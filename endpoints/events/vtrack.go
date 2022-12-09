@@ -267,7 +267,7 @@ func isAllowVastForBidder(bidder string, bidderInfos *config.BidderInfos, allowU
 	// check if bidder is configured
 	if b, ok := (*bidderInfos)[bidder]; bidderInfos != nil && ok {
 		// check if bidder is enabled
-		return b.Enabled && b.ModifyingVastXmlAllowed
+		return b.IsEnabled() && b.ModifyingVastXmlAllowed
 	}
 
 	return allowUnknownBidder

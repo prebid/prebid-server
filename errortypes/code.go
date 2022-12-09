@@ -12,6 +12,8 @@ const (
 	BlacklistedAcctErrorCode
 	AcctRequiredErrorCode
 	NoConversionRateErrorCode
+	MalformedAcctErrorCode
+	ModuleRejectionErrorCode
 )
 
 // Defines numeric codes for well-known warnings.

@@ -11,7 +11,9 @@ import (
 )
 
 func BuildAdapters(client *http.Client, cfg *config.Configuration, infos config.BidderInfos, me metrics.MetricsEngine) (map[openrtb_ext.BidderName]AdaptedBidder, []error) {
-	bidders, errs := buildBidders(cfg.Adapters, infos, newAdapterBuilders())
+	server := config.Server{ExternalUrl: cfg.ExternalURL, GvlID: cfg.GDPR.HostVendorID, DataCenter: cfg.DataCenter}
+	bidders, errs := buildBidders(infos, newAdapterBuilders(), server)
+
 	if len(errs) > 0 {
 		return nil, errs
 	}
@@ -26,20 +28,14 @@ func BuildAdapters(client *http.Client, cfg *config.Configuration, infos config.
 	return exchangeBidders, nil
 }
 
-func buildBidders(adapterConfig map[string]config.Adapter, infos config.BidderInfos, builders map[openrtb_ext.BidderName]adapters.Builder) (map[openrtb_ext.BidderName]adapters.Bidder, []error) {
+func buildBidders(infos config.BidderInfos, builders map[openrtb_ext.BidderName]adapters.Builder, server config.Server) (map[openrtb_ext.BidderName]adapters.Bidder, []error) {
 	bidders := make(map[openrtb_ext.BidderName]adapters.Bidder)
 	var errs []error
 
-	for bidder, cfg := range adapterConfig {
+	for bidder, info := range infos {
 		bidderName, bidderNameFound := openrtb_ext.NormalizeBidderName(bidder)
 		if !bidderNameFound {
 			errs = append(errs, fmt.Errorf("%v: unknown bidder", bidder))
-			continue
-		}
-
-		info, infoFound := infos[string(bidderName)]
-		if !infoFound {
-			errs = append(errs, fmt.Errorf("%v: bidder info not found", bidder))
 			continue
 		}
 
@@ -49,8 +45,10 @@ func buildBidders(adapterConfig map[string]config.Adapter, infos config.BidderIn
 			continue
 		}
 
-		if info.Enabled {
-			bidderInstance, builderErr := builder(bidderName, cfg)
+		if info.IsEnabled() {
+			adapterInfo := buildAdapterInfo(info)
+			bidderInstance, builderErr := builder(bidderName, adapterInfo, server)
+
 			if builderErr != nil {
 				errs = append(errs, fmt.Errorf("%v: %v", bidder, builderErr))
 				continue
@@ -58,8 +56,17 @@ func buildBidders(adapterConfig map[string]config.Adapter, infos config.BidderIn
 			bidders[bidderName] = adapters.BuildInfoAwareBidder(bidderInstance, info)
 		}
 	}
-
 	return bidders, errs
+}
+
+func buildAdapterInfo(bidderInfo config.BidderInfo) config.Adapter {
+	adapter := config.Adapter{}
+	adapter.Endpoint = bidderInfo.Endpoint
+	adapter.ExtraAdapterInfo = bidderInfo.ExtraAdapterInfo
+	adapter.PlatformID = bidderInfo.PlatformID
+	adapter.AppSecret = bidderInfo.AppSecret
+	adapter.XAPI = bidderInfo.XAPI
+	return adapter
 }
 
 // GetActiveBidders returns a map of all active bidder names.
@@ -67,7 +74,7 @@ func GetActiveBidders(infos config.BidderInfos) map[string]openrtb_ext.BidderNam
 	activeBidders := make(map[string]openrtb_ext.BidderName)
 
 	for name, info := range infos {
-		if info.Enabled {
+		if info.IsEnabled() {
 			activeBidders[name] = openrtb_ext.BidderName(name)
 		}
 	}
@@ -78,13 +85,15 @@ func GetActiveBidders(infos config.BidderInfos) map[string]openrtb_ext.BidderNam
 // GetDisabledBiddersErrorMessages returns a map of error messages for disabled bidders.
 func GetDisabledBiddersErrorMessages(infos config.BidderInfos) map[string]string {
 	disabledBidders := map[string]string{
-		"lifestreet":   `Bidder "lifestreet" is no longer available in Prebid Server. Please update your configuration.`,
-		"adagio":       `Bidder "adagio" is no longer available in Prebid Server. Please update your configuration.`,
-		"somoaudience": `Bidder "somoaudience" is no longer available in Prebid Server. Please update your configuration.`,
+		"lifestreet":     `Bidder "lifestreet" is no longer available in Prebid Server. Please update your configuration.`,
+		"adagio":         `Bidder "adagio" is no longer available in Prebid Server. Please update your configuration.`,
+		"somoaudience":   `Bidder "somoaudience" is no longer available in Prebid Server. Please update your configuration.`,
+		"yssp":           `Bidder "yssp" is no longer available in Prebid Server. If you're looking to use the Yahoo SSP adapter, please rename it to "yahoossp" in your configuration.`,
+		"andbeyondmedia": `Bidder "andbeyondmedia" is no longer available in Prebid Server. If you're looking to use the AndBeyond.Media SSP adapter, please rename it to "beyondmedia" in your configuration.`,
 	}
 
 	for name, info := range infos {
-		if !info.Enabled {
+		if info.Disabled {
 			msg := fmt.Sprintf(`Bidder "%s" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`, name)
 			disabledBidders[name] = msg
 		}
