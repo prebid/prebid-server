@@ -97,7 +97,7 @@ func TestUpdateImpExtWithFloorDetails(t *testing.T) {
 		matchedRule  string
 		floorRuleVal float64
 		floorVal     float64
-		imp          openrtb2.Imp
+		imp          *openrtb_ext.ImpWrapper
 		expected     json.RawMessage
 	}{
 		{
@@ -105,7 +105,7 @@ func TestUpdateImpExtWithFloorDetails(t *testing.T) {
 			matchedRule:  "test|123|xyz",
 			floorRuleVal: 5.5,
 			floorVal:     5.5,
-			imp:          openrtb2.Imp{ID: "1234", Video: &openrtb2.Video{W: 300, H: 250}},
+			imp:          &openrtb_ext.ImpWrapper{Imp: &openrtb2.Imp{ID: "1234", Video: &openrtb2.Video{W: 300, H: 250}}},
 			expected:     []byte(`{"prebid":{"floors":{"floorRule":"test|123|xyz","floorRuleValue":5.5,"floorValue":5.5}}}`),
 		},
 		{
@@ -113,7 +113,7 @@ func TestUpdateImpExtWithFloorDetails(t *testing.T) {
 			matchedRule:  "test|123|xyz",
 			floorRuleVal: 5.5,
 			floorVal:     5.5,
-			imp:          openrtb2.Imp{ID: "1234", Video: &openrtb2.Video{W: 300, H: 250}, Ext: json.RawMessage{}},
+			imp:          &openrtb_ext.ImpWrapper{Imp: &openrtb2.Imp{ID: "1234", Video: &openrtb2.Video{W: 300, H: 250}, Ext: json.RawMessage{}}},
 			expected:     []byte(`{"prebid":{"floors":{"floorRule":"test|123|xyz","floorRuleValue":5.5,"floorValue":5.5}}}`),
 		},
 		{
@@ -121,13 +121,13 @@ func TestUpdateImpExtWithFloorDetails(t *testing.T) {
 			matchedRule:  "banner|www.test.com|*",
 			floorRuleVal: 5.5,
 			floorVal:     15.5,
-			imp:          openrtb2.Imp{ID: "1234", Video: &openrtb2.Video{W: 300, H: 250}, Ext: []byte(`{"prebid": {"test": true}}`)},
-			expected:     []byte(`{"prebid":{"floors":{"floorRule":"banner|www.test.com|*","floorRuleValue":5.5,"floorValue":15.5},"test":true}}`),
+			imp:          &openrtb_ext.ImpWrapper{Imp: &openrtb2.Imp{ID: "1234", Video: &openrtb2.Video{W: 300, H: 250}, Ext: []byte(`{"prebid": {"test": true}}`)}},
+			expected:     []byte(`{"prebid":{"floors":{"floorRule":"banner|www.test.com|*","floorRuleValue":5.5,"floorValue":15.5}}}`),
 		},
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			updateImpExtWithFloorDetails(&tc.imp, tc.matchedRule, tc.floorRuleVal, tc.floorVal)
+			updateImpExtWithFloorDetails(tc.imp, tc.matchedRule, tc.floorRuleVal, tc.floorVal)
 			if tc.imp.Ext != nil && !reflect.DeepEqual(tc.imp.Ext, tc.expected) {
 				t.Errorf("error: \nreturn:\t%v\n want:\t%v", string(tc.imp.Ext), string(tc.expected))
 			}

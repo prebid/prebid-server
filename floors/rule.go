@@ -108,32 +108,25 @@ func getFloorMinAndCurFromImp(imp openrtb2.Imp) (float64, string, error) {
 	return floorMin, floorMinCur, nil
 }
 
-func updateImpExtWithFloorDetails(imp *openrtb2.Imp, matchedRule string, floorRuleVal, floorVal float64) {
-	var impExtObj map[string]interface{}
+func updateImpExtWithFloorDetails(imp *openrtb_ext.ImpWrapper, matchedRule string, floorRuleVal, floorVal float64) {
 
-	err := json.Unmarshal(imp.Ext, &impExtObj)
-	if impExtObj == nil {
-		impExtObj = make(map[string]interface{})
+	impExt, err := imp.GetImpExt()
+	if err != nil {
+		return
+	}
+	extImpPrebid := impExt.GetPrebid()
+	if extImpPrebid == nil {
+		extImpPrebid = &openrtb_ext.ExtImpPrebid{}
 	}
 
-	floorExt := openrtb_ext.ExtFloors{
+	extImpPrebid.Floors = &openrtb_ext.ExtFloors{
 		FloorRuleValue: floorRuleVal,
 		FloorRule:      matchedRule,
-		FloorValue:     floorVal,
+		FloorValue:     math.Round(floorVal*10000) / 10000,
 	}
+	impExt.SetPrebid(extImpPrebid)
+	_ = imp.RebuildImp()
 
-	prebidExt, ok := impExtObj["prebid"].(map[string]interface{})
-	if ok {
-		prebidExt["floors"] = floorExt
-	} else {
-		impExtObj["prebid"] = map[string]interface{}{
-			"floors": floorExt,
-		}
-	}
-	impExt, err := json.Marshal(impExtObj)
-	if err == nil {
-		imp.Ext = impExt
-	}
 }
 
 func selectFloorModelGroup(modelGroups []openrtb_ext.PriceFloorModelGroup, f func(int) int) []openrtb_ext.PriceFloorModelGroup {

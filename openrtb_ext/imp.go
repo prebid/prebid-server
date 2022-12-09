@@ -24,6 +24,8 @@ type ExtImpPrebid struct {
 	Options *Options `json:"options,omitempty"`
 
 	Passthrough json.RawMessage `json:"passthrough,omitempty"`
+
+	Floors *ExtFloors `json:"floors,omitempty"`
 }
 
 // ExtFloors defines the contract for imp[i].ext.prebid.floors

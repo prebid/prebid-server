@@ -42,13 +42,13 @@ func EnrichWithPriceFloors(bidRequestWrapper *openrtb_ext.RequestWrapper, accoun
 
 	floors, err := resolveFloors(account, bidRequestWrapper, conversions, priceFloorFetcher)
 	if len(err) == 0 {
-		err = updateBidRequestWithFloors(floors, bidRequestWrapper.BidRequest, conversions)
+		err = updateBidRequestWithFloors(floors, bidRequestWrapper, conversions)
 	}
 	return err
 }
 
 // updateBidRequestWithFloors will update imp.bidfloor and imp.bidfloorcur based on rules matching
-func updateBidRequestWithFloors(extFloorRules *openrtb_ext.PriceFloorRules, request *openrtb2.BidRequest, conversions currency.Conversions) []error {
+func updateBidRequestWithFloors(extFloorRules *openrtb_ext.PriceFloorRules, request *openrtb_ext.RequestWrapper, conversions currency.Conversions) []error {
 	var (
 		floorErrList      []error
 		floorModelErrList []error
@@ -76,8 +76,8 @@ func updateBidRequestWithFloors(extFloorRules *openrtb_ext.PriceFloorRules, requ
 
 	floorErrList = validateFloorRulesAndLowerValidRuleKey(modelGroup.Schema, modelGroup.Schema.Delimiter, modelGroup.Values)
 	if len(modelGroup.Values) > 0 {
-		for i := 0; i < len(request.Imp); i++ {
-			desiredRuleKey := createRuleKey(modelGroup.Schema, request, request.Imp[i])
+		for i, imp := range request.GetImp() {
+			desiredRuleKey := createRuleKey(modelGroup.Schema, request.BidRequest, request.Imp[i])
 			matchedRule, isRuleMatched := findRule(modelGroup.Values, modelGroup.Schema.Delimiter, desiredRuleKey, len(modelGroup.Schema.Fields))
 
 			floorVal = modelGroup.Default
@@ -94,11 +94,11 @@ func updateBidRequestWithFloors(extFloorRules *openrtb_ext.PriceFloorRules, requ
 				}
 
 				if bidFloor > float64(0) && isBidFloorGreater(request.Imp[i], conversions, bidFloor, floorCur) {
-					request.Imp[i].BidFloor = bidFloor
-					request.Imp[i].BidFloorCur = floorCur
+					imp.BidFloor = bidFloor
+					imp.BidFloorCur = floorCur
 				}
 				if isRuleMatched {
-					updateImpExtWithFloorDetails(&request.Imp[i], matchedRule, floorVal, request.Imp[i].BidFloor)
+					updateImpExtWithFloorDetails(imp, matchedRule, floorVal, imp.BidFloor)
 				}
 			} else {
 				floorModelErrList = append(floorModelErrList, fmt.Errorf("Error in getting FloorMin value : '%v'", err.Error()))
