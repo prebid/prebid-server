@@ -35,8 +35,6 @@ func (m Module) HandleBidderRequestHook(
 	return handleBidderRequestHook(cfg, payload)
 }
 
-const ctxKeyBlockingAttributes = "blocking_attributes"
-
 type blockingAttributes struct {
 	badv   []string
 	bapp   []string
