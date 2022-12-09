@@ -1,5 +1,5 @@
 {
-    "bid_validation_flag": "enforce",
+    "bid_validation_flag": "warn",
     "incomingRequest": {
         "ortbRequest": {
             "id": "some-request-id",
@@ -153,13 +153,59 @@
             "seatbid": [
                 {
                     "seat": "appnexus",
-                    "bid": []
+                    "bid": [
+                        {
+                            "id": "apn-bid",
+                            "impid": "some-imp-id",
+                            "price": 0.3,
+                            "w": 200,
+                            "h": 500,
+                            "crid": "creative-1",
+                            "ext": {
+                                "origbidcpm": 0.3,
+                                "prebid": {
+                                    "type": "banner"
+                                }
+                            }
+                        }
+                    ]
                 },
                 {
                     "seat": "rubicon",
-                    "bid": []
+                    "bid": [
+                        {
+                            "id": "rubi-bid",
+                            "impid": "some-imp-id",
+                            "price": 0.4,
+                            "w": 200,
+                            "h": 500,
+                            "crid": "creative-2",
+                            "ext": {
+                                "origbidcpm": 0.4,
+                                "prebid": {
+                                    "type": "banner"
+                                }
+                            }
+                        }
+                    ]
                 }
             ]
+        },
+        "ext": {
+            "errors": {
+                "appnexus": [
+                    {
+                        "code": 4,
+                        "message": "bidResponse creative size warning: size WxH larger than AdUnit sizes"
+                    }
+                ],
+                "rubicon": [
+                    {
+                        "code": 4,
+                        "message": "bidResponse creative size warning: size WxH larger than AdUnit sizes"
+                    }
+                ]
+            }
         }
     }
 }

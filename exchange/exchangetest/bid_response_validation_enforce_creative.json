@@ -134,8 +134,8 @@
                                     "id": "rubi-bid",
                                     "impid": "some-imp-id",
                                     "price": 0.4,
-                                    "w": 20,
-                                    "h": 50,
+                                    "w": 200,
+                                    "h": 500,
                                     "crid": "creative-2"
                                 },
                                 "bidType": "banner"
@@ -157,28 +157,19 @@
                 },
                 {
                     "seat": "rubicon",
-                    "bid": [
-                        {
-                            "id": "rubi-bid",
-                            "impid": "some-imp-id",
-                            "price": 0.4,
-                            "w": 20,
-                            "h": 50,
-                            "crid": "creative-2",
-                            "ext": {
-                                "origbidcpm": 0.4,
-                                "prebid": {
-                                    "type": "banner"
-                                }
-                            }
-                        }
-                    ]
+                    "bid": []
                 }
             ]
         },
         "ext": {
             "errors": {
                 "appnexus": [
+                    {
+                        "code": 4,
+                        "message": "bidResponse rejected: size WxH"
+                    }
+                ],
+                "rubicon": [
                     {
                         "code": 4,
                         "message": "bidResponse rejected: size WxH"

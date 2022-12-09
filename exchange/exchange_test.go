@@ -2188,6 +2188,12 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	accountBidValidation := config.Validations{}
 	if spec.BidValidationEnforcement == config.ValidationEnforce {
 		accountBidValidation.BannerCreativeMaxSize = config.ValidationEnforce
+		_, impID, err := getInfoFromImp(&openrtb_ext.RequestWrapper{BidRequest: &spec.IncomingRequest.OrtbRequest})
+		if err != nil {
+			t.Errorf("%s: Exchange returned an unexpected error. Got %s", filename, err.Error())
+		}
+		impExtInfoMap[impID] = ImpExtInfo{}
+
 	} else if spec.BidValidationEnforcement == config.ValidationWarn {
 		accountBidValidation.BannerCreativeMaxSize = config.ValidationWarn
 	}
@@ -2282,6 +2288,21 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 			assert.JSONEq(t, expectedPassthough, actualPassthrough, "Expected bid response extension is incorrect")
 		}
 
+	}
+
+	if spec.BidValidationEnforcement == config.ValidationEnforce {
+		actualBidRespExt := &openrtb_ext.ExtBidResponse{}
+		expectedBidRespExt := &openrtb_ext.ExtBidResponse{}
+		if bid.Ext != nil {
+			if err := json.Unmarshal(bid.Ext, actualBidRespExt); err != nil {
+				assert.NoError(t, err, fmt.Sprintf("Error when unmarshalling: %s", err))
+			}
+		}
+		if err := json.Unmarshal(spec.Response.Ext, expectedBidRespExt); err != nil {
+			assert.NoError(t, err, fmt.Sprintf("Error when unmarshalling: %s", err))
+		}
+
+		assert.Equal(t, expectedBidRespExt.Errors, actualBidRespExt.Errors, "Oh no")
 	}
 }
 
@@ -2392,6 +2413,7 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 	if bidValidationEnforcement == config.ValidationEnforce || bidValidationEnforcement == config.ValidationWarn {
 		bidValidation = config.Validations{
 			BannerCreativeMaxSize: bidValidationEnforcement,
+			SecureMarkup:          bidValidationEnforcement,
 			MaxCreativeWidth:      100,
 			MaxCreativeHeight:     100,
 		}
@@ -4265,10 +4287,10 @@ func TestValidateBidForBidResponse(t *testing.T) {
 		},
 	}
 	for _, test := range testCases {
-		acutalBannerCreativeValid := exchange.validateBannerCreativeSize(test.givenBid, test.givenBidResponseExt, openrtb_ext.BidderName(test.givenBidderName), test.givenPubID)
+		acutalBannerCreativeValid := exchange.validateBannerCreativeSize(test.givenBid, test.givenBidResponseExt, openrtb_ext.BidderName(test.givenBidderName), test.givenPubID, "enforce")
 		assert.Equal(t, test.expectedBannerCreativeValid, acutalBannerCreativeValid)
 
-		actualBidAdMValid := exchange.validateBidAdM(test.givenBid, test.givenBidResponseExt, openrtb_ext.BidderName(test.givenBidderName), test.givenPubID)
+		actualBidAdMValid := exchange.validateBidAdM(test.givenBid, test.givenBidResponseExt, openrtb_ext.BidderName(test.givenBidderName), test.givenPubID, "enforce")
 		assert.Equal(t, test.expectedBidAdMValid, actualBidAdMValid)
 
 	}

@@ -1034,20 +1034,19 @@ func (e *exchange) makeBid(bids []*pbsOrtbBid, auc *auction, returnCreative bool
 
 	for _, bid := range bids {
 		if e.bidValidationEnforcement.BannerCreativeMaxSize == config.ValidationEnforce && bid.bidType == openrtb_ext.BidTypeBanner {
-			if !e.validateBannerCreativeSize(bid, bidResponseExt, adapter, pubID) {
+			if !e.validateBannerCreativeSize(bid, bidResponseExt, adapter, pubID, e.bidValidationEnforcement.BannerCreativeMaxSize) {
 				continue // Don't add bid to result
 			}
 		} else if e.bidValidationEnforcement.BannerCreativeMaxSize == config.ValidationWarn && bid.bidType == openrtb_ext.BidTypeBanner {
-			e.validateBannerCreativeSize(bid, bidResponseExt, adapter, pubID)
+			e.validateBannerCreativeSize(bid, bidResponseExt, adapter, pubID, e.bidValidationEnforcement.BannerCreativeMaxSize)
 		}
-
 		if _, ok := impExtInfoMap[bid.bid.ImpID]; ok {
 			if e.bidValidationEnforcement.SecureMarkup == config.ValidationEnforce && (bid.bidType == openrtb_ext.BidTypeBanner || bid.bidType == openrtb_ext.BidTypeVideo) {
-				if !e.validateBidAdM(bid, bidResponseExt, adapter, pubID) {
+				if !e.validateBidAdM(bid, bidResponseExt, adapter, pubID, e.bidValidationEnforcement.SecureMarkup) {
 					continue // Don't add bid to result
 				}
 			} else if e.bidValidationEnforcement.SecureMarkup == config.ValidationWarn && (bid.bidType == openrtb_ext.BidTypeBanner || bid.bidType == openrtb_ext.BidTypeVideo) {
-				e.validateBidAdM(bid, bidResponseExt, adapter, pubID)
+				e.validateBidAdM(bid, bidResponseExt, adapter, pubID, e.bidValidationEnforcement.SecureMarkup)
 			}
 
 		}
@@ -1265,12 +1264,13 @@ func isAdsCertEnabled(experiment *openrtb_ext.Experiment, info config.BidderInfo
 	return requestAdsCertEnabled && bidderAdsCertEnabled
 }
 
-func (e exchange) validateBannerCreativeSize(bid *pbsOrtbBid, bidResponseExt *openrtb_ext.ExtBidResponse, adapter openrtb_ext.BidderName, pubID string) bool {
+func (e exchange) validateBannerCreativeSize(bid *pbsOrtbBid, bidResponseExt *openrtb_ext.ExtBidResponse, adapter openrtb_ext.BidderName, pubID string, validationType string) bool {
 	if bid.bid.W > e.bidValidationEnforcement.MaxCreativeWidth || bid.bid.H > e.bidValidationEnforcement.MaxCreativeHeight {
 		// Add error to debug array
+		errorMessage := setErrorMessageCreativeSize(validationType)
 		bidCreativeMaxSizeError := openrtb_ext.ExtBidderMessage{
 			Code:    errortypes.BadServerResponseErrorCode,
-			Message: "bidResponse rejected: size WxH",
+			Message: errorMessage,
 		}
 		bidResponseExt.Errors[adapter] = append(bidResponseExt.Errors[adapter], bidCreativeMaxSizeError)
 
@@ -1282,15 +1282,16 @@ func (e exchange) validateBannerCreativeSize(bid *pbsOrtbBid, bidResponseExt *op
 	return true
 }
 
-func (e exchange) validateBidAdM(bid *pbsOrtbBid, bidResponseExt *openrtb_ext.ExtBidResponse, adapter openrtb_ext.BidderName, pubID string) bool {
+func (e exchange) validateBidAdM(bid *pbsOrtbBid, bidResponseExt *openrtb_ext.ExtBidResponse, adapter openrtb_ext.BidderName, pubID string, validationType string) bool {
 	invalidAdM := []string{"http:", "http%3A"}
 	requiredAdM := []string{"https:", "https%3A"}
 
 	if (strings.Contains(bid.bid.AdM, invalidAdM[0]) || strings.Contains(bid.bid.AdM, invalidAdM[1])) && (!strings.Contains(bid.bid.AdM, requiredAdM[0]) || !strings.Contains(bid.bid.AdM, requiredAdM[1])) {
 		// Add error to debug array
+		errorMessage := setErrorMessageSecureMarkup(validationType)
 		bidSecureMarkupError := openrtb_ext.ExtBidderMessage{
 			Code:    errortypes.BadServerResponseErrorCode,
-			Message: "bidResponse rejected: insecure creative in secure context",
+			Message: errorMessage,
 		}
 		bidResponseExt.Errors[adapter] = append(bidResponseExt.Errors[adapter], bidSecureMarkupError)
 
@@ -1300,4 +1301,22 @@ func (e exchange) validateBidAdM(bid *pbsOrtbBid, bidResponseExt *openrtb_ext.Ex
 		return false
 	}
 	return true
+}
+
+func setErrorMessageCreativeSize(validationType string) string {
+	if validationType == config.ValidationEnforce {
+		return "bidResponse rejected: size WxH"
+	} else if validationType == config.ValidationWarn {
+		return "bidResponse creative size warning: size WxH larger than AdUnit sizes"
+	}
+	return ""
+}
+
+func setErrorMessageSecureMarkup(validationType string) string {
+	if validationType == config.ValidationEnforce {
+		return "bidResponse rejected: insecure creative in secure context"
+	} else if validationType == config.ValidationWarn {
+		return "bidResponse secure markup warning: insecure creative in secure contexts"
+	}
+	return ""
 }

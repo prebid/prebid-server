@@ -80,8 +80,9 @@
                                     "id": "apn-bid",
                                     "impid": "some-imp-id",
                                     "price": 0.3,
-                                    "w": 200,
-                                    "h": 500,
+                                    "w": 20,
+                                    "h": 50,
+                                    "adm": "http:",
                                     "crid": "creative-1"
                                 },
                                 "bidType": "banner"
@@ -134,8 +135,9 @@
                                     "id": "rubi-bid",
                                     "impid": "some-imp-id",
                                     "price": 0.4,
-                                    "w": 200,
-                                    "h": 500,
+                                    "w": 20,
+                                    "h": 50,
+                                    "adm": "http:",
                                     "crid": "creative-2"
                                 },
                                 "bidType": "banner"
@@ -158,8 +160,9 @@
                             "id": "apn-bid",
                             "impid": "some-imp-id",
                             "price": 0.3,
-                            "w": 200,
-                            "h": 500,
+                            "w": 20,
+                            "h": 50,
+                            "adm": "http:",
                             "crid": "creative-1",
                             "ext": {
                                 "origbidcpm": 0.3,
@@ -177,8 +180,9 @@
                             "id": "rubi-bid",
                             "impid": "some-imp-id",
                             "price": 0.4,
-                            "w": 200,
-                            "h": 500,
+                            "w": 20,
+                            "h": 50,
+                            "adm": "http:",
                             "crid": "creative-2",
                             "ext": {
                                 "origbidcpm": 0.4,
@@ -190,6 +194,22 @@
                     ]
                 }
             ]
+        },
+        "ext": {
+            "errors": {
+                "appnexus": [
+                    {
+                        "code": 4,
+                        "message": "bidResponse warning: insecure creative in secure context"
+                    }
+                ],
+                "rubicon": [
+                    {
+                        "code": 4,
+                        "message": "bidResponse warning: insecure creative in secure context"
+                    }
+                ]
+            }
         }
     }
 }
