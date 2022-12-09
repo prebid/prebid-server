@@ -2166,7 +2166,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	if spec.BidIDGenerator != nil {
 		*bidIdGenerator = *spec.BidIDGenerator
 	}
-	ex := newExchangeForTests(t, filename, spec.OutgoingRequests, aliases, privacyConfig, bidIdGenerator, spec.HostSChainFlag, spec.BidValidationEnforcement)
+	ex := newExchangeForTests(t, filename, spec.OutgoingRequests, aliases, privacyConfig, bidIdGenerator, spec.HostSChainFlag, spec.HostConfigBidValidation)
 	biddersInAuction := findBiddersInAuction(t, filename, &spec.IncomingRequest.OrtbRequest)
 	debugLog := &DebugLog{}
 	if spec.DebugLog != nil {
@@ -2184,18 +2184,13 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		impExtInfoMap[impID] = ImpExtInfo{Passthrough: impPassthrough}
 	}
 
-	// Account Bid Validation Enforcement
-	accountBidValidation := config.Validations{}
-	if spec.BidValidationEnforcement == config.ValidationEnforce {
-		accountBidValidation.BannerCreativeMaxSize = config.ValidationEnforce
+	// Imp Setting for Bid Validation
+	if spec.HostConfigBidValidation.SecureMarkup == config.ValidationEnforce || spec.HostConfigBidValidation.SecureMarkup == config.ValidationWarn {
 		_, impID, err := getInfoFromImp(&openrtb_ext.RequestWrapper{BidRequest: &spec.IncomingRequest.OrtbRequest})
 		if err != nil {
 			t.Errorf("%s: Exchange returned an unexpected error. Got %s", filename, err.Error())
 		}
 		impExtInfoMap[impID] = ImpExtInfo{}
-
-	} else if spec.BidValidationEnforcement == config.ValidationWarn {
-		accountBidValidation.BannerCreativeMaxSize = config.ValidationWarn
 	}
 
 	auctionRequest := AuctionRequest{
@@ -2204,7 +2199,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 			ID:            "testaccount",
 			EventsEnabled: spec.EventsEnabled,
 			DebugAllow:    true,
-			Validations:   accountBidValidation,
+			Validations:   spec.AccountConfigBidValidation,
 		},
 		UserSyncs:     mockIdFetcher(spec.IncomingRequest.Usersyncs),
 		ImpExtInfoMap: impExtInfoMap,
@@ -2343,7 +2338,7 @@ func extractResponseTimes(t *testing.T, context string, bid *openrtb2.BidRespons
 	}
 }
 
-func newExchangeForTests(t *testing.T, filename string, expectations map[string]*bidderSpec, aliases map[string]string, privacyConfig config.Privacy, bidIDGenerator BidIDGenerator, hostSChainFlag bool, bidValidationEnforcement string) Exchange {
+func newExchangeForTests(t *testing.T, filename string, expectations map[string]*bidderSpec, aliases map[string]string, privacyConfig config.Privacy, bidIDGenerator BidIDGenerator, hostSChainFlag bool, hostBidValidation config.Validations) Exchange {
 	bidderAdapters := make(map[openrtb_ext.BidderName]AdaptedBidder, len(expectations))
 	bidderInfos := make(config.BidderInfos, len(expectations))
 	for _, bidderName := range openrtb_ext.CoreBidderNames() {
@@ -2409,16 +2404,6 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		hostSChainNode = nil
 	}
 
-	bidValidation := config.Validations{}
-	if bidValidationEnforcement == config.ValidationEnforce || bidValidationEnforcement == config.ValidationWarn {
-		bidValidation = config.Validations{
-			BannerCreativeMaxSize: bidValidationEnforcement,
-			SecureMarkup:          bidValidationEnforcement,
-			MaxCreativeWidth:      100,
-			MaxCreativeHeight:     100,
-		}
-	}
-
 	return &exchange{
 		adapterMap:               bidderAdapters,
 		me:                       metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.CoreBidderNames(), nil),
@@ -2436,7 +2421,7 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		bidIDGenerator:           bidIDGenerator,
 		hostSChainNode:           hostSChainNode,
 		server:                   config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "Datacenter"},
-		bidValidationEnforcement: bidValidation,
+		bidValidationEnforcement: hostBidValidation,
 	}
 }
 
@@ -4420,8 +4405,8 @@ func TestSetBidValidationStatus(t *testing.T) {
 		},
 	}
 	for _, test := range testCases {
-		actual := test.givenHost.SetBidValidationStatus(test.givenAccount)
-		assert.Equal(t, test.expected, actual)
+		test.givenHost.SetBidValidationStatus(test.givenAccount)
+		assert.Equal(t, test.expected, test.givenHost)
 	}
 }
 
@@ -4614,21 +4599,23 @@ func (ms *MockSigner) Sign(destinationURL string, body []byte) (string, error) {
 }
 
 type exchangeSpec struct {
-	GDPREnabled              bool                   `json:"gdpr_enabled"`
-	IncomingRequest          exchangeRequest        `json:"incomingRequest"`
-	OutgoingRequests         map[string]*bidderSpec `json:"outgoingRequests"`
-	Response                 exchangeResponse       `json:"response,omitempty"`
-	EnforceCCPA              bool                   `json:"enforceCcpa"`
-	EnforceLMT               bool                   `json:"enforceLmt"`
-	AssumeGDPRApplies        bool                   `json:"assume_gdpr_applies"`
-	DebugLog                 *DebugLog              `json:"debuglog,omitempty"`
-	EventsEnabled            bool                   `json:"events_enabled,omitempty"`
-	StartTime                int64                  `json:"start_time_ms,omitempty"`
-	BidIDGenerator           *mockBidIDGenerator    `json:"bidIDGenerator,omitempty"`
-	RequestType              *metrics.RequestType   `json:"requestType,omitempty"`
-	PassthroughFlag          bool                   `json:"passthrough_flag,omitempty"`
-	HostSChainFlag           bool                   `json:"host_schain_flag,omitempty"`
-	BidValidationEnforcement string                 `json:"bid_validation_flag,omitempty"`
+	GDPREnabled                bool                   `json:"gdpr_enabled"`
+	IncomingRequest            exchangeRequest        `json:"incomingRequest"`
+	OutgoingRequests           map[string]*bidderSpec `json:"outgoingRequests"`
+	Response                   exchangeResponse       `json:"response,omitempty"`
+	EnforceCCPA                bool                   `json:"enforceCcpa"`
+	EnforceLMT                 bool                   `json:"enforceLmt"`
+	AssumeGDPRApplies          bool                   `json:"assume_gdpr_applies"`
+	DebugLog                   *DebugLog              `json:"debuglog,omitempty"`
+	EventsEnabled              bool                   `json:"events_enabled,omitempty"`
+	StartTime                  int64                  `json:"start_time_ms,omitempty"`
+	BidIDGenerator             *mockBidIDGenerator    `json:"bidIDGenerator,omitempty"`
+	RequestType                *metrics.RequestType   `json:"requestType,omitempty"`
+	PassthroughFlag            bool                   `json:"passthrough_flag,omitempty"`
+	HostSChainFlag             bool                   `json:"host_schain_flag,omitempty"`
+	BidValidationEnforcement   string                 `json:"bid_validation_flag,omitempty"`
+	HostConfigBidValidation    config.Validations     `json:"host_bid_validations"`
+	AccountConfigBidValidation config.Validations     `json:"account_bid_validations"`
 }
 
 type exchangeRequest struct {

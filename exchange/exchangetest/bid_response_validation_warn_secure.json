@@ -1,5 +1,10 @@
 {
-    "bid_validation_flag": "warn",
+    "host_bid_validations": {
+        "banner_creative_max_size": "skip",
+        "secure_markup": "warn",
+        "max_creative_width": 100,
+        "max_creative_height": 100
+    },
     "incomingRequest": {
         "ortbRequest": {
             "id": "some-request-id",

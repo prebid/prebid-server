@@ -643,12 +643,10 @@ const (
 	ValidationSkip    string = "skip"
 )
 
-func (host Validations) SetBidValidationStatus(account Validations) Validations {
-	finalEnforcement := host
+func (host *Validations) SetBidValidationStatus(account Validations) {
 	if len(account.BannerCreativeMaxSize) > 0 {
-		finalEnforcement.BannerCreativeMaxSize = account.BannerCreativeMaxSize
+		host.BannerCreativeMaxSize = account.BannerCreativeMaxSize
 	}
-	return finalEnforcement
 }
 
 func (cfg *TimeoutNotification) validate(errs []error) []error {
