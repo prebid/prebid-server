@@ -34,7 +34,7 @@ func handleBidderRequestHook(
 	result.Warnings = mergeStrings(result.Warnings, message)
 	if err != nil {
 		return result, hookexecution.NewFailure("failed to get override for badv.blocked_adomain: %s", err)
-	} else if len(badv) > 0 {
+	} else if len(blockingAttributes.badv) > 0 {
 		changeSet.BidderRequest().BAdv().Update(badv)
 	}
 
@@ -44,7 +44,7 @@ func handleBidderRequestHook(
 	result.Warnings = mergeStrings(result.Warnings, message)
 	if err != nil {
 		return result, hookexecution.NewFailure("failed to get override for bapp.blocked_app: %s", err)
-	} else if len(bapp) > 0 {
+	} else if len(blockingAttributes.bapp) > 0 {
 		changeSet.BidderRequest().BApp().Update(bapp)
 	}
 
@@ -54,10 +54,11 @@ func handleBidderRequestHook(
 	result.Warnings = mergeStrings(result.Warnings, message)
 	if err != nil {
 		return result, hookexecution.NewFailure("failed to get override for bcat.blocked_adv_cat: %s", err)
-	} else if len(bcat) > 0 {
+	} else if len(blockingAttributes.bcat) > 0 {
 		changeSet.BidderRequest().BCat().Update(bcat)
 	}
 
+	// todo: probably we should update cattax only if current bidder supports openrtb v2.6
 	blockingAttributes.cattax = payload.BidRequest.CatTax
 	if blockingAttributes.cattax == 0 && cfg.Attributes.Bcat.CategoryTaxonomy > 0 {
 		blockingAttributes.cattax = cfg.Attributes.Bcat.CategoryTaxonomy
