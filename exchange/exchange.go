@@ -223,14 +223,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		_, targData.cacheHost, targData.cachePath = e.cache.GetExtCacheData()
 	}
 	responseDebugAllow, accountDebugAllow, debugLog := getDebugInfo(r.BidRequestWrapper.BidRequest, requestExt, r.Account.DebugAllow, debugLog)
-	if responseDebugAllow {
-		//save incoming request with stored requests (if applicable) to return in debug logs
-		resolvedBidReq, err := json.Marshal(r.BidRequestWrapper.BidRequest)
-		if err != nil {
-			return nil, err
-		}
-		r.ResolvedBidRequest = resolvedBidReq
-	}
+
 	e.me.RecordDebugRequest(responseDebugAllow || accountDebugAllow, r.PubID)
 
 	if r.RequestType == metrics.ReqTypeORTB2Web || r.RequestType == metrics.ReqTypeORTB2App {
@@ -266,6 +259,14 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 
 	if e.floor.Enabled {
 		floorErrs = floors.EnrichWithPriceFloors(r.BidRequestWrapper, r.Account, conversions, e.priceFloorFetcher)
+	}
+	if responseDebugAllow {
+		//save incoming request with stored requests (if applicable) to return in debug logs
+		resolvedBidReq, err := json.Marshal(r.BidRequestWrapper.BidRequest)
+		if err != nil {
+			return nil, err
+		}
+		r.ResolvedBidRequest = resolvedBidReq
 	}
 
 	recordImpMetrics(r.BidRequestWrapper.BidRequest, e.me)

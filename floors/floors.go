@@ -103,8 +103,8 @@ func updateBidRequestWithFloors(extFloorRules *openrtb_ext.PriceFloorRules, requ
 			} else {
 				floorModelErrList = append(floorModelErrList, fmt.Errorf("Error in getting FloorMin value : '%v'", err.Error()))
 			}
-
 		}
+		_ = request.RebuildRequest()
 	}
 	floorModelErrList = append(floorModelErrList, floorErrList...)
 	return floorModelErrList
