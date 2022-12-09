@@ -13,9 +13,9 @@ import (
 //
 // Rejection has no effect and is completely ignored at this stage.
 type AllProcessedBidResponses interface {
-	HandleAllProcBidResponsesHook(
+	HandleAllProcessedBidResponsesHook(
 		context.Context,
-		InvocationContext,
+		ModuleInvocationContext,
 		AllProcessedBidResponsesPayload,
 	) (HookResult[AllProcessedBidResponsesPayload], error)
 }

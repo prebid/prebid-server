@@ -4,7 +4,7 @@ import (
 	"context"
 )
 
-// RawAuction hooks are invoked only for "/openrtb2/auction"
+// RawAuctionRequest hooks are invoked only for "/openrtb2/auction"
 // endpoint after retrieving the account config,
 // but before the request is parsed and any additions are made.
 //
@@ -14,14 +14,14 @@ import (
 //
 // Rejection results in sending an empty BidResponse
 // with the NBR code indicating the rejection reason.
-type RawAuction interface {
+type RawAuctionRequest interface {
 	HandleRawAuctionHook(
 		context.Context,
-		InvocationContext,
-		RawAuctionPayload,
-	) (HookResult[RawAuctionPayload], error)
+		ModuleInvocationContext,
+		RawAuctionRequestPayload,
+	) (HookResult[RawAuctionRequestPayload], error)
 }
 
-// RawAuctionPayload represents a raw body of the openrtb2.BidRequest.
+// RawAuctionRequestPayload represents a raw body of the openrtb2.BidRequest.
 // Hooks are allowed to modify body using mutations.
-type RawAuctionPayload []byte
+type RawAuctionRequestPayload []byte

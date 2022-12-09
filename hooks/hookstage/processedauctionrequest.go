@@ -6,7 +6,7 @@ import (
 	"github.com/prebid/openrtb/v17/openrtb2"
 )
 
-// ProcessedAuction hooks are invoked after the request is parsed
+// ProcessedAuctionRequest hooks are invoked after the request is parsed
 // and enriched with additional data.
 //
 // At this stage, account config is available,
@@ -15,16 +15,16 @@ import (
 //
 // Rejection results in sending an empty BidResponse
 // with the NBR code indicating the rejection reason.
-type ProcessedAuction interface {
+type ProcessedAuctionRequest interface {
 	HandleProcessedAuctionHook(
 		context.Context,
-		InvocationContext,
-		ProcessedAuctionPayload,
-	) (HookResult[ProcessedAuctionPayload], error)
+		ModuleInvocationContext,
+		ProcessedAuctionRequestPayload,
+	) (HookResult[ProcessedAuctionRequestPayload], error)
 }
 
-// ProcessedAuctionPayload consists of the openrtb2.BidRequest object.
+// ProcessedAuctionRequestPayload consists of the openrtb2.BidRequest object.
 // Hooks are allowed to modify openrtb2.BidRequest using mutations.
-type ProcessedAuctionPayload struct {
+type ProcessedAuctionRequestPayload struct {
 	BidRequest *openrtb2.BidRequest
 }

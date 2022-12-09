@@ -14,6 +14,7 @@ const (
 	NoConversionRateErrorCode
 	MalformedAcctErrorCode
 	BidRejectionFloorsErrorCode
+	ModuleRejectionErrorCode
 )
 
 // Defines numeric codes for well-known warnings.

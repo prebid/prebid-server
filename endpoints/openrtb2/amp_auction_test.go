@@ -20,6 +20,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/hooks"
+	"github.com/prebid/prebid-server/hooks/hookexecution"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
@@ -1522,16 +1523,19 @@ func TestSetEffectiveAmpPubID(t *testing.T) {
 }
 
 type mockLogger struct {
-	ampObject *analytics.AmpObject
+	ampObject     *analytics.AmpObject
+	auctionObject *analytics.AuctionObject
 }
 
-func newMockLogger(ao *analytics.AmpObject) analytics.PBSAnalyticsModule {
+func newMockLogger(ao *analytics.AmpObject, aucObj *analytics.AuctionObject) analytics.PBSAnalyticsModule {
 	return &mockLogger{
-		ampObject: ao,
+		ampObject:     ao,
+		auctionObject: aucObj,
 	}
 }
 
 func (logger mockLogger) LogAuctionObject(ao *analytics.AuctionObject) {
+	*logger.auctionObject = *ao
 }
 func (logger mockLogger) LogVideoObject(vo *analytics.VideoObject) {
 }
@@ -1713,7 +1717,7 @@ func TestIdGeneration(t *testing.T) {
 
 func ampObjectTestSetup(t *testing.T, inTagId string, inStoredRequest json.RawMessage, generateRequestID bool) (*analytics.AmpObject, httprouter.Handle) {
 	actualAmpObject := analytics.AmpObject{}
-	logger := newMockLogger(&actualAmpObject)
+	logger := newMockLogger(&actualAmpObject, nil)
 
 	mockAmpFetcher := &mockAmpStoredReqFetcher{
 		data: map[string]json.RawMessage{
@@ -1927,5 +1931,70 @@ func TestSetTargeting(t *testing.T) {
 			assert.JSONEq(t, test.expectedImpExt, string(req.Imp[0].Ext), "incorrect impression extension returned for test %s", test.description)
 		}
 
+	}
+}
+
+func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
+	reject := hookexecution.RejectError{
+		123,
+		hookexecution.HookID{ModuleCode: "foobar", HookImplCode: "foo"},
+		hooks.StageEntrypoint.String(),
+	}
+
+	testCases := []struct {
+		description         string
+		expectedAmpResponse AmpResponse
+		hookExecutor        hookexecution.HookStageExecutor
+	}{
+		{
+			"Assert correct AmpResponse when request rejected at entrypoint stage",
+			AmpResponse{Targeting: map[string]string{}},
+			rejectableHookExecutor{entrypointReject: &reject},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			actualAmpObject := analytics.AmpObject{}
+			logger := newMockLogger(&actualAmpObject, nil)
+			stored := map[string]json.RawMessage{
+				"1": json.RawMessage(validRequest(t, "site.json")),
+			}
+
+			deps := &endpointDeps{
+				fakeUUIDGenerator{},
+				&nobidExchange{},
+				mockBidderParamValidator{},
+				&mockAmpStoredReqFetcher{data: stored},
+				empty_fetcher.EmptyFetcher{},
+				empty_fetcher.EmptyFetcher{},
+				&config.Configuration{MaxRequestSize: maxSize},
+				&metricsConfig.NilMetricsEngine{},
+				logger,
+				map[string]string{},
+				false,
+				[]byte{},
+				openrtb_ext.BuildBidderMap(),
+				nil,
+				nil,
+				hardcodedResponseIPValidator{response: true},
+				empty_fetcher.EmptyFetcher{},
+				test.hookExecutor,
+			}
+
+			req := httptest.NewRequest("POST", "/openrtb2/amp?tag_id=1", nil)
+			recorder := httptest.NewRecorder()
+
+			deps.AmpAuction(recorder, req, nil)
+			assert.Equal(t, recorder.Code, http.StatusOK, "Endpoint should return 200 OK.")
+
+			resp := AmpResponse{}
+			respBytes := recorder.Body.Bytes()
+			err := json.Unmarshal(respBytes, &resp)
+
+			assert.NoError(t, err, "Unable to unmarshal response.")
+			assert.Equal(t, test.expectedAmpResponse, resp)
+			assert.Contains(t, actualAmpObject.Errors, reject, "Reject error is not logged to analytics.")
+		})
 	}
 }
