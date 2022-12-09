@@ -3,6 +3,7 @@ package ortb2blocking
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 
 	"github.com/prebid/openrtb/v17/adcom1"
@@ -249,6 +250,7 @@ func TestHandleBidderRequestHook(t *testing.T) {
 		bidRequest         *openrtb2.BidRequest
 		expectedBidRequest *openrtb2.BidRequest
 		expectedHookResult hookstage.HookResult[hookstage.BidderRequestPayload]
+		expectedError      error
 	}{
 		{
 			description: "Payload changed after successful BidderRequest hook execution",
@@ -284,9 +286,10 @@ func TestHandleBidderRequestHook(t *testing.T) {
 					},
 				},
 			},
+			expectedError: nil,
 		},
 		{
-			description: "bidrequest fields are not updated if config empty",
+			description: "BidRequest fields are not updated if config empty",
 			bidder:      bidder,
 			config:      json.RawMessage(`{}`),
 			bidRequest: &openrtb2.BidRequest{
@@ -304,6 +307,31 @@ func TestHandleBidderRequestHook(t *testing.T) {
 					battr: map[string][]int{},
 				}},
 			},
+			expectedError: nil,
+		},
+		{
+			description: "Expect empty hook execution result if empty module config provided",
+			bidder:      bidder,
+			config:      json.RawMessage(""),
+			bidRequest: &openrtb2.BidRequest{
+				BAdv: []string{bAdvA, bAdvC},
+				Imp:  []openrtb2.Imp{{ID: "ImpID1", Video: &openrtb2.Video{}}},
+			},
+			expectedBidRequest: &openrtb2.BidRequest{
+				BAdv: []string{bAdvA, bAdvC},
+				Imp:  []openrtb2.Imp{{ID: "ImpID1", Video: &openrtb2.Video{}}},
+			},
+			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{},
+			expectedError:      nil,
+		},
+		{
+			description:        "Expect empty result and error on config parsing failure",
+			bidder:             bidder,
+			config:             json.RawMessage("..."),
+			bidRequest:         &openrtb2.BidRequest{},
+			expectedBidRequest: &openrtb2.BidRequest{},
+			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{},
+			expectedError:      errors.New("failed to parse config: invalid character '.' looking for beginning of value"),
 		},
 	}
 
@@ -326,7 +354,7 @@ func TestHandleBidderRequestHook(t *testing.T) {
 				},
 				payload,
 			)
-			assert.NoError(t, err, "Hook execution failed.")
+			assert.Equal(t, test.expectedError, err, "Invalid hook execution error.")
 
 			// test mutations separately
 			for _, mut := range hookResult.ChangeSet.Mutations() {
