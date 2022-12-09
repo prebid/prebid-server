@@ -16,7 +16,6 @@ func newConfig(data json.RawMessage) (Config, error) {
 }
 
 type Config struct {
-	DryRun     bool       `json:"dry_run"`
 	Attributes Attributes `json:"attributes"`
 }
 
