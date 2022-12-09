@@ -22,8 +22,8 @@ type entity string
 const (
 	entityHttpRequest              entity = "http-request"
 	entityAuctionRequest           entity = "auction-request"
-	entityAuctionResponse          entity = "auction-response"
-	entityAllProcessedBidResponses entity = "all-processed-bid-responses"
+	entityAuctionResponse          entity = "auction_response"
+	entityAllProcessedBidResponses entity = "all_processed_bid_responses"
 )
 
 type StageExecutor interface {
@@ -39,7 +39,7 @@ type HookStageExecutor interface {
 
 type hookExecutor struct {
 	account        *config.Account
-	accountId      string
+	accountID      string
 	endpoint       string
 	planBuilder    hooks.ExecutionPlanBuilder
 	stageOutcomes  []StageOutcome
@@ -65,7 +65,7 @@ func (e *hookExecutor) SetAccount(account *config.Account) {
 	}
 
 	e.account = account
-	e.accountId = account.ID
+	e.accountID = account.ID
 }
 
 func (e *hookExecutor) GetOutcomes() []StageOutcome {
@@ -116,7 +116,7 @@ func (e *hookExecutor) ExecuteRawAuctionStage(requestBody []byte) ([]byte, *Reje
 		return hook.HandleRawAuctionHook(ctx, moduleCtx, payload)
 	}
 
-	stageName := hooks.StageRawAuction.String()
+	stageName := hooks.StageRawAuctionRequest.String()
 	executionCtx := e.newContext(stageName)
 	payload := hookstage.RawAuctionRequestPayload(requestBody)
 
@@ -133,7 +133,7 @@ func (e *hookExecutor) ExecuteRawAuctionStage(requestBody []byte) ([]byte, *Reje
 func (e *hookExecutor) newContext(stage string) executionContext {
 	return executionContext{
 		account:        e.account,
-		accountId:      e.accountId,
+		accountId:      e.accountID,
 		endpoint:       e.endpoint,
 		moduleContexts: e.moduleContexts,
 		stage:          stage,

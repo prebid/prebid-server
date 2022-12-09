@@ -99,7 +99,7 @@ func extractStoredResponsesIds(impInfo []ImpExtPrebidData,
 				}
 				//check if bidder is valid/exists
 				if _, isValid := bidderMap[bidderResp.Bidder]; !isValid {
-					return nil, nil, nil, nil, fmt.Errorf("request.imp[impId: %s].ext contains unknown bidder: %s. Did you forget an alias in request.ext.prebid.aliases?", impId, bidderResp.Bidder)
+					return nil, nil, nil, nil, fmt.Errorf("request.imp[impId: %s].ext.prebid.bidder contains unknown bidder: %s. Did you forget an alias in request.ext.prebid.aliases?", impId, bidderResp.Bidder)
 				}
 				// bidder is unique per one bid stored response
 				// if more than one bidder specified the last defined bidder id will take precedence

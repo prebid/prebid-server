@@ -89,7 +89,7 @@ func TestExecuteEntrypointStage(t *testing.T) {
 							InvocationResults: []HookOutcome{
 								{
 									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{ModuleCode: "foobar", HookCode: "foo"},
+									HookID:        HookID{ModuleCode: "foobar", HookImplCode: "foo"},
 									Status:        StatusSuccess,
 									Action:        ActionUpdate,
 									Message:       "",
@@ -99,7 +99,7 @@ func TestExecuteEntrypointStage(t *testing.T) {
 								},
 								{
 									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{ModuleCode: "foobar", HookCode: "foobaz"},
+									HookID:        HookID{ModuleCode: "foobar", HookImplCode: "foobaz"},
 									Status:        StatusSuccess,
 									Action:        ActionUpdate,
 									Message:       "",
@@ -109,7 +109,7 @@ func TestExecuteEntrypointStage(t *testing.T) {
 								},
 								{
 									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{ModuleCode: "foobar", HookCode: "bar"},
+									HookID:        HookID{ModuleCode: "foobar", HookImplCode: "bar"},
 									Status:        StatusSuccess,
 									Action:        ActionUpdate,
 									Message:       "",
@@ -123,7 +123,7 @@ func TestExecuteEntrypointStage(t *testing.T) {
 							InvocationResults: []HookOutcome{
 								{
 									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{ModuleCode: "foobar", HookCode: "baz"},
+									HookID:        HookID{ModuleCode: "foobar", HookImplCode: "baz"},
 									Status:        StatusSuccess,
 									Action:        ActionUpdate,
 									Message:       "",
@@ -136,7 +136,7 @@ func TestExecuteEntrypointStage(t *testing.T) {
 								},
 								{
 									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{ModuleCode: "foobar", HookCode: "foo"},
+									HookID:        HookID{ModuleCode: "foobar", HookImplCode: "foo"},
 									Status:        StatusFailure,
 									Action:        "",
 									Message:       "",
@@ -158,7 +158,7 @@ func TestExecuteEntrypointStage(t *testing.T) {
 			expectedBody:           body,
 			expectedHeader:         http.Header{"Foo": []string{"bar"}},
 			expectedQuery:          url.Values{},
-			expectedReject:         &RejectError{0, HookID{ModuleCode: "foobar", HookCode: "bar"}, hooks.StageEntrypoint.String()},
+			expectedReject:         &RejectError{0, HookID{ModuleCode: "foobar", HookImplCode: "bar"}, hooks.StageEntrypoint.String()},
 			expectedModuleContexts: foobarModuleCtx,
 			expectedStageOutcomes: []StageOutcome{
 				{
@@ -172,7 +172,7 @@ func TestExecuteEntrypointStage(t *testing.T) {
 								{
 									ExecutionTime: ExecutionTime{},
 									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{ModuleCode: "foobar", HookCode: "foo"},
+									HookID:        HookID{ModuleCode: "foobar", HookImplCode: "foo"},
 									Status:        StatusSuccess,
 									Action:        ActionUpdate,
 									Message:       "",
@@ -185,7 +185,7 @@ func TestExecuteEntrypointStage(t *testing.T) {
 								{
 									ExecutionTime: ExecutionTime{},
 									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{ModuleCode: "foobar", HookCode: "baz"},
+									HookID:        HookID{ModuleCode: "foobar", HookImplCode: "baz"},
 									Status:        StatusExecutionFailure,
 									Action:        "",
 									Message:       "",
@@ -201,7 +201,7 @@ func TestExecuteEntrypointStage(t *testing.T) {
 								{
 									ExecutionTime: ExecutionTime{},
 									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{ModuleCode: "foobar", HookCode: "bar"},
+									HookID:        HookID{ModuleCode: "foobar", HookImplCode: "bar"},
 									Status:        StatusSuccess,
 									Action:        ActionReject,
 									Message:       "",
@@ -239,7 +239,7 @@ func TestExecuteEntrypointStage(t *testing.T) {
 								{
 									ExecutionTime: ExecutionTime{},
 									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{ModuleCode: "foobar", HookCode: "foo"},
+									HookID:        HookID{ModuleCode: "foobar", HookImplCode: "foo"},
 									Status:        StatusSuccess,
 									Action:        ActionUpdate,
 									Message:       "",
@@ -252,7 +252,7 @@ func TestExecuteEntrypointStage(t *testing.T) {
 								{
 									ExecutionTime: ExecutionTime{},
 									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{ModuleCode: "foobar", HookCode: "bar"},
+									HookID:        HookID{ModuleCode: "foobar", HookImplCode: "bar"},
 									Status:        StatusTimeout,
 									Action:        "",
 									Message:       "",
@@ -268,7 +268,7 @@ func TestExecuteEntrypointStage(t *testing.T) {
 								{
 									ExecutionTime: ExecutionTime{},
 									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{ModuleCode: "foobar", HookCode: "baz"},
+									HookID:        HookID{ModuleCode: "foobar", HookImplCode: "baz"},
 									Status:        StatusSuccess,
 									Action:        ActionUpdate,
 									Message:       "",
@@ -310,7 +310,7 @@ func TestExecuteEntrypointStage(t *testing.T) {
 								{
 									ExecutionTime: ExecutionTime{},
 									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{ModuleCode: "module-1", HookCode: "foo"},
+									HookID:        HookID{ModuleCode: "module-1", HookImplCode: "foo"},
 									Status:        StatusSuccess,
 									Action:        ActionNone,
 									Message:       "",
@@ -326,7 +326,7 @@ func TestExecuteEntrypointStage(t *testing.T) {
 								{
 									ExecutionTime: ExecutionTime{},
 									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{ModuleCode: "module-2", HookCode: "bar"},
+									HookID:        HookID{ModuleCode: "module-2", HookImplCode: "bar"},
 									Status:        StatusSuccess,
 									Action:        ActionNone,
 									Message:       "",
@@ -337,7 +337,7 @@ func TestExecuteEntrypointStage(t *testing.T) {
 								{
 									ExecutionTime: ExecutionTime{},
 									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{ModuleCode: "module-1", HookCode: "baz"},
+									HookID:        HookID{ModuleCode: "module-1", HookImplCode: "baz"},
 									Status:        StatusSuccess,
 									Action:        ActionNone,
 									Message:       "",
@@ -421,13 +421,13 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 			expectedStageOutcomes: []StageOutcome{
 				{
 					Entity: entityAuctionRequest,
-					Stage:  hooks.StageRawAuction.String(),
+					Stage:  hooks.StageRawAuctionRequest.String(),
 					Groups: []GroupOutcome{
 						{
 							InvocationResults: []HookOutcome{
 								{
 									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{ModuleCode: "foobar", HookCode: "foo"},
+									HookID:        HookID{ModuleCode: "foobar", HookImplCode: "foo"},
 									Status:        StatusSuccess,
 									Action:        ActionUpdate,
 									Message:       "",
@@ -440,7 +440,7 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 								},
 								{
 									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{ModuleCode: "foobar", HookCode: "bar"},
+									HookID:        HookID{ModuleCode: "foobar", HookImplCode: "bar"},
 									Status:        StatusSuccess,
 									Action:        ActionUpdate,
 									Message:       "",
@@ -454,7 +454,7 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 							InvocationResults: []HookOutcome{
 								{
 									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{ModuleCode: "foobar", HookCode: "baz"},
+									HookID:        HookID{ModuleCode: "foobar", HookImplCode: "baz"},
 									Status:        StatusFailure,
 									Action:        "",
 									Message:       "",
@@ -475,13 +475,13 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 			givenPlanBuilder:       TestRejectPlanBuilder{},
 			givenAccount:           nil,
 			expectedBody:           bodyUpdated,
-			expectedReject:         &RejectError{0, HookID{ModuleCode: "foobar", HookCode: "bar"}, hooks.StageRawAuction.String()},
+			expectedReject:         &RejectError{0, HookID{ModuleCode: "foobar", HookImplCode: "bar"}, hooks.StageRawAuctionRequest.String()},
 			expectedModuleContexts: foobarModuleCtx,
 			expectedStageOutcomes: []StageOutcome{
 				{
 					ExecutionTime: ExecutionTime{},
 					Entity:        entityAuctionRequest,
-					Stage:         hooks.StageRawAuction.String(),
+					Stage:         hooks.StageRawAuctionRequest.String(),
 					Groups: []GroupOutcome{
 						{
 							ExecutionTime: ExecutionTime{},
@@ -489,7 +489,7 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 								{
 									ExecutionTime: ExecutionTime{},
 									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{ModuleCode: "foobar", HookCode: "foo"},
+									HookID:        HookID{ModuleCode: "foobar", HookImplCode: "foo"},
 									Status:        StatusSuccess,
 									Action:        ActionUpdate,
 									Message:       "",
@@ -503,7 +503,7 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 								{
 									ExecutionTime: ExecutionTime{},
 									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{ModuleCode: "foobar", HookCode: "baz"},
+									HookID:        HookID{ModuleCode: "foobar", HookImplCode: "baz"},
 									Status:        StatusExecutionFailure,
 									Action:        "",
 									Message:       "",
@@ -519,13 +519,13 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 								{
 									ExecutionTime: ExecutionTime{},
 									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{ModuleCode: "foobar", HookCode: "bar"},
+									HookID:        HookID{ModuleCode: "foobar", HookImplCode: "bar"},
 									Status:        StatusSuccess,
 									Action:        ActionReject,
 									Message:       "",
 									DebugMessages: nil,
 									Errors: []string{
-										`Module foobar (hook: bar) rejected request with code 0 at raw-auction stage`,
+										`Module foobar (hook: bar) rejected request with code 0 at raw_auction_request stage`,
 									},
 									Warnings: nil,
 								},
@@ -548,7 +548,7 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 				{
 					ExecutionTime: ExecutionTime{},
 					Entity:        entityAuctionRequest,
-					Stage:         hooks.StageRawAuction.String(),
+					Stage:         hooks.StageRawAuctionRequest.String(),
 					Groups: []GroupOutcome{
 						{
 							ExecutionTime: ExecutionTime{},
@@ -556,7 +556,7 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 								{
 									ExecutionTime: ExecutionTime{},
 									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{ModuleCode: "foobar", HookCode: "foo"},
+									HookID:        HookID{ModuleCode: "foobar", HookImplCode: "foo"},
 									Status:        StatusSuccess,
 									Action:        ActionUpdate,
 									Message:       "",
@@ -575,7 +575,7 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 								{
 									ExecutionTime: ExecutionTime{},
 									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{ModuleCode: "foobar", HookCode: "bar"},
+									HookID:        HookID{ModuleCode: "foobar", HookImplCode: "bar"},
 									Status:        StatusTimeout,
 									Action:        "",
 									Message:       "",
@@ -605,7 +605,7 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 				{
 					ExecutionTime: ExecutionTime{},
 					Entity:        entityAuctionRequest,
-					Stage:         hooks.StageRawAuction.String(),
+					Stage:         hooks.StageRawAuctionRequest.String(),
 					Groups: []GroupOutcome{
 						{
 							ExecutionTime: ExecutionTime{},
@@ -613,7 +613,7 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 								{
 									ExecutionTime: ExecutionTime{},
 									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{ModuleCode: "module-1", HookCode: "foo"},
+									HookID:        HookID{ModuleCode: "module-1", HookImplCode: "foo"},
 									Status:        StatusSuccess,
 									Action:        ActionNone,
 									Message:       "",
@@ -624,7 +624,7 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 								{
 									ExecutionTime: ExecutionTime{},
 									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{ModuleCode: "module-2", HookCode: "baz"},
+									HookID:        HookID{ModuleCode: "module-2", HookImplCode: "baz"},
 									Status:        StatusSuccess,
 									Action:        ActionNone,
 									Message:       "",
@@ -640,7 +640,7 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 								{
 									ExecutionTime: ExecutionTime{},
 									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{ModuleCode: "module-1", HookCode: "bar"},
+									HookID:        HookID{ModuleCode: "module-1", HookImplCode: "bar"},
 									Status:        StatusSuccess,
 									Action:        ActionNone,
 									Message:       "",

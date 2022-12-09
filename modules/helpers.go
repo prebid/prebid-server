@@ -21,13 +21,13 @@ func createModuleStageNamesCollection(modules map[string]interface{}) (map[strin
 
 		if _, ok := hook.(hookstage.RawAuctionRequest); ok {
 			added = true
-			stageName := hooks.StageRawAuction.String()
+			stageName := hooks.StageRawAuctionRequest.String()
 			moduleStageNameCollector = addModuleStageName(moduleStageNameCollector, id, stageName)
 		}
 
 		if _, ok := hook.(hookstage.ProcessedAuctionRequest); ok {
 			added = true
-			stageName := hooks.StageProcessedAuction.String()
+			stageName := hooks.StageProcessedAuctionRequest.String()
 			moduleStageNameCollector = addModuleStageName(moduleStageNameCollector, id, stageName)
 		}
 
@@ -64,7 +64,8 @@ func createModuleStageNamesCollection(modules map[string]interface{}) (map[strin
 }
 
 func addModuleStageName(moduleStageNameCollector map[string][]string, id string, stage string) map[string][]string {
-	str := strings.Replace(id, ".", "-", -1)
+	replacer := strings.NewReplacer(".", "_", "-", "_")
+	str := replacer.Replace(id)
 	moduleStageNameCollector[str] = append(moduleStageNameCollector[str], stage)
 
 	return moduleStageNameCollector
