@@ -256,7 +256,13 @@ func TestHandleBidderRequestHook(t *testing.T) {
 			description: "Payload changed after successful BidderRequest hook execution",
 			bidder:      bidder,
 			config:      config,
-			bidRequest:  &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "ImpID1", Video: &openrtb2.Video{}}}},
+			bidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{
+				ID:     "ImpID1",
+				Audio:  &openrtb2.Audio{},
+				Banner: &openrtb2.Banner{},
+				Native: &openrtb2.Native{},
+				Video:  &openrtb2.Video{},
+			}}},
 			expectedBidRequest: &openrtb2.BidRequest{
 				BAdv:   []string{bAdvA, bAdvB},
 				BApp:   []string{bApp3},
@@ -264,13 +270,15 @@ func TestHandleBidderRequestHook(t *testing.T) {
 				CatTax: catTax,
 				Imp: []openrtb2.Imp{
 					{
-						ID: "ImpID1",
+						ID:    "ImpID1",
+						Audio: &openrtb2.Audio{},
 						Banner: &openrtb2.Banner{
 							BType: []openrtb2.BannerAdType{bType3, bType4, bType5},
 							// default field override is used if no ActionOverrides defined for field
 							BAttr: []adcom1.CreativeAttribute{bAttr1, bAttr8, bAttr9, bAttr10},
 						},
-						Video: &openrtb2.Video{},
+						Native: &openrtb2.Native{},
+						Video:  &openrtb2.Video{},
 					},
 				},
 			},
@@ -332,6 +340,15 @@ func TestHandleBidderRequestHook(t *testing.T) {
 			expectedBidRequest: &openrtb2.BidRequest{},
 			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{},
 			expectedError:      errors.New("failed to parse config: invalid character '.' looking for beginning of value"),
+		},
+		{
+			description:        "Expect empty result and error if nil BidRequest provided",
+			bidder:             bidder,
+			config:             config,
+			bidRequest:         nil,
+			expectedBidRequest: nil,
+			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{},
+			expectedError:      hookexecution.NewFailure("empty BidRequest provided"),
 		},
 	}
 
