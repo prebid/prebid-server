@@ -3,7 +3,9 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"go/format"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -38,11 +40,6 @@ func main() {
 		return nil
 	})
 
-	if len(modules) == 0 {
-		fmt.Println("No modules found.")
-		return
-	}
-
 	funcMap := template.FuncMap{"Title": strings.Title}
 	t, err := template.New(tmplName).Funcs(funcMap).ParseFiles(fmt.Sprintf("generator/%s", tmplName))
 	if err != nil {
@@ -55,8 +52,18 @@ func main() {
 	}
 	defer f.Close()
 
-	if err = t.Execute(f, modules); err != nil {
+	var buf bytes.Buffer
+	if err = t.Execute(&buf, modules); err != nil {
 		panic(fmt.Sprintf("failed to generate %s file content: %s", outName, err))
+	}
+
+	content, err := format.Source(buf.Bytes())
+	if err != nil {
+		panic(fmt.Sprintf("failed to format generated code: %s", err))
+	}
+
+	if _, err = f.Write(content); err != nil {
+		panic(fmt.Sprintf("failed to write file content: %s", err))
 	}
 
 	fmt.Printf("%s file successfully generated\n", outName)

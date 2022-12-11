@@ -1,10 +1,12 @@
 package modules
 
+{{if .}}
 import (
     {{- range .}}
     {{.Vendor}}{{.Module | Title}} "github.com/prebid/prebid-server/modules/{{.Vendor}}/{{.Module}}"
     {{- end}}
 )
+{{end}}
 
 // builders returns mapping between module name and its builder
 // vendor and module names are chosen based on the module directory name
