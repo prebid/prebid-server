@@ -165,15 +165,35 @@ var config = json.RawMessage(`
             "override": [
               "app3"
             ]
+          },
+          {
+            "conditions": {
+              "bidders": [
+                "appnexus"
+              ],
+			  "media_types": [
+				"video"
+			  ]
+            },
+            "override": [
+              "app1"
+            ]
+          },
+          {
+            "conditions": {
+			  "media_types": [
+				"video"
+			  ]
+            },
+            "override": [
+              "app1"
+            ]
           }
         ]
       }
     },
     "btype": {
-      "blocked_banner_type": [
-        3,
-        4
-      ],
+      "blocked_banner_type": [],
       "action_overrides": {
         "blocked_banner_type": [
           {
@@ -186,6 +206,19 @@ var config = json.RawMessage(`
               3,
               4,
               5
+            ]
+          },
+          {
+            "conditions": {
+              "bidders": [
+                "appnexus"
+              ],
+			  "media_types": [
+				"video"
+			  ]
+            },
+            "override": [
+              3
             ]
           }
         ]
@@ -220,6 +253,8 @@ const bidder string = "appnexus"
 const bAdvA string = "a.com"
 const bAdvB string = "b.com"
 const bAdvC string = "c.com"
+const bAdvD string = "d.com"
+const bAdvE string = "e.com"
 
 const bApp1 string = "app1"
 const bApp2 string = "app2"
@@ -229,7 +264,6 @@ const bCat1 string = "IAB-1"
 const bCat2 string = "IAB-2"
 const bCat3 string = "IAB-3"
 const bCat4 string = "IAB-4"
-const bCat5 string = "IAB-5"
 
 const catTax adcom1.CategoryTaxonomy = 6
 
@@ -256,15 +290,24 @@ func TestHandleBidderRequestHook(t *testing.T) {
 			description: "Payload changed after successful BidderRequest hook execution",
 			bidder:      bidder,
 			config:      config,
-			bidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{
-				ID:     "ImpID1",
-				Audio:  &openrtb2.Audio{},
-				Banner: &openrtb2.Banner{},
-				Native: &openrtb2.Native{},
-				Video:  &openrtb2.Video{},
-			}}},
+			bidRequest: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{
+						ID:     "ImpID1",
+						Audio:  &openrtb2.Audio{},
+						Banner: &openrtb2.Banner{},
+						Native: &openrtb2.Native{},
+						Video:  &openrtb2.Video{},
+					},
+					{
+						ID:    "ImpID2",
+						Audio: &openrtb2.Audio{},
+					},
+				},
+			},
 			expectedBidRequest: &openrtb2.BidRequest{
-				BAdv:   []string{bAdvA, bAdvB},
+				BAdv: []string{bAdvA, bAdvB},
+				// BApp contains only first specific override (other overrides ignored)
 				BApp:   []string{bApp3},
 				BCat:   []string{bCat1, bCat2, bCat3, bCat4},
 				CatTax: catTax,
@@ -280,18 +323,38 @@ func TestHandleBidderRequestHook(t *testing.T) {
 						Native: &openrtb2.Native{},
 						Video:  &openrtb2.Video{},
 					},
+					{
+						ID:    "ImpID2",
+						Audio: &openrtb2.Audio{},
+						Banner: &openrtb2.Banner{
+							BType: []openrtb2.BannerAdType{bType3, bType4, bType5},
+							// default field override is used if no ActionOverrides defined for field
+							BAttr: []adcom1.CreativeAttribute{bAttr1, bAttr8, bAttr9, bAttr10},
+						},
+					},
 				},
 			},
 			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{
 				ModuleContext: map[string]interface{}{
 					bidder: blockingAttributes{
-						badv:   []string{bAdvA, bAdvB},
-						bapp:   []string{bApp3},
-						bcat:   []string{bCat1, bCat2, bCat3, bCat4},
-						btype:  map[string][]int{"ImpID1": toInt([]openrtb2.BannerAdType{bType3, bType4, bType5})},
-						battr:  map[string][]int{"ImpID1": toInt([]adcom1.CreativeAttribute{bAttr1, bAttr8, bAttr9, bAttr10})},
+						badv: []string{bAdvA, bAdvB},
+						bapp: []string{bApp3},
+						bcat: []string{bCat1, bCat2, bCat3, bCat4},
+						btype: map[string][]int{
+							"ImpID1": toInt([]openrtb2.BannerAdType{bType3, bType4, bType5}),
+							"ImpID2": toInt([]openrtb2.BannerAdType{bType3, bType4, bType5}),
+						},
+						battr: map[string][]int{
+							"ImpID1": toInt([]adcom1.CreativeAttribute{bAttr1, bAttr8, bAttr9, bAttr10}),
+							"ImpID2": toInt([]adcom1.CreativeAttribute{bAttr1, bAttr8, bAttr9, bAttr10}),
+						},
 						cattax: catTax,
 					},
+				},
+				Warnings: []string{
+					// multiple warnings may be added (per condition)
+					"More than one condition matches request. Bidder: appnexus, request media types: audio, banner, native, video",
+					"More than one condition matches request. Bidder: appnexus, request media types: audio, banner, native, video",
 				},
 			},
 			expectedError: nil,
@@ -333,7 +396,7 @@ func TestHandleBidderRequestHook(t *testing.T) {
 			expectedError:      nil,
 		},
 		{
-			description:        "Expect empty result and error on config parsing failure",
+			description:        "Expect error on config parsing failure",
 			bidder:             bidder,
 			config:             json.RawMessage("..."),
 			bidRequest:         &openrtb2.BidRequest{},
@@ -342,13 +405,76 @@ func TestHandleBidderRequestHook(t *testing.T) {
 			expectedError:      errors.New("failed to parse config: invalid character '.' looking for beginning of value"),
 		},
 		{
-			description:        "Expect empty result and error if nil BidRequest provided",
+			description:        "Expect error if nil BidRequest provided",
 			bidder:             bidder,
 			config:             config,
 			bidRequest:         nil,
 			expectedBidRequest: nil,
 			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{},
 			expectedError:      hookexecution.NewFailure("empty BidRequest provided"),
+		},
+		{
+			description:        "Expect baadv error if bidders and media_types not defined in config conditions",
+			bidder:             bidder,
+			config:             json.RawMessage(`{"attributes": {"badv": {"action_overrides": {"blocked_adomain": [{"conditions": {}}]}}}}`),
+			bidRequest:         &openrtb2.BidRequest{},
+			expectedBidRequest: &openrtb2.BidRequest{},
+			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{},
+			expectedError:      hookexecution.NewFailure("failed to update badv field: failed to get override for badv.blocked_adomain: bidders and media_types absent from conditions, at least one of the fields must be present"),
+		},
+		{
+			description:        "Expect bapp error if bidders and media_types not defined in config conditions",
+			bidder:             bidder,
+			config:             json.RawMessage(`{"attributes": {"bapp": {"action_overrides": {"blocked_app": [{"conditions": {}}]}}}}`),
+			bidRequest:         &openrtb2.BidRequest{},
+			expectedBidRequest: &openrtb2.BidRequest{},
+			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{},
+			expectedError:      hookexecution.NewFailure("failed to update bapp field: failed to get override for bapp.blocked_app: bidders and media_types absent from conditions, at least one of the fields must be present"),
+		},
+		{
+			description:        "Expect bcat error if bidders and media_types not defined in config conditions",
+			bidder:             bidder,
+			config:             json.RawMessage(`{"attributes": {"bcat": {"action_overrides": {"blocked_adv_cat": [{"conditions": {}}]}}}}`),
+			bidRequest:         &openrtb2.BidRequest{},
+			expectedBidRequest: &openrtb2.BidRequest{},
+			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{},
+			expectedError:      hookexecution.NewFailure("failed to update bcat field: failed to get override for bcat.blocked_adv_cat: bidders and media_types absent from conditions, at least one of the fields must be present"),
+		},
+		{
+			description:        "Expect btype error if bidders and media_types not defined in config conditions",
+			bidder:             bidder,
+			config:             json.RawMessage(`{"attributes": {"btype": {"action_overrides": {"blocked_banner_type": [{"conditions": {}}]}}}}`),
+			bidRequest:         &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "ImpID1", Video: &openrtb2.Video{}}}},
+			expectedBidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "ImpID1", Video: &openrtb2.Video{}}}},
+			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{},
+			expectedError:      hookexecution.NewFailure("failed to update btype field: failed to get override for imp.*.banner.btype: bidders and media_types absent from conditions, at least one of the fields must be present"),
+		},
+		{
+			description:        "Expect battr error if bidders and media_types not defined in config conditions",
+			bidder:             bidder,
+			config:             json.RawMessage(`{"attributes": {"battr": {"action_overrides": {"blocked_banner_attr": [{"conditions": {}}]}}}}`),
+			bidRequest:         &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "ImpID1", Video: &openrtb2.Video{}}}},
+			expectedBidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "ImpID1", Video: &openrtb2.Video{}}}},
+			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{},
+			expectedError:      hookexecution.NewFailure("failed to update battr field: failed to get override for imp.*.banner.battr: bidders and media_types absent from conditions, at least one of the fields must be present"),
+		},
+		{
+			description:        "Expect error if override.names empty in config conditions",
+			bidder:             bidder,
+			config:             json.RawMessage(`{"attributes": {"badv": {"action_overrides": {"blocked_adomain": [{"conditions": {"bidders": ["appnexus"]}, "override": {}}]}}}}`),
+			bidRequest:         &openrtb2.BidRequest{},
+			expectedBidRequest: &openrtb2.BidRequest{},
+			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{},
+			expectedError:      hookexecution.NewFailure("failed to update badv field: failed to get override for badv.blocked_adomain: empty override field"),
+		},
+		{
+			description:        "Expect error if override.ids empty in config conditions",
+			bidder:             bidder,
+			config:             json.RawMessage(`{"attributes": {"battr": {"action_overrides": {"blocked_banner_attr": [{"conditions": {"bidders": ["appnexus"]}, "override": {}}]}}}}`),
+			bidRequest:         &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "ImpID1", Video: &openrtb2.Video{}}}},
+			expectedBidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "ImpID1", Video: &openrtb2.Video{}}}},
+			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{},
+			expectedError:      hookexecution.NewFailure("failed to update battr field: failed to get override for imp.*.banner.battr: empty override field"),
 		},
 	}
 
