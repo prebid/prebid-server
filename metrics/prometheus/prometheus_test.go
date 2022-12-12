@@ -1784,14 +1784,10 @@ func TestRecordModuleMetrics(t *testing.T) {
 	for module, stages := range modulesStages {
 		for _, stage := range stages {
 			// first record the metrics
-			m.RecordModuleDuration(metrics.ModuleLabels{
-				Module: module,
-				Stage:  stage,
-			}, time.Millisecond*1)
 			m.RecordModuleCalled(metrics.ModuleLabels{
 				Module: module,
 				Stage:  stage,
-			})
+			}, time.Millisecond*1)
 			m.RecordModuleFailed(metrics.ModuleLabels{
 				Module: module,
 				Stage:  stage,

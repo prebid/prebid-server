@@ -173,9 +173,8 @@ func handleHookResponse[P any](
 	metricEngine metrics.MetricsEngine,
 ) (P, HookOutcome, *RejectError) {
 	var rejectErr *RejectError
-	labels := metrics.ModuleLabels{Module: hr.HookID.ModuleCode, Stage: ctx.stage, PubID: ctx.accountId}
-	metricEngine.RecordModuleCalled(labels)
-	metricEngine.RecordModuleDuration(labels, hr.ExecutionTime)
+	labels := metrics.ModuleLabels{Module: hr.HookID.ModuleCode, Stage: ctx.stage, AccountID: ctx.accountId}
+	metricEngine.RecordModuleCalled(labels, hr.ExecutionTime)
 
 	hookOutcome := HookOutcome{
 		Status:        StatusSuccess,

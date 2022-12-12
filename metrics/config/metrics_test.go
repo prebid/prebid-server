@@ -82,9 +82,9 @@ func TestMultiMetricsEngine(t *testing.T) {
 	for module, stages := range modulesStages {
 		for _, stage := range stages {
 			moduleLabels = append(moduleLabels, metrics.ModuleLabels{
-				Module: module,
-				Stage:  stage,
-				PubID:  "test1",
+				Module:    module,
+				Stage:     stage,
+				AccountID: "test1",
 			})
 		}
 	}
@@ -100,8 +100,7 @@ func TestMultiMetricsEngine(t *testing.T) {
 		metricsEngine.RecordPrebidCacheRequestTime(true, time.Millisecond*20)
 	}
 	for _, module := range moduleLabels {
-		metricsEngine.RecordModuleDuration(module, time.Millisecond*1)
-		metricsEngine.RecordModuleCalled(module)
+		metricsEngine.RecordModuleCalled(module, time.Millisecond*1)
 		metricsEngine.RecordModuleFailed(module)
 		metricsEngine.RecordModuleSuccessNooped(module)
 		metricsEngine.RecordModuleSuccessUpdated(module)

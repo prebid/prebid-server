@@ -130,20 +130,3 @@ func tcfVersionsAsString() []string {
 	}
 	return valuesAsString
 }
-
-func stagesAsString(moduleStageNames map[string][]string) []string {
-	foundStages := make(map[string]struct{})
-	stages := make([]string, 0)
-
-	// add unique stage names
-	for _, stageNames := range moduleStageNames {
-		for _, stage := range stageNames {
-			if _, ok := foundStages[stage]; !ok {
-				stages = append(stages, stage)
-				foundStages[stage] = struct{}{}
-			}
-		}
-	}
-
-	return stages
-}

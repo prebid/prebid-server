@@ -897,16 +897,14 @@ func (m *Metrics) RecordAdsCertSignTime(adsCertSignTime time.Duration) {
 	m.adsCertSignTimer.Observe(adsCertSignTime.Seconds())
 }
 
-func (m *Metrics) RecordModuleDuration(labels metrics.ModuleLabels, duration time.Duration) {
-	m.moduleDuration[labels.Module].With(prometheus.Labels{
-		stageLabel: labels.Stage,
-	}).Observe(duration.Seconds())
-}
-
-func (m *Metrics) RecordModuleCalled(labels metrics.ModuleLabels) {
+func (m *Metrics) RecordModuleCalled(labels metrics.ModuleLabels, duration time.Duration) {
 	m.moduleCalls[labels.Module].With(prometheus.Labels{
 		stageLabel: labels.Stage,
 	}).Inc()
+
+	m.moduleDuration[labels.Module].With(prometheus.Labels{
+		stageLabel: labels.Stage,
+	}).Observe(duration.Seconds())
 }
 
 func (m *Metrics) RecordModuleFailed(labels metrics.ModuleLabels) {
