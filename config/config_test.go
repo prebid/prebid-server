@@ -2369,7 +2369,7 @@ func TestMigrateConfigDatabaseQueryParams(t *testing.T) {
 	assert.Equal(t, want_queries.poll_for_updates_amp_query, v.GetString("stored_responses.database.poll_for_updates.amp_query"))
 }
 
-func TestConfigDatabaseConnectionPresent(t *testing.T) {
+func TestIsConfigInfoPresent(t *testing.T) {
 	configPrefix1Field2Only := []byte(`
       prefix1:
         field2: "value2"
@@ -2454,7 +2454,7 @@ func TestConfigDatabaseConnectionPresent(t *testing.T) {
 		v.SetConfigType("yaml")
 		v.ReadConfig(bytes.NewBuffer(tt.config))
 
-		result := configDatabaseConnectionPresent(v, tt.keyPrefix, tt.fields)
+		result := isConfigInfoPresent(v, tt.keyPrefix, tt.fields)
 		assert.Equal(t, tt.wantResult, result, tt.description)
 	}
 }
