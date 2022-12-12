@@ -508,7 +508,7 @@ func createImpsToExtMap(imps []openrtb2.Imp) (map[*openrtb2.Imp]rubiconExtImpBid
 func prepareImpsToExtMap(impsToExtMap map[*openrtb2.Imp]rubiconExtImpBidder) map[*openrtb2.Imp]rubiconExtImpBidder {
 	preparedImpsToExtMap := make(map[*openrtb2.Imp]rubiconExtImpBidder)
 	for imp, bidderExt := range impsToExtMap {
-		if bidderExt.Bidder.MultiFormat == false {
+		if bidderExt.Bidder.BidOnMultiformat == false {
 			impCopy := imp
 			preparedImpsToExtMap[impCopy] = bidderExt
 			continue
