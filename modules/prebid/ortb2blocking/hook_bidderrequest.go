@@ -164,7 +164,7 @@ func updateBAttr(
 	attributes.battr, messages, err = findImpressionOverrides(payload, actionOverrides, battr)
 	result.Warnings = mergeStrings(result.Warnings, messages...)
 	if err != nil {
-		return fmt.Errorf("failed to get override for imp.*.banner.btype: %s", err)
+		return fmt.Errorf("failed to get override for imp.*.banner.battr: %s", err)
 	} else if len(attributes.battr) > 0 {
 		mutation := bAttrMutation(attributes.battr)
 		changeSet.AddMutation(mutation, hookstage.MutationUpdate, "bidrequest", "imp", "banner", "battr")
@@ -218,7 +218,7 @@ func mutationForImp(
 }
 
 // firstOrDefaultOverride searches for matching override based on conditions.
-// Returns first found override. Override for specific bidder has higher priority
+// Returns only first found override. Override for specific bidder has higher priority
 // than override matching all bidders. If no override found, the defaultOverride returned.
 func firstOrDefaultOverride[T any](
 	bidder string,
@@ -313,29 +313,31 @@ func getIds(override Override) ([]int, error) {
 	return override.Ids, nil
 }
 
-func getIsActive(override Override) (bool, error) {
-	return override.IsActive, nil
-}
-
 type mediaTypes map[string]struct{}
 
 func (m mediaTypes) String() string {
-	var i int
 	var builder strings.Builder
-	for mType := range m {
-		if i > 0 {
-			builder.WriteString(", ")
+	// keep media_types in sorted order
+	for i, mediaType := range [4]string{
+		string(openrtb_ext.BidTypeAudio),
+		string(openrtb_ext.BidTypeBanner),
+		string(openrtb_ext.BidTypeNative),
+		string(openrtb_ext.BidTypeVideo),
+	} {
+		if _, ok := m[mediaType]; ok {
+			if i > 0 {
+				builder.WriteString(", ")
+			}
+			builder.WriteString(mediaType)
 		}
-		builder.WriteString(mType)
-		i++
 	}
 
 	return builder.String()
 }
 
 func (m mediaTypes) intersects(mediaTypes []string) bool {
-	for _, mt := range mediaTypes {
-		if _, ok := m[strings.ToLower(mt)]; ok {
+	for _, mediaType := range mediaTypes {
+		if _, ok := m[strings.ToLower(mediaType)]; ok {
 			return true
 		}
 	}
