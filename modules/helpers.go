@@ -8,6 +8,8 @@ import (
 	"github.com/prebid/prebid-server/hooks/hookstage"
 )
 
+var moduleReplacer = strings.NewReplacer(".", "_", "-", "_")
+
 func createModuleStageNamesCollection(modules map[string]interface{}) (map[string][]string, error) {
 	moduleStageNameCollector := make(map[string][]string)
 	var added bool
@@ -64,8 +66,7 @@ func createModuleStageNamesCollection(modules map[string]interface{}) (map[strin
 }
 
 func addModuleStageName(moduleStageNameCollector map[string][]string, id string, stage string) map[string][]string {
-	replacer := strings.NewReplacer(".", "_", "-", "_")
-	str := replacer.Replace(id)
+	str := moduleReplacer.Replace(id)
 	moduleStageNameCollector[str] = append(moduleStageNameCollector[str], stage)
 
 	return moduleStageNameCollector

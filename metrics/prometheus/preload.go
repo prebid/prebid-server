@@ -23,7 +23,6 @@ func preloadLabelValues(m *Metrics, syncerKeys []string, moduleStageNames map[st
 		syncerRequestStatusValues = syncerRequestStatusesAsString()
 		syncerSetsStatusValues    = syncerSetStatusesAsString()
 		sourceValues              = []string{sourceRequest}
-		stageValues               = stagesAsString(moduleStageNames)
 	)
 
 	preloadLabelValuesForCounter(m.connectionsError, map[string][]string{
@@ -209,7 +208,7 @@ func preloadLabelValues(m *Metrics, syncerKeys []string, moduleStageNames map[st
 		})
 	}
 
-	for module := range moduleStageNames {
+	for module, stageValues := range moduleStageNames {
 		preloadLabelValuesForHistogram(m.moduleDuration[module], map[string][]string{
 			stageLabel: stageValues,
 		})

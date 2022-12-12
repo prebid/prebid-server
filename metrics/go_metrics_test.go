@@ -924,15 +924,16 @@ func TestRecordModuleAccountMetrics(t *testing.T) {
 		m := NewMetrics(registry, nil, test.givenDisabledMetrics, nil, map[string][]string{module: {stage1, stage2, stage3}})
 
 		m.RecordModuleCalled(ModuleLabels{
-			Module: test.givenModuleName,
-			Stage:  test.givenStageName,
-			PubID:  test.givenPubID,
-		})
+			Module:    test.givenModuleName,
+			Stage:     test.givenStageName,
+			AccountID: test.givenPubID,
+		}, time.Microsecond)
 		am := m.getAccountMetrics(test.givenPubID)
 
 		assert.Equal(t, test.expectedModuleMetricCount, m.ModuleMetrics[test.givenModuleName][test.givenStageName].CallCounter.Count())
 		if !test.givenDisabledMetrics.AccountModulesMetrics {
 			assert.Equal(t, test.expectedAccountMetricCount, am.moduleMetrics[test.givenModuleName].CallCounter.Count())
+			assert.Equal(t, test.expectedAccountMetricCount, am.moduleMetrics[test.givenModuleName].DurationTimer.Count())
 		} else {
 			assert.Len(t, am.moduleMetrics, 0, "Account modules metrics are disabled, they should not be collected. Actual result %d account metrics collected \n", len(am.moduleMetrics))
 		}

@@ -67,7 +67,7 @@ func NewEndpoint(
 	requestsById stored_requests.Fetcher,
 	accounts stored_requests.AccountFetcher,
 	cfg *config.Configuration,
-	met metrics.MetricsEngine,
+	metricsEngine metrics.MetricsEngine,
 	pbsAnalytics analytics.PBSAnalyticsModule,
 	disabledBidders map[string]string,
 	defReqJSON []byte,
@@ -75,7 +75,7 @@ func NewEndpoint(
 	storedRespFetcher stored_requests.Fetcher,
 	hookExecutionPlanBuilder hooks.ExecutionPlanBuilder,
 ) (httprouter.Handle, error) {
-	if ex == nil || validator == nil || requestsById == nil || accounts == nil || cfg == nil || met == nil {
+	if ex == nil || validator == nil || requestsById == nil || accounts == nil || cfg == nil || metricsEngine == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
 
@@ -86,7 +86,7 @@ func NewEndpoint(
 		IPv6PrivateNetworks: cfg.RequestValidation.IPv6PrivateNetworksParsed,
 	}
 
-	hookExecutor := hookexecution.NewHookExecutor(hookExecutionPlanBuilder, hookexecution.EndpointAuction, met)
+	hookExecutor := hookexecution.NewHookExecutor(hookExecutionPlanBuilder, hookexecution.EndpointAuction, metricsEngine)
 
 	return httprouter.Handle((&endpointDeps{
 		uuidGenerator,
@@ -96,7 +96,7 @@ func NewEndpoint(
 		empty_fetcher.EmptyFetcher{},
 		accounts,
 		cfg,
-		met,
+		metricsEngine,
 		pbsAnalytics,
 		disabledBidders,
 		defRequest,
