@@ -1320,15 +1320,13 @@ func migrateConfigDatabaseConnection(v *viper.Viper) {
 }
 
 func configDatabaseConnectionPresent(v *viper.Viper, keyPrefix string, fields []string) bool {
-	present := false
 	for _, field := range fields {
 		fieldName := keyPrefix + "." + field
 		if v.IsSet(fieldName) {
-			present = true
-			break
+			return true
 		}
 	}
-	return present
+	return false
 }
 
 func setBidderDefaults(v *viper.Viper, bidder string) {
