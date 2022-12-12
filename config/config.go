@@ -1319,9 +1319,10 @@ func migrateConfigDatabaseConnection(v *viper.Viper) {
 	}
 }
 
-func isConfigInfoPresent(v *viper.Viper, keyPrefix string, fields []string) bool {
+func isConfigInfoPresent(v *viper.Viper, prefix string, fields []string) bool {
+	prefix = prefix + "."
 	for _, field := range fields {
-		fieldName := keyPrefix + "." + field
+		fieldName := prefix + field
 		if v.IsSet(fieldName) {
 			return true
 		}
