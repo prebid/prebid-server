@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -2192,6 +2193,78 @@ func TestMigrateConfigDatabaseConnection(t *testing.T) {
 	}
 }
 
+func TestMigrateConfigDatabaseConnectionUsingEnvVars(t *testing.T) {
+	tests := []struct {
+		description string
+		prefix      string
+	}{
+		{
+			description: "stored requests old config set using env vars",
+			prefix:      "stored_requests",
+		},
+		{
+			description: "stored video requests old config set using env vars",
+			prefix:      "stored_video_req",
+		},
+		{
+			description: "stored responses old config set using env vars",
+			prefix:      "stored_responses",
+		},
+	}
+
+	envVarValues := map[string]string{
+		"CONNECTION_DBNAME":                     "some dbname",
+		"CONNECTION_HOST":                       "some host",
+		"CONNECTION_PORT":                       "25",
+		"CONNECTION_USER":                       "some user",
+		"CONNECTION_PASSWORD":                   "some password",
+		"FETCHER_QUERY":                         "some fetcher query",
+		"FETCHER_AMP_QUERY":                     "some fetcher amp query",
+		"INITIALIZE_CACHES_TIMEOUT_MS":          "50",
+		"INITIALIZE_CACHES_QUERY":               "some init caches query",
+		"INITIALIZE_CACHES_AMP_QUERY":           "some init caches amp query",
+		"POLL_FOR_UPDATES_REFRESH_RATE_SECONDS": "75",
+		"POLL_FOR_UPDATES_TIMEOUT_MS":           "100",
+		"POLL_FOR_UPDATES_QUERY":                "some poll query",
+		"POLL_FOR_UPDATES_AMP_QUERY":            "some poll amp query",
+	}
+
+	for _, tt := range tests {
+		prefixUppercase := strings.ToUpper(tt.prefix)
+
+		for suffix, v := range envVarValues {
+			if oldval, ok := os.LookupEnv("PBS_" + prefixUppercase + "_POSTGRES_" + suffix); ok {
+				defer os.Setenv("PBS_"+prefixUppercase+"_POSTGRES_"+suffix, oldval)
+			} else {
+				defer os.Unsetenv("PBS_" + prefixUppercase + "_POSTGRES_" + suffix)
+			}
+			os.Setenv("PBS_"+prefixUppercase+"_POSTGRES_"+suffix, v)
+		}
+
+		v := viper.New()
+		SetupViper(v, "", bidderInfos)
+
+		assert.Equal(t, envVarValues["CONNECTION_DBNAME"], v.GetString(tt.prefix+".database.connection.dbname"), tt.description)
+		assert.Equal(t, envVarValues["CONNECTION_HOST"], v.GetString(tt.prefix+".database.connection.host"), tt.description)
+		assert.Equal(t, envVarValues["CONNECTION_PORT"], v.GetString(tt.prefix+".database.connection.port"), tt.description)
+		assert.Equal(t, envVarValues["CONNECTION_USER"], v.GetString(tt.prefix+".database.connection.user"), tt.description)
+		assert.Equal(t, envVarValues["CONNECTION_PASSWORD"], v.GetString(tt.prefix+".database.connection.password"), tt.description)
+		assert.Equal(t, envVarValues["FETCHER_QUERY"], v.GetString(tt.prefix+".database.fetcher.query"), tt.description)
+		assert.Equal(t, envVarValues["INITIALIZE_CACHES_TIMEOUT_MS"], v.GetString(tt.prefix+".database.initialize_caches.timeout_ms"), tt.description)
+		assert.Equal(t, envVarValues["INITIALIZE_CACHES_QUERY"], v.GetString(tt.prefix+".database.initialize_caches.query"), tt.description)
+		assert.Equal(t, envVarValues["POLL_FOR_UPDATES_REFRESH_RATE_SECONDS"], v.GetString(tt.prefix+".database.poll_for_updates.refresh_rate_seconds"), tt.description)
+		assert.Equal(t, envVarValues["POLL_FOR_UPDATES_TIMEOUT_MS"], v.GetString(tt.prefix+".database.poll_for_updates.timeout_ms"), tt.description)
+		assert.Equal(t, envVarValues["POLL_FOR_UPDATES_QUERY"], v.GetString(tt.prefix+".database.poll_for_updates.query"), tt.description)
+
+		// AMP queries are only migrated for stored requests
+		if tt.prefix == "stored_requests" {
+			assert.Equal(t, envVarValues["FETCHER_AMP_QUERY"], v.GetString(tt.prefix+".database.fetcher.amp_query"), tt.description)
+			assert.Equal(t, envVarValues["INITIALIZE_CACHES_AMP_QUERY"], v.GetString(tt.prefix+".database.initialize_caches.amp_query"), tt.description)
+			assert.Equal(t, envVarValues["POLL_FOR_UPDATES_AMP_QUERY"], v.GetString(tt.prefix+".database.poll_for_updates.amp_query"), tt.description)
+		}
+	}
+}
+
 func TestMigrateConfigDatabaseQueryParams(t *testing.T) {
 
 	config := []byte(`
@@ -2294,6 +2367,96 @@ func TestMigrateConfigDatabaseQueryParams(t *testing.T) {
 	assert.Equal(t, want_queries.fetcher_amp_query, v.GetString("stored_responses.database.fetcher.amp_query"))
 	assert.Equal(t, want_queries.poll_for_updates_query, v.GetString("stored_responses.database.poll_for_updates.query"))
 	assert.Equal(t, want_queries.poll_for_updates_amp_query, v.GetString("stored_responses.database.poll_for_updates.amp_query"))
+}
+
+func TestConfigDatabaseConnectionPresent(t *testing.T) {
+	configPrefix1Field2Only := []byte(`
+      prefix1:
+        field2: "value2"
+    `)
+	configPrefix1Field4Only := []byte(`
+      prefix1:
+        field4: "value4"
+      `)
+	configPrefix1Field2AndField3 := []byte(`
+      prefix1:
+        field2: "value2"
+        field3: "value3"
+      `)
+
+	tests := []struct {
+		description string
+		config      []byte
+		keyPrefix   string
+		fields      []string
+		wantResult  bool
+	}{
+		{
+			description: "config is nil",
+			config:      nil,
+			keyPrefix:   "prefix1",
+			fields:      []string{"field1", "field2", "field3"},
+			wantResult:  false,
+		},
+		{
+			description: "config is empty",
+			config:      []byte{},
+			keyPrefix:   "prefix1",
+			fields:      []string{"field1", "field2", "field3"},
+			wantResult:  false,
+		},
+		{
+			description: "present - one field exists in config",
+			config:      configPrefix1Field2Only,
+			keyPrefix:   "prefix1",
+			fields:      []string{"field1", "field2", "field3"},
+			wantResult:  true,
+		},
+		{
+			description: "present - many fields exist in config",
+			config:      configPrefix1Field2AndField3,
+			keyPrefix:   "prefix1",
+			fields:      []string{"field1", "field2", "field3"},
+			wantResult:  true,
+		},
+		{
+			description: "not present - field not found",
+			config:      configPrefix1Field4Only,
+			keyPrefix:   "prefix1",
+			fields:      []string{"field1", "field2", "field3"},
+			wantResult:  false,
+		},
+		{
+			description: "not present - field exists but with a different prefix",
+			config:      configPrefix1Field2Only,
+			keyPrefix:   "prefix2",
+			fields:      []string{"field1", "field2", "field3"},
+			wantResult:  false,
+		},
+		{
+			description: "not present - fields is nil",
+			config:      configPrefix1Field2Only,
+			keyPrefix:   "prefix1",
+			fields:      nil,
+			wantResult:  false,
+		},
+		{
+			description: "not present - fields is empty",
+			config:      configPrefix1Field2Only,
+			keyPrefix:   "prefix1",
+			fields:      []string{},
+			wantResult:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		v := viper.New()
+		v.SetConfigType("yaml")
+		v.ReadConfig(bytes.NewBuffer(tt.config))
+
+		result := configDatabaseConnectionPresent(v, tt.keyPrefix, tt.fields)
+		assert.Equal(t, tt.wantResult, result, tt.description)
+	}
 }
 
 func TestNegativeRequestSize(t *testing.T) {
