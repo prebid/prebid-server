@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -2195,73 +2196,183 @@ func TestMigrateConfigDatabaseConnection(t *testing.T) {
 
 func TestMigrateConfigDatabaseConnectionUsingEnvVars(t *testing.T) {
 	tests := []struct {
-		description string
-		prefix      string
+		description        string
+		prefix             string
+		setDatabaseEnvVars bool
+		setPostgresEnvVars bool
 	}{
 		{
-			description: "stored requests old config set using env vars",
-			prefix:      "stored_requests",
+			description:        "stored requests old config set",
+			prefix:             "stored_requests",
+			setPostgresEnvVars: true,
 		},
 		{
-			description: "stored video requests old config set using env vars",
-			prefix:      "stored_video_req",
+			description:        "stored requests new config set",
+			prefix:             "stored_requests",
+			setDatabaseEnvVars: true,
 		},
 		{
-			description: "stored responses old config set using env vars",
-			prefix:      "stored_responses",
+			description:        "stored requests old and new config set",
+			prefix:             "stored_requests",
+			setDatabaseEnvVars: true,
+			setPostgresEnvVars: true,
+		},
+		{
+			description:        "stored video requests old config set",
+			prefix:             "stored_video_req",
+			setPostgresEnvVars: true,
+		},
+		{
+			description:        "stored video requests new config set",
+			prefix:             "stored_video_req",
+			setDatabaseEnvVars: true,
+		},
+		{
+			description:        "stored video requests old and new config set",
+			prefix:             "stored_video_req",
+			setDatabaseEnvVars: true,
+			setPostgresEnvVars: true,
+		},
+		{
+			description:        "stored responses old config set",
+			prefix:             "stored_responses",
+			setPostgresEnvVars: true,
+		},
+		{
+			description:        "stored responses new config set",
+			prefix:             "stored_responses",
+			setDatabaseEnvVars: true,
+		},
+		{
+			description:        "stored responses old and new config set",
+			prefix:             "stored_responses",
+			setDatabaseEnvVars: true,
+			setPostgresEnvVars: true,
 		},
 	}
 
-	envVarValues := map[string]string{
-		"CONNECTION_DBNAME":                     "some dbname",
-		"CONNECTION_HOST":                       "some host",
-		"CONNECTION_PORT":                       "25",
-		"CONNECTION_USER":                       "some user",
-		"CONNECTION_PASSWORD":                   "some password",
-		"FETCHER_QUERY":                         "some fetcher query",
-		"FETCHER_AMP_QUERY":                     "some fetcher amp query",
-		"INITIALIZE_CACHES_TIMEOUT_MS":          "50",
-		"INITIALIZE_CACHES_QUERY":               "some init caches query",
-		"INITIALIZE_CACHES_AMP_QUERY":           "some init caches amp query",
-		"POLL_FOR_UPDATES_REFRESH_RATE_SECONDS": "75",
-		"POLL_FOR_UPDATES_TIMEOUT_MS":           "100",
-		"POLL_FOR_UPDATES_QUERY":                "some poll query",
-		"POLL_FOR_UPDATES_AMP_QUERY":            "some poll amp query",
+	pgValues := map[string]string{
+		"CONNECTION_DBNAME":                     "pg-dbname",
+		"CONNECTION_HOST":                       "pg-host",
+		"CONNECTION_PORT":                       "1",
+		"CONNECTION_USER":                       "pg-user",
+		"CONNECTION_PASSWORD":                   "pg-password",
+		"FETCHER_QUERY":                         "pg-fetcher-query",
+		"FETCHER_AMP_QUERY":                     "pg-fetcher-amp-query",
+		"INITIALIZE_CACHES_TIMEOUT_MS":          "2",
+		"INITIALIZE_CACHES_QUERY":               "pg-init-caches-query",
+		"INITIALIZE_CACHES_AMP_QUERY":           "pg-init-caches-amp-query",
+		"POLL_FOR_UPDATES_REFRESH_RATE_SECONDS": "3",
+		"POLL_FOR_UPDATES_TIMEOUT_MS":           "4",
+		"POLL_FOR_UPDATES_QUERY":                "pg-poll-query",
+		"POLL_FOR_UPDATES_AMP_QUERY":            "pg-poll-amp-query",
+	}
+	dbValues := map[string]string{
+		"CONNECTION_DBNAME":                     "db-dbname",
+		"CONNECTION_HOST":                       "db-host",
+		"CONNECTION_PORT":                       "5",
+		"CONNECTION_USER":                       "db-user",
+		"CONNECTION_PASSWORD":                   "db-password",
+		"FETCHER_QUERY":                         "db-fetcher-query",
+		"FETCHER_AMP_QUERY":                     "db-fetcher-amp-query",
+		"INITIALIZE_CACHES_TIMEOUT_MS":          "6",
+		"INITIALIZE_CACHES_QUERY":               "db-init-caches-query",
+		"INITIALIZE_CACHES_AMP_QUERY":           "db-init-caches-amp-query",
+		"POLL_FOR_UPDATES_REFRESH_RATE_SECONDS": "7",
+		"POLL_FOR_UPDATES_TIMEOUT_MS":           "8",
+		"POLL_FOR_UPDATES_QUERY":                "db-poll-query",
+		"POLL_FOR_UPDATES_AMP_QUERY":            "db-poll-amp-query",
 	}
 
 	for _, tt := range tests {
-		prefixUppercase := strings.ToUpper(tt.prefix)
+		t.Run(tt.description, func(t *testing.T) {
+			prefix := "PBS_" + strings.ToUpper(tt.prefix)
 
-		for suffix, v := range envVarValues {
-			if oldval, ok := os.LookupEnv("PBS_" + prefixUppercase + "_POSTGRES_" + suffix); ok {
-				defer os.Setenv("PBS_"+prefixUppercase+"_POSTGRES_"+suffix, oldval)
-			} else {
-				defer os.Unsetenv("PBS_" + prefixUppercase + "_POSTGRES_" + suffix)
+			if tt.setPostgresEnvVars {
+				for suffix, v := range pgValues {
+					envVarName := prefix + "_POSTGRES_" + suffix
+					if oldval, ok := os.LookupEnv(envVarName); ok {
+						defer os.Setenv(envVarName, oldval)
+					} else {
+						defer os.Unsetenv(envVarName)
+					}
+					os.Setenv(envVarName, v)
+				}
 			}
-			os.Setenv("PBS_"+prefixUppercase+"_POSTGRES_"+suffix, v)
-		}
+			if tt.setDatabaseEnvVars {
+				for suffix, v := range dbValues {
+					envVarName := prefix + "_DATABASE_" + suffix
+					if oldval, ok := os.LookupEnv(envVarName); ok {
+						defer os.Setenv(envVarName, oldval)
+					} else {
+						defer os.Unsetenv(envVarName)
+					}
+					os.Setenv(envVarName, v)
+				}
+			}
 
-		v := viper.New()
-		SetupViper(v, "", bidderInfos)
+			v := viper.New()
+			SetupViper(v, "", bidderInfos)
+			c, err := New(v, bidderInfos, mockNormalizeBidderName)
+			if err != nil {
+				//TODO
+			}
 
-		assert.Equal(t, envVarValues["CONNECTION_DBNAME"], v.GetString(tt.prefix+".database.connection.dbname"), tt.description)
-		assert.Equal(t, envVarValues["CONNECTION_HOST"], v.GetString(tt.prefix+".database.connection.host"), tt.description)
-		assert.Equal(t, envVarValues["CONNECTION_PORT"], v.GetString(tt.prefix+".database.connection.port"), tt.description)
-		assert.Equal(t, envVarValues["CONNECTION_USER"], v.GetString(tt.prefix+".database.connection.user"), tt.description)
-		assert.Equal(t, envVarValues["CONNECTION_PASSWORD"], v.GetString(tt.prefix+".database.connection.password"), tt.description)
-		assert.Equal(t, envVarValues["FETCHER_QUERY"], v.GetString(tt.prefix+".database.fetcher.query"), tt.description)
-		assert.Equal(t, envVarValues["INITIALIZE_CACHES_TIMEOUT_MS"], v.GetString(tt.prefix+".database.initialize_caches.timeout_ms"), tt.description)
-		assert.Equal(t, envVarValues["INITIALIZE_CACHES_QUERY"], v.GetString(tt.prefix+".database.initialize_caches.query"), tt.description)
-		assert.Equal(t, envVarValues["POLL_FOR_UPDATES_REFRESH_RATE_SECONDS"], v.GetString(tt.prefix+".database.poll_for_updates.refresh_rate_seconds"), tt.description)
-		assert.Equal(t, envVarValues["POLL_FOR_UPDATES_TIMEOUT_MS"], v.GetString(tt.prefix+".database.poll_for_updates.timeout_ms"), tt.description)
-		assert.Equal(t, envVarValues["POLL_FOR_UPDATES_QUERY"], v.GetString(tt.prefix+".database.poll_for_updates.query"), tt.description)
+			expectedDatabaseValues := map[string]string{}
+			if tt.setDatabaseEnvVars {
+				expectedDatabaseValues = dbValues
+			} else if tt.setPostgresEnvVars {
+				expectedDatabaseValues = pgValues
+			}
 
-		// AMP queries are only migrated for stored requests
-		if tt.prefix == "stored_requests" {
-			assert.Equal(t, envVarValues["FETCHER_AMP_QUERY"], v.GetString(tt.prefix+".database.fetcher.amp_query"), tt.description)
-			assert.Equal(t, envVarValues["INITIALIZE_CACHES_AMP_QUERY"], v.GetString(tt.prefix+".database.initialize_caches.amp_query"), tt.description)
-			assert.Equal(t, envVarValues["POLL_FOR_UPDATES_AMP_QUERY"], v.GetString(tt.prefix+".database.poll_for_updates.amp_query"), tt.description)
-		}
+			if tt.prefix == "stored_requests" {
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_DBNAME"], c.StoredRequests.Database.ConnectionInfo.Database, tt.description)
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_HOST"], c.StoredRequests.Database.ConnectionInfo.Host, tt.description)
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_PORT"], strconv.Itoa(c.StoredRequests.Database.ConnectionInfo.Port), tt.description)
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_USER"], c.StoredRequests.Database.ConnectionInfo.Username, tt.description)
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_PASSWORD"], c.StoredRequests.Database.ConnectionInfo.Password, tt.description)
+				assert.Equal(t, expectedDatabaseValues["FETCHER_QUERY"], c.StoredRequests.Database.FetcherQueries.QueryTemplate, tt.description)
+				assert.Equal(t, expectedDatabaseValues["INITIALIZE_CACHES_TIMEOUT_MS"], strconv.Itoa(c.StoredRequests.Database.CacheInitialization.Timeout), tt.description)
+				assert.Equal(t, expectedDatabaseValues["INITIALIZE_CACHES_QUERY"], c.StoredRequests.Database.CacheInitialization.Query, tt.description)
+				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_REFRESH_RATE_SECONDS"], strconv.Itoa(c.StoredRequests.Database.PollUpdates.RefreshRate), tt.description)
+				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_TIMEOUT_MS"], strconv.Itoa(c.StoredRequests.Database.PollUpdates.Timeout), tt.description)
+				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_QUERY"], c.StoredRequests.Database.PollUpdates.Query, tt.description)
+				// AMP queries are only migrated for stored requests
+				assert.Equal(t, expectedDatabaseValues["FETCHER_AMP_QUERY"], c.StoredRequests.Database.FetcherQueries.AmpQueryTemplate, tt.description)
+				assert.Equal(t, expectedDatabaseValues["INITIALIZE_CACHES_AMP_QUERY"], c.StoredRequests.Database.CacheInitialization.AmpQuery, tt.description)
+				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_AMP_QUERY"], c.StoredRequests.Database.PollUpdates.AmpQuery, tt.description)
+			} else if tt.prefix == "stored_video_req" {
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_DBNAME"], c.StoredVideo.Database.ConnectionInfo.Database, tt.description)
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_HOST"], c.StoredVideo.Database.ConnectionInfo.Host, tt.description)
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_PORT"], strconv.Itoa(c.StoredVideo.Database.ConnectionInfo.Port), tt.description)
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_USER"], c.StoredVideo.Database.ConnectionInfo.Username, tt.description)
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_PASSWORD"], c.StoredVideo.Database.ConnectionInfo.Password, tt.description)
+				assert.Equal(t, expectedDatabaseValues["FETCHER_QUERY"], c.StoredVideo.Database.FetcherQueries.QueryTemplate, tt.description)
+				assert.Equal(t, expectedDatabaseValues["INITIALIZE_CACHES_TIMEOUT_MS"], strconv.Itoa(c.StoredVideo.Database.CacheInitialization.Timeout), tt.description)
+				assert.Equal(t, expectedDatabaseValues["INITIALIZE_CACHES_QUERY"], c.StoredVideo.Database.CacheInitialization.Query, tt.description)
+				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_REFRESH_RATE_SECONDS"], strconv.Itoa(c.StoredVideo.Database.PollUpdates.RefreshRate), tt.description)
+				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_TIMEOUT_MS"], strconv.Itoa(c.StoredVideo.Database.PollUpdates.Timeout), tt.description)
+				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_QUERY"], c.StoredVideo.Database.PollUpdates.Query, tt.description)
+				assert.Empty(t, c.StoredVideo.Database.FetcherQueries.AmpQueryTemplate, tt.description)
+				assert.Empty(t, c.StoredVideo.Database.CacheInitialization.AmpQuery, tt.description)
+				assert.Empty(t, c.StoredVideo.Database.PollUpdates.AmpQuery, tt.description)
+			} else {
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_DBNAME"], c.StoredResponses.Database.ConnectionInfo.Database, tt.description)
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_HOST"], c.StoredResponses.Database.ConnectionInfo.Host, tt.description)
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_PORT"], strconv.Itoa(c.StoredResponses.Database.ConnectionInfo.Port), tt.description)
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_USER"], c.StoredResponses.Database.ConnectionInfo.Username, tt.description)
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_PASSWORD"], c.StoredResponses.Database.ConnectionInfo.Password, tt.description)
+				assert.Equal(t, expectedDatabaseValues["FETCHER_QUERY"], c.StoredResponses.Database.FetcherQueries.QueryTemplate, tt.description)
+				assert.Equal(t, expectedDatabaseValues["INITIALIZE_CACHES_TIMEOUT_MS"], strconv.Itoa(c.StoredResponses.Database.CacheInitialization.Timeout), tt.description)
+				assert.Equal(t, expectedDatabaseValues["INITIALIZE_CACHES_QUERY"], c.StoredResponses.Database.CacheInitialization.Query, tt.description)
+				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_REFRESH_RATE_SECONDS"], strconv.Itoa(c.StoredResponses.Database.PollUpdates.RefreshRate), tt.description)
+				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_TIMEOUT_MS"], strconv.Itoa(c.StoredResponses.Database.PollUpdates.Timeout), tt.description)
+				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_QUERY"], c.StoredResponses.Database.PollUpdates.Query, tt.description)
+				assert.Empty(t, c.StoredResponses.Database.FetcherQueries.AmpQueryTemplate, tt.description)
+				assert.Empty(t, c.StoredResponses.Database.CacheInitialization.AmpQuery, tt.description)
+				assert.Empty(t, c.StoredResponses.Database.PollUpdates.AmpQuery, tt.description)
+			}
+		})
 	}
 }
 

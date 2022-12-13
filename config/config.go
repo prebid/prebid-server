@@ -991,6 +991,8 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("request_validation.ipv4_private_networks", []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "169.254.0.0/16", "127.0.0.0/8"})
 	v.SetDefault("request_validation.ipv6_private_networks", []string{"::1/128", "fc00::/7", "fe80::/10", "ff00::/8", "2001:db8::/32"})
 
+	bindDatabaseEnvVars(v)
+
 	// Set environment variable support:
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.SetTypeByDefaultValue(true)
@@ -1328,6 +1330,48 @@ func isConfigInfoPresent(v *viper.Viper, prefix string, fields []string) bool {
 		}
 	}
 	return false
+}
+
+func bindDatabaseEnvVars(v *viper.Viper) {
+	v.BindEnv("stored_requests.database.connection.driver")
+	v.BindEnv("stored_requests.database.connection.dbname")
+	v.BindEnv("stored_requests.database.connection.host")
+	v.BindEnv("stored_requests.database.connection.port")
+	v.BindEnv("stored_requests.database.connection.user")
+	v.BindEnv("stored_requests.database.connection.password")
+	v.BindEnv("stored_requests.database.fetcher.query")
+	v.BindEnv("stored_requests.database.fetcher.amp_query")
+	v.BindEnv("stored_requests.database.initialize_caches.timeout_ms")
+	v.BindEnv("stored_requests.database.initialize_caches.query")
+	v.BindEnv("stored_requests.database.initialize_caches.amp_query")
+	v.BindEnv("stored_requests.database.poll_for_updates.refresh_rate_seconds")
+	v.BindEnv("stored_requests.database.poll_for_updates.timeout_ms")
+	v.BindEnv("stored_requests.database.poll_for_updates.query")
+	v.BindEnv("stored_requests.database.poll_for_updates.amp_query")
+	v.BindEnv("stored_video_req.database.connection.driver")
+	v.BindEnv("stored_video_req.database.connection.dbname")
+	v.BindEnv("stored_video_req.database.connection.host")
+	v.BindEnv("stored_video_req.database.connection.port")
+	v.BindEnv("stored_video_req.database.connection.user")
+	v.BindEnv("stored_video_req.database.connection.password")
+	v.BindEnv("stored_video_req.database.fetcher.query")
+	v.BindEnv("stored_video_req.database.initialize_caches.timeout_ms")
+	v.BindEnv("stored_video_req.database.initialize_caches.query")
+	v.BindEnv("stored_video_req.database.poll_for_updates.refresh_rate_seconds")
+	v.BindEnv("stored_video_req.database.poll_for_updates.timeout_ms")
+	v.BindEnv("stored_video_req.database.poll_for_updates.query")
+	v.BindEnv("stored_responses.database.connection.driver")
+	v.BindEnv("stored_responses.database.connection.dbname")
+	v.BindEnv("stored_responses.database.connection.host")
+	v.BindEnv("stored_responses.database.connection.port")
+	v.BindEnv("stored_responses.database.connection.user")
+	v.BindEnv("stored_responses.database.connection.password")
+	v.BindEnv("stored_responses.database.fetcher.query")
+	v.BindEnv("stored_responses.database.initialize_caches.timeout_ms")
+	v.BindEnv("stored_responses.database.initialize_caches.query")
+	v.BindEnv("stored_responses.database.poll_for_updates.refresh_rate_seconds")
+	v.BindEnv("stored_responses.database.poll_for_updates.timeout_ms")
+	v.BindEnv("stored_responses.database.poll_for_updates.query")
 }
 
 func setBidderDefaults(v *viper.Viper, bidder string) {
