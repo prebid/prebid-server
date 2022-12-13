@@ -3,10 +3,10 @@ package modules
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
 
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/hooks"
+	"github.com/prebid/prebid-server/modules/moduledeps"
 )
 
 // NewBuilder returns a new module builder.
@@ -21,14 +21,14 @@ type Builder interface {
 	// It returns hook repository created based on the implemented hook interfaces by modules
 	// and a map of modules to a list of stage names for which module provides hooks
 	// or an error encountered during module initialization.
-	Build(cfg config.Modules, client *http.Client) (hooks.HookRepository, map[string][]string, error)
+	Build(cfg config.Modules, client moduledeps.ModuleDeps) (hooks.HookRepository, map[string][]string, error)
 }
 
 type (
 	// ModuleBuilders mapping between module name and its builder: map[vendor]map[module]ModuleBuilderFn
 	ModuleBuilders map[string]map[string]ModuleBuilderFn
 	// ModuleBuilderFn returns an interface{} type that implements certain hook interfaces
-	ModuleBuilderFn func(cfg json.RawMessage, client *http.Client) (interface{}, error)
+	ModuleBuilderFn func(cfg json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, error)
 )
 
 type builder struct {
@@ -42,7 +42,10 @@ type builder struct {
 //
 // Method returns a hooks.HookRepository and a map of modules to a list of stage names
 // for which module provides hooks or an error occurred during modules initialization.
-func (m *builder) Build(cfg config.Modules, client *http.Client) (hooks.HookRepository, map[string][]string, error) {
+func (m *builder) Build(
+	cfg config.Modules,
+	deps moduledeps.ModuleDeps,
+) (hooks.HookRepository, map[string][]string, error) {
 	modules := make(map[string]interface{})
 	for vendor, moduleBuilders := range m.builders {
 		for moduleName, builder := range moduleBuilders {
@@ -56,7 +59,7 @@ func (m *builder) Build(cfg config.Modules, client *http.Client) (hooks.HookRepo
 				}
 			}
 
-			module, err := builder(conf, client)
+			module, err := builder(conf, deps)
 			if err != nil {
 				return nil, nil, fmt.Errorf(`failed to init "%s" module: %s`, id, err)
 			}

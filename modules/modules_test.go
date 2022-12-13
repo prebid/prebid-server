@@ -12,6 +12,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookstage"
+	"github.com/prebid/prebid-server/modules/moduledeps"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -90,14 +91,14 @@ func TestModuleBuilderBuild(t *testing.T) {
 			builder := &builder{
 				builders: ModuleBuilders{
 					vendor: {
-						moduleName: func(cfg json.RawMessage, client *http.Client) (interface{}, error) {
+						moduleName: func(cfg json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, error) {
 							return test.givenModule, test.givenHookBuilderErr
 						},
 					},
 				},
 			}
 
-			repo, coll, err := builder.Build(test.givenConfig, http.DefaultClient)
+			repo, coll, err := builder.Build(test.givenConfig, moduledeps.ModuleDeps{HTTPClient: http.DefaultClient})
 			assert.Equal(t, test.expectedErr, err)
 			if test.expectedErr == nil {
 				hook, found := test.givenGetHookFn(repo, fmt.Sprintf("%s.%s", vendor, moduleName))
