@@ -2023,6 +2023,14 @@ func getAccountIdFromRawRequest(hasStoredRequest bool, storedRequest json.RawMes
 		return "", isAppReq, []error{err}
 	}
 
+	// In case the stored request did not have account data we specifically search it in the original request
+	if accountId == "" && hasStoredRequest {
+		accountId, _, err = searchAccountId(originalRequest)
+		if err != nil {
+			return "", isAppReq, []error{err}
+		}
+	}
+
 	if accountId == "" {
 		return metrics.PublisherUnknown, isAppReq, nil
 	}
