@@ -2264,8 +2264,8 @@ func TestMigrateConfigDatabaseConnectionUsingEnvVars(t *testing.T) {
 		"INITIALIZE_CACHES_AMP_QUERY":           "pg-init-caches-amp-query",
 		"POLL_FOR_UPDATES_REFRESH_RATE_SECONDS": "3",
 		"POLL_FOR_UPDATES_TIMEOUT_MS":           "4",
-		"POLL_FOR_UPDATES_QUERY":                "pg-poll-query",
-		"POLL_FOR_UPDATES_AMP_QUERY":            "pg-poll-amp-query",
+		"POLL_FOR_UPDATES_QUERY":                "pg-poll-query $LAST_UPDATED",
+		"POLL_FOR_UPDATES_AMP_QUERY":            "pg-poll-amp-query $LAST_UPDATED",
 	}
 	dbValues := map[string]string{
 		"CONNECTION_DBNAME":                     "db-dbname",
@@ -2280,13 +2280,23 @@ func TestMigrateConfigDatabaseConnectionUsingEnvVars(t *testing.T) {
 		"INITIALIZE_CACHES_AMP_QUERY":           "db-init-caches-amp-query",
 		"POLL_FOR_UPDATES_REFRESH_RATE_SECONDS": "7",
 		"POLL_FOR_UPDATES_TIMEOUT_MS":           "8",
-		"POLL_FOR_UPDATES_QUERY":                "db-poll-query",
-		"POLL_FOR_UPDATES_AMP_QUERY":            "db-poll-amp-query",
+		"POLL_FOR_UPDATES_QUERY":                "db-poll-query $LAST_UPDATED",
+		"POLL_FOR_UPDATES_AMP_QUERY":            "db-poll-amp-query $LAST_UPDATED",
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.description, func(t *testing.T) {
 			prefix := "PBS_" + strings.ToUpper(tt.prefix)
+
+			// validation rules require in memory cache type to not be "none"
+			// given that we want to set the poll for update queries to non-empty values
+			envVarName := prefix + "_IN_MEMORY_CACHE_TYPE"
+			if oldval, ok := os.LookupEnv(envVarName); ok {
+				defer os.Setenv(envVarName, oldval)
+			} else {
+				defer os.Unsetenv(envVarName)
+			}
+			os.Setenv(envVarName, "unbounded")
 
 			if tt.setPostgresEnvVars {
 				for suffix, v := range pgValues {
@@ -2311,12 +2321,7 @@ func TestMigrateConfigDatabaseConnectionUsingEnvVars(t *testing.T) {
 				}
 			}
 
-			v := viper.New()
-			SetupViper(v, "", bidderInfos)
-			c, err := New(v, bidderInfos, mockNormalizeBidderName)
-			if err != nil {
-				//TODO
-			}
+			c, _ := newDefaultConfig(t)
 
 			expectedDatabaseValues := map[string]string{}
 			if tt.setDatabaseEnvVars {
