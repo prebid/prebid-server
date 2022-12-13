@@ -50,9 +50,8 @@ func EnrichWithPriceFloors(bidRequestWrapper *openrtb_ext.RequestWrapper, accoun
 // updateBidRequestWithFloors will update imp.bidfloor and imp.bidfloorcur based on rules matching
 func updateBidRequestWithFloors(extFloorRules *openrtb_ext.PriceFloorRules, request *openrtb_ext.RequestWrapper, conversions currency.Conversions) []error {
 	var (
-		floorErrList      []error
-		floorModelErrList []error
-		floorVal          float64
+		floorErrList []error
+		floorVal     float64
 	)
 
 	if extFloorRules == nil || extFloorRules.Data == nil || len(extFloorRules.Data.ModelGroups) == 0 {
@@ -71,7 +70,7 @@ func updateBidRequestWithFloors(extFloorRules *openrtb_ext.PriceFloorRules, requ
 	extFloorRules.Skipped = new(bool)
 	if shouldSkipFloors(modelGroup.SkipRate, extFloorRules.Data.SkipRate, extFloorRules.SkipRate, rand.Intn) {
 		*extFloorRules.Skipped = true
-		return floorModelErrList
+		return []error{}
 	}
 
 	floorErrList = validateFloorRulesAndLowerValidRuleKey(modelGroup.Schema, modelGroup.Schema.Delimiter, modelGroup.Values)
@@ -101,13 +100,15 @@ func updateBidRequestWithFloors(extFloorRules *openrtb_ext.PriceFloorRules, requ
 					updateImpExtWithFloorDetails(imp, matchedRule, floorVal, imp.BidFloor)
 				}
 			} else {
-				floorModelErrList = append(floorModelErrList, fmt.Errorf("Error in getting FloorMin value : '%v'", err.Error()))
+				floorErrList = append(floorErrList, fmt.Errorf("Error in getting FloorMin value : '%v'", err.Error()))
 			}
 		}
-		_ = request.RebuildRequest()
+		err := request.RebuildImp()
+		if err != nil {
+			return append(floorErrList, err)
+		}
 	}
-	floorModelErrList = append(floorModelErrList, floorErrList...)
-	return floorModelErrList
+	return floorErrList
 }
 
 // isBidFloorGreater check for floor rule value is greater than original imp.bidfloor
@@ -252,10 +253,6 @@ func resolveFloorMin(reqFloors *openrtb_ext.PriceFloorRules, fetchFloors openrtb
 		reqFloorMinCur = reqFloors.FloorMinCur
 	}
 
-	if len(reqFloorMinCur) == 0 {
-		reqFloorMinCur = floorCur
-	}
-
 	provFloorMinCur := fetchFloors.FloorMinCur
 	provFloorMin := fetchFloors.FloorMin
 
@@ -272,6 +269,10 @@ func resolveFloorMin(reqFloors *openrtb_ext.PriceFloorRules, fetchFloors openrtb
 					FloorMin: math.Round(rate*provFloorMin*10000) / 10000}
 			}
 		}
+	}
+
+	if len(provFloorMinCur) == 0 {
+		provFloorMinCur = getFloorCurrency(&fetchFloors)
 	}
 
 	if len(provFloorMinCur) > 0 {

@@ -1,7 +1,6 @@
 package exchange
 
 import (
-	"encoding/json"
 	"fmt"
 	"math/rand"
 
@@ -144,16 +143,10 @@ func enforceFloors(r *AuctionRequest, seatBids map[openrtb_ext.BidderName]*pbsOr
 			seatBids, rejectionsErrs, rejecteBids = enforceFloorToBids(r.BidRequestWrapper.BidRequest, seatBids, conversions, enforceDealFloors)
 		}
 		requestExt.SetPrebid(prebidExt)
-		err = r.BidRequestWrapper.RebuildRequest()
+		err = r.BidRequestWrapper.RebuildRequestExt()
 		if err != nil {
 			rejectionsErrs = append(rejectionsErrs, err)
 			return seatBids, rejectionsErrs, rejecteBids
-		}
-
-		if responseDebugAllow {
-			updatedBidReq, _ := json.Marshal(r.BidRequestWrapper.BidRequest)
-			//save updated request after floors enforcement
-			r.ResolvedBidRequest = updatedBidReq
 		}
 	}
 	return seatBids, rejectionsErrs, rejecteBids

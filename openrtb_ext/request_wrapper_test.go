@@ -60,7 +60,7 @@ func TestUserExt(t *testing.T) {
 	assert.Equal(t, false, userExt.Dirty(), "UserExt should not be dirty after marshalling")
 }
 
-func TestRebuildImp(t *testing.T) {
+func TestRebuildImpExt(t *testing.T) {
 	var (
 		prebid     = &ExtImpPrebid{IsRewardedInventory: openrtb2.Int8Ptr(1)}
 		prebidJson = json.RawMessage(`{"prebid":{"is_rewarded_inventory":1}}`)
@@ -95,7 +95,7 @@ func TestRebuildImp(t *testing.T) {
 			description:       "One - Accessed - Error",
 			request:           openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "1"}}},
 			requestImpWrapper: []*ImpWrapper{{Imp: nil, impExt: &ImpExt{}}},
-			expectedError:     "ImpWrapper RebuildImp called on a nil Imp",
+			expectedError:     "ImpWrapper RebuildImpExt called on a nil Imp",
 		},
 		{
 			description:       "Many - Accessed - Dirty / Not Dirty",
@@ -857,7 +857,7 @@ func TestRebuildSourceExt(t *testing.T) {
 	}
 }
 
-func TestImpWrapperRebuildImp(t *testing.T) {
+func TestImpWrapperRebuildImpExt(t *testing.T) {
 	var (
 		isRewardedInventoryOne int8 = 1
 		isRewardedInventoryTwo int8 = 2
@@ -924,7 +924,7 @@ func TestImpWrapperRebuildImp(t *testing.T) {
 		test.impExtWrapper.ext = make(map[string]json.RawMessage)
 
 		w := &ImpWrapper{Imp: &test.imp, impExt: &test.impExtWrapper}
-		w.RebuildImp()
+		w.RebuildImpExt()
 		assert.Equal(t, test.expectedImp, *w.Imp, test.description)
 	}
 }

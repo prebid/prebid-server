@@ -401,7 +401,7 @@ func TestMoveRewardedFrom26ToPrebidExt(t *testing.T) {
 		if len(test.expectedErr) > 0 {
 			assert.EqualError(t, err, test.expectedErr, test.description)
 		} else {
-			assert.NoError(t, w.RebuildImp(), test.description)
+			assert.NoError(t, w.RebuildImpExt(), test.description)
 			assert.Equal(t, test.expectedImp, *w.Imp, test.description)
 		}
 	}
