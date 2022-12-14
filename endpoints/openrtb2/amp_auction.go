@@ -737,7 +737,11 @@ func setTrace(req *openrtb2.BidRequest, value string) (err error) {
 		return nil
 	}
 
-	ext := json.RawMessage(`{"prebid":{"trace":"` + value + `"}}`)
+	ext, err := json.Marshal(map[string]map[string]string{"prebid": {"trace": value}})
+	if err != nil {
+		return err
+	}
+
 	if len(req.Ext) > 0 {
 		ext, err = jsonpatch.MergePatch(req.Ext, ext)
 		if err != nil {

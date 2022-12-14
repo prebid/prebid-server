@@ -28,6 +28,14 @@ func (t trace) isVerbose() bool {
 	return t == traceLevelVerbose
 }
 
+type extPrebid struct {
+	Prebid extModules `json:"prebid"`
+}
+
+type extModules struct {
+	Modules json.RawMessage `json:"modules"`
+}
+
 // EnrichExtBidResponse adds debug and trace information returned from executing hooks to the ext argument.
 // In response the outcome is visible under the key response.ext.prebid.modules.
 //
@@ -40,13 +48,15 @@ func EnrichExtBidResponse(
 	account *config.Account,
 ) (json.RawMessage, error) {
 	modules, err := GetModulesJSON(stageOutcomes, bidRequest, account)
-	if err != nil {
+	if err != nil || modules == nil {
 		return ext, err
-	} else if modules == nil {
-		return ext, nil
 	}
 
-	response := json.RawMessage(`{"prebid":{"modules":` + string(modules) + `}}`)
+	response, err := json.Marshal(extPrebid{Prebid: extModules{Modules: modules}})
+	if err != nil {
+		return ext, err
+	}
+
 	if ext != nil {
 		response, err = jsonpatch.MergePatch(ext, response)
 	}
@@ -150,12 +160,10 @@ func prepareModulesOutcome(modulesOutcome *ModulesOutcome, groups []GroupOutcome
 				group.InvocationResults[i].AnalyticsTags = hookanalytics.Analytics{}
 			}
 
-			if !isDebugEnabled {
-				continue
+			if isDebugEnabled {
+				modulesOutcome.Errors = fillMessages(modulesOutcome.Errors, hookOutcome.Errors, hookOutcome.HookID)
+				modulesOutcome.Warnings = fillMessages(modulesOutcome.Warnings, hookOutcome.Warnings, hookOutcome.HookID)
 			}
-
-			modulesOutcome.Errors = fillMessages(modulesOutcome.Errors, hookOutcome.Errors, hookOutcome.HookID)
-			modulesOutcome.Warnings = fillMessages(modulesOutcome.Warnings, hookOutcome.Warnings, hookOutcome.HookID)
 		}
 	}
 }
