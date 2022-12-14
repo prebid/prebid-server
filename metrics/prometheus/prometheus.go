@@ -78,6 +78,16 @@ type Metrics struct {
 	accountDebugRequests   *prometheus.CounterVec
 	accountStoredResponses *prometheus.CounterVec
 
+	// Module Metrics as a map where the key is the module name
+	moduleDuration        map[string]*prometheus.HistogramVec
+	moduleCalls           map[string]*prometheus.CounterVec
+	moduleFailures        map[string]*prometheus.CounterVec
+	moduleSuccessNoops    map[string]*prometheus.CounterVec
+	moduleSuccessUpdates  map[string]*prometheus.CounterVec
+	moduleSuccessRejects  map[string]*prometheus.CounterVec
+	moduleExecutionErrors map[string]*prometheus.CounterVec
+	moduleTimeouts        map[string]*prometheus.CounterVec
+
 	metricsDisabled config.DisabledMetrics
 }
 
@@ -100,6 +110,7 @@ const (
 	privacyBlockedLabel  = "privacy_blocked"
 	requestStatusLabel   = "request_status"
 	requestTypeLabel     = "request_type"
+	stageLabel           = "stage"
 	statusLabel          = "status"
 	successLabel         = "success"
 	syncerLabel          = "syncer"
@@ -137,7 +148,7 @@ const (
 )
 
 // NewMetrics initializes a new Prometheus metrics instance with preloaded label values.
-func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMetrics, syncerKeys []string) *Metrics {
+func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMetrics, syncerKeys []string, moduleStageNames map[string][]string) *Metrics {
 	standardTimeBuckets := []float64{0.05, 0.1, 0.15, 0.20, 0.25, 0.3, 0.4, 0.5, 0.75, 1}
 	cacheWriteTimeBuckets := []float64{0.001, 0.002, 0.005, 0.01, 0.025, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 1}
 	priceBuckets := []float64{250, 500, 750, 1000, 1500, 2000, 2500, 3000, 3500, 4000}
@@ -423,6 +434,8 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"Count of AdsCert request, and if they were successfully sent.",
 		[]string{successLabel})
 
+	createModulesMetrics(cfg, reg, &metrics, moduleStageNames, standardTimeBuckets)
+
 	metrics.Gatherer = reg
 
 	metricsPrefix := ""
@@ -436,9 +449,65 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 	metrics.Registerer = prometheus.WrapRegistererWithPrefix(metricsPrefix, reg)
 	metrics.Registerer.MustRegister(promCollector.NewGoCollector())
 
-	preloadLabelValues(&metrics, syncerKeys)
+	preloadLabelValues(&metrics, syncerKeys, moduleStageNames)
 
 	return &metrics
+}
+
+func createModulesMetrics(cfg config.PrometheusMetrics, registry *prometheus.Registry, m *Metrics, moduleStageNames map[string][]string, standardTimeBuckets []float64) {
+	l := len(moduleStageNames)
+	m.moduleDuration = make(map[string]*prometheus.HistogramVec, l)
+	m.moduleCalls = make(map[string]*prometheus.CounterVec, l)
+	m.moduleFailures = make(map[string]*prometheus.CounterVec, l)
+	m.moduleSuccessNoops = make(map[string]*prometheus.CounterVec, l)
+	m.moduleSuccessUpdates = make(map[string]*prometheus.CounterVec, l)
+	m.moduleSuccessRejects = make(map[string]*prometheus.CounterVec, l)
+	m.moduleExecutionErrors = make(map[string]*prometheus.CounterVec, l)
+	m.moduleTimeouts = make(map[string]*prometheus.CounterVec, l)
+
+	// create for each registered module its own metric
+	for module := range moduleStageNames {
+		m.moduleDuration[module] = newHistogramVec(cfg, registry,
+			fmt.Sprintf("modules_%s_duration", module),
+			"Amount of seconds a module processed a hook labeled by stage name.",
+			[]string{stageLabel},
+			standardTimeBuckets)
+
+		m.moduleCalls[module] = newCounter(cfg, registry,
+			fmt.Sprintf("modules_%s_called", module),
+			"Count of module calls labeled by stage name.",
+			[]string{stageLabel})
+
+		m.moduleFailures[module] = newCounter(cfg, registry,
+			fmt.Sprintf("modules_%s_failed", module),
+			"Count of module fails labeled by stage name.",
+			[]string{stageLabel})
+
+		m.moduleSuccessNoops[module] = newCounter(cfg, registry,
+			fmt.Sprintf("modules_%s_success_noops", module),
+			"Count of module successful noops labeled by stage name.",
+			[]string{stageLabel})
+
+		m.moduleSuccessUpdates[module] = newCounter(cfg, registry,
+			fmt.Sprintf("modules_%s_success_updates", module),
+			"Count of module successful updates labeled by stage name.",
+			[]string{stageLabel})
+
+		m.moduleSuccessRejects[module] = newCounter(cfg, registry,
+			fmt.Sprintf("modules_%s_success_rejects", module),
+			"Count of module successful rejects labeled by stage name.",
+			[]string{stageLabel})
+
+		m.moduleExecutionErrors[module] = newCounter(cfg, registry,
+			fmt.Sprintf("modules_%s_execution_errors", module),
+			"Count of module execution errors labeled by stage name.",
+			[]string{stageLabel})
+
+		m.moduleTimeouts[module] = newCounter(cfg, registry,
+			fmt.Sprintf("modules_%s_timeouts", module),
+			"Count of module timeouts labeled by stage name.",
+			[]string{stageLabel})
+	}
 }
 
 func newCounter(cfg config.PrometheusMetrics, registry *prometheus.Registry, name, help string, labels []string) *prometheus.CounterVec {
@@ -826,4 +895,50 @@ func (m *Metrics) RecordAdsCertReq(success bool) {
 }
 func (m *Metrics) RecordAdsCertSignTime(adsCertSignTime time.Duration) {
 	m.adsCertSignTimer.Observe(adsCertSignTime.Seconds())
+}
+
+func (m *Metrics) RecordModuleCalled(labels metrics.ModuleLabels, duration time.Duration) {
+	m.moduleCalls[labels.Module].With(prometheus.Labels{
+		stageLabel: labels.Stage,
+	}).Inc()
+
+	m.moduleDuration[labels.Module].With(prometheus.Labels{
+		stageLabel: labels.Stage,
+	}).Observe(duration.Seconds())
+}
+
+func (m *Metrics) RecordModuleFailed(labels metrics.ModuleLabels) {
+	m.moduleFailures[labels.Module].With(prometheus.Labels{
+		stageLabel: labels.Stage,
+	}).Inc()
+}
+
+func (m *Metrics) RecordModuleSuccessNooped(labels metrics.ModuleLabels) {
+	m.moduleSuccessNoops[labels.Module].With(prometheus.Labels{
+		stageLabel: labels.Stage,
+	}).Inc()
+}
+
+func (m *Metrics) RecordModuleSuccessUpdated(labels metrics.ModuleLabels) {
+	m.moduleSuccessUpdates[labels.Module].With(prometheus.Labels{
+		stageLabel: labels.Stage,
+	}).Inc()
+}
+
+func (m *Metrics) RecordModuleSuccessRejected(labels metrics.ModuleLabels) {
+	m.moduleSuccessRejects[labels.Module].With(prometheus.Labels{
+		stageLabel: labels.Stage,
+	}).Inc()
+}
+
+func (m *Metrics) RecordModuleExecutionError(labels metrics.ModuleLabels) {
+	m.moduleExecutionErrors[labels.Module].With(prometheus.Labels{
+		stageLabel: labels.Stage,
+	}).Inc()
+}
+
+func (m *Metrics) RecordModuleTimeout(labels metrics.ModuleLabels) {
+	m.moduleTimeouts[labels.Module].With(prometheus.Labels{
+		stageLabel: labels.Stage,
+	}).Inc()
 }

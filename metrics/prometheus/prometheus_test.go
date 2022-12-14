@@ -13,13 +13,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var modulesStages = map[string][]string{"foobar": {"entry", "raw"}, "another_module": {"raw", "auction"}}
+
 func createMetricsForTesting() *Metrics {
 	syncerKeys := []string{}
 	return NewMetrics(config.PrometheusMetrics{
 		Port:      8080,
 		Namespace: "prebid",
 		Subsystem: "server",
-	}, config.DisabledMetrics{}, syncerKeys)
+	}, config.DisabledMetrics{}, syncerKeys, modulesStages)
 }
 
 func TestMetricCountGatekeeping(t *testing.T) {
@@ -1476,7 +1478,7 @@ func TestDisabledMetrics(t *testing.T) {
 		AdapterConnectionMetrics:  true,
 		AdapterGDPRRequestBlocked: true,
 	},
-		nil)
+		nil, nil)
 
 	// Assert counter vector was not initialized
 	assert.Nil(t, prometheusMetrics.adapterReusedConnections, "Counter Vector adapterReusedConnections should be nil")
@@ -1772,5 +1774,55 @@ func TestRecordAdsCertSignTime(t *testing.T) {
 
 		assert.Equal(t, test.out.expCount, histogram.GetSampleCount(), "[%d] Incorrect number of histogram entries. Desc: %s\n", i, test.description)
 		assert.Equal(t, test.out.expDuration, histogram.GetSampleSum(), "[%d] Incorrect number of histogram cumulative values. Desc: %s\n", i, test.description)
+	}
+}
+
+func TestRecordModuleMetrics(t *testing.T) {
+	m := createMetricsForTesting()
+
+	// check that each module has its own metric recorded with correct stage labels
+	for module, stages := range modulesStages {
+		for _, stage := range stages {
+			// first record the metrics
+			m.RecordModuleCalled(metrics.ModuleLabels{
+				Module: module,
+				Stage:  stage,
+			}, time.Millisecond*1)
+			m.RecordModuleFailed(metrics.ModuleLabels{
+				Module: module,
+				Stage:  stage,
+			})
+			m.RecordModuleSuccessNooped(metrics.ModuleLabels{
+				Module: module,
+				Stage:  stage,
+			})
+			m.RecordModuleSuccessUpdated(metrics.ModuleLabels{
+				Module: module,
+				Stage:  stage,
+			})
+			m.RecordModuleSuccessRejected(metrics.ModuleLabels{
+				Module: module,
+				Stage:  stage,
+			})
+			m.RecordModuleExecutionError(metrics.ModuleLabels{
+				Module: module,
+				Stage:  stage,
+			})
+			m.RecordModuleTimeout(metrics.ModuleLabels{
+				Module: module,
+				Stage:  stage,
+			})
+
+			// now check that the values are correct
+			result := getHistogramFromHistogramVec(m.moduleDuration[module], stageLabel, stage)
+			assertHistogram(t, fmt.Sprintf("module_%s_duration", module), result, 1, 0.001)
+			assertCounterVecValue(t, "Module calls performed", fmt.Sprintf("%s metric recorded during %s stage", module, stage), m.moduleCalls[module], 1, prometheus.Labels{stageLabel: stage})
+			assertCounterVecValue(t, "Module calls failed", fmt.Sprintf("%s metric recorded during %s stage", module, stage), m.moduleFailures[module], 1, prometheus.Labels{stageLabel: stage})
+			assertCounterVecValue(t, "Module success noop action", fmt.Sprintf("%s metric recorded during %s stage", module, stage), m.moduleSuccessNoops[module], 1, prometheus.Labels{stageLabel: stage})
+			assertCounterVecValue(t, "Module success update action", fmt.Sprintf("%s metric recorded during %s stage", module, stage), m.moduleSuccessUpdates[module], 1, prometheus.Labels{stageLabel: stage})
+			assertCounterVecValue(t, "Module success reject action", fmt.Sprintf("%s metric recorded during %s stage", module, stage), m.moduleSuccessRejects[module], 1, prometheus.Labels{stageLabel: stage})
+			assertCounterVecValue(t, "Module execution error", fmt.Sprintf("%s metric recorded during %s stage", module, stage), m.moduleExecutionErrors[module], 1, prometheus.Labels{stageLabel: stage})
+			assertCounterVecValue(t, "Module timeout", fmt.Sprintf("%s metric recorded during %s stage", module, stage), m.moduleTimeouts[module], 1, prometheus.Labels{stageLabel: stage})
+		}
 	}
 }

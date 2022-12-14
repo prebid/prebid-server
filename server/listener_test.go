@@ -25,7 +25,7 @@ func TestCloseErrorMetrics(t *testing.T) {
 
 func doTest(t *testing.T, allowAccept bool, allowClose bool) {
 	reg := gometrics.NewRegistry()
-	me := metrics.NewMetrics(reg, nil, config.DisabledMetrics{}, nil)
+	me := metrics.NewMetrics(reg, nil, config.DisabledMetrics{}, nil, nil)
 
 	var listener net.Listener = &mockListener{
 		listenSuccess: allowAccept,

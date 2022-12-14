@@ -175,6 +175,7 @@ func TestDefaults(t *testing.T) {
 	cmpNils(t, "host_schain_node", cfg.HostSChainNode)
 	cmpStrings(t, "datacenter", cfg.DataCenter, "")
 	cmpBools(t, "hooks.enabled", cfg.Hooks.Enabled, false)
+	cmpBools(t, "account_modules_metrics", cfg.Metrics.Disabled.AccountModulesMetrics, false)
 
 	//Assert purpose VendorExceptionMap hash tables were built correctly
 	expectedTCF2 := TCF2{
@@ -394,6 +395,7 @@ metrics:
     account_stored_responses: false
     adapter_connections_metrics: true
     adapter_gdpr_request_blocked: true
+    account_modules_metrics: true
 blacklisted_apps: ["spamAppID","sketchy-app-id"]
 account_required: true
 auto_gen_source_tid: false
@@ -666,6 +668,7 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "experiment.adscert.remote.url", cfg.Experiment.AdCerts.Remote.Url, "")
 	cmpInts(t, "experiment.adscert.remote.signing_timeout_ms", cfg.Experiment.AdCerts.Remote.SigningTimeoutMs, 10)
 	cmpBools(t, "hooks.enabled", cfg.Hooks.Enabled, true)
+	cmpBools(t, "account_modules_metrics", cfg.Metrics.Disabled.AccountModulesMetrics, true)
 }
 
 func TestValidateConfig(t *testing.T) {

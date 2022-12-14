@@ -8,6 +8,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookstage"
+	"github.com/prebid/prebid-server/metrics"
 )
 
 const (
@@ -42,16 +43,18 @@ type hookExecutor struct {
 	planBuilder    hooks.ExecutionPlanBuilder
 	stageOutcomes  []StageOutcome
 	moduleContexts *moduleContexts
+	metricEngine   metrics.MetricsEngine
 	// Mutex needed for BidderRequest and RawBidderResponse Stages as they are run in several goroutines
 	sync.Mutex
 }
 
-func NewHookExecutor(builder hooks.ExecutionPlanBuilder, endpoint string) *hookExecutor {
+func NewHookExecutor(builder hooks.ExecutionPlanBuilder, endpoint string, me metrics.MetricsEngine) *hookExecutor {
 	return &hookExecutor{
 		endpoint:       endpoint,
 		planBuilder:    builder,
 		stageOutcomes:  []StageOutcome{},
 		moduleContexts: &moduleContexts{ctxs: make(map[string]hookstage.ModuleContext)},
+		metricEngine:   me,
 	}
 }
 
@@ -93,12 +96,12 @@ func (e *hookExecutor) ExecuteEntrypointStage(req *http.Request, body []byte) ([
 	}
 
 	payload := hookstage.EntrypointPayload{Request: req, Body: body}
-	stageOutcome, payload, stageModuleContexts, rejectErr := executeStage(executionCtx, plan, payload, handler)
-	stageOutcome.Entity = entityHttpRequest
-	stageOutcome.Stage = stageName
+	outcome, payload, contexts, rejectErr := executeStage(executionCtx, plan, payload, handler, e.metricEngine)
+	outcome.Entity = entityHttpRequest
+	outcome.Stage = stageName
 
-	e.saveModuleContexts(stageModuleContexts)
-	e.pushStageOutcome(stageOutcome)
+	e.saveModuleContexts(contexts)
+	e.pushStageOutcome(outcome)
 
 	return payload.Body, rejectErr
 }

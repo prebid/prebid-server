@@ -1218,7 +1218,8 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 
 	adapterList := make([]openrtb_ext.BidderName, 0, 2)
 	syncerKeys := []string{}
-	testEngine := metricsConf.NewMetricsEngine(cfg, adapterList, syncerKeys)
+	var moduleStageNames map[string][]string
+	testEngine := metricsConf.NewMetricsEngine(cfg, adapterList, syncerKeys, moduleStageNames)
 	//	2) Init new exchange with said configuration
 	handlerNoBidServer := func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) }
 	server := httptest.NewServer(http.HandlerFunc(handlerNoBidServer))
@@ -2382,7 +2383,7 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 
 	return &exchange{
 		adapterMap:        bidderAdapters,
-		me:                metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.CoreBidderNames(), nil),
+		me:                metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.CoreBidderNames(), nil, nil),
 		cache:             &wellBehavedCache{},
 		cacheTime:         0,
 		currencyConverter: currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),

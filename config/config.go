@@ -515,6 +515,9 @@ type DisabledMetrics struct {
 
 	// True if we don't want to collect the per adapter GDPR request blocked metric
 	AdapterGDPRRequestBlocked bool `mapstructure:"adapter_gdpr_request_blocked"`
+
+	// True if we want to stop collecting account modules metrics
+	AccountModulesMetrics bool `mapstructure:"account_modules_metrics"`
 }
 
 func (cfg *Metrics) validate(errs []error) []error {

@@ -21,8 +21,9 @@ func NewBuilder() Builder {
 type Builder interface {
 	// Build initializes existing hook modules passing them config and other dependencies.
 	// It returns hook repository created based on the implemented hook interfaces by modules
+	// and a map of modules to a list of stage names for which module provides hooks
 	// or an error encountered during module initialization.
-	Build(cfg config.Modules, client *http.Client) (hooks.HookRepository, error)
+	Build(cfg config.Modules, client *http.Client) (hooks.HookRepository, map[string][]string, error)
 }
 
 type (
@@ -41,8 +42,9 @@ type builder struct {
 // The ID chosen for the module's hooks represents a fully qualified module path in the format
 // "vendor.module_name" and should be used to retrieve module hooks from the hooks.HookRepository.
 //
-// Method returns a hooks.HookRepository or an error occurred during modules initialization.
-func (m *builder) Build(cfg config.Modules, client *http.Client) (hooks.HookRepository, error) {
+// Method returns a hooks.HookRepository and a map of modules to a list of stage names
+// for which module provides hooks or an error occurred during modules initialization.
+func (m *builder) Build(cfg config.Modules, client *http.Client) (hooks.HookRepository, map[string][]string, error) {
 	modules := make(map[string]interface{})
 	for vendor, moduleBuilders := range m.builders {
 		for moduleName, builder := range moduleBuilders {
@@ -52,18 +54,25 @@ func (m *builder) Build(cfg config.Modules, client *http.Client) (hooks.HookRepo
 			id := fmt.Sprintf("%s.%s", vendor, moduleName)
 			if data, ok := cfg[vendor][moduleName]; ok {
 				if conf, err = json.Marshal(data); err != nil {
-					return nil, fmt.Errorf(`failed to marshal "%s" module config: %s`, id, err)
+					return nil, nil, fmt.Errorf(`failed to marshal "%s" module config: %s`, id, err)
 				}
 			}
 
 			module, err := builder(conf, client)
 			if err != nil {
-				return nil, fmt.Errorf(`failed to init "%s" module: %s`, id, err)
+				return nil, nil, fmt.Errorf(`failed to init "%s" module: %s`, id, err)
 			}
 
 			modules[id] = module
 		}
 	}
 
-	return hooks.NewHookRepository(modules)
+	collection, err := createModuleStageNamesCollection(modules)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	repo, err := hooks.NewHookRepository(modules)
+
+	return repo, collection, err
 }
