@@ -61,6 +61,16 @@ var (
 	notAmp      int8   = 0
 )
 
+var accountIdSearchPath = [...]struct {
+	isApp bool
+	key   []string
+}{
+	{true, []string{"app", "publisher", "ext", openrtb_ext.PrebidExtKey, "parentAccount"}},
+	{true, []string{"app", "publisher", "id"}},
+	{false, []string{"site", "publisher", "ext", openrtb_ext.PrebidExtKey, "parentAccount"}},
+	{false, []string{"site", "publisher", "id"}},
+}
+
 func NewEndpoint(
 	uuidGenerator uuidutil.UUIDGenerator,
 	ex exchange.Exchange,
@@ -353,9 +363,8 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	}
 
 	// Look up account
-	account, acctIDErrs := accountService.GetAccount(ctx, deps.cfg, deps.accounts, accountId)
-	if len(acctIDErrs) > 0 {
-		errs = append(errs, acctIDErrs...)
+	account, errs = accountService.GetAccount(ctx, deps.cfg, deps.accounts, accountId)
+	if len(errs) > 0 {
 		return
 	}
 
@@ -364,8 +373,18 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	if rejectErr != nil {
 		errs = []error{rejectErr}
 		if err = json.Unmarshal(requestJson, req.BidRequest); err != nil {
-			glog.Errorf("Failed to unmarshal BidRequest during entrypoint rejection: %s", err)
+			glog.Errorf("Failed to unmarshal BidRequest during raw auction stage rejection: %s", err)
 		}
+		return
+	}
+
+	// retrieve storedRequests and storedImps once more in case stored data was changed by the raw auction hook
+	impInfo, errs = parseImpInfo(requestJson)
+	if len(errs) > 0 {
+		return nil, nil, nil, nil, nil, nil, errs
+	}
+	storedBidRequestId, hasStoredBidRequest, storedRequests, storedImps, errs = deps.getStoredRequests(ctx, requestJson, impInfo)
+	if len(errs) > 0 {
 		return
 	}
 
@@ -1732,7 +1751,7 @@ func (deps *endpointDeps) getStoredRequests(ctx context.Context, requestJson []b
 
 	storedRequests, storedImps, errs := deps.storedReqFetcher.FetchRequests(ctx, storedReqIds, impStoredReqIds)
 	if len(errs) != 0 {
-		return "", false, nil, nil, []error{err}
+		return "", false, nil, nil, errs
 	}
 
 	return storedBidRequestId, hasStoredBidRequest, storedRequests, storedImps, errs
@@ -2007,18 +2026,13 @@ func getAccountID(pub *openrtb2.Publisher) string {
 	return metrics.PublisherUnknown
 }
 
-// Returns the account from the request
 func getAccountIdFromRawRequest(hasStoredRequest bool, storedRequest json.RawMessage, originalRequest []byte) (string, bool, []error) {
-	var accountId string
-	var isAppReq bool
-	var err error
-
 	request := originalRequest
 	if hasStoredRequest {
 		request = storedRequest
 	}
 
-	accountId, isAppReq, err = searchAccountId(request)
+	accountId, isAppReq, err := searchAccountId(request)
 	if err != nil {
 		return "", isAppReq, []error{err}
 	}
@@ -2039,22 +2053,13 @@ func getAccountIdFromRawRequest(hasStoredRequest bool, storedRequest json.RawMes
 }
 
 func searchAccountId(request []byte) (string, bool, error) {
-	queries := [...]struct {
-		isApp bool
-		key   []string
-	}{
-		{true, []string{"app", "publisher", "ext", openrtb_ext.PrebidExtKey, "parentAccount"}},
-		{true, []string{"app", "publisher", "id"}},
-		{false, []string{"site", "publisher", "ext", openrtb_ext.PrebidExtKey, "parentAccount"}},
-		{false, []string{"site", "publisher", "id"}},
-	}
-	for _, query := range queries {
-		accountId, exists, err := getStringValueFromRequest(request, query.key)
+	for _, path := range accountIdSearchPath {
+		accountId, exists, err := getStringValueFromRequest(request, path.key)
 		if err != nil {
-			return "", query.isApp, err
+			return "", path.isApp, err
 		}
 		if exists {
-			return accountId, query.isApp, nil
+			return accountId, path.isApp, nil
 		}
 	}
 	return "", false, nil
