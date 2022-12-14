@@ -2713,3 +2713,126 @@ func TestExtraBidWithBidAdjustmentsUsingAdapterCode(t *testing.T) {
 	})
 	assert.Equal(t, wantSeatBids, seatBids)
 }
+
+func TestExtraBidWithMultiCurrencies(t *testing.T) {
+	respStatus := 200
+	respBody := "{\"bid\":false}"
+	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
+	defer server.Close()
+
+	requestHeaders := http.Header{}
+	requestHeaders.Add("Content-Type", "application/json")
+
+	bidderImpl := &goodSingleBidder{
+		httpRequest: &adapters.RequestData{
+			Method:  "POST",
+			Uri:     server.URL,
+			Body:    []byte("{\"key\":\"val\"}"),
+			Headers: http.Header{},
+		},
+		bidResponse: &adapters.BidderResponse{
+			Bids: []*adapters.TypedBid{
+				{
+					Bid: &openrtb2.Bid{
+						ID:    "pubmaticImp1",
+						Price: 3,
+					},
+					BidType:      openrtb_ext.BidTypeBanner,
+					DealPriority: 4,
+					Seat:         "pubmatic",
+				},
+				{
+					Bid: &openrtb2.Bid{
+						ID:    "groupmImp1",
+						Price: 7,
+					},
+					BidType:      openrtb_ext.BidTypeVideo,
+					DealPriority: 5,
+					Seat:         "groupm",
+				},
+			},
+		},
+	}
+
+	wantSeatBids := []*pbsOrtbSeatBid{
+		{
+			httpCalls: []*openrtb_ext.ExtHttpCall{},
+			bids: []*pbsOrtbBid{{
+				bid: &openrtb2.Bid{
+					ID:    "groupmImp1",
+					Price: 571.5994430039375,
+				},
+				dealPriority:   5,
+				bidType:        openrtb_ext.BidTypeVideo,
+				originalBidCPM: 7,
+				originalBidCur: "USD",
+				bidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
+			}},
+			seat:     "groupm",
+			currency: "INR",
+		},
+		{
+			httpCalls: []*openrtb_ext.ExtHttpCall{},
+			bids: []*pbsOrtbBid{{
+				bid: &openrtb2.Bid{
+					ID:    "pubmaticImp1",
+					Price: 244.97118985883034,
+				},
+				dealPriority:   4,
+				bidType:        openrtb_ext.BidTypeBanner,
+				originalBidCPM: 3,
+				originalBidCur: "USD",
+				bidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
+			}},
+			seat:     string(openrtb_ext.BidderPubmatic),
+			currency: "INR",
+		},
+	}
+
+	mockedHTTPServer := httptest.NewServer(http.HandlerFunc(
+		func(rw http.ResponseWriter, req *http.Request) {
+			rw.Write([]byte(`{"dataAsOf":"2022-11-24T00:00:00.000Z","generatedAt":"2022-11-24T15:00:46.363Z","conversions":{"USD":{"USD":1,"INR":81.65706328627678}}}`))
+			rw.WriteHeader(http.StatusOK)
+		}),
+	)
+
+	// Execute:
+	bidder := AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil, "")
+	currencyConverter := currency.NewRateConverter(
+		&http.Client{},
+		mockedHTTPServer.URL,
+		time.Duration(24)*time.Hour,
+	)
+	time.Sleep(time.Duration(500) * time.Millisecond)
+	currencyConverter.Run()
+
+	bidderReq := BidderRequest{
+		BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "impId"}}, Cur: []string{"INR"}},
+		BidderName: openrtb_ext.BidderPubmatic,
+	}
+
+	bidAdjustments := map[string]float64{string(openrtb_ext.BidderAppnexus): 2.0}
+	bidReqOptions := bidRequestOptions{
+		accountDebugAllowed: false,
+		headerDebugAllowed:  false,
+		addCallSignHeader:   true,
+		bidAdjustments:      bidAdjustments,
+	}
+
+	seatBids, errs := bidder.requestBid(context.Background(), bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &MockSigner{}, bidReqOptions,
+		openrtb_ext.ExtAlternateBidderCodes{
+			Enabled: true,
+			Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+				string(openrtb_ext.BidderPubmatic): {
+					Enabled:            true,
+					AllowedBidderCodes: []string{"groupm"},
+				},
+			},
+		})
+	assert.Nil(t, errs)
+	assert.Len(t, seatBids, 2)
+	sort.Slice(seatBids, func(i, j int) bool {
+		return len(seatBids[i].seat) < len(seatBids[j].seat)
+	})
+	assert.Equal(t, wantSeatBids, seatBids)
+}
