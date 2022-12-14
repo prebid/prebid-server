@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -1463,7 +1463,7 @@ var testVideoStoredRequestData = map[string]json.RawMessage{
 }
 
 func readVideoTestFile(t *testing.T, filename string) string {
-	requestData, err := ioutil.ReadFile(filename)
+	requestData, err := os.ReadFile(filename)
 	if err != nil {
 		t.Fatalf("Failed to fetch a valid request: %v", err)
 	}

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -315,14 +314,14 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_
 		R: httpRequest.Body,
 		N: deps.cfg.MaxRequestSize,
 	}
-	requestJson, err := ioutil.ReadAll(lr)
+	requestJson, err := io.ReadAll(lr)
 	if err != nil {
 		errs = []error{err}
 		return
 	}
 	// If the request size was too large, read through the rest of the request body so that the connection can be reused.
 	if lr.N <= 0 {
-		if written, err := io.Copy(ioutil.Discard, httpRequest.Body); written > 0 || err != nil {
+		if written, err := io.Copy(io.Discard, httpRequest.Body); written > 0 || err != nil {
 			errs = []error{fmt.Errorf("Request size exceeded max size of %d bytes.", deps.cfg.MaxRequestSize)}
 			return
 		}

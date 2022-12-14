@@ -6,10 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -114,7 +114,7 @@ func TestJsonSampleRequests(t *testing.T) {
 		testCaseFiles, err := getTestFiles(filepath.Join("sample-requests", tc.sampleRequestsSubDir))
 		if assert.NoError(t, err, "Test case %s. Error reading files from directory %s \n", tc.description, tc.sampleRequestsSubDir) {
 			for _, testFile := range testCaseFiles {
-				fileData, err := ioutil.ReadFile(testFile)
+				fileData, err := os.ReadFile(testFile)
 				if assert.NoError(t, err, "Test case %s. Error reading file %s \n", tc.description, testFile) {
 					// Retrieve test case input and expected output from JSON file
 					test, err := parseTestFile(fileData, testFile)
@@ -2400,7 +2400,7 @@ func TestValidateImpExt(t *testing.T) {
 }
 
 func validRequest(t *testing.T, filename string) string {
-	requestData, err := ioutil.ReadFile("sample-requests/valid-whole/supplementary/" + filename)
+	requestData, err := os.ReadFile("sample-requests/valid-whole/supplementary/" + filename)
 	if err != nil {
 		t.Fatalf("Failed to fetch a valid request: %v", err)
 	}
@@ -4730,7 +4730,7 @@ func (cf *mockStoredResponseFetcher) FetchResponses(ctx context.Context, ids []s
 }
 
 func getObject(t *testing.T, filename, key string) json.RawMessage {
-	requestData, err := ioutil.ReadFile("sample-requests/valid-whole/supplementary/" + filename)
+	requestData, err := os.ReadFile("sample-requests/valid-whole/supplementary/" + filename)
 	if err != nil {
 		t.Fatalf("Failed to fetch a valid request: %v", err)
 	}

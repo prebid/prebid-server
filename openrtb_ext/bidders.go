@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -475,7 +475,7 @@ type BidderParamValidator interface {
 // NewBidderParamsValidator makes a BidderParamValidator, assuming all the necessary files exist in the filesystem.
 // This will error if, for example, a Bidder gets added but no JSON schema is written for them.
 func NewBidderParamsValidator(schemaDirectory string) (BidderParamValidator, error) {
-	fileInfos, err := ioutil.ReadDir(schemaDirectory)
+	fileInfos, err := os.ReadDir(schemaDirectory)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to read JSON schemas from directory %s. %v", schemaDirectory, err)
 	}
@@ -499,7 +499,7 @@ func NewBidderParamsValidator(schemaDirectory string) (BidderParamValidator, err
 			return nil, fmt.Errorf("Failed to load json schema at %s: %v", toOpen, err)
 		}
 
-		fileBytes, err := ioutil.ReadFile(fmt.Sprintf("%s/%s", schemaDirectory, fileInfo.Name()))
+		fileBytes, err := os.ReadFile(fmt.Sprintf("%s/%s", schemaDirectory, fileInfo.Name()))
 		if err != nil {
 			return nil, fmt.Errorf("Failed to read file %s/%s: %v", schemaDirectory, fileInfo.Name(), err)
 		}

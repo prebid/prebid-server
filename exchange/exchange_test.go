@@ -6,9 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"reflect"
 	"regexp"
 	"sort"
@@ -2098,7 +2099,7 @@ func TestTimeoutComputation(t *testing.T) {
 
 // TestExchangeJSON executes tests for all the *.json files in exchangetest.
 func TestExchangeJSON(t *testing.T) {
-	if specFiles, err := ioutil.ReadDir("./exchangetest"); err == nil {
+	if specFiles, err := os.ReadDir("./exchangetest"); err == nil {
 		for _, specFile := range specFiles {
 			fileName := "./exchangetest/" + specFile.Name()
 			fileDisplayName := "exchange/exchangetest/" + specFile.Name()
@@ -2114,7 +2115,7 @@ func TestExchangeJSON(t *testing.T) {
 
 // LoadFile reads and parses a file as a test case. If something goes wrong, it returns an error.
 func loadFile(filename string) (*exchangeSpec, error) {
-	specData, err := ioutil.ReadFile(filename)
+	specData, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to read file %s: %v", filename, err)
 	}
@@ -4659,7 +4660,7 @@ func (m *fakeCurrencyRatesHttpClient) Do(req *http.Request) (*http.Response, err
 	return &http.Response{
 		Status:     "200 OK",
 		StatusCode: http.StatusOK,
-		Body:       ioutil.NopCloser(strings.NewReader(m.responseBody)),
+		Body:       io.NopCloser(strings.NewReader(m.responseBody)),
 	}, nil
 }
 
