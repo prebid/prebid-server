@@ -65,12 +65,12 @@ func (m *builder) Build(cfg config.Modules, client *http.Client) (hooks.HookRepo
 		}
 	}
 
-	coll, err := createModuleStageNamesCollection(modules)
+	collection, err := createModuleStageNamesCollection(modules)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	repo, err := hooks.NewHookRepository(modules)
 
-	return repo, coll, err
+	return repo, collection, err
 }

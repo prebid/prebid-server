@@ -463,7 +463,7 @@ func registerAccountModuleMetrics(registry metrics.Registry, id string, module s
 	mm.FailureCounter = metrics.GetOrRegisterCounter(fmt.Sprintf("account.%s.modules.module.%s.failure", id, module), registry)
 	mm.SuccessNoopCounter = metrics.GetOrRegisterCounter(fmt.Sprintf("account.%s.modules.module.%s.success.noop", id, module), registry)
 	mm.SuccessUpdateCounter = metrics.GetOrRegisterCounter(fmt.Sprintf("account.%s.modules.module.%s.success.update", id, module), registry)
-	mm.SuccessRejectCounter = metrics.GetOrRegisterCounter(fmt.Sprintf("account.%s.modules.module.%s.reject", id, module), registry)
+	mm.SuccessRejectCounter = metrics.GetOrRegisterCounter(fmt.Sprintf("account.%s.modules.module.%s.success.reject", id, module), registry)
 	mm.ExecutionErrorCounter = metrics.GetOrRegisterCounter(fmt.Sprintf("account.%s.modules.module.%s.execution_error", id, module), registry)
 	mm.TimeoutCounter = metrics.GetOrRegisterCounter(fmt.Sprintf("account.%s.modules.module.%s.timeout", id, module), registry)
 }
@@ -885,7 +885,7 @@ func (me *Metrics) RecordModuleCalled(labels ModuleLabels, duration time.Duratio
 	mm.DurationTimer.Update(duration)
 
 	// Account-Module metrics
-	if labels.AccountID != "" {
+	if labels.AccountID != "" && labels.AccountID != PublisherUnknown {
 		if aam, ok := me.getAccountMetrics(labels.AccountID).moduleMetrics[labels.Module]; ok {
 			aam.CallCounter.Inc(1)
 			aam.DurationTimer.Update(duration)
@@ -903,7 +903,7 @@ func (me *Metrics) RecordModuleFailed(labels ModuleLabels) {
 	mm.FailureCounter.Inc(1)
 
 	// Account-Module metrics
-	if labels.AccountID != "" {
+	if labels.AccountID != "" && labels.AccountID != PublisherUnknown {
 		if aam, ok := me.getAccountMetrics(labels.AccountID).moduleMetrics[labels.Module]; ok {
 			aam.FailureCounter.Inc(1)
 		}
@@ -920,7 +920,7 @@ func (me *Metrics) RecordModuleSuccessNooped(labels ModuleLabels) {
 	mm.SuccessNoopCounter.Inc(1)
 
 	// Account-Module metrics
-	if labels.AccountID != "" {
+	if labels.AccountID != "" && labels.AccountID != PublisherUnknown {
 		if aam, ok := me.getAccountMetrics(labels.AccountID).moduleMetrics[labels.Module]; ok {
 			aam.SuccessNoopCounter.Inc(1)
 		}
@@ -937,7 +937,7 @@ func (me *Metrics) RecordModuleSuccessUpdated(labels ModuleLabels) {
 	mm.SuccessUpdateCounter.Inc(1)
 
 	// Account-Module metrics
-	if labels.AccountID != "" {
+	if labels.AccountID != "" && labels.AccountID != PublisherUnknown {
 		if aam, ok := me.getAccountMetrics(labels.AccountID).moduleMetrics[labels.Module]; ok {
 			aam.SuccessUpdateCounter.Inc(1)
 		}
@@ -954,7 +954,7 @@ func (me *Metrics) RecordModuleSuccessRejected(labels ModuleLabels) {
 	mm.SuccessRejectCounter.Inc(1)
 
 	// Account-Module metrics
-	if labels.AccountID != "" {
+	if labels.AccountID != "" && labels.AccountID != PublisherUnknown {
 		if aam, ok := me.getAccountMetrics(labels.AccountID).moduleMetrics[labels.Module]; ok {
 			aam.SuccessRejectCounter.Inc(1)
 		}
@@ -971,7 +971,7 @@ func (me *Metrics) RecordModuleExecutionError(labels ModuleLabels) {
 	mm.ExecutionErrorCounter.Inc(1)
 
 	// Account-Module metrics
-	if labels.AccountID != "" {
+	if labels.AccountID != "" && labels.AccountID != PublisherUnknown {
 		if aam, ok := me.getAccountMetrics(labels.AccountID).moduleMetrics[labels.Module]; ok {
 			aam.ExecutionErrorCounter.Inc(1)
 		}
@@ -988,7 +988,7 @@ func (me *Metrics) RecordModuleTimeout(labels ModuleLabels) {
 	mm.TimeoutCounter.Inc(1)
 
 	// Account-Module metrics
-	if labels.AccountID != "" {
+	if labels.AccountID != "" && labels.AccountID != PublisherUnknown {
 		if aam, ok := me.getAccountMetrics(labels.AccountID).moduleMetrics[labels.Module]; ok {
 			aam.TimeoutCounter.Inc(1)
 		}
