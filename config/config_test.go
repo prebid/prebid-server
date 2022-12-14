@@ -5,6 +5,8 @@ import (
 	"errors"
 	"net"
 	"os"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -2192,6 +2194,193 @@ func TestMigrateConfigDatabaseConnection(t *testing.T) {
 	}
 }
 
+func TestMigrateConfigDatabaseConnectionUsingEnvVars(t *testing.T) {
+	tests := []struct {
+		description        string
+		prefix             string
+		setDatabaseEnvVars bool
+		setPostgresEnvVars bool
+	}{
+		{
+			description:        "stored requests old config set",
+			prefix:             "stored_requests",
+			setPostgresEnvVars: true,
+		},
+		{
+			description:        "stored requests new config set",
+			prefix:             "stored_requests",
+			setDatabaseEnvVars: true,
+		},
+		{
+			description:        "stored requests old and new config set",
+			prefix:             "stored_requests",
+			setDatabaseEnvVars: true,
+			setPostgresEnvVars: true,
+		},
+		{
+			description:        "stored video requests old config set",
+			prefix:             "stored_video_req",
+			setPostgresEnvVars: true,
+		},
+		{
+			description:        "stored video requests new config set",
+			prefix:             "stored_video_req",
+			setDatabaseEnvVars: true,
+		},
+		{
+			description:        "stored video requests old and new config set",
+			prefix:             "stored_video_req",
+			setDatabaseEnvVars: true,
+			setPostgresEnvVars: true,
+		},
+		{
+			description:        "stored responses old config set",
+			prefix:             "stored_responses",
+			setPostgresEnvVars: true,
+		},
+		{
+			description:        "stored responses new config set",
+			prefix:             "stored_responses",
+			setDatabaseEnvVars: true,
+		},
+		{
+			description:        "stored responses old and new config set",
+			prefix:             "stored_responses",
+			setDatabaseEnvVars: true,
+			setPostgresEnvVars: true,
+		},
+	}
+
+	pgValues := map[string]string{
+		"CONNECTION_DBNAME":                     "pg-dbname",
+		"CONNECTION_HOST":                       "pg-host",
+		"CONNECTION_PORT":                       "1",
+		"CONNECTION_USER":                       "pg-user",
+		"CONNECTION_PASSWORD":                   "pg-password",
+		"FETCHER_QUERY":                         "pg-fetcher-query",
+		"FETCHER_AMP_QUERY":                     "pg-fetcher-amp-query",
+		"INITIALIZE_CACHES_TIMEOUT_MS":          "2",
+		"INITIALIZE_CACHES_QUERY":               "pg-init-caches-query",
+		"INITIALIZE_CACHES_AMP_QUERY":           "pg-init-caches-amp-query",
+		"POLL_FOR_UPDATES_REFRESH_RATE_SECONDS": "3",
+		"POLL_FOR_UPDATES_TIMEOUT_MS":           "4",
+		"POLL_FOR_UPDATES_QUERY":                "pg-poll-query $LAST_UPDATED",
+		"POLL_FOR_UPDATES_AMP_QUERY":            "pg-poll-amp-query $LAST_UPDATED",
+	}
+	dbValues := map[string]string{
+		"CONNECTION_DBNAME":                     "db-dbname",
+		"CONNECTION_HOST":                       "db-host",
+		"CONNECTION_PORT":                       "5",
+		"CONNECTION_USER":                       "db-user",
+		"CONNECTION_PASSWORD":                   "db-password",
+		"FETCHER_QUERY":                         "db-fetcher-query",
+		"FETCHER_AMP_QUERY":                     "db-fetcher-amp-query",
+		"INITIALIZE_CACHES_TIMEOUT_MS":          "6",
+		"INITIALIZE_CACHES_QUERY":               "db-init-caches-query",
+		"INITIALIZE_CACHES_AMP_QUERY":           "db-init-caches-amp-query",
+		"POLL_FOR_UPDATES_REFRESH_RATE_SECONDS": "7",
+		"POLL_FOR_UPDATES_TIMEOUT_MS":           "8",
+		"POLL_FOR_UPDATES_QUERY":                "db-poll-query $LAST_UPDATED",
+		"POLL_FOR_UPDATES_AMP_QUERY":            "db-poll-amp-query $LAST_UPDATED",
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.description, func(t *testing.T) {
+			prefix := "PBS_" + strings.ToUpper(tt.prefix)
+
+			// validation rules require in memory cache type to not be "none"
+			// given that we want to set the poll for update queries to non-empty values
+			envVarName := prefix + "_IN_MEMORY_CACHE_TYPE"
+			if oldval, ok := os.LookupEnv(envVarName); ok {
+				defer os.Setenv(envVarName, oldval)
+			} else {
+				defer os.Unsetenv(envVarName)
+			}
+			os.Setenv(envVarName, "unbounded")
+
+			if tt.setPostgresEnvVars {
+				for suffix, v := range pgValues {
+					envVarName := prefix + "_POSTGRES_" + suffix
+					if oldval, ok := os.LookupEnv(envVarName); ok {
+						defer os.Setenv(envVarName, oldval)
+					} else {
+						defer os.Unsetenv(envVarName)
+					}
+					os.Setenv(envVarName, v)
+				}
+			}
+			if tt.setDatabaseEnvVars {
+				for suffix, v := range dbValues {
+					envVarName := prefix + "_DATABASE_" + suffix
+					if oldval, ok := os.LookupEnv(envVarName); ok {
+						defer os.Setenv(envVarName, oldval)
+					} else {
+						defer os.Unsetenv(envVarName)
+					}
+					os.Setenv(envVarName, v)
+				}
+			}
+
+			c, _ := newDefaultConfig(t)
+
+			expectedDatabaseValues := map[string]string{}
+			if tt.setDatabaseEnvVars {
+				expectedDatabaseValues = dbValues
+			} else if tt.setPostgresEnvVars {
+				expectedDatabaseValues = pgValues
+			}
+
+			if tt.prefix == "stored_requests" {
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_DBNAME"], c.StoredRequests.Database.ConnectionInfo.Database, tt.description)
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_HOST"], c.StoredRequests.Database.ConnectionInfo.Host, tt.description)
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_PORT"], strconv.Itoa(c.StoredRequests.Database.ConnectionInfo.Port), tt.description)
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_USER"], c.StoredRequests.Database.ConnectionInfo.Username, tt.description)
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_PASSWORD"], c.StoredRequests.Database.ConnectionInfo.Password, tt.description)
+				assert.Equal(t, expectedDatabaseValues["FETCHER_QUERY"], c.StoredRequests.Database.FetcherQueries.QueryTemplate, tt.description)
+				assert.Equal(t, expectedDatabaseValues["INITIALIZE_CACHES_TIMEOUT_MS"], strconv.Itoa(c.StoredRequests.Database.CacheInitialization.Timeout), tt.description)
+				assert.Equal(t, expectedDatabaseValues["INITIALIZE_CACHES_QUERY"], c.StoredRequests.Database.CacheInitialization.Query, tt.description)
+				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_REFRESH_RATE_SECONDS"], strconv.Itoa(c.StoredRequests.Database.PollUpdates.RefreshRate), tt.description)
+				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_TIMEOUT_MS"], strconv.Itoa(c.StoredRequests.Database.PollUpdates.Timeout), tt.description)
+				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_QUERY"], c.StoredRequests.Database.PollUpdates.Query, tt.description)
+				// AMP queries are only migrated for stored requests
+				assert.Equal(t, expectedDatabaseValues["FETCHER_AMP_QUERY"], c.StoredRequests.Database.FetcherQueries.AmpQueryTemplate, tt.description)
+				assert.Equal(t, expectedDatabaseValues["INITIALIZE_CACHES_AMP_QUERY"], c.StoredRequests.Database.CacheInitialization.AmpQuery, tt.description)
+				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_AMP_QUERY"], c.StoredRequests.Database.PollUpdates.AmpQuery, tt.description)
+			} else if tt.prefix == "stored_video_req" {
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_DBNAME"], c.StoredVideo.Database.ConnectionInfo.Database, tt.description)
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_HOST"], c.StoredVideo.Database.ConnectionInfo.Host, tt.description)
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_PORT"], strconv.Itoa(c.StoredVideo.Database.ConnectionInfo.Port), tt.description)
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_USER"], c.StoredVideo.Database.ConnectionInfo.Username, tt.description)
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_PASSWORD"], c.StoredVideo.Database.ConnectionInfo.Password, tt.description)
+				assert.Equal(t, expectedDatabaseValues["FETCHER_QUERY"], c.StoredVideo.Database.FetcherQueries.QueryTemplate, tt.description)
+				assert.Equal(t, expectedDatabaseValues["INITIALIZE_CACHES_TIMEOUT_MS"], strconv.Itoa(c.StoredVideo.Database.CacheInitialization.Timeout), tt.description)
+				assert.Equal(t, expectedDatabaseValues["INITIALIZE_CACHES_QUERY"], c.StoredVideo.Database.CacheInitialization.Query, tt.description)
+				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_REFRESH_RATE_SECONDS"], strconv.Itoa(c.StoredVideo.Database.PollUpdates.RefreshRate), tt.description)
+				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_TIMEOUT_MS"], strconv.Itoa(c.StoredVideo.Database.PollUpdates.Timeout), tt.description)
+				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_QUERY"], c.StoredVideo.Database.PollUpdates.Query, tt.description)
+				assert.Empty(t, c.StoredVideo.Database.FetcherQueries.AmpQueryTemplate, tt.description)
+				assert.Empty(t, c.StoredVideo.Database.CacheInitialization.AmpQuery, tt.description)
+				assert.Empty(t, c.StoredVideo.Database.PollUpdates.AmpQuery, tt.description)
+			} else {
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_DBNAME"], c.StoredResponses.Database.ConnectionInfo.Database, tt.description)
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_HOST"], c.StoredResponses.Database.ConnectionInfo.Host, tt.description)
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_PORT"], strconv.Itoa(c.StoredResponses.Database.ConnectionInfo.Port), tt.description)
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_USER"], c.StoredResponses.Database.ConnectionInfo.Username, tt.description)
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_PASSWORD"], c.StoredResponses.Database.ConnectionInfo.Password, tt.description)
+				assert.Equal(t, expectedDatabaseValues["FETCHER_QUERY"], c.StoredResponses.Database.FetcherQueries.QueryTemplate, tt.description)
+				assert.Equal(t, expectedDatabaseValues["INITIALIZE_CACHES_TIMEOUT_MS"], strconv.Itoa(c.StoredResponses.Database.CacheInitialization.Timeout), tt.description)
+				assert.Equal(t, expectedDatabaseValues["INITIALIZE_CACHES_QUERY"], c.StoredResponses.Database.CacheInitialization.Query, tt.description)
+				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_REFRESH_RATE_SECONDS"], strconv.Itoa(c.StoredResponses.Database.PollUpdates.RefreshRate), tt.description)
+				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_TIMEOUT_MS"], strconv.Itoa(c.StoredResponses.Database.PollUpdates.Timeout), tt.description)
+				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_QUERY"], c.StoredResponses.Database.PollUpdates.Query, tt.description)
+				assert.Empty(t, c.StoredResponses.Database.FetcherQueries.AmpQueryTemplate, tt.description)
+				assert.Empty(t, c.StoredResponses.Database.CacheInitialization.AmpQuery, tt.description)
+				assert.Empty(t, c.StoredResponses.Database.PollUpdates.AmpQuery, tt.description)
+			}
+		})
+	}
+}
+
 func TestMigrateConfigDatabaseQueryParams(t *testing.T) {
 
 	config := []byte(`
@@ -2294,6 +2483,96 @@ func TestMigrateConfigDatabaseQueryParams(t *testing.T) {
 	assert.Equal(t, want_queries.fetcher_amp_query, v.GetString("stored_responses.database.fetcher.amp_query"))
 	assert.Equal(t, want_queries.poll_for_updates_query, v.GetString("stored_responses.database.poll_for_updates.query"))
 	assert.Equal(t, want_queries.poll_for_updates_amp_query, v.GetString("stored_responses.database.poll_for_updates.amp_query"))
+}
+
+func TestIsConfigInfoPresent(t *testing.T) {
+	configPrefix1Field2Only := []byte(`
+      prefix1:
+        field2: "value2"
+    `)
+	configPrefix1Field4Only := []byte(`
+      prefix1:
+        field4: "value4"
+      `)
+	configPrefix1Field2AndField3 := []byte(`
+      prefix1:
+        field2: "value2"
+        field3: "value3"
+      `)
+
+	tests := []struct {
+		description string
+		config      []byte
+		keyPrefix   string
+		fields      []string
+		wantResult  bool
+	}{
+		{
+			description: "config is nil",
+			config:      nil,
+			keyPrefix:   "prefix1",
+			fields:      []string{"field1", "field2", "field3"},
+			wantResult:  false,
+		},
+		{
+			description: "config is empty",
+			config:      []byte{},
+			keyPrefix:   "prefix1",
+			fields:      []string{"field1", "field2", "field3"},
+			wantResult:  false,
+		},
+		{
+			description: "present - one field exists in config",
+			config:      configPrefix1Field2Only,
+			keyPrefix:   "prefix1",
+			fields:      []string{"field1", "field2", "field3"},
+			wantResult:  true,
+		},
+		{
+			description: "present - many fields exist in config",
+			config:      configPrefix1Field2AndField3,
+			keyPrefix:   "prefix1",
+			fields:      []string{"field1", "field2", "field3"},
+			wantResult:  true,
+		},
+		{
+			description: "not present - field not found",
+			config:      configPrefix1Field4Only,
+			keyPrefix:   "prefix1",
+			fields:      []string{"field1", "field2", "field3"},
+			wantResult:  false,
+		},
+		{
+			description: "not present - field exists but with a different prefix",
+			config:      configPrefix1Field2Only,
+			keyPrefix:   "prefix2",
+			fields:      []string{"field1", "field2", "field3"},
+			wantResult:  false,
+		},
+		{
+			description: "not present - fields is nil",
+			config:      configPrefix1Field2Only,
+			keyPrefix:   "prefix1",
+			fields:      nil,
+			wantResult:  false,
+		},
+		{
+			description: "not present - fields is empty",
+			config:      configPrefix1Field2Only,
+			keyPrefix:   "prefix1",
+			fields:      []string{},
+			wantResult:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		v := viper.New()
+		v.SetConfigType("yaml")
+		v.ReadConfig(bytes.NewBuffer(tt.config))
+
+		result := isConfigInfoPresent(v, tt.keyPrefix, tt.fields)
+		assert.Equal(t, tt.wantResult, result, tt.description)
+	}
 }
 
 func TestNegativeRequestSize(t *testing.T) {
