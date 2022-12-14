@@ -463,7 +463,7 @@ func registerAccountModuleMetrics(registry metrics.Registry, id string, module s
 	mm.FailureCounter = metrics.GetOrRegisterCounter(fmt.Sprintf("account.%s.modules.module.%s.failure", id, module), registry)
 	mm.SuccessNoopCounter = metrics.GetOrRegisterCounter(fmt.Sprintf("account.%s.modules.module.%s.success.noop", id, module), registry)
 	mm.SuccessUpdateCounter = metrics.GetOrRegisterCounter(fmt.Sprintf("account.%s.modules.module.%s.success.update", id, module), registry)
-	mm.SuccessRejectCounter = metrics.GetOrRegisterCounter(fmt.Sprintf("account.%s.modules.module.%s.reject", id, module), registry)
+	mm.SuccessRejectCounter = metrics.GetOrRegisterCounter(fmt.Sprintf("account.%s.modules.module.%s.success.reject", id, module), registry)
 	mm.ExecutionErrorCounter = metrics.GetOrRegisterCounter(fmt.Sprintf("account.%s.modules.module.%s.execution_error", id, module), registry)
 	mm.TimeoutCounter = metrics.GetOrRegisterCounter(fmt.Sprintf("account.%s.modules.module.%s.timeout", id, module), registry)
 }

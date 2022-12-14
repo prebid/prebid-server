@@ -14,8 +14,10 @@ import (
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookanalytics"
 	"github.com/prebid/prebid-server/hooks/hookstage"
+	"github.com/prebid/prebid-server/metrics"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestEmptyHookExecutor(t *testing.T) {
@@ -97,7 +99,7 @@ func TestExecuteEntrypointStage(t *testing.T) {
 								{
 									AnalyticsTags: hookanalytics.Analytics{},
 									HookID:        HookID{ModuleCode: "foobar", HookImplCode: "foobaz"},
-									Status:        StatusSuccess,
+									Status:        StatusExecutionFailure,
 									Action:        ActionUpdate,
 									Message:       "",
 									DebugMessages: nil,
@@ -376,6 +378,39 @@ func TestExecuteEntrypointStage(t *testing.T) {
 	}
 }
 
+func TestMetricsAreGatheredDuringHookExecution(t *testing.T) {
+	reader := bytes.NewReader(nil)
+	req, err := http.NewRequest(http.MethodPost, "https://prebid.com/openrtb2/auction", reader)
+	assert.NoError(t, err)
+
+	metricEngine := &metrics.MetricsEngineMock{}
+	builder := TestAllHookResultsBuilder{}
+	exec := NewHookExecutor(TestAllHookResultsBuilder{}, "/openrtb2/auction", metricEngine)
+	moduleLabels := metrics.ModuleLabels{
+		Module: "module-1",
+		Stage:  "entrypoint",
+	}
+	rTime := func(dur time.Duration) bool { return dur.Nanoseconds() > 0 }
+	plan := builder.PlanForEntrypointStage("")
+	hooksCalledDuringStage := 0
+	for _, group := range plan {
+		for range group.Hooks {
+			hooksCalledDuringStage++
+		}
+	}
+	metricEngine.On("RecordModuleCalled", moduleLabels, mock.MatchedBy(rTime)).Times(hooksCalledDuringStage)
+	metricEngine.On("RecordModuleSuccessUpdated", moduleLabels).Once()
+	metricEngine.On("RecordModuleSuccessRejected", moduleLabels).Once()
+	metricEngine.On("RecordModuleTimeout", moduleLabels).Once()
+	metricEngine.On("RecordModuleExecutionError", moduleLabels).Twice()
+	metricEngine.On("RecordModuleFailed", moduleLabels).Once()
+
+	_, _ = exec.ExecuteEntrypointStage(req, nil)
+
+	// Assert that all module metrics funcs were called with the parameters we expected
+	metricEngine.AssertExpectations(t)
+}
+
 type mockUpdateHeaderEntrypointHook struct{}
 
 func (e mockUpdateHeaderEntrypointHook) HandleEntrypointHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
@@ -574,4 +609,31 @@ func (h mockFailedMutationEntrypointHook) HandleEntrypointHook(_ context.Context
 	}, hookstage.MutationUpdate, "header", "foo")
 
 	return hookstage.HookResult[hookstage.EntrypointPayload]{ChangeSet: changeSet}, nil
+}
+
+type TestAllHookResultsBuilder struct {
+	hooks.EmptyPlanBuilder
+}
+
+func (e TestAllHookResultsBuilder) PlanForEntrypointStage(_ string) hooks.Plan[hookstage.Entrypoint] {
+	return hooks.Plan[hookstage.Entrypoint]{
+		hooks.Group[hookstage.Entrypoint]{
+			Timeout: 1 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
+				{Module: "module-1", Code: "code-1", Hook: mockUpdateHeaderEntrypointHook{}},
+				{Module: "module-1", Code: "code-3", Hook: mockTimeoutEntrypointHook{}},
+				{Module: "module-1", Code: "code-4", Hook: mockFailureEntrypointHook{}},
+				{Module: "module-1", Code: "code-5", Hook: mockErrorEntrypointHook{}},
+				{Module: "module-1", Code: "code-6", Hook: mockFailedMutationEntrypointHook{}},
+			},
+		},
+		// place the reject hook in a separate group because it rejects the stage completely
+		// thus we can not make accurate mock calls if it is processed in parallel with others
+		hooks.Group[hookstage.Entrypoint]{
+			Timeout: 10 * time.Second,
+			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
+				{Module: "module-1", Code: "code-2", Hook: mockRejectEntrypointHook{}},
+			},
+		},
+	}
 }

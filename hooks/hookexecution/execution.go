@@ -276,6 +276,7 @@ func handleHookMutations[P any](
 	}
 
 	hookOutcome.Action = ActionUpdate
+	successfulMutations := 0
 	for _, mut := range hr.Result.ChangeSet.Mutations() {
 		p, err := mut.Apply(payload)
 		if err != nil {
@@ -295,8 +296,17 @@ func handleHookMutations[P any](
 				mut.Type(),
 			),
 		)
+		successfulMutations++
 	}
-	metricEngine.RecordModuleSuccessUpdated(labels)
+
+	// if at least one mutation from a given module was successfully applied
+	// we consider that the module was processed successfully
+	if successfulMutations > 0 {
+		metricEngine.RecordModuleSuccessUpdated(labels)
+	} else {
+		hookOutcome.Status = StatusExecutionFailure
+		metricEngine.RecordModuleExecutionError(labels)
+	}
 
 	return payload
 }
