@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/modules/moduledeps"
@@ -27,8 +28,16 @@ type Builder interface {
 type (
 	// ModuleBuilders mapping between module name and its builder: map[vendor]map[module]ModuleBuilderFn
 	ModuleBuilders map[string]map[string]ModuleBuilderFn
-	// ModuleBuilderFn returns an interface{} type that implements certain hook interfaces
+	// ModuleBuilderFn returns an interface{} type that implements certain hook interfaces.
 	ModuleBuilderFn func(cfg json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, error)
+	// moduleConfig defines the minimum module config, each module is required to implement it.
+	moduleConfig struct {
+		// Enabled determines the module status. All modules are disabled by default
+		// unless explicitly enabled via config. Disabled modules not added to hook repository
+		// and skipped from general hook execution flow. PBS logs warning if hook execution plan
+		// refers to disabled module.
+		Enabled bool `json:"enabled"`
+	}
 )
 
 type builder struct {
@@ -51,12 +60,20 @@ func (m *builder) Build(
 		for moduleName, builder := range moduleBuilders {
 			var err error
 			var conf json.RawMessage
+			var baseConf moduleConfig
 
 			id := fmt.Sprintf("%s.%s", vendor, moduleName)
 			if data, ok := cfg[vendor][moduleName]; ok {
 				if conf, err = json.Marshal(data); err != nil {
 					return nil, nil, fmt.Errorf(`failed to marshal "%s" module config: %s`, id, err)
 				}
+			}
+
+			if err = json.Unmarshal(conf, &baseConf); err != nil {
+				return nil, nil, fmt.Errorf(`failed to unmarshal base config for module %s: %s`, id, err)
+			} else if !baseConf.Enabled {
+				glog.Infof("Skip %s module, disabled.", id)
+				continue
 			}
 
 			module, err := builder(conf, deps)

@@ -8,11 +8,11 @@ import (
 )
 
 func newConfig(data json.RawMessage) (Config, error) {
-	var c Config
-	if err := json.Unmarshal(data, &c); err != nil {
-		return c, fmt.Errorf("failed to parse config: %s", err)
+	var cfg Config
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		return cfg, fmt.Errorf("failed to parse config: %s", err)
 	}
-	return c, nil
+	return cfg, nil
 }
 
 type Config struct {

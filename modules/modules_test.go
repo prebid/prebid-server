@@ -19,70 +19,66 @@ import (
 func TestModuleBuilderBuild(t *testing.T) {
 	vendor := "acme"
 	moduleName := "foobar"
+	defaultModulesConfig := map[string]map[string]interface{}{vendor: {moduleName: map[string]bool{"enabled": true}}}
+	defaultHookRepository, err := hooks.NewHookRepository(map[string]interface{}{vendor + "." + moduleName: module{}})
+	if err != nil {
+		t.Fatalf("Failed to init default hook repository: %s", err)
+	}
+	emptyHookRepository, err := hooks.NewHookRepository(map[string]interface{}{})
+	if err != nil {
+		t.Fatalf("Failed to init empty hook repository: %s", err)
+	}
 
 	testCases := map[string]struct {
-		isHookFound          bool
-		expectedModStageColl map[string][]string
-		expectedHook         interface{}
-		givenModule          interface{}
-		givenConfig          config.Modules
-		expectedErr          error
-		givenHookBuilderErr  error
-		givenGetHookFn       func(repo hooks.HookRepository, module string) (interface{}, bool)
+		givenModule           interface{}
+		givenConfig           config.Modules
+		givenHookBuilderErr   error
+		expectedHookRepo      hooks.HookRepository
+		expectedModulesStages map[string][]string
+		expectedErr           error
 	}{
-		"Can build with entrypoint hook without config": {
-			isHookFound:          true,
-			expectedModStageColl: map[string][]string{vendor + "-" + moduleName: {hooks.StageEntrypoint.String(), hooks.StageAuctionResponse.String()}},
-			expectedHook:         module{},
-			givenModule:          module{},
-			givenGetHookFn: func(repo hooks.HookRepository, module string) (interface{}, bool) {
-				return repo.GetEntrypointHook(module)
-			},
+		"Can build module with config": {
+			givenModule:           module{},
+			givenConfig:           defaultModulesConfig,
+			expectedModulesStages: map[string][]string{vendor + "-" + moduleName: {hooks.StageEntrypoint.String(), hooks.StageAuctionResponse.String()}},
+			expectedHookRepo:      defaultHookRepository,
+			expectedErr:           nil,
 		},
-		"Can build with entrypoint hook with config": {
-			isHookFound:          true,
-			expectedModStageColl: map[string][]string{vendor + "-" + moduleName: {hooks.StageEntrypoint.String(), hooks.StageAuctionResponse.String()}},
-			expectedHook:         module{},
-			givenModule:          module{},
-			givenConfig:          map[string]map[string]interface{}{vendor: {moduleName: map[string]bool{"enabled": true}}},
-			givenGetHookFn: func(repo hooks.HookRepository, module string) (interface{}, bool) {
-				return repo.GetEntrypointHook(module)
-			},
+		"Module is not added to hook repository if it's disabled": {
+			givenModule:           module{},
+			givenConfig:           map[string]map[string]interface{}{vendor: {moduleName: map[string]bool{"enabled": false}}},
+			expectedModulesStages: map[string][]string{},
+			expectedHookRepo:      emptyHookRepository,
+			expectedErr:           nil,
 		},
-		"Can build with auction response hook": {
-			isHookFound:          true,
-			expectedModStageColl: map[string][]string{vendor + "-" + moduleName: {hooks.StageEntrypoint.String(), hooks.StageAuctionResponse.String()}},
-			expectedHook:         module{},
-			givenModule:          module{},
-			givenConfig:          map[string]map[string]interface{}{"vendor": {"module": map[string]bool{"enabled": true}}},
-			givenGetHookFn: func(repo hooks.HookRepository, module string) (interface{}, bool) {
-				return repo.GetAuctionResponseHook(module)
-			},
-		},
-		"Fails to find not registered hook": {
-			isHookFound:          false,
-			expectedModStageColl: map[string][]string{vendor + "-" + moduleName: {hooks.StageEntrypoint.String(), hooks.StageAuctionResponse.String()}},
-			expectedHook:         nil,
-			givenModule:          module{},
-			givenConfig:          map[string]map[string]interface{}{vendor: {"module": map[string]bool{"enabled": true}}},
-			givenGetHookFn: func(repo hooks.HookRepository, module string) (interface{}, bool) {
-				return repo.GetAllProcessedBidResponsesHook(module) // ask for hook not implemented in module
-			},
+		"Build fails if modules config not provided": {
+			givenModule:           module{},
+			givenConfig:           nil,
+			expectedHookRepo:      nil,
+			expectedModulesStages: nil,
+			expectedErr:           fmt.Errorf("failed to unmarshal base config for module %s.%s: unexpected end of JSON input", vendor, moduleName),
 		},
 		"Fails if module does not implement any hook interface": {
-			expectedHook: struct{}{},
-			expectedErr:  fmt.Errorf(`hook "%s.%s" does not implement any supported hook interface`, vendor, moduleName),
+			givenModule:           struct{}{},
+			givenConfig:           defaultModulesConfig,
+			expectedHookRepo:      nil,
+			expectedModulesStages: nil,
+			expectedErr:           fmt.Errorf(`hook "%s.%s" does not implement any supported hook interface`, vendor, moduleName),
 		},
 		"Fails if module builder function returns error": {
-			givenModule:         module{},
-			givenConfig:         map[string]map[string]interface{}{vendor: {moduleName: map[string]string{"media_type": "video"}}},
-			givenHookBuilderErr: errors.New("failed to build module"),
-			expectedErr:         fmt.Errorf(`failed to init "%s.%s" module: %s`, vendor, moduleName, "failed to build module"),
+			givenModule:           module{},
+			givenConfig:           defaultModulesConfig,
+			givenHookBuilderErr:   errors.New("failed to build module"),
+			expectedHookRepo:      nil,
+			expectedModulesStages: nil,
+			expectedErr:           fmt.Errorf(`failed to init "%s.%s" module: %s`, vendor, moduleName, "failed to build module"),
 		},
 		"Fails if config marshaling returns error": {
-			givenModule: module{},
-			givenConfig: map[string]map[string]interface{}{vendor: {moduleName: math.Inf(1)}},
-			expectedErr: fmt.Errorf(`failed to marshal "%s.%s" module config: json: unsupported value: +Inf`, vendor, moduleName),
+			givenModule:           module{},
+			givenConfig:           map[string]map[string]interface{}{vendor: {moduleName: math.Inf(1)}},
+			expectedHookRepo:      nil,
+			expectedModulesStages: nil,
+			expectedErr:           fmt.Errorf(`failed to marshal "%s.%s" module config: json: unsupported value: +Inf`, vendor, moduleName),
 		},
 	}
 
@@ -98,14 +94,10 @@ func TestModuleBuilderBuild(t *testing.T) {
 				},
 			}
 
-			repo, coll, err := builder.Build(test.givenConfig, moduledeps.ModuleDeps{HTTPClient: http.DefaultClient})
+			repo, modulesStages, err := builder.Build(test.givenConfig, moduledeps.ModuleDeps{HTTPClient: http.DefaultClient})
 			assert.Equal(t, test.expectedErr, err)
-			if test.expectedErr == nil {
-				hook, found := test.givenGetHookFn(repo, fmt.Sprintf("%s.%s", vendor, moduleName))
-				assert.Equal(t, test.isHookFound, found)
-				assert.IsType(t, test.expectedHook, hook)
-				assert.Equal(t, test.expectedModStageColl, coll)
-			}
+			assert.Equal(t, test.expectedModulesStages, modulesStages)
+			assert.Equal(t, test.expectedHookRepo, repo)
 		})
 	}
 }
