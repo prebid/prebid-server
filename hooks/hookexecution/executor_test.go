@@ -404,6 +404,7 @@ func TestMetricsAreGatheredDuringHookExecution(t *testing.T) {
 	metricEngine.On("RecordModuleTimeout", moduleLabels).Once()
 	metricEngine.On("RecordModuleExecutionError", moduleLabels).Twice()
 	metricEngine.On("RecordModuleFailed", moduleLabels).Once()
+	metricEngine.On("RecordModuleSuccessNooped", moduleLabels).Once()
 
 	_, _ = exec.ExecuteEntrypointStage(req, nil)
 
@@ -625,6 +626,7 @@ func (e TestAllHookResultsBuilder) PlanForEntrypointStage(_ string) hooks.Plan[h
 				{Module: "module-1", Code: "code-4", Hook: mockFailureEntrypointHook{}},
 				{Module: "module-1", Code: "code-5", Hook: mockErrorEntrypointHook{}},
 				{Module: "module-1", Code: "code-6", Hook: mockFailedMutationEntrypointHook{}},
+				{Module: "module-1", Code: "code-7", Hook: mockModuleContextHook{key: "key", val: "val"}},
 			},
 		},
 		// place the reject hook in a separate group because it rejects the stage completely
