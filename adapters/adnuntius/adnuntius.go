@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
@@ -32,26 +33,28 @@ type extDeviceAdnuntius struct {
 	NoCookies bool `json:"noCookies,omitempty"`
 }
 
-type AdnResponse struct {
-	AdUnits []struct {
-		AuId       string
-		TargetId   string
-		Html       string
-		ResponseId string
-		Ads        []struct {
-			Bid struct {
-				Amount   float64
-				Currency string
-			}
-			AdId            string
-			CreativeWidth   string
-			CreativeHeight  string
-			CreativeId      string
-			LineItemId      string
-			Html            string
-			DestinationUrls map[string]string
+type AdUnit struct {
+	AuId       string
+	TargetId   string
+	Html       string
+	ResponseId string
+	Ads        []struct {
+		Bid struct {
+			Amount   float64
+			Currency string
 		}
+		AdId            string
+		CreativeWidth   string
+		CreativeHeight  string
+		CreativeId      string
+		LineItemId      string
+		Html            string
+		DestinationUrls map[string]string
 	}
+}
+
+type AdnResponse struct {
+	AdUnits []AdUnit
 }
 type adnMetaData struct {
 	Usi string `json:"usi,omitempty"`
@@ -60,6 +63,10 @@ type adnRequest struct {
 	AdUnits  []adnAdunit `json:"adUnits"`
 	MetaData adnMetaData `json:"metaData,omitempty"`
 	Context  string      `json:"context,omitempty"`
+}
+
+type RequestExt struct {
+	Bidder adnAdunit `json:"bidder"`
 }
 
 const defaultNetwork = "default"
@@ -314,8 +321,23 @@ func getGDPR(request *openrtb2.BidRequest) (string, string, error) {
 func generateBidResponse(adnResponse *AdnResponse, request *openrtb2.BidRequest) (*adapters.BidderResponse, []error) {
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(adnResponse.AdUnits))
 	var currency string
+	adunitMap := map[string]AdUnit{}
 
-	for i, adunit := range adnResponse.AdUnits {
+	for _, adnRespAdunit := range adnResponse.AdUnits {
+		adunitMap[adnRespAdunit.TargetId] = adnRespAdunit
+	}
+
+	for i, imp := range request.Imp {
+
+		auId, _, _, err := jsonparser.Get(imp.Ext, "bidder", "auId")
+		if err != nil {
+			return nil, []error{&errortypes.BadInput{
+				Message: fmt.Sprintf("Error at Bidder auId: %s", err.Error()),
+			}}
+		}
+
+		targetID := fmt.Sprintf("%s-%s", string(auId), imp.ID)
+		adunit := adunitMap[targetID]
 
 		if len(adunit.Ads) > 0 {
 

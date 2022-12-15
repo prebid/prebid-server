@@ -1,4 +1,4 @@
-package postgres
+package database
 
 import (
 	"encoding/json"
@@ -9,6 +9,7 @@ import (
 
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/metrics"
+	"github.com/prebid/prebid-server/stored_requests/backends/db_provider"
 	"github.com/prebid/prebid-server/stored_requests/events"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -113,7 +114,7 @@ func TestFetchAllSuccess(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		db, dbMock, _ := sqlmock.New()
+		provider, dbMock, _ := db_provider.NewDbProviderMock()
 		dbMock.ExpectQuery(fakeQueryRegex()).WillReturnRows(tt.giveMockRows)
 
 		metricsMock := &metrics.MetricsEngineMock{}
@@ -122,8 +123,8 @@ func TestFetchAllSuccess(t *testing.T) {
 			DataFetchType: metrics.FetchAll,
 		}, mock.Anything).Return()
 
-		eventProducer := NewPostgresEventProducer(PostgresEventProducerConfig{
-			DB:               db,
+		eventProducer := NewDatabaseEventProducer(DatabaseEventProducerConfig{
+			Provider:         provider,
 			RequestType:      config.RequestDataType,
 			CacheInitTimeout: 100 * time.Millisecond,
 			CacheInitQuery:   fakeQuery,
@@ -196,7 +197,7 @@ func TestFetchAllErrors(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		db, dbMock, _ := sqlmock.New()
+		provider, dbMock, _ := db_provider.NewDbProviderMock()
 		if tt.giveMockRows == nil {
 			dbMock.ExpectQuery(fakeQueryRegex()).WillReturnError(errors.New("Query failed."))
 		} else {
@@ -213,8 +214,8 @@ func TestFetchAllErrors(t *testing.T) {
 			Error:    tt.wantRecordedError,
 		}).Return()
 
-		eventProducer := NewPostgresEventProducer(PostgresEventProducerConfig{
-			DB:               db,
+		eventProducer := NewDatabaseEventProducer(DatabaseEventProducerConfig{
+			Provider:         provider,
 			RequestType:      config.RequestDataType,
 			CacheInitTimeout: time.Duration(tt.giveTimeoutMS) * time.Millisecond,
 			CacheInitQuery:   fakeQuery,
@@ -349,7 +350,7 @@ func TestFetchDeltaSuccess(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		db, dbMock, _ := sqlmock.New()
+		provider, dbMock, _ := db_provider.NewDbProviderMock()
 		dbMock.ExpectQuery(fakeQueryRegex()).WillReturnRows(tt.giveMockRows)
 
 		metricsMock := &metrics.MetricsEngineMock{}
@@ -358,8 +359,8 @@ func TestFetchDeltaSuccess(t *testing.T) {
 			DataFetchType: metrics.FetchDelta,
 		}, mock.Anything).Return()
 
-		eventProducer := NewPostgresEventProducer(PostgresEventProducerConfig{
-			DB:                 db,
+		eventProducer := NewDatabaseEventProducer(DatabaseEventProducerConfig{
+			Provider:           provider,
 			RequestType:        config.RequestDataType,
 			CacheUpdateTimeout: 100 * time.Millisecond,
 			CacheUpdateQuery:   fakeQuery,
@@ -437,7 +438,7 @@ func TestFetchDeltaErrors(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		db, dbMock, _ := sqlmock.New()
+		provider, dbMock, _ := db_provider.NewDbProviderMock()
 		if tt.giveMockRows == nil {
 			dbMock.ExpectQuery(fakeQueryRegex()).WillReturnError(errors.New("Query failed."))
 		} else {
@@ -454,8 +455,8 @@ func TestFetchDeltaErrors(t *testing.T) {
 			Error:    tt.wantRecordedError,
 		}).Return()
 
-		eventProducer := NewPostgresEventProducer(PostgresEventProducerConfig{
-			DB:                 db,
+		eventProducer := NewDatabaseEventProducer(DatabaseEventProducerConfig{
+			Provider:           provider,
 			RequestType:        config.RequestDataType,
 			CacheUpdateTimeout: time.Duration(tt.giveTimeoutMS) * time.Millisecond,
 			CacheUpdateQuery:   fakeQuery,

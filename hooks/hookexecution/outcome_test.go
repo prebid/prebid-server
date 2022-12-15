@@ -4,13 +4,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func assertEqualStageOutcomes(t *testing.T, expected StageOutcome, actual StageOutcome) {
 	t.Helper()
 
-	require.Equal(t, len(actual.Groups), len(expected.Groups), "Stage outcomes contain different number of groups")
+	assert.Equal(t, len(actual.Groups), len(expected.Groups), "Stage outcomes contain different number of groups")
 
 	// calculate expected timings from actual outcome
 	for i, group := range actual.Groups {
@@ -28,12 +27,12 @@ func assertEqualStageOutcomes(t *testing.T, expected StageOutcome, actual StageO
 
 	for i, expGroup := range expected.Groups {
 		gotGroup := actual.Groups[i]
-		require.Equal(t, len(expGroup.InvocationResults), len(gotGroup.InvocationResults), "Group outcomes #%d contain different number of invocation results", i)
+		assert.Equal(t, len(expGroup.InvocationResults), len(gotGroup.InvocationResults), "Group outcomes #%d contain different number of invocation results", i)
 		assert.Equal(t, expGroup.ExecutionTimeMillis, gotGroup.ExecutionTimeMillis, "Incorrect group #%d execution time", i)
 
 		for _, expHook := range expGroup.InvocationResults {
 			gotHook := findCorrespondingHookResult(expHook.HookID, gotGroup)
-			require.NotNil(t, gotHook, "Expected to get hook, got nil: group #%d, hookID %v", i, expHook.HookID)
+			assert.NotNil(t, gotHook, "Expected to get hook, got nil: group #%d, hookID %v", i, expHook.HookID)
 
 			gotHook.ExecutionTimeMillis = 0 // reset hook execution time, we cannot predict it
 			assert.Equal(t, expHook, *gotHook, "Incorrect hook outcome: group #%d, hookID %v", i, expHook.HookID)
@@ -44,7 +43,7 @@ func assertEqualStageOutcomes(t *testing.T, expected StageOutcome, actual StageO
 func findCorrespondingHookResult(hookID HookID, group GroupOutcome) *HookOutcome {
 	for _, hook := range group.InvocationResults {
 		if hook.HookID.ModuleCode == hookID.ModuleCode &&
-			hook.HookID.HookCode == hookID.HookCode {
+			hook.HookID.HookImplCode == hookID.HookImplCode {
 			return &hook
 		}
 	}

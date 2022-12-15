@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -129,7 +129,7 @@ func (fetcher *HttpFetcher) FetchAccounts(ctx context.Context, accountIDs []stri
 		}
 	}
 	defer httpResp.Body.Close()
-	respBytes, err := ioutil.ReadAll(httpResp.Body)
+	respBytes, err := io.ReadAll(httpResp.Body)
 	if err != nil {
 		return nil, []error{
 			fmt.Errorf(`Error fetching accounts %v via http: error reading response: %v`, accountIDs, err),
@@ -201,7 +201,7 @@ func (fetcher *HttpFetcher) FetchCategories(ctx context.Context, primaryAdServer
 	}
 	defer httpResp.Body.Close()
 
-	respBytes, err := ioutil.ReadAll(httpResp.Body)
+	respBytes, err := io.ReadAll(httpResp.Body)
 	tmp := make(map[string]stored_requests.Category)
 
 	if err := json.Unmarshal(respBytes, &tmp); err != nil {
@@ -227,7 +227,7 @@ func buildRequest(endpoint string, requestIDs []string, impIDs []string) (*http.
 }
 
 func unpackResponse(resp *http.Response) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
-	respBytes, err := ioutil.ReadAll(resp.Body)
+	respBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		errs = append(errs, err)
 		return

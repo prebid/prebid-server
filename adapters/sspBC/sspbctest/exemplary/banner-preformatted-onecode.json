@@ -36,7 +36,7 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "http://ssp.wp.test/bidder/?bdver=5.7&inver=4",
+                "uri": "http://ssp.wp.test/bidder/?bdver=5.8&inver=4",
                 "body": {
                     "id": "test-request",
                     "imp": [
