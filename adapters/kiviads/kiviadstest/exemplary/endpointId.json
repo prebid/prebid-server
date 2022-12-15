@@ -89,12 +89,7 @@
                                     "crid": "test_crid",
                                     "dealid": "test_dealid",
                                     "w": 300,
-                                    "h": 250,
-                                    "ext": {
-                                        "prebid": {
-                                            "type": "banner"
-                                        }
-                                    }
+                                    "h": 250
                                 }
                             ],
                             "seat": "kiviads"
@@ -118,12 +113,7 @@
                         "crid": "test_crid",
                         "dealid": "test_dealid",
                         "w": 300,
-                        "h": 250,
-                        "ext": {
-                            "prebid": {
-                                "type": "banner"
-                            }
-                        }
+                        "h": 250
                     },
                     "type": "banner"
                 }
