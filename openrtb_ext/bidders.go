@@ -314,6 +314,7 @@ func CoreBidderNames() []BidderName {
 		BidderDatablocks,
 		BidderDecenterAds,
 		BidderDeepintent,
+		BidderDefinemedia,
 		BidderDianomi,
 		BidderDmx,
 		BidderEmxDigital,
