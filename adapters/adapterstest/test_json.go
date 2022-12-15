@@ -3,7 +3,8 @@ package adapterstest
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"net/http"
+	"os"
 	"regexp"
 	"testing"
 
@@ -15,8 +16,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/yudai/gojsondiff"
 	"github.com/yudai/gojsondiff/formatter"
-
-	"net/http"
 )
 
 // RunJSONBidderTest is a helper method intended to unit test Bidders' adapters.
@@ -64,7 +63,7 @@ func RunJSONBidderTest(t *testing.T, rootDir string, bidder adapters.Bidder) {
 // runTests runs all the *.json files in a directory. If allowErrors is false, and one of the test files
 // expects errors from the bidder, then the test will fail.
 func runTests(t *testing.T, directory string, bidder adapters.Bidder, allowErrors, isAmpTest, isVideoTest bool) {
-	if specFiles, err := ioutil.ReadDir(directory); err == nil {
+	if specFiles, err := os.ReadDir(directory); err == nil {
 		for _, specFile := range specFiles {
 			fileName := fmt.Sprintf("%s/%s", directory, specFile.Name())
 			specData, err := loadFile(fileName)
@@ -82,7 +81,7 @@ func runTests(t *testing.T, directory string, bidder adapters.Bidder, allowError
 
 // LoadFile reads and parses a file as a test case. If something goes wrong, it returns an error.
 func loadFile(filename string) (*testSpec, error) {
-	specData, err := ioutil.ReadFile(filename)
+	specData, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to read file %s: %v", filename, err)
 	}
