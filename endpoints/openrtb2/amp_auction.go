@@ -148,7 +148,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	w.Header().Set("Access-Control-Expose-Headers", "AMP-Access-Control-Allow-Source-Origin")
 	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
 
-	_, rejectErr := deps.hookExecutor.ExecuteEntrypointStage(r, nil)
+	_, rejectErr := deps.hookExecutor.ExecuteEntrypointStage(r, nilBody)
 	reqWrapper, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, errL := deps.parseAmpRequest(r)
 	ao.Errors = append(ao.Errors, errL...)
 	// Process reject after parsing amp request, so we can use reqWrapper.
