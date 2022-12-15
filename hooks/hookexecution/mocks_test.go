@@ -128,7 +128,7 @@ func (e mockTimeoutHook) HandleBidderRequestHook(_ context.Context, _ hookstage.
 
 func (e mockTimeoutHook) HandleRawBidderResponseHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.RawBidderResponsePayload) (hookstage.HookResult[hookstage.RawBidderResponsePayload], error) {
 	time.Sleep(2 * time.Millisecond)
-	c := &hookstage.ChangeSet[hookstage.RawBidderResponsePayload]{}
+	c := hookstage.ChangeSet[hookstage.RawBidderResponsePayload]{}
 	c.AddMutation(func(payload hookstage.RawBidderResponsePayload) (hookstage.RawBidderResponsePayload, error) {
 		payload.Bids[0].BidMeta = &openrtb_ext.ExtBidPrebidMeta{AdapterCode: "new-code"}
 		return payload, nil
@@ -240,7 +240,7 @@ func (e mockUpdateBidRequestHook) HandleBidderRequestHook(_ context.Context, _ h
 type mockUpdateBidderResponseHook struct{}
 
 func (e mockUpdateBidderResponseHook) HandleRawBidderResponseHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.RawBidderResponsePayload) (hookstage.HookResult[hookstage.RawBidderResponsePayload], error) {
-	c := &hookstage.ChangeSet[hookstage.RawBidderResponsePayload]{}
+	c := hookstage.ChangeSet[hookstage.RawBidderResponsePayload]{}
 	c.AddMutation(
 		func(payload hookstage.RawBidderResponsePayload) (hookstage.RawBidderResponsePayload, error) {
 			payload.Bids[0].DealPriority = 10

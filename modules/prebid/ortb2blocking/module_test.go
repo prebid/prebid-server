@@ -341,15 +341,3 @@ func TestHandleBidderRequestHook(t *testing.T) {
 		})
 	}
 }
-
-type numeric interface {
-	openrtb2.BannerAdType | adcom1.CreativeAttribute
-}
-
-func toInt[T numeric](values []T) []int {
-	ints := make([]int, len(values))
-	for i := range values {
-		ints[i] = int(values[i])
-	}
-	return ints
-}

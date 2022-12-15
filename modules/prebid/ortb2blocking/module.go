@@ -35,6 +35,25 @@ func (m Module) HandleBidderRequestHook(
 	return handleBidderRequestHook(cfg, payload)
 }
 
+// HandleRawBidderResponseHook rejects bids for a specific bidder if they fail the attribute check.
+func (m Module) HandleRawBidderResponseHook(
+	_ context.Context,
+	miCtx hookstage.ModuleInvocationContext,
+	payload hookstage.RawBidderResponsePayload,
+) (hookstage.HookResult[hookstage.RawBidderResponsePayload], error) {
+	result := hookstage.HookResult[hookstage.RawBidderResponsePayload]{}
+	var cfg Config
+	if len(miCtx.AccountConfig) != 0 {
+		ncfg, err := newConfig(miCtx.AccountConfig)
+		if err != nil {
+			return result, err
+		}
+		cfg = ncfg
+	}
+
+	return handleRawBidderResponseHook(cfg, payload, miCtx.ModuleContext)
+}
+
 type blockingAttributes struct {
 	badv   []string
 	bapp   []string
