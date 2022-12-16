@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"reflect"
 	"strconv"
 	"testing"
@@ -62,7 +62,7 @@ func TestGoodAmpRequests(t *testing.T) {
 	for _, tgroup := range testGroups {
 		for _, filename := range tgroup.testFiles {
 			// Read test case and unmarshal
-			fileJsonData, err := ioutil.ReadFile(tgroup.dir + filename)
+			fileJsonData, err := os.ReadFile(tgroup.dir + filename)
 			if !assert.NoError(t, err, "Failed to fetch a valid request: %v. Test file: %s", err, filename) {
 				continue
 			}
@@ -153,7 +153,7 @@ func TestAccountErrors(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		fileJsonData, err := ioutil.ReadFile("sample-requests/" + tt.filename)
+		fileJsonData, err := os.ReadFile("sample-requests/" + tt.filename)
 		if !assert.NoError(t, err, "Failed to fetch a valid request: %v. Test file: %s", err, tt.filename) {
 			continue
 		}
@@ -987,7 +987,7 @@ func TestAMPSiteExt(t *testing.T) {
 // TestBadRequests makes sure we return 400's on bad requests.
 func TestAmpBadRequests(t *testing.T) {
 	dir := "sample-requests/invalid-whole"
-	files, err := ioutil.ReadDir(dir)
+	files, err := os.ReadDir(dir)
 	assert.NoError(t, err, "Failed to read folder: %s", dir)
 
 	badRequests := make(map[string]json.RawMessage, len(files))

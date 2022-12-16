@@ -14,6 +14,7 @@ func (e TimeoutError) Error() string {
 }
 
 // FailureError indicates expected error occurred during hook execution on the module-side.
+// A moduleFailed metric will be sent in such case.
 type FailureError struct {
 	Message string
 }
