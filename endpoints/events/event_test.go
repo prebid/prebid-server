@@ -393,7 +393,7 @@ func TestShouldNotPassEventToAnalyticsReporterWhenAccountNotFound(t *testing.T) 
 
 	// validate
 	assert.Equal(t, 401, recorder.Result().StatusCode, "Expected 401 on account not found")
-	assert.Equal(t, "Account 'testacc' doesn't support events", string(d))
+	assert.Equal(t, "Account 'testacc' or server doesn't support events", string(d))
 }
 
 func TestShouldReturnBadRequestWhenIntegrationValueIsInvalid(t *testing.T) {
@@ -431,7 +431,7 @@ func TestShouldReturnBadRequestWhenIntegrationValueIsInvalid(t *testing.T) {
 	assert.Equal(t, "invalid request: integration type can only contain numbers, letters and these characters '-', '_'\n", string(d))
 }
 
-func TestShouldNotPassEventToAnalyticsReporterWhenAccountEventNotEnabled(t *testing.T) {
+func TestShouldNotPassEventToAnalyticsReporterWhenAccountOrServerEventNotEnabled(t *testing.T) {
 
 	// mock AccountsFetcher
 	mockAccountsFetcher := &mockAccountsFetcher{
@@ -466,7 +466,7 @@ func TestShouldNotPassEventToAnalyticsReporterWhenAccountEventNotEnabled(t *test
 
 	// validate
 	assert.Equal(t, 401, recorder.Result().StatusCode, "Expected 401 on account with events disabled")
-	assert.Equal(t, "Account 'events_disabled' doesn't support events", string(d))
+	assert.Equal(t, "Account 'events_disabled' or server doesn't support events", string(d))
 }
 
 func TestShouldPassEventToAnalyticsReporterWhenAccountEventEnabled(t *testing.T) {
@@ -500,6 +500,45 @@ func TestShouldPassEventToAnalyticsReporterWhenAccountEventEnabled(t *testing.T)
 
 	// validate
 	assert.Equal(t, 204, recorder.Result().StatusCode, "Expected 204 when account has events enabled")
+	assert.Equal(t, true, mockAnalyticsModule.Invoked)
+}
+
+func TestShouldPassEventToAnalyticsReporterWhenServerEventEnabled(t *testing.T) {
+	// instance level event enabled flag
+
+	// mock AccountsFetcher
+	mockAccountsFetcher := &mockAccountsFetcher{
+		Fail: false,
+	}
+
+	// mock PBS Analytics Module
+	mockAnalyticsModule := &eventsMockAnalyticsModule{
+		Fail: false,
+	}
+
+	// mock config
+	cfg := &config.Configuration{
+		AccountDefaults: config.Account{},
+		Event: config.Event{
+			Enabled: true,
+		},
+	}
+	cfg.MarshalAccountDefaults()
+
+	// prepare
+	reqData := ""
+
+	// account level disabled but instance level enabled which takes precedence
+	req := httptest.NewRequest("GET", "/event?t=win&b=test&ts=1234&f=b&x=1&a=events_disabled", strings.NewReader(reqData))
+	recorder := httptest.NewRecorder()
+
+	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule)
+
+	// execute
+	e(recorder, req, nil)
+
+	// validate
+	assert.Equal(t, 204, recorder.Result().StatusCode, "Expected 204 when server has events enabled")
 	assert.Equal(t, true, mockAnalyticsModule.Invoked)
 }
 

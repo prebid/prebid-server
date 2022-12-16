@@ -71,6 +71,7 @@ type exchange struct {
 	hostSChainNode    *openrtb2.SupplyChainNode
 	adsCertSigner     adscert.Signer
 	server            config.Server
+	event             config.Event
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -334,7 +335,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 			}
 		}
 
-		evTracking := getEventTracking(&requestExt.Prebid, r.StartTime, &r.Account, e.bidderInfo, e.externalURL)
+		evTracking := getEventTracking(&requestExt.Prebid, r.StartTime, &r.Account, e.bidderInfo, e.externalURL, &e.event)
 		adapterBids = evTracking.modifyBidsForEvents(adapterBids)
 
 		if targData != nil {
