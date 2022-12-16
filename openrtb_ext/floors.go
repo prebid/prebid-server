@@ -36,6 +36,7 @@ type PriceFloorEndpoint struct {
 }
 
 type PriceFloorData struct {
+	FloorProvider       string                 `json:"floorprovider,omitempty"`
 	Currency            string                 `json:"currency,omitempty"`
 	SkipRate            int                    `json:"skiprate,omitempty"`
 	FloorsSchemaVersion *int                   `json:"floorsschemaversion,omitempty"`

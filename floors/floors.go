@@ -6,7 +6,6 @@ import (
 	"math/rand"
 	"strings"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -31,7 +30,7 @@ const (
 // EnrichWithPriceFloors checks for floors enabled in account and request and selects floors data from dynamic fetched floors JSON if present
 // else selects floors JOSN from req.ext.prebid.floors and update request with selected floors details
 func EnrichWithPriceFloors(bidRequestWrapper *openrtb_ext.RequestWrapper, account config.Account, conversions currency.Conversions, priceFloorFetcher FloorFetcher) []error {
-	err := []error{}
+
 	if bidRequestWrapper == nil || bidRequestWrapper.BidRequest == nil {
 		return []error{fmt.Errorf("Empty bidrequest")}
 	}
@@ -41,10 +40,10 @@ func EnrichWithPriceFloors(bidRequestWrapper *openrtb_ext.RequestWrapper, accoun
 	}
 
 	floors, err := resolveFloors(account, bidRequestWrapper, conversions, priceFloorFetcher)
-	if len(err) == 0 {
-		err = updateBidRequestWithFloors(floors, bidRequestWrapper, conversions)
-	}
-	return err
+
+	updateReqErrs := updateBidRequestWithFloors(floors, bidRequestWrapper, conversions)
+
+	return append(err, updateReqErrs...)
 }
 
 // updateBidRequestWithFloors will update imp.bidfloor and imp.bidfloorcur based on rules matching
@@ -92,7 +91,7 @@ func updateBidRequestWithFloors(extFloorRules *openrtb_ext.PriceFloorRules, requ
 					bidFloor = floorMinVal
 				}
 
-				if bidFloor > float64(0) && isBidFloorGreater(request.Imp[i], conversions, bidFloor, floorCur) {
+				if bidFloor > float64(0) {
 					imp.BidFloor = bidFloor
 					imp.BidFloorCur = floorCur
 				}
@@ -109,20 +108,6 @@ func updateBidRequestWithFloors(extFloorRules *openrtb_ext.PriceFloorRules, requ
 		}
 	}
 	return floorErrList
-}
-
-// isBidFloorGreater check for floor rule value is greater than original imp.bidfloor
-func isBidFloorGreater(imp openrtb2.Imp, conversions currency.Conversions, bidfloor float64, bidfloorCur string) bool {
-
-	if imp.BidFloor > float64(0) {
-		floorVal := bidfloor
-		if bidfloorCur != imp.BidFloorCur {
-			rate, _ := conversions.GetRate(bidfloorCur, imp.BidFloorCur)
-			floorVal = rate * bidfloor
-		}
-		return floorVal > imp.BidFloor
-	}
-	return true
 }
 
 // isPriceFloorsDisabled check for floors are disabled at account or request level
@@ -189,9 +174,7 @@ func createFloorsFrom(floors *openrtb_ext.PriceFloorRules, fetchStatus, floorLoc
 			}
 		}
 	}
-	if floors != nil && len(floors.FloorProvider) != 0 {
-		finFloors.FloorProvider = floors.FloorProvider
-	}
+
 	finFloors.FetchStatus = fetchStatus
 	finFloors.PriceFloorLocation = floorLocation
 	return finFloors, floorModelErrList

@@ -160,7 +160,7 @@ func TestEnrichWithPriceFloors(t *testing.T) {
 			Skipped: true,
 		},
 		{
-			name: "Invalid Skiprate = 110: Floors singalling skipped ",
+			name: "Single ModelGroup, Invalid Skiprate = 110: Floors singalling skipped ",
 			bidRequestWrapper: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					Site: &openrtb2.Site{
@@ -180,6 +180,31 @@ func TestEnrichWithPriceFloors(t *testing.T) {
 				},
 			},
 			err: "Invalid SkipRate = '110' at ext.floors.skiprate",
+		},
+		{
+			name: "Multiple ModelGroups, Invalid Skiprate = 110: in one group, Floors singalling done using second ModelGroup",
+			bidRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Site: &openrtb2.Site{
+						Publisher: &openrtb2.Publisher{Domain: "www.website.com"},
+					},
+					Imp: []openrtb2.Imp{{ID: "1234", Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}}}},
+					Ext: json.RawMessage(`{"prebid":{"floors":{"floormin":11,"floormincur":"USD","data":{"currency":"USD","floorsschemaversion":2,"modelgroups":[{"modelweight":50,"modelversion":"version2","skiprate":10,"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"},"values":{"*|*|*":11.01,"*|*|www.website1.com":17.01},"default":21},{"modelweight":50,"modelversion":"version11","skiprate":110,"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"},"values":{"*|300x250|*":11.01,"*|300x250|www.website1.com":100.01},"default":21}]},"enforcement":{"enforcepbs":true,"floordeals":true},"enabled":true}}}`),
+				},
+			},
+			account: config.Account{
+				PriceFloors: config.AccountPriceFloors{
+					Enabled:        true,
+					UseDynamicData: false,
+					Fetch: config.AccountFloorFetch{
+						Enabled: false,
+					},
+				},
+			},
+			err:            "Invalid Floor Model = 'version11' due to SkipRate = '110' is out of range (1-100)",
+			expFloorVal:    11.01,
+			expFloorCur:    "USD",
+			expPriceFlrLoc: openrtb_ext.RequestLocation,
 		},
 		{
 			name: "Rule selection with Site object, banner|300x600|www.website.com",
@@ -430,8 +455,8 @@ func TestEnrichWithPriceFloors(t *testing.T) {
 					Enabled: true,
 				},
 			},
-			expFloorVal:    100,
-			expFloorCur:    "INR",
+			expFloorVal:    1,
+			expFloorCur:    "USD",
 			expPriceFlrLoc: openrtb_ext.RequestLocation,
 		},
 	}
