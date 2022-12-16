@@ -18,14 +18,11 @@ func (c ChangeSetRawBidderResponse[T]) Bids() ChangeSetBids[T] {
 	return ChangeSetBids[T]{changeSetRawBidderResponse: c}
 }
 
-func (c ChangeSetRawBidderResponse[T]) castPayload(p T) (*RawBidderResponsePayload, error) {
+func (c ChangeSetRawBidderResponse[T]) castPayload(p T) (RawBidderResponsePayload, error) {
 	if payload, ok := any(p).(RawBidderResponsePayload); ok {
-		if payload.Bids == nil {
-			return nil, errors.New("empty bids provided")
-		}
-		return &payload, nil
+		return payload, nil
 	}
-	return nil, errors.New("failed to cast RawBidderResponsePayload")
+	return RawBidderResponsePayload{}, errors.New("failed to cast RawBidderResponsePayload")
 }
 
 type ChangeSetBids[T any] struct {
@@ -38,6 +35,9 @@ func (c ChangeSetBids[T]) Update(bids []*adapters.TypedBid) {
 		if err == nil {
 			bidderPayload.Bids = bids
 		}
-		return p, err
+		if payload, ok := any(bidderPayload).(T); ok {
+			return payload, nil
+		}
+		return p, errors.New("failed to cast RawBidderResponsePayload")
 	}, MutationUpdate, "bids")
 }

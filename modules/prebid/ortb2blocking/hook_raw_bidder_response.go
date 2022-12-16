@@ -187,13 +187,14 @@ func shouldBeBlockedDueToCattax(
 		return failedChecksData
 	}
 
-	// if blocking cattax was not specified use a default
+	// if blocking cattax was not specified use a default value
 	if blockAttr.cattax == 0 {
 		blockAttr.cattax = adcom1.CatTaxIABContent10
 	}
 
+	// cattax check has a reverse logic, the blockAttr.cattax should have one allowed value
 	if cattax != blockAttr.cattax {
-		failedChecksData["cattax"] = cattax
+		failedChecksData["cattax"] = []adcom1.CategoryTaxonomy{cattax}
 	}
 
 	return failedChecksData
