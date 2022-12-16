@@ -142,7 +142,6 @@ func getModulesOutcome(stageOutcomes []StageOutcome, trace trace, isDebugEnabled
 		modulesOutcome.Trace = &TraceOutcome{}
 		modulesOutcome.Trace.Stages = make([]Stage, 0, len(stages))
 
-		// iterate through slice of names to keep order of stages
 		for _, stage := range stageNames {
 			modulesOutcome.Trace.ExecutionTimeMillis += stages[stage].ExecutionTimeMillis
 			modulesOutcome.Trace.Stages = append(modulesOutcome.Trace.Stages, stages[stage])

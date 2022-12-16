@@ -21,6 +21,7 @@ import (
 	"github.com/prebid/openrtb/v17/native1"
 	nativeRequests "github.com/prebid/openrtb/v17/native1/request"
 	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/prebid-server/analytics"
 	"github.com/stretchr/testify/assert"
 
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
@@ -4741,6 +4742,43 @@ func TestValidResponseAfterExecutingStages(t *testing.T) {
 	}
 }
 
+func TestSendAuctionResponse_ErrorLoggedIfEnrichmentFails(t *testing.T) {
+	writer := httptest.NewRecorder()
+	bidResponse := openrtb2.BidResponse{ID: "some-id", Ext: json.RawMessage("...")}
+	bidRequest := openrtb2.BidRequest{ID: "some-id", Test: 1}
+	labels := metrics.Labels{}
+	ao := analytics.AuctionObject{}
+	account := &config.Account{DebugAllow: true}
+	hookExecutor := &mockStageExecutor{
+		outcomes: []hookexecution.StageOutcome{
+			{
+				Entity: "bid-request",
+				Stage:  hooks.StageBidderRequest.String(),
+				Groups: []hookexecution.GroupOutcome{
+					{
+						InvocationResults: []hookexecution.HookOutcome{
+							{
+								HookID: hookexecution.HookID{
+									ModuleCode: "foobar",
+									HookCode:   "foo",
+								},
+								Status:   hookexecution.StatusSuccess,
+								Action:   hookexecution.ActionNone,
+								Warnings: []string{"warning message"},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	expectedError := errors.New("Failed to enrich Bid Response with hook debug information: Invalid JSON Document")
+
+	labels, ao = sendAuctionResponse(writer, hookExecutor, &bidResponse, &bidRequest, account, labels, ao)
+	assert.Contains(t, ao.Errors, expectedError, "Missing expected error.")
+}
+
 type mockStoredResponseFetcher struct {
 	data map[string]json.RawMessage
 }
@@ -4776,4 +4814,14 @@ func getIntegrationFromRequest(req *openrtb_ext.RequestWrapper) (string, error) 
 	}
 	reqPrebid := reqExt.GetPrebid()
 	return reqPrebid.Integration, nil
+}
+
+type mockStageExecutor struct {
+	hookexecution.EmptyHookExecutor
+
+	outcomes []hookexecution.StageOutcome
+}
+
+func (e mockStageExecutor) GetOutcomes() []hookexecution.StageOutcome {
+	return e.outcomes
 }
