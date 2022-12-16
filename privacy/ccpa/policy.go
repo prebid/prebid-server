@@ -3,6 +3,8 @@ package ccpa
 import (
 	"fmt"
 
+	gpplib "github.com/prebid/go-gpp"
+	gppConstants "github.com/prebid/go-gpp/constants"
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -14,21 +16,30 @@ type Policy struct {
 }
 
 // ReadFromRequestWrapper extracts the CCPA regulatory information from an OpenRTB bid request.
-func ReadFromRequestWrapper(req *openrtb_ext.RequestWrapper) (Policy, error) {
+func ReadFromRequestWrapper(req *openrtb_ext.RequestWrapper, gpp gpplib.GppContainer) (Policy, error) {
 	var consent string
 	var noSaleBidders []string
 
-	if req == nil {
-		return Policy{}, nil
+	for i, id := range gpp.SectionTypes {
+		if id == gppConstants.SectionUSPV1 {
+			//if id == 6 {
+			consent = gpp.Sections[i].GetValue()
+		}
 	}
 
-	// Read consent from request.regs.ext
-	regsExt, err := req.GetRegExt()
-	if err != nil {
-		return Policy{}, fmt.Errorf("error reading request.regs.ext: %s", err)
-	}
-	if regsExt != nil {
-		consent = regsExt.GetUSPrivacy()
+	if consent == "" {
+		if req == nil {
+			return Policy{}, nil
+		}
+
+		// Read consent from request.regs.ext
+		regsExt, err := req.GetRegExt()
+		if err != nil {
+			return Policy{}, fmt.Errorf("error reading request.regs.ext: %s", err)
+		}
+		if regsExt != nil {
+			consent = regsExt.GetUSPrivacy()
+		}
 	}
 	// Read no sale bidders from request.ext.prebid
 	reqExt, err := req.GetRequestExt()
@@ -44,7 +55,17 @@ func ReadFromRequestWrapper(req *openrtb_ext.RequestWrapper) (Policy, error) {
 }
 
 func ReadFromRequest(req *openrtb2.BidRequest) (Policy, error) {
-	return ReadFromRequestWrapper(&openrtb_ext.RequestWrapper{BidRequest: req})
+	var gpp gpplib.GppContainer
+	var err error
+	if req.Regs != nil && len(req.Regs.GPP) > 0 {
+		gpp, err = gpplib.Parse(req.Regs.GPP)
+		if err != nil {
+			// zero out bad container
+			gpp = gpplib.GppContainer{}
+		}
+	}
+
+	return ReadFromRequestWrapper(&openrtb_ext.RequestWrapper{BidRequest: req}, gpp)
 }
 
 // Write mutates an OpenRTB bid request with the CCPA regulatory information.

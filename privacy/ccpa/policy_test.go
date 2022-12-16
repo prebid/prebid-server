@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	gpplib "github.com/prebid/go-gpp"
+	gppConstants "github.com/prebid/go-gpp/constants"
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
@@ -13,6 +15,7 @@ func TestReadFromRequest(t *testing.T) {
 	testCases := []struct {
 		description    string
 		request        *openrtb2.BidRequest
+		giveGPP        gpplib.GppContainer
 		expectedPolicy Policy
 		expectedError  bool
 	}{
@@ -153,13 +156,38 @@ func TestReadFromRequest(t *testing.T) {
 				Consent: "1YYY\"},\"oops\":\"malicious\",\"p\":{\"p\":\"",
 			},
 		},
+		{
+			description: "GPP Success",
+			request: &openrtb2.BidRequest{
+				Ext: json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
+			},
+			giveGPP: gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{6}, Sections: []gpplib.Section{&upsv1Section}},
+			expectedPolicy: Policy{
+				Consent:       "1YNY",
+				NoSaleBidders: []string{"a", "b"},
+			},
+		},
+		{
+			description: "GPP Success, has Regs.ext",
+			request: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":"ABC"}`)},
+				Ext:  json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
+			},
+			giveGPP: gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{6}, Sections: []gpplib.Section{&upsv1Section}},
+			expectedPolicy: Policy{
+				Consent:       "1YNY",
+				NoSaleBidders: []string{"a", "b"},
+			},
+		},
 	}
 
 	for _, test := range testCases {
-		reqWrapper := &openrtb_ext.RequestWrapper{BidRequest: test.request}
-		result, err := ReadFromRequestWrapper(reqWrapper)
-		assertError(t, test.expectedError, err, test.description)
-		assert.Equal(t, test.expectedPolicy, result, test.description)
+		t.Run(test.description, func(t *testing.T) {
+			reqWrapper := &openrtb_ext.RequestWrapper{BidRequest: test.request}
+			result, err := ReadFromRequestWrapper(reqWrapper, test.giveGPP)
+			assertError(t, test.expectedError, err, test.description)
+			assert.Equal(t, test.expectedPolicy, result, test.description)
+		})
 	}
 }
 
@@ -653,4 +681,20 @@ func assertError(t *testing.T, expectError bool, err error, description string) 
 	} else {
 		assert.NoError(t, err, description)
 	}
+}
+
+var upsv1Section mockGPPSection = mockGPPSection{sectionID: 6, value: "1YNY"}
+var tcf1Section mockGPPSection = mockGPPSection{sectionID: 2, value: "BOS2bx5OS2bx5ABABBAAABoAAAAAFA"}
+
+type mockGPPSection struct {
+	sectionID gppConstants.SectionID
+	value     string
+}
+
+func (ms mockGPPSection) GetID() gppConstants.SectionID {
+	return ms.sectionID
+}
+
+func (ms mockGPPSection) GetValue() string {
+	return ms.value
 }
