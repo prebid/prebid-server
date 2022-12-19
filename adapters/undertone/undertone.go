@@ -137,13 +137,19 @@ func (a *UndertoneAdapter) populateSiteApp(bidRequest *openrtb2.BidRequest, publ
 	pubId := strconv.Itoa(publisherId)
 	if site != nil {
 		siteCopy := *site
-		publisher := *siteCopy.Publisher
+		var publisher openrtb2.Publisher
+		if siteCopy.Publisher != nil {
+			publisher = *siteCopy.Publisher
+		}
 		publisher.ID = pubId
 		bidRequest.Site = &siteCopy
 		bidRequest.Site.Publisher = &publisher
 	} else if app != nil {
 		appCopy := *app
-		publisher := *appCopy.Publisher
+		var publisher openrtb2.Publisher
+		if appCopy.Publisher != nil {
+			publisher = *appCopy.Publisher
+		}
 		publisher.ID = pubId
 		bidRequest.App = &appCopy
 		bidRequest.App.Publisher = &publisher
