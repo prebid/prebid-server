@@ -211,19 +211,24 @@
       "mockResponse": {
         "status": 200,
         "body": {
-          "id": "ceb63773-4280-45f2-a684-94cf6a3b8fcf",
+          "id": "test-request-id",
           "seatbid": [
             {
               "bid": [
                 {
                   "id": "46189656-7e2e-477d-b7f2-e05de224bb89",
                   "impid": "div-gpt-ad-1460505748561-0",
-                  "price": 10,
-                  "adm": "\u003cdiv\u003eAd\u003c/div\u003e",
+                  "price": 100,
+                  "adm": "{banner html}",
                   "adomain": [
-                    "localhost:8080"
+                    "test.com"
                   ],
-                  "crid": "test-creative-id"
+                  "crid": "test-creative-id",
+                  "ext": {
+                    "prebid": {
+                      "type": "banner"
+                    }
+                  }
                 }
               ]
             }
@@ -239,8 +244,8 @@
       "bids": [
         {
           "bid": {
-            "id": "test-bid-id",
-            "impid": "test-imp-id",
+            "id": "46189656-7e2e-477d-b7f2-e05de224bb89",
+            "impid": "div-gpt-ad-1460505748561-0",
             "price": 100,
             "adm": "{banner html}",
             "crid": "test-creative-id",
