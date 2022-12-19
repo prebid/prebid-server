@@ -205,7 +205,7 @@
                   "id": "46189656-7e2e-477d-b7f2-e05de224bb89",
                   "impid": "div-gpt-ad-1460505748561-0",
                   "price": 100,
-                  "adm": "{banner html}",
+                  "adm": "{\n \"ver\": \"1.1\",\n \"imptrackers\": [\"http://imptracker.com\"],\n \"jstracker\": \"\u003cscript\u003etrack()\u003c/script\u003e\",\n \"link\": {\n  \"url\": \"http://i.am.a/URL\"\n },\n \"assets\": [\n  {\n   \"id\": 123,\n   \"required\": 1,\n   \"title\": {\n    \"text\": \"Learn about this awesome thing\"\n   }\n  },\n  {\n   \"id\": 124,\n   \"required\": 1,\n   \"img\": {\n    \"url\": \"http://www.myads.com/thumbnail1.png\"\n   }\n  },\n  {\n   \"id\": 128,\n   \"required\": 1,\n   \"img\": {\n    \"url\": \"http://www.myads.com/largethumb1.png\"\n   }\n  },\n  {\n   \"id\": 126,\n   \"required\": 1,\n   \"data\": {\n    \"value\": \"My Brand\"\n   }\n  },\n  {\n   \"id\": 127,\n   \"required\": 1,\n   \"data\": {\n    \"value\": \"Learn all about this awesome story of someone using my product.\"\n   }\n  },\n  {\n   \"id\": 4,\n   \"video\": {\n    \"vasttag\": \"\u003cVAST version=\\\"2.0\\\"\u003e\u003c/VAST\u003e\"\n   }\n  },\n  {\n   \"id\": 5,\n   \"link\": {\n    \"url\": \"http://landing.com\",\n    \"clicktrackers\": [\"http://tracker.com\"],\n    \"fallback\": \"http://fallback.com\"\n   }\n  }\n ]\n}",
                   "adomain": [
                     "test.com"
                   ],
@@ -233,7 +233,8 @@
             "id": "46189656-7e2e-477d-b7f2-e05de224bb89",
             "impid": "div-gpt-ad-1460505748561-0",
             "price": 100,
-            "adm": "{banner html}",
+
+            "adm": "{\n \"ver\": \"1.1\",\n \"imptrackers\": [\"http://imptracker.com\"],\n \"jstracker\": \"\u003cscript\u003etrack()\u003c/script\u003e\",\n \"link\": {\n  \"url\": \"http://i.am.a/URL\"\n },\n \"assets\": [\n  {\n   \"id\": 123,\n   \"required\": 1,\n   \"title\": {\n    \"text\": \"Learn about this awesome thing\"\n   }\n  },\n  {\n   \"id\": 124,\n   \"required\": 1,\n   \"img\": {\n    \"url\": \"http://www.myads.com/thumbnail1.png\"\n   }\n  },\n  {\n   \"id\": 128,\n   \"required\": 1,\n   \"img\": {\n    \"url\": \"http://www.myads.com/largethumb1.png\"\n   }\n  },\n  {\n   \"id\": 126,\n   \"required\": 1,\n   \"data\": {\n    \"value\": \"My Brand\"\n   }\n  },\n  {\n   \"id\": 127,\n   \"required\": 1,\n   \"data\": {\n    \"value\": \"Learn all about this awesome story of someone using my product.\"\n   }\n  },\n  {\n   \"id\": 4,\n   \"video\": {\n    \"vasttag\": \"\u003cVAST version=\\\"2.0\\\"\u003e\u003c/VAST\u003e\"\n   }\n  },\n  {\n   \"id\": 5,\n   \"link\": {\n    \"url\": \"http://landing.com\",\n    \"clicktrackers\": [\"http://tracker.com\"],\n    \"fallback\": \"http://fallback.com\"\n   }\n  }\n ]\n}",
             "crid": "test-creative-id",
             "adomain": [
               "test.com"
