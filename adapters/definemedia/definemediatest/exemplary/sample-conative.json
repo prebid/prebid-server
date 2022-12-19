@@ -3,7 +3,7 @@
     "imp": [
       {
         "ext": {
-          "tid": "7269f14e-9b1f-4fb8-a585-bfc586c8f8fa",
+          "tid": "397962d3-47a1-4634-9cb7-78597b01d9a9",
           "prebid": {
             "bidder": {
               "definemedia": {}
@@ -31,8 +31,8 @@
       }
     },
     "device": {
-      "w": 970,
-      "h": 969,
+      "w": 1098,
+      "h": 1169,
       "dnt": 0,
       "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
       "language": "de",
@@ -81,19 +81,19 @@
         "architecture": "x86"
       }
     },
-    "id": "661d44d5-a8f4-44d3-9a01-af71ea1c0d3e",
+    "id": "ceb63773-4280-45f2-a684-94cf6a3b8fcf",
     "test": 0,
     "source": {
-      "tid": "661d44d5-a8f4-44d3-9a01-af71ea1c0d3e"
+      "tid": "ceb63773-4280-45f2-a684-94cf6a3b8fcf"
     },
     "ext": {
       "prebid": {
-        "debug": true,
-        "server": {
-          "datacenter": "",
-          "externalurl": "http://localhost:8000",
-          "gvlid": 0
+        "auctiontimestamp": 1671449004622,
+        "targeting": {
+          "includewinners": true,
+          "includebidderkeys": false
         },
+        "debug": true,
         "channel": {
           "name": "pbjs",
           "version": "v7.28.0"
@@ -105,8 +105,9 @@
   "httpCalls": [
     {
       "expectedRequest": {
+        "uri": "https://gzbsrk4sxf.execute-api.eu-west-1.amazonaws.com/openrtb2/auction",
         "body": {
-          "id": "661d44d5-a8f4-44d3-9a01-af71ea1c0d3e",
+          "id": "ceb63773-4280-45f2-a684-94cf6a3b8fcf",
           "imp": [
             {
               "id": "div-gpt-ad-1460505748561-0",
@@ -120,8 +121,12 @@
                 "topframe": 1
               },
               "ext": {
-                "bidder": {},
-                "tid": "7269f14e-9b1f-4fb8-a585-bfc586c8f8fa"
+                "prebid": {
+                  "bidder": {
+                    "definemedia": {}
+                  }
+                },
+                "tid": "397962d3-47a1-4634-9cb7-78597b01d9a9"
               }
             }
           ],
@@ -179,40 +184,39 @@
               "bitness": "64",
               "source": 2
             },
-            "h": 969,
-            "w": 970,
+            "h": 1169,
+            "w": 1098,
             "language": "de"
           },
           "tmax": 1000,
           "source": {
-            "tid": "661d44d5-a8f4-44d3-9a01-af71ea1c0d3e"
+            "tid": "ceb63773-4280-45f2-a684-94cf6a3b8fcf"
           },
           "ext": {
             "prebid": {
+              "auctiontimestamp": 1.671449004622e+12,
               "channel": {
                 "name": "pbjs",
                 "version": "v7.28.0"
               },
               "debug": true,
-              "server": {
-                "externalurl": "http://localhost:8000",
-                "gvlid": 0,
-                "datacenter": ""
+              "targeting": {
+                "includebidderkeys": false,
+                "includewinners": true
               }
             }
           }
-        },
-        "uri": "https://gzbsrk4sxf.execute-api.eu-west-1.amazonaws.com/openrtb2/auction"
+        }
       },
       "mockResponse": {
         "status": 200,
         "body": {
-          "id": "661d44d5-a8f4-44d3-9a01-af71ea1c0d3e",
+          "id": "ceb63773-4280-45f2-a684-94cf6a3b8fcf",
           "seatbid": [
             {
               "bid": [
                 {
-                  "id": "e4f3df81-4714-4886-baf2-25f282107615",
+                  "id": "46189656-7e2e-477d-b7f2-e05de224bb89",
                   "impid": "div-gpt-ad-1460505748561-0",
                   "price": 10,
                   "adm": "\u003cdiv\u003eAd\u003c/div\u003e",
@@ -229,5 +233,29 @@
       }
     }
   ],
-  "expectedBidResponses": []
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-bid-id",
+            "impid": "test-imp-id",
+            "price": 100,
+            "adm": "{banner html}",
+            "crid": "test-creative-id",
+            "adomain": [
+              "test.com"
+            ],
+            "ext": {
+              "prebid": {
+                "type": "banner"
+              }
+            }
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
 }

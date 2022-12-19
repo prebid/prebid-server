@@ -156,7 +156,7 @@
             "bid": [{
               "id": "test-bid-id",
               "impid": "test-imp-id",
-              "price": 10,
+              "price": 100,
               "adm": "{banner html}",
               "adomain": [ "test.com" ],
               "crid": "test-creative-id",
@@ -178,7 +178,7 @@
           "bid": {
             "id": "test-bid-id",
             "impid": "test-imp-id",
-            "price": 10,
+            "price": 100,
             "adm": "{banner html}",
             "crid": "test-creative-id",
             "adomain": [ "test.com" ],
