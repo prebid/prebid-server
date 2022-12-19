@@ -190,7 +190,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	usersyncs := usersync.ParseCookieFromRequest(r, &(deps.cfg.HostCookie))
-	if req.App == nil {
+	if req.Site != nil {
 		if usersyncs.HasAnyLiveSyncs() {
 			labels.CookieFlag = metrics.CookieFlagYes
 		} else {
@@ -378,13 +378,15 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	}
 
 	// retrieve storedRequests and storedImps once more in case stored data was changed by the raw auction hook
-	impInfo, errs = parseImpInfo(requestJson)
-	if len(errs) > 0 {
-		return nil, nil, nil, nil, nil, nil, errs
-	}
-	storedBidRequestId, hasStoredBidRequest, storedRequests, storedImps, errs = deps.getStoredRequests(ctx, requestJson, impInfo)
-	if len(errs) > 0 {
-		return
+	if hasPayloadUpdatesAt(hooks.StageRawAuctionRequest.String(), deps.hookExecutor.GetOutcomes()) {
+		impInfo, errs = parseImpInfo(requestJson)
+		if len(errs) > 0 {
+			return nil, nil, nil, nil, nil, nil, errs
+		}
+		storedBidRequestId, hasStoredBidRequest, storedRequests, storedImps, errs = deps.getStoredRequests(ctx, requestJson, impInfo)
+		if len(errs) > 0 {
+			return
+		}
 	}
 
 	// Fetch the Stored Request data and merge it into the HTTP request.
@@ -428,6 +430,26 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	}
 
 	return
+}
+
+// hasPayloadUpdatesAt checks if there are any successful payload updates at given stage
+func hasPayloadUpdatesAt(stageName string, outcomes []hookexecution.StageOutcome) bool {
+	for _, outcome := range outcomes {
+		if stageName != outcome.Stage {
+			continue
+		}
+
+		for _, group := range outcome.Groups {
+			for _, invocationResult := range group.InvocationResults {
+				if invocationResult.Status == hookexecution.StatusSuccess &&
+					invocationResult.Action == hookexecution.ActionUpdate {
+					return true
+				}
+			}
+		}
+	}
+
+	return false
 }
 
 // parseTimeout returns parses tmax from the requestJson, or returns the default if it doesn't exist.
