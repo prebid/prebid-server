@@ -28,6 +28,7 @@ const (
 
 type StageExecutor interface {
 	ExecuteEntrypointStage(req *http.Request, body []byte) ([]byte, *RejectError)
+	ExecuteRawAuctionStage(body []byte) ([]byte, *RejectError)
 }
 
 type HookStageExecutor interface {
@@ -77,7 +78,6 @@ func (e *hookExecutor) ExecuteEntrypointStage(req *http.Request, body []byte) ([
 		return body, nil
 	}
 
-	stageName := hooks.StageEntrypoint.String()
 	handler := func(
 		ctx context.Context,
 		moduleCtx hookstage.ModuleInvocationContext,
@@ -87,15 +87,10 @@ func (e *hookExecutor) ExecuteEntrypointStage(req *http.Request, body []byte) ([
 		return hook.HandleEntrypointHook(ctx, moduleCtx, payload)
 	}
 
-	executionCtx := executionContext{
-		endpoint:       e.endpoint,
-		stage:          stageName,
-		accountId:      e.accountID,
-		account:        e.account,
-		moduleContexts: e.moduleContexts,
-	}
-
+	stageName := hooks.StageEntrypoint.String()
+	executionCtx := e.newContext(stageName)
 	payload := hookstage.EntrypointPayload{Request: req, Body: body}
+
 	outcome, payload, contexts, rejectErr := executeStage(executionCtx, plan, payload, handler, e.metricEngine)
 	outcome.Entity = entityHttpRequest
 	outcome.Stage = stageName
@@ -104,6 +99,45 @@ func (e *hookExecutor) ExecuteEntrypointStage(req *http.Request, body []byte) ([
 	e.pushStageOutcome(outcome)
 
 	return payload.Body, rejectErr
+}
+
+func (e *hookExecutor) ExecuteRawAuctionStage(requestBody []byte) ([]byte, *RejectError) {
+	plan := e.planBuilder.PlanForRawAuctionStage(e.endpoint, e.account)
+	if len(plan) == 0 {
+		return requestBody, nil
+	}
+
+	handler := func(
+		ctx context.Context,
+		moduleCtx hookstage.ModuleInvocationContext,
+		hook hookstage.RawAuctionRequest,
+		payload hookstage.RawAuctionRequestPayload,
+	) (hookstage.HookResult[hookstage.RawAuctionRequestPayload], error) {
+		return hook.HandleRawAuctionHook(ctx, moduleCtx, payload)
+	}
+
+	stageName := hooks.StageRawAuctionRequest.String()
+	executionCtx := e.newContext(stageName)
+	payload := hookstage.RawAuctionRequestPayload(requestBody)
+
+	outcome, payload, contexts, reject := executeStage(executionCtx, plan, payload, handler, e.metricEngine)
+	outcome.Entity = entityAuctionRequest
+	outcome.Stage = stageName
+
+	e.saveModuleContexts(contexts)
+	e.pushStageOutcome(outcome)
+
+	return payload, reject
+}
+
+func (e *hookExecutor) newContext(stage string) executionContext {
+	return executionContext{
+		account:        e.account,
+		accountId:      e.accountID,
+		endpoint:       e.endpoint,
+		moduleContexts: e.moduleContexts,
+		stage:          stage,
+	}
 }
 
 func (e *hookExecutor) saveModuleContexts(ctxs stageModuleContext) {
@@ -129,5 +163,9 @@ func (executor *EmptyHookExecutor) GetOutcomes() []StageOutcome {
 }
 
 func (executor *EmptyHookExecutor) ExecuteEntrypointStage(_ *http.Request, body []byte) ([]byte, *RejectError) {
+	return body, nil
+}
+
+func (executor *EmptyHookExecutor) ExecuteRawAuctionStage(body []byte) ([]byte, *RejectError) {
 	return body, nil
 }
