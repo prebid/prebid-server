@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestReadFromRequest(t *testing.T) {
+func TestReadFromRequestWrapper(t *testing.T) {
 	testCases := []struct {
 		description    string
 		request        *openrtb2.BidRequest
@@ -193,6 +193,84 @@ func TestReadFromRequest(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			reqWrapper := &openrtb_ext.RequestWrapper{BidRequest: test.request}
 			result, err := ReadFromRequestWrapper(reqWrapper, test.giveGPP)
+			assertError(t, test.expectedError, err, test.description)
+			assert.Equal(t, test.expectedPolicy, result)
+		})
+	}
+}
+
+func TestReadFromRequest(t *testing.T) {
+	testCases := []struct {
+		description    string
+		request        *openrtb2.BidRequest
+		expectedPolicy Policy
+		expectedError  bool
+	}{
+		{
+			description: "Success",
+			request: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":"ABC"}`)},
+				Ext:  json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
+			},
+			expectedPolicy: Policy{
+				Consent:       "ABC",
+				NoSaleBidders: []string{"a", "b"},
+			},
+		},
+		{
+			description: "Nil Request",
+			request:     nil,
+			expectedPolicy: Policy{
+				Consent:       "",
+				NoSaleBidders: nil,
+			},
+		},
+		{
+			description: "Nil Regs",
+			request: &openrtb2.BidRequest{
+				Regs: nil,
+				Ext:  json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
+			},
+			expectedPolicy: Policy{
+				Consent:       "",
+				NoSaleBidders: []string{"a", "b"},
+			},
+		},
+		{
+			description: "GPP Success",
+			request: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{GPP: "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN"},
+				Ext:  json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
+			},
+			expectedPolicy: Policy{
+				Consent:       "1YNN",
+				NoSaleBidders: []string{"a", "b"},
+			},
+		},
+		{
+			description: "GPP Success, has Regs.ext",
+			request: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{GPP: "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN", Ext: json.RawMessage(`{"us_privacy":"ABC"}`)},
+				Ext:  json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
+			},
+			expectedPolicy: Policy{
+				Consent:       "1YNN",
+				NoSaleBidders: []string{"a", "b"},
+			},
+		},
+		{
+			description: "GPP Success, no USPV1",
+			request: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{GPP: "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA"}},
+			expectedPolicy: Policy{
+				Consent: "",
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			result, err := ReadFromRequest(test.request)
 			assertError(t, test.expectedError, err, test.description)
 			assert.Equal(t, test.expectedPolicy, result)
 		})

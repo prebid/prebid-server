@@ -55,7 +55,7 @@ func ReadFromRequestWrapper(req *openrtb_ext.RequestWrapper, gpp gpplib.GppConta
 
 func ReadFromRequest(req *openrtb2.BidRequest) (Policy, error) {
 	var gpp gpplib.GppContainer
-	if req.Regs != nil && len(req.Regs.GPP) > 0 {
+	if req != nil && req.Regs != nil && len(req.Regs.GPP) > 0 {
 		gpp, _ = gpplib.Parse(req.Regs.GPP)
 	}
 
