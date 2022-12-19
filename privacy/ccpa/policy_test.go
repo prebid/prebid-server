@@ -179,6 +179,14 @@ func TestReadFromRequest(t *testing.T) {
 				NoSaleBidders: []string{"a", "b"},
 			},
 		},
+		{
+			description: "GPP Success, no USPV1",
+			request:     &openrtb2.BidRequest{},
+			giveGPP:     gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{2}, Sections: []gpplib.Section{&tcf1Section}},
+			expectedPolicy: Policy{
+				Consent: "",
+			},
+		},
 	}
 
 	for _, test := range testCases {
@@ -186,7 +194,7 @@ func TestReadFromRequest(t *testing.T) {
 			reqWrapper := &openrtb_ext.RequestWrapper{BidRequest: test.request}
 			result, err := ReadFromRequestWrapper(reqWrapper, test.giveGPP)
 			assertError(t, test.expectedError, err, test.description)
-			assert.Equal(t, test.expectedPolicy, result, test.description)
+			assert.Equal(t, test.expectedPolicy, result)
 		})
 	}
 }

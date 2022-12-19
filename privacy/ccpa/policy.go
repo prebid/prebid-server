@@ -22,7 +22,6 @@ func ReadFromRequestWrapper(req *openrtb_ext.RequestWrapper, gpp gpplib.GppConta
 
 	for i, id := range gpp.SectionTypes {
 		if id == gppConstants.SectionUSPV1 {
-			//if id == 6 {
 			consent = gpp.Sections[i].GetValue()
 		}
 	}
@@ -56,13 +55,8 @@ func ReadFromRequestWrapper(req *openrtb_ext.RequestWrapper, gpp gpplib.GppConta
 
 func ReadFromRequest(req *openrtb2.BidRequest) (Policy, error) {
 	var gpp gpplib.GppContainer
-	var err error
 	if req.Regs != nil && len(req.Regs.GPP) > 0 {
-		gpp, err = gpplib.Parse(req.Regs.GPP)
-		if err != nil {
-			// zero out bad container
-			gpp = gpplib.GppContainer{}
-		}
+		gpp, _ = gpplib.Parse(req.Regs.GPP)
 	}
 
 	return ReadFromRequestWrapper(&openrtb_ext.RequestWrapper{BidRequest: req}, gpp)

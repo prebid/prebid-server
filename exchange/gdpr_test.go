@@ -83,12 +83,12 @@ func TestExtractGDPR(t *testing.T) {
 			}
 
 			result, err := extractGDPR(&bidReq)
-			assert.Equal(t, tt.wantGDPR, result, tt.description)
+			assert.Equal(t, tt.wantGDPR, result)
 
 			if tt.wantError {
-				assert.NotNil(t, err, tt.description)
+				assert.NotNil(t, err)
 			} else {
-				assert.Nil(t, err, tt.description)
+				assert.Nil(t, err)
 			}
 		})
 	}
