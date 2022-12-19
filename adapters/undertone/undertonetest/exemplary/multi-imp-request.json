@@ -53,11 +53,18 @@
         "ext": {
           "bidder": {
             "publisherId": 1234,
-            "placementId": 12345
+            "placementId": 123456
           }
         }
       }
-    ]
+    ],
+    "site": {
+      "domain": "www.example.com",
+      "page": "http://www.example.com",
+      "publisher": {
+        "domain": "example.com"
+      }
+    }
   },
   "httpCalls": [
     {
@@ -79,7 +86,8 @@
                     "h": 300
                   }
                 ]
-              }
+              },
+              "tagid": "12345"
             },
             {
               "id": "test-imp-video-id",
@@ -107,15 +115,24 @@
                   3,
                   4
                 ]
-              }
+              },
+              "tagid": "123456"
             }
-          ]
-        },
-        "ext": {
-          "prebid": {
-            "bidderparams": {
-              "id": 4,
-              "version": 1
+          ],
+          "site": {
+            "domain": "www.example.com",
+            "page": "http://www.example.com",
+            "publisher": {
+              "id": "1234",
+              "domain": "example.com"
+            }
+          },
+          "ext": {
+            "prebid": {
+              "bidderparams": {
+                "id": 4,
+                "version": "1.0.0"
+              }
             }
           }
         }
@@ -135,7 +152,7 @@
                   "adid": "29681110",
                   "adm": "some-test-ad",
                   "adomain": [
-                    "yahoo.com"
+                    "undertone.com"
                   ],
                   "cid": "958",
                   "crid": "29681110",
@@ -161,7 +178,7 @@
           "adm": "some-test-ad",
           "adid": "29681110",
           "adomain": [
-            "yahoo.com"
+            "undertone.com"
           ],
           "cid": "958",
           "crid": "29681110",

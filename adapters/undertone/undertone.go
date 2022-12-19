@@ -139,10 +139,10 @@ func (a *UndertoneAdapter) populateBidReqExt(bidRequest *openrtb2.BidRequest) {
 		Id:      4,
 		Version: "1.0.0",
 	}
-	bidRequestExt := &BidRequestExt{}
 	undertoneBidderParamsJSON, err := json.Marshal(undertoneBidderParams)
 	if err == nil {
-		bidRequestExt.Prebid.BidderParams = undertoneBidderParamsJSON
+		extRequestPrebid := &openrtb_ext.ExtRequestPrebid{BidderParams: undertoneBidderParamsJSON}
+		bidRequestExt := &BidRequestExt{Prebid: extRequestPrebid}
 		bidRequestExtJSON, err2 := json.Marshal(bidRequestExt)
 		if err2 == nil {
 			bidRequest.Ext = bidRequestExtJSON
