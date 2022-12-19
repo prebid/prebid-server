@@ -142,6 +142,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/triplelift"
 	"github.com/prebid/prebid-server/adapters/triplelift_native"
 	"github.com/prebid/prebid-server/adapters/ucfunnel"
+	"github.com/prebid/prebid-server/adapters/undertone"
 	"github.com/prebid/prebid-server/adapters/unicorn"
 	"github.com/prebid/prebid-server/adapters/unruly"
 	"github.com/prebid/prebid-server/adapters/videobyte"
@@ -327,5 +328,6 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderYieldmo:           yieldmo.Builder,
 		openrtb_ext.BidderYieldone:          yieldone.Builder,
 		openrtb_ext.BidderZeroClickFraud:    zeroclickfraud.Builder,
+		openrtb_ext.BidderUndertone:         undertone.Builder,
 	}
 }

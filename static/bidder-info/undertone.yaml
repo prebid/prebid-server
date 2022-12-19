@@ -1,0 +1,16 @@
+#endpoint: "https://ads.undertone.com/rtb"
+endpoint: http://localhost:8081/rtb # todo: do not commit this
+maintainer:
+  email: csop@undertone.com
+endpointCompression: gzip
+gvlVendorID: 677
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
