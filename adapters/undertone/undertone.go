@@ -117,23 +117,6 @@ func (a *UndertoneAdapter) MakeBids(request *openrtb2.BidRequest, requestData *a
 	return bidResponse, nil
 }
 
-func (a *UndertoneAdapter) findImp(impId string, imps []openrtb2.Imp) (bool, openrtb_ext.BidType) {
-	var mediaType openrtb_ext.BidType
-	var exists bool
-	for _, imp := range imps {
-		if imp.ID == impId {
-			exists = true
-			if imp.Banner != nil {
-				mediaType = openrtb_ext.BidTypeBanner
-			} else if imp.Video != nil {
-				mediaType = openrtb_ext.BidTypeVideo
-			}
-			break
-		}
-	}
-	return exists, mediaType
-}
-
 func (a *UndertoneAdapter) populateBidReqExt(bidRequest *openrtb2.BidRequest) {
 	undertoneBidderParams := &UndertoneBidderParams{
 		Id:      4,
