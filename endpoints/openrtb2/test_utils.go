@@ -29,6 +29,7 @@ import (
 	"github.com/prebid/prebid-server/experiment/adscert"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/hooks"
+	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/prebid/prebid-server/metrics"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -67,6 +68,7 @@ type testCase struct {
 	ExpectedReturnCode      int               `json:"expectedReturnCode,omitempty"`
 	ExpectedErrorMessage    string            `json:"expectedErrorMessage"`
 	Query                   string            `json:"query"`
+	planBuilder             hooks.ExecutionPlanBuilder
 
 	// "/openrtb2/auction" endpoint JSON test info
 	ExpectedBidResponse json.RawMessage `json:"expectedBidResponse"`
@@ -1293,6 +1295,11 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 		},
 	}
 
+	planBuilder := test.planBuilder
+	if planBuilder == nil {
+		planBuilder = hooks.EmptyPlanBuilder{}
+	}
+
 	var endpointBuilder func(uuidutil.UUIDGenerator, exchange.Exchange, openrtb_ext.BidderParamValidator, stored_requests.Fetcher, stored_requests.AccountFetcher, *config.Configuration, metrics.MetricsEngine, analytics.PBSAnalyticsModule, map[string]string, []byte, map[string]openrtb_ext.BidderName, stored_requests.Fetcher, hooks.ExecutionPlanBuilder) (httprouter.Handle, error)
 
 	switch test.endpointType {
@@ -1315,7 +1322,7 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 		[]byte(test.Config.AliasJSON),
 		bidderMap,
 		storedResponseFetcher,
-		hooks.EmptyPlanBuilder{},
+		planBuilder,
 	)
 
 	return endpoint, testExchange.(*exchangeTestWrapper), mockBidServersArray, mockCurrencyRatesServer, err
@@ -1427,4 +1434,77 @@ func (p *fakePermissions) AuctionActivitiesAllowed(ctx context.Context, bidderCo
 	return gdpr.AuctionPermissions{
 		AllowBidRequest: true,
 	}, nil
+}
+
+type mockPlanBuilder struct {
+	entrypointPlan               hooks.Plan[hookstage.Entrypoint]
+	rawAuctionPlan               hooks.Plan[hookstage.RawAuctionRequest]
+	processedAuctionPlan         hooks.Plan[hookstage.ProcessedAuctionRequest]
+	bidderRequestPlan            hooks.Plan[hookstage.BidderRequest]
+	bidderResponsePlan           hooks.Plan[hookstage.RawBidderResponse]
+	allProcessedBidResponsesPlan hooks.Plan[hookstage.AllProcessedBidResponses]
+	auctionResponsePlan          hooks.Plan[hookstage.AuctionResponse]
+}
+
+func (m mockPlanBuilder) PlanForEntrypointStage(_ string) hooks.Plan[hookstage.Entrypoint] {
+	return m.entrypointPlan
+}
+
+func (m mockPlanBuilder) PlanForRawAuctionStage(_ string, _ *config.Account) hooks.Plan[hookstage.RawAuctionRequest] {
+	return m.rawAuctionPlan
+}
+
+func (m mockPlanBuilder) PlanForProcessedAuctionStage(_ string, _ *config.Account) hooks.Plan[hookstage.ProcessedAuctionRequest] {
+	return m.processedAuctionPlan
+}
+
+func (m mockPlanBuilder) PlanForBidderRequestStage(_ string, _ *config.Account) hooks.Plan[hookstage.BidderRequest] {
+	return m.bidderRequestPlan
+}
+
+func (m mockPlanBuilder) PlanForRawBidderResponseStage(_ string, _ *config.Account) hooks.Plan[hookstage.RawBidderResponse] {
+	return m.bidderResponsePlan
+}
+
+func (m mockPlanBuilder) PlanForAllProcessedBidResponsesStage(_ string, _ *config.Account) hooks.Plan[hookstage.AllProcessedBidResponses] {
+	return m.allProcessedBidResponsesPlan
+}
+
+func (m mockPlanBuilder) PlanForAuctionResponseStage(_ string, _ *config.Account) hooks.Plan[hookstage.AuctionResponse] {
+	return m.auctionResponsePlan
+}
+
+func makeRejectPlan[H any](hook H) hooks.Plan[H] {
+	return hooks.Plan[H]{
+		{
+			Timeout: 5 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[H]{
+				{
+					Module: "foobar",
+					Code:   "foo",
+					Hook:   hook,
+				},
+			},
+		},
+	}
+}
+
+type mockRejectionHook struct {
+	nbr int
+}
+
+func (m mockRejectionHook) HandleEntrypointHook(
+	_ context.Context,
+	_ hookstage.ModuleInvocationContext,
+	_ hookstage.EntrypointPayload,
+) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+	return hookstage.HookResult[hookstage.EntrypointPayload]{Reject: true, NbrCode: m.nbr}, nil
+}
+
+func (m mockRejectionHook) HandleRawAuctionHook(
+	_ context.Context,
+	_ hookstage.ModuleInvocationContext,
+	_ hookstage.RawAuctionRequestPayload,
+) (hookstage.HookResult[hookstage.RawAuctionRequestPayload], error) {
+	return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{Reject: true, NbrCode: m.nbr}, nil
 }
