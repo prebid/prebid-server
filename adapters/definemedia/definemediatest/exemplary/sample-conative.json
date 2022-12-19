@@ -1,0 +1,233 @@
+{
+  "mockBidRequest": {
+    "imp": [
+      {
+        "ext": {
+          "tid": "7269f14e-9b1f-4fb8-a585-bfc586c8f8fa",
+          "prebid": {
+            "bidder": {
+              "definemedia": {}
+            }
+          }
+        },
+        "id": "div-gpt-ad-1460505748561-0",
+        "banner": {
+          "topframe": 1,
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        }
+      }
+    ],
+    "site": {
+      "page": "http://localhost:8080/prebidServer_example.html?pbjs_debug=true",
+      "domain": "localhost:8080",
+      "publisher": {
+        "domain": "localhost:8080",
+        "id": "1"
+      }
+    },
+    "device": {
+      "w": 970,
+      "h": 969,
+      "dnt": 0,
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
+      "language": "de",
+      "sua": {
+        "source": 2,
+        "platform": {
+          "brand": "macOS",
+          "version": [
+            "12",
+            "3",
+            "1"
+          ]
+        },
+        "browsers": [
+          {
+            "brand": "Not?A_Brand",
+            "version": [
+              "8",
+              "0",
+              "0",
+              "0"
+            ]
+          },
+          {
+            "brand": "Chromium",
+            "version": [
+              "108",
+              "0",
+              "5359",
+              "124"
+            ]
+          },
+          {
+            "brand": "Google Chrome",
+            "version": [
+              "108",
+              "0",
+              "5359",
+              "124"
+            ]
+          }
+        ],
+        "mobile": 0,
+        "model": "",
+        "bitness": "64",
+        "architecture": "x86"
+      }
+    },
+    "id": "661d44d5-a8f4-44d3-9a01-af71ea1c0d3e",
+    "test": 0,
+    "source": {
+      "tid": "661d44d5-a8f4-44d3-9a01-af71ea1c0d3e"
+    },
+    "ext": {
+      "prebid": {
+        "debug": true,
+        "server": {
+          "datacenter": "",
+          "externalurl": "http://localhost:8000",
+          "gvlid": 0
+        },
+        "channel": {
+          "name": "pbjs",
+          "version": "v7.28.0"
+        }
+      }
+    },
+    "tmax": 1000
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "body": {
+          "id": "661d44d5-a8f4-44d3-9a01-af71ea1c0d3e",
+          "imp": [
+            {
+              "id": "div-gpt-ad-1460505748561-0",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ],
+                "topframe": 1
+              },
+              "ext": {
+                "bidder": {},
+                "tid": "7269f14e-9b1f-4fb8-a585-bfc586c8f8fa"
+              }
+            }
+          ],
+          "site": {
+            "domain": "localhost:8080",
+            "page": "http://localhost:8080/prebidServer_example.html?pbjs_debug=true",
+            "publisher": {
+              "id": "1",
+              "domain": "localhost:8080"
+            }
+          },
+          "device": {
+            "dnt": 0,
+            "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
+            "sua": {
+              "browsers": [
+                {
+                  "brand": "Not?A_Brand",
+                  "version": [
+                    "8",
+                    "0",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "brand": "Chromium",
+                  "version": [
+                    "108",
+                    "0",
+                    "5359",
+                    "124"
+                  ]
+                },
+                {
+                  "brand": "Google Chrome",
+                  "version": [
+                    "108",
+                    "0",
+                    "5359",
+                    "124"
+                  ]
+                }
+              ],
+              "platform": {
+                "brand": "macOS",
+                "version": [
+                  "12",
+                  "3",
+                  "1"
+                ]
+              },
+              "mobile": 0,
+              "architecture": "x86",
+              "bitness": "64",
+              "source": 2
+            },
+            "h": 969,
+            "w": 970,
+            "language": "de"
+          },
+          "tmax": 1000,
+          "source": {
+            "tid": "661d44d5-a8f4-44d3-9a01-af71ea1c0d3e"
+          },
+          "ext": {
+            "prebid": {
+              "channel": {
+                "name": "pbjs",
+                "version": "v7.28.0"
+              },
+              "debug": true,
+              "server": {
+                "externalurl": "http://localhost:8000",
+                "gvlid": 0,
+                "datacenter": ""
+              }
+            }
+          }
+        },
+        "uri": "https://gzbsrk4sxf.execute-api.eu-west-1.amazonaws.com/openrtb2/auction"
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "661d44d5-a8f4-44d3-9a01-af71ea1c0d3e",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "e4f3df81-4714-4886-baf2-25f282107615",
+                  "impid": "div-gpt-ad-1460505748561-0",
+                  "price": 10,
+                  "adm": "\u003cdiv\u003eAd\u003c/div\u003e",
+                  "adomain": [
+                    "localhost:8080"
+                  ],
+                  "crid": "test-creative-id"
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}
