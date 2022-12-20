@@ -217,7 +217,7 @@ func TestExecuteEntrypointStage(t *testing.T) {
 			},
 		},
 		{
-			description:            "Request can be changed when a hook times out",
+			description:            "Stage execution can be timed out",
 			givenBody:              body,
 			givenUrl:               urlString,
 			givenPlanBuilder:       TestWithTimeoutPlanBuilder{},
@@ -500,12 +500,15 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 			expectedModuleContexts: foobarModuleCtx,
 			expectedStageOutcomes: []StageOutcome{
 				{
-					Entity: entityAuctionRequest,
-					Stage:  hooks.StageRawAuctionRequest.String(),
+					ExecutionTime: ExecutionTime{},
+					Entity:        entityAuctionRequest,
+					Stage:         hooks.StageRawAuctionRequest.String(),
 					Groups: []GroupOutcome{
 						{
+							ExecutionTime: ExecutionTime{},
 							InvocationResults: []HookOutcome{
 								{
+									ExecutionTime: ExecutionTime{},
 									AnalyticsTags: hookanalytics.Analytics{},
 									HookID:        HookID{ModuleCode: "foobar", HookImplCode: "foo"},
 									Status:        StatusSuccess,
@@ -519,6 +522,7 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 									Warnings: nil,
 								},
 								{
+									ExecutionTime: ExecutionTime{},
 									AnalyticsTags: hookanalytics.Analytics{},
 									HookID:        HookID{ModuleCode: "foobar", HookImplCode: "baz"},
 									Status:        StatusExecutionFailure,
@@ -531,8 +535,10 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 							},
 						},
 						{
+							ExecutionTime: ExecutionTime{},
 							InvocationResults: []HookOutcome{
 								{
+									ExecutionTime: ExecutionTime{},
 									AnalyticsTags: hookanalytics.Analytics{},
 									HookID:        HookID{ModuleCode: "foobar", HookImplCode: "bar"},
 									Status:        StatusSuccess,
@@ -551,7 +557,7 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 			},
 		},
 		{
-			description:            "Request can be changed when a hook times out",
+			description:            "Stage execution can be timed out",
 			givenBody:              body,
 			givenUrl:               urlString,
 			givenPlanBuilder:       TestWithTimeoutPlanBuilder{},
@@ -561,12 +567,15 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 			expectedModuleContexts: foobarModuleCtx,
 			expectedStageOutcomes: []StageOutcome{
 				{
-					Entity: entityAuctionRequest,
-					Stage:  hooks.StageRawAuctionRequest.String(),
+					ExecutionTime: ExecutionTime{},
+					Entity:        entityAuctionRequest,
+					Stage:         hooks.StageRawAuctionRequest.String(),
 					Groups: []GroupOutcome{
 						{
+							ExecutionTime: ExecutionTime{},
 							InvocationResults: []HookOutcome{
 								{
+									ExecutionTime: ExecutionTime{},
 									AnalyticsTags: hookanalytics.Analytics{},
 									HookID:        HookID{ModuleCode: "foobar", HookImplCode: "foo"},
 									Status:        StatusSuccess,
@@ -582,8 +591,10 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 							},
 						},
 						{
+							ExecutionTime: ExecutionTime{},
 							InvocationResults: []HookOutcome{
 								{
+									ExecutionTime: ExecutionTime{},
 									AnalyticsTags: hookanalytics.Analytics{},
 									HookID:        HookID{ModuleCode: "foobar", HookImplCode: "bar"},
 									Status:        StatusTimeout,
@@ -613,12 +624,15 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 			}},
 			expectedStageOutcomes: []StageOutcome{
 				{
-					Entity: entityAuctionRequest,
-					Stage:  hooks.StageRawAuctionRequest.String(),
+					ExecutionTime: ExecutionTime{},
+					Entity:        entityAuctionRequest,
+					Stage:         hooks.StageRawAuctionRequest.String(),
 					Groups: []GroupOutcome{
 						{
+							ExecutionTime: ExecutionTime{},
 							InvocationResults: []HookOutcome{
 								{
+									ExecutionTime: ExecutionTime{},
 									AnalyticsTags: hookanalytics.Analytics{},
 									HookID:        HookID{ModuleCode: "module-1", HookImplCode: "foo"},
 									Status:        StatusSuccess,
@@ -629,6 +643,7 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 									Warnings:      nil,
 								},
 								{
+									ExecutionTime: ExecutionTime{},
 									AnalyticsTags: hookanalytics.Analytics{},
 									HookID:        HookID{ModuleCode: "module-2", HookImplCode: "baz"},
 									Status:        StatusSuccess,
@@ -641,8 +656,10 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 							},
 						},
 						{
+							ExecutionTime: ExecutionTime{},
 							InvocationResults: []HookOutcome{
 								{
+									ExecutionTime: ExecutionTime{},
 									AnalyticsTags: hookanalytics.Analytics{},
 									HookID:        HookID{ModuleCode: "module-1", HookImplCode: "bar"},
 									Status:        StatusSuccess,

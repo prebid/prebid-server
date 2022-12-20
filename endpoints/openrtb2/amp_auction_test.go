@@ -1938,10 +1938,10 @@ func TestValidAmpResponseWhenRequestStagesRejected(t *testing.T) {
 	const nbr int = 123
 	const file string = "sample-requests/amp/valid-supplementary/aliased-buyeruids.json"
 
-	var tc testCase
+	var test testCase
 	fileData, err := os.ReadFile(file)
 	assert.NoError(t, err, "Failed to read test file.")
-	if err := json.Unmarshal(fileData, &tc); err != nil {
+	if err := json.Unmarshal(fileData, &test); err != nil {
 		t.Fatal("Failed to unmarshal test file.")
 	}
 
@@ -1961,7 +1961,7 @@ func TestValidAmpResponseWhenRequestStagesRejected(t *testing.T) {
 			description:         "Assert correct BidResponse when request rejected at raw-auction stage",
 			file:                file,
 			planBuilder:         mockPlanBuilder{rawAuctionPlan: makeRejectPlan[hookstage.RawAuctionRequest](mockRejectionHook{nbr})},
-			expectedAmpResponse: tc.ExpectedAmpResponse,
+			expectedAmpResponse: test.ExpectedAmpResponse,
 		},
 		{
 			description:         "Assert correct AmpResponse when request rejected at processed-auction stage",
@@ -1973,9 +1973,6 @@ func TestValidAmpResponseWhenRequestStagesRejected(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			test := testCase{}
-			assert.NoError(t, json.Unmarshal(fileData, &test), "Failed to parse test file.")
-
 			request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?%s", test.Query), nil)
 			recorder := httptest.NewRecorder()
 			query := request.URL.Query()
