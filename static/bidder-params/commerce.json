@@ -1,0 +1,6 @@
+{
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"title": "Commerce Adapter Params",
+	"description": "A schema which validates params accepted by the Commerce adapter",
+	"type": "object"
+}
