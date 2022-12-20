@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -113,7 +112,7 @@ func TestJsonSampleRequests(t *testing.T) {
 		testCaseFiles, err := getTestFiles(filepath.Join("sample-requests", tc.sampleRequestsSubDir))
 		if assert.NoError(t, err, "Test case %s. Error reading files from directory %s \n", tc.description, tc.sampleRequestsSubDir) {
 			for _, testFile := range testCaseFiles {
-				fileData, err := ioutil.ReadFile(testFile)
+				fileData, err := os.ReadFile(testFile)
 				if assert.NoError(t, err, "Test case %s. Error reading file %s \n", tc.description, testFile) {
 					// Retrieve test case input and expected output from JSON file
 					test, err := parseTestFile(fileData, testFile)
@@ -2200,37 +2199,37 @@ func TestValidateImpExt(t *testing.T) {
 					description:    "Unknown Bidder only",
 					impExt:         json.RawMessage(`{"unknownbidder":{"placement_id":555}}`),
 					expectedImpExt: `{"unknownbidder":{"placement_id":555}}`,
-					expectedErrs:   []error{errors.New("request.imp[0].ext contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
+					expectedErrs:   []error{errors.New("request.imp[0].ext.prebid.bidder contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
 				},
 				{
 					description:    "Unknown Prebid Ext Bidder only",
 					impExt:         json.RawMessage(`{"prebid":{"bidder":{"unknownbidder":{"placement_id":555}}}}`),
 					expectedImpExt: `{"prebid":{"bidder":{"unknownbidder":{"placement_id":555}}}}`,
-					expectedErrs:   []error{errors.New("request.imp[0].ext contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
+					expectedErrs:   []error{errors.New("request.imp[0].ext.prebid.bidder contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
 				},
 				{
 					description:    "Unknown Prebid Ext Bidder + First Party Data Context",
 					impExt:         json.RawMessage(`{"prebid":{"bidder":{"unknownbidder":{"placement_id":555}}},"context":{"data":{"keywords":"prebid server example"}}}`),
 					expectedImpExt: `{"prebid":{"bidder":{"unknownbidder":{"placement_id":555}}},"context":{"data":{"keywords":"prebid server example"}}}`,
-					expectedErrs:   []error{errors.New("request.imp[0].ext contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
+					expectedErrs:   []error{errors.New("request.imp[0].ext.prebid.bidder contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
 				},
 				{
 					description:    "Unknown Bidder + First Party Data Context",
 					impExt:         json.RawMessage(`{"unknownbidder":{"placement_id":555} ,"context":{"data":{"keywords":"prebid server example"}}}`),
 					expectedImpExt: `{"unknownbidder":{"placement_id":555},"context":{"data":{"keywords":"prebid server example"}}}`,
-					expectedErrs:   []error{errors.New("request.imp[0].ext contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
+					expectedErrs:   []error{errors.New("request.imp[0].ext.prebid.bidder contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
 				},
 				{
 					description:    "Unknown Bidder + Disabled Bidder",
 					impExt:         json.RawMessage(`{"unknownbidder":{"placement_id":555},"disabledbidder":{"foo":"bar"}}`),
 					expectedImpExt: `{"unknownbidder":{"placement_id":555},"disabledbidder":{"foo":"bar"}}`,
-					expectedErrs:   []error{errors.New("request.imp[0].ext contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
+					expectedErrs:   []error{errors.New("request.imp[0].ext.prebid.bidder contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
 				},
 				{
 					description:    "Unknown Bidder + Disabled Prebid Ext Bidder",
 					impExt:         json.RawMessage(`{"unknownbidder":{"placement_id":555},"prebid":{"bidder":{"disabledbidder":{"foo":"bar"}}}}`),
 					expectedImpExt: `{"unknownbidder":{"placement_id":555},"prebid":{"bidder":{"disabledbidder":{"foo":"bar"}}}}`,
-					expectedErrs:   []error{errors.New("request.imp[0].ext contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
+					expectedErrs:   []error{errors.New("request.imp[0].ext.prebid.bidder contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
 				},
 			},
 		},
@@ -2243,7 +2242,7 @@ func TestValidateImpExt(t *testing.T) {
 					expectedImpExt: `{"disabledbidder":{"foo":"bar"}}`,
 					expectedErrs: []error{
 						&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'disabledbidder' has been disabled."},
-						errors.New("request.imp[0].ext must contain at least one bidder"),
+						errors.New("request.imp[0].ext.prebid.bidder must contain at least one bidder"),
 					},
 					// if only bidder(s) found in request.imp[x].ext.{biddername} or request.imp[x].ext.prebid.bidder.{biddername} are disabled, return error
 				},
@@ -2253,7 +2252,7 @@ func TestValidateImpExt(t *testing.T) {
 					expectedImpExt: `{"prebid":{"bidder":{"disabledbidder":{"foo":"bar"}}}}`,
 					expectedErrs: []error{
 						&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'disabledbidder' has been disabled."},
-						errors.New("request.imp[0].ext must contain at least one bidder"),
+						errors.New("request.imp[0].ext.prebid.bidder must contain at least one bidder"),
 					},
 				},
 				{
@@ -2262,7 +2261,7 @@ func TestValidateImpExt(t *testing.T) {
 					expectedImpExt: `{"disabledbidder":{"foo":"bar"},"context":{"data":{"keywords":"prebid server example"}}}`,
 					expectedErrs: []error{
 						&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'disabledbidder' has been disabled."},
-						errors.New("request.imp[0].ext must contain at least one bidder"),
+						errors.New("request.imp[0].ext.prebid.bidder must contain at least one bidder"),
 					},
 				},
 				{
@@ -2271,7 +2270,7 @@ func TestValidateImpExt(t *testing.T) {
 					expectedImpExt: `{"prebid":{"bidder":{"disabledbidder":{"foo":"bar"}}},"context":{"data":{"keywords":"prebid server example"}}}`,
 					expectedErrs: []error{
 						&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'disabledbidder' has been disabled."},
-						errors.New("request.imp[0].ext must contain at least one bidder"),
+						errors.New("request.imp[0].ext.prebid.bidder must contain at least one bidder"),
 					},
 				},
 			},
@@ -2284,7 +2283,7 @@ func TestValidateImpExt(t *testing.T) {
 					impExt:         json.RawMessage(`{"context":{"data":{"keywords":"prebid server example"}}}`),
 					expectedImpExt: `{"context":{"data":{"keywords":"prebid server example"}}}`,
 					expectedErrs: []error{
-						errors.New("request.imp[0].ext must contain at least one bidder"),
+						errors.New("request.imp[0].ext.prebid.bidder must contain at least one bidder"),
 					},
 				},
 			},
@@ -2320,7 +2319,7 @@ func TestValidateImpExt(t *testing.T) {
 					description:    "Valid Bidder + Unknown Bidder",
 					impExt:         json.RawMessage(`{"appnexus":{"placement_id":555},"unknownbidder":{"placement_id":555}}`),
 					expectedImpExt: `{"appnexus":{"placement_id":555},"unknownbidder":{"placement_id":555}}`,
-					expectedErrs:   []error{errors.New("request.imp[0].ext contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
+					expectedErrs:   []error{errors.New("request.imp[0].ext.prebid.bidder contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
 				},
 				{
 					description:    "Valid Bidder + Disabled Bidder",
@@ -2338,7 +2337,7 @@ func TestValidateImpExt(t *testing.T) {
 					description:    "Valid Bidder + Disabled Bidder + Unknown Bidder + First Party Data Context",
 					impExt:         json.RawMessage(`{"appnexus":{"placement_id":555},"disabledbidder":{"foo":"bar"},"unknownbidder":{"placement_id":555},"context":{"data":{"keywords":"prebid server example"}}}`),
 					expectedImpExt: `{"appnexus":{"placement_id":555},"disabledbidder":{"foo":"bar"},"unknownbidder":{"placement_id":555},"context":{"data":{"keywords":"prebid server example"}}}`,
-					expectedErrs:   []error{errors.New("request.imp[0].ext contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
+					expectedErrs:   []error{errors.New("request.imp[0].ext.prebid.bidder contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
 				},
 				{
 					description:    "Valid Prebid Ext Bidder + Disabled Bidder Ext",
@@ -2356,7 +2355,7 @@ func TestValidateImpExt(t *testing.T) {
 					description:    "Valid Prebid Ext Bidder + Disabled Ext Bidder + Unknown Ext + First Party Data Context",
 					impExt:         json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placement_id":555},"disabledbidder":{"foo":"bar"},"unknownbidder":{"placement_id":555}}},"context":{"data":{"keywords":"prebid server example"}}}`),
 					expectedImpExt: `{"prebid":{"bidder":{"appnexus":{"placement_id":555},"disabledbidder":{"foo":"bar"},"unknownbidder":{"placement_id":555}}},"context":{"data":{"keywords":"prebid server example"}}}`,
-					expectedErrs:   []error{errors.New("request.imp[0].ext contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
+					expectedErrs:   []error{errors.New("request.imp[0].ext.prebid.bidder contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
 				},
 			},
 		},
@@ -2403,7 +2402,7 @@ func TestValidateImpExt(t *testing.T) {
 }
 
 func validRequest(t *testing.T, filename string) string {
-	requestData, err := ioutil.ReadFile("sample-requests/valid-whole/supplementary/" + filename)
+	requestData, err := os.ReadFile("sample-requests/valid-whole/supplementary/" + filename)
 	if err != nil {
 		t.Fatalf("Failed to fetch a valid request: %v", err)
 	}
@@ -4741,7 +4740,7 @@ func (cf *mockStoredResponseFetcher) FetchResponses(ctx context.Context, ids []s
 }
 
 func getObject(t *testing.T, filename, key string) json.RawMessage {
-	requestData, err := ioutil.ReadFile("sample-requests/valid-whole/supplementary/" + filename)
+	requestData, err := os.ReadFile("sample-requests/valid-whole/supplementary/" + filename)
 	if err != nil {
 		t.Fatalf("Failed to fetch a valid request: %v", err)
 	}

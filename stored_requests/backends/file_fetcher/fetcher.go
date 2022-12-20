@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/prebid/prebid-server/stored_requests"
@@ -104,7 +104,7 @@ func collectStoredData(directory string, fileSystem FileSystem, err error) (File
 	if err != nil {
 		return FileSystem{nil, nil}, err
 	}
-	fileInfos, err := ioutil.ReadDir(directory)
+	fileInfos, err := os.ReadDir(directory)
 	if err != nil {
 		return FileSystem{nil, nil}, err
 	}
@@ -122,7 +122,7 @@ func collectStoredData(directory string, fileSystem FileSystem, err error) (File
 
 		} else {
 			if strings.HasSuffix(fileInfo.Name(), ".json") { // Skip the .gitignore
-				fileData, err := ioutil.ReadFile(fmt.Sprintf("%s/%s", directory, fileInfo.Name()))
+				fileData, err := os.ReadFile(fmt.Sprintf("%s/%s", directory, fileInfo.Name()))
 				if err != nil {
 					return FileSystem{nil, nil}, err
 				}
