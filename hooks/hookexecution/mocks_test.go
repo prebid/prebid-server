@@ -88,7 +88,7 @@ func (e mockRejectHook) HandleAllProcessedBidResponsesHook(_ context.Context, _ 
 type mockTimeoutHook struct{}
 
 func (e mockTimeoutHook) HandleEntrypointHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
-	time.Sleep(2 * time.Millisecond)
+	time.Sleep(3 * time.Millisecond)
 	c := &hookstage.ChangeSet[hookstage.EntrypointPayload]{}
 	c.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
 		params := payload.Request.URL.Query()
