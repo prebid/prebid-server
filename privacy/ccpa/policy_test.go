@@ -277,6 +277,15 @@ func TestReadFromRequest(t *testing.T) {
 				Consent: "",
 			},
 		},
+		{
+			description: "GPP Success, no signal",
+			request: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{GPP: "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
+					GPPSID: []int8{}}},
+			expectedPolicy: Policy{
+				Consent: "",
+			},
+		},
 	}
 
 	for _, test := range testCases {
