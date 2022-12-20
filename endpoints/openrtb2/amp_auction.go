@@ -370,6 +370,7 @@ func getExtBidResponse(
 		}
 
 		stageOutcomes := hookExecutor.GetOutcomes()
+		ao.HookExecutionOutcome = stageOutcomes
 		if modules, err := hookexecution.GetModulesJSON(stageOutcomes, reqWrapper.BidRequest, account); err != nil {
 			err := fmt.Errorf("Failed to get modules outcome: %s", err)
 			glog.Errorf(err.Error())
