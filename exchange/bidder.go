@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptrace"
 	"regexp"
@@ -323,7 +323,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 							// Initalize seatBidMap entry as this is first extra bid with seat bidderName
 							seatBidMap[bidderName] = &entities.PbsOrtbSeatBid{
 								Bids:     make([]*entities.PbsOrtbBid, 0, dataLen),
-								Currency: defaultCurrency,
+								Currency: seatBidMap[bidderRequest.BidderName].Currency,
 								// Do we need to fill httpCalls for this?. Can we refer one from adaptercode for debugging?
 								HttpCalls: seatBidMap[bidderRequest.BidderName].HttpCalls,
 								Seat:      bidderName.String(),
@@ -522,7 +522,7 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 		}
 	}
 
-	respBody, err := ioutil.ReadAll(httpResp.Body)
+	respBody, err := io.ReadAll(httpResp.Body)
 	if err != nil {
 		return &httpCallInfo{
 			request: req,
