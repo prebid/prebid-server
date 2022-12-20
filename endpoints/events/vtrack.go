@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
@@ -164,7 +163,7 @@ func ParseVTrackRequest(httpRequest *http.Request, maxRequestSize int64) (req *B
 	}
 
 	defer httpRequest.Body.Close()
-	requestJson, err := ioutil.ReadAll(lr)
+	requestJson, err := io.ReadAll(lr)
 	if err != nil {
 		return req, err
 	}

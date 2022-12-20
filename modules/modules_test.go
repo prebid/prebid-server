@@ -31,7 +31,7 @@ func TestModuleBuilderBuild(t *testing.T) {
 	}{
 		"Can build with entrypoint hook without config": {
 			isHookFound:          true,
-			expectedModStageColl: map[string][]string{vendor + "-" + moduleName: {hooks.StageEntrypoint.String(), hooks.StageAuctionResponse.String()}},
+			expectedModStageColl: map[string][]string{vendor + "_" + moduleName: {hooks.StageEntrypoint.String(), hooks.StageAuctionResponse.String()}},
 			expectedHook:         module{},
 			givenModule:          module{},
 			givenGetHookFn: func(repo hooks.HookRepository, module string) (interface{}, bool) {
@@ -40,7 +40,7 @@ func TestModuleBuilderBuild(t *testing.T) {
 		},
 		"Can build with entrypoint hook with config": {
 			isHookFound:          true,
-			expectedModStageColl: map[string][]string{vendor + "-" + moduleName: {hooks.StageEntrypoint.String(), hooks.StageAuctionResponse.String()}},
+			expectedModStageColl: map[string][]string{vendor + "_" + moduleName: {hooks.StageEntrypoint.String(), hooks.StageAuctionResponse.String()}},
 			expectedHook:         module{},
 			givenModule:          module{},
 			givenConfig:          map[string]map[string]interface{}{vendor: {moduleName: map[string]bool{"enabled": true}}},
@@ -50,7 +50,7 @@ func TestModuleBuilderBuild(t *testing.T) {
 		},
 		"Can build with auction response hook": {
 			isHookFound:          true,
-			expectedModStageColl: map[string][]string{vendor + "-" + moduleName: {hooks.StageEntrypoint.String(), hooks.StageAuctionResponse.String()}},
+			expectedModStageColl: map[string][]string{vendor + "_" + moduleName: {hooks.StageEntrypoint.String(), hooks.StageAuctionResponse.String()}},
 			expectedHook:         module{},
 			givenModule:          module{},
 			givenConfig:          map[string]map[string]interface{}{"vendor": {"module": map[string]bool{"enabled": true}}},
@@ -60,7 +60,7 @@ func TestModuleBuilderBuild(t *testing.T) {
 		},
 		"Fails to find not registered hook": {
 			isHookFound:          false,
-			expectedModStageColl: map[string][]string{vendor + "-" + moduleName: {hooks.StageEntrypoint.String(), hooks.StageAuctionResponse.String()}},
+			expectedModStageColl: map[string][]string{vendor + "_" + moduleName: {hooks.StageEntrypoint.String(), hooks.StageAuctionResponse.String()}},
 			expectedHook:         nil,
 			givenModule:          module{},
 			givenConfig:          map[string]map[string]interface{}{vendor: {"module": map[string]bool{"enabled": true}}},

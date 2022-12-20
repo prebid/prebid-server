@@ -5,7 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -132,7 +132,7 @@ func TestShouldReturnBadRequestWhenTypeIsMissing(t *testing.T) {
 	// execute
 	e(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -168,7 +168,7 @@ func TestShouldReturnBadRequestWhenTypeIsInvalid(t *testing.T) {
 	// execute
 	e(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -204,7 +204,7 @@ func TestShouldReturnBadRequestWhenBidIdIsMissing(t *testing.T) {
 	// execute
 	e(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -240,7 +240,7 @@ func TestShouldReturnBadRequestWhenTimestampIsInvalid(t *testing.T) {
 	// execute
 	e(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -276,7 +276,7 @@ func TestShouldReturnUnauthorizedWhenAccountIsMissing(t *testing.T) {
 	// execute
 	e(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -312,7 +312,7 @@ func TestShouldReturnBadRequestWhenFormatValueIsInvalid(t *testing.T) {
 	// execute
 	e(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -348,7 +348,7 @@ func TestShouldReturnBadRequestWhenAnalyticsValueIsInvalid(t *testing.T) {
 	// execute
 	e(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -386,7 +386,7 @@ func TestShouldNotPassEventToAnalyticsReporterWhenAccountNotFound(t *testing.T) 
 
 	// execute
 	e(recorder, req, nil)
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -421,7 +421,7 @@ func TestShouldReturnBadRequestWhenIntegrationValueIsInvalid(t *testing.T) {
 	// execute
 	e(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -459,7 +459,7 @@ func TestShouldNotPassEventToAnalyticsReporterWhenAccountEventNotEnabled(t *test
 
 	// execute
 	e(recorder, req, nil)
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -566,7 +566,7 @@ func TestShouldRespondWithPixelAndContentTypeWhenRequestFormatIsImage(t *testing
 	// execute
 	e(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -607,7 +607,7 @@ func TestShouldRespondWithNoContentWhenRequestFormatIsNotDefined(t *testing.T) {
 	// execute
 	e(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -809,7 +809,7 @@ func TestShouldReturnBadRequestWhenVTypeIsInvalid(t *testing.T) {
 		e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule)
 		e(recorder, test.req, nil)
 
-		d, err := ioutil.ReadAll(recorder.Result().Body)
+		d, err := io.ReadAll(recorder.Result().Body)
 		if err != nil {
 			t.Fatal(err)
 		}
