@@ -16,6 +16,10 @@
     "pageViewId": {
       "type": "integer",
       "description": "An ID which identifies the site's page number"
+    },
+    "creativeId": {
+      "type": "string",
+      "description": "An ID of the creative that we want to show"
     }
   },
 

@@ -5,4 +5,5 @@ type ImpExtCWire struct {
 	PlacementID int     `json:"placementId"`
 	SiteID      int     `json:"siteId"`
 	PageViewID  float64 `json:"pageViewId,omitempty"`
+	CreativeID  string  `json:"creativeId,omitempty"`
 }
