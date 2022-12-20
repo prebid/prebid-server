@@ -159,34 +159,34 @@ func TestReadFromRequestWrapper(t *testing.T) {
 		{
 			description: "GPP Success",
 			request: &openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{GPP: "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
+				Regs: &openrtb2.Regs{GPP: "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~present",
 					GPPSID: []int8{6}},
 				Ext: json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
 			},
 			giveGPP: gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{6}, Sections: []gpplib.Section{&upsv1Section}},
 			expectedPolicy: Policy{
-				Consent:       "1YNY",
+				Consent:       "present",
 				NoSaleBidders: []string{"a", "b"},
 			},
 		},
 		{
 			description: "GPP Success, has Regs.ext",
 			request: &openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{GPP: "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
+				Regs: &openrtb2.Regs{GPP: "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~present",
 					GPPSID: []int8{6},
 					Ext:    json.RawMessage(`{"us_privacy":"ABC"}`)},
 				Ext: json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
 			},
 			giveGPP: gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{6}, Sections: []gpplib.Section{&upsv1Section}},
 			expectedPolicy: Policy{
-				Consent:       "1YNY",
+				Consent:       "present",
 				NoSaleBidders: []string{"a", "b"},
 			},
 		},
 		{
 			description: "GPP Success, no USPV1",
 			request: &openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{GPP: "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
+				Regs: &openrtb2.Regs{GPP: "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
 					GPPSID: []int8{6}},
 			},
 			giveGPP: gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{2}, Sections: []gpplib.Section{&tcf1Section}},
@@ -789,7 +789,7 @@ func assertError(t *testing.T, expectError bool, err error, description string) 
 	}
 }
 
-var upsv1Section mockGPPSection = mockGPPSection{sectionID: 6, value: "1YNY"}
+var upsv1Section mockGPPSection = mockGPPSection{sectionID: 6, value: "present"}
 var tcf1Section mockGPPSection = mockGPPSection{sectionID: 2, value: "BOS2bx5OS2bx5ABABBAAABoAAAAAFA"}
 
 type mockGPPSection struct {
