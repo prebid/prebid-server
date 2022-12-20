@@ -19,10 +19,15 @@ type Policy struct {
 func ReadFromRequestWrapper(req *openrtb_ext.RequestWrapper, gpp gpplib.GppContainer) (Policy, error) {
 	var consent string
 	var noSaleBidders []string
-
-	for i, id := range gpp.SectionTypes {
-		if id == gppConstants.SectionUSPV1 {
-			consent = gpp.Sections[i].GetValue()
+	if req.BidRequest != nil && req.BidRequest.Regs != nil {
+		for _, s := range req.BidRequest.Regs.GPPSID {
+			if s == int8(gppConstants.SectionUSPV1) {
+				for i, id := range gpp.SectionTypes {
+					if id == gppConstants.SectionUSPV1 {
+						consent = gpp.Sections[i].GetValue()
+					}
+				}
+			}
 		}
 	}
 

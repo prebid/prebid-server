@@ -239,8 +239,9 @@ func TestReadFromRequest(t *testing.T) {
 		{
 			description: "GPP Success",
 			request: &openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{GPP: "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN"},
-				Ext:  json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
+				Regs: &openrtb2.Regs{GPP: "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
+					GPPSID: []int8{6}},
+				Ext: json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
 			},
 			expectedPolicy: Policy{
 				Consent:       "1YNN",
@@ -250,8 +251,10 @@ func TestReadFromRequest(t *testing.T) {
 		{
 			description: "GPP Success, has Regs.ext",
 			request: &openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{GPP: "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN", Ext: json.RawMessage(`{"us_privacy":"ABC"}`)},
-				Ext:  json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
+				Regs: &openrtb2.Regs{GPP: "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
+					GPPSID: []int8{6},
+					Ext:    json.RawMessage(`{"us_privacy":"ABC"}`)},
+				Ext: json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
 			},
 			expectedPolicy: Policy{
 				Consent:       "1YNN",
@@ -261,7 +264,8 @@ func TestReadFromRequest(t *testing.T) {
 		{
 			description: "GPP Success, no USPV1",
 			request: &openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{GPP: "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA"}},
+				Regs: &openrtb2.Regs{GPP: "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+					GPPSID: []int8{6}}},
 			expectedPolicy: Policy{
 				Consent: "",
 			},
