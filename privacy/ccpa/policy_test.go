@@ -159,6 +159,8 @@ func TestReadFromRequestWrapper(t *testing.T) {
 		{
 			description: "GPP Success",
 			request: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{GPP: "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
+					GPPSID: []int8{6}},
 				Ext: json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
 			},
 			giveGPP: gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{6}, Sections: []gpplib.Section{&upsv1Section}},
@@ -170,8 +172,10 @@ func TestReadFromRequestWrapper(t *testing.T) {
 		{
 			description: "GPP Success, has Regs.ext",
 			request: &openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":"ABC"}`)},
-				Ext:  json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
+				Regs: &openrtb2.Regs{GPP: "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
+					GPPSID: []int8{6},
+					Ext:    json.RawMessage(`{"us_privacy":"ABC"}`)},
+				Ext: json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
 			},
 			giveGPP: gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{6}, Sections: []gpplib.Section{&upsv1Section}},
 			expectedPolicy: Policy{
@@ -181,8 +185,11 @@ func TestReadFromRequestWrapper(t *testing.T) {
 		},
 		{
 			description: "GPP Success, no USPV1",
-			request:     &openrtb2.BidRequest{},
-			giveGPP:     gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{2}, Sections: []gpplib.Section{&tcf1Section}},
+			request: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{GPP: "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
+					GPPSID: []int8{6}},
+			},
+			giveGPP: gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{2}, Sections: []gpplib.Section{&tcf1Section}},
 			expectedPolicy: Policy{
 				Consent: "",
 			},
