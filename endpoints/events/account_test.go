@@ -3,7 +3,7 @@ package events
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -135,7 +135,7 @@ func TestHandleAccountServiceErrors(t *testing.T) {
 
 				// execute
 				handler.h(recorder, handler.r, nil)
-				d, err := ioutil.ReadAll(recorder.Result().Body)
+				d, err := io.ReadAll(recorder.Result().Body)
 				if err != nil {
 					t.Fatal(err)
 				}
