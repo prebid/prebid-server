@@ -364,10 +364,16 @@ func addDebugMessage(
 // returns a slice with the names of failed attributes
 func getFailedAttributes(data map[string]interface{}) []string {
 	attributes := make([]string, len(data))
-	i := 0
-	for k := range data {
-		attributes[i] = k
-		i++
+	for i, attribute := range [5]string{
+		"badv",
+		"bcat",
+		"cattax",
+		"bapp",
+		"battr",
+	} {
+		if _, ok := data[attribute]; ok {
+			attributes[i] = attribute
+		}
 	}
 
 	return attributes

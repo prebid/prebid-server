@@ -52,9 +52,17 @@ func addBlockedAnalyticTag(
 	values := make(map[string]interface{})
 
 	values[attributesAnalyticKey] = failedAttributes
-	for key, val := range data {
-		analyticKey := getAnalyticKeyForAttribute(key)
-		values[analyticKey] = val
+	for _, attribute := range [5]string{
+		"badv",
+		"bcat",
+		"cattax",
+		"bapp",
+		"battr",
+	} {
+		if _, ok := data[attribute]; ok {
+			analyticKey := getAnalyticKeyForAttribute(attribute)
+			values[analyticKey] = data[attribute]
+		}
 	}
 
 	newBlockedResult := hookanalytics.Result{
