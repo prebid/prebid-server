@@ -17,6 +17,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
+	gpplib "github.com/prebid/go-gpp"
 	"github.com/prebid/openrtb/v17/adcom1"
 	"github.com/prebid/openrtb/v17/native1"
 	nativeRequests "github.com/prebid/openrtb/v17/native1/request"
@@ -709,7 +710,17 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 		return append(errL, err)
 	}
 
-	if ccpaPolicy, err := ccpa.ReadFromRequestWrapper(req); err != nil {
+	var gpp gpplib.GppContainer
+	if req.BidRequest.Regs != nil && len(req.BidRequest.Regs.GPP) > 0 {
+		gpp, err = gpplib.Parse(req.BidRequest.Regs.GPP)
+		if err != nil {
+			errL = append(errL, &errortypes.Warning{
+				Message:     fmt.Sprintf("GPP consent string is invalid and will be ignored. (%v)", err),
+				WarningCode: errortypes.InvalidPrivacyConsentWarningCode})
+		}
+	}
+
+	if ccpaPolicy, err := ccpa.ReadFromRequestWrapper(req, gpp); err != nil {
 		return append(errL, err)
 	} else if _, err := ccpaPolicy.Parse(exchange.GetValidBidders(aliases)); err != nil {
 		if _, invalidConsent := err.(*errortypes.Warning); invalidConsent {
