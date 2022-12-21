@@ -47,7 +47,10 @@ var invalidParams = []string{
 	`2`,
 	`{"size":12345678}`,
 	`{"size":""}`,
-	`{"uid": "1"}`,
+	`{"uid": "-1"}`,
+	`{"uid": "232af"}`,
+	`{"uid": "af213"}`,
+	`{"uid": "af"}`,
 	`{"size": true}`,
 	`{"uid": true, "size":"1234567"}`,
 }
