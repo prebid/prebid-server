@@ -150,6 +150,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/yieldmo"
 	"github.com/prebid/prebid-server/adapters/yieldone"
 	"github.com/prebid/prebid-server/adapters/zeroclickfraud"
+	"github.com/prebid/prebid-server/adapters/commerce"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -319,5 +320,6 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderYieldone:          yieldone.Builder,
 		openrtb_ext.BidderYSSP:              yahoossp.Builder,
 		openrtb_ext.BidderZeroClickFraud:    zeroclickfraud.Builder,
+		openrtb_ext.BidderCommerce:    commerce.Builder,
 	}
 }
