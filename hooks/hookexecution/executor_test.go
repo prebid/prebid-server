@@ -1192,12 +1192,15 @@ func TestInterStageContextCommunication(t *testing.T) {
 			"entrypoint-ctx-3":          "some-ctx-3",
 			"raw-auction-ctx-1":         "some-ctx-1",
 			"raw-auction-ctx-3":         "some-ctx-3",
+			"processed-auction-ctx-1":   "some-ctx-1",
+			"processed-auction-ctx-3":   "some-ctx-3",
 			"raw-bidder-response-ctx-1": "some-ctx-1",
 			"raw-bidder-response-ctx-3": "some-ctx-3",
 		},
 		"module-2": {
 			"entrypoint-ctx-2":          "some-ctx-2",
 			"raw-auction-ctx-2":         "some-ctx-2",
+			"processed-auction-ctx-2":   "some-ctx-2",
 			"raw-bidder-response-ctx-2": "some-ctx-2",
 		},
 	}}, exec.moduleContexts, "Wrong module contexts after executing raw-bidder-response hook.")
