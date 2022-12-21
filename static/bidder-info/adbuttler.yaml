@@ -1,6 +1,6 @@
 maintainer:
-  email: commerce@pubmatic.com
-gvlVendorID: 999
+  email: adbuttler@pubmatic.com
+gvlVendorID: 997
 capabilities:
   app:
     mediaTypes:

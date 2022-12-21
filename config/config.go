@@ -1150,6 +1150,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.yssp.disabled", true)
 	v.SetDefault("adapters.zeroclickfraud.endpoint", "http://{{.Host}}/openrtb2?sid={{.SourceId}}")
 	v.SetDefault("adapters.commerce.endpoint", "http://commerce.com/openrtb2")
+	v.SetDefault("adapters.koddi.endpoint", "http://koddi.com/openrtb2")
+	v.SetDefault("adapters.adbuttler.endpoint", "http://adbuttlerer.com/openrtb2")
 
 	v.SetDefault("max_request_size", 1024*256)
 	v.SetDefault("analytics.file.filename", "")
