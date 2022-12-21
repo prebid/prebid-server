@@ -1509,6 +1509,14 @@ func (m mockRejectionHook) HandleRawAuctionHook(
 	return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{Reject: true, NbrCode: m.nbr}, nil
 }
 
+func (m mockRejectionHook) HandleProcessedAuctionHook(
+	_ context.Context,
+	_ hookstage.ModuleInvocationContext,
+	_ hookstage.ProcessedAuctionRequestPayload,
+) (hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload], error) {
+	return hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload]{Reject: true, NbrCode: m.nbr}, nil
+}
+
 func (m mockRejectionHook) HandleBidderRequestHook(
 	_ context.Context,
 	_ hookstage.ModuleInvocationContext,

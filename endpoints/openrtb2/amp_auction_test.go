@@ -20,7 +20,6 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/hooks"
-	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/hooks/hookstage"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -1935,7 +1934,7 @@ func TestSetTargeting(t *testing.T) {
 	}
 }
 
-func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
+func TestValidAmpResponseWhenRequestStagesRejected(t *testing.T) {
 	const nbr int = 123
 	const file string = "sample-requests/amp/valid-supplementary/aliased-buyeruids.json"
 
@@ -1950,8 +1949,6 @@ func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
 		description         string
 		file                string
 		planBuilder         hooks.ExecutionPlanBuilder
-		expectedBidResponse openrtb2.BidResponse
-		hookExecutor        hookexecution.HookStageExecutor
 		expectedAmpResponse AmpResponse
 	}{
 		{
@@ -1965,6 +1962,12 @@ func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
 			file:                file,
 			planBuilder:         mockPlanBuilder{rawAuctionPlan: makeRejectPlan[hookstage.RawAuctionRequest](mockRejectionHook{nbr})},
 			expectedAmpResponse: test.ExpectedAmpResponse,
+		},
+		{
+			description:         "Assert correct AmpResponse when request rejected at processed-auction stage",
+			file:                file,
+			planBuilder:         mockPlanBuilder{processedAuctionPlan: makeRejectPlan[hookstage.ProcessedAuctionRequest](mockRejectionHook{nbr})},
+			expectedAmpResponse: AmpResponse{Targeting: map[string]string{}},
 		},
 		{
 			// bidder-request stage rejects only bidder, so we expect bidder rejection warning added
