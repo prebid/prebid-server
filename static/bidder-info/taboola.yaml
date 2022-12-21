@@ -1,0 +1,15 @@
+endpoint: "https://display.bidder.taboola.com/OpenRTB/TaboolaHB/auction"
+maintainer:
+  email:  ps-team@taboola.com
+gvlVendorID: 42
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner
+userSync:
+  redirect:
+    url: https://trc.taboola.com/sg/ps/1/cm?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
+    userMacro: "<TUID>"

@@ -50,9 +50,9 @@ type PrivacyLabels struct {
 }
 
 type ModuleLabels struct {
-	Module string
-	Stage  string
-	PubID  string // account ID
+	Module    string
+	Stage     string
+	AccountID string
 }
 
 type StoredDataType string
@@ -435,8 +435,7 @@ type MetricsEngine interface {
 	RecordStoredResponse(pubId string)
 	RecordAdsCertReq(success bool)
 	RecordAdsCertSignTime(adsCertSignTime time.Duration)
-	RecordModuleDuration(labels ModuleLabels, duration time.Duration)
-	RecordModuleCalled(labels ModuleLabels)
+	RecordModuleCalled(labels ModuleLabels, duration time.Duration)
 	RecordModuleFailed(labels ModuleLabels)
 	RecordModuleSuccessNooped(labels ModuleLabels)
 	RecordModuleSuccessUpdated(labels ModuleLabels)

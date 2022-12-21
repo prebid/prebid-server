@@ -9,7 +9,7 @@ import (
 
 // This file actually intends to test static/bidder-params/nanointeractive.json
 //
-// These also validate the format of the external API: request.imp[i].ext.nanointeracive
+// These also validate the format of the external API: request.imp[i].ext.prebid.bidder.nanointeracive
 
 // TestValidParams makes sure that the NanoInteractive schema accepts all imp.ext fields which we intend to support.
 func TestValidParams(t *testing.T) {

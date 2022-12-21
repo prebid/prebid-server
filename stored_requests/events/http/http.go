@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	httpCore "net/http"
 	"net/url"
 	"time"
@@ -172,7 +172,7 @@ func (e *HTTPEvents) parse(endpoint string, resp *httpCore.Response, err error) 
 	}
 	defer resp.Body.Close()
 
-	respBytes, err := ioutil.ReadAll(resp.Body)
+	respBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		glog.Errorf("Failed to read body of GET %s for Stored Requests: %v", endpoint, err)
 		return nil, false
