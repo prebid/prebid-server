@@ -1964,6 +1964,12 @@ func TestValidAmpResponseWhenRequestStagesRejected(t *testing.T) {
 			expectedAmpResponse: test.ExpectedAmpResponse,
 		},
 		{
+			description:         "Assert correct AmpResponse when request rejected at processed-auction stage",
+			file:                file,
+			planBuilder:         mockPlanBuilder{processedAuctionPlan: makeRejectPlan[hookstage.ProcessedAuctionRequest](mockRejectionHook{nbr})},
+			expectedAmpResponse: AmpResponse{Targeting: map[string]string{}},
+		},
+		{
 			description: "Assert correct AmpResponse when request rejected at raw-bidder-response stage",
 			file:        file,
 			planBuilder: mockPlanBuilder{rawBidderResponsePlan: makeRejectPlan[hookstage.RawBidderResponse](mockRejectionHook{nbr})},

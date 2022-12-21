@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/hooks"
@@ -30,6 +31,7 @@ const (
 type StageExecutor interface {
 	ExecuteEntrypointStage(req *http.Request, body []byte) ([]byte, *RejectError)
 	ExecuteRawAuctionStage(body []byte) ([]byte, *RejectError)
+	ExecuteProcessedAuctionStage(req *openrtb2.BidRequest) *RejectError
 	ExecuteRawBidderResponseStage(response *adapters.BidderResponse, bidder string) *RejectError
 }
 
@@ -132,6 +134,35 @@ func (e *hookExecutor) ExecuteRawAuctionStage(requestBody []byte) ([]byte, *Reje
 	return payload, reject
 }
 
+func (e *hookExecutor) ExecuteProcessedAuctionStage(request *openrtb2.BidRequest) *RejectError {
+	plan := e.planBuilder.PlanForProcessedAuctionStage(e.endpoint, e.account)
+	if len(plan) == 0 {
+		return nil
+	}
+
+	handler := func(
+		ctx context.Context,
+		moduleCtx hookstage.ModuleInvocationContext,
+		hook hookstage.ProcessedAuctionRequest,
+		payload hookstage.ProcessedAuctionRequestPayload,
+	) (hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload], error) {
+		return hook.HandleProcessedAuctionHook(ctx, moduleCtx, payload)
+	}
+
+	stageName := hooks.StageProcessedAuctionRequest.String()
+	executionCtx := e.newContext(stageName)
+	payload := hookstage.ProcessedAuctionRequestPayload{BidRequest: request}
+
+	outcome, _, contexts, reject := executeStage(executionCtx, plan, payload, handler, e.metricEngine)
+	outcome.Entity = entityAuctionRequest
+	outcome.Stage = stageName
+
+	e.saveModuleContexts(contexts)
+	e.pushStageOutcome(outcome)
+
+	return reject
+}
+
 func (e *hookExecutor) ExecuteRawBidderResponseStage(response *adapters.BidderResponse, bidder string) *RejectError {
 	plan := e.planBuilder.PlanForRawBidderResponseStage(e.endpoint, e.account)
 	if len(plan) == 0 {
@@ -199,6 +230,10 @@ func (executor *EmptyHookExecutor) ExecuteEntrypointStage(_ *http.Request, body 
 
 func (executor *EmptyHookExecutor) ExecuteRawAuctionStage(body []byte) ([]byte, *RejectError) {
 	return body, nil
+}
+
+func (executor *EmptyHookExecutor) ExecuteProcessedAuctionStage(_ *openrtb2.BidRequest) *RejectError {
+	return nil
 }
 
 func (executor *EmptyHookExecutor) ExecuteRawBidderResponseStage(_ *adapters.BidderResponse, _ string) *RejectError {
