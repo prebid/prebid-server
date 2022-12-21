@@ -278,7 +278,15 @@ func rejectAmpRequest(
 	return sendAmpResponse(w, hookExecutor, response, reqWrapper, labels, ao, errs)
 }
 
-func sendAmpResponse(w http.ResponseWriter, hookExecutor hookexecution.HookStageExecutor, response *openrtb2.BidResponse, reqWrapper *openrtb_ext.RequestWrapper, labels metrics.Labels, ao analytics.AmpObject, errs []error) (metrics.Labels, analytics.AmpObject) {
+func sendAmpResponse(
+	w http.ResponseWriter,
+	hookExecutor hookexecution.HookStageExecutor,
+	response *openrtb2.BidResponse,
+	reqWrapper *openrtb_ext.RequestWrapper,
+	labels metrics.Labels,
+	ao analytics.AmpObject,
+	errs []error,
+) (metrics.Labels, analytics.AmpObject) {
 	hookExecutor.ExecuteAuctionResponseStage(response)
 	// Need to extract the targeting parameters from the response, as those are all that
 	// go in the AMP response
