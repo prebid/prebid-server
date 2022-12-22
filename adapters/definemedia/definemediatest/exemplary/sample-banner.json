@@ -74,7 +74,7 @@
     },
     "httpCalls": [{
       "expectedRequest": {
-        "uri": "https://gzbsrk4sxf.execute-api.eu-west-1.amazonaws.com/openrtb2/auction",
+        "uri": "https://rtb.conative.network/openrtb2/auction",
         "body": {
           "id": "123456789316e6ede735f123ef6e32361bfc7b22",
           "at": 2,

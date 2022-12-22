@@ -1,4 +1,4 @@
-endpoint: "https://gzbsrk4sxf.execute-api.eu-west-1.amazonaws.com/openrtb2/auction"
+endpoint: "https://rtb.conative.network/openrtb2/auction"
 maintainer:
   email: "s.prasad@definemedia.de"
 # gvlVendorID: 50  # GDPR vendor list ID
