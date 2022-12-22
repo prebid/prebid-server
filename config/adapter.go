@@ -23,6 +23,16 @@ type Adapter struct {
 	// needed for Facebook
 	PlatformID string `mapstructure:"platform_id"`
 	AppSecret  string `mapstructure:"app_secret"`
+
+	// needed for commerce partners
+	ComParams AdapterCommerce `mapstructure:"commerceparams"`
+}
+
+
+type AdapterCommerce struct {
+	ImpTracker  string `mapstructure:"impurl"`
+	ClickTracker  string `mapstructure:"clickurl"`
+	ConversionTracker  string `mapstructure:"conversionurl"`
 }
 
 type AdapterXAPI struct {
