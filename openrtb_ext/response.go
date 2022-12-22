@@ -19,7 +19,8 @@ type ExtBidResponse struct {
 	// ResponseUserSync defines the contract for bidresponse.ext.usersync
 	Usersync map[BidderName]*ExtResponseSyncData `json:"usersync,omitempty"`
 	// Prebid defines the contract for bidresponse.ext.prebid
-	Prebid *ExtResponsePrebid `json:"prebid,omitempty"`
+	Prebid     *ExtResponsePrebid `json:"prebid,omitempty"`
+	SeatNonBid []SeatNonBid
 }
 
 // ExtResponseDebug defines the contract for bidresponse.ext.debug
@@ -80,3 +81,15 @@ const (
 	UserSyncIframe UserSyncType = "iframe"
 	UserSyncPixel  UserSyncType = "pixel"
 )
+
+type NonBid struct {
+	ImpId      string
+	StatusCode int
+	Ext        json.RawMessage
+}
+
+type SeatNonBid struct {
+	NonBid []NonBid
+	Seat   string
+	Ext    json.RawMessage
+}

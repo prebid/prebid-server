@@ -1,6 +1,7 @@
 package analytics
 
 import (
+	"context"
 	"time"
 
 	"github.com/prebid/openrtb/v17/openrtb2"
@@ -89,4 +90,21 @@ type UsersyncInfo struct {
 type NotificationEvent struct {
 	Request *EventRequest   `json:"request"`
 	Account *config.Account `json:"account"`
+}
+
+// LoggableAuctionObject contains common attributes
+type LoggableAuctionObject struct { // Proposed Abstraction
+	Context      context.Context
+	Status       int
+	Errors       []error
+	Request      *openrtb2.BidRequest
+	Response     *openrtb2.BidResponse
+	RejectedBids []RejectedBid
+}
+
+// RejectedBid holds bid and seat information alongwith rejection reason
+type RejectedBid struct {
+	RejectionReason int
+	Bid             openrtb2.Bid
+	Seat            string
 }
