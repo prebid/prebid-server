@@ -224,53 +224,100 @@ func getAuctionBidderRequests(auctionRequest AuctionRequest,
 	if err != nil {
 		return nil, []error{err}
 	}
-
+	reqExt, err := req.GetRequestExt()
+	if err != nil {
+		return nil, []error{err}
+	}
+	reqPrebid := reqExt.GetPrebid()
+	isCommerceRequest := reqPrebid.IsCommerceRequest
 	sChainWriter, err := schain.NewSChainWriter(requestExt, hostSChainNode)
 	if err != nil {
 		return nil, []error{err}
 	}
 
 	var errs []error
-	for bidder, imps := range impsByBidder {
-		coreBidder := resolveBidder(bidder, aliases)
+	if !isCommerceRequest {
+		for bidder, imps := range impsByBidder {
+			coreBidder := resolveBidder(bidder, aliases)
 
-		reqCopy := *req.BidRequest
-		reqCopy.Imp = imps
+			reqCopy := *req.BidRequest
+			reqCopy.Imp = imps
 
-		sChainWriter.Write(&reqCopy, bidder)
+			sChainWriter.Write(&reqCopy, bidder)
 
-		reqCopy.Ext, err = buildRequestExtForBidder(bidder, req.BidRequest.Ext, requestExt, bidderParamsInReqExt)
-		if err != nil {
-			return nil, []error{err}
-		}
+			reqCopy.Ext, err = buildRequestExtForBidder(bidder, req.BidRequest.Ext, requestExt, bidderParamsInReqExt)
+			if err != nil {
+				return nil, []error{err}
+			}
 
-		if err := removeUnpermissionedEids(&reqCopy, bidder, requestExt); err != nil {
-			errs = append(errs, fmt.Errorf("unable to enforce request.ext.prebid.data.eidpermissions because %v", err))
-			continue
-		}
+			if err := removeUnpermissionedEids(&reqCopy, bidder, requestExt); err != nil {
+				errs = append(errs, fmt.Errorf("unable to enforce request.ext.prebid.data.eidpermissions because %v", err))
+				continue
+			}
 
-		bidderRequest := BidderRequest{
-			BidderName:     openrtb_ext.BidderName(bidder),
-			BidderCoreName: coreBidder,
-			BidRequest:     &reqCopy,
-			BidderLabels: metrics.AdapterLabels{
-				Source:      auctionRequest.LegacyLabels.Source,
-				RType:       auctionRequest.LegacyLabels.RType,
-				Adapter:     coreBidder,
-				PubID:       auctionRequest.LegacyLabels.PubID,
-				CookieFlag:  auctionRequest.LegacyLabels.CookieFlag,
-				AdapterBids: metrics.AdapterBidPresent,
-			},
-		}
+			bidderRequest := BidderRequest{
+				BidderName:     openrtb_ext.BidderName(bidder),
+				BidderCoreName: coreBidder,
+				BidRequest:     &reqCopy,
+				BidderLabels: metrics.AdapterLabels{
+					Source:      auctionRequest.LegacyLabels.Source,
+					RType:       auctionRequest.LegacyLabels.RType,
+					Adapter:     coreBidder,
+					PubID:       auctionRequest.LegacyLabels.PubID,
+					CookieFlag:  auctionRequest.LegacyLabels.CookieFlag,
+					AdapterBids: metrics.AdapterBidPresent,
+				},
+			}
 
-		syncerKey := bidderToSyncerKey[string(coreBidder)]
-		if hadSync := prepareUser(&reqCopy, bidder, syncerKey, explicitBuyerUIDs, auctionRequest.UserSyncs); !hadSync && req.BidRequest.App == nil {
+			syncerKey := bidderToSyncerKey[string(coreBidder)]
+			if hadSync := prepareUser(&reqCopy, bidder, syncerKey, explicitBuyerUIDs, auctionRequest.UserSyncs); !hadSync && req.BidRequest.App == nil {
 			bidderRequest.BidderLabels.CookieFlag = metrics.CookieFlagNo
-		} else {
-			bidderRequest.BidderLabels.CookieFlag = metrics.CookieFlagYes
-		}
+			} else {
+				bidderRequest.BidderLabels.CookieFlag = metrics.CookieFlagYes
+			}
 
-		bidderRequests = append(bidderRequests, bidderRequest)
+			bidderRequests = append(bidderRequests, bidderRequest)
+		}
+	} else {
+		for bidderName, _ := range bidderParamsInReqExt {
+			reqCopy := *req.BidRequest
+			sChainWriter.Write(&reqCopy, bidderName)
+			coreBidder := resolveBidder(bidderName, aliases)
+
+			reqCopy.Ext, err = buildRequestExtForBidder(bidderName, req.BidRequest.Ext, requestExt, bidderParamsInReqExt)
+			if err != nil {
+				return nil, []error{err}
+			}
+
+			if err := removeUnpermissionedEids(&reqCopy, bidderName, requestExt); err != nil {
+				errs = append(errs, fmt.Errorf("unable to enforce request.ext.prebid.data.eidpermissions because %v", err))
+				continue
+			}
+
+			bidderRequest := BidderRequest{
+				BidderName:     openrtb_ext.BidderName(bidderName),
+				BidderCoreName: coreBidder,
+				BidRequest:     &reqCopy,
+				IsCommerceRequest: isCommerceRequest,
+				BidderLabels: metrics.AdapterLabels{
+					Source:      auctionRequest.LegacyLabels.Source,
+					RType:       auctionRequest.LegacyLabels.RType,
+					Adapter:     coreBidder,
+					PubID:       auctionRequest.LegacyLabels.PubID,
+					CookieFlag:  auctionRequest.LegacyLabels.CookieFlag,
+					AdapterBids: metrics.AdapterBidPresent,
+				},
+			}
+
+			syncerKey := bidderToSyncerKey[string(coreBidder)]
+			if hadSync := prepareUser(&reqCopy, bidderName, syncerKey, explicitBuyerUIDs, auctionRequest.UserSyncs); !hadSync && req.BidRequest.App == nil {
+			bidderRequest.BidderLabels.CookieFlag = metrics.CookieFlagNo
+			} else {
+				bidderRequest.BidderLabels.CookieFlag = metrics.CookieFlagYes
+			}
+
+			bidderRequests = append(bidderRequests, bidderRequest)
+		}
 	}
 	return bidderRequests, errs
 }

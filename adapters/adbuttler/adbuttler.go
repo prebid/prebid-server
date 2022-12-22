@@ -1,7 +1,9 @@
 package adbuttler
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"text/template"
 
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
@@ -19,7 +21,26 @@ type AdButtlerAdapter struct {
 }
 
 func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	return nil, nil
+	host := "adbuttler"
+	endPoint,_ := a.buildEndpointURL(host)
+	errs := make([]error, 0, len(request.Imp))
+
+	reqJSON, err := json.Marshal(request)
+	if err != nil {
+		errs = append(errs, err)
+		return nil, errs
+	}
+
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
+
+	return []*adapters.RequestData{{
+		Method:  "POST",
+		Uri:     endPoint,
+		Body:    reqJSON,
+		Headers: headers,
+	}}, errs
 }
 func (a *AdButtlerAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 		return nil, nil

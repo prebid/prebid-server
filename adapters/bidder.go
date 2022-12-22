@@ -153,6 +153,7 @@ type ExtraRequestInfo struct {
 	PbsEntryPoint              metrics.RequestType
 	GlobalPrivacyControlHeader string
 	CurrencyConversions        currency.Conversions
+	IsCommerceRequest          bool
 }
 
 func NewExtraRequestInfo(c currency.Conversions) ExtraRequestInfo {

@@ -514,11 +514,11 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 		return []error{fmt.Errorf("request.ext is invalid: %v", err)}
 	}
 	reqPrebid := reqExt.GetPrebid()
+	isCommerceRequest := reqPrebid.IsCommerceRequest
 	if err := deps.parseBidExt(req); err != nil {
 		return []error{err}
 	} else if reqPrebid != nil {
 		aliases = reqPrebid.Aliases
-
 		if err := deps.validateAliases(aliases); err != nil {
 			return []error{err}
 		}
@@ -600,7 +600,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 			errL = append(errL, fmt.Errorf(`request.imp[%d].id and request.imp[%d].id are both "%s". Imp IDs must be unique.`, firstIndex, index, imp.ID))
 		}
 		impIDs[imp.ID] = index
-		errs := deps.validateImp(imp, aliases, index, hasStoredResponses, storedBidResp)
+		errs := deps.validateImp(imp, aliases, index, hasStoredResponses, storedBidResp, isCommerceRequest)
 		if len(errs) > 0 {
 			errL = append(errL, errs...)
 		}
@@ -716,7 +716,7 @@ func validateBidders(bidders []string, knownBidders map[string]openrtb_ext.Bidde
 	return nil
 }
 
-func (deps *endpointDeps) validateImp(imp *openrtb2.Imp, aliases map[string]string, index int, hasStoredResponses bool, storedBidResp stored_responses.ImpBidderStoredResp) []error {
+func (deps *endpointDeps) validateImp(imp *openrtb2.Imp, aliases map[string]string, index int, hasStoredResponses bool, storedBidResp stored_responses.ImpBidderStoredResp, isCommerceRequest bool) []error {
 	if imp.ID == "" {
 		return []error{fmt.Errorf("request.imp[%d] missing required field: \"id\"", index)}
 	}
@@ -724,36 +724,36 @@ func (deps *endpointDeps) validateImp(imp *openrtb2.Imp, aliases map[string]stri
 	if len(imp.Metric) != 0 {
 		return []error{fmt.Errorf("request.imp[%d].metric is not yet supported by prebid-server. Support may be added in the future", index)}
 	}
+ 	if !isCommerceRequest {
+		if imp.Banner == nil && imp.Video == nil && imp.Audio == nil && imp.Native == nil  {
+			return []error{fmt.Errorf("request.imp[%d] must contain at least one of \"banner\", \"video\", \"audio\", or \"native\"", index)}
+		}
 
-	if imp.Banner == nil && imp.Video == nil && imp.Audio == nil && imp.Native == nil {
-		return []error{fmt.Errorf("request.imp[%d] must contain at least one of \"banner\", \"video\", \"audio\", or \"native\"", index)}
+		if err := validateBanner(imp.Banner, index, isInterstitial(imp)); err != nil {
+			return []error{err}
+		}
+
+		if err := validateVideo(imp.Video, index); err != nil {
+			return []error{err}
+		}
+
+		if err := validateAudio(imp.Audio, index); err != nil {
+			return []error{err}
+		}
+
+		if err := fillAndValidateNative(imp.Native, index); err != nil {
+			return []error{err}
+		}
+
+		if err := validatePmp(imp.PMP, index); err != nil {
+			return []error{err}
+		}
+
+		errL := deps.validateImpExt(imp, aliases, index, hasStoredResponses, storedBidResp)
+		if len(errL) != 0 {
+			return errL
+		}
 	}
-
-	if err := validateBanner(imp.Banner, index, isInterstitial(imp)); err != nil {
-		return []error{err}
-	}
-
-	if err := validateVideo(imp.Video, index); err != nil {
-		return []error{err}
-	}
-
-	if err := validateAudio(imp.Audio, index); err != nil {
-		return []error{err}
-	}
-
-	if err := fillAndValidateNative(imp.Native, index); err != nil {
-		return []error{err}
-	}
-
-	if err := validatePmp(imp.PMP, index); err != nil {
-		return []error{err}
-	}
-
-	errL := deps.validateImpExt(imp, aliases, index, hasStoredResponses, storedBidResp)
-	if len(errL) != 0 {
-		return errL
-	}
-
 	return nil
 }
 

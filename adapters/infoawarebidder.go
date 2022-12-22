@@ -53,18 +53,21 @@ func (i *InfoAwareBidder) MakeRequests(request *openrtb2.BidRequest, reqInfo *Ex
 	//
 	// To avoid allocating new arrays and copying in the normal case, we'll make one pass to
 	// see if any imps need to be removed, and another to do the removing if necessary.
-	numToFilter, errs := pruneImps(request.Imp, allowedMediaTypes)
+    var errs []error;
+	if !reqInfo.IsCommerceRequest {
+		numToFilter, errs := pruneImps(request.Imp, allowedMediaTypes)
 
-	// If all imps in bid request come with unsupported media types, exit
-	if numToFilter == len(request.Imp) {
+		// If all imps in bid request come with unsupported media types, exit
+		if numToFilter == len(request.Imp) {
 		return nil, append(errs, &errortypes.BadInput{Message: "Bid request didn't contain media types supported by the bidder"})
-	}
+		}
 
-	if numToFilter != 0 {
-		// Filter out imps with unsupported media types
-		filteredImps, newErrs := filterImps(request.Imp, numToFilter)
-		request.Imp = filteredImps
-		errs = append(errs, newErrs...)
+		if numToFilter != 0 {
+			// Filter out imps with unsupported media types
+			filteredImps, newErrs := filterImps(request.Imp, numToFilter)
+			request.Imp = filteredImps
+			errs = append(errs, newErrs...)
+		}
 	}
 	reqs, delegateErrs := i.Bidder.MakeRequests(request, reqInfo)
 	return reqs, append(errs, delegateErrs...)
