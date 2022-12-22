@@ -62,6 +62,9 @@ type ExtRequestPrebid struct {
 
 	//AlternateBidderCodes is populated with host's AlternateBidderCodes config if not defined in request
 	AlternateBidderCodes *ExtAlternateBidderCodes `json:"alternatebiddercodes,omitempty"`
+	// ReturnAllBidStatus if true populates bidresponse.ext.prebid.seatnonbid with all bids which was
+	// either rejected, nobid, input error
+	ReturnAllBidStatus bool `json:"returnallbidstatus:omitempty"`
 }
 
 // Experiment defines if experimental features are available for the request

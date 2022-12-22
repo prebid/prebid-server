@@ -2,6 +2,8 @@ package openrtb_ext
 
 import (
 	"encoding/json"
+
+	"github.com/prebid/openrtb/v17/openrtb2"
 )
 
 // ExtBidResponse defines the contract for bidresponse.ext
@@ -19,8 +21,7 @@ type ExtBidResponse struct {
 	// ResponseUserSync defines the contract for bidresponse.ext.usersync
 	Usersync map[BidderName]*ExtResponseSyncData `json:"usersync,omitempty"`
 	// Prebid defines the contract for bidresponse.ext.prebid
-	Prebid     *ExtResponsePrebid `json:"prebid,omitempty"`
-	SeatNonBid []SeatNonBid
+	Prebid *ExtResponsePrebid `json:"prebid,omitempty"`
 }
 
 // ExtResponseDebug defines the contract for bidresponse.ext.debug
@@ -42,6 +43,8 @@ type ExtResponseSyncData struct {
 type ExtResponsePrebid struct {
 	AuctionTimestamp int64           `json:"auctiontimestamp,omitempty"`
 	Passthrough      json.RawMessage `json:"passthrough,omitempty"`
+	// SeatNonBid holds the array of Bids which are either rejected, no bids inside bidresponse.ext.prebid.seatnonbid
+	SeatNonBid []SeatNonBid
 }
 
 // ExtUserSync defines the contract for bidresponse.ext.usersync.{bidder}.syncs[i]
@@ -85,6 +88,7 @@ const (
 type NonBid struct {
 	ImpId      string
 	StatusCode int
+	Bid        openrtb2.Bid
 	Ext        json.RawMessage
 }
 

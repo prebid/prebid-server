@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/errortypes"
@@ -183,6 +184,8 @@ type AuctionRequest struct {
 	BidderImpReplaceImpID stored_responses.BidderImpReplaceImpID
 	PubID                 string
 	HookExecutor          hookexecution.StageExecutor
+	// LogObject will be used by auction to populate SeatNonBid
+	LogObject *analytics.LogObject
 }
 
 // BidderRequest holds the bidder specific request and all other
@@ -203,6 +206,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	}
 
 	var errs []error
+	var seatNonBids []openrtb_ext.SeatNonBid
 	// rebuild/resync the request in the request wrapper.
 	if err := r.BidRequestWrapper.RebuildRequest(); err != nil {
 		return nil, err
@@ -341,6 +345,10 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 
 		evTracking := getEventTracking(&requestExt.Prebid, r.StartTime, &r.Account, e.bidderInfo, e.externalURL)
 		adapterBids = evTracking.modifyBidsForEvents(adapterBids)
+
+		if len(seatNonBids) > 0 {
+			r.LogObject.SeatNonBid = seatNonBids
+		}
 
 		if targData != nil {
 			// A non-nil auction is only needed if targeting is active. (It is used below this block to extract cache keys)
@@ -1011,6 +1019,18 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 		// Defering the filling of bidResponseExt.Usersync[bidderName] until later
 
 	}
+
+	reqExt, err := r.BidRequestWrapper.GetRequestExt()
+	if err != nil {
+		prebidExt := reqExt.GetPrebid()
+		if prebidExt != nil && prebidExt.ReturnAllBidStatus && len(r.LogObject.SeatNonBid) > 0 {
+			if bidResponseExt.Prebid == nil {
+				bidResponseExt.Prebid = &openrtb_ext.ExtResponsePrebid{}
+			}
+			bidResponseExt.Prebid.SeatNonBid = r.LogObject.SeatNonBid
+		}
+	}
+
 	return bidResponseExt
 }
 

@@ -1,7 +1,6 @@
 package analytics
 
 import (
-	"context"
 	"time"
 
 	"github.com/prebid/openrtb/v17/openrtb2"
@@ -34,6 +33,7 @@ type AuctionObject struct {
 	Response  *openrtb2.BidResponse
 	Account   *config.Account
 	StartTime time.Time
+	LogObject
 }
 
 // Loggable object of a transaction at /openrtb2/amp endpoint
@@ -45,6 +45,7 @@ type AmpObject struct {
 	AmpTargetingValues map[string]string
 	Origin             string
 	StartTime          time.Time
+	LogObject
 }
 
 // Loggable object of a transaction at /openrtb2/video endpoint
@@ -56,6 +57,7 @@ type VideoObject struct {
 	VideoRequest  *openrtb_ext.BidRequestVideo
 	VideoResponse *openrtb_ext.BidResponseVideo
 	StartTime     time.Time
+	LogObject
 }
 
 // Loggable object of a transaction at /setuid
@@ -92,19 +94,7 @@ type NotificationEvent struct {
 	Account *config.Account `json:"account"`
 }
 
-// LoggableAuctionObject contains common attributes
-type LoggableAuctionObject struct { // Proposed Abstraction
-	Context      context.Context
-	Status       int
-	Errors       []error
-	Request      *openrtb2.BidRequest
-	Response     *openrtb2.BidResponse
-	RejectedBids []RejectedBid
-}
-
-// RejectedBid holds bid and seat information alongwith rejection reason
-type RejectedBid struct {
-	RejectionReason int
-	Bid             openrtb2.Bid
-	Seat            string
+// LogObject is common loggable object
+type LogObject struct {
+	SeatNonBid []openrtb_ext.SeatNonBid
 }
