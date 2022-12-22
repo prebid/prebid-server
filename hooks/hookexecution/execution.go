@@ -9,6 +9,7 @@ import (
 
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookstage"
+	"github.com/prebid/prebid-server/metrics"
 )
 
 type hookResponse[T any] struct {
@@ -30,6 +31,7 @@ func executeStage[H any, P any](
 	plan hooks.Plan[H],
 	payload P,
 	hookHandler hookHandler[H, P],
+	metricEngine metrics.MetricsEngine,
 ) (StageOutcome, P, stageModuleContext, *RejectError) {
 	stageOutcome := StageOutcome{}
 	stageOutcome.Groups = make([]GroupOutcome, 0, len(plan))
@@ -37,7 +39,7 @@ func executeStage[H any, P any](
 	stageModuleCtx.groupCtx = make([]groupModuleContext, 0, len(plan))
 
 	for _, group := range plan {
-		groupOutcome, newPayload, moduleContexts, rejectErr := executeGroup(executionCtx, group, payload, hookHandler)
+		groupOutcome, newPayload, moduleContexts, rejectErr := executeGroup(executionCtx, group, payload, hookHandler, metricEngine)
 		stageOutcome.ExecutionTimeMillis += groupOutcome.ExecutionTimeMillis
 		stageOutcome.Groups = append(stageOutcome.Groups, groupOutcome)
 		stageModuleCtx.groupCtx = append(stageModuleCtx.groupCtx, moduleContexts)
@@ -56,6 +58,7 @@ func executeGroup[H any, P any](
 	group hooks.Group[H],
 	payload P,
 	hookHandler hookHandler[H, P],
+	metricEngine metrics.MetricsEngine,
 ) (GroupOutcome, P, groupModuleContext, *RejectError) {
 	var wg sync.WaitGroup
 	rejected := make(chan struct{})
@@ -77,7 +80,7 @@ func executeGroup[H any, P any](
 
 	hookResponses := collectHookResponses(resp, rejected)
 
-	return handleHookResponses(executionCtx, hookResponses, payload)
+	return handleHookResponses(executionCtx, hookResponses, payload, metricEngine)
 }
 
 func executeHook[H any, P any](
@@ -137,6 +140,7 @@ func handleHookResponses[P any](
 	executionCtx executionContext,
 	hookResponses []hookResponse[P],
 	payload P,
+	metricEngine metrics.MetricsEngine,
 ) (GroupOutcome, P, groupModuleContext, *RejectError) {
 	groupOutcome := GroupOutcome{}
 	groupOutcome.InvocationResults = make([]HookOutcome, 0, len(hookResponses))
@@ -148,7 +152,7 @@ func handleHookResponses[P any](
 			groupOutcome.ExecutionTimeMillis = r.ExecutionTime
 		}
 
-		updatedPayload, hookOutcome, rejectErr := handleHookResponse(executionCtx, payload, r)
+		updatedPayload, hookOutcome, rejectErr := handleHookResponse(executionCtx, payload, r, metricEngine)
 		groupOutcome.InvocationResults = append(groupOutcome.InvocationResults, hookOutcome)
 		payload = updatedPayload
 
@@ -166,8 +170,12 @@ func handleHookResponse[P any](
 	ctx executionContext,
 	payload P,
 	hr hookResponse[P],
+	metricEngine metrics.MetricsEngine,
 ) (P, HookOutcome, *RejectError) {
 	var rejectErr *RejectError
+	labels := metrics.ModuleLabels{Module: hr.HookID.ModuleCode, Stage: ctx.stage, AccountID: ctx.accountId}
+	metricEngine.RecordModuleCalled(labels, hr.ExecutionTime)
+
 	hookOutcome := HookOutcome{
 		Status:        StatusSuccess,
 		HookID:        hr.HookID,
@@ -181,18 +189,23 @@ func handleHookResponse[P any](
 
 	switch true {
 	case hr.Err != nil:
-		handleHookError(hr, &hookOutcome)
+		handleHookError(hr, &hookOutcome, metricEngine, labels)
 	case hr.Result.Reject:
-		rejectErr = handleHookReject(ctx, hr, &hookOutcome)
+		rejectErr = handleHookReject(ctx, hr, &hookOutcome, metricEngine, labels)
 	default:
-		payload = handleHookMutations(payload, hr, &hookOutcome)
+		payload = handleHookMutations(payload, hr, &hookOutcome, metricEngine, labels)
 	}
 
 	return payload, hookOutcome, rejectErr
 }
 
 // handleHookError sets an appropriate status to HookOutcome depending on the type of hook execution error.
-func handleHookError[P any](hr hookResponse[P], hookOutcome *HookOutcome) {
+func handleHookError[P any](
+	hr hookResponse[P],
+	hookOutcome *HookOutcome,
+	metricEngine metrics.MetricsEngine,
+	labels metrics.ModuleLabels,
+) {
 	if hr.Err == nil {
 		return
 	}
@@ -200,23 +213,33 @@ func handleHookError[P any](hr hookResponse[P], hookOutcome *HookOutcome) {
 	hookOutcome.Errors = append(hookOutcome.Errors, hr.Err.Error())
 	switch hr.Err.(type) {
 	case TimeoutError:
+		metricEngine.RecordModuleTimeout(labels)
 		hookOutcome.Status = StatusTimeout
 	case FailureError:
+		metricEngine.RecordModuleFailed(labels)
 		hookOutcome.Status = StatusFailure
 	default:
+		metricEngine.RecordModuleExecutionError(labels)
 		hookOutcome.Status = StatusExecutionFailure
 	}
 }
 
 // handleHookReject rejects execution at the current stage.
 // In case the stage does not support rejection, hook execution marked as failed.
-func handleHookReject[P any](ctx executionContext, hr hookResponse[P], hookOutcome *HookOutcome) *RejectError {
+func handleHookReject[P any](
+	ctx executionContext,
+	hr hookResponse[P],
+	hookOutcome *HookOutcome,
+	metricEngine metrics.MetricsEngine,
+	labels metrics.ModuleLabels,
+) *RejectError {
 	if !hr.Result.Reject {
 		return nil
 	}
 
 	stage := hooks.Stage(ctx.stage)
 	if !stage.IsRejectable() {
+		metricEngine.RecordModuleExecutionError(labels)
 		hookOutcome.Status = StatusExecutionFailure
 		hookOutcome.Errors = append(
 			hookOutcome.Errors,
@@ -233,18 +256,27 @@ func handleHookReject[P any](ctx executionContext, hr hookResponse[P], hookOutco
 	rejectErr := &RejectError{NBR: hr.Result.NbrCode, Hook: hr.HookID, Stage: ctx.stage}
 	hookOutcome.Action = ActionReject
 	hookOutcome.Errors = append(hookOutcome.Errors, rejectErr.Error())
+	metricEngine.RecordModuleSuccessRejected(labels)
 
 	return rejectErr
 }
 
 // handleHookMutations applies mutations returned by hook to provided payload.
-func handleHookMutations[P any](payload P, hr hookResponse[P], hookOutcome *HookOutcome) P {
+func handleHookMutations[P any](
+	payload P,
+	hr hookResponse[P],
+	hookOutcome *HookOutcome,
+	metricEngine metrics.MetricsEngine,
+	labels metrics.ModuleLabels,
+) P {
 	if hr.Result.ChangeSet == nil || len(hr.Result.ChangeSet.Mutations()) == 0 {
+		metricEngine.RecordModuleSuccessNooped(labels)
 		hookOutcome.Action = ActionNone
 		return payload
 	}
 
 	hookOutcome.Action = ActionUpdate
+	successfulMutations := 0
 	for _, mut := range hr.Result.ChangeSet.Mutations() {
 		p, err := mut.Apply(payload)
 		if err != nil {
@@ -264,6 +296,16 @@ func handleHookMutations[P any](payload P, hr hookResponse[P], hookOutcome *Hook
 				mut.Type(),
 			),
 		)
+		successfulMutations++
+	}
+
+	// if at least one mutation from a given module was successfully applied
+	// we consider that the module was processed successfully
+	if successfulMutations > 0 {
+		metricEngine.RecordModuleSuccessUpdated(labels)
+	} else {
+		hookOutcome.Status = StatusExecutionFailure
+		metricEngine.RecordModuleExecutionError(labels)
 	}
 
 	return payload
