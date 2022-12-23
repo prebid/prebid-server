@@ -7,7 +7,7 @@
             "prebid": {
               "bidder": {
                 "definemedia": {
-                  "mandantId": "12"
+                  "mandantId": 12
                 }
               }
             }
@@ -120,7 +120,7 @@
                   "prebid": {
                     "bidder": {
                       "definemedia": {
-                        "mandantId": "12"
+                        "mandantId": 12
                       }
                     }
                   },

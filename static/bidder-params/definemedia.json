@@ -6,13 +6,13 @@
   
     "properties": {
       "mandantId": {
-        "type": "string",
-        "description": "An ID which identifies the mandate"
+        "type": "integer",
+        "description": "The DEFINE-MEDIA mandant id. This is a unique identifier for your account. Please contact your account manager for more information."
       },
 
       "adslotId":{
-        "type": "string",
-        "description": "An ID which identifies the ad slot"
+        "type": "integer",
+        "description": "The adslot id. This is a unique identifier for your adslot and may change on subparts on a website. Please contact your account manager for more information."
       }
     },
     "required": ["mandantId"]
