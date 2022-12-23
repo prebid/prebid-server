@@ -44,7 +44,7 @@ type ExtResponsePrebid struct {
 	AuctionTimestamp int64           `json:"auctiontimestamp,omitempty"`
 	Passthrough      json.RawMessage `json:"passthrough,omitempty"`
 	// SeatNonBid holds the array of Bids which are either rejected, no bids inside bidresponse.ext.prebid.seatnonbid
-	SeatNonBid []SeatNonBid
+	SeatNonBid []SeatNonBid `json:"seatnonbid,omitempty"`
 }
 
 // ExtUserSync defines the contract for bidresponse.ext.usersync.{bidder}.syncs[i]
@@ -85,6 +85,14 @@ const (
 	UserSyncPixel  UserSyncType = "pixel"
 )
 
+//PROPOSAL1 - Extend Bid Object
+
+// type NonBid struct {
+// 	openrtb2.Bid
+// 	StatusCode int
+// }
+
+// PROPOSAL2 - Introduce Bid Object
 type NonBid struct {
 	ImpId      string
 	StatusCode int
@@ -93,7 +101,7 @@ type NonBid struct {
 }
 
 type SeatNonBid struct {
-	NonBid []NonBid
+	NonBid []NonBid // can be renamed to Bid
 	Seat   string
 	Ext    json.RawMessage
 }
