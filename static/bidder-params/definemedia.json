@@ -4,5 +4,16 @@
     "description": "A schema which validates params accepted by the DM adapter",
     "type": "object",
   
-    "properties": {}
+    "properties": {
+      "mandantId": {
+        "type": "string",
+        "description": "An ID which identifies the mandate"
+      },
+
+      "adslotId":{
+        "type": "string",
+        "description": "An ID which identifies the ad slot"
+      }
+    },
+    "required": ["mandantId"]
   }

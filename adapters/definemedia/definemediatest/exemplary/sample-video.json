@@ -6,7 +6,9 @@
             "tid": "397962d3-47a1-4634-9cb7-78597b01d9a9",
             "prebid": {
               "bidder": {
-                "definemedia": {}
+                "definemedia": {
+                  "mandantId": "12"
+                }
               }
             }
           },
@@ -117,7 +119,9 @@
                 "ext": {
                   "prebid": {
                     "bidder": {
-                      "definemedia": {}
+                      "definemedia": {
+                        "mandantId": "12"
+                      }
                     }
                   },
                   "tid": "397962d3-47a1-4634-9cb7-78597b01d9a9"
