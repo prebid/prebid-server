@@ -20,45 +20,50 @@ func TestModuleBuilderBuild(t *testing.T) {
 	moduleName := "foobar"
 
 	testCases := map[string]struct {
-		isHookFound         bool
-		expectedHook        interface{}
-		givenModule         interface{}
-		givenConfig         config.Modules
-		expectedErr         error
-		givenHookBuilderErr error
-		givenGetHookFn      func(repo hooks.HookRepository, module string) (interface{}, bool)
+		isHookFound          bool
+		expectedModStageColl map[string][]string
+		expectedHook         interface{}
+		givenModule          interface{}
+		givenConfig          config.Modules
+		expectedErr          error
+		givenHookBuilderErr  error
+		givenGetHookFn       func(repo hooks.HookRepository, module string) (interface{}, bool)
 	}{
 		"Can build with entrypoint hook without config": {
-			isHookFound:  true,
-			expectedHook: module{},
-			givenModule:  module{},
+			isHookFound:          true,
+			expectedModStageColl: map[string][]string{vendor + "_" + moduleName: {hooks.StageEntrypoint.String(), hooks.StageAuctionResponse.String()}},
+			expectedHook:         module{},
+			givenModule:          module{},
 			givenGetHookFn: func(repo hooks.HookRepository, module string) (interface{}, bool) {
 				return repo.GetEntrypointHook(module)
 			},
 		},
 		"Can build with entrypoint hook with config": {
-			isHookFound:  true,
-			expectedHook: module{},
-			givenModule:  module{},
-			givenConfig:  map[string]map[string]interface{}{vendor: {moduleName: map[string]bool{"enabled": true}}},
+			isHookFound:          true,
+			expectedModStageColl: map[string][]string{vendor + "_" + moduleName: {hooks.StageEntrypoint.String(), hooks.StageAuctionResponse.String()}},
+			expectedHook:         module{},
+			givenModule:          module{},
+			givenConfig:          map[string]map[string]interface{}{vendor: {moduleName: map[string]bool{"enabled": true}}},
 			givenGetHookFn: func(repo hooks.HookRepository, module string) (interface{}, bool) {
 				return repo.GetEntrypointHook(module)
 			},
 		},
 		"Can build with auction response hook": {
-			isHookFound:  true,
-			expectedHook: module{},
-			givenModule:  module{},
-			givenConfig:  map[string]map[string]interface{}{"vendor": {"module": map[string]bool{"enabled": true}}},
+			isHookFound:          true,
+			expectedModStageColl: map[string][]string{vendor + "_" + moduleName: {hooks.StageEntrypoint.String(), hooks.StageAuctionResponse.String()}},
+			expectedHook:         module{},
+			givenModule:          module{},
+			givenConfig:          map[string]map[string]interface{}{"vendor": {"module": map[string]bool{"enabled": true}}},
 			givenGetHookFn: func(repo hooks.HookRepository, module string) (interface{}, bool) {
 				return repo.GetAuctionResponseHook(module)
 			},
 		},
 		"Fails to find not registered hook": {
-			isHookFound:  false,
-			expectedHook: nil,
-			givenModule:  module{},
-			givenConfig:  map[string]map[string]interface{}{vendor: {"module": map[string]bool{"enabled": true}}},
+			isHookFound:          false,
+			expectedModStageColl: map[string][]string{vendor + "_" + moduleName: {hooks.StageEntrypoint.String(), hooks.StageAuctionResponse.String()}},
+			expectedHook:         nil,
+			givenModule:          module{},
+			givenConfig:          map[string]map[string]interface{}{vendor: {"module": map[string]bool{"enabled": true}}},
 			givenGetHookFn: func(repo hooks.HookRepository, module string) (interface{}, bool) {
 				return repo.GetAllProcessedBidResponsesHook(module) // ask for hook not implemented in module
 			},
@@ -92,12 +97,13 @@ func TestModuleBuilderBuild(t *testing.T) {
 				},
 			}
 
-			repo, err := builder.Build(test.givenConfig, http.DefaultClient)
+			repo, coll, err := builder.Build(test.givenConfig, http.DefaultClient)
 			assert.Equal(t, test.expectedErr, err)
 			if test.expectedErr == nil {
 				hook, found := test.givenGetHookFn(repo, fmt.Sprintf("%s.%s", vendor, moduleName))
 				assert.Equal(t, test.isHookFound, found)
 				assert.IsType(t, test.expectedHook, hook)
+				assert.Equal(t, test.expectedModStageColl, coll)
 			}
 		})
 	}

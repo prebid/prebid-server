@@ -2,7 +2,6 @@ package hooks
 
 import (
 	"fmt"
-
 	"github.com/prebid/prebid-server/hooks/hookstage"
 )
 

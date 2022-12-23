@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -13,7 +14,8 @@ import (
 func TestNewMetrics(t *testing.T) {
 	registry := metrics.NewRegistry()
 	syncerKeys := []string{"foo"}
-	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{}, syncerKeys)
+	moduleStageNames := map[string][]string{"foobar": {"entry", "raw"}, "another_module": {"raw", "auction"}}
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{}, syncerKeys, moduleStageNames)
 
 	ensureContains(t, registry, "app_requests", m.AppRequestMeter)
 	ensureContains(t, registry, "debug_requests", m.DebugRequestMeter)
@@ -77,11 +79,17 @@ func TestNewMetrics(t *testing.T) {
 
 	ensureContains(t, registry, "ads_cert_requests.ok", m.AdsCertRequestsSuccess)
 	ensureContains(t, registry, "ads_cert_requests.failed", m.AdsCertRequestsFailure)
+
+	for module, stages := range moduleStageNames {
+		for _, stage := range stages {
+			ensureContainsModuleMetrics(t, registry, fmt.Sprintf("modules.module.%s.stage.%s", module, stage), m.ModuleMetrics[module][stage])
+		}
+	}
 }
 
 func TestRecordBidType(t *testing.T) {
 	registry := metrics.NewRegistry()
-	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{}, nil)
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{}, nil, nil)
 
 	m.RecordAdapterBidReceived(AdapterLabels{
 		Adapter: openrtb_ext.BidderAppnexus,
@@ -122,6 +130,18 @@ func ensureContainsAdapterMetrics(t *testing.T, registry metrics.Registry, name 
 	ensureContains(t, registry, name+".connections_created", adapterMetrics.ConnCreated)
 	ensureContains(t, registry, name+".connections_reused", adapterMetrics.ConnReused)
 	ensureContains(t, registry, name+".connection_wait_time", adapterMetrics.ConnWaitTime)
+}
+
+func ensureContainsModuleMetrics(t *testing.T, registry metrics.Registry, name string, moduleMetrics *ModuleMetrics) {
+	t.Helper()
+	ensureContains(t, registry, name+".duration", moduleMetrics.DurationTimer)
+	ensureContains(t, registry, name+".call", moduleMetrics.CallCounter)
+	ensureContains(t, registry, name+".failure", moduleMetrics.FailureCounter)
+	ensureContains(t, registry, name+".success.noop", moduleMetrics.SuccessNoopCounter)
+	ensureContains(t, registry, name+".success.update", moduleMetrics.SuccessUpdateCounter)
+	ensureContains(t, registry, name+".success.reject", moduleMetrics.SuccessRejectCounter)
+	ensureContains(t, registry, name+".execution_error", moduleMetrics.ExecutionErrorCounter)
+	ensureContains(t, registry, name+".timeout", moduleMetrics.TimeoutCounter)
 }
 
 func TestRecordBidTypeDisabledConfig(t *testing.T) {
@@ -169,7 +189,7 @@ func TestRecordBidTypeDisabledConfig(t *testing.T) {
 
 	for _, test := range testCases {
 		registry := metrics.NewRegistry()
-		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, test.DisabledMetrics, nil)
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, test.DisabledMetrics, nil, nil)
 
 		m.RecordAdapterBidReceived(AdapterLabels{
 			Adapter: openrtb_ext.BidderAppnexus,
@@ -242,7 +262,7 @@ func TestRecordDebugRequest(t *testing.T) {
 	}
 	for _, test := range testCases {
 		registry := metrics.NewRegistry()
-		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, test.givenDisabledMetrics, nil)
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, test.givenDisabledMetrics, nil, nil)
 
 		m.RecordDebugRequest(test.givenDebugEnabledFlag, test.givenPubID)
 		am := m.getAccountMetrics(test.givenPubID)
@@ -271,7 +291,7 @@ func TestRecordDNSTime(t *testing.T) {
 	}
 	for _, test := range testCases {
 		registry := metrics.NewRegistry()
-		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: true}, nil)
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: true}, nil, nil)
 
 		m.RecordDNSTime(test.inDnsLookupDuration)
 
@@ -298,7 +318,7 @@ func TestRecordTLSHandshakeTime(t *testing.T) {
 	}
 	for _, test := range testCases {
 		registry := metrics.NewRegistry()
-		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: true}, nil)
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: true}, nil, nil)
 
 		m.RecordTLSHandshakeTime(test.tLSHandshakeDuration)
 
@@ -403,7 +423,7 @@ func TestRecordAdapterConnections(t *testing.T) {
 
 	for i, test := range testCases {
 		registry := metrics.NewRegistry()
-		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AdapterConnectionMetrics: test.in.connMetricsDisabled}, nil)
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AdapterConnectionMetrics: test.in.connMetricsDisabled}, nil, nil)
 
 		m.RecordAdapterConnections(test.in.adapterName, test.in.connWasReused, test.in.connWait)
 
@@ -415,14 +435,15 @@ func TestRecordAdapterConnections(t *testing.T) {
 
 func TestNewMetricsWithDisabledConfig(t *testing.T) {
 	registry := metrics.NewRegistry()
-	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{AccountAdapterDetails: true}, nil)
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{AccountAdapterDetails: true, AccountModulesMetrics: true}, nil, map[string][]string{"foobar": {"entry", "raw"}})
 
 	assert.True(t, m.MetricsDisabled.AccountAdapterDetails, "Accound adapter metrics should be disabled")
+	assert.True(t, m.MetricsDisabled.AccountModulesMetrics, "Accound modules metrics should be disabled")
 }
 
 func TestRecordPrebidCacheRequestTimeWithSuccess(t *testing.T) {
 	registry := metrics.NewRegistry()
-	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: true}, nil)
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: true}, nil, nil)
 
 	m.RecordPrebidCacheRequestTime(true, 42)
 
@@ -432,7 +453,7 @@ func TestRecordPrebidCacheRequestTimeWithSuccess(t *testing.T) {
 
 func TestRecordPrebidCacheRequestTimeWithNotSuccess(t *testing.T) {
 	registry := metrics.NewRegistry()
-	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: true}, nil)
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: true}, nil, nil)
 
 	m.RecordPrebidCacheRequestTime(false, 42)
 
@@ -500,7 +521,7 @@ func TestRecordStoredDataFetchTime(t *testing.T) {
 
 	for _, tt := range tests {
 		registry := metrics.NewRegistry()
-		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{AccountAdapterDetails: true}, nil)
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{AccountAdapterDetails: true}, nil, nil)
 		m.RecordStoredDataFetchTime(StoredDataLabels{
 			DataType:      tt.dataType,
 			DataFetchType: tt.fetchType,
@@ -574,7 +595,7 @@ func TestRecordStoredDataError(t *testing.T) {
 
 	for _, tt := range tests {
 		registry := metrics.NewRegistry()
-		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{AccountAdapterDetails: true}, nil)
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{AccountAdapterDetails: true}, nil, nil)
 		m.RecordStoredDataError(StoredDataLabels{
 			DataType: tt.dataType,
 			Error:    tt.errorType,
@@ -587,7 +608,7 @@ func TestRecordStoredDataError(t *testing.T) {
 
 func TestRecordRequestPrivacy(t *testing.T) {
 	registry := metrics.NewRegistry()
-	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{AccountAdapterDetails: true}, nil)
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{AccountAdapterDetails: true}, nil, nil)
 
 	// CCPA
 	m.RecordRequestPrivacy(PrivacyLabels{
@@ -662,7 +683,7 @@ func TestRecordAdapterGDPRRequestBlocked(t *testing.T) {
 
 	for _, tt := range tests {
 		registry := metrics.NewRegistry()
-		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AdapterGDPRRequestBlocked: tt.metricsDisabled}, nil)
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AdapterGDPRRequestBlocked: tt.metricsDisabled}, nil, nil)
 
 		m.RecordAdapterGDPRRequestBlocked(tt.adapterName)
 
@@ -672,7 +693,7 @@ func TestRecordAdapterGDPRRequestBlocked(t *testing.T) {
 
 func TestRecordCookieSync(t *testing.T) {
 	registry := metrics.NewRegistry()
-	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{}, nil)
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{}, nil, nil)
 
 	// Known
 	m.RecordCookieSync(CookieSyncBadRequest)
@@ -690,7 +711,7 @@ func TestRecordCookieSync(t *testing.T) {
 func TestRecordSyncerRequest(t *testing.T) {
 	registry := metrics.NewRegistry()
 	syncerKeys := []string{"foo"}
-	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{}, syncerKeys)
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{}, syncerKeys, nil)
 
 	// Known
 	m.RecordSyncerRequest("foo", SyncerCookieSyncOK)
@@ -709,7 +730,7 @@ func TestRecordSyncerRequest(t *testing.T) {
 
 func TestRecordSetUid(t *testing.T) {
 	registry := metrics.NewRegistry()
-	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{}, nil)
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{}, nil, nil)
 
 	// Known
 	m.RecordSetUid(SetUidOptOut)
@@ -728,7 +749,7 @@ func TestRecordSetUid(t *testing.T) {
 func TestRecordSyncerSet(t *testing.T) {
 	registry := metrics.NewRegistry()
 	syncerKeys := []string{"foo"}
-	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{}, syncerKeys)
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{}, syncerKeys, nil)
 
 	// Known
 	m.RecordSyncerSet("foo", SyncerSetUidCleared)
@@ -782,7 +803,7 @@ func TestStoredResponses(t *testing.T) {
 	}
 	for _, test := range testCases {
 		registry := metrics.NewRegistry()
-		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountStoredResponses: test.accountStoredResponsesMetricsDisabled}, nil)
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountStoredResponses: test.accountStoredResponsesMetricsDisabled}, nil, nil)
 
 		m.RecordStoredResponse(test.givenPubID)
 		am := m.getAccountMetrics(test.givenPubID)
@@ -816,7 +837,7 @@ func TestRecordAdsCertSignTime(t *testing.T) {
 	}
 	for _, test := range testCases {
 		registry := metrics.NewRegistry()
-		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{}, nil)
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{}, nil, nil)
 
 		m.RecordAdsCertSignTime(test.inAdsCertSignDuration)
 
@@ -847,12 +868,75 @@ func TestRecordAdsCertReqMetric(t *testing.T) {
 
 	for _, test := range testCases {
 		registry := metrics.NewRegistry()
-		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{}, nil)
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{}, nil, nil)
 
 		m.RecordAdsCertReq(test.requestSuccess)
 
 		assert.Equal(t, test.expectedSuccessRequestsCount, m.AdsCertRequestsSuccess.Count(), test.description)
 		assert.Equal(t, test.expectedFailedRequestsCount, m.AdsCertRequestsFailure.Count(), test.description)
+	}
+}
+
+func TestRecordModuleAccountMetrics(t *testing.T) {
+	registry := metrics.NewRegistry()
+	module := "foobar"
+	stage1 := "entrypoint"
+	stage2 := "raw_auction"
+	stage3 := "processed_auction"
+
+	testCases := []struct {
+		description                string
+		givenModuleName            string
+		givenStageName             string
+		givenPubID                 string
+		givenDisabledMetrics       config.DisabledMetrics
+		expectedModuleMetricCount  int64
+		expectedAccountMetricCount int64
+	}{
+		{
+			description:                "Entrypoint stage should not record account metrics",
+			givenModuleName:            module,
+			givenStageName:             stage1,
+			givenDisabledMetrics:       config.DisabledMetrics{AccountModulesMetrics: false},
+			expectedModuleMetricCount:  1,
+			expectedAccountMetricCount: 0,
+		},
+		{
+			description:                "Rawauction stage should record both metrics",
+			givenModuleName:            module,
+			givenStageName:             stage2,
+			givenPubID:                 "acc-1",
+			givenDisabledMetrics:       config.DisabledMetrics{AccountModulesMetrics: false},
+			expectedModuleMetricCount:  1,
+			expectedAccountMetricCount: 1,
+		},
+		{
+			description:                "Rawauction stage should not record account metrics because they are disabled",
+			givenModuleName:            module,
+			givenStageName:             stage3,
+			givenPubID:                 "acc-1",
+			givenDisabledMetrics:       config.DisabledMetrics{AccountModulesMetrics: true},
+			expectedModuleMetricCount:  1,
+			expectedAccountMetricCount: 0,
+		},
+	}
+	for _, test := range testCases {
+		m := NewMetrics(registry, nil, test.givenDisabledMetrics, nil, map[string][]string{module: {stage1, stage2, stage3}})
+
+		m.RecordModuleCalled(ModuleLabels{
+			Module:    test.givenModuleName,
+			Stage:     test.givenStageName,
+			AccountID: test.givenPubID,
+		}, time.Microsecond)
+		am := m.getAccountMetrics(test.givenPubID)
+
+		assert.Equal(t, test.expectedModuleMetricCount, m.ModuleMetrics[test.givenModuleName][test.givenStageName].CallCounter.Count())
+		if !test.givenDisabledMetrics.AccountModulesMetrics {
+			assert.Equal(t, test.expectedAccountMetricCount, am.moduleMetrics[test.givenModuleName].CallCounter.Count())
+			assert.Equal(t, test.expectedAccountMetricCount, am.moduleMetrics[test.givenModuleName].DurationTimer.Count())
+		} else {
+			assert.Len(t, am.moduleMetrics, 0, "Account modules metrics are disabled, they should not be collected. Actual result %d account metrics collected \n", len(am.moduleMetrics))
+		}
 	}
 }
 

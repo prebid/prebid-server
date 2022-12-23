@@ -6,9 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"reflect"
 	"regexp"
 	"sort"
@@ -19,6 +20,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
@@ -358,6 +360,7 @@ func TestDebugBehaviour(t *testing.T) {
 			Account:           config.Account{DebugAllow: test.debugData.accountLevelDebugAllowed},
 			UserSyncs:         &emptyUsersync{},
 			StartTime:         time.Now(),
+			HookExecutor:      &hookexecution.EmptyHookExecutor{},
 		}
 		if test.generateWarnings {
 			var errL []error
@@ -523,6 +526,7 @@ func TestTwoBiddersDebugDisabledAndEnabled(t *testing.T) {
 			Account:           config.Account{DebugAllow: true},
 			UserSyncs:         &emptyUsersync{},
 			StartTime:         time.Now(),
+			HookExecutor:      &hookexecution.EmptyHookExecutor{},
 		}
 
 		e.adapterMap = map[openrtb_ext.BidderName]AdaptedBidder{
@@ -699,6 +703,7 @@ func TestOverrideWithCustomCurrency(t *testing.T) {
 			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: mockBidRequest},
 			Account:           config.Account{},
 			UserSyncs:         &emptyUsersync{},
+			HookExecutor:      &hookexecution.EmptyHookExecutor{},
 		}
 
 		// Run test
@@ -788,6 +793,7 @@ func TestAdapterCurrency(t *testing.T) {
 		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: request},
 		Account:           config.Account{},
 		UserSyncs:         &emptyUsersync{},
+		HookExecutor:      &hookexecution.EmptyHookExecutor{},
 	}
 	response, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{})
 	assert.NoError(t, err)
@@ -1166,6 +1172,7 @@ func TestReturnCreativeEndToEnd(t *testing.T) {
 				BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: mockBidRequest},
 				Account:           config.Account{},
 				UserSyncs:         &emptyUsersync{},
+				HookExecutor:      &hookexecution.EmptyHookExecutor{},
 			}
 
 			// Run test
@@ -1217,7 +1224,8 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 
 	adapterList := make([]openrtb_ext.BidderName, 0, 2)
 	syncerKeys := []string{}
-	testEngine := metricsConf.NewMetricsEngine(cfg, adapterList, syncerKeys)
+	var moduleStageNames map[string][]string
+	testEngine := metricsConf.NewMetricsEngine(cfg, adapterList, syncerKeys, moduleStageNames)
 	//	2) Init new exchange with said configuration
 	handlerNoBidServer := func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) }
 	server := httptest.NewServer(http.HandlerFunc(handlerNoBidServer))
@@ -1846,6 +1854,7 @@ func TestRaceIntegration(t *testing.T) {
 		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: getTestBuildRequest(t)},
 		Account:           config.Account{},
 		UserSyncs:         &emptyUsersync{},
+		HookExecutor:      &hookexecution.EmptyHookExecutor{},
 	}
 
 	debugLog := DebugLog{}
@@ -2070,6 +2079,7 @@ func TestPanicRecoveryHighLevel(t *testing.T) {
 		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: request},
 		Account:           config.Account{},
 		UserSyncs:         &emptyUsersync{},
+		HookExecutor:      &hookexecution.EmptyHookExecutor{},
 	}
 	debugLog := DebugLog{}
 	_, err = e.HoldAuction(context.Background(), auctionRequest, &debugLog)
@@ -2098,7 +2108,7 @@ func TestTimeoutComputation(t *testing.T) {
 
 // TestExchangeJSON executes tests for all the *.json files in exchangetest.
 func TestExchangeJSON(t *testing.T) {
-	if specFiles, err := ioutil.ReadDir("./exchangetest"); err == nil {
+	if specFiles, err := os.ReadDir("./exchangetest"); err == nil {
 		for _, specFile := range specFiles {
 			fileName := "./exchangetest/" + specFile.Name()
 			fileDisplayName := "exchange/exchangetest/" + specFile.Name()
@@ -2114,7 +2124,7 @@ func TestExchangeJSON(t *testing.T) {
 
 // LoadFile reads and parses a file as a test case. If something goes wrong, it returns an error.
 func loadFile(filename string) (*exchangeSpec, error) {
-	specData, err := ioutil.ReadFile(filename)
+	specData, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to read file %s: %v", filename, err)
 	}
@@ -2193,6 +2203,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		},
 		UserSyncs:     mockIdFetcher(spec.IncomingRequest.Usersyncs),
 		ImpExtInfoMap: impExtInfoMap,
+		HookExecutor:  &hookexecution.EmptyHookExecutor{},
 	}
 
 	if spec.StartTime > 0 {
@@ -2381,7 +2392,7 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 
 	return &exchange{
 		adapterMap:        bidderAdapters,
-		me:                metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.CoreBidderNames(), nil),
+		me:                metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.CoreBidderNames(), nil, nil),
 		cache:             &wellBehavedCache{},
 		cacheTime:         0,
 		currencyConverter: currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
@@ -3864,6 +3875,7 @@ func TestStoredAuctionResponses(t *testing.T) {
 			Account:                config.Account{},
 			UserSyncs:              &emptyUsersync{},
 			StoredAuctionResponses: test.storedAuctionResp,
+			HookExecutor:           &hookexecution.EmptyHookExecutor{},
 		}
 		// Run test
 		outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{})
@@ -4061,6 +4073,7 @@ func TestAuctionDebugEnabled(t *testing.T) {
 		UserSyncs:         &emptyUsersync{},
 		StartTime:         time.Now(),
 		RequestType:       metrics.ReqTypeORTB2Web,
+		HookExecutor:      &hookexecution.EmptyHookExecutor{},
 	}
 
 	debugLog := &DebugLog{DebugOverride: true, DebugEnabledOrOverridden: true}
@@ -4132,6 +4145,7 @@ func TestPassExperimentConfigsToHoldAuction(t *testing.T) {
 		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: mockBidRequest},
 		Account:           config.Account{},
 		UserSyncs:         &emptyUsersync{},
+		HookExecutor:      &hookexecution.EmptyHookExecutor{},
 	}
 
 	debugLog := DebugLog{}
@@ -4349,6 +4363,7 @@ func TestOverrideConfigAlternateBidderCodesWithRequestValues(t *testing.T) {
 			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: mockBidRequest},
 			Account:           test.in.config.AccountDefaults,
 			UserSyncs:         &emptyUsersync{},
+			HookExecutor:      &hookexecution.EmptyHookExecutor{},
 		}
 
 		// Run test
@@ -4659,7 +4674,7 @@ func (m *fakeCurrencyRatesHttpClient) Do(req *http.Request) (*http.Response, err
 	return &http.Response{
 		Status:     "200 OK",
 		StatusCode: http.StatusOK,
-		Body:       ioutil.NopCloser(strings.NewReader(m.responseBody)),
+		Body:       io.NopCloser(strings.NewReader(m.responseBody)),
 	}, nil
 }
 

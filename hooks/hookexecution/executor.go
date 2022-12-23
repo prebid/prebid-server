@@ -5,9 +5,11 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookstage"
+	"github.com/prebid/prebid-server/metrics"
 )
 
 const (
@@ -27,6 +29,8 @@ const (
 
 type StageExecutor interface {
 	ExecuteEntrypointStage(req *http.Request, body []byte) ([]byte, *RejectError)
+	ExecuteRawAuctionStage(body []byte) ([]byte, *RejectError)
+	ExecuteProcessedAuctionStage(req *openrtb2.BidRequest) *RejectError
 }
 
 type HookStageExecutor interface {
@@ -42,16 +46,18 @@ type hookExecutor struct {
 	planBuilder    hooks.ExecutionPlanBuilder
 	stageOutcomes  []StageOutcome
 	moduleContexts *moduleContexts
+	metricEngine   metrics.MetricsEngine
 	// Mutex needed for BidderRequest and RawBidderResponse Stages as they are run in several goroutines
 	sync.Mutex
 }
 
-func NewHookExecutor(builder hooks.ExecutionPlanBuilder, endpoint string) *hookExecutor {
+func NewHookExecutor(builder hooks.ExecutionPlanBuilder, endpoint string, me metrics.MetricsEngine) *hookExecutor {
 	return &hookExecutor{
 		endpoint:       endpoint,
 		planBuilder:    builder,
 		stageOutcomes:  []StageOutcome{},
 		moduleContexts: &moduleContexts{ctxs: make(map[string]hookstage.ModuleContext)},
+		metricEngine:   me,
 	}
 }
 
@@ -74,7 +80,6 @@ func (e *hookExecutor) ExecuteEntrypointStage(req *http.Request, body []byte) ([
 		return body, nil
 	}
 
-	stageName := hooks.StageEntrypoint.String()
 	handler := func(
 		ctx context.Context,
 		moduleCtx hookstage.ModuleInvocationContext,
@@ -84,23 +89,86 @@ func (e *hookExecutor) ExecuteEntrypointStage(req *http.Request, body []byte) ([
 		return hook.HandleEntrypointHook(ctx, moduleCtx, payload)
 	}
 
-	executionCtx := executionContext{
-		endpoint:       e.endpoint,
-		stage:          stageName,
-		accountId:      e.accountID,
-		account:        e.account,
-		moduleContexts: e.moduleContexts,
-	}
-
+	stageName := hooks.StageEntrypoint.String()
+	executionCtx := e.newContext(stageName)
 	payload := hookstage.EntrypointPayload{Request: req, Body: body}
-	stageOutcome, payload, stageModuleContexts, rejectErr := executeStage(executionCtx, plan, payload, handler)
-	stageOutcome.Entity = entityHttpRequest
-	stageOutcome.Stage = stageName
 
-	e.saveModuleContexts(stageModuleContexts)
-	e.pushStageOutcome(stageOutcome)
+	outcome, payload, contexts, rejectErr := executeStage(executionCtx, plan, payload, handler, e.metricEngine)
+	outcome.Entity = entityHttpRequest
+	outcome.Stage = stageName
+
+	e.saveModuleContexts(contexts)
+	e.pushStageOutcome(outcome)
 
 	return payload.Body, rejectErr
+}
+
+func (e *hookExecutor) ExecuteRawAuctionStage(requestBody []byte) ([]byte, *RejectError) {
+	plan := e.planBuilder.PlanForRawAuctionStage(e.endpoint, e.account)
+	if len(plan) == 0 {
+		return requestBody, nil
+	}
+
+	handler := func(
+		ctx context.Context,
+		moduleCtx hookstage.ModuleInvocationContext,
+		hook hookstage.RawAuctionRequest,
+		payload hookstage.RawAuctionRequestPayload,
+	) (hookstage.HookResult[hookstage.RawAuctionRequestPayload], error) {
+		return hook.HandleRawAuctionHook(ctx, moduleCtx, payload)
+	}
+
+	stageName := hooks.StageRawAuctionRequest.String()
+	executionCtx := e.newContext(stageName)
+	payload := hookstage.RawAuctionRequestPayload(requestBody)
+
+	outcome, payload, contexts, reject := executeStage(executionCtx, plan, payload, handler, e.metricEngine)
+	outcome.Entity = entityAuctionRequest
+	outcome.Stage = stageName
+
+	e.saveModuleContexts(contexts)
+	e.pushStageOutcome(outcome)
+
+	return payload, reject
+}
+
+func (e *hookExecutor) ExecuteProcessedAuctionStage(request *openrtb2.BidRequest) *RejectError {
+	plan := e.planBuilder.PlanForProcessedAuctionStage(e.endpoint, e.account)
+	if len(plan) == 0 {
+		return nil
+	}
+
+	handler := func(
+		ctx context.Context,
+		moduleCtx hookstage.ModuleInvocationContext,
+		hook hookstage.ProcessedAuctionRequest,
+		payload hookstage.ProcessedAuctionRequestPayload,
+	) (hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload], error) {
+		return hook.HandleProcessedAuctionHook(ctx, moduleCtx, payload)
+	}
+
+	stageName := hooks.StageProcessedAuctionRequest.String()
+	executionCtx := e.newContext(stageName)
+	payload := hookstage.ProcessedAuctionRequestPayload{BidRequest: request}
+
+	outcome, _, contexts, reject := executeStage(executionCtx, plan, payload, handler, e.metricEngine)
+	outcome.Entity = entityAuctionRequest
+	outcome.Stage = stageName
+
+	e.saveModuleContexts(contexts)
+	e.pushStageOutcome(outcome)
+
+	return reject
+}
+
+func (e *hookExecutor) newContext(stage string) executionContext {
+	return executionContext{
+		account:        e.account,
+		accountId:      e.accountID,
+		endpoint:       e.endpoint,
+		moduleContexts: e.moduleContexts,
+		stage:          stage,
+	}
 }
 
 func (e *hookExecutor) saveModuleContexts(ctxs stageModuleContext) {
@@ -127,4 +195,12 @@ func (executor *EmptyHookExecutor) GetOutcomes() []StageOutcome {
 
 func (executor *EmptyHookExecutor) ExecuteEntrypointStage(_ *http.Request, body []byte) ([]byte, *RejectError) {
 	return body, nil
+}
+
+func (executor *EmptyHookExecutor) ExecuteRawAuctionStage(body []byte) ([]byte, *RejectError) {
+	return body, nil
+}
+
+func (executor *EmptyHookExecutor) ExecuteProcessedAuctionStage(_ *openrtb2.BidRequest) *RejectError {
+	return nil
 }
