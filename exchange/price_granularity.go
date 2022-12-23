@@ -13,7 +13,8 @@ func GetPriceBucket(cpm float64, config openrtb_ext.PriceGranularity) string {
 	bucketMax := 0.0
 	increment := 0.0
 	precision := config.Precision
-
+	bucketFloor := 0.0
+	bucketMin := 0.0
 	for i := 0; i < len(config.Ranges); i++ {
 		if config.Ranges[i].Max > bucketMax {
 			bucketMax = config.Ranges[i].Max
@@ -21,6 +22,9 @@ func GetPriceBucket(cpm float64, config openrtb_ext.PriceGranularity) string {
 		// find what range cpm is in
 		if cpm >= config.Ranges[i].Min && cpm <= config.Ranges[i].Max {
 			increment = config.Ranges[i].Increment
+			bucketMin = bucketFloor
+		} else {
+			bucketFloor = config.Ranges[i].Max
 		}
 	}
 
@@ -29,13 +33,13 @@ func GetPriceBucket(cpm float64, config openrtb_ext.PriceGranularity) string {
 		cpmStr = strconv.FormatFloat(bucketMax, 'f', precision, 64)
 	} else if increment > 0 {
 		// If increment exists, get cpm string value
-		cpmStr = getCpmTarget(cpm, increment, precision)
+		cpmStr = getCpmTarget(cpm, bucketMin, increment, precision)
 	}
 
 	return cpmStr
 }
 
-func getCpmTarget(cpm float64, increment float64, precision int) string {
-	roundedCPM := math.Floor(cpm/increment) * increment
+func getCpmTarget(cpm float64, bucketMin float64, increment float64, precision int) string {
+	roundedCPM := math.Floor((cpm-bucketMin)/increment)*increment + bucketMin
 	return strconv.FormatFloat(roundedCPM, 'f', precision, 64)
 }
