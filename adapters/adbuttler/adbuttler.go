@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"text/template"
 
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/adapters/commerce"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -21,7 +23,7 @@ type AdButtlerAdapter struct {
 }
 
 func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	host := "adbuttler"
+	host := "localhost"
 	endPoint,_ := a.buildEndpointURL(host)
 	errs := make([]error, 0, len(request.Imp))
 
@@ -32,8 +34,7 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 	}
 
 	headers := http.Header{}
-	headers.Add("Content-Type", "application/json;charset=utf-8")
-	headers.Add("Accept", "application/json")
+	headers.Add("Content-Type", "application/json")
 
 	return []*adapters.RequestData{{
 		Method:  "POST",
@@ -41,9 +42,49 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 		Body:    reqJSON,
 		Headers: headers,
 	}}, errs
+	
 }
 func (a *AdButtlerAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-		return nil, nil
+	var typedArray     []*adapters.TypedBid
+	iurl, _ := a.buildImpressionURL("adbuttler")
+	curl, _ := a.buildClickURL("adbuttler")
+	purl, _ := a.buildConversionURL("adbuttler")
+	requestCount := commerce.GetRequestSlotCount(internalRequest)
+
+	for i := 1; i <= requestCount; i++ {
+		productid := commerce.GetRandomProductID()
+		bidID := commerce.GetDefaultBidID() + "_" + strconv.Itoa(i)
+		bidExt := &commerce.ExtBidCommerce{
+			ProductId:  &productid,
+			ImpUrl:        &iurl,
+			ClickUrl: &curl,
+			ConversionUrl: &purl,
+		}
+		
+		bid := &openrtb2.Bid {
+			ID: bidID,
+			ImpID: bidID,
+		}
+
+		commerce.AddDefaultFields(bid)
+
+		bidExtJSON, err1 := json.Marshal(bidExt)
+		if nil == err1 {
+			bid.Ext = json.RawMessage(bidExtJSON)
+		}
+
+		typedbid := &adapters.TypedBid {
+			Bid:  bid,
+			Seat: "commerce",
+		}
+		typedArray = append(typedArray, typedbid)
+	}
+
+	responseF := &adapters.BidderResponse{
+		Bids: typedArray,
+		Currency: "USD",
+	}
+	return responseF, nil
 }
 
 // Builder builds a new instance of the AdButtler adapter for the given bidder with the given config.
