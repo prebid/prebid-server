@@ -50,9 +50,4 @@ var invalidParams = []string{
 	`5`,
 	`4.2`,
 	`[]`,
-	`{}`,
-	`{"pageViewId":"123"}`,
-	`{"pageViewId":"0"}`,
-	`{"pageViewId":"123","placementId":"123"}`,
-	`{"pageViewId":123, "placementId":"123", "siteId":"321"}`,
 }
