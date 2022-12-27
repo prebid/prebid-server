@@ -49,56 +49,25 @@ least one valid Impression for your adapter. Impressions not configured for
 your adapter are not accessible.
 */
 func (a *CWireAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var errors []error
-
-	bidderParams := map[int]openrtb_ext.ImpExtCWire{}
-
-	fmt.Println("REQUEST HAS ARRIVED TO CWIRE ADAPTER")
-
-	for i, imp := range request.Imp {
-		var ext struct {
-			Bidder openrtb_ext.ImpExtCWire
-		}
-		err := json.Unmarshal(imp.Ext, &ext)
-		if err != nil {
-			errors = append(errors, fmt.Errorf("Error while unmarshaling bidder parameters: %v", err))
-			continue
-		}
-		bidderParams[i] = ext.Bidder
-	}
-
-	for _, err := range errors {
-		fmt.Printf("ERROR WHILE PARSING BIDDER PARAMATER: %v\n", err)
-	}
-
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 
-	body := struct {
-		OpenRTBRequest            openrtb2.BidRequest
-		ImpressionBidderParamsMap map[int]openrtb_ext.ImpExtCWire
-	}{
-		OpenRTBRequest:            *request,
-		ImpressionBidderParamsMap: bidderParams,
-	}
-
-	bodyJSON, err := json.Marshal(body)
+	resJSON, err := json.Marshal(request)
 	if err != nil {
-		errors = append(errors, fmt.Errorf("Error while encoding bidRequest: %v", err))
-		return nil, errors
+		return nil, []error{fmt.Errorf("Error while encoding OpenRTB BidRequest: %v", err)}
 	}
 
 	reqs := []*adapters.RequestData{
-		&adapters.RequestData{
+		{
 			Method:  "POST",
 			Uri:     a.endpoint,
-			Body:    bodyJSON,
+			Body:    resJSON,
 			Headers: headers,
 		},
 	}
 
-	return reqs, errors
+	return reqs, nil
 }
 
 /*
@@ -110,29 +79,27 @@ within the bidding time window (request.tmax). If there are no requests or if
 all requests time out, the MakeBids method will not be called.
 */
 func (a *CWireAdapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.RequestData, httpRes *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	var errors []error
-
 	if httpRes.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
 
-	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(httpRes.Body, &bidResp); err != nil {
+	var resp openrtb2.BidResponse
+	if err := json.Unmarshal(httpRes.Body, &resp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Error while decoding response, err: %s", err),
 		}}
 	}
 
-	bidResponse := adapters.NewBidderResponse()
-
-	for _, sb := range bidResp.SeatBid {
+	bidderResponse := adapters.NewBidderResponse()
+	bidderResponse.Currency = resp.Cur
+	for _, sb := range resp.SeatBid {
 		for _, bid := range sb.Bid {
-			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
 				Bid:     &bid,
 				BidType: openrtb_ext.BidTypeBanner,
 			})
 		}
 	}
 
-	return bidResponse, errors
+	return bidderResponse, nil
 }

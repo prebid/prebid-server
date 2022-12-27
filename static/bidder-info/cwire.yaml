@@ -1,8 +1,7 @@
 endpoint: "https://embed.cwi.re/delivery/prebid-server"
-# endpoint: "http://localhost:8888/v2/prebid-server/"
 maintainer:
   email: "mateja.maric@cwire.com"
-# endpointCompression: gzip
+  endpointCompression: gzip
 gvlVendorID: 1081
 modifyingVastXmlAllowed: false
 capabilities:
