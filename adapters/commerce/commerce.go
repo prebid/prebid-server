@@ -93,11 +93,20 @@ type ExtBidCommerce struct {
 	ConversionUrl        *string            `json:"purl,omitempty"`
 	BidPrice        *float64            `json:"bidprice,omitempty"`
 	ClickPrice        *float64            `json:"clickprice,omitempty"`
-	Rate          *float64             `json:"clickprice,omitempty"`
+	Rate          *float64             `json:"rate,omitempty"`
 }
+
+const MAX_COUNT = 10
 
 func (a *CommerceAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	host := "localhost"
+
+	var extension map[string]json.RawMessage
+	var preBidExt openrtb_ext.ExtRequestPrebid
+	var commerceExt ExtBidderCommerce
+	json.Unmarshal(request.Ext, &extension)
+	json.Unmarshal(extension["prebid"], &preBidExt)
+	json.Unmarshal(preBidExt.BidderParams, &commerceExt)
 	endPoint,_ := a.buildEndpointURL(host)
 	errs := make([]error, 0, len(request.Imp))
 
@@ -145,31 +154,58 @@ func GetRandomProductID() string {
 
 }
 
-func GetDefaultBidID() string {
-	prefix := "BidResponse_"
-	t := time.Now()
-	return prefix + t.String()
+func GetDefaultBidID(name string) string {
+	prefix := "BidResponse_" + name+ "_"
+	t := time.Now().UnixNano() / int64(time.Millisecond)
+	return prefix + strconv.Itoa(int(t))
+}
+
+func GetRandomBidPrice() float64 {
+	min := 0.0
+	max := 1.0
+	untruncated := min + rand.Float64() * (max - min)
+	truncated := float64(int(untruncated * 100)) / 100
+	return truncated
+}
+
+func GetRandomClickPrice() float64 {
+	min := 1.0
+	max := 5.0
+	untruncated := min + rand.Float64() * (max - min)
+	truncated := float64(int(untruncated * 100)) / 100
+	return truncated
 }
 
 func (a *CommerceAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var typedArray     []*adapters.TypedBid
-	iurl, _ := a.buildImpressionURL("commerce")
+	iurl, _ := a.buildImpressionURL("commerce") 
 	curl, _ := a.buildClickURL("commerce")
 	purl, _ := a.buildConversionURL("commerce")
 	requestCount := GetRequestSlotCount(internalRequest)
 
+
+	if requestCount > MAX_COUNT {
+		requestCount = MAX_COUNT
+	}
 	for i := 1; i <= requestCount; i++ {
 		productid := GetRandomProductID()
-		bidID := GetDefaultBidID() + "_" + strconv.Itoa(i)
+		bidPrice := GetRandomBidPrice()
+		clikcPrice := GetRandomClickPrice()
+		bidID := GetDefaultBidID("commerce") + "_" + strconv.Itoa(i)
+		newIurl := iurl + "_ImpID=" +bidID
+		newCurl := curl + "_ImpID=" +bidID
+		newPurl := purl + "_ImpID=" +bidID
 		bidExt := &ExtBidCommerce{
 			ProductId:  &productid,
-			ImpUrl:        &iurl,
-			ClickUrl: &curl,
-			ConversionUrl: &purl,
+			ImpUrl:        &newIurl,
+			ClickUrl: &newCurl,
+			ConversionUrl: &newPurl,
+			BidPrice: &bidPrice,
+			ClickPrice: &clikcPrice,
 		}
 		
 		bid := &openrtb2.Bid {
-			ID: bidID,
+			ID:bidID,
 			ImpID: bidID,
 		}
 
@@ -189,7 +225,6 @@ func (a *CommerceAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 
 	responseF := &adapters.BidderResponse{
 		Bids: typedArray,
-		Currency: "USD",
 	}
 	return responseF, nil
 }

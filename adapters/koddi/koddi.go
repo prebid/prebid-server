@@ -24,6 +24,12 @@ type KoddiAdapter struct {
 
 func (a *KoddiAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	host := "localhost"
+	var extension map[string]json.RawMessage
+	var preBidExt openrtb_ext.ExtRequestPrebid
+	var commerceExt commerce.ExtBidderCommerce
+	json.Unmarshal(request.Ext, &extension)
+	json.Unmarshal(extension["prebid"], &preBidExt)
+	json.Unmarshal(preBidExt.BidderParams, &commerceExt)
 	endPoint,_ := a.buildEndpointURL(host)
 	errs := make([]error, 0, len(request.Imp))
 
@@ -51,18 +57,29 @@ func (a *KoddiAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRe
 	purl, _ := a.buildConversionURL("koddi")
 	requestCount := commerce.GetRequestSlotCount(internalRequest)
 
+
+	if requestCount > commerce.MAX_COUNT {
+		requestCount = commerce.MAX_COUNT
+	}
 	for i := 1; i <= requestCount; i++ {
 		productid := commerce.GetRandomProductID()
-		bidID := commerce.GetDefaultBidID() + "_" + strconv.Itoa(i)
+		bidPrice := commerce.GetRandomBidPrice()
+		clikcPrice := commerce.GetRandomClickPrice()
+		bidID := commerce.GetDefaultBidID("koddi") + "_" + strconv.Itoa(i)
+		newIurl := iurl + "_ImpID=" +bidID
+		newCurl := curl + "_ImpID=" +bidID
+		newPurl := purl + "_ImpID=" +bidID
 		bidExt := &commerce.ExtBidCommerce{
 			ProductId:  &productid,
-			ImpUrl:        &iurl,
-			ClickUrl: &curl,
-			ConversionUrl: &purl,
+			ImpUrl:        &newIurl,
+			ClickUrl: &newCurl,
+			ConversionUrl: &newPurl,
+			BidPrice: &bidPrice,
+			ClickPrice: &clikcPrice,
 		}
 		
 		bid := &openrtb2.Bid {
-			ID: bidID,
+			ID:bidID,
 			ImpID: bidID,
 		}
 
@@ -75,14 +92,13 @@ func (a *KoddiAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRe
 
 		typedbid := &adapters.TypedBid {
 			Bid:  bid,
-			Seat: "commerce",
+			Seat: "koddi",
 		}
 		typedArray = append(typedArray, typedbid)
 	}
 
 	responseF := &adapters.BidderResponse{
 		Bids: typedArray,
-		Currency: "USD",
 	}
 	return responseF, nil
 }
