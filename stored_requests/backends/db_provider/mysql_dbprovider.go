@@ -3,12 +3,17 @@ package db_provider
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"database/sql"
+	"errors"
+	"io/ioutil"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 
+	"github.com/go-sql-driver/mysql"
 	"github.com/prebid/prebid-server/config"
 )
 
@@ -22,8 +27,12 @@ func (provider *MySqlDbProvider) Config() config.DatabaseConnection {
 }
 
 func (provider *MySqlDbProvider) Open() error {
-	db, err := sql.Open(provider.cfg.Driver, provider.ConnString())
+	connStr, err := provider.ConnString()
+	if err != nil {
+		return err
+	}
 
+	db, err := sql.Open(provider.cfg.Driver, connStr)
 	if err != nil {
 		return err
 	}
@@ -46,7 +55,7 @@ func (provider *MySqlDbProvider) Ping() error {
 	return provider.db.Ping()
 }
 
-func (provider *MySqlDbProvider) ConnString() string {
+func (provider *MySqlDbProvider) ConnString() (string, error) {
 	buffer := bytes.NewBuffer(nil)
 
 	if provider.cfg.Username != "" {
@@ -75,7 +84,65 @@ func (provider *MySqlDbProvider) ConnString() string {
 		buffer.WriteString(provider.cfg.Database)
 	}
 
-	return buffer.String()
+	// TSL connection
+	if provider.cfg.ServerCa != "" && provider.cfg.ClientCert != "" && provider.cfg.ClientKey != "" {
+		if err := setupTLSConfig(provider); err != nil {
+			return "", err
+		}
+		buffer.WriteString("?tls=prebid-tls")
+	}
+
+	return buffer.String(), nil
+}
+
+func setupTLSConfig(provider *MySqlDbProvider) error {
+	rootCertPool := x509.NewCertPool()
+
+	pem, err := ioutil.ReadFile(provider.cfg.ServerCa)
+	if err != nil {
+		return err
+	}
+
+	if ok := rootCertPool.AppendCertsFromPEM(pem); !ok {
+		return err
+	}
+
+	clientCert := make([]tls.Certificate, 0, 1)
+	certs, err := tls.LoadX509KeyPair(provider.cfg.ClientCert, provider.cfg.ClientKey)
+	if err != nil {
+		return err
+	}
+
+	clientCert = append(clientCert, certs)
+	mysql.RegisterTLSConfig("prebid-tls", &tls.Config{
+		RootCAs:               rootCertPool,
+		Certificates:          clientCert,
+		InsecureSkipVerify:    true,
+		VerifyPeerCertificate: verifyPeerCertFunc(rootCertPool),
+	})
+
+	return nil
+}
+
+// verifyPeerCertFunc returns a function that verifies the peer certificate is
+// in the cert pool.
+func verifyPeerCertFunc(pool *x509.CertPool) func([][]byte, [][]*x509.Certificate) error {
+	return func(rawCerts [][]byte, _ [][]*x509.Certificate) error {
+		if len(rawCerts) == 0 {
+			return errors.New("no certificates available to verify")
+		}
+
+		cert, err := x509.ParseCertificate(rawCerts[0])
+		if err != nil {
+			return err
+		}
+
+		opts := x509.VerifyOptions{Roots: pool}
+		if _, err = cert.Verify(opts); err != nil {
+			return err
+		}
+		return nil
+	}
 }
 
 func (provider *MySqlDbProvider) PrepareQuery(template string, params ...QueryParam) (query string, args []interface{}) {

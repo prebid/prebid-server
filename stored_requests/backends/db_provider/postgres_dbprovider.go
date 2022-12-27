@@ -21,8 +21,12 @@ func (provider *PostgresDbProvider) Config() config.DatabaseConnection {
 }
 
 func (provider *PostgresDbProvider) Open() error {
-	db, err := sql.Open(provider.cfg.Driver, provider.ConnString())
+	connStr, err := provider.ConnString()
+	if err != nil {
+		return err
+	}
 
+	db, err := sql.Open(provider.cfg.Driver, connStr)
 	if err != nil {
 		return err
 	}
@@ -45,7 +49,7 @@ func (provider *PostgresDbProvider) Ping() error {
 	return provider.db.Ping()
 }
 
-func (provider *PostgresDbProvider) ConnString() string {
+func (provider *PostgresDbProvider) ConnString() (string, error) {
 	buffer := bytes.NewBuffer(nil)
 
 	if provider.cfg.Host != "" {
@@ -79,7 +83,7 @@ func (provider *PostgresDbProvider) ConnString() string {
 	}
 
 	buffer.WriteString("sslmode=disable")
-	return buffer.String()
+	return buffer.String(), nil
 }
 
 func (provider *PostgresDbProvider) PrepareQuery(template string, params ...QueryParam) (query string, args []interface{}) {

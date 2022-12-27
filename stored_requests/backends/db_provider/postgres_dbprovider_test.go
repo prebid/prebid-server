@@ -83,7 +83,7 @@ func TestConnStringPostgres(t *testing.T) {
 			cfg: cfg,
 		}
 
-		connString := provider.ConnString()
+		connString, _ := provider.ConnString()
 		assert.Equal(t, test.connString, connString, "Strings did not match")
 	}
 }
