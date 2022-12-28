@@ -159,6 +159,7 @@ const (
 	BidderGroupm            BidderName = "groupm"
 	BidderGumGum            BidderName = "gumgum"
 	BidderHuaweiAds         BidderName = "huaweiads"
+	BidderImds              BidderName = "imds"
 	BidderImpactify         BidderName = "impactify"
 	BidderImprovedigital    BidderName = "improvedigital"
 	BidderInfyTV            BidderName = "infytv"
@@ -329,6 +330,7 @@ func CoreBidderNames() []BidderName {
 		BidderGroupm,
 		BidderGumGum,
 		BidderHuaweiAds,
+		BidderImds,
 		BidderImpactify,
 		BidderImprovedigital,
 		BidderInfyTV,

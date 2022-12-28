@@ -3,6 +3,23 @@
     "id": "test-request-id",
     "imp": [
       {
+        "id": "test-imp-bad",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "seatId": "",
+            "tagId": ""
+          }
+        }
+      },
+      {
         "id": "test-imp-id",
         "banner": {
           "format": [
@@ -73,12 +90,12 @@
                   }
                 }
               ],
-              "seat": "synacormedia"
+              "seat": "imds"
             }
           ],
           "ext": {
             "responsetimemillis": {
-              "synacormedia": 339
+              "imds": 339
             }
           }
         }
@@ -108,6 +125,12 @@
           "type": "banner"
         }
       ]
+    }
+  ],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Invalid Impression",
+      "comparison": "literal"
     }
   ]
 }

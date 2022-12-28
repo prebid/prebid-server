@@ -1,4 +1,4 @@
-package synacormedia
+package imds
 
 import (
 	"testing"
@@ -10,18 +10,18 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderSynacormedia, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderImds, config.Adapter{
 		Endpoint: "http://{{.Host}}.technoratimedia.com/openrtb/bids/{{.Host}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	adapterstest.RunJSONBidderTest(t, "synacormediatest", bidder)
+	adapterstest.RunJSONBidderTest(t, "imdstest", bidder)
 }
 
 func TestEndpointTemplateMalformed(t *testing.T) {
-	_, buildErr := Builder(openrtb_ext.BidderSynacormedia, config.Adapter{
+	_, buildErr := Builder(openrtb_ext.BidderImds, config.Adapter{
 		Endpoint: "{{Malformed}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	assert.Error(t, buildErr)
