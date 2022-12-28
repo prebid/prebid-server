@@ -298,7 +298,6 @@ func getAuctionBidderRequests(auctionRequest AuctionRequest,
 				BidderName:     openrtb_ext.BidderName(bidderName),
 				BidderCoreName: coreBidder,
 				BidRequest:     &reqCopy,
-				IsCommerceRequest: isCommerceRequest,
 				BidderLabels: metrics.AdapterLabels{
 					Source:      auctionRequest.LegacyLabels.Source,
 					RType:       auctionRequest.LegacyLabels.RType,

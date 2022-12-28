@@ -83,6 +83,7 @@ type ExtAppCommerce struct {
 type ExtBidderCommerce struct {
 	PrebidBidderName  *string            `json:"prebidname,omitempty"`
 	BidderCode        *string            `json:"biddercode,omitempty"`
+	HostName          *string            `json:"hostname,omitempty"`
 	CustomConfig      []*ExtCustomConfig `json:"config,omitempty"`
 }
 
@@ -232,10 +233,22 @@ func GetDummyBids(impUrl , clickUrl , conversionUrl, seatName string, requestCou
 	return responseF
 }
 
+func GetHostName(internalRequest *openrtb2.BidRequest) string {
+	var extension map[string]json.RawMessage
+	var preBidExt openrtb_ext.ExtRequestPrebid
+	var commerceExt ExtBidderCommerce
+	json.Unmarshal(internalRequest.Ext, &extension)
+	json.Unmarshal(extension["prebid"], &preBidExt)
+	json.Unmarshal(preBidExt.BidderParams, &commerceExt)
+
+	return *commerceExt.HostName
+}
 func (a *CommerceAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	iurl, _ := a.buildImpressionURL("target") 
-	curl, _ := a.buildClickURL("target")
-	purl, _ := a.buildConversionURL("target")
+	hostName := GetHostName(internalRequest)
+
+	iurl, _ := a.buildImpressionURL(hostName) 
+	curl, _ := a.buildClickURL(hostName)
+	purl, _ := a.buildConversionURL(hostName)
 	requestCount := GetRequestSlotCount(internalRequest)
 
 	responseF := GetDummyBids(iurl, curl, purl, "commerce", requestCount)

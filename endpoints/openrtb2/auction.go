@@ -724,31 +724,32 @@ func (deps *endpointDeps) validateImp(imp *openrtb2.Imp, aliases map[string]stri
 	if len(imp.Metric) != 0 {
 		return []error{fmt.Errorf("request.imp[%d].metric is not yet supported by prebid-server. Support may be added in the future", index)}
 	}
- 	if !isCommerceRequest {
-		if imp.Banner == nil && imp.Video == nil && imp.Audio == nil && imp.Native == nil  {
-			return []error{fmt.Errorf("request.imp[%d] must contain at least one of \"banner\", \"video\", \"audio\", or \"native\"", index)}
-		}
+		
+	if imp.Banner == nil && imp.Video == nil && imp.Audio == nil && imp.Native == nil  {
+		return []error{fmt.Errorf("request.imp[%d] must contain at least one of \"banner\", \"video\", \"audio\", or \"native\"", index)}
+	}
 
-		if err := validateBanner(imp.Banner, index, isInterstitial(imp)); err != nil {
-			return []error{err}
-		}
+	if err := validateBanner(imp.Banner, index, isInterstitial(imp)); err != nil {
+		return []error{err}
+	}
 
-		if err := validateVideo(imp.Video, index); err != nil {
-			return []error{err}
-		}
+	if err := validateVideo(imp.Video, index); err != nil {
+		return []error{err}
+	}
 
-		if err := validateAudio(imp.Audio, index); err != nil {
-			return []error{err}
-		}
+	if err := validateAudio(imp.Audio, index); err != nil {
+		return []error{err}
+	}
 
-		if err := fillAndValidateNative(imp.Native, index); err != nil {
-			return []error{err}
-		}
+	if err := fillAndValidateNative(imp.Native, index); err != nil {
+		return []error{err}
+	}
 
-		if err := validatePmp(imp.PMP, index); err != nil {
-			return []error{err}
-		}
+	if err := validatePmp(imp.PMP, index); err != nil {
+		return []error{err}
+	}
 
+	if !isCommerceRequest {
 		errL := deps.validateImpExt(imp, aliases, index, hasStoredResponses, storedBidResp)
 		if len(errL) != 0 {
 			return errL

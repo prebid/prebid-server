@@ -50,9 +50,11 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 	
 }
 func (a *AdButtlerAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	iurl, _ := a.buildImpressionURL("target")
-	curl, _ := a.buildClickURL("target")
-	purl, _ := a.buildConversionURL("target")
+	hostName := commerce.GetHostName(internalRequest)
+	iurl, _ := a.buildImpressionURL(hostName) 
+	curl, _ := a.buildClickURL(hostName)
+	purl, _ := a.buildConversionURL(hostName)
+	
 	requestCount := commerce.GetRequestSlotCount(internalRequest)
 	
 	responseF := commerce.GetDummyBids(iurl, curl, purl, "adbuttler", requestCount)
