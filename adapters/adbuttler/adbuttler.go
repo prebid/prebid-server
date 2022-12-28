@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 	"text/template"
 
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
@@ -51,55 +50,12 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 	
 }
 func (a *AdButtlerAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	var typedArray     []*adapters.TypedBid
-	iurl, _ := a.buildImpressionURL("adbuttler")
-	curl, _ := a.buildClickURL("adbuttler")
-	purl, _ := a.buildConversionURL("adbuttler")
+	iurl, _ := a.buildImpressionURL("target")
+	curl, _ := a.buildClickURL("target")
+	purl, _ := a.buildConversionURL("target")
 	requestCount := commerce.GetRequestSlotCount(internalRequest)
-
-
-	if requestCount > commerce.MAX_COUNT {
-		requestCount = commerce.MAX_COUNT
-	}
-	for i := 1; i <= requestCount; i++ {
-		productid := commerce.GetRandomProductID()
-		bidPrice := commerce.GetRandomBidPrice()
-		clikcPrice := commerce.GetRandomClickPrice()
-		bidID := commerce.GetDefaultBidID("adbuttler") + "_" + strconv.Itoa(i)
-		newIurl := iurl + "_ImpID=" +bidID
-		newCurl := curl + "_ImpID=" +bidID
-		newPurl := purl + "_ImpID=" +bidID
-		bidExt := &commerce.ExtBidCommerce{
-			ProductId:  &productid,
-			ImpUrl:        &newIurl,
-			ClickUrl: &newCurl,
-			ConversionUrl: &newPurl,
-			BidPrice: &bidPrice,
-			ClickPrice: &clikcPrice,
-		}
-		
-		bid := &openrtb2.Bid {
-			ID:bidID,
-			ImpID: bidID,
-		}
-
-		commerce.AddDefaultFields(bid)
-
-		bidExtJSON, err1 := json.Marshal(bidExt)
-		if nil == err1 {
-			bid.Ext = json.RawMessage(bidExtJSON)
-		}
-
-		typedbid := &adapters.TypedBid {
-			Bid:  bid,
-			Seat: "adbuttler",
-		}
-		typedArray = append(typedArray, typedbid)
-	}
-
-	responseF := &adapters.BidderResponse{
-		Bids: typedArray,
-	}
+	
+	responseF := commerce.GetDummyBids(iurl, curl, purl, "adbuttler", requestCount)
 	return responseF, nil
 }
 
