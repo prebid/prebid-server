@@ -1,5 +1,6 @@
+endpoint: "http://{{.Host}}.technoratimedia.com/openrtb/bids/{{.Host}}"
 maintainer:
-  email: "eng-demand@synacor.com"
+  email: "eng-demand@imds.tv"
 capabilities:
   app:
     mediaTypes:
@@ -9,3 +10,7 @@ capabilities:
     mediaTypes:
       - banner
       - video
+userSync:
+  iframe:
+    url: "https://ad-cdn.technoratimedia.com/html/usersync.html?cb={{.RedirectURL}}"
+    userMacro: "[USER_ID]"

@@ -4,16 +4,18 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/adapters"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/stretchr/testify/assert"
-	"io/ioutil"
-	"net/http/httptest"
-	"strings"
-	"testing"
 )
 
 const (
@@ -71,7 +73,7 @@ func TestShouldRespondWithBadRequestWhenAccountParameterIsMissing(t *testing.T) 
 	// execute
 	e.Handle(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -112,7 +114,7 @@ func TestShouldRespondWithBadRequestWhenRequestBodyIsEmpty(t *testing.T) {
 	// execute
 	e.Handle(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -197,7 +199,7 @@ func TestShouldRespondWithBadRequestWhenBidIdIsMissing(t *testing.T) {
 	// execute
 	e.Handle(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -249,7 +251,7 @@ func TestShouldRespondWithBadRequestWhenBidderIsMissing(t *testing.T) {
 	// execute
 	e.Handle(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -298,7 +300,7 @@ func TestShouldRespondWithInternalServerErrorWhenPbsCacheClientFails(t *testing.
 	// execute
 	e.Handle(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -374,13 +376,13 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastNotAllowe
 	cfg.MarshalAccountDefaults()
 
 	// bidder info
-	bidderInfos := make(adapters.BidderInfos)
-	bidderInfos["bidder"] = adapters.BidderInfo{
-		Status:                  adapters.StatusActive,
+	bidderInfos := make(config.BidderInfos)
+	bidderInfos["bidder"] = config.BidderInfo{
+		Disabled:                false,
 		ModifyingVastXmlAllowed: false,
 	}
-	bidderInfos["updatable_bidder"] = adapters.BidderInfo{
-		Status:                  adapters.StatusActive,
+	bidderInfos["updatable_bidder"] = config.BidderInfo{
+		Disabled:                false,
 		ModifyingVastXmlAllowed: true,
 	}
 
@@ -404,7 +406,7 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastNotAllowe
 	// execute
 	e.Handle(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -437,13 +439,13 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastAllowed(t
 	cfg.MarshalAccountDefaults()
 
 	// bidder info
-	bidderInfos := make(adapters.BidderInfos)
-	bidderInfos["bidder"] = adapters.BidderInfo{
-		Status:                  adapters.StatusActive,
+	bidderInfos := make(config.BidderInfos)
+	bidderInfos["bidder"] = config.BidderInfo{
+		Disabled:                false,
 		ModifyingVastXmlAllowed: true,
 	}
-	bidderInfos["updatable_bidder"] = adapters.BidderInfo{
-		Status:                  adapters.StatusActive,
+	bidderInfos["updatable_bidder"] = config.BidderInfo{
+		Disabled:                false,
 		ModifyingVastXmlAllowed: true,
 	}
 
@@ -467,7 +469,7 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastAllowed(t
 	// execute
 	e.Handle(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -500,7 +502,7 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableUnknownBiddersWhenUnknownBidde
 	cfg.MarshalAccountDefaults()
 
 	// bidder info
-	bidderInfos := make(adapters.BidderInfos)
+	bidderInfos := make(config.BidderInfos)
 
 	// prepare
 	data, err := getValidVTrackRequestBody(true, false)
@@ -522,7 +524,7 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableUnknownBiddersWhenUnknownBidde
 	// execute
 	e.Handle(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -556,7 +558,7 @@ func TestShouldReturnBadRequestWhenRequestExceedsMaxRequestSize(t *testing.T) {
 	cfg.MarshalAccountDefaults()
 
 	// bidder info
-	bidderInfos := make(adapters.BidderInfos)
+	bidderInfos := make(config.BidderInfos)
 
 	// prepare
 	data, err := getValidVTrackRequestBody(true, false)
@@ -578,7 +580,7 @@ func TestShouldReturnBadRequestWhenRequestExceedsMaxRequestSize(t *testing.T) {
 	// execute
 	e.Handle(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -622,7 +624,7 @@ func TestShouldRespondWithInternalErrorPbsCacheIsNotConfigured(t *testing.T) {
 	// execute
 	e.Handle(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -633,8 +635,8 @@ func TestShouldRespondWithInternalErrorPbsCacheIsNotConfigured(t *testing.T) {
 }
 
 func TestVastUrlShouldReturnExpectedUrl(t *testing.T) {
-	url := GetVastUrlTracking("http://external-url", "bidId", "bidder", "accountId", 1000)
-	assert.Equal(t, "http://external-url/event?t=imp&b=bidId&a=accountId&bidder=bidder&f=b&ts=1000", url, "Invalid vast url")
+	url := GetVastUrlTracking("http://external-url", "bidId", "bidder", "accountId", 1000, "integrationType")
+	assert.Equal(t, "http://external-url/event?t=imp&b=bidId&a=accountId&bidder=bidder&f=b&int=integrationType&ts=1000", url, "Invalid vast url")
 }
 
 func getValidVTrackRequestBody(withImpression bool, withContent bool) (string, error) {
@@ -689,4 +691,40 @@ func getVTrackRequestData(wi bool, wic bool) (db []byte, e error) {
 	}
 
 	return data.Bytes(), e
+}
+
+func TestGetIntegrationType(t *testing.T) {
+	testCases := []struct {
+		description             string
+		givenHttpRequest        *http.Request
+		expectedIntegrationType string
+		expectedError           error
+	}{
+		{
+			description:             "Integration type in http request is valid, expect same integration time and no errors",
+			givenHttpRequest:        httptest.NewRequest("GET", "/event?t=win&b=bidId&f=b&ts=1000&x=1&a=accountId&bidder=bidder&int=TestIntegrationType", strings.NewReader("")),
+			expectedIntegrationType: "TestIntegrationType",
+			expectedError:           nil,
+		},
+		{
+			description:      "Integration type in http request is too long, expect too long error",
+			givenHttpRequest: httptest.NewRequest("GET", "/event?t=win&b=bidId&f=b&ts=1000&x=1&a=accountId&bidder=bidder&int=TestIntegrationTypeTooLongTestIntegrationTypeTooLongTestIntegrationType", strings.NewReader("")),
+			expectedError:    errors.New("integration type length is too long"),
+		},
+		{
+			description:      "Integration type in http request contains invalid character, expect invalid character error",
+			givenHttpRequest: httptest.NewRequest("GET", "/event?t=win&b=bidId&f=b&ts=1000&x=1&a=accountId&bidder=bidder&int=Te$tIntegrationType", strings.NewReader("")),
+			expectedError:    errors.New("integration type can only contain numbers, letters and these characters '-', '_'"),
+		},
+	}
+
+	for _, test := range testCases {
+		integrationType, err := getIntegrationType(test.givenHttpRequest)
+		if test.expectedError != nil {
+			assert.Equal(t, test.expectedError, err, test.description)
+		} else {
+			assert.Empty(t, err, test.description)
+			assert.Equalf(t, test.expectedIntegrationType, integrationType, test.description)
+		}
+	}
 }

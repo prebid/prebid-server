@@ -1,7 +1,17 @@
+endpoint: "http://{{.Host}}"
 maintainer:
   email: "tappx@tappx.com"
+gvlVendorID: 628
 capabilities:
   app:
     mediaTypes:
       - banner
       - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  iframe:
+    url: "https://ssp.api.tappx.com/cs/usersync.php?gdpr_optin={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&type=iframe&ruid={{.RedirectURL}}"
+    userMacro: "{{TPPXUID}}"

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -15,28 +14,33 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
-	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/gofrs/uuid"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/util/iputil"
-
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
-	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/prebid-server/hooks/hookexecution"
+	jsonpatch "gopkg.in/evanphx/json-patch.v4"
+
 	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/usersync"
+	"github.com/prebid/prebid-server/util/iputil"
+	"github.com/prebid/prebid-server/util/uuidutil"
+	"github.com/prebid/prebid-server/version"
 )
 
 var defaultRequestTimeout int64 = 5000
 
 func NewVideoEndpoint(
+	uuidGenerator uuidutil.UUIDGenerator,
 	ex exchange.Exchange,
 	validator openrtb_ext.BidderParamValidator,
 	requestsById stored_requests.Fetcher,
@@ -65,6 +69,7 @@ func NewVideoEndpoint(
 	videoEndpointRegexp := regexp.MustCompile(`[<>]`)
 
 	return httprouter.Handle((&endpointDeps{
+		uuidGenerator,
 		ex,
 		validator,
 		requestsById,
@@ -79,31 +84,33 @@ func NewVideoEndpoint(
 		bidderMap,
 		cache,
 		videoEndpointRegexp,
-		ipValidator}).VideoAuctionEndpoint), nil
+		ipValidator,
+		empty_fetcher.EmptyFetcher{},
+		&hookexecution.EmptyHookExecutor{}}).VideoAuctionEndpoint), nil
 }
 
 /*
-1. Parse "storedrequestid" field from simplified endpoint request body.
-2. If config flag to require that field is set (which it will be for us) and this field is not given then error out here.
-3. Load the stored request JSON for the given storedrequestid, if the id was invalid then error out here.
-4. Use "json-patch" 3rd party library to merge the request body JSON data into the stored request JSON data.
-5. Unmarshal the merged JSON data into a Go structure.
-6. Add fields from merged JSON data that correspond to an OpenRTB request into the OpenRTB bid request we are building.
-	a. Unmarshal certain OpenRTB defined structs directly into the OpenRTB bid request.
-	b. In cases where customized logic is needed just copy/fill the fields in directly.
-7. Call setFieldsImplicitly from auction.go to get basic data from the HTTP request into an OpenRTB bid request to start building the OpenRTB bid request.
-8. Loop through ad pods to build array of Imps into OpenRTB request, for each pod:
-	a. Load the stored impression to use as the basis for impressions generated for this pod from the configid field.
-	b. NumImps = adpoddurationsec / MIN_VALUE(allowedDurations)
-	c. Build impression array for this pod:
-		I.Create array of NumImps entries initialized to the base impression loaded from the configid.
-			1. If requireexactdurations = true, iterate over allowdDurations and for (NumImps / len(allowedDurations)) number of Imps set minduration = maxduration = allowedDurations[i]
-			2. If requireexactdurations = false, set maxduration = MAX_VALUE(allowedDurations)
-		II. Set Imp.id field to "podX_Y" where X is the pod index and Y is the impression index within this pod.
-	d. Append impressions for this pod to the overall list of impressions in the OpenRTB bid request.
-9. Call validateRequest() function from auction.go to validate the generated request.
-10. Call HoldAuction() function to run the auction for the OpenRTB bid request that was built in the previous step.
-11. Build proper response format.
+ 1. Parse "storedrequestid" field from simplified endpoint request body.
+ 2. If config flag to require that field is set (which it will be for us) and this field is not given then error out here.
+ 3. Load the stored request JSON for the given storedrequestid, if the id was invalid then error out here.
+ 4. Use "json-patch" 3rd party library to merge the request body JSON data into the stored request JSON data.
+ 5. Unmarshal the merged JSON data into a Go structure.
+ 6. Add fields from merged JSON data that correspond to an OpenRTB request into the OpenRTB bid request we are building.
+    a. Unmarshal certain OpenRTB defined structs directly into the OpenRTB bid request.
+    b. In cases where customized logic is needed just copy/fill the fields in directly.
+ 7. Call setFieldsImplicitly from auction.go to get basic data from the HTTP request into an OpenRTB bid request to start building the OpenRTB bid request.
+ 8. Loop through ad pods to build array of Imps into OpenRTB request, for each pod:
+    a. Load the stored impression to use as the basis for impressions generated for this pod from the configid field.
+    b. NumImps = adpoddurationsec / MIN_VALUE(allowedDurations)
+    c. Build impression array for this pod:
+    I.Create array of NumImps entries initialized to the base impression loaded from the configid.
+ 1. If requireexactdurations = true, iterate over allowdDurations and for (NumImps / len(allowedDurations)) number of Imps set minduration = maxduration = allowedDurations[i]
+ 2. If requireexactdurations = false, set maxduration = MAX_VALUE(allowedDurations)
+    II. Set Imp.id field to "podX_Y" where X is the pod index and Y is the impression index within this pod.
+    d. Append impressions for this pod to the overall list of impressions in the OpenRTB bid request.
+ 9. Call validateRequest() function from auction.go to validate the generated request.
+ 10. Call HoldAuction() function to run the auction for the OpenRTB bid request that was built in the previous step.
+ 11. Build proper response format.
 */
 func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	start := time.Now()
@@ -128,11 +135,13 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		cacheTTL = int64(deps.cfg.CacheURL.DefaultTTLs.Video)
 	}
 	debugLog := exchange.DebugLog{
-		Enabled:   strings.EqualFold(debugQuery, "true"),
-		CacheType: prebid_cache_client.TypeXML,
-		TTL:       cacheTTL,
-		Regexp:    deps.debugLogRegexp,
+		Enabled:       strings.EqualFold(debugQuery, "true"),
+		CacheType:     prebid_cache_client.TypeXML,
+		TTL:           cacheTTL,
+		Regexp:        deps.debugLogRegexp,
+		DebugOverride: exchange.IsDebugOverrideEnabled(r.Header.Get(exchange.DebugOverrideHeader), deps.cfg.Debug.OverrideToken),
 	}
+	debugLog.DebugEnabledOrOverridden = debugLog.Enabled || debugLog.DebugOverride
 
 	defer func() {
 		if len(debugLog.CacheKey) > 0 && vo.VideoResponse == nil {
@@ -146,18 +155,20 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		deps.analytics.LogVideoObject(&vo)
 	}()
 
+	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
+
 	lr := &io.LimitedReader{
 		R: r.Body,
 		N: deps.cfg.MaxRequestSize,
 	}
-	requestJson, err := ioutil.ReadAll(lr)
+	requestJson, err := io.ReadAll(lr)
 	if err != nil {
 		handleError(&labels, w, []error{err}, &vo, &debugLog)
 		return
 	}
 
 	resolvedRequest := requestJson
-	if debugLog.Enabled {
+	if debugLog.DebugEnabledOrOverridden {
 		debugLog.Data.Request = string(requestJson)
 		if headerBytes, err := json.Marshal(r.Header); err == nil {
 			debugLog.Data.Headers = string(headerBytes)
@@ -197,7 +208,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 
 	vo.VideoRequest = videoBidReq
 
-	var bidReq = &openrtb.BidRequest{}
+	var bidReq = &openrtb2.BidRequest{}
 	if deps.defaultRequest {
 		if err := json.Unmarshal(deps.defReqJSON, bidReq); err != nil {
 			err = fmt.Errorf("Invalid JSON in Default Request Settings: %s", err)
@@ -209,7 +220,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	//create full open rtb req from full video request
 	mergeData(videoBidReq, bidReq)
 	// If debug query param is set, force the response to enable test flag
-	if debugLog.Enabled {
+	if debugLog.DebugEnabledOrOverridden {
 		bidReq.Test = 1
 	}
 
@@ -236,35 +247,38 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	bidReq.Imp = imps
 	bidReq.ID = "bid_id" //TODO: look at prebid.js
 
-	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
-	deps.setFieldsImplicitly(r, bidReq) // move after merge
+	// all code after this line should use the bidReqWrapper instead of bidReq directly
+	bidReqWrapper := &openrtb_ext.RequestWrapper{BidRequest: bidReq}
 
-	errL = deps.validateRequest(bidReq)
+	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
+	deps.setFieldsImplicitly(r, bidReqWrapper)
+
+	errL = deps.validateRequest(bidReqWrapper, false, false, nil)
 	if errortypes.ContainsFatalError(errL) {
 		handleError(&labels, w, errL, &vo, &debugLog)
 		return
 	}
 
 	ctx := context.Background()
-	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(bidReq.TMax) * time.Millisecond)
+	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(bidReqWrapper.TMax) * time.Millisecond)
 	if timeout > 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithDeadline(ctx, start.Add(timeout))
 		defer cancel()
 	}
 
-	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie))
-	if bidReq.App != nil {
+	usersyncs := usersync.ParseCookieFromRequest(r, &(deps.cfg.HostCookie))
+	if bidReqWrapper.App != nil {
 		labels.Source = metrics.DemandApp
-		labels.PubID = getAccountID(bidReq.App.Publisher)
-	} else { // both bidReq.App == nil and bidReq.Site != nil are true
+		labels.PubID = getAccountID(bidReqWrapper.App.Publisher)
+	} else { // both bidReqWrapper.App == nil and bidReqWrapper.Site != nil are true
 		labels.Source = metrics.DemandWeb
-		if usersyncs.LiveSyncCount() == 0 {
-			labels.CookieFlag = metrics.CookieFlagNo
-		} else {
+		if usersyncs.HasAnyLiveSyncs() {
 			labels.CookieFlag = metrics.CookieFlagYes
+		} else {
+			labels.CookieFlag = metrics.CookieFlagNo
 		}
-		labels.PubID = getAccountID(bidReq.Site.Publisher)
+		labels.PubID = getAccountID(bidReqWrapper.Site.Publisher)
 	}
 
 	// Look up account now that we have resolved the pubID value
@@ -274,17 +288,22 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	secGPC := r.Header.Get("Sec-GPC")
+
 	auctionRequest := exchange.AuctionRequest{
-		BidRequest:   bidReq,
-		Account:      *account,
-		UserSyncs:    usersyncs,
-		RequestType:  labels.RType,
-		StartTime:    start,
-		LegacyLabels: labels,
+		BidRequestWrapper:          bidReqWrapper,
+		Account:                    *account,
+		UserSyncs:                  usersyncs,
+		RequestType:                labels.RType,
+		StartTime:                  start,
+		LegacyLabels:               labels,
+		GlobalPrivacyControlHeader: secGPC,
+		PubID:                      labels.PubID,
+		HookExecutor:               deps.hookExecutor,
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog)
-	vo.Request = bidReq
+	vo.Request = bidReqWrapper.BidRequest
 	vo.Response = response
 	if err != nil {
 		errL := []error{err}
@@ -303,7 +322,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		bidResp.Ext = response.Ext
 	}
 
-	if len(bidResp.AdPods) == 0 && debugLog.Enabled {
+	if len(bidResp.AdPods) == 0 && debugLog.DebugEnabledOrOverridden {
 		err := debugLog.PutDebugLogError(deps.cache, deps.cfg.CacheURL.ExpectedTimeMillis, vo.Errors)
 		if err != nil {
 			vo.Errors = append(vo.Errors, err)
@@ -341,7 +360,7 @@ func cleanupVideoBidRequest(videoReq *openrtb_ext.BidRequestVideo, podErrors []P
 }
 
 func handleError(labels *metrics.Labels, w http.ResponseWriter, errL []error, vo *analytics.VideoObject, debugLog *exchange.DebugLog) {
-	if debugLog != nil && debugLog.Enabled {
+	if debugLog != nil && debugLog.DebugEnabledOrOverridden {
 		if rawUUID, err := uuid.NewV4(); err == nil {
 			debugLog.CacheKey = rawUUID.String()
 		}
@@ -360,6 +379,10 @@ func handleError(labels *metrics.Labels, w http.ResponseWriter, errL []error, vo
 			status = http.StatusBadRequest
 			labels.RequestStatus = metrics.RequestStatusBadInput
 			break
+		} else if erVal == errortypes.MalformedAcctErrorCode {
+			status = http.StatusInternalServerError
+			labels.RequestStatus = metrics.RequestStatusAccountConfigErr
+			break
 		}
 		errors = fmt.Sprintf("%s %s", errors, er.Error())
 	}
@@ -370,13 +393,13 @@ func handleError(labels *metrics.Labels, w http.ResponseWriter, errL []error, vo
 	vo.Errors = append(vo.Errors, errL...)
 }
 
-func (deps *endpointDeps) createImpressions(videoReq *openrtb_ext.BidRequestVideo, podErrors []PodError) ([]openrtb.Imp, []PodError) {
+func (deps *endpointDeps) createImpressions(videoReq *openrtb_ext.BidRequestVideo, podErrors []PodError) ([]openrtb2.Imp, []PodError) {
 	videoDur := videoReq.PodConfig.DurationRangeSec
 	minDuration, maxDuration := minMax(videoDur)
 	reqExactDur := videoReq.PodConfig.RequireExactDuration
 	videoData := videoReq.Video
 
-	finalImpsArray := make([]openrtb.Imp, 0)
+	finalImpsArray := make([]openrtb2.Imp, 0)
 	for ind, pod := range videoReq.PodConfig.Pods {
 
 		//load stored impression
@@ -400,7 +423,7 @@ func (deps *endpointDeps) createImpressions(videoReq *openrtb_ext.BidRequestVide
 		}
 		impDivNumber := numImps / len(videoDur)
 
-		impsArray := make([]openrtb.Imp, numImps)
+		impsArray := make([]openrtb2.Imp, numImps)
 		for impInd := range impsArray {
 			newImp := createImpressionTemplate(storedImp, videoData)
 			impsArray[impInd] = newImp
@@ -432,18 +455,18 @@ func max(a, b int) int {
 	return b
 }
 
-func createImpressionTemplate(imp openrtb.Imp, video *openrtb.Video) openrtb.Imp {
+func createImpressionTemplate(imp openrtb2.Imp, video *openrtb2.Video) openrtb2.Imp {
 	//for every new impression we need to have it's own copy of video object, because we customize it in further processing
 	newVideo := *video
 	imp.Video = &newVideo
 	return imp
 }
 
-func (deps *endpointDeps) loadStoredImp(storedImpId string) (openrtb.Imp, []error) {
+func (deps *endpointDeps) loadStoredImp(storedImpId string) (openrtb2.Imp, []error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
 	defer cancel()
 
-	impr := openrtb.Imp{}
+	impr := openrtb2.Imp{}
 	_, imp, err := deps.storedReqFetcher.FetchRequests(ctx, []string{}, []string{storedImpId})
 	if err != nil {
 		return impr, err
@@ -469,7 +492,7 @@ func minMax(array []int) (int, int) {
 	return min, max
 }
 
-func buildVideoResponse(bidresponse *openrtb.BidResponse, podErrors []PodError) (*openrtb_ext.BidResponseVideo, error) {
+func buildVideoResponse(bidresponse *openrtb2.BidResponse, podErrors []PodError) (*openrtb_ext.BidResponseVideo, error) {
 
 	adPods := make([]*openrtb_ext.AdPod, 0)
 	anyBidsReturned := false
@@ -561,7 +584,7 @@ func getVideoStoredRequestId(request []byte) (string, error) {
 	return string(value), nil
 }
 
-func mergeData(videoRequest *openrtb_ext.BidRequestVideo, bidRequest *openrtb.BidRequest) error {
+func mergeData(videoRequest *openrtb_ext.BidRequestVideo, bidRequest *openrtb2.BidRequest) error {
 
 	if videoRequest.Site != nil {
 		bidRequest.Site = videoRequest.Site

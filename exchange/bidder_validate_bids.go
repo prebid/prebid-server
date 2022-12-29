@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/currency"
+	"github.com/prebid/prebid-server/experiment/adscert"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	goCurrency "golang.org/x/text/currency"
 )
@@ -18,26 +19,28 @@ import (
 //
 // The goal here is to make sure that the response contains Bids which are valid given the initial Request,
 // so that Publishers can trust the Bids they get from Prebid Server.
-func addValidatedBidderMiddleware(bidder adaptedBidder) adaptedBidder {
+func addValidatedBidderMiddleware(bidder AdaptedBidder) AdaptedBidder {
 	return &validatedBidder{
 		bidder: bidder,
 	}
 }
 
 type validatedBidder struct {
-	bidder adaptedBidder
+	bidder AdaptedBidder
 }
 
-func (v *validatedBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo) (*pbsOrtbSeatBid, []error) {
-	seatBid, errs := v.bidder.requestBid(ctx, request, name, bidAdjustment, conversions, reqInfo)
-	if validationErrors := removeInvalidBids(request, seatBid); len(validationErrors) > 0 {
-		errs = append(errs, validationErrors...)
+func (v *validatedBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes) ([]*pbsOrtbSeatBid, []error) {
+	seatBids, errs := v.bidder.requestBid(ctx, bidderRequest, conversions, reqInfo, adsCertSigner, bidRequestOptions, alternateBidderCodes)
+	for _, seatBid := range seatBids {
+		if validationErrors := removeInvalidBids(bidderRequest.BidRequest, seatBid); len(validationErrors) > 0 {
+			errs = append(errs, validationErrors...)
+		}
 	}
-	return seatBid, errs
+	return seatBids, errs
 }
 
 // validateBids will run some validation checks on the returned bids and excise any invalid bids
-func removeInvalidBids(request *openrtb.BidRequest, seatBid *pbsOrtbSeatBid) []error {
+func removeInvalidBids(request *openrtb2.BidRequest, seatBid *pbsOrtbSeatBid) []error {
 	// Exit early if there is nothing to do.
 	if seatBid == nil || len(seatBid.bids) == 0 {
 		return nil
@@ -110,8 +113,11 @@ func validateBid(bid *pbsOrtbBid) (bool, error) {
 	if bid.bid.ImpID == "" {
 		return false, fmt.Errorf("Bid \"%s\" missing required field 'impid'", bid.bid.ID)
 	}
-	if bid.bid.Price <= 0.0 {
-		return false, fmt.Errorf("Bid \"%s\" does not contain a positive 'price'", bid.bid.ID)
+	if bid.bid.Price < 0.0 {
+		return false, fmt.Errorf("Bid \"%s\" does not contain a positive (or zero if there is a deal) 'price'", bid.bid.ID)
+	}
+	if bid.bid.Price == 0.0 && bid.bid.DealID == "" {
+		return false, fmt.Errorf("Bid \"%s\" does not contain positive 'price' which is required since there is no deal set for this bid", bid.bid.ID)
 	}
 	if bid.bid.CrID == "" {
 		return false, fmt.Errorf("Bid \"%s\" missing creative ID", bid.bid.ID)

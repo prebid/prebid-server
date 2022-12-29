@@ -1,3 +1,5 @@
+endpoint: "https://an.facebook.com/placementbid.ortb"
+disabled: true
 maintainer:
   email: "none"
 capabilities:
@@ -6,3 +8,7 @@ capabilities:
       - banner
       - video
       - native
+userSync:
+  # facebook's audience network supports user syncing, but requires configuration by the host.
+  supports:
+    - redirect

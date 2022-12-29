@@ -32,11 +32,6 @@ func (me *MetricsEngineMock) RecordImps(labels ImpLabels) {
 	me.Called(labels)
 }
 
-// RecordLegacyImps mock
-func (me *MetricsEngineMock) RecordLegacyImps(labels Labels, numImps int) {
-	me.Called(labels, numImps)
-}
-
 // RecordRequestTime mock
 func (me *MetricsEngineMock) RecordRequestTime(labels Labels, length time.Duration) {
 	me.Called(labels, length)
@@ -92,18 +87,23 @@ func (me *MetricsEngineMock) RecordAdapterTime(labels AdapterLabels, length time
 }
 
 // RecordCookieSync mock
-func (me *MetricsEngineMock) RecordCookieSync() {
-	me.Called()
+func (me *MetricsEngineMock) RecordCookieSync(status CookieSyncStatus) {
+	me.Called(status)
 }
 
-// RecordAdapterCookieSync mock
-func (me *MetricsEngineMock) RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprBlocked bool) {
-	me.Called(adapter, gdprBlocked)
+// RecordSyncerRequest mock
+func (me *MetricsEngineMock) RecordSyncerRequest(key string, status SyncerCookieSyncStatus) {
+	me.Called(key, status)
 }
 
-// RecordUserIDSet mock
-func (me *MetricsEngineMock) RecordUserIDSet(userLabels UserLabels) {
-	me.Called(userLabels)
+// RecordSetUid mock
+func (me *MetricsEngineMock) RecordSetUid(status SetUidStatus) {
+	me.Called(status)
+}
+
+// RecordSyncerSet mock
+func (me *MetricsEngineMock) RecordSyncerSet(key string, status SyncerSetUidStatus) {
+	me.Called(key, status)
 }
 
 // RecordStoredReqCacheResult mock
@@ -139,4 +139,54 @@ func (me *MetricsEngineMock) RecordTimeoutNotice(success bool) {
 // RecordRequestPrivacy mock
 func (me *MetricsEngineMock) RecordRequestPrivacy(privacy PrivacyLabels) {
 	me.Called(privacy)
+}
+
+// RecordAdapterGDPRRequestBlocked mock
+func (me *MetricsEngineMock) RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.BidderName) {
+	me.Called(adapterName)
+}
+
+// RecordDebugRequest mock
+func (me *MetricsEngineMock) RecordDebugRequest(debugEnabled bool, pubId string) {
+	me.Called(debugEnabled, pubId)
+}
+
+func (me *MetricsEngineMock) RecordStoredResponse(pubId string) {
+	me.Called(pubId)
+}
+
+func (me *MetricsEngineMock) RecordAdsCertReq(success bool) {
+	me.Called(success)
+}
+
+func (me *MetricsEngineMock) RecordAdsCertSignTime(adsCertSignTime time.Duration) {
+	me.Called(adsCertSignTime)
+}
+
+func (me *MetricsEngineMock) RecordModuleCalled(labels ModuleLabels, duration time.Duration) {
+	me.Called(labels, duration)
+}
+
+func (me *MetricsEngineMock) RecordModuleFailed(labels ModuleLabels) {
+	me.Called(labels)
+}
+
+func (me *MetricsEngineMock) RecordModuleSuccessNooped(labels ModuleLabels) {
+	me.Called(labels)
+}
+
+func (me *MetricsEngineMock) RecordModuleSuccessUpdated(labels ModuleLabels) {
+	me.Called(labels)
+}
+
+func (me *MetricsEngineMock) RecordModuleSuccessRejected(labels ModuleLabels) {
+	me.Called(labels)
+}
+
+func (me *MetricsEngineMock) RecordModuleExecutionError(labels ModuleLabels) {
+	me.Called(labels)
+}
+
+func (me *MetricsEngineMock) RecordModuleTimeout(labels ModuleLabels) {
+	me.Called(labels)
 }

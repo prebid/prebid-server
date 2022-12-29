@@ -1,0 +1,29 @@
+{
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Bidder extension not provided or can't be unmarshalled",
+      "comparison": "literal"
+    }
+  ],
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "tagid": "my-adcode",
+        "video": {
+          "mimes": ["video/mp4"],
+          "w": 640,
+          "h": 480,
+          "minduration": 120,
+          "maxduration": 150
+        },
+        "ext": ""
+      }
+    ],
+    "site": {
+      "page": "test.com"
+    }
+  },
+  "httpCalls": []
+}

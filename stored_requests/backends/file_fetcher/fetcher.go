@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/prebid/prebid-server/stored_requests"
@@ -31,6 +31,10 @@ func (fetcher *eagerFetcher) FetchRequests(ctx context.Context, requestIDs []str
 	errs := appendErrors("Request", requestIDs, storedRequests, nil)
 	errs = appendErrors("Imp", impIDs, storedImpressions, errs)
 	return storedRequests, storedImpressions, errs
+}
+
+func (fetcher *eagerFetcher) FetchResponses(ctx context.Context, ids []string) (data map[string]json.RawMessage, errs []error) {
+	return nil, nil
 }
 
 // FetchAccount fetches the host account configuration for a publisher
@@ -100,7 +104,7 @@ func collectStoredData(directory string, fileSystem FileSystem, err error) (File
 	if err != nil {
 		return FileSystem{nil, nil}, err
 	}
-	fileInfos, err := ioutil.ReadDir(directory)
+	fileInfos, err := os.ReadDir(directory)
 	if err != nil {
 		return FileSystem{nil, nil}, err
 	}
@@ -118,7 +122,7 @@ func collectStoredData(directory string, fileSystem FileSystem, err error) (File
 
 		} else {
 			if strings.HasSuffix(fileInfo.Name(), ".json") { // Skip the .gitignore
-				fileData, err := ioutil.ReadFile(fmt.Sprintf("%s/%s", directory, fileInfo.Name()))
+				fileData, err := os.ReadFile(fmt.Sprintf("%s/%s", directory, fileInfo.Name()))
 				if err != nil {
 					return FileSystem{nil, nil}, err
 				}

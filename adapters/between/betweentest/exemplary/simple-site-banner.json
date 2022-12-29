@@ -21,9 +21,7 @@
         "ext": {
           "bidder": {
             "host": "127.0.0.1",
-            "publisher_id": "1",
-            "bid_floor_cur": "RUB",
-            "bid_floor": 1000
+            "publisher_id": "1"
           }
         }
       }
@@ -48,15 +46,11 @@
                 "w": 728,
                 "h": 90
               },
-              "bidfloor": 1000,
-              "bidfloorcur": "RUB",
               "secure": 0,
               "ext": {
                 "bidder": {
                   "host": "127.0.0.1",
-                  "publisher_id": "1",
-                  "bid_floor_cur": "RUB",
-                  "bid_floor": 1000
+                  "publisher_id": "1"
                 }
               }
             }

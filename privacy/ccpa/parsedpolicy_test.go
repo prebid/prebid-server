@@ -3,9 +3,7 @@ package ccpa
 import (
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 func TestValidateConsent(t *testing.T) {
@@ -379,13 +377,4 @@ func TestShouldEnforce(t *testing.T) {
 		result := test.policy.ShouldEnforce(test.bidder)
 		assert.Equal(t, test.expected, result, test.description)
 	}
-}
-
-type mockPolicWriter struct {
-	mock.Mock
-}
-
-func (m *mockPolicWriter) Write(req *openrtb.BidRequest) error {
-	args := m.Called(req)
-	return args.Error(0)
 }

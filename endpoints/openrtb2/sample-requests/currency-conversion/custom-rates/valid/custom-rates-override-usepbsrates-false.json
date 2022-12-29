@@ -1,0 +1,69 @@
+{
+  "description": "request.ext.prebid.currency substitutes those of the currency conversion server because usepbsrates is false",
+  "config": {
+    "currencyRates":{
+      "USD": {
+        "MXN": 2.00
+      }
+    },
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 1.00}
+    ]
+  },
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          }
+        }
+      }
+    ],
+    "cur": ["MXN"],
+    "ext": {
+      "prebid": {
+        "aliases": {
+          "unknown": "appnexus"
+        },
+        "currency": {
+          "rates": {
+            "USD": {
+              "MXN": 5.00
+            }
+          },
+          "usepbsrates": false
+        }
+      }
+    }
+  },
+  "expectedBidResponse": {
+      "id":"some-request-id",
+      "bidid":"test bid id",
+      "cur": "MXN",
+      "nbr":0,
+      "seatbid": [
+        {
+          "bid": [
+            {
+              "id": "appnexus-bid",
+              "impid": "my-imp-id",
+              "price": 5.00
+            }
+          ],
+          "seat": "appnexus"
+        }
+      ]
+  },
+  "expectedReturnCode": 200
+}

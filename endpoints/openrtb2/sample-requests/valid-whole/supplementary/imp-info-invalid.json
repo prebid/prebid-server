@@ -1,0 +1,23 @@
+{
+  "description": "Impression with  stored request has invalid data",
+  "mockBidRequest": {
+    "id": "ThisID",
+    "imp": [
+      {
+        "id": "imp1",
+        "ext": {
+          "prebid": {
+            "storedrequest": {
+              "id": "1"
+            },
+            "options": {
+              "echovideoattrs": "true"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "expectedBidResponse": {},
+  "expectedReturnCode": 200
+}

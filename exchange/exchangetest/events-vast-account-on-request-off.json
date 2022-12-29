@@ -12,11 +12,15 @@
           "id": "my-imp-id",
           "video": {},
           "ext": {
-            "appnexus": {
-              "placementId": 1
-            },
-            "audienceNetwork": {
-              "placementId": 1
+            "prebid": {
+              "bidder": {
+                "appnexus": {
+                  "placementId": 1
+                },
+                "audienceNetwork": {
+                  "placementId": 1
+                }
+              }
             }
           }
         }
@@ -26,7 +30,8 @@
           "targeting": {
             "includewinners": true,
             "includebidderkeys": false
-          }
+          },
+          "integration": "testIntegrationType"
         }
       }
     }
@@ -35,55 +40,61 @@
     "appnexus": {
       "modifyingVastXmlAllowed": true,
       "mockResponse": {
-        "pbsSeatBid": {
-          "pbsBids": [
-            {
-              "ortbBid": {
-                "id": "winning-bid",
-                "nurl": "http://domain.com/winning-bid",
-                "impid": "my-imp-id",
-                "price": 0.71,
-                "w": 200,
-                "h": 250,
-                "crid": "creative-1"
+        "pbsSeatBids": [
+          {
+            "pbsBids": [
+              {
+                "ortbBid": {
+                  "id": "winning-bid",
+                  "nurl": "http://domain.com/winning-bid",
+                  "impid": "my-imp-id",
+                  "price": 0.71,
+                  "w": 200,
+                  "h": 250,
+                  "crid": "creative-1"
+                },
+                "bidType": "video"
               },
-              "bidType": "video"
-            },
-            {
-              "ortbBid": {
-                "id": "losing-bid",
-                "nurl": "http://domain.com/losing-bid",
-                "impid": "my-imp-id",
-                "price": 0.21,
-                "w": 200,
-                "h": 250,
-                "crid": "creative-2"
-              },
-              "bidType": "video"
-            }
-          ]
-        }
+              {
+                "ortbBid": {
+                  "id": "losing-bid",
+                  "nurl": "http://domain.com/losing-bid",
+                  "impid": "my-imp-id",
+                  "price": 0.21,
+                  "w": 200,
+                  "h": 250,
+                  "crid": "creative-2"
+                },
+                "bidType": "video"
+              }
+            ],
+            "seat": "appnexus"
+          }
+        ]
       }
     },
     "audienceNetwork": {
       "modifyingVastXmlAllowed": false,
       "mockResponse": {
-        "pbsSeatBid": {
-          "pbsBids": [
-            {
-              "ortbBid": {
-                "id": "contending-bid",
-                "nurl": "http://domain.com/contending-bid",
-                "impid": "my-imp-id",
-                "price": 0.51,
-                "w": 200,
-                "h": 250,
-                "crid": "creative-4"
-              },
-              "bidType": "video"
-            }
-          ]
-        }
+        "pbsSeatBids": [
+          {
+            "pbsBids": [
+              {
+                "ortbBid": {
+                  "id": "contending-bid",
+                  "nurl": "http://domain.com/contending-bid",
+                  "impid": "my-imp-id",
+                  "price": 0.51,
+                  "w": 200,
+                  "h": 250,
+                  "crid": "creative-4"
+                },
+                "bidType": "video"
+              }
+            ],
+            "seat": "audienceNetwork"
+          }
+        ]
       }
     }
   },
@@ -103,6 +114,7 @@
               "h": 250,
               "crid": "creative-4",
               "ext": {
+                "origbidcpm": 0.51,
                 "prebid": {
                   "type": "video"
                 }
@@ -115,7 +127,7 @@
           "bid": [
             {
               "id": "winning-bid",
-              "adm": "<VAST version=\"3.0\"><Ad><Wrapper><AdSystem>prebid.org wrapper</AdSystem><VASTAdTagURI><![CDATA[http://domain.com/winning-bid]]></VASTAdTagURI><Impression><![CDATA[http://localhost/event?t=imp&b=winning-bid&a=testaccount&bidder=appnexus&f=b&ts=1234567890]]></Impression><Creatives></Creatives></Wrapper></Ad></VAST>",
+              "adm": "<VAST version=\"3.0\"><Ad><Wrapper><AdSystem>prebid.org wrapper</AdSystem><VASTAdTagURI><![CDATA[http://domain.com/winning-bid]]></VASTAdTagURI><Impression><![CDATA[http://localhost/event?t=imp&b=winning-bid&a=testaccount&bidder=appnexus&f=b&int=testIntegrationType&ts=1234567890]]></Impression><Creatives></Creatives></Wrapper></Ad></VAST>",
               "nurl": "http://domain.com/winning-bid",
               "impid": "my-imp-id",
               "price": 0.71,
@@ -123,22 +135,23 @@
               "h": 250,
               "crid": "creative-1",
               "ext": {
+                "origbidcpm": 0.71,
                 "prebid": {
                   "type": "video",
                   "targeting": {
-                      "hb_bidder": "appnexus",
-                      "hb_cache_host": "www.pbcserver.com",
-                      "hb_cache_path": "/pbcache/endpoint",
-                      "hb_env": "mobile-app",
-                      "hb_pb": "0.70",
-                      "hb_size": "200x250"
+                    "hb_bidder": "appnexus",
+                    "hb_cache_host": "www.pbcserver.com",
+                    "hb_cache_path": "/pbcache/endpoint",
+                    "hb_env": "mobile-app",
+                    "hb_pb": "0.70",
+                    "hb_size": "200x250"
                   }
                 }
               }
             },
             {
               "id": "losing-bid",
-              "adm": "<VAST version=\"3.0\"><Ad><Wrapper><AdSystem>prebid.org wrapper</AdSystem><VASTAdTagURI><![CDATA[http://domain.com/losing-bid]]></VASTAdTagURI><Impression><![CDATA[http://localhost/event?t=imp&b=losing-bid&a=testaccount&bidder=appnexus&f=b&ts=1234567890]]></Impression><Creatives></Creatives></Wrapper></Ad></VAST>",
+              "adm": "<VAST version=\"3.0\"><Ad><Wrapper><AdSystem>prebid.org wrapper</AdSystem><VASTAdTagURI><![CDATA[http://domain.com/losing-bid]]></VASTAdTagURI><Impression><![CDATA[http://localhost/event?t=imp&b=losing-bid&a=testaccount&bidder=appnexus&f=b&int=testIntegrationType&ts=1234567890]]></Impression><Creatives></Creatives></Wrapper></Ad></VAST>",
               "nurl": "http://domain.com/losing-bid",
               "impid": "my-imp-id",
               "price": 0.21,
@@ -146,6 +159,7 @@
               "h": 250,
               "crid": "creative-2",
               "ext": {
+                "origbidcpm": 0.21,
                 "prebid": {
                   "type": "video"
                 }

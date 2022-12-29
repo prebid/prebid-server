@@ -2,9 +2,10 @@ package gdpr
 
 import (
 	"context"
-	"net/http"
 	"testing"
 
+	"github.com/prebid/go-gdpr/consentconstants"
+	"github.com/prebid/go-gdpr/vendorlist"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 
@@ -42,9 +43,23 @@ func TestNewPermissions(t *testing.T) {
 			HostVendorID: tt.hostVendorID,
 		}
 		vendorIDs := map[openrtb_ext.BidderName]uint16{}
+		vendorListFetcher := func(ctx context.Context, id uint16) (vendorlist.VendorList, error) {
+			return nil, nil
+		}
 
-		perms := NewPermissions(context.Background(), config, vendorIDs, &http.Client{})
+		fakePurposeEnforcerBuilder := fakePurposeEnforcerBuilder{
+			purposeEnforcer: nil,
+		}.Builder
+		perms := NewPermissions(config, &tcf2Config{}, vendorIDs, vendorListFetcher, fakePurposeEnforcerBuilder, RequestInfo{})
 
 		assert.IsType(t, tt.wantType, perms, tt.description)
 	}
+}
+
+type fakePurposeEnforcerBuilder struct {
+	purposeEnforcer PurposeEnforcer
+}
+
+func (fpeb fakePurposeEnforcerBuilder) Builder(consentconstants.Purpose, openrtb_ext.BidderName) PurposeEnforcer {
+	return fpeb.purposeEnforcer
 }

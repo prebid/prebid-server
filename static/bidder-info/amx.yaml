@@ -1,11 +1,20 @@
+endpoint: "http://pbs.amxrtb.com/auction/openrtb"
 maintainer:
   email: "prebid@amxrtb.com"
+gvlVendorID: 737
 capabilities:
   site:
     mediaTypes:
       - banner
       - video
+      - native
   app:
     mediaTypes:
       - banner
       - video
+      - native
+userSync:
+  redirect:
+    url: "https://prebid.a-mo.net/cchain/0?gdpr={{.GDPR}}&us_privacy={{.USPrivacy}}&cb={{.RedirectURL}}"
+    userMacro: ""
+

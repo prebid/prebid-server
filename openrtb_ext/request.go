@@ -3,27 +3,54 @@ package openrtb_ext
 import (
 	"encoding/json"
 	"errors"
+
+	"github.com/prebid/openrtb/v17/openrtb2"
 )
 
-// FirstPartyDataContextExtKey defines the field name within bidrequest.ext reserved
-// for first party data support.
-const FirstPartyDataContextExtKey string = "context"
+// FirstPartyDataExtKey defines a field name within request.ext and request.imp.ext reserved for first party data.
+const FirstPartyDataExtKey = "data"
+
+// FirstPartyDataContextExtKey defines a field name within request.ext and request.imp.ext reserved for first party data.
+const FirstPartyDataContextExtKey = "context"
+
+// SKAdNExtKey defines the field name within request.ext reserved for Apple's SKAdNetwork.
+const SKAdNExtKey = "skadn"
+
+// GPIDKey defines the field name within request.ext reserved for the Global Placement ID (GPID),
+const GPIDKey = "gpid"
+
+// TIDKey reserved for Per-Impression Transactions IDs for Multi-Impression Bid Requests.
+const TIDKey = "tid"
+
+// NativeExchangeSpecificLowerBound defines the lower threshold of exchange specific types for native ads. There is no upper bound.
+const NativeExchangeSpecificLowerBound = 500
+
 const MaxDecimalFigures int = 15
 
 // ExtRequest defines the contract for bidrequest.ext
 type ExtRequest struct {
-	Prebid ExtRequestPrebid `json:"prebid"`
+	Prebid ExtRequestPrebid      `json:"prebid"`
+	SChain *openrtb2.SupplyChain `json:"schain,omitempty"`
 }
 
 // ExtRequestPrebid defines the contract for bidrequest.ext.prebid
 type ExtRequestPrebid struct {
 	Aliases              map[string]string         `json:"aliases,omitempty"`
+	AliasGVLIDs          map[string]uint16         `json:"aliasgvlids,omitempty"`
 	BidAdjustmentFactors map[string]float64        `json:"bidadjustmentfactors,omitempty"`
+	BidderConfigs        []BidderConfig            `json:"bidderconfig,omitempty"`
+	BidderParams         json.RawMessage           `json:"bidderparams,omitempty"`
 	Cache                *ExtRequestPrebidCache    `json:"cache,omitempty"`
+	Channel              *ExtRequestPrebidChannel  `json:"channel,omitempty"`
+	CurrencyConversions  *ExtRequestCurrency       `json:"currency,omitempty"`
 	Data                 *ExtRequestPrebidData     `json:"data,omitempty"`
 	Debug                bool                      `json:"debug,omitempty"`
 	Events               json.RawMessage           `json:"events,omitempty"`
+	Experiment           *Experiment               `json:"experiment,omitempty"`
+	Integration          string                    `json:"integration,omitempty"`
+	Passthrough          json.RawMessage           `json:"passthrough,omitempty"`
 	SChains              []*ExtRequestPrebidSChain `json:"schains,omitempty"`
+	Server               *ExtRequestPrebidServer   `json:"server,omitempty"`
 	StoredRequest        *ExtStoredRequest         `json:"storedrequest,omitempty"`
 	SupportDeals         bool                      `json:"supportdeals,omitempty"`
 	Targeting            *ExtRequestTargeting      `json:"targeting,omitempty"`
@@ -32,36 +59,51 @@ type ExtRequestPrebid struct {
 	// passing of personally identifiable information doesn't constitute a sale per CCPA law.
 	// The array may contain a single sstar ('*') entry to represent all bidders.
 	NoSale []string `json:"nosale,omitempty"`
+
+	//AlternateBidderCodes is populated with host's AlternateBidderCodes config if not defined in request
+	AlternateBidderCodes *ExtAlternateBidderCodes `json:"alternatebiddercodes,omitempty"`
+}
+
+// Experiment defines if experimental features are available for the request
+type Experiment struct {
+	AdsCert *AdsCert `json:"adscert,omitempty"`
+}
+
+// AdsCert defines if Call Sign feature is enabled for request
+type AdsCert struct {
+	Enabled bool `json:"enabled,omitempty"`
+}
+
+type BidderConfig struct {
+	Bidders []string `json:"bidders,omitempty"`
+	Config  *Config  `json:"config,omitempty"`
+}
+
+type Config struct {
+	ORTB2 *ORTB2 `json:"ortb2,omitempty"`
+}
+
+type ORTB2 struct { //First party data
+	Site map[string]json.RawMessage `json:"site,omitempty"`
+	App  map[string]json.RawMessage `json:"app,omitempty"`
+	User map[string]json.RawMessage `json:"user,omitempty"`
+}
+
+type ExtRequestCurrency struct {
+	ConversionRates map[string]map[string]float64 `json:"rates"`
+	UsePBSRates     *bool                         `json:"usepbsrates"`
 }
 
 // ExtRequestPrebid defines the contract for bidrequest.ext.prebid.schains
 type ExtRequestPrebidSChain struct {
-	Bidders []string                     `json:"bidders,omitempty"`
-	SChain  ExtRequestPrebidSChainSChain `json:"schain"`
+	Bidders []string             `json:"bidders,omitempty"`
+	SChain  openrtb2.SupplyChain `json:"schain"`
 }
 
-// ExtRequestPrebidSChainSChain defines the contract for bidrequest.ext.prebid.schains[i].schain
-type ExtRequestPrebidSChainSChain struct {
-	Complete int                                 `json:"complete"`
-	Nodes    []*ExtRequestPrebidSChainSChainNode `json:"nodes"`
-	Ver      string                              `json:"ver"`
-	Ext      json.RawMessage                     `json:"ext,omitempty"`
-}
-
-// ExtRequestPrebidSChainSChainNode defines the contract for bidrequest.ext.prebid.schains[i].schain[i].nodes
-type ExtRequestPrebidSChainSChainNode struct {
-	ASI    string          `json:"asi"`
-	SID    string          `json:"sid"`
-	RID    string          `json:"rid,omitempty"`
-	Name   string          `json:"name,omitempty"`
-	Domain string          `json:"domain,omitempty"`
-	HP     int             `json:"hp"`
-	Ext    json.RawMessage `json:"ext,omitempty"`
-}
-
-// SourceExt defines the contract for bidrequest.source.ext
-type SourceExt struct {
-	SChain ExtRequestPrebidSChainSChain `json:"schain"`
+// ExtRequestPrebidChannel defines the contract for bidrequest.ext.prebid.channel
+type ExtRequestPrebidChannel struct {
+	Name    string `json:"name"`
+	Version string `json:"version"`
 }
 
 // ExtRequestPrebidCache defines the contract for bidrequest.ext.prebid.cache
@@ -70,20 +112,10 @@ type ExtRequestPrebidCache struct {
 	VastXML *ExtRequestPrebidCacheVAST `json:"vastxml"`
 }
 
-// UnmarshalJSON prevents nil bids arguments.
-func (ert *ExtRequestPrebidCache) UnmarshalJSON(b []byte) error {
-	type typesAlias ExtRequestPrebidCache // Prevents infinite UnmarshalJSON loops
-	var proxy typesAlias
-	if err := json.Unmarshal(b, &proxy); err != nil {
-		return err
-	}
-
-	if proxy.Bids == nil && proxy.VastXML == nil {
-		return errors.New(`request.ext.prebid.cache requires one of the "bids" or "vastxml" properties`)
-	}
-
-	*ert = ExtRequestPrebidCache(proxy)
-	return nil
+type ExtRequestPrebidServer struct {
+	ExternalUrl string `json:"externalurl"`
+	GvlID       int    `json:"gvlid"`
+	DataCenter  string `json:"datacenter"`
 }
 
 // ExtRequestPrebidCacheBids defines the contract for bidrequest.ext.prebid.cache.bids
@@ -295,6 +327,7 @@ var priceGranularityAuto = PriceGranularity{
 // ExtRequestPrebidData defines Prebid's First Party Data (FPD) and related bid request options.
 type ExtRequestPrebidData struct {
 	EidPermissions []ExtRequestPrebidDataEidPermission `json:"eidpermissions"`
+	Bidders        []string                            `json:"bidders,omitempty"`
 }
 
 // ExtRequestPrebidDataEidPermission defines a filter rule for filter user.ext.eids

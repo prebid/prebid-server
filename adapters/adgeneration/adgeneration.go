@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -41,7 +41,7 @@ type adgServerResponse struct {
 	Results    []interface{} `json:"results"`
 }
 
-func (adg *AdgenerationAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (adg *AdgenerationAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	numRequests := len(request.Imp)
 	var errs []error
 
@@ -55,8 +55,13 @@ func (adg *AdgenerationAdapter) MakeRequests(request *openrtb.BidRequest, reqInf
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
-	if request.Device != nil && len(request.Device.UA) > 0 {
-		headers.Add("User-Agent", request.Device.UA)
+	if request.Device != nil {
+		if len(request.Device.UA) > 0 {
+			headers.Add("User-Agent", request.Device.UA)
+		}
+		if len(request.Device.IP) > 0 {
+			headers.Add("X-Forwarded-For", request.Device.IP)
+		}
 	}
 
 	bidRequestArray := make([]*adapters.RequestData, 0, numRequests)
@@ -79,7 +84,7 @@ func (adg *AdgenerationAdapter) MakeRequests(request *openrtb.BidRequest, reqInf
 	return bidRequestArray, errs
 }
 
-func (adg *AdgenerationAdapter) getRequestUri(request *openrtb.BidRequest, index int) (string, error) {
+func (adg *AdgenerationAdapter) getRequestUri(request *openrtb2.BidRequest, index int) (string, error) {
 	imp := request.Imp[index]
 	adgExt, err := unmarshalExtImpAdgeneration(&imp)
 	if err != nil {
@@ -98,11 +103,10 @@ func (adg *AdgenerationAdapter) getRequestUri(request *openrtb.BidRequest, index
 	return uriObj.String(), err
 }
 
-func (adg *AdgenerationAdapter) getRawQuery(id string, request *openrtb.BidRequest, imp *openrtb.Imp) *url.Values {
+func (adg *AdgenerationAdapter) getRawQuery(id string, request *openrtb2.BidRequest, imp *openrtb2.Imp) *url.Values {
 	v := url.Values{}
 	v.Set("posall", "SSPLOC")
 	v.Set("id", id)
-	v.Set("sdktype", "0")
 	v.Set("hb", "true")
 	v.Set("t", "json3")
 	v.Set("currency", adg.getCurrency(request))
@@ -112,16 +116,36 @@ func (adg *AdgenerationAdapter) getRawQuery(id string, request *openrtb.BidReque
 	if adSize != "" {
 		v.Set("sizes", adSize)
 	}
+	if request.Device != nil && request.Device.OS == "android" {
+		v.Set("sdktype", "1")
+	} else if request.Device != nil && request.Device.OS == "ios" {
+		v.Set("sdktype", "2")
+	} else {
+		v.Set("sdktype", "0")
+	}
 	if request.Site != nil && request.Site.Page != "" {
 		v.Set("tp", request.Site.Page)
 	}
 	if request.Source != nil && request.Source.TID != "" {
 		v.Set("transactionid", request.Source.TID)
 	}
+	if request.App != nil && request.App.Bundle != "" {
+		v.Set("appbundle", request.App.Bundle)
+	}
+	if request.App != nil && request.App.Name != "" {
+		v.Set("appname", request.App.Name)
+	}
+	if request.Device != nil && request.Device.OS == "ios" && request.Device.IFA != "" {
+		v.Set("idfa", request.Device.IFA)
+	}
+	if request.Device != nil && request.Device.OS == "android" && request.Device.IFA != "" {
+		v.Set("advertising_id", request.Device.IFA)
+	}
+
 	return &v
 }
 
-func unmarshalExtImpAdgeneration(imp *openrtb.Imp) (*openrtb_ext.ExtImpAdgeneration, error) {
+func unmarshalExtImpAdgeneration(imp *openrtb2.Imp) (*openrtb_ext.ExtImpAdgeneration, error) {
 	var bidderExt adapters.ExtImpBidder
 	var adgExt openrtb_ext.ExtImpAdgeneration
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
@@ -136,13 +160,13 @@ func unmarshalExtImpAdgeneration(imp *openrtb.Imp) (*openrtb_ext.ExtImpAdgenerat
 	return &adgExt, nil
 }
 
-func getSizes(imp *openrtb.Imp) string {
+func getSizes(imp *openrtb2.Imp) string {
 	if imp.Banner == nil || len(imp.Banner.Format) == 0 {
 		return ""
 	}
 	var sizeStr string
 	for _, v := range imp.Banner.Format {
-		sizeStr += strconv.FormatUint(v.W, 10) + "x" + strconv.FormatUint(v.H, 10) + ","
+		sizeStr += strconv.FormatInt(v.W, 10) + "x" + strconv.FormatInt(v.H, 10) + ","
 	}
 	if len(sizeStr) > 0 && strings.LastIndex(sizeStr, ",") == len(sizeStr)-1 {
 		sizeStr = sizeStr[:len(sizeStr)-1]
@@ -150,7 +174,7 @@ func getSizes(imp *openrtb.Imp) string {
 	return sizeStr
 }
 
-func (adg *AdgenerationAdapter) getCurrency(request *openrtb.BidRequest) string {
+func (adg *AdgenerationAdapter) getCurrency(request *openrtb2.BidRequest) string {
 	if len(request.Cur) <= 0 {
 		return adg.defaultCurrency
 	} else {
@@ -163,7 +187,7 @@ func (adg *AdgenerationAdapter) getCurrency(request *openrtb.BidRequest) string 
 	}
 }
 
-func (adg *AdgenerationAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (adg *AdgenerationAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -202,13 +226,13 @@ func (adg *AdgenerationAdapter) MakeBids(internalRequest *openrtb.BidRequest, ex
 			impId = v.ID
 			bitType = openrtb_ext.BidTypeBanner
 			adm = createAd(&bidResp, impId)
-			bid := openrtb.Bid{
+			bid := openrtb2.Bid{
 				ID:     bidResp.Locationid,
 				ImpID:  impId,
 				AdM:    adm,
 				Price:  bidResp.Cpm,
-				W:      bidResp.W,
-				H:      bidResp.H,
+				W:      int64(bidResp.W),
+				H:      int64(bidResp.H),
 				CrID:   bidResp.Creativeid,
 				DealID: bidResp.Dealid,
 			}
@@ -260,10 +284,10 @@ func removeWrapper(ad string) string {
 }
 
 // Builder builds a new instance of the Adgeneration adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &AdgenerationAdapter{
 		config.Endpoint,
-		"1.0.2",
+		"1.0.3",
 		"JPY",
 	}
 	return bidder, nil

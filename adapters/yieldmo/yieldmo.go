@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -16,11 +16,21 @@ type YieldmoAdapter struct {
 	endpoint string
 }
 
-type Ext struct {
-	PlacementId string `json:"placement_id"`
+type ExtImpBidderYieldmo struct {
+	adapters.ExtImpBidder
+	Data *ExtData `json:"data,omitempty"`
 }
 
-func (a *YieldmoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+type ExtData struct {
+	PbAdslot string `json:"pbadslot"`
+}
+
+type Ext struct {
+	PlacementId string `json:"placement_id"`
+	Gpid        string `json:"gpid,omitempty"`
+}
+
+func (a *YieldmoAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var adapterRequests []*adapters.RequestData
 
@@ -33,7 +43,7 @@ func (a *YieldmoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 	return adapterRequests, errors
 }
 
-func (a *YieldmoAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
+func (a *YieldmoAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, []error) {
 	var errs []error
 
 	if err := preprocess(request); err != nil {
@@ -59,10 +69,10 @@ func (a *YieldmoAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.Req
 }
 
 // Mutate the request to get it ready to send to yieldmo.
-func preprocess(request *openrtb.BidRequest) error {
+func preprocess(request *openrtb2.BidRequest) error {
 	for i := 0; i < len(request.Imp); i++ {
 		var imp = request.Imp[i]
-		var bidderExt adapters.ExtImpBidder
+		var bidderExt ExtImpBidderYieldmo
 
 		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			return &errortypes.BadInput{
@@ -81,6 +91,12 @@ func preprocess(request *openrtb.BidRequest) error {
 		var impExt Ext
 		impExt.PlacementId = yieldmoExt.PlacementId
 
+		if bidderExt.Data != nil {
+			if bidderExt.Data.PbAdslot != "" {
+				impExt.Gpid = bidderExt.Data.PbAdslot
+			}
+		}
+
 		impExtJSON, err := json.Marshal(impExt)
 		if err != nil {
 			return &errortypes.BadInput{
@@ -95,7 +111,7 @@ func preprocess(request *openrtb.BidRequest) error {
 }
 
 // MakeBids make the bids for the bid response.
-func (a *YieldmoAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *YieldmoAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -112,7 +128,7 @@ func (a *YieldmoAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
@@ -133,14 +149,14 @@ func (a *YieldmoAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 }
 
 // Builder builds a new instance of the Yieldmo adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &YieldmoAdapter{
 		endpoint: config.Endpoint,
 	}
 	return bidder, nil
 }
 
-func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
+func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	//default to video unless banner exists in impression
 	for _, imp := range imps {
 		if imp.ID == impId && imp.Banner != nil {

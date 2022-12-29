@@ -1,0 +1,270 @@
+{
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "device": {
+      "ua": "test-user-agent",
+      "ip": "123.123.123.123",
+      "language": "en",
+      "dnt": 0,
+      "make": "samsung",
+      "model": "sm-a505u",
+      "devicetype": 4,
+      "lmt": 0,
+      "w": 412,
+      "h": 812,
+      "pxratio": 2.625
+    },
+    "tmax": 1000,
+    "user": {
+      "buyeruid": "awesome-user"
+    },
+    "app": {
+      "name": "SmartNews: Local Breaking News",
+      "bundle": "jp.gocro.smartnews.android",
+      "publisher": {
+        "id": "pub-2647321473134964",
+        "ext": {
+          "country": "JP"
+        }
+      },
+      "content": {
+        "url": "https://play.google.com/store/apps/details?id\u003djp.gocro.smartnews.android",
+        "userrating": "4.2",
+        "livestream": 0,
+        "language": "en"
+      },
+      "storeurl": "https://play.google.com/store/apps/details?id\u003djp.gocro.smartnews.android",
+      "ext": {
+        "inventorypartnerdomain": ""
+      }
+    },
+    "imp": [
+      {
+        "id": "1",
+        "tagid": "1",
+        "bidfloor": 0.16,
+        "bidfloorcur": "EUR",
+        "secure": 1,
+        "native": {
+          "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":25}},{\"id\":2,\"required\":1,\"data\":{\"type\":2,\"len\":90}},{\"id\":3,\"data\":{\"type\":12,\"len\":15}},{\"id\":4,\"required\":1,\"img\":{\"type\":3,\"wmin\":1200,\"hmin\":627}},{\"id\":5,\"required\":1,\"img\":{\"type\":1,\"wmin\":100,\"hmin\":100}},{\"id\":6,\"data\":{\"type\":3,\"len\":5}},{\"id\":7,\"data\":{\"type\":6}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1]}]}",
+          "ver": "1.2",
+          "api": [
+            3,
+            5,
+            6
+          ]
+        },
+        "metric": [
+          {
+            "type": "viewability",
+            "value": 0.94,
+            "vendor": "EXCHANGE"
+          },
+          {
+            "type": "session_depth",
+            "value": 2.0,
+            "vendor": "EXCHANGE"
+          }
+        ],
+        "ext": {
+          "billing_id": [
+            "48566531714"
+          ],
+          "dfp_ad_unit_code": "/22455324824/US/Android/ChannelView/NonFirst/us_android_channelview_nonfirst_native_v",
+          "ampad": 2,
+          "open_bidding": {
+            "is_open_bidding": 1
+          },
+          "creative_enforcement_settings": {
+            "policy_enforcement": 1,
+            "scan_enforcement": 3,
+            "publisher_blocks_enforcement": 2,
+            "is_default": 1
+          },
+          "auction_environment": 0,
+          "bidder": {
+            "siteId": 1,
+            "pageId": 2,
+            "formatId": 3,
+            "networkId": 73
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "uri": "https://ssb.smartadserver.com/api/bid?callerId=5",
+        "body": {
+          "id": "some-request-id",
+          "device": {
+            "ua": "test-user-agent",
+            "ip": "123.123.123.123",
+            "language": "en",
+            "dnt": 0,
+            "make": "samsung",
+            "model": "sm-a505u",
+            "devicetype": 4,
+            "lmt": 0,
+            "w": 412,
+            "h": 812,
+            "pxratio": 2.625
+          },
+          "tmax": 1000,
+          "user": {
+            "buyeruid": "awesome-user"
+          },
+          "app": {
+            "name": "SmartNews: Local Breaking News",
+            "bundle": "jp.gocro.smartnews.android",
+            "publisher": {
+              "id": "pub-2647321473134964",
+              "ext": {
+                "country": "JP"
+              }
+            },
+            "content": {
+              "url": "https://play.google.com/store/apps/details?id\u003djp.gocro.smartnews.android",
+              "userrating": "4.2",
+              "language": "en"
+            },
+            "storeurl": "https://play.google.com/store/apps/details?id\u003djp.gocro.smartnews.android",
+            "ext": {
+              "inventorypartnerdomain": ""
+            }
+          },
+          "imp": [
+            {
+              "id": "1",
+              "tagid": "1",
+              "bidfloor": 0.16,
+              "bidfloorcur": "EUR",
+              "secure": 1,
+              "native": {
+                "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":25}},{\"id\":2,\"required\":1,\"data\":{\"type\":2,\"len\":90}},{\"id\":3,\"data\":{\"type\":12,\"len\":15}},{\"id\":4,\"required\":1,\"img\":{\"type\":3,\"wmin\":1200,\"hmin\":627}},{\"id\":5,\"required\":1,\"img\":{\"type\":1,\"wmin\":100,\"hmin\":100}},{\"id\":6,\"data\":{\"type\":3,\"len\":5}},{\"id\":7,\"data\":{\"type\":6}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1]}]}",
+                "ver": "1.2",
+                "api": [
+                  3,
+                  5,
+                  6
+                ]
+              },
+              "metric": [
+                {
+                  "type": "viewability",
+                  "value": 0.94,
+                  "vendor": "EXCHANGE"
+                },
+                {
+                  "type": "session_depth",
+                  "value": 2.0,
+                  "vendor": "EXCHANGE"
+                }
+              ],
+              "ext": {
+                "billing_id": [
+                  "48566531714"
+                ],
+                "dfp_ad_unit_code": "/22455324824/US/Android/ChannelView/NonFirst/us_android_channelview_nonfirst_native_v",
+                "ampad": 2,
+                "open_bidding": {
+                  "is_open_bidding": 1
+                },
+                "creative_enforcement_settings": {
+                  "policy_enforcement": 1,
+                  "scan_enforcement": 3,
+                  "publisher_blocks_enforcement": 2,
+                  "is_default": 1
+                },
+                "auction_environment": 0,
+                "bidder": {
+                  "siteId": 1,
+                  "pageId": 2,
+                  "formatId": 3,
+                  "networkId": 73
+                }
+              }
+            }
+          ],
+          "site": {
+            "publisher": {
+              "id": "73"
+            }
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "awesome-resp-id",
+          "seatbid": [
+            {
+              "seat": "13936",
+              "bid": [
+                {
+                  "id": "905895002584918328",
+                  "impid": "1",
+                  "price": 0.86403,
+                  "adm": "{\"native\":{\"ver\":\"1.2\",\"privacy\":\"https://privacy.us.criteo.com/adchoices?cppv\u003d3\u0026cpp\u003ddA0RezzRiApl49U79WS4eSofHI9xp0QYBojK_np3IC3bUxP--nXz3YJ9Knp3lffIaxxkyWjwHWw6E-om3O1QPVKQzRogO7TA1mZgFFS7oTrn5BAmxej9Ibf_f3nLqCMlvyUb0uBGRRY8e6F_4mMTsPfi0gfvHMHt9p9cMMz7_EMMB2a2\",\"assets\":[{\"id\":1,\"title\":{\"text\":\"Hotel Katla\"}},{\"id\":2,\"data\":{\"value\":\"Vik\"}},{\"id\":3,\"data\":{\"value\":\"Book Now\"}},{\"id\":4,\"img\":{\"url\":\"https://pix.us.criteo.net/img/img?c\u003d3\u0026cq\u003d256\u0026h\u003d800\u0026m\u003d0\u0026partner\u003d4653\u0026q\u003d80\u0026r\u003d2\u0026u\u003dhttps%3A%2F%2Fmedia-cdn.tripadvisor.com%2Fmedia%2Fphoto-s%2F1c%2Fe0%2Fd1%2F28%2Fb86401-exterior.jpg\u0026ups\u003d1\u0026v\u003d3\u0026w\u003d800\u0026s\u003dmfVfgFTxkIyJE1l8uEIH0kjY\",\"w\":800,\"h\":800,\"ext\":{\"imagemode\":1}}},{\"id\":5,\"img\":{\"url\":\"https://pix.us.criteo.net/img/img?h\u003d200\u0026m\u003d0\u0026partner\u003d4653\u0026q\u003d80\u0026r\u003d0\u0026u\u003dhttp%3A%2F%2Fstatic.va.us.criteo.net%2Fdesign%2Fdt%2F4653%2F220310%2Fa8c95dab6f4048a3a93333bb2df35394_logo_colorset_1_square.png\u0026v\u003d3\u0026w\u003d200\u0026s\u003dS_tJonEVlXbjJYH3qQhRMmmr\",\"w\":200,\"h\":200}},{\"id\":7,\"data\":{\"value\":\"from $212\"}}],\"link\":{\"url\":\"https://cat.va.us.criteo.com/delivery/ckn.php?cppv\u003d3\u0026cpp\u003d_Hp3ShHYhT6VGVf27R7phNvxu2hpEMhI-_juBZvPRzA-urYvy54GTjaheHPJy7u8s523QQV0dFM_3EsVBAkZLqLOmHSlm5FjpMn_-sQY_Fpu1m4uZi9T5i2t49tP2csthrSlyhHQHD55kOCkG2gTV5GV4gbBTeDun61HYB0ztXzScWk0jO9iEy-6YGY_6nZCB5LpUKuaiZ4ApBhNuHx6rQkJkdbBmKFnS0sY3Dvri6AigvbUsZiku6v_VGqTKlER65Z1UzFx-mGSn5yZjsjbO-Zf0l7xRNzZFb7dW_EZjZufLLL47fyT5uMcbVypmMYcu6Htxb5Z_wj3eL7gz_zThJxYi60PzBoI4F3dYznFPgl6NY_Nazp1nAryiPGiCDbpM4yGF_9Sh8pEg2Ev94beM_ymWaqEdYTuCor6_grea5K0GIXeKSv5c4FsGSrTflQmIE_nLrJuvI8wMGQC8JtuNdC43wwWnQj5tOhHcOANVvZBkE_M\u0026maxdest\u003dhttps%3A%2F%2Fwww.tripadvisor.com%2FHotel_Review-s1-d5030264%3Fm%3D66738%26supcm%3D288696%26supai%3D307147\"},\"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"https://cat.va.us.criteo.com/delivery/lgn.php?cppv\u003d3\u0026cpp\u003dOYXXGxHYhT6VGVf27R7phNvxu2hpEMhI-_juBZvPRzA-urYvy54GTjaheHPJy7u8s523QQV0dFM_3EsVBAkZLqLOmHSlm5FjpMn_-sQY_Fpu1m4uZi9T5i2t49tP2csthrSlygJccxue8pR1zYveG3Rhcmzgt7JGjWy2WOHS5y42tNQvzbafDza85vKl66AQJCfeqdM_A6tUxZe2WFlSDw1s6sokf8fdldJ0aZucyWwh1Wx_tJbdzbyaD-j9TcpnAVsI2npiXJPI-_9xnE4pG3SAJiGZ2K4hWT34PkEC0g_9C9s1Hf6jQ6X1Wv0a8wa5IWLoMldXqnZ3W7jr9nPKXngjEy6n2-_WId8D9q9LkwXFcIR9LGovLfQ3U9XT9j1oJLzqgmyIVB9Z7VPF-NxHUDh1-fcjDMRMCPTKAOI4CcI8akLDN9M6XyaM7KLtHCHOpi1k-HT_gI70veWC4koE-UouUwM\u0026z\u003dsj0HnHF3bINdeGYjfRPFUEztMyUWhruGkElSEg\"}],\"assetsurl\":\"https://rdi.va.us.criteo.com/delivery/r/native?u\u003d%7CQ4DwbCv1DLCf%2FRGbTXtJ1gp584IIyg2Xyl6hmWNuvP4%3D%7C\u0026zn\u003dsj0HnHF3bINdeGYjfRPFUEztMyUWhruGkElSEg\u0026callback\u003d\u0026c1\u003dSEEq4vz4aLDKSl7f6j97sw4tGcTvFLx-G7HAXpahtNFbKhTsLPbfhYclWUAr1fpRrS5FKjKJDCrsY5WICFwCPtxotN6aDFevt17x9oLdclOk5qh_QOZ3AhwsnBXMPNEsxS6CR_ZPGwG6JmcbFms24fl9H5zHw7NWKcPTb_xtLsHLuKy3X2iAgHZ8QIT_87DNLHhfjmcEfnPnLr-669VrrQc4GLrjhWW8qFUaOfru2DjSZdBJjgxjTbuEbVI4NJ38zG7hgs13DDu9i7b9gidNjSJVg492IBN50JmS0p07mKQzgD2ELoa8cbdPnr9kwXwH3C6N_esaNHo87pj8DPHXQqVV6XvvZAeoQpUgo6Src_tX1eSo6ZHzH2mWXFCo6kP9BBf9HOdB8H5n1oL_rNxqfCthXOYzAlbAGeCvyc0GCeCuzwiCkq53bqcssz3E4Scul6ZDYUZltsbEeYLJPwkdMSviPH4Po-j9mUQaHW5lMABl2nam2q6lDoEFulNR8kz3R2BbrlMEoDHfcAtDf9gHKNndrYVRhfRtEMu0RW1SVdJ6fKuPvU1_zodMaXEpGmJ6dEwz04eBm22yN7nAaqJQYdEiiLuvrYyQZPzp6M8nXt66I8hzO9WfYk40EvQzg-fZMmr7NMke0_YPCm7oRyFZChAnbq3LE_jpjAuygA_S-Yq8y1d4RVhfRgTUdAdJaYne\"}}",
+                  "adomain": [
+                    "tripadvisor.com"
+                  ],
+                  "crid": "11116594",
+                  "w": 0,
+                  "h": 0,
+                  "exp": 0,
+                  "qagmediarating": 0,
+                  "ext": {
+                    "event_notification_token": {
+                      "payload": "4323.905895002584918328.1655998688532"
+                    },
+                    "impression_tracking_url": [
+                      "https://ssb-use1.smartadserver.com:443/api/imp?callerid\u003d3\u0026rtb\u003d1\u0026rtbnid\u003d4323\u0026rtbbid\u003d905895002584918328\u0026rtbh\u003d5aa204f3c4aca84cb52ea307bbff41e44571485c\u0026rtblt\u003d637915954885316448\u0026rtbet\u003d2\u0026rtbptnid\u003d361\u0026cftgid\u003d4a496db2aade"
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "905895002584918328",
+            "impid": "1",
+            "price": 0.86403,
+            "adm": "{\"native\":{\"ver\":\"1.2\",\"privacy\":\"https://privacy.us.criteo.com/adchoices?cppv\u003d3\u0026cpp\u003ddA0RezzRiApl49U79WS4eSofHI9xp0QYBojK_np3IC3bUxP--nXz3YJ9Knp3lffIaxxkyWjwHWw6E-om3O1QPVKQzRogO7TA1mZgFFS7oTrn5BAmxej9Ibf_f3nLqCMlvyUb0uBGRRY8e6F_4mMTsPfi0gfvHMHt9p9cMMz7_EMMB2a2\",\"assets\":[{\"id\":1,\"title\":{\"text\":\"Hotel Katla\"}},{\"id\":2,\"data\":{\"value\":\"Vik\"}},{\"id\":3,\"data\":{\"value\":\"Book Now\"}},{\"id\":4,\"img\":{\"url\":\"https://pix.us.criteo.net/img/img?c\u003d3\u0026cq\u003d256\u0026h\u003d800\u0026m\u003d0\u0026partner\u003d4653\u0026q\u003d80\u0026r\u003d2\u0026u\u003dhttps%3A%2F%2Fmedia-cdn.tripadvisor.com%2Fmedia%2Fphoto-s%2F1c%2Fe0%2Fd1%2F28%2Fb86401-exterior.jpg\u0026ups\u003d1\u0026v\u003d3\u0026w\u003d800\u0026s\u003dmfVfgFTxkIyJE1l8uEIH0kjY\",\"w\":800,\"h\":800,\"ext\":{\"imagemode\":1}}},{\"id\":5,\"img\":{\"url\":\"https://pix.us.criteo.net/img/img?h\u003d200\u0026m\u003d0\u0026partner\u003d4653\u0026q\u003d80\u0026r\u003d0\u0026u\u003dhttp%3A%2F%2Fstatic.va.us.criteo.net%2Fdesign%2Fdt%2F4653%2F220310%2Fa8c95dab6f4048a3a93333bb2df35394_logo_colorset_1_square.png\u0026v\u003d3\u0026w\u003d200\u0026s\u003dS_tJonEVlXbjJYH3qQhRMmmr\",\"w\":200,\"h\":200}},{\"id\":7,\"data\":{\"value\":\"from $212\"}}],\"link\":{\"url\":\"https://cat.va.us.criteo.com/delivery/ckn.php?cppv\u003d3\u0026cpp\u003d_Hp3ShHYhT6VGVf27R7phNvxu2hpEMhI-_juBZvPRzA-urYvy54GTjaheHPJy7u8s523QQV0dFM_3EsVBAkZLqLOmHSlm5FjpMn_-sQY_Fpu1m4uZi9T5i2t49tP2csthrSlyhHQHD55kOCkG2gTV5GV4gbBTeDun61HYB0ztXzScWk0jO9iEy-6YGY_6nZCB5LpUKuaiZ4ApBhNuHx6rQkJkdbBmKFnS0sY3Dvri6AigvbUsZiku6v_VGqTKlER65Z1UzFx-mGSn5yZjsjbO-Zf0l7xRNzZFb7dW_EZjZufLLL47fyT5uMcbVypmMYcu6Htxb5Z_wj3eL7gz_zThJxYi60PzBoI4F3dYznFPgl6NY_Nazp1nAryiPGiCDbpM4yGF_9Sh8pEg2Ev94beM_ymWaqEdYTuCor6_grea5K0GIXeKSv5c4FsGSrTflQmIE_nLrJuvI8wMGQC8JtuNdC43wwWnQj5tOhHcOANVvZBkE_M\u0026maxdest\u003dhttps%3A%2F%2Fwww.tripadvisor.com%2FHotel_Review-s1-d5030264%3Fm%3D66738%26supcm%3D288696%26supai%3D307147\"},\"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"https://cat.va.us.criteo.com/delivery/lgn.php?cppv\u003d3\u0026cpp\u003dOYXXGxHYhT6VGVf27R7phNvxu2hpEMhI-_juBZvPRzA-urYvy54GTjaheHPJy7u8s523QQV0dFM_3EsVBAkZLqLOmHSlm5FjpMn_-sQY_Fpu1m4uZi9T5i2t49tP2csthrSlygJccxue8pR1zYveG3Rhcmzgt7JGjWy2WOHS5y42tNQvzbafDza85vKl66AQJCfeqdM_A6tUxZe2WFlSDw1s6sokf8fdldJ0aZucyWwh1Wx_tJbdzbyaD-j9TcpnAVsI2npiXJPI-_9xnE4pG3SAJiGZ2K4hWT34PkEC0g_9C9s1Hf6jQ6X1Wv0a8wa5IWLoMldXqnZ3W7jr9nPKXngjEy6n2-_WId8D9q9LkwXFcIR9LGovLfQ3U9XT9j1oJLzqgmyIVB9Z7VPF-NxHUDh1-fcjDMRMCPTKAOI4CcI8akLDN9M6XyaM7KLtHCHOpi1k-HT_gI70veWC4koE-UouUwM\u0026z\u003dsj0HnHF3bINdeGYjfRPFUEztMyUWhruGkElSEg\"}],\"assetsurl\":\"https://rdi.va.us.criteo.com/delivery/r/native?u\u003d%7CQ4DwbCv1DLCf%2FRGbTXtJ1gp584IIyg2Xyl6hmWNuvP4%3D%7C\u0026zn\u003dsj0HnHF3bINdeGYjfRPFUEztMyUWhruGkElSEg\u0026callback\u003d\u0026c1\u003dSEEq4vz4aLDKSl7f6j97sw4tGcTvFLx-G7HAXpahtNFbKhTsLPbfhYclWUAr1fpRrS5FKjKJDCrsY5WICFwCPtxotN6aDFevt17x9oLdclOk5qh_QOZ3AhwsnBXMPNEsxS6CR_ZPGwG6JmcbFms24fl9H5zHw7NWKcPTb_xtLsHLuKy3X2iAgHZ8QIT_87DNLHhfjmcEfnPnLr-669VrrQc4GLrjhWW8qFUaOfru2DjSZdBJjgxjTbuEbVI4NJ38zG7hgs13DDu9i7b9gidNjSJVg492IBN50JmS0p07mKQzgD2ELoa8cbdPnr9kwXwH3C6N_esaNHo87pj8DPHXQqVV6XvvZAeoQpUgo6Src_tX1eSo6ZHzH2mWXFCo6kP9BBf9HOdB8H5n1oL_rNxqfCthXOYzAlbAGeCvyc0GCeCuzwiCkq53bqcssz3E4Scul6ZDYUZltsbEeYLJPwkdMSviPH4Po-j9mUQaHW5lMABl2nam2q6lDoEFulNR8kz3R2BbrlMEoDHfcAtDf9gHKNndrYVRhfRtEMu0RW1SVdJ6fKuPvU1_zodMaXEpGmJ6dEwz04eBm22yN7nAaqJQYdEiiLuvrYyQZPzp6M8nXt66I8hzO9WfYk40EvQzg-fZMmr7NMke0_YPCm7oRyFZChAnbq3LE_jpjAuygA_S-Yq8y1d4RVhfRgTUdAdJaYne\"}}",
+            "adomain": [
+              "tripadvisor.com"
+            ],
+            "crid": "11116594",
+            "ext": {
+              "event_notification_token": {
+                "payload": "4323.905895002584918328.1655998688532"
+              },
+              "impression_tracking_url": [
+                "https://ssb-use1.smartadserver.com:443/api/imp?callerid\u003d3\u0026rtb\u003d1\u0026rtbnid\u003d4323\u0026rtbbid\u003d905895002584918328\u0026rtbh\u003d5aa204f3c4aca84cb52ea307bbff41e44571485c\u0026rtblt\u003d637915954885316448\u0026rtbet\u003d2\u0026rtbptnid\u003d361\u0026cftgid\u003d4a496db2aade"
+              ]
+            }
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}

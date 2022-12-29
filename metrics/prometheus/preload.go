@@ -5,9 +5,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-func preloadLabelValues(m *Metrics) {
+func preloadLabelValues(m *Metrics, syncerKeys []string, moduleStageNames map[string][]string) {
 	var (
-		actionValues              = actionsAsString()
+		setUidStatusValues        = setUidStatusesAsString()
 		adapterErrorValues        = adapterErrorsAsString()
 		adapterValues             = adaptersAsString()
 		bidTypeValues             = []string{markupDeliveryAdm, markupDeliveryNurl}
@@ -15,15 +15,26 @@ func preloadLabelValues(m *Metrics) {
 		cacheResultValues         = cacheResultsAsString()
 		connectionErrorValues     = []string{connectionAcceptError, connectionCloseError}
 		cookieValues              = cookieTypesAsString()
-		requestStatusValues       = requestStatusesAsString()
+		cookieSyncStatusValues    = cookieSyncStatusesAsString()
 		requestTypeValues         = requestTypesAsString()
+		requestStatusValues       = requestStatusesAsString()
 		storedDataFetchTypeValues = storedDataFetchTypesAsString()
 		storedDataErrorValues     = storedDataErrorsAsString()
+		syncerRequestStatusValues = syncerRequestStatusesAsString()
+		syncerSetsStatusValues    = syncerSetStatusesAsString()
 		sourceValues              = []string{sourceRequest}
 	)
 
 	preloadLabelValuesForCounter(m.connectionsError, map[string][]string{
 		connectionErrorLabel: connectionErrorValues,
+	})
+
+	preloadLabelValuesForCounter(m.cookieSync, map[string][]string{
+		statusLabel: cookieSyncStatusValues,
+	})
+
+	preloadLabelValuesForCounter(m.setUid, map[string][]string{
+		statusLabel: setUidStatusValues,
 	})
 
 	preloadLabelValuesForCounter(m.impressions, map[string][]string{
@@ -66,6 +77,10 @@ func preloadLabelValues(m *Metrics) {
 		storedDataFetchTypeLabel: storedDataFetchTypeValues,
 	})
 
+	preloadLabelValuesForHistogram(m.storedResponsesFetchTimer, map[string][]string{
+		storedDataFetchTypeLabel: storedDataFetchTypeValues,
+	})
+
 	preloadLabelValuesForCounter(m.storedAccountErrors, map[string][]string{
 		storedDataErrorLabel: storedDataErrorValues,
 	})
@@ -83,6 +98,10 @@ func preloadLabelValues(m *Metrics) {
 	})
 
 	preloadLabelValuesForCounter(m.storedVideoErrors, map[string][]string{
+		storedDataErrorLabel: storedDataErrorValues,
+	})
+
+	preloadLabelValuesForCounter(m.storedResponsesErrors, map[string][]string{
 		storedDataErrorLabel: storedDataErrorValues,
 	})
 
@@ -107,11 +126,6 @@ func preloadLabelValues(m *Metrics) {
 		markupDeliveryLabel: bidTypeValues,
 	})
 
-	preloadLabelValuesForCounter(m.adapterCookieSync, map[string][]string{
-		adapterLabel:        adapterValues,
-		privacyBlockedLabel: boolValues,
-	})
-
 	preloadLabelValuesForCounter(m.adapterErrors, map[string][]string{
 		adapterLabel:      adapterValues,
 		adapterErrorLabel: adapterErrorValues,
@@ -129,6 +143,10 @@ func preloadLabelValues(m *Metrics) {
 		adapterLabel: adapterValues,
 		cookieLabel:  cookieValues,
 		hasBidsLabel: boolValues,
+	})
+
+	preloadLabelValuesForCounter(m.adsCertRequests, map[string][]string{
+		successLabel: boolValues,
 	})
 
 	if !m.metricsDisabled.AdapterConnectionMetrics {
@@ -149,9 +167,14 @@ func preloadLabelValues(m *Metrics) {
 		adapterLabel: adapterValues,
 	})
 
-	preloadLabelValuesForCounter(m.adapterUserSync, map[string][]string{
-		adapterLabel: adapterValues,
-		actionLabel:  actionValues,
+	preloadLabelValuesForCounter(m.syncerRequests, map[string][]string{
+		syncerLabel: syncerKeys,
+		statusLabel: syncerRequestStatusValues,
+	})
+
+	preloadLabelValuesForCounter(m.syncerSets, map[string][]string{
+		syncerLabel: syncerKeys,
+		statusLabel: syncerSetsStatusValues,
 	})
 
 	//to minimize memory usage, queuedTimeout metric is now supported for video endpoint only
@@ -178,6 +201,46 @@ func preloadLabelValues(m *Metrics) {
 		sourceLabel:  sourceValues,
 		versionLabel: tcfVersionsAsString(),
 	})
+
+	if !m.metricsDisabled.AdapterGDPRRequestBlocked {
+		preloadLabelValuesForCounter(m.adapterGDPRBlockedRequests, map[string][]string{
+			adapterLabel: adapterValues,
+		})
+	}
+
+	for module, stageValues := range moduleStageNames {
+		preloadLabelValuesForHistogram(m.moduleDuration[module], map[string][]string{
+			stageLabel: stageValues,
+		})
+
+		preloadLabelValuesForCounter(m.moduleCalls[module], map[string][]string{
+			stageLabel: stageValues,
+		})
+
+		preloadLabelValuesForCounter(m.moduleFailures[module], map[string][]string{
+			stageLabel: stageValues,
+		})
+
+		preloadLabelValuesForCounter(m.moduleSuccessNoops[module], map[string][]string{
+			stageLabel: stageValues,
+		})
+
+		preloadLabelValuesForCounter(m.moduleSuccessUpdates[module], map[string][]string{
+			stageLabel: stageValues,
+		})
+
+		preloadLabelValuesForCounter(m.moduleSuccessRejects[module], map[string][]string{
+			stageLabel: stageValues,
+		})
+
+		preloadLabelValuesForCounter(m.moduleExecutionErrors[module], map[string][]string{
+			stageLabel: stageValues,
+		})
+
+		preloadLabelValuesForCounter(m.moduleTimeouts[module], map[string][]string{
+			stageLabel: stageValues,
+		})
+	}
 }
 
 func preloadLabelValuesForCounter(counter *prometheus.CounterVec, labelsWithValues map[string][]string) {

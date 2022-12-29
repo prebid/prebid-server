@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -17,7 +17,7 @@ type AdmixerAdapter struct {
 }
 
 // Builder builds a new instance of the Admixer adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &AdmixerAdapter{
 		endpoint: config.Endpoint,
 	}
@@ -28,7 +28,7 @@ type admixerImpExt struct {
 	CustomParams map[string]interface{} `json:"customParams"`
 }
 
-func (a *AdmixerAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) (requests []*adapters.RequestData, errors []error) {
+func (a *AdmixerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) (requests []*adapters.RequestData, errors []error) {
 	rq, errs := a.makeRequest(request)
 
 	if len(errs) > 0 {
@@ -43,9 +43,9 @@ func (a *AdmixerAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 	return
 }
 
-func (a *AdmixerAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
+func (a *AdmixerAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, []error) {
 	var errs []error
-	var validImps []openrtb.Imp
+	var validImps []openrtb2.Imp
 
 	if len(request.Imp) == 0 {
 		return nil, []error{&errortypes.BadInput{
@@ -84,7 +84,7 @@ func (a *AdmixerAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.Req
 	}, errs
 }
 
-func preprocess(imp *openrtb.Imp) error {
+func preprocess(imp *openrtb2.Imp) error {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return &errortypes.BadInput{
@@ -100,14 +100,17 @@ func preprocess(imp *openrtb.Imp) error {
 	}
 
 	//don't use regexp due to possible performance reduce
-	if len(admixerExt.ZoneId) != 36 {
+	if len(admixerExt.ZoneId) < 32 || len(admixerExt.ZoneId) > 36 {
 		return &errortypes.BadInput{
 			Message: "ZoneId must be UUID/GUID",
 		}
 	}
 
 	imp.TagID = admixerExt.ZoneId
-	imp.BidFloor = admixerExt.CustomBidFloor
+
+	if imp.BidFloor == 0 && admixerExt.CustomBidFloor > 0 {
+		imp.BidFloor = admixerExt.CustomBidFloor
+	}
 
 	imp.Ext = nil
 
@@ -126,7 +129,7 @@ func preprocess(imp *openrtb.Imp) error {
 	return nil
 }
 
-func (a *AdmixerAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *AdmixerAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -149,7 +152,7 @@ func (a *AdmixerAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
@@ -172,7 +175,7 @@ func (a *AdmixerAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 	return bidResponse, nil
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb.Imp) openrtb_ext.BidType {
+func getMediaTypeForImp(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	for _, imp := range imps {
 		if imp.ID == impID {
 			if imp.Banner != nil {

@@ -1,7 +1,13 @@
+endpoint: "https://ssc.33across.com/api/v1/s2s"
 maintainer:
   email: "headerbidding@33across.com"
+gvlVendorID: 58
 capabilities:
   site:
     mediaTypes:
     - banner
     - video
+userSync:
+  iframe:
+    url: "https://ssc-cms.33across.com/ps/?m=xch&rt=html&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&ru={{.RedirectURL}}&id=zzz000000000002zzz"
+    userMacro: "33XUSERID33X"

@@ -1,0 +1,45 @@
+{
+    "mockBidRequest": {
+        "id": "test-no-placement-id",
+        "imp": [
+            {
+                "id": "test-imp-id-unique-id-1",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 728,
+                            "h": 90
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "zoneId": "/1111111/banner"
+                    }
+                }
+            },
+            {
+                "id": "test-imp-id-unique-id-2",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 728,
+                            "h": 90
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "zoneId": "/2222222/banner"
+                    }
+                }
+            }
+        ]
+    },
+    "expectedMakeRequestsErrors": [
+        {
+            "value": "There must be only one zone ID",
+            "comparison": "literal"
+        }
+    ]
+}

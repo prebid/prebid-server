@@ -1,5 +1,7 @@
+endpoint: "https://hb.emxdgt.com"
 maintainer:
   email: "adops@emxdigital.com"
+gvlVendorID: 183
 capabilities:
   site:
     mediaTypes:
@@ -9,3 +11,7 @@ capabilities:
     mediaTypes:
       - banner
       - video
+userSync:
+  iframe:
+    url: "https://cs.emxdgt.com/um?ssp=pbs&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+    userMacro: "$UID"

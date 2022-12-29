@@ -1,0 +1,52 @@
+{
+  "description": "False usepbsrates forces BidRequest use custom currency rates but bidRequest.ext.prebid.currency.rates field comes with invalid currency codes",
+  "config": {
+    "currencyRates":{
+      "USD": {
+        "MXN": 5.09
+      }
+    },
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 1.00}
+    ]
+  },
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          }
+        }
+      }
+    ],
+    "cur": ["MXN"],
+    "ext": {
+      "prebid": {
+        "aliases": {
+          "unknown": "appnexus"
+        },
+        "currency": {
+          "rates": {
+            "USD": {
+              "FOO": 10.0
+            }
+          },
+          "usepbsrates": false
+        }
+      }
+    }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: currency code "
+}

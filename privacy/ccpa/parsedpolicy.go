@@ -43,7 +43,10 @@ func (p Policy) Parse(validBidders map[string]struct{}) (ParsedPolicy, error) {
 	consentOptOut, err := parseConsent(p.Consent)
 	if err != nil {
 		msg := fmt.Sprintf("request.regs.ext.us_privacy %s", err.Error())
-		return ParsedPolicy{}, &errortypes.InvalidPrivacyConsent{Message: msg}
+		return ParsedPolicy{}, &errortypes.Warning{
+			Message:     msg,
+			WarningCode: errortypes.InvalidPrivacyConsentWarningCode,
+		}
 	}
 
 	noSaleForAllBidders, noSaleSpecificBidders, err := parseNoSaleBidders(p.NoSaleBidders, validBidders)

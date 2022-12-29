@@ -1,5 +1,7 @@
+endpoint: "http://{{.Host}}.admanmedia.com/bid?token={{.AccountID}}"
 maintainer:
   email: "integrations@acuityads.com"
+gvlVendorID: 231
 capabilities:
   app:
     mediaTypes:
@@ -11,4 +13,7 @@ capabilities:
       - banner
       - video
       - native
-
+userSync:
+  redirect:
+    url: "https://cs.admanmedia.com/sync/prebid?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir={{.RedirectURL}}"
+    userMacro: "[UID]"

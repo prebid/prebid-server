@@ -9,28 +9,40 @@
         {
           "id": "my-imp-id",
           "video": {
-            "mimes": ["video/mp4"]
+            "mimes": [
+              "video/mp4"
+            ]
           },
           "ext": {
-            "appnexus": {
-              "placementId": 1
-            },
-            "audienceNetwork": {
-              "placementId": "some-placement"
+            "prebid": {
+              "bidder": {
+                "appnexus": {
+                  "placementId": 1
+                },
+                "audienceNetwork": {
+                  "placementId": "some-placement"
+                }
+              }
             }
           }
         },
         {
           "id": "imp-id-2",
           "video": {
-            "mimes": ["video/mp4"]
+            "mimes": [
+              "video/mp4"
+            ]
           },
           "ext": {
-            "appnexus": {
-              "placementId": 2
-            },
-            "audienceNetwork": {
-              "placementId": "some-other-placement"
+            "prebid": {
+              "bidder": {
+                "appnexus": {
+                  "placementId": 2
+                },
+                "audienceNetwork": {
+                  "placementId": "some-other-placement"
+                }
+              }
             }
           }
         }
@@ -38,7 +50,10 @@
       "ext": {
         "prebid": {
           "targeting": {
-            "durationRangeSec": [15,30],
+            "durationRangeSec": [
+              15,
+              30
+            ],
             "includebrandcategory": {
               "primaryadserver": 1,
               "publisher": "",
@@ -53,29 +68,30 @@
   "outgoingRequests": {
     "appnexus": {
       "mockResponse": {
-        "pbsSeatBid": {
-          "pbsBids": [
-            {
-              "ortbBid": {
-                "id": "winning-bid",
-                "impid": "my-imp-id",
-                "price": 12.00,
-                "w": 200,
-                "h": 250,
-                "crid": "creative-1",
-                "cat": [
-                  "IAB1-1"
-                ]
+        "pbsSeatBids": [
+          {
+            "pbsBids": [
+              {
+                "ortbBid": {
+                  "id": "winning-bid",
+                  "impid": "my-imp-id",
+                  "price": 12.00,
+                  "w": 200,
+                  "h": 250,
+                  "crid": "creative-1",
+                  "cat": [
+                    "IAB1-1"
+                  ]
+                }
               }
-            }
-          ]
-        }
+            ],
+            "seat": "appnexus"
+          }
+        ]
       }
     },
     "audienceNetwork": {
-      "mockResponse": {
-
-      }
+      "mockResponse": {}
     }
   },
   "response": {
@@ -86,37 +102,39 @@
           "seat": "appnexus",
           "bid": [
             {
-            "id": "winning-bid",
-            "impid": "my-imp-id",
-            "price": 12.00,
-            "w": 200,
-            "h": 250,
-            "crid": "creative-1",
-            "cat": ["IAB1-1"],
-            "ext": {
-              "prebid": {
-                "type": "",
-                "targeting": {
-                  "hb_bidder": "appnexus",
-                  "hb_bidder_appnexus": "appnexus",
-                  "hb_cache_host": "www.pbcserver.com",
-                  "hb_cache_host_appnex": "www.pbcserver.com",
-                  "hb_cache_path": "/pbcache/endpoint",
-                  "hb_cache_path_appnex": "/pbcache/endpoint",
-                  "hb_size": "200x250",
-                  "hb_size_appnexus": "200x250",
-                  "hb_pb": "12.00",
-                  "hb_pb_appnexus": "12.00",
-                  "hb_pb_cat_dur": "12.00_VideoGames_15s",
-                  "hb_pb_cat_dur_appnex": "12.00_VideoGames_15s"
+              "id": "winning-bid",
+              "impid": "my-imp-id",
+              "price": 12.00,
+              "w": 200,
+              "h": 250,
+              "crid": "creative-1",
+              "cat": [
+                "IAB1-1"
+              ],
+              "ext": {
+                "origbidcpm": 12.00,
+                "prebid": {
+                  "type": "",
+                  "targeting": {
+                    "hb_bidder": "appnexus",
+                    "hb_bidder_appnexus": "appnexus",
+                    "hb_cache_host": "www.pbcserver.com",
+                    "hb_cache_host_appnex": "www.pbcserver.com",
+                    "hb_cache_path": "/pbcache/endpoint",
+                    "hb_cache_path_appnex": "/pbcache/endpoint",
+                    "hb_size": "200x250",
+                    "hb_size_appnexus": "200x250",
+                    "hb_pb": "12.00",
+                    "hb_pb_appnexus": "12.00",
+                    "hb_pb_cat_dur": "12.00_VideoGames_15s",
+                    "hb_pb_cat_dur_appnex": "12.00_VideoGames_15s"
+                  }
                 }
               }
             }
-          }]
+          ]
         }
       ]
     }
   }
 }
-
-

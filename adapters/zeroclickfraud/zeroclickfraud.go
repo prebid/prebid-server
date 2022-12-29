@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"text/template"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -16,10 +16,10 @@ import (
 )
 
 type ZeroClickFraudAdapter struct {
-	EndpointTemplate template.Template
+	EndpointTemplate *template.Template
 }
 
-func (a *ZeroClickFraudAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *ZeroClickFraudAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
 	errs := make([]error, 0, len(request.Imp))
 	headers := http.Header{
@@ -69,7 +69,7 @@ func (a *ZeroClickFraudAdapter) MakeRequests(request *openrtb.BidRequest, reqInf
 internal original request in OpenRTB, external = result of us having converted it (what comes out of MakeRequests)
 */
 func (a *ZeroClickFraudAdapter) MakeBids(
-	internalRequest *openrtb.BidRequest,
+	internalRequest *openrtb2.BidRequest,
 	externalRequest *adapters.RequestData,
 	response *adapters.ResponseData,
 ) (*adapters.BidderResponse, []error) {
@@ -88,7 +88,7 @@ func (a *ZeroClickFraudAdapter) MakeBids(
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
@@ -110,9 +110,9 @@ func (a *ZeroClickFraudAdapter) MakeBids(
 	return bidResponse, nil
 }
 
-func splitImpressions(imps []openrtb.Imp) (map[openrtb_ext.ExtImpZeroClickFraud][]openrtb.Imp, error) {
+func splitImpressions(imps []openrtb2.Imp) (map[openrtb_ext.ExtImpZeroClickFraud][]openrtb2.Imp, error) {
 
-	var m = make(map[openrtb_ext.ExtImpZeroClickFraud][]openrtb.Imp)
+	var m = make(map[openrtb_ext.ExtImpZeroClickFraud][]openrtb2.Imp)
 
 	for _, imp := range imps {
 		bidderParams, err := getBidderParams(&imp)
@@ -126,7 +126,7 @@ func splitImpressions(imps []openrtb.Imp) (map[openrtb_ext.ExtImpZeroClickFraud]
 	return m, nil
 }
 
-func getBidderParams(imp *openrtb.Imp) (*openrtb_ext.ExtImpZeroClickFraud, error) {
+func getBidderParams(imp *openrtb2.Imp) (*openrtb_ext.ExtImpZeroClickFraud, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
@@ -155,7 +155,7 @@ func getBidderParams(imp *openrtb.Imp) (*openrtb_ext.ExtImpZeroClickFraud, error
 	return &zeroclickfraudExt, nil
 }
 
-func getMediaType(impID string, imps []openrtb.Imp) openrtb_ext.BidType {
+func getMediaType(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
 
 	bidType := openrtb_ext.BidTypeBanner
 
@@ -178,14 +178,14 @@ func getMediaType(impID string, imps []openrtb.Imp) openrtb_ext.BidType {
 }
 
 // Builder builds a new instance of the AppNexus adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
 	bidder := &ZeroClickFraudAdapter{
-		EndpointTemplate: *template,
+		EndpointTemplate: template,
 	}
 	return bidder, nil
 }

@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "NextMillennium Adapter Params",
+  "description": "A schema which validates params accepted by the NextMillennium adapter",
+  "type": "object",
+  "properties": {
+    "placement_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "An id used to identify NextMillennium placement"
+    },
+    "group_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "An id used to identify NextMillennium placement group"
+    }
+  },
+  "anyOf": [
+    {
+      "required": [
+        "placement_id"
+      ]
+    },
+    {
+      "required": [
+        "group_id"
+      ]
+    }
+  ]
+}

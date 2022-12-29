@@ -1,0 +1,27 @@
+{
+    "description": "Request has a negative device width.",
+    "mockBidRequest": {
+        "id": "req-id",
+        "site": {
+            "id": "some-site"
+        },
+        "device": {
+            "w": -1,
+            "h": 50
+        },
+        "imp": [{
+            "id": "imp-id",
+            "banner": {
+                "w": 50,
+                "h": 50
+            },
+            "ext": {
+                "appnexus": {
+                    "placementId": 12883451
+                }
+            }
+        }]
+    },
+    "expectedReturnCode": 400,
+    "expectedErrorMessage": "Invalid request: request.device.w must be a positive number"
+}

@@ -1,3 +1,4 @@
+endpoint: "http://rtb.ninthdecimal.com/xp/get?pubid={{.PublisherID}}"
 maintainer:
   email: "abudig@ninthdecimal.com"
 capabilities:
@@ -10,4 +11,8 @@ capabilities:
     mediaTypes:
     - banner
     - video
-   
+userSync:
+  iframe:
+    url: "https://rtb.ninthdecimal.com/xp/user-sync?acctid={aid}&&redirect={{.RedirectURL}}"
+    userMacro: "$UID"
+

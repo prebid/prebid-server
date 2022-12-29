@@ -1,5 +1,7 @@
+endpoint: "http://dsp.pubnative.net/bid/v1/request"
 maintainer:
   email: product@pubnative.net
+gvlVendorID: 512
 capabilities:
   app:
     mediaTypes:

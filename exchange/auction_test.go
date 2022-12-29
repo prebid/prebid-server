@@ -5,23 +5,23 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"testing"
 
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 
-	"github.com/mxmCherry/openrtb"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMakeVASTGiven(t *testing.T) {
 	const expect = `<VAST version="3.0"></VAST>`
-	bid := &openrtb.Bid{
+	bid := &openrtb2.Bid{
 		AdM: expect,
 	}
 	vast := makeVAST(bid)
@@ -35,7 +35,7 @@ func TestMakeVASTNurl(t *testing.T) {
 		`<VASTAdTagURI><![CDATA[` + url + `]]></VASTAdTagURI>` +
 		`<Impression></Impression><Creatives></Creatives>` +
 		`</Wrapper></Ad></VAST>`
-	bid := &openrtb.Bid{
+	bid := &openrtb2.Bid{
 		NURL: url,
 	}
 	vast := makeVAST(bid)
@@ -101,7 +101,7 @@ func TestBuildCacheString(t *testing.T) {
 // customcachekey.json test here verifies custom cache key not used for non-vast video
 func TestCacheJSON(t *testing.T) {
 	for _, dir := range []string{"cachetest", "customcachekeytest", "impcustomcachekeytest", "eventscachetest"} {
-		if specFiles, err := ioutil.ReadDir(dir); err == nil {
+		if specFiles, err := os.ReadDir(dir); err == nil {
 			for _, specFile := range specFiles {
 				fileName := filepath.Join(dir, specFile.Name())
 				fileDisplayName := "exchange/" + fileName
@@ -118,9 +118,59 @@ func TestCacheJSON(t *testing.T) {
 	}
 }
 
+func TestIsDebugOverrideEnabled(t *testing.T) {
+	type inTest struct {
+		debugHeader string
+		configToken string
+	}
+	type aTest struct {
+		desc   string
+		in     inTest
+		result bool
+	}
+	testCases := []aTest{
+		{
+			desc:   "test debug header is empty, config token is empty",
+			in:     inTest{debugHeader: "", configToken: ""},
+			result: false,
+		},
+		{
+			desc:   "test debug header is present, config token is empty",
+			in:     inTest{debugHeader: "TestToken", configToken: ""},
+			result: false,
+		},
+		{
+			desc:   "test debug header is empty, config token is present",
+			in:     inTest{debugHeader: "", configToken: "TestToken"},
+			result: false,
+		},
+		{
+			desc:   "test debug header is present, config token is present, not equal",
+			in:     inTest{debugHeader: "TestToken123", configToken: "TestToken"},
+			result: false,
+		},
+		{
+			desc:   "test debug header is present, config token is present, equal",
+			in:     inTest{debugHeader: "TestToken", configToken: "TestToken"},
+			result: true,
+		},
+		{
+			desc:   "test debug header is present, config token is present, not case equal",
+			in:     inTest{debugHeader: "TestTokeN", configToken: "TestToken"},
+			result: false,
+		},
+	}
+
+	for _, test := range testCases {
+		result := IsDebugOverrideEnabled(test.in.debugHeader, test.in.configToken)
+		assert.Equal(t, test.result, result, test.desc)
+	}
+
+}
+
 // LoadCacheSpec reads and parses a file as a test case. If something goes wrong, it returns an error.
 func loadCacheSpec(filename string) (*cacheSpec, error) {
-	specData, err := ioutil.ReadFile(filename)
+	specData, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to read file %s: %v", filename, err)
 	}
@@ -268,45 +318,45 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 
 func TestNewAuction(t *testing.T) {
 	bid1p077 := pbsOrtbBid{
-		bid: &openrtb.Bid{
+		bid: &openrtb2.Bid{
 			ImpID: "imp1",
 			Price: 0.77,
 		},
 	}
 	bid1p123 := pbsOrtbBid{
-		bid: &openrtb.Bid{
+		bid: &openrtb2.Bid{
 			ImpID: "imp1",
 			Price: 1.23,
 		},
 	}
 	bid1p230 := pbsOrtbBid{
-		bid: &openrtb.Bid{
+		bid: &openrtb2.Bid{
 			ImpID: "imp1",
 			Price: 2.30,
 		},
 	}
 	bid1p088d := pbsOrtbBid{
-		bid: &openrtb.Bid{
+		bid: &openrtb2.Bid{
 			ImpID:  "imp1",
 			Price:  0.88,
 			DealID: "SpecialDeal",
 		},
 	}
 	bid1p166d := pbsOrtbBid{
-		bid: &openrtb.Bid{
+		bid: &openrtb2.Bid{
 			ImpID:  "imp1",
 			Price:  1.66,
 			DealID: "BigDeal",
 		},
 	}
 	bid2p123 := pbsOrtbBid{
-		bid: &openrtb.Bid{
+		bid: &openrtb2.Bid{
 			ImpID: "imp2",
 			Price: 1.23,
 		},
 	}
 	bid2p144 := pbsOrtbBid{
-		bid: &openrtb.Bid{
+		bid: &openrtb2.Bid{
 			ImpID: "imp2",
 			Price: 1.44,
 		},
@@ -486,7 +536,7 @@ func TestNewAuction(t *testing.T) {
 }
 
 type cacheSpec struct {
-	BidRequest                  openrtb.BidRequest              `json:"bidRequest"`
+	BidRequest                  openrtb2.BidRequest             `json:"bidRequest"`
 	PbsBids                     []pbsBid                        `json:"pbsBids"`
 	ExpectedCacheables          []prebid_cache_client.Cacheable `json:"expectedCacheables"`
 	DefaultTTLs                 config.DefaultTTLs              `json:"defaultTTLs"`
@@ -500,15 +550,9 @@ type cacheSpec struct {
 }
 
 type pbsBid struct {
-	Bid     *openrtb.Bid           `json:"bid"`
+	Bid     *openrtb2.Bid          `json:"bid"`
 	BidType openrtb_ext.BidType    `json:"bidType"`
 	Bidder  openrtb_ext.BidderName `json:"bidder"`
-}
-
-type cacheComparator struct {
-	freq         int
-	expectedKeys []string
-	actualKeys   []string
 }
 
 type mockCache struct {

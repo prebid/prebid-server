@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/config"
@@ -15,7 +15,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderKidoz, config.Adapter{
-		Endpoint: "http://example.com/prebid"})
+		Endpoint: "http://example.com/prebid"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -24,14 +24,14 @@ func TestJsonSamples(t *testing.T) {
 	adapterstest.RunJSONBidderTest(t, "kidoztest", bidder)
 }
 
-func makeBidRequest() *openrtb.BidRequest {
-	request := &openrtb.BidRequest{
+func makeBidRequest() *openrtb2.BidRequest {
+	request := &openrtb2.BidRequest{
 		ID: "test-req-id-0",
-		Imp: []openrtb.Imp{
+		Imp: []openrtb2.Imp{
 			{
 				ID: "test-imp-id-0",
-				Banner: &openrtb.Banner{
-					Format: []openrtb.Format{
+				Banner: &openrtb2.Banner{
+					Format: []openrtb2.Format{
 						{
 							W: 320,
 							H: 50,
@@ -47,7 +47,7 @@ func makeBidRequest() *openrtb.BidRequest {
 
 func TestMakeRequests(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderKidoz, config.Adapter{
-		Endpoint: "http://example.com/prebid"})
+		Endpoint: "http://example.com/prebid"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -67,7 +67,7 @@ func TestMakeRequests(t *testing.T) {
 
 func TestMakeBids(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderKidoz, config.Adapter{
-		Endpoint: "http://example.com/prebid"})
+		Endpoint: "http://example.com/prebid"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -89,22 +89,22 @@ func TestMakeBids(t *testing.T) {
 }
 
 func TestGetMediaTypeForImp(t *testing.T) {
-	imps := []openrtb.Imp{
+	imps := []openrtb2.Imp{
 		{
 			ID:     "1",
-			Banner: &openrtb.Banner{},
+			Banner: &openrtb2.Banner{},
 		},
 		{
 			ID:    "2",
-			Video: &openrtb.Video{},
+			Video: &openrtb2.Video{},
 		},
 		{
 			ID:     "3",
-			Native: &openrtb.Native{},
+			Native: &openrtb2.Native{},
 		},
 		{
 			ID:    "4",
-			Audio: &openrtb.Audio{},
+			Audio: &openrtb2.Audio{},
 		},
 	}
 

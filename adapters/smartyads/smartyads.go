@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"text/template"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -16,23 +16,23 @@ import (
 )
 
 type SmartyAdsAdapter struct {
-	endpoint template.Template
+	endpoint *template.Template
 }
 
 // Builder builds a new instance of the SmartyAds adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
 	bidder := &SmartyAdsAdapter{
-		endpoint: *template,
+		endpoint: template,
 	}
 	return bidder, nil
 }
 
-func GetHeaders(request *openrtb.BidRequest) *http.Header {
+func GetHeaders(request *openrtb2.BidRequest) *http.Header {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
@@ -64,7 +64,7 @@ func GetHeaders(request *openrtb.BidRequest) *http.Header {
 }
 
 func (a *SmartyAdsAdapter) MakeRequests(
-	openRTBRequest *openrtb.BidRequest,
+	openRTBRequest *openrtb2.BidRequest,
 	reqInfo *adapters.ExtraRequestInfo,
 ) (
 	requestsToBidder []*adapters.RequestData,
@@ -106,7 +106,7 @@ func (a *SmartyAdsAdapter) MakeRequests(
 	}}, nil
 }
 
-func (a *SmartyAdsAdapter) getImpressionExt(imp *openrtb.Imp) (*openrtb_ext.ExtSmartyAds, error) {
+func (a *SmartyAdsAdapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtSmartyAds, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
@@ -154,7 +154,7 @@ func (a *SmartyAdsAdapter) CheckResponseStatusCodes(response *adapters.ResponseD
 }
 
 func (a *SmartyAdsAdapter) MakeBids(
-	openRTBRequest *openrtb.BidRequest,
+	openRTBRequest *openrtb2.BidRequest,
 	requestToBidder *adapters.RequestData,
 	bidderRawResponse *adapters.ResponseData,
 ) (
@@ -167,7 +167,7 @@ func (a *SmartyAdsAdapter) MakeBids(
 	}
 
 	responseBody := bidderRawResponse.Body
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(responseBody, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: "Bad Server Response",
@@ -192,7 +192,7 @@ func (a *SmartyAdsAdapter) MakeBids(
 	return bidResponse, nil
 }
 
-func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
+func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impId {

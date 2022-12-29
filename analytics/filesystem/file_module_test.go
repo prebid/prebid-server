@@ -1,15 +1,15 @@
 package filesystem
 
 import (
-	"github.com/prebid/prebid-server/config"
 	"net/http"
 	"os"
 	"strings"
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/analytics"
-	"github.com/prebid/prebid-server/usersync"
+	"github.com/prebid/prebid-server/config"
+
+	"github.com/prebid/openrtb/v17/openrtb2"
 )
 
 const TEST_DIR string = "testFiles"
@@ -18,7 +18,7 @@ func TestAmpObject_ToJson(t *testing.T) {
 	ao := &analytics.AmpObject{
 		Status:             http.StatusOK,
 		Errors:             make([]error, 0),
-		AuctionResponse:    &openrtb.BidResponse{},
+		AuctionResponse:    &openrtb2.BidResponse{},
 		AmpTargetingValues: map[string]string{},
 	}
 	if aoJson := jsonifyAmpObject(ao); strings.Contains(aoJson, "Transactional Logs Error") {
@@ -58,7 +58,7 @@ func TestSetUIDObject_ToJson(t *testing.T) {
 func TestCookieSyncObject_ToJson(t *testing.T) {
 	cso := &analytics.CookieSyncObject{
 		Status:       http.StatusOK,
-		BidderStatus: []*usersync.CookieSyncBidders{},
+		BidderStatus: []*analytics.CookieSyncBidder{},
 	}
 	if csoJson := jsonifyCookieSync(cso); strings.Contains(csoJson, "Transactional Logs Error") {
 		t.Fatalf("CookieSyncObject failed to convert to json")

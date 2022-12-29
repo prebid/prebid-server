@@ -1,0 +1,174 @@
+{
+  "mockBidRequest": {
+    "id": "d910ceef496ff2d746176506e296f4b3_z53356_a126365",
+    "imp": [{
+      "id": "126365",
+      "secure": 1,
+      "bidfloor": 0.20,
+      "bidfloorcur": "USD",
+      "banner": {
+        "w": 300,
+        "h": 250,
+        "format": [{
+          "w": 300,
+          "h": 250
+        }]
+      },
+      "ext": {
+        "bidder": {
+          "key": "test_banner"
+        }
+      }
+    }],
+    "device": {
+      "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 14_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1 Mobile/15E148 Safari/604.1",
+      "geo": {
+        "country": "MEX",
+        "region": "CMX",
+        "city": "Mexico City",
+        "lat": 19.42,
+        "lon": -99.1663
+      },
+      "ip": "189.146.118.247",
+      "devicetype": 4,
+      "language": "it"
+    },
+    "regs": {
+      "ext": {
+        "gdpr": 0
+      }
+    },
+    "user": {
+      "id": "460ecf1d41fa6656c4b892fd84e61ff8c2ab5ad5",
+      "ext": {
+        "consent": ""
+      }
+    },
+    "site": {
+      "id": "12",
+      "domain": "milano.repubblica.it",
+      "cat": ["IAB12"],
+      "page": "https://milano.repubblica.it",
+      "publisher": {
+        "id": "45672"
+      }
+    }
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://service.e-volution.ai/pbserver",
+        "body": {
+          "id": "d910ceef496ff2d746176506e296f4b3_z53356_a126365",
+          "imp": [{
+            "id": "126365",
+            "banner": {
+              "format": [{
+                "w": 300,
+                "h": 250
+              }],
+              "w": 300,
+              "h": 250
+            },
+            "bidfloor": 0.2,
+            "bidfloorcur": "USD",
+            "secure": 1,
+            "ext": {
+              "bidder": {
+                "key": "test_banner"
+              }
+            }
+          }],
+          "site": {
+            "id": "12",
+            "domain": "milano.repubblica.it",
+            "cat": ["IAB12"],
+            "page": "https://milano.repubblica.it",
+            "publisher": {
+              "id": "45672"
+            }
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 14_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1 Mobile/15E148 Safari/604.1",
+            "geo": {
+              "lat": 19.42,
+              "lon": -99.1663,
+              "country": "MEX",
+              "region": "CMX",
+              "city": "Mexico City"
+            },
+            "ip": "189.146.118.247",
+            "devicetype": 4,
+            "language": "it"
+          },
+          "user": {
+            "id": "460ecf1d41fa6656c4b892fd84e61ff8c2ab5ad5",
+            "ext": {
+              "consent": ""
+            }
+          },
+          "regs": {
+            "ext": {
+              "gdpr": 0
+            }
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "d910ceef496ff2d746176506e296f4b3_z53356_a126365",
+          "bidid": "880184da7ec02b1f42802acb46b63b3c",
+          "seatbid": [{
+            "bid": [{
+              "id": "6ca51ef38eb42820d27503ee96b634b5",
+              "impid": "126365",
+              "price": 0.1,
+              "nurl": "http://us-east-edge1.e-volution.ai/?c=rtb&m=nurl&auctionId=880184da7ec02b1f42802acb46b63b3c&price=${AUCTION_PRICE}",
+              "burl": "http://us-east-edge1.e-volution.ai/?c=rtb&m=burl&auctionId=880184da7ec02b1f42802acb46b63b3c&price=${AUCTION_PRICE}",
+              "adm": "<iframe srcdoc=\"<p style='text-align: center'>Test Mode</p>\" width=\"300\" height=\"250\" scrolling=\"no\" style=\"background-color:lightgray;border:0;overflow:hidden\"></iframe><img src=\"https://us-east-edge1.e-volution.ai/?c=rtb&m=i&key=880184da7ec02b1f42802acb46b63b3c&cp=${AUCTION_PRICE}\" width=\"1\" height=\"1\" alt=\"\" style=\"position: absolute\"><img src=\"https://us-east-edge1.e-volution.ai/?c=rtb&m=sync&gdpr=0&gdpr_consent=&ccpa_consent=\" width=\"1\" height=\"1\" alt=\"\" style=\"position: absolute; opacity: 0;\"><iframe  src=\"https://sync.e-volution.ai/html?gdpr=0&gdpr_consent=&ccpa=\" width=\"0\" height=\"0\" style=\"display: none;\"></iframe><img src=\"https://adrta.com/i?clid=vrl&paid=bidlab&avid=&caid=&plid=&publisherId=repubblica.it&siteId=12&priceBid=10.01000&pricePaid=&lineItemId=1&kv1=0x0&kv2=https%3A%2F%2Fmilano.repubblica.it&kv3=&kv4=189.146.118.247&kv5=1622069609078513&kv7=-1&kv9=&kv11=&kv12=&kv15=MEX&kv16=19.42&kv17=-99.1663&kv18=&kv19=&kv23=&kv24=&kv25=&kv26=&kv27=Mozilla%2F5.0%20(iPhone%3B%20CPU%20iPhone%20OS%2014_5_1%20like%20Mac%20OS%20X)%20AppleWebKit%2F605.1.15%20(KHTML%2C%20like%20Gecko)%20Version%2F14.1%20Mobile%2F15E148%20Safari%2F604.1&kv28=&cb=1622069609078513&kv29=[ERRORCODE]&kv30=[CONTENTPLAYHEAD]_[ADPLAYHEAD]&kv33=[ASSETURI]&kv34=[VASTVERSIONS]&kv35=[IFATYPE]&kv36=[IFA]&kv37=[CLIENTUA]&kv38=[SERVERUA]&kv39=[DEVICEUA]&kv40=[DEVICEIP]&kv41=[LATLONG]&kv42=[DOMAIN]&kv43=[PAGEURL]&kv44=[VIDEO_TYPE]&kv45=[PLAYERSIZE]&kv46=[REGULATIONS]&kv47=[ADTYPE]&kv48=[TRANSACTIONID]&kv49=[BREAKPOSITION]&kv50=[APPNAME]&kv51=[PLACEMENTTYPE]\" width=\"1\" height=\"1\" alt=\"\" style=\"position: absolute\"><script src=\"https://s.funnel.e-volution.ai/2/623416/analytics.js?dt=6234161607645611134000&di=milano.repubblica.it&ui=460ecf1d41fa6656c4b892fd84e61ff8c2ab5ad5&ap=&sr=-1&pp=repubblica.it&ti=d910ceef496ff2d746176506e296f4b3_z53356_a126365&md=1&de=4&si=12&dm=300x250&gt=MX&ac=&pc=&cr=&pv=684e0715-f9e8-42c9-a804-e011c38ae8a1&c1=1&c2=-1&cb=16220696090799003\" async=\"true\"></script><script src=\"https://s.funnel.e-volution.ai/2/623416/analytics.gif?dt=6234161617121529371000&di=milano.repubblica.it&ui=460ecf1d41fa6656c4b892fd84e61ff8c2ab5ad5&ap=&sr=-1&pp=repubblica.it&ti=d910ceef496ff2d746176506e296f4b3_z53356_a126365&md=1&de=4&si=12&dm=300x250&gt=MX&ac=&pc=&cr=&pv=684e0715-f9e8-42c9-a804-e011c38ae8a1&c1=1&c2=-1&cb=16220696090799003\" async=\"true\"></script>",
+              "adomain": ["test.com"],
+              "cat": ["IAB24"],
+              "cid": "1IP31",
+              "crid": "1KS13",
+              "w": 0,
+              "h": 0,
+              "ext": {
+                "mediaType": "banner"
+              }
+            }],
+            "seat": "1"
+          }],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "6ca51ef38eb42820d27503ee96b634b5",
+            "impid": "126365",
+            "price": 0.1,
+            "nurl": "http://us-east-edge1.e-volution.ai/?c=rtb&m=nurl&auctionId=880184da7ec02b1f42802acb46b63b3c&price=${AUCTION_PRICE}",
+            "burl": "http://us-east-edge1.e-volution.ai/?c=rtb&m=burl&auctionId=880184da7ec02b1f42802acb46b63b3c&price=${AUCTION_PRICE}",
+            "adm": "<iframe srcdoc=\"<p style='text-align: center'>Test Mode</p>\" width=\"300\" height=\"250\" scrolling=\"no\" style=\"background-color:lightgray;border:0;overflow:hidden\"></iframe><img src=\"https://us-east-edge1.e-volution.ai/?c=rtb&m=i&key=880184da7ec02b1f42802acb46b63b3c&cp=${AUCTION_PRICE}\" width=\"1\" height=\"1\" alt=\"\" style=\"position: absolute\"><img src=\"https://us-east-edge1.e-volution.ai/?c=rtb&m=sync&gdpr=0&gdpr_consent=&ccpa_consent=\" width=\"1\" height=\"1\" alt=\"\" style=\"position: absolute; opacity: 0;\"><iframe  src=\"https://sync.e-volution.ai/html?gdpr=0&gdpr_consent=&ccpa=\" width=\"0\" height=\"0\" style=\"display: none;\"></iframe><img src=\"https://adrta.com/i?clid=vrl&paid=bidlab&avid=&caid=&plid=&publisherId=repubblica.it&siteId=12&priceBid=10.01000&pricePaid=&lineItemId=1&kv1=0x0&kv2=https%3A%2F%2Fmilano.repubblica.it&kv3=&kv4=189.146.118.247&kv5=1622069609078513&kv7=-1&kv9=&kv11=&kv12=&kv15=MEX&kv16=19.42&kv17=-99.1663&kv18=&kv19=&kv23=&kv24=&kv25=&kv26=&kv27=Mozilla%2F5.0%20(iPhone%3B%20CPU%20iPhone%20OS%2014_5_1%20like%20Mac%20OS%20X)%20AppleWebKit%2F605.1.15%20(KHTML%2C%20like%20Gecko)%20Version%2F14.1%20Mobile%2F15E148%20Safari%2F604.1&kv28=&cb=1622069609078513&kv29=[ERRORCODE]&kv30=[CONTENTPLAYHEAD]_[ADPLAYHEAD]&kv33=[ASSETURI]&kv34=[VASTVERSIONS]&kv35=[IFATYPE]&kv36=[IFA]&kv37=[CLIENTUA]&kv38=[SERVERUA]&kv39=[DEVICEUA]&kv40=[DEVICEIP]&kv41=[LATLONG]&kv42=[DOMAIN]&kv43=[PAGEURL]&kv44=[VIDEO_TYPE]&kv45=[PLAYERSIZE]&kv46=[REGULATIONS]&kv47=[ADTYPE]&kv48=[TRANSACTIONID]&kv49=[BREAKPOSITION]&kv50=[APPNAME]&kv51=[PLACEMENTTYPE]\" width=\"1\" height=\"1\" alt=\"\" style=\"position: absolute\"><script src=\"https://s.funnel.e-volution.ai/2/623416/analytics.js?dt=6234161607645611134000&di=milano.repubblica.it&ui=460ecf1d41fa6656c4b892fd84e61ff8c2ab5ad5&ap=&sr=-1&pp=repubblica.it&ti=d910ceef496ff2d746176506e296f4b3_z53356_a126365&md=1&de=4&si=12&dm=300x250&gt=MX&ac=&pc=&cr=&pv=684e0715-f9e8-42c9-a804-e011c38ae8a1&c1=1&c2=-1&cb=16220696090799003\" async=\"true\"></script><script src=\"https://s.funnel.e-volution.ai/2/623416/analytics.gif?dt=6234161617121529371000&di=milano.repubblica.it&ui=460ecf1d41fa6656c4b892fd84e61ff8c2ab5ad5&ap=&sr=-1&pp=repubblica.it&ti=d910ceef496ff2d746176506e296f4b3_z53356_a126365&md=1&de=4&si=12&dm=300x250&gt=MX&ac=&pc=&cr=&pv=684e0715-f9e8-42c9-a804-e011c38ae8a1&c1=1&c2=-1&cb=16220696090799003\" async=\"true\"></script>",
+            "adomain": ["test.com"],
+            "cat": ["IAB24"],
+            "cid": "1IP31",
+            "crid": "1KS13",
+            "ext": {
+              "mediaType": "banner"
+            }
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

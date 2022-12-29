@@ -13,8 +13,12 @@
             "h": 250
           },
           "ext": {
-            "appnexus": {
-              "placementId": 1
+            "prebid": {
+              "bidder": {
+                "appnexus": {
+                  "placementId": 1
+                }
+              }
             }
           }
         }
@@ -32,21 +36,24 @@
   "outgoingRequests": {
     "appnexus": {
       "mockResponse": {
-        "pbsSeatBid": {
-          "pbsBids": [
-            {
-              "ortbBid": {
-                "id": "winning-bid",
-                "impid": "my-imp-id",
-                "price": 0.01,
-                "w": 200,
-                "h": 250,
-                "crid": "creative-1"
-              },
-              "bidType": "banner"
-            }
-          ]
-        }
+        "pbsSeatBids": [
+          {
+            "pbsBids": [
+              {
+                "ortbBid": {
+                  "id": "winning-bid",
+                  "impid": "my-imp-id",
+                  "price": 0.01,
+                  "w": 200,
+                  "h": 250,
+                  "crid": "creative-1"
+                },
+                "bidType": "banner"
+              }
+            ],
+            "seat": "appnexus"
+          }
+        ]
       }
     }
   },
@@ -56,31 +63,34 @@
       "seatbid": [
         {
           "seat": "appnexus",
-          "bid": [{
-            "id": "winning-bid",
-            "impid": "my-imp-id",
-            "price": 0.01,
-            "w": 200,
-            "h": 250,
-            "crid": "creative-1",
-            "ext": {
-              "prebid": {
-                "type": "banner",
-                "targeting": {
-                  "hb_bidder": "appnexus",
-                  "hb_bidder_appnexus": "appnexus",
-                  "hb_cache_host": "www.pbcserver.com",
-                  "hb_cache_host_appnex": "www.pbcserver.com",
-                  "hb_cache_path": "/pbcache/endpoint",
-                  "hb_cache_path_appnex": "/pbcache/endpoint",
-                  "hb_pb": "0.00",
-                  "hb_pb_appnexus": "0.00",
-                  "hb_size": "200x250",
-                  "hb_size_appnexus": "200x250"
+          "bid": [
+            {
+              "id": "winning-bid",
+              "impid": "my-imp-id",
+              "price": 0.01,
+              "w": 200,
+              "h": 250,
+              "crid": "creative-1",
+              "ext": {
+                "origbidcpm": 0.01,
+                "prebid": {
+                  "type": "banner",
+                  "targeting": {
+                    "hb_bidder": "appnexus",
+                    "hb_bidder_appnexus": "appnexus",
+                    "hb_cache_host": "www.pbcserver.com",
+                    "hb_cache_host_appnex": "www.pbcserver.com",
+                    "hb_cache_path": "/pbcache/endpoint",
+                    "hb_cache_path_appnex": "/pbcache/endpoint",
+                    "hb_pb": "0.00",
+                    "hb_pb_appnexus": "0.00",
+                    "hb_size": "200x250",
+                    "hb_size_appnexus": "200x250"
+                  }
                 }
               }
             }
-          }]
+          ]
         }
       ]
     }

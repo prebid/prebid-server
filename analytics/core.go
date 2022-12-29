@@ -3,10 +3,9 @@ package analytics
 import (
 	"time"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/usersync"
 )
 
 /*
@@ -26,39 +25,39 @@ type PBSAnalyticsModule interface {
 	LogNotificationEventObject(*NotificationEvent)
 }
 
-//Loggable object of a transaction at /openrtb2/auction endpoint
+// Loggable object of a transaction at /openrtb2/auction endpoint
 type AuctionObject struct {
 	Status    int
 	Errors    []error
-	Request   *openrtb.BidRequest
-	Response  *openrtb.BidResponse
+	Request   *openrtb2.BidRequest
+	Response  *openrtb2.BidResponse
 	Account   *config.Account
 	StartTime time.Time
 }
 
-//Loggable object of a transaction at /openrtb2/amp endpoint
+// Loggable object of a transaction at /openrtb2/amp endpoint
 type AmpObject struct {
 	Status             int
 	Errors             []error
-	Request            *openrtb.BidRequest
-	AuctionResponse    *openrtb.BidResponse
+	Request            *openrtb2.BidRequest
+	AuctionResponse    *openrtb2.BidResponse
 	AmpTargetingValues map[string]string
 	Origin             string
 	StartTime          time.Time
 }
 
-//Loggable object of a transaction at /openrtb2/video endpoint
+// Loggable object of a transaction at /openrtb2/video endpoint
 type VideoObject struct {
 	Status        int
 	Errors        []error
-	Request       *openrtb.BidRequest
-	Response      *openrtb.BidResponse
+	Request       *openrtb2.BidRequest
+	Response      *openrtb2.BidResponse
 	VideoRequest  *openrtb_ext.BidRequestVideo
 	VideoResponse *openrtb_ext.BidResponseVideo
 	StartTime     time.Time
 }
 
-//Loggable object of a transaction at /setuid
+// Loggable object of a transaction at /setuid
 type SetUIDObject struct {
 	Status  int
 	Bidder  string
@@ -67,11 +66,23 @@ type SetUIDObject struct {
 	Success bool
 }
 
-//Loggable object of a transaction at /cookie_sync
+// Loggable object of a transaction at /cookie_sync
 type CookieSyncObject struct {
 	Status       int
 	Errors       []error
-	BidderStatus []*usersync.CookieSyncBidders
+	BidderStatus []*CookieSyncBidder
+}
+
+type CookieSyncBidder struct {
+	BidderCode   string        `json:"bidder"`
+	NoCookie     bool          `json:"no_cookie,omitempty"`
+	UsersyncInfo *UsersyncInfo `json:"usersync,omitempty"`
+}
+
+type UsersyncInfo struct {
+	URL         string `json:"url,omitempty"`
+	Type        string `json:"type,omitempty"`
+	SupportCORS bool   `json:"supportCORS,omitempty"`
 }
 
 // NotificationEvent is a loggable object

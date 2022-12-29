@@ -1,0 +1,54 @@
+{
+  "description": "bid request calls for a bid in foreign currency but mockbidder bids in USD. Conversion rate is applied",
+  "config": {
+    "currencyRates":{
+      "USD": {
+        "MXN": 2.00
+      }
+    },
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 1.00}
+    ]
+  },
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "cur": ["MXN"],
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          }
+        }
+      }
+    ]
+  },
+  "expectedBidResponse": {
+      "id":"some-request-id",
+      "bidid":"test bid id",
+      "cur": "MXN",
+      "nbr":0,
+      "seatbid": [
+        {
+          "bid": [
+            {
+              "id": "appnexus-bid",
+              "impid": "my-imp-id",
+              "price": 2.00
+            }
+          ],
+          "seat": "appnexus"
+        }
+      ]
+  },
+  "expectedReturnCode": 200
+}

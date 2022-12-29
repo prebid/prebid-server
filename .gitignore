@@ -32,6 +32,7 @@ vendor
 prebid-server
 build
 debug
+__debug_bin
 
 # config files
 pbs.*

@@ -5,19 +5,16 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const vastImpressionFormat = "<Impression><![CDATA[%s]]></Impression>"
-const vastSearchPoint = "</Impression>"
 const nbrHeaderName = "x-nbr"
-const adapterVersion = "pbs1.0"
+const adapterVersion = "pbs1.2"
 
 // AMXAdapter is the AMX bid adapter
 type AMXAdapter struct {
@@ -25,7 +22,7 @@ type AMXAdapter struct {
 }
 
 // Builder builds a new instance of the AMX adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	endpointURL, err := url.Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("invalid endpoint: %v", err)
@@ -49,9 +46,9 @@ type amxExt struct {
 	Bidder openrtb_ext.ExtImpAMX `json:"bidder"`
 }
 
-func ensurePublisherWithID(pub *openrtb.Publisher, publisherID string) openrtb.Publisher {
+func ensurePublisherWithID(pub *openrtb2.Publisher, publisherID string) openrtb2.Publisher {
 	if pub == nil {
-		return openrtb.Publisher{ID: publisherID}
+		return openrtb2.Publisher{ID: publisherID}
 	}
 
 	pubCopy := *pub
@@ -60,7 +57,7 @@ func ensurePublisherWithID(pub *openrtb.Publisher, publisherID string) openrtb.P
 }
 
 // MakeRequests creates AMX adapter requests
-func (adapter *AMXAdapter) MakeRequests(request *openrtb.BidRequest, req *adapters.ExtraRequestInfo) (reqsBidder []*adapters.RequestData, errs []error) {
+func (adapter *AMXAdapter) MakeRequests(request *openrtb2.BidRequest, req *adapters.ExtraRequestInfo) (reqsBidder []*adapters.RequestData, errs []error) {
 	reqCopy := *request
 
 	var publisherID string
@@ -114,12 +111,12 @@ func (adapter *AMXAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 }
 
 type amxBidExt struct {
-	Himp       []string `json:"himp,omitempty"`
-	StartDelay *int     `json:"startdelay,omitempty"`
+	StartDelay   *int `json:"startdelay,omitempty"`
+	CreativeType *int `json:"ct,omitempty"`
 }
 
 // MakeBids will parse the bids from the AMX server
-func (adapter *AMXAdapter) MakeBids(request *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (adapter *AMXAdapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var errs []error
 
 	if http.StatusNoContent == response.StatusCode {
@@ -140,7 +137,7 @@ func (adapter *AMXAdapter) MakeBids(request *openrtb.BidRequest, externalRequest
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
@@ -149,6 +146,7 @@ func (adapter *AMXAdapter) MakeBids(request *openrtb.BidRequest, externalRequest
 
 	for _, sb := range bidResp.SeatBid {
 		for _, bid := range sb.Bid {
+			bid := bid
 			bidExt, bidExtErr := getBidExt(bid.Ext)
 			if bidExtErr != nil {
 				errs = append(errs, bidExtErr)
@@ -160,16 +158,12 @@ func (adapter *AMXAdapter) MakeBids(request *openrtb.BidRequest, externalRequest
 				Bid:     &bid,
 				BidType: bidType,
 			}
-			if b.BidType == openrtb_ext.BidTypeVideo {
-				b.Bid.AdM = interpolateImpressions(bid, bidExt)
-				// remove the NURL so a client/player doesn't fire it twice
-				b.Bid.NURL = ""
-			}
+
 			bidResponse.Bids = append(bidResponse.Bids, b)
 		}
 	}
-	return bidResponse, errs
 
+	return bidResponse, errs
 }
 
 func getBidExt(ext json.RawMessage) (amxBidExt, error) {
@@ -187,25 +181,9 @@ func getMediaTypeForBid(bidExt amxBidExt) openrtb_ext.BidType {
 		return openrtb_ext.BidTypeVideo
 	}
 
+	if bidExt.CreativeType != nil && *bidExt.CreativeType == 10 {
+		return openrtb_ext.BidTypeNative
+	}
+
 	return openrtb_ext.BidTypeBanner
-}
-
-func pixelToImpression(pixel string) string {
-	return fmt.Sprintf(vastImpressionFormat, pixel)
-}
-
-func interpolateImpressions(bid openrtb.Bid, ext amxBidExt) string {
-	var buffer strings.Builder
-	if bid.NURL != "" {
-		buffer.WriteString(pixelToImpression(bid.NURL))
-	}
-
-	for _, impPixel := range ext.Himp {
-		if impPixel != "" {
-			buffer.WriteString(pixelToImpression(impPixel))
-		}
-	}
-
-	results := strings.Replace(bid.AdM, vastSearchPoint, vastSearchPoint+buffer.String(), 1)
-	return results
 }

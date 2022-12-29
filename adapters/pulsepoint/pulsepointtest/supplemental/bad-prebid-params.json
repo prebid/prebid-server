@@ -1,0 +1,32 @@
+{
+    "mockBidRequest": {
+        "id": "request-id",
+        "site": {
+            "page": "http://publisher.com/index.html",
+            "publisher": {
+                "id": "123456789",
+                "name": "publisher.com"
+            }
+        },
+        "imp": [{
+            "id": "banner-1",
+            "banner": {
+                "w": 320,
+                "h": 50
+            },
+            "ext": {
+                "bidder": {
+                    "cp": "1234",
+                    "ct": "1001"
+                }
+            }
+        }]
+    },
+    "httpCalls": [],
+    "expectedMakeRequestsErrors": [{
+        "value": "json: cannot unmarshal string into Go struct field ExtImpPulsePoint.cp of type int",
+        "comparison": "literal"
+    }],
+    "expectedBidResponses": [],
+    "expectedMakeBidsErrors": []
+}

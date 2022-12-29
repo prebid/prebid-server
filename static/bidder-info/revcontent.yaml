@@ -1,5 +1,8 @@
+endpoint: "https://trends.revcontent.com/rtb"
+disabled: true
 maintainer:
   email: "developers@revcontent.com"
+gvlVendorID: 203
 capabilities:
   app:
     mediaTypes:

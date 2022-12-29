@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -13,24 +13,20 @@ import (
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 )
 
-var (
-	bidRequest string
-)
-
 func TestFetchParams(t *testing.T) {
 	var w, h int = 300, 250
 
-	var width, height uint64 = uint64(w), uint64(h)
-	var arrImp []openrtb.Imp
+	var width, height int64 = int64(w), int64(h)
+	var arrImp []openrtb2.Imp
 	var imps = fetchParams(
 		dmxExt{Bidder: dmxParams{
 			TagId:       "222",
 			PublisherId: "5555",
 		}},
-		openrtb.Imp{ID: "32"},
-		openrtb.Imp{ID: "32"},
+		openrtb2.Imp{ID: "32"},
+		openrtb2.Imp{ID: "32"},
 		arrImp,
-		&openrtb.Banner{W: &width, H: &height, Format: []openrtb.Format{
+		&openrtb2.Banner{W: &width, H: &height, Format: []openrtb2.Format{
 			{W: 300, H: 250},
 		}},
 		nil,
@@ -40,10 +36,10 @@ func TestFetchParams(t *testing.T) {
 			DmxId:    "222",
 			MemberId: "5555",
 		}},
-		openrtb.Imp{ID: "32"},
-		openrtb.Imp{ID: "32"},
+		openrtb2.Imp{ID: "32"},
+		openrtb2.Imp{ID: "32"},
 		arrImp,
-		&openrtb.Banner{W: &width, H: &height, Format: []openrtb.Format{
+		&openrtb2.Banner{W: &width, H: &height, Format: []openrtb2.Format{
 			{W: 300, H: 250},
 		}},
 		nil,
@@ -58,7 +54,7 @@ func TestFetchParams(t *testing.T) {
 
 }
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{})
+	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -70,31 +66,31 @@ func TestJsonSamples(t *testing.T) {
 func TestMakeRequestsOtherPlacement(t *testing.T) {
 	var w, h int = 300, 250
 
-	var width, height uint64 = uint64(w), uint64(h)
+	var width, height int64 = int64(w), int64(h)
 
 	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
-		Endpoint: "https://dmx.districtm.io/b/v2"})
+		Endpoint: "https://dmx.districtm.io/b/v2"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	imp1 := openrtb.Imp{
+	imp1 := openrtb2.Imp{
 		ID:  "imp1",
 		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
-		Banner: &openrtb.Banner{
+		Banner: &openrtb2.Banner{
 			W: &width,
 			H: &height,
-			Format: []openrtb.Format{
+			Format: []openrtb2.Format{
 				{W: 300, H: 250},
 			},
 		}}
 
-	inputRequest := openrtb.BidRequest{
-		User: &openrtb.User{ID: "bscakucbkasucbkasunscancasuin"},
-		Imp:  []openrtb.Imp{imp1},
-		Site: &openrtb.Site{
-			Publisher: &openrtb.Publisher{
+	inputRequest := openrtb2.BidRequest{
+		User: &openrtb2.User{ID: "bscakucbkasucbkasunscancasuin"},
+		Imp:  []openrtb2.Imp{imp1},
+		Site: &openrtb2.Site{
+			Publisher: &openrtb2.Publisher{
 				ID: "10007",
 			},
 		},
@@ -115,30 +111,30 @@ func TestMakeRequestsOtherPlacement(t *testing.T) {
 func TestMakeRequestsInvalid(t *testing.T) {
 	var w, h int = 300, 250
 
-	var width, height uint64 = uint64(w), uint64(h)
+	var width, height int64 = int64(w), int64(h)
 
 	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
-		Endpoint: "https://dmx.districtm.io/b/v2"})
+		Endpoint: "https://dmx.districtm.io/b/v2"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	imp1 := openrtb.Imp{
+	imp1 := openrtb2.Imp{
 		ID:  "imp1",
 		Ext: json.RawMessage("{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}"),
-		Banner: &openrtb.Banner{
+		Banner: &openrtb2.Banner{
 			W: &width,
 			H: &height,
-			Format: []openrtb.Format{
+			Format: []openrtb2.Format{
 				{W: 300, H: 250},
 			},
 		}}
 
-	inputRequest := openrtb.BidRequest{
-		Imp: []openrtb.Imp{imp1},
-		Site: &openrtb.Site{
-			Publisher: &openrtb.Publisher{
+	inputRequest := openrtb2.BidRequest{
+		Imp: []openrtb2.Imp{imp1},
+		Site: &openrtb2.Site{
+			Publisher: &openrtb2.Publisher{
 				ID: "10007",
 			},
 		},
@@ -159,29 +155,29 @@ func TestMakeRequestsInvalid(t *testing.T) {
 func TestMakeRequestNoSite(t *testing.T) {
 	var w, h int = 300, 250
 
-	var width, height uint64 = uint64(w), uint64(h)
+	var width, height int64 = int64(w), int64(h)
 
 	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
-		Endpoint: "https://dmx.districtm.io/b/v2"})
+		Endpoint: "https://dmx.districtm.io/b/v2"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	imp1 := openrtb.Imp{
+	imp1 := openrtb2.Imp{
 		ID:  "imp1",
 		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
-		Banner: &openrtb.Banner{
+		Banner: &openrtb2.Banner{
 			W: &width,
 			H: &height,
-			Format: []openrtb.Format{
+			Format: []openrtb2.Format{
 				{W: 300, H: 250},
 			},
 		}}
 
-	inputRequest := openrtb.BidRequest{
-		Imp: []openrtb.Imp{imp1},
-		App: &openrtb.App{ID: "cansanuabnua", Publisher: &openrtb.Publisher{ID: "whatever"}},
+	inputRequest := openrtb2.BidRequest{
+		Imp: []openrtb2.Imp{imp1},
+		App: &openrtb2.App{ID: "cansanuabnua", Publisher: &openrtb2.Publisher{ID: "whatever"}},
 		ID:  "1234",
 	}
 
@@ -190,7 +186,7 @@ func TestMakeRequestNoSite(t *testing.T) {
 	if len(actualAdapterRequests) != 1 {
 		t.Errorf("openrtb type should be an Array when it's an App")
 	}
-	var the_body openrtb.BidRequest
+	var the_body openrtb2.BidRequest
 	if err := json.Unmarshal(actualAdapterRequests[0].Body, &the_body); err != nil {
 		t.Errorf("failed to read bid request")
 	}
@@ -207,34 +203,34 @@ func TestMakeRequestNoSite(t *testing.T) {
 func TestMakeRequestsApp(t *testing.T) {
 	var w, h int = 300, 250
 
-	var width, height uint64 = uint64(w), uint64(h)
+	var width, height int64 = int64(w), int64(h)
 
 	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
-		Endpoint: "https://dmx.districtm.io/b/v2"})
+		Endpoint: "https://dmx.districtm.io/b/v2"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	imp1 := openrtb.Imp{
+	imp1 := openrtb2.Imp{
 		ID:  "imp1",
 		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
-		Banner: &openrtb.Banner{
+		Banner: &openrtb2.Banner{
 			W: &width,
 			H: &height,
-			Format: []openrtb.Format{
+			Format: []openrtb2.Format{
 				{W: 300, H: 250},
 			},
 		}}
 
-	inputRequest := openrtb.BidRequest{
-		Imp: []openrtb.Imp{imp1},
-		Site: &openrtb.Site{
-			Publisher: &openrtb.Publisher{
+	inputRequest := openrtb2.BidRequest{
+		Imp: []openrtb2.Imp{imp1},
+		Site: &openrtb2.Site{
+			Publisher: &openrtb2.Publisher{
 				ID: "10007",
 			},
 		},
-		App: &openrtb.App{ID: "cansanuabnua", Publisher: &openrtb.Publisher{ID: "whatever"}},
+		App: &openrtb2.App{ID: "cansanuabnua", Publisher: &openrtb2.Publisher{ID: "whatever"}},
 		ID:  "1234",
 	}
 
@@ -243,7 +239,7 @@ func TestMakeRequestsApp(t *testing.T) {
 	if len(actualAdapterRequests) != 1 {
 		t.Errorf("openrtb type should be an Array when it's an App")
 	}
-	var the_body openrtb.BidRequest
+	var the_body openrtb2.BidRequest
 	if err := json.Unmarshal(actualAdapterRequests[0].Body, &the_body); err != nil {
 		t.Errorf("failed to read bid request")
 	}
@@ -257,30 +253,30 @@ func TestMakeRequestsApp(t *testing.T) {
 func TestMakeRequestsNoUser(t *testing.T) {
 	var w, h int = 300, 250
 
-	var width, height uint64 = uint64(w), uint64(h)
+	var width, height int64 = int64(w), int64(h)
 
 	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
-		Endpoint: "https://dmx.districtm.io/b/v2"})
+		Endpoint: "https://dmx.districtm.io/b/v2"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	imp1 := openrtb.Imp{
+	imp1 := openrtb2.Imp{
 		ID:  "imp1",
 		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
-		Banner: &openrtb.Banner{
+		Banner: &openrtb2.Banner{
 			W: &width,
 			H: &height,
-			Format: []openrtb.Format{
+			Format: []openrtb2.Format{
 				{W: 300, H: 250},
 			},
 		}}
 
-	inputRequest := openrtb.BidRequest{
-		Imp: []openrtb.Imp{imp1},
-		Site: &openrtb.Site{
-			Publisher: &openrtb.Publisher{
+	inputRequest := openrtb2.BidRequest{
+		Imp: []openrtb2.Imp{imp1},
+		Site: &openrtb2.Site{
+			Publisher: &openrtb2.Publisher{
 				ID: "10007",
 			},
 		},
@@ -296,57 +292,56 @@ func TestMakeRequestsNoUser(t *testing.T) {
 }
 
 func TestMakeRequests(t *testing.T) {
-	//server := httptest.NewServer(http.HandlerFunc(DummyDmxServer))
 	var w, h int = 300, 250
 
-	var width, height uint64 = uint64(w), uint64(h)
+	var width, height int64 = int64(w), int64(h)
 
 	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
-		Endpoint: "https://dmx.districtm.io/b/v2"})
+		Endpoint: "https://dmx.districtm.io/b/v2"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	imp1 := openrtb.Imp{
+	imp1 := openrtb2.Imp{
 		ID:  "imp1",
 		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
-		Banner: &openrtb.Banner{
+		Banner: &openrtb2.Banner{
 			W: &width,
 			H: &height,
-			Format: []openrtb.Format{
+			Format: []openrtb2.Format{
 				{W: 300, H: 250},
 			},
 		}}
-	imp2 := openrtb.Imp{
+	imp2 := openrtb2.Imp{
 		ID:  "imp2",
 		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
-		Banner: &openrtb.Banner{
+		Banner: &openrtb2.Banner{
 			W: &width,
 			H: &height,
-			Format: []openrtb.Format{
+			Format: []openrtb2.Format{
 				{W: 300, H: 250},
 			},
 		}}
-	imp3 := openrtb.Imp{
+	imp3 := openrtb2.Imp{
 		ID:  "imp3",
 		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
-		Banner: &openrtb.Banner{
+		Banner: &openrtb2.Banner{
 			W: &width,
 			H: &height,
-			Format: []openrtb.Format{
+			Format: []openrtb2.Format{
 				{W: 300, H: 250},
 			},
 		}}
 
-	inputRequest := openrtb.BidRequest{
-		Imp: []openrtb.Imp{imp1, imp2, imp3},
-		Site: &openrtb.Site{
-			Publisher: &openrtb.Publisher{
+	inputRequest := openrtb2.BidRequest{
+		Imp: []openrtb2.Imp{imp1, imp2, imp3},
+		Site: &openrtb2.Site{
+			Publisher: &openrtb2.Publisher{
 				ID: "10007",
 			},
 		},
-		User: &openrtb.User{ID: "districtmID"},
+		User: &openrtb2.User{ID: "districtmID"},
 		ID:   "1234",
 	}
 
@@ -355,7 +350,7 @@ func TestMakeRequests(t *testing.T) {
 	if len(actualAdapterRequests) != 1 {
 		t.Errorf("should have 1 request")
 	}
-	var the_body openrtb.BidRequest
+	var the_body openrtb2.BidRequest
 	if err := json.Unmarshal(actualAdapterRequests[0].Body, &the_body); err != nil {
 		t.Errorf("failed to read bid request")
 	}
@@ -369,32 +364,32 @@ func TestMakeRequests(t *testing.T) {
 func TestMakeBidVideo(t *testing.T) {
 	var w, h int = 640, 480
 
-	var width, height uint64 = uint64(w), uint64(h)
+	var width, height int64 = int64(w), int64(h)
 
 	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
-		Endpoint: "https://dmx.districtm.io/b/v2"})
+		Endpoint: "https://dmx.districtm.io/b/v2"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	imp1 := openrtb.Imp{
+	imp1 := openrtb2.Imp{
 		ID:  "imp1",
 		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
-		Video: &openrtb.Video{
+		Video: &openrtb2.Video{
 			W:     width,
 			H:     height,
 			MIMEs: []string{"video/mp4"},
 		}}
 
-	inputRequest := openrtb.BidRequest{
-		Imp: []openrtb.Imp{imp1},
-		Site: &openrtb.Site{
-			Publisher: &openrtb.Publisher{
+	inputRequest := openrtb2.BidRequest{
+		Imp: []openrtb2.Imp{imp1},
+		Site: &openrtb2.Site{
+			Publisher: &openrtb2.Publisher{
 				ID: "10007",
 			},
 		},
-		User: &openrtb.User{ID: "districtmID"},
+		User: &openrtb2.User{ID: "districtmID"},
 		ID:   "1234",
 	}
 
@@ -403,7 +398,7 @@ func TestMakeBidVideo(t *testing.T) {
 	if len(actualAdapterRequests) != 1 {
 		t.Errorf("should have 1 request")
 	}
-	var the_body openrtb.BidRequest
+	var the_body openrtb2.BidRequest
 	if err := json.Unmarshal(actualAdapterRequests[0].Body, &the_body); err != nil {
 		t.Errorf("failed to read bid request")
 	}
@@ -416,34 +411,34 @@ func TestMakeBidVideo(t *testing.T) {
 func TestMakeBidsNoContent(t *testing.T) {
 	var w, h int = 300, 250
 
-	var width, height uint64 = uint64(w), uint64(h)
+	var width, height int64 = int64(w), int64(h)
 
 	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
-		Endpoint: "https://dmx.districtm.io/b/v2"})
+		Endpoint: "https://dmx.districtm.io/b/v2"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	imp1 := openrtb.Imp{
+	imp1 := openrtb2.Imp{
 		ID:  "imp1",
 		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
-		Banner: &openrtb.Banner{
+		Banner: &openrtb2.Banner{
 			W: &width,
 			H: &height,
-			Format: []openrtb.Format{
+			Format: []openrtb2.Format{
 				{W: 300, H: 250},
 			},
 		}}
 
-	inputRequest := openrtb.BidRequest{
-		Imp: []openrtb.Imp{imp1},
-		Site: &openrtb.Site{
-			Publisher: &openrtb.Publisher{
+	inputRequest := openrtb2.BidRequest{
+		Imp: []openrtb2.Imp{imp1},
+		Site: &openrtb2.Site{
+			Publisher: &openrtb2.Publisher{
 				ID: "10007",
 			},
 		},
-		User: &openrtb.User{ID: "districtmID"},
+		User: &openrtb2.User{ID: "districtmID"},
 		ID:   "1234",
 	}
 
@@ -554,34 +549,34 @@ func TestMakeBidsNoContent(t *testing.T) {
 func TestUserExtEmptyObject(t *testing.T) {
 	var w, h int = 300, 250
 
-	var width, height uint64 = uint64(w), uint64(h)
+	var width, height int64 = int64(w), int64(h)
 
 	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
-		Endpoint: "https://dmx.districtm.io/b/v2"})
+		Endpoint: "https://dmx.districtm.io/b/v2"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	imp1 := openrtb.Imp{
+	imp1 := openrtb2.Imp{
 		ID:  "imp1",
 		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
-		Banner: &openrtb.Banner{
+		Banner: &openrtb2.Banner{
 			W: &width,
 			H: &height,
-			Format: []openrtb.Format{
+			Format: []openrtb2.Format{
 				{W: 300, H: 250},
 			},
 		}}
 
-	inputRequest := openrtb.BidRequest{
-		Imp: []openrtb.Imp{imp1, imp1, imp1},
-		Site: &openrtb.Site{
-			Publisher: &openrtb.Publisher{
+	inputRequest := openrtb2.BidRequest{
+		Imp: []openrtb2.Imp{imp1, imp1, imp1},
+		Site: &openrtb2.Site{
+			Publisher: &openrtb2.Publisher{
 				ID: "10007",
 			},
 		},
-		User: &openrtb.User{Ext: json.RawMessage(`{}`)},
+		User: &openrtb2.User{Ext: json.RawMessage(`{}`)},
 		ID:   "1234",
 	}
 
@@ -593,34 +588,34 @@ func TestUserExtEmptyObject(t *testing.T) {
 func TestUserEidsOnly(t *testing.T) {
 	var w, h int = 300, 250
 
-	var width, height uint64 = uint64(w), uint64(h)
+	var width, height int64 = int64(w), int64(h)
 
 	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
-		Endpoint: "https://dmx.districtm.io/b/v2"})
+		Endpoint: "https://dmx.districtm.io/b/v2"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	imp1 := openrtb.Imp{
+	imp1 := openrtb2.Imp{
 		ID:  "imp1",
 		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
-		Banner: &openrtb.Banner{
+		Banner: &openrtb2.Banner{
 			W: &width,
 			H: &height,
-			Format: []openrtb.Format{
+			Format: []openrtb2.Format{
 				{W: 300, H: 250},
 			},
 		}}
 
-	inputRequest := openrtb.BidRequest{
-		Imp: []openrtb.Imp{imp1, imp1, imp1},
-		Site: &openrtb.Site{
-			Publisher: &openrtb.Publisher{
+	inputRequest := openrtb2.BidRequest{
+		Imp: []openrtb2.Imp{imp1, imp1, imp1},
+		Site: &openrtb2.Site{
+			Publisher: &openrtb2.Publisher{
 				ID: "10007",
 			},
 		},
-		User: &openrtb.User{Ext: json.RawMessage(`{"eids": [{
+		User: &openrtb2.User{Ext: json.RawMessage(`{"eids": [{
                 "source": "adserver.org",
                 "uids": [{
                     "id": "111111111111",
@@ -644,81 +639,37 @@ func TestUserEidsOnly(t *testing.T) {
 	}
 }
 
-func TestUserDigitrustOnly(t *testing.T) {
-	var w, h int = 300, 250
-
-	var width, height uint64 = uint64(w), uint64(h)
-
-	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
-		Endpoint: "https://dmx.districtm.io/b/v2"})
-
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
-
-	imp1 := openrtb.Imp{
-		ID:  "imp1",
-		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
-		Banner: &openrtb.Banner{
-			W: &width,
-			H: &height,
-			Format: []openrtb.Format{
-				{W: 300, H: 250},
-			},
-		}}
-
-	inputRequest := openrtb.BidRequest{
-		Imp: []openrtb.Imp{imp1, imp1, imp1},
-		Site: &openrtb.Site{
-			Publisher: &openrtb.Publisher{
-				ID: "10007",
-			},
-		},
-		User: &openrtb.User{Ext: json.RawMessage(`{
-            "digitrust": {
-                "id": "11111111111",
-                "keyv": 4
-            }}`)},
-		ID: "1234",
-	}
-
-	actualAdapterRequests, _ := bidder.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
-	if len(actualAdapterRequests) != 1 {
-		t.Errorf("should have 1 request")
-	}
-}
-
 func TestUsersEids(t *testing.T) {
 	var w, h int = 300, 250
 
-	var width, height uint64 = uint64(w), uint64(h)
+	var width, height int64 = int64(w), int64(h)
 
 	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
-		Endpoint: "https://dmx.districtm.io/b/v2"})
+		Endpoint: "https://dmx.districtm.io/b/v2"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	imp1 := openrtb.Imp{
+	imp1 := openrtb2.Imp{
 		ID:  "imp1",
 		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
-		Banner: &openrtb.Banner{
+		Banner: &openrtb2.Banner{
 			W: &width,
 			H: &height,
-			Format: []openrtb.Format{
+			Format: []openrtb2.Format{
 				{W: 300, H: 250},
 			},
 		}}
 
-	inputRequest := openrtb.BidRequest{
-		Imp: []openrtb.Imp{imp1, imp1, imp1},
-		Site: &openrtb.Site{
-			Publisher: &openrtb.Publisher{
+	inputRequest := openrtb2.BidRequest{
+		Imp: []openrtb2.Imp{imp1, imp1, imp1},
+		Site: &openrtb2.Site{
+			Publisher: &openrtb2.Publisher{
 				ID: "10007",
 			},
 		},
-		User: &openrtb.User{ID: "districtmID", Ext: json.RawMessage(`{"eids": [{
+		User: &openrtb2.User{ID: "districtmID", Ext: json.RawMessage(`{"eids": [{
                 "source": "adserver.org",
                 "uids": [{
                     "id": "111111111111",
@@ -726,53 +677,56 @@ func TestUsersEids(t *testing.T) {
                         "rtiPartner": "TDID"
                     }
                 }]
-            },{
+            },
+			{
                 "source": "pubcid.org",
                 "uids": [{
-                    "id":"11111111"
+                    "id": "11111111"
                 }]
             },
-            {
+			{
                 "source": "id5-sync.com",
                 "uids": [{
                     "id": "ID5-12345"
                 }]
-            },
-            {
+            },            
+			{
                 "source": "parrable.com",
                 "uids": [{
                     "id": "01.1563917337.test-eid"
                 }]
-            },{
+            },
+			{
                 "source": "identityLink",
                 "uids": [{
                     "id": "11111111"
                 }]
-            },{
+            },
+			{
                 "source": "criteo",
                 "uids": [{
                     "id": "11111111"
                 }]
-            },{
+            },
+			{
                 "source": "britepool.com",
                 "uids": [{
                     "id": "11111111"
                 }]
-            },{
+            },
+			{
                 "source": "liveintent.com",
                 "uids": [{
                     "id": "11111111"
                 }]
-            },{
+            },
+			{
                 "source": "netid.de",
                 "uids": [{
                     "id": "11111111"
                 }]
-            }],
-            "digitrust": {
-                "id": "11111111111",
-                "keyv": 4
-            }}`)},
+            }]
+            }`)},
 		ID: "1234",
 	}
 
@@ -780,7 +734,7 @@ func TestUsersEids(t *testing.T) {
 	if len(actualAdapterRequests) != 1 {
 		t.Errorf("should have 1 request")
 	}
-	var the_body openrtb.BidRequest
+	var the_body openrtb2.BidRequest
 	if err := json.Unmarshal(actualAdapterRequests[0].Body, &the_body); err != nil {
 		t.Errorf("failed to read bid request")
 	}
@@ -790,8 +744,8 @@ func TestUsersEids(t *testing.T) {
 	}
 }
 func TestVideoImpInsertion(t *testing.T) {
-	var bidResp openrtb.BidResponse
-	var bid openrtb.Bid
+	var bidResp openrtb2.BidResponse
+	var bid openrtb2.Bid
 	payload := []byte(`{
     "id": "some-request-id",
     "seatbid": [
@@ -853,7 +807,7 @@ func TestVideoImpInsertion(t *testing.T) {
 	if err != nil {
 		t.Errorf("Payload is invalid")
 	}
-	bid = openrtb.Bid(bidResp.SeatBid[0].Bid[0])
+	bid = openrtb2.Bid(bidResp.SeatBid[0].Bid[0])
 	data := videoImpInsertion(&bid)
 	find := strings.Index(data, "demo.arripiblik.com")
 	if find == -1 {

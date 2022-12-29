@@ -3,10 +3,9 @@ package amx
 import (
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -23,7 +22,7 @@ const (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAMX, config.Adapter{
-		Endpoint: amxTestEndpoint})
+		Endpoint: amxTestEndpoint}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -34,24 +33,24 @@ func TestJsonSamples(t *testing.T) {
 
 func TestEndpointMalformed(t *testing.T) {
 	_, buildErr := Builder(openrtb_ext.BidderAMX, config.Adapter{
-		Endpoint: " http://leading.space.is.invalid"})
+		Endpoint: " http://leading.space.is.invalid"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	assert.Error(t, buildErr)
 }
 
 func TestEndpointQueryStringMalformed(t *testing.T) {
 	_, buildErr := Builder(openrtb_ext.BidderAMX, config.Adapter{
-		Endpoint: "http://invalid.query.from.go.docs/page?%gh&%ij"})
+		Endpoint: "http://invalid.query.from.go.docs/page?%gh&%ij"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	assert.Error(t, buildErr)
 }
 
 func TestMakeRequestsTagID(t *testing.T) {
 	var w, h int = 300, 250
-	var width, height uint64 = uint64(w), uint64(h)
+	var width, height int64 = int64(w), int64(h)
 
 	bidder, buildErr := Builder(openrtb_ext.BidderAMX, config.Adapter{
-		Endpoint: amxTestEndpoint})
+		Endpoint: amxTestEndpoint}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -75,12 +74,12 @@ func TestMakeRequestsTagID(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		imp1 := openrtb.Imp{
+		imp1 := openrtb2.Imp{
 			ID: "sample_imp_1",
-			Banner: &openrtb.Banner{
+			Banner: &openrtb2.Banner{
 				W: &width,
 				H: &height,
-				Format: []openrtb.Format{
+				Format: []openrtb2.Format{
 					{W: 300, H: 250},
 				},
 			}}
@@ -94,16 +93,16 @@ func TestMakeRequestsTagID(t *testing.T) {
 			imp1.TagID = tc.tagID
 		}
 
-		inputRequest := openrtb.BidRequest{
-			User: &openrtb.User{},
-			Imp:  []openrtb.Imp{imp1},
-			Site: &openrtb.Site{},
+		inputRequest := openrtb2.BidRequest{
+			User: &openrtb2.User{},
+			Imp:  []openrtb2.Imp{imp1},
+			Site: &openrtb2.Site{},
 		}
 
 		actualAdapterRequests, err := bidder.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
 		assert.Len(t, actualAdapterRequests, 1)
 		assert.Empty(t, err)
-		var body openrtb.BidRequest
+		var body openrtb2.BidRequest
 		assert.Nil(t, json.Unmarshal(actualAdapterRequests[0].Body, &body))
 		assert.Equal(t, tc.expectedTagID, body.Imp[0].TagID)
 	}
@@ -111,10 +110,10 @@ func TestMakeRequestsTagID(t *testing.T) {
 
 func TestMakeRequestsPublisherId(t *testing.T) {
 	var w, h int = 300, 250
-	var width, height uint64 = uint64(w), uint64(h)
+	var width, height int64 = int64(w), int64(h)
 
 	bidder, buildErr := Builder(openrtb_ext.BidderAMX, config.Adapter{
-		Endpoint: amxTestEndpoint})
+		Endpoint: amxTestEndpoint}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -137,12 +136,12 @@ func TestMakeRequestsPublisherId(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		imp1 := openrtb.Imp{
+		imp1 := openrtb2.Imp{
 			ID: "sample_imp_1",
-			Banner: &openrtb.Banner{
+			Banner: &openrtb2.Banner{
 				W: &width,
 				H: &height,
-				Format: []openrtb.Format{
+				Format: []openrtb2.Format{
 					{W: 300, H: 250},
 				},
 			}}
@@ -152,15 +151,15 @@ func TestMakeRequestsPublisherId(t *testing.T) {
 				fmt.Sprintf(`{"bidder":{"tagId":"%s"}}`, tc.extTagID))
 		}
 
-		inputRequest := openrtb.BidRequest{
-			User: &openrtb.User{ID: "example_user_id"},
-			Imp:  []openrtb.Imp{imp1},
-			Site: &openrtb.Site{},
+		inputRequest := openrtb2.BidRequest{
+			User: &openrtb2.User{ID: "example_user_id"},
+			Imp:  []openrtb2.Imp{imp1},
+			Site: &openrtb2.Site{},
 			ID:   "1234",
 		}
 
 		if tc.publisherID != "" || !tc.blankNil {
-			inputRequest.Site.Publisher = &openrtb.Publisher{
+			inputRequest.Site.Publisher = &openrtb2.Publisher{
 				ID: tc.publisherID,
 			}
 		}
@@ -168,48 +167,72 @@ func TestMakeRequestsPublisherId(t *testing.T) {
 		actualAdapterRequests, err := bidder.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
 		assert.Len(t, actualAdapterRequests, 1)
 		assert.Empty(t, err)
-		var body openrtb.BidRequest
+		var body openrtb2.BidRequest
 		assert.Nil(t, json.Unmarshal(actualAdapterRequests[0].Body, &body))
 		assert.Equal(t, tc.expectedPublisherID, body.Site.Publisher.ID)
 	}
 }
 
-var vastImpressionRXP = regexp.MustCompile(`<Impression><!\[CDATA\[[^\]]*\]\]></Impression>`)
+func TestMakeBids(t *testing.T) {
+	bidder, buildErr := Builder(openrtb_ext.BidderAMX, config.Adapter{
+		Endpoint: amxTestEndpoint}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
-func countImpressionPixels(vast string) int {
-	matches := vastImpressionRXP.FindAllIndex([]byte(vast), -1)
-	return len(matches)
-}
+	if buildErr != nil {
+		t.Fatalf("Failed to build bidder: %v", buildErr)
+	}
 
-func TestVideoImpInsertion(t *testing.T) {
-	markup := interpolateImpressions(openrtb.Bid{
-		AdM:  sampleVastADM,
-		NURL: "https://example2.com/nurl",
-	}, amxBidExt{Himp: []string{"https://example.com/pixel.png"}})
-	assert.Contains(t, markup, "example2.com/nurl")
-	assert.Contains(t, markup, "example.com/pixel.png")
-	assert.Equal(t, 3, countImpressionPixels(markup), "should have 3 Impression pixels")
+	type testCase struct {
+		bidType openrtb_ext.BidType
+		adm     string
+		extRaw  string
+		valid   bool
+	}
 
-	// make sure that a blank NURL won't result in a blank impression tag
-	markup = interpolateImpressions(openrtb.Bid{
-		AdM:  sampleVastADM,
-		NURL: "",
-	}, amxBidExt{})
-	assert.Equal(t, 1, countImpressionPixels(markup), "should have 1 impression pixels")
+	tests := []testCase{
+		{openrtb_ext.BidTypeNative, `{"assets":[]}`, `{"ct":10}`, true},
+		{openrtb_ext.BidTypeBanner, sampleDisplayADM, `{"ct": 1}`, true},
+		{openrtb_ext.BidTypeBanner, sampleDisplayADM, `{"ct": "invalid"}`, false},
+		{openrtb_ext.BidTypeBanner, sampleDisplayADM, `{}`, true},
+		{openrtb_ext.BidTypeVideo, sampleVastADM, `{"startdelay": 1}`, true},
+		{openrtb_ext.BidTypeBanner, sampleVastADM, `{"ct": 1}`, true}, // the server shouldn't do this
+	}
 
-	// we should also ignore blank ext.Himp pixels
-	markup = interpolateImpressions(openrtb.Bid{
-		AdM:  sampleVastADM,
-		NURL: "https://example-nurl.com/nurl",
-	}, amxBidExt{Himp: []string{"", "", ""}})
-	assert.Equal(t, 2, countImpressionPixels(markup), "should have 2 impression pixels")
-}
+	for _, test := range tests {
+		bid := openrtb2.Bid{
+			AdM:   test.adm,
+			Price: 1,
+			Ext:   json.RawMessage(test.extRaw),
+		}
 
-func TestNoDisplayImpInsertion(t *testing.T) {
-	data := interpolateImpressions(openrtb.Bid{
-		AdM:  sampleDisplayADM,
-		NURL: "https://example2.com/nurl",
-	}, amxBidExt{Himp: []string{"https://example.com/pixel.png"}})
-	assert.NotContains(t, data, "example2.com/nurl")
-	assert.NotContains(t, data, "example.com/pixel.png")
+		sb := openrtb2.SeatBid{
+			Bid: []openrtb2.Bid{bid},
+		}
+
+		resp := openrtb2.BidResponse{
+			SeatBid: []openrtb2.SeatBid{sb},
+		}
+
+		respJson, jsonErr := json.Marshal(resp)
+		if jsonErr != nil {
+			t.Fatalf("Failed to serialize test bid %v: %v", test, jsonErr)
+		}
+
+		bids, errs := bidder.MakeBids(nil, nil, &adapters.ResponseData{
+			StatusCode: 200,
+			Body:       respJson,
+		})
+
+		if !test.valid {
+			assert.Len(t, errs, 1)
+			continue
+		}
+
+		if len(errs) > 0 {
+			t.Fatalf("Failed to make bids: %v", errs)
+		}
+
+		assert.Len(t, bids.Bids, 1)
+		assert.Equal(t, test.bidType, bids.Bids[0].BidType)
+	}
+
 }

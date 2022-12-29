@@ -3,12 +3,15 @@ package adot
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/mxmCherry/openrtb"
+	"net/http"
+	"strconv"
+	"strings"
+
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"net/http"
 )
 
 type adapter struct {
@@ -24,7 +27,7 @@ type bidExt struct {
 }
 
 // Builder builds a new instance of the Adot adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
@@ -32,8 +35,9 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 }
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids.
-func (a *adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var reqJSON []byte
+	var publisherPath string
 	var err error
 
 	if reqJSON, err = json.Marshal(request); err != nil {
@@ -43,9 +47,17 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.Ex
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 
+	if adotExt := getImpAdotExt(&request.Imp[0]); adotExt != nil {
+		publisherPath = adotExt.PublisherPath
+	} else {
+		publisherPath = ""
+	}
+
+	endpoint := strings.Replace(a.endpoint, "{PUBLISHER_PATH}", publisherPath, -1)
+
 	return []*adapters.RequestData{{
 		Method:  "POST",
-		Uri:     a.endpoint,
+		Uri:     endpoint,
 		Body:    reqJSON,
 		Headers: headers,
 	}}, nil
@@ -53,7 +65,7 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.Ex
 
 // MakeBids unpacks the server's response into Bids.
 // The bidder return a status code 204 when it cannot delivery an ad.
-func (a *adapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -70,7 +82,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest 
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
@@ -84,6 +96,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest 
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
 			if bidType, err := getMediaTypeForBid(&sb.Bid[i]); err == nil {
+				resolveMacros(&sb.Bid[i])
 				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 					Bid:     &sb.Bid[i],
 					BidType: bidType,
@@ -96,7 +109,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest 
 }
 
 // getMediaTypeForBid determines which type of bid.
-func getMediaTypeForBid(bid *openrtb.Bid) (openrtb_ext.BidType, error) {
+func getMediaTypeForBid(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 	if bid == nil {
 		return "", fmt.Errorf("the bid request object is nil")
 	}
@@ -114,4 +127,29 @@ func getMediaTypeForBid(bid *openrtb.Bid) (openrtb_ext.BidType, error) {
 	}
 
 	return "", fmt.Errorf("unrecognized bid type in response from adot")
+}
+
+// resolveMacros resolves OpenRTB macros in nurl and adm
+func resolveMacros(bid *openrtb2.Bid) {
+	if bid == nil {
+		return
+	}
+	price := strconv.FormatFloat(bid.Price, 'f', -1, 64)
+	bid.NURL = strings.Replace(bid.NURL, "${AUCTION_PRICE}", price, -1)
+	bid.AdM = strings.Replace(bid.AdM, "${AUCTION_PRICE}", price, -1)
+}
+
+// getImpAdotExt parses and return first imp ext or nil
+func getImpAdotExt(imp *openrtb2.Imp) *openrtb_ext.ExtImpAdot {
+	var extImpAdot openrtb_ext.ExtImpAdot
+	var extBidder adapters.ExtImpBidder
+	err := json.Unmarshal(imp.Ext, &extBidder)
+	if err != nil {
+		return nil
+	}
+	err = json.Unmarshal(extBidder.Bidder, &extImpAdot)
+	if err != nil {
+		return nil
+	}
+	return &extImpAdot
 }

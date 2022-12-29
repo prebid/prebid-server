@@ -1,0 +1,84 @@
+{
+    "mockBidRequest": {
+      "id": "test-request-id",
+      "site": {
+        "id": "site-id",
+        "page": "criteo.com"
+      },
+      "device": {
+        "os": "android",
+        "ip": "91.199.242.236",
+        "ua": "random user agent"
+      },
+      "user": {
+        "ext": {
+          "eids": [{
+            "source": "criteo.com",
+            "uids": [{
+              "id": "criteo-eid"
+            }]
+          }]
+        }
+      },
+      "imp": [
+        {
+          "id": "test-imp-id-1",
+          "banner": {
+            "format": [
+              {
+                "w": 300,
+                "h": 250
+              }
+            ]
+          },
+          "ext": {
+            "bidder": {
+              "zoneid": 123456,
+              "networkid": 78910
+            }
+          }
+        },
+        {
+          "id": "test-imp-id-2",
+          "banner": {
+            "format": [
+              {
+                "w": 300,
+                "h": 250
+              }
+            ]
+          },
+          "ext": {
+            "bidder": {
+              "zoneid": 7891011,
+              "networkid": 123456
+            }
+          }
+        },
+        {
+          "id": "test-imp-id-3",
+          "banner": {
+            "format": [
+              {
+                "w": 300,
+                "h": 250
+              }
+            ]
+          },
+          "ext": {
+            "bidder": {
+              "zoneid": 121314,
+              "networkid": 467890
+            }
+          }
+        }
+      ]
+    },
+      "expectedMakeRequestsErrors": [
+        {
+          "value": "Bid request has slots coming with several network IDs which is not allowed",
+          "comparison": "literal"
+        }
+      ]
+  }
+  

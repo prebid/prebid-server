@@ -9,22 +9,34 @@
         {
           "id": "my-imp-id",
           "video": {
-            "mimes": ["video/mp4"]
+            "mimes": [
+              "video/mp4"
+            ]
           },
           "ext": {
-            "appnexus": {
-              "placementId": 1
+            "prebid": {
+              "bidder": {
+                "appnexus": {
+                  "placementId": 1
+                }
+              }
             }
           }
         },
         {
           "id": "imp-id-2",
           "video": {
-            "mimes": ["video/mp4"]
+            "mimes": [
+              "video/mp4"
+            ]
           },
           "ext": {
-            "appnexus": {
-              "placementId": 1
+            "prebid": {
+              "bidder": {
+                "appnexus": {
+                  "placementId": 1
+                }
+              }
             }
           }
         }
@@ -34,7 +46,7 @@
           "targeting": {
             "includebrandcategory": {
               "primaryadserver": 1,
-              "publisher":"",
+              "publisher": "",
               "withcategory": true
             }
           }
@@ -48,38 +60,45 @@
   "outgoingRequests": {
     "appnexus": {
       "mockResponse": {
-        "pbsSeatBid": {
-          "pbsBids": [
-            {
-              "ortbBid": {
-                "id": "apn-bid",
-                "impid": "my-imp-id",
-                "price": 0.3,
-                "w": 200,
-                "h": 250,
-                "crid": "creative-1",
-                "cat": ["IAB1-1"]
+        "pbsSeatBids": [
+          {
+            "pbsBids": [
+              {
+                "ortbBid": {
+                  "id": "apn-bid",
+                  "impid": "my-imp-id",
+                  "price": 0.3,
+                  "w": 200,
+                  "h": 250,
+                  "crid": "creative-1",
+                  "cat": [
+                    "IAB1-1"
+                  ]
+                },
+                "bidType": "video",
+                "bidVideo": {
+                  "duration": 30,
+                  "PrimaryCategory": ""
+                }
               },
-              "bidType": "video",
-              "bidVideo": {
-                "duration": 30,
-                "PrimaryCategory": ""
+              {
+                "ortbBid": {
+                  "id": "apn-other-bid",
+                  "impid": "imp-id-2",
+                  "price": 0.6,
+                  "w": 300,
+                  "h": 500,
+                  "crid": "creative-3",
+                  "cat": [
+                    "IAB1-2"
+                  ]
+                },
+                "bidType": "video"
               }
-            },
-            {
-              "ortbBid": {
-                "id": "apn-other-bid",
-                "impid": "imp-id-2",
-                "price": 0.6,
-                "w": 300,
-                "h": 500,
-                "crid": "creative-3",
-                "cat": ["IAB1-2"]
-              },
-              "bidType": "video"
-            }
-          ]
-        }
+            ],
+            "seat": "appnexus"
+          }
+        ]
       }
     }
   },
@@ -97,46 +116,52 @@
               "w": 200,
               "h": 250,
               "crid": "creative-1",
-              "cat": ["IAB1-1"],
+              "cat": [
+                "IAB1-1"
+              ],
               "ext": {
+                "origbidcpm": 0.3,
                 "prebid": {
                   "type": "video",
                   "targeting": {
-                     "hb_bidder": "appnexus",
-                     "hb_bidder_appnexus": "appnexus",
-                     "hb_cache_host": "www.pbcserver.com",
-                     "hb_cache_host_appnex": "www.pbcserver.com",
-                     "hb_cache_path": "/pbcache/endpoint",
-                     "hb_cache_path_appnex": "/pbcache/endpoint",
-                     "hb_pb": "0.20",
-                     "hb_pb_appnexus": "0.20",
-                     "hb_pb_cat_dur": "0.20_VideoGames_0s",
-                     "hb_pb_cat_dur_appnex": "0.20_VideoGames_0s",
-                     "hb_size": "200x250",
-                     "hb_size_appnexus": "200x250"
-                   }
+                    "hb_bidder": "appnexus",
+                    "hb_bidder_appnexus": "appnexus",
+                    "hb_cache_host": "www.pbcserver.com",
+                    "hb_cache_host_appnex": "www.pbcserver.com",
+                    "hb_cache_path": "/pbcache/endpoint",
+                    "hb_cache_path_appnex": "/pbcache/endpoint",
+                    "hb_pb": "0.20",
+                    "hb_pb_appnexus": "0.20",
+                    "hb_pb_cat_dur": "0.20_VideoGames_0s",
+                    "hb_pb_cat_dur_appnex": "0.20_VideoGames_0s",
+                    "hb_size": "200x250",
+                    "hb_size_appnexus": "200x250"
+                  }
                 }
               }
             },
             {
-              "cat": ["IAB1-2"],
+              "cat": [
+                "IAB1-2"
+              ],
               "crid": "creative-3",
               "ext": {
+                "origbidcpm": 0.6,
                 "prebid": {
                   "targeting": {
-                      "hb_bidder": "appnexus",
-                      "hb_bidder_appnexus": "appnexus",
-                      "hb_cache_host": "www.pbcserver.com",
-                      "hb_cache_host_appnex": "www.pbcserver.com",
-                      "hb_cache_path": "/pbcache/endpoint",
-                      "hb_cache_path_appnex": "/pbcache/endpoint",
-                      "hb_pb": "0.50",
-                      "hb_pb_appnexus": "0.50",
-                      "hb_pb_cat_dur": "0.50_HomeDecor_0s",
-                      "hb_pb_cat_dur_appnex": "0.50_HomeDecor_0s",
-                      "hb_size": "300x500",
-                      "hb_size_appnexus": "300x500"
-                    },
+                    "hb_bidder": "appnexus",
+                    "hb_bidder_appnexus": "appnexus",
+                    "hb_cache_host": "www.pbcserver.com",
+                    "hb_cache_host_appnex": "www.pbcserver.com",
+                    "hb_cache_path": "/pbcache/endpoint",
+                    "hb_cache_path_appnex": "/pbcache/endpoint",
+                    "hb_pb": "0.50",
+                    "hb_pb_appnexus": "0.50",
+                    "hb_pb_cat_dur": "0.50_HomeDecor_0s",
+                    "hb_pb_cat_dur_appnex": "0.50_HomeDecor_0s",
+                    "hb_size": "300x500",
+                    "hb_size_appnexus": "300x500"
+                  },
                   "type": "video"
                 }
               },

@@ -42,7 +42,6 @@
                 "w": 300,
                 "h": 250
               },
-              "bidfloor": 1e-05,
               "secure": 0,
               "ext": {
                 "bidder": {
@@ -70,7 +69,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "Unable to unpackage bid response. Error json: cannot unmarshal string into Go value of type openrtb.BidResponse",
+      "value": "Unable to unpackage bid response. Error json: cannot unmarshal string into Go value of type openrtb2.BidResponse",
       "comparison": "literal"
     }
   ]

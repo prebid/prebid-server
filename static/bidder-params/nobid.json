@@ -7,10 +7,10 @@
     "properties": {
       "siteId": {
         "type": "integer",
-        "description": "A Required ID which identifies the NoBid site. The siteId paramerter is provided by your NoBid account manager."
+        "description": "A Required ID which identifies the NoBid site. The siteId parameter is provided by your NoBid account manager."
       }, "placementId": { 
     	  "type": "integer",
-    	  "description": "An oprional ID which identifies an adunit in a site. The placementId paramerter is provided by your NoBid account manager."
+    	  "description": "An optional ID which identifies an adunit in a site. The placementId parameter is provided by your NoBid account manager."
       }
     },
     "required": ["siteId"]

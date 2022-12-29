@@ -1,0 +1,16 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Madvertise Adapter Params",
+    "description": "A schema which validates params accepted by the Madvertise adapter",
+    "type": "object",
+    "properties": {
+        "zoneId": {
+            "type": "string",
+            "minLength": 7,
+            "description": "The zone ID provided by Madvertise"
+        }
+    },
+    "required": [
+        "zoneId"
+    ]
+}

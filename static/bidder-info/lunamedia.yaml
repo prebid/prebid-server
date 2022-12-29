@@ -1,3 +1,4 @@
+endpoint: "http://api.lunamedia.io/xp/get?pubid={{.PublisherID}}"
 maintainer:
   email: "josh@lunamedia.io"
 capabilities:
@@ -10,4 +11,8 @@ capabilities:
     mediaTypes:
     - banner
     - video
-   
+userSync:
+  iframe:
+    url: "https://api.lunamedia.io/xp/user-sync?redirect={{.RedirectURL}}"
+    userMacro: "$UID"
+

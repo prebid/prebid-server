@@ -1,0 +1,130 @@
+{
+  "mockBidRequest": {
+    "id": "5f4d1e01",
+    "at": 1,
+    "imp": [
+      {
+        "id": "8b1bdcca",
+        "banner": {
+          "w": 300,
+          "h": 300,
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ],
+          "pos": 0,
+          "expdir": [1, 2, 3, 4, 5]
+        },
+        "video": {
+          "mimes": null
+        },
+        "native": {
+          "request": ""
+        },
+        "pmp": {
+        },
+        "tagid": "73",
+        "secure": 1,
+        "iframebuster": ["ALL"],
+        "ext": {}
+      }
+    ],
+    "site": {
+      "id": "123",
+      "domain": "www.dailymail.co.uk",
+      "cat": ["IAB7"],
+      "page": "https://www.dailymail.co.uk/",
+      "ref": "https://www.dailymail.co.uk/",
+      "mobile": 1,
+      "publisher": {
+        "id": "1"
+      }
+    },
+    "user": {
+      "id": "07fb48ed",
+      "ext": {
+        "consent": "consent opt-out"
+      },
+      "buyeruid": "345"
+    },
+    "regs": {
+      "ext": {
+        "us_privacy": "1"
+      }
+    },
+    "tmax": 200,
+    "ext": {}
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://example.com/bid",
+        "body": {
+          "id": "5f4d1e01",
+          "at": 1,
+          "imp": [
+            {
+              "id": "8b1bdcca",
+              "banner": {
+                "w": 300,
+                "h": 300,
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ],
+                "pos": 0,
+                "expdir": [1, 2, 3, 4, 5]
+              },
+              "video": {
+                "mimes": null
+              },
+              "native": {
+                "request": ""
+              },
+              "pmp": {
+              },
+              "tagid": "73",
+              "secure": 1,
+              "iframebuster": ["ALL"],
+              "ext": {}
+            }
+          ],
+          "site": {
+            "id": "123",
+            "domain": "www.dailymail.co.uk",
+            "cat": ["IAB7"],
+            "page": "https://www.dailymail.co.uk/",
+            "ref": "https://www.dailymail.co.uk/",
+            "mobile": 1,
+            "publisher": {
+              "id": "1"
+            }
+          },
+          "user": {
+            "id": "07fb48ed",
+            "ext": {
+              "consent": "consent opt-out"
+            },
+            "buyeruid": "345"
+          },
+          "regs": {
+            "ext": {
+              "us_privacy": "1"
+            }
+          },
+          "tmax": 200,
+          "ext": {}
+        }
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": {}
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}

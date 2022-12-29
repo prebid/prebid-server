@@ -1,0 +1,73 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-native-id",
+    "imp": [
+      {
+        "id": "test-imp-native-id",
+        "native": {
+          "request": "test-native",
+          "ver": "1.2"
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://localhost/prebid_server",
+        "body": {
+          "id": "test-request-native-id",
+          "imp": [
+            {
+              "id": "test-imp-native-id",
+              "native": {
+                "request": "test-native",
+                "ver": "1.2"
+              }
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "adxcg",
+              "bid": [
+                {
+                  "id": "test-request-native-id",
+                  "impid": "test-imp-native-id",
+                  "price": 1.16,
+                  "adm": "native-ad",
+                  "w": 1,
+                  "h": 1
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-request-native-id",
+            "impid": "test-imp-native-id",
+            "price": 1.16,
+            "adm": "native-ad",
+            "w": 1,
+            "h": 1
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}

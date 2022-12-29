@@ -16,6 +16,21 @@
             "customParams": {"foo": "bar"}
           }
         }
+      },
+      {
+        "bidfloor": 0.5,
+        "id": "test-imp-id",
+        "banner": {
+          "format": [{"w": 728, "h": 90}]
+        },
+        "ext": {
+          "bidder": {
+            "unit": "539439964",
+            "delDomain": "se-demo-d.openx.net",
+            "platform": "PLATFORM",
+            "customFloor": 0.1
+          }
+        }
       }
     ]
   },
@@ -37,6 +52,14 @@
               "ext": {
                 "customParams": {"foo": "bar"}
               }
+            },
+            {
+              "id":"test-imp-id",
+              "banner": {
+                "format": [{"w": 728, "h": 90}]
+              },
+              "tagid": "539439964",
+              "bidfloor": 0.5
             }
           ],
           "ext": {

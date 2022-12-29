@@ -23,7 +23,7 @@
           "type": "boolean"
         }
       },
-      "description": "Parameters used for debugging porposes"
+      "description": "Parameters used for debugging purposes"
     }
   },
   "required": ["placementId"]

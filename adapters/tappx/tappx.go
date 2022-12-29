@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"text/template"
 	"time"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -17,27 +18,38 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const TAPPX_BIDDER_VERSION = "1.1"
+const TAPPX_BIDDER_VERSION = "1.5"
 const TYPE_CNN = "prebid"
 
 type TappxAdapter struct {
-	endpointTemplate template.Template
+	endpointTemplate *template.Template
+}
+
+type Bidder struct {
+	Tappxkey string   `json:"tappxkey"`
+	Mktag    string   `json:"mktag,omitempty"`
+	Bcid     []string `json:"bcid,omitempty"`
+	Bcrid    []string `json:"bcrid,omitempty"`
+}
+
+type Ext struct {
+	Bidder `json:"bidder"`
 }
 
 // Builder builds a new instance of the Tappx adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
 	bidder := &TappxAdapter{
-		endpointTemplate: *template,
+		endpointTemplate: template,
 	}
 	return bidder, nil
 }
 
-func (a *TappxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *TappxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	if len(request.Imp) == 0 {
 		return nil, []error{&errortypes.BadInput{
 			Message: "No impression in the bid request",
@@ -50,11 +62,27 @@ func (a *TappxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapte
 			Message: "Error parsing bidderExt object",
 		}}
 	}
-
 	var tappxExt openrtb_ext.ExtImpTappx
 	if err := json.Unmarshal(bidderExt.Bidder, &tappxExt); err != nil {
 		return nil, []error{&errortypes.BadInput{
 			Message: "Error parsing tappxExt parameters",
+		}}
+	}
+
+	ext := Ext{
+		Bidder: Bidder{
+			Tappxkey: tappxExt.TappxKey,
+			Mktag:    tappxExt.Mktag,
+			Bcid:     tappxExt.Bcid,
+			Bcrid:    tappxExt.Bcrid,
+		},
+	}
+
+	if jsonext, err := json.Marshal(ext); err == nil {
+		request.Ext = jsonext
+	} else {
+		return nil, []error{&errortypes.FailedToRequestBids{
+			Message: "Error marshaling tappxExt parameters",
 		}}
 	}
 
@@ -91,12 +119,6 @@ func (a *TappxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapte
 // Builds enpoint url based on adapter-specific pub settings from imp.ext
 func (a *TappxAdapter) buildEndpointURL(params *openrtb_ext.ExtImpTappx, test int) (string, error) {
 
-	if params.Host == "" {
-		return "", &errortypes.BadInput{
-			Message: "Tappx host undefined",
-		}
-	}
-
 	if params.Endpoint == "" {
 		return "", &errortypes.BadInput{
 			Message: "Tappx endpoint undefined",
@@ -109,7 +131,15 @@ func (a *TappxAdapter) buildEndpointURL(params *openrtb_ext.ExtImpTappx, test in
 		}
 	}
 
-	endpointParams := macros.EndpointTemplateParams{Host: params.Host}
+	tappxHost := "tappx.com"
+	isNewEndpoint, err := regexp.Match(`^(zz|vz)[0-9]{3,}([a-z]{2,3}|test)$`, []byte(params.Endpoint))
+	if isNewEndpoint {
+		tappxHost = params.Endpoint + ".pub." + tappxHost + "/rtb/"
+	} else {
+		tappxHost = "ssp.api." + tappxHost + "/rtb/v2/"
+	}
+
+	endpointParams := macros.EndpointTemplateParams{Host: tappxHost}
 	host, err := macros.ResolveMacros(a.endpointTemplate, endpointParams)
 
 	if err != nil {
@@ -119,14 +149,15 @@ func (a *TappxAdapter) buildEndpointURL(params *openrtb_ext.ExtImpTappx, test in
 	}
 
 	thisURI, err := url.Parse(host)
-
 	if err != nil {
 		return "", &errortypes.BadInput{
 			Message: "Malformed URL: " + err.Error(),
 		}
 	}
 
-	thisURI.Path += params.Endpoint
+	if !isNewEndpoint {
+		thisURI.Path += params.Endpoint
+	}
 
 	queryParams := url.Values{}
 
@@ -146,7 +177,7 @@ func (a *TappxAdapter) buildEndpointURL(params *openrtb_ext.ExtImpTappx, test in
 	return thisURI.String(), nil
 }
 
-func (a *TappxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *TappxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -161,7 +192,7 @@ func (a *TappxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReq
 		return nil, []error{fmt.Errorf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
@@ -181,7 +212,7 @@ func (a *TappxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReq
 	return bidResponse, []error{}
 }
 
-func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
+func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impId {

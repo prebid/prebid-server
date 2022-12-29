@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -22,7 +22,7 @@ import (
 
 // Client stores values in Prebid Cache. For more info, see https://github.com/prebid/prebid-cache
 type Client interface {
-	// PutJson stores JSON values for the given openrtb.Bids in the cache. Null values will be
+	// PutJson stores JSON values for the given openrtb2.Bids in the cache. Null values will be
 	//
 	// The returned string slice will always have the same number of elements as the values argument. If a
 	// value could not be saved, the element will be an empty string. Implementations are responsible for
@@ -118,9 +118,9 @@ func (c *clientImpl) PutJson(ctx context.Context, values []Cacheable) (uuids []s
 	defer anResp.Body.Close()
 	c.metrics.RecordPrebidCacheRequestTime(true, elapsedTime)
 
-	responseBody, err := ioutil.ReadAll(anResp.Body)
+	responseBody, err := io.ReadAll(anResp.Body)
 	if anResp.StatusCode != 200 {
-		logError(&errs, "Prebid Cache call to %s returned %d: %s", putURL, anResp.StatusCode, responseBody)
+		logError(&errs, "Prebid Cache call to %s returned %d: %s", c.putUrl, anResp.StatusCode, responseBody)
 		return uuidsToReturn, errs
 	}
 

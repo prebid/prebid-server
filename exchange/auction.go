@@ -11,20 +11,27 @@ import (
 	"time"
 
 	uuid "github.com/gofrs/uuid"
-	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 )
 
+const (
+	DebugOverrideHeader string = "x-pbs-debug-override"
+)
+
 type DebugLog struct {
-	Enabled     bool
-	CacheType   prebid_cache_client.PayloadType
-	Data        DebugData
-	TTL         int64
-	CacheKey    string
-	CacheString string
-	Regexp      *regexp.Regexp
+	Enabled       bool
+	CacheType     prebid_cache_client.PayloadType
+	Data          DebugData
+	TTL           int64
+	CacheKey      string
+	CacheString   string
+	Regexp        *regexp.Regexp
+	DebugOverride bool
+	//little optimization, it stores value of debugLog.Enabled || debugLog.DebugOverride
+	DebugEnabledOrOverridden bool
 }
 
 type DebugData struct {
@@ -45,6 +52,10 @@ func (d *DebugLog) BuildCacheString() {
 	d.Data.Response = fmt.Sprintf("<Response>%s</Response>", d.Data.Response)
 
 	d.CacheString = fmt.Sprintf("%s<Log>%s%s%s</Log>", xml.Header, d.Data.Request, d.Data.Headers, d.Data.Response)
+}
+
+func IsDebugOverrideEnabled(debugHeader, configOverrideToken string) bool {
+	return configOverrideToken != "" && debugHeader == configOverrideToken
 }
 
 func (d *DebugLog) PutDebugLogError(cache prebid_cache_client.Client, timeout int, errors []error) error {
@@ -125,7 +136,7 @@ func newAuction(seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, numImps int
 }
 
 // isNewWinningBid calculates if the new bid (nbid) will win against the current winning bid (wbid) given preferDeals.
-func isNewWinningBid(bid, wbid *openrtb.Bid, preferDeals bool) bool {
+func isNewWinningBid(bid, wbid *openrtb2.Bid, preferDeals bool) bool {
 	if preferDeals {
 		if len(wbid.DealID) > 0 && len(bid.DealID) == 0 {
 			return false
@@ -147,7 +158,7 @@ func (a *auction) setRoundedPrices(priceGranularity openrtb_ext.PriceGranularity
 	a.roundedPrices = roundedPrices
 }
 
-func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client, targData *targetData, evTracking *eventTracking, bidRequest *openrtb.BidRequest, ttlBuffer int64, defaultTTLs *config.DefaultTTLs, bidCategory map[string]string, debugLog *DebugLog) []error {
+func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client, targData *targetData, evTracking *eventTracking, bidRequest *openrtb2.BidRequest, ttlBuffer int64, defaultTTLs *config.DefaultTTLs, bidCategory map[string]string, debugLog *DebugLog) []error {
 	var bids, vast, includeBidderKeys, includeWinners bool = targData.includeCacheBids, targData.includeCacheVast, targData.includeBidderKeys, targData.includeWinners
 	if !((bids || vast) && (includeBidderKeys || includeWinners)) {
 		return nil
@@ -155,8 +166,8 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 	var errs []error
 	expectNumBids := valOrZero(bids, len(a.roundedPrices))
 	expectNumVast := valOrZero(vast, len(a.roundedPrices))
-	bidIndices := make(map[int]*openrtb.Bid, expectNumBids)
-	vastIndices := make(map[int]*openrtb.Bid, expectNumVast)
+	bidIndices := make(map[int]*openrtb2.Bid, expectNumBids)
+	vastIndices := make(map[int]*openrtb2.Bid, expectNumVast)
 	toCache := make([]prebid_cache_client.Cacheable, 0, expectNumBids+expectNumVast)
 	expByImp := make(map[string]int64)
 	competitiveExclusion := false
@@ -238,7 +249,7 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 		}
 	}
 
-	if len(toCache) > 0 && debugLog != nil && debugLog.Enabled {
+	if len(toCache) > 0 && debugLog != nil && debugLog.DebugEnabledOrOverridden {
 		debugLog.CacheKey = hbCacheID
 		debugLog.BuildCacheString()
 		if jsonBytes, err := json.Marshal(debugLog.CacheString); err == nil {
@@ -257,7 +268,7 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 	}
 
 	if bids {
-		a.cacheIds = make(map[*openrtb.Bid]string, len(bidIndices))
+		a.cacheIds = make(map[*openrtb2.Bid]string, len(bidIndices))
 		for index, bid := range bidIndices {
 			if ids[index] != "" {
 				a.cacheIds[bid] = ids[index]
@@ -265,7 +276,7 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 		}
 	}
 	if vast {
-		a.vastCacheIds = make(map[*openrtb.Bid]string, len(vastIndices))
+		a.vastCacheIds = make(map[*openrtb2.Bid]string, len(vastIndices))
 		for index, bid := range vastIndices {
 			if ids[index] != "" {
 				if competitiveExclusion && strings.HasSuffix(ids[index], hbCacheID) {
@@ -282,7 +293,7 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 
 // makeVAST returns some VAST XML for the given bid. If AdM is defined,
 // it takes precedence. Otherwise the Nurl will be wrapped in a redirect tag.
-func makeVAST(bid *openrtb.Bid) string {
+func makeVAST(bid *openrtb2.Bid) string {
 	if bid.AdM == "" {
 		return `<VAST version="3.0"><Ad><Wrapper>` +
 			`<AdSystem>prebid.org wrapper</AdSystem>` +
@@ -298,13 +309,6 @@ func valOrZero(useVal bool, val int) int {
 		return val
 	}
 	return 0
-}
-
-func maybeMake(shouldMake bool, capacity int) []prebid_cache_client.Cacheable {
-	if shouldMake {
-		return make([]prebid_cache_client.Cacheable, 0, capacity)
-	}
-	return nil
 }
 
 func cacheTTL(impTTL int64, bidTTL int64, defTTL int64, buffer int64) (ttl int64) {
@@ -355,7 +359,7 @@ type auction struct {
 	// roundedPrices stores the price strings rounded for each bid according to the price granularity.
 	roundedPrices map[*pbsOrtbBid]string
 	// cacheIds stores the UUIDs from Prebid Cache for fetching the full bid JSON.
-	cacheIds map[*openrtb.Bid]string
+	cacheIds map[*openrtb2.Bid]string
 	// vastCacheIds stores UUIDS from Prebid cache for fetching the VAST markup to video bids.
-	vastCacheIds map[*openrtb.Bid]string
+	vastCacheIds map[*openrtb2.Bid]string
 }

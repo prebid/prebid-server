@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Kayzen Adapter Params",
+  "description": "A schema which validates params accepted by the Kayzen adapter",
+  "type": "object",
+
+  "properties": {
+    "zone": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Zone ID"
+    },
+    "exchange": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Exchange/Publisher Name"
+    }
+  },
+  "required": ["zone", "exchange"]
+}
+
