@@ -4,6 +4,7 @@
         "imp": [
             {
                 "id": "test-imp-id",
+                "tagid": "test",
                 "banner": {
                     "format": [
                         {
@@ -18,7 +19,7 @@
                 },
                 "ext": {
                     "bidder": {
-                        "placementId": "8"
+                        "placementId": "test"
                     }
                 }
             }
@@ -28,18 +29,20 @@
             "domain": "test.com"
         },
         "device": {
-            "ip": "123.123.123.123"
+            "ip": "123.123.123.123",
+            "ua": "Ubuntu"
         }
     },
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "http://example.com/?c=o&m=ortb",
+                "uri": "http://endpoint1.logan.com/pserver",
                 "body": {
                     "id": "test-request-id",
                     "imp": [
                         {
                             "id": "test-imp-id",
+                            "tagid": "test",
                             "banner": {
                                 "format": [
                                     {
@@ -54,7 +57,8 @@
                             },
                             "ext": {
                                 "bidder": {
-                                    "placementId": "8"
+                                    "placementId": "test",
+                                    "type": "publisher"
                                 }
                             }
                         }
@@ -64,7 +68,8 @@
                         "domain": "test.com"
                     },
                     "device": {
-                        "ip": "123.123.123.123"
+                        "ip": "123.123.123.123",
+                        "ua": "Ubuntu"
                     }
                 }
             },
@@ -79,17 +84,12 @@
                                     "id": "test_bid_id",
                                     "impid": "test-imp-id",
                                     "price": 0.27543,
-                                    "adm": "<div>ad</div>",
+                                    "adm": "<iframe id=\"adm-banner-1\" width=\"468\" height=\"60\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"http://endpoint1.logan.com/pserver&k=bc2d316f39931a07d9a8dd249bf85fc0\"></iframe>",
                                     "cid": "test_cid",
                                     "crid": "test_crid",
                                     "dealid": "test_dealid",
                                     "w": 468,
-                                    "h": 60,
-                                    "ext": {
-                                        "prebid": {
-                                            "type": "banner"
-                                        }
-                                    }
+                                    "h": 60
                                 }
                             ],
                             "seat": "logan"
@@ -108,17 +108,12 @@
                         "id": "test_bid_id",
                         "impid": "test-imp-id",
                         "price": 0.27543,
-                        "adm": "<div>ad</div>",
+                        "adm": "<iframe id=\"adm-banner-1\" width=\"468\" height=\"60\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"http://endpoint1.logan.com/pserver&k=bc2d316f39931a07d9a8dd249bf85fc0\"></iframe>",
                         "cid": "test_cid",
                         "crid": "test_crid",
                         "dealid": "test_dealid",
                         "w": 468,
-                        "h": 60,
-                        "ext": {
-                            "prebid": {
-                                "type": "banner"
-                            }
-                        }
+                        "h": 60
                     },
                     "type": "banner"
                 }

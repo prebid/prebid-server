@@ -13,17 +13,9 @@
             {
                 "id": "test-imp-id",
                 "tagid": "test",
-                "banner": {
-                    "format": [
-                        {
-                            "w": 300,
-                            "h": 250
-                        },
-                        {
-                            "w": 300,
-                            "h": 600
-                        }
-                    ]
+                "native": {
+                    "request": "{\"ver\":\"1.1\",\"layout\":1,\"adunit\":2,\"plcmtcnt\":6,\"plcmttype\":4,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":75}},{\"id\":2,\"required\":1,\"img\":{\"wmin\":492,\"hmin\":328,\"type\":3,\"mimes\":[\"image/jpeg\",\"image/jpg\",\"image/png\"]}},{\"id\":4,\"required\":0,\"data\":{\"type\":6}},{\"id\":5,\"required\":0,\"data\":{\"type\":7}},{\"id\":6,\"required\":0,\"data\":{\"type\":1,\"len\":20}}]}",
+                    "ver": "1.1"
                 },
                 "ext": {
                     "bidder": {
@@ -43,17 +35,9 @@
                         {
                             "id": "test-imp-id",
                             "tagid": "test",
-                            "banner": {
-                                "format": [
-                                    {
-                                        "w": 300,
-                                        "h": 250
-                                    },
-                                    {
-                                        "w": 300,
-                                        "h": 600
-                                    }
-                                ]
+                            "native": {
+                                "request": "{\"ver\":\"1.1\",\"layout\":1,\"adunit\":2,\"plcmtcnt\":6,\"plcmttype\":4,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":75}},{\"id\":2,\"required\":1,\"img\":{\"wmin\":492,\"hmin\":328,\"type\":3,\"mimes\":[\"image/jpeg\",\"image/jpg\",\"image/png\"]}},{\"id\":4,\"required\":0,\"data\":{\"type\":6}},{\"id\":5,\"required\":0,\"data\":{\"type\":7}},{\"id\":6,\"required\":0,\"data\":{\"type\":1,\"len\":20}}]}",
+                                "ver": "1.1"
                             },
                             "ext": {
                                 "bidder": {
@@ -115,7 +99,7 @@
                         "w": 300,
                         "h": 250
                     },
-                    "type": "banner"
+                    "type": "native"
                 }
             ]
         }
