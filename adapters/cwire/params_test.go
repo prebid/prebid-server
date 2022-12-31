@@ -40,7 +40,7 @@ func TestInvalidParams(t *testing.T) {
 
 var validParams = []string{
 	`{"placementId":123,"siteId":321}`,
-  `{"placementId":123,"siteId":321,"pageViewId":2}`,
+	`{"placementId":123,"siteId":321,"pageViewId":2}`,
 }
 
 var invalidParams = []string{
