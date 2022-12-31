@@ -1,4 +1,4 @@
-endpoint: "https://embed.cwi.re/delivery/prebid-server"
+endpoint: "https://embed.cwi.re/prebid/ortb2"
 maintainer:
   email: "mateja.maric@cwire.com"
   endpointCompression: gzip
