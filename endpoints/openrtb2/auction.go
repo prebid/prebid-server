@@ -519,6 +519,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 		return []error{err}
 	} else if reqPrebid != nil {
 		aliases = reqPrebid.Aliases
+		
 		if err := deps.validateAliases(aliases); err != nil {
 			return []error{err}
 		}
