@@ -51,6 +51,9 @@ func (a *KoddiAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 }
 func (a *KoddiAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	hostName := commerce.GetHostName(internalRequest)
+	if len(hostName) == 0 {
+		hostName = commerce.COMMERCE_DEFAULT_HOSTNAME
+	}
 	iurl, _ := a.buildImpressionURL(hostName) 
 	curl, _ := a.buildClickURL(hostName)
 	purl, _ := a.buildConversionURL(hostName)

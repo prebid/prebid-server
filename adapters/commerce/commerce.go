@@ -100,6 +100,7 @@ type ExtBidCommerce struct {
 }
 
 const MAX_COUNT = 10
+const COMMERCE_DEFAULT_HOSTNAME = "pubMatic"
 
 func (a *CommerceAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	host := "localhost"
@@ -245,7 +246,9 @@ func GetHostName(internalRequest *openrtb2.BidRequest) string {
 }
 func (a *CommerceAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	hostName := GetHostName(internalRequest)
-
+	if len(hostName) == 0 {
+		hostName = COMMERCE_DEFAULT_HOSTNAME
+	}
 	iurl, _ := a.buildImpressionURL(hostName) 
 	curl, _ := a.buildClickURL(hostName)
 	purl, _ := a.buildConversionURL(hostName)
