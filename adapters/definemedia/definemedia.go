@@ -86,7 +86,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		}
 	}
 
-	return bidResponse, nil
+	return bidResponse, errors
 }
 
 func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
@@ -94,7 +94,12 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 		var bidExt openrtb_ext.ExtBid
 		err := json.Unmarshal(bid.Ext, &bidExt)
 		if err == nil && bidExt.Prebid != nil {
-			return openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
+			if (bidExt.Prebid.Type == "banner") || (bidExt.Prebid.Type == "native") {
+				return openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
+			}
+			return "", &errortypes.BadServerResponse{
+				Message: fmt.Sprintf("Invalid mediatype in the impression"),
+			}
 		}
 	}
 

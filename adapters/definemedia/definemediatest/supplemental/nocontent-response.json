@@ -6,18 +6,19 @@
             "tid": "397962d3-47a1-4634-9cb7-78597b01d9a9",
             "prebid": {
               "bidder": {
-                "definemedia": {
-                  "mandantId": 12
-                }
+                "definemedia": {}
               }
             }
           },
           "id": "div-gpt-ad-1460505748561-0",
-          "video": {
-            "mimes": [
-              "video/mp4"
-            ],
-            "placement": 1
+          "banner": {
+            "topframe": 1,
+            "format": [
+              {
+                "w": 300,
+                "h": 250
+              }
+            ]
           }
         }
       ],
@@ -110,18 +111,19 @@
             "imp": [
               {
                 "id": "div-gpt-ad-1460505748561-0",
-                "video": {
-                    "mimes": [
-                      "video/mp4"
-                    ],
-                    "placement": 1
-                  },
+                "banner": {
+                  "format": [
+                    {
+                      "w": 300,
+                      "h": 250
+                    }
+                  ],
+                  "topframe": 1
+                },
                 "ext": {
                   "prebid": {
                     "bidder": {
-                      "definemedia": {
-                        "mandantId": 12
-                      }
+                      "definemedia": {}
                     }
                   },
                   "tid": "397962d3-47a1-4634-9cb7-78597b01d9a9"
@@ -207,58 +209,11 @@
           }
         },
         "mockResponse": {
-          "status": 200,
-          "body": {
-            "id": "test-request-id",
-            "seatbid": [
-              {
-                "bid": [
-                  {
-                    "id": "46189656-7e2e-477d-b7f2-e05de224bb89",
-                    "impid": "div-gpt-ad-1460505748561-0",
-                    "price": 100,
-                    "adm": "{banner html}",
-                    "adomain": [
-                      "test.com"
-                    ],
-                    "crid": "test-creative-id",
-                    "ext": {
-                      "prebid": {
-                        "type": "video"
-                      }
-                    }
-                  }
-                ]
-              }
-            ],
-            "cur": "USD"
-          }
+          "status": 204,
+          "body": {}
         }
       }
     ],
-    "expectedBidResponses": [
-      {
-        "currency": "USD",
-        "bids": [
-          {
-            "bid": {
-              "id": "46189656-7e2e-477d-b7f2-e05de224bb89",
-              "impid": "div-gpt-ad-1460505748561-0",
-              "price": 100,
-              "adm": "{banner html}",
-              "crid": "test-creative-id",
-              "adomain": [
-                "test.com"
-              ],
-              "ext": {
-                "prebid": {
-                  "type": "video"
-                }
-              }
-            },
-            "type": "video"
-          }
-        ]
-      }
-    ]
+    "expectedBidResponses": [],
+    "expectedMakeBidsErrors": []
   }
