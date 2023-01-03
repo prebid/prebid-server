@@ -16,7 +16,7 @@ import (
 type Entrypoint interface {
 	HandleEntrypointHook(
 		context.Context,
-		InvocationContext,
+		ModuleInvocationContext,
 		EntrypointPayload,
 	) (HookResult[EntrypointPayload], error)
 }

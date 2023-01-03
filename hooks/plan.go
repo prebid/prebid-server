@@ -8,26 +8,37 @@ import (
 	"github.com/prebid/prebid-server/hooks/hookstage"
 )
 
+type Stage string
+
 // Names of the available stages.
 const (
-	StageEntrypoint               = "entrypoint"
-	StageRawAuction               = "rawauction"
-	StageProcessedAuction         = "procauction"
-	StageBidRequest               = "bidrequest"
-	StageRawBidResponse           = "rawbidresponse"
-	StageAllProcessedBidResponses = "allprocbidresponses"
-	StageAuctionResponse          = "auctionresponse"
+	StageEntrypoint               Stage = "entrypoint"
+	StageRawAuctionRequest        Stage = "raw_auction_request"
+	StageProcessedAuctionRequest  Stage = "processed_auction_request"
+	StageBidderRequest            Stage = "bidder_request"
+	StageRawBidderResponse        Stage = "raw_bidder_response"
+	StageAllProcessedBidResponses Stage = "all_processed_bid_responses"
+	StageAuctionResponse          Stage = "auction_response"
 )
+
+func (s Stage) String() string {
+	return string(s)
+}
+
+func (s Stage) IsRejectable() bool {
+	return s != StageAllProcessedBidResponses &&
+		s != StageAuctionResponse
+}
 
 // ExecutionPlanBuilder is the interface that provides methods
 // for retrieving hooks grouped and sorted in the established order
 // according to the hook execution plan intended for run at a certain stage.
 type ExecutionPlanBuilder interface {
 	PlanForEntrypointStage(endpoint string) Plan[hookstage.Entrypoint]
-	PlanForRawAuctionStage(endpoint string, account *config.Account) Plan[hookstage.RawAuction]
-	PlanForProcessedAuctionStage(endpoint string, account *config.Account) Plan[hookstage.ProcessedAuction]
-	PlanForBidRequestStage(endpoint string, account *config.Account) Plan[hookstage.BidRequest]
-	PlanForRawBidResponseStage(endpoint string, account *config.Account) Plan[hookstage.RawBidResponse]
+	PlanForRawAuctionStage(endpoint string, account *config.Account) Plan[hookstage.RawAuctionRequest]
+	PlanForProcessedAuctionStage(endpoint string, account *config.Account) Plan[hookstage.ProcessedAuctionRequest]
+	PlanForBidderRequestStage(endpoint string, account *config.Account) Plan[hookstage.BidderRequest]
+	PlanForRawBidderResponseStage(endpoint string, account *config.Account) Plan[hookstage.RawBidderResponse]
 	PlanForAllProcessedBidResponsesStage(endpoint string, account *config.Account) Plan[hookstage.AllProcessedBidResponses]
 	PlanForAuctionResponseStage(endpoint string, account *config.Account) Plan[hookstage.AuctionResponse]
 }
@@ -85,43 +96,43 @@ func (p PlanBuilder) PlanForEntrypointStage(endpoint string) Plan[hookstage.Entr
 	)
 }
 
-func (p PlanBuilder) PlanForRawAuctionStage(endpoint string, account *config.Account) Plan[hookstage.RawAuction] {
+func (p PlanBuilder) PlanForRawAuctionStage(endpoint string, account *config.Account) Plan[hookstage.RawAuctionRequest] {
 	return getMergedPlan(
 		p.hooks,
 		account,
 		endpoint,
-		StageRawAuction,
+		StageRawAuctionRequest,
 		p.repo.GetRawAuctionHook,
 	)
 }
 
-func (p PlanBuilder) PlanForProcessedAuctionStage(endpoint string, account *config.Account) Plan[hookstage.ProcessedAuction] {
+func (p PlanBuilder) PlanForProcessedAuctionStage(endpoint string, account *config.Account) Plan[hookstage.ProcessedAuctionRequest] {
 	return getMergedPlan(
 		p.hooks,
 		account,
 		endpoint,
-		StageProcessedAuction,
+		StageProcessedAuctionRequest,
 		p.repo.GetProcessedAuctionHook,
 	)
 }
 
-func (p PlanBuilder) PlanForBidRequestStage(endpoint string, account *config.Account) Plan[hookstage.BidRequest] {
+func (p PlanBuilder) PlanForBidderRequestStage(endpoint string, account *config.Account) Plan[hookstage.BidderRequest] {
 	return getMergedPlan(
 		p.hooks,
 		account,
 		endpoint,
-		StageBidRequest,
-		p.repo.GetBidRequestHook,
+		StageBidderRequest,
+		p.repo.GetBidderRequestHook,
 	)
 }
 
-func (p PlanBuilder) PlanForRawBidResponseStage(endpoint string, account *config.Account) Plan[hookstage.RawBidResponse] {
+func (p PlanBuilder) PlanForRawBidderResponseStage(endpoint string, account *config.Account) Plan[hookstage.RawBidderResponse] {
 	return getMergedPlan(
 		p.hooks,
 		account,
 		endpoint,
-		StageRawBidResponse,
-		p.repo.GetRawBidResponseHook,
+		StageRawBidderResponse,
+		p.repo.GetRawBidderResponseHook,
 	)
 }
 
@@ -150,7 +161,8 @@ type hookFn[T any] func(moduleName string) (T, bool)
 func getMergedPlan[T any](
 	cfg config.Hooks,
 	account *config.Account,
-	endpoint, stage string,
+	endpoint string,
+	stage Stage,
 	getHookFn hookFn[T],
 ) Plan[T] {
 	accountPlan := cfg.DefaultAccountExecutionPlan
@@ -164,9 +176,9 @@ func getMergedPlan[T any](
 	return plan
 }
 
-func getPlan[T any](getHookFn hookFn[T], cfg config.HookExecutionPlan, endpoint, stage string) Plan[T] {
-	plan := make(Plan[T], 0, len(cfg.Endpoints[endpoint].Stages[stage].Groups))
-	for _, groupCfg := range cfg.Endpoints[endpoint].Stages[stage].Groups {
+func getPlan[T any](getHookFn hookFn[T], cfg config.HookExecutionPlan, endpoint string, stage Stage) Plan[T] {
+	plan := make(Plan[T], 0, len(cfg.Endpoints[endpoint].Stages[stage.String()].Groups))
+	for _, groupCfg := range cfg.Endpoints[endpoint].Stages[stage.String()].Groups {
 		group := getGroup(getHookFn, groupCfg)
 		if len(group.Hooks) > 0 {
 			plan = append(plan, group)

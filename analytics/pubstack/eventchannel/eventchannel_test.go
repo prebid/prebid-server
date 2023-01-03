@@ -3,7 +3,7 @@ package eventchannel
 import (
 	"bytes"
 	"compress/gzip"
-	"io/ioutil"
+	"io"
 	"math"
 	"sync"
 	"testing"
@@ -21,7 +21,7 @@ func readGz(encoded []byte) string {
 	gr, _ := gzip.NewReader(bytes.NewReader(encoded))
 	defer gr.Close()
 
-	decoded, _ := ioutil.ReadAll(gr)
+	decoded, _ := io.ReadAll(gr)
 	return string(decoded)
 }
 

@@ -17,7 +17,7 @@ import (
 type AuctionResponse interface {
 	HandleAuctionResponseHook(
 		context.Context,
-		InvocationContext,
+		ModuleInvocationContext,
 		AuctionResponsePayload,
 	) (HookResult[AuctionResponsePayload], error)
 }

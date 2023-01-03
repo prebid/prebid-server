@@ -49,6 +49,12 @@ type PrivacyLabels struct {
 	LMTEnforced    bool
 }
 
+type ModuleLabels struct {
+	Module    string
+	Stage     string
+	AccountID string
+}
+
 type StoredDataType string
 
 const (
@@ -433,4 +439,11 @@ type MetricsEngine interface {
 	RecordBidValidationCreativeSizeWarn(adapter openrtb_ext.BidderName, account string)
 	RecordBidValidationSecureMarkupError(adapter openrtb_ext.BidderName, account string)
 	RecordBidValidationSecureMarkupWarn(adapter openrtb_ext.BidderName, account string)
+	RecordModuleCalled(labels ModuleLabels, duration time.Duration)
+	RecordModuleFailed(labels ModuleLabels)
+	RecordModuleSuccessNooped(labels ModuleLabels)
+	RecordModuleSuccessUpdated(labels ModuleLabels)
+	RecordModuleSuccessRejected(labels ModuleLabels)
+	RecordModuleExecutionError(labels ModuleLabels)
+	RecordModuleTimeout(labels ModuleLabels)
 }

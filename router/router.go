@@ -5,8 +5,8 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -54,7 +54,7 @@ import (
 // If the root directory, or any of the files in it, cannot be read, then the program will exit.
 func NewJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.BidderParamValidator, aliases map[string]string) httprouter.Handle {
 	// Slurp the files into memory first, since they're small and it minimizes request latency.
-	files, err := ioutil.ReadDir(schemaDirectory)
+	files, err := os.ReadDir(schemaDirectory)
 	if err != nil {
 		glog.Fatalf("Failed to read directory %s: %v", schemaDirectory, err)
 	}
@@ -168,8 +168,13 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		syncerKeys = append(syncerKeys, k)
 	}
 
+	repo, moduleStageNames, err := modules.NewBuilder().Build(cfg.Hooks.Modules, generalHttpClient)
+	if err != nil {
+		glog.Fatalf("Failed to init hook modules: %v", err)
+	}
+
 	// Metrics engine
-	r.MetricsEngine = metricsConf.NewMetricsEngine(cfg, openrtb_ext.CoreBidderNames(), syncerKeys)
+	r.MetricsEngine = metricsConf.NewMetricsEngine(cfg, openrtb_ext.CoreBidderNames(), syncerKeys, moduleStageNames)
 	shutdown, fetcher, ampFetcher, accounts, categoriesFetcher, videoFetcher, storedRespFetcher := storedRequestsConf.NewStoredRequests(cfg, r.MetricsEngine, generalHttpClient, r.Router)
 	// todo(zachbadgett): better shutdown
 	r.Shutdown = shutdown
@@ -204,11 +209,6 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	adsCertSigner, err := adscert.NewAdCertsSigner(cfg.Experiment.AdCerts)
 	if err != nil {
 		glog.Fatalf("Failed to create ads cert signer: %v", err)
-	}
-
-	repo, err := modules.NewBuilder().Build(cfg.Hooks.Modules, generalHttpClient)
-	if err != nil {
-		glog.Fatalf("Failed to init hook modules: %v", err)
 	}
 
 	planBuilder := hooks.NewExecutionPlanBuilder(cfg.Hooks, repo)
@@ -337,7 +337,7 @@ func readDefaultRequest(defReqConfig config.DefReqConfig) (map[string]string, []
 		if len(defReqConfig.FileSystem.FileName) == 0 {
 			return aliases, []byte{}
 		}
-		defReqJSON, err := ioutil.ReadFile(defReqConfig.FileSystem.FileName)
+		defReqJSON, err := os.ReadFile(defReqConfig.FileSystem.FileName)
 		if err != nil {
 			glog.Fatalf("error reading aliases from file %s: %v", defReqConfig.FileSystem.FileName, err)
 			return aliases, []byte{}
