@@ -1,0 +1,74 @@
+{
+  "mockBidRequest": {
+    "id": "test-req-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "ext": {
+          "bidder": {
+            "slotid": "testslotid",
+            "adtype": "banner",
+            "publisherid": "123",
+            "signkey": "signkey",
+            "keyid": "41",
+            "isTestAuthorization": "true"
+          }
+        }
+      }
+    ],
+    "app": {
+      "bundle": "com.example.p1",
+      "name": "Huawei Browser",
+      "ver": "9.1.0.301",
+      "content": {
+        "language": "zh"
+      }
+    },
+    "device": {
+      "ua": "useragent",
+      "h": 1920,
+      "language": "zh",
+      "model": "COL-TEST",
+      "os": "android",
+      "osv": "10.0.0",
+      "devicetype": 4,
+      "make": "huawei",
+      "w": 1080,
+      "ip": "ip",
+      "pxratio": 23.01,
+      "geo": {
+        "country": "CHN"
+      }
+    },
+    "user": {
+      "ext": {
+        "data": {
+          "gaid": [
+            "gaid"
+          ],
+          "oaid": [
+            "oaid"
+          ],
+          "clientTime": [
+            "2018-11-02 16:34:07.981+1300"
+          ]
+        }
+      }
+    },
+    "regs": {
+      "coppa": 1
+    },
+    "ext": {
+    }
+  },
+  "httpcalls": [
+  ],
+  "expectedBidResponses": [
+  ],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "check openrtb format: please choose one of our supported type banner, native, or video",
+      "comparison": "literal"
+    }
+  ]
+}

@@ -9,7 +9,7 @@ jobs:
   release:
     name: Create Release
     if: github.event.base_ref == 'refs/heads/master'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - name: Get Version
         id: get_version

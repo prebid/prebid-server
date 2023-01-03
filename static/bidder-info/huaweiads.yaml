@@ -1,3 +1,5 @@
+endpoint: "https://acd.op.hicloud.com/ppsadx/getResult"
+disabled: true
 maintainer:
   email: hwads@huawei.com
 gvlVendorID: 856
@@ -7,3 +9,4 @@ capabilities:
     mediaTypes:
       - banner
       - native
+      - video

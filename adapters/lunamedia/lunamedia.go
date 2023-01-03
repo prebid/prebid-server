@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"text/template"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -18,7 +18,7 @@ type LunaMediaAdapter struct {
 	EndpointTemplate *template.Template
 }
 
-//MakeRequests prepares request information for prebid-server core
+// MakeRequests prepares request information for prebid-server core
 func (adapter *LunaMediaAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 	if len(request.Imp) == 0 {
@@ -86,7 +86,7 @@ func validateImpression(impExt *openrtb_ext.ExtImpLunaMedia) error {
 	return nil
 }
 
-//Alter impression info to comply with LunaMedia platform requirements
+// Alter impression info to comply with LunaMedia platform requirements
 func compatImpression(imp *openrtb2.Imp) error {
 	imp.Ext = nil //do not forward ext to LunaMedia platform
 	if imp.Banner != nil {
@@ -183,7 +183,7 @@ func (adapter *LunaMediaAdapter) buildEndpointURL(params *openrtb_ext.ExtImpLuna
 	return macros.ResolveMacros(adapter.EndpointTemplate, endpointParams)
 }
 
-//MakeBids translates LunaMedia bid response to prebid-server specific format
+// MakeBids translates LunaMedia bid response to prebid-server specific format
 func (adapter *LunaMediaAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var msg = ""
 	if response.StatusCode == http.StatusNoContent {
@@ -228,7 +228,7 @@ func getMediaTypeForImpID(impID string, imps []openrtb2.Imp) openrtb_ext.BidType
 }
 
 // Builder builds a new instance of the LunaMedia adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	urlTemplate, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)

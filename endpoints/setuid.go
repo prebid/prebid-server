@@ -10,10 +10,12 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
+	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
+	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/prebid/prebid-server/util/httputil"
 )
@@ -26,8 +28,8 @@ const (
 	chromeiOSStrLen = len(chromeiOSStr)
 )
 
-func NewSetUIDEndpoint(cfg config.HostCookie, syncersByBidder map[string]usersync.Syncer, perms gdpr.Permissions, pbsanalytics analytics.PBSAnalyticsModule, metricsEngine metrics.MetricsEngine) httprouter.Handle {
-	cookieTTL := time.Duration(cfg.TTL) * 24 * time.Hour
+func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, gdprPermsBuilder gdpr.PermissionsBuilder, tcf2CfgBuilder gdpr.TCF2ConfigBuilder, pbsanalytics analytics.PBSAnalyticsModule, accountsFetcher stored_requests.AccountFetcher, metricsEngine metrics.MetricsEngine) httprouter.Handle {
+	cookieTTL := time.Duration(cfg.HostCookie.TTL) * 24 * time.Hour
 
 	// convert map of syncers by bidder to map of syncers by key
 	// - its safe to assume that if multiple bidders map to the same key, the syncers are interchangeable.
@@ -44,7 +46,7 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncersByBidder map[string]usersyn
 
 		defer pbsanalytics.LogSetUIDObject(&so)
 
-		pc := usersync.ParseCookieFromRequest(r, &cfg)
+		pc := usersync.ParseCookieFromRequest(r, &cfg.HostCookie)
 		if !pc.AllowSyncs() {
 			w.WriteHeader(http.StatusUnauthorized)
 			metricsEngine.RecordSetUid(metrics.SetUidOptOut)
@@ -59,6 +61,7 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncersByBidder map[string]usersyn
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(err.Error()))
 			metricsEngine.RecordSetUid(metrics.SetUidSyncerUnknown)
+			so.Errors = []error{err}
 			so.Status = http.StatusBadRequest
 			return
 		}
@@ -69,11 +72,38 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncersByBidder map[string]usersyn
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(err.Error()))
 			metricsEngine.RecordSetUid(metrics.SetUidBadRequest)
+			so.Errors = []error{err}
 			so.Status = http.StatusBadRequest
 			return
 		}
 
-		if shouldReturn, status, body := preventSyncsGDPR(query.Get("gdpr"), query.Get("gdpr_consent"), perms); shouldReturn {
+		accountID := query.Get("account")
+		if accountID == "" {
+			accountID = metrics.PublisherUnknown
+		}
+		account, fetchErrs := accountService.GetAccount(context.Background(), cfg, accountsFetcher, accountID)
+		if len(fetchErrs) > 0 {
+			w.WriteHeader(http.StatusBadRequest)
+			err := combineErrors(fetchErrs)
+			w.Write([]byte(err.Error()))
+			switch err {
+			case errCookieSyncAccountBlocked:
+				metricsEngine.RecordSetUid(metrics.SetUidAccountBlocked)
+			case errCookieSyncAccountConfigMalformed:
+				metricsEngine.RecordSetUid(metrics.SetUidAccountConfigMalformed)
+			case errCookieSyncAccountInvalid:
+				metricsEngine.RecordSetUid(metrics.SetUidAccountInvalid)
+			default:
+				metricsEngine.RecordSetUid(metrics.SetUidBadRequest)
+			}
+			so.Errors = []error{err}
+			so.Status = http.StatusBadRequest
+			return
+		}
+
+		tcf2Cfg := tcf2CfgBuilder(cfg.GDPR.TCF2, account.GDPR)
+
+		if shouldReturn, status, body := preventSyncsGDPR(query.Get("gdpr"), query.Get("gdpr_consent"), gdprPermsBuilder, tcf2Cfg); shouldReturn {
 			w.WriteHeader(status)
 			w.Write([]byte(body))
 			switch status {
@@ -82,6 +112,7 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncersByBidder map[string]usersyn
 			case http.StatusUnavailableForLegalReasons:
 				metricsEngine.RecordSetUid(metrics.SetUidGDPRHostCookieBlocked)
 			}
+			so.Errors = []error{errors.New(body)}
 			so.Status = status
 			return
 		}
@@ -101,7 +132,7 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncersByBidder map[string]usersyn
 		}
 
 		setSiteCookie := siteCookieCheck(r.UserAgent())
-		pc.SetCookieOnResponse(w, setSiteCookie, &cfg, cookieTTL)
+		pc.SetCookieOnResponse(w, setSiteCookie, &cfg.HostCookie, cookieTTL)
 
 		switch responseFormat {
 		case "i":
@@ -185,7 +216,7 @@ func checkChromeBrowserVersion(ua string, index int, chromeStrLength int) bool {
 	return result
 }
 
-func preventSyncsGDPR(gdprEnabled string, gdprConsent string, perms gdpr.Permissions) (shouldReturn bool, status int, body string) {
+func preventSyncsGDPR(gdprEnabled string, gdprConsent string, permsBuilder gdpr.PermissionsBuilder, tcf2Cfg gdpr.TCF2ConfigReader) (shouldReturn bool, status int, body string) {
 	if gdprEnabled != "" && gdprEnabled != "0" && gdprEnabled != "1" {
 		return true, http.StatusBadRequest, "the gdpr query param must be either 0 or 1. You gave " + gdprEnabled
 	}
@@ -200,7 +231,14 @@ func preventSyncsGDPR(gdprEnabled string, gdprConsent string, perms gdpr.Permiss
 		gdprSignal = gdpr.Signal(i)
 	}
 
-	allowed, err := perms.HostCookiesAllowed(context.Background(), gdprSignal, gdprConsent)
+	gdprRequestInfo := gdpr.RequestInfo{
+		Consent:    gdprConsent,
+		GDPRSignal: gdprSignal,
+	}
+
+	perms := permsBuilder(tcf2Cfg, gdprRequestInfo)
+
+	allowed, err := perms.HostCookiesAllowed(context.Background())
 	if err != nil {
 		if _, ok := err.(*gdpr.ErrorMalformedConsent); ok {
 			return true, http.StatusBadRequest, "gdpr_consent was invalid. " + err.Error()

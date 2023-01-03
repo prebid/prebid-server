@@ -4,27 +4,27 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/analytics"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestJsonifyAuctionObject(t *testing.T) {
 	ao := &analytics.AuctionObject{
 		Status: http.StatusOK,
 	}
-	if _, err := JsonifyAuctionObject(ao, "scopeId"); err != nil {
-		t.Fail()
-	}
 
+	_, err := JsonifyAuctionObject(ao, "scopeId")
+	assert.NoError(t, err)
 }
 
 func TestJsonifyVideoObject(t *testing.T) {
 	vo := &analytics.VideoObject{
 		Status: http.StatusOK,
 	}
-	if _, err := JsonifyVideoObject(vo, "scopeId"); err != nil {
-		t.Fail()
-	}
+
+	_, err := JsonifyVideoObject(vo, "scopeId")
+	assert.NoError(t, err)
 }
 
 func TestJsonifyCookieSync(t *testing.T) {
@@ -32,9 +32,9 @@ func TestJsonifyCookieSync(t *testing.T) {
 		Status:       http.StatusOK,
 		BidderStatus: []*analytics.CookieSyncBidder{},
 	}
-	if _, err := JsonifyCookieSync(cso, "scopeId"); err != nil {
-		t.Fail()
-	}
+
+	_, err := JsonifyCookieSync(cso, "scopeId")
+	assert.NoError(t, err)
 }
 
 func TestJsonifySetUIDObject(t *testing.T) {
@@ -43,9 +43,9 @@ func TestJsonifySetUIDObject(t *testing.T) {
 		Bidder: "any-bidder",
 		UID:    "uid string",
 	}
-	if _, err := JsonifySetUIDObject(so, "scopeId"); err != nil {
-		t.Fail()
-	}
+
+	_, err := JsonifySetUIDObject(so, "scopeId")
+	assert.NoError(t, err)
 }
 
 func TestJsonifyAmpObject(t *testing.T) {
@@ -55,7 +55,7 @@ func TestJsonifyAmpObject(t *testing.T) {
 		AuctionResponse:    &openrtb2.BidResponse{},
 		AmpTargetingValues: map[string]string{},
 	}
-	if _, err := JsonifyAmpObject(ao, "scopeId"); err != nil {
-		t.Fail()
-	}
+
+	_, err := JsonifyAmpObject(ao, "scopeId")
+	assert.NoError(t, err)
 }

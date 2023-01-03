@@ -1,6 +1,6 @@
 package openrtb_ext
 
-// ExtImpOutbrain defines the contract for bidrequest.imp[i].ext.outbrain
+// ExtImpOutbrain defines the contract for bidrequest.imp[i].ext.prebid.bidder.outbrain
 type ExtImpOutbrain struct {
 	Publisher ExtImpOutbrainPublisher `json:"publisher"`
 	TagId     string                  `json:"tagid"`

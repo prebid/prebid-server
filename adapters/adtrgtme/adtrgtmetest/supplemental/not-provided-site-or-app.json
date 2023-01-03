@@ -1,0 +1,37 @@
+{
+  "mockBidRequest": {
+    "id": "test-req-id",
+    "at": 1,
+    "tmax": 300,
+    "imp": [
+      {
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "id": "test-bid-id",
+        "bidfloor": 1,
+        "bidfloorcur": "USD",
+        "secure": 1
+      }
+    ],
+    "device": {
+      "ua": "test-device-user-agent",
+      "ip": "123.123.123.123",
+      "geo": {
+        "country": "TST"
+      },
+      "os": "Android",
+      "language": "en"
+    },
+    "user": {
+      "id": "test-user-id"
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "request.Site or request.App are not provided",
+      "comparison": "literal"
+    }
+  ]
+}

@@ -32,6 +32,7 @@ type googleResponse struct {
 
 func (deps *UserSyncDeps) VerifyRecaptcha(response string) error {
 	ts := &http.Transport{
+		Proxy:           http.ProxyFromEnvironment,
 		TLSClientConfig: &tls.Config{RootCAs: ssl.GetRootCAPool()},
 	}
 

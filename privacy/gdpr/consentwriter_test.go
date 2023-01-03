@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -88,7 +88,7 @@ func TestConsentWriter(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		writer := ConsentWriter{test.consent}
+		writer := ConsentWriter{test.consent, nil}
 		err := writer.Write(test.request)
 
 		if test.expectedError {
