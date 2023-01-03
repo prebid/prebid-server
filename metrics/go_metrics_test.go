@@ -307,7 +307,7 @@ func TestRecordBidValidationCreativeSize(t *testing.T) {
 	}
 	for _, test := range testCases {
 		registry := metrics.NewRegistry()
-		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, test.givenDisabledMetrics, nil)
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, test.givenDisabledMetrics, nil, nil)
 
 		m.RecordBidValidationCreativeSizeError(openrtb_ext.BidderAppnexus, test.givenPubID)
 		m.RecordBidValidationCreativeSizeWarn(openrtb_ext.BidderAppnexus, test.givenPubID)
@@ -349,7 +349,7 @@ func TestRecordBidValidationSecureMarkup(t *testing.T) {
 	}
 	for _, test := range testCases {
 		registry := metrics.NewRegistry()
-		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, test.givenDisabledMetrics, nil)
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, test.givenDisabledMetrics, nil, nil)
 
 		m.RecordBidValidationSecureMarkupError(openrtb_ext.BidderAppnexus, test.givenPubID)
 		m.RecordBidValidationSecureMarkupWarn(openrtb_ext.BidderAppnexus, test.givenPubID)
