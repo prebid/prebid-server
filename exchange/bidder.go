@@ -156,6 +156,10 @@ type bidderAdapterConfig struct {
 }
 
 func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, hookExecutor hookexecution.StageExecutor) ([]*pbsOrtbSeatBid, []error) {
+	reject := hookExecutor.ExecuteBidderRequestStage(bidderRequest.BidRequest, string(bidderRequest.BidderName))
+	if reject != nil {
+		return nil, []error{reject}
+	}
 
 	var reqData []*adapters.RequestData
 	var errs []error
