@@ -313,7 +313,7 @@ func CoreBidderNames() []BidderName {
 		BidderConversant,
 		BidderCpmstar,
 		BidderCriteo,
-	  BidderCWire,
+		BidderCWire,
 		BidderDatablocks,
 		BidderDecenterAds,
 		BidderDeepintent,
