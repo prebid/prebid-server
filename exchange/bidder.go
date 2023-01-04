@@ -116,6 +116,10 @@ type bidderAdapterConfig struct {
 }
 
 func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, hookExecutor hookexecution.StageExecutor) ([]*entities.PbsOrtbSeatBid, []error) {
+	reject := hookExecutor.ExecuteBidderRequestStage(bidderRequest.BidRequest, string(bidderRequest.BidderName))
+	if reject != nil {
+		return nil, []error{reject}
+	}
 
 	var reqData []*adapters.RequestData
 	var errs []error
@@ -227,6 +231,11 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 			errs = append(errs, moreErrs...)
 
 			if bidResponse != nil {
+				reject := hookExecutor.ExecuteRawBidderResponseStage(bidResponse, string(bidder.BidderName))
+				if reject != nil {
+					errs = append(errs, reject)
+					continue
+				}
 				// Setup default currency as `USD` is not set in bid request nor bid response
 				if bidResponse.Currency == "" {
 					bidResponse.Currency = defaultCurrency
