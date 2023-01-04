@@ -329,8 +329,6 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 			}
 		}
 
-		r.HookExecutor.ExecuteAllProcessedBidResponsesStage(adapterBids)
-
 		if e.bidIDGenerator.Enabled() {
 			for _, seatBid := range adapterBids {
 				for _, pbsBid := range seatBid.Bids {
@@ -344,6 +342,8 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 
 		evTracking := getEventTracking(&requestExt.Prebid, r.StartTime, &r.Account, e.bidderInfo, e.externalURL)
 		adapterBids = evTracking.modifyBidsForEvents(adapterBids)
+
+		r.HookExecutor.ExecuteAllProcessedBidResponsesStage(adapterBids)
 
 		if targData != nil {
 			// A non-nil auction is only needed if targeting is active. (It is used below this block to extract cache keys)
