@@ -1441,7 +1441,7 @@ type mockPlanBuilder struct {
 	rawAuctionPlan               hooks.Plan[hookstage.RawAuctionRequest]
 	processedAuctionPlan         hooks.Plan[hookstage.ProcessedAuctionRequest]
 	bidderRequestPlan            hooks.Plan[hookstage.BidderRequest]
-	bidderResponsePlan           hooks.Plan[hookstage.RawBidderResponse]
+	rawBidderResponsePlan        hooks.Plan[hookstage.RawBidderResponse]
 	allProcessedBidResponsesPlan hooks.Plan[hookstage.AllProcessedBidResponses]
 	auctionResponsePlan          hooks.Plan[hookstage.AuctionResponse]
 }
@@ -1463,7 +1463,7 @@ func (m mockPlanBuilder) PlanForBidderRequestStage(_ string, _ *config.Account) 
 }
 
 func (m mockPlanBuilder) PlanForRawBidderResponseStage(_ string, _ *config.Account) hooks.Plan[hookstage.RawBidderResponse] {
-	return m.bidderResponsePlan
+	return m.rawBidderResponsePlan
 }
 
 func (m mockPlanBuilder) PlanForAllProcessedBidResponsesStage(_ string, _ *config.Account) hooks.Plan[hookstage.AllProcessedBidResponses] {
@@ -1523,6 +1523,20 @@ func (m mockRejectionHook) HandleBidderRequestHook(
 	payload hookstage.BidderRequestPayload,
 ) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
 	result := hookstage.HookResult[hookstage.BidderRequestPayload]{}
+	if payload.Bidder == "appnexus" {
+		result.Reject = true
+		result.NbrCode = m.nbr
+	}
+
+	return result, nil
+}
+
+func (m mockRejectionHook) HandleRawBidderResponseHook(
+	_ context.Context,
+	_ hookstage.ModuleInvocationContext,
+	payload hookstage.RawBidderResponsePayload,
+) (hookstage.HookResult[hookstage.RawBidderResponsePayload], error) {
+	result := hookstage.HookResult[hookstage.RawBidderResponsePayload]{}
 	if payload.Bidder == "appnexus" {
 		result.Reject = true
 		result.NbrCode = m.nbr

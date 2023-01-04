@@ -271,6 +271,11 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 			errs = append(errs, moreErrs...)
 
 			if bidResponse != nil {
+				reject := hookExecutor.ExecuteRawBidderResponseStage(bidResponse, string(bidder.BidderName))
+				if reject != nil {
+					errs = append(errs, reject)
+					continue
+				}
 				// Setup default currency as `USD` is not set in bid request nor bid response
 				if bidResponse.Currency == "" {
 					bidResponse.Currency = defaultCurrency

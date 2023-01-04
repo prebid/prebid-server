@@ -1989,6 +1989,25 @@ func TestValidAmpResponseWhenRequestStagesRejected(t *testing.T) {
 				},
 			}},
 		},
+		{
+			description: "Assert correct AmpResponse when request rejected at raw-bidder-response stage",
+			file:        file,
+			planBuilder: mockPlanBuilder{rawBidderResponsePlan: makeRejectPlan[hookstage.RawBidderResponse](mockRejectionHook{nbr})},
+			expectedAmpResponse: AmpResponse{Targeting: map[string]string{}, Warnings: map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{
+				"appnexus": {
+					{
+						Code:    11,
+						Message: "Module foobar (hook: foo) rejected request with code 123 at raw_bidder_response stage",
+					},
+				},
+				"general": {
+					{
+						Code:    10002,
+						Message: "debug turned off for account",
+					},
+				},
+			}},
+		},
 	}
 
 	for _, tc := range testCases {
