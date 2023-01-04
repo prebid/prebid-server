@@ -20,7 +20,9 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
+	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
@@ -4480,7 +4482,7 @@ type validatingBidder struct {
 	mockResponses map[string]bidderResponse
 }
 
-func (b *validatingBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes) (seatBids []*pbsOrtbSeatBid, errs []error) {
+func (b *validatingBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, executor hookexecution.StageExecutor) (seatBids []*pbsOrtbSeatBid, errs []error) {
 	if expectedRequest, ok := b.expectations[string(bidderRequest.BidderName)]; ok {
 		if expectedRequest != nil {
 			if !reflect.DeepEqual(expectedRequest.BidAdjustments, bidRequestOptions.bidAdjustments) {
@@ -4643,7 +4645,7 @@ func (e *emptyUsersync) HasAnyLiveSyncs() bool {
 
 type panicingAdapter struct{}
 
-func (panicingAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestMetadata bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes) (posb []*pbsOrtbSeatBid, errs []error) {
+func (panicingAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestMetadata bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, executor hookexecution.StageExecutor) (posb []*pbsOrtbSeatBid, errs []error) {
 	panic("Panic! Panic! The world is ending!")
 }
 
@@ -4712,4 +4714,129 @@ func getInfoFromImp(req *openrtb_ext.RequestWrapper) (json.RawMessage, string, e
 		}
 	}
 	return extPrebid.Passthrough, impID, nil
+}
+
+func TestModulesCanBeExecutedForMultipleBiddersSimultaneously(t *testing.T) {
+	noBidServer := func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(204)
+	}
+	server := httptest.NewServer(http.HandlerFunc(noBidServer))
+	defer server.Close()
+
+	bidderImpl := &goodSingleBidder{
+		httpRequest: &adapters.RequestData{
+			Method:  "POST",
+			Uri:     server.URL,
+			Body:    []byte(`{"key":"val"}`),
+			Headers: http.Header{},
+		},
+		bidResponse: &adapters.BidderResponse{},
+	}
+
+	e := new(exchange)
+	e.me = &metricsConf.NilMetricsEngine{}
+	e.tcf2ConfigBuilder = fakeTCF2ConfigBuilder{
+		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
+	}.Builder
+	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+
+	bidRequest := &openrtb2.BidRequest{
+		ID: "some-request-id",
+		Imp: []openrtb2.Imp{{
+			ID:     "some-impression-id",
+			Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}, {W: 300, H: 600}}},
+			Ext: json.RawMessage(
+				`{"prebid":{"bidder":{"telaria": {"placementId": 1}, "appnexus": {"placementid": 2}, "33across": {"placementId": 3}, "aax": {"placementid": 4}}}}`,
+			),
+		}},
+		Site:   &openrtb2.Site{Page: "prebid.org", Ext: json.RawMessage(`{"amp":0}`)},
+		Device: &openrtb2.Device{UA: "curl/7.54.0", IP: "::1"},
+		AT:     1,
+		TMax:   500,
+	}
+
+	exec := hookexecution.NewHookExecutor(TestApplyHookMutationsBuilder{}, "/openrtb2/auction", &metricsConfig.NilMetricsEngine{})
+
+	auctionRequest := AuctionRequest{
+		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: bidRequest},
+		Account:           config.Account{DebugAllow: true},
+		UserSyncs:         &emptyUsersync{},
+		StartTime:         time.Now(),
+		HookExecutor:      exec,
+	}
+
+	e.adapterMap = map[openrtb_ext.BidderName]AdaptedBidder{
+		openrtb_ext.BidderAppnexus: AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{}, ""),
+		openrtb_ext.BidderTelaria:  AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{}, ""),
+		openrtb_ext.Bidder33Across: AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.Bidder33Across, &config.DebugInfo{}, ""),
+		openrtb_ext.BidderAax:      AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAax, &config.DebugInfo{}, ""),
+	}
+	// Run test
+	_, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{})
+	// Assert no HoldAuction err
+	assert.NoErrorf(t, err, "ex.HoldAuction returned an err")
+
+	// check stage outcomes
+	assert.Equal(t, len(exec.GetOutcomes()), len(e.adapterMap), "stage outcomes append operation failed")
+	//check that all modules were applied and logged
+	for _, sto := range exec.GetOutcomes() {
+		assert.Equal(t, 2, len(sto.Groups), "not all groups were executed")
+		for _, group := range sto.Groups {
+			assert.Equal(t, 5, len(group.InvocationResults), "not all module hooks were applied")
+			for _, r := range group.InvocationResults {
+				assert.Equal(t, "success", string(r.Status), fmt.Sprintf("Module %s hook %s completed unsuccessfully", r.HookID.ModuleCode, r.HookID.HookImplCode))
+			}
+		}
+	}
+}
+
+type TestApplyHookMutationsBuilder struct {
+	hooks.EmptyPlanBuilder
+}
+
+func (e TestApplyHookMutationsBuilder) PlanForBidderRequestStage(_ string, _ *config.Account) hooks.Plan[hookstage.BidderRequest] {
+	return hooks.Plan[hookstage.BidderRequest]{
+		hooks.Group[hookstage.BidderRequest]{
+			Timeout: 100 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.BidderRequest]{
+				{Module: "foobar1", Code: "foo1", Hook: mockUpdateBidRequestHook{}},
+				{Module: "foobar2", Code: "foo2", Hook: mockUpdateBidRequestHook{}},
+				{Module: "foobar3", Code: "foo3", Hook: mockUpdateBidRequestHook{}},
+				{Module: "foobar4", Code: "foo4", Hook: mockUpdateBidRequestHook{}},
+				{Module: "foobar5", Code: "foo5", Hook: mockUpdateBidRequestHook{}},
+			},
+		},
+		hooks.Group[hookstage.BidderRequest]{
+			Timeout: 100 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.BidderRequest]{
+				{Module: "foobar6", Code: "foo6", Hook: mockUpdateBidRequestHook{}},
+				{Module: "foobar7", Code: "foo7", Hook: mockUpdateBidRequestHook{}},
+				{Module: "foobar8", Code: "foo8", Hook: mockUpdateBidRequestHook{}},
+				{Module: "foobar9", Code: "foo9", Hook: mockUpdateBidRequestHook{}},
+				{Module: "foobar10", Code: "foo10", Hook: mockUpdateBidRequestHook{}},
+			},
+		},
+	}
+}
+
+type mockUpdateBidRequestHook struct{}
+
+func (e mockUpdateBidRequestHook) HandleBidderRequestHook(_ context.Context, mctx hookstage.ModuleInvocationContext, _ hookstage.BidderRequestPayload) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
+	time.Sleep(50 * time.Millisecond)
+	c := &hookstage.ChangeSet[hookstage.BidderRequestPayload]{}
+	c.AddMutation(
+		func(payload hookstage.BidderRequestPayload) (hookstage.BidderRequestPayload, error) {
+			payload.BidRequest.Site.Name = "test"
+			return payload, nil
+		}, hookstage.MutationUpdate, "bidRequest", "site.name",
+	).AddMutation(
+		func(payload hookstage.BidderRequestPayload) (hookstage.BidderRequestPayload, error) {
+			payload.BidRequest.Site.Domain = "test.com"
+			return payload, nil
+		}, hookstage.MutationUpdate, "bidRequest", "site.domain",
+	)
+
+	mctx.ModuleContext = map[string]interface{}{"some-ctx": "some-ctx"}
+
+	return hookstage.HookResult[hookstage.BidderRequestPayload]{ChangeSet: c, ModuleContext: mctx.ModuleContext}, nil
 }

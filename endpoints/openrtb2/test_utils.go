@@ -1516,3 +1516,17 @@ func (m mockRejectionHook) HandleProcessedAuctionHook(
 ) (hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload], error) {
 	return hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload]{Reject: true, NbrCode: m.nbr}, nil
 }
+
+func (m mockRejectionHook) HandleBidderRequestHook(
+	_ context.Context,
+	_ hookstage.ModuleInvocationContext,
+	payload hookstage.BidderRequestPayload,
+) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
+	result := hookstage.HookResult[hookstage.BidderRequestPayload]{}
+	if payload.Bidder == "appnexus" {
+		result.Reject = true
+		result.NbrCode = m.nbr
+	}
+
+	return result, nil
+}
