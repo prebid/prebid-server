@@ -1969,6 +1969,26 @@ func TestValidAmpResponseWhenRequestStagesRejected(t *testing.T) {
 			planBuilder:         mockPlanBuilder{processedAuctionPlan: makeRejectPlan[hookstage.ProcessedAuctionRequest](mockRejectionHook{nbr})},
 			expectedAmpResponse: AmpResponse{Targeting: map[string]string{}},
 		},
+		{
+			// bidder-request stage rejects only bidder, so we expect bidder rejection warning added
+			description: "Assert correct BidResponse when request rejected at bidder-request stage",
+			file:        file,
+			planBuilder: mockPlanBuilder{bidderRequestPlan: makeRejectPlan[hookstage.BidderRequest](mockRejectionHook{nbr})},
+			expectedAmpResponse: AmpResponse{Targeting: map[string]string{}, Warnings: map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{
+				"appnexus": {
+					{
+						Code:    11,
+						Message: "Module foobar (hook: foo) rejected request with code 123 at bidder_request stage",
+					},
+				},
+				"general": {
+					{
+						Code:    10002,
+						Message: "debug turned off for account",
+					},
+				},
+			}},
+		},
 	}
 
 	for _, tc := range testCases {
