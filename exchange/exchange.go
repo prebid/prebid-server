@@ -315,7 +315,6 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	var cacheErrs []error
 	var bidResponseExt *openrtb_ext.ExtBidResponse
 	if anyBidsReturned {
-		r.HookExecutor.ExecuteAllProcessedBidResponsesStage(adapterBids)
 
 		var bidCategory map[string]string
 		//If includebrandcategory is present in ext then CE feature is on.
@@ -329,6 +328,8 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 				errs = append(errs, errors.New(message))
 			}
 		}
+
+		r.HookExecutor.ExecuteAllProcessedBidResponsesStage(adapterBids)
 
 		if e.bidIDGenerator.Enabled() {
 			for _, seatBid := range adapterBids {
