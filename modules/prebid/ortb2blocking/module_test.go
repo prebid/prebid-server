@@ -361,6 +361,38 @@ func TestHandleBidderRequestHook(t *testing.T) {
 			expectedError: nil,
 		},
 		{
+			description: "Payload changed after successful BidderRequest hook execution for default config",
+			bidder:      bidder,
+			config:      json.RawMessage(`{"attributes": {"badv": {"enforce_blocks": true, "block_unknown_adomain": true, "blocked_adomain": ["a.com","b.com","c.com"]}}}`),
+			bidRequest: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{
+						ID:    "ImpID1",
+						Audio: &openrtb2.Audio{},
+					},
+				},
+			},
+			expectedBidRequest: &openrtb2.BidRequest{
+				BAdv: []string{bAdvA, bAdvB, bAdvC},
+				Imp: []openrtb2.Imp{
+					{
+						ID:    "ImpID1",
+						Audio: &openrtb2.Audio{},
+					},
+				},
+			},
+			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{
+				ModuleContext: map[string]interface{}{
+					bidder: blockingAttributes{
+						badv:  []string{bAdvA, bAdvB, bAdvC},
+						btype: map[string][]int{},
+						battr: map[string][]int{},
+					},
+				},
+			},
+			expectedError: nil,
+		},
+		{
 			description: "BidRequest fields are not updated if config empty",
 			bidder:      bidder,
 			config:      json.RawMessage(`{}`),
