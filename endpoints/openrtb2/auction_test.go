@@ -4680,6 +4680,17 @@ func TestValidResponseWhenRequestRejected(t *testing.T) {
 			file:        file,
 			planBuilder: mockPlanBuilder{processedAuctionPlan: makeRejectPlan[hookstage.ProcessedAuctionRequest](mockRejectionHook{nbr})},
 		},
+		{
+			// bidder-request stage doesn't reject whole request, so we do not expect NBR code in response
+			description: "Assert correct BidResponse when request rejected at bidder-request stage",
+			file:        "sample-requests/valid-whole/hooks/auction_bidder_reject.json",
+			planBuilder: mockPlanBuilder{bidderRequestPlan: makeRejectPlan[hookstage.BidderRequest](mockRejectionHook{nbr})},
+		},
+		{
+			description: "Assert correct BidResponse when request rejected at raw-bidder-response stage",
+			file:        "sample-requests/valid-whole/hooks/auction_bidder_response_reject.json",
+			planBuilder: mockPlanBuilder{rawBidderResponsePlan: makeRejectPlan[hookstage.RawBidderResponse](mockRejectionHook{nbr})},
+		},
 	}
 
 	for _, tc := range testCases {
