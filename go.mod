@@ -3,7 +3,7 @@ module github.com/prebid/prebid-server
 go 1.16
 
 // Magic comment that determines which Go version Heroku uses.
-// +heroku goVersion go1.16
+// +heroku goVersion go1.19
 
 replace github.com/prebid-server/adapters/playwire_ortb => ./adapters/playwire_ortb/
 
