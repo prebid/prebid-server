@@ -3,7 +3,7 @@ module github.com/prebid/prebid-server
 go 1.19
 
 // Magic comment that determines which Go version Heroku uses.
-// +heroku goVersion go1.16
+// +heroku goVersion go1.19
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
