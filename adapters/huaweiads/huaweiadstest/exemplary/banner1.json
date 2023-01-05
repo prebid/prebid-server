@@ -45,7 +45,9 @@
       "make": "huawei",
       "w": 1080,
       "ip": "ip",
+      "ifa": "e4fe9bde-caa0-47b6-908d-ffba3fa184f2",
       "pxratio": 23.01,
+      "mccmnc": "460",
       "geo": {
         "country": "CHN"
       }
@@ -62,7 +64,8 @@
           "clientTime": [
             "2018-11-02 16:34:07.981+1300"
           ]
-        }
+        },
+        "consent": "CPaYLJBPaYLJBIPAAAENCSCgAPAAAAAAAAAAGsQAQGsAAAAA.YAAAAAAAAAA"
       }
     },
     "regs": {
@@ -101,7 +104,7 @@
             {
               "adtype": 8,
               "slotid": "m8x9x3rzff",
-              "test": 0,
+              "test": 1,
               "format": [
                 {
                   "w": 300,
@@ -138,7 +141,9 @@
           "regs": {
             "coppa": 1
           },
-          "version": "3.4"
+          "consent": "CPaYLJBPaYLJBIPAAAENCSCgAPAAAAAAAAAAGsQAQGsAAAAA.YAAAAAAAAAA",
+          "version": "3.4",
+          "clientAdRequestId": "test-req-id"
         }
       },
       "mockResponse": {

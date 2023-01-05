@@ -11,7 +11,8 @@ import (
 
 	"fmt"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/openrtb/v17/adcom1"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -192,7 +193,7 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb2.BidRequest, reqI
 }
 
 func isMobileDevice(request *openrtb2.BidRequest) bool {
-	return request.Device != nil && (request.Device.DeviceType == openrtb2.DeviceTypeMobileTablet || request.Device.DeviceType == openrtb2.DeviceTypePhone || request.Device.DeviceType == openrtb2.DeviceTypeTablet)
+	return request.Device != nil && (request.Device.DeviceType == adcom1.DeviceMobile || request.Device.DeviceType == adcom1.DevicePhone || request.Device.DeviceType == adcom1.DeviceTablet)
 }
 
 func cleanName(name string) string {
@@ -345,7 +346,7 @@ func (adapter *EPlanningAdapter) MakeBids(internalRequest *openrtb2.BidRequest, 
 }
 
 // Builder builds a new instance of the EPlanning adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &EPlanningAdapter{
 		URI:     config.Endpoint,
 		testing: false,

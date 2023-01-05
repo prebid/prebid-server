@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/openrtb/v17/adcom1"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -110,7 +111,7 @@ func getBidType(bid openrtb2.Bid, ext avocetBidExt) openrtb_ext.BidType {
 		return openrtb_ext.BidTypeVideo
 	}
 	switch bid.API {
-	case openrtb2.APIFrameworkVPAID10, openrtb2.APIFrameworkVPAID20:
+	case adcom1.APIVPAID10, adcom1.APIVPAID20:
 		return openrtb_ext.BidTypeVideo
 	default:
 		return openrtb_ext.BidTypeBanner
@@ -118,7 +119,7 @@ func getBidType(bid openrtb2.Bid, ext avocetBidExt) openrtb_ext.BidType {
 }
 
 // Builder builds a new instance of the Avocet adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &AvocetAdapter{
 		Endpoint: config.Endpoint,
 	}

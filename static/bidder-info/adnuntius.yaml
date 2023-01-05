@@ -1,3 +1,5 @@
+endpoint: "https://ads.adnuntius.delivery/i"
+extra_info: "https://europe.delivery.adnuntius.com/i"
 maintainer:
   email: hello@adnuntius.com
 gvlVendorID: 855

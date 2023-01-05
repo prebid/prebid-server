@@ -4,20 +4,23 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"reflect"
 	"strconv"
 	"testing"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/prebid-server/amp"
 	"github.com/prebid/prebid-server/analytics"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/hooks"
+	"github.com/prebid/prebid-server/hooks/hookstage"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
@@ -27,68 +30,164 @@ import (
 
 // TestGoodRequests makes sure that the auction runs properly-formatted stored bids correctly.
 func TestGoodAmpRequests(t *testing.T) {
-	testCases := []struct {
+	testGroups := []struct {
+		desc      string
+		dir       string
+		testFiles []string
+	}{
+		{
+			desc: "Valid supplementary, tag_id param only",
+			dir:  "sample-requests/amp/valid-supplementary/",
+			testFiles: []string{
+				"aliased-buyeruids.json",
+				"aliases.json",
+				"imp-with-stored-resp.json",
+				"gdpr-no-consentstring.json",
+				"gdpr.json",
+			},
+		},
+		{
+			desc: "Valid, consent handling in query",
+			dir:  "sample-requests/amp/consent-through-query/",
+			testFiles: []string{
+				"addtl-consent-through-query.json",
+				"gdpr-tcf1-consent-through-query.json",
+				"gdpr-tcf2-consent-through-query.json",
+				"gdpr-legacy-tcf2-consent-through-query.json",
+				"gdpr-ccpa-through-query.json",
+			},
+		},
+	}
+
+	for _, tgroup := range testGroups {
+		for _, filename := range tgroup.testFiles {
+			// Read test case and unmarshal
+			fileJsonData, err := os.ReadFile(tgroup.dir + filename)
+			if !assert.NoError(t, err, "Failed to fetch a valid request: %v. Test file: %s", err, filename) {
+				continue
+			}
+
+			test := testCase{}
+			if !assert.NoError(t, json.Unmarshal(fileJsonData, &test), "Failed to unmarshal data from file: %s. Error: %v", filename, err) {
+				continue
+			}
+
+			// build http request
+			request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?%s", test.Query), nil)
+			recorder := httptest.NewRecorder()
+
+			// build the stored requests and configure endpoint conf
+			query := request.URL.Query()
+			tagID := query.Get("tag_id")
+			if !assert.Greater(t, len(tagID), 0, "AMP test %s file is missing tag_id field", filename) {
+				continue
+			}
+
+			test.storedRequest = map[string]json.RawMessage{tagID: test.BidRequest}
+			test.endpointType = AMP_ENDPOINT
+
+			cfg := &config.Configuration{
+				MaxRequestSize: maxSize,
+				GDPR:           config.GDPR{Enabled: true},
+			}
+			if test.Config != nil {
+				cfg.BlacklistedApps = test.Config.BlacklistedApps
+				cfg.BlacklistedAppMap = test.Config.getBlacklistedAppMap()
+				cfg.BlacklistedAccts = test.Config.BlacklistedAccounts
+				cfg.BlacklistedAcctMap = test.Config.getBlackListedAccountMap()
+				cfg.AccountRequired = test.Config.AccountRequired
+			}
+
+			// Set test up
+			ampEndpoint, ex, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
+			if !assert.NoError(t, err) {
+				continue
+			}
+
+			// runTestCase
+			ampEndpoint(recorder, request, nil)
+
+			// Close servers
+			for _, mockBidServer := range mockBidServers {
+				mockBidServer.Close()
+			}
+			mockCurrencyRatesServer.Close()
+
+			// Assertions
+			if assert.Equal(t, test.ExpectedReturnCode, recorder.Code, "Expected status %d. Got %d. Amp test file: %s", http.StatusOK, recorder.Code, filename) {
+				if test.ExpectedReturnCode == http.StatusOK {
+					var ampResponse AmpResponse
+					assert.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &ampResponse), "Error unmarshalling ampResponse: %v", err)
+					assert.Equal(t, test.ExpectedAmpResponse, ampResponse, "Not the expected response. Test file: %s", filename)
+				} else {
+					assert.Equal(t, test.ExpectedErrorMessage, recorder.Body.String(), filename)
+				}
+			}
+			if test.ExpectedValidatedBidReq != nil {
+				// compare as json to ignore whitespace and ext field ordering
+				actualJson, err := json.Marshal(ex.actualValidatedBidReq)
+				if assert.NoError(t, err, "Error converting actual bid request to json. Test file: %s", filename) {
+					assert.JSONEq(t, string(test.ExpectedValidatedBidReq), string(actualJson), "Not the expected validated request. Test file: %s", filename)
+				}
+			}
+		}
+	}
+}
+
+func TestAccountErrors(t *testing.T) {
+	tests := []struct {
+		description string
 		storedReqID string
 		filename    string
 	}{
-		{"1", "aliased-buyeruids.json"},
-		{"2", "aliases.json"},
-		{"3", "imp-with-stored-resp.json"},
-		{"5", "gdpr-no-consentstring.json"},
-		{"6", "gdpr.json"},
+		{
+			description: "Malformed account config",
+			storedReqID: "1",
+			filename:    "account-malformed/malformed-acct.json",
+		},
+		{
+			description: "Blocked account",
+			storedReqID: "1",
+			filename:    "blacklisted/blacklisted-site-publisher.json",
+		},
 	}
 
-	for _, tc := range testCases {
-		// Read test case and unmarshal
-		fileJsonData, err := ioutil.ReadFile("sample-requests/valid-whole/supplementary/" + tc.filename)
-		if !assert.NoError(t, err, "Failed to fetch a valid request: %v. Test file: %s", err, tc.filename) {
+	for _, tt := range tests {
+		fileJsonData, err := os.ReadFile("sample-requests/" + tt.filename)
+		if !assert.NoError(t, err, "Failed to fetch a valid request: %v. Test file: %s", err, tt.filename) {
 			continue
 		}
 
 		test := testCase{}
-		if !assert.NoError(t, json.Unmarshal(fileJsonData, &test), "Failed to unmarshal data from file: %s. Error: %v", tc.filename, err) {
+		if !assert.NoError(t, json.Unmarshal(fileJsonData, &test), "Failed to unmarshal data from file: %s. Error: %v", tt.filename, err) {
 			continue
 		}
-		test.storedRequest = map[string]json.RawMessage{tc.storedReqID: test.BidRequest}
+		test.storedRequest = map[string]json.RawMessage{tt.storedReqID: test.BidRequest}
 		test.endpointType = AMP_ENDPOINT
 
-		cfg := &config.Configuration{MaxRequestSize: maxSize}
-		if test.Config != nil {
-			cfg.BlacklistedApps = test.Config.BlacklistedApps
-			cfg.BlacklistedAppMap = test.Config.getBlacklistedAppMap()
-			cfg.BlacklistedAccts = test.Config.BlacklistedAccounts
-			cfg.BlacklistedAcctMap = test.Config.getBlackListedAccountMap()
-			cfg.AccountRequired = test.Config.AccountRequired
+		cfg := &config.Configuration{
+			BlacklistedAccts:   []string{"bad_acct"},
+			BlacklistedAcctMap: map[string]bool{"bad_acct": true},
+			MaxRequestSize:     maxSize,
 		}
+		cfg.MarshalAccountDefaults()
 
-		// Set test up
-		ampEndpoint, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
+		ampEndpoint, _, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
 		if !assert.NoError(t, err) {
 			continue
 		}
 
-		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s", tc.storedReqID), nil)
+		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s&", tt.storedReqID), nil)
 		recorder := httptest.NewRecorder()
-
-		// runTestCase
 		ampEndpoint(recorder, request, nil)
 
-		// Close servers
 		for _, mockBidServer := range mockBidServers {
 			mockBidServer.Close()
 		}
 		mockCurrencyRatesServer.Close()
 
-		// Assertions
-		if assert.Equal(t, test.ExpectedReturnCode, recorder.Code, "Expected status %d. Got %d. Amp test file: %s", http.StatusOK, recorder.Code, tc.filename) {
-			if test.ExpectedReturnCode == http.StatusOK {
-				var ampResponse AmpResponse
-				assert.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &ampResponse), "Error unmarshalling ampResponse: %v", err)
-				assert.Equal(t, test.ExpectedAmpResponse, ampResponse, "Test file: %s", tc.filename)
-			} else {
-				assert.Equal(t, test.ExpectedErrorMessage, recorder.Body.String(), tc.filename)
-			}
-		}
+		assert.Equal(t, test.ExpectedReturnCode, recorder.Code, "%s: %s", tt.description, tt.filename)
+		assert.Equal(t, test.ExpectedErrorMessage, recorder.Body.String(), "%s: %s", tt.description, tt.filename)
 	}
 }
 
@@ -113,6 +212,7 @@ func TestAMPPageInfo(t *testing.T) {
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	)
 	request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&curl=%s", url.QueryEscape(page)), nil)
 	recorder := httptest.NewRecorder()
@@ -129,7 +229,7 @@ func TestAMPPageInfo(t *testing.T) {
 }
 
 func TestGDPRConsent(t *testing.T) {
-	consent := "BOu5On0Ou5On0ADACHENAO7pqzAAppY"
+	consent := "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA"
 	existingConsent := "BONV8oqONXwgmADACHENAO7pqzAAppY"
 
 	testCases := []struct {
@@ -205,17 +305,21 @@ func TestGDPRConsent(t *testing.T) {
 			newParamsValidator(t),
 			&mockAmpStoredReqFetcher{stored},
 			empty_fetcher.EmptyFetcher{},
-			&config.Configuration{MaxRequestSize: maxSize},
+			&config.Configuration{
+				MaxRequestSize: maxSize,
+				GDPR:           config.GDPR{Enabled: true},
+			},
 			&metricsConfig.NilMetricsEngine{},
 			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
 			empty_fetcher.EmptyFetcher{},
+			hooks.EmptyPlanBuilder{},
 		)
 
 		// Invoke Endpoint
-		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&consent_string=%s", test.consent), nil)
+		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&consent_type=2&consent_string=%s", test.consent), nil)
 		responseRecorder := httptest.NewRecorder()
 		endpoint(responseRecorder, request, nil)
 
@@ -246,7 +350,7 @@ func TestGDPRConsent(t *testing.T) {
 		assert.Empty(t, response.Warnings, test.description+":warnings")
 
 		// Invoke Endpoint With Legacy Param
-		requestLegacy := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&gdpr_consent=%s", test.consent), nil)
+		requestLegacy := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&consent_type=2&gdpr_consent=%s", test.consent), nil)
 		responseRecorderLegacy := httptest.NewRecorder()
 		endpoint(responseRecorderLegacy, requestLegacy, nil)
 
@@ -275,6 +379,237 @@ func TestGDPRConsent(t *testing.T) {
 		assert.Equal(t, test.expectedUserExt, ueLegacy, test.description+":legacy")
 		assert.Equal(t, expectedErrorsFromHoldAuction, responseLegacy.Errors, test.description+":legacy:errors")
 		assert.Empty(t, responseLegacy.Warnings, test.description+":legacy:warnings")
+	}
+}
+
+func TestOverrideWithParams(t *testing.T) {
+	e := &endpointDeps{
+		cfg: &config.Configuration{
+			GDPR: config.GDPR{
+				Enabled: true,
+			},
+		},
+	}
+
+	type testInput struct {
+		ampParams  amp.Params
+		bidRequest *openrtb2.BidRequest
+	}
+	type testOutput struct {
+		bidRequest *openrtb2.BidRequest
+		errorMsgs  []string
+	}
+	testCases := []struct {
+		desc     string
+		given    testInput
+		expected testOutput
+	}{
+		{
+			desc: "bid request with no Site field - amp.Params empty - expect Site to be added",
+			given: testInput{
+				ampParams: amp.Params{},
+				bidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}},
+				},
+			},
+			expected: testOutput{
+				bidRequest: &openrtb2.BidRequest{
+					Imp:  []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}},
+					Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)},
+				},
+				errorMsgs: nil,
+			},
+		},
+		{
+			desc: "amp.Params with Size field - expect Site and Banner format fields to be added",
+			given: testInput{
+				ampParams: amp.Params{
+					Size: amp.Size{
+						Width:  480,
+						Height: 320,
+					},
+				},
+				bidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}},
+				},
+			},
+			expected: testOutput{
+				bidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{
+						{
+							Banner: &openrtb2.Banner{
+								Format: []openrtb2.Format{
+									{
+										W: 480,
+										H: 320,
+									},
+								},
+							},
+						},
+					},
+					Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)},
+				},
+				errorMsgs: nil,
+			},
+		},
+		{
+			desc: "amp.Params with CanonicalURL field - expect Site to be aded with Page and Domain fields",
+			given: testInput{
+				ampParams:  amp.Params{CanonicalURL: "http://www.foobar.com"},
+				bidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}}},
+			},
+			expected: testOutput{
+				bidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}},
+					Site: &openrtb2.Site{
+						Page:   "http://www.foobar.com",
+						Domain: "www.foobar.com",
+						Ext:    json.RawMessage(`{"amp":1}`),
+					},
+				},
+				errorMsgs: nil,
+			},
+		},
+		{
+			desc: "bid request with malformed User.Ext - amp.Params with AdditionalConsent - expect error",
+			given: testInput{
+				ampParams: amp.Params{AdditionalConsent: "1~X.X.X.X"},
+				bidRequest: &openrtb2.BidRequest{
+					Imp:  []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}},
+					User: &openrtb2.User{Ext: json.RawMessage(`malformed`)},
+				},
+			},
+			expected: testOutput{
+				bidRequest: &openrtb2.BidRequest{
+					Imp:  []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}},
+					Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)},
+					User: &openrtb2.User{Ext: json.RawMessage(`malformed`)},
+				},
+				errorMsgs: []string{"invalid character 'm' looking for beginning of value"},
+			},
+		},
+		{
+			desc: "bid request with valid imp[0].ext - amp.Params with malformed targeting value - expect error because imp[0].ext won't be unable to get merged with targeting values",
+			given: testInput{
+				ampParams: amp.Params{Targeting: "{123,}"},
+				bidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{
+						{
+							Banner: &openrtb2.Banner{Format: []openrtb2.Format{}},
+							Ext:    []byte(`{"appnexus":{"placementId":123}}`),
+						},
+					},
+				},
+			},
+			expected: testOutput{
+				bidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{
+						{
+							Banner: &openrtb2.Banner{Format: []openrtb2.Format{}},
+							Ext:    json.RawMessage(`{"appnexus":{"placementId":123}}`),
+						},
+					},
+					Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)},
+				},
+				errorMsgs: []string{"unable to merge imp.ext with targeting data, check targeting data is correct: Invalid JSON Patch"},
+			},
+		},
+		{
+			desc: "bid request with malformed user.ext.prebid - amp.Params with GDPR consent values - expect policy writer to return error",
+			given: testInput{
+				ampParams: amp.Params{
+					ConsentType: amp.ConsentTCF2,
+					Consent:     "CPdECS0PdECS0ACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA",
+				},
+				bidRequest: &openrtb2.BidRequest{
+					Imp:  []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}},
+					User: &openrtb2.User{Ext: json.RawMessage(`{"prebid":{malformed}}`)},
+				},
+			},
+			expected: testOutput{
+				bidRequest: &openrtb2.BidRequest{
+					Imp:  []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}},
+					User: &openrtb2.User{Ext: json.RawMessage(`{"prebid":{malformed}}`)},
+					Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)},
+				},
+				errorMsgs: []string{"invalid character 'm' looking for beginning of object key string"},
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		errs := e.overrideWithParams(test.given.ampParams, test.given.bidRequest)
+
+		assert.Equal(t, test.expected.bidRequest, test.given.bidRequest, test.desc)
+		assert.Len(t, errs, len(test.expected.errorMsgs), test.desc)
+		if len(test.expected.errorMsgs) > 0 {
+			assert.Equal(t, test.expected.errorMsgs[0], errs[0].Error(), test.desc)
+		}
+	}
+}
+
+func TestSetConsentedProviders(t *testing.T) {
+
+	sampleBidRequest := &openrtb2.BidRequest{}
+
+	testCases := []struct {
+		description            string
+		givenAdditionalConsent string
+		givenBidRequest        *openrtb2.BidRequest
+		expectedBidRequest     *openrtb2.BidRequest
+		expectedError          bool
+	}{
+		{
+			description:            "empty additional consent bid request unmodified",
+			givenAdditionalConsent: "",
+			givenBidRequest:        sampleBidRequest,
+			expectedBidRequest:     sampleBidRequest,
+			expectedError:          false,
+		},
+		{
+			description:            "nil bid request, expect error",
+			givenAdditionalConsent: "ADDITIONAL_CONSENT_STRING",
+			givenBidRequest:        nil,
+			expectedBidRequest:     nil,
+			expectedError:          true,
+		},
+		{
+			description:            "malformed user.ext, expect error",
+			givenAdditionalConsent: "ADDITIONAL_CONSENT_STRING",
+			givenBidRequest: &openrtb2.BidRequest{
+				User: &openrtb2.User{
+					Ext: json.RawMessage(`malformed`),
+				},
+			},
+			expectedBidRequest: &openrtb2.BidRequest{
+				User: &openrtb2.User{
+					Ext: json.RawMessage(`malformed`),
+				},
+			},
+			expectedError: true,
+		},
+		{
+			description:            "non-empty additional consent bid request will carry this value in user.ext.ConsentedProvidersSettings.consented_providers",
+			givenAdditionalConsent: "ADDITIONAL_CONSENT_STRING",
+			givenBidRequest:        sampleBidRequest,
+			expectedBidRequest: &openrtb2.BidRequest{
+				User: &openrtb2.User{
+					Ext: json.RawMessage(`{"ConsentedProvidersSettings":{"consented_providers":"ADDITIONAL_CONSENT_STRING"}}`),
+				},
+			},
+			expectedError: false,
+		},
+	}
+
+	for _, test := range testCases {
+		err := setConsentedProviders(test.givenBidRequest, amp.Params{AdditionalConsent: test.givenAdditionalConsent})
+
+		if test.expectedError {
+			assert.Error(t, err, test.description)
+		} else {
+			assert.NoError(t, err, test.description)
+		}
+		assert.Equal(t, test.expectedBidRequest, test.givenBidRequest, test.description)
 	}
 }
 
@@ -366,10 +701,11 @@ func TestCCPAConsent(t *testing.T) {
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
 			empty_fetcher.EmptyFetcher{},
+			hooks.EmptyPlanBuilder{},
 		)
 
 		// Invoke Endpoint
-		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&consent_string=%s", test.consent), nil)
+		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&consent_type=3&consent_string=%s", test.consent), nil)
 		responseRecorder := httptest.NewRecorder()
 		endpoint(responseRecorder, request, nil)
 
@@ -415,7 +751,7 @@ func TestConsentWarnings(t *testing.T) {
 	}
 	invalidCCPAWarning := openrtb_ext.ExtBidderMessage{
 		Code:    10001,
-		Message: "Consent '" + invalidConsent + "' is not recognized as either CCPA or GDPR TCF.",
+		Message: "Consent string '" + invalidConsent + "' is not a valid CCPA consent string.",
 	}
 	invalidConsentWarning := openrtb_ext.ExtBidderMessage{
 		Code:    10001,
@@ -478,13 +814,14 @@ func TestConsentWarnings(t *testing.T) {
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
 			empty_fetcher.EmptyFetcher{},
+			hooks.EmptyPlanBuilder{},
 		)
 
 		// Invoke Endpoint
 		var request *http.Request
 
 		if testCase.invalidConsentURL {
-			request = httptest.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1&consent_string="+invalidConsent, nil)
+			request = httptest.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1&consent_type=3&consent_string="+invalidConsent, nil)
 
 		} else {
 			request = httptest.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1", nil)
@@ -519,8 +856,8 @@ func TestConsentWarnings(t *testing.T) {
 }
 
 func TestNewAndLegacyConsentBothProvided(t *testing.T) {
-	validConsentGDPR1 := "BOu5On0Ou5On0ADACHENAO7pqzAAppY"
-	validConsentGDPR2 := "BONV8oqONXwgmADACHENAO7pqzAAppY"
+	validConsentGDPR1 := "COwGVJOOwGVJOADACHENAOCAAO6as_-AAAhoAFNLAAoAAAA"
+	validConsentGDPR2 := "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA"
 
 	testCases := []struct {
 		description     string
@@ -565,17 +902,21 @@ func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 			newParamsValidator(t),
 			&mockAmpStoredReqFetcher{stored},
 			empty_fetcher.EmptyFetcher{},
-			&config.Configuration{MaxRequestSize: maxSize},
+			&config.Configuration{
+				MaxRequestSize: maxSize,
+				GDPR:           config.GDPR{Enabled: true},
+			},
 			&metricsConfig.NilMetricsEngine{},
 			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
 			empty_fetcher.EmptyFetcher{},
+			hooks.EmptyPlanBuilder{},
 		)
 
 		// Invoke Endpoint
-		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&consent_string=%s&gdpr_consent=%s", test.consent, test.consentLegacy), nil)
+		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&consent_type=2&consent_string=%s&gdpr_consent=%s", test.consent, test.consentLegacy), nil)
 		responseRecorder := httptest.NewRecorder()
 		endpoint(responseRecorder, request, nil)
 
@@ -625,6 +966,7 @@ func TestAMPSiteExt(t *testing.T) {
 		nil,
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	)
 	request, err := http.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1", nil)
 	if !assert.NoError(t, err) {
@@ -645,7 +987,7 @@ func TestAMPSiteExt(t *testing.T) {
 // TestBadRequests makes sure we return 400's on bad requests.
 func TestAmpBadRequests(t *testing.T) {
 	dir := "sample-requests/invalid-whole"
-	files, err := ioutil.ReadDir(dir)
+	files, err := os.ReadDir(dir)
 	assert.NoError(t, err, "Failed to read folder: %s", dir)
 
 	badRequests := make(map[string]json.RawMessage, len(files))
@@ -666,6 +1008,7 @@ func TestAmpBadRequests(t *testing.T) {
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	)
 	for requestID := range badRequests {
 		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s", requestID), nil)
@@ -698,6 +1041,7 @@ func TestAmpDebug(t *testing.T) {
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	)
 
 	for requestID := range requests {
@@ -731,10 +1075,12 @@ func TestAmpDebug(t *testing.T) {
 
 // Prevents #452
 func TestAmpTargetingDefaults(t *testing.T) {
-	req := &openrtb2.BidRequest{}
-	if errs := defaultRequestExt(req); len(errs) != 0 {
-		t.Fatalf("Unexpected error defaulting request.ext for AMP: %v", errs)
+	req := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}}
+	if err := defaultRequestExt(req); err != nil {
+		t.Fatalf("Unexpected error defaulting request.ext for AMP: %v", err)
 	}
+
+	assert.NoError(t, req.RebuildRequest())
 
 	var extRequest openrtb_ext.ExtRequest
 	if err := json.Unmarshal(req.Ext, &extRequest); err != nil {
@@ -772,6 +1118,7 @@ func TestQueryParamOverrides(t *testing.T) {
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	)
 
 	requestID := "1"
@@ -928,6 +1275,7 @@ func (s formatOverrideSpec) execute(t *testing.T) {
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	)
 
 	url := fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&debug=1&w=%d&h=%d&ow=%d&oh=%d&ms=%s&account=%s", s.width, s.height, s.overrideWidth, s.overrideHeight, s.multisize, s.account)
@@ -1155,39 +1503,47 @@ func TestSetEffectiveAmpPubID(t *testing.T) {
 	for _, test := range testCases {
 		setEffectiveAmpPubID(test.req, test.account)
 		if test.req.Site != nil {
-			assert.Equal(t, test.expectedPubID, test.req.Site.Publisher.ID,
-				"should return the expected Publisher ID for test case: %s", test.description)
+			if test.req.Site.Publisher == nil {
+				assert.Empty(t, test.expectedPubID,
+					"should return the expected Publisher ID for test case: %s", test.description)
+			} else {
+				assert.Equal(t, test.expectedPubID, test.req.Site.Publisher.ID,
+					"should return the expected Publisher ID for test case: %s", test.description)
+			}
 		} else {
-			assert.Equal(t, test.expectedPubID, test.req.App.Publisher.ID,
-				"should return the expected Publisher ID for test case: %s", test.description)
+			if test.req.App.Publisher == nil {
+				assert.Empty(t, test.expectedPubID,
+					"should return the expected Publisher ID for test case: %s", test.description)
+			} else {
+				assert.Equal(t, test.expectedPubID, test.req.App.Publisher.ID,
+					"should return the expected Publisher ID for test case: %s", test.description)
+			}
 		}
 	}
 }
 
 type mockLogger struct {
-	ampObject *analytics.AmpObject
+	ampObject     *analytics.AmpObject
+	auctionObject *analytics.AuctionObject
 }
 
-func newMockLogger(ao *analytics.AmpObject) analytics.PBSAnalyticsModule {
+func newMockLogger(ao *analytics.AmpObject, aucObj *analytics.AuctionObject) analytics.PBSAnalyticsModule {
 	return &mockLogger{
-		ampObject: ao,
+		ampObject:     ao,
+		auctionObject: aucObj,
 	}
 }
 
 func (logger mockLogger) LogAuctionObject(ao *analytics.AuctionObject) {
-	return
+	*logger.auctionObject = *ao
 }
 func (logger mockLogger) LogVideoObject(vo *analytics.VideoObject) {
-	return
 }
 func (logger mockLogger) LogCookieSyncObject(cookieObject *analytics.CookieSyncObject) {
-	return
 }
 func (logger mockLogger) LogSetUIDObject(uuidObj *analytics.SetUIDObject) {
-	return
 }
 func (logger mockLogger) LogNotificationEventObject(uuidObj *analytics.NotificationEvent) {
-	return
 }
 func (logger mockLogger) LogAmpObject(ao *analytics.AmpObject) {
 	*logger.ampObject = *ao
@@ -1221,7 +1577,7 @@ func TestBuildAmpObject(t *testing.T) {
 		{
 			description:     "Wrong tag_id, error gets logged",
 			inTagId:         "unknown",
-			inStoredRequest: json.RawMessage(`{"id":"some-request-id","site":{"page":"prebid.org"},"imp":[{"id":"some-impression-id","banner":{"format":[{"w":300,"h":250}]},"ext":{"appnexus":{"placementId":12883451}}}],"tmax":500}`),
+			inStoredRequest: json.RawMessage(`{"id":"some-request-id","site":{"page":"prebid.org"},"imp":[{"id":"some-impression-id","banner":{"format":[{"w":300,"h":250}]},"ext":{"prebid":{"bidder":{"appnexus":{"placementId":12883451}}}}}],"tmax":500}`),
 			expectedAmpObject: &analytics.AmpObject{
 				Status: http.StatusOK,
 				Errors: []error{fmt.Errorf("unexpected end of JSON input")},
@@ -1230,7 +1586,7 @@ func TestBuildAmpObject(t *testing.T) {
 		{
 			description:     "Valid stored Amp request, correct tag_id, a valid response should be logged",
 			inTagId:         "test",
-			inStoredRequest: json.RawMessage(`{"id":"some-request-id","site":{"page":"prebid.org"},"imp":[{"id":"some-impression-id","banner":{"format":[{"w":300,"h":250}]},"ext":{"appnexus":{"placementId":12883451}}}],"tmax":500}`),
+			inStoredRequest: json.RawMessage(`{"id":"some-request-id","site":{"page":"prebid.org"},"imp":[{"id":"some-impression-id","banner":{"format":[{"w":300,"h":250}]},"ext":{"prebid":{"bidder":{"appnexus":{"placementId":12883451}}}}}],"tmax":500}`),
 			expectedAmpObject: &analytics.AmpObject{
 				Status: http.StatusOK,
 				Errors: nil,
@@ -1240,9 +1596,8 @@ func TestBuildAmpObject(t *testing.T) {
 						IP: "192.0.2.1",
 					},
 					Site: &openrtb2.Site{
-						Page:      "prebid.org",
-						Publisher: &openrtb2.Publisher{},
-						Ext:       json.RawMessage(`{"amp":1}`),
+						Page: "prebid.org",
+						Ext:  json.RawMessage(`{"amp":1}`),
 					},
 					Imp: []openrtb2.Imp{
 						{
@@ -1256,7 +1611,7 @@ func TestBuildAmpObject(t *testing.T) {
 								},
 							},
 							Secure: func(val int8) *int8 { return &val }(1), //(*int8)(1),
-							Ext:    json.RawMessage(`{"appnexus":{"placementId":12883451}}`),
+							Ext:    json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placementId":12883451}}}}`),
 						},
 					},
 					AT:   1,
@@ -1362,7 +1717,7 @@ func TestIdGeneration(t *testing.T) {
 
 func ampObjectTestSetup(t *testing.T, inTagId string, inStoredRequest json.RawMessage, generateRequestID bool) (*analytics.AmpObject, httprouter.Handle) {
 	actualAmpObject := analytics.AmpObject{}
-	logger := newMockLogger(&actualAmpObject)
+	logger := newMockLogger(&actualAmpObject, nil)
 
 	mockAmpFetcher := &mockAmpStoredReqFetcher{
 		data: map[string]json.RawMessage{
@@ -1383,6 +1738,7 @@ func ampObjectTestSetup(t *testing.T, inTagId string, inStoredRequest json.RawMe
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	)
 	return &actualAmpObject, endpoint
 }
@@ -1434,6 +1790,7 @@ func TestAmpAuctionResponseHeaders(t *testing.T) {
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	)
 
 	for _, test := range testCases {
@@ -1447,5 +1804,199 @@ func TestAmpAuctionResponseHeaders(t *testing.T) {
 
 		assert.Equal(t, test.expectedStatus, recorder.Result().StatusCode, test.description+":statuscode")
 		assert.Equal(t, expectedHeaders, recorder.Result().Header, test.description+":statuscode")
+	}
+}
+
+func TestRequestWithTargeting(t *testing.T) {
+	stored := map[string]json.RawMessage{
+		"1": json.RawMessage(validRequest(t, "site.json")),
+	}
+	exchange := &mockAmpExchange{}
+	endpoint, _ := NewAmpEndpoint(
+		fakeUUIDGenerator{},
+		exchange,
+		newParamsValidator(t),
+		&mockAmpStoredReqFetcher{stored},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize},
+		&metricsConfig.NilMetricsEngine{},
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		nil,
+		nil,
+		openrtb_ext.BuildBidderMap(),
+		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
+	)
+	url, err := url.Parse("/openrtb2/auction/amp")
+	assert.NoError(t, err, "unexpected error received while parsing url")
+	values := url.Query()
+	values.Add("targeting", `{"gam-key1":"val1", "gam-key2":"val2"}`)
+	values.Add("tag_id", "1")
+	url.RawQuery = values.Encode()
+
+	request, err := http.NewRequest("GET", url.String(), nil)
+	if !assert.NoError(t, err) {
+		return
+	}
+	recorder := httptest.NewRecorder()
+	endpoint(recorder, request, nil)
+
+	if assert.NotNil(t, exchange.lastRequest, "Endpoint responded with %d: %s", recorder.Code, recorder.Body.String()) {
+		assert.JSONEq(t, `{"prebid":{"bidder":{"appnexus":{"placementId":12883451}}}, "data":{"gam-key1":"val1", "gam-key2":"val2"}}`, string(exchange.lastRequest.Imp[0].Ext))
+	}
+}
+
+func TestSetTargeting(t *testing.T) {
+	tests := []struct {
+		description    string
+		bidRequest     openrtb2.BidRequest
+		targeting      string
+		expectedImpExt string
+		wantError      bool
+		errorMessage   string
+	}{
+		{
+			description:    "valid imp ext, valid targeting data",
+			bidRequest:     openrtb2.BidRequest{Imp: []openrtb2.Imp{{Ext: []byte(`{"appnexus":{"placementId":123}}`)}}},
+			targeting:      `{"gam-key1":"val1", "gam-key2":"val2"}`,
+			expectedImpExt: `{"appnexus":{"placementId":123}, "data": {"gam-key1":"val1", "gam-key2":"val2"}}`,
+			wantError:      false,
+			errorMessage:   "",
+		},
+		{
+			description:    "valid imp ext, empty targeting data",
+			bidRequest:     openrtb2.BidRequest{Imp: []openrtb2.Imp{{Ext: []byte(`{"appnexus":{"placementId":123}}`)}}},
+			targeting:      ``,
+			expectedImpExt: `{"appnexus":{"placementId":123}}`,
+			wantError:      false,
+			errorMessage:   "",
+		},
+		{
+			description:    "empty imp ext, valid targeting data",
+			bidRequest:     openrtb2.BidRequest{Imp: []openrtb2.Imp{{Ext: []byte(`{}`)}}},
+			targeting:      `{"gam-key1":"val1", "gam-key2":"val2"}`,
+			expectedImpExt: `{"data": {"gam-key1":"val1", "gam-key2":"val2"}}`,
+			wantError:      false,
+			errorMessage:   "",
+		},
+		{
+			description:    "nil imp ext, valid targeting data",
+			bidRequest:     openrtb2.BidRequest{Imp: []openrtb2.Imp{{Ext: nil}}},
+			targeting:      `{"gam-key1":"val1", "gam-key2":"val2"}`,
+			expectedImpExt: `{"data": {"gam-key1":"val1", "gam-key2":"val2"}}`,
+			wantError:      false,
+			errorMessage:   "",
+		},
+		{
+			description:    "imp ext has data, valid targeting data",
+			bidRequest:     openrtb2.BidRequest{Imp: []openrtb2.Imp{{Ext: []byte(`{"data":{"placementId":123}}`)}}},
+			targeting:      `{"gam-key1":"val1", "gam-key2":"val2"}`,
+			expectedImpExt: `{"data": {"gam-key1":"val1", "gam-key2":"val2", "placementId":123}}`,
+			wantError:      false,
+			errorMessage:   "",
+		},
+		{
+			description:    "imp ext has data and other fields, valid targeting data",
+			bidRequest:     openrtb2.BidRequest{Imp: []openrtb2.Imp{{Ext: []byte(`{"data":{"placementId":123}, "prebid": 123}`)}}},
+			targeting:      `{"gam-key1":"val1", "gam-key2":"val2"}`,
+			expectedImpExt: `{"data": {"gam-key1":"val1", "gam-key2":"val2", "placementId":123}, "prebid":123}`,
+			wantError:      false,
+			errorMessage:   "",
+		},
+		{
+			description:    "imp ext has invalid format, valid targeting data",
+			bidRequest:     openrtb2.BidRequest{Imp: []openrtb2.Imp{{Ext: []byte(`{123:{}`)}}},
+			targeting:      `{"gam-key1":"val1", "gam-key2":"val2"}`,
+			expectedImpExt: ``,
+			wantError:      true,
+			errorMessage:   "unable to merge imp.ext with targeting data, check targeting data is correct: Invalid JSON Document",
+		},
+		{
+			description:    "valid imp ext, invalid targeting data",
+			bidRequest:     openrtb2.BidRequest{Imp: []openrtb2.Imp{{Ext: []byte(`{"appnexus":{"placementId":123}}`)}}},
+			targeting:      `{123,}`,
+			expectedImpExt: ``,
+			wantError:      true,
+			errorMessage:   "unable to merge imp.ext with targeting data, check targeting data is correct: Invalid JSON Patch",
+		},
+	}
+
+	for _, test := range tests {
+		req := &test.bidRequest
+		err := setTargeting(req, test.targeting)
+		if test.wantError {
+			assert.EqualErrorf(t, err, test.errorMessage, "error is incorrect for test case: %s", test.description)
+		} else {
+			assert.NoError(t, err, "error should be nil for test case: %s", test.description)
+			assert.JSONEq(t, test.expectedImpExt, string(req.Imp[0].Ext), "incorrect impression extension returned for test %s", test.description)
+		}
+
+	}
+}
+
+func TestValidAmpResponseWhenRequestStagesRejected(t *testing.T) {
+	const nbr int = 123
+	const file string = "sample-requests/amp/valid-supplementary/aliased-buyeruids.json"
+
+	var test testCase
+	fileData, err := os.ReadFile(file)
+	assert.NoError(t, err, "Failed to read test file.")
+	if err := json.Unmarshal(fileData, &test); err != nil {
+		t.Fatal("Failed to unmarshal test file.")
+	}
+
+	testCases := []struct {
+		description         string
+		file                string
+		planBuilder         hooks.ExecutionPlanBuilder
+		expectedAmpResponse AmpResponse
+	}{
+		{
+			description:         "Assert correct BidResponse when request rejected at entrypoint stage",
+			file:                file,
+			planBuilder:         mockPlanBuilder{entrypointPlan: makeRejectPlan[hookstage.Entrypoint](mockRejectionHook{nbr})},
+			expectedAmpResponse: AmpResponse{Targeting: map[string]string{}},
+		},
+		{
+			description:         "Assert correct BidResponse when request rejected at raw-auction stage",
+			file:                file,
+			planBuilder:         mockPlanBuilder{rawAuctionPlan: makeRejectPlan[hookstage.RawAuctionRequest](mockRejectionHook{nbr})},
+			expectedAmpResponse: test.ExpectedAmpResponse,
+		},
+		{
+			description:         "Assert correct AmpResponse when request rejected at processed-auction stage",
+			file:                file,
+			planBuilder:         mockPlanBuilder{processedAuctionPlan: makeRejectPlan[hookstage.ProcessedAuctionRequest](mockRejectionHook{nbr})},
+			expectedAmpResponse: AmpResponse{Targeting: map[string]string{}},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?%s", test.Query), nil)
+			recorder := httptest.NewRecorder()
+			query := request.URL.Query()
+			tagID := query.Get("tag_id")
+
+			test.storedRequest = map[string]json.RawMessage{tagID: test.BidRequest}
+			test.planBuilder = tc.planBuilder
+			test.endpointType = AMP_ENDPOINT
+
+			ampEndpointHandler, _, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, &config.Configuration{MaxRequestSize: maxSize})
+			assert.NoError(t, err, "Failed to build test endpoint.")
+
+			ampEndpointHandler(recorder, request, nil)
+			assert.Equal(t, recorder.Code, http.StatusOK, "Endpoint should return 200 OK.")
+
+			var actualResp AmpResponse
+			assert.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &actualResp), "Unable to unmarshal actual BidResponse.")
+			assert.Equal(t, tc.expectedAmpResponse, actualResp, "Invalid AMP Response.")
+
+			// Close servers regardless if the test case was run or not
+			for _, mockBidServer := range mockBidServers {
+				mockBidServer.Close()
+			}
+			mockCurrencyRatesServer.Close()
+		})
 	}
 }

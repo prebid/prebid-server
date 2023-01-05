@@ -9,7 +9,7 @@ import (
 
 // This file actually intends to test static/bidder-params/33across.json
 //
-// These also validate the format of the external API: request.imp[i].ext.33across
+// These also validate the format of the external API: request.imp[i].ext.prebid.bidder.33across
 
 // TestValidParams makes sure that the 33across schema accepts all imp.ext fields which we intend to support.
 func TestValidParams(t *testing.T) {

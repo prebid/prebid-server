@@ -81,7 +81,8 @@
                 "wrapper": {
                     "profile": 5123,
                     "version":1
-                }
+                },
+                "prebid": {}
             }
           }
         },
@@ -133,6 +134,12 @@
             "type": "banner"
           }
         ]
+      }
+    ],
+    "expectedMakeBidsErrors": [
+      {
+        "value": "unexpected end of JSON input",
+        "comparison": "literal"
       }
     ]
   }

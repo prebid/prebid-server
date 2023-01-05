@@ -91,10 +91,10 @@
               "adtype": 3,
               "slotid": "u42ohmaufh",
               "detailedCreativeTypeList": [
-                "909"
+                "901"
               ],
               "h": 200,
-              "test": 0,
+              "test": 1,
               "w": 200
             }
           ],
@@ -125,7 +125,8 @@
           },
           "regs": {
           },
-          "version": "3.4"
+          "version": "3.4",
+          "clientAdRequestId": "test-req-id"
         }
       },
       "mockResponse": {
@@ -143,7 +144,7 @@
                   "creativetype": 106,
                   "ctrlSwitchs": "001011101001010212",
                   "endtime": 1621344684645,
-                  "interactiontype": 2,
+                  "interactiontype": 1,
                   "landingTitle": 1,
                   "metaData": {
                     "adSign": "2",

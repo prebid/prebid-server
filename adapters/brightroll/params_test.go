@@ -9,7 +9,7 @@ import (
 
 // This file actually intends to test static/bidder-params/brightroll.json
 //
-// These also validate the format of the external API: request.imp[i].ext.brightroll
+// These also validate the format of the external API: request.imp[i].ext.prebid.bidder.brightroll
 
 // TestValidParams makes sure that the Brightroll schema accepts all imp.ext fields which we intend to support.
 func TestValidParams(t *testing.T) {

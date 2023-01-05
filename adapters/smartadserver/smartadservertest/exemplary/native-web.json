@@ -1,0 +1,273 @@
+{
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "device": {
+      "ua": "test-user-agent",
+      "ipv6": "2607:fb90:f27:4512:d800:cb23:a603:e245",
+      "language": "en",
+      "dnt": 0,
+      "geo": {
+        "lat": 123.0,
+        "lon": 123.0,
+        "country": "BEL",
+        "region": "BE-VWV",
+        "city": "Ieper"
+      }
+    },
+    "tmax": 1000,
+    "user": {
+      "buyeruid": "awesome-user"
+    },
+    "site": {
+      "page": "https://www.redactie24.be/shopping/colruyt-moet-ingrijpen-3-producten-onmiddellijk-uit-de-rekken-gehaald-140289",
+      "publisher": {
+        "id": "pub-9936969251765866",
+        "ext": {
+          "country": "NL"
+        }
+      },
+      "content": {
+        "language": "nl"
+      },
+      "mobile": 1,
+      "ext": {
+        "amp": 0,
+        "page_visibility": 1,
+        "inventorypartnerdomain": ""
+      }
+    },
+    "imp": [
+      {
+        "id": "1",
+        "displaymanager": "GOOGLE",
+        "tagid": "1349892507",
+        "bidfloor": 0.75,
+        "bidfloorcur": "EUR",
+        "secure": 1,
+        "native": {
+          "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":25}},{\"id\":2,\"required\":1,\"data\":{\"type\":2,\"len\":90}},{\"id\":3,\"data\":{\"type\":12,\"len\":15}},{\"id\":4,\"required\":1,\"img\":{\"type\":3,\"wmin\":1200,\"hmin\":627}},{\"id\":5,\"required\":1,\"img\":{\"type\":1,\"wmin\":100,\"hmin\":100}},{\"id\":6,\"data\":{\"type\":3,\"len\":5}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1]}],\"ext\":{\"style_id\":188304,\"style_height\":1,\"style_width\":1,\"style_layout_type\":1}}",
+          "ver": "1.2"
+        },
+        "metric": [
+          {
+            "type": "click_through_rate",
+            "value": 0.0016456807497888803,
+            "vendor": "EXCHANGE"
+          },
+          {
+            "type": "viewability",
+            "value": 0.84,
+            "vendor": "EXCHANGE"
+          },
+          {
+            "type": "session_depth",
+            "value": 1.0,
+            "vendor": "EXCHANGE"
+          }
+        ],
+        "ext": {
+          "billing_id": [
+            "48566531714"
+          ],
+          "dfp_ad_unit_code": "/15748617/Redactie24.be/Redactie24.be-Mobile-Rectangle-Mid",
+          "ampad": 3,
+          "open_bidding": {
+            "is_open_bidding": 1
+          },
+          "creative_enforcement_settings": {
+            "policy_enforcement": 1,
+            "scan_enforcement": 3,
+            "publisher_blocks_enforcement": 2,
+            "is_default": 1
+          },
+          "auction_environment": 0,
+          "bidder": {
+            "siteId": 1,
+            "pageId": 2,
+            "formatId": 3,
+            "networkId": 73
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "uri": "https://ssb.smartadserver.com/api/bid?callerId=5",
+        "body": {
+          "id": "some-request-id",
+          "device": {
+            "ua": "test-user-agent",
+            "ipv6": "2607:fb90:f27:4512:d800:cb23:a603:e245",
+            "language": "en",
+            "dnt": 0,
+            "geo": {
+              "lat": 123.0,
+              "lon": 123.0,
+              "country": "BEL",
+              "region": "BE-VWV",
+              "city": "Ieper"
+            }
+          },
+          "tmax": 1000,
+          "user": {
+            "buyeruid": "awesome-user"
+          },
+          "site": {
+            "page": "https://www.redactie24.be/shopping/colruyt-moet-ingrijpen-3-producten-onmiddellijk-uit-de-rekken-gehaald-140289",
+            "publisher": {
+              "id": "73",
+              "ext": {
+                "country": "NL"
+              }
+            },
+            "content": {
+              "language": "nl"
+            },
+            "mobile": 1,
+            "ext": {
+              "amp": 0,
+              "page_visibility": 1,
+              "inventorypartnerdomain": ""
+            }
+          },
+          "imp": [
+            {
+              "id": "1",
+              "displaymanager": "GOOGLE",
+              "tagid": "1349892507",
+              "bidfloor": 0.75,
+              "bidfloorcur": "EUR",
+              "secure": 1,
+              "native": {
+                "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":25}},{\"id\":2,\"required\":1,\"data\":{\"type\":2,\"len\":90}},{\"id\":3,\"data\":{\"type\":12,\"len\":15}},{\"id\":4,\"required\":1,\"img\":{\"type\":3,\"wmin\":1200,\"hmin\":627}},{\"id\":5,\"required\":1,\"img\":{\"type\":1,\"wmin\":100,\"hmin\":100}},{\"id\":6,\"data\":{\"type\":3,\"len\":5}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1]}],\"ext\":{\"style_id\":188304,\"style_height\":1,\"style_width\":1,\"style_layout_type\":1}}",
+                "ver": "1.2"
+              },
+              "metric": [
+                {
+                  "type": "click_through_rate",
+                  "value": 0.0016456807497888803,
+                  "vendor": "EXCHANGE"
+                },
+                {
+                  "type": "viewability",
+                  "value": 0.84,
+                  "vendor": "EXCHANGE"
+                },
+                {
+                  "type": "session_depth",
+                  "value": 1.0,
+                  "vendor": "EXCHANGE"
+                }
+              ],
+              "ext": {
+                "billing_id": [
+                  "48566531714"
+                ],
+                "dfp_ad_unit_code": "/15748617/Redactie24.be/Redactie24.be-Mobile-Rectangle-Mid",
+                "ampad": 3,
+                "open_bidding": {
+                  "is_open_bidding": 1
+                },
+                "creative_enforcement_settings": {
+                  "policy_enforcement": 1,
+                  "scan_enforcement": 3,
+                  "publisher_blocks_enforcement": 2,
+                  "is_default": 1
+                },
+                "auction_environment": 0,
+                "bidder": {
+                  "siteId": 1,
+                  "pageId": 2,
+                  "formatId": 3,
+                  "networkId": 73
+                }
+              }
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "awesome-resp-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "295938731865870037",
+                  "impid": "1",
+                  "price": 1.54925,
+                  "adm": "{\"native\":{\"ver\":\"1.2\",\"privacy\":\"https://www.google.com/url?ct\u003dabg\u0026q\u003dhttps://www.google.com/adsense/support/bin/request.py%3Fcontact%3Dabg_afc%26url%3Dhttps://www.redactie24.be/shopping/colruyt-moet-ingrijpen-3-producten-onmiddellijk-uit-de-rekken-gehaald-140289%26gl%3DBE%26hl%3Dnl%26client%3Dca-pub-6068497455919343%26ai0%3DCMWU2JWy1YsCyELKtzAbL7bvgCburseVqyIHkmrwQpC8QASDyoukmYDnIAQapAjPWmVA1qrE-qAMBqgTyAU_Q8o1C6ubbCv5vk2HM3fs8wHZka2sgzJZ-ydmQV3eXB3NIsBx4KgRQHdARGZjklQkHnxyL7qcXt6CNK_VP-USVsgKVRLy4TZDA-KqA9So2DlO5_spLZUkXDRJcuzdsl3jErSYVMoiXBrz0o8wkoCropIrEdyguIXj7mdUa0jzOqYI7PGmVI1GQFGlxvHl0vHKqTcvJvXuL10Rb3tBTgTn11m3vvbjv-0Gr7wEXMQHIMxwRw348dNQFgNpFh_uQaTDXulE_2cYB5eIAL3OSzp3-NImnXi5BReLIz2S-O27cYQCDQFn0vanM1ZBl0h-s1F8TwASDw7itjATgBAOIBbOq9pJBkAYBoAY32AYCgAfrp8o7qAeOzhuoB5PYG6gH7paxAqgH_p6xAqgHpKOxAqgH1ckbqAemvhuoB_PRG6gHltgbqAeqm7ECqAffn7EC2AcBoAjTx6kEsAgC0ggSCIDhgBAQARgfMgKqAjoDgMAD8ggRYmlkZGVyLTEyMjQxNjY3NDGxCQJEVu77f8u_gAoEmAsByAsBsBPP7cUP0BMA2BMKghQTGhF3d3cucmVkYWN0aWUyNC5iZdgUAdAVAfgWAYAXAQ\u0026usg\u003dAOvVaw19w649NdpH5fOLqrJv5iKn\",\"assets\":[{\"id\":1,\"title\":{\"text\":\"Merkenfestival!\"}},{\"id\":2,\"data\":{\"value\":\"Merkenfestival bij Colruyt met heel wat kortingen op grote merken. Van 15/6 t.e.m. 28/6\"}},{\"id\":3,\"data\":{\"value\":\"Profiteer ervan\"}},{\"id\":4,\"img\":{\"url\":\"https://s0.2mdn.net/simgad/13451259496958298280\",\"w\":1200,\"h\":627}},{\"id\":5,\"img\":{\"url\":\"https://s0.2mdn.net/simgad/2036458828863222275\",\"w\":200,\"h\":200}}],\"link\":{\"url\":\"https://googleads.g.doubleclick.net/dbm/clk?sa\u003dL\u0026ai\u003dCMWU2JWy1YsCyELKtzAbL7bvgCburseVqyIHkmrwQpC8QASDyoukmYDnIAQapAjPWmVA1qrE-qAMBqgTyAU_Q8o1C6ubbCv5vk2HM3fs8wHZka2sgzJZ-ydmQV3eXB3NIsBx4KgRQHdARGZjklQkHnxyL7qcXt6CNK_VP-USVsgKVRLy4TZDA-KqA9So2DlO5_spLZUkXDRJcuzdsl3jErSYVMoiXBrz0o8wkoCropIrEdyguIXj7mdUa0jzOqYI7PGmVI1GQFGlxvHl0vHKqTcvJvXuL10Rb3tBTgTn11m3vvbjv-0Gr7wEXMQHIMxwRw348dNQFgNpFh_uQaTDXulE_2cYB5eIAL3OSzp3-NImnXi5BReLIz2S-O27cYQCDQFn0vanM1ZBl0h-s1F8TwASDw7itjATgBAOIBbOq9pJBkAYBoAY32AYCgAfrp8o7qAeOzhuoB5PYG6gH7paxAqgH_p6xAqgHpKOxAqgH1ckbqAemvhuoB_PRG6gHltgbqAeqm7ECqAffn7EC2AcBoAjTx6kEsAgC0ggSCIDhgBAQARgfMgKqAjoDgMAD8ggRYmlkZGVyLTEyMjQxNjY3NDGxCQJEVu77f8u_gAoEmAsByAsBsBPP7cUP0BMA2BMKghQTGhF3d3cucmVkYWN0aWUyNC5iZdgUAdAVAfgWAYAXAQ\u0026num\u003d1\u0026cid\u003dCAASEuRoVZGmAOtO71YvotJoZFcAsA\u0026sig\u003dAOD64_1hNRa4SE5uXyxwr67sFVdttkXPMw\u0026client\u003dca-pub-6068497455919343\u0026dbm_c\u003dAKAmf-DXV5GMQ1DDDLVJesOQet1BLLRN_F07dwWiFKq6MqCPa-5AOEBQ_NDUHJd3Y7ZvHAC0fPA8yvkbeGzxb22Xfcn61EBbTw\u0026dbm_d\u003dAKAmf-C7GnCTqLdVsHVmHm0th-M3KSzxsgdBt0CfU5p-ZewkMHZUp9MuXuFB3lu9eNAZk4HDQ4bcasljiO2TWzUK4FX1F9kodnzxAz8-58dvtZ_35H3RZti6IayNy2JmlX77vA-4i-MDo1y_xGmVmgYlW8htjrrh38P7oiCkk1Eeqp4GT8b5NPXJ6owKBjP-f-4j3Br85EEUqlDm8XhSeKayoEmRGSAWwyLJWPfSWMU8AYCGMoCbz3d1qdYAM7vMMAubD38vdNkIzeScpaP97fO_Rcyn_N1SdyWJ2tWSJgjEw0zMU4n7d_v1BB0L7c8dXeMey9y62DX9lkhYKc6IGSi7lzs1b3N3xg\u0026dc_exteid\u003d3253483843301142955\u0026dc_pubid\u003d4\u0026adurl\u003dhttps://www.colruyt.be/nl/acties/merkenfestival?utm_medium\u003ddisplay\u0026utm_source\u003dmatterkind\u0026utm_campaign\u003dclp_merkenfestival__2022_sa_a3___vi13_\u0026utm_content\u003dnative___2j_nl___prog_20220615\"},\"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"https://googleads.g.doubleclick.net/dbm/ad?dbm_c\u003dAKAmf-ALROcN7i4iCF4_lIWdwE1RqHrg-hXY1YlIcMdhjf0y_Vq8xKKuLNx44WcLwmLtsgQuH-YjpoA5jssSSfE8YFwd2OIM6A\u0026dbm_d\u003dAKAmf-DYOlYXzDGNy1AWHuljIkbVGdy-3XkSQC4_DLFN7K4j3Xydgq5hqeOlKV2G3tZA0Qx7-_Q-vOikIfQ9xwfiMdyVPW8AaWknZ0G6Yh1bqlj_uRORqDWnPJDfCUs-3qRBuJGtQUzy8QiIsxVZxHL7BocEBcky55fsbVOGVAfImlSS3r_H5m4bp8L1UTtLKrL4RghtDpElRkOgcVLofR53DiYEGqDjkdFFIMCpypmUMxVsmzQJjF0bwXiqNPMe7cRv2KxToY88NAXkvM3X1kfnApXp2lIQubljbN-mvcljPppQhLHWqXlqA-mhafhbat0yllG0riHO1frZYgnqW9-a3ot-ra-Z1NVZTgs4JTab1RlBqmVm87GyEYUG8_8z85upY54zDqeNhkOBt_yU6-aJH3TVJ8n3sm4gLKXpvTP8sfTKjgKEqc2FVwWHShT1wOdgDBOyiv4W8J7tfelvhsJphT83a7exKdNAf0tJTZ-l_oo0iWveHCMz_R8KKv4lMT8HtlHZ77c1-5jx2FtyEMJiSRdiANiy8E6Syb9l8HsamiugkLmsBaLbMlOEmGsd9Qz34Pn5SUmNoKhGmQJVJuKoD5UDbL-PoWBf-7PfVgCsoSM2AeM6-0ENasMZ5Ij95_icGTJD2k5hiAtB4A2tnXdkVR1xGcxmq61Oxz4F_VQIPeTosvqXwhBfvw8jpyc4rvQqVKfqpHg-1LktGXQ9KWocMto_ddVCJHqv9SEn09SwhNqWvbunWoZNelsHLGjexpcYXIyeDAZSv4x53yxmctjkI6J5Dx_-cLcDseueVX5mUYCnC_XUegJsJqUwAY9OeaZMf05ItZmARQF30o-4VMuzqzUc6nF7BHwVi1mK8ZCm1LI-CuMZmIrrR92Iecu8nw6zObCxsP9PbNStz76qv6l1pYSxxp5AcSRuDWUgDG-D4Pwj3CuV3Tr--jNlqDIVzEyRfg9nbkRa6EPogb1CG2-jJgg7SpSMrbs4mDaZT-OOZyCEY12-PtT8_Dt-eD3HxI2-C2EZSY11Faii3qRiIlObXjuAmghElecenOQXqK_rqHoOowdRxnkNdLdiaReXKY5iErMx-wq2Q6gw3PM-oyNTbE3lOPhLbFlCVnVdPKM2InjTkOpsT32Gd-aa0Or09_IxB89Ww1JnHAxzcN9JMXSv5gbCiE04IbdcDooWncPsVmuFoYP_xIVP17kugYPA7oVvSJ4cTNiuZHLJxHvRk_kdKrM2bP0sXTSUpzRl76QORln7m2plu6uMDuFneLRt_mwpotp88ziQdDEezOrOH4GcQF8Hy4hUV5stN4XL9wUF8Bid3Rj1MDCK0fcVJ5zqx4nfqkvXmGvjfw0B172YsbXVrwnyLN3L40u4clQ0CMApqRx7xUzMEJfkh791EnVQCmPrKDuhxgUTrI0UE02HRypReiZnTKKleotRsaVAtpWik-aguBZW_CApcL0vnrDER0z1m6xFakB3tIw9uXJhuZnWIaRxzBvW_cXNWopkS7-g0pNTMnbo6mFqYRh38u0voIvHzm7KliItR10fxX_KZUF6K9YUaDPGDZ9r_zMl4YWX4VQ0d5ZP1ATgDcpQa_M7sEsTBRCodltxE4mVLYF89w3SNXU-Th7WQWWix37mbL3iA6JffljlwiXqxe8NnSsHLYaNgk1rjAGKpRw4pbyNMePymohg3k26tdRqwS8HG5Wt4uxby-RPIdOnqesZ-y-WuBpzwvGqgJIi5ckjjM12p5mT28FdQkVOR7kSIkzM7gBoUvSBdcLwr9DcUUV8obqakZ9dL_cjVxRuUmQ5lJBoSLLMdwE9tT6Um5FyhR51HfK43oN85GyR4srHjE_jHM2LWEPdB4MUG69V7bAUCGCsh3hl2rcNiTP7aWVrDBIgj5XPBmhxWudPJjNY8zHbycpV-BjSIxwQ9kRI8ykxBYLG8fjJZHmoXFM0t0mOhtJogp2yaKXDLsQCnU_X0SkpS9KPCDE1Bf7Npw6K_kvLuvVZR3NYRYvCu6pxGKhBLB83ZcM4-Lo2ij2NDTLDTl2XAYOCKCrSIwTN2mMa35srI20IXP2PBnhCVPVncJfoWaGzG_MKrQFj4jWqpNo0gFVvJfwx2nPdYJ6sMSQsy50vB-NJEvz9W80H7yoann5M4KjrRftg40AAUQeknwqCBuLlxqN7zISUXm1i0dlzEeMBtqY0d1HSUCdoPr2sJL3rKlrw5Ap1zChcVV_HE5RtQzFgcGy0yXFcTtf1DNJ5A1SQYG4JHwQrI-qKxdSBLSQ-dg_CO-Zy-EmvN4Ys0S82zzU2-kmkR-yj4xAQ4lqLUxw2ux4fsyHayADQPSJgC1ACKE2wd0-6kyOPDVXBAZECWK13tStxR5XR27kSgkvx6Ve3RKPa9P4x07GO5ih6K67i5y9kIaGVokNHtkmsR2m0AzMrkW1VcK81YI_800Bm_MHgk93uDrCoPpPfk4lCVMh6VGiS9YgxXCui74V4Kq6CY-N-U34siIT3iLgxIND3jrGcN2NabVPz7sshPYGrPez6SDJtExdVPom-SCHxvtVWTDCnq5eud_mIIOT44uoK7XbQZ6ae7AVYdhbvvKDhGarm-V4txmfHqkF9_sZYQ1NI2DD1sI1RU-N8DriBqMTT56kwrwifCp1Y8Qe-Q7sr_K3nNdE5nBJABRiTKdpHQ-ZpvJTLslTJmjrXDMlgjkcx3F06KQLvQ4kyrO9PeCIyya79Clay0yJ7IbMNtQ5H_R84AOMS0-DrnZBsW0-y1Z21h7UjHvEYkIPAvmMi8uA2Jz_LROi8munwwcdyFGg3U5uX-5hW9YbV3NYANWcajk0QsOJfrO5kQr4EQ7ulzXPTOavnfnYlEzXEz6LF2g_wpT3uVh2IZK9opwtAwD3MDrbukKstwVOQAM4WbUp8_DRGJP4XTmrqpAZZ70dLm9CrxjS55fmCA9LjmBPGLA4A97pNTfjziXL6RwWCISDfaPb3YBeF7ILmLuuLpXweIf3e1R61FBg8x8vIbC_CgwSOhLrAQmsgAVv_o-9aFFL38mTmOj1z1wpkjX4WDzebnqClSsfHfZXTnea9skm7oHMnmUN2BH4brF5e8Zyi1DmdrizQ8A\u0026pr\u003d60:2.532574\u0026cid\u003dCAASEuRoVZGmAOtO71YvotJoZFcAsA\u0026dc_exteid\u003d3253483843301142955\u0026dc_pubid\u003d4\"}]}}",
+                  "adomain": [
+                    "colruyt.be"
+                  ],
+                  "crid": "431321529",
+                  "w": 0,
+                  "h": 0,
+                  "exp": 0,
+                  "qagmediarating": 0,
+                  "ext": {
+                    "event_notification_token": {
+                      "payload": "3305.295938731865870037.1656056869251"
+                    },
+                    "impression_tracking_url": [
+                      "https://ssb-itx5.smartadserver.com:443/api/imp?callerid\u003d3\u0026rtb\u003d1\u0026rtbnid\u003d3305\u0026rtbbid\u003d295938731865870037\u0026rtbh\u003ddc4394811e91fdf08152b776f92c56d8e579c439\u0026rtblt\u003d637916536692508131\u0026rtbet\u003d1\u0026rtbptnid\u003d76\u0026cftgid\u003d16747b4b6788"
+                    ],
+                    "third_party_buyer_token": "AKAmf-DVv2DRJUgEPOajfj9Fo42XjLuHvqfOu6JQ5cpX6aEWvjp3c9AG1996IBT-ikYiT6HWItxrqDB6T66XtyhccpqLug1SOwKH9uyZQtUmVFpnRPVwRaCtZJs_c1Gl_ZEAvvUvIHvd"
+                  }
+                }
+              ],
+              "seat": "118133"
+            }
+          ],
+          "cur": "EUR",
+          "statuscode": 0,
+          "ext": {
+            "responsetimemillis": {
+              "acuityads": 154
+            },
+            "tmaxrequest": 1000
+          }
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "295938731865870037",
+            "impid": "1",
+            "price": 1.54925,
+            "adm": "{\"native\":{\"ver\":\"1.2\",\"privacy\":\"https://www.google.com/url?ct\u003dabg\u0026q\u003dhttps://www.google.com/adsense/support/bin/request.py%3Fcontact%3Dabg_afc%26url%3Dhttps://www.redactie24.be/shopping/colruyt-moet-ingrijpen-3-producten-onmiddellijk-uit-de-rekken-gehaald-140289%26gl%3DBE%26hl%3Dnl%26client%3Dca-pub-6068497455919343%26ai0%3DCMWU2JWy1YsCyELKtzAbL7bvgCburseVqyIHkmrwQpC8QASDyoukmYDnIAQapAjPWmVA1qrE-qAMBqgTyAU_Q8o1C6ubbCv5vk2HM3fs8wHZka2sgzJZ-ydmQV3eXB3NIsBx4KgRQHdARGZjklQkHnxyL7qcXt6CNK_VP-USVsgKVRLy4TZDA-KqA9So2DlO5_spLZUkXDRJcuzdsl3jErSYVMoiXBrz0o8wkoCropIrEdyguIXj7mdUa0jzOqYI7PGmVI1GQFGlxvHl0vHKqTcvJvXuL10Rb3tBTgTn11m3vvbjv-0Gr7wEXMQHIMxwRw348dNQFgNpFh_uQaTDXulE_2cYB5eIAL3OSzp3-NImnXi5BReLIz2S-O27cYQCDQFn0vanM1ZBl0h-s1F8TwASDw7itjATgBAOIBbOq9pJBkAYBoAY32AYCgAfrp8o7qAeOzhuoB5PYG6gH7paxAqgH_p6xAqgHpKOxAqgH1ckbqAemvhuoB_PRG6gHltgbqAeqm7ECqAffn7EC2AcBoAjTx6kEsAgC0ggSCIDhgBAQARgfMgKqAjoDgMAD8ggRYmlkZGVyLTEyMjQxNjY3NDGxCQJEVu77f8u_gAoEmAsByAsBsBPP7cUP0BMA2BMKghQTGhF3d3cucmVkYWN0aWUyNC5iZdgUAdAVAfgWAYAXAQ\u0026usg\u003dAOvVaw19w649NdpH5fOLqrJv5iKn\",\"assets\":[{\"id\":1,\"title\":{\"text\":\"Merkenfestival!\"}},{\"id\":2,\"data\":{\"value\":\"Merkenfestival bij Colruyt met heel wat kortingen op grote merken. Van 15/6 t.e.m. 28/6\"}},{\"id\":3,\"data\":{\"value\":\"Profiteer ervan\"}},{\"id\":4,\"img\":{\"url\":\"https://s0.2mdn.net/simgad/13451259496958298280\",\"w\":1200,\"h\":627}},{\"id\":5,\"img\":{\"url\":\"https://s0.2mdn.net/simgad/2036458828863222275\",\"w\":200,\"h\":200}}],\"link\":{\"url\":\"https://googleads.g.doubleclick.net/dbm/clk?sa\u003dL\u0026ai\u003dCMWU2JWy1YsCyELKtzAbL7bvgCburseVqyIHkmrwQpC8QASDyoukmYDnIAQapAjPWmVA1qrE-qAMBqgTyAU_Q8o1C6ubbCv5vk2HM3fs8wHZka2sgzJZ-ydmQV3eXB3NIsBx4KgRQHdARGZjklQkHnxyL7qcXt6CNK_VP-USVsgKVRLy4TZDA-KqA9So2DlO5_spLZUkXDRJcuzdsl3jErSYVMoiXBrz0o8wkoCropIrEdyguIXj7mdUa0jzOqYI7PGmVI1GQFGlxvHl0vHKqTcvJvXuL10Rb3tBTgTn11m3vvbjv-0Gr7wEXMQHIMxwRw348dNQFgNpFh_uQaTDXulE_2cYB5eIAL3OSzp3-NImnXi5BReLIz2S-O27cYQCDQFn0vanM1ZBl0h-s1F8TwASDw7itjATgBAOIBbOq9pJBkAYBoAY32AYCgAfrp8o7qAeOzhuoB5PYG6gH7paxAqgH_p6xAqgHpKOxAqgH1ckbqAemvhuoB_PRG6gHltgbqAeqm7ECqAffn7EC2AcBoAjTx6kEsAgC0ggSCIDhgBAQARgfMgKqAjoDgMAD8ggRYmlkZGVyLTEyMjQxNjY3NDGxCQJEVu77f8u_gAoEmAsByAsBsBPP7cUP0BMA2BMKghQTGhF3d3cucmVkYWN0aWUyNC5iZdgUAdAVAfgWAYAXAQ\u0026num\u003d1\u0026cid\u003dCAASEuRoVZGmAOtO71YvotJoZFcAsA\u0026sig\u003dAOD64_1hNRa4SE5uXyxwr67sFVdttkXPMw\u0026client\u003dca-pub-6068497455919343\u0026dbm_c\u003dAKAmf-DXV5GMQ1DDDLVJesOQet1BLLRN_F07dwWiFKq6MqCPa-5AOEBQ_NDUHJd3Y7ZvHAC0fPA8yvkbeGzxb22Xfcn61EBbTw\u0026dbm_d\u003dAKAmf-C7GnCTqLdVsHVmHm0th-M3KSzxsgdBt0CfU5p-ZewkMHZUp9MuXuFB3lu9eNAZk4HDQ4bcasljiO2TWzUK4FX1F9kodnzxAz8-58dvtZ_35H3RZti6IayNy2JmlX77vA-4i-MDo1y_xGmVmgYlW8htjrrh38P7oiCkk1Eeqp4GT8b5NPXJ6owKBjP-f-4j3Br85EEUqlDm8XhSeKayoEmRGSAWwyLJWPfSWMU8AYCGMoCbz3d1qdYAM7vMMAubD38vdNkIzeScpaP97fO_Rcyn_N1SdyWJ2tWSJgjEw0zMU4n7d_v1BB0L7c8dXeMey9y62DX9lkhYKc6IGSi7lzs1b3N3xg\u0026dc_exteid\u003d3253483843301142955\u0026dc_pubid\u003d4\u0026adurl\u003dhttps://www.colruyt.be/nl/acties/merkenfestival?utm_medium\u003ddisplay\u0026utm_source\u003dmatterkind\u0026utm_campaign\u003dclp_merkenfestival__2022_sa_a3___vi13_\u0026utm_content\u003dnative___2j_nl___prog_20220615\"},\"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"https://googleads.g.doubleclick.net/dbm/ad?dbm_c\u003dAKAmf-ALROcN7i4iCF4_lIWdwE1RqHrg-hXY1YlIcMdhjf0y_Vq8xKKuLNx44WcLwmLtsgQuH-YjpoA5jssSSfE8YFwd2OIM6A\u0026dbm_d\u003dAKAmf-DYOlYXzDGNy1AWHuljIkbVGdy-3XkSQC4_DLFN7K4j3Xydgq5hqeOlKV2G3tZA0Qx7-_Q-vOikIfQ9xwfiMdyVPW8AaWknZ0G6Yh1bqlj_uRORqDWnPJDfCUs-3qRBuJGtQUzy8QiIsxVZxHL7BocEBcky55fsbVOGVAfImlSS3r_H5m4bp8L1UTtLKrL4RghtDpElRkOgcVLofR53DiYEGqDjkdFFIMCpypmUMxVsmzQJjF0bwXiqNPMe7cRv2KxToY88NAXkvM3X1kfnApXp2lIQubljbN-mvcljPppQhLHWqXlqA-mhafhbat0yllG0riHO1frZYgnqW9-a3ot-ra-Z1NVZTgs4JTab1RlBqmVm87GyEYUG8_8z85upY54zDqeNhkOBt_yU6-aJH3TVJ8n3sm4gLKXpvTP8sfTKjgKEqc2FVwWHShT1wOdgDBOyiv4W8J7tfelvhsJphT83a7exKdNAf0tJTZ-l_oo0iWveHCMz_R8KKv4lMT8HtlHZ77c1-5jx2FtyEMJiSRdiANiy8E6Syb9l8HsamiugkLmsBaLbMlOEmGsd9Qz34Pn5SUmNoKhGmQJVJuKoD5UDbL-PoWBf-7PfVgCsoSM2AeM6-0ENasMZ5Ij95_icGTJD2k5hiAtB4A2tnXdkVR1xGcxmq61Oxz4F_VQIPeTosvqXwhBfvw8jpyc4rvQqVKfqpHg-1LktGXQ9KWocMto_ddVCJHqv9SEn09SwhNqWvbunWoZNelsHLGjexpcYXIyeDAZSv4x53yxmctjkI6J5Dx_-cLcDseueVX5mUYCnC_XUegJsJqUwAY9OeaZMf05ItZmARQF30o-4VMuzqzUc6nF7BHwVi1mK8ZCm1LI-CuMZmIrrR92Iecu8nw6zObCxsP9PbNStz76qv6l1pYSxxp5AcSRuDWUgDG-D4Pwj3CuV3Tr--jNlqDIVzEyRfg9nbkRa6EPogb1CG2-jJgg7SpSMrbs4mDaZT-OOZyCEY12-PtT8_Dt-eD3HxI2-C2EZSY11Faii3qRiIlObXjuAmghElecenOQXqK_rqHoOowdRxnkNdLdiaReXKY5iErMx-wq2Q6gw3PM-oyNTbE3lOPhLbFlCVnVdPKM2InjTkOpsT32Gd-aa0Or09_IxB89Ww1JnHAxzcN9JMXSv5gbCiE04IbdcDooWncPsVmuFoYP_xIVP17kugYPA7oVvSJ4cTNiuZHLJxHvRk_kdKrM2bP0sXTSUpzRl76QORln7m2plu6uMDuFneLRt_mwpotp88ziQdDEezOrOH4GcQF8Hy4hUV5stN4XL9wUF8Bid3Rj1MDCK0fcVJ5zqx4nfqkvXmGvjfw0B172YsbXVrwnyLN3L40u4clQ0CMApqRx7xUzMEJfkh791EnVQCmPrKDuhxgUTrI0UE02HRypReiZnTKKleotRsaVAtpWik-aguBZW_CApcL0vnrDER0z1m6xFakB3tIw9uXJhuZnWIaRxzBvW_cXNWopkS7-g0pNTMnbo6mFqYRh38u0voIvHzm7KliItR10fxX_KZUF6K9YUaDPGDZ9r_zMl4YWX4VQ0d5ZP1ATgDcpQa_M7sEsTBRCodltxE4mVLYF89w3SNXU-Th7WQWWix37mbL3iA6JffljlwiXqxe8NnSsHLYaNgk1rjAGKpRw4pbyNMePymohg3k26tdRqwS8HG5Wt4uxby-RPIdOnqesZ-y-WuBpzwvGqgJIi5ckjjM12p5mT28FdQkVOR7kSIkzM7gBoUvSBdcLwr9DcUUV8obqakZ9dL_cjVxRuUmQ5lJBoSLLMdwE9tT6Um5FyhR51HfK43oN85GyR4srHjE_jHM2LWEPdB4MUG69V7bAUCGCsh3hl2rcNiTP7aWVrDBIgj5XPBmhxWudPJjNY8zHbycpV-BjSIxwQ9kRI8ykxBYLG8fjJZHmoXFM0t0mOhtJogp2yaKXDLsQCnU_X0SkpS9KPCDE1Bf7Npw6K_kvLuvVZR3NYRYvCu6pxGKhBLB83ZcM4-Lo2ij2NDTLDTl2XAYOCKCrSIwTN2mMa35srI20IXP2PBnhCVPVncJfoWaGzG_MKrQFj4jWqpNo0gFVvJfwx2nPdYJ6sMSQsy50vB-NJEvz9W80H7yoann5M4KjrRftg40AAUQeknwqCBuLlxqN7zISUXm1i0dlzEeMBtqY0d1HSUCdoPr2sJL3rKlrw5Ap1zChcVV_HE5RtQzFgcGy0yXFcTtf1DNJ5A1SQYG4JHwQrI-qKxdSBLSQ-dg_CO-Zy-EmvN4Ys0S82zzU2-kmkR-yj4xAQ4lqLUxw2ux4fsyHayADQPSJgC1ACKE2wd0-6kyOPDVXBAZECWK13tStxR5XR27kSgkvx6Ve3RKPa9P4x07GO5ih6K67i5y9kIaGVokNHtkmsR2m0AzMrkW1VcK81YI_800Bm_MHgk93uDrCoPpPfk4lCVMh6VGiS9YgxXCui74V4Kq6CY-N-U34siIT3iLgxIND3jrGcN2NabVPz7sshPYGrPez6SDJtExdVPom-SCHxvtVWTDCnq5eud_mIIOT44uoK7XbQZ6ae7AVYdhbvvKDhGarm-V4txmfHqkF9_sZYQ1NI2DD1sI1RU-N8DriBqMTT56kwrwifCp1Y8Qe-Q7sr_K3nNdE5nBJABRiTKdpHQ-ZpvJTLslTJmjrXDMlgjkcx3F06KQLvQ4kyrO9PeCIyya79Clay0yJ7IbMNtQ5H_R84AOMS0-DrnZBsW0-y1Z21h7UjHvEYkIPAvmMi8uA2Jz_LROi8munwwcdyFGg3U5uX-5hW9YbV3NYANWcajk0QsOJfrO5kQr4EQ7ulzXPTOavnfnYlEzXEz6LF2g_wpT3uVh2IZK9opwtAwD3MDrbukKstwVOQAM4WbUp8_DRGJP4XTmrqpAZZ70dLm9CrxjS55fmCA9LjmBPGLA4A97pNTfjziXL6RwWCISDfaPb3YBeF7ILmLuuLpXweIf3e1R61FBg8x8vIbC_CgwSOhLrAQmsgAVv_o-9aFFL38mTmOj1z1wpkjX4WDzebnqClSsfHfZXTnea9skm7oHMnmUN2BH4brF5e8Zyi1DmdrizQ8A\u0026pr\u003d60:2.532574\u0026cid\u003dCAASEuRoVZGmAOtO71YvotJoZFcAsA\u0026dc_exteid\u003d3253483843301142955\u0026dc_pubid\u003d4\"}]}}",
+            "adomain": [
+              "colruyt.be"
+            ],
+            "crid": "431321529",
+            "ext": {
+              "event_notification_token": {
+                "payload": "3305.295938731865870037.1656056869251"
+              },
+              "impression_tracking_url": [
+                "https://ssb-itx5.smartadserver.com:443/api/imp?callerid\u003d3\u0026rtb\u003d1\u0026rtbnid\u003d3305\u0026rtbbid\u003d295938731865870037\u0026rtbh\u003ddc4394811e91fdf08152b776f92c56d8e579c439\u0026rtblt\u003d637916536692508131\u0026rtbet\u003d1\u0026rtbptnid\u003d76\u0026cftgid\u003d16747b4b6788"
+              ],
+              "third_party_buyer_token": "AKAmf-DVv2DRJUgEPOajfj9Fo42XjLuHvqfOu6JQ5cpX6aEWvjp3c9AG1996IBT-ikYiT6HWItxrqDB6T66XtyhccpqLug1SOwKH9uyZQtUmVFpnRPVwRaCtZJs_c1Gl_ZEAvvUvIHvd"
+            }
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}

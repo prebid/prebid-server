@@ -9,19 +9,25 @@
         {
           "id": "my-imp-id",
           "video": {
-            "mimes": ["video/mp4"]
+            "mimes": [
+              "video/mp4"
+            ]
           },
           "ext": {
-            "appnexus": {
-              "placementId": 1
-            },
-            "districtm": {
-              "placementId": 2
-            },
-            "rubicon": {
-              "accountId": 1,
-              "siteId": 2,
-              "zoneId": 3
+            "prebid": {
+              "bidder": {
+                "appnexus": {
+                  "placementId": 1
+                },
+                "districtm": {
+                  "placementId": 2
+                },
+                "rubicon": {
+                  "accountId": 1,
+                  "siteId": 2,
+                  "zoneId": 3
+                }
+              }
             }
           }
         }
@@ -63,7 +69,9 @@
             {
               "id": "my-imp-id",
               "video": {
-                "mimes": ["video/mp4"]
+                "mimes": [
+                  "video/mp4"
+                ]
               },
               "ext": {
                 "bidder": {
@@ -74,16 +82,19 @@
           ],
           "ext": {
             "prebid": {
-              "aliases": {
-                "districtm": "appnexus"
+              "server": {
+                "datacenter": "Datacenter",
+                "externalurl": "http://hosturl.com",
+                "gvlid": 1
               }
             }
           }
-        },
-        "bidAdjustment": 1.0
+        }
       },
       "mockResponse": {
-        "errors": ["appnexus-error"]
+        "errors": [
+          "appnexus-error"
+        ]
       }
     },
     "rubicon": {
@@ -100,7 +111,9 @@
             {
               "id": "my-imp-id",
               "video": {
-                "mimes": ["video/mp4"]
+                "mimes": [
+                  "video/mp4"
+                ]
               },
               "ext": {
                 "bidder": {
@@ -113,16 +126,19 @@
           ],
           "ext": {
             "prebid": {
-              "aliases": {
-                "districtm": "appnexus"
+              "server": {
+                "datacenter": "Datacenter",
+                "externalurl": "http://hosturl.com",
+                "gvlid": 1
               }
             }
           }
-        },
-        "bidAdjustment": 1.0
+        }
       },
       "mockResponse": {
-        "errors": ["appnexus-error"]
+        "errors": [
+          "appnexus-error"
+        ]
       }
     },
     "districtm": {
@@ -139,7 +155,9 @@
             {
               "id": "my-imp-id",
               "video": {
-                "mimes": ["video/mp4"]
+                "mimes": [
+                  "video/mp4"
+                ]
               },
               "ext": {
                 "bidder": {
@@ -150,16 +168,19 @@
           ],
           "ext": {
             "prebid": {
-              "aliases": {
-                "districtm": "appnexus"
+              "server": {
+                "datacenter": "Datacenter",
+                "externalurl": "http://hosturl.com",
+                "gvlid": 1
               }
             }
           }
-        },
-        "bidAdjustment": 1.0
+        }
       },
       "mockResponse": {
-        "errors": ["districtm-error"]
+        "errors": [
+          "districtm-error"
+        ]
       }
     }
   },
@@ -168,8 +189,12 @@
       "id": "some-request-id",
       "ext": {
         "errors": {
-          "appnexus": ["appnexus-error"],
-          "districtm": ["districtm-error"]
+          "appnexus": [
+            "appnexus-error"
+          ],
+          "districtm": [
+            "districtm-error"
+          ]
         }
       }
     }

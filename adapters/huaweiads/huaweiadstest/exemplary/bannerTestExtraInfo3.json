@@ -126,7 +126,7 @@
             {
               "adtype": 8,
               "slotid": "m8x9x3rzff",
-              "test": 0,
+              "test": 1,
               "format": [
                 {
                   "w": 300,
@@ -165,7 +165,8 @@
           },
           "regs": {
           },
-          "version": "3.4"
+          "version": "3.4",
+          "clientAdRequestId": "a3b18c5b-6708-4bb7-b41b-40ed37d89561"
         }
       },
       "mockResponse": {

@@ -3,7 +3,7 @@ package adapters
 import (
 	"fmt"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -13,12 +13,12 @@ import (
 // media types defined in the static/bidder-info/{bidder}.yaml file.
 //
 // It adjusts incoming requests in the following ways:
-//   1. If App or Site traffic is not supported by the info file, then requests from
-//      those sources will be rejected before the delegate is called.
-//   2. If a given MediaType is not supported for the platform, then it will be set
-//      to nil before the request is forwarded to the delegate.
-//   3. Any Imps which have no MediaTypes left will be removed.
-//   4. If there are no valid Imps left, the delegate won't be called at all.
+//  1. If App or Site traffic is not supported by the info file, then requests from
+//     those sources will be rejected before the delegate is called.
+//  2. If a given MediaType is not supported for the platform, then it will be set
+//     to nil before the request is forwarded to the delegate.
+//  3. Any Imps which have no MediaTypes left will be removed.
+//  4. If there are no valid Imps left, the delegate won't be called at all.
 type InfoAwareBidder struct {
 	Bidder
 	info parsedBidderInfo
@@ -37,13 +37,13 @@ func (i *InfoAwareBidder) MakeRequests(request *openrtb2.BidRequest, reqInfo *Ex
 
 	if request.Site != nil {
 		if !i.info.site.enabled {
-			return nil, []error{&errortypes.BadInput{Message: "this bidder does not support site requests"}}
+			return nil, []error{&errortypes.Warning{Message: "this bidder does not support site requests"}}
 		}
 		allowedMediaTypes = i.info.site
 	}
 	if request.App != nil {
 		if !i.info.app.enabled {
-			return nil, []error{&errortypes.BadInput{Message: "this bidder does not support app requests"}}
+			return nil, []error{&errortypes.Warning{Message: "this bidder does not support app requests"}}
 		}
 		allowedMediaTypes = i.info.app
 	}
@@ -57,7 +57,7 @@ func (i *InfoAwareBidder) MakeRequests(request *openrtb2.BidRequest, reqInfo *Ex
 
 	// If all imps in bid request come with unsupported media types, exit
 	if numToFilter == len(request.Imp) {
-		return nil, append(errs, &errortypes.BadInput{Message: "Bid request didn't contain media types supported by the bidder"})
+		return nil, append(errs, &errortypes.Warning{Message: "Bid request didn't contain media types supported by the bidder"})
 	}
 
 	if numToFilter != 0 {
@@ -78,19 +78,19 @@ func pruneImps(imps []openrtb2.Imp, allowedTypes parsedSupports) (int, []error) 
 	for i := 0; i < len(imps); i++ {
 		if !allowedTypes.banner && imps[i].Banner != nil {
 			imps[i].Banner = nil
-			errs = append(errs, &errortypes.BadInput{Message: fmt.Sprintf("request.imp[%d] uses banner, but this bidder doesn't support it", i)})
+			errs = append(errs, &errortypes.Warning{Message: fmt.Sprintf("request.imp[%d] uses banner, but this bidder doesn't support it", i)})
 		}
 		if !allowedTypes.video && imps[i].Video != nil {
 			imps[i].Video = nil
-			errs = append(errs, &errortypes.BadInput{Message: fmt.Sprintf("request.imp[%d] uses video, but this bidder doesn't support it", i)})
+			errs = append(errs, &errortypes.Warning{Message: fmt.Sprintf("request.imp[%d] uses video, but this bidder doesn't support it", i)})
 		}
 		if !allowedTypes.audio && imps[i].Audio != nil {
 			imps[i].Audio = nil
-			errs = append(errs, &errortypes.BadInput{Message: fmt.Sprintf("request.imp[%d] uses audio, but this bidder doesn't support it", i)})
+			errs = append(errs, &errortypes.Warning{Message: fmt.Sprintf("request.imp[%d] uses audio, but this bidder doesn't support it", i)})
 		}
 		if !allowedTypes.native && imps[i].Native != nil {
 			imps[i].Native = nil
-			errs = append(errs, &errortypes.BadInput{Message: fmt.Sprintf("request.imp[%d] uses native, but this bidder doesn't support it", i)})
+			errs = append(errs, &errortypes.Warning{Message: fmt.Sprintf("request.imp[%d] uses native, but this bidder doesn't support it", i)})
 		}
 		if !hasAnyTypes(&imps[i]) {
 			numToFilter = numToFilter + 1

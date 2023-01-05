@@ -1,7 +1,7 @@
 package info
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -12,8 +12,8 @@ import (
 
 func TestPrepareBiddersResponseAll(t *testing.T) {
 	var (
-		enabled  = config.BidderInfo{Enabled: true}
-		disabled = config.BidderInfo{Enabled: false}
+		enabled  = config.BidderInfo{Disabled: false}
+		disabled = config.BidderInfo{Disabled: true}
 	)
 
 	testCases := []struct {
@@ -88,8 +88,8 @@ func TestPrepareBiddersResponseAll(t *testing.T) {
 
 func TestPrepareBiddersResponseEnabledOnly(t *testing.T) {
 	var (
-		enabled  = config.BidderInfo{Enabled: true}
-		disabled = config.BidderInfo{Enabled: false}
+		enabled  = config.BidderInfo{Disabled: false}
+		disabled = config.BidderInfo{Disabled: true}
 	)
 
 	testCases := []struct {
@@ -164,8 +164,8 @@ func TestPrepareBiddersResponseEnabledOnly(t *testing.T) {
 
 func TestBiddersHandler(t *testing.T) {
 	var (
-		enabled  = config.BidderInfo{Enabled: true}
-		disabled = config.BidderInfo{Enabled: false}
+		enabled  = config.BidderInfo{Disabled: false}
+		disabled = config.BidderInfo{Disabled: true}
 	)
 
 	bidders := config.BidderInfos{"a": enabled, "b": disabled}
@@ -240,7 +240,7 @@ func TestBiddersHandler(t *testing.T) {
 		result := responseRecorder.Result()
 		assert.Equal(t, result.StatusCode, test.expectedStatus)
 
-		resultBody, _ := ioutil.ReadAll(result.Body)
+		resultBody, _ := io.ReadAll(result.Body)
 		assert.Equal(t, []byte(test.expectedBody), resultBody)
 
 		resultHeaders := result.Header

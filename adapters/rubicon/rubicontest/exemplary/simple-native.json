@@ -1,0 +1,385 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "device": {
+      "ip": "123.123.123.123",
+      "ifa": "zxcjbzxmc-zxcbmz-zxbcz-zxczx"
+    },
+    "app": {
+      "id": "1",
+      "bundle": "com.wls.testwlsapplication"
+    },
+    "site": {
+      "pagecat": [
+        "val1",
+        "val2"
+      ],
+      "content": {
+        "data": [
+          {
+            "ext": {
+              "segtax": 1
+            },
+            "segment": [
+              {
+                "id": "segmentId1"
+              },
+              {
+                "id": "segmentId2"
+              }
+            ]
+          },
+          {
+            "ext": {
+              "segtax": "1"
+            },
+            "segment": [
+              {
+                "id": "shouldNotBeCopied"
+              }
+            ]
+          },
+          {
+            "ext": {
+              "segtax": 2
+            },
+            "segment": [
+              {
+                "id": "segmentId3"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "user": {
+      "yob": 2000,
+      "geo": {
+        "country": "USA",
+        "lat": 47.627500,
+        "lon": -122.346200
+      },
+      "gender": "f",
+      "data": [
+        {
+          "ext": {
+            "segtax": 4
+          },
+          "segment": [
+            {
+              "id": "idToCopy"
+            }
+          ]
+        },
+        {
+          "ext": {
+            "segtax": "someValue"
+          },
+          "segment": [
+            {
+              "id": "shouldNotBeCopied"
+            }
+          ]
+        },
+        {
+          "ext": {
+            "segtax": "4"
+          },
+          "segment": [
+            {
+              "id": "shouldNotBeCopied2"
+            }
+          ]
+        },
+        {
+          "ext": {
+            "segtax": 4
+          },
+          "segment": [
+            {
+              "id": "idToCopy2"
+            }
+          ]
+        },
+        {
+          "ext": {
+            "segtax": [
+              4
+            ]
+          },
+          "segment": [
+            {
+              "id": "shouldNotBeCopied3"
+            }
+          ]
+        }
+      ]
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "instl": 1,
+        "native": {
+          "ver": "1.2",
+          "request": "{\"eventtrackers\":[],\"context\":1,\"plcmttype\":2}"
+        },
+        "ext": {
+          "data": {
+            "pbadslot": "pbadslot"
+          },
+          "bidder": {
+            "video": {
+            },
+            "accountId": 1001,
+            "siteId": 113932,
+            "zoneId": 535510
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "uri?tk_xint=pbs-test-tracker",
+        "body": {
+          "id": "test-request-id",
+          "device": {
+            "ext": {
+              "rp": {
+                "pixelratio": 0
+              }
+            },
+            "ip": "123.123.123.123",
+            "ifa": "zxcjbzxmc-zxcbmz-zxbcz-zxczx"
+          },
+          "site": {
+            "pagecat": [
+              "val1",
+              "val2"
+            ],
+            "content": {
+              "data": [
+                {
+                  "ext": {
+                    "segtax": 1
+                  },
+                  "segment": [
+                    {
+                      "id": "segmentId1"
+                    },
+                    {
+                      "id": "segmentId2"
+                    }
+                  ]
+                },
+                {
+                  "ext": {
+                    "segtax": "1"
+                  },
+                  "segment": [
+                    {
+                      "id": "shouldNotBeCopied"
+                    }
+                  ]
+                },
+                {
+                  "ext": {
+                    "segtax": 2
+                  },
+                  "segment": [
+                    {
+                      "id": "segmentId3"
+                    }
+                  ]
+                }
+              ]
+            },
+            "ext": {
+              "rp": {
+                "site_id": 113932,
+                "target": {
+                  "iab": [
+                    "segmentId1",
+                    "segmentId2",
+                    "segmentId3"
+                  ]
+                }
+              }
+            },
+            "publisher": {
+              "ext": {
+                "rp": {
+                  "account_id": 1001
+                }
+              }
+            }
+          },
+          "user": {
+            "data": [
+              {
+                "ext": {
+                  "segtax": 4
+                },
+                "segment": [
+                  {
+                    "id": "idToCopy"
+                  }
+                ]
+              },
+              {
+                "ext": {
+                  "segtax": "someValue"
+                },
+                "segment": [
+                  {
+                    "id": "shouldNotBeCopied"
+                  }
+                ]
+              },
+              {
+                "ext": {
+                  "segtax": "4"
+                },
+                "segment": [
+                  {
+                    "id": "shouldNotBeCopied2"
+                  }
+                ]
+              },
+              {
+                "ext": {
+                  "segtax": 4
+                },
+                "segment": [
+                  {
+                    "id": "idToCopy2"
+                  }
+                ]
+              },
+              {
+                "ext": {
+                  "segtax": [
+                    4
+                  ]
+                },
+                "segment": [
+                  {
+                    "id": "shouldNotBeCopied3"
+                  }
+                ]
+              }
+            ],
+            "ext": {
+              "rp": {
+                "target": {
+                  "iab": [
+                    "idToCopy",
+                    "idToCopy2"
+                  ]
+                }
+              }
+            }
+          },
+          "app": {
+            "id": "1",
+            "bundle": "com.wls.testwlsapplication"
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "instl": 1,
+              "native": {
+                "ver": "1.2",
+                "request": "{\"eventtrackers\":[],\"context\":1,\"plcmttype\":2}",
+                "request_native": {
+                  "context": 1,
+                  "eventtrackers": [
+                  ],
+                  "plcmttype": 2
+                }
+              },
+              "ext": {
+                "rp": {
+                  "target": {
+                    "pbadslot": "pbadslot",
+                    "pagecat": [
+                      "val1",
+                      "val2"
+                    ]
+                  },
+                  "track": {
+                    "mint": "",
+                    "mint_version": ""
+                  },
+                  "zone_id": 535510
+                }
+              }
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "buyer": "123",
+              "bid": [
+                {
+                  "id": "test_bid_id",
+                  "impid": "test-imp-id",
+                  "price": 0.27543,
+                  "cid": "test_cid",
+                  "crid": "test_crid",
+                  "dealid": "test_dealid",
+                  "admobject": {
+                    "property1": "value1"
+                  },
+                  "ext": {
+                    "prebid": {
+                      "meta": {
+                        "networkId": 123
+                      },
+                      "type": "native"
+                    }
+                  }
+                }
+              ],
+              "seat": "adman"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test_bid_id",
+            "impid": "test-imp-id",
+            "price": 0.27543,
+            "adm": "{\"property1\":\"value1\"}",
+            "cid": "test_cid",
+            "crid": "test_crid",
+            "dealid": "test_dealid",
+            "ext": {
+              "prebid": {
+                "meta": {
+                  "networkId": 123
+                },
+                "type": "native"
+              }
+            }
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}

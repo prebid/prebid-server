@@ -1,5 +1,6 @@
+endpoint: "https://e.serverbid.com/api/v2"
 maintainer:
-  email: "naffis@consumable.com"
+  email: "prebid@consumable.com"
 gvlVendorID: 591
 capabilities:
   app:

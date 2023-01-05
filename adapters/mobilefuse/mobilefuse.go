@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"text/template"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -19,8 +19,16 @@ type MobileFuseAdapter struct {
 	EndpointTemplate *template.Template
 }
 
+type ExtMf struct {
+	MediaType string `json:"media_type"`
+}
+
+type BidExt struct {
+	Mf ExtMf `json:"mf"`
+}
+
 // Builder builds a new instance of the MobileFuse adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
@@ -71,9 +79,12 @@ func (adapter *MobileFuseAdapter) MakeBids(incomingRequest *openrtb2.BidRequest,
 
 	for _, seatbid := range incomingBidResponse.SeatBid {
 		for i := range seatbid.Bid {
+			bidType := adapter.getBidType(seatbid.Bid[i])
+			seatbid.Bid[i].Ext = nil
+
 			outgoingBidResponse.Bids = append(outgoingBidResponse.Bids, &adapters.TypedBid{
 				Bid:     &seatbid.Bid[i],
-				BidType: adapter.getBidType(seatbid.Bid[i].ImpID, incomingRequest.Imp),
+				BidType: bidType,
 			})
 		}
 	}
@@ -172,10 +183,6 @@ func (adapter *MobileFuseAdapter) getValidImps(bidRequest *openrtb2.BidRequest, 
 
 	for _, imp := range bidRequest.Imp {
 		if imp.Banner != nil || imp.Video != nil {
-			if imp.Banner != nil && imp.Video != nil {
-				imp.Video = nil
-			}
-
 			imp.TagID = strconv.Itoa(ext.PlacementId)
 			imp.Ext = nil
 			validImps = append(validImps, imp)
@@ -187,9 +194,14 @@ func (adapter *MobileFuseAdapter) getValidImps(bidRequest *openrtb2.BidRequest, 
 	return validImps
 }
 
-func (adapter *MobileFuseAdapter) getBidType(imp_id string, imps []openrtb2.Imp) openrtb_ext.BidType {
-	if imps[0].Video != nil {
-		return openrtb_ext.BidTypeVideo
+func (adapter *MobileFuseAdapter) getBidType(bid openrtb2.Bid) openrtb_ext.BidType {
+	if bid.Ext != nil {
+		var bidExt BidExt
+		err := json.Unmarshal(bid.Ext, &bidExt)
+
+		if err == nil && bidExt.Mf.MediaType == "video" {
+			return openrtb_ext.BidTypeVideo
+		}
 	}
 
 	return openrtb_ext.BidTypeBanner

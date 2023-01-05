@@ -89,7 +89,12 @@
                     "profile": 5123,
                     "version":1
                 },
-                "acat": ["drg","dlu","ssr"]
+                "acat": ["drg","dlu","ssr"],
+                "prebid": {
+                  "bidderparams": {
+                    "acat": ["drg","dlu","ssr"]
+                  }
+                }
             }
           }
         },
@@ -113,7 +118,8 @@
                   "dealid":"test deal",
                   "ext": {
                     "dspid": 6,
-                    "deal_channel": 1
+                    "deal_channel": 1,
+                    "prebiddealpriority": 1
                   }
                 }]
               }
@@ -143,7 +149,8 @@
               "dealid":"test deal",
               "ext": {
                 "dspid": 6,
-                "deal_channel": 1
+                "deal_channel": 1,
+                "prebiddealpriority": 1
               }
             },
             "type": "banner"
