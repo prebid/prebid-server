@@ -148,6 +148,7 @@ const (
 	BidderDmx               BidderName = "dmx"
 	BidderEmxDigital        BidderName = "emx_digital"
 	BidderEngageBDR         BidderName = "engagebdr"
+	BidderEngageBDROrtb     BidderName = "engagebdr_ortb"
 	BidderEPlanning         BidderName = "eplanning"
 	BidderEpom              BidderName = "epom"
 	BidderEVolution         BidderName = "e_volution"
@@ -158,6 +159,7 @@ const (
 	BidderGrid              BidderName = "grid"
 	BidderGroupm            BidderName = "groupm"
 	BidderGumGum            BidderName = "gumgum"
+	BidderGumGumOrtb        BidderName = "gumgum_ortb"
 	BidderHuaweiAds         BidderName = "huaweiads"
 	BidderImpactify         BidderName = "impactify"
 	BidderImprovedigital    BidderName = "improvedigital"
@@ -202,6 +204,7 @@ const (
 	BidderPubmatic          BidderName = "pubmatic"
 	BidderPubnative         BidderName = "pubnative"
 	BidderPulsepoint        BidderName = "pulsepoint"
+	BidderPulsepointOrtb    BidderName = "pulsepoint_ortb"
 	BidderQuantumdex        BidderName = "quantumdex"
 	BidderRevcontent        BidderName = "revcontent"
 	BidderRhythmone         BidderName = "rhythmone"
@@ -320,6 +323,7 @@ func CoreBidderNames() []BidderName {
 		BidderDmx,
 		BidderEmxDigital,
 		BidderEngageBDR,
+		BidderEngageBDROrtb,
 		BidderEPlanning,
 		BidderEpom,
 		BidderEVolution,
@@ -330,6 +334,7 @@ func CoreBidderNames() []BidderName {
 		BidderGrid,
 		BidderGroupm,
 		BidderGumGum,
+		BidderGumGumOrtb,
 		BidderHuaweiAds,
 		BidderImpactify,
 		BidderImprovedigital,
@@ -374,6 +379,7 @@ func CoreBidderNames() []BidderName {
 		BidderPubmatic,
 		BidderPubnative,
 		BidderPulsepoint,
+		BidderPulsepointOrtb,
 		BidderQuantumdex,
 		BidderRevcontent,
 		BidderRhythmone,

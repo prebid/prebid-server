@@ -23,7 +23,7 @@ require (
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/lib/pq v1.10.4
 	github.com/mitchellh/copystructure v1.2.0
-	github.com/mxmCherry/openrtb v11.0.0+incompatible
+	github.com/mxmCherry/openrtb/v15 v15.0.1
 	github.com/prebid-server/adapters/playwire_ortb v0.0.0-00010101000000-000000000000
 	github.com/prebid/go-gdpr v1.11.0
 	github.com/prebid/go-gpp v0.1.1

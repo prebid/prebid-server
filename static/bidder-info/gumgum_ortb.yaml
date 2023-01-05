@@ -1,7 +1,16 @@
+endpoint: "https://g2.gumgum.com/zones/8ylgv2wd/bid"
 maintainer:
-  email: "pubtech@na.com"
+  email: "na@playwire.com"
 capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - audio
+      - native
   site:
     mediaTypes:
-    - banner
-    - video
+      - banner
+      - video
+      - audio
+      - native
