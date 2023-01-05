@@ -24,6 +24,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/exchange/entities"
 	"github.com/prebid/prebid-server/experiment/adscert"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/metrics"
@@ -130,18 +131,18 @@ func TestSingleBidder(t *testing.T) {
 		if !test.debugInfo.Allow && len(errortypes.WarningOnly(errs)) != 1 {
 			t.Errorf("bidder.Bid returned %d warnings. Expected 1", len(errs))
 		}
-		if len(seatBid.bids) != len(mockBidderResponse.Bids) {
-			t.Fatalf("Expected %d bids. Got %d", len(mockBidderResponse.Bids), len(seatBid.bids))
+		if len(seatBid.Bids) != len(mockBidderResponse.Bids) {
+			t.Fatalf("Expected %d bids. Got %d", len(mockBidderResponse.Bids), len(seatBid.Bids))
 		}
 		for index, typedBid := range mockBidderResponse.Bids {
-			if typedBid.Bid != seatBid.bids[index].bid {
+			if typedBid.Bid != seatBid.Bids[index].Bid {
 				t.Errorf("Bid %d did not point to the same bid returned by the Bidder.", index)
 			}
-			if typedBid.BidType != seatBid.bids[index].bidType {
-				t.Errorf("Bid %d did not have the right type. Expected %s, got %s", index, typedBid.BidType, seatBid.bids[index].bidType)
+			if typedBid.BidType != seatBid.Bids[index].BidType {
+				t.Errorf("Bid %d did not have the right type. Expected %s, got %s", index, typedBid.BidType, seatBid.Bids[index].BidType)
 			}
-			if typedBid.DealPriority != seatBid.bids[index].dealPriority {
-				t.Errorf("Bid %d did not have the right deal priority. Expected %s, got %s", index, typedBid.BidType, seatBid.bids[index].bidType)
+			if typedBid.DealPriority != seatBid.Bids[index].DealPriority {
+				t.Errorf("Bid %d did not have the right deal priority. Expected %s, got %s", index, typedBid.BidType, seatBid.Bids[index].BidType)
 			}
 		}
 		bidAdjustment := bidAdjustments["test"]
@@ -151,11 +152,11 @@ func TestSingleBidder(t *testing.T) {
 		if mockBidderResponse.Bids[1].Bid.Price != bidAdjustment*secondInitialPrice {
 			t.Errorf("Bid[1].Price was not adjusted properly. Expected %f, got %f", bidAdjustment*secondInitialPrice, mockBidderResponse.Bids[1].Bid.Price)
 		}
-		if len(seatBid.httpCalls) != test.httpCallsLen {
-			t.Errorf("The bidder shouldn't log HttpCalls when request.test == 0. Found %d", len(seatBid.httpCalls))
+		if len(seatBid.HttpCalls) != test.httpCallsLen {
+			t.Errorf("The bidder shouldn't log HttpCalls when request.test == 0. Found %d", len(seatBid.HttpCalls))
 		}
-		for index, bid := range seatBid.bids {
-			assert.NotEqual(t, mockBidderResponse.Bids[index].Bid.Price, bid.originalBidCPM, "The bid price was adjusted, so the originally bid CPM should be different")
+		for index, bid := range seatBid.Bids {
+			assert.NotEqual(t, mockBidderResponse.Bids[index].Bid.Price, bid.OriginalBidCPM, "The bid price was adjusted, so the originally bid CPM should be different")
 		}
 	}
 }
@@ -252,18 +253,18 @@ func TestSingleBidderGzip(t *testing.T) {
 		if !test.debugInfo.Allow && len(errortypes.WarningOnly(errs)) != 1 {
 			t.Errorf("bidder.Bid returned %d warnings. Expected 1", len(errs))
 		}
-		if len(seatBid.bids) != len(mockBidderResponse.Bids) {
-			t.Fatalf("Expected %d bids. Got %d", len(mockBidderResponse.Bids), len(seatBid.bids))
+		if len(seatBid.Bids) != len(mockBidderResponse.Bids) {
+			t.Fatalf("Expected %d bids. Got %d", len(mockBidderResponse.Bids), len(seatBid.Bids))
 		}
 		for index, typedBid := range mockBidderResponse.Bids {
-			if typedBid.Bid != seatBid.bids[index].bid {
+			if typedBid.Bid != seatBid.Bids[index].Bid {
 				t.Errorf("Bid %d did not point to the same bid returned by the Bidder.", index)
 			}
-			if typedBid.BidType != seatBid.bids[index].bidType {
-				t.Errorf("Bid %d did not have the right type. Expected %s, got %s", index, typedBid.BidType, seatBid.bids[index].bidType)
+			if typedBid.BidType != seatBid.Bids[index].BidType {
+				t.Errorf("Bid %d did not have the right type. Expected %s, got %s", index, typedBid.BidType, seatBid.Bids[index].BidType)
 			}
-			if typedBid.DealPriority != seatBid.bids[index].dealPriority {
-				t.Errorf("Bid %d did not have the right deal priority. Expected %s, got %s", index, typedBid.BidType, seatBid.bids[index].bidType)
+			if typedBid.DealPriority != seatBid.Bids[index].DealPriority {
+				t.Errorf("Bid %d did not have the right deal priority. Expected %s, got %s", index, typedBid.BidType, seatBid.Bids[index].BidType)
 			}
 		}
 		bidAdjustment := bidAdjustments["test"]
@@ -273,15 +274,15 @@ func TestSingleBidderGzip(t *testing.T) {
 		if mockBidderResponse.Bids[1].Bid.Price != bidAdjustment*secondInitialPrice {
 			t.Errorf("Bid[1].Price was not adjusted properly. Expected %f, got %f", bidAdjustment*secondInitialPrice, mockBidderResponse.Bids[1].Bid.Price)
 		}
-		if len(seatBid.httpCalls) != test.httpCallsLen {
-			t.Errorf("The bidder shouldn't log HttpCalls when request.test == 0. Found %d", len(seatBid.httpCalls))
+		if len(seatBid.HttpCalls) != test.httpCallsLen {
+			t.Errorf("The bidder shouldn't log HttpCalls when request.test == 0. Found %d", len(seatBid.HttpCalls))
 		}
-		if test.debugInfo.Allow && len(seatBid.httpCalls) > 0 {
-			assert.Equalf(t, "gzip", seatBid.httpCalls[0].RequestHeaders["Content-Encoding"][0], "Mismatched headers")
-			assert.Equalf(t, "{\"key\":\"val\"}", seatBid.httpCalls[0].RequestBody, "Mismatched request bodies")
+		if test.debugInfo.Allow && len(seatBid.HttpCalls) > 0 {
+			assert.Equalf(t, "gzip", seatBid.HttpCalls[0].RequestHeaders["Content-Encoding"][0], "Mismatched headers")
+			assert.Equalf(t, "{\"key\":\"val\"}", seatBid.HttpCalls[0].RequestBody, "Mismatched request bodies")
 		}
-		for index, bid := range seatBid.bids {
-			assert.NotEqual(t, mockBidderResponse.Bids[index].Bid.Price, bid.originalBidCPM, "The bid price was adjusted, so the originally bid CPM should be different")
+		for index, bid := range seatBid.Bids {
+			assert.NotEqual(t, mockBidderResponse.Bids[index].Bid.Price, bid.OriginalBidCPM, "The bid price was adjusted, so the originally bid CPM should be different")
 		}
 	}
 }
@@ -343,7 +344,7 @@ func TestRequestBidRemovesSensitiveHeaders(t *testing.T) {
 
 	assert.Empty(t, errs)
 	assert.Len(t, seatBids, 1)
-	assert.ElementsMatch(t, seatBids[0].httpCalls, expectedHttpCalls)
+	assert.ElementsMatch(t, seatBids[0].HttpCalls, expectedHttpCalls)
 }
 
 func TestSetGPCHeader(t *testing.T) {
@@ -395,7 +396,7 @@ func TestSetGPCHeader(t *testing.T) {
 
 	assert.Empty(t, errs)
 	assert.Len(t, seatBids, 1)
-	assert.ElementsMatch(t, seatBids[0].httpCalls, expectedHttpCall)
+	assert.ElementsMatch(t, seatBids[0].HttpCalls, expectedHttpCall)
 }
 
 func TestSetGPCHeaderNil(t *testing.T) {
@@ -445,7 +446,7 @@ func TestSetGPCHeaderNil(t *testing.T) {
 
 	assert.Empty(t, errs)
 	assert.Len(t, seatBids, 1)
-	assert.ElementsMatch(t, seatBids[0].httpCalls, expectedHttpCall)
+	assert.ElementsMatch(t, seatBids[0].HttpCalls, expectedHttpCall)
 }
 
 // TestMultiBidder makes sure all the requests get sent, and the responses processed.
@@ -510,8 +511,8 @@ func TestMultiBidder(t *testing.T) {
 	if len(errs) != 1+len(bidderImpl.httpRequests) {
 		t.Errorf("Expected %d errors. Got %d", 1+len(bidderImpl.httpRequests), len(errs))
 	}
-	if len(seatBids[0].bids) != len(bidderImpl.httpResponses)*len(mockBidderResponse.Bids) {
-		t.Errorf("Expected %d bids. Got %d", len(bidderImpl.httpResponses)*len(mockBidderResponse.Bids), len(seatBids[0].bids))
+	if len(seatBids[0].Bids) != len(bidderImpl.httpResponses)*len(mockBidderResponse.Bids) {
+		t.Errorf("Expected %d bids. Got %d", len(bidderImpl.httpResponses)*len(mockBidderResponse.Bids), len(seatBids[0].Bids))
 	}
 
 }
@@ -887,12 +888,12 @@ func TestMultiCurrencies(t *testing.T) {
 		seatBid := seatBids[0]
 
 		// Verify:
-		resultLightBids := make([]bid, len(seatBid.bids))
-		for i, b := range seatBid.bids {
+		resultLightBids := make([]bid, len(seatBid.Bids))
+		for i, b := range seatBid.Bids {
 			resultLightBids[i] = bid{
-				price:          b.bid.Price,
-				currency:       seatBid.currency,
-				originalBidCur: b.originalBidCur,
+				price:          b.Bid.Price,
+				currency:       seatBid.Currency,
+				originalBidCur: b.OriginalBidCur,
 			}
 		}
 		assert.ElementsMatch(t, tc.expectedBids, resultLightBids, tc.description)
@@ -1047,7 +1048,7 @@ func TestMultiCurrencies_RateConverterNotSet(t *testing.T) {
 
 		// Verify:
 		assert.Equal(t, false, (seatBid == nil && tc.expectedBidsCount != 0), tc.description)
-		assert.Equal(t, tc.expectedBidsCount, uint(len(seatBid.bids)), tc.description)
+		assert.Equal(t, tc.expectedBidsCount, uint(len(seatBid.Bids)), tc.description)
 		assert.ElementsMatch(t, tc.expectedBadCurrencyErrors, errs, tc.description)
 	}
 }
@@ -1228,7 +1229,7 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			assert.NotNil(t, errs, tc.description)
 		} else {
 			assert.Nil(t, errs, tc.description)
-			assert.Equal(t, tc.expectedPickedCurrency, seatBid.currency, tc.description)
+			assert.Equal(t, tc.expectedPickedCurrency, seatBid.Currency, tc.description)
 		}
 	}
 }
@@ -1540,8 +1541,8 @@ func TestMobileNativeTypes(t *testing.T) {
 		assert.Len(t, seatBids, 1)
 
 		var actualValue string
-		for _, bid := range seatBids[0].bids {
-			actualValue = bid.bid.AdM
+		for _, bid := range seatBids[0].Bids {
+			actualValue = bid.Bid.AdM
 			assert.JSONEq(t, tc.expectedValue, actualValue, tc.description)
 		}
 	}
@@ -1658,10 +1659,10 @@ func TestRequestBidsStoredBidResponses(t *testing.T) {
 		)
 		assert.Len(t, seatBids, 1)
 
-		assert.Len(t, seatBids[0].bids, len(tc.expectedBidIds), "Incorrect bids number for test case ", tc.description)
-		for _, bid := range seatBids[0].bids {
-			assert.Contains(t, tc.expectedBidIds, bid.bid.ID, tc.description)
-			assert.Contains(t, tc.expectedImpIds, bid.bid.ImpID, tc.description)
+		assert.Len(t, seatBids[0].Bids, len(tc.expectedBidIds), "Incorrect bids number for test case ", tc.description)
+		for _, bid := range seatBids[0].Bids {
+			assert.Contains(t, tc.expectedBidIds, bid.Bid.ID, tc.description)
+			assert.Contains(t, tc.expectedImpIds, bid.Bid.ImpID, tc.description)
 		}
 	}
 
@@ -2327,30 +2328,30 @@ func TestExtraBid(t *testing.T) {
 		},
 	}
 
-	wantSeatBids := []*pbsOrtbSeatBid{
+	wantSeatBids := []*entities.PbsOrtbSeatBid{
 		{
-			httpCalls: []*openrtb_ext.ExtHttpCall{},
-			bids: []*pbsOrtbBid{{
-				bid:            &openrtb2.Bid{ID: "groupmImp1"},
-				dealPriority:   5,
-				bidType:        openrtb_ext.BidTypeVideo,
-				originalBidCur: "USD",
-				bidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
+			HttpCalls: []*openrtb_ext.ExtHttpCall{},
+			Bids: []*entities.PbsOrtbBid{{
+				Bid:            &openrtb2.Bid{ID: "groupmImp1"},
+				DealPriority:   5,
+				BidType:        openrtb_ext.BidTypeVideo,
+				OriginalBidCur: "USD",
+				BidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
 			}},
-			seat:     "groupm",
-			currency: "USD",
+			Seat:     "groupm",
+			Currency: "USD",
 		},
 		{
-			httpCalls: []*openrtb_ext.ExtHttpCall{},
-			bids: []*pbsOrtbBid{{
-				bid:            &openrtb2.Bid{ID: "pubmaticImp1"},
-				dealPriority:   4,
-				bidType:        openrtb_ext.BidTypeBanner,
-				originalBidCur: "USD",
-				bidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
+			HttpCalls: []*openrtb_ext.ExtHttpCall{},
+			Bids: []*entities.PbsOrtbBid{{
+				Bid:            &openrtb2.Bid{ID: "pubmaticImp1"},
+				DealPriority:   4,
+				BidType:        openrtb_ext.BidTypeBanner,
+				OriginalBidCur: "USD",
+				BidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
 			}},
-			seat:     string(openrtb_ext.BidderPubmatic),
-			currency: "USD",
+			Seat:     string(openrtb_ext.BidderPubmatic),
+			Currency: "USD",
 		},
 	}
 
@@ -2384,7 +2385,7 @@ func TestExtraBid(t *testing.T) {
 	assert.Nil(t, errs)
 	assert.Len(t, seatBids, 2)
 	sort.Slice(seatBids, func(i, j int) bool {
-		return len(seatBids[i].seat) < len(seatBids[j].seat)
+		return len(seatBids[i].Seat) < len(seatBids[j].Seat)
 	})
 	assert.Equal(t, wantSeatBids, seatBids)
 }
@@ -2435,30 +2436,30 @@ func TestExtraBidWithAlternateBidderCodeDisabled(t *testing.T) {
 		},
 	}
 
-	wantSeatBids := []*pbsOrtbSeatBid{
+	wantSeatBids := []*entities.PbsOrtbSeatBid{
 		{
-			httpCalls: []*openrtb_ext.ExtHttpCall{},
-			bids: []*pbsOrtbBid{{
-				bid:            &openrtb2.Bid{ID: "groupmImp2"},
-				dealPriority:   5,
-				bidType:        openrtb_ext.BidTypeVideo,
-				originalBidCur: "USD",
-				bidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
+			HttpCalls: []*openrtb_ext.ExtHttpCall{},
+			Bids: []*entities.PbsOrtbBid{{
+				Bid:            &openrtb2.Bid{ID: "groupmImp2"},
+				DealPriority:   5,
+				BidType:        openrtb_ext.BidTypeVideo,
+				OriginalBidCur: "USD",
+				BidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
 			}},
-			seat:     "groupm-allowed",
-			currency: "USD",
+			Seat:     "groupm-allowed",
+			Currency: "USD",
 		},
 		{
-			httpCalls: []*openrtb_ext.ExtHttpCall{},
-			bids: []*pbsOrtbBid{{
-				bid:            &openrtb2.Bid{ID: "pubmaticImp1"},
-				dealPriority:   4,
-				bidType:        openrtb_ext.BidTypeBanner,
-				originalBidCur: "USD",
-				bidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
+			HttpCalls: []*openrtb_ext.ExtHttpCall{},
+			Bids: []*entities.PbsOrtbBid{{
+				Bid:            &openrtb2.Bid{ID: "pubmaticImp1"},
+				DealPriority:   4,
+				BidType:        openrtb_ext.BidTypeBanner,
+				OriginalBidCur: "USD",
+				BidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
 			}},
-			seat:     string(openrtb_ext.BidderPubmatic),
-			currency: "USD",
+			Seat:     string(openrtb_ext.BidderPubmatic),
+			Currency: "USD",
 		},
 	}
 	wantErrs := []error{
@@ -2539,38 +2540,38 @@ func TestExtraBidWithBidAdjustments(t *testing.T) {
 		},
 	}
 
-	wantSeatBids := []*pbsOrtbSeatBid{
+	wantSeatBids := []*entities.PbsOrtbSeatBid{
 		{
-			httpCalls: []*openrtb_ext.ExtHttpCall{},
-			bids: []*pbsOrtbBid{{
-				bid: &openrtb2.Bid{
+			HttpCalls: []*openrtb_ext.ExtHttpCall{},
+			Bids: []*entities.PbsOrtbBid{{
+				Bid: &openrtb2.Bid{
 					ID:    "groupmImp1",
 					Price: 21,
 				},
-				dealPriority:   5,
-				bidType:        openrtb_ext.BidTypeVideo,
-				originalBidCPM: 7,
-				originalBidCur: "USD",
-				bidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
+				DealPriority:   5,
+				BidType:        openrtb_ext.BidTypeVideo,
+				OriginalBidCPM: 7,
+				OriginalBidCur: "USD",
+				BidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
 			}},
-			seat:     "groupm",
-			currency: "USD",
+			Seat:     "groupm",
+			Currency: "USD",
 		},
 		{
-			httpCalls: []*openrtb_ext.ExtHttpCall{},
-			bids: []*pbsOrtbBid{{
-				bid: &openrtb2.Bid{
+			HttpCalls: []*openrtb_ext.ExtHttpCall{},
+			Bids: []*entities.PbsOrtbBid{{
+				Bid: &openrtb2.Bid{
 					ID:    "pubmaticImp1",
 					Price: 6,
 				},
-				dealPriority:   4,
-				bidType:        openrtb_ext.BidTypeBanner,
-				originalBidCur: "USD",
-				originalBidCPM: 3,
-				bidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
+				DealPriority:   4,
+				BidType:        openrtb_ext.BidTypeBanner,
+				OriginalBidCur: "USD",
+				OriginalBidCPM: 3,
+				BidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
 			}},
-			seat:     string(openrtb_ext.BidderPubmatic),
-			currency: "USD",
+			Seat:     string(openrtb_ext.BidderPubmatic),
+			Currency: "USD",
 		},
 	}
 
@@ -2607,7 +2608,7 @@ func TestExtraBidWithBidAdjustments(t *testing.T) {
 	assert.Nil(t, errs)
 	assert.Len(t, seatBids, 2)
 	sort.Slice(seatBids, func(i, j int) bool {
-		return len(seatBids[i].seat) < len(seatBids[j].seat)
+		return len(seatBids[i].Seat) < len(seatBids[j].Seat)
 	})
 	assert.Equal(t, wantSeatBids, seatBids)
 }
@@ -2652,38 +2653,38 @@ func TestExtraBidWithBidAdjustmentsUsingAdapterCode(t *testing.T) {
 		},
 	}
 
-	wantSeatBids := []*pbsOrtbSeatBid{
+	wantSeatBids := []*entities.PbsOrtbSeatBid{
 		{
-			httpCalls: []*openrtb_ext.ExtHttpCall{},
-			bids: []*pbsOrtbBid{{
-				bid: &openrtb2.Bid{
+			HttpCalls: []*openrtb_ext.ExtHttpCall{},
+			Bids: []*entities.PbsOrtbBid{{
+				Bid: &openrtb2.Bid{
 					ID:    "groupmImp1",
 					Price: 14,
 				},
-				dealPriority:   5,
-				bidType:        openrtb_ext.BidTypeVideo,
-				originalBidCPM: 7,
-				originalBidCur: "USD",
-				bidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
+				DealPriority:   5,
+				BidType:        openrtb_ext.BidTypeVideo,
+				OriginalBidCPM: 7,
+				OriginalBidCur: "USD",
+				BidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
 			}},
-			seat:     "groupm",
-			currency: "USD",
+			Seat:     "groupm",
+			Currency: "USD",
 		},
 		{
-			httpCalls: []*openrtb_ext.ExtHttpCall{},
-			bids: []*pbsOrtbBid{{
-				bid: &openrtb2.Bid{
+			HttpCalls: []*openrtb_ext.ExtHttpCall{},
+			Bids: []*entities.PbsOrtbBid{{
+				Bid: &openrtb2.Bid{
 					ID:    "pubmaticImp1",
 					Price: 6,
 				},
-				dealPriority:   4,
-				bidType:        openrtb_ext.BidTypeBanner,
-				originalBidCur: "USD",
-				originalBidCPM: 3,
-				bidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
+				DealPriority:   4,
+				BidType:        openrtb_ext.BidTypeBanner,
+				OriginalBidCur: "USD",
+				OriginalBidCPM: 3,
+				BidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
 			}},
-			seat:     string(openrtb_ext.BidderPubmatic),
-			currency: "USD",
+			Seat:     string(openrtb_ext.BidderPubmatic),
+			Currency: "USD",
 		},
 	}
 
@@ -2719,7 +2720,7 @@ func TestExtraBidWithBidAdjustmentsUsingAdapterCode(t *testing.T) {
 	assert.Nil(t, errs)
 	assert.Len(t, seatBids, 2)
 	sort.Slice(seatBids, func(i, j int) bool {
-		return len(seatBids[i].seat) < len(seatBids[j].seat)
+		return len(seatBids[i].Seat) < len(seatBids[j].Seat)
 	})
 	assert.Equal(t, wantSeatBids, seatBids)
 }
@@ -2764,38 +2765,38 @@ func TestExtraBidWithMultiCurrencies(t *testing.T) {
 		},
 	}
 
-	wantSeatBids := []*pbsOrtbSeatBid{
+	wantSeatBids := []*entities.PbsOrtbSeatBid{
 		{
-			httpCalls: []*openrtb_ext.ExtHttpCall{},
-			bids: []*pbsOrtbBid{{
-				bid: &openrtb2.Bid{
+			HttpCalls: []*openrtb_ext.ExtHttpCall{},
+			Bids: []*entities.PbsOrtbBid{{
+				Bid: &openrtb2.Bid{
 					ID:    "groupmImp1",
 					Price: 571.5994430039375,
 				},
-				dealPriority:   5,
-				bidType:        openrtb_ext.BidTypeVideo,
-				originalBidCPM: 7,
-				originalBidCur: "USD",
-				bidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
+				DealPriority:   5,
+				BidType:        openrtb_ext.BidTypeVideo,
+				OriginalBidCPM: 7,
+				OriginalBidCur: "USD",
+				BidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
 			}},
-			seat:     "groupm",
-			currency: "INR",
+			Seat:     "groupm",
+			Currency: "INR",
 		},
 		{
-			httpCalls: []*openrtb_ext.ExtHttpCall{},
-			bids: []*pbsOrtbBid{{
-				bid: &openrtb2.Bid{
+			HttpCalls: []*openrtb_ext.ExtHttpCall{},
+			Bids: []*entities.PbsOrtbBid{{
+				Bid: &openrtb2.Bid{
 					ID:    "pubmaticImp1",
 					Price: 244.97118985883034,
 				},
-				dealPriority:   4,
-				bidType:        openrtb_ext.BidTypeBanner,
-				originalBidCPM: 3,
-				originalBidCur: "USD",
-				bidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
+				DealPriority:   4,
+				BidType:        openrtb_ext.BidTypeBanner,
+				OriginalBidCPM: 3,
+				OriginalBidCur: "USD",
+				BidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
 			}},
-			seat:     string(openrtb_ext.BidderPubmatic),
-			currency: "INR",
+			Seat:     string(openrtb_ext.BidderPubmatic),
+			Currency: "INR",
 		},
 	}
 
@@ -2843,7 +2844,7 @@ func TestExtraBidWithMultiCurrencies(t *testing.T) {
 	assert.Nil(t, errs)
 	assert.Len(t, seatBids, 2)
 	sort.Slice(seatBids, func(i, j int) bool {
-		return len(seatBids[i].seat) < len(seatBids[j].seat)
+		return len(seatBids[i].Seat) < len(seatBids[j].Seat)
 	})
 	assert.Equal(t, wantSeatBids, seatBids)
 }
