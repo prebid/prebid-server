@@ -519,7 +519,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 		return []error{err}
 	} else if reqPrebid != nil {
 		aliases = reqPrebid.Aliases
-		
+
 		if err := deps.validateAliases(aliases); err != nil {
 			return []error{err}
 		}
@@ -725,11 +725,11 @@ func (deps *endpointDeps) validateImp(imp *openrtb2.Imp, aliases map[string]stri
 	if len(imp.Metric) != 0 {
 		return []error{fmt.Errorf("request.imp[%d].metric is not yet supported by prebid-server. Support may be added in the future", index)}
 	}
-		
-	if imp.Banner == nil && imp.Video == nil && imp.Audio == nil && imp.Native == nil  {
+
+	if imp.Banner == nil && imp.Video == nil && imp.Audio == nil && imp.Native == nil {
 		return []error{fmt.Errorf("request.imp[%d] must contain at least one of \"banner\", \"video\", \"audio\", or \"native\"", index)}
 	}
-
+	
 	if err := validateBanner(imp.Banner, index, isInterstitial(imp)); err != nil {
 		return []error{err}
 	}

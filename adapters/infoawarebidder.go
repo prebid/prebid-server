@@ -53,7 +53,7 @@ func (i *InfoAwareBidder) MakeRequests(request *openrtb2.BidRequest, reqInfo *Ex
 	//
 	// To avoid allocating new arrays and copying in the normal case, we'll make one pass to
 	// see if any imps need to be removed, and another to do the removing if necessary.
-    numToFilter, errs := pruneImps(request.Imp, allowedMediaTypes)
+	numToFilter, errs := pruneImps(request.Imp, allowedMediaTypes)
 
 	// If all imps in bid request come with unsupported media types, exit
 	if numToFilter == len(request.Imp) {
