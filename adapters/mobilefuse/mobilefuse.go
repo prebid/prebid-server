@@ -182,7 +182,7 @@ func (adapter *MobileFuseAdapter) getValidImps(bidRequest *openrtb2.BidRequest, 
 	var validImps []openrtb2.Imp
 
 	for _, imp := range bidRequest.Imp {
-		if imp.Banner != nil || imp.Video != nil {
+		if imp.Banner != nil || imp.Video != nil || imp.Native != nil {
 			imp.TagID = strconv.Itoa(ext.PlacementId)
 			imp.Ext = nil
 			validImps = append(validImps, imp)
@@ -198,9 +198,12 @@ func (adapter *MobileFuseAdapter) getBidType(bid openrtb2.Bid) openrtb_ext.BidTy
 	if bid.Ext != nil {
 		var bidExt BidExt
 		err := json.Unmarshal(bid.Ext, &bidExt)
-
-		if err == nil && bidExt.Mf.MediaType == "video" {
-			return openrtb_ext.BidTypeVideo
+		if err == nil {
+			if bidExt.Mf.MediaType == "video" {
+				return openrtb_ext.BidTypeVideo
+			} else if bidExt.Mf.MediaType == "native" {
+				return openrtb_ext.BidTypeNative
+			}
 		}
 	}
 
