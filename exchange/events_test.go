@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/prebid-server/exchange/entities"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
@@ -69,7 +70,7 @@ func Test_eventsData_makeBidExtEvents(t *testing.T) {
 				auctionTimestampMs: 1234567890,
 				externalURL:        "http://localhost",
 			}
-			bid := &pbsOrtbBid{bid: &openrtb2.Bid{ID: "BID-1"}, bidType: tt.args.bidType, generatedBidID: tt.args.generatedBidId}
+			bid := &entities.PbsOrtbBid{Bid: &openrtb2.Bid{ID: "BID-1"}, BidType: tt.args.bidType, GeneratedBidID: tt.args.generatedBidId}
 			assert.Equal(t, tt.want, evData.makeBidExtEvents(bid, openrtb_ext.BidderOpenx))
 		})
 	}
@@ -140,7 +141,7 @@ func Test_eventsData_modifyBidJSON(t *testing.T) {
 				auctionTimestampMs: 1234567890,
 				externalURL:        "http://localhost",
 			}
-			bid := &pbsOrtbBid{bid: &openrtb2.Bid{ID: "BID-1"}, bidType: tt.args.bidType, generatedBidID: tt.args.generatedBidId}
+			bid := &entities.PbsOrtbBid{Bid: &openrtb2.Bid{ID: "BID-1"}, BidType: tt.args.bidType, GeneratedBidID: tt.args.generatedBidId}
 			modifiedJSON, err := evData.modifyBidJSON(bid, openrtb_ext.BidderOpenx, tt.jsonBytes)
 			if tt.want != nil {
 				assert.NoError(t, err, "Unexpected error")
