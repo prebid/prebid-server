@@ -215,7 +215,7 @@ func (h mockFailureHook) HandleBidderRequestHook(_ context.Context, _ hookstage.
 	return hookstage.HookResult[hookstage.BidderRequestPayload]{}, FailureError{Message: "attribute not found"}
 }
 
-func (e mockFailureHook) HandleAllProcessedBidResponsesHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.AllProcessedBidResponsesPayload) (hookstage.HookResult[hookstage.AllProcessedBidResponsesPayload], error) {
+func (h mockFailureHook) HandleAllProcessedBidResponsesHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.AllProcessedBidResponsesPayload) (hookstage.HookResult[hookstage.AllProcessedBidResponsesPayload], error) {
 	return hookstage.HookResult[hookstage.AllProcessedBidResponsesPayload]{}, FailureError{Message: "attribute not found"}
 }
 
@@ -233,7 +233,7 @@ func (h mockErrorHook) HandleBidderRequestHook(_ context.Context, _ hookstage.Mo
 	return hookstage.HookResult[hookstage.BidderRequestPayload]{}, errors.New("unexpected error")
 }
 
-func (e mockErrorHook) HandleAllProcessedBidResponsesHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.AllProcessedBidResponsesPayload) (hookstage.HookResult[hookstage.AllProcessedBidResponsesPayload], error) {
+func (h mockErrorHook) HandleAllProcessedBidResponsesHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.AllProcessedBidResponsesPayload) (hookstage.HookResult[hookstage.AllProcessedBidResponsesPayload], error) {
 	return hookstage.HookResult[hookstage.AllProcessedBidResponsesPayload]{}, errors.New("unexpected error")
 }
 
@@ -264,6 +264,15 @@ func (h mockFailedMutationHook) HandleBidderRequestHook(_ context.Context, _ hoo
 	}, hookstage.MutationUpdate, "header", "foo")
 
 	return hookstage.HookResult[hookstage.BidderRequestPayload]{ChangeSet: changeSet}, nil
+}
+
+func (h mockFailedMutationHook) HandleAllProcessedBidResponsesHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.AllProcessedBidResponsesPayload) (hookstage.HookResult[hookstage.AllProcessedBidResponsesPayload], error) {
+	changeSet := &hookstage.ChangeSet[hookstage.AllProcessedBidResponsesPayload]{}
+	changeSet.AddMutation(func(payload hookstage.AllProcessedBidResponsesPayload) (hookstage.AllProcessedBidResponsesPayload, error) {
+		return payload, errors.New("key not found")
+	}, hookstage.MutationUpdate, "some-bidder", "bids[0]", "deal_priority")
+
+	return hookstage.HookResult[hookstage.AllProcessedBidResponsesPayload]{ChangeSet: changeSet}, nil
 }
 
 type mockUpdateBidRequestHook struct{}
@@ -314,15 +323,6 @@ func (e mockUpdateBidderResponseHook) HandleRawBidderResponseHook(_ context.Cont
 	)
 
 	return hookstage.HookResult[hookstage.RawBidderResponsePayload]{ChangeSet: c}, nil
-}
-
-func (e mockFailedMutationHook) HandleAllProcessedBidResponsesHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.AllProcessedBidResponsesPayload) (hookstage.HookResult[hookstage.AllProcessedBidResponsesPayload], error) {
-	changeSet := &hookstage.ChangeSet[hookstage.AllProcessedBidResponsesPayload]{}
-	changeSet.AddMutation(func(payload hookstage.AllProcessedBidResponsesPayload) (hookstage.AllProcessedBidResponsesPayload, error) {
-		return payload, errors.New("key not found")
-	}, hookstage.MutationUpdate, "some-bidder", "bids[0]", "deal_priority")
-
-	return hookstage.HookResult[hookstage.AllProcessedBidResponsesPayload]{ChangeSet: changeSet}, nil
 }
 
 type mockUpdateBiddersResponsesHook struct{}

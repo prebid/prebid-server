@@ -4540,7 +4540,7 @@ type capturingRequestBidder struct {
 	req *openrtb2.BidRequest
 }
 
-func (b *capturingRequestBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes *openrtb_ext.ExtAlternateBidderCodes) (seatBid []*entities.PbsOrtbSeatBid, errs []error) {
+func (b *capturingRequestBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, executor hookexecution.StageExecutor) (seatBid []*entities.PbsOrtbSeatBid, errs []error) {
 	b.req = bidderRequest.BidRequest
 	return []*entities.PbsOrtbSeatBid{{}}, nil
 }
