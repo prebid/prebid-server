@@ -45,7 +45,7 @@ type rubiconAdServer struct {
 
 type rubiconExtImpBidder struct {
 	Prebid  *openrtb_ext.ExtImpPrebid `json:"prebid"`
-	Bidder  json.RawMessage           `json:"bidder"`
+	Bidder  openrtb_ext.ExtImpRubicon `json:"bidder"`
 	Gpid    string                    `json:"gpid"`
 	Data    json.RawMessage           `json:"data"`
 	Context rubiconContext            `json:"context"`
@@ -169,11 +169,6 @@ type extPrebid struct {
 	Bidder json.RawMessage           `json:"bidder,omitempty"`
 }
 
-type rubiSize struct {
-	w uint16
-	h uint16
-}
-
 // defines the contract for bidrequest.user.ext.eids[i].ext
 type rubiconUserExtEidExt struct {
 	Segments []string `json:"segments,omitempty"`
@@ -237,36 +232,19 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 
 func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	numRequests := len(request.Imp)
-	errs := make([]error, 0, len(request.Imp))
-	var err error
 	requestData := make([]*adapters.RequestData, 0, numRequests)
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 	headers.Add("User-Agent", "prebid-server/1.0")
 
-	requestImpCopy := request.Imp
+	impsToExtNotGrouped, errs := createImpsToExtMap(request.Imp)
+	impsToExtMap := prepareImpsToExtMap(impsToExtNotGrouped)
 
 	rubiconRequest := *request
-	for _, imp := range requestImpCopy {
-
-		var bidderExt rubiconExtImpBidder
-		if err = json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-			errs = append(errs, &errortypes.BadInput{
-				Message: err.Error(),
-			})
-			continue
-		}
-
-		var rubiconExt openrtb_ext.ExtImpRubicon
-		if err = json.Unmarshal(bidderExt.Bidder, &rubiconExt); err != nil {
-			errs = append(errs, &errortypes.BadInput{
-				Message: err.Error(),
-			})
-			continue
-		}
-
-		target, err := updateImpRpTargetWithFpdAttributes(bidderExt, rubiconExt, imp, request.Site, request.App)
+	for imp, bidderExt := range impsToExtMap {
+		rubiconExt := bidderExt.Bidder
+		target, err := updateImpRpTargetWithFpdAttributes(bidderExt, rubiconExt, *imp, request.Site, request.App)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -298,6 +276,9 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			errs = append(errs, err)
 			continue
 		}
+
+		secure := int8(1)
+		imp.Secure = &secure
 
 		resolvedBidFloor, err := resolveBidFloor(imp.BidFloor, imp.BidFloorCur, reqInfo)
 		if err != nil {
@@ -376,7 +357,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			rubiconRequest.Device = &deviceCopy
 		}
 
-		isVideo := isVideo(imp)
+		isVideo := isVideo(*imp)
 		impType := openrtb_ext.BidTypeVideo
 		requestNative := make(map[string]interface{})
 		if isVideo {
@@ -478,7 +459,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			}
 		}
 
-		rubiconRequest.Imp = []openrtb2.Imp{imp}
+		rubiconRequest.Imp = []openrtb2.Imp{*imp}
 		rubiconRequest.Cur = nil
 		rubiconRequest.Ext = nil
 
@@ -503,6 +484,81 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 	}
 
 	return requestData, errs
+}
+
+func createImpsToExtMap(imps []openrtb2.Imp) (map[*openrtb2.Imp]rubiconExtImpBidder, []error) {
+	impsToExtMap := make(map[*openrtb2.Imp]rubiconExtImpBidder)
+	errs := make([]error, 0)
+	var err error
+	for _, imp := range imps {
+		impCopy := imp
+		var bidderExt rubiconExtImpBidder
+		if err = json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+			errs = append(errs, &errortypes.BadInput{
+				Message: err.Error(),
+			})
+			continue
+		}
+		impsToExtMap[&impCopy] = bidderExt
+	}
+
+	return impsToExtMap, errs
+}
+
+func prepareImpsToExtMap(impsToExtMap map[*openrtb2.Imp]rubiconExtImpBidder) map[*openrtb2.Imp]rubiconExtImpBidder {
+	preparedImpsToExtMap := make(map[*openrtb2.Imp]rubiconExtImpBidder)
+	for imp, bidderExt := range impsToExtMap {
+		if bidderExt.Bidder.BidOnMultiformat == false {
+			impCopy := imp
+			preparedImpsToExtMap[impCopy] = bidderExt
+			continue
+		}
+
+		splitImps := splitMultiFormatImp(imp)
+		for _, imp := range splitImps {
+			impCopy := imp
+			preparedImpsToExtMap[impCopy] = bidderExt
+		}
+	}
+
+	return preparedImpsToExtMap
+}
+
+func splitMultiFormatImp(imp *openrtb2.Imp) []*openrtb2.Imp {
+	splitImps := make([]*openrtb2.Imp, 0)
+	if imp.Banner != nil {
+		impCopy := *imp
+		impCopy.Video = nil
+		impCopy.Native = nil
+		impCopy.Audio = nil
+		splitImps = append(splitImps, &impCopy)
+	}
+
+	if imp.Video != nil {
+		impCopy := *imp
+		impCopy.Banner = nil
+		impCopy.Native = nil
+		impCopy.Audio = nil
+		splitImps = append(splitImps, &impCopy)
+	}
+
+	if imp.Native != nil {
+		impCopy := *imp
+		impCopy.Banner = nil
+		impCopy.Video = nil
+		impCopy.Audio = nil
+		splitImps = append(splitImps, &impCopy)
+	}
+
+	if imp.Audio != nil {
+		impCopy := *imp
+		impCopy.Banner = nil
+		impCopy.Video = nil
+		impCopy.Native = nil
+		splitImps = append(splitImps, &impCopy)
+	}
+
+	return splitImps
 }
 
 func resolveBidFloor(bidFloor float64, bidFloorCur string, reqInfo *adapters.ExtraRequestInfo) (float64, error) {
