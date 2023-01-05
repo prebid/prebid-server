@@ -97,7 +97,7 @@ func findCorrespondingStageOutcome(stage Stage, outcome StageOutcome) *StageOutc
 func findCorrespondingHookResult(hookID HookID, group GroupOutcome) *HookOutcome {
 	for _, hook := range group.InvocationResults {
 		if hook.HookID.ModuleCode == hookID.ModuleCode &&
-			hook.HookID.HookCode == hookID.HookCode {
+			hook.HookID.HookImplCode == hookID.HookImplCode {
 			return &hook
 		}
 	}

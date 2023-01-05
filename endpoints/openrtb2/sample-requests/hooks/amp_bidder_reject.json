@@ -76,7 +76,7 @@
           "appnexus": [
             {
               "code": 11,
-              "message": "Module foobar (hook: foo) rejected request with code 123 at bidder-request stage"
+              "message": "Module foobar (hook: foo) rejected request with code 123 at bidder_request stage"
             }
           ]
         },
@@ -85,7 +85,7 @@
             "errors": {
               "foobar": {
                 "foo": [
-                  "Module foobar (hook: foo) rejected request with code 123 at bidder-request stage"
+                  "Module foobar (hook: foo) rejected request with code 123 at bidder_request stage"
                 ]
               }
             },
@@ -97,13 +97,13 @@
                       "entity": "appnexus",
                       "groups": [
                         {
-                          "invocationresults": [
+                          "invocation_results": [
                             {
                               "action": "reject",
-                              "analyticstags": {},
-                              "hookid": {
-                                "hook-impl-code": "foo",
-                                "module-code": "foobar"
+                              "analytics_tags": {},
+                              "hook_id": {
+                                "hook_impl_code": "foo",
+                                "module_code": "foobar"
                               },
                               "message": "",
                               "status": "success"
@@ -116,13 +116,13 @@
                       "entity": "applogy",
                       "groups": [
                         {
-                          "invocationresults": [
+                          "invocation_results": [
                             {
                               "action": "no_action",
-                              "analyticstags": {},
-                              "hookid": {
-                                "hook-impl-code": "foo",
-                                "module-code": "foobar"
+                              "analytics_tags": {},
+                              "hook_id": {
+                                "hook_impl_code": "foo",
+                                "module_code": "foobar"
                               },
                               "message": "",
                               "status": "success"
@@ -132,7 +132,7 @@
                       ]
                     }
                   ],
-                  "stage": "bidder-request"
+                  "stage": "bidder_request"
                 }
               ]
             }

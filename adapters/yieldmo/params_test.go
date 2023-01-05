@@ -9,7 +9,7 @@ import (
 
 // This file actually intends to test static/bidder-params/yieldmo.json
 //
-// These also validate the format of the external API: request.imp[i].ext.yieldmo
+// These also validate the format of the external API: request.imp[i].ext.prebid.bidder.yieldmo
 
 // TestValidParams makes sure that the Yieldmo schema accepts all imp.ext fields which we intend to support.
 func TestValidParams(t *testing.T) {

@@ -24,17 +24,17 @@ type StageOutcomeTest struct {
 
 type GroupOutcomeTest struct {
 	ExecutionTime
-	InvocationResults []HookOutcomeTest `json:"invocationresults"`
+	InvocationResults []HookOutcomeTest `json:"invocation_results"`
 }
 
 type HookOutcomeTest struct {
 	ExecutionTime
-	AnalyticsTags hookanalytics.Analytics `json:"analyticstags"`
-	HookID        HookID                  `json:"hookid"`
+	AnalyticsTags hookanalytics.Analytics `json:"analytics_tags"`
+	HookID        HookID                  `json:"hook_id"`
 	Status        Status                  `json:"status"`
 	Action        Action                  `json:"action"`
 	Message       string                  `json:"message"`
-	DebugMessages []string                `json:"debugmessages"`
+	DebugMessages []string                `json:"debug_messages"`
 	Errors        []string                `json:"errors"`
 	Warnings      []string                `json:"warnings"`
 }

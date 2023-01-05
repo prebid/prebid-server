@@ -336,7 +336,7 @@ func BuildIxDiag(request *openrtb2.BidRequest) error {
 	}
 	ixdiag := &IxDiag{}
 
-	if extRequest.Prebid != nil {
+	if extRequest.Prebid != nil && extRequest.Prebid.Channel != nil {
 		ixdiag.PbjsV = extRequest.Prebid.Channel.Version
 	}
 
@@ -350,11 +350,11 @@ func BuildIxDiag(request *openrtb2.BidRequest) error {
 	// Only set request.ext if ixDiag is not empty
 	if *ixdiag != (IxDiag{}) {
 		extRequest.IxDiag = ixdiag
-		requestExtJson, err := json.Marshal(extRequest)
+		extRequestJson, err := json.Marshal(extRequest)
 		if err != nil {
 			return err
 		}
-		request.Ext = requestExtJson
+		request.Ext = extRequestJson
 	}
 	return nil
 }

@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookstage"
@@ -23,14 +24,16 @@ type entity string
 const (
 	entityHttpRequest              entity = "http-request"
 	entityAuctionRequest           entity = "auction-request"
-	entityAuctionResponse          entity = "auction-response"
-	entityAllProcessedBidResponses entity = "all-processed-bid-responses"
+	entityAuctionResponse          entity = "auction_response"
+	entityAllProcessedBidResponses entity = "all_processed_bid_responses"
 )
 
 type StageExecutor interface {
 	ExecuteEntrypointStage(req *http.Request, body []byte) ([]byte, *RejectError)
 	ExecuteRawAuctionStage(body []byte) ([]byte, *RejectError)
+	ExecuteProcessedAuctionStage(req *openrtb2.BidRequest) *RejectError
 	ExecuteBidderRequestStage(req *openrtb2.BidRequest, bidder string) *RejectError
+	ExecuteRawBidderResponseStage(response *adapters.BidderResponse, bidder string) *RejectError
 }
 
 type HookStageExecutor interface {
@@ -41,7 +44,7 @@ type HookStageExecutor interface {
 
 type hookExecutor struct {
 	account        *config.Account
-	accountId      string
+	accountID      string
 	endpoint       string
 	planBuilder    hooks.ExecutionPlanBuilder
 	stageOutcomes  []StageOutcome
@@ -67,7 +70,7 @@ func (e *hookExecutor) SetAccount(account *config.Account) {
 	}
 
 	e.account = account
-	e.accountId = account.ID
+	e.accountID = account.ID
 }
 
 func (e *hookExecutor) GetOutcomes() []StageOutcome {
@@ -118,7 +121,7 @@ func (e *hookExecutor) ExecuteRawAuctionStage(requestBody []byte) ([]byte, *Reje
 		return hook.HandleRawAuctionHook(ctx, moduleCtx, payload)
 	}
 
-	stageName := hooks.StageRawAuction.String()
+	stageName := hooks.StageRawAuctionRequest.String()
 	executionCtx := e.newContext(stageName)
 	payload := hookstage.RawAuctionRequestPayload(requestBody)
 
@@ -130,6 +133,35 @@ func (e *hookExecutor) ExecuteRawAuctionStage(requestBody []byte) ([]byte, *Reje
 	e.pushStageOutcome(outcome)
 
 	return payload, reject
+}
+
+func (e *hookExecutor) ExecuteProcessedAuctionStage(request *openrtb2.BidRequest) *RejectError {
+	plan := e.planBuilder.PlanForProcessedAuctionStage(e.endpoint, e.account)
+	if len(plan) == 0 {
+		return nil
+	}
+
+	handler := func(
+		ctx context.Context,
+		moduleCtx hookstage.ModuleInvocationContext,
+		hook hookstage.ProcessedAuctionRequest,
+		payload hookstage.ProcessedAuctionRequestPayload,
+	) (hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload], error) {
+		return hook.HandleProcessedAuctionHook(ctx, moduleCtx, payload)
+	}
+
+	stageName := hooks.StageProcessedAuctionRequest.String()
+	executionCtx := e.newContext(stageName)
+	payload := hookstage.ProcessedAuctionRequestPayload{BidRequest: request}
+
+	outcome, _, contexts, reject := executeStage(executionCtx, plan, payload, handler, e.metricEngine)
+	outcome.Entity = entityAuctionRequest
+	outcome.Stage = stageName
+
+	e.saveModuleContexts(contexts)
+	e.pushStageOutcome(outcome)
+
+	return reject
 }
 
 func (e *hookExecutor) ExecuteBidderRequestStage(req *openrtb2.BidRequest, bidder string) *RejectError {
@@ -160,10 +192,39 @@ func (e *hookExecutor) ExecuteBidderRequestStage(req *openrtb2.BidRequest, bidde
 	return reject
 }
 
+func (e *hookExecutor) ExecuteRawBidderResponseStage(response *adapters.BidderResponse, bidder string) *RejectError {
+	plan := e.planBuilder.PlanForRawBidderResponseStage(e.endpoint, e.account)
+	if len(plan) == 0 {
+		return nil
+	}
+
+	handler := func(
+		ctx context.Context,
+		moduleCtx hookstage.ModuleInvocationContext,
+		hook hookstage.RawBidderResponse,
+		payload hookstage.RawBidderResponsePayload,
+	) (hookstage.HookResult[hookstage.RawBidderResponsePayload], error) {
+		return hook.HandleRawBidderResponseHook(ctx, moduleCtx, payload)
+	}
+
+	stageName := hooks.StageRawBidderResponse.String()
+	executionCtx := e.newContext(stageName)
+	payload := hookstage.RawBidderResponsePayload{Bids: response.Bids, Bidder: bidder}
+
+	outcome, _, contexts, reject := executeStage(executionCtx, plan, payload, handler, e.metricEngine)
+	outcome.Entity = entity(bidder)
+	outcome.Stage = stageName
+
+	e.saveModuleContexts(contexts)
+	e.pushStageOutcome(outcome)
+
+	return reject
+}
+
 func (e *hookExecutor) newContext(stage string) executionContext {
 	return executionContext{
 		account:        e.account,
-		accountId:      e.accountId,
+		accountId:      e.accountID,
 		endpoint:       e.endpoint,
 		moduleContexts: e.moduleContexts,
 		stage:          stage,
@@ -200,6 +261,14 @@ func (executor *EmptyHookExecutor) ExecuteRawAuctionStage(body []byte) ([]byte, 
 	return body, nil
 }
 
+func (executor *EmptyHookExecutor) ExecuteProcessedAuctionStage(_ *openrtb2.BidRequest) *RejectError {
+	return nil
+}
+
 func (executor *EmptyHookExecutor) ExecuteBidderRequestStage(_ *openrtb2.BidRequest, bidder string) *RejectError {
+	return nil
+}
+
+func (executor *EmptyHookExecutor) ExecuteRawBidderResponseStage(_ *adapters.BidderResponse, _ string) *RejectError {
 	return nil
 }

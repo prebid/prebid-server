@@ -279,15 +279,9 @@ func (me *MultiMetricsEngine) RecordAdsCertSignTime(adsCertSignTime time.Duratio
 	}
 }
 
-func (me *MultiMetricsEngine) RecordModuleDuration(labels metrics.ModuleLabels, duration time.Duration) {
+func (me *MultiMetricsEngine) RecordModuleCalled(labels metrics.ModuleLabels, duration time.Duration) {
 	for _, thisME := range *me {
-		thisME.RecordModuleDuration(labels, duration)
-	}
-}
-
-func (me *MultiMetricsEngine) RecordModuleCalled(labels metrics.ModuleLabels) {
-	for _, thisME := range *me {
-		thisME.RecordModuleCalled(labels)
+		thisME.RecordModuleCalled(labels, duration)
 	}
 }
 
@@ -454,10 +448,7 @@ func (me *NilMetricsEngine) RecordAdsCertSignTime(adsCertSignTime time.Duration)
 
 }
 
-func (me *NilMetricsEngine) RecordModuleDuration(labels metrics.ModuleLabels, duration time.Duration) {
-}
-
-func (me *NilMetricsEngine) RecordModuleCalled(labels metrics.ModuleLabels) {
+func (me *NilMetricsEngine) RecordModuleCalled(labels metrics.ModuleLabels, duration time.Duration) {
 }
 
 func (me *NilMetricsEngine) RecordModuleFailed(labels metrics.ModuleLabels) {

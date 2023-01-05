@@ -2,20 +2,20 @@
   {
     "entity": "http-request",
     "stage": "entrypoint",
-    "executiontimemillis": 300,
+    "execution_time_millis": 300,
     "groups": [
       {
-        "executiontimemillis": 200,
-        "invocationresults": [
+        "execution_time_millis": 200,
+        "invocation_results": [
           {
-            "hookid": {
-              "module-code": "foobar",
-              "hook-impl-code": "foo"
+            "hook_id": {
+              "module_code": "foobar",
+              "hook_impl_code": "foo"
             },
             "status": "success",
             "action": "update",
-            "executiontimemillis": 200,
-            "analyticstags": {
+            "execution_time_millis": 200,
+            "analytics_tags": {
               "activities": [
                 {
                   "name": "device-id",
@@ -41,7 +41,7 @@
                 }
               ]
             },
-            "debugmessages": [
+            "debug_messages": [
               "debug message 1"
             ],
             "errors": [
@@ -50,14 +50,14 @@
             "message": ""
           },
           {
-            "hookid": {
-              "module-code": "foobar",
-              "hook-impl-code": "bar"
+            "hook_id": {
+              "module_code": "foobar",
+              "hook_impl_code": "bar"
             },
             "status": "success",
             "action": "update",
-            "executiontimemillis": 50,
-            "analyticstags": {},
+            "execution_time_millis": 50,
+            "analytics_tags": {},
             "errors": [
               "error 2"
             ],
@@ -66,18 +66,18 @@
         ]
       },
       {
-        "executiontimemillis": 100,
-        "invocationresults": [
+        "execution_time_millis": 100,
+        "invocation_results": [
           {
-            "hookid": {
-              "module-code": "foobaz",
-              "hook-impl-code": "baz"
+            "hook_id": {
+              "module_code": "foobaz",
+              "hook_impl_code": "baz"
             },
             "status": "success",
             "action": "update",
-            "executiontimemillis": 100,
-            "analyticstags": {},
-            "debugmessages": [
+            "execution_time_millis": 100,
+            "analytics_tags": {},
+            "debug_messages": [
               "debug message 1",
               "debug message 2"
             ],
@@ -90,14 +90,14 @@
             "message": ""
           },
           {
-            "hookid": {
-              "module-code": "foobar",
-              "hook-impl-code": "bar"
+            "hook_id": {
+              "module_code": "foobar",
+              "hook_impl_code": "bar"
             },
             "status": "success",
             "action": "update",
-            "executiontimemillis": 10,
-            "analyticstags": {},
+            "execution_time_millis": 10,
+            "analytics_tags": {},
             "errors": [
               "error 4"
             ],
@@ -109,22 +109,22 @@
   },
   {
     "entity": "adf",
-    "stage": "bidrequest",
-    "executiontimemillis": 200,
+    "stage": "bidder_request",
+    "execution_time_millis": 200,
     "groups": [
       {
-        "executiontimemillis": 200,
-        "invocationresults": [
+        "execution_time_millis": 200,
+        "invocation_results": [
           {
-            "hookid": {
-              "module-code": "foobar",
-              "hook-impl-code": "foo"
+            "hook_id": {
+              "module_code": "foobar",
+              "hook_impl_code": "foo"
             },
             "status": "success",
             "action": "update",
-            "executiontimemillis": 200,
-            "analyticstags": {},
-            "debugmessages": [
+            "execution_time_millis": 200,
+            "analytics_tags": {},
+            "debug_messages": [
               "debug message 1"
             ],
             "message": ""
@@ -135,21 +135,21 @@
   },
   {
     "entity": "adot",
-    "stage": "bidrequest",
-    "executiontimemillis": 300,
+    "stage": "bidder_request",
+    "execution_time_millis": 300,
     "groups": [
       {
-        "executiontimemillis": 200,
-        "invocationresults": [
+        "execution_time_millis": 200,
+        "invocation_results": [
           {
-            "hookid": {
-              "module-code": "foobar",
-              "hook-impl-code": "bar"
+            "hook_id": {
+              "module_code": "foobar",
+              "hook_impl_code": "bar"
             },
             "status": "success",
             "action": "no_action",
-            "executiontimemillis": 200,
-            "analyticstags": {},
+            "execution_time_millis": 200,
+            "analytics_tags": {},
             "message": ""
           }
         ]

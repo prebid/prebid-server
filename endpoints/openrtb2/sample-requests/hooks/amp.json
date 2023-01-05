@@ -97,42 +97,42 @@
                       "entity": "http-request",
                       "groups": [
                         {
-                          "invocationresults": [
+                          "invocation_results": [
                             {
-                              "analyticstags": {},
-                              "hookid": {
-                                "module-code": "foobar",
-                                "hook-impl-code": "foo"
+                              "analytics_tags": {},
+                              "hook_id": {
+                                "module_code": "foobar",
+                                "hook_impl_code": "foo"
                               },
                               "status": "success",
                               "action": "update",
                               "message": "",
-                              "debugmessages": [
+                              "debug_messages": [
                                 "Hook mutation successfully applied, affected key: header.foo, mutation type: update"
                               ]
                             },
                             {
-                              "analyticstags": {},
-                              "hookid": {
-                                "module-code": "foobar",
-                                "hook-impl-code": "bar"
+                              "analytics_tags": {},
+                              "hook_id": {
+                                "module_code": "foobar",
+                                "hook_impl_code": "bar"
                               },
                               "status": "success",
                               "action": "update",
                               "message": "",
-                              "debugmessages": [
+                              "debug_messages": [
                                 "Hook mutation successfully applied, affected key: param.foo, mutation type: update"
                               ]
                             }
                           ]
                         },
                         {
-                          "invocationresults": [
+                          "invocation_results": [
                             {
-                              "analyticstags": {},
-                              "hookid": {
-                                "module-code": "foobar",
-                                "hook-impl-code": "baz"
+                              "analytics_tags": {},
+                              "hook_id": {
+                                "module_code": "foobar",
+                                "hook_impl_code": "baz"
                               },
                               "status": "success",
                               "action": "no_action",

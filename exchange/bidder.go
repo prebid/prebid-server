@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptrace"
 	"regexp"
@@ -271,6 +271,11 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 			errs = append(errs, moreErrs...)
 
 			if bidResponse != nil {
+				reject := hookExecutor.ExecuteRawBidderResponseStage(bidResponse, string(bidder.BidderName))
+				if reject != nil {
+					errs = append(errs, reject)
+					continue
+				}
 				// Setup default currency as `USD` is not set in bid request nor bid response
 				if bidResponse.Currency == "" {
 					bidResponse.Currency = defaultCurrency
@@ -367,7 +372,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 							// Initalize seatBidMap entry as this is first extra bid with seat bidderName
 							seatBidMap[bidderName] = &pbsOrtbSeatBid{
 								bids:     make([]*pbsOrtbBid, 0, dataLen),
-								currency: defaultCurrency,
+								currency: seatBidMap[bidderRequest.BidderName].currency,
 								// Do we need to fill httpCalls for this?. Can we refer one from adaptercode for debugging?
 								httpCalls: seatBidMap[bidderRequest.BidderName].httpCalls,
 								seat:      bidderName.String(),
@@ -566,7 +571,7 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 		}
 	}
 
-	respBody, err := ioutil.ReadAll(httpResp.Body)
+	respBody, err := io.ReadAll(httpResp.Body)
 	if err != nil {
 		return &httpCallInfo{
 			request: req,

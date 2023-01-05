@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	// traceLevelBasic excludes debugmessages and analytic_tags from output
+	// traceLevelBasic excludes debug_messages and analytic_tags from output
 	traceLevelBasic trace = "basic"
 	// traceLevelVerbose sets maximum level of output information
 	traceLevelVerbose trace = "verbose"
@@ -173,19 +173,19 @@ func fillMessages(messages Messages, values []string, hookID HookID) Messages {
 	}
 
 	if messages == nil {
-		return Messages{hookID.ModuleCode: {hookID.HookCode: values}}
+		return Messages{hookID.ModuleCode: {hookID.HookImplCode: values}}
 	}
 
 	if _, ok := messages[hookID.ModuleCode]; !ok {
-		messages[hookID.ModuleCode] = map[string][]string{hookID.HookCode: values}
+		messages[hookID.ModuleCode] = map[string][]string{hookID.HookImplCode: values}
 		return messages
 	}
 
-	if prevValues, ok := messages[hookID.ModuleCode][hookID.HookCode]; ok {
+	if prevValues, ok := messages[hookID.ModuleCode][hookID.HookImplCode]; ok {
 		values = append(prevValues, values...)
 	}
 
-	messages[hookID.ModuleCode][hookID.HookCode] = values
+	messages[hookID.ModuleCode][hookID.HookImplCode] = values
 
 	return messages
 }

@@ -2,7 +2,7 @@
   {
     "entity": "http-request",
     "stage": "entrypoint",
-    "executiontimemillis": 0,
+    "execution_time_millis": 0,
     "groups": []
   }
 ]

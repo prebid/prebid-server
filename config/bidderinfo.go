@@ -3,17 +3,18 @@ package config
 import (
 	"errors"
 	"fmt"
-	validator "github.com/asaskevich/govalidator"
-	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/util/sliceutil"
-	"io/ioutil"
 	"log"
+	"os"
 	"path/filepath"
 	"strings"
 	"text/template"
 
+	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/sliceutil"
+
+	validator "github.com/asaskevich/govalidator"
 	"gopkg.in/yaml.v3"
 )
 
@@ -180,7 +181,7 @@ type InfoReaderFromDisk struct {
 }
 
 func (r InfoReaderFromDisk) Read() (map[string][]byte, error) {
-	bidderConfigs, err := ioutil.ReadDir(r.Path)
+	bidderConfigs, err := os.ReadDir(r.Path)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -192,7 +193,7 @@ func (r InfoReaderFromDisk) Read() (map[string][]byte, error) {
 		}
 		fileName := bidderConfig.Name()
 		filePath := filepath.Join(r.Path, fileName)
-		data, err := ioutil.ReadFile(filePath)
+		data, err := os.ReadFile(filePath)
 		if err != nil {
 			return nil, err
 		}

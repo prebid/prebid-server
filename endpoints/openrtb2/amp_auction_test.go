@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -64,7 +63,7 @@ func TestGoodAmpRequests(t *testing.T) {
 	for _, tgroup := range testGroups {
 		for _, filename := range tgroup.testFiles {
 			// Read test case and unmarshal
-			fileJsonData, err := ioutil.ReadFile(tgroup.dir + filename)
+			fileJsonData, err := os.ReadFile(tgroup.dir + filename)
 			if !assert.NoError(t, err, "Failed to fetch a valid request: %v. Test file: %s", err, filename) {
 				continue
 			}
@@ -153,7 +152,7 @@ func TestAccountErrors(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		fileJsonData, err := ioutil.ReadFile("sample-requests/" + tt.filename)
+		fileJsonData, err := os.ReadFile("sample-requests/" + tt.filename)
 		if !assert.NoError(t, err, "Failed to fetch a valid request: %v. Test file: %s", err, tt.filename) {
 			continue
 		}
@@ -1020,7 +1019,7 @@ func TestAMPSiteExt(t *testing.T) {
 // TestBadRequests makes sure we return 400's on bad requests.
 func TestAmpBadRequests(t *testing.T) {
 	dir := "sample-requests/invalid-whole"
-	files, err := ioutil.ReadDir(dir)
+	files, err := os.ReadDir(dir)
 	assert.NoError(t, err, "Failed to read folder: %s", dir)
 
 	badRequests := make(map[string]json.RawMessage, len(files))
@@ -1981,19 +1980,30 @@ func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
 			planBuilder: mockPlanBuilder{entrypointPlan: makePlan[hookstage.Entrypoint](mockRejectionHook{nbr})},
 		},
 		{
-			// raw-auction stage not executed for AMP endpoint, so we expect full response
-			description: "Assert correct AmpResponse when request rejected at raw-auction stage",
+			// raw_auction stage not executed for AMP endpoint, so we expect full response
+			description: "Assert correct AmpResponse when request rejected at raw_auction stage",
 			file:        "sample-requests/amp/valid-supplementary/aliased-buyeruids.json",
 			planBuilder: mockPlanBuilder{rawAuctionPlan: makePlan[hookstage.RawAuctionRequest](mockRejectionHook{nbr})},
 		},
 		{
-			// bidder-request stage rejects only bidder, so we expect bidder rejection warning added
+			description: "Assert correct AmpResponse when request rejected at processed_auction stage",
+			file:        "sample-requests/hooks/amp_reject.json",
+			planBuilder: mockPlanBuilder{processedAuctionPlan: makePlan[hookstage.ProcessedAuctionRequest](mockRejectionHook{nbr})},
+		},
+		{
+			// bidder_request stage rejects only bidder, so we expect bidder rejection warning added
 			description: "Assert correct AmpResponse when request rejected at bidder-request stage",
 			file:        "sample-requests/hooks/amp_bidder_reject.json",
 			planBuilder: mockPlanBuilder{bidderRequestPlan: makePlan[hookstage.BidderRequest](mockRejectionHook{nbr})},
 		},
 		{
-			// no debug information should be added for raw-auction stage because it's not executed for amp endpoint
+			// raw_bidder_response stage rejects only bidder, so we expect bidder rejection warning added
+			description: "Assert correct AmpResponse when request rejected at raw_bidder_response stage",
+			file:        "sample-requests/hooks/amp_bidder_response_reject.json",
+			planBuilder: mockPlanBuilder{rawBidderResponsePlan: makePlan[hookstage.RawBidderResponse](mockRejectionHook{nbr})},
+		},
+		{
+			// no debug information should be added for raw_auction stage because it's not executed for amp endpoint
 			description: "Assert correct AmpResponse with debug information from modules added to ext.prebid.modules",
 			file:        "sample-requests/hooks/amp.json",
 			planBuilder: mockPlanBuilder{
