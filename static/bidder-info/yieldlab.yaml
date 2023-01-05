@@ -1,3 +1,4 @@
+endpoint: "https://ad.yieldlab.net/yp/"
 maintainer:
   email: "solutions@yieldlab.de"
 gvlVendorID: 70

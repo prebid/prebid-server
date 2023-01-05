@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
@@ -101,7 +101,7 @@ func TestBuildCacheString(t *testing.T) {
 // customcachekey.json test here verifies custom cache key not used for non-vast video
 func TestCacheJSON(t *testing.T) {
 	for _, dir := range []string{"cachetest", "customcachekeytest", "impcustomcachekeytest", "eventscachetest"} {
-		if specFiles, err := ioutil.ReadDir(dir); err == nil {
+		if specFiles, err := os.ReadDir(dir); err == nil {
 			for _, specFile := range specFiles {
 				fileName := filepath.Join(dir, specFile.Name())
 				fileDisplayName := "exchange/" + fileName
@@ -170,7 +170,7 @@ func TestIsDebugOverrideEnabled(t *testing.T) {
 
 // LoadCacheSpec reads and parses a file as a test case. If something goes wrong, it returns an error.
 func loadCacheSpec(filename string) (*cacheSpec, error) {
-	specData, err := ioutil.ReadFile(filename)
+	specData, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to read file %s: %v", filename, err)
 	}

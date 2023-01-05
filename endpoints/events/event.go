@@ -206,7 +206,9 @@ func HandleAccountServiceErrors(errs []error) (status int, messages []string) {
 		if errCode == errortypes.BlacklistedAppErrorCode || errCode == errortypes.BlacklistedAcctErrorCode {
 			status = http.StatusServiceUnavailable
 		}
-
+		if errCode == errortypes.MalformedAcctErrorCode {
+			status = http.StatusInternalServerError
+		}
 		if errCode == errortypes.TimeoutErrorCode && status == http.StatusBadRequest {
 			status = http.StatusGatewayTimeout
 		}

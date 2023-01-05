@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"text/template"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -18,7 +18,7 @@ type AdvangelistsAdapter struct {
 	EndpointTemplate *template.Template
 }
 
-//MakeRequests prepares request information for prebid-server core
+// MakeRequests prepares request information for prebid-server core
 func (adapter *AdvangelistsAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 	if len(request.Imp) == 0 {
@@ -80,7 +80,7 @@ func validateImpression(imp *openrtb2.Imp, impExt *openrtb_ext.ExtImpAdvangelist
 	return nil
 }
 
-//Group impressions by advangelists-specific parameters `pubid
+// Group impressions by advangelists-specific parameters `pubid
 func dispatchImpressions(imps []openrtb2.Imp, impsExt []openrtb_ext.ExtImpAdvangelists) (map[openrtb_ext.ExtImpAdvangelists][]openrtb2.Imp, []error) {
 	res := make(map[openrtb_ext.ExtImpAdvangelists][]openrtb2.Imp)
 	errors := make([]error, 0)
@@ -100,7 +100,7 @@ func dispatchImpressions(imps []openrtb2.Imp, impsExt []openrtb_ext.ExtImpAdvang
 	return res, errors
 }
 
-//Alter impression info to comply with advangelists platform requirements
+// Alter impression info to comply with advangelists platform requirements
 func compatImpression(imp *openrtb2.Imp) error {
 	imp.Ext = nil //do not forward ext to advangelists platform
 	if imp.Banner != nil {
@@ -196,7 +196,7 @@ func (adapter *AdvangelistsAdapter) buildEndpointURL(params *openrtb_ext.ExtImpA
 	return macros.ResolveMacros(adapter.EndpointTemplate, endpointParams)
 }
 
-//MakeBids translates advangelists bid response to prebid-server specific format
+// MakeBids translates advangelists bid response to prebid-server specific format
 func (adapter *AdvangelistsAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var msg = ""
 	if response.StatusCode == http.StatusNoContent {
@@ -240,7 +240,7 @@ func getMediaTypeForImpID(impID string, imps []openrtb2.Imp) openrtb_ext.BidType
 }
 
 // Builder builds a new instance of the Advangelists adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)

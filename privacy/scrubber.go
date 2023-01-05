@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 )
 
 // ScrubStrategyIPV4 defines the approach to scrub PII from an IPV4 address.

@@ -12,10 +12,11 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/gdpr"
+	"github.com/prebid/prebid-server/hooks/hookexecution"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -83,12 +84,22 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 		t.Errorf("Failed to create a category Fetcher: %v", error)
 	}
 
+	gdprPermsBuilder := fakePermissionsBuilder{
+		permissions: &permissionsMock{
+			allowAllBidders: true,
+		},
+	}.Builder
+	tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
+		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
+	}.Builder
+
 	ex := &exchange{
 		adapterMap:        buildAdapterMap(mockBids, server.URL, server.Client()),
 		me:                &metricsConfig.NilMetricsEngine{},
 		cache:             &wellBehavedCache{},
 		cacheTime:         time.Duration(0),
-		vendorListFetcher: gdpr.NewVendorListFetcher(context.Background(), config.GDPR{}, &http.Client{}, gdpr.VendorListURLMaker),
+		gdprPermsBuilder:  gdprPermsBuilder,
+		tcf2ConfigBuilder: tcf2ConfigBuilder,
 		currencyConverter: currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
 		gdprDefaultValue:  gdpr.SignalYes,
 		categoriesFetcher: categoriesFetcher,
@@ -108,11 +119,10 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 	}
 
 	auctionRequest := AuctionRequest{
-		BidRequestWrapper:      &openrtb_ext.RequestWrapper{BidRequest: req},
-		Account:                config.Account{},
-		UserSyncs:              &emptyUsersync{},
-		GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
-		TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
+		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
+		Account:           config.Account{},
+		UserSyncs:         &emptyUsersync{},
+		HookExecutor:      &hookexecution.EmptyHookExecutor{},
 	}
 
 	debugLog := DebugLog{}
@@ -134,7 +144,7 @@ func buildAdapterMap(bids map[openrtb_ext.BidderName][]*openrtb2.Bid, mockServer
 		adapterMap[bidder] = AdaptBidder(&mockTargetingBidder{
 			mockServerURL: mockServerURL,
 			bids:          bids,
-		}, client, &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil)
+		}, client, &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil, "")
 	}
 	return adapterMap
 }
@@ -159,10 +169,16 @@ func buildTargetingExt(includeCache bool, includeWinners bool, includeBidderKeys
 }
 
 func buildParams(t *testing.T, mockBids map[openrtb_ext.BidderName][]*openrtb2.Bid) json.RawMessage {
-	params := make(map[string]json.RawMessage)
+	params := make(map[string]interface{})
+	paramsPrebid := make(map[string]interface{})
+	paramsPrebidBidders := make(map[string]json.RawMessage)
+
 	for bidder := range mockBids {
-		params[string(bidder)] = json.RawMessage(`{"whatever":true}`)
+		paramsPrebidBidders[string(bidder)] = json.RawMessage(`{"whatever":true}`)
 	}
+
+	paramsPrebid["bidder"] = paramsPrebidBidders
+	params["prebid"] = paramsPrebid
 	ext, err := json.Marshal(params)
 	if err != nil {
 		t.Fatalf("Failed to make imp exts: %v", err)

@@ -6,7 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/openrtb/v17/adcom1"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -199,15 +200,15 @@ func (a *BrightrollAdapter) MakeBids(internalRequest *openrtb2.BidRequest, exter
 	return bidResponse, nil
 }
 
-func getBlockedCreativetypes(attr []int8) []openrtb2.CreativeAttribute {
-	var creativeAttr []openrtb2.CreativeAttribute
+func getBlockedCreativetypes(attr []int8) []adcom1.CreativeAttribute {
+	var creativeAttr []adcom1.CreativeAttribute
 	for i := 0; i < len(attr); i++ {
-		creativeAttr = append(creativeAttr, openrtb2.CreativeAttribute(attr[i]))
+		creativeAttr = append(creativeAttr, adcom1.CreativeAttribute(attr[i]))
 	}
 	return creativeAttr
 }
 
-//Adding header fields to request header
+// Adding header fields to request header
 func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue string) {
 	if len(headerValue) > 0 {
 		headers.Add(headerName, headerValue)
@@ -229,7 +230,7 @@ func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 }
 
 // Builder builds a new instance of the Brightroll adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	extraInfo, err := getExtraInfo(config.ExtraAdapterInfo)
 	if err != nil {
 		return nil, err

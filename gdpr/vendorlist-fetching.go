@@ -3,7 +3,7 @@ package gdpr
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 	"sync"
@@ -117,7 +117,7 @@ func saveOne(ctx context.Context, client *http.Client, url string, saver saveVen
 	}
 	defer resp.Body.Close()
 
-	respBody, err := ioutil.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		glog.Errorf("Error reading response body from GET %s. Cookie syncs may be affected: %v", url, err)
 		return 0

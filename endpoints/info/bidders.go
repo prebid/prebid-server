@@ -79,13 +79,13 @@ func prepareBiddersResponseEnabledOnly(bidders config.BidderInfos, aliases map[s
 	bidderNames := make([]string, 0, len(bidders)+len(aliases))
 
 	for name, info := range bidders {
-		if info.Enabled {
+		if info.IsEnabled() {
 			bidderNames = append(bidderNames, name)
 		}
 	}
 
 	for name, bidder := range aliases {
-		if info, ok := bidders[bidder]; ok && info.Enabled {
+		if info, ok := bidders[bidder]; ok && info.IsEnabled() {
 			bidderNames = append(bidderNames, name)
 		}
 	}

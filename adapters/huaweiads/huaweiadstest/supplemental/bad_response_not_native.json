@@ -11,7 +11,7 @@
         "ext": {
           "bidder": {
             "slotid": "m8x9x3rzff",
-            "adtype": "banner",
+            "adtype": "native",
             "publisherid": "123",
             "signkey": "signkey",
             "keyid": "41",
@@ -88,9 +88,9 @@
           },
           "multislot": [
             {
-              "adtype": 8,
+              "adtype": 3,
               "slotid": "m8x9x3rzff",
-              "test": 0,
+              "test": 1,
               "detailedCreativeTypeList": [
                 "903"
               ],
@@ -123,7 +123,8 @@
           },
           "regs": {
           },
-          "version": "3.4"
+          "version": "3.4",
+          "clientAdRequestId": "test-req-id"
         }
       },
       "mockResponse": {
@@ -212,7 +213,7 @@
   "expectedMakeRequestsErrors": [],
   "expectedMakeBidsErrors": [
     {
-      "value": "getAdmFromHuaweiAdsContent failed: extractAdmNative: response is not a native ad",
+      "value": "generate Adm field from HuaweiAds response failed: extract Adm for Native ad: huaweiads response is not a native ad",
       "comparison": "literal"
     }
   ]

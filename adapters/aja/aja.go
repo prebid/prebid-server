@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -124,11 +124,14 @@ func (a *AJAAdapter) MakeBids(bidReq *openrtb2.BidRequest, adapterReq *adapters.
 			}
 		}
 	}
+	if bidResp.Cur != "" {
+		bidderResp.Currency = bidResp.Cur
+	}
 	return bidderResp, errors
 }
 
 // Builder builds a new instance of the AJA adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &AJAAdapter{
 		endpoint: config.Endpoint,
 	}

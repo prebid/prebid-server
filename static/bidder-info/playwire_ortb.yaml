@@ -1,6 +1,6 @@
+endpoint: "https://grid.bidswitch.net/sp_bid?sp=prebid"
 maintainer:
   email: "na@playwire.com"
-gvlVendorID: 686
 capabilities:
   app:
     mediaTypes:

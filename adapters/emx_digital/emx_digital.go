@@ -9,7 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/openrtb/v17/adcom1"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -162,11 +163,11 @@ func buildImpVideo(imp *openrtb2.Imp) error {
 }
 
 // not supporting VAST protocol 7 (VAST 4.0);
-func cleanProtocol(protocols []openrtb2.Protocol) []openrtb2.Protocol {
-	newitems := make([]openrtb2.Protocol, 0, len(protocols))
+func cleanProtocol(protocols []adcom1.MediaCreativeSubtype) []adcom1.MediaCreativeSubtype {
+	newitems := make([]adcom1.MediaCreativeSubtype, 0, len(protocols))
 
 	for _, i := range protocols {
-		if i != openrtb2.ProtocolVAST40 {
+		if i != adcom1.CreativeVAST40 {
 			newitems = append(newitems, i)
 		}
 	}
@@ -309,7 +310,7 @@ func ContainsAny(raw string, keys []string) bool {
 }
 
 // Builder builds a new instance of the EmxDigital adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &EmxDigitalAdapter{
 		endpoint: config.Endpoint,
 		testing:  false,
