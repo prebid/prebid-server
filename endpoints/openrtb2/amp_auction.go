@@ -148,7 +148,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 
 	// There is no body for AMP requests, so we pass a nil body and ignore the return value.
 	if _, rejectErr := deps.hookExecutor.ExecuteEntrypointStage(r, nilBody); rejectErr != nil {
-		labels, ao = rejectAmpRequest(*rejectErr, w, nil, labels, ao, nil)
+		labels, ao = rejectAmpRequest(*rejectErr, w, deps.hookExecutor, nil, labels, ao, nil)
 		return
 	}
 
@@ -255,16 +255,17 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	}
 
 	if isRejectErr {
-		labels, ao = rejectAmpRequest(*rejectErr, w, reqWrapper, labels, ao, errL)
+		labels, ao = rejectAmpRequest(*rejectErr, w, deps.hookExecutor, reqWrapper, labels, ao, errL)
 		return
 	}
 
-	labels, ao = sendAmpResponse(w, response, reqWrapper, labels, ao, errL)
+	labels, ao = sendAmpResponse(w, deps.hookExecutor, response, reqWrapper, labels, ao, errL)
 }
 
 func rejectAmpRequest(
 	rejectErr hookexecution.RejectError,
 	w http.ResponseWriter,
+	hookExecutor hookexecution.HookStageExecutor,
 	reqWrapper *openrtb_ext.RequestWrapper,
 	labels metrics.Labels,
 	ao analytics.AmpObject,
@@ -274,17 +275,19 @@ func rejectAmpRequest(
 	ao.AuctionResponse = response
 	ao.Errors = append(ao.Errors, rejectErr)
 
-	return sendAmpResponse(w, response, reqWrapper, labels, ao, errs)
+	return sendAmpResponse(w, hookExecutor, response, reqWrapper, labels, ao, errs)
 }
 
 func sendAmpResponse(
 	w http.ResponseWriter,
+	hookExecutor hookexecution.HookStageExecutor,
 	response *openrtb2.BidResponse,
 	reqWrapper *openrtb_ext.RequestWrapper,
 	labels metrics.Labels,
 	ao analytics.AmpObject,
 	errs []error,
 ) (metrics.Labels, analytics.AmpObject) {
+	hookExecutor.ExecuteAuctionResponseStage(response)
 	// Need to extract the targeting parameters from the response, as those are all that
 	// go in the AMP response
 	targets := map[string]string{}
