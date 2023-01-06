@@ -97,6 +97,10 @@ func (e mockRejectHook) HandleAllProcessedBidResponsesHook(_ context.Context, _ 
 	return hookstage.HookResult[hookstage.AllProcessedBidResponsesPayload]{Reject: true}, nil
 }
 
+func (e mockRejectHook) HandleAuctionResponseHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.AuctionResponsePayload) (hookstage.HookResult[hookstage.AuctionResponsePayload], error) {
+	return hookstage.HookResult[hookstage.AuctionResponsePayload]{Reject: true}, nil
+}
+
 type mockTimeoutHook struct{}
 
 func (e mockTimeoutHook) HandleEntrypointHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
@@ -167,6 +171,17 @@ func (e mockTimeoutHook) HandleAllProcessedBidResponsesHook(_ context.Context, _
 	return hookstage.HookResult[hookstage.AllProcessedBidResponsesPayload]{ChangeSet: c}, nil
 }
 
+func (e mockTimeoutHook) HandleAuctionResponseHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.AuctionResponsePayload) (hookstage.HookResult[hookstage.AuctionResponsePayload], error) {
+	time.Sleep(2 * time.Millisecond)
+	c := &hookstage.ChangeSet[hookstage.AuctionResponsePayload]{}
+	c.AddMutation(func(payload hookstage.AuctionResponsePayload) (hookstage.AuctionResponsePayload, error) {
+		payload.BidResponse.Ext = []byte("another-byte")
+		return payload, nil
+	}, hookstage.MutationUpdate, "auctionResponse", "bidResponse.Ext")
+
+	return hookstage.HookResult[hookstage.AuctionResponsePayload]{ChangeSet: c}, nil
+}
+
 type mockModuleContextHook struct {
 	key, val string
 }
@@ -199,6 +214,11 @@ func (e mockModuleContextHook) HandleRawBidderResponseHook(_ context.Context, mi
 func (e mockModuleContextHook) HandleAllProcessedBidResponsesHook(_ context.Context, miCtx hookstage.ModuleInvocationContext, _ hookstage.AllProcessedBidResponsesPayload) (hookstage.HookResult[hookstage.AllProcessedBidResponsesPayload], error) {
 	miCtx.ModuleContext = map[string]interface{}{e.key: e.val}
 	return hookstage.HookResult[hookstage.AllProcessedBidResponsesPayload]{ModuleContext: miCtx.ModuleContext}, nil
+}
+
+func (e mockModuleContextHook) HandleAuctionResponseHook(_ context.Context, miCtx hookstage.ModuleInvocationContext, _ hookstage.AuctionResponsePayload) (hookstage.HookResult[hookstage.AuctionResponsePayload], error) {
+	miCtx.ModuleContext = map[string]interface{}{e.key: e.val}
+	return hookstage.HookResult[hookstage.AuctionResponsePayload]{ModuleContext: miCtx.ModuleContext}, nil
 }
 
 type mockFailureHook struct{}
@@ -235,6 +255,10 @@ func (h mockErrorHook) HandleBidderRequestHook(_ context.Context, _ hookstage.Mo
 
 func (h mockErrorHook) HandleAllProcessedBidResponsesHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.AllProcessedBidResponsesPayload) (hookstage.HookResult[hookstage.AllProcessedBidResponsesPayload], error) {
 	return hookstage.HookResult[hookstage.AllProcessedBidResponsesPayload]{}, errors.New("unexpected error")
+}
+
+func (h mockErrorHook) HandleAuctionResponseHook(_ context.Context, miCtx hookstage.ModuleInvocationContext, _ hookstage.AuctionResponsePayload) (hookstage.HookResult[hookstage.AuctionResponsePayload], error) {
+	return hookstage.HookResult[hookstage.AuctionResponsePayload]{}, errors.New("unexpected error")
 }
 
 type mockFailedMutationHook struct{}
@@ -337,4 +361,17 @@ func (e mockUpdateBiddersResponsesHook) HandleAllProcessedBidResponsesHook(_ con
 	)
 
 	return hookstage.HookResult[hookstage.AllProcessedBidResponsesPayload]{ChangeSet: c}, nil
+}
+
+type mockUpdateBidResponseHook struct{}
+
+func (e mockUpdateBidResponseHook) HandleAuctionResponseHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.AuctionResponsePayload) (hookstage.HookResult[hookstage.AuctionResponsePayload], error) {
+	c := &hookstage.ChangeSet[hookstage.AuctionResponsePayload]{}
+	c.AddMutation(
+		func(payload hookstage.AuctionResponsePayload) (hookstage.AuctionResponsePayload, error) {
+			payload.BidResponse.CustomData = "new-custom-data"
+			return payload, nil
+		}, hookstage.MutationUpdate, "auctionResponse", "bidResponse.custom-data")
+
+	return hookstage.HookResult[hookstage.AuctionResponsePayload]{ChangeSet: c}, nil
 }
