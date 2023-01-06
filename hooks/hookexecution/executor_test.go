@@ -1772,7 +1772,7 @@ type TestApplyHookMutationsBuilder struct {
 func (e TestApplyHookMutationsBuilder) PlanForEntrypointStage(_ string) hooks.Plan[hookstage.Entrypoint] {
 	return hooks.Plan[hookstage.Entrypoint]{
 		hooks.Group[hookstage.Entrypoint]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
 				{Module: "foobar", Code: "foo", Hook: mockUpdateHeaderEntrypointHook{}},
 				{Module: "foobar", Code: "foobaz", Hook: mockFailedMutationHook{}},
@@ -1780,7 +1780,7 @@ func (e TestApplyHookMutationsBuilder) PlanForEntrypointStage(_ string) hooks.Pl
 			},
 		},
 		hooks.Group[hookstage.Entrypoint]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
 				{Module: "foobar", Code: "baz", Hook: mockUpdateBodyHook{}},
 				{Module: "foobar", Code: "foo", Hook: mockFailureHook{}},
@@ -1792,14 +1792,14 @@ func (e TestApplyHookMutationsBuilder) PlanForEntrypointStage(_ string) hooks.Pl
 func (e TestApplyHookMutationsBuilder) PlanForRawAuctionStage(_ string, _ *config.Account) hooks.Plan[hookstage.RawAuctionRequest] {
 	return hooks.Plan[hookstage.RawAuctionRequest]{
 		hooks.Group[hookstage.RawAuctionRequest]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.RawAuctionRequest]{
 				{Module: "foobar", Code: "foo", Hook: mockUpdateBodyHook{}},
 				{Module: "foobar", Code: "bar", Hook: mockFailedMutationHook{}},
 			},
 		},
 		hooks.Group[hookstage.RawAuctionRequest]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.RawAuctionRequest]{
 				{Module: "foobar", Code: "baz", Hook: mockFailureHook{}},
 			},
@@ -1810,7 +1810,7 @@ func (e TestApplyHookMutationsBuilder) PlanForRawAuctionStage(_ string, _ *confi
 func (e TestApplyHookMutationsBuilder) PlanForProcessedAuctionStage(_ string, _ *config.Account) hooks.Plan[hookstage.ProcessedAuctionRequest] {
 	return hooks.Plan[hookstage.ProcessedAuctionRequest]{
 		hooks.Group[hookstage.ProcessedAuctionRequest]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.ProcessedAuctionRequest]{
 				{Module: "foobar", Code: "foo", Hook: mockUpdateBidRequestHook{}},
 			},
@@ -1821,14 +1821,14 @@ func (e TestApplyHookMutationsBuilder) PlanForProcessedAuctionStage(_ string, _ 
 func (e TestApplyHookMutationsBuilder) PlanForBidderRequestStage(_ string, _ *config.Account) hooks.Plan[hookstage.BidderRequest] {
 	return hooks.Plan[hookstage.BidderRequest]{
 		hooks.Group[hookstage.BidderRequest]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.BidderRequest]{
 				{Module: "foobar", Code: "foo", Hook: mockUpdateBidRequestHook{}},
 				{Module: "foobar", Code: "bar", Hook: mockFailedMutationHook{}},
 			},
 		},
 		hooks.Group[hookstage.BidderRequest]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.BidderRequest]{
 				{Module: "foobar", Code: "baz", Hook: mockFailureHook{}},
 			},
@@ -1839,7 +1839,7 @@ func (e TestApplyHookMutationsBuilder) PlanForBidderRequestStage(_ string, _ *co
 func (e TestApplyHookMutationsBuilder) PlanForRawBidderResponseStage(_ string, _ *config.Account) hooks.Plan[hookstage.RawBidderResponse] {
 	return hooks.Plan[hookstage.RawBidderResponse]{
 		hooks.Group[hookstage.RawBidderResponse]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.RawBidderResponse]{
 				{Module: "foobar", Code: "foo", Hook: mockUpdateBidderResponseHook{}},
 			},
@@ -1850,14 +1850,14 @@ func (e TestApplyHookMutationsBuilder) PlanForRawBidderResponseStage(_ string, _
 func (e TestApplyHookMutationsBuilder) PlanForAllProcessedBidResponsesStage(_ string, _ *config.Account) hooks.Plan[hookstage.AllProcessedBidResponses] {
 	return hooks.Plan[hookstage.AllProcessedBidResponses]{
 		hooks.Group[hookstage.AllProcessedBidResponses]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.AllProcessedBidResponses]{
 				{Module: "foobar", Code: "foo", Hook: mockUpdateBiddersResponsesHook{}},
 				{Module: "foobar", Code: "bar", Hook: mockFailedMutationHook{}},
 			},
 		},
 		hooks.Group[hookstage.AllProcessedBidResponses]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.AllProcessedBidResponses]{
 				{Module: "foobar", Code: "baz", Hook: mockFailureHook{}},
 			},
@@ -1872,14 +1872,14 @@ type TestRejectPlanBuilder struct {
 func (e TestRejectPlanBuilder) PlanForEntrypointStage(_ string) hooks.Plan[hookstage.Entrypoint] {
 	return hooks.Plan[hookstage.Entrypoint]{
 		hooks.Group[hookstage.Entrypoint]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
 				{Module: "foobar", Code: "foo", Hook: mockUpdateHeaderEntrypointHook{}},
 				{Module: "foobar", Code: "baz", Hook: mockErrorHook{}},
 			},
 		},
 		hooks.Group[hookstage.Entrypoint]{
-			Timeout: 5 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
 				// reject stage
 				{Module: "foobar", Code: "bar", Hook: mockRejectHook{}},
@@ -1890,7 +1890,7 @@ func (e TestRejectPlanBuilder) PlanForEntrypointStage(_ string) hooks.Plan[hooks
 		},
 		// group of hooks rejected
 		hooks.Group[hookstage.Entrypoint]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
 				{Module: "foobar", Code: "foo", Hook: mockUpdateHeaderEntrypointHook{}},
 				{Module: "foobar", Code: "baz", Hook: mockErrorHook{}},
@@ -1902,14 +1902,14 @@ func (e TestRejectPlanBuilder) PlanForEntrypointStage(_ string) hooks.Plan[hooks
 func (e TestRejectPlanBuilder) PlanForRawAuctionStage(_ string, _ *config.Account) hooks.Plan[hookstage.RawAuctionRequest] {
 	return hooks.Plan[hookstage.RawAuctionRequest]{
 		hooks.Group[hookstage.RawAuctionRequest]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.RawAuctionRequest]{
 				{Module: "foobar", Code: "foo", Hook: mockUpdateBodyHook{}},
 				{Module: "foobar", Code: "baz", Hook: mockErrorHook{}},
 			},
 		},
 		hooks.Group[hookstage.RawAuctionRequest]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.RawAuctionRequest]{
 				{Module: "foobar", Code: "bar", Hook: mockRejectHook{}},
 				// next hook rejected: we use timeout hook to make sure
@@ -1919,7 +1919,7 @@ func (e TestRejectPlanBuilder) PlanForRawAuctionStage(_ string, _ *config.Accoun
 		},
 		// group of hooks rejected
 		hooks.Group[hookstage.RawAuctionRequest]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.RawAuctionRequest]{
 				{Module: "foobar", Code: "foo", Hook: mockUpdateBodyHook{}},
 				{Module: "foobar", Code: "baz", Hook: mockErrorHook{}},
@@ -1931,13 +1931,13 @@ func (e TestRejectPlanBuilder) PlanForRawAuctionStage(_ string, _ *config.Accoun
 func (e TestRejectPlanBuilder) PlanForProcessedAuctionStage(_ string, _ *config.Account) hooks.Plan[hookstage.ProcessedAuctionRequest] {
 	return hooks.Plan[hookstage.ProcessedAuctionRequest]{
 		hooks.Group[hookstage.ProcessedAuctionRequest]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.ProcessedAuctionRequest]{
 				{Module: "foobar", Code: "foo", Hook: mockRejectHook{}},
 			},
 		},
 		hooks.Group[hookstage.ProcessedAuctionRequest]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.ProcessedAuctionRequest]{
 				{Module: "foobar", Code: "bar", Hook: mockUpdateBidRequestHook{}},
 			},
@@ -1948,19 +1948,19 @@ func (e TestRejectPlanBuilder) PlanForProcessedAuctionStage(_ string, _ *config.
 func (e TestRejectPlanBuilder) PlanForBidderRequestStage(_ string, _ *config.Account) hooks.Plan[hookstage.BidderRequest] {
 	return hooks.Plan[hookstage.BidderRequest]{
 		hooks.Group[hookstage.BidderRequest]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.BidderRequest]{
 				{Module: "foobar", Code: "baz", Hook: mockErrorHook{}},
 			},
 		},
 		hooks.Group[hookstage.BidderRequest]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.BidderRequest]{
 				{Module: "foobar", Code: "foo", Hook: mockRejectHook{}},
 			},
 		},
 		hooks.Group[hookstage.BidderRequest]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.BidderRequest]{
 				{Module: "foobar", Code: "bar", Hook: mockUpdateBidRequestHook{}},
 			},
@@ -1971,7 +1971,7 @@ func (e TestRejectPlanBuilder) PlanForBidderRequestStage(_ string, _ *config.Acc
 func (e TestRejectPlanBuilder) PlanForRawBidderResponseStage(_ string, _ *config.Account) hooks.Plan[hookstage.RawBidderResponse] {
 	return hooks.Plan[hookstage.RawBidderResponse]{
 		hooks.Group[hookstage.RawBidderResponse]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.RawBidderResponse]{
 				{Module: "foobar", Code: "foo", Hook: mockRejectHook{}},
 			},
@@ -1982,21 +1982,21 @@ func (e TestRejectPlanBuilder) PlanForRawBidderResponseStage(_ string, _ *config
 func (e TestRejectPlanBuilder) PlanForAllProcessedBidResponsesStage(_ string, _ *config.Account) hooks.Plan[hookstage.AllProcessedBidResponses] {
 	return hooks.Plan[hookstage.AllProcessedBidResponses]{
 		hooks.Group[hookstage.AllProcessedBidResponses]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.AllProcessedBidResponses]{
 				{Module: "foobar", Code: "baz", Hook: mockErrorHook{}},
 			},
 		},
 		// rejection ignored, stage doesn't support rejection
 		hooks.Group[hookstage.AllProcessedBidResponses]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.AllProcessedBidResponses]{
 				{Module: "foobar", Code: "foo", Hook: mockRejectHook{}},
 			},
 		},
 		// hook executed and payload updated because this stage doesn't support rejection
 		hooks.Group[hookstage.AllProcessedBidResponses]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.AllProcessedBidResponses]{
 				{Module: "foobar", Code: "bar", Hook: mockUpdateBiddersResponsesHook{}},
 			},
@@ -2011,14 +2011,14 @@ type TestWithTimeoutPlanBuilder struct {
 func (e TestWithTimeoutPlanBuilder) PlanForEntrypointStage(_ string) hooks.Plan[hookstage.Entrypoint] {
 	return hooks.Plan[hookstage.Entrypoint]{
 		hooks.Group[hookstage.Entrypoint]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
 				{Module: "foobar", Code: "foo", Hook: mockUpdateHeaderEntrypointHook{}},
 				{Module: "foobar", Code: "bar", Hook: mockTimeoutHook{}},
 			},
 		},
 		hooks.Group[hookstage.Entrypoint]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
 				{Module: "foobar", Code: "baz", Hook: mockUpdateBodyHook{}},
 			},
@@ -2029,13 +2029,13 @@ func (e TestWithTimeoutPlanBuilder) PlanForEntrypointStage(_ string) hooks.Plan[
 func (e TestWithTimeoutPlanBuilder) PlanForRawAuctionStage(_ string, _ *config.Account) hooks.Plan[hookstage.RawAuctionRequest] {
 	return hooks.Plan[hookstage.RawAuctionRequest]{
 		hooks.Group[hookstage.RawAuctionRequest]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.RawAuctionRequest]{
 				{Module: "foobar", Code: "foo", Hook: mockUpdateBodyHook{}},
 			},
 		},
 		hooks.Group[hookstage.RawAuctionRequest]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.RawAuctionRequest]{
 				{Module: "foobar", Code: "bar", Hook: mockTimeoutHook{}},
 			},
@@ -2046,13 +2046,13 @@ func (e TestWithTimeoutPlanBuilder) PlanForRawAuctionStage(_ string, _ *config.A
 func (e TestWithTimeoutPlanBuilder) PlanForProcessedAuctionStage(_ string, _ *config.Account) hooks.Plan[hookstage.ProcessedAuctionRequest] {
 	return hooks.Plan[hookstage.ProcessedAuctionRequest]{
 		hooks.Group[hookstage.ProcessedAuctionRequest]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.ProcessedAuctionRequest]{
 				{Module: "foobar", Code: "foo", Hook: mockTimeoutHook{}},
 			},
 		},
 		hooks.Group[hookstage.ProcessedAuctionRequest]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.ProcessedAuctionRequest]{
 				{Module: "foobar", Code: "bar", Hook: mockUpdateBidRequestHook{}},
 			},
@@ -2063,13 +2063,13 @@ func (e TestWithTimeoutPlanBuilder) PlanForProcessedAuctionStage(_ string, _ *co
 func (e TestWithTimeoutPlanBuilder) PlanForBidderRequestStage(_ string, _ *config.Account) hooks.Plan[hookstage.BidderRequest] {
 	return hooks.Plan[hookstage.BidderRequest]{
 		hooks.Group[hookstage.BidderRequest]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.BidderRequest]{
 				{Module: "foobar", Code: "foo", Hook: mockTimeoutHook{}},
 			},
 		},
 		hooks.Group[hookstage.BidderRequest]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.BidderRequest]{
 				{Module: "foobar", Code: "bar", Hook: mockUpdateBidRequestHook{}},
 			},
@@ -2080,13 +2080,13 @@ func (e TestWithTimeoutPlanBuilder) PlanForBidderRequestStage(_ string, _ *confi
 func (e TestWithTimeoutPlanBuilder) PlanForRawBidderResponseStage(_ string, _ *config.Account) hooks.Plan[hookstage.RawBidderResponse] {
 	return hooks.Plan[hookstage.RawBidderResponse]{
 		hooks.Group[hookstage.RawBidderResponse]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.RawBidderResponse]{
 				{Module: "foobar", Code: "foo", Hook: mockTimeoutHook{}},
 			},
 		},
 		hooks.Group[hookstage.RawBidderResponse]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.RawBidderResponse]{
 				{Module: "foobar", Code: "bar", Hook: mockUpdateBidderResponseHook{}},
 			},
@@ -2097,13 +2097,13 @@ func (e TestWithTimeoutPlanBuilder) PlanForRawBidderResponseStage(_ string, _ *c
 func (e TestWithTimeoutPlanBuilder) PlanForAllProcessedBidResponsesStage(_ string, _ *config.Account) hooks.Plan[hookstage.AllProcessedBidResponses] {
 	return hooks.Plan[hookstage.AllProcessedBidResponses]{
 		hooks.Group[hookstage.AllProcessedBidResponses]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.AllProcessedBidResponses]{
 				{Module: "foobar", Code: "foo", Hook: mockTimeoutHook{}},
 			},
 		},
 		hooks.Group[hookstage.AllProcessedBidResponses]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.AllProcessedBidResponses]{
 				{Module: "foobar", Code: "bar", Hook: mockUpdateBiddersResponsesHook{}},
 			},
@@ -2118,13 +2118,13 @@ type TestWithModuleContextsPlanBuilder struct {
 func (e TestWithModuleContextsPlanBuilder) PlanForEntrypointStage(_ string) hooks.Plan[hookstage.Entrypoint] {
 	return hooks.Plan[hookstage.Entrypoint]{
 		hooks.Group[hookstage.Entrypoint]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
 				{Module: "module-1", Code: "foo", Hook: mockModuleContextHook{key: "entrypoint-ctx-1", val: "some-ctx-1"}},
 			},
 		},
 		hooks.Group[hookstage.Entrypoint]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
 				{Module: "module-2", Code: "bar", Hook: mockModuleContextHook{key: "entrypoint-ctx-2", val: "some-ctx-2"}},
 				{Module: "module-1", Code: "baz", Hook: mockModuleContextHook{key: "entrypoint-ctx-3", val: "some-ctx-3"}},
@@ -2136,14 +2136,14 @@ func (e TestWithModuleContextsPlanBuilder) PlanForEntrypointStage(_ string) hook
 func (e TestWithModuleContextsPlanBuilder) PlanForRawAuctionStage(_ string, _ *config.Account) hooks.Plan[hookstage.RawAuctionRequest] {
 	return hooks.Plan[hookstage.RawAuctionRequest]{
 		hooks.Group[hookstage.RawAuctionRequest]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.RawAuctionRequest]{
 				{Module: "module-1", Code: "foo", Hook: mockModuleContextHook{key: "raw-auction-ctx-1", val: "some-ctx-1"}},
 				{Module: "module-2", Code: "baz", Hook: mockModuleContextHook{key: "raw-auction-ctx-2", val: "some-ctx-2"}},
 			},
 		},
 		hooks.Group[hookstage.RawAuctionRequest]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.RawAuctionRequest]{
 				{Module: "module-1", Code: "bar", Hook: mockModuleContextHook{key: "raw-auction-ctx-3", val: "some-ctx-3"}},
 			},
@@ -2154,13 +2154,13 @@ func (e TestWithModuleContextsPlanBuilder) PlanForRawAuctionStage(_ string, _ *c
 func (e TestWithModuleContextsPlanBuilder) PlanForProcessedAuctionStage(_ string, _ *config.Account) hooks.Plan[hookstage.ProcessedAuctionRequest] {
 	return hooks.Plan[hookstage.ProcessedAuctionRequest]{
 		hooks.Group[hookstage.ProcessedAuctionRequest]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.ProcessedAuctionRequest]{
 				{Module: "module-1", Code: "foo", Hook: mockModuleContextHook{key: "processed-auction-ctx-1", val: "some-ctx-1"}},
 			},
 		},
 		hooks.Group[hookstage.ProcessedAuctionRequest]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.ProcessedAuctionRequest]{
 				{Module: "module-2", Code: "bar", Hook: mockModuleContextHook{key: "processed-auction-ctx-2", val: "some-ctx-2"}},
 				{Module: "module-1", Code: "baz", Hook: mockModuleContextHook{key: "processed-auction-ctx-3", val: "some-ctx-3"}},
@@ -2172,13 +2172,13 @@ func (e TestWithModuleContextsPlanBuilder) PlanForProcessedAuctionStage(_ string
 func (e TestWithModuleContextsPlanBuilder) PlanForBidderRequestStage(_ string, _ *config.Account) hooks.Plan[hookstage.BidderRequest] {
 	return hooks.Plan[hookstage.BidderRequest]{
 		hooks.Group[hookstage.BidderRequest]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.BidderRequest]{
 				{Module: "module-1", Code: "foo", Hook: mockModuleContextHook{key: "bidder-request-ctx-1", val: "some-ctx-1"}},
 			},
 		},
 		hooks.Group[hookstage.BidderRequest]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.BidderRequest]{
 				{Module: "module-2", Code: "bar", Hook: mockModuleContextHook{key: "bidder-request-ctx-2", val: "some-ctx-2"}},
 			},
@@ -2189,14 +2189,14 @@ func (e TestWithModuleContextsPlanBuilder) PlanForBidderRequestStage(_ string, _
 func (e TestWithModuleContextsPlanBuilder) PlanForRawBidderResponseStage(_ string, _ *config.Account) hooks.Plan[hookstage.RawBidderResponse] {
 	return hooks.Plan[hookstage.RawBidderResponse]{
 		hooks.Group[hookstage.RawBidderResponse]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.RawBidderResponse]{
 				{Module: "module-1", Code: "foo", Hook: mockModuleContextHook{key: "raw-bidder-response-ctx-1", val: "some-ctx-1"}},
 				{Module: "module-2", Code: "baz", Hook: mockModuleContextHook{key: "raw-bidder-response-ctx-2", val: "some-ctx-2"}},
 			},
 		},
 		hooks.Group[hookstage.RawBidderResponse]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.RawBidderResponse]{
 				{Module: "module-1", Code: "bar", Hook: mockModuleContextHook{key: "raw-bidder-response-ctx-3", val: "some-ctx-3"}},
 			},
@@ -2207,13 +2207,13 @@ func (e TestWithModuleContextsPlanBuilder) PlanForRawBidderResponseStage(_ strin
 func (e TestWithModuleContextsPlanBuilder) PlanForAllProcessedBidResponsesStage(_ string, _ *config.Account) hooks.Plan[hookstage.AllProcessedBidResponses] {
 	return hooks.Plan[hookstage.AllProcessedBidResponses]{
 		hooks.Group[hookstage.AllProcessedBidResponses]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.AllProcessedBidResponses]{
 				{Module: "module-1", Code: "foo", Hook: mockModuleContextHook{key: "all-processed-bid-responses-ctx-1", val: "some-ctx-1"}},
 			},
 		},
 		hooks.Group[hookstage.AllProcessedBidResponses]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.AllProcessedBidResponses]{
 				{Module: "module-2", Code: "bar", Hook: mockModuleContextHook{key: "all-processed-bid-responses-ctx-2", val: "some-ctx-2"}},
 			},
@@ -2228,7 +2228,7 @@ type TestAllHookResultsBuilder struct {
 func (e TestAllHookResultsBuilder) PlanForEntrypointStage(_ string) hooks.Plan[hookstage.Entrypoint] {
 	return hooks.Plan[hookstage.Entrypoint]{
 		hooks.Group[hookstage.Entrypoint]{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
 				{Module: "module-1", Code: "code-1", Hook: mockUpdateHeaderEntrypointHook{}},
 				{Module: "module-1", Code: "code-3", Hook: mockTimeoutHook{}},
