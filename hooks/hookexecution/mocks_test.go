@@ -100,7 +100,7 @@ func (e mockRejectHook) HandleAllProcessedBidResponsesHook(_ context.Context, _ 
 type mockTimeoutHook struct{}
 
 func (e mockTimeoutHook) HandleEntrypointHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
-	time.Sleep(2 * time.Millisecond)
+	time.Sleep(20 * time.Millisecond)
 	c := &hookstage.ChangeSet[hookstage.EntrypointPayload]{}
 	c.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
 		params := payload.Request.URL.Query()
@@ -113,7 +113,7 @@ func (e mockTimeoutHook) HandleEntrypointHook(_ context.Context, _ hookstage.Mod
 }
 
 func (e mockTimeoutHook) HandleRawAuctionHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.RawAuctionRequestPayload) (hookstage.HookResult[hookstage.RawAuctionRequestPayload], error) {
-	time.Sleep(2 * time.Millisecond)
+	time.Sleep(20 * time.Millisecond)
 	c := &hookstage.ChangeSet[hookstage.RawAuctionRequestPayload]{}
 	c.AddMutation(func(payload hookstage.RawAuctionRequestPayload) (hookstage.RawAuctionRequestPayload, error) {
 		payload = []byte(`{"last_name": "Doe", "foo": "bar", "address": "A st."}`)
@@ -124,7 +124,7 @@ func (e mockTimeoutHook) HandleRawAuctionHook(_ context.Context, _ hookstage.Mod
 }
 
 func (e mockTimeoutHook) HandleProcessedAuctionHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.ProcessedAuctionRequestPayload) (hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload], error) {
-	time.Sleep(2 * time.Millisecond)
+	time.Sleep(20 * time.Millisecond)
 	c := &hookstage.ChangeSet[hookstage.ProcessedAuctionRequestPayload]{}
 	c.AddMutation(func(payload hookstage.ProcessedAuctionRequestPayload) (hookstage.ProcessedAuctionRequestPayload, error) {
 		payload.BidRequest.User.CustomData = "some-custom-data"
@@ -135,7 +135,7 @@ func (e mockTimeoutHook) HandleProcessedAuctionHook(_ context.Context, _ hooksta
 }
 
 func (e mockTimeoutHook) HandleBidderRequestHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.BidderRequestPayload) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
-	time.Sleep(2 * time.Millisecond)
+	time.Sleep(20 * time.Millisecond)
 	c := &hookstage.ChangeSet[hookstage.BidderRequestPayload]{}
 	c.AddMutation(func(payload hookstage.BidderRequestPayload) (hookstage.BidderRequestPayload, error) {
 		payload.BidRequest.User.CustomData = "some-custom-data"
@@ -146,7 +146,7 @@ func (e mockTimeoutHook) HandleBidderRequestHook(_ context.Context, _ hookstage.
 }
 
 func (e mockTimeoutHook) HandleRawBidderResponseHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.RawBidderResponsePayload) (hookstage.HookResult[hookstage.RawBidderResponsePayload], error) {
-	time.Sleep(2 * time.Millisecond)
+	time.Sleep(20 * time.Millisecond)
 	c := &hookstage.ChangeSet[hookstage.RawBidderResponsePayload]{}
 	c.AddMutation(func(payload hookstage.RawBidderResponsePayload) (hookstage.RawBidderResponsePayload, error) {
 		payload.Bids[0].BidMeta = &openrtb_ext.ExtBidPrebidMeta{AdapterCode: "new-code"}
@@ -157,7 +157,7 @@ func (e mockTimeoutHook) HandleRawBidderResponseHook(_ context.Context, _ hookst
 }
 
 func (e mockTimeoutHook) HandleAllProcessedBidResponsesHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.AllProcessedBidResponsesPayload) (hookstage.HookResult[hookstage.AllProcessedBidResponsesPayload], error) {
-	time.Sleep(2 * time.Millisecond)
+	time.Sleep(20 * time.Millisecond)
 	c := &hookstage.ChangeSet[hookstage.AllProcessedBidResponsesPayload]{}
 	c.AddMutation(func(payload hookstage.AllProcessedBidResponsesPayload) (hookstage.AllProcessedBidResponsesPayload, error) {
 		payload.Responses["some-bidder"].Bids[0].BidMeta = &openrtb_ext.ExtBidPrebidMeta{AdapterCode: "new-code"}
