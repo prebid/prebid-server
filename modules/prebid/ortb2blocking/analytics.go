@@ -46,7 +46,7 @@ func addAllowedAnalyticTag(result *hookstage.HookResult[hookstage.RawBidderRespo
 func addBlockedAnalyticTag(
 	result *hookstage.HookResult[hookstage.RawBidderResponsePayload],
 	bidder, ImpID string,
-	failedAttributes []string,
+	failedAttributes string,
 	data map[string]interface{},
 ) {
 	values := make(map[string]interface{})

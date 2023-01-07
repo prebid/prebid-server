@@ -3,6 +3,7 @@ package ortb2blocking
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/prebid/openrtb/v17/adcom1"
 	"github.com/prebid/openrtb/v17/openrtb2"
@@ -353,7 +354,7 @@ func addDebugMessage(
 	result *hookstage.HookResult[hookstage.RawBidderResponsePayload],
 	bid *openrtb2.Bid,
 	bidder string,
-	failedAttributes []string,
+	failedAttributes string,
 ) {
 	result.DebugMessages = append(
 		result.DebugMessages,
@@ -362,8 +363,8 @@ func addDebugMessage(
 }
 
 // returns a slice with the names of failed attributes
-func getFailedAttributes(data map[string]interface{}) []string {
-	attributes := make([]string, len(data))
+func getFailedAttributes(data map[string]interface{}) string {
+	var builder strings.Builder
 	for i, attribute := range [5]string{
 		"badv",
 		"bcat",
@@ -372,9 +373,12 @@ func getFailedAttributes(data map[string]interface{}) []string {
 		"battr",
 	} {
 		if _, ok := data[attribute]; ok {
-			attributes[i] = attribute
+			if i > 0 && builder.Len() != 0 {
+				builder.WriteString(", ")
+			}
+			builder.WriteString(attribute)
 		}
 	}
 
-	return attributes
+	return builder.String()
 }

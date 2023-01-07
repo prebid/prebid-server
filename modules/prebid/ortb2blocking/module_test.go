@@ -429,7 +429,7 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 								{
 									Status: hookanalytics.ResultStatusBlock,
 									Values: map[string]interface{}{
-										attributesAnalyticKey: []string{"badv"},
+										attributesAnalyticKey: "badv",
 										badvAnalyticKey:       []string{"forbidden_domain"},
 									},
 									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID1}},
@@ -442,7 +442,7 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 						},
 					},
 				},
-				DebugMessages: []string{"Bid 1 from bidder appnexus has been rejected, failed checks: [badv]"},
+				DebugMessages: []string{"Bid 1 from bidder appnexus has been rejected, failed checks: badv"},
 			},
 		},
 		{
@@ -595,7 +595,7 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 								{
 									Status: hookanalytics.ResultStatusBlock,
 									Values: map[string]interface{}{
-										attributesAnalyticKey: []string{"badv"},
+										attributesAnalyticKey: "badv",
 										badvAnalyticKey:       []string(nil),
 									},
 									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID1}},
@@ -608,7 +608,7 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 						},
 					},
 				},
-				DebugMessages: []string{"Bid 1 from bidder appnexus has been rejected, failed checks: [badv]"},
+				DebugMessages: []string{"Bid 1 from bidder appnexus has been rejected, failed checks: badv"},
 			},
 		},
 		{
@@ -745,7 +745,7 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 								{
 									Status: hookanalytics.ResultStatusBlock,
 									Values: map[string]interface{}{
-										attributesAnalyticKey: []string{"bcat"},
+										attributesAnalyticKey: "bcat",
 										"bcat":                []string{"fishing"},
 									},
 									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID1}},
@@ -758,7 +758,7 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 						},
 					},
 				},
-				DebugMessages: []string{"Bid 1 from bidder appnexus has been rejected, failed checks: [bcat]"},
+				DebugMessages: []string{"Bid 1 from bidder appnexus has been rejected, failed checks: bcat"},
 			},
 		},
 		{
@@ -788,7 +788,7 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 								{
 									Status: hookanalytics.ResultStatusBlock,
 									Values: map[string]interface{}{
-										attributesAnalyticKey: []string{"cattax"},
+										attributesAnalyticKey: "cattax",
 										cattaxAnalyticKey:     []adcom1.CategoryTaxonomy{1},
 									},
 									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID1}},
@@ -801,7 +801,7 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 						},
 					},
 				},
-				DebugMessages: []string{"Bid 1 from bidder appnexus has been rejected, failed checks: [cattax]"},
+				DebugMessages: []string{"Bid 1 from bidder appnexus has been rejected, failed checks: cattax"},
 			},
 		},
 		{
@@ -834,7 +834,7 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 								{
 									Status: hookanalytics.ResultStatusBlock,
 									Values: map[string]interface{}{
-										attributesAnalyticKey: []string{"cattax"},
+										attributesAnalyticKey: "cattax",
 										cattaxAnalyticKey:     []adcom1.CategoryTaxonomy{2},
 									},
 									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID2}},
@@ -843,7 +843,7 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 						},
 					},
 				},
-				DebugMessages: []string{"Bid 2 from bidder appnexus has been rejected, failed checks: [cattax]"},
+				DebugMessages: []string{"Bid 2 from bidder appnexus has been rejected, failed checks: cattax"},
 			},
 		},
 		{
@@ -873,7 +873,7 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 								{
 									Status: hookanalytics.ResultStatusBlock,
 									Values: map[string]interface{}{
-										attributesAnalyticKey: []string{"bapp"},
+										attributesAnalyticKey: "bapp",
 										bappAnalyticKey:       []string{"forbidden_bundle"},
 									},
 									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID1}},
@@ -886,7 +886,7 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 						},
 					},
 				},
-				DebugMessages: []string{"Bid 1 from bidder appnexus has been rejected, failed checks: [bapp]"},
+				DebugMessages: []string{"Bid 1 from bidder appnexus has been rejected, failed checks: bapp"},
 			},
 		},
 		{
@@ -916,7 +916,7 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 								{
 									Status: hookanalytics.ResultStatusBlock,
 									Values: map[string]interface{}{
-										attributesAnalyticKey: []string{"battr"},
+										attributesAnalyticKey: "battr",
 										battrAnalyticKey:      []int{1},
 									},
 									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID1}},
@@ -929,7 +929,7 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 						},
 					},
 				},
-				DebugMessages: []string{"Bid 1 from bidder appnexus has been rejected, failed checks: [battr]"},
+				DebugMessages: []string{"Bid 1 from bidder appnexus has been rejected, failed checks: battr"},
 			},
 		},
 		{
@@ -989,7 +989,7 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 								{
 									Status: hookanalytics.ResultStatusBlock,
 									Values: map[string]interface{}{
-										attributesAnalyticKey: []string{"badv", "bcat", "cattax", "bapp", "battr"},
+										attributesAnalyticKey: "badv, bcat, cattax, bapp, battr",
 										badvAnalyticKey:       []string{"forbidden_domain"},
 										cattaxAnalyticKey:     []adcom1.CategoryTaxonomy{1},
 										bappAnalyticKey:       []string{"forbidden_bundle"},
@@ -1005,7 +1005,7 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 						},
 					},
 				},
-				DebugMessages: []string{"Bid 1 from bidder appnexus has been rejected, failed checks: [badv bcat cattax bapp battr]"},
+				DebugMessages: []string{"Bid 1 from bidder appnexus has been rejected, failed checks: badv, bcat, cattax, bapp, battr"},
 			},
 		},
 	}
