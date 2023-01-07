@@ -1,3 +1,4 @@
+endpoint: "https://tlx.3lift.com/s2sn/auction?supplier_id=20"
 disabled: true
 extra_info: "{\"publisher_whitelist\":[]}"
 maintainer:

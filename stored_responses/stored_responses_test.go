@@ -228,7 +228,7 @@ func TestProcessStoredAuctionAndBidResponsesErrors(t *testing.T) {
     			    }
     			  }
     			]}`),
-			expectedErrorList: []error{errors.New("request.imp[impId: imp-id1].ext contains unknown bidder: testBidder123. Did you forget an alias in request.ext.prebid.aliases?")},
+			expectedErrorList: []error{errors.New("request.imp[impId: imp-id1].ext.prebid.bidder contains unknown bidder: testBidder123. Did you forget an alias in request.ext.prebid.aliases?")},
 		},
 		{
 			description: "Invalid stored auction response format: empty stored Auction Response Id in second imp",

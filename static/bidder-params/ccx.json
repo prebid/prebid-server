@@ -1,0 +1,13 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Clickonometrics Adapter Params",
+    "description": "A schema which validates params accepted by the Clickonometrics adapter",
+    "type": "object",
+    "properties": {
+      "placementId": {
+        "type": "integer",
+        "description": "Placement ID"
+      }
+    },
+    "required": ["placementId"]
+  }

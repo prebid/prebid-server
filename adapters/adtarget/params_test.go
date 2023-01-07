@@ -8,7 +8,7 @@ import (
 )
 
 // This file actually intends to test static/bidder-params/adtarget.json
-// These also validate the format of the external API: request.imp[i].ext.adtarget
+// These also validate the format of the external API: request.imp[i].ext.prebid.bidder.adtarget
 // TestValidParams makes sure that the adtarget schema accepts all imp.ext fields which we intend to support.
 
 func TestValidParams(t *testing.T) {

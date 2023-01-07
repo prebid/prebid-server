@@ -1,0 +1,78 @@
+{
+  "description": "Simple request",
+  "config": {
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 0.00},
+      {"bidderName": "applogy", "currency": "USD", "price": 0.00}
+    ]
+  },
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "prebid.org"
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          },
+          "applogy": {
+            "placementId": 12883451
+          }
+        }
+      }
+    ],
+    "tmax": 50,
+    "ext": {}
+  },
+  "expectedBidResponse": {
+    "id":"some-request-id",
+    "bidid":"test bid id",
+    "cur":"USD",
+    "nbr":null,
+    "seatbid": [
+      {
+        "bid": [
+          {
+            "id": "applogy-bid",
+            "impid": "some-impression-id",
+            "price": 0,
+            "ext": {"prebid":{"type":"banner"}}
+          }
+        ],
+        "seat": "applogy"
+      }
+    ],
+    "ext": {
+      "warnings": {
+        "appnexus": [
+          {
+            "code": 11,
+            "message": "Module foobar (hook: foo) rejected request with code 123 at bidder_request stage"
+          }
+        ],
+        "general": [
+          {
+            "code": 10002,
+            "message": "debug turned off for account"
+          }
+        ]
+      }
+    }
+  },
+  "expectedReturnCode": 200
+}

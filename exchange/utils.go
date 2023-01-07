@@ -9,6 +9,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/go-gdpr/vendorconsent"
+	gpplib "github.com/prebid/go-gpp"
 	"github.com/prebid/openrtb/v17/openrtb2"
 
 	"github.com/prebid/prebid-server/adapters"
@@ -78,17 +79,26 @@ func cleanOpenRTBRequests(ctx context.Context,
 	//this function should be executed after getAuctionBidderRequests
 	allBidderRequests = mergeBidderRequests(allBidderRequests, bidderNameToBidderReq)
 
+	var gpp gpplib.GppContainer
+	if req.BidRequest.Regs != nil && len(req.BidRequest.Regs.GPP) > 0 {
+		gpp, err = gpplib.Parse(req.BidRequest.Regs.GPP)
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
 	gdprSignal, err := extractGDPR(req.BidRequest)
 	if err != nil {
 		errs = append(errs, err)
 	}
-	consent, err := extractConsent(req.BidRequest)
+
+	consent, err := extractConsent(req.BidRequest, gpp)
 	if err != nil {
 		errs = append(errs, err)
 	}
 	gdprApplies := gdprSignal == gdpr.SignalYes || (gdprSignal == gdpr.SignalAmbiguous && gdprDefaultValue == gdpr.SignalYes)
 
-	ccpaEnforcer, err := extractCCPA(req.BidRequest, privacyConfig, &auctionReq.Account, aliases, channelTypeMap[auctionReq.LegacyLabels.RType])
+	ccpaEnforcer, err := extractCCPA(req.BidRequest, privacyConfig, &auctionReq.Account, aliases, channelTypeMap[auctionReq.LegacyLabels.RType], gpp)
 	if err != nil {
 		errs = append(errs, err)
 	}
@@ -177,9 +187,9 @@ func ccpaEnabled(account *config.Account, privacyConfig config.Privacy, requestT
 	return privacyConfig.CCPA.Enforce
 }
 
-func extractCCPA(orig *openrtb2.BidRequest, privacyConfig config.Privacy, account *config.Account, aliases map[string]string, requestType config.ChannelType) (privacy.PolicyEnforcer, error) {
+func extractCCPA(orig *openrtb2.BidRequest, privacyConfig config.Privacy, account *config.Account, aliases map[string]string, requestType config.ChannelType, gpp gpplib.GppContainer) (privacy.PolicyEnforcer, error) {
 	// Quick extra wrapper until RequestWrapper makes its way into CleanRequests
-	ccpaPolicy, err := ccpa.ReadFromRequestWrapper(&openrtb_ext.RequestWrapper{BidRequest: orig})
+	ccpaPolicy, err := ccpa.ReadFromRequestWrapper(&openrtb_ext.RequestWrapper{BidRequest: orig}, gpp)
 	if err != nil {
 		return privacy.NilPolicyEnforcer{}, err
 	}

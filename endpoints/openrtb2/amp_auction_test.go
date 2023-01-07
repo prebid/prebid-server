@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"reflect"
 	"strconv"
 	"testing"
@@ -19,6 +19,8 @@ import (
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/hooks"
+	"github.com/prebid/prebid-server/hooks/hookstage"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
@@ -60,7 +62,7 @@ func TestGoodAmpRequests(t *testing.T) {
 	for _, tgroup := range testGroups {
 		for _, filename := range tgroup.testFiles {
 			// Read test case and unmarshal
-			fileJsonData, err := ioutil.ReadFile(tgroup.dir + filename)
+			fileJsonData, err := os.ReadFile(tgroup.dir + filename)
 			if !assert.NoError(t, err, "Failed to fetch a valid request: %v. Test file: %s", err, filename) {
 				continue
 			}
@@ -151,7 +153,7 @@ func TestAccountErrors(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		fileJsonData, err := ioutil.ReadFile("sample-requests/" + tt.filename)
+		fileJsonData, err := os.ReadFile("sample-requests/" + tt.filename)
 		if !assert.NoError(t, err, "Failed to fetch a valid request: %v. Test file: %s", err, tt.filename) {
 			continue
 		}
@@ -210,6 +212,7 @@ func TestAMPPageInfo(t *testing.T) {
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	)
 	request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&curl=%s", url.QueryEscape(page)), nil)
 	recorder := httptest.NewRecorder()
@@ -312,6 +315,7 @@ func TestGDPRConsent(t *testing.T) {
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
 			empty_fetcher.EmptyFetcher{},
+			hooks.EmptyPlanBuilder{},
 		)
 
 		// Invoke Endpoint
@@ -697,6 +701,7 @@ func TestCCPAConsent(t *testing.T) {
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
 			empty_fetcher.EmptyFetcher{},
+			hooks.EmptyPlanBuilder{},
 		)
 
 		// Invoke Endpoint
@@ -809,6 +814,7 @@ func TestConsentWarnings(t *testing.T) {
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
 			empty_fetcher.EmptyFetcher{},
+			hooks.EmptyPlanBuilder{},
 		)
 
 		// Invoke Endpoint
@@ -906,6 +912,7 @@ func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
 			empty_fetcher.EmptyFetcher{},
+			hooks.EmptyPlanBuilder{},
 		)
 
 		// Invoke Endpoint
@@ -959,6 +966,7 @@ func TestAMPSiteExt(t *testing.T) {
 		nil,
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	)
 	request, err := http.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1", nil)
 	if !assert.NoError(t, err) {
@@ -979,7 +987,7 @@ func TestAMPSiteExt(t *testing.T) {
 // TestBadRequests makes sure we return 400's on bad requests.
 func TestAmpBadRequests(t *testing.T) {
 	dir := "sample-requests/invalid-whole"
-	files, err := ioutil.ReadDir(dir)
+	files, err := os.ReadDir(dir)
 	assert.NoError(t, err, "Failed to read folder: %s", dir)
 
 	badRequests := make(map[string]json.RawMessage, len(files))
@@ -1000,6 +1008,7 @@ func TestAmpBadRequests(t *testing.T) {
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	)
 	for requestID := range badRequests {
 		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s", requestID), nil)
@@ -1032,6 +1041,7 @@ func TestAmpDebug(t *testing.T) {
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	)
 
 	for requestID := range requests {
@@ -1108,6 +1118,7 @@ func TestQueryParamOverrides(t *testing.T) {
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	)
 
 	requestID := "1"
@@ -1264,6 +1275,7 @@ func (s formatOverrideSpec) execute(t *testing.T) {
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	)
 
 	url := fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&debug=1&w=%d&h=%d&ow=%d&oh=%d&ms=%s&account=%s", s.width, s.height, s.overrideWidth, s.overrideHeight, s.multisize, s.account)
@@ -1511,16 +1523,19 @@ func TestSetEffectiveAmpPubID(t *testing.T) {
 }
 
 type mockLogger struct {
-	ampObject *analytics.AmpObject
+	ampObject     *analytics.AmpObject
+	auctionObject *analytics.AuctionObject
 }
 
-func newMockLogger(ao *analytics.AmpObject) analytics.PBSAnalyticsModule {
+func newMockLogger(ao *analytics.AmpObject, aucObj *analytics.AuctionObject) analytics.PBSAnalyticsModule {
 	return &mockLogger{
-		ampObject: ao,
+		ampObject:     ao,
+		auctionObject: aucObj,
 	}
 }
 
 func (logger mockLogger) LogAuctionObject(ao *analytics.AuctionObject) {
+	*logger.auctionObject = *ao
 }
 func (logger mockLogger) LogVideoObject(vo *analytics.VideoObject) {
 }
@@ -1702,7 +1717,7 @@ func TestIdGeneration(t *testing.T) {
 
 func ampObjectTestSetup(t *testing.T, inTagId string, inStoredRequest json.RawMessage, generateRequestID bool) (*analytics.AmpObject, httprouter.Handle) {
 	actualAmpObject := analytics.AmpObject{}
-	logger := newMockLogger(&actualAmpObject)
+	logger := newMockLogger(&actualAmpObject, nil)
 
 	mockAmpFetcher := &mockAmpStoredReqFetcher{
 		data: map[string]json.RawMessage{
@@ -1723,6 +1738,7 @@ func ampObjectTestSetup(t *testing.T, inTagId string, inStoredRequest json.RawMe
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	)
 	return &actualAmpObject, endpoint
 }
@@ -1774,6 +1790,7 @@ func TestAmpAuctionResponseHeaders(t *testing.T) {
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	)
 
 	for _, test := range testCases {
@@ -1808,6 +1825,7 @@ func TestRequestWithTargeting(t *testing.T) {
 		nil,
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	)
 	url, err := url.Parse("/openrtb2/auction/amp")
 	assert.NoError(t, err, "unexpected error received while parsing url")
@@ -1913,5 +1931,111 @@ func TestSetTargeting(t *testing.T) {
 			assert.JSONEq(t, test.expectedImpExt, string(req.Imp[0].Ext), "incorrect impression extension returned for test %s", test.description)
 		}
 
+	}
+}
+
+func TestValidAmpResponseWhenRequestStagesRejected(t *testing.T) {
+	const nbr int = 123
+	const file string = "sample-requests/amp/valid-supplementary/aliased-buyeruids.json"
+
+	var test testCase
+	fileData, err := os.ReadFile(file)
+	assert.NoError(t, err, "Failed to read test file.")
+	if err := json.Unmarshal(fileData, &test); err != nil {
+		t.Fatal("Failed to unmarshal test file.")
+	}
+
+	testCases := []struct {
+		description         string
+		file                string
+		planBuilder         hooks.ExecutionPlanBuilder
+		expectedAmpResponse AmpResponse
+	}{
+		{
+			description:         "Assert correct BidResponse when request rejected at entrypoint stage",
+			file:                file,
+			planBuilder:         mockPlanBuilder{entrypointPlan: makeRejectPlan[hookstage.Entrypoint](mockRejectionHook{nbr})},
+			expectedAmpResponse: AmpResponse{Targeting: map[string]string{}},
+		},
+		{
+			description:         "Assert correct BidResponse when request rejected at raw-auction stage",
+			file:                file,
+			planBuilder:         mockPlanBuilder{rawAuctionPlan: makeRejectPlan[hookstage.RawAuctionRequest](mockRejectionHook{nbr})},
+			expectedAmpResponse: test.ExpectedAmpResponse,
+		},
+		{
+			description:         "Assert correct AmpResponse when request rejected at processed-auction stage",
+			file:                file,
+			planBuilder:         mockPlanBuilder{processedAuctionPlan: makeRejectPlan[hookstage.ProcessedAuctionRequest](mockRejectionHook{nbr})},
+			expectedAmpResponse: AmpResponse{Targeting: map[string]string{}},
+		},
+		{
+			// bidder-request stage rejects only bidder, so we expect bidder rejection warning added
+			description: "Assert correct BidResponse when request rejected at bidder-request stage",
+			file:        file,
+			planBuilder: mockPlanBuilder{bidderRequestPlan: makeRejectPlan[hookstage.BidderRequest](mockRejectionHook{nbr})},
+			expectedAmpResponse: AmpResponse{Targeting: map[string]string{}, Warnings: map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{
+				"appnexus": {
+					{
+						Code:    11,
+						Message: "Module foobar (hook: foo) rejected request with code 123 at bidder_request stage",
+					},
+				},
+				"general": {
+					{
+						Code:    10002,
+						Message: "debug turned off for account",
+					},
+				},
+			}},
+		},
+		{
+			description: "Assert correct AmpResponse when request rejected at raw-bidder-response stage",
+			file:        file,
+			planBuilder: mockPlanBuilder{rawBidderResponsePlan: makeRejectPlan[hookstage.RawBidderResponse](mockRejectionHook{nbr})},
+			expectedAmpResponse: AmpResponse{Targeting: map[string]string{}, Warnings: map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{
+				"appnexus": {
+					{
+						Code:    11,
+						Message: "Module foobar (hook: foo) rejected request with code 123 at raw_bidder_response stage",
+					},
+				},
+				"general": {
+					{
+						Code:    10002,
+						Message: "debug turned off for account",
+					},
+				},
+			}},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?%s", test.Query), nil)
+			recorder := httptest.NewRecorder()
+			query := request.URL.Query()
+			tagID := query.Get("tag_id")
+
+			test.storedRequest = map[string]json.RawMessage{tagID: test.BidRequest}
+			test.planBuilder = tc.planBuilder
+			test.endpointType = AMP_ENDPOINT
+
+			ampEndpointHandler, _, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, &config.Configuration{MaxRequestSize: maxSize})
+			assert.NoError(t, err, "Failed to build test endpoint.")
+
+			ampEndpointHandler(recorder, request, nil)
+			assert.Equal(t, recorder.Code, http.StatusOK, "Endpoint should return 200 OK.")
+
+			var actualResp AmpResponse
+			assert.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &actualResp), "Unable to unmarshal actual BidResponse.")
+			assert.Equal(t, tc.expectedAmpResponse, actualResp, "Invalid AMP Response.")
+
+			// Close servers regardless if the test case was run or not
+			for _, mockBidServer := range mockBidServers {
+				mockBidServer.Close()
+			}
+			mockCurrencyRatesServer.Close()
+		})
 	}
 }
