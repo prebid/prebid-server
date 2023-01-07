@@ -626,14 +626,14 @@ func (e *exchange) getAllBids(
 	return adapterBids, adapterExtra, fledge, bidsFound
 }
 
-func collectFledgeFromSeatBid(fledge *openrtb_ext.Fledge, bidderName openrtb_ext.BidderName, seatBid *pbsOrtbSeatBid) *openrtb_ext.Fledge {
-	if seatBid.fledgeAuctionConfigs != nil {
+func collectFledgeFromSeatBid(fledge *openrtb_ext.Fledge, bidderName openrtb_ext.BidderName, seatBid *entities.PbsOrtbSeatBid) *openrtb_ext.Fledge {
+	if seatBid.FledgeAuctionConfigs != nil {
 		if fledge == nil {
 			fledge = &openrtb_ext.Fledge{
-				AuctionConfigs: make([]*openrtb_ext.FledgeAuctionConfig, 0, len(seatBid.fledgeAuctionConfigs)),
+				AuctionConfigs: make([]*openrtb_ext.FledgeAuctionConfig, 0, len(seatBid.FledgeAuctionConfigs)),
 			}
 		}
-		for _, config := range seatBid.fledgeAuctionConfigs {
+		for _, config := range seatBid.FledgeAuctionConfigs {
 			fledge.AuctionConfigs = append(fledge.AuctionConfigs, &openrtb_ext.FledgeAuctionConfig{
 				Bidder: bidderName.String(),
 				ImpId:  config.ImpId, // TODO: validate impId
@@ -1302,7 +1302,11 @@ func buildStoredAuctionResponse(storedAuctionResponses map[string]json.RawMessag
 			} else {
 				//create new seat bid and add it to live adapters
 				liveAdapters = append(liveAdapters, bidderName)
-				newSeatBid := pbsOrtbSeatBid{bidsToAdd, "", nil, ""}
+				newSeatBid := entities.PbsOrtbSeatBid{
+					Bids:     bidsToAdd,
+					Currency: "",
+					Seat:     "",
+				}
 				adapterBids[bidderName] = &newSeatBid
 
 			}
