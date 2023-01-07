@@ -8,11 +8,11 @@ import (
 )
 
 func newConfig(data json.RawMessage) (Config, error) {
-	var c Config
-	if err := json.Unmarshal(data, &c); err != nil {
-		return c, fmt.Errorf("failed to parse config: %s", err)
+	var cfg Config
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		return cfg, fmt.Errorf("failed to parse config: %s", err)
 	}
-	return c, nil
+	return cfg, nil
 }
 
 type Config struct {
@@ -111,21 +111,21 @@ type Override struct {
 }
 
 func (o *Override) UnmarshalJSON(bytes []byte) error {
-	var d interface{}
-	if err := json.Unmarshal(bytes, &d); err != nil {
+	var overrideData interface{}
+	if err := json.Unmarshal(bytes, &overrideData); err != nil {
 		return err
 	}
 
-	switch v := d.(type) {
+	switch overrideValue := overrideData.(type) {
 	case bool:
-		o.IsActive = v
+		o.IsActive = overrideValue
 	case []interface{}:
-		for _, val := range v {
-			switch i := val.(type) {
+		for _, value := range overrideValue {
+			switch override := value.(type) {
 			case string:
-				o.Names = append(o.Names, i)
+				o.Names = append(o.Names, override)
 			case float64:
-				o.Ids = append(o.Ids, int(i))
+				o.Ids = append(o.Ids, int(override))
 			}
 		}
 	}

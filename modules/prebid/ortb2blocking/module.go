@@ -3,13 +3,13 @@ package ortb2blocking
 import (
 	"context"
 	"encoding/json"
-	"net/http"
 
 	"github.com/prebid/openrtb/v17/adcom1"
 	"github.com/prebid/prebid-server/hooks/hookstage"
+	"github.com/prebid/prebid-server/modules/moduledeps"
 )
 
-func Builder(_ json.RawMessage, _ *http.Client) (interface{}, error) {
+func Builder(_ json.RawMessage, _ moduledeps.ModuleDeps) (interface{}, error) {
 	return Module{}, nil
 }
 

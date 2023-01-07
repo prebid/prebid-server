@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -63,7 +62,7 @@ func TestGoodAmpRequests(t *testing.T) {
 	for _, tgroup := range testGroups {
 		for _, filename := range tgroup.testFiles {
 			// Read test case and unmarshal
-			fileJsonData, err := ioutil.ReadFile(tgroup.dir + filename)
+			fileJsonData, err := os.ReadFile(tgroup.dir + filename)
 			if !assert.NoError(t, err, "Failed to fetch a valid request: %v. Test file: %s", err, filename) {
 				continue
 			}
@@ -154,7 +153,7 @@ func TestAccountErrors(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		fileJsonData, err := ioutil.ReadFile("sample-requests/" + tt.filename)
+		fileJsonData, err := os.ReadFile("sample-requests/" + tt.filename)
 		if !assert.NoError(t, err, "Failed to fetch a valid request: %v. Test file: %s", err, tt.filename) {
 			continue
 		}
@@ -988,7 +987,7 @@ func TestAMPSiteExt(t *testing.T) {
 // TestBadRequests makes sure we return 400's on bad requests.
 func TestAmpBadRequests(t *testing.T) {
 	dir := "sample-requests/invalid-whole"
-	files, err := ioutil.ReadDir(dir)
+	files, err := os.ReadDir(dir)
 	assert.NoError(t, err, "Failed to read folder: %s", dir)
 
 	badRequests := make(map[string]json.RawMessage, len(files))
@@ -1935,14 +1934,14 @@ func TestSetTargeting(t *testing.T) {
 	}
 }
 
-func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
+func TestValidAmpResponseWhenRequestStagesRejected(t *testing.T) {
 	const nbr int = 123
 	const file string = "sample-requests/amp/valid-supplementary/aliased-buyeruids.json"
 
-	var tc testCase
+	var test testCase
 	fileData, err := os.ReadFile(file)
 	assert.NoError(t, err, "Failed to read test file.")
-	if err := json.Unmarshal(fileData, &tc); err != nil {
+	if err := json.Unmarshal(fileData, &test); err != nil {
 		t.Fatal("Failed to unmarshal test file.")
 	}
 
@@ -1962,18 +1961,24 @@ func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
 			description:         "Assert correct BidResponse when request rejected at raw-auction stage",
 			file:                file,
 			planBuilder:         mockPlanBuilder{rawAuctionPlan: makeRejectPlan[hookstage.RawAuctionRequest](mockRejectionHook{nbr})},
-			expectedAmpResponse: tc.ExpectedAmpResponse,
+			expectedAmpResponse: test.ExpectedAmpResponse,
+		},
+		{
+			description:         "Assert correct AmpResponse when request rejected at processed-auction stage",
+			file:                file,
+			planBuilder:         mockPlanBuilder{processedAuctionPlan: makeRejectPlan[hookstage.ProcessedAuctionRequest](mockRejectionHook{nbr})},
+			expectedAmpResponse: AmpResponse{Targeting: map[string]string{}},
 		},
 		{
 			// bidder-request stage rejects only bidder, so we expect bidder rejection warning added
 			description: "Assert correct BidResponse when request rejected at bidder-request stage",
-			file:        "sample-requests/amp/valid-supplementary/aliased-buyeruids.json",
+			file:        file,
 			planBuilder: mockPlanBuilder{bidderRequestPlan: makeRejectPlan[hookstage.BidderRequest](mockRejectionHook{nbr})},
 			expectedAmpResponse: AmpResponse{Targeting: map[string]string{}, Warnings: map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{
 				"appnexus": {
 					{
 						Code:    11,
-						Message: "Module foobar (hook: foo) rejected request with code 123 at bidder-request stage",
+						Message: "Module foobar (hook: foo) rejected request with code 123 at bidder_request stage",
 					},
 				},
 				"general": {
@@ -1992,7 +1997,7 @@ func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
 				"appnexus": {
 					{
 						Code:    11,
-						Message: "Module foobar (hook: foo) rejected request with code 123 at raw-bidder-response stage",
+						Message: "Module foobar (hook: foo) rejected request with code 123 at raw_bidder_response stage",
 					},
 				},
 				"general": {
@@ -2007,9 +2012,6 @@ func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			test := testCase{}
-			assert.NoError(t, json.Unmarshal(fileData, &test), "Failed to parse test file.")
-
 			request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?%s", test.Query), nil)
 			recorder := httptest.NewRecorder()
 			query := request.URL.Query()

@@ -62,7 +62,7 @@
         "appnexus": [
           {
             "code": 11,
-            "message": "Module foobar (hook: foo) rejected request with code 123 at raw-bidder-response stage"
+            "message": "Module foobar (hook: foo) rejected request with code 123 at raw_bidder_response stage"
           }
         ],
         "general": [

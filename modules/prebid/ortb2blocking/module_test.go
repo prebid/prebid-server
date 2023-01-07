@@ -11,6 +11,7 @@ import (
 	"github.com/prebid/prebid-server/hooks/hookanalytics"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/hooks/hookstage"
+	"github.com/prebid/prebid-server/modules/moduledeps"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -316,7 +317,7 @@ func TestHandleBidderRequestHook(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			payload := hookstage.BidderRequestPayload{Bidder: test.bidder, BidRequest: test.bidRequest}
 
-			result, err := Builder(nil, nil)
+			result, err := Builder(nil, moduledeps.ModuleDeps{})
 			assert.NoError(t, err, "Failed to build module.")
 
 			module, ok := result.(Module)
@@ -1011,7 +1012,7 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
-			result, err := Builder(nil, nil)
+			result, err := Builder(nil, moduledeps.ModuleDeps{})
 			assert.NoError(t, err, "Failed to build module.")
 
 			module, ok := result.(Module)

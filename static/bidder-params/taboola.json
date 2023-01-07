@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Taboola Adapter Params",
+  "description": "A schema which validates params accepted by the Taboola adapter",
+
+  "type": "object",
+  "properties": {
+    "publisherId": {
+      "type": "string"
+    },
+    "publisherDomain": {
+      "type": "string"
+    },
+    "tagid": {
+      "type": "string"
+    },
+    "bidfloor": {
+      "type": "number"
+    },
+    "bcat": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "badv": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": ["tagid","publisherId"]
+}

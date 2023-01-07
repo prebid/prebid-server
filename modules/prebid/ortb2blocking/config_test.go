@@ -311,3 +311,29 @@ func TestNewConfig(t *testing.T) {
 	assert.Empty(t, c.Attributes.Battr.ActionOverrides.EnforceBlocks[0].Override.Ids, "attributes.battr.action_overrides[0].enforce_blocks[0].override")
 	assert.Empty(t, c.Attributes.Battr.ActionOverrides.EnforceBlocks[0].Override.Names, "attributes.battr.action_overrides[0].enforce_blocks[0].override")
 }
+
+func TestOverride_UnmarshalJSON(t *testing.T) {
+	// error on invalid JSON
+	override := Override{}
+	assert.Error(t, override.UnmarshalJSON([]byte("...")), "Error expected on invalid JSON.")
+
+	// expect IsActive to be initialized correctly
+	override = Override{}
+	assert.NoError(t, override.UnmarshalJSON([]byte("true")), "Failed to unmarshal bool override.")
+	assert.Equal(t, Override{IsActive: true}, override, "Override.IsActive expected to be true.")
+
+	// expect IDs to be initialized correctly
+	override = Override{}
+	assert.NoError(t, override.UnmarshalJSON([]byte("[1, 2, 3]")), "Failed to unmarshal override with IDs.")
+	assert.Equal(t, Override{Ids: []int{1, 2, 3}}, override, "Invalid override.IDs.")
+
+	// expect Names to be initialized correctly
+	override = Override{}
+	assert.NoError(t, override.UnmarshalJSON([]byte(`["one", "two"]`)), "Failed to unmarshal override with Names.")
+	assert.Equal(t, Override{Names: []string{"one", "two"}}, override, "Invalid override.Names.")
+
+	// expect empty override on ignored JSON
+	override = Override{}
+	assert.NoError(t, override.UnmarshalJSON([]byte(`"string"`)), "Failed to unmarshal override with ignored value.")
+	assert.Equal(t, Override{}, override, "Empty override expected.")
+}

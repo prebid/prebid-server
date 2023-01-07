@@ -126,6 +126,19 @@ func TestBuildIxDiag(t *testing.T) {
 			pbsVersion:  "1.880-abcdef",
 		},
 		{
+			description: "Base test for nil channel but non-empty ext prebid payload",
+			request: &openrtb2.BidRequest{
+				ID:  "1",
+				Ext: json.RawMessage(`{"prebid":{"server":{"externalurl":"http://localhost:8000"}}}`),
+			},
+			expectedRequest: &openrtb2.BidRequest{
+				ID:  "1",
+				Ext: json.RawMessage(`{"prebid":{"server":{"externalurl":"http://localhost:8000","gvlid":0,"datacenter":""}},"ixdiag":{"pbsv":"1.880"}}`),
+			},
+			expectError: false,
+			pbsVersion:  "1.880-abcdef",
+		},
+		{
 			description: "No Ext",
 			request: &openrtb2.BidRequest{
 				ID: "1",
@@ -191,15 +204,16 @@ func TestBuildIxDiag(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		version.Ver = test.pbsVersion
-		err := BuildIxDiag(test.request)
-		if test.expectError {
-			assert.NotNil(t, err)
-		} else {
-			assert.Equal(t, test.request, test.expectedRequest)
-			assert.Nil(t, err)
-		}
-		version.Ver = ""
+		t.Run(test.description, func(t *testing.T) {
+			version.Ver = test.pbsVersion
+			err := BuildIxDiag(test.request)
+			if test.expectError {
+				assert.NotNil(t, err)
+			} else {
+				assert.Equal(t, test.expectedRequest, test.request)
+				assert.Nil(t, err)
+			}
+		})
 	}
 }
 

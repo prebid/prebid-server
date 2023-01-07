@@ -3,9 +3,9 @@ package openrtb2
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -138,7 +138,7 @@ func BenchmarkValidWholeExemplary(b *testing.B) {
 		b.Run(fmt.Sprintf("input_file_%s", testFile), func(b *testing.B) {
 			b.StopTimer()
 			// Set up
-			fileData, err := ioutil.ReadFile(testFile)
+			fileData, err := os.ReadFile(testFile)
 			if err != nil {
 				b.Fatalf("unable to read file %s", testFile)
 			}

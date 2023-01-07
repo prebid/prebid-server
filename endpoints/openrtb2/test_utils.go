@@ -6,10 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strconv"
 	"testing"
@@ -1093,7 +1093,7 @@ func newBidderInfo(isDisabled bool) config.BidderInfo {
 func getTestFiles(dir string) ([]string, error) {
 	var filesToAssert []string
 
-	fileList, err := ioutil.ReadDir(dir)
+	fileList, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, err
 	}
@@ -1396,7 +1396,7 @@ func (c *wellBehavedCache) PutJson(ctx context.Context, values []pbc.Cacheable) 
 }
 
 func readFile(t *testing.T, filename string) []byte {
-	data, err := ioutil.ReadFile(filename)
+	data, err := os.ReadFile(filename)
 	if err != nil {
 		t.Fatalf("Failed to read file %s: %v", filename, err)
 	}
@@ -1507,6 +1507,14 @@ func (m mockRejectionHook) HandleRawAuctionHook(
 	_ hookstage.RawAuctionRequestPayload,
 ) (hookstage.HookResult[hookstage.RawAuctionRequestPayload], error) {
 	return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{Reject: true, NbrCode: m.nbr}, nil
+}
+
+func (m mockRejectionHook) HandleProcessedAuctionHook(
+	_ context.Context,
+	_ hookstage.ModuleInvocationContext,
+	_ hookstage.ProcessedAuctionRequestPayload,
+) (hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload], error) {
+	return hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload]{Reject: true, NbrCode: m.nbr}, nil
 }
 
 func (m mockRejectionHook) HandleBidderRequestHook(
