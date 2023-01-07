@@ -10,6 +10,8 @@ import (
 	"github.com/prebid/prebid-server/modules/moduledeps"
 )
 
+//go:generate go run ./generator/buildergen.go
+
 // NewBuilder returns a new module builder.
 func NewBuilder() Builder {
 	return &builder{builders()}
@@ -85,12 +87,12 @@ func (m *builder) Build(
 		}
 	}
 
-	coll, err := createModuleStageNamesCollection(modules)
+	collection, err := createModuleStageNamesCollection(modules)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	repo, err := hooks.NewHookRepository(modules)
 
-	return repo, coll, err
+	return repo, collection, err
 }
