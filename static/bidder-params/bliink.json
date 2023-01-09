@@ -13,5 +13,6 @@
       "type": "string",
       "description": "The image url on which the ad is displayed in case of in-image ad"
     }
-  }
+  },
+  "required": ["tagId"]
 }
