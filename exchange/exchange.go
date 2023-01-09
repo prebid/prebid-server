@@ -406,7 +406,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		bidResponseExt.Warnings[openrtb_ext.BidderReservedGeneral] = append(bidResponseExt.Warnings[openrtb_ext.BidderReservedGeneral], generalWarning)
 	}
 
-	e.bidValidationEnforcement.SetBidValidationStatus(r.Account.Validations)
+	e.bidValidationEnforcement.SetBannerCreativeMaxSize(r.Account.Validations)
 
 	// Build the response
 	bidResponse, err := e.buildBidResponse(ctx, liveAdapters, adapterBids, r.BidRequestWrapper.BidRequest, adapterExtra, auc, bidResponseExt, cacheInstructions.returnCreative, r.ImpExtInfoMap, r.PubID, errs)
@@ -1298,7 +1298,7 @@ func (e exchange) validateBidAdM(bid *entities.PbsOrtbBid, bidResponseExt *openr
 	invalidAdM := []string{"http:", "http%3A"}
 	requiredAdM := []string{"https:", "https%3A"}
 
-	if (strings.Contains(bid.Bid.AdM, invalidAdM[0]) || strings.Contains(bid.Bid.AdM, invalidAdM[1])) && (!strings.Contains(bid.Bid.AdM, requiredAdM[0]) || !strings.Contains(bid.Bid.AdM, requiredAdM[1])) {
+	if (strings.Contains(bid.Bid.AdM, invalidAdM[0]) || strings.Contains(bid.Bid.AdM, invalidAdM[1])) && (!strings.Contains(bid.Bid.AdM, requiredAdM[0]) && !strings.Contains(bid.Bid.AdM, requiredAdM[1])) {
 		// Add error to debug array
 		errorMessage := setErrorMessageSecureMarkup(validationType)
 		bidSecureMarkupError := openrtb_ext.ExtBidderMessage{

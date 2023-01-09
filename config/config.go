@@ -646,7 +646,7 @@ const (
 	ValidationSkip    string = "skip"
 )
 
-func (host *Validations) SetBidValidationStatus(account Validations) {
+func (host *Validations) SetBannerCreativeMaxSize(account Validations) {
 	if len(account.BannerCreativeMaxSize) > 0 {
 		host.BannerCreativeMaxSize = account.BannerCreativeMaxSize
 	}

@@ -4238,7 +4238,7 @@ func TestCallSignHeader(t *testing.T) {
 
 }
 
-func TestValidateBidForBidResponse(t *testing.T) {
+func TestValidateBannerCreativeSize(t *testing.T) {
 	exchange := exchange{bidValidationEnforcement: config.Validations{MaxCreativeWidth: 100, MaxCreativeHeight: 100},
 		me: metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.CoreBidderNames(), nil, nil),
 	}
@@ -4249,49 +4249,92 @@ func TestValidateBidForBidResponse(t *testing.T) {
 		givenBidderName             string
 		givenPubID                  string
 		expectedBannerCreativeValid bool
-		expectedBidAdMValid         bool
 	}{
 		{
-			description:                 "The dimensions and adm of the bid are invalid, expect false",
-			givenBid:                    &entities.PbsOrtbBid{Bid: &openrtb2.Bid{W: 200, H: 200, AdM: "http://domain.com/invalid"}},
+			description:                 "The dimensions are invalid, both values bigger than the max",
+			givenBid:                    &entities.PbsOrtbBid{Bid: &openrtb2.Bid{W: 200, H: 200}},
 			givenBidResponseExt:         &openrtb_ext.ExtBidResponse{Errors: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)},
 			givenBidderName:             "bidder",
 			givenPubID:                  "1",
 			expectedBannerCreativeValid: false,
-			expectedBidAdMValid:         false,
 		},
 		{
-			description:                 "The dimensions and adm of the bid are valid, expect true",
-			givenBid:                    &entities.PbsOrtbBid{Bid: &openrtb2.Bid{W: 50, H: 50, AdM: "https://domain.com/valid"}},
-			givenBidResponseExt:         &openrtb_ext.ExtBidResponse{Errors: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)},
-			givenBidderName:             "bidder",
-			givenPubID:                  "1",
-			expectedBannerCreativeValid: true,
-			expectedBidAdMValid:         true,
-		},
-		{
-			description:                 "Dimensions are valid. The adm is invalid. Expect true/false",
-			givenBid:                    &entities.PbsOrtbBid{Bid: &openrtb2.Bid{W: 50, H: 50, AdM: "http://domain.com/invalid"}},
-			givenBidResponseExt:         &openrtb_ext.ExtBidResponse{Errors: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)},
-			givenBidderName:             "bidder",
-			givenPubID:                  "1",
-			expectedBannerCreativeValid: true,
-			expectedBidAdMValid:         false,
-		},
-		{
-			description:                 "Dimensions are invalid. The adm is valid. Expect false/true",
-			givenBid:                    &entities.PbsOrtbBid{Bid: &openrtb2.Bid{W: 200, H: 200, AdM: "https://domain.com/valid"}},
+			description:                 "The width is invalid, height is valid, the dimensions as a whole are invalid",
+			givenBid:                    &entities.PbsOrtbBid{Bid: &openrtb2.Bid{W: 200, H: 50}},
 			givenBidResponseExt:         &openrtb_ext.ExtBidResponse{Errors: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)},
 			givenBidderName:             "bidder",
 			givenPubID:                  "1",
 			expectedBannerCreativeValid: false,
-			expectedBidAdMValid:         true,
+		},
+		{
+			description:                 "The width is valid, height is invalid, the dimensions as a whole are invalid",
+			givenBid:                    &entities.PbsOrtbBid{Bid: &openrtb2.Bid{W: 50, H: 200}},
+			givenBidResponseExt:         &openrtb_ext.ExtBidResponse{Errors: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)},
+			givenBidderName:             "bidder",
+			givenPubID:                  "1",
+			expectedBannerCreativeValid: false,
+		},
+		{
+			description:                 "Both width and height are valid, the dimensions are valid",
+			givenBid:                    &entities.PbsOrtbBid{Bid: &openrtb2.Bid{W: 50, H: 50}},
+			givenBidResponseExt:         &openrtb_ext.ExtBidResponse{Errors: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)},
+			givenBidderName:             "bidder",
+			givenPubID:                  "1",
+			expectedBannerCreativeValid: true,
 		},
 	}
 	for _, test := range testCases {
 		acutalBannerCreativeValid := exchange.validateBannerCreativeSize(test.givenBid, test.givenBidResponseExt, openrtb_ext.BidderName(test.givenBidderName), test.givenPubID, "enforce")
 		assert.Equal(t, test.expectedBannerCreativeValid, acutalBannerCreativeValid)
+	}
+}
 
+func TestValidateBidAdM(t *testing.T) {
+	exchange := exchange{bidValidationEnforcement: config.Validations{MaxCreativeWidth: 100, MaxCreativeHeight: 100},
+		me: metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.CoreBidderNames(), nil, nil),
+	}
+	testCases := []struct {
+		description         string
+		givenBid            *entities.PbsOrtbBid
+		givenBidResponseExt *openrtb_ext.ExtBidResponse
+		givenBidderName     string
+		givenPubID          string
+		expectedBidAdMValid bool
+	}{
+		{
+			description:         "The adm of the bid contains insecure string and no secure string, adm is invalid",
+			givenBid:            &entities.PbsOrtbBid{Bid: &openrtb2.Bid{AdM: "http://domain.com/invalid"}},
+			givenBidResponseExt: &openrtb_ext.ExtBidResponse{Errors: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)},
+			givenBidderName:     "bidder",
+			givenPubID:          "1",
+			expectedBidAdMValid: false,
+		},
+		{
+			description:         "The adm has both an insecure and secure string defined and therefore the adm is valid",
+			givenBid:            &entities.PbsOrtbBid{Bid: &openrtb2.Bid{AdM: "http://www.foo.com https://www.bar.com"}},
+			givenBidResponseExt: &openrtb_ext.ExtBidResponse{Errors: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)},
+			givenBidderName:     "bidder",
+			givenPubID:          "1",
+			expectedBidAdMValid: true,
+		},
+		{
+			description:         "The adm has both an insecure and secure string defined and therefore the adm is valid",
+			givenBid:            &entities.PbsOrtbBid{Bid: &openrtb2.Bid{AdM: "http%3A//www.foo.com https%3A//www.bar.com"}},
+			givenBidResponseExt: &openrtb_ext.ExtBidResponse{Errors: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)},
+			givenBidderName:     "bidder",
+			givenPubID:          "1",
+			expectedBidAdMValid: true,
+		},
+		{
+			description:         "The adm of the bid are valid with a secure string",
+			givenBid:            &entities.PbsOrtbBid{Bid: &openrtb2.Bid{AdM: "https://domain.com/valid"}},
+			givenBidResponseExt: &openrtb_ext.ExtBidResponse{Errors: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)},
+			givenBidderName:     "bidder",
+			givenPubID:          "1",
+			expectedBidAdMValid: true,
+		},
+	}
+	for _, test := range testCases {
 		actualBidAdMValid := exchange.validateBidAdM(test.givenBid, test.givenBidResponseExt, openrtb_ext.BidderName(test.givenBidderName), test.givenPubID, "enforce")
 		assert.Equal(t, test.expectedBidAdMValid, actualBidAdMValid)
 
@@ -4422,7 +4465,7 @@ func TestSetBidValidationStatus(t *testing.T) {
 		},
 	}
 	for _, test := range testCases {
-		test.givenHost.SetBidValidationStatus(test.givenAccount)
+		test.givenHost.SetBannerCreativeMaxSize(test.givenAccount)
 		assert.Equal(t, test.expected, test.givenHost)
 	}
 }
