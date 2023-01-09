@@ -15,7 +15,7 @@ import (
 // eventTracking has configuration fields needed for adding event tracking to an auction response
 type eventTracking struct {
 	accountID          string
-	enabledForAccount  bool
+	enabledForAccount  *bool
 	enabledForRequest  bool
 	enabledForInstance bool
 	auctionTimestampMs int64
@@ -54,7 +54,7 @@ func (ev *eventTracking) modifyBidsForEvents(seatBids map[openrtb_ext.BidderName
 
 // isModifyingVASTXMLAllowed returns true if this bidder config allows modifying VAST XML for event tracking
 func (ev *eventTracking) isModifyingVASTXMLAllowed(bidderName string) bool {
-	return ev.bidderInfos[bidderName].ModifyingVastXmlAllowed && (ev.enabledForAccount || ev.enabledForRequest || ev.enabledForInstance)
+	return ev.bidderInfos[bidderName].ModifyingVastXmlAllowed && ((ev.enabledForAccount != nil && *ev.enabledForAccount) || ev.enabledForRequest || ev.enabledForInstance)
 }
 
 // modifyBidVAST injects event Impression url if needed, otherwise returns original VAST string
@@ -75,7 +75,7 @@ func (ev *eventTracking) modifyBidVAST(pbsBid *pbsOrtbBid, bidderName openrtb_ex
 
 // modifyBidJSON injects "wurl" (win) event url if needed, otherwise returns original json
 func (ev *eventTracking) modifyBidJSON(pbsBid *pbsOrtbBid, bidderName openrtb_ext.BidderName, jsonBytes []byte) ([]byte, error) {
-	if !(ev.enabledForAccount || ev.enabledForRequest || ev.enabledForInstance) || pbsBid.bidType == openrtb_ext.BidTypeVideo {
+	if !((ev.enabledForAccount != nil && *ev.enabledForAccount) || ev.enabledForRequest || ev.enabledForInstance) || pbsBid.bidType == openrtb_ext.BidTypeVideo {
 		return jsonBytes, nil
 	}
 	var winEventURL string
@@ -98,7 +98,7 @@ func (ev *eventTracking) modifyBidJSON(pbsBid *pbsOrtbBid, bidderName openrtb_ex
 
 // makeBidExtEvents make the data for bid.ext.prebid.events if needed, otherwise returns nil
 func (ev *eventTracking) makeBidExtEvents(pbsBid *pbsOrtbBid, bidderName openrtb_ext.BidderName) *openrtb_ext.ExtBidPrebidEvents {
-	if !(ev.enabledForAccount || ev.enabledForRequest || ev.enabledForInstance) || pbsBid.bidType == openrtb_ext.BidTypeVideo {
+	if !((ev.enabledForAccount != nil && *ev.enabledForAccount) || ev.enabledForRequest || ev.enabledForInstance) || pbsBid.bidType == openrtb_ext.BidTypeVideo {
 		return nil
 	}
 	return &openrtb_ext.ExtBidPrebidEvents{

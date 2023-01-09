@@ -21,11 +21,12 @@ const (
 )
 
 // Account represents a publisher account configuration
+// EventsEnabled is defined as pointer bool so that we can distinguish between nil and false.
 type Account struct {
 	ID                      string                               `mapstructure:"id" json:"id"`
 	Disabled                bool                                 `mapstructure:"disabled" json:"disabled"`
 	CacheTTL                DefaultTTLs                          `mapstructure:"cache_ttl" json:"cache_ttl"`
-	EventsEnabled           bool                                 `mapstructure:"events_enabled" json:"events_enabled"`
+	EventsEnabled           *bool                                `mapstructure:"events_enabled" json:"events_enabled"`
 	CCPA                    AccountCCPA                          `mapstructure:"ccpa" json:"ccpa"`
 	GDPR                    AccountGDPR                          `mapstructure:"gdpr" json:"gdpr"`
 	DebugAllow              bool                                 `mapstructure:"debug_allow" json:"debug_allow"`

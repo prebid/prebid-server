@@ -72,9 +72,10 @@ func (e *eventsMockAnalyticsModule) LogNotificationEventObject(ne *analytics.Not
 
 // Mock Account fetcher
 var mockAccountData = map[string]json.RawMessage{
-	"events_enabled":  json.RawMessage(`{"events_enabled":true}`),
-	"events_disabled": json.RawMessage(`{"events_enabled":false}`),
-	"malformed_acct":  json.RawMessage(`{"events_enabled":"invalid type"}`),
+	"events_enabled":     json.RawMessage(`{"events_enabled":true}`),
+	"events_disabled":    json.RawMessage(`{"events_enabled":false}`),
+	"malformed_acct":     json.RawMessage(`{"events_enabled":"invalid type"}`),
+	"events_not_defined": json.RawMessage(`{}`),
 }
 
 type mockAccountsFetcher struct {
@@ -466,7 +467,7 @@ func TestShouldNotPassEventToAnalyticsReporterWhenAccountOrServerEventNotEnabled
 
 	// validate
 	assert.Equal(t, 401, recorder.Result().StatusCode, "Expected 401 on account with events disabled")
-	assert.Equal(t, "Account 'events_disabled' or server doesn't support events", string(d))
+	assert.Equal(t, "Account 'events_disabled' doesn't support events", string(d))
 }
 
 func TestShouldPassEventToAnalyticsReporterWhenAccountEventEnabled(t *testing.T) {
@@ -528,8 +529,8 @@ func TestShouldPassEventToAnalyticsReporterWhenServerEventEnabled(t *testing.T) 
 	// prepare
 	reqData := ""
 
-	// account level disabled but instance level enabled which takes precedence
-	req := httptest.NewRequest("GET", "/event?t=win&b=test&ts=1234&f=b&x=1&a=events_disabled", strings.NewReader(reqData))
+	// account level not defined but instance level enabled
+	req := httptest.NewRequest("GET", "/event?t=win&b=test&ts=1234&f=b&x=1&a=events_not_defined", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
 	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule)
