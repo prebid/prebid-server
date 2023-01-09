@@ -1,6 +1,6 @@
 package openrtb_ext
 
 type ImpExtDefinemedia struct {
-	MandantID string `json:"mandantId"`
-	AdslotID  string `json:"adslotId"`
+	MandantID int64 `json:"mandantId"`
+	AdslotID  int64 `json:"adslotId"`
 }
