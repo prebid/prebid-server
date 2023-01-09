@@ -76,7 +76,7 @@ func (ev *eventTracking) modifyBidVAST(pbsBid *entities.PbsOrtbBid, bidderName o
 
 // modifyBidJSON injects "wurl" (win) event url if needed, otherwise returns original json
 func (ev *eventTracking) modifyBidJSON(pbsBid *entities.PbsOrtbBid, bidderName openrtb_ext.BidderName, jsonBytes []byte) ([]byte, error) {
-	if !((ev.enabledForAccount != nil && *ev.enabledForAccount) || ev.enabledForRequest) || pbsBid.BidType == openrtb_ext.BidTypeVideo {
+	if !((ev.enabledForAccount != nil && *ev.enabledForAccount) || ev.enabledForRequest || ev.enabledForInstance || pbsBid.BidType == openrtb_ext.BidTypeVideo) {
 		return jsonBytes, nil
 	}
 	var winEventURL string
@@ -99,7 +99,7 @@ func (ev *eventTracking) modifyBidJSON(pbsBid *entities.PbsOrtbBid, bidderName o
 
 // makeBidExtEvents make the data for bid.ext.prebid.events if needed, otherwise returns nil
 func (ev *eventTracking) makeBidExtEvents(pbsBid *entities.PbsOrtbBid, bidderName openrtb_ext.BidderName) *openrtb_ext.ExtBidPrebidEvents {
-	if !((ev.enabledForAccount != nil && *ev.enabledForAccount) || ev.enabledForRequest) || pbsBid.BidType == openrtb_ext.BidTypeVideo {
+	if !((ev.enabledForAccount != nil && *ev.enabledForAccount) || ev.enabledForRequest || pbsBid.BidType == openrtb_ext.BidTypeVideo) {
 		return nil
 	}
 	return &openrtb_ext.ExtBidPrebidEvents{
