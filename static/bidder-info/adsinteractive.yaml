@@ -1,0 +1,12 @@
+endpoint: "http://bid.adsinteractive.com/prebid"
+maintainer:
+  email: it@adsinteractive.com
+gvlVendorID: 42
+modifyingVastXmlAllowed: false
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner
