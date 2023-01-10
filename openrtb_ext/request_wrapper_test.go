@@ -963,12 +963,14 @@ func TestImpWrapperGetImpExt(t *testing.T) {
 		},
 		{
 			description:  "Populated - Ext",
-			givenWrapper: ImpWrapper{Imp: &openrtb2.Imp{Ext: json.RawMessage(`{"prebid":{"is_rewarded_inventory":1},"other":42}`)}},
+			givenWrapper: ImpWrapper{Imp: &openrtb2.Imp{Ext: json.RawMessage(`{"prebid":{"is_rewarded_inventory":1},"other":42, "tid": "test-tid"}`)}},
 			expectedImpExt: ImpExt{
 				ext: map[string]json.RawMessage{
 					"prebid": json.RawMessage(`{"is_rewarded_inventory":1}`),
 					"other":  json.RawMessage(`42`),
+					"tid":    json.RawMessage(`"test-tid"`),
 				},
+				tid:    "test-tid",
 				prebid: &ExtImpPrebid{IsRewardedInventory: &isRewardedInventoryOne},
 			},
 		},
