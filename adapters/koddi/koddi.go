@@ -50,6 +50,7 @@ func (a *KoddiAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 	
 }
 func (a *KoddiAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+    var errors []error 
 	hostName := commerce.GetHostName(internalRequest)
 	if len(hostName) == 0 {
 		hostName = commerce.COMMERCE_DEFAULT_HOSTNAME
@@ -60,7 +61,11 @@ func (a *KoddiAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRe
 	requestCount := commerce.GetRequestSlotCount(internalRequest)
 	
 	responseF := commerce.GetDummyBids(iurl, curl, purl, "koddi", requestCount)
-	return responseF, nil
+	//responseF := commerce.GetDummyBids_NoBid(iurl, curl, purl, "koddi", 1)
+    //err := fmt.Errorf("No Bid Response from Koddi")
+	//errors = append(errors,err )
+	return responseF, errors
+
 }
 
 // Builder builds a new instance of the Koddi adapter for the given bidder with the given config.

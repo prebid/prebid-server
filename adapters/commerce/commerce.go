@@ -89,12 +89,9 @@ type ExtBidderCommerce struct {
 
 type ExtBidCommerce struct {
 	ProductId  *string              `json:"productid,omitempty"`
-	ImpUrl        *string           `json:"iurl,omitempty"`
 	ClickUrl        *string         `json:"curl,omitempty"`
 	ConversionUrl        *string            `json:"purl,omitempty"`
-	BidPrice        *float64            `json:"bidprice,omitempty"`
 	ClickPrice        *float64            `json:"clickprice,omitempty"`
-	CampaignID		*int	              `json:"campaignID,omitempty"`
 	Rate          *float64             `json:"rate,omitempty"`
 
 }
@@ -134,7 +131,6 @@ func (a *CommerceAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 
 func AddDefaultFields(bid *openrtb2.Bid){
 	if bid != nil {
-		bid.Price = 2.50
 		bid.CrID = "DefaultCRID"
 	}
 }
@@ -157,9 +153,10 @@ func GetRandomProductID() string {
 	return t
 }
 
-func  GetRandomCampaignID() int {
-	randomN :=rand.Intn(900000000)
-	return randomN
+func  GetRandomCampaignID() string {
+	randomN :=rand.Intn(9000000)
+	t := strconv.Itoa(randomN)
+	return t
 }
 
 func GetDefaultBidID(name string) string {
@@ -201,17 +198,17 @@ func GetDummyBids(impUrl , clickUrl , conversionUrl, seatName string, requestCou
 		newPurl := conversionUrl + "_ImpID=" +bidID
 		bidExt := &ExtBidCommerce{
 			ProductId:  &productid,
-			ImpUrl:        &newIurl,
 			ClickUrl: &newCurl,
 			ConversionUrl: &newPurl,
-			BidPrice: &bidPrice,
 			ClickPrice: &clikcPrice,
-			CampaignID: &campaignID,
 		}
 		
 		bid := &openrtb2.Bid {
 			ID: bidID,
 			ImpID: bidID,
+			Price: bidPrice,
+			CID: campaignID,
+			IURL: newIurl,
 		}
 
 		AddDefaultFields(bid)
@@ -233,6 +230,59 @@ func GetDummyBids(impUrl , clickUrl , conversionUrl, seatName string, requestCou
 	}
 	return responseF
 }
+
+func GetDummyBids_NoBid(impUrl , clickUrl , conversionUrl, seatName string, requestCount int) (*adapters.BidderResponse) {
+	var typedArray     []*adapters.TypedBid
+
+	if requestCount > MAX_COUNT {
+		requestCount = MAX_COUNT
+	}
+	for i := 1; i <= requestCount; i++ {
+		productid := GetRandomProductID()
+		campaignID := GetRandomCampaignID()
+		bidPrice := GetRandomBidPrice()
+		clickPrice := GetRandomClickPrice()
+		bidID := GetDefaultBidID(seatName) + "_" + strconv.Itoa(i)
+		newIurl := impUrl + "_ImpID=" +bidID
+		newCurl := clickUrl + "_ImpID=" +bidID
+		newPurl := conversionUrl + "_ImpID=" +bidID
+		bidExt := &ExtBidCommerce{
+			ProductId:  &productid,
+			ClickUrl: &newCurl,
+			ConversionUrl: &newPurl,
+			ClickPrice: &clickPrice,
+			
+		}
+		
+		bid := &openrtb2.Bid {
+			ID: bidID,
+			ImpID: bidID,
+			Price: bidPrice,
+			CID: campaignID,
+			IURL: newIurl,
+			Tactic: "Dummy",
+		}
+
+		AddDefaultFields(bid)
+
+		bidExtJSON, err1 := json.Marshal(bidExt)
+		if nil == err1 {
+			bid.Ext = json.RawMessage(bidExtJSON)
+		}
+
+		typedbid := &adapters.TypedBid {
+			Bid:  bid,
+			Seat: openrtb_ext.BidderName(seatName),
+		}
+		typedArray = append(typedArray, typedbid)
+	}
+
+	responseF := &adapters.BidderResponse{
+		Bids: typedArray,
+	}
+	return responseF
+}
+
 
 func GetHostName(internalRequest *openrtb2.BidRequest) string {
 	var extension map[string]json.RawMessage
