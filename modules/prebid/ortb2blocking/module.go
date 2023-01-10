@@ -36,10 +36,10 @@ func (m Module) HandleBidderRequestHook(
 }
 
 type blockingAttributes struct {
-	badv   []string
-	bapp   []string
-	bcat   []string
-	btype  map[string][]int
-	battr  map[string][]int
-	cattax adcom1.CategoryTaxonomy
+	bAdv   []string
+	bApp   []string
+	bCat   []string
+	bType  map[string][]int
+	bAttr  map[string][]int
+	catTax adcom1.CategoryTaxonomy
 }
