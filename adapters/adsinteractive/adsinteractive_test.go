@@ -12,7 +12,7 @@ const testsDir = "adsinteractivetest"
 const testsBidderEndpoint = "http://bid.adsinteractive.com/prebid"
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderAdtarget, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderAdsinteractive, config.Adapter{
 		Endpoint: testsBidderEndpoint}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
