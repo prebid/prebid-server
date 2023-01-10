@@ -70,9 +70,8 @@ type Metrics struct {
 	adapterGDPRBlockedRequests            *prometheus.CounterVec
 	adapterBidResponseValidationSizeError *prometheus.CounterVec
 	adapterBidResponseValidationSizeWarn  *prometheus.CounterVec
-
-	adapterBidResponseSecureMarkupError *prometheus.CounterVec
-	adapterBidResponseSecureMarkupWarn  *prometheus.CounterVec
+	adapterBidResponseSecureMarkupError   *prometheus.CounterVec
+	adapterBidResponseSecureMarkupWarn    *prometheus.CounterVec
 
 	// Syncer Metrics
 	syncerRequests *prometheus.CounterVec
