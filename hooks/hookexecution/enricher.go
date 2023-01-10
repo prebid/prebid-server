@@ -65,7 +65,6 @@ func EnrichExtBidResponse(
 }
 
 // GetModulesJSON returns debug and trace information produced from executing hooks.
-//
 // Debug information is returned only if the debug mode is enabled by request and allowed by account (if provided).
 // The details of the trace output depends on the value in the bidRequest.ext.prebid.trace field.
 func GetModulesJSON(

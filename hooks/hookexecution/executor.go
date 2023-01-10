@@ -8,9 +8,11 @@ import (
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/exchange/entities"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/prebid/prebid-server/metrics"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 const (
@@ -34,6 +36,8 @@ type StageExecutor interface {
 	ExecuteProcessedAuctionStage(req *openrtb2.BidRequest) *RejectError
 	ExecuteBidderRequestStage(req *openrtb2.BidRequest, bidder string) *RejectError
 	ExecuteRawBidderResponseStage(response *adapters.BidderResponse, bidder string) *RejectError
+	ExecuteAllProcessedBidResponsesStage(adapterBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid)
+	ExecuteAuctionResponseStage(response *openrtb2.BidResponse)
 }
 
 type HookStageExecutor interface {
@@ -221,6 +225,59 @@ func (e *hookExecutor) ExecuteRawBidderResponseStage(response *adapters.BidderRe
 	return reject
 }
 
+func (e *hookExecutor) ExecuteAllProcessedBidResponsesStage(adapterBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid) {
+	plan := e.planBuilder.PlanForAllProcessedBidResponsesStage(e.endpoint, e.account)
+	if len(plan) == 0 {
+		return
+	}
+
+	handler := func(
+		ctx context.Context,
+		moduleCtx hookstage.ModuleInvocationContext,
+		hook hookstage.AllProcessedBidResponses,
+		payload hookstage.AllProcessedBidResponsesPayload,
+	) (hookstage.HookResult[hookstage.AllProcessedBidResponsesPayload], error) {
+		return hook.HandleAllProcessedBidResponsesHook(ctx, moduleCtx, payload)
+	}
+
+	stageName := hooks.StageAllProcessedBidResponses.String()
+	executionCtx := e.newContext(stageName)
+	payload := hookstage.AllProcessedBidResponsesPayload{Responses: adapterBids}
+	outcome, _, contexts, _ := executeStage(executionCtx, plan, payload, handler, e.metricEngine)
+	outcome.Entity = entityAllProcessedBidResponses
+	outcome.Stage = stageName
+
+	e.saveModuleContexts(contexts)
+	e.pushStageOutcome(outcome)
+}
+
+func (e *hookExecutor) ExecuteAuctionResponseStage(response *openrtb2.BidResponse) {
+	plan := e.planBuilder.PlanForAuctionResponseStage(e.endpoint, e.account)
+	if len(plan) == 0 {
+		return
+	}
+
+	handler := func(
+		ctx context.Context,
+		moduleCtx hookstage.ModuleInvocationContext,
+		hook hookstage.AuctionResponse,
+		payload hookstage.AuctionResponsePayload,
+	) (hookstage.HookResult[hookstage.AuctionResponsePayload], error) {
+		return hook.HandleAuctionResponseHook(ctx, moduleCtx, payload)
+	}
+
+	stageName := hooks.StageAuctionResponse.String()
+	executionCtx := e.newContext(stageName)
+	payload := hookstage.AuctionResponsePayload{BidResponse: response}
+
+	outcome, _, contexts, _ := executeStage(executionCtx, plan, payload, handler, e.metricEngine)
+	outcome.Entity = entityAuctionResponse
+	outcome.Stage = stageName
+
+	e.saveModuleContexts(contexts)
+	e.pushStageOutcome(outcome)
+}
+
 func (e *hookExecutor) newContext(stage string) executionContext {
 	return executionContext{
 		account:        e.account,
@@ -272,3 +329,8 @@ func (executor *EmptyHookExecutor) ExecuteBidderRequestStage(_ *openrtb2.BidRequ
 func (executor *EmptyHookExecutor) ExecuteRawBidderResponseStage(_ *adapters.BidderResponse, _ string) *RejectError {
 	return nil
 }
+
+func (executor *EmptyHookExecutor) ExecuteAllProcessedBidResponsesStage(_ map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid) {
+}
+
+func (executor *EmptyHookExecutor) ExecuteAuctionResponseStage(_ *openrtb2.BidResponse) {}

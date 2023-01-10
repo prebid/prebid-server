@@ -280,6 +280,8 @@ func sendAuctionResponse(
 	labels metrics.Labels,
 	ao analytics.AuctionObject,
 ) (metrics.Labels, analytics.AuctionObject) {
+	hookExecutor.ExecuteAuctionResponseStage(response)
+
 	if response != nil {
 		stageOutcomes := hookExecutor.GetOutcomes()
 		ao.HookExecutionOutcome = stageOutcomes

@@ -293,6 +293,7 @@ func sendAmpResponse(
 	ao analytics.AmpObject,
 	errs []error,
 ) (metrics.Labels, analytics.AmpObject) {
+	hookExecutor.ExecuteAuctionResponseStage(response)
 	// Need to extract the targeting parameters from the response, as those are all that
 	// go in the AMP response
 	targets := map[string]string{}
