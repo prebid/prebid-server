@@ -57,7 +57,7 @@ func NewAmpEndpoint(
 	requestsById stored_requests.Fetcher,
 	accounts stored_requests.AccountFetcher,
 	cfg *config.Configuration,
-	met metrics.MetricsEngine,
+	metricsEngine metrics.MetricsEngine,
 	pbsAnalytics analytics.PBSAnalyticsModule,
 	disabledBidders map[string]string,
 	defReqJSON []byte,
@@ -66,7 +66,7 @@ func NewAmpEndpoint(
 	hookExecutionPlanBuilder hooks.ExecutionPlanBuilder,
 ) (httprouter.Handle, error) {
 
-	if ex == nil || validator == nil || requestsById == nil || accounts == nil || cfg == nil || met == nil {
+	if ex == nil || validator == nil || requestsById == nil || accounts == nil || cfg == nil || metricsEngine == nil {
 		return nil, errors.New("NewAmpEndpoint requires non-nil arguments.")
 	}
 
@@ -77,7 +77,7 @@ func NewAmpEndpoint(
 		IPv6PrivateNetworks: cfg.RequestValidation.IPv6PrivateNetworksParsed,
 	}
 
-	hookExecutor := hookexecution.NewHookExecutor(hookExecutionPlanBuilder, hookexecution.EndpointAmp, met)
+	hookExecutor := hookexecution.NewHookExecutor(hookExecutionPlanBuilder, hookexecution.EndpointAmp, metricsEngine)
 
 	return httprouter.Handle((&endpointDeps{
 		uuidGenerator,
@@ -87,7 +87,7 @@ func NewAmpEndpoint(
 		empty_fetcher.EmptyFetcher{},
 		accounts,
 		cfg,
-		met,
+		metricsEngine,
 		pbsAnalytics,
 		disabledBidders,
 		defRequest,
@@ -148,7 +148,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 
 	// There is no body for AMP requests, so we pass a nil body and ignore the return value.
 	if _, rejectErr := deps.hookExecutor.ExecuteEntrypointStage(r, nilBody); rejectErr != nil {
-		labels, ao = rejectAmpRequest(*rejectErr, w, nil, labels, ao, nil)
+		labels, ao = rejectAmpRequest(*rejectErr, w, deps.hookExecutor, nil, labels, ao, nil)
 		return
 	}
 
@@ -255,22 +255,39 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	}
 
 	if isRejectErr {
-		labels, ao = rejectAmpRequest(*rejectErr, w, reqWrapper, labels, ao, errL)
+		labels, ao = rejectAmpRequest(*rejectErr, w, deps.hookExecutor, reqWrapper, labels, ao, errL)
 		return
 	}
 
-	labels, ao = sendAmpResponse(w, response, reqWrapper, labels, ao, errL)
+	labels, ao = sendAmpResponse(w, deps.hookExecutor, response, reqWrapper, labels, ao, errL)
 }
 
-func rejectAmpRequest(rejectErr hookexecution.RejectError, w http.ResponseWriter, reqWrapper *openrtb_ext.RequestWrapper, labels metrics.Labels, ao analytics.AmpObject, errs []error) (metrics.Labels, analytics.AmpObject) {
+func rejectAmpRequest(
+	rejectErr hookexecution.RejectError,
+	w http.ResponseWriter,
+	hookExecutor hookexecution.HookStageExecutor,
+	reqWrapper *openrtb_ext.RequestWrapper,
+	labels metrics.Labels,
+	ao analytics.AmpObject,
+	errs []error,
+) (metrics.Labels, analytics.AmpObject) {
 	response := &openrtb2.BidResponse{NBR: openrtb3.NoBidReason(rejectErr.NBR).Ptr()}
 	ao.AuctionResponse = response
 	ao.Errors = append(ao.Errors, rejectErr)
 
-	return sendAmpResponse(w, response, reqWrapper, labels, ao, errs)
+	return sendAmpResponse(w, hookExecutor, response, reqWrapper, labels, ao, errs)
 }
 
-func sendAmpResponse(w http.ResponseWriter, response *openrtb2.BidResponse, reqWrapper *openrtb_ext.RequestWrapper, labels metrics.Labels, ao analytics.AmpObject, errs []error) (metrics.Labels, analytics.AmpObject) {
+func sendAmpResponse(
+	w http.ResponseWriter,
+	hookExecutor hookexecution.HookStageExecutor,
+	response *openrtb2.BidResponse,
+	reqWrapper *openrtb_ext.RequestWrapper,
+	labels metrics.Labels,
+	ao analytics.AmpObject,
+	errs []error,
+) (metrics.Labels, analytics.AmpObject) {
+	hookExecutor.ExecuteAuctionResponseStage(response)
 	// Need to extract the targeting parameters from the response, as those are all that
 	// go in the AMP response
 	targets := map[string]string{}

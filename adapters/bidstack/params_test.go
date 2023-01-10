@@ -9,11 +9,15 @@ import (
 
 var validParams = []string{
 	`{"publisherId": "355cf800-8348-433a-9d95-70345fa70afc"}`,
+	`{"publisherId": "355cf800-8348-433a-9d95-70345fa70afc","placementId":"Some placement ID"}`,
+	`{"publisherId": "355cf800-8348-433a-9d95-70345fa70afc","consent":false}`,
+	`{"publisherId": "355cf800-8348-433a-9d95-70345fa70afc","placementId":"Some placement ID","consent":true}`,
 }
 
 var invalidParams = []string{
 	`{"publisherId": ""}`,
 	`{"publisherId": "non-uuid"}`,
+	`{"consent": "true"}`,
 }
 
 func TestValidParams(t *testing.T) {

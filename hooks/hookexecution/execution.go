@@ -94,7 +94,7 @@ func executeHook[H any, P any](
 ) {
 	hookRespCh := make(chan hookResponse[P], 1)
 	startTime := time.Now()
-	hookId := HookID{ModuleCode: hw.Module, HookCode: hw.Code}
+	hookId := HookID{ModuleCode: hw.Module, HookImplCode: hw.Code}
 
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
@@ -173,14 +173,15 @@ func handleHookResponse[P any](
 	metricEngine metrics.MetricsEngine,
 ) (P, HookOutcome, *RejectError) {
 	var rejectErr *RejectError
-	labels := metrics.ModuleLabels{Module: hr.HookID.ModuleCode, Stage: ctx.stage, PubID: ctx.accountId}
-	metricEngine.RecordModuleCalled(labels)
-	metricEngine.RecordModuleDuration(labels, hr.ExecutionTime)
+	labels := metrics.ModuleLabels{Module: hr.HookID.ModuleCode, Stage: ctx.stage, AccountID: ctx.accountId}
+	metricEngine.RecordModuleCalled(labels, hr.ExecutionTime)
 
 	hookOutcome := HookOutcome{
 		Status:        StatusSuccess,
 		HookID:        hr.HookID,
 		Message:       hr.Result.Message,
+		Errors:        hr.Result.Errors,
+		Warnings:      hr.Result.Warnings,
 		DebugMessages: hr.Result.DebugMessages,
 		AnalyticsTags: hr.Result.AnalyticsTags,
 		ExecutionTime: ExecutionTime{ExecutionTimeMillis: hr.ExecutionTime},
@@ -245,7 +246,7 @@ func handleHookReject[P any](
 			fmt.Sprintf(
 				"Module (name: %s, hook code: %s) tried to reject request on the %s stage that does not support rejection",
 				hr.HookID.ModuleCode,
-				hr.HookID.HookCode,
+				hr.HookID.HookImplCode,
 				ctx.stage,
 			),
 		)
@@ -275,6 +276,7 @@ func handleHookMutations[P any](
 	}
 
 	hookOutcome.Action = ActionUpdate
+	successfulMutations := 0
 	for _, mut := range hr.Result.ChangeSet.Mutations() {
 		p, err := mut.Apply(payload)
 		if err != nil {
@@ -294,8 +296,17 @@ func handleHookMutations[P any](
 				mut.Type(),
 			),
 		)
+		successfulMutations++
 	}
-	metricEngine.RecordModuleSuccessUpdated(labels)
+
+	// if at least one mutation from a given module was successfully applied
+	// we consider that the module was processed successfully
+	if successfulMutations > 0 {
+		metricEngine.RecordModuleSuccessUpdated(labels)
+	} else {
+		hookOutcome.Status = StatusExecutionFailure
+		metricEngine.RecordModuleExecutionError(labels)
+	}
 
 	return payload
 }

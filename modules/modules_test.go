@@ -40,7 +40,7 @@ func TestModuleBuilderBuild(t *testing.T) {
 		"Can build module with config": {
 			givenModule:           module{},
 			givenConfig:           defaultModulesConfig,
-			expectedModulesStages: map[string][]string{vendor + "-" + moduleName: {hooks.StageEntrypoint.String(), hooks.StageAuctionResponse.String()}},
+			expectedModulesStages: map[string][]string{vendor + "_" + moduleName: {hooks.StageEntrypoint.String(), hooks.StageAuctionResponse.String()}},
 			expectedHookRepo:      defaultHookRepository,
 			expectedErr:           nil,
 		},

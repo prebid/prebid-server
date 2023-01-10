@@ -1,6 +1,6 @@
 package openrtb_ext
 
-// ExtImpNanoInteractive defines the contract for bidrequest.imp[i].ext.nanointeractive
+// ExtImpNanoInteractive defines the contract for bidrequest.imp[i].ext.prebid.bidder.nanointeractive
 type ExtImpNanoInteractive struct {
 	Pid      string   `json:"pid"`
 	Nq       []string `json:"nq,omitempty"`

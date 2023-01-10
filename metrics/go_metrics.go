@@ -198,8 +198,8 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		newMetrics.AdapterMetrics[a] = makeBlankAdapterMetrics(newMetrics.MetricsDisabled)
 	}
 
-	for m, stages := range moduleStageNames {
-		newMetrics.ModuleMetrics[m] = makeBlankModuleStageMetrics(stages)
+	for module, stages := range moduleStageNames {
+		newMetrics.ModuleMetrics[module] = makeBlankModuleStageMetrics(stages)
 	}
 
 	for _, t := range RequestTypes() {
@@ -238,16 +238,16 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 	return newMetrics
 }
 
-func getModuleNames(ms map[string][]string) []string {
-	mn := make([]string, len(ms))
+func getModuleNames(moduleStageNames map[string][]string) []string {
+	names := make([]string, len(moduleStageNames))
 
 	i := 0
-	for n := range ms {
-		mn[i] = n
+	for moduleName := range moduleStageNames {
+		names[i] = moduleName
 		i++
 	}
 
-	return mn
+	return names
 }
 
 // NewMetrics creates a new Metrics object with needed metrics defined. In time we may develop to the point
@@ -346,8 +346,8 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	newMetrics.AdsCertRequestsFailure = metrics.GetOrRegisterMeter("ads_cert_requests.failed", registry)
 	newMetrics.adsCertSignTimer = metrics.GetOrRegisterTimer("ads_cert_sign_time", registry)
 
-	for m, stages := range moduleStageNames {
-		registerModuleMetrics(registry, m, stages, newMetrics.ModuleMetrics[m])
+	for module, stages := range moduleStageNames {
+		registerModuleMetrics(registry, module, stages, newMetrics.ModuleMetrics[module])
 	}
 
 	return newMetrics
@@ -382,12 +382,12 @@ func makeBlankAdapterMetrics(disabledMetrics config.DisabledMetrics) *AdapterMet
 }
 
 func makeBlankModuleStageMetrics(stages []string) map[string]*ModuleMetrics {
-	mm := map[string]*ModuleMetrics{}
+	blankMetrics := map[string]*ModuleMetrics{}
 	for _, stage := range stages {
-		mm[stage] = makeBlankModuleMetrics()
+		blankMetrics[stage] = makeBlankModuleMetrics()
 	}
 
-	return mm
+	return blankMetrics
 }
 
 func makeBlankModuleMetrics() *ModuleMetrics {
@@ -463,7 +463,7 @@ func registerAccountModuleMetrics(registry metrics.Registry, id string, module s
 	mm.FailureCounter = metrics.GetOrRegisterCounter(fmt.Sprintf("account.%s.modules.module.%s.failure", id, module), registry)
 	mm.SuccessNoopCounter = metrics.GetOrRegisterCounter(fmt.Sprintf("account.%s.modules.module.%s.success.noop", id, module), registry)
 	mm.SuccessUpdateCounter = metrics.GetOrRegisterCounter(fmt.Sprintf("account.%s.modules.module.%s.success.update", id, module), registry)
-	mm.SuccessRejectCounter = metrics.GetOrRegisterCounter(fmt.Sprintf("account.%s.modules.module.%s.reject", id, module), registry)
+	mm.SuccessRejectCounter = metrics.GetOrRegisterCounter(fmt.Sprintf("account.%s.modules.module.%s.success.reject", id, module), registry)
 	mm.ExecutionErrorCounter = metrics.GetOrRegisterCounter(fmt.Sprintf("account.%s.modules.module.%s.execution_error", id, module), registry)
 	mm.TimeoutCounter = metrics.GetOrRegisterCounter(fmt.Sprintf("account.%s.modules.module.%s.timeout", id, module), registry)
 }
@@ -512,9 +512,11 @@ func (me *Metrics) getAccountMetrics(id string) *accountMetrics {
 			registerAdapterMetrics(me.MetricsRegistry, fmt.Sprintf("account.%s", id), string(a), am.adapterMetrics[a])
 		}
 	}
-	for _, mod := range me.modules {
-		am.moduleMetrics[mod] = makeBlankModuleMetrics()
-		registerAccountModuleMetrics(me.MetricsRegistry, id, mod, am.moduleMetrics[mod])
+	if !me.MetricsDisabled.AccountModulesMetrics {
+		for _, mod := range me.modules {
+			am.moduleMetrics[mod] = makeBlankModuleMetrics()
+			registerAccountModuleMetrics(me.MetricsRegistry, id, mod, am.moduleMetrics[mod])
+		}
 	}
 
 	me.accountMetrics[id] = am
@@ -872,23 +874,7 @@ func (me *Metrics) RecordAdsCertSignTime(adsCertSignTime time.Duration) {
 	me.adsCertSignTimer.Update(adsCertSignTime)
 }
 
-func (me *Metrics) RecordModuleDuration(labels ModuleLabels, duration time.Duration) {
-	mm, err := me.getModuleMetric(labels)
-	if err != nil {
-		return
-	}
-
-	// Module metrics
-	mm.DurationTimer.Update(duration)
-	// Account-Module metrics
-	if labels.PubID != "" {
-		if aam, ok := me.getAccountMetrics(labels.PubID).moduleMetrics[labels.Module]; ok {
-			aam.DurationTimer.Update(duration)
-		}
-	}
-}
-
-func (me *Metrics) RecordModuleCalled(labels ModuleLabels) {
+func (me *Metrics) RecordModuleCalled(labels ModuleLabels, duration time.Duration) {
 	mm, err := me.getModuleMetric(labels)
 	if err != nil {
 		return
@@ -896,10 +882,13 @@ func (me *Metrics) RecordModuleCalled(labels ModuleLabels) {
 
 	// Module metrics
 	mm.CallCounter.Inc(1)
+	mm.DurationTimer.Update(duration)
+
 	// Account-Module metrics
-	if labels.PubID != "" {
-		if aam, ok := me.getAccountMetrics(labels.PubID).moduleMetrics[labels.Module]; ok {
+	if labels.AccountID != "" && labels.AccountID != PublisherUnknown {
+		if aam, ok := me.getAccountMetrics(labels.AccountID).moduleMetrics[labels.Module]; ok {
 			aam.CallCounter.Inc(1)
+			aam.DurationTimer.Update(duration)
 		}
 	}
 }
@@ -912,9 +901,10 @@ func (me *Metrics) RecordModuleFailed(labels ModuleLabels) {
 
 	// Module metrics
 	mm.FailureCounter.Inc(1)
+
 	// Account-Module metrics
-	if labels.PubID != "" {
-		if aam, ok := me.getAccountMetrics(labels.PubID).moduleMetrics[labels.Module]; ok {
+	if labels.AccountID != "" && labels.AccountID != PublisherUnknown {
+		if aam, ok := me.getAccountMetrics(labels.AccountID).moduleMetrics[labels.Module]; ok {
 			aam.FailureCounter.Inc(1)
 		}
 	}
@@ -928,9 +918,10 @@ func (me *Metrics) RecordModuleSuccessNooped(labels ModuleLabels) {
 
 	// Module metrics
 	mm.SuccessNoopCounter.Inc(1)
+
 	// Account-Module metrics
-	if labels.PubID != "" {
-		if aam, ok := me.getAccountMetrics(labels.PubID).moduleMetrics[labels.Module]; ok {
+	if labels.AccountID != "" && labels.AccountID != PublisherUnknown {
+		if aam, ok := me.getAccountMetrics(labels.AccountID).moduleMetrics[labels.Module]; ok {
 			aam.SuccessNoopCounter.Inc(1)
 		}
 	}
@@ -944,9 +935,10 @@ func (me *Metrics) RecordModuleSuccessUpdated(labels ModuleLabels) {
 
 	// Module metrics
 	mm.SuccessUpdateCounter.Inc(1)
+
 	// Account-Module metrics
-	if labels.PubID != "" {
-		if aam, ok := me.getAccountMetrics(labels.PubID).moduleMetrics[labels.Module]; ok {
+	if labels.AccountID != "" && labels.AccountID != PublisherUnknown {
+		if aam, ok := me.getAccountMetrics(labels.AccountID).moduleMetrics[labels.Module]; ok {
 			aam.SuccessUpdateCounter.Inc(1)
 		}
 	}
@@ -960,9 +952,10 @@ func (me *Metrics) RecordModuleSuccessRejected(labels ModuleLabels) {
 
 	// Module metrics
 	mm.SuccessRejectCounter.Inc(1)
+
 	// Account-Module metrics
-	if labels.PubID != "" {
-		if aam, ok := me.getAccountMetrics(labels.PubID).moduleMetrics[labels.Module]; ok {
+	if labels.AccountID != "" && labels.AccountID != PublisherUnknown {
+		if aam, ok := me.getAccountMetrics(labels.AccountID).moduleMetrics[labels.Module]; ok {
 			aam.SuccessRejectCounter.Inc(1)
 		}
 	}
@@ -976,9 +969,10 @@ func (me *Metrics) RecordModuleExecutionError(labels ModuleLabels) {
 
 	// Module metrics
 	mm.ExecutionErrorCounter.Inc(1)
+
 	// Account-Module metrics
-	if labels.PubID != "" {
-		if aam, ok := me.getAccountMetrics(labels.PubID).moduleMetrics[labels.Module]; ok {
+	if labels.AccountID != "" && labels.AccountID != PublisherUnknown {
+		if aam, ok := me.getAccountMetrics(labels.AccountID).moduleMetrics[labels.Module]; ok {
 			aam.ExecutionErrorCounter.Inc(1)
 		}
 	}
@@ -992,9 +986,10 @@ func (me *Metrics) RecordModuleTimeout(labels ModuleLabels) {
 
 	// Module metrics
 	mm.TimeoutCounter.Inc(1)
+
 	// Account-Module metrics
-	if labels.PubID != "" {
-		if aam, ok := me.getAccountMetrics(labels.PubID).moduleMetrics[labels.Module]; ok {
+	if labels.AccountID != "" && labels.AccountID != PublisherUnknown {
+		if aam, ok := me.getAccountMetrics(labels.AccountID).moduleMetrics[labels.Module]; ok {
 			aam.TimeoutCounter.Inc(1)
 		}
 	}

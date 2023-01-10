@@ -163,12 +163,8 @@ func (me *MetricsEngineMock) RecordAdsCertSignTime(adsCertSignTime time.Duration
 	me.Called(adsCertSignTime)
 }
 
-func (me *MetricsEngineMock) RecordModuleDuration(labels ModuleLabels, duration time.Duration) {
+func (me *MetricsEngineMock) RecordModuleCalled(labels ModuleLabels, duration time.Duration) {
 	me.Called(labels, duration)
-}
-
-func (me *MetricsEngineMock) RecordModuleCalled(labels ModuleLabels) {
-	me.Called(labels)
 }
 
 func (me *MetricsEngineMock) RecordModuleFailed(labels ModuleLabels) {
