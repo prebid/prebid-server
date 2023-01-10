@@ -12,6 +12,7 @@ import (
 	"reflect"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/openrtb/v17/openrtb2"
@@ -1978,7 +1979,7 @@ func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
 	}{
 		{
 			description: "Assert correct AmpResponse when request rejected at entrypoint stage",
-			file:        "sample-requests/hooks/amp_reject.json",
+			file:        "sample-requests/hooks/amp_entrypoint_reject.json",
 			planBuilder: mockPlanBuilder{entrypointPlan: makePlan[hookstage.Entrypoint](mockRejectionHook{nbr})},
 		},
 		{
@@ -1989,7 +1990,7 @@ func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
 		},
 		{
 			description: "Assert correct AmpResponse when request rejected at processed_auction stage",
-			file:        "sample-requests/hooks/amp_reject.json",
+			file:        "sample-requests/hooks/amp_processed_auction_request_reject.json",
 			planBuilder: mockPlanBuilder{processedAuctionPlan: makePlan[hookstage.ProcessedAuctionRequest](mockRejectionHook{nbr})},
 		},
 		{
@@ -2009,8 +2010,29 @@ func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
 			description: "Assert correct AmpResponse with debug information from modules added to ext.prebid.modules",
 			file:        "sample-requests/hooks/amp.json",
 			planBuilder: mockPlanBuilder{
-				entrypointPlan: makeEntrypointPlan(),
-				rawAuctionPlan: makeRawAuctionPlan(),
+				entrypointPlan: hooks.Plan[hookstage.Entrypoint]{
+					{
+						Timeout: 5 * time.Millisecond,
+						Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
+							entryPointHookUpdateWithErrors,
+							entryPointHookUpdateWithErrorsAndWarnings,
+						},
+					},
+					{
+						Timeout: 5 * time.Millisecond,
+						Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
+							entryPointHookUpdate,
+						},
+					},
+				},
+				rawAuctionPlan: hooks.Plan[hookstage.RawAuctionRequest]{
+					{
+						Timeout: 5 * time.Millisecond,
+						Hooks: []hooks.HookWrapper[hookstage.RawAuctionRequest]{
+							rawAuctionHookNone,
+						},
+					},
+				},
 			},
 		},
 	}

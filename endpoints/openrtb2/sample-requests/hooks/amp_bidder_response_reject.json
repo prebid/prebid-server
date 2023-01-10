@@ -8,7 +8,7 @@
     ]
   },
   "mockBidRequest": {
-    "id": "request-with-user-ext-obj",
+    "id": "my-req-id",
     "site": {
       "page": "test.somepage.com"
     },
@@ -37,16 +37,6 @@
         }
       }
     ],
-    "user": {
-      "ext": {
-        "prebid": {
-          "buyeruids": {
-            "unknown": "123",
-            "foo": "124"
-          }
-        }
-      }
-    },
     "ext": {
       "prebid": {
         "debug": true,

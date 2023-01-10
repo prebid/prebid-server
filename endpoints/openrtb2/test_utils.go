@@ -1547,114 +1547,93 @@ func (m mockRejectionHook) HandleRawBidderResponseHook(
 	return result, nil
 }
 
-func makeEntrypointPlan() hooks.Plan[hookstage.Entrypoint] {
-	return hooks.Plan[hookstage.Entrypoint]{
-		{
-			Timeout: 5 * time.Millisecond,
-			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
-				{
-					Module: "foobar",
-					Code:   "foo",
-					Hook: mockUpdateHook{
-						entrypointHandler: func(
-							_ hookstage.ModuleInvocationContext,
-							payload hookstage.EntrypointPayload,
-						) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
-							ch := &hookstage.ChangeSet[hookstage.EntrypointPayload]{}
-							ch.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
-								payload.Request.Header.Add("foo", "bar")
-								return payload, nil
-							}, hookstage.MutationUpdate, "header", "foo")
+var entryPointHookUpdateWithErrors = hooks.HookWrapper[hookstage.Entrypoint]{
+	Module: "foobar",
+	Code:   "foo",
+	Hook: mockUpdateHook{
+		entrypointHandler: func(
+			_ hookstage.ModuleInvocationContext,
+			payload hookstage.EntrypointPayload,
+		) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+			ch := &hookstage.ChangeSet[hookstage.EntrypointPayload]{}
+			ch.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
+				payload.Request.Header.Add("foo", "bar")
+				return payload, nil
+			}, hookstage.MutationUpdate, "header", "foo")
 
-							return hookstage.HookResult[hookstage.EntrypointPayload]{
-								ChangeSet: ch,
-								Errors:    []string{"error 1"},
-							}, nil
-						},
-					},
-				},
-				{
-					Module: "foobar",
-					Code:   "bar",
-					Hook: mockUpdateHook{
-						entrypointHandler: func(
-							_ hookstage.ModuleInvocationContext,
-							payload hookstage.EntrypointPayload,
-						) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
-							ch := &hookstage.ChangeSet[hookstage.EntrypointPayload]{}
-							ch.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
-								params := payload.Request.URL.Query()
-								params.Add("foo", "baz")
-								payload.Request.URL.RawQuery = params.Encode()
-								return payload, nil
-							}, hookstage.MutationUpdate, "param", "foo")
-
-							return hookstage.HookResult[hookstage.EntrypointPayload]{
-								ChangeSet: ch,
-								Errors:    []string{"error 1"},
-								Warnings:  []string{"warning 1"},
-							}, nil
-						},
-					},
-				},
-			},
+			return hookstage.HookResult[hookstage.EntrypointPayload]{
+				ChangeSet: ch,
+				Errors:    []string{"error 1"},
+			}, nil
 		},
-		{
-			Timeout: 5 * time.Millisecond,
-			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
-				{
-					Module: "foobar",
-					Code:   "baz",
-					Hook: mockUpdateHook{
-						entrypointHandler: func(
-							ctx hookstage.ModuleInvocationContext,
-							payload hookstage.EntrypointPayload,
-						) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
-							result := hookstage.HookResult[hookstage.EntrypointPayload]{}
-							if ctx.Endpoint != hookexecution.EndpointAuction {
-								result.Warnings = []string{fmt.Sprintf("Endpoint %s is not supported by hook.", ctx.Endpoint)}
-								return result, nil
-							}
-
-							ch := &hookstage.ChangeSet[hookstage.EntrypointPayload]{}
-							ch.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
-								body, err := jsonpatch.MergePatch(payload.Body, []byte(`{"tmax":50}`))
-								if err == nil {
-									payload.Body = body
-								}
-								return payload, err
-							}, hookstage.MutationUpdate, "body", "tmax")
-							ch.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
-								body, err := jsonpatch.MergePatch(payload.Body, []byte(`{"regs": {"ext": {"gdpr": 1, "us_privacy": "1NYN"}}}`))
-								if err == nil {
-									payload.Body = body
-								}
-								return payload, err
-							}, hookstage.MutationAdd, "body", "regs", "ext", "us_privacy")
-							result.ChangeSet = ch
-
-							return result, nil
-						},
-					},
-				},
-			},
-		},
-	}
+	},
 }
 
-func makeRawAuctionPlan() hooks.Plan[hookstage.RawAuctionRequest] {
-	return hooks.Plan[hookstage.RawAuctionRequest]{
-		{
-			Timeout: 5 * time.Millisecond,
-			Hooks: []hooks.HookWrapper[hookstage.RawAuctionRequest]{
-				{
-					Module: "vendor.module",
-					Code:   "foobar",
-					Hook:   mockUpdateHook{},
-				},
-			},
+var entryPointHookUpdateWithErrorsAndWarnings = hooks.HookWrapper[hookstage.Entrypoint]{
+	Module: "foobar",
+	Code:   "bar",
+	Hook: mockUpdateHook{
+		entrypointHandler: func(
+			_ hookstage.ModuleInvocationContext,
+			payload hookstage.EntrypointPayload,
+		) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+			ch := &hookstage.ChangeSet[hookstage.EntrypointPayload]{}
+			ch.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
+				params := payload.Request.URL.Query()
+				params.Add("foo", "baz")
+				payload.Request.URL.RawQuery = params.Encode()
+				return payload, nil
+			}, hookstage.MutationUpdate, "param", "foo")
+
+			return hookstage.HookResult[hookstage.EntrypointPayload]{
+				ChangeSet: ch,
+				Errors:    []string{"error 1"},
+				Warnings:  []string{"warning 1"},
+			}, nil
 		},
-	}
+	},
+}
+
+var entryPointHookUpdate = hooks.HookWrapper[hookstage.Entrypoint]{
+	Module: "foobar",
+	Code:   "baz",
+	Hook: mockUpdateHook{
+		entrypointHandler: func(
+			ctx hookstage.ModuleInvocationContext,
+			payload hookstage.EntrypointPayload,
+		) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+			result := hookstage.HookResult[hookstage.EntrypointPayload]{}
+			if ctx.Endpoint != hookexecution.EndpointAuction {
+				result.Warnings = []string{fmt.Sprintf("Endpoint %s is not supported by hook.", ctx.Endpoint)}
+				return result, nil
+			}
+
+			ch := &hookstage.ChangeSet[hookstage.EntrypointPayload]{}
+			ch.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
+				body, err := jsonpatch.MergePatch(payload.Body, []byte(`{"tmax":50}`))
+				if err == nil {
+					payload.Body = body
+				}
+				return payload, err
+			}, hookstage.MutationUpdate, "body", "tmax")
+			ch.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
+				body, err := jsonpatch.MergePatch(payload.Body, []byte(`{"regs": {"ext": {"gdpr": 1, "us_privacy": "1NYN"}}}`))
+				if err == nil {
+					payload.Body = body
+				}
+				return payload, err
+			}, hookstage.MutationAdd, "body", "regs", "ext", "us_privacy")
+			result.ChangeSet = ch
+
+			return result, nil
+		},
+	},
+}
+
+var rawAuctionHookNone = hooks.HookWrapper[hookstage.RawAuctionRequest]{
+	Module: "vendor.module",
+	Code:   "foobar",
+	Hook:   mockUpdateHook{},
 }
 
 type mockUpdateHook struct {

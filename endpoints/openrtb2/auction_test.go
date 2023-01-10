@@ -4667,17 +4667,17 @@ func TestValidResponseAfterExecutingStages(t *testing.T) {
 	}{
 		{
 			description: "Assert correct BidResponse when request rejected at entrypoint stage",
-			file:        "sample-requests/hooks/auction_reject.json",
+			file:        "sample-requests/hooks/auction_entrypoint_reject.json",
 			planBuilder: mockPlanBuilder{entrypointPlan: makePlan[hookstage.Entrypoint](mockRejectionHook{nbr})},
 		},
 		{
 			description: "Assert correct BidResponse when request rejected at raw-auction stage",
-			file:        "sample-requests/hooks/auction_reject.json",
+			file:        "sample-requests/hooks/auction_raw_auction_request_reject.json",
 			planBuilder: mockPlanBuilder{rawAuctionPlan: makePlan[hookstage.RawAuctionRequest](mockRejectionHook{nbr})},
 		},
 		{
 			description: "Assert correct BidResponse when request rejected at processed-auction stage",
-			file:        "sample-requests/hooks/auction_reject.json",
+			file:        "sample-requests/hooks/auction_processed_auction_request_reject.json",
 			planBuilder: mockPlanBuilder{processedAuctionPlan: makePlan[hookstage.ProcessedAuctionRequest](mockRejectionHook{nbr})},
 		},
 		{
@@ -4695,8 +4695,29 @@ func TestValidResponseAfterExecutingStages(t *testing.T) {
 			description: "Assert correct BidResponse with debug information from modules added to ext.prebid.modules",
 			file:        "sample-requests/hooks/auction.json",
 			planBuilder: mockPlanBuilder{
-				entrypointPlan: makeEntrypointPlan(),
-				rawAuctionPlan: makeRawAuctionPlan(),
+				entrypointPlan: hooks.Plan[hookstage.Entrypoint]{
+					{
+						Timeout: 5 * time.Millisecond,
+						Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
+							entryPointHookUpdateWithErrors,
+							entryPointHookUpdateWithErrorsAndWarnings,
+						},
+					},
+					{
+						Timeout: 5 * time.Millisecond,
+						Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
+							entryPointHookUpdate,
+						},
+					},
+				},
+				rawAuctionPlan: hooks.Plan[hookstage.RawAuctionRequest]{
+					{
+						Timeout: 5 * time.Millisecond,
+						Hooks: []hooks.HookWrapper[hookstage.RawAuctionRequest]{
+							rawAuctionHookNone,
+						},
+					},
+				},
 			},
 		},
 	}
