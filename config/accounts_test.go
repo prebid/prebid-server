@@ -1,6 +1,8 @@
 package config
 
 import (
+	"encoding/json"
+	"errors"
 	"testing"
 
 	"github.com/prebid/go-gdpr/consentconstants"
@@ -749,5 +751,76 @@ func TestPurposeOneTreatmentAccessAllowed(t *testing.T) {
 
 		assert.Equal(t, tt.wantAllowed, value, tt.description)
 		assert.Equal(t, tt.wantAllowedSet, present, tt.description)
+	}
+}
+
+func TestModulesGetConfig(t *testing.T) {
+	modules := AccountModules{
+		"acme": {
+			"foo":     json.RawMessage(`{"foo": "bar"}`),
+			"foo.bar": json.RawMessage(`{"foo": "bar"}`),
+		},
+		"acme.foo": {
+			"baz": json.RawMessage(`{"foo": "bar"}`),
+		},
+	}
+
+	testCases := []struct {
+		description    string
+		givenId        string
+		givenModules   AccountModules
+		expectedConfig json.RawMessage
+		expectedError  error
+	}{
+		{
+			description:    "Returns module config if found by ID",
+			givenId:        "acme.foo",
+			givenModules:   modules,
+			expectedConfig: json.RawMessage(`{"foo": "bar"}`),
+			expectedError:  nil,
+		},
+		{
+			description:    "Returns module config if found by ID",
+			givenId:        "acme.foo.bar",
+			givenModules:   modules,
+			expectedConfig: json.RawMessage(`{"foo": "bar"}`),
+			expectedError:  nil,
+		},
+		{
+			description:    "Returns nil config if wrong ID provided",
+			givenId:        "invalid_id",
+			givenModules:   modules,
+			expectedConfig: nil,
+			expectedError:  errors.New("ID must consist of vendor and module names separated by dot, got: invalid_id"),
+		},
+		{
+			description:    "Returns nil config if no matching module exists",
+			givenId:        "acme.bar",
+			givenModules:   modules,
+			expectedConfig: nil,
+			expectedError:  nil,
+		},
+		{
+			description:    "Returns nil config if no matching module exists",
+			givenId:        "acme.foo.baz",
+			givenModules:   modules,
+			expectedConfig: nil,
+			expectedError:  nil,
+		},
+		{
+			description:    "Returns nil config if no module configs defined in account",
+			givenId:        "acme.foo",
+			givenModules:   nil,
+			expectedConfig: nil,
+			expectedError:  nil,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			gotConfig, err := test.givenModules.ModuleConfig(test.givenId)
+			assert.Equal(t, test.expectedError, err)
+			assert.Equal(t, test.expectedConfig, gotConfig)
+		})
 	}
 }
