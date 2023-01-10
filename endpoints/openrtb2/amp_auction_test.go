@@ -2090,33 +2090,81 @@ func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
 func TestSendAmpResponse_LogsErrors(t *testing.T) {
 	testCases := []struct {
 		description    string
-		expectedError  error
+		expectedErrors []error
 		expectedStatus int
 		writer         http.ResponseWriter
+		request        *openrtb2.BidRequest
 		response       *openrtb2.BidResponse
+		hookExecutor   hookexecution.HookStageExecutor
 	}{
 		{
-			description:    "Error logged when bid.ext unmarshal fails",
-			expectedError:  errors.New("Critical error while unpacking AMP targets: unexpected end of JSON input"),
+			description: "Error logged when bid.ext unmarshal fails",
+			expectedErrors: []error{
+				errors.New("Critical error while unpacking AMP targets: unexpected end of JSON input"),
+			},
 			expectedStatus: http.StatusInternalServerError,
 			writer:         httptest.NewRecorder(),
+			request:        &openrtb2.BidRequest{ID: "some-id", Test: 1},
 			response: &openrtb2.BidResponse{ID: "some-id", SeatBid: []openrtb2.SeatBid{
 				{Bid: []openrtb2.Bid{{Ext: json.RawMessage(`"hb_cache_id`)}}},
 			}},
+			hookExecutor: &hookexecution.EmptyHookExecutor{},
 		},
 		{
-			description:    "Error logged when test mode activated but no debug present in response",
-			expectedError:  errors.New("test set on request but debug not present in response"),
+			description: "Error logged when test mode activated but no debug present in response",
+			expectedErrors: []error{
+				errors.New("test set on request but debug not present in response"),
+			},
 			expectedStatus: 0,
 			writer:         httptest.NewRecorder(),
+			request:        &openrtb2.BidRequest{ID: "some-id", Test: 1},
 			response:       &openrtb2.BidResponse{ID: "some-id", Ext: json.RawMessage("{}")},
+			hookExecutor:   &hookexecution.EmptyHookExecutor{},
 		},
 		{
-			description:    "Error logged when response encoding fails",
-			expectedError:  errors.New("/openrtb2/amp Failed to send response: failed writing response"),
+			description: "Error logged when response encoding fails",
+			expectedErrors: []error{
+				errors.New("/openrtb2/amp Failed to send response: failed writing response"),
+			},
 			expectedStatus: 0,
 			writer:         errorResponseWriter{},
+			request:        &openrtb2.BidRequest{ID: "some-id", Test: 1},
 			response:       &openrtb2.BidResponse{ID: "some-id", Ext: json.RawMessage(`{"debug": {}}`)},
+			hookExecutor:   &hookexecution.EmptyHookExecutor{},
+		},
+		{
+			description: "Error logged if hook enrichment returns warnings",
+			expectedErrors: []error{
+				errors.New("Value is not a string: 1"),
+				errors.New("Value is not a boolean: active"),
+			},
+			expectedStatus: 0,
+			writer:         httptest.NewRecorder(),
+			request:        &openrtb2.BidRequest{ID: "some-id", Ext: json.RawMessage(`{"prebid": {"debug": "active", "trace": 1}}`)},
+			response:       &openrtb2.BidResponse{ID: "some-id", Ext: json.RawMessage("{}")},
+			hookExecutor: &mockStageExecutor{
+				outcomes: []hookexecution.StageOutcome{
+					{
+						Entity: "bid-request",
+						Stage:  hooks.StageBidderRequest.String(),
+						Groups: []hookexecution.GroupOutcome{
+							{
+								InvocationResults: []hookexecution.HookOutcome{
+									{
+										HookID: hookexecution.HookID{
+											ModuleCode:   "foobar",
+											HookImplCode: "foo",
+										},
+										Status:   hookexecution.StatusSuccess,
+										Action:   hookexecution.ActionNone,
+										Warnings: []string{"warning message"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 
@@ -2125,12 +2173,11 @@ func TestSendAmpResponse_LogsErrors(t *testing.T) {
 			labels := metrics.Labels{}
 			ao := analytics.AmpObject{}
 			account := &config.Account{DebugAllow: true}
-			hookExecutor := &hookexecution.EmptyHookExecutor{}
-			reqWrapper := openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{ID: "some-id", Test: 1}}
+			reqWrapper := openrtb_ext.RequestWrapper{BidRequest: test.request}
 
-			labels, ao = sendAmpResponse(test.writer, hookExecutor, test.response, &reqWrapper, account, labels, ao, nil)
+			labels, ao = sendAmpResponse(test.writer, test.hookExecutor, test.response, &reqWrapper, account, labels, ao, nil)
 
-			assert.Contains(t, ao.Errors, test.expectedError, "Missing expected error.")
+			assert.Equal(t, ao.Errors, test.expectedErrors, "Invalid errors.")
 			assert.Equal(t, test.expectedStatus, ao.Status, "Invalid HTTP response status.")
 		})
 	}

@@ -4660,6 +4660,32 @@ func TestValidateStoredResp(t *testing.T) {
 func TestValidResponseAfterExecutingStages(t *testing.T) {
 	const nbr int = 123
 
+	hooksPlanBuilder := mockPlanBuilder{
+		entrypointPlan: hooks.Plan[hookstage.Entrypoint]{
+			{
+				Timeout: 5 * time.Millisecond,
+				Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
+					entryPointHookUpdateWithErrors,
+					entryPointHookUpdateWithErrorsAndWarnings,
+				},
+			},
+			{
+				Timeout: 5 * time.Millisecond,
+				Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
+					entryPointHookUpdate,
+				},
+			},
+		},
+		rawAuctionPlan: hooks.Plan[hookstage.RawAuctionRequest]{
+			{
+				Timeout: 5 * time.Millisecond,
+				Hooks: []hooks.HookWrapper[hookstage.RawAuctionRequest]{
+					rawAuctionHookNone,
+				},
+			},
+		},
+	}
+
 	testCases := []struct {
 		description string
 		file        string
@@ -4694,31 +4720,7 @@ func TestValidResponseAfterExecutingStages(t *testing.T) {
 		{
 			description: "Assert correct BidResponse with debug information from modules added to ext.prebid.modules",
 			file:        "sample-requests/hooks/auction.json",
-			planBuilder: mockPlanBuilder{
-				entrypointPlan: hooks.Plan[hookstage.Entrypoint]{
-					{
-						Timeout: 5 * time.Millisecond,
-						Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
-							entryPointHookUpdateWithErrors,
-							entryPointHookUpdateWithErrorsAndWarnings,
-						},
-					},
-					{
-						Timeout: 5 * time.Millisecond,
-						Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
-							entryPointHookUpdate,
-						},
-					},
-				},
-				rawAuctionPlan: hooks.Plan[hookstage.RawAuctionRequest]{
-					{
-						Timeout: 5 * time.Millisecond,
-						Hooks: []hooks.HookWrapper[hookstage.RawAuctionRequest]{
-							rawAuctionHookNone,
-						},
-					},
-				},
-			},
+			planBuilder: hooksPlanBuilder,
 		},
 	}
 
@@ -4772,13 +4774,7 @@ func TestValidResponseAfterExecutingStages(t *testing.T) {
 	}
 }
 
-func TestSendAuctionResponse_ErrorLoggedIfEnrichmentFails(t *testing.T) {
-	writer := httptest.NewRecorder()
-	bidResponse := openrtb2.BidResponse{ID: "some-id", Ext: json.RawMessage("...")}
-	bidRequest := openrtb2.BidRequest{ID: "some-id", Test: 1}
-	labels := metrics.Labels{}
-	ao := analytics.AuctionObject{}
-	account := &config.Account{DebugAllow: true}
+func TestSendAuctionResponse_LogsErrors(t *testing.T) {
 	hookExecutor := &mockStageExecutor{
 		outcomes: []hookexecution.StageOutcome{
 			{
@@ -4803,10 +4799,51 @@ func TestSendAuctionResponse_ErrorLoggedIfEnrichmentFails(t *testing.T) {
 		},
 	}
 
-	expectedError := errors.New("Failed to enrich Bid Response with hook debug information: Invalid JSON Document")
+	testCases := []struct {
+		description    string
+		expectedErrors []error
+		expectedStatus int
+		request        *openrtb2.BidRequest
+		response       *openrtb2.BidResponse
+		hookExecutor   hookexecution.HookStageExecutor
+	}{
+		{
+			description: "Error logged if hook enrichment fails",
+			expectedErrors: []error{
+				errors.New("Failed to enrich Bid Response with hook debug information: Invalid JSON Document"),
+				errors.New("/openrtb2/auction Failed to send response: json: error calling MarshalJSON for type json.RawMessage: invalid character '.' looking for beginning of value"),
+			},
+			expectedStatus: 0,
+			request:        &openrtb2.BidRequest{ID: "some-id", Test: 1},
+			response:       &openrtb2.BidResponse{ID: "some-id", Ext: json.RawMessage("...")},
+			hookExecutor:   hookExecutor,
+		},
+		{
+			description: "Error logged if hook enrichment returns warnings",
+			expectedErrors: []error{
+				errors.New("Value is not a string: 1"),
+				errors.New("Value is not a boolean: active"),
+			},
+			expectedStatus: 0,
+			request:        &openrtb2.BidRequest{ID: "some-id", Test: 1, Ext: json.RawMessage(`{"prebid": {"debug": "active", "trace": 1}}`)},
+			response:       &openrtb2.BidResponse{ID: "some-id", Ext: json.RawMessage("{}")},
+			hookExecutor:   hookExecutor,
+		},
+	}
 
-	labels, ao = sendAuctionResponse(writer, hookExecutor, &bidResponse, &bidRequest, account, labels, ao)
-	assert.Contains(t, ao.Errors, expectedError, "Missing expected error.")
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			writer := httptest.NewRecorder()
+			labels := metrics.Labels{}
+			ao := analytics.AuctionObject{}
+			account := &config.Account{DebugAllow: true}
+
+			labels, ao = sendAuctionResponse(writer, test.hookExecutor, test.response, test.request, account, labels, ao)
+
+			assert.Equal(t, ao.Errors, test.expectedErrors, "Invalid errors.")
+			assert.Equal(t, test.expectedStatus, ao.Status, "Invalid HTTP response status.")
+		})
+	}
 }
 
 type mockStoredResponseFetcher struct {

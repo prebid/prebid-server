@@ -2,6 +2,7 @@ package hookexecution
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"testing"
 
@@ -42,6 +43,7 @@ type HookOutcomeTest struct {
 func TestEnrichBidResponse(t *testing.T) {
 	testCases := []struct {
 		description             string
+		expectedWarnings        []error
 		expectedBidResponseFile string
 		stageOutcomesFile       string
 		bidResponse             *openrtb2.BidResponse
@@ -50,6 +52,7 @@ func TestEnrichBidResponse(t *testing.T) {
 	}{
 		{
 			description:             "BidResponse enriched with verbose trace and debug info when bidRequest.test=1 and trace=verbose",
+			expectedWarnings:        nil,
 			expectedBidResponseFile: "test/complete-stage-outcomes/expected-verbose-debug-response.json",
 			stageOutcomesFile:       "test/complete-stage-outcomes/stage-outcomes.json",
 			bidResponse:             &openrtb2.BidResponse{Ext: []byte(`{"prebid": {"foo": "bar"}}`)},
@@ -58,6 +61,7 @@ func TestEnrichBidResponse(t *testing.T) {
 		},
 		{
 			description:             "BidResponse enriched with basic trace and debug info when bidRequest.ext.prebid.debug=true and trace=basic",
+			expectedWarnings:        nil,
 			expectedBidResponseFile: "test/complete-stage-outcomes/expected-basic-debug-response.json",
 			stageOutcomesFile:       "test/complete-stage-outcomes/stage-outcomes.json",
 			bidResponse:             &openrtb2.BidResponse{Ext: []byte(`{"prebid": {"foo": "bar"}}`)},
@@ -66,6 +70,7 @@ func TestEnrichBidResponse(t *testing.T) {
 		},
 		{
 			description:             "BidResponse enriched with debug info when bidRequest.ext.prebid.debug=true",
+			expectedWarnings:        nil,
 			expectedBidResponseFile: "test/complete-stage-outcomes/expected-debug-response.json",
 			stageOutcomesFile:       "test/complete-stage-outcomes/stage-outcomes.json",
 			bidResponse:             &openrtb2.BidResponse{Ext: []byte(`{"prebid": {"foo": "bar"}}`)},
@@ -74,6 +79,7 @@ func TestEnrichBidResponse(t *testing.T) {
 		},
 		{
 			description:             "BidResponse not enriched when bidRequest.ext.prebid.debug=false",
+			expectedWarnings:        nil,
 			expectedBidResponseFile: "test/complete-stage-outcomes/expected-empty-response.json",
 			stageOutcomesFile:       "test/complete-stage-outcomes/stage-outcomes.json",
 			bidResponse:             &openrtb2.BidResponse{Ext: []byte(`{"prebid": {"foo": "bar"}}`)},
@@ -82,6 +88,7 @@ func TestEnrichBidResponse(t *testing.T) {
 		},
 		{
 			description:             "BidResponse enriched only with verbose trace when bidRequest.ext.prebid.trace=verbose and account.DebugAllow=false",
+			expectedWarnings:        nil,
 			expectedBidResponseFile: "test/complete-stage-outcomes/expected-verbose-response.json",
 			stageOutcomesFile:       "test/complete-stage-outcomes/stage-outcomes.json",
 			bidResponse:             &openrtb2.BidResponse{Ext: []byte(`{"prebid": {"foo": "bar"}}`)},
@@ -90,6 +97,7 @@ func TestEnrichBidResponse(t *testing.T) {
 		},
 		{
 			description:             "BidResponse enriched with debug info if bidResponse.Ext is nil",
+			expectedWarnings:        nil,
 			expectedBidResponseFile: "test/complete-stage-outcomes/expected-pure-debug-response.json",
 			stageOutcomesFile:       "test/complete-stage-outcomes/stage-outcomes.json",
 			bidResponse:             &openrtb2.BidResponse{},
@@ -98,6 +106,7 @@ func TestEnrichBidResponse(t *testing.T) {
 		},
 		{
 			description:             "BidResponse not enriched with modules if stage outcome groups empty",
+			expectedWarnings:        nil,
 			expectedBidResponseFile: "test/empty-stage-outcomes/empty.json",
 			stageOutcomesFile:       "test/empty-stage-outcomes/empty-stage-outcomes-v1.json",
 			bidResponse:             &openrtb2.BidResponse{},
@@ -106,6 +115,7 @@ func TestEnrichBidResponse(t *testing.T) {
 		},
 		{
 			description:             "BidResponse not enriched with modules if stage outcomes empty",
+			expectedWarnings:        nil,
 			expectedBidResponseFile: "test/empty-stage-outcomes/empty.json",
 			stageOutcomesFile:       "test/empty-stage-outcomes/empty-stage-outcomes-v2.json",
 			bidResponse:             &openrtb2.BidResponse{},
@@ -119,8 +129,9 @@ func TestEnrichBidResponse(t *testing.T) {
 			expectedResponse := readFile(t, test.expectedBidResponseFile)
 			stageOutcomes := getStageOutcomes(t, test.stageOutcomesFile)
 
-			ext, err := EnrichExtBidResponse(test.bidResponse.Ext, stageOutcomes, test.bidRequest, test.account)
+			ext, warns, err := EnrichExtBidResponse(test.bidResponse.Ext, stageOutcomes, test.bidRequest, test.account)
 			require.NoError(t, err, "Failed to enrich BidResponse with hook debug information: %s", err)
+			assert.Equal(t, test.expectedWarnings, warns, "Unexpected warnings")
 
 			test.bidResponse.Ext = ext
 			if test.bidResponse.Ext == nil {
@@ -135,6 +146,7 @@ func TestEnrichBidResponse(t *testing.T) {
 func TestGetModulesJSON(t *testing.T) {
 	testCases := []struct {
 		description             string
+		expectedWarnings        []error
 		expectedBidResponseFile string
 		stageOutcomesFile       string
 		bidRequest              *openrtb2.BidRequest
@@ -142,6 +154,7 @@ func TestGetModulesJSON(t *testing.T) {
 	}{
 		{
 			description:             "Modules Outcome contains verbose trace and debug info when bidRequest.test=1 and trace=verbose",
+			expectedWarnings:        nil,
 			expectedBidResponseFile: "test/complete-stage-outcomes/expected-verbose-debug-response.json",
 			stageOutcomesFile:       "test/complete-stage-outcomes/stage-outcomes.json",
 			bidRequest:              &openrtb2.BidRequest{Test: 1, Ext: []byte(`{"prebid": {"trace": "verbose"}}`)},
@@ -149,6 +162,7 @@ func TestGetModulesJSON(t *testing.T) {
 		},
 		{
 			description:             "Modules Outcome contains verbose trace and debug info when bidRequest.test=1 and trace=verbose and account is not defined",
+			expectedWarnings:        nil,
 			expectedBidResponseFile: "test/complete-stage-outcomes/expected-verbose-debug-response.json",
 			stageOutcomesFile:       "test/complete-stage-outcomes/stage-outcomes.json",
 			bidRequest:              &openrtb2.BidRequest{Test: 1, Ext: []byte(`{"prebid": {"trace": "verbose"}}`)},
@@ -156,6 +170,7 @@ func TestGetModulesJSON(t *testing.T) {
 		},
 		{
 			description:             "Modules Outcome contains basic trace and debug info when bidRequest.ext.prebid.debug=true and trace=basic",
+			expectedWarnings:        nil,
 			expectedBidResponseFile: "test/complete-stage-outcomes/expected-basic-debug-response.json",
 			stageOutcomesFile:       "test/complete-stage-outcomes/stage-outcomes.json",
 			bidRequest:              &openrtb2.BidRequest{Ext: []byte(`{"prebid": {"debug": true, "trace": "basic"}}`)},
@@ -163,6 +178,7 @@ func TestGetModulesJSON(t *testing.T) {
 		},
 		{
 			description:             "Modules Outcome contains debug info when bidRequest.ext.prebid.debug=true",
+			expectedWarnings:        nil,
 			expectedBidResponseFile: "test/complete-stage-outcomes/expected-debug-response.json",
 			stageOutcomesFile:       "test/complete-stage-outcomes/stage-outcomes.json",
 			bidRequest:              &openrtb2.BidRequest{Ext: []byte(`{"prebid": {"debug": true, "trace": ""}}`)},
@@ -170,6 +186,7 @@ func TestGetModulesJSON(t *testing.T) {
 		},
 		{
 			description:             "Modules Outcome empty when bidRequest.ext.prebid.debug=false",
+			expectedWarnings:        nil,
 			expectedBidResponseFile: "test/empty-stage-outcomes/empty.json",
 			stageOutcomesFile:       "test/complete-stage-outcomes/stage-outcomes.json",
 			bidRequest:              &openrtb2.BidRequest{},
@@ -177,6 +194,7 @@ func TestGetModulesJSON(t *testing.T) {
 		},
 		{
 			description:             "Modules Outcome empty when bidRequest is nil",
+			expectedWarnings:        nil,
 			expectedBidResponseFile: "test/empty-stage-outcomes/empty.json",
 			stageOutcomesFile:       "test/complete-stage-outcomes/stage-outcomes.json",
 			bidRequest:              nil,
@@ -184,6 +202,7 @@ func TestGetModulesJSON(t *testing.T) {
 		},
 		{
 			description:             "Modules Outcome contains only verbose trace when bidRequest.ext.prebid.trace=verbose and account.DebugAllow=false",
+			expectedWarnings:        nil,
 			expectedBidResponseFile: "test/complete-stage-outcomes/expected-verbose-response.json",
 			stageOutcomesFile:       "test/complete-stage-outcomes/stage-outcomes.json",
 			bidRequest:              &openrtb2.BidRequest{Test: 1, Ext: []byte(`{"prebid": {"debug": true, "trace": "verbose"}}`)},
@@ -191,6 +210,7 @@ func TestGetModulesJSON(t *testing.T) {
 		},
 		{
 			description:             "Modules Outcome contains debug info if bidResponse.Ext is nil",
+			expectedWarnings:        nil,
 			expectedBidResponseFile: "test/complete-stage-outcomes/expected-pure-debug-response.json",
 			stageOutcomesFile:       "test/complete-stage-outcomes/stage-outcomes.json",
 			bidRequest:              &openrtb2.BidRequest{Test: 1},
@@ -198,6 +218,7 @@ func TestGetModulesJSON(t *testing.T) {
 		},
 		{
 			description:             "Modules Outcome empty if stage outcome groups empty",
+			expectedWarnings:        nil,
 			expectedBidResponseFile: "test/empty-stage-outcomes/empty.json",
 			stageOutcomesFile:       "test/empty-stage-outcomes/empty-stage-outcomes-v1.json",
 			bidRequest:              &openrtb2.BidRequest{Test: 1},
@@ -205,9 +226,21 @@ func TestGetModulesJSON(t *testing.T) {
 		},
 		{
 			description:             "Modules Outcome empty if stage outcomes empty",
+			expectedWarnings:        nil,
 			expectedBidResponseFile: "test/empty-stage-outcomes/empty.json",
 			stageOutcomesFile:       "test/empty-stage-outcomes/empty-stage-outcomes-v2.json",
 			bidRequest:              &openrtb2.BidRequest{Test: 1},
+			account:                 &config.Account{DebugAllow: true},
+		},
+		{
+			description: "Warnings returned if debug info invalid",
+			expectedWarnings: []error{
+				errors.New("Value is not a string: 1"),
+				errors.New("Value is not a boolean: active"),
+			},
+			expectedBidResponseFile: "test/complete-stage-outcomes/expected-pure-debug-response.json",
+			stageOutcomesFile:       "test/complete-stage-outcomes/stage-outcomes.json",
+			bidRequest:              &openrtb2.BidRequest{Test: 1, Ext: json.RawMessage(`{"prebid": {"debug": "active", "trace": 1}}`)},
 			account:                 &config.Account{DebugAllow: true},
 		},
 	}
@@ -217,8 +250,9 @@ func TestGetModulesJSON(t *testing.T) {
 			expectedResponse := readFile(t, test.expectedBidResponseFile)
 			stageOutcomes := getStageOutcomes(t, test.stageOutcomesFile)
 
-			modules, err := GetModulesJSON(stageOutcomes, test.bidRequest, test.account)
+			modules, warns, err := GetModulesJSON(stageOutcomes, test.bidRequest, test.account)
 			require.NoError(t, err, "Failed to get modules outcome as json: %s", err)
+			assert.Equal(t, test.expectedWarnings, warns, "Unexpected warnings")
 
 			if modules == nil {
 				assert.Empty(t, expectedResponse)

@@ -41,64 +41,78 @@ type extModules struct {
 //
 // Debug information is added only if the debug mode is enabled by request and allowed by account (if provided).
 // The details of the trace output depends on the value in the bidRequest.ext.prebid.trace field.
+// Warnings returned if bidRequest contains unexpected types for debug fields controlling debug output.
 func EnrichExtBidResponse(
 	ext json.RawMessage,
 	stageOutcomes []StageOutcome,
 	bidRequest *openrtb2.BidRequest,
 	account *config.Account,
-) (json.RawMessage, error) {
-	modules, err := GetModulesJSON(stageOutcomes, bidRequest, account)
+) (json.RawMessage, []error, error) {
+	modules, warnings, err := GetModulesJSON(stageOutcomes, bidRequest, account)
 	if err != nil || modules == nil {
-		return ext, err
+		return ext, warnings, err
 	}
 
 	response, err := json.Marshal(extPrebid{Prebid: extModules{Modules: modules}})
 	if err != nil {
-		return ext, err
+		return ext, warnings, err
 	}
 
 	if ext != nil {
 		response, err = jsonpatch.MergePatch(ext, response)
 	}
 
-	return response, err
+	return response, warnings, err
 }
 
 // GetModulesJSON returns debug and trace information produced from executing hooks.
 // Debug information is returned only if the debug mode is enabled by request and allowed by account (if provided).
 // The details of the trace output depends on the value in the bidRequest.ext.prebid.trace field.
+// Warnings returned if bidRequest contains unexpected types for debug fields controlling debug output.
 func GetModulesJSON(
 	stageOutcomes []StageOutcome,
 	bidRequest *openrtb2.BidRequest,
 	account *config.Account,
-) (json.RawMessage, error) {
+) (json.RawMessage, []error, error) {
 	if len(stageOutcomes) == 0 {
-		return nil, nil
+		return nil, nil, nil
 	}
 
-	trace, isDebugEnabled := getDebugContext(bidRequest, account)
+	trace, isDebugEnabled, warnings := getDebugContext(bidRequest, account)
 	modulesOutcome := getModulesOutcome(stageOutcomes, trace, isDebugEnabled)
 	if modulesOutcome == nil {
-		return nil, nil
+		return nil, warnings, nil
 	}
 
-	return json.Marshal(modulesOutcome)
+	data, err := json.Marshal(modulesOutcome)
+
+	return data, warnings, err
 }
 
-func getDebugContext(bidRequest *openrtb2.BidRequest, account *config.Account) (trace, bool) {
+func getDebugContext(bidRequest *openrtb2.BidRequest, account *config.Account) (trace, bool, []error) {
 	var traceLevel string
 	var isDebugEnabled bool
+	var warnings []error
+	var err error
 
 	if bidRequest != nil {
-		traceLevel, _ = jsonparser.GetString(bidRequest.Ext, "prebid", "trace")
-		isDebug, _ := jsonparser.GetBoolean(bidRequest.Ext, "prebid", "debug")
+		traceLevel, err = jsonparser.GetString(bidRequest.Ext, "prebid", "trace")
+		if err != nil && err != jsonparser.KeyPathNotFoundError {
+			warnings = append(warnings, err)
+		}
+
+		isDebug, err := jsonparser.GetBoolean(bidRequest.Ext, "prebid", "debug")
+		if err != nil && err != jsonparser.KeyPathNotFoundError {
+			warnings = append(warnings, err)
+		}
+
 		isDebugEnabled = bidRequest.Test == 1 || isDebug
 		if account != nil {
 			isDebugEnabled = isDebugEnabled && account.DebugAllow
 		}
 	}
 
-	return trace(traceLevel), isDebugEnabled
+	return trace(traceLevel), isDebugEnabled, warnings
 }
 
 func getModulesOutcome(stageOutcomes []StageOutcome, trace trace, isDebugEnabled bool) *ModulesOutcome {
