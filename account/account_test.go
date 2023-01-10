@@ -69,6 +69,24 @@ func TestGetAccount(t *testing.T) {
 		{accountID: "disabled_acct", required: true, disabled: false, err: &errortypes.BlacklistedAcct{}},
 		{accountID: "disabled_acct", required: false, disabled: true, err: &errortypes.BlacklistedAcct{}},
 		{accountID: "disabled_acct", required: true, disabled: true, err: &errortypes.BlacklistedAcct{}},
+
+		// pubID given and matches a host account with Disabled: false and GDPR purpose data to convert
+		{accountID: "gdpr_convert_acct", required: false, disabled: false, err: nil},
+		{accountID: "gdpr_convert_acct", required: true, disabled: false, err: nil},
+		{accountID: "gdpr_convert_acct", required: false, disabled: true, err: nil},
+		{accountID: "gdpr_convert_acct", required: true, disabled: true, err: nil},
+
+		// pubID given and matches a host account that has a malformed config
+		{accountID: "malformed_acct", required: false, disabled: false, err: &errortypes.MalformedAcct{}},
+		{accountID: "malformed_acct", required: true, disabled: false, err: &errortypes.MalformedAcct{}},
+		{accountID: "malformed_acct", required: false, disabled: true, err: &errortypes.MalformedAcct{}},
+		{accountID: "malformed_acct", required: true, disabled: true, err: &errortypes.MalformedAcct{}},
+
+		// account not provided (does not exist)
+		{accountID: "", required: false, disabled: false, err: nil},
+		{accountID: "", required: true, disabled: false, err: nil},
+		{accountID: "", required: false, disabled: true, err: &errortypes.BlacklistedAcct{}},
+		{accountID: "", required: true, disabled: true, err: &errortypes.AcctRequired{}},
 	}
 
 	for _, test := range testCases {
