@@ -4,12 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 
-	acc "github.com/prebid/prebid-server/account"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/stored_requests"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 )
@@ -42,8 +39,7 @@ func (fetcher *eagerFetcher) FetchResponses(ctx context.Context, ids []string) (
 }
 
 // FetchAccount fetches the host account configuration for a publisher
-func (fetcher *eagerFetcher) FetchAccount(ctx context.Context, accountDefaultsJSON json.RawMessage, accountID string) (*config.Account, []error) {
-	var errs []error
+func (fetcher *eagerFetcher) FetchAccount(ctx context.Context, accountDefaultsJSON json.RawMessage, accountID string) (json.RawMessage, []error) {
 	if len(accountID) == 0 {
 		return nil, []error{fmt.Errorf("Cannot look up an empty accountID")}
 	}
@@ -55,40 +51,11 @@ func (fetcher *eagerFetcher) FetchAccount(ctx context.Context, accountDefaultsJS
 		}}
 	}
 
-	// accountID resolved to a valid account, merge with AccountDefaults for a complete config
-	account := &config.Account{}
 	completeJSON, err := jsonpatch.MergePatch(accountDefaultsJSON, accountJSON)
-	if err == nil {
-		err = json.Unmarshal(completeJSON, account)
-
-		// this logic exists for backwards compatibility. If the initial unmarshal fails above, we attempt to
-		// resolve it by converting the GDPR enforce purpose fields and then attempting an unmarshal again before
-		// declaring a malformed account error.
-		// unmarshal fetched account to determine if it is well-formed
-		if _, ok := err.(*json.UnmarshalTypeError); ok {
-			// attempt to convert deprecated GDPR enforce purpose fields to resolve issue
-			completeJSON, err = acc.ConvertGDPREnforcePurposeFields(completeJSON)
-			// unmarshal again to check if unmarshal error still exists after GDPR field conversion
-			err = json.Unmarshal(completeJSON, account)
-
-			if _, ok := err.(*json.UnmarshalTypeError); ok {
-				return nil, []error{&errortypes.MalformedAcct{
-					Message: fmt.Sprintf("The prebid-server account config for account id \"%s\" is malformed. Please reach out to the prebid server host.", accountID),
-				}}
-			}
-		}
-	}
-
 	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
+		return nil, []error{err}
 	}
-	// Fill in ID if needed, so it can be left out of account definition
-	if len(account.ID) == 0 {
-		account.ID = accountID
-	}
-
-	return account, nil
+	return completeJSON, nil
 }
 
 func (fetcher *eagerFetcher) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {
@@ -143,7 +110,7 @@ func collectStoredData(directory string, fileSystem FileSystem, err error) (File
 	if err != nil {
 		return FileSystem{nil, nil}, err
 	}
-	fileInfos, err := ioutil.ReadDir(directory)
+	fileInfos, err := os.ReadDir(directory)
 	if err != nil {
 		return FileSystem{nil, nil}, err
 	}
@@ -161,7 +128,7 @@ func collectStoredData(directory string, fileSystem FileSystem, err error) (File
 
 		} else {
 			if strings.HasSuffix(fileInfo.Name(), ".json") { // Skip the .gitignore
-				fileData, err := ioutil.ReadFile(fmt.Sprintf("%s/%s", directory, fileInfo.Name()))
+				fileData, err := os.ReadFile(fmt.Sprintf("%s/%s", directory, fileInfo.Name()))
 				if err != nil {
 					return FileSystem{nil, nil}, err
 				}

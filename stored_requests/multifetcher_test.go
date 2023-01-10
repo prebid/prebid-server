@@ -6,7 +6,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/prebid/prebid-server/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -133,14 +132,14 @@ func TestMultiFetcherAccountFoundInFirstFetcher(t *testing.T) {
 	fetcher := &MultiFetcher{f1, f2}
 	ctx := context.Background()
 
-	f1.On("FetchAccount", ctx, json.RawMessage(`{"id": "ONE"}`), "ONE").Once().Return(&config.Account{ID: "ONE"}, []error{})
+	f1.On("FetchAccount", ctx, json.RawMessage("{}"), "ONE").Once().Return(json.RawMessage(`{"id": "ONE"}`), []error{})
 
-	account, errs := fetcher.FetchAccount(ctx, json.RawMessage(`{"id": "ONE"}`), "ONE")
+	account, errs := fetcher.FetchAccount(ctx, json.RawMessage("{}"), "ONE")
 
 	f1.AssertExpectations(t)
 	f2.AssertNotCalled(t, "FetchAccount")
 	assert.Empty(t, errs)
-	assert.Equal(t, &config.Account{ID: "ONE"}, account)
+	assert.JSONEq(t, `{"id": "ONE"}`, string(account))
 }
 
 func TestMultiFetcherAccountFoundInSecondFetcher(t *testing.T) {
@@ -149,15 +148,15 @@ func TestMultiFetcherAccountFoundInSecondFetcher(t *testing.T) {
 	fetcher := &MultiFetcher{f1, f2}
 	ctx := context.Background()
 
-	f1.On("FetchAccount", ctx, json.RawMessage(`{"id": "TWO"}`), "TWO").Once().Return(&config.Account{}, []error{NotFoundError{"TWO", "Account"}})
-	f2.On("FetchAccount", ctx, json.RawMessage(`{"id": "TWO"}`), "TWO").Once().Return(&config.Account{ID: "TWO"}, []error{})
+	f1.On("FetchAccount", ctx, json.RawMessage("{}"), "TWO").Once().Return(json.RawMessage(``), []error{NotFoundError{"TWO", "Account"}})
+	f2.On("FetchAccount", ctx, json.RawMessage("{}"), "TWO").Once().Return(json.RawMessage(`{"id": "TWO"}`), []error{})
 
-	account, errs := fetcher.FetchAccount(ctx, json.RawMessage(`{"id": "TWO"}`), "TWO")
+	account, errs := fetcher.FetchAccount(ctx, json.RawMessage("{}"), "TWO")
 
 	f1.AssertExpectations(t)
 	f2.AssertExpectations(t)
 	assert.Empty(t, errs)
-	assert.Equal(t, &config.Account{ID: "TWO"}, account)
+	assert.JSONEq(t, `{"id": "TWO"}`, string(account))
 }
 
 func TestMultiFetcherAccountNotFound(t *testing.T) {
@@ -166,10 +165,10 @@ func TestMultiFetcherAccountNotFound(t *testing.T) {
 	fetcher := &MultiFetcher{f1, f2}
 	ctx := context.Background()
 
-	f1.On("FetchAccount", ctx, json.RawMessage(`{"id": "TWO"}`), "MISSING").Once().Return(&config.Account{}, []error{NotFoundError{"TWO", "Account"}})
-	f2.On("FetchAccount", ctx, json.RawMessage(`{"id": "TWO"}`), "MISSING").Once().Return(&config.Account{}, []error{NotFoundError{"TWO", "Account"}})
+	f1.On("FetchAccount", ctx, json.RawMessage("{}"), "MISSING").Once().Return(json.RawMessage(``), []error{NotFoundError{"TWO", "Account"}})
+	f2.On("FetchAccount", ctx, json.RawMessage("{}"), "MISSING").Once().Return(json.RawMessage(``), []error{NotFoundError{"TWO", "Account"}})
 
-	account, errs := fetcher.FetchAccount(ctx, json.RawMessage(`{"id": "TWO"}`), "MISSING")
+	account, errs := fetcher.FetchAccount(ctx, json.RawMessage("{}"), "MISSING")
 
 	f1.AssertExpectations(t)
 	f2.AssertExpectations(t)

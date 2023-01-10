@@ -14,15 +14,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var mockAccountData = map[string]*config.Account{
-	"valid_acct":    {Disabled: false, ID: "valid_acct"},
-	"disabled_acct": {Disabled: true},
+var mockAccountData = map[string]json.RawMessage{
+	"valid_acct":        json.RawMessage(`{"disabled":false}`),
+	"disabled_acct":     json.RawMessage(`{"disabled":true}`),
+	"malformed_acct":    json.RawMessage(`{"disabled":"invalid type"}`),
+	"gdpr_convert_acct": json.RawMessage(`{"disabled":false,"gdpr":{"purpose5":{"enforce_purpose":"full"}}}`),
 }
 
 type mockAccountFetcher struct {
 }
 
-func (af mockAccountFetcher) FetchAccount(ctx context.Context, accountDefaultJSON json.RawMessage, accountID string) (*config.Account, []error) {
+func (af mockAccountFetcher) FetchAccount(ctx context.Context, accountDefaultsJSON json.RawMessage, accountID string) (json.RawMessage, []error) {
 	if account, ok := mockAccountData[accountID]; ok {
 		return account, nil
 	}

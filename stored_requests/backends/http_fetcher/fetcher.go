@@ -5,14 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
 
-	acc "github.com/prebid/prebid-server/account"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/stored_requests"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
@@ -133,7 +130,7 @@ func (fetcher *HttpFetcher) FetchAccounts(ctx context.Context, accountIDs []stri
 		}
 	}
 	defer httpResp.Body.Close()
-	respBytes, err := ioutil.ReadAll(httpResp.Body)
+	respBytes, err := io.ReadAll(httpResp.Body)
 	if err != nil {
 		return nil, []error{
 			fmt.Errorf(`Error fetching accounts %v via http: error reading response: %v`, accountIDs, err),
@@ -155,7 +152,7 @@ func (fetcher *HttpFetcher) FetchAccounts(ctx context.Context, accountIDs []stri
 }
 
 // FetchAccount fetchers a single accountID and returns its corresponding json
-func (fetcher *HttpFetcher) FetchAccount(ctx context.Context, accountDefaultsJSON json.RawMessage, accountID string) (*config.Account, []error) {
+func (fetcher *HttpFetcher) FetchAccount(ctx context.Context, accountDefaultsJSON json.RawMessage, accountID string) (accountJSON json.RawMessage, errs []error) {
 	accountData, errs := fetcher.FetchAccounts(ctx, []string{accountID})
 	if len(errs) > 0 {
 		return nil, errs
@@ -167,39 +164,11 @@ func (fetcher *HttpFetcher) FetchAccount(ctx context.Context, accountDefaultsJSO
 			DataType: "Account",
 		}}
 	}
-	// accountID resolved to a valid account, merge with AccountDefaults for a complete config
-	account := &config.Account{}
 	completeJSON, err := jsonpatch.MergePatch(accountDefaultsJSON, accountJSON)
-	if err == nil {
-		err = json.Unmarshal(completeJSON, account)
-
-		// this logic exists for backwards compatibility. If the initial unmarshal fails above, we attempt to
-		// resolve it by converting the GDPR enforce purpose fields and then attempting an unmarshal again before
-		// declaring a malformed account error.
-		// unmarshal fetched account to determine if it is well-formed
-		if _, ok := err.(*json.UnmarshalTypeError); ok {
-			// attempt to convert deprecated GDPR enforce purpose fields to resolve issue
-			completeJSON, err = acc.ConvertGDPREnforcePurposeFields(completeJSON)
-			// unmarshal again to check if unmarshal error still exists after GDPR field conversion
-			err = json.Unmarshal(completeJSON, account)
-
-			if _, ok := err.(*json.UnmarshalTypeError); ok {
-				return nil, []error{&errortypes.MalformedAcct{
-					Message: fmt.Sprintf("The prebid-server account config for account id \"%s\" is malformed. Please reach out to the prebid server host.", accountID),
-				}}
-			}
-		}
-	}
-
 	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
+		return nil, []error{err}
 	}
-	// Fill in ID if needed, so it can be left out of account definition
-	if len(account.ID) == 0 {
-		account.ID = accountID
-	}
-	return account, nil
+	return completeJSON, nil
 }
 
 func (fetcher *HttpFetcher) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {
@@ -237,7 +206,7 @@ func (fetcher *HttpFetcher) FetchCategories(ctx context.Context, primaryAdServer
 	}
 	defer httpResp.Body.Close()
 
-	respBytes, err := ioutil.ReadAll(httpResp.Body)
+	respBytes, err := io.ReadAll(httpResp.Body)
 	tmp := make(map[string]stored_requests.Category)
 
 	if err := json.Unmarshal(respBytes, &tmp); err != nil {
@@ -263,7 +232,7 @@ func buildRequest(endpoint string, requestIDs []string, impIDs []string) (*http.
 }
 
 func unpackResponse(resp *http.Response) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
-	respBytes, err := ioutil.ReadAll(resp.Body)
+	respBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		errs = append(errs, err)
 		return

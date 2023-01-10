@@ -28,8 +28,7 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 			Message: fmt.Sprintf("Prebid-server has been configured to discard requests without a valid Account ID. Please reach out to the prebid server host."),
 		}}
 	}
-	var accErrs []error
-	if account, accErrs = fetcher.FetchAccount(ctx, cfg.AccountDefaultsJSON(), accountID); len(accErrs) > 0 || account == nil {
+	if accountJSON, accErrs := fetcher.FetchAccount(ctx, cfg.AccountDefaultsJSON(), accountID); len(accErrs) > 0 || accountJSON == nil {
 		// accountID does not reference a valid account
 		for _, e := range accErrs {
 			if _, ok := e.(stored_requests.NotFoundError); !ok {
@@ -48,6 +47,36 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 		pubAccount.ID = accountID
 		account = &pubAccount
 	} else {
+		// accountID resolved to a valid account, merge with AccountDefaults for a complete config
+		account = &config.Account{}
+		err := json.Unmarshal(accountJSON, account)
+
+		// this logic exists for backwards compatibility. If the initial unmarshal fails above, we attempt to
+		// resolve it by converting the GDPR enforce purpose fields and then attempting an unmarshal again before
+		// declaring a malformed account error.
+		// unmarshal fetched account to determine if it is well-formed
+		if _, ok := err.(*json.UnmarshalTypeError); ok {
+			// attempt to convert deprecated GDPR enforce purpose fields to resolve issue
+			accountJSON, err = ConvertGDPREnforcePurposeFields(accountJSON)
+			// unmarshal again to check if unmarshal error still exists after GDPR field conversion
+			err = json.Unmarshal(accountJSON, account)
+
+			if _, ok := err.(*json.UnmarshalTypeError); ok {
+				return nil, []error{&errortypes.MalformedAcct{
+					Message: fmt.Sprintf("The prebid-server account config for account id \"%s\" is malformed. Please reach out to the prebid server host.", accountID),
+				}}
+			}
+		}
+
+		if err != nil {
+			errs = append(errs, err)
+			return nil, errs
+		}
+		// Fill in ID if needed, so it can be left out of account definition
+		if len(account.ID) == 0 {
+			account.ID = accountID
+		}
+
 		// Set derived fields
 		setDerivedConfig(account)
 	}

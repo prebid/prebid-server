@@ -2,6 +2,7 @@ package endpoints
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -494,6 +495,50 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 				a.On("LogSetUIDObject", &expected).Once()
 			},
 		},
+		{
+			description:            "Malformed account",
+			uri:                    "/setuid?bidder=pubmatic&uid=123&account=malformed_acct",
+			cookies:                []*usersync.Cookie{},
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			gdprAllowsHostCookies:  true,
+			cfgAccountRequired:     true,
+			expectedResponseCode:   400,
+			expectedMetrics: func(m *metrics.MetricsEngineMock) {
+				m.On("RecordSetUid", metrics.SetUidAccountConfigMalformed).Once()
+			},
+			expectedAnalytics: func(a *MockAnalytics) {
+				expected := analytics.SetUIDObject{
+					Status:  400,
+					Bidder:  "pubmatic",
+					UID:     "",
+					Errors:  []error{errCookieSyncAccountConfigMalformed},
+					Success: false,
+				}
+				a.On("LogSetUIDObject", &expected).Once()
+			},
+		},
+		{
+			description:            "Invalid JSON account",
+			uri:                    "/setuid?bidder=pubmatic&uid=123&account=invalid_json_acct",
+			cookies:                []*usersync.Cookie{},
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			gdprAllowsHostCookies:  true,
+			cfgAccountRequired:     true,
+			expectedResponseCode:   400,
+			expectedMetrics: func(m *metrics.MetricsEngineMock) {
+				m.On("RecordSetUid", metrics.SetUidBadRequest).Once()
+			},
+			expectedAnalytics: func(a *MockAnalytics) {
+				expected := analytics.SetUIDObject{
+					Status:  400,
+					Bidder:  "pubmatic",
+					UID:     "",
+					Errors:  []error{errors.New("unexpected end of JSON input")},
+					Success: false,
+				}
+				a.On("LogSetUIDObject", &expected).Once()
+			},
+		},
 	}
 
 	for _, test := range testCases {
@@ -665,6 +710,7 @@ func doRequest(req *http.Request, analytics analytics.PBSAnalyticsModule, metric
 		BlacklistedAcctMap: map[string]bool{
 			"blocked_acct": true,
 		},
+		AccountDefaults: config.Account{},
 	}
 	cfg.MarshalAccountDefaults()
 
@@ -689,9 +735,11 @@ func doRequest(req *http.Request, analytics analytics.PBSAnalyticsModule, metric
 		syncersByBidder[bidderName] = fakeSyncer{key: syncerKey, defaultSyncType: usersync.SyncTypeIFrame}
 	}
 
-	fakeAccountsFetcher := FakeAccountsFetcher{AccountData: map[string]*config.Account{
-		"valid_acct":    {Disabled: false},
-		"disabled_acct": {Disabled: true},
+	fakeAccountsFetcher := FakeAccountsFetcher{AccountData: map[string]json.RawMessage{
+		"valid_acct":        json.RawMessage(`{"disabled":false}`),
+		"disabled_acct":     json.RawMessage(`{"disabled":true}`),
+		"malformed_acct":    json.RawMessage(`{"disabled":"malformed"}`),
+		"invalid_json_acct": json.RawMessage(`{"}`),
 	}}
 
 	endpoint := NewSetUIDEndpoint(&cfg, syncersByBidder, gdprPermsBuilder, tcf2ConfigBuilder, analytics, fakeAccountsFetcher, metrics)

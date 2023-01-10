@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -135,16 +134,16 @@ func TestFetchAccount(t *testing.T) {
 	fetcher, close := newTestAccountFetcher(t, []string{"acc-1"})
 	defer close()
 
-	account, errs := fetcher.FetchAccount(context.Background(), json.RawMessage(`{"id":"123"}`), "acc-1")
+	account, errs := fetcher.FetchAccount(context.Background(), json.RawMessage(`{"disabled":true}`), "acc-1")
 	assert.Empty(t, errs, "Unexpected error fetching existing account")
-	assert.Equal(t, &config.Account{ID: "123"}, account, "Unexpected account data fetching existing account")
+	assert.JSONEq(t, `{"disabled": true, "id":"acc-1"}`, string(account), "Unexpected account data fetching existing account")
 }
 
 func TestFetchAccountNoData(t *testing.T) {
 	fetcher, close := newFetcherBrokenBackend()
 	defer close()
 
-	unknownAccount, errs := fetcher.FetchAccount(context.Background(), json.RawMessage(`{"id":"123"}`), "unknown-acc")
+	unknownAccount, errs := fetcher.FetchAccount(context.Background(), json.RawMessage(`{disabled":true}`), "unknown-acc")
 	assert.NotEmpty(t, errs, "Retrieving unknown account should return error")
 	assert.Nil(t, unknownAccount, "Retrieving unknown account should return nil json.RawMessage")
 }
@@ -153,7 +152,7 @@ func TestFetchAccountNoIDProvided(t *testing.T) {
 	fetcher, close := newTestAccountFetcher(t, nil)
 	defer close()
 
-	account, errs := fetcher.FetchAccount(context.Background(), json.RawMessage(`"id":"123"`), "")
+	account, errs := fetcher.FetchAccount(context.Background(), json.RawMessage(`{disabled":true}`), "")
 	assert.Len(t, errs, 1, "Fetching account with empty id should error")
 	assert.Nil(t, account, "Fetching account with empty id should return nil")
 }
@@ -250,7 +249,7 @@ func newAccountHandler(t *testing.T, expectAccIDs []string, jsonifier func(strin
 
 		for _, accID := range gotAccIDs {
 			if accID != "" {
-				accIDResponse[accID] = json.RawMessage(`{"id":"123"}`)
+				accIDResponse[accID] = json.RawMessage(`{"id":"` + accID + `"}`)
 			}
 		}
 
