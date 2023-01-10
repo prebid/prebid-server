@@ -78,6 +78,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	bidder := &adapter{
 		time:     &timeutil.RealTime{},
 		endpoint: config.Endpoint,
+		extraInfo: config.ExtraAdapterInfo,
 	}
 
 	return bidder, nil
