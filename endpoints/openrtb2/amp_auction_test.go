@@ -3,6 +3,7 @@ package openrtb2
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -22,6 +23,7 @@ import (
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/hooks/hookstage"
+	"github.com/prebid/prebid-server/metrics"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
@@ -2062,3 +2064,64 @@ func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
 		})
 	}
 }
+
+func TestSendAmpResponse_LogsErrors(t *testing.T) {
+	testCases := []struct {
+		description    string
+		expectedError  error
+		expectedStatus int
+		writer         http.ResponseWriter
+		response       *openrtb2.BidResponse
+	}{
+		{
+			description:    "Error logged when bid.ext unmarshal fails",
+			expectedError:  errors.New("Critical error while unpacking AMP targets: unexpected end of JSON input"),
+			expectedStatus: http.StatusInternalServerError,
+			writer:         httptest.NewRecorder(),
+			response: &openrtb2.BidResponse{ID: "some-id", SeatBid: []openrtb2.SeatBid{
+				{Bid: []openrtb2.Bid{{Ext: json.RawMessage(`"hb_cache_id`)}}},
+			}},
+		},
+		{
+			description:    "Error logged when test mode activated but no debug present in response",
+			expectedError:  errors.New("test set on request but debug not present in response"),
+			expectedStatus: 0,
+			writer:         httptest.NewRecorder(),
+			response:       &openrtb2.BidResponse{ID: "some-id", Ext: json.RawMessage("{}")},
+		},
+		{
+			description:    "Error logged when response encoding fails",
+			expectedError:  errors.New("/openrtb2/amp Failed to send response: failed writing response"),
+			expectedStatus: 0,
+			writer:         errorResponseWriter{},
+			response:       &openrtb2.BidResponse{ID: "some-id", Ext: json.RawMessage(`{"debug": {}}`)},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			labels := metrics.Labels{}
+			ao := analytics.AmpObject{}
+			account := &config.Account{DebugAllow: true}
+			hookExecutor := &hookexecution.EmptyHookExecutor{}
+			reqWrapper := openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{ID: "some-id", Test: 1}}
+
+			labels, ao = sendAmpResponse(test.writer, hookExecutor, test.response, &reqWrapper, account, labels, ao, nil)
+
+			assert.Contains(t, ao.Errors, test.expectedError, "Missing expected error.")
+			assert.Equal(t, test.expectedStatus, ao.Status, "Invalid HTTP response status.")
+		})
+	}
+}
+
+type errorResponseWriter struct{}
+
+func (e errorResponseWriter) Header() http.Header {
+	return http.Header{}
+}
+
+func (e errorResponseWriter) Write(bytes []byte) (int, error) {
+	return 0, errors.New("failed writing response")
+}
+
+func (e errorResponseWriter) WriteHeader(statusCode int) {}
