@@ -14,7 +14,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type ImdsAdapter struct {
+type adapter struct {
 	EndpointTemplate *template.Template
 }
 
@@ -34,13 +34,13 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
-	bidder := &ImdsAdapter{
+	bidder := &adapter{
 		EndpointTemplate: template,
 	}
 	return bidder, nil
 }
 
-func (a *ImdsAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var bidRequests []*adapters.RequestData
 
@@ -53,7 +53,7 @@ func (a *ImdsAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapte
 	return bidRequests, errs
 }
 
-func (a *ImdsAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, []error) {
+func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, []error) {
 	var errs []error
 	var validImps []openrtb2.Imp
 	var re *ReqExt
@@ -126,7 +126,7 @@ func (a *ImdsAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.Reque
 }
 
 // Builds enpoint url based on adapter-specific pub settings from imp.ext
-func (adapter *ImdsAdapter) buildEndpointURL(params *openrtb_ext.ExtImpImds) (string, error) {
+func (adapter *adapter) buildEndpointURL(params *openrtb_ext.ExtImpImds) (string, error) {
 	return macros.ResolveMacros(adapter.EndpointTemplate, macros.EndpointTemplateParams{Host: params.SeatId})
 }
 
@@ -149,7 +149,7 @@ func getExtImpObj(imp *openrtb2.Imp) (*openrtb_ext.ExtImpImds, error) {
 }
 
 // MakeBids make the bids for the bid response.
-func (a *ImdsAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	const errorMessage string = "Unexpected status code: %d. Run with request.debug = 1 for more info"
 	switch {
 	case response.StatusCode == http.StatusNoContent:
