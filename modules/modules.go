@@ -71,9 +71,13 @@ func (m *builder) Build(
 				}
 			}
 
-			if err = json.Unmarshal(conf, &baseConf); err != nil {
-				return nil, nil, fmt.Errorf(`failed to unmarshal base config for module %s: %s`, id, err)
-			} else if !baseConf.Enabled {
+			if conf != nil {
+				if err = json.Unmarshal(conf, &baseConf); err != nil {
+					return nil, nil, fmt.Errorf(`failed to unmarshal base config for module %s: %s`, id, err)
+				}
+			}
+
+			if !baseConf.Enabled {
 				glog.Infof("Skip %s module, disabled.", id)
 				continue
 			}
