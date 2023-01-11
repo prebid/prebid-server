@@ -135,6 +135,26 @@ func preloadLabelValues(m *Metrics, syncerKeys []string, moduleStageNames map[st
 		adapterLabel: adapterValues,
 	})
 
+	preloadLabelValuesForCounter(m.adapterBidResponseSecureMarkupError, map[string][]string{
+		adapterLabel: adapterValues,
+		successLabel: boolValues,
+	})
+
+	preloadLabelValuesForCounter(m.adapterBidResponseSecureMarkupWarn, map[string][]string{
+		adapterLabel: adapterValues,
+		successLabel: boolValues,
+	})
+
+	preloadLabelValuesForCounter(m.adapterBidResponseValidationSizeError, map[string][]string{
+		adapterLabel: adapterValues,
+		successLabel: boolValues,
+	})
+
+	preloadLabelValuesForCounter(m.adapterBidResponseValidationSizeWarn, map[string][]string{
+		adapterLabel: adapterValues,
+		successLabel: boolValues,
+	})
+
 	preloadLabelValuesForHistogram(m.adapterPrices, map[string][]string{
 		adapterLabel: adapterValues,
 	})

@@ -171,7 +171,7 @@ func TestCharacterEscape(t *testing.T) {
 	var errList []error
 
 	// 	4) Build bid response
-	bidResp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, adapterExtra, nil, nil, true, nil, errList)
+	bidResp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, adapterExtra, nil, nil, true, nil, "", errList)
 
 	// 	5) Assert we have no errors and one '&' character as we are supposed to
 	if err != nil {
@@ -1359,7 +1359,7 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 	var errList []error
 
 	// 	4) Build bid response
-	bid_resp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, adapterExtra, auc, nil, true, nil, errList)
+	bid_resp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, adapterExtra, auc, nil, true, nil, "", errList)
 
 	// 	5) Assert we have no errors and the bid response we expected
 	assert.NoError(t, err, "[TestGetBidCacheInfo] buildBidResponse() threw an error")
@@ -1452,7 +1452,7 @@ func TestBidReturnsCreative(t *testing.T) {
 
 	//Run tests
 	for _, test := range testCases {
-		resultingBids, resultingErrs := e.makeBid(sampleBids, sampleAuction, test.inReturnCreative, nil)
+		resultingBids, resultingErrs := e.makeBid(sampleBids, sampleAuction, test.inReturnCreative, nil, nil, "", "")
 
 		assert.Equal(t, 0, len(resultingErrs), "%s. Test should not return errors \n", test.description)
 		assert.Equal(t, test.expectedCreativeMarkup, resultingBids[0].AdM, "%s. Ad markup string doesn't match expected \n", test.description)
@@ -1746,7 +1746,7 @@ func TestBidResponseCurrency(t *testing.T) {
 	}
 	// Run tests
 	for i := range testCases {
-		actualBidResp, err := e.buildBidResponse(context.Background(), liveAdapters, testCases[i].adapterBids, bidRequest, adapterExtra, nil, bidResponseExt, true, nil, errList)
+		actualBidResp, err := e.buildBidResponse(context.Background(), liveAdapters, testCases[i].adapterBids, bidRequest, adapterExtra, nil, bidResponseExt, true, nil, "", errList)
 		assert.NoError(t, err, fmt.Sprintf("[TEST_FAILED] e.buildBidResponse resturns error in test: %s Error message: %s \n", testCases[i].description, err))
 		assert.Equalf(t, testCases[i].expectedBidResponse, actualBidResp, fmt.Sprintf("[TEST_FAILED] Objects must be equal for test: %s \n Expected: >>%s<< \n Actual: >>%s<< ", testCases[i].description, testCases[i].expectedBidResponse.Ext, actualBidResp.Ext))
 	}
@@ -1816,7 +1816,7 @@ func TestBidResponseImpExtInfo(t *testing.T) {
 
 	expectedBidResponseExt := `{"origbidcpm":0,"prebid":{"type":"video","passthrough":{"imp_passthrough_val":1}},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]}}`
 
-	actualBidResp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, nil, nil, nil, true, impExtInfo, errList)
+	actualBidResp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, nil, nil, nil, true, impExtInfo, "", errList)
 	assert.NoError(t, err, fmt.Sprintf("imp ext info was not passed through correctly: %s", err))
 
 	resBidExt := string(actualBidResp.SeatBid[0].Bid[0].Ext)
@@ -2179,7 +2179,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	if spec.BidIDGenerator != nil {
 		*bidIdGenerator = *spec.BidIDGenerator
 	}
-	ex := newExchangeForTests(t, filename, spec.OutgoingRequests, aliases, privacyConfig, bidIdGenerator, spec.HostSChainFlag)
+	ex := newExchangeForTests(t, filename, spec.OutgoingRequests, aliases, privacyConfig, bidIdGenerator, spec.HostSChainFlag, spec.HostConfigBidValidation)
 	biddersInAuction := findBiddersInAuction(t, filename, &spec.IncomingRequest.OrtbRequest)
 	debugLog := &DebugLog{}
 	if spec.DebugLog != nil {
@@ -2197,12 +2197,22 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		impExtInfoMap[impID] = ImpExtInfo{Passthrough: impPassthrough}
 	}
 
+	// Imp Setting for Bid Validation
+	if spec.HostConfigBidValidation.SecureMarkup == config.ValidationEnforce || spec.HostConfigBidValidation.SecureMarkup == config.ValidationWarn {
+		_, impID, err := getInfoFromImp(&openrtb_ext.RequestWrapper{BidRequest: &spec.IncomingRequest.OrtbRequest})
+		if err != nil {
+			t.Errorf("%s: Exchange returned an unexpected error. Got %s", filename, err.Error())
+		}
+		impExtInfoMap[impID] = ImpExtInfo{}
+	}
+
 	auctionRequest := AuctionRequest{
 		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &spec.IncomingRequest.OrtbRequest},
 		Account: config.Account{
 			ID:            "testaccount",
 			EventsEnabled: spec.EventsEnabled,
 			DebugAllow:    true,
+			Validations:   spec.AccountConfigBidValidation,
 		},
 		UserSyncs:     mockIdFetcher(spec.IncomingRequest.Usersyncs),
 		ImpExtInfoMap: impExtInfoMap,
@@ -2288,6 +2298,21 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		}
 
 	}
+
+	if spec.BidValidationEnforcement == config.ValidationEnforce {
+		actualBidRespExt := &openrtb_ext.ExtBidResponse{}
+		expectedBidRespExt := &openrtb_ext.ExtBidResponse{}
+		if bid.Ext != nil {
+			if err := json.Unmarshal(bid.Ext, actualBidRespExt); err != nil {
+				assert.NoError(t, err, fmt.Sprintf("Error when unmarshalling: %s", err))
+			}
+		}
+		if err := json.Unmarshal(spec.Response.Ext, expectedBidRespExt); err != nil {
+			assert.NoError(t, err, fmt.Sprintf("Error when unmarshalling: %s", err))
+		}
+
+		assert.Equal(t, expectedBidRespExt.Errors, actualBidRespExt.Errors, "Oh no")
+	}
 }
 
 func findBiddersInAuction(t *testing.T, context string, req *openrtb2.BidRequest) []string {
@@ -2327,7 +2352,7 @@ func extractResponseTimes(t *testing.T, context string, bid *openrtb2.BidRespons
 	}
 }
 
-func newExchangeForTests(t *testing.T, filename string, expectations map[string]*bidderSpec, aliases map[string]string, privacyConfig config.Privacy, bidIDGenerator BidIDGenerator, hostSChainFlag bool) Exchange {
+func newExchangeForTests(t *testing.T, filename string, expectations map[string]*bidderSpec, aliases map[string]string, privacyConfig config.Privacy, bidIDGenerator BidIDGenerator, hostSChainFlag bool, hostBidValidation config.Validations) Exchange {
 	bidderAdapters := make(map[openrtb_ext.BidderName]AdaptedBidder, len(expectations))
 	bidderInfos := make(config.BidderInfos, len(expectations))
 	for _, bidderName := range openrtb_ext.CoreBidderNames() {
@@ -2394,22 +2419,23 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 	}
 
 	return &exchange{
-		adapterMap:        bidderAdapters,
-		me:                metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.CoreBidderNames(), nil, nil),
-		cache:             &wellBehavedCache{},
-		cacheTime:         0,
-		currencyConverter: currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
-		gdprDefaultValue:  gdprDefaultValue,
-		gdprPermsBuilder:  gdprPermsBuilder,
-		tcf2ConfigBuilder: tcf2ConfigBuilder,
-		privacyConfig:     privacyConfig,
-		categoriesFetcher: categoriesFetcher,
-		bidderInfo:        bidderInfos,
-		bidderToSyncerKey: bidderToSyncerKey,
-		externalURL:       "http://localhost",
-		bidIDGenerator:    bidIDGenerator,
-		hostSChainNode:    hostSChainNode,
-		server:            config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "Datacenter"},
+		adapterMap:               bidderAdapters,
+		me:                       metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.CoreBidderNames(), nil, nil),
+		cache:                    &wellBehavedCache{},
+		cacheTime:                0,
+		currencyConverter:        currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
+		gdprDefaultValue:         gdprDefaultValue,
+		gdprPermsBuilder:         gdprPermsBuilder,
+		tcf2ConfigBuilder:        tcf2ConfigBuilder,
+		privacyConfig:            privacyConfig,
+		categoriesFetcher:        categoriesFetcher,
+		bidderInfo:               bidderInfos,
+		bidderToSyncerKey:        bidderToSyncerKey,
+		externalURL:              "http://localhost",
+		bidIDGenerator:           bidIDGenerator,
+		hostSChainNode:           hostSChainNode,
+		server:                   config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "Datacenter"},
+		bidValidationEnforcement: hostBidValidation,
 	}
 }
 
@@ -4212,6 +4238,238 @@ func TestCallSignHeader(t *testing.T) {
 
 }
 
+func TestValidateBannerCreativeSize(t *testing.T) {
+	exchange := exchange{bidValidationEnforcement: config.Validations{MaxCreativeWidth: 100, MaxCreativeHeight: 100},
+		me: metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.CoreBidderNames(), nil, nil),
+	}
+	testCases := []struct {
+		description                 string
+		givenBid                    *entities.PbsOrtbBid
+		givenBidResponseExt         *openrtb_ext.ExtBidResponse
+		givenBidderName             string
+		givenPubID                  string
+		expectedBannerCreativeValid bool
+	}{
+		{
+			description:                 "The dimensions are invalid, both values bigger than the max",
+			givenBid:                    &entities.PbsOrtbBid{Bid: &openrtb2.Bid{W: 200, H: 200}},
+			givenBidResponseExt:         &openrtb_ext.ExtBidResponse{Errors: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)},
+			givenBidderName:             "bidder",
+			givenPubID:                  "1",
+			expectedBannerCreativeValid: false,
+		},
+		{
+			description:                 "The width is invalid, height is valid, the dimensions as a whole are invalid",
+			givenBid:                    &entities.PbsOrtbBid{Bid: &openrtb2.Bid{W: 200, H: 50}},
+			givenBidResponseExt:         &openrtb_ext.ExtBidResponse{Errors: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)},
+			givenBidderName:             "bidder",
+			givenPubID:                  "1",
+			expectedBannerCreativeValid: false,
+		},
+		{
+			description:                 "The width is valid, height is invalid, the dimensions as a whole are invalid",
+			givenBid:                    &entities.PbsOrtbBid{Bid: &openrtb2.Bid{W: 50, H: 200}},
+			givenBidResponseExt:         &openrtb_ext.ExtBidResponse{Errors: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)},
+			givenBidderName:             "bidder",
+			givenPubID:                  "1",
+			expectedBannerCreativeValid: false,
+		},
+		{
+			description:                 "Both width and height are valid, the dimensions are valid",
+			givenBid:                    &entities.PbsOrtbBid{Bid: &openrtb2.Bid{W: 50, H: 50}},
+			givenBidResponseExt:         &openrtb_ext.ExtBidResponse{Errors: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)},
+			givenBidderName:             "bidder",
+			givenPubID:                  "1",
+			expectedBannerCreativeValid: true,
+		},
+	}
+	for _, test := range testCases {
+		acutalBannerCreativeValid := exchange.validateBannerCreativeSize(test.givenBid, test.givenBidResponseExt, openrtb_ext.BidderName(test.givenBidderName), test.givenPubID, "enforce")
+		assert.Equal(t, test.expectedBannerCreativeValid, acutalBannerCreativeValid)
+	}
+}
+
+func TestValidateBidAdM(t *testing.T) {
+	exchange := exchange{bidValidationEnforcement: config.Validations{MaxCreativeWidth: 100, MaxCreativeHeight: 100},
+		me: metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.CoreBidderNames(), nil, nil),
+	}
+	testCases := []struct {
+		description         string
+		givenBid            *entities.PbsOrtbBid
+		givenBidResponseExt *openrtb_ext.ExtBidResponse
+		givenBidderName     string
+		givenPubID          string
+		expectedBidAdMValid bool
+	}{
+		{
+			description:         "The adm of the bid contains insecure string and no secure string, adm is invalid",
+			givenBid:            &entities.PbsOrtbBid{Bid: &openrtb2.Bid{AdM: "http://domain.com/invalid"}},
+			givenBidResponseExt: &openrtb_ext.ExtBidResponse{Errors: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)},
+			givenBidderName:     "bidder",
+			givenPubID:          "1",
+			expectedBidAdMValid: false,
+		},
+		{
+			description:         "The adm has both an insecure and secure string defined and therefore the adm is valid",
+			givenBid:            &entities.PbsOrtbBid{Bid: &openrtb2.Bid{AdM: "http://www.foo.com https://www.bar.com"}},
+			givenBidResponseExt: &openrtb_ext.ExtBidResponse{Errors: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)},
+			givenBidderName:     "bidder",
+			givenPubID:          "1",
+			expectedBidAdMValid: true,
+		},
+		{
+			description:         "The adm has both an insecure and secure string defined and therefore the adm is valid",
+			givenBid:            &entities.PbsOrtbBid{Bid: &openrtb2.Bid{AdM: "http%3A//www.foo.com https%3A//www.bar.com"}},
+			givenBidResponseExt: &openrtb_ext.ExtBidResponse{Errors: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)},
+			givenBidderName:     "bidder",
+			givenPubID:          "1",
+			expectedBidAdMValid: true,
+		},
+		{
+			description:         "The adm of the bid are valid with a secure string",
+			givenBid:            &entities.PbsOrtbBid{Bid: &openrtb2.Bid{AdM: "https://domain.com/valid"}},
+			givenBidResponseExt: &openrtb_ext.ExtBidResponse{Errors: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)},
+			givenBidderName:     "bidder",
+			givenPubID:          "1",
+			expectedBidAdMValid: true,
+		},
+	}
+	for _, test := range testCases {
+		actualBidAdMValid := exchange.validateBidAdM(test.givenBid, test.givenBidResponseExt, openrtb_ext.BidderName(test.givenBidderName), test.givenPubID, "enforce")
+		assert.Equal(t, test.expectedBidAdMValid, actualBidAdMValid)
+
+	}
+}
+
+func TestMakeBidWithValidation(t *testing.T) {
+	sampleAd := "<?xml version=\"1.0\" encoding=\"UTF-8\"?><VAST ...></VAST>"
+	sampleOpenrtbBid := &openrtb2.Bid{ID: "some-bid-id", AdM: sampleAd}
+
+	// Define test cases
+	testCases := []struct {
+		description       string
+		givenValidations  config.Validations
+		givenBids         []*entities.PbsOrtbBid
+		expectedNumOfBids int
+	}{
+		{
+			description:       "Validation is enforced, and one bid out of the two is invalid based on dimensions",
+			givenValidations:  config.Validations{BannerCreativeMaxSize: config.ValidationEnforce, MaxCreativeWidth: 100, MaxCreativeHeight: 100},
+			givenBids:         []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{W: 200, H: 200}, BidType: openrtb_ext.BidTypeBanner}, {Bid: &openrtb2.Bid{W: 50, H: 50}, BidType: openrtb_ext.BidTypeBanner}},
+			expectedNumOfBids: 1,
+		},
+		{
+			description:       "Validation is warned, so no bids should be removed (Validating CreativeMaxSize) ",
+			givenValidations:  config.Validations{BannerCreativeMaxSize: config.ValidationWarn, MaxCreativeWidth: 100, MaxCreativeHeight: 100},
+			givenBids:         []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{W: 200, H: 200}, BidType: openrtb_ext.BidTypeBanner}, {Bid: &openrtb2.Bid{W: 50, H: 50}, BidType: openrtb_ext.BidTypeBanner}},
+			expectedNumOfBids: 2,
+		},
+		{
+			description:       "Validation is enforced, and one bid out of the two is invalid based on AdM",
+			givenValidations:  config.Validations{SecureMarkup: config.ValidationEnforce},
+			givenBids:         []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{AdM: "http://domain.com/invalid", ImpID: "1"}, BidType: openrtb_ext.BidTypeBanner}, {Bid: &openrtb2.Bid{AdM: "https://domain.com/valid", ImpID: "2"}, BidType: openrtb_ext.BidTypeBanner}},
+			expectedNumOfBids: 1,
+		},
+		{
+			description:       "Validation is warned so no bids should be removed (Validating SecureMarkup)",
+			givenValidations:  config.Validations{SecureMarkup: config.ValidationWarn},
+			givenBids:         []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{AdM: "http://domain.com/invalid", ImpID: "1"}, BidType: openrtb_ext.BidTypeBanner}, {Bid: &openrtb2.Bid{AdM: "https://domain.com/valid", ImpID: "2"}, BidType: openrtb_ext.BidTypeBanner}},
+			expectedNumOfBids: 2,
+		},
+		{
+			description:       "Adm validation is skipped, creative size validation is enforced, one Adm is invalid, but because we skip, no bids should be removed",
+			givenValidations:  config.Validations{SecureMarkup: config.ValidationSkip, BannerCreativeMaxSize: config.ValidationEnforce},
+			givenBids:         []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{AdM: "http://domain.com/invalid"}, BidType: openrtb_ext.BidTypeBanner}, {Bid: &openrtb2.Bid{AdM: "https://domain.com/valid"}, BidType: openrtb_ext.BidTypeBanner}},
+			expectedNumOfBids: 2,
+		},
+		{
+			description:       "Creative Size Validation is skipped, Adm Validation is enforced, one Creative Size is invalid, but because we skip, no bids should be removed",
+			givenValidations:  config.Validations{BannerCreativeMaxSize: config.ValidationWarn, MaxCreativeWidth: 100, MaxCreativeHeight: 100},
+			givenBids:         []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{W: 200, H: 200}, BidType: openrtb_ext.BidTypeBanner}, {Bid: &openrtb2.Bid{W: 50, H: 50}, BidType: openrtb_ext.BidTypeBanner}},
+			expectedNumOfBids: 2,
+		},
+	}
+
+	// Test set up
+	sampleAuction := &auction{cacheIds: map[*openrtb2.Bid]string{sampleOpenrtbBid: "CACHE_UUID_1234"}}
+
+	noBidHandler := func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) }
+	server := httptest.NewServer(http.HandlerFunc(noBidHandler))
+	defer server.Close()
+
+	bidderImpl := &goodSingleBidder{
+		httpRequest: &adapters.RequestData{
+			Method:  "POST",
+			Uri:     server.URL,
+			Body:    []byte("{\"key\":\"val\"}"),
+			Headers: http.Header{},
+		},
+		bidResponse: &adapters.BidderResponse{},
+	}
+	e := new(exchange)
+	e.adapterMap = map[openrtb_ext.BidderName]AdaptedBidder{
+		openrtb_ext.BidderAppnexus: AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil, ""),
+	}
+	e.cache = &wellBehavedCache{}
+	e.me = &metricsConf.NilMetricsEngine{}
+
+	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+
+	bidExtResponse := &openrtb_ext.ExtBidResponse{Errors: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)}
+
+	ImpExtInfoMap := make(map[string]ImpExtInfo)
+	ImpExtInfoMap["1"] = ImpExtInfo{}
+	ImpExtInfoMap["2"] = ImpExtInfo{}
+
+	//Run tests
+	for _, test := range testCases {
+		e.bidValidationEnforcement = test.givenValidations
+		sampleBids := test.givenBids
+		resultingBids, resultingErrs := e.makeBid(sampleBids, sampleAuction, true, ImpExtInfoMap, bidExtResponse, "", "")
+
+		assert.Equal(t, 0, len(resultingErrs), "%s. Test should not return errors \n", test.description)
+		assert.Equal(t, test.expectedNumOfBids, len(resultingBids), "%s. Test returns more valid bids than expected\n", test.description)
+	}
+}
+
+func TestSetBidValidationStatus(t *testing.T) {
+	testCases := []struct {
+		description  string
+		givenHost    config.Validations
+		givenAccount config.Validations
+		expected     config.Validations
+	}{
+		{
+			description:  "Host configuration is different than account, account setting should be preferred (enforce)",
+			givenHost:    config.Validations{BannerCreativeMaxSize: config.ValidationSkip, SecureMarkup: config.ValidationSkip},
+			givenAccount: config.Validations{BannerCreativeMaxSize: config.ValidationEnforce, SecureMarkup: config.ValidationEnforce},
+			expected:     config.Validations{BannerCreativeMaxSize: config.ValidationEnforce, SecureMarkup: config.ValidationSkip},
+		},
+		{
+			description:  "Host configuration is different than account, account setting should be preferred (warn)",
+			givenHost:    config.Validations{BannerCreativeMaxSize: config.ValidationEnforce, SecureMarkup: config.ValidationEnforce},
+			givenAccount: config.Validations{BannerCreativeMaxSize: config.ValidationWarn, SecureMarkup: config.ValidationWarn},
+			expected:     config.Validations{BannerCreativeMaxSize: config.ValidationWarn, SecureMarkup: config.ValidationEnforce},
+		},
+		{
+			description:  "Host configuration is different than account, account setting should be preferred (skip)",
+			givenHost:    config.Validations{BannerCreativeMaxSize: config.ValidationWarn, SecureMarkup: config.ValidationWarn},
+			givenAccount: config.Validations{BannerCreativeMaxSize: config.ValidationSkip, SecureMarkup: config.ValidationSkip},
+			expected:     config.Validations{BannerCreativeMaxSize: config.ValidationSkip, SecureMarkup: config.ValidationWarn},
+		},
+		{
+			description:  "No account confiugration given, host confg should be preferred",
+			givenHost:    config.Validations{BannerCreativeMaxSize: config.ValidationSkip, SecureMarkup: config.ValidationSkip},
+			givenAccount: config.Validations{},
+			expected:     config.Validations{BannerCreativeMaxSize: config.ValidationSkip, SecureMarkup: config.ValidationSkip},
+		},
+	}
+	for _, test := range testCases {
+		test.givenHost.SetBannerCreativeMaxSize(test.givenAccount)
+		assert.Equal(t, test.expected, test.givenHost)
+	}
+}
+
 /*
 TestOverrideConfigAlternateBidderCodesWithRequestValues makes sure that the correct alternabiddercodes list is forwarded to the adapters and only the approved bids are returned in auction response.
 
@@ -4402,20 +4660,23 @@ func (ms *MockSigner) Sign(destinationURL string, body []byte) (string, error) {
 }
 
 type exchangeSpec struct {
-	GDPREnabled       bool                   `json:"gdpr_enabled"`
-	IncomingRequest   exchangeRequest        `json:"incomingRequest"`
-	OutgoingRequests  map[string]*bidderSpec `json:"outgoingRequests"`
-	Response          exchangeResponse       `json:"response,omitempty"`
-	EnforceCCPA       bool                   `json:"enforceCcpa"`
-	EnforceLMT        bool                   `json:"enforceLmt"`
-	AssumeGDPRApplies bool                   `json:"assume_gdpr_applies"`
-	DebugLog          *DebugLog              `json:"debuglog,omitempty"`
-	EventsEnabled     bool                   `json:"events_enabled,omitempty"`
-	StartTime         int64                  `json:"start_time_ms,omitempty"`
-	BidIDGenerator    *mockBidIDGenerator    `json:"bidIDGenerator,omitempty"`
-	RequestType       *metrics.RequestType   `json:"requestType,omitempty"`
-	PassthroughFlag   bool                   `json:"passthrough_flag,omitempty"`
-	HostSChainFlag    bool                   `json:"host_schain_flag,omitempty"`
+	GDPREnabled                bool                   `json:"gdpr_enabled"`
+	IncomingRequest            exchangeRequest        `json:"incomingRequest"`
+	OutgoingRequests           map[string]*bidderSpec `json:"outgoingRequests"`
+	Response                   exchangeResponse       `json:"response,omitempty"`
+	EnforceCCPA                bool                   `json:"enforceCcpa"`
+	EnforceLMT                 bool                   `json:"enforceLmt"`
+	AssumeGDPRApplies          bool                   `json:"assume_gdpr_applies"`
+	DebugLog                   *DebugLog              `json:"debuglog,omitempty"`
+	EventsEnabled              bool                   `json:"events_enabled,omitempty"`
+	StartTime                  int64                  `json:"start_time_ms,omitempty"`
+	BidIDGenerator             *mockBidIDGenerator    `json:"bidIDGenerator,omitempty"`
+	RequestType                *metrics.RequestType   `json:"requestType,omitempty"`
+	PassthroughFlag            bool                   `json:"passthrough_flag,omitempty"`
+	HostSChainFlag             bool                   `json:"host_schain_flag,omitempty"`
+	BidValidationEnforcement   string                 `json:"bid_validation_flag,omitempty"`
+	HostConfigBidValidation    config.Validations     `json:"host_bid_validations"`
+	AccountConfigBidValidation config.Validations     `json:"account_bid_validations"`
 }
 
 type exchangeRequest struct {
