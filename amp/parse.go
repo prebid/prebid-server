@@ -31,6 +31,7 @@ type Params struct {
 	StoredRequestID   string
 	Targeting         string
 	Timeout           *uint64
+	Trace             string
 }
 
 // Size defines size information of an AMP request.
@@ -172,6 +173,7 @@ func ParseParams(httpRequest *http.Request) (Params, error) {
 		Slot:            query.Get("slot"),
 		StoredRequestID: tagID,
 		Targeting:       query.Get("targeting"),
+		Trace:           query.Get("trace"),
 	}
 	var err error
 	urlQueryGdprApplies := query.Get("gdpr_applies")
