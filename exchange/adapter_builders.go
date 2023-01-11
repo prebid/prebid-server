@@ -135,6 +135,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/stroeerCore"
 	"github.com/prebid/prebid-server/adapters/suntContent"
 	"github.com/prebid/prebid-server/adapters/synacormedia"
+	"github.com/prebid/prebid-server/adapters/taboola"
 	"github.com/prebid/prebid-server/adapters/tappx"
 	"github.com/prebid/prebid-server/adapters/telaria"
 	"github.com/prebid/prebid-server/adapters/trafficgate"
@@ -144,6 +145,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/unicorn"
 	"github.com/prebid/prebid-server/adapters/unruly"
 	"github.com/prebid/prebid-server/adapters/videobyte"
+	"github.com/prebid/prebid-server/adapters/videoheroes"
 	"github.com/prebid/prebid-server/adapters/vidoomy"
 	"github.com/prebid/prebid-server/adapters/visx"
 	"github.com/prebid/prebid-server/adapters/vrtcal"
@@ -303,6 +305,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderSuntContent:       suntContent.Builder,
 		openrtb_ext.BidderStroeerCore:       stroeerCore.Builder,
 		openrtb_ext.BidderSynacormedia:      synacormedia.Builder,
+		openrtb_ext.BidderTaboola:           taboola.Builder,
 		openrtb_ext.BidderTappx:             tappx.Builder,
 		openrtb_ext.BidderTelaria:           telaria.Builder,
 		openrtb_ext.BidderTrafficGate:       trafficgate.Builder,
@@ -315,6 +318,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderValueImpression:   apacdex.Builder,
 		openrtb_ext.BidderVerizonMedia:      yahoossp.Builder,
 		openrtb_ext.BidderVideoByte:         videobyte.Builder,
+		openrtb_ext.BidderVideoHeroes:       videoheroes.Builder,
 		openrtb_ext.BidderVidoomy:           vidoomy.Builder,
 		openrtb_ext.BidderViewdeos:          adtelligent.Builder,
 		openrtb_ext.BidderVisx:              visx.Builder,

@@ -9,7 +9,7 @@ import (
 
 // This file actually intends to test static/bidder-params/gamoshi.json
 //
-// These also validate the format of the external API: request.imp[i].ext.gamoshi
+// These also validate the format of the external API: request.imp[i].ext.prebid.bidder.gamoshi
 
 // TestValidParams makes sure that the Gamoshi schema accepts all imp.ext fields which we intend to support.
 func TestValidParams(t *testing.T) {

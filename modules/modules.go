@@ -10,6 +10,8 @@ import (
 	"github.com/prebid/prebid-server/modules/moduledeps"
 )
 
+//go:generate go run ./generator/buildergen.go
+
 // NewBuilder returns a new module builder.
 func NewBuilder() Builder {
 	return &builder{builders()}
@@ -67,11 +69,13 @@ func (m *builder) Build(
 				if conf, err = json.Marshal(data); err != nil {
 					return nil, nil, fmt.Errorf(`failed to marshal "%s" module config: %s`, id, err)
 				}
+
+				if err = json.Unmarshal(conf, &baseConf); err != nil {
+					return nil, nil, fmt.Errorf(`failed to unmarshal base config for module %s: %s`, id, err)
+				}
 			}
 
-			if err = json.Unmarshal(conf, &baseConf); err != nil {
-				return nil, nil, fmt.Errorf(`failed to unmarshal base config for module %s: %s`, id, err)
-			} else if !baseConf.Enabled {
+			if !baseConf.Enabled {
 				glog.Infof("Skip %s module, disabled.", id)
 				continue
 			}
@@ -85,12 +89,12 @@ func (m *builder) Build(
 		}
 	}
 
-	coll, err := createModuleStageNamesCollection(modules)
+	collection, err := createModuleStageNamesCollection(modules)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	repo, err := hooks.NewHookRepository(modules)
 
-	return repo, coll, err
+	return repo, collection, err
 }

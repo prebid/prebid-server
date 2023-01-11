@@ -9,7 +9,7 @@ import (
 
 // This file actually intends to test static/bidder-params/vidoomy.json
 //
-// These also validate the format of the external API: request.imp[i].ext.vidoomy
+// These also validate the format of the external API: request.imp[i].ext.prebid.bidder.vidoomy
 
 // TestValidParams makes sure that the vidoomy schema accepts all imp.ext fields which we intend to support.
 func TestValidParams(t *testing.T) {

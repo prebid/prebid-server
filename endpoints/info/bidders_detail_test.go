@@ -2,7 +2,7 @@ package info
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -440,7 +440,7 @@ func TestBiddersDetailHandler(t *testing.T) {
 		result := responseRecorder.Result()
 		assert.Equal(t, result.StatusCode, test.expectedStatus, test.description+":statuscode")
 
-		resultBody, _ := ioutil.ReadAll(result.Body)
+		resultBody, _ := io.ReadAll(result.Body)
 		assert.Equal(t, test.expectedResponse, resultBody, test.description+":body")
 
 		resultHeaders := result.Header

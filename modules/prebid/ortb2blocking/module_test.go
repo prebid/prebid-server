@@ -338,18 +338,18 @@ func TestHandleBidderRequestHook(t *testing.T) {
 			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{
 				ModuleContext: map[string]interface{}{
 					bidder: blockingAttributes{
-						badv: []string{bAdvA, bAdvB},
-						bapp: []string{bApp3},
-						bcat: []string{bCat1, bCat2, bCat3, bCat4},
-						btype: map[string][]int{
+						bAdv: []string{bAdvA, bAdvB},
+						bApp: []string{bApp3},
+						bCat: []string{bCat1, bCat2, bCat3, bCat4},
+						bType: map[string][]int{
 							"ImpID1": toInt([]openrtb2.BannerAdType{bType3, bType4, bType5}),
 							"ImpID2": toInt([]openrtb2.BannerAdType{bType3, bType4, bType5}),
 						},
-						battr: map[string][]int{
+						bAttr: map[string][]int{
 							"ImpID1": toInt([]adcom1.CreativeAttribute{bAttr1, bAttr8, bAttr9, bAttr10}),
 							"ImpID2": toInt([]adcom1.CreativeAttribute{bAttr1, bAttr8, bAttr9, bAttr10}),
 						},
-						cattax: catTax,
+						catTax: catTax,
 					},
 				},
 				Warnings: []string{
@@ -357,6 +357,86 @@ func TestHandleBidderRequestHook(t *testing.T) {
 					"More than one condition matches request. Bidder: appnexus, request media types: audio, banner, native, video",
 					"More than one condition matches request. Bidder: appnexus, request media types: audio, banner, native, video",
 				},
+			},
+			expectedError: nil,
+		},
+		{
+			description: "Payload changed after successful BidderRequest hook execution for default config",
+			bidder:      bidder,
+			config:      json.RawMessage(`{"attributes": {"badv": {"enforce_blocks": true, "block_unknown_adomain": true, "blocked_adomain": ["a.com","b.com","c.com"]}}}`),
+			bidRequest: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{
+						ID:    "ImpID1",
+						Audio: &openrtb2.Audio{},
+					},
+				},
+			},
+			expectedBidRequest: &openrtb2.BidRequest{
+				BAdv: []string{bAdvA, bAdvB, bAdvC},
+				Imp: []openrtb2.Imp{
+					{
+						ID:    "ImpID1",
+						Audio: &openrtb2.Audio{},
+					},
+				},
+			},
+			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{
+				ModuleContext: map[string]interface{}{
+					bidder: blockingAttributes{
+						bAdv:  []string{bAdvA, bAdvB, bAdvC},
+						bType: map[string][]int{},
+						bAttr: map[string][]int{},
+					},
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			description: "BidderRequest attributes not updated if they already present in BidderRequest",
+			bidder:      bidder,
+			config:      config,
+			bidRequest: &openrtb2.BidRequest{
+				BAdv:   []string{"existing.com"},
+				BApp:   []string{"existingApp", "existingApp2"},
+				BCat:   []string{"Existing-IAB-1", "Existing-IAB-2"},
+				CatTax: adcom1.CatTaxIABContent10,
+				Imp: []openrtb2.Imp{
+					{
+						ID:    "ImpID1",
+						Audio: &openrtb2.Audio{},
+						Banner: &openrtb2.Banner{
+							BType: []openrtb2.BannerAdType{openrtb2.BannerAdTypeXHTMLTextAd},
+							BAttr: []adcom1.CreativeAttribute{adcom1.AttrSurvey},
+						},
+						Native: &openrtb2.Native{},
+						Video:  &openrtb2.Video{},
+					},
+				},
+			},
+			expectedBidRequest: &openrtb2.BidRequest{
+				BAdv:   []string{"existing.com"},
+				BApp:   []string{"existingApp", "existingApp2"},
+				BCat:   []string{"Existing-IAB-1", "Existing-IAB-2"},
+				CatTax: adcom1.CatTaxIABContent10,
+				Imp: []openrtb2.Imp{
+					{
+						ID:    "ImpID1",
+						Audio: &openrtb2.Audio{},
+						Banner: &openrtb2.Banner{
+							BType: []openrtb2.BannerAdType{openrtb2.BannerAdTypeXHTMLTextAd},
+							BAttr: []adcom1.CreativeAttribute{adcom1.AttrSurvey},
+						},
+						Native: &openrtb2.Native{},
+						Video:  &openrtb2.Video{},
+					},
+				},
+			},
+			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{
+				ModuleContext: map[string]interface{}{bidder: blockingAttributes{
+					bType: map[string][]int{},
+					bAttr: map[string][]int{},
+				}},
 			},
 			expectedError: nil,
 		},
@@ -375,8 +455,8 @@ func TestHandleBidderRequestHook(t *testing.T) {
 			},
 			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{
 				ModuleContext: map[string]interface{}{bidder: blockingAttributes{
-					btype: map[string][]int{},
-					battr: map[string][]int{},
+					bType: map[string][]int{},
+					bAttr: map[string][]int{},
 				}},
 			},
 			expectedError: nil,
