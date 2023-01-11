@@ -123,7 +123,7 @@ func shouldBeBlockedDueToBadv(
 		}
 	}
 
-	shouldBlock, blockedAttributes := blockAttribute(bid.ADomain, blockAttr.badv, dealExceptions, blockUnknown)
+	shouldBlock, blockedAttributes := blockAttribute(bid.ADomain, blockAttr.bAdv, dealExceptions, blockUnknown)
 	if shouldBlock {
 		failedChecksData["badv"] = blockedAttributes
 	}
@@ -165,7 +165,7 @@ func shouldBeBlockedDueToBcat(
 		}
 	}
 
-	shouldBlock, blockedAttributes := blockAttribute(bid.Cat, blockAttr.bcat, dealExceptions, blockUnknown)
+	shouldBlock, blockedAttributes := blockAttribute(bid.Cat, blockAttr.bCat, dealExceptions, blockUnknown)
 	if shouldBlock {
 		failedChecksData["bcat"] = blockedAttributes
 	}
@@ -189,12 +189,12 @@ func shouldBeBlockedDueToCattax(
 	}
 
 	// if blocking cattax was not specified use a default value
-	if blockAttr.cattax == 0 {
-		blockAttr.cattax = adcom1.CatTaxIABContent10
+	if blockAttr.catTax == 0 {
+		blockAttr.catTax = adcom1.CatTaxIABContent10
 	}
 
 	// cattax check has a reverse logic, the blockAttr.cattax should have one allowed value
-	if cattax != blockAttr.cattax {
+	if cattax != blockAttr.catTax {
 		failedChecksData["cattax"] = []adcom1.CategoryTaxonomy{cattax}
 	}
 
@@ -231,7 +231,7 @@ func shouldBeBlockedDueToBapp(
 
 	bidBapp := []string{bid.Bundle}
 
-	shouldBlock, blockedAttributes := blockAttribute(bidBapp, blockAttr.bapp, dealExceptions, false)
+	shouldBlock, blockedAttributes := blockAttribute(bidBapp, blockAttr.bApp, dealExceptions, false)
 	if shouldBlock {
 		failedChecksData["bapp"] = blockedAttributes
 	}
@@ -267,10 +267,10 @@ func shouldBeBlockedDueToBattr(
 		}
 	}
 
-	if blockAttr.battr == nil || len(blockAttr.battr) == 0 {
+	if blockAttr.bAttr == nil || len(blockAttr.bAttr) == 0 {
 		return failedChecksData, nil
 	}
-	blockedBattr := blockAttr.battr[bid.ImpID]
+	blockedBattr := blockAttr.bAttr[bid.ImpID]
 	bidAttr := toInt(bid.Attr)
 
 	shouldBlock, blockedAttributes := blockAttribute(bidAttr, blockedBattr, dealExceptions, false)

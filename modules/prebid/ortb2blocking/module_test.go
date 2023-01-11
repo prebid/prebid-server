@@ -8,8 +8,6 @@ import (
 
 	"github.com/prebid/openrtb/v17/adcom1"
 	"github.com/prebid/openrtb/v17/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/hooks/hookanalytics"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/prebid/prebid-server/modules/moduledeps"
@@ -597,16 +595,4 @@ func TestHandleBidderRequestHook(t *testing.T) {
 			assert.Equal(t, test.expectedHookResult, hookResult, "Invalid hook execution result.")
 		})
 	}
-}
-
-type numeric interface {
-	openrtb2.BannerAdType | adcom1.CreativeAttribute
-}
-
-func toInt[T numeric](values []T) []int {
-	ints := make([]int, len(values))
-	for i := range values {
-		ints[i] = int(values[i])
-	}
-	return ints
 }
