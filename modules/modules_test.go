@@ -51,12 +51,12 @@ func TestModuleBuilderBuild(t *testing.T) {
 			expectedHookRepo:      emptyHookRepository,
 			expectedErr:           nil,
 		},
-		"Build fails if modules config not provided": {
+		"Module considered disabled if its config not provided and as a result skipped from execution": {
 			givenModule:           module{},
 			givenConfig:           nil,
-			expectedHookRepo:      nil,
-			expectedModulesStages: nil,
-			expectedErr:           fmt.Errorf("failed to unmarshal base config for module %s.%s: unexpected end of JSON input", vendor, moduleName),
+			expectedHookRepo:      emptyHookRepository,
+			expectedModulesStages: map[string][]string{},
+			expectedErr:           nil,
 		},
 		"Fails if module does not implement any hook interface": {
 			givenModule:           struct{}{},
