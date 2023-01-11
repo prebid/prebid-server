@@ -20,6 +20,7 @@ import (
 	"github.com/prebid/openrtb/v17/native1"
 	nativeRequests "github.com/prebid/openrtb/v17/native1/request"
 	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/hooks/hookstage"
@@ -4656,9 +4657,34 @@ func TestValidateStoredResp(t *testing.T) {
 	}
 }
 
-func TestValidResponseWhenRequestRejected(t *testing.T) {
+func TestValidResponseAfterExecutingStages(t *testing.T) {
 	const nbr int = 123
-	const file string = "sample-requests/valid-whole/hooks/auction_reject.json"
+
+	hooksPlanBuilder := mockPlanBuilder{
+		entrypointPlan: hooks.Plan[hookstage.Entrypoint]{
+			{
+				Timeout: 5 * time.Millisecond,
+				Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
+					entryPointHookUpdateWithErrors,
+					entryPointHookUpdateWithErrorsAndWarnings,
+				},
+			},
+			{
+				Timeout: 5 * time.Millisecond,
+				Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
+					entryPointHookUpdate,
+				},
+			},
+		},
+		rawAuctionPlan: hooks.Plan[hookstage.RawAuctionRequest]{
+			{
+				Timeout: 5 * time.Millisecond,
+				Hooks: []hooks.HookWrapper[hookstage.RawAuctionRequest]{
+					rawAuctionHookNone,
+				},
+			},
+		},
+	}
 
 	testCases := []struct {
 		description string
@@ -4667,29 +4693,34 @@ func TestValidResponseWhenRequestRejected(t *testing.T) {
 	}{
 		{
 			description: "Assert correct BidResponse when request rejected at entrypoint stage",
-			file:        file,
-			planBuilder: mockPlanBuilder{entrypointPlan: makeRejectPlan[hookstage.Entrypoint](mockRejectionHook{nbr})},
+			file:        "sample-requests/hooks/auction_entrypoint_reject.json",
+			planBuilder: mockPlanBuilder{entrypointPlan: makePlan[hookstage.Entrypoint](mockRejectionHook{nbr})},
 		},
 		{
 			description: "Assert correct BidResponse when request rejected at raw-auction stage",
-			file:        file,
-			planBuilder: mockPlanBuilder{rawAuctionPlan: makeRejectPlan[hookstage.RawAuctionRequest](mockRejectionHook{nbr})},
+			file:        "sample-requests/hooks/auction_raw_auction_request_reject.json",
+			planBuilder: mockPlanBuilder{rawAuctionPlan: makePlan[hookstage.RawAuctionRequest](mockRejectionHook{nbr})},
 		},
 		{
 			description: "Assert correct BidResponse when request rejected at processed-auction stage",
-			file:        file,
-			planBuilder: mockPlanBuilder{processedAuctionPlan: makeRejectPlan[hookstage.ProcessedAuctionRequest](mockRejectionHook{nbr})},
+			file:        "sample-requests/hooks/auction_processed_auction_request_reject.json",
+			planBuilder: mockPlanBuilder{processedAuctionPlan: makePlan[hookstage.ProcessedAuctionRequest](mockRejectionHook{nbr})},
 		},
 		{
 			// bidder-request stage doesn't reject whole request, so we do not expect NBR code in response
 			description: "Assert correct BidResponse when request rejected at bidder-request stage",
-			file:        "sample-requests/valid-whole/hooks/auction_bidder_reject.json",
-			planBuilder: mockPlanBuilder{bidderRequestPlan: makeRejectPlan[hookstage.BidderRequest](mockRejectionHook{nbr})},
+			file:        "sample-requests/hooks/auction_bidder_reject.json",
+			planBuilder: mockPlanBuilder{bidderRequestPlan: makePlan[hookstage.BidderRequest](mockRejectionHook{nbr})},
 		},
 		{
 			description: "Assert correct BidResponse when request rejected at raw-bidder-response stage",
-			file:        "sample-requests/valid-whole/hooks/auction_bidder_response_reject.json",
-			planBuilder: mockPlanBuilder{rawBidderResponsePlan: makeRejectPlan[hookstage.RawBidderResponse](mockRejectionHook{nbr})},
+			file:        "sample-requests/hooks/auction_bidder_response_reject.json",
+			planBuilder: mockPlanBuilder{rawBidderResponsePlan: makePlan[hookstage.RawBidderResponse](mockRejectionHook{nbr})},
+		},
+		{
+			description: "Assert correct BidResponse with debug information from modules added to ext.prebid.modules",
+			file:        "sample-requests/hooks/auction.json",
+			planBuilder: hooksPlanBuilder,
 		},
 	}
 
@@ -4703,7 +4734,8 @@ func TestValidResponseWhenRequestRejected(t *testing.T) {
 			test.planBuilder = tc.planBuilder
 			test.endpointType = OPENRTB_ENDPOINT
 
-			auctionEndpointHandler, _, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, &config.Configuration{MaxRequestSize: maxSize})
+			cfg := &config.Configuration{MaxRequestSize: maxSize, AccountDefaults: config.Account{DebugAllow: true}}
+			auctionEndpointHandler, _, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
 			assert.NoError(t, err, "Failed to build test endpoint.")
 
 			recorder := httptest.NewRecorder()
@@ -4725,13 +4757,91 @@ func TestValidResponseWhenRequestRejected(t *testing.T) {
 
 			assertBidResponseEqual(t, tc.file, expectedResp, actualResp)
 			assert.Equal(t, expectedResp.NBR, actualResp.NBR, "Invalid NBR.")
-			assert.Equal(t, expectedExt.Warnings, actualExt.Warnings, "Wrong bidResponse.ext.")
+			assert.Equal(t, expectedExt.Warnings, actualExt.Warnings, "Wrong bidResponse.ext.warnings.")
+
+			if expectedExt.Prebid != nil {
+				hookexecution.AssertEqualModulesData(t, expectedExt.Prebid.Modules, actualExt.Prebid.Modules)
+			} else {
+				assert.Nil(t, actualExt.Prebid, "Invalid BidResponse.ext.prebid")
+			}
 
 			// Close servers regardless if the test case was run or not
 			for _, mockBidServer := range mockBidServers {
 				mockBidServer.Close()
 			}
 			mockCurrencyRatesServer.Close()
+		})
+	}
+}
+
+func TestSendAuctionResponse_LogsErrors(t *testing.T) {
+	hookExecutor := &mockStageExecutor{
+		outcomes: []hookexecution.StageOutcome{
+			{
+				Entity: "bid-request",
+				Stage:  hooks.StageBidderRequest.String(),
+				Groups: []hookexecution.GroupOutcome{
+					{
+						InvocationResults: []hookexecution.HookOutcome{
+							{
+								HookID: hookexecution.HookID{
+									ModuleCode:   "foobar",
+									HookImplCode: "foo",
+								},
+								Status:   hookexecution.StatusSuccess,
+								Action:   hookexecution.ActionNone,
+								Warnings: []string{"warning message"},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	testCases := []struct {
+		description    string
+		expectedErrors []error
+		expectedStatus int
+		request        *openrtb2.BidRequest
+		response       *openrtb2.BidResponse
+		hookExecutor   hookexecution.HookStageExecutor
+	}{
+		{
+			description: "Error logged if hook enrichment fails",
+			expectedErrors: []error{
+				errors.New("Failed to enrich Bid Response with hook debug information: Invalid JSON Document"),
+				errors.New("/openrtb2/auction Failed to send response: json: error calling MarshalJSON for type json.RawMessage: invalid character '.' looking for beginning of value"),
+			},
+			expectedStatus: 0,
+			request:        &openrtb2.BidRequest{ID: "some-id", Test: 1},
+			response:       &openrtb2.BidResponse{ID: "some-id", Ext: json.RawMessage("...")},
+			hookExecutor:   hookExecutor,
+		},
+		{
+			description: "Error logged if hook enrichment returns warnings",
+			expectedErrors: []error{
+				errors.New("Value is not a string: 1"),
+				errors.New("Value is not a boolean: active"),
+			},
+			expectedStatus: 0,
+			request:        &openrtb2.BidRequest{ID: "some-id", Test: 1, Ext: json.RawMessage(`{"prebid": {"debug": "active", "trace": 1}}`)},
+			response:       &openrtb2.BidResponse{ID: "some-id", Ext: json.RawMessage("{}")},
+			hookExecutor:   hookExecutor,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			writer := httptest.NewRecorder()
+			labels := metrics.Labels{}
+			ao := analytics.AuctionObject{}
+			account := &config.Account{DebugAllow: true}
+
+			labels, ao = sendAuctionResponse(writer, test.hookExecutor, test.response, test.request, account, labels, ao)
+
+			assert.Equal(t, ao.Errors, test.expectedErrors, "Invalid errors.")
+			assert.Equal(t, test.expectedStatus, ao.Status, "Invalid HTTP response status.")
 		})
 	}
 }
@@ -4771,4 +4881,14 @@ func getIntegrationFromRequest(req *openrtb_ext.RequestWrapper) (string, error) 
 	}
 	reqPrebid := reqExt.GetPrebid()
 	return reqPrebid.Integration, nil
+}
+
+type mockStageExecutor struct {
+	hookexecution.EmptyHookExecutor
+
+	outcomes []hookexecution.StageOutcome
+}
+
+func (e mockStageExecutor) GetOutcomes() []hookexecution.StageOutcome {
+	return e.outcomes
 }
