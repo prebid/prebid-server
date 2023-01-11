@@ -5,7 +5,7 @@
 package hookanalytics
 
 type Analytics struct {
-	Activities []Activity `json:"activities"`
+	Activities []Activity `json:"activities,omitempty"`
 }
 
 type Activity struct {
