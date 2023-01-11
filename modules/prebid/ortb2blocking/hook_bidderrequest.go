@@ -20,20 +20,19 @@ func handleBidderRequestHook(
 		return result, hookexecution.NewFailure("empty BidRequest provided")
 	}
 
-	bidder := payload.Bidder
 	mediaTypes := mediaTypesFrom(payload.BidRequest)
 	changeSet := hookstage.ChangeSet[hookstage.BidderRequestPayload]{}
 	blockingAttributes := blockingAttributes{}
 
-	if err = updateBAdv(cfg, bidder, mediaTypes, &blockingAttributes, &result, &changeSet); err != nil {
+	if err = updateBAdv(cfg, payload, mediaTypes, &blockingAttributes, &result, &changeSet); err != nil {
 		return result, hookexecution.NewFailure("failed to update badv field: %s", err)
 	}
 
-	if err = updateBApp(cfg, bidder, mediaTypes, &blockingAttributes, &result, &changeSet); err != nil {
+	if err = updateBApp(cfg, payload, mediaTypes, &blockingAttributes, &result, &changeSet); err != nil {
 		return result, hookexecution.NewFailure("failed to update bapp field: %s", err)
 	}
 
-	if err = updateBCat(cfg, bidder, mediaTypes, &blockingAttributes, &result, &changeSet); err != nil {
+	if err = updateBCat(cfg, payload, mediaTypes, &blockingAttributes, &result, &changeSet); err != nil {
 		return result, hookexecution.NewFailure("failed to update bcat field: %s", err)
 	}
 
@@ -45,37 +44,36 @@ func handleBidderRequestHook(
 		return result, hookexecution.NewFailure("failed to update battr field: %s", err)
 	}
 
-	// todo: probably we should update cattax only if current bidder supports openrtb v2.6
-	blockingAttributes.cattax = payload.BidRequest.CatTax
-	if blockingAttributes.cattax == 0 && cfg.Attributes.Bcat.CategoryTaxonomy > 0 {
-		blockingAttributes.cattax = cfg.Attributes.Bcat.CategoryTaxonomy
-		changeSet.BidderRequest().CatTax().Update(blockingAttributes.cattax)
-	}
+	updateCatTax(cfg, payload, &blockingAttributes, &changeSet)
 
 	result.ChangeSet = changeSet
-	result.ModuleContext = hookstage.ModuleContext{bidder: blockingAttributes}
+	result.ModuleContext = hookstage.ModuleContext{payload.Bidder: blockingAttributes}
 
 	return result, nil
 }
 
 func updateBAdv(
 	cfg Config,
-	bidder string,
+	payload hookstage.BidderRequestPayload,
 	mediaTypes mediaTypes,
 	attributes *blockingAttributes,
 	result *hookstage.HookResult[hookstage.BidderRequestPayload],
 	changeSet *hookstage.ChangeSet[hookstage.BidderRequestPayload],
 ) (err error) {
+	if len(payload.BidRequest.BAdv) > 0 {
+		return nil
+	}
+
 	var message string
 	badv := cfg.Attributes.Badv.BlockedAdomain
 	actionOverrides := cfg.Attributes.Badv.ActionOverrides.BlockedAdomain
 
-	attributes.badv, message, err = firstOrDefaultOverride(bidder, mediaTypes, getNames, actionOverrides, badv)
+	attributes.bAdv, message, err = firstOrDefaultOverride(payload.Bidder, mediaTypes, getNames, actionOverrides, badv)
 	result.Warnings = mergeStrings(result.Warnings, message)
 	if err != nil {
 		return fmt.Errorf("failed to get override for badv.blocked_adomain: %s", err)
-	} else if len(attributes.badv) > 0 {
-		changeSet.BidderRequest().BAdv().Update(attributes.badv)
+	} else if len(attributes.bAdv) > 0 {
+		changeSet.BidderRequest().BAdv().Update(attributes.bAdv)
 	}
 
 	return nil
@@ -83,22 +81,26 @@ func updateBAdv(
 
 func updateBApp(
 	cfg Config,
-	bidder string,
+	payload hookstage.BidderRequestPayload,
 	mediaTypes mediaTypes,
 	attributes *blockingAttributes,
 	result *hookstage.HookResult[hookstage.BidderRequestPayload],
 	changeSet *hookstage.ChangeSet[hookstage.BidderRequestPayload],
 ) (err error) {
+	if len(payload.BidRequest.BApp) > 0 {
+		return nil
+	}
+
 	var message string
 	bapp := cfg.Attributes.Bapp.BlockedApp
 	actionOverrides := cfg.Attributes.Bapp.ActionOverrides.BlockedApp
 
-	attributes.bapp, message, err = firstOrDefaultOverride(bidder, mediaTypes, getNames, actionOverrides, bapp)
+	attributes.bApp, message, err = firstOrDefaultOverride(payload.Bidder, mediaTypes, getNames, actionOverrides, bapp)
 	result.Warnings = mergeStrings(result.Warnings, message)
 	if err != nil {
 		return fmt.Errorf("failed to get override for bapp.blocked_app: %s", err)
-	} else if len(attributes.bapp) > 0 {
-		changeSet.BidderRequest().BApp().Update(attributes.bapp)
+	} else if len(attributes.bApp) > 0 {
+		changeSet.BidderRequest().BApp().Update(attributes.bApp)
 	}
 
 	return nil
@@ -106,22 +108,26 @@ func updateBApp(
 
 func updateBCat(
 	cfg Config,
-	bidder string,
+	payload hookstage.BidderRequestPayload,
 	mediaTypes mediaTypes,
 	attributes *blockingAttributes,
 	result *hookstage.HookResult[hookstage.BidderRequestPayload],
 	changeSet *hookstage.ChangeSet[hookstage.BidderRequestPayload],
 ) (err error) {
+	if len(payload.BidRequest.BCat) > 0 {
+		return nil
+	}
+
 	var message string
 	bcat := cfg.Attributes.Bcat.BlockedAdvCat
 	actionOverrides := cfg.Attributes.Bcat.ActionOverrides.BlockedAdvCat
 
-	attributes.bcat, message, err = firstOrDefaultOverride(bidder, mediaTypes, getNames, actionOverrides, bcat)
+	attributes.bCat, message, err = firstOrDefaultOverride(payload.Bidder, mediaTypes, getNames, actionOverrides, bcat)
 	result.Warnings = mergeStrings(result.Warnings, message)
 	if err != nil {
 		return fmt.Errorf("failed to get override for bcat.blocked_adv_cat: %s", err)
-	} else if len(attributes.bcat) > 0 {
-		changeSet.BidderRequest().BCat().Update(attributes.bcat)
+	} else if len(attributes.bCat) > 0 {
+		changeSet.BidderRequest().BCat().Update(attributes.bCat)
 	}
 
 	return nil
@@ -137,13 +143,16 @@ func updateBType(
 	var messages []string
 	btype := cfg.Attributes.Btype.BlockedBannerType
 	actionOverrides := cfg.Attributes.Btype.ActionOverrides.BlockedBannerType
+	checkAttrExistence := func(imp openrtb2.Imp) bool {
+		return imp.Banner != nil && len(imp.Banner.BType) > 0
+	}
 
-	attributes.btype, messages, err = findImpressionOverrides(payload, actionOverrides, btype)
+	attributes.bType, messages, err = findImpressionOverrides(payload, actionOverrides, btype, checkAttrExistence)
 	result.Warnings = mergeStrings(result.Warnings, messages...)
 	if err != nil {
 		return fmt.Errorf("failed to get override for imp.*.banner.btype: %s", err)
-	} else if len(attributes.btype) > 0 {
-		mutation := bTypeMutation(attributes.btype)
+	} else if len(attributes.bType) > 0 {
+		mutation := bTypeMutation(attributes.bType)
 		changeSet.AddMutation(mutation, hookstage.MutationUpdate, "bidrequest", "imp", "banner", "btype")
 	}
 
@@ -160,17 +169,35 @@ func updateBAttr(
 	var messages []string
 	battr := cfg.Attributes.Battr.BlockedBannerAttr
 	actionOverrides := cfg.Attributes.Battr.ActionOverrides.BlockedBannerAttr
+	checkAttrExistence := func(imp openrtb2.Imp) bool {
+		return imp.Banner != nil && len(imp.Banner.BAttr) > 0
+	}
 
-	attributes.battr, messages, err = findImpressionOverrides(payload, actionOverrides, battr)
+	attributes.bAttr, messages, err = findImpressionOverrides(payload, actionOverrides, battr, checkAttrExistence)
 	result.Warnings = mergeStrings(result.Warnings, messages...)
 	if err != nil {
-		return fmt.Errorf("failed to get override for imp.*.banner.btype: %s", err)
-	} else if len(attributes.battr) > 0 {
-		mutation := bAttrMutation(attributes.battr)
+		return fmt.Errorf("failed to get override for imp.*.banner.battr: %s", err)
+	} else if len(attributes.bAttr) > 0 {
+		mutation := bAttrMutation(attributes.bAttr)
 		changeSet.AddMutation(mutation, hookstage.MutationUpdate, "bidrequest", "imp", "banner", "battr")
 	}
 
 	return nil
+}
+
+func updateCatTax(
+	cfg Config,
+	payload hookstage.BidderRequestPayload,
+	attributes *blockingAttributes,
+	changeSet *hookstage.ChangeSet[hookstage.BidderRequestPayload],
+) {
+	if payload.BidRequest.CatTax > 0 {
+		return
+	}
+
+	// todo: probably we should update cattax only if current bidder supports openrtb v2.6
+	attributes.catTax = cfg.Attributes.Bcat.CategoryTaxonomy
+	changeSet.BidderRequest().CatTax().Update(attributes.catTax)
 }
 
 func bTypeMutation(bTypeByImp map[string][]int) hookstage.MutationFunc[hookstage.BidderRequestPayload] {
@@ -218,7 +245,7 @@ func mutationForImp(
 }
 
 // firstOrDefaultOverride searches for matching override based on conditions.
-// Returns first found override. Override for specific bidder has higher priority
+// Returns only first found override. Override for specific bidder has higher priority
 // than override matching all bidders. If no override found, the defaultOverride returned.
 func firstOrDefaultOverride[T any](
 	bidder string,
@@ -278,12 +305,18 @@ func findImpressionOverrides(
 	payload hookstage.BidderRequestPayload,
 	actionOverrides []ActionOverride,
 	defaultOverride []int,
+	isAttrPresent func(imp openrtb2.Imp) bool,
 ) (map[string][]int, []string, error) {
 	bidder := payload.Bidder
 	overrides := map[string][]int{}
 	messages := []string{}
 
 	for _, imp := range payload.BidRequest.Imp {
+		// do not add override for attribute if it already exists in request
+		if isAttrPresent(imp) {
+			continue
+		}
+
 		mediaTypes := mediaTypesFromImp(imp)
 		override, message, err := firstOrDefaultOverride(bidder, mediaTypes, getIds, actionOverrides, defaultOverride)
 		messages = mergeStrings(messages, message)
@@ -320,22 +353,28 @@ func getIsActive(override Override) (bool, error) {
 type mediaTypes map[string]struct{}
 
 func (m mediaTypes) String() string {
-	var i int
 	var builder strings.Builder
-	for mType := range m {
-		if i > 0 {
-			builder.WriteString(", ")
+	// keep media_types in sorted order
+	for i, mediaType := range [4]string{
+		string(openrtb_ext.BidTypeAudio),
+		string(openrtb_ext.BidTypeBanner),
+		string(openrtb_ext.BidTypeNative),
+		string(openrtb_ext.BidTypeVideo),
+	} {
+		if _, ok := m[mediaType]; ok {
+			if i > 0 {
+				builder.WriteString(", ")
+			}
+			builder.WriteString(mediaType)
 		}
-		builder.WriteString(mType)
-		i++
 	}
 
 	return builder.String()
 }
 
 func (m mediaTypes) intersects(mediaTypes []string) bool {
-	for _, mt := range mediaTypes {
-		if _, ok := m[strings.ToLower(mt)]; ok {
+	for _, mediaType := range mediaTypes {
+		if _, ok := m[strings.ToLower(mediaType)]; ok {
 			return true
 		}
 	}

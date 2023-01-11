@@ -3,6 +3,7 @@ package ortb2blocking
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 
 	"github.com/prebid/openrtb/v17/adcom1"
@@ -167,15 +168,35 @@ var config = json.RawMessage(`
             "override": [
               "app3"
             ]
+          },
+          {
+            "conditions": {
+              "bidders": [
+                "appnexus"
+              ],
+			  "media_types": [
+				"video"
+			  ]
+            },
+            "override": [
+              "app1"
+            ]
+          },
+          {
+            "conditions": {
+			  "media_types": [
+				"video"
+			  ]
+            },
+            "override": [
+              "app1"
+            ]
           }
         ]
       }
     },
     "btype": {
-      "blocked_banner_type": [
-        3,
-        4
-      ],
+      "blocked_banner_type": [],
       "action_overrides": {
         "blocked_banner_type": [
           {
@@ -188,6 +209,19 @@ var config = json.RawMessage(`
               3,
               4,
               5
+            ]
+          },
+          {
+            "conditions": {
+              "bidders": [
+                "appnexus"
+              ],
+			  "media_types": [
+				"video"
+			  ]
+            },
+            "override": [
+              3
             ]
           }
         ]
@@ -222,6 +256,8 @@ const bidder string = "appnexus"
 const bAdvA string = "a.com"
 const bAdvB string = "b.com"
 const bAdvC string = "c.com"
+const bAdvD string = "d.com"
+const bAdvE string = "e.com"
 
 const bApp1 string = "app1"
 const bApp2 string = "app2"
@@ -231,7 +267,6 @@ const bCat1 string = "IAB-1"
 const bCat2 string = "IAB-2"
 const bCat3 string = "IAB-3"
 const bCat4 string = "IAB-4"
-const bCat5 string = "IAB-5"
 
 const catTax adcom1.CategoryTaxonomy = 6
 
@@ -255,44 +290,163 @@ func TestHandleBidderRequestHook(t *testing.T) {
 		bidRequest         *openrtb2.BidRequest
 		expectedBidRequest *openrtb2.BidRequest
 		expectedHookResult hookstage.HookResult[hookstage.BidderRequestPayload]
+		expectedError      error
 	}{
 		{
 			description: "Payload changed after successful BidderRequest hook execution",
 			bidder:      bidder,
 			config:      config,
-			bidRequest:  &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "ImpID1", Video: &openrtb2.Video{}}}},
+			bidRequest: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{
+						ID:     "ImpID1",
+						Audio:  &openrtb2.Audio{},
+						Banner: &openrtb2.Banner{},
+						Native: &openrtb2.Native{},
+						Video:  &openrtb2.Video{},
+					},
+					{
+						ID:    "ImpID2",
+						Audio: &openrtb2.Audio{},
+					},
+				},
+			},
 			expectedBidRequest: &openrtb2.BidRequest{
-				BAdv:   []string{bAdvA, bAdvB},
+				BAdv: []string{bAdvA, bAdvB},
+				// BApp contains only first specific override (other overrides ignored)
 				BApp:   []string{bApp3},
 				BCat:   []string{bCat1, bCat2, bCat3, bCat4},
 				CatTax: catTax,
 				Imp: []openrtb2.Imp{
 					{
-						ID: "ImpID1",
+						ID:    "ImpID1",
+						Audio: &openrtb2.Audio{},
 						Banner: &openrtb2.Banner{
 							BType: []openrtb2.BannerAdType{bType3, bType4, bType5},
 							// default field override is used if no ActionOverrides defined for field
 							BAttr: []adcom1.CreativeAttribute{bAttr1, bAttr8, bAttr9, bAttr10},
 						},
-						Video: &openrtb2.Video{},
+						Native: &openrtb2.Native{},
+						Video:  &openrtb2.Video{},
+					},
+					{
+						ID:    "ImpID2",
+						Audio: &openrtb2.Audio{},
+						Banner: &openrtb2.Banner{
+							BType: []openrtb2.BannerAdType{bType3, bType4, bType5},
+							// default field override is used if no ActionOverrides defined for field
+							BAttr: []adcom1.CreativeAttribute{bAttr1, bAttr8, bAttr9, bAttr10},
+						},
 					},
 				},
 			},
 			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{
 				ModuleContext: map[string]interface{}{
 					bidder: blockingAttributes{
-						badv:   []string{bAdvA, bAdvB},
-						bapp:   []string{bApp3},
-						bcat:   []string{bCat1, bCat2, bCat3, bCat4},
-						btype:  map[string][]int{"ImpID1": toInt([]openrtb2.BannerAdType{bType3, bType4, bType5})},
-						battr:  map[string][]int{"ImpID1": toInt([]adcom1.CreativeAttribute{bAttr1, bAttr8, bAttr9, bAttr10})},
-						cattax: catTax,
+						bAdv: []string{bAdvA, bAdvB},
+						bApp: []string{bApp3},
+						bCat: []string{bCat1, bCat2, bCat3, bCat4},
+						bType: map[string][]int{
+							"ImpID1": toInt([]openrtb2.BannerAdType{bType3, bType4, bType5}),
+							"ImpID2": toInt([]openrtb2.BannerAdType{bType3, bType4, bType5}),
+						},
+						bAttr: map[string][]int{
+							"ImpID1": toInt([]adcom1.CreativeAttribute{bAttr1, bAttr8, bAttr9, bAttr10}),
+							"ImpID2": toInt([]adcom1.CreativeAttribute{bAttr1, bAttr8, bAttr9, bAttr10}),
+						},
+						catTax: catTax,
+					},
+				},
+				Warnings: []string{
+					// multiple warnings may be added (per condition)
+					"More than one condition matches request. Bidder: appnexus, request media types: audio, banner, native, video",
+					"More than one condition matches request. Bidder: appnexus, request media types: audio, banner, native, video",
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			description: "Payload changed after successful BidderRequest hook execution for default config",
+			bidder:      bidder,
+			config:      json.RawMessage(`{"attributes": {"badv": {"enforce_blocks": true, "block_unknown_adomain": true, "blocked_adomain": ["a.com","b.com","c.com"]}}}`),
+			bidRequest: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{
+						ID:    "ImpID1",
+						Audio: &openrtb2.Audio{},
 					},
 				},
 			},
+			expectedBidRequest: &openrtb2.BidRequest{
+				BAdv: []string{bAdvA, bAdvB, bAdvC},
+				Imp: []openrtb2.Imp{
+					{
+						ID:    "ImpID1",
+						Audio: &openrtb2.Audio{},
+					},
+				},
+			},
+			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{
+				ModuleContext: map[string]interface{}{
+					bidder: blockingAttributes{
+						bAdv:  []string{bAdvA, bAdvB, bAdvC},
+						bType: map[string][]int{},
+						bAttr: map[string][]int{},
+					},
+				},
+			},
+			expectedError: nil,
 		},
 		{
-			description: "bidrequest fields are not updated if config empty",
+			description: "BidderRequest attributes not updated if they already present in BidderRequest",
+			bidder:      bidder,
+			config:      config,
+			bidRequest: &openrtb2.BidRequest{
+				BAdv:   []string{"existing.com"},
+				BApp:   []string{"existingApp", "existingApp2"},
+				BCat:   []string{"Existing-IAB-1", "Existing-IAB-2"},
+				CatTax: adcom1.CatTaxIABContent10,
+				Imp: []openrtb2.Imp{
+					{
+						ID:    "ImpID1",
+						Audio: &openrtb2.Audio{},
+						Banner: &openrtb2.Banner{
+							BType: []openrtb2.BannerAdType{openrtb2.BannerAdTypeXHTMLTextAd},
+							BAttr: []adcom1.CreativeAttribute{adcom1.AttrSurvey},
+						},
+						Native: &openrtb2.Native{},
+						Video:  &openrtb2.Video{},
+					},
+				},
+			},
+			expectedBidRequest: &openrtb2.BidRequest{
+				BAdv:   []string{"existing.com"},
+				BApp:   []string{"existingApp", "existingApp2"},
+				BCat:   []string{"Existing-IAB-1", "Existing-IAB-2"},
+				CatTax: adcom1.CatTaxIABContent10,
+				Imp: []openrtb2.Imp{
+					{
+						ID:    "ImpID1",
+						Audio: &openrtb2.Audio{},
+						Banner: &openrtb2.Banner{
+							BType: []openrtb2.BannerAdType{openrtb2.BannerAdTypeXHTMLTextAd},
+							BAttr: []adcom1.CreativeAttribute{adcom1.AttrSurvey},
+						},
+						Native: &openrtb2.Native{},
+						Video:  &openrtb2.Video{},
+					},
+				},
+			},
+			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{
+				ModuleContext: map[string]interface{}{bidder: blockingAttributes{
+					bType: map[string][]int{},
+					bAttr: map[string][]int{},
+				}},
+			},
+			expectedError: nil,
+		},
+		{
+			description: "BidRequest fields are not updated if config empty",
 			bidder:      bidder,
 			config:      json.RawMessage(`{}`),
 			bidRequest: &openrtb2.BidRequest{
@@ -306,10 +460,107 @@ func TestHandleBidderRequestHook(t *testing.T) {
 			},
 			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{
 				ModuleContext: map[string]interface{}{bidder: blockingAttributes{
-					btype: map[string][]int{},
-					battr: map[string][]int{},
+					bType: map[string][]int{},
+					bAttr: map[string][]int{},
 				}},
 			},
+			expectedError: nil,
+		},
+		{
+			description: "Expect empty hook execution result if empty module config provided",
+			bidder:      bidder,
+			config:      json.RawMessage(""),
+			bidRequest: &openrtb2.BidRequest{
+				BAdv: []string{bAdvA, bAdvC},
+				Imp:  []openrtb2.Imp{{ID: "ImpID1", Video: &openrtb2.Video{}}},
+			},
+			expectedBidRequest: &openrtb2.BidRequest{
+				BAdv: []string{bAdvA, bAdvC},
+				Imp:  []openrtb2.Imp{{ID: "ImpID1", Video: &openrtb2.Video{}}},
+			},
+			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{},
+			expectedError:      nil,
+		},
+		{
+			description:        "Expect error on config parsing failure",
+			bidder:             bidder,
+			config:             json.RawMessage("..."),
+			bidRequest:         &openrtb2.BidRequest{},
+			expectedBidRequest: &openrtb2.BidRequest{},
+			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{},
+			expectedError:      errors.New("failed to parse config: invalid character '.' looking for beginning of value"),
+		},
+		{
+			description:        "Expect error if nil BidRequest provided",
+			bidder:             bidder,
+			config:             config,
+			bidRequest:         nil,
+			expectedBidRequest: nil,
+			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{},
+			expectedError:      hookexecution.NewFailure("empty BidRequest provided"),
+		},
+		{
+			description:        "Expect baadv error if bidders and media_types not defined in config conditions",
+			bidder:             bidder,
+			config:             json.RawMessage(`{"attributes": {"badv": {"action_overrides": {"blocked_adomain": [{"conditions": {}}]}}}}`),
+			bidRequest:         &openrtb2.BidRequest{},
+			expectedBidRequest: &openrtb2.BidRequest{},
+			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{},
+			expectedError:      hookexecution.NewFailure("failed to update badv field: failed to get override for badv.blocked_adomain: bidders and media_types absent from conditions, at least one of the fields must be present"),
+		},
+		{
+			description:        "Expect bapp error if bidders and media_types not defined in config conditions",
+			bidder:             bidder,
+			config:             json.RawMessage(`{"attributes": {"bapp": {"action_overrides": {"blocked_app": [{"conditions": {}}]}}}}`),
+			bidRequest:         &openrtb2.BidRequest{},
+			expectedBidRequest: &openrtb2.BidRequest{},
+			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{},
+			expectedError:      hookexecution.NewFailure("failed to update bapp field: failed to get override for bapp.blocked_app: bidders and media_types absent from conditions, at least one of the fields must be present"),
+		},
+		{
+			description:        "Expect bcat error if bidders and media_types not defined in config conditions",
+			bidder:             bidder,
+			config:             json.RawMessage(`{"attributes": {"bcat": {"action_overrides": {"blocked_adv_cat": [{"conditions": {}}]}}}}`),
+			bidRequest:         &openrtb2.BidRequest{},
+			expectedBidRequest: &openrtb2.BidRequest{},
+			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{},
+			expectedError:      hookexecution.NewFailure("failed to update bcat field: failed to get override for bcat.blocked_adv_cat: bidders and media_types absent from conditions, at least one of the fields must be present"),
+		},
+		{
+			description:        "Expect btype error if bidders and media_types not defined in config conditions",
+			bidder:             bidder,
+			config:             json.RawMessage(`{"attributes": {"btype": {"action_overrides": {"blocked_banner_type": [{"conditions": {}}]}}}}`),
+			bidRequest:         &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "ImpID1", Video: &openrtb2.Video{}}}},
+			expectedBidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "ImpID1", Video: &openrtb2.Video{}}}},
+			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{},
+			expectedError:      hookexecution.NewFailure("failed to update btype field: failed to get override for imp.*.banner.btype: bidders and media_types absent from conditions, at least one of the fields must be present"),
+		},
+		{
+			description:        "Expect battr error if bidders and media_types not defined in config conditions",
+			bidder:             bidder,
+			config:             json.RawMessage(`{"attributes": {"battr": {"action_overrides": {"blocked_banner_attr": [{"conditions": {}}]}}}}`),
+			bidRequest:         &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "ImpID1", Video: &openrtb2.Video{}}}},
+			expectedBidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "ImpID1", Video: &openrtb2.Video{}}}},
+			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{},
+			expectedError:      hookexecution.NewFailure("failed to update battr field: failed to get override for imp.*.banner.battr: bidders and media_types absent from conditions, at least one of the fields must be present"),
+		},
+		{
+			description:        "Expect error if override.names empty in config conditions",
+			bidder:             bidder,
+			config:             json.RawMessage(`{"attributes": {"badv": {"action_overrides": {"blocked_adomain": [{"conditions": {"bidders": ["appnexus"]}, "override": {}}]}}}}`),
+			bidRequest:         &openrtb2.BidRequest{},
+			expectedBidRequest: &openrtb2.BidRequest{},
+			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{},
+			expectedError:      hookexecution.NewFailure("failed to update badv field: failed to get override for badv.blocked_adomain: empty override field"),
+		},
+		{
+			description:        "Expect error if override.ids empty in config conditions",
+			bidder:             bidder,
+			config:             json.RawMessage(`{"attributes": {"battr": {"action_overrides": {"blocked_banner_attr": [{"conditions": {"bidders": ["appnexus"]}, "override": {}}]}}}}`),
+			bidRequest:         &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "ImpID1", Video: &openrtb2.Video{}}}},
+			expectedBidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "ImpID1", Video: &openrtb2.Video{}}}},
+			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{},
+			expectedError:      hookexecution.NewFailure("failed to update battr field: failed to get override for imp.*.banner.battr: empty override field"),
 		},
 	}
 
@@ -332,7 +583,7 @@ func TestHandleBidderRequestHook(t *testing.T) {
 				},
 				payload,
 			)
-			assert.NoError(t, err, "Hook execution failed.")
+			assert.Equal(t, test.expectedError, err, "Invalid hook execution error.")
 
 			// test mutations separately
 			for _, mut := range hookResult.ChangeSet.Mutations() {
@@ -348,698 +599,14 @@ func TestHandleBidderRequestHook(t *testing.T) {
 	}
 }
 
-func TestHandleRawBidderResponseHook(t *testing.T) {
-	testCases := []struct {
-		description        string
-		payload            hookstage.RawBidderResponsePayload
-		config             json.RawMessage
-		moduleCtx          hookstage.ModuleContext
-		expectedBids       []*adapters.TypedBid
-		expectedHookResult hookstage.HookResult[hookstage.RawBidderResponsePayload]
-		expectedError      error
-	}{
-		{
-			description: "Payload not changed when empty account config and empty module contexts are provided. Analytic tags have successful records",
-			payload: hookstage.RawBidderResponsePayload{Bidder: bidder, Bids: []*adapters.TypedBid{
-				{
-					Bid: &openrtb2.Bid{ADomain: []string{"foo"}, ImpID: impID1},
-				},
-			}},
-			expectedBids: []*adapters.TypedBid{
-				{
-					Bid: &openrtb2.Bid{ADomain: []string{"foo"}, ImpID: impID1},
-				},
-			},
-			expectedHookResult: hookstage.HookResult[hookstage.RawBidderResponsePayload]{
-				AnalyticsTags: hookanalytics.Analytics{
-					Activities: []hookanalytics.Activity{
-						{
-							Name:   enforceBlockingTag,
-							Status: hookanalytics.ActivityStatusSuccess,
-							Results: []hookanalytics.Result{
-								{
-									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID1}},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			description: "Catch error if wrong data has been passed from previous hook. Payload not changed",
-			payload: hookstage.RawBidderResponsePayload{Bidder: bidder, Bids: []*adapters.TypedBid{
-				{
-					Bid: &openrtb2.Bid{ADomain: []string{"foo"}, ImpID: impID1},
-				},
-			}},
-			expectedBids: []*adapters.TypedBid{
-				{
-					Bid: &openrtb2.Bid{ADomain: []string{"foo"}, ImpID: impID1},
-				},
-			},
-			moduleCtx:     map[string]interface{}{bidder: "boo"},
-			expectedError: hookexecution.NewFailure("could not cast blocking attributes for bidder `appnexus`, module context has incorrect data"),
-		},
-		{
-			description: "Bid blocked by badv attribute check. Payload updated. Analytic tags successfully collected",
-			payload: hookstage.RawBidderResponsePayload{Bidder: bidder, Bids: []*adapters.TypedBid{
-				{
-					Bid: &openrtb2.Bid{ID: "1", ADomain: []string{"forbidden_domain"}, ImpID: impID1},
-				},
-				{
-					Bid: &openrtb2.Bid{ID: "2", ADomain: []string{"good_domain"}, ImpID: impID2},
-				},
-			}},
-			config: json.RawMessage(`{"attributes":{"badv":{"enforce_blocks": true}}}`),
-			expectedBids: []*adapters.TypedBid{
-				{
-					Bid: &openrtb2.Bid{ID: "2", ADomain: []string{"good_domain"}, ImpID: impID2},
-				},
-			},
-			moduleCtx: map[string]interface{}{bidder: blockingAttributes{badv: []string{"forbidden_domain"}}},
-			expectedHookResult: hookstage.HookResult[hookstage.RawBidderResponsePayload]{
-				AnalyticsTags: hookanalytics.Analytics{
-					Activities: []hookanalytics.Activity{
-						{
-							Name:   enforceBlockingTag,
-							Status: hookanalytics.ActivityStatusSuccess,
-							Results: []hookanalytics.Result{
-								{
-									Status: hookanalytics.ResultStatusBlock,
-									Values: map[string]interface{}{
-										attributesAnalyticKey: "badv",
-										badvAnalyticKey:       []string{"forbidden_domain"},
-									},
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID1}},
-								},
-								{
-									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID2}},
-								},
-							},
-						},
-					},
-				},
-				DebugMessages: []string{"Bid 1 from bidder appnexus has been rejected, failed checks: badv"},
-			},
-		},
-		{
-			description: "Bid not blocked because blocking conditions for current bidder do not exist. Payload not updated. Analytic tags successfully collected",
-			payload: hookstage.RawBidderResponsePayload{Bidder: bidder, Bids: []*adapters.TypedBid{
-				{
-					Bid: &openrtb2.Bid{ID: "1", ADomain: []string{"forbidden_domain"}, ImpID: impID1},
-				},
-				{
-					Bid: &openrtb2.Bid{ID: "2", ADomain: []string{"good_domain"}, ImpID: impID2},
-				},
-			}},
-			config: json.RawMessage(`{"attributes":{"badv":{"enforce_blocks": true}}}`),
-			expectedBids: []*adapters.TypedBid{
-				{
-					Bid: &openrtb2.Bid{ID: "1", ADomain: []string{"forbidden_domain"}, ImpID: impID1},
-				},
-				{
-					Bid: &openrtb2.Bid{ID: "2", ADomain: []string{"good_domain"}, ImpID: impID2},
-				},
-			},
-			moduleCtx: map[string]interface{}{"other-bidder": blockingAttributes{badv: []string{"forbidden_domain"}}},
-			expectedHookResult: hookstage.HookResult[hookstage.RawBidderResponsePayload]{
-				AnalyticsTags: hookanalytics.Analytics{
-					Activities: []hookanalytics.Activity{
-						{
-							Name:   enforceBlockingTag,
-							Status: hookanalytics.ActivityStatusSuccess,
-							Results: []hookanalytics.Result{
-								{
-									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID1}},
-								},
-								{
-									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID2}},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			description: "Bid not blocked because enforce blocking is disabled by account config. Payload not updated. Analytic tags successfully collected",
-			payload: hookstage.RawBidderResponsePayload{Bidder: bidder, Bids: []*adapters.TypedBid{
-				{
-					Bid: &openrtb2.Bid{ID: "1", ADomain: []string{"forbidden_domain"}, ImpID: impID1},
-				},
-				{
-					Bid: &openrtb2.Bid{ID: "2", ADomain: []string{"good_domain"}, ImpID: impID2},
-				},
-			}},
-			config: json.RawMessage(`{"attributes":{"badv":{"enforce_blocks": false}}}`),
-			expectedBids: []*adapters.TypedBid{
-				{
-					Bid: &openrtb2.Bid{ID: "1", ADomain: []string{"forbidden_domain"}, ImpID: impID1},
-				},
-				{
-					Bid: &openrtb2.Bid{ID: "2", ADomain: []string{"good_domain"}, ImpID: impID2},
-				},
-			},
-			moduleCtx: map[string]interface{}{bidder: blockingAttributes{badv: []string{"forbidden_domain"}}},
-			expectedHookResult: hookstage.HookResult[hookstage.RawBidderResponsePayload]{
-				AnalyticsTags: hookanalytics.Analytics{
-					Activities: []hookanalytics.Activity{
-						{
-							Name:   enforceBlockingTag,
-							Status: hookanalytics.ActivityStatusSuccess,
-							Results: []hookanalytics.Result{
-								{
-									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID1}},
-								},
-								{
-									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID2}},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			description: "Bid not blocked because enforce blocking overridden for given bidder. Payload not updated. Analytic tags successfully collected",
-			payload: hookstage.RawBidderResponsePayload{Bidder: bidder, Bids: []*adapters.TypedBid{
-				{
-					Bid: &openrtb2.Bid{ID: "1", ADomain: []string{"forbidden_domain"}, ImpID: impID1},
-				},
-				{
-					Bid: &openrtb2.Bid{ID: "2", ADomain: []string{"good_domain"}, ImpID: impID2},
-				},
-			}},
-			config: json.RawMessage(`{"attributes":{"badv":{"enforce_blocks": true, "action_overrides": {"enforce_blocks": [{"conditions": {"bidders": ["appnexus"]}, "override": false}]}}}}`),
-			expectedBids: []*adapters.TypedBid{
-				{
-					Bid: &openrtb2.Bid{ID: "1", ADomain: []string{"forbidden_domain"}, ImpID: impID1},
-				},
-				{
-					Bid: &openrtb2.Bid{ID: "2", ADomain: []string{"good_domain"}, ImpID: impID2},
-				},
-			},
-			moduleCtx: map[string]interface{}{bidder: blockingAttributes{badv: []string{"forbidden_domain"}}},
-			expectedHookResult: hookstage.HookResult[hookstage.RawBidderResponsePayload]{
-				AnalyticsTags: hookanalytics.Analytics{
-					Activities: []hookanalytics.Activity{
-						{
-							Name:   enforceBlockingTag,
-							Status: hookanalytics.ActivityStatusSuccess,
-							Results: []hookanalytics.Result{
-								{
-									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID1}},
-								},
-								{
-									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID2}},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			description: "Bid blocked by badv attribute check (block unknown attributes). Payload updated. Analytic tags successfully collected",
-			payload: hookstage.RawBidderResponsePayload{Bidder: bidder, Bids: []*adapters.TypedBid{
-				{
-					Bid: &openrtb2.Bid{ID: "1", ImpID: impID1},
-				},
-				{
-					Bid: &openrtb2.Bid{ID: "2", ADomain: []string{"good_domain"}, ImpID: impID2},
-				},
-			}},
-			config: json.RawMessage(`{"attributes":{"badv":{"enforce_blocks": true, "block_unknown_adomain": true}}}`),
-			expectedBids: []*adapters.TypedBid{
-				{
-					Bid: &openrtb2.Bid{ID: "2", ADomain: []string{"good_domain"}, ImpID: impID2},
-				},
-			},
-			moduleCtx: map[string]interface{}{bidder: blockingAttributes{}},
-			expectedHookResult: hookstage.HookResult[hookstage.RawBidderResponsePayload]{
-				AnalyticsTags: hookanalytics.Analytics{
-					Activities: []hookanalytics.Activity{
-						{
-							Name:   enforceBlockingTag,
-							Status: hookanalytics.ActivityStatusSuccess,
-							Results: []hookanalytics.Result{
-								{
-									Status: hookanalytics.ResultStatusBlock,
-									Values: map[string]interface{}{
-										attributesAnalyticKey: "badv",
-										badvAnalyticKey:       []string(nil),
-									},
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID1}},
-								},
-								{
-									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID2}},
-								},
-							},
-						},
-					},
-				},
-				DebugMessages: []string{"Bid 1 from bidder appnexus has been rejected, failed checks: badv"},
-			},
-		},
-		{
-			description: "Bid not blocked because block unknown overridden for given bidder. Payload not updated. Analytic tags successfully collected",
-			payload: hookstage.RawBidderResponsePayload{Bidder: bidder, Bids: []*adapters.TypedBid{
-				{
-					Bid: &openrtb2.Bid{ID: "1", ImpID: impID1},
-				},
-				{
-					Bid: &openrtb2.Bid{ID: "2", ImpID: impID2},
-				},
-			}},
-			config: json.RawMessage(`{"attributes":{"badv":{"enforce_blocks": true, "block_unknown_adomain": true, "action_overrides": {"block_unknown_adomain": [{"conditions": {"bidders": ["appnexus"]}, "override": false}]}}}}`),
-			expectedBids: []*adapters.TypedBid{
-				{
-					Bid: &openrtb2.Bid{ID: "1", ImpID: impID1},
-				},
-				{
-					Bid: &openrtb2.Bid{ID: "2", ImpID: impID2},
-				},
-			},
-			moduleCtx: map[string]interface{}{bidder: blockingAttributes{}},
-			expectedHookResult: hookstage.HookResult[hookstage.RawBidderResponsePayload]{
-				AnalyticsTags: hookanalytics.Analytics{
-					Activities: []hookanalytics.Activity{
-						{
-							Name:   enforceBlockingTag,
-							Status: hookanalytics.ActivityStatusSuccess,
-							Results: []hookanalytics.Result{
-								{
-									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID1}},
-								},
-								{
-									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID2}},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			description: "Bid not blocked due to deal exception. Payload not updated. Analytic tags successfully collected",
-			payload: hookstage.RawBidderResponsePayload{Bidder: bidder, Bids: []*adapters.TypedBid{
-				{
-					Bid: &openrtb2.Bid{ID: "1", ADomain: []string{"forbidden_domain"}, ImpID: impID1, DealID: "acceptDealID"},
-				},
-				{
-					Bid: &openrtb2.Bid{ID: "2", ADomain: []string{"good_domain"}, ImpID: impID2},
-				},
-			}},
-			config: json.RawMessage(`{"attributes":{"badv":{"enforce_blocks": true, "action_overrides": {"allowed_adomain_for_deals": [{"conditions": {"deal_ids": ["acceptDealID"]}, "override": ["forbidden_domain"]}]}}}}`),
-			expectedBids: []*adapters.TypedBid{
-				{
-					Bid: &openrtb2.Bid{ID: "1", ADomain: []string{"forbidden_domain"}, ImpID: impID1, DealID: "acceptDealID"},
-				},
-				{
-					Bid: &openrtb2.Bid{ID: "2", ADomain: []string{"good_domain"}, ImpID: impID2},
-				},
-			},
-			moduleCtx: map[string]interface{}{bidder: blockingAttributes{badv: []string{"forbidden_domain"}}},
-			expectedHookResult: hookstage.HookResult[hookstage.RawBidderResponsePayload]{
-				AnalyticsTags: hookanalytics.Analytics{
-					Activities: []hookanalytics.Activity{
-						{
-							Name:   enforceBlockingTag,
-							Status: hookanalytics.ActivityStatusSuccess,
-							Results: []hookanalytics.Result{
-								{
-									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID1}},
-								},
-								{
-									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID2}},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			description: "Expect error if deal_ids not defined in config override conditions. Analytics should have error status tag",
-			payload: hookstage.RawBidderResponsePayload{Bidder: bidder, Bids: []*adapters.TypedBid{
-				{
-					Bid: &openrtb2.Bid{ID: "1", ADomain: []string{"forbidden_domain"}, DealID: "acceptDealID"},
-				},
-			}},
-			config: json.RawMessage(`{"attributes": {"badv": {"enforce_blocks": true, "action_overrides": {"allowed_adomain_for_deals": [{"conditions": {}}]}}}}`),
-			expectedBids: []*adapters.TypedBid{
-				{
-					Bid: &openrtb2.Bid{ID: "1", ADomain: []string{"forbidden_domain"}, DealID: "acceptDealID"},
-				},
-			},
-			expectedHookResult: hookstage.HookResult[hookstage.RawBidderResponsePayload]{
-				AnalyticsTags: hookanalytics.Analytics{
-					Activities: []hookanalytics.Activity{
-						{
-							Name:   enforceBlockingTag,
-							Status: hookanalytics.ActivityStatusError,
-						},
-					},
-				},
-			},
-			expectedError: hookexecution.NewFailure("failed to process badv block checking: failed to get override for badv.allowed_adomain_for_deals: conditions field in account configuration must contain deal_ids"),
-		},
-		{
-			description: "Bid blocked by bcat attribute check. Payload updated. Analytic tags successfully collected",
-			payload: hookstage.RawBidderResponsePayload{Bidder: bidder, Bids: []*adapters.TypedBid{
-				{
-					Bid: &openrtb2.Bid{ID: "1", Cat: []string{"fishing"}, ImpID: impID1},
-				},
-				{
-					Bid: &openrtb2.Bid{ID: "2", Cat: []string{"moto"}, ImpID: impID2},
-				},
-			}},
-			config: json.RawMessage(`{"attributes":{"bcat":{"enforce_blocks": true}}}`),
-			expectedBids: []*adapters.TypedBid{
-				{
-					Bid: &openrtb2.Bid{ID: "2", Cat: []string{"moto"}, ImpID: impID2},
-				},
-			},
-			moduleCtx: map[string]interface{}{bidder: blockingAttributes{bcat: []string{"fishing"}}},
-			expectedHookResult: hookstage.HookResult[hookstage.RawBidderResponsePayload]{
-				AnalyticsTags: hookanalytics.Analytics{
-					Activities: []hookanalytics.Activity{
-						{
-							Name:   enforceBlockingTag,
-							Status: hookanalytics.ActivityStatusSuccess,
-							Results: []hookanalytics.Result{
-								{
-									Status: hookanalytics.ResultStatusBlock,
-									Values: map[string]interface{}{
-										attributesAnalyticKey: "bcat",
-										"bcat":                []string{"fishing"},
-									},
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID1}},
-								},
-								{
-									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID2}},
-								},
-							},
-						},
-					},
-				},
-				DebugMessages: []string{"Bid 1 from bidder appnexus has been rejected, failed checks: bcat"},
-			},
-		},
-		{
-			description: "Bid blocked by cattax attribute check. Payload updated. Analytic tags successfully collected",
-			payload: hookstage.RawBidderResponsePayload{Bidder: bidder, Bids: []*adapters.TypedBid{
-				{
-					Bid: &openrtb2.Bid{ID: "1", CatTax: 1, ImpID: impID1},
-				},
-				{
-					Bid: &openrtb2.Bid{ID: "2", CatTax: 2, ImpID: impID2},
-				},
-			}},
-			config: json.RawMessage(`{"attributes":{"bcat":{"enforce_blocks": true}}}`),
-			expectedBids: []*adapters.TypedBid{
-				{
-					Bid: &openrtb2.Bid{ID: "2", CatTax: 2, ImpID: impID2},
-				},
-			},
-			moduleCtx: map[string]interface{}{bidder: blockingAttributes{cattax: 2}},
-			expectedHookResult: hookstage.HookResult[hookstage.RawBidderResponsePayload]{
-				AnalyticsTags: hookanalytics.Analytics{
-					Activities: []hookanalytics.Activity{
-						{
-							Name:   enforceBlockingTag,
-							Status: hookanalytics.ActivityStatusSuccess,
-							Results: []hookanalytics.Result{
-								{
-									Status: hookanalytics.ResultStatusBlock,
-									Values: map[string]interface{}{
-										attributesAnalyticKey: "cattax",
-										cattaxAnalyticKey:     []adcom1.CategoryTaxonomy{1},
-									},
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID1}},
-								},
-								{
-									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID2}},
-								},
-							},
-						},
-					},
-				},
-				DebugMessages: []string{"Bid 1 from bidder appnexus has been rejected, failed checks: cattax"},
-			},
-		},
-		{
-			description: "Bid blocked by cattax attribute check (the default value used if no blocking attribute passed). Payload updated. Analytic tags successfully collected",
-			payload: hookstage.RawBidderResponsePayload{Bidder: bidder, Bids: []*adapters.TypedBid{
-				{
-					Bid: &openrtb2.Bid{ID: "1", CatTax: 1, ImpID: impID1},
-				},
-				{
-					Bid: &openrtb2.Bid{ID: "2", CatTax: 2, ImpID: impID2},
-				},
-			}},
-			config: json.RawMessage(`{"attributes":{"bcat":{"enforce_blocks": true}}}`),
-			expectedBids: []*adapters.TypedBid{
-				{
-					Bid: &openrtb2.Bid{ID: "1", CatTax: 1, ImpID: impID1},
-				},
-			},
-			expectedHookResult: hookstage.HookResult[hookstage.RawBidderResponsePayload]{
-				AnalyticsTags: hookanalytics.Analytics{
-					Activities: []hookanalytics.Activity{
-						{
-							Name:   enforceBlockingTag,
-							Status: hookanalytics.ActivityStatusSuccess,
-							Results: []hookanalytics.Result{
-								{
-									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID1}},
-								},
-								{
-									Status: hookanalytics.ResultStatusBlock,
-									Values: map[string]interface{}{
-										attributesAnalyticKey: "cattax",
-										cattaxAnalyticKey:     []adcom1.CategoryTaxonomy{2},
-									},
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID2}},
-								},
-							},
-						},
-					},
-				},
-				DebugMessages: []string{"Bid 2 from bidder appnexus has been rejected, failed checks: cattax"},
-			},
-		},
-		{
-			description: "Bid blocked by bapp attribute check. Payload updated. Analytic tags successfully collected",
-			payload: hookstage.RawBidderResponsePayload{Bidder: bidder, Bids: []*adapters.TypedBid{
-				{
-					Bid: &openrtb2.Bid{ID: "1", Bundle: "forbidden_bundle", ImpID: impID1},
-				},
-				{
-					Bid: &openrtb2.Bid{ID: "2", Bundle: "allowed_bundle", ImpID: impID2},
-				},
-			}},
-			config: json.RawMessage(`{"attributes":{"bapp":{"enforce_blocks": true}}}`),
-			expectedBids: []*adapters.TypedBid{
-				{
-					Bid: &openrtb2.Bid{ID: "2", Bundle: "allowed_bundle", ImpID: impID2},
-				},
-			},
-			moduleCtx: map[string]interface{}{bidder: blockingAttributes{bapp: []string{"forbidden_bundle"}}},
-			expectedHookResult: hookstage.HookResult[hookstage.RawBidderResponsePayload]{
-				AnalyticsTags: hookanalytics.Analytics{
-					Activities: []hookanalytics.Activity{
-						{
-							Name:   enforceBlockingTag,
-							Status: hookanalytics.ActivityStatusSuccess,
-							Results: []hookanalytics.Result{
-								{
-									Status: hookanalytics.ResultStatusBlock,
-									Values: map[string]interface{}{
-										attributesAnalyticKey: "bapp",
-										bappAnalyticKey:       []string{"forbidden_bundle"},
-									},
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID1}},
-								},
-								{
-									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID2}},
-								},
-							},
-						},
-					},
-				},
-				DebugMessages: []string{"Bid 1 from bidder appnexus has been rejected, failed checks: bapp"},
-			},
-		},
-		{
-			description: "Bid blocked by battr attribute check. Payload updated. Analytic tags successfully collected",
-			payload: hookstage.RawBidderResponsePayload{Bidder: bidder, Bids: []*adapters.TypedBid{
-				{
-					Bid: &openrtb2.Bid{ID: "1", Attr: []adcom1.CreativeAttribute{1}, ImpID: impID1},
-				},
-				{
-					Bid: &openrtb2.Bid{ID: "2", Attr: []adcom1.CreativeAttribute{2}, ImpID: impID2},
-				},
-			}},
-			config: json.RawMessage(`{"attributes":{"battr":{"enforce_blocks": true}}}`),
-			expectedBids: []*adapters.TypedBid{
-				{
-					Bid: &openrtb2.Bid{ID: "2", Attr: []adcom1.CreativeAttribute{2}, ImpID: impID2},
-				},
-			},
-			moduleCtx: map[string]interface{}{bidder: blockingAttributes{battr: map[string][]int{impID1: {1}}}},
-			expectedHookResult: hookstage.HookResult[hookstage.RawBidderResponsePayload]{
-				AnalyticsTags: hookanalytics.Analytics{
-					Activities: []hookanalytics.Activity{
-						{
-							Name:   enforceBlockingTag,
-							Status: hookanalytics.ActivityStatusSuccess,
-							Results: []hookanalytics.Result{
-								{
-									Status: hookanalytics.ResultStatusBlock,
-									Values: map[string]interface{}{
-										attributesAnalyticKey: "battr",
-										battrAnalyticKey:      []int{1},
-									},
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID1}},
-								},
-								{
-									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID2}},
-								},
-							},
-						},
-					},
-				},
-				DebugMessages: []string{"Bid 1 from bidder appnexus has been rejected, failed checks: battr"},
-			},
-		},
-		{
-			description: "Bid blocked by multiple attribute check. Payload updated. Analytic tags successfully collected",
-			payload: hookstage.RawBidderResponsePayload{Bidder: bidder, Bids: []*adapters.TypedBid{
-				{
-					Bid: &openrtb2.Bid{
-						ID:      "1",
-						ADomain: []string{"forbidden_domain"},
-						Cat:     []string{"fishing"},
-						CatTax:  1,
-						Bundle:  "forbidden_bundle",
-						Attr:    []adcom1.CreativeAttribute{1},
-						ImpID:   impID1,
-					},
-				},
-				{
-					Bid: &openrtb2.Bid{
-						ID:      "2",
-						ADomain: []string{"allowed_domain"},
-						Cat:     []string{"moto"},
-						CatTax:  2,
-						Bundle:  "allowed_bundle",
-						Attr:    []adcom1.CreativeAttribute{2},
-						ImpID:   impID2,
-					},
-				},
-			}},
-			config: json.RawMessage(`{"attributes":{"badv":{"enforce_blocks": true}, "bcat":{"enforce_blocks": true}, "cattax":{"enforce_blocks": true}, "bapp":{"enforce_blocks": true}, "battr":{"enforce_blocks": true}}}`),
-			expectedBids: []*adapters.TypedBid{
-				{
-					Bid: &openrtb2.Bid{
-						ID:      "2",
-						ADomain: []string{"allowed_domain"},
-						Cat:     []string{"moto"},
-						CatTax:  2,
-						Bundle:  "allowed_bundle",
-						Attr:    []adcom1.CreativeAttribute{2},
-						ImpID:   impID2,
-					},
-				},
-			},
-			moduleCtx: map[string]interface{}{bidder: blockingAttributes{
-				badv:   []string{"forbidden_domain"},
-				bcat:   []string{"fishing"},
-				cattax: 2,
-				bapp:   []string{"forbidden_bundle"},
-				battr:  map[string][]int{impID1: {1}}},
-			},
-			expectedHookResult: hookstage.HookResult[hookstage.RawBidderResponsePayload]{
-				AnalyticsTags: hookanalytics.Analytics{
-					Activities: []hookanalytics.Activity{
-						{
-							Name:   enforceBlockingTag,
-							Status: hookanalytics.ActivityStatusSuccess,
-							Results: []hookanalytics.Result{
-								{
-									Status: hookanalytics.ResultStatusBlock,
-									Values: map[string]interface{}{
-										attributesAnalyticKey: "badv, bcat, cattax, bapp, battr",
-										badvAnalyticKey:       []string{"forbidden_domain"},
-										cattaxAnalyticKey:     []adcom1.CategoryTaxonomy{1},
-										bappAnalyticKey:       []string{"forbidden_bundle"},
-										battrAnalyticKey:      []int{1},
-									},
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID1}},
-								},
-								{
-									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID2}},
-								},
-							},
-						},
-					},
-				},
-				DebugMessages: []string{"Bid 1 from bidder appnexus has been rejected, failed checks: badv, bcat, cattax, bapp, battr"},
-			},
-		},
+type numeric interface {
+	openrtb2.BannerAdType | adcom1.CreativeAttribute
+}
+
+func toInt[T numeric](values []T) []int {
+	ints := make([]int, len(values))
+	for i := range values {
+		ints[i] = int(values[i])
 	}
-
-	for _, test := range testCases {
-		t.Run(test.description, func(t *testing.T) {
-			result, err := Builder(nil, moduledeps.ModuleDeps{})
-			assert.NoError(t, err, "Failed to build module.")
-
-			module, ok := result.(Module)
-			assert.True(t, ok, "Failed to cast module type.")
-
-			hookResult, err := module.HandleRawBidderResponseHook(
-				context.Background(),
-				hookstage.ModuleInvocationContext{
-					AccountConfig: test.config,
-					Endpoint:      hookexecution.EndpointAuction,
-					ModuleContext: test.moduleCtx,
-				},
-				test.payload,
-			)
-			assert.Equal(t, test.expectedError, err, "Invalid hook execution error.")
-
-			// test mutations separately
-			for _, mut := range hookResult.ChangeSet.Mutations() {
-				newPayload, err := mut.Apply(test.payload)
-				assert.NoError(t, err)
-				test.payload = newPayload
-			}
-			assert.Equal(t, test.expectedBids, test.payload.Bids, "Invalid Bids returned after executing RawBidderResponse hook.")
-
-			// reset ChangeSet not to break hookResult assertion, we validated ChangeSet separately
-			hookResult.ChangeSet = hookstage.ChangeSet[hookstage.RawBidderResponsePayload]{}
-			assert.Equal(t, test.expectedHookResult, hookResult, "Invalid hook execution result.")
-		})
-	}
+	return ints
 }
