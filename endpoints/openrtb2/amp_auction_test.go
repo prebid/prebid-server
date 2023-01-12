@@ -142,6 +142,11 @@ func TestAccountErrors(t *testing.T) {
 		filename    string
 	}{
 		{
+			description: "Malformed account config",
+			storedReqID: "1",
+			filename:    "account-malformed/malformed-acct.json",
+		},
+		{
 			description: "Blocked account",
 			storedReqID: "1",
 			filename:    "blacklisted/blacklisted-site-publisher.json",

@@ -3,6 +3,7 @@ package http_fetcher
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -139,6 +140,15 @@ func TestFetchAccount(t *testing.T) {
 	assert.JSONEq(t, `{"disabled": true, "id":"acc-1"}`, string(account), "Unexpected account data fetching existing account")
 }
 
+func TestAccountMergeError(t *testing.T) {
+	fetcher, close := newTestAccountFetcher(t, []string{"acc-1"})
+	defer close()
+
+	_, errs := fetcher.FetchAccount(context.Background(), json.RawMessage(`{"disabled"}`), "acc-1")
+	assert.Error(t, errs[0])
+	assert.Equal(t, fmt.Errorf("Invalid JSON Document"), errs[0])
+}
+
 func TestFetchAccountNoData(t *testing.T) {
 	fetcher, close := newFetcherBrokenBackend()
 	defer close()
@@ -233,12 +243,12 @@ func newHandler(t *testing.T, expectReqIDs []string, expectImpIDs []string, json
 }
 
 func newTestAccountFetcher(t *testing.T, expectAccIDs []string) (fetcher *HttpFetcher, closer func()) {
-	handler := newAccountHandler(t, expectAccIDs, jsonifyID)
+	handler := newAccountHandler(t, expectAccIDs)
 	server := httptest.NewServer(http.HandlerFunc(handler))
 	return NewFetcher(server.Client(), server.URL), server.Close
 }
 
-func newAccountHandler(t *testing.T, expectAccIDs []string, jsonifier func(string) json.RawMessage) func(w http.ResponseWriter, r *http.Request) {
+func newAccountHandler(t *testing.T, expectAccIDs []string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		query := r.URL.Query()
 		gotAccIDs := richSplit(query.Get("account-ids"))

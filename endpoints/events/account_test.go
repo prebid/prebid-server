@@ -11,6 +11,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/stretchr/testify/assert"
 )
@@ -45,6 +46,26 @@ func TestHandleAccountServiceErrors(t *testing.T) {
 			}{
 				code:     400,
 				response: "Invalid request: some error\nInvalid request: Prebid-server could not verify the Account ID. Please reach out to the prebid server host.\n",
+			},
+		},
+		"malformedAccountConfig": {
+			fetcher: &mockAccountsFetcher{
+				Fail:  true,
+				Error: &errortypes.MalformedAcct{},
+			},
+			cfg: &config.Configuration{
+				MaxRequestSize: maxSize,
+				VTrack: config.VTrack{
+					TimeoutMS: int64(2000), AllowUnknownBidder: false,
+				},
+			},
+			accountID: "malformed_acct",
+			want: struct {
+				code     int
+				response string
+			}{
+				code:     500,
+				response: "Invalid request: The prebid-server account config for account id \"malformed_acct\" is malformed. Please reach out to the prebid server host.\n",
 			},
 		},
 		"serviceUnavailable": {
