@@ -42,6 +42,7 @@ type ExtResponsePrebid struct {
 	AuctionTimestamp int64           `json:"auctiontimestamp,omitempty"`
 	Passthrough      json.RawMessage `json:"passthrough,omitempty"`
 	Modules          json.RawMessage `json:"modules,omitempty"`
+	Targeting        map[string]string `json:"targeting,omitempty"`
 }
 
 // ExtUserSync defines the contract for bidresponse.ext.usersync.{bidder}.syncs[i]

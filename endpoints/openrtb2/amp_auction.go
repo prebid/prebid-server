@@ -325,6 +325,22 @@ func sendAmpResponse(
 		}
 	}
 
+	// Extract global targeting
+	var extResponse openrtb_ext.ExtBidResponse
+	eRErr := json.Unmarshal(response.Ext, &extResponse)
+	if eRErr != nil {
+		ao.Errors = append(ao.Errors, fmt.Errorf("AMP response: failed to unpack OpenRTB response.ext, debug info cannot be forwarded: %v", eRErr))
+	}
+	// Extract global targeting
+	extPrebid := extResponse.Prebid
+	if extPrebid != nil {
+		for key, value := range extPrebid.Targeting {
+			_, exists := targets[key]
+			if !exists {
+				targets[key] = value
+			}
+		}
+	}
 	// Now JSONify the targets for the AMP response.
 	ampResponse := AmpResponse{Targeting: targets}
 	ao, ampResponse.ORTB2.Ext = getExtBidResponse(hookExecutor, response, reqWrapper, account, ao, errs)
