@@ -13,3 +13,7 @@ capabilities:
     mediaTypes:
       - banner
       - video
+userSync:
+  iframe:
+    url: https://cdn.undertone.com/js/usersync.html?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
+    userSync: '$UID'
