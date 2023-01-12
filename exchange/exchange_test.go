@@ -2299,7 +2299,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 
 	}
 
-	if spec.BidValidationEnforcement == config.ValidationEnforce {
+	if spec.HostConfigBidValidation.BannerCreativeMaxSize == config.ValidationEnforce || spec.HostConfigBidValidation.SecureMarkup == config.ValidationEnforce {
 		actualBidRespExt := &openrtb_ext.ExtBidResponse{}
 		expectedBidRespExt := &openrtb_ext.ExtBidResponse{}
 		if bid.Ext != nil {
@@ -2311,7 +2311,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 			assert.NoError(t, err, fmt.Sprintf("Error when unmarshalling: %s", err))
 		}
 
-		assert.Equal(t, expectedBidRespExt.Errors, actualBidRespExt.Errors, "Oh no")
+		assert.Equal(t, expectedBidRespExt.Errors, actualBidRespExt.Errors, "Expected errors from response ext do not match")
 	}
 }
 
