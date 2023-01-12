@@ -25,7 +25,6 @@ type UndertoneBidderParams struct {
 	Version string `json:"version"`
 }
 
-// Builder builds a new instance of the Foo UndertoneAdapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &UndertoneAdapter{
 		endpoint: config.Endpoint,
