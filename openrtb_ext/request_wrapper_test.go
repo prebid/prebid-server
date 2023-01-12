@@ -917,6 +917,24 @@ func TestImpWrapperRebuildImp(t *testing.T) {
 			impExtWrapper: ImpExt{prebid: &ExtImpPrebid{IsRewardedInventory: nil}, prebidDirty: true},
 			expectedImp:   openrtb2.Imp{},
 		},
+		{
+			description:   "Populated Tid - Dirty",
+			imp:           openrtb2.Imp{Ext: json.RawMessage(`{"tid": "some-tid"}`)},
+			impExtWrapper: ImpExt{tidDirty: true, tid: "12345"},
+			expectedImp:   openrtb2.Imp{Ext: json.RawMessage(`{"tid":"12345"}`)},
+		},
+		{
+			description:   "Populated Tid - Dirty - No Change",
+			imp:           openrtb2.Imp{Ext: json.RawMessage(`{"tid": "some-tid"}`)},
+			impExtWrapper: ImpExt{tid: "some-tid", tidDirty: true},
+			expectedImp:   openrtb2.Imp{Ext: json.RawMessage(`{"tid":"some-tid"}`)},
+		},
+		{
+			description:   "Populated Tid - Dirty - Cleared",
+			imp:           openrtb2.Imp{Ext: json.RawMessage(`{"tid":"some-tid"}`)},
+			impExtWrapper: ImpExt{tid: "", tidDirty: true},
+			expectedImp:   openrtb2.Imp{},
+		},
 	}
 
 	for _, test := range testCases {
@@ -945,12 +963,14 @@ func TestImpWrapperGetImpExt(t *testing.T) {
 		},
 		{
 			description:  "Populated - Ext",
-			givenWrapper: ImpWrapper{Imp: &openrtb2.Imp{Ext: json.RawMessage(`{"prebid":{"is_rewarded_inventory":1},"other":42}`)}},
+			givenWrapper: ImpWrapper{Imp: &openrtb2.Imp{Ext: json.RawMessage(`{"prebid":{"is_rewarded_inventory":1},"other":42, "tid": "test-tid"}`)}},
 			expectedImpExt: ImpExt{
 				ext: map[string]json.RawMessage{
 					"prebid": json.RawMessage(`{"is_rewarded_inventory":1}`),
 					"other":  json.RawMessage(`42`),
+					"tid":    json.RawMessage(`"test-tid"`),
 				},
+				tid:    "test-tid",
 				prebid: &ExtImpPrebid{IsRewardedInventory: &isRewardedInventoryOne},
 			},
 		},
@@ -982,4 +1002,17 @@ func TestImpWrapperGetImpExt(t *testing.T) {
 			assert.Equal(t, test.expectedImpExt, *impExt, test.description)
 		}
 	}
+}
+
+func TestImpExtTid(t *testing.T) {
+	impExt := &ImpExt{}
+
+	impExt.unmarshal(nil)
+	assert.Equal(t, false, impExt.Dirty(), "New impext should not be dirty.")
+	assert.Empty(t, impExt.GetTid(), "Empty ImpExt should have  empty tid")
+
+	newTid := "tid"
+	impExt.SetTid(newTid)
+	assert.Equal(t, "tid", impExt.GetTid(), "ImpExt tid is incorrect")
+	assert.Equal(t, true, impExt.Dirty(), "New impext should be dirty.")
 }

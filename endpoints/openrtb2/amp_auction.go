@@ -436,7 +436,7 @@ func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openr
 	// At this point, we should have a valid request that definitely has Targeting and Cache turned on
 	hasStoredResponses := len(storedAuctionResponses) > 0
 
-	e = deps.validateRequest(req, true, hasStoredResponses, storedBidResponses)
+	e = deps.validateRequest(req, true, hasStoredResponses, storedBidResponses, false)
 	errs = append(errs, e...)
 	return
 }
