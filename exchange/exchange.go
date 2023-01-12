@@ -89,6 +89,7 @@ type bidResponseWrapper struct {
 	adapterSeatBids []*entities.PbsOrtbSeatBid
 	adapterExtra    *seatResponseExtra
 	bidder          openrtb_ext.BidderName
+	adapter         openrtb_ext.BidderName
 }
 
 type BidIDGenerator interface {
@@ -547,6 +548,7 @@ func (e *exchange) getAllBids(
 			}
 			brw := new(bidResponseWrapper)
 			brw.bidder = bidderRequest.BidderName
+			brw.adapter = bidderRequest.BidderCoreName
 			// Defer basic metrics to insure we capture them after all the values have been set
 			defer func() {
 				e.me.RecordAdapterRequest(bidderRequest.BidderLabels)
@@ -616,7 +618,7 @@ func (e *exchange) getAllBids(
 				}
 			}
 			// collect fledgeAuctionConfigs separately from bids, as empty seatBids may be discarded
-			fledge = collectFledgeFromSeatBid(fledge, bidderName, seatBid)
+			fledge = collectFledgeFromSeatBid(fledge, bidderName, brw.adapter, seatBid)
 		}
 		//but we need to add all bidders data to adapterExtra to have metrics and other metadata
 		adapterExtra[brw.bidder] = brw.adapterExtra
@@ -629,7 +631,7 @@ func (e *exchange) getAllBids(
 	return adapterBids, adapterExtra, fledge, bidsFound
 }
 
-func collectFledgeFromSeatBid(fledge *openrtb_ext.Fledge, bidderName openrtb_ext.BidderName, seatBid *entities.PbsOrtbSeatBid) *openrtb_ext.Fledge {
+func collectFledgeFromSeatBid(fledge *openrtb_ext.Fledge, bidderName openrtb_ext.BidderName, adapterName openrtb_ext.BidderName, seatBid *entities.PbsOrtbSeatBid) *openrtb_ext.Fledge {
 	if seatBid.FledgeAuctionConfigs != nil {
 		if fledge == nil {
 			fledge = &openrtb_ext.Fledge{
@@ -638,9 +640,10 @@ func collectFledgeFromSeatBid(fledge *openrtb_ext.Fledge, bidderName openrtb_ext
 		}
 		for _, config := range seatBid.FledgeAuctionConfigs {
 			fledge.AuctionConfigs = append(fledge.AuctionConfigs, &openrtb_ext.FledgeAuctionConfig{
-				Bidder: bidderName.String(),
-				ImpId:  config.ImpId, // TODO: validate impId
-				Config: config.Config,
+				Bidder:  bidderName.String(),
+				Adapter: config.Bidder,
+				ImpId:   config.ImpId, // TODO: validate impId
+				Config:  config.Config,
 			})
 		}
 	}

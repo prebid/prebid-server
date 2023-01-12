@@ -52,9 +52,10 @@ type Fledge struct {
 
 // FledgeAuctionConfig defines the container for bidresponse.ext.fledge.auctionconfigs[]
 type FledgeAuctionConfig struct {
-	ImpId  string          `json:"impid"`
-	Bidder string          `json:"bidder,omitempty"`
-	Config json.RawMessage `json:"config"`
+	ImpId   string          `json:"impid"`
+	Bidder  string          `json:"bidder,omitempty"`
+	Adapter string          `json:"adapter,omitempty"`
+	Config  json.RawMessage `json:"config"`
 }
 
 // ExtUserSync defines the contract for bidresponse.ext.usersync.{bidder}.syncs[i]
