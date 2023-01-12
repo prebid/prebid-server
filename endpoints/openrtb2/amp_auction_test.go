@@ -1344,8 +1344,8 @@ func (s formatOverrideSpec) execute(t *testing.T) {
 }
 
 type mockAmpExchange struct {
-	lastRequest            *openrtb2.BidRequest
-	extPrebidTargetingTest bool
+	lastRequest *openrtb2.BidRequest
+	requestExt  json.RawMessage
 }
 
 var expectedErrorsFromHoldAuction map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage = map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{
@@ -1371,16 +1371,8 @@ func (m *mockAmpExchange) HoldAuction(ctx context.Context, auctionRequest exchan
 		Ext: json.RawMessage(`{ "errors": {"openx":[ { "code": 1, "message": "The request exceeded the timeout allocated" } ] } }`),
 	}
 
-	if m.extPrebidTargetingTest {
-		response = &openrtb2.BidResponse{
-			SeatBid: []openrtb2.SeatBid{{
-				Bid: []openrtb2.Bid{{
-					AdM: "<script></script>",
-					Ext: json.RawMessage(`{ "prebid": {"targeting": { "hb_pb": "1.20", "hb_appnexus_pb": "1.20", "hb_cache_id": "some_id"}}}`),
-				}},
-			}},
-			Ext: json.RawMessage(`{ "prebid": {"targeting": { "test_key": "test_value", "hb_appnexus_pb": "9999" } }, "errors": {"openx":[ { "code": 1, "message": "The request exceeded the timeout allocated" } ] } }`),
-		}
+	if m.requestExt != nil {
+		response.Ext = m.requestExt
 	}
 	if len(auctionRequest.StoredAuctionResponses) > 0 {
 		var seatBids []openrtb2.SeatBid
@@ -1689,7 +1681,7 @@ func TestBuildAmpObject(t *testing.T) {
 			description:     "Global targeting from bid response should be applied for Amp",
 			inTagId:         "test",
 			inStoredRequest: json.RawMessage(`{"id":"some-request-id","site":{"page":"prebid.org"},"imp":[{"id":"some-impression-id","banner":{"format":[{"w":300,"h":250}]},"ext":{"prebid":{"bidder":{"appnexus":{"placementId":12883451}}}}}],"tmax":500}`),
-			exchange:        &mockAmpExchange{extPrebidTargetingTest: true},
+			exchange:        &mockAmpExchange{requestExt: json.RawMessage(`{ "prebid": {"targeting": { "test_key": "test_value", "hb_appnexus_pb": "9999" } }, "errors": {"openx":[ { "code": 1, "message": "The request exceeded the timeout allocated" } ] } }`)},
 			expectedAmpObject: &analytics.AmpObject{
 				Status: http.StatusOK,
 				Errors: nil,
