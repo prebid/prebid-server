@@ -4674,7 +4674,6 @@ type exchangeSpec struct {
 	RequestType                *metrics.RequestType   `json:"requestType,omitempty"`
 	PassthroughFlag            bool                   `json:"passthrough_flag,omitempty"`
 	HostSChainFlag             bool                   `json:"host_schain_flag,omitempty"`
-	BidValidationEnforcement   string                 `json:"bid_validation_flag,omitempty"`
 	HostConfigBidValidation    config.Validations     `json:"host_bid_validations"`
 	AccountConfigBidValidation config.Validations     `json:"account_bid_validations"`
 }
