@@ -1,5 +1,6 @@
 {
     "description": "FLEDGE request/response when no contextual bids exist",
+    "fledge_enabled": true,
     "debuglog": {
         "enabled": false,
         "debug_override": false,

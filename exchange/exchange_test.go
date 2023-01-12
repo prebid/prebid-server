@@ -2297,11 +2297,13 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 			assert.JSONEq(t, expectedPassthough, actualPassthrough, "Expected bid response extension is incorrect")
 		}
 
-	} else if spec.Response.Ext != nil {
+	}
+
+	if spec.FledgeEnabled {
 		assert.JSONEq(t, string(spec.Response.Ext), string(bid.Ext), "ext mismatch")
 	}
 
-	if spec.BidValidationEnforcement == config.ValidationEnforce {
+	if spec.BidValidationEnforcement == config.ValidationEnforce || spec.FledgeEnabled {
 		actualBidRespExt := &openrtb_ext.ExtBidResponse{}
 		expectedBidRespExt := &openrtb_ext.ExtBidResponse{}
 		if bid.Ext != nil {
@@ -4679,6 +4681,7 @@ type exchangeSpec struct {
 	BidValidationEnforcement   string                 `json:"bid_validation_flag,omitempty"`
 	HostConfigBidValidation    config.Validations     `json:"host_bid_validations"`
 	AccountConfigBidValidation config.Validations     `json:"account_bid_validations"`
+	FledgeEnabled              bool                   `json:"fledge_enabled,omitempty"`
 }
 
 type exchangeRequest struct {
