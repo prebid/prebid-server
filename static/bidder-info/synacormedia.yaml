@@ -12,7 +12,7 @@ capabilities:
       - banner
       - video
 userSync:
-  key: imds
+  key: "imds"
   supportCors: true
   iframe:
     url: "https://ad-cdn.technoratimedia.com/html/usersync.html?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&cb={{.RedirectURL}}"
