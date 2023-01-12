@@ -79,19 +79,21 @@ type Metrics struct {
 
 // AdapterMetrics houses the metrics for a particular adapter
 type AdapterMetrics struct {
-	NoCookieMeter      metrics.Meter
-	ErrorMeters        map[AdapterError]metrics.Meter
-	NoBidMeter         metrics.Meter
-	GotBidsMeter       metrics.Meter
-	RequestTimer       metrics.Timer
-	PriceHistogram     metrics.Histogram
-	BidsReceivedMeter  metrics.Meter
-	PanicMeter         metrics.Meter
-	MarkupMetrics      map[openrtb_ext.BidType]*MarkupDeliveryMetrics
-	ConnCreated        metrics.Counter
-	ConnReused         metrics.Counter
-	ConnWaitTime       metrics.Timer
-	GDPRRequestBlocked metrics.Meter
+	NoCookieMeter            metrics.Meter
+	ErrorMeters              map[AdapterError]metrics.Meter
+	NoBidMeter               metrics.Meter
+	GotBidsMeter             metrics.Meter
+	RequestTimer             metrics.Timer
+	PriceHistogram           metrics.Histogram
+	WinningPriceHistogram    metrics.Histogram
+	BidsReceivedMeter        metrics.Meter
+	WinningBidsReceivedMeter metrics.Meter
+	PanicMeter               metrics.Meter
+	MarkupMetrics            map[openrtb_ext.BidType]*MarkupDeliveryMetrics
+	ConnCreated              metrics.Counter
+	ConnReused               metrics.Counter
+	ConnWaitTime             metrics.Timer
+	GDPRRequestBlocked       metrics.Meter
 }
 
 type MarkupDeliveryMetrics struct {
@@ -318,15 +320,17 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 func makeBlankAdapterMetrics(disabledMetrics config.DisabledMetrics) *AdapterMetrics {
 	blankMeter := &metrics.NilMeter{}
 	newAdapter := &AdapterMetrics{
-		NoCookieMeter:     blankMeter,
-		ErrorMeters:       make(map[AdapterError]metrics.Meter),
-		NoBidMeter:        blankMeter,
-		GotBidsMeter:      blankMeter,
-		RequestTimer:      &metrics.NilTimer{},
-		PriceHistogram:    &metrics.NilHistogram{},
-		BidsReceivedMeter: blankMeter,
-		PanicMeter:        blankMeter,
-		MarkupMetrics:     makeBlankBidMarkupMetrics(),
+		NoCookieMeter:            blankMeter,
+		ErrorMeters:              make(map[AdapterError]metrics.Meter),
+		NoBidMeter:               blankMeter,
+		GotBidsMeter:             blankMeter,
+		RequestTimer:             &metrics.NilTimer{},
+		PriceHistogram:           &metrics.NilHistogram{},
+		WinningPriceHistogram:    &metrics.NilHistogram{},
+		BidsReceivedMeter:        blankMeter,
+		WinningBidsReceivedMeter: blankMeter,
+		PanicMeter:               blankMeter,
+		MarkupMetrics:            makeBlankBidMarkupMetrics(),
 	}
 	if !disabledMetrics.AdapterConnectionMetrics {
 		newAdapter.ConnCreated = metrics.NilCounter{}
@@ -364,6 +368,7 @@ func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, 
 	am.GotBidsMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.requests.gotbids", adapterOrAccount, exchange), registry)
 	am.RequestTimer = metrics.GetOrRegisterTimer(fmt.Sprintf("%[1]s.%[2]s.request_time", adapterOrAccount, exchange), registry)
 	am.PriceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("%[1]s.%[2]s.prices", adapterOrAccount, exchange), registry, metrics.NewExpDecaySample(1028, 0.015))
+	am.WinningPriceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("%[1]s.%[2]s.prices", adapterOrAccount, exchange), registry, metrics.NewExpDecaySample(1028, 0.015))
 	am.MarkupMetrics = map[openrtb_ext.BidType]*MarkupDeliveryMetrics{
 		openrtb_ext.BidTypeBanner: makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeBanner),
 		openrtb_ext.BidTypeVideo:  makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeVideo),
@@ -378,6 +383,7 @@ func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, 
 	}
 	if adapterOrAccount != "adapter" {
 		am.BidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.bids_received", adapterOrAccount, exchange), registry)
+		am.WinningBidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.winning_bids_received", adapterOrAccount, exchange), registry)
 	}
 	am.PanicMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.requests.panic", adapterOrAccount, exchange), registry)
 	am.GDPRRequestBlocked = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.gdpr_request_blocked", adapterOrAccount, exchange), registry)
@@ -624,6 +630,33 @@ func (me *Metrics) RecordAdapterBidReceived(labels AdapterLabels, bidType openrt
 	}
 }
 
+// RecordAdapterWinningBidReceived implements a part of the MetricsEngine interface.
+// This tracks how many winning bids from each Bidder use `adm` vs. `nurl.
+func (me *Metrics) RecordAdapterWinningBidReceived(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
+	am, ok := me.AdapterMetrics[labels.Adapter]
+	if !ok {
+		glog.Errorf("Trying to run adapter bid metrics on %s: adapter metrics not found", string(labels.Adapter))
+		return
+	}
+
+	// Adapter metrics
+	am.WinningBidsReceivedMeter.Mark(1)
+	// Account-Adapter metrics
+	if aam, ok := me.getAccountMetrics(labels.PubID).adapterMetrics[labels.Adapter]; ok {
+		aam.WinningBidsReceivedMeter.Mark(1)
+	}
+
+	if metricsForType, ok := am.MarkupMetrics[bidType]; ok {
+		if hasAdm {
+			metricsForType.AdmMeter.Mark(1)
+		} else {
+			metricsForType.NurlMeter.Mark(1)
+		}
+	} else {
+		glog.Errorf("bid/adm metrics map entry does not exist for type %s. This is a bug, and should be reported.", bidType)
+	}
+}
+
 // RecordAdapterPrice implements a part of the MetricsEngine interface. Generates a histogram of winning bid prices
 func (me *Metrics) RecordAdapterPrice(labels AdapterLabels, cpm float64) {
 	am, ok := me.AdapterMetrics[labels.Adapter]
@@ -636,6 +669,21 @@ func (me *Metrics) RecordAdapterPrice(labels AdapterLabels, cpm float64) {
 	// Account-Adapter metrics
 	if aam, ok := me.getAccountMetrics(labels.PubID).adapterMetrics[labels.Adapter]; ok {
 		aam.PriceHistogram.Update(int64(cpm))
+	}
+}
+
+// RecordWinningAdapterPrice implements a part of the MetricsEngine interface. Generates a histogram of winning bid prices
+func (me *Metrics) RecordAdapterWinningPrice(labels AdapterLabels, cpm float64) {
+	am, ok := me.AdapterMetrics[labels.Adapter]
+	if !ok {
+		glog.Errorf("Trying to run adapter price metrics on %s: adapter metrics not found", string(labels.Adapter))
+		return
+	}
+	// Adapter metrics
+	am.WinningPriceHistogram.Update(int64(cpm))
+	// Account-Adapter metrics
+	if aam, ok := me.getAccountMetrics(labels.PubID).adapterMetrics[labels.Adapter]; ok {
+		aam.WinningPriceHistogram.Update(int64(cpm))
 	}
 }
 

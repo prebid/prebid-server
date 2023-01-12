@@ -143,16 +143,27 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		PubID:         metrics.PublisherUnknown,
 		CookieFlag:    metrics.CookieFlagUnknown,
 		RequestStatus: metrics.RequestStatusOK,
+		StoredImp:     metrics.StoredImpUnknown,
 	}
+
+	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
+
+	req, impExtInfoMap, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, storedImp, errL := deps.parseRequest(r)
+
+	adUnitName := "unknown"
+	if storedImp != nil {
+		if string(storedImp) != "" {
+			adUnitName = string(storedImp)
+		}
+	}
+	labels.StoredImp = adUnitName
+
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
 		deps.analytics.LogAuctionObject(&ao)
 	}()
 
-	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
-
-	req, impExtInfoMap, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, errL := deps.parseRequest(r)
 	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels) {
 		return
 	}
@@ -214,7 +225,9 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		StoredBidResponses:         storedBidResponses,
 		BidderImpReplaceImpID:      bidderImpReplaceImp,
 		PubID:                      labels.PubID,
+		StoredImp:                  adUnitName,
 	}
+
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
 	ao.Request = req.BidRequest
 	ao.Response = response
@@ -258,7 +271,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 // possible, it will return errors with messages that suggest improvements.
 //
 // If the errors list has at least one element, then no guarantees are made about the returned request.
-func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_ext.RequestWrapper, impExtInfoMap map[string]exchange.ImpExtInfo, storedAuctionResponses stored_responses.ImpsWithBidResponses, storedBidResponses stored_responses.ImpBidderStoredResp, bidderImpReplaceImpId stored_responses.BidderImpReplaceImpID, errs []error) {
+func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_ext.RequestWrapper, impExtInfoMap map[string]exchange.ImpExtInfo, storedAuctionResponses stored_responses.ImpsWithBidResponses, storedBidResponses stored_responses.ImpBidderStoredResp, bidderImpReplaceImpId stored_responses.BidderImpReplaceImpID, storedImp []byte, errs []error) {
 	req = &openrtb_ext.RequestWrapper{}
 	req.BidRequest = &openrtb2.BidRequest{}
 	errs = nil
@@ -287,18 +300,18 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_
 
 	impInfo, errs := parseImpInfo(requestJson)
 	if len(errs) > 0 {
-		return nil, nil, nil, nil, nil, errs
+		return nil, nil, nil, nil, nil, nil, errs
 	}
 
 	// Fetch the Stored Request data and merge it into the HTTP request.
-	if requestJson, impExtInfoMap, errs = deps.processStoredRequests(ctx, requestJson, impInfo); len(errs) > 0 {
+	if requestJson, impExtInfoMap, storedImp, errs = deps.processStoredRequests(ctx, requestJson, impInfo); len(errs) > 0 {
 		return
 	}
 
 	//Stored auction responses should be processed after stored requests due to possible impression modification
 	storedAuctionResponses, storedBidResponses, bidderImpReplaceImpId, errs = stored_responses.ProcessStoredResponses(ctx, requestJson, deps.storedRespFetcher, deps.bidderMap)
 	if len(errs) > 0 {
-		return nil, nil, nil, nil, nil, errs
+		return nil, nil, nil, nil, nil, nil, errs
 	}
 
 	if err := json.Unmarshal(requestJson, req.BidRequest); err != nil {
@@ -1611,11 +1624,11 @@ func getJsonSyntaxError(testJSON []byte) (bool, string) {
 	return false, ""
 }
 
-func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson []byte, impInfo []ImpExtPrebidData) ([]byte, map[string]exchange.ImpExtInfo, []error) {
+func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson []byte, impInfo []ImpExtPrebidData) ([]byte, map[string]exchange.ImpExtInfo, []byte, []error) {
 	// Parse the Stored Request IDs from the BidRequest and Imps.
 	storedBidRequestId, hasStoredBidRequest, err := getStoredRequestId(requestJson)
 	if err != nil {
-		return nil, nil, []error{err}
+		return nil, nil, nil, []error{err}
 	}
 
 	// Fetch the Stored Request data
@@ -1639,11 +1652,11 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	storedRequests, storedImps, errs := deps.storedReqFetcher.FetchRequests(ctx, storedReqIds, impStoredReqIds)
 
 	if len(errs) != 0 {
-		return nil, nil, errs
+		return nil, nil, nil, errs
 	}
 	bidRequestID, err := getBidRequestID(storedRequests[storedBidRequestId])
 	if err != nil {
-		return nil, nil, []error{err}
+		return nil, nil, nil, []error{err}
 	}
 
 	// Apply the Stored BidRequest, if it exists
@@ -1652,28 +1665,28 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	if hasStoredBidRequest {
 		isAppRequest, err := checkIfAppRequest(requestJson)
 		if err != nil {
-			return nil, nil, []error{err}
+			return nil, nil, nil, []error{err}
 		}
 		if (deps.cfg.GenerateRequestID && isAppRequest) || bidRequestID == "{{UUID}}" {
 			uuidPatch, err := generateUuidForBidRequest(deps.uuidGenerator)
 			if err != nil {
-				return nil, nil, []error{err}
+				return nil, nil, nil, []error{err}
 			}
 			uuidPatch, err = jsonpatch.MergePatch(storedRequests[storedBidRequestId], uuidPatch)
 			if err != nil {
 				errL := storedRequestErrorChecker(requestJson, storedRequests, storedBidRequestId)
-				return nil, nil, errL
+				return nil, nil, nil, errL
 			}
 			resolvedRequest, err = jsonpatch.MergePatch(requestJson, uuidPatch)
 			if err != nil {
 				errL := storedRequestErrorChecker(requestJson, storedRequests, storedBidRequestId)
-				return nil, nil, errL
+				return nil, nil, nil, errL
 			}
 		} else {
 			resolvedRequest, err = jsonpatch.MergePatch(storedRequests[storedBidRequestId], requestJson)
 			if err != nil {
 				errL := storedRequestErrorChecker(requestJson, storedRequests, storedBidRequestId)
-				return nil, nil, errL
+				return nil, nil, nil, errL
 			}
 		}
 	}
@@ -1691,7 +1704,7 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 					err = fmt.Errorf("Invalid JSON in Default Request Settings: %s", Err)
 				}
 			}
-			return nil, nil, []error{err}
+			return nil, nil, nil, []error{err}
 		}
 		resolvedRequest = aliasedRequest
 	}
@@ -1715,12 +1728,12 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 						err = fmt.Errorf("imp.ext.prebid.storedrequest.id %s: Stored Imp has Invalid JSON: %s", impData.ImpExtPrebid.StoredRequest.ID, errMessage)
 					}
 				}
-				return nil, nil, []error{err}
+				return nil, nil, nil, []error{err}
 			}
 			resolvedImps = append(resolvedImps, resolvedImp)
 			impId, err := jsonparser.GetString(resolvedImp, "id")
 			if err != nil {
-				return nil, nil, []error{err}
+				return nil, nil, nil, []error{err}
 			}
 
 			echoVideoAttributes := false
@@ -1731,7 +1744,7 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 			// Extract Passthrough from Merged Imp
 			passthrough, _, _, err := jsonparser.Get(resolvedImp, "ext", "prebid", "passthrough")
 			if err != nil && err != jsonparser.KeyPathNotFoundError {
-				return nil, nil, []error{err}
+				return nil, nil, nil, []error{err}
 			}
 			impExtInfoMap[impId] = exchange.ImpExtInfo{EchoVideoAttrs: echoVideoAttributes, StoredImp: storedImps[impData.ImpExtPrebid.StoredRequest.ID], Passthrough: passthrough}
 
@@ -1742,7 +1755,7 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 				if err == jsonparser.KeyPathNotFoundError {
 					err = fmt.Errorf("request.imp[%d] missing required field: \"id\"\n", i)
 				}
-				return nil, nil, []error{err}
+				return nil, nil, nil, []error{err}
 			}
 			impExtInfoMap[impId] = exchange.ImpExtInfo{Passthrough: impData.ImpExtPrebid.Passthrough}
 		}
@@ -1750,15 +1763,19 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	if len(resolvedImps) > 0 {
 		newImpJson, err := json.Marshal(resolvedImps)
 		if err != nil {
-			return nil, nil, []error{err}
+			return nil, nil, nil, []error{err}
 		}
 		resolvedRequest, err = jsonparser.Set(resolvedRequest, newImpJson, "imp")
 		if err != nil {
-			return nil, nil, []error{err}
+			return nil, nil, nil, []error{err}
 		}
 	}
 
-	return resolvedRequest, impExtInfoMap, nil
+	if len(impStoredReqIds) == 0 {
+		return resolvedRequest, impExtInfoMap, nil, nil
+	}
+
+	return resolvedRequest, impExtInfoMap, []byte(impStoredReqIds[0]), nil
 }
 
 // parseImpInfo parses the request JSON and returns impression and unmarshalled imp.ext.prebid

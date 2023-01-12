@@ -76,8 +76,18 @@ func (me *MetricsEngineMock) RecordAdapterBidReceived(labels AdapterLabels, bidT
 	me.Called(labels, bidType, hasAdm)
 }
 
+// RecordAdapterWinningBidReceived mock
+func (me *MetricsEngineMock) RecordAdapterWinningBidReceived(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
+	me.Called(labels, bidType, hasAdm)
+}
+
 // RecordAdapterPrice mock
 func (me *MetricsEngineMock) RecordAdapterPrice(labels AdapterLabels, cpm float64) {
+	me.Called(labels, cpm)
+}
+
+// RecordAdapterWinningPrice mock
+func (me *MetricsEngineMock) RecordAdapterWinningPrice(labels AdapterLabels, cpm float64) {
 	me.Called(labels, cpm)
 }
 

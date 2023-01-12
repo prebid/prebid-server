@@ -13,6 +13,7 @@ type Labels struct {
 	PubID         string // exchange specific ID, so we cannot compile in values
 	CookieFlag    CookieFlag
 	RequestStatus RequestStatus
+	StoredImp     string
 }
 
 // AdapterLabels defines the labels that can be attached to the adapter metrics.
@@ -24,6 +25,7 @@ type AdapterLabels struct {
 	CookieFlag    CookieFlag
 	AdapterBids   AdapterBid
 	AdapterErrors map[AdapterError]struct{}
+	StoredImp     string
 }
 
 // ImpLabels defines metric labels describing the impression type.
@@ -133,6 +135,9 @@ type CacheResult string
 
 // PublisherUnknown : Default value for Labels.PubID
 const PublisherUnknown = "unknown"
+
+// StoredImpUnknown: Defalut value for Labels.StoredImp
+const StoredImpUnknown = "unknown"
 
 // The demand sources
 const (
@@ -409,7 +414,9 @@ type MetricsEngine interface {
 	// This records whether or not a bid of a particular type uses `adm` or `nurl`.
 	// Since the legacy endpoints don't have a bid type, it can only count bids from OpenRTB and AMP.
 	RecordAdapterBidReceived(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool)
+	RecordAdapterWinningBidReceived(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool)
 	RecordAdapterPrice(labels AdapterLabels, cpm float64)
+	RecordAdapterWinningPrice(labels AdapterLabels, cpm float64)
 	RecordAdapterTime(labels AdapterLabels, length time.Duration)
 	RecordCookieSync(status CookieSyncStatus)
 	RecordSyncerRequest(key string, status SyncerCookieSyncStatus)

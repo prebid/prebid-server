@@ -181,6 +181,7 @@ type AuctionRequest struct {
 	StoredBidResponses    stored_responses.ImpBidderStoredResp
 	BidderImpReplaceImpID stored_responses.BidderImpReplaceImpID
 	PubID                 string
+	StoredImp             string
 }
 
 // BidderRequest holds the bidder specific request and all other
@@ -259,6 +260,10 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
 	bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(ctx, r, requestExt, e.bidderToSyncerKey, e.me, gdprDefaultValue, e.privacyConfig, e.gdprPermsBuilder, e.tcf2ConfigBuilder, e.hostSChainNode)
+
+	for i := range bidderRequests {
+		bidderRequests[i].BidderLabels.StoredImp = r.StoredImp
+	}
 
 	e.me.RecordRequestPrivacy(privacyLabels)
 
@@ -374,6 +379,20 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 			} else {
 				debugLog.Data.Response = "Unable to marshal response ext for debugging"
 				errs = append(errs, err)
+			}
+		}
+	}
+
+	if auc != nil && auc.winningBidsByBidder != nil {
+		for _, topBidsPerImp := range auc.winningBidsByBidder {
+			for bidderName, topBidPerBidder := range topBidsPerImp {
+				topBidderLabel := metrics.AdapterLabels{
+					Adapter:   bidderName,
+					StoredImp: r.StoredImp,
+				}
+				var cpm = float64(topBidPerBidder.bid.Price * 1000)
+				e.me.RecordAdapterWinningBidReceived(topBidderLabel, topBidPerBidder.bidType, topBidPerBidder.bid.AdM != "")
+				e.me.RecordAdapterWinningPrice(topBidderLabel, cpm)
 			}
 		}
 	}

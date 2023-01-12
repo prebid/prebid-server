@@ -23,6 +23,7 @@ func preloadLabelValues(m *Metrics, syncerKeys []string) {
 		syncerRequestStatusValues = syncerRequestStatusesAsString()
 		syncerSetsStatusValues    = syncerSetStatusesAsString()
 		sourceValues              = []string{sourceRequest}
+		storedImpValues           = []string{metrics.StoredImpUnknown}
 	)
 
 	preloadLabelValuesForCounter(m.connectionsError, map[string][]string{
@@ -51,10 +52,12 @@ func preloadLabelValues(m *Metrics, syncerKeys []string) {
 	preloadLabelValuesForCounter(m.requests, map[string][]string{
 		requestTypeLabel:   requestTypeValues,
 		requestStatusLabel: requestStatusValues,
+		storedImpLabel:     storedImpValues,
 	})
 
 	preloadLabelValuesForHistogram(m.requestsTimer, map[string][]string{
 		requestTypeLabel: requestTypeValues,
+		storedImpLabel:   storedImpValues,
 	})
 
 	preloadLabelValuesForHistogram(m.storedAccountFetchTimer, map[string][]string{
@@ -124,6 +127,13 @@ func preloadLabelValues(m *Metrics, syncerKeys []string) {
 	preloadLabelValuesForCounter(m.adapterBids, map[string][]string{
 		adapterLabel:        adapterValues,
 		markupDeliveryLabel: bidTypeValues,
+		storedImpLabel:      storedImpValues,
+	})
+
+	preloadLabelValuesForCounter(m.adapterWinningBids, map[string][]string{
+		adapterLabel:        adapterValues,
+		markupDeliveryLabel: bidTypeValues,
+		storedImpLabel:      storedImpValues,
 	})
 
 	preloadLabelValuesForCounter(m.adapterErrors, map[string][]string{
@@ -136,13 +146,20 @@ func preloadLabelValues(m *Metrics, syncerKeys []string) {
 	})
 
 	preloadLabelValuesForHistogram(m.adapterPrices, map[string][]string{
-		adapterLabel: adapterValues,
+		adapterLabel:   adapterValues,
+		storedImpLabel: storedImpValues,
+	})
+
+	preloadLabelValuesForHistogram(m.adapterWinningPrices, map[string][]string{
+		adapterLabel:   adapterValues,
+		storedImpLabel: storedImpValues,
 	})
 
 	preloadLabelValuesForCounter(m.adapterRequests, map[string][]string{
-		adapterLabel: adapterValues,
-		cookieLabel:  cookieValues,
-		hasBidsLabel: boolValues,
+		adapterLabel:   adapterValues,
+		cookieLabel:    cookieValues,
+		hasBidsLabel:   boolValues,
+		storedImpLabel: storedImpValues,
 	})
 
 	preloadLabelValuesForCounter(m.adsCertRequests, map[string][]string{

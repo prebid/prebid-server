@@ -141,10 +141,12 @@ func TestRequestMetric(t *testing.T) {
 	m := createMetricsForTesting()
 	requestType := metrics.ReqTypeORTB2Web
 	requestStatus := metrics.RequestStatusBlacklisted
+	storedImp := "testImpName"
 
 	m.RecordRequest(metrics.Labels{
 		RType:         requestType,
 		RequestStatus: requestStatus,
+		StoredImp:     storedImp,
 	})
 
 	expectedCount := float64(1)
@@ -153,6 +155,7 @@ func TestRequestMetric(t *testing.T) {
 		prometheus.Labels{
 			requestTypeLabel:   string(requestType),
 			requestStatusLabel: string(requestStatus),
+			storedImpLabel:     storedImp,
 		})
 }
 
@@ -405,10 +408,12 @@ func TestImpressionsMetric(t *testing.T) {
 
 func TestRequestTimeMetric(t *testing.T) {
 	requestType := metrics.ReqTypeORTB2Web
+	storedImp := "testImpName"
 	performTest := func(m *Metrics, requestStatus metrics.RequestStatus, timeInMs float64) {
 		m.RecordRequestTime(metrics.Labels{
 			RType:         requestType,
 			RequestStatus: requestStatus,
+			StoredImp:     storedImp,
 		}, time.Duration(timeInMs)*time.Millisecond)
 	}
 
@@ -441,7 +446,7 @@ func TestRequestTimeMetric(t *testing.T) {
 
 		test.testCase(m)
 
-		result := getHistogramFromHistogramVec(m.requestsTimer, requestTypeLabel, string(requestType))
+		result := getHistogramFromHistogramVecByTwoKeys(m.requestsTimer, requestTypeLabel, string(requestType), storedImpLabel, storedImp)
 		assertHistogram(t, test.description, result, test.expectedCount, test.expectedSum)
 	}
 }
@@ -650,9 +655,11 @@ func TestRecordStoredDataError(t *testing.T) {
 
 func TestAdapterBidReceivedMetric(t *testing.T) {
 	adapterName := "anyName"
+	storedImpName := "testImpName"
 	performTest := func(m *Metrics, hasAdm bool) {
 		labels := metrics.AdapterLabels{
-			Adapter: openrtb_ext.BidderName(adapterName),
+			Adapter:   openrtb_ext.BidderName(adapterName),
+			StoredImp: storedImpName,
 		}
 		bidType := openrtb_ext.BidTypeBanner
 		m.RecordAdapterBidReceived(labels, bidType, hasAdm)
@@ -692,12 +699,14 @@ func TestAdapterBidReceivedMetric(t *testing.T) {
 			prometheus.Labels{
 				adapterLabel:        adapterName,
 				markupDeliveryLabel: markupDeliveryAdm,
+				storedImpLabel:      storedImpName,
 			})
 		assertCounterVecValue(t, test.description, "adapterBids[nurl]", m.adapterBids,
 			test.expectedNurlCount,
 			prometheus.Labels{
 				adapterLabel:        adapterName,
 				markupDeliveryLabel: markupDeliveryNurl,
+				storedImpLabel:      storedImpName,
 			})
 	}
 }

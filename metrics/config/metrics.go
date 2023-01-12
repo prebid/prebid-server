@@ -156,10 +156,24 @@ func (me *MultiMetricsEngine) RecordAdapterBidReceived(labels metrics.AdapterLab
 	}
 }
 
+// RecordAdapterWinningBidReceived across all engines
+func (me *MultiMetricsEngine) RecordAdapterWinningBidReceived(labels metrics.AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
+	for _, thisME := range *me {
+		thisME.RecordAdapterWinningBidReceived(labels, bidType, hasAdm)
+	}
+}
+
 // RecordAdapterPrice across all engines
 func (me *MultiMetricsEngine) RecordAdapterPrice(labels metrics.AdapterLabels, cpm float64) {
 	for _, thisME := range *me {
 		thisME.RecordAdapterPrice(labels, cpm)
+	}
+}
+
+// RecordAdapterWinningPrice across all engines
+func (me *MultiMetricsEngine) RecordAdapterWinningPrice(labels metrics.AdapterLabels, cpm float64) {
+	for _, thisME := range *me {
+		thisME.RecordAdapterWinningPrice(labels, cpm)
 	}
 }
 
@@ -335,8 +349,16 @@ func (me *NilMetricsEngine) RecordTLSHandshakeTime(tlsHandshakeTime time.Duratio
 func (me *NilMetricsEngine) RecordAdapterBidReceived(labels metrics.AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
 }
 
+// RecordAdapterWinningBidReceived as a noop
+func (me *NilMetricsEngine) RecordAdapterWinningBidReceived(labels metrics.AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
+}
+
 // RecordAdapterPrice as a noop
 func (me *NilMetricsEngine) RecordAdapterPrice(labels metrics.AdapterLabels, cpm float64) {
+}
+
+// RecordAdapterWinningPrice as a noop
+func (me *NilMetricsEngine) RecordAdapterWinningPrice(labels metrics.AdapterLabels, cpm float64) {
 }
 
 // RecordAdapterTime as a noop
