@@ -13,3 +13,6 @@ userSync:
   redirect:
     url: https://trc.taboola.com/sg/ps/1/cm?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
     userMacro: "<TUID>"
+  iframe:
+    url: https://cdn.taboola.com/scripts/ps-sync.html?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
+    userMacro: "<TUID>"
