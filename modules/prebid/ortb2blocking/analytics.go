@@ -35,8 +35,8 @@ func addAllowedAnalyticTag(result *hookstage.HookResult[hookstage.RawBidderRespo
 	newAllowedResult := hookanalytics.Result{
 		Status: hookanalytics.ResultStatusAllow,
 		AppliedTo: hookanalytics.AppliedTo{
-			Bidders: []string{bidder},
-			ImpIds:  []string{ImpID},
+			Bidder: bidder,
+			ImpIds: []string{ImpID},
 		},
 	}
 
@@ -46,7 +46,7 @@ func addAllowedAnalyticTag(result *hookstage.HookResult[hookstage.RawBidderRespo
 func addBlockedAnalyticTag(
 	result *hookstage.HookResult[hookstage.RawBidderResponsePayload],
 	bidder, ImpID string,
-	failedAttributes string,
+	failedAttributes []string,
 	data map[string]interface{},
 ) {
 	values := make(map[string]interface{})
@@ -69,8 +69,8 @@ func addBlockedAnalyticTag(
 		Status: hookanalytics.ResultStatusBlock,
 		Values: values,
 		AppliedTo: hookanalytics.AppliedTo{
-			Bidders: []string{bidder},
-			ImpIds:  []string{ImpID},
+			Bidder: bidder,
+			ImpIds: []string{ImpID},
 		},
 	}
 

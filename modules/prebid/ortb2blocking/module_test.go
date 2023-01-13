@@ -630,7 +630,7 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 							Results: []hookanalytics.Result{
 								{
 									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID1}},
+									AppliedTo: hookanalytics.AppliedTo{Bidder: bidder, ImpIds: []string{impID1}},
 								},
 							},
 						},
@@ -680,14 +680,14 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 								{
 									Status: hookanalytics.ResultStatusBlock,
 									Values: map[string]interface{}{
-										attributesAnalyticKey: "badv",
+										attributesAnalyticKey: []string{"badv"},
 										badvAnalyticKey:       []string{"forbidden_domain"},
 									},
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID1}},
+									AppliedTo: hookanalytics.AppliedTo{Bidder: bidder, ImpIds: []string{impID1}},
 								},
 								{
 									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID2}},
+									AppliedTo: hookanalytics.AppliedTo{Bidder: bidder, ImpIds: []string{impID2}},
 								},
 							},
 						},
@@ -725,11 +725,11 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 							Results: []hookanalytics.Result{
 								{
 									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID1}},
+									AppliedTo: hookanalytics.AppliedTo{Bidder: bidder, ImpIds: []string{impID1}},
 								},
 								{
 									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID2}},
+									AppliedTo: hookanalytics.AppliedTo{Bidder: bidder, ImpIds: []string{impID2}},
 								},
 							},
 						},
@@ -766,11 +766,11 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 							Results: []hookanalytics.Result{
 								{
 									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID1}},
+									AppliedTo: hookanalytics.AppliedTo{Bidder: bidder, ImpIds: []string{impID1}},
 								},
 								{
 									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID2}},
+									AppliedTo: hookanalytics.AppliedTo{Bidder: bidder, ImpIds: []string{impID2}},
 								},
 							},
 						},
@@ -807,11 +807,11 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 							Results: []hookanalytics.Result{
 								{
 									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID1}},
+									AppliedTo: hookanalytics.AppliedTo{Bidder: bidder, ImpIds: []string{impID1}},
 								},
 								{
 									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID2}},
+									AppliedTo: hookanalytics.AppliedTo{Bidder: bidder, ImpIds: []string{impID2}},
 								},
 							},
 						},
@@ -846,14 +846,14 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 								{
 									Status: hookanalytics.ResultStatusBlock,
 									Values: map[string]interface{}{
-										attributesAnalyticKey: "badv",
+										attributesAnalyticKey: []string{"badv"},
 										badvAnalyticKey:       []string(nil),
 									},
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID1}},
+									AppliedTo: hookanalytics.AppliedTo{Bidder: bidder, ImpIds: []string{impID1}},
 								},
 								{
 									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID2}},
+									AppliedTo: hookanalytics.AppliedTo{Bidder: bidder, ImpIds: []string{impID2}},
 								},
 							},
 						},
@@ -891,11 +891,11 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 							Results: []hookanalytics.Result{
 								{
 									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID1}},
+									AppliedTo: hookanalytics.AppliedTo{Bidder: bidder, ImpIds: []string{impID1}},
 								},
 								{
 									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID2}},
+									AppliedTo: hookanalytics.AppliedTo{Bidder: bidder, ImpIds: []string{impID2}},
 								},
 							},
 						},
@@ -932,11 +932,11 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 							Results: []hookanalytics.Result{
 								{
 									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID1}},
+									AppliedTo: hookanalytics.AppliedTo{Bidder: bidder, ImpIds: []string{impID1}},
 								},
 								{
 									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID2}},
+									AppliedTo: hookanalytics.AppliedTo{Bidder: bidder, ImpIds: []string{impID2}},
 								},
 							},
 						},
@@ -996,14 +996,14 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 								{
 									Status: hookanalytics.ResultStatusBlock,
 									Values: map[string]interface{}{
-										attributesAnalyticKey: "bcat",
+										attributesAnalyticKey: []string{"bcat"},
 										"bcat":                []string{"fishing"},
 									},
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID1}},
+									AppliedTo: hookanalytics.AppliedTo{Bidder: bidder, ImpIds: []string{impID1}},
 								},
 								{
 									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID2}},
+									AppliedTo: hookanalytics.AppliedTo{Bidder: bidder, ImpIds: []string{impID2}},
 								},
 							},
 						},
@@ -1039,14 +1039,14 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 								{
 									Status: hookanalytics.ResultStatusBlock,
 									Values: map[string]interface{}{
-										attributesAnalyticKey: "cattax",
+										attributesAnalyticKey: []string{"cattax"},
 										cattaxAnalyticKey:     []adcom1.CategoryTaxonomy{1},
 									},
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID1}},
+									AppliedTo: hookanalytics.AppliedTo{Bidder: bidder, ImpIds: []string{impID1}},
 								},
 								{
 									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID2}},
+									AppliedTo: hookanalytics.AppliedTo{Bidder: bidder, ImpIds: []string{impID2}},
 								},
 							},
 						},
@@ -1080,15 +1080,15 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 							Results: []hookanalytics.Result{
 								{
 									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID1}},
+									AppliedTo: hookanalytics.AppliedTo{Bidder: bidder, ImpIds: []string{impID1}},
 								},
 								{
 									Status: hookanalytics.ResultStatusBlock,
 									Values: map[string]interface{}{
-										attributesAnalyticKey: "cattax",
+										attributesAnalyticKey: []string{"cattax"},
 										cattaxAnalyticKey:     []adcom1.CategoryTaxonomy{2},
 									},
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID2}},
+									AppliedTo: hookanalytics.AppliedTo{Bidder: bidder, ImpIds: []string{impID2}},
 								},
 							},
 						},
@@ -1124,14 +1124,14 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 								{
 									Status: hookanalytics.ResultStatusBlock,
 									Values: map[string]interface{}{
-										attributesAnalyticKey: "bapp",
+										attributesAnalyticKey: []string{"bapp"},
 										bappAnalyticKey:       []string{"forbidden_bundle"},
 									},
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID1}},
+									AppliedTo: hookanalytics.AppliedTo{Bidder: bidder, ImpIds: []string{impID1}},
 								},
 								{
 									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID2}},
+									AppliedTo: hookanalytics.AppliedTo{Bidder: bidder, ImpIds: []string{impID2}},
 								},
 							},
 						},
@@ -1167,14 +1167,14 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 								{
 									Status: hookanalytics.ResultStatusBlock,
 									Values: map[string]interface{}{
-										attributesAnalyticKey: "battr",
+										attributesAnalyticKey: []string{"battr"},
 										battrAnalyticKey:      []int{1},
 									},
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID1}},
+									AppliedTo: hookanalytics.AppliedTo{Bidder: bidder, ImpIds: []string{impID1}},
 								},
 								{
 									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID2}},
+									AppliedTo: hookanalytics.AppliedTo{Bidder: bidder, ImpIds: []string{impID2}},
 								},
 							},
 						},
@@ -1240,17 +1240,17 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 								{
 									Status: hookanalytics.ResultStatusBlock,
 									Values: map[string]interface{}{
-										attributesAnalyticKey: "badv, bcat, cattax, bapp, battr",
+										attributesAnalyticKey: []string{"badv", "bcat", "cattax", "bapp", "battr"},
 										badvAnalyticKey:       []string{"forbidden_domain"},
 										cattaxAnalyticKey:     []adcom1.CategoryTaxonomy{1},
 										bappAnalyticKey:       []string{"forbidden_bundle"},
 										battrAnalyticKey:      []int{1},
 									},
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID1}},
+									AppliedTo: hookanalytics.AppliedTo{Bidder: bidder, ImpIds: []string{impID1}},
 								},
 								{
 									Status:    hookanalytics.ResultStatusAllow,
-									AppliedTo: hookanalytics.AppliedTo{Bidders: []string{bidder}, ImpIds: []string{impID2}},
+									AppliedTo: hookanalytics.AppliedTo{Bidder: bidder, ImpIds: []string{impID2}},
 								},
 							},
 						},

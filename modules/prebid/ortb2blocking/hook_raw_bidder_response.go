@@ -354,18 +354,18 @@ func addDebugMessage(
 	result *hookstage.HookResult[hookstage.RawBidderResponsePayload],
 	bid *openrtb2.Bid,
 	bidder string,
-	failedAttributes string,
+	failedAttributes []string,
 ) {
 	result.DebugMessages = append(
 		result.DebugMessages,
-		fmt.Sprintf("Bid %s from bidder %s has been rejected, failed checks: %s", bid.ID, bidder, failedAttributes),
+		fmt.Sprintf("Bid %s from bidder %s has been rejected, failed checks: %s", bid.ID, bidder, strings.Join(failedAttributes, ", ")),
 	)
 }
 
 // returns a slice with the names of failed attributes
-func getFailedAttributes(data map[string]interface{}) string {
-	var builder strings.Builder
-	for i, attribute := range [5]string{
+func getFailedAttributes(data map[string]interface{}) []string {
+	var builder []string
+	for _, attribute := range [5]string{
 		"badv",
 		"bcat",
 		"cattax",
@@ -373,12 +373,9 @@ func getFailedAttributes(data map[string]interface{}) string {
 		"battr",
 	} {
 		if _, ok := data[attribute]; ok {
-			if i > 0 && builder.Len() != 0 {
-				builder.WriteString(", ")
-			}
-			builder.WriteString(attribute)
+			builder = append(builder, attribute)
 		}
 	}
 
-	return builder.String()
+	return builder
 }
