@@ -94,7 +94,7 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 		var bidExt openrtb_ext.ExtBid
 		err := json.Unmarshal(bid.Ext, &bidExt)
 		if err == nil && bidExt.Prebid != nil {
-			if (bidExt.Prebid.Type == "banner") || (bidExt.Prebid.Type == "native") {
+			if (bidExt.Prebid.Type == openrtb_ext.BidTypeBanner) || (bidExt.Prebid.Type == openrtb_ext.BidTypeNative) {
 				return openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
 			}
 			return "", &errortypes.BadServerResponse{
