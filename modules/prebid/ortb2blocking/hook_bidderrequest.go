@@ -13,7 +13,7 @@ import (
 )
 
 func handleBidderRequestHook(
-	cfg Config,
+	cfg config,
 	payload hookstage.BidderRequestPayload,
 ) (result hookstage.HookResult[hookstage.BidderRequestPayload], err error) {
 	if payload.BidRequest == nil {
@@ -53,7 +53,7 @@ func handleBidderRequestHook(
 }
 
 func updateBAdv(
-	cfg Config,
+	cfg config,
 	payload hookstage.BidderRequestPayload,
 	mediaTypes mediaTypes,
 	attributes *blockingAttributes,
@@ -80,7 +80,7 @@ func updateBAdv(
 }
 
 func updateBApp(
-	cfg Config,
+	cfg config,
 	payload hookstage.BidderRequestPayload,
 	mediaTypes mediaTypes,
 	attributes *blockingAttributes,
@@ -107,7 +107,7 @@ func updateBApp(
 }
 
 func updateBCat(
-	cfg Config,
+	cfg config,
 	payload hookstage.BidderRequestPayload,
 	mediaTypes mediaTypes,
 	attributes *blockingAttributes,
@@ -134,7 +134,7 @@ func updateBCat(
 }
 
 func updateBType(
-	cfg Config,
+	cfg config,
 	payload hookstage.BidderRequestPayload,
 	attributes *blockingAttributes,
 	result *hookstage.HookResult[hookstage.BidderRequestPayload],
@@ -160,7 +160,7 @@ func updateBType(
 }
 
 func updateBAttr(
-	cfg Config,
+	cfg config,
 	payload hookstage.BidderRequestPayload,
 	attributes *blockingAttributes,
 	result *hookstage.HookResult[hookstage.BidderRequestPayload],
@@ -186,7 +186,7 @@ func updateBAttr(
 }
 
 func updateCatTax(
-	cfg Config,
+	cfg config,
 	payload hookstage.BidderRequestPayload,
 	attributes *blockingAttributes,
 	changeSet *hookstage.ChangeSet[hookstage.BidderRequestPayload],
