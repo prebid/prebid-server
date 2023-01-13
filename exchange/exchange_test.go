@@ -5085,7 +5085,7 @@ type mockUpdateBidRequestHook struct{}
 
 func (e mockUpdateBidRequestHook) HandleBidderRequestHook(_ context.Context, mctx hookstage.ModuleInvocationContext, _ hookstage.BidderRequestPayload) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
 	time.Sleep(50 * time.Millisecond)
-	c := &hookstage.ChangeSet[hookstage.BidderRequestPayload]{}
+	c := hookstage.ChangeSet[hookstage.BidderRequestPayload]{}
 	c.AddMutation(
 		func(payload hookstage.BidderRequestPayload) (hookstage.BidderRequestPayload, error) {
 			payload.BidRequest.Site.Name = "test"
