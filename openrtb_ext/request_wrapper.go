@@ -1273,6 +1273,8 @@ type ImpExt struct {
 	extDirty    bool
 	prebid      *ExtImpPrebid
 	prebidDirty bool
+	tid         string
+	tidDirty    bool
 }
 
 func (e *ImpExt) unmarshal(extJson json.RawMessage) error {
@@ -1298,6 +1300,13 @@ func (e *ImpExt) unmarshal(extJson json.RawMessage) error {
 		}
 	}
 
+	tidJson, hasTid := e.ext["tid"]
+	if hasTid {
+		if err := json.Unmarshal(tidJson, &e.tid); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -1319,6 +1328,19 @@ func (e *ImpExt) marshal() (json.RawMessage, error) {
 		e.prebidDirty = false
 	}
 
+	if e.tidDirty {
+		if len(e.tid) > 0 {
+			tidJson, err := json.Marshal(e.tid)
+			if err != nil {
+				return nil, err
+			}
+			e.ext["tid"] = tidJson
+		} else {
+			delete(e.ext, "tid")
+		}
+		e.tidDirty = false
+	}
+
 	e.extDirty = false
 	if len(e.ext) == 0 {
 		return nil, nil
@@ -1327,7 +1349,7 @@ func (e *ImpExt) marshal() (json.RawMessage, error) {
 }
 
 func (e *ImpExt) Dirty() bool {
-	return e.extDirty || e.prebidDirty
+	return e.extDirty || e.prebidDirty || e.tidDirty
 }
 
 func (e *ImpExt) GetExt() map[string]json.RawMessage {
@@ -1361,6 +1383,16 @@ func (e *ImpExt) GetOrCreatePrebid() *ExtImpPrebid {
 func (e *ImpExt) SetPrebid(prebid *ExtImpPrebid) {
 	e.prebid = prebid
 	e.prebidDirty = true
+}
+
+func (e *ImpExt) GetTid() string {
+	tid := e.tid
+	return tid
+}
+
+func (e *ImpExt) SetTid(tid string) {
+	e.tid = tid
+	e.tidDirty = true
 }
 
 func CreateImpExtForTesting(ext map[string]json.RawMessage, prebid *ExtImpPrebid) ImpExt {
