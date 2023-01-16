@@ -130,6 +130,12 @@ func ensureContainsAdapterMetrics(t *testing.T, registry metrics.Registry, name 
 	ensureContains(t, registry, name+".connections_created", adapterMetrics.ConnCreated)
 	ensureContains(t, registry, name+".connections_reused", adapterMetrics.ConnReused)
 	ensureContains(t, registry, name+".connection_wait_time", adapterMetrics.ConnWaitTime)
+
+	ensureContains(t, registry, name+".response.validation.size.err", adapterMetrics.BidValidationCreativeSizeErrorMeter)
+	ensureContains(t, registry, name+".response.validation.size.warn", adapterMetrics.BidValidationCreativeSizeWarnMeter)
+	ensureContains(t, registry, name+".response.validation.secure.err", adapterMetrics.BidValidationSecureMarkupErrorMeter)
+	ensureContains(t, registry, name+".response.validation.secure.warn", adapterMetrics.BidValidationSecureMarkupWarnMeter)
+
 }
 
 func ensureContainsModuleMetrics(t *testing.T, registry metrics.Registry, name string, moduleMetrics *ModuleMetrics) {
@@ -269,6 +275,90 @@ func TestRecordDebugRequest(t *testing.T) {
 
 		assert.Equal(t, test.expectedDebugCount, m.DebugRequestMeter.Count())
 		assert.Equal(t, test.expectedAccountDebugCount, am.debugRequestMeter.Count())
+	}
+}
+
+func TestRecordBidValidationCreativeSize(t *testing.T) {
+	testCases := []struct {
+		description          string
+		givenDisabledMetrics config.DisabledMetrics
+		givenPubID           string
+		expectedAccountCount int64
+		expectedAdapterCount int64
+	}{
+		{
+			description: "Account Metric isn't disabled, so both metrics should be incremented",
+			givenDisabledMetrics: config.DisabledMetrics{
+				AccountAdapterDetails: false,
+			},
+			givenPubID:           "acct-id",
+			expectedAdapterCount: 1,
+			expectedAccountCount: 1,
+		},
+		{
+			description: "Account Metric is disabled, so only the adapter metric should increment",
+			givenDisabledMetrics: config.DisabledMetrics{
+				AccountAdapterDetails: true,
+			},
+			givenPubID:           "acct-id",
+			expectedAdapterCount: 1,
+			expectedAccountCount: 0,
+		},
+	}
+	for _, test := range testCases {
+		registry := metrics.NewRegistry()
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, test.givenDisabledMetrics, nil, nil)
+
+		m.RecordBidValidationCreativeSizeError(openrtb_ext.BidderAppnexus, test.givenPubID)
+		m.RecordBidValidationCreativeSizeWarn(openrtb_ext.BidderAppnexus, test.givenPubID)
+		am := m.getAccountMetrics(test.givenPubID)
+
+		assert.Equal(t, test.expectedAdapterCount, m.AdapterMetrics[openrtb_ext.BidderAppnexus].BidValidationCreativeSizeErrorMeter.Count())
+		assert.Equal(t, test.expectedAdapterCount, m.AdapterMetrics[openrtb_ext.BidderAppnexus].BidValidationCreativeSizeWarnMeter.Count())
+		assert.Equal(t, test.expectedAccountCount, am.bidValidationCreativeSizeMeter.Count())
+		assert.Equal(t, test.expectedAccountCount, am.bidValidationCreativeSizeWarnMeter.Count())
+	}
+}
+
+func TestRecordBidValidationSecureMarkup(t *testing.T) {
+	testCases := []struct {
+		description          string
+		givenDisabledMetrics config.DisabledMetrics
+		givenPubID           string
+		expectedAccountCount int64
+		expectedAdapterCount int64
+	}{
+		{
+			description: "Account Metric isn't disabled, so both metrics should be incremented",
+			givenDisabledMetrics: config.DisabledMetrics{
+				AccountAdapterDetails: false,
+			},
+			givenPubID:           "acct-id",
+			expectedAdapterCount: 1,
+			expectedAccountCount: 1,
+		},
+		{
+			description: "Account Metric is disabled, so only the adapter metric should increment",
+			givenDisabledMetrics: config.DisabledMetrics{
+				AccountAdapterDetails: true,
+			},
+			givenPubID:           "acct-id",
+			expectedAdapterCount: 1,
+			expectedAccountCount: 0,
+		},
+	}
+	for _, test := range testCases {
+		registry := metrics.NewRegistry()
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, test.givenDisabledMetrics, nil, nil)
+
+		m.RecordBidValidationSecureMarkupError(openrtb_ext.BidderAppnexus, test.givenPubID)
+		m.RecordBidValidationSecureMarkupWarn(openrtb_ext.BidderAppnexus, test.givenPubID)
+		am := m.getAccountMetrics(test.givenPubID)
+
+		assert.Equal(t, test.expectedAdapterCount, m.AdapterMetrics[openrtb_ext.BidderAppnexus].BidValidationSecureMarkupErrorMeter.Count())
+		assert.Equal(t, test.expectedAdapterCount, m.AdapterMetrics[openrtb_ext.BidderAppnexus].BidValidationSecureMarkupWarnMeter.Count())
+		assert.Equal(t, test.expectedAccountCount, am.bidValidationSecureMarkupMeter.Count())
+		assert.Equal(t, test.expectedAccountCount, am.bidValidationSecureMarkupWarnMeter.Count())
 	}
 }
 
