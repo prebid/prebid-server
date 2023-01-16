@@ -55,23 +55,24 @@ type IdFetcher interface {
 }
 
 type exchange struct {
-	adapterMap        map[openrtb_ext.BidderName]AdaptedBidder
-	bidderInfo        config.BidderInfos
-	bidderToSyncerKey map[string]string
-	me                metrics.MetricsEngine
-	cache             prebid_cache_client.Client
-	cacheTime         time.Duration
-	gdprPermsBuilder  gdpr.PermissionsBuilder
-	tcf2ConfigBuilder gdpr.TCF2ConfigBuilder
-	currencyConverter *currency.RateConverter
-	externalURL       string
-	gdprDefaultValue  gdpr.Signal
-	privacyConfig     config.Privacy
-	categoriesFetcher stored_requests.CategoryFetcher
-	bidIDGenerator    BidIDGenerator
-	hostSChainNode    *openrtb2.SupplyChainNode
-	adsCertSigner     adscert.Signer
-	server            config.Server
+	adapterMap               map[openrtb_ext.BidderName]AdaptedBidder
+	bidderInfo               config.BidderInfos
+	bidderToSyncerKey        map[string]string
+	me                       metrics.MetricsEngine
+	cache                    prebid_cache_client.Client
+	cacheTime                time.Duration
+	gdprPermsBuilder         gdpr.PermissionsBuilder
+	tcf2ConfigBuilder        gdpr.TCF2ConfigBuilder
+	currencyConverter        *currency.RateConverter
+	externalURL              string
+	gdprDefaultValue         gdpr.Signal
+	privacyConfig            config.Privacy
+	categoriesFetcher        stored_requests.CategoryFetcher
+	bidIDGenerator           BidIDGenerator
+	hostSChainNode           *openrtb2.SupplyChainNode
+	adsCertSigner            adscert.Signer
+	server                   config.Server
+	bidValidationEnforcement config.Validations
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -147,10 +148,11 @@ func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid
 			GDPR: cfg.GDPR,
 			LMT:  cfg.LMT,
 		},
-		bidIDGenerator: &bidIDGenerator{cfg.GenerateBidID},
-		hostSChainNode: cfg.HostSChainNode,
-		adsCertSigner:  adsCertSigner,
-		server:         config.Server{ExternalUrl: cfg.ExternalURL, GvlID: cfg.GDPR.HostVendorID, DataCenter: cfg.DataCenter},
+		bidIDGenerator:           &bidIDGenerator{cfg.GenerateBidID},
+		hostSChainNode:           cfg.HostSChainNode,
+		adsCertSigner:            adsCertSigner,
+		server:                   config.Server{ExternalUrl: cfg.ExternalURL, GvlID: cfg.GDPR.HostVendorID, DataCenter: cfg.DataCenter},
+		bidValidationEnforcement: cfg.Validations,
 	}
 }
 
@@ -404,9 +406,10 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		bidResponseExt.Warnings[openrtb_ext.BidderReservedGeneral] = append(bidResponseExt.Warnings[openrtb_ext.BidderReservedGeneral], generalWarning)
 	}
 
-	// Build the response
-	bidResponse, err := e.buildBidResponse(ctx, liveAdapters, adapterBids, r.BidRequestWrapper.BidRequest, adapterExtra, auc, bidResponseExt, cacheInstructions.returnCreative, r.ImpExtInfoMap, errs)
+	e.bidValidationEnforcement.SetBannerCreativeMaxSize(r.Account.Validations)
 
+	// Build the response
+	bidResponse, err := e.buildBidResponse(ctx, liveAdapters, adapterBids, r.BidRequestWrapper.BidRequest, adapterExtra, auc, bidResponseExt, cacheInstructions.returnCreative, r.ImpExtInfoMap, r.PubID, errs)
 	return bidResponse, err
 }
 
@@ -706,7 +709,7 @@ func errsToBidderWarnings(errs []error) []openrtb_ext.ExtBidderMessage {
 }
 
 // This piece takes all the bids supplied by the adapters and crafts an openRTB response to send back to the requester
-func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_ext.BidderName, adapterSeatBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, bidRequest *openrtb2.BidRequest, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, auc *auction, bidResponseExt *openrtb_ext.ExtBidResponse, returnCreative bool, impExtInfoMap map[string]ImpExtInfo, errList []error) (*openrtb2.BidResponse, error) {
+func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_ext.BidderName, adapterSeatBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, bidRequest *openrtb2.BidRequest, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, auc *auction, bidResponseExt *openrtb_ext.ExtBidResponse, returnCreative bool, impExtInfoMap map[string]ImpExtInfo, pubID string, errList []error) (*openrtb2.BidResponse, error) {
 	bidResponse := new(openrtb2.BidResponse)
 	var err error
 
@@ -722,7 +725,7 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 	for a, adapterSeatBids := range adapterSeatBids {
 		//while processing every single bib, do we need to handle categories here?
 		if adapterSeatBids != nil && len(adapterSeatBids.Bids) > 0 {
-			sb := e.makeSeatBid(adapterSeatBids, a, adapterExtra, auc, returnCreative, impExtInfoMap)
+			sb := e.makeSeatBid(adapterSeatBids, a, adapterExtra, auc, returnCreative, impExtInfoMap, bidResponseExt, pubID)
 			seatBids = append(seatBids, *sb)
 			bidResponse.Cur = adapterSeatBids.Currency
 		}
@@ -1022,14 +1025,14 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*en
 
 // Return an openrtb seatBid for a bidder
 // BuildBidResponse is responsible for ensuring nil bid seatbids are not included
-func (e *exchange) makeSeatBid(adapterBid *entities.PbsOrtbSeatBid, adapter openrtb_ext.BidderName, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, auc *auction, returnCreative bool, impExtInfoMap map[string]ImpExtInfo) *openrtb2.SeatBid {
+func (e *exchange) makeSeatBid(adapterBid *entities.PbsOrtbSeatBid, adapter openrtb_ext.BidderName, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, auc *auction, returnCreative bool, impExtInfoMap map[string]ImpExtInfo, bidResponseExt *openrtb_ext.ExtBidResponse, pubID string) *openrtb2.SeatBid {
 	seatBid := &openrtb2.SeatBid{
 		Seat:  adapter.String(),
 		Group: 0, // Prebid cannot support roadblocking
 	}
 
 	var errList []error
-	seatBid.Bid, errList = e.makeBid(adapterBid.Bids, auc, returnCreative, impExtInfoMap)
+	seatBid.Bid, errList = e.makeBid(adapterBid.Bids, auc, returnCreative, impExtInfoMap, bidResponseExt, adapter, pubID)
 	if len(errList) > 0 {
 		adapterExtra[adapter].Errors = append(adapterExtra[adapter].Errors, errsToBidderErrors(errList)...)
 	}
@@ -1037,11 +1040,28 @@ func (e *exchange) makeSeatBid(adapterBid *entities.PbsOrtbSeatBid, adapter open
 	return seatBid
 }
 
-func (e *exchange) makeBid(bids []*entities.PbsOrtbBid, auc *auction, returnCreative bool, impExtInfoMap map[string]ImpExtInfo) ([]openrtb2.Bid, []error) {
+func (e *exchange) makeBid(bids []*entities.PbsOrtbBid, auc *auction, returnCreative bool, impExtInfoMap map[string]ImpExtInfo, bidResponseExt *openrtb_ext.ExtBidResponse, adapter openrtb_ext.BidderName, pubID string) ([]openrtb2.Bid, []error) {
 	result := make([]openrtb2.Bid, 0, len(bids))
 	errs := make([]error, 0, 1)
 
 	for _, bid := range bids {
+		if e.bidValidationEnforcement.BannerCreativeMaxSize == config.ValidationEnforce && bid.BidType == openrtb_ext.BidTypeBanner {
+			if !e.validateBannerCreativeSize(bid, bidResponseExt, adapter, pubID, e.bidValidationEnforcement.BannerCreativeMaxSize) {
+				continue // Don't add bid to result
+			}
+		} else if e.bidValidationEnforcement.BannerCreativeMaxSize == config.ValidationWarn && bid.BidType == openrtb_ext.BidTypeBanner {
+			e.validateBannerCreativeSize(bid, bidResponseExt, adapter, pubID, e.bidValidationEnforcement.BannerCreativeMaxSize)
+		}
+		if _, ok := impExtInfoMap[bid.Bid.ImpID]; ok {
+			if e.bidValidationEnforcement.SecureMarkup == config.ValidationEnforce && (bid.BidType == openrtb_ext.BidTypeBanner || bid.BidType == openrtb_ext.BidTypeVideo) {
+				if !e.validateBidAdM(bid, bidResponseExt, adapter, pubID, e.bidValidationEnforcement.SecureMarkup) {
+					continue // Don't add bid to result
+				}
+			} else if e.bidValidationEnforcement.SecureMarkup == config.ValidationWarn && (bid.BidType == openrtb_ext.BidTypeBanner || bid.BidType == openrtb_ext.BidTypeVideo) {
+				e.validateBidAdM(bid, bidResponseExt, adapter, pubID, e.bidValidationEnforcement.SecureMarkup)
+			}
+
+		}
 		bidExtPrebid := &openrtb_ext.ExtBidPrebid{
 			DealPriority:      bid.DealPriority,
 			DealTierSatisfied: bid.DealTierSatisfied,
@@ -1254,4 +1274,61 @@ func isAdsCertEnabled(experiment *openrtb_ext.Experiment, info config.BidderInfo
 	requestAdsCertEnabled := experiment != nil && experiment.AdsCert != nil && experiment.AdsCert.Enabled
 	bidderAdsCertEnabled := info.Experiment.AdsCert.Enabled
 	return requestAdsCertEnabled && bidderAdsCertEnabled
+}
+
+func (e exchange) validateBannerCreativeSize(bid *entities.PbsOrtbBid, bidResponseExt *openrtb_ext.ExtBidResponse, adapter openrtb_ext.BidderName, pubID string, validationType string) bool {
+	if bid.Bid.W > e.bidValidationEnforcement.MaxCreativeWidth || bid.Bid.H > e.bidValidationEnforcement.MaxCreativeHeight {
+		// Add error to debug array
+		errorMessage := setErrorMessageCreativeSize(validationType)
+		bidCreativeMaxSizeError := openrtb_ext.ExtBidderMessage{
+			Code:    errortypes.BadServerResponseErrorCode,
+			Message: errorMessage,
+		}
+		bidResponseExt.Errors[adapter] = append(bidResponseExt.Errors[adapter], bidCreativeMaxSizeError)
+
+		// Log Metrics
+		e.me.RecordBidValidationCreativeSizeError(adapter, pubID)
+
+		return false
+	}
+	return true
+}
+
+func (e exchange) validateBidAdM(bid *entities.PbsOrtbBid, bidResponseExt *openrtb_ext.ExtBidResponse, adapter openrtb_ext.BidderName, pubID string, validationType string) bool {
+	invalidAdM := []string{"http:", "http%3A"}
+	requiredAdM := []string{"https:", "https%3A"}
+
+	if (strings.Contains(bid.Bid.AdM, invalidAdM[0]) || strings.Contains(bid.Bid.AdM, invalidAdM[1])) && (!strings.Contains(bid.Bid.AdM, requiredAdM[0]) && !strings.Contains(bid.Bid.AdM, requiredAdM[1])) {
+		// Add error to debug array
+		errorMessage := setErrorMessageSecureMarkup(validationType)
+		bidSecureMarkupError := openrtb_ext.ExtBidderMessage{
+			Code:    errortypes.BadServerResponseErrorCode,
+			Message: errorMessage,
+		}
+		bidResponseExt.Errors[adapter] = append(bidResponseExt.Errors[adapter], bidSecureMarkupError)
+
+		// Log Metrics
+		e.me.RecordBidValidationSecureMarkupError(adapter, pubID)
+
+		return false
+	}
+	return true
+}
+
+func setErrorMessageCreativeSize(validationType string) string {
+	if validationType == config.ValidationEnforce {
+		return "bidResponse rejected: size WxH"
+	} else if validationType == config.ValidationWarn {
+		return "bidResponse creative size warning: size WxH larger than AdUnit sizes"
+	}
+	return ""
+}
+
+func setErrorMessageSecureMarkup(validationType string) string {
+	if validationType == config.ValidationEnforce {
+		return "bidResponse rejected: insecure creative in secure context"
+	} else if validationType == config.ValidationWarn {
+		return "bidResponse secure markup warning: insecure creative in secure contexts"
+	}
+	return ""
 }

@@ -7,15 +7,15 @@ import (
 	"github.com/prebid/openrtb/v17/adcom1"
 )
 
-func newConfig(data json.RawMessage) (Config, error) {
-	var cfg Config
+func newConfig(data json.RawMessage) (config, error) {
+	var cfg config
 	if err := json.Unmarshal(data, &cfg); err != nil {
 		return cfg, fmt.Errorf("failed to parse config: %s", err)
 	}
 	return cfg, nil
 }
 
-type Config struct {
+type config struct {
 	Attributes Attributes `json:"attributes"`
 }
 

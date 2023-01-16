@@ -19,7 +19,7 @@ import (
 func TestModuleBuilderBuild(t *testing.T) {
 	vendor := "acme"
 	moduleName := "foobar"
-	defaultModulesConfig := map[string]map[string]interface{}{vendor: {moduleName: map[string]bool{"enabled": true}}}
+	defaultModulesConfig := map[string]map[string]interface{}{vendor: {moduleName: map[string]interface{}{"enabled": true}}}
 	defaultHookRepository, err := hooks.NewHookRepository(map[string]interface{}{vendor + "." + moduleName: module{}})
 	if err != nil {
 		t.Fatalf("Failed to init default hook repository: %s", err)
@@ -46,9 +46,16 @@ func TestModuleBuilderBuild(t *testing.T) {
 		},
 		"Module is not added to hook repository if it's disabled": {
 			givenModule:           module{},
-			givenConfig:           map[string]map[string]interface{}{vendor: {moduleName: map[string]bool{"enabled": false}}},
+			givenConfig:           map[string]map[string]interface{}{vendor: {moduleName: map[string]interface{}{"enabled": false, "attr": "val"}}},
 			expectedModulesStages: map[string][]string{},
 			expectedHookRepo:      emptyHookRepository,
+			expectedErr:           nil,
+		},
+		"Module considered disabled if status property not defined in module config": {
+			givenModule:           module{},
+			givenConfig:           map[string]map[string]interface{}{vendor: {moduleName: map[string]interface{}{"foo": "bar"}}},
+			expectedHookRepo:      emptyHookRepository,
+			expectedModulesStages: map[string][]string{},
 			expectedErr:           nil,
 		},
 		"Module considered disabled if its config not provided and as a result skipped from execution": {

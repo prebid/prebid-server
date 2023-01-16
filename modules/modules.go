@@ -32,14 +32,6 @@ type (
 	ModuleBuilders map[string]map[string]ModuleBuilderFn
 	// ModuleBuilderFn returns an interface{} type that implements certain hook interfaces.
 	ModuleBuilderFn func(cfg json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, error)
-	// moduleConfig defines the minimum module config, each module is required to implement it.
-	moduleConfig struct {
-		// Enabled determines the module status. All modules are disabled by default
-		// unless explicitly enabled via config. Disabled modules not added to hook repository
-		// and skipped from general hook execution flow. PBS logs warning if hook execution plan
-		// refers to disabled module.
-		Enabled bool `json:"enabled"`
-	}
 )
 
 type builder struct {
@@ -62,7 +54,7 @@ func (m *builder) Build(
 		for moduleName, builder := range moduleBuilders {
 			var err error
 			var conf json.RawMessage
-			var baseConf moduleConfig
+			var isEnabled bool
 
 			id := fmt.Sprintf("%s.%s", vendor, moduleName)
 			if data, ok := cfg[vendor][moduleName]; ok {
@@ -70,12 +62,14 @@ func (m *builder) Build(
 					return nil, nil, fmt.Errorf(`failed to marshal "%s" module config: %s`, id, err)
 				}
 
-				if err = json.Unmarshal(conf, &baseConf); err != nil {
-					return nil, nil, fmt.Errorf(`failed to unmarshal base config for module %s: %s`, id, err)
+				if values, ok := data.(map[string]interface{}); ok {
+					if value, ok := values["enabled"].(bool); ok {
+						isEnabled = value
+					}
 				}
 			}
 
-			if !baseConf.Enabled {
+			if !isEnabled {
 				glog.Infof("Skip %s module, disabled.", id)
 				continue
 			}
