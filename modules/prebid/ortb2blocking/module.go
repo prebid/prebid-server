@@ -42,7 +42,7 @@ func (m Module) HandleRawBidderResponseHook(
 	payload hookstage.RawBidderResponsePayload,
 ) (hookstage.HookResult[hookstage.RawBidderResponsePayload], error) {
 	result := hookstage.HookResult[hookstage.RawBidderResponsePayload]{}
-	var cfg Config
+	var cfg config
 	if len(miCtx.AccountConfig) != 0 {
 		ncfg, err := newConfig(miCtx.AccountConfig)
 		if err != nil {

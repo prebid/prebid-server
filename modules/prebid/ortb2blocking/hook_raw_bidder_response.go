@@ -13,7 +13,7 @@ import (
 )
 
 func handleRawBidderResponseHook(
-	cfg Config,
+	cfg config,
 	payload hookstage.RawBidderResponsePayload,
 	moduleCtx hookstage.ModuleContext,
 ) (result hookstage.HookResult[hookstage.RawBidderResponsePayload], err error) {
@@ -91,7 +91,7 @@ func mediaTypesFromBid(bid *adapters.TypedBid) mediaTypes {
 
 func shouldBeBlockedDueToBadv(
 	result *hookstage.HookResult[hookstage.RawBidderResponsePayload],
-	cfg Config,
+	cfg config,
 	blockAttr blockingAttributes,
 	bid *openrtb2.Bid,
 	bidMediaTypes mediaTypes,
@@ -133,7 +133,7 @@ func shouldBeBlockedDueToBadv(
 
 func shouldBeBlockedDueToBcat(
 	result *hookstage.HookResult[hookstage.RawBidderResponsePayload],
-	cfg Config,
+	cfg config,
 	blockAttr blockingAttributes,
 	bid *openrtb2.Bid,
 	bidMediaTypes mediaTypes,
@@ -203,7 +203,7 @@ func shouldBeBlockedDueToCattax(
 
 func shouldBeBlockedDueToBapp(
 	result *hookstage.HookResult[hookstage.RawBidderResponsePayload],
-	cfg Config,
+	cfg config,
 	blockAttr blockingAttributes,
 	bid *openrtb2.Bid,
 	bidMediaTypes mediaTypes,
@@ -241,7 +241,7 @@ func shouldBeBlockedDueToBapp(
 
 func shouldBeBlockedDueToBattr(
 	result *hookstage.HookResult[hookstage.RawBidderResponsePayload],
-	cfg Config,
+	cfg config,
 	blockAttr blockingAttributes,
 	bid *openrtb2.Bid,
 	bidMediaTypes mediaTypes,
