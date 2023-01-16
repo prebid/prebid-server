@@ -58,25 +58,34 @@ type Metrics struct {
 	adsCertSignTimer             prometheus.Histogram
 
 	// Adapter Metrics
-	adapterBids                *prometheus.CounterVec
-	adapterErrors              *prometheus.CounterVec
-	adapterPanics              *prometheus.CounterVec
-	adapterPrices              *prometheus.HistogramVec
-	adapterRequests            *prometheus.CounterVec
-	adapterRequestsTimer       *prometheus.HistogramVec
-	adapterReusedConnections   *prometheus.CounterVec
-	adapterCreatedConnections  *prometheus.CounterVec
-	adapterConnectionWaitTime  *prometheus.HistogramVec
-	adapterGDPRBlockedRequests *prometheus.CounterVec
+	adapterBids                           *prometheus.CounterVec
+	adapterErrors                         *prometheus.CounterVec
+	adapterPanics                         *prometheus.CounterVec
+	adapterPrices                         *prometheus.HistogramVec
+	adapterRequests                       *prometheus.CounterVec
+	adapterRequestsTimer                  *prometheus.HistogramVec
+	adapterReusedConnections              *prometheus.CounterVec
+	adapterCreatedConnections             *prometheus.CounterVec
+	adapterConnectionWaitTime             *prometheus.HistogramVec
+	adapterGDPRBlockedRequests            *prometheus.CounterVec
+	adapterBidResponseValidationSizeError *prometheus.CounterVec
+	adapterBidResponseValidationSizeWarn  *prometheus.CounterVec
+	adapterBidResponseSecureMarkupError   *prometheus.CounterVec
+	adapterBidResponseSecureMarkupWarn    *prometheus.CounterVec
 
 	// Syncer Metrics
 	syncerRequests *prometheus.CounterVec
 	syncerSets     *prometheus.CounterVec
 
 	// Account Metrics
-	accountRequests        *prometheus.CounterVec
-	accountDebugRequests   *prometheus.CounterVec
-	accountStoredResponses *prometheus.CounterVec
+	accountRequests                       *prometheus.CounterVec
+	accountDebugRequests                  *prometheus.CounterVec
+	accountStoredResponses                *prometheus.CounterVec
+	accountBidResponseValidationSizeError *prometheus.CounterVec
+	accountBidResponseValidationSizeWarn  *prometheus.CounterVec
+
+	accountBidResponseSecureMarkupError *prometheus.CounterVec
+	accountBidResponseSecureMarkupWarn  *prometheus.CounterVec
 
 	// Module Metrics as a map where the key is the module name
 	moduleDuration        map[string]*prometheus.HistogramVec
@@ -387,6 +396,26 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 			standardTimeBuckets)
 	}
 
+	metrics.adapterBidResponseValidationSizeError = newCounter(cfg, reg,
+		"adapter_response_validation_size_err",
+		"Count that tracks number of bids removed from bid response that had a creative size greater than maxWidth/maxHeight",
+		[]string{adapterLabel, successLabel})
+
+	metrics.adapterBidResponseValidationSizeWarn = newCounter(cfg, reg,
+		"adapter_response_validation_size_warn",
+		"Count that tracks number of bids removed from bid response that had a creative size greater than maxWidth/maxHeight (warn)",
+		[]string{adapterLabel, successLabel})
+
+	metrics.adapterBidResponseSecureMarkupError = newCounter(cfg, reg,
+		"adapter_response_validation_secure_err",
+		"Count that tracks number of bids removed from bid response that had a invalid bidAdm",
+		[]string{adapterLabel, successLabel})
+
+	metrics.adapterBidResponseSecureMarkupWarn = newCounter(cfg, reg,
+		"adapter_response_validation_secure_warn",
+		"Count that tracks number of bids removed from bid response that had a invalid bidAdm (warn)",
+		[]string{adapterLabel, successLabel})
+
 	metrics.adapterRequestsTimer = newHistogramVec(cfg, reg,
 		"adapter_request_time_seconds",
 		"Seconds to resolve each successful request labeled by adapter.",
@@ -412,6 +441,26 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"account_debug_requests",
 		"Count of total requests to Prebid Server that have debug enabled labled by account",
 		[]string{accountLabel})
+
+	metrics.accountBidResponseValidationSizeError = newCounter(cfg, reg,
+		"account_response_validation_size_err",
+		"Count that tracks number of bids removed from bid response that had a creative size greater than maxWidth/maxHeight labeled by account (enforce) ",
+		[]string{accountLabel, successLabel})
+
+	metrics.accountBidResponseValidationSizeWarn = newCounter(cfg, reg,
+		"account_response_validation_size_warn",
+		"Count that tracks number of bids removed from bid response that had a creative size greater than maxWidth/maxHeight labeled by account (warn)",
+		[]string{accountLabel, successLabel})
+
+	metrics.accountBidResponseSecureMarkupError = newCounter(cfg, reg,
+		"account_response_validation_secure_err",
+		"Count that tracks number of bids removed from bid response that had a invalid bidAdm labeled by account (enforce) ",
+		[]string{accountLabel, successLabel})
+
+	metrics.accountBidResponseSecureMarkupWarn = newCounter(cfg, reg,
+		"account_response_validation_secure_warn",
+		"Count that tracks number of bids removed from bid response that had a invalid bidAdm labeled by account (warn)",
+		[]string{accountLabel, successLabel})
 
 	metrics.requestsQueueTimer = newHistogramVec(cfg, reg,
 		"request_queue_time",
@@ -895,6 +944,54 @@ func (m *Metrics) RecordAdsCertReq(success bool) {
 }
 func (m *Metrics) RecordAdsCertSignTime(adsCertSignTime time.Duration) {
 	m.adsCertSignTimer.Observe(adsCertSignTime.Seconds())
+}
+
+func (m *Metrics) RecordBidValidationCreativeSizeError(adapter openrtb_ext.BidderName, account string) {
+	m.adapterBidResponseValidationSizeError.With(prometheus.Labels{
+		adapterLabel: string(adapter), successLabel: successLabel,
+	}).Inc()
+
+	if !m.metricsDisabled.AccountAdapterDetails && account != metrics.PublisherUnknown {
+		m.accountBidResponseValidationSizeError.With(prometheus.Labels{
+			accountLabel: account, successLabel: successLabel,
+		}).Inc()
+	}
+}
+
+func (m *Metrics) RecordBidValidationCreativeSizeWarn(adapter openrtb_ext.BidderName, account string) {
+	m.adapterBidResponseValidationSizeWarn.With(prometheus.Labels{
+		adapterLabel: string(adapter), successLabel: successLabel,
+	}).Inc()
+
+	if !m.metricsDisabled.AccountAdapterDetails && account != metrics.PublisherUnknown {
+		m.accountBidResponseValidationSizeWarn.With(prometheus.Labels{
+			accountLabel: account, successLabel: successLabel,
+		}).Inc()
+	}
+}
+
+func (m *Metrics) RecordBidValidationSecureMarkupError(adapter openrtb_ext.BidderName, account string) {
+	m.adapterBidResponseSecureMarkupError.With(prometheus.Labels{
+		adapterLabel: string(adapter), successLabel: successLabel,
+	}).Inc()
+
+	if !m.metricsDisabled.AccountAdapterDetails && account != metrics.PublisherUnknown {
+		m.accountBidResponseSecureMarkupError.With(prometheus.Labels{
+			accountLabel: account, successLabel: successLabel,
+		}).Inc()
+	}
+}
+
+func (m *Metrics) RecordBidValidationSecureMarkupWarn(adapter openrtb_ext.BidderName, account string) {
+	m.adapterBidResponseSecureMarkupWarn.With(prometheus.Labels{
+		adapterLabel: string(adapter), successLabel: successLabel,
+	}).Inc()
+
+	if !m.metricsDisabled.AccountAdapterDetails && account != metrics.PublisherUnknown {
+		m.accountBidResponseSecureMarkupWarn.With(prometheus.Labels{
+			accountLabel: account, successLabel: successLabel,
+		}).Inc()
+	}
 }
 
 func (m *Metrics) RecordModuleCalled(labels metrics.ModuleLabels, duration time.Duration) {

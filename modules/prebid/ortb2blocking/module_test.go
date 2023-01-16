@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var config = json.RawMessage(`
+var testConfig = json.RawMessage(`
 {
   "attributes": {
     "badv": {
@@ -295,7 +295,7 @@ func TestHandleBidderRequestHook(t *testing.T) {
 		{
 			description: "Payload changed after successful BidderRequest hook execution",
 			bidder:      bidder,
-			config:      config,
+			config:      testConfig,
 			bidRequest: &openrtb2.BidRequest{
 				Imp: []openrtb2.Imp{
 					{
@@ -400,7 +400,7 @@ func TestHandleBidderRequestHook(t *testing.T) {
 		{
 			description: "BidderRequest attributes not updated if they already present in BidderRequest",
 			bidder:      bidder,
-			config:      config,
+			config:      testConfig,
 			bidRequest: &openrtb2.BidRequest{
 				BAdv:   []string{"existing.com"},
 				BApp:   []string{"existingApp", "existingApp2"},
@@ -493,7 +493,7 @@ func TestHandleBidderRequestHook(t *testing.T) {
 		{
 			description:        "Expect error if nil BidRequest provided",
 			bidder:             bidder,
-			config:             config,
+			config:             testConfig,
 			bidRequest:         nil,
 			expectedBidRequest: nil,
 			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{},
