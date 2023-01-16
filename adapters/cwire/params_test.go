@@ -39,15 +39,35 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"placementId":123,"pageId":321}`,
+	`{"cwcreative":"3746","cwdebug":true,"cwfeatures":["feat1","feat2"]}`,
+	`{"cwcreative":"3746","cwdebug":true}`,
+	`{"cwcreative":"3746"}`,
+	`{"cwdebug":true,"cwfeatures":["feat1","feat2"]}`,
+	`{"cwdebug":true}`,
+	`{"cwfeatures":["feat1","feat2"]}`,
+	`{"cwfeatures":["feat1"]}`,
+	`{"cwfeatures":[]}`,
+	`{"pageId":321,"cwcreative":"3746"}`,
+	`{"pageId":321}`,
+	`{"placementId":123,"cwcreative":"3746"}`,
+	`{"placementId":123,"cwdebug":true,"cwfeatures":["feat1","feat2"]}`,
+	`{"placementId":123,"pageId":321,"cwcreative":"3746","cwdebug":true,"cwfeatures":["feat1","feat2"]}`,
 	`{"placementId":123,"pageId":321,"cwcreative":"3746"}`,
+	`{"placementId":123,"pageId":321}`,
+	`{"placementId":123}`,
+	`{}`,
 }
 
 var invalidParams = []string{
+	`4.2`,
+	`5`,
+	`[]`,
 	``,
 	`null`,
 	`true`,
-	`5`,
-	`4.2`,
-	`[]`,
+	`{"cwcreative":1234}`,
+	`{"placementId":"abc"}`,
+	`{"cwdebug":"TRUE"}`,
+	`{"cwdebug":"FALSE"}`,
+	`{"cwfeatures":[1,2,3]}`,
 }

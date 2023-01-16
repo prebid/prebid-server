@@ -21,7 +21,7 @@
       "description": "Enable CWire debug mode"
     },
     "cwfeatures": {
-      "type": "number",
+      "type": "array",
       "items": {
         "type": "string"
       },
