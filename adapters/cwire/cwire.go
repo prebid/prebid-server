@@ -23,13 +23,13 @@ Your bid adapter code will need to implement and export:
   responses.
 */
 
-type CWireAdapter struct {
+type adapter struct {
 	endpoint string
 }
 
 // Builder builds a new instance of the CWire adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	bidder := &CWireAdapter{
+	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
 	return bidder, nil
@@ -48,7 +48,7 @@ This method is called once by the core framework for bid requests which have at
 least one valid Impression for your adapter. Impressions not configured for
 your adapter are not accessible.
 */
-func (a *CWireAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
@@ -78,7 +78,7 @@ This method is called for each response received from your bidding server
 within the bidding time window (request.tmax). If there are no requests or if
 all requests time out, the MakeBids method will not be called.
 */
-func (a *CWireAdapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.RequestData, httpRes *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.RequestData, httpRes *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if httpRes.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}

@@ -1,7 +1,7 @@
 endpoint: "https://ortb.cwi.re/v1/bid"
 maintainer:
   email: "mateja.maric@cwire.com"
-  endpointCompression: gzip
+endpointCompression: gzip
 gvlVendorID: 1081
 modifyingVastXmlAllowed: false
 capabilities:
