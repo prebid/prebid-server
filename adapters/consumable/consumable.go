@@ -79,8 +79,6 @@ type decision struct {
 	Height        uint64     `json:"height,omitempty"` // Consumable extension, not defined by Adzerk
 	Adomain       []string   `json:"adomain,omitempty"`
 	Cats          []string   `json:"cats,omitempty"`
-	NetworkId     int        `json:"networkId,omitempty"`
-	MediaType     string     `json:"mediaType,omitempty"`
 }
 
 type contents struct {
