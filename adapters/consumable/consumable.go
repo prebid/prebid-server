@@ -290,7 +290,8 @@ func (a *ConsumableAdapter) MakeBids(
 			bid.H = int64(decision.Height)
 			bid.CrID = strconv.FormatInt(decision.AdID, 10)
 			bid.Exp = 30 // TODO: Check this is intention of TTL
-
+			bid.ADomain = decision.Adomain
+			bid.Cat = decision.Cats
 			// not yet ported from prebid.js adapter
 			//bid.requestId = bidId;
 			//bid.currency = 'USD';
@@ -303,7 +304,6 @@ func (a *ConsumableAdapter) MakeBids(
 				// From Prebid's point of view, this means that Consumable units
 				// are always "banners".
 				BidType: openrtb_ext.BidTypeBanner,
-				BidMeta: getBidMeta(bid, decision),
 			})
 		}
 	}
@@ -344,32 +344,4 @@ func hasEids(eids []openrtb2.EID) bool {
 		}
 	}
 	return false
-}
-
-func getBidMeta(bid openrtb2.Bid, dec decision) *openrtb_ext.ExtBidPrebidMeta {
-	prebidMeta := &openrtb_ext.ExtBidPrebidMeta{}
-
-	if dec.Adomain != nil {
-		prebidMeta.AdvertiserDomains = dec.Adomain
-	} else {
-		prebidMeta.AdvertiserDomains = []string{}
-	}
-
-	if dec.Cats != nil && len(dec.Cats) > 0 {
-		prebidMeta.PrimaryCategoryID = dec.Cats[0]
-
-		if len(dec.Cats) > 1 {
-			prebidMeta.SecondaryCategoryIDs = dec.Cats[1:]
-		}
-	}
-
-	if dec.NetworkId > 0 {
-		prebidMeta.NetworkID = dec.NetworkId
-	}
-
-	if dec.MediaType != "" {
-		prebidMeta.MediaType = dec.MediaType
-	}
-
-	return prebidMeta
 }

@@ -96,9 +96,7 @@
                 }
               ],
               "adomain": ["consumabletv.com"],
-              "cats": ["IAB1", "IAB2"],
-              "mediaType": "banner",
-              "networkId": 5528
+              "cats": ["IAB1", "IAB2"]
             }
           }
         }
@@ -118,7 +116,9 @@
             "crid": "1234567890",
             "exp": 30,
             "w": 728,
-            "h": 250
+            "h": 250,
+            "adomain": ["consumabletv.com"],
+            "cat": ["IAB1", "IAB2"]
           },
           "type": "banner"
         }
