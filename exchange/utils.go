@@ -71,14 +71,8 @@ func cleanOpenRTBRequests(ctx context.Context,
 		return
 	}
 
-	reqExt, err := req.GetRequestExt()
-	if err != nil {
-		return
-	}
-	reqPrebid := reqExt.GetPrebid()
-
 	var allBidderRequests []BidderRequest
-    allBidderRequests, errs = getAuctionBidderRequests(auctionReq, requestExt, bidderToSyncerKey, impsByBidder, aliases, hostSChainNode)
+	allBidderRequests, errs = getAuctionBidderRequests(auctionReq, requestExt, bidderToSyncerKey, impsByBidder, aliases, hostSChainNode)
 	
 	bidderNameToBidderReq := buildBidResponseRequest(req.BidRequest, bidderImpWithBidResp, aliases, auctionReq.BidderImpReplaceImpID)
 	//this function should be executed after getAuctionBidderRequests
