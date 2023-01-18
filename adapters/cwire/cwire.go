@@ -83,6 +83,12 @@ func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.Request
 		return nil, nil
 	}
 
+	if httpRes.StatusCode != http.StatusOK {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: "Status of the response in not 200!",
+		}}
+	}
+
 	var resp openrtb2.BidResponse
 	if err := json.Unmarshal(httpRes.Body, &resp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
