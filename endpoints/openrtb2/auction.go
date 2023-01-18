@@ -158,6 +158,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	ctx := context.Background()
 
+	
 	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(req.TMax) * time.Millisecond)
 	if timeout > 0 {
 		var cancel context.CancelFunc
@@ -514,7 +515,6 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 		return []error{fmt.Errorf("request.ext is invalid: %v", err)}
 	}
 	reqPrebid := reqExt.GetPrebid()
-	isCommerceRequest := reqPrebid.IsCommerceRequest
 	if err := deps.parseBidExt(req); err != nil {
 		return []error{err}
 	} else if reqPrebid != nil {
@@ -601,7 +601,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 			errL = append(errL, fmt.Errorf(`request.imp[%d].id and request.imp[%d].id are both "%s". Imp IDs must be unique.`, firstIndex, index, imp.ID))
 		}
 		impIDs[imp.ID] = index
-		errs := deps.validateImp(imp, aliases, index, hasStoredResponses, storedBidResp, isCommerceRequest)
+		errs := deps.validateImp(imp, aliases, index, hasStoredResponses, storedBidResp)
 		if len(errs) > 0 {
 			errL = append(errL, errs...)
 		}
@@ -717,7 +717,7 @@ func validateBidders(bidders []string, knownBidders map[string]openrtb_ext.Bidde
 	return nil
 }
 
-func (deps *endpointDeps) validateImp(imp *openrtb2.Imp, aliases map[string]string, index int, hasStoredResponses bool, storedBidResp stored_responses.ImpBidderStoredResp, isCommerceRequest bool) []error {
+func (deps *endpointDeps) validateImp(imp *openrtb2.Imp, aliases map[string]string, index int, hasStoredResponses bool, storedBidResp stored_responses.ImpBidderStoredResp) []error {
 	if imp.ID == "" {
 		return []error{fmt.Errorf("request.imp[%d] missing required field: \"id\"", index)}
 	}
@@ -750,12 +750,11 @@ func (deps *endpointDeps) validateImp(imp *openrtb2.Imp, aliases map[string]stri
 		return []error{err}
 	}
 
-	if !isCommerceRequest {
-		errL := deps.validateImpExt(imp, aliases, index, hasStoredResponses, storedBidResp)
-		if len(errL) != 0 {
-			return errL
-		}
+	errL := deps.validateImpExt(imp, aliases, index, hasStoredResponses, storedBidResp)
+	if len(errL) != 0 {
+		return errL
 	}
+	
 	return nil
 }
 
@@ -1277,6 +1276,8 @@ func isBidderToValidate(bidder string) bool {
 	case openrtb_ext.BidderReservedSKAdN:
 		return false
 	case openrtb_ext.BidderReservedTID:
+		return false
+	case openrtb_ext.BidderReservedCommerce:
 		return false
 	default:
 		return true

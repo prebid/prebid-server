@@ -54,14 +54,19 @@ type ExtCustomConfig struct {
 	Value *string `json:"value,omitempty"`
 	Type  *int    `json:"type,omitempty"`
 }
-
 // ImpExtensionCommerce - Impression Commerce Extension
-type ExtImpCommerce struct {
+type CommerceParams struct {
 	MaxRequested   *int               `json:"max_requested,omitempty"`
 	SlotsAvailable *int               `json:"slots_available,omitempty"`
 	Preferred      []*ExtImpPreferred `json:"preferred,omitempty"`
 	Filtering      *ExtImpFiltering   `json:"filtering,omitempty"`
 	Targeting      []*ExtImpTargeting `json:"targeting,omitempty"`
+}
+
+// ImpExtensionCommerce - Impression Commerce Extension
+type ExtImpCommerce struct {
+	ComParams   *CommerceParams        `json:"comparams,omitempty"`
+	Bidder *ExtBidderCommerce          `json:"bidder,omitempty"`
 }
 
 // UserExtensionCommerce - User Commerce Extension
@@ -104,10 +109,10 @@ func (a *CommerceAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 
 	var extension map[string]json.RawMessage
 	var preBidExt openrtb_ext.ExtRequestPrebid
-	var commerceExt ExtBidderCommerce
+	var commerceExt ExtImpCommerce
 	json.Unmarshal(request.Ext, &extension)
 	json.Unmarshal(extension["prebid"], &preBidExt)
-	json.Unmarshal(preBidExt.BidderParams, &commerceExt)
+	json.Unmarshal(request.Imp[0].Ext, &commerceExt)
 	endPoint,_ := a.buildEndpointURL(host)
 	errs := make([]error, 0, len(request.Imp))
 
@@ -140,9 +145,9 @@ func GetRequestSlotCount(internalRequest *openrtb2.BidRequest)int {
 	impArray := internalRequest.Imp
 	reqCount := 0
 	for _, eachImp := range impArray {
-		var impExt ExtImpCommerce
-		json.Unmarshal(eachImp.Ext, &impExt)
-		reqCount += *impExt.SlotsAvailable
+		var commerceExt ExtImpCommerce
+		json.Unmarshal(eachImp.Ext, &commerceExt)
+		reqCount += *commerceExt.ComParams.SlotsAvailable
 	}
 	return reqCount
 }
@@ -166,7 +171,7 @@ func GetDefaultBidID(name string) string {
 }
 
 func GetRandomBidPrice() float64 {
-	min := 0.0
+	min := 0.1
 	max := 1.0
 	untruncated := min + rand.Float64() * (max - min)
 	truncated := float64(int(untruncated * 100)) / 100
@@ -287,12 +292,11 @@ func GetDummyBids_NoBid(impUrl , clickUrl , conversionUrl, seatName string, requ
 func GetHostName(internalRequest *openrtb2.BidRequest) string {
 	var extension map[string]json.RawMessage
 	var preBidExt openrtb_ext.ExtRequestPrebid
-	var commerceExt ExtBidderCommerce
+	var commerceExt ExtImpCommerce
 	json.Unmarshal(internalRequest.Ext, &extension)
 	json.Unmarshal(extension["prebid"], &preBidExt)
-	json.Unmarshal(preBidExt.BidderParams, &commerceExt)
-
-	return *commerceExt.HostName
+	json.Unmarshal(internalRequest.Imp[0].Ext, &commerceExt)
+	return *commerceExt.Bidder.HostName
 }
 func (a *CommerceAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	hostName := GetHostName(internalRequest)

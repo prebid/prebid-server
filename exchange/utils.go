@@ -78,11 +78,8 @@ func cleanOpenRTBRequests(ctx context.Context,
 	reqPrebid := reqExt.GetPrebid()
 
 	var allBidderRequests []BidderRequest
-	if reqPrebid.IsCommerceRequest {
-		allBidderRequests, errs = getAuctionBidderRequestsCommerce(auctionReq, requestExt, bidderToSyncerKey, aliases, hostSChainNode)
-	} else {
-	    allBidderRequests, errs = getAuctionBidderRequests(auctionReq, requestExt, bidderToSyncerKey, impsByBidder, aliases, hostSChainNode)
-	}
+    allBidderRequests, errs = getAuctionBidderRequests(auctionReq, requestExt, bidderToSyncerKey, impsByBidder, aliases, hostSChainNode)
+	
 	bidderNameToBidderReq := buildBidResponseRequest(req.BidRequest, bidderImpWithBidResp, aliases, auctionReq.BidderImpReplaceImpID)
 	//this function should be executed after getAuctionBidderRequests
 	allBidderRequests = mergeBidderRequests(allBidderRequests, bidderNameToBidderReq)
@@ -284,74 +281,6 @@ func getAuctionBidderRequests(auctionRequest AuctionRequest,
 	return bidderRequests, errs
 }
 
-
-func getAuctionBidderRequestsCommerce(auctionRequest AuctionRequest,
-	requestExt *openrtb_ext.ExtRequest,
-	bidderToSyncerKey map[string]string,
-	aliases map[string]string,
-	hostSChainNode *openrtb2.SupplyChainNode) ([]BidderRequest, []error) {
-
-	req := auctionRequest.BidRequestWrapper
-	explicitBuyerUIDs, err := extractBuyerUIDs(req.BidRequest.User)
-	if err != nil {
-		return nil, []error{err}
-	}
-
-	bidderParamsInReqExt, err := adapters.ExtractReqExtBidderParamsMap(req.BidRequest)
-	if err != nil {
-		return nil, []error{err}
-	}
-	bidderRequests := make([]BidderRequest, 0, len(bidderParamsInReqExt))
-	sChainWriter, err := schain.NewSChainWriter(requestExt, hostSChainNode)
-	if err != nil {
-		return nil, []error{err}
-	}
-
-	var errs []error
-	for bidder, _ := range bidderParamsInReqExt {
-		coreBidder := resolveBidder(bidder, aliases)
-
-		reqCopy := *req.BidRequest
-		
-		sChainWriter.Write(&reqCopy, bidder)
-
-		reqCopy.Ext, err = buildRequestExtForBidder(bidder, req.BidRequest.Ext, requestExt, bidderParamsInReqExt)
-		if err != nil {
-			return nil, []error{err}
-		}
-
-		if err := removeUnpermissionedEids(&reqCopy, bidder, requestExt); err != nil {
-			errs = append(errs, fmt.Errorf("unable to enforce request.ext.prebid.data.eidpermissions because %v", err))
-			continue
-		}
-
-		bidderRequest := BidderRequest{
-			BidderName:     openrtb_ext.BidderName(bidder),
-			BidderCoreName: coreBidder,
-			BidRequest:     &reqCopy,
-			BidderLabels: metrics.AdapterLabels{
-				Source:      auctionRequest.LegacyLabels.Source,
-				RType:       auctionRequest.LegacyLabels.RType,
-				Adapter:     coreBidder,
-				PubID:       auctionRequest.LegacyLabels.PubID,
-				CookieFlag:  auctionRequest.LegacyLabels.CookieFlag,
-				AdapterBids: metrics.AdapterBidPresent,
-			},
-		}
-
-		syncerKey := bidderToSyncerKey[string(coreBidder)]
-		if hadSync := prepareUser(&reqCopy, bidder, syncerKey, explicitBuyerUIDs, auctionRequest.UserSyncs); !hadSync && req.BidRequest.App == nil {
-			bidderRequest.BidderLabels.CookieFlag = metrics.CookieFlagNo
-		} else {
-			bidderRequest.BidderLabels.CookieFlag = metrics.CookieFlagYes
-		}
-
-		bidderRequests = append(bidderRequests, bidderRequest)
-	}
-	return bidderRequests, errs
-}
-
-
 func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, requestExtParsed *openrtb_ext.ExtRequest, bidderParamsInReqExt map[string]json.RawMessage) (json.RawMessage, error) {
 	if len(requestExt) == 0 || requestExtParsed == nil {
 		return json.RawMessage(``), nil
@@ -520,6 +449,10 @@ func createSanitizedImpExt(impExt, impExtPrebid map[string]json.RawMessage) (map
 		sanitizedImpExt[openrtb_ext.TIDKey] = v
 	}
 
+	if v, exists := impExt[string(openrtb_ext.CommerceParamKey)]; exists {
+		sanitizedImpExt[openrtb_ext.CommerceParamKey] = v
+	}
+
 	return sanitizedImpExt, nil
 }
 
@@ -551,7 +484,8 @@ func isSpecialField(bidder string) bool {
 		bidder == openrtb_ext.SKAdNExtKey ||
 		bidder == openrtb_ext.GPIDKey ||
 		bidder == openrtb_ext.PrebidExtKey ||
-		bidder == openrtb_ext.TIDKey
+		bidder == openrtb_ext.TIDKey ||
+		bidder == openrtb_ext.CommerceParamKey
 }
 
 // prepareUser changes req.User so that it's ready for the given bidder.

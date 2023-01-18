@@ -25,10 +25,10 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 	host := "localhost"
 	var extension map[string]json.RawMessage
 	var preBidExt openrtb_ext.ExtRequestPrebid
-	var commerceExt commerce.ExtBidderCommerce
+	var commerceExt commerce.ExtImpCommerce
 	json.Unmarshal(request.Ext, &extension)
 	json.Unmarshal(extension["prebid"], &preBidExt)
-	json.Unmarshal(preBidExt.BidderParams, &commerceExt)
+	json.Unmarshal(request.Imp[0].Ext, &commerceExt)
 	endPoint,_ := a.buildEndpointURL(host)
 	errs := make([]error, 0, len(request.Imp))
 

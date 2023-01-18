@@ -25,10 +25,10 @@ func (a *KoddiAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 	host := "localhost"
 	var extension map[string]json.RawMessage
 	var preBidExt openrtb_ext.ExtRequestPrebid
-	var commerceExt commerce.ExtBidderCommerce
+	var commerceExt commerce.ExtImpCommerce
 	json.Unmarshal(request.Ext, &extension)
 	json.Unmarshal(extension["prebid"], &preBidExt)
-	json.Unmarshal(preBidExt.BidderParams, &commerceExt)
+	json.Unmarshal(request.Imp[0].Ext, &commerceExt)
 	endPoint,_ := a.buildEndpointURL(host)
 	errs := make([]error, 0, len(request.Imp))
 
@@ -62,7 +62,7 @@ func (a *KoddiAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRe
 	
 	responseF := commerce.GetDummyBids(iurl, curl, purl, "koddi", requestCount)
 	//responseF := commerce.GetDummyBids_NoBid(iurl, curl, purl, "koddi", 1)
-    //err := fmt.Errorf("No Bid Response from Koddi")
+    //err := fmt.Errorf("No Bids available for the given request from Koddi")
 	//errors = append(errors,err )
 	return responseF, errors
 

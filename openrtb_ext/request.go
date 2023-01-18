@@ -22,6 +22,8 @@ const GPIDKey = "gpid"
 // TIDKey reserved for Per-Impression Transactions IDs for Multi-Impression Bid Requests.
 const TIDKey = "tid"
 
+const CommerceParamKey = "comparams"
+
 // NativeExchangeSpecificLowerBound defines the lower threshold of exchange specific types for native ads. There is no upper bound.
 const NativeExchangeSpecificLowerBound = 500
 
@@ -53,7 +55,6 @@ type ExtRequestPrebid struct {
 	StoredRequest        *ExtStoredRequest         `json:"storedrequest,omitempty"`
 	SupportDeals         bool                      `json:"supportdeals,omitempty"`
 	Targeting            *ExtRequestTargeting      `json:"targeting,omitempty"`
-	IsCommerceRequest	 bool		   `json:"isCommerce,omitempty"`
 
 	// NoSale specifies bidders with whom the publisher has a legal relationship where the
 	// passing of personally identifiable information doesn't constitute a sale per CCPA law.
