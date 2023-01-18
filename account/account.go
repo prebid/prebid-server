@@ -193,6 +193,8 @@ func ConvertGDPREnforcePurposeFields(config []byte) (newConfig []byte, err error
 		}
 		if purposeDataType != jsonparser.String {
 			continue
+		} else {
+			// Log Metric for Host
 		}
 
 		_, _, _, err = jsonparser.Get(gdprJSON, purposeName, "enforce_algo")

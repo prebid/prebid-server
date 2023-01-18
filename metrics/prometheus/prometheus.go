@@ -83,9 +83,20 @@ type Metrics struct {
 	accountStoredResponses                *prometheus.CounterVec
 	accountBidResponseValidationSizeError *prometheus.CounterVec
 	accountBidResponseValidationSizeWarn  *prometheus.CounterVec
+	accountBidResponseSecureMarkupError   *prometheus.CounterVec
+	accountBidResponseSecureMarkupWarn    *prometheus.CounterVec
 
-	accountBidResponseSecureMarkupError *prometheus.CounterVec
-	accountBidResponseSecureMarkupWarn  *prometheus.CounterVec
+	// Account Depreciation Metrics
+	accountDepreciationWarningsPurpose1  prometheus.Counter
+	accountDepreciationWarningsPurpose2  prometheus.Counter
+	accountDepreciationWarningsPurpose3  prometheus.Counter
+	accountDepreciationWarningsPurpose4  prometheus.Counter
+	accountDepreciationWarningsPurpose5  prometheus.Counter
+	accountDepreciationWarningsPurpose6  prometheus.Counter
+	accountDepreciationWarningsPurpose7  prometheus.Counter
+	accountDepreciationWarningsPurpose8  prometheus.Counter
+	accountDepreciationWarningsPurpose9  prometheus.Counter
+	accountDepreciationWarningsPurpose10 prometheus.Counter
 
 	// Module Metrics as a map where the key is the module name
 	moduleDuration        map[string]*prometheus.HistogramVec
@@ -482,6 +493,10 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"ads_cert_requests",
 		"Count of AdsCert request, and if they were successfully sent.",
 		[]string{successLabel})
+
+	metrics.accountDepreciationWarningsPurpose1 = newCounterWithoutLabels(cfg, reg,
+		"purpose_1",
+		"TODO: Purpose 1")
 
 	createModulesMetrics(cfg, reg, &metrics, moduleStageNames, standardTimeBuckets)
 
