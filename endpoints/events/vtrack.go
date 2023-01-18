@@ -91,7 +91,7 @@ func (v *vtrackEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httpro
 	defer cancel()
 
 	// get account details
-	account, errs := accountService.GetAccount(ctx, v.Cfg, v.Accounts, accountId)
+	account, errs := accountService.GetAccount(ctx, v.Cfg, v.Accounts, accountId) // TODO: What to do in this case for metrics engine passthrough
 	if len(errs) > 0 {
 		status, messages := HandleAccountServiceErrors(errs)
 		w.WriteHeader(status)

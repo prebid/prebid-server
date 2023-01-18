@@ -303,6 +303,22 @@ func (me *MultiMetricsEngine) RecordBidValidationSecureMarkupWarn(adapter openrt
 	}
 }
 
+func (me *MultiMetricsEngine) RecordAccountDepreciationWarnings(pubID string, purposeName string) {
+	for _, thisME := range *me {
+		thisME.RecordAccountDepreciationWarnings(pubID, purposeName)
+	}
+}
+func (me *MultiMetricsEngine) RecordGDPRChannelEnabledDepreciationWarning(pubID string) {
+	for _, thisME := range *me {
+		thisME.RecordGDPRChannelEnabledDepreciationWarning(pubID)
+	}
+}
+func (me *MultiMetricsEngine) RecordCCPAChannelEnabledDepreciationWarning(pubID string) {
+	for _, thisME := range *me {
+		thisME.RecordCCPAChannelEnabledDepreciationWarning(pubID)
+	}
+}
+
 func (me *MultiMetricsEngine) RecordModuleCalled(labels metrics.ModuleLabels, duration time.Duration) {
 	for _, thisME := range *me {
 		thisME.RecordModuleCalled(labels, duration)
@@ -482,6 +498,15 @@ func (me *NilMetricsEngine) RecordBidValidationSecureMarkupError(adapter openrtb
 }
 
 func (me *NilMetricsEngine) RecordBidValidationSecureMarkupWarn(adapter openrtb_ext.BidderName, account string) {
+}
+
+func (me *NilMetricsEngine) RecordAccountDepreciationWarnings(pubID string, purposeName string) {
+}
+
+func (me *NilMetricsEngine) RecordGDPRChannelEnabledDepreciationWarning(pubID string) {
+}
+
+func (me *NilMetricsEngine) RecordCCPAChannelEnabledDepreciationWarning(pubID string) {
 }
 
 func (me *NilMetricsEngine) RecordModuleCalled(labels metrics.ModuleLabels, duration time.Duration) {

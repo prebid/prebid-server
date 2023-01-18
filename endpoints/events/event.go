@@ -93,7 +93,7 @@ func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprou
 	}
 
 	// get account details
-	account, errs := accountService.GetAccount(ctx, e.Cfg, e.Accounts, eventRequest.AccountID)
+	account, errs := accountService.GetAccount(ctx, e.Cfg, e.Accounts, eventRequest.AccountID) // TODO: What to do in this case for metrics engine passthrough
 	if len(errs) > 0 {
 		status, messages := HandleAccountServiceErrors(errs)
 		w.WriteHeader(status)

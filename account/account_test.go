@@ -100,7 +100,7 @@ func TestGetAccount(t *testing.T) {
 			fetcher := &mockAccountFetcher{}
 			assert.NoError(t, cfg.MarshalAccountDefaults())
 
-			account, errors := GetAccount(context.Background(), cfg, fetcher, test.accountID)
+			account, errors := GetAccount(context.Background(), cfg, fetcher, test.accountID) // TODO: What to do in this case for metrics engine passthrough
 
 			if test.err == nil {
 				assert.Empty(t, errors)

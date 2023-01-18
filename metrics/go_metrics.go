@@ -121,9 +121,22 @@ type accountMetrics struct {
 
 	bidValidationCreativeSizeMeter     metrics.Meter
 	bidValidationCreativeSizeWarnMeter metrics.Meter
-
 	bidValidationSecureMarkupMeter     metrics.Meter
 	bidValidationSecureMarkupWarnMeter metrics.Meter
+
+	// Account Deprciation Metrics
+	accountDepreciationWarningsPurpose1Meter  metrics.Meter
+	accountDepreciationWarningsPurpose2Meter  metrics.Meter
+	accountDepreciationWarningsPurpose3Meter  metrics.Meter
+	accountDepreciationWarningsPurpose4Meter  metrics.Meter
+	accountDepreciationWarningsPurpose5Meter  metrics.Meter
+	accountDepreciationWarningsPurpose6Meter  metrics.Meter
+	accountDepreciationWarningsPurpose7Meter  metrics.Meter
+	accountDepreciationWarningsPurpose8Meter  metrics.Meter
+	accountDepreciationWarningsPurpose9Meter  metrics.Meter
+	accountDepreciationWarningsPurpose10Meter metrics.Meter
+	channelEnabledGDPRMeter                   metrics.Meter
+	channelEnabledCCPAMeter                   metrics.Meter
 }
 
 type ModuleMetrics struct {
@@ -536,6 +549,19 @@ func (me *Metrics) getAccountMetrics(id string) *accountMetrics {
 	am.bidValidationSecureMarkupMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.response.validation.secure.err", id), me.MetricsRegistry)
 	am.bidValidationSecureMarkupWarnMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.response.validation.secure.warn", id), me.MetricsRegistry)
 
+	am.accountDepreciationWarningsPurpose1Meter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.depreciation.warnings.purpose1", id), me.MetricsRegistry)
+	am.accountDepreciationWarningsPurpose2Meter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.depreciation.warnings.purpose2", id), me.MetricsRegistry)
+	am.accountDepreciationWarningsPurpose3Meter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.depreciation.warnings.purpose3", id), me.MetricsRegistry)
+	am.accountDepreciationWarningsPurpose4Meter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.depreciation.warnings.purpose4", id), me.MetricsRegistry)
+	am.accountDepreciationWarningsPurpose5Meter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.depreciation.warnings.purpose5", id), me.MetricsRegistry)
+	am.accountDepreciationWarningsPurpose6Meter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.depreciation.warnings.purpose6", id), me.MetricsRegistry)
+	am.accountDepreciationWarningsPurpose7Meter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.depreciation.warnings.purpose7", id), me.MetricsRegistry)
+	am.accountDepreciationWarningsPurpose8Meter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.depreciation.warnings.purpose8", id), me.MetricsRegistry)
+	am.accountDepreciationWarningsPurpose9Meter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.depreciation.warnings.purpose9", id), me.MetricsRegistry)
+	am.accountDepreciationWarningsPurpose10Meter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.depreciation.warnings.purpose10", id), me.MetricsRegistry)
+	am.channelEnabledCCPAMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.channel.enabled.ccpa", id), me.MetricsRegistry)
+	am.channelEnabledGDPRMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.channel.enabled.gdpr", id), me.MetricsRegistry)
+
 	if !me.MetricsDisabled.AccountModulesMetrics {
 		for _, mod := range me.modules {
 			am.moduleMetrics[mod] = makeBlankModuleMetrics()
@@ -577,6 +603,54 @@ func (me *Metrics) RecordDebugRequest(debugEnabled bool, pubID string) {
 			if !me.MetricsDisabled.AccountDebug {
 				am.debugRequestMeter.Mark(1)
 			}
+		}
+	}
+}
+
+func (me *Metrics) RecordAccountDepreciationWarnings(pubID string, purposeName string) {
+	if pubID != PublisherUnknown {
+		am := me.getAccountMetrics(pubID)
+		if !me.MetricsDisabled.AccountAdapterDetails { // TODO: Confirm Disabled
+			switch purposeName {
+			case "purpose1":
+				am.accountDepreciationWarningsPurpose1Meter.Mark(1)
+			case "purpose2":
+				am.accountDepreciationWarningsPurpose2Meter.Mark(1)
+			case "purpose3":
+				am.accountDepreciationWarningsPurpose3Meter.Mark(1)
+			case "purpose4":
+				am.accountDepreciationWarningsPurpose4Meter.Mark(1)
+			case "purpose5":
+				am.accountDepreciationWarningsPurpose5Meter.Mark(1)
+			case "purpose6":
+				am.accountDepreciationWarningsPurpose6Meter.Mark(1)
+			case "purpose7":
+				am.accountDepreciationWarningsPurpose7Meter.Mark(1)
+			case "purpose8":
+				am.accountDepreciationWarningsPurpose8Meter.Mark(1)
+			case "purpose9":
+				am.accountDepreciationWarningsPurpose9Meter.Mark(1)
+			case "purpose10":
+				am.accountDepreciationWarningsPurpose10Meter.Mark(1)
+			}
+		}
+	}
+}
+
+func (me *Metrics) RecordGDPRChannelEnabledDepreciationWarning(pubID string) {
+	if pubID != PublisherUnknown {
+		am := me.getAccountMetrics(pubID)
+		if !me.MetricsDisabled.AccountAdapterDetails {
+			am.channelEnabledGDPRMeter.Mark(1)
+		}
+	}
+}
+
+func (me *Metrics) RecordCCPAChannelEnabledDepreciationWarning(pubID string) {
+	if pubID != PublisherUnknown {
+		am := me.getAccountMetrics(pubID)
+		if !me.MetricsDisabled.AccountAdapterDetails {
+			am.channelEnabledCCPAMeter.Mark(1)
 		}
 	}
 }

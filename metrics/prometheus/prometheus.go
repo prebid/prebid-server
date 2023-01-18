@@ -97,6 +97,8 @@ type Metrics struct {
 	accountDepreciationWarningsPurpose8  prometheus.Counter
 	accountDepreciationWarningsPurpose9  prometheus.Counter
 	accountDepreciationWarningsPurpose10 prometheus.Counter
+	channelEnabledGDPR                   prometheus.Counter
+	channelEnabledCCPA                   prometheus.Counter
 
 	// Module Metrics as a map where the key is the module name
 	moduleDuration        map[string]*prometheus.HistogramVec
@@ -671,6 +673,45 @@ func (m *Metrics) RecordDebugRequest(debugEnabled bool, pubID string) {
 				accountLabel: pubID,
 			}).Inc()
 		}
+	}
+}
+
+func (m *Metrics) RecordAccountDepreciationWarnings(account string, purposeName string) {
+	if !m.metricsDisabled.AccountAdapterDetails && account != metrics.PublisherUnknown {
+		switch purposeName {
+		case "purpose1":
+			m.accountDepreciationWarningsPurpose1.Inc()
+		case "purpose2":
+			m.accountDepreciationWarningsPurpose2.Inc()
+		case "purpose3":
+			m.accountDepreciationWarningsPurpose3.Inc()
+		case "purpose4":
+			m.accountDepreciationWarningsPurpose4.Inc()
+		case "purpose5":
+			m.accountDepreciationWarningsPurpose5.Inc()
+		case "purpose6":
+			m.accountDepreciationWarningsPurpose6.Inc()
+		case "purpose7":
+			m.accountDepreciationWarningsPurpose7.Inc()
+		case "purpose8":
+			m.accountDepreciationWarningsPurpose8.Inc()
+		case "purpose9":
+			m.accountDepreciationWarningsPurpose9.Inc()
+		case "purpose10":
+			m.accountDepreciationWarningsPurpose10.Inc()
+		}
+	}
+}
+
+func (m *Metrics) RecordGDPRChannelEnabledDepreciationWarning(pubID string) {
+	if !m.metricsDisabled.AccountAdapterDetails && pubID != metrics.PublisherUnknown { //TODO: Check metrics disabled way
+		m.channelEnabledGDPR.Inc()
+	}
+}
+
+func (m *Metrics) RecordCCPAChannelEnabledDepreciationWarning(pubID string) {
+	if !m.metricsDisabled.AccountAdapterDetails && pubID != metrics.PublisherUnknown { //TODO: Check metrics disabled way
+		m.channelEnabledCCPA.Inc()
 	}
 }
 

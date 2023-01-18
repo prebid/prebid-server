@@ -16,7 +16,7 @@ import (
 )
 
 // GetAccount looks up the config.Account object referenced by the given accountID, with access rules applied
-func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_requests.AccountFetcher, accountID string) (account *config.Account, errs []error) {
+func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_requests.AccountFetcher, accountID string, me metrics.MetricsEngine) (account *config.Account, errs []error) {
 	// Check BlacklistedAcctMap until we have deprecated it
 	if _, found := cfg.BlacklistedAcctMap[accountID]; found {
 		return nil, []error{&errortypes.BlacklistedAcct{
@@ -50,6 +50,12 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 		// accountID resolved to a valid account, merge with AccountDefaults for a complete config
 		account = &config.Account{}
 		err := json.Unmarshal(accountJSON, account)
+		if checkGDPRBackwardsCompatability(account) {
+			me.RecordGDPRChannelEnabledDepreciationWarning(accountID)
+		}
+		if checkCCPABackwardsCompatability(account) {
+			me.RecordCCPAChannelEnabledDepreciationWarning(accountID)
+		}
 
 		// this logic exists for backwards compatibility. If the initial unmarshal fails above, we attempt to
 		// resolve it by converting the GDPR enforce purpose fields and then attempting an unmarshal again before
@@ -57,7 +63,7 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 		// unmarshal fetched account to determine if it is well-formed
 		if _, ok := err.(*json.UnmarshalTypeError); ok {
 			// attempt to convert deprecated GDPR enforce purpose fields to resolve issue
-			accountJSON, err = ConvertGDPREnforcePurposeFields(accountJSON)
+			accountJSON, err = ConvertGDPREnforcePurposeFields(accountJSON, me, accountID)
 			// unmarshal again to check if unmarshal error still exists after GDPR field conversion
 			err = json.Unmarshal(accountJSON, account)
 
@@ -168,7 +174,7 @@ type PatchAccountGDPRPurpose struct {
 // given the recent type change of gdpr.purpose{1-10}.enforce_purpose from a string to a bool. This function
 // iterates over each GDPR purpose config and sets enforce_purpose and enforce_algo to the appropriate
 // bool and string values respectively if enforce_purpose is a string and enforce_algo is not set
-func ConvertGDPREnforcePurposeFields(config []byte) (newConfig []byte, err error) {
+func ConvertGDPREnforcePurposeFields(config []byte, me metrics.MetricsEngine, pubID string) (newConfig []byte, err error) {
 	gdprJSON, _, _, err := jsonparser.Get(config, "gdpr")
 	if err != nil && err == jsonparser.KeyPathNotFoundError {
 		return config, nil
@@ -194,7 +200,7 @@ func ConvertGDPREnforcePurposeFields(config []byte) (newConfig []byte, err error
 		if purposeDataType != jsonparser.String {
 			continue
 		} else {
-			// Log Metric for Host
+			me.RecordAccountDepreciationWarnings(pubID, purposeName)
 		}
 
 		_, _, _, err = jsonparser.Get(gdprJSON, purposeName, "enforce_algo")
@@ -227,4 +233,22 @@ func ConvertGDPREnforcePurposeFields(config []byte) (newConfig []byte, err error
 	}
 
 	return newConfig, nil
+}
+
+func checkGDPRBackwardsCompatability(account *config.Account) bool {
+	if account.GDPR.ChannelEnabled.AMP != nil || account.GDPR.ChannelEnabled.App != nil || account.GDPR.ChannelEnabled.Video != nil || account.GDPR.ChannelEnabled.Web != nil {
+		if account.GDPR.IntegrationEnabled.AMP == nil && account.GDPR.IntegrationEnabled.App == nil && account.GDPR.IntegrationEnabled.Video == nil && account.GDPR.IntegrationEnabled.Web == nil {
+			return true
+		}
+	}
+	return false
+}
+
+func checkCCPABackwardsCompatability(account *config.Account) bool {
+	if account.CCPA.ChannelEnabled.AMP != nil || account.CCPA.ChannelEnabled.App != nil || account.CCPA.ChannelEnabled.Video != nil || account.CCPA.ChannelEnabled.Web != nil {
+		if account.CCPA.IntegrationEnabled.AMP == nil && account.CCPA.IntegrationEnabled.App == nil && account.CCPA.IntegrationEnabled.Video == nil && account.CCPA.IntegrationEnabled.Web == nil {
+			return true
+		}
+	}
+	return false
 }
