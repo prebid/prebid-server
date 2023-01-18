@@ -3,7 +3,7 @@ package analytics
 import (
 	"time"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -25,7 +25,7 @@ type PBSAnalyticsModule interface {
 	LogNotificationEventObject(*NotificationEvent)
 }
 
-//Loggable object of a transaction at /openrtb2/auction endpoint
+// Loggable object of a transaction at /openrtb2/auction endpoint
 type AuctionObject struct {
 	Status    int
 	Errors    []error
@@ -35,7 +35,7 @@ type AuctionObject struct {
 	StartTime time.Time
 }
 
-//Loggable object of a transaction at /openrtb2/amp endpoint
+// Loggable object of a transaction at /openrtb2/amp endpoint
 type AmpObject struct {
 	Status             int
 	Errors             []error
@@ -46,7 +46,7 @@ type AmpObject struct {
 	StartTime          time.Time
 }
 
-//Loggable object of a transaction at /openrtb2/video endpoint
+// Loggable object of a transaction at /openrtb2/video endpoint
 type VideoObject struct {
 	Status        int
 	Errors        []error
@@ -57,7 +57,7 @@ type VideoObject struct {
 	StartTime     time.Time
 }
 
-//Loggable object of a transaction at /setuid
+// Loggable object of a transaction at /setuid
 type SetUIDObject struct {
 	Status  int
 	Bidder  string
@@ -66,7 +66,7 @@ type SetUIDObject struct {
 	Success bool
 }
 
-//Loggable object of a transaction at /cookie_sync
+// Loggable object of a transaction at /cookie_sync
 type CookieSyncObject struct {
 	Status       int
 	Errors       []error

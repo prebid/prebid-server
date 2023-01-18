@@ -69,38 +69,6 @@ const ext3 = `{
 	}
 }`
 
-func TestCacheIllegal(t *testing.T) {
-	var bids ExtRequestPrebidCache
-	if err := json.Unmarshal([]byte(`{}`), &bids); err == nil {
-		t.Error("Unmarshal should fail when cache.bids is undefined.")
-	}
-	if err := json.Unmarshal([]byte(`{"bids":null}`), &bids); err == nil {
-		t.Error("Unmarshal should fail when cache.bids is null.")
-	}
-	if err := json.Unmarshal([]byte(`{"bids":true}`), &bids); err == nil {
-		t.Error("Unmarshal should fail when cache.bids is not an object.")
-	}
-}
-
-func TestCacheBids(t *testing.T) {
-	var bids ExtRequestPrebidCache
-	assert.NoError(t, json.Unmarshal([]byte(`{"bids":{}}`), &bids))
-	assert.NotNil(t, bids.Bids)
-	assert.Nil(t, bids.VastXML)
-}
-
-func TestCacheVast(t *testing.T) {
-	var bids ExtRequestPrebidCache
-	assert.NoError(t, json.Unmarshal([]byte(`{"vastxml":{}}`), &bids))
-	assert.Nil(t, bids.Bids)
-	assert.NotNil(t, bids.VastXML)
-}
-
-func TestCacheNothing(t *testing.T) {
-	var bids ExtRequestPrebidCache
-	assert.Error(t, json.Unmarshal([]byte(`{}`), &bids))
-}
-
 type granularityTestData struct {
 	json   []byte
 	target PriceGranularity

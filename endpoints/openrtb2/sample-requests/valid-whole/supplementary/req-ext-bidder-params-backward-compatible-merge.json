@@ -84,17 +84,18 @@
     }
   },
   "expectedImpExt": {
-    "appnexus": {
-      "placementId": 111111
-    },
-    "pubmatic": {
-      "publisherId": "5678",
-      "wrapper": {
-        "profile": 1234
-      }
-    },
     "prebid": {
-      "bidder": {}
+      "bidder": {
+        "appnexus": {
+          "placementId": 111111
+        },
+        "pubmatic": {
+          "publisherId": "5678",
+          "wrapper": {
+            "profile": 1234
+          }
+        }
+      }
     }
   },
   "expectedReturnCode": 200

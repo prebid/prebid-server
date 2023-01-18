@@ -2,6 +2,7 @@ package endpoints
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -10,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
@@ -232,12 +234,34 @@ func TestSetUIDEndpoint(t *testing.T) {
 			expectedBody:           `"f" query param is invalid. must be "b" or "i"`,
 			description:            "Set uid for valid bidder with invalid format",
 		},
+		{
+			uri:                    "/setuid?bidder=pubmatic&uid=123&account=valid_acct",
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			existingSyncs:          nil,
+			gdprAllowsHostCookies:  true,
+			expectedSyncs:          map[string]string{"pubmatic": "123"},
+			expectedStatusCode:     http.StatusOK,
+			expectedHeaders:        map[string]string{"Content-Type": "text/html", "Content-Length": "0"},
+			description:            "Set uid for valid bidder with valid account provided",
+		},
+		{
+			uri:                    "/setuid?bidder=pubmatic&uid=123&account=disabled_acct",
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			existingSyncs:          nil,
+			gdprAllowsHostCookies:  true,
+			expectedSyncs:          nil,
+			expectedStatusCode:     http.StatusBadRequest,
+			expectedBody:           "account is disabled, please reach out to the prebid server host",
+			description:            "Set uid for valid bidder with valid disabled account provided",
+		},
 	}
 
+	analytics := analyticsConf.NewPBSAnalytics(&config.Analytics{})
 	metrics := &metricsConf.NilMetricsEngine{}
+
 	for _, test := range testCases {
-		response := doRequest(makeRequest(test.uri, test.existingSyncs), metrics,
-			test.syncersBidderNameToKey, test.gdprAllowsHostCookies, test.gdprReturnsError, test.gdprMalformed)
+		response := doRequest(makeRequest(test.uri, test.existingSyncs), analytics, metrics,
+			test.syncersBidderNameToKey, test.gdprAllowsHostCookies, test.gdprReturnsError, test.gdprMalformed, false)
 		assert.Equal(t, test.expectedStatusCode, response.Code, "Test Case: %s. /setuid returned unexpected error code", test.description)
 
 		if test.expectedSyncs != nil {
@@ -274,8 +298,10 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 		cookies                []*usersync.Cookie
 		syncersBidderNameToKey map[string]string
 		gdprAllowsHostCookies  bool
+		cfgAccountRequired     bool
 		expectedResponseCode   int
 		expectedMetrics        func(*metrics.MetricsEngineMock)
+		expectedAnalytics      func(*MockAnalytics)
 	}{
 		{
 			description:            "Success - Sync",
@@ -287,6 +313,16 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 			expectedMetrics: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordSetUid", metrics.SetUidOK).Once()
 				m.On("RecordSyncerSet", "pubmatic", metrics.SyncerSetUidOK).Once()
+			},
+			expectedAnalytics: func(a *MockAnalytics) {
+				expected := analytics.SetUIDObject{
+					Status:  200,
+					Bidder:  "pubmatic",
+					UID:     "123",
+					Errors:  []error{},
+					Success: true,
+				}
+				a.On("LogSetUIDObject", &expected).Once()
 			},
 		},
 		{
@@ -300,6 +336,16 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 				m.On("RecordSetUid", metrics.SetUidOK).Once()
 				m.On("RecordSyncerSet", "pubmatic", metrics.SyncerSetUidCleared).Once()
 			},
+			expectedAnalytics: func(a *MockAnalytics) {
+				expected := analytics.SetUIDObject{
+					Status:  200,
+					Bidder:  "pubmatic",
+					UID:     "",
+					Errors:  []error{},
+					Success: true,
+				}
+				a.On("LogSetUIDObject", &expected).Once()
+			},
 		},
 		{
 			description:            "Cookie Opted Out",
@@ -310,6 +356,16 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 			expectedResponseCode:   401,
 			expectedMetrics: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordSetUid", metrics.SetUidOptOut).Once()
+			},
+			expectedAnalytics: func(a *MockAnalytics) {
+				expected := analytics.SetUIDObject{
+					Status:  401,
+					Bidder:  "",
+					UID:     "",
+					Errors:  []error{},
+					Success: false,
+				}
+				a.On("LogSetUIDObject", &expected).Once()
 			},
 		},
 		{
@@ -322,6 +378,16 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 			expectedMetrics: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordSetUid", metrics.SetUidSyncerUnknown).Once()
 			},
+			expectedAnalytics: func(a *MockAnalytics) {
+				expected := analytics.SetUIDObject{
+					Status:  400,
+					Bidder:  "",
+					UID:     "",
+					Errors:  []error{errors.New("The bidder name provided is not supported by Prebid Server")},
+					Success: false,
+				}
+				a.On("LogSetUIDObject", &expected).Once()
+			},
 		},
 		{
 			description:            "Unknown Format",
@@ -332,6 +398,16 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 			expectedResponseCode:   400,
 			expectedMetrics: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordSetUid", metrics.SetUidBadRequest).Once()
+			},
+			expectedAnalytics: func(a *MockAnalytics) {
+				expected := analytics.SetUIDObject{
+					Status:  400,
+					Bidder:  "pubmatic",
+					UID:     "",
+					Errors:  []error{errors.New(`"f" query param is invalid. must be "b" or "i"`)},
+					Success: false,
+				}
+				a.On("LogSetUIDObject", &expected).Once()
 			},
 		},
 		{
@@ -344,6 +420,16 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 			expectedMetrics: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordSetUid", metrics.SetUidBadRequest).Once()
 			},
+			expectedAnalytics: func(a *MockAnalytics) {
+				expected := analytics.SetUIDObject{
+					Status:  400,
+					Bidder:  "pubmatic",
+					UID:     "",
+					Errors:  []error{errors.New("gdpr_consent is required when gdpr=1")},
+					Success: false,
+				}
+				a.On("LogSetUIDObject", &expected).Once()
+			},
 		},
 		{
 			description:            "Prevented By GDPR - Permission Denied By Consent String",
@@ -355,10 +441,110 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 			expectedMetrics: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordSetUid", metrics.SetUidGDPRHostCookieBlocked).Once()
 			},
+			expectedAnalytics: func(a *MockAnalytics) {
+				expected := analytics.SetUIDObject{
+					Status:  451,
+					Bidder:  "pubmatic",
+					UID:     "",
+					Errors:  []error{errors.New("The gdpr_consent string prevents cookies from being saved")},
+					Success: false,
+				}
+				a.On("LogSetUIDObject", &expected).Once()
+			},
+		},
+		{
+			description:            "Blocked account",
+			uri:                    "/setuid?bidder=pubmatic&uid=123&account=blocked_acct",
+			cookies:                []*usersync.Cookie{},
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			gdprAllowsHostCookies:  true,
+			expectedResponseCode:   400,
+			expectedMetrics: func(m *metrics.MetricsEngineMock) {
+				m.On("RecordSetUid", metrics.SetUidAccountBlocked).Once()
+			},
+			expectedAnalytics: func(a *MockAnalytics) {
+				expected := analytics.SetUIDObject{
+					Status:  400,
+					Bidder:  "pubmatic",
+					UID:     "",
+					Errors:  []error{errCookieSyncAccountBlocked},
+					Success: false,
+				}
+				a.On("LogSetUIDObject", &expected).Once()
+			},
+		},
+		{
+			description:            "Invalid account",
+			uri:                    "/setuid?bidder=pubmatic&uid=123&account=unknown",
+			cookies:                []*usersync.Cookie{},
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			gdprAllowsHostCookies:  true,
+			cfgAccountRequired:     true,
+			expectedResponseCode:   400,
+			expectedMetrics: func(m *metrics.MetricsEngineMock) {
+				m.On("RecordSetUid", metrics.SetUidAccountInvalid).Once()
+			},
+			expectedAnalytics: func(a *MockAnalytics) {
+				expected := analytics.SetUIDObject{
+					Status:  400,
+					Bidder:  "pubmatic",
+					UID:     "",
+					Errors:  []error{errCookieSyncAccountInvalid},
+					Success: false,
+				}
+				a.On("LogSetUIDObject", &expected).Once()
+			},
+		},
+		{
+			description:            "Malformed account",
+			uri:                    "/setuid?bidder=pubmatic&uid=123&account=malformed_acct",
+			cookies:                []*usersync.Cookie{},
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			gdprAllowsHostCookies:  true,
+			cfgAccountRequired:     true,
+			expectedResponseCode:   400,
+			expectedMetrics: func(m *metrics.MetricsEngineMock) {
+				m.On("RecordSetUid", metrics.SetUidAccountConfigMalformed).Once()
+			},
+			expectedAnalytics: func(a *MockAnalytics) {
+				expected := analytics.SetUIDObject{
+					Status:  400,
+					Bidder:  "pubmatic",
+					UID:     "",
+					Errors:  []error{errCookieSyncAccountConfigMalformed},
+					Success: false,
+				}
+				a.On("LogSetUIDObject", &expected).Once()
+			},
+		},
+		{
+			description:            "Invalid JSON account",
+			uri:                    "/setuid?bidder=pubmatic&uid=123&account=invalid_json_acct",
+			cookies:                []*usersync.Cookie{},
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			gdprAllowsHostCookies:  true,
+			cfgAccountRequired:     true,
+			expectedResponseCode:   400,
+			expectedMetrics: func(m *metrics.MetricsEngineMock) {
+				m.On("RecordSetUid", metrics.SetUidBadRequest).Once()
+			},
+			expectedAnalytics: func(a *MockAnalytics) {
+				expected := analytics.SetUIDObject{
+					Status:  400,
+					Bidder:  "pubmatic",
+					UID:     "",
+					Errors:  []error{errors.New("Invalid JSON Patch")},
+					Success: false,
+				}
+				a.On("LogSetUIDObject", &expected).Once()
+			},
 		},
 	}
 
 	for _, test := range testCases {
+		analyticsEngine := &MockAnalytics{}
+		test.expectedAnalytics(analyticsEngine)
+
 		metricsEngine := &metrics.MetricsEngineMock{}
 		test.expectedMetrics(metricsEngine)
 
@@ -366,9 +552,10 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 		for _, v := range test.cookies {
 			addCookie(req, v)
 		}
-		response := doRequest(req, metricsEngine, test.syncersBidderNameToKey, test.gdprAllowsHostCookies, false, false)
+		response := doRequest(req, analyticsEngine, metricsEngine, test.syncersBidderNameToKey, test.gdprAllowsHostCookies, false, false, test.cfgAccountRequired)
 
 		assert.Equal(t, test.expectedResponseCode, response.Code, test.description)
+		analyticsEngine.AssertExpectations(t)
 		metricsEngine.AssertExpectations(t)
 	}
 }
@@ -379,8 +566,9 @@ func TestOptedOut(t *testing.T) {
 	cookie.SetOptOut(true)
 	addCookie(request, cookie)
 	syncersBidderNameToKey := map[string]string{"pubmatic": "pubmatic"}
+	analytics := analyticsConf.NewPBSAnalytics(&config.Analytics{})
 	metrics := &metricsConf.NilMetricsEngine{}
-	response := doRequest(request, metrics, syncersBidderNameToKey, true, false, false)
+	response := doRequest(request, analytics, metrics, syncersBidderNameToKey, true, false, false, false)
 
 	assert.Equal(t, http.StatusUnauthorized, response.Code)
 }
@@ -516,21 +704,44 @@ func makeRequest(uri string, existingSyncs map[string]string) *http.Request {
 	return request
 }
 
-func doRequest(req *http.Request, metrics metrics.MetricsEngine, syncersBidderNameToKey map[string]string, gdprAllowsHostCookies, gdprReturnsError, gdprReturnsMalformedError bool) *httptest.ResponseRecorder {
-	cfg := config.Configuration{}
-	perms := &mockPermsSetUID{
+func doRequest(req *http.Request, analytics analytics.PBSAnalyticsModule, metrics metrics.MetricsEngine, syncersBidderNameToKey map[string]string, gdprAllowsHostCookies, gdprReturnsError, gdprReturnsMalformedError, cfgAccountRequired bool) *httptest.ResponseRecorder {
+	cfg := config.Configuration{
+		AccountRequired: cfgAccountRequired,
+		BlacklistedAcctMap: map[string]bool{
+			"blocked_acct": true,
+		},
+	}
+	cfg.MarshalAccountDefaults()
+
+	query := req.URL.Query()
+
+	perms := &fakePermsSetUID{
 		allowHost:           gdprAllowsHostCookies,
+		consent:             query.Get("gdpr_consent"),
 		errorHost:           gdprReturnsError,
 		errorMalformed:      gdprReturnsMalformedError,
 		personalInfoAllowed: true,
 	}
-	analytics := analyticsConf.NewPBSAnalytics(&cfg.Analytics)
+	gdprPermsBuilder := fakePermissionsBuilder{
+		permissions: perms,
+	}.Builder
+	tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
+		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
+	}.Builder
+
 	syncersByBidder := make(map[string]usersync.Syncer)
 	for bidderName, syncerKey := range syncersBidderNameToKey {
 		syncersByBidder[bidderName] = fakeSyncer{key: syncerKey, defaultSyncType: usersync.SyncTypeIFrame}
 	}
 
-	endpoint := NewSetUIDEndpoint(cfg.HostCookie, syncersByBidder, perms, analytics, metrics)
+	fakeAccountsFetcher := FakeAccountsFetcher{AccountData: map[string]json.RawMessage{
+		"valid_acct":        json.RawMessage(`{"disabled":false}`),
+		"disabled_acct":     json.RawMessage(`{"disabled":true}`),
+		"malformed_acct":    json.RawMessage(`{"disabled":"malformed"}`),
+		"invalid_json_acct": json.RawMessage(`{"}`),
+	}}
+
+	endpoint := NewSetUIDEndpoint(&cfg, syncersByBidder, gdprPermsBuilder, tcf2ConfigBuilder, analytics, fakeAccountsFetcher, metrics)
 	response := httptest.NewRecorder()
 	endpoint(response, req, nil)
 	return response
@@ -552,16 +763,33 @@ func parseCookieString(t *testing.T, response *httptest.ResponseRecorder) *users
 	return usersync.ParseCookie(&httpCookie)
 }
 
-type mockPermsSetUID struct {
+type fakePermissionsBuilder struct {
+	permissions gdpr.Permissions
+}
+
+func (fpb fakePermissionsBuilder) Builder(gdpr.TCF2ConfigReader, gdpr.RequestInfo) gdpr.Permissions {
+	return fpb.permissions
+}
+
+type fakeTCF2ConfigBuilder struct {
+	cfg gdpr.TCF2ConfigReader
+}
+
+func (fcr fakeTCF2ConfigBuilder) Builder(hostConfig config.TCF2, accountConfig config.AccountGDPR) gdpr.TCF2ConfigReader {
+	return fcr.cfg
+}
+
+type fakePermsSetUID struct {
 	allowHost           bool
+	consent             string
 	errorHost           bool
 	errorMalformed      bool
 	personalInfoAllowed bool
 }
 
-func (g *mockPermsSetUID) HostCookiesAllowed(ctx context.Context, gdprSignal gdpr.Signal, consent string) (bool, error) {
+func (g *fakePermsSetUID) HostCookiesAllowed(ctx context.Context) (bool, error) {
 	if g.errorMalformed {
-		return g.allowHost, &gdpr.ErrorMalformedConsent{Consent: consent, Cause: errors.New("some error")}
+		return g.allowHost, &gdpr.ErrorMalformedConsent{Consent: g.consent, Cause: errors.New("some error")}
 	}
 	if g.errorHost {
 		return g.allowHost, errors.New("something went wrong")
@@ -569,11 +797,11 @@ func (g *mockPermsSetUID) HostCookiesAllowed(ctx context.Context, gdprSignal gdp
 	return g.allowHost, nil
 }
 
-func (g *mockPermsSetUID) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, gdprSignal gdpr.Signal, consent string) (bool, error) {
+func (g *fakePermsSetUID) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName) (bool, error) {
 	return false, nil
 }
 
-func (g *mockPermsSetUID) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string, aliasGVLIDs map[string]uint16) (permissions gdpr.AuctionPermissions, err error) {
+func (g *fakePermsSetUID) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (permissions gdpr.AuctionPermissions, err error) {
 	return gdpr.AuctionPermissions{
 		AllowBidRequest: g.personalInfoAllowed,
 		PassGeo:         g.personalInfoAllowed,

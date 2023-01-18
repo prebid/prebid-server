@@ -1,6 +1,6 @@
+endpoint: "http://rts.lga.contextweb.com/rt-seller/bid/openrtb/playwire"
 maintainer:
   email: "na@playwire.com"
-gvlVendorID: 62
 capabilities:
   app:
     mediaTypes:

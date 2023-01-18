@@ -3,12 +3,14 @@ package bliink
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"net/http"
+
+	"github.com/prebid/openrtb/v17/openrtb2"
+
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"net/http"
 )
 
 type adapter struct {
@@ -16,7 +18,7 @@ type adapter struct {
 }
 
 // Builder builds a new instance of the Bliink adapter for the given bidder with the given config.
-func Builder(_ openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(_ openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
@@ -75,15 +77,16 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 		}}
 	}
 
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(response.SeatBid[0].Bid))
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
 	bidResponse.Currency = response.Cur
-	seatBid := response.SeatBid[0]
 	var errs []error
-	for i, bid := range seatBid.Bid {
-		mediaType, err := getMediaTypeForImp(bid.ImpID, request.Imp)
-		if err != nil {
-			errs = append(errs, err)
-		} else {
+	for _, seatBid := range response.SeatBid {
+		for i, bid := range seatBid.Bid {
+			mediaType, err := getMediaTypeForImp(bid.ImpID, request.Imp)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &seatBid.Bid[i],
 				BidType: mediaType,

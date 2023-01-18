@@ -6,7 +6,8 @@ import (
 	"net/http"
 	"text/template"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/openrtb/v17/adcom1"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -18,7 +19,7 @@ type adapter struct {
 	endpointTemplate *template.Template
 }
 
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
@@ -149,13 +150,13 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return bidResponse, nil
 }
 
-func getMediaTypeForBid(attr []openrtb2.CreativeAttribute) openrtb_ext.BidType {
+func getMediaTypeForBid(attr []adcom1.CreativeAttribute) openrtb_ext.BidType {
 	for i := 0; i < len(attr); i++ {
-		if attr[i] == openrtb2.CreativeAttribute(16) {
+		if attr[i] == adcom1.AttrHasSkipButton {
 			return openrtb_ext.BidTypeVideo
-		} else if attr[i] == openrtb2.CreativeAttribute(6) {
+		} else if attr[i] == adcom1.AttrVideoAuto {
 			return openrtb_ext.BidTypeVideo
-		} else if attr[i] == openrtb2.CreativeAttribute(7) {
+		} else if attr[i] == adcom1.AttrVideoUser {
 			return openrtb_ext.BidTypeVideo
 		}
 	}

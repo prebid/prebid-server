@@ -5,7 +5,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-func preloadLabelValues(m *Metrics, syncerKeys []string) {
+func preloadLabelValues(m *Metrics, syncerKeys []string, moduleStageNames map[string][]string) {
 	var (
 		setUidStatusValues        = setUidStatusesAsString()
 		adapterErrorValues        = adapterErrorsAsString()
@@ -77,6 +77,10 @@ func preloadLabelValues(m *Metrics, syncerKeys []string) {
 		storedDataFetchTypeLabel: storedDataFetchTypeValues,
 	})
 
+	preloadLabelValuesForHistogram(m.storedResponsesFetchTimer, map[string][]string{
+		storedDataFetchTypeLabel: storedDataFetchTypeValues,
+	})
+
 	preloadLabelValuesForCounter(m.storedAccountErrors, map[string][]string{
 		storedDataErrorLabel: storedDataErrorValues,
 	})
@@ -94,6 +98,10 @@ func preloadLabelValues(m *Metrics, syncerKeys []string) {
 	})
 
 	preloadLabelValuesForCounter(m.storedVideoErrors, map[string][]string{
+		storedDataErrorLabel: storedDataErrorValues,
+	})
+
+	preloadLabelValuesForCounter(m.storedResponsesErrors, map[string][]string{
 		storedDataErrorLabel: storedDataErrorValues,
 	})
 
@@ -135,6 +143,10 @@ func preloadLabelValues(m *Metrics, syncerKeys []string) {
 		adapterLabel: adapterValues,
 		cookieLabel:  cookieValues,
 		hasBidsLabel: boolValues,
+	})
+
+	preloadLabelValuesForCounter(m.adsCertRequests, map[string][]string{
+		successLabel: boolValues,
 	})
 
 	if !m.metricsDisabled.AdapterConnectionMetrics {
@@ -193,6 +205,40 @@ func preloadLabelValues(m *Metrics, syncerKeys []string) {
 	if !m.metricsDisabled.AdapterGDPRRequestBlocked {
 		preloadLabelValuesForCounter(m.adapterGDPRBlockedRequests, map[string][]string{
 			adapterLabel: adapterValues,
+		})
+	}
+
+	for module, stageValues := range moduleStageNames {
+		preloadLabelValuesForHistogram(m.moduleDuration[module], map[string][]string{
+			stageLabel: stageValues,
+		})
+
+		preloadLabelValuesForCounter(m.moduleCalls[module], map[string][]string{
+			stageLabel: stageValues,
+		})
+
+		preloadLabelValuesForCounter(m.moduleFailures[module], map[string][]string{
+			stageLabel: stageValues,
+		})
+
+		preloadLabelValuesForCounter(m.moduleSuccessNoops[module], map[string][]string{
+			stageLabel: stageValues,
+		})
+
+		preloadLabelValuesForCounter(m.moduleSuccessUpdates[module], map[string][]string{
+			stageLabel: stageValues,
+		})
+
+		preloadLabelValuesForCounter(m.moduleSuccessRejects[module], map[string][]string{
+			stageLabel: stageValues,
+		})
+
+		preloadLabelValuesForCounter(m.moduleExecutionErrors[module], map[string][]string{
+			stageLabel: stageValues,
+		})
+
+		preloadLabelValuesForCounter(m.moduleTimeouts[module], map[string][]string{
+			stageLabel: stageValues,
 		})
 	}
 }
