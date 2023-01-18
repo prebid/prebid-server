@@ -277,7 +277,6 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 
 				// FLEDGE auctionconfig responses are sent separate from bids
 				if bidResponse.FledgeAuctionConfigs != nil {
-					// TODO: only if ae was set in incoming request (imp.ext.ae etc)
 					if fledgeAuctionConfigs := seatBidMap[bidderRequest.BidderName].FledgeAuctionConfigs; fledgeAuctionConfigs != nil {
 						seatBidMap[bidderRequest.BidderName].FledgeAuctionConfigs = append(fledgeAuctionConfigs, bidResponse.FledgeAuctionConfigs...)
 					} else {

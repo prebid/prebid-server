@@ -606,19 +606,18 @@ func (e *exchange) getAllBids(
 
 		//if bidder returned no bids back - remove bidder from further processing
 		for _, seatBid := range brw.adapterSeatBids {
-			if seatBid == nil {
-				continue
-			}
-			bidderName := openrtb_ext.BidderName(seatBid.Seat)
-			if len(seatBid.Bids) != 0 {
-				if val, ok := adapterBids[bidderName]; ok {
-					adapterBids[bidderName].Bids = append(val.Bids, seatBid.Bids...)
-				} else {
-					adapterBids[bidderName] = seatBid
+			if seatBid != nil {
+				bidderName := openrtb_ext.BidderName(seatBid.Seat)
+				if len(seatBid.Bids) != 0 {
+					if val, ok := adapterBids[bidderName]; ok {
+						adapterBids[bidderName].Bids = append(val.Bids, seatBid.Bids...)
+					} else {
+						adapterBids[bidderName] = seatBid
+					}
 				}
+				// collect fledgeAuctionConfigs separately from bids, as empty seatBids may be discarded
+				fledge = collectFledgeFromSeatBid(fledge, bidderName, brw.adapter, seatBid)
 			}
-			// collect fledgeAuctionConfigs separately from bids, as empty seatBids may be discarded
-			fledge = collectFledgeFromSeatBid(fledge, bidderName, brw.adapter, seatBid)
 		}
 		//but we need to add all bidders data to adapterExtra to have metrics and other metadata
 		adapterExtra[brw.bidder] = brw.adapterExtra
@@ -642,7 +641,7 @@ func collectFledgeFromSeatBid(fledge *openrtb_ext.Fledge, bidderName openrtb_ext
 			fledge.AuctionConfigs = append(fledge.AuctionConfigs, &openrtb_ext.FledgeAuctionConfig{
 				Bidder:  bidderName.String(),
 				Adapter: config.Bidder,
-				ImpId:   config.ImpId, // TODO: validate impId
+				ImpId:   config.ImpId,
 				Config:  config.Config,
 			})
 		}
@@ -1310,9 +1309,10 @@ func buildStoredAuctionResponse(storedAuctionResponses map[string]json.RawMessag
 					}
 					for _, config := range auctionConfigs {
 						newConfig := &openrtb_ext.FledgeAuctionConfig{
-							ImpId:  impId,
-							Bidder: string(bidderName),
-							Config: config.Config,
+							ImpId:   impId,
+							Bidder:  string(bidderName),
+							Adapter: string(bidderName),
+							Config:  config.Config,
 						}
 						fledge.AuctionConfigs = append(fledge.AuctionConfigs, newConfig)
 					}

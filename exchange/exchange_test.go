@@ -3930,6 +3930,7 @@ func TestBuildStoredAuctionResponses(t *testing.T) {
 	}
 	type testResults struct {
 		adapterBids  map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid
+		fledge       *openrtb_ext.Fledge
 		liveAdapters []openrtb_ext.BidderName
 	}
 
@@ -4060,13 +4061,40 @@ func TestBuildStoredAuctionResponses(t *testing.T) {
 				liveAdapters: []openrtb_ext.BidderName{openrtb_ext.BidderName("appnexus"), openrtb_ext.BidderName("rubicon")},
 			},
 		},
+		{
+			desc: "Fledge in stored response bid",
+			in: testIn{
+				StoredAuctionResponses: map[string]json.RawMessage{
+					"impression-id": json.RawMessage(`[{"bid": [],"seat": "openx", "ext": {"prebid": {"fledge": {"auctionconfigs": [{"impid": "1", "bidder": "openx", "adapter": "openx", "config": [1,2,3]}]}}}}]`),
+				},
+			},
+			expected: testResults{
+				adapterBids: map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid{
+					openrtb_ext.BidderName("openx"): {
+						Bids: []*entities.PbsOrtbBid{},
+					},
+				},
+				liveAdapters: []openrtb_ext.BidderName{openrtb_ext.BidderName("openx")},
+				fledge: &openrtb_ext.Fledge{
+					AuctionConfigs: []*openrtb_ext.FledgeAuctionConfig{
+						{
+							ImpId:   "impression-id",
+							Bidder:  "openx",
+							Adapter: "openx",
+							Config:  json.RawMessage("[1,2,3]"),
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, test := range testCases {
 
-		bids, _, adapters, err := buildStoredAuctionResponse(test.in.StoredAuctionResponses)
+		bids, fledge, adapters, err := buildStoredAuctionResponse(test.in.StoredAuctionResponses)
 		assert.NoErrorf(t, err, "%s. HoldAuction error: %v \n", test.desc, err)
 
 		assert.ElementsMatch(t, test.expected.liveAdapters, adapters, "Incorrect adapter list")
+		assert.Equal(t, fledge, test.expected.fledge, "Incorrect FLEDGE response")
 
 		for _, bidderName := range test.expected.liveAdapters {
 			assert.ElementsMatch(t, test.expected.adapterBids[bidderName].Bids, bids[bidderName].Bids, "Incorrect bids")
