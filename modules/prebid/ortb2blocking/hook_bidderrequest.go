@@ -195,7 +195,6 @@ func updateCatTax(
 		return
 	}
 
-	// todo: probably we should update cattax only if current bidder supports openrtb v2.6
 	attributes.catTax = cfg.Attributes.Bcat.CategoryTaxonomy
 	changeSet.BidderRequest().CatTax().Update(attributes.catTax)
 }
