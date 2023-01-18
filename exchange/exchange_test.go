@@ -2303,7 +2303,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		assert.JSONEq(t, string(spec.Response.Ext), string(bid.Ext), "ext mismatch")
 	}
 
-	if spec.BidValidationEnforcement == config.ValidationEnforce || spec.FledgeEnabled {
+	if spec.HostConfigBidValidation.BannerCreativeMaxSize == config.ValidationEnforce || spec.HostConfigBidValidation.SecureMarkup == config.ValidationEnforce {
 		actualBidRespExt := &openrtb_ext.ExtBidResponse{}
 		expectedBidRespExt := &openrtb_ext.ExtBidResponse{}
 		if bid.Ext != nil {
@@ -2315,7 +2315,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 			assert.NoError(t, err, fmt.Sprintf("Error when unmarshalling: %s", err))
 		}
 
-		assert.Equal(t, expectedBidRespExt.Errors, actualBidRespExt.Errors, "Oh no")
+		assert.Equal(t, expectedBidRespExt.Errors, actualBidRespExt.Errors, "Expected errors from response ext do not match")
 	}
 }
 
@@ -4678,7 +4678,6 @@ type exchangeSpec struct {
 	RequestType                *metrics.RequestType   `json:"requestType,omitempty"`
 	PassthroughFlag            bool                   `json:"passthrough_flag,omitempty"`
 	HostSChainFlag             bool                   `json:"host_schain_flag,omitempty"`
-	BidValidationEnforcement   string                 `json:"bid_validation_flag,omitempty"`
 	HostConfigBidValidation    config.Validations     `json:"host_bid_validations"`
 	AccountConfigBidValidation config.Validations     `json:"account_bid_validations"`
 	FledgeEnabled              bool                   `json:"fledge_enabled,omitempty"`
@@ -5092,7 +5091,7 @@ type mockUpdateBidRequestHook struct{}
 
 func (e mockUpdateBidRequestHook) HandleBidderRequestHook(_ context.Context, mctx hookstage.ModuleInvocationContext, _ hookstage.BidderRequestPayload) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
 	time.Sleep(50 * time.Millisecond)
-	c := &hookstage.ChangeSet[hookstage.BidderRequestPayload]{}
+	c := hookstage.ChangeSet[hookstage.BidderRequestPayload]{}
 	c.AddMutation(
 		func(payload hookstage.BidderRequestPayload) (hookstage.BidderRequestPayload, error) {
 			payload.BidRequest.Site.Name = "test"

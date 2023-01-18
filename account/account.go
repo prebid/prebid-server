@@ -28,7 +28,7 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 			Message: fmt.Sprintf("Prebid-server has been configured to discard requests without a valid Account ID. Please reach out to the prebid server host."),
 		}}
 	}
-	if accountJSON, accErrs := fetcher.FetchAccount(ctx, accountID); len(accErrs) > 0 || accountJSON == nil {
+	if accountJSON, accErrs := fetcher.FetchAccount(ctx, cfg.AccountDefaultsJSON(), accountID); len(accErrs) > 0 || accountJSON == nil {
 		// accountID does not reference a valid account
 		for _, e := range accErrs {
 			if _, ok := e.(stored_requests.NotFoundError); !ok {
@@ -49,25 +49,22 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 	} else {
 		// accountID resolved to a valid account, merge with AccountDefaults for a complete config
 		account = &config.Account{}
-		completeJSON, err := jsonpatch.MergePatch(cfg.AccountDefaultsJSON(), accountJSON)
-		if err == nil {
-			err = json.Unmarshal(completeJSON, account)
+		err := json.Unmarshal(accountJSON, account)
 
-			// this logic exists for backwards compatibility. If the initial unmarshal fails above, we attempt to
-			// resolve it by converting the GDPR enforce purpose fields and then attempting an unmarshal again before
-			// declaring a malformed account error.
-			// unmarshal fetched account to determine if it is well-formed
+		// this logic exists for backwards compatibility. If the initial unmarshal fails above, we attempt to
+		// resolve it by converting the GDPR enforce purpose fields and then attempting an unmarshal again before
+		// declaring a malformed account error.
+		// unmarshal fetched account to determine if it is well-formed
+		if _, ok := err.(*json.UnmarshalTypeError); ok {
+			// attempt to convert deprecated GDPR enforce purpose fields to resolve issue
+			accountJSON, err = ConvertGDPREnforcePurposeFields(accountJSON)
+			// unmarshal again to check if unmarshal error still exists after GDPR field conversion
+			err = json.Unmarshal(accountJSON, account)
+
 			if _, ok := err.(*json.UnmarshalTypeError); ok {
-				// attempt to convert deprecated GDPR enforce purpose fields to resolve issue
-				completeJSON, err = ConvertGDPREnforcePurposeFields(completeJSON)
-				// unmarshal again to check if unmarshal error still exists after GDPR field conversion
-				err = json.Unmarshal(completeJSON, account)
-
-				if _, ok := err.(*json.UnmarshalTypeError); ok {
-					return nil, []error{&errortypes.MalformedAcct{
-						Message: fmt.Sprintf("The prebid-server account config for account id \"%s\" is malformed. Please reach out to the prebid server host.", accountID),
-					}}
-				}
+				return nil, []error{&errortypes.MalformedAcct{
+					Message: fmt.Sprintf("The prebid-server account config for account id \"%s\" is malformed. Please reach out to the prebid server host.", accountID),
+				}}
 			}
 		}
 
