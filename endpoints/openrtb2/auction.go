@@ -1447,6 +1447,8 @@ func isPossibleBidder(bidder string) bool {
 		return false
 	case openrtb_ext.BidderReservedTID:
 		return false
+	case openrtb_ext.BidderReservedAE:
+		return false
 	default:
 		return true
 	}

@@ -14,6 +14,9 @@ type PbsOrtbSeatBid struct {
 	// Currency is the Currency in which the Bids are made.
 	// Should be a valid Currency ISO code.
 	Currency string
+	// fledgeAuctionConfigs is quasi-opaque data passed back for in-browser interest group auction.
+	// if exists, it should be passed through even if bids[] is empty.
+	FledgeAuctionConfigs []*openrtb_ext.FledgeAuctionConfig
 	// HttpCalls is the list of debugging info. It should only be populated if the request.test == 1.
 	// This will become response.ext.debug.httpcalls.{bidder} on the final Response.
 	HttpCalls []*openrtb_ext.ExtHttpCall
