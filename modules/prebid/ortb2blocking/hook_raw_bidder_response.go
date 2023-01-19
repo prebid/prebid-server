@@ -184,7 +184,7 @@ func shouldBeBlockedDueToCattax(
 	}
 
 	cattax := bid.CatTax
-	if cattax == 0 { // TODO: possibly needed to add check ortb version < 2.6
+	if cattax == 0 {
 		return failedChecksData
 	}
 
