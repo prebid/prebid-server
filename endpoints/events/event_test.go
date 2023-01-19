@@ -73,9 +73,10 @@ func (e *eventsMockAnalyticsModule) LogNotificationEventObject(ne *analytics.Not
 
 // Mock Account fetcher
 var mockAccountData = map[string]json.RawMessage{
-	"events_enabled":  json.RawMessage(`{"events_enabled":true}`),
-	"events_disabled": json.RawMessage(`{"events_enabled":false}`),
-	"malformed_acct":  json.RawMessage(`{"events_enabled":"invalid type"}`),
+	"events_enabled":     json.RawMessage(`{"events_enabled":true}`),
+	"events_disabled":    json.RawMessage(`{"events_enabled":false}`),
+	"malformed_acct":     json.RawMessage(`{"events_enabled":"invalid type"}`),
+	"events_not_defined": json.RawMessage(`{}`),
 }
 
 type mockAccountsFetcher struct {
@@ -394,7 +395,7 @@ func TestShouldNotPassEventToAnalyticsReporterWhenAccountNotFound(t *testing.T) 
 
 	// validate
 	assert.Equal(t, 401, recorder.Result().StatusCode, "Expected 401 on account not found")
-	assert.Equal(t, "Account 'testacc' doesn't support events", string(d))
+	assert.Equal(t, "Account 'testacc' or server doesn't support events", string(d))
 }
 
 func TestShouldReturnBadRequestWhenIntegrationValueIsInvalid(t *testing.T) {
@@ -501,6 +502,45 @@ func TestShouldPassEventToAnalyticsReporterWhenAccountEventEnabled(t *testing.T)
 
 	// validate
 	assert.Equal(t, 204, recorder.Result().StatusCode, "Expected 204 when account has events enabled")
+	assert.Equal(t, true, mockAnalyticsModule.Invoked)
+}
+
+func TestShouldPassEventToAnalyticsReporterWhenServerEventEnabled(t *testing.T) {
+	// instance level event enabled flag
+
+	// mock AccountsFetcher
+	mockAccountsFetcher := &mockAccountsFetcher{
+		Fail: false,
+	}
+
+	// mock PBS Analytics Module
+	mockAnalyticsModule := &eventsMockAnalyticsModule{
+		Fail: false,
+	}
+
+	// mock config
+	cfg := &config.Configuration{
+		AccountDefaults: config.Account{},
+		Event: config.Event{
+			Enabled: true,
+		},
+	}
+	cfg.MarshalAccountDefaults()
+
+	// prepare
+	reqData := ""
+
+	// account level not defined but instance level enabled
+	req := httptest.NewRequest("GET", "/event?t=win&b=test&ts=1234&f=b&x=1&a=events_not_defined", strings.NewReader(reqData))
+	recorder := httptest.NewRecorder()
+
+	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule)
+
+	// execute
+	e(recorder, req, nil)
+
+	// validate
+	assert.Equal(t, 204, recorder.Result().StatusCode, "Expected 204 when server has events enabled")
 	assert.Equal(t, true, mockAnalyticsModule.Invoked)
 }
 

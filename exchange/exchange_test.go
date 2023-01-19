@@ -2399,7 +2399,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &spec.IncomingRequest.OrtbRequest},
 		Account: config.Account{
 			ID:            "testaccount",
-			EventsEnabled: spec.EventsEnabled,
+			EventsEnabled: &spec.EventsEnabled,
 			DebugAllow:    true,
 			Validations:   spec.AccountConfigBidValidation,
 		},

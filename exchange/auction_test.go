@@ -845,7 +845,7 @@ type cacheSpec struct {
 	TargetDataIncludeBidderKeys bool                            `json:"targetDataIncludeBidderKeys"`
 	TargetDataIncludeCacheBids  bool                            `json:"targetDataIncludeCacheBids"`
 	TargetDataIncludeCacheVast  bool                            `json:"targetDataIncludeCacheVast"`
-	EventsDataEnabledForAccount bool                            `json:"eventsDataEnabledForAccount"`
+	EventsDataEnabledForAccount *bool                           `json:"eventsDataEnabledForAccount"`
 	EventsDataEnabledForRequest bool                            `json:"eventsDataEnabledForRequest"`
 	DebugLog                    DebugLog                        `json:"debugLog,omitempty"`
 }
