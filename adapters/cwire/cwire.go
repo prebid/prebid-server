@@ -73,16 +73,16 @@ func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.Request
 	}
 
 	if httpRes.StatusCode != http.StatusOK {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: "Status of the response in not 200!",
-		}}
+		return nil, []error{
+			fmt.Errorf("Unexpected status code: %d. Run with request.debug = 1 for more info", httpRes.StatusCode),
+		}
 	}
 
 	var resp openrtb2.BidResponse
 	if err := json.Unmarshal(httpRes.Body, &resp); err != nil {
-		return nil, []error{
-			fmt.Errorf("Unexpected status code: %d. Run with request.debug = 1 for more info", httpRes.StatusCode),
-		}
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Error while decoding response, err: %s", err),
+		}}
 	}
 
 	bidderResponse := adapters.NewBidderResponse()
