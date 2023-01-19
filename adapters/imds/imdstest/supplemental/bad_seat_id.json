@@ -24,7 +24,7 @@
 
   "expectedMakeRequestsErrors": [
     {
-      "value": "json: cannot unmarshal number into Go struct field ExtImpSynacormedia.seatId of type string",
+      "value": "json: cannot unmarshal number into Go struct field ExtImpImds.seatId of type string",
       "comparison": "literal"
     }
   ]
