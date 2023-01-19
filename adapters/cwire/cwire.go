@@ -13,7 +13,7 @@ import (
 )
 
 /*
-Your bid adapter code will need to implement and export:
+Bid adapter implements and exports the requirements:
 
 - The adapters.Builder method to create a new instance of the adapter based on
   the host configuration
@@ -36,17 +36,10 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 /*
-The MakeRequests method is responsible for returning none, one, or many HTTP
-requests to be sent to your bidding server. Bid adapters are forbidden from
-directly initiating any form of network communication and must entirely rely
-upon the core framework. This allows the core framework to optimize outgoing
-connections using a managed pool and record networking metrics. The return type
-adapters.RequestData allows your adapter to specify the HTTP method, url, body,
-and headers.
-
-This method is called once by the core framework for bid requests which have at
-least one valid Impression for your adapter. Impressions not configured for
-your adapter are not accessible.
+This method creates an HTTP requests that should be sent to the CWire OpenRTB endpoint.
+It's only provided with valid impressions for the adapter, it's not called if there is none.
+For optimization purposes bid adapters are forbidden from directly initiating any form of
+network communication and must entirely rely upon the core framework (adapters.RequestData).
 */
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	headers := http.Header{}
@@ -71,12 +64,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 }
 
 /*
-The MakeBids method is responsible for parsing the bidding server’s response
-and mapping it to the OpenRTB 2.5 Bid Response object model.
-
-This method is called for each response received from your bidding server
-within the bidding time window (request.tmax). If there are no requests or if
-all requests time out, the MakeBids method will not be called.
+This method is called for every Bid Response from CWire's OpenRTB endpoint.
+It maps the responses to core framework's OpenRTB 2.5 Bid Response object model.
 */
 func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.RequestData, httpRes *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if httpRes.StatusCode == http.StatusNoContent {
@@ -91,9 +80,9 @@ func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.Request
 
 	var resp openrtb2.BidResponse
 	if err := json.Unmarshal(httpRes.Body, &resp); err != nil {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Error while decoding response, err: %s", err),
-		}}
+		return nil, []error{
+			fmt.Errorf("Unexpected status code: %d. Run with request.debug = 1 for more info", httpRes.StatusCode),
+		}
 	}
 
 	bidderResponse := adapters.NewBidderResponse()
