@@ -533,7 +533,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 					Status:  400,
 					Bidder:  "pubmatic",
 					UID:     "",
-					Errors:  []error{errors.New("Invalid JSON Patch")},
+					Errors:  []error{errors.New("unexpected end of JSON input")},
 					Success: false,
 				}
 				a.On("LogSetUIDObject", &expected).Once()
@@ -710,6 +710,7 @@ func doRequest(req *http.Request, analytics analytics.PBSAnalyticsModule, metric
 		BlacklistedAcctMap: map[string]bool{
 			"blocked_acct": true,
 		},
+		AccountDefaults: config.Account{},
 	}
 	cfg.MarshalAccountDefaults()
 

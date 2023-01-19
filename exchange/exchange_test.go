@@ -2299,7 +2299,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 
 	}
 
-	if spec.BidValidationEnforcement == config.ValidationEnforce {
+	if spec.HostConfigBidValidation.BannerCreativeMaxSize == config.ValidationEnforce || spec.HostConfigBidValidation.SecureMarkup == config.ValidationEnforce {
 		actualBidRespExt := &openrtb_ext.ExtBidResponse{}
 		expectedBidRespExt := &openrtb_ext.ExtBidResponse{}
 		if bid.Ext != nil {
@@ -2311,7 +2311,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 			assert.NoError(t, err, fmt.Sprintf("Error when unmarshalling: %s", err))
 		}
 
-		assert.Equal(t, expectedBidRespExt.Errors, actualBidRespExt.Errors, "Oh no")
+		assert.Equal(t, expectedBidRespExt.Errors, actualBidRespExt.Errors, "Expected errors from response ext do not match")
 	}
 }
 
@@ -4674,7 +4674,6 @@ type exchangeSpec struct {
 	RequestType                *metrics.RequestType   `json:"requestType,omitempty"`
 	PassthroughFlag            bool                   `json:"passthrough_flag,omitempty"`
 	HostSChainFlag             bool                   `json:"host_schain_flag,omitempty"`
-	BidValidationEnforcement   string                 `json:"bid_validation_flag,omitempty"`
 	HostConfigBidValidation    config.Validations     `json:"host_bid_validations"`
 	AccountConfigBidValidation config.Validations     `json:"account_bid_validations"`
 }
