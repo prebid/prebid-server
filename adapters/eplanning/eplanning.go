@@ -221,9 +221,9 @@ func getImpTypeRequest(request *openrtb2.BidRequest, totalImps int) int {
 	for i := 0; i < totalImps; i++ {
 		imp := request.Imp[i]
 		if imp.Video != nil {
-			if imp.Video.Placement > 0 && imp.Video.Placement == vastInstream {
+			if imp.Video.Placement == vastInstream {
 				impType = vastInstream
-			} else if impType == 0 {
+			} else if impType == impTypeBanner {
 				impType = vastOutstream
 			}
 		}
