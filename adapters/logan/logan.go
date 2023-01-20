@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
@@ -36,22 +37,16 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	var err error
 	var adapterRequests []*adapters.RequestData
 
-	reqCopy := *request
-	for _, imp := range request.Imp {
-		reqCopy.Imp = []openrtb2.Imp{imp}
+	var originalImpSlice []openrtb2.Imp = request.Imp
 
-		var bidderExt adapters.ExtImpBidder
-		var loganExt openrtb_ext.ImpExtLogan
-
-		if err = json.Unmarshal(reqCopy.Imp[0].Ext, &bidderExt); err != nil {
-			return nil, []error{err}
-		}
-		if err = json.Unmarshal(bidderExt.Bidder, &loganExt); err != nil {
-			return nil, []error{err}
-		}
+	for i := range originalImpSlice {
+		request.Imp = []openrtb2.Imp{originalImpSlice[i]}
 
 		temp := reqBodyExt{LoganBidderExt: reqBodyExtBidder{}}
-		temp.LoganBidderExt.PlacementID = loganExt.PlacementID
+		temp.LoganBidderExt.PlacementID, err = jsonparser.GetString(request.Imp[0].Ext, "bidder", "placementId")
+		if err != nil {
+			return nil, []error{err}
+		}
 		temp.LoganBidderExt.Type = "publisher"
 
 		finalyImpExt, err := json.Marshal(temp)
@@ -59,9 +54,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			return nil, []error{err}
 		}
 
-		reqCopy.Imp[0].Ext = finalyImpExt
+		request.Imp[0].Ext = finalyImpExt
 
-		adapterReq, err := a.makeRequest(&reqCopy)
+		adapterReq, err := a.makeRequest(request)
 		if err != nil {
 			return nil, []error{err}
 		}
@@ -70,6 +65,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			adapterRequests = append(adapterRequests, adapterReq)
 		}
 	}
+	request.Imp = originalImpSlice
 	return adapterRequests, nil
 }
 
@@ -87,7 +83,7 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestDa
 		Uri:     a.endpoint,
 		Body:    reqJSON,
 		Headers: headers,
-	}, err
+	}, nil
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -109,9 +105,15 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
 	bidResponse.Currency = response.Cur
+
+	impsMappedByID := make(map[string]openrtb2.Imp, len(request.Imp))
+	for i, imp := range request.Imp {
+		impsMappedByID[request.Imp[i].ID] = imp
+	}
+
 	for _, seatBid := range response.SeatBid {
 		for i := range seatBid.Bid {
-			bidType, err := getMediaTypeForImp(seatBid.Bid[i].ImpID, request.Imp)
+			bidType, err := getMediaTypeForImp(seatBid.Bid[i].ImpID, request.Imp, impsMappedByID)
 			if err != nil {
 				return nil, []error{err}
 			}
@@ -126,18 +128,16 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return bidResponse, nil
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
-	for _, imp := range imps {
-		if imp.ID == impID {
-			if imp.Banner != nil {
-				return openrtb_ext.BidTypeBanner, nil
-			}
-			if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo, nil
-			}
-			if imp.Native != nil {
-				return openrtb_ext.BidTypeNative, nil
-			}
+func getMediaTypeForImp(impID string, imps []openrtb2.Imp, impMap map[string]openrtb2.Imp) (openrtb_ext.BidType, error) {
+	if index, found := impMap[impID]; found {
+		if index.Banner != nil {
+			return openrtb_ext.BidTypeBanner, nil
+		}
+		if index.Video != nil {
+			return openrtb_ext.BidTypeVideo, nil
+		}
+		if index.Native != nil {
+			return openrtb_ext.BidTypeNative, nil
 		}
 	}
 
