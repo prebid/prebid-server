@@ -8,13 +8,14 @@ import (
 
 func TestEmptyPlanBuilder(t *testing.T) {
 	planBuilder := EmptyPlanBuilder{}
+	endpoint := "/openrtb2/auction"
 	message := "Empty plan builder should always return empty hook execution plan for %s stage."
 
-	assert.Len(t, planBuilder.PlanForEntrypointStage(StageEntrypoint), 0, message, StageEntrypoint)
-	assert.Len(t, planBuilder.PlanForRawAuctionStage(StageRawAuction, nil), 0, message, StageRawAuction)
-	assert.Len(t, planBuilder.PlanForProcessedAuctionStage(StageProcessedAuction, nil), 0, message, StageProcessedAuction)
-	assert.Len(t, planBuilder.PlanForBidRequestStage(StageBidRequest, nil), 0, message, StageBidRequest)
-	assert.Len(t, planBuilder.PlanForRawBidResponseStage(StageRawBidResponse, nil), 0, message, StageRawBidResponse)
-	assert.Len(t, planBuilder.PlanForAllProcessedBidResponsesStage(StageAllProcessedBidResponses, nil), 0, message, StageAllProcessedBidResponses)
-	assert.Len(t, planBuilder.PlanForAuctionResponseStage(StageAuctionResponse, nil), 0, message, StageAuctionResponse)
+	assert.Len(t, planBuilder.PlanForEntrypointStage(endpoint), 0, message, StageEntrypoint)
+	assert.Len(t, planBuilder.PlanForRawAuctionStage(endpoint, nil), 0, message, StageRawAuctionRequest)
+	assert.Len(t, planBuilder.PlanForProcessedAuctionStage(endpoint, nil), 0, message, StageProcessedAuctionRequest)
+	assert.Len(t, planBuilder.PlanForBidderRequestStage(endpoint, nil), 0, message, StageBidderRequest)
+	assert.Len(t, planBuilder.PlanForRawBidderResponseStage(endpoint, nil), 0, message, StageRawBidderResponse)
+	assert.Len(t, planBuilder.PlanForAllProcessedBidResponsesStage(endpoint, nil), 0, message, StageAllProcessedBidResponses)
+	assert.Len(t, planBuilder.PlanForAuctionResponseStage(endpoint, nil), 0, message, StageAuctionResponse)
 }

@@ -71,6 +71,6 @@ func TestAddHook_FailsToAddHookOfSameTypeAndIdTwice(t *testing.T) {
 
 type hook struct{}
 
-func (h hook) HandleEntrypointHook(ctx context.Context, context hookstage.InvocationContext, payload hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+func (h hook) HandleEntrypointHook(ctx context.Context, context hookstage.ModuleInvocationContext, payload hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
 	return hookstage.HookResult[hookstage.EntrypointPayload]{}, nil
 }

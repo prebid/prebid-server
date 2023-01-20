@@ -9,6 +9,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/go-gdpr/vendorconsent"
+	gpplib "github.com/prebid/go-gpp"
 	"github.com/prebid/openrtb/v17/openrtb2"
 
 	"github.com/prebid/prebid-server/adapters"
@@ -78,17 +79,26 @@ func cleanOpenRTBRequests(ctx context.Context,
 	//this function should be executed after getAuctionBidderRequests
 	allBidderRequests = mergeBidderRequests(allBidderRequests, bidderNameToBidderReq)
 
+	var gpp gpplib.GppContainer
+	if req.BidRequest.Regs != nil && len(req.BidRequest.Regs.GPP) > 0 {
+		gpp, err = gpplib.Parse(req.BidRequest.Regs.GPP)
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
 	gdprSignal, err := extractGDPR(req.BidRequest)
 	if err != nil {
 		errs = append(errs, err)
 	}
-	consent, err := extractConsent(req.BidRequest)
+
+	consent, err := extractConsent(req.BidRequest, gpp)
 	if err != nil {
 		errs = append(errs, err)
 	}
 	gdprApplies := gdprSignal == gdpr.SignalYes || (gdprSignal == gdpr.SignalAmbiguous && gdprDefaultValue == gdpr.SignalYes)
 
-	ccpaEnforcer, err := extractCCPA(req.BidRequest, privacyConfig, &auctionReq.Account, aliases, channelTypeMap[auctionReq.LegacyLabels.RType])
+	ccpaEnforcer, err := extractCCPA(req.BidRequest, privacyConfig, &auctionReq.Account, aliases, channelTypeMap[auctionReq.LegacyLabels.RType], gpp)
 	if err != nil {
 		errs = append(errs, err)
 	}
@@ -177,9 +187,9 @@ func ccpaEnabled(account *config.Account, privacyConfig config.Privacy, requestT
 	return privacyConfig.CCPA.Enforce
 }
 
-func extractCCPA(orig *openrtb2.BidRequest, privacyConfig config.Privacy, account *config.Account, aliases map[string]string, requestType config.ChannelType) (privacy.PolicyEnforcer, error) {
+func extractCCPA(orig *openrtb2.BidRequest, privacyConfig config.Privacy, account *config.Account, aliases map[string]string, requestType config.ChannelType, gpp gpplib.GppContainer) (privacy.PolicyEnforcer, error) {
 	// Quick extra wrapper until RequestWrapper makes its way into CleanRequests
-	ccpaPolicy, err := ccpa.ReadFromRequestWrapper(&openrtb_ext.RequestWrapper{BidRequest: orig})
+	ccpaPolicy, err := ccpa.ReadFromRequestWrapper(&openrtb_ext.RequestWrapper{BidRequest: orig}, gpp)
 	if err != nil {
 		return privacy.NilPolicyEnforcer{}, err
 	}
@@ -468,17 +478,29 @@ func splitImps(imps []openrtb2.Imp) (map[string][]openrtb2.Imp, error) {
 	return bidderImps, nil
 }
 
+var allowedImpExtFields = map[string]interface{}{
+	openrtb_ext.AuctionEnvironmentKey:       struct{}{},
+	openrtb_ext.FirstPartyDataExtKey:        struct{}{},
+	openrtb_ext.FirstPartyDataContextExtKey: struct{}{},
+	openrtb_ext.GPIDKey:                     struct{}{},
+	openrtb_ext.SKAdNExtKey:                 struct{}{},
+	openrtb_ext.TIDKey:                      struct{}{},
+}
+
+var allowedImpExtPrebidFields = map[string]interface{}{
+	openrtb_ext.IsRewardedInventoryKey: struct{}{},
+	openrtb_ext.OptionsKey:             struct{}{},
+}
+
 func createSanitizedImpExt(impExt, impExtPrebid map[string]json.RawMessage) (map[string]json.RawMessage, error) {
 	sanitizedImpExt := make(map[string]json.RawMessage, 6)
 	sanitizedImpPrebidExt := make(map[string]json.RawMessage, 2)
 
 	// copy allowed imp[].ext.prebid fields
-	if v, exists := impExtPrebid["is_rewarded_inventory"]; exists {
-		sanitizedImpPrebidExt["is_rewarded_inventory"] = v
-	}
-
-	if v, exists := impExtPrebid["options"]; exists {
-		sanitizedImpPrebidExt["options"] = v
+	for k := range allowedImpExtPrebidFields {
+		if v, exists := impExtPrebid[k]; exists {
+			sanitizedImpPrebidExt[k] = v
+		}
 	}
 
 	// marshal sanitized imp[].ext.prebid
@@ -491,36 +513,13 @@ func createSanitizedImpExt(impExt, impExtPrebid map[string]json.RawMessage) (map
 	}
 
 	// copy reserved imp[].ext fields known to not be bidder names
-	if v, exists := impExt[openrtb_ext.FirstPartyDataExtKey]; exists {
-		sanitizedImpExt[openrtb_ext.FirstPartyDataExtKey] = v
-	}
-
-	if v, exists := impExt[openrtb_ext.FirstPartyDataContextExtKey]; exists {
-		sanitizedImpExt[openrtb_ext.FirstPartyDataContextExtKey] = v
-	}
-
-	if v, exists := impExt[openrtb_ext.SKAdNExtKey]; exists {
-		sanitizedImpExt[openrtb_ext.SKAdNExtKey] = v
-	}
-
-	if v, exists := impExt[string(openrtb_ext.GPIDKey)]; exists {
-		sanitizedImpExt[openrtb_ext.GPIDKey] = v
-	}
-
-	if v, exists := impExt[string(openrtb_ext.TIDKey)]; exists {
-		sanitizedImpExt[openrtb_ext.TIDKey] = v
+	for k := range allowedImpExtFields {
+		if v, exists := impExt[k]; exists {
+			sanitizedImpExt[k] = v
+		}
 	}
 
 	return sanitizedImpExt, nil
-}
-
-func isSpecialField(bidder string) bool {
-	return bidder == openrtb_ext.FirstPartyDataContextExtKey ||
-		bidder == openrtb_ext.FirstPartyDataExtKey ||
-		bidder == openrtb_ext.SKAdNExtKey ||
-		bidder == openrtb_ext.GPIDKey ||
-		bidder == openrtb_ext.PrebidExtKey ||
-		bidder == openrtb_ext.TIDKey
 }
 
 // prepareUser changes req.User so that it's ready for the given bidder.

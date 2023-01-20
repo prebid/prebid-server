@@ -9,7 +9,7 @@ import (
 
 // This file actually intends to test static/bidder-params/axonix.json
 //
-// These also validate the format of the external API: request.imp[i].ext.axonix
+// These also validate the format of the external API: request.imp[i].ext.prebid.bidder.axonix
 
 // TestValidParams makes sure that the Axonix schema accepts all imp.ext fields which we intend to support.
 func TestValidParams(t *testing.T) {

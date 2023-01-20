@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -16,7 +16,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
-	"github.com/prebid/prebid-server/hooks"
+	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/metrics"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -1217,7 +1217,7 @@ func TestVideoAuctionResponseHeaders(t *testing.T) {
 func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *metrics.Metrics, *mockAnalyticsModule) {
 	mockModule := &mockAnalyticsModule{}
 
-	metrics := metrics.NewMetrics(gometrics.NewRegistry(), openrtb_ext.CoreBidderNames(), config.DisabledMetrics{}, nil)
+	metrics := metrics.NewMetrics(gometrics.NewRegistry(), openrtb_ext.CoreBidderNames(), config.DisabledMetrics{}, nil, nil)
 
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
@@ -1237,7 +1237,7 @@ func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *m
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		hooks.EmptyPlanBuilder{},
+		&hookexecution.EmptyHookExecutor{},
 	}
 	return deps, metrics, mockModule
 }
@@ -1282,7 +1282,7 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		regexp.MustCompile(`[<>]`),
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		hooks.EmptyPlanBuilder{},
+		&hookexecution.EmptyHookExecutor{},
 	}
 }
 
@@ -1305,7 +1305,7 @@ func mockDepsAppendBidderNames(t *testing.T, ex *mockExchangeAppendBidderNames) 
 		regexp.MustCompile(`[<>]`),
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		hooks.EmptyPlanBuilder{},
+		&hookexecution.EmptyHookExecutor{},
 	}
 
 	return deps
@@ -1330,7 +1330,7 @@ func mockDepsNoBids(t *testing.T, ex *mockExchangeVideoNoBids) *endpointDeps {
 		regexp.MustCompile(`[<>]`),
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		hooks.EmptyPlanBuilder{},
+		&hookexecution.EmptyHookExecutor{},
 	}
 
 	return edep
@@ -1463,7 +1463,7 @@ var testVideoStoredRequestData = map[string]json.RawMessage{
 }
 
 func readVideoTestFile(t *testing.T, filename string) string {
-	requestData, err := ioutil.ReadFile(filename)
+	requestData, err := os.ReadFile(filename)
 	if err != nil {
 		t.Fatalf("Failed to fetch a valid request: %v", err)
 	}

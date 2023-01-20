@@ -2,7 +2,7 @@ package api
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
@@ -35,7 +35,7 @@ func NewEventsAPI() (events.EventProducer, httprouter.Handle) {
 
 func (api *eventsAPI) HandleEvent(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	if r.Method == "POST" {
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte("Missing update data.\n"))
@@ -51,7 +51,7 @@ func (api *eventsAPI) HandleEvent(w http.ResponseWriter, r *http.Request, _ http
 
 		api.saves <- save
 	} else if r.Method == "DELETE" {
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte("Missing invalidation data.\n"))
