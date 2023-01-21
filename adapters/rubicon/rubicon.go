@@ -96,7 +96,6 @@ type rubiconDataExt struct {
 }
 
 type rubiconUserExt struct {
-	Consent     string           `json:"consent,omitempty"`
 	Eids        []openrtb2.EID   `json:"eids,omitempty"`
 	RP          rubiconUserExtRP `json:"rp"`
 	LiverampIdl string           `json:"liveramp_idl,omitempty"`
@@ -231,6 +230,11 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	err := openrtb_ext.ConvertUpTo26(&openrtb_ext.RequestWrapper{BidRequest: request})
+	if err != nil {
+		return nil, []error{err}
+	}
+
 	numRequests := len(request.Imp)
 	requestData := make([]*adapters.RequestData, 0, numRequests)
 	headers := http.Header{}
@@ -305,36 +309,25 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			userExtRP := rubiconUserExt{RP: rubiconUserExtRP{Target: target}}
 			userBuyerUID := userCopy.BuyerUID
 
-			if request.User.Ext != nil {
-				var userExt *openrtb_ext.ExtUser
-				if err = json.Unmarshal(userCopy.Ext, &userExt); err != nil {
-					errs = append(errs, &errortypes.BadInput{
-						Message: err.Error(),
-					})
+			if len(userCopy.EIDs) > 0 {
+				userExtRP.Eids = userCopy.EIDs
+
+				if userBuyerUID == "" {
+					userBuyerUID = extractUserBuyerUID(userExtRP.Eids)
+				}
+
+				mappedRubiconUidsParam, errors := getSegments(userExtRP.Eids)
+				if len(errors) > 0 {
+					errs = append(errs, errors...)
 					continue
 				}
-				userExtRP.Consent = userExt.Consent
-				userExtRP.Eids = userExt.Eids
 
-				// set user.ext.tpid
-				if len(userExt.Eids) > 0 {
-					if userBuyerUID == "" {
-						userBuyerUID = extractUserBuyerUID(userExt.Eids)
-					}
-
-					mappedRubiconUidsParam, errors := getSegments(userExt.Eids)
-					if len(errors) > 0 {
-						errs = append(errs, errors...)
-						continue
-					}
-
-					if err := updateUserExtWithSegments(&userExtRP, mappedRubiconUidsParam); err != nil {
-						errs = append(errs, err)
-						continue
-					}
-
-					userExtRP.LiverampIdl = mappedRubiconUidsParam.liverampIdl
+				if err := updateUserExtWithSegments(&userExtRP, mappedRubiconUidsParam); err != nil {
+					errs = append(errs, err)
+					continue
 				}
+
+				userExtRP.LiverampIdl = mappedRubiconUidsParam.liverampIdl
 			}
 
 			userCopy.Ext, err = json.Marshal(&userExtRP)
@@ -346,6 +339,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			userCopy.Yob = 0
 			userCopy.Gender = ""
 			userCopy.BuyerUID = userBuyerUID
+			userCopy.EIDs = nil
 
 			rubiconRequest.User = &userCopy
 		}
@@ -375,8 +369,9 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 
 			// if imp.ext.is_rewarded_inventory = 1, set imp.video.ext.videotype = "rewarded"
 			var videoType = ""
-			if bidderExt.Prebid != nil && bidderExt.Prebid.IsRewardedInventory != nil && *bidderExt.Prebid.IsRewardedInventory == 1 {
+			if imp.Rwdd == 1 {
 				videoType = "rewarded"
+				imp.Rwdd = 0
 			}
 			videoExt := rubiconVideoExt{Skip: rubiconExt.Video.Skip, SkipDelay: rubiconExt.Video.SkipDelay, VideoType: videoType, RP: rubiconVideoExtRP{SizeID: videoSizeId}}
 			videoCopy.Ext, err = json.Marshal(&videoExt)
@@ -450,6 +445,73 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			appCopy.Publisher = &openrtb2.Publisher{}
 			appCopy.Publisher.Ext, err = json.Marshal(&pubExt)
 			rubiconRequest.App = &appCopy
+		}
+
+		if request.Source != nil || rubiconExt.PChain != "" {
+			var sourceCopy openrtb2.Source
+			if request.Source != nil {
+				sourceCopy = *request.Source
+			} else {
+				sourceCopy = openrtb2.Source{}
+			}
+
+			if sourceCopy.SChain != nil {
+				var sourceCopyExt openrtb_ext.SourceExt
+				if sourceCopy.Ext != nil {
+					if err = json.Unmarshal(sourceCopy.Ext, &sourceCopyExt); err != nil {
+						errs = append(errs, &errortypes.BadInput{Message: err.Error()})
+						continue
+					}
+				} else {
+					sourceCopyExt = openrtb_ext.SourceExt{}
+				}
+
+				sourceCopyExt.SetSChain(sourceCopy.SChain)
+				sourceCopy.SChain = nil
+
+				sourceCopy.Ext, err = json.Marshal(&sourceCopyExt)
+				if err != nil {
+					errs = append(errs, err)
+					continue
+				}
+			}
+
+			if rubiconExt.PChain != "" {
+				sourceCopy.PChain = rubiconExt.PChain
+			}
+
+			rubiconRequest.Source = &sourceCopy
+		}
+
+		if request.Regs != nil && (request.Regs.GDPR != nil || request.Regs.USPrivacy != "") {
+			regsCopy := *request.Regs
+
+			var regsCopyExt openrtb_ext.ExtRegs
+			if regsCopy.Ext != nil {
+				if err = json.Unmarshal(regsCopy.Ext, &regsCopyExt); err != nil {
+					errs = append(errs, &errortypes.BadInput{Message: err.Error()})
+					continue
+				}
+			} else {
+				regsCopyExt = openrtb_ext.ExtRegs{}
+			}
+
+			if regsCopy.GDPR != nil {
+				regsCopyExt.GDPR = regsCopy.GDPR
+			}
+			if regsCopy.USPrivacy != "" {
+				regsCopyExt.USPrivacy = regsCopy.USPrivacy
+			}
+
+			regsCopy.Ext, err = json.Marshal(&regsCopyExt)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+			regsCopy.GDPR = nil
+			regsCopy.USPrivacy = ""
+
+			rubiconRequest.Regs = &regsCopy
 		}
 
 		reqBadv := request.BAdv
