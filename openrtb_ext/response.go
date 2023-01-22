@@ -42,7 +42,21 @@ type ExtResponsePrebid struct {
 	AuctionTimestamp int64             `json:"auctiontimestamp,omitempty"`
 	Passthrough      json.RawMessage   `json:"passthrough,omitempty"`
 	Modules          json.RawMessage   `json:"modules,omitempty"`
-	Targeting        map[string]string `json:"targeting,omitempty"`
+	Fledge           *Fledge           `json:"fledge,omitempty"`
+  Targeting        map[string]string `json:"targeting,omitempty"`
+}
+
+// FledgeResponse defines the contract for bidresponse.ext.fledge
+type Fledge struct {
+	AuctionConfigs []*FledgeAuctionConfig `json:"auctionconfigs,omitempty"`
+}
+
+// FledgeAuctionConfig defines the container for bidresponse.ext.fledge.auctionconfigs[]
+type FledgeAuctionConfig struct {
+	ImpId   string          `json:"impid"`
+	Bidder  string          `json:"bidder,omitempty"`
+	Adapter string          `json:"adapter,omitempty"`
+	Config  json.RawMessage `json:"config"`
 }
 
 // ExtUserSync defines the contract for bidresponse.ext.usersync.{bidder}.syncs[i]

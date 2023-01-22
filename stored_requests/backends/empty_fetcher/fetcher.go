@@ -32,7 +32,7 @@ func (fetcher EmptyFetcher) FetchResponses(ctx context.Context, ids []string) (d
 	return nil, nil
 }
 
-func (fetcher EmptyFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
+func (fetcher EmptyFetcher) FetchAccount(ctx context.Context, accountDefaultJSON json.RawMessage, accountID string) (json.RawMessage, []error) {
 	return nil, []error{stored_requests.NotFoundError{accountID, "Account"}}
 }
 

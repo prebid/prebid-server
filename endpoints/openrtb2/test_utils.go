@@ -1341,7 +1341,7 @@ type mockAccountFetcher struct {
 	data map[string]json.RawMessage
 }
 
-func (af *mockAccountFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
+func (af *mockAccountFetcher) FetchAccount(ctx context.Context, defaultAccountJSON json.RawMessage, accountID string) (json.RawMessage, []error) {
 	if account, ok := af.data[accountID]; ok {
 		return account, nil
 	}
@@ -1555,7 +1555,7 @@ var entryPointHookUpdateWithErrors = hooks.HookWrapper[hookstage.Entrypoint]{
 			_ hookstage.ModuleInvocationContext,
 			payload hookstage.EntrypointPayload,
 		) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
-			ch := &hookstage.ChangeSet[hookstage.EntrypointPayload]{}
+			ch := hookstage.ChangeSet[hookstage.EntrypointPayload]{}
 			ch.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
 				payload.Request.Header.Add("foo", "bar")
 				return payload, nil
@@ -1577,7 +1577,7 @@ var entryPointHookUpdateWithErrorsAndWarnings = hooks.HookWrapper[hookstage.Entr
 			_ hookstage.ModuleInvocationContext,
 			payload hookstage.EntrypointPayload,
 		) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
-			ch := &hookstage.ChangeSet[hookstage.EntrypointPayload]{}
+			ch := hookstage.ChangeSet[hookstage.EntrypointPayload]{}
 			ch.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
 				params := payload.Request.URL.Query()
 				params.Add("foo", "baz")
@@ -1608,7 +1608,7 @@ var entryPointHookUpdate = hooks.HookWrapper[hookstage.Entrypoint]{
 				return result, nil
 			}
 
-			ch := &hookstage.ChangeSet[hookstage.EntrypointPayload]{}
+			ch := hookstage.ChangeSet[hookstage.EntrypointPayload]{}
 			ch.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
 				body, err := jsonpatch.MergePatch(payload.Body, []byte(`{"tmax":50}`))
 				if err == nil {

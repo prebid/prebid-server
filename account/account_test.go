@@ -25,7 +25,7 @@ var mockAccountData = map[string]json.RawMessage{
 type mockAccountFetcher struct {
 }
 
-func (af mockAccountFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
+func (af mockAccountFetcher) FetchAccount(ctx context.Context, accountDefaultsJSON json.RawMessage, accountID string) (json.RawMessage, []error) {
 	if account, ok := mockAccountData[accountID]; ok {
 		return account, nil
 	}
