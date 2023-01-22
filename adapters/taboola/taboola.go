@@ -9,16 +9,19 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
+	"net/url"
 )
 
 type adapter struct {
-	endpoint string
+	endpoint    string
+	externalUrl string
 }
 
 // Builder builds a new instance of the Foo adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
-		endpoint: config.Endpoint,
+		endpoint:    config.Endpoint,
+		externalUrl: server.ExternalUrl,
 	}
 	return bidder, nil
 }
@@ -37,7 +40,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	requestData := &adapters.RequestData{
 		Method: "POST",
-		Uri:    a.endpoint + "/" + taboolaRequest.Site.ID,
+		Uri:    a.endpoint + "/" + taboolaRequest.Site.ID + "/" + url.QueryEscape(a.externalUrl),
 		Body:   requestJSON,
 	}
 

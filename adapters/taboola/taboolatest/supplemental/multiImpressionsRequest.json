@@ -51,7 +51,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://whatever.com/publisher-id",
+        "uri": "http://whatever.com/publisher-id/http%3A%2F%2Fhosturl.com",
         "body": {
           "id": "request-id",
           "imp": [
