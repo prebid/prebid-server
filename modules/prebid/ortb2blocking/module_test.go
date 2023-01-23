@@ -945,7 +945,57 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 			},
 		},
 		{
-			description: "Expect error if deal_ids not defined in config override conditions. Analytics should have error status tag",
+			description: "Expect error if there is an issue processing enforce blocks overrides for badv attribute. Analytics should have error status tag",
+			payload: hookstage.RawBidderResponsePayload{Bidder: bidder, Bids: []*adapters.TypedBid{
+				{
+					Bid: &openrtb2.Bid{ID: "1", ADomain: []string{"forbidden_domain"}},
+				},
+			}},
+			config: json.RawMessage(`{"attributes": {"badv": {"enforce_blocks": true, "action_overrides": {"enforce_blocks": [{"conditions": {}}]}}}}`),
+			expectedBids: []*adapters.TypedBid{
+				{
+					Bid: &openrtb2.Bid{ID: "1", ADomain: []string{"forbidden_domain"}},
+				},
+			},
+			expectedHookResult: hookstage.HookResult[hookstage.RawBidderResponsePayload]{
+				AnalyticsTags: hookanalytics.Analytics{
+					Activities: []hookanalytics.Activity{
+						{
+							Name:   enforceBlockingTag,
+							Status: hookanalytics.ActivityStatusError,
+						},
+					},
+				},
+			},
+			expectedError: hookexecution.NewFailure("failed to process badv block checking: failed to get override for badv.enforce_blocks: bidders and media_types absent from conditions, at least one of the fields must be present"),
+		},
+		{
+			description: "Expect error if there is an issue processing block unknown domains overrides for badv attribute. Analytics should have error status tag",
+			payload: hookstage.RawBidderResponsePayload{Bidder: bidder, Bids: []*adapters.TypedBid{
+				{
+					Bid: &openrtb2.Bid{ID: "1", ADomain: []string{"forbidden_domain"}},
+				},
+			}},
+			config: json.RawMessage(`{"attributes": {"badv": {"enforce_blocks": true, "action_overrides": {"block_unknown_adomain": [{"conditions": {}}]}}}}`),
+			expectedBids: []*adapters.TypedBid{
+				{
+					Bid: &openrtb2.Bid{ID: "1", ADomain: []string{"forbidden_domain"}},
+				},
+			},
+			expectedHookResult: hookstage.HookResult[hookstage.RawBidderResponsePayload]{
+				AnalyticsTags: hookanalytics.Analytics{
+					Activities: []hookanalytics.Activity{
+						{
+							Name:   enforceBlockingTag,
+							Status: hookanalytics.ActivityStatusError,
+						},
+					},
+				},
+			},
+			expectedError: hookexecution.NewFailure("failed to process badv block checking: failed to get override for badv.block_unknown_adomain: bidders and media_types absent from conditions, at least one of the fields must be present"),
+		},
+		{
+			description: "Expect error if deal_ids not defined in config override conditions for badv attribute. Analytics should have error status tag",
 			payload: hookstage.RawBidderResponsePayload{Bidder: bidder, Bids: []*adapters.TypedBid{
 				{
 					Bid: &openrtb2.Bid{ID: "1", ADomain: []string{"forbidden_domain"}, DealID: "acceptDealID"},
@@ -1011,6 +1061,81 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 				},
 				DebugMessages: []string{"Bid 1 from bidder appnexus has been rejected, failed checks: bcat"},
 			},
+		},
+		{
+			description: "Expect error if there is an issue processing enforce blocks overrides for bcat attribute. Analytics should have error status tag",
+			payload: hookstage.RawBidderResponsePayload{Bidder: bidder, Bids: []*adapters.TypedBid{
+				{
+					Bid: &openrtb2.Bid{ID: "1", Cat: []string{"fishing"}, ImpID: impID1},
+				},
+			}},
+			config: json.RawMessage(`{"attributes": {"bcat": {"enforce_blocks": true, "action_overrides": {"enforce_blocks": [{"conditions": {}}]}}}}`),
+			expectedBids: []*adapters.TypedBid{
+				{
+					Bid: &openrtb2.Bid{ID: "1", Cat: []string{"fishing"}, ImpID: impID1},
+				},
+			},
+			expectedHookResult: hookstage.HookResult[hookstage.RawBidderResponsePayload]{
+				AnalyticsTags: hookanalytics.Analytics{
+					Activities: []hookanalytics.Activity{
+						{
+							Name:   enforceBlockingTag,
+							Status: hookanalytics.ActivityStatusError,
+						},
+					},
+				},
+			},
+			expectedError: hookexecution.NewFailure("failed to process bcat block checking: failed to get override for bcat.enforce_blocks: bidders and media_types absent from conditions, at least one of the fields must be present"),
+		},
+		{
+			description: "Expect error if there is an issue processing block unknown domains overrides for bcat attribute. Analytics should have error status tag",
+			payload: hookstage.RawBidderResponsePayload{Bidder: bidder, Bids: []*adapters.TypedBid{
+				{
+					Bid: &openrtb2.Bid{ID: "1", Cat: []string{"fishing"}, ImpID: impID1},
+				},
+			}},
+			config: json.RawMessage(`{"attributes": {"bcat": {"enforce_blocks": true, "action_overrides": {"block_unknown_adv_cat": [{"conditions": {}}]}}}}`),
+			expectedBids: []*adapters.TypedBid{
+				{
+					Bid: &openrtb2.Bid{ID: "1", Cat: []string{"fishing"}, ImpID: impID1},
+				},
+			},
+			expectedHookResult: hookstage.HookResult[hookstage.RawBidderResponsePayload]{
+				AnalyticsTags: hookanalytics.Analytics{
+					Activities: []hookanalytics.Activity{
+						{
+							Name:   enforceBlockingTag,
+							Status: hookanalytics.ActivityStatusError,
+						},
+					},
+				},
+			},
+			expectedError: hookexecution.NewFailure("failed to process bcat block checking: failed to get override for bcat.block_unknown_adv_cat: bidders and media_types absent from conditions, at least one of the fields must be present"),
+		},
+		{
+			description: "Expect error if deal_ids not defined in config override conditions for bcat attribute. Analytics should have error status tag",
+			payload: hookstage.RawBidderResponsePayload{Bidder: bidder, Bids: []*adapters.TypedBid{
+				{
+					Bid: &openrtb2.Bid{ID: "1", Cat: []string{"fishing"}, ImpID: impID1, DealID: "acceptDealID"},
+				},
+			}},
+			config: json.RawMessage(`{"attributes": {"bcat": {"enforce_blocks": true, "action_overrides": {"allowed_adv_cat_for_deals": [{"conditions": {}}]}}}}`),
+			expectedBids: []*adapters.TypedBid{
+				{
+					Bid: &openrtb2.Bid{ID: "1", Cat: []string{"fishing"}, ImpID: impID1, DealID: "acceptDealID"},
+				},
+			},
+			expectedHookResult: hookstage.HookResult[hookstage.RawBidderResponsePayload]{
+				AnalyticsTags: hookanalytics.Analytics{
+					Activities: []hookanalytics.Activity{
+						{
+							Name:   enforceBlockingTag,
+							Status: hookanalytics.ActivityStatusError,
+						},
+					},
+				},
+			},
+			expectedError: hookexecution.NewFailure("failed to process bcat block checking: failed to get override for bcat.allowed_adv_cat_for_deals: conditions field in account configuration must contain deal_ids"),
 		},
 		{
 			description: "Bid blocked by cattax attribute check. Payload updated. Analytic tags successfully collected",
@@ -1141,6 +1266,56 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 			},
 		},
 		{
+			description: "Expect error if there is an issue processing enforce blocks overrides for bapp attribute. Analytics should have error status tag",
+			payload: hookstage.RawBidderResponsePayload{Bidder: bidder, Bids: []*adapters.TypedBid{
+				{
+					Bid: &openrtb2.Bid{ID: "1", Bundle: "forbidden_bundle", ImpID: impID1},
+				},
+			}},
+			config: json.RawMessage(`{"attributes": {"bapp": {"enforce_blocks": true, "action_overrides": {"enforce_blocks": [{"conditions": {}}]}}}}`),
+			expectedBids: []*adapters.TypedBid{
+				{
+					Bid: &openrtb2.Bid{ID: "1", Bundle: "forbidden_bundle", ImpID: impID1},
+				},
+			},
+			expectedHookResult: hookstage.HookResult[hookstage.RawBidderResponsePayload]{
+				AnalyticsTags: hookanalytics.Analytics{
+					Activities: []hookanalytics.Activity{
+						{
+							Name:   enforceBlockingTag,
+							Status: hookanalytics.ActivityStatusError,
+						},
+					},
+				},
+			},
+			expectedError: hookexecution.NewFailure("failed to process bapp block checking: failed to get override for bapp.enforce_blocks: bidders and media_types absent from conditions, at least one of the fields must be present"),
+		},
+		{
+			description: "Expect error if deal_ids not defined in config override conditions for bapp attribute. Analytics should have error status tag",
+			payload: hookstage.RawBidderResponsePayload{Bidder: bidder, Bids: []*adapters.TypedBid{
+				{
+					Bid: &openrtb2.Bid{ID: "1", Bundle: "forbidden_bundle", ImpID: impID1, DealID: "acceptDealID"},
+				},
+			}},
+			config: json.RawMessage(`{"attributes": {"bapp": {"enforce_blocks": true, "action_overrides": {"allowed_app_for_deals": [{"conditions": {}}]}}}}`),
+			expectedBids: []*adapters.TypedBid{
+				{
+					Bid: &openrtb2.Bid{ID: "1", Bundle: "forbidden_bundle", ImpID: impID1, DealID: "acceptDealID"},
+				},
+			},
+			expectedHookResult: hookstage.HookResult[hookstage.RawBidderResponsePayload]{
+				AnalyticsTags: hookanalytics.Analytics{
+					Activities: []hookanalytics.Activity{
+						{
+							Name:   enforceBlockingTag,
+							Status: hookanalytics.ActivityStatusError,
+						},
+					},
+				},
+			},
+			expectedError: hookexecution.NewFailure("failed to process bapp block checking: failed to get override for bapp.allowed_app_for_deals: conditions field in account configuration must contain deal_ids"),
+		},
+		{
 			description: "Bid blocked by battr attribute check. Payload updated. Analytic tags successfully collected",
 			payload: hookstage.RawBidderResponsePayload{Bidder: bidder, Bids: []*adapters.TypedBid{
 				{
@@ -1182,6 +1357,56 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 				},
 				DebugMessages: []string{"Bid 1 from bidder appnexus has been rejected, failed checks: battr"},
 			},
+		},
+		{
+			description: "Expect error if there is an issue processing enforce blocks overrides for battr attribute. Analytics should have error status tag",
+			payload: hookstage.RawBidderResponsePayload{Bidder: bidder, Bids: []*adapters.TypedBid{
+				{
+					Bid: &openrtb2.Bid{ID: "1", Attr: []adcom1.CreativeAttribute{1}, ImpID: impID1},
+				},
+			}},
+			config: json.RawMessage(`{"attributes": {"battr": {"enforce_blocks": true, "action_overrides": {"enforce_blocks": [{"conditions": {}}]}}}}`),
+			expectedBids: []*adapters.TypedBid{
+				{
+					Bid: &openrtb2.Bid{ID: "1", Attr: []adcom1.CreativeAttribute{1}, ImpID: impID1},
+				},
+			},
+			expectedHookResult: hookstage.HookResult[hookstage.RawBidderResponsePayload]{
+				AnalyticsTags: hookanalytics.Analytics{
+					Activities: []hookanalytics.Activity{
+						{
+							Name:   enforceBlockingTag,
+							Status: hookanalytics.ActivityStatusError,
+						},
+					},
+				},
+			},
+			expectedError: hookexecution.NewFailure("failed to process battr block checking: failed to get override for battr.enforce_blocks: bidders and media_types absent from conditions, at least one of the fields must be present"),
+		},
+		{
+			description: "Expect error if deal_ids not defined in config override conditions for battr attribute. Analytics should have error status tag",
+			payload: hookstage.RawBidderResponsePayload{Bidder: bidder, Bids: []*adapters.TypedBid{
+				{
+					Bid: &openrtb2.Bid{ID: "1", Attr: []adcom1.CreativeAttribute{1}, ImpID: impID1, DealID: "acceptDealID"},
+				},
+			}},
+			config: json.RawMessage(`{"attributes": {"battr": {"enforce_blocks": true, "action_overrides": {"allowed_banner_attr_for_deals": [{"conditions": {}}]}}}}`),
+			expectedBids: []*adapters.TypedBid{
+				{
+					Bid: &openrtb2.Bid{ID: "1", Attr: []adcom1.CreativeAttribute{1}, ImpID: impID1, DealID: "acceptDealID"},
+				},
+			},
+			expectedHookResult: hookstage.HookResult[hookstage.RawBidderResponsePayload]{
+				AnalyticsTags: hookanalytics.Analytics{
+					Activities: []hookanalytics.Activity{
+						{
+							Name:   enforceBlockingTag,
+							Status: hookanalytics.ActivityStatusError,
+						},
+					},
+				},
+			},
+			expectedError: hookexecution.NewFailure("failed to process battr block checking: failed to get override for battr.allowed_banner_attr_for_deals: conditions field in account configuration must contain deal_ids"),
 		},
 		{
 			description: "Bid blocked by multiple attribute check. Payload updated. Analytic tags successfully collected",

@@ -95,7 +95,8 @@ func shouldBeBlockedDueToBadv(
 	blockAttr blockingAttributes,
 	bid *openrtb2.Bid,
 	bidMediaTypes mediaTypes,
-	bidder, dealID string,
+	bidder string,
+	dealID string,
 	failedChecksData map[string]interface{},
 ) (map[string]interface{}, error) {
 	badv := cfg.Attributes.Badv
