@@ -3,6 +3,7 @@ package rubicon
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/mitchellh/copystructure"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -232,10 +233,18 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	err := openrtb_ext.ConvertUpTo26(&openrtb_ext.RequestWrapper{BidRequest: request})
+	requestCopy, err := copystructure.Copy(request)
 	if err != nil {
 		return nil, []error{err}
 	}
+
+	requestDeepCopy := requestCopy.(*openrtb2.BidRequest)
+	err = openrtb_ext.ConvertUpTo26(&openrtb_ext.RequestWrapper{BidRequest: requestDeepCopy})
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	request = requestDeepCopy
 
 	numRequests := len(request.Imp)
 	requestData := make([]*adapters.RequestData, 0, numRequests)
@@ -370,7 +379,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 				videoSizeId = resolvedSizeId
 			}
 
-			// if imp.ext.is_rewarded_inventory = 1, set imp.video.ext.videotype = "rewarded"
+			// if imp.rwdd = 1, set imp.video.ext.videotype = "rewarded"
 			var videoType = ""
 			if imp.Rwdd == 1 {
 				videoType = "rewarded"
@@ -459,17 +468,17 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			}
 
 			if sourceCopy.SChain != nil {
-				var sourceCopyExt openrtb_ext.SourceExt
+				var sourceCopyExt openrtb_ext.ExtSource
 				if sourceCopy.Ext != nil {
 					if err = json.Unmarshal(sourceCopy.Ext, &sourceCopyExt); err != nil {
 						errs = append(errs, &errortypes.BadInput{Message: err.Error()})
 						continue
 					}
 				} else {
-					sourceCopyExt = openrtb_ext.SourceExt{}
+					sourceCopyExt = openrtb_ext.ExtSource{}
 				}
 
-				sourceCopyExt.SetSChain(sourceCopy.SChain)
+				sourceCopyExt.SChain = sourceCopy.SChain
 				sourceCopy.SChain = nil
 
 				sourceCopy.Ext, err = json.Marshal(&sourceCopyExt)
