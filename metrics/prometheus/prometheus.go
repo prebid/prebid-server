@@ -498,7 +498,41 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 
 	metrics.accountDepreciationWarningsPurpose1 = newCounterWithoutLabels(cfg, reg,
 		"purpose_1",
-		"TODO: Purpose 1")
+		"Purpose 1")
+	metrics.accountDepreciationWarningsPurpose2 = newCounterWithoutLabels(cfg, reg,
+		"purpose_2",
+		"Purpose 2")
+	metrics.accountDepreciationWarningsPurpose3 = newCounterWithoutLabels(cfg, reg,
+		"purpose_3",
+		"Purpose 3")
+	metrics.accountDepreciationWarningsPurpose4 = newCounterWithoutLabels(cfg, reg,
+		"purpose_4",
+		"Purpose 4")
+	metrics.accountDepreciationWarningsPurpose5 = newCounterWithoutLabels(cfg, reg,
+		"purpose_5",
+		"Purpose 5")
+	metrics.accountDepreciationWarningsPurpose6 = newCounterWithoutLabels(cfg, reg,
+		"purpose_6",
+		"Purpose 6")
+	metrics.accountDepreciationWarningsPurpose7 = newCounterWithoutLabels(cfg, reg,
+		"purpose_7",
+		"Purpose 7")
+	metrics.accountDepreciationWarningsPurpose8 = newCounterWithoutLabels(cfg, reg,
+		"purpose_8",
+		"Purpose 8")
+	metrics.accountDepreciationWarningsPurpose9 = newCounterWithoutLabels(cfg, reg,
+		"purpose_9",
+		"Purpose 9")
+	metrics.accountDepreciationWarningsPurpose10 = newCounterWithoutLabels(cfg, reg,
+		"purpose_10",
+		"Purpose 10")
+
+	metrics.channelEnabledCCPA = newCounterWithoutLabels(cfg, reg,
+		"channel_enabled_ccpa",
+		"Channel Enabled CCPA")
+	metrics.channelEnabledGDPR = newCounterWithoutLabels(cfg, reg,
+		"channel_enabled_gdpr",
+		"Channel Enabled GDPR")
 
 	createModulesMetrics(cfg, reg, &metrics, moduleStageNames, standardTimeBuckets)
 

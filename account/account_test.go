@@ -13,6 +13,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 var mockAccountData = map[string]json.RawMessage{
@@ -100,7 +101,10 @@ func TestGetAccount(t *testing.T) {
 			fetcher := &mockAccountFetcher{}
 			assert.NoError(t, cfg.MarshalAccountDefaults())
 
-			account, errors := GetAccount(context.Background(), cfg, fetcher, test.accountID) // TODO: What to do in this case for metrics engine passthrough
+			metrics := &metrics.MetricsEngineMock{}
+			metrics.Mock.On("RecordAccountDepreciationWarnings", mock.Anything, mock.Anything).Return()
+
+			account, errors := GetAccount(context.Background(), cfg, fetcher, test.accountID, metrics)
 
 			if test.err == nil {
 				assert.Empty(t, errors)
@@ -332,7 +336,10 @@ func TestConvertGDPREnforcePurposeFields(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		newConfig, err := ConvertGDPREnforcePurposeFields(tt.giveConfig)
+		metricsMock := &metrics.MetricsEngineMock{}
+		metricsMock.Mock.On("RecordAccountDepreciationWarnings", mock.Anything, mock.Anything).Return()
+
+		newConfig, err := ConvertGDPREnforcePurposeFields(tt.giveConfig, metricsMock, "acct-id")
 		if tt.wantErr != nil {
 			assert.Error(t, err, tt.description)
 		}

@@ -1898,3 +1898,209 @@ func TestRecordModuleMetrics(t *testing.T) {
 		}
 	}
 }
+
+func TestRecordAccountDepreciationWarnings(t *testing.T) {
+	testCases := []struct {
+		description          string
+		givenDisabledMetrics config.DisabledMetrics
+		givenPubID           string
+		givenPurposeName     string
+		expectedMetricCount  float64
+	}{
+		{
+			description: "Metric isn't disabled, purpose1 metric should be incremented",
+			givenDisabledMetrics: config.DisabledMetrics{
+				AccountAdapterDetails: false,
+			},
+			givenPubID:          "acct-id",
+			givenPurposeName:    "purpose1",
+			expectedMetricCount: 1,
+		},
+		{
+			description: "Metric isn't disabled, purpose1 metric should be incremented",
+			givenDisabledMetrics: config.DisabledMetrics{
+				AccountAdapterDetails: false,
+			},
+			givenPubID:          "acct-id",
+			givenPurposeName:    "purpose2",
+			expectedMetricCount: 1,
+		},
+		{
+			description: "Metric isn't disabled, purpose1 metric should be incremented",
+			givenDisabledMetrics: config.DisabledMetrics{
+				AccountAdapterDetails: false,
+			},
+			givenPubID:          "acct-id",
+			givenPurposeName:    "purpose3",
+			expectedMetricCount: 1,
+		},
+		{
+			description: "Metric isn't disabled, purpose1 metric should be incremented",
+			givenDisabledMetrics: config.DisabledMetrics{
+				AccountAdapterDetails: false,
+			},
+			givenPubID:          "acct-id",
+			givenPurposeName:    "purpose4",
+			expectedMetricCount: 1,
+		},
+		{
+			description: "Metric isn't disabled, purpose1 metric should be incremented",
+			givenDisabledMetrics: config.DisabledMetrics{
+				AccountAdapterDetails: false,
+			},
+			givenPubID:          "acct-id",
+			givenPurposeName:    "purpose5",
+			expectedMetricCount: 1,
+		},
+		{
+			description: "Metric isn't disabled, purpose1 metric should be incremented",
+			givenDisabledMetrics: config.DisabledMetrics{
+				AccountAdapterDetails: false,
+			},
+			givenPubID:          "acct-id",
+			givenPurposeName:    "purpose6",
+			expectedMetricCount: 1,
+		},
+		{
+			description: "Metric isn't disabled, purpose1 metric should be incremented",
+			givenDisabledMetrics: config.DisabledMetrics{
+				AccountAdapterDetails: false,
+			},
+			givenPubID:          "acct-id",
+			givenPurposeName:    "purpose7",
+			expectedMetricCount: 1,
+		},
+		{
+			description: "Metric isn't disabled, purpose1 metric should be incremented",
+			givenDisabledMetrics: config.DisabledMetrics{
+				AccountAdapterDetails: false,
+			},
+			givenPubID:          "acct-id",
+			givenPurposeName:    "purpose8",
+			expectedMetricCount: 1,
+		},
+		{
+			description: "Metric isn't disabled, purpose1 metric should be incremented",
+			givenDisabledMetrics: config.DisabledMetrics{
+				AccountAdapterDetails: false,
+			},
+			givenPubID:          "acct-id",
+			givenPurposeName:    "purpose9",
+			expectedMetricCount: 1,
+		},
+		{
+			description: "Metric isn't disabled, purpose1 metric should be incremented",
+			givenDisabledMetrics: config.DisabledMetrics{
+				AccountAdapterDetails: false,
+			},
+			givenPubID:          "acct-id",
+			givenPurposeName:    "purpose10",
+			expectedMetricCount: 1,
+		},
+		{
+			description: "Metric is disabled, so no metrics should be incremented",
+			givenDisabledMetrics: config.DisabledMetrics{
+				AccountAdapterDetails: true,
+			},
+			givenPubID:          "acct-id",
+			givenPurposeName:    "purpose1",
+			expectedMetricCount: 0,
+		},
+	}
+	for _, test := range testCases {
+		m := createMetricsForTesting()
+		m.metricsDisabled.AccountAdapterDetails = test.givenDisabledMetrics.AccountAdapterDetails
+		m.RecordAccountDepreciationWarnings(test.givenPubID, test.givenPurposeName)
+
+		switch test.givenPurposeName {
+		case "purpose1":
+			assertCounterValue(t, "", "Account Depreciation Warnings", m.accountDepreciationWarningsPurpose1, test.expectedMetricCount)
+		case "purpose2":
+			assertCounterValue(t, "", "Account Depreciation Warnings", m.accountDepreciationWarningsPurpose2, test.expectedMetricCount)
+		case "purpose3":
+			assertCounterValue(t, "", "Account Depreciation Warnings", m.accountDepreciationWarningsPurpose3, test.expectedMetricCount)
+		case "purpose4":
+			assertCounterValue(t, "", "Account Depreciation Warnings", m.accountDepreciationWarningsPurpose4, test.expectedMetricCount)
+		case "purpose5":
+			assertCounterValue(t, "", "Account Depreciation Warnings", m.accountDepreciationWarningsPurpose5, test.expectedMetricCount)
+		case "purpose6":
+			assertCounterValue(t, "", "Account Depreciation Warnings", m.accountDepreciationWarningsPurpose6, test.expectedMetricCount)
+		case "purpose7":
+			assertCounterValue(t, "", "Account Depreciation Warnings", m.accountDepreciationWarningsPurpose7, test.expectedMetricCount)
+		case "purpose8":
+			assertCounterValue(t, "", "Account Depreciation Warnings", m.accountDepreciationWarningsPurpose8, test.expectedMetricCount)
+		case "purpose9":
+			assertCounterValue(t, "", "Account Depreciation Warnings", m.accountDepreciationWarningsPurpose9, test.expectedMetricCount)
+		case "purpose10":
+			assertCounterValue(t, "", "Account Depreciation Warnings", m.accountDepreciationWarningsPurpose10, test.expectedMetricCount)
+		}
+	}
+}
+
+func TestRecordGDPRChannelEnabledDepreciationWarning(t *testing.T) {
+	testCases := []struct {
+		description          string
+		givenDisabledMetrics config.DisabledMetrics
+		givenPubID           string
+		expectedMetricCount  float64
+	}{
+		{
+			description: "Metric isn't disabled, gdpr channel metric should be incremented",
+			givenDisabledMetrics: config.DisabledMetrics{
+				AccountAdapterDetails: false,
+			},
+			givenPubID:          "acct-id",
+			expectedMetricCount: 1,
+		},
+		{
+			description: "Metric is disabled, so no metrics should be incremented",
+			givenDisabledMetrics: config.DisabledMetrics{
+				AccountAdapterDetails: true,
+			},
+			givenPubID:          "acct-id",
+			expectedMetricCount: 0,
+		},
+	}
+	for _, test := range testCases {
+		m := createMetricsForTesting()
+		m.metricsDisabled.AccountAdapterDetails = test.givenDisabledMetrics.AccountAdapterDetails
+		m.RecordGDPRChannelEnabledDepreciationWarning(test.givenPubID)
+
+		assertCounterValue(t, "", "GDPR Channel Enabled Depreciation Warnings", m.channelEnabledGDPR, test.expectedMetricCount)
+
+	}
+}
+
+func TestRecordCCPAChannelEnabledDepreciationWarning(t *testing.T) {
+	testCases := []struct {
+		description          string
+		givenDisabledMetrics config.DisabledMetrics
+		givenPubID           string
+		expectedMetricCount  float64
+	}{
+		{
+			description: "Metric isn't disabled, gdpr channel metric should be incremented",
+			givenDisabledMetrics: config.DisabledMetrics{
+				AccountAdapterDetails: false,
+			},
+			givenPubID:          "acct-id",
+			expectedMetricCount: 1,
+		},
+		{
+			description: "Metric is disabled, so no metrics should be incremented",
+			givenDisabledMetrics: config.DisabledMetrics{
+				AccountAdapterDetails: true,
+			},
+			givenPubID:          "acct-id",
+			expectedMetricCount: 0,
+		},
+	}
+	for _, test := range testCases {
+		m := createMetricsForTesting()
+		m.metricsDisabled.AccountAdapterDetails = test.givenDisabledMetrics.AccountAdapterDetails
+		m.RecordCCPAChannelEnabledDepreciationWarning(test.givenPubID)
+
+		assertCounterValue(t, "", "CCPA Channel Enabled Depreciation Warnings", m.channelEnabledCCPA, test.expectedMetricCount)
+
+	}
+}
