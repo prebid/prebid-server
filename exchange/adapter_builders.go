@@ -6,6 +6,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/aax"
 	"github.com/prebid/prebid-server/adapters/aceex"
 	"github.com/prebid/prebid-server/adapters/acuityads"
+	"github.com/prebid/prebid-server/adapters/adbuttler"
 	"github.com/prebid/prebid-server/adapters/adf"
 	"github.com/prebid/prebid-server/adapters/adgeneration"
 	"github.com/prebid/prebid-server/adapters/adhese"
@@ -85,6 +86,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/kargo"
 	"github.com/prebid/prebid-server/adapters/kayzen"
 	"github.com/prebid/prebid-server/adapters/kidoz"
+	"github.com/prebid/prebid-server/adapters/koddi"
 	"github.com/prebid/prebid-server/adapters/krushmedia"
 	"github.com/prebid/prebid-server/adapters/kubient"
 	"github.com/prebid/prebid-server/adapters/lockerdome"
@@ -150,9 +152,6 @@ import (
 	"github.com/prebid/prebid-server/adapters/yieldmo"
 	"github.com/prebid/prebid-server/adapters/yieldone"
 	"github.com/prebid/prebid-server/adapters/zeroclickfraud"
-	"github.com/prebid/prebid-server/adapters/commerce"
-	"github.com/prebid/prebid-server/adapters/adbuttler"
-	"github.com/prebid/prebid-server/adapters/koddi"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -322,7 +321,6 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderYieldone:          yieldone.Builder,
 		openrtb_ext.BidderYSSP:              yahoossp.Builder,
 		openrtb_ext.BidderZeroClickFraud:    zeroclickfraud.Builder,
-		openrtb_ext.BidderCommerce:    commerce.Builder,
 		openrtb_ext.BidderKoddi:   koddi.Builder,
 		openrtb_ext.BidderAdButtler:    adbuttler.Builder,
 	}

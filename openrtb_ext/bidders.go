@@ -36,7 +36,7 @@ const (
 	BidderReservedPrebid  BidderName = "prebid"  // Reserved for Prebid Server configuration.
 	BidderReservedSKAdN   BidderName = "skadn"   // Reserved for Apple's SKAdNetwork OpenRTB extension.
 	BidderReservedTID     BidderName = "tid"     // Reserved for Per-Impression Transactions IDs for Multi-Impression Bid Requests.
-	BidderReservedCommerce    BidderName = "comparams"
+	BidderReservedCommerce    BidderName = "commerce"
 )
 
 // IsBidderNameReserved returns true if the specified name is a case insensitive match for a reserved bidder name.
@@ -247,7 +247,6 @@ const (
 	BidderYieldone          BidderName = "yieldone"
 	BidderYSSP              BidderName = "yssp"
 	BidderZeroClickFraud    BidderName = "zeroclickfraud"
-	BidderCommerce    BidderName = "commerce"
 	BidderKoddi    BidderName = "koddi"
 	BidderAdButtler    BidderName = "adbuttler"
 )
@@ -416,7 +415,6 @@ func CoreBidderNames() []BidderName {
 		BidderYieldone,
 		BidderYSSP,
 		BidderZeroClickFraud,
-		BidderCommerce,
 		BidderKoddi,
 		BidderAdButtler,
 	}

@@ -8,7 +8,7 @@ import (
 
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/adapters/commerce"
+	"github.com/prebid/prebid-server/adapters/koddi"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -25,7 +25,7 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 	host := "localhost"
 	var extension map[string]json.RawMessage
 	var preBidExt openrtb_ext.ExtRequestPrebid
-	var commerceExt commerce.ExtImpCommerce
+	var commerceExt koddi.ExtImpCommerce
 	json.Unmarshal(request.Ext, &extension)
 	json.Unmarshal(extension["prebid"], &preBidExt)
 	json.Unmarshal(request.Imp[0].Ext, &commerceExt)
@@ -50,16 +50,16 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 	
 }
 func (a *AdButtlerAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	hostName := commerce.GetHostName(internalRequest)
+	hostName := koddi.GetHostName(internalRequest)
 	if len(hostName) == 0 {
-		hostName = commerce.COMMERCE_DEFAULT_HOSTNAME
+		hostName = koddi.COMMERCE_DEFAULT_HOSTNAME
 	}
 	iurl, _ := a.buildImpressionURL(hostName) 
 	curl, _ := a.buildClickURL(hostName)
 	purl, _ := a.buildConversionURL(hostName)
-	requestCount := commerce.GetRequestSlotCount(internalRequest)
+	requestCount := koddi.GetRequestSlotCount(internalRequest)
 	
-	responseF := commerce.GetDummyBids(iurl, curl, purl, "adbuttler", requestCount)
+	responseF := koddi.GetDummyBids(iurl, curl, purl, "adbuttler", requestCount)
 	return responseF, nil
 }
 
