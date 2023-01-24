@@ -49,6 +49,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 	gdprPermsBuilder gdpr.PermissionsBuilder,
 	tcf2ConfigBuilder gdpr.TCF2ConfigBuilder,
 	hostSChainNode *openrtb2.SupplyChainNode,
+	bidderInfos config.BidderInfos,
 ) (allowedBidderRequests []BidderRequest, privacyLabels metrics.PrivacyLabels, errs []error) {
 
 	req := auctionReq.BidRequestWrapper

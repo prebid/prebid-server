@@ -2,9 +2,10 @@ package config
 
 import (
 	"errors"
-	"gopkg.in/yaml.v3"
 	"strings"
 	"testing"
+
+	"gopkg.in/yaml.v3"
 
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
@@ -38,6 +39,9 @@ experiment:
   adsCert:
     enabled: true
 endpointCompression: "GZIP"
+openrtb:
+  version: "2.6"
+  gpp-supported: true
 `
 
 func TestLoadBidderInfoFromDisk(t *testing.T) {
@@ -990,6 +994,10 @@ func TestReadFullYamlBidderConfig(t *testing.T) {
 			},
 			Experiment:          BidderInfoExperiment{AdsCert: BidderAdsCert{Enabled: true}},
 			EndpointCompression: "GZIP",
+			OpenRTB: &OpenRTBInfo{
+				Version:      "2.6",
+				GPPSupported: true,
+			},
 		},
 	}
 	assert.Equalf(t, expectedBidderInfo, actualBidderInfo, "Bidder info objects aren't matching")
