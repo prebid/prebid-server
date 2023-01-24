@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Iion Adapter Params",
+  "description": "A schema which validates params accepted by the Iion adapter",
+  "type": "object",
+
+  "properties": {
+    "host": {
+      "type": "string",
+      "description": "Ad network's RTB host",
+      "minLength": 1
+    },
+    "publisherId": {
+      "type": "integer",
+      "description": "Publisher ID",
+      "minimum": 1
+    }
+  },
+
+  "required": ["host", "publisherId"]
+}
