@@ -40,7 +40,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	requestData := &adapters.RequestData{
 		Method: "POST",
-		Uri:    a.endpoint + "/" + taboolaRequest.Site.ID + "/" + url.QueryEscape(a.externalUrl),
+		Uri:    a.endpoint + "/" + url.QueryEscape(a.externalUrl) + "/" + taboolaRequest.Site.ID,
 		Body:   requestJSON,
 	}
 
