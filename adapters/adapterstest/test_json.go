@@ -198,8 +198,9 @@ func (resp *httpResponse) ToResponseData(t *testing.T) *adapters.ResponseData {
 }
 
 type expectedBidResponse struct {
-	Bids     []expectedBid `json:"bids"`
-	Currency string        `json:"currency"`
+	Bids                 []expectedBid   `json:"bids"`
+	Currency             string          `json:"currency"`
+	FledgeAuctionConfigs json.RawMessage `json:"fledgeauctionconfigs,omitempty"`
 }
 
 type expectedBid struct {
@@ -255,11 +256,11 @@ func assertErrorList(t *testing.T, description string, actual []error, expected 
 	}
 }
 
-func assertMakeBidsOutput(t *testing.T, filename string, bidderResponse *adapters.BidderResponse, expected []expectedBid) {
+func assertMakeBidsOutput(t *testing.T, filename string, bidderResponse *adapters.BidderResponse, expected expectedBidResponse) {
 	t.Helper()
 
-	if (bidderResponse == nil || len(bidderResponse.Bids) == 0) != (len(expected) == 0) {
-		if len(expected) == 0 {
+	if (bidderResponse == nil || len(bidderResponse.Bids) == 0) != (len(expected.Bids) == 0) {
+		if len(expected.Bids) == 0 {
 			t.Fatalf("%s: expectedBidResponses indicated a nil response, but mockResponses supplied a non-nil response", filename)
 		}
 
@@ -271,11 +272,19 @@ func assertMakeBidsOutput(t *testing.T, filename string, bidderResponse *adapter
 		bidderResponse = new(adapters.BidderResponse)
 	}
 
-	if len(bidderResponse.Bids) != len(expected) {
-		t.Fatalf("%s: MakeBids returned wrong bid count. Expected %d, got %d", filename, len(expected), len(bidderResponse.Bids))
+	if len(bidderResponse.Bids) != len(expected.Bids) {
+		t.Fatalf("%s: MakeBids returned wrong bid count. Expected %d, got %d", filename, len(expected.Bids), len(bidderResponse.Bids))
 	}
 	for i := 0; i < len(bidderResponse.Bids); i++ {
-		diffBids(t, fmt.Sprintf("%s:  typedBid[%d]", filename, i), bidderResponse.Bids[i], &(expected[i]))
+		diffBids(t, fmt.Sprintf("%s:  typedBid[%d]", filename, i), bidderResponse.Bids[i], &(expected.Bids[i]))
+	}
+	if expected.FledgeAuctionConfigs != nil {
+		assert.NotNilf(t, bidderResponse.FledgeAuctionConfigs, "%s: expected fledgeauctionconfigs in bidderResponse", filename)
+		fledgeAuctionConfigsJson, err := json.Marshal(bidderResponse.FledgeAuctionConfigs)
+		assert.NoErrorf(t, err, "%s: failed to marshal actual FledgeAuctionConfig response into JSON.", filename)
+		assert.JSONEqf(t, string(expected.FledgeAuctionConfigs), string(fledgeAuctionConfigsJson), "%s: incorrect fledgeauctionconfig", filename)
+	} else {
+		assert.Nilf(t, bidderResponse.FledgeAuctionConfigs, "%s: unexpected fledgeauctionconfigs in bidderResponse", filename)
 	}
 }
 
@@ -435,6 +444,6 @@ func testMakeBidsImpl(t *testing.T, filename string, spec *testSpec, bidder adap
 
 	// Assert MakeBids implementation BidResponses with expected JSON-defined spec.BidResponses[i].Bids
 	for i := 0; i < len(spec.BidResponses); i++ {
-		assertMakeBidsOutput(t, filename, bidResponses[i], spec.BidResponses[i].Bids)
+		assertMakeBidsOutput(t, filename, bidResponses[i], spec.BidResponses[i])
 	}
 }

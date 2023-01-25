@@ -20,6 +20,7 @@ import (
 	"github.com/prebid/openrtb/v17/native1"
 	nativeRequests "github.com/prebid/openrtb/v17/native1/request"
 	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/hooks/hookstage"
@@ -1112,7 +1113,6 @@ func TestStoredRequests(t *testing.T) {
 		}
 		expectJson := json.RawMessage(testFinalRequests[i])
 		assert.JSONEq(t, string(expectJson), string(newRequest), "Incorrect result request %d", i)
-
 		expectedImp := testStoredImpIds[i]
 		expectedStoredImp := json.RawMessage(testStoredImps[i])
 		if len(impExtInfoMap[expectedImp].StoredImp) > 0 {
@@ -1631,7 +1631,7 @@ func TestValidateRequest(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		errorList := deps.validateRequest(test.givenRequestWrapper, test.givenIsAmp, false, nil)
+		errorList := deps.validateRequest(test.givenRequestWrapper, test.givenIsAmp, false, nil, false)
 		assert.Equalf(t, test.expectedErrorList, errorList, "Error doesn't match: %s\n", test.description)
 
 		if len(errorList) == 0 {
@@ -2453,7 +2453,7 @@ func TestCurrencyTrunc(t *testing.T) {
 		Cur: []string{"USD", "EUR"},
 	}
 
-	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil)
+	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
 
 	expectedError := errortypes.Warning{Message: "A prebid request can only process one currency. Taking the first currency in the list, USD, as the active currency"}
 	assert.ElementsMatch(t, errL, []error{&expectedError})
@@ -2502,7 +2502,7 @@ func TestCCPAInvalid(t *testing.T) {
 		},
 	}
 
-	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil)
+	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
 
 	expectedWarning := errortypes.Warning{
 		Message:     "CCPA consent is invalid and will be ignored. (request.regs.ext.us_privacy must contain 4 characters)",
@@ -2554,7 +2554,7 @@ func TestNoSaleInvalid(t *testing.T) {
 		Ext: json.RawMessage(`{"prebid": {"nosale": ["*", "appnexus"]} }`),
 	}
 
-	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil)
+	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
 
 	expectedError := errors.New("request.ext.prebid.nosale is invalid: can only specify all bidders if no other bidders are provided")
 	assert.ElementsMatch(t, errL, []error{expectedError})
@@ -2604,7 +2604,7 @@ func TestValidateSourceTID(t *testing.T) {
 		},
 	}
 
-	deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil)
+	deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
 	assert.NotEmpty(t, req.Source.TID, "Expected req.Source.TID to be filled with a randomly generated UID")
 }
 
@@ -2649,7 +2649,7 @@ func TestSChainInvalid(t *testing.T) {
 		Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}, {"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller2.com","sid":"00002","rid":"BidRequest2","hp":1}],"ver":"1.0"}}]}}`),
 	}
 
-	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil)
+	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
 
 	expectedError := errors.New("request.ext.prebid.schains contains multiple schains for bidder appnexus; it must contain no more than one per bidder.")
 	assert.ElementsMatch(t, errL, []error{expectedError})
@@ -2920,42 +2920,185 @@ func TestSanitizeRequest(t *testing.T) {
 func TestValidateAndFillSourceTID(t *testing.T) {
 	testTID := "some-tid"
 	testCases := []struct {
-		description   string
-		req           *openrtb2.BidRequest
-		expectRandTID bool
-		expectedTID   string
+		description         string
+		req                 *openrtb_ext.RequestWrapper
+		generateRequestID   bool
+		hasStoredBidRequest bool
+		isAmp               bool
+		expectRandImpTID    bool
+		expectRandSourceTID bool
+		expectSourceTid     *string
+		expectImpTid        *string
 	}{
 		{
-			description:   "req.Source not present. Expecting a randomly generated TID value",
-			req:           &openrtb2.BidRequest{},
-			expectRandTID: true,
-		},
-		{
-			description: "req.Source.TID not present. Expecting a randomly generated TID value",
-			req: &openrtb2.BidRequest{
-				Source: &openrtb2.Source{},
-			},
-			expectRandTID: true,
-		},
-		{
-			description: "req.Source.TID present. Expecting no change",
-			req: &openrtb2.BidRequest{
-				Source: &openrtb2.Source{
-					TID: testTID,
+			description: "req source.tid not set, expect random value",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID:     "1",
+					Imp:    []openrtb2.Imp{{ID: "1"}},
+					Source: &openrtb2.Source{},
 				},
 			},
-			expectRandTID: false,
-			expectedTID:   testTID,
+			generateRequestID:   false,
+			hasStoredBidRequest: false,
+			isAmp:               false,
+			expectRandSourceTID: true,
+			expectRandImpTID:    false,
+		},
+		{
+			description: "req source.tid set to {{UUID}}, expect to be replaced by random value",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID:     "1",
+					Imp:    []openrtb2.Imp{{ID: "1"}},
+					Source: &openrtb2.Source{TID: "{{UUID}}"},
+				},
+			},
+			generateRequestID:   false,
+			hasStoredBidRequest: false,
+			isAmp:               false,
+			expectRandSourceTID: true,
+			expectRandImpTID:    false,
+		},
+		{
+			description: "req source.tid is set, isAmp = true, generateRequestID = true, expect to be replaced by random value",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID:     "1",
+					Imp:    []openrtb2.Imp{{ID: "1"}},
+					Source: &openrtb2.Source{TID: "test-tid"},
+				},
+			},
+			generateRequestID:   true,
+			hasStoredBidRequest: false,
+			isAmp:               true,
+			expectRandSourceTID: true,
+			expectRandImpTID:    false,
+		},
+		{
+			description: "req source.tid is set,  hasStoredBidRequest = true, generateRequestID = true, expect to be replaced by random value",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID:     "1",
+					Imp:    []openrtb2.Imp{{ID: "1"}},
+					Source: &openrtb2.Source{TID: "test-tid"},
+				},
+			},
+			generateRequestID:   true,
+			hasStoredBidRequest: true,
+			isAmp:               false,
+			expectRandSourceTID: true,
+			expectRandImpTID:    false,
+		},
+		{
+			description: "req source.tid is set,  hasStoredBidRequest = true, generateRequestID = false, expect NOT to be replaced by random value",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID:     "1",
+					Imp:    []openrtb2.Imp{{ID: "1"}},
+					Source: &openrtb2.Source{TID: testTID},
+				},
+			},
+			generateRequestID:   false,
+			hasStoredBidRequest: true,
+			isAmp:               false,
+			expectRandSourceTID: false,
+			expectRandImpTID:    false,
+			expectSourceTid:     &testTID,
+		},
+		{
+			description: "req imp.ext.tid not set, expect random value",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID:     "1",
+					Imp:    []openrtb2.Imp{{ID: "1"}},
+					Source: &openrtb2.Source{},
+				},
+			},
+			generateRequestID:   false,
+			hasStoredBidRequest: false,
+			isAmp:               false,
+			expectRandSourceTID: false,
+			expectRandImpTID:    true,
+		},
+		{
+			description: "req imp.ext.tid set to {{UUID}}, expect random value",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID:     "1",
+					Imp:    []openrtb2.Imp{{ID: "1", Ext: json.RawMessage(`{"tid": "{{UUID}}"}`)}},
+					Source: &openrtb2.Source{},
+				},
+			},
+			generateRequestID:   false,
+			hasStoredBidRequest: false,
+			isAmp:               false,
+			expectRandSourceTID: false,
+			expectRandImpTID:    true,
+		},
+		{
+			description: "req imp.tid is set,  hasStoredBidRequest = true, generateRequestID = true, expect to be replaced by random value",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID:     "1",
+					Imp:    []openrtb2.Imp{{ID: "1", Ext: json.RawMessage(`{"tid": "some-tid"}`)}},
+					Source: &openrtb2.Source{TID: "test-tid"},
+				},
+			},
+			generateRequestID:   true,
+			hasStoredBidRequest: true,
+			isAmp:               false,
+			expectRandSourceTID: false,
+			expectRandImpTID:    true,
+		},
+		{
+			description: "req imp.tid is set,  isAmp = true, generateRequestID = true, expect to be replaced by random value",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID:     "1",
+					Imp:    []openrtb2.Imp{{ID: "1", Ext: json.RawMessage(`{"tid": "some-tid"}`)}},
+					Source: &openrtb2.Source{TID: "test-tid"},
+				},
+			},
+			generateRequestID:   true,
+			hasStoredBidRequest: false,
+			isAmp:               true,
+			expectRandSourceTID: false,
+			expectRandImpTID:    true,
+		},
+		{
+			description: "req imp.tid is set,  hasStoredBidRequest = true, generateRequestID = false, expect NOT to be replaced by random value",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID:     "1",
+					Imp:    []openrtb2.Imp{{ID: "1", Ext: json.RawMessage(`{"tid": "some-tid"}`)}},
+					Source: &openrtb2.Source{TID: testTID},
+				},
+			},
+			generateRequestID:   false,
+			hasStoredBidRequest: true,
+			isAmp:               false,
+			expectRandSourceTID: false,
+			expectRandImpTID:    false,
+			expectImpTid:        &testTID,
 		},
 	}
 
 	for _, test := range testCases {
-		_ = validateAndFillSourceTID(test.req)
-		if test.expectRandTID {
+		_ = validateAndFillSourceTID(test.req, test.generateRequestID, test.hasStoredBidRequest, test.isAmp)
+		impWrapper := &openrtb_ext.ImpWrapper{}
+		impWrapper.Imp = &test.req.Imp[0]
+		ie, _ := impWrapper.GetImpExt()
+		impTID := ie.GetTid()
+		if test.expectRandSourceTID {
 			assert.NotEmpty(t, test.req.Source.TID, test.description)
-			assert.NotEqual(t, test.expectedTID, test.req.Source.TID, test.description)
-		} else {
-			assert.Equal(t, test.expectedTID, test.req.Source.TID, test.description)
+		} else if test.expectRandImpTID {
+			assert.NotEqual(t, testTID, impTID, test.description)
+			assert.NotEmpty(t, impTID, test.description)
+		} else if test.expectSourceTid != nil {
+			assert.Equal(t, test.req.Source.TID, *test.expectSourceTid, test.description)
+		} else if test.expectImpTid != nil {
+			assert.Equal(t, impTID, *test.expectImpTid, test.description)
 		}
 	}
 }
@@ -3001,7 +3144,7 @@ func TestEidPermissionsInvalid(t *testing.T) {
 		Ext: json.RawMessage(`{"prebid": {"data": {"eidpermissions": [{"source":"a", "bidders":[]}]} } }`),
 	}
 
-	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil)
+	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
 
 	expectedError := errors.New(`request.ext.prebid.data.eidpermissions[0] missing or empty required field: "bidders"`)
 	assert.ElementsMatch(t, errL, []error{expectedError})
@@ -4651,14 +4794,39 @@ func TestValidateStoredResp(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		errorList := deps.validateRequest(test.givenRequestWrapper, false, test.hasStoredAuctionResponses, test.storedBidResponses)
+		errorList := deps.validateRequest(test.givenRequestWrapper, false, test.hasStoredAuctionResponses, test.storedBidResponses, false)
 		assert.Equalf(t, test.expectedErrorList, errorList, "Error doesn't match: %s\n", test.description)
 	}
 }
 
-func TestValidResponseWhenRequestRejected(t *testing.T) {
+func TestValidResponseAfterExecutingStages(t *testing.T) {
 	const nbr int = 123
-	const file string = "sample-requests/valid-whole/hooks/auction_reject.json"
+
+	hooksPlanBuilder := mockPlanBuilder{
+		entrypointPlan: hooks.Plan[hookstage.Entrypoint]{
+			{
+				Timeout: 5 * time.Millisecond,
+				Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
+					entryPointHookUpdateWithErrors,
+					entryPointHookUpdateWithErrorsAndWarnings,
+				},
+			},
+			{
+				Timeout: 5 * time.Millisecond,
+				Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
+					entryPointHookUpdate,
+				},
+			},
+		},
+		rawAuctionPlan: hooks.Plan[hookstage.RawAuctionRequest]{
+			{
+				Timeout: 5 * time.Millisecond,
+				Hooks: []hooks.HookWrapper[hookstage.RawAuctionRequest]{
+					rawAuctionHookNone,
+				},
+			},
+		},
+	}
 
 	testCases := []struct {
 		description string
@@ -4667,29 +4835,34 @@ func TestValidResponseWhenRequestRejected(t *testing.T) {
 	}{
 		{
 			description: "Assert correct BidResponse when request rejected at entrypoint stage",
-			file:        file,
-			planBuilder: mockPlanBuilder{entrypointPlan: makeRejectPlan[hookstage.Entrypoint](mockRejectionHook{nbr})},
+			file:        "sample-requests/hooks/auction_entrypoint_reject.json",
+			planBuilder: mockPlanBuilder{entrypointPlan: makePlan[hookstage.Entrypoint](mockRejectionHook{nbr})},
 		},
 		{
 			description: "Assert correct BidResponse when request rejected at raw-auction stage",
-			file:        file,
-			planBuilder: mockPlanBuilder{rawAuctionPlan: makeRejectPlan[hookstage.RawAuctionRequest](mockRejectionHook{nbr})},
+			file:        "sample-requests/hooks/auction_raw_auction_request_reject.json",
+			planBuilder: mockPlanBuilder{rawAuctionPlan: makePlan[hookstage.RawAuctionRequest](mockRejectionHook{nbr})},
 		},
 		{
 			description: "Assert correct BidResponse when request rejected at processed-auction stage",
-			file:        file,
-			planBuilder: mockPlanBuilder{processedAuctionPlan: makeRejectPlan[hookstage.ProcessedAuctionRequest](mockRejectionHook{nbr})},
+			file:        "sample-requests/hooks/auction_processed_auction_request_reject.json",
+			planBuilder: mockPlanBuilder{processedAuctionPlan: makePlan[hookstage.ProcessedAuctionRequest](mockRejectionHook{nbr})},
 		},
 		{
 			// bidder-request stage doesn't reject whole request, so we do not expect NBR code in response
 			description: "Assert correct BidResponse when request rejected at bidder-request stage",
-			file:        "sample-requests/valid-whole/hooks/auction_bidder_reject.json",
-			planBuilder: mockPlanBuilder{bidderRequestPlan: makeRejectPlan[hookstage.BidderRequest](mockRejectionHook{nbr})},
+			file:        "sample-requests/hooks/auction_bidder_reject.json",
+			planBuilder: mockPlanBuilder{bidderRequestPlan: makePlan[hookstage.BidderRequest](mockRejectionHook{nbr})},
 		},
 		{
 			description: "Assert correct BidResponse when request rejected at raw-bidder-response stage",
-			file:        "sample-requests/valid-whole/hooks/auction_bidder_response_reject.json",
-			planBuilder: mockPlanBuilder{rawBidderResponsePlan: makeRejectPlan[hookstage.RawBidderResponse](mockRejectionHook{nbr})},
+			file:        "sample-requests/hooks/auction_bidder_response_reject.json",
+			planBuilder: mockPlanBuilder{rawBidderResponsePlan: makePlan[hookstage.RawBidderResponse](mockRejectionHook{nbr})},
+		},
+		{
+			description: "Assert correct BidResponse with debug information from modules added to ext.prebid.modules",
+			file:        "sample-requests/hooks/auction.json",
+			planBuilder: hooksPlanBuilder,
 		},
 	}
 
@@ -4703,7 +4876,8 @@ func TestValidResponseWhenRequestRejected(t *testing.T) {
 			test.planBuilder = tc.planBuilder
 			test.endpointType = OPENRTB_ENDPOINT
 
-			auctionEndpointHandler, _, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, &config.Configuration{MaxRequestSize: maxSize})
+			cfg := &config.Configuration{MaxRequestSize: maxSize, AccountDefaults: config.Account{DebugAllow: true}}
+			auctionEndpointHandler, _, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
 			assert.NoError(t, err, "Failed to build test endpoint.")
 
 			recorder := httptest.NewRecorder()
@@ -4725,13 +4899,91 @@ func TestValidResponseWhenRequestRejected(t *testing.T) {
 
 			assertBidResponseEqual(t, tc.file, expectedResp, actualResp)
 			assert.Equal(t, expectedResp.NBR, actualResp.NBR, "Invalid NBR.")
-			assert.Equal(t, expectedExt.Warnings, actualExt.Warnings, "Wrong bidResponse.ext.")
+			assert.Equal(t, expectedExt.Warnings, actualExt.Warnings, "Wrong bidResponse.ext.warnings.")
+
+			if expectedExt.Prebid != nil {
+				hookexecution.AssertEqualModulesData(t, expectedExt.Prebid.Modules, actualExt.Prebid.Modules)
+			} else {
+				assert.Nil(t, actualExt.Prebid, "Invalid BidResponse.ext.prebid")
+			}
 
 			// Close servers regardless if the test case was run or not
 			for _, mockBidServer := range mockBidServers {
 				mockBidServer.Close()
 			}
 			mockCurrencyRatesServer.Close()
+		})
+	}
+}
+
+func TestSendAuctionResponse_LogsErrors(t *testing.T) {
+	hookExecutor := &mockStageExecutor{
+		outcomes: []hookexecution.StageOutcome{
+			{
+				Entity: "bid-request",
+				Stage:  hooks.StageBidderRequest.String(),
+				Groups: []hookexecution.GroupOutcome{
+					{
+						InvocationResults: []hookexecution.HookOutcome{
+							{
+								HookID: hookexecution.HookID{
+									ModuleCode:   "foobar",
+									HookImplCode: "foo",
+								},
+								Status:   hookexecution.StatusSuccess,
+								Action:   hookexecution.ActionNone,
+								Warnings: []string{"warning message"},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	testCases := []struct {
+		description    string
+		expectedErrors []error
+		expectedStatus int
+		request        *openrtb2.BidRequest
+		response       *openrtb2.BidResponse
+		hookExecutor   hookexecution.HookStageExecutor
+	}{
+		{
+			description: "Error logged if hook enrichment fails",
+			expectedErrors: []error{
+				errors.New("Failed to enrich Bid Response with hook debug information: Invalid JSON Document"),
+				errors.New("/openrtb2/auction Failed to send response: json: error calling MarshalJSON for type json.RawMessage: invalid character '.' looking for beginning of value"),
+			},
+			expectedStatus: 0,
+			request:        &openrtb2.BidRequest{ID: "some-id", Test: 1},
+			response:       &openrtb2.BidResponse{ID: "some-id", Ext: json.RawMessage("...")},
+			hookExecutor:   hookExecutor,
+		},
+		{
+			description: "Error logged if hook enrichment returns warnings",
+			expectedErrors: []error{
+				errors.New("Value is not a string: 1"),
+				errors.New("Value is not a boolean: active"),
+			},
+			expectedStatus: 0,
+			request:        &openrtb2.BidRequest{ID: "some-id", Test: 1, Ext: json.RawMessage(`{"prebid": {"debug": "active", "trace": 1}}`)},
+			response:       &openrtb2.BidResponse{ID: "some-id", Ext: json.RawMessage("{}")},
+			hookExecutor:   hookExecutor,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			writer := httptest.NewRecorder()
+			labels := metrics.Labels{}
+			ao := analytics.AuctionObject{}
+			account := &config.Account{DebugAllow: true}
+
+			labels, ao = sendAuctionResponse(writer, test.hookExecutor, test.response, test.request, account, labels, ao)
+
+			assert.Equal(t, ao.Errors, test.expectedErrors, "Invalid errors.")
+			assert.Equal(t, test.expectedStatus, ao.Status, "Invalid HTTP response status.")
 		})
 	}
 }
@@ -4771,4 +5023,14 @@ func getIntegrationFromRequest(req *openrtb_ext.RequestWrapper) (string, error) 
 	}
 	reqPrebid := reqExt.GetPrebid()
 	return reqPrebid.Integration, nil
+}
+
+type mockStageExecutor struct {
+	hookexecution.EmptyHookExecutor
+
+	outcomes []hookexecution.StageOutcome
+}
+
+func (e mockStageExecutor) GetOutcomes() []hookexecution.StageOutcome {
+	return e.outcomes
 }

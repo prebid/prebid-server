@@ -177,7 +177,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	if rejectErr := hookexecution.FindFirstRejectOrNil(errL); rejectErr != nil {
-		labels, ao = rejectAuctionRequest(*rejectErr, w, deps.hookExecutor, req.BidRequest, labels, ao)
+		labels, ao = rejectAuctionRequest(*rejectErr, w, deps.hookExecutor, req.BidRequest, account, labels, ao)
 		return
 	}
 
@@ -244,11 +244,11 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		ao.Errors = append(ao.Errors, err)
 		return
 	} else if isRejectErr {
-		labels, ao = rejectAuctionRequest(*rejectErr, w, deps.hookExecutor, req.BidRequest, labels, ao)
+		labels, ao = rejectAuctionRequest(*rejectErr, w, deps.hookExecutor, req.BidRequest, account, labels, ao)
 		return
 	}
 
-	labels, ao = sendAuctionResponse(w, deps.hookExecutor, response, labels, ao)
+	labels, ao = sendAuctionResponse(w, deps.hookExecutor, response, req.BidRequest, account, labels, ao)
 }
 
 func rejectAuctionRequest(
@@ -256,6 +256,7 @@ func rejectAuctionRequest(
 	w http.ResponseWriter,
 	hookExecutor hookexecution.HookStageExecutor,
 	request *openrtb2.BidRequest,
+	account *config.Account,
 	labels metrics.Labels,
 	ao analytics.AuctionObject,
 ) (metrics.Labels, analytics.AuctionObject) {
@@ -267,17 +268,38 @@ func rejectAuctionRequest(
 	ao.Response = response
 	ao.Errors = append(ao.Errors, rejectErr)
 
-	return sendAuctionResponse(w, hookExecutor, response, labels, ao)
+	return sendAuctionResponse(w, hookExecutor, response, request, account, labels, ao)
 }
 
 func sendAuctionResponse(
 	w http.ResponseWriter,
 	hookExecutor hookexecution.HookStageExecutor,
 	response *openrtb2.BidResponse,
+	request *openrtb2.BidRequest,
+	account *config.Account,
 	labels metrics.Labels,
 	ao analytics.AuctionObject,
 ) (metrics.Labels, analytics.AuctionObject) {
 	hookExecutor.ExecuteAuctionResponseStage(response)
+
+	if response != nil {
+		stageOutcomes := hookExecutor.GetOutcomes()
+		ao.HookExecutionOutcome = stageOutcomes
+
+		ext, warns, err := hookexecution.EnrichExtBidResponse(response.Ext, stageOutcomes, request, account)
+		if err != nil {
+			err = fmt.Errorf("Failed to enrich Bid Response with hook debug information: %s", err)
+			glog.Errorf(err.Error())
+			ao.Errors = append(ao.Errors, err)
+		} else {
+			response.Ext = ext
+		}
+
+		if len(warns) > 0 {
+			ao.Errors = append(ao.Errors, warns...)
+		}
+	}
+
 	// Fixes #231
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
@@ -428,7 +450,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	if len(storedAuctionResponses) > 0 {
 		hasStoredResponses = true
 	}
-	errL := deps.validateRequest(req, false, hasStoredResponses, storedBidResponses)
+	errL := deps.validateRequest(req, false, hasStoredResponses, storedBidResponses, hasStoredBidRequest)
 	if len(errL) > 0 {
 		errs = append(errs, errL...)
 	}
@@ -613,7 +635,7 @@ func mergeBidderParamsImpExtPrebid(impExt *openrtb_ext.ImpExt, reqExtParams map[
 	return nil
 }
 
-func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp bool, hasStoredResponses bool, storedBidResp stored_responses.ImpBidderStoredResp) []error {
+func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp bool, hasStoredResponses bool, storedBidResp stored_responses.ImpBidderStoredResp, hasStoredBidRequest bool) []error {
 	errL := []error{}
 	if req.ID == "" {
 		return []error{errors.New("request missing required field: \"id\"")}
@@ -635,7 +657,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 	// If automatically filling source TID is enabled then validate that
 	// source.TID exists and If it doesn't, fill it with a randomly generated UUID
 	if deps.cfg.AutoGenSourceTID {
-		if err := validateAndFillSourceTID(req.BidRequest); err != nil {
+		if err := validateAndFillSourceTID(req, deps.cfg.GenerateRequestID, hasStoredBidRequest, isAmp); err != nil {
 			return []error{err}
 		}
 	}
@@ -786,17 +808,31 @@ func mapSChains(req *openrtb_ext.RequestWrapper) error {
 	return nil
 }
 
-func validateAndFillSourceTID(req *openrtb2.BidRequest) error {
+func validateAndFillSourceTID(req *openrtb_ext.RequestWrapper, generateRequestID bool, hasStoredBidRequest bool, isAmp bool) error {
 	if req.Source == nil {
 		req.Source = &openrtb2.Source{}
 	}
-	if req.Source.TID == "" {
-		if rawUUID, err := uuid.NewV4(); err == nil {
-			req.Source.TID = rawUUID.String()
-		} else {
-			return errors.New("req.Source.TID missing in the req and error creating a random UID")
+
+	if req.Source.TID == "" || req.Source.TID == "{{UUID}}" || (generateRequestID && (isAmp || hasStoredBidRequest)) {
+		rawUUID, err := uuid.NewV4()
+		if err != nil {
+			return errors.New("error creating a random UUID for source.tid")
+		}
+		req.Source.TID = rawUUID.String()
+	}
+
+	for _, impWrapper := range req.GetImp() {
+		ie, _ := impWrapper.GetImpExt()
+		if ie.GetTid() == "" || ie.GetTid() == "{{UUID}}" || (generateRequestID && (isAmp || hasStoredBidRequest)) {
+			rawUUID, err := uuid.NewV4()
+			if err != nil {
+				return errors.New("imp.ext.tid missing in the imp and error creating a random UID")
+			}
+			ie.SetTid(rawUUID.String())
+			impWrapper.RebuildImp()
 		}
 	}
+
 	return nil
 }
 
@@ -1410,6 +1446,8 @@ func isPossibleBidder(bidder string) bool {
 	case openrtb_ext.BidderReservedSKAdN:
 		return false
 	case openrtb_ext.BidderReservedTID:
+		return false
+	case openrtb_ext.BidderReservedAE:
 		return false
 	default:
 		return true

@@ -269,7 +269,7 @@ func handleHookMutations[P any](
 	metricEngine metrics.MetricsEngine,
 	labels metrics.ModuleLabels,
 ) P {
-	if hr.Result.ChangeSet == nil || len(hr.Result.ChangeSet.Mutations()) == 0 {
+	if len(hr.Result.ChangeSet.Mutations()) == 0 {
 		metricEngine.RecordModuleSuccessNooped(labels)
 		hookOutcome.Action = ActionNone
 		return payload

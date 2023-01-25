@@ -175,6 +175,10 @@ func TestDefaults(t *testing.T) {
 	cmpNils(t, "host_schain_node", cfg.HostSChainNode)
 	cmpStrings(t, "datacenter", cfg.DataCenter, "")
 	cmpBools(t, "hooks.enabled", cfg.Hooks.Enabled, false)
+	cmpStrings(t, "validations.banner_creative_max_size", cfg.Validations.BannerCreativeMaxSize, "skip")
+	cmpStrings(t, "validations.secure_markup", cfg.Validations.SecureMarkup, "skip")
+	cmpInts(t, "validations.max_creative_width", int(cfg.Validations.MaxCreativeWidth), 0)
+	cmpInts(t, "validations.max_creative_height", int(cfg.Validations.MaxCreativeHeight), 0)
 	cmpBools(t, "account_modules_metrics", cfg.Metrics.Disabled.AccountModulesMetrics, false)
 
 	//Assert purpose VendorExceptionMap hash tables were built correctly
@@ -409,6 +413,11 @@ host_schain_node:
     sid: "00001"
     rid: "BidRequest"
     hp: 1
+validations:
+    banner_creative_max_size: "skip"
+    secure_markup: "skip"
+    max_creative_width: 0
+    max_creative_height: 0
 experiment:
     adscert:
         mode: inprocess
@@ -497,6 +506,10 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "host_schain_node.rid", cfg.HostSChainNode.RID, "BidRequest")
 	cmpInt8s(t, "host_schain_node.hp", cfg.HostSChainNode.HP, &int8One)
 	cmpStrings(t, "datacenter", cfg.DataCenter, "1")
+	cmpStrings(t, "validations.banner_creative_max_size", cfg.Validations.BannerCreativeMaxSize, "skip")
+	cmpStrings(t, "validations.secure_markup", cfg.Validations.SecureMarkup, "skip")
+	cmpInts(t, "validations.max_creative_width", int(cfg.Validations.MaxCreativeWidth), 0)
+	cmpInts(t, "validations.max_creative_height", int(cfg.Validations.MaxCreativeHeight), 0)
 
 	//Assert the NonStandardPublishers was correctly unmarshalled
 	assert.Equal(t, []string{"pub1", "pub2"}, cfg.GDPR.NonStandardPublishers, "gdpr.non_standard_publishers")
