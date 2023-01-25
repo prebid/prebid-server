@@ -64,7 +64,7 @@
                   }
                 ]
               },
-              "tagid" : "tag-id",
+              "tagid": "tag-id",
               "ext": {
                 "bidder": {
                   "publisherId": "publisher-id",
