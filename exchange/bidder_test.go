@@ -1668,6 +1668,117 @@ func TestRequestBidsStoredBidResponses(t *testing.T) {
 
 }
 
+// TestFledge verifies that fledge responses from bidders are collected.
+func TestFledge(t *testing.T) {
+	respStatus := 200
+	respBody := "{\"bid\":false}"
+	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
+	defer server.Close()
+
+	fledgeAuctionConfig1 := &openrtb_ext.FledgeAuctionConfig{
+		ImpId:  "imp-id-1",
+		Config: json.RawMessage("[1,2,3]"),
+		Bidder: "openx",
+	}
+	fledgeAuctionConfig2 := &openrtb_ext.FledgeAuctionConfig{
+		ImpId:  "imp-id-2",
+		Config: json.RawMessage("[3,2,1]"),
+		Bidder: "openx",
+	}
+
+	testCases := []struct {
+		mockBidderResponse []*adapters.BidderResponse
+		expectedFledge     []*openrtb_ext.FledgeAuctionConfig
+		description        string
+	}{
+		{
+			mockBidderResponse: []*adapters.BidderResponse{
+				{
+					Bids:                 []*adapters.TypedBid{},
+					FledgeAuctionConfigs: []*openrtb_ext.FledgeAuctionConfig{fledgeAuctionConfig1, fledgeAuctionConfig2},
+				},
+				nil,
+			},
+			expectedFledge: []*openrtb_ext.FledgeAuctionConfig{fledgeAuctionConfig1, fledgeAuctionConfig2},
+			description:    "Collects FLEDGE auction configs from single bidder response",
+		},
+		{
+			mockBidderResponse: []*adapters.BidderResponse{
+				{
+					Bids:                 []*adapters.TypedBid{},
+					FledgeAuctionConfigs: []*openrtb_ext.FledgeAuctionConfig{fledgeAuctionConfig2},
+				},
+				{
+					Bids:                 []*adapters.TypedBid{},
+					FledgeAuctionConfigs: []*openrtb_ext.FledgeAuctionConfig{fledgeAuctionConfig1},
+				},
+			},
+			expectedFledge: []*openrtb_ext.FledgeAuctionConfig{fledgeAuctionConfig1, fledgeAuctionConfig2},
+			description:    "Collects FLEDGE auction configs from multiple bidder response",
+		},
+	}
+
+	for _, tc := range testCases {
+		bidderImpl := &goodMultiHTTPCallsBidder{
+			httpRequest: []*adapters.RequestData{
+				{
+					Method:  "POST",
+					Uri:     server.URL,
+					Body:    []byte("{\"key\":\"val1\"}"),
+					Headers: http.Header{},
+				},
+				{
+					Method:  "POST",
+					Uri:     server.URL,
+					Body:    []byte("{\"key\":\"val2\"}"),
+					Headers: http.Header{},
+				},
+			},
+			bidResponses: tc.mockBidderResponse,
+		}
+		bidder := AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderOpenx, nil, "")
+		currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+
+		bidderReq := BidderRequest{
+			BidRequest: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{
+						ID:     "imp-id-1",
+						Banner: &openrtb2.Banner{},
+						Ext:    json.RawMessage(`{"ae": 1}`),
+					},
+					{
+						ID:     "imp-id-2",
+						Banner: &openrtb2.Banner{},
+						Ext:    json.RawMessage(`{"ae": 1}`),
+					},
+				},
+			},
+			BidderName: "openx",
+		}
+		seatBids, _ := bidder.requestBid(
+			context.Background(),
+			bidderReq,
+			currencyConverter.Rates(),
+			&adapters.ExtraRequestInfo{},
+			&adscert.NilSigner{},
+			bidRequestOptions{
+				accountDebugAllowed: true,
+				headerDebugAllowed:  true,
+				addCallSignHeader:   false,
+				bidAdjustments:      map[string]float64{"test": 1.0},
+			},
+			openrtb_ext.ExtAlternateBidderCodes{},
+			&hookexecution.EmptyHookExecutor{},
+		)
+		assert.Len(t, seatBids, 1)
+		assert.NotNil(t, seatBids[0].FledgeAuctionConfigs)
+		assert.Len(t, seatBids[0].FledgeAuctionConfigs, len(tc.expectedFledge))
+
+		assert.ElementsMatch(t, seatBids[0].FledgeAuctionConfigs, tc.expectedFledge)
+	}
+}
+
 func TestErrorReporting(t *testing.T) {
 	bidder := AdaptBidder(&bidRejector{}, nil, &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil, "")
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))

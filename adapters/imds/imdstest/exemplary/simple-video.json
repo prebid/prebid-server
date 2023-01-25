@@ -1,65 +1,62 @@
 {
   "mockBidRequest": {
-    "id": "test-request-id",
+    "id": "1",
+    "site": {
+      "domain": "test.com",
+      "page": "http://test.com",
+      "ref": "",
+      "publisher": {}
+    },
     "imp": [
       {
-        "id": "test-imp-bad",
-        "banner": {
-          "format": [
-            {
-              "w": 300,
-              "h": 250
-            }
+        "id": "i3",
+        "video": {
+          "w": 300,
+          "h": 250,
+          "pos": 1,
+          "mimes": [
+            "video/mp4"
           ]
         },
+        "metric": [],
         "ext": {
           "bidder": {
-            "seatId": "",
-            "tagId": ""
-          }
-        }
-      },
-      {
-        "id": "test-imp-id",
-        "banner": {
-          "format": [
-            {
-              "w": 300,
-              "h": 250
-            }
-          ]
-        },
-        "ext": {
-          "bidder": {
-            "seatId": "prebid",
+            "seatId":"prebid",
             "tagId": "demo1"
           }
         }
       }
     ]
   },
-
   "httpCalls": [
     {
       "expectedRequest": {
         "uri": "http://prebid.technoratimedia.com/openrtb/bids/prebid",
         "body": {
-          "id": "test-request-id",
+          "id": "1",
+          "site": {
+            "domain": "test.com",
+            "page": "http://test.com",
+            "publisher": {}
+          },
           "ext": {
             "seatId": "prebid"
           },
           "imp": [
             {
-              "id":"test-imp-id",
+              "id": "i3",
               "tagid": "demo1",
-              "banner": {
-                "format": [
-                  {"w":300,"h":250}
+              "video": {
+                "w": 300,
+                "h": 250,
+                "pos": 1,
+                "mimes": [
+                  "video/mp4"
                 ]
               },
               "ext": {
-                "bidder": {
-                  "seatId": "prebid",
+                "bidder":{
+                  "seatId":"prebid",
                   "tagId": "demo1"
                 }
               }
@@ -75,9 +72,9 @@
             {
               "bid": [
                 {
-                  "id": "test-request-id",
-                  "impid": "test-imp-id",
-                  "price": 2.69,
+                  "id": "video-request-id",
+                  "impid": "i3",
+                  "price": 2.693309696244891,
                   "adomain": [
                     "psacentral.org"
                   ],
@@ -85,17 +82,17 @@
                   "crid": "mock-cid",
                   "ext": {
                     "prebid": {
-                      "type": "banner"
+                      "type": "video"
                     }
                   }
                 }
               ],
-              "seat": "synacormedia"
+              "seat": "imds"
             }
           ],
           "ext": {
             "responsetimemillis": {
-              "synacormedia": 339
+              "imds": 339
             }
           }
         }
@@ -114,23 +111,17 @@
             "cid": "mock-crid",
             "crid": "mock-cid",
             "ext": {
-              "prebid": {
-                "type": "banner"
+                "prebid": {
+                "type": "video"
               }
             },
-            "id": "test-request-id",
-            "impid": "test-imp-id",
-            "price": 2.69
+            "id": "video-request-id",
+            "impid": "i3",
+            "price": 2.693309696244891
           },
-          "type": "banner"
+          "type": "video"
         }
       ]
-    }
-  ],
-  "expectedMakeRequestsErrors": [
-    {
-      "value": "Invalid Impression",
-      "comparison": "literal"
     }
   ]
 }

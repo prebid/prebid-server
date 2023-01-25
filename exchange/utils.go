@@ -450,17 +450,29 @@ func splitImps(imps []openrtb2.Imp) (map[string][]openrtb2.Imp, error) {
 	return bidderImps, nil
 }
 
+var allowedImpExtFields = map[string]interface{}{
+	openrtb_ext.AuctionEnvironmentKey:       struct{}{},
+	openrtb_ext.FirstPartyDataExtKey:        struct{}{},
+	openrtb_ext.FirstPartyDataContextExtKey: struct{}{},
+	openrtb_ext.GPIDKey:                     struct{}{},
+	openrtb_ext.SKAdNExtKey:                 struct{}{},
+	openrtb_ext.TIDKey:                      struct{}{},
+}
+
+var allowedImpExtPrebidFields = map[string]interface{}{
+	openrtb_ext.IsRewardedInventoryKey: struct{}{},
+	openrtb_ext.OptionsKey:             struct{}{},
+}
+
 func createSanitizedImpExt(impExt, impExtPrebid map[string]json.RawMessage) (map[string]json.RawMessage, error) {
 	sanitizedImpExt := make(map[string]json.RawMessage, 6)
 	sanitizedImpPrebidExt := make(map[string]json.RawMessage, 2)
 
 	// copy allowed imp[].ext.prebid fields
-	if v, exists := impExtPrebid["is_rewarded_inventory"]; exists {
-		sanitizedImpPrebidExt["is_rewarded_inventory"] = v
-	}
-
-	if v, exists := impExtPrebid["options"]; exists {
-		sanitizedImpPrebidExt["options"] = v
+	for k := range allowedImpExtPrebidFields {
+		if v, exists := impExtPrebid[k]; exists {
+			sanitizedImpPrebidExt[k] = v
+		}
 	}
 
 	// marshal sanitized imp[].ext.prebid
@@ -473,36 +485,13 @@ func createSanitizedImpExt(impExt, impExtPrebid map[string]json.RawMessage) (map
 	}
 
 	// copy reserved imp[].ext fields known to not be bidder names
-	if v, exists := impExt[openrtb_ext.FirstPartyDataExtKey]; exists {
-		sanitizedImpExt[openrtb_ext.FirstPartyDataExtKey] = v
-	}
-
-	if v, exists := impExt[openrtb_ext.FirstPartyDataContextExtKey]; exists {
-		sanitizedImpExt[openrtb_ext.FirstPartyDataContextExtKey] = v
-	}
-
-	if v, exists := impExt[openrtb_ext.SKAdNExtKey]; exists {
-		sanitizedImpExt[openrtb_ext.SKAdNExtKey] = v
-	}
-
-	if v, exists := impExt[string(openrtb_ext.GPIDKey)]; exists {
-		sanitizedImpExt[openrtb_ext.GPIDKey] = v
-	}
-
-	if v, exists := impExt[string(openrtb_ext.TIDKey)]; exists {
-		sanitizedImpExt[openrtb_ext.TIDKey] = v
+	for k := range allowedImpExtFields {
+		if v, exists := impExt[k]; exists {
+			sanitizedImpExt[k] = v
+		}
 	}
 
 	return sanitizedImpExt, nil
-}
-
-func isSpecialField(bidder string) bool {
-	return bidder == openrtb_ext.FirstPartyDataContextExtKey ||
-		bidder == openrtb_ext.FirstPartyDataExtKey ||
-		bidder == openrtb_ext.SKAdNExtKey ||
-		bidder == openrtb_ext.GPIDKey ||
-		bidder == openrtb_ext.PrebidExtKey ||
-		bidder == openrtb_ext.TIDKey
 }
 
 // prepareUser changes req.User so that it's ready for the given bidder.

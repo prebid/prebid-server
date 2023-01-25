@@ -275,6 +275,15 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 					}
 				}
 
+				// FLEDGE auctionconfig responses are sent separate from bids
+				if bidResponse.FledgeAuctionConfigs != nil {
+					if fledgeAuctionConfigs := seatBidMap[bidderRequest.BidderName].FledgeAuctionConfigs; fledgeAuctionConfigs != nil {
+						seatBidMap[bidderRequest.BidderName].FledgeAuctionConfigs = append(fledgeAuctionConfigs, bidResponse.FledgeAuctionConfigs...)
+					} else {
+						seatBidMap[bidderRequest.BidderName].FledgeAuctionConfigs = bidResponse.FledgeAuctionConfigs
+					}
+				}
+
 				if len(bidderRequest.BidderStoredResponses) > 0 {
 					//set imp ids back to response for bids with stored responses
 					for i := 0; i < len(bidResponse.Bids); i++ {
