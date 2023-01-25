@@ -12,7 +12,10 @@ import (
 	"strconv"
 )
 
-type UndertoneAdapter struct {
+const adapterId = 4
+const adapterVersion = "1.0.0"
+
+type adapter struct {
 	endpoint string
 }
 
@@ -20,34 +23,32 @@ type BidRequestExt struct {
 	Prebid *openrtb_ext.ExtRequestPrebid `json:"prebid"`
 }
 
-type UndertoneBidderParams struct {
+type undertoneBidderParams struct {
 	Id      int    `json:"id"`
 	Version string `json:"version"`
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	bidder := &UndertoneAdapter{
+	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
 	return bidder, nil
 }
 
-func (a *UndertoneAdapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	err := a.validateBidRequest(request)
-	if err != nil {
-		return nil, []error{err}
-	}
-
-	imps, publisherId, errors := a.parseImps(request)
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	imps, publisherId, errs := getImpsAndPublisherId(request)
 	if len(imps) == 0 {
-		return nil, errors
+		return nil, errs
 	}
 
 	reqCopy := *request
 	reqCopy.Imp = imps
 
-	a.populateSiteApp(&reqCopy, publisherId, request.Site, request.App)
-	a.populateBidReqExt(&reqCopy)
+	populateSiteApp(&reqCopy, publisherId, request.Site, request.App)
+	e := populateBidReqExt(&reqCopy)
+	if e != nil {
+		errs = append(errs, e)
+	}
 
 	requestJSON, err := json.Marshal(reqCopy)
 	if err != nil {
@@ -60,10 +61,10 @@ func (a *UndertoneAdapter) MakeRequests(request *openrtb2.BidRequest, requestInf
 		Body:   requestJSON,
 	}
 
-	return []*adapters.RequestData{requestData}, errors
+	return []*adapters.RequestData{requestData}, errs
 }
 
-func (a *UndertoneAdapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if responseData.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -116,10 +117,10 @@ func (a *UndertoneAdapter) MakeBids(request *openrtb2.BidRequest, requestData *a
 	return bidResponse, nil
 }
 
-func (a *UndertoneAdapter) populateBidReqExt(bidRequest *openrtb2.BidRequest) {
-	undertoneBidderParams := &UndertoneBidderParams{
-		Id:      4,
-		Version: "1.0.0",
+func populateBidReqExt(bidRequest *openrtb2.BidRequest) error {
+	undertoneBidderParams := &undertoneBidderParams{
+		Id:      adapterId,
+		Version: adapterVersion,
 	}
 	undertoneBidderParamsJSON, err := json.Marshal(undertoneBidderParams)
 	if err == nil {
@@ -130,9 +131,10 @@ func (a *UndertoneAdapter) populateBidReqExt(bidRequest *openrtb2.BidRequest) {
 			bidRequest.Ext = bidRequestExtJSON
 		}
 	}
+	return err
 }
 
-func (a *UndertoneAdapter) populateSiteApp(bidRequest *openrtb2.BidRequest, publisherId int, site *openrtb2.Site, app *openrtb2.App) {
+func populateSiteApp(bidRequest *openrtb2.BidRequest, publisherId int, site *openrtb2.Site, app *openrtb2.App) {
 	pubId := strconv.Itoa(publisherId)
 	if site != nil {
 		siteCopy := *site
@@ -155,34 +157,21 @@ func (a *UndertoneAdapter) populateSiteApp(bidRequest *openrtb2.BidRequest, publ
 	}
 }
 
-func (a *UndertoneAdapter) validateBidRequest(bidRequest *openrtb2.BidRequest) error {
-	if bidRequest.Site == nil && bidRequest.App == nil {
-		return fmt.Errorf("invalid req: missing Site/App")
-	}
-	return nil
-}
-
-func (a *UndertoneAdapter) parseImps(bidRequest *openrtb2.BidRequest) ([]openrtb2.Imp, int, []error) {
+func getImpsAndPublisherId(bidRequest *openrtb2.BidRequest) ([]openrtb2.Imp, int, []error) {
 	var errs []error
 	var publisherId int
 	var validImps []openrtb2.Imp
 
 	for _, imp := range bidRequest.Imp {
-		if imp.Banner == nil && imp.Video == nil {
-			errs = append(errs, fmt.Errorf("invalid imp: no supported mediatype"))
+		var extImpBidder adapters.ExtImpBidder
+		if err := json.Unmarshal(imp.Ext, &extImpBidder); err != nil {
+			errs = append(errs, getInvalidImpErr(imp.ID, err))
 			continue
 		}
 
 		var extImpUndertone openrtb_ext.ExtImpUndertone
-		var extImpBidder adapters.ExtImpBidder
-		err := json.Unmarshal(imp.Ext, &extImpBidder)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-		err = json.Unmarshal(extImpBidder.Bidder, &extImpUndertone)
-		if err != nil {
-			errs = append(errs, err)
+		if err := json.Unmarshal(extImpBidder.Bidder, &extImpUndertone); err != nil {
+			errs = append(errs, getInvalidImpErr(imp.ID, err))
 			continue
 		}
 
@@ -198,7 +187,13 @@ func (a *UndertoneAdapter) parseImps(bidRequest *openrtb2.BidRequest) ([]openrtb
 	return validImps, publisherId, errs
 }
 
-func (a *UndertoneAdapter) makeImps(bidRequest *openrtb2.BidRequest, ext *openrtb_ext.ExtImpUndertone) []openrtb2.Imp {
+func getInvalidImpErr(impId string, err error) *errortypes.BadInput {
+	return &errortypes.BadInput{
+		Message: "Invalid impid=" + impId + ": " + err.Error(),
+	}
+}
+
+func (a *adapter) makeImps(bidRequest *openrtb2.BidRequest, ext *openrtb_ext.ExtImpUndertone) []openrtb2.Imp {
 	var validImps []openrtb2.Imp
 
 	for _, imp := range bidRequest.Imp {
