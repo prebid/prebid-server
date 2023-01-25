@@ -14,12 +14,12 @@ import (
 const testInfoFilesPathValid = "./test/bidder-info-valid"
 const testSimpleYAML = `
 maintainer:
-  email: "some-email@domain.com"
+  email: some-email@domain.com
 gvlVendorID: 42
 `
 const fullBidderYAMLConfig = `
 maintainer:
-  email: "some-email@domain.com"
+  email: some-email@domain.com
 capabilities:
   app:
     mediaTypes:
@@ -38,9 +38,9 @@ gvlVendorID: 42
 experiment:
   adsCert:
     enabled: true
-endpointCompression: "GZIP"
+endpointCompression: GZIP
 openrtb:
-  version: "2.6"
+  version: 2.6
   gpp-supported: true
 `
 

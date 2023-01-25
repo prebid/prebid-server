@@ -1420,6 +1420,8 @@ func setBidderDefaults(v *viper.Viper, bidder string) {
 	v.BindEnv(adapterCfgPrefix+".xapi.password", "")
 	v.BindEnv(adapterCfgPrefix+".xapi.tracker", "")
 	v.BindEnv(adapterCfgPrefix+".endpointCompression", "")
+	v.BindEnv(adapterCfgPrefix+".openrtb.version", "")
+	v.BindEnv(adapterCfgPrefix+".openrtb.gpp-supported", "")
 
 	v.BindEnv(adapterCfgPrefix + ".usersync.key")
 	v.BindEnv(adapterCfgPrefix + ".usersync.default")
