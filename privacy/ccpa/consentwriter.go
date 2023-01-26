@@ -17,10 +17,15 @@ func (c ConsentWriter) Write(req *openrtb2.BidRequest) error {
 		return nil
 	}
 	reqWrap := &openrtb_ext.RequestWrapper{BidRequest: req}
-	if regsExt, err := reqWrap.GetRegExt(); err == nil {
-		regsExt.SetUSPrivacy(c.Consent)
-	} else {
-		return err
+
+	// Set consent string in USPrivacy
+	if c.Consent != "" {
+		if regsExt, err := reqWrap.GetRegExt(); err == nil {
+			regsExt.SetUSPrivacy(c.Consent)
+		} else {
+			return err
+		}
 	}
+
 	return reqWrap.RebuildRequest()
 }

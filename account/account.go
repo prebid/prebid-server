@@ -28,7 +28,7 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 			Message: fmt.Sprintf("Prebid-server has been configured to discard requests without a valid Account ID. Please reach out to the prebid server host."),
 		}}
 	}
-	if accountJSON, accErrs := fetcher.FetchAccount(ctx, accountID); len(accErrs) > 0 || accountJSON == nil {
+	if accountJSON, accErrs := fetcher.FetchAccount(ctx, cfg.AccountDefaultsJSON(), accountID); len(accErrs) > 0 || accountJSON == nil {
 		// accountID does not reference a valid account
 		for _, e := range accErrs {
 			if _, ok := e.(stored_requests.NotFoundError); !ok {
@@ -49,25 +49,22 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 	} else {
 		// accountID resolved to a valid account, merge with AccountDefaults for a complete config
 		account = &config.Account{}
-		completeJSON, err := jsonpatch.MergePatch(cfg.AccountDefaultsJSON(), accountJSON)
-		if err == nil {
-			err = json.Unmarshal(completeJSON, account)
+		err := json.Unmarshal(accountJSON, account)
 
-			// this logic exists for backwards compatibility. If the initial unmarshal fails above, we attempt to
-			// resolve it by converting the GDPR enforce purpose fields and then attempting an unmarshal again before
-			// declaring a malformed account error.
-			// unmarshal fetched account to determine if it is well-formed
+		// this logic exists for backwards compatibility. If the initial unmarshal fails above, we attempt to
+		// resolve it by converting the GDPR enforce purpose fields and then attempting an unmarshal again before
+		// declaring a malformed account error.
+		// unmarshal fetched account to determine if it is well-formed
+		if _, ok := err.(*json.UnmarshalTypeError); ok {
+			// attempt to convert deprecated GDPR enforce purpose fields to resolve issue
+			accountJSON, err = ConvertGDPREnforcePurposeFields(accountJSON)
+			// unmarshal again to check if unmarshal error still exists after GDPR field conversion
+			err = json.Unmarshal(accountJSON, account)
+
 			if _, ok := err.(*json.UnmarshalTypeError); ok {
-				// attempt to convert deprecated GDPR enforce purpose fields to resolve issue
-				completeJSON, err = ConvertGDPREnforcePurposeFields(completeJSON)
-				// unmarshal again to check if unmarshal error still exists after GDPR field conversion
-				err = json.Unmarshal(completeJSON, account)
-
-				if _, ok := err.(*json.UnmarshalTypeError); ok {
-					return nil, []error{&errortypes.MalformedAcct{
-						Message: fmt.Sprintf("The prebid-server account config for account id \"%s\" is malformed. Please reach out to the prebid server host.", accountID),
-					}}
-				}
+				return nil, []error{&errortypes.MalformedAcct{
+					Message: fmt.Sprintf("The prebid-server account config for account id \"%s\" is malformed. Please reach out to the prebid server host.", accountID),
+				}}
 			}
 		}
 
@@ -92,6 +89,13 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 	return account, nil
 }
 
+// TCF2Enforcements maps enforcement algo string values to their integer representation and is
+// used to limit string compares
+var TCF2Enforcements = map[string]config.TCF2EnforcementAlgo{
+	config.TCF2EnforceAlgoBasic: config.TCF2BasicEnforcement,
+	config.TCF2EnforceAlgoFull:  config.TCF2FullEnforcement,
+}
+
 // setDerivedConfig modifies an account object by setting fields derived from other fields set in the account configuration
 func setDerivedConfig(account *config.Account) {
 	account.GDPR.PurposeConfigs = map[consentconstants.Purpose]*config.AccountGDPRPurpose{
@@ -107,9 +111,16 @@ func setDerivedConfig(account *config.Account) {
 		10: &account.GDPR.Purpose10,
 	}
 
-	// To look for a purpose's vendor exceptions in O(1) time, for each purpose we fill this hash table with bidders
-	// located in the VendorExceptions field of the GDPR.PurposeX struct
 	for _, pc := range account.GDPR.PurposeConfigs {
+		// To minimize the number of string compares per request, we set the integer representation
+		// of the enforcement algorithm on each purpose config
+		pc.EnforceAlgoID = config.TCF2UndefinedEnforcement
+		if algo, exists := TCF2Enforcements[pc.EnforceAlgo]; exists {
+			pc.EnforceAlgoID = algo
+		}
+
+		// To look for a purpose's vendor exceptions in O(1) time, for each purpose we fill this hash table with bidders
+		// located in the VendorExceptions field of the GDPR.PurposeX struct
 		if pc.VendorExceptions == nil {
 			continue
 		}

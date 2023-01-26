@@ -5,8 +5,8 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -21,8 +21,11 @@ import (
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/experiment/adscert"
 	"github.com/prebid/prebid-server/gdpr"
+	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/metrics"
 	metricsConf "github.com/prebid/prebid-server/metrics/config"
+	"github.com/prebid/prebid-server/modules"
+	"github.com/prebid/prebid-server/modules/moduledeps"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
@@ -33,6 +36,7 @@ import (
 	"github.com/prebid/prebid-server/util/uuidutil"
 	"github.com/prebid/prebid-server/version"
 
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	_ "github.com/lib/pq"
@@ -42,16 +46,16 @@ import (
 // NewJsonDirectoryServer is used to serve .json files from a directory as a single blob. For example,
 // given a directory containing the files "a.json" and "b.json", this returns a Handle which serves JSON like:
 //
-// {
-//   "a": { ... content from the file a.json ... },
-//   "b": { ... content from the file b.json ... }
-// }
+//	{
+//	  "a": { ... content from the file a.json ... },
+//	  "b": { ... content from the file b.json ... }
+//	}
 //
 // This function stores the file contents in memory, and should not be used on large directories.
 // If the root directory, or any of the files in it, cannot be read, then the program will exit.
 func NewJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.BidderParamValidator, aliases map[string]string) httprouter.Handle {
 	// Slurp the files into memory first, since they're small and it minimizes request latency.
-	files, err := ioutil.ReadDir(schemaDirectory)
+	files, err := os.ReadDir(schemaDirectory)
 	if err != nil {
 		glog.Fatalf("Failed to read directory %s: %v", schemaDirectory, err)
 	}
@@ -165,8 +169,14 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		syncerKeys = append(syncerKeys, k)
 	}
 
+	moduleDeps := moduledeps.ModuleDeps{HTTPClient: generalHttpClient}
+	repo, moduleStageNames, err := modules.NewBuilder().Build(cfg.Hooks.Modules, moduleDeps)
+	if err != nil {
+		glog.Fatalf("Failed to init hook modules: %v", err)
+	}
+
 	// Metrics engine
-	r.MetricsEngine = metricsConf.NewMetricsEngine(cfg, openrtb_ext.CoreBidderNames(), syncerKeys)
+	r.MetricsEngine = metricsConf.NewMetricsEngine(cfg, openrtb_ext.CoreBidderNames(), syncerKeys, moduleStageNames)
 	shutdown, fetcher, ampFetcher, accounts, categoriesFetcher, videoFetcher, storedRespFetcher := storedRequestsConf.NewStoredRequests(cfg, r.MetricsEngine, generalHttpClient, r.Router)
 	// todo(zachbadgett): better shutdown
 	r.Shutdown = shutdown
@@ -203,14 +213,15 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		glog.Fatalf("Failed to create ads cert signer: %v", err)
 	}
 
+	planBuilder := hooks.NewExecutionPlanBuilder(cfg.Hooks, repo)
 	theExchange := exchange.NewExchange(adapters, cacheClient, cfg, syncersByBidder, r.MetricsEngine, cfg.BidderInfos, gdprPermsBuilder, tcf2CfgBuilder, rateConvertor, categoriesFetcher, adsCertSigner)
 	var uuidGenerator uuidutil.UUIDRandomGenerator
-	openrtbEndpoint, err := openrtb2.NewEndpoint(uuidGenerator, theExchange, paramsValidator, fetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBidders, storedRespFetcher)
+	openrtbEndpoint, err := openrtb2.NewEndpoint(uuidGenerator, theExchange, paramsValidator, fetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBidders, storedRespFetcher, planBuilder)
 	if err != nil {
 		glog.Fatalf("Failed to create the openrtb2 endpoint handler. %v", err)
 	}
 
-	ampEndpoint, err := openrtb2.NewAmpEndpoint(uuidGenerator, theExchange, paramsValidator, ampFetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBidders, storedRespFetcher)
+	ampEndpoint, err := openrtb2.NewAmpEndpoint(uuidGenerator, theExchange, paramsValidator, ampFetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBidders, storedRespFetcher, planBuilder)
 	if err != nil {
 		glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
 	}
@@ -328,7 +339,7 @@ func readDefaultRequest(defReqConfig config.DefReqConfig) (map[string]string, []
 		if len(defReqConfig.FileSystem.FileName) == 0 {
 			return aliases, []byte{}
 		}
-		defReqJSON, err := ioutil.ReadFile(defReqConfig.FileSystem.FileName)
+		defReqJSON, err := os.ReadFile(defReqConfig.FileSystem.FileName)
 		if err != nil {
 			glog.Fatalf("error reading aliases from file %s: %v", defReqConfig.FileSystem.FileName, err)
 			return aliases, []byte{}

@@ -5,6 +5,8 @@ import (
 	"errors"
 	"net"
 	"os"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -172,13 +174,20 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "experiment.adscert.remote.signing_timeout_ms", cfg.Experiment.AdCerts.Remote.SigningTimeoutMs, 5)
 	cmpNils(t, "host_schain_node", cfg.HostSChainNode)
 	cmpStrings(t, "datacenter", cfg.DataCenter, "")
+	cmpBools(t, "hooks.enabled", cfg.Hooks.Enabled, false)
+	cmpStrings(t, "validations.banner_creative_max_size", cfg.Validations.BannerCreativeMaxSize, "skip")
+	cmpStrings(t, "validations.secure_markup", cfg.Validations.SecureMarkup, "skip")
+	cmpInts(t, "validations.max_creative_width", int(cfg.Validations.MaxCreativeWidth), 0)
+	cmpInts(t, "validations.max_creative_height", int(cfg.Validations.MaxCreativeHeight), 0)
+	cmpBools(t, "account_modules_metrics", cfg.Metrics.Disabled.AccountModulesMetrics, false)
 
 	//Assert purpose VendorExceptionMap hash tables were built correctly
 	expectedTCF2 := TCF2{
 		Enabled: true,
 		Purpose1: TCF2Purpose{
 			Enabled:            true,
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
@@ -186,7 +195,8 @@ func TestDefaults(t *testing.T) {
 		},
 		Purpose2: TCF2Purpose{
 			Enabled:            true,
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
@@ -194,7 +204,8 @@ func TestDefaults(t *testing.T) {
 		},
 		Purpose3: TCF2Purpose{
 			Enabled:            true,
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
@@ -202,7 +213,8 @@ func TestDefaults(t *testing.T) {
 		},
 		Purpose4: TCF2Purpose{
 			Enabled:            true,
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
@@ -210,7 +222,8 @@ func TestDefaults(t *testing.T) {
 		},
 		Purpose5: TCF2Purpose{
 			Enabled:            true,
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
@@ -218,7 +231,8 @@ func TestDefaults(t *testing.T) {
 		},
 		Purpose6: TCF2Purpose{
 			Enabled:            true,
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
@@ -226,7 +240,8 @@ func TestDefaults(t *testing.T) {
 		},
 		Purpose7: TCF2Purpose{
 			Enabled:            true,
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
@@ -234,7 +249,8 @@ func TestDefaults(t *testing.T) {
 		},
 		Purpose8: TCF2Purpose{
 			Enabled:            true,
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
@@ -242,7 +258,8 @@ func TestDefaults(t *testing.T) {
 		},
 		Purpose9: TCF2Purpose{
 			Enabled:            true,
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
@@ -250,7 +267,8 @@ func TestDefaults(t *testing.T) {
 		},
 		Purpose10: TCF2Purpose{
 			Enabled:            true,
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
@@ -298,6 +316,7 @@ gdpr:
       enforce_vendors: false
       vendor_exceptions: ["foo2"]
     purpose3:
+      enforce_algo: "basic"
       enforce_vendors: false
       vendor_exceptions: ["foo3"]
     purpose4:
@@ -380,6 +399,7 @@ metrics:
     account_stored_responses: false
     adapter_connections_metrics: true
     adapter_gdpr_request_blocked: true
+    account_modules_metrics: true
 blacklisted_apps: ["spamAppID","sketchy-app-id"]
 account_required: true
 auto_gen_source_tid: false
@@ -393,6 +413,11 @@ host_schain_node:
     sid: "00001"
     rid: "BidRequest"
     hp: 1
+validations:
+    banner_creative_max_size: "skip"
+    secure_markup: "skip"
+    max_creative_width: 0
+    max_creative_height: 0
 experiment:
     adscert:
         mode: inprocess
@@ -404,6 +429,8 @@ experiment:
         remote:
             url: ""
             signing_timeout_ms: 10
+hooks:
+    enabled: true
 `)
 
 var oldStoredRequestsConfig = []byte(`
@@ -479,6 +506,10 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "host_schain_node.rid", cfg.HostSChainNode.RID, "BidRequest")
 	cmpInt8s(t, "host_schain_node.hp", cfg.HostSChainNode.HP, &int8One)
 	cmpStrings(t, "datacenter", cfg.DataCenter, "1")
+	cmpStrings(t, "validations.banner_creative_max_size", cfg.Validations.BannerCreativeMaxSize, "skip")
+	cmpStrings(t, "validations.secure_markup", cfg.Validations.SecureMarkup, "skip")
+	cmpInts(t, "validations.max_creative_width", int(cfg.Validations.MaxCreativeWidth), 0)
+	cmpInts(t, "validations.max_creative_height", int(cfg.Validations.MaxCreativeHeight), 0)
 
 	//Assert the NonStandardPublishers was correctly unmarshalled
 	assert.Equal(t, []string{"pub1", "pub2"}, cfg.GDPR.NonStandardPublishers, "gdpr.non_standard_publishers")
@@ -505,7 +536,8 @@ func TestFullConfig(t *testing.T) {
 		Enabled: true,
 		Purpose1: TCF2Purpose{
 			Enabled:            true, // true by default
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo1a"), openrtb_ext.BidderName("foo1b")},
@@ -513,7 +545,8 @@ func TestFullConfig(t *testing.T) {
 		},
 		Purpose2: TCF2Purpose{
 			Enabled:            false,
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     false,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo2")},
@@ -521,7 +554,8 @@ func TestFullConfig(t *testing.T) {
 		},
 		Purpose3: TCF2Purpose{
 			Enabled:            true, // true by default
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoBasic,
+			EnforceAlgoID:      TCF2BasicEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo3")},
@@ -529,7 +563,8 @@ func TestFullConfig(t *testing.T) {
 		},
 		Purpose4: TCF2Purpose{
 			Enabled:            true, // true by default
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo4")},
@@ -537,7 +572,8 @@ func TestFullConfig(t *testing.T) {
 		},
 		Purpose5: TCF2Purpose{
 			Enabled:            true, // true by default
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo5")},
@@ -545,7 +581,8 @@ func TestFullConfig(t *testing.T) {
 		},
 		Purpose6: TCF2Purpose{
 			Enabled:            true, // true by default
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo6")},
@@ -553,7 +590,8 @@ func TestFullConfig(t *testing.T) {
 		},
 		Purpose7: TCF2Purpose{
 			Enabled:            true, // true by default
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo7")},
@@ -561,7 +599,8 @@ func TestFullConfig(t *testing.T) {
 		},
 		Purpose8: TCF2Purpose{
 			Enabled:            true, // true by default
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo8")},
@@ -569,7 +608,8 @@ func TestFullConfig(t *testing.T) {
 		},
 		Purpose9: TCF2Purpose{
 			Enabled:            true, // true by default
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo9")},
@@ -577,7 +617,8 @@ func TestFullConfig(t *testing.T) {
 		},
 		Purpose10: TCF2Purpose{
 			Enabled:            true, // true by default
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo10")},
@@ -639,6 +680,8 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "experiment.adscert.inprocess.domain_renewal_interval_seconds", cfg.Experiment.AdCerts.InProcess.DNSRenewalIntervalInSeconds, 60)
 	cmpStrings(t, "experiment.adscert.remote.url", cfg.Experiment.AdCerts.Remote.Url, "")
 	cmpInts(t, "experiment.adscert.remote.signing_timeout_ms", cfg.Experiment.AdCerts.Remote.SigningTimeoutMs, 10)
+	cmpBools(t, "hooks.enabled", cfg.Hooks.Enabled, true)
+	cmpBools(t, "account_modules_metrics", cfg.Metrics.Disabled.AccountModulesMetrics, true)
 }
 
 func TestValidateConfig(t *testing.T) {
@@ -646,16 +689,16 @@ func TestValidateConfig(t *testing.T) {
 		GDPR: GDPR{
 			DefaultValue: "1",
 			TCF2: TCF2{
-				Purpose1:  TCF2Purpose{EnforceAlgo: TCF2FullEnforcement},
-				Purpose2:  TCF2Purpose{EnforceAlgo: TCF2FullEnforcement},
-				Purpose3:  TCF2Purpose{EnforceAlgo: TCF2FullEnforcement},
-				Purpose4:  TCF2Purpose{EnforceAlgo: TCF2FullEnforcement},
-				Purpose5:  TCF2Purpose{EnforceAlgo: TCF2FullEnforcement},
-				Purpose6:  TCF2Purpose{EnforceAlgo: TCF2FullEnforcement},
-				Purpose7:  TCF2Purpose{EnforceAlgo: TCF2FullEnforcement},
-				Purpose8:  TCF2Purpose{EnforceAlgo: TCF2FullEnforcement},
-				Purpose9:  TCF2Purpose{EnforceAlgo: TCF2FullEnforcement},
-				Purpose10: TCF2Purpose{EnforceAlgo: TCF2FullEnforcement},
+				Purpose1:  TCF2Purpose{EnforceAlgo: TCF2EnforceAlgoBasic},
+				Purpose2:  TCF2Purpose{EnforceAlgo: TCF2EnforceAlgoFull},
+				Purpose3:  TCF2Purpose{EnforceAlgo: TCF2EnforceAlgoBasic},
+				Purpose4:  TCF2Purpose{EnforceAlgo: TCF2EnforceAlgoFull},
+				Purpose5:  TCF2Purpose{EnforceAlgo: TCF2EnforceAlgoBasic},
+				Purpose6:  TCF2Purpose{EnforceAlgo: TCF2EnforceAlgoFull},
+				Purpose7:  TCF2Purpose{EnforceAlgo: TCF2EnforceAlgoBasic},
+				Purpose8:  TCF2Purpose{EnforceAlgo: TCF2EnforceAlgoFull},
+				Purpose9:  TCF2Purpose{EnforceAlgo: TCF2EnforceAlgoBasic},
+				Purpose10: TCF2Purpose{EnforceAlgo: TCF2EnforceAlgoFull},
 			},
 		},
 		StoredRequests: StoredRequests{
@@ -1368,16 +1411,16 @@ func TestMigrateConfigTCF2EnforcePurposeFlags(t *testing.T) {
                     enforce_purpose: "no"
             `),
 			wantEnforceAlgosSet:         true,
-			wantPurpose1EnforceAlgo:     TCF2FullEnforcement,
-			wantPurpose2EnforceAlgo:     TCF2FullEnforcement,
-			wantPurpose3EnforceAlgo:     TCF2FullEnforcement,
-			wantPurpose4EnforceAlgo:     TCF2FullEnforcement,
-			wantPurpose5EnforceAlgo:     TCF2FullEnforcement,
-			wantPurpose6EnforceAlgo:     TCF2FullEnforcement,
-			wantPurpose7EnforceAlgo:     TCF2FullEnforcement,
-			wantPurpose8EnforceAlgo:     TCF2FullEnforcement,
-			wantPurpose9EnforceAlgo:     TCF2FullEnforcement,
-			wantPurpose10EnforceAlgo:    TCF2FullEnforcement,
+			wantPurpose1EnforceAlgo:     TCF2EnforceAlgoFull,
+			wantPurpose2EnforceAlgo:     TCF2EnforceAlgoFull,
+			wantPurpose3EnforceAlgo:     TCF2EnforceAlgoFull,
+			wantPurpose4EnforceAlgo:     TCF2EnforceAlgoFull,
+			wantPurpose5EnforceAlgo:     TCF2EnforceAlgoFull,
+			wantPurpose6EnforceAlgo:     TCF2EnforceAlgoFull,
+			wantPurpose7EnforceAlgo:     TCF2EnforceAlgoFull,
+			wantPurpose8EnforceAlgo:     TCF2EnforceAlgoFull,
+			wantPurpose9EnforceAlgo:     TCF2EnforceAlgoFull,
+			wantPurpose10EnforceAlgo:    TCF2EnforceAlgoFull,
 			wantEnforcePurposesSet:      true,
 			wantPurpose1EnforcePurpose:  trueStr,
 			wantPurpose2EnforcePurpose:  falseStr,
@@ -1456,16 +1499,16 @@ func TestMigrateConfigTCF2EnforcePurposeFlags(t *testing.T) {
                     enforce_algo: "full"
             `),
 			wantEnforceAlgosSet:      true,
-			wantPurpose1EnforceAlgo:  TCF2FullEnforcement,
-			wantPurpose2EnforceAlgo:  TCF2FullEnforcement,
-			wantPurpose3EnforceAlgo:  TCF2FullEnforcement,
-			wantPurpose4EnforceAlgo:  TCF2FullEnforcement,
-			wantPurpose5EnforceAlgo:  TCF2FullEnforcement,
-			wantPurpose6EnforceAlgo:  TCF2FullEnforcement,
-			wantPurpose7EnforceAlgo:  TCF2FullEnforcement,
-			wantPurpose8EnforceAlgo:  TCF2FullEnforcement,
-			wantPurpose9EnforceAlgo:  TCF2FullEnforcement,
-			wantPurpose10EnforceAlgo: TCF2FullEnforcement,
+			wantPurpose1EnforceAlgo:  TCF2EnforceAlgoFull,
+			wantPurpose2EnforceAlgo:  TCF2EnforceAlgoFull,
+			wantPurpose3EnforceAlgo:  TCF2EnforceAlgoFull,
+			wantPurpose4EnforceAlgo:  TCF2EnforceAlgoFull,
+			wantPurpose5EnforceAlgo:  TCF2EnforceAlgoFull,
+			wantPurpose6EnforceAlgo:  TCF2EnforceAlgoFull,
+			wantPurpose7EnforceAlgo:  TCF2EnforceAlgoFull,
+			wantPurpose8EnforceAlgo:  TCF2EnforceAlgoFull,
+			wantPurpose9EnforceAlgo:  TCF2EnforceAlgoFull,
+			wantPurpose10EnforceAlgo: TCF2EnforceAlgoFull,
 			wantEnforcePurposesSet:   false,
 		},
 		{
@@ -1505,16 +1548,16 @@ func TestMigrateConfigTCF2EnforcePurposeFlags(t *testing.T) {
                     enforce_purpose: "no"
             `),
 			wantEnforceAlgosSet:         true,
-			wantPurpose1EnforceAlgo:     TCF2FullEnforcement,
-			wantPurpose2EnforceAlgo:     TCF2FullEnforcement,
-			wantPurpose3EnforceAlgo:     TCF2FullEnforcement,
-			wantPurpose4EnforceAlgo:     TCF2FullEnforcement,
-			wantPurpose5EnforceAlgo:     TCF2FullEnforcement,
-			wantPurpose6EnforceAlgo:     TCF2FullEnforcement,
-			wantPurpose7EnforceAlgo:     TCF2FullEnforcement,
-			wantPurpose8EnforceAlgo:     TCF2FullEnforcement,
-			wantPurpose9EnforceAlgo:     TCF2FullEnforcement,
-			wantPurpose10EnforceAlgo:    TCF2FullEnforcement,
+			wantPurpose1EnforceAlgo:     TCF2EnforceAlgoFull,
+			wantPurpose2EnforceAlgo:     TCF2EnforceAlgoFull,
+			wantPurpose3EnforceAlgo:     TCF2EnforceAlgoFull,
+			wantPurpose4EnforceAlgo:     TCF2EnforceAlgoFull,
+			wantPurpose5EnforceAlgo:     TCF2EnforceAlgoFull,
+			wantPurpose6EnforceAlgo:     TCF2EnforceAlgoFull,
+			wantPurpose7EnforceAlgo:     TCF2EnforceAlgoFull,
+			wantPurpose8EnforceAlgo:     TCF2EnforceAlgoFull,
+			wantPurpose9EnforceAlgo:     TCF2EnforceAlgoFull,
+			wantPurpose10EnforceAlgo:    TCF2EnforceAlgoFull,
 			wantEnforcePurposesSet:      true,
 			wantPurpose1EnforcePurpose:  falseStr,
 			wantPurpose2EnforcePurpose:  falseStr,
@@ -1586,6 +1629,968 @@ func TestMigrateConfigTCF2EnforcePurposeFlags(t *testing.T) {
 	}
 }
 
+func TestMigrateConfigDatabaseConnection(t *testing.T) {
+	type configs struct {
+		old  []byte
+		new  []byte
+		both []byte
+	}
+
+	// Stored Requests Config Migration
+	storedReqestsConfigs := configs{
+		old: []byte(`
+      stored_requests:
+        postgres:
+          connection:
+            dbname: "old_connection_dbname"
+            host: "old_connection_host"
+            port: 1000
+            user: "old_connection_user"
+            password: "old_connection_password"
+          fetcher:
+            query: "old_fetcher_query"
+            amp_query: "old_fetcher_amp_query"
+          initialize_caches:
+            timeout_ms: 1000
+            query: "old_initialize_caches_query"
+            amp_query: "old_initialize_caches_amp_query"
+          poll_for_updates:
+            refresh_rate_seconds: 1000
+            timeout_ms: 1000
+            query: "old_poll_for_updates_query"
+            amp_query: "old_poll_for_updates_amp_query"
+    `),
+		new: []byte(`
+      stored_requests:
+        database:
+          connection:
+            dbname: "new_connection_dbname"
+            host: "new_connection_host"
+            port: 2000
+            user: "new_connection_user"
+            password: "new_connection_password"
+          fetcher:
+            query: "new_fetcher_query"
+            amp_query: "new_fetcher_amp_query"
+          initialize_caches:
+            timeout_ms: 2000
+            query: "new_initialize_caches_query"
+            amp_query: "new_initialize_caches_amp_query"
+          poll_for_updates:
+            refresh_rate_seconds: 2000
+            timeout_ms: 2000
+            query: "new_poll_for_updates_query"
+            amp_query: "new_poll_for_updates_amp_query"
+    `),
+		both: []byte(`
+      stored_requests:
+        postgres:
+          connection:
+            dbname: "old_connection_dbname"
+            host: "old_connection_host"
+            port: 1000
+            user: "old_connection_user"
+            password: "old_connection_password"
+          fetcher:
+            query: "old_fetcher_query"
+            amp_query: "old_fetcher_amp_query"
+          initialize_caches:
+            timeout_ms: 1000
+            query: "old_initialize_caches_query"
+            amp_query: "old_initialize_caches_amp_query"
+          poll_for_updates:
+            refresh_rate_seconds: 1000
+            timeout_ms: 1000
+            query: "old_poll_for_updates_query"
+            amp_query: "old_poll_for_updates_amp_query"
+        database:
+          connection:
+            dbname: "new_connection_dbname"
+            host: "new_connection_host"
+            port: 2000
+            user: "new_connection_user"
+            password: "new_connection_password"
+          fetcher:
+            query: "new_fetcher_query"
+            amp_query: "new_fetcher_amp_query"
+          initialize_caches:
+            timeout_ms: 2000
+            query: "new_initialize_caches_query"
+            amp_query: "new_initialize_caches_amp_query"
+          poll_for_updates:
+            refresh_rate_seconds: 2000
+            timeout_ms: 2000
+            query: "new_poll_for_updates_query"
+            amp_query: "new_poll_for_updates_amp_query"
+    `),
+	}
+
+	storedRequestsTests := []struct {
+		description string
+		config      []byte
+
+		want_connection_dbname                     string
+		want_connection_host                       string
+		want_connection_port                       int
+		want_connection_user                       string
+		want_connection_password                   string
+		want_fetcher_query                         string
+		want_fetcher_amp_query                     string
+		want_initialize_caches_timeout_ms          int
+		want_initialize_caches_query               string
+		want_initialize_caches_amp_query           string
+		want_poll_for_updates_refresh_rate_seconds int
+		want_poll_for_updates_timeout_ms           int
+		want_poll_for_updates_query                string
+		want_poll_for_updates_amp_query            string
+	}{
+		{
+			description: "New config and old config not set",
+			config:      []byte{},
+		},
+		{
+			description: "New config not set, old config set",
+			config:      storedReqestsConfigs.old,
+
+			want_connection_dbname:                     "old_connection_dbname",
+			want_connection_host:                       "old_connection_host",
+			want_connection_port:                       1000,
+			want_connection_user:                       "old_connection_user",
+			want_connection_password:                   "old_connection_password",
+			want_fetcher_query:                         "old_fetcher_query",
+			want_fetcher_amp_query:                     "old_fetcher_amp_query",
+			want_initialize_caches_timeout_ms:          1000,
+			want_initialize_caches_query:               "old_initialize_caches_query",
+			want_initialize_caches_amp_query:           "old_initialize_caches_amp_query",
+			want_poll_for_updates_refresh_rate_seconds: 1000,
+			want_poll_for_updates_timeout_ms:           1000,
+			want_poll_for_updates_query:                "old_poll_for_updates_query",
+			want_poll_for_updates_amp_query:            "old_poll_for_updates_amp_query",
+		},
+		{
+			description: "New config set, old config not set",
+			config:      storedReqestsConfigs.new,
+
+			want_connection_dbname:                     "new_connection_dbname",
+			want_connection_host:                       "new_connection_host",
+			want_connection_port:                       2000,
+			want_connection_user:                       "new_connection_user",
+			want_connection_password:                   "new_connection_password",
+			want_fetcher_query:                         "new_fetcher_query",
+			want_fetcher_amp_query:                     "new_fetcher_amp_query",
+			want_initialize_caches_timeout_ms:          2000,
+			want_initialize_caches_query:               "new_initialize_caches_query",
+			want_initialize_caches_amp_query:           "new_initialize_caches_amp_query",
+			want_poll_for_updates_refresh_rate_seconds: 2000,
+			want_poll_for_updates_timeout_ms:           2000,
+			want_poll_for_updates_query:                "new_poll_for_updates_query",
+			want_poll_for_updates_amp_query:            "new_poll_for_updates_amp_query",
+		},
+		{
+			description: "New config and old config set",
+			config:      storedReqestsConfigs.both,
+
+			want_connection_dbname:                     "new_connection_dbname",
+			want_connection_host:                       "new_connection_host",
+			want_connection_port:                       2000,
+			want_connection_user:                       "new_connection_user",
+			want_connection_password:                   "new_connection_password",
+			want_fetcher_query:                         "new_fetcher_query",
+			want_fetcher_amp_query:                     "new_fetcher_amp_query",
+			want_initialize_caches_timeout_ms:          2000,
+			want_initialize_caches_query:               "new_initialize_caches_query",
+			want_initialize_caches_amp_query:           "new_initialize_caches_amp_query",
+			want_poll_for_updates_refresh_rate_seconds: 2000,
+			want_poll_for_updates_timeout_ms:           2000,
+			want_poll_for_updates_query:                "new_poll_for_updates_query",
+			want_poll_for_updates_amp_query:            "new_poll_for_updates_amp_query",
+		},
+	}
+
+	for _, tt := range storedRequestsTests {
+		v := viper.New()
+		v.SetConfigType("yaml")
+		v.ReadConfig(bytes.NewBuffer(tt.config))
+
+		migrateConfigDatabaseConnection(v)
+
+		if len(tt.config) > 0 {
+			assert.Equal(t, tt.want_connection_dbname, v.GetString("stored_requests.database.connection.dbname"), tt.description)
+			assert.Equal(t, tt.want_connection_host, v.GetString("stored_requests.database.connection.host"), tt.description)
+			assert.Equal(t, tt.want_connection_port, v.GetInt("stored_requests.database.connection.port"), tt.description)
+			assert.Equal(t, tt.want_connection_user, v.GetString("stored_requests.database.connection.user"), tt.description)
+			assert.Equal(t, tt.want_connection_password, v.GetString("stored_requests.database.connection.password"), tt.description)
+			assert.Equal(t, tt.want_fetcher_query, v.GetString("stored_requests.database.fetcher.query"), tt.description)
+			assert.Equal(t, tt.want_fetcher_amp_query, v.GetString("stored_requests.database.fetcher.amp_query"), tt.description)
+			assert.Equal(t, tt.want_initialize_caches_timeout_ms, v.GetInt("stored_requests.database.initialize_caches.timeout_ms"), tt.description)
+			assert.Equal(t, tt.want_initialize_caches_query, v.GetString("stored_requests.database.initialize_caches.query"), tt.description)
+			assert.Equal(t, tt.want_initialize_caches_amp_query, v.GetString("stored_requests.database.initialize_caches.amp_query"), tt.description)
+			assert.Equal(t, tt.want_poll_for_updates_refresh_rate_seconds, v.GetInt("stored_requests.database.poll_for_updates.refresh_rate_seconds"), tt.description)
+			assert.Equal(t, tt.want_poll_for_updates_timeout_ms, v.GetInt("stored_requests.database.poll_for_updates.timeout_ms"), tt.description)
+			assert.Equal(t, tt.want_poll_for_updates_query, v.GetString("stored_requests.database.poll_for_updates.query"), tt.description)
+			assert.Equal(t, tt.want_poll_for_updates_amp_query, v.GetString("stored_requests.database.poll_for_updates.amp_query"), tt.description)
+		} else {
+			assert.Nil(t, v.Get("stored_requests.database.connection.dbname"), tt.description)
+			assert.Nil(t, v.Get("stored_requests.database.connection.host"), tt.description)
+			assert.Nil(t, v.Get("stored_requests.database.connection.port"), tt.description)
+			assert.Nil(t, v.Get("stored_requests.database.connection.user"), tt.description)
+			assert.Nil(t, v.Get("stored_requests.database.connection.password"), tt.description)
+			assert.Nil(t, v.Get("stored_requests.database.fetcher.query"), tt.description)
+			assert.Nil(t, v.Get("stored_requests.database.fetcher.amp_query"), tt.description)
+			assert.Nil(t, v.Get("stored_requests.database.initialize_caches.timeout_ms"), tt.description)
+			assert.Nil(t, v.Get("stored_requests.database.initialize_caches.query"), tt.description)
+			assert.Nil(t, v.Get("stored_requests.database.initialize_caches.amp_query"), tt.description)
+			assert.Nil(t, v.Get("stored_requests.database.poll_for_updates.refresh_rate_seconds"), tt.description)
+			assert.Nil(t, v.Get("stored_requests.database.poll_for_updates.timeout_ms"), tt.description)
+			assert.Nil(t, v.Get("stored_requests.database.poll_for_updates.query"), tt.description)
+			assert.Nil(t, v.Get("stored_requests.database.poll_for_updates.amp_query"), tt.description)
+		}
+	}
+
+	// Stored Video Reqs Config Migration
+	storedVideoReqsConfigs := configs{
+		old: []byte(`
+      stored_video_req:
+        postgres:
+          connection:
+            dbname: "old_connection_dbname"
+            host: "old_connection_host"
+            port: 1000
+            user: "old_connection_user"
+            password: "old_connection_password"
+          fetcher:
+            query: "old_fetcher_query"
+          initialize_caches:
+            timeout_ms: 1000
+            query: "old_initialize_caches_query"
+          poll_for_updates:
+            refresh_rate_seconds: 1000
+            timeout_ms: 1000
+            query: "old_poll_for_updates_query"
+    `),
+		new: []byte(`
+      stored_video_req:
+        database:
+          connection:
+            dbname: "new_connection_dbname"
+            host: "new_connection_host"
+            port: 2000
+            user: "new_connection_user"
+            password: "new_connection_password"
+          fetcher:
+            query: "new_fetcher_query"
+          initialize_caches:
+            timeout_ms: 2000
+            query: "new_initialize_caches_query"
+          poll_for_updates:
+            refresh_rate_seconds: 2000
+            timeout_ms: 2000
+            query: "new_poll_for_updates_query"
+    `),
+		both: []byte(`
+      stored_video_req:
+        postgres:
+          connection:
+            dbname: "old_connection_dbname"
+            host: "old_connection_host"
+            port: 1000
+            user: "old_connection_user"
+            password: "old_connection_password"
+          fetcher:
+            query: "old_fetcher_query"
+          initialize_caches:
+            timeout_ms: 1000
+            query: "old_initialize_caches_query"
+          poll_for_updates:
+            refresh_rate_seconds: 1000
+            timeout_ms: 1000
+            query: "old_poll_for_updates_query"
+        database:
+          connection:
+            dbname: "new_connection_dbname"
+            host: "new_connection_host"
+            port: 2000
+            user: "new_connection_user"
+            password: "new_connection_password"
+          fetcher:
+            query: "new_fetcher_query"
+          initialize_caches:
+            timeout_ms: 2000
+            query: "new_initialize_caches_query"
+          poll_for_updates:
+            refresh_rate_seconds: 2000
+            timeout_ms: 2000
+            query: "new_poll_for_updates_query"
+    `),
+	}
+
+	storedVideoReqsTests := []struct {
+		description string
+		config      []byte
+
+		want_connection_dbname                     string
+		want_connection_host                       string
+		want_connection_port                       int
+		want_connection_user                       string
+		want_connection_password                   string
+		want_fetcher_query                         string
+		want_initialize_caches_timeout_ms          int
+		want_initialize_caches_query               string
+		want_poll_for_updates_refresh_rate_seconds int
+		want_poll_for_updates_timeout_ms           int
+		want_poll_for_updates_query                string
+	}{
+		{
+			description: "New config and old config not set",
+			config:      []byte{},
+		},
+		{
+			description: "New config not set, old config set",
+			config:      storedVideoReqsConfigs.old,
+
+			want_connection_dbname:                     "old_connection_dbname",
+			want_connection_host:                       "old_connection_host",
+			want_connection_port:                       1000,
+			want_connection_user:                       "old_connection_user",
+			want_connection_password:                   "old_connection_password",
+			want_fetcher_query:                         "old_fetcher_query",
+			want_initialize_caches_timeout_ms:          1000,
+			want_initialize_caches_query:               "old_initialize_caches_query",
+			want_poll_for_updates_refresh_rate_seconds: 1000,
+			want_poll_for_updates_timeout_ms:           1000,
+			want_poll_for_updates_query:                "old_poll_for_updates_query",
+		},
+		{
+			description: "New config set, old config not set",
+			config:      storedVideoReqsConfigs.new,
+
+			want_connection_dbname:                     "new_connection_dbname",
+			want_connection_host:                       "new_connection_host",
+			want_connection_port:                       2000,
+			want_connection_user:                       "new_connection_user",
+			want_connection_password:                   "new_connection_password",
+			want_fetcher_query:                         "new_fetcher_query",
+			want_initialize_caches_timeout_ms:          2000,
+			want_initialize_caches_query:               "new_initialize_caches_query",
+			want_poll_for_updates_refresh_rate_seconds: 2000,
+			want_poll_for_updates_timeout_ms:           2000,
+			want_poll_for_updates_query:                "new_poll_for_updates_query",
+		},
+		{
+			description: "New config and old config set",
+			config:      storedVideoReqsConfigs.both,
+
+			want_connection_dbname:                     "new_connection_dbname",
+			want_connection_host:                       "new_connection_host",
+			want_connection_port:                       2000,
+			want_connection_user:                       "new_connection_user",
+			want_connection_password:                   "new_connection_password",
+			want_fetcher_query:                         "new_fetcher_query",
+			want_initialize_caches_timeout_ms:          2000,
+			want_initialize_caches_query:               "new_initialize_caches_query",
+			want_poll_for_updates_refresh_rate_seconds: 2000,
+			want_poll_for_updates_timeout_ms:           2000,
+			want_poll_for_updates_query:                "new_poll_for_updates_query",
+		},
+	}
+
+	for _, tt := range storedVideoReqsTests {
+		v := viper.New()
+		v.SetConfigType("yaml")
+		v.ReadConfig(bytes.NewBuffer(tt.config))
+
+		migrateConfigDatabaseConnection(v)
+
+		if len(tt.config) > 0 {
+			assert.Equal(t, tt.want_connection_dbname, v.Get("stored_video_req.database.connection.dbname").(string), tt.description)
+			assert.Equal(t, tt.want_connection_host, v.Get("stored_video_req.database.connection.host").(string), tt.description)
+			assert.Equal(t, tt.want_connection_port, v.Get("stored_video_req.database.connection.port").(int), tt.description)
+			assert.Equal(t, tt.want_connection_user, v.Get("stored_video_req.database.connection.user").(string), tt.description)
+			assert.Equal(t, tt.want_connection_password, v.Get("stored_video_req.database.connection.password").(string), tt.description)
+			assert.Equal(t, tt.want_fetcher_query, v.Get("stored_video_req.database.fetcher.query").(string), tt.description)
+			assert.Equal(t, tt.want_initialize_caches_timeout_ms, v.Get("stored_video_req.database.initialize_caches.timeout_ms").(int), tt.description)
+			assert.Equal(t, tt.want_initialize_caches_query, v.Get("stored_video_req.database.initialize_caches.query").(string), tt.description)
+			assert.Equal(t, tt.want_poll_for_updates_refresh_rate_seconds, v.Get("stored_video_req.database.poll_for_updates.refresh_rate_seconds").(int), tt.description)
+			assert.Equal(t, tt.want_poll_for_updates_timeout_ms, v.Get("stored_video_req.database.poll_for_updates.timeout_ms").(int), tt.description)
+			assert.Equal(t, tt.want_poll_for_updates_query, v.Get("stored_video_req.database.poll_for_updates.query").(string), tt.description)
+		} else {
+			assert.Nil(t, v.Get("stored_video_req.database.connection.dbname"), tt.description)
+			assert.Nil(t, v.Get("stored_video_req.database.connection.host"), tt.description)
+			assert.Nil(t, v.Get("stored_video_req.database.connection.port"), tt.description)
+			assert.Nil(t, v.Get("stored_video_req.database.connection.user"), tt.description)
+			assert.Nil(t, v.Get("stored_video_req.database.connection.password"), tt.description)
+			assert.Nil(t, v.Get("stored_video_req.database.fetcher.query"), tt.description)
+			assert.Nil(t, v.Get("stored_video_req.database.initialize_caches.timeout_ms"), tt.description)
+			assert.Nil(t, v.Get("stored_video_req.database.initialize_caches.query"), tt.description)
+			assert.Nil(t, v.Get("stored_video_req.database.poll_for_updates.refresh_rate_seconds"), tt.description)
+			assert.Nil(t, v.Get("stored_video_req.database.poll_for_updates.timeout_ms"), tt.description)
+			assert.Nil(t, v.Get("stored_video_req.database.poll_for_updates.query"), tt.description)
+		}
+	}
+
+	// Stored Responses Config Migration
+	storedResponsesConfigs := configs{
+		old: []byte(`
+      stored_responses:
+        postgres:
+          connection:
+            dbname: "old_connection_dbname"
+            host: "old_connection_host"
+            port: 1000
+            user: "old_connection_user"
+            password: "old_connection_password"
+          fetcher:
+            query: "old_fetcher_query"
+          initialize_caches:
+            timeout_ms: 1000
+            query: "old_initialize_caches_query"
+          poll_for_updates:
+            refresh_rate_seconds: 1000
+            timeout_ms: 1000
+            query: "old_poll_for_updates_query"
+    `),
+		new: []byte(`
+      stored_responses:
+        database:
+          connection:
+            dbname: "new_connection_dbname"
+            host: "new_connection_host"
+            port: 2000
+            user: "new_connection_user"
+            password: "new_connection_password"
+          fetcher:
+            query: "new_fetcher_query"
+          initialize_caches:
+            timeout_ms: 2000
+            query: "new_initialize_caches_query"
+          poll_for_updates:
+            refresh_rate_seconds: 2000
+            timeout_ms: 2000
+            query: "new_poll_for_updates_query"
+    `),
+		both: []byte(`
+      stored_responses:
+        postgres:
+          connection:
+            dbname: "old_connection_dbname"
+            host: "old_connection_host"
+            port: 1000
+            user: "old_connection_user"
+            password: "old_connection_password"
+          fetcher:
+            query: "old_fetcher_query"
+          initialize_caches:
+            timeout_ms: 1000
+            query: "old_initialize_caches_query"
+          poll_for_updates:
+            refresh_rate_seconds: 1000
+            timeout_ms: 1000
+            query: "old_poll_for_updates_query"
+        database:
+          connection:
+            dbname: "new_connection_dbname"
+            host: "new_connection_host"
+            port: 2000
+            user: "new_connection_user"
+            password: "new_connection_password"
+          fetcher:
+            query: "new_fetcher_query"
+          initialize_caches:
+            timeout_ms: 2000
+            query: "new_initialize_caches_query"
+          poll_for_updates:
+            refresh_rate_seconds: 2000
+            timeout_ms: 2000
+            query: "new_poll_for_updates_query"
+    `),
+	}
+
+	storedResponsesTests := []struct {
+		description string
+		config      []byte
+
+		want_connection_dbname                     string
+		want_connection_host                       string
+		want_connection_port                       int
+		want_connection_user                       string
+		want_connection_password                   string
+		want_fetcher_query                         string
+		want_initialize_caches_timeout_ms          int
+		want_initialize_caches_query               string
+		want_poll_for_updates_refresh_rate_seconds int
+		want_poll_for_updates_timeout_ms           int
+		want_poll_for_updates_query                string
+	}{
+		{
+			description: "New config and old config not set",
+			config:      []byte{},
+		},
+		{
+			description: "New config not set, old config set",
+			config:      storedResponsesConfigs.old,
+
+			want_connection_dbname:                     "old_connection_dbname",
+			want_connection_host:                       "old_connection_host",
+			want_connection_port:                       1000,
+			want_connection_user:                       "old_connection_user",
+			want_connection_password:                   "old_connection_password",
+			want_fetcher_query:                         "old_fetcher_query",
+			want_initialize_caches_timeout_ms:          1000,
+			want_initialize_caches_query:               "old_initialize_caches_query",
+			want_poll_for_updates_refresh_rate_seconds: 1000,
+			want_poll_for_updates_timeout_ms:           1000,
+			want_poll_for_updates_query:                "old_poll_for_updates_query",
+		},
+		{
+			description: "New config set, old config not set",
+			config:      storedResponsesConfigs.new,
+
+			want_connection_dbname:                     "new_connection_dbname",
+			want_connection_host:                       "new_connection_host",
+			want_connection_port:                       2000,
+			want_connection_user:                       "new_connection_user",
+			want_connection_password:                   "new_connection_password",
+			want_fetcher_query:                         "new_fetcher_query",
+			want_initialize_caches_timeout_ms:          2000,
+			want_initialize_caches_query:               "new_initialize_caches_query",
+			want_poll_for_updates_refresh_rate_seconds: 2000,
+			want_poll_for_updates_timeout_ms:           2000,
+			want_poll_for_updates_query:                "new_poll_for_updates_query",
+		},
+		{
+			description: "New config and old config set",
+			config:      storedResponsesConfigs.both,
+
+			want_connection_dbname:                     "new_connection_dbname",
+			want_connection_host:                       "new_connection_host",
+			want_connection_port:                       2000,
+			want_connection_user:                       "new_connection_user",
+			want_connection_password:                   "new_connection_password",
+			want_fetcher_query:                         "new_fetcher_query",
+			want_initialize_caches_timeout_ms:          2000,
+			want_initialize_caches_query:               "new_initialize_caches_query",
+			want_poll_for_updates_refresh_rate_seconds: 2000,
+			want_poll_for_updates_timeout_ms:           2000,
+			want_poll_for_updates_query:                "new_poll_for_updates_query",
+		},
+	}
+
+	for _, tt := range storedResponsesTests {
+		v := viper.New()
+		v.SetConfigType("yaml")
+		v.ReadConfig(bytes.NewBuffer(tt.config))
+
+		migrateConfigDatabaseConnection(v)
+
+		if len(tt.config) > 0 {
+			assert.Equal(t, tt.want_connection_dbname, v.Get("stored_responses.database.connection.dbname").(string), tt.description)
+			assert.Equal(t, tt.want_connection_host, v.Get("stored_responses.database.connection.host").(string), tt.description)
+			assert.Equal(t, tt.want_connection_port, v.Get("stored_responses.database.connection.port").(int), tt.description)
+			assert.Equal(t, tt.want_connection_user, v.Get("stored_responses.database.connection.user").(string), tt.description)
+			assert.Equal(t, tt.want_connection_password, v.Get("stored_responses.database.connection.password").(string), tt.description)
+			assert.Equal(t, tt.want_fetcher_query, v.Get("stored_responses.database.fetcher.query").(string), tt.description)
+			assert.Equal(t, tt.want_initialize_caches_timeout_ms, v.Get("stored_responses.database.initialize_caches.timeout_ms").(int), tt.description)
+			assert.Equal(t, tt.want_initialize_caches_query, v.Get("stored_responses.database.initialize_caches.query").(string), tt.description)
+			assert.Equal(t, tt.want_poll_for_updates_refresh_rate_seconds, v.Get("stored_responses.database.poll_for_updates.refresh_rate_seconds").(int), tt.description)
+			assert.Equal(t, tt.want_poll_for_updates_timeout_ms, v.Get("stored_responses.database.poll_for_updates.timeout_ms").(int), tt.description)
+			assert.Equal(t, tt.want_poll_for_updates_query, v.Get("stored_responses.database.poll_for_updates.query").(string), tt.description)
+		} else {
+			assert.Nil(t, v.Get("stored_responses.database.connection.dbname"), tt.description)
+			assert.Nil(t, v.Get("stored_responses.database.connection.host"), tt.description)
+			assert.Nil(t, v.Get("stored_responses.database.connection.port"), tt.description)
+			assert.Nil(t, v.Get("stored_responses.database.connection.user"), tt.description)
+			assert.Nil(t, v.Get("stored_responses.database.connection.password"), tt.description)
+			assert.Nil(t, v.Get("stored_responses.database.fetcher.query"), tt.description)
+			assert.Nil(t, v.Get("stored_responses.database.initialize_caches.timeout_ms"), tt.description)
+			assert.Nil(t, v.Get("stored_responses.database.initialize_caches.query"), tt.description)
+			assert.Nil(t, v.Get("stored_responses.database.poll_for_updates.refresh_rate_seconds"), tt.description)
+			assert.Nil(t, v.Get("stored_responses.database.poll_for_updates.timeout_ms"), tt.description)
+			assert.Nil(t, v.Get("stored_responses.database.poll_for_updates.query"), tt.description)
+		}
+	}
+}
+
+func TestMigrateConfigDatabaseConnectionUsingEnvVars(t *testing.T) {
+	tests := []struct {
+		description        string
+		prefix             string
+		setDatabaseEnvVars bool
+		setPostgresEnvVars bool
+	}{
+		{
+			description:        "stored requests old config set",
+			prefix:             "stored_requests",
+			setPostgresEnvVars: true,
+		},
+		{
+			description:        "stored requests new config set",
+			prefix:             "stored_requests",
+			setDatabaseEnvVars: true,
+		},
+		{
+			description:        "stored requests old and new config set",
+			prefix:             "stored_requests",
+			setDatabaseEnvVars: true,
+			setPostgresEnvVars: true,
+		},
+		{
+			description:        "stored video requests old config set",
+			prefix:             "stored_video_req",
+			setPostgresEnvVars: true,
+		},
+		{
+			description:        "stored video requests new config set",
+			prefix:             "stored_video_req",
+			setDatabaseEnvVars: true,
+		},
+		{
+			description:        "stored video requests old and new config set",
+			prefix:             "stored_video_req",
+			setDatabaseEnvVars: true,
+			setPostgresEnvVars: true,
+		},
+		{
+			description:        "stored responses old config set",
+			prefix:             "stored_responses",
+			setPostgresEnvVars: true,
+		},
+		{
+			description:        "stored responses new config set",
+			prefix:             "stored_responses",
+			setDatabaseEnvVars: true,
+		},
+		{
+			description:        "stored responses old and new config set",
+			prefix:             "stored_responses",
+			setDatabaseEnvVars: true,
+			setPostgresEnvVars: true,
+		},
+	}
+
+	pgValues := map[string]string{
+		"CONNECTION_DBNAME":                     "pg-dbname",
+		"CONNECTION_HOST":                       "pg-host",
+		"CONNECTION_PORT":                       "1",
+		"CONNECTION_USER":                       "pg-user",
+		"CONNECTION_PASSWORD":                   "pg-password",
+		"FETCHER_QUERY":                         "pg-fetcher-query",
+		"FETCHER_AMP_QUERY":                     "pg-fetcher-amp-query",
+		"INITIALIZE_CACHES_TIMEOUT_MS":          "2",
+		"INITIALIZE_CACHES_QUERY":               "pg-init-caches-query",
+		"INITIALIZE_CACHES_AMP_QUERY":           "pg-init-caches-amp-query",
+		"POLL_FOR_UPDATES_REFRESH_RATE_SECONDS": "3",
+		"POLL_FOR_UPDATES_TIMEOUT_MS":           "4",
+		"POLL_FOR_UPDATES_QUERY":                "pg-poll-query $LAST_UPDATED",
+		"POLL_FOR_UPDATES_AMP_QUERY":            "pg-poll-amp-query $LAST_UPDATED",
+	}
+	dbValues := map[string]string{
+		"CONNECTION_DBNAME":                     "db-dbname",
+		"CONNECTION_HOST":                       "db-host",
+		"CONNECTION_PORT":                       "5",
+		"CONNECTION_USER":                       "db-user",
+		"CONNECTION_PASSWORD":                   "db-password",
+		"FETCHER_QUERY":                         "db-fetcher-query",
+		"FETCHER_AMP_QUERY":                     "db-fetcher-amp-query",
+		"INITIALIZE_CACHES_TIMEOUT_MS":          "6",
+		"INITIALIZE_CACHES_QUERY":               "db-init-caches-query",
+		"INITIALIZE_CACHES_AMP_QUERY":           "db-init-caches-amp-query",
+		"POLL_FOR_UPDATES_REFRESH_RATE_SECONDS": "7",
+		"POLL_FOR_UPDATES_TIMEOUT_MS":           "8",
+		"POLL_FOR_UPDATES_QUERY":                "db-poll-query $LAST_UPDATED",
+		"POLL_FOR_UPDATES_AMP_QUERY":            "db-poll-amp-query $LAST_UPDATED",
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.description, func(t *testing.T) {
+			prefix := "PBS_" + strings.ToUpper(tt.prefix)
+
+			// validation rules require in memory cache type to not be "none"
+			// given that we want to set the poll for update queries to non-empty values
+			envVarName := prefix + "_IN_MEMORY_CACHE_TYPE"
+			if oldval, ok := os.LookupEnv(envVarName); ok {
+				defer os.Setenv(envVarName, oldval)
+			} else {
+				defer os.Unsetenv(envVarName)
+			}
+			os.Setenv(envVarName, "unbounded")
+
+			if tt.setPostgresEnvVars {
+				for suffix, v := range pgValues {
+					envVarName := prefix + "_POSTGRES_" + suffix
+					if oldval, ok := os.LookupEnv(envVarName); ok {
+						defer os.Setenv(envVarName, oldval)
+					} else {
+						defer os.Unsetenv(envVarName)
+					}
+					os.Setenv(envVarName, v)
+				}
+			}
+			if tt.setDatabaseEnvVars {
+				for suffix, v := range dbValues {
+					envVarName := prefix + "_DATABASE_" + suffix
+					if oldval, ok := os.LookupEnv(envVarName); ok {
+						defer os.Setenv(envVarName, oldval)
+					} else {
+						defer os.Unsetenv(envVarName)
+					}
+					os.Setenv(envVarName, v)
+				}
+			}
+
+			c, _ := newDefaultConfig(t)
+
+			expectedDatabaseValues := map[string]string{}
+			if tt.setDatabaseEnvVars {
+				expectedDatabaseValues = dbValues
+			} else if tt.setPostgresEnvVars {
+				expectedDatabaseValues = pgValues
+			}
+
+			if tt.prefix == "stored_requests" {
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_DBNAME"], c.StoredRequests.Database.ConnectionInfo.Database, tt.description)
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_HOST"], c.StoredRequests.Database.ConnectionInfo.Host, tt.description)
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_PORT"], strconv.Itoa(c.StoredRequests.Database.ConnectionInfo.Port), tt.description)
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_USER"], c.StoredRequests.Database.ConnectionInfo.Username, tt.description)
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_PASSWORD"], c.StoredRequests.Database.ConnectionInfo.Password, tt.description)
+				assert.Equal(t, expectedDatabaseValues["FETCHER_QUERY"], c.StoredRequests.Database.FetcherQueries.QueryTemplate, tt.description)
+				assert.Equal(t, expectedDatabaseValues["INITIALIZE_CACHES_TIMEOUT_MS"], strconv.Itoa(c.StoredRequests.Database.CacheInitialization.Timeout), tt.description)
+				assert.Equal(t, expectedDatabaseValues["INITIALIZE_CACHES_QUERY"], c.StoredRequests.Database.CacheInitialization.Query, tt.description)
+				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_REFRESH_RATE_SECONDS"], strconv.Itoa(c.StoredRequests.Database.PollUpdates.RefreshRate), tt.description)
+				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_TIMEOUT_MS"], strconv.Itoa(c.StoredRequests.Database.PollUpdates.Timeout), tt.description)
+				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_QUERY"], c.StoredRequests.Database.PollUpdates.Query, tt.description)
+				// AMP queries are only migrated for stored requests
+				assert.Equal(t, expectedDatabaseValues["FETCHER_AMP_QUERY"], c.StoredRequests.Database.FetcherQueries.AmpQueryTemplate, tt.description)
+				assert.Equal(t, expectedDatabaseValues["INITIALIZE_CACHES_AMP_QUERY"], c.StoredRequests.Database.CacheInitialization.AmpQuery, tt.description)
+				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_AMP_QUERY"], c.StoredRequests.Database.PollUpdates.AmpQuery, tt.description)
+			} else if tt.prefix == "stored_video_req" {
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_DBNAME"], c.StoredVideo.Database.ConnectionInfo.Database, tt.description)
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_HOST"], c.StoredVideo.Database.ConnectionInfo.Host, tt.description)
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_PORT"], strconv.Itoa(c.StoredVideo.Database.ConnectionInfo.Port), tt.description)
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_USER"], c.StoredVideo.Database.ConnectionInfo.Username, tt.description)
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_PASSWORD"], c.StoredVideo.Database.ConnectionInfo.Password, tt.description)
+				assert.Equal(t, expectedDatabaseValues["FETCHER_QUERY"], c.StoredVideo.Database.FetcherQueries.QueryTemplate, tt.description)
+				assert.Equal(t, expectedDatabaseValues["INITIALIZE_CACHES_TIMEOUT_MS"], strconv.Itoa(c.StoredVideo.Database.CacheInitialization.Timeout), tt.description)
+				assert.Equal(t, expectedDatabaseValues["INITIALIZE_CACHES_QUERY"], c.StoredVideo.Database.CacheInitialization.Query, tt.description)
+				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_REFRESH_RATE_SECONDS"], strconv.Itoa(c.StoredVideo.Database.PollUpdates.RefreshRate), tt.description)
+				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_TIMEOUT_MS"], strconv.Itoa(c.StoredVideo.Database.PollUpdates.Timeout), tt.description)
+				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_QUERY"], c.StoredVideo.Database.PollUpdates.Query, tt.description)
+				assert.Empty(t, c.StoredVideo.Database.FetcherQueries.AmpQueryTemplate, tt.description)
+				assert.Empty(t, c.StoredVideo.Database.CacheInitialization.AmpQuery, tt.description)
+				assert.Empty(t, c.StoredVideo.Database.PollUpdates.AmpQuery, tt.description)
+			} else {
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_DBNAME"], c.StoredResponses.Database.ConnectionInfo.Database, tt.description)
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_HOST"], c.StoredResponses.Database.ConnectionInfo.Host, tt.description)
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_PORT"], strconv.Itoa(c.StoredResponses.Database.ConnectionInfo.Port), tt.description)
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_USER"], c.StoredResponses.Database.ConnectionInfo.Username, tt.description)
+				assert.Equal(t, expectedDatabaseValues["CONNECTION_PASSWORD"], c.StoredResponses.Database.ConnectionInfo.Password, tt.description)
+				assert.Equal(t, expectedDatabaseValues["FETCHER_QUERY"], c.StoredResponses.Database.FetcherQueries.QueryTemplate, tt.description)
+				assert.Equal(t, expectedDatabaseValues["INITIALIZE_CACHES_TIMEOUT_MS"], strconv.Itoa(c.StoredResponses.Database.CacheInitialization.Timeout), tt.description)
+				assert.Equal(t, expectedDatabaseValues["INITIALIZE_CACHES_QUERY"], c.StoredResponses.Database.CacheInitialization.Query, tt.description)
+				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_REFRESH_RATE_SECONDS"], strconv.Itoa(c.StoredResponses.Database.PollUpdates.RefreshRate), tt.description)
+				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_TIMEOUT_MS"], strconv.Itoa(c.StoredResponses.Database.PollUpdates.Timeout), tt.description)
+				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_QUERY"], c.StoredResponses.Database.PollUpdates.Query, tt.description)
+				assert.Empty(t, c.StoredResponses.Database.FetcherQueries.AmpQueryTemplate, tt.description)
+				assert.Empty(t, c.StoredResponses.Database.CacheInitialization.AmpQuery, tt.description)
+				assert.Empty(t, c.StoredResponses.Database.PollUpdates.AmpQuery, tt.description)
+			}
+		})
+	}
+}
+
+func TestMigrateConfigDatabaseQueryParams(t *testing.T) {
+
+	config := []byte(`
+    stored_requests:
+      postgres:
+        fetcher:
+          query:
+            SELECT * FROM Table1 WHERE id in (%REQUEST_ID_LIST%)
+            UNION ALL
+            SELECT * FROM Table2 WHERE id in (%IMP_ID_LIST%)
+            UNION ALL
+            SELECT * FROM Table3 WHERE id in (%ID_LIST%)
+          amp_query:
+            SELECT * FROM Table1 WHERE id in (%REQUEST_ID_LIST%)
+            UNION ALL
+            SELECT * FROM Table2 WHERE id in (%IMP_ID_LIST%)
+            UNION ALL
+            SELECT * FROM Table3 WHERE id in (%ID_LIST%)
+        poll_for_updates:
+          query: "SELECT * FROM Table1 WHERE last_updated > $1 UNION ALL SELECT * FROM Table2 WHERE last_updated > $1"
+          amp_query: "SELECT * FROM Table1 WHERE last_updated > $1 UNION ALL SELECT * FROM Table2 WHERE last_updated > $1"
+    stored_video_req:
+      postgres:
+        fetcher:
+          query:
+            SELECT * FROM Table1 WHERE id in (%REQUEST_ID_LIST%)
+            UNION ALL
+            SELECT * FROM Table2 WHERE id in (%IMP_ID_LIST%)
+            UNION ALL
+            SELECT * FROM Table3 WHERE id in (%ID_LIST%)
+          amp_query:
+            SELECT * FROM Table1 WHERE id in (%REQUEST_ID_LIST%)
+            UNION ALL
+            SELECT * FROM Table2 WHERE id in (%IMP_ID_LIST%)
+            UNION ALL
+            SELECT * FROM Table3 WHERE id in (%ID_LIST%)
+        poll_for_updates:
+          query: "SELECT * FROM Table1 WHERE last_updated > $1 UNION ALL SELECT * FROM Table2 WHERE last_updated > $1"
+          amp_query: "SELECT * FROM Table1 WHERE last_updated > $1 UNION ALL SELECT * FROM Table2 WHERE last_updated > $1"
+    stored_responses:
+      postgres:
+        fetcher:
+          query: 
+            SELECT * FROM Table1 WHERE id in (%REQUEST_ID_LIST%)
+            UNION ALL
+            SELECT * FROM Table2 WHERE id in (%IMP_ID_LIST%)
+            UNION ALL
+            SELECT * FROM Table3 WHERE id in (%ID_LIST%)
+          amp_query:
+            SELECT * FROM Table1 WHERE id in (%REQUEST_ID_LIST%)
+            UNION ALL
+            SELECT * FROM Table2 WHERE id in (%IMP_ID_LIST%)
+            UNION ALL
+            SELECT * FROM Table3 WHERE id in (%ID_LIST%)
+        poll_for_updates:
+          query: "SELECT * FROM Table1 WHERE last_updated > $1 UNION ALL SELECT * FROM Table2 WHERE last_updated > $1"
+          amp_query: "SELECT * FROM Table1 WHERE last_updated > $1 UNION ALL SELECT * FROM Table2 WHERE last_updated > $1"
+  `)
+
+	want_queries := struct {
+		fetcher_query              string
+		fetcher_amp_query          string
+		poll_for_updates_query     string
+		poll_for_updates_amp_query string
+	}{
+		fetcher_query: "SELECT * FROM Table1 WHERE id in ($REQUEST_ID_LIST) " +
+			"UNION ALL " +
+			"SELECT * FROM Table2 WHERE id in ($IMP_ID_LIST) " +
+			"UNION ALL " +
+			"SELECT * FROM Table3 WHERE id in ($ID_LIST)",
+		fetcher_amp_query: "SELECT * FROM Table1 WHERE id in ($REQUEST_ID_LIST) " +
+			"UNION ALL " +
+			"SELECT * FROM Table2 WHERE id in ($IMP_ID_LIST) " +
+			"UNION ALL " +
+			"SELECT * FROM Table3 WHERE id in ($ID_LIST)",
+		poll_for_updates_query:     "SELECT * FROM Table1 WHERE last_updated > $LAST_UPDATED UNION ALL SELECT * FROM Table2 WHERE last_updated > $LAST_UPDATED",
+		poll_for_updates_amp_query: "SELECT * FROM Table1 WHERE last_updated > $LAST_UPDATED UNION ALL SELECT * FROM Table2 WHERE last_updated > $LAST_UPDATED",
+	}
+
+	v := viper.New()
+	v.SetConfigType("yaml")
+	v.ReadConfig(bytes.NewBuffer(config))
+
+	migrateConfigDatabaseConnection(v)
+
+	// stored_requests queries
+	assert.Equal(t, want_queries.fetcher_query, v.GetString("stored_requests.database.fetcher.query"))
+	assert.Equal(t, want_queries.fetcher_amp_query, v.GetString("stored_requests.database.fetcher.amp_query"))
+	assert.Equal(t, want_queries.poll_for_updates_query, v.GetString("stored_requests.database.poll_for_updates.query"))
+	assert.Equal(t, want_queries.poll_for_updates_amp_query, v.GetString("stored_requests.database.poll_for_updates.amp_query"))
+
+	// stored_video_req queries
+	assert.Equal(t, want_queries.fetcher_query, v.GetString("stored_video_req.database.fetcher.query"))
+	assert.Equal(t, want_queries.fetcher_amp_query, v.GetString("stored_video_req.database.fetcher.amp_query"))
+	assert.Equal(t, want_queries.poll_for_updates_query, v.GetString("stored_video_req.database.poll_for_updates.query"))
+	assert.Equal(t, want_queries.poll_for_updates_amp_query, v.GetString("stored_video_req.database.poll_for_updates.amp_query"))
+
+	// stored_responses queries
+	assert.Equal(t, want_queries.fetcher_query, v.GetString("stored_responses.database.fetcher.query"))
+	assert.Equal(t, want_queries.fetcher_amp_query, v.GetString("stored_responses.database.fetcher.amp_query"))
+	assert.Equal(t, want_queries.poll_for_updates_query, v.GetString("stored_responses.database.poll_for_updates.query"))
+	assert.Equal(t, want_queries.poll_for_updates_amp_query, v.GetString("stored_responses.database.poll_for_updates.amp_query"))
+}
+
+func TestIsConfigInfoPresent(t *testing.T) {
+	configPrefix1Field2Only := []byte(`
+      prefix1:
+        field2: "value2"
+    `)
+	configPrefix1Field4Only := []byte(`
+      prefix1:
+        field4: "value4"
+      `)
+	configPrefix1Field2AndField3 := []byte(`
+      prefix1:
+        field2: "value2"
+        field3: "value3"
+      `)
+
+	tests := []struct {
+		description string
+		config      []byte
+		keyPrefix   string
+		fields      []string
+		wantResult  bool
+	}{
+		{
+			description: "config is nil",
+			config:      nil,
+			keyPrefix:   "prefix1",
+			fields:      []string{"field1", "field2", "field3"},
+			wantResult:  false,
+		},
+		{
+			description: "config is empty",
+			config:      []byte{},
+			keyPrefix:   "prefix1",
+			fields:      []string{"field1", "field2", "field3"},
+			wantResult:  false,
+		},
+		{
+			description: "present - one field exists in config",
+			config:      configPrefix1Field2Only,
+			keyPrefix:   "prefix1",
+			fields:      []string{"field1", "field2", "field3"},
+			wantResult:  true,
+		},
+		{
+			description: "present - many fields exist in config",
+			config:      configPrefix1Field2AndField3,
+			keyPrefix:   "prefix1",
+			fields:      []string{"field1", "field2", "field3"},
+			wantResult:  true,
+		},
+		{
+			description: "not present - field not found",
+			config:      configPrefix1Field4Only,
+			keyPrefix:   "prefix1",
+			fields:      []string{"field1", "field2", "field3"},
+			wantResult:  false,
+		},
+		{
+			description: "not present - field exists but with a different prefix",
+			config:      configPrefix1Field2Only,
+			keyPrefix:   "prefix2",
+			fields:      []string{"field1", "field2", "field3"},
+			wantResult:  false,
+		},
+		{
+			description: "not present - fields is nil",
+			config:      configPrefix1Field2Only,
+			keyPrefix:   "prefix1",
+			fields:      nil,
+			wantResult:  false,
+		},
+		{
+			description: "not present - fields is empty",
+			config:      configPrefix1Field2Only,
+			keyPrefix:   "prefix1",
+			fields:      []string{},
+			wantResult:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		v := viper.New()
+		v.SetConfigType("yaml")
+		v.ReadConfig(bytes.NewBuffer(tt.config))
+
+		result := isConfigInfoPresent(v, tt.keyPrefix, tt.fields)
+		assert.Equal(t, tt.wantResult, result, tt.description)
+	}
+}
+
 func TestNegativeRequestSize(t *testing.T) {
 	cfg, v := newDefaultConfig(t)
 	cfg.MaxRequestSize = -1
@@ -1646,26 +2651,26 @@ func TestMissingGDPRDefaultValue(t *testing.T) {
 	assertOneError(t, cfg.validate(v), "gdpr.default_value is required and must be specified")
 }
 
-func TestInvalidEnforcePurpose(t *testing.T) {
+func TestInvalidEnforceAlgo(t *testing.T) {
 	cfg, v := newDefaultConfig(t)
 	cfg.GDPR.TCF2.Purpose1.EnforceAlgo = ""
-	cfg.GDPR.TCF2.Purpose2.EnforceAlgo = TCF2FullEnforcement
-	cfg.GDPR.TCF2.Purpose3.EnforceAlgo = TCF2FullEnforcement
-	cfg.GDPR.TCF2.Purpose4.EnforceAlgo = TCF2FullEnforcement
+	cfg.GDPR.TCF2.Purpose2.EnforceAlgo = TCF2EnforceAlgoFull
+	cfg.GDPR.TCF2.Purpose3.EnforceAlgo = TCF2EnforceAlgoBasic
+	cfg.GDPR.TCF2.Purpose4.EnforceAlgo = TCF2EnforceAlgoFull
 	cfg.GDPR.TCF2.Purpose5.EnforceAlgo = "invalid1"
 	cfg.GDPR.TCF2.Purpose6.EnforceAlgo = "invalid2"
-	cfg.GDPR.TCF2.Purpose7.EnforceAlgo = TCF2FullEnforcement
-	cfg.GDPR.TCF2.Purpose8.EnforceAlgo = TCF2FullEnforcement
-	cfg.GDPR.TCF2.Purpose9.EnforceAlgo = TCF2FullEnforcement
+	cfg.GDPR.TCF2.Purpose7.EnforceAlgo = TCF2EnforceAlgoFull
+	cfg.GDPR.TCF2.Purpose8.EnforceAlgo = TCF2EnforceAlgoBasic
+	cfg.GDPR.TCF2.Purpose9.EnforceAlgo = TCF2EnforceAlgoFull
 	cfg.GDPR.TCF2.Purpose10.EnforceAlgo = "invalid3"
 
 	errs := cfg.validate(v)
 
 	expectedErrs := []error{
-		errors.New("gdpr.tcf2.purpose1.enforce_algo must be \"full\". Got "),
-		errors.New("gdpr.tcf2.purpose5.enforce_algo must be \"full\". Got invalid1"),
-		errors.New("gdpr.tcf2.purpose6.enforce_algo must be \"full\". Got invalid2"),
-		errors.New("gdpr.tcf2.purpose10.enforce_algo must be \"full\". Got invalid3"),
+		errors.New("gdpr.tcf2.purpose1.enforce_algo must be \"basic\" or \"full\". Got "),
+		errors.New("gdpr.tcf2.purpose5.enforce_algo must be \"basic\" or \"full\". Got invalid1"),
+		errors.New("gdpr.tcf2.purpose6.enforce_algo must be \"basic\" or \"full\". Got invalid2"),
+		errors.New("gdpr.tcf2.purpose10.enforce_algo must be \"basic\" or \"full\". Got invalid3"),
 	}
 	assert.ElementsMatch(t, errs, expectedErrs, "gdpr.tcf2.purposeX.enforce_algo should prevent invalid values but it doesn't")
 }
@@ -1779,11 +2784,11 @@ func TestValidateAccountsConfigRestrictions(t *testing.T) {
 	cfg, v := newDefaultConfig(t)
 	cfg.Accounts.Files.Enabled = true
 	cfg.Accounts.HTTP.Endpoint = "http://localhost"
-	cfg.Accounts.Postgres.ConnectionInfo.Database = "accounts"
+	cfg.Accounts.Database.ConnectionInfo.Database = "accounts"
 
 	errs := cfg.validate(v)
 	assert.Len(t, errs, 1)
-	assert.Contains(t, errs, errors.New("accounts.postgres: retrieving accounts via postgres not available, use accounts.files"))
+	assert.Contains(t, errs, errors.New("accounts.database: retrieving accounts via database not available, use accounts.files"))
 }
 
 func newDefaultConfig(t *testing.T) (*Configuration, *viper.Viper) {
@@ -1924,6 +2929,61 @@ func TestTCF2PurposeEnforced(t *testing.T) {
 	}
 }
 
+func TestTCF2PurposeEnforcementAlgo(t *testing.T) {
+	tests := []struct {
+		description          string
+		givePurposeConfigNil bool
+		givePurpose1Algo     TCF2EnforcementAlgo
+		givePurpose2Algo     TCF2EnforcementAlgo
+		givePurpose          consentconstants.Purpose
+		wantAlgo             TCF2EnforcementAlgo
+	}{
+		{
+			description:          "Purpose config is nil",
+			givePurposeConfigNil: true,
+			givePurpose:          1,
+			wantAlgo:             TCF2FullEnforcement,
+		},
+		{
+			description:      "Purpose 1 enforcement algo set to basic",
+			givePurpose1Algo: TCF2BasicEnforcement,
+			givePurpose:      1,
+			wantAlgo:         TCF2BasicEnforcement,
+		},
+		{
+			description:      "Purpose 1 enforcement algo set to full",
+			givePurpose1Algo: TCF2FullEnforcement,
+			givePurpose:      1,
+			wantAlgo:         TCF2FullEnforcement,
+		},
+		{
+			description:      "Purpose 2 Enforcement algo set to basic",
+			givePurpose2Algo: TCF2BasicEnforcement,
+			givePurpose:      2,
+			wantAlgo:         TCF2BasicEnforcement,
+		},
+	}
+
+	for _, tt := range tests {
+		tcf2 := TCF2{}
+
+		if !tt.givePurposeConfigNil {
+			tcf2.PurposeConfigs = map[consentconstants.Purpose]*TCF2Purpose{
+				1: {
+					EnforceAlgoID: tt.givePurpose1Algo,
+				},
+				2: {
+					EnforceAlgoID: tt.givePurpose2Algo,
+				},
+			}
+		}
+
+		value := tcf2.PurposeEnforcementAlgo(tt.givePurpose)
+
+		assert.Equal(t, tt.wantAlgo, value, tt.description)
+	}
+}
+
 func TestTCF2PurposeEnforcingVendors(t *testing.T) {
 	tests := []struct {
 		description           string
@@ -1979,65 +3039,44 @@ func TestTCF2PurposeEnforcingVendors(t *testing.T) {
 	}
 }
 
-func TestTCF2PurposeVendorException(t *testing.T) {
+func TestTCF2PurposeVendorExceptions(t *testing.T) {
 	tests := []struct {
 		description              string
 		givePurposeConfigNil     bool
 		givePurpose1ExceptionMap map[openrtb_ext.BidderName]struct{}
 		givePurpose2ExceptionMap map[openrtb_ext.BidderName]struct{}
 		givePurpose              consentconstants.Purpose
-		giveBidder               openrtb_ext.BidderName
-		wantIsVendorException    bool
+		wantExceptionMap         map[openrtb_ext.BidderName]struct{}
 	}{
 		{
-			description:           "Purpose config is nil",
-			givePurposeConfigNil:  true,
-			givePurpose:           1,
-			giveBidder:            "appnexus",
-			wantIsVendorException: false,
+			description:          "Purpose config is nil",
+			givePurposeConfigNil: true,
+			givePurpose:          1,
+			wantExceptionMap:     map[openrtb_ext.BidderName]struct{}{},
 		},
 		{
-			description:           "Nil - exception map not defined for purpose",
-			givePurpose:           1,
-			giveBidder:            "appnexus",
-			wantIsVendorException: false,
+			description:      "Nil - exception map not defined for purpose",
+			givePurpose:      1,
+			wantExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 		},
 		{
 			description:              "Empty - exception map empty for purpose",
 			givePurpose:              1,
 			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{},
-			giveBidder:               "appnexus",
-			wantIsVendorException:    false,
+			wantExceptionMap:         map[openrtb_ext.BidderName]struct{}{},
 		},
 		{
-			description:              "One - bidder found in purpose exception map containing one entry",
-			givePurpose:              1,
-			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{"appnexus": {}},
-			giveBidder:               "appnexus",
-			wantIsVendorException:    true,
-		},
-		{
-			description:              "Many - bidder found in purpose exception map containing multiple entries",
+			description:              "Nonempty - exception map with multiple entries for purpose",
 			givePurpose:              1,
 			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
-			giveBidder:               "appnexus",
-			wantIsVendorException:    true,
+			wantExceptionMap:         map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
 		},
 		{
-			description:              "Many - bidder not found in purpose exception map containing multiple entries",
-			givePurpose:              1,
-			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
-			givePurpose2ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "openx": {}},
-			giveBidder:               "openx",
-			wantIsVendorException:    false,
-		},
-		{
-			description:              "Many - bidder found in different purpose exception map containing multiple entries",
+			description:              "Nonempty - exception map with multiple entries for different purpose",
 			givePurpose:              2,
 			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
 			givePurpose2ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "openx": {}},
-			giveBidder:               "openx",
-			wantIsVendorException:    true,
+			wantExceptionMap:         map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "openx": {}},
 		},
 	}
 
@@ -2055,9 +3094,9 @@ func TestTCF2PurposeVendorException(t *testing.T) {
 			}
 		}
 
-		value := tcf2.PurposeVendorException(tt.givePurpose, tt.giveBidder)
+		value := tcf2.PurposeVendorExceptions(tt.givePurpose)
 
-		assert.Equal(t, tt.wantIsVendorException, value, tt.description)
+		assert.Equal(t, tt.wantExceptionMap, value, tt.description)
 	}
 }
 

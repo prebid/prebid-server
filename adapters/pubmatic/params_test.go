@@ -9,7 +9,7 @@ import (
 
 // This file actually intends to test static/bidder-params/pubmatic.json
 //
-// These also validate the format of the external API: request.imp[i].ext.pubmatic
+// These also validate the format of the external API: request.imp[i].ext.prebid.bidder.pubmatic
 
 // TestValidParams makes sure that the pubmatic schema accepts all imp.ext fields which we intend to support.
 func TestValidParams(t *testing.T) {

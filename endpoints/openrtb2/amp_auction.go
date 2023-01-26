@@ -15,6 +15,8 @@ import (
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb3"
+	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/util/uuidutil"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
@@ -24,6 +26,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests"
@@ -36,11 +39,15 @@ import (
 
 const defaultAmpRequestTimeoutMillis = 900
 
+var nilBody []byte = nil
+
 type AmpResponse struct {
-	Targeting map[string]string                                         `json:"targeting"`
-	Debug     *openrtb_ext.ExtResponseDebug                             `json:"debug,omitempty"`
-	Errors    map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage `json:"errors,omitempty"`
-	Warnings  map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage `json:"warnings,omitempty"`
+	Targeting map[string]string `json:"targeting"`
+	ORTB2     ORTB2             `json:"ortb2"`
+}
+
+type ORTB2 struct {
+	Ext openrtb_ext.ExtBidResponse `json:"ext"`
 }
 
 // NewAmpEndpoint modifies the OpenRTB endpoint to handle AMP requests. This will basically modify the parsing
@@ -52,15 +59,16 @@ func NewAmpEndpoint(
 	requestsById stored_requests.Fetcher,
 	accounts stored_requests.AccountFetcher,
 	cfg *config.Configuration,
-	met metrics.MetricsEngine,
+	metricsEngine metrics.MetricsEngine,
 	pbsAnalytics analytics.PBSAnalyticsModule,
 	disabledBidders map[string]string,
 	defReqJSON []byte,
 	bidderMap map[string]openrtb_ext.BidderName,
 	storedRespFetcher stored_requests.Fetcher,
+	hookExecutionPlanBuilder hooks.ExecutionPlanBuilder,
 ) (httprouter.Handle, error) {
 
-	if ex == nil || validator == nil || requestsById == nil || accounts == nil || cfg == nil || met == nil {
+	if ex == nil || validator == nil || requestsById == nil || accounts == nil || cfg == nil || metricsEngine == nil {
 		return nil, errors.New("NewAmpEndpoint requires non-nil arguments.")
 	}
 
@@ -71,6 +79,8 @@ func NewAmpEndpoint(
 		IPv6PrivateNetworks: cfg.RequestValidation.IPv6PrivateNetworksParsed,
 	}
 
+	hookExecutor := hookexecution.NewHookExecutor(hookExecutionPlanBuilder, hookexecution.EndpointAmp, metricsEngine)
+
 	return httprouter.Handle((&endpointDeps{
 		uuidGenerator,
 		ex,
@@ -79,7 +89,7 @@ func NewAmpEndpoint(
 		empty_fetcher.EmptyFetcher{},
 		accounts,
 		cfg,
-		met,
+		metricsEngine,
 		pbsAnalytics,
 		disabledBidders,
 		defRequest,
@@ -88,7 +98,8 @@ func NewAmpEndpoint(
 		nil,
 		nil,
 		ipValidator,
-		storedRespFetcher}).AmpAuction), nil
+		storedRespFetcher,
+		hookExecutor}).AmpAuction), nil
 
 }
 
@@ -116,6 +127,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		CookieFlag:    metrics.CookieFlagUnknown,
 		RequestStatus: metrics.RequestStatusOK,
 	}
+
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
@@ -136,8 +148,16 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	w.Header().Set("Access-Control-Expose-Headers", "AMP-Access-Control-Allow-Source-Origin")
 	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
 
+	// There is no body for AMP requests, so we pass a nil body and ignore the return value.
+	_, rejectErr := deps.hookExecutor.ExecuteEntrypointStage(r, nilBody)
 	reqWrapper, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, errL := deps.parseAmpRequest(r)
 	ao.Errors = append(ao.Errors, errL...)
+	// Process reject after parsing amp request, so we can use reqWrapper.
+	// There is no body for AMP requests, so we pass a nil body and ignore the return value.
+	if rejectErr != nil {
+		labels, ao = rejectAmpRequest(*rejectErr, w, deps.hookExecutor, reqWrapper, nil, labels, ao, nil)
+		return
+	}
 
 	if errortypes.ContainsFatalError(errL) {
 		w.WriteHeader(http.StatusBadRequest)
@@ -212,12 +232,13 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		StoredBidResponses:         storedBidResponses,
 		BidderImpReplaceImpID:      bidderImpReplaceImp,
 		PubID:                      labels.PubID,
+		HookExecutor:               deps.hookExecutor,
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
 	ao.AuctionResponse = response
-
-	if err != nil {
+	rejectErr, isRejectErr := hookexecution.CastRejectErr(err)
+	if err != nil && !isRejectErr {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
 		glog.Errorf("/openrtb2/amp Critical error: %v", err)
@@ -237,72 +258,78 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		return
 	}
 
+	if isRejectErr {
+		labels, ao = rejectAmpRequest(*rejectErr, w, deps.hookExecutor, reqWrapper, account, labels, ao, errL)
+		return
+	}
+
+	labels, ao = sendAmpResponse(w, deps.hookExecutor, response, reqWrapper, account, labels, ao, errL)
+}
+
+func rejectAmpRequest(
+	rejectErr hookexecution.RejectError,
+	w http.ResponseWriter,
+	hookExecutor hookexecution.HookStageExecutor,
+	reqWrapper *openrtb_ext.RequestWrapper,
+	account *config.Account,
+	labels metrics.Labels,
+	ao analytics.AmpObject,
+	errs []error,
+) (metrics.Labels, analytics.AmpObject) {
+	response := &openrtb2.BidResponse{NBR: openrtb3.NoBidReason(rejectErr.NBR).Ptr()}
+	ao.AuctionResponse = response
+	ao.Errors = append(ao.Errors, rejectErr)
+
+	return sendAmpResponse(w, hookExecutor, response, reqWrapper, account, labels, ao, errs)
+}
+
+func sendAmpResponse(
+	w http.ResponseWriter,
+	hookExecutor hookexecution.HookStageExecutor,
+	response *openrtb2.BidResponse,
+	reqWrapper *openrtb_ext.RequestWrapper,
+	account *config.Account,
+	labels metrics.Labels,
+	ao analytics.AmpObject,
+	errs []error,
+) (metrics.Labels, analytics.AmpObject) {
+	hookExecutor.ExecuteAuctionResponseStage(response)
 	// Need to extract the targeting parameters from the response, as those are all that
 	// go in the AMP response
 	targets := map[string]string{}
 	byteCache := []byte("\"hb_cache_id")
-	for _, seatBids := range response.SeatBid {
-		for _, bid := range seatBids.Bid {
-			if bytes.Contains(bid.Ext, byteCache) {
-				// Looking for cache_id to be set, as this should only be set on winning bids (or
-				// deal bids), and AMP can only deliver cached ads in any case.
-				// Note, this could cause issues if a targeting key value starts with "hb_cache_id",
-				// but this is a very unlikely corner case. Doing this so we can catch "hb_cache_id"
-				// and "hb_cache_id_{deal}", which allows for deal support in AMP.
-				bidExt := &openrtb_ext.ExtBid{}
-				err := json.Unmarshal(bid.Ext, bidExt)
-				if err != nil {
-					w.WriteHeader(http.StatusInternalServerError)
-					fmt.Fprintf(w, "Critical error while unpacking AMP targets: %v", err)
-					glog.Errorf("/openrtb2/amp Critical error unpacking targets: %v", err)
-					ao.Errors = append(ao.Errors, fmt.Errorf("Critical error while unpacking AMP targets: %v", err))
-					ao.Status = http.StatusInternalServerError
-					return
-				}
-				for key, value := range bidExt.Prebid.Targeting {
-					targets[key] = value
+	if response != nil {
+		for _, seatBids := range response.SeatBid {
+			for _, bid := range seatBids.Bid {
+				if bytes.Contains(bid.Ext, byteCache) {
+					// Looking for cache_id to be set, as this should only be set on winning bids (or
+					// deal bids), and AMP can only deliver cached ads in any case.
+					// Note, this could cause issues if a targeting key value starts with "hb_cache_id",
+					// but this is a very unlikely corner case. Doing this so we can catch "hb_cache_id"
+					// and "hb_cache_id_{deal}", which allows for deal support in AMP.
+					bidExt := &openrtb_ext.ExtBid{}
+					err := json.Unmarshal(bid.Ext, bidExt)
+					if err != nil {
+						w.WriteHeader(http.StatusInternalServerError)
+						fmt.Fprintf(w, "Critical error while unpacking AMP targets: %v", err)
+						glog.Errorf("/openrtb2/amp Critical error unpacking targets: %v", err)
+						ao.Errors = append(ao.Errors, fmt.Errorf("Critical error while unpacking AMP targets: %v", err))
+						ao.Status = http.StatusInternalServerError
+						return labels, ao
+					}
+					for key, value := range bidExt.Prebid.Targeting {
+						targets[key] = value
+					}
 				}
 			}
 		}
 	}
 
-	// Extract any errors
-	var extResponse openrtb_ext.ExtBidResponse
-	eRErr := json.Unmarshal(response.Ext, &extResponse)
-	if eRErr != nil {
-		ao.Errors = append(ao.Errors, fmt.Errorf("AMP response: failed to unpack OpenRTB response.ext, debug info cannot be forwarded: %v", eRErr))
-	}
-
-	warnings := extResponse.Warnings
-	if warnings == nil {
-		warnings = make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)
-	}
-	for _, v := range errortypes.WarningOnly(errL) {
-		bidderErr := openrtb_ext.ExtBidderMessage{
-			Code:    errortypes.ReadCode(v),
-			Message: v.Error(),
-		}
-		warnings[openrtb_ext.BidderReservedGeneral] = append(warnings[openrtb_ext.BidderReservedGeneral], bidderErr)
-	}
-
 	// Now JSONify the targets for the AMP response.
-	ampResponse := AmpResponse{
-		Targeting: targets,
-		Errors:    extResponse.Errors,
-		Warnings:  warnings,
-	}
+	ampResponse := AmpResponse{Targeting: targets}
+	ao, ampResponse.ORTB2.Ext = getExtBidResponse(hookExecutor, response, reqWrapper, account, ao, errs)
 
 	ao.AmpTargetingValues = targets
-
-	// add debug information if requested
-	if reqWrapper.Test == 1 && eRErr == nil {
-		if extResponse.Debug != nil {
-			ampResponse.Debug = extResponse.Debug
-		} else {
-			glog.Errorf("Test set on request but debug not present in response: %v", err)
-			ao.Errors = append(ao.Errors, fmt.Errorf("Test set on request but debug not present in response: %v", err))
-		}
-	}
 
 	// Fixes #231
 	enc := json.NewEncoder(w)
@@ -315,6 +342,70 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		labels.RequestStatus = metrics.RequestStatusNetworkErr
 		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/amp Failed to send response: %v", err))
 	}
+
+	return labels, ao
+}
+
+func getExtBidResponse(
+	hookExecutor hookexecution.HookStageExecutor,
+	response *openrtb2.BidResponse,
+	reqWrapper *openrtb_ext.RequestWrapper,
+	account *config.Account,
+	ao analytics.AmpObject,
+	errs []error,
+) (analytics.AmpObject, openrtb_ext.ExtBidResponse) {
+	// Extract any errors
+	var extResponse openrtb_ext.ExtBidResponse
+	eRErr := json.Unmarshal(response.Ext, &extResponse)
+	if eRErr != nil {
+		ao.Errors = append(ao.Errors, fmt.Errorf("AMP response: failed to unpack OpenRTB response.ext, debug info cannot be forwarded: %v", eRErr))
+	}
+
+	warnings := extResponse.Warnings
+	if warnings == nil {
+		warnings = make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)
+	}
+	for _, v := range errortypes.WarningOnly(errs) {
+		bidderErr := openrtb_ext.ExtBidderMessage{
+			Code:    errortypes.ReadCode(v),
+			Message: v.Error(),
+		}
+		warnings[openrtb_ext.BidderReservedGeneral] = append(warnings[openrtb_ext.BidderReservedGeneral], bidderErr)
+	}
+
+	extBidResponse := openrtb_ext.ExtBidResponse{
+		Errors:   extResponse.Errors,
+		Warnings: warnings,
+	}
+
+	// add debug information if requested
+	if reqWrapper != nil {
+		if reqWrapper.Test == 1 && eRErr == nil {
+			if extResponse.Debug != nil {
+				extBidResponse.Debug = extResponse.Debug
+			} else {
+				glog.Errorf("Test set on request but debug not present in response.")
+				ao.Errors = append(ao.Errors, fmt.Errorf("test set on request but debug not present in response"))
+			}
+		}
+
+		stageOutcomes := hookExecutor.GetOutcomes()
+		ao.HookExecutionOutcome = stageOutcomes
+		modules, warns, err := hookexecution.GetModulesJSON(stageOutcomes, reqWrapper.BidRequest, account)
+		if err != nil {
+			err := fmt.Errorf("Failed to get modules outcome: %s", err)
+			glog.Errorf(err.Error())
+			ao.Errors = append(ao.Errors, err)
+		} else if modules != nil {
+			extBidResponse.Prebid = &openrtb_ext.ExtResponsePrebid{Modules: modules}
+		}
+
+		if len(warns) > 0 {
+			ao.Errors = append(ao.Errors, warns...)
+		}
+	}
+
+	return ao, extBidResponse
 }
 
 // parseRequest turns the HTTP request into an OpenRTB request.
@@ -345,7 +436,7 @@ func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openr
 	// At this point, we should have a valid request that definitely has Targeting and Cache turned on
 	hasStoredResponses := len(storedAuctionResponses) > 0
 
-	e = deps.validateRequest(req, true, hasStoredResponses, storedBidResponses)
+	e = deps.validateRequest(req, true, hasStoredResponses, storedBidResponses, false)
 	errs = append(errs, e...)
 	return
 }
@@ -461,6 +552,10 @@ func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb2
 		req.Imp[0].TagID = ampParams.Slot
 	}
 
+	if err := setConsentedProviders(req, ampParams); err != nil {
+		return []error{err}
+	}
+
 	policyWriter, policyWriterErr := amp.ReadPolicy(ampParams, deps.cfg.GDPR.Enabled)
 	if policyWriterErr != nil {
 		return []error{policyWriterErr}
@@ -477,6 +572,50 @@ func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb2
 		return []error{err}
 	}
 
+	if err := setTrace(req, ampParams.Trace); err != nil {
+		return []error{err}
+	}
+
+	return nil
+}
+
+// setConsentedProviders sets the addtl_consent value to user.ext.ConsentedProvidersSettings.consented_providers
+// in its orginal Google Additional Consent string format and user.ext.consented_providers_settings.consented_providers
+// that is an array of ints that contains the elements found in addtl_consent
+func setConsentedProviders(req *openrtb2.BidRequest, ampParams amp.Params) error {
+	if len(ampParams.AdditionalConsent) > 0 {
+		reqWrap := &openrtb_ext.RequestWrapper{BidRequest: req}
+
+		userExt, err := reqWrap.GetUserExt()
+		if err != nil {
+			return err
+		}
+
+		// Parse addtl_consent, that is supposed to come formatted as a Google Additional Consent string, into array of ints
+		consentedProvidersList := openrtb_ext.ParseConsentedProvidersString(ampParams.AdditionalConsent)
+
+		// Set user.ext.consented_providers_settings.consented_providers if elements where found
+		if len(consentedProvidersList) > 0 {
+			cps := userExt.GetConsentedProvidersSettingsOut()
+			if cps == nil {
+				cps = &openrtb_ext.ConsentedProvidersSettingsOut{}
+			}
+			cps.ConsentedProvidersList = append(cps.ConsentedProvidersList, consentedProvidersList...)
+			userExt.SetConsentedProvidersSettingsOut(cps)
+		}
+
+		// Copy addtl_consent into user.ext.ConsentedProvidersSettings.consented_providers as is
+		cps := userExt.GetConsentedProvidersSettingsIn()
+		if cps == nil {
+			cps = &openrtb_ext.ConsentedProvidersSettingsIn{}
+		}
+		cps.ConsentedProvidersString = ampParams.AdditionalConsent
+		userExt.SetConsentedProvidersSettingsIn(cps)
+
+		if err := reqWrap.RebuildRequest(); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -617,4 +756,25 @@ func setEffectiveAmpPubID(req *openrtb2.BidRequest, account string) {
 	if pub.ID == "" {
 		pub.ID = account
 	}
+}
+
+func setTrace(req *openrtb2.BidRequest, value string) (err error) {
+	if value == "" {
+		return nil
+	}
+
+	ext, err := json.Marshal(map[string]map[string]string{"prebid": {"trace": value}})
+	if err != nil {
+		return err
+	}
+
+	if len(req.Ext) > 0 {
+		ext, err = jsonpatch.MergePatch(req.Ext, ext)
+		if err != nil {
+			return err
+		}
+	}
+	req.Ext = ext
+
+	return nil
 }
