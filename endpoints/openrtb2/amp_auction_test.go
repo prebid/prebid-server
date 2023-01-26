@@ -1111,7 +1111,7 @@ func TestAmpDebug(t *testing.T) {
 // Prevents #452
 func TestAmpTargetingDefaults(t *testing.T) {
 	req := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}}
-	if err := defaultRequestExt(req); err != nil {
+	if err := setAMPDefaultTargetingAndCache(req); err != nil {
 		t.Fatalf("Unexpected error defaulting request.ext for AMP: %v", err)
 	}
 

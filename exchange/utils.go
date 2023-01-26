@@ -727,9 +727,9 @@ func getExtTargetData(requestExt *openrtb_ext.ExtRequest, cacheInstructions *ext
 
 	if requestExt != nil && requestExt.Prebid.Targeting != nil {
 		targData = &targetData{
-			priceGranularity:  requestExt.Prebid.Targeting.PriceGranularity,
-			includeWinners:    requestExt.Prebid.Targeting.IncludeWinners,
-			includeBidderKeys: requestExt.Prebid.Targeting.IncludeBidderKeys,
+			priceGranularity:  *requestExt.Prebid.Targeting.PriceGranularity,
+			includeWinners:    *requestExt.Prebid.Targeting.IncludeWinners,
+			includeBidderKeys: *requestExt.Prebid.Targeting.IncludeBidderKeys,
 			includeCacheBids:  cacheInstructions.cacheBids,
 			includeCacheVast:  cacheInstructions.cacheVAST,
 			includeFormat:     requestExt.Prebid.Targeting.IncludeFormat,

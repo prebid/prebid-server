@@ -12,7 +12,7 @@ func GetPriceBucket(cpm float64, config openrtb_ext.PriceGranularity) string {
 	cpmStr := ""
 	bucketMax := 0.0
 	increment := 0.0
-	precision := config.Precision
+	precision := *config.Precision
 
 	for i := 0; i < len(config.Ranges); i++ {
 		if config.Ranges[i].Max > bucketMax {

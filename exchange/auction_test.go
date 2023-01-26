@@ -16,6 +16,7 @@ import (
 	"github.com/prebid/prebid-server/exchange/entities"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
+	"github.com/prebid/prebid-server/util/ptrutil"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -229,7 +230,7 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 
 	targData := &targetData{
 		priceGranularity: openrtb_ext.PriceGranularity{
-			Precision: 2,
+			Precision: ptrutil.ToPtr(2),
 			Ranges: []openrtb_ext.GranularityRange{
 				{
 					Min:       0,

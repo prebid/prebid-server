@@ -22,6 +22,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/util/ptrutil"
 
 	"github.com/prebid/openrtb/v17/adcom1"
 	"github.com/prebid/openrtb/v17/openrtb2"
@@ -120,8 +121,8 @@ func TestCreateBidExtension(t *testing.T) {
 			DurationRangeSec:     durationRange,
 			RequireExactDuration: false,
 		},
-		PriceGranularity: openrtb_ext.PriceGranularity{
-			Precision: 2,
+		PriceGranularity: &openrtb_ext.PriceGranularity{
+			Precision: ptrutil.ToPtr(2),
 			Ranges:    priceGranRanges,
 		},
 	}
@@ -153,7 +154,7 @@ func TestCreateBidExtensionExactDurTrueNoPriceRange(t *testing.T) {
 			DurationRangeSec:     durationRange,
 			RequireExactDuration: true,
 		},
-		PriceGranularity: openrtb_ext.PriceGranularity{
+		PriceGranularity: &openrtb_ext.PriceGranularity{
 			Precision: 0,
 			Ranges:    nil,
 		},
