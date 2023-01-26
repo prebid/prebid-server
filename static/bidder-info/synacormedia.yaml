@@ -13,4 +13,3 @@ capabilities:
       - video
 userSync:
   key: "imds"
-  supportCors: true
