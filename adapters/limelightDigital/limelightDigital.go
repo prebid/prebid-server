@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/prebid/prebid-server/macros"
 	"net/http"
-	"strconv"
 	"strings"
 	"text/template"
 
@@ -149,7 +148,7 @@ func (a *adapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ImpExtLimeli
 func (a *adapter) buildEndpointURL(params *openrtb_ext.ImpExtLimelightDigital) (string, error) {
 	endpointParams := macros.EndpointTemplateParams{
 		Host:        params.Host,
-		PublisherID: strconv.Itoa(params.PublisherID),
+		PublisherID: params.PublisherID.String(),
 	}
 	return macros.ResolveMacros(a.endpointTemplate, endpointParams)
 }

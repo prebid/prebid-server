@@ -11,9 +11,10 @@
       "minLength": 1
     },
     "publisherId": {
-      "type": "integer",
+      "type": ["integer", "string"],
       "description": "Publisher ID",
-      "minimum": 1
+      "minimum": 1,
+      "pattern": "^[1-9][0-9]*$"
     }
   },
 

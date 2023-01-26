@@ -38,6 +38,10 @@ var validParams = []string{
 	`{"host": "example.com:42", "publisherId": 42}`,
 	`{"host": "example.com/test", "publisherId": 42}`,
 	`{"host": "example.com:42/test", "publisherId": 42}`,
+
+	`{"host": "example.com", "publisherId": 1}`,
+	`{"host": "example.com", "publisherId": "1"}`,
+	`{"host": "example.com", "publisherId": "42"}`,
 }
 
 var invalidParams = []string{
@@ -55,9 +59,14 @@ var invalidParams = []string{
 	`{"host": 42, "publisherId": 42}`,
 
 	`{"host": "example.com", "publisherId": ""}`,
-	`{"host": "example.com", "publisherId": "42"}`,
 	`{"host": "example.com", "publisherId": 0}`,
+	`{"host": "example.com", "publisherId": "0"}`,
 	`{"host": "example.com", "publisherId": -1}`,
+	`{"host": "example.com", "publisherId": "-1"}`,
+	`{"host": "example.com", "publisherId": 01}`,
+	`{"host": "example.com", "publisherId": "01"}`,
+	`{"host": "example.com", "publisherId": -01}`,
+	`{"host": "example.com", "publisherId": "-01"}`,
 	`{"host": "example.com", "publisherId": -42}`,
 	`{"host": "example.com", "publisherId": "-42"}`,
 }
