@@ -163,8 +163,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			continue
 		}
 
-		var diaRubiconNative openrtb_ext.ExtImpDiaRubiconNative
-		if err := json.Unmarshal(bidderExt.Bidder, &diaRubiconNative); err != nil {
+		var diaRubiconNativeExtImp openrtb_ext.ExtImpDiaRubiconNative
+		if err := json.Unmarshal(bidderExt.Bidder, &diaRubiconNativeExtImp); err != nil {
 			errors = append(errors, &errortypes.BadInput{
 				Message: err.Error(),
 			})
