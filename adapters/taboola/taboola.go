@@ -3,6 +3,7 @@ package taboola
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/prebid/openrtb/v17/adcom1"
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
@@ -114,6 +115,11 @@ func createTaboolaRequest(request *openrtb2.BidRequest) (taboolaRequest *openrtb
 			imp.BidFloor = taboolaExt.BidFloor
 			modifiedRequest.Imp[i] = imp
 		}
+		if taboolaExt.Pos != nil {
+			imp.Banner.Pos = adcom1.PlacementPosition(*taboolaExt.Pos).Ptr()
+			modifiedRequest.Imp[i] = imp
+		}
+
 	}
 
 	publisher := &openrtb2.Publisher{
@@ -126,6 +132,11 @@ func createTaboolaRequest(request *openrtb2.BidRequest) (taboolaRequest *openrtb
 			Name:      taboolaExt.PublisherId,
 			Domain:    evaluateDomain(taboolaExt.PublisherDomain, request),
 			Publisher: publisher,
+			//if taboolaExt.PageType != nil {},
+			//Ext:       generateSiteExtJson(taboolaExt, errs),
+		}
+		if taboolaExt.PageType != "" {
+			newSite.Ext = generateSiteExtJson(taboolaExt, errs)
 		}
 		modifiedRequest.Site = newSite
 	} else {
@@ -134,6 +145,13 @@ func createTaboolaRequest(request *openrtb2.BidRequest) (taboolaRequest *openrtb
 		modifiedSite.ID = taboolaExt.PublisherId
 		modifiedSite.Name = taboolaExt.PublisherId
 		modifiedSite.Domain = evaluateDomain(taboolaExt.PublisherDomain, request)
+		if taboolaExt.PageType != "" {
+			if modifiedSite.Ext == nil {
+				modifiedSite.Ext = generateSiteExtJson(taboolaExt, errs)
+			} else {
+				modifiedSite.Ext = wrapSiteExtJson(taboolaExt, modifiedRequest.Site, errs)
+			}
+		}
 		modifiedRequest.Site = &modifiedSite
 	}
 
@@ -146,6 +164,33 @@ func createTaboolaRequest(request *openrtb2.BidRequest) (taboolaRequest *openrtb
 	}
 
 	return &modifiedRequest, errs
+}
+
+func wrapSiteExtJson(taboolaExt openrtb_ext.ImpExtTaboola, site *openrtb2.Site, errs []error) json.RawMessage {
+	tblaSiteExt := &TBLASiteExt{
+		PageType:   taboolaExt.PageType,
+		RTBSiteExt: site.Ext,
+	}
+	tblaSiteExtJson, err := json.Marshal(tblaSiteExt)
+	if err != nil {
+		errs = append(errs, err)
+		tblaSiteExtJson = make([]byte, 0)
+	}
+	return tblaSiteExtJson
+
+}
+
+func generateSiteExtJson(taboolaExt openrtb_ext.ImpExtTaboola, errs []error) json.RawMessage {
+	tblaSiteExt := &TBLASiteExt{
+		PageType: taboolaExt.PageType,
+	}
+	tblaSiteExtJson, err := json.Marshal(tblaSiteExt)
+	if err != nil {
+		errs = append(errs, err)
+		return make([]byte, 0)
+	}
+	return tblaSiteExtJson
+
 }
 
 func getMediaType(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
