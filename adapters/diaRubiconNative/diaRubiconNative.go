@@ -42,6 +42,34 @@ type nativeOutbound struct {
 	Api        []int                  `json:"api"`
 }
 
+type diaRubiconNativeUserExtRP struct {
+	Target json.RawMessage `json:"target,omitempty"`
+}
+
+type diaRubiconNativeUserExt struct {
+	Consent string                    `json:"consent,omitempty"`
+	Eids    []openrtb2.EID            `json:"eids,omitempty"`
+	RP      diaRubiconNativeUserExtRP `json:"rp"`
+	Data    json.RawMessage           `json:"data,omitempty"`
+}
+
+type diaRubiconNativeContext struct {
+	Data json.RawMessage `json:"data"`
+}
+
+type diaRubiconNativeUserExtEidUidExt struct {
+	RtiPartner string `json:"rtiPartner,omitempty"`
+	Stype      string `json:"stype"`
+}
+
+type diaRubiconNativeExtImpBidder struct {
+	Prebid  *openrtb_ext.ExtImpPrebid `json:"prebid"`
+	Bidder  json.RawMessage           `json:"bidder"`
+	Gpid    string                    `json:"gpid"`
+	Data    json.RawMessage           `json:"data"`
+	Context diaRubiconNativeContext   `json:"context"`
+}
+
 type target struct {
 	Context []string `json:"context"`
 	Test    []string `json:"test"`
@@ -106,6 +134,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errors []error
+
 	var onePointTwoImps = make([]impOutbound, 0, len(request.Imp))
 	var onePointZeroImps = make([]impOutbound, 0, len(request.Imp))
 	// site ext is used in all requests
@@ -122,13 +151,63 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		})
 	}
 
+	var user *openrtb2.User
+
 	for _, imp := range request.Imp {
-		var bidderExt adapters.ExtImpBidder
+
+		var bidderExt diaRubiconNativeExtImpBidder
 		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			errors = append(errors, &errortypes.BadInput{
 				Message: err.Error(),
 			})
 			continue
+		}
+
+		var diaRubiconNativeExtImp openrtb_ext.ExtImpDiaRubiconNative
+		if err := json.Unmarshal(bidderExt.Bidder, &diaRubiconNativeExtImp); err != nil {
+			errors = append(errors, &errortypes.BadInput{
+				Message: err.Error(),
+			})
+			continue
+		}
+
+		if request.User != nil {
+			userCopy := *request.User
+
+			var userExtRP diaRubiconNativeUserExt
+			userBuyerUID := userCopy.BuyerUID
+
+			if request.User.Ext != nil {
+				var userExt *openrtb_ext.ExtUser
+				if err := json.Unmarshal(userCopy.Ext, &userExt); err != nil {
+					errors = append(errors, &errortypes.BadInput{
+						Message: err.Error(),
+					})
+					continue
+				}
+				userExtRP.Consent = userExt.Consent
+				userExtRP.Eids = userExt.Eids
+
+				// set user.ext.tpid
+				if len(userExt.Eids) > 0 {
+					if userBuyerUID == "" {
+						userBuyerUID = extractUserBuyerUID(userExt.Eids)
+					}
+
+				}
+			}
+			var err error
+			userCopy.Ext, err = json.Marshal(&userExtRP)
+			if err != nil {
+				errors = append(errors, err)
+				continue
+			}
+			userCopy.Geo = nil
+			userCopy.Yob = 0
+			userCopy.Gender = ""
+			userCopy.BuyerUID = userBuyerUID
+
+			user = &userCopy
 		}
 
 		var nativeImpExt openrtb_ext.ExtImpDiaRubiconNative
@@ -144,7 +223,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			})
 			continue
 		}
-		// get a 1.2 native object here (default as recieved)
+		// get a 1.2 native object here (default as received)
 		var onePointTwoNativeRequest nativeRequests.Request
 
 		if err := json.Unmarshal([]byte(imp.Native.Request), &onePointTwoNativeRequest); err != nil {
@@ -219,18 +298,13 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		*request,
 		onePointZeroImps,
 	}
+	onePointZeroRequest.User = user
 	// turn the 1.2 imps into a rubicon happy request
 	onePointTwoRequest := rubiconBidRequest{
 		*request,
 		onePointTwoImps,
 	}
-	// for my dev testing, remove when going live
-	// if onePointZeroRequest.Device.IP == "" {
-	// 	onePointZeroRequest.Device.IP = "75.54.23.3"
-	// }
-	// if onePointZeroRequest.User.BuyerUID == "" {
-	// 	onePointZeroRequest.User.BuyerUID = "L5QJF35F-1O-MBBY"
-	// }
+	onePointTwoRequest.User = user
 	// not sure if we need this or not, without getting responses it's very hard
 	onePointZeroRequest.Ext = nil
 
@@ -411,4 +485,26 @@ func getMediaTypeForBid(bid rubiconBid) (openrtb_ext.BidType, error) {
 	return "", &errortypes.BadServerResponse{
 		Message: fmt.Sprintf("Failed to parse impression \"%s\" mediatype", bid.ImpID),
 	}
+}
+
+func extractUserBuyerUID(eids []openrtb2.EID) string {
+	for _, eid := range eids {
+		if eid.Source != "rubiconproject.com" {
+			continue
+		}
+
+		for _, uid := range eid.UIDs {
+			var uidExt diaRubiconNativeUserExtEidUidExt
+			err := json.Unmarshal(uid.Ext, &uidExt)
+			if err != nil {
+				continue
+			}
+
+			if uidExt.Stype == "ppuid" || uidExt.Stype == "other" {
+				return uid.ID
+			}
+		}
+	}
+
+	return ""
 }
