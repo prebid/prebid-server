@@ -6,9 +6,11 @@ capabilities:
   app:
     mediaTypes:
       - banner
+      - native
   site:
     mediaTypes:
       - banner
+      - native
 userSync:
   redirect:
     url: https://trc.taboola.com/sg/ps/1/cm?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}

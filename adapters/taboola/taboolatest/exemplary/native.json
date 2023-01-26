@@ -4,21 +4,9 @@
     "imp": [
       {
         "id": "impression-id",
-        "banner": {
-          "format": [
-            {
-              "w": 300,
-              "h": 250
-            },
-            {
-              "w": 300,
-              "h": 600
-            },
-            {
-              "w": 160,
-              "h": 600
-            }
-          ]
+        "native": {
+          "request": "\"{\\\"ver\\\":\\\"1.1\\\",\\\"plcmttype\\\": 4,\\\"plcmtcnt\\\": 1,\\\"assets\\\":[{\\\"id\\\": 1,\\\"required\\\": 1,\\\"title\\\":{\\\"len\\\": 140}},{\\\"id\\\": 4,\\\"required\\\": 1,\\\"img\\\":{\\\"type\\\": 3,\\\"wmin\\\": 600,\\\"hmin\\\": 315}},{\\\"id\\\": 2,\\\"required\\\": 0,\\\"img\\\":{\\\"type\\\": 1,\\\"wmin\\\": 320,\\\"hmin\\\": 180}},{\\\"id\\\": 6,\\\"required\\\": 1,\\\"data\\\":{\\\"type\\\": 2,\\\"len\\\": 205}},{\\\"id\\\": 5,\\\"required\\\": 1,\\\"data\\\":{\\\"type\\\": 1,\\\"len\\\": 140}}]}}\"",
+          "ver": "1.1"
         },
         "ext": {
           "bidder": {
@@ -42,29 +30,17 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://whatever.com/publisher-id",
+        "uri": "https://native.bidder.taboola.com/OpenRTB/TaboolaHB/auction/publisher-id",
         "body": {
           "id": "request-id",
           "imp": [
             {
               "id": "impression-id",
-              "banner": {
-                "format": [
-                  {
-                    "w": 300,
-                    "h": 250
-                  },
-                  {
-                    "w": 300,
-                    "h": 600
-                  },
-                  {
-                    "w": 160,
-                    "h": 600
-                  }
-                ]
+              "native": {
+                "request": "\"{\\\"ver\\\":\\\"1.1\\\",\\\"plcmttype\\\": 4,\\\"plcmtcnt\\\": 1,\\\"assets\\\":[{\\\"id\\\": 1,\\\"required\\\": 1,\\\"title\\\":{\\\"len\\\": 140}},{\\\"id\\\": 4,\\\"required\\\": 1,\\\"img\\\":{\\\"type\\\": 3,\\\"wmin\\\": 600,\\\"hmin\\\": 315}},{\\\"id\\\": 2,\\\"required\\\": 0,\\\"img\\\":{\\\"type\\\": 1,\\\"wmin\\\": 320,\\\"hmin\\\": 180}},{\\\"id\\\": 6,\\\"required\\\": 1,\\\"data\\\":{\\\"type\\\": 2,\\\"len\\\": 205}},{\\\"id\\\": 5,\\\"required\\\": 1,\\\"data\\\":{\\\"type\\\": 1,\\\"len\\\": 140}}]}}\"",
+                "ver": "1.1"
               },
-              "tagid" : "tag-id",
+              "tagid": "tag-id",
               "ext": {
                 "bidder": {
                   "publisherId": "publisher-id",
@@ -99,7 +75,7 @@
               "bid": [
                 {
                   "id": "request-id",
-                  "impid": "incorrect-impression-id",
+                  "impid": "impression-id",
                   "price": 2.1,
                   "adid": "1",
                   "adm": "<hrml></html>",
@@ -123,10 +99,30 @@
       }
     }
   ],
-  "expectedMakeBidsErrors": [
+  "expectedBidResponses": [
     {
-      "value": "Failed to find banner/native impression \"incorrect-impression-id\" ",
-      "comparison": "literal"
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "request-id",
+            "impid": "impression-id",
+            "price": 2.1,
+            "adid": "1",
+            "adm": "<hrml></html>",
+            "adomain": [
+              "adomain.com"
+            ],
+            "cid": "cid",
+            "crid": "crid",
+            "w": 300,
+            "h": 250,
+            "exp": 60,
+            "lurl": "https://lurl.domain.com/"
+          },
+          "type": "native"
+        }
+      ]
     }
   ]
 }

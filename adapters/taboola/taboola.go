@@ -11,6 +11,10 @@ import (
 	"net/http"
 )
 
+const (
+	NATIVE_ENDPOINT = "https://native.bidder.taboola.com/OpenRTB/TaboolaHB/auction"
+)
+
 type adapter struct {
 	endpoint string
 }
@@ -35,9 +39,17 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		return nil, []error{err}
 	}
 
+	requestEndpoint := a.endpoint
+	if len(request.Imp) > 0 {
+		if request.Imp[0].Native != nil {
+			requestEndpoint = NATIVE_ENDPOINT
+		}
+
+	}
+
 	requestData := &adapters.RequestData{
 		Method: "POST",
-		Uri:    a.endpoint + "/" + taboolaRequest.Site.ID,
+		Uri:    requestEndpoint + "/" + taboolaRequest.Site.ID,
 		Body:   requestJSON,
 	}
 
@@ -153,12 +165,14 @@ func getMediaType(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error
 		if imp.ID == impID {
 			if imp.Banner != nil {
 				return openrtb_ext.BidTypeBanner, nil
+			} else if imp.Native != nil {
+				return openrtb_ext.BidTypeNative, nil
 			}
 		}
 	}
 
 	return "", &errortypes.BadInput{
-		Message: fmt.Sprintf("Failed to find banner impression \"%s\" ", impID),
+		Message: fmt.Sprintf("Failed to find banner/native impression \"%s\" ", impID),
 	}
 }
 
