@@ -20,7 +20,7 @@ jobs:
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
           ORGANIZATION: prebid
           DATE_FIELD: Created on
-          PROJECT_NUMBER: 2
+          PROJECT_NUMBER: 4
         run: |
           gh api graphql -f query='
             query($org: String!, $number: Int!) {
