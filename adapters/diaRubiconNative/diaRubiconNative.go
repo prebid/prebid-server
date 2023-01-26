@@ -215,9 +215,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 						userBuyerUID = extractUserBuyerUID(userExt.Eids)
 					}
 
-					mappedRubiconUidsParam, errors := getSegments(userExt.Eids)
-					if len(errors) > 0 {
-						errors = append(errors, errors...)
+					mappedRubiconUidsParam, errs := getSegments(userExt.Eids)
+					if len(errs) > 0 {
+						errors = append(errors, errs...)
 						continue
 					}
 

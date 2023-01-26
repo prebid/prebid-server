@@ -18,7 +18,13 @@
       "ext": {}
     },
     "device": {"ip":"75.54.23.3"},
-    "user": { "buyeruid": "L5QJF35F-1O-MBBY" },
+    "user": { "buyeruid": "L5QJF35F-1O-MBBY", 
+      "ext": {
+            "rp": {
+              "target": {
+              }
+            }
+          } },
     "source": {
       "ext":{"schain":{"ver":"","complete":0,"nodes":null}}}
   },
