@@ -38,9 +38,15 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		return nil, []error{err}
 	}
 
+	parsedUrl, err := url.Parse(a.externalUrl)
+	if err != nil {
+		parsedUrl = nil
+	}
+	hostName := parsedUrl.Host
+
 	requestData := &adapters.RequestData{
 		Method: "POST",
-		Uri:    a.endpoint + "/" + url.QueryEscape(a.externalUrl) + "/" + taboolaRequest.Site.ID,
+		Uri:    a.endpoint + "/" + hostName + "/" + taboolaRequest.Site.ID,
 		Body:   requestJSON,
 	}
 
