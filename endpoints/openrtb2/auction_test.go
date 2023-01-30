@@ -135,7 +135,7 @@ func TestJsonSampleRequests(t *testing.T) {
 
 					auctionEndpointHandler, _, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
 					if assert.NoError(t, err) {
-						runTestCase(t, auctionEndpointHandler, test, fileData, testFile)
+						assert.NotPanics(t, func() { runTestCase(t, auctionEndpointHandler, test, fileData, testFile) }, testFile)
 					}
 
 					// Close servers regardless if the test case was run or not

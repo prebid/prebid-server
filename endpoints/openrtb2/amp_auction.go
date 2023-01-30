@@ -429,12 +429,12 @@ func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openr
 	deps.setFieldsImplicitly(httpRequest, req)
 
 	// Need to ensure cache and targeting are turned on
-	e = setAMPDefaultTargetingAndCache(req)
+	e = initAmpTargetingAndCache(req)
 	if errs = append(errs, e...); errortypes.ContainsFatalError(errs) {
 		return
 	}
 
-	if err := ortb.SetDefaults(req); err == nil {
+	if err := ortb.SetDefaults(req); err != nil {
 		errs = append(errs, err)
 		return
 	}
@@ -686,7 +686,7 @@ func setHeights(formats []openrtb2.Format, height int64) {
 
 // AMP won't function unless ext.prebid.targeting and ext.prebid.cache.bids are defined.
 // If the user didn't include them, default those here.
-func setAMPDefaultTargetingAndCache(req *openrtb_ext.RequestWrapper) []error {
+func initAmpTargetingAndCache(req *openrtb_ext.RequestWrapper) []error {
 	extRequest, err := req.GetRequestExt()
 	if err != nil {
 		return []error{err}
@@ -708,11 +708,10 @@ func setAMPDefaultTargetingAndCache(req *openrtb_ext.RequestWrapper) []error {
 
 	// create cache object if missing
 	if prebid.Cache == nil {
-		prebid.Cache = &openrtb_ext.ExtRequestPrebidCache{
-			Bids: &openrtb_ext.ExtRequestPrebidCacheBids{},
-		}
+		prebid.Cache = &openrtb_ext.ExtRequestPrebidCache{}
 		prebidModified = true
-	} else if prebid.Cache.Bids == nil {
+	}
+	if prebid.Cache.Bids == nil {
 		prebid.Cache.Bids = &openrtb_ext.ExtRequestPrebidCacheBids{}
 		prebidModified = true
 	}

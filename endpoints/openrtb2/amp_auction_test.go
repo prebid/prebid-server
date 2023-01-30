@@ -9,7 +9,6 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
-	"reflect"
 	"strconv"
 	"testing"
 	"time"
@@ -28,6 +27,7 @@ import (
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/util/ptrutil"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -1108,30 +1108,111 @@ func TestAmpDebug(t *testing.T) {
 	}
 }
 
-// Prevents #452
-func TestAmpTargetingDefaults(t *testing.T) {
-	req := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}}
-	if err := setAMPDefaultTargetingAndCache(req); err != nil {
-		t.Fatalf("Unexpected error defaulting request.ext for AMP: %v", err)
+func TestInitAmpTargetingAndCache(t *testing.T) {
+	trueVal := true
+	type testOut struct {
+		targeting *openrtb_ext.ExtRequestTargeting
+		cache     *openrtb_ext.ExtRequestPrebidCache
+		errs      []error
+	}
+	emptyTargetingAndCache := testOut{
+		targeting: &openrtb_ext.ExtRequestTargeting{},
+		cache: &openrtb_ext.ExtRequestPrebidCache{
+			Bids: &openrtb_ext.ExtRequestPrebidCacheBids{},
+		},
 	}
 
-	assert.NoError(t, req.RebuildRequest())
+	testCases := []struct {
+		desc     string
+		inBidReq *openrtb2.BidRequest
+		expected testOut
+	}{
+		{
+			desc:     "GetRequestExt() returns error",
+			inBidReq: &openrtb2.BidRequest{Ext: json.RawMessage("malformed")},
+			expected: testOut{
+				errs: []error{
+					errors.New("invalid character 'm' looking for beginning of value"),
+				},
+			},
+		},
+		{
+			desc:     "request ext is nil",
+			inBidReq: &openrtb2.BidRequest{},
+			expected: emptyTargetingAndCache,
+		},
+		{
+			desc:     "no prebid field in request.ext",
+			inBidReq: &openrtb2.BidRequest{Ext: json.RawMessage(`{"ext":{}}`)},
+			expected: emptyTargetingAndCache,
+		},
+		{
+			desc: "no request.ext.prebid.targeting nor request.ext.prebid.cache fields",
+			inBidReq: &openrtb2.BidRequest{
+				Ext: json.RawMessage(`{"ext":{"prebid":{}}}`),
+			},
+			expected: emptyTargetingAndCache,
+		},
+		{
+			desc: "no request.ext.prebid.cache field, expect initialized request.ext.prebid.cache with empty values",
+			inBidReq: &openrtb2.BidRequest{
+				Ext: json.RawMessage(`{"prebid":{"targeting":{"includewinners":true}}}`),
+			},
+			expected: testOut{
+				targeting: &openrtb_ext.ExtRequestTargeting{
+					//IncludeWinners: ptrutil.ToPtr(true),
+					IncludeWinners: &trueVal,
+				},
+				cache: &openrtb_ext.ExtRequestPrebidCache{
+					Bids: &openrtb_ext.ExtRequestPrebidCacheBids{},
+				},
+			},
+		},
+		{
+			desc: "no request.ext.prebid.targeting field, populated request.ext.prebid.cache.bids",
+			inBidReq: &openrtb2.BidRequest{
+				Ext: json.RawMessage(`{"prebid":{"cache":{"bids":{"returnCreative":true}}}}`),
+			},
+			expected: testOut{
+				targeting: &openrtb_ext.ExtRequestTargeting{},
+				cache: &openrtb_ext.ExtRequestPrebidCache{
+					Bids: &openrtb_ext.ExtRequestPrebidCacheBids{ReturnCreative: ptrutil.ToPtr(true)},
+				},
+			},
+		},
+	}
 
-	var extRequest openrtb_ext.ExtRequest
-	if err := json.Unmarshal(req.Ext, &extRequest); err != nil {
-		t.Fatalf("Unexpected error unmarshalling defaulted request.ext for AMP: %v", err)
-	}
-	if extRequest.Prebid.Targeting == nil {
-		t.Fatal("AMP defaults should set request.ext.targeting")
-	}
-	if !extRequest.Prebid.Targeting.IncludeWinners {
-		t.Error("AMP defaults should set request.ext.targeting.includewinners to true")
-	}
-	if !extRequest.Prebid.Targeting.IncludeBidderKeys {
-		t.Error("AMP defaults should set request.ext.targeting.includebidderkeys to true")
-	}
-	if !reflect.DeepEqual(extRequest.Prebid.Targeting.PriceGranularity, openrtb_ext.PriceGranularityFromString("med")) {
-		t.Error("AMP defaults should set request.ext.targeting.pricegranularity to medium")
+	for _, tc := range testCases {
+		// setup
+		req := &openrtb_ext.RequestWrapper{BidRequest: tc.inBidReq}
+
+		// run
+		errs := initAmpTargetingAndCache(req)
+
+		// assertions
+		if !assert.NoError(t, req.RebuildRequest(), tc.desc) {
+			continue
+		}
+		assert.Equal(t, len(tc.expected.errs), len(errs), tc.desc)
+		for i, e := range tc.expected.errs {
+			assert.Equal(t, e.Error(), errs[i].Error(), tc.desc)
+		}
+
+		var expectedPrebid *openrtb_ext.ExtRequestPrebid = nil
+		if tc.expected.targeting != nil || tc.expected.cache != nil {
+			expectedPrebid = &openrtb_ext.ExtRequestPrebid{
+				Targeting: tc.expected.targeting,
+				Cache:     tc.expected.cache,
+			}
+		}
+		actualReqExt, err := req.GetRequestExt()
+		if !assert.NoError(t, err, tc.desc) {
+			continue
+		}
+		actualPrebid := actualReqExt.GetPrebid()
+
+		assert.NoError(t, err, tc.desc)
+		assert.Equal(t, expectedPrebid, actualPrebid, tc.desc)
 	}
 }
 
