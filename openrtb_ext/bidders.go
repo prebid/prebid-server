@@ -73,10 +73,6 @@ func IsBidderNameReserved(name string) bool {
 		return true
 	}
 
-	if strings.EqualFold(name, string(BidderReservedCommerce)) {
-		return true
-	}
-
 	return false
 }
 

@@ -28,13 +28,6 @@ type Adapter struct {
 	ComParams AdapterCommerce `mapstructure:"commerceparams"`
 }
 
-
-type AdapterCommerce struct {
-	ImpTracker  string `mapstructure:"impurl"`
-	ClickTracker  string `mapstructure:"clickurl"`
-	ConversionTracker  string `mapstructure:"conversionurl"`
-}
-
 type AdapterXAPI struct {
 	Username string `mapstructure:"username"`
 	Password string `mapstructure:"password"`
