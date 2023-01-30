@@ -23,6 +23,9 @@ type Adapter struct {
 	// needed for Facebook
 	PlatformID string `mapstructure:"platform_id"`
 	AppSecret  string `mapstructure:"app_secret"`
+
+	// needed for commerce partners
+	ComParams AdapterCommerce `mapstructure:"commerceparams"`
 }
 
 type AdapterXAPI struct {

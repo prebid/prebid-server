@@ -73,7 +73,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 
 	var allBidderRequests []BidderRequest
 	allBidderRequests, errs = getAuctionBidderRequests(auctionReq, requestExt, bidderToSyncerKey, impsByBidder, aliases, hostSChainNode)
-
+	
 	bidderNameToBidderReq := buildBidResponseRequest(req.BidRequest, bidderImpWithBidResp, aliases, auctionReq.BidderImpReplaceImpID)
 	//this function should be executed after getAuctionBidderRequests
 	allBidderRequests = mergeBidderRequests(allBidderRequests, bidderNameToBidderReq)
@@ -443,6 +443,10 @@ func createSanitizedImpExt(impExt, impExtPrebid map[string]json.RawMessage) (map
 		sanitizedImpExt[openrtb_ext.TIDKey] = v
 	}
 
+	if v, exists := impExt[string(openrtb_ext.CommerceParamKey)]; exists {
+		sanitizedImpExt[openrtb_ext.CommerceParamKey] = v
+	}
+
 	return sanitizedImpExt, nil
 }
 
@@ -474,7 +478,8 @@ func isSpecialField(bidder string) bool {
 		bidder == openrtb_ext.SKAdNExtKey ||
 		bidder == openrtb_ext.GPIDKey ||
 		bidder == openrtb_ext.PrebidExtKey ||
-		bidder == openrtb_ext.TIDKey
+		bidder == openrtb_ext.TIDKey ||
+		bidder == openrtb_ext.CommerceParamKey
 }
 
 // prepareUser changes req.User so that it's ready for the given bidder.
