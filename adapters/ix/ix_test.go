@@ -104,6 +104,56 @@ func TestIxMakeBidsWithCategoryDuration(t *testing.T) {
 	}
 }
 
+func TestIxMakeRequestWithGppString(t *testing.T) {
+	bidder := &IxAdapter{}
+	bidder.maxRequests = 2
+
+	testGppString := "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN"
+
+	mockedReq := &openrtb2.BidRequest{
+		Imp: []openrtb2.Imp{{
+			ID: "1_1",
+			Video: &openrtb2.Video{
+				W:           640,
+				H:           360,
+				MIMEs:       []string{"video/mp4"},
+				MaxDuration: 60,
+				Protocols:   []adcom1.MediaCreativeSubtype{2, 3, 5, 6},
+			},
+			Ext: json.RawMessage(
+				`{
+					"prebid": {},
+					"bidder": {
+						"siteID": 123456
+					}
+				}`,
+			)},
+		},
+		Regs: &openrtb2.Regs{
+			GPP: testGppString,
+		},
+	}
+
+	expectedRequestCount := 1
+	expectedErrorCount := 0
+	var reqInfo *adapters.ExtraRequestInfo
+
+	requests, errors := bidder.MakeRequests(mockedReq, reqInfo)
+
+	if len(requests) != expectedRequestCount {
+		t.Errorf("should have 1 request, requests=%v", requests)
+	}
+
+	if len(errors) != expectedErrorCount {
+		t.Errorf("should not have any errors, errors=%v", errors)
+	}
+
+	req := &openrtb2.BidRequest{}
+	json.Unmarshal(requests[0].Body, req)
+
+	assert.Equal(t, req.Regs.GPP, testGppString)
+}
+
 func TestBuildIxDiag(t *testing.T) {
 	testCases := []struct {
 		description     string

@@ -48,13 +48,17 @@
       "hb_pb": "5.00",
       "hb_pb_appnexus": "5.00"
     },
-    "warnings": {
-      "general": [
-        {
-          "code": 10002,
-          "message": "debug turned off for account"
+    "ortb2": {
+      "ext": {
+        "warnings": {
+          "general": [
+            {
+              "code": 10002,
+              "message": "debug turned off for account"
+            }
+          ]
         }
-      ]
+      }
     }
   },
   "expectedReturnCode": 200

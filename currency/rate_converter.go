@@ -3,7 +3,7 @@ package currency
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"sync/atomic"
 	"time"
@@ -60,7 +60,7 @@ func (rc *RateConverter) fetch() (*Rates, error) {
 
 	defer response.Body.Close()
 
-	bytesJSON, err := ioutil.ReadAll(response.Body)
+	bytesJSON, err := io.ReadAll(response.Body)
 	if err != nil {
 		return nil, err
 	}
