@@ -103,6 +103,7 @@ type rubiconUserExt struct {
 	RP          rubiconUserExtRP `json:"rp"`
 	LiverampIdl string           `json:"liveramp_idl,omitempty"`
 	Data        json.RawMessage  `json:"data,omitempty"`
+	Consent     string           `json:"consent,omitempty"`
 }
 
 type rubiconSiteExtRP struct {
@@ -340,6 +341,11 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 				}
 
 				userExtRP.LiverampIdl = mappedRubiconUidsParam.liverampIdl
+			}
+
+			if userCopy.Consent != "" {
+				userExtRP.Consent = userCopy.Consent
+				userCopy.Consent = ""
 			}
 
 			userCopy.Ext, err = json.Marshal(&userExtRP)

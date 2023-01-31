@@ -245,7 +245,6 @@
             }
           },
           "user": {
-            "consent": "consent",
             "data": [
               {
                 "ext": {
@@ -301,6 +300,7 @@
               }
             ],
             "ext": {
+              "consent": "consent",
               "rp": {
                 "target": {
                   "iab": [
