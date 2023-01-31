@@ -3,6 +3,7 @@ package taboola
 import (
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/config"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -11,7 +12,7 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderOutbrain, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderTaboola, config.Adapter{
 		Endpoint: "http://whatever.com"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
@@ -19,4 +20,17 @@ func TestJsonSamples(t *testing.T) {
 	}
 
 	adapterstest.RunJSONBidderTest(t, "taboolatest", bidder)
+}
+
+func TestEmptyExternalUrl(t *testing.T) {
+	bidder, buildErr := Builder(openrtb_ext.BidderTaboola, config.Adapter{
+		Endpoint: "http://whatever.com"}, config.Server{})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	bidderTaboola := bidder.(*adapter)
+
+	assert.Equal(t, "", bidderTaboola.hostName)
 }

@@ -13,15 +13,23 @@ import (
 )
 
 type adapter struct {
-	endpoint    string
-	externalUrl string
+	endpoint string
+	hostName string
 }
 
 // Builder builds a new instance of the Foo adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	hostName := ""
+	if server.ExternalUrl != "" {
+		parsedUrl, err := url.Parse(server.ExternalUrl)
+		if err == nil && parsedUrl != nil {
+			hostName = parsedUrl.Host
+		}
+	}
+
 	bidder := &adapter{
-		endpoint:    config.Endpoint,
-		externalUrl: server.ExternalUrl,
+		endpoint: config.Endpoint,
+		hostName: hostName,
 	}
 	return bidder, nil
 }
@@ -38,15 +46,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		return nil, []error{err}
 	}
 
-	parsedUrl, err := url.Parse(a.externalUrl)
-	if err != nil {
-		parsedUrl = nil
-	}
-	hostName := parsedUrl.Host
-
 	requestData := &adapters.RequestData{
 		Method: "POST",
-		Uri:    a.endpoint + "/" + hostName + "/" + taboolaRequest.Site.ID,
+		Uri:    a.endpoint + "/" + a.hostName + "/" + taboolaRequest.Site.ID,
 		Body:   requestJSON,
 	}
 
