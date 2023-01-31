@@ -1516,13 +1516,21 @@ func validateRequestExt(req *openrtb_ext.RequestWrapper) error {
 		}
 	}
 
-	if prebid.Targeting != nil {
-		if (prebid.Targeting.IncludeWinners == nil || !*prebid.Targeting.IncludeWinners) && (prebid.Targeting.IncludeBidderKeys == nil || !*prebid.Targeting.IncludeBidderKeys) {
+	if err := validateTargeting(prebid.Targeting); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func validateTargeting(t *openrtb_ext.ExtRequestTargeting) error {
+	if t != nil {
+		if (t.IncludeWinners == nil || !*t.IncludeWinners) && (t.IncludeBidderKeys == nil || !*t.IncludeBidderKeys) {
 			return errors.New("ext.prebid.targeting: At least one of includewinners or includebidderkeys must be enabled to enable targeting support")
 		}
 
-		if prebid.Targeting.PriceGranularity != nil {
-			pg := prebid.Targeting.PriceGranularity
+		if t.PriceGranularity != nil {
+			pg := t.PriceGranularity
 
 			if pg.Precision == nil {
 				return errors.New("Price granularity error: precision is required")
@@ -1533,7 +1541,7 @@ func validateRequestExt(req *openrtb_ext.RequestWrapper) error {
 			}
 
 			var prevMax float64 = 0
-			for _, gr := range pg.Ranges {
+			for i, gr := range pg.Ranges {
 				if gr.Max <= prevMax {
 					return errors.New(`Price granularity error: range list must be ordered with increasing "max"`)
 				}
@@ -1541,11 +1549,12 @@ func validateRequestExt(req *openrtb_ext.RequestWrapper) error {
 				if gr.Increment <= 0.0 {
 					return errors.New("Price granularity error: increment must be a nonzero positive number")
 				}
+				// Enforce that we don't read "min" from the request
+				pg.Ranges[i].Min = prevMax
 				prevMax = gr.Max
 			}
 		}
 	}
-
 	return nil
 }
 

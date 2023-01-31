@@ -149,7 +149,7 @@ func isNewWinningBid(bid, wbid *openrtb2.Bid, preferDeals bool) bool {
 	return bid.Price > wbid.Price
 }
 
-func (a *auction) setRoundedPrices(priceGranularity openrtb_ext.PriceGranularity) {
+func (a *auction) setRoundedPrices(priceGranularity *openrtb_ext.PriceGranularity) {
 	roundedPrices := make(map[*entities.PbsOrtbBid]string, 5*len(a.winningBids))
 	for _, topBidsPerImp := range a.winningBidsByBidder {
 		for _, topBidPerBidder := range topBidsPerImp {

@@ -36,6 +36,7 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/stored_responses"
 	"github.com/prebid/prebid-server/util/iputil"
+	"github.com/prebid/prebid-server/util/ptrutil"
 )
 
 func TestJsonSampleRequests(t *testing.T) {
@@ -4985,6 +4986,189 @@ func TestSendAuctionResponse_LogsErrors(t *testing.T) {
 			assert.Equal(t, ao.Errors, test.expectedErrors, "Invalid errors.")
 			assert.Equal(t, test.expectedStatus, ao.Status, "Invalid HTTP response status.")
 		})
+	}
+}
+
+func TestValidateTargeting(t *testing.T) {
+	testCases := []struct {
+		desc              string
+		in                *openrtb_ext.ExtRequestTargeting
+		modifiedTargeting *openrtb_ext.ExtRequestTargeting
+		outErr            error
+	}{
+		{
+			desc:              "nil targeting, expect nil output and no error",
+			in:                nil,
+			modifiedTargeting: nil,
+			outErr:            nil,
+		},
+		{
+			desc:              "non-nil targeting, but both include_winners and include_bidderkeys nil, return error",
+			in:                &openrtb_ext.ExtRequestTargeting{},
+			modifiedTargeting: nil,
+			outErr:            errors.New("ext.prebid.targeting: At least one of includewinners or includebidderkeys must be enabled to enable targeting support"),
+		},
+		{
+			desc: "includewinners nil, IncludeBidderKeys false",
+			in: &openrtb_ext.ExtRequestTargeting{
+				IncludeBidderKeys: ptrutil.ToPtr(false),
+			},
+			modifiedTargeting: nil,
+			outErr:            errors.New("ext.prebid.targeting: At least one of includewinners or includebidderkeys must be enabled to enable targeting support"),
+		},
+		{
+			desc: "includewinners nil, IncludeBidderKeys true",
+			in: &openrtb_ext.ExtRequestTargeting{
+				IncludeBidderKeys: ptrutil.ToPtr(true),
+			},
+			modifiedTargeting: nil,
+			outErr:            nil,
+		},
+		{
+			desc: "includewinners false, IncludeBidderKeys nil",
+			in: &openrtb_ext.ExtRequestTargeting{
+				IncludeWinners: ptrutil.ToPtr(false),
+			},
+			modifiedTargeting: nil,
+			outErr:            errors.New("ext.prebid.targeting: At least one of includewinners or includebidderkeys must be enabled to enable targeting support"),
+		},
+		{
+			desc: "includewinners false, IncludeBidderKeys flase",
+			in: &openrtb_ext.ExtRequestTargeting{
+				IncludeWinners:    ptrutil.ToPtr(false),
+				IncludeBidderKeys: ptrutil.ToPtr(false),
+			},
+			modifiedTargeting: nil,
+			outErr:            errors.New("ext.prebid.targeting: At least one of includewinners or includebidderkeys must be enabled to enable targeting support"),
+		},
+		{
+			desc: "includewinners false, IncludeBidderKeys true",
+			in: &openrtb_ext.ExtRequestTargeting{
+				IncludeWinners:    ptrutil.ToPtr(false),
+				IncludeBidderKeys: ptrutil.ToPtr(true),
+			},
+			modifiedTargeting: nil,
+			outErr:            nil,
+		},
+		{
+			desc: "includewinners true, IncludeBidderKeys nil",
+			in: &openrtb_ext.ExtRequestTargeting{
+				IncludeWinners: ptrutil.ToPtr(true),
+			},
+			modifiedTargeting: nil,
+			outErr:            nil,
+		},
+		{
+			desc: "includewinners false, IncludeBidderKeys true",
+			in: &openrtb_ext.ExtRequestTargeting{
+				IncludeWinners:    ptrutil.ToPtr(true),
+				IncludeBidderKeys: ptrutil.ToPtr(false),
+			},
+			modifiedTargeting: nil,
+			outErr:            nil,
+		},
+		{
+			desc: "includewinners true, IncludeBidderKeys true",
+			in: &openrtb_ext.ExtRequestTargeting{
+				IncludeWinners:    ptrutil.ToPtr(true),
+				IncludeBidderKeys: ptrutil.ToPtr(true),
+			},
+			modifiedTargeting: nil,
+			outErr:            nil,
+		},
+		{
+			desc: "Non-nil, empty PriceGranularity and either include_winners or include_bidderkeys true",
+			in: &openrtb_ext.ExtRequestTargeting{
+				IncludeWinners:   ptrutil.ToPtr(true),
+				PriceGranularity: &openrtb_ext.PriceGranularity{},
+			},
+			modifiedTargeting: nil,
+			outErr:            errors.New("Price granularity error: precision is required"),
+		},
+		{
+			desc: "Negative PriceGranularity Precision",
+			in: &openrtb_ext.ExtRequestTargeting{
+				IncludeWinners: ptrutil.ToPtr(true),
+				PriceGranularity: &openrtb_ext.PriceGranularity{
+					Precision: ptrutil.ToPtr(-1),
+				},
+			},
+			modifiedTargeting: nil,
+			outErr:            errors.New("Price granularity error: precision must be non-negative"),
+		},
+		{
+			desc: "PriceGranularity Precision greater than max",
+			in: &openrtb_ext.ExtRequestTargeting{
+				IncludeWinners: ptrutil.ToPtr(true),
+				PriceGranularity: &openrtb_ext.PriceGranularity{
+					Precision: ptrutil.ToPtr(openrtb_ext.MaxDecimalFigures + 1),
+				},
+			},
+			modifiedTargeting: nil,
+			outErr:            errors.New("Price granularity error: precision of more than 15 significant figures is not supported"),
+		},
+		{
+			desc: "Non-odered PriceGranularity Ranges",
+			in: &openrtb_ext.ExtRequestTargeting{
+				IncludeWinners: ptrutil.ToPtr(true),
+				PriceGranularity: &openrtb_ext.PriceGranularity{
+					Precision: ptrutil.ToPtr(2),
+					Ranges: []openrtb_ext.GranularityRange{
+						{Min: 1.0, Max: 2.0, Increment: 0.2},
+						{Min: 0.0, Max: 1.0, Increment: 0.5},
+					},
+				},
+			},
+			modifiedTargeting: nil,
+			outErr:            errors.New(`Price granularity error: range list must be ordered with increasing "max"`),
+		},
+		{
+			desc: "Negative increment, expect error",
+			in: &openrtb_ext.ExtRequestTargeting{
+				IncludeWinners: ptrutil.ToPtr(true),
+				PriceGranularity: &openrtb_ext.PriceGranularity{
+					Precision: ptrutil.ToPtr(2),
+					Ranges: []openrtb_ext.GranularityRange{
+						{Min: 0.0, Max: 1.0, Increment: -0.1},
+					},
+				},
+			},
+			modifiedTargeting: nil,
+			outErr:            errors.New("Price granularity error: increment must be a nonzero positive number"),
+		},
+		{
+			desc: "Set minimum values with previous Max",
+			in: &openrtb_ext.ExtRequestTargeting{
+				IncludeWinners: ptrutil.ToPtr(true),
+				PriceGranularity: &openrtb_ext.PriceGranularity{
+					Precision: ptrutil.ToPtr(2),
+					Ranges: []openrtb_ext.GranularityRange{
+						{Min: 0.0, Max: 1.0, Increment: 0.5},
+						{Min: 0.0, Max: 2.0, Increment: 0.2},
+						{Min: 0.0, Max: 5.0, Increment: 0.1},
+					},
+				},
+			},
+			modifiedTargeting: &openrtb_ext.ExtRequestTargeting{
+				IncludeWinners: ptrutil.ToPtr(true),
+				PriceGranularity: &openrtb_ext.PriceGranularity{
+					Precision: ptrutil.ToPtr(2),
+					Ranges: []openrtb_ext.GranularityRange{
+						{Min: 0.0, Max: 1.0, Increment: 0.5},
+						{Min: 1.0, Max: 2.0, Increment: 0.2},
+						{Min: 2.0, Max: 5.0, Increment: 0.1},
+					},
+				},
+			},
+			outErr: nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		assert.Equal(t, tc.outErr, validateTargeting(tc.in), tc.desc)
+		if tc.modifiedTargeting != nil {
+			assert.Equal(t, tc.modifiedTargeting, tc.in, tc.desc)
+		}
 	}
 }
 

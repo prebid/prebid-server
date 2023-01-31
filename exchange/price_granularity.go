@@ -8,7 +8,7 @@ import (
 )
 
 // GetPriceBucket is the externally facing function for computing CPM buckets
-func GetPriceBucket(cpm float64, config openrtb_ext.PriceGranularity) string {
+func GetPriceBucket(cpm float64, config *openrtb_ext.PriceGranularity) string {
 	cpmStr := ""
 	bucketMax := 0.0
 	increment := 0.0

@@ -16,6 +16,7 @@ import (
 	"github.com/prebid/prebid-server/hooks/hookexecution"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/ptrutil"
 
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/stretchr/testify/assert"
@@ -153,13 +154,13 @@ func buildAdapterMap(bids map[openrtb_ext.BidderName][]*openrtb2.Bid, mockServer
 func buildTargetingExt(includeCache bool, includeWinners bool, includeBidderKeys bool) json.RawMessage {
 	var targeting string
 	if includeWinners && includeBidderKeys {
-		targeting = "{}"
+		targeting = `{"pricegranularity":{"precision":2,"ranges": [{"min": 0,"max": 20,"increment": 0.1}]},"includewinners": true, "includebidderkeys": true}`
 	} else if !includeWinners && includeBidderKeys {
-		targeting = `{"includewinners": false}`
+		targeting = `{"precision":2,"includewinners": false}`
 	} else if includeWinners && !includeBidderKeys {
-		targeting = `{"includebidderkeys": false}`
+		targeting = `{"precision":2,"includebidderkeys": false}`
 	} else {
-		targeting = `{"includewinners": false, "includebidderkeys": false}`
+		targeting = `{"precision":2,"includewinners": false, "includebidderkeys": false}`
 	}
 
 	if includeCache {
@@ -289,8 +290,14 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 	{
 		Description: "Targeting winners only (most basic targeting example)",
 		TargetData: targetData{
-			priceGranularity: openrtb_ext.PriceGranularityFromString("med"),
-			includeWinners:   true,
+			priceGranularity: openrtb_ext.PriceGranularity{
+				Precision: ptrutil.ToPtr(2),
+				Ranges: []openrtb_ext.GranularityRange{{
+					Min:       0,
+					Max:       20,
+					Increment: 0.1}},
+			},
+			includeWinners: true,
 		},
 		Auction: auction{
 			winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*entities.PbsOrtbBid{
@@ -320,7 +327,13 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 	{
 		Description: "Targeting on bidders only",
 		TargetData: targetData{
-			priceGranularity:  openrtb_ext.PriceGranularityFromString("med"),
+			priceGranularity: openrtb_ext.PriceGranularity{
+				Precision: ptrutil.ToPtr(2),
+				Ranges: []openrtb_ext.GranularityRange{{
+					Min:       0,
+					Max:       20,
+					Increment: 0.1}},
+			},
 			includeBidderKeys: true,
 		},
 		Auction: auction{
@@ -354,7 +367,13 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 	{
 		Description: "Full basic targeting with hd_format",
 		TargetData: targetData{
-			priceGranularity:  openrtb_ext.PriceGranularityFromString("med"),
+			priceGranularity: openrtb_ext.PriceGranularity{
+				Precision: ptrutil.ToPtr(2),
+				Ranges: []openrtb_ext.GranularityRange{{
+					Min:       0,
+					Max:       20,
+					Increment: 0.1}},
+			},
 			includeWinners:    true,
 			includeBidderKeys: true,
 			includeFormat:     true,
@@ -395,7 +414,13 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 	{
 		Description: "Cache and deal targeting test",
 		TargetData: targetData{
-			priceGranularity:  openrtb_ext.PriceGranularityFromString("med"),
+			priceGranularity: openrtb_ext.PriceGranularity{
+				Precision: ptrutil.ToPtr(2),
+				Ranges: []openrtb_ext.GranularityRange{{
+					Min:       0,
+					Max:       20,
+					Increment: 0.1}},
+			},
 			includeBidderKeys: true,
 			cacheHost:         "cache.prebid.com",
 			cachePath:         "cache",
@@ -442,7 +467,14 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 	{
 		Description: "Truncate Targeting Attribute value is given and is less than const MaxKeyLength",
 		TargetData: targetData{
-			priceGranularity:  openrtb_ext.PriceGranularityFromString("med"),
+			priceGranularity: openrtb_ext.PriceGranularity{
+				Precision: ptrutil.ToPtr(2),
+				Ranges: []openrtb_ext.GranularityRange{{
+					Min:       0,
+					Max:       20,
+					Increment: 0.1}},
+			},
+
 			includeBidderKeys: true,
 		},
 		Auction: auction{
@@ -476,7 +508,14 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 	{
 		Description: "Truncate Targeting Attribute value is given and is greater than const MaxKeyLength",
 		TargetData: targetData{
-			priceGranularity:  openrtb_ext.PriceGranularityFromString("med"),
+			priceGranularity: openrtb_ext.PriceGranularity{
+				Precision: ptrutil.ToPtr(2),
+				Ranges: []openrtb_ext.GranularityRange{{
+					Min:       0,
+					Max:       20,
+					Increment: 0.1}},
+			},
+
 			includeBidderKeys: true,
 		},
 		Auction: auction{
@@ -510,7 +549,14 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 	{
 		Description: "Truncate Targeting Attribute value is given and is negative",
 		TargetData: targetData{
-			priceGranularity:  openrtb_ext.PriceGranularityFromString("med"),
+			priceGranularity: openrtb_ext.PriceGranularity{
+				Precision: ptrutil.ToPtr(2),
+				Ranges: []openrtb_ext.GranularityRange{{
+					Min:       0,
+					Max:       20,
+					Increment: 0.1}},
+			},
+
 			includeBidderKeys: true,
 		},
 		Auction: auction{
@@ -544,8 +590,15 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 	{
 		Description: "Check that key gets truncated properly when value is smaller than key",
 		TargetData: targetData{
-			priceGranularity: openrtb_ext.PriceGranularityFromString("med"),
-			includeWinners:   true,
+			priceGranularity: openrtb_ext.PriceGranularity{
+				Precision: ptrutil.ToPtr(2),
+				Ranges: []openrtb_ext.GranularityRange{{
+					Min:       0,
+					Max:       20,
+					Increment: 0.1}},
+			},
+
+			includeWinners: true,
 		},
 		Auction: auction{
 			winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*entities.PbsOrtbBid{
@@ -575,8 +628,15 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 	{
 		Description: "Check that key gets truncated properly when value is greater than key",
 		TargetData: targetData{
-			priceGranularity: openrtb_ext.PriceGranularityFromString("med"),
-			includeWinners:   true,
+			priceGranularity: openrtb_ext.PriceGranularity{
+				Precision: ptrutil.ToPtr(2),
+				Ranges: []openrtb_ext.GranularityRange{{
+					Min:       0,
+					Max:       20,
+					Increment: 0.1}},
+			},
+
+			includeWinners: true,
 		},
 		Auction: auction{
 			winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*entities.PbsOrtbBid{
@@ -606,8 +666,15 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 	{
 		Description: "Check that key gets truncated properly when value is negative",
 		TargetData: targetData{
-			priceGranularity: openrtb_ext.PriceGranularityFromString("med"),
-			includeWinners:   true,
+			priceGranularity: openrtb_ext.PriceGranularity{
+				Precision: ptrutil.ToPtr(2),
+				Ranges: []openrtb_ext.GranularityRange{{
+					Min:       0,
+					Max:       20,
+					Increment: 0.1}},
+			},
+
+			includeWinners: true,
 		},
 		Auction: auction{
 			winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*entities.PbsOrtbBid{
@@ -640,7 +707,7 @@ func TestSetTargeting(t *testing.T) {
 	for _, test := range TargetingTests {
 		auc := &test.Auction
 		// Set rounded prices from the auction data
-		auc.setRoundedPrices(test.TargetData.priceGranularity)
+		auc.setRoundedPrices(&test.TargetData.priceGranularity)
 		winningBids := make(map[string]*entities.PbsOrtbBid)
 		// Set winning bids from the auction data
 		for imp, bidsByBidder := range auc.winningBidsByBidder {
