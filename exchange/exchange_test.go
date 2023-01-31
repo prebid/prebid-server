@@ -2111,6 +2111,7 @@ func TestTimeoutComputation(t *testing.T) {
 }
 
 // TestExchangeJSON executes tests for all the *.json files in exchangetest.
+
 func TestExchangeJSON(t *testing.T) {
 	if specFiles, err := os.ReadDir("./exchangetest"); err == nil {
 		for _, specFile := range specFiles {
