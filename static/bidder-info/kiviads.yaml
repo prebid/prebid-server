@@ -14,5 +14,5 @@ capabilities:
     - native
 userSync:
   redirect:
-    url: "https://sync.kiviads.com/pserver?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir={{.RedirectURL}}"
+    url: "https://sync.kiviads.com/pserver?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&redir={{.RedirectURL}}"
     userMacro: "[UID]"
