@@ -34,7 +34,7 @@
     },
 	"httpCalls": [{
 		"expectedRequest": {
-			"uri": "http://sa-lb.deliverimp.com/pserver",
+			"uri": "http://example.com/pserver",
 			"body": {
                 "id": "test-request-id",
                 "imp": [
