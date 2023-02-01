@@ -15,5 +15,5 @@ capabilities:
     - native
 userSync:
   redirect:
-    url: "https://cookies.andbeyond.media/pbserver?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir={{.RedirectURL}}"
+    url: "https://cookies.andbeyond.media/pbserver?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&redir={{.RedirectURL}}"
     userMacro: "[UID]"
