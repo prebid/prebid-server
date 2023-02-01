@@ -1,4 +1,4 @@
-endpoint: "http://endpoint1.kiviads.com/pserver"
+endpoint: "http://lb.kiviads.com/pserver"
 maintainer:
   email: "prebid@kiviads.com"
 capabilities:
