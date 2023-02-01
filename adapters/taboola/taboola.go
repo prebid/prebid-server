@@ -31,34 +31,34 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
+	var requests []*adapters.RequestData
+
 	taboolaRequest, errs := createTaboolaRequest(request)
 	if len(errs) > 0 {
 		return nil, errs
 	}
 
-	requestJSON, err := json.Marshal(taboolaRequest)
-	if err != nil {
-		return nil, []error{err}
+	filterNative := func(imp openrtb2.Imp) bool { return imp.Native != nil }
+	nativeRequest := createRequestByMediaType(*taboolaRequest, filterNative)
+	if len(nativeRequest.Imp) > 0 {
+		request, err := a.buildRequest(&nativeRequest)
+		if err != nil {
+			return nil, []error{fmt.Errorf("unable to build native request %v", err)}
+		}
+		requests = append(requests, request)
 	}
 
-	// MediaType set based on first imp, currently not supporting multi-format requests
-	mediaType := "display"
-	if request.Imp[0].Native != nil {
-		mediaType = "native"
+	filterDisplay := func(imp openrtb2.Imp) bool { return imp.Banner != nil }
+	displayRequest := createRequestByMediaType(*taboolaRequest, filterDisplay)
+	if len(displayRequest.Imp) > 0 {
+		request, err := a.buildRequest(&displayRequest)
+		if err != nil {
+			return nil, []error{fmt.Errorf("unable to build display request %v", err)}
+		}
+		requests = append(requests, request)
 	}
 
-	url, err := a.buildEndpointURL(taboolaRequest.Site.ID, mediaType)
-	if err != nil {
-		return nil, []error{err}
-	}
-
-	requestData := &adapters.RequestData{
-		Method: "POST",
-		Uri:    url,
-		Body:   requestJSON,
-	}
-
-	return []*adapters.RequestData{requestData}, errs
+	return requests, errs
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -104,6 +104,32 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		}
 	}
 	return bidResponse, errs
+}
+
+func (a *adapter) buildRequest(request *openrtb2.BidRequest) (*adapters.RequestData, error) {
+	requestJSON, err := json.Marshal(request)
+	if err != nil {
+		return nil, err
+	}
+
+	// MediaType set based on first imp
+	mediaType := "display"
+	if request.Imp[0].Native != nil {
+		mediaType = "native"
+	}
+
+	url, err := a.buildEndpointURL(request.Site.ID, mediaType)
+	if err != nil {
+		return nil, err
+	}
+
+	requestData := &adapters.RequestData{
+		Method: "POST",
+		Uri:    url,
+		Body:   requestJSON,
+	}
+
+	return requestData, nil
 }
 
 // Builds endpoint url based on adapter-specific pub settings from imp.ext
@@ -199,4 +225,20 @@ func evaluateDomain(publisherDomain string, request *openrtb2.BidRequest) (resul
 		return request.Site.Domain
 	}
 	return ""
+}
+
+func filter[T any](ss []T, f func(T) bool) (ret []T) {
+	for _, s := range ss {
+		if f(s) {
+			ret = append(ret, s)
+		}
+	}
+	return
+}
+
+func createRequestByMediaType(originBidRequest openrtb2.BidRequest, f func(imp openrtb2.Imp) bool) (bidRequest openrtb2.BidRequest) {
+	filteredImps := filter(originBidRequest.Imp, f)
+	bidRequest = originBidRequest
+	bidRequest.Imp = filteredImps
+	return
 }
