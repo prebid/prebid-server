@@ -7,22 +7,24 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
-)
-
-const (
-	NATIVE_ENDPOINT = "https://native.bidder.taboola.com/OpenRTB/TaboolaHB/auction"
+	"text/template"
 )
 
 type adapter struct {
-	endpoint string
+	endpoint *template.Template
 }
 
 // Builder builds a new instance of the Foo adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	endpointTemplate, err := template.New("endpointTemplate").Parse(config.Endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
+	}
 	bidder := &adapter{
-		endpoint: config.Endpoint,
+		endpoint: endpointTemplate,
 	}
 	return bidder, nil
 }
@@ -39,17 +41,20 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		return nil, []error{err}
 	}
 
-	requestEndpoint := a.endpoint
-	if len(request.Imp) > 0 {
-		if request.Imp[0].Native != nil {
-			requestEndpoint = NATIVE_ENDPOINT
-		}
+	// MediaType set based on first imp, currently not supporting multi-format requests
+	mediaType := "display"
+	if request.Imp[0].Native != nil {
+		mediaType = "native"
+	}
 
+	url, err := a.buildEndpointURL(taboolaRequest.Site.ID, mediaType)
+	if err != nil {
+		return nil, []error{err}
 	}
 
 	requestData := &adapters.RequestData{
 		Method: "POST",
-		Uri:    requestEndpoint + "/" + taboolaRequest.Site.ID,
+		Uri:    url,
 		Body:   requestJSON,
 	}
 
@@ -99,6 +104,16 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		}
 	}
 	return bidResponse, errs
+}
+
+// Builds endpoint url based on adapter-specific pub settings from imp.ext
+func (a *adapter) buildEndpointURL(publisherId string, mediaType string) (string, error) {
+	endpointParams := macros.EndpointTemplateParams{PublisherID: publisherId, MediaType: mediaType}
+	resolvedUrl, err := macros.ResolveMacros(a.endpoint, endpointParams)
+	if err != nil {
+		return "", err
+	}
+	return resolvedUrl, nil
 }
 
 func createTaboolaRequest(request *openrtb2.BidRequest) (taboolaRequest *openrtb2.BidRequest, errors []error) {

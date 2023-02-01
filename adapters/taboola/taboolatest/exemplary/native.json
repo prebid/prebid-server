@@ -30,7 +30,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://native.bidder.taboola.com/OpenRTB/TaboolaHB/auction/publisher-id",
+        "uri": "http://native.whatever.com/publisher-id",
         "body": {
           "id": "request-id",
           "imp": [
