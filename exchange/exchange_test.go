@@ -20,20 +20,16 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v17/openrtb2"
-	"github.com/prebid/prebid-server/exchange/entities"
-	"github.com/prebid/prebid-server/hooks"
-	"github.com/prebid/prebid-server/hooks/hookexecution"
-	"github.com/prebid/prebid-server/hooks/hookstage"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	jsonpatch "gopkg.in/evanphx/json-patch.v4"
-
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/exchange/entities"
 	"github.com/prebid/prebid-server/experiment/adscert"
 	"github.com/prebid/prebid-server/gdpr"
+	"github.com/prebid/prebid-server/hooks"
+	"github.com/prebid/prebid-server/hooks/hookexecution"
+	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/prebid/prebid-server/metrics"
 	metricsConf "github.com/prebid/prebid-server/metrics/config"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
@@ -42,6 +38,9 @@ import (
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
 	"github.com/prebid/prebid-server/usersync"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 )
 
 func TestNewExchange(t *testing.T) {
@@ -3478,6 +3477,137 @@ func TestApplyDealSupport(t *testing.T) {
 		if len(test.expectedDealErr) > 0 {
 			assert.Containsf(t, dealErrs, errors.New(test.expectedDealErr), "Expected error message not found in deal errors")
 		}
+	}
+}
+
+func TestApplyDealSupportMultiBid(t *testing.T) {
+	type args struct {
+		bidRequest  *openrtb2.BidRequest
+		auc         *auction
+		bidCategory map[string]string
+		multiBid    ExtMultiBidMap
+	}
+	type want struct {
+		errs                      []error
+		expectedHbPbCatDur        map[string]map[string][]string
+		expectedDealTierSatisfied map[string]map[string][]bool
+	}
+	tests := []struct {
+		name string
+		args args
+		want want
+	}{
+		{
+			name: "multibid disabled, hb_pb_cat_dur should be modified only for first bid",
+			args: args{
+				bidRequest: &openrtb2.BidRequest{
+					ID: "some-request-id",
+					Imp: []openrtb2.Imp{
+						{
+							ID:  "imp_id1",
+							Ext: json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}`),
+						},
+						{
+							ID:  "imp_id1",
+							Ext: json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}`),
+						},
+					},
+				},
+				auc: &auction{
+					winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
+						"imp_id1": {
+							openrtb_ext.BidderName("appnexus"): {
+								&entities.PbsOrtbBid{&openrtb2.Bid{ID: "123456"}, nil, "video", map[string]string{}, &openrtb_ext.ExtBidPrebidVideo{}, nil, 5, false, "", 0, "USD", ""},
+								&entities.PbsOrtbBid{&openrtb2.Bid{ID: "789101"}, nil, "video", map[string]string{}, &openrtb_ext.ExtBidPrebidVideo{}, nil, 5, false, "", 0, "USD", ""},
+							},
+						},
+					},
+				},
+				bidCategory: map[string]string{
+					"123456": "12.00_movies_30s",
+					"789101": "12.00_movies_30s",
+				},
+				multiBid: ExtMultiBidMap{},
+			},
+			want: want{
+				errs: []error{},
+				expectedHbPbCatDur: map[string]map[string][]string{
+					"imp_id1": {
+						"appnexus": []string{"tier5_movies_30s", "12.00_movies_30s"},
+					},
+				},
+				expectedDealTierSatisfied: map[string]map[string][]bool{
+					"imp_id1": {
+						"appnexus": []bool{true, false},
+					},
+				},
+			},
+		},
+		{
+			name: "multibid enabled, hb_pb_cat_dur should be modified for all winning bids",
+			args: args{
+				bidRequest: &openrtb2.BidRequest{
+					ID: "some-request-id",
+					Imp: []openrtb2.Imp{
+						{
+							ID:  "imp_id1",
+							Ext: json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}`),
+						},
+						{
+							ID:  "imp_id1",
+							Ext: json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}`),
+						},
+					},
+				},
+				auc: &auction{
+					winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
+						"imp_id1": {
+							openrtb_ext.BidderName("appnexus"): {
+								&entities.PbsOrtbBid{&openrtb2.Bid{ID: "123456"}, nil, "video", map[string]string{}, &openrtb_ext.ExtBidPrebidVideo{}, nil, 5, false, "", 0, "USD", ""},
+								&entities.PbsOrtbBid{&openrtb2.Bid{ID: "789101"}, nil, "video", map[string]string{}, &openrtb_ext.ExtBidPrebidVideo{}, nil, 5, false, "", 0, "USD", ""},
+							},
+						},
+					},
+				},
+				bidCategory: map[string]string{
+					"123456": "12.00_movies_30s",
+					"789101": "12.00_movies_30s",
+				},
+				multiBid: ExtMultiBidMap{
+					"appnexus": &openrtb_ext.ExtMultiBid{
+						TargetBidderCodePrefix: "appN",
+					},
+				},
+			},
+			want: want{
+				errs: []error{},
+				expectedHbPbCatDur: map[string]map[string][]string{
+					"imp_id1": {
+						"appnexus": []string{"tier5_movies_30s", "tier5_movies_30s"},
+					},
+				},
+				expectedDealTierSatisfied: map[string]map[string][]bool{
+					"imp_id1": {
+						"appnexus": []bool{true, true},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			errs := applyDealSupport(tt.args.bidRequest, tt.args.auc, tt.args.bidCategory, tt.args.multiBid)
+			assert.Equal(t, tt.want.errs, errs)
+
+			for impID, topBidsPerImp := range tt.args.auc.winningBidsByBidder {
+				for bidder, topBidsPerBidder := range topBidsPerImp {
+					for i, topBid := range topBidsPerBidder {
+						assert.Equal(t, tt.want.expectedHbPbCatDur[impID][bidder.String()][i], tt.args.bidCategory[topBid.Bid.ID], tt.name)
+						assert.Equal(t, tt.want.expectedDealTierSatisfied[impID][bidder.String()][i], topBid.DealTierSatisfied, tt.name)
+					}
+				}
+			}
+		})
 	}
 }
 

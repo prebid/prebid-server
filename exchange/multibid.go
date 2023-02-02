@@ -13,7 +13,8 @@ type ExtMultiBidMap map[string]*openrtb_ext.ExtMultiBid
 
 // Validate and add multiBid value
 func (mb *ExtMultiBidMap) Add(multiBid *openrtb_ext.ExtMultiBid) []error {
-	var errs []error
+	errs := make([]error, 0)
+
 	// If maxbids is not specified, ignore whole block and add warning when in debug mode
 	if multiBid.MaxBids == nil {
 		errs = append(errs, fmt.Errorf("maxBid not defined %v", multiBid))
@@ -40,23 +41,25 @@ func (mb *ExtMultiBidMap) Add(multiBid *openrtb_ext.ExtMultiBid) []error {
 		}
 
 		if multiBid.Bidders != nil {
+			errs = append(errs, fmt.Errorf("ignoring bidders from %v", multiBid))
 			multiBid.Bidders = nil
-			errs = append(errs, fmt.Errorf("ignoring bidders %v", multiBid))
 		}
 		(*mb)[multiBid.Bidder] = multiBid
 	} else if len(multiBid.Bidders) > 0 {
 		for _, bidder := range multiBid.Bidders {
-			if _, ok := (*mb)[multiBid.Bidder]; ok {
-				errs = append(errs, fmt.Errorf("multiBid already defined for %s, ignoring this instance %v", multiBid.Bidder, multiBid))
-				return errs
+			if _, ok := (*mb)[bidder]; ok {
+				errs = append(errs, fmt.Errorf("multiBid already defined for %s, ignoring this instance %v", bidder, multiBid))
+				continue
 			}
 
 			if multiBid.TargetBidderCodePrefix != "" {
-				multiBid.TargetBidderCodePrefix = ""
 				errs = append(errs, fmt.Errorf("ignoring targetbiddercodeprefix for %v", multiBid))
+				multiBid.TargetBidderCodePrefix = ""
 			}
 			(*mb)[bidder] = multiBid
 		}
+	} else {
+		errs = append(errs, fmt.Errorf("bidder(s) not specified %v", multiBid))
 	}
 	return errs
 }
