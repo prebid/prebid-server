@@ -473,9 +473,9 @@ func applyDealSupport(bidRequest *openrtb2.BidRequest, auc *auction, bidCategory
 		impDeal := impDealMap[impID]
 		for bidder, topBidsPerBidder := range topBidsPerImp {
 			for i, topBid := range topBidsPerBidder {
-				m, ok := multiBid[bidder.String()]
-				if i > 0 && (!ok || m.TargetBidderCodePrefix == "") {
-					// apply targeting keys to only first bid if multibid is not enabled for this bidders
+				bidderMultiBid, ok := multiBid[bidder.String()]
+				if i > 0 && (!ok || bidderMultiBid.TargetBidderCodePrefix == "") {
+					// For 2nd and the following bids, updateHbPbCatDur only if this bidder's multibid config is defined.
 					break
 				}
 				if topBid.DealPriority > 0 {

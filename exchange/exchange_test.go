@@ -3593,6 +3593,56 @@ func TestApplyDealSupportMultiBid(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "multibid enabled but TargetBidderCodePrefix not defined, hb_pb_cat_dur should be modified only for first bid",
+			args: args{
+				bidRequest: &openrtb2.BidRequest{
+					ID: "some-request-id",
+					Imp: []openrtb2.Imp{
+						{
+							ID:  "imp_id1",
+							Ext: json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}`),
+						},
+						{
+							ID:  "imp_id1",
+							Ext: json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}`),
+						},
+					},
+				},
+				auc: &auction{
+					winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
+						"imp_id1": {
+							openrtb_ext.BidderName("appnexus"): {
+								&entities.PbsOrtbBid{&openrtb2.Bid{ID: "123456"}, nil, "video", map[string]string{}, &openrtb_ext.ExtBidPrebidVideo{}, nil, 5, false, "", 0, "USD", ""},
+								&entities.PbsOrtbBid{&openrtb2.Bid{ID: "789101"}, nil, "video", map[string]string{}, &openrtb_ext.ExtBidPrebidVideo{}, nil, 5, false, "", 0, "USD", ""},
+							},
+						},
+					},
+				},
+				bidCategory: map[string]string{
+					"123456": "12.00_movies_30s",
+					"789101": "12.00_movies_30s",
+				},
+				multiBid: ExtMultiBidMap{
+					"appnexus": &openrtb_ext.ExtMultiBid{
+						MaxBids: getIntPtr(2),
+					},
+				},
+			},
+			want: want{
+				errs: []error{},
+				expectedHbPbCatDur: map[string]map[string][]string{
+					"imp_id1": {
+						"appnexus": []string{"tier5_movies_30s", "12.00_movies_30s"},
+					},
+				},
+				expectedDealTierSatisfied: map[string]map[string][]bool{
+					"imp_id1": {
+						"appnexus": []bool{true, false},
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

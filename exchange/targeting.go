@@ -20,7 +20,7 @@ const MaxKeyLength = 20
 type targetData struct {
 	priceGranularity  openrtb_ext.PriceGranularity
 	includeWinners    bool
-	includeBidderKeys bool // need to be true
+	includeBidderKeys bool
 	includeCacheBids  bool
 	includeCacheVast  bool
 	includeFormat     bool
