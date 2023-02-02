@@ -191,18 +191,3 @@ func getInvalidImpErr(impId string, err error) *errortypes.BadInput {
 		Message: "Invalid impid=" + impId + ": " + err.Error(),
 	}
 }
-
-func (a *adapter) makeImps(bidRequest *openrtb2.BidRequest, ext *openrtb_ext.ExtImpUndertone) []openrtb2.Imp {
-	var validImps []openrtb2.Imp
-
-	for _, imp := range bidRequest.Imp {
-		if imp.Banner != nil || imp.Video != nil {
-			imp.TagID = strconv.Itoa(ext.PlacementID)
-			imp.Ext = nil
-			validImps = append(validImps, imp)
-			break
-		}
-	}
-
-	return validImps
-}
