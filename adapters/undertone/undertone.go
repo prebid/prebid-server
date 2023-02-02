@@ -23,7 +23,7 @@ type BidRequestExt struct {
 	Prebid *openrtb_ext.ExtRequestPrebid `json:"prebid"`
 }
 
-type undertoneBidderParams struct {
+type bidderParams struct {
 	Id      int    `json:"id"`
 	Version string `json:"version"`
 }
@@ -118,7 +118,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 }
 
 func populateBidReqExt(bidRequest *openrtb2.BidRequest) error {
-	undertoneBidderParams := &undertoneBidderParams{
+	undertoneBidderParams := &bidderParams{
 		Id:      adapterId,
 		Version: adapterVersion,
 	}
