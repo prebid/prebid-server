@@ -34,13 +34,9 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"host": "example.com", "publisherId": 42}`,
-	`{"host": "example.com:42", "publisherId": 42}`,
-	`{"host": "example.com/test", "publisherId": 42}`,
-	`{"host": "example.com:42/test", "publisherId": 42}`,
-
 	`{"host": "example.com", "publisherId": 1}`,
 	`{"host": "example.com", "publisherId": "1"}`,
+	`{"host": "example.com", "publisherId": 42}`,
 	`{"host": "example.com", "publisherId": "42"}`,
 }
 
@@ -57,6 +53,9 @@ var invalidParams = []string{
 
 	`{"host": "", "publisherId": 42}`,
 	`{"host": 42, "publisherId": 42}`,
+	`{"host": "example.com:42", "publisherId": 42}`,
+	`{"host": "example.com/test", "publisherId": 42}`,
+	`{"host": "example.com:42/test", "publisherId": 42}`,
 
 	`{"host": "example.com", "publisherId": ""}`,
 	`{"host": "example.com", "publisherId": 0}`,

@@ -8,7 +8,7 @@
     "host": {
       "type": "string",
       "description": "Ad network's RTB host",
-      "minLength": 1
+      "format": "hostname"
     },
     "publisherId": {
       "type": ["number", "string"],
