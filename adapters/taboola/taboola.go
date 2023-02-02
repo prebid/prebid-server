@@ -33,29 +33,19 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	var requests []*adapters.RequestData
 
-	taboolaRequest, errs := createTaboolaRequest(request)
+	taboolaRequests, errs := createTaboolaRequests(request)
 	if len(errs) > 0 {
 		return nil, errs
 	}
 
-	filterNative := func(imp openrtb2.Imp) bool { return imp.Native != nil }
-	nativeRequest := createRequestByMediaType(*taboolaRequest, filterNative)
-	if len(nativeRequest.Imp) > 0 {
-		request, err := a.buildRequest(&nativeRequest, "native")
-		if err != nil {
-			return nil, []error{fmt.Errorf("unable to build native request %v", err)}
+	for _, taboolaRequest := range taboolaRequests {
+		if len(taboolaRequest.Imp) > 0 {
+			request, err := a.buildRequest(taboolaRequest)
+			if err != nil {
+				return nil, []error{fmt.Errorf("unable to build request %v", err)}
+			}
+			requests = append(requests, request)
 		}
-		requests = append(requests, request)
-	}
-
-	filterDisplay := func(imp openrtb2.Imp) bool { return imp.Banner != nil }
-	displayRequest := createRequestByMediaType(*taboolaRequest, filterDisplay)
-	if len(displayRequest.Imp) > 0 {
-		request, err := a.buildRequest(&displayRequest, "display")
-		if err != nil {
-			return nil, []error{fmt.Errorf("unable to build display request %v", err)}
-		}
-		requests = append(requests, request)
 	}
 
 	return requests, errs
@@ -106,9 +96,20 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return bidResponse, errs
 }
 
-func (a *adapter) buildRequest(request *openrtb2.BidRequest, mediaType string) (*adapters.RequestData, error) {
+func (a *adapter) buildRequest(request *openrtb2.BidRequest) (*adapters.RequestData, error) {
 	requestJSON, err := json.Marshal(request)
 	if err != nil {
+		return nil, err
+	}
+
+	//set MediaType based on first imp
+	var mediaType string
+	if request.Imp[0].Banner != nil {
+		mediaType = "display"
+	} else if request.Imp[0].Native != nil {
+		mediaType = "native"
+	} else {
+		fmt.Errorf("unsupported media type for imp: %v", request.Imp[0])
 		return nil, err
 	}
 
@@ -136,8 +137,10 @@ func (a *adapter) buildEndpointURL(publisherId string, mediaType string) (string
 	return resolvedUrl, nil
 }
 
-func createTaboolaRequest(request *openrtb2.BidRequest) (taboolaRequest *openrtb2.BidRequest, errors []error) {
+func createTaboolaRequests(request *openrtb2.BidRequest) (taboolaRequests []*openrtb2.BidRequest, errors []error) {
 	modifiedRequest := *request
+	var nativeImp []openrtb2.Imp
+	var bannerImp []openrtb2.Imp
 	var errs []error
 
 	var taboolaExt openrtb_ext.ImpExtTaboola
@@ -160,6 +163,12 @@ func createTaboolaRequest(request *openrtb2.BidRequest) (taboolaRequest *openrtb
 		if taboolaExt.BidFloor != 0 {
 			imp.BidFloor = taboolaExt.BidFloor
 			modifiedRequest.Imp[i] = imp
+		}
+
+		if modifiedRequest.Imp[i].Banner != nil {
+			bannerImp = append(bannerImp, modifiedRequest.Imp[i])
+		} else if modifiedRequest.Imp[i].Native != nil {
+			nativeImp = append(nativeImp, modifiedRequest.Imp[i])
 		}
 	}
 
@@ -192,7 +201,10 @@ func createTaboolaRequest(request *openrtb2.BidRequest) (taboolaRequest *openrtb
 		modifiedRequest.BAdv = taboolaExt.BAdv
 	}
 
-	return &modifiedRequest, errs
+	taboolaRequests = append(taboolaRequests, overrideBidRequestImp(&modifiedRequest, nativeImp))
+	taboolaRequests = append(taboolaRequests, overrideBidRequestImp(&modifiedRequest, bannerImp))
+
+	return taboolaRequests, errs
 }
 
 func getMediaType(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
@@ -221,18 +233,8 @@ func evaluateDomain(publisherDomain string, request *openrtb2.BidRequest) (resul
 	return ""
 }
 
-func filter[T any](ss []T, f func(T) bool) (ret []T) {
-	for _, s := range ss {
-		if f(s) {
-			ret = append(ret, s)
-		}
-	}
-	return
-}
-
-func createRequestByMediaType(originBidRequest openrtb2.BidRequest, f func(imp openrtb2.Imp) bool) (bidRequest openrtb2.BidRequest) {
-	filteredImps := filter(originBidRequest.Imp, f)
-	bidRequest = originBidRequest
-	bidRequest.Imp = filteredImps
-	return bidRequest
+func overrideBidRequestImp(originBidRequest *openrtb2.BidRequest, imp []openrtb2.Imp) (bidRequest *openrtb2.BidRequest) {
+	bidRequestResult := *originBidRequest
+	bidRequestResult.Imp = imp
+	return &bidRequestResult
 }
