@@ -28,7 +28,7 @@ type Result struct {
 }
 
 type AppliedTo struct {
-	Bidders  []string `json:"bidders,omitempty"`
+	Bidder   string   `json:"bidder,omitempty"`
 	BidIds   []string `json:"bidids,omitempty"`
 	ImpIds   []string `json:"impids,omitempty"`
 	Request  bool     `json:"request,omitempty"`

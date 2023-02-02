@@ -345,6 +345,10 @@ func getIds(override Override) ([]int, error) {
 	return override.Ids, nil
 }
 
+func getIsActive(override Override) (bool, error) {
+	return override.IsActive, nil
+}
+
 type mediaTypes map[string]struct{}
 
 func (m mediaTypes) String() string {
