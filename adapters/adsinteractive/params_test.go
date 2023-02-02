@@ -22,7 +22,7 @@ func TestValidParams(t *testing.T) {
 	}
 }
 
-// TestInvalidParams makes sure that the adtelligent schema rejects all the imp.ext fields we don't support.
+// TestInvalidParams makes sure that the Adsinteractive schema rejects all the imp.ext fields we don't support.
 func TestInvalidParams(t *testing.T) {
 	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 	if err != nil {
