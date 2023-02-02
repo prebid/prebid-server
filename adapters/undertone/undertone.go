@@ -52,7 +52,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	requestJSON, err := json.Marshal(reqCopy)
 	if err != nil {
-		return nil, []error{err}
+		return nil, append(errs, e)
 	}
 
 	requestData := &adapters.RequestData{
