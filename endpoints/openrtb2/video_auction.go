@@ -253,7 +253,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
 	deps.setFieldsImplicitly(r, bidReqWrapper)
 
-	errL = deps.validateRequest(bidReqWrapper, false, false, nil)
+	errL = deps.validateRequest(bidReqWrapper, false, false, nil, false)
 	if errortypes.ContainsFatalError(errL) {
 		handleError(&labels, w, errL, &vo, &debugLog)
 		return

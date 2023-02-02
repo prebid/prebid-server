@@ -29,6 +29,7 @@ import (
 	"github.com/prebid/prebid-server/experiment/adscert"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/hooks"
+	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/prebid/prebid-server/metrics"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
@@ -38,6 +39,7 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/util/iputil"
 	"github.com/prebid/prebid-server/util/uuidutil"
+	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 )
 
 // In this file we define:
@@ -76,7 +78,7 @@ type testCase struct {
 	// "/openrtb2/amp" endpoint JSON test info
 	storedRequest       map[string]json.RawMessage `json:"mockAmpStoredRequest"`
 	StoredResponse      map[string]json.RawMessage `json:"mockAmpStoredResponse"`
-	ExpectedAmpResponse AmpResponse                `json:"expectedAmpResponse"`
+	ExpectedAmpResponse json.RawMessage            `json:"expectedAmpResponse"`
 }
 
 type testConfigValues struct {
@@ -1339,7 +1341,7 @@ type mockAccountFetcher struct {
 	data map[string]json.RawMessage
 }
 
-func (af *mockAccountFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
+func (af *mockAccountFetcher) FetchAccount(ctx context.Context, defaultAccountJSON json.RawMessage, accountID string) (json.RawMessage, []error) {
 	if account, ok := af.data[accountID]; ok {
 		return account, nil
 	}
@@ -1441,7 +1443,7 @@ type mockPlanBuilder struct {
 	rawAuctionPlan               hooks.Plan[hookstage.RawAuctionRequest]
 	processedAuctionPlan         hooks.Plan[hookstage.ProcessedAuctionRequest]
 	bidderRequestPlan            hooks.Plan[hookstage.BidderRequest]
-	bidderResponsePlan           hooks.Plan[hookstage.RawBidderResponse]
+	rawBidderResponsePlan        hooks.Plan[hookstage.RawBidderResponse]
 	allProcessedBidResponsesPlan hooks.Plan[hookstage.AllProcessedBidResponses]
 	auctionResponsePlan          hooks.Plan[hookstage.AuctionResponse]
 }
@@ -1463,7 +1465,7 @@ func (m mockPlanBuilder) PlanForBidderRequestStage(_ string, _ *config.Account) 
 }
 
 func (m mockPlanBuilder) PlanForRawBidderResponseStage(_ string, _ *config.Account) hooks.Plan[hookstage.RawBidderResponse] {
-	return m.bidderResponsePlan
+	return m.rawBidderResponsePlan
 }
 
 func (m mockPlanBuilder) PlanForAllProcessedBidResponsesStage(_ string, _ *config.Account) hooks.Plan[hookstage.AllProcessedBidResponses] {
@@ -1474,7 +1476,7 @@ func (m mockPlanBuilder) PlanForAuctionResponseStage(_ string, _ *config.Account
 	return m.auctionResponsePlan
 }
 
-func makeRejectPlan[H any](hook H) hooks.Plan[H] {
+func makePlan[H any](hook H) hooks.Plan[H] {
 	return hooks.Plan[H]{
 		{
 			Timeout: 5 * time.Millisecond,
@@ -1515,4 +1517,144 @@ func (m mockRejectionHook) HandleProcessedAuctionHook(
 	_ hookstage.ProcessedAuctionRequestPayload,
 ) (hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload], error) {
 	return hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload]{Reject: true, NbrCode: m.nbr}, nil
+}
+
+func (m mockRejectionHook) HandleBidderRequestHook(
+	_ context.Context,
+	_ hookstage.ModuleInvocationContext,
+	payload hookstage.BidderRequestPayload,
+) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
+	result := hookstage.HookResult[hookstage.BidderRequestPayload]{}
+	if payload.Bidder == "appnexus" {
+		result.Reject = true
+		result.NbrCode = m.nbr
+	}
+
+	return result, nil
+}
+
+func (m mockRejectionHook) HandleRawBidderResponseHook(
+	_ context.Context,
+	_ hookstage.ModuleInvocationContext,
+	payload hookstage.RawBidderResponsePayload,
+) (hookstage.HookResult[hookstage.RawBidderResponsePayload], error) {
+	result := hookstage.HookResult[hookstage.RawBidderResponsePayload]{}
+	if payload.Bidder == "appnexus" {
+		result.Reject = true
+		result.NbrCode = m.nbr
+	}
+
+	return result, nil
+}
+
+var entryPointHookUpdateWithErrors = hooks.HookWrapper[hookstage.Entrypoint]{
+	Module: "foobar",
+	Code:   "foo",
+	Hook: mockUpdateHook{
+		entrypointHandler: func(
+			_ hookstage.ModuleInvocationContext,
+			payload hookstage.EntrypointPayload,
+		) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+			ch := hookstage.ChangeSet[hookstage.EntrypointPayload]{}
+			ch.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
+				payload.Request.Header.Add("foo", "bar")
+				return payload, nil
+			}, hookstage.MutationUpdate, "header", "foo")
+
+			return hookstage.HookResult[hookstage.EntrypointPayload]{
+				ChangeSet: ch,
+				Errors:    []string{"error 1"},
+			}, nil
+		},
+	},
+}
+
+var entryPointHookUpdateWithErrorsAndWarnings = hooks.HookWrapper[hookstage.Entrypoint]{
+	Module: "foobar",
+	Code:   "bar",
+	Hook: mockUpdateHook{
+		entrypointHandler: func(
+			_ hookstage.ModuleInvocationContext,
+			payload hookstage.EntrypointPayload,
+		) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+			ch := hookstage.ChangeSet[hookstage.EntrypointPayload]{}
+			ch.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
+				params := payload.Request.URL.Query()
+				params.Add("foo", "baz")
+				payload.Request.URL.RawQuery = params.Encode()
+				return payload, nil
+			}, hookstage.MutationUpdate, "param", "foo")
+
+			return hookstage.HookResult[hookstage.EntrypointPayload]{
+				ChangeSet: ch,
+				Errors:    []string{"error 1"},
+				Warnings:  []string{"warning 1"},
+			}, nil
+		},
+	},
+}
+
+var entryPointHookUpdate = hooks.HookWrapper[hookstage.Entrypoint]{
+	Module: "foobar",
+	Code:   "baz",
+	Hook: mockUpdateHook{
+		entrypointHandler: func(
+			ctx hookstage.ModuleInvocationContext,
+			payload hookstage.EntrypointPayload,
+		) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+			result := hookstage.HookResult[hookstage.EntrypointPayload]{}
+			if ctx.Endpoint != hookexecution.EndpointAuction {
+				result.Warnings = []string{fmt.Sprintf("Endpoint %s is not supported by hook.", ctx.Endpoint)}
+				return result, nil
+			}
+
+			ch := hookstage.ChangeSet[hookstage.EntrypointPayload]{}
+			ch.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
+				body, err := jsonpatch.MergePatch(payload.Body, []byte(`{"tmax":50}`))
+				if err == nil {
+					payload.Body = body
+				}
+				return payload, err
+			}, hookstage.MutationUpdate, "body", "tmax")
+			ch.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
+				body, err := jsonpatch.MergePatch(payload.Body, []byte(`{"regs": {"ext": {"gdpr": 1, "us_privacy": "1NYN"}}}`))
+				if err == nil {
+					payload.Body = body
+				}
+				return payload, err
+			}, hookstage.MutationAdd, "body", "regs", "ext", "us_privacy")
+			result.ChangeSet = ch
+
+			return result, nil
+		},
+	},
+}
+
+var rawAuctionHookNone = hooks.HookWrapper[hookstage.RawAuctionRequest]{
+	Module: "vendor.module",
+	Code:   "foobar",
+	Hook:   mockUpdateHook{},
+}
+
+type mockUpdateHook struct {
+	entrypointHandler func(
+		hookstage.ModuleInvocationContext,
+		hookstage.EntrypointPayload,
+	) (hookstage.HookResult[hookstage.EntrypointPayload], error)
+}
+
+func (m mockUpdateHook) HandleEntrypointHook(
+	_ context.Context,
+	miCtx hookstage.ModuleInvocationContext,
+	payload hookstage.EntrypointPayload,
+) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+	return m.entrypointHandler(miCtx, payload)
+}
+
+func (m mockUpdateHook) HandleRawAuctionHook(
+	_ context.Context,
+	_ hookstage.ModuleInvocationContext,
+	_ hookstage.RawAuctionRequestPayload,
+) (hookstage.HookResult[hookstage.RawAuctionRequestPayload], error) {
+	return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{}, nil
 }

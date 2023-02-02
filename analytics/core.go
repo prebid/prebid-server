@@ -5,6 +5,7 @@ import (
 
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -27,25 +28,27 @@ type PBSAnalyticsModule interface {
 
 // Loggable object of a transaction at /openrtb2/auction endpoint
 type AuctionObject struct {
-	Status    int
-	Errors    []error
-	Request   *openrtb2.BidRequest
-	Response  *openrtb2.BidResponse
-	Account   *config.Account
-	StartTime time.Time
-	LogObject
+	Status               int
+	Errors               []error
+	Request              *openrtb2.BidRequest
+	Response             *openrtb2.BidResponse
+	Account              *config.Account
+	StartTime            time.Time
+	HookExecutionOutcome []hookexecution.StageOutcome
+  LogObject
 }
 
 // Loggable object of a transaction at /openrtb2/amp endpoint
 type AmpObject struct {
-	Status             int
-	Errors             []error
-	Request            *openrtb2.BidRequest
-	AuctionResponse    *openrtb2.BidResponse
-	AmpTargetingValues map[string]string
-	Origin             string
-	StartTime          time.Time
-	LogObject
+	Status               int
+	Errors               []error
+	Request              *openrtb2.BidRequest
+	AuctionResponse      *openrtb2.BidResponse
+	AmpTargetingValues   map[string]string
+	Origin               string
+	StartTime            time.Time
+	HookExecutionOutcome []hookexecution.StageOutcome
+  LogObject
 }
 
 // Loggable object of a transaction at /openrtb2/video endpoint

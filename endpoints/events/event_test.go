@@ -83,7 +83,7 @@ type mockAccountsFetcher struct {
 	DurationMS int
 }
 
-func (maf mockAccountsFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
+func (maf mockAccountsFetcher) FetchAccount(ctx context.Context, defaultAccountJSON json.RawMessage, accountID string) (json.RawMessage, []error) {
 	if maf.DurationMS > 0 {
 		select {
 		case <-time.After(time.Duration(maf.DurationMS) * time.Millisecond):

@@ -22,6 +22,9 @@ const GPIDKey = "gpid"
 // TIDKey reserved for Per-Impression Transactions IDs for Multi-Impression Bid Requests.
 const TIDKey = "tid"
 
+// AuctionEnvironmentKey is the json key under imp[].ext for ExtImp.AuctionEnvironment
+const AuctionEnvironmentKey = string(BidderReservedAE)
+
 // NativeExchangeSpecificLowerBound defines the lower threshold of exchange specific types for native ads. There is no upper bound.
 const NativeExchangeSpecificLowerBound = 500
 
@@ -62,9 +65,17 @@ type ExtRequestPrebid struct {
 
 	//AlternateBidderCodes is populated with host's AlternateBidderCodes config if not defined in request
 	AlternateBidderCodes *ExtAlternateBidderCodes `json:"alternatebiddercodes,omitempty"`
+
 	// ReturnAllBidStatus if true populates bidresponse.ext.prebid.seatnonbid with all bids which was
 	// either rejected, nobid, input error
 	ReturnAllBidStatus bool `json:"returnallbidstatus:omitempty"`
+
+	// Trace controls the level of detail in the output information returned from executing hooks.
+	// There are two options:
+	// - verbose: sets maximum level of output information
+	// - basic: excludes debugmessages and analytic_tags from output
+	// any other value or an empty string disables trace output at all.
+	Trace string `json:"trace,omitempty"`
 }
 
 // Experiment defines if experimental features are available for the request

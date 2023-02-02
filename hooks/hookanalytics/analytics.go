@@ -5,7 +5,7 @@
 package hookanalytics
 
 type Analytics struct {
-	Activities []Activity `json:"activities"`
+	Activities []Activity `json:"activities,omitempty"`
 }
 
 type Activity struct {
@@ -28,7 +28,7 @@ type Result struct {
 }
 
 type AppliedTo struct {
-	Bidders  []string `json:"bidders,omitempty"`
+	Bidder   string   `json:"bidder,omitempty"`
 	BidIds   []string `json:"bidids,omitempty"`
 	ImpIds   []string `json:"impids,omitempty"`
 	Request  bool     `json:"request,omitempty"`
