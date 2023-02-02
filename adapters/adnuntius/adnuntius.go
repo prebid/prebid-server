@@ -76,8 +76,9 @@ const minutesInHour = 60
 // Builder builds a new instance of the Adnuntius adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
-		time:     &timeutil.RealTime{},
-		endpoint: config.Endpoint,
+		time:      &timeutil.RealTime{},
+		endpoint:  config.Endpoint,
+		extraInfo: config.ExtraAdapterInfo,
 	}
 
 	return bidder, nil
