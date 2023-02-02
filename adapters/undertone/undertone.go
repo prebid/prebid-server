@@ -80,7 +80,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		err := &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info.", responseData.StatusCode),
 		}
-		return nil, []error{err}
+		return nil, []error{err} // todo: add unit test
 	}
 
 	var response openrtb2.BidResponse
@@ -112,7 +112,6 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 			}
 			bidResponse.Bids = append(bidResponse.Bids, b)
 		}
-		return bidResponse, nil
 	}
 	return bidResponse, nil
 }
