@@ -35,7 +35,7 @@ type AuctionObject struct {
 	Account              *config.Account
 	StartTime            time.Time
 	HookExecutionOutcome []hookexecution.StageOutcome
-  LogObject
+        LogObject
 }
 
 // Loggable object of a transaction at /openrtb2/amp endpoint
@@ -48,7 +48,7 @@ type AmpObject struct {
 	Origin               string
 	StartTime            time.Time
 	HookExecutionOutcome []hookexecution.StageOutcome
-  LogObject
+        LogObject
 }
 
 // Loggable object of a transaction at /openrtb2/video endpoint
