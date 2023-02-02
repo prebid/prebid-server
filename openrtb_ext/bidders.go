@@ -416,6 +416,7 @@ func CoreBidderNames() []BidderName {
 		BidderTripleliftNative,
 		BidderTrustX,
 		BidderUcfunnel,
+		BidderUndertone,
 		BidderUnicorn,
 		BidderUnruly,
 		BidderValueImpression,
@@ -432,7 +433,6 @@ func CoreBidderNames() []BidderName {
 		BidderYieldmo,
 		BidderYieldone,
 		BidderZeroClickFraud,
-		BidderUndertone,
 	}
 }
 
