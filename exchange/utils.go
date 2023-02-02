@@ -364,30 +364,42 @@ func buildRequestExtAlternateBidderCodes(bidder string, accABC *openrtb_ext.ExtA
 }
 
 func buildRequestExtMultiBid(adapter string, reqMultiBid []*openrtb_ext.ExtMultiBid, adapterABC *openrtb_ext.ExtAlternateBidderCodes) []*openrtb_ext.ExtMultiBid {
-	// TODO: send multiBid to adapters under adapterABC
-
-	var adapterMultiBid []*openrtb_ext.ExtMultiBid
+	adapterMultiBid := make([]*openrtb_ext.ExtMultiBid, 0)
 	for _, multiBid := range reqMultiBid {
-		if multiBid.Bidder == adapter {
-			if adapterMultiBid == nil {
-				adapterMultiBid = make([]*openrtb_ext.ExtMultiBid, 0)
+		if multiBid.Bidder != "" {
+			if multiBid.Bidder == adapter || isBidderInExtAlternateBidderCodes(adapter, multiBid.Bidder, adapterABC) {
+				adapterMultiBid = append(adapterMultiBid, multiBid)
 			}
-			adapterMultiBid = append(adapterMultiBid, multiBid)
-			continue
-		}
-		for _, bidder := range multiBid.Bidders {
-			if bidder == adapter {
-				if adapterMultiBid == nil {
-					adapterMultiBid = make([]*openrtb_ext.ExtMultiBid, 0)
+		} else {
+			for _, bidder := range multiBid.Bidders {
+				if bidder == adapter || isBidderInExtAlternateBidderCodes(adapter, bidder, adapterABC) {
+					adapterMultiBid = append(adapterMultiBid, &openrtb_ext.ExtMultiBid{
+						Bidders: []string{bidder},
+						MaxBids: multiBid.MaxBids,
+					})
 				}
-				adapterMultiBid = append(adapterMultiBid, &openrtb_ext.ExtMultiBid{
-					Bidders: []string{adapter},
-					MaxBids: multiBid.MaxBids,
-				})
 			}
 		}
 	}
-	return adapterMultiBid
+
+	if len(adapterMultiBid) > 0 {
+		return adapterMultiBid
+	}
+
+	return nil
+}
+
+func isBidderInExtAlternateBidderCodes(adapter, currentMultiBidBidder string, adapterABC *openrtb_ext.ExtAlternateBidderCodes) bool {
+	if adapterABC != nil {
+		if abc, ok := adapterABC.Bidders[adapter]; ok {
+			for _, bidder := range abc.AllowedBidderCodes {
+				if bidder == "*" || bidder == currentMultiBidBidder {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 // extractBuyerUIDs parses the values from user.ext.prebid.buyeruids, and then deletes those values from the ext.

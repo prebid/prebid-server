@@ -2434,6 +2434,55 @@ func TestBuildRequestExtForBidder(t *testing.T) {
 			requestExt:           json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["foo2"]},"bar":{"enabled":true,"allowedbiddercodes":["ix"]}}}}}`),
 			expectedJson:         json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["foo2"]}}},"bidderparams":"bar"}}`),
 		},
+		{
+			description:  "Prebid + Other + Bider Params + MultiBid.Bidder",
+			bidderParams: map[string]json.RawMessage{bidder: bidderParams},
+			requestExt:   json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"multibid":[{"bidder":"foo","maxbids":2,"targetbiddercodeprefix":"fmb"},{"bidders":["appnexus","groupm"],"maxbids":2}]}}`),
+			expectedJson: json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"multibid":[{"bidder":"foo","maxbids":2,"targetbiddercodeprefix":"fmb"}],"bidderparams":"bar"}}`),
+		},
+		{
+			description:  "Prebid + Other + Bider Params + MultiBid.Bidders",
+			bidderParams: map[string]json.RawMessage{bidder: bidderParams},
+			requestExt:   json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"multibid":[{"bidder":"pubmatic","maxbids":3,"targetbiddercodeprefix":"pubM"},{"bidders":["foo","groupm"],"maxbids":4}]}}`),
+			expectedJson: json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"multibid":[{"bidders":["foo"],"maxbids":4}],"bidderparams":"bar"}}`),
+		},
+		{
+			description:  "Prebid + Other + Bider Params + MultiBid (foo not in MultiBid)",
+			bidderParams: map[string]json.RawMessage{bidder: bidderParams},
+			requestExt:   json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"multibid":[{"bidder":"foo2","maxbids":2,"targetbiddercodeprefix":"fmb"},{"bidders":["appnexus","groupm"],"maxbids":2}]}}`),
+			expectedJson: json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"bidderparams":"bar"}}`),
+		},
+		{
+			description:  "Prebid + Other + Bider Params + MultiBid (foo not in MultiBid)",
+			bidderParams: map[string]json.RawMessage{bidder: bidderParams},
+			requestExt:   json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"multibid":[{"bidder":"foo2","maxbids":2,"targetbiddercodeprefix":"fmb"},{"bidders":["appnexus","groupm"],"maxbids":2}]}}`),
+			expectedJson: json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"bidderparams":"bar"}}`),
+		},
+		{
+			description:  "Prebid + AlternateBidderCodes.MultiBid.Bidder",
+			requestExt:   json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["pubmatic"]}}},"multibid":[{"bidder":"foo","maxbids":3,"targetbiddercodeprefix":"fmb"},{"bidder":"foo2","maxbids":4,"targetbiddercodeprefix":"fmb2"},{"bidder":"pubmatic","maxbids":5,"targetbiddercodeprefix":"pm"}]}}`),
+			expectedJson: json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["pubmatic"]}}},"multibid":[{"bidder":"foo","maxbids":3,"targetbiddercodeprefix":"fmb"},{"bidder":"pubmatic","maxbids":5,"targetbiddercodeprefix":"pm"}]}}`),
+		},
+		{
+			description:  "Prebid + AlternateBidderCodes.MultiBid.Bidders",
+			requestExt:   json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["pubmatic"]}}},"multibid":[{"bidder":"foo","maxbids":3,"targetbiddercodeprefix":"fmb"},{"bidders":["pubmatic","groupm"],"maxbids":4}]}}`),
+			expectedJson: json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["pubmatic"]}}},"multibid":[{"bidder":"foo","maxbids":3,"targetbiddercodeprefix":"fmb"},{"bidders":["pubmatic"],"maxbids":4}]}}`),
+		},
+		{
+			description:  "Prebid + AlternateBidderCodes.MultiBid.Bidder with *",
+			requestExt:   json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["*"]}}},"multibid":[{"bidder":"foo","maxbids":3,"targetbiddercodeprefix":"fmb"},{"bidder":"foo2","maxbids":4,"targetbiddercodeprefix":"fmb2"},{"bidder":"pubmatic","maxbids":5,"targetbiddercodeprefix":"pm"}]}}`),
+			expectedJson: json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["*"]}}},"multibid":[{"bidder":"foo","maxbids":3,"targetbiddercodeprefix":"fmb"},{"bidder":"foo2","maxbids":4,"targetbiddercodeprefix":"fmb2"},{"bidder":"pubmatic","maxbids":5,"targetbiddercodeprefix":"pm"}]}}`),
+		},
+		{
+			description:  "Prebid + AlternateBidderCodes.MultiBid.Bidders with *",
+			requestExt:   json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["*"]}}},"multibid":[{"bidder":"foo","maxbids":3,"targetbiddercodeprefix":"fmb"},{"bidders":["pubmatic","groupm"],"maxbids":4}]}}`),
+			expectedJson: json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["*"]}}},"multibid":[{"bidder":"foo","maxbids":3,"targetbiddercodeprefix":"fmb"},{"bidders":["pubmatic"],"maxbids":4},{"bidders":["groupm"],"maxbids":4}]}}`),
+		},
+		{
+			description:  "Prebid + AlternateBidderCodes + MultiBid",
+			requestExt:   json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["foo2"]}}},"multibid":[{"bidder":"foo3","maxbids":3,"targetbiddercodeprefix":"fmb"},{"bidders":["pubmatic","groupm"],"maxbids":4}]}}`),
+			expectedJson: json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["foo2"]}}}}}`),
+		},
 	}
 
 	for _, test := range testCases {
