@@ -384,8 +384,9 @@ func TestMetricsAreGatheredDuringHookExecution(t *testing.T) {
 	metricEngine := &metrics.MetricsEngineMock{}
 	builder := TestAllHookResultsBuilder{}
 	exec := NewHookExecutor(TestAllHookResultsBuilder{}, "/openrtb2/auction", metricEngine)
+	moduleName := "module.x-1"
 	moduleLabels := metrics.ModuleLabels{
-		Module: "module-1",
+		Module: moduleReplacer.Replace(moduleName),
 		Stage:  "entrypoint",
 	}
 	rTime := func(dur time.Duration) bool { return dur.Nanoseconds() > 0 }
@@ -2576,12 +2577,12 @@ func (e TestAllHookResultsBuilder) PlanForEntrypointStage(_ string) hooks.Plan[h
 		hooks.Group[hookstage.Entrypoint]{
 			Timeout: 10 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
-				{Module: "module-1", Code: "code-1", Hook: mockUpdateHeaderEntrypointHook{}},
-				{Module: "module-1", Code: "code-3", Hook: mockTimeoutHook{}},
-				{Module: "module-1", Code: "code-4", Hook: mockFailureHook{}},
-				{Module: "module-1", Code: "code-5", Hook: mockErrorHook{}},
-				{Module: "module-1", Code: "code-6", Hook: mockFailedMutationHook{}},
-				{Module: "module-1", Code: "code-7", Hook: mockModuleContextHook{key: "key", val: "val"}},
+				{Module: "module.x-1", Code: "code-1", Hook: mockUpdateHeaderEntrypointHook{}},
+				{Module: "module.x-1", Code: "code-3", Hook: mockTimeoutHook{}},
+				{Module: "module.x-1", Code: "code-4", Hook: mockFailureHook{}},
+				{Module: "module.x-1", Code: "code-5", Hook: mockErrorHook{}},
+				{Module: "module.x-1", Code: "code-6", Hook: mockFailedMutationHook{}},
+				{Module: "module.x-1", Code: "code-7", Hook: mockModuleContextHook{key: "key", val: "val"}},
 			},
 		},
 		// place the reject hook in a separate group because it rejects the stage completely
@@ -2589,7 +2590,7 @@ func (e TestAllHookResultsBuilder) PlanForEntrypointStage(_ string) hooks.Plan[h
 		hooks.Group[hookstage.Entrypoint]{
 			Timeout: 10 * time.Second,
 			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
-				{Module: "module-1", Code: "code-2", Hook: mockRejectHook{}},
+				{Module: "module.x-1", Code: "code-2", Hook: mockRejectHook{}},
 			},
 		},
 	}
