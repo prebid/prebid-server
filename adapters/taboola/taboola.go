@@ -17,6 +17,11 @@ type adapter struct {
 	endpoint *template.Template
 }
 
+const (
+	NATIVE_ENDPOINT_PREFIX  = "native"
+	DISPLAY_ENDPOINT_PREFIX = "display"
+)
+
 // Builder builds a new instance of the Foo adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	endpointTemplate, err := template.New("endpointTemplate").Parse(config.Endpoint)
@@ -105,12 +110,11 @@ func (a *adapter) buildRequest(request *openrtb2.BidRequest) (*adapters.RequestD
 	//set MediaType based on first imp
 	var mediaType string
 	if request.Imp[0].Banner != nil {
-		mediaType = "display"
+		mediaType = DISPLAY_ENDPOINT_PREFIX
 	} else if request.Imp[0].Native != nil {
-		mediaType = "native"
+		mediaType = NATIVE_ENDPOINT_PREFIX
 	} else {
-		fmt.Errorf("unsupported media type for imp: %v", request.Imp[0])
-		return nil, err
+		return nil, fmt.Errorf("unsupported media type for imp: %v", request.Imp[0])
 	}
 
 	url, err := a.buildEndpointURL(request.Site.ID, mediaType)
