@@ -115,8 +115,11 @@ func createTaboolaRequest(request *openrtb2.BidRequest) (taboolaRequest *openrtb
 			imp.BidFloor = taboolaExt.BidFloor
 			modifiedRequest.Imp[i] = imp
 		}
-		if taboolaExt.Pos != nil {
-			imp.Banner.Pos = adcom1.PlacementPosition(*taboolaExt.Pos).Ptr()
+		//var position *adcom1.PlacementPosition
+		if taboolaExt.Position != nil {
+			bannerCopy := *imp.Banner
+			bannerCopy.Pos = adcom1.PlacementPosition(*taboolaExt.Position).Ptr()
+			imp.Banner = &bannerCopy
 			modifiedRequest.Imp[i] = imp
 		}
 
@@ -132,8 +135,6 @@ func createTaboolaRequest(request *openrtb2.BidRequest) (taboolaRequest *openrtb
 			Name:      taboolaExt.PublisherId,
 			Domain:    evaluateDomain(taboolaExt.PublisherDomain, request),
 			Publisher: publisher,
-			//if taboolaExt.PageType != nil {},
-			//Ext:       generateSiteExtJson(taboolaExt, errs),
 		}
 		if taboolaExt.PageType != "" {
 			newSite.Ext = generateSiteExtJson(taboolaExt, errs)
