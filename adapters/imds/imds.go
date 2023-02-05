@@ -1,4 +1,4 @@
-package synacormedia
+package imds
 
 import (
 	"encoding/json"
@@ -14,7 +14,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type SynacorMediaAdapter struct {
+type adapter struct {
 	EndpointTemplate *template.Template
 }
 
@@ -27,20 +27,20 @@ type ReqExt struct {
 	SeatId string `json:"seatId"`
 }
 
-// Builder builds a new instance of the SynacorMedia adapter for the given bidder with the given config.
+// Builder builds a new instance of the Imds adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
-	bidder := &SynacorMediaAdapter{
+	bidder := &adapter{
 		EndpointTemplate: template,
 	}
 	return bidder, nil
 }
 
-func (a *SynacorMediaAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var bidRequests []*adapters.RequestData
 
@@ -53,11 +53,11 @@ func (a *SynacorMediaAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo
 	return bidRequests, errs
 }
 
-func (a *SynacorMediaAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, []error) {
+func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, []error) {
 	var errs []error
 	var validImps []openrtb2.Imp
 	var re *ReqExt
-	var firstExtImp *openrtb_ext.ExtImpSynacormedia = nil
+	var firstExtImp *openrtb_ext.ExtImpImds = nil
 
 	for _, imp := range request.Imp {
 		validExtImpObj, err := getExtImpObj(&imp) // getExtImpObj returns {seatId:"", tagId:""}
@@ -126,11 +126,11 @@ func (a *SynacorMediaAdapter) makeRequest(request *openrtb2.BidRequest) (*adapte
 }
 
 // Builds enpoint url based on adapter-specific pub settings from imp.ext
-func (adapter *SynacorMediaAdapter) buildEndpointURL(params *openrtb_ext.ExtImpSynacormedia) (string, error) {
+func (adapter *adapter) buildEndpointURL(params *openrtb_ext.ExtImpImds) (string, error) {
 	return macros.ResolveMacros(adapter.EndpointTemplate, macros.EndpointTemplateParams{Host: params.SeatId})
 }
 
-func getExtImpObj(imp *openrtb2.Imp) (*openrtb_ext.ExtImpSynacormedia, error) {
+func getExtImpObj(imp *openrtb2.Imp) (*openrtb_ext.ExtImpImds, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
@@ -138,18 +138,18 @@ func getExtImpObj(imp *openrtb2.Imp) (*openrtb_ext.ExtImpSynacormedia, error) {
 		}
 	}
 
-	var synacormediaExt openrtb_ext.ExtImpSynacormedia
-	if err := json.Unmarshal(bidderExt.Bidder, &synacormediaExt); err != nil {
+	var imdsExt openrtb_ext.ExtImpImds
+	if err := json.Unmarshal(bidderExt.Bidder, &imdsExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
 
-	return &synacormediaExt, nil
+	return &imdsExt, nil
 }
 
 // MakeBids make the bids for the bid response.
-func (a *SynacorMediaAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	const errorMessage string = "Unexpected status code: %d. Run with request.debug = 1 for more info"
 	switch {
 	case response.StatusCode == http.StatusNoContent:

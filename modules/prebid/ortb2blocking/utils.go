@@ -1,6 +1,11 @@
 package ortb2blocking
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/prebid/openrtb/v17/adcom1"
+	"github.com/prebid/openrtb/v17/openrtb2"
+)
 
 func mergeStrings(messages []string, newMessages ...string) []string {
 	for _, msg := range newMessages {
@@ -19,4 +24,16 @@ func hasMatches(list []string, s string) bool {
 		}
 	}
 	return false
+}
+
+type numeric interface {
+	openrtb2.BannerAdType | adcom1.CreativeAttribute
+}
+
+func toInt[T numeric](values []T) []int {
+	ints := make([]int, len(values))
+	for i := range values {
+		ints[i] = int(values[i])
+	}
+	return ints
 }
