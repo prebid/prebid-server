@@ -2,6 +2,9 @@ package hookstage
 
 import (
 	"context"
+
+	"github.com/prebid/prebid-server/exchange/entities"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 // AllProcessedBidResponses hooks are invoked over a list of all
@@ -24,5 +27,5 @@ type AllProcessedBidResponses interface {
 // processed responses received from bidders.
 // Hooks are allowed to modify payload object and discard bids using mutations.
 type AllProcessedBidResponsesPayload struct {
-	// todo: decide what payload to use within the hook invocation task
+	Responses map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid
 }

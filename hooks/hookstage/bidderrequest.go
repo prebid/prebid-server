@@ -26,4 +26,5 @@ type BidderRequest interface {
 // Hooks are allowed to modify openrtb2.BidRequest using mutations.
 type BidderRequestPayload struct {
 	BidRequest *openrtb2.BidRequest
+	Bidder     string
 }

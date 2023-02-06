@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -36,6 +36,7 @@ const (
 	BidderReservedPrebid  BidderName = "prebid"  // Reserved for Prebid Server configuration.
 	BidderReservedSKAdN   BidderName = "skadn"   // Reserved for Apple's SKAdNetwork OpenRTB extension.
 	BidderReservedTID     BidderName = "tid"     // Reserved for Per-Impression Transactions IDs for Multi-Impression Bid Requests.
+	BidderReservedAE      BidderName = "ae"      // Reserved for FLEDGE Auction Environment
 )
 
 // IsBidderNameReserved returns true if the specified name is a case insensitive match for a reserved bidder name.
@@ -69,6 +70,10 @@ func IsBidderNameReserved(name string) bool {
 	}
 
 	if strings.EqualFold(name, string(BidderReservedTID)) {
+		return true
+	}
+
+	if strings.EqualFold(name, string(BidderReservedAE)) {
 		return true
 	}
 
@@ -131,6 +136,7 @@ const (
 	BidderBlue              BidderName = "blue"
 	BidderBmtm              BidderName = "bmtm"
 	BidderBoldwin           BidderName = "boldwin"
+	BidderBrave             BidderName = "brave"
 	BidderBrightroll        BidderName = "brightroll"
 	BidderCcx               BidderName = "ccx"
 	BidderCoinzilla         BidderName = "coinzilla"
@@ -141,9 +147,11 @@ const (
 	BidderConversant        BidderName = "conversant"
 	BidderCpmstar           BidderName = "cpmstar"
 	BidderCriteo            BidderName = "criteo"
+	BidderCWire             BidderName = "cwire"
 	BidderDatablocks        BidderName = "datablocks"
 	BidderDecenterAds       BidderName = "decenterads"
 	BidderDeepintent        BidderName = "deepintent"
+	BidderDefinemedia       BidderName = "definemedia"
 	BidderDianomi           BidderName = "dianomi"
 	BidderDmx               BidderName = "dmx"
 	BidderEmxDigital        BidderName = "emx_digital"
@@ -159,6 +167,7 @@ const (
 	BidderGroupm            BidderName = "groupm"
 	BidderGumGum            BidderName = "gumgum"
 	BidderHuaweiAds         BidderName = "huaweiads"
+	BidderImds              BidderName = "imds"
 	BidderImpactify         BidderName = "impactify"
 	BidderImprovedigital    BidderName = "improvedigital"
 	BidderInfyTV            BidderName = "infytv"
@@ -223,6 +232,7 @@ const (
 	BidderStroeerCore       BidderName = "stroeerCore"
 	BidderSuntContent       BidderName = "suntContent"
 	BidderSynacormedia      BidderName = "synacormedia"
+	BidderTaboola           BidderName = "taboola"
 	BidderTappx             BidderName = "tappx"
 	BidderTelaria           BidderName = "telaria"
 	BidderTrafficGate       BidderName = "trafficgate"
@@ -235,6 +245,7 @@ const (
 	BidderValueImpression   BidderName = "valueimpression"
 	BidderVerizonMedia      BidderName = "verizonmedia"
 	BidderVideoByte         BidderName = "videobyte"
+	BidderVideoHeroes       BidderName = "videoheroes"
 	BidderVidoomy           BidderName = "vidoomy"
 	BidderViewdeos          BidderName = "viewdeos"
 	BidderVisx              BidderName = "visx"
@@ -300,6 +311,7 @@ func CoreBidderNames() []BidderName {
 		BidderBlue,
 		BidderBmtm,
 		BidderBoldwin,
+		BidderBrave,
 		BidderBrightroll,
 		BidderCcx,
 		BidderCoinzilla,
@@ -310,9 +322,11 @@ func CoreBidderNames() []BidderName {
 		BidderConversant,
 		BidderCpmstar,
 		BidderCriteo,
+		BidderCWire,
 		BidderDatablocks,
 		BidderDecenterAds,
 		BidderDeepintent,
+		BidderDefinemedia,
 		BidderDianomi,
 		BidderDmx,
 		BidderEmxDigital,
@@ -328,6 +342,7 @@ func CoreBidderNames() []BidderName {
 		BidderGroupm,
 		BidderGumGum,
 		BidderHuaweiAds,
+		BidderImds,
 		BidderImpactify,
 		BidderImprovedigital,
 		BidderInfyTV,
@@ -392,6 +407,7 @@ func CoreBidderNames() []BidderName {
 		BidderStroeerCore,
 		BidderSuntContent,
 		BidderSynacormedia,
+		BidderTaboola,
 		BidderTappx,
 		BidderTelaria,
 		BidderTrafficGate,
@@ -404,6 +420,7 @@ func CoreBidderNames() []BidderName {
 		BidderValueImpression,
 		BidderVerizonMedia,
 		BidderVideoByte,
+		BidderVideoHeroes,
 		BidderVidoomy,
 		BidderViewdeos,
 		BidderVisx,
@@ -473,7 +490,7 @@ type BidderParamValidator interface {
 // NewBidderParamsValidator makes a BidderParamValidator, assuming all the necessary files exist in the filesystem.
 // This will error if, for example, a Bidder gets added but no JSON schema is written for them.
 func NewBidderParamsValidator(schemaDirectory string) (BidderParamValidator, error) {
-	fileInfos, err := ioutil.ReadDir(schemaDirectory)
+	fileInfos, err := os.ReadDir(schemaDirectory)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to read JSON schemas from directory %s. %v", schemaDirectory, err)
 	}
@@ -497,7 +514,7 @@ func NewBidderParamsValidator(schemaDirectory string) (BidderParamValidator, err
 			return nil, fmt.Errorf("Failed to load json schema at %s: %v", toOpen, err)
 		}
 
-		fileBytes, err := ioutil.ReadFile(fmt.Sprintf("%s/%s", schemaDirectory, fileInfo.Name()))
+		fileBytes, err := os.ReadFile(fmt.Sprintf("%s/%s", schemaDirectory, fileInfo.Name()))
 		if err != nil {
 			return nil, fmt.Errorf("Failed to read file %s/%s: %v", schemaDirectory, fileInfo.Name(), err)
 		}

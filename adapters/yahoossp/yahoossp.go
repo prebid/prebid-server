@@ -169,6 +169,34 @@ func changeRequestForBidService(request *openrtb2.BidRequest, extension *openrtb
 		}
 	}
 
+	if request.Regs != nil && request.Regs.GPP != "" {
+		requestRegs := *request.Regs
+		if requestRegs.Ext == nil {
+			requestRegs.Ext = json.RawMessage("{}")
+		}
+		var regsExt map[string]json.RawMessage
+		err := json.Unmarshal(requestRegs.Ext, &regsExt)
+		if err != nil {
+			return err
+		}
+		regsExt["gpp"], err = json.Marshal(&requestRegs.GPP)
+
+		if requestRegs.GPPSID != nil {
+			regsExt["gpp_sid"], err = json.Marshal(&requestRegs.GPPSID)
+			if err != nil {
+				return err
+			}
+		}
+
+		requestRegs.Ext, err = json.Marshal(&regsExt)
+		if err != nil {
+			return err
+		}
+		requestRegs.GPP = ""
+		requestRegs.GPPSID = nil
+		request.Regs = &requestRegs
+	}
+
 	return nil
 }
 

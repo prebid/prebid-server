@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -73,7 +73,7 @@ func TestShouldRespondWithBadRequestWhenAccountParameterIsMissing(t *testing.T) 
 	// execute
 	e.Handle(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,7 +114,7 @@ func TestShouldRespondWithBadRequestWhenRequestBodyIsEmpty(t *testing.T) {
 	// execute
 	e.Handle(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -199,7 +199,7 @@ func TestShouldRespondWithBadRequestWhenBidIdIsMissing(t *testing.T) {
 	// execute
 	e.Handle(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -251,7 +251,7 @@ func TestShouldRespondWithBadRequestWhenBidderIsMissing(t *testing.T) {
 	// execute
 	e.Handle(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -300,7 +300,7 @@ func TestShouldRespondWithInternalServerErrorWhenPbsCacheClientFails(t *testing.
 	// execute
 	e.Handle(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -406,7 +406,7 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastNotAllowe
 	// execute
 	e.Handle(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -469,7 +469,7 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastAllowed(t
 	// execute
 	e.Handle(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -524,7 +524,7 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableUnknownBiddersWhenUnknownBidde
 	// execute
 	e.Handle(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -580,7 +580,7 @@ func TestShouldReturnBadRequestWhenRequestExceedsMaxRequestSize(t *testing.T) {
 	// execute
 	e.Handle(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -624,7 +624,7 @@ func TestShouldRespondWithInternalErrorPbsCacheIsNotConfigured(t *testing.T) {
 	// execute
 	e.Handle(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}

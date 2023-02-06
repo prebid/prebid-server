@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -162,7 +161,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		R: r.Body,
 		N: deps.cfg.MaxRequestSize,
 	}
-	requestJson, err := ioutil.ReadAll(lr)
+	requestJson, err := io.ReadAll(lr)
 	if err != nil {
 		handleError(&labels, w, []error{err}, &vo, &debugLog)
 		return
@@ -254,7 +253,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
 	deps.setFieldsImplicitly(r, bidReqWrapper)
 
-	errL = deps.validateRequest(bidReqWrapper, false, false, nil)
+	errL = deps.validateRequest(bidReqWrapper, false, false, nil, false)
 	if errortypes.ContainsFatalError(errL) {
 		handleError(&labels, w, errL, &vo, &debugLog)
 		return

@@ -2,9 +2,9 @@ package router
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
@@ -47,7 +47,7 @@ func TestNewJsonDirectoryServer(t *testing.T) {
 	json.Unmarshal(recorder.Body.Bytes(), &data)
 
 	// Make sure that every adapter has a json schema by the same name associated with it.
-	adapterFiles, err := ioutil.ReadDir(adapterDirectory)
+	adapterFiles, err := os.ReadDir(adapterDirectory)
 	if err != nil {
 		t.Fatalf("Failed to open the adapters directory: %v", err)
 	}
