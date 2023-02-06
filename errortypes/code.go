@@ -13,8 +13,8 @@ const (
 	AcctRequiredErrorCode
 	NoConversionRateErrorCode
 	MalformedAcctErrorCode
-	BidRejectionFloorsErrorCode
 	ModuleRejectionErrorCode
+	BidRejectionFloorsErrorCode
 )
 
 // Defines numeric codes for well-known warnings.

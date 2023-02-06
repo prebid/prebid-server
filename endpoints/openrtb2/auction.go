@@ -829,7 +829,7 @@ func validateAndFillSourceTID(req *openrtb_ext.RequestWrapper, generateRequestID
 				return errors.New("imp.ext.tid missing in the imp and error creating a random UID")
 			}
 			ie.SetTid(rawUUID.String())
-			impWrapper.RebuildImp()
+			impWrapper.RebuildImpExt()
 		}
 	}
 

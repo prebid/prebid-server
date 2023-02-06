@@ -104,7 +104,7 @@ type Configuration struct {
 	TrackerURL        string            `mapstructure:"tracker_url"`
 	PriceFloors       PriceFloors       `mapstructure:"price_floors"`
 	PriceFloorFetcher PriceFloorFetcher `mapstructure:"price_floor_fetcher"`
-  Validations       Validations       `mapstructure:"validations"`
+	Validations       Validations       `mapstructure:"validations"`
 }
 
 type PriceFloors struct {

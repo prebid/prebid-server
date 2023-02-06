@@ -856,7 +856,7 @@ func TestRecordSyncerSet(t *testing.T) {
 
 func TestRecordRejectedBidsForBidders(t *testing.T) {
 	registry := metrics.NewRegistry()
-	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon, openrtb_ext.BidderPubmatic}, config.DisabledMetrics{}, nil)
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon, openrtb_ext.BidderPubmatic}, config.DisabledMetrics{}, nil, nil)
 
 	m.RecordFloorsRequestForAccount("1234")
 	m.RecordRejectedBidsForAccount("1234")

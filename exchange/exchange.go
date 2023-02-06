@@ -56,27 +56,27 @@ type IdFetcher interface {
 }
 
 type exchange struct {
-	adapterMap        map[openrtb_ext.BidderName]AdaptedBidder
-	bidderInfo        config.BidderInfos
-	bidderToSyncerKey map[string]string
-	me                metrics.MetricsEngine
-	cache             prebid_cache_client.Client
-	cacheTime         time.Duration
-	gdprPermsBuilder  gdpr.PermissionsBuilder
-	tcf2ConfigBuilder gdpr.TCF2ConfigBuilder
-	currencyConverter *currency.RateConverter
-	externalURL       string
-	gdprDefaultValue  gdpr.Signal
-	privacyConfig     config.Privacy
-	categoriesFetcher stored_requests.CategoryFetcher
-	bidIDGenerator    BidIDGenerator
-	hostSChainNode    *openrtb2.SupplyChainNode
-	adsCertSigner     adscert.Signer
-	floor             config.PriceFloors
-	server            config.Server
-	trakerURL         string
-	priceFloorFetcher *floors.PriceFloorFetcher
-  bidValidationEnforcement config.Validations
+	adapterMap               map[openrtb_ext.BidderName]AdaptedBidder
+	bidderInfo               config.BidderInfos
+	bidderToSyncerKey        map[string]string
+	me                       metrics.MetricsEngine
+	cache                    prebid_cache_client.Client
+	cacheTime                time.Duration
+	gdprPermsBuilder         gdpr.PermissionsBuilder
+	tcf2ConfigBuilder        gdpr.TCF2ConfigBuilder
+	currencyConverter        *currency.RateConverter
+	externalURL              string
+	gdprDefaultValue         gdpr.Signal
+	privacyConfig            config.Privacy
+	categoriesFetcher        stored_requests.CategoryFetcher
+	bidIDGenerator           BidIDGenerator
+	hostSChainNode           *openrtb2.SupplyChainNode
+	adsCertSigner            adscert.Signer
+	floor                    config.PriceFloors
+	server                   config.Server
+	trakerURL                string
+	priceFloorFetcher        *floors.PriceFloorFetcher
+	bidValidationEnforcement config.Validations
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -153,13 +153,13 @@ func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid
 			GDPR: cfg.GDPR,
 			LMT:  cfg.LMT,
 		},
-		bidIDGenerator:    &bidIDGenerator{cfg.GenerateBidID},
-		hostSChainNode:    cfg.HostSChainNode,
-		adsCertSigner:     adsCertSigner,
-		floor:             cfg.PriceFloors,
-		trakerURL:         cfg.TrackerURL,
-		priceFloorFetcher: floorFetcher,
-    bidValidationEnforcement: cfg.Validations,
+		bidIDGenerator:           &bidIDGenerator{cfg.GenerateBidID},
+		hostSChainNode:           cfg.HostSChainNode,
+		adsCertSigner:            adsCertSigner,
+		floor:                    cfg.PriceFloors,
+		trakerURL:                cfg.TrackerURL,
+		priceFloorFetcher:        floorFetcher,
+		bidValidationEnforcement: cfg.Validations,
 	}
 }
 
@@ -297,10 +297,6 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	// We should reduce the amount of time the bidders have, to compensate.
 	auctionCtx, cancel := e.makeAuctionContext(ctx, cacheInstructions.cacheBids)
 	defer cancel()
-
-
-	// Get currency rates conversions for the auction
-	conversions := e.getAuctionCurrencyRates(requestExt.Prebid.CurrencyConversions)
 
 	var adapterBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid
 
