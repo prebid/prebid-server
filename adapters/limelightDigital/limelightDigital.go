@@ -47,7 +47,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			return nil, append(errors, err)
 		}
 
-		url, err := a.buildEndpointURL(limelightDigitalExt)
+		url, err := buildEndpointURL(a.endpointTemplate, limelightDigitalExt)
 		if err != nil {
 			return nil, []error{err}
 		}
@@ -145,12 +145,12 @@ func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ImpExtLimelightDigital, e
 	return &limelightDigitalExt, nil
 }
 
-func (a *adapter) buildEndpointURL(params *openrtb_ext.ImpExtLimelightDigital) (string, error) {
+func buildEndpointURL(template *template.Template, params *openrtb_ext.ImpExtLimelightDigital) (string, error) {
 	endpointParams := macros.EndpointTemplateParams{
 		Host:        params.Host,
 		PublisherID: params.PublisherID.String(),
 	}
-	return macros.ResolveMacros(a.endpointTemplate, endpointParams)
+	return macros.ResolveMacros(template, endpointParams)
 }
 
 func getMediaTypeForBid(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
