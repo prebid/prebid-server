@@ -69,6 +69,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 		requestCopy.ID = request.ID + "-" + imp.ID
 		requestCopy.Imp = []openrtb2.Imp{imp}
+		requestCopy.Ext = nil
 
 		requestJSON, err := json.Marshal(requestCopy)
 		if err != nil {
