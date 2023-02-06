@@ -116,16 +116,22 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
 	bidResponse.Currency = response.Cur
+	var errs []error
 	for _, seatBid := range response.SeatBid {
 		for i, bid := range seatBid.Bid {
-			b := &adapters.TypedBid{
-				Bid:     &seatBid.Bid[i],
-				BidType: getMediaTypeForBid(bid.ImpID, request.Imp),
+			bidType, err := getMediaTypeForBid(bid.ImpID, request.Imp)
+			if err != nil {
+				errs = append(errs, err)
+			} else {
+				b := &adapters.TypedBid{
+					Bid:     &seatBid.Bid[i],
+					BidType: bidType,
+				}
+				bidResponse.Bids = append(bidResponse.Bids, b)
 			}
-			bidResponse.Bids = append(bidResponse.Bids, b)
 		}
 	}
-	return bidResponse, nil
+	return bidResponse, errs
 }
 
 func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ImpExtLimelightDigital, error) {
@@ -153,20 +159,20 @@ func buildEndpointURL(template *template.Template, params *openrtb_ext.ImpExtLim
 	return macros.ResolveMacros(template, endpointParams)
 }
 
-func getMediaTypeForBid(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
+func getMediaTypeForBid(impId string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
 	for _, imp := range imps {
 		if imp.ID == impId {
 			if imp.Banner != nil {
-				return openrtb_ext.BidTypeBanner
+				return openrtb_ext.BidTypeBanner, nil
 			} else if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo
+				return openrtb_ext.BidTypeVideo, nil
 			} else if imp.Audio != nil {
-				return openrtb_ext.BidTypeAudio
+				return openrtb_ext.BidTypeAudio, nil
 			} else if imp.Native != nil {
-				return openrtb_ext.BidTypeNative
+				return openrtb_ext.BidTypeNative, nil
 			}
-			return openrtb_ext.BidTypeBanner
+			return openrtb_ext.BidTypeBanner, nil
 		}
 	}
-	return openrtb_ext.BidTypeBanner
+	return "", fmt.Errorf("bid contains unknown imp id: %s", impId)
 }
