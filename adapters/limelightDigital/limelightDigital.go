@@ -171,7 +171,7 @@ func getMediaTypeForBid(impId string, imps []openrtb2.Imp) (openrtb_ext.BidType,
 			} else if imp.Native != nil {
 				return openrtb_ext.BidTypeNative, nil
 			}
-			return openrtb_ext.BidTypeBanner, nil
+			return "", fmt.Errorf("unknown media type of imp: %s", impId)
 		}
 	}
 	return "", fmt.Errorf("bid contains unknown imp id: %s", impId)
