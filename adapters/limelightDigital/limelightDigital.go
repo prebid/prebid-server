@@ -42,7 +42,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	requestCopy := *request
 	for _, imp := range request.Imp {
-		limelightDigitalExt, err := a.getImpressionExt(&imp)
+		limelightDigitalExt, err := getImpressionExt(&imp)
 		if err != nil {
 			return nil, append(errors, err)
 		}
@@ -128,7 +128,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return bidResponse, nil
 }
 
-func (a *adapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ImpExtLimelightDigital, error) {
+func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ImpExtLimelightDigital, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
