@@ -152,11 +152,8 @@ const (
 	BidderDatablocks        BidderName = "datablocks"
 	BidderDecenterAds       BidderName = "decenterads"
 	BidderDeepintent        BidderName = "deepintent"
-<<<<<<< HEAD
 	BidderDiaRubiconNative  BidderName = "diaRubiconNative"
-=======
 	BidderDefinemedia       BidderName = "definemedia"
->>>>>>> 2dc27903c06eb5d622c09512d5509c147819f4b3
 	BidderDianomi           BidderName = "dianomi"
 	BidderDmx               BidderName = "dmx"
 	BidderEmxDigital        BidderName = "emx_digital"
