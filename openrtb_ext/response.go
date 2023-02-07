@@ -39,10 +39,11 @@ type ExtResponseSyncData struct {
 
 // ExtResponsePrebid defines the contract for bidresponse.ext.prebid
 type ExtResponsePrebid struct {
-	AuctionTimestamp int64           `json:"auctiontimestamp,omitempty"`
-	Passthrough      json.RawMessage `json:"passthrough,omitempty"`
-	Modules          json.RawMessage `json:"modules,omitempty"`
-	Fledge           *Fledge         `json:"fledge,omitempty"`
+	AuctionTimestamp int64             `json:"auctiontimestamp,omitempty"`
+	Passthrough      json.RawMessage   `json:"passthrough,omitempty"`
+	Modules          json.RawMessage   `json:"modules,omitempty"`
+	Fledge           *Fledge           `json:"fledge,omitempty"`
+	Targeting        map[string]string `json:"targeting,omitempty"`
 }
 
 // FledgeResponse defines the contract for bidresponse.ext.fledge
