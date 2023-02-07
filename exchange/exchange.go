@@ -266,7 +266,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	// Get currency rates conversions for the auction
 	conversions := e.getAuctionCurrencyRates(requestExt.Prebid.CurrencyConversions)
 
-	if e.floor.Enabled {
+	if e.floor.Enabled && r.Account.PriceFloors.Enabled {
 		floorErrs = floors.EnrichWithPriceFloors(r.BidRequestWrapper, r.Account, conversions, e.priceFloorFetcher)
 	}
 	if responseDebugAllow {
@@ -334,23 +334,37 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	var bidResponseExt *openrtb_ext.ExtBidResponse
 	if anyBidsReturned {
 
-		//If floor enforcement config enabled then filter bids
-		adapterBids, enforceErrs, rejectedBids := enforceFloors(&r, adapterBids, e.floor, conversions, responseDebugAllow)
-		errs = append(errs, enforceErrs...)
+		var rejectedBids []floors.RejectedBid
+		var enforceErrs []error
 
-		if floors.RequestHasFloors(r.BidRequestWrapper.BidRequest) {
-			// Record request count with non-zero imp.bidfloor value
-			e.me.RecordFloorsRequestForAccount(r.PubID)
+		if e.floor.Enabled && r.Account.PriceFloors.Enabled {
+			adapterBids, enforceErrs, rejectedBids = floors.EnforceFloors(r.BidRequestWrapper, r.BidRequestWrapper.BidRequest, adapterBids, r.Account.PriceFloors, conversions)
+			errs = append(errs, enforceErrs...)
 
-			if e.floor.Enabled && len(rejectedBids) > 0 {
-				// Record rejected bid count at account level
-				e.me.RecordRejectedBidsForAccount(r.PubID)
-				// Record rejected bid count at adaptor/bidder level
-				for _, rejectedBid := range rejectedBids {
-					e.me.RecordRejectedBidsForBidder(openrtb_ext.BidderName(rejectedBid.BidderName))
+			if floors.IsImpBidfloorPresentInRequest(r.BidRequestWrapper.BidRequest) {
+				// Record request count with non-zero imp.bidfloor value
+				e.me.RecordFloorsRequestForAccount(r.PubID)
+
+				if e.floor.Enabled && len(rejectedBids) > 0 {
+					// Record rejected bid count at account level
+					e.me.RecordRejectedBidsForAccount(r.PubID)
+					// Record rejected bid count at adaptor/bidder level
+					for _, rejectedBid := range rejectedBids {
+						e.me.RecordRejectedBidsForBidder(openrtb_ext.BidderName(rejectedBid.BidderName))
+					}
 				}
 			}
 		}
+
+		if responseDebugAllow {
+			//save incoming request with stored requests (if applicable) to return in debug logs
+			resolvedBidReq, err := json.Marshal(r.BidRequestWrapper.BidRequest)
+			if err != nil {
+				return nil, err
+			}
+			r.ResolvedBidRequest = resolvedBidReq
+		}
+
 		var bidCategory map[string]string
 		//If includebrandcategory is present in ext then CE feature is on.
 		if requestExt.Prebid.Targeting != nil && requestExt.Prebid.Targeting.IncludeBrandCategory != nil {
