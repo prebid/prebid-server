@@ -47,7 +47,8 @@
               },
               "ext": {
                 "bidder": {
-                  "siteId": 72721
+                  "siteId": 72721,
+                  "siteid": 0
                 }
               }
             }
