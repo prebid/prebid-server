@@ -440,6 +440,32 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 		TruncateTargetAttr: nil,
 	},
 	{
+		Description: "bidder with no dealID should not have deal targeting",
+		TargetData: targetData{
+			priceGranularity:  openrtb_ext.PriceGranularityFromString("med"),
+			includeBidderKeys: true,
+		},
+		Auction: auction{
+			winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*entities.PbsOrtbBid{
+				"ImpId-1": {
+					openrtb_ext.BidderAppnexus: {
+						Bid:     bid123,
+						BidType: openrtb_ext.BidTypeBanner,
+					},
+				},
+			},
+		},
+		ExpectedBidTargetsByBidder: map[string]map[openrtb_ext.BidderName]map[string]string{
+			"ImpId-1": {
+				openrtb_ext.BidderAppnexus: {
+					"hb_bidder_appnexus": "appnexus",
+					"hb_pb_appnexus":     "1.20",
+				},
+			},
+		},
+		TruncateTargetAttr: nil,
+	},
+	{
 		Description: "Truncate Targeting Attribute value is given and is less than const MaxKeyLength",
 		TargetData: targetData{
 			priceGranularity:  openrtb_ext.PriceGranularityFromString("med"),
