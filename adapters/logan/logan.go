@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
@@ -34,31 +33,35 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var err error
+	var errors []error
 	var adapterRequests []*adapters.RequestData
 
-	var originalImpSlice []openrtb2.Imp = request.Imp
+	originalImpSlice := request.Imp
 
 	for i := range originalImpSlice {
-		request.Imp = []openrtb2.Imp{originalImpSlice[i]}
+		currImp := originalImpSlice[i]
+		request.Imp = []openrtb2.Imp{currImp}
 
-		temp := reqBodyExt{LoganBidderExt: reqBodyExtBidder{}}
-		temp.LoganBidderExt.PlacementID, err = jsonparser.GetString(request.Imp[0].Ext, "bidder", "placementId")
-		if err != nil {
-			return nil, []error{err}
-		}
-		temp.LoganBidderExt.Type = "publisher"
-
-		finalyImpExt, err := json.Marshal(temp)
-		if err != nil {
-			return nil, []error{err}
+		var bidderExt reqBodyExt
+		if err := json.Unmarshal(currImp.Ext, &bidderExt); err != nil {
+			errors = append(errors, &errortypes.BadInput{
+				Message: err.Error(),
+			})
+			continue // or return
 		}
 
-		request.Imp[0].Ext = finalyImpExt
+		bidderExt.LoganBidderExt.Type = "publisher" // constant
+
+		finalImpExt, err := json.Marshal(bidderExt)
+		if err != nil {
+			return nil, append(errors, err)
+		}
+
+		request.Imp[0].Ext = finalImpExt
 
 		adapterReq, err := a.makeRequest(request)
 		if err != nil {
-			return nil, []error{err}
+			return nil, append(errors, err)
 		}
 
 		if adapterReq != nil {
@@ -113,7 +116,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 	for _, seatBid := range response.SeatBid {
 		for i := range seatBid.Bid {
-			bidType, err := getMediaTypeForImp(seatBid.Bid[i].ImpID, request.Imp, impsMappedByID)
+			bidType, err := getMediaTypeForImp(seatBid.Bid[i].ImpID, impsMappedByID)
 			if err != nil {
 				return nil, []error{err}
 			}
@@ -128,7 +131,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return bidResponse, nil
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb2.Imp, impMap map[string]openrtb2.Imp) (openrtb_ext.BidType, error) {
+func getMediaTypeForImp(impID string, impMap map[string]openrtb2.Imp) (openrtb_ext.BidType, error) {
 	if index, found := impMap[impID]; found {
 		if index.Banner != nil {
 			return openrtb_ext.BidTypeBanner, nil
