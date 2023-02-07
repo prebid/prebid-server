@@ -21,7 +21,7 @@ type adapter struct {
 	hostName string
 }
 
-// Builder builds a new instance of the Foo adapter for the given bidder with the given config.
+// Builder builds a new instance of Taboola adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	endpointTemplate, err := template.New("endpointTemplate").Parse(config.Endpoint)
 
