@@ -12,21 +12,33 @@ import (
 	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
+	"net/url"
 	"text/template"
 )
 
 type adapter struct {
 	endpoint *template.Template
+	hostName string
 }
 
 // Builder builds a new instance of the Foo adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	endpointTemplate, err := template.New("endpointTemplate").Parse(config.Endpoint)
+
+	hostName := ""
+	if server.ExternalUrl != "" {
+		parsedUrl, err := url.Parse(server.ExternalUrl)
+		if err == nil && parsedUrl != nil {
+			hostName = parsedUrl.Host
+		}
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 	bidder := &adapter{
 		endpoint: endpointTemplate,
+		hostName: hostName,
 	}
 	return bidder, nil
 }
@@ -42,7 +54,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	for _, taboolaRequest := range taboolaRequests {
 		if len(taboolaRequest.Imp) > 0 {
-			request, err := buildRequest(taboolaRequest, a.endpoint)
+			request, err := buildRequest(taboolaRequest, a.endpoint, a.hostName)
 			if err != nil {
 				return nil, []error{fmt.Errorf("unable to build request %v", err)}
 			}
@@ -112,7 +124,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return bidResponse, errs
 }
 
-func buildRequest(request *openrtb2.BidRequest, endpoint *template.Template) (*adapters.RequestData, error) {
+func buildRequest(request *openrtb2.BidRequest, endpoint *template.Template, hostName string) (*adapters.RequestData, error) {
 	requestJSON, err := json.Marshal(request)
 	if err != nil {
 		return nil, err
@@ -133,7 +145,7 @@ func buildRequest(request *openrtb2.BidRequest, endpoint *template.Template) (*a
 		return nil, fmt.Errorf("unsupported media type for imp: %v", request.Imp[0])
 	}
 
-	url, err := buildEndpointURL(request.Site.ID, mediaType, endpoint)
+	url, err := buildEndpointURL(request.Site.ID, mediaType, hostName, endpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -148,8 +160,8 @@ func buildRequest(request *openrtb2.BidRequest, endpoint *template.Template) (*a
 }
 
 // Builds endpoint url based on adapter-specific pub settings from imp.ext
-func buildEndpointURL(publisherId string, mediaType string, endpoint *template.Template) (string, error) {
-	endpointParams := macros.EndpointTemplateParams{PublisherID: publisherId, MediaType: mediaType}
+func buildEndpointURL(publisherId string, mediaType string, hostName string, endpoint *template.Template) (string, error) {
+	endpointParams := macros.EndpointTemplateParams{PublisherID: publisherId, MediaType: mediaType, Host: hostName}
 	resolvedUrl, err := macros.ResolveMacros(endpoint, endpointParams)
 	if err != nil {
 		return "", err
