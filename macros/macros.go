@@ -13,6 +13,7 @@ type EndpointTemplateParams struct {
 	SourceId    string
 	AccountID   string
 	AdUnit      string
+	MediaType   string
 }
 
 // UserSyncTemplateParams specifies params for an user sync URL template
