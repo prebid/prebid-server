@@ -260,7 +260,7 @@ func overrideBidRequestImp(originBidRequest *openrtb2.BidRequest, imp []openrtb2
 }
 
 func overrideEventTrackers(nativePayload *nativeResponse.Response) {
-	// convert evventrackers to the deprecated imptrackers and jstracker because it's not supported in native 1.1v
+	// convert eventrackers to the deprecated imptrackers and jstracker because it's not supported in native 1.1v
 	for _, eventTracker := range nativePayload.EventTrackers {
 		if eventTracker.Event != native1.EventTypeImpression {
 			continue
