@@ -117,8 +117,8 @@ type ExtRequestPrebidChannel struct {
 
 // ExtRequestPrebidCache defines the contract for bidrequest.ext.prebid.cache
 type ExtRequestPrebidCache struct {
-	Bids    *ExtRequestPrebidCacheBids `json:"bids"`
-	VastXML *ExtRequestPrebidCacheVAST `json:"vastxml"`
+	Bids    *ExtRequestPrebidCacheBids `json:"bids,omitempty"`
+	VastXML *ExtRequestPrebidCacheVAST `json:"vastxml,omitempty"`
 }
 
 type ExtRequestPrebidServer struct {
@@ -129,12 +129,12 @@ type ExtRequestPrebidServer struct {
 
 // ExtRequestPrebidCacheBids defines the contract for bidrequest.ext.prebid.cache.bids
 type ExtRequestPrebidCacheBids struct {
-	ReturnCreative *bool `json:"returnCreative"`
+	ReturnCreative *bool `json:"returnCreative,omitempty"`
 }
 
 // ExtRequestPrebidCacheVAST defines the contract for bidrequest.ext.prebid.cache.vastxml
 type ExtRequestPrebidCacheVAST struct {
-	ReturnCreative *bool `json:"returnCreative"`
+	ReturnCreative *bool `json:"returnCreative,omitempty"`
 }
 
 // ExtRequestTargeting defines the contract for bidrequest.ext.prebid.targeting
