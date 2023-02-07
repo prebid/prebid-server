@@ -106,6 +106,11 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 		categoriesFetcher: categoriesFetcher,
 		bidIDGenerator:    &mockBidIDGenerator{false, false},
 	}
+	ex.requestSplitter = requestSplitter{
+		me:                ex.me,
+		gdprPermsBuilder:  ex.gdprPermsBuilder,
+		tcf2ConfigBuilder: ex.tcf2ConfigBuilder,
+	}
 
 	imps := buildImps(t, mockBids)
 
