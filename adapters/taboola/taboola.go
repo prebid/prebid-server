@@ -187,16 +187,15 @@ func createTaboolaRequests(request *openrtb2.BidRequest) (taboolaRequests []*ope
 		}
 
 		if modifiedRequest.Imp[i].Banner != nil {
+			if taboolaExt.Position != nil {
+				bannerCopy := *imp.Banner
+				bannerCopy.Pos = adcom1.PlacementPosition(*taboolaExt.Position).Ptr()
+				imp.Banner = &bannerCopy
+				modifiedRequest.Imp[i] = imp
+			}
 			bannerImp = append(bannerImp, modifiedRequest.Imp[i])
 		} else if modifiedRequest.Imp[i].Native != nil {
 			nativeImp = append(nativeImp, modifiedRequest.Imp[i])
-		}
-		//var position *adcom1.PlacementPosition
-		if taboolaExt.Position != nil {
-			bannerCopy := *imp.Banner
-			bannerCopy.Pos = adcom1.PlacementPosition(*taboolaExt.Position).Ptr()
-			imp.Banner = &bannerCopy
-			modifiedRequest.Imp[i] = imp
 		}
 
 	}
@@ -212,7 +211,7 @@ func createTaboolaRequests(request *openrtb2.BidRequest) (taboolaRequests []*ope
 			Domain:    evaluateDomain(taboolaExt.PublisherDomain, request),
 			Publisher: publisher,
 		}
-		if taboolaExt.PageType != "" {
+		if taboolaExt.PageType != "" { //todo: put in requet ext, not site ext
 			newSite.Ext = generateSiteExtJson(taboolaExt, errs)
 		}
 		modifiedRequest.Site = newSite
