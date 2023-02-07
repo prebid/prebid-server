@@ -3,7 +3,8 @@ package adapterstest
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"net/http"
+	"os"
 	"regexp"
 	"testing"
 
@@ -15,8 +16,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/yudai/gojsondiff"
 	"github.com/yudai/gojsondiff/formatter"
-
-	"net/http"
 )
 
 // RunJSONBidderTest is a helper method intended to unit test Bidders' adapters.
@@ -64,7 +63,7 @@ func RunJSONBidderTest(t *testing.T, rootDir string, bidder adapters.Bidder) {
 // runTests runs all the *.json files in a directory. If allowErrors is false, and one of the test files
 // expects errors from the bidder, then the test will fail.
 func runTests(t *testing.T, directory string, bidder adapters.Bidder, allowErrors, isAmpTest, isVideoTest bool) {
-	if specFiles, err := ioutil.ReadDir(directory); err == nil {
+	if specFiles, err := os.ReadDir(directory); err == nil {
 		for _, specFile := range specFiles {
 			fileName := fmt.Sprintf("%s/%s", directory, specFile.Name())
 			specData, err := loadFile(fileName)
@@ -82,7 +81,7 @@ func runTests(t *testing.T, directory string, bidder adapters.Bidder, allowError
 
 // LoadFile reads and parses a file as a test case. If something goes wrong, it returns an error.
 func loadFile(filename string) (*testSpec, error) {
-	specData, err := ioutil.ReadFile(filename)
+	specData, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to read file %s: %v", filename, err)
 	}
@@ -199,8 +198,9 @@ func (resp *httpResponse) ToResponseData(t *testing.T) *adapters.ResponseData {
 }
 
 type expectedBidResponse struct {
-	Bids     []expectedBid `json:"bids"`
-	Currency string        `json:"currency"`
+	Bids                 []expectedBid   `json:"bids"`
+	Currency             string          `json:"currency"`
+	FledgeAuctionConfigs json.RawMessage `json:"fledgeauctionconfigs,omitempty"`
 }
 
 type expectedBid struct {
@@ -256,11 +256,11 @@ func assertErrorList(t *testing.T, description string, actual []error, expected 
 	}
 }
 
-func assertMakeBidsOutput(t *testing.T, filename string, bidderResponse *adapters.BidderResponse, expected []expectedBid) {
+func assertMakeBidsOutput(t *testing.T, filename string, bidderResponse *adapters.BidderResponse, expected expectedBidResponse) {
 	t.Helper()
 
-	if (bidderResponse == nil || len(bidderResponse.Bids) == 0) != (len(expected) == 0) {
-		if len(expected) == 0 {
+	if (bidderResponse == nil || len(bidderResponse.Bids) == 0) != (len(expected.Bids) == 0) {
+		if len(expected.Bids) == 0 {
 			t.Fatalf("%s: expectedBidResponses indicated a nil response, but mockResponses supplied a non-nil response", filename)
 		}
 
@@ -272,11 +272,19 @@ func assertMakeBidsOutput(t *testing.T, filename string, bidderResponse *adapter
 		bidderResponse = new(adapters.BidderResponse)
 	}
 
-	if len(bidderResponse.Bids) != len(expected) {
-		t.Fatalf("%s: MakeBids returned wrong bid count. Expected %d, got %d", filename, len(expected), len(bidderResponse.Bids))
+	if len(bidderResponse.Bids) != len(expected.Bids) {
+		t.Fatalf("%s: MakeBids returned wrong bid count. Expected %d, got %d", filename, len(expected.Bids), len(bidderResponse.Bids))
 	}
 	for i := 0; i < len(bidderResponse.Bids); i++ {
-		diffBids(t, fmt.Sprintf("%s:  typedBid[%d]", filename, i), bidderResponse.Bids[i], &(expected[i]))
+		diffBids(t, fmt.Sprintf("%s:  typedBid[%d]", filename, i), bidderResponse.Bids[i], &(expected.Bids[i]))
+	}
+	if expected.FledgeAuctionConfigs != nil {
+		assert.NotNilf(t, bidderResponse.FledgeAuctionConfigs, "%s: expected fledgeauctionconfigs in bidderResponse", filename)
+		fledgeAuctionConfigsJson, err := json.Marshal(bidderResponse.FledgeAuctionConfigs)
+		assert.NoErrorf(t, err, "%s: failed to marshal actual FledgeAuctionConfig response into JSON.", filename)
+		assert.JSONEqf(t, string(expected.FledgeAuctionConfigs), string(fledgeAuctionConfigsJson), "%s: incorrect fledgeauctionconfig", filename)
+	} else {
+		assert.Nilf(t, bidderResponse.FledgeAuctionConfigs, "%s: unexpected fledgeauctionconfigs in bidderResponse", filename)
 	}
 }
 
@@ -436,6 +444,6 @@ func testMakeBidsImpl(t *testing.T, filename string, spec *testSpec, bidder adap
 
 	// Assert MakeBids implementation BidResponses with expected JSON-defined spec.BidResponses[i].Bids
 	for i := 0; i < len(spec.BidResponses); i++ {
-		assertMakeBidsOutput(t, filename, bidResponses[i], spec.BidResponses[i].Bids)
+		assertMakeBidsOutput(t, filename, bidResponses[i], spec.BidResponses[i])
 	}
 }
