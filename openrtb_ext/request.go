@@ -139,13 +139,13 @@ type ExtRequestPrebidCacheVAST struct {
 
 // ExtRequestTargeting defines the contract for bidrequest.ext.prebid.targeting
 type ExtRequestTargeting struct {
-	PriceGranularity     *PriceGranularity        `json:"pricegranularity"`
-	IncludeWinners       *bool                    `json:"includewinners"`
-	IncludeBidderKeys    *bool                    `json:"includebidderkeys"`
-	IncludeBrandCategory *ExtIncludeBrandCategory `json:"includebrandcategory"`
-	IncludeFormat        bool                     `json:"includeformat"`
-	DurationRangeSec     []int                    `json:"durationrangesec"`
-	PreferDeals          bool                     `json:"preferdeals"`
+	PriceGranularity     *PriceGranularity        `json:"pricegranularity,omitempty"`
+	IncludeWinners       *bool                    `json:"includewinners,omitempty"`
+	IncludeBidderKeys    *bool                    `json:"includebidderkeys,omitempty"`
+	IncludeBrandCategory *ExtIncludeBrandCategory `json:"includebrandcategory,omitempty"`
+	IncludeFormat        bool                     `json:"includeformat,omitempty"`
+	DurationRangeSec     []int                    `json:"durationrangesec,omitempty"`
+	PreferDeals          bool                     `json:"preferdeals,omitempty"`
 	AppendBidderNames    bool                     `json:"appendbiddernames,omitempty"`
 }
 
