@@ -1124,27 +1124,27 @@ func TestInitAmpTargetingAndCache(t *testing.T) {
 		expectedErrs   []string
 	}{
 		{
-			name:         "Malformed",
+			name:         "malformed",
 			request:      &openrtb2.BidRequest{Ext: json.RawMessage("malformed")},
 			expectedErrs: []string{"invalid character 'm' looking for beginning of value"},
 		},
 		{
-			name:           "Nil",
+			name:           "nil",
 			request:        &openrtb2.BidRequest{},
 			expectedPrebid: emptyTargetingAndCache,
 		},
 		{
-			name:           "Empty",
+			name:           "empty",
 			request:        &openrtb2.BidRequest{Ext: json.RawMessage(`{"ext":{}}`)},
 			expectedPrebid: emptyTargetingAndCache,
 		},
 		{
-			name:           "Missing Targeting + Cache",
+			name:           "missing targeting + cache",
 			request:        &openrtb2.BidRequest{Ext: json.RawMessage(`{"ext":{"prebid":{}}}`)},
 			expectedPrebid: emptyTargetingAndCache,
 		},
 		{
-			name:    "Missing Targeting",
+			name:    "missing targeting",
 			request: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"cache":{"bids":{"returnCreative":true}}}}`)},
 			expectedPrebid: &openrtb_ext.ExtRequestPrebid{
 				Targeting: &openrtb_ext.ExtRequestTargeting{},
@@ -1156,7 +1156,7 @@ func TestInitAmpTargetingAndCache(t *testing.T) {
 			},
 		},
 		{
-			name:    "Missing Cache",
+			name:    "missing cache",
 			request: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"targeting":{"includewinners":true}}}`)},
 			expectedPrebid: &openrtb_ext.ExtRequestPrebid{
 				Targeting: &openrtb_ext.ExtRequestTargeting{
@@ -1178,17 +1178,17 @@ func TestInitAmpTargetingAndCache(t *testing.T) {
 			actualErrs := initAmpTargetingAndCache(req)
 
 			// assertions
-			require.NoError(t, req.RebuildRequest(), "Rebuild Request")
+			require.NoError(t, req.RebuildRequest(), "rebuild request")
 
 			actualErrsMsgs := make([]string, len(actualErrs))
 			for i, v := range actualErrs {
 				actualErrsMsgs[i] = v.Error()
 			}
-			assert.ElementsMatch(t, tc.expectedErrs, actualErrsMsgs, "Errors")
+			assert.ElementsMatch(t, tc.expectedErrs, actualErrsMsgs, "errors")
 
 			actualReqExt, _ := req.GetRequestExt()
 			actualPrebid := actualReqExt.GetPrebid()
-			assert.Equal(t, tc.expectedPrebid, actualPrebid, "Prebid Ext")
+			assert.Equal(t, tc.expectedPrebid, actualPrebid, "prebid ext")
 		})
 	}
 }

@@ -10,69 +10,12 @@ import (
 )
 
 func TestGetPriceBucketString(t *testing.T) {
-	low := openrtb_ext.PriceGranularity{
-		Precision: ptrutil.ToPtr(2),
-		Ranges: []openrtb_ext.GranularityRange{{
-			Min:       0,
-			Max:       5,
-			Increment: 0.5}},
-	}
-	medium := openrtb_ext.PriceGranularity{
-		Precision: ptrutil.ToPtr(2),
-		Ranges: []openrtb_ext.GranularityRange{{
-			Min:       0,
-			Max:       20,
-			Increment: 0.1}},
-	}
-	high := openrtb_ext.PriceGranularity{
-		Precision: ptrutil.ToPtr(2),
-		Ranges: []openrtb_ext.GranularityRange{{
-			Min:       0,
-			Max:       20,
-			Increment: 0.01}},
-	}
+	low, _ := openrtb_ext.NewPriceGranularityFromLegacyID("low")
+	medium, _ := openrtb_ext.NewPriceGranularityFromLegacyID("medium")
+	high, _ := openrtb_ext.NewPriceGranularityFromLegacyID("high")
+	auto, _ := openrtb_ext.NewPriceGranularityFromLegacyID("auto")
+	dense, _ := openrtb_ext.NewPriceGranularityFromLegacyID("dense")
 
-	auto := openrtb_ext.PriceGranularity{
-		Precision: ptrutil.ToPtr(2),
-		Ranges: []openrtb_ext.GranularityRange{
-			{
-				Min:       0,
-				Max:       5,
-				Increment: 0.05,
-			},
-			{
-				Min:       5,
-				Max:       10,
-				Increment: 0.1,
-			},
-			{
-				Min:       10,
-				Max:       20,
-				Increment: 0.5,
-			},
-		},
-	}
-
-	dense := openrtb_ext.PriceGranularity{
-		Precision: ptrutil.ToPtr(2),
-		Ranges: []openrtb_ext.GranularityRange{
-			{
-				Min:       0,
-				Max:       3,
-				Increment: 0.01,
-			},
-			{
-				Min:       3,
-				Max:       8,
-				Increment: 0.05,
-			},
-			{
-				Min:       8,
-				Max:       20,
-				Increment: 0.5,
-			},
-		},
-	}
 	custom1 := openrtb_ext.PriceGranularity{
 		Precision: ptrutil.ToPtr(2),
 		Ranges: []openrtb_ext.GranularityRange{

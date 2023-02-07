@@ -28,6 +28,7 @@ import (
 	"github.com/prebid/openrtb/v17/openrtb2"
 	gometrics "github.com/rcrowley/go-metrics"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestVideoEndpointImpressionsNumber(t *testing.T) {
@@ -139,37 +140,20 @@ func TestCreateBidExtension(t *testing.T) {
 	assert.Equal(t, resExt.Prebid.Targeting.PriceGranularity.Ranges, priceGranRanges, "Price granularity is incorrect")
 }
 
-func TestCreateBidExtensionExactDurTrueNoPriceRange(t *testing.T) {
-	durationRange := make([]int, 0)
-	durationRange = append(durationRange, 15)
-	durationRange = append(durationRange, 30)
+func TestCreateBidExtensionTargeting(t *testing.T) {
+	ex := &mockExchangeVideo{}
+	reqBody := readVideoTestFile(t, "sample-requests/video/video_valid_sample.json")
+	req := httptest.NewRequest("POST", "/openrtb2/video", strings.NewReader(reqBody))
+	recorder := httptest.NewRecorder()
 
-	translateCategories := false
-	videoRequest := openrtb_ext.BidRequestVideo{
-		IncludeBrandCategory: &openrtb_ext.IncludeBrandCategory{
-			PrimaryAdserver:     1,
-			Publisher:           "",
-			TranslateCategories: &translateCategories,
-		},
-		PodConfig: openrtb_ext.PodConfig{
-			DurationRangeSec:     durationRange,
-			RequireExactDuration: true,
-		},
-		PriceGranularity: &openrtb_ext.PriceGranularity{
-			Precision: ptrutil.ToPtr(0),
-			Ranges:    nil,
-		},
-	}
-	res, err := createBidExtension(&videoRequest)
-	assert.NoError(t, err, "Error should be nil")
+	deps := mockDeps(t, ex)
+	deps.VideoAuctionEndpoint(recorder, req, nil)
 
-	resExt := &openrtb_ext.ExtRequest{}
+	require.NotNil(t, ex.lastRequest, "The request never made it into the Exchange.")
 
-	if err := json.Unmarshal(res, &resExt); err != nil {
-		assert.Fail(t, "Unable to unmarshal bid extension")
-	}
-	assert.Equal(t, resExt.Prebid.Targeting.DurationRangeSec, []int(nil), "Duration range seconds is incorrect")
-	//assert.Equal(t, resExt.Prebid.Targeting.PriceGranularity, openrtb_ext.PriceGranularityFromString("med"), "Price granularity is incorrect")
+	// assert targeting set to default
+	expectedRequestExt := `{"prebid":{"cache":{"vastxml":{}},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"includebidderkeys":true,"includewinners":true,"includebrandcategory":{"primaryadserver":1,"publisher":"","withcategory":true}}}}`
+	assert.JSONEq(t, expectedRequestExt, string(ex.lastRequest.Ext))
 }
 
 func TestVideoEndpointDebugQueryTrue(t *testing.T) {
@@ -1257,13 +1241,13 @@ func (m *mockAnalyticsModule) LogVideoObject(vo *analytics.VideoObject) {
 	m.videoObjects = append(m.videoObjects, vo)
 }
 
-func (m *mockAnalyticsModule) LogCookieSyncObject(cso *analytics.CookieSyncObject) { return }
+func (m *mockAnalyticsModule) LogCookieSyncObject(cso *analytics.CookieSyncObject) {}
 
-func (m *mockAnalyticsModule) LogSetUIDObject(so *analytics.SetUIDObject) { return }
+func (m *mockAnalyticsModule) LogSetUIDObject(so *analytics.SetUIDObject) {}
 
-func (m *mockAnalyticsModule) LogAmpObject(ao *analytics.AmpObject) { return }
+func (m *mockAnalyticsModule) LogAmpObject(ao *analytics.AmpObject) {}
 
-func (m *mockAnalyticsModule) LogNotificationEventObject(ne *analytics.NotificationEvent) { return }
+func (m *mockAnalyticsModule) LogNotificationEventObject(ne *analytics.NotificationEvent) {}
 
 func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 	return &endpointDeps{
@@ -1370,6 +1354,10 @@ type mockExchangeVideo struct {
 }
 
 func (m *mockExchangeVideo) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+	if err := r.BidRequestWrapper.RebuildRequest(); err != nil {
+		return nil, err
+	}
+
 	m.lastRequest = r.BidRequestWrapper.BidRequest
 	if debugLog != nil && debugLog.Enabled {
 		m.cache.called = true
