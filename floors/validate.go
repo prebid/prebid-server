@@ -25,8 +25,8 @@ func validateFloorRulesAndLowerValidRuleKey(schema openrtb_ext.PriceFloorSchema,
 
 func validateFloorParams(extFloorRules *openrtb_ext.PriceFloorRules) error {
 
-	if extFloorRules.Data != nil && extFloorRules.Data.FloorsSchemaVersion != nil && *extFloorRules.Data.FloorsSchemaVersion != 2 {
-		return fmt.Errorf("Invalid FloorsSchemaVersion = '%v', supported version 2", *extFloorRules.Data.FloorsSchemaVersion)
+	if extFloorRules.Data != nil && len(extFloorRules.Data.FloorsSchemaVersion) > 0 && extFloorRules.Data.FloorsSchemaVersion != "2" {
+		return fmt.Errorf("Invalid FloorsSchemaVersion = '%v', supported version 2", extFloorRules.Data.FloorsSchemaVersion)
 	}
 
 	if extFloorRules.Data != nil && (extFloorRules.Data.SkipRate < skipRateMin || extFloorRules.Data.SkipRate > skipRateMax) {

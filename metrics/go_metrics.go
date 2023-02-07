@@ -117,9 +117,10 @@ type accountMetrics struct {
 	bidsReceivedMeter  metrics.Meter
 	priceHistogram     metrics.Histogram
 	// store account by adapter metrics. Type is map[PBSBidder.BidderCode]
-	adapterMetrics       map[openrtb_ext.BidderName]*AdapterMetrics
-	moduleMetrics        map[string]*ModuleMetrics
-	storedResponsesMeter metrics.Meter
+	adapterMetrics           map[openrtb_ext.BidderName]*AdapterMetrics
+	moduleMetrics            map[string]*ModuleMetrics
+	dynamicFetchFailureMeter metrics.Meter
+	storedResponsesMeter     metrics.Meter
 
 	bidValidationCreativeSizeMeter     metrics.Meter
 	bidValidationCreativeSizeWarnMeter metrics.Meter
@@ -604,6 +605,12 @@ func (me *Metrics) RecordRejectedBidsForAccount(pubId string) {
 	}
 }
 
+// RecordDynamicFetchFailure implements a part of the MetricsEngine interface. Records dynamic fetch failure
+func (me *Metrics) RecordDynamicFetchFailure(pubId, code string) {
+	if pubId != PublisherUnknown {
+		me.getAccountMetrics(pubId).dynamicFetchFailureMeter.Mark(1)
+	}
+}
 func (me *Metrics) RecordFloorsRequestForAccount(pubId string) {
 	if pubId != PublisherUnknown {
 		me.getAccountMetrics(pubId).floorsRequestMeter.Mark(1)

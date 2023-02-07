@@ -39,7 +39,7 @@ type PriceFloorData struct {
 	FloorProvider       string                 `json:"floorprovider,omitempty"`
 	Currency            string                 `json:"currency,omitempty"`
 	SkipRate            int                    `json:"skiprate,omitempty"`
-	FloorsSchemaVersion *int                   `json:"floorsschemaversion,omitempty"`
+	FloorsSchemaVersion string                 `json:"_,omitempty"`
 	ModelTimestamp      int                    `json:"modeltimestamp,omitempty"`
 	ModelGroups         []PriceFloorModelGroup `json:"modelgroups,omitempty"`
 }
@@ -63,6 +63,12 @@ type PriceFloorEnforcement struct {
 	FloorDeals    *bool `json:"floordeals,omitempty"`
 	BidAdjustment *bool `json:"bidadjustment,omitempty"`
 	EnforceRate   int   `json:"enforcerate,omitempty"`
+}
+
+type ImpFloorExt struct {
+	FloorRule      string  `json:"floorRule,omitempty"`
+	FloorRuleValue float64 `json:"floorRuleValue,omitempty"`
+	FloorValue     float64 `json:"floorValue,omitempty"`
 }
 type Price struct {
 	FloorMin    float64 `json:"floormin,omitempty"`

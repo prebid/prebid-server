@@ -218,3 +218,6 @@ func (me *MetricsEngineMock) RecordModuleExecutionError(labels ModuleLabels) {
 func (me *MetricsEngineMock) RecordModuleTimeout(labels ModuleLabels) {
 	me.Called(labels)
 }
+func (me *MetricsEngineMock) RecordDynamicFetchFailure(pubId, code string) {
+	me.Called(pubId, code)
+}

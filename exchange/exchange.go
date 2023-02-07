@@ -72,9 +72,9 @@ type exchange struct {
 	bidIDGenerator           BidIDGenerator
 	hostSChainNode           *openrtb2.SupplyChainNode
 	adsCertSigner            adscert.Signer
-	floor                    config.PriceFloors
 	server                   config.Server
 	trakerURL                string
+	floor                    config.PriceFloors
 	priceFloorFetcher        *floors.PriceFloorFetcher
 	bidValidationEnforcement config.Validations
 }
@@ -156,8 +156,8 @@ func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid
 		bidIDGenerator:           &bidIDGenerator{cfg.GenerateBidID},
 		hostSChainNode:           cfg.HostSChainNode,
 		adsCertSigner:            adsCertSigner,
-		floor:                    cfg.PriceFloors,
 		trakerURL:                cfg.TrackerURL,
+		floor:                    cfg.PriceFloors,
 		priceFloorFetcher:        floorFetcher,
 		bidValidationEnforcement: cfg.Validations,
 	}

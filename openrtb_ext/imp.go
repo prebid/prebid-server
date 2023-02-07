@@ -43,14 +43,16 @@ type ExtImpPrebid struct {
 
 	Passthrough json.RawMessage `json:"passthrough,omitempty"`
 
-	Floors *ExtFloors `json:"floors,omitempty"`
+	Floors *ExtImpPrebidFloors `json:"floors,omitempty"`
 }
 
-// ExtFloors defines the contract for imp[i].ext.prebid.floors
-type ExtFloors struct {
+// ExtImpPrebidFloors defines the contract for imp[i].ext.prebid.floors
+type ExtImpPrebidFloors struct {
 	FloorRule      string  `json:"floorRule,omitempty"`
 	FloorRuleValue float64 `json:"floorRuleValue,omitempty"`
 	FloorValue     float64 `json:"floorValue,omitempty"`
+	FloorMin       float64 `json:"floorMin,omitempty"`
+	FloorMinCur    string  `json:"floorMinCur,omitempty"`
 }
 
 // ExtStoredRequest defines the contract for bidrequest.imp[i].ext.prebid.storedrequest

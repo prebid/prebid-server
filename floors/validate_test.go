@@ -56,7 +56,7 @@ func TestValidateFloorParams(t *testing.T) {
 		{
 			name: "Invalid FloorSchemaVersion ",
 			floorExt: &openrtb_ext.PriceFloorRules{Data: &openrtb_ext.PriceFloorData{
-				FloorsSchemaVersion: getIntPtr(1),
+				FloorsSchemaVersion: "1",
 				ModelGroups: []openrtb_ext.PriceFloorModelGroup{{
 					ModelVersion: "Version 1",
 

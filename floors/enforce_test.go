@@ -60,9 +60,10 @@ func TestShouldEnforceFloors(t *testing.T) {
 		f                 func(int) int
 	}
 	tests := []struct {
-		name string
-		args args
-		want bool
+		name            string
+		args            args
+		expEnforce      bool
+		expReqExtUpdate bool
 	}{
 		{
 			name: "enfocement = true of enforcement object not provided",
@@ -87,7 +88,8 @@ func TestShouldEnforceFloors(t *testing.T) {
 					return n - 1
 				},
 			},
-			want: true,
+			expEnforce:      true,
+			expReqExtUpdate: true,
 		},
 
 		{
@@ -119,7 +121,8 @@ func TestShouldEnforceFloors(t *testing.T) {
 					return n
 				},
 			},
-			want: false,
+			expEnforce:      false,
+			expReqExtUpdate: false,
 		},
 		{
 			name: "No enfocement of floors when enforcePBS is true but enforce rate is low",
@@ -150,7 +153,8 @@ func TestShouldEnforceFloors(t *testing.T) {
 					return n
 				},
 			},
-			want: false,
+			expEnforce:      false,
+			expReqExtUpdate: true,
 		},
 		{
 			name: "No enfocement of floors when enforcePBS is true but enforce rate is low in incoming request",
@@ -182,7 +186,8 @@ func TestShouldEnforceFloors(t *testing.T) {
 					return n
 				},
 			},
-			want: false,
+			expEnforce:      false,
+			expReqExtUpdate: true,
 		},
 		{
 			name: "No Enfocement of floors when skipped is true, non zero value of bidfloor in imp",
@@ -213,7 +218,8 @@ func TestShouldEnforceFloors(t *testing.T) {
 					return n - 5
 				},
 			},
-			want: false,
+			expEnforce:      false,
+			expReqExtUpdate: false,
 		},
 		{
 			name: "No enfocement of floors when skipped is true, zero value of bidfloor in imp",
@@ -244,13 +250,19 @@ func TestShouldEnforceFloors(t *testing.T) {
 					return n - 5
 				},
 			},
-			want: false,
+			expEnforce:      false,
+			expReqExtUpdate: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := ShouldEnforce(tt.args.bidRequest, tt.args.floorExt, tt.args.configEnforceRate, tt.args.f); got != tt.want {
-				t.Errorf("ShouldEnforce() = %v, want %v", got, tt.want)
+			shouldEnforce, updateReq := ShouldEnforce(tt.args.bidRequest, tt.args.floorExt, tt.args.configEnforceRate, tt.args.f)
+			if shouldEnforce != tt.expEnforce {
+				t.Errorf("shouldEnforce = %v, want %v", shouldEnforce, tt.expEnforce)
+			}
+
+			if updateReq != tt.expReqExtUpdate {
+				t.Errorf("expReqExtUpdate  %v, want %v", updateReq, tt.expReqExtUpdate)
 			}
 		})
 	}

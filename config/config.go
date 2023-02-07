@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/url"
 	"reflect"
 	"strconv"
@@ -136,6 +137,7 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 	errs = cfg.CurrencyConverter.validate(errs)
 	errs = cfg.Debug.validate(errs)
 	errs = cfg.ExtCacheURL.validate(errs)
+	errs = cfg.AccountDefaults.PriceFloors.validate(errs)
 	if cfg.AccountDefaults.Disabled {
 		glog.Warning(`With account_defaults.disabled=true, host-defined accounts must exist and have "disabled":false. All other requests will be rejected.`)
 	}
@@ -153,6 +155,38 @@ type AuctionTimeouts struct {
 	Default uint64 `mapstructure:"default"`
 	// The max timeout is used as an absolute cap, to prevent excessively long ones. Use 0 for no cap
 	Max uint64 `mapstructure:"max"`
+}
+
+func (pf *AccountPriceFloors) validate(errs []error) []error {
+
+	if pf.EnforceFloorRate < 0 || pf.EnforceFloorRate > 100 {
+		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.enforce_floors_rate should be between 0 and 100`))
+	}
+
+	if pf.Fetch.MaxAge > 0 && (pf.Fetch.MaxAge < pf.Fetch.MinAge || pf.Fetch.MaxAge > math.MaxInt32) {
+		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.fetch.max_age_sec should not be less than 600 seconds and greater than maximum integer value`))
+	}
+
+	if pf.Fetch.Period > 0 && pf.Fetch.Period < pf.Fetch.MinPeriod {
+		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.fetch.period_sec should not be less than 300 seconds`))
+	}
+
+	if pf.Fetch.Period > pf.Fetch.MaxAge {
+		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.fetch.period_sec should be less than account_defaults.price_floors.fetch.max_age_sec`))
+	}
+
+	if pf.Fetch.Timeout > 0 && (pf.Fetch.Timeout < pf.Fetch.MinTimeout || pf.Fetch.Timeout > pf.Fetch.MaxTimeout) {
+		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.fetch.timeout_ms should be between 10 to 10,000 mili seconds`))
+	}
+
+	if pf.Fetch.MaxRules < 0 || pf.Fetch.MaxRules > math.MaxInt32 {
+		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.fetch.max_rules should not be less than 0 seconds and greater than maximum integer value`))
+	}
+
+	if pf.Fetch.MaxFileSize < 0 || pf.Fetch.MaxFileSize > math.MaxInt32 {
+		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.fetch.max_file_size_kb should not be less than 0 seconds and greater than maximum integer value`))
+	}
+	return errs
 }
 
 func (cfg *AuctionTimeouts) validate(errs []error) []error {
@@ -1003,6 +1037,22 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("account_required", false)
 	v.SetDefault("account_defaults.disabled", false)
 	v.SetDefault("account_defaults.debug_allow", true)
+	v.SetDefault("account_defaults.price_floors.enabled", true)
+	v.SetDefault("account_defaults.price_floors.enforce_floors_rate", 100)
+	v.SetDefault("account_defaults.price_floors.adjust_for_bid_adjustment", true)
+	v.SetDefault("account_defaults.price_floors.enforce_deal_floors", false)
+	v.SetDefault("account_defaults.price_floors.use_dynamic_data", true)
+	v.SetDefault("account_defaults.price_floors.fetch.enabled", false)
+	v.SetDefault("account_defaults.price_floors.fetch.timeout_ms", 3000)
+	v.SetDefault("account_defaults.price_floors.fetch.max_file_size_kb", 100)
+	v.SetDefault("account_defaults.price_floors.fetch.max_rules", 1000)
+	v.SetDefault("account_defaults.price_floors.fetch.max_age_sec", 86400)
+	v.SetDefault("account_defaults.price_floors.fetch.period_sec", 3600)
+	v.SetDefault("account_defaults.price_floors.fetch.min_period", 300)
+	v.SetDefault("account_defaults.price_floors.fetch.min_age", 600)
+	v.SetDefault("account_defaults.price_floors.fetch.min_timeout", 10)
+	v.SetDefault("account_defaults.price_floors.fetch.max_timeout", 10000)
+
 	v.SetDefault("certificates_file", "")
 	v.SetDefault("auto_gen_source_tid", true)
 	v.SetDefault("generate_bid_id", false)
@@ -1084,6 +1134,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("gdpr.tcf2.purpose_one_treatment.access_allowed", true)
 	v.SetDefault("gdpr.tcf2.special_feature1.enforce", true)
 	v.SetDefault("gdpr.tcf2.special_feature1.vendor_exceptions", []openrtb_ext.BidderName{})
+	v.SetDefault("price_floors.enabled", false)
 
 	// Defaults for account_defaults.events.default_url
 	v.SetDefault("account_defaults.events.default_url", "https://PBS_HOST/event?t=##PBS-EVENTTYPE##&vtype=##PBS-VASTEVENT##&b=##PBS-BIDID##&f=i&a=##PBS-ACCOUNTID##&ts=##PBS-TIMESTAMP##&bidder=##PBS-BIDDER##&int=##PBS-INTEGRATION##&mt=##PBS-MEDIATYPE##&ch=##PBS-CHANNEL##&aid=##PBS-AUCTIONID##&l=##PBS-LINEID##")
@@ -1096,17 +1147,14 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("experiment.adscert.remote.url", "")
 	v.SetDefault("experiment.adscert.remote.signing_timeout_ms", 5)
 
-	v.SetDefault("experiment.price_floors.enabled", false)
-	v.SetDefault("experiment.price_floors.use_dynamic_data", false)
-	v.SetDefault("experiment.price_floors.enforce_floors_rate", 100)
-	v.SetDefault("experiment.price_floors.enforce_deal_floors", false)
-
 	v.SetDefault("hooks.enabled", false)
 
 	for bidderName := range bidderInfos {
 		setBidderDefaults(v, strings.ToLower(bidderName))
 	}
-
+	//Defaults for Price floor fetcher
+	v.SetDefault("price_floor_fetcher.worker", 20)
+	v.SetDefault("price_floor_fetcher.capacity", 20000)
 }
 
 func migrateConfig(v *viper.Viper) {

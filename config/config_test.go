@@ -174,6 +174,24 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "experiment.adscert.remote.signing_timeout_ms", cfg.Experiment.AdCerts.Remote.SigningTimeoutMs, 5)
 	cmpNils(t, "host_schain_node", cfg.HostSChainNode)
 	cmpStrings(t, "datacenter", cfg.DataCenter, "")
+
+	//Assert the price floor default values
+	cmpBools(t, "price_floors.enabled", cfg.PriceFloors.Enabled, false)
+
+	cmpBools(t, "account_defaults.price_floors.enabled", cfg.AccountDefaults.PriceFloors.Enabled, true)
+	cmpInts(t, "account_defaults.price_floors.enforce_floors_rate", cfg.AccountDefaults.PriceFloors.EnforceFloorRate, 100)
+	cmpBools(t, "account_defaults.price_floors.adjust_for_bid_adjustment", cfg.AccountDefaults.PriceFloors.BidAdjustment, true)
+	cmpBools(t, "account_defaults.price_floors.enforce_deal_floors", cfg.AccountDefaults.PriceFloors.EnforceDealFloors, false)
+	cmpBools(t, "account_defaults.price_floors.use_dynamic_data", cfg.AccountDefaults.PriceFloors.UseDynamicData, true)
+	cmpBools(t, "account_defaults.price_floors.fetch.enabled", cfg.AccountDefaults.PriceFloors.Fetch.Enabled, false)
+	cmpInts(t, "account_defaults.price_floors.fetch.timeout_ms", cfg.AccountDefaults.PriceFloors.Fetch.Timeout, 3000)
+	cmpInts(t, "account_defaults.price_floors.fetch.max_file_size_kb", cfg.AccountDefaults.PriceFloors.Fetch.MaxFileSize, 100)
+	cmpInts(t, "account_defaults.price_floors.fetch.max_rules", cfg.AccountDefaults.PriceFloors.Fetch.MaxRules, 1000)
+	cmpInts(t, "account_defaults.price_floors.fetch.max_age_sec", cfg.AccountDefaults.PriceFloors.Fetch.MaxAge, 86400)
+	cmpInts(t, "account_defaults.price_floors.fetch.period_sec", cfg.AccountDefaults.PriceFloors.Fetch.Period, 3600)
+	cmpInts(t, "price_floor_fetcher.worker", cfg.PriceFloorFetcher.Worker, 20)
+	cmpInts(t, "price_floor_fetcher.capacity", cfg.PriceFloorFetcher.Capacity, 20000)
+
 	cmpBools(t, "hooks.enabled", cfg.Hooks.Enabled, false)
 	cmpStrings(t, "validations.banner_creative_max_size", cfg.Validations.BannerCreativeMaxSize, "skip")
 	cmpStrings(t, "validations.secure_markup", cfg.Validations.SecureMarkup, "skip")
@@ -437,6 +455,25 @@ experiment:
         enforce_deal_floors: true
 hooks:
     enabled: true
+price_floors:
+    enabled: true
+account_defaults:
+    price_floors:
+        enabled: true
+        enforce_floors_rate: 100
+        adjust_for_bid_adjustment: true
+        enforce_deal_floors: true
+        use_dynamic_data: true
+        fetch:
+            enabled: true
+            timeout_ms: 1000
+            max_file_size_kb: 100
+            max_rules: 1000
+            max_age_sec: 36000
+            period_sec: 7200
+price_floor_fetcher:
+     worker: 10
+     capacity: 20
 `)
 
 var oldStoredRequestsConfig = []byte(`
@@ -516,6 +553,22 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "validations.secure_markup", cfg.Validations.SecureMarkup, "skip")
 	cmpInts(t, "validations.max_creative_width", int(cfg.Validations.MaxCreativeWidth), 0)
 	cmpInts(t, "validations.max_creative_height", int(cfg.Validations.MaxCreativeHeight), 0)
+
+	//Assert the price floor values
+	cmpBools(t, "price_floors.enabled", cfg.PriceFloors.Enabled, true)
+	cmpBools(t, "account_defaults.price_floors.enabled", cfg.AccountDefaults.PriceFloors.Enabled, true)
+	cmpInts(t, "account_defaults.price_floors.enforce_floors_rate", cfg.AccountDefaults.PriceFloors.EnforceFloorRate, 100)
+	cmpBools(t, "account_defaults.price_floors.adjust_for_bid_adjustment", cfg.AccountDefaults.PriceFloors.BidAdjustment, true)
+	cmpBools(t, "account_defaults.price_floors.enforce_deal_floors", cfg.AccountDefaults.PriceFloors.EnforceDealFloors, true)
+	cmpBools(t, "account_defaults.price_floors.use_dynamic_data", cfg.AccountDefaults.PriceFloors.UseDynamicData, true)
+	cmpBools(t, "account_defaults.price_floors.fetch.enabled", cfg.AccountDefaults.PriceFloors.Fetch.Enabled, true)
+	cmpInts(t, "account_defaults.price_floors.fetch.timeout_ms", cfg.AccountDefaults.PriceFloors.Fetch.Timeout, 1000)
+	cmpInts(t, "account_defaults.price_floors.fetch.max_file_size_kb", cfg.AccountDefaults.PriceFloors.Fetch.MaxFileSize, 100)
+	cmpInts(t, "account_defaults.price_floors.fetch.max_rules", cfg.AccountDefaults.PriceFloors.Fetch.MaxRules, 1000)
+	cmpInts(t, "account_defaults.price_floors.fetch.max_age_sec", cfg.AccountDefaults.PriceFloors.Fetch.MaxAge, 36000)
+	cmpInts(t, "account_defaults.price_floors.fetch.period_sec", cfg.AccountDefaults.PriceFloors.Fetch.Period, 7200)
+	cmpInts(t, "price_floor_fetcher.worker", cfg.PriceFloorFetcher.Worker, 10)
+	cmpInts(t, "price_floor_fetcher.capacity", cfg.PriceFloorFetcher.Capacity, 20)
 
 	//Assert the NonStandardPublishers was correctly unmarshalled
 	assert.Equal(t, []string{"pub1", "pub2"}, cfg.GDPR.NonStandardPublishers, "gdpr.non_standard_publishers")

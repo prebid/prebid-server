@@ -70,6 +70,11 @@ type AccountFloorFetch struct {
 	MaxRules    int    `mapstructure:"max_rules" json:"max_rules"`
 	MaxAge      int    `mapstructure:"max_age_sec" json:"max_age_sec"`
 	Period      int    `mapstructure:"period_sec" json:"period_sec"`
+	AccountID   string `mapstructure:"accountID" json:"accountID"`
+	MinPeriod   int    `mapstructure:"min_period" json:"min_period"`
+	MinAge      int    `mapstructure:"min_age" json:"min_age"`
+	MinTimeout  int    `mapstructure:"min_timeout" json:"min_timeout"`
+	MaxTimeout  int    `mapstructure:"max_timeout" json:"max_timeout"`
 }
 
 // EnabledForChannelType indicates whether CCPA is turned on at the account level for the specified channel type

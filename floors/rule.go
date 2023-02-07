@@ -11,7 +11,6 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
-
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -109,7 +108,6 @@ func getFloorMinAndCurFromImp(imp openrtb2.Imp) (float64, string, error) {
 }
 
 func updateImpExtWithFloorDetails(imp *openrtb_ext.ImpWrapper, matchedRule string, floorRuleVal, floorVal float64) {
-
 	impExt, err := imp.GetImpExt()
 	if err != nil {
 		return
@@ -118,38 +116,42 @@ func updateImpExtWithFloorDetails(imp *openrtb_ext.ImpWrapper, matchedRule strin
 	if extImpPrebid == nil {
 		extImpPrebid = &openrtb_ext.ExtImpPrebid{}
 	}
-
-	extImpPrebid.Floors = &openrtb_ext.ExtFloors{
-		FloorRuleValue: floorRuleVal,
+	extImpPrebid.Floors = &openrtb_ext.ExtImpPrebidFloors{
 		FloorRule:      matchedRule,
-		FloorValue:     math.Round(floorVal*10000) / 10000,
+		FloorRuleValue: math.Floor(floorRuleVal*10000) / 10000,
+		FloorValue:     floorVal,
 	}
 	impExt.SetPrebid(extImpPrebid)
 }
 
 func selectFloorModelGroup(modelGroups []openrtb_ext.PriceFloorModelGroup, f func(int) int) []openrtb_ext.PriceFloorModelGroup {
 	totalModelWeight := 0
-
 	for i := 0; i < len(modelGroups); i++ {
 		if modelGroups[i].ModelWeight == nil {
 			modelGroups[i].ModelWeight = new(int)
 			*modelGroups[i].ModelWeight = 1
 		}
-		totalModelWeight += *modelGroups[i].ModelWeight
+		if modelGroups[i].ModelWeight != nil {
+			totalModelWeight += *modelGroups[i].ModelWeight
+		}
 	}
 
 	sort.SliceStable(modelGroups, func(i, j int) bool {
-		return *modelGroups[i].ModelWeight < *modelGroups[j].ModelWeight
+		if modelGroups[i].ModelWeight != nil && modelGroups[j].ModelWeight != nil {
+			return *modelGroups[i].ModelWeight < *modelGroups[j].ModelWeight
+		}
+		return false
 	})
 
 	winWeight := f(totalModelWeight + 1)
 	for i, modelGroup := range modelGroups {
-		winWeight -= *modelGroup.ModelWeight
-		if winWeight <= 0 {
-			modelGroups[0], modelGroups[i] = modelGroups[i], modelGroups[0]
-			return modelGroups[:1]
+		if modelGroup.ModelWeight != nil {
+			winWeight -= *modelGroup.ModelWeight
+			if winWeight <= 0 {
+				modelGroups[0], modelGroups[i] = modelGroups[i], modelGroups[0]
+				return modelGroups[:1]
+			}
 		}
-
 	}
 	return modelGroups[:1]
 }

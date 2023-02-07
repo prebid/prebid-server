@@ -429,6 +429,8 @@ type MetricsEngine interface {
 	RecordRejectedBidsForBidder(bidder openrtb_ext.BidderName)
 	RecordFloorsRequestForAccount(pubId string)
 	RecordRejectedBidsForAccount(pubId string)
+	//RecordDynamicFetchFailure records the dynamic fetch failure labeled by pubid and reason code
+	RecordDynamicFetchFailure(pubId, code string)
 	RecordPrebidCacheRequestTime(success bool, length time.Duration)
 	RecordRequestQueueTime(success bool, requestType RequestType, length time.Duration)
 	RecordTimeoutNotice(success bool)

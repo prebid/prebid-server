@@ -1,6 +1,7 @@
 package exchange
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand"
 
@@ -130,12 +131,13 @@ func enforceFloors(r *AuctionRequest, seatBids map[openrtb_ext.BidderName]*entit
 	}
 	prebidExt := requestExt.GetPrebid()
 	reqFloorEnable := getFloorsFlagFromReqExt(prebidExt)
-	if floor.Enabled && reqFloorEnable {
+	if floor.Enabled && reqFloorEnable && r.Account.PriceFloors.Enabled {
 		var enforceDealFloors bool
 		var floorsEnfocement bool
+		var updateReqExt bool
 		floorsEnfocement = floors.RequestHasFloors(r.BidRequestWrapper.BidRequest)
 		if prebidExt != nil && floorsEnfocement {
-			if floorsEnfocement = floors.ShouldEnforce(r.BidRequestWrapper.BidRequest, prebidExt.Floors, r.Account.PriceFloors.EnforceFloorRate, rand.Intn); floorsEnfocement {
+			if floorsEnfocement, updateReqExt = floors.ShouldEnforce(r.BidRequestWrapper.BidRequest, prebidExt.Floors, r.Account.PriceFloors.EnforceFloorRate, rand.Intn); floorsEnfocement {
 				enforceDealFloors = r.Account.PriceFloors.EnforceDealFloors && getEnforceDealsFlag(prebidExt.Floors)
 			}
 		}
@@ -143,11 +145,18 @@ func enforceFloors(r *AuctionRequest, seatBids map[openrtb_ext.BidderName]*entit
 		if floorsEnfocement {
 			seatBids, rejectionsErrs, rejecteBids = enforceFloorToBids(r.BidRequestWrapper.BidRequest, seatBids, conversions, enforceDealFloors)
 		}
-		requestExt.SetPrebid(prebidExt)
-		err = r.BidRequestWrapper.RebuildRequestExt()
-		if err != nil {
-			rejectionsErrs = append(rejectionsErrs, err)
-			return seatBids, rejectionsErrs, rejecteBids
+
+		if updateReqExt {
+			requestExt.SetPrebid(prebidExt)
+			err = r.BidRequestWrapper.RebuildRequestExt()
+			if err != nil {
+				rejectionsErrs = append(rejectionsErrs, err)
+				return seatBids, rejectionsErrs, rejecteBids
+			}
+			if responseDebugAllow {
+				updatedBidReq, _ := json.Marshal(r.BidRequestWrapper.BidRequest)
+				r.ResolvedBidRequest = updatedBidReq
+			}
 		}
 	}
 	return seatBids, rejectionsErrs, rejecteBids

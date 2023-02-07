@@ -1849,6 +1849,45 @@ func TestRecordAdsCertSignTime(t *testing.T) {
 	}
 }
 
+func TestRecordDynamicFetchFailure(t *testing.T) {
+	type testIn struct {
+		pubid, code string
+	}
+	type testOut struct {
+		expCount int
+	}
+	testCases := []struct {
+		description string
+		in          testIn
+		out         testOut
+	}{
+		{
+			description: "record dynamic fetch failure",
+			in: testIn{
+				pubid: "5890",
+				code:  "1",
+			},
+			out: testOut{
+				expCount: 1,
+			},
+		},
+	}
+	for _, test := range testCases {
+		pm := createMetricsForTesting()
+		pm.RecordDynamicFetchFailure(test.in.pubid, test.in.code)
+
+		assertCounterVecValue(t,
+			"",
+			"",
+			pm.dynamicFetchFailure,
+			float64(test.out.expCount),
+			prometheus.Labels{
+				accountLabel: test.in.pubid,
+				codeLabel:    test.in.code,
+			})
+	}
+}
+
 func TestRecordModuleMetrics(t *testing.T) {
 	m := createMetricsForTesting()
 
