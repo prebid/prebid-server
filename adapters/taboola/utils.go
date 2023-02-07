@@ -1,10 +1,5 @@
 package taboola
 
-import (
-	"encoding/json"
-)
-
-type TBLASiteExt struct {
-	PageType   string          `json:"pageType,omitempty"`
-	RTBSiteExt json.RawMessage `json:"rtbSiteExt,omitempty"`
+type RequestExt struct {
+	PageType string `json:"pageType,omitempty"`
 }

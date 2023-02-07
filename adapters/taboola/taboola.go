@@ -211,9 +211,6 @@ func createTaboolaRequests(request *openrtb2.BidRequest) (taboolaRequests []*ope
 			Domain:    evaluateDomain(taboolaExt.PublisherDomain, request),
 			Publisher: publisher,
 		}
-		if taboolaExt.PageType != "" { //todo: put in requet ext, not site ext
-			newSite.Ext = generateSiteExtJson(taboolaExt, errs)
-		}
 		modifiedRequest.Site = newSite
 	} else {
 		modifiedSite := *modifiedRequest.Site
@@ -221,13 +218,6 @@ func createTaboolaRequests(request *openrtb2.BidRequest) (taboolaRequests []*ope
 		modifiedSite.ID = taboolaExt.PublisherId
 		modifiedSite.Name = taboolaExt.PublisherId
 		modifiedSite.Domain = evaluateDomain(taboolaExt.PublisherDomain, request)
-		if taboolaExt.PageType != "" {
-			if modifiedSite.Ext == nil {
-				modifiedSite.Ext = generateSiteExtJson(taboolaExt, errs)
-			} else {
-				modifiedSite.Ext = wrapSiteExtJson(taboolaExt, modifiedRequest.Site, errs)
-			}
-		}
 		modifiedRequest.Site = &modifiedSite
 	}
 
@@ -239,36 +229,27 @@ func createTaboolaRequests(request *openrtb2.BidRequest) (taboolaRequests []*ope
 		modifiedRequest.BAdv = taboolaExt.BAdv
 	}
 
+	if taboolaExt.PageType != "" {
+		modifiedRequest.Ext = makeRequestExt(taboolaExt.PageType, errs)
+	}
+
 	taboolaRequests = append(taboolaRequests, overrideBidRequestImp(&modifiedRequest, nativeImp))
 	taboolaRequests = append(taboolaRequests, overrideBidRequestImp(&modifiedRequest, bannerImp))
 
 	return taboolaRequests, errs
 }
 
-func wrapSiteExtJson(taboolaExt openrtb_ext.ImpExtTaboola, site *openrtb2.Site, errs []error) json.RawMessage {
-	tblaSiteExt := &TBLASiteExt{
-		PageType:   taboolaExt.PageType,
-		RTBSiteExt: site.Ext,
+func makeRequestExt(pageType string, errs []error) json.RawMessage {
+	requestExt := &RequestExt{
+		PageType: pageType,
 	}
-	tblaSiteExtJson, err := json.Marshal(tblaSiteExt)
-	if err != nil {
-		errs = append(errs, err)
-		tblaSiteExtJson = make([]byte, 0)
-	}
-	return tblaSiteExtJson
 
-}
-
-func generateSiteExtJson(taboolaExt openrtb_ext.ImpExtTaboola, errs []error) json.RawMessage {
-	tblaSiteExt := &TBLASiteExt{
-		PageType: taboolaExt.PageType,
-	}
-	tblaSiteExtJson, err := json.Marshal(tblaSiteExt)
+	requestExtJson, err := json.Marshal(requestExt)
 	if err != nil {
 		errs = append(errs, err)
 		return make([]byte, 0)
 	}
-	return tblaSiteExtJson
+	return requestExtJson
 
 }
 

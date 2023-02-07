@@ -83,15 +83,15 @@
             "ref": "http://page-domain.com",
             "publisher": {
               "id": "publisher-id"
-            },
-            "ext": {
-              "pageType": "homepage"
             }
           },
           "device": {
             "ua": "Mozilla/5.0 (Linux; Android 12; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.62 Mobile Safari/537.36",
             "h": 300,
             "w": 300
+          },
+          "ext": {
+            "pageType": "homepage"
           }
         }
       },
