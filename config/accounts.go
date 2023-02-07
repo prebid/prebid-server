@@ -35,6 +35,7 @@ type Account struct {
 	TruncateTargetAttribute *int                                 `mapstructure:"truncate_target_attr" json:"truncate_target_attr"`
 	AlternateBidderCodes    *openrtb_ext.ExtAlternateBidderCodes `mapstructure:"alternatebiddercodes" json:"alternatebiddercodes"`
 	Hooks                   AccountHooks                         `mapstructure:"hooks" json:"hooks"`
+	PriceFloors             AccountPriceFloors                   `mapstructure:"price_floors" json:"price_floors"`
 	Validations             Validations                          `mapstructure:"validations" json:"validations"`
 }
 
@@ -50,6 +51,14 @@ type AccountCCPA struct {
 	Enabled            *bool          `mapstructure:"enabled" json:"enabled,omitempty"`
 	IntegrationEnabled AccountChannel `mapstructure:"integration_enabled" json:"integration_enabled"`
 	ChannelEnabled     AccountChannel `mapstructure:"channel_enabled" json:"channel_enabled"`
+}
+
+type AccountPriceFloors struct {
+	Enabled           bool `mapstructure:"enabled" json:"enabled"`
+	EnforceFloorRate  int  `mapstructure:"enforce_floors_rate" json:"enforce_floors_rate"`
+	BidAdjustment     bool `mapstructure:"adjust_for_bid_adjustment" json:"adjust_for_bid_adjustment"`
+	EnforceDealFloors bool `mapstructure:"enforce_deal_floors" json:"enforce_deal_floors"`
+	UseDynamicData    bool `mapstructure:"use_dynamic_data" json:"use_dynamic_data"`
 }
 
 // EnabledForChannelType indicates whether CCPA is turned on at the account level for the specified channel type
