@@ -341,7 +341,11 @@ func TestDebugBehaviour(t *testing.T) {
 	}.Builder
 	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	e.categoriesFetcher = categoriesFetcher
-
+	e.requestSplitter = requestSplitter{
+		me:                &metricsConf.NilMetricsEngine{},
+		gdprPermsBuilder:  e.gdprPermsBuilder,
+		tcf2ConfigBuilder: e.tcf2ConfigBuilder,
+	}
 	ctx := context.Background()
 
 	// Run tests
@@ -506,6 +510,11 @@ func TestTwoBiddersDebugDisabledAndEnabled(t *testing.T) {
 	}.Builder
 	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	e.categoriesFetcher = categoriesFetcher
+	e.requestSplitter = requestSplitter{
+		me:                e.me,
+		gdprPermsBuilder:  e.gdprPermsBuilder,
+		tcf2ConfigBuilder: e.tcf2ConfigBuilder,
+	}
 
 	debugLog := DebugLog{Enabled: true}
 
@@ -669,6 +678,11 @@ func TestOverrideWithCustomCurrency(t *testing.T) {
 	e.currencyConverter = mockCurrencyConverter
 	e.categoriesFetcher = categoriesFetcher
 	e.bidIDGenerator = &mockBidIDGenerator{false, false}
+	e.requestSplitter = requestSplitter{
+		me:                e.me,
+		gdprPermsBuilder:  e.gdprPermsBuilder,
+		tcf2ConfigBuilder: e.tcf2ConfigBuilder,
+	}
 
 	// Define mock incoming bid requeset
 	mockBidRequest := &openrtb2.BidRequest{
@@ -774,6 +788,11 @@ func TestAdapterCurrency(t *testing.T) {
 		adapterMap: map[openrtb_ext.BidderName]AdaptedBidder{
 			openrtb_ext.BidderName("foo"): AdaptBidder(mockBidder, nil, &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderName("foo"), nil, ""),
 		},
+	}
+	e.requestSplitter = requestSplitter{
+		me:                e.me,
+		gdprPermsBuilder:  e.gdprPermsBuilder,
+		tcf2ConfigBuilder: e.tcf2ConfigBuilder,
 	}
 
 	// Define Bid Request
@@ -1155,6 +1174,11 @@ func TestReturnCreativeEndToEnd(t *testing.T) {
 	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	e.categoriesFetcher = categoriesFetcher
 	e.bidIDGenerator = &mockBidIDGenerator{false, false}
+	e.requestSplitter = requestSplitter{
+		me:                e.me,
+		gdprPermsBuilder:  e.gdprPermsBuilder,
+		tcf2ConfigBuilder: e.tcf2ConfigBuilder,
+	}
 
 	// Define mock incoming bid requeset
 	mockBidRequest := &openrtb2.BidRequest{
@@ -2423,9 +2447,20 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		hostSChainNode = nil
 	}
 
+	metricsEngine := metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.CoreBidderNames(), nil, nil)
+	requestSplitter := requestSplitter{
+		bidderToSyncerKey: bidderToSyncerKey,
+		me:                metricsEngine,
+		privacyConfig:     privacyConfig,
+		gdprPermsBuilder:  gdprPermsBuilder,
+		tcf2ConfigBuilder: tcf2ConfigBuilder,
+		hostSChainNode:    hostSChainNode,
+		bidderInfo:        bidderInfos,
+	}
+
 	return &exchange{
 		adapterMap:               bidderAdapters,
-		me:                       metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.CoreBidderNames(), nil, nil),
+		me:                       metricsEngine,
 		cache:                    &wellBehavedCache{},
 		cacheTime:                0,
 		currencyConverter:        currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
@@ -2441,6 +2476,7 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		hostSChainNode:           hostSChainNode,
 		server:                   config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "Datacenter"},
 		bidValidationEnforcement: hostBidValidation,
+		requestSplitter:          requestSplitter,
 	}
 }
 
@@ -4121,6 +4157,11 @@ func TestAuctionDebugEnabled(t *testing.T) {
 	e.tcf2ConfigBuilder = fakeTCF2ConfigBuilder{
 		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 	}.Builder
+	e.requestSplitter = requestSplitter{
+		me:                e.me,
+		gdprPermsBuilder:  e.gdprPermsBuilder,
+		tcf2ConfigBuilder: e.tcf2ConfigBuilder,
+	}
 
 	ctx := context.Background()
 
@@ -4633,6 +4674,11 @@ func TestOverrideConfigAlternateBidderCodesWithRequestValues(t *testing.T) {
 	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	e.categoriesFetcher = categoriesFetcher
 	e.bidIDGenerator = &mockBidIDGenerator{false, false}
+	e.requestSplitter = requestSplitter{
+		me:                e.me,
+		gdprPermsBuilder:  e.gdprPermsBuilder,
+		tcf2ConfigBuilder: e.tcf2ConfigBuilder,
+	}
 
 	// Define mock incoming bid requeset
 	mockBidRequest := &openrtb2.BidRequest{
@@ -5036,6 +5082,11 @@ func TestModulesCanBeExecutedForMultipleBiddersSimultaneously(t *testing.T) {
 		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 	}.Builder
 	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	e.requestSplitter = requestSplitter{
+		me:                e.me,
+		gdprPermsBuilder:  e.gdprPermsBuilder,
+		tcf2ConfigBuilder: e.tcf2ConfigBuilder,
+	}
 
 	bidRequest := &openrtb2.BidRequest{
 		ID: "some-request-id",
