@@ -50,13 +50,8 @@ func (targData *targetData) setTargeting(auc *auction, isApp bool, categoryMappi
 			}
 
 			for i, topBid := range topBidsPerBidder {
-				if accountMaxBids != 0 && i >= accountMaxBids {
-					topBid.Bid = nil
-					continue
-				}
-
-				if i >= maxBids {
-					continue
+				if i == maxBids {
+					break
 				}
 
 				isOverallWinner := overallWinner == topBid

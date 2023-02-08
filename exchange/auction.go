@@ -129,15 +129,6 @@ func newAuction(seatBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, nu
 		}
 	}
 
-	//sort bids for multibid targeting
-	for _, topBidsPerBidder := range winningBidsByBidder {
-		for _, topBids := range topBidsPerBidder {
-			sort.Slice(topBids, func(i, j int) bool {
-				return isNewWinningBid(topBids[i].Bid, topBids[j].Bid, preferDeals)
-			})
-		}
-	}
-
 	return &auction{
 		winningBids:         winningBids,
 		winningBidsByBidder: winningBidsByBidder,
@@ -157,8 +148,46 @@ func isNewWinningBid(bid, wbid *openrtb2.Bid, preferDeals bool) bool {
 	return bid.Price > wbid.Price
 }
 
+func (a *auction) validateAndUpdateMultiBid(adapterBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, preferDeals bool, accountMaxBids int) {
+	bidsDropped := false
+	// sort bids for multibid targeting
+	for _, topBidsPerBidder := range a.winningBidsByBidder {
+		for bidder, topBids := range topBidsPerBidder {
+			sort.Slice(topBids, func(i, j int) bool {
+				return isNewWinningBid(topBids[i].Bid, topBids[j].Bid, preferDeals)
+			})
+
+			if accountMaxBids != 0 && len(topBids) > accountMaxBids {
+				bidsDropped = true
+
+				// mark drop-candidate bid and remove its reference (avoid mem leak)
+				for i := accountMaxBids; i < len(topBids); i++ {
+					topBids[i].Bid = nil
+					topBids[i] = nil
+				}
+
+				topBidsPerBidder[bidder] = topBids[:accountMaxBids]
+			}
+		}
+	}
+
+	if bidsDropped { // remove the marked bids from original references
+		for _, seatBid := range adapterBids {
+			if seatBid != nil {
+				bids := make([]*entities.PbsOrtbBid, 0, accountMaxBids)
+				for i := 0; i < len(seatBid.Bids); i++ {
+					if seatBid.Bids[i].Bid != nil {
+						bids = append(bids, seatBid.Bids[i])
+					}
+				}
+				seatBid.Bids = bids
+			}
+		}
+	}
+}
+
 func (a *auction) setRoundedPrices(priceGranularity openrtb_ext.PriceGranularity) {
-	roundedPrices := make(map[*entities.PbsOrtbBid]string, 5*len(a.winningBids)) // TODO
+	roundedPrices := make(map[*entities.PbsOrtbBid]string, 5*len(a.winningBids))
 	for _, topBidsPerImp := range a.winningBidsByBidder {
 		for _, topBidsPerBidder := range topBidsPerImp {
 			for _, topBid := range topBidsPerBidder {
