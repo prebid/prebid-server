@@ -105,6 +105,7 @@ const (
 	BidderAdpone            BidderName = "adpone"
 	BidderAdprime           BidderName = "adprime"
 	BidderAdrino            BidderName = "adrino"
+	BidderAdsinteractive    BidderName = "adsinteractive"
 	BidderAdtarget          BidderName = "adtarget"
 	BidderAdtrgtme          BidderName = "adtrgtme"
 	BidderAdtelligent       BidderName = "adtelligent"
@@ -181,6 +182,7 @@ const (
 	BidderKargo             BidderName = "kargo"
 	BidderKayzen            BidderName = "kayzen"
 	BidderKidoz             BidderName = "kidoz"
+	BidderKiviads           BidderName = "kiviads"
 	BidderKrushmedia        BidderName = "krushmedia"
 	BidderKubient           BidderName = "kubient"
 	BidderLockerDome        BidderName = "lockerdome"
@@ -280,6 +282,7 @@ func CoreBidderNames() []BidderName {
 		BidderAdpone,
 		BidderAdprime,
 		BidderAdrino,
+		BidderAdsinteractive,
 		BidderAdtarget,
 		BidderAdtrgtme,
 		BidderAdtelligent,
@@ -356,6 +359,7 @@ func CoreBidderNames() []BidderName {
 		BidderKargo,
 		BidderKayzen,
 		BidderKidoz,
+		BidderKiviads,
 		BidderKrushmedia,
 		BidderKubient,
 		BidderLockerDome,

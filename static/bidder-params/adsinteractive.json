@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Adsinteractive Adapter Params",
+  "description": "Adsinteractive Bidder Parameter Schema",
+  "type": "object",
+  "properties": {
+    "adUnit": {
+      "type": "string",
+      "description": "ad unit name"
+    }
+  },
+  "required": ["adUnit"]
+}

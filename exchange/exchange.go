@@ -73,6 +73,7 @@ type exchange struct {
 	adsCertSigner            adscert.Signer
 	server                   config.Server
 	bidValidationEnforcement config.Validations
+	requestSplitter          requestSplitter
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -131,29 +132,41 @@ func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid
 		gdprDefaultValue = gdpr.SignalNo
 	}
 
-	return &exchange{
-		adapterMap:        adapters,
-		bidderInfo:        infos,
+	privacyConfig := config.Privacy{
+		CCPA: cfg.CCPA,
+		GDPR: cfg.GDPR,
+		LMT:  cfg.LMT,
+	}
+	requestSplitter := requestSplitter{
 		bidderToSyncerKey: bidderToSyncerKey,
-		cache:             cache,
-		cacheTime:         time.Duration(cfg.CacheURL.ExpectedTimeMillis) * time.Millisecond,
-		categoriesFetcher: categoriesFetcher,
-		currencyConverter: currencyConverter,
-		externalURL:       cfg.ExternalURL,
+		me:                metricsEngine,
+		privacyConfig:     privacyConfig,
 		gdprPermsBuilder:  gdprPermsBuilder,
 		tcf2ConfigBuilder: tcf2CfgBuilder,
-		me:                metricsEngine,
-		gdprDefaultValue:  gdprDefaultValue,
-		privacyConfig: config.Privacy{
-			CCPA: cfg.CCPA,
-			GDPR: cfg.GDPR,
-			LMT:  cfg.LMT,
-		},
+		hostSChainNode:    cfg.HostSChainNode,
+		bidderInfo:        infos,
+	}
+
+	return &exchange{
+		adapterMap:               adapters,
+		bidderInfo:               infos,
+		bidderToSyncerKey:        bidderToSyncerKey,
+		cache:                    cache,
+		cacheTime:                time.Duration(cfg.CacheURL.ExpectedTimeMillis) * time.Millisecond,
+		categoriesFetcher:        categoriesFetcher,
+		currencyConverter:        currencyConverter,
+		externalURL:              cfg.ExternalURL,
+		gdprPermsBuilder:         gdprPermsBuilder,
+		tcf2ConfigBuilder:        tcf2CfgBuilder,
+		me:                       metricsEngine,
+		gdprDefaultValue:         gdprDefaultValue,
+		privacyConfig:            privacyConfig,
 		bidIDGenerator:           &bidIDGenerator{cfg.GenerateBidID},
 		hostSChainNode:           cfg.HostSChainNode,
 		adsCertSigner:            adsCertSigner,
 		server:                   config.Server{ExternalUrl: cfg.ExternalURL, GvlID: cfg.GDPR.HostVendorID, DataCenter: cfg.DataCenter},
 		bidValidationEnforcement: cfg.Validations,
+		requestSplitter:          requestSplitter,
 	}
 }
 
@@ -269,7 +282,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	gdprDefaultValue := e.parseGDPRDefaultValue(r.BidRequestWrapper.BidRequest)
 
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
-	bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(ctx, r, requestExt, e.bidderToSyncerKey, e.me, gdprDefaultValue, e.privacyConfig, e.gdprPermsBuilder, e.tcf2ConfigBuilder, e.hostSChainNode)
+	bidderRequests, privacyLabels, errs := e.requestSplitter.cleanOpenRTBRequests(ctx, r, requestExt, gdprDefaultValue)
 
 	e.me.RecordRequestPrivacy(privacyLabels)
 

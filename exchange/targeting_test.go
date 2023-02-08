@@ -106,6 +106,11 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 		categoriesFetcher: categoriesFetcher,
 		bidIDGenerator:    &mockBidIDGenerator{false, false},
 	}
+	ex.requestSplitter = requestSplitter{
+		me:                ex.me,
+		gdprPermsBuilder:  ex.gdprPermsBuilder,
+		tcf2ConfigBuilder: ex.tcf2ConfigBuilder,
+	}
 
 	imps := buildImps(t, mockBids)
 
@@ -435,6 +440,32 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 					"hb_deal_rubicon":      "mydeal",
 					"hb_cache_host_rubico": "cache.prebid.com",
 					"hb_cache_path_rubico": "cache",
+				},
+			},
+		},
+		TruncateTargetAttr: nil,
+	},
+	{
+		Description: "bidder with no dealID should not have deal targeting",
+		TargetData: targetData{
+			priceGranularity:  openrtb_ext.PriceGranularityFromString("med"),
+			includeBidderKeys: true,
+		},
+		Auction: auction{
+			winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*entities.PbsOrtbBid{
+				"ImpId-1": {
+					openrtb_ext.BidderAppnexus: {
+						Bid:     bid123,
+						BidType: openrtb_ext.BidTypeBanner,
+					},
+				},
+			},
+		},
+		ExpectedBidTargetsByBidder: map[string]map[openrtb_ext.BidderName]map[string]string{
+			"ImpId-1": {
+				openrtb_ext.BidderAppnexus: {
+					"hb_bidder_appnexus": "appnexus",
+					"hb_pb_appnexus":     "1.20",
 				},
 			},
 		},

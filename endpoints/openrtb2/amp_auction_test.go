@@ -1345,6 +1345,7 @@ func (s formatOverrideSpec) execute(t *testing.T) {
 
 type mockAmpExchange struct {
 	lastRequest *openrtb2.BidRequest
+	requestExt  json.RawMessage
 }
 
 var expectedErrorsFromHoldAuction map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage = map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{
@@ -1368,6 +1369,10 @@ func (m *mockAmpExchange) HoldAuction(ctx context.Context, auctionRequest exchan
 			}},
 		}},
 		Ext: json.RawMessage(`{ "errors": {"openx":[ { "code": 1, "message": "The request exceeded the timeout allocated" } ] } }`),
+	}
+
+	if m.requestExt != nil {
+		response.Ext = m.requestExt
 	}
 	if len(auctionRequest.StoredAuctionResponses) > 0 {
 		var seatBids []openrtb2.SeatBid
@@ -1588,6 +1593,7 @@ func TestBuildAmpObject(t *testing.T) {
 	testCases := []struct {
 		description       string
 		inTagId           string
+		exchange          *mockAmpExchange
 		inStoredRequest   json.RawMessage
 		expectedAmpObject *analytics.AmpObject
 	}{
@@ -1671,6 +1677,61 @@ func TestBuildAmpObject(t *testing.T) {
 				Origin: "",
 			},
 		},
+		{
+			description:     "Global targeting from bid response should be applied for Amp",
+			inTagId:         "test",
+			inStoredRequest: json.RawMessage(`{"id":"some-request-id","site":{"page":"prebid.org"},"imp":[{"id":"some-impression-id","banner":{"format":[{"w":300,"h":250}]},"ext":{"prebid":{"bidder":{"appnexus":{"placementId":12883451}}}}}],"tmax":500}`),
+			exchange:        &mockAmpExchange{requestExt: json.RawMessage(`{ "prebid": {"targeting": { "test_key": "test_value", "hb_appnexus_pb": "9999" } }, "errors": {"openx":[ { "code": 1, "message": "The request exceeded the timeout allocated" } ] } }`)},
+			expectedAmpObject: &analytics.AmpObject{
+				Status: http.StatusOK,
+				Errors: nil,
+				Request: &openrtb2.BidRequest{
+					ID: "some-request-id",
+					Device: &openrtb2.Device{
+						IP: "192.0.2.1",
+					},
+					Site: &openrtb2.Site{
+						Page: "prebid.org",
+						Ext:  json.RawMessage(`{"amp":1}`),
+					},
+					Imp: []openrtb2.Imp{
+						{
+							ID: "some-impression-id",
+							Banner: &openrtb2.Banner{
+								Format: []openrtb2.Format{
+									{
+										W: 300,
+										H: 250,
+									},
+								},
+							},
+							Secure: func(val int8) *int8 { return &val }(1), //(*int8)(1),
+							Ext:    json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placementId":12883451}}}}`),
+						},
+					},
+					AT:   1,
+					TMax: 500,
+					Ext:  json.RawMessage(`{"prebid":{"cache":{"bids":{"returnCreative":null},"vastxml":null},"channel":{"name":"amp","version":""},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"includewinners":true,"includebidderkeys":true,"includebrandcategory":null,"includeformat":false,"durationrangesec":null,"preferdeals":false}}}`),
+				},
+				AuctionResponse: &openrtb2.BidResponse{
+					SeatBid: []openrtb2.SeatBid{{
+						Bid: []openrtb2.Bid{{
+							AdM: "<script></script>",
+							Ext: json.RawMessage(`{ "prebid": {"targeting": { "hb_pb": "1.20", "hb_appnexus_pb": "1.20", "hb_cache_id": "some_id"}}}`),
+						}},
+						Seat: "",
+					}},
+					Ext: json.RawMessage(`{ "prebid": {"targeting": { "test_key": "test_value", "hb_appnexus_pb": "9999" } }, "errors": {"openx":[ { "code": 1, "message": "The request exceeded the timeout allocated" } ] } }`),
+				},
+				AmpTargetingValues: map[string]string{
+					"hb_appnexus_pb": "1.20", // Bid level has higher priority than global
+					"hb_cache_id":    "some_id",
+					"hb_pb":          "1.20",
+					"test_key":       "test_value", // New global key added
+				},
+				Origin: "",
+			},
+		},
 	}
 
 	request := httptest.NewRequest("GET", "/openrtb2/auction/amp?tag_id=test", nil)
@@ -1678,7 +1739,11 @@ func TestBuildAmpObject(t *testing.T) {
 
 	for _, test := range testCases {
 		// Set up test, declare a new mock logger every time
-		actualAmpObject, endpoint := ampObjectTestSetup(t, test.inTagId, test.inStoredRequest, false)
+		exchange := test.exchange
+		if exchange == nil {
+			exchange = &mockAmpExchange{}
+		}
+		actualAmpObject, endpoint := ampObjectTestSetup(t, test.inTagId, test.inStoredRequest, false, exchange)
 		// Run test
 		endpoint(recorder, request, nil)
 
@@ -1744,13 +1809,13 @@ func TestIdGeneration(t *testing.T) {
 
 	for _, test := range testCases {
 		// Set up and run test
-		actualAmpObject, endpoint := ampObjectTestSetup(t, "test", test.givenInStoredRequest, test.givenGenerateRequestID)
+		actualAmpObject, endpoint := ampObjectTestSetup(t, "test", test.givenInStoredRequest, test.givenGenerateRequestID, &mockAmpExchange{})
 		endpoint(recorder, request, nil)
 		assert.Equalf(t, test.expectedID, actualAmpObject.Request.ID, "Bid Request ID is incorrect: %s\n", test.description)
 	}
 }
 
-func ampObjectTestSetup(t *testing.T, inTagId string, inStoredRequest json.RawMessage, generateRequestID bool) (*analytics.AmpObject, httprouter.Handle) {
+func ampObjectTestSetup(t *testing.T, inTagId string, inStoredRequest json.RawMessage, generateRequestID bool, exchange *mockAmpExchange) (*analytics.AmpObject, httprouter.Handle) {
 	actualAmpObject := analytics.AmpObject{}
 	logger := newMockLogger(&actualAmpObject, nil)
 
@@ -1762,7 +1827,7 @@ func ampObjectTestSetup(t *testing.T, inTagId string, inStoredRequest json.RawMe
 
 	endpoint, _ := NewAmpEndpoint(
 		fakeUUIDGenerator{id: "foo", err: nil},
-		&mockAmpExchange{},
+		exchange,
 		newParamsValidator(t),
 		mockAmpFetcher,
 		empty_fetcher.EmptyFetcher{},
