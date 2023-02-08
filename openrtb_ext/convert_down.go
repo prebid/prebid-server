@@ -31,9 +31,10 @@ func ConvertDownTo25(r *RequestWrapper) error {
 		}
 	}
 
-	// Do not remove new OpenRTB 2.6 fields. The spec specifies that bidders and exchanges
-	// must tolerate new or unexpected fields gracefully, either ignoring them or treating
-	// them as unknown.
+	// Remove new OpenRTB 2.6 fields. The spec did not specify that bidders and exchanges
+	// must tolerate new or unexpected fields gracefully until 2.6.
+	clear26Fields(r)
+	clear202211Fields(r)
 
 	return nil
 }
@@ -176,4 +177,123 @@ func moveRewardedFrom26ToPrebidExt(i *ImpWrapper) error {
 	impExt.SetPrebid(impExtPrebid)
 
 	return nil
+}
+
+// clear26Fields sets all fields introduced in OpenRTB 2.6 to their defaults, which
+// will cause them to omitted during json marshal.
+func clear26Fields(r *RequestWrapper) {
+	r.WLangB = nil
+	r.CatTax = 0
+
+	if r.App != nil {
+		r.App.CatTax = 0
+		r.App.KwArray = nil
+
+		if r.App.Content != nil {
+			r.App.Content.CatTax = 0
+			r.App.Content.KwArray = nil
+			r.App.Content.LangB = ""
+			r.App.Content.Network = nil
+			r.App.Content.Channel = nil
+
+			if r.App.Content.Producer != nil {
+				r.App.Content.Producer.CatTax = 0
+			}
+		}
+
+		if r.App.Publisher != nil {
+			r.App.Publisher.CatTax = 0
+		}
+	}
+
+	if r.Site != nil {
+		r.Site.CatTax = 0
+		r.Site.KwArray = nil
+
+		if r.Site.Content != nil {
+			r.Site.Content.CatTax = 0
+			r.Site.Content.KwArray = nil
+			r.Site.Content.LangB = ""
+			r.Site.Content.Network = nil
+			r.Site.Content.Channel = nil
+
+			if r.Site.Content.Producer != nil {
+				r.Site.Content.Producer.CatTax = 0
+			}
+		}
+
+		if r.Site.Publisher != nil {
+			r.Site.Publisher.CatTax = 0
+		}
+	}
+
+	if r.Device != nil {
+		r.Device.UA = ""
+		r.Device.SUA = nil
+		r.Device.LangB = ""
+	}
+
+	if r.Regs != nil {
+		r.Regs.GDPR = nil
+		r.Regs.USPrivacy = ""
+	}
+
+	if r.Source != nil {
+		r.Source.SChain = nil
+	}
+
+	if r.User != nil {
+		r.User.KwArray = nil
+		r.User.Consent = ""
+		r.User.EIDs = nil
+	}
+
+	for _, imp := range r.GetImp() {
+		imp.Rwdd = 0
+		imp.SSAI = 0
+
+		if imp.Audio != nil {
+			imp.Audio.PodDur = 0
+			imp.Audio.RqdDurs = nil
+			imp.Audio.PodID = 0
+			imp.Audio.PodSeq = 0
+			imp.Audio.SlotInPod = 0
+			imp.Audio.MinCPMPerSec = 0
+		}
+
+		if imp.Video != nil {
+			imp.Video.StartDelay = nil
+			imp.Video.MaxSeq = 0
+			imp.Video.PodDur = 0
+			imp.Video.PodID = 0
+			imp.Video.PodSeq = 0
+			imp.Video.RqdDurs = nil
+			imp.Video.SlotInPod = 0
+			imp.Video.MinCPMPerSec = 0
+		}
+	}
+}
+
+// clear202211Fields sets all fields introduced in OpenRTB 2.6-202211 to their defaults,
+// which will cause them to omitted during json marshal.
+func clear202211Fields(r *RequestWrapper) {
+	r.DOOH = nil
+
+	if r.App != nil {
+		r.App.InventoryPartnerDomain = ""
+	}
+
+	if r.Site != nil {
+		r.Site.InventoryPartnerDomain = ""
+	}
+
+	if r.Regs != nil {
+		r.Regs.GPP = ""
+		r.Regs.GPPSID = nil
+	}
+
+	for _, imp := range r.GetImp() {
+		imp.Qty = nil
+		imp.DT = 0
+	}
 }
