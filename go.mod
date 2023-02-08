@@ -30,7 +30,7 @@ require (
 	github.com/vrischmann/go-metrics-influxdb v0.1.1
 	github.com/xeipuuv/gojsonschema v1.2.0
 	github.com/yudai/gojsondiff v1.0.0
-	golang.org/x/net v0.5.0
+	golang.org/x/net v0.4.0
 	golang.org/x/text v0.6.0
 	google.golang.org/grpc v1.46.2
 	gopkg.in/evanphx/json-patch.v4 v4.12.0

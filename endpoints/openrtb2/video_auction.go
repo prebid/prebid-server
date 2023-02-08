@@ -113,14 +113,6 @@ func NewVideoEndpoint(
  11. Build proper response format.
 */
 func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	start := time.Now()
-
-	vo := analytics.VideoObject{
-		Status:    http.StatusOK,
-		Errors:    make([]error, 0),
-		StartTime: start,
-	}
-
 	labels := metrics.Labels{
 		Source:        metrics.DemandUnknown,
 		RType:         metrics.ReqTypeVideo,
@@ -129,6 +121,13 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		RequestStatus: metrics.RequestStatusOK,
 	}
 
+	start := time.Now()
+
+	vo := analytics.VideoObject{
+		Status:    http.StatusOK,
+		Errors:    make([]error, 0),
+		StartTime: start,
+	}
 	debugQuery := r.URL.Query().Get("debug")
 	cacheTTL := int64(3600)
 	if deps.cfg.CacheURL.DefaultTTLs.Video > 0 {
