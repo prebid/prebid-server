@@ -121,16 +121,20 @@ func populateBidReqExt(bidRequest *openrtb2.BidRequest) error {
 		Id:      adapterId,
 		Version: adapterVersion,
 	}
+
 	undertoneBidderParamsJSON, err := json.Marshal(undertoneBidderParams)
-	if err == nil {
-		extRequestPrebid := &openrtb_ext.ExtRequestPrebid{BidderParams: undertoneBidderParamsJSON}
-		bidRequestExt := &BidRequestExt{Prebid: extRequestPrebid}
-		bidRequestExtJSON, err2 := json.Marshal(bidRequestExt)
-		if err2 == nil {
-			bidRequest.Ext = bidRequestExtJSON
-		}
+	if err != nil {
+		return err
 	}
-	return err
+
+	extRequestPrebid := &openrtb_ext.ExtRequestPrebid{BidderParams: undertoneBidderParamsJSON}
+	bidRequestExt := &BidRequestExt{Prebid: extRequestPrebid}
+	bidRequestExtJSON, err := json.Marshal(bidRequestExt)
+	if err != nil {
+		return err
+	}
+	bidRequest.Ext = bidRequestExtJSON
+	return nil
 }
 
 func populateSiteApp(bidRequest *openrtb2.BidRequest, publisherId int, site *openrtb2.Site, app *openrtb2.App) {
