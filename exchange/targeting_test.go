@@ -265,13 +265,20 @@ func mockServer(w http.ResponseWriter, req *http.Request) {
 }
 
 type TargetingTestData struct {
-	Description                string
-	TargetData                 targetData
-	Auction                    auction
-	IsApp                      bool
-	CategoryMapping            map[string]string
-	ExpectedBidTargetsByBidder map[string]map[openrtb_ext.BidderName]map[string]string
-	TruncateTargetAttr         *int
+	Description        string
+	TargetData         targetData
+	Auction            auction
+	IsApp              bool
+	CategoryMapping    map[string]string
+	ExpectedPbsBids    map[string]map[openrtb_ext.BidderName][]ExpectedPbsBid
+	TruncateTargetAttr *int
+	MultiBidMap        ExtMultiBidMap
+	DefaultBidLimitMin int
+}
+
+type ExpectedPbsBid struct {
+	BidTargets       map[string]string
+	TargetBidderCode string
 }
 
 var bid123 *openrtb2.Bid = &openrtb2.Bid{
@@ -284,6 +291,34 @@ var bid111 *openrtb2.Bid = &openrtb2.Bid{
 }
 var bid084 *openrtb2.Bid = &openrtb2.Bid{
 	Price: 0.84,
+}
+
+var bid1p001 *openrtb2.Bid = &openrtb2.Bid{
+	Price: 0.01,
+}
+
+var bid1p077 *openrtb2.Bid = &openrtb2.Bid{
+	Price: 0.77,
+}
+
+var bid1p120 *openrtb2.Bid = &openrtb2.Bid{
+	Price: 1.20,
+}
+
+var bid2p123 *openrtb2.Bid = &openrtb2.Bid{
+	Price: 1.23,
+}
+
+var bid2p144 *openrtb2.Bid = &openrtb2.Bid{
+	Price: 1.44,
+}
+
+var bid2p155 *openrtb2.Bid = &openrtb2.Bid{
+	Price: 1.55,
+}
+
+var bid2p166 *openrtb2.Bid = &openrtb2.Bid{
+	Price: 1.66,
 }
 
 var truncateTargetAttrValue10 int = 10
@@ -312,13 +347,17 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 				},
 			},
 		},
-		ExpectedBidTargetsByBidder: map[string]map[openrtb_ext.BidderName]map[string]string{
+		ExpectedPbsBids: map[string]map[openrtb_ext.BidderName][]ExpectedPbsBid{
 			"ImpId-1": {
-				openrtb_ext.BidderAppnexus: {
-					"hb_bidder": "appnexus",
-					"hb_pb":     "1.20",
+				openrtb_ext.BidderAppnexus: []ExpectedPbsBid{
+					{
+						BidTargets: map[string]string{
+							"hb_bidder": "appnexus",
+							"hb_pb":     "1.20",
+						},
+					},
 				},
-				openrtb_ext.BidderRubicon: {},
+				openrtb_ext.BidderRubicon: []ExpectedPbsBid{},
 			},
 		},
 		TruncateTargetAttr: nil,
@@ -343,15 +382,23 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 				},
 			},
 		},
-		ExpectedBidTargetsByBidder: map[string]map[openrtb_ext.BidderName]map[string]string{
+		ExpectedPbsBids: map[string]map[openrtb_ext.BidderName][]ExpectedPbsBid{
 			"ImpId-1": {
-				openrtb_ext.BidderAppnexus: {
-					"hb_bidder_appnexus": "appnexus",
-					"hb_pb_appnexus":     "1.20",
+				openrtb_ext.BidderAppnexus: []ExpectedPbsBid{
+					{
+						BidTargets: map[string]string{
+							"hb_bidder_appnexus": "appnexus",
+							"hb_pb_appnexus":     "1.20",
+						},
+					},
 				},
-				openrtb_ext.BidderRubicon: {
-					"hb_bidder_rubicon": "rubicon",
-					"hb_pb_rubicon":     "0.80",
+				openrtb_ext.BidderRubicon: []ExpectedPbsBid{
+					{
+						BidTargets: map[string]string{
+							"hb_bidder_rubicon": "rubicon",
+							"hb_pb_rubicon":     "0.80",
+						},
+					},
 				},
 			},
 		},
@@ -379,20 +426,28 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 				},
 			},
 		},
-		ExpectedBidTargetsByBidder: map[string]map[openrtb_ext.BidderName]map[string]string{
+		ExpectedPbsBids: map[string]map[openrtb_ext.BidderName][]ExpectedPbsBid{
 			"ImpId-1": {
-				openrtb_ext.BidderAppnexus: {
-					"hb_bidder":          "appnexus",
-					"hb_bidder_appnexus": "appnexus",
-					"hb_pb":              "1.20",
-					"hb_pb_appnexus":     "1.20",
-					"hb_format":          "banner",
-					"hb_format_appnexus": "banner",
+				openrtb_ext.BidderAppnexus: []ExpectedPbsBid{
+					{
+						BidTargets: map[string]string{
+							"hb_bidder":          "appnexus",
+							"hb_bidder_appnexus": "appnexus",
+							"hb_pb":              "1.20",
+							"hb_pb_appnexus":     "1.20",
+							"hb_format":          "banner",
+							"hb_format_appnexus": "banner",
+						},
+					},
 				},
-				openrtb_ext.BidderRubicon: {
-					"hb_bidder_rubicon": "rubicon",
-					"hb_pb_rubicon":     "0.80",
-					"hb_format_rubicon": "banner",
+				openrtb_ext.BidderRubicon: []ExpectedPbsBid{
+					{
+						BidTargets: map[string]string{
+							"hb_bidder_rubicon": "rubicon",
+							"hb_pb_rubicon":     "0.80",
+							"hb_format_rubicon": "banner",
+						},
+					},
 				},
 			},
 		},
@@ -424,22 +479,30 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 				bid111: "cacheme",
 			},
 		},
-		ExpectedBidTargetsByBidder: map[string]map[openrtb_ext.BidderName]map[string]string{
+		ExpectedPbsBids: map[string]map[openrtb_ext.BidderName][]ExpectedPbsBid{
 			"ImpId-1": {
-				openrtb_ext.BidderAppnexus: {
-					"hb_bidder_appnexus":   "appnexus",
-					"hb_pb_appnexus":       "1.20",
-					"hb_cache_id_appnexus": "55555",
-					"hb_cache_host_appnex": "cache.prebid.com",
-					"hb_cache_path_appnex": "cache",
+				openrtb_ext.BidderAppnexus: []ExpectedPbsBid{
+					{
+						BidTargets: map[string]string{
+							"hb_bidder_appnexus":   "appnexus",
+							"hb_pb_appnexus":       "1.20",
+							"hb_cache_id_appnexus": "55555",
+							"hb_cache_host_appnex": "cache.prebid.com",
+							"hb_cache_path_appnex": "cache",
+						},
+					},
 				},
-				openrtb_ext.BidderRubicon: {
-					"hb_bidder_rubicon":    "rubicon",
-					"hb_pb_rubicon":        "1.10",
-					"hb_cache_id_rubicon":  "cacheme",
-					"hb_deal_rubicon":      "mydeal",
-					"hb_cache_host_rubico": "cache.prebid.com",
-					"hb_cache_path_rubico": "cache",
+				openrtb_ext.BidderRubicon: []ExpectedPbsBid{
+					{
+						BidTargets: map[string]string{
+							"hb_bidder_rubicon":    "rubicon",
+							"hb_pb_rubicon":        "1.10",
+							"hb_cache_id_rubicon":  "cacheme",
+							"hb_deal_rubicon":      "mydeal",
+							"hb_cache_host_rubico": "cache.prebid.com",
+							"hb_cache_path_rubico": "cache",
+						},
+					},
 				},
 			},
 		},
@@ -461,11 +524,15 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 				},
 			},
 		},
-		ExpectedBidTargetsByBidder: map[string]map[openrtb_ext.BidderName]map[string]string{
+		ExpectedPbsBids: map[string]map[openrtb_ext.BidderName][]ExpectedPbsBid{
 			"ImpId-1": {
-				openrtb_ext.BidderAppnexus: {
-					"hb_bidder_appnexus": "appnexus",
-					"hb_pb_appnexus":     "1.20",
+				openrtb_ext.BidderAppnexus: []ExpectedPbsBid{
+					{
+						BidTargets: map[string]string{
+							"hb_bidder_appnexus": "appnexus",
+							"hb_pb_appnexus":     "1.20",
+						},
+					},
 				},
 			},
 		},
@@ -491,15 +558,23 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 				},
 			},
 		},
-		ExpectedBidTargetsByBidder: map[string]map[openrtb_ext.BidderName]map[string]string{
+		ExpectedPbsBids: map[string]map[openrtb_ext.BidderName][]ExpectedPbsBid{
 			"ImpId-1": {
-				openrtb_ext.BidderAppnexus: {
-					"hb_bidder_": "appnexus",
-					"hb_pb_appn": "1.20",
+				openrtb_ext.BidderAppnexus: []ExpectedPbsBid{
+					{
+						BidTargets: map[string]string{
+							"hb_bidder_": "appnexus",
+							"hb_pb_appn": "1.20",
+						},
+					},
 				},
-				openrtb_ext.BidderRubicon: {
-					"hb_bidder_": "rubicon",
-					"hb_pb_rubi": "0.80",
+				openrtb_ext.BidderRubicon: []ExpectedPbsBid{
+					{
+						BidTargets: map[string]string{
+							"hb_bidder_": "rubicon",
+							"hb_pb_rubi": "0.80",
+						},
+					},
 				},
 			},
 		},
@@ -525,15 +600,23 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 				},
 			},
 		},
-		ExpectedBidTargetsByBidder: map[string]map[openrtb_ext.BidderName]map[string]string{
+		ExpectedPbsBids: map[string]map[openrtb_ext.BidderName][]ExpectedPbsBid{
 			"ImpId-1": {
-				openrtb_ext.BidderAppnexus: {
-					"hb_bidder_appnexus": "appnexus",
-					"hb_pb_appnexus":     "1.20",
+				openrtb_ext.BidderAppnexus: []ExpectedPbsBid{
+					{
+						BidTargets: map[string]string{
+							"hb_bidder_appnexus": "appnexus",
+							"hb_pb_appnexus":     "1.20",
+						},
+					},
 				},
-				openrtb_ext.BidderRubicon: {
-					"hb_bidder_rubicon": "rubicon",
-					"hb_pb_rubicon":     "0.80",
+				openrtb_ext.BidderRubicon: []ExpectedPbsBid{
+					{
+						BidTargets: map[string]string{
+							"hb_bidder_rubicon": "rubicon",
+							"hb_pb_rubicon":     "0.80",
+						},
+					},
 				},
 			},
 		},
@@ -559,15 +642,23 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 				},
 			},
 		},
-		ExpectedBidTargetsByBidder: map[string]map[openrtb_ext.BidderName]map[string]string{
+		ExpectedPbsBids: map[string]map[openrtb_ext.BidderName][]ExpectedPbsBid{
 			"ImpId-1": {
-				openrtb_ext.BidderAppnexus: {
-					"hb_bidder_appnexus": "appnexus",
-					"hb_pb_appnexus":     "1.20",
+				openrtb_ext.BidderAppnexus: []ExpectedPbsBid{
+					{
+						BidTargets: map[string]string{
+							"hb_bidder_appnexus": "appnexus",
+							"hb_pb_appnexus":     "1.20",
+						},
+					},
 				},
-				openrtb_ext.BidderRubicon: {
-					"hb_bidder_rubicon": "rubicon",
-					"hb_pb_rubicon":     "0.80",
+				openrtb_ext.BidderRubicon: []ExpectedPbsBid{
+					{
+						BidTargets: map[string]string{
+							"hb_bidder_rubicon": "rubicon",
+							"hb_pb_rubicon":     "0.80",
+						},
+					},
 				},
 			},
 		},
@@ -593,13 +684,17 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 				},
 			},
 		},
-		ExpectedBidTargetsByBidder: map[string]map[openrtb_ext.BidderName]map[string]string{
+		ExpectedPbsBids: map[string]map[openrtb_ext.BidderName][]ExpectedPbsBid{
 			"ImpId-1": {
-				openrtb_ext.BidderAppnexus: {
-					"hb_bi": "appnexus",
-					"hb_pb": "1.20",
+				openrtb_ext.BidderAppnexus: []ExpectedPbsBid{
+					{
+						BidTargets: map[string]string{
+							"hb_bi": "appnexus",
+							"hb_pb": "1.20",
+						},
+					},
 				},
-				openrtb_ext.BidderRubicon: {},
+				openrtb_ext.BidderRubicon: []ExpectedPbsBid{},
 			},
 		},
 		TruncateTargetAttr: &truncateTargetAttrValue5,
@@ -624,13 +719,17 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 				},
 			},
 		},
-		ExpectedBidTargetsByBidder: map[string]map[openrtb_ext.BidderName]map[string]string{
+		ExpectedPbsBids: map[string]map[openrtb_ext.BidderName][]ExpectedPbsBid{
 			"ImpId-1": {
-				openrtb_ext.BidderAppnexus: {
-					"hb_bidder": "appnexus",
-					"hb_pb":     "1.20",
+				openrtb_ext.BidderAppnexus: []ExpectedPbsBid{
+					{
+						BidTargets: map[string]string{
+							"hb_bidder": "appnexus",
+							"hb_pb":     "1.20",
+						},
+					},
 				},
-				openrtb_ext.BidderRubicon: {},
+				openrtb_ext.BidderRubicon: []ExpectedPbsBid{},
 			},
 		},
 		TruncateTargetAttr: &truncateTargetAttrValue25,
@@ -655,16 +754,155 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 				},
 			},
 		},
-		ExpectedBidTargetsByBidder: map[string]map[openrtb_ext.BidderName]map[string]string{
+		ExpectedPbsBids: map[string]map[openrtb_ext.BidderName][]ExpectedPbsBid{
 			"ImpId-1": {
-				openrtb_ext.BidderAppnexus: {
-					"hb_bidder": "appnexus",
-					"hb_pb":     "1.20",
+				openrtb_ext.BidderAppnexus: []ExpectedPbsBid{
+					{
+						BidTargets: map[string]string{
+							"hb_bidder": "appnexus",
+							"hb_pb":     "1.20",
+						},
+					},
 				},
-				openrtb_ext.BidderRubicon: {},
+				openrtb_ext.BidderRubicon: []ExpectedPbsBid{},
 			},
 		},
 		TruncateTargetAttr: &truncateTargetAttrValueNegative,
+	},
+	{
+		Description: "Full basic targeting with multibid",
+		TargetData: targetData{
+			priceGranularity:  openrtb_ext.PriceGranularityFromString("med"),
+			includeWinners:    true,
+			includeBidderKeys: true,
+			includeFormat:     true,
+		},
+		Auction: auction{
+			winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
+				"ImpId-1": {
+					openrtb_ext.BidderAppnexus: {
+						{
+							Bid:     bid1p120,
+							BidType: openrtb_ext.BidTypeBanner,
+						},
+						{
+							Bid:     bid1p077,
+							BidType: openrtb_ext.BidTypeBanner,
+						},
+						{
+							Bid:     bid1p001,
+							BidType: openrtb_ext.BidTypeBanner,
+						},
+					},
+					openrtb_ext.BidderRubicon: {
+						{
+							Bid:     bid123,
+							BidType: openrtb_ext.BidTypeBanner,
+						},
+						{
+							Bid:     bid111,
+							BidType: openrtb_ext.BidTypeBanner,
+						},
+						{
+							Bid:     bid084,
+							BidType: openrtb_ext.BidTypeBanner,
+						},
+					},
+				},
+				"ImpId-2": {
+					openrtb_ext.BidderPubmatic: {
+						{
+							Bid:     bid2p166,
+							BidType: openrtb_ext.BidTypeBanner,
+						},
+						{
+							Bid:     bid2p155,
+							BidType: openrtb_ext.BidTypeBanner,
+						},
+						{
+							Bid:     bid2p144,
+							BidType: openrtb_ext.BidTypeBanner,
+						},
+						{
+							Bid:     bid2p123,
+							BidType: openrtb_ext.BidTypeBanner,
+						},
+					},
+				},
+			},
+		},
+		ExpectedPbsBids: map[string]map[openrtb_ext.BidderName][]ExpectedPbsBid{
+			"ImpId-1": {
+				openrtb_ext.BidderAppnexus: []ExpectedPbsBid{
+					{
+						BidTargets: map[string]string{
+							"hb_bidder_appnexus": "appnexus",
+							"hb_pb_appnexus":     "1.10",
+							"hb_format_appnexus": "banner",
+						},
+						TargetBidderCode: "appnexus",
+					},
+					{},
+					{},
+				},
+				openrtb_ext.BidderRubicon: []ExpectedPbsBid{
+					{
+						BidTargets: map[string]string{
+							"hb_bidder":         "rubicon",
+							"hb_bidder_rubicon": "rubicon",
+							"hb_pb":             "1.20",
+							"hb_pb_rubicon":     "1.20",
+							"hb_format":         "banner",
+							"hb_format_rubicon": "banner",
+						},
+					},
+					{},
+					{},
+				},
+			},
+			"ImpId-2": {
+				openrtb_ext.BidderPubmatic: []ExpectedPbsBid{
+					{
+						BidTargets: map[string]string{
+							"hb_bidder":          "pubmatic",
+							"hb_bidder_pubmatic": "pubmatic",
+							"hb_pb":              "1.60",
+							"hb_pb_pubmatic":     "1.60",
+							"hb_format":          "banner",
+							"hb_format_pubmatic": "banner",
+						},
+						TargetBidderCode: "pubmatic",
+					},
+					{
+						BidTargets: map[string]string{
+							"hb_bidder_pm2": "pm2",
+							"hb_pb_pm2":     "1.50",
+							"hb_format_pm2": "banner",
+						},
+						TargetBidderCode: "pm2",
+					},
+					{
+						BidTargets: map[string]string{
+							"hb_bidder_pm3": "pm3",
+							"hb_pb_pm3":     "1.40",
+							"hb_format_pm3": "banner",
+						},
+						TargetBidderCode: "pm3",
+					},
+					{},
+				},
+			},
+		},
+		TruncateTargetAttr: nil,
+		MultiBidMap: ExtMultiBidMap{
+			string(openrtb_ext.BidderPubmatic): &openrtb_ext.ExtMultiBid{
+				MaxBids:                getIntPtr(3),
+				TargetBidderCodePrefix: "pm",
+			},
+			string(openrtb_ext.BidderAppnexus): &openrtb_ext.ExtMultiBid{
+				MaxBids: getIntPtr(2),
+			},
+		},
 	},
 }
 
@@ -690,19 +928,20 @@ func TestSetTargeting(t *testing.T) {
 		}
 		auc.winningBids = winningBids
 		targData := test.TargetData
-		targData.setTargeting(auc, test.IsApp, test.CategoryMapping, test.TruncateTargetAttr, ExtMultiBidMap{}, 0)
-		for imp, targetsByBidder := range test.ExpectedBidTargetsByBidder {
-			for bidder, expected := range targetsByBidder {
-				assert.Len(t, auc.winningBidsByBidder[imp][bidder], 1) //until all tests are updated
-				assert.Equal(t,
-					expected,
-					auc.winningBidsByBidder[imp][bidder][0].BidTargets,
-					"Test: %s\nTargeting failed for bidder %s on imp %s.",
-					test.Description,
-					string(bidder),
-					imp)
+		targData.setTargeting(auc, test.IsApp, test.CategoryMapping, test.TruncateTargetAttr, test.MultiBidMap, test.DefaultBidLimitMin)
+		for imp, targetsByBidder := range test.ExpectedPbsBids {
+			for bidder, expectedTargets := range targetsByBidder {
+				for i, expected := range expectedTargets {
+					assert.Equal(t,
+						expected.BidTargets,
+						auc.winningBidsByBidder[imp][bidder][i].BidTargets,
+						"Test: %s\nTargeting failed for bidder %s on imp %s.",
+						test.Description,
+						string(bidder),
+						imp)
+					assert.Equal(t, expected.TargetBidderCode, auc.winningBidsByBidder[imp][bidder][i].TargetBidderCode)
+				}
 			}
 		}
 	}
-
 }

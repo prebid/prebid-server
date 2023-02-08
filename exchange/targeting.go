@@ -63,7 +63,7 @@ func (targData *targetData) setTargeting(auc *auction, isApp bool, categoryMappi
 					targetingBidderCode = openrtb_ext.BidderName(fmt.Sprintf("%s%d", bidderCodePrefix, i+1))
 				}
 
-				if maxBids > 1 && (bidderCodePrefix != "" || i == 0) {
+				if maxBids > 1 {
 					// update targeting key only if multibid is set for bidder
 					topBid.TargetBidderCode = targetingBidderCode.String()
 				}
