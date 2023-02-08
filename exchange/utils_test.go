@@ -3524,3 +3524,340 @@ func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
 		}
 	}
 }
+
+func Test_isBidderInExtAlternateBidderCodes(t *testing.T) {
+	type args struct {
+		adapter               string
+		currentMultiBidBidder string
+		adapterABC            *openrtb_ext.ExtAlternateBidderCodes
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "alternatebiddercodes not defined",
+			want: false,
+		},
+		{
+			name: "adapter not defined in alternatebiddercodes",
+			args: args{
+				adapter: string(openrtb_ext.BidderPubmatic),
+				adapterABC: &openrtb_ext.ExtAlternateBidderCodes{
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{string(openrtb_ext.BidderAppnexus): {}},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "adapter defined in alternatebiddercodes but currentMultiBidBidder not in AllowedBidders list",
+			args: args{
+				adapter:               string(openrtb_ext.BidderPubmatic),
+				currentMultiBidBidder: string(openrtb_ext.BidderGroupm),
+				adapterABC: &openrtb_ext.ExtAlternateBidderCodes{
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						string(openrtb_ext.BidderPubmatic): {
+							AllowedBidderCodes: []string{string(openrtb_ext.BidderAppnexus)},
+						},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "adapter defined in alternatebiddercodes with currentMultiBidBidder mentioned in AllowedBidders list",
+			args: args{
+				adapter:               string(openrtb_ext.BidderPubmatic),
+				currentMultiBidBidder: string(openrtb_ext.BidderGroupm),
+				adapterABC: &openrtb_ext.ExtAlternateBidderCodes{
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						string(openrtb_ext.BidderPubmatic): {
+							AllowedBidderCodes: []string{string(openrtb_ext.BidderGroupm)},
+						},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "adapter defined in alternatebiddercodes with AllowedBidders list as *",
+			args: args{
+				adapter:               string(openrtb_ext.BidderPubmatic),
+				currentMultiBidBidder: string(openrtb_ext.BidderGroupm),
+				adapterABC: &openrtb_ext.ExtAlternateBidderCodes{
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						string(openrtb_ext.BidderPubmatic): {
+							AllowedBidderCodes: []string{"*"},
+						},
+					},
+				},
+			},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isBidderInExtAlternateBidderCodes(tt.args.adapter, tt.args.currentMultiBidBidder, tt.args.adapterABC); got != tt.want {
+				t.Errorf("isBidderInExtAlternateBidderCodes() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_buildRequestExtMultiBid(t *testing.T) {
+	type args struct {
+		adapter     string
+		reqMultiBid []*openrtb_ext.ExtMultiBid
+		adapterABC  *openrtb_ext.ExtAlternateBidderCodes
+	}
+	tests := []struct {
+		name string
+		args args
+		want []*openrtb_ext.ExtMultiBid
+	}{
+		{
+			name: "multi-bid config not defined",
+			args: args{
+				adapter:     string(openrtb_ext.BidderPubmatic),
+				reqMultiBid: nil,
+			},
+			want: nil,
+		},
+		{
+			name: "adapter not defined in multi-bid config",
+			args: args{
+				adapter: string(openrtb_ext.BidderPubmatic),
+				reqMultiBid: []*openrtb_ext.ExtMultiBid{
+					{
+						Bidder:  string(openrtb_ext.BidderAppnexus),
+						MaxBids: getIntPtr(2),
+					},
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "adapter defined in multi-bid config as Bidder object along with other bidders",
+			args: args{
+				adapter: string(openrtb_ext.BidderPubmatic),
+				reqMultiBid: []*openrtb_ext.ExtMultiBid{
+					{
+						Bidder:  string(openrtb_ext.BidderAppnexus),
+						MaxBids: getIntPtr(3),
+					},
+					{
+						Bidder:  string(openrtb_ext.BidderPubmatic),
+						MaxBids: getIntPtr(2),
+					},
+					{
+						Bidders: []string{string(openrtb_ext.Bidder33Across), string(openrtb_ext.BidderRubicon)},
+						MaxBids: getIntPtr(2),
+					},
+				},
+			},
+			want: []*openrtb_ext.ExtMultiBid{
+				{
+					Bidder:  string(openrtb_ext.BidderPubmatic),
+					MaxBids: getIntPtr(2),
+				},
+			},
+		},
+		{
+			name: "adapter defined in multi-bid config as a entry of Bidders list along with other bidders",
+			args: args{
+				adapter: string(openrtb_ext.BidderRubicon),
+				reqMultiBid: []*openrtb_ext.ExtMultiBid{
+					{
+						Bidder:  string(openrtb_ext.BidderAppnexus),
+						MaxBids: getIntPtr(3),
+					},
+					{
+						Bidder:  string(openrtb_ext.BidderPubmatic),
+						MaxBids: getIntPtr(2),
+					},
+					{
+						Bidders: []string{string(openrtb_ext.Bidder33Across), string(openrtb_ext.BidderRubicon)},
+						MaxBids: getIntPtr(4),
+					},
+				},
+			},
+			want: []*openrtb_ext.ExtMultiBid{
+				{
+					Bidders: []string{string(openrtb_ext.BidderRubicon)},
+					MaxBids: getIntPtr(4),
+				},
+			},
+		},
+		{
+			name: "adapter defined in multi-bid config as Bidder object along with other bidders with alternateBiddercode",
+			args: args{
+				adapter: string(openrtb_ext.BidderPubmatic),
+				reqMultiBid: []*openrtb_ext.ExtMultiBid{
+					{
+						Bidder:  string(openrtb_ext.BidderGroupm),
+						MaxBids: getIntPtr(3),
+					},
+					{
+						Bidder:  string(openrtb_ext.BidderPubmatic),
+						MaxBids: getIntPtr(2),
+					},
+					{
+						Bidders: []string{string(openrtb_ext.Bidder33Across), string(openrtb_ext.BidderRubicon)},
+						MaxBids: getIntPtr(2),
+					},
+				},
+				adapterABC: &openrtb_ext.ExtAlternateBidderCodes{
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						string(openrtb_ext.BidderPubmatic): {
+							AllowedBidderCodes: []string{string(openrtb_ext.BidderGroupm)},
+						},
+					},
+				},
+			},
+			want: []*openrtb_ext.ExtMultiBid{
+				{
+					Bidder:  string(openrtb_ext.BidderGroupm),
+					MaxBids: getIntPtr(3),
+				},
+				{
+					Bidder:  string(openrtb_ext.BidderPubmatic),
+					MaxBids: getIntPtr(2),
+				},
+			},
+		},
+		{
+			name: "adapter defined in multi-bid config as a entry of Bidders list along with other bidders with alternateBiddercode",
+			args: args{
+				adapter: string(openrtb_ext.BidderAppnexus),
+				reqMultiBid: []*openrtb_ext.ExtMultiBid{
+					{
+						Bidder:  string(openrtb_ext.BidderGroupm),
+						MaxBids: getIntPtr(3),
+					},
+					{
+						Bidder:  string(openrtb_ext.BidderPubmatic),
+						MaxBids: getIntPtr(2),
+					},
+					{
+						Bidders: []string{string(openrtb_ext.Bidder33Across), string(openrtb_ext.BidderAppnexus)},
+						MaxBids: getIntPtr(4),
+					},
+				},
+				adapterABC: &openrtb_ext.ExtAlternateBidderCodes{
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						string(openrtb_ext.BidderAppnexus): {
+							AllowedBidderCodes: []string{string(openrtb_ext.BidderGroupm)},
+						},
+					},
+				},
+			},
+			want: []*openrtb_ext.ExtMultiBid{
+				{
+					Bidder:  string(openrtb_ext.BidderGroupm),
+					MaxBids: getIntPtr(3),
+				},
+				{
+					Bidders: []string{string(openrtb_ext.BidderAppnexus)},
+					MaxBids: getIntPtr(4),
+				},
+			},
+		},
+		{
+			name: "adapter defined in multi-bid config as Bidder object along with other bidders with alternateBiddercode.AllowedBidders as *",
+			args: args{
+				adapter: string(openrtb_ext.BidderPubmatic),
+				reqMultiBid: []*openrtb_ext.ExtMultiBid{
+					{
+						Bidder:  string(openrtb_ext.BidderGroupm),
+						MaxBids: getIntPtr(3),
+					},
+					{
+						Bidder:  string(openrtb_ext.BidderPubmatic),
+						MaxBids: getIntPtr(2),
+					},
+					{
+						Bidders: []string{string(openrtb_ext.Bidder33Across), string(openrtb_ext.BidderRubicon)},
+						MaxBids: getIntPtr(2),
+					},
+				},
+				adapterABC: &openrtb_ext.ExtAlternateBidderCodes{
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						string(openrtb_ext.BidderPubmatic): {
+							AllowedBidderCodes: []string{"*"},
+						},
+					},
+				},
+			},
+			want: []*openrtb_ext.ExtMultiBid{
+				{
+					Bidder:  string(openrtb_ext.BidderGroupm),
+					MaxBids: getIntPtr(3),
+				},
+				{
+					Bidder:  string(openrtb_ext.BidderPubmatic),
+					MaxBids: getIntPtr(2),
+				},
+				{
+					Bidders: []string{string(openrtb_ext.Bidder33Across)},
+					MaxBids: getIntPtr(2),
+				},
+				{
+					Bidders: []string{string(openrtb_ext.BidderRubicon)},
+					MaxBids: getIntPtr(2),
+				},
+			},
+		},
+		{
+			name: "adapter defined in multi-bid config as a entry of Bidders list along with other bidders with alternateBiddercode.AllowedBidders as *",
+			args: args{
+				adapter: string(openrtb_ext.BidderAppnexus),
+				reqMultiBid: []*openrtb_ext.ExtMultiBid{
+					{
+						Bidder:  string(openrtb_ext.BidderGroupm),
+						MaxBids: getIntPtr(3),
+					},
+					{
+						Bidder:  string(openrtb_ext.BidderPubmatic),
+						MaxBids: getIntPtr(2),
+					},
+					{
+						Bidders: []string{string(openrtb_ext.Bidder33Across), string(openrtb_ext.BidderAppnexus)},
+						MaxBids: getIntPtr(4),
+					},
+				},
+				adapterABC: &openrtb_ext.ExtAlternateBidderCodes{
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						string(openrtb_ext.BidderAppnexus): {
+							AllowedBidderCodes: []string{"*"},
+						},
+					},
+				},
+			},
+			want: []*openrtb_ext.ExtMultiBid{
+				{
+					Bidder:  string(openrtb_ext.BidderGroupm),
+					MaxBids: getIntPtr(3),
+				},
+				{
+					Bidder:  string(openrtb_ext.BidderPubmatic),
+					MaxBids: getIntPtr(2),
+				},
+				{
+					Bidders: []string{string(openrtb_ext.Bidder33Across)},
+					MaxBids: getIntPtr(4),
+				},
+				{
+					Bidders: []string{string(openrtb_ext.BidderAppnexus)},
+					MaxBids: getIntPtr(4),
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := buildRequestExtMultiBid(tt.args.adapter, tt.args.reqMultiBid, tt.args.adapterABC)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
