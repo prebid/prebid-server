@@ -3506,7 +3506,7 @@ func TestApplyDealSupport(t *testing.T) {
 			},
 		}
 
-		dealErrs := applyDealSupport(bidRequest, auc, bidCategory, ExtMultiBidMap{})
+		dealErrs := applyDealSupport(bidRequest, auc, bidCategory, nil)
 
 		assert.Equal(t, test.expectedHbPbCatDur, bidCategory[auc.winningBidsByBidder["imp_id1"][bidderName][0].Bid.ID], test.description)
 		assert.Equal(t, test.expectedDealTierSatisfied, auc.winningBidsByBidder["imp_id1"][bidderName][0].DealTierSatisfied, "expectedDealTierSatisfied=%v when %v", test.expectedDealTierSatisfied, test.description)
@@ -3516,12 +3516,14 @@ func TestApplyDealSupport(t *testing.T) {
 	}
 }
 
+var getIntPtr = func(m int) *int { return &m }
+
 func TestApplyDealSupportMultiBid(t *testing.T) {
 	type args struct {
 		bidRequest  *openrtb2.BidRequest
 		auc         *auction
 		bidCategory map[string]string
-		multiBid    ExtMultiBidMap
+		multiBid    map[string]openrtb_ext.ExtMultiBid
 	}
 	type want struct {
 		errs                      []error
@@ -3563,7 +3565,7 @@ func TestApplyDealSupportMultiBid(t *testing.T) {
 					"123456": "12.00_movies_30s",
 					"789101": "12.00_movies_30s",
 				},
-				multiBid: ExtMultiBidMap{},
+				multiBid: nil,
 			},
 			want: want{
 				errs: []error{},
@@ -3609,9 +3611,10 @@ func TestApplyDealSupportMultiBid(t *testing.T) {
 					"123456": "12.00_movies_30s",
 					"789101": "12.00_movies_30s",
 				},
-				multiBid: ExtMultiBidMap{
-					"appnexus": &openrtb_ext.ExtMultiBid{
+				multiBid: map[string]openrtb_ext.ExtMultiBid{
+					"appnexus": {
 						TargetBidderCodePrefix: "appN",
+						MaxBids:                getIntPtr(2),
 					},
 				},
 			},
@@ -3659,8 +3662,8 @@ func TestApplyDealSupportMultiBid(t *testing.T) {
 					"123456": "12.00_movies_30s",
 					"789101": "12.00_movies_30s",
 				},
-				multiBid: ExtMultiBidMap{
-					"appnexus": &openrtb_ext.ExtMultiBid{
+				multiBid: map[string]openrtb_ext.ExtMultiBid{
+					"appnexus": {
 						MaxBids: getIntPtr(2),
 					},
 				},
@@ -4936,7 +4939,7 @@ type exchangeSpec struct {
 	HostConfigBidValidation    config.Validations     `json:"host_bid_validations"`
 	AccountConfigBidValidation config.Validations     `json:"account_bid_validations"`
 	FledgeEnabled              bool                   `json:"fledge_enabled,omitempty"`
-	AccountMaxBid              int                    `mapstructure:"default_bid_limit_min" json:"default_bid_limit_min"`
+	AccountMaxBid              int                    `json:"default_bid_limit_min"`
 }
 
 type exchangeRequest struct {

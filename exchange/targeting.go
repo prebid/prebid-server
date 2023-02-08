@@ -36,37 +36,28 @@ type targetData struct {
 // The one exception is the `hb_cache_id` key. Since our APIs explicitly document cache keys to be on a "best effort" basis,
 // it's ok if those stay in the auction. For now, this method implements a very naive cache strategy.
 // In the future, we should implement a more clever retry & backoff strategy to balance the success rate & performance.
-func (targData *targetData) setTargeting(auc *auction, isApp bool, categoryMapping map[string]string, truncateTargetAttr *int, multiBidMap ExtMultiBidMap, accountMaxBids int) {
+func (targData *targetData) setTargeting(auc *auction, isApp bool, categoryMapping map[string]string, truncateTargetAttr *int, multiBidMap map[string]openrtb_ext.ExtMultiBid, accountMaxBids int) {
 	for impId, topBidsPerImp := range auc.winningBidsByBidder {
 		overallWinner := auc.winningBids[impId]
 		for originalBidderName, topBidsPerBidder := range topBidsPerImp {
 			targetingBidderCode := originalBidderName
-
-			var bidderCodePrefix string
-			maxBids := 1
-			if multiBid, ok := multiBidMap[originalBidderName.String()]; ok {
-				bidderCodePrefix = multiBid.TargetBidderCodePrefix
-				maxBids = *multiBid.MaxBids
-			}
+			bidderCodePrefix, maxBids := getMultiBidMeta(multiBidMap, originalBidderName.String())
 
 			for i, topBid := range topBidsPerBidder {
-				if i == maxBids {
+				if i == maxBids || // limit targeting keys to maxBids (default 1 bid),
+					(i == 1 && bidderCodePrefix == "") { // do not apply targeting for more than 1 bid if bidderCodePrefix is not defined.
 					break
 				}
 
-				isOverallWinner := overallWinner == topBid
-				if i > 0 {
-					if bidderCodePrefix == "" {
-						// apply targeting keys to only first bid if multibid is not enabled for this bidders
-						continue // cannot break, need to delete the extra-bids
-					}
+				if i > 0 { // bidderCode is used for first bid, generated bidderCodePrefix for following bids
 					targetingBidderCode = openrtb_ext.BidderName(fmt.Sprintf("%s%d", bidderCodePrefix, i+1))
 				}
 
-				if maxBids > 1 {
-					// update targeting key only if multibid is set for bidder
+				if maxBids > openrtb_ext.DefaultBidLimit { // add targetingbiddercode only if multibid is set for this bidder
 					topBid.TargetBidderCode = targetingBidderCode.String()
 				}
+
+				isOverallWinner := overallWinner == topBid
 
 				targets := make(map[string]string, 10)
 				if cpm, ok := auc.roundedPrices[topBid]; ok {
@@ -132,4 +123,14 @@ func makeHbSize(bid *openrtb2.Bid) string {
 		return strconv.FormatInt(bid.W, 10) + "x" + strconv.FormatInt(bid.H, 10)
 	}
 	return ""
+}
+
+func getMultiBidMeta(multiBidMap map[string]openrtb_ext.ExtMultiBid, bidder string) (string, int) {
+	if multiBidMap != nil {
+		if multiBid, ok := multiBidMap[bidder]; ok {
+			return multiBid.TargetBidderCodePrefix, *multiBid.MaxBids
+		}
+	}
+
+	return "", openrtb_ext.DefaultBidLimit
 }

@@ -894,17 +894,3 @@ func WrapJSONInData(data []byte) []byte {
 	res = append(res, []byte(`}`)...)
 	return res
 }
-
-func getExtMultiBidData(requestExt *openrtb_ext.ExtRequest) (multiBidMap ExtMultiBidMap, errs []error) {
-	multiBidMap = make(ExtMultiBidMap)
-
-	if requestExt == nil {
-		return
-	}
-
-	for _, multiBid := range requestExt.Prebid.Multibid {
-		errs = append(errs, multiBidMap.Add(multiBid)...)
-	}
-
-	return
-}

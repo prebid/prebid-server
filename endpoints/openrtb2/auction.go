@@ -711,8 +711,8 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 		return append(errL, errors.New("request.site or request.app must be defined, but not both."))
 	}
 
-	if err := validateRequestExt(req); err != nil {
-		return append(errL, err)
+	if errs := validateRequestExt(req); err != nil {
+		return append(errL, errs...)
 	}
 
 	if err := deps.validateSite(req); err != nil {
@@ -1492,18 +1492,18 @@ func (deps *endpointDeps) validateAliasesGVLIDs(aliasesGVLIDs map[string]uint16,
 	return nil
 }
 
-func validateRequestExt(req *openrtb_ext.RequestWrapper) error {
+func validateRequestExt(req *openrtb_ext.RequestWrapper) []error {
 	reqExt, err := req.GetRequestExt()
 	if err != nil {
-		return err
+		return []error{err}
 	}
 
 	prebid := reqExt.GetPrebid()
 	if prebid != nil && prebid.Cache != nil && (prebid.Cache.Bids == nil && prebid.Cache.VastXML == nil) {
-		return errors.New(`request.ext is invalid: request.ext.prebid.cache requires one of the "bids" or "vastxml" properties`)
+		return []error{errors.New(`request.ext is invalid: request.ext.prebid.cache requires one of the "bids" or "vastxml" properties`)}
 	}
 
-	return nil
+	return openrtb_ext.ValidateAndBuildExtMultiBidMap(prebid)
 }
 
 func (deps *endpointDeps) validateSite(req *openrtb_ext.RequestWrapper) error {

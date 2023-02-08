@@ -363,16 +363,13 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		r.HookExecutor.ExecuteAllProcessedBidResponsesStage(adapterBids)
 
 		if targData != nil {
-			multiBid, multiBidErrs := getExtMultiBidData(requestExt)
-			errs = append(errs, multiBidErrs...)
-
 			// A non-nil auction is only needed if targeting is active. (It is used below this block to extract cache keys)
 			auc = newAuction(adapterBids, len(r.BidRequestWrapper.Imp), targData.preferDeals)
 			auc.validateAndUpdateMultiBid(adapterBids, targData.preferDeals, r.Account.DefaultBidLimitMin)
 			auc.setRoundedPrices(targData.priceGranularity)
 
 			if requestExt.Prebid.SupportDeals {
-				dealErrs := applyDealSupport(r.BidRequestWrapper.BidRequest, auc, bidCategory, multiBid)
+				dealErrs := applyDealSupport(r.BidRequestWrapper.BidRequest, auc, bidCategory, requestExt.Prebid.MultibidMap)
 				errs = append(errs, dealErrs...)
 			}
 
@@ -391,7 +388,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 				errs = append(errs, cacheErrs...)
 			}
 
-			targData.setTargeting(auc, r.BidRequestWrapper.BidRequest.App != nil, bidCategory, r.Account.TruncateTargetAttribute, multiBid, r.Account.DefaultBidLimitMin)
+			targData.setTargeting(auc, r.BidRequestWrapper.BidRequest.App != nil, bidCategory, r.Account.TruncateTargetAttribute, requestExt.Prebid.MultibidMap, r.Account.DefaultBidLimitMin)
 		}
 		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, responseDebugAllow, requestExt.Prebid.Passthrough, fledge, errs)
 	} else {
@@ -467,17 +464,17 @@ func recordImpMetrics(bidRequest *openrtb2.BidRequest, metricsEngine metrics.Met
 }
 
 // applyDealSupport updates targeting keys with deal prefixes if minimum deal tier exceeded
-func applyDealSupport(bidRequest *openrtb2.BidRequest, auc *auction, bidCategory map[string]string, multiBid ExtMultiBidMap) []error {
+func applyDealSupport(bidRequest *openrtb2.BidRequest, auc *auction, bidCategory map[string]string, multiBid map[string]openrtb_ext.ExtMultiBid) []error {
 	errs := []error{}
 	impDealMap := getDealTiers(bidRequest)
 
 	for impID, topBidsPerImp := range auc.winningBidsByBidder {
 		impDeal := impDealMap[impID]
 		for bidder, topBidsPerBidder := range topBidsPerImp {
+			maxBid := bidsToUpdate(multiBid, bidder.String())
+
 			for i, topBid := range topBidsPerBidder {
-				bidderMultiBid, ok := multiBid[bidder.String()]
-				if i > 0 && (!ok || bidderMultiBid.TargetBidderCodePrefix == "") {
-					// For 2nd and the following bids, updateHbPbCatDur only if this bidder's multibid config is defined.
+				if i == maxBid {
 					break
 				}
 				if topBid.DealPriority > 0 {
@@ -492,6 +489,18 @@ func applyDealSupport(bidRequest *openrtb2.BidRequest, auc *auction, bidCategory
 	}
 
 	return errs
+}
+
+// By default, update 1 bid,
+// For 2nd and the following bids, updateHbPbCatDur only if this bidder's multibid config is fully defined.
+func bidsToUpdate(multiBid map[string]openrtb_ext.ExtMultiBid, bidder string) int {
+	if multiBid != nil {
+		if bidderMultiBid, ok := multiBid[bidder]; ok && bidderMultiBid.TargetBidderCodePrefix != "" {
+			return *bidderMultiBid.MaxBids
+		}
+	}
+
+	return openrtb_ext.DefaultBidLimit
 }
 
 // getDealTiers creates map of impression to bidder deal tier configuration

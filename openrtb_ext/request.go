@@ -73,7 +73,8 @@ type ExtRequestPrebid struct {
 	// any other value or an empty string disables trace output at all.
 	Trace string `json:"trace,omitempty"`
 
-	Multibid []*ExtMultiBid `json:"multibid,omitempty"`
+	Multibid    []*ExtMultiBid         `json:"multibid,omitempty"`
+	MultibidMap map[string]ExtMultiBid `json:"-"`
 }
 
 // Experiment defines if experimental features are available for the request

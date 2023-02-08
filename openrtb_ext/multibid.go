@@ -1,18 +1,25 @@
-package exchange
+package openrtb_ext
 
-import (
-	"fmt"
-
-	"github.com/prebid/prebid-server/openrtb_ext"
-)
+import "fmt"
 
 const DefaultBidLimit = 1
 const MaxBidLimit = 9
 
-type ExtMultiBidMap map[string]*openrtb_ext.ExtMultiBid
+func ValidateAndBuildExtMultiBidMap(prebid *ExtRequestPrebid) []error {
+	if prebid.Multibid == nil {
+		return nil
+	}
 
-// Validate and add multiBid value
-func (mb ExtMultiBidMap) Add(multiBid *openrtb_ext.ExtMultiBid) []error {
+	var errs []error
+	for _, multiBid := range prebid.Multibid {
+		errs = append(errs, addMultiBid(prebid.MultibidMap, multiBid)...)
+	}
+
+	return errs
+}
+
+// Validate and add multiBid
+func addMultiBid(multiBidMap map[string]ExtMultiBid, multiBid *ExtMultiBid) []error {
 	errs := make([]error, 0)
 
 	// If maxbids is not specified, ignore whole block and add warning when in debug mode
@@ -35,7 +42,7 @@ func (mb ExtMultiBidMap) Add(multiBid *openrtb_ext.ExtMultiBid) []error {
 
 	// Prefer Bidder over []Bidders
 	if multiBid.Bidder != "" {
-		if _, ok := mb[multiBid.Bidder]; ok {
+		if _, ok := multiBidMap[multiBid.Bidder]; ok {
 			errs = append(errs, fmt.Errorf("multiBid already defined for %s, ignoring this instance %v", multiBid.Bidder, multiBid))
 			return errs
 		}
@@ -44,10 +51,10 @@ func (mb ExtMultiBidMap) Add(multiBid *openrtb_ext.ExtMultiBid) []error {
 			errs = append(errs, fmt.Errorf("ignoring bidders from %v", multiBid))
 			multiBid.Bidders = nil
 		}
-		mb[multiBid.Bidder] = multiBid
+		multiBidMap[multiBid.Bidder] = *multiBid
 	} else if len(multiBid.Bidders) > 0 {
 		for _, bidder := range multiBid.Bidders {
-			if _, ok := mb[bidder]; ok {
+			if _, ok := multiBidMap[bidder]; ok {
 				errs = append(errs, fmt.Errorf("multiBid already defined for %s, ignoring this instance %v", bidder, multiBid))
 				continue
 			}
@@ -56,18 +63,10 @@ func (mb ExtMultiBidMap) Add(multiBid *openrtb_ext.ExtMultiBid) []error {
 				errs = append(errs, fmt.Errorf("ignoring targetbiddercodeprefix for %v", multiBid))
 				multiBid.TargetBidderCodePrefix = ""
 			}
-			mb[bidder] = multiBid
+			multiBidMap[bidder] = *multiBid
 		}
 	} else {
 		errs = append(errs, fmt.Errorf("bidder(s) not specified %v", multiBid))
 	}
 	return errs
-}
-
-// Get multi-bid limit for this bidder
-func (mb *ExtMultiBidMap) GetMaxBids(bidder string) int {
-	if maxBid, ok := (*mb)[bidder]; ok {
-		return *maxBid.MaxBids
-	}
-	return DefaultBidLimit
 }
