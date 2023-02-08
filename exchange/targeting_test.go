@@ -452,12 +452,12 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 			includeBidderKeys: true,
 		},
 		Auction: auction{
-			winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*entities.PbsOrtbBid{
+			winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
 				"ImpId-1": {
-					openrtb_ext.BidderAppnexus: {
+					openrtb_ext.BidderAppnexus: {{
 						Bid:     bid123,
 						BidType: openrtb_ext.BidTypeBanner,
-					},
+					}},
 				},
 			},
 		},
