@@ -335,7 +335,7 @@
                   "cid": "test_cid",
                   "crid": "test_crid",
                   "dealid": "test_dealid",
-                  "admobject": {
+                  "adm_native": {
                     "property1": "value1"
                   },
                   "ext": {
