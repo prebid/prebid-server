@@ -1,0 +1,92 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Rubicon Adapter Params",
+  "description": "A schema which validates params accepted by the Rubicon adapter",
+  "type": "object",
+  "properties": {
+    "accountId": {
+      "type": [
+        "integer",
+        "string"
+      ],
+      "pattern": "^\\d+$",
+      "minimum": 1,
+      "description": "An ID which identifies the publisher's account"
+    },
+    "siteId": {
+      "type": [
+        "integer",
+        "string"
+      ],
+      "pattern": "^\\d+$",
+      "minimum": 1,
+      "description": "An ID which identifies the site selling the impression"
+    },
+    "zoneId": {
+      "type": [
+        "integer",
+        "string"
+      ],
+      "pattern": "^\\d+$",
+      "minimum": 1,
+      "description": "An ID which identifies the sub-section of the site where the impression is located"
+    },
+    "inventory": {
+      "type": "object",
+      "description": "An object defining arbitrary targeting key/value pairs related to the page",
+      "additionalProperties": {
+        "type": "array"
+      }
+    },
+    "bidonmultiformat": {
+      "type": "boolean",
+      "description": "It determines if the request should be processed in multi format way."
+    },
+    "visitor": {
+      "type": "object",
+      "description": "An object defining arbitrary targeting key/value pairs related to the visitor",
+      "additionalProperties": {
+        "type": "array"
+      }
+    },
+    "pchain": {
+      "type": "string",
+      "description": "A payment ID chain string"
+    },
+    "video": {
+      "type": "object",
+      "description": "An object defining additional Rubicon video parameters",
+      "properties": {
+        "language": {
+          "type": "string",
+          "description": "Language of the ad - should match content video"
+        },
+        "playerHeight": {
+          "type": ["integer", "string"],
+          "description": "Height in pixels of the video player"
+        },
+        "playerWidth": {
+          "type": ["integer", "string"],
+          "description": "Width in pixels of the video player"
+        },
+        "size_id": {
+          "type": "integer",
+          "description": "Rubicon size_id, used to describe type of video ad (preroll, postroll, etc)"
+        },
+        "skip": {
+          "type": "integer",
+          "description": "Can this ad be skipped (0 = no, 1 = yes)"
+        },
+        "skipdelay": {
+          "type": "integer",
+          "description": "number of seconds until the ad can be skipped"
+        }
+      }
+    }
+  },
+  "required": [
+    "accountId",
+    "siteId",
+    "zoneId"
+  ]
+}

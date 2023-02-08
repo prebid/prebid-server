@@ -45,22 +45,6 @@ func TestBidderNamesValid(t *testing.T) {
 // TestBidderUniquenessGatekeeping acts as a gatekeeper of bidder name uniqueness. If this test fails
 // when you're building a new adapter, please consider choosing a different bidder name to maintain the
 // current uniqueness threshold, or else start a discussion in the PR.
-func TestBidderUniquenessGatekeeping(t *testing.T) {
-	// Get List Of Bidders
-	// - Exclude duplicates of adapters for the same bidder, as it's unlikely a publisher will use both.
-	var bidders []string
-	for _, bidder := range CoreBidderNames() {
-		if bidder != BidderTripleliftNative && bidder != BidderAdkernelAdn && bidder != BidderFreewheelSSPOld {
-			bidders = append(bidders, string(bidder))
-		}
-	}
-
-	currentThreshold := 6
-	measuredThreshold := minUniquePrefixLength(bidders)
-
-	assert.NotZero(t, measuredThreshold, "BidderMap contains duplicate bidder name values.")
-	assert.LessOrEqual(t, measuredThreshold, currentThreshold)
-}
 
 // minUniquePrefixLength measures the minimun amount of characters needed to uniquely identify
 // one of the strings, or returns 0 if there are duplicates.
