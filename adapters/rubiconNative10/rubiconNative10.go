@@ -406,6 +406,10 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 				errs = append(errs, err)
 				continue
 			}
+			requestNative = translate10(requestNative)
+			native.Ver = "1.0"
+			native.Request = ""
+
 			imp.Native = native
 			imp.Video = nil
 			impType = openrtb_ext.BidTypeNative
@@ -484,6 +488,34 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 	}
 
 	return requestData, errs
+}
+
+/*
+ * translate native 1.2 -> 1.0
+ * at least enough for dianomi
+ */
+func translate10(requestNative map[string]interface{}) map[string]interface{} {
+	requestNative10 := make(map[string]interface{})
+	requestNative10["layout"] = 6
+	requestNative10["adunit"] = 4
+
+	// seq optional
+	seq, ok := requestNative["seq"].(float64)
+	if ok {
+		requestNative10["seq"] = seq
+	}
+
+	// assets required
+	requestNative10["assets"] = requestNative["assets"]
+	// ext.privacy optional
+	privacy, ok := requestNative["privacy"].(float64)
+	if ok {
+		ext := make(map[string]float64)
+		ext["privacy"] = privacy
+		requestNative10["ext"] = ext
+	}
+
+	return requestNative10
 }
 
 func createImpsToExtMap(imps []openrtb2.Imp) (map[*openrtb2.Imp]rubiconExtImpBidder, []error) {
@@ -981,6 +1013,7 @@ func setImpNative(jsonData []byte, requestNative map[string]interface{}) ([]byte
 	}
 
 	nativeMap["request_native"] = requestNative
+	delete(nativeMap, "request")
 
 	if jsonReEncoded, err := json.Marshal(jsonMap); err == nil {
 		return jsonReEncoded, nil
