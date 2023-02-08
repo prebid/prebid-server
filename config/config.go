@@ -1000,7 +1000,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("account_required", false)
 	v.SetDefault("account_defaults.disabled", false)
 	v.SetDefault("account_defaults.debug_allow", true)
-	v.SetDefault("account_defaults.price_floors.enabled", true)
+	v.SetDefault("account_defaults.price_floors.enabled", false)
 	v.SetDefault("account_defaults.price_floors.enforce_floors_rate", 100)
 	v.SetDefault("account_defaults.price_floors.adjust_for_bid_adjustment", true)
 	v.SetDefault("account_defaults.price_floors.enforce_deal_floors", false)

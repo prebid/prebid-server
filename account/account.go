@@ -15,14 +15,6 @@ import (
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 )
 
-type AccountPriceFloors struct {
-	Enabled           bool `mapstructure:"enabled" json:"enabled"`
-	EnforceFloorRate  int  `mapstructure:"enforce_floors_rate" json:"enforce_floors_rate"`
-	BidAdjustment     bool `mapstructure:"adjust_for_bid_adjustment" json:"adjust_for_bid_adjustment"`
-	EnforceDealFloors bool `mapstructure:"enforce_deal_floors" json:"enforce_deal_floors"`
-	UseDynamicData    bool `mapstructure:"use_dynamic_data" json:"use_dynamic_data"`
-}
-
 // GetAccount looks up the config.Account object referenced by the given accountID, with access rules applied
 func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_requests.AccountFetcher, accountID string) (account *config.Account, errs []error) {
 	// Check BlacklistedAcctMap until we have deprecated it
