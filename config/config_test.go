@@ -860,6 +860,11 @@ func TestBidderInfoFromEnv(t *testing.T) {
 	} else {
 		defer os.Unsetenv("PBS_ADAPTERS_BIDDER1_USERSYNC_REDIRECT_URL")
 	}
+	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_BIDDER1_OPENRTB_VERSION"); ok {
+		defer os.Setenv("PBS_ADAPTERS_BIDDER1_OPENRTB_VERSION", oldval)
+	} else {
+		defer os.Unsetenv("PBS_ADAPTERS_BIDDER1_OPENRTB_VERSION")
+	}
 
 	// set new
 	os.Setenv("PBS_ADAPTERS_BIDDER1_DISABLED", "true")
@@ -870,6 +875,7 @@ func TestBidderInfoFromEnv(t *testing.T) {
 	os.Setenv("PBS_ADAPTERS_BIDDER1_EXPERIMENT_ADSCERT_ENABLED", "true")
 	os.Setenv("PBS_ADAPTERS_BIDDER1_XAPI_USERNAME", "username_override")
 	os.Setenv("PBS_ADAPTERS_BIDDER1_USERSYNC_REDIRECT_URL", "http://some.url/sync?redirect={{.RedirectURL}}")
+	os.Setenv("PBS_ADAPTERS_BIDDER1_OPENRTB_VERSION", "2.6")
 
 	cfg, _ := newDefaultConfig(t)
 
@@ -882,6 +888,8 @@ func TestBidderInfoFromEnv(t *testing.T) {
 
 	assert.Equal(t, true, cfg.BidderInfos["bidder1"].Experiment.AdsCert.Enabled)
 	assert.Equal(t, "username_override", cfg.BidderInfos["bidder1"].XAPI.Username)
+
+	assert.Equal(t, "2.6", cfg.BidderInfos["bidder1"].OpenRTB.Version)
 }
 
 func TestMigrateConfigPurposeOneTreatment(t *testing.T) {

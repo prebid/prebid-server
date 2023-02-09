@@ -161,7 +161,7 @@ type rubiconSeatBid struct {
 
 type rubiconBid struct {
 	openrtb2.Bid
-	AdmObject json.RawMessage `json:"admobject,omitempty"`
+	AdmNative json.RawMessage `json:"adm_native,omitempty"`
 }
 
 type extPrebid struct {
@@ -1113,7 +1113,7 @@ func resolveAdm(bid rubiconBid) string {
 		return bidAdm
 	}
 
-	admObject := bid.AdmObject
+	admObject := bid.AdmNative
 	admObjectAsBytes, err := json.Marshal(&admObject)
 	if err != nil {
 		return ""
