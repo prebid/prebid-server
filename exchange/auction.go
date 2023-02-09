@@ -148,7 +148,7 @@ func isNewWinningBid(bid, wbid *openrtb2.Bid, preferDeals bool) bool {
 	return bid.Price > wbid.Price
 }
 
-func (a *auction) validateAndUpdateMultiBid(adapterBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, preferDeals bool, accountMaxBids int) {
+func (a *auction) validateAndUpdateMultiBid(adapterBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, preferDeals bool, accountDefaultBidLimit int) {
 	bidsDropped := false
 	// sort bids for multibid targeting
 	for _, topBidsPerBidder := range a.winningBidsByBidder {
@@ -157,16 +157,15 @@ func (a *auction) validateAndUpdateMultiBid(adapterBids map[openrtb_ext.BidderNa
 				return isNewWinningBid(topBids[i].Bid, topBids[j].Bid, preferDeals)
 			})
 
-			if accountMaxBids != 0 && len(topBids) > accountMaxBids {
-				bidsDropped = true
-
-				// mark drop-candidate bid and remove its reference (avoid mem leak)
-				for i := accountMaxBids; i < len(topBids); i++ {
+			// assert hard limit on bids count per imp, per adapter. ()
+			if accountDefaultBidLimit != 0 && len(topBids) > accountDefaultBidLimit {
+				for i := accountDefaultBidLimit; i < len(topBids); i++ {
 					topBids[i].Bid = nil
 					topBids[i] = nil
+					bidsDropped = true // mark drop-candidate bid and remove its reference (avoid mem leak)
 				}
 
-				topBidsPerBidder[bidder] = topBids[:accountMaxBids]
+				topBidsPerBidder[bidder] = topBids[:accountDefaultBidLimit]
 			}
 		}
 	}
@@ -174,7 +173,7 @@ func (a *auction) validateAndUpdateMultiBid(adapterBids map[openrtb_ext.BidderNa
 	if bidsDropped { // remove the marked bids from original references
 		for _, seatBid := range adapterBids {
 			if seatBid != nil {
-				bids := make([]*entities.PbsOrtbBid, 0, accountMaxBids)
+				bids := make([]*entities.PbsOrtbBid, 0, accountDefaultBidLimit)
 				for i := 0; i < len(seatBid.Bids); i++ {
 					if seatBid.Bids[i].Bid != nil {
 						bids = append(bids, seatBid.Bids[i])

@@ -711,8 +711,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 		return append(errL, errors.New("request.site or request.app must be defined, but not both."))
 	}
 
-	errs := validateRequestExt(req)
-	if len(errs) != 0 {
+	if errs := validateRequestExt(req); len(errs) != 0 {
 		return append(errL, errs...)
 	}
 
@@ -1515,6 +1514,7 @@ func validateRequestExt(req *openrtb_ext.RequestWrapper) []error {
 			})
 		}
 
+		// update the downstream multibid to avoid passing unvalidated ext to bidders, etc.
 		prebid.MultiBid = validatedMultiBids
 		reqExt.SetPrebid(prebid)
 	}

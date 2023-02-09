@@ -650,9 +650,9 @@ func Test_auction_validateAndUpdateMultiBid(t *testing.T) {
 		vastCacheIds        map[*openrtb2.Bid]string
 	}
 	type args struct {
-		adapterBids    map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid
-		preferDeals    bool
-		accountMaxBids int
+		adapterBids            map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid
+		preferDeals            bool
+		accountDefaultBidLimit int
 	}
 	type want struct {
 		winningBidsByBidder map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid
@@ -691,8 +691,8 @@ func Test_auction_validateAndUpdateMultiBid(t *testing.T) {
 						Bids: []*entities.PbsOrtbBid{&bid1p088d, &bid1p123, &bid2p155, &bid2p166},
 					},
 				},
-				accountMaxBids: 0,
-				preferDeals:    true,
+				accountDefaultBidLimit: 0,
+				preferDeals:            true,
 			},
 			want: want{
 				winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
@@ -742,8 +742,8 @@ func Test_auction_validateAndUpdateMultiBid(t *testing.T) {
 						Bids: []*entities.PbsOrtbBid{&bid1p088d, &bid1p123, &bid2p155, &bid2p166},
 					},
 				},
-				accountMaxBids: 3,
-				preferDeals:    true,
+				accountDefaultBidLimit: 3,
+				preferDeals:            true,
 			},
 			want: want{
 				winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
@@ -793,8 +793,8 @@ func Test_auction_validateAndUpdateMultiBid(t *testing.T) {
 						Bids: []*entities.PbsOrtbBid{&bid1p088d, &bid1p123, &bid2p155, &bid2p166},
 					},
 				},
-				accountMaxBids: 2,
-				preferDeals:    true,
+				accountDefaultBidLimit: 2,
+				preferDeals:            true,
 			},
 			want: want{
 				winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
@@ -827,7 +827,7 @@ func Test_auction_validateAndUpdateMultiBid(t *testing.T) {
 				cacheIds:            tt.fields.cacheIds,
 				vastCacheIds:        tt.fields.vastCacheIds,
 			}
-			a.validateAndUpdateMultiBid(tt.args.adapterBids, tt.args.preferDeals, tt.args.accountMaxBids)
+			a.validateAndUpdateMultiBid(tt.args.adapterBids, tt.args.preferDeals, tt.args.accountDefaultBidLimit)
 			assert.Equal(t, tt.want.winningBidsByBidder, tt.fields.winningBidsByBidder, tt.description)
 			assert.Equal(t, tt.want.adapterBids, tt.args.adapterBids, tt.description)
 		})
