@@ -273,7 +273,7 @@ type TargetingTestData struct {
 	ExpectedPbsBids    map[string]map[openrtb_ext.BidderName][]ExpectedPbsBid
 	TruncateTargetAttr *int
 	MultiBidMap        map[string]openrtb_ext.ExtMultiBid
-	DefaultBidLimitMin int
+	DefaultBidLimit    int
 }
 
 type ExpectedPbsBid struct {
@@ -928,7 +928,7 @@ func TestSetTargeting(t *testing.T) {
 		}
 		auc.winningBids = winningBids
 		targData := test.TargetData
-		targData.setTargeting(auc, test.IsApp, test.CategoryMapping, test.TruncateTargetAttr, test.MultiBidMap, test.DefaultBidLimitMin)
+		targData.setTargeting(auc, test.IsApp, test.CategoryMapping, test.TruncateTargetAttr, test.MultiBidMap, test.DefaultBidLimit)
 		for imp, targetsByBidder := range test.ExpectedPbsBids {
 			for bidder, expectedTargets := range targetsByBidder {
 				for i, expected := range expectedTargets {

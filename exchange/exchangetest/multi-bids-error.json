@@ -1,6 +1,6 @@
 {
   "multiBid": {
-    "default_bid_limit_min": 3,
+    "default_bid_limit": 3,
     "assert_multi_bid_warnings": true
   },
   "incomingRequest": {

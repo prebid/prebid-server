@@ -665,7 +665,7 @@ func Test_auction_validateAndUpdateMultiBid(t *testing.T) {
 		want        want
 	}{
 		{
-			description: "DefaultBidLimitMinAuction is 0 (default value)",
+			description: "DefaultBidLimit is 0 (default value)",
 			fields: fields{
 				winningBids: map[string]*entities.PbsOrtbBid{
 					"imp1": &bid1p166d,
@@ -716,7 +716,7 @@ func Test_auction_validateAndUpdateMultiBid(t *testing.T) {
 			},
 		},
 		{
-			description: "Adapters bid count per imp within DefaultBidLimitMin",
+			description: "Adapters bid count per imp within DefaultBidLimit",
 			fields: fields{
 				winningBids: map[string]*entities.PbsOrtbBid{
 					"imp1": &bid1p166d,
@@ -767,7 +767,7 @@ func Test_auction_validateAndUpdateMultiBid(t *testing.T) {
 			},
 		},
 		{
-			description: "Adapters bid count per imp more than DefaultBidLimitMin",
+			description: "Adapters bid count per imp more than DefaultBidLimit",
 			fields: fields{
 				winningBids: map[string]*entities.PbsOrtbBid{
 					"imp1": &bid1p166d,

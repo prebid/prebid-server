@@ -36,7 +36,7 @@ type Account struct {
 	AlternateBidderCodes    *openrtb_ext.ExtAlternateBidderCodes `mapstructure:"alternatebiddercodes" json:"alternatebiddercodes"`
 	Hooks                   AccountHooks                         `mapstructure:"hooks" json:"hooks"`
 	Validations             Validations                          `mapstructure:"validations" json:"validations"`
-	DefaultBidLimitMin      int                                  `mapstructure:"default_bid_limit_min" json:"default_bid_limit_min"`
+	DefaultBidLimit         int                                  `mapstructure:"default_bid_limit" json:"default_bid_limit"`
 }
 
 // CookieSync represents the account-level defaults for the cookie sync endpoint.

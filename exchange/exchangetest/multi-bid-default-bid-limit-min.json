@@ -1,6 +1,6 @@
 {
   "multiBid": {
-    "default_bid_limit_min": 2
+    "default_bid_limit": 2
   },
   "incomingRequest": {
     "ortbRequest": {

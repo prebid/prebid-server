@@ -2243,7 +2243,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	}
 
 	if spec.MultiBid != nil {
-		auctionRequest.Account.DefaultBidLimitMin = spec.MultiBid.AccountMaxBid
+		auctionRequest.Account.DefaultBidLimit = spec.MultiBid.AccountMaxBid
 
 		requestExt := &openrtb_ext.ExtRequest{}
 		err := json.Unmarshal(spec.IncomingRequest.OrtbRequest.Ext, requestExt)
@@ -4968,7 +4968,7 @@ type exchangeSpec struct {
 }
 
 type multiBidSpec struct {
-	AccountMaxBid          int  `json:"default_bid_limit_min"`
+	AccountMaxBid          int  `json:"default_bid_limit"`
 	AssertMultiBidWarnings bool `json:"assert_multi_bid_warnings"`
 }
 
