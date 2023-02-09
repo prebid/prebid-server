@@ -54,7 +54,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	for _, taboolaRequest := range taboolaRequests {
 		if len(taboolaRequest.Imp) > 0 {
-			request, err := buildRequest(taboolaRequest, a.endpoint, a.hostName)
+			request, err := a.buildRequest(taboolaRequest)
 			if err != nil {
 				return nil, []error{fmt.Errorf("unable to build request %v", err)}
 			}
@@ -124,7 +124,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return bidResponse, errs
 }
 
-func buildRequest(request *openrtb2.BidRequest, endpoint *template.Template, hostName string) (*adapters.RequestData, error) {
+func (a *adapter) buildRequest(request *openrtb2.BidRequest) (*adapters.RequestData, error) {
 	requestJSON, err := json.Marshal(request)
 	if err != nil {
 		return nil, err
@@ -145,7 +145,7 @@ func buildRequest(request *openrtb2.BidRequest, endpoint *template.Template, hos
 		return nil, fmt.Errorf("unsupported media type for imp: %v", request.Imp[0])
 	}
 
-	url, err := buildEndpointURL(request.Site.ID, mediaType, hostName, endpoint)
+	url, err := a.buildEndpointURL(request.Site.ID, mediaType)
 	if err != nil {
 		return nil, err
 	}
@@ -160,9 +160,9 @@ func buildRequest(request *openrtb2.BidRequest, endpoint *template.Template, hos
 }
 
 // Builds endpoint url based on adapter-specific pub settings from imp.ext
-func buildEndpointURL(publisherId string, mediaType string, hostName string, endpoint *template.Template) (string, error) {
-	endpointParams := macros.EndpointTemplateParams{PublisherID: publisherId, MediaType: mediaType, Host: hostName}
-	resolvedUrl, err := macros.ResolveMacros(endpoint, endpointParams)
+func (a *adapter) buildEndpointURL(publisherId string, mediaType string) (string, error) {
+	endpointParams := macros.EndpointTemplateParams{PublisherID: publisherId, MediaType: mediaType, Host: a.hostName}
+	resolvedUrl, err := macros.ResolveMacros(a.endpoint, endpointParams)
 	if err != nil {
 		return "", err
 	}
