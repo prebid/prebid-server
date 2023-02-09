@@ -711,7 +711,8 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 		return append(errL, errors.New("request.site or request.app must be defined, but not both."))
 	}
 
-	if errs := validateRequestExt(req); err != nil {
+	errs := validateRequestExt(req)
+	if len(errs) != 0 {
 		return append(errL, errs...)
 	}
 
@@ -1503,7 +1504,22 @@ func validateRequestExt(req *openrtb_ext.RequestWrapper) []error {
 		return []error{errors.New(`request.ext is invalid: request.ext.prebid.cache requires one of the "bids" or "vastxml" properties`)}
 	}
 
-	return openrtb_ext.ValidateAndBuildExtMultiBidMap(prebid)
+	var errs []error
+	if prebid != nil && prebid.MultiBid != nil {
+		validatedMultiBids, multBidErrs := openrtb_ext.ValidateAndBuildExtMultiBid(prebid)
+
+		for _, err := range multBidErrs {
+			errs = append(errs, &errortypes.Warning{
+				WarningCode: errortypes.MultiBidWarningCode,
+				Message:     err.Error(),
+			})
+		}
+
+		prebid.MultiBid = validatedMultiBids
+		reqExt.SetPrebid(prebid)
+	}
+
+	return errs
 }
 
 func (deps *endpointDeps) validateSite(req *openrtb_ext.RequestWrapper) error {

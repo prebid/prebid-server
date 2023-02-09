@@ -1,4 +1,5 @@
 {
+  "multiBid": {},
   "incomingRequest": {
     "ortbRequest": {
       "id": "some-request-id",

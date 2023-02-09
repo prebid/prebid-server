@@ -7,113 +7,299 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var getIntPtr = func(m int) *int { return &m }
+var maxBid1 = getIntPtr(1)
+var maxBid2 = getIntPtr(2)
+var maxBid3 = getIntPtr(3)
+var maxBid9 = getIntPtr(9)
 
-func Test_addMultiBid(t *testing.T) {
-	maxBid0 := getIntPtr(0)
-	maxBid1 := getIntPtr(1)
-	maxBid2 := getIntPtr(2)
-	maxBid3 := getIntPtr(3)
-	maxBid9 := getIntPtr(9)
-	maxBid10 := getIntPtr(10)
+func TestValidateAndBuildExtMultiBid(t *testing.T) {
+	var maxBid0 = getIntPtr(0)
+	var maxBid10 = getIntPtr(10)
 
 	type args struct {
-		multiBidMap map[string]ExtMultiBid
-		multiBid    *ExtMultiBid
+		prebid *ExtRequestPrebid
 	}
 	tests := []struct {
-		name            string
-		args            args
-		wantErrs        []error
-		wantMultiBidMap map[string]ExtMultiBid
+		name                   string
+		args                   args
+		wantValidatedMultiBids []*ExtMultiBid
+		wantErrs               []error
 	}{
+		{
+			name:                   "prebid nil",
+			wantValidatedMultiBids: nil,
+			wantErrs:               nil,
+		},
+		{
+			name: "prebid.MultiBid nil",
+			args: args{
+				prebid: &ExtRequestPrebid{MultiBid: nil},
+			},
+			wantValidatedMultiBids: nil,
+			wantErrs:               nil,
+		},
+		{
+			name: "prebid.MultiBid empty",
+			args: args{
+				prebid: &ExtRequestPrebid{MultiBid: make([]*ExtMultiBid, 0)},
+			},
+			wantValidatedMultiBids: nil,
+			wantErrs:               nil,
+		},
 		{
 			name: "MaxBids not defined",
 			args: args{
-				multiBidMap: map[string]ExtMultiBid{},
-				multiBid:    &ExtMultiBid{},
+				prebid: &ExtRequestPrebid{MultiBid: []*ExtMultiBid{{Bidder: "pubmatic"}}},
 			},
-			wantErrs:        []error{fmt.Errorf("maxBid not defined %v", &ExtMultiBid{})},
-			wantMultiBidMap: map[string]ExtMultiBid{},
+			wantValidatedMultiBids: nil,
+			wantErrs:               []error{fmt.Errorf("maxBids not defined for %v", ExtMultiBid{Bidder: "pubmatic"})},
 		},
 		{
 			name: "Bidder or Bidders not defined",
 			args: args{
-				multiBidMap: map[string]ExtMultiBid{},
-				multiBid:    &ExtMultiBid{MaxBids: maxBid2},
+				prebid: &ExtRequestPrebid{MultiBid: []*ExtMultiBid{{MaxBids: maxBid2}}},
 			},
-			wantErrs:        []error{fmt.Errorf("bidder(s) not specified %v", &ExtMultiBid{MaxBids: maxBid2})},
-			wantMultiBidMap: map[string]ExtMultiBid{},
+			wantValidatedMultiBids: nil,
+			wantErrs:               []error{fmt.Errorf("bidder(s) not specified for %v", ExtMultiBid{MaxBids: maxBid2})},
 		},
 		{
 			name: "Input bidder is already present in multibid",
 			args: args{
-				multiBidMap: map[string]ExtMultiBid{"pubmatic": {MaxBids: maxBid3, TargetBidderCodePrefix: "pm"}},
-				multiBid:    &ExtMultiBid{MaxBids: maxBid2, Bidder: "pubmatic"},
+				prebid: &ExtRequestPrebid{
+					MultiBid: []*ExtMultiBid{
+						{Bidder: "pubmatic", MaxBids: maxBid2, TargetBidderCodePrefix: "pm"},
+						{Bidder: "pubmatic", MaxBids: maxBid3, TargetBidderCodePrefix: "pubm"},
+					},
+				},
 			},
-			wantErrs:        []error{fmt.Errorf("multiBid already defined for pubmatic, ignoring this instance %v", &ExtMultiBid{MaxBids: maxBid2, Bidder: "pubmatic"})},
-			wantMultiBidMap: map[string]ExtMultiBid{"pubmatic": {MaxBids: maxBid3, TargetBidderCodePrefix: "pm"}},
+			wantErrs:               []error{fmt.Errorf("multiBid already defined for pubmatic, ignoring this instance %v", ExtMultiBid{MaxBids: maxBid3, Bidder: "pubmatic", TargetBidderCodePrefix: "pubm"})},
+			wantValidatedMultiBids: []*ExtMultiBid{{Bidder: "pubmatic", MaxBids: maxBid2, TargetBidderCodePrefix: "pm"}},
 		},
 		{
 			name: "Bidder and Bidders both defined (only Bidder will be used)",
 			args: args{
-				multiBidMap: map[string]ExtMultiBid{"pubmatic": {TargetBidderCodePrefix: "pm"}},
-				multiBid:    &ExtMultiBid{MaxBids: maxBid2, Bidder: "appnexus", Bidders: []string{"rubicon"}, TargetBidderCodePrefix: "appN"},
+				prebid: &ExtRequestPrebid{
+					MultiBid: []*ExtMultiBid{
+						{Bidder: "pubmatic", MaxBids: maxBid2, TargetBidderCodePrefix: "pm"},
+						{MaxBids: maxBid2, Bidder: "appnexus", Bidders: []string{"rubicon"}, TargetBidderCodePrefix: "appN"},
+					},
+				},
 			},
-			wantErrs:        []error{fmt.Errorf("ignoring bidders from %v", &ExtMultiBid{MaxBids: maxBid2, Bidder: "appnexus", Bidders: []string{"rubicon"}, TargetBidderCodePrefix: "appN"})},
-			wantMultiBidMap: map[string]ExtMultiBid{"pubmatic": {TargetBidderCodePrefix: "pm"}, "appnexus": {MaxBids: maxBid2, Bidder: "appnexus", TargetBidderCodePrefix: "appN"}},
+			wantErrs:               []error{fmt.Errorf("ignoring bidders from %v", ExtMultiBid{MaxBids: maxBid2, Bidder: "appnexus", Bidders: []string{"rubicon"}, TargetBidderCodePrefix: "appN"})},
+			wantValidatedMultiBids: []*ExtMultiBid{{Bidder: "pubmatic", MaxBids: maxBid2, TargetBidderCodePrefix: "pm"}, {Bidder: "appnexus", MaxBids: maxBid2, TargetBidderCodePrefix: "appN"}},
 		},
 		{
 			name: "Only Bidder defined",
 			args: args{
-				multiBidMap: map[string]ExtMultiBid{"pubmatic": {TargetBidderCodePrefix: "pm"}},
-				multiBid:    &ExtMultiBid{MaxBids: maxBid2, Bidder: "appnexus", TargetBidderCodePrefix: "appN"},
+				prebid: &ExtRequestPrebid{
+					MultiBid: []*ExtMultiBid{
+						{MaxBids: maxBid2, Bidder: "appnexus", TargetBidderCodePrefix: "appN"},
+					},
+				},
 			},
-			wantErrs:        []error{},
-			wantMultiBidMap: map[string]ExtMultiBid{"pubmatic": {TargetBidderCodePrefix: "pm"}, "appnexus": {MaxBids: maxBid2, Bidder: "appnexus", TargetBidderCodePrefix: "appN"}},
+			wantErrs:               nil,
+			wantValidatedMultiBids: []*ExtMultiBid{{Bidder: "appnexus", MaxBids: maxBid2, TargetBidderCodePrefix: "appN"}},
+		},
+		{
+			name: "Only Bidders defined",
+			args: args{
+				prebid: &ExtRequestPrebid{
+					MultiBid: []*ExtMultiBid{
+						{MaxBids: maxBid2, Bidders: []string{"appnexus", "someBidder"}},
+					},
+				},
+			},
+			wantErrs:               nil,
+			wantValidatedMultiBids: []*ExtMultiBid{{Bidders: []string{"appnexus", "someBidder"}, MaxBids: maxBid2}},
 		},
 		{
 			name: "Bidders defined where a bidder is already present in multibid",
 			args: args{
-				multiBidMap: map[string]ExtMultiBid{"pubmatic": {TargetBidderCodePrefix: "pm"}},
-				multiBid:    &ExtMultiBid{MaxBids: maxBid2, Bidders: []string{"appnexus", "pubmatic"}},
+				prebid: &ExtRequestPrebid{
+					MultiBid: []*ExtMultiBid{
+						{Bidder: "pubmatic", MaxBids: maxBid9, TargetBidderCodePrefix: "pm"},
+						{MaxBids: maxBid2, Bidders: []string{"appnexus", "pubmatic"}},
+					},
+				},
 			},
-			wantErrs:        []error{fmt.Errorf("multiBid already defined for pubmatic, ignoring this instance %v", &ExtMultiBid{MaxBids: maxBid2, Bidders: []string{"appnexus", "pubmatic"}})},
-			wantMultiBidMap: map[string]ExtMultiBid{"pubmatic": {TargetBidderCodePrefix: "pm"}, "appnexus": {MaxBids: maxBid2, Bidders: []string{"appnexus", "pubmatic"}}},
+			wantErrs:               []error{fmt.Errorf("multiBid already defined for pubmatic, ignoring this instance %v", ExtMultiBid{MaxBids: maxBid2, Bidders: []string{"appnexus", "pubmatic"}})},
+			wantValidatedMultiBids: []*ExtMultiBid{{Bidder: "pubmatic", MaxBids: maxBid9, TargetBidderCodePrefix: "pm"}, {Bidders: []string{"appnexus"}, MaxBids: maxBid2}},
+		},
+		{
+			name: "Bidders defined where all the bidders are already present in multibid",
+			args: args{
+				prebid: &ExtRequestPrebid{
+					MultiBid: []*ExtMultiBid{
+						{Bidder: "pubmatic", MaxBids: maxBid9, TargetBidderCodePrefix: "pm"},
+						{Bidders: []string{"appnexus"}, MaxBids: maxBid3},
+						{MaxBids: maxBid2, Bidders: []string{"appnexus", "pubmatic"}},
+					},
+				},
+			},
+			wantErrs: []error{
+				fmt.Errorf("multiBid already defined for appnexus, ignoring this instance %v", ExtMultiBid{MaxBids: maxBid2, Bidders: []string{"appnexus", "pubmatic"}}),
+				fmt.Errorf("multiBid already defined for pubmatic, ignoring this instance %v", ExtMultiBid{MaxBids: maxBid2, Bidders: []string{"appnexus", "pubmatic"}}),
+			},
+			wantValidatedMultiBids: []*ExtMultiBid{{Bidder: "pubmatic", MaxBids: maxBid9, TargetBidderCodePrefix: "pm"}, {Bidders: []string{"appnexus"}, MaxBids: maxBid3}},
 		},
 		{
 			name: "Bidders defined along with TargetBidderCodePrefix",
 			args: args{
-				multiBidMap: map[string]ExtMultiBid{"pubmatic": {TargetBidderCodePrefix: "pm"}},
-				multiBid:    &ExtMultiBid{MaxBids: maxBid2, Bidders: []string{"appnexus"}, TargetBidderCodePrefix: "appN"},
+				prebid: &ExtRequestPrebid{
+					MultiBid: []*ExtMultiBid{
+						{MaxBids: maxBid2, Bidders: []string{"appnexus"}, TargetBidderCodePrefix: "appN"},
+					},
+				},
 			},
-			wantErrs:        []error{fmt.Errorf("ignoring targetbiddercodeprefix for %v", &ExtMultiBid{MaxBids: maxBid2, Bidders: []string{"appnexus"}, TargetBidderCodePrefix: "appN"})},
-			wantMultiBidMap: map[string]ExtMultiBid{"pubmatic": {TargetBidderCodePrefix: "pm"}, "appnexus": {MaxBids: maxBid2, Bidders: []string{"appnexus"}}},
+			wantErrs:               []error{fmt.Errorf("ignoring targetbiddercodeprefix for %v", ExtMultiBid{MaxBids: maxBid2, Bidders: []string{"appnexus"}, TargetBidderCodePrefix: "appN"})},
+			wantValidatedMultiBids: []*ExtMultiBid{{Bidders: []string{"appnexus"}, MaxBids: maxBid2}},
 		},
 		{
 			name: "MaxBids defined below minimum limit",
 			args: args{
-				multiBidMap: map[string]ExtMultiBid{"pubmatic": {TargetBidderCodePrefix: "pm"}},
-				multiBid:    &ExtMultiBid{MaxBids: maxBid0, Bidder: "appnexus", TargetBidderCodePrefix: "appN"},
+				prebid: &ExtRequestPrebid{
+					MultiBid: []*ExtMultiBid{
+						{MaxBids: maxBid0, Bidder: "appnexus", TargetBidderCodePrefix: "appN"},
+					},
+				},
 			},
-			wantErrs:        []error{fmt.Errorf("using default maxBid minimum 1 limit %v", &ExtMultiBid{MaxBids: maxBid0, Bidder: "appnexus", TargetBidderCodePrefix: "appN"})},
-			wantMultiBidMap: map[string]ExtMultiBid{"pubmatic": {TargetBidderCodePrefix: "pm"}, "appnexus": {MaxBids: maxBid1, Bidder: "appnexus", TargetBidderCodePrefix: "appN"}},
+			wantErrs:               []error{fmt.Errorf("invalid maxBids value, using minimum 1 limit for %v", ExtMultiBid{MaxBids: maxBid0, Bidder: "appnexus", TargetBidderCodePrefix: "appN"})},
+			wantValidatedMultiBids: []*ExtMultiBid{{Bidder: "appnexus", TargetBidderCodePrefix: "appN", MaxBids: maxBid1}},
 		},
 		{
 			name: "MaxBids defined over max limit",
 			args: args{
-				multiBidMap: map[string]ExtMultiBid{"pubmatic": {TargetBidderCodePrefix: "pm"}},
-				multiBid:    &ExtMultiBid{MaxBids: maxBid10, Bidder: "appnexus", TargetBidderCodePrefix: "appN"},
+				prebid: &ExtRequestPrebid{
+					MultiBid: []*ExtMultiBid{
+						{MaxBids: maxBid10, Bidder: "appnexus", TargetBidderCodePrefix: "appN"},
+					},
+				},
 			},
-			wantErrs:        []error{fmt.Errorf("using default maxBid maximum 9 limit %v", &ExtMultiBid{MaxBids: maxBid10, Bidder: "appnexus", TargetBidderCodePrefix: "appN"})},
-			wantMultiBidMap: map[string]ExtMultiBid{"pubmatic": {TargetBidderCodePrefix: "pm"}, "appnexus": {MaxBids: maxBid9, Bidder: "appnexus", TargetBidderCodePrefix: "appN"}},
+			wantErrs:               []error{fmt.Errorf("invalid maxBids value, using maximum 9 limit for %v", ExtMultiBid{MaxBids: maxBid10, Bidder: "appnexus", TargetBidderCodePrefix: "appN"})},
+			wantValidatedMultiBids: []*ExtMultiBid{{Bidder: "appnexus", TargetBidderCodePrefix: "appN", MaxBids: maxBid9}},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotErrs := addMultiBid(tt.args.multiBidMap, tt.args.multiBid)
+			gotValidatedMultiBids, gotErrs := ValidateAndBuildExtMultiBid(tt.args.prebid)
+			assert.Equal(t, tt.wantValidatedMultiBids, gotValidatedMultiBids)
 			assert.Equal(t, tt.wantErrs, gotErrs)
-			assert.Equal(t, tt.wantMultiBidMap, tt.args.multiBidMap)
+		})
+	}
+}
+
+var getIntPtr = func(m int) *int { return &m }
+
+func Test_addMultiBid(t *testing.T) {
+	var maxBid0 = getIntPtr(0)
+	var maxBid10 = getIntPtr(10)
+
+	type args struct {
+		multiBidMap map[string]struct{}
+		multiBid    *ExtMultiBid
+	}
+	tests := []struct {
+		name          string
+		args          args
+		wantErrs      []error
+		wantMultiBids []*ExtMultiBid
+	}{
+		{
+			name: "MaxBids not defined",
+			args: args{
+				multiBidMap: map[string]struct{}{},
+				multiBid:    &ExtMultiBid{},
+			},
+			wantErrs:      []error{fmt.Errorf("maxBids not defined for %v", ExtMultiBid{})},
+			wantMultiBids: nil,
+		},
+		{
+			name: "Bidder or Bidders not defined",
+			args: args{
+				multiBidMap: map[string]struct{}{},
+				multiBid:    &ExtMultiBid{MaxBids: maxBid2},
+			},
+			wantErrs:      []error{fmt.Errorf("bidder(s) not specified for %v", ExtMultiBid{MaxBids: maxBid2})},
+			wantMultiBids: nil,
+		},
+		{
+			name: "Input bidder is already present in multibid",
+			args: args{
+				multiBidMap: map[string]struct{}{"pubmatic": {}},
+				multiBid:    &ExtMultiBid{MaxBids: maxBid2, Bidder: "pubmatic"},
+			},
+			wantErrs:      []error{fmt.Errorf("multiBid already defined for pubmatic, ignoring this instance %v", ExtMultiBid{MaxBids: maxBid2, Bidder: "pubmatic"})},
+			wantMultiBids: nil,
+		},
+		{
+			name: "Bidder and Bidders both defined (only Bidder will be used)",
+			args: args{
+				multiBidMap: map[string]struct{}{"pubmatic": {}},
+				multiBid:    &ExtMultiBid{MaxBids: maxBid2, Bidder: "appnexus", Bidders: []string{"rubicon"}, TargetBidderCodePrefix: "appN"},
+			},
+			wantErrs:      []error{fmt.Errorf("ignoring bidders from %v", ExtMultiBid{MaxBids: maxBid2, Bidder: "appnexus", Bidders: []string{"rubicon"}, TargetBidderCodePrefix: "appN"})},
+			wantMultiBids: []*ExtMultiBid{{Bidder: "appnexus", MaxBids: maxBid2, TargetBidderCodePrefix: "appN"}},
+		},
+		{
+			name: "Only Bidder defined",
+			args: args{
+				multiBidMap: map[string]struct{}{},
+				multiBid:    &ExtMultiBid{MaxBids: maxBid2, Bidder: "appnexus", TargetBidderCodePrefix: "appN"},
+			},
+			wantErrs:      []error{},
+			wantMultiBids: []*ExtMultiBid{{Bidder: "appnexus", MaxBids: maxBid2, TargetBidderCodePrefix: "appN"}},
+		},
+		{
+			name: "Only Bidders defined",
+			args: args{
+				multiBidMap: map[string]struct{}{},
+				multiBid:    &ExtMultiBid{MaxBids: maxBid2, Bidders: []string{"appnexus", "someBidder"}},
+			},
+			wantErrs:      []error{},
+			wantMultiBids: []*ExtMultiBid{{Bidders: []string{"appnexus", "someBidder"}, MaxBids: maxBid2}},
+		},
+		{
+			name: "Bidders defined where a bidder is already present in multibid",
+			args: args{
+				multiBidMap: map[string]struct{}{"pubmatic": {}},
+				multiBid:    &ExtMultiBid{MaxBids: maxBid2, Bidders: []string{"appnexus", "pubmatic"}},
+			},
+			wantErrs:      []error{fmt.Errorf("multiBid already defined for pubmatic, ignoring this instance %v", ExtMultiBid{MaxBids: maxBid2, Bidders: []string{"appnexus", "pubmatic"}})},
+			wantMultiBids: []*ExtMultiBid{{Bidders: []string{"appnexus"}, MaxBids: maxBid2}},
+		},
+		{
+			name: "Bidders defined along with TargetBidderCodePrefix",
+			args: args{
+				multiBidMap: map[string]struct{}{},
+				multiBid:    &ExtMultiBid{MaxBids: maxBid2, Bidders: []string{"appnexus"}, TargetBidderCodePrefix: "appN"},
+			},
+			wantErrs:      []error{fmt.Errorf("ignoring targetbiddercodeprefix for %v", ExtMultiBid{MaxBids: maxBid2, Bidders: []string{"appnexus"}, TargetBidderCodePrefix: "appN"})},
+			wantMultiBids: []*ExtMultiBid{{Bidders: []string{"appnexus"}, MaxBids: maxBid2}},
+		},
+		{
+			name: "MaxBids defined below minimum limit",
+			args: args{
+				multiBidMap: map[string]struct{}{},
+				multiBid:    &ExtMultiBid{MaxBids: maxBid0, Bidder: "appnexus", TargetBidderCodePrefix: "appN"},
+			},
+			wantErrs:      []error{fmt.Errorf("invalid maxBids value, using minimum 1 limit for %v", ExtMultiBid{MaxBids: maxBid0, Bidder: "appnexus", TargetBidderCodePrefix: "appN"})},
+			wantMultiBids: []*ExtMultiBid{{Bidder: "appnexus", TargetBidderCodePrefix: "appN", MaxBids: maxBid1}},
+		},
+		{
+			name: "MaxBids defined over max limit",
+			args: args{
+				multiBidMap: map[string]struct{}{},
+				multiBid:    &ExtMultiBid{MaxBids: maxBid10, Bidder: "appnexus", TargetBidderCodePrefix: "appN"},
+			},
+			wantErrs:      []error{fmt.Errorf("invalid maxBids value, using maximum 9 limit for %v", ExtMultiBid{MaxBids: maxBid10, Bidder: "appnexus", TargetBidderCodePrefix: "appN"})},
+			wantMultiBids: []*ExtMultiBid{{Bidder: "appnexus", TargetBidderCodePrefix: "appN", MaxBids: maxBid9}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotMultiBids, gotErrs := addMultiBid(tt.args.multiBidMap, tt.args.multiBid)
+			assert.Equal(t, tt.wantErrs, gotErrs)
+			assert.Equal(t, tt.wantMultiBids, gotMultiBids)
 		})
 	}
 }

@@ -3,6 +3,7 @@ package openrtb_ext
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/prebid/openrtb/v17/openrtb2"
 )
@@ -73,7 +74,7 @@ type ExtRequestPrebid struct {
 	// any other value or an empty string disables trace output at all.
 	Trace string `json:"trace,omitempty"`
 
-	Multibid    []*ExtMultiBid         `json:"multibid,omitempty"`
+	MultiBid    []*ExtMultiBid         `json:"multibid,omitempty"`
 	MultibidMap map[string]ExtMultiBid `json:"-"`
 }
 
@@ -354,4 +355,12 @@ type ExtMultiBid struct {
 	Bidders                []string `json:"bidders,omitempty"`
 	MaxBids                *int     `json:"maxbids,omitempty"`
 	TargetBidderCodePrefix string   `json:"targetbiddercodeprefix,omitempty"`
+}
+
+func (m ExtMultiBid) String() string {
+	maxBid := "<nil>"
+	if m.MaxBids != nil {
+		maxBid = fmt.Sprintf("%d", *m.MaxBids)
+	}
+	return fmt.Sprintf("{Bidder:%s, Bidders:%v, MaxBids:%s, TargetBidderCodePrefix:%s}", m.Bidder, m.Bidders, maxBid, m.TargetBidderCodePrefix)
 }

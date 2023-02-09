@@ -1,5 +1,8 @@
 {
-  "multiBid": {},
+  "multiBid": {
+    "default_bid_limit_min": 3,
+    "assert_multi_bid_warnings": true
+  },
   "incomingRequest": {
     "ortbRequest": {
       "id": "some-request-id",
@@ -54,29 +57,49 @@
             "includewinners": true,
             "includebidderkeys": true
           },
-          "alternatebiddercodes": {
-            "enabled": true,
-            "bidders": {
-              "pubmatic": {
-                "enabled": true,
-                "allowedbiddercodes": [
-                  "groupm"
-                ]
-              }
-            }
-          },
           "multibid": [
             {
-              "bidder": "pubmatic",
-              "maxbids": 2,
-              "targetbiddercodeprefix": "pubm"
+              "bidder": "appnexus"
             },
             {
+              "maxbids": -1,
+              "bidder": "rubicon",
+              "targetbiddercodeprefix": "rubN"
+            },
+            {
+              "maxbids": 10,
+              "bidder": "pubmatic",
+              "targetbiddercodeprefix": "pm"
+            },
+            {
+              "maxbids": 4,
+              "bidder": "pubmatic",
+              "targetbiddercodeprefix": "pubM"
+            },
+            {
+              "maxbids": 5,
+              "bidder": "groupm",
               "bidders": [
-                "appnexus",
-                "groupm"
+                "someBidder"
               ],
-              "maxbids": 2
+              "targetbiddercodeprefix": "gm"
+            },
+            {
+              "maxbids": 6,
+              "bidders": [
+                "groupm"
+              ]
+            },
+            {
+              "maxbids": 7,
+              "bidders": [
+                "33across"
+              ],
+              "targetbiddercodeprefix": "abc"
+            },
+            {
+              "maxbids": 8,
+              "targetbiddercodeprefix": "xyz"
             }
           ]
         }
@@ -121,33 +144,18 @@
           ],
           "ext": {
             "prebid": {
-              "alternatebiddercodes": {
-                "enabled": true,
-                "bidders": {
-                  "pubmatic": {
-                    "enabled": true,
-                    "allowedbiddercodes": [
-                      "groupm"
-                    ]
-                  }
-                }
-              },
               "multibid": [
                 {
                   "bidder": "pubmatic",
-                  "maxbids": 2,
-                  "targetbiddercodeprefix": "pubm"
-                },
-                {
-                  "bidders": ["groupm"],
-                  "maxbids": 2
+                  "maxbids": 9,
+                  "targetbiddercodeprefix": "pm"
                 }
               ],
               "server": {
                 "datacenter": "Datacenter",
                 "externalurl": "http://hosturl.com",
                 "gvlid": 1
-              } 
+              }
             }
           }
         }
@@ -255,18 +263,6 @@
           ],
           "ext": {
             "prebid": {
-              "alternatebiddercodes": {
-                "enabled": true,
-                "bidders": null
-              },
-              "multibid": [
-                {
-                  "bidders": [
-                    "appnexus"
-                  ],
-                  "maxbids": 2
-                }
-              ],
               "server": {
                 "datacenter": "Datacenter",
                 "externalurl": "http://hosturl.com",
@@ -365,7 +361,15 @@
                   "meta": {
                     "adaptercode": "pubmatic"
                   },
-                  "type": "video"
+                  "type": "video",
+                  "targeting": {
+                    "hb_bidder_pm3": "pm3",
+                    "hb_cache_host_pm3": "www.pbcserver.com",
+                    "hb_cache_path_pm3": "/pbcache/endpoint",
+                    "hb_pb_pm3": "0.20",
+                    "hb_size_pm3": "200x250"
+                  },
+                  "targetbiddercode": "pm3"
                 }
               }
             },
@@ -414,13 +418,13 @@
                   },
                   "type": "video",
                   "targeting": {
-                    "hb_bidder_pubm2": "pubm2",
-                    "hb_cache_host_pubm2": "www.pbcserver.com",
-                    "hb_cache_path_pubm2": "/pbcache/endpoint",
-                    "hb_pb_pubm2": "0.50",
-                    "hb_size_pubm2": "200x250"
+                    "hb_bidder_pm2": "pm2",
+                    "hb_cache_host_pm2": "www.pbcserver.com",
+                    "hb_cache_path_pm2": "/pbcache/endpoint",
+                    "hb_pb_pm2": "0.50",
+                    "hb_size_pm2": "200x250"
                   },
-                  "targetbiddercode": "pubm2"
+                  "targetbiddercode": "pm2"
                 }
               }
             }
@@ -442,7 +446,6 @@
                   "meta": {
                     "adaptercode": "appnexus"
                   },
-                  "targetbiddercode": "appnexus",
                   "type": "banner",
                   "targeting": {
                     "hb_bidder_appnexus": "appnexus",
@@ -474,6 +477,48 @@
           ]
         }
       ]
+    },
+    "ext": {
+      "warnings": {
+        "general": [
+          {
+            "code": 10002,
+            "message": "debug turned off for account"
+          },
+          {
+            "code": 10006,
+            "message": "maxBids not defined for {Bidder:appnexus, Bidders:[], MaxBids:<nil>, TargetBidderCodePrefix:}"
+          },
+          {
+            "code": 10006,
+            "message": "invalid maxBids value, using minimum 1 limit for {Bidder:rubicon, Bidders:[], MaxBids:-1, TargetBidderCodePrefix:rubN}"
+          },
+          {
+            "code": 10006,
+            "message": "invalid maxBids value, using maximum 9 limit for {Bidder:pubmatic, Bidders:[], MaxBids:10, TargetBidderCodePrefix:pm}"
+          },
+          {
+            "code": 10006,
+            "message": "multiBid already defined for pubmatic, ignoring this instance {Bidder:pubmatic, Bidders:[], MaxBids:4, TargetBidderCodePrefix:pubM}"
+          },
+          {
+            "code": 10006,
+            "message": "ignoring bidders from {Bidder:groupm, Bidders:[someBidder], MaxBids:5, TargetBidderCodePrefix:gm}"
+          },
+          {
+            "code": 10006,
+            "message": "multiBid already defined for groupm, ignoring this instance {Bidder:, Bidders:[groupm], MaxBids:6, TargetBidderCodePrefix:}"
+          },
+          {
+            "code": 10006,
+            "message": "ignoring targetbiddercodeprefix for {Bidder:, Bidders:[33across], MaxBids:7, TargetBidderCodePrefix:abc}"
+          },
+          {
+            "code": 10006,
+            "message": "bidder(s) not specified for {Bidder:, Bidders:[], MaxBids:8, TargetBidderCodePrefix:xyz}"
+          }
+        ]
+      }
     }
   }
 }

@@ -272,7 +272,7 @@ type TargetingTestData struct {
 	CategoryMapping    map[string]string
 	ExpectedPbsBids    map[string]map[openrtb_ext.BidderName][]ExpectedPbsBid
 	TruncateTargetAttr *int
-	MultiBidMap        ExtMultiBidMap
+	MultiBidMap        map[string]openrtb_ext.ExtMultiBid
 	DefaultBidLimitMin int
 }
 
@@ -894,12 +894,12 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 			},
 		},
 		TruncateTargetAttr: nil,
-		MultiBidMap: ExtMultiBidMap{
-			string(openrtb_ext.BidderPubmatic): &openrtb_ext.ExtMultiBid{
+		MultiBidMap: map[string]openrtb_ext.ExtMultiBid{
+			string(openrtb_ext.BidderPubmatic): {
 				MaxBids:                getIntPtr(3),
 				TargetBidderCodePrefix: "pm",
 			},
-			string(openrtb_ext.BidderAppnexus): &openrtb_ext.ExtMultiBid{
+			string(openrtb_ext.BidderAppnexus): {
 				MaxBids: getIntPtr(2),
 			},
 		},

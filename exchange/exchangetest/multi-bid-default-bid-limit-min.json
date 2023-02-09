@@ -1,5 +1,7 @@
 {
-  "default_bid_limit_min": 2,
+  "multiBid": {
+    "default_bid_limit_min": 2
+  },
   "incomingRequest": {
     "ortbRequest": {
       "id": "tid",

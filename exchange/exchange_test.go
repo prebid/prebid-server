@@ -2232,15 +2232,34 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	auctionRequest := AuctionRequest{
 		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &spec.IncomingRequest.OrtbRequest},
 		Account: config.Account{
-			ID:                 "testaccount",
-			EventsEnabled:      spec.EventsEnabled,
-			DebugAllow:         true,
-			Validations:        spec.AccountConfigBidValidation,
-			DefaultBidLimitMin: spec.AccountMaxBid,
+			ID:            "testaccount",
+			EventsEnabled: spec.EventsEnabled,
+			DebugAllow:    true,
+			Validations:   spec.AccountConfigBidValidation,
 		},
 		UserSyncs:     mockIdFetcher(spec.IncomingRequest.Usersyncs),
 		ImpExtInfoMap: impExtInfoMap,
 		HookExecutor:  &hookexecution.EmptyHookExecutor{},
+	}
+
+	if spec.MultiBid != nil {
+		auctionRequest.Account.DefaultBidLimitMin = spec.MultiBid.AccountMaxBid
+
+		requestExt := &openrtb_ext.ExtRequest{}
+		err := json.Unmarshal(spec.IncomingRequest.OrtbRequest.Ext, requestExt)
+		assert.NoError(t, err, "invalid request ext")
+		validatedMultiBids, errs := openrtb_ext.ValidateAndBuildExtMultiBid(&requestExt.Prebid)
+		for _, err := range errs { // same as in validateRequestExt().
+			auctionRequest.Warnings = append(auctionRequest.Warnings, &errortypes.Warning{
+				WarningCode: errortypes.MultiBidWarningCode,
+				Message:     err.Error(),
+			})
+		}
+
+		requestExt.Prebid.MultiBid = validatedMultiBids
+		updateReqExt, err := json.Marshal(requestExt)
+		assert.NoError(t, err, "invalid request ext")
+		auctionRequest.BidRequestWrapper.Ext = updateReqExt
 	}
 
 	if spec.StartTime > 0 {
@@ -2292,11 +2311,11 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		assert.JSONEq(t, string(bid.Ext), string(spec.Response.Ext), "Debug info modified")
 	}
 
-	if spec.PassthroughFlag {
+	if spec.PassthroughFlag || (spec.MultiBid != nil && spec.MultiBid.AssertMultiBidWarnings) {
 		expectedPassthough := ""
 		actualPassthrough := ""
+		actualBidRespExt := &openrtb_ext.ExtBidResponse{}
 		if bid.Ext != nil {
-			actualBidRespExt := &openrtb_ext.ExtBidResponse{}
 			if err := json.Unmarshal(bid.Ext, actualBidRespExt); err != nil {
 				assert.NoError(t, err, fmt.Sprintf("Error when unmarshalling: %s", err))
 			}
@@ -2304,8 +2323,8 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 				actualPassthrough = string(actualBidRespExt.Prebid.Passthrough)
 			}
 		}
+		expectedBidRespExt := &openrtb_ext.ExtBidResponse{}
 		if spec.Response.Ext != nil {
-			expectedBidRespExt := &openrtb_ext.ExtBidResponse{}
 			if err := json.Unmarshal(spec.Response.Ext, expectedBidRespExt); err != nil {
 				assert.NoError(t, err, fmt.Sprintf("Error when unmarshalling: %s", err))
 			}
@@ -2314,11 +2333,17 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 			}
 		}
 
-		// special handling since JSONEq fails if either parameters is an empty string instead of json
-		if expectedPassthough == "" || actualPassthrough == "" {
-			assert.Equal(t, expectedPassthough, actualPassthrough, "Expected bid response extension is incorrect")
-		} else {
-			assert.JSONEq(t, expectedPassthough, actualPassthrough, "Expected bid response extension is incorrect")
+		if spec.MultiBid != nil && spec.MultiBid.AssertMultiBidWarnings {
+			assert.Equal(t, expectedBidRespExt.Warnings, actualBidRespExt.Warnings, "Expected same multi-bid warnings")
+		}
+
+		if spec.PassthroughFlag {
+			// special handling since JSONEq fails if either parameters is an empty string instead of json
+			if expectedPassthough == "" || actualPassthrough == "" {
+				assert.Equal(t, expectedPassthough, actualPassthrough, "Expected bid response extension is incorrect")
+			} else {
+				assert.JSONEq(t, expectedPassthough, actualPassthrough, "Expected bid response extension is incorrect")
+			}
 		}
 
 	}
@@ -4939,7 +4964,12 @@ type exchangeSpec struct {
 	HostConfigBidValidation    config.Validations     `json:"host_bid_validations"`
 	AccountConfigBidValidation config.Validations     `json:"account_bid_validations"`
 	FledgeEnabled              bool                   `json:"fledge_enabled,omitempty"`
-	AccountMaxBid              int                    `json:"default_bid_limit_min"`
+	MultiBid                   *multiBidSpec          `json:"multiBid,omitempty"`
+}
+
+type multiBidSpec struct {
+	AccountMaxBid          int  `json:"default_bid_limit_min"`
+	AssertMultiBidWarnings bool `json:"assert_multi_bid_warnings"`
 }
 
 type exchangeRequest struct {

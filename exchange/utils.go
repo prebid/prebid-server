@@ -318,7 +318,7 @@ func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, request
 		prebid.Channel = requestExtParsed.Prebid.Channel
 		prebid.Debug = requestExtParsed.Prebid.Debug
 		prebid.Server = requestExtParsed.Prebid.Server
-		prebid.Multibid = buildRequestExtMultiBid(bidder, requestExtParsed.Prebid.Multibid, alternateBidderCodes)
+		prebid.MultiBid = buildRequestExtMultiBid(bidder, requestExtParsed.Prebid.MultiBid, alternateBidderCodes)
 	}
 
 	// Marshal New Prebid Object
@@ -733,6 +733,21 @@ func extractBidRequestExt(bidRequest *openrtb2.BidRequest) (*openrtb_ext.ExtRequ
 			return requestExt, fmt.Errorf("Error decoding Request.ext : %s", err.Error())
 		}
 	}
+
+	// validation already done in validateRequestExt(), directly build a map here for downstream processing
+	if requestExt.Prebid.MultiBid != nil {
+		requestExt.Prebid.MultibidMap = make(map[string]openrtb_ext.ExtMultiBid)
+		for _, multiBid := range requestExt.Prebid.MultiBid {
+			if multiBid.Bidder != "" {
+				requestExt.Prebid.MultibidMap[multiBid.Bidder] = *multiBid
+			} else {
+				for _, bidder := range multiBid.Bidders {
+					requestExt.Prebid.MultibidMap[bidder] = *multiBid
+				}
+			}
+		}
+	}
+
 	return requestExt, nil
 }
 
