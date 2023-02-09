@@ -74,15 +74,14 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		requestJSON, err := json.Marshal(requestCopy)
 		if err != nil {
 			errors = append(errors, err)
-			continue
+		} else {
+			requestData := &adapters.RequestData{
+				Method: "POST",
+				Uri:    url,
+				Body:   requestJSON,
+			}
+			requests = append(requests, requestData)
 		}
-
-		requestData := &adapters.RequestData{
-			Method: "POST",
-			Uri:    url,
-			Body:   requestJSON,
-		}
-		requests = append(requests, requestData)
 	}
 	return requests, errors
 }

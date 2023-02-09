@@ -38,6 +38,7 @@ var validParams = []string{
 	`{"host": "example.com", "publisherId": "1"}`,
 	`{"host": "example.com", "publisherId": 42}`,
 	`{"host": "example.com", "publisherId": "42"}`,
+	`{"host": "example.com", "publisherId": "42", "adUnitId": 123, "adUnitType": "banner"}`,
 }
 
 var invalidParams = []string{
