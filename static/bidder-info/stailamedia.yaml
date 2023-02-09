@@ -1,0 +1,17 @@
+endpoint: "http://ib.adnxs.com/openrtb2"
+platform_id: "5"
+maintainer:
+  email: "prebid@stailamedia.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  key: "adnxs"

@@ -1,0 +1,65 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ],
+          "w": 100,
+          "h": 400
+        },
+        "ext": {
+          "bidder": {
+            "placementId": 1
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://ib.adnxs.com/openrtb2",
+        "body": {
+          "id": "test-request-id",
+          "ext": {
+            "stailamedia": {
+              "hb_source": 5
+            },
+            "prebid": {}
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ],
+                "w": 100,
+                "h": 400
+              },
+              "ext": {
+                "stailamedia": {
+                  "placement_id": 1
+                }
+              }
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}

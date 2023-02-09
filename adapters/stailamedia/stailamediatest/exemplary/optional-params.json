@@ -1,0 +1,82 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "member": "1504",
+            "inv_code": "abc",
+            "reserve": 20,
+            "position": "below",
+            "traffic_source_code": "trafficSource",
+            "keywords": [
+              {"key": "foo", "value": ["bar","baz"]},
+              {"key": "valueless"}
+            ],
+            "use_pmt_rule": true,
+            "private_sizes": [{"w": 300, "h": 250}]
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://ib.adnxs.com/openrtb2?member_id=1504",
+        "body": {
+          "id": "test-request-id",
+          "ext": {
+            "stailamedia": {
+              "hb_source": 5
+            },
+            "prebid": {}
+          },
+          "imp": [
+            {
+              "id":"test-imp-id",
+              "banner": {
+                "format": [
+                  {"w":300,"h":250},
+                  {"w":300,"h":600}
+                ],
+                "w": 300,
+                "h": 250,
+                "pos": 3
+              },
+              "tagid": "abc",
+              "bidfloor": 20,
+              "ext": {
+                "stailamedia": {
+                  "keywords": "foo=bar,foo=baz,valueless",
+                  "traffic_source_code": "trafficSource",
+                  "use_pmt_rule": true,
+                  "private_sizes": [{"w": 300, "h": 250}]
+                }
+              }
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}
