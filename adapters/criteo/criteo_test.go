@@ -9,7 +9,7 @@ func TestJsonSamples(t *testing.T) {
 
 	// Setup:
 	bidder := &adapter{
-		endpoint: "https://bidder.criteo.com/cdb?profileId=230",
+		endpoint: "https://bidder.criteo.com/openrtb/prebid/auction/request?profile=230",
 	}
 
 	// Execute & Verify:
