@@ -12,9 +12,9 @@ func ValidateAndBuildExtMultiBid(prebid *ExtRequestPrebid) ([]*ExtMultiBid, []er
 
 	var validationErrs, errs []error
 	var validatedMultiBids, newMultiBids []*ExtMultiBid //returning slice instead of map to keep the downstream req.Ext payload consistent
-	multibidMap := make(map[string]struct{})            // map is needed temporarily for validate of duplicate entries, etc.
+	multiBidMap := make(map[string]struct{})            // map is needed temporarily for validate of duplicate entries, etc.
 	for _, multiBid := range prebid.MultiBid {
-		newMultiBids, errs = addMultiBid(multibidMap, multiBid)
+		newMultiBids, errs = addMultiBid(multiBidMap, multiBid)
 		if len(errs) != 0 {
 			validationErrs = append(validationErrs, errs...)
 		}
@@ -30,26 +30,22 @@ func ValidateAndBuildExtMultiBid(prebid *ExtRequestPrebid) ([]*ExtMultiBid, []er
 func addMultiBid(multiBidMap map[string]struct{}, multiBid *ExtMultiBid) ([]*ExtMultiBid, []error) {
 	errs := make([]error, 0)
 
-	// If maxbids is not specified, ignore whole block and add warning when in debug mode
 	if multiBid.MaxBids == nil {
 		errs = append(errs, fmt.Errorf("maxBids not defined for %v", *multiBid))
 		return nil, errs
 	}
 
-	// Min and default is 1
 	if *multiBid.MaxBids < DefaultBidLimit {
 		errs = append(errs, fmt.Errorf("invalid maxBids value, using minimum %d limit for %v", DefaultBidLimit, *multiBid))
 		*multiBid.MaxBids = DefaultBidLimit
 	}
 
-	// Max 9
 	if *multiBid.MaxBids > MaxBidLimit {
 		errs = append(errs, fmt.Errorf("invalid maxBids value, using maximum %d limit for %v", MaxBidLimit, *multiBid))
 		*multiBid.MaxBids = MaxBidLimit
 	}
 
 	var validatedMultiBids []*ExtMultiBid
-	// Prefer Bidder over []Bidders
 	if multiBid.Bidder != "" {
 		if _, ok := multiBidMap[multiBid.Bidder]; ok {
 			errs = append(errs, fmt.Errorf("multiBid already defined for %s, ignoring this instance %v", multiBid.Bidder, *multiBid))

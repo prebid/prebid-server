@@ -44,8 +44,9 @@ func (targData *targetData) setTargeting(auc *auction, isApp bool, categoryMappi
 			bidderCodePrefix, maxBids := getMultiBidMeta(multiBidMap, originalBidderName.String())
 
 			for i, topBid := range topBidsPerBidder {
-				if i == maxBids || // limit targeting keys to maxBids (default 1 bid),
-					(i == 1 && bidderCodePrefix == "") { // do not apply targeting for more than 1 bid if bidderCodePrefix is not defined.
+				// Limit targeting keys to maxBids (default 1 bid).
+				// And, do not apply targeting for more than 1 bid if bidderCodePrefix is not defined.
+				if i == maxBids || (i == 1 && bidderCodePrefix == "") {
 					break
 				}
 

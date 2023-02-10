@@ -157,12 +157,12 @@ func (a *auction) validateAndUpdateMultiBid(adapterBids map[openrtb_ext.BidderNa
 				return isNewWinningBid(topBids[i].Bid, topBids[j].Bid, preferDeals)
 			})
 
-			// assert hard limit on bids count per imp, per adapter. ()
+			// assert hard limit on bids count per imp, per adapter.
 			if accountDefaultBidLimit != 0 && len(topBids) > accountDefaultBidLimit {
 				for i := accountDefaultBidLimit; i < len(topBids); i++ {
 					topBids[i].Bid = nil
 					topBids[i] = nil
-					bidsDropped = true // mark drop-candidate bid and remove its reference (avoid mem leak)
+					bidsDropped = true
 				}
 
 				topBidsPerBidder[bidder] = topBids[:accountDefaultBidLimit]

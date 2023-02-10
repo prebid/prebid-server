@@ -369,7 +369,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 			auc.setRoundedPrices(targData.priceGranularity)
 
 			if requestExt.Prebid.SupportDeals {
-				dealErrs := applyDealSupport(r.BidRequestWrapper.BidRequest, auc, bidCategory, requestExt.Prebid.MultibidMap)
+				dealErrs := applyDealSupport(r.BidRequestWrapper.BidRequest, auc, bidCategory, requestExt.Prebid.MultiBidMap)
 				errs = append(errs, dealErrs...)
 			}
 
@@ -388,7 +388,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 				errs = append(errs, cacheErrs...)
 			}
 
-			targData.setTargeting(auc, r.BidRequestWrapper.BidRequest.App != nil, bidCategory, r.Account.TruncateTargetAttribute, requestExt.Prebid.MultibidMap, r.Account.DefaultBidLimit)
+			targData.setTargeting(auc, r.BidRequestWrapper.BidRequest.App != nil, bidCategory, r.Account.TruncateTargetAttribute, requestExt.Prebid.MultiBidMap, r.Account.DefaultBidLimit)
 		}
 		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, responseDebugAllow, requestExt.Prebid.Passthrough, fledge, errs)
 	} else {
@@ -1136,7 +1136,7 @@ func (e *exchange) makeBid(bids []*entities.PbsOrtbBid, auc *auction, returnCrea
 			Meta:              bid.BidMeta,
 			Video:             bid.BidVideo,
 			BidId:             bid.GeneratedBidID,
-			Targetbiddercode:  bid.TargetBidderCode,
+			TargetBidderCode:  bid.TargetBidderCode,
 		}
 
 		if cacheInfo, found := e.getBidCacheInfo(bid, auc); found {

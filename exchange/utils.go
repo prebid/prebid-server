@@ -736,13 +736,13 @@ func extractBidRequestExt(bidRequest *openrtb2.BidRequest) (*openrtb_ext.ExtRequ
 
 	// validation already done in validateRequestExt(), directly build a map here for downstream processing
 	if requestExt.Prebid.MultiBid != nil {
-		requestExt.Prebid.MultibidMap = make(map[string]openrtb_ext.ExtMultiBid)
+		requestExt.Prebid.MultiBidMap = make(map[string]openrtb_ext.ExtMultiBid)
 		for _, multiBid := range requestExt.Prebid.MultiBid {
 			if multiBid.Bidder != "" {
-				requestExt.Prebid.MultibidMap[multiBid.Bidder] = *multiBid
+				requestExt.Prebid.MultiBidMap[multiBid.Bidder] = *multiBid
 			} else {
 				for _, bidder := range multiBid.Bidders {
-					requestExt.Prebid.MultibidMap[bidder] = *multiBid
+					requestExt.Prebid.MultiBidMap[bidder] = *multiBid
 				}
 			}
 		}
