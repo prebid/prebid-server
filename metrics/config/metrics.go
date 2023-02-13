@@ -303,19 +303,24 @@ func (me *MultiMetricsEngine) RecordBidValidationSecureMarkupWarn(adapter openrt
 	}
 }
 
-func (me *MultiMetricsEngine) RecordAccountDepreciationWarnings(pubID string, purposeName string) {
+func (me *MultiMetricsEngine) RecordAccountGDPRPurposeWarning(account string, purposeName string) {
 	for _, thisME := range *me {
-		thisME.RecordAccountDepreciationWarnings(pubID, purposeName)
+		thisME.RecordAccountGDPRPurposeWarning(account, purposeName)
 	}
 }
-func (me *MultiMetricsEngine) RecordGDPRChannelEnabledDepreciationWarning(pubID string) {
+func (me *MultiMetricsEngine) RecordAccountGDPRChannelEnabledWarning(account string) {
 	for _, thisME := range *me {
-		thisME.RecordGDPRChannelEnabledDepreciationWarning(pubID)
+		thisME.RecordAccountGDPRChannelEnabledWarning(account)
 	}
 }
-func (me *MultiMetricsEngine) RecordCCPAChannelEnabledDepreciationWarning(pubID string) {
+func (me *MultiMetricsEngine) RecordAccountCCPAChannelEnabledWarning(account string) {
 	for _, thisME := range *me {
-		thisME.RecordCCPAChannelEnabledDepreciationWarning(pubID)
+		thisME.RecordAccountCCPAChannelEnabledWarning(account)
+	}
+}
+func (me *MultiMetricsEngine) RecordAccountUpgradeStatus(account string) {
+	for _, thisME := range *me {
+		thisME.RecordAccountUpgradeStatus(account)
 	}
 }
 
@@ -500,13 +505,16 @@ func (me *NilMetricsEngine) RecordBidValidationSecureMarkupError(adapter openrtb
 func (me *NilMetricsEngine) RecordBidValidationSecureMarkupWarn(adapter openrtb_ext.BidderName, account string) {
 }
 
-func (me *NilMetricsEngine) RecordAccountDepreciationWarnings(pubID string, purposeName string) {
+func (me *NilMetricsEngine) RecordAccountGDPRPurposeWarning(account string, purposeName string) {
 }
 
-func (me *NilMetricsEngine) RecordGDPRChannelEnabledDepreciationWarning(pubID string) {
+func (me *NilMetricsEngine) RecordAccountGDPRChannelEnabledWarning(account string) {
 }
 
-func (me *NilMetricsEngine) RecordCCPAChannelEnabledDepreciationWarning(pubID string) {
+func (me *NilMetricsEngine) RecordAccountCCPAChannelEnabledWarning(account string) {
+}
+
+func (me *NilMetricsEngine) RecordAccountUpgradeStatus(account string) {
 }
 
 func (me *NilMetricsEngine) RecordModuleCalled(labels metrics.ModuleLabels, duration time.Duration) {

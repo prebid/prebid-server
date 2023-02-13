@@ -1899,118 +1899,77 @@ func TestRecordModuleMetrics(t *testing.T) {
 	}
 }
 
-func TestRecordAccountDepreciationWarnings(t *testing.T) {
+func TestRecordAccountGDPRPurposeWarning(t *testing.T) {
 	testCases := []struct {
-		description          string
-		givenDisabledMetrics config.DisabledMetrics
-		givenPubID           string
-		givenPurposeName     string
-		expectedMetricCount  float64
+		description         string
+		givenPubID          string
+		givenPurposeName    string
+		expectedMetricCount float64
 	}{
 		{
-			description: "Metric isn't disabled, purpose1 metric should be incremented",
-			givenDisabledMetrics: config.DisabledMetrics{
-				AccountAdapterDetails: false,
-			},
+			description:         "purpose1 metric should be incremented",
 			givenPubID:          "acct-id",
 			givenPurposeName:    "purpose1",
 			expectedMetricCount: 1,
 		},
 		{
-			description: "Metric isn't disabled, purpose1 metric should be incremented",
-			givenDisabledMetrics: config.DisabledMetrics{
-				AccountAdapterDetails: false,
-			},
+			description:         "purpose2 metric should be incremented",
 			givenPubID:          "acct-id",
 			givenPurposeName:    "purpose2",
 			expectedMetricCount: 1,
 		},
 		{
-			description: "Metric isn't disabled, purpose1 metric should be incremented",
-			givenDisabledMetrics: config.DisabledMetrics{
-				AccountAdapterDetails: false,
-			},
+			description:         "purpose3 metric should be incremented",
 			givenPubID:          "acct-id",
 			givenPurposeName:    "purpose3",
 			expectedMetricCount: 1,
 		},
 		{
-			description: "Metric isn't disabled, purpose1 metric should be incremented",
-			givenDisabledMetrics: config.DisabledMetrics{
-				AccountAdapterDetails: false,
-			},
+			description:         "purpose4 metric should be incremented",
 			givenPubID:          "acct-id",
 			givenPurposeName:    "purpose4",
 			expectedMetricCount: 1,
 		},
 		{
-			description: "Metric isn't disabled, purpose1 metric should be incremented",
-			givenDisabledMetrics: config.DisabledMetrics{
-				AccountAdapterDetails: false,
-			},
+			description:         "purpose5 metric should be incremented",
 			givenPubID:          "acct-id",
 			givenPurposeName:    "purpose5",
 			expectedMetricCount: 1,
 		},
 		{
-			description: "Metric isn't disabled, purpose1 metric should be incremented",
-			givenDisabledMetrics: config.DisabledMetrics{
-				AccountAdapterDetails: false,
-			},
+			description:         "purpose6 metric should be incremented",
 			givenPubID:          "acct-id",
 			givenPurposeName:    "purpose6",
 			expectedMetricCount: 1,
 		},
 		{
-			description: "Metric isn't disabled, purpose1 metric should be incremented",
-			givenDisabledMetrics: config.DisabledMetrics{
-				AccountAdapterDetails: false,
-			},
+			description:         "purpose7 metric should be incremented",
 			givenPubID:          "acct-id",
 			givenPurposeName:    "purpose7",
 			expectedMetricCount: 1,
 		},
 		{
-			description: "Metric isn't disabled, purpose1 metric should be incremented",
-			givenDisabledMetrics: config.DisabledMetrics{
-				AccountAdapterDetails: false,
-			},
+			description:         "purpose8 metric should be incremented",
 			givenPubID:          "acct-id",
 			givenPurposeName:    "purpose8",
 			expectedMetricCount: 1,
 		},
 		{
-			description: "Metric isn't disabled, purpose1 metric should be incremented",
-			givenDisabledMetrics: config.DisabledMetrics{
-				AccountAdapterDetails: false,
-			},
+			description:         "purpose9 metric should be incremented",
 			givenPubID:          "acct-id",
 			givenPurposeName:    "purpose9",
 			expectedMetricCount: 1,
 		},
 		{
-			description: "Metric isn't disabled, purpose1 metric should be incremented",
-			givenDisabledMetrics: config.DisabledMetrics{
-				AccountAdapterDetails: false,
-			},
+			description:         "purpose10 metric should be incremented",
 			givenPubID:          "acct-id",
 			givenPurposeName:    "purpose10",
 			expectedMetricCount: 1,
 		},
-		{
-			description: "Metric is disabled, so no metrics should be incremented",
-			givenDisabledMetrics: config.DisabledMetrics{
-				AccountAdapterDetails: true,
-			},
-			givenPubID:          "acct-id",
-			givenPurposeName:    "purpose1",
-			expectedMetricCount: 0,
-		},
 	}
 	for _, test := range testCases {
 		m := createMetricsForTesting()
-		m.metricsDisabled.AccountAdapterDetails = test.givenDisabledMetrics.AccountAdapterDetails
-		m.RecordAccountDepreciationWarnings(test.givenPubID, test.givenPurposeName)
+		m.RecordAccountGDPRPurposeWarning(test.givenPubID, test.givenPurposeName)
 
 		switch test.givenPurposeName {
 		case "purpose1":
@@ -2037,70 +1996,65 @@ func TestRecordAccountDepreciationWarnings(t *testing.T) {
 	}
 }
 
-func TestRecordGDPRChannelEnabledDepreciationWarning(t *testing.T) {
+func TestRecordAccountGDPRChannelEnabledWarning(t *testing.T) {
 	testCases := []struct {
-		description          string
-		givenDisabledMetrics config.DisabledMetrics
-		givenPubID           string
-		expectedMetricCount  float64
+		description         string
+		givenPubID          string
+		expectedMetricCount float64
 	}{
 		{
-			description: "Metric isn't disabled, gdpr channel metric should be incremented",
-			givenDisabledMetrics: config.DisabledMetrics{
-				AccountAdapterDetails: false,
-			},
+			description:         "Metric isn't disabled, gdpr channel metric should be incremented",
 			givenPubID:          "acct-id",
 			expectedMetricCount: 1,
-		},
-		{
-			description: "Metric is disabled, so no metrics should be incremented",
-			givenDisabledMetrics: config.DisabledMetrics{
-				AccountAdapterDetails: true,
-			},
-			givenPubID:          "acct-id",
-			expectedMetricCount: 0,
 		},
 	}
 	for _, test := range testCases {
 		m := createMetricsForTesting()
-		m.metricsDisabled.AccountAdapterDetails = test.givenDisabledMetrics.AccountAdapterDetails
-		m.RecordGDPRChannelEnabledDepreciationWarning(test.givenPubID)
+		m.RecordAccountGDPRChannelEnabledWarning(test.givenPubID)
 
 		assertCounterValue(t, "", "GDPR Channel Enabled Depreciation Warnings", m.channelEnabledGDPR, test.expectedMetricCount)
 
 	}
 }
 
-func TestRecordCCPAChannelEnabledDepreciationWarning(t *testing.T) {
+func TestRecordAccountCCPAChannelEnabledWarning(t *testing.T) {
 	testCases := []struct {
-		description          string
-		givenDisabledMetrics config.DisabledMetrics
-		givenPubID           string
-		expectedMetricCount  float64
+		description         string
+		givenPubID          string
+		expectedMetricCount float64
 	}{
 		{
-			description: "Metric isn't disabled, gdpr channel metric should be incremented",
-			givenDisabledMetrics: config.DisabledMetrics{
-				AccountAdapterDetails: false,
-			},
+			description:         "Gdpr channel metric should be incremented",
 			givenPubID:          "acct-id",
 			expectedMetricCount: 1,
-		},
-		{
-			description: "Metric is disabled, so no metrics should be incremented",
-			givenDisabledMetrics: config.DisabledMetrics{
-				AccountAdapterDetails: true,
-			},
-			givenPubID:          "acct-id",
-			expectedMetricCount: 0,
 		},
 	}
 	for _, test := range testCases {
 		m := createMetricsForTesting()
-		m.metricsDisabled.AccountAdapterDetails = test.givenDisabledMetrics.AccountAdapterDetails
-		m.RecordCCPAChannelEnabledDepreciationWarning(test.givenPubID)
+		m.RecordAccountCCPAChannelEnabledWarning(test.givenPubID)
 
 		assertCounterValue(t, "", "CCPA Channel Enabled Depreciation Warnings", m.channelEnabledCCPA, test.expectedMetricCount)
+
+	}
+}
+
+func TestRecordAccountUpgradeStatus(t *testing.T) {
+	testCases := []struct {
+		description         string
+		givenPubID          string
+		expectedMetricCount float64
+	}{
+		{
+			description:         "Account depreciation summary meter should be incremented",
+			givenPubID:          "acct-id",
+			expectedMetricCount: 1,
+		},
+	}
+	for _, test := range testCases {
+		m := createMetricsForTesting()
+		m.RecordAccountUpgradeStatus(test.givenPubID)
+
+		assertCounterValue(t, "", "Account Depreciation Summary Meter should be incremented", m.accountDepreciationSummary, test.expectedMetricCount)
 
 	}
 }

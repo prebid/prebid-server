@@ -207,14 +207,18 @@ func (me *MetricsEngineMock) RecordModuleTimeout(labels ModuleLabels) {
 	me.Called(labels)
 }
 
-func (me *MetricsEngineMock) RecordAccountDepreciationWarnings(pubID string, purposeName string) {
-	me.Called(pubID, purposeName)
+func (me *MetricsEngineMock) RecordAccountGDPRPurposeWarning(account string, purposeName string) {
+	me.Called(account, purposeName)
 }
 
-func (me *MetricsEngineMock) RecordGDPRChannelEnabledDepreciationWarning(pubID string) {
-	me.Called(pubID)
+func (me *MetricsEngineMock) RecordAccountGDPRChannelEnabledWarning(account string) {
+	me.Called(account)
 }
 
-func (me *MetricsEngineMock) RecordCCPAChannelEnabledDepreciationWarning(pubID string) {
-	me.Called(pubID)
+func (me *MetricsEngineMock) RecordAccountCCPAChannelEnabledWarning(account string) {
+	me.Called(account)
+}
+
+func (me *MetricsEngineMock) RecordAccountUpgradeStatus(account string) {
+	me.Called(account)
 }

@@ -1030,119 +1030,79 @@ func TestRecordModuleAccountMetrics(t *testing.T) {
 	}
 }
 
-func TestRecordAccountDepreciationWarnings(t *testing.T) {
+func TestRecordAccountGDPRPurposeWarning(t *testing.T) {
 	testCases := []struct {
-		description          string
-		givenDisabledMetrics config.DisabledMetrics
-		givenPubID           string
-		givenPurposeName     string
-		expectedMetricCount  int64
+		description         string
+		givenPubID          string
+		givenPurposeName    string
+		expectedMetricCount int64
 	}{
 		{
-			description: "Metric isn't disabled, purpose1 metric should be incremented",
-			givenDisabledMetrics: config.DisabledMetrics{
-				AccountAdapterDetails: false,
-			},
+			description:         "purpose1 metric should be incremented",
 			givenPubID:          "acct-id",
 			givenPurposeName:    "purpose1",
 			expectedMetricCount: 1,
 		},
 		{
-			description: "Metric isn't disabled, purpose1 metric should be incremented",
-			givenDisabledMetrics: config.DisabledMetrics{
-				AccountAdapterDetails: false,
-			},
+			description:         "purpose2 metric should be incremented",
 			givenPubID:          "acct-id",
 			givenPurposeName:    "purpose2",
 			expectedMetricCount: 1,
 		},
 		{
-			description: "Metric isn't disabled, purpose1 metric should be incremented",
-			givenDisabledMetrics: config.DisabledMetrics{
-				AccountAdapterDetails: false,
-			},
+			description:         "purpose3 metric should be incremented",
 			givenPubID:          "acct-id",
 			givenPurposeName:    "purpose3",
 			expectedMetricCount: 1,
 		},
 		{
-			description: "Metric isn't disabled, purpose1 metric should be incremented",
-			givenDisabledMetrics: config.DisabledMetrics{
-				AccountAdapterDetails: false,
-			},
+			description:         "purpose4 metric should be incremented",
 			givenPubID:          "acct-id",
 			givenPurposeName:    "purpose4",
 			expectedMetricCount: 1,
 		},
 		{
-			description: "Metric isn't disabled, purpose1 metric should be incremented",
-			givenDisabledMetrics: config.DisabledMetrics{
-				AccountAdapterDetails: false,
-			},
+			description:         "purpose5 metric should be incremented",
 			givenPubID:          "acct-id",
 			givenPurposeName:    "purpose5",
 			expectedMetricCount: 1,
 		},
 		{
-			description: "Metric isn't disabled, purpose1 metric should be incremented",
-			givenDisabledMetrics: config.DisabledMetrics{
-				AccountAdapterDetails: false,
-			},
+			description:         "purpose6 metric should be incremented",
 			givenPubID:          "acct-id",
 			givenPurposeName:    "purpose6",
 			expectedMetricCount: 1,
 		},
 		{
-			description: "Metric isn't disabled, purpose1 metric should be incremented",
-			givenDisabledMetrics: config.DisabledMetrics{
-				AccountAdapterDetails: false,
-			},
+			description:         "purpose7 metric should be incremented",
 			givenPubID:          "acct-id",
 			givenPurposeName:    "purpose7",
 			expectedMetricCount: 1,
 		},
 		{
-			description: "Metric isn't disabled, purpose1 metric should be incremented",
-			givenDisabledMetrics: config.DisabledMetrics{
-				AccountAdapterDetails: false,
-			},
+			description:         "purpose8 metric should be incremented",
 			givenPubID:          "acct-id",
 			givenPurposeName:    "purpose8",
 			expectedMetricCount: 1,
 		},
 		{
-			description: "Metric isn't disabled, purpose1 metric should be incremented",
-			givenDisabledMetrics: config.DisabledMetrics{
-				AccountAdapterDetails: false,
-			},
+			description:         "purpose9 metric should be incremented",
 			givenPubID:          "acct-id",
 			givenPurposeName:    "purpose9",
 			expectedMetricCount: 1,
 		},
 		{
-			description: "Metric isn't disabled, purpose1 metric should be incremented",
-			givenDisabledMetrics: config.DisabledMetrics{
-				AccountAdapterDetails: false,
-			},
+			description:         "purpose10 metric should be incremented",
 			givenPubID:          "acct-id",
 			givenPurposeName:    "purpose10",
 			expectedMetricCount: 1,
 		},
-		{
-			description: "Metric is disabled, so no metrics should be incremented",
-			givenDisabledMetrics: config.DisabledMetrics{
-				AccountAdapterDetails: true,
-			},
-			givenPubID:          "acct-id",
-			givenPurposeName:    "purpose1",
-			expectedMetricCount: 0,
-		},
 	}
 	for _, test := range testCases {
 		registry := metrics.NewRegistry()
-		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, test.givenDisabledMetrics, nil, nil)
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{}, nil, nil)
 
-		m.RecordAccountDepreciationWarnings(test.givenPubID, test.givenPurposeName)
+		m.RecordAccountGDPRPurposeWarning(test.givenPubID, test.givenPurposeName)
 		am := m.getAccountMetrics(test.givenPubID)
 
 		switch test.givenPurposeName {
@@ -1170,35 +1130,23 @@ func TestRecordAccountDepreciationWarnings(t *testing.T) {
 	}
 }
 
-func TestRecordGDPRChannelEnabledDepreciationWarning(t *testing.T) {
+func TestRecordAccountGDPRChannelEnabledWarning(t *testing.T) {
 	testCases := []struct {
-		description          string
-		givenDisabledMetrics config.DisabledMetrics
-		givenPubID           string
-		expectedMetricCount  int64
+		description         string
+		givenPubID          string
+		expectedMetricCount int64
 	}{
 		{
-			description: "Metric isn't disabled, gdpr channel metric should be incremented",
-			givenDisabledMetrics: config.DisabledMetrics{
-				AccountAdapterDetails: false,
-			},
+			description:         "Gdpr channel metric should be incremented",
 			givenPubID:          "acct-id",
 			expectedMetricCount: 1,
-		},
-		{
-			description: "Metric is disabled, so no metrics should be incremented",
-			givenDisabledMetrics: config.DisabledMetrics{
-				AccountAdapterDetails: true,
-			},
-			givenPubID:          "acct-id",
-			expectedMetricCount: 0,
 		},
 	}
 	for _, test := range testCases {
 		registry := metrics.NewRegistry()
-		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, test.givenDisabledMetrics, nil, nil)
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{}, nil, nil)
 
-		m.RecordGDPRChannelEnabledDepreciationWarning(test.givenPubID)
+		m.RecordAccountGDPRChannelEnabledWarning(test.givenPubID)
 		am := m.getAccountMetrics(test.givenPubID)
 
 		assert.Equal(t, test.expectedMetricCount, am.channelEnabledGDPRMeter.Count())
@@ -1206,38 +1154,50 @@ func TestRecordGDPRChannelEnabledDepreciationWarning(t *testing.T) {
 	}
 }
 
-func TestRecordCCPAChannelEnabledDepreciationWarning(t *testing.T) {
+func TestRecordAccountCCPAChannelEnabledWarning(t *testing.T) {
 	testCases := []struct {
-		description          string
-		givenDisabledMetrics config.DisabledMetrics
-		givenPubID           string
-		expectedMetricCount  int64
+		description         string
+		givenPubID          string
+		expectedMetricCount int64
 	}{
 		{
-			description: "Metric isn't disabled, gdpr channel metric should be incremented",
-			givenDisabledMetrics: config.DisabledMetrics{
-				AccountAdapterDetails: false,
-			},
+			description:         "Ccpa channel metric should be incremented",
 			givenPubID:          "acct-id",
 			expectedMetricCount: 1,
-		},
-		{
-			description: "Metric is disabled, so no metrics should be incremented",
-			givenDisabledMetrics: config.DisabledMetrics{
-				AccountAdapterDetails: true,
-			},
-			givenPubID:          "acct-id",
-			expectedMetricCount: 0,
 		},
 	}
 	for _, test := range testCases {
 		registry := metrics.NewRegistry()
-		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, test.givenDisabledMetrics, nil, nil)
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{}, nil, nil)
 
-		m.RecordCCPAChannelEnabledDepreciationWarning(test.givenPubID)
+		m.RecordAccountCCPAChannelEnabledWarning(test.givenPubID)
 		am := m.getAccountMetrics(test.givenPubID)
 
 		assert.Equal(t, test.expectedMetricCount, am.channelEnabledCCPAMeter.Count())
+
+	}
+}
+
+func TestRecordAccountUpgradeStatus(t *testing.T) {
+	testCases := []struct {
+		description         string
+		givenPubID          string
+		expectedMetricCount int64
+	}{
+		{
+			description:         "Account depreciation summary meter should be incremented",
+			givenPubID:          "acct-id",
+			expectedMetricCount: 1,
+		},
+	}
+	for _, test := range testCases {
+		registry := metrics.NewRegistry()
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{}, nil, nil)
+
+		m.RecordAccountUpgradeStatus(test.givenPubID)
+		am := m.getAccountMetrics(test.givenPubID)
+
+		assert.Equal(t, test.expectedMetricCount, am.accountDepreciationSummaryMeter.Count())
 
 	}
 }

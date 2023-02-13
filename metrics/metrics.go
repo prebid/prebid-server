@@ -446,7 +446,8 @@ type MetricsEngine interface {
 	RecordModuleSuccessRejected(labels ModuleLabels)
 	RecordModuleExecutionError(labels ModuleLabels)
 	RecordModuleTimeout(labels ModuleLabels)
-	RecordAccountDepreciationWarnings(pubID string, purposeName string)
-	RecordGDPRChannelEnabledDepreciationWarning(pubID string)
-	RecordCCPAChannelEnabledDepreciationWarning(pubID string)
+	RecordAccountGDPRPurposeWarning(account string, purposeName string)
+	RecordAccountGDPRChannelEnabledWarning(account string)
+	RecordAccountCCPAChannelEnabledWarning(account string)
+	RecordAccountUpgradeStatus(account string)
 }

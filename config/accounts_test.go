@@ -824,3 +824,34 @@ func TestModulesGetConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestAccountChannelIsSet(t *testing.T) {
+	trueBool := true
+	falseBool := false
+
+	testCases := []struct {
+		description         string
+		givenAccountChannel *AccountChannel
+		expected            bool
+	}{
+		{
+			description:         "All values of Account Channel Are Set, Expect True",
+			givenAccountChannel: &AccountChannel{AMP: &trueBool, App: &falseBool, Video: &falseBool, Web: &falseBool},
+			expected:            true,
+		},
+		{
+			description:         "Account Channel values aren't set, expect false",
+			givenAccountChannel: &AccountChannel{},
+			expected:            false,
+		},
+		{
+			description:         "One account channel value is set, expect true",
+			givenAccountChannel: &AccountChannel{AMP: &trueBool},
+			expected:            true,
+		},
+	}
+
+	for _, test := range testCases {
+		assert.Equal(t, test.expected, test.givenAccountChannel.IsSet(), "Accout channel result is unexpected")
+	}
+}

@@ -17,10 +17,12 @@ import (
 )
 
 var mockAccountData = map[string]json.RawMessage{
-	"valid_acct":        json.RawMessage(`{"disabled":false}`),
-	"disabled_acct":     json.RawMessage(`{"disabled":true}`),
-	"malformed_acct":    json.RawMessage(`{"disabled":"invalid type"}`),
-	"gdpr_convert_acct": json.RawMessage(`{"disabled":false,"gdpr":{"purpose5":{"enforce_purpose":"full"}}}`),
+	"valid_acct":                json.RawMessage(`{"disabled":false}`),
+	"disabled_acct":             json.RawMessage(`{"disabled":true}`),
+	"malformed_acct":            json.RawMessage(`{"disabled":"invalid type"}`),
+	"gdpr_convert_acct":         json.RawMessage(`{"disabled":false,"gdpr":{"purpose5":{"enforce_purpose":"full"}}}`),
+	"gdpr_channel_enabled_acct": json.RawMessage(`{"disabled":false,"gdpr":{"channel_enabled":{"amp":true}}}`),
+	"ccpa_channel_enabled_acct": json.RawMessage(`{"disabled":false,"ccpa":{"channel_enabled":{"amp":true}}}`),
 }
 
 type mockAccountFetcher struct {
@@ -102,7 +104,8 @@ func TestGetAccount(t *testing.T) {
 			assert.NoError(t, cfg.MarshalAccountDefaults())
 
 			metrics := &metrics.MetricsEngineMock{}
-			metrics.Mock.On("RecordAccountDepreciationWarnings", mock.Anything, mock.Anything).Return()
+			metrics.Mock.On("RecordAccountGDPRPurposeWarning", mock.Anything, mock.Anything).Return()
+			metrics.Mock.On("RecordAccountUpgradeStatus", mock.Anything, mock.Anything).Return()
 
 			account, errors := GetAccount(context.Background(), cfg, fetcher, test.accountID, metrics)
 
@@ -337,7 +340,8 @@ func TestConvertGDPREnforcePurposeFields(t *testing.T) {
 
 	for _, tt := range tests {
 		metricsMock := &metrics.MetricsEngineMock{}
-		metricsMock.Mock.On("RecordAccountDepreciationWarnings", mock.Anything, mock.Anything).Return()
+		metricsMock.Mock.On("RecordAccountGDPRPurposeWarning", mock.Anything, mock.Anything).Return()
+		metricsMock.Mock.On("RecordAccountUpgradeStatus", mock.Anything, mock.Anything).Return()
 
 		newConfig, err := ConvertGDPREnforcePurposeFields(tt.giveConfig, metricsMock, "acct-id")
 		if tt.wantErr != nil {
@@ -349,5 +353,147 @@ func TestConvertGDPREnforcePurposeFields(t *testing.T) {
 		} else {
 			assert.JSONEq(t, string(tt.wantConfig), string(newConfig), tt.description)
 		}
+	}
+}
+
+func TestGdprCcpaChannelEnabled(t *testing.T) {
+	testCases := []struct {
+		description         string
+		givenAccountID      string
+		givenMetric         string
+		required            bool
+		disabled            bool
+		expectedMetricCount int
+	}{
+		{
+			description:         "Account is GDPR Channel Enabled, the GDPR metric should be called",
+			givenAccountID:      "gdpr_channel_enabled_acct",
+			givenMetric:         "RecordAccountGDPRChannelEnabledWarning",
+			required:            false,
+			disabled:            false,
+			expectedMetricCount: 1,
+		},
+		{
+			description:         "Account is CCPA Channel Enabled, the CCPA metric should be called",
+			givenAccountID:      "ccpa_channel_enabled_acct",
+			givenMetric:         "RecordAccountCCPAChannelEnabledWarning",
+			required:            false,
+			disabled:            false,
+			expectedMetricCount: 1,
+		},
+		{
+			description:         "Account isn't channel enabled, CCPA metric shouldn't be called",
+			givenAccountID:      "valid_acct",
+			givenMetric:         "RecordAccountCCPAChannelEnabledWarning",
+			required:            false,
+			disabled:            false,
+			expectedMetricCount: 0,
+		},
+		{
+			description:         "Account isn't channel enabled, GDPR metric shouldn't be called",
+			givenAccountID:      "valid_acct",
+			givenMetric:         "RecordAccountGDPRChannelEnabledWarning",
+			required:            false,
+			disabled:            false,
+			expectedMetricCount: 0,
+		},
+	}
+
+	for _, test := range testCases {
+		cfg := &config.Configuration{
+			BlacklistedAcctMap: map[string]bool{"bad_acct": true},
+			AccountRequired:    test.required,
+			AccountDefaults:    config.Account{Disabled: test.disabled},
+		}
+		fetcher := &mockAccountFetcher{}
+		assert.NoError(t, cfg.MarshalAccountDefaults())
+
+		metrics := &metrics.MetricsEngineMock{}
+		metrics.Mock.On(test.givenMetric, mock.Anything, mock.Anything).Return()
+		metrics.Mock.On("RecordAccountUpgradeStatus", mock.Anything, mock.Anything).Return()
+
+		_, _ = GetAccount(context.Background(), cfg, fetcher, test.givenAccountID, metrics)
+
+		metrics.AssertNumberOfCalls(t, test.givenMetric, test.expectedMetricCount)
+		metrics.AssertNumberOfCalls(t, "RecordAccountUpgradeStatus", test.expectedMetricCount)
+
+	}
+}
+
+func TestGdprPurposeWarning(t *testing.T) {
+	testCases := []struct {
+		description         string
+		givenMetric         string
+		givenConfig         []byte
+		expectedMetricCount int
+	}{
+		{
+			description:         "Old GDPR Purpose 1 Config Is Used, Expect Purpose Metric Method to Be Called",
+			givenConfig:         []byte(`{"gdpr":{"purpose1":{"enforce_purpose":"full"}}}`),
+			expectedMetricCount: 1,
+		},
+		{
+			description:         "Old GDPR Purpose 2 Config Is Used, Expect Purpose Metric Method to Be Called",
+			givenConfig:         []byte(`{"gdpr":{"purpose2":{"enforce_purpose":"full"}}}`),
+			expectedMetricCount: 1,
+		},
+		{
+			description:         "Old GDPR Purpose 3 Config Is Used, Expect Purpose Metric Method to Be Called",
+			givenConfig:         []byte(`{"gdpr":{"purpose3":{"enforce_purpose":"full"}}}`),
+			expectedMetricCount: 1,
+		},
+		{
+			description:         "Old GDPR Purpose 4 Config Is Used, Expect Purpose Metric Method to Be Called",
+			givenConfig:         []byte(`{"gdpr":{"purpose4":{"enforce_purpose":"full"}}}`),
+			expectedMetricCount: 1,
+		},
+		{
+			description:         "Old GDPR Purpose 5 Config Is Used, Expect Purpose Metric Method to Be Called",
+			givenConfig:         []byte(`{"gdpr":{"purpose5":{"enforce_purpose":"full"}}}`),
+			expectedMetricCount: 1,
+		},
+		{
+			description:         "Old GDPR Purpose 6 Config Is Used, Expect Purpose Metric Method to Be Called",
+			givenConfig:         []byte(`{"gdpr":{"purpose6":{"enforce_purpose":"full"}}}`),
+			expectedMetricCount: 1,
+		},
+		{
+			description:         "Old GDPR Purpose 7 Config Is Used, Expect Purpose Metric Method to Be Called",
+			givenConfig:         []byte(`{"gdpr":{"purpose7":{"enforce_purpose":"full"}}}`),
+			expectedMetricCount: 1,
+		},
+		{
+			description:         "Old GDPR Purpose 8 Config Is Used, Expect Purpose Metric Method to Be Called",
+			givenConfig:         []byte(`{"gdpr":{"purpose8":{"enforce_purpose":"full"}}}`),
+			expectedMetricCount: 1,
+		},
+		{
+			description:         "Old GDPR Purpose 9 Config Is Used, Expect Purpose Metric Method to Be Called",
+			givenConfig:         []byte(`{"gdpr":{"purpose9":{"enforce_purpose":"full"}}}`),
+			expectedMetricCount: 1,
+		},
+		{
+			description:         "Old GDPR Purpose 10 Config Is Used, Expect Purpose Metric Method to Be Called",
+			givenConfig:         []byte(`{"gdpr":{"purpose10":{"enforce_purpose":"full"}}}`),
+			expectedMetricCount: 1,
+		},
+		{
+			description:         "New GDPR Purpose Config Is Used, Don't Expect Purpose Metric Method to Be Called",
+			givenConfig:         []byte(`{"gdpr":{"purpose1":{"enforce_algo":"full"}}}`),
+			expectedMetricCount: 0,
+		},
+	}
+
+	for _, test := range testCases {
+		metrics := &metrics.MetricsEngineMock{}
+		metrics.Mock.On("RecordAccountGDPRPurposeWarning", mock.Anything, mock.Anything).Return()
+		metrics.Mock.On("RecordAccountUpgradeStatus", mock.Anything, mock.Anything).Return()
+
+		_, err := ConvertGDPREnforcePurposeFields(test.givenConfig, metrics, "acct-id")
+		assert.NoError(t, err)
+
+		metrics.AssertNumberOfCalls(t, "RecordAccountGDPRPurposeWarning", test.expectedMetricCount)
+		metrics.AssertNumberOfCalls(t, "RecordAccountUpgradeStatus", test.expectedMetricCount)
+
 	}
 }

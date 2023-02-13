@@ -50,12 +50,6 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 		// accountID resolved to a valid account, merge with AccountDefaults for a complete config
 		account = &config.Account{}
 		err := json.Unmarshal(accountJSON, account)
-		if checkGDPRBackwardsCompatability(account) {
-			me.RecordGDPRChannelEnabledDepreciationWarning(accountID)
-		}
-		if checkCCPABackwardsCompatability(account) {
-			me.RecordCCPAChannelEnabledDepreciationWarning(accountID)
-		}
 
 		// this logic exists for backwards compatibility. If the initial unmarshal fails above, we attempt to
 		// resolve it by converting the GDPR enforce purpose fields and then attempting an unmarshal again before
@@ -71,6 +65,23 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 				return nil, []error{&errortypes.MalformedAcct{
 					Message: fmt.Sprintf("The prebid-server account config for account id \"%s\" is malformed. Please reach out to the prebid server host.", accountID),
 				}}
+			}
+			if useGDPRChannelEnabled(account) {
+				me.RecordAccountGDPRChannelEnabledWarning(accountID)
+				me.RecordAccountUpgradeStatus(accountID)
+			}
+			if useCCPAChannelEnabled(account) {
+				me.RecordAccountCCPAChannelEnabledWarning(accountID)
+				me.RecordAccountUpgradeStatus(accountID)
+			}
+		} else {
+			if useGDPRChannelEnabled(account) {
+				me.RecordAccountGDPRChannelEnabledWarning(accountID)
+				me.RecordAccountUpgradeStatus(accountID)
+			}
+			if useCCPAChannelEnabled(account) {
+				me.RecordAccountCCPAChannelEnabledWarning(accountID)
+				me.RecordAccountUpgradeStatus(accountID)
 			}
 		}
 
@@ -174,7 +185,7 @@ type PatchAccountGDPRPurpose struct {
 // given the recent type change of gdpr.purpose{1-10}.enforce_purpose from a string to a bool. This function
 // iterates over each GDPR purpose config and sets enforce_purpose and enforce_algo to the appropriate
 // bool and string values respectively if enforce_purpose is a string and enforce_algo is not set
-func ConvertGDPREnforcePurposeFields(config []byte, me metrics.MetricsEngine, pubID string) (newConfig []byte, err error) {
+func ConvertGDPREnforcePurposeFields(config []byte, me metrics.MetricsEngine, accountID string) (newConfig []byte, err error) {
 	gdprJSON, _, _, err := jsonparser.Get(config, "gdpr")
 	if err != nil && err == jsonparser.KeyPathNotFoundError {
 		return config, nil
@@ -200,7 +211,8 @@ func ConvertGDPREnforcePurposeFields(config []byte, me metrics.MetricsEngine, pu
 		if purposeDataType != jsonparser.String {
 			continue
 		} else {
-			me.RecordAccountDepreciationWarnings(pubID, purposeName)
+			me.RecordAccountGDPRPurposeWarning(accountID, purposeName)
+			me.RecordAccountUpgradeStatus(accountID)
 		}
 
 		_, _, _, err = jsonparser.Get(gdprJSON, purposeName, "enforce_algo")
@@ -235,20 +247,10 @@ func ConvertGDPREnforcePurposeFields(config []byte, me metrics.MetricsEngine, pu
 	return newConfig, nil
 }
 
-func checkGDPRBackwardsCompatability(account *config.Account) bool {
-	if account.GDPR.ChannelEnabled.AMP != nil || account.GDPR.ChannelEnabled.App != nil || account.GDPR.ChannelEnabled.Video != nil || account.GDPR.ChannelEnabled.Web != nil {
-		if account.GDPR.IntegrationEnabled.AMP == nil && account.GDPR.IntegrationEnabled.App == nil && account.GDPR.IntegrationEnabled.Video == nil && account.GDPR.IntegrationEnabled.Web == nil {
-			return true
-		}
-	}
-	return false
+func useGDPRChannelEnabled(account *config.Account) bool {
+	return account.GDPR.ChannelEnabled.IsSet() && !account.GDPR.IntegrationEnabled.IsSet()
 }
 
-func checkCCPABackwardsCompatability(account *config.Account) bool {
-	if account.CCPA.ChannelEnabled.AMP != nil || account.CCPA.ChannelEnabled.App != nil || account.CCPA.ChannelEnabled.Video != nil || account.CCPA.ChannelEnabled.Web != nil {
-		if account.CCPA.IntegrationEnabled.AMP == nil && account.CCPA.IntegrationEnabled.App == nil && account.CCPA.IntegrationEnabled.Video == nil && account.CCPA.IntegrationEnabled.Web == nil {
-			return true
-		}
-	}
-	return false
+func useCCPAChannelEnabled(account *config.Account) bool {
+	return account.CCPA.ChannelEnabled.IsSet() && !account.CCPA.IntegrationEnabled.IsSet()
 }
