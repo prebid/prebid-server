@@ -19,9 +19,9 @@ func SetDefaults(r *openrtb_ext.RequestWrapper) error {
 
 	requestExtPrebid := requestExt.GetPrebid()
 	if requestExtPrebid != nil {
-		hasChanges := setDefaultsTargeting(requestExtPrebid.Targeting)
+		modified := setDefaultsTargeting(requestExtPrebid.Targeting)
 
-		if hasChanges {
+		if modified {
 			requestExt.SetPrebid(requestExtPrebid)
 		}
 	}
@@ -34,43 +34,43 @@ func setDefaultsTargeting(targeting *openrtb_ext.ExtRequestTargeting) bool {
 		return false
 	}
 
-	hasChanges := false
+	modified := false
 
 	if targeting.PriceGranularity == nil {
 		targeting.PriceGranularity = ptrutil.ToPtr(openrtb_ext.NewPriceGranularityDefault())
-		hasChanges = true
+		modified = true
 	} else {
 		if targeting.PriceGranularity.Precision == nil {
 			targeting.PriceGranularity.Precision = ptrutil.ToPtr(DefaultPriceGranularityPrecision)
-			hasChanges = true
+			modified = true
 		}
-		hasChanges = hasChanges || setDefaultsPriceGranularityRange(targeting.PriceGranularity.Ranges)
+		modified = modified || setDefaultsPriceGranularityRange(targeting.PriceGranularity.Ranges)
 	}
 
 	if targeting.IncludeWinners == nil {
 		targeting.IncludeWinners = ptrutil.ToPtr(DefaultTargetingIncludeWinners)
-		hasChanges = true
+		modified = true
 	}
 
 	if targeting.IncludeBidderKeys == nil {
 		targeting.IncludeBidderKeys = ptrutil.ToPtr(DefaultTargetingIncludeBidderKeys)
-		hasChanges = true
+		modified = true
 	}
 
-	return hasChanges
+	return modified
 }
 
 func setDefaultsPriceGranularityRange(ranges []openrtb_ext.GranularityRange) bool {
-	hasChanges := false
+	modified := false
 
 	var prevMax float64 = 0
 	for i, r := range ranges {
 		if ranges[i].Min != prevMax {
 			ranges[i].Min = prevMax
-			hasChanges = true
+			modified = true
 		}
 		prevMax = r.Max
 	}
 
-	return hasChanges
+	return modified
 }
