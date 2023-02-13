@@ -1,0 +1,15 @@
+endpoint: "http://point.braveglobal.tv/?t=3&partner={{.PublisherID}}"
+maintainer:
+  email: "support@thebrave.io"
+gvlVendorID: 869
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native

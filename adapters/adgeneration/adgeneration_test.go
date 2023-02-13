@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/config"
@@ -14,7 +14,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAdgeneration, config.Adapter{
-		Endpoint: "https://d.socdm.com/adsv/v1"})
+		Endpoint: "https://d.socdm.com/adsv/v1"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -25,7 +25,7 @@ func TestJsonSamples(t *testing.T) {
 
 func TestGetRequestUri(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAdgeneration, config.Adapter{
-		Endpoint: "https://d.socdm.com/adsv/v1"})
+		Endpoint: "https://d.socdm.com/adsv/v1"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -133,7 +133,7 @@ func TestGetSizes(t *testing.T) {
 
 func TestGetCurrency(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAdgeneration, config.Adapter{
-		Endpoint: "https://d.socdm.com/adsv/v1"})
+		Endpoint: "https://d.socdm.com/adsv/v1"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -204,7 +204,7 @@ func TestCreateAd(t *testing.T) {
 
 func TestMakeBids(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAdgeneration, config.Adapter{
-		Endpoint: "https://d.socdm.com/adsv/v1"})
+		Endpoint: "https://d.socdm.com/adsv/v1"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)

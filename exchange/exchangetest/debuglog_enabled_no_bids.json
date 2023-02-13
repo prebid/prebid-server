@@ -26,8 +26,12 @@
             ]
           },
           "ext": {
-            "appnexus": {
-              "placementId": 1
+            "prebid": {
+              "bidder": {
+                "appnexus": {
+                  "placementId": 1
+                }
+              }
             }
           }
         },
@@ -39,8 +43,12 @@
             ]
           },
           "ext": {
-            "appnexus": {
-              "placementId": 1
+            "prebid": {
+              "bidder": {
+                "appnexus": {
+                  "placementId": 1
+                }
+              }
             }
           }
         }
@@ -64,7 +72,9 @@
   "outgoingRequests": {
     "appnexus": {
       "mockResponse": {
-        "pbsSeatBid": {}
+        "pbsSeatBids": [
+          {}
+        ]
       }
     }
   },

@@ -5,19 +5,19 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 type criteoRequest struct {
-	ID          string                   `json:"id,omitempty"`
-	Publisher   criteoPublisher          `json:"publisher,omitempty"`
-	User        criteoUser               `json:"user,omitempty"`
-	GdprConsent criteoGdprConsent        `json:"gdprconsent,omitempty"`
-	Slots       []criteoRequestSlot      `json:"slots,omitempty"`
-	Eids        []openrtb_ext.ExtUserEid `json:"eids,omitempty"`
+	ID          string              `json:"id,omitempty"`
+	Publisher   criteoPublisher     `json:"publisher,omitempty"`
+	User        criteoUser          `json:"user,omitempty"`
+	GdprConsent criteoGdprConsent   `json:"gdprconsent,omitempty"`
+	Slots       []criteoRequestSlot `json:"slots,omitempty"`
+	Eids        []openrtb2.EID      `json:"eids,omitempty"`
 }
 
 func newCriteoRequest(slotIDGenerator slotIDGenerator, request *openrtb2.BidRequest) (criteoRequest, []error) {

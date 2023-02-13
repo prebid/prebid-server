@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -21,14 +21,14 @@ type DeepintentAdapter struct {
 }
 
 // Builder builds a new instance of the Deepintent adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &DeepintentAdapter{
 		URI: config.Endpoint,
 	}
 	return bidder, nil
 }
 
-//MakeRequests which creates request object for Deepintent DSP
+// MakeRequests which creates request object for Deepintent DSP
 func (d *DeepintentAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var deepintentExt openrtb_ext.ExtImpDeepintent

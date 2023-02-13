@@ -11,15 +11,27 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/version"
 
-	"github.com/mxmCherry/openrtb/v15/native1"
-	native1response "github.com/mxmCherry/openrtb/v15/native1/response"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/openrtb/v17/native1"
+	native1response "github.com/prebid/openrtb/v17/native1/response"
+	"github.com/prebid/openrtb/v17/openrtb2"
 )
 
 type IxAdapter struct {
 	URI         string
 	maxRequests int
+}
+
+type ExtRequest struct {
+	Prebid *openrtb_ext.ExtRequestPrebid `json:"prebid"`
+	SChain *openrtb2.SupplyChain         `json:"schain,omitempty"`
+	IxDiag *IxDiag                       `json:"ixdiag,omitempty"`
+}
+
+type IxDiag struct {
+	PbsV  string `json:"pbsv,omitempty"`
+	PbjsV string `json:"pbjsv,omitempty"`
 }
 
 func (a *IxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -29,13 +41,18 @@ func (a *IxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters
 		nImp = a.maxRequests
 	}
 
+	errs := make([]error, 0)
+
+	if err := BuildIxDiag(request); err != nil {
+		errs = append(errs, err)
+	}
+
 	// Multi-size banner imps are split into single-size requests.
 	// The first size imp requests are added to the first slice.
 	// Additional size requests are added to the second slice and are merged with the first at the end.
 	// Preallocate the max possible size to avoid reallocating arrays.
 	requests := make([]*adapters.RequestData, 0, a.maxRequests)
 	multiSizeRequests := make([]*adapters.RequestData, 0, a.maxRequests-nImp)
-	errs := make([]error, 0, 1)
 
 	headers := http.Header{
 		"Content-Type": {"application/json;charset=utf-8"},
@@ -148,18 +165,18 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 		}}
 	}
 
-	// Until the time we support multi-format ad units, we'll use a bid request impression media type
-	// as a bid response bid type. They are linked by the impression id.
-	impMediaType := map[string]openrtb_ext.BidType{}
+	// Store media type per impression in a map for later use to set in bid.ext.prebid.type
+	// Won't work for multiple bid case with a multi-format ad unit. We expect to get type from exchange on such case.
+	impMediaTypeReq := map[string]openrtb_ext.BidType{}
 	for _, imp := range internalRequest.Imp {
 		if imp.Banner != nil {
-			impMediaType[imp.ID] = openrtb_ext.BidTypeBanner
+			impMediaTypeReq[imp.ID] = openrtb_ext.BidTypeBanner
 		} else if imp.Video != nil {
-			impMediaType[imp.ID] = openrtb_ext.BidTypeVideo
+			impMediaTypeReq[imp.ID] = openrtb_ext.BidTypeVideo
 		} else if imp.Native != nil {
-			impMediaType[imp.ID] = openrtb_ext.BidTypeNative
+			impMediaTypeReq[imp.ID] = openrtb_ext.BidTypeNative
 		} else if imp.Audio != nil {
-			impMediaType[imp.ID] = openrtb_ext.BidTypeAudio
+			impMediaTypeReq[imp.ID] = openrtb_ext.BidTypeAudio
 		}
 	}
 
@@ -170,9 +187,11 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 
 	for _, seatBid := range bidResponse.SeatBid {
 		for _, bid := range seatBid.Bid {
-			bidType, ok := impMediaType[bid.ImpID]
-			if !ok {
-				errs = append(errs, fmt.Errorf("unmatched impression id: %s", bid.ImpID))
+
+			bidType, err := getMediaTypeForBid(bid, impMediaTypeReq)
+			if err != nil {
+				errs = append(errs, err)
+				continue
 			}
 
 			var bidExtVideo *openrtb_ext.ExtBidPrebidVideo
@@ -222,8 +241,38 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 	return bidderResponse, errs
 }
 
+func getMediaTypeForBid(bid openrtb2.Bid, impMediaTypeReq map[string]openrtb_ext.BidType) (openrtb_ext.BidType, error) {
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupAudio:
+		return openrtb_ext.BidTypeAudio, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
+	}
+
+	if bid.Ext != nil {
+		var bidExt openrtb_ext.ExtBid
+		err := json.Unmarshal(bid.Ext, &bidExt)
+		if err == nil && bidExt.Prebid != nil {
+			prebidType := string(bidExt.Prebid.Type)
+			if prebidType != "" {
+				return openrtb_ext.ParseBidType(prebidType)
+			}
+		}
+	}
+
+	if bidType, ok := impMediaTypeReq[bid.ImpID]; ok {
+		return bidType, nil
+	} else {
+		return "", fmt.Errorf("unmatched impression id: %s", bid.ImpID)
+	}
+}
+
 // Builder builds a new instance of the Ix adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &IxAdapter{
 		URI:         config.Endpoint,
 		maxRequests: 20,
@@ -276,4 +325,36 @@ func marshalJsonWithoutUnicode(v interface{}) (string, error) {
 	// json.Encode also writes a newline, need to remove
 	// https://pkg.go.dev/encoding/json#Encoder.Encode
 	return strings.TrimSuffix(sb.String(), "\n"), nil
+}
+
+func BuildIxDiag(request *openrtb2.BidRequest) error {
+	extRequest := &ExtRequest{}
+	if request.Ext != nil {
+		if err := json.Unmarshal(request.Ext, &extRequest); err != nil {
+			return err
+		}
+	}
+	ixdiag := &IxDiag{}
+
+	if extRequest.Prebid != nil && extRequest.Prebid.Channel != nil {
+		ixdiag.PbjsV = extRequest.Prebid.Channel.Version
+	}
+
+	// Slice commit hash out of version
+	if strings.Contains(version.Ver, "-") {
+		ixdiag.PbsV = version.Ver[:strings.Index(version.Ver, "-")]
+	} else if version.Ver != "" {
+		ixdiag.PbsV = version.Ver
+	}
+
+	// Only set request.ext if ixDiag is not empty
+	if *ixdiag != (IxDiag{}) {
+		extRequest.IxDiag = ixdiag
+		extRequestJson, err := json.Marshal(extRequest)
+		if err != nil {
+			return err
+		}
+		request.Ext = extRequestJson
+	}
+	return nil
 }

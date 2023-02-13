@@ -13,7 +13,7 @@ import (
 
 // NewMetricsEngine reads the configuration and returns the appropriate metrics engine
 // for this instance.
-func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.BidderName, syncerKeys []string) *DetailedMetricsEngine {
+func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.BidderName, syncerKeys []string, moduleStageNames map[string][]string) *DetailedMetricsEngine {
 	// Create a list of metrics engines to use.
 	// Capacity of 2, as unlikely to have more than 2 metrics backends, and in the case
 	// of 1 we won't use the list so it will be garbage collected.
@@ -22,7 +22,7 @@ func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.Bidde
 
 	if cfg.Metrics.Influxdb.Host != "" {
 		// Currently use go-metrics as the metrics piece for influx
-		returnEngine.GoMetrics = metrics.NewMetrics(gometrics.NewPrefixedRegistry("prebidserver."), adapterList, cfg.Metrics.Disabled, syncerKeys)
+		returnEngine.GoMetrics = metrics.NewMetrics(gometrics.NewPrefixedRegistry("prebidserver."), adapterList, cfg.Metrics.Disabled, syncerKeys, moduleStageNames)
 		engineList = append(engineList, returnEngine.GoMetrics)
 
 		// Set up the Influx logger
@@ -40,7 +40,7 @@ func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.Bidde
 	}
 	if cfg.Metrics.Prometheus.Port != 0 {
 		// Set up the Prometheus metrics.
-		returnEngine.PrometheusMetrics = prometheusmetrics.NewMetrics(cfg.Metrics.Prometheus, cfg.Metrics.Disabled, syncerKeys)
+		returnEngine.PrometheusMetrics = prometheusmetrics.NewMetrics(cfg.Metrics.Prometheus, cfg.Metrics.Disabled, syncerKeys, moduleStageNames)
 		engineList = append(engineList, returnEngine.PrometheusMetrics)
 	}
 
@@ -86,7 +86,7 @@ func (me *MultiMetricsEngine) RecordConnectionClose(success bool) {
 	}
 }
 
-//RecordsImps records imps with imp types across all metric engines
+// RecordsImps records imps with imp types across all metric engines
 func (me *MultiMetricsEngine) RecordImps(implabels metrics.ImpLabels) {
 	for _, thisME := range *me {
 		thisME.RecordImps(implabels)
@@ -254,6 +254,97 @@ func (me *MultiMetricsEngine) RecordAdapterGDPRRequestBlocked(adapter openrtb_ex
 	}
 }
 
+// RecordDebugRequest across all engines
+func (me *MultiMetricsEngine) RecordDebugRequest(debugEnabled bool, pubId string) {
+	for _, thisME := range *me {
+		thisME.RecordDebugRequest(debugEnabled, pubId)
+	}
+}
+
+func (me *MultiMetricsEngine) RecordStoredResponse(pubId string) {
+	for _, thisME := range *me {
+		thisME.RecordStoredResponse(pubId)
+	}
+}
+
+func (me *MultiMetricsEngine) RecordAdsCertReq(success bool) {
+	for _, thisME := range *me {
+		thisME.RecordAdsCertReq(success)
+	}
+}
+
+func (me *MultiMetricsEngine) RecordAdsCertSignTime(adsCertSignTime time.Duration) {
+	for _, thisME := range *me {
+		thisME.RecordAdsCertSignTime(adsCertSignTime)
+	}
+}
+
+func (me *MultiMetricsEngine) RecordBidValidationCreativeSizeError(adapter openrtb_ext.BidderName, account string) {
+	for _, thisME := range *me {
+		thisME.RecordBidValidationCreativeSizeError(adapter, account)
+	}
+}
+
+func (me *MultiMetricsEngine) RecordBidValidationCreativeSizeWarn(adapter openrtb_ext.BidderName, account string) {
+	for _, thisME := range *me {
+		thisME.RecordBidValidationCreativeSizeWarn(adapter, account)
+	}
+}
+
+func (me *MultiMetricsEngine) RecordBidValidationSecureMarkupError(adapter openrtb_ext.BidderName, account string) {
+	for _, thisME := range *me {
+		thisME.RecordBidValidationSecureMarkupError(adapter, account)
+	}
+}
+
+func (me *MultiMetricsEngine) RecordBidValidationSecureMarkupWarn(adapter openrtb_ext.BidderName, account string) {
+	for _, thisME := range *me {
+		thisME.RecordBidValidationSecureMarkupWarn(adapter, account)
+	}
+}
+
+func (me *MultiMetricsEngine) RecordModuleCalled(labels metrics.ModuleLabels, duration time.Duration) {
+	for _, thisME := range *me {
+		thisME.RecordModuleCalled(labels, duration)
+	}
+}
+
+func (me *MultiMetricsEngine) RecordModuleFailed(labels metrics.ModuleLabels) {
+	for _, thisME := range *me {
+		thisME.RecordModuleFailed(labels)
+	}
+}
+
+func (me *MultiMetricsEngine) RecordModuleSuccessNooped(labels metrics.ModuleLabels) {
+	for _, thisME := range *me {
+		thisME.RecordModuleSuccessNooped(labels)
+	}
+}
+
+func (me *MultiMetricsEngine) RecordModuleSuccessUpdated(labels metrics.ModuleLabels) {
+	for _, thisME := range *me {
+		thisME.RecordModuleSuccessUpdated(labels)
+	}
+}
+
+func (me *MultiMetricsEngine) RecordModuleSuccessRejected(labels metrics.ModuleLabels) {
+	for _, thisME := range *me {
+		thisME.RecordModuleSuccessRejected(labels)
+	}
+}
+
+func (me *MultiMetricsEngine) RecordModuleExecutionError(labels metrics.ModuleLabels) {
+	for _, thisME := range *me {
+		thisME.RecordModuleExecutionError(labels)
+	}
+}
+
+func (me *MultiMetricsEngine) RecordModuleTimeout(labels metrics.ModuleLabels) {
+	for _, thisME := range *me {
+		thisME.RecordModuleTimeout(labels)
+	}
+}
+
 // NilMetricsEngine implements the MetricsEngine interface where no metrics are actually captured. This is
 // used if no metric backend is configured and also for tests.
 type NilMetricsEngine struct{}
@@ -364,4 +455,52 @@ func (me *NilMetricsEngine) RecordRequestPrivacy(privacy metrics.PrivacyLabels) 
 
 // RecordAdapterGDPRRequestBlocked as a noop
 func (me *NilMetricsEngine) RecordAdapterGDPRRequestBlocked(adapter openrtb_ext.BidderName) {
+}
+
+// RecordDebugRequest as a noop
+func (me *NilMetricsEngine) RecordDebugRequest(debugEnabled bool, pubId string) {
+}
+
+func (me *NilMetricsEngine) RecordStoredResponse(pubId string) {
+}
+
+func (me *NilMetricsEngine) RecordAdsCertReq(success bool) {
+
+}
+
+func (me *NilMetricsEngine) RecordAdsCertSignTime(adsCertSignTime time.Duration) {
+
+}
+
+func (me *NilMetricsEngine) RecordBidValidationCreativeSizeError(adapter openrtb_ext.BidderName, account string) {
+}
+
+func (me *NilMetricsEngine) RecordBidValidationCreativeSizeWarn(adapter openrtb_ext.BidderName, account string) {
+}
+
+func (me *NilMetricsEngine) RecordBidValidationSecureMarkupError(adapter openrtb_ext.BidderName, account string) {
+}
+
+func (me *NilMetricsEngine) RecordBidValidationSecureMarkupWarn(adapter openrtb_ext.BidderName, account string) {
+}
+
+func (me *NilMetricsEngine) RecordModuleCalled(labels metrics.ModuleLabels, duration time.Duration) {
+}
+
+func (me *NilMetricsEngine) RecordModuleFailed(labels metrics.ModuleLabels) {
+}
+
+func (me *NilMetricsEngine) RecordModuleSuccessNooped(labels metrics.ModuleLabels) {
+}
+
+func (me *NilMetricsEngine) RecordModuleSuccessUpdated(labels metrics.ModuleLabels) {
+}
+
+func (me *NilMetricsEngine) RecordModuleSuccessRejected(labels metrics.ModuleLabels) {
+}
+
+func (me *NilMetricsEngine) RecordModuleExecutionError(labels metrics.ModuleLabels) {
+}
+
+func (me *NilMetricsEngine) RecordModuleTimeout(labels metrics.ModuleLabels) {
 }

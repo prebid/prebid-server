@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/config"
@@ -15,7 +15,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderKidoz, config.Adapter{
-		Endpoint: "http://example.com/prebid"})
+		Endpoint: "http://example.com/prebid"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -47,7 +47,7 @@ func makeBidRequest() *openrtb2.BidRequest {
 
 func TestMakeRequests(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderKidoz, config.Adapter{
-		Endpoint: "http://example.com/prebid"})
+		Endpoint: "http://example.com/prebid"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -67,7 +67,7 @@ func TestMakeRequests(t *testing.T) {
 
 func TestMakeBids(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderKidoz, config.Adapter{
-		Endpoint: "http://example.com/prebid"})
+		Endpoint: "http://example.com/prebid"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)

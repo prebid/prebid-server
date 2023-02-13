@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"text/template"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -28,7 +28,7 @@ type algorixResponseBidExt struct {
 }
 
 // Builder builds a new instance of the AlgoriX adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	endpoint, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
@@ -135,7 +135,7 @@ func preProcess(request *openrtb2.BidRequest) {
 			if err != nil {
 				continue
 			}
-			if impExt.Prebid != nil && impExt.Prebid.IsRewardedInventory == 1 {
+			if impExt.Prebid != nil && impExt.Prebid.IsRewardedInventory != nil && *impExt.Prebid.IsRewardedInventory == 1 {
 				videoCopy := *request.Imp[i].Video
 				videoExt := algorixVideoExt{Rewarded: 1}
 				videoCopy.Ext, err = json.Marshal(&videoExt)

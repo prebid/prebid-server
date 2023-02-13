@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/benbjohnson/clock"
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/analytics/clients"
@@ -9,7 +10,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 )
 
-//Modules that need to be logged to need to be initialized here
+// Modules that need to be logged to need to be initialized here
 func NewPBSAnalytics(analytics *config.Analytics) analytics.PBSAnalyticsModule {
 	modules := make(enabledAnalytics, 0)
 	if len(analytics.File.Filename) > 0 {
@@ -19,15 +20,17 @@ func NewPBSAnalytics(analytics *config.Analytics) analytics.PBSAnalyticsModule {
 			glog.Fatalf("Could not initialize FileLogger for file %v :%v", analytics.File.Filename, err)
 		}
 	}
+
 	if analytics.Pubstack.Enabled {
-		pubstackModule, err := pubstack.NewPubstackModule(
+		pubstackModule, err := pubstack.NewModule(
 			clients.GetDefaultHttpInstance(),
 			analytics.Pubstack.ScopeId,
 			analytics.Pubstack.IntakeUrl,
 			analytics.Pubstack.ConfRefresh,
 			analytics.Pubstack.Buffers.EventCount,
 			analytics.Pubstack.Buffers.BufferSize,
-			analytics.Pubstack.Buffers.Timeout)
+			analytics.Pubstack.Buffers.Timeout,
+			clock.New())
 		if err == nil {
 			modules = append(modules, pubstackModule)
 		} else {
@@ -37,7 +40,7 @@ func NewPBSAnalytics(analytics *config.Analytics) analytics.PBSAnalyticsModule {
 	return modules
 }
 
-//Collection of all the correctly configured analytics modules - implements the PBSAnalyticsModule interface
+// Collection of all the correctly configured analytics modules - implements the PBSAnalyticsModule interface
 type enabledAnalytics []analytics.PBSAnalyticsModule
 
 func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject) {

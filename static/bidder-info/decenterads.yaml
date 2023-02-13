@@ -1,3 +1,4 @@
+endpoint: "http://supply.decenterads.com/?c=o&m=rtb"
 maintainer:
   email: "support@decenterads.com"
 modifyingVastXmlAllowed: true

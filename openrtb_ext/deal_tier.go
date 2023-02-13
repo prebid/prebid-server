@@ -3,7 +3,7 @@ package openrtb_ext
 import (
 	"encoding/json"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 )
 
 // DealTier defines the configuration of a deal tier.

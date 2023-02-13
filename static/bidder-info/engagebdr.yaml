@@ -1,3 +1,4 @@
+endpoint: "http://dsp.bnmla.com/hb"
 maintainer:
   email: "tech@engagebdr.com"
 capabilities:

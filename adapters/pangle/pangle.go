@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -38,7 +38,7 @@ type bidExt struct {
 
 /* Builder */
 
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		Endpoint: config.Endpoint,
 	}
@@ -51,7 +51,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 func getAdType(imp openrtb2.Imp, parsedImpExt *wrappedExtImpBidder) int {
 	// video
 	if imp.Video != nil {
-		if parsedImpExt != nil && parsedImpExt.Prebid != nil && parsedImpExt.Prebid.IsRewardedInventory == 1 {
+		if parsedImpExt != nil && parsedImpExt.Prebid != nil && parsedImpExt.Prebid.IsRewardedInventory != nil && *parsedImpExt.Prebid.IsRewardedInventory == 1 {
 			return 7
 		}
 		if imp.Instl == 1 {

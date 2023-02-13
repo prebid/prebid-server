@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/openrtb/v17/adcom1"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -56,7 +57,7 @@ func (c ConversantAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 	data, err := json.Marshal(request)
 	if err != nil {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Error in packaging request to JSON"),
+			Message: "Error in packaging request to JSON",
 		}}
 	}
 	headers := http.Header{}
@@ -88,9 +89,9 @@ func parseCnvrParams(imp *openrtb2.Imp, cnvrExt openrtb_ext.ExtImpConversant) {
 		imp.Secure = cnvrExt.Secure
 	}
 
-	var position *openrtb2.AdPosition
+	var position *adcom1.PlacementPosition
 	if cnvrExt.Position != nil {
-		position = openrtb2.AdPosition(*cnvrExt.Position).Ptr()
+		position = adcom1.PlacementPosition(*cnvrExt.Position).Ptr()
 	}
 	if imp.Banner != nil {
 		tmpBanner := *imp.Banner
@@ -103,9 +104,9 @@ func parseCnvrParams(imp *openrtb2.Imp, cnvrExt openrtb_ext.ExtImpConversant) {
 		imp.Video.Pos = position
 
 		if len(cnvrExt.API) > 0 {
-			imp.Video.API = make([]openrtb2.APIFramework, 0, len(cnvrExt.API))
+			imp.Video.API = make([]adcom1.APIFramework, 0, len(cnvrExt.API))
 			for _, api := range cnvrExt.API {
-				imp.Video.API = append(imp.Video.API, openrtb2.APIFramework(api))
+				imp.Video.API = append(imp.Video.API, adcom1.APIFramework(api))
 			}
 		}
 
@@ -114,9 +115,9 @@ func parseCnvrParams(imp *openrtb2.Imp, cnvrExt openrtb_ext.ExtImpConversant) {
 		// but are overridden if the custom params object also contains them.
 
 		if len(cnvrExt.Protocols) > 0 {
-			imp.Video.Protocols = make([]openrtb2.Protocol, 0, len(cnvrExt.Protocols))
+			imp.Video.Protocols = make([]adcom1.MediaCreativeSubtype, 0, len(cnvrExt.Protocols))
 			for _, protocol := range cnvrExt.Protocols {
-				imp.Video.Protocols = append(imp.Video.Protocols, openrtb2.Protocol(protocol))
+				imp.Video.Protocols = append(imp.Video.Protocols, adcom1.MediaCreativeSubtype(protocol))
 			}
 		}
 
@@ -151,7 +152,7 @@ func (c ConversantAdapter) MakeBids(internalRequest *openrtb2.BidRequest, extern
 
 	if len(resp.SeatBid) == 0 {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Empty bid request"),
+			Message: "Empty bid request",
 		}}
 	}
 
@@ -180,7 +181,7 @@ func getBidType(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 }
 
 // Builder builds a new instance of the Conversant adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &ConversantAdapter{
 		URI: config.Endpoint,
 	}
