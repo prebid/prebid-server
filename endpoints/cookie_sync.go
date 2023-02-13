@@ -156,8 +156,8 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 			Consent: request.USPrivacy,
 		},
 		GPP: gppPrivacy.Policy{
-			String: request.GPP,
-			RawSID: request.GPPSid,
+			Consent: request.GPP,
+			RawSID:  request.GPPSid,
 		},
 	}
 

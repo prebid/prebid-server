@@ -229,7 +229,7 @@ func (s standardSyncer) GetSync(syncTypes []SyncType, privacyPolicies privacy.Po
 		GDPR:        privacyPolicies.GDPR.Signal,
 		GDPRConsent: privacyPolicies.GDPR.Consent,
 		USPrivacy:   privacyPolicies.CCPA.Consent,
-		GPP:         privacyPolicies.GPP.String,
+		GPP:         privacyPolicies.GPP.Consent,
 		GPPSID:      privacyPolicies.GPP.RawSID,
 	})
 	if err != nil {

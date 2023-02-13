@@ -348,8 +348,8 @@ func TestCookieSyncParseRequest(t *testing.T) {
 					Consent: "1NYN",
 				},
 				GPP: gppPrivacy.Policy{
-					String: "anyGPPString",
-					RawSID: "2",
+					Consent: "anyGPPString",
+					RawSID:  "2",
 				},
 			},
 			expectedRequest: usersync.Request{
