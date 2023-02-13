@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -180,9 +181,9 @@ func TestDefaults(t *testing.T) {
 
 	cmpBools(t, "account_defaults.price_floors.enabled", cfg.AccountDefaults.PriceFloors.Enabled, false)
 	cmpInts(t, "account_defaults.price_floors.enforce_floors_rate", cfg.AccountDefaults.PriceFloors.EnforceFloorRate, 100)
-	cmpBools(t, "account_defaults.price_floors.adjust_for_bid_adjustment", cfg.AccountDefaults.PriceFloors.BidAdjustment, true)
+	cmpBools(t, "account_defaults.price_floors.adjust_for_bid_adjustment", cfg.AccountDefaults.PriceFloors.AdjustForBidAdjustment, true)
 	cmpBools(t, "account_defaults.price_floors.enforce_deal_floors", cfg.AccountDefaults.PriceFloors.EnforceDealFloors, false)
-	cmpBools(t, "account_defaults.price_floors.use_dynamic_data", cfg.AccountDefaults.PriceFloors.UseDynamicData, true)
+	cmpBools(t, "account_defaults.price_floors.use_dynamic_data", cfg.AccountDefaults.PriceFloors.UseDynamicData, false)
 
 	cmpBools(t, "hooks.enabled", cfg.Hooks.Enabled, false)
 	cmpStrings(t, "validations.banner_creative_max_size", cfg.Validations.BannerCreativeMaxSize, "skip")
@@ -534,7 +535,7 @@ func TestFullConfig(t *testing.T) {
 	cmpBools(t, "price_floors.enabled", cfg.PriceFloors.Enabled, true)
 	cmpBools(t, "account_defaults.price_floors.enabled", cfg.AccountDefaults.PriceFloors.Enabled, true)
 	cmpInts(t, "account_defaults.price_floors.enforce_floors_rate", cfg.AccountDefaults.PriceFloors.EnforceFloorRate, 100)
-	cmpBools(t, "account_defaults.price_floors.adjust_for_bid_adjustment", cfg.AccountDefaults.PriceFloors.BidAdjustment, true)
+	cmpBools(t, "account_defaults.price_floors.adjust_for_bid_adjustment", cfg.AccountDefaults.PriceFloors.AdjustForBidAdjustment, true)
 	cmpBools(t, "account_defaults.price_floors.enforce_deal_floors", cfg.AccountDefaults.PriceFloors.EnforceDealFloors, true)
 	cmpBools(t, "account_defaults.price_floors.use_dynamic_data", cfg.AccountDefaults.PriceFloors.UseDynamicData, true)
 
@@ -3175,5 +3176,46 @@ func TestTCF2FeatureOneVendorException(t *testing.T) {
 		value := tcf2.FeatureOneVendorException(tt.giveBidder)
 
 		assert.Equal(t, tt.wantIsVendorException, value, tt.description)
+	}
+}
+
+func TestAccountPriceFloors_validate(t *testing.T) {
+	type fields struct {
+		Enabled                bool
+		EnforceFloorRate       int
+		AdjustForBidAdjustment bool
+		EnforceDealFloors      bool
+		UseDynamicData         bool
+	}
+	type args struct {
+		errs []error
+	}
+	tests := []struct {
+		name string
+		pf   *AccountPriceFloors
+		args args
+		want []error
+	}{
+		{
+			name: "valid configuration",
+			pf: &AccountPriceFloors{
+				EnforceFloorRate: 100,
+			},
+		},
+		{
+			name: "Invalid configuration",
+			pf: &AccountPriceFloors{
+				EnforceFloorRate: 110,
+			},
+			want: []error{errors.New("account_defaults.price_floors.enforce_floors_rate should be between 0 and 100")},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			if got := tt.pf.validate(tt.args.errs); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("AccountPriceFloors.validate() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

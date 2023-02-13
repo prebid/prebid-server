@@ -54,11 +54,11 @@ type AccountCCPA struct {
 }
 
 type AccountPriceFloors struct {
-	Enabled           bool `mapstructure:"enabled" json:"enabled"`
-	EnforceFloorRate  int  `mapstructure:"enforce_floors_rate" json:"enforce_floors_rate"`
-	BidAdjustment     bool `mapstructure:"adjust_for_bid_adjustment" json:"adjust_for_bid_adjustment"`
-	EnforceDealFloors bool `mapstructure:"enforce_deal_floors" json:"enforce_deal_floors"`
-	UseDynamicData    bool `mapstructure:"use_dynamic_data" json:"use_dynamic_data"`
+	Enabled                bool `mapstructure:"enabled" json:"enabled"`
+	EnforceFloorRate       int  `mapstructure:"enforce_floors_rate" json:"enforce_floors_rate"`
+	AdjustForBidAdjustment bool `mapstructure:"adjust_for_bid_adjustment" json:"adjust_for_bid_adjustment"`
+	EnforceDealFloors      bool `mapstructure:"enforce_deal_floors" json:"enforce_deal_floors"`
+	UseDynamicData         bool `mapstructure:"use_dynamic_data" json:"use_dynamic_data"`
 }
 
 // EnabledForChannelType indicates whether CCPA is turned on at the account level for the specified channel type

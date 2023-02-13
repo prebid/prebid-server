@@ -134,6 +134,7 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 	errs = cfg.CurrencyConverter.validate(errs)
 	errs = cfg.Debug.validate(errs)
 	errs = cfg.ExtCacheURL.validate(errs)
+	errs = cfg.AccountDefaults.PriceFloors.validate(errs)
 	if cfg.AccountDefaults.Disabled {
 		glog.Warning(`With account_defaults.disabled=true, host-defined accounts must exist and have "disabled":false. All other requests will be rejected.`)
 	}
@@ -142,7 +143,7 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 	}
 
 	if cfg.PriceFloors.Enabled {
-		glog.Warning(`cfg.PriceFloors.Enabled  will currently not do anything as price floors feature is still under development.`)
+		glog.Warning(`cfg.PriceFloors.Enabled will currently not do anything as price floors feature is still under development.`)
 	}
 
 	errs = cfg.Experiment.validate(errs)
@@ -155,6 +156,14 @@ type AuctionTimeouts struct {
 	Default uint64 `mapstructure:"default"`
 	// The max timeout is used as an absolute cap, to prevent excessively long ones. Use 0 for no cap
 	Max uint64 `mapstructure:"max"`
+}
+
+func (pf *AccountPriceFloors) validate(errs []error) []error {
+
+	if pf.EnforceFloorRate < 0 || pf.EnforceFloorRate > 100 {
+		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.enforce_floors_rate should be between 0 and 100`))
+	}
+	return errs
 }
 
 func (cfg *AuctionTimeouts) validate(errs []error) []error {
@@ -1004,7 +1013,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("account_defaults.price_floors.enforce_floors_rate", 100)
 	v.SetDefault("account_defaults.price_floors.adjust_for_bid_adjustment", true)
 	v.SetDefault("account_defaults.price_floors.enforce_deal_floors", false)
-	v.SetDefault("account_defaults.price_floors.use_dynamic_data", true)
+	v.SetDefault("account_defaults.price_floors.use_dynamic_data", false)
 
 	v.SetDefault("certificates_file", "")
 	v.SetDefault("auto_gen_source_tid", true)
