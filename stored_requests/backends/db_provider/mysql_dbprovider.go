@@ -17,6 +17,8 @@ import (
 	"github.com/prebid/prebid-server/config"
 )
 
+const customTLSKey = "prebid-tls"
+
 type MySqlDbProvider struct {
 	cfg config.DatabaseConnection
 	db  *sql.DB
@@ -84,12 +86,35 @@ func (provider *MySqlDbProvider) ConnString() (string, error) {
 		buffer.WriteString(provider.cfg.Database)
 	}
 
-	// TSL connection
-	if provider.cfg.ServerCa != "" && provider.cfg.ClientCert != "" && provider.cfg.ClientKey != "" {
+	// TLS connection
+	var tls = "false"
+
+	if provider.cfg.TLS.RootCert != "" {
+		tls = "true"
+
 		if err := setupTLSConfig(provider); err != nil {
 			return "", err
 		}
-		buffer.WriteString("?tls=prebid-tls")
+
+		if provider.cfg.TLS.ClientCert != "" && provider.cfg.TLS.ClientKey != "" {
+			tls = customTLSKey
+		}
+	}
+
+	if !strings.Contains(provider.cfg.QueryString, "tls=") {
+		buffer.WriteString("?tls=")
+		buffer.WriteString(tls)
+		// Rest of connection string parameters passed through query_string
+		if provider.cfg.QueryString != "" {
+			buffer.WriteString("&")
+			buffer.WriteString(provider.cfg.QueryString)
+		}
+	}
+
+	// Rest of connection string parameters passed through query_string
+	if provider.cfg.QueryString != "" {
+		buffer.WriteString("?")
+		buffer.WriteString(provider.cfg.QueryString)
 	}
 
 	return buffer.String(), nil
@@ -98,7 +123,7 @@ func (provider *MySqlDbProvider) ConnString() (string, error) {
 func setupTLSConfig(provider *MySqlDbProvider) error {
 	rootCertPool := x509.NewCertPool()
 
-	pem, err := ioutil.ReadFile(provider.cfg.ServerCa)
+	pem, err := ioutil.ReadFile(provider.cfg.TLS.RootCert)
 	if err != nil {
 		return err
 	}
@@ -107,14 +132,18 @@ func setupTLSConfig(provider *MySqlDbProvider) error {
 		return err
 	}
 
-	clientCert := make([]tls.Certificate, 0, 1)
-	certs, err := tls.LoadX509KeyPair(provider.cfg.ClientCert, provider.cfg.ClientKey)
-	if err != nil {
-		return err
+	var clientCert []tls.Certificate
+	if provider.cfg.TLS.ClientCert != "" && provider.cfg.TLS.ClientKey != "" {
+		clientCert = make([]tls.Certificate, 0, 1)
+		certs, err := tls.LoadX509KeyPair(provider.cfg.TLS.ClientCert, provider.cfg.TLS.ClientKey)
+		if err != nil {
+			return err
+		}
+
+		clientCert = append(clientCert, certs)
 	}
 
-	clientCert = append(clientCert, certs)
-	mysql.RegisterTLSConfig("prebid-tls", &tls.Config{
+	mysql.RegisterTLSConfig(customTLSKey, &tls.Config{
 		RootCAs:               rootCertPool,
 		Certificates:          clientCert,
 		InsecureSkipVerify:    true,

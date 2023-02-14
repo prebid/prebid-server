@@ -82,7 +82,40 @@ func (provider *PostgresDbProvider) ConnString() (string, error) {
 		buffer.WriteString(" ")
 	}
 
-	buffer.WriteString("sslmode=disable")
+	// TLS connection
+	var sslmode = "disable"
+
+	if provider.cfg.TLS.RootCert != "" {
+		sslmode = "verify-ca"
+
+		buffer.WriteString("sslrootcert=")
+		buffer.WriteString(provider.cfg.TLS.RootCert)
+		buffer.WriteString(" ")
+
+		if provider.cfg.TLS.ClientCert != "" && provider.cfg.TLS.ClientKey != "" {
+			sslmode = "verify-full"
+
+			buffer.WriteString("sslcert=")
+			buffer.WriteString(provider.cfg.TLS.ClientCert)
+			buffer.WriteString(" ")
+
+			buffer.WriteString("sslkey=")
+			buffer.WriteString(provider.cfg.TLS.ClientKey)
+			buffer.WriteString(" ")
+		}
+	}
+
+	if !strings.Contains(provider.cfg.QueryString, "sslmode=") {
+		buffer.WriteString("sslmode=")
+		buffer.WriteString(sslmode)
+		buffer.WriteString(" ")
+	}
+
+	// Rest of connection string parameters passed through query_string
+	if provider.cfg.QueryString != "" {
+		buffer.WriteString(provider.cfg.QueryString)
+	}
+
 	return buffer.String(), nil
 }
 
