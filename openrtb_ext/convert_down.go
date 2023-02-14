@@ -228,7 +228,6 @@ func clear26Fields(r *RequestWrapper) {
 	}
 
 	if device := r.Device; device != nil {
-		device.UA = ""
 		device.SUA = nil
 		device.LangB = ""
 	}
@@ -262,7 +261,6 @@ func clear26Fields(r *RequestWrapper) {
 		}
 
 		if video := imp.Video; video != nil {
-			video.StartDelay = nil
 			video.MaxSeq = 0
 			video.PodDur = 0
 			video.PodID = 0

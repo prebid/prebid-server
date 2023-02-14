@@ -38,7 +38,7 @@ func TestConvertDownTo25(t *testing.T) {
 			givenRequest: openrtb2.BidRequest{
 				ID:     "anyID",
 				CatTax: adcom1.CatTaxIABContent10,
-				Device: &openrtb2.Device{UA: "anyUserAgent"},
+				Device: &openrtb2.Device{LangB: "anyLang"},
 			},
 			expectedRequest: openrtb2.BidRequest{
 				ID:     "anyID",
@@ -503,7 +503,6 @@ func TestClear26Fields(t *testing.T) {
 		},
 		Device: &openrtb2.Device{
 			IP:    "1.2.3.4",
-			UA:    "anyUserAgent",
 			LangB: "anyLang",
 			SUA: &openrtb2.UserAgent{
 				Model: "PBS 2000",
@@ -541,7 +540,6 @@ func TestClear26Fields(t *testing.T) {
 			},
 			Video: &openrtb2.Video{
 				MIMEs:        []string{"any/video"},
-				StartDelay:   adcom1.StartPreRoll.Ptr(),
 				MaxSeq:       30,
 				PodDur:       30,
 				PodID:        1,
