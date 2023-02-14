@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/prebid/openrtb/v17/adcom1"
-	"github.com/prebid/openrtb/v17/native1"
-	nativeResponse "github.com/prebid/openrtb/v17/native1/response"
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
@@ -103,20 +101,6 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 			if err != nil {
 				errs = append(errs, err)
 				continue
-			}
-			if bidType == openrtb_ext.BidTypeNative {
-				var nativePayload nativeResponse.Response
-				if err := json.Unmarshal(json.RawMessage(seatBid.Bid[i].AdM), &nativePayload); err != nil {
-					errs = append(errs, err)
-					continue
-				}
-				overrideEventTrackers(&nativePayload)
-				nativePayloadJson, err := json.Marshal(nativePayload)
-				if err != nil {
-					errs = append(errs, err)
-					continue
-				}
-				seatBid.Bid[i].AdM = string(nativePayloadJson)
 			}
 			b := &adapters.TypedBid{
 				Bid:     &seatBid.Bid[i],
@@ -298,20 +282,4 @@ func overrideBidRequestImp(originBidRequest *openrtb2.BidRequest, imp []openrtb2
 	bidRequestResult := *originBidRequest
 	bidRequestResult.Imp = imp
 	return &bidRequestResult
-}
-
-func overrideEventTrackers(nativePayload *nativeResponse.Response) {
-	// convert eventrackers to the deprecated imptrackers and jstracker because it's not supported in native 1.1v
-	for _, eventTracker := range nativePayload.EventTrackers {
-		if eventTracker.Event != native1.EventTypeImpression {
-			continue
-		}
-		switch eventTracker.Method {
-		case native1.EventTrackingMethodImage:
-			nativePayload.ImpTrackers = append(nativePayload.ImpTrackers, eventTracker.URL)
-		case native1.EventTrackingMethodJS:
-			nativePayload.JSTracker = fmt.Sprintf("<script src=\"%s\"></script>", eventTracker.URL)
-		}
-	}
-	nativePayload.EventTrackers = nil
 }
