@@ -108,11 +108,11 @@ func (provider *PostgresDbProvider) ConnString() (string, error) {
 	if !strings.Contains(provider.cfg.QueryString, "sslmode=") {
 		buffer.WriteString("sslmode=")
 		buffer.WriteString(sslmode)
-		buffer.WriteString(" ")
 	}
 
 	// Rest of connection string parameters passed through query_string
 	if provider.cfg.QueryString != "" {
+		buffer.WriteString(" ")
 		buffer.WriteString(provider.cfg.QueryString)
 	}
 

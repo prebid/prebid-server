@@ -101,7 +101,7 @@ func (provider *MySqlDbProvider) ConnString() (string, error) {
 		}
 	}
 
-	if !strings.Contains(provider.cfg.QueryString, "tls=") {
+	if tls != "false" && !strings.Contains(provider.cfg.QueryString, "tls=") {
 		buffer.WriteString("?tls=")
 		buffer.WriteString(tls)
 		// Rest of connection string parameters passed through query_string
