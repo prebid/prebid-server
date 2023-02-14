@@ -731,17 +731,13 @@ func getExtTargetData(requestExt *openrtb_ext.ExtRequest, cacheInstructions *ext
 
 	if requestExt != nil && requestExt.Prebid.Targeting != nil {
 		targData = &targetData{
-			includeWinners:    requestExt.Prebid.Targeting.IncludeWinners != nil && *requestExt.Prebid.Targeting.IncludeWinners,
-			includeBidderKeys: requestExt.Prebid.Targeting.IncludeBidderKeys != nil && *requestExt.Prebid.Targeting.IncludeBidderKeys,
+			includeWinners:    *requestExt.Prebid.Targeting.IncludeWinners,
+			includeBidderKeys: *requestExt.Prebid.Targeting.IncludeBidderKeys,
 			includeCacheBids:  cacheInstructions.cacheBids,
 			includeCacheVast:  cacheInstructions.cacheVAST,
 			includeFormat:     requestExt.Prebid.Targeting.IncludeFormat,
+			priceGranularity:  *requestExt.Prebid.Targeting.PriceGranularity,
 			preferDeals:       requestExt.Prebid.Targeting.PreferDeals,
-		}
-		if requestExt.Prebid.Targeting.PriceGranularity != nil {
-			targData.priceGranularity = *requestExt.Prebid.Targeting.PriceGranularity
-		} else {
-			targData.priceGranularity = openrtb_ext.PriceGranularity{}
 		}
 	}
 	return targData

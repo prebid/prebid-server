@@ -36,15 +36,11 @@ func setDefaultsTargeting(targeting *openrtb_ext.ExtRequestTargeting) bool {
 
 	modified := false
 
-	if targeting.PriceGranularity == nil {
+	if targeting.PriceGranularity == nil || len(targeting.PriceGranularity.Ranges) == 0 {
 		targeting.PriceGranularity = ptrutil.ToPtr(openrtb_ext.NewPriceGranularityDefault())
 		modified = true
-	} else {
-		if targeting.PriceGranularity.Precision == nil {
-			targeting.PriceGranularity.Precision = ptrutil.ToPtr(DefaultPriceGranularityPrecision)
-			modified = true
-		}
-		modified = modified || setDefaultsPriceGranularityRange(targeting.PriceGranularity.Ranges)
+	} else if setDefaultsPriceGranularity(targeting.PriceGranularity) {
+		modified = true
 	}
 
 	if targeting.IncludeWinners == nil {
@@ -54,6 +50,21 @@ func setDefaultsTargeting(targeting *openrtb_ext.ExtRequestTargeting) bool {
 
 	if targeting.IncludeBidderKeys == nil {
 		targeting.IncludeBidderKeys = ptrutil.ToPtr(DefaultTargetingIncludeBidderKeys)
+		modified = true
+	}
+
+	return modified
+}
+
+func setDefaultsPriceGranularity(pg *openrtb_ext.PriceGranularity) bool {
+	modified := false
+
+	if pg.Precision == nil {
+		pg.Precision = ptrutil.ToPtr(DefaultPriceGranularityPrecision)
+		modified = true
+	}
+
+	if setDefaultsPriceGranularityRange(pg.Ranges) {
 		modified = true
 	}
 

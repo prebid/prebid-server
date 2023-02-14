@@ -80,6 +80,7 @@ func TestSetDefaultsTargeting(t *testing.T) {
 		name              string
 		givenTargeting    *openrtb_ext.ExtRequestTargeting
 		expectedTargeting *openrtb_ext.ExtRequestTargeting
+		expectedModified  bool
 	}{
 		{
 			name:              "nil",
@@ -87,16 +88,17 @@ func TestSetDefaultsTargeting(t *testing.T) {
 			expectedTargeting: nil,
 		},
 		{
-			name:           "empty", // all defaults set
+			name:           "empty-targeting",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{},
 			expectedTargeting: &openrtb_ext.ExtRequestTargeting{
 				PriceGranularity:  &defaultGranularity,
 				IncludeWinners:    ptrutil.ToPtr(DefaultTargetingIncludeWinners),
 				IncludeBidderKeys: ptrutil.ToPtr(DefaultTargetingIncludeBidderKeys),
 			},
+			expectedModified: true,
 		},
 		{
-			name: "populated partial", // precision and includewinners defaults set
+			name: "populated-partial", // precision and includewinners defaults set
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
 				PriceGranularity: &openrtb_ext.PriceGranularity{
 					Ranges: []openrtb_ext.GranularityRange{{Min: 0, Max: 10, Increment: 1}},
@@ -111,9 +113,54 @@ func TestSetDefaultsTargeting(t *testing.T) {
 				IncludeWinners:    ptrutil.ToPtr(DefaultTargetingIncludeWinners),
 				IncludeBidderKeys: ptrutil.ToPtr(false),
 			},
+			expectedModified: true,
 		},
 		{
-			name: "populated full", // no defaults set
+			name: "populated-no-granularity",
+			givenTargeting: &openrtb_ext.ExtRequestTargeting{
+				PriceGranularity:  &openrtb_ext.PriceGranularity{},
+				IncludeWinners:    ptrutil.ToPtr(false),
+				IncludeBidderKeys: ptrutil.ToPtr(false),
+			},
+			expectedTargeting: &openrtb_ext.ExtRequestTargeting{
+				PriceGranularity:  &defaultGranularity,
+				IncludeWinners:    ptrutil.ToPtr(false),
+				IncludeBidderKeys: ptrutil.ToPtr(false),
+			},
+			expectedModified: true,
+		},
+		{
+			name: "populated-ranges-nil",
+			givenTargeting: &openrtb_ext.ExtRequestTargeting{
+				PriceGranularity: &openrtb_ext.PriceGranularity{
+					Precision: ptrutil.ToPtr(4),
+					Ranges:    nil,
+				},
+			},
+			expectedTargeting: &openrtb_ext.ExtRequestTargeting{
+				PriceGranularity:  &defaultGranularity,
+				IncludeWinners:    ptrutil.ToPtr(DefaultTargetingIncludeWinners),
+				IncludeBidderKeys: ptrutil.ToPtr(DefaultTargetingIncludeBidderKeys),
+			},
+			expectedModified: true,
+		},
+		{
+			name: "populated-ranges-empty",
+			givenTargeting: &openrtb_ext.ExtRequestTargeting{
+				PriceGranularity: &openrtb_ext.PriceGranularity{
+					Precision: ptrutil.ToPtr(4),
+					Ranges:    []openrtb_ext.GranularityRange{},
+				},
+			},
+			expectedTargeting: &openrtb_ext.ExtRequestTargeting{
+				PriceGranularity:  &defaultGranularity,
+				IncludeWinners:    ptrutil.ToPtr(DefaultTargetingIncludeWinners),
+				IncludeBidderKeys: ptrutil.ToPtr(DefaultTargetingIncludeBidderKeys),
+			},
+			expectedModified: true,
+		},
+		{
+			name: "populated-full", // no defaults set
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
 				PriceGranularity: &openrtb_ext.PriceGranularity{
 					Precision: ptrutil.ToPtr(4),
@@ -130,9 +177,10 @@ func TestSetDefaultsTargeting(t *testing.T) {
 				IncludeWinners:    ptrutil.ToPtr(false),
 				IncludeBidderKeys: ptrutil.ToPtr(false),
 			},
+			expectedModified: false,
 		},
 		{
-			name: "setDefaultsPriceGranularityRange integration",
+			name: "setDefaultsPriceGranularity-integration",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
 				PriceGranularity: &openrtb_ext.PriceGranularity{
 					Precision: ptrutil.ToPtr(4),
@@ -149,59 +197,135 @@ func TestSetDefaultsTargeting(t *testing.T) {
 				IncludeWinners:    ptrutil.ToPtr(false),
 				IncludeBidderKeys: ptrutil.ToPtr(false),
 			},
+			expectedModified: true,
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			setDefaultsTargeting(test.givenTargeting)
+			actualModified := setDefaultsTargeting(test.givenTargeting)
+			assert.Equal(t, test.expectedModified, actualModified)
 			assert.Equal(t, test.expectedTargeting, test.givenTargeting)
+		})
+	}
+}
+
+func TestSetDefaultsPriceGranularity(t *testing.T) {
+	testCases := []struct {
+		name                string
+		givenGranularity    *openrtb_ext.PriceGranularity
+		expectedGranularity *openrtb_ext.PriceGranularity
+		expectedModified    bool
+	}{
+		{
+			name: "no-precision",
+			givenGranularity: &openrtb_ext.PriceGranularity{
+				Precision: nil,
+				Ranges:    []openrtb_ext.GranularityRange{{Min: 0, Max: 10, Increment: 1}},
+			},
+			expectedGranularity: &openrtb_ext.PriceGranularity{
+				Precision: ptrutil.ToPtr(2),
+				Ranges:    []openrtb_ext.GranularityRange{{Min: 0, Max: 10, Increment: 1}},
+			},
+			expectedModified: true,
+		},
+		{
+			name: "incomplete-range",
+			givenGranularity: &openrtb_ext.PriceGranularity{
+				Precision: ptrutil.ToPtr(2),
+				Ranges:    []openrtb_ext.GranularityRange{{Min: 5, Max: 10, Increment: 1}},
+			},
+			expectedGranularity: &openrtb_ext.PriceGranularity{
+				Precision: ptrutil.ToPtr(2),
+				Ranges:    []openrtb_ext.GranularityRange{{Min: 0, Max: 10, Increment: 1}},
+			},
+			expectedModified: true,
+		},
+		{
+			name: "no-precision+incomplete-range",
+			givenGranularity: &openrtb_ext.PriceGranularity{
+				Precision: nil,
+				Ranges:    []openrtb_ext.GranularityRange{{Min: 5, Max: 10, Increment: 1}},
+			},
+			expectedGranularity: &openrtb_ext.PriceGranularity{
+				Precision: ptrutil.ToPtr(2),
+				Ranges:    []openrtb_ext.GranularityRange{{Min: 0, Max: 10, Increment: 1}},
+			},
+			expectedModified: true,
+		},
+		{
+			name: "all-set",
+			givenGranularity: &openrtb_ext.PriceGranularity{
+				Precision: ptrutil.ToPtr(2),
+				Ranges:    []openrtb_ext.GranularityRange{{Min: 0, Max: 10, Increment: 1}},
+			},
+			expectedGranularity: &openrtb_ext.PriceGranularity{
+				Precision: ptrutil.ToPtr(2),
+				Ranges:    []openrtb_ext.GranularityRange{{Min: 0, Max: 10, Increment: 1}},
+			},
+			expectedModified: false,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			actualModified := setDefaultsPriceGranularity(test.givenGranularity)
+			assert.Equal(t, test.expectedModified, actualModified)
+			assert.Equal(t, test.expectedGranularity, test.givenGranularity)
 		})
 	}
 }
 
 func TestSetDefaultsPriceGranularityRange(t *testing.T) {
 	testCases := []struct {
-		name           string
-		givenRanges    []openrtb_ext.GranularityRange
-		expectedRanges []openrtb_ext.GranularityRange
+		name             string
+		givenRange       []openrtb_ext.GranularityRange
+		expectedRange    []openrtb_ext.GranularityRange
+		expectedModified bool
 	}{
 		{
-			name:           "nil",
-			givenRanges:    nil,
-			expectedRanges: nil,
+			name:             "nil",
+			givenRange:       nil,
+			expectedRange:    nil,
+			expectedModified: false,
 		},
 		{
-			name:           "empty",
-			givenRanges:    []openrtb_ext.GranularityRange{},
-			expectedRanges: []openrtb_ext.GranularityRange{},
+			name:             "empty",
+			givenRange:       []openrtb_ext.GranularityRange{},
+			expectedRange:    []openrtb_ext.GranularityRange{},
+			expectedModified: false,
 		},
 		{
-			name:           "one - ok",
-			givenRanges:    []openrtb_ext.GranularityRange{{Min: 0, Max: 10, Increment: 1}},
-			expectedRanges: []openrtb_ext.GranularityRange{{Min: 0, Max: 10, Increment: 1}},
+			name:             "one-ok",
+			givenRange:       []openrtb_ext.GranularityRange{{Min: 0, Max: 10, Increment: 1}},
+			expectedRange:    []openrtb_ext.GranularityRange{{Min: 0, Max: 10, Increment: 1}},
+			expectedModified: false,
 		},
 		{
-			name:           "one - fixed",
-			givenRanges:    []openrtb_ext.GranularityRange{{Min: 5, Max: 10, Increment: 1}},
-			expectedRanges: []openrtb_ext.GranularityRange{{Min: 0, Max: 10, Increment: 1}},
+			name:             "one-fixed",
+			givenRange:       []openrtb_ext.GranularityRange{{Min: 5, Max: 10, Increment: 1}},
+			expectedRange:    []openrtb_ext.GranularityRange{{Min: 0, Max: 10, Increment: 1}},
+			expectedModified: true,
 		},
 		{
-			name:           "many - ok",
-			givenRanges:    []openrtb_ext.GranularityRange{{Min: 0, Max: 10, Increment: 1}, {Min: 10, Max: 20, Increment: 1}},
-			expectedRanges: []openrtb_ext.GranularityRange{{Min: 0, Max: 10, Increment: 1}, {Min: 10, Max: 20, Increment: 1}},
+			name:             "many-ok",
+			givenRange:       []openrtb_ext.GranularityRange{{Min: 0, Max: 10, Increment: 1}, {Min: 10, Max: 20, Increment: 1}},
+			expectedRange:    []openrtb_ext.GranularityRange{{Min: 0, Max: 10, Increment: 1}, {Min: 10, Max: 20, Increment: 1}},
+			expectedModified: false,
 		},
 		{
-			name:           "many - fixed",
-			givenRanges:    []openrtb_ext.GranularityRange{{Min: 0, Max: 10, Increment: 1}, {Min: 15, Max: 20, Increment: 1}},
-			expectedRanges: []openrtb_ext.GranularityRange{{Min: 0, Max: 10, Increment: 1}, {Min: 10, Max: 20, Increment: 1}},
+			name:             "many-fixed",
+			givenRange:       []openrtb_ext.GranularityRange{{Min: 0, Max: 10, Increment: 1}, {Min: 15, Max: 20, Increment: 1}},
+			expectedRange:    []openrtb_ext.GranularityRange{{Min: 0, Max: 10, Increment: 1}, {Min: 10, Max: 20, Increment: 1}},
+			expectedModified: true,
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			setDefaultsPriceGranularityRange(test.givenRanges)
-			assert.Equal(t, test.expectedRanges, test.givenRanges)
+			actualModified := setDefaultsPriceGranularityRange(test.givenRange)
+			assert.Equal(t, test.expectedModified, actualModified)
+			assert.Equal(t, test.expectedRange, test.givenRange)
 		})
 	}
 }
