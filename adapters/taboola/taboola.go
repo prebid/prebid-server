@@ -20,11 +20,6 @@ type adapter struct {
 	endpoint *template.Template
 }
 
-const (
-	NATIVE_ENDPOINT_PREFIX  = "native"
-	DISPLAY_ENDPOINT_PREFIX = "display"
-)
-
 // Builder builds a new instance of the Foo adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	endpointTemplate, err := template.New("endpointTemplate").Parse(config.Endpoint)
@@ -48,7 +43,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	for _, taboolaRequest := range taboolaRequests {
 		if len(taboolaRequest.Imp) > 0 {
-			request, err := a.buildRequest(taboolaRequest)
+			request, err := buildRequest(taboolaRequest, a.endpoint)
 			if err != nil {
 				return nil, []error{fmt.Errorf("unable to build request %v", err)}
 			}
@@ -118,11 +113,16 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return bidResponse, errs
 }
 
-func (a *adapter) buildRequest(request *openrtb2.BidRequest) (*adapters.RequestData, error) {
+func buildRequest(request *openrtb2.BidRequest, endpoint *template.Template) (*adapters.RequestData, error) {
 	requestJSON, err := json.Marshal(request)
 	if err != nil {
 		return nil, err
 	}
+
+	const (
+		NATIVE_ENDPOINT_PREFIX  = "native"
+		DISPLAY_ENDPOINT_PREFIX = "display"
+	)
 
 	//set MediaType based on first imp
 	var mediaType string
@@ -134,7 +134,7 @@ func (a *adapter) buildRequest(request *openrtb2.BidRequest) (*adapters.RequestD
 		return nil, fmt.Errorf("unsupported media type for imp: %v", request.Imp[0])
 	}
 
-	url, err := a.buildEndpointURL(request.Site.ID, mediaType)
+	url, err := buildEndpointURL(request.Site.ID, mediaType, endpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -149,9 +149,9 @@ func (a *adapter) buildRequest(request *openrtb2.BidRequest) (*adapters.RequestD
 }
 
 // Builds endpoint url based on adapter-specific pub settings from imp.ext
-func (a *adapter) buildEndpointURL(publisherId string, mediaType string) (string, error) {
+func buildEndpointURL(publisherId string, mediaType string, endpoint *template.Template) (string, error) {
 	endpointParams := macros.EndpointTemplateParams{PublisherID: publisherId, MediaType: mediaType}
-	resolvedUrl, err := macros.ResolveMacros(a.endpoint, endpointParams)
+	resolvedUrl, err := macros.ResolveMacros(endpoint, endpointParams)
 	if err != nil {
 		return "", err
 	}
@@ -286,7 +286,7 @@ func overrideBidRequestImp(originBidRequest *openrtb2.BidRequest, imp []openrtb2
 }
 
 func overrideEventTrackers(nativePayload *nativeResponse.Response) {
-	// convert evventrackers to the deprecated imptrackers and jstracker because it's not supported in native 1.1v
+	// convert eventrackers to the deprecated imptrackers and jstracker because it's not supported in native 1.1v
 	for _, eventTracker := range nativePayload.EventTrackers {
 		if eventTracker.Event != native1.EventTypeImpression {
 			continue
