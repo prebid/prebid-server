@@ -13,8 +13,8 @@ import (
 	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
-	"text/template"
 	"net/url"
+	"text/template"
 )
 
 type adapter struct {
