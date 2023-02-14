@@ -1540,7 +1540,7 @@ func validateTargeting(t *openrtb_ext.ExtRequestTargeting) error {
 		} else if *pg.Precision < 0 {
 			return errors.New("Price granularity error: precision must be non-negative")
 		} else if *pg.Precision > openrtb_ext.MaxDecimalFigures {
-			return errors.New("Price granularity error: precision of more than 15 significant figures is not supported")
+			return fmt.Errorf("Price granularity error: precision of more than %d significant figures is not supported", openrtb_ext.MaxDecimalFigures)
 		}
 
 		var prevMax float64 = 0
