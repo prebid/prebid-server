@@ -100,7 +100,8 @@ type Configuration struct {
 	// Refers to main.go `configFileName` constant
 	BidderInfos BidderInfos `mapstructure:"adapters"`
 	// Hooks provides a way to specify hook execution plan for specific endpoints and stages
-	Hooks Hooks `mapstructure:"hooks"`
+	Hooks       Hooks       `mapstructure:"hooks"`
+	Validations Validations `mapstructure:"validations"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -632,6 +633,25 @@ type TimeoutNotification struct {
 	FailOnly bool `mapstructure:"fail_only"`
 }
 
+type Validations struct {
+	BannerCreativeMaxSize string `mapstructure:"banner_creative_max_size" json:"banner_creative_max_size"`
+	SecureMarkup          string `mapstructure:"secure_markup" json:"secure_markup"`
+	MaxCreativeWidth      int64  `mapstructure:"max_creative_width" json:"max_creative_width"`
+	MaxCreativeHeight     int64  `mapstructure:"max_creative_height" json:"max_creative_height"`
+}
+
+const (
+	ValidationEnforce string = "enforce"
+	ValidationWarn    string = "warn"
+	ValidationSkip    string = "skip"
+)
+
+func (host *Validations) SetBannerCreativeMaxSize(account Validations) {
+	if len(account.BannerCreativeMaxSize) > 0 {
+		host.BannerCreativeMaxSize = account.BannerCreativeMaxSize
+	}
+}
+
 func (cfg *TimeoutNotification) validate(errs []error) []error {
 	if cfg.SamplingRate < 0.0 || cfg.SamplingRate > 1.0 {
 		errs = append(errs, fmt.Errorf("debug.timeout_notification.sampling_rate must be positive and not greater than 1.0. Got %f", cfg.SamplingRate))
@@ -822,6 +842,10 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("host_cookie.ttl_days", 90)
 	v.SetDefault("host_cookie.max_cookie_size_bytes", 0)
 	v.SetDefault("host_schain_node", nil)
+	v.SetDefault("validations.banner_creative_max_size", ValidationSkip)
+	v.SetDefault("validations.secure_markup", ValidationSkip)
+	v.SetDefault("validations.max_creative_size.height", 0)
+	v.SetDefault("validations.max_creative_size.width", 0)
 	v.SetDefault("http_client.max_connections_per_host", 0) // unlimited
 	v.SetDefault("http_client.max_idle_connections", 400)
 	v.SetDefault("http_client.max_idle_connections_per_host", 10)
@@ -909,7 +933,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 
 	// some adapters append the user id to the end of the redirect url instead of using
 	// macro substitution. it is important for the uid to be the last query parameter.
-	v.SetDefault("user_sync.redirect_url", "{{.ExternalURL}}/setuid?bidder={{.SyncerKey}}&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&f={{.SyncType}}&uid={{.UserMacro}}")
+	v.SetDefault("user_sync.redirect_url", "{{.ExternalURL}}/setuid?bidder={{.SyncerKey}}&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&f={{.SyncType}}&uid={{.UserMacro}}")
 
 	v.SetDefault("max_request_size", 1024*256)
 	v.SetDefault("analytics.file.filename", "")
@@ -1382,20 +1406,22 @@ func bindDatabaseEnvVars(v *viper.Viper) {
 
 func setBidderDefaults(v *viper.Viper, bidder string) {
 	adapterCfgPrefix := "adapters." + bidder
-	v.BindEnv(adapterCfgPrefix+".disabled", "")
-	v.BindEnv(adapterCfgPrefix+".endpoint", "")
-	v.BindEnv(adapterCfgPrefix+".extra_info", "")
-	v.BindEnv(adapterCfgPrefix+".modifyingVastXmlAllowed", "")
-	v.BindEnv(adapterCfgPrefix+".debug.allow", "")
-	v.BindEnv(adapterCfgPrefix+".gvlVendorID", "")
-	v.BindEnv(adapterCfgPrefix+".usersync_url", "")
-	v.BindEnv(adapterCfgPrefix+".experiment.adsCert.enabled", "")
-	v.BindEnv(adapterCfgPrefix+".platform_id", "")
-	v.BindEnv(adapterCfgPrefix+".app_secret", "")
-	v.BindEnv(adapterCfgPrefix+".xapi.username", "")
-	v.BindEnv(adapterCfgPrefix+".xapi.password", "")
-	v.BindEnv(adapterCfgPrefix+".xapi.tracker", "")
-	v.BindEnv(adapterCfgPrefix+".endpointCompression", "")
+	v.BindEnv(adapterCfgPrefix + ".disabled")
+	v.BindEnv(adapterCfgPrefix + ".endpoint")
+	v.BindEnv(adapterCfgPrefix + ".extra_info")
+	v.BindEnv(adapterCfgPrefix + ".modifyingVastXmlAllowed")
+	v.BindEnv(adapterCfgPrefix + ".debug.allow")
+	v.BindEnv(adapterCfgPrefix + ".gvlVendorID")
+	v.BindEnv(adapterCfgPrefix + ".usersync_url")
+	v.BindEnv(adapterCfgPrefix + ".experiment.adsCert.enabled")
+	v.BindEnv(adapterCfgPrefix + ".platform_id")
+	v.BindEnv(adapterCfgPrefix + ".app_secret")
+	v.BindEnv(adapterCfgPrefix + ".xapi.username")
+	v.BindEnv(adapterCfgPrefix + ".xapi.password")
+	v.BindEnv(adapterCfgPrefix + ".xapi.tracker")
+	v.BindEnv(adapterCfgPrefix + ".endpointCompression")
+	v.BindEnv(adapterCfgPrefix + ".openrtb.version")
+	v.BindEnv(adapterCfgPrefix + ".openrtb.gpp-supported")
 
 	v.BindEnv(adapterCfgPrefix + ".usersync.key")
 	v.BindEnv(adapterCfgPrefix + ".usersync.default")

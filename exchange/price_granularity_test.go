@@ -30,6 +30,22 @@ func TestGetPriceBucketString(t *testing.T) {
 		},
 	}
 
+	custom2 := openrtb_ext.PriceGranularity{
+		Precision: 2,
+		Ranges: []openrtb_ext.GranularityRange{
+			{
+				Min:       0.0,
+				Max:       1.5,
+				Increment: 1.0,
+			},
+			{
+				Min:       1.5,
+				Max:       10.0,
+				Increment: 1.2,
+			},
+		},
+	}
+
 	// Define test cases
 	type aTest struct {
 		granularityId       string
@@ -51,6 +67,7 @@ func TestGetPriceBucketString(t *testing.T) {
 				{"auto", auto, "1.85"},
 				{"dense", dense, "1.87"},
 				{"custom1", custom1, "1.86"},
+				{"custom2", custom2, "1.50"},
 			},
 		},
 		{
@@ -63,6 +80,15 @@ func TestGetPriceBucketString(t *testing.T) {
 				{"auto", auto, "5.70"},
 				{"dense", dense, "5.70"},
 				{"custom1", custom1, "5.70"},
+				{"custom2", custom2, "5.10"},
+			},
+		},
+		{
+			groupDesc: "cpm equal the max for custom granularity",
+			cpm:       10,
+			testCases: []aTest{
+				{"custom1", custom1, "10.00"},
+				{"custom2", custom2, "9.90"},
 			},
 		},
 		{

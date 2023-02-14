@@ -1,3 +1,4 @@
+# DEPRECATED: Use imds bidder instead
 endpoint: "http://{{.Host}}.technoratimedia.com/openrtb/bids/{{.Host}}"
 maintainer:
   email: "eng-demand@imds.tv"
@@ -11,6 +12,4 @@ capabilities:
       - banner
       - video
 userSync:
-  iframe:
-    url: "https://ad-cdn.technoratimedia.com/html/usersync.html?cb={{.RedirectURL}}"
-    userMacro: "[USER_ID]"
+  key: "imds"
