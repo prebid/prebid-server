@@ -933,7 +933,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 
 	// some adapters append the user id to the end of the redirect url instead of using
 	// macro substitution. it is important for the uid to be the last query parameter.
-	v.SetDefault("user_sync.redirect_url", "{{.ExternalURL}}/setuid?bidder={{.SyncerKey}}&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&f={{.SyncType}}&uid={{.UserMacro}}")
+	v.SetDefault("user_sync.redirect_url", "{{.ExternalURL}}/setuid?bidder={{.SyncerKey}}&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&f={{.SyncType}}&uid={{.UserMacro}}")
 
 	v.SetDefault("max_request_size", 1024*256)
 	v.SetDefault("analytics.file.filename", "")
@@ -1406,20 +1406,22 @@ func bindDatabaseEnvVars(v *viper.Viper) {
 
 func setBidderDefaults(v *viper.Viper, bidder string) {
 	adapterCfgPrefix := "adapters." + bidder
-	v.BindEnv(adapterCfgPrefix+".disabled", "")
-	v.BindEnv(adapterCfgPrefix+".endpoint", "")
-	v.BindEnv(adapterCfgPrefix+".extra_info", "")
-	v.BindEnv(adapterCfgPrefix+".modifyingVastXmlAllowed", "")
-	v.BindEnv(adapterCfgPrefix+".debug.allow", "")
-	v.BindEnv(adapterCfgPrefix+".gvlVendorID", "")
-	v.BindEnv(adapterCfgPrefix+".usersync_url", "")
-	v.BindEnv(adapterCfgPrefix+".experiment.adsCert.enabled", "")
-	v.BindEnv(adapterCfgPrefix+".platform_id", "")
-	v.BindEnv(adapterCfgPrefix+".app_secret", "")
-	v.BindEnv(adapterCfgPrefix+".xapi.username", "")
-	v.BindEnv(adapterCfgPrefix+".xapi.password", "")
-	v.BindEnv(adapterCfgPrefix+".xapi.tracker", "")
-	v.BindEnv(adapterCfgPrefix+".endpointCompression", "")
+	v.BindEnv(adapterCfgPrefix + ".disabled")
+	v.BindEnv(adapterCfgPrefix + ".endpoint")
+	v.BindEnv(adapterCfgPrefix + ".extra_info")
+	v.BindEnv(adapterCfgPrefix + ".modifyingVastXmlAllowed")
+	v.BindEnv(adapterCfgPrefix + ".debug.allow")
+	v.BindEnv(adapterCfgPrefix + ".gvlVendorID")
+	v.BindEnv(adapterCfgPrefix + ".usersync_url")
+	v.BindEnv(adapterCfgPrefix + ".experiment.adsCert.enabled")
+	v.BindEnv(adapterCfgPrefix + ".platform_id")
+	v.BindEnv(adapterCfgPrefix + ".app_secret")
+	v.BindEnv(adapterCfgPrefix + ".xapi.username")
+	v.BindEnv(adapterCfgPrefix + ".xapi.password")
+	v.BindEnv(adapterCfgPrefix + ".xapi.tracker")
+	v.BindEnv(adapterCfgPrefix + ".endpointCompression")
+	v.BindEnv(adapterCfgPrefix + ".openrtb.version")
+	v.BindEnv(adapterCfgPrefix + ".openrtb.gpp-supported")
 
 	v.BindEnv(adapterCfgPrefix + ".usersync.key")
 	v.BindEnv(adapterCfgPrefix + ".usersync.default")
