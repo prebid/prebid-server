@@ -712,7 +712,7 @@ func (re *RequestExt) SetExt(ext map[string]json.RawMessage) {
 }
 
 func (re *RequestExt) GetPrebid() *ExtRequestPrebid {
-	if re.prebid == nil {
+	if re == nil || re.prebid == nil {
 		return nil
 	}
 	prebid := *re.prebid

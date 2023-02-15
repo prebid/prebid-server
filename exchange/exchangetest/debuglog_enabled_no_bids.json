@@ -56,6 +56,18 @@
       "ext": {
         "prebid": {
           "targeting": {
+            "pricegranularity": {
+              "precision": 2,
+              "ranges": [
+                {
+                  "min": 0,
+                  "max": 20,
+                  "increment": 0.1
+                }
+              ]
+            },
+            "includewinners": false,
+            "includebidderkeys": true,
             "includebrandcategory": {
               "primaryadserver": 1,
               "publisher": "",
