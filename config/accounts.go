@@ -61,6 +61,14 @@ type AccountPriceFloors struct {
 	UseDynamicData         bool `mapstructure:"use_dynamic_data" json:"use_dynamic_data"`
 }
 
+func (pf *AccountPriceFloors) validate(errs []error) []error {
+
+	if pf.EnforceFloorRate < 0 || pf.EnforceFloorRate > 100 {
+		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.enforce_floors_rate should be between 0 and 100`))
+	}
+	return errs
+}
+
 // EnabledForChannelType indicates whether CCPA is turned on at the account level for the specified channel type
 // by using the channel type setting if defined or the general CCPA setting if defined; otherwise it returns nil
 func (a *AccountCCPA) EnabledForChannelType(channelType ChannelType) *bool {

@@ -158,14 +158,6 @@ type AuctionTimeouts struct {
 	Max uint64 `mapstructure:"max"`
 }
 
-func (pf *AccountPriceFloors) validate(errs []error) []error {
-
-	if pf.EnforceFloorRate < 0 || pf.EnforceFloorRate > 100 {
-		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.enforce_floors_rate should be between 0 and 100`))
-	}
-	return errs
-}
-
 func (cfg *AuctionTimeouts) validate(errs []error) []error {
 	if cfg.Max < cfg.Default {
 		errs = append(errs, fmt.Errorf("auction_timeouts_ms.max cannot be less than auction_timeouts_ms.default. max=%d, default=%d", cfg.Max, cfg.Default))

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"net"
 	"os"
-	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -3176,46 +3175,5 @@ func TestTCF2FeatureOneVendorException(t *testing.T) {
 		value := tcf2.FeatureOneVendorException(tt.giveBidder)
 
 		assert.Equal(t, tt.wantIsVendorException, value, tt.description)
-	}
-}
-
-func TestAccountPriceFloors_validate(t *testing.T) {
-	type fields struct {
-		Enabled                bool
-		EnforceFloorRate       int
-		AdjustForBidAdjustment bool
-		EnforceDealFloors      bool
-		UseDynamicData         bool
-	}
-	type args struct {
-		errs []error
-	}
-	tests := []struct {
-		name string
-		pf   *AccountPriceFloors
-		args args
-		want []error
-	}{
-		{
-			name: "valid configuration",
-			pf: &AccountPriceFloors{
-				EnforceFloorRate: 100,
-			},
-		},
-		{
-			name: "Invalid configuration",
-			pf: &AccountPriceFloors{
-				EnforceFloorRate: 110,
-			},
-			want: []error{errors.New("account_defaults.price_floors.enforce_floors_rate should be between 0 and 100")},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			if got := tt.pf.validate(tt.args.errs); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("AccountPriceFloors.validate() = %v, want %v", got, tt.want)
-			}
-		})
 	}
 }
