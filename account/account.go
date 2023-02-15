@@ -66,23 +66,14 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 					Message: fmt.Sprintf("The prebid-server account config for account id \"%s\" is malformed. Please reach out to the prebid server host.", accountID),
 				}}
 			}
-			if useGDPRChannelEnabled(account) {
-				me.RecordAccountGDPRChannelEnabledWarning(accountID)
-				me.RecordAccountUpgradeStatus(accountID)
-			}
-			if useCCPAChannelEnabled(account) {
-				me.RecordAccountCCPAChannelEnabledWarning(accountID)
-				me.RecordAccountUpgradeStatus(accountID)
-			}
-		} else {
-			if useGDPRChannelEnabled(account) {
-				me.RecordAccountGDPRChannelEnabledWarning(accountID)
-				me.RecordAccountUpgradeStatus(accountID)
-			}
-			if useCCPAChannelEnabled(account) {
-				me.RecordAccountCCPAChannelEnabledWarning(accountID)
-				me.RecordAccountUpgradeStatus(accountID)
-			}
+		}
+		if useGDPRChannelEnabled(account) {
+			me.RecordAccountGDPRChannelEnabledWarning(accountID)
+			me.RecordAccountUpgradeStatus(accountID)
+		}
+		if useCCPAChannelEnabled(account) {
+			me.RecordAccountCCPAChannelEnabledWarning(accountID)
+			me.RecordAccountUpgradeStatus(accountID)
 		}
 
 		if err != nil {

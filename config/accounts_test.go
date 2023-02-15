@@ -852,6 +852,8 @@ func TestAccountChannelIsSet(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		assert.Equal(t, test.expected, test.givenAccountChannel.IsSet(), "Accout channel result is unexpected")
+		t.Run(test.description, func(t *testing.T) {
+			assert.Equal(t, test.expected, test.givenAccountChannel.IsSet())
+		})
 	}
 }

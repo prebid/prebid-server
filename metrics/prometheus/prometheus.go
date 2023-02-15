@@ -529,15 +529,15 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"Count of requests referencing an account whose config specifies a deprecated gdpr.tcf2.purpose10 field")
 
 	metrics.channelEnabledCCPA = newCounterWithoutLabels(cfg, reg,
-		"ccpa_channel_enabled",
-		"Count of requests referencing an account whose config specifies a depreceated ccpa_channel_enabled field")
+		"account_config_ccpa_channel_enabled_warn",
+		"Count of requests referencing an account whose config specifies a depreceated ccpa.channel_enabled field")
 	metrics.channelEnabledGDPR = newCounterWithoutLabels(cfg, reg,
-		"gdpr_channel_enabled",
-		"Count of requests referencing an account whose config specifies a depreceated gdpr_channel_enabled field")
+		"account_config_gdpr_channel_enabled_warn",
+		"Count of requests referencing an account whose config specifies a depreceated gdpr.channel_enabled field")
 
 	metrics.accountDepreciationSummary = newCounterWithoutLabels(cfg, reg,
-		"account_depreciation_summary",
-		"Count of depreceated account config fields for a specific account")
+		"account_config_summary",
+		"Count of deprecated account config fields encountered across all accounts")
 
 	createModulesMetrics(cfg, reg, &metrics, moduleStageNames, standardTimeBuckets)
 

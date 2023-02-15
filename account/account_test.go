@@ -357,66 +357,53 @@ func TestConvertGDPREnforcePurposeFields(t *testing.T) {
 }
 
 func TestGdprCcpaChannelEnabled(t *testing.T) {
+	cfg := &config.Configuration{}
+	fetcher := &mockAccountFetcher{}
+	assert.NoError(t, cfg.MarshalAccountDefaults())
+
 	testCases := []struct {
 		description         string
 		givenAccountID      string
 		givenMetric         string
-		required            bool
-		disabled            bool
 		expectedMetricCount int
 	}{
 		{
 			description:         "Account is GDPR Channel Enabled, the GDPR metric should be called",
 			givenAccountID:      "gdpr_channel_enabled_acct",
 			givenMetric:         "RecordAccountGDPRChannelEnabledWarning",
-			required:            false,
-			disabled:            false,
 			expectedMetricCount: 1,
 		},
 		{
 			description:         "Account is CCPA Channel Enabled, the CCPA metric should be called",
 			givenAccountID:      "ccpa_channel_enabled_acct",
 			givenMetric:         "RecordAccountCCPAChannelEnabledWarning",
-			required:            false,
-			disabled:            false,
 			expectedMetricCount: 1,
 		},
 		{
 			description:         "Account isn't channel enabled, CCPA metric shouldn't be called",
 			givenAccountID:      "valid_acct",
 			givenMetric:         "RecordAccountCCPAChannelEnabledWarning",
-			required:            false,
-			disabled:            false,
 			expectedMetricCount: 0,
 		},
 		{
 			description:         "Account isn't channel enabled, GDPR metric shouldn't be called",
 			givenAccountID:      "valid_acct",
 			givenMetric:         "RecordAccountGDPRChannelEnabledWarning",
-			required:            false,
-			disabled:            false,
 			expectedMetricCount: 0,
 		},
 	}
 
 	for _, test := range testCases {
-		cfg := &config.Configuration{
-			BlacklistedAcctMap: map[string]bool{"bad_acct": true},
-			AccountRequired:    test.required,
-			AccountDefaults:    config.Account{Disabled: test.disabled},
-		}
-		fetcher := &mockAccountFetcher{}
-		assert.NoError(t, cfg.MarshalAccountDefaults())
+		t.Run(test.description, func(t *testing.T) {
+			metrics := &metrics.MetricsEngineMock{}
+			metrics.Mock.On(test.givenMetric, mock.Anything, mock.Anything).Return()
+			metrics.Mock.On("RecordAccountUpgradeStatus", mock.Anything, mock.Anything).Return()
 
-		metrics := &metrics.MetricsEngineMock{}
-		metrics.Mock.On(test.givenMetric, mock.Anything, mock.Anything).Return()
-		metrics.Mock.On("RecordAccountUpgradeStatus", mock.Anything, mock.Anything).Return()
+			_, _ = GetAccount(context.Background(), cfg, fetcher, test.givenAccountID, metrics)
 
-		_, _ = GetAccount(context.Background(), cfg, fetcher, test.givenAccountID, metrics)
-
-		metrics.AssertNumberOfCalls(t, test.givenMetric, test.expectedMetricCount)
-		metrics.AssertNumberOfCalls(t, "RecordAccountUpgradeStatus", test.expectedMetricCount)
-
+			metrics.AssertNumberOfCalls(t, test.givenMetric, test.expectedMetricCount)
+			metrics.AssertNumberOfCalls(t, "RecordAccountUpgradeStatus", test.expectedMetricCount)
+		})
 	}
 }
 

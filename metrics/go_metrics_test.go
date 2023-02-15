@@ -1032,70 +1032,79 @@ func TestRecordModuleAccountMetrics(t *testing.T) {
 
 func TestRecordAccountGDPRPurposeWarning(t *testing.T) {
 	testCases := []struct {
-		description         string
-		givenPubID          string
-		givenPurposeName    string
-		expectedMetricCount int64
+		description            string
+		givenPubID             string
+		givenPurposeName       string
+		expectedP1MetricCount  int64
+		expectedP2MetricCount  int64
+		expectedP3MetricCount  int64
+		expectedP4MetricCount  int64
+		expectedP5MetricCount  int64
+		expectedP6MetricCount  int64
+		expectedP7MetricCount  int64
+		expectedP8MetricCount  int64
+		expectedP9MetricCount  int64
+		expectedP10MetricCount int64
 	}{
 		{
-			description:         "purpose1 metric should be incremented",
-			givenPubID:          "acct-id",
-			givenPurposeName:    "purpose1",
-			expectedMetricCount: 1,
+			description:           "purpose1 metric should be incremented",
+			givenPubID:            "acct-id",
+			givenPurposeName:      "purpose1",
+			expectedP1MetricCount: 1,
 		},
 		{
-			description:         "purpose2 metric should be incremented",
-			givenPubID:          "acct-id",
-			givenPurposeName:    "purpose2",
-			expectedMetricCount: 1,
+			description:           "purpose2 metric should be incremented",
+			givenPubID:            "acct-id",
+			givenPurposeName:      "purpose2",
+			expectedP2MetricCount: 1,
 		},
 		{
-			description:         "purpose3 metric should be incremented",
-			givenPubID:          "acct-id",
-			givenPurposeName:    "purpose3",
-			expectedMetricCount: 1,
+			description:           "purpose3 metric should be incremented",
+			givenPubID:            "acct-id",
+			givenPurposeName:      "purpose3",
+			expectedP3MetricCount: 1,
 		},
 		{
-			description:         "purpose4 metric should be incremented",
-			givenPubID:          "acct-id",
-			givenPurposeName:    "purpose4",
-			expectedMetricCount: 1,
+			description:           "purpose4 metric should be incremented",
+			givenPubID:            "acct-id",
+			givenPurposeName:      "purpose4",
+			expectedP4MetricCount: 1,
 		},
 		{
-			description:         "purpose5 metric should be incremented",
-			givenPubID:          "acct-id",
-			givenPurposeName:    "purpose5",
-			expectedMetricCount: 1,
+			description:           "purpose5 metric should be incremented",
+			givenPubID:            "acct-id",
+			givenPurposeName:      "purpose5",
+			expectedP5MetricCount: 1,
 		},
 		{
-			description:         "purpose6 metric should be incremented",
-			givenPubID:          "acct-id",
-			givenPurposeName:    "purpose6",
-			expectedMetricCount: 1,
+			description:           "purpose6 metric should be incremented",
+			givenPubID:            "acct-id",
+			givenPurposeName:      "purpose6",
+			expectedP6MetricCount: 1,
 		},
 		{
-			description:         "purpose7 metric should be incremented",
-			givenPubID:          "acct-id",
-			givenPurposeName:    "purpose7",
-			expectedMetricCount: 1,
+			description:           "purpose7 metric should be incremented",
+			givenPubID:            "acct-id",
+			givenPurposeName:      "purpose7",
+			expectedP7MetricCount: 1,
 		},
 		{
-			description:         "purpose8 metric should be incremented",
-			givenPubID:          "acct-id",
-			givenPurposeName:    "purpose8",
-			expectedMetricCount: 1,
+			description:           "purpose8 metric should be incremented",
+			givenPubID:            "acct-id",
+			givenPurposeName:      "purpose8",
+			expectedP8MetricCount: 1,
 		},
 		{
-			description:         "purpose9 metric should be incremented",
-			givenPubID:          "acct-id",
-			givenPurposeName:    "purpose9",
-			expectedMetricCount: 1,
+			description:           "purpose9 metric should be incremented",
+			givenPubID:            "acct-id",
+			givenPurposeName:      "purpose9",
+			expectedP9MetricCount: 1,
 		},
 		{
-			description:         "purpose10 metric should be incremented",
-			givenPubID:          "acct-id",
-			givenPurposeName:    "purpose10",
-			expectedMetricCount: 1,
+			description:            "purpose10 metric should be incremented",
+			givenPubID:             "acct-id",
+			givenPurposeName:       "purpose10",
+			expectedP10MetricCount: 1,
 		},
 	}
 	for _, test := range testCases {
@@ -1105,28 +1114,16 @@ func TestRecordAccountGDPRPurposeWarning(t *testing.T) {
 		m.RecordAccountGDPRPurposeWarning(test.givenPubID, test.givenPurposeName)
 		am := m.getAccountMetrics(test.givenPubID)
 
-		switch test.givenPurposeName {
-		case "purpose1":
-			assert.Equal(t, test.expectedMetricCount, am.accountDepreciationWarningsPurpose1Meter.Count())
-		case "purpose2":
-			assert.Equal(t, test.expectedMetricCount, am.accountDepreciationWarningsPurpose2Meter.Count())
-		case "purpose3":
-			assert.Equal(t, test.expectedMetricCount, am.accountDepreciationWarningsPurpose3Meter.Count())
-		case "purpose4":
-			assert.Equal(t, test.expectedMetricCount, am.accountDepreciationWarningsPurpose4Meter.Count())
-		case "purpose5":
-			assert.Equal(t, test.expectedMetricCount, am.accountDepreciationWarningsPurpose5Meter.Count())
-		case "purpose6":
-			assert.Equal(t, test.expectedMetricCount, am.accountDepreciationWarningsPurpose6Meter.Count())
-		case "purpose7":
-			assert.Equal(t, test.expectedMetricCount, am.accountDepreciationWarningsPurpose7Meter.Count())
-		case "purpose8":
-			assert.Equal(t, test.expectedMetricCount, am.accountDepreciationWarningsPurpose8Meter.Count())
-		case "purpose9":
-			assert.Equal(t, test.expectedMetricCount, am.accountDepreciationWarningsPurpose9Meter.Count())
-		case "purpose10":
-			assert.Equal(t, test.expectedMetricCount, am.accountDepreciationWarningsPurpose10Meter.Count())
-		}
+		assert.Equal(t, test.expectedP1MetricCount, am.accountDeprecationWarningsPurpose1Meter.Count())
+		assert.Equal(t, test.expectedP2MetricCount, am.accountDeprecationWarningsPurpose2Meter.Count())
+		assert.Equal(t, test.expectedP3MetricCount, am.accountDeprecationWarningsPurpose3Meter.Count())
+		assert.Equal(t, test.expectedP4MetricCount, am.accountDeprecationWarningsPurpose4Meter.Count())
+		assert.Equal(t, test.expectedP5MetricCount, am.accountDeprecationWarningsPurpose5Meter.Count())
+		assert.Equal(t, test.expectedP6MetricCount, am.accountDeprecationWarningsPurpose6Meter.Count())
+		assert.Equal(t, test.expectedP7MetricCount, am.accountDeprecationWarningsPurpose7Meter.Count())
+		assert.Equal(t, test.expectedP8MetricCount, am.accountDeprecationWarningsPurpose8Meter.Count())
+		assert.Equal(t, test.expectedP9MetricCount, am.accountDeprecationWarningsPurpose9Meter.Count())
+		assert.Equal(t, test.expectedP10MetricCount, am.accountDeprecationWarningsPurpose10Meter.Count())
 	}
 }
 
@@ -1197,7 +1194,7 @@ func TestRecordAccountUpgradeStatus(t *testing.T) {
 		m.RecordAccountUpgradeStatus(test.givenPubID)
 		am := m.getAccountMetrics(test.givenPubID)
 
-		assert.Equal(t, test.expectedMetricCount, am.accountDepreciationSummaryMeter.Count())
+		assert.Equal(t, test.expectedMetricCount, am.accountDeprecationSummaryMeter.Count())
 
 	}
 }
