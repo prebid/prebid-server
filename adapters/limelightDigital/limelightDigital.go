@@ -44,12 +44,14 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	for _, imp := range request.Imp {
 		limelightDigitalExt, err := getImpressionExt(&imp)
 		if err != nil {
-			return nil, append(errors, err)
+			errors = append(errors, err)
+			continue
 		}
 
 		url, err := a.buildEndpointURL(limelightDigitalExt)
 		if err != nil {
-			return nil, []error{err}
+			errors = append(errors, err)
+			continue
 		}
 
 		// Check if imp comes with bid floor amount defined in a foreign currency
@@ -58,7 +60,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			// Convert to US dollars
 			convertedValue, err := requestInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, "USD")
 			if err != nil {
-				return nil, []error{err}
+				errors = append(errors, err)
+				continue
 			}
 
 			// Update after conversion. All imp elements inside request.Imp are shallow copies
