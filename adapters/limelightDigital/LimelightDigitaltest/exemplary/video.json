@@ -11,7 +11,7 @@
         },
         "ext": {
           "bidder": {
-            "host": "www.limelightDigital.video.test.com",
+            "host": "video.ortb.net",
             "publisherId": 123456
           }
         }
@@ -21,7 +21,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://www.limelightDigital.video.test.com/openrtb/123456",
+        "uri": "http://video.ortb.net/openrtb/123456",
         "body": {
           "id": "test-request-id-test-video-id",
           "imp": [

@@ -153,7 +153,7 @@ func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ImpExtLimelightDigital, e
 
 func (a *adapter) buildEndpointURL(params *openrtb_ext.ImpExtLimelightDigital) (string, error) {
 	endpointParams := macros.EndpointTemplateParams{
-		Host:        params.Host,
+		Host:        params.Host[:strings.IndexByte(params.Host, '.')],
 		PublisherID: params.PublisherID.String(),
 	}
 	return macros.ResolveMacros(a.endpointTemplate, endpointParams)

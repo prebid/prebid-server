@@ -16,7 +16,7 @@
         "bidfloorcur": "EUR",
         "ext": {
           "bidder": {
-            "host": "www.limelightDigital.banner.test.com",
+            "host": "banner.ortb.net",
             "publisherId": 123456
           }
         }

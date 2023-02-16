@@ -8,10 +8,11 @@
     "host": {
       "type": "string",
       "description": "Ad network's RTB host",
-      "format": "hostname"
+      "format": "hostname",
+      "pattern": "^.+\\..+$"
     },
     "publisherId": {
-      "type": ["number", "string"],
+      "type": ["integer", "string"],
       "description": "Publisher ID",
       "minimum": 1,
       "pattern": "^[1-9][0-9]*$"

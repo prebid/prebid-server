@@ -9,7 +9,7 @@
         },
         "ext": {
           "bidder": {
-            "host": "www.limelightDigital.native.test.com",
+            "host": "native.ortb.net",
             "publisherId": 123456
           }
         }
@@ -19,7 +19,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://www.limelightDigital.native.test.com/openrtb/123456",
+        "uri": "http://native.ortb.net/openrtb/123456",
         "body": {
           "id": "test-request-id-test-native-id",
           "imp": [

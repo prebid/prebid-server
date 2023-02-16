@@ -14,7 +14,7 @@
         },
         "ext": {
           "bidder": {
-            "host": "www.limelightDigital.banner.test.com",
+            "host": "banner.ortb.net",
             "publisherId": "123456"
           }
         }
@@ -24,7 +24,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://www.limelightDigital.banner.test.com/openrtb/123456",
+        "uri": "http://banner.ortb.net/openrtb/123456",
         "body": {
           "id": "test-request-id-test-banner-id",
           "imp": [

@@ -1,4 +1,4 @@
-endpoint: "https://{{.Host}}/openrtb/{{.PublisherID}}"
+endpoint: "http://{{.Host}}.ortb.net/openrtb/{{.PublisherID}}"
 maintainer:
   email: "engineering@project-limelight.com"
 capabilities:
