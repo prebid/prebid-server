@@ -42,7 +42,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://whatever.com/publisher-id",
+        "uri": "http://display.whatever.com/hosturl.com/publisher-id",
         "body": {
           "id": "request-id",
           "imp": [
@@ -125,7 +125,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "Failed to find banner impression \"incorrect-impression-id\" ",
+      "value": "Failed to find banner/native impression \"incorrect-impression-id\" ",
       "comparison": "literal"
     }
   ]

@@ -52,7 +52,17 @@
         "prebid": {
           "targeting": {
             "includewinners": true,
-            "includebidderkeys": true
+            "includebidderkeys": true,
+            "pricegranularity": {
+              "precision": 2,
+              "ranges": [
+                {
+                  "min": 0,
+                  "max": 20,
+                  "increment": 0.1
+                }
+              ]
+            }
           },
           "alternatebiddercodes": {
             "enabled": true,
