@@ -10,7 +10,7 @@
     },
     "siteId": {
       "type": "integer",
-      "description": "ID for publisher site"
+      "description": "ID for publisher site,preferred"
     }
   },
   "oneOf": [
