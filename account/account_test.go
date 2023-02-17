@@ -17,12 +17,13 @@ import (
 )
 
 var mockAccountData = map[string]json.RawMessage{
-	"valid_acct":                json.RawMessage(`{"disabled":false}`),
-	"disabled_acct":             json.RawMessage(`{"disabled":true}`),
-	"malformed_acct":            json.RawMessage(`{"disabled":"invalid type"}`),
-	"gdpr_convert_acct":         json.RawMessage(`{"disabled":false,"gdpr":{"purpose5":{"enforce_purpose":"full"}}}`),
-	"gdpr_channel_enabled_acct": json.RawMessage(`{"disabled":false,"gdpr":{"channel_enabled":{"amp":true}}}`),
-	"ccpa_channel_enabled_acct": json.RawMessage(`{"disabled":false,"ccpa":{"channel_enabled":{"amp":true}}}`),
+	"valid_acct":                                   json.RawMessage(`{"disabled":false}`),
+	"disabled_acct":                                json.RawMessage(`{"disabled":true}`),
+	"malformed_acct":                               json.RawMessage(`{"disabled":"invalid type"}`),
+	"gdpr_convert_acct":                            json.RawMessage(`{"disabled":false,"gdpr":{"purpose5":{"enforce_purpose":"full"}}}`),
+	"gdpr_channel_enabled_acct":                    json.RawMessage(`{"disabled":false,"gdpr":{"channel_enabled":{"amp":true}}}`),
+	"ccpa_channel_enabled_acct":                    json.RawMessage(`{"disabled":false,"ccpa":{"channel_enabled":{"amp":true}}}`),
+	"gdpr_channel_enabled_deprecated_purpose_acct": json.RawMessage(`{"disabled":false,"gdpr":{"purpose1":{"enforce_purpose":"full"}, "channel_enabled":{"amp":true}}}`),
 }
 
 type mockAccountFetcher struct {
@@ -229,84 +230,98 @@ func TestConvertGDPREnforcePurposeFields(t *testing.T) {
 		giveConfig  []byte
 		wantConfig  []byte
 		wantErr     error
+		wantBool    bool
 	}{
 		{
 			description: "config is nil",
 			giveConfig:  nil,
 			wantConfig:  nil,
 			wantErr:     nil,
+			wantBool:    false,
 		},
 		{
 			description: "config is empty - no gdpr key",
 			giveConfig:  []byte(``),
 			wantConfig:  []byte(``),
 			wantErr:     nil,
+			wantBool:    false,
 		},
 		{
 			description: "gdpr present but empty",
 			giveConfig:  []byte(`{"gdpr": {}}`),
 			wantConfig:  []byte(`{"gdpr": {}}`),
 			wantErr:     nil,
+			wantBool:    false,
 		},
 		{
 			description: "gdpr present but invalid",
 			giveConfig:  []byte(`{"gdpr": {`),
 			wantConfig:  nil,
 			wantErr:     jsonparser.MalformedJsonError,
+			wantBool:    false,
 		},
 		{
 			description: "gdpr.purpose1 present but empty",
 			giveConfig:  []byte(`{"gdpr":{"purpose1":{}}}`),
 			wantConfig:  []byte(`{"gdpr":{"purpose1":{}}}`),
 			wantErr:     nil,
+			wantBool:    false,
 		},
 		{
 			description: "gdpr.purpose1.enforce_purpose is set to bool",
 			giveConfig:  []byte(`{"gdpr":{"purpose1":{"enforce_purpose":true}}}`),
 			wantConfig:  []byte(`{"gdpr":{"purpose1":{"enforce_purpose":true}}}`),
 			wantErr:     nil,
+			wantBool:    false,
 		},
 		{
 			description: "gdpr.purpose1.enforce_purpose is set to string full",
 			giveConfig:  []byte(`{"gdpr":{"purpose1":{"enforce_purpose":"full"}}}`),
 			wantConfig:  []byte(`{"gdpr":{"purpose1":{"enforce_algo":"full", "enforce_purpose":true}}}`),
 			wantErr:     nil,
+			wantBool:    true,
 		},
 		{
 			description: "gdpr.purpose1.enforce_purpose is set to string no",
 			giveConfig:  []byte(`{"gdpr":{"purpose1":{"enforce_purpose":"no"}}}`),
 			wantConfig:  []byte(`{"gdpr":{"purpose1":{"enforce_algo":"full", "enforce_purpose":false}}}`),
 			wantErr:     nil,
+			wantBool:    true,
 		},
 		{
 			description: "gdpr.purpose1.enforce_purpose is set to string no and other fields are untouched during conversion",
 			giveConfig:  []byte(`{"gdpr":{"purpose1":{"enforce_purpose":"no", "enforce_vendors":true}}}`),
 			wantConfig:  []byte(`{"gdpr":{"purpose1":{"enforce_algo":"full", "enforce_purpose":false, "enforce_vendors":true}}}`),
 			wantErr:     nil,
+			wantBool:    true,
 		},
 		{
 			description: "gdpr.purpose1.enforce_purpose is set but invalid",
 			giveConfig:  []byte(`{"gdpr":{"purpose1":{"enforce_purpose":}}}`),
 			wantConfig:  nil,
 			wantErr:     jsonparser.MalformedJsonError,
+			wantBool:    false,
 		},
 		{
 			description: "gdpr.purpose1.enforce_algo is set",
 			giveConfig:  []byte(`{"gdpr":{"purpose1":{"enforce_algo":"full"}}}`),
 			wantConfig:  []byte(`{"gdpr":{"purpose1":{"enforce_algo":"full"}}}`),
 			wantErr:     nil,
+			wantBool:    false,
 		},
 		{
 			description: "gdpr.purpose1.enforce_purpose is set to string and enforce_algo is set",
 			giveConfig:  []byte(`{"gdpr":{"purpose1":{"enforce_algo":"full", "enforce_purpose":"full"}}}`),
 			wantConfig:  []byte(`{"gdpr":{"purpose1":{"enforce_algo":"full", "enforce_purpose":"full"}}}`),
 			wantErr:     nil,
+			wantBool:    true,
 		},
 		{
 			description: "gdpr.purpose1.enforce_purpose is set to string and enforce_algo is set but invalid",
 			giveConfig:  []byte(`{"gdpr":{"purpose1":{"enforce_algo":, "enforce_purpose":"full"}}}`),
 			wantConfig:  nil,
 			wantErr:     jsonparser.MalformedJsonError,
+			wantBool:    true,
 		},
 		{
 			description: "gdpr.purpose{1-10}.enforce_purpose are set to strings no and full alternating",
@@ -334,7 +349,8 @@ func TestConvertGDPREnforcePurposeFields(t *testing.T) {
 				`,"purpose9":` + enforcePurposeNoMapped +
 				`,"purpose10":` + enforcePurposeFullMapped +
 				`}}`),
-			wantErr: nil,
+			wantErr:  nil,
+			wantBool: true,
 		},
 	}
 
@@ -343,7 +359,7 @@ func TestConvertGDPREnforcePurposeFields(t *testing.T) {
 		metricsMock.Mock.On("RecordAccountGDPRPurposeWarning", mock.Anything, mock.Anything).Return()
 		metricsMock.Mock.On("RecordAccountUpgradeStatus", mock.Anything, mock.Anything).Return()
 
-		newConfig, err := ConvertGDPREnforcePurposeFields(tt.giveConfig, metricsMock, "acct-id")
+		newConfig, err, metricRecorded := ConvertGDPREnforcePurposeFields(tt.giveConfig, metricsMock, "acct-id")
 		if tt.wantErr != nil {
 			assert.Error(t, err, tt.description)
 		}
@@ -353,6 +369,7 @@ func TestConvertGDPREnforcePurposeFields(t *testing.T) {
 		} else {
 			assert.JSONEq(t, string(tt.wantConfig), string(newConfig), tt.description)
 		}
+		assert.Equal(t, tt.wantBool, metricRecorded, tt.description)
 	}
 }
 
@@ -402,7 +419,6 @@ func TestGdprCcpaChannelEnabledMetrics(t *testing.T) {
 			_, _ = GetAccount(context.Background(), cfg, fetcher, test.givenAccountID, metrics)
 
 			metrics.AssertNumberOfCalls(t, test.givenMetric, test.expectedMetricCount)
-			metrics.AssertNumberOfCalls(t, "RecordAccountUpgradeStatus", test.expectedMetricCount)
 		})
 	}
 }
@@ -477,12 +493,76 @@ func TestGdprPurposeWarningMetrics(t *testing.T) {
 			metrics.Mock.On("RecordAccountGDPRPurposeWarning", mock.Anything, mock.Anything).Return()
 			metrics.Mock.On("RecordAccountUpgradeStatus", mock.Anything, mock.Anything).Return()
 
-			_, err := ConvertGDPREnforcePurposeFields(test.givenConfig, metrics, "acct-id")
+			_, err, _ := ConvertGDPREnforcePurposeFields(test.givenConfig, metrics, "acct-id")
 			assert.NoError(t, err)
 
 			metrics.AssertNumberOfCalls(t, "RecordAccountGDPRPurposeWarning", test.expectedMetricCount)
-			metrics.AssertNumberOfCalls(t, "RecordAccountUpgradeStatus", test.expectedMetricCount)
 		})
 
+	}
+}
+
+func TestAccountUpgradeStatusGetAccount(t *testing.T) {
+	cfg := &config.Configuration{}
+	fetcher := &mockAccountFetcher{}
+	assert.NoError(t, cfg.MarshalAccountDefaults())
+
+	testCases := []struct {
+		name                string
+		givenAccountIDs     []string
+		givenMetrics        []string
+		expectedMetricCount int
+	}{
+		{
+			name:                "MultipleDeprecatedConfigs",
+			givenAccountIDs:     []string{"gdpr_channel_enabled_deprecated_purpose_acct"},
+			givenMetrics:        []string{"RecordAccountGDPRChannelEnabledWarning", "RecordAccountGDPRPurposeWarning"},
+			expectedMetricCount: 1,
+		},
+		{
+			name:                "ZeroDeprecatedConfigs",
+			givenAccountIDs:     []string{"valid_acct"},
+			givenMetrics:        []string{},
+			expectedMetricCount: 0,
+		},
+		{
+			name:                "OneDeprecatedConfigPurpose",
+			givenAccountIDs:     []string{"gdpr_convert_acct"},
+			givenMetrics:        []string{"RecordAccountGDPRPurposeWarning"},
+			expectedMetricCount: 1,
+		},
+		{
+			name:                "OneDeprecatedConfigGDPRChannelEnabled",
+			givenAccountIDs:     []string{"gdpr_channel_enabled_acct"},
+			givenMetrics:        []string{"RecordAccountGDPRChannelEnabledWarning"},
+			expectedMetricCount: 1,
+		},
+		{
+			name:                "OneDeprecatedConfigCCPAChannelEnabled",
+			givenAccountIDs:     []string{"ccpa_channel_enabled_acct"},
+			givenMetrics:        []string{"RecordAccountCCPAChannelEnabledWarning"},
+			expectedMetricCount: 1,
+		},
+		{
+			name:                "MultipleAccountsWithDeprecatedConfigs",
+			givenAccountIDs:     []string{"gdpr_channel_enabled_acct", "gdpr_convert_acct"},
+			givenMetrics:        []string{"RecordAccountGDPRChannelEnabledWarning", "RecordAccountGDPRPurposeWarning"},
+			expectedMetricCount: 2,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			metrics := &metrics.MetricsEngineMock{}
+			for _, metric := range test.givenMetrics {
+				metrics.Mock.On(metric, mock.Anything, mock.Anything).Return()
+			}
+			metrics.Mock.On("RecordAccountUpgradeStatus", mock.Anything, mock.Anything).Return()
+
+			for _, accountID := range test.givenAccountIDs {
+				_, _ = GetAccount(context.Background(), cfg, fetcher, accountID, metrics)
+			}
+			metrics.AssertNumberOfCalls(t, "RecordAccountUpgradeStatus", test.expectedMetricCount)
+		})
 	}
 }
