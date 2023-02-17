@@ -55,7 +55,7 @@ type AccountCCPA struct {
 
 type AccountPriceFloors struct {
 	Enabled                bool `mapstructure:"enabled" json:"enabled"`
-	EnforceFloorRate       int  `mapstructure:"enforce_floors_rate" json:"enforce_floors_rate"`
+	EnforceFloorsRate      int  `mapstructure:"enforce_floors_rate" json:"enforce_floors_rate"`
 	AdjustForBidAdjustment bool `mapstructure:"adjust_for_bid_adjustment" json:"adjust_for_bid_adjustment"`
 	EnforceDealFloors      bool `mapstructure:"enforce_deal_floors" json:"enforce_deal_floors"`
 	UseDynamicData         bool `mapstructure:"use_dynamic_data" json:"use_dynamic_data"`
@@ -63,7 +63,7 @@ type AccountPriceFloors struct {
 
 func (pf *AccountPriceFloors) validate(errs []error) []error {
 
-	if pf.EnforceFloorRate < 0 || pf.EnforceFloorRate > 100 {
+	if pf.EnforceFloorsRate < 0 || pf.EnforceFloorsRate > 100 {
 		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.enforce_floors_rate should be between 0 and 100`))
 	}
 	return errs

@@ -179,7 +179,7 @@ func TestDefaults(t *testing.T) {
 	cmpBools(t, "price_floors.enabled", cfg.PriceFloors.Enabled, false)
 
 	cmpBools(t, "account_defaults.price_floors.enabled", cfg.AccountDefaults.PriceFloors.Enabled, false)
-	cmpInts(t, "account_defaults.price_floors.enforce_floors_rate", cfg.AccountDefaults.PriceFloors.EnforceFloorRate, 100)
+	cmpInts(t, "account_defaults.price_floors.enforce_floors_rate", cfg.AccountDefaults.PriceFloors.EnforceFloorsRate, 100)
 	cmpBools(t, "account_defaults.price_floors.adjust_for_bid_adjustment", cfg.AccountDefaults.PriceFloors.AdjustForBidAdjustment, true)
 	cmpBools(t, "account_defaults.price_floors.enforce_deal_floors", cfg.AccountDefaults.PriceFloors.EnforceDealFloors, false)
 	cmpBools(t, "account_defaults.price_floors.use_dynamic_data", cfg.AccountDefaults.PriceFloors.UseDynamicData, false)
@@ -446,8 +446,8 @@ price_floors:
 account_defaults:
     price_floors:
         enabled: true
-        enforce_floors_rate: 100
-        adjust_for_bid_adjustment: true
+        enforce_floors_rate: 50
+        adjust_for_bid_adjustment: false
         enforce_deal_floors: true
         use_dynamic_data: true
 `)
@@ -533,8 +533,8 @@ func TestFullConfig(t *testing.T) {
 	//Assert the price floor values
 	cmpBools(t, "price_floors.enabled", cfg.PriceFloors.Enabled, true)
 	cmpBools(t, "account_defaults.price_floors.enabled", cfg.AccountDefaults.PriceFloors.Enabled, true)
-	cmpInts(t, "account_defaults.price_floors.enforce_floors_rate", cfg.AccountDefaults.PriceFloors.EnforceFloorRate, 100)
-	cmpBools(t, "account_defaults.price_floors.adjust_for_bid_adjustment", cfg.AccountDefaults.PriceFloors.AdjustForBidAdjustment, true)
+	cmpInts(t, "account_defaults.price_floors.enforce_floors_rate", cfg.AccountDefaults.PriceFloors.EnforceFloorsRate, 50)
+	cmpBools(t, "account_defaults.price_floors.adjust_for_bid_adjustment", cfg.AccountDefaults.PriceFloors.AdjustForBidAdjustment, false)
 	cmpBools(t, "account_defaults.price_floors.enforce_deal_floors", cfg.AccountDefaults.PriceFloors.EnforceDealFloors, true)
 	cmpBools(t, "account_defaults.price_floors.use_dynamic_data", cfg.AccountDefaults.PriceFloors.UseDynamicData, true)
 
