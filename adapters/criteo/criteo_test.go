@@ -10,7 +10,7 @@ import (
 func TestJsonSamples(t *testing.T) {
 
 	bidder, buildErr := Builder(openrtb_ext.BidderCriteo, config.Adapter{
-		Endpoint: "https://bidder.criteo.com/openrtb/prebid/auction/request?profile=230"},
+		Endpoint: "https://ssp-bidder.criteo.com/openrtb/pbs/auction/request?profile=230"},
 		config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
