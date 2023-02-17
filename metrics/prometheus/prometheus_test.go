@@ -1899,9 +1899,9 @@ func TestRecordModuleMetrics(t *testing.T) {
 	}
 }
 
-func TestRecordAccountGDPRPurposeWarning(t *testing.T) {
+func TestRecordAccountGDPRPurposeWarningMetrics(t *testing.T) {
 	testCases := []struct {
-		description            string
+		name                   string
 		givenPubID             string
 		givenPurposeName       string
 		expectedP1MetricCount  float64
@@ -1916,142 +1916,148 @@ func TestRecordAccountGDPRPurposeWarning(t *testing.T) {
 		expectedP10MetricCount float64
 	}{
 		{
-			description:           "purpose1 metric should be incremented",
+			name:                  "Purpose1MetricIncremented",
 			givenPubID:            "acct-id",
 			givenPurposeName:      "purpose1",
 			expectedP1MetricCount: 1,
 		},
 		{
-			description:           "purpose2 metric should be incremented",
+			name:                  "Purpose2MetricIncremented",
 			givenPubID:            "acct-id",
 			givenPurposeName:      "purpose2",
 			expectedP2MetricCount: 1,
 		},
 		{
-			description:           "purpose3 metric should be incremented",
+			name:                  "Purpose3MetricIncremented",
 			givenPubID:            "acct-id",
 			givenPurposeName:      "purpose3",
 			expectedP3MetricCount: 1,
 		},
 		{
-			description:           "purpose4 metric should be incremented",
+			name:                  "Purpose4MetricIncremented",
 			givenPubID:            "acct-id",
 			givenPurposeName:      "purpose4",
 			expectedP4MetricCount: 1,
 		},
 		{
-			description:           "purpose5 metric should be incremented",
+			name:                  "Purpose5MetricIncremented",
 			givenPubID:            "acct-id",
 			givenPurposeName:      "purpose5",
 			expectedP5MetricCount: 1,
 		},
 		{
-			description:           "purpose6 metric should be incremented",
+			name:                  "Purpose6MetricIncremented",
 			givenPubID:            "acct-id",
 			givenPurposeName:      "purpose6",
 			expectedP6MetricCount: 1,
 		},
 		{
-			description:           "purpose7 metric should be incremented",
+			name:                  "Purpose7MetricIncremented",
 			givenPubID:            "acct-id",
 			givenPurposeName:      "purpose7",
 			expectedP7MetricCount: 1,
 		},
 		{
-			description:           "purpose8 metric should be incremented",
+			name:                  "Purpose8MetricIncremented",
 			givenPubID:            "acct-id",
 			givenPurposeName:      "purpose8",
 			expectedP8MetricCount: 1,
 		},
 		{
-			description:           "purpose9 metric should be incremented",
+			name:                  "Purpose9MetricIncremented",
 			givenPubID:            "acct-id",
 			givenPurposeName:      "purpose9",
 			expectedP9MetricCount: 1,
 		},
 		{
-			description:            "purpose10 metric should be incremented",
+			name:                   "Purpose10MetricIncremented",
 			givenPubID:             "acct-id",
 			givenPurposeName:       "purpose10",
 			expectedP10MetricCount: 1,
 		},
 	}
 	for _, test := range testCases {
-		m := createMetricsForTesting()
-		m.RecordAccountGDPRPurposeWarning(test.givenPubID, test.givenPurposeName)
+		t.Run(test.name, func(t *testing.T) {
+			m := createMetricsForTesting()
+			m.RecordAccountGDPRPurposeWarning(test.givenPubID, test.givenPurposeName)
 
-		assertCounterValue(t, "", "Account Depreciation Warnings", m.accountDepreciationWarningsPurpose1, test.expectedP1MetricCount)
-		assertCounterValue(t, "", "Account Depreciation Warnings", m.accountDepreciationWarningsPurpose2, test.expectedP2MetricCount)
-		assertCounterValue(t, "", "Account Depreciation Warnings", m.accountDepreciationWarningsPurpose3, test.expectedP3MetricCount)
-		assertCounterValue(t, "", "Account Depreciation Warnings", m.accountDepreciationWarningsPurpose4, test.expectedP4MetricCount)
-		assertCounterValue(t, "", "Account Depreciation Warnings", m.accountDepreciationWarningsPurpose5, test.expectedP5MetricCount)
-		assertCounterValue(t, "", "Account Depreciation Warnings", m.accountDepreciationWarningsPurpose6, test.expectedP6MetricCount)
-		assertCounterValue(t, "", "Account Depreciation Warnings", m.accountDepreciationWarningsPurpose7, test.expectedP7MetricCount)
-		assertCounterValue(t, "", "Account Depreciation Warnings", m.accountDepreciationWarningsPurpose8, test.expectedP8MetricCount)
-		assertCounterValue(t, "", "Account Depreciation Warnings", m.accountDepreciationWarningsPurpose9, test.expectedP9MetricCount)
-		assertCounterValue(t, "", "Account Depreciation Warnings", m.accountDepreciationWarningsPurpose10, test.expectedP10MetricCount)
+			assertCounterValue(t, "", "Account Deprecation Warnings", m.accountDeprecationWarningsPurpose1, test.expectedP1MetricCount)
+			assertCounterValue(t, "", "Account Deprecation Warnings", m.accountDeprecationWarningsPurpose2, test.expectedP2MetricCount)
+			assertCounterValue(t, "", "Account Deprecation Warnings", m.accountDeprecationWarningsPurpose3, test.expectedP3MetricCount)
+			assertCounterValue(t, "", "Account Deprecation Warnings", m.accountDeprecationWarningsPurpose4, test.expectedP4MetricCount)
+			assertCounterValue(t, "", "Account Deprecation Warnings", m.accountDeprecationWarningsPurpose5, test.expectedP5MetricCount)
+			assertCounterValue(t, "", "Account Deprecation Warnings", m.accountDeprecationWarningsPurpose6, test.expectedP6MetricCount)
+			assertCounterValue(t, "", "Account Deprecation Warnings", m.accountDeprecationWarningsPurpose7, test.expectedP7MetricCount)
+			assertCounterValue(t, "", "Account Deprecation Warnings", m.accountDeprecationWarningsPurpose8, test.expectedP8MetricCount)
+			assertCounterValue(t, "", "Account Deprecation Warnings", m.accountDeprecationWarningsPurpose9, test.expectedP9MetricCount)
+			assertCounterValue(t, "", "Account Deprecation Warnings", m.accountDeprecationWarningsPurpose10, test.expectedP10MetricCount)
+		})
 	}
 }
 
-func TestRecordAccountGDPRChannelEnabledWarning(t *testing.T) {
+func TestRecordAccountGDPRChannelEnabledWarningMetrics(t *testing.T) {
 	testCases := []struct {
-		description         string
+		name                string
 		givenPubID          string
 		expectedMetricCount float64
 	}{
 		{
-			description:         "Metric isn't disabled, gdpr channel metric should be incremented",
+			name:                "GdprChannelMetricIncremented",
 			givenPubID:          "acct-id",
 			expectedMetricCount: 1,
 		},
 	}
 	for _, test := range testCases {
-		m := createMetricsForTesting()
-		m.RecordAccountGDPRChannelEnabledWarning(test.givenPubID)
+		t.Run(test.name, func(t *testing.T) {
+			m := createMetricsForTesting()
+			m.RecordAccountGDPRChannelEnabledWarning(test.givenPubID)
 
-		assertCounterValue(t, "", "GDPR Channel Enabled Depreciation Warnings", m.channelEnabledGDPR, test.expectedMetricCount)
-
+			assertCounterValue(t, "", "GDPR Channel Enabled Deprecation Warnings", m.channelEnabledGDPR, test.expectedMetricCount)
+		})
 	}
 }
 
-func TestRecordAccountCCPAChannelEnabledWarning(t *testing.T) {
+func TestRecordAccountCCPAChannelEnabledWarningMetrics(t *testing.T) {
 	testCases := []struct {
-		description         string
+		name                string
 		givenPubID          string
 		expectedMetricCount float64
 	}{
 		{
-			description:         "CCPA channel metric should be incremented",
+			name:                "CcpaChannelMetricIncremented",
 			givenPubID:          "acct-id",
 			expectedMetricCount: 1,
 		},
 	}
 	for _, test := range testCases {
-		m := createMetricsForTesting()
-		m.RecordAccountCCPAChannelEnabledWarning(test.givenPubID)
+		t.Run(test.name, func(t *testing.T) {
+			m := createMetricsForTesting()
+			m.RecordAccountCCPAChannelEnabledWarning(test.givenPubID)
 
-		assertCounterValue(t, "", "CCPA Channel Enabled Depreciation Warnings", m.channelEnabledCCPA, test.expectedMetricCount)
-
+			assertCounterValue(t, "", "CCPA Channel Enabled Deprecation Warnings", m.channelEnabledCCPA, test.expectedMetricCount)
+		})
 	}
 }
 
-func TestRecordAccountUpgradeStatus(t *testing.T) {
+func TestRecordAccountUpgradeStatusMetrics(t *testing.T) {
 	testCases := []struct {
-		description         string
+		name                string
 		givenPubID          string
 		expectedMetricCount float64
 	}{
 		{
-			description:         "Account depreciation summary meter should be incremented",
+			name:                "AccountDeprecationMeterIncremented",
 			givenPubID:          "acct-id",
 			expectedMetricCount: 1,
 		},
 	}
 	for _, test := range testCases {
-		m := createMetricsForTesting()
-		m.RecordAccountUpgradeStatus(test.givenPubID)
+		t.Run(test.name, func(t *testing.T) {
+			m := createMetricsForTesting()
+			m.RecordAccountUpgradeStatus(test.givenPubID)
 
-		assertCounterValue(t, "", "Account Depreciation Summary Meter should be incremented", m.accountDepreciationSummary, test.expectedMetricCount)
+			assertCounterValue(t, "", "Account Depreciation Summary Meter should be incremented", m.accountDeprecationSummary, test.expectedMetricCount)
+		})
 
 	}
 }

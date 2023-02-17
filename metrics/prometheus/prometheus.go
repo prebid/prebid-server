@@ -86,20 +86,20 @@ type Metrics struct {
 	accountBidResponseSecureMarkupError   *prometheus.CounterVec
 	accountBidResponseSecureMarkupWarn    *prometheus.CounterVec
 
-	// Account Depreciation Metrics
-	accountDepreciationWarningsPurpose1  prometheus.Counter
-	accountDepreciationWarningsPurpose2  prometheus.Counter
-	accountDepreciationWarningsPurpose3  prometheus.Counter
-	accountDepreciationWarningsPurpose4  prometheus.Counter
-	accountDepreciationWarningsPurpose5  prometheus.Counter
-	accountDepreciationWarningsPurpose6  prometheus.Counter
-	accountDepreciationWarningsPurpose7  prometheus.Counter
-	accountDepreciationWarningsPurpose8  prometheus.Counter
-	accountDepreciationWarningsPurpose9  prometheus.Counter
-	accountDepreciationWarningsPurpose10 prometheus.Counter
-	channelEnabledGDPR                   prometheus.Counter
-	channelEnabledCCPA                   prometheus.Counter
-	accountDepreciationSummary           prometheus.Counter
+	// Account Deprecation Metrics
+	accountDeprecationWarningsPurpose1  prometheus.Counter
+	accountDeprecationWarningsPurpose2  prometheus.Counter
+	accountDeprecationWarningsPurpose3  prometheus.Counter
+	accountDeprecationWarningsPurpose4  prometheus.Counter
+	accountDeprecationWarningsPurpose5  prometheus.Counter
+	accountDeprecationWarningsPurpose6  prometheus.Counter
+	accountDeprecationWarningsPurpose7  prometheus.Counter
+	accountDeprecationWarningsPurpose8  prometheus.Counter
+	accountDeprecationWarningsPurpose9  prometheus.Counter
+	accountDeprecationWarningsPurpose10 prometheus.Counter
+	channelEnabledGDPR                  prometheus.Counter
+	channelEnabledCCPA                  prometheus.Counter
+	accountDeprecationSummary           prometheus.Counter
 
 	// Module Metrics as a map where the key is the module name
 	moduleDuration        map[string]*prometheus.HistogramVec
@@ -497,34 +497,34 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"Count of AdsCert request, and if they were successfully sent.",
 		[]string{successLabel})
 
-	metrics.accountDepreciationWarningsPurpose1 = newCounterWithoutLabels(cfg, reg,
+	metrics.accountDeprecationWarningsPurpose1 = newCounterWithoutLabels(cfg, reg,
 		"account_config_gdpr_tcf2_purpose1_warn",
 		"Count of requests referencing an account whose config specifies a deprecated gdpr.tcf2.purpose1 field")
-	metrics.accountDepreciationWarningsPurpose2 = newCounterWithoutLabels(cfg, reg,
+	metrics.accountDeprecationWarningsPurpose2 = newCounterWithoutLabels(cfg, reg,
 		"account_config_gdpr_tcf2_purpose2_warn",
 		"Count of requests referencing an account whose config specifies a deprecated gdpr.tcf2.purpose2 field")
-	metrics.accountDepreciationWarningsPurpose3 = newCounterWithoutLabels(cfg, reg,
+	metrics.accountDeprecationWarningsPurpose3 = newCounterWithoutLabels(cfg, reg,
 		"account_config_gdpr_tcf2_purpose3_warn",
 		"Count of requests referencing an account whose config specifies a deprecated gdpr.tcf2.purpose3 field")
-	metrics.accountDepreciationWarningsPurpose4 = newCounterWithoutLabels(cfg, reg,
+	metrics.accountDeprecationWarningsPurpose4 = newCounterWithoutLabels(cfg, reg,
 		"account_config_gdpr_tcf2_purpose4_warn",
 		"Count of requests referencing an account whose config specifies a deprecated gdpr.tcf2.purpose4 field")
-	metrics.accountDepreciationWarningsPurpose5 = newCounterWithoutLabels(cfg, reg,
+	metrics.accountDeprecationWarningsPurpose5 = newCounterWithoutLabels(cfg, reg,
 		"account_config_gdpr_tcf2_purpose5_warn",
 		"Count of requests referencing an account whose config specifies a deprecated gdpr.tcf2.purpose5 field")
-	metrics.accountDepreciationWarningsPurpose6 = newCounterWithoutLabels(cfg, reg,
+	metrics.accountDeprecationWarningsPurpose6 = newCounterWithoutLabels(cfg, reg,
 		"account_config_gdpr_tcf2_purpose6_warn",
 		"Count of requests referencing an account whose config specifies a deprecated gdpr.tcf2.purpose6 field")
-	metrics.accountDepreciationWarningsPurpose7 = newCounterWithoutLabels(cfg, reg,
+	metrics.accountDeprecationWarningsPurpose7 = newCounterWithoutLabels(cfg, reg,
 		"account_config_gdpr_tcf2_purpose7_warn",
 		"Count of requests referencing an account whose config specifies a deprecated gdpr.tcf2.purpose7 field")
-	metrics.accountDepreciationWarningsPurpose8 = newCounterWithoutLabels(cfg, reg,
+	metrics.accountDeprecationWarningsPurpose8 = newCounterWithoutLabels(cfg, reg,
 		"account_config_gdpr_tcf2_purpose8_warn",
 		"Count of requests referencing an account whose config specifies a deprecated gdpr.tcf2.purpose8 field")
-	metrics.accountDepreciationWarningsPurpose9 = newCounterWithoutLabels(cfg, reg,
+	metrics.accountDeprecationWarningsPurpose9 = newCounterWithoutLabels(cfg, reg,
 		"account_config_gdpr_tcf2_purpose9_warn",
 		"Count of requests referencing an account whose config specifies a deprecated gdpr.tcf2.purpose9 field")
-	metrics.accountDepreciationWarningsPurpose10 = newCounterWithoutLabels(cfg, reg,
+	metrics.accountDeprecationWarningsPurpose10 = newCounterWithoutLabels(cfg, reg,
 		"account_config_gdpr_tcf2_purpose10_warn",
 		"Count of requests referencing an account whose config specifies a deprecated gdpr.tcf2.purpose10 field")
 
@@ -535,7 +535,7 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"account_config_gdpr_channel_enabled_warn",
 		"Count of requests referencing an account whose config specifies a depreceated gdpr.channel_enabled field")
 
-	metrics.accountDepreciationSummary = newCounterWithoutLabels(cfg, reg,
+	metrics.accountDeprecationSummary = newCounterWithoutLabels(cfg, reg,
 		"account_config_summary",
 		"Count of deprecated account config fields encountered across all accounts")
 
@@ -719,25 +719,25 @@ func (m *Metrics) RecordAccountGDPRPurposeWarning(account string, purposeName st
 	if account != metrics.PublisherUnknown {
 		switch purposeName {
 		case "purpose1":
-			m.accountDepreciationWarningsPurpose1.Inc()
+			m.accountDeprecationWarningsPurpose1.Inc()
 		case "purpose2":
-			m.accountDepreciationWarningsPurpose2.Inc()
+			m.accountDeprecationWarningsPurpose2.Inc()
 		case "purpose3":
-			m.accountDepreciationWarningsPurpose3.Inc()
+			m.accountDeprecationWarningsPurpose3.Inc()
 		case "purpose4":
-			m.accountDepreciationWarningsPurpose4.Inc()
+			m.accountDeprecationWarningsPurpose4.Inc()
 		case "purpose5":
-			m.accountDepreciationWarningsPurpose5.Inc()
+			m.accountDeprecationWarningsPurpose5.Inc()
 		case "purpose6":
-			m.accountDepreciationWarningsPurpose6.Inc()
+			m.accountDeprecationWarningsPurpose6.Inc()
 		case "purpose7":
-			m.accountDepreciationWarningsPurpose7.Inc()
+			m.accountDeprecationWarningsPurpose7.Inc()
 		case "purpose8":
-			m.accountDepreciationWarningsPurpose8.Inc()
+			m.accountDeprecationWarningsPurpose8.Inc()
 		case "purpose9":
-			m.accountDepreciationWarningsPurpose9.Inc()
+			m.accountDeprecationWarningsPurpose9.Inc()
 		case "purpose10":
-			m.accountDepreciationWarningsPurpose10.Inc()
+			m.accountDeprecationWarningsPurpose10.Inc()
 		}
 	}
 }
@@ -756,7 +756,7 @@ func (m *Metrics) RecordAccountCCPAChannelEnabledWarning(account string) {
 
 func (m *Metrics) RecordAccountUpgradeStatus(account string) {
 	if account != metrics.PublisherUnknown {
-		m.accountDepreciationSummary.Inc()
+		m.accountDeprecationSummary.Inc()
 	}
 }
 

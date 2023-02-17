@@ -1030,9 +1030,9 @@ func TestRecordModuleAccountMetrics(t *testing.T) {
 	}
 }
 
-func TestRecordAccountGDPRPurposeWarning(t *testing.T) {
+func TestRecordAccountGDPRPurposeWarningMetrics(t *testing.T) {
 	testCases := []struct {
-		description            string
+		name                   string
 		givenPubID             string
 		givenPurposeName       string
 		expectedP1MetricCount  int64
@@ -1047,155 +1047,160 @@ func TestRecordAccountGDPRPurposeWarning(t *testing.T) {
 		expectedP10MetricCount int64
 	}{
 		{
-			description:           "purpose1 metric should be incremented",
+			name:                  "Purpose1MetricIncremented",
 			givenPubID:            "acct-id",
 			givenPurposeName:      "purpose1",
 			expectedP1MetricCount: 1,
 		},
 		{
-			description:           "purpose2 metric should be incremented",
+			name:                  "Purpose2MetricIncremented",
 			givenPubID:            "acct-id",
 			givenPurposeName:      "purpose2",
 			expectedP2MetricCount: 1,
 		},
 		{
-			description:           "purpose3 metric should be incremented",
+			name:                  "Purpose3MetricIncremented",
 			givenPubID:            "acct-id",
 			givenPurposeName:      "purpose3",
 			expectedP3MetricCount: 1,
 		},
 		{
-			description:           "purpose4 metric should be incremented",
+			name:                  "Purpose4MetricIncremented",
 			givenPubID:            "acct-id",
 			givenPurposeName:      "purpose4",
 			expectedP4MetricCount: 1,
 		},
 		{
-			description:           "purpose5 metric should be incremented",
+			name:                  "Purpose5MetricIncremented",
 			givenPubID:            "acct-id",
 			givenPurposeName:      "purpose5",
 			expectedP5MetricCount: 1,
 		},
 		{
-			description:           "purpose6 metric should be incremented",
+			name:                  "Purpose6MetricIncremented",
 			givenPubID:            "acct-id",
 			givenPurposeName:      "purpose6",
 			expectedP6MetricCount: 1,
 		},
 		{
-			description:           "purpose7 metric should be incremented",
+			name:                  "Purpose7MetricIncremented",
 			givenPubID:            "acct-id",
 			givenPurposeName:      "purpose7",
 			expectedP7MetricCount: 1,
 		},
 		{
-			description:           "purpose8 metric should be incremented",
+			name:                  "Purpose8MetricIncremented",
 			givenPubID:            "acct-id",
 			givenPurposeName:      "purpose8",
 			expectedP8MetricCount: 1,
 		},
 		{
-			description:           "purpose9 metric should be incremented",
+			name:                  "Purpose9MetricIncremented",
 			givenPubID:            "acct-id",
 			givenPurposeName:      "purpose9",
 			expectedP9MetricCount: 1,
 		},
 		{
-			description:            "purpose10 metric should be incremented",
+			name:                   "Purpose10MetricIncremented",
 			givenPubID:             "acct-id",
 			givenPurposeName:       "purpose10",
 			expectedP10MetricCount: 1,
 		},
 	}
 	for _, test := range testCases {
-		registry := metrics.NewRegistry()
-		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{}, nil, nil)
+		t.Run(test.name, func(t *testing.T) {
+			registry := metrics.NewRegistry()
+			m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{}, nil, nil)
 
-		m.RecordAccountGDPRPurposeWarning(test.givenPubID, test.givenPurposeName)
-		am := m.getAccountMetrics(test.givenPubID)
+			m.RecordAccountGDPRPurposeWarning(test.givenPubID, test.givenPurposeName)
+			am := m.getAccountMetrics(test.givenPubID)
 
-		assert.Equal(t, test.expectedP1MetricCount, am.accountDeprecationWarningsPurpose1Meter.Count())
-		assert.Equal(t, test.expectedP2MetricCount, am.accountDeprecationWarningsPurpose2Meter.Count())
-		assert.Equal(t, test.expectedP3MetricCount, am.accountDeprecationWarningsPurpose3Meter.Count())
-		assert.Equal(t, test.expectedP4MetricCount, am.accountDeprecationWarningsPurpose4Meter.Count())
-		assert.Equal(t, test.expectedP5MetricCount, am.accountDeprecationWarningsPurpose5Meter.Count())
-		assert.Equal(t, test.expectedP6MetricCount, am.accountDeprecationWarningsPurpose6Meter.Count())
-		assert.Equal(t, test.expectedP7MetricCount, am.accountDeprecationWarningsPurpose7Meter.Count())
-		assert.Equal(t, test.expectedP8MetricCount, am.accountDeprecationWarningsPurpose8Meter.Count())
-		assert.Equal(t, test.expectedP9MetricCount, am.accountDeprecationWarningsPurpose9Meter.Count())
-		assert.Equal(t, test.expectedP10MetricCount, am.accountDeprecationWarningsPurpose10Meter.Count())
+			assert.Equal(t, test.expectedP1MetricCount, am.accountDeprecationWarningsPurpose1Meter.Count())
+			assert.Equal(t, test.expectedP2MetricCount, am.accountDeprecationWarningsPurpose2Meter.Count())
+			assert.Equal(t, test.expectedP3MetricCount, am.accountDeprecationWarningsPurpose3Meter.Count())
+			assert.Equal(t, test.expectedP4MetricCount, am.accountDeprecationWarningsPurpose4Meter.Count())
+			assert.Equal(t, test.expectedP5MetricCount, am.accountDeprecationWarningsPurpose5Meter.Count())
+			assert.Equal(t, test.expectedP6MetricCount, am.accountDeprecationWarningsPurpose6Meter.Count())
+			assert.Equal(t, test.expectedP7MetricCount, am.accountDeprecationWarningsPurpose7Meter.Count())
+			assert.Equal(t, test.expectedP8MetricCount, am.accountDeprecationWarningsPurpose8Meter.Count())
+			assert.Equal(t, test.expectedP9MetricCount, am.accountDeprecationWarningsPurpose9Meter.Count())
+			assert.Equal(t, test.expectedP10MetricCount, am.accountDeprecationWarningsPurpose10Meter.Count())
+		})
 	}
 }
 
-func TestRecordAccountGDPRChannelEnabledWarning(t *testing.T) {
+func TestRecordAccountGDPRChannelEnabledWarningMetrics(t *testing.T) {
 	testCases := []struct {
-		description         string
+		name                string
 		givenPubID          string
 		expectedMetricCount int64
 	}{
 		{
-			description:         "Gdpr channel metric should be incremented",
+			name:                "GdprChannelMetricIncremented",
 			givenPubID:          "acct-id",
 			expectedMetricCount: 1,
 		},
 	}
 	for _, test := range testCases {
-		registry := metrics.NewRegistry()
-		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{}, nil, nil)
+		t.Run(test.name, func(t *testing.T) {
+			registry := metrics.NewRegistry()
+			m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{}, nil, nil)
 
-		m.RecordAccountGDPRChannelEnabledWarning(test.givenPubID)
-		am := m.getAccountMetrics(test.givenPubID)
+			m.RecordAccountGDPRChannelEnabledWarning(test.givenPubID)
+			am := m.getAccountMetrics(test.givenPubID)
 
-		assert.Equal(t, test.expectedMetricCount, am.channelEnabledGDPRMeter.Count())
-
+			assert.Equal(t, test.expectedMetricCount, am.channelEnabledGDPRMeter.Count())
+		})
 	}
 }
 
-func TestRecordAccountCCPAChannelEnabledWarning(t *testing.T) {
+func TestRecordAccountCCPAChannelEnabledWarningMetrics(t *testing.T) {
 	testCases := []struct {
-		description         string
+		name                string
 		givenPubID          string
 		expectedMetricCount int64
 	}{
 		{
-			description:         "Ccpa channel metric should be incremented",
+			name:                "CcpaChannelMetricIncremented",
 			givenPubID:          "acct-id",
 			expectedMetricCount: 1,
 		},
 	}
 	for _, test := range testCases {
-		registry := metrics.NewRegistry()
-		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{}, nil, nil)
+		t.Run(test.name, func(t *testing.T) {
+			registry := metrics.NewRegistry()
+			m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{}, nil, nil)
 
-		m.RecordAccountCCPAChannelEnabledWarning(test.givenPubID)
-		am := m.getAccountMetrics(test.givenPubID)
+			m.RecordAccountCCPAChannelEnabledWarning(test.givenPubID)
+			am := m.getAccountMetrics(test.givenPubID)
 
-		assert.Equal(t, test.expectedMetricCount, am.channelEnabledCCPAMeter.Count())
-
+			assert.Equal(t, test.expectedMetricCount, am.channelEnabledCCPAMeter.Count())
+		})
 	}
 }
 
-func TestRecordAccountUpgradeStatus(t *testing.T) {
+func TestRecordAccountUpgradeStatusMetrics(t *testing.T) {
 	testCases := []struct {
-		description         string
+		name                string
 		givenPubID          string
 		expectedMetricCount int64
 	}{
 		{
-			description:         "Account depreciation summary meter should be incremented",
+			name:                "AccountDeprecationMeterIncremented",
 			givenPubID:          "acct-id",
 			expectedMetricCount: 1,
 		},
 	}
 	for _, test := range testCases {
-		registry := metrics.NewRegistry()
-		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{}, nil, nil)
+		t.Run(test.name, func(t *testing.T) {
+			registry := metrics.NewRegistry()
+			m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{}, nil, nil)
 
-		m.RecordAccountUpgradeStatus(test.givenPubID)
-		am := m.getAccountMetrics(test.givenPubID)
+			m.RecordAccountUpgradeStatus(test.givenPubID)
+			am := m.getAccountMetrics(test.givenPubID)
 
-		assert.Equal(t, test.expectedMetricCount, am.accountDeprecationSummaryMeter.Count())
-
+			assert.Equal(t, test.expectedMetricCount, am.accountDeprecationSummaryMeter.Count())
+		})
 	}
 }
 

@@ -830,29 +830,29 @@ func TestAccountChannelIsSet(t *testing.T) {
 	falseBool := false
 
 	testCases := []struct {
-		description         string
+		name                string
 		givenAccountChannel *AccountChannel
 		expected            bool
 	}{
 		{
-			description:         "All values of Account Channel Are Set, Expect True",
+			name:                "AccountChannelSetAllFields",
 			givenAccountChannel: &AccountChannel{AMP: &trueBool, App: &falseBool, Video: &falseBool, Web: &falseBool},
 			expected:            true,
 		},
 		{
-			description:         "Account Channel values aren't set, expect false",
+			name:                "AccountChannelNotSet",
 			givenAccountChannel: &AccountChannel{},
 			expected:            false,
 		},
 		{
-			description:         "One account channel value is set, expect true",
+			name:                "AccountChannelSetAmpOnly",
 			givenAccountChannel: &AccountChannel{AMP: &trueBool},
 			expected:            true,
 		},
 	}
 
 	for _, test := range testCases {
-		t.Run(test.description, func(t *testing.T) {
+		t.Run(test.name, func(t *testing.T) {
 			assert.Equal(t, test.expected, test.givenAccountChannel.IsSet())
 		})
 	}
