@@ -9,13 +9,15 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
-	"reflect"
 	"strconv"
 	"testing"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/prebid/prebid-server/amp"
 	"github.com/prebid/prebid-server/analytics"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
@@ -28,8 +30,6 @@ import (
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
-
-	"github.com/stretchr/testify/assert"
 )
 
 // TestGoodRequests makes sure that the auction runs properly-formatted stored bids correctly.
@@ -1108,30 +1108,88 @@ func TestAmpDebug(t *testing.T) {
 	}
 }
 
-// Prevents #452
-func TestAmpTargetingDefaults(t *testing.T) {
-	req := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}}
-	if err := defaultRequestExt(req); err != nil {
-		t.Fatalf("Unexpected error defaulting request.ext for AMP: %v", err)
+func TestInitAmpTargetingAndCache(t *testing.T) {
+	trueVal := true
+	emptyTargetingAndCache := &openrtb_ext.ExtRequestPrebid{
+		Targeting: &openrtb_ext.ExtRequestTargeting{},
+		Cache: &openrtb_ext.ExtRequestPrebidCache{
+			Bids: &openrtb_ext.ExtRequestPrebidCacheBids{},
+		},
 	}
 
-	assert.NoError(t, req.RebuildRequest())
+	testCases := []struct {
+		name           string
+		request        *openrtb2.BidRequest
+		expectedPrebid *openrtb_ext.ExtRequestPrebid
+		expectedErrs   []string
+	}{
+		{
+			name:         "malformed",
+			request:      &openrtb2.BidRequest{Ext: json.RawMessage("malformed")},
+			expectedErrs: []string{"invalid character 'm' looking for beginning of value"},
+		},
+		{
+			name:           "nil",
+			request:        &openrtb2.BidRequest{},
+			expectedPrebid: emptyTargetingAndCache,
+		},
+		{
+			name:           "empty",
+			request:        &openrtb2.BidRequest{Ext: json.RawMessage(`{"ext":{}}`)},
+			expectedPrebid: emptyTargetingAndCache,
+		},
+		{
+			name:           "missing targeting + cache",
+			request:        &openrtb2.BidRequest{Ext: json.RawMessage(`{"ext":{"prebid":{}}}`)},
+			expectedPrebid: emptyTargetingAndCache,
+		},
+		{
+			name:    "missing targeting",
+			request: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"cache":{"bids":{"returnCreative":true}}}}`)},
+			expectedPrebid: &openrtb_ext.ExtRequestPrebid{
+				Targeting: &openrtb_ext.ExtRequestTargeting{},
+				Cache: &openrtb_ext.ExtRequestPrebidCache{
+					Bids: &openrtb_ext.ExtRequestPrebidCacheBids{
+						ReturnCreative: &trueVal,
+					},
+				},
+			},
+		},
+		{
+			name:    "missing cache",
+			request: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"targeting":{"includewinners":true}}}`)},
+			expectedPrebid: &openrtb_ext.ExtRequestPrebid{
+				Targeting: &openrtb_ext.ExtRequestTargeting{
+					IncludeWinners: &trueVal,
+				},
+				Cache: &openrtb_ext.ExtRequestPrebidCache{
+					Bids: &openrtb_ext.ExtRequestPrebidCacheBids{},
+				},
+			},
+		},
+	}
 
-	var extRequest openrtb_ext.ExtRequest
-	if err := json.Unmarshal(req.Ext, &extRequest); err != nil {
-		t.Fatalf("Unexpected error unmarshalling defaulted request.ext for AMP: %v", err)
-	}
-	if extRequest.Prebid.Targeting == nil {
-		t.Fatal("AMP defaults should set request.ext.targeting")
-	}
-	if !extRequest.Prebid.Targeting.IncludeWinners {
-		t.Error("AMP defaults should set request.ext.targeting.includewinners to true")
-	}
-	if !extRequest.Prebid.Targeting.IncludeBidderKeys {
-		t.Error("AMP defaults should set request.ext.targeting.includebidderkeys to true")
-	}
-	if !reflect.DeepEqual(extRequest.Prebid.Targeting.PriceGranularity, openrtb_ext.PriceGranularityFromString("med")) {
-		t.Error("AMP defaults should set request.ext.targeting.pricegranularity to medium")
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// setup
+			req := &openrtb_ext.RequestWrapper{BidRequest: tc.request}
+
+			// run
+			actualErrs := initAmpTargetingAndCache(req)
+
+			// assertions
+			require.NoError(t, req.RebuildRequest(), "rebuild request")
+
+			actualErrsMsgs := make([]string, len(actualErrs))
+			for i, v := range actualErrs {
+				actualErrsMsgs[i] = v.Error()
+			}
+			assert.ElementsMatch(t, tc.expectedErrs, actualErrsMsgs, "errors")
+
+			actualReqExt, _ := req.GetRequestExt()
+			actualPrebid := actualReqExt.GetPrebid()
+			assert.Equal(t, tc.expectedPrebid, actualPrebid, "prebid ext")
+		})
 	}
 }
 
@@ -1657,7 +1715,7 @@ func TestBuildAmpObject(t *testing.T) {
 					},
 					AT:   1,
 					TMax: 500,
-					Ext:  json.RawMessage(`{"prebid":{"cache":{"bids":{"returnCreative":null},"vastxml":null},"channel":{"name":"amp","version":""},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"includewinners":true,"includebidderkeys":true,"includebrandcategory":null,"includeformat":false,"durationrangesec":null,"preferdeals":false}}}`),
+					Ext:  json.RawMessage(`{"prebid":{"cache":{"bids":{}},"channel":{"name":"amp","version":""},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"includewinners":true,"includebidderkeys":true}}}`),
 				},
 				AuctionResponse: &openrtb2.BidResponse{
 					SeatBid: []openrtb2.SeatBid{{
@@ -1711,7 +1769,7 @@ func TestBuildAmpObject(t *testing.T) {
 					},
 					AT:   1,
 					TMax: 500,
-					Ext:  json.RawMessage(`{"prebid":{"cache":{"bids":{"returnCreative":null},"vastxml":null},"channel":{"name":"amp","version":""},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"includewinners":true,"includebidderkeys":true,"includebrandcategory":null,"includeformat":false,"durationrangesec":null,"preferdeals":false}}}`),
+					Ext:  json.RawMessage(`{"prebid":{"cache":{"bids":{}},"channel":{"name":"amp","version":""},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"includewinners":true,"includebidderkeys":true}}}`),
 				},
 				AuctionResponse: &openrtb2.BidResponse{
 					SeatBid: []openrtb2.SeatBid{{
