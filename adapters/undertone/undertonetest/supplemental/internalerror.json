@@ -128,12 +128,8 @@
             }
           },
           "ext": {
-            "prebid": {
-              "bidderparams": {
-                "id": 4,
-                "version": "1.0.0"
-              }
-            }
+            "id": 4,
+            "version": "1.0.0"
           }
         }
       },

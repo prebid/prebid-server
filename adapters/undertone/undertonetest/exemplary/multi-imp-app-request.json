@@ -128,12 +128,8 @@
             }
           },
           "ext": {
-            "prebid": {
-              "bidderparams": {
-                "id": 4,
-                "version": "1.0.0"
-              }
-            }
+            "id": 4,
+            "version": "1.0.0"
           }
         }
       },
@@ -184,39 +180,42 @@
   ],
   "expectedBidResponses": [
     {
-      "bids": [{
-        "bid": {
-          "id": "7706636740145184841",
-          "impid": "test-imp-video-id",
-          "price": 0.5,
-          "adm": "some-test-ad-video",
-          "adid": "29681110",
-          "adomain": [
-            "undertone.com"
-          ],
-          "cid": "958",
-          "crid": "29681110",
-          "w": 1024,
-          "h": 576
+      "bids": [
+        {
+          "bid": {
+            "id": "7706636740145184841",
+            "impid": "test-imp-video-id",
+            "price": 0.5,
+            "adm": "some-test-ad-video",
+            "adid": "29681110",
+            "adomain": [
+              "undertone.com"
+            ],
+            "cid": "958",
+            "crid": "29681110",
+            "w": 1024,
+            "h": 576
+          },
+          "type": "video"
         },
-        "type": "video"
-      },{
-        "bid": {
-          "id": "8706636740145184841",
-          "impid": "test-imp-banner-id",
-          "price": 0.4,
-          "adm": "some-test-ad-banner",
-          "adid": "39681110",
-          "adomain": [
-            "undertone.com"
-          ],
-          "cid": "958",
-          "crid": "29681110",
-          "w": 1024,
-          "h": 576
-        },
-        "type": "banner"
-      }]
+        {
+          "bid": {
+            "id": "8706636740145184841",
+            "impid": "test-imp-banner-id",
+            "price": 0.4,
+            "adm": "some-test-ad-banner",
+            "adid": "39681110",
+            "adomain": [
+              "undertone.com"
+            ],
+            "cid": "958",
+            "crid": "29681110",
+            "w": 1024,
+            "h": 576
+          },
+          "type": "banner"
+        }
+      ]
     }
   ]
 }
