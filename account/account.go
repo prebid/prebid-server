@@ -50,15 +50,15 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 		// accountID resolved to a valid account, merge with AccountDefaults for a complete config
 		account = &config.Account{}
 		err := json.Unmarshal(accountJSON, account)
-		metricRecorded := false
 
 		// this logic exists for backwards compatibility. If the initial unmarshal fails above, we attempt to
 		// resolve it by converting the GDPR enforce purpose fields and then attempting an unmarshal again before
 		// declaring a malformed account error.
 		// unmarshal fetched account to determine if it is well-formed
+		var deprecatedPurposeFields []string
 		if _, ok := err.(*json.UnmarshalTypeError); ok {
 			// attempt to convert deprecated GDPR enforce purpose fields to resolve issue
-			accountJSON, err, metricRecorded = ConvertGDPREnforcePurposeFields(accountJSON, me, accountID)
+			accountJSON, err, deprecatedPurposeFields = ConvertGDPREnforcePurposeFields(accountJSON, me, accountID)
 			// unmarshal again to check if unmarshal error still exists after GDPR field conversion
 			err = json.Unmarshal(accountJSON, account)
 
@@ -68,19 +68,20 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 				}}
 			}
 		}
-		if useGDPRChannelEnabled(account) {
+		usingGDPRChannelEnabled := useGDPRChannelEnabled(account)
+		usingCCPAChannelEnabled := useCCPAChannelEnabled(account)
+
+		if usingGDPRChannelEnabled {
 			me.RecordAccountGDPRChannelEnabledWarning(accountID)
-			if metricRecorded == false {
-				me.RecordAccountUpgradeStatus(accountID)
-				metricRecorded = true
-			}
 		}
-		if useCCPAChannelEnabled(account) {
+		if usingCCPAChannelEnabled {
 			me.RecordAccountCCPAChannelEnabledWarning(accountID)
-			if metricRecorded == false {
-				me.RecordAccountUpgradeStatus(accountID)
-				metricRecorded = true
-			}
+		}
+		for _, purposeName := range deprecatedPurposeFields {
+			me.RecordAccountGDPRPurposeWarning(accountID, purposeName)
+		}
+		if len(deprecatedPurposeFields) > 0 || usingGDPRChannelEnabled || usingCCPAChannelEnabled {
+			me.RecordAccountUpgradeStatus(accountID)
 		}
 
 		if err != nil {
@@ -183,14 +184,13 @@ type PatchAccountGDPRPurpose struct {
 // given the recent type change of gdpr.purpose{1-10}.enforce_purpose from a string to a bool. This function
 // iterates over each GDPR purpose config and sets enforce_purpose and enforce_algo to the appropriate
 // bool and string values respectively if enforce_purpose is a string and enforce_algo is not set
-func ConvertGDPREnforcePurposeFields(config []byte, me metrics.MetricsEngine, accountID string) (newConfig []byte, err error, metricRecorded bool) {
+func ConvertGDPREnforcePurposeFields(config []byte, me metrics.MetricsEngine, accountID string) (newConfig []byte, err error, deprecatedPurposeFields []string) {
 	gdprJSON, _, _, err := jsonparser.Get(config, "gdpr")
-	metricRecorded = false
 	if err != nil && err == jsonparser.KeyPathNotFoundError {
-		return config, nil, metricRecorded
+		return config, nil, deprecatedPurposeFields
 	}
 	if err != nil {
-		return nil, err, metricRecorded
+		return nil, err, deprecatedPurposeFields
 	}
 
 	newAccount := PatchAccount{
@@ -205,19 +205,17 @@ func ConvertGDPREnforcePurposeFields(config []byte, me metrics.MetricsEngine, ac
 			continue
 		}
 		if err != nil {
-			return nil, err, metricRecorded
+			return nil, err, deprecatedPurposeFields
 		}
 		if purposeDataType != jsonparser.String {
 			continue
 		} else {
-			me.RecordAccountGDPRPurposeWarning(accountID, purposeName)
-			me.RecordAccountUpgradeStatus(accountID)
-			metricRecorded = true
+			deprecatedPurposeFields = append(deprecatedPurposeFields, purposeName)
 		}
 
 		_, _, _, err = jsonparser.Get(gdprJSON, purposeName, "enforce_algo")
 		if err != nil && err != jsonparser.KeyPathNotFoundError {
-			return nil, err, metricRecorded
+			return nil, err, deprecatedPurposeFields
 		}
 		if err == nil {
 			continue
@@ -236,15 +234,15 @@ func ConvertGDPREnforcePurposeFields(config []byte, me metrics.MetricsEngine, ac
 
 	patchConfig, err := json.Marshal(newAccount)
 	if err != nil {
-		return nil, err, metricRecorded
+		return nil, err, deprecatedPurposeFields
 	}
 
 	newConfig, err = jsonpatch.MergePatch(config, patchConfig)
 	if err != nil {
-		return nil, err, metricRecorded
+		return nil, err, deprecatedPurposeFields
 	}
 
-	return newConfig, nil, metricRecorded
+	return newConfig, nil, deprecatedPurposeFields
 }
 
 func useGDPRChannelEnabled(account *config.Account) bool {
