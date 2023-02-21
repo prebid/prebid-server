@@ -102,6 +102,11 @@ type Configuration struct {
 	// Hooks provides a way to specify hook execution plan for specific endpoints and stages
 	Hooks       Hooks       `mapstructure:"hooks"`
 	Validations Validations `mapstructure:"validations"`
+	PriceFloors PriceFloors `mapstructure:"price_floors"`
+}
+
+type PriceFloors struct {
+	Enabled bool `mapstructure:"enabled"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -129,12 +134,18 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 	errs = cfg.CurrencyConverter.validate(errs)
 	errs = cfg.Debug.validate(errs)
 	errs = cfg.ExtCacheURL.validate(errs)
+	errs = cfg.AccountDefaults.PriceFloors.validate(errs)
 	if cfg.AccountDefaults.Disabled {
 		glog.Warning(`With account_defaults.disabled=true, host-defined accounts must exist and have "disabled":false. All other requests will be rejected.`)
 	}
 	if cfg.AccountDefaults.Events.Enabled {
 		glog.Warning(`account_defaults.events will currently not do anything as the feature is still under development. Please follow https://github.com/prebid/prebid-server/issues/1725 for more updates`)
 	}
+
+	if cfg.PriceFloors.Enabled {
+		glog.Warning(`cfg.PriceFloors.Enabled will currently not do anything as price floors feature is still under development.`)
+	}
+
 	errs = cfg.Experiment.validate(errs)
 	errs = cfg.BidderInfos.validate(errs)
 	return errs
@@ -990,6 +1001,12 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("account_required", false)
 	v.SetDefault("account_defaults.disabled", false)
 	v.SetDefault("account_defaults.debug_allow", true)
+	v.SetDefault("account_defaults.price_floors.enabled", false)
+	v.SetDefault("account_defaults.price_floors.enforce_floors_rate", 100)
+	v.SetDefault("account_defaults.price_floors.adjust_for_bid_adjustment", true)
+	v.SetDefault("account_defaults.price_floors.enforce_deal_floors", false)
+	v.SetDefault("account_defaults.price_floors.use_dynamic_data", false)
+
 	v.SetDefault("certificates_file", "")
 	v.SetDefault("auto_gen_source_tid", true)
 	v.SetDefault("generate_bid_id", false)
@@ -1071,6 +1088,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("gdpr.tcf2.purpose_one_treatment.access_allowed", true)
 	v.SetDefault("gdpr.tcf2.special_feature1.enforce", true)
 	v.SetDefault("gdpr.tcf2.special_feature1.vendor_exceptions", []openrtb_ext.BidderName{})
+	v.SetDefault("price_floors.enabled", false)
 
 	// Defaults for account_defaults.events.default_url
 	v.SetDefault("account_defaults.events.default_url", "https://PBS_HOST/event?t=##PBS-EVENTTYPE##&vtype=##PBS-VASTEVENT##&b=##PBS-BIDID##&f=i&a=##PBS-ACCOUNTID##&ts=##PBS-TIMESTAMP##&bidder=##PBS-BIDDER##&int=##PBS-INTEGRATION##&mt=##PBS-MEDIATYPE##&ch=##PBS-CHANNEL##&aid=##PBS-AUCTIONID##&l=##PBS-LINEID##")
