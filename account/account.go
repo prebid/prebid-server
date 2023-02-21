@@ -58,7 +58,7 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 		var deprecatedPurposeFields []string
 		if _, ok := err.(*json.UnmarshalTypeError); ok {
 			// attempt to convert deprecated GDPR enforce purpose fields to resolve issue
-			accountJSON, err, deprecatedPurposeFields = ConvertGDPREnforcePurposeFields(accountJSON, me, accountID)
+			accountJSON, err, deprecatedPurposeFields = ConvertGDPREnforcePurposeFields(accountJSON)
 			// unmarshal again to check if unmarshal error still exists after GDPR field conversion
 			err = json.Unmarshal(accountJSON, account)
 
@@ -184,7 +184,7 @@ type PatchAccountGDPRPurpose struct {
 // given the recent type change of gdpr.purpose{1-10}.enforce_purpose from a string to a bool. This function
 // iterates over each GDPR purpose config and sets enforce_purpose and enforce_algo to the appropriate
 // bool and string values respectively if enforce_purpose is a string and enforce_algo is not set
-func ConvertGDPREnforcePurposeFields(config []byte, me metrics.MetricsEngine, accountID string) (newConfig []byte, err error, deprecatedPurposeFields []string) {
+func ConvertGDPREnforcePurposeFields(config []byte) (newConfig []byte, err error, deprecatedPurposeFields []string) {
 	gdprJSON, _, _, err := jsonparser.Get(config, "gdpr")
 	if err != nil && err == jsonparser.KeyPathNotFoundError {
 		return config, nil, deprecatedPurposeFields

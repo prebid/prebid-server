@@ -1902,7 +1902,6 @@ func TestRecordModuleMetrics(t *testing.T) {
 func TestRecordAccountGDPRPurposeWarningMetrics(t *testing.T) {
 	testCases := []struct {
 		name                   string
-		givenPubID             string
 		givenPurposeName       string
 		expectedP1MetricCount  float64
 		expectedP2MetricCount  float64
@@ -1917,61 +1916,51 @@ func TestRecordAccountGDPRPurposeWarningMetrics(t *testing.T) {
 	}{
 		{
 			name:                  "Purpose1MetricIncremented",
-			givenPubID:            "acct-id",
 			givenPurposeName:      "purpose1",
 			expectedP1MetricCount: 1,
 		},
 		{
 			name:                  "Purpose2MetricIncremented",
-			givenPubID:            "acct-id",
 			givenPurposeName:      "purpose2",
 			expectedP2MetricCount: 1,
 		},
 		{
 			name:                  "Purpose3MetricIncremented",
-			givenPubID:            "acct-id",
 			givenPurposeName:      "purpose3",
 			expectedP3MetricCount: 1,
 		},
 		{
 			name:                  "Purpose4MetricIncremented",
-			givenPubID:            "acct-id",
 			givenPurposeName:      "purpose4",
 			expectedP4MetricCount: 1,
 		},
 		{
 			name:                  "Purpose5MetricIncremented",
-			givenPubID:            "acct-id",
 			givenPurposeName:      "purpose5",
 			expectedP5MetricCount: 1,
 		},
 		{
 			name:                  "Purpose6MetricIncremented",
-			givenPubID:            "acct-id",
 			givenPurposeName:      "purpose6",
 			expectedP6MetricCount: 1,
 		},
 		{
 			name:                  "Purpose7MetricIncremented",
-			givenPubID:            "acct-id",
 			givenPurposeName:      "purpose7",
 			expectedP7MetricCount: 1,
 		},
 		{
 			name:                  "Purpose8MetricIncremented",
-			givenPubID:            "acct-id",
 			givenPurposeName:      "purpose8",
 			expectedP8MetricCount: 1,
 		},
 		{
 			name:                  "Purpose9MetricIncremented",
-			givenPubID:            "acct-id",
 			givenPurposeName:      "purpose9",
 			expectedP9MetricCount: 1,
 		},
 		{
 			name:                   "Purpose10MetricIncremented",
-			givenPubID:             "acct-id",
 			givenPurposeName:       "purpose10",
 			expectedP10MetricCount: 1,
 		},
@@ -1979,7 +1968,7 @@ func TestRecordAccountGDPRPurposeWarningMetrics(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			m := createMetricsForTesting()
-			m.RecordAccountGDPRPurposeWarning(test.givenPubID, test.givenPurposeName)
+			m.RecordAccountGDPRPurposeWarning("acct-id", test.givenPurposeName)
 
 			assertCounterValue(t, "", "Account Deprecation Warnings", m.accountDeprecationWarningsPurpose1, test.expectedP1MetricCount)
 			assertCounterValue(t, "", "Account Deprecation Warnings", m.accountDeprecationWarningsPurpose2, test.expectedP2MetricCount)

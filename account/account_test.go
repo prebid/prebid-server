@@ -368,7 +368,7 @@ func TestConvertGDPREnforcePurposeFields(t *testing.T) {
 		metricsMock.Mock.On("RecordAccountGDPRPurposeWarning", mock.Anything, mock.Anything).Return()
 		metricsMock.Mock.On("RecordAccountUpgradeStatus", mock.Anything, mock.Anything).Return()
 
-		newConfig, err, deprecatedPurposeFields := ConvertGDPREnforcePurposeFields(tt.giveConfig, metricsMock, "acct-id")
+		newConfig, err, deprecatedPurposeFields := ConvertGDPREnforcePurposeFields(tt.giveConfig)
 		if tt.wantErr != nil {
 			assert.Error(t, err, tt.description)
 		}

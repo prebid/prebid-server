@@ -641,7 +641,6 @@ func (me *Metrics) RecordAccountGDPRChannelEnabledWarning(account string) {
 	if account != PublisherUnknown {
 		am := me.getAccountMetrics(account)
 		am.channelEnabledGDPRMeter.Mark(1)
-
 	}
 }
 
