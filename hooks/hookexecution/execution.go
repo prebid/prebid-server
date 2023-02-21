@@ -164,6 +164,9 @@ func handleHookResponses[P any](
 	return groupOutcome, payload, groupModuleCtx, nil
 }
 
+// moduleReplacer changes unwanted symbols to be in compliance with metric naming requirements
+var moduleReplacer = strings.NewReplacer(".", "_", "-", "_")
+
 // handleHookResponse is a strategy function that selects and applies
 // one of the available algorithms to handle hook response.
 func handleHookResponse[P any](
@@ -173,7 +176,7 @@ func handleHookResponse[P any](
 	metricEngine metrics.MetricsEngine,
 ) (P, HookOutcome, *RejectError) {
 	var rejectErr *RejectError
-	labels := metrics.ModuleLabels{Module: hr.HookID.ModuleCode, Stage: ctx.stage, AccountID: ctx.accountId}
+	labels := metrics.ModuleLabels{Module: moduleReplacer.Replace(hr.HookID.ModuleCode), Stage: ctx.stage, AccountID: ctx.accountId}
 	metricEngine.RecordModuleCalled(labels, hr.ExecutionTime)
 
 	hookOutcome := HookOutcome{

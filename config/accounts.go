@@ -35,6 +35,7 @@ type Account struct {
 	TruncateTargetAttribute *int                                 `mapstructure:"truncate_target_attr" json:"truncate_target_attr"`
 	AlternateBidderCodes    *openrtb_ext.ExtAlternateBidderCodes `mapstructure:"alternatebiddercodes" json:"alternatebiddercodes"`
 	Hooks                   AccountHooks                         `mapstructure:"hooks" json:"hooks"`
+	PriceFloors             AccountPriceFloors                   `mapstructure:"price_floors" json:"price_floors"`
 	Validations             Validations                          `mapstructure:"validations" json:"validations"`
 }
 
@@ -50,6 +51,22 @@ type AccountCCPA struct {
 	Enabled            *bool          `mapstructure:"enabled" json:"enabled,omitempty"`
 	IntegrationEnabled AccountChannel `mapstructure:"integration_enabled" json:"integration_enabled"`
 	ChannelEnabled     AccountChannel `mapstructure:"channel_enabled" json:"channel_enabled"`
+}
+
+type AccountPriceFloors struct {
+	Enabled                bool `mapstructure:"enabled" json:"enabled"`
+	EnforceFloorsRate      int  `mapstructure:"enforce_floors_rate" json:"enforce_floors_rate"`
+	AdjustForBidAdjustment bool `mapstructure:"adjust_for_bid_adjustment" json:"adjust_for_bid_adjustment"`
+	EnforceDealFloors      bool `mapstructure:"enforce_deal_floors" json:"enforce_deal_floors"`
+	UseDynamicData         bool `mapstructure:"use_dynamic_data" json:"use_dynamic_data"`
+}
+
+func (pf *AccountPriceFloors) validate(errs []error) []error {
+
+	if pf.EnforceFloorsRate < 0 || pf.EnforceFloorsRate > 100 {
+		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.enforce_floors_rate should be between 0 and 100`))
+	}
+	return errs
 }
 
 // EnabledForChannelType indicates whether CCPA is turned on at the account level for the specified channel type

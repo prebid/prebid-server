@@ -77,6 +77,8 @@ type decision struct {
 	ImpressionUrl *string    `json:"impressionUrl,omitempty"`
 	Width         uint64     `json:"width,omitempty"`  // Consumable extension, not defined by Adzerk
 	Height        uint64     `json:"height,omitempty"` // Consumable extension, not defined by Adzerk
+	Adomain       []string   `json:"adomain,omitempty"`
+	Cats          []string   `json:"cats,omitempty"`
 }
 
 type contents struct {
@@ -286,7 +288,8 @@ func (a *ConsumableAdapter) MakeBids(
 			bid.H = int64(decision.Height)
 			bid.CrID = strconv.FormatInt(decision.AdID, 10)
 			bid.Exp = 30 // TODO: Check this is intention of TTL
-
+			bid.ADomain = decision.Adomain
+			bid.Cat = decision.Cats
 			// not yet ported from prebid.js adapter
 			//bid.requestId = bidId;
 			//bid.currency = 'USD';

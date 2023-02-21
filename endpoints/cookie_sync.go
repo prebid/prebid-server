@@ -22,6 +22,7 @@ import (
 	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/privacy/ccpa"
 	gdprPrivacy "github.com/prebid/prebid-server/privacy/gdpr"
+	gppPrivacy "github.com/prebid/prebid-server/privacy/gpp"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/usersync"
 )
@@ -153,6 +154,10 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 		},
 		CCPA: ccpa.Policy{
 			Consent: request.USPrivacy,
+		},
+		GPP: gppPrivacy.Policy{
+			Consent: request.GPP,
+			RawSID:  request.GPPSid,
 		},
 	}
 
@@ -398,6 +403,8 @@ type cookieSyncRequest struct {
 	GDPRConsent     string                           `json:"gdpr_consent"`
 	USPrivacy       string                           `json:"us_privacy"`
 	Limit           int                              `json:"limit"`
+	GPP             string                           `json:"gpp"`
+	GPPSid          string                           `json:"gpp_sid"`
 	CooperativeSync *bool                            `json:"coopSync"`
 	FilterSettings  *cookieSyncRequestFilterSettings `json:"filterSettings"`
 	Account         string                           `json:"account"`
