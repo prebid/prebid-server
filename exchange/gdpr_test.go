@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	gpplib "github.com/prebid/go-gpp"
+	gppConstants "github.com/prebid/go-gpp/constants"
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/stretchr/testify/assert"
@@ -47,21 +49,48 @@ func TestExtractGDPR(t *testing.T) {
 			wantGDPR:    gdpr.SignalAmbiguous,
 			wantError:   true,
 		},
+		{
+			description: "Regs Ext GDPR = null, GPPSID has tcf2",
+			giveRegs:    &openrtb2.Regs{Ext: json.RawMessage(`{"gdpr": null}`), GPPSID: []int8{2}},
+			wantGDPR:    gdpr.SignalYes,
+		},
+		{
+			description: "Regs Ext GDPR = 1, GPPSID has uspv1",
+			giveRegs:    &openrtb2.Regs{Ext: json.RawMessage(`{"gdpr": 1}`), GPPSID: []int8{6}},
+			wantGDPR:    gdpr.SignalNo,
+		},
+		{
+			description: "Regs Ext GDPR = 0, GPPSID has tcf2",
+			giveRegs:    &openrtb2.Regs{Ext: json.RawMessage(`{"gdpr": 0}`), GPPSID: []int8{2}},
+			wantGDPR:    gdpr.SignalYes,
+		},
+		{
+			description: "Regs Ext is nil, GPPSID has tcf2",
+			giveRegs:    &openrtb2.Regs{GPPSID: []int8{2}},
+			wantGDPR:    gdpr.SignalYes,
+		},
+		{
+			description: "Regs Ext is nil, GPPSID has uspv1",
+			giveRegs:    &openrtb2.Regs{GPPSID: []int8{6}},
+			wantGDPR:    gdpr.SignalNo,
+		},
 	}
 
 	for _, tt := range tests {
-		bidReq := openrtb2.BidRequest{
-			Regs: tt.giveRegs,
-		}
+		t.Run(tt.description, func(t *testing.T) {
+			bidReq := openrtb2.BidRequest{
+				Regs: tt.giveRegs,
+			}
 
-		result, err := extractGDPR(&bidReq)
-		assert.Equal(t, tt.wantGDPR, result, tt.description)
+			result, err := extractGDPR(&bidReq)
+			assert.Equal(t, tt.wantGDPR, result)
 
-		if tt.wantError {
-			assert.NotNil(t, err, tt.description)
-		} else {
-			assert.Nil(t, err, tt.description)
-		}
+			if tt.wantError {
+				assert.NotNil(t, err)
+			} else {
+				assert.Nil(t, err)
+			}
+		})
 	}
 }
 
@@ -69,6 +98,7 @@ func TestExtractConsent(t *testing.T) {
 	tests := []struct {
 		description string
 		giveUser    *openrtb2.User
+		giveGPP     gpplib.GppContainer
 		wantConsent string
 		wantError   bool
 	}{
@@ -98,20 +128,56 @@ func TestExtractConsent(t *testing.T) {
 			wantConsent: "",
 			wantError:   true,
 		},
+		{
+			description: "User Ext is nil, GPP has no GDPR",
+			giveUser:    &openrtb2.User{Ext: nil},
+			giveGPP:     gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{6}, Sections: []gpplib.Section{&upsv1Section}},
+			wantConsent: "",
+		},
+		{
+			description: "User Ext is nil, GPP has GDPR",
+			giveUser:    &openrtb2.User{Ext: nil},
+			giveGPP:     gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{2}, Sections: []gpplib.Section{&tcf1Section}},
+			wantConsent: "BOS2bx5OS2bx5ABABBAAABoAAAAAFA",
+		},
+		{
+			description: "User Ext has GDPR, GPP has GDPR",
+			giveUser:    &openrtb2.User{Ext: json.RawMessage(`{"consent": "BSOMECONSENT"}`)},
+			giveGPP:     gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{2}, Sections: []gpplib.Section{&tcf1Section}},
+			wantConsent: "BOS2bx5OS2bx5ABABBAAABoAAAAAFA",
+		},
 	}
 
 	for _, tt := range tests {
-		bidReq := openrtb2.BidRequest{
-			User: tt.giveUser,
-		}
+		t.Run(tt.description, func(t *testing.T) {
+			bidReq := openrtb2.BidRequest{
+				User: tt.giveUser,
+			}
 
-		result, err := extractConsent(&bidReq)
-		assert.Equal(t, tt.wantConsent, result, tt.description)
+			result, err := extractConsent(&bidReq, tt.giveGPP)
+			assert.Equal(t, tt.wantConsent, result, tt.description)
 
-		if tt.wantError {
-			assert.NotNil(t, err, tt.description)
-		} else {
-			assert.Nil(t, err, tt.description)
-		}
+			if tt.wantError {
+				assert.NotNil(t, err, tt.description)
+			} else {
+				assert.Nil(t, err, tt.description)
+			}
+		})
 	}
+}
+
+var upsv1Section mockGPPSection = mockGPPSection{sectionID: 6, value: "1YNY"}
+var tcf1Section mockGPPSection = mockGPPSection{sectionID: 2, value: "BOS2bx5OS2bx5ABABBAAABoAAAAAFA"}
+
+type mockGPPSection struct {
+	sectionID gppConstants.SectionID
+	value     string
+}
+
+func (ms mockGPPSection) GetID() gppConstants.SectionID {
+	return ms.sectionID
+}
+
+func (ms mockGPPSection) GetValue() string {
+	return ms.value
 }

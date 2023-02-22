@@ -155,12 +155,14 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType,
 				return openrtb_ext.BidTypeNative, nil
 			} else if imp.Banner != nil {
 				return openrtb_ext.BidTypeBanner, nil
+			} else if imp.Video != nil {
+				return openrtb_ext.BidTypeVideo, nil
 			}
 		}
 	}
 
 	return "", &errortypes.BadInput{
-		Message: fmt.Sprintf("Failed to find native/banner impression \"%s\" ", impID),
+		Message: fmt.Sprintf("Failed to find native/banner/video impression \"%s\" ", impID),
 	}
 }
 

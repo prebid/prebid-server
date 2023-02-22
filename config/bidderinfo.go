@@ -3,17 +3,18 @@ package config
 import (
 	"errors"
 	"fmt"
-	validator "github.com/asaskevich/govalidator"
-	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/util/sliceutil"
-	"io/ioutil"
 	"log"
+	"os"
 	"path/filepath"
 	"strings"
 	"text/template"
 
+	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/sliceutil"
+
+	validator "github.com/asaskevich/govalidator"
 	"gopkg.in/yaml.v3"
 )
 
@@ -46,7 +47,8 @@ type BidderInfo struct {
 	PlatformID string `yaml:"platform_id" mapstructure:"platform_id"`
 	AppSecret  string `yaml:"app_secret" mapstructure:"app_secret"`
 	// EndpointCompression determines, if set, the type of compression the bid request will undergo before being sent to the corresponding bid server
-	EndpointCompression string `yaml:"endpointCompression" mapstructure:"endpointCompression"`
+	EndpointCompression string       `yaml:"endpointCompression" mapstructure:"endpointCompression"`
+	OpenRTB             *OpenRTBInfo `yaml:"openrtb" mapstructure:"openrtb"`
 }
 
 // BidderInfoExperiment specifies non-production ready feature config for a bidder
@@ -84,6 +86,14 @@ type AdapterXAPI struct {
 	Username string `yaml:"username" mapstructure:"username"`
 	Password string `yaml:"password" mapstructure:"password"`
 	Tracker  string `yaml:"tracker" mapstructure:"tracker"`
+}
+
+// OpenRTBInfo specifies the versions/aspects of openRTB that a bidder supports
+// Version is not yet actively supported
+// GPPSupported is not yet actively supported
+type OpenRTBInfo struct {
+	Version      string `yaml:"version" mapstructure:"version"`
+	GPPSupported bool   `yaml:"gpp-supported" mapstructure:"gpp-supported"`
 }
 
 // Syncer specifies the user sync settings for a bidder. This struct is shared by the account config,
@@ -180,7 +190,7 @@ type InfoReaderFromDisk struct {
 }
 
 func (r InfoReaderFromDisk) Read() (map[string][]byte, error) {
-	bidderConfigs, err := ioutil.ReadDir(r.Path)
+	bidderConfigs, err := os.ReadDir(r.Path)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -192,7 +202,7 @@ func (r InfoReaderFromDisk) Read() (map[string][]byte, error) {
 		}
 		fileName := bidderConfig.Name()
 		filePath := filepath.Join(r.Path, fileName)
-		data, err := ioutil.ReadFile(filePath)
+		data, err := os.ReadFile(filePath)
 		if err != nil {
 			return nil, err
 		}

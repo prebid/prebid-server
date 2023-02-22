@@ -22,6 +22,9 @@ const GPIDKey = "gpid"
 // TIDKey reserved for Per-Impression Transactions IDs for Multi-Impression Bid Requests.
 const TIDKey = "tid"
 
+// AuctionEnvironmentKey is the json key under imp[].ext for ExtImp.AuctionEnvironment
+const AuctionEnvironmentKey = string(BidderReservedAE)
+
 // NativeExchangeSpecificLowerBound defines the lower threshold of exchange specific types for native ads. There is no upper bound.
 const NativeExchangeSpecificLowerBound = 500
 
@@ -62,6 +65,13 @@ type ExtRequestPrebid struct {
 
 	//AlternateBidderCodes is populated with host's AlternateBidderCodes config if not defined in request
 	AlternateBidderCodes *ExtAlternateBidderCodes `json:"alternatebiddercodes,omitempty"`
+
+	// Trace controls the level of detail in the output information returned from executing hooks.
+	// There are two options:
+	// - verbose: sets maximum level of output information
+	// - basic: excludes debugmessages and analytic_tags from output
+	// any other value or an empty string disables trace output at all.
+	Trace string `json:"trace,omitempty"`
 }
 
 // Experiment defines if experimental features are available for the request
@@ -116,18 +126,6 @@ type ExtRequestPrebidServer struct {
 	ExternalUrl string `json:"externalurl"`
 	GvlID       int    `json:"gvlid"`
 	DataCenter  string `json:"datacenter"`
-}
-
-// UnmarshalJSON prevents nil bids arguments.
-func (ert *ExtRequestPrebidCache) UnmarshalJSON(b []byte) error {
-	type typesAlias ExtRequestPrebidCache // Prevents infinite UnmarshalJSON loops
-	var proxy typesAlias
-	if err := json.Unmarshal(b, &proxy); err != nil {
-		return err
-	}
-
-	*ert = ExtRequestPrebidCache(proxy)
-	return nil
 }
 
 // ExtRequestPrebidCacheBids defines the contract for bidrequest.ext.prebid.cache.bids

@@ -19,12 +19,14 @@ func TestConvertDownTo25(t *testing.T) {
 			description: "2.6 -> 2.5",
 			givenRequest: openrtb2.BidRequest{
 				ID:     "anyID",
+				Imp:    []openrtb2.Imp{{Rwdd: 1}},
 				Source: &openrtb2.Source{SChain: &openrtb2.SupplyChain{Complete: 1, Nodes: []openrtb2.SupplyChainNode{}, Ver: "2"}},
 				Regs:   &openrtb2.Regs{GDPR: openrtb2.Int8Ptr(1), USPrivacy: "3"},
 				User:   &openrtb2.User{Consent: "1", EIDs: []openrtb2.EID{{Source: "42"}}},
 			},
 			expectedRequest: openrtb2.BidRequest{
 				ID:     "anyID",
+				Imp:    []openrtb2.Imp{{Ext: json.RawMessage(`{"prebid":{"is_rewarded_inventory":1}}`)}},
 				Source: &openrtb2.Source{Ext: json.RawMessage(`{"schain":{"complete":1,"nodes":[],"ver":"2"}}`)},
 				Regs:   &openrtb2.Regs{Ext: json.RawMessage(`{"gdpr":1,"us_privacy":"3"}`)},
 				User:   &openrtb2.User{Ext: json.RawMessage(`{"consent":"1","eids":[{"source":"42"}]}`)},
@@ -34,6 +36,7 @@ func TestConvertDownTo25(t *testing.T) {
 			description: "2.6 -> 2.5 + Other Ext Fields",
 			givenRequest: openrtb2.BidRequest{
 				ID:     "anyID",
+				Imp:    []openrtb2.Imp{{Rwdd: 1, Ext: json.RawMessage(`{"other":"otherImp"}`)}},
 				Ext:    json.RawMessage(`{"other":"otherExt"}`),
 				Source: &openrtb2.Source{SChain: &openrtb2.SupplyChain{Complete: 1, Nodes: []openrtb2.SupplyChainNode{}, Ver: "2"}, Ext: json.RawMessage(`{"other":"otherSource"}`)},
 				Regs:   &openrtb2.Regs{GDPR: openrtb2.Int8Ptr(1), USPrivacy: "3", Ext: json.RawMessage(`{"other":"otherRegs"}`)},
@@ -41,6 +44,7 @@ func TestConvertDownTo25(t *testing.T) {
 			},
 			expectedRequest: openrtb2.BidRequest{
 				ID:     "anyID",
+				Imp:    []openrtb2.Imp{{Ext: json.RawMessage(`{"other":"otherImp","prebid":{"is_rewarded_inventory":1}}`)}},
 				Ext:    json.RawMessage(`{"other":"otherExt"}`),
 				Source: &openrtb2.Source{Ext: json.RawMessage(`{"other":"otherSource","schain":{"complete":1,"nodes":[],"ver":"2"}}`)},
 				Regs:   &openrtb2.Regs{Ext: json.RawMessage(`{"gdpr":1,"other":"otherRegs","us_privacy":"3"}`)},
@@ -84,6 +88,14 @@ func TestConvertDownTo25(t *testing.T) {
 			givenRequest: openrtb2.BidRequest{
 				ID:   "anyID",
 				User: &openrtb2.User{EIDs: []openrtb2.EID{{Source: "42"}}, Ext: json.RawMessage(`malformed`)},
+			},
+			expectedErr: "invalid character 'm' looking for beginning of value",
+		},
+		{
+			description: "Malformed - Imp",
+			givenRequest: openrtb2.BidRequest{
+				ID:  "anyID",
+				Imp: []openrtb2.Imp{{Rwdd: 1, Ext: json.RawMessage(`malformed`)}},
 			},
 			expectedErr: "invalid character 'm' looking for beginning of value",
 		},
@@ -349,6 +361,48 @@ func TestMoveEIDFrom26To25(t *testing.T) {
 		} else {
 			assert.NoError(t, w.RebuildRequest(), test.description)
 			assert.Equal(t, test.expectedRequest, *w.BidRequest, test.description)
+		}
+	}
+}
+
+func TestMoveRewardedFrom26ToPrebidExt(t *testing.T) {
+	testCases := []struct {
+		description string
+		givenImp    openrtb2.Imp
+		expectedImp openrtb2.Imp
+		expectedErr string
+	}{
+		{
+			description: "Not Present",
+			givenImp:    openrtb2.Imp{},
+			expectedImp: openrtb2.Imp{},
+		},
+		{
+			description: "2.6 Migrated To Prebid Ext",
+			givenImp:    openrtb2.Imp{Rwdd: 1},
+			expectedImp: openrtb2.Imp{Ext: json.RawMessage(`{"prebid":{"is_rewarded_inventory":1}}`)},
+		},
+		{
+			description: "Prebid Ext Overwritten",
+			givenImp:    openrtb2.Imp{Rwdd: 1, Ext: json.RawMessage(`{"prebid":{"is_rewarded_inventory":2}}`)},
+			expectedImp: openrtb2.Imp{Ext: json.RawMessage(`{"prebid":{"is_rewarded_inventory":1}}`)},
+		},
+		{
+			description: "Malformed",
+			givenImp:    openrtb2.Imp{Rwdd: 1, Ext: json.RawMessage(`malformed`)},
+			expectedErr: "invalid character 'm' looking for beginning of value",
+		},
+	}
+
+	for _, test := range testCases {
+		w := &ImpWrapper{Imp: &test.givenImp}
+		err := moveRewardedFrom26ToPrebidExt(w)
+
+		if len(test.expectedErr) > 0 {
+			assert.EqualError(t, err, test.expectedErr, test.description)
+		} else {
+			assert.NoError(t, w.RebuildImp(), test.description)
+			assert.Equal(t, test.expectedImp, *w.Imp, test.description)
 		}
 	}
 }

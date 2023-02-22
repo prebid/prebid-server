@@ -1,0 +1,8 @@
+[
+  {
+    "entity": "http-request",
+    "stage": "entrypoint",
+    "execution_time_millis": 0,
+    "groups": []
+  }
+]

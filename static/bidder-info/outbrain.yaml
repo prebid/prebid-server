@@ -7,10 +7,12 @@ capabilities:
     mediaTypes:
       - banner
       - native
+      - video
   site:
     mediaTypes:
       - banner
       - native
+      - video
 userSync:
   redirect:
     url: "https://prebidtest.zemanta.com/usersync/prebidtest?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&cb={{.RedirectURL}}"

@@ -1815,8 +1815,8 @@ type FakeAccountsFetcher struct {
 	AccountData map[string]json.RawMessage
 }
 
-func (f FakeAccountsFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
-	defaultAccountJSON := json.RawMessage(`{"disabled":false}`)
+func (f FakeAccountsFetcher) FetchAccount(ctx context.Context, defaultAccountJSON json.RawMessage, accountID string) (json.RawMessage, []error) {
+	defaultAccountJSON = json.RawMessage(`{"disabled":false}`)
 
 	if accountID == metrics.PublisherUnknown {
 		return defaultAccountJSON, nil
