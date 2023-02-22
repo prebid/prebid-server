@@ -728,21 +728,19 @@ func getExtCacheInstructions(requestExtPrebid *openrtb_ext.ExtRequestPrebid) ext
 }
 
 func getExtTargetData(requestExtPrebid *openrtb_ext.ExtRequestPrebid, cacheInstructions extCacheInstructions) *targetData {
-	var targData *targetData
-
 	if requestExtPrebid != nil && requestExtPrebid.Targeting != nil {
-		targData = &targetData{
-			priceGranularity:  requestExtPrebid.Targeting.PriceGranularity,
-			includeWinners:    requestExtPrebid.Targeting.IncludeWinners,
-			includeBidderKeys: requestExtPrebid.Targeting.IncludeBidderKeys,
+		return &targetData{
+			includeWinners:    *requestExtPrebid.Targeting.IncludeWinners,
+			includeBidderKeys: *requestExtPrebid.Targeting.IncludeBidderKeys,
 			includeCacheBids:  cacheInstructions.cacheBids,
 			includeCacheVast:  cacheInstructions.cacheVAST,
 			includeFormat:     requestExtPrebid.Targeting.IncludeFormat,
+			priceGranularity:  *requestExtPrebid.Targeting.PriceGranularity,
 			preferDeals:       requestExtPrebid.Targeting.PreferDeals,
 		}
 	}
 
-	return targData
+	return nil
 }
 
 // getDebugInfo returns the boolean flags that allow for debug information in bidResponse.Ext, the SeatBid.httpcalls slice, and

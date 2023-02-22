@@ -24,6 +24,7 @@ import (
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/hooks/hookstage"
+	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
@@ -2142,7 +2143,7 @@ func TestExchangeJSON(t *testing.T) {
 			t.Run(fileDisplayName, func(t *testing.T) {
 				specData, err := loadFile(fileName)
 				if assert.NoError(t, err, "Failed to load contents of file %s: %v", fileDisplayName, err) {
-					runSpec(t, fileDisplayName, specData)
+					assert.NotPanics(t, func() { runSpec(t, fileDisplayName, specData) }, fileDisplayName)
 				}
 			})
 		}
@@ -2508,7 +2509,7 @@ func (m *fakeRandomDeduplicateBidBooleanGenerator) Generate() bool {
 
 func newExtRequest() openrtb_ext.ExtRequest {
 	priceGran := openrtb_ext.PriceGranularity{
-		Precision: 2,
+		Precision: ptrutil.ToPtr(2),
 		Ranges: []openrtb_ext.GranularityRange{
 			{
 				Min:       0.0,
@@ -2522,8 +2523,8 @@ func newExtRequest() openrtb_ext.ExtRequest {
 	brandCat := openrtb_ext.ExtIncludeBrandCategory{PrimaryAdServer: 1, WithCategory: true, TranslateCategories: &translateCategories}
 
 	reqExt := openrtb_ext.ExtRequestTargeting{
-		PriceGranularity:     priceGran,
-		IncludeWinners:       true,
+		PriceGranularity:     &priceGran,
+		IncludeWinners:       ptrutil.ToPtr(true),
 		IncludeBrandCategory: &brandCat,
 	}
 
@@ -2536,7 +2537,7 @@ func newExtRequest() openrtb_ext.ExtRequest {
 
 func newExtRequestNoBrandCat() openrtb_ext.ExtRequest {
 	priceGran := openrtb_ext.PriceGranularity{
-		Precision: 2,
+		Precision: ptrutil.ToPtr(2),
 		Ranges: []openrtb_ext.GranularityRange{
 			{
 				Min:       0.0,
@@ -2549,8 +2550,8 @@ func newExtRequestNoBrandCat() openrtb_ext.ExtRequest {
 	brandCat := openrtb_ext.ExtIncludeBrandCategory{WithCategory: false}
 
 	reqExt := openrtb_ext.ExtRequestTargeting{
-		PriceGranularity:     priceGran,
-		IncludeWinners:       true,
+		PriceGranularity:     &priceGran,
+		IncludeWinners:       ptrutil.ToPtr(true),
 		IncludeBrandCategory: &brandCat,
 	}
 
@@ -2571,7 +2572,7 @@ func TestCategoryMapping(t *testing.T) {
 	requestExt := newExtRequest()
 
 	targData := &targetData{
-		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
+		priceGranularity: *requestExt.Prebid.Targeting.PriceGranularity,
 		includeWinners:   true,
 	}
 
@@ -2627,7 +2628,7 @@ func TestCategoryMappingNoIncludeBrandCategory(t *testing.T) {
 	requestExt := newExtRequestNoBrandCat()
 
 	targData := &targetData{
-		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
+		priceGranularity: *requestExt.Prebid.Targeting.PriceGranularity,
 		includeWinners:   true,
 	}
 	requestExt.Prebid.Targeting.DurationRangeSec = []int{15, 30, 40, 50}
@@ -2682,7 +2683,7 @@ func TestCategoryMappingTranslateCategoriesNil(t *testing.T) {
 	requestExt := newExtRequestTranslateCategories(nil)
 
 	targData := &targetData{
-		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
+		priceGranularity: *requestExt.Prebid.Targeting.PriceGranularity,
 		includeWinners:   true,
 	}
 
@@ -2725,7 +2726,7 @@ func TestCategoryMappingTranslateCategoriesNil(t *testing.T) {
 
 func newExtRequestTranslateCategories(translateCategories *bool) openrtb_ext.ExtRequest {
 	priceGran := openrtb_ext.PriceGranularity{
-		Precision: 2,
+		Precision: ptrutil.ToPtr(2),
 		Ranges: []openrtb_ext.GranularityRange{
 			{
 				Min:       0.0,
@@ -2741,8 +2742,8 @@ func newExtRequestTranslateCategories(translateCategories *bool) openrtb_ext.Ext
 	}
 
 	reqExt := openrtb_ext.ExtRequestTargeting{
-		PriceGranularity:     priceGran,
-		IncludeWinners:       true,
+		PriceGranularity:     &priceGran,
+		IncludeWinners:       ptrutil.ToPtr(true),
 		IncludeBrandCategory: &brandCat,
 	}
 
@@ -2764,7 +2765,7 @@ func TestCategoryMappingTranslateCategoriesFalse(t *testing.T) {
 	requestExt := newExtRequestTranslateCategories(&translateCategories)
 
 	targData := &targetData{
-		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
+		priceGranularity: *requestExt.Prebid.Targeting.PriceGranularity,
 		includeWinners:   true,
 	}
 
@@ -2815,7 +2816,7 @@ func TestCategoryDedupe(t *testing.T) {
 	requestExt := newExtRequest()
 
 	targData := &targetData{
-		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
+		priceGranularity: *requestExt.Prebid.Targeting.PriceGranularity,
 		includeWinners:   true,
 	}
 
@@ -2895,7 +2896,7 @@ func TestNoCategoryDedupe(t *testing.T) {
 	requestExt := newExtRequestNoBrandCat()
 
 	targData := &targetData{
-		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
+		priceGranularity: *requestExt.Prebid.Targeting.PriceGranularity,
 		includeWinners:   true,
 	}
 
@@ -2977,7 +2978,7 @@ func TestCategoryMappingBidderName(t *testing.T) {
 	requestExt.Prebid.Targeting.AppendBidderNames = true
 
 	targData := &targetData{
-		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
+		priceGranularity: *requestExt.Prebid.Targeting.PriceGranularity,
 		includeWinners:   true,
 	}
 
@@ -3031,7 +3032,7 @@ func TestCategoryMappingBidderNameNoCategories(t *testing.T) {
 	requestExt.Prebid.Targeting.AppendBidderNames = true
 
 	targData := &targetData{
-		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
+		priceGranularity: *requestExt.Prebid.Targeting.PriceGranularity,
 		includeWinners:   true,
 	}
 
@@ -3084,7 +3085,7 @@ func TestBidRejectionErrors(t *testing.T) {
 	requestExt.Prebid.Targeting.DurationRangeSec = []int{15, 30, 50}
 
 	targData := &targetData{
-		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
+		priceGranularity: *requestExt.Prebid.Targeting.PriceGranularity,
 		includeWinners:   true,
 	}
 
@@ -3191,7 +3192,7 @@ func TestCategoryMappingTwoBiddersOneBidEachNoCategorySamePrice(t *testing.T) {
 	requestExt := newExtRequestTranslateCategories(nil)
 
 	targData := &targetData{
-		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
+		priceGranularity: *requestExt.Prebid.Targeting.PriceGranularity,
 		includeWinners:   true,
 	}
 
@@ -3268,7 +3269,7 @@ func TestCategoryMappingTwoBiddersManyBidsEachNoCategorySamePrice(t *testing.T) 
 	requestExt := newExtRequestTranslateCategories(nil)
 
 	targData := &targetData{
-		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
+		priceGranularity: *requestExt.Prebid.Targeting.PriceGranularity,
 		includeWinners:   true,
 	}
 

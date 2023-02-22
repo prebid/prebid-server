@@ -37,6 +37,18 @@
               "publisher": "",
               "withcategory": true
             },
+            "pricegranularity": {
+              "precision": 2,
+              "ranges": [
+                {
+                  "min": 0,
+                  "max": 20,
+                  "increment": 0.1
+                }
+              ]
+            },
+            "includewinners": true,
+            "includebidderkeys": true,
             "appendbiddernames": true
           }
         }
@@ -150,12 +162,29 @@
           "ext": {
             "prebid": {
               "targeting": {
+                "pricegranularity": {
+                  "precision": 2,
+                  "ranges": [
+                    {
+                      "min": 0,
+                      "max": 20,
+                      "increment": 0.1
+                    }
+                  ]
+                },
+                "includewinners": true,
+                "includebidderkeys": true,
                 "includebrandcategory": {
                   "primaryadserver": 1,
                   "publisher": "",
                   "withcategory": true
                 },
                 "appendbiddernames": true
+              },
+              "server": {
+                "datacenter": "Datacenter",
+                "externalurl": "http://hosturl.com",
+                "gvlid": 1
               }
             }
           }

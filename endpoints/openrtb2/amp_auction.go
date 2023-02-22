@@ -17,6 +17,7 @@ import (
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/openrtb/v17/openrtb3"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
+	"github.com/prebid/prebid-server/ortb"
 	"github.com/prebid/prebid-server/util/uuidutil"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
@@ -444,16 +445,20 @@ func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openr
 	deps.setFieldsImplicitly(httpRequest, req)
 
 	// Need to ensure cache and targeting are turned on
-	e = defaultRequestExt(req)
+	e = initAmpTargetingAndCache(req)
 	if errs = append(errs, e...); errortypes.ContainsFatalError(errs) {
 		return
 	}
 
-	// At this point, we should have a valid request that definitely has Targeting and Cache turned on
-	hasStoredResponses := len(storedAuctionResponses) > 0
+	if err := ortb.SetDefaults(req); err != nil {
+		errs = append(errs, err)
+		return
+	}
 
+	hasStoredResponses := len(storedAuctionResponses) > 0
 	e = deps.validateRequest(req, true, hasStoredResponses, storedBidResponses, false)
 	errs = append(errs, e...)
+
 	return
 }
 
@@ -697,7 +702,7 @@ func setHeights(formats []openrtb2.Format, height int64) {
 
 // AMP won't function unless ext.prebid.targeting and ext.prebid.cache.bids are defined.
 // If the user didn't include them, default those here.
-func defaultRequestExt(req *openrtb_ext.RequestWrapper) []error {
+func initAmpTargetingAndCache(req *openrtb_ext.RequestWrapper) []error {
 	extRequest, err := req.GetRequestExt()
 	if err != nil {
 		return []error{err}
@@ -706,27 +711,23 @@ func defaultRequestExt(req *openrtb_ext.RequestWrapper) []error {
 	prebid := extRequest.GetPrebid()
 	prebidModified := false
 
-	// create prebid object if missing from request
+	// create prebid object if missing
 	if prebid == nil {
 		prebid = &openrtb_ext.ExtRequestPrebid{}
 	}
 
-	// Ensure Targeting and caching is on
+	// create targeting object if missing
 	if prebid.Targeting == nil {
-		prebid.Targeting = &openrtb_ext.ExtRequestTargeting{
-			IncludeWinners:    true,
-			IncludeBidderKeys: true,
-			PriceGranularity:  openrtb_ext.PriceGranularityFromString("med"),
-		}
+		prebid.Targeting = &openrtb_ext.ExtRequestTargeting{}
 		prebidModified = true
 	}
 
+	// create cache object if missing
 	if prebid.Cache == nil {
-		prebid.Cache = &openrtb_ext.ExtRequestPrebidCache{
-			Bids: &openrtb_ext.ExtRequestPrebidCacheBids{},
-		}
+		prebid.Cache = &openrtb_ext.ExtRequestPrebidCache{}
 		prebidModified = true
-	} else if prebid.Cache.Bids == nil {
+	}
+	if prebid.Cache.Bids == nil {
 		prebid.Cache.Bids = &openrtb_ext.ExtRequestPrebidCacheBids{}
 		prebidModified = true
 	}

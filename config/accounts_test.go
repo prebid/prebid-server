@@ -824,3 +824,40 @@ func TestModulesGetConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestAccountPriceFloorsValidate(t *testing.T) {
+
+	tests := []struct {
+		description string
+		pf          *AccountPriceFloors
+		want        []error
+	}{
+		{
+			description: "valid configuration",
+			pf: &AccountPriceFloors{
+				EnforceFloorsRate: 100,
+			},
+		},
+		{
+			description: "Invalid configuration: EnforceFloorRate:110",
+			pf: &AccountPriceFloors{
+				EnforceFloorsRate: 110,
+			},
+			want: []error{errors.New("account_defaults.price_floors.enforce_floors_rate should be between 0 and 100")},
+		},
+		{
+			description: "Invalid configuration: EnforceFloorRate:-10",
+			pf: &AccountPriceFloors{
+				EnforceFloorsRate: -10,
+			},
+			want: []error{errors.New("account_defaults.price_floors.enforce_floors_rate should be between 0 and 100")},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.description, func(t *testing.T) {
+			var errs []error
+			got := tt.pf.validate(errs)
+			assert.ElementsMatch(t, got, tt.want)
+		})
+	}
+}

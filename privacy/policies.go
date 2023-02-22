@@ -3,6 +3,7 @@ package privacy
 import (
 	"github.com/prebid/prebid-server/privacy/ccpa"
 	"github.com/prebid/prebid-server/privacy/gdpr"
+	"github.com/prebid/prebid-server/privacy/gpp"
 	"github.com/prebid/prebid-server/privacy/lmt"
 )
 
@@ -11,4 +12,5 @@ type Policies struct {
 	CCPA ccpa.Policy
 	GDPR gdpr.Policy
 	LMT  lmt.Policy
+	GPP  gpp.Policy
 }
