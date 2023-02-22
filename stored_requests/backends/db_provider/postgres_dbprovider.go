@@ -51,72 +51,72 @@ func (provider *PostgresDbProvider) Ping() error {
 
 func (provider *PostgresDbProvider) ConnString() (string, error) {
 	buffer := bytes.NewBuffer(nil)
+	buffer.WriteString("postgresql://")
+
+	if provider.cfg.Username != "" {
+		buffer.WriteString(provider.cfg.Username)
+		if provider.cfg.Password != "" {
+			buffer.WriteString(":")
+			buffer.WriteString(provider.cfg.Password)
+		}
+		buffer.WriteString("@")
+	}
 
 	if provider.cfg.Host != "" {
-		buffer.WriteString("host=")
 		buffer.WriteString(provider.cfg.Host)
-		buffer.WriteString(" ")
 	}
 
 	if provider.cfg.Port > 0 {
-		buffer.WriteString("port=")
+		buffer.WriteString(":")
 		buffer.WriteString(strconv.Itoa(provider.cfg.Port))
-		buffer.WriteString(" ")
-	}
-
-	if provider.cfg.Username != "" {
-		buffer.WriteString("user=")
-		buffer.WriteString(provider.cfg.Username)
-		buffer.WriteString(" ")
-	}
-
-	if provider.cfg.Password != "" {
-		buffer.WriteString("password=")
-		buffer.WriteString(provider.cfg.Password)
-		buffer.WriteString(" ")
 	}
 
 	if provider.cfg.Database != "" {
-		buffer.WriteString("dbname=")
+		buffer.WriteString("/")
 		buffer.WriteString(provider.cfg.Database)
-		buffer.WriteString(" ")
 	}
 
-	// TLS connection
-	var sslmode = "disable"
-
-	if provider.cfg.TLS.RootCert != "" {
-		sslmode = "verify-ca"
-
-		buffer.WriteString("sslrootcert=")
-		buffer.WriteString(provider.cfg.TLS.RootCert)
-		buffer.WriteString(" ")
-
-		if provider.cfg.TLS.ClientCert != "" && provider.cfg.TLS.ClientKey != "" {
-			sslmode = "verify-full"
-
-			buffer.WriteString("sslcert=")
-			buffer.WriteString(provider.cfg.TLS.ClientCert)
-			buffer.WriteString(" ")
-
-			buffer.WriteString("sslkey=")
-			buffer.WriteString(provider.cfg.TLS.ClientKey)
-			buffer.WriteString(" ")
-		}
+	queryStr, err := provider.generateQueryString()
+	if err != nil {
+		return "", err
 	}
-
-	if !strings.Contains(provider.cfg.QueryString, "sslmode=") {
-		buffer.WriteString("sslmode=")
-		buffer.WriteString(sslmode)
-	}
-
-	// Rest of connection string parameters passed through query_string
-	if provider.cfg.QueryString != "" {
-		buffer.WriteString(" ")
-		buffer.WriteString(provider.cfg.QueryString)
+	if queryStr != "" {
+		buffer.WriteString("?")
+		buffer.WriteString(queryStr)
 	}
 
 	return buffer.String(), nil
+}
+
+func (provider *PostgresDbProvider) generateQueryString() (string, error) {
+	sslmode := "disable"
+	sslrootcert := ""
+	sslcert := ""
+	sslkey := ""
+	queryString := ""
+
+	if provider.cfg.TLS.RootCert != "" {
+		sslmode = "verify-ca"
+		sslrootcert = fmt.Sprintf("&sslrootcert=%s", provider.cfg.TLS.RootCert)
+
+		if provider.cfg.TLS.ClientCert != "" && provider.cfg.TLS.ClientKey != "" {
+			sslmode = "verify-full"
+			sslcert = fmt.Sprintf("&sslcert=%s", provider.cfg.TLS.ClientCert)
+			sslkey = fmt.Sprintf("&sslkey=%s", provider.cfg.TLS.ClientKey)
+		}
+	}
+	sslmode = fmt.Sprintf("&sslmode=%s", sslmode)
+
+	if len(provider.cfg.QueryString) != 0 {
+		queryString = fmt.Sprintf("&%s", provider.cfg.QueryString)
+
+		if strings.Contains(provider.cfg.QueryString, "sslmode=") {
+			sslmode = ""
+		}
+	}
+
+	params := strings.Join([]string{sslmode, sslrootcert, sslcert, sslkey, queryString}, "")
+	return params[1:], nil
 }
 
 func (provider *PostgresDbProvider) PrepareQuery(template string, params ...QueryParam) (query string, args []interface{}) {

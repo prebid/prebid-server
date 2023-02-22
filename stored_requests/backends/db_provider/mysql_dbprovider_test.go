@@ -12,9 +12,6 @@ import (
 
 func TestConnStringMySql(t *testing.T) {
 
-	_, callerFilename, _, _ := runtime.Caller(0)
-	workingDir := path.Dir(callerFilename)
-
 	type TLS struct {
 		RootCert   string
 		ClientCert string
@@ -30,6 +27,9 @@ func TestConnStringMySql(t *testing.T) {
 		QueryString string
 		TLS         TLS
 	}
+
+	_, callerFilename, _, _ := runtime.Caller(0)
+	workingDir := path.Dir(callerFilename)
 
 	tests := []struct {
 		name       string
