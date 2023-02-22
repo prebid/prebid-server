@@ -389,7 +389,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	}
 
 	// Look up account
-	account, errs = accountService.GetAccount(ctx, deps.cfg, deps.accounts, accountId)
+	account, errs = accountService.GetAccount(ctx, deps.cfg, deps.accounts, accountId, deps.metricsEngine)
 	if len(errs) > 0 {
 		return
 	}

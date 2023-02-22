@@ -120,7 +120,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 	if request.Account == "" {
 		request.Account = metrics.PublisherUnknown
 	}
-	account, fetchErrs := accountService.GetAccount(context.Background(), c.config, c.accountsFetcher, request.Account)
+	account, fetchErrs := accountService.GetAccount(context.Background(), c.config, c.accountsFetcher, request.Account, c.metrics)
 	if len(fetchErrs) > 0 {
 		return usersync.Request{}, privacy.Policies{}, combineErrors(fetchErrs)
 	}

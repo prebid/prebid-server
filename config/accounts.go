@@ -273,3 +273,7 @@ func (m AccountModules) ModuleConfig(id string) (json.RawMessage, error) {
 	module := ns[1]
 	return m[vendor][module], nil
 }
+
+func (a *AccountChannel) IsSet() bool {
+	return a.AMP != nil || a.App != nil || a.Video != nil || a.Web != nil
+}
