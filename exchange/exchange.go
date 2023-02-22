@@ -21,6 +21,7 @@ import (
 	"github.com/prebid/prebid-server/exchange/entities"
 	"github.com/prebid/prebid-server/experiment/adscert"
 	"github.com/prebid/prebid-server/firstpartydata"
+	"github.com/prebid/prebid-server/floors"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/metrics"
@@ -74,6 +75,7 @@ type exchange struct {
 	server                   config.Server
 	bidValidationEnforcement config.Validations
 	requestSplitter          requestSplitter
+	floor                    config.PriceFloors
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -167,6 +169,7 @@ func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid
 		server:                   config.Server{ExternalUrl: cfg.ExternalURL, GvlID: cfg.GDPR.HostVendorID, DataCenter: cfg.DataCenter},
 		bidValidationEnforcement: cfg.Validations,
 		requestSplitter:          requestSplitter,
+		floor:                    cfg.PriceFloors,
 	}
 }
 
@@ -220,6 +223,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	}
 
 	var errs []error
+	var floorErrs []error
 	// rebuild/resync the request in the request wrapper.
 	if err := r.BidRequestWrapper.RebuildRequest(); err != nil {
 		return nil, err
@@ -276,6 +280,21 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 
 	bidAdjustmentFactors := getExtBidAdjustmentFactors(requestExt)
 
+	// Get currency rates conversions for the auction
+	conversions := e.getAuctionCurrencyRates(requestExt.Prebid.CurrencyConversions)
+
+	if e.floor.Enabled {
+		floorErrs = floors.EnrichWithPriceFloors(r.BidRequestWrapper, r.Account, conversions)
+	}
+	if responseDebugAllow {
+		//save incoming request with stored requests (if applicable) to return in debug logs
+		resolvedBidReq, err := json.Marshal(r.BidRequestWrapper.BidRequest)
+		if err != nil {
+			return nil, err
+		}
+		r.ResolvedBidRequest = resolvedBidReq
+	}
+
 	recordImpMetrics(r.BidRequestWrapper.BidRequest, e.me)
 
 	// Make our best guess if GDPR applies
@@ -283,7 +302,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
 	bidderRequests, privacyLabels, errs := e.requestSplitter.cleanOpenRTBRequests(ctx, r, requestExt, gdprDefaultValue)
-
+	errs = append(errs, floorErrs...)
 	e.me.RecordRequestPrivacy(privacyLabels)
 
 	if len(r.StoredAuctionResponses) > 0 || len(r.StoredBidResponses) > 0 {
@@ -294,9 +313,6 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	// We should reduce the amount of time the bidders have, to compensate.
 	auctionCtx, cancel := e.makeAuctionContext(ctx, cacheInstructions.cacheBids)
 	defer cancel()
-
-	// Get currency rates conversions for the auction
-	conversions := e.getAuctionCurrencyRates(requestExt.Prebid.CurrencyConversions)
 
 	var adapterBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid
 	var adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra
