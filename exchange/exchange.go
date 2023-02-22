@@ -388,7 +388,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 				errs = append(errs, cacheErrs...)
 			}
 
-			targData.setTargeting(auc, r.BidRequestWrapper.BidRequest.App != nil, bidCategory, r.Account.TruncateTargetAttribute, requestExt.Prebid.MultiBidMap, r.Account.DefaultBidLimit)
+			targData.setTargeting(auc, r.BidRequestWrapper.BidRequest.App != nil, bidCategory, r.Account.TruncateTargetAttribute, requestExt.Prebid.MultiBidMap)
 		}
 		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, responseDebugAllow, requestExt.Prebid.Passthrough, fledge, errs)
 	} else {

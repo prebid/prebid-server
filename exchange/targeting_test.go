@@ -935,7 +935,7 @@ func TestSetTargeting(t *testing.T) {
 		}
 		auc.winningBids = winningBids
 		targData := test.TargetData
-		targData.setTargeting(auc, test.IsApp, test.CategoryMapping, test.TruncateTargetAttr, test.MultiBidMap, test.DefaultBidLimit)
+		targData.setTargeting(auc, test.IsApp, test.CategoryMapping, test.TruncateTargetAttr, test.MultiBidMap)
 		for imp, targetsByBidder := range test.ExpectedPbsBids {
 			for bidder, expectedTargets := range targetsByBidder {
 				for i, expected := range expectedTargets {
