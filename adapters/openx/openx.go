@@ -144,8 +144,8 @@ func preprocess(imp *openrtb2.Imp, reqExt *openxReqExt) error {
 			Message: err.Error(),
 		}
 	}
-	delete(impExt, "bidder")
-	delete(impExt, "prebid")
+	delete(impExt, openrtb_ext.PrebidExtKey)
+	delete(impExt, openrtb_ext.PrebidExtBidderKey)
 
 	if openxExt.CustomParams != nil {
 		var err error
