@@ -13,6 +13,9 @@ import (
 )
 
 func TestSetDefaults(t *testing.T) {
+	secure0 := int8(0)
+	secure1 := int8(1)
+
 	testCases := []struct {
 		name            string
 		givenRequest    openrtb2.BidRequest
@@ -34,6 +37,11 @@ func TestSetDefaults(t *testing.T) {
 			name:            "targeting", // tests integration with setDefaultsTargeting
 			givenRequest:    openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"targeting":{}}}`)},
 			expectedRequest: openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"includewinners":true,"includebidderkeys":true}}}`)},
+		},
+		{
+			name:            "imp", // tests integration with setDefaultsImp
+			givenRequest:    openrtb2.BidRequest{Imp: []openrtb2.Imp{{Secure: &secure0}, {Secure: nil}}},
+			expectedRequest: openrtb2.BidRequest{Imp: []openrtb2.Imp{{Secure: &secure0}, {Secure: &secure1}}},
 		},
 	}
 
@@ -326,6 +334,81 @@ func TestSetDefaultsPriceGranularityRange(t *testing.T) {
 			actualModified := setDefaultsPriceGranularityRange(test.givenRange)
 			assert.Equal(t, test.expectedModified, actualModified)
 			assert.Equal(t, test.expectedRange, test.givenRange)
+		})
+	}
+}
+
+func TestSetDefaultsImp(t *testing.T) {
+	secure0 := int8(0)
+	secure1 := int8(1)
+
+	testCases := []struct {
+		name             string
+		givenImps        []*openrtb_ext.ImpWrapper
+		expectedImps     []*openrtb_ext.ImpWrapper
+		expectedModified bool
+	}{
+		{
+			name:             "nil",
+			givenImps:        nil,
+			expectedImps:     nil,
+			expectedModified: false,
+		},
+		{
+			name:             "empty",
+			givenImps:        []*openrtb_ext.ImpWrapper{},
+			expectedImps:     []*openrtb_ext.ImpWrapper{},
+			expectedModified: false,
+		},
+		{
+			name:             "one-nil",
+			givenImps:        []*openrtb_ext.ImpWrapper{nil},
+			expectedImps:     []*openrtb_ext.ImpWrapper{nil},
+			expectedModified: false,
+		},
+		{
+			name:             "one-imp-nil",
+			givenImps:        []*openrtb_ext.ImpWrapper{{Imp: nil}},
+			expectedImps:     []*openrtb_ext.ImpWrapper{{Imp: nil}},
+			expectedModified: false,
+		},
+		{
+			name:             "one-imp-secure-0",
+			givenImps:        []*openrtb_ext.ImpWrapper{{Imp: &openrtb2.Imp{Secure: &secure0}}},
+			expectedImps:     []*openrtb_ext.ImpWrapper{{Imp: &openrtb2.Imp{Secure: &secure0}}},
+			expectedModified: false,
+		},
+		{
+			name:             "one-imp-secure-1",
+			givenImps:        []*openrtb_ext.ImpWrapper{{Imp: &openrtb2.Imp{Secure: &secure1}}},
+			expectedImps:     []*openrtb_ext.ImpWrapper{{Imp: &openrtb2.Imp{Secure: &secure1}}},
+			expectedModified: false,
+		},
+		{
+			name:             "one-imp-secure-nil",
+			givenImps:        []*openrtb_ext.ImpWrapper{{Imp: &openrtb2.Imp{Secure: nil}}},
+			expectedImps:     []*openrtb_ext.ImpWrapper{{Imp: &openrtb2.Imp{Secure: &secure1}}},
+			expectedModified: true,
+		},
+		{
+			name:             "one-imp-many-notmodified",
+			givenImps:        []*openrtb_ext.ImpWrapper{{Imp: &openrtb2.Imp{Secure: &secure0}}, {Imp: &openrtb2.Imp{Secure: &secure1}}},
+			expectedImps:     []*openrtb_ext.ImpWrapper{{Imp: &openrtb2.Imp{Secure: &secure0}}, {Imp: &openrtb2.Imp{Secure: &secure1}}},
+			expectedModified: false,
+		},
+		{
+			name:             "one-imp-many-modified",
+			givenImps:        []*openrtb_ext.ImpWrapper{{Imp: &openrtb2.Imp{Secure: &secure0}}, {Imp: &openrtb2.Imp{Secure: nil}}},
+			expectedImps:     []*openrtb_ext.ImpWrapper{{Imp: &openrtb2.Imp{Secure: &secure0}}, {Imp: &openrtb2.Imp{Secure: &secure1}}},
+			expectedModified: true,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			actualModified := setDefaultsImp(test.givenImps)
+			assert.Equal(t, test.expectedModified, actualModified)
+			assert.ElementsMatch(t, test.expectedImps, test.givenImps)
 		})
 	}
 }
