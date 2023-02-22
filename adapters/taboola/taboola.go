@@ -229,7 +229,12 @@ func createTaboolaRequests(request *openrtb2.BidRequest) (taboolaRequests []*ope
 	}
 
 	if taboolaExt.PageType != "" {
-		modifiedRequest.Ext = makeRequestExt(taboolaExt.PageType, errs)
+		requestExt, requestExtErr := makeRequestExt(taboolaExt.PageType)
+		if requestExtErr == nil {
+			modifiedRequest.Ext = requestExt
+		} else {
+			errs = append(errs, requestExtErr)
+		}
 	}
 
 	taboolaRequests = append(taboolaRequests, overrideBidRequestImp(&modifiedRequest, nativeImp))
@@ -238,17 +243,17 @@ func createTaboolaRequests(request *openrtb2.BidRequest) (taboolaRequests []*ope
 	return taboolaRequests, errs
 }
 
-func makeRequestExt(pageType string, errs []error) json.RawMessage {
+func makeRequestExt(pageType string) (json.RawMessage, error) {
 	requestExt := &RequestExt{
 		PageType: pageType,
 	}
 
 	requestExtJson, err := json.Marshal(requestExt)
 	if err != nil {
-		errs = append(errs, err)
-		return make([]byte, 0)
+		fmt.Errorf("could not marshal %s", requestExt)
+		return nil, err
 	}
-	return requestExtJson
+	return requestExtJson, nil
 
 }
 

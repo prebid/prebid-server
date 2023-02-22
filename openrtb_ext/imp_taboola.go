@@ -8,5 +8,5 @@ type ImpExtTaboola struct {
 	BCat            []string `json:"bcat"`
 	BAdv            []string `json:"badv"`
 	PageType        string   `json:"pageType"`
-	Position        *int8    `json:"position"`
+	Position        *int     `json:"position"`
 }
