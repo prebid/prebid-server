@@ -824,3 +824,73 @@ func TestModulesGetConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestAccountChannelIsSet(t *testing.T) {
+	trueBool := true
+	falseBool := false
+
+	testCases := []struct {
+		name                string
+		givenAccountChannel *AccountChannel
+		expected            bool
+	}{
+		{
+			name:                "AccountChannelSetAllFields",
+			givenAccountChannel: &AccountChannel{AMP: &trueBool, App: &falseBool, Video: &falseBool, Web: &falseBool},
+			expected:            true,
+		},
+		{
+			name:                "AccountChannelNotSet",
+			givenAccountChannel: &AccountChannel{},
+			expected:            false,
+		},
+		{
+			name:                "AccountChannelSetAmpOnly",
+			givenAccountChannel: &AccountChannel{AMP: &trueBool},
+			expected:            true,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			assert.Equal(t, test.expected, test.givenAccountChannel.IsSet())
+		})
+	}
+}
+
+func TestAccountPriceFloorsValidate(t *testing.T) {
+
+	tests := []struct {
+		description string
+		pf          *AccountPriceFloors
+		want        []error
+	}{
+		{
+			description: "valid configuration",
+			pf: &AccountPriceFloors{
+				EnforceFloorsRate: 100,
+			},
+		},
+		{
+			description: "Invalid configuration: EnforceFloorRate:110",
+			pf: &AccountPriceFloors{
+				EnforceFloorsRate: 110,
+			},
+			want: []error{errors.New("account_defaults.price_floors.enforce_floors_rate should be between 0 and 100")},
+		},
+		{
+			description: "Invalid configuration: EnforceFloorRate:-10",
+			pf: &AccountPriceFloors{
+				EnforceFloorsRate: -10,
+			},
+			want: []error{errors.New("account_defaults.price_floors.enforce_floors_rate should be between 0 and 100")},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.description, func(t *testing.T) {
+			var errs []error
+			got := tt.pf.validate(errs)
+			assert.ElementsMatch(t, got, tt.want)
+		})
+	}
+}

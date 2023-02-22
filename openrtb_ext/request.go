@@ -2,7 +2,6 @@ package openrtb_ext
 
 import (
 	"encoding/json"
-	"errors"
 
 	"github.com/prebid/openrtb/v17/openrtb2"
 )
@@ -118,8 +117,8 @@ type ExtRequestPrebidChannel struct {
 
 // ExtRequestPrebidCache defines the contract for bidrequest.ext.prebid.cache
 type ExtRequestPrebidCache struct {
-	Bids    *ExtRequestPrebidCacheBids `json:"bids"`
-	VastXML *ExtRequestPrebidCacheVAST `json:"vastxml"`
+	Bids    *ExtRequestPrebidCacheBids `json:"bids,omitempty"`
+	VastXML *ExtRequestPrebidCacheVAST `json:"vastxml,omitempty"`
 }
 
 type ExtRequestPrebidServer struct {
@@ -130,23 +129,23 @@ type ExtRequestPrebidServer struct {
 
 // ExtRequestPrebidCacheBids defines the contract for bidrequest.ext.prebid.cache.bids
 type ExtRequestPrebidCacheBids struct {
-	ReturnCreative *bool `json:"returnCreative"`
+	ReturnCreative *bool `json:"returnCreative,omitempty"`
 }
 
 // ExtRequestPrebidCacheVAST defines the contract for bidrequest.ext.prebid.cache.vastxml
 type ExtRequestPrebidCacheVAST struct {
-	ReturnCreative *bool `json:"returnCreative"`
+	ReturnCreative *bool `json:"returnCreative,omitempty"`
 }
 
 // ExtRequestTargeting defines the contract for bidrequest.ext.prebid.targeting
 type ExtRequestTargeting struct {
-	PriceGranularity     PriceGranularity         `json:"pricegranularity"`
-	IncludeWinners       bool                     `json:"includewinners"`
-	IncludeBidderKeys    bool                     `json:"includebidderkeys"`
-	IncludeBrandCategory *ExtIncludeBrandCategory `json:"includebrandcategory"`
-	IncludeFormat        bool                     `json:"includeformat"`
-	DurationRangeSec     []int                    `json:"durationrangesec"`
-	PreferDeals          bool                     `json:"preferdeals"`
+	PriceGranularity     *PriceGranularity        `json:"pricegranularity,omitempty"`
+	IncludeWinners       *bool                    `json:"includewinners,omitempty"`
+	IncludeBidderKeys    *bool                    `json:"includebidderkeys,omitempty"`
+	IncludeBrandCategory *ExtIncludeBrandCategory `json:"includebrandcategory,omitempty"`
+	IncludeFormat        bool                     `json:"includeformat,omitempty"`
+	DurationRangeSec     []int                    `json:"durationrangesec,omitempty"`
+	PreferDeals          bool                     `json:"preferdeals,omitempty"`
 	AppendBidderNames    bool                     `json:"appendbiddernames,omitempty"`
 }
 
@@ -157,34 +156,9 @@ type ExtIncludeBrandCategory struct {
 	TranslateCategories *bool  `json:"translatecategories,omitempty"`
 }
 
-// Make an unmarshaller that will set a default PriceGranularity
-func (ert *ExtRequestTargeting) UnmarshalJSON(b []byte) error {
-	if string(b) == "null" {
-		return nil
-	}
-
-	// define separate type to prevent infinite recursive calls to UnmarshalJSON
-	type extRequestTargetingDefaults ExtRequestTargeting
-	defaults := &extRequestTargetingDefaults{
-		PriceGranularity:  priceGranularityMed,
-		IncludeWinners:    true,
-		IncludeBidderKeys: true,
-	}
-
-	err := json.Unmarshal(b, defaults)
-	if err == nil {
-		if !defaults.IncludeWinners && !defaults.IncludeBidderKeys {
-			return errors.New("ext.prebid.targeting: At least one of includewinners or includebidderkeys must be enabled to enable targeting support")
-		}
-		*ert = ExtRequestTargeting(*defaults)
-	}
-
-	return err
-}
-
 // PriceGranularity defines the allowed values for bidrequest.ext.prebid.targeting.pricegranularity
 type PriceGranularity struct {
-	Precision int                `json:"precision,omitempty"`
+	Precision *int               `json:"precision,omitempty"`
 	Ranges    []GranularityRange `json:"ranges,omitempty"`
 }
 
@@ -197,141 +171,109 @@ type GranularityRange struct {
 	Increment float64 `json:"increment"`
 }
 
-// UnmarshalJSON : custom unmarshaller to handle legacy string granularites.
 func (pg *PriceGranularity) UnmarshalJSON(b []byte) error {
-	// We default to medium
-	if len(b) == 0 {
-		*pg = priceGranularityMed
-		return nil
-	}
-	// First check for legacy strings
-	var pgString string
-	err := json.Unmarshal(b, &pgString)
-	if err == nil {
-		*pg = PriceGranularityFromString(pgString)
-		if len(pg.Ranges) > 0 {
-			// Only exit if we matched something, else we try processing as custom granularity
-			// This way we error as expecting the new custom granularity standard.
+	// price granularity used to be a string referencing a predefined value, try to parse
+	// and map the legacy string before falling back to the modern custom model.
+	legacyID := ""
+	if err := json.Unmarshal(b, &legacyID); err == nil {
+		if legacyValue, ok := NewPriceGranularityFromLegacyID(legacyID); ok {
+			*pg = legacyValue
 			return nil
 		}
 	}
-	// Not legacy, so we do a normal Unmarshal
-	pgraw := PriceGranularityRaw{}
-	pgraw.Precision = 2
-	err = json.Unmarshal(b, &pgraw)
-	if err != nil {
-		return err
+
+	// use a type-alias to avoid calling back into this UnmarshalJSON implementation
+	modernValue := PriceGranularityRaw{}
+	err := json.Unmarshal(b, &modernValue)
+	if err == nil {
+		*pg = (PriceGranularity)(modernValue)
 	}
-	if pgraw.Precision < 0 {
-		return errors.New("Price granularity error: precision must be non-negative")
-	}
-	if pgraw.Precision > MaxDecimalFigures {
-		return errors.New("Price granularity error: precision of more than 15 significant figures is not supported")
-	}
-	if len(pgraw.Ranges) > 0 {
-		var prevMax float64 = 0
-		for i, gr := range pgraw.Ranges {
-			if gr.Max <= prevMax {
-				return errors.New("Price granularity error: range list must be ordered with increasing \"max\"")
-			}
-			if gr.Increment <= 0.0 {
-				return errors.New("Price granularity error: increment must be a nonzero positive number")
-			}
-			// Enforce that we don't read "min" from the request
-			pgraw.Ranges[i].Min = prevMax
-			prevMax = gr.Max
-		}
-		*pg = PriceGranularity(pgraw)
-		return nil
-	}
-	// Default to medium if no ranges are specified
-	*pg = priceGranularityMed
-	return nil
+	return err
 }
 
-// PriceGranularityFromString converts a legacy string into the new PriceGranularity
-func PriceGranularityFromString(gran string) PriceGranularity {
-	switch gran {
+func NewPriceGranularityDefault() PriceGranularity {
+	pg, _ := NewPriceGranularityFromLegacyID("medium")
+	return pg
+}
+
+// NewPriceGranularityFromLegacyID converts a legacy string into the new PriceGranularity structure.
+func NewPriceGranularityFromLegacyID(v string) (PriceGranularity, bool) {
+	precision2 := 2
+
+	switch v {
 	case "low":
-		return priceGranularityLow
+		return PriceGranularity{
+			Precision: &precision2,
+			Ranges: []GranularityRange{{
+				Min:       0,
+				Max:       5,
+				Increment: 0.5}},
+		}, true
+
 	case "med", "medium":
-		// Seems that PBS was written with medium = "med", so hacking that in
-		return priceGranularityMed
+		return PriceGranularity{
+			Precision: &precision2,
+			Ranges: []GranularityRange{{
+				Min:       0,
+				Max:       20,
+				Increment: 0.1}},
+		}, true
+
 	case "high":
-		return priceGranularityHigh
+		return PriceGranularity{
+			Precision: &precision2,
+			Ranges: []GranularityRange{{
+				Min:       0,
+				Max:       20,
+				Increment: 0.01}},
+		}, true
+
 	case "auto":
-		return priceGranularityAuto
+		return PriceGranularity{
+			Precision: &precision2,
+			Ranges: []GranularityRange{
+				{
+					Min:       0,
+					Max:       5,
+					Increment: 0.05,
+				},
+				{
+					Min:       5,
+					Max:       10,
+					Increment: 0.1,
+				},
+				{
+					Min:       10,
+					Max:       20,
+					Increment: 0.5,
+				},
+			},
+		}, true
+
 	case "dense":
-		return priceGranularityDense
+		return PriceGranularity{
+			Precision: &precision2,
+			Ranges: []GranularityRange{
+				{
+					Min:       0,
+					Max:       3,
+					Increment: 0.01,
+				},
+				{
+					Min:       3,
+					Max:       8,
+					Increment: 0.05,
+				},
+				{
+					Min:       8,
+					Max:       20,
+					Increment: 0.5,
+				},
+			},
+		}, true
 	}
-	// Return empty if not matched
-	return PriceGranularity{}
-}
 
-var priceGranularityLow = PriceGranularity{
-	Precision: 2,
-	Ranges: []GranularityRange{{
-		Min:       0,
-		Max:       5,
-		Increment: 0.5}},
-}
-
-var priceGranularityMed = PriceGranularity{
-	Precision: 2,
-	Ranges: []GranularityRange{{
-		Min:       0,
-		Max:       20,
-		Increment: 0.1}},
-}
-
-var priceGranularityHigh = PriceGranularity{
-	Precision: 2,
-	Ranges: []GranularityRange{{
-		Min:       0,
-		Max:       20,
-		Increment: 0.01}},
-}
-
-var priceGranularityDense = PriceGranularity{
-	Precision: 2,
-	Ranges: []GranularityRange{
-		{
-			Min:       0,
-			Max:       3,
-			Increment: 0.01,
-		},
-		{
-			Min:       3,
-			Max:       8,
-			Increment: 0.05,
-		},
-		{
-			Min:       8,
-			Max:       20,
-			Increment: 0.5,
-		},
-	},
-}
-
-var priceGranularityAuto = PriceGranularity{
-	Precision: 2,
-	Ranges: []GranularityRange{
-		{
-			Min:       0,
-			Max:       5,
-			Increment: 0.05,
-		},
-		{
-			Min:       5,
-			Max:       10,
-			Increment: 0.1,
-		},
-		{
-			Min:       10,
-			Max:       20,
-			Increment: 0.5,
-		},
-	},
+	return PriceGranularity{}, false
 }
 
 // ExtRequestPrebidData defines Prebid's First Party Data (FPD) and related bid request options.
