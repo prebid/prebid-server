@@ -86,35 +86,13 @@ func (provider *MySqlDbProvider) ConnString() (string, error) {
 		buffer.WriteString(provider.cfg.Database)
 	}
 
-	// TLS connection
-	var tls = "false"
-
-	if provider.cfg.TLS.RootCert != "" {
-		tls = "true"
-
-		if err := setupTLSConfig(provider); err != nil {
-			return "", err
-		}
-
-		if provider.cfg.TLS.ClientCert != "" && provider.cfg.TLS.ClientKey != "" {
-			tls = customTLSKey
-		}
+	queryStr, err := provider.generateQueryString()
+	if err != nil {
+		return "", err
 	}
-
-	if tls != "false" && !strings.Contains(provider.cfg.QueryString, "tls=") {
-		buffer.WriteString("?tls=")
-		buffer.WriteString(tls)
-		// Rest of connection string parameters passed through query_string
-		if provider.cfg.QueryString != "" {
-			buffer.WriteString("&")
-			buffer.WriteString(provider.cfg.QueryString)
-		}
-	}
-
-	// Rest of connection string parameters passed through query_string
-	if provider.cfg.QueryString != "" {
+	if queryStr != "" {
 		buffer.WriteString("?")
-		buffer.WriteString(provider.cfg.QueryString)
+		buffer.WriteString(queryStr)
 	}
 
 	return buffer.String(), nil
@@ -172,6 +150,33 @@ func verifyPeerCertFunc(pool *x509.CertPool) func([][]byte, [][]*x509.Certificat
 		}
 		return nil
 	}
+}
+
+func (provider *MySqlDbProvider) generateQueryString() (string, error) {
+	tls := ""
+
+	if provider.cfg.TLS.RootCert != "" {
+		tls = "true"
+
+		if err := setupTLSConfig(provider); err != nil {
+			return "", err
+		}
+
+		if provider.cfg.TLS.ClientCert != "" && provider.cfg.TLS.ClientKey != "" {
+			tls = customTLSKey
+		}
+	}
+
+	if tls != "" {
+		if len(provider.cfg.QueryString) == 0 {
+			return "tls=" + tls, nil
+		}
+		if !strings.Contains(provider.cfg.QueryString, "tls=") {
+			return "tls=" + tls + "&" + provider.cfg.QueryString, nil
+		}
+	}
+
+	return provider.cfg.QueryString, nil
 }
 
 func (provider *MySqlDbProvider) PrepareQuery(template string, params ...QueryParam) (query string, args []interface{}) {
