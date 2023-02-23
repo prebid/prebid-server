@@ -156,14 +156,10 @@ func (provider *MySqlDbProvider) generateQueryString() (string, error) {
 	tls := ""
 
 	if provider.cfg.TLS.RootCert != "" {
-		tls = "true"
+		tls = customTLSKey
 
 		if err := setupTLSConfig(provider); err != nil {
 			return "", err
-		}
-
-		if provider.cfg.TLS.ClientCert != "" && provider.cfg.TLS.ClientKey != "" {
-			tls = customTLSKey
 		}
 	}
 

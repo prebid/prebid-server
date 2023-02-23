@@ -107,6 +107,19 @@ func TestConnStringPostgres(t *testing.T) {
 				username: "someuser",
 				password: "somepassword",
 				TLS: TLS{
+					RootCert: "root-cert.pem",
+				},
+			},
+			connString: "postgresql://someuser:somepassword@example.com:20/TestDB?sslmode=verify-ca&sslrootcert=root-cert.pem",
+		},
+		{
+			params: Params{
+				db:       "TestDB",
+				host:     "example.com",
+				port:     20,
+				username: "someuser",
+				password: "somepassword",
+				TLS: TLS{
 					RootCert:   "root-cert.pem",
 					ClientCert: "client-cert.pem",
 					ClientKey:  "client-key.pem",
