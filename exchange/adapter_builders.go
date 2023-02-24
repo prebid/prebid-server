@@ -20,6 +20,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/adpone"
 	"github.com/prebid/prebid-server/adapters/adprime"
 	"github.com/prebid/prebid-server/adapters/adrino"
+	"github.com/prebid/prebid-server/adapters/adsinteractive"
 	"github.com/prebid/prebid-server/adapters/adtarget"
 	"github.com/prebid/prebid-server/adapters/adtelligent"
 	"github.com/prebid/prebid-server/adapters/adtrgtme"
@@ -93,9 +94,11 @@ import (
 	"github.com/prebid/prebid-server/adapters/kargo"
 	"github.com/prebid/prebid-server/adapters/kayzen"
 	"github.com/prebid/prebid-server/adapters/kidoz"
+	"github.com/prebid/prebid-server/adapters/kiviads"
 	"github.com/prebid/prebid-server/adapters/krushmedia"
 	"github.com/prebid/prebid-server/adapters/kubient"
 	"github.com/prebid/prebid-server/adapters/lockerdome"
+	"github.com/prebid/prebid-server/adapters/logan"
 	"github.com/prebid/prebid-server/adapters/logicad"
 	"github.com/prebid/prebid-server/adapters/lunamedia"
 	"github.com/prebid/prebid-server/adapters/madvertise"
@@ -150,6 +153,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/videobyte"
 	"github.com/prebid/prebid-server/adapters/videoheroes"
 	"github.com/prebid/prebid-server/adapters/vidoomy"
+	"github.com/prebid/prebid-server/adapters/visiblemeasures"
 	"github.com/prebid/prebid-server/adapters/visx"
 	"github.com/prebid/prebid-server/adapters/vrtcal"
 	"github.com/prebid/prebid-server/adapters/yahoossp"
@@ -185,6 +189,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAdpone:            adpone.Builder,
 		openrtb_ext.BidderAdprime:           adprime.Builder,
 		openrtb_ext.BidderAdrino:            adrino.Builder,
+		openrtb_ext.BidderAdsinteractive:    adsinteractive.Builder,
 		openrtb_ext.BidderAdtarget:          adtarget.Builder,
 		openrtb_ext.BidderAdtrgtme:          adtrgtme.Builder,
 		openrtb_ext.BidderAdtelligent:       adtelligent.Builder,
@@ -261,9 +266,11 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderKargo:             kargo.Builder,
 		openrtb_ext.BidderKayzen:            kayzen.Builder,
 		openrtb_ext.BidderKidoz:             kidoz.Builder,
+		openrtb_ext.BidderKiviads:           kiviads.Builder,
 		openrtb_ext.BidderKrushmedia:        krushmedia.Builder,
 		openrtb_ext.BidderKubient:           kubient.Builder,
 		openrtb_ext.BidderLockerDome:        lockerdome.Builder,
+		openrtb_ext.BidderLogan:             logan.Builder,
 		openrtb_ext.BidderLogicad:           logicad.Builder,
 		openrtb_ext.BidderLunaMedia:         lunamedia.Builder,
 		openrtb_ext.BidderMadvertise:        madvertise.Builder,
@@ -328,6 +335,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderVideoHeroes:       videoheroes.Builder,
 		openrtb_ext.BidderVidoomy:           vidoomy.Builder,
 		openrtb_ext.BidderViewdeos:          adtelligent.Builder,
+		openrtb_ext.BidderVisibleMeasures:   visiblemeasures.Builder,
 		openrtb_ext.BidderVisx:              visx.Builder,
 		openrtb_ext.BidderVrtcal:            vrtcal.Builder,
 		openrtb_ext.BidderYahooSSP:          yahoossp.Builder,

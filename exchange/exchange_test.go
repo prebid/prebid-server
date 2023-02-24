@@ -24,6 +24,7 @@ import (
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/hooks/hookstage"
+	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
@@ -340,7 +341,11 @@ func TestDebugBehaviour(t *testing.T) {
 	}.Builder
 	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	e.categoriesFetcher = categoriesFetcher
-
+	e.requestSplitter = requestSplitter{
+		me:                &metricsConf.NilMetricsEngine{},
+		gdprPermsBuilder:  e.gdprPermsBuilder,
+		tcf2ConfigBuilder: e.tcf2ConfigBuilder,
+	}
 	ctx := context.Background()
 
 	// Run tests
@@ -505,6 +510,11 @@ func TestTwoBiddersDebugDisabledAndEnabled(t *testing.T) {
 	}.Builder
 	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	e.categoriesFetcher = categoriesFetcher
+	e.requestSplitter = requestSplitter{
+		me:                e.me,
+		gdprPermsBuilder:  e.gdprPermsBuilder,
+		tcf2ConfigBuilder: e.tcf2ConfigBuilder,
+	}
 
 	debugLog := DebugLog{Enabled: true}
 
@@ -668,6 +678,11 @@ func TestOverrideWithCustomCurrency(t *testing.T) {
 	e.currencyConverter = mockCurrencyConverter
 	e.categoriesFetcher = categoriesFetcher
 	e.bidIDGenerator = &mockBidIDGenerator{false, false}
+	e.requestSplitter = requestSplitter{
+		me:                e.me,
+		gdprPermsBuilder:  e.gdprPermsBuilder,
+		tcf2ConfigBuilder: e.tcf2ConfigBuilder,
+	}
 
 	// Define mock incoming bid requeset
 	mockBidRequest := &openrtb2.BidRequest{
@@ -773,6 +788,11 @@ func TestAdapterCurrency(t *testing.T) {
 		adapterMap: map[openrtb_ext.BidderName]AdaptedBidder{
 			openrtb_ext.BidderName("foo"): AdaptBidder(mockBidder, nil, &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderName("foo"), nil, ""),
 		},
+	}
+	e.requestSplitter = requestSplitter{
+		me:                e.me,
+		gdprPermsBuilder:  e.gdprPermsBuilder,
+		tcf2ConfigBuilder: e.tcf2ConfigBuilder,
 	}
 
 	// Define Bid Request
@@ -1154,6 +1174,11 @@ func TestReturnCreativeEndToEnd(t *testing.T) {
 	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	e.categoriesFetcher = categoriesFetcher
 	e.bidIDGenerator = &mockBidIDGenerator{false, false}
+	e.requestSplitter = requestSplitter{
+		me:                e.me,
+		gdprPermsBuilder:  e.gdprPermsBuilder,
+		tcf2ConfigBuilder: e.tcf2ConfigBuilder,
+	}
 
 	// Define mock incoming bid requeset
 	mockBidRequest := &openrtb2.BidRequest{
@@ -2118,7 +2143,7 @@ func TestExchangeJSON(t *testing.T) {
 			t.Run(fileDisplayName, func(t *testing.T) {
 				specData, err := loadFile(fileName)
 				if assert.NoError(t, err, "Failed to load contents of file %s: %v", fileDisplayName, err) {
-					runSpec(t, fileDisplayName, specData)
+					assert.NotPanics(t, func() { runSpec(t, fileDisplayName, specData) }, fileDisplayName)
 				}
 			})
 		}
@@ -2422,9 +2447,20 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		hostSChainNode = nil
 	}
 
+	metricsEngine := metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.CoreBidderNames(), nil, nil)
+	requestSplitter := requestSplitter{
+		bidderToSyncerKey: bidderToSyncerKey,
+		me:                metricsEngine,
+		privacyConfig:     privacyConfig,
+		gdprPermsBuilder:  gdprPermsBuilder,
+		tcf2ConfigBuilder: tcf2ConfigBuilder,
+		hostSChainNode:    hostSChainNode,
+		bidderInfo:        bidderInfos,
+	}
+
 	return &exchange{
 		adapterMap:               bidderAdapters,
-		me:                       metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.CoreBidderNames(), nil, nil),
+		me:                       metricsEngine,
 		cache:                    &wellBehavedCache{},
 		cacheTime:                0,
 		currencyConverter:        currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
@@ -2440,6 +2476,7 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		hostSChainNode:           hostSChainNode,
 		server:                   config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "Datacenter"},
 		bidValidationEnforcement: hostBidValidation,
+		requestSplitter:          requestSplitter,
 	}
 }
 
@@ -2472,7 +2509,7 @@ func (m *fakeRandomDeduplicateBidBooleanGenerator) Generate() bool {
 
 func newExtRequest() openrtb_ext.ExtRequest {
 	priceGran := openrtb_ext.PriceGranularity{
-		Precision: 2,
+		Precision: ptrutil.ToPtr(2),
 		Ranges: []openrtb_ext.GranularityRange{
 			{
 				Min:       0.0,
@@ -2486,8 +2523,8 @@ func newExtRequest() openrtb_ext.ExtRequest {
 	brandCat := openrtb_ext.ExtIncludeBrandCategory{PrimaryAdServer: 1, WithCategory: true, TranslateCategories: &translateCategories}
 
 	reqExt := openrtb_ext.ExtRequestTargeting{
-		PriceGranularity:     priceGran,
-		IncludeWinners:       true,
+		PriceGranularity:     &priceGran,
+		IncludeWinners:       ptrutil.ToPtr(true),
 		IncludeBrandCategory: &brandCat,
 	}
 
@@ -2500,7 +2537,7 @@ func newExtRequest() openrtb_ext.ExtRequest {
 
 func newExtRequestNoBrandCat() openrtb_ext.ExtRequest {
 	priceGran := openrtb_ext.PriceGranularity{
-		Precision: 2,
+		Precision: ptrutil.ToPtr(2),
 		Ranges: []openrtb_ext.GranularityRange{
 			{
 				Min:       0.0,
@@ -2513,8 +2550,8 @@ func newExtRequestNoBrandCat() openrtb_ext.ExtRequest {
 	brandCat := openrtb_ext.ExtIncludeBrandCategory{WithCategory: false}
 
 	reqExt := openrtb_ext.ExtRequestTargeting{
-		PriceGranularity:     priceGran,
-		IncludeWinners:       true,
+		PriceGranularity:     &priceGran,
+		IncludeWinners:       ptrutil.ToPtr(true),
 		IncludeBrandCategory: &brandCat,
 	}
 
@@ -2535,7 +2572,7 @@ func TestCategoryMapping(t *testing.T) {
 	requestExt := newExtRequest()
 
 	targData := &targetData{
-		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
+		priceGranularity: *requestExt.Prebid.Targeting.PriceGranularity,
 		includeWinners:   true,
 	}
 
@@ -2591,7 +2628,7 @@ func TestCategoryMappingNoIncludeBrandCategory(t *testing.T) {
 	requestExt := newExtRequestNoBrandCat()
 
 	targData := &targetData{
-		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
+		priceGranularity: *requestExt.Prebid.Targeting.PriceGranularity,
 		includeWinners:   true,
 	}
 	requestExt.Prebid.Targeting.DurationRangeSec = []int{15, 30, 40, 50}
@@ -2646,7 +2683,7 @@ func TestCategoryMappingTranslateCategoriesNil(t *testing.T) {
 	requestExt := newExtRequestTranslateCategories(nil)
 
 	targData := &targetData{
-		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
+		priceGranularity: *requestExt.Prebid.Targeting.PriceGranularity,
 		includeWinners:   true,
 	}
 
@@ -2689,7 +2726,7 @@ func TestCategoryMappingTranslateCategoriesNil(t *testing.T) {
 
 func newExtRequestTranslateCategories(translateCategories *bool) openrtb_ext.ExtRequest {
 	priceGran := openrtb_ext.PriceGranularity{
-		Precision: 2,
+		Precision: ptrutil.ToPtr(2),
 		Ranges: []openrtb_ext.GranularityRange{
 			{
 				Min:       0.0,
@@ -2705,8 +2742,8 @@ func newExtRequestTranslateCategories(translateCategories *bool) openrtb_ext.Ext
 	}
 
 	reqExt := openrtb_ext.ExtRequestTargeting{
-		PriceGranularity:     priceGran,
-		IncludeWinners:       true,
+		PriceGranularity:     &priceGran,
+		IncludeWinners:       ptrutil.ToPtr(true),
 		IncludeBrandCategory: &brandCat,
 	}
 
@@ -2728,7 +2765,7 @@ func TestCategoryMappingTranslateCategoriesFalse(t *testing.T) {
 	requestExt := newExtRequestTranslateCategories(&translateCategories)
 
 	targData := &targetData{
-		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
+		priceGranularity: *requestExt.Prebid.Targeting.PriceGranularity,
 		includeWinners:   true,
 	}
 
@@ -2779,7 +2816,7 @@ func TestCategoryDedupe(t *testing.T) {
 	requestExt := newExtRequest()
 
 	targData := &targetData{
-		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
+		priceGranularity: *requestExt.Prebid.Targeting.PriceGranularity,
 		includeWinners:   true,
 	}
 
@@ -2859,7 +2896,7 @@ func TestNoCategoryDedupe(t *testing.T) {
 	requestExt := newExtRequestNoBrandCat()
 
 	targData := &targetData{
-		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
+		priceGranularity: *requestExt.Prebid.Targeting.PriceGranularity,
 		includeWinners:   true,
 	}
 
@@ -2941,7 +2978,7 @@ func TestCategoryMappingBidderName(t *testing.T) {
 	requestExt.Prebid.Targeting.AppendBidderNames = true
 
 	targData := &targetData{
-		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
+		priceGranularity: *requestExt.Prebid.Targeting.PriceGranularity,
 		includeWinners:   true,
 	}
 
@@ -2995,7 +3032,7 @@ func TestCategoryMappingBidderNameNoCategories(t *testing.T) {
 	requestExt.Prebid.Targeting.AppendBidderNames = true
 
 	targData := &targetData{
-		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
+		priceGranularity: *requestExt.Prebid.Targeting.PriceGranularity,
 		includeWinners:   true,
 	}
 
@@ -3048,7 +3085,7 @@ func TestBidRejectionErrors(t *testing.T) {
 	requestExt.Prebid.Targeting.DurationRangeSec = []int{15, 30, 50}
 
 	targData := &targetData{
-		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
+		priceGranularity: *requestExt.Prebid.Targeting.PriceGranularity,
 		includeWinners:   true,
 	}
 
@@ -3155,7 +3192,7 @@ func TestCategoryMappingTwoBiddersOneBidEachNoCategorySamePrice(t *testing.T) {
 	requestExt := newExtRequestTranslateCategories(nil)
 
 	targData := &targetData{
-		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
+		priceGranularity: *requestExt.Prebid.Targeting.PriceGranularity,
 		includeWinners:   true,
 	}
 
@@ -3232,7 +3269,7 @@ func TestCategoryMappingTwoBiddersManyBidsEachNoCategorySamePrice(t *testing.T) 
 	requestExt := newExtRequestTranslateCategories(nil)
 
 	targData := &targetData{
-		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
+		priceGranularity: *requestExt.Prebid.Targeting.PriceGranularity,
 		includeWinners:   true,
 	}
 
@@ -4120,6 +4157,11 @@ func TestAuctionDebugEnabled(t *testing.T) {
 	e.tcf2ConfigBuilder = fakeTCF2ConfigBuilder{
 		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 	}.Builder
+	e.requestSplitter = requestSplitter{
+		me:                e.me,
+		gdprPermsBuilder:  e.gdprPermsBuilder,
+		tcf2ConfigBuilder: e.tcf2ConfigBuilder,
+	}
 
 	ctx := context.Background()
 
@@ -4632,6 +4674,11 @@ func TestOverrideConfigAlternateBidderCodesWithRequestValues(t *testing.T) {
 	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	e.categoriesFetcher = categoriesFetcher
 	e.bidIDGenerator = &mockBidIDGenerator{false, false}
+	e.requestSplitter = requestSplitter{
+		me:                e.me,
+		gdprPermsBuilder:  e.gdprPermsBuilder,
+		tcf2ConfigBuilder: e.tcf2ConfigBuilder,
+	}
 
 	// Define mock incoming bid requeset
 	mockBidRequest := &openrtb2.BidRequest{
@@ -5035,6 +5082,11 @@ func TestModulesCanBeExecutedForMultipleBiddersSimultaneously(t *testing.T) {
 		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 	}.Builder
 	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	e.requestSplitter = requestSplitter{
+		me:                e.me,
+		gdprPermsBuilder:  e.gdprPermsBuilder,
+		tcf2ConfigBuilder: e.tcf2ConfigBuilder,
+	}
 
 	bidRequest := &openrtb2.BidRequest{
 		ID: "some-request-id",
