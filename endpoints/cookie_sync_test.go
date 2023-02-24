@@ -21,6 +21,7 @@ import (
 	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/privacy/ccpa"
 	gdprPrivacy "github.com/prebid/prebid-server/privacy/gdpr"
+	gppPrivacy "github.com/prebid/prebid-server/privacy/gpp"
 	"github.com/prebid/prebid-server/usersync"
 
 	"github.com/stretchr/testify/assert"
@@ -324,6 +325,8 @@ func TestCookieSyncParseRequest(t *testing.T) {
 				`"gdpr":1,` +
 				`"gdpr_consent":"anyGDPRConsent",` +
 				`"us_privacy":"1NYN",` +
+				`"gpp":"anyGPPString",` +
+				`"gpp_sid":"2",` +
 				`"limit":42,` +
 				`"coopSync":true,` +
 				`"filterSettings":{"iframe":{"bidders":"*","filter":"include"}, "image":{"bidders":["b"],"filter":"exclude"}}` +
@@ -343,6 +346,10 @@ func TestCookieSyncParseRequest(t *testing.T) {
 				},
 				CCPA: ccpa.Policy{
 					Consent: "1NYN",
+				},
+				GPP: gppPrivacy.Policy{
+					Consent: "anyGPPString",
+					RawSID:  "2",
 				},
 			},
 			expectedRequest: usersync.Request{

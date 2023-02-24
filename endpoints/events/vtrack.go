@@ -15,6 +15,7 @@ import (
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/stored_requests"
 )
@@ -27,10 +28,11 @@ const (
 )
 
 type vtrackEndpoint struct {
-	Cfg         *config.Configuration
-	Accounts    stored_requests.AccountFetcher
-	BidderInfos config.BidderInfos
-	Cache       prebid_cache_client.Client
+	Cfg           *config.Configuration
+	Accounts      stored_requests.AccountFetcher
+	BidderInfos   config.BidderInfos
+	Cache         prebid_cache_client.Client
+	MetricsEngine metrics.MetricsEngine
 }
 
 type BidCacheRequest struct {
@@ -45,12 +47,13 @@ type CacheObject struct {
 	UUID string `json:"uuid"`
 }
 
-func NewVTrackEndpoint(cfg *config.Configuration, accounts stored_requests.AccountFetcher, cache prebid_cache_client.Client, bidderInfos config.BidderInfos) httprouter.Handle {
+func NewVTrackEndpoint(cfg *config.Configuration, accounts stored_requests.AccountFetcher, cache prebid_cache_client.Client, bidderInfos config.BidderInfos, me metrics.MetricsEngine) httprouter.Handle {
 	vte := &vtrackEndpoint{
-		Cfg:         cfg,
-		Accounts:    accounts,
-		BidderInfos: bidderInfos,
-		Cache:       cache,
+		Cfg:           cfg,
+		Accounts:      accounts,
+		BidderInfos:   bidderInfos,
+		Cache:         cache,
+		MetricsEngine: me,
 	}
 
 	return vte.Handle
@@ -91,7 +94,7 @@ func (v *vtrackEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httpro
 	defer cancel()
 
 	// get account details
-	account, errs := accountService.GetAccount(ctx, v.Cfg, v.Accounts, accountId)
+	account, errs := accountService.GetAccount(ctx, v.Cfg, v.Accounts, accountId, v.MetricsEngine)
 	if len(errs) > 0 {
 		status, messages := HandleAccountServiceErrors(errs)
 		w.WriteHeader(status)

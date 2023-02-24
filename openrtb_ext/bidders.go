@@ -105,6 +105,7 @@ const (
 	BidderAdpone            BidderName = "adpone"
 	BidderAdprime           BidderName = "adprime"
 	BidderAdrino            BidderName = "adrino"
+	BidderAdsinteractive    BidderName = "adsinteractive"
 	BidderAdtarget          BidderName = "adtarget"
 	BidderAdtrgtme          BidderName = "adtrgtme"
 	BidderAdtelligent       BidderName = "adtelligent"
@@ -181,9 +182,11 @@ const (
 	BidderKargo             BidderName = "kargo"
 	BidderKayzen            BidderName = "kayzen"
 	BidderKidoz             BidderName = "kidoz"
+	BidderKiviads           BidderName = "kiviads"
 	BidderKrushmedia        BidderName = "krushmedia"
 	BidderKubient           BidderName = "kubient"
 	BidderLockerDome        BidderName = "lockerdome"
+	BidderLogan             BidderName = "logan"
 	BidderLogicad           BidderName = "logicad"
 	BidderLunaMedia         BidderName = "lunamedia"
 	BidderMadvertise        BidderName = "madvertise"
@@ -248,6 +251,7 @@ const (
 	BidderVideoHeroes       BidderName = "videoheroes"
 	BidderVidoomy           BidderName = "vidoomy"
 	BidderViewdeos          BidderName = "viewdeos"
+	BidderVisibleMeasures   BidderName = "visiblemeasures"
 	BidderVisx              BidderName = "visx"
 	BidderVrtcal            BidderName = "vrtcal"
 	BidderYahooSSP          BidderName = "yahoossp"
@@ -280,6 +284,7 @@ func CoreBidderNames() []BidderName {
 		BidderAdpone,
 		BidderAdprime,
 		BidderAdrino,
+		BidderAdsinteractive,
 		BidderAdtarget,
 		BidderAdtrgtme,
 		BidderAdtelligent,
@@ -356,9 +361,11 @@ func CoreBidderNames() []BidderName {
 		BidderKargo,
 		BidderKayzen,
 		BidderKidoz,
+		BidderKiviads,
 		BidderKrushmedia,
 		BidderKubient,
 		BidderLockerDome,
+		BidderLogan,
 		BidderLogicad,
 		BidderLunaMedia,
 		BidderMadvertise,
@@ -423,6 +430,7 @@ func CoreBidderNames() []BidderName {
 		BidderVideoHeroes,
 		BidderVidoomy,
 		BidderViewdeos,
+		BidderVisibleMeasures,
 		BidderVisx,
 		BidderVrtcal,
 		BidderYahooSSP,
