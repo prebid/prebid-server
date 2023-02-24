@@ -67,9 +67,9 @@ type PriceFloorEnforcement struct {
 }
 
 type ImpFloorExt struct {
-	FloorRule      string  `json:"floorRule,omitempty"`
-	FloorRuleValue float64 `json:"floorRuleValue,omitempty"`
-	FloorValue     float64 `json:"floorValue,omitempty"`
+	FloorRule      string  `json:"floorrule,omitempty"`
+	FloorRuleValue float64 `json:"floorrulevalue,omitempty"`
+	FloorValue     float64 `json:"floorvalue,omitempty"`
 }
 type Price struct {
 	FloorMin    float64 `json:"floormin,omitempty"`

@@ -73,7 +73,7 @@ func getMinFloorValue(floorExt *openrtb_ext.PriceFloorRules, imp openrtb2.Imp, c
 			floorMinCur = floorCurValue
 		}
 	}
-	if floorMin > float64(0) && floorMinCur != "" {
+	if floorMin > 0.0 && floorMinCur != "" {
 		if floorExt.FloorMinCur != "" && floorCurValue != "" && floorExt.FloorMinCur != floorCurValue {
 			glog.Warning("FloorMinCur are different in floorExt and ImpExt")
 		}
@@ -203,9 +203,9 @@ func createRuleKey(floorSchema openrtb_ext.PriceFloorSchema, request *openrtb2.B
 		case DeviceType:
 			value = getDeviceType(request)
 		case Channel:
-			value = extractChanelNameFromBidRequestExt(request)
+			value = extractChannelNameFromBidRequestExt(request)
 		case GptSlot:
-			value = getgptslot(imp)
+			value = getGptSlot(imp)
 		case AdUnitCode:
 			value = getAdUnitCode(imp)
 		}
@@ -346,7 +346,7 @@ func getBundle(request *openrtb2.BidRequest) string {
 	return value
 }
 
-func getgptslot(imp openrtb2.Imp) string {
+func getGptSlot(imp openrtb2.Imp) string {
 	value := catchAll
 	adsname, err := jsonparser.GetString(imp.Ext, "data", "adserver", "name")
 	if err == nil && adsname == "gam" {
@@ -355,12 +355,12 @@ func getgptslot(imp openrtb2.Imp) string {
 			value = gptSlot
 		}
 	} else {
-		value = getpbadslot(imp)
+		value = getPbAdslot(imp)
 	}
 	return value
 }
 
-func extractChanelNameFromBidRequestExt(bidRequest *openrtb2.BidRequest) string {
+func extractChannelNameFromBidRequestExt(bidRequest *openrtb2.BidRequest) string {
 	requestExt := &openrtb_ext.ExtRequest{}
 	if bidRequest == nil {
 		return catchAll
@@ -379,7 +379,7 @@ func extractChanelNameFromBidRequestExt(bidRequest *openrtb2.BidRequest) string 
 	return catchAll
 }
 
-func getpbadslot(imp openrtb2.Imp) string {
+func getPbAdslot(imp openrtb2.Imp) string {
 	value := catchAll
 	pbAdSlot, err := jsonparser.GetString(imp.Ext, "data", "pbadslot")
 	if err == nil {
@@ -404,9 +404,9 @@ func getAdUnitCode(imp openrtb2.Imp) string {
 		return pbAdSlot
 	}
 
-	storedrequestID, err := jsonparser.GetString(imp.Ext, "prebid", "storedrequest", "id")
-	if err == nil && storedrequestID != "" {
-		return storedrequestID
+	storedRequestId, err := jsonparser.GetString(imp.Ext, "prebid", "storedrequest", "id")
+	if err == nil && storedRequestId != "" {
+		return storedRequestId
 	}
 	return adUnitCode
 }
@@ -431,7 +431,7 @@ func isTabletDevice(userAgent string) bool {
 func prepareRuleCombinations(keys []string, numSchemaFields int, delimiter string) []string {
 	var subset []string
 	var comb []int
-	var desiredkeys [][]string
+	var desiredKeys [][]string
 	var ruleKeys []string
 
 	segNum := 1 << numSchemaFields
@@ -439,28 +439,28 @@ func prepareRuleCombinations(keys []string, numSchemaFields int, delimiter strin
 		subset = append(subset, strings.ToLower(keys[i]))
 		comb = append(comb, i)
 	}
-	desiredkeys = append(desiredkeys, subset)
+	desiredKeys = append(desiredKeys, subset)
 	for numWildCard := 1; numWildCard <= numSchemaFields; numWildCard++ {
 		newComb := generateCombinations(comb, numWildCard, segNum)
 		for i := 0; i < len(newComb); i++ {
-			eachSet := make([]string, len(desiredkeys[0]))
-			_ = copy(eachSet, desiredkeys[0])
+			eachSet := make([]string, len(desiredKeys[0]))
+			copy(eachSet, desiredKeys[0])
 			for j := 0; j < len(newComb[i]); j++ {
 				eachSet[newComb[i][j]] = catchAll
 			}
-			desiredkeys = append(desiredkeys, eachSet)
+			desiredKeys = append(desiredKeys, eachSet)
 		}
 	}
-	ruleKeys = prepareRuleKeys(desiredkeys, delimiter)
+	ruleKeys = prepareRuleKeys(desiredKeys, delimiter)
 	return ruleKeys
 }
 
-func prepareRuleKeys(desiredkeys [][]string, delimiter string) []string {
+func prepareRuleKeys(desiredKeys [][]string, delimiter string) []string {
 	var ruleKeys []string
-	for i := 0; i < len(desiredkeys); i++ {
-		subset := desiredkeys[i][0]
-		for j := 1; j < len(desiredkeys[i]); j++ {
-			subset += delimiter + desiredkeys[i][j]
+	for i := 0; i < len(desiredKeys); i++ {
+		subset := desiredKeys[i][0]
+		for j := 1; j < len(desiredKeys[i]); j++ {
+			subset += delimiter + desiredKeys[i][j]
 		}
 		ruleKeys = append(ruleKeys, subset)
 	}

@@ -832,6 +832,92 @@ func TestAdapterCurrency(t *testing.T) {
 	}
 }
 
+func TestFloorsSignalling(t *testing.T) {
+
+	fakeCurrencyClient := &fakeCurrencyRatesHttpClient{
+		responseBody: `{"dataAsOf":"2018-09-12","conversions":{"USD":{"MXN":10.00}}}`,
+	}
+	currencyConverter := currency.NewRateConverter(
+		fakeCurrencyClient,
+		"currency.com",
+		24*time.Hour,
+	)
+	currencyConverter.Run()
+
+	// Initialize Real Exchange
+	e := exchange{
+		cache: &wellBehavedCache{},
+		me:    &metricsConf.NilMetricsEngine{},
+		gdprPermsBuilder: fakePermissionsBuilder{
+			permissions: &permissionsMock{
+				allowAllBidders: true,
+			},
+		}.Builder,
+		tcf2ConfigBuilder: fakeTCF2ConfigBuilder{
+			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
+		}.Builder,
+		currencyConverter: currencyConverter,
+		categoriesFetcher: nilCategoryFetcher{},
+		bidIDGenerator:    &mockBidIDGenerator{false, false},
+		floor:             config.PriceFloors{Enabled: true},
+	}
+	e.requestSplitter = requestSplitter{
+		me:                e.me,
+		gdprPermsBuilder:  e.gdprPermsBuilder,
+		tcf2ConfigBuilder: e.tcf2ConfigBuilder,
+	}
+
+	type testResults struct {
+		bidFloor    float64
+		bidFloorCur string
+		err         error
+	}
+
+	testCases := []struct {
+		desc     string
+		in       *openrtb_ext.RequestWrapper
+		expected testResults
+	}{
+		{
+			desc: "valid request.ext.prebid.floor, expect valid bidfloor",
+			in: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				ID: "some-request-id",
+				Imp: []openrtb2.Imp{{
+					ID:     "some-impression-id",
+					Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}},
+					Ext:    json.RawMessage(`{"prebid":{}}`),
+				}},
+				Site: &openrtb2.Site{
+					Page:   "prebid.org",
+					Ext:    json.RawMessage(`{"amp":0}`),
+					Domain: "www.website.com",
+				},
+				Cur: []string{"USD"},
+				Ext: json.RawMessage(`{"prebid":{"floors":{"floormin":1,"floormincur":"USD","data":{"currency":"USD","modelgroups":[{"modelversion":"model 1 from req","values":{"banner|300x250|www.website.com":10,"*|*|www.test.com":15,"*|*|*":20},"Default":50,"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"}}]},"enabled":true}}}`),
+			}},
+			expected: testResults{
+				bidFloor:    10.00,
+				bidFloorCur: "USD",
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		auctionRequest := AuctionRequest{
+			BidRequestWrapper: test.in,
+			Account:           config.Account{PriceFloors: config.AccountPriceFloors{Enabled: true}},
+			UserSyncs:         &emptyUsersync{},
+			HookExecutor:      &hookexecution.EmptyHookExecutor{},
+		}
+		_, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{})
+
+		// Assertions
+		assert.Equal(t, test.expected.err, err, "Error")
+		assert.Equal(t, test.expected.bidFloor, auctionRequest.BidRequestWrapper.Imp[0].BidFloor, "Floor Value")
+		assert.Equal(t, test.expected.bidFloorCur, auctionRequest.BidRequestWrapper.Imp[0].BidFloorCur, "Floor Currency")
+	}
+
+}
 func TestGetAuctionCurrencyRates(t *testing.T) {
 
 	pbsRates := map[string]map[string]float64{

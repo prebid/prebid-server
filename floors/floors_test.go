@@ -2,13 +2,14 @@ package floors
 
 import (
 	"encoding/json"
-	"reflect"
+	"errors"
 	"testing"
 
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestIsRequestEnabledWithFloor(t *testing.T) {
@@ -39,9 +40,7 @@ func TestIsRequestEnabledWithFloor(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			out := tc.in.Prebid.Floors.GetEnabled()
-			if !reflect.DeepEqual(out, tc.out) {
-				t.Errorf("error: \nreturn:\t%v\nwant:\t%v", out, tc.out)
-			}
+			assert.Equal(t, out, tc.out, tc.name)
 		})
 	}
 }
@@ -416,38 +415,56 @@ func TestEnrichWithPriceFloors(t *testing.T) {
 			expFloorCur:    "USD",
 			expPriceFlrLoc: openrtb_ext.RequestLocation,
 		},
+		{
+			name:              "Empty RequestWrapper ",
+			bidRequestWrapper: nil,
+			account: config.Account{
+				PriceFloors: config.AccountPriceFloors{
+					Enabled: true,
+				},
+			},
+			err: "Empty bidrequest",
+		},
+		{
+			name: "Invalid Floor Min Currency",
+			bidRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Site: &openrtb2.Site{
+						Publisher: &openrtb2.Publisher{Domain: "www.website.com"},
+					},
+					Imp: []openrtb2.Imp{{ID: "1234", Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}}}},
+					Ext: json.RawMessage(`{"prebid":{"floors":{"floormin":80,"floormincur":"ABCD","data":{"currency":"USD","modelgroups":[{"modelversion":"model 1 from req","currency":"USD","values":{"banner|300x250|www.website.com":1,"*|*|www.test.com":15,"*|*|*":7},"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"}}]},"enabled":true,"enforcement":{"enforcepbs":true,"floordeals":true,"enforcerate":100}}}}`),
+				},
+			},
+			account: config.Account{
+				PriceFloors: config.AccountPriceFloors{
+					Enabled: true,
+				},
+			},
+			err:            "Error in getting FloorMin value : 'currency: tag is not well-formed'",
+			expPriceFlrLoc: openrtb_ext.RequestLocation,
+		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+
 			ErrList := EnrichWithPriceFloors(tc.bidRequestWrapper, tc.account, getCurrencyRates(rates))
-			if !reflect.DeepEqual(tc.bidRequestWrapper.Imp[0].BidFloor, tc.expFloorVal) {
-				t.Errorf("Floor Value error: \nreturn:\t%v\nwant:\t%v", tc.bidRequestWrapper.Imp[0].BidFloor, tc.expFloorVal)
-			}
-			if !reflect.DeepEqual(tc.bidRequestWrapper.Imp[0].BidFloorCur, tc.expFloorCur) {
-				t.Errorf("Floor Currency error: \nreturn:\t%v\nwant:\t%v", tc.bidRequestWrapper.Imp[0].BidFloorCur, tc.expFloorCur)
-			}
-
-			if len(ErrList) > 0 && !reflect.DeepEqual(ErrList[0].Error(), tc.err) {
-				t.Errorf("Incorrect Error: \nreturn:\t%v\nwant:\t%v", ErrList[0].Error(), tc.err)
-			}
-			requestExt, err := tc.bidRequestWrapper.GetRequestExt()
-			if tc.Skipped {
+			if tc.bidRequestWrapper != nil {
+				assert.Equal(t, tc.bidRequestWrapper.Imp[0].BidFloor, tc.expFloorVal, tc.name)
+				assert.Equal(t, tc.bidRequestWrapper.Imp[0].BidFloorCur, tc.expFloorCur, tc.name)
+				requestExt, err := tc.bidRequestWrapper.GetRequestExt()
 				if err == nil {
-					prebidExt := requestExt.GetPrebid()
-					if !reflect.DeepEqual(*prebidExt.Floors.Skipped, tc.Skipped) {
-						t.Errorf("Floor Skipped error: \nreturn:\t%v\nwant:\t%v", *prebidExt.Floors.Skipped, tc.Skipped)
-					}
-				}
-			} else {
-				if err == nil {
-					prebidExt := requestExt.GetPrebid()
-					if prebidExt != nil && prebidExt.Floors != nil && !reflect.DeepEqual(prebidExt.Floors.PriceFloorLocation, tc.expPriceFlrLoc) {
-						t.Errorf("Floor Skipped error: \nreturn:\t%v\nwant:\t%v", prebidExt.Floors.PriceFloorLocation, tc.expPriceFlrLoc)
+					if tc.Skipped {
+						assert.Equal(t, *requestExt.GetPrebid().Floors.Skipped, tc.Skipped, tc.name)
+					} else {
+						assert.Equal(t, requestExt.GetPrebid().Floors.PriceFloorLocation, tc.expPriceFlrLoc, tc.name)
 					}
 				}
 			}
-
+			if len(ErrList) > 0 {
+				assert.Equal(t, ErrList[0].Error(), tc.err, tc.name)
+			}
 		})
 	}
 }
@@ -603,13 +620,8 @@ func TestResolveFloorMin(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			price := resolveFloorMin(&tc.reqFloors, tc.fetchFloors, getCurrencyRates(rates))
-			if !reflect.DeepEqual(price.FloorMin, tc.expPrice.FloorMin) {
-				t.Errorf("Floor Value error: \nreturn:\t%v\nwant:\t%v", price.FloorMin, tc.expPrice.FloorMin)
-			}
-			if !reflect.DeepEqual(price.FloorMinCur, tc.expPrice.FloorMinCur) {
-				t.Errorf("Floor Currency error: \nreturn:\t%v\nwant:\t%v", price.FloorMinCur, tc.expPrice.FloorMinCur)
-			}
-
+			assert.Equal(t, price.FloorMin, tc.expPrice.FloorMin, tc.name)
+			assert.Equal(t, price.FloorMinCur, tc.expPrice.FloorMinCur, tc.name)
 		})
 	}
 }
@@ -667,9 +679,7 @@ func TestResolveFloors(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			resolvedFloors, _ := resolveFloors(tc.account, tc.bidRequestWrapper, getCurrencyRates(rates))
-			if !reflect.DeepEqual(resolvedFloors, tc.expFloors) {
-				t.Errorf("resolveFloors  error: \nreturn:\t%v\nwant:\t%v", printFloors(resolvedFloors), printFloors(tc.expFloors))
-			}
+			assert.Equal(t, resolvedFloors, tc.expFloors, tc.name)
 		})
 	}
 }
@@ -695,11 +705,9 @@ func Test_createFloorsFrom(t *testing.T) {
 			name: "floor provider should be selected from floor json",
 			args: args{
 				floors: &openrtb_ext.PriceFloorRules{
-					Enabled:            getTrue(),
-					FloorMin:           10.11,
-					FloorMinCur:        "EUR",
-					FetchStatus:        openrtb_ext.FetchSuccess,
-					PriceFloorLocation: openrtb_ext.FetchLocation,
+					Enabled:     getTrue(),
+					FloorMin:    10.11,
+					FloorMinCur: "EUR",
 					Enforcement: &openrtb_ext.PriceFloorEnforcement{
 						EnforcePBS:  getTrue(),
 						EnforceRate: 100,
@@ -760,11 +768,9 @@ func Test_createFloorsFrom(t *testing.T) {
 			name: "floor provider will be empty if no value provided in floor json",
 			args: args{
 				floors: &openrtb_ext.PriceFloorRules{
-					Enabled:            getTrue(),
-					FloorMin:           10.11,
-					FloorMinCur:        "EUR",
-					FetchStatus:        openrtb_ext.FetchSuccess,
-					PriceFloorLocation: openrtb_ext.FetchLocation,
+					Enabled:     getTrue(),
+					FloorMin:    10.11,
+					FloorMinCur: "EUR",
 					Enforcement: &openrtb_ext.PriceFloorEnforcement{
 						EnforcePBS:  getTrue(),
 						EnforceRate: 100,
@@ -774,7 +780,7 @@ func Test_createFloorsFrom(t *testing.T) {
 						Currency: "USD",
 						ModelGroups: []openrtb_ext.PriceFloorModelGroup{
 							{
-								ModelVersion: "model from fetched",
+								ModelVersion: "model from request",
 								Currency:     "USD",
 								Values: map[string]float64{
 									"banner|300x600|www.website5.com": 15,
@@ -806,7 +812,7 @@ func Test_createFloorsFrom(t *testing.T) {
 					Currency: "USD",
 					ModelGroups: []openrtb_ext.PriceFloorModelGroup{
 						{
-							ModelVersion: "model from fetched",
+							ModelVersion: "model from request",
 							Currency:     "USD",
 							Values: map[string]float64{
 								"banner|300x600|www.website5.com": 15,
@@ -845,17 +851,46 @@ func Test_createFloorsFrom(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Invalid modelGroup with skipRate = 110",
+			args: args{
+				floors: &openrtb_ext.PriceFloorRules{
+					Enabled: getTrue(),
+					Data: &openrtb_ext.PriceFloorData{
+						Currency: "USD",
+						ModelGroups: []openrtb_ext.PriceFloorModelGroup{
+							{
+								ModelVersion: "model from fetched",
+								Currency:     "USD",
+								SkipRate:     110,
+								Values: map[string]float64{
+									"banner|300x600|www.website5.com": 15,
+									"*|*|*":                           25,
+								},
+								Schema: openrtb_ext.PriceFloorSchema{
+									Fields: []string{"mediaType", "size", "domain"},
+								},
+							},
+						},
+					},
+				},
+				fetchStatus:   openrtb_ext.FetchNone,
+				floorLocation: openrtb_ext.RequestLocation,
+			},
+			want: &openrtb_ext.PriceFloorRules{
+				FetchStatus:        openrtb_ext.FetchNone,
+				PriceFloorLocation: openrtb_ext.RequestLocation,
+			},
+			want1: []error{
+				errors.New("Invalid Floor Model = 'model from fetched' due to SkipRate = '110' is out of range (1-100)"),
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, got1 := createFloorsFrom(tt.args.floors, tt.args.fetchStatus, tt.args.floorLocation)
-			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("createFloorsFrom() got1 = %v, want %v", got1, tt.want1)
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("createFloorsFrom() got = %v, want %v", got, tt.want)
-			}
-
+			assert.Equal(t, got1, tt.want1, tt.name)
+			assert.Equal(t, got, tt.want, tt.name)
 		})
 	}
 }

@@ -2,13 +2,13 @@ package floors
 
 import (
 	"encoding/json"
-	"reflect"
+	"errors"
 	"testing"
 
-	"github.com/magiconair/properties/assert"
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPrepareRuleCombinations(t *testing.T) {
@@ -85,9 +85,7 @@ func TestPrepareRuleCombinations(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			out := prepareRuleCombinations(tc.in, tc.n, tc.del)
-			if !reflect.DeepEqual(out, tc.out) {
-				t.Errorf("error: \nreturn:\t%v\nwant:\t%v", out, tc.out)
-			}
+			assert.Equal(t, out, tc.out, tc.name)
 		})
 	}
 }
@@ -130,8 +128,8 @@ func TestUpdateImpExtWithFloorDetails(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			updateImpExtWithFloorDetails(tc.imp, tc.matchedRule, tc.floorRuleVal, tc.floorVal)
 			_ = tc.imp.RebuildImp()
-			if tc.imp.Ext != nil && !reflect.DeepEqual(tc.imp.Ext, tc.expected) {
-				t.Errorf("error: \nreturn:\t%v\n want:\t%v", string(tc.imp.Ext), string(tc.expected))
+			if tc.imp.Ext != nil {
+				assert.Equal(t, tc.imp.Ext, tc.expected, tc.name)
 			}
 		})
 	}
@@ -418,9 +416,7 @@ func TestCreateRuleKeys(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			out := createRuleKey(tc.floorSchema, tc.request, tc.request.Imp[0])
-			if !reflect.DeepEqual(out, tc.out) {
-				t.Errorf("error: \nreturn:\t%v\nwant:\t%v", out, tc.out)
-			}
+			assert.Equal(t, out, tc.out, tc.name)
 		})
 	}
 }
@@ -495,9 +491,7 @@ func TestShouldSkipFloors(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			out := shouldSkipFloors(tc.ModelGroupsSkipRate, tc.DataSkipRate, tc.RootSkipRate, tc.randomGen)
-			if !reflect.DeepEqual(out, tc.out) {
-				t.Errorf("error: \nreturn:\t%v\nwant:\t%v", out, tc.out)
-			}
+			assert.Equal(t, out, tc.out, tc.name)
 		})
 	}
 
@@ -654,13 +648,8 @@ func TestSelectFloorModelGroup(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			resp := selectFloorModelGroup(tc.ModelGroup, tc.fn)
-
-			assert.Equal(t, *resp[0].ModelWeight, tc.expectedModelWeight)
-
-			if !reflect.DeepEqual(tc.ModelGroup[0].ModelVersion, tc.ModelVersion) {
-				t.Errorf("Floor Model Version mismatch error: \nreturn:\t%v\nwant:\t%v", tc.ModelGroup[0].ModelVersion, tc.ModelVersion)
-			}
-
+			assert.Equal(t, *resp[0].ModelWeight, tc.expectedModelWeight, tc.name)
+			assert.Equal(t, tc.ModelGroup[0].ModelVersion, tc.ModelVersion, tc.name)
 		})
 	}
 }
@@ -682,7 +671,7 @@ func Test_getMinFloorValue(t *testing.T) {
 		args    args
 		want    float64
 		want1   string
-		wantErr bool
+		wantErr error
 	}{
 		{
 			name: "Floor min is available in imp and floor ext",
@@ -690,9 +679,8 @@ func Test_getMinFloorValue(t *testing.T) {
 				floorExt: &openrtb_ext.PriceFloorRules{FloorMin: 2.0, FloorMinCur: "INR", Data: &openrtb_ext.PriceFloorData{Currency: "INR"}},
 				imp:      openrtb2.Imp{Ext: json.RawMessage(`{"prebid":{"floors":{"floorMinCur": "INR","floorMin":1.0}}}`)},
 			},
-			want:    1,
-			want1:   "INR",
-			wantErr: false,
+			want:  1,
+			want1: "INR",
 		},
 		{
 			name: "Floor min and floor min currency is available in imp ext only",
@@ -700,9 +688,8 @@ func Test_getMinFloorValue(t *testing.T) {
 				floorExt: &openrtb_ext.PriceFloorRules{},
 				imp:      openrtb2.Imp{Ext: json.RawMessage(`{"prebid":{"floors":{"floorMinCur": "INR", "floorMin": 1.0}}}`)},
 			},
-			want:    0.0123,
-			want1:   "USD",
-			wantErr: false,
+			want:  0.0123,
+			want1: "USD",
 		},
 		{
 			name: "Floor min is available in floor ext only",
@@ -710,9 +697,8 @@ func Test_getMinFloorValue(t *testing.T) {
 				floorExt: &openrtb_ext.PriceFloorRules{FloorMin: 1.0, FloorMinCur: "EUR", Data: &openrtb_ext.PriceFloorData{Currency: "EUR"}},
 				imp:      openrtb2.Imp{Ext: json.RawMessage(`{"prebid":{"floors":{}}}`)},
 			},
-			want:    1.0,
-			want1:   "EUR",
-			wantErr: false,
+			want:  1.0,
+			want1: "EUR",
 		},
 		{
 			name: "Floor min is available in floorExt and currency is available in imp",
@@ -720,9 +706,8 @@ func Test_getMinFloorValue(t *testing.T) {
 				floorExt: &openrtb_ext.PriceFloorRules{FloorMin: 2.0, Data: &openrtb_ext.PriceFloorData{Currency: "INR"}},
 				imp:      openrtb2.Imp{Ext: json.RawMessage(`{"prebid":{"floors":{"floorMinCur": "INR"}}}`)},
 			},
-			want:    2,
-			want1:   "INR",
-			wantErr: false,
+			want:  2,
+			want1: "INR",
 		},
 		{
 			name: "Floor min is available in ImpExt and currency is available in floorExt",
@@ -730,9 +715,8 @@ func Test_getMinFloorValue(t *testing.T) {
 				floorExt: &openrtb_ext.PriceFloorRules{FloorMinCur: "USD", Data: &openrtb_ext.PriceFloorData{Currency: "INR"}},
 				imp:      openrtb2.Imp{Ext: json.RawMessage(`{"prebid":{"floors":{"FloorMin": 2.0}}}`)},
 			},
-			want:    162.34,
-			want1:   "INR",
-			wantErr: false,
+			want:  162.34,
+			want1: "INR",
 		},
 		{
 			name: "Floor Min and floor Currency are in Imp and only floor currency is available in floor ext",
@@ -740,9 +724,8 @@ func Test_getMinFloorValue(t *testing.T) {
 				floorExt: &openrtb_ext.PriceFloorRules{FloorMinCur: "USD"},
 				imp:      openrtb2.Imp{Ext: json.RawMessage(`{"prebid":{"floors":{"floorMinCur": "USD","floorMin":1.0}}}`)},
 			},
-			want:    1,
-			want1:   "USD",
-			wantErr: false,
+			want:  1,
+			want1: "USD",
 		},
 		{
 			name: "Currency are different in floor ext and imp",
@@ -750,9 +733,8 @@ func Test_getMinFloorValue(t *testing.T) {
 				floorExt: &openrtb_ext.PriceFloorRules{FloorMin: 0.0, FloorMinCur: "EUR", Data: &openrtb_ext.PriceFloorData{Currency: "INR"}},
 				imp:      openrtb2.Imp{Ext: json.RawMessage(`{"prebid":{"floors":{"floorMinCur": "USD","floorMin":1.0}}}`)},
 			},
-			want:    81.17,
-			want1:   "INR",
-			wantErr: false,
+			want:  81.17,
+			want1: "INR",
 		},
 		{
 			name: "Floor min is 0 in imp ",
@@ -760,9 +742,8 @@ func Test_getMinFloorValue(t *testing.T) {
 				floorExt: &openrtb_ext.PriceFloorRules{FloorMin: 2.0, FloorMinCur: "JPY", Data: &openrtb_ext.PriceFloorData{Currency: "INR"}},
 				imp:      openrtb2.Imp{Ext: json.RawMessage(`{"prebid":{"floors":{"floorMinCur": "USD","floorMin":0.0}}}`)},
 			},
-			want:    162.34,
-			want1:   "INR",
-			wantErr: false,
+			want:  162.34,
+			want1: "INR",
 		},
 		{
 			name: "Floor Currency is empty in imp",
@@ -770,9 +751,8 @@ func Test_getMinFloorValue(t *testing.T) {
 				floorExt: &openrtb_ext.PriceFloorRules{FloorMin: 1.0, FloorMinCur: "EUR", Data: &openrtb_ext.PriceFloorData{Currency: "EUR"}},
 				imp:      openrtb2.Imp{Ext: json.RawMessage(`{"prebid":{"floors":{"floorMinCur": "","floorMin":-1.0}}}`)},
 			},
-			want:    1.0,
-			want1:   "EUR",
-			wantErr: false,
+			want:  1.0,
+			want1: "EUR",
 		},
 		{
 			name: "Invalid input",
@@ -782,22 +762,15 @@ func Test_getMinFloorValue(t *testing.T) {
 			},
 			want:    0.0,
 			want1:   "USD",
-			wantErr: true,
+			wantErr: errors.New("error decoding Request.ext : unexpected end of JSON input"),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, got1, err := getMinFloorValue(tt.args.floorExt, tt.args.imp, getCurrencyRates(rates))
-			if (err != nil) != tt.wantErr {
-				t.Errorf("getMinFloorValue() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("getMinFloorValue() got = %v, want %v", got, tt.want)
-			}
-			if got1 != tt.want1 {
-				t.Errorf("getMinFloorValue() got1 = %v, want %v", got1, tt.want1)
-			}
+			assert.Equal(t, err, tt.wantErr, tt.name)
+			assert.Equal(t, got, tt.want, tt.name)
+			assert.Equal(t, got1, tt.want1, tt.name)
 		})
 	}
 }

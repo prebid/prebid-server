@@ -28,7 +28,7 @@ const (
 )
 
 // EnrichWithPriceFloors checks for floors enabled in account and request and selects floors data from dynamic fetched floors JSON if present
-// else selects floors JOSN from req.ext.prebid.floors and update request with selected floors details
+// else selects floors JSON from req.ext.prebid.floors and update request with selected floors details
 func EnrichWithPriceFloors(bidRequestWrapper *openrtb_ext.RequestWrapper, account config.Account, conversions currency.Conversions) []error {
 	err := []error{}
 	if bidRequestWrapper == nil || bidRequestWrapper.BidRequest == nil {
@@ -41,9 +41,9 @@ func EnrichWithPriceFloors(bidRequestWrapper *openrtb_ext.RequestWrapper, accoun
 
 	floors, err := resolveFloors(account, bidRequestWrapper, conversions)
 
-	uprateReqErrs := updateBidRequestWithFloors(floors, bidRequestWrapper, conversions)
+	updateReqErrs := updateBidRequestWithFloors(floors, bidRequestWrapper, conversions)
 	updateFloorsInRequest(bidRequestWrapper, floors)
-	return append(err, uprateReqErrs...)
+	return append(err, updateReqErrs...)
 }
 
 // updateBidRequestWithFloors will update imp.bidfloor and imp.bidfloorcur based on rules matching
@@ -55,10 +55,6 @@ func updateBidRequestWithFloors(extFloorRules *openrtb_ext.PriceFloorRules, requ
 
 	if extFloorRules == nil || extFloorRules.Data == nil || len(extFloorRules.Data.ModelGroups) == 0 {
 		return []error{}
-	}
-
-	if !extFloorRules.GetEnabled() {
-		return []error{fmt.Errorf("Floors disabled in request")}
 	}
 
 	modelGroup := extFloorRules.Data.ModelGroups[0]
@@ -87,11 +83,11 @@ func updateBidRequestWithFloors(extFloorRules *openrtb_ext.PriceFloorRules, requ
 			if err == nil {
 				floorVal = math.Round(floorVal*10000) / 10000
 				bidFloor := floorVal
-				if floorMinVal > float64(0) && floorVal < floorMinVal {
+				if floorMinVal > 0.0 && floorVal < floorMinVal {
 					bidFloor = floorMinVal
 				}
 
-				if bidFloor > float64(0) {
+				if bidFloor > 0.0 {
 					imp.BidFloor = math.Round(bidFloor*10000) / 10000
 					imp.BidFloorCur = floorCur
 				}
@@ -133,52 +129,52 @@ func isPriceFloorsDisabledForRequest(bidRequestWrapper *openrtb_ext.RequestWrapp
 
 // resolveFloors does selection of floors fields from requet JSON and dynamic fetched floors JSON if dynamic fetch is enabled
 func resolveFloors(account config.Account, bidRequestWrapper *openrtb_ext.RequestWrapper, conversions currency.Conversions) (*openrtb_ext.PriceFloorRules, []error) {
-	var errlist []error
+	var errList []error
 	var floorsJson *openrtb_ext.PriceFloorRules
 
 	reqFloor := extractFloorsFromRequest(bidRequestWrapper)
 	if reqFloor != nil {
-		floorsJson, errlist = createFloorsFrom(reqFloor, openrtb_ext.FetchNone, openrtb_ext.RequestLocation)
+		floorsJson, errList = createFloorsFrom(reqFloor, openrtb_ext.FetchNone, openrtb_ext.RequestLocation)
 	} else {
-		floorsJson, errlist = createFloorsFrom(nil, openrtb_ext.FetchNone, openrtb_ext.NoDataLocation)
+		floorsJson, errList = createFloorsFrom(nil, openrtb_ext.FetchNone, openrtb_ext.NoDataLocation)
 	}
-	return floorsJson, errlist
+	return floorsJson, errList
 }
 
 // createFloorsFrom does preparation of floors data which shall be used for further processing
 func createFloorsFrom(floors *openrtb_ext.PriceFloorRules, fetchStatus, floorLocation string) (*openrtb_ext.PriceFloorRules, []error) {
 	var floorModelErrList []error
-	finFloors := new(openrtb_ext.PriceFloorRules)
+	finalFloors := new(openrtb_ext.PriceFloorRules)
 
 	if floors != nil {
 		floorValidationErr := validateFloorParams(floors)
 		if floorValidationErr != nil {
-			finFloors.FetchStatus = fetchStatus
-			finFloors.PriceFloorLocation = floorLocation
-			return finFloors, append(floorModelErrList, floorValidationErr)
+			finalFloors.FetchStatus = fetchStatus
+			finalFloors.PriceFloorLocation = floorLocation
+			return finalFloors, append(floorModelErrList, floorValidationErr)
 		}
 
-		finFloors.Enforcement = floors.Enforcement
+		finalFloors.Enforcement = floors.Enforcement
 		if floors.Data != nil {
 			validModelGroups, floorModelErrList := selectValidFloorModelGroups(floors.Data.ModelGroups)
 			if len(validModelGroups) == 0 {
-				finFloors.FetchStatus = fetchStatus
-				finFloors.PriceFloorLocation = floorLocation
-				return finFloors, floorModelErrList
+				finalFloors.FetchStatus = fetchStatus
+				finalFloors.PriceFloorLocation = floorLocation
+				return finalFloors, floorModelErrList
 			} else {
-				*finFloors = *floors
-				finFloors.Data = new(openrtb_ext.PriceFloorData)
-				*finFloors.Data = *floors.Data
+				*finalFloors = *floors
+				finalFloors.Data = new(openrtb_ext.PriceFloorData)
+				*finalFloors.Data = *floors.Data
 				if len(validModelGroups) > 1 {
 					validModelGroups = selectFloorModelGroup(validModelGroups, rand.Intn)
 				}
-				finFloors.Data.ModelGroups = []openrtb_ext.PriceFloorModelGroup{*validModelGroups[0].Copy()}
+				finalFloors.Data.ModelGroups = []openrtb_ext.PriceFloorModelGroup{*validModelGroups[0].Copy()}
 			}
 		}
 	}
-	finFloors.FetchStatus = fetchStatus
-	finFloors.PriceFloorLocation = floorLocation
-	return finFloors, floorModelErrList
+	finalFloors.FetchStatus = fetchStatus
+	finalFloors.PriceFloorLocation = floorLocation
+	return finalFloors, floorModelErrList
 }
 
 // resolveFloorMin gets floorMin valud from request and dynamic fetched data
@@ -199,9 +195,9 @@ func resolveFloorMin(reqFloors *openrtb_ext.PriceFloorRules, fetchFloors openrtb
 	provFloorMin := fetchFloors.FloorMin
 
 	if len(reqFloorMinCur) > 0 {
-		if reqFloorMin > float64(0) {
+		if reqFloorMin > 0.0 {
 			return Price{FloorMin: reqFloorMin, FloorMinCur: reqFloorMinCur}
-		} else if provFloorMin > float64(0) {
+		} else if provFloorMin > 0.0 {
 			if len(provFloorMinCur) == 0 || strings.Compare(reqFloorMinCur, provFloorMinCur) == 0 {
 				return Price{FloorMin: provFloorMin, FloorMinCur: reqFloorMinCur}
 			}
@@ -216,9 +212,9 @@ func resolveFloorMin(reqFloors *openrtb_ext.PriceFloorRules, fetchFloors openrtb
 		provFloorMinCur = getFloorCurrency(&fetchFloors)
 	}
 	if len(provFloorMinCur) > 0 {
-		if provFloorMin > float64(0) {
+		if provFloorMin > 0.0 {
 			return Price{FloorMin: provFloorMin, FloorMinCur: provFloorMinCur}
-		} else if reqFloorMin > float64(0) {
+		} else if reqFloorMin > 0.0 {
 			return Price{FloorMin: reqFloorMin, FloorMinCur: provFloorMinCur}
 		}
 	}
