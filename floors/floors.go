@@ -1,6 +1,7 @@
 package floors
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"math/rand"
@@ -30,13 +31,13 @@ const (
 // EnrichWithPriceFloors checks for floors enabled in account and request and selects floors data from dynamic fetched floors JSON if present
 // else selects floors JSON from req.ext.prebid.floors and update request with selected floors details
 func EnrichWithPriceFloors(bidRequestWrapper *openrtb_ext.RequestWrapper, account config.Account, conversions currency.Conversions) []error {
-	err := []error{}
+
 	if bidRequestWrapper == nil || bidRequestWrapper.BidRequest == nil {
-		return []error{fmt.Errorf("Empty bidrequest")}
+		return []error{errors.New("Empty bidrequest")}
 	}
 
 	if isPriceFloorsDisabled(account, bidRequestWrapper) {
-		return []error{fmt.Errorf("Floors feature is disabled at account level or request")}
+		return []error{errors.New("Floors feature is disabled at account level or request")}
 	}
 
 	floors, err := resolveFloors(account, bidRequestWrapper, conversions)
@@ -168,7 +169,7 @@ func createFloorsFrom(floors *openrtb_ext.PriceFloorRules, fetchStatus, floorLoc
 				if len(validModelGroups) > 1 {
 					validModelGroups = selectFloorModelGroup(validModelGroups, rand.Intn)
 				}
-				finalFloors.Data.ModelGroups = []openrtb_ext.PriceFloorModelGroup{*validModelGroups[0].Copy()}
+				finalFloors.Data.ModelGroups = []openrtb_ext.PriceFloorModelGroup{validModelGroups[0].Copy()}
 			}
 		}
 	}

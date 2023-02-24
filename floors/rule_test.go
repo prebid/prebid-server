@@ -105,7 +105,7 @@ func TestUpdateImpExtWithFloorDetails(t *testing.T) {
 			floorRuleVal: 5.5,
 			floorVal:     5.5,
 			imp:          &openrtb_ext.ImpWrapper{Imp: &openrtb2.Imp{ID: "1234", Video: &openrtb2.Video{W: 300, H: 250}}},
-			expected:     []byte(`{"prebid":{"floors":{"floorRule":"test|123|xyz","floorRuleValue":5.5,"floorValue":5.5}}}`),
+			expected:     []byte(`{"prebid":{"floors":{"floorrule":"test|123|xyz","floorrulevalue":5.5,"floorvalue":5.5}}}`),
 		},
 		{
 			name:         "Empty ImpExt",
@@ -113,7 +113,7 @@ func TestUpdateImpExtWithFloorDetails(t *testing.T) {
 			floorRuleVal: 5.5,
 			floorVal:     5.5,
 			imp:          &openrtb_ext.ImpWrapper{Imp: &openrtb2.Imp{ID: "1234", Video: &openrtb2.Video{W: 300, H: 250}, Ext: json.RawMessage{}}},
-			expected:     []byte(`{"prebid":{"floors":{"floorRule":"test|123|xyz","floorRuleValue":5.5,"floorValue":5.5}}}`),
+			expected:     []byte(`{"prebid":{"floors":{"floorrule":"test|123|xyz","floorrulevalue":5.5,"floorvalue":5.5}}}`),
 		},
 		{
 			name:         "With prebid Ext",
@@ -121,7 +121,7 @@ func TestUpdateImpExtWithFloorDetails(t *testing.T) {
 			floorRuleVal: 5.5,
 			floorVal:     15.5,
 			imp:          &openrtb_ext.ImpWrapper{Imp: &openrtb2.Imp{ID: "1234", Video: &openrtb2.Video{W: 300, H: 250}, Ext: []byte(`{"prebid": {"test": true}}`)}},
-			expected:     []byte(`{"prebid":{"floors":{"floorRule":"banner|www.test.com|*","floorRuleValue":5.5,"floorValue":15.5}}}`),
+			expected:     []byte(`{"prebid":{"floors":{"floorrule":"banner|www.test.com|*","floorrulevalue":5.5,"floorvalue":15.5}}}`),
 		},
 	}
 	for _, tc := range tt {

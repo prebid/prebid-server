@@ -92,7 +92,7 @@ func (Floors *PriceFloorRules) GetEnabled() bool {
 	return true
 }
 
-func (modelGroup *PriceFloorModelGroup) Copy() *PriceFloorModelGroup {
+func (modelGroup PriceFloorModelGroup) Copy() PriceFloorModelGroup {
 	newModelGroup := new(PriceFloorModelGroup)
 	newModelGroup.Currency = modelGroup.Currency
 	newModelGroup.ModelVersion = modelGroup.ModelVersion
@@ -110,5 +110,5 @@ func (modelGroup *PriceFloorModelGroup) Copy() *PriceFloorModelGroup {
 	for key, val := range modelGroup.Values {
 		newModelGroup.Values[key] = val
 	}
-	return newModelGroup
+	return *newModelGroup
 }
