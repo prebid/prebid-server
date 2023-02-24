@@ -121,7 +121,7 @@ func setupTLSConfig(provider *MySqlDbProvider) error {
 		clientCert = append(clientCert, certs)
 	}
 
-	mysql.RegisterTLSConfig(customTLSKey, &tls.Config{
+	mysql.RegisterTLSConfig(provider.getTLSKey(), &tls.Config{
 		RootCAs:               rootCertPool,
 		Certificates:          clientCert,
 		InsecureSkipVerify:    true,
@@ -156,7 +156,7 @@ func (provider *MySqlDbProvider) generateQueryString() (string, error) {
 	tls := ""
 
 	if provider.cfg.TLS.RootCert != "" {
-		tls = customTLSKey
+		tls = provider.getTLSKey()
 
 		if err := setupTLSConfig(provider); err != nil {
 			return "", err
@@ -173,6 +173,18 @@ func (provider *MySqlDbProvider) generateQueryString() (string, error) {
 	}
 
 	return provider.cfg.QueryString, nil
+}
+
+func (provider *MySqlDbProvider) getTLSKey() string {
+	pairs := strings.Split(provider.cfg.QueryString, "&")
+
+	for _, pair := range pairs {
+		if strings.HasPrefix(pair, "tls=") {
+			return strings.Split(pair, "=")[1]
+		}
+	}
+
+	return customTLSKey
 }
 
 func (provider *MySqlDbProvider) PrepareQuery(template string, params ...QueryParam) (query string, args []interface{}) {

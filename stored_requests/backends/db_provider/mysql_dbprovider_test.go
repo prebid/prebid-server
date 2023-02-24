@@ -120,6 +120,20 @@ func TestConnStringMySql(t *testing.T) {
 		},
 		{
 			params: Params{
+				db:          "TestDB",
+				host:        "example.com",
+				port:        20,
+				username:    "someuser",
+				password:    "somepassword",
+				QueryString: "tls=tlsKeyByQueryString",
+				TLS: TLS{
+					RootCert: path.Join(workingDir, "test_assets/root-cert.pem"),
+				},
+			},
+			connString: "someuser:somepassword@tcp(example.com:20)/TestDB?tls=tlsKeyByQueryString",
+		},
+		{
+			params: Params{
 				db:       "TestDB",
 				host:     "example.com",
 				port:     20,
@@ -180,6 +194,22 @@ func TestConnStringMySql(t *testing.T) {
 				},
 			},
 			connString: "someuser:somepassword@tcp(example.com:20)/TestDB?param=value&tls=preferred",
+		},
+		{
+			params: Params{
+				db:          "TestDB",
+				host:        "example.com",
+				port:        20,
+				username:    "someuser",
+				password:    "somepassword",
+				QueryString: "param=value&tls=tlsKeyByQueryString",
+				TLS: TLS{
+					RootCert:   path.Join(workingDir, "test_assets/root-cert.pem"),
+					ClientCert: path.Join(workingDir, "test_assets/client-cert.pem"),
+					ClientKey:  path.Join(workingDir, "test_assets/client-key.pem"),
+				},
+			},
+			connString: "someuser:somepassword@tcp(example.com:20)/TestDB?param=value&tls=tlsKeyByQueryString",
 		},
 	}
 
