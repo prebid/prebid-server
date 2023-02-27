@@ -879,24 +879,6 @@ func TestImplicitDNTEndToEnd(t *testing.T) {
 	}
 }
 
-func TestImplicitSecure(t *testing.T) {
-	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
-	httpReq.Header.Set("X-Forwarded-Proto", "https")
-
-	imps := []*openrtb_ext.ImpWrapper{
-		{Imp: &openrtb2.Imp{}},
-		{Imp: &openrtb2.Imp{}},
-	}
-
-	setImpsImplicitly(httpReq, imps)
-
-	for _, imp := range imps {
-		if imp.Secure == nil || *imp.Secure != 1 {
-			t.Errorf("imp.Secure should be set to 1 if the request is https. Got %#v", imp.Secure)
-		}
-	}
-}
-
 func TestReferer(t *testing.T) {
 	testCases := []struct {
 		description             string

@@ -1756,7 +1756,6 @@ func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, r *openrtb_
 	if r.App == nil {
 		setSiteImplicitly(httpReq, r)
 	}
-	setImpsImplicitly(httpReq, r.GetImp())
 
 	setAuctionTypeImplicitly(r)
 }
@@ -1821,15 +1820,6 @@ func setSitePublisherDomainIfEmpty(site *openrtb2.Site, publisherDomain string) 
 	}
 	if site.Publisher.Domain == "" {
 		site.Publisher.Domain = publisherDomain
-	}
-}
-
-func setImpsImplicitly(httpReq *http.Request, imps []*openrtb_ext.ImpWrapper) {
-	secure := int8(1)
-	for i := 0; i < len(imps); i++ {
-		if imps[i].Secure == nil && httputil.IsSecure(httpReq) {
-			imps[i].Secure = &secure
-		}
 	}
 }
 
