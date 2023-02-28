@@ -28,6 +28,12 @@
       "items": {
         "type": "string"
       }
+    },
+    "pageType": {
+      "type": "string"
+    },
+    "position": {
+      "type": "integer"
     }
   },
   "required": ["tagid","publisherId"]

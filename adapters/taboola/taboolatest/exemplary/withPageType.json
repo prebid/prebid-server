@@ -4,14 +4,27 @@
     "imp": [
       {
         "id": "impression-id",
-        "native": {
-          "request": "\"{\\\"ver\\\":\\\"1.1\\\",\\\"plcmttype\\\": 4,\\\"plcmtcnt\\\": 1,\\\"assets\\\":[{\\\"id\\\": 1,\\\"required\\\": 1,\\\"title\\\":{\\\"len\\\": 140}},{\\\"id\\\": 4,\\\"required\\\": 1,\\\"img\\\":{\\\"type\\\": 3,\\\"wmin\\\": 600,\\\"hmin\\\": 315}},{\\\"id\\\": 6,\\\"required\\\": 1,\\\"data\\\":{\\\"type\\\": 2,\\\"len\\\": 205}},{\\\"id\\\": 5,\\\"required\\\": 1,\\\"data\\\":{\\\"type\\\": 1,\\\"len\\\": 140}}]}}\"",
-          "ver": "1.1"
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            },
+            {
+              "w": 160,
+              "h": 600
+            }
+          ]
         },
         "ext": {
           "bidder": {
             "publisherId": "publisher-id",
-            "tagid": "tag-id"
+            "tagid": "tag-id",
+            "pageType": "homepage"
           }
         }
       }
@@ -30,21 +43,34 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://native.whatever.com/hosturl.com/publisher-id",
+        "uri": "http://display.whatever.com/hosturl.com/publisher-id",
         "body": {
           "id": "request-id",
           "imp": [
             {
               "id": "impression-id",
-              "native": {
-                "request": "\"{\\\"ver\\\":\\\"1.1\\\",\\\"plcmttype\\\": 4,\\\"plcmtcnt\\\": 1,\\\"assets\\\":[{\\\"id\\\": 1,\\\"required\\\": 1,\\\"title\\\":{\\\"len\\\": 140}},{\\\"id\\\": 4,\\\"required\\\": 1,\\\"img\\\":{\\\"type\\\": 3,\\\"wmin\\\": 600,\\\"hmin\\\": 315}},{\\\"id\\\": 6,\\\"required\\\": 1,\\\"data\\\":{\\\"type\\\": 2,\\\"len\\\": 205}},{\\\"id\\\": 5,\\\"required\\\": 1,\\\"data\\\":{\\\"type\\\": 1,\\\"len\\\": 140}}]}}\"",
-                "ver": "1.1"
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  },
+                  {
+                    "w": 300,
+                    "h": 600
+                  },
+                  {
+                    "w": 160,
+                    "h": 600
+                  }
+                ]
               },
-              "tagid": "tag-id",
+              "tagid" : "tag-id",
               "ext": {
                 "bidder": {
                   "publisherId": "publisher-id",
-                  "tagid": "tag-id"
+                  "tagid": "tag-id",
+                  "pageType": "homepage"
                 }
               }
             }
@@ -63,6 +89,9 @@
             "ua": "Mozilla/5.0 (Linux; Android 12; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.62 Mobile Safari/537.36",
             "h": 300,
             "w": 300
+          },
+          "ext": {
+            "pageType": "homepage"
           }
         }
       },
@@ -78,12 +107,15 @@
                   "impid": "impression-id",
                   "price": 2.1,
                   "adid": "1",
-                  "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":7,\"required\":1,\"img\":{\"url\":\"http://image.taboola.com\",\"w\":600,\"h\":315}},{\"id\":0,\"required\":1,\"title\":{\"text\":\"Title For Example\"}},{\"id\":5,\"data\":{\"value\":\"Test sponsor\"}}],\"link\":{\"url\":\"http://clickUrl.com\"},\"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"http://tracker.com\"},{\"event\":1,\"method\":2,\"url\":\"http://tracker-2.com\"}]}",
+                  "adm": "<hrml></html>",
                   "adomain": [
                     "adomain.com"
                   ],
                   "cid": "cid",
                   "crid": "crid",
+                  "w": 300,
+                  "h": 250,
+                  "exp": 60,
                   "lurl": "https://lurl.domain.com/"
                 }
               ],
@@ -106,16 +138,18 @@
             "impid": "impression-id",
             "price": 2.1,
             "adid": "1",
-            "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":7,\"required\":1,\"img\":{\"url\":\"http://image.taboola.com\",\"w\":600,\"h\":315}},{\"id\":0,\"required\":1,\"title\":{\"text\":\"Title For Example\"}},{\"id\":5,\"data\":{\"value\":\"Test sponsor\"}}],\"link\":{\"url\":\"http://clickUrl.com\"},\"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"http://tracker.com\"},{\"event\":1,\"method\":2,\"url\":\"http://tracker-2.com\"}]}",
-
-          "adomain": [
+            "adm": "<hrml></html>",
+            "adomain": [
               "adomain.com"
             ],
             "cid": "cid",
             "crid": "crid",
+            "w": 300,
+            "h": 250,
+            "exp": 60,
             "lurl": "https://lurl.domain.com/"
           },
-          "type": "native"
+          "type": "banner"
         }
       ]
     }
