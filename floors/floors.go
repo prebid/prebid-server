@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
-	"strings"
 
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
@@ -128,7 +127,7 @@ func isPriceFloorsDisabledForRequest(bidRequestWrapper *openrtb_ext.RequestWrapp
 	return false
 }
 
-// resolveFloors does selection of floors fields from requet JSON and dynamic fetched floors JSON if dynamic fetch is enabled
+// resolveFloors does selection of floors fields from request JSON and dynamic fetched floors JSON if dynamic fetch is enabled
 func resolveFloors(account config.Account, bidRequestWrapper *openrtb_ext.RequestWrapper, conversions currency.Conversions) (*openrtb_ext.PriceFloorRules, []error) {
 	var errList []error
 	var floorsJson *openrtb_ext.PriceFloorRules
@@ -178,50 +177,6 @@ func createFloorsFrom(floors *openrtb_ext.PriceFloorRules, fetchStatus, floorLoc
 	return finalFloors, floorModelErrList
 }
 
-// resolveFloorMin gets floorMin valud from request and dynamic fetched data
-func resolveFloorMin(reqFloors *openrtb_ext.PriceFloorRules, fetchFloors openrtb_ext.PriceFloorRules, conversions currency.Conversions) Price {
-	var floorCur, reqFloorMinCur string
-	var reqFloorMin float64
-	if reqFloors != nil {
-		floorCur = getFloorCurrency(reqFloors)
-		reqFloorMin = reqFloors.FloorMin
-		reqFloorMinCur = reqFloors.FloorMinCur
-	}
-
-	if len(reqFloorMinCur) == 0 && fetchFloors.Data == nil {
-		reqFloorMinCur = floorCur
-	}
-
-	provFloorMinCur := fetchFloors.FloorMinCur
-	provFloorMin := fetchFloors.FloorMin
-
-	if len(reqFloorMinCur) > 0 {
-		if reqFloorMin > 0.0 {
-			return Price{FloorMin: reqFloorMin, FloorMinCur: reqFloorMinCur}
-		} else if provFloorMin > 0.0 {
-			if len(provFloorMinCur) == 0 || strings.Compare(reqFloorMinCur, provFloorMinCur) == 0 {
-				return Price{FloorMin: provFloorMin, FloorMinCur: reqFloorMinCur}
-			}
-			rate, err := conversions.GetRate(provFloorMinCur, reqFloorMinCur)
-			if err == nil {
-				return Price{FloorMinCur: reqFloorMinCur,
-					FloorMin: math.Round(rate*provFloorMin*10000) / 10000}
-			}
-		}
-	}
-	if len(provFloorMinCur) == 0 {
-		provFloorMinCur = getFloorCurrency(&fetchFloors)
-	}
-	if len(provFloorMinCur) > 0 {
-		if provFloorMin > 0.0 {
-			return Price{FloorMin: provFloorMin, FloorMinCur: provFloorMinCur}
-		} else if reqFloorMin > 0.0 {
-			return Price{FloorMin: reqFloorMin, FloorMinCur: provFloorMinCur}
-		}
-	}
-	return Price{FloorMin: 0.0, FloorMinCur: floorCur}
-}
-
 // extractFloorsFromRequest gets floors data from req.ext.prebid.floors
 func extractFloorsFromRequest(bidRequestWrapper *openrtb_ext.RequestWrapper) *openrtb_ext.PriceFloorRules {
 	requestExt, err := bidRequestWrapper.GetRequestExt()
@@ -234,7 +189,7 @@ func extractFloorsFromRequest(bidRequestWrapper *openrtb_ext.RequestWrapper) *op
 	return nil
 }
 
-// updateFloorsInRequest updates floors data into req.ext.prebid.floors
+// updateFloorsInRequest updates req.ext.prebid.floors with floors data
 func updateFloorsInRequest(bidRequestWrapper *openrtb_ext.RequestWrapper, priceFloors *openrtb_ext.PriceFloorRules) {
 	requestExt, err := bidRequestWrapper.GetRequestExt()
 	if err == nil {

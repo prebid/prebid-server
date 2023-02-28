@@ -12,7 +12,7 @@ import (
 )
 
 func TestPrepareRuleCombinations(t *testing.T) {
-	tt := []struct {
+	testCases := []struct {
 		name string
 		in   []string
 		n    int
@@ -82,7 +82,7 @@ func TestPrepareRuleCombinations(t *testing.T) {
 			},
 		},
 	}
-	for _, tc := range tt {
+	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			out := prepareRuleCombinations(tc.in, tc.n, tc.del)
 			assert.Equal(t, out, tc.out, tc.name)
@@ -91,7 +91,7 @@ func TestPrepareRuleCombinations(t *testing.T) {
 }
 
 func TestUpdateImpExtWithFloorDetails(t *testing.T) {
-	tt := []struct {
+	testCases := []struct {
 		name         string
 		matchedRule  string
 		floorRuleVal float64
@@ -124,7 +124,7 @@ func TestUpdateImpExtWithFloorDetails(t *testing.T) {
 			expected:     []byte(`{"prebid":{"floors":{"floorrule":"banner|www.test.com|*","floorrulevalue":5.5,"floorvalue":15.5}}}`),
 		},
 	}
-	for _, tc := range tt {
+	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			updateImpExtWithFloorDetails(tc.imp, tc.matchedRule, tc.floorRuleVal, tc.floorVal)
 			_ = tc.imp.RebuildImp()
@@ -136,7 +136,7 @@ func TestUpdateImpExtWithFloorDetails(t *testing.T) {
 }
 
 func TestCreateRuleKeys(t *testing.T) {
-	tt := []struct {
+	testCases := []struct {
 		name        string
 		floorSchema openrtb_ext.PriceFloorSchema
 		request     *openrtb2.BidRequest
@@ -413,7 +413,7 @@ func TestCreateRuleKeys(t *testing.T) {
 			out:         []string{"www.test.com", "storedid_123", "*"},
 		},
 	}
-	for _, tc := range tt {
+	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			out := createRuleKey(tc.floorSchema, tc.request, tc.request.Imp[0])
 			assert.Equal(t, out, tc.out, tc.name)
@@ -423,7 +423,7 @@ func TestCreateRuleKeys(t *testing.T) {
 
 func TestShouldSkipFloors(t *testing.T) {
 
-	tt := []struct {
+	testCases := []struct {
 		name                string
 		ModelGroupsSkipRate int
 		DataSkipRate        int
@@ -488,7 +488,7 @@ func TestShouldSkipFloors(t *testing.T) {
 			out:                 true,
 		},
 	}
-	for _, tc := range tt {
+	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			out := shouldSkipFloors(tc.ModelGroupsSkipRate, tc.DataSkipRate, tc.RootSkipRate, tc.randomGen)
 			assert.Equal(t, out, tc.out, tc.name)
@@ -502,7 +502,7 @@ func getIntPtr(v int) *int {
 }
 
 func TestSelectFloorModelGroup(t *testing.T) {
-	tt := []struct {
+	testCases := []struct {
 		name                string
 		ModelGroup          []openrtb_ext.PriceFloorModelGroup
 		ModelVersion        string
@@ -645,7 +645,7 @@ func TestSelectFloorModelGroup(t *testing.T) {
 		},
 	}
 
-	for _, tc := range tt {
+	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			resp := selectFloorModelGroup(tc.ModelGroup, tc.fn)
 			assert.Equal(t, *resp[0].ModelWeight, tc.expectedModelWeight, tc.name)
@@ -666,7 +666,7 @@ func Test_getMinFloorValue(t *testing.T) {
 		imp         openrtb2.Imp
 		conversions currency.Conversions
 	}
-	tests := []struct {
+	testCases := []struct {
 		name    string
 		args    args
 		want    float64
@@ -765,12 +765,12 @@ func Test_getMinFloorValue(t *testing.T) {
 			wantErr: errors.New("error decoding Request.ext : unexpected end of JSON input"),
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, got1, err := getMinFloorValue(tt.args.floorExt, tt.args.imp, getCurrencyRates(rates))
-			assert.Equal(t, err, tt.wantErr, tt.name)
-			assert.Equal(t, got, tt.want, tt.name)
-			assert.Equal(t, got1, tt.want1, tt.name)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, got1, err := getMinFloorValue(tc.args.floorExt, tc.args.imp, getCurrencyRates(rates))
+			assert.Equal(t, err, tc.wantErr, tc.name)
+			assert.Equal(t, got, tc.want, tc.name)
+			assert.Equal(t, got1, tc.want1, tc.name)
 		})
 	}
 }
