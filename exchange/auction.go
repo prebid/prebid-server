@@ -149,7 +149,7 @@ func isNewWinningBid(bid, wbid *openrtb2.Bid, preferDeals bool) bool {
 }
 
 func (a *auction) validateAndUpdateMultiBid(adapterBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, preferDeals bool, accountDefaultBidLimit int) {
-	bidsDropped := false
+	bidsSnipped := false
 	// sort bids for multibid targeting
 	for _, topBidsPerBidder := range a.winningBidsByBidder {
 		for bidder, topBids := range topBidsPerBidder {
@@ -162,7 +162,7 @@ func (a *auction) validateAndUpdateMultiBid(adapterBids map[openrtb_ext.BidderNa
 				for i := accountDefaultBidLimit; i < len(topBids); i++ {
 					topBids[i].Bid = nil
 					topBids[i] = nil
-					bidsDropped = true
+					bidsSnipped = true
 				}
 
 				topBidsPerBidder[bidder] = topBids[:accountDefaultBidLimit]
@@ -170,7 +170,7 @@ func (a *auction) validateAndUpdateMultiBid(adapterBids map[openrtb_ext.BidderNa
 		}
 	}
 
-	if bidsDropped { // remove the marked bids from original references
+	if bidsSnipped { // remove the marked bids from original references
 		for _, seatBid := range adapterBids {
 			if seatBid != nil {
 				bids := make([]*entities.PbsOrtbBid, 0, accountDefaultBidLimit)

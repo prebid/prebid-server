@@ -585,7 +585,7 @@ func TestNewAuction(t *testing.T) {
 
 }
 
-func Test_auction_validateAndUpdateMultiBid(t *testing.T) {
+func TestValidateAndUpdateMultiBid(t *testing.T) {
 	// create new bids for new test cases since the last one changes a few bids. Ex marks bid1p001.Bid = nil
 	bid1p001 := entities.PbsOrtbBid{
 		Bid: &openrtb2.Bid{
