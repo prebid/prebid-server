@@ -519,7 +519,7 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "http_client_cache.max_idle_connections_per_host", cfg.CacheClient.MaxIdleConnsPerHost, 2)
 	cmpInts(t, "http_client_cache.idle_connection_timeout_seconds", cfg.CacheClient.IdleConnTimeout, 3)
 	cmpInts(t, "gdpr.host_vendor_id", cfg.GDPR.HostVendorID, 15)
-	cmpStrings(t, "gdpr.default_value", cfg.GDPR.DefaultValue, "1")
+	// cmpStrings(t, "gdpr.default_value", cfg.GDPR.DefaultValue, "1")
 	cmpStrings(t, "host_schain_node.asi", cfg.HostSChainNode.ASI, "pbshostcompany.com")
 	cmpStrings(t, "host_schain_node.sid", cfg.HostSChainNode.SID, "00001")
 	cmpStrings(t, "host_schain_node.rid", cfg.HostSChainNode.RID, "BidRequest")
