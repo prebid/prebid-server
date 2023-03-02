@@ -329,7 +329,7 @@ func preprocess(imp *openrtb2.Imp, defaultDisplayManagerVer string) (string, boo
 	}
 
 	impExt := appnexusImpExt{Appnexus: appnexusImpExtAppnexus{
-		PlacementID:       appnexusExt.PlacementId,
+		PlacementID:       int(appnexusExt.PlacementId),
 		TrafficSourceCode: appnexusExt.TrafficSourceCode,
 		Keywords:          makeKeywordStr(appnexusExt.Keywords),
 		UsePmtRule:        appnexusExt.UsePmtRule,

@@ -1,13 +1,17 @@
 package openrtb_ext
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"github.com/prebid/prebid-server/util/typeutil"
+)
 
 // ExtImpAppnexus defines the contract for bidrequest.imp[i].ext.prebid.bidder.appnexus
 type ExtImpAppnexus struct {
-	LegacyPlacementId       int                     `json:"placementId"`
+	LegacyPlacementId       typeutil.StringInt      `json:"placementId"`
 	LegacyInvCode           string                  `json:"invCode"`
 	LegacyTrafficSourceCode string                  `json:"trafficSourceCode"`
-	PlacementId             int                     `json:"placement_id"`
+	PlacementId             typeutil.StringInt      `json:"placement_id"`
 	InvCode                 string                  `json:"inv_code"`
 	Member                  string                  `json:"member"`
 	Keywords                []*ExtImpAppnexusKeyVal `json:"keywords"`
