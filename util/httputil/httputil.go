@@ -3,6 +3,7 @@ package httputil
 import (
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/prebid/prebid-server/util/iputil"
@@ -74,4 +75,17 @@ func findRemoteAddr(r *http.Request, v iputil.IPValidator) (net.IP, iputil.IPVer
 		}
 	}
 	return nil, iputil.IPvUnknown
+}
+
+func ConvertUrlParamsToMap(url *url.URL) map[string]string {
+	rawQuery := url.RawQuery
+	rawQuerySplit := strings.Split(rawQuery, "&")
+	ampData := make(map[string]string, 0)
+	for _, kv := range rawQuerySplit {
+		kvSplit := strings.Split(kv, "=")
+		if len(kvSplit) == 2 {
+			ampData[kvSplit[0]] = kvSplit[1]
+		}
+	}
+	return ampData
 }

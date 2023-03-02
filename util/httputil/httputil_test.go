@@ -3,6 +3,7 @@ package httputil
 import (
 	"net"
 	"net/http"
+	"net/url"
 	"testing"
 
 	"github.com/prebid/prebid-server/util/iputil"
@@ -262,4 +263,15 @@ type hardcodedResponseIPValidator struct {
 
 func (v hardcodedResponseIPValidator) IsValid(net.IP, iputil.IPVersion) bool {
 	return v.response
+}
+
+func TestConvertUrlParamsToMap(t *testing.T) {
+	p := "https://www.test-url.com?tag_id=101&addtl_consent=1~1.35.41.101&ampkey=testAmpKey&data-override-height=400"
+	u, err := url.Parse(p)
+	assert.NoError(t, err, "unexpected error parsing url")
+	res := ConvertUrlParamsToMap(u)
+	assert.Len(t, res, 4, "incorrect url parameters number")
+	assert.Equal(t, res["tag_id"], "101", "incorrect param value")
+	assert.Equal(t, res["addtl_consent"], "1~1.35.41.101", "incorrect param value")
+	assert.Equal(t, res["data-override-height"], "400", "incorrect param value")
 }
