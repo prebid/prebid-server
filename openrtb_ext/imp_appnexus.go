@@ -8,7 +8,7 @@ import (
 
 // ExtImpAppnexus defines the contract for bidrequest.imp[i].ext.prebid.bidder.appnexus
 type ExtImpAppnexus struct {
-	LegacyPlacementId       typeutil.StringInt      `json:"placementId"`
+	DeprecatedPlacementId   typeutil.StringInt      `json:"placementId"`
 	LegacyInvCode           string                  `json:"invCode"`
 	LegacyTrafficSourceCode string                  `json:"trafficSourceCode"`
 	PlacementId             typeutil.StringInt      `json:"placement_id"`
