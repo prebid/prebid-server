@@ -3910,7 +3910,7 @@ func TestStoredAuctionResponses(t *testing.T) {
 		SeatBid: []openrtb2.SeatBid{
 			{
 				Bid: []openrtb2.Bid{
-					{ID: "bid_id", ImpID: "impression-id", Ext: json.RawMessage(`{"origbidcpm":0,"prebid":{"type":""}}`)},
+					{ID: "bid_id", ImpID: "impression-id", Ext: json.RawMessage(`{"origbidcpm":0,"prebid":{"type":"video"}}`)},
 				},
 				Seat: "appnexus",
 			},
@@ -3925,7 +3925,7 @@ func TestStoredAuctionResponses(t *testing.T) {
 		{
 			desc: "Single imp with valid stored response",
 			storedAuctionResp: map[string]json.RawMessage{
-				"impression-id": json.RawMessage(`[{"bid": [{"id": "bid_id"}],"seat": "appnexus"}]`),
+				"impression-id": json.RawMessage(`[{"bid": [{"id": "bid_id", "ext": {"prebid": {"type": "video"}}}],"seat": "appnexus"}]`),
 			},
 			errorExpected: false,
 		},
@@ -3980,7 +3980,7 @@ func TestBuildStoredAuctionResponses(t *testing.T) {
 			desc: "Single imp with single stored response bid",
 			in: testIn{
 				StoredAuctionResponses: map[string]json.RawMessage{
-					"impression-id": json.RawMessage(`[{"bid": [{"id": "bid_id"}],"seat": "appnexus"}]`),
+					"impression-id": json.RawMessage(`[{"bid": [{"id": "bid_id", "ext": {"prebid": {"type": "native"}}}],"seat": "appnexus"}]`),
 				},
 			},
 			expected: testResults{
@@ -3988,7 +3988,8 @@ func TestBuildStoredAuctionResponses(t *testing.T) {
 					openrtb_ext.BidderName("appnexus"): {
 						Bids: []*entities.PbsOrtbBid{
 							{
-								Bid: &openrtb2.Bid{ID: "bid_id", ImpID: "impression-id"},
+								Bid:     &openrtb2.Bid{ID: "bid_id", ImpID: "impression-id", Ext: []byte(`{"prebid": {"type": "native"}}`)},
+								BidType: openrtb_ext.BidTypeNative,
 							},
 						},
 					},
@@ -4000,15 +4001,15 @@ func TestBuildStoredAuctionResponses(t *testing.T) {
 			desc: "Single imp with multiple bids in stored response one bidder",
 			in: testIn{
 				StoredAuctionResponses: map[string]json.RawMessage{
-					"impression-id": json.RawMessage(`[{"bid": [{"id": "bid_id1"}, {"id": "bid_id2"}],"seat": "appnexus"}]`),
+					"impression-id": json.RawMessage(`[{"bid": [{"id": "bid_id1", "ext": {"prebid": {"type": "native"}}}, {"id": "bid_id2", "ext": {"prebid": {"type": "video"}}}],"seat": "appnexus"}]`),
 				},
 			},
 			expected: testResults{
 				adapterBids: map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid{
 					openrtb_ext.BidderName("appnexus"): {
 						Bids: []*entities.PbsOrtbBid{
-							{Bid: &openrtb2.Bid{ID: "bid_id1", ImpID: "impression-id"}},
-							{Bid: &openrtb2.Bid{ID: "bid_id2", ImpID: "impression-id"}},
+							{Bid: &openrtb2.Bid{ID: "bid_id1", ImpID: "impression-id", Ext: []byte(`{"prebid": {"type": "native"}}`)}, BidType: openrtb_ext.BidTypeNative},
+							{Bid: &openrtb2.Bid{ID: "bid_id2", ImpID: "impression-id", Ext: []byte(`{"prebid": {"type": "video"}}`)}, BidType: openrtb_ext.BidTypeVideo},
 						},
 					},
 				},
@@ -4019,21 +4020,21 @@ func TestBuildStoredAuctionResponses(t *testing.T) {
 			desc: "Single imp with multiple bids in stored response two bidders",
 			in: testIn{
 				StoredAuctionResponses: map[string]json.RawMessage{
-					"impression-id": json.RawMessage(`[{"bid": [{"id": "apn_id1"}, {"id": "apn_id2"}],"seat": "appnexus"}, {"bid": [{"id": "rubicon_id1"}, {"id": "rubicon_id2"}],"seat": "rubicon"}]`),
+					"impression-id": json.RawMessage(`[{"bid": [{"id": "apn_id1", "ext": {"prebid": {"type": "native"}}}, {"id": "apn_id2", "ext": {"prebid": {"type": "native"}}}],"seat": "appnexus"}, {"bid": [{"id": "rubicon_id1", "ext": {"prebid": {"type": "banner"}}}, {"id": "rubicon_id2", "ext": {"prebid": {"type": "banner"}}}],"seat": "rubicon"}]`),
 				},
 			},
 			expected: testResults{
 				adapterBids: map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid{
 					openrtb_ext.BidderName("appnexus"): {
 						Bids: []*entities.PbsOrtbBid{
-							{Bid: &openrtb2.Bid{ID: "apn_id1", ImpID: "impression-id"}},
-							{Bid: &openrtb2.Bid{ID: "apn_id2", ImpID: "impression-id"}},
+							{Bid: &openrtb2.Bid{ID: "apn_id1", ImpID: "impression-id", Ext: []byte(`{"prebid": {"type": "native"}}`)}, BidType: openrtb_ext.BidTypeNative},
+							{Bid: &openrtb2.Bid{ID: "apn_id2", ImpID: "impression-id", Ext: []byte(`{"prebid": {"type": "native"}}`)}, BidType: openrtb_ext.BidTypeNative},
 						},
 					},
 					openrtb_ext.BidderName("rubicon"): {
 						Bids: []*entities.PbsOrtbBid{
-							{Bid: &openrtb2.Bid{ID: "rubicon_id1", ImpID: "impression-id"}},
-							{Bid: &openrtb2.Bid{ID: "rubicon_id2", ImpID: "impression-id"}},
+							{Bid: &openrtb2.Bid{ID: "rubicon_id1", ImpID: "impression-id", Ext: []byte(`{"prebid": {"type": "banner"}}`)}, BidType: openrtb_ext.BidTypeBanner},
+							{Bid: &openrtb2.Bid{ID: "rubicon_id2", ImpID: "impression-id", Ext: []byte(`{"prebid": {"type": "banner"}}`)}, BidType: openrtb_ext.BidTypeBanner},
 						},
 					},
 				},
@@ -4044,24 +4045,24 @@ func TestBuildStoredAuctionResponses(t *testing.T) {
 			desc: "Two imps with two bids in stored response two bidders, different bids number",
 			in: testIn{
 				StoredAuctionResponses: map[string]json.RawMessage{
-					"impression-id1": json.RawMessage(`[{"bid": [{"id": "apn_id1"}, {"id": "apn_id2"}],"seat": "appnexus"}]`),
-					"impression-id2": json.RawMessage(`[{"bid": [{"id": "apn_id1"}, {"id": "apn_id2"}],"seat": "appnexus"}, {"bid": [{"id": "rubicon_id1"}, {"id": "rubicon_id2"}],"seat": "rubicon"}]`),
+					"impression-id1": json.RawMessage(`[{"bid": [{"id": "apn_id1", "ext": {"prebid": {"type": "native"}}}, {"id": "apn_id2", "ext": {"prebid": {"type": "native"}}}],"seat": "appnexus"}]`),
+					"impression-id2": json.RawMessage(`[{"bid": [{"id": "apn_id1", "ext": {"prebid": {"type": "native"}}}, {"id": "apn_id2", "ext": {"prebid": {"type": "native"}}}],"seat": "appnexus"}, {"bid": [{"id": "rubicon_id1", "ext": {"prebid": {"type": "native"}}}, {"id": "rubicon_id2", "ext": {"prebid": {"type": "native"}}}],"seat": "rubicon"}]`),
 				},
 			},
 			expected: testResults{
 				adapterBids: map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid{
 					openrtb_ext.BidderName("appnexus"): {
 						Bids: []*entities.PbsOrtbBid{
-							{Bid: &openrtb2.Bid{ID: "apn_id1", ImpID: "impression-id1"}},
-							{Bid: &openrtb2.Bid{ID: "apn_id2", ImpID: "impression-id1"}},
-							{Bid: &openrtb2.Bid{ID: "apn_id1", ImpID: "impression-id2"}},
-							{Bid: &openrtb2.Bid{ID: "apn_id2", ImpID: "impression-id2"}},
+							{Bid: &openrtb2.Bid{ID: "apn_id1", ImpID: "impression-id1", Ext: []byte(`{"prebid": {"type": "native"}}`)}, BidType: openrtb_ext.BidTypeNative},
+							{Bid: &openrtb2.Bid{ID: "apn_id2", ImpID: "impression-id1", Ext: []byte(`{"prebid": {"type": "native"}}`)}, BidType: openrtb_ext.BidTypeNative},
+							{Bid: &openrtb2.Bid{ID: "apn_id1", ImpID: "impression-id2", Ext: []byte(`{"prebid": {"type": "native"}}`)}, BidType: openrtb_ext.BidTypeNative},
+							{Bid: &openrtb2.Bid{ID: "apn_id2", ImpID: "impression-id2", Ext: []byte(`{"prebid": {"type": "native"}}`)}, BidType: openrtb_ext.BidTypeNative},
 						},
 					},
 					openrtb_ext.BidderName("rubicon"): {
 						Bids: []*entities.PbsOrtbBid{
-							{Bid: &openrtb2.Bid{ID: "rubicon_id1", ImpID: "impression-id2"}},
-							{Bid: &openrtb2.Bid{ID: "rubicon_id2", ImpID: "impression-id2"}},
+							{Bid: &openrtb2.Bid{ID: "rubicon_id1", ImpID: "impression-id2", Ext: []byte(`{"prebid": {"type": "native"}}`)}, BidType: openrtb_ext.BidTypeNative},
+							{Bid: &openrtb2.Bid{ID: "rubicon_id2", ImpID: "impression-id2", Ext: []byte(`{"prebid": {"type": "native"}}`)}, BidType: openrtb_ext.BidTypeNative},
 						},
 					},
 				},
@@ -4072,26 +4073,26 @@ func TestBuildStoredAuctionResponses(t *testing.T) {
 			desc: "Two imps with two bids in stored response two bidders",
 			in: testIn{
 				StoredAuctionResponses: map[string]json.RawMessage{
-					"impression-id1": json.RawMessage(`[{"bid": [{"id": "apn_id1"}, {"id": "apn_id2"}],"seat": "appnexus"}, {"bid": [{"id": "rubicon_id1"}, {"id": "rubicon_id2"}],"seat": "rubicon"}]`),
-					"impression-id2": json.RawMessage(`[{"bid": [{"id": "apn_id1"}, {"id": "apn_id2"}],"seat": "appnexus"}, {"bid": [{"id": "rubicon_id1"}, {"id": "rubicon_id2"}],"seat": "rubicon"}]`),
+					"impression-id1": json.RawMessage(`[{"bid": [{"id": "apn_id1", "ext": {"prebid": {"type": "native"}}}, {"id": "apn_id2", "ext": {"prebid": {"type": "native"}}}],"seat": "appnexus"}, {"bid": [{"id": "rubicon_id1", "ext": {"prebid": {"type": "native"}}}, {"id": "rubicon_id2", "ext": {"prebid": {"type": "native"}}}],"seat": "rubicon"}]`),
+					"impression-id2": json.RawMessage(`[{"bid": [{"id": "apn_id1", "ext": {"prebid": {"type": "native"}}}, {"id": "apn_id2", "ext": {"prebid": {"type": "native"}}}],"seat": "appnexus"}, {"bid": [{"id": "rubicon_id1", "ext": {"prebid": {"type": "native"}}}, {"id": "rubicon_id2", "ext": {"prebid": {"type": "native"}}}],"seat": "rubicon"}]`),
 				},
 			},
 			expected: testResults{
 				adapterBids: map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid{
 					openrtb_ext.BidderName("appnexus"): {
 						Bids: []*entities.PbsOrtbBid{
-							{Bid: &openrtb2.Bid{ID: "apn_id1", ImpID: "impression-id1"}},
-							{Bid: &openrtb2.Bid{ID: "apn_id2", ImpID: "impression-id1"}},
-							{Bid: &openrtb2.Bid{ID: "apn_id1", ImpID: "impression-id2"}},
-							{Bid: &openrtb2.Bid{ID: "apn_id2", ImpID: "impression-id2"}},
+							{Bid: &openrtb2.Bid{ID: "apn_id1", ImpID: "impression-id1", Ext: []byte(`{"prebid": {"type": "native"}}`)}, BidType: openrtb_ext.BidTypeNative},
+							{Bid: &openrtb2.Bid{ID: "apn_id2", ImpID: "impression-id1", Ext: []byte(`{"prebid": {"type": "native"}}`)}, BidType: openrtb_ext.BidTypeNative},
+							{Bid: &openrtb2.Bid{ID: "apn_id1", ImpID: "impression-id2", Ext: []byte(`{"prebid": {"type": "native"}}`)}, BidType: openrtb_ext.BidTypeNative},
+							{Bid: &openrtb2.Bid{ID: "apn_id2", ImpID: "impression-id2", Ext: []byte(`{"prebid": {"type": "native"}}`)}, BidType: openrtb_ext.BidTypeNative},
 						},
 					},
 					openrtb_ext.BidderName("rubicon"): {
 						Bids: []*entities.PbsOrtbBid{
-							{Bid: &openrtb2.Bid{ID: "rubicon_id1", ImpID: "impression-id1"}},
-							{Bid: &openrtb2.Bid{ID: "rubicon_id2", ImpID: "impression-id1"}},
-							{Bid: &openrtb2.Bid{ID: "rubicon_id1", ImpID: "impression-id2"}},
-							{Bid: &openrtb2.Bid{ID: "rubicon_id2", ImpID: "impression-id2"}},
+							{Bid: &openrtb2.Bid{ID: "rubicon_id1", ImpID: "impression-id1", Ext: []byte(`{"prebid": {"type": "native"}}`)}, BidType: openrtb_ext.BidTypeNative},
+							{Bid: &openrtb2.Bid{ID: "rubicon_id2", ImpID: "impression-id1", Ext: []byte(`{"prebid": {"type": "native"}}`)}, BidType: openrtb_ext.BidTypeNative},
+							{Bid: &openrtb2.Bid{ID: "rubicon_id1", ImpID: "impression-id2", Ext: []byte(`{"prebid": {"type": "native"}}`)}, BidType: openrtb_ext.BidTypeNative},
+							{Bid: &openrtb2.Bid{ID: "rubicon_id2", ImpID: "impression-id2", Ext: []byte(`{"prebid": {"type": "native"}}`)}, BidType: openrtb_ext.BidTypeNative},
 						},
 					},
 				},

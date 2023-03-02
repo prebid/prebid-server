@@ -1280,6 +1280,20 @@ func listBiddersWithRequests(bidderRequests []BidderRequest) []openrtb_ext.Bidde
 	return liveAdapters
 }
 
+func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	if bid.Ext != nil {
+		var bidExt openrtb_ext.ExtBid
+		err := json.Unmarshal(bid.Ext, &bidExt)
+		if err == nil && bidExt.Prebid != nil {
+			return openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
+		}
+	}
+
+	return "", &errortypes.BadServerResponse{
+		Message: fmt.Sprintf("Failed to parse bid mediatype for impression \"%s\"", bid.ImpID),
+	}
+}
+
 func buildStoredAuctionResponse(storedAuctionResponses map[string]json.RawMessage) (
 	map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid,
 	*openrtb_ext.Fledge,
@@ -1300,7 +1314,11 @@ func buildStoredAuctionResponse(storedAuctionResponses map[string]json.RawMessag
 			//set imp id from request
 			for i := range seat.Bid {
 				seat.Bid[i].ImpID = impId
-				bidsToAdd = append(bidsToAdd, &entities.PbsOrtbBid{Bid: &seat.Bid[i]})
+				bidType, err := getMediaTypeForBid(seat.Bid[i])
+				if err != nil {
+					return nil, nil, nil, err
+				}
+				bidsToAdd = append(bidsToAdd, &entities.PbsOrtbBid{Bid: &seat.Bid[i], BidType: bidType})
 			}
 
 			bidderName := openrtb_ext.BidderName(seat.Seat)
