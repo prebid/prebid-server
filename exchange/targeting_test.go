@@ -16,6 +16,7 @@ import (
 	"github.com/prebid/prebid-server/hooks/hookexecution"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/ptrutil"
 
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/stretchr/testify/assert"
@@ -903,11 +904,11 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 		TruncateTargetAttr: nil,
 		MultiBidMap: map[string]openrtb_ext.ExtMultiBid{
 			string(openrtb_ext.BidderPubmatic): {
-				MaxBids:                getIntPtr(3),
+				MaxBids:                ptrutil.ToPtr(3),
 				TargetBidderCodePrefix: "pm",
 			},
 			string(openrtb_ext.BidderAppnexus): {
-				MaxBids: getIntPtr(2),
+				MaxBids: ptrutil.ToPtr(2),
 			},
 		},
 	},

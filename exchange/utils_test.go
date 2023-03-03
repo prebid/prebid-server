@@ -3632,7 +3632,7 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 				reqMultiBid: []*openrtb_ext.ExtMultiBid{
 					{
 						Bidder:  string(openrtb_ext.BidderAppnexus),
-						MaxBids: getIntPtr(2),
+						MaxBids: ptrutil.ToPtr(2),
 					},
 				},
 			},
@@ -3645,22 +3645,22 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 				reqMultiBid: []*openrtb_ext.ExtMultiBid{
 					{
 						Bidder:  string(openrtb_ext.BidderAppnexus),
-						MaxBids: getIntPtr(3),
+						MaxBids: ptrutil.ToPtr(3),
 					},
 					{
 						Bidder:  string(openrtb_ext.BidderPubmatic),
-						MaxBids: getIntPtr(2),
+						MaxBids: ptrutil.ToPtr(2),
 					},
 					{
 						Bidders: []string{string(openrtb_ext.Bidder33Across), string(openrtb_ext.BidderRubicon)},
-						MaxBids: getIntPtr(2),
+						MaxBids: ptrutil.ToPtr(2),
 					},
 				},
 			},
 			want: []*openrtb_ext.ExtMultiBid{
 				{
 					Bidder:  string(openrtb_ext.BidderPubmatic),
-					MaxBids: getIntPtr(2),
+					MaxBids: ptrutil.ToPtr(2),
 				},
 			},
 		},
@@ -3671,22 +3671,22 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 				reqMultiBid: []*openrtb_ext.ExtMultiBid{
 					{
 						Bidder:  string(openrtb_ext.BidderAppnexus),
-						MaxBids: getIntPtr(3),
+						MaxBids: ptrutil.ToPtr(3),
 					},
 					{
 						Bidder:  string(openrtb_ext.BidderPubmatic),
-						MaxBids: getIntPtr(2),
+						MaxBids: ptrutil.ToPtr(2),
 					},
 					{
 						Bidders: []string{string(openrtb_ext.Bidder33Across), string(openrtb_ext.BidderRubicon)},
-						MaxBids: getIntPtr(4),
+						MaxBids: ptrutil.ToPtr(4),
 					},
 				},
 			},
 			want: []*openrtb_ext.ExtMultiBid{
 				{
 					Bidders: []string{string(openrtb_ext.BidderRubicon)},
-					MaxBids: getIntPtr(4),
+					MaxBids: ptrutil.ToPtr(4),
 				},
 			},
 		},
@@ -3697,15 +3697,15 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 				reqMultiBid: []*openrtb_ext.ExtMultiBid{
 					{
 						Bidder:  string(openrtb_ext.BidderGroupm),
-						MaxBids: getIntPtr(3),
+						MaxBids: ptrutil.ToPtr(3),
 					},
 					{
 						Bidder:  string(openrtb_ext.BidderPubmatic),
-						MaxBids: getIntPtr(2),
+						MaxBids: ptrutil.ToPtr(2),
 					},
 					{
 						Bidders: []string{string(openrtb_ext.Bidder33Across), string(openrtb_ext.BidderRubicon)},
-						MaxBids: getIntPtr(2),
+						MaxBids: ptrutil.ToPtr(2),
 					},
 				},
 				adapterABC: &openrtb_ext.ExtAlternateBidderCodes{
@@ -3719,11 +3719,11 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 			want: []*openrtb_ext.ExtMultiBid{
 				{
 					Bidder:  string(openrtb_ext.BidderGroupm),
-					MaxBids: getIntPtr(3),
+					MaxBids: ptrutil.ToPtr(3),
 				},
 				{
 					Bidder:  string(openrtb_ext.BidderPubmatic),
-					MaxBids: getIntPtr(2),
+					MaxBids: ptrutil.ToPtr(2),
 				},
 			},
 		},
@@ -3734,15 +3734,15 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 				reqMultiBid: []*openrtb_ext.ExtMultiBid{
 					{
 						Bidder:  string(openrtb_ext.BidderGroupm),
-						MaxBids: getIntPtr(3),
+						MaxBids: ptrutil.ToPtr(3),
 					},
 					{
 						Bidder:  string(openrtb_ext.BidderPubmatic),
-						MaxBids: getIntPtr(2),
+						MaxBids: ptrutil.ToPtr(2),
 					},
 					{
 						Bidders: []string{string(openrtb_ext.Bidder33Across), string(openrtb_ext.BidderAppnexus)},
-						MaxBids: getIntPtr(4),
+						MaxBids: ptrutil.ToPtr(4),
 					},
 				},
 				adapterABC: &openrtb_ext.ExtAlternateBidderCodes{
@@ -3756,11 +3756,11 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 			want: []*openrtb_ext.ExtMultiBid{
 				{
 					Bidder:  string(openrtb_ext.BidderGroupm),
-					MaxBids: getIntPtr(3),
+					MaxBids: ptrutil.ToPtr(3),
 				},
 				{
 					Bidders: []string{string(openrtb_ext.BidderAppnexus)},
-					MaxBids: getIntPtr(4),
+					MaxBids: ptrutil.ToPtr(4),
 				},
 			},
 		},
@@ -3771,15 +3771,15 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 				reqMultiBid: []*openrtb_ext.ExtMultiBid{
 					{
 						Bidder:  string(openrtb_ext.BidderGroupm),
-						MaxBids: getIntPtr(3),
+						MaxBids: ptrutil.ToPtr(3),
 					},
 					{
 						Bidder:  string(openrtb_ext.BidderPubmatic),
-						MaxBids: getIntPtr(2),
+						MaxBids: ptrutil.ToPtr(2),
 					},
 					{
 						Bidders: []string{string(openrtb_ext.Bidder33Across), string(openrtb_ext.BidderRubicon)},
-						MaxBids: getIntPtr(2),
+						MaxBids: ptrutil.ToPtr(2),
 					},
 				},
 				adapterABC: &openrtb_ext.ExtAlternateBidderCodes{
@@ -3793,19 +3793,19 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 			want: []*openrtb_ext.ExtMultiBid{
 				{
 					Bidder:  string(openrtb_ext.BidderGroupm),
-					MaxBids: getIntPtr(3),
+					MaxBids: ptrutil.ToPtr(3),
 				},
 				{
 					Bidder:  string(openrtb_ext.BidderPubmatic),
-					MaxBids: getIntPtr(2),
+					MaxBids: ptrutil.ToPtr(2),
 				},
 				{
 					Bidders: []string{string(openrtb_ext.Bidder33Across)},
-					MaxBids: getIntPtr(2),
+					MaxBids: ptrutil.ToPtr(2),
 				},
 				{
 					Bidders: []string{string(openrtb_ext.BidderRubicon)},
-					MaxBids: getIntPtr(2),
+					MaxBids: ptrutil.ToPtr(2),
 				},
 			},
 		},
@@ -3816,15 +3816,15 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 				reqMultiBid: []*openrtb_ext.ExtMultiBid{
 					{
 						Bidder:  string(openrtb_ext.BidderGroupm),
-						MaxBids: getIntPtr(3),
+						MaxBids: ptrutil.ToPtr(3),
 					},
 					{
 						Bidder:  string(openrtb_ext.BidderPubmatic),
-						MaxBids: getIntPtr(2),
+						MaxBids: ptrutil.ToPtr(2),
 					},
 					{
 						Bidders: []string{string(openrtb_ext.Bidder33Across), string(openrtb_ext.BidderAppnexus)},
-						MaxBids: getIntPtr(4),
+						MaxBids: ptrutil.ToPtr(4),
 					},
 				},
 				adapterABC: &openrtb_ext.ExtAlternateBidderCodes{
@@ -3838,19 +3838,19 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 			want: []*openrtb_ext.ExtMultiBid{
 				{
 					Bidder:  string(openrtb_ext.BidderGroupm),
-					MaxBids: getIntPtr(3),
+					MaxBids: ptrutil.ToPtr(3),
 				},
 				{
 					Bidder:  string(openrtb_ext.BidderPubmatic),
-					MaxBids: getIntPtr(2),
+					MaxBids: ptrutil.ToPtr(2),
 				},
 				{
 					Bidders: []string{string(openrtb_ext.Bidder33Across)},
-					MaxBids: getIntPtr(4),
+					MaxBids: ptrutil.ToPtr(4),
 				},
 				{
 					Bidders: []string{string(openrtb_ext.BidderAppnexus)},
-					MaxBids: getIntPtr(4),
+					MaxBids: ptrutil.ToPtr(4),
 				},
 			},
 		},

@@ -3542,8 +3542,6 @@ func TestApplyDealSupport(t *testing.T) {
 	}
 }
 
-var getIntPtr = func(m int) *int { return &m }
-
 func TestApplyDealSupportMultiBid(t *testing.T) {
 	type args struct {
 		bidRequest  *openrtb2.BidRequest
@@ -3640,7 +3638,7 @@ func TestApplyDealSupportMultiBid(t *testing.T) {
 				multiBid: map[string]openrtb_ext.ExtMultiBid{
 					"appnexus": {
 						TargetBidderCodePrefix: "appN",
-						MaxBids:                getIntPtr(2),
+						MaxBids:                ptrutil.ToPtr(2),
 					},
 				},
 			},
@@ -3690,7 +3688,7 @@ func TestApplyDealSupportMultiBid(t *testing.T) {
 				},
 				multiBid: map[string]openrtb_ext.ExtMultiBid{
 					"appnexus": {
-						MaxBids: getIntPtr(2),
+						MaxBids: ptrutil.ToPtr(2),
 					},
 				},
 			},

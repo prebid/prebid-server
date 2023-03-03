@@ -4,17 +4,18 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
 
-var maxBid1 = getIntPtr(1)
-var maxBid2 = getIntPtr(2)
-var maxBid3 = getIntPtr(3)
-var maxBid9 = getIntPtr(9)
+var maxBid1 = ptrutil.ToPtr(1)
+var maxBid2 = ptrutil.ToPtr(2)
+var maxBid3 = ptrutil.ToPtr(3)
+var maxBid9 = ptrutil.ToPtr(9)
 
 func TestValidateAndBuildExtMultiBid(t *testing.T) {
-	var maxBid0 = getIntPtr(0)
-	var maxBid10 = getIntPtr(10)
+	var maxBid0 = ptrutil.ToPtr(0)
+	var maxBid10 = ptrutil.ToPtr(10)
 
 	type args struct {
 		prebid *ExtRequestPrebid
@@ -188,11 +189,9 @@ func TestValidateAndBuildExtMultiBid(t *testing.T) {
 	}
 }
 
-var getIntPtr = func(m int) *int { return &m }
-
 func Test_addMultiBid(t *testing.T) {
-	var maxBid0 = getIntPtr(0)
-	var maxBid10 = getIntPtr(10)
+	var maxBid0 = ptrutil.ToPtr(0)
+	var maxBid10 = ptrutil.ToPtr(10)
 
 	type args struct {
 		multiBidMap map[string]struct{}
