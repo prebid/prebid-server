@@ -8,6 +8,8 @@ import (
 	"sort"
 	"testing"
 
+	gpplib "github.com/prebid/go-gpp"
+	"github.com/prebid/go-gpp/constants"
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -3474,5 +3476,308 @@ func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
 		for i, wantBidderRequest := range test.wantExt {
 			assert.Equal(t, wantBidderRequest, bidderRequests[i].BidRequest.Ext, test.desc+" : "+string(bidderRequests[i].BidderCoreName)+"\n\t\tGotRequestExt : "+string(bidderRequests[i].BidRequest.Ext))
 		}
+	}
+}
+
+type GPPMockSection struct {
+	sectionID constants.SectionID
+	value     string
+}
+
+func (gs GPPMockSection) GetID() constants.SectionID {
+	return gs.sectionID
+}
+
+func (gs GPPMockSection) GetValue() string {
+	return gs.value
+}
+
+func TestGdprFromGPP(t *testing.T) {
+	testCases := []struct {
+		name            string
+		desc            string
+		initialRequest  *openrtb2.BidRequest
+		gpp             gpplib.GppContainer
+		expectedRequest *openrtb2.BidRequest
+	}{
+		{
+			name:            "Empty",
+			desc:            "Empty Request",
+			initialRequest:  &openrtb2.BidRequest{},
+			gpp:             gpplib.GppContainer{},
+			expectedRequest: &openrtb2.BidRequest{},
+		},
+		{
+			name: "GDPR_Downgrade",
+			desc: "GDPR from GPP, into empty",
+			initialRequest: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{
+					GPPSID: []int8{2},
+				},
+			},
+			gpp: gpplib.GppContainer{
+				SectionTypes: []constants.SectionID{2},
+				Sections: []gpplib.Section{
+					GPPMockSection{
+						sectionID: 2,
+						value:     "GDPRConsent",
+					},
+				},
+			},
+			expectedRequest: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{
+					GPPSID: []int8{2},
+					GDPR:   ptrutil.ToPtr[int8](1),
+				},
+				User: &openrtb2.User{
+					Consent: "GDPRConsent",
+				},
+			},
+		},
+		{
+			name: "Downgrade_Blocked_By_Existing",
+			desc: "GDPR from GPP blocked by existing GDPR",
+			initialRequest: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{
+					GPPSID: []int8{2},
+					GDPR:   ptrutil.ToPtr[int8](1),
+				},
+				User: &openrtb2.User{
+					Consent: "LegacyConsent",
+				},
+			},
+			gpp: gpplib.GppContainer{
+				SectionTypes: []constants.SectionID{2},
+				Sections: []gpplib.Section{
+					GPPMockSection{
+						sectionID: 2,
+						value:     "GDPRConsent",
+					},
+				},
+			},
+			expectedRequest: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{
+					GPPSID: []int8{2},
+					GDPR:   ptrutil.ToPtr[int8](1),
+				},
+				User: &openrtb2.User{
+					Consent: "LegacyConsent",
+				},
+			},
+		},
+		{
+			name: "Downgrade_Partial",
+			desc: "GDPR from GPP partially blocked by existing GDPR",
+			initialRequest: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{
+					GPPSID: []int8{2},
+					GDPR:   ptrutil.ToPtr[int8](0),
+				},
+			},
+			gpp: gpplib.GppContainer{
+				SectionTypes: []constants.SectionID{2},
+				Sections: []gpplib.Section{
+					GPPMockSection{
+						sectionID: 2,
+						value:     "GDPRConsent",
+					},
+				},
+			},
+			expectedRequest: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{
+					GPPSID: []int8{2},
+					GDPR:   ptrutil.ToPtr[int8](0),
+				},
+				User: &openrtb2.User{
+					Consent: "GDPRConsent",
+				},
+			},
+		},
+		{
+			name: "No_GDPR",
+			desc: "Downgrade not possible due to missing GDPR",
+			initialRequest: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{
+					GPPSID: []int8{6},
+				},
+			},
+			gpp: gpplib.GppContainer{
+				SectionTypes: []constants.SectionID{6},
+				Sections: []gpplib.Section{
+					GPPMockSection{
+						sectionID: 6,
+						value:     "USPrivacy",
+					},
+				},
+			},
+			expectedRequest: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{
+					GPPSID: []int8{6},
+					GDPR:   ptrutil.ToPtr[int8](0),
+				},
+			},
+		},
+		{
+			name: "No_SID",
+			desc: "GDPR from GPP partially blocked by no SID",
+			initialRequest: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{
+					GPPSID: []int8{6},
+				},
+			},
+			gpp: gpplib.GppContainer{
+				SectionTypes: []constants.SectionID{2, 6},
+				Sections: []gpplib.Section{
+					GPPMockSection{
+						sectionID: 2,
+						value:     "GDPRConsent",
+					},
+					GPPMockSection{
+						sectionID: 6,
+						value:     "USPrivacy",
+					},
+				},
+			},
+			expectedRequest: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{
+					GPPSID: []int8{6},
+					GDPR:   ptrutil.ToPtr[int8](0),
+				},
+				User: &openrtb2.User{
+					Consent: "GDPRConsent",
+				},
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			gdprFromGPP(test.initialRequest, test.gpp)
+			assert.Equal(t, test.expectedRequest, test.initialRequest)
+		})
+	}
+}
+
+func TestPrivacyFromGPP(t *testing.T) {
+	testCases := []struct {
+		name            string
+		desc            string
+		initialRequest  *openrtb2.BidRequest
+		gpp             gpplib.GppContainer
+		expectedRequest *openrtb2.BidRequest
+	}{
+		{
+			name:            "Empty",
+			desc:            "Empty Request",
+			initialRequest:  &openrtb2.BidRequest{},
+			gpp:             gpplib.GppContainer{},
+			expectedRequest: &openrtb2.BidRequest{},
+		},
+		{
+			name: "Privacy_Downgrade",
+			desc: "US Privacy from GPP, into empty",
+			initialRequest: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{
+					GPPSID: []int8{6},
+				},
+			},
+			gpp: gpplib.GppContainer{
+				SectionTypes: []constants.SectionID{6},
+				Sections: []gpplib.Section{
+					GPPMockSection{
+						sectionID: 6,
+						value:     "USPrivacy",
+					},
+				},
+			},
+			expectedRequest: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{
+					GPPSID:    []int8{6},
+					USPrivacy: "USPrivacy",
+				},
+			},
+		},
+		{
+			name: "Downgrade_Blocked_By_Existing",
+			desc: "US Privacy from GPP blocked by existing US Privacy",
+			initialRequest: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{
+					GPPSID:    []int8{6},
+					USPrivacy: "LegacyPrivacy",
+				},
+			},
+			gpp: gpplib.GppContainer{
+				SectionTypes: []constants.SectionID{6},
+				Sections: []gpplib.Section{
+					GPPMockSection{
+						sectionID: 6,
+						value:     "USPrivacy",
+					},
+				},
+			},
+			expectedRequest: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{
+					GPPSID:    []int8{6},
+					USPrivacy: "LegacyPrivacy",
+				},
+			},
+		},
+		{
+			name: "No_USPrivacy",
+			desc: "Downgrade not possible due to missing USPrivacy",
+			initialRequest: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{
+					GPPSID: []int8{2},
+				},
+			},
+			gpp: gpplib.GppContainer{
+				SectionTypes: []constants.SectionID{2},
+				Sections: []gpplib.Section{
+					GPPMockSection{
+						sectionID: 2,
+						value:     "GDPRConsent",
+					},
+				},
+			},
+			expectedRequest: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{
+					GPPSID: []int8{2},
+				},
+			},
+		},
+		{
+			name: "No_SID",
+			desc: "US Privacy from GPP partially blocked by no SID",
+			initialRequest: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{
+					GPPSID: []int8{2},
+				},
+			},
+			gpp: gpplib.GppContainer{
+				SectionTypes: []constants.SectionID{2, 6},
+				Sections: []gpplib.Section{
+					GPPMockSection{
+						sectionID: 2,
+						value:     "GDPRConsent",
+					},
+					GPPMockSection{
+						sectionID: 6,
+						value:     "USPrivacy",
+					},
+				},
+			},
+			expectedRequest: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{
+					GPPSID: []int8{2},
+				},
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			privacyFromGPP(test.initialRequest, test.gpp)
+			assert.Equal(t, test.expectedRequest, test.initialRequest)
+		})
 	}
 }

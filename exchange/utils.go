@@ -10,6 +10,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/prebid/go-gdpr/vendorconsent"
 	gpplib "github.com/prebid/go-gpp"
+	gppConstants "github.com/prebid/go-gpp/constants"
 	"github.com/prebid/openrtb/v17/openrtb2"
 
 	"github.com/prebid/prebid-server/adapters"
@@ -23,6 +24,7 @@ import (
 	"github.com/prebid/prebid-server/privacy/lmt"
 	"github.com/prebid/prebid-server/schain"
 	"github.com/prebid/prebid-server/stored_responses"
+	"github.com/prebid/prebid-server/util/ptrutil"
 )
 
 var channelTypeMap = map[metrics.RequestType]config.ChannelType{
@@ -178,6 +180,16 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		if bidRequestAllowed {
 			privacyEnforcement.Apply(bidderRequest.BidRequest)
 			allowedBidderRequests = append(allowedBidderRequests, bidderRequest)
+		}
+		// GPP downgrade: always downgrade unless we can confirm GPP is supported
+		if binfo, ok := rs.bidderInfo[string(bidderRequest.BidderCoreName)]; ok {
+			if binfo.OpenRTB == nil || !binfo.OpenRTB.GPPSupported {
+				gdprFromGPP(bidderRequest.BidRequest, gpp)
+				privacyFromGPP(bidderRequest.BidRequest, gpp)
+			}
+		} else {
+			gdprFromGPP(bidderRequest.BidRequest, gpp)
+			privacyFromGPP(bidderRequest.BidRequest, gpp)
 		}
 	}
 
@@ -845,6 +857,49 @@ func mergeBidderRequests(allBidderRequests []BidderRequest, bidderNameToBidderRe
 		}
 	}
 	return allBidderRequests
+}
+
+func gdprFromGPP(r *openrtb2.BidRequest, gpp gpplib.GppContainer) {
+	if r.Regs != nil && r.Regs.GDPR == nil {
+		if len(r.Regs.GPPSID) > 0 {
+			// Set to 0 unless SID exists
+			r.Regs.GDPR = ptrutil.ToPtr[int8](0)
+			for _, id := range r.Regs.GPPSID {
+				if id == int8(gppConstants.SectionTCFEU2) {
+					r.Regs.GDPR = ptrutil.ToPtr[int8](1)
+				}
+			}
+		}
+	}
+
+	if r.User == nil || len(r.User.Consent) == 0 {
+		for i, id := range gpp.SectionTypes {
+			if id == gppConstants.SectionTCFEU2 {
+				if r.User == nil {
+					r.User = &openrtb2.User{}
+				}
+				r.User.Consent = gpp.Sections[i].GetValue()
+				return
+			}
+		}
+	}
+
+}
+func privacyFromGPP(r *openrtb2.BidRequest, gpp gpplib.GppContainer) {
+	if r.Regs != nil && len(r.Regs.USPrivacy) == 0 {
+		if len(r.Regs.GPPSID) > 0 {
+			for _, id := range r.Regs.GPPSID {
+				if id == int8(gppConstants.SectionUSPV1) {
+					for i, id := range gpp.SectionTypes {
+						if id == gppConstants.SectionUSPV1 {
+							r.Regs.USPrivacy = gpp.Sections[i].GetValue()
+						}
+					}
+				}
+			}
+		}
+	}
+
 }
 
 func WrapJSONInData(data []byte) []byte {
