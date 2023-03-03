@@ -33,6 +33,14 @@
           "w": 300,
           "h": 250
         },
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
         "ext": {
           "bidder": {
             "zoneid": 123456,
@@ -81,6 +89,14 @@
                 "w": 300,
                 "h": 250
               },
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
               "ext": {
                 "bidder": {
                   "zoneid": 123456,
@@ -103,12 +119,12 @@
                   "impid": "test-imp-id",
                   "price": 0.1,
                   "crid": "creative-123",
-                  "adm": "some-test-ad-vast",
+                  "adm": "<iframe id='789abc' name='789abc' src='http://creative-url.criteo.com'></iframe>",
                   "h": 250,
                   "w": 300,
                   "ext": {
                     "prebid": {
-                      "type": "video"
+                      "type": "banner"
                     }
                   }
                 }
@@ -129,12 +145,12 @@
             "impid": "test-imp-id",
             "price": 0.1,
             "crid": "creative-123",
-            "adm": "some-test-ad-vast",
+            "adm": "<iframe id='789abc' name='789abc' src='http://creative-url.criteo.com'></iframe>",
             "h": 250,
             "w": 300,
             "ext": {
               "prebid": {
-                "type": "video"
+                "type": "banner"
               }
             }
           }
