@@ -33,10 +33,6 @@ type KeyVal struct {
 	Values []string `json:"value,omitempty"`
 }
 
-type appnexusAdapterOptions struct {
-	IabCategories map[string]string `json:"iab_categories"`
-}
-
 type appnexusImpExtAppnexus struct {
 	PlacementID       int             `json:"placement_id,omitempty"`
 	Keywords          string          `json:"keywords,omitempty"`
