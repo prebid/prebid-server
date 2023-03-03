@@ -1,0 +1,18 @@
+endpoint: "https://bid.pubwise.io/prebid"
+maintainer:
+  email: info@pubwise.io
+gvlVendorID: 842
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - native
+# userSync:
+#   redirect:
+#     url:
+#     userMacro: $UID
+# idk what to do here yet

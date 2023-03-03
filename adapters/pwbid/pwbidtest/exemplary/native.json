@@ -1,0 +1,87 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [{"w": 728, "h": 90}]
+        },
+        "ext": {
+          "bidder": {
+            "siteId": "3943fa"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bid.pubwise.io/prebid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [{"w": 728, "h": 90}]
+              },
+              "ext": {
+                "bidder": {
+                  "siteId": "3943fa"
+                }
+              }
+            }
+          ],
+          "site": {
+            "publisher": {
+              "idk": "idk wtf this is"
+            }
+          },
+          "regs": { "ext": { "gdpr": 0 } }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "pwbid",
+              "bid": [{
+                "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                "impid": "test-imp-id",
+                "price": 0.500000,
+                "adm": "some-test-ad",
+                "crid": "crid_10",
+                "h": 90,
+                "w": 728
+              }]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+            "impid": "test-imp-id",
+            "price": 0.5,
+            "adm": "some-test-ad",
+            "crid": "crid_10",
+            "w": 728,
+            "h": 90
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
