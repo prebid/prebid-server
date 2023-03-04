@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/errortypes"
@@ -46,7 +45,7 @@ type extCacheInstructions struct {
 // Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
 type Exchange interface {
 	// HoldAuction executes an OpenRTB v2.5 Auction.
-	HoldAuction(ctx context.Context, r AuctionRequest, debugLog *DebugLog) (*openrtb2.BidResponse, error)
+	HoldAuction(ctx context.Context, r AuctionRequest, debugLog *DebugLog) (*openrtb_ext.ResponseWrapper, error)
 }
 
 // IdFetcher can find the user's ID for a specific Bidder.
@@ -201,8 +200,6 @@ type AuctionRequest struct {
 	BidderImpReplaceImpID stored_responses.BidderImpReplaceImpID
 	PubID                 string
 	HookExecutor          hookexecution.StageExecutor
-	// LogObject will be used by auction to populate SeatNonBid
-	LogObject *analytics.LogObject
 }
 
 // BidderRequest holds the bidder specific request and all other
@@ -216,14 +213,14 @@ type BidderRequest struct {
 	ImpReplaceImpId       map[string]bool
 }
 
-func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *DebugLog) (*openrtb2.BidResponse, error) {
+func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *DebugLog) (*openrtb_ext.ResponseWrapper, error) {
 	reject := r.HookExecutor.ExecuteProcessedAuctionStage(r.BidRequestWrapper.BidRequest)
 	if reject != nil {
 		return nil, reject
 	}
 
 	var errs []error
-	var seatNonBids []openrtb_ext.SeatNonBid
+	var seatNonBid []openrtb_ext.SeatNonBid
 	// rebuild/resync the request in the request wrapper.
 	if err := r.BidRequestWrapper.RebuildRequest(); err != nil {
 		return nil, err
@@ -364,9 +361,6 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		evTracking := getEventTracking(&requestExt.Prebid, r.StartTime, &r.Account, e.bidderInfo, e.externalURL)
 		adapterBids = evTracking.modifyBidsForEvents(adapterBids)
 
-		if len(seatNonBids) > 0 {
-			r.LogObject.SeatNonBid = seatNonBids
-		}
 		r.HookExecutor.ExecuteAllProcessedBidResponsesStage(adapterBids)
 
 		if targData != nil {
@@ -379,7 +373,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 				errs = append(errs, dealErrs...)
 			}
 
-			bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, responseDebugAllow, requestExt.Prebid.Passthrough, fledge, errs)
+			bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, responseDebugAllow, requestExt.Prebid.Passthrough, fledge, errs, seatNonBid)
 			if debugLog.DebugEnabledOrOverridden {
 				if bidRespExtBytes, err := json.Marshal(bidResponseExt); err == nil {
 					debugLog.Data.Response = string(bidRespExtBytes)
@@ -397,9 +391,9 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 			targData.setTargeting(auc, r.BidRequestWrapper.BidRequest.App != nil, bidCategory, r.Account.TruncateTargetAttribute)
 
 		}
-		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, responseDebugAllow, requestExt.Prebid.Passthrough, fledge, errs)
+		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, responseDebugAllow, requestExt.Prebid.Passthrough, fledge, errs, seatNonBid)
 	} else {
-		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, responseDebugAllow, requestExt.Prebid.Passthrough, fledge, errs)
+		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, responseDebugAllow, requestExt.Prebid.Passthrough, fledge, errs, seatNonBid)
 
 		if debugLog.DebugEnabledOrOverridden {
 
@@ -432,7 +426,10 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 
 	// Build the response
 	bidResponse, err := e.buildBidResponse(ctx, liveAdapters, adapterBids, r.BidRequestWrapper.BidRequest, adapterExtra, auc, bidResponseExt, cacheInstructions.returnCreative, r.ImpExtInfoMap, r.PubID, errs)
-	return bidResponse, err
+	if err != nil {
+		return nil, err
+	}
+	return e.buildBidResponseWrapper(ctx, bidResponse, seatNonBid)
 }
 
 func (e *exchange) parseGDPRDefaultValue(bidRequest *openrtb2.BidRequest) gdpr.Signal {
@@ -1025,7 +1022,7 @@ func getPrimaryAdServer(adServerId int) (string, error) {
 }
 
 // Extract all the data from the SeatBids and build the ExtBidResponse
-func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, r AuctionRequest, debugInfo bool, passthrough json.RawMessage, fledge *openrtb_ext.Fledge, errList []error) *openrtb_ext.ExtBidResponse {
+func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, r AuctionRequest, debugInfo bool, passthrough json.RawMessage, fledge *openrtb_ext.Fledge, errList []error, seatNonBid []openrtb_ext.SeatNonBid) *openrtb_ext.ExtBidResponse {
 	bidResponseExt := &openrtb_ext.ExtBidResponse{
 		Errors:               make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage, len(adapterBids)),
 		Warnings:             make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage, len(adapterBids)),
@@ -1075,13 +1072,13 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*en
 	}
 
 	reqExt, err := r.BidRequestWrapper.GetRequestExt()
-	if err != nil {
+	if err == nil {
 		prebidExt := reqExt.GetPrebid()
-		if prebidExt != nil && prebidExt.ReturnAllBidStatus && len(r.LogObject.SeatNonBid) > 0 {
+		if prebidExt != nil && prebidExt.ReturnAllBidStatus {
 			if bidResponseExt.Prebid == nil {
 				bidResponseExt.Prebid = &openrtb_ext.ExtResponsePrebid{}
 			}
-			bidResponseExt.Prebid.SeatNonBid = r.LogObject.SeatNonBid
+			bidResponseExt.Prebid.SeatNonBid = seatNonBid
 		}
 	}
 
@@ -1089,7 +1086,7 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*en
 }
 
 // Return an openrtb seatBid for a bidder
-// BuildBidResponse is responsible for ensuring nil bid seatbids are not included
+// buildBidResponse is responsible for ensuring nil bid seatbids are not included
 func (e *exchange) makeSeatBid(adapterBid *entities.PbsOrtbSeatBid, adapter openrtb_ext.BidderName, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, auc *auction, returnCreative bool, impExtInfoMap map[string]ImpExtInfo, bidResponseExt *openrtb_ext.ExtBidResponse, pubID string) *openrtb2.SeatBid {
 	seatBid := &openrtb2.SeatBid{
 		Seat:  adapter.String(),
@@ -1432,4 +1429,23 @@ func setErrorMessageSecureMarkup(validationType string) string {
 		return "bidResponse secure markup warning: insecure creative in secure contexts"
 	}
 	return ""
+}
+
+// buildBidResponseWrapper wraps the openrtb Bid Response object into BidResponseWrapper
+// It also adds SeatNonBids within bidResponse.Ext.Prebid.SeatNonBid
+func (ex *exchange) buildBidResponseWrapper(ctx context.Context, bidResponse *openrtb2.BidResponse, seatNonBid []openrtb_ext.SeatNonBid) (*openrtb_ext.ResponseWrapper, error) {
+	response := new(openrtb_ext.ResponseWrapper)
+	response.BidResponse = bidResponse
+	resExt, err := response.GetResponseExt()
+	if err == nil {
+		prebidExt := resExt.GetPrebid()
+		if prebidExt != nil {
+			prebidExt.SeatNonBid = seatNonBid
+		}
+		resExt.SetPrebid(prebidExt)
+		if err := response.RebuildResponse(); err != nil {
+			return nil, err
+		}
+	}
+	return response, nil
 }

@@ -307,10 +307,13 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		GlobalPrivacyControlHeader: secGPC,
 		PubID:                      labels.PubID,
 		HookExecutor:               deps.hookExecutor,
-		LogObject:                  &vo.LogObject,
 	}
 
-	response, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog)
+	respWrapper, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog)
+	var response *openrtb2.BidResponse
+	if respWrapper != nil {
+		response = respWrapper.BidResponse
+	}
 	vo.Request = bidReqWrapper.BidRequest
 	vo.Response = response
 	if err != nil {
@@ -353,6 +356,12 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		errL := []error{err}
 		handleError(&labels, w, errL, &vo, &debugLog)
 		return
+	}
+
+	// Send SeatNonBid to analytics
+	var extResponse openrtb_ext.ExtBidResponse
+	if response != nil && json.Unmarshal(response.Ext, &extResponse) != nil && extResponse.Prebid != nil {
+		vo.SeatNonBid = extResponse.Prebid.SeatNonBid
 	}
 
 	w.Header().Set("Content-Type", "application/json")

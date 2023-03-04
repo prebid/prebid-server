@@ -35,7 +35,7 @@ type AuctionObject struct {
 	Account              *config.Account
 	StartTime            time.Time
 	HookExecutionOutcome []hookexecution.StageOutcome
-	LogObject
+	SeatNonBid           []openrtb_ext.SeatNonBid
 }
 
 // Loggable object of a transaction at /openrtb2/amp endpoint
@@ -48,7 +48,7 @@ type AmpObject struct {
 	Origin               string
 	StartTime            time.Time
 	HookExecutionOutcome []hookexecution.StageOutcome
-	LogObject
+	SeatNonBid           []openrtb_ext.SeatNonBid
 }
 
 // Loggable object of a transaction at /openrtb2/video endpoint
@@ -60,7 +60,7 @@ type VideoObject struct {
 	VideoRequest  *openrtb_ext.BidRequestVideo
 	VideoResponse *openrtb_ext.BidResponseVideo
 	StartTime     time.Time
-	LogObject
+	SeatNonBid    []openrtb_ext.SeatNonBid
 }
 
 // Loggable object of a transaction at /setuid
@@ -95,9 +95,4 @@ type UsersyncInfo struct {
 type NotificationEvent struct {
 	Request *EventRequest   `json:"request"`
 	Account *config.Account `json:"account"`
-}
-
-// LogObject is common loggable object
-type LogObject struct {
-	SeatNonBid []openrtb_ext.SeatNonBid
 }

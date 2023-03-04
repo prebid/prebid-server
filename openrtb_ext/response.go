@@ -101,6 +101,14 @@ const (
 	UserSyncPixel  UserSyncType = "pixel"
 )
 
+type Prebid struct {
+	Bid openrtb2.Bid `json:"bid"`
+}
+
+type NonBidExt struct {
+	Prebid Prebid `json:"bid"`
+}
+
 //PROPOSAL1 - Extend Bid Object
 
 // type NonBid struct {
@@ -110,14 +118,14 @@ const (
 
 // PROPOSAL2 - Introduce Bid Object
 type NonBid struct {
-	ImpId      string
-	StatusCode int
-	Bid        openrtb2.Bid
-	Ext        json.RawMessage
+	ImpId      string `json:"impid"`
+	StatusCode int    `json:"statuscode"`
+	// Bid        openrtb2.Bid
+	Ext NonBidExt `json:"ext"`
 }
 
 type SeatNonBid struct {
-	NonBid []NonBid // can be renamed to Bid
-	Seat   string
-	Ext    json.RawMessage
+	NonBid []NonBid        `json:"nonbid"` // can be renamed to Bid
+	Seat   string          `json:"seat"`
+	Ext    json.RawMessage `json:"ext"`
 }

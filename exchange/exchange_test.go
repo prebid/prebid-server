@@ -20,29 +20,29 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v17/openrtb2"
-	"github.com/prebid/prebid-server/exchange/entities"
-	"github.com/prebid/prebid-server/hooks"
-	"github.com/prebid/prebid-server/hooks/hookexecution"
-	"github.com/prebid/prebid-server/hooks/hookstage"
-	"github.com/prebid/prebid-server/util/ptrutil"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	jsonpatch "gopkg.in/evanphx/json-patch.v4"
-
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/exchange/entities"
 	"github.com/prebid/prebid-server/experiment/adscert"
 	"github.com/prebid/prebid-server/gdpr"
+	"github.com/prebid/prebid-server/hooks"
+	"github.com/prebid/prebid-server/hooks/hookexecution"
+	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/prebid/prebid-server/metrics"
 	metricsConf "github.com/prebid/prebid-server/metrics/config"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/prebid_cache_client"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
 	"github.com/prebid/prebid-server/usersync"
+	"github.com/prebid/prebid-server/util/ptrutil"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 )
 
 func TestNewExchange(t *testing.T) {
@@ -2252,7 +2252,11 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	}
 	ctx := context.Background()
 
-	bid, err := ex.HoldAuction(ctx, auctionRequest, debugLog)
+	resWrapper, err := ex.HoldAuction(ctx, auctionRequest, debugLog)
+	var bid *openrtb2.BidResponse
+	if resWrapper != nil {
+		bid = resWrapper.BidResponse
+	}
 	if len(spec.Response.Error) > 0 && spec.Response.Bids == nil {
 		if err.Error() != spec.Response.Error {
 			t.Errorf("%s: Exchange returned different errors. Expected %s, got %s", filename, spec.Response.Error, err.Error())
@@ -3948,7 +3952,11 @@ func TestStoredAuctionResponses(t *testing.T) {
 			HookExecutor:           &hookexecution.EmptyHookExecutor{},
 		}
 		// Run test
-		outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{})
+		resWrapper, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{})
+		var outBidResponse *openrtb2.BidResponse
+		if resWrapper != nil {
+			outBidResponse = resWrapper.BidResponse
+		}
 		if test.errorExpected {
 			assert.Error(t, err, "Error should be returned")
 		} else {
@@ -4181,9 +4189,7 @@ func TestAuctionDebugEnabled(t *testing.T) {
 
 	debugLog := &DebugLog{DebugOverride: true, DebugEnabledOrOverridden: true}
 	resp, err := e.HoldAuction(ctx, auctionRequest, debugLog)
-
 	assert.NoError(t, err, "error should be nil")
-
 	expectedResolvedRequest := `{"id":"some-request-id","imp":null,"test":1}`
 	actualResolvedRequest, _, _, err := jsonparser.Get(resp.Ext, "debug", "resolvedrequest")
 	assert.NoError(t, err, "error should be nil")
@@ -5187,4 +5193,224 @@ func (e mockUpdateBidRequestHook) HandleBidderRequestHook(_ context.Context, mct
 	mctx.ModuleContext = map[string]interface{}{"some-ctx": "some-ctx"}
 
 	return hookstage.HookResult[hookstage.BidderRequestPayload]{ChangeSet: c, ModuleContext: mctx.ModuleContext}, nil
+}
+
+func TestMakeExtBidResponse(t *testing.T) {
+	type fields struct {
+		adapterMap               map[openrtb_ext.BidderName]AdaptedBidder
+		bidderInfo               config.BidderInfos
+		bidderToSyncerKey        map[string]string
+		me                       metrics.MetricsEngine
+		cache                    prebid_cache_client.Client
+		cacheTime                time.Duration
+		gdprPermsBuilder         gdpr.PermissionsBuilder
+		tcf2ConfigBuilder        gdpr.TCF2ConfigBuilder
+		currencyConverter        *currency.RateConverter
+		externalURL              string
+		gdprDefaultValue         gdpr.Signal
+		privacyConfig            config.Privacy
+		categoriesFetcher        stored_requests.CategoryFetcher
+		bidIDGenerator           BidIDGenerator
+		hostSChainNode           *openrtb2.SupplyChainNode
+		adsCertSigner            adscert.Signer
+		server                   config.Server
+		bidValidationEnforcement config.Validations
+		requestSplitter          requestSplitter
+	}
+	type args struct {
+		adapterBids  map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid
+		adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra
+		r            AuctionRequest
+		debugInfo    bool
+		passthrough  json.RawMessage
+		fledge       *openrtb_ext.Fledge
+		errList      []error
+		seatNonBid   []openrtb_ext.SeatNonBid
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   func(args, *openrtb_ext.ExtBidResponse) (*openrtb_ext.ExtBidResponse, bool)
+	}{
+		{
+			name: "set seat non bid in prebid extension",
+			args: args{
+				r: AuctionRequest{
+					BidRequestWrapper: &openrtb_ext.RequestWrapper{
+						BidRequest: &openrtb2.BidRequest{
+							Ext: []byte(`{
+								"prebid" : {
+									"returnallbidstatus" : true
+								}
+							}`),
+						},
+					},
+				},
+				seatNonBid: []openrtb_ext.SeatNonBid{
+					{
+						Seat: "pubmatic",
+						NonBid: []openrtb_ext.NonBid{
+							{
+								ImpId:      "imp_1_pubm",
+								StatusCode: 100,
+								Ext: openrtb_ext.NonBidExt{
+									Prebid: openrtb_ext.Prebid{
+										Bid: openrtb2.Bid{
+											ID:    "bid_imp1_pubm",
+											ImpID: "imp_1_pubm",
+											Price: 5.6,
+											AdM:   "some_adm",
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						Seat: "appnexus",
+						NonBid: []openrtb_ext.NonBid{
+							{
+								ImpId:      "imp_1_appnx",
+								StatusCode: 234,
+								Ext: openrtb_ext.NonBidExt{
+									Prebid: openrtb_ext.Prebid{
+										Bid: openrtb2.Bid{
+											ID:    "bid_imp1_appx",
+											ImpID: "imp_1_appnx",
+											Price: 3.4,
+											AdM:   "some_adm",
+										},
+									},
+								},
+							},
+							{
+								ImpId:      "imp_2_appnx",
+								StatusCode: 434,
+								Ext: openrtb_ext.NonBidExt{
+									Prebid: openrtb_ext.Prebid{
+										Bid: openrtb2.Bid{
+											ID:    "bid_imp2_appx",
+											ImpID: "imp_2_appnx",
+											Price: 4.4,
+											AdM:   "some_adm",
+										},
+									},
+								},
+							},
+						},
+					},
+				}},
+			want: func(args args, actual *openrtb_ext.ExtBidResponse) (*openrtb_ext.ExtBidResponse, bool) {
+				return &openrtb_ext.ExtBidResponse{
+					Prebid: &openrtb_ext.ExtResponsePrebid{
+						SeatNonBid: args.seatNonBid,
+					},
+				}, reflect.DeepEqual(actual.Prebid.SeatNonBid, args.seatNonBid)
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &exchange{
+				adapterMap:               tt.fields.adapterMap,
+				bidderInfo:               tt.fields.bidderInfo,
+				bidderToSyncerKey:        tt.fields.bidderToSyncerKey,
+				me:                       tt.fields.me,
+				cache:                    tt.fields.cache,
+				cacheTime:                tt.fields.cacheTime,
+				gdprPermsBuilder:         tt.fields.gdprPermsBuilder,
+				tcf2ConfigBuilder:        tt.fields.tcf2ConfigBuilder,
+				currencyConverter:        tt.fields.currencyConverter,
+				externalURL:              tt.fields.externalURL,
+				gdprDefaultValue:         tt.fields.gdprDefaultValue,
+				privacyConfig:            tt.fields.privacyConfig,
+				categoriesFetcher:        tt.fields.categoriesFetcher,
+				bidIDGenerator:           tt.fields.bidIDGenerator,
+				hostSChainNode:           tt.fields.hostSChainNode,
+				adsCertSigner:            tt.fields.adsCertSigner,
+				server:                   tt.fields.server,
+				bidValidationEnforcement: tt.fields.bidValidationEnforcement,
+				requestSplitter:          tt.fields.requestSplitter,
+			}
+
+			actual := e.makeExtBidResponse(tt.args.adapterBids, tt.args.adapterExtra, tt.args.r, tt.args.debugInfo, tt.args.passthrough, tt.args.fledge, tt.args.errList, tt.args.seatNonBid)
+			if expected, ok := tt.want(tt.args, actual); !ok {
+				t.Errorf("exchange.makeExtBidResponse() = %v, want %v", actual, expected)
+			}
+		})
+	}
+}
+
+func TestBuildBidResponseWrapper(t *testing.T) {
+	type args struct {
+		ctx         context.Context
+		bidResponse *openrtb2.BidResponse
+		seatNonBid  []openrtb_ext.SeatNonBid
+	}
+	tests := []struct {
+		name             string
+		args             args
+		expectedResponse *openrtb_ext.ResponseWrapper
+		expctedErr       error
+	}{
+		{
+			name: "with_seat_non_bids",
+			args: args{
+				bidResponse: &openrtb2.BidResponse{
+					SeatBid: []openrtb2.SeatBid{
+						{
+							Bid:  []openrtb2.Bid{*bid084, *bid111},
+							Seat: "pubmatic",
+						},
+						{
+							Bid:  []openrtb2.Bid{*bid123},
+							Seat: "appnexus",
+						},
+					},
+					Ext: []byte(`{ "k1": "v1" }`),
+				},
+				seatNonBid: []openrtb_ext.SeatNonBid{
+					{
+						NonBid: []openrtb_ext.NonBid{
+							{
+								StatusCode: 123,
+								Ext: openrtb_ext.NonBidExt{
+									Prebid: openrtb_ext.Prebid{Bid: openrtb2.Bid{Price: -1.2}},
+								},
+							},
+						},
+						Seat: "appnexus",
+					},
+					{
+						NonBid: []openrtb_ext.NonBid{
+							{
+								StatusCode: 456,
+								Ext: openrtb_ext.NonBidExt{
+									Prebid: openrtb_ext.Prebid{Bid: openrtb2.Bid{Price: -3.4}},
+								},
+							},
+						},
+						Seat: "pubmatic",
+					},
+				},
+			},
+			expectedResponse: &openrtb_ext.ResponseWrapper{
+				BidResponse: &openrtb2.BidResponse{},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ex := &exchange{}
+			actualResponse, actualErr := ex.buildBidResponseWrapper(tt.args.ctx, tt.args.bidResponse, tt.args.seatNonBid)
+			if assert.EqualError(t, actualErr, tt.expctedErr.Error()) {
+				t.Errorf("exchange.buildBidResponseWrapper() error = %v, wantErr %v", actualErr, tt.expctedErr)
+				return
+			}
+			if !reflect.DeepEqual(actualResponse, tt.expectedResponse) {
+				t.Errorf("exchange.buildBidResponseWrapper() = %v, want %v", actualResponse, tt.expectedResponse)
+			}
+		})
+	}
 }

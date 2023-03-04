@@ -1415,7 +1415,7 @@ var expectedErrorsFromHoldAuction map[openrtb_ext.BidderName][]openrtb_ext.ExtBi
 	},
 }
 
-func (m *mockAmpExchange) HoldAuction(ctx context.Context, auctionRequest exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (m *mockAmpExchange) HoldAuction(ctx context.Context, auctionRequest exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb_ext.ResponseWrapper, error) {
 	r := auctionRequest.BidRequestWrapper
 	m.lastRequest = r.BidRequest
 
@@ -1449,12 +1449,12 @@ func (m *mockAmpExchange) HoldAuction(ctx context.Context, auctionRequest exchan
 		response.Ext = json.RawMessage(fmt.Sprintf(`{"debug": {"httpcalls": {}, "resolvedrequest": %s}}`, resolvedRequest))
 	}
 
-	return response, nil
+	return &openrtb_ext.ResponseWrapper{BidResponse: response}, nil
 }
 
 type mockAmpExchangeWarnings struct{}
 
-func (m *mockAmpExchangeWarnings) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (m *mockAmpExchangeWarnings) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb_ext.ResponseWrapper, error) {
 	response := &openrtb2.BidResponse{
 		SeatBid: []openrtb2.SeatBid{{
 			Bid: []openrtb2.Bid{{
@@ -1464,7 +1464,7 @@ func (m *mockAmpExchangeWarnings) HoldAuction(ctx context.Context, r exchange.Au
 		}},
 		Ext: json.RawMessage(`{ "warnings": {"appnexus": [{"code": 10003, "message": "debug turned off for bidder"}] }}`),
 	}
-	return response, nil
+	return &openrtb_ext.ResponseWrapper{BidResponse: response}, nil
 }
 
 func getTestBidRequest(nilUser bool, userExt *openrtb_ext.ExtUser, nilRegs bool, regsExt *openrtb_ext.ExtRegs) ([]byte, error) {

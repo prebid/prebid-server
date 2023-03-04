@@ -226,9 +226,12 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		BidderImpReplaceImpID:      bidderImpReplaceImp,
 		PubID:                      labels.PubID,
 		HookExecutor:               deps.hookExecutor,
-		LogObject:                  &ao.LogObject,
 	}
-	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
+	respWrapper, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
+	var response *openrtb2.BidResponse
+	if respWrapper != nil {
+		response = respWrapper.BidResponse
+	}
 	ao.Request = req.BidRequest
 	ao.Response = response
 	ao.Account = account
@@ -248,6 +251,21 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	} else if isRejectErr {
 		labels, ao = rejectAuctionRequest(*rejectErr, w, deps.hookExecutor, req.BidRequest, account, labels, ao)
 		return
+	}
+
+	// Send SeatNonBid to analytics
+	// var extResponse openrtb_ext.ExtBidResponse
+	// if response != nil && json.Unmarshal(response.Ext, &extResponse) != nil && extResponse.Prebid != nil {
+	// 	ao.SeatNonBid = extResponse.Prebid.SeatNonBid
+	// }
+	respExt, err := respWrapper.GetResponseExt()
+	if err == nil {
+		respExtPrebid := respExt.GetPrebid()
+		if respExtPrebid != nil {
+			ao.SeatNonBid = respExtPrebid.SeatNonBid
+		}
+	} else {
+		glog.Errorf("Error in getting ResponseExt : [%v]", err.Error())
 	}
 
 	labels, ao = sendAuctionResponse(w, deps.hookExecutor, response, req.BidRequest, account, labels, ao)

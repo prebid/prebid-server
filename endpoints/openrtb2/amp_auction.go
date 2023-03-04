@@ -234,10 +234,13 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		BidderImpReplaceImpID:      bidderImpReplaceImp,
 		PubID:                      labels.PubID,
 		HookExecutor:               deps.hookExecutor,
-		LogObject:                  &ao.LogObject,
 	}
 
-	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
+	respWrapper, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
+	var response *openrtb2.BidResponse
+	if respWrapper != nil {
+		response = respWrapper.BidResponse
+	}
 	ao.AuctionResponse = response
 	rejectErr, isRejectErr := hookexecution.CastRejectErr(err)
 	if err != nil && !isRejectErr {
@@ -333,7 +336,7 @@ func sendAmpResponse(
 	if eRErr != nil {
 		ao.Errors = append(ao.Errors, fmt.Errorf("AMP response: failed to unpack OpenRTB response.ext, debug info cannot be forwarded: %v", eRErr))
 	}
-	// Extract global targeting
+	// Extract global targeting and send seatnonbid to analytics
 	extPrebid := extResponse.Prebid
 	if extPrebid != nil {
 		for key, value := range extPrebid.Targeting {
@@ -342,6 +345,7 @@ func sendAmpResponse(
 				targets[key] = value
 			}
 		}
+		ao.SeatNonBid = extPrebid.SeatNonBid
 	}
 	// Now JSONify the targets for the AMP response.
 	ampResponse := AmpResponse{Targeting: targets}
