@@ -18,7 +18,6 @@ import (
 	"github.com/prebid/openrtb/v17/openrtb3"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/ortb"
-	"github.com/prebid/prebid-server/util/httputil"
 	"github.com/prebid/prebid-server/util/uuidutil"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
@@ -235,7 +234,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		BidderImpReplaceImpID:      bidderImpReplaceImp,
 		PubID:                      labels.PubID,
 		HookExecutor:               deps.hookExecutor,
-		QueryParams:                httputil.ConvertUrlParamsToMap(r.URL),
+		QueryParams:                r.URL.Query(),
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)

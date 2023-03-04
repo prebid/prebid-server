@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/util/httputil"
 	"github.com/stretchr/testify/assert"
 	"net/url"
 	"testing"
@@ -40,11 +39,11 @@ func TestExtractAdServerTargeting(t *testing.T) {
 
 	p := "https://www.test-url.com?ampkey=testAmpKey&data-override-height=400"
 	u, _ := url.Parse(p)
-	params := httputil.ConvertUrlParamsToMap(u)
+	params := u.Query()
 	reqBytes, err := json.Marshal(r)
 	assert.NoError(t, err, "unexpected req marshal error")
 
-	res, warnings := ExtractAdServerTargeting(rw, reqBytes, params)
+	res, warnings := CollectAdServerTargeting(rw, reqBytes, params)
 	assert.Empty(t, warnings, "unexpected warnings")
 
 	assert.Len(t, res.RequestTargetingData, 7, "incorrect request targeting data length")
@@ -52,20 +51,20 @@ func TestExtractAdServerTargeting(t *testing.T) {
 
 	assert.Equal(t, res.RequestTargetingData["hb_amp_param"].SingleVal, json.RawMessage(`testAmpKey`), "incorrect requestTargetingData value for key: hb_amp_param")
 
-	assert.Len(t, res.RequestTargetingData["hb_req_imp_ext_param"].ImpData, 3, "incorrect requestTargetingData length for key hb_req_imp_ext_param")
-	assert.Equal(t, res.RequestTargetingData["hb_req_imp_ext_param"].ImpData["imp1"], []byte(`{"testUser":"user1"}`), "incorrect requestTargetingData value for key: hb_req_imp_ext_param.imp1")
-	assert.Equal(t, res.RequestTargetingData["hb_req_imp_ext_param"].ImpData["imp2"], []byte(`{"testUser":"user2"}`), "incorrect requestTargetingData value for key: hb_req_imp_ext_param.imp2")
-	assert.Equal(t, res.RequestTargetingData["hb_req_imp_ext_param"].ImpData["imp3"], []byte(`{"testUser":"user3"}`), "incorrect requestTargetingData value for key: hb_req_imp_ext_param.imp3")
+	assert.Len(t, res.RequestTargetingData["hb_req_imp_ext_param"].TargetingValueByImpId, 3, "incorrect requestTargetingData length for key hb_req_imp_ext_param")
+	assert.Equal(t, res.RequestTargetingData["hb_req_imp_ext_param"].TargetingValueByImpId["imp1"], []byte(`{"testUser":"user1"}`), "incorrect requestTargetingData value for key: hb_req_imp_ext_param.imp1")
+	assert.Equal(t, res.RequestTargetingData["hb_req_imp_ext_param"].TargetingValueByImpId["imp2"], []byte(`{"testUser":"user2"}`), "incorrect requestTargetingData value for key: hb_req_imp_ext_param.imp2")
+	assert.Equal(t, res.RequestTargetingData["hb_req_imp_ext_param"].TargetingValueByImpId["imp3"], []byte(`{"testUser":"user3"}`), "incorrect requestTargetingData value for key: hb_req_imp_ext_param.imp3")
 
-	assert.Len(t, res.RequestTargetingData["hb_req_imp_ext_bidder_param"].ImpData, 3, "incorrect requestTargetingData length for key: hb_req_imp_ext_bidder_param")
-	assert.Equal(t, res.RequestTargetingData["hb_req_imp_ext_bidder_param"].ImpData["imp1"], []byte(`111`), "incorrect requestTargetingData value for key: hb_req_imp_ext_bidder_param.imp1")
-	assert.Equal(t, res.RequestTargetingData["hb_req_imp_ext_bidder_param"].ImpData["imp2"], []byte(`222`), "incorrect requestTargetingData value for key: hb_req_imp_ext_bidder_param.imp2")
-	assert.Equal(t, res.RequestTargetingData["hb_req_imp_ext_bidder_param"].ImpData["imp3"], []byte(`333`), "incorrect requestTargetingData value for key: hb_req_imp_ext_bidder_param.imp3")
+	assert.Len(t, res.RequestTargetingData["hb_req_imp_ext_bidder_param"].TargetingValueByImpId, 3, "incorrect requestTargetingData length for key: hb_req_imp_ext_bidder_param")
+	assert.Equal(t, res.RequestTargetingData["hb_req_imp_ext_bidder_param"].TargetingValueByImpId["imp1"], []byte(`111`), "incorrect requestTargetingData value for key: hb_req_imp_ext_bidder_param.imp1")
+	assert.Equal(t, res.RequestTargetingData["hb_req_imp_ext_bidder_param"].TargetingValueByImpId["imp2"], []byte(`222`), "incorrect requestTargetingData value for key: hb_req_imp_ext_bidder_param.imp2")
+	assert.Equal(t, res.RequestTargetingData["hb_req_imp_ext_bidder_param"].TargetingValueByImpId["imp3"], []byte(`333`), "incorrect requestTargetingData value for key: hb_req_imp_ext_bidder_param.imp3")
 
-	assert.Len(t, res.RequestTargetingData["hb_req_imp_param"].ImpData, 3, "incorrect requestTargetingData length for key: hb_req_imp_param")
-	assert.Equal(t, res.RequestTargetingData["hb_req_imp_param"].ImpData["imp1"], []byte(`10`), "incorrect requestTargetingData value for key: hb_req_imp_param.imp1")
-	assert.Equal(t, res.RequestTargetingData["hb_req_imp_param"].ImpData["imp2"], []byte(`20`), "incorrect requestTargetingData value for key: hb_req_imp_param.imp2")
-	assert.Equal(t, res.RequestTargetingData["hb_req_imp_param"].ImpData["imp3"], []byte(`30`), "incorrect requestTargetingData value for key: hb_req_imp_param.imp3")
+	assert.Len(t, res.RequestTargetingData["hb_req_imp_param"].TargetingValueByImpId, 3, "incorrect requestTargetingData length for key: hb_req_imp_param")
+	assert.Equal(t, res.RequestTargetingData["hb_req_imp_param"].TargetingValueByImpId["imp1"], []byte(`10`), "incorrect requestTargetingData value for key: hb_req_imp_param.imp1")
+	assert.Equal(t, res.RequestTargetingData["hb_req_imp_param"].TargetingValueByImpId["imp2"], []byte(`20`), "incorrect requestTargetingData value for key: hb_req_imp_param.imp2")
+	assert.Equal(t, res.RequestTargetingData["hb_req_imp_param"].TargetingValueByImpId["imp3"], []byte(`30`), "incorrect requestTargetingData value for key: hb_req_imp_param.imp3")
 
 	assert.Equal(t, res.RequestTargetingData["hb_req_ext_param"].SingleVal, json.RawMessage(`{"primaryadserver":1,"publisher":"","withcategory":true}`), "incorrect requestTargetingData value for key: hb_req_ext_param")
 	assert.Equal(t, res.RequestTargetingData["hb_req_user_param"].SingleVal, json.RawMessage(`2000`), "incorrect requestTargetingData value for key: hb_req_user_param")
@@ -110,8 +109,8 @@ func TestResolveAdServerTargeting(t *testing.T) {
 
 	adServerTargeting := &adServerTargetingData{
 		RequestTargetingData: map[string]RequestTargetingData{
-			"hb_amp_param": {SingleVal: json.RawMessage(`testAmpKey`), ImpData: nil},
-			"hb_imp_param": {SingleVal: nil, ImpData: map[string][]byte{
+			"hb_amp_param": {SingleVal: json.RawMessage(`testAmpKey`), TargetingValueByImpId: nil},
+			"hb_imp_param": {SingleVal: nil, TargetingValueByImpId: map[string][]byte{
 				"imp1": []byte(`111`),
 				"imp2": []byte(`222`),
 				"imp3": []byte(`333`),
@@ -213,7 +212,7 @@ func TestProcessAdServerTargetingFull(t *testing.T) {
 
 	p := "https://www.test-url.com?ampkey=testAmpKey&data-override-height=400"
 	u, _ := url.Parse(p)
-	params := httputil.ConvertUrlParamsToMap(u)
+	params := u.Query()
 
 	resp := &openrtb2.BidResponse{
 		ID:  "testResponse",
@@ -241,13 +240,13 @@ func TestProcessAdServerTargetingFull(t *testing.T) {
 		Ext: []byte(`{"prebid": {"seatExt": "true"}}`),
 	}
 
-	bidResponseExt := &openrtb_ext.ExtBidResponse{Warnings: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)}
+	bidResponseExt := &openrtb_ext.ExtBidResponse{}
 
 	reqBytes, err := json.Marshal(r)
 	assert.NoError(t, err, "unexpected req marshal error")
 	resResp := ProcessAdServerTargeting(rw, reqBytes, resp, params, bidResponseExt, nil)
 	assert.Len(t, resResp.SeatBid, 2, "Incorrect response: seat bid number")
-	assert.Len(t, bidResponseExt.Warnings, 0, "Incorrect response: no warnings expected")
+	assert.Nil(t, bidResponseExt.Warnings, "Incorrect response: no warnings expected")
 
 	apnBids := resResp.SeatBid[0].Bid
 	rbcBids := resResp.SeatBid[1].Bid
@@ -294,7 +293,7 @@ func TestProcessAdServerTargetingWarnings(t *testing.T) {
 
 	p := "https://www.test-url.com?data-override-height=400"
 	u, _ := url.Parse(p)
-	params := httputil.ConvertUrlParamsToMap(u)
+	params := u.Query()
 
 	resp := &openrtb2.BidResponse{
 		ID: "testResponse",

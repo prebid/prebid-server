@@ -201,7 +201,7 @@ type AuctionRequest struct {
 	BidderImpReplaceImpID stored_responses.BidderImpReplaceImpID
 	PubID                 string
 	HookExecutor          hookexecution.StageExecutor
-	QueryParams           map[string]string
+	QueryParams           url.Values
 }
 
 // BidderRequest holds the bidder specific request and all other

@@ -4,15 +4,29 @@ import (
 	"encoding/json"
 	"github.com/buger/jsonparser"
 	"github.com/pkg/errors"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"net/url"
 	"strings"
 )
 
-func getValueFromBidRequest(dataHolder *reqImpCache, path string, ampData map[string]string) (RequestTargetingData, error) {
+func getAdServerTargeting(reqWrapper *openrtb_ext.RequestWrapper) ([]openrtb_ext.AdServerTargeting, error) {
+	reqExt, err := reqWrapper.GetRequestExt()
+	if err != nil {
+		return nil, err
+	}
+	reqExtPrebid := reqExt.GetPrebid()
+	if reqExtPrebid == nil {
+		return nil, err
+	}
+	return reqExtPrebid.AdServerTargeting, nil
+}
+
+func getValueFromBidRequest(dataHolder *reqImpCache, path string, queryParams url.Values) (RequestTargetingData, error) {
 	//use the path specified in 'value' to look for data in the ortb bidrequest.
 	res := RequestTargetingData{}
 
 	//check if key points to query param from ext.prebid.amp.data
-	ampDataValue, err := getValueFromQueryParam(path, ampData)
+	ampDataValue, err := getValueFromQueryParam(path, queryParams)
 	if ampDataValue != nil || err != nil {
 		res.SingleVal = ampDataValue
 		return res, err
@@ -21,7 +35,7 @@ func getValueFromBidRequest(dataHolder *reqImpCache, path string, ampData map[st
 	// check if key points to imp data
 	impData, err := getValueFromImp(path, dataHolder)
 	if len(impData) > 0 || err != nil {
-		res.ImpData = impData
+		res.TargetingValueByImpId = impData
 		return res, err
 	}
 
@@ -35,11 +49,11 @@ func getValueFromBidRequest(dataHolder *reqImpCache, path string, ampData map[st
 	return res, nil
 }
 
-func getValueFromQueryParam(path string, ampData map[string]string) (json.RawMessage, error) {
+func getValueFromQueryParam(path string, queryParams url.Values) (json.RawMessage, error) {
 	ampDataSplit := strings.Split(path, "ext.prebid.amp.data.")
 	if len(ampDataSplit) == 2 && ampDataSplit[0] == "" {
-		val, exists := ampData[ampDataSplit[1]]
-		if exists {
+		val := queryParams.Get(ampDataSplit[1])
+		if val != "" {
 			return json.RawMessage(val), nil
 		} else {
 			return nil, errors.Errorf("value not found for path: %s", path)

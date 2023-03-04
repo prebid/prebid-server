@@ -2,6 +2,8 @@ package adservertargeting
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/pkg/errors"
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
@@ -17,8 +19,8 @@ func processRequestTargetingData(adServerTargetingData *adServerTargetingData, t
 	for key, val := range adServerTargetingData.RequestTargetingData {
 		if len(val.SingleVal) > 0 {
 			targetingData[key] = string(val.SingleVal)
-		} else if len(val.ImpData) > 0 {
-			targetingData[key] = string(val.ImpData[bidImpId])
+		} else if len(val.TargetingValueByImpId) > 0 {
+			targetingData[key] = string(val.TargetingValueByImpId[bidImpId])
 		}
 	}
 }
@@ -29,7 +31,6 @@ func processResponseTargetingData(
 	bidderName string,
 	bid openrtb2.Bid,
 	bidsHolder bidsCache,
-	bidderRespHolder respCache,
 	response *openrtb2.BidResponse,
 	seatExt json.RawMessage,
 	warnings []openrtb_ext.ExtBidderMessage) {
@@ -55,7 +56,11 @@ func processResponseTargetingData(
 		case "ext":
 			getValueFromRespExt(key, path, targetingData, response.Ext, warnings)
 		default:
-			getValueFromResp(key, path, targetingData, bidderRespHolder, response, warnings)
+			// path points to value in response, not seat or ext
+			// bidder response has limited number of properties
+			// instead of unmarshal the whole response with seats and bids
+			// try to find data by field name
+			getValueFromResp(key, path, targetingData, response, warnings)
 
 		}
 	}
@@ -164,17 +169,33 @@ func getValueFromRespExt(
 func getValueFromResp(
 	key, path string,
 	targetingData map[string]string,
-	bidderRespHolder respCache,
 	response *openrtb2.BidResponse,
 	warnings []openrtb_ext.ExtBidderMessage) {
-	// path points to value in response, not seat or ext
-	// bidder response has limited number of properties
-	// instead of unmarshal the whole response with seats and bids
-	// try to find data by field name
 
-	value, err := bidderRespHolder.GetRespData(response, path)
+	value, err := getRespData(response, path)
 	if err != nil {
 		warnings = append(warnings, createWarning(err.Error()))
 	}
 	targetingData[key] = value
+}
+
+func getRespData(bidderResp *openrtb2.BidResponse, field string) (string, error) {
+	// this code should be modified if there are changes in Op[enRtb format
+	// it's up to date with OpenRTB 2.5 and 2.6
+	switch field {
+	case "id":
+		return bidderResp.ID, nil
+	case "bidid":
+		return bidderResp.BidID, nil
+	case "cur":
+		return bidderResp.Cur, nil
+	case "customdata":
+		return bidderResp.CustomData, nil
+	case "nbr":
+		return fmt.Sprint(bidderResp.NBR.Val()), nil
+
+	default:
+		return "", errors.Errorf("key not found for field in bid response: %s", field)
+	}
+
 }
