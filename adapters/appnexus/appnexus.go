@@ -82,7 +82,7 @@ type appnexusReqExt struct {
 var maxImpsPerReq = 10
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	memberIds := make(map[string]bool)
+	memberIds := make(map[string]struct{})
 	errs := make([]error, 0, len(request.Imp))
 
 	// appnexus adapter expects imp.displaymanagerver to be populated in openrtb2 endpoint
@@ -94,7 +94,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	for i := 0; i < len(request.Imp); i++ {
 		memberId, impAdPodId, err := preprocess(&request.Imp[i], defaultDisplayManagerVer)
 		if memberId != "" {
-			memberIds[memberId] = true
+			memberIds[memberId] = struct{}{}
 		}
 		if adPodId == nil {
 			adPodId = &impAdPodId
@@ -250,7 +250,7 @@ func splitRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExt
 }
 
 // get the keys from the map
-func keys(m map[string]bool) []string {
+func keys(m map[string]struct{}) []string {
 	keys := make([]string, 0, len(m))
 	for key := range m {
 		keys = append(keys, key)
