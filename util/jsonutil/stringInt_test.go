@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestUnmarshalJSON(t *testing.T) {
+func TestStringIntUnmarshalJSON(t *testing.T) {
 	type Item struct {
 		ItemId StringInt `json:"item_id"`
 	}
