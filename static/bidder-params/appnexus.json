@@ -10,7 +10,7 @@
       "description": "An ID which identifies this placement of the impression"
     },
     "placementId": {
-      "type": "integer",
+      "type": ["integer", "string"],
       "description": "Deprecated, use placement_id instead."
     },
     "inv_code": {
