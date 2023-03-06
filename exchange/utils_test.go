@@ -15,6 +15,7 @@ import (
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -1756,12 +1757,12 @@ func TestGetExtTargetData(t *testing.T) {
 				requestExt: &openrtb_ext.ExtRequest{
 					Prebid: openrtb_ext.ExtRequestPrebid{
 						Targeting: &openrtb_ext.ExtRequestTargeting{
-							PriceGranularity: openrtb_ext.PriceGranularity{
-								Precision: 2,
+							PriceGranularity: &openrtb_ext.PriceGranularity{
+								Precision: ptrutil.ToPtr(2),
 								Ranges:    []openrtb_ext.GranularityRange{{Min: 0.00, Max: 5.00, Increment: 1.00}},
 							},
-							IncludeWinners:    true,
-							IncludeBidderKeys: true,
+							IncludeWinners:    ptrutil.ToPtr(true),
+							IncludeBidderKeys: ptrutil.ToPtr(true),
 						},
 					},
 				},
@@ -1773,7 +1774,7 @@ func TestGetExtTargetData(t *testing.T) {
 			outTest{
 				targetData: &targetData{
 					priceGranularity: openrtb_ext.PriceGranularity{
-						Precision: 2,
+						Precision: ptrutil.ToPtr(2),
 						Ranges:    []openrtb_ext.GranularityRange{{Min: 0.00, Max: 5.00, Increment: 1.00}},
 					},
 					includeWinners:    true,

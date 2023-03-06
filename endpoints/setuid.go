@@ -81,7 +81,7 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 		if accountID == "" {
 			accountID = metrics.PublisherUnknown
 		}
-		account, fetchErrs := accountService.GetAccount(context.Background(), cfg, accountsFetcher, accountID)
+		account, fetchErrs := accountService.GetAccount(context.Background(), cfg, accountsFetcher, accountID, metricsEngine)
 		if len(fetchErrs) > 0 {
 			w.WriteHeader(http.StatusBadRequest)
 			err := combineErrors(fetchErrs)

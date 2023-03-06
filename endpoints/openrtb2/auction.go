@@ -24,6 +24,7 @@ import (
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/openrtb/v17/openrtb3"
 	"github.com/prebid/prebid-server/hooks"
+	"github.com/prebid/prebid-server/ortb"
 	"golang.org/x/net/publicsuffix"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
@@ -388,7 +389,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	}
 
 	// Look up account
-	account, errs = accountService.GetAccount(ctx, deps.cfg, deps.accounts, accountId)
+	account, errs = accountService.GetAccount(ctx, deps.cfg, deps.accounts, accountId, deps.metricsEngine)
 	if len(errs) > 0 {
 		return
 	}
@@ -439,6 +440,11 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
 	deps.setFieldsImplicitly(httpRequest, req)
 
+	if err := ortb.SetDefaults(req); err != nil {
+		errs = []error{err}
+		return
+	}
+
 	if err := processInterstitials(req); err != nil {
 		errs = []error{err}
 		return
@@ -446,10 +452,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 
 	lmt.ModifyForIOS(req.BidRequest)
 
-	var hasStoredResponses bool
-	if len(storedAuctionResponses) > 0 {
-		hasStoredResponses = true
-	}
+	hasStoredResponses := len(storedAuctionResponses) > 0
 	errL := deps.validateRequest(req, false, hasStoredResponses, storedBidResponses, hasStoredBidRequest)
 	if len(errL) > 0 {
 		errs = append(errs, errL...)
@@ -671,7 +674,9 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 	reqPrebid := reqExt.GetPrebid()
 	if err := deps.parseBidExt(req); err != nil {
 		return []error{err}
-	} else if reqPrebid != nil {
+	}
+
+	if reqPrebid != nil {
 		aliases = reqPrebid.Aliases
 
 		if err := deps.validateAliases(aliases); err != nil {
@@ -1499,8 +1504,56 @@ func validateRequestExt(req *openrtb_ext.RequestWrapper) error {
 	}
 
 	prebid := reqExt.GetPrebid()
-	if prebid != nil && prebid.Cache != nil && (prebid.Cache.Bids == nil && prebid.Cache.VastXML == nil) {
-		return errors.New(`request.ext is invalid: request.ext.prebid.cache requires one of the "bids" or "vastxml" properties`)
+
+	// exit early if there is no request.ext.prebid to validate
+	if prebid == nil {
+		return nil
+	}
+
+	if prebid.Cache != nil {
+		if prebid.Cache.Bids == nil && prebid.Cache.VastXML == nil {
+			return errors.New(`request.ext is invalid: request.ext.prebid.cache requires one of the "bids" or "vastxml" properties`)
+		}
+	}
+
+	if err := validateTargeting(prebid.Targeting); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func validateTargeting(t *openrtb_ext.ExtRequestTargeting) error {
+	if t == nil {
+		return nil
+	}
+
+	if (t.IncludeWinners == nil || !*t.IncludeWinners) && (t.IncludeBidderKeys == nil || !*t.IncludeBidderKeys) {
+		return errors.New("ext.prebid.targeting: At least one of includewinners or includebidderkeys must be enabled to enable targeting support")
+	}
+
+	if t.PriceGranularity != nil {
+		pg := t.PriceGranularity
+
+		if pg.Precision == nil {
+			return errors.New("Price granularity error: precision is required")
+		} else if *pg.Precision < 0 {
+			return errors.New("Price granularity error: precision must be non-negative")
+		} else if *pg.Precision > openrtb_ext.MaxDecimalFigures {
+			return fmt.Errorf("Price granularity error: precision of more than %d significant figures is not supported", openrtb_ext.MaxDecimalFigures)
+		}
+
+		var prevMax float64 = 0
+		for _, gr := range pg.Ranges {
+			if gr.Max <= prevMax {
+				return errors.New(`Price granularity error: range list must be ordered with increasing "max"`)
+			}
+
+			if gr.Increment <= 0.0 {
+				return errors.New("Price granularity error: increment must be a nonzero positive number")
+			}
+			prevMax = gr.Max
+		}
 	}
 
 	return nil
@@ -1703,7 +1756,6 @@ func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, r *openrtb_
 	if r.App == nil {
 		setSiteImplicitly(httpReq, r)
 	}
-	setImpsImplicitly(httpReq, r.GetImp())
 
 	setAuctionTypeImplicitly(r)
 }
@@ -1768,15 +1820,6 @@ func setSitePublisherDomainIfEmpty(site *openrtb2.Site, publisherDomain string) 
 	}
 	if site.Publisher.Domain == "" {
 		site.Publisher.Domain = publisherDomain
-	}
-}
-
-func setImpsImplicitly(httpReq *http.Request, imps []*openrtb_ext.ImpWrapper) {
-	secure := int8(1)
-	for i := 0; i < len(imps); i++ {
-		if imps[i].Secure == nil && httputil.IsSecure(httpReq) {
-			imps[i].Secure = &secure
-		}
 	}
 }
 

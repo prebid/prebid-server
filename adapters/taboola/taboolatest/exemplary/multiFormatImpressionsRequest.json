@@ -283,7 +283,7 @@
             "impid": "native-impression-id",
             "price": 2.1,
             "adid": "1",
-            "adm": "{\"link\":{\"url\":\"\"}}",
+            "adm": "{}",
             "adomain": [
               "adomain.com"
             ],
