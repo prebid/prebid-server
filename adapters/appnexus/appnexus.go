@@ -85,15 +85,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	memberIds := make(map[string]bool)
 	errs := make([]error, 0, len(request.Imp))
 
-	// AppNexus openrtb2 endpoint expects imp.displaymanagerver to be populated, but some SDKs will put it in imp.ext.prebid instead
-	var defaultDisplayManagerVer string
-	if request.App != nil {
-		source, err1 := jsonparser.GetString(request.App.Ext, openrtb_ext.PrebidExtKey, "source")
-		version, err2 := jsonparser.GetString(request.App.Ext, openrtb_ext.PrebidExtKey, "version")
-		if (err1 == nil) && (err2 == nil) {
-			defaultDisplayManagerVer = fmt.Sprintf("%s-%s", source, version)
-		}
-	}
+	// appnexus adapter expects imp.displaymanagerver to be populated in openrtb2 endpoint
+	// but some SDKs will put it in imp.ext.prebid instead
+	defaultDisplayManagerVer := buildDefaultDisplayManageVer(request)
+
 	var adPodId *bool
 
 	for i := 0; i < len(request.Imp); i++ {
@@ -468,4 +463,22 @@ func resolvePlatformID(platformID string) int {
 	}
 
 	return defaultPlatformID
+}
+
+func buildDefaultDisplayManageVer(req *openrtb2.BidRequest) string {
+	if req.App == nil {
+		return ""
+	}
+
+	source, err := jsonparser.GetString(req.App.Ext, openrtb_ext.PrebidExtKey, "source")
+	if err != nil {
+		return ""
+	}
+
+	version, err := jsonparser.GetString(req.App.Ext, openrtb_ext.PrebidExtKey, "version")
+	if err != nil {
+		return ""
+	}
+
+	return fmt.Sprintf("%s-%s", source, version)
 }
