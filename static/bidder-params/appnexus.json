@@ -6,7 +6,7 @@
   "type": "object",
   "properties": {
     "placement_id": {
-      "type": "integer",
+      "type": ["integer", "string"],
       "description": "An ID which identifies this placement of the impression"
     },
     "placementId": {
