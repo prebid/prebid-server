@@ -1316,7 +1316,7 @@ func buildStoredAuctionResponse(storedAuctionResponses map[string]json.RawMessag
 				seat.Bid[i].ImpID = impId
 				mType := seat.Bid[i].MType
 				var bidType openrtb_ext.BidType
-				if mType != 0 {
+				if mType > 0 {
 					bidType = openrtb_ext.BidTypes()[mType-1]
 				} else {
 					var err error
