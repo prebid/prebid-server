@@ -90,6 +90,13 @@ func (provider *MySqlDbProvider) ConnString() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	if provider.cfg.TLS.RootCert != "" {
+		if err := setupTLSConfig(provider); err != nil {
+			return "", err
+		}
+	}
+
 	if queryStr != "" {
 		buffer.WriteString("?")
 		buffer.WriteString(queryStr)
@@ -157,10 +164,6 @@ func (provider *MySqlDbProvider) generateQueryString() (string, error) {
 
 	if provider.cfg.TLS.RootCert != "" {
 		tls = provider.getTLSKey()
-
-		if err := setupTLSConfig(provider); err != nil {
-			return "", err
-		}
 	}
 
 	if tls != "" {
