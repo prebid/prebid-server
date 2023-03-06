@@ -1314,9 +1314,16 @@ func buildStoredAuctionResponse(storedAuctionResponses map[string]json.RawMessag
 			//set imp id from request
 			for i := range seat.Bid {
 				seat.Bid[i].ImpID = impId
-				bidType, err := getMediaTypeForBid(seat.Bid[i])
-				if err != nil {
-					return nil, nil, nil, err
+				mType := seat.Bid[i].MType
+				var bidType openrtb_ext.BidType
+				if mType != 0 {
+					bidType = openrtb_ext.BidTypes()[mType-1]
+				} else {
+					var err error
+					bidType, err = getMediaTypeForBid(seat.Bid[i])
+					if err != nil {
+						return nil, nil, nil, err
+					}
 				}
 				bidsToAdd = append(bidsToAdd, &entities.PbsOrtbBid{Bid: &seat.Bid[i], BidType: bidType})
 			}

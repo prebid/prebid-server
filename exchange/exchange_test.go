@@ -4125,6 +4125,27 @@ func TestBuildStoredAuctionResponses(t *testing.T) {
 				},
 			},
 		},
+		{
+			desc: "Single imp with single stored response bid with bid.mtype",
+			in: testIn{
+				StoredAuctionResponses: map[string]json.RawMessage{
+					"impression-id": json.RawMessage(`[{"bid": [{"id": "bid_id", "mtype": 2, "ext": {"prebid": {"type": "native"}}}],"seat": "appnexus"}]`),
+				},
+			},
+			expected: testResults{
+				adapterBids: map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid{
+					openrtb_ext.BidderName("appnexus"): {
+						Bids: []*entities.PbsOrtbBid{
+							{
+								Bid:     &openrtb2.Bid{ID: "bid_id", ImpID: "impression-id", MType: 2, Ext: []byte(`{"prebid": {"type": "native"}}`)},
+								BidType: openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+				},
+				liveAdapters: []openrtb_ext.BidderName{openrtb_ext.BidderName("appnexus")},
+			},
+		},
 	}
 	for _, test := range testCases {
 
