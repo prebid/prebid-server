@@ -28,11 +28,6 @@ type adapter struct {
 	hbSource       int
 }
 
-type KeyVal struct {
-	Key    string   `json:"key,omitempty"`
-	Values []string `json:"value,omitempty"`
-}
-
 var maxImpsPerReq = 10
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
