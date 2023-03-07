@@ -120,7 +120,8 @@
                 "type": "banner"
               }
             }
-          }
+          },
+          "type": "banner"
         }
       ]
     }

@@ -137,7 +137,8 @@
                 "type": "video"
               }
             }
-          }
+          },
+          "type": "video"
         }
       ]
     }

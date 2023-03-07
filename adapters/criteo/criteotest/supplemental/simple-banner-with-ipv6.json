@@ -134,7 +134,8 @@
                 "type": "banner"
               }
             }
-          }
+          },
+          "type": "banner"
         }
       ]
     }

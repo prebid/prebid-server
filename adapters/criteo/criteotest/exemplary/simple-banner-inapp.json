@@ -113,7 +113,8 @@
                 "type": "banner"
               }
             }
-          }
+          },
+          "type": "banner"
         }
       ]
     }

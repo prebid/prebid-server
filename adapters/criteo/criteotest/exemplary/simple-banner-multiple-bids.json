@@ -193,7 +193,8 @@
                 "type": "banner"
               }
             }
-          }
+          },
+          "type": "banner"
         },
         {
           "bid": {
@@ -209,7 +210,8 @@
                 "type": "banner"
               }
             }
-          }
+          },
+          "type": "banner"
         }
       ]
     }

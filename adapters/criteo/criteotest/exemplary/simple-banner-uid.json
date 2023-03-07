@@ -141,7 +141,8 @@
                 "type": "banner"
               }
             }
-          }
+          },
+          "type": "banner"
         }
       ]
     }
