@@ -95,7 +95,15 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	)
 
 	for i := 0; i < len(request.Imp); i++ {
+		// If the preprocessing failed, the server won't be able to bid on this Imp. Delete it, and note the error.
 		memberId, impAdPodId, err := preprocess(&request.Imp[i], defaultDisplayManagerVer)
+		if err != nil {
+			errs = append(errs, err)
+			request.Imp = append(request.Imp[:i], request.Imp[i+1:]...)
+			i--
+			continue
+		}
+
 		if memberId != "" {
 			if _, ok := memberIds[memberId]; !ok {
 				memberIds[memberId] = struct{}{}
@@ -107,13 +115,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		} else if *adPodId != impAdPodId {
 			errs = append(errs, errors.New("generate ad pod option should be same for all pods in request"))
 			return nil, errs
-		}
-
-		// If the preprocessing failed, the server won't be able to bid on this Imp. Delete it, and note the error.
-		if err != nil {
-			errs = append(errs, err)
-			request.Imp = append(request.Imp[:i], request.Imp[i+1:]...)
-			i--
 		}
 	}
 
