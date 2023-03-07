@@ -276,3 +276,82 @@ func TestMakeRequestsErrIxDiag(t *testing.T) {
 	_, errs := bidder.MakeRequests(req, nil)
 	assert.Len(t, errs, 1)
 }
+
+func TestMakeBidsMultiBid(t *testing.T) {
+	bidder := &IxAdapter{}
+
+	mockedReq := &openrtb2.BidRequest{
+		ID: "test-1",
+		Imp: []openrtb2.Imp{{
+			ID: "1_0",
+			Video: &openrtb2.Video{
+				W:           640,
+				H:           360,
+				MIMEs:       []string{"video/mp4"},
+				MaxDuration: 60,
+				Protocols:   []adcom1.MediaCreativeSubtype{2, 3, 5, 6},
+			},
+			Ext: json.RawMessage(
+				`{
+					"prebid": {},
+					"bidder": {
+						"siteID": 123456
+					}
+				}`,
+			)},
+		},
+	}
+	mockedExtReq := &adapters.RequestData{}
+	mockedBidResponse := &openrtb2.BidResponse{
+		ID: "test-1",
+		SeatBid: []openrtb2.SeatBid{{
+			Seat: "Buyer",
+			Bid: []openrtb2.Bid{
+				{
+					ID:    "1",
+					ImpID: "1_0",
+					Price: 1.23,
+					AdID:  "123",
+					Ext: json.RawMessage(
+						`{
+							"prebid": {
+								"video": {
+									"duration": 60,
+									"primary_category": "IAB18-1"
+								}
+							}
+						}`,
+					),
+				},
+				{
+					ID:    "2",
+					ImpID: "1_0",
+					Price: 1.53,
+					AdID:  "123",
+					Ext: json.RawMessage(
+						`{
+							"prebid": {
+								"video": {
+									"duration": 60,
+									"primary_category": "IAB1-1"
+								}
+							}
+						}`,
+					),
+				},
+			},
+		}},
+	}
+	body, _ := json.Marshal(mockedBidResponse)
+	mockedRes := &adapters.ResponseData{
+		StatusCode: 200,
+		Body:       body,
+	}
+
+	expectedBidCount := 2
+
+	bidResponse, _ := bidder.MakeBids(mockedReq, mockedExtReq, mockedRes)
+	assert.Equal(t, expectedBidCount, len(bidResponse.Bids))
+	assert.Equal(t, "1", bidResponse.Bids[0].Bid.ID)
+	assert.Equal(t, "2", bidResponse.Bids[1].Bid.ID)
+}
