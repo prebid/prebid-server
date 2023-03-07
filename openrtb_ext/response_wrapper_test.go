@@ -9,7 +9,7 @@ import (
 )
 
 func TestRebuildResponseExt(t *testing.T) {
-	testCases := loadCommonTestCases(prebidSample1, prebidSample2)
+	testCases := loadBidResponseTestCases(prebidSample1, prebidSample2)
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			// create required filed in the test loop to keep test declaration easier to read
@@ -25,7 +25,7 @@ func TestRebuildResponseExt(t *testing.T) {
 }
 
 func TestGetResponseExt(t *testing.T) {
-	testCases := append(loadCommonTestCases(prebidSample1, prebidSample2), commonTestcase{
+	testCases := append(loadBidResponseTestCases(prebidSample1, prebidSample2), bidResponseTestcase{
 		name:    "Empty - ResponseExt",
 		respExt: &ResponseExt{},
 	})
@@ -40,7 +40,7 @@ func TestGetResponseExt(t *testing.T) {
 }
 
 func TestRebuildResponse(t *testing.T) {
-	testCases := loadCommonTestCases(prebidSample1, prebidSample2)
+	testCases := loadBidResponseTestCases(prebidSample1, prebidSample2)
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			rw := ResponseWrapper{BidResponse: &test.response, responseExt: test.respExt}
@@ -55,71 +55,7 @@ func TestRebuildResponse(t *testing.T) {
 }
 
 func TestResponseExtMarshal(t *testing.T) {
-	customExt := []byte(`{"key1":"value1"}`)
-	customExtMap := make(map[string]json.RawMessage)
-	json.Unmarshal(customExt, &customExtMap)
-
-	prebidSample1Json, _ := json.Marshal(struct {
-		Prebid ExtResponsePrebid `json:"prebid"`
-	}{Prebid: prebidSample1})
-	prebidSample1Map := make(map[string]json.RawMessage)
-	json.Unmarshal(prebidSample1Json, &prebidSample1Map)
-
-	testCases := []struct {
-		name             string
-		responseExt      ResponseExt
-		expectedResponse json.RawMessage
-		expectedErr      error
-	}{
-		{
-			name:             "Empty - Not Dirty",
-			responseExt:      ResponseExt{},
-			expectedResponse: nil,
-		},
-		{
-			name:             "Populated - Dirty ext",
-			responseExt:      ResponseExt{extMap: customExtMap, extMapDirty: true},
-			expectedResponse: customExt,
-		},
-		{
-			name:             "Populated - Dirty prebid",
-			responseExt:      ResponseExt{prebid: &prebidSample1, prebidDirty: true},
-			expectedResponse: prebidSample1Json,
-		},
-		{
-			name:             "Empty - Dirty - No Change",
-			responseExt:      ResponseExt{prebid: nil, prebidDirty: true},
-			expectedResponse: nil,
-		},
-		{
-			name:             "Populated - Not Dirty",
-			responseExt:      ResponseExt{extMap: customExtMap},
-			expectedResponse: customExt,
-		},
-		// {
-		// 	name: "Populated - Dirty",
-		// },
-		{
-			name:             "Populated - Dirty - No Change",
-			responseExt:      ResponseExt{extMap: prebidSample1Map, prebid: &prebidSample1, prebidDirty: true},
-			expectedResponse: prebidSample1Json,
-		},
-		{
-			name:             "Populated - Dirty - Cleared",
-			responseExt:      ResponseExt{extMap: nil, extMapDirty: true},
-			expectedResponse: nil,
-		},
-		{
-			name:             "Appended - Dirty",
-			responseExt:      ResponseExt{extMap: customExtMap, prebid: &prebidSample1, prebidDirty: true},
-			expectedResponse: json.RawMessage(`{"key1":"value1","prebid":{"auctiontimestamp":118}}`),
-		},
-		{
-			name:             "Populated - Empty prebid - Cleared",
-			responseExt:      ResponseExt{extMap: prebidSample1Map, prebid: &ExtResponsePrebid{}, prebidDirty: true},
-			expectedResponse: nil,
-		},
-	}
+	testCases := loadResponseExtTestCases()
 	for _, test := range testCases {
 		if test.name != "Populated - Empty prebid - Cleared" {
 			continue
@@ -137,7 +73,22 @@ func TestResponseExtMarshal(t *testing.T) {
 	}
 }
 
-type commonTestcase struct {
+func TestResponseExtUnMarshal(t *testing.T) {
+	testCases := loadResponseExtTestCases()
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			re := ResponseExt{}
+			extJson := json.RawMessage{}
+			actualErr := re.unmarshal(extJson)
+			assert.Equal(t, test.expectedResponse, re, test.name)
+			assert.Equal(t, test.expectedErr, actualErr, test.name)
+		})
+	}
+}
+
+// == testdata
+
+type bidResponseTestcase struct {
 	name             string
 	response         openrtb2.BidResponse
 	respExt          *ResponseExt
@@ -145,7 +96,7 @@ type commonTestcase struct {
 	expectedErr      error
 }
 
-func loadCommonTestCases(prebidSample1, prebidSample2 ExtResponsePrebid) []commonTestcase {
+func loadBidResponseTestCases(prebidSample1, prebidSample2 ExtResponsePrebid) []bidResponseTestcase {
 	prebidSample1Json, _ := json.Marshal(struct {
 		Prebid ExtResponsePrebid `json:"prebid"`
 	}{Prebid: prebidSample1})
@@ -158,7 +109,7 @@ func loadCommonTestCases(prebidSample1, prebidSample2 ExtResponsePrebid) []commo
 	customExtMap := make(map[string]json.RawMessage)
 	json.Unmarshal(customExt, &customExtMap)
 
-	var testCases = []commonTestcase{
+	var testCases = []bidResponseTestcase{
 		{
 			name:             "Empty - Not Dirty",
 			response:         openrtb2.BidResponse{},
@@ -213,3 +164,74 @@ func loadCommonTestCases(prebidSample1, prebidSample2 ExtResponsePrebid) []commo
 
 var prebidSample1 = ExtResponsePrebid{AuctionTimestamp: 118}
 var prebidSample2 = ExtResponsePrebid{AuctionTimestamp: 218}
+
+type responseExtTescase struct {
+	name             string
+	responseExt      ResponseExt
+	expectedResponse json.RawMessage
+	expectedErr      error
+}
+
+func loadResponseExtTestCases() []responseExtTescase {
+	customExt := []byte(`{"key1":"value1"}`)
+	customExtMap := make(map[string]json.RawMessage)
+	json.Unmarshal(customExt, &customExtMap)
+
+	prebidSample1Json, _ := json.Marshal(struct {
+		Prebid ExtResponsePrebid `json:"prebid"`
+	}{Prebid: prebidSample1})
+	prebidSample1Map := make(map[string]json.RawMessage)
+	json.Unmarshal(prebidSample1Json, &prebidSample1Map)
+
+	testCases := []responseExtTescase{
+		{
+			name:             "Empty - Not Dirty",
+			responseExt:      ResponseExt{},
+			expectedResponse: nil,
+		},
+		{
+			name:             "Populated - Dirty ext",
+			responseExt:      ResponseExt{extMap: customExtMap, extMapDirty: true},
+			expectedResponse: customExt,
+		},
+		{
+			name:             "Populated - Dirty prebid",
+			responseExt:      ResponseExt{prebid: &prebidSample1, prebidDirty: true},
+			expectedResponse: prebidSample1Json,
+		},
+		{
+			name:             "Empty - Dirty - No Change",
+			responseExt:      ResponseExt{prebid: nil, prebidDirty: true},
+			expectedResponse: nil,
+		},
+		{
+			name:             "Populated - Not Dirty",
+			responseExt:      ResponseExt{extMap: customExtMap},
+			expectedResponse: customExt,
+		},
+		// {
+		// 	name: "Populated - Dirty",
+		// },
+		{
+			name:             "Populated - Dirty - No Change",
+			responseExt:      ResponseExt{extMap: prebidSample1Map, prebid: &prebidSample1, prebidDirty: true},
+			expectedResponse: prebidSample1Json,
+		},
+		{
+			name:             "Populated - Dirty - Cleared",
+			responseExt:      ResponseExt{extMap: nil, extMapDirty: true},
+			expectedResponse: nil,
+		},
+		{
+			name:             "Appended - Dirty",
+			responseExt:      ResponseExt{extMap: customExtMap, prebid: &prebidSample1, prebidDirty: true},
+			expectedResponse: json.RawMessage(`{"key1":"value1","prebid":{"auctiontimestamp":118}}`),
+		},
+		{
+			name:             "Populated - Empty prebid - Cleared",
+			responseExt:      ResponseExt{extMap: prebidSample1Map, prebid: &ExtResponsePrebid{}, prebidDirty: true},
+			expectedResponse: nil,
+		},
+	}
+	return testCases
+}

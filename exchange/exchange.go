@@ -779,7 +779,7 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 		}
 	}
 
-	bidResponse.SeatBid = seatBids
+	// bidResponse.SeatBid = seatBids
 
 	bidResponse.Ext, err = encodeBidResponseExt(bidResponseExt)
 
@@ -1443,6 +1443,8 @@ func (ex *exchange) buildBidResponseWrapper(ctx context.Context, bidResponse *op
 			prebidExt.SeatNonBid = seatNonBid
 		}
 		resExt.SetPrebid(prebidExt)
+		// response.RebuildResponse will be removed from here
+		// and we will expect this will be handled by respective auction
 		if err := response.RebuildResponse(); err != nil {
 			return nil, err
 		}

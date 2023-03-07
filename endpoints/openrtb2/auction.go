@@ -228,10 +228,11 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		HookExecutor:               deps.hookExecutor,
 	}
 	respWrapper, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
-	var response *openrtb2.BidResponse
-	if respWrapper != nil {
-		response = respWrapper.BidResponse
+
+	if err != nil {
+		return
 	}
+	var response *openrtb2.BidResponse = respWrapper.BidResponse
 	ao.Request = req.BidRequest
 	ao.Response = response
 	ao.Account = account

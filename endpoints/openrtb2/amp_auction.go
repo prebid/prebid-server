@@ -268,7 +268,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		return
 	}
 
-	labels, ao = sendAmpResponse(w, deps.hookExecutor, response, reqWrapper, account, labels, ao, errL)
+	labels, ao = sendAmpResponse(w, deps.hookExecutor, respWrapper, reqWrapper, account, labels, ao, errL)
 }
 
 func rejectAmpRequest(
@@ -285,19 +285,21 @@ func rejectAmpRequest(
 	ao.AuctionResponse = response
 	ao.Errors = append(ao.Errors, rejectErr)
 
-	return sendAmpResponse(w, hookExecutor, response, reqWrapper, account, labels, ao, errs)
+	return sendAmpResponse(w, hookExecutor, &openrtb_ext.ResponseWrapper{BidResponse: response}, reqWrapper, account, labels, ao, errs)
 }
 
 func sendAmpResponse(
 	w http.ResponseWriter,
 	hookExecutor hookexecution.HookStageExecutor,
-	response *openrtb2.BidResponse,
+	respWrapper *openrtb_ext.ResponseWrapper,
 	reqWrapper *openrtb_ext.RequestWrapper,
 	account *config.Account,
 	labels metrics.Labels,
 	ao analytics.AmpObject,
 	errs []error,
 ) (metrics.Labels, analytics.AmpObject) {
+	// assuming respWrapper is never nil here
+	response := respWrapper.BidResponse
 	hookExecutor.ExecuteAuctionResponseStage(response)
 	// Need to extract the targeting parameters from the response, as those are all that
 	// go in the AMP response
@@ -336,20 +338,9 @@ func sendAmpResponse(
 	if eRErr != nil {
 		ao.Errors = append(ao.Errors, fmt.Errorf("AMP response: failed to unpack OpenRTB response.ext, debug info cannot be forwarded: %v", eRErr))
 	}
-	// Extract global targeting and send seatnonbid to analytics
-	extPrebid := extResponse.Prebid
-	if extPrebid != nil {
-		for key, value := range extPrebid.Targeting {
-			_, exists := targets[key]
-			if !exists {
-				targets[key] = value
-			}
-		}
-		ao.SeatNonBid = extPrebid.SeatNonBid
-	}
 	// Now JSONify the targets for the AMP response.
 	ampResponse := AmpResponse{Targeting: targets}
-	ao, ampResponse.ORTB2.Ext = getExtBidResponse(hookExecutor, response, reqWrapper, account, ao, errs)
+	ao, ampResponse.ORTB2.Ext = getExtBidResponse(hookExecutor, respWrapper, reqWrapper, account, ao, errs)
 
 	ao.AmpTargetingValues = targets
 
@@ -370,12 +361,14 @@ func sendAmpResponse(
 
 func getExtBidResponse(
 	hookExecutor hookexecution.HookStageExecutor,
-	response *openrtb2.BidResponse,
+	respWrapper *openrtb_ext.ResponseWrapper,
 	reqWrapper *openrtb_ext.RequestWrapper,
 	account *config.Account,
 	ao analytics.AmpObject,
 	errs []error,
 ) (analytics.AmpObject, openrtb_ext.ExtBidResponse) {
+	// assuming respWrapper is never nil here
+	response := respWrapper.BidResponse
 	// Extract any errors
 	var extResponse openrtb_ext.ExtBidResponse
 	eRErr := json.Unmarshal(response.Ext, &extResponse)
@@ -425,6 +418,12 @@ func getExtBidResponse(
 		if len(warns) > 0 {
 			ao.Errors = append(ao.Errors, warns...)
 		}
+	}
+
+	// Set seat non-bid if requested
+	if err := setSeatNonBid(&extBidResponse, reqWrapper, respWrapper); err != nil {
+		glog.Errorf("Error in setting seat non-bid : [%v]", err.Error())
+		ao.Errors = append(ao.Errors, fmt.Errorf("AMP: Failed to get Request Extension : %v", err))
 	}
 
 	return ao, extBidResponse
@@ -799,4 +798,29 @@ func setTrace(req *openrtb2.BidRequest, value string) (err error) {
 	req.Ext = ext
 
 	return nil
+}
+
+func setSeatNonBid(finalExtBidResponse *openrtb_ext.ExtBidResponse, request *openrtb_ext.RequestWrapper, response *openrtb_ext.ResponseWrapper) error {
+	var err error
+	if request != nil {
+		reqExt, err := request.GetRequestExt()
+		if err == nil {
+			prebid := reqExt.GetPrebid()
+			if prebid != nil && prebid.ReturnAllBidStatus {
+				respExt, err := response.GetResponseExt()
+				if err == nil {
+					respExtPrebid := respExt.GetPrebid()
+					if respExtPrebid != nil {
+						if finalExtBidResponse.Prebid == nil {
+							finalExtBidResponse.Prebid = &openrtb_ext.ExtResponsePrebid{}
+						}
+						finalExtBidResponse.Prebid.SeatNonBid = respExtPrebid.SeatNonBid
+					}
+				}
+			} else {
+				err = errors.New("unable to determing prebid.ReturnAllBidStatus")
+			}
+		}
+	}
+	return err
 }

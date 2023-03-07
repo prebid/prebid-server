@@ -89,7 +89,6 @@ func (re *ResponseExt) unmarshal(extJson json.RawMessage) error {
 	if len(extJson) == 0 {
 		return nil
 	}
-
 	if err := json.Unmarshal(extJson, &re.extMap); err != nil {
 		return err
 	}
@@ -100,7 +99,6 @@ func (re *ResponseExt) unmarshal(extJson json.RawMessage) error {
 			return err
 		}
 	}
-
 	return nil
 }
 
