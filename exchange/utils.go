@@ -182,14 +182,9 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 			allowedBidderRequests = append(allowedBidderRequests, bidderRequest)
 		}
 		// GPP downgrade: always downgrade unless we can confirm GPP is supported
-		if binfo, ok := rs.bidderInfo[string(bidderRequest.BidderCoreName)]; ok {
-			if binfo.OpenRTB == nil || !binfo.OpenRTB.GPPSupported {
-				gdprFromGPP(bidderRequest.BidRequest, gpp)
-				privacyFromGPP(bidderRequest.BidRequest, gpp)
-			}
-		} else {
-			gdprFromGPP(bidderRequest.BidRequest, gpp)
-			privacyFromGPP(bidderRequest.BidRequest, gpp)
+		if binfo, ok := rs.bidderInfo[string(bidderRequest.BidderCoreName)]; ok && (binfo.OpenRTB == nil || !binfo.OpenRTB.GPPSupported) {
+			setLegacyGDPRFromGPP(bidderRequest.BidRequest, gpp)
+			setLegacyprivacyFromGPP(bidderRequest.BidRequest, gpp)
 		}
 	}
 
@@ -859,14 +854,16 @@ func mergeBidderRequests(allBidderRequests []BidderRequest, bidderNameToBidderRe
 	return allBidderRequests
 }
 
-func gdprFromGPP(r *openrtb2.BidRequest, gpp gpplib.GppContainer) {
+func setLegacyGDPRFromGPP(r *openrtb2.BidRequest, gpp gpplib.GppContainer) {
 	if r.Regs != nil && r.Regs.GDPR == nil {
-		if len(r.Regs.GPPSID) > 0 {
+		if r.Regs.GPPSID != nil {
 			// Set to 0 unless SID exists
 			r.Regs.GDPR = ptrutil.ToPtr[int8](0)
 			for _, id := range r.Regs.GPPSID {
 				if id == int8(gppConstants.SectionTCFEU2) {
-					r.Regs.GDPR = ptrutil.ToPtr[int8](1)
+					regs := *r.Regs
+					regs.GDPR = ptrutil.ToPtr[int8](1)
+					r.Regs = &regs
 				}
 			}
 		}
@@ -876,25 +873,34 @@ func gdprFromGPP(r *openrtb2.BidRequest, gpp gpplib.GppContainer) {
 		for i, id := range gpp.SectionTypes {
 			if id == gppConstants.SectionTCFEU2 {
 				if r.User == nil {
-					r.User = &openrtb2.User{}
+					r.User = &openrtb2.User{
+						Consent: gpp.Sections[i].GetValue(),
+					}
 				}
-				r.User.Consent = gpp.Sections[i].GetValue()
+				user := *r.User
+				user.Consent = gpp.Sections[i].GetValue()
+				r.User = &user
 				return
 			}
 		}
 	}
 
 }
-func privacyFromGPP(r *openrtb2.BidRequest, gpp gpplib.GppContainer) {
-	if r.Regs != nil && len(r.Regs.USPrivacy) == 0 {
-		if len(r.Regs.GPPSID) > 0 {
-			for _, id := range r.Regs.GPPSID {
-				if id == int8(gppConstants.SectionUSPV1) {
-					for i, id := range gpp.SectionTypes {
-						if id == gppConstants.SectionUSPV1 {
-							r.Regs.USPrivacy = gpp.Sections[i].GetValue()
-						}
-					}
+func setLegacyprivacyFromGPP(r *openrtb2.BidRequest, gpp gpplib.GppContainer) {
+	if r.Regs == nil {
+		return
+	}
+
+	if len(r.Regs.USPrivacy) > 0 || r.Regs.GPPSID == nil {
+		return
+	}
+	for _, id := range r.Regs.GPPSID {
+		if id == int8(gppConstants.SectionUSPV1) {
+			for i, id := range gpp.SectionTypes {
+				if id == gppConstants.SectionUSPV1 {
+					regs := *r.Regs
+					regs.USPrivacy = gpp.Sections[i].GetValue()
+					r.Regs = &regs
 				}
 			}
 		}

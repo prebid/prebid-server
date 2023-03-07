@@ -3652,7 +3652,7 @@ func TestGdprFromGPP(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			gdprFromGPP(test.initialRequest, test.gpp)
+			setLegacyGDPRFromGPP(test.initialRequest, test.gpp)
 			assert.Equal(t, test.expectedRequest, test.initialRequest)
 		})
 	}
@@ -3776,7 +3776,7 @@ func TestPrivacyFromGPP(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			privacyFromGPP(test.initialRequest, test.gpp)
+			setLegacyprivacyFromGPP(test.initialRequest, test.gpp)
 			assert.Equal(t, test.expectedRequest, test.initialRequest)
 		})
 	}
