@@ -118,15 +118,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		}
 	}
 
-	thisURI := a.URI
-
+	requestURI := a.URI
 	// The Appnexus API requires a Member ID in the URL. This means the request may fail if
 	// different impressions have different member IDs.
 	// Check for this condition, and log an error if it's a problem.
 	if len(uniqueMemberIds) > 0 {
-		memberId := uniqueMemberIds[0]
-		thisURI = appendMemberId(thisURI, memberId)
-
+		requestURI = appendMemberId(requestURI, uniqueMemberIds[0])
 		if len(uniqueMemberIds) > 1 {
 			errs = append(errs, fmt.Errorf("All request.imp[i].ext.prebid.bidder.appnexus.member params must match. Request contained: %v", uniqueMemberIds))
 		}
@@ -178,14 +175,14 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		for _, podImps := range podImps {
 			reqExt.Appnexus.AdPodId = generatePodID()
 
-			reqs, errors := splitRequests(podImps, request, reqExt, thisURI, errs)
+			reqs, errors := splitRequests(podImps, request, reqExt, requestURI, errs)
 			requests = append(requests, reqs...)
 			errs = append(errs, errors...)
 		}
 		return requests, errs
 	}
 
-	return splitRequests(imps, request, reqExt, thisURI, errs)
+	return splitRequests(imps, request, reqExt, requestURI, errs)
 }
 
 func generatePodID() string {
