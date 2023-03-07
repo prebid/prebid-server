@@ -89,12 +89,18 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	// but some SDKs will put it in imp.ext.prebid instead
 	defaultDisplayManagerVer := buildDefaultDisplayManageVer(request)
 
-	var adPodId *bool
+	var (
+		adPodId         *bool
+		uniqueMemberIds []string
+	)
 
 	for i := 0; i < len(request.Imp); i++ {
 		memberId, impAdPodId, err := preprocess(&request.Imp[i], defaultDisplayManagerVer)
 		if memberId != "" {
-			memberIds[memberId] = struct{}{}
+			if _, ok := memberIds[memberId]; !ok {
+				memberIds[memberId] = struct{}{}
+				uniqueMemberIds = append(uniqueMemberIds, memberId)
+			}
 		}
 		if adPodId == nil {
 			adPodId = &impAdPodId
@@ -116,13 +122,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	// The Appnexus API requires a Member ID in the URL. This means the request may fail if
 	// different impressions have different member IDs.
 	// Check for this condition, and log an error if it's a problem.
-	if len(memberIds) > 0 {
-		uniqueIds := keys(memberIds)
-		memberId := uniqueIds[0]
+	if len(uniqueMemberIds) > 0 {
+		memberId := uniqueMemberIds[0]
 		thisURI = appendMemberId(thisURI, memberId)
 
-		if len(uniqueIds) > 1 {
-			errs = append(errs, fmt.Errorf("All request.imp[i].ext.prebid.bidder.appnexus.member params must match. Request contained: %v", uniqueIds))
+		if len(uniqueMemberIds) > 1 {
+			errs = append(errs, fmt.Errorf("All request.imp[i].ext.prebid.bidder.appnexus.member params must match. Request contained: %v", uniqueMemberIds))
 		}
 	}
 
@@ -247,15 +252,6 @@ func splitRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExt
 		startInd = endInd
 	}
 	return resArr, errs
-}
-
-// get the keys from the map
-func keys(m map[string]struct{}) []string {
-	keys := make([]string, 0, len(m))
-	for key := range m {
-		keys = append(keys, key)
-	}
-	return keys
 }
 
 // preprocess mutates the imp to get it ready to send to appnexus.
