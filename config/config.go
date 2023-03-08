@@ -481,7 +481,6 @@ type VTrack struct {
 
 type Event struct {
 	TimeoutMS int64 `mapstructure:"timeout_ms"`
-	Enabled   bool  `mapstructure:"enabled"`
 }
 
 type HostCookie struct {
@@ -1010,6 +1009,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("account_defaults.price_floors.use_dynamic_data", false)
 	v.SetDefault("account_defaults.price_floors.max_rules", 100)
 	v.SetDefault("account_defaults.price_floors.max_schema_dims", 3)
+	v.SetDefault("account_defaults.events_enabled", false)
 
 	v.SetDefault("certificates_file", "")
 	v.SetDefault("auto_gen_source_tid", true)

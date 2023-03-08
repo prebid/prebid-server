@@ -107,19 +107,17 @@ func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprou
 		return
 	}
 
-	// account does not support events and events are not enabled at instance level (account config takes precedence)
+	// account does not support events and events are not enabled by default for accounts
 	if account.EventsEnabled != nil {
 		if !*account.EventsEnabled {
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte(fmt.Sprintf("Account '%s' doesn't support events", eventRequest.AccountID)))
 			return
 		}
-	} else {
-		if !e.Cfg.Event.Enabled {
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte(fmt.Sprintf("Account '%s' or server doesn't support events", eventRequest.AccountID)))
-			return
-		}
+	} else if e.Cfg.AccountDefaults.EventsEnabled == nil || !*e.Cfg.AccountDefaults.EventsEnabled {
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte(fmt.Sprintf("Account '%s' or server doesn't support events", eventRequest.AccountID)))
+		return
 	}
 
 	// handle notification event

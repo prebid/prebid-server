@@ -157,3 +157,34 @@ func Test_eventsData_modifyBidJSON(t *testing.T) {
 		})
 	}
 }
+
+func Test_isEventAllowed(t *testing.T) {
+	enabledForAccountTrue := true
+	type args struct {
+		enabledForAccount *bool
+		enabledForRequest bool
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "enabled for account",
+			args: args{enabledForAccount: &enabledForAccountTrue, enabledForRequest: false},
+			want: true,
+		},
+		{
+			name: "enabled for request",
+			args: args{enabledForAccount: nil, enabledForRequest: true},
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			isEventAllowed := isEventAllowed(tt.args.enabledForRequest, tt.args.enabledForAccount)
+			assert.Equal(t, tt.want, isEventAllowed)
+		})
+	}
+}

@@ -360,7 +360,7 @@ func TestShouldReturnBadRequestWhenAnalyticsValueIsInvalid(t *testing.T) {
 	assert.Equal(t, "invalid request: unknown analytics: '4'\n", string(d))
 }
 
-func TestShouldNotPassEventToAnalyticsReporterWhenAccountNotFound(t *testing.T) {
+func TestShouldNotPassEventToAnalyticsReporterWhenAccountNotFoundAndDefaultIsFalse(t *testing.T) {
 
 	// mock AccountsFetcher
 	mockAccountsFetcher := &mockAccountsFetcher{
@@ -505,7 +505,7 @@ func TestShouldPassEventToAnalyticsReporterWhenAccountEventEnabled(t *testing.T)
 	assert.Equal(t, true, mockAnalyticsModule.Invoked)
 }
 
-func TestShouldPassEventToAnalyticsReporterWhenServerEventEnabled(t *testing.T) {
+func TestShouldPassEventToAnalyticsReporterWhenAccountDefaultsEventEnabled(t *testing.T) {
 	// instance level event enabled flag
 
 	// mock AccountsFetcher
@@ -518,11 +518,11 @@ func TestShouldPassEventToAnalyticsReporterWhenServerEventEnabled(t *testing.T) 
 		Fail: false,
 	}
 
+	accountDefaultsEventEnabled := true
 	// mock config
 	cfg := &config.Configuration{
-		AccountDefaults: config.Account{},
-		Event: config.Event{
-			Enabled: true,
+		AccountDefaults: config.Account{
+			EventsEnabled: &accountDefaultsEventEnabled,
 		},
 	}
 	cfg.MarshalAccountDefaults()
