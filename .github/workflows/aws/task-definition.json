@@ -1,0 +1,142 @@
+{
+    "taskDefinitionArn": "arn:aws:ecs:us-east-1:885182695675:task-definition/prebid-server:1",
+    "containerDefinitions": [
+        {
+            "name": "prebid-server",
+            "image": "885182695675.dkr.ecr.us-east-1.amazonaws.com/prebid-server:latest",
+            "cpu": 0,
+            "portMappings": [
+                {
+                    "containerPort": 80,
+                    "hostPort": 80,
+                    "protocol": "tcp"
+                },
+                {
+                    "containerPort": 8000,
+                    "hostPort": 8000,
+                    "protocol": "tcp"
+                },
+                {
+                    "containerPort": 6060,
+                    "hostPort": 6060,
+                    "protocol": "tcp"
+                }
+            ],
+            "essential": true,
+            "environment": [
+                {
+                    "name": "PBS_STORED_REQUESTS_IN_MEMORY_CACHE_TYPE",
+                    "value": "lru"
+                },
+                {
+                    "name": "PBS_CACHE_SCHEME",
+                    "value": "https"
+                },
+                {
+                    "name": "PBS_STORED_REQUESTS_FILESYSTEM_ENABLED",
+                    "value": "true"
+                },
+                {
+                    "name": "PBS_ADAPTERS_RUBICON_XAPI_PASSWORD",
+                    "value": "KNXDFG67MN"
+                },
+                {
+                    "name": "PBS_GDPR_DEFAULT_VALUE",
+                    "value": "0"
+                },
+                {
+                    "name": "PBS_ADAPTERS_RUBICON_DISABLED",
+                    "value": "false"
+                },
+                {
+                    "name": "PBS_CACHE_HOST",
+                    "value": "prebid.adnxs.com/pbc/v1/"
+                },
+                {
+                    "name": "PBS_STORED_REQUESTS_IN_MEMORY_CACHE_REQUEST_CACHE_SIZE_BYTES",
+                    "value": "107374182"
+                },
+                {
+                    "name": "PBS_STORED_REQUESTS_HTTP_ENDPOINT",
+                    "value": "https://config.playwire.com/prebid/"
+                },
+                {
+                    "name": "PBS_ADAPTERS_RUBICON_XAPI_USERNAME",
+                    "value": "pb_playwire"
+                },
+                {
+                    "name": "PBS_ADAPTERS_RUBICON_USERSYNC_URL",
+                    "value": "https://secure-assets.rubiconproject.com/utils/xapi/multi-sync.html?p=pbs-Playwire&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}"
+                },
+                {
+                    "name": "PBS_STORED_REQUESTS_IN_MEMORY_CACHE_IMP_CACHE_SIZE_BYTES",
+                    "value": "107374182"
+                },
+                {
+                    "name": "PBS_STORED_REQUESTS_IN_MEMORY_CACHE_RESP_CACHE_SIZE_BYTES",
+                    "value": "107374182"
+                }
+            ],
+            "environmentFiles": [],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-create-group": "true",
+                    "awslogs-group": "/ecs/prebid-server",
+                    "awslogs-region": "us-east-1",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            }
+        }
+    ],
+    "family": "prebid-server",
+    "executionRoleArn": "arn:aws:iam::885182695675:role/ecsTaskExecutionRole",
+    "networkMode": "awsvpc",
+    "revision": 1,
+    "volumes": [],
+    "status": "ACTIVE",
+    "requiresAttributes": [
+        {
+            "name": "com.amazonaws.ecs.capability.logging-driver.awslogs"
+        },
+        {
+            "name": "ecs.capability.execution-role-awslogs"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.ecr-auth"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.19"
+        },
+        {
+            "name": "ecs.capability.execution-role-ecr-pull"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.18"
+        },
+        {
+            "name": "ecs.capability.task-eni"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.29"
+        }
+    ],
+    "placementConstraints": [],
+    "compatibilities": [
+        "EC2",
+        "FARGATE"
+    ],
+    "runtimePlatform": {
+        "cpuArchitecture": "X86_64",
+        "operatingSystemFamily": "LINUX"
+    },
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "512",
+    "memory": "1024",
+    "registeredAt": "2023-02-28T12:22:24.314000+02:00",
+    "registeredBy": "arn:aws:iam::885182695675:user/ltarabarova"
+}
