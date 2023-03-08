@@ -73,6 +73,9 @@ type ExtRequestPrebid struct {
 	// any other value or an empty string disables trace output at all.
 	Trace string `json:"trace,omitempty"`
 
+	// Macros specifies list of custom macros along with the values. This is used while forming
+	// the tracker URLs, where PBS will replace the Custom Macro with its value with url-encoding
+	Macros      map[string]string      `json:"macros,omitempty"`
 	MultiBid    []*ExtMultiBid         `json:"multibid,omitempty"`
 	MultiBidMap map[string]ExtMultiBid `json:"-"`
 }
