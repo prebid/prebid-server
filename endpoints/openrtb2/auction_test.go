@@ -1631,7 +1631,7 @@ func TestValidateRequestExt(t *testing.T) {
 	testCases := []struct {
 		description     string
 		givenRequestExt json.RawMessage
-		expectedError   string
+		expectedErrors  []string
 	}{
 		{
 			description:     "nil",
@@ -1648,17 +1648,17 @@ func TestValidateRequestExt(t *testing.T) {
 		{
 			description:     "prebid cache - empty",
 			givenRequestExt: json.RawMessage(`{"prebid":{"cache":{}}}`),
-			expectedError:   `request.ext is invalid: request.ext.prebid.cache requires one of the "bids" or "vastxml" properties`,
+			expectedErrors:  []string{`request.ext is invalid: request.ext.prebid.cache requires one of the "bids" or "vastxml" properties`},
 		},
 		{
 			description:     "prebid cache - bids - null",
 			givenRequestExt: json.RawMessage(`{"prebid":{"cache":{"bids":null}}}`),
-			expectedError:   `request.ext is invalid: request.ext.prebid.cache requires one of the "bids" or "vastxml" properties`,
+			expectedErrors:  []string{`request.ext is invalid: request.ext.prebid.cache requires one of the "bids" or "vastxml" properties`},
 		},
 		{
 			description:     "prebid cache - bids - wrong type",
 			givenRequestExt: json.RawMessage(`{"prebid":{"cache":{"bids":true}}}`),
-			expectedError:   `json: cannot unmarshal bool into Go struct field ExtRequestPrebidCache.cache.bids of type openrtb_ext.ExtRequestPrebidCacheBids`,
+			expectedErrors:  []string{`json: cannot unmarshal bool into Go struct field ExtRequestPrebidCache.cache.bids of type openrtb_ext.ExtRequestPrebidCacheBids`},
 		},
 		{
 			description:     "prebid cache - bids - provided",
@@ -1666,13 +1666,13 @@ func TestValidateRequestExt(t *testing.T) {
 		},
 		{
 			description:     "prebid cache - vastxml - null",
-			givenRequestExt: json.RawMessage(`{"prebid":{"cache":{"vastxml":null}}}`),
-			expectedError:   `request.ext is invalid: request.ext.prebid.cache requires one of the "bids" or "vastxml" properties`,
+			givenRequestExt: json.RawMessage(`{"prebid": {"cache": {"vastxml": null}}}`),
+			expectedErrors:  []string{`request.ext is invalid: request.ext.prebid.cache requires one of the "bids" or "vastxml" properties`},
 		},
 		{
 			description:     "prebid cache - vastxml - wrong type",
 			givenRequestExt: json.RawMessage(`{"prebid":{"cache":{"vastxml":true}}}`),
-			expectedError:   `json: cannot unmarshal bool into Go struct field ExtRequestPrebidCache.cache.vastxml of type openrtb_ext.ExtRequestPrebidCacheVAST`,
+			expectedErrors:  []string{`json: cannot unmarshal bool into Go struct field ExtRequestPrebidCache.cache.vastxml of type openrtb_ext.ExtRequestPrebidCacheVAST`},
 		},
 		{
 			description:     "prebid cache - vastxml - provided",
@@ -1685,18 +1685,32 @@ func TestValidateRequestExt(t *testing.T) {
 		{
 			description:     "prebid targeting", // test integration with validateTargeting
 			givenRequestExt: json.RawMessage(`{"prebid":{"targeting":{}}}`),
-			expectedError:   "ext.prebid.targeting: At least one of includewinners or includebidderkeys must be enabled to enable targeting support",
+			expectedErrors:  []string{"ext.prebid.targeting: At least one of includewinners or includebidderkeys must be enabled to enable targeting support"},
+		},
+		{
+			description:     "valid multibid",
+			givenRequestExt: json.RawMessage(`{"prebid": {"multibid": [{"Bidder": "pubmatic", "MaxBids": 2}]}}`),
+		},
+		{
+			description:     "multibid with invalid entries",
+			givenRequestExt: json.RawMessage(`{"prebid": {"multibid": [{"Bidder": "pubmatic"}, {"Bidder": "pubmatic", "MaxBids": 2}, {"Bidders": ["pubmatic"], "MaxBids": 3}]}}`),
+			expectedErrors: []string{
+				`maxBids not defined for {Bidder:pubmatic, Bidders:[], MaxBids:<nil>, TargetBidderCodePrefix:}`,
+				`multiBid already defined for pubmatic, ignoring this instance {Bidder:, Bidders:[pubmatic], MaxBids:3, TargetBidderCodePrefix:}`,
+			},
 		},
 	}
 
 	for _, test := range testCases {
 		w := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: test.givenRequestExt}}
-		err := validateRequestExt(w)
+		errs := validateRequestExt(w)
 
-		if len(test.expectedError) > 0 {
-			assert.EqualError(t, err, test.expectedError, test.description)
+		if len(test.expectedErrors) > 0 {
+			for i, expectedError := range test.expectedErrors {
+				assert.EqualError(t, errs[i], expectedError, test.description)
+			}
 		} else {
-			assert.NoError(t, err, test.description)
+			assert.Nil(t, errs, test.description)
 		}
 	}
 }
@@ -5112,6 +5126,89 @@ func TestSendAuctionResponse_LogsErrors(t *testing.T) {
 
 			assert.Equal(t, ao.Errors, test.expectedErrors, "Invalid errors.")
 			assert.Equal(t, test.expectedStatus, ao.Status, "Invalid HTTP response status.")
+		})
+	}
+}
+
+func TestParseRequestMultiBid(t *testing.T) {
+	tests := []struct {
+		name             string
+		givenRequestBody string
+		expectedReqExt   json.RawMessage
+		expectedErrors   []error
+	}{
+		{
+			name:             "validate and build multi-bid extension",
+			givenRequestBody: validRequest(t, "multi-bid-error.json"),
+			expectedReqExt:   getObject(t, "multi-bid-error.json", "expectedReqExt"),
+			expectedErrors: []error{
+				&errortypes.Warning{
+					WarningCode: errortypes.MultiBidWarningCode,
+					Message:     "maxBids not defined for {Bidder:appnexus, Bidders:[], MaxBids:<nil>, TargetBidderCodePrefix:}",
+				},
+				&errortypes.Warning{
+					WarningCode: errortypes.MultiBidWarningCode,
+					Message:     "invalid maxBids value, using minimum 1 limit for {Bidder:rubicon, Bidders:[], MaxBids:-1, TargetBidderCodePrefix:rubN}",
+				},
+				&errortypes.Warning{
+					WarningCode: errortypes.MultiBidWarningCode,
+					Message:     "invalid maxBids value, using maximum 9 limit for {Bidder:pubmatic, Bidders:[], MaxBids:10, TargetBidderCodePrefix:pm}",
+				},
+				&errortypes.Warning{
+					WarningCode: errortypes.MultiBidWarningCode,
+					Message:     "multiBid already defined for pubmatic, ignoring this instance {Bidder:pubmatic, Bidders:[], MaxBids:4, TargetBidderCodePrefix:pubM}",
+				},
+				&errortypes.Warning{
+					WarningCode: errortypes.MultiBidWarningCode,
+					Message:     "ignoring bidders from {Bidder:groupm, Bidders:[someBidder], MaxBids:5, TargetBidderCodePrefix:gm}",
+				},
+				&errortypes.Warning{
+					WarningCode: errortypes.MultiBidWarningCode,
+					Message:     "multiBid already defined for groupm, ignoring this instance {Bidder:, Bidders:[groupm], MaxBids:6, TargetBidderCodePrefix:}",
+				},
+				&errortypes.Warning{
+					WarningCode: errortypes.MultiBidWarningCode,
+					Message:     "ignoring targetbiddercodeprefix for {Bidder:, Bidders:[33across], MaxBids:7, TargetBidderCodePrefix:abc}",
+				},
+				&errortypes.Warning{
+					WarningCode: errortypes.MultiBidWarningCode,
+					Message:     "bidder(s) not specified for {Bidder:, Bidders:[], MaxBids:8, TargetBidderCodePrefix:xyz}",
+				},
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			deps := &endpointDeps{
+				fakeUUIDGenerator{},
+				&warningsCheckExchange{},
+				mockBidderParamValidator{},
+				&mockStoredReqFetcher{},
+				empty_fetcher.EmptyFetcher{},
+				empty_fetcher.EmptyFetcher{},
+				&config.Configuration{MaxRequestSize: int64(len(test.givenRequestBody))},
+				&metricsConfig.NilMetricsEngine{},
+				analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+				map[string]string{},
+				false,
+				[]byte{},
+				openrtb_ext.BuildBidderMap(),
+				nil,
+				nil,
+				hardcodedResponseIPValidator{response: true},
+				empty_fetcher.EmptyFetcher{},
+				hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+			}
+
+			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
+
+			resReq, _, _, _, _, _, errL := deps.parseRequest(req, &metrics.Labels{})
+
+			assert.NoError(t, resReq.RebuildRequest())
+
+			assert.JSONEq(t, string(test.expectedReqExt), string(resReq.Ext))
+
+			assert.Equal(t, errL, test.expectedErrors, "error length should match")
 		})
 	}
 }

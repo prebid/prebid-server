@@ -134,30 +134,30 @@ func (c standardChooser) Choose(request Request, cookie *Cookie) Result {
 func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}, syncTypeFilter SyncTypeFilter, privacy Privacy, cookie *Cookie) (Syncer, BidderEvaluation) {
 	syncer, exists := c.bidderSyncerLookup[bidder]
 	if !exists {
-		return nil, BidderEvaluation{Bidder: bidder, Status: StatusUnknownBidder}
+		return nil, BidderEvaluation{Status: StatusUnknownBidder, Bidder: bidder}
 	}
 
 	_, seen := syncersSeen[syncer.Key()]
 	if seen {
-		return nil, BidderEvaluation{Bidder: bidder, Status: StatusDuplicate}
+		return nil, BidderEvaluation{Status: StatusDuplicate, Bidder: bidder, SyncerKey: syncer.Key()}
 	}
 	syncersSeen[syncer.Key()] = struct{}{}
 
 	if !syncer.SupportsType(syncTypeFilter.ForBidder(bidder)) {
-		return nil, BidderEvaluation{Bidder: bidder, Status: StatusTypeNotSupported}
+		return nil, BidderEvaluation{Status: StatusTypeNotSupported, Bidder: bidder, SyncerKey: syncer.Key()}
 	}
 
 	if cookie.HasLiveSync(syncer.Key()) {
-		return nil, BidderEvaluation{Bidder: bidder, Status: StatusAlreadySynced}
+		return nil, BidderEvaluation{Status: StatusAlreadySynced, Bidder: bidder, SyncerKey: syncer.Key()}
 	}
 
 	if !privacy.GDPRAllowsBidderSync(bidder) {
-		return nil, BidderEvaluation{Bidder: bidder, Status: StatusBlockedByGDPR}
+		return nil, BidderEvaluation{Status: StatusBlockedByGDPR, Bidder: bidder, SyncerKey: syncer.Key()}
 	}
 
 	if !privacy.CCPAAllowsBidderSync(bidder) {
-		return nil, BidderEvaluation{Bidder: bidder, Status: StatusBlockedByCCPA}
+		return nil, BidderEvaluation{Status: StatusBlockedByCCPA, Bidder: bidder, SyncerKey: syncer.Key()}
 	}
 
-	return syncer, BidderEvaluation{Bidder: bidder, Status: StatusOK}
+	return syncer, BidderEvaluation{Status: StatusOK, Bidder: bidder, SyncerKey: syncer.Key()}
 }
