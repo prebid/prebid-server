@@ -534,7 +534,7 @@ func TestShouldPassEventToAnalyticsReporterWhenAccountDefaultsEventEnabled(t *te
 	req := httptest.NewRequest("GET", "/event?t=win&b=test&ts=1234&f=b&x=1&a=events_not_defined", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
-	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule)
+	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule, &metrics.MetricsEngineMock{})
 
 	// execute
 	e(recorder, req, nil)
