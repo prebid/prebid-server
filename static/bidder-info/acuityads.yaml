@@ -1,3 +1,4 @@
+endpoint: "http://{{.Host}}.admanmedia.com/bid?token={{.AccountID}}"
 maintainer:
   email: "integrations@acuityads.com"
 gvlVendorID: 231

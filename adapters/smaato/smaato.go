@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -17,7 +17,7 @@ import (
 	"github.com/prebid/prebid-server/util/timeutil"
 )
 
-const clientVersion = "prebid_server_0.4"
+const clientVersion = "prebid_server_0.5"
 
 type adMarkupType string
 
@@ -25,6 +25,7 @@ const (
 	smtAdTypeImg       adMarkupType = "Img"
 	smtAdTypeRichmedia adMarkupType = "Richmedia"
 	smtAdTypeVideo     adMarkupType = "Video"
+	smtAdTypeNative    adMarkupType = "Native"
 )
 
 // adapter describes a Smaato prebid server adapter.
@@ -65,7 +66,7 @@ type videoExt struct {
 }
 
 // Builder builds a new instance of the Smaato adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		clock:    &timeutil.RealTime{},
 		endpoint: config.Endpoint,
@@ -187,20 +188,29 @@ func (adapter *adapter) makeIndividualRequests(request *openrtb2.BidRequest) ([]
 }
 
 func splitImpressionsByMediaType(imp *openrtb2.Imp) ([]openrtb2.Imp, error) {
-	if imp.Banner == nil && imp.Video == nil {
-		return nil, &errortypes.BadInput{Message: "Invalid MediaType. Smaato only supports Banner and Video."}
+	if imp.Banner == nil && imp.Video == nil && imp.Native == nil {
+		return nil, &errortypes.BadInput{Message: "Invalid MediaType. Smaato only supports Banner, Video and Native."}
 	}
 
-	imps := make([]openrtb2.Imp, 0, 2)
+	imps := make([]openrtb2.Imp, 0, 3)
 
 	if imp.Banner != nil {
 		impCopy := *imp
 		impCopy.Video = nil
+		impCopy.Native = nil
 		imps = append(imps, impCopy)
 	}
 
 	if imp.Video != nil {
+		impCopy := *imp
+		impCopy.Banner = nil
+		impCopy.Native = nil
+		imps = append(imps, impCopy)
+	}
+
+	if imp.Native != nil {
 		imp.Banner = nil
+		imp.Video = nil
 		imps = append(imps, *imp)
 	}
 
@@ -258,6 +268,8 @@ func getAdMarkupType(response *adapters.ResponseData, adMarkup string) (adMarkup
 		return smtAdTypeRichmedia, nil
 	} else if strings.HasPrefix(adMarkup, `<?xml`) {
 		return smtAdTypeVideo, nil
+	} else if strings.HasPrefix(adMarkup, `{"native":`) {
+		return smtAdTypeNative, nil
 	} else {
 		return "", &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Invalid ad markup %s.", adMarkup),
@@ -287,6 +299,8 @@ func renderAdMarkup(adMarkupType adMarkupType, adMarkup string) (string, error) 
 		return extractAdmRichMedia(adMarkup)
 	case smtAdTypeVideo:
 		return adMarkup, nil
+	case smtAdTypeNative:
+		return extractAdmNative(adMarkup)
 	default:
 		return "", &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Unknown markup type %s.", adMarkupType),
@@ -302,6 +316,8 @@ func convertAdMarkupTypeToMediaType(adMarkupType adMarkupType) (openrtb_ext.BidT
 		return openrtb_ext.BidTypeBanner, nil
 	case smtAdTypeVideo:
 		return openrtb_ext.BidTypeVideo, nil
+	case smtAdTypeNative:
+		return openrtb_ext.BidTypeNative, nil
 	default:
 		return "", &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Unknown markup type %s.", adMarkupType),
@@ -459,7 +475,7 @@ func setImpForAdspace(imp *openrtb2.Imp) error {
 		return nil
 	}
 
-	if imp.Video != nil {
+	if imp.Video != nil || imp.Native != nil {
 		imp.TagID = adSpaceID
 		imp.Ext = nil
 		return nil

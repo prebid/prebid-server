@@ -1,7 +1,13 @@
+endpoint: "http://rtb.vrtcal.com/bidder_prebid.vap?ssp=1804"
 maintainer:
   email: "support@vrtcal.com"
+gvlVendorID: 706
 capabilities:
   app:
+    mediaTypes:
+      - banner
+      - video
+  site:
     mediaTypes:
       - banner
       - video
@@ -10,3 +16,4 @@ userSync:
   # bidder directly at the email address in this file to ask about enabling user sync.
   supports:
     - redirect
+

@@ -14,7 +14,7 @@ import (
 	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 )
 
 type adapter struct {
@@ -27,7 +27,7 @@ var (
 )
 
 // Builder builds a new instance of the operaads adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	epTemplate, err := template.New("endpoint").Parse(config.Endpoint)
 	if err != nil {
 		return nil, err

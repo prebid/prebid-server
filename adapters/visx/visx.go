@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -68,6 +68,16 @@ func (a *VisxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapte
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
+
+	if request.Device != nil {
+		if request.Device.IP != "" {
+			headers.Add("X-Forwarded-For", request.Device.IP)
+		}
+
+		if request.Device.IPv6 != "" {
+			headers.Add("X-Forwarded-For", request.Device.IPv6)
+		}
+	}
 
 	return []*adapters.RequestData{{
 		Method:  "POST",
@@ -165,7 +175,7 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp, bid visxBid) (openrtb
 }
 
 // Builder builds a new instance of the Visx adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &VisxAdapter{
 		endpoint: config.Endpoint,
 	}

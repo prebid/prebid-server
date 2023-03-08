@@ -3,6 +3,7 @@ package schain
 import (
 	"testing"
 
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
@@ -13,16 +14,16 @@ func TestBidderToPrebidChains(t *testing.T) {
 			SChains: []*openrtb_ext.ExtRequestPrebidSChain{
 				{
 					Bidders: []string{"Bidder1", "Bidder2"},
-					SChain: openrtb_ext.ExtRequestPrebidSChainSChain{
+					SChain: openrtb2.SupplyChain{
 						Complete: 1,
-						Nodes: []*openrtb_ext.ExtRequestPrebidSChainSChainNode{
+						Nodes: []openrtb2.SupplyChainNode{
 							{
 								ASI:    "asi1",
 								SID:    "sid1",
 								Name:   "name1",
 								RID:    "rid1",
 								Domain: "domain1",
-								HP:     1,
+								HP:     openrtb2.Int8Ptr(1),
 							},
 							{
 								ASI:    "asi2",
@@ -30,7 +31,7 @@ func TestBidderToPrebidChains(t *testing.T) {
 								Name:   "name2",
 								RID:    "rid2",
 								Domain: "domain2",
-								HP:     2,
+								HP:     openrtb2.Int8Ptr(2),
 							},
 						},
 						Ver: "version1",
@@ -38,7 +39,7 @@ func TestBidderToPrebidChains(t *testing.T) {
 				},
 				{
 					Bidders: []string{"Bidder3", "Bidder4"},
-					SChain:  openrtb_ext.ExtRequestPrebidSChainSChain{},
+					SChain:  openrtb2.SupplyChain{},
 				},
 			},
 		},
@@ -60,11 +61,11 @@ func TestBidderToPrebidChainsDiscardMultipleChainsForBidder(t *testing.T) {
 			SChains: []*openrtb_ext.ExtRequestPrebidSChain{
 				{
 					Bidders: []string{"Bidder1"},
-					SChain:  openrtb_ext.ExtRequestPrebidSChainSChain{},
+					SChain:  openrtb2.SupplyChain{},
 				},
 				{
 					Bidders: []string{"Bidder1", "Bidder2"},
-					SChain:  openrtb_ext.ExtRequestPrebidSChainSChain{},
+					SChain:  openrtb2.SupplyChain{},
 				},
 			},
 		},

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -169,6 +169,34 @@ func changeRequestForBidService(request *openrtb2.BidRequest, extension *openrtb
 		}
 	}
 
+	if request.Regs != nil && request.Regs.GPP != "" {
+		requestRegs := *request.Regs
+		if requestRegs.Ext == nil {
+			requestRegs.Ext = json.RawMessage("{}")
+		}
+		var regsExt map[string]json.RawMessage
+		err := json.Unmarshal(requestRegs.Ext, &regsExt)
+		if err != nil {
+			return err
+		}
+		regsExt["gpp"], err = json.Marshal(&requestRegs.GPP)
+
+		if requestRegs.GPPSID != nil {
+			regsExt["gpp_sid"], err = json.Marshal(&requestRegs.GPPSID)
+			if err != nil {
+				return err
+			}
+		}
+
+		requestRegs.Ext, err = json.Marshal(&regsExt)
+		if err != nil {
+			return err
+		}
+		requestRegs.GPP = ""
+		requestRegs.GPPSID = nil
+		request.Regs = &requestRegs
+	}
+
 	return nil
 }
 
@@ -191,7 +219,7 @@ func validateBanner(banner *openrtb2.Banner) error {
 }
 
 // Builder builds a new instance of the YahooSSP adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		URI: config.Endpoint,
 	}

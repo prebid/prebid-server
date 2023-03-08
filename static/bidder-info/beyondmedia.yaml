@@ -1,0 +1,19 @@
+endpoint: "http://backend.andbeyond.media/pserver"
+maintainer:
+  email: "sysengg@andbeyond.media"
+capabilities:
+  site:
+    mediaTypes:
+    - banner
+    - video
+    - native
+    
+  app:
+    mediaTypes:
+    - banner
+    - video
+    - native
+userSync:
+  redirect:
+    url: "https://cookies.andbeyond.media/pbserver?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&redir={{.RedirectURL}}"
+    userMacro: "[UID]"

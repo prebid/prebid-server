@@ -2,12 +2,14 @@ package smaato
 
 import (
 	"encoding/json"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 
+	"github.com/prebid/openrtb/v17/adcom1"
+	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -15,7 +17,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderSmaato, config.Adapter{
-		Endpoint: "https://prebid/bidder"})
+		Endpoint: "https://prebid/bidder"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -39,7 +41,7 @@ func TestVideoWithCategoryAndDuration(t *testing.T) {
 				H:           360,
 				MIMEs:       []string{"video/mp4"},
 				MaxDuration: 60,
-				Protocols:   []openrtb2.Protocol{2, 3, 5, 6},
+				Protocols:   []adcom1.MediaCreativeSubtype{2, 3, 5, 6},
 			},
 			Ext: json.RawMessage(
 				`{

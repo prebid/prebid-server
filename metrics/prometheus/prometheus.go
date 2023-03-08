@@ -27,6 +27,7 @@ type Metrics struct {
 	impressionsLegacy            prometheus.Counter
 	prebidCacheWriteTimer        *prometheus.HistogramVec
 	requests                     *prometheus.CounterVec
+	debugRequests                prometheus.Counter
 	requestsTimer                *prometheus.HistogramVec
 	requestsQueueTimer           *prometheus.HistogramVec
 	requestsWithoutCookie        *prometheus.CounterVec
@@ -50,25 +51,65 @@ type Metrics struct {
 	privacyCOPPA                 *prometheus.CounterVec
 	privacyLMT                   *prometheus.CounterVec
 	privacyTCF                   *prometheus.CounterVec
+	storedResponses              prometheus.Counter
+	storedResponsesFetchTimer    *prometheus.HistogramVec
+	storedResponsesErrors        *prometheus.CounterVec
+	adsCertRequests              *prometheus.CounterVec
+	adsCertSignTimer             prometheus.Histogram
 
 	// Adapter Metrics
-	adapterBids                *prometheus.CounterVec
-	adapterErrors              *prometheus.CounterVec
-	adapterPanics              *prometheus.CounterVec
-	adapterPrices              *prometheus.HistogramVec
-	adapterRequests            *prometheus.CounterVec
-	adapterRequestsTimer       *prometheus.HistogramVec
-	adapterReusedConnections   *prometheus.CounterVec
-	adapterCreatedConnections  *prometheus.CounterVec
-	adapterConnectionWaitTime  *prometheus.HistogramVec
-	adapterGDPRBlockedRequests *prometheus.CounterVec
+	adapterBids                           *prometheus.CounterVec
+	adapterErrors                         *prometheus.CounterVec
+	adapterPanics                         *prometheus.CounterVec
+	adapterPrices                         *prometheus.HistogramVec
+	adapterRequests                       *prometheus.CounterVec
+	adapterRequestsTimer                  *prometheus.HistogramVec
+	adapterReusedConnections              *prometheus.CounterVec
+	adapterCreatedConnections             *prometheus.CounterVec
+	adapterConnectionWaitTime             *prometheus.HistogramVec
+	adapterGDPRBlockedRequests            *prometheus.CounterVec
+	adapterBidResponseValidationSizeError *prometheus.CounterVec
+	adapterBidResponseValidationSizeWarn  *prometheus.CounterVec
+	adapterBidResponseSecureMarkupError   *prometheus.CounterVec
+	adapterBidResponseSecureMarkupWarn    *prometheus.CounterVec
 
 	// Syncer Metrics
 	syncerRequests *prometheus.CounterVec
 	syncerSets     *prometheus.CounterVec
 
 	// Account Metrics
-	accountRequests *prometheus.CounterVec
+	accountRequests                       *prometheus.CounterVec
+	accountDebugRequests                  *prometheus.CounterVec
+	accountStoredResponses                *prometheus.CounterVec
+	accountBidResponseValidationSizeError *prometheus.CounterVec
+	accountBidResponseValidationSizeWarn  *prometheus.CounterVec
+	accountBidResponseSecureMarkupError   *prometheus.CounterVec
+	accountBidResponseSecureMarkupWarn    *prometheus.CounterVec
+
+	// Account Deprecation Metrics
+	accountDeprecationWarningsPurpose1  prometheus.Counter
+	accountDeprecationWarningsPurpose2  prometheus.Counter
+	accountDeprecationWarningsPurpose3  prometheus.Counter
+	accountDeprecationWarningsPurpose4  prometheus.Counter
+	accountDeprecationWarningsPurpose5  prometheus.Counter
+	accountDeprecationWarningsPurpose6  prometheus.Counter
+	accountDeprecationWarningsPurpose7  prometheus.Counter
+	accountDeprecationWarningsPurpose8  prometheus.Counter
+	accountDeprecationWarningsPurpose9  prometheus.Counter
+	accountDeprecationWarningsPurpose10 prometheus.Counter
+	channelEnabledGDPR                  prometheus.Counter
+	channelEnabledCCPA                  prometheus.Counter
+	accountDeprecationSummary           prometheus.Counter
+
+	// Module Metrics as a map where the key is the module name
+	moduleDuration        map[string]*prometheus.HistogramVec
+	moduleCalls           map[string]*prometheus.CounterVec
+	moduleFailures        map[string]*prometheus.CounterVec
+	moduleSuccessNoops    map[string]*prometheus.CounterVec
+	moduleSuccessUpdates  map[string]*prometheus.CounterVec
+	moduleSuccessRejects  map[string]*prometheus.CounterVec
+	moduleExecutionErrors map[string]*prometheus.CounterVec
+	moduleTimeouts        map[string]*prometheus.CounterVec
 
 	metricsDisabled config.DisabledMetrics
 }
@@ -92,6 +133,7 @@ const (
 	privacyBlockedLabel  = "privacy_blocked"
 	requestStatusLabel   = "request_status"
 	requestTypeLabel     = "request_type"
+	stageLabel           = "stage"
 	statusLabel          = "status"
 	successLabel         = "success"
 	syncerLabel          = "syncer"
@@ -129,7 +171,7 @@ const (
 )
 
 // NewMetrics initializes a new Prometheus metrics instance with preloaded label values.
-func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMetrics, syncerKeys []string) *Metrics {
+func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMetrics, syncerKeys []string, moduleStageNames map[string][]string) *Metrics {
 	standardTimeBuckets := []float64{0.05, 0.1, 0.15, 0.20, 0.25, 0.3, 0.4, 0.5, 0.75, 1}
 	cacheWriteTimeBuckets := []float64{0.001, 0.002, 0.005, 0.01, 0.025, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 1}
 	priceBuckets := []float64{250, 500, 750, 1000, 1500, 2000, 2500, 3000, 3500, 4000}
@@ -181,6 +223,10 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"requests",
 		"Count of total requests to Prebid Server labeled by type and status.",
 		[]string{requestTypeLabel, requestStatusLabel})
+
+	metrics.debugRequests = newCounterWithoutLabels(cfg, reg,
+		"debug_requests",
+		"Count of total requests to Prebid Server that have debug enabled")
 
 	metrics.requestsTimer = newHistogramVec(cfg, reg,
 		"request_time_seconds",
@@ -305,6 +351,21 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 			[]string{adapterLabel})
 	}
 
+	metrics.storedResponsesFetchTimer = newHistogramVec(cfg, reg,
+		"stored_response_fetch_time_seconds",
+		"Seconds to fetch stored responses labeled by fetch type",
+		[]string{storedDataFetchTypeLabel},
+		standardTimeBuckets)
+
+	metrics.storedResponsesErrors = newCounter(cfg, reg,
+		"stored_response_errors",
+		"Count of stored video errors by error type",
+		[]string{storedDataErrorLabel})
+
+	metrics.storedResponses = newCounterWithoutLabels(cfg, reg,
+		"stored_responses",
+		"Count of total requests to Prebid Server that have stored responses")
+
 	metrics.adapterBids = newCounter(cfg, reg,
 		"adapter_bids",
 		"Count of bids labeled by adapter and markup delivery type (adm or nurl).",
@@ -349,6 +410,26 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 			standardTimeBuckets)
 	}
 
+	metrics.adapterBidResponseValidationSizeError = newCounter(cfg, reg,
+		"adapter_response_validation_size_err",
+		"Count that tracks number of bids removed from bid response that had a creative size greater than maxWidth/maxHeight",
+		[]string{adapterLabel, successLabel})
+
+	metrics.adapterBidResponseValidationSizeWarn = newCounter(cfg, reg,
+		"adapter_response_validation_size_warn",
+		"Count that tracks number of bids removed from bid response that had a creative size greater than maxWidth/maxHeight (warn)",
+		[]string{adapterLabel, successLabel})
+
+	metrics.adapterBidResponseSecureMarkupError = newCounter(cfg, reg,
+		"adapter_response_validation_secure_err",
+		"Count that tracks number of bids removed from bid response that had a invalid bidAdm",
+		[]string{adapterLabel, successLabel})
+
+	metrics.adapterBidResponseSecureMarkupWarn = newCounter(cfg, reg,
+		"adapter_response_validation_secure_warn",
+		"Count that tracks number of bids removed from bid response that had a invalid bidAdm (warn)",
+		[]string{adapterLabel, successLabel})
+
 	metrics.adapterRequestsTimer = newHistogramVec(cfg, reg,
 		"adapter_request_time_seconds",
 		"Seconds to resolve each successful request labeled by adapter.",
@@ -370,22 +451,168 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"Count of total requests to Prebid Server labeled by account.",
 		[]string{accountLabel})
 
+	metrics.accountDebugRequests = newCounter(cfg, reg,
+		"account_debug_requests",
+		"Count of total requests to Prebid Server that have debug enabled labled by account",
+		[]string{accountLabel})
+
+	metrics.accountBidResponseValidationSizeError = newCounter(cfg, reg,
+		"account_response_validation_size_err",
+		"Count that tracks number of bids removed from bid response that had a creative size greater than maxWidth/maxHeight labeled by account (enforce) ",
+		[]string{accountLabel, successLabel})
+
+	metrics.accountBidResponseValidationSizeWarn = newCounter(cfg, reg,
+		"account_response_validation_size_warn",
+		"Count that tracks number of bids removed from bid response that had a creative size greater than maxWidth/maxHeight labeled by account (warn)",
+		[]string{accountLabel, successLabel})
+
+	metrics.accountBidResponseSecureMarkupError = newCounter(cfg, reg,
+		"account_response_validation_secure_err",
+		"Count that tracks number of bids removed from bid response that had a invalid bidAdm labeled by account (enforce) ",
+		[]string{accountLabel, successLabel})
+
+	metrics.accountBidResponseSecureMarkupWarn = newCounter(cfg, reg,
+		"account_response_validation_secure_warn",
+		"Count that tracks number of bids removed from bid response that had a invalid bidAdm labeled by account (warn)",
+		[]string{accountLabel, successLabel})
+
 	metrics.requestsQueueTimer = newHistogramVec(cfg, reg,
 		"request_queue_time",
 		"Seconds request was waiting in queue",
 		[]string{requestTypeLabel, requestStatusLabel},
 		queuedRequestTimeBuckets)
 
+	metrics.accountStoredResponses = newCounter(cfg, reg,
+		"account_stored_responses",
+		"Count of total requests to Prebid Server that have stored responses labled by account",
+		[]string{accountLabel})
+
+	metrics.adsCertSignTimer = newHistogram(cfg, reg,
+		"ads_cert_sign_time",
+		"Seconds to generate an AdsCert header",
+		standardTimeBuckets)
+
+	metrics.adsCertRequests = newCounter(cfg, reg,
+		"ads_cert_requests",
+		"Count of AdsCert request, and if they were successfully sent.",
+		[]string{successLabel})
+
+	metrics.accountDeprecationWarningsPurpose1 = newCounterWithoutLabels(cfg, reg,
+		"account_config_gdpr_tcf2_purpose1_warn",
+		"Count of requests referencing an account whose config specifies a deprecated gdpr.tcf2.purpose1 field")
+	metrics.accountDeprecationWarningsPurpose2 = newCounterWithoutLabels(cfg, reg,
+		"account_config_gdpr_tcf2_purpose2_warn",
+		"Count of requests referencing an account whose config specifies a deprecated gdpr.tcf2.purpose2 field")
+	metrics.accountDeprecationWarningsPurpose3 = newCounterWithoutLabels(cfg, reg,
+		"account_config_gdpr_tcf2_purpose3_warn",
+		"Count of requests referencing an account whose config specifies a deprecated gdpr.tcf2.purpose3 field")
+	metrics.accountDeprecationWarningsPurpose4 = newCounterWithoutLabels(cfg, reg,
+		"account_config_gdpr_tcf2_purpose4_warn",
+		"Count of requests referencing an account whose config specifies a deprecated gdpr.tcf2.purpose4 field")
+	metrics.accountDeprecationWarningsPurpose5 = newCounterWithoutLabels(cfg, reg,
+		"account_config_gdpr_tcf2_purpose5_warn",
+		"Count of requests referencing an account whose config specifies a deprecated gdpr.tcf2.purpose5 field")
+	metrics.accountDeprecationWarningsPurpose6 = newCounterWithoutLabels(cfg, reg,
+		"account_config_gdpr_tcf2_purpose6_warn",
+		"Count of requests referencing an account whose config specifies a deprecated gdpr.tcf2.purpose6 field")
+	metrics.accountDeprecationWarningsPurpose7 = newCounterWithoutLabels(cfg, reg,
+		"account_config_gdpr_tcf2_purpose7_warn",
+		"Count of requests referencing an account whose config specifies a deprecated gdpr.tcf2.purpose7 field")
+	metrics.accountDeprecationWarningsPurpose8 = newCounterWithoutLabels(cfg, reg,
+		"account_config_gdpr_tcf2_purpose8_warn",
+		"Count of requests referencing an account whose config specifies a deprecated gdpr.tcf2.purpose8 field")
+	metrics.accountDeprecationWarningsPurpose9 = newCounterWithoutLabels(cfg, reg,
+		"account_config_gdpr_tcf2_purpose9_warn",
+		"Count of requests referencing an account whose config specifies a deprecated gdpr.tcf2.purpose9 field")
+	metrics.accountDeprecationWarningsPurpose10 = newCounterWithoutLabels(cfg, reg,
+		"account_config_gdpr_tcf2_purpose10_warn",
+		"Count of requests referencing an account whose config specifies a deprecated gdpr.tcf2.purpose10 field")
+
+	metrics.channelEnabledCCPA = newCounterWithoutLabels(cfg, reg,
+		"account_config_ccpa_channel_enabled_warn",
+		"Count of requests referencing an account whose config specifies a depreceated ccpa.channel_enabled field")
+	metrics.channelEnabledGDPR = newCounterWithoutLabels(cfg, reg,
+		"account_config_gdpr_channel_enabled_warn",
+		"Count of requests referencing an account whose config specifies a depreceated gdpr.channel_enabled field")
+
+	metrics.accountDeprecationSummary = newCounterWithoutLabels(cfg, reg,
+		"account_config_summary",
+		"Count of deprecated account config fields encountered across all accounts")
+
+	createModulesMetrics(cfg, reg, &metrics, moduleStageNames, standardTimeBuckets)
+
 	metrics.Gatherer = reg
 
-	metricsPrefix := fmt.Sprintf("%s_%s_", cfg.Namespace, cfg.Subsystem)
+	metricsPrefix := ""
+	if len(cfg.Namespace) > 0 {
+		metricsPrefix += fmt.Sprintf("%s_", cfg.Namespace)
+	}
+	if len(cfg.Subsystem) > 0 {
+		metricsPrefix += fmt.Sprintf("%s_", cfg.Subsystem)
+	}
 
 	metrics.Registerer = prometheus.WrapRegistererWithPrefix(metricsPrefix, reg)
 	metrics.Registerer.MustRegister(promCollector.NewGoCollector())
 
-	preloadLabelValues(&metrics, syncerKeys)
+	preloadLabelValues(&metrics, syncerKeys, moduleStageNames)
 
 	return &metrics
+}
+
+func createModulesMetrics(cfg config.PrometheusMetrics, registry *prometheus.Registry, m *Metrics, moduleStageNames map[string][]string, standardTimeBuckets []float64) {
+	l := len(moduleStageNames)
+	m.moduleDuration = make(map[string]*prometheus.HistogramVec, l)
+	m.moduleCalls = make(map[string]*prometheus.CounterVec, l)
+	m.moduleFailures = make(map[string]*prometheus.CounterVec, l)
+	m.moduleSuccessNoops = make(map[string]*prometheus.CounterVec, l)
+	m.moduleSuccessUpdates = make(map[string]*prometheus.CounterVec, l)
+	m.moduleSuccessRejects = make(map[string]*prometheus.CounterVec, l)
+	m.moduleExecutionErrors = make(map[string]*prometheus.CounterVec, l)
+	m.moduleTimeouts = make(map[string]*prometheus.CounterVec, l)
+
+	// create for each registered module its own metric
+	for module := range moduleStageNames {
+		m.moduleDuration[module] = newHistogramVec(cfg, registry,
+			fmt.Sprintf("modules_%s_duration", module),
+			"Amount of seconds a module processed a hook labeled by stage name.",
+			[]string{stageLabel},
+			standardTimeBuckets)
+
+		m.moduleCalls[module] = newCounter(cfg, registry,
+			fmt.Sprintf("modules_%s_called", module),
+			"Count of module calls labeled by stage name.",
+			[]string{stageLabel})
+
+		m.moduleFailures[module] = newCounter(cfg, registry,
+			fmt.Sprintf("modules_%s_failed", module),
+			"Count of module fails labeled by stage name.",
+			[]string{stageLabel})
+
+		m.moduleSuccessNoops[module] = newCounter(cfg, registry,
+			fmt.Sprintf("modules_%s_success_noops", module),
+			"Count of module successful noops labeled by stage name.",
+			[]string{stageLabel})
+
+		m.moduleSuccessUpdates[module] = newCounter(cfg, registry,
+			fmt.Sprintf("modules_%s_success_updates", module),
+			"Count of module successful updates labeled by stage name.",
+			[]string{stageLabel})
+
+		m.moduleSuccessRejects[module] = newCounter(cfg, registry,
+			fmt.Sprintf("modules_%s_success_rejects", module),
+			"Count of module successful rejects labeled by stage name.",
+			[]string{stageLabel})
+
+		m.moduleExecutionErrors[module] = newCounter(cfg, registry,
+			fmt.Sprintf("modules_%s_execution_errors", module),
+			"Count of module execution errors labeled by stage name.",
+			[]string{stageLabel})
+
+		m.moduleTimeouts[module] = newCounter(cfg, registry,
+			fmt.Sprintf("modules_%s_timeouts", module),
+			"Count of module timeouts labeled by stage name.",
+			[]string{stageLabel})
+	}
 }
 
 func newCounter(cfg config.PrometheusMetrics, registry *prometheus.Registry, name, help string, labels []string) *prometheus.CounterVec {
@@ -477,6 +704,71 @@ func (m *Metrics) RecordRequest(labels metrics.Labels) {
 	}
 }
 
+func (m *Metrics) RecordDebugRequest(debugEnabled bool, pubID string) {
+	if debugEnabled {
+		m.debugRequests.Inc()
+		if !m.metricsDisabled.AccountDebug && pubID != metrics.PublisherUnknown {
+			m.accountDebugRequests.With(prometheus.Labels{
+				accountLabel: pubID,
+			}).Inc()
+		}
+	}
+}
+
+func (m *Metrics) RecordAccountGDPRPurposeWarning(account string, purposeName string) {
+	if account != metrics.PublisherUnknown {
+		switch purposeName {
+		case "purpose1":
+			m.accountDeprecationWarningsPurpose1.Inc()
+		case "purpose2":
+			m.accountDeprecationWarningsPurpose2.Inc()
+		case "purpose3":
+			m.accountDeprecationWarningsPurpose3.Inc()
+		case "purpose4":
+			m.accountDeprecationWarningsPurpose4.Inc()
+		case "purpose5":
+			m.accountDeprecationWarningsPurpose5.Inc()
+		case "purpose6":
+			m.accountDeprecationWarningsPurpose6.Inc()
+		case "purpose7":
+			m.accountDeprecationWarningsPurpose7.Inc()
+		case "purpose8":
+			m.accountDeprecationWarningsPurpose8.Inc()
+		case "purpose9":
+			m.accountDeprecationWarningsPurpose9.Inc()
+		case "purpose10":
+			m.accountDeprecationWarningsPurpose10.Inc()
+		}
+	}
+}
+
+func (m *Metrics) RecordAccountGDPRChannelEnabledWarning(account string) {
+	if account != metrics.PublisherUnknown {
+		m.channelEnabledGDPR.Inc()
+	}
+}
+
+func (m *Metrics) RecordAccountCCPAChannelEnabledWarning(account string) {
+	if account != metrics.PublisherUnknown {
+		m.channelEnabledCCPA.Inc()
+	}
+}
+
+func (m *Metrics) RecordAccountUpgradeStatus(account string) {
+	if account != metrics.PublisherUnknown {
+		m.accountDeprecationSummary.Inc()
+	}
+}
+
+func (m *Metrics) RecordStoredResponse(pubId string) {
+	m.storedResponses.Inc()
+	if !m.metricsDisabled.AccountStoredResponses && pubId != metrics.PublisherUnknown {
+		m.accountStoredResponses.With(prometheus.Labels{
+			accountLabel: pubId,
+		}).Inc()
+	}
+}
+
 func (m *Metrics) RecordImps(labels metrics.ImpLabels) {
 	m.impressions.With(prometheus.Labels{
 		isBannerLabel: strconv.FormatBool(labels.BannerImps),
@@ -516,6 +808,10 @@ func (m *Metrics) RecordStoredDataFetchTime(labels metrics.StoredDataLabels, len
 		m.storedVideoFetchTimer.With(prometheus.Labels{
 			storedDataFetchTypeLabel: string(labels.DataFetchType),
 		}).Observe(length.Seconds())
+	case metrics.ResponseDataType:
+		m.storedResponsesFetchTimer.With(prometheus.Labels{
+			storedDataFetchTypeLabel: string(labels.DataFetchType),
+		}).Observe(length.Seconds())
 	}
 }
 
@@ -539,6 +835,10 @@ func (m *Metrics) RecordStoredDataError(labels metrics.StoredDataLabels) {
 		}).Inc()
 	case metrics.VideoDataType:
 		m.storedVideoErrors.With(prometheus.Labels{
+			storedDataErrorLabel: string(labels.Error),
+		}).Inc()
+	case metrics.ResponseDataType:
+		m.storedResponsesErrors.With(prometheus.Labels{
 			storedDataErrorLabel: string(labels.Error),
 		}).Inc()
 	}
@@ -729,5 +1029,114 @@ func (m *Metrics) RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.Bidder
 
 	m.adapterGDPRBlockedRequests.With(prometheus.Labels{
 		adapterLabel: string(adapterName),
+	}).Inc()
+}
+
+func (m *Metrics) RecordAdsCertReq(success bool) {
+	if success {
+		m.adsCertRequests.With(prometheus.Labels{
+			successLabel: requestSuccessful,
+		}).Inc()
+	} else {
+		m.adsCertRequests.With(prometheus.Labels{
+			successLabel: requestFailed,
+		}).Inc()
+	}
+}
+func (m *Metrics) RecordAdsCertSignTime(adsCertSignTime time.Duration) {
+	m.adsCertSignTimer.Observe(adsCertSignTime.Seconds())
+}
+
+func (m *Metrics) RecordBidValidationCreativeSizeError(adapter openrtb_ext.BidderName, account string) {
+	m.adapterBidResponseValidationSizeError.With(prometheus.Labels{
+		adapterLabel: string(adapter), successLabel: successLabel,
+	}).Inc()
+
+	if !m.metricsDisabled.AccountAdapterDetails && account != metrics.PublisherUnknown {
+		m.accountBidResponseValidationSizeError.With(prometheus.Labels{
+			accountLabel: account, successLabel: successLabel,
+		}).Inc()
+	}
+}
+
+func (m *Metrics) RecordBidValidationCreativeSizeWarn(adapter openrtb_ext.BidderName, account string) {
+	m.adapterBidResponseValidationSizeWarn.With(prometheus.Labels{
+		adapterLabel: string(adapter), successLabel: successLabel,
+	}).Inc()
+
+	if !m.metricsDisabled.AccountAdapterDetails && account != metrics.PublisherUnknown {
+		m.accountBidResponseValidationSizeWarn.With(prometheus.Labels{
+			accountLabel: account, successLabel: successLabel,
+		}).Inc()
+	}
+}
+
+func (m *Metrics) RecordBidValidationSecureMarkupError(adapter openrtb_ext.BidderName, account string) {
+	m.adapterBidResponseSecureMarkupError.With(prometheus.Labels{
+		adapterLabel: string(adapter), successLabel: successLabel,
+	}).Inc()
+
+	if !m.metricsDisabled.AccountAdapterDetails && account != metrics.PublisherUnknown {
+		m.accountBidResponseSecureMarkupError.With(prometheus.Labels{
+			accountLabel: account, successLabel: successLabel,
+		}).Inc()
+	}
+}
+
+func (m *Metrics) RecordBidValidationSecureMarkupWarn(adapter openrtb_ext.BidderName, account string) {
+	m.adapterBidResponseSecureMarkupWarn.With(prometheus.Labels{
+		adapterLabel: string(adapter), successLabel: successLabel,
+	}).Inc()
+
+	if !m.metricsDisabled.AccountAdapterDetails && account != metrics.PublisherUnknown {
+		m.accountBidResponseSecureMarkupWarn.With(prometheus.Labels{
+			accountLabel: account, successLabel: successLabel,
+		}).Inc()
+	}
+}
+
+func (m *Metrics) RecordModuleCalled(labels metrics.ModuleLabels, duration time.Duration) {
+	m.moduleCalls[labels.Module].With(prometheus.Labels{
+		stageLabel: labels.Stage,
+	}).Inc()
+
+	m.moduleDuration[labels.Module].With(prometheus.Labels{
+		stageLabel: labels.Stage,
+	}).Observe(duration.Seconds())
+}
+
+func (m *Metrics) RecordModuleFailed(labels metrics.ModuleLabels) {
+	m.moduleFailures[labels.Module].With(prometheus.Labels{
+		stageLabel: labels.Stage,
+	}).Inc()
+}
+
+func (m *Metrics) RecordModuleSuccessNooped(labels metrics.ModuleLabels) {
+	m.moduleSuccessNoops[labels.Module].With(prometheus.Labels{
+		stageLabel: labels.Stage,
+	}).Inc()
+}
+
+func (m *Metrics) RecordModuleSuccessUpdated(labels metrics.ModuleLabels) {
+	m.moduleSuccessUpdates[labels.Module].With(prometheus.Labels{
+		stageLabel: labels.Stage,
+	}).Inc()
+}
+
+func (m *Metrics) RecordModuleSuccessRejected(labels metrics.ModuleLabels) {
+	m.moduleSuccessRejects[labels.Module].With(prometheus.Labels{
+		stageLabel: labels.Stage,
+	}).Inc()
+}
+
+func (m *Metrics) RecordModuleExecutionError(labels metrics.ModuleLabels) {
+	m.moduleExecutionErrors[labels.Module].With(prometheus.Labels{
+		stageLabel: labels.Stage,
+	}).Inc()
+}
+
+func (m *Metrics) RecordModuleTimeout(labels metrics.ModuleLabels) {
+	m.moduleTimeouts[labels.Module].With(prometheus.Labels{
+		stageLabel: labels.Stage,
 	}).Inc()
 }

@@ -1,0 +1,78 @@
+{
+  "description": "Amp request comes with a root.regs.ext.gdpr and a GDPR consent string found in root.user.ext.consent",
+  "query": "tag_id=101",
+  "config": {
+    "mockBidders": [
+      {
+        "bidderName": "appnexus",
+        "currency": "USD",
+        "price": 15
+      }
+    ]
+  },
+  "mockBidRequest": {
+    "id": "b9c97a4b-cbc4-483d-b2c4-58a19ed5cfc5",
+    "site": {
+      "page": "prebid.org"
+    },
+    "imp": [
+      {
+        "id": "/19968336/header-bid-tag-0",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "prebid": {
+            "bidder": {
+              "appnexus": {
+                "placementId": 12883451
+              }
+            }
+          }
+        }
+      }
+    ],
+    "regs": {
+      "ext": {
+        "gdpr": 1
+      }
+    },
+    "user": {
+      "ext": {
+        "consent": "some-consent-string"
+      }
+    }
+  },
+  "expectedAmpResponse": {
+    "targeting": {
+      "hb_bidder": "appnexus",
+      "hb_bidder_appnexus": "appnexus",
+      "hb_cache_host": "www.pbcserver.com",
+      "hb_cache_host_appnex": "www.pbcserver.com",
+      "hb_cache_id": "0",
+      "hb_cache_id_appnexus": "0",
+      "hb_cache_path": "/pbcache/endpoint",
+      "hb_cache_path_appnex": "/pbcache/endpoint",
+      "hb_pb": "15.00",
+      "hb_pb_appnexus": "15.00"
+    },
+    "ortb2": {
+      "ext": {
+        "warnings": {
+          "general": [
+            {
+              "code": 10002,
+              "message": "debug turned off for account"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "expectedReturnCode": 200
+}

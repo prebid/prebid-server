@@ -177,7 +177,7 @@ func TestBuildTemplate(t *testing.T) {
 		key           = "anyKey"
 		syncTypeValue = "x"
 		hostConfig    = config.UserSync{ExternalURL: "http://host.com", RedirectURL: "{{.ExternalURL}}/host"}
-		macroValues   = macros.UserSyncTemplateParams{GDPR: "A", GDPRConsent: "B", USPrivacy: "C"}
+		macroValues   = macros.UserSyncTemplateParams{GDPR: "A", GDPRConsent: "B", USPrivacy: "C", GPP: "D", GPPSID: "1"}
 	)
 
 	testCases := []struct {
@@ -199,11 +199,11 @@ func TestBuildTemplate(t *testing.T) {
 			description: "All Composed Macros",
 			givenSyncerEndpoint: config.SyncerEndpoint{
 				URL:         "https://bidder.com/sync?redirect={{.RedirectURL}}",
-				RedirectURL: "{{.ExternalURL}}/setuid?bidder={{.SyncerKey}}&f={{.SyncType}}&gdpr={{.GDPR}}&uid={{.UserMacro}}",
+				RedirectURL: "{{.ExternalURL}}/setuid?bidder={{.SyncerKey}}&f={{.SyncType}}&gdpr={{.GDPR}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&uid={{.UserMacro}}",
 				ExternalURL: "http://syncer.com",
 				UserMacro:   "$UID$",
 			},
-			expectedRendered: "https://bidder.com/sync?redirect=http%3A%2F%2Fsyncer.com%2Fsetuid%3Fbidder%3DanyKey%26f%3Dx%26gdpr%3DA%26uid%3D%24UID%24",
+			expectedRendered: "https://bidder.com/sync?redirect=http%3A%2F%2Fsyncer.com%2Fsetuid%3Fbidder%3DanyKey%26f%3Dx%26gdpr%3DA%26gpp%3DD%26gpp_sid%3D1%26uid%3D%24UID%24",
 		},
 		{
 			description: "Redirect URL + External URL From Host",

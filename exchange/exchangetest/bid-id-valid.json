@@ -18,8 +18,12 @@
             ]
           },
           "ext": {
-            "appnexus": {
-              "placementId": 1
+            "prebid": {
+              "bidder": {
+                "appnexus": {
+                  "placementId": 1
+                }
+              }
             }
           }
         }
@@ -33,6 +37,18 @@
               "publisher": "",
               "withcategory": true
             },
+            "pricegranularity": {
+              "precision": 2,
+              "ranges": [
+                {
+                  "min": 0,
+                  "max": 20,
+                  "increment": 0.1
+                }
+              ]
+            },
+            "includewinners": true,
+            "includebidderkeys": true,
             "appendbiddernames": true
           }
         }
@@ -45,28 +61,31 @@
   "outgoingRequests": {
     "appnexus": {
       "mockResponse": {
-        "pbsSeatBid": {
-          "pbsBids": [
-            {
-              "ortbBid": {
-                "id": "apn-bid",
-                "impid": "my-imp-id",
-                "price": 0.3,
-                "w": 200,
-                "h": 250,
-                "crid": "creative-1",
-                "cat": [
-                  "IAB1-1"
-                ]
-              },
-              "bidType": "video",
-              "bidVideo": {
-                "duration": 30,
-                "PrimaryCategory": ""
+        "pbsSeatBids": [
+          {
+            "pbsBids": [
+              {
+                "ortbBid": {
+                  "id": "apn-bid",
+                  "impid": "my-imp-id",
+                  "price": 0.3,
+                  "w": 200,
+                  "h": 250,
+                  "crid": "creative-1",
+                  "cat": [
+                    "IAB1-1"
+                  ]
+                },
+                "bidType": "video",
+                "bidVideo": {
+                  "duration": 30,
+                  "PrimaryCategory": ""
+                }
               }
-            }
-          ]
-        }
+            ],
+            "seat": "appnexus"
+          }
+        ]
       }
     }
   },
@@ -126,8 +145,12 @@
                 ]
               },
               "ext": {
-                "appnexus": {
-                  "placementId": 1
+                "prebid": {
+                  "bidder": {
+                    "appnexus": {
+                      "placementId": 1
+                    }
+                  }
                 }
               }
             }
@@ -139,6 +162,18 @@
           "ext": {
             "prebid": {
               "targeting": {
+                "pricegranularity": {
+                  "precision": 2,
+                  "ranges": [
+                    {
+                      "min": 0,
+                      "max": 20,
+                      "increment": 0.1
+                    }
+                  ]
+                },
+                "includewinners": true,
+                "includebidderkeys": true,
                 "includebrandcategory": {
                   "primaryadserver": 1,
                   "publisher": "",

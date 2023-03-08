@@ -1,6 +1,6 @@
 package lmt
 
-import "github.com/mxmCherry/openrtb/v15/openrtb2"
+import "github.com/prebid/openrtb/v17/openrtb2"
 
 const (
 	trackingUnrestricted = 0

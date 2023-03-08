@@ -2,7 +2,7 @@ package openrtb_ext
 
 import "encoding/json"
 
-// ExtImpAppnexus defines the contract for bidrequest.imp[i].ext.appnexus
+// ExtImpAppnexus defines the contract for bidrequest.imp[i].ext.prebid.bidder.appnexus
 type ExtImpAppnexus struct {
 	LegacyPlacementId       int                     `json:"placementId"`
 	LegacyInvCode           string                  `json:"invCode"`
@@ -20,7 +20,7 @@ type ExtImpAppnexus struct {
 	AdPodId      bool            `json:"generate_ad_pod_id"`
 }
 
-// ExtImpAppnexusKeyVal defines the contract for bidrequest.imp[i].ext.appnexus.keywords[i]
+// ExtImpAppnexusKeyVal defines the contract for bidrequest.imp[i].ext.prebid.bidder.appnexus.keywords[i]
 type ExtImpAppnexusKeyVal struct {
 	Key    string   `json:"key,omitempty"`
 	Values []string `json:"value,omitempty"`

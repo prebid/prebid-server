@@ -3,12 +3,14 @@ package vidoomy
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"net/http"
+
+	"github.com/prebid/openrtb/v17/openrtb2"
+
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"net/http"
 )
 
 type adapter struct {
@@ -165,7 +167,7 @@ func getImpInfo(impId string, imps []openrtb2.Imp) (bool, openrtb_ext.BidType) {
 }
 
 // Builder builds a new instance of the Vidoomy adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}

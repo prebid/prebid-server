@@ -13,7 +13,7 @@ func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderBeachfront, config.Adapter{
 		Endpoint:         `https://qa.beachrtb.com/prebid_display`,
 		ExtraAdapterInfo: `{"video_endpoint":"https://qa.beachrtb.com/bid.json?exchange_id"}`,
-	})
+	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -26,7 +26,7 @@ func TestExtraInfoDefaultWhenEmpty(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderBeachfront, config.Adapter{
 		Endpoint:         `https://qa.beachrtb.com/prebid_display`,
 		ExtraAdapterInfo: ``,
-	})
+	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -41,7 +41,7 @@ func TestExtraInfoDefaultWhenNotSpecified(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderBeachfront, config.Adapter{
 		Endpoint:         `https://qa.beachrtb.com/prebid_display`,
 		ExtraAdapterInfo: `{"video_endpoint":""}`,
-	})
+	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -56,7 +56,7 @@ func TestExtraInfoMalformed(t *testing.T) {
 	_, buildErr := Builder(openrtb_ext.BidderBeachfront, config.Adapter{
 		Endpoint:         `https://qa.beachrtb.com/prebid_display`,
 		ExtraAdapterInfo: `malformed`,
-	})
+	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	assert.Error(t, buildErr)
 }

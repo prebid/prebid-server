@@ -3,7 +3,7 @@ package lmt
 import (
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/stretchr/testify/assert"
 )
 
