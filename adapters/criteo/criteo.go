@@ -68,12 +68,10 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	for _, seatBid := range response.SeatBid {
 		for i := range seatBid.Bid {
 			var bidExt openrtb_ext.ExtBid
-			unmarshalExtErr := json.Unmarshal(seatBid.Bid[i].Ext, &bidExt)
-			if unmarshalExtErr != nil {
-				err := &errortypes.BadServerResponse{
-					Message: fmt.Sprintf("Missing ad type in response: %d.", responseData.StatusCode),
-				}
-				return nil, []error{err}
+			if err := json.Unmarshal(seatBid.Bid[i].Ext, &bidExt); err != nil {
+				return nil, []error{&errortypes.BadServerResponse{
+					Message: fmt.Sprintf("Missing ext.prebid.type in bid for impression : %d.", seatBid.Bid[i].ImpID),
+				}}
 			}
 
 			b := &adapters.TypedBid{
