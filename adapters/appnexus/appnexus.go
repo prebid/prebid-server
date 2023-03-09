@@ -173,7 +173,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 		requests := make([]*adapters.RequestData, 0, len(podImps))
 		for _, podImps := range podImps {
-			reqExt.Appnexus.AdPodId = generatePodID()
+			reqExt.Appnexus.AdPodId = fmt.Sprint(rand.Int63())
 
 			reqs, errors := splitRequests(podImps, request, reqExt, requestURI)
 			requests = append(requests, reqs...)
@@ -184,11 +184,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	requests, errors := splitRequests(imps, request, reqExt, requestURI)
 	return requests, append(errs, errors...)
-}
-
-func generatePodID() string {
-	val := rand.Int63()
-	return fmt.Sprint(val)
 }
 
 func groupByPods(imps []openrtb2.Imp) map[string]([]openrtb2.Imp) {
