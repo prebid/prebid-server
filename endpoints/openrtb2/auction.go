@@ -389,7 +389,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	}
 
 	// Look up account
-	account, errs = accountService.GetAccount(ctx, deps.cfg, deps.accounts, accountId)
+	account, errs = accountService.GetAccount(ctx, deps.cfg, deps.accounts, accountId, deps.metricsEngine)
 	if len(errs) > 0 {
 		return
 	}
@@ -716,8 +716,8 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 		return append(errL, errors.New("request.site or request.app must be defined, but not both."))
 	}
 
-	if err := validateRequestExt(req); err != nil {
-		return append(errL, err)
+	if errs := validateRequestExt(req); len(errs) != 0 {
+		return append(errL, errs...)
 	}
 
 	if err := deps.validateSite(req); err != nil {
@@ -1497,14 +1497,13 @@ func (deps *endpointDeps) validateAliasesGVLIDs(aliasesGVLIDs map[string]uint16,
 	return nil
 }
 
-func validateRequestExt(req *openrtb_ext.RequestWrapper) error {
+func validateRequestExt(req *openrtb_ext.RequestWrapper) []error {
 	reqExt, err := req.GetRequestExt()
 	if err != nil {
-		return err
+		return []error{err}
 	}
 
 	prebid := reqExt.GetPrebid()
-
 	// exit early if there is no request.ext.prebid to validate
 	if prebid == nil {
 		return nil
@@ -1512,15 +1511,31 @@ func validateRequestExt(req *openrtb_ext.RequestWrapper) error {
 
 	if prebid.Cache != nil {
 		if prebid.Cache.Bids == nil && prebid.Cache.VastXML == nil {
-			return errors.New(`request.ext is invalid: request.ext.prebid.cache requires one of the "bids" or "vastxml" properties`)
+			return []error{errors.New(`request.ext is invalid: request.ext.prebid.cache requires one of the "bids" or "vastxml" properties`)}
 		}
 	}
 
 	if err := validateTargeting(prebid.Targeting); err != nil {
-		return err
+		return []error{err}
 	}
 
-	return nil
+	var errs []error
+	if prebid.MultiBid != nil {
+		validatedMultiBids, multBidErrs := openrtb_ext.ValidateAndBuildExtMultiBid(prebid)
+
+		for _, err := range multBidErrs {
+			errs = append(errs, &errortypes.Warning{
+				WarningCode: errortypes.MultiBidWarningCode,
+				Message:     err.Error(),
+			})
+		}
+
+		// update the downstream multibid to avoid passing unvalidated ext to bidders, etc.
+		prebid.MultiBid = validatedMultiBids
+		reqExt.SetPrebid(prebid)
+	}
+
+	return errs
 }
 
 func validateTargeting(t *openrtb_ext.ExtRequestTargeting) error {
@@ -1756,7 +1771,6 @@ func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, r *openrtb_
 	if r.App == nil {
 		setSiteImplicitly(httpReq, r)
 	}
-	setImpsImplicitly(httpReq, r.GetImp())
 
 	setAuctionTypeImplicitly(r)
 }
@@ -1821,15 +1835,6 @@ func setSitePublisherDomainIfEmpty(site *openrtb2.Site, publisherDomain string) 
 	}
 	if site.Publisher.Domain == "" {
 		site.Publisher.Domain = publisherDomain
-	}
-}
-
-func setImpsImplicitly(httpReq *http.Request, imps []*openrtb_ext.ImpWrapper) {
-	secure := int8(1)
-	for i := 0; i < len(imps); i++ {
-		if imps[i].Secure == nil && httputil.IsSecure(httpReq) {
-			imps[i].Secure = &secure
-		}
 	}
 }
 
