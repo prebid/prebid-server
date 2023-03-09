@@ -1,11 +1,16 @@
 {
   "mockBidRequest": {
-    "id": "test-request-id",
+    "id": "test-request-id-native",
     "imp": [
       {
-        "id": "test-imp-id",
-        "banner": {
-          "format": [{"w": 728, "h": 90}]
+        "id": "test-imp-id-native",
+        "native": {
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
         },
         "ext": {
           "bidder": {
@@ -20,12 +25,17 @@
       "expectedRequest": {
         "uri": "https://bid.pubwise.io/prebid",
         "body": {
-          "id": "test-request-id",
+          "id": "test-request-id-native",
           "imp": [
             {
-              "id": "test-imp-id",
-              "banner": {
-                "format": [{"w": 728, "h": 90}]
+              "id": "test-imp-id-native",
+              "native": {
+                "format": [
+                  {
+                    "w": 728,
+                    "h": 90
+                  }
+                ]
               },
               "ext": {
                 "bidder": {
@@ -33,30 +43,24 @@
                 }
               }
             }
-          ],
-          "site": {
-            "publisher": {
-              "idk": "idk wtf this is"
-            }
-          },
-          "regs": { "ext": { "gdpr": 0 } }
+          ]
         }
       },
       "mockResponse": {
         "status": 200,
         "body": {
-          "id": "test-request-id",
+          "id": "test-request-id-native",
           "seatbid": [
             {
               "seat": "pwbid",
               "bid": [{
                 "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
-                "impid": "test-imp-id",
+                "impid": "test-imp-id-native",
                 "price": 0.500000,
-                "adm": "some-test-ad",
+                "adm": "some-test-ad-native",
                 "crid": "crid_10",
-                "h": 90,
-                "w": 728
+                "w": 728,
+                "h": 90
               }]
             }
           ],
@@ -72,14 +76,14 @@
         {
           "bid": {
             "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
-            "impid": "test-imp-id",
+            "impid": "test-imp-id-native",
             "price": 0.5,
-            "adm": "some-test-ad",
+            "adm": "some-test-ad-native",
             "crid": "crid_10",
             "w": 728,
             "h": 90
           },
-          "type": "banner"
+          "type": "native"
         }
       ]
     }

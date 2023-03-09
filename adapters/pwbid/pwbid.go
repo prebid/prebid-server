@@ -22,7 +22,6 @@ type adapter struct {
 	endpoint string
 }
 
-// Builder builds a new instance of the Foo adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
@@ -74,7 +73,10 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 	for _, seatBid := range response.SeatBid {
 		for i, bid := range seatBid.Bid {
-			bidType := getMediaTypeForBid(bid)
+			bidType, typeerr := getMediaTypeForBid(bid)
+			if typeerr != nil {
+				return nil, []error{typeerr}
+			}
 			b := &adapters.TypedBid{
 				Bid:     &seatBid.Bid[i],
 				BidType: bidType,
@@ -86,15 +88,16 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return bidResponse, nil
 }
 
-func getMediaTypeForBid(bid openrtb2.Bid) openrtb_ext.BidType {
+func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	if bid.Ext != nil {
 		var bidExt openrtb_ext.ExtBid
 		err := json.Unmarshal(bid.Ext, &bidExt)
 		if err == nil && bidExt.Prebid != nil {
-			bidType, _ := openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
-			return bidType
+			return openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
 		}
 	}
 
-	return ""
+	return "", &errortypes.BadServerResponse{
+		Message: fmt.Sprintf("Failed to parse bid mediatype for impression \"%s\"", bid.ImpID),
+	}
 }

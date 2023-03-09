@@ -34,12 +34,7 @@
                 }
               }
             }
-          ],
-          "site": {
-            "publisher": {
-              "id": "73"
-            }
-          }
+          ]
         }
       },
       "mockResponse": {

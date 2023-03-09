@@ -11,8 +11,7 @@ capabilities:
     mediaTypes:
       - banner
       - native
-# userSync:
-#   redirect:
-#     url:
-#     userMacro: $UID
-# idk what to do here yet
+userSync:
+  redirect:
+    url: https://gdpr-wrapper.privacymanager.io/gdpr/6543ee0a-dbc0-4ab5-bf52-3e12b1b58de8/gdpr-liveramp.js
+    userMacro: $UID
