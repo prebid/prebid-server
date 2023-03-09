@@ -70,7 +70,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 			var bidExt openrtb_ext.ExtBid
 			if err := json.Unmarshal(seatBid.Bid[i].Ext, &bidExt); err != nil {
 				return nil, []error{&errortypes.BadServerResponse{
-					Message: fmt.Sprintf("Missing ext.prebid.type in bid for impression : %d.", seatBid.Bid[i].ImpID),
+					Message: fmt.Sprintf("Missing ext.prebid.type in bid for impression : %s.", seatBid.Bid[i].ImpID),
 				}}
 			}
 
