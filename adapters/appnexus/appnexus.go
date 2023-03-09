@@ -175,14 +175,15 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		for _, podImps := range podImps {
 			reqExt.Appnexus.AdPodId = generatePodID()
 
-			reqs, errors := splitRequests(podImps, request, reqExt, requestURI, errs)
+			reqs, errors := splitRequests(podImps, request, reqExt, requestURI)
 			requests = append(requests, reqs...)
 			errs = append(errs, errors...)
 		}
 		return requests, errs
 	}
 
-	return splitRequests(imps, request, reqExt, requestURI, errs)
+	requests, errors := splitRequests(imps, request, reqExt, requestURI)
+	return requests, append(errs, errors...)
 }
 
 func generatePodID() string {
@@ -200,8 +201,8 @@ func groupByPods(imps []openrtb2.Imp) map[string]([]openrtb2.Imp) {
 	return podImps
 }
 
-func splitRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExtension appnexusReqExt, uri string, errs []error) ([]*adapters.RequestData, []error) {
-
+func splitRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExtension appnexusReqExt, uri string) ([]*adapters.RequestData, []error) {
+	errs := []error{}
 	// Initial capacity for future array of requests, memory optimization.
 	// Let's say there are 35 impressions and limit impressions per request equals to 10.
 	// In this case we need to create 4 requests with 10, 10, 10 and 5 impressions.
