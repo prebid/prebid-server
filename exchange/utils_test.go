@@ -3495,21 +3495,18 @@ func (gs GPPMockSection) GetValue() string {
 func TestGdprFromGPP(t *testing.T) {
 	testCases := []struct {
 		name            string
-		desc            string
 		initialRequest  *openrtb2.BidRequest
 		gpp             gpplib.GppContainer
 		expectedRequest *openrtb2.BidRequest
 	}{
 		{
-			name:            "Empty",
-			desc:            "Empty Request",
+			name:            "Empty", // Empty Request
 			initialRequest:  &openrtb2.BidRequest{},
 			gpp:             gpplib.GppContainer{},
 			expectedRequest: &openrtb2.BidRequest{},
 		},
 		{
-			name: "GDPR_Downgrade",
-			desc: "GDPR from GPP, into empty",
+			name: "GDPR_Downgrade", // GDPR from GPP, into empty
 			initialRequest: &openrtb2.BidRequest{
 				Regs: &openrtb2.Regs{
 					GPPSID: []int8{2},
@@ -3535,8 +3532,7 @@ func TestGdprFromGPP(t *testing.T) {
 			},
 		},
 		{
-			name: "Downgrade_Blocked_By_Existing",
-			desc: "GDPR from GPP blocked by existing GDPR",
+			name: "Downgrade_Blocked_By_Existing", // GDPR from GPP blocked by existing GDPR",
 			initialRequest: &openrtb2.BidRequest{
 				Regs: &openrtb2.Regs{
 					GPPSID: []int8{2},
@@ -3566,8 +3562,7 @@ func TestGdprFromGPP(t *testing.T) {
 			},
 		},
 		{
-			name: "Downgrade_Partial",
-			desc: "GDPR from GPP partially blocked by existing GDPR",
+			name: "Downgrade_Partial", // GDPR from GPP partially blocked by existing GDPR
 			initialRequest: &openrtb2.BidRequest{
 				Regs: &openrtb2.Regs{
 					GPPSID: []int8{2},
@@ -3594,8 +3589,7 @@ func TestGdprFromGPP(t *testing.T) {
 			},
 		},
 		{
-			name: "No_GDPR",
-			desc: "Downgrade not possible due to missing GDPR",
+			name: "No_GDPR", // Downgrade not possible due to missing GDPR
 			initialRequest: &openrtb2.BidRequest{
 				Regs: &openrtb2.Regs{
 					GPPSID: []int8{6},
@@ -3618,8 +3612,7 @@ func TestGdprFromGPP(t *testing.T) {
 			},
 		},
 		{
-			name: "No_SID",
-			desc: "GDPR from GPP partially blocked by no SID",
+			name: "No_SID", // GDPR from GPP partially blocked by no SID
 			initialRequest: &openrtb2.BidRequest{
 				Regs: &openrtb2.Regs{
 					GPPSID: []int8{6},
@@ -3661,21 +3654,18 @@ func TestGdprFromGPP(t *testing.T) {
 func TestPrivacyFromGPP(t *testing.T) {
 	testCases := []struct {
 		name            string
-		desc            string
 		initialRequest  *openrtb2.BidRequest
 		gpp             gpplib.GppContainer
 		expectedRequest *openrtb2.BidRequest
 	}{
 		{
-			name:            "Empty",
-			desc:            "Empty Request",
+			name:            "Empty", // Empty Request
 			initialRequest:  &openrtb2.BidRequest{},
 			gpp:             gpplib.GppContainer{},
 			expectedRequest: &openrtb2.BidRequest{},
 		},
 		{
-			name: "Privacy_Downgrade",
-			desc: "US Privacy from GPP, into empty",
+			name: "Privacy_Downgrade", // US Privacy from GPP, into empty
 			initialRequest: &openrtb2.BidRequest{
 				Regs: &openrtb2.Regs{
 					GPPSID: []int8{6},
@@ -3698,8 +3688,7 @@ func TestPrivacyFromGPP(t *testing.T) {
 			},
 		},
 		{
-			name: "Downgrade_Blocked_By_Existing",
-			desc: "US Privacy from GPP blocked by existing US Privacy",
+			name: "Downgrade_Blocked_By_Existing", // US Privacy from GPP blocked by existing US Privacy
 			initialRequest: &openrtb2.BidRequest{
 				Regs: &openrtb2.Regs{
 					GPPSID:    []int8{6},
@@ -3723,8 +3712,7 @@ func TestPrivacyFromGPP(t *testing.T) {
 			},
 		},
 		{
-			name: "No_USPrivacy",
-			desc: "Downgrade not possible due to missing USPrivacy",
+			name: "No_USPrivacy", // Downgrade not possible due to missing USPrivacy
 			initialRequest: &openrtb2.BidRequest{
 				Regs: &openrtb2.Regs{
 					GPPSID: []int8{2},
@@ -3746,8 +3734,7 @@ func TestPrivacyFromGPP(t *testing.T) {
 			},
 		},
 		{
-			name: "No_SID",
-			desc: "US Privacy from GPP partially blocked by no SID",
+			name: "No_SID", // US Privacy from GPP partially blocked by no SID
 			initialRequest: &openrtb2.BidRequest{
 				Regs: &openrtb2.Regs{
 					GPPSID: []int8{2},

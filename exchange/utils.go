@@ -858,14 +858,14 @@ func setLegacyGDPRFromGPP(r *openrtb2.BidRequest, gpp gpplib.GppContainer) {
 	if r.Regs != nil && r.Regs.GDPR == nil {
 		if r.Regs.GPPSID != nil {
 			// Set to 0 unless SID exists
-			r.Regs.GDPR = ptrutil.ToPtr[int8](0)
+			regs := *r.Regs
+			regs.GDPR = ptrutil.ToPtr[int8](0)
 			for _, id := range r.Regs.GPPSID {
 				if id == int8(gppConstants.SectionTCFEU2) {
-					regs := *r.Regs
 					regs.GDPR = ptrutil.ToPtr[int8](1)
-					r.Regs = &regs
 				}
 			}
+			r.Regs = &regs
 		}
 	}
 
@@ -876,11 +876,11 @@ func setLegacyGDPRFromGPP(r *openrtb2.BidRequest, gpp gpplib.GppContainer) {
 					r.User = &openrtb2.User{
 						Consent: gpp.Sections[i].GetValue(),
 					}
+				} else {
+					user := *r.User
+					user.Consent = gpp.Sections[i].GetValue()
+					r.User = &user
 				}
-				user := *r.User
-				user.Consent = gpp.Sections[i].GetValue()
-				r.User = &user
-				return
 			}
 		}
 	}
