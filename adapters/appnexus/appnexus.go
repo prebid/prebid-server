@@ -200,14 +200,6 @@ func groupByPods(imps []openrtb2.Imp) map[string]([]openrtb2.Imp) {
 	return podImps
 }
 
-func marshalAndSetRequestExt(request *openrtb2.BidRequest, requestExtension appnexusReqExt, errs []error) {
-	var err error
-	request.Ext, err = json.Marshal(requestExtension)
-	if err != nil {
-		errs = append(errs, err)
-	}
-}
-
 func splitRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExtension appnexusReqExt, uri string, errs []error) ([]*adapters.RequestData, []error) {
 
 	// Initial capacity for future array of requests, memory optimization.
@@ -223,7 +215,11 @@ func splitRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExt
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 
-	marshalAndSetRequestExt(request, requestExtension, errs)
+	var err error
+	request.Ext, err = json.Marshal(requestExtension)
+	if err != nil {
+		errs = append(errs, err)
+	}
 
 	for impsLeft {
 
