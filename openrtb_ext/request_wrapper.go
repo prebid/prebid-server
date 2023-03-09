@@ -172,7 +172,7 @@ func (rw *RequestWrapper) RebuildRequest() error {
 		return errors.New("Requestwrapper RebuildRequest called on a nil BidRequest")
 	}
 
-	if err := rw.RebuildImp(); err != nil {
+	if err := rw.rebuildImp(); err != nil {
 		return err
 	}
 	if err := rw.rebuildUserExt(); err != nil {
@@ -181,7 +181,7 @@ func (rw *RequestWrapper) RebuildRequest() error {
 	if err := rw.rebuildDeviceExt(); err != nil {
 		return err
 	}
-	if err := rw.RebuildRequestExt(); err != nil {
+	if err := rw.rebuildRequestExt(); err != nil {
 		return err
 	}
 	if err := rw.rebuildAppExt(); err != nil {
@@ -200,7 +200,7 @@ func (rw *RequestWrapper) RebuildRequest() error {
 	return nil
 }
 
-func (rw *RequestWrapper) RebuildImp() error {
+func (rw *RequestWrapper) rebuildImp() error {
 	if !rw.impWrappersAccessed {
 		return nil
 	}
@@ -259,7 +259,7 @@ func (rw *RequestWrapper) rebuildDeviceExt() error {
 	return nil
 }
 
-func (rw *RequestWrapper) RebuildRequestExt() error {
+func (rw *RequestWrapper) rebuildRequestExt() error {
 	if rw.requestExt == nil || !rw.requestExt.Dirty() {
 		return nil
 	}

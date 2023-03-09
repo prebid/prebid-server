@@ -98,10 +98,6 @@ func updateBidRequestWithFloors(extFloorRules *openrtb_ext.PriceFloorRules, requ
 				floorErrList = append(floorErrList, fmt.Errorf("Error in getting FloorMin value : '%v'", err.Error()))
 			}
 		}
-		err := request.RebuildImp()
-		if err != nil {
-			return append(floorErrList, err)
-		}
 	}
 	return floorErrList
 }
@@ -197,7 +193,7 @@ func updateFloorsInRequest(bidRequestWrapper *openrtb_ext.RequestWrapper, priceF
 		if prebidExt != nil {
 			prebidExt.Floors = priceFloors
 			requestExt.SetPrebid(prebidExt)
-			bidRequestWrapper.RebuildRequestExt()
+			bidRequestWrapper.RebuildRequest()
 		}
 	}
 }
