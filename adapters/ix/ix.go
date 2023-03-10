@@ -186,7 +186,7 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 	var errs []error
 
 	for _, seatBid := range bidResponse.SeatBid {
-		for i := 0; i < len(seatBid.Bid); i++ {
+		for i := range seatBid.Bid {
 			bid := seatBid.Bid[i]
 
 			bidType, err := getMediaTypeForBid(bid, impMediaTypeReq)
