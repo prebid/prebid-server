@@ -1,10 +1,7 @@
 name: Chrome
 
-worflow_dispatch:
-  inputs:
-     debug:
-        type: boolean
-        default: true
+on:
+  workflow_dispatch
 
 jobs:
   chrome:
