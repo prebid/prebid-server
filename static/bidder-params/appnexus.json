@@ -69,7 +69,7 @@
     },
     "usePaymentRule": {
       "type": "boolean",
-      "description": "Boolean to signal AppNexus to apply the relevant payment rule"
+      "description": "Deprecated, Boolean to signal AppNexus to apply the relevant payment rule"
     },
     "generate_ad_pod_id": {
       "type": "boolean",
