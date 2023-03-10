@@ -1,0 +1,21 @@
+name: Chrome
+
+worflow_dispatch:
+  inputs:
+     debug:
+        type: boolean
+        default: true
+
+jobs:
+  chrome:
+    runs-on: ubuntu-18.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Chrome
+        uses: cypress-io/github-action@v5
+        timeout-minutes: 10
+        with:
+          build: npm run build
+          start: npm start
+          browser: chrome
