@@ -4,5 +4,6 @@ module.exports = defineConfig({
  e2e: {
      "viewportWidth": 1170,
       "viewportHeight": 800,
+         supportFile: false,
      },
 })
