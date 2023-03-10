@@ -85,19 +85,20 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	memberIds := make(map[string]bool)
 	errs := make([]error, 0, len(request.Imp))
 
+	requestCopy := *request
 	// AppNexus openrtb2 endpoint expects imp.displaymanagerver to be populated, but some SDKs will put it in imp.ext.prebid instead
 	var defaultDisplayManagerVer string
-	if request.App != nil {
-		source, err1 := jsonparser.GetString(request.App.Ext, openrtb_ext.PrebidExtKey, "source")
-		version, err2 := jsonparser.GetString(request.App.Ext, openrtb_ext.PrebidExtKey, "version")
+	if requestCopy.App != nil {
+		source, err1 := jsonparser.GetString(requestCopy.App.Ext, openrtb_ext.PrebidExtKey, "source")
+		version, err2 := jsonparser.GetString(requestCopy.App.Ext, openrtb_ext.PrebidExtKey, "version")
 		if (err1 == nil) && (err2 == nil) {
 			defaultDisplayManagerVer = fmt.Sprintf("%s-%s", source, version)
 		}
 	}
 	var adPodId *bool
 
-	for i := 0; i < len(request.Imp); i++ {
-		memberId, impAdPodId, err := preprocess(&request.Imp[i], defaultDisplayManagerVer)
+	for i := 0; i < len(requestCopy.Imp); i++ {
+		memberId, impAdPodId, err := preprocess(&requestCopy.Imp[i], defaultDisplayManagerVer)
 		if memberId != "" {
 			memberIds[memberId] = true
 		}
@@ -111,7 +112,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		// If the preprocessing failed, the server won't be able to bid on this Imp. Delete it, and note the error.
 		if err != nil {
 			errs = append(errs, err)
-			request.Imp = append(request.Imp[:i], request.Imp[i+1:]...)
+			requestCopy.Imp = append(requestCopy.Imp[:i], requestCopy.Imp[i+1:]...)
 			i--
 		}
 	}
@@ -132,7 +133,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	}
 
 	// If all the requests were malformed, don't bother making a server call with no impressions.
-	if len(request.Imp) == 0 {
+	if len(requestCopy.Imp) == 0 {
 		return nil, errs
 	}
 
@@ -145,8 +146,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	}
 
 	var reqExt appnexusReqExt
-	if len(request.Ext) > 0 {
-		if err := json.Unmarshal(request.Ext, &reqExt); err != nil {
+	if len(requestCopy.Ext) > 0 {
+		if err := json.Unmarshal(requestCopy.Ext, &reqExt); err != nil {
 			errs = append(errs, err)
 			return nil, errs
 		}
@@ -162,7 +163,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	reqExt.Appnexus.IsAMP = isAMP
 	reqExt.Appnexus.HeaderBiddingSource = a.hbSource + isVIDEO
 
-	imps := request.Imp
+	imps := requestCopy.Imp
 
 	// For long form requests if adpodId feature enabled, adpod_id must be sent downstream.
 	// Adpod id is a unique identifier for pod
@@ -177,14 +178,14 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		for _, podImps := range podImps {
 			reqExt.Appnexus.AdPodId = generatePodID()
 
-			reqs, errors := splitRequests(podImps, request, reqExt, thisURI, errs)
+			reqs, errors := splitRequests(podImps, &requestCopy, reqExt, thisURI, errs)
 			requests = append(requests, reqs...)
 			errs = append(errs, errors...)
 		}
 		return requests, errs
 	}
 
-	return splitRequests(imps, request, reqExt, thisURI, errs)
+	return splitRequests(imps, &requestCopy, reqExt, thisURI, errs)
 }
 
 func generatePodID() string {
