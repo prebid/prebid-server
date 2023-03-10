@@ -12,12 +12,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type PwbidAdapter struct {
-	siteId   string
-	bidFloor float32
-	isTest   bool
-}
-
 type adapter struct {
 	endpoint string
 }
@@ -73,7 +67,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 	for _, seatBid := range response.SeatBid {
 		for i, bid := range seatBid.Bid {
-			bidType, typeerr := getMediaTypeForBid(bid)
+			bidType, typeerr := getMediaTypeForBid(request.Imp, bid)
 			if typeerr != nil {
 				return nil, []error{typeerr}
 			}
@@ -88,16 +82,19 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return bidResponse, nil
 }
 
-func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
-	if bid.Ext != nil {
-		var bidExt openrtb_ext.ExtBid
-		err := json.Unmarshal(bid.Ext, &bidExt)
-		if err == nil && bidExt.Prebid != nil {
-			return openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
+func getMediaTypeForBid(impressions []openrtb2.Imp, bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	for _, impression := range impressions {
+		if impression.ID == bid.ImpID {
+			if impression.Banner != nil {
+				return openrtb_ext.BidTypeBanner, nil
+			}
+			if impression.Native != nil {
+				return openrtb_ext.BidTypeNative, nil
+			}
 		}
 	}
 
 	return "", &errortypes.BadServerResponse{
-		Message: fmt.Sprintf("Failed to parse bid mediatype for impression \"%s\"", bid.ImpID),
+		Message: fmt.Sprintf("The impression with ID %s is not present into the request", bid.ImpID),
 	}
 }

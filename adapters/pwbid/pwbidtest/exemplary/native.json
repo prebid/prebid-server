@@ -5,16 +5,11 @@
       {
         "id": "test-imp-id-native",
         "native": {
-          "format": [
-            {
-              "w": 728,
-              "h": 90
-            }
-          ]
+          "request": ""
         },
         "ext": {
           "bidder": {
-            "siteId": "3943fa"
+            "siteId": "39f43a"
           }
         }
       }
@@ -30,16 +25,11 @@
             {
               "id": "test-imp-id-native",
               "native": {
-                "format": [
-                  {
-                    "w": 728,
-                    "h": 90
-                  }
-                ]
+                "request": ""
               },
               "ext": {
                 "bidder": {
-                  "siteId": "3943fa"
+                  "siteId": "39f43a"
                 }
               }
             }
