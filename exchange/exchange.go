@@ -45,7 +45,7 @@ type extCacheInstructions struct {
 // Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
 type Exchange interface {
 	// HoldAuction executes an OpenRTB v2.5 Auction.
-	HoldAuction(ctx context.Context, r AuctionRequest, debugLog *DebugLog) (*openrtb_ext.ResponseWrapper, error)
+	HoldAuction(ctx context.Context, r AuctionRequest, debugLog *DebugLog) (*AuctionResponse, error)
 }
 
 // IdFetcher can find the user's ID for a specific Bidder.
@@ -213,7 +213,7 @@ type BidderRequest struct {
 	ImpReplaceImpId       map[string]bool
 }
 
-func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *DebugLog) (*openrtb_ext.ResponseWrapper, error) {
+func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *DebugLog) (*AuctionResponse, error) {
 	reject := r.HookExecutor.ExecuteProcessedAuctionStage(r.BidRequestWrapper.BidRequest)
 	if reject != nil {
 		return nil, reject
@@ -429,7 +429,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	if err != nil {
 		return nil, err
 	}
-	return e.buildBidResponseWrapper(ctx, bidResponse, seatNonBid)
+	return e.buildAuctionResponse(ctx, bidResponse, bidResponseExt)
 }
 
 func (e *exchange) parseGDPRDefaultValue(bidRequest *openrtb2.BidRequest) gdpr.Signal {
@@ -781,7 +781,7 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 
 	// bidResponse.SeatBid = seatBids
 
-	bidResponse.Ext, err = encodeBidResponseExt(bidResponseExt)
+	// bidResponse.Ext, err = encodeBidResponseExt(bidResponseExt)
 
 	return bidResponse, err
 }
@@ -1071,15 +1071,9 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*en
 
 	}
 
-	reqExt, err := r.BidRequestWrapper.GetRequestExt()
-	if err == nil {
-		prebidExt := reqExt.GetPrebid()
-		if prebidExt != nil && prebidExt.ReturnAllBidStatus {
-			if bidResponseExt.Prebid == nil {
-				bidResponseExt.Prebid = &openrtb_ext.ExtResponsePrebid{}
-			}
-			bidResponseExt.Prebid.SeatNonBid = seatNonBid
-		}
+	//TODO create prebid if not exists
+	if bidResponseExt.Prebid != nil {
+		setSeatNonBid(seatNonBid, bidResponseExt.Prebid)
 	}
 
 	return bidResponseExt
@@ -1431,23 +1425,31 @@ func setErrorMessageSecureMarkup(validationType string) string {
 	return ""
 }
 
-// buildBidResponseWrapper wraps the openrtb Bid Response object into BidResponseWrapper
-// It also adds SeatNonBids within bidResponse.Ext.Prebid.SeatNonBid
-func (ex *exchange) buildBidResponseWrapper(ctx context.Context, bidResponse *openrtb2.BidResponse, seatNonBid []openrtb_ext.SeatNonBid) (*openrtb_ext.ResponseWrapper, error) {
-	response := new(openrtb_ext.ResponseWrapper)
-	response.BidResponse = bidResponse
-	resExt, err := response.GetResponseExt()
-	if err == nil {
-		prebidExt := resExt.GetPrebid()
-		if prebidExt != nil {
-			prebidExt.SeatNonBid = seatNonBid
-		}
-		resExt.SetPrebid(prebidExt)
-		// response.RebuildResponse will be removed from here
-		// and we will expect this will be handled by respective auction
-		if err := response.RebuildResponse(); err != nil {
-			return nil, err
-		}
+// buildAuctionResponse wraps the openrtb Bid Response object into AuctionResponse
+func (ex *exchange) buildAuctionResponse(ctx context.Context, bidResponse *openrtb2.BidResponse, bidResponseExt *openrtb_ext.ExtBidResponse) (*AuctionResponse, error) {
+	return &AuctionResponse{
+		BidResponse:    bidResponse,
+		ExtBidResponse: bidResponseExt,
+	}, nil
+}
+
+// setSeatNonBid  adds SeatNonBids within bidResponse.Ext.Prebid.SeatNonBid
+func setSeatNonBid(seatNonBid []openrtb_ext.SeatNonBid, prebid *openrtb_ext.ExtResponsePrebid) {
+	if prebid != nil {
+		prebid.SeatNonBid = seatNonBid
 	}
-	return response, nil
+}
+
+// AuctionResponse contains OpenRTB Bid Response object and its extension (un-marshalled) object
+type AuctionResponse struct {
+	*openrtb2.BidResponse                             // BidResponse defines the contract for openrtb bidresponse
+	ExtBidResponse        *openrtb_ext.ExtBidResponse // ExtBidResponse defines the contract for bidresponse.ext
+}
+
+// GetSeatNonBid returns array of seat non-bid if present. nil otherwise
+func (ar *AuctionResponse) GetSeatNonBid() []openrtb_ext.SeatNonBid {
+	if ar.ExtBidResponse != nil && ar.ExtBidResponse.Prebid != nil {
+		return ar.ExtBidResponse.Prebid.SeatNonBid
+	}
+	return nil
 }

@@ -227,12 +227,12 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		PubID:                      labels.PubID,
 		HookExecutor:               deps.hookExecutor,
 	}
-	respWrapper, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
+	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
 
 	if err != nil {
 		return
 	}
-	var response *openrtb2.BidResponse = respWrapper.BidResponse
+	response := auctionResponse.BidResponse
 	ao.Request = req.BidRequest
 	ao.Response = response
 	ao.Account = account
@@ -255,20 +255,17 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	// Send SeatNonBid to analytics
-	// var extResponse openrtb_ext.ExtBidResponse
-	// if response != nil && json.Unmarshal(response.Ext, &extResponse) != nil && extResponse.Prebid != nil {
-	// 	ao.SeatNonBid = extResponse.Prebid.SeatNonBid
-	// }
-	respExt, err := respWrapper.GetResponseExt()
-	if err == nil {
-		respExtPrebid := respExt.GetPrebid()
-		if respExtPrebid != nil {
-			ao.SeatNonBid = respExtPrebid.SeatNonBid
-		}
-	} else {
-		glog.Errorf("Error in getting ResponseExt : [%v]", err.Error())
-	}
+	ao.SeatNonBid = auctionResponse.GetSeatNonBid()
+	respExt := new(openrtb_ext.ExtBidResponse)
 
+	// unmarshalling is required here, until we are moving away from bidResponse.Ext
+	// references to auctionResponse.ExtBidResponse
+	if json.Unmarshal(response.Ext, &respExt) != nil && setSeatNonBid(respExt, req, auctionResponse) == nil {
+		// marshal again
+		if respExtJson, err := json.Marshal(respExt); err == nil {
+			response.Ext = respExtJson
+		}
+	}
 	labels, ao = sendAuctionResponse(w, deps.hookExecutor, response, req.BidRequest, account, labels, ao)
 }
 
@@ -307,7 +304,7 @@ func sendAuctionResponse(
 		stageOutcomes := hookExecutor.GetOutcomes()
 		ao.HookExecutionOutcome = stageOutcomes
 
-		ext, warns, err := hookexecution.EnrichExtBidResponse(response.Ext, stageOutcomes, request, account)
+		ext, warns, err := hookexecution.EnrichExtBidResponse(response.Ext, stageOutcomes, request, account, &openrtb_ext.ExtBidResponse{})
 		if err != nil {
 			err = fmt.Errorf("Failed to enrich Bid Response with hook debug information: %s", err)
 			glog.Errorf(err.Error())

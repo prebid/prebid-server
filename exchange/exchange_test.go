@@ -5342,7 +5342,7 @@ func TestMakeExtBidResponse(t *testing.T) {
 	}
 }
 
-func TestBuildBidResponseWrapper(t *testing.T) {
+func TestBuildAuctionResponse(t *testing.T) {
 	type args struct {
 		ctx         context.Context
 		bidResponse *openrtb2.BidResponse
@@ -5403,13 +5403,17 @@ func TestBuildBidResponseWrapper(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ex := &exchange{}
-			actualResponse, actualErr := ex.buildBidResponseWrapper(tt.args.ctx, tt.args.bidResponse, tt.args.seatNonBid)
+			bidResponseExt := new(openrtb_ext.ExtBidResponse)
+			bidResponseExt.Prebid = &openrtb_ext.ExtResponsePrebid{
+				SeatNonBid: tt.args.seatNonBid,
+			}
+			actualResponse, actualErr := ex.buildAuctionResponse(tt.args.ctx, tt.args.bidResponse, bidResponseExt)
 			if assert.EqualError(t, actualErr, tt.expctedErr.Error()) {
-				t.Errorf("exchange.buildBidResponseWrapper() error = %v, wantErr %v", actualErr, tt.expctedErr)
+				t.Errorf("exchange.buildAuctionResponse() error = %v, wantErr %v", actualErr, tt.expctedErr)
 				return
 			}
 			if !reflect.DeepEqual(actualResponse, tt.expectedResponse) {
-				t.Errorf("exchange.buildBidResponseWrapper() = %v, want %v", actualResponse, tt.expectedResponse)
+				t.Errorf("exchange.buildAuctionResponse() = %v, want %v", actualResponse, tt.expectedResponse)
 			}
 		})
 	}

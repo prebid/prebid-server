@@ -236,10 +236,10 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		HookExecutor:               deps.hookExecutor,
 	}
 
-	respWrapper, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
+	aucResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
 	var response *openrtb2.BidResponse
-	if respWrapper != nil {
-		response = respWrapper.BidResponse
+	if aucResponse != nil {
+		response = aucResponse.BidResponse
 	}
 	ao.AuctionResponse = response
 	rejectErr, isRejectErr := hookexecution.CastRejectErr(err)
@@ -268,7 +268,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		return
 	}
 
-	labels, ao = sendAmpResponse(w, deps.hookExecutor, respWrapper, reqWrapper, account, labels, ao, errL)
+	labels, ao = sendAmpResponse(w, deps.hookExecutor, aucResponse, reqWrapper, account, labels, ao, errL)
 }
 
 func rejectAmpRequest(
@@ -285,21 +285,21 @@ func rejectAmpRequest(
 	ao.AuctionResponse = response
 	ao.Errors = append(ao.Errors, rejectErr)
 
-	return sendAmpResponse(w, hookExecutor, &openrtb_ext.ResponseWrapper{BidResponse: response}, reqWrapper, account, labels, ao, errs)
+	return sendAmpResponse(w, hookExecutor, &exchange.AuctionResponse{BidResponse: response}, reqWrapper, account, labels, ao, errs)
 }
 
 func sendAmpResponse(
 	w http.ResponseWriter,
 	hookExecutor hookexecution.HookStageExecutor,
-	respWrapper *openrtb_ext.ResponseWrapper,
+	aucResponse *exchange.AuctionResponse,
 	reqWrapper *openrtb_ext.RequestWrapper,
 	account *config.Account,
 	labels metrics.Labels,
 	ao analytics.AmpObject,
 	errs []error,
 ) (metrics.Labels, analytics.AmpObject) {
-	// assuming respWrapper is never nil here
-	response := respWrapper.BidResponse
+	// assuming aucResponse is never nil here
+	response := aucResponse.BidResponse
 	hookExecutor.ExecuteAuctionResponseStage(response)
 	// Need to extract the targeting parameters from the response, as those are all that
 	// go in the AMP response
@@ -340,7 +340,7 @@ func sendAmpResponse(
 	}
 	// Now JSONify the targets for the AMP response.
 	ampResponse := AmpResponse{Targeting: targets}
-	ao, ampResponse.ORTB2.Ext = getExtBidResponse(hookExecutor, respWrapper, reqWrapper, account, ao, errs)
+	ao, ampResponse.ORTB2.Ext = getExtBidResponse(hookExecutor, aucResponse, reqWrapper, account, ao, errs)
 
 	ao.AmpTargetingValues = targets
 
@@ -361,14 +361,14 @@ func sendAmpResponse(
 
 func getExtBidResponse(
 	hookExecutor hookexecution.HookStageExecutor,
-	respWrapper *openrtb_ext.ResponseWrapper,
+	aucResponse *exchange.AuctionResponse,
 	reqWrapper *openrtb_ext.RequestWrapper,
 	account *config.Account,
 	ao analytics.AmpObject,
 	errs []error,
 ) (analytics.AmpObject, openrtb_ext.ExtBidResponse) {
-	// assuming respWrapper is never nil here
-	response := respWrapper.BidResponse
+	// assuming aucResponse is never nil here
+	response := aucResponse.BidResponse
 	// Extract any errors
 	var extResponse openrtb_ext.ExtBidResponse
 	eRErr := json.Unmarshal(response.Ext, &extResponse)
@@ -421,7 +421,7 @@ func getExtBidResponse(
 	}
 
 	// Set seat non-bid if requested
-	if err := setSeatNonBid(&extBidResponse, reqWrapper, respWrapper); err != nil {
+	if err := setSeatNonBid(&extBidResponse, reqWrapper, aucResponse); err != nil {
 		glog.Errorf("Error in setting seat non-bid : [%v]", err.Error())
 		ao.Errors = append(ao.Errors, fmt.Errorf("AMP: Failed to get Request Extension : %v", err))
 	}
@@ -800,23 +800,19 @@ func setTrace(req *openrtb2.BidRequest, value string) (err error) {
 	return nil
 }
 
-func setSeatNonBid(finalExtBidResponse *openrtb_ext.ExtBidResponse, request *openrtb_ext.RequestWrapper, response *openrtb_ext.ResponseWrapper) error {
+// setSeatNonBid populates bidresponse.ext.prebid.seatnonbid if  bidrequest.ext.prebid.returnallbidstatus is true
+func setSeatNonBid(finalExtBidResponse *openrtb_ext.ExtBidResponse, request *openrtb_ext.RequestWrapper, aucResponse *exchange.AuctionResponse) error {
 	var err error
-	if request != nil {
+	//TODO return if error or nil
+	if aucResponse.ExtBidResponse != nil && request != nil {
 		reqExt, err := request.GetRequestExt()
 		if err == nil {
 			prebid := reqExt.GetPrebid()
 			if prebid != nil && prebid.ReturnAllBidStatus {
-				respExt, err := response.GetResponseExt()
-				if err == nil {
-					respExtPrebid := respExt.GetPrebid()
-					if respExtPrebid != nil {
-						if finalExtBidResponse.Prebid == nil {
-							finalExtBidResponse.Prebid = &openrtb_ext.ExtResponsePrebid{}
-						}
-						finalExtBidResponse.Prebid.SeatNonBid = respExtPrebid.SeatNonBid
-					}
+				if finalExtBidResponse.Prebid == nil {
+					finalExtBidResponse.Prebid = &openrtb_ext.ExtResponsePrebid{}
 				}
+				finalExtBidResponse.Prebid.SeatNonBid = aucResponse.GetSeatNonBid()
 			} else {
 				err = errors.New("unable to determing prebid.ReturnAllBidStatus")
 			}

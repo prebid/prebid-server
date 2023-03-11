@@ -1186,7 +1186,7 @@ type exchangeTestWrapper struct {
 	actualValidatedBidReq *openrtb2.BidRequest
 }
 
-func (te *exchangeTestWrapper) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb_ext.ResponseWrapper, error) {
+func (te *exchangeTestWrapper) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*exchange.AuctionResponse, error) {
 
 	// rebuild/resync the request in the request wrapper.
 	if err := r.BidRequestWrapper.RebuildRequest(); err != nil {

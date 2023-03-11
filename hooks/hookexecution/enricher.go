@@ -46,8 +46,8 @@ func EnrichExtBidResponse(
 	ext json.RawMessage,
 	stageOutcomes []StageOutcome,
 	bidRequest *openrtb2.BidRequest,
-	account *config.Account,
-) (json.RawMessage, []error, error) {
+	account *config.Account) (json.RawMessage, []error, error) {
+
 	modules, warnings, err := GetModulesJSON(stageOutcomes, bidRequest, account)
 	if err != nil || modules == nil {
 		return ext, warnings, err
@@ -62,7 +62,15 @@ func EnrichExtBidResponse(
 		response, err = jsonpatch.MergePatch(ext, response)
 	}
 
-	return response, warnings, err
+	// if extBidResponse != nil && extBidResponse.Prebid != nil {
+	// 	if extBidResponse.Prebid.Modules == nil {
+	// 		extBidResponse.Prebid.Modules = modules
+	// 	} else {
+	// 		extBidResponse.Prebid.Modules, _ = jsonpatch.MergePatch(extBidResponse.Prebid.Modules, modules)
+	// 	}
+	// }
+
+	return nil, warnings, err
 }
 
 // GetModulesJSON returns debug and trace information produced from executing hooks.

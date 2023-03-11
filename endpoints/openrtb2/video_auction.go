@@ -309,10 +309,10 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		HookExecutor:               deps.hookExecutor,
 	}
 
-	respWrapper, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog)
+	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog)
 	var response *openrtb2.BidResponse
-	if respWrapper != nil {
-		response = respWrapper.BidResponse
+	if auctionResponse != nil {
+		response = auctionResponse.BidResponse
 	}
 	vo.Request = bidReqWrapper.BidRequest
 	vo.Response = response
@@ -330,6 +330,15 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 	if bidReq.Test == 1 {
+		// unmarshalling is required here, until we are moving away from bidResponse.Ext
+		// references to auctionResponse.ExtBidResponse
+		respExt := new(openrtb_ext.ExtBidResponse)
+		if json.Unmarshal(response.Ext, &respExt) != nil && setSeatNonBid(respExt, bidReqWrapper, auctionResponse) == nil {
+			// marshal again
+			if respExtJson, err := json.Marshal(respExt); err == nil {
+				response.Ext = respExtJson
+			}
+		}
 		bidResp.Ext = response.Ext
 	}
 
@@ -359,10 +368,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 
 	// Send SeatNonBid to analytics
-	var extResponse openrtb_ext.ExtBidResponse
-	if response != nil && json.Unmarshal(response.Ext, &extResponse) != nil && extResponse.Prebid != nil {
-		vo.SeatNonBid = extResponse.Prebid.SeatNonBid
-	}
+	vo.SeatNonBid = auctionResponse.GetSeatNonBid()
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(resp)

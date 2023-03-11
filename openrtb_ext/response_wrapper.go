@@ -16,7 +16,7 @@ import (
 //	respExt.SetExt(ext)
 type ResponseWrapper struct {
 	*openrtb2.BidResponse
-	responseExt *ResponseExt
+	responseExt iResponseExt
 }
 
 func (rw *ResponseWrapper) rebuildResponseExt() error {
@@ -31,7 +31,7 @@ func (rw *ResponseWrapper) rebuildResponseExt() error {
 	return nil
 }
 
-func (rw *ResponseWrapper) GetResponseExt() (*ResponseExt, error) {
+func (rw *ResponseWrapper) GetResponseExt() (iResponseExt, error) {
 	if rw.responseExt != nil {
 		return rw.responseExt, nil
 	}
@@ -57,6 +57,11 @@ type ResponseExt struct {
 	prebidDirty bool
 	extMap      map[string]json.RawMessage // map version of response.ext
 	extMapDirty bool
+}
+type iResponseExt interface {
+	marshal() (json.RawMessage, error)
+	unmarshal(json.RawMessage) error
+	dirty() bool
 }
 
 func (re *ResponseExt) marshal() (json.RawMessage, error) {
@@ -85,10 +90,10 @@ func (re *ResponseExt) unmarshal(extJson json.RawMessage) error {
 	if len(re.extMap) != 0 || re.dirty() {
 		return nil
 	}
-	re.extMap = make(map[string]json.RawMessage)
 	if len(extJson) == 0 {
 		return nil
 	}
+	re.extMap = make(map[string]json.RawMessage)
 	if err := json.Unmarshal(extJson, &re.extMap); err != nil {
 		return err
 	}
