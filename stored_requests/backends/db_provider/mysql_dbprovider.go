@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"database/sql"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"regexp"
 	"sort"
@@ -111,7 +112,7 @@ func setupTLSConfig(provider *MySqlDbProvider) error {
 	}
 
 	if ok := rootCertPool.AppendCertsFromPEM(pem); !ok {
-		return err
+		return fmt.Errorf("failed to parse certificate: %s", provider.cfg.TLS.RootCert)
 	}
 
 	var clientCert []tls.Certificate
