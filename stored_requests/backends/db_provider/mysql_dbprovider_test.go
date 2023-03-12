@@ -75,6 +75,13 @@ func TestConnStringMySql(t *testing.T) {
 		},
 		{
 			params: Params{
+				username: "someuser",
+				password: "somepassword:/?#[]@!$&()*+,;=",
+			},
+			connString: "someuser:somepassword:/?#[]@!$&()*+,;=@tcp()/",
+		},
+		{
+			params: Params{
 				db:       "TestDB",
 				host:     "example.com",
 				port:     20,

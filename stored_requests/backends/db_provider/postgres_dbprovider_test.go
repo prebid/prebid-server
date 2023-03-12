@@ -69,6 +69,13 @@ func TestConnStringPostgres(t *testing.T) {
 		},
 		{
 			params: Params{
+				username: "someuser",
+				password: "somepassword:/?#[]@!$&()*+,;=",
+			},
+			connString: "postgresql://someuser:somepassword%3A%2F%3F%23%5B%5D%40%21%24%26%28%29%2A%2B%2C%3B%3D@?sslmode=disable",
+		},
+		{
+			params: Params{
 				db:       "TestDB",
 				host:     "example.com",
 				port:     20,

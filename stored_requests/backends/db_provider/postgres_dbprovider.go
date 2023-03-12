@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -57,7 +58,7 @@ func (provider *PostgresDbProvider) ConnString() (string, error) {
 		buffer.WriteString(provider.cfg.Username)
 		if provider.cfg.Password != "" {
 			buffer.WriteString(":")
-			buffer.WriteString(provider.cfg.Password)
+			buffer.WriteString(url.QueryEscape(provider.cfg.Password))
 		}
 		buffer.WriteString("@")
 	}
