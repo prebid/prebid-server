@@ -76,10 +76,7 @@ func (provider *PostgresDbProvider) ConnString() (string, error) {
 		buffer.WriteString(provider.cfg.Database)
 	}
 
-	queryStr, err := provider.generateQueryString()
-	if err != nil {
-		return "", err
-	}
+	queryStr := provider.generateQueryString()
 	if queryStr != "" {
 		buffer.WriteString("?")
 		buffer.WriteString(queryStr)
@@ -88,7 +85,7 @@ func (provider *PostgresDbProvider) ConnString() (string, error) {
 	return buffer.String(), nil
 }
 
-func (provider *PostgresDbProvider) generateQueryString() (string, error) {
+func (provider *PostgresDbProvider) generateQueryString() string {
 	sslmode := "disable"
 	sslrootcert := ""
 	sslcert := ""
@@ -116,7 +113,7 @@ func (provider *PostgresDbProvider) generateQueryString() (string, error) {
 	}
 
 	params := strings.Join([]string{sslmode, sslrootcert, sslcert, sslkey, queryString}, "")
-	return params[1:], nil
+	return params[1:]
 }
 
 func (provider *PostgresDbProvider) PrepareQuery(template string, params ...QueryParam) (query string, args []interface{}) {

@@ -86,10 +86,7 @@ func (provider *MySqlDbProvider) ConnString() (string, error) {
 		buffer.WriteString(provider.cfg.Database)
 	}
 
-	queryStr, err := provider.generateQueryString()
-	if err != nil {
-		return "", err
-	}
+	queryStr := provider.generateQueryString()
 
 	if provider.cfg.TLS.RootCert != "" {
 		if err := setupTLSConfig(provider); err != nil {
@@ -159,7 +156,7 @@ func verifyPeerCertFunc(pool *x509.CertPool) func([][]byte, [][]*x509.Certificat
 	}
 }
 
-func (provider *MySqlDbProvider) generateQueryString() (string, error) {
+func (provider *MySqlDbProvider) generateQueryString() string {
 	tls := ""
 
 	if provider.cfg.TLS.RootCert != "" {
@@ -168,14 +165,14 @@ func (provider *MySqlDbProvider) generateQueryString() (string, error) {
 
 	if tls != "" {
 		if len(provider.cfg.QueryString) == 0 {
-			return "tls=" + tls, nil
+			return "tls=" + tls
 		}
 		if !strings.Contains(provider.cfg.QueryString, "tls=") {
-			return "tls=" + tls + "&" + provider.cfg.QueryString, nil
+			return "tls=" + tls + "&" + provider.cfg.QueryString
 		}
 	}
 
-	return provider.cfg.QueryString, nil
+	return provider.cfg.QueryString
 }
 
 func (provider *MySqlDbProvider) getTLSKey() string {
