@@ -934,7 +934,6 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("vtrack.enabled", true)
 
 	v.SetDefault("event.timeout_ms", 1000)
-	v.SetDefault("event.enabled", false)
 
 	v.SetDefault("accounts.filesystem.enabled", false)
 	v.SetDefault("accounts.filesystem.directorypath", "./stored_requests/data/by_id")
