@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
@@ -23,7 +24,6 @@ type reqBodyExt struct {
 type reqBodyExtBidder struct {
 	Type        string `json:"type"`
 	PlacementID string `json:"placementId,omitempty"`
-	EndpointID  string `json:"endpointId,omitempty"`
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
@@ -34,33 +34,28 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var err error
 	adapterRequests := make([]*adapters.RequestData, 0, len(request.Imp))
 
+	reqCopy := *request
 	for _, imp := range request.Imp {
-		reqCopy := *request
 		reqCopy.Imp = []openrtb2.Imp{imp}
 
-		var bidderExt adapters.ExtImpBidder
-		var globalsunExt openrtb_ext.ImpExtGlobalsun
-
-		if err = json.Unmarshal(reqCopy.Imp[0].Ext, &bidderExt); err != nil {
-			return nil, []error{err}
-		}
-		if err = json.Unmarshal(bidderExt.Bidder, &globalsunExt); err != nil {
-			return nil, []error{err}
-		}
-
-		temp := reqBodyExt{GlobalsunBidderExt: reqBodyExtBidder{}}
-		temp.GlobalsunBidderExt.PlacementID = globalsunExt.PlacementID
-		temp.GlobalsunBidderExt.Type = "publisher"
-
-		finalyImpExt, err := json.Marshal(temp)
+		placementID, err := jsonparser.GetString(imp.Ext, "bidder", "placementId")
 		if err != nil {
 			return nil, []error{err}
 		}
 
-		reqCopy.Imp[0].Ext = finalyImpExt
+		extJson, err := json.Marshal(reqBodyExt{
+			GlobalsunBidderExt: reqBodyExtBidder{
+				PlacementID: placementID,
+				Type:        "publisher",
+			},
+		})
+		if err != nil {
+			return nil, []error{err}
+		}
+
+		reqCopy.Imp[0].Ext = extJson
 
 		adapterReq, err := a.makeRequest(&reqCopy)
 		if err != nil {
