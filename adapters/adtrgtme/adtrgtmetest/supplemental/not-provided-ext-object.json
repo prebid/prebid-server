@@ -15,15 +15,6 @@
         "secure": 1
       }
     ],
-    "device": {
-      "ua": "test-device-user-agent",
-      "ip": "123.123.123.123",
-      "geo": {
-        "country": "TST"
-      },
-      "os": "Android",
-      "language": "en"
-    },
     "app": {
       "publisher": {
         "id": "test-site-publisher-id"
@@ -33,7 +24,17 @@
       ],
       "bundle": "com.app.test",
       "name": "Test App",
-      "domain": "testapp.com"
+      "domain": "testapp.com",
+      "id": "123456789"
+    },
+    "device": {
+      "ua": "test-device-user-agent",
+      "ip": "123.123.123.123",
+      "geo": {
+        "country": "TST"
+      },
+      "os": "Android",
+      "language": "en"
     },
     "user": {
       "id": "test-user-id"
@@ -41,8 +42,9 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "request.App.ID is not provided",
+      "value": "ext.bidder not provided",
       "comparison": "literal"
     }
-  ]
+  ],
+  "httpCalls": []
 }
