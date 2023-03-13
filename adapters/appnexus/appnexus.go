@@ -94,13 +94,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		uniqueMemberIds       []string
 	)
 
+	validImps := []openrtb2.Imp{}
 	for i := 0; i < len(request.Imp); i++ {
 		// If the preprocessing failed, the server won't be able to bid on this Imp. Delete it, and note the error.
 		memberId, shouldGenerateAdPodIdForImp, err := preprocess(&request.Imp[i], displayManagerVer)
 		if err != nil {
 			errs = append(errs, err)
-			request.Imp = append(request.Imp[:i], request.Imp[i+1:]...)
-			i--
 			continue
 		}
 
@@ -116,7 +115,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			errs = append(errs, errors.New("generate ad pod option should be same for all pods in request"))
 			return nil, errs
 		}
+
+		validImps = append(validImps, request.Imp[i])
 	}
+	request.Imp = validImps
 
 	requestURI := a.URI
 	// The Appnexus API requires a Member ID in the URL. This means the request may fail if
