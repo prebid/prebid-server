@@ -67,7 +67,7 @@
       "type": "boolean",
       "description": "Boolean to signal AppNexus to apply the relevant payment rule"
     },
-    "usePaymentRule": {
+    "use_payment_rule": {
       "type": "boolean",
       "description": "Deprecated, Boolean to signal AppNexus to apply the relevant payment rule. use_pmt_rule will get precedence over usePaymentRule."
     },
