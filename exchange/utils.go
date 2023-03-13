@@ -182,13 +182,23 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 			allowedBidderRequests = append(allowedBidderRequests, bidderRequest)
 		}
 		// GPP downgrade: always downgrade unless we can confirm GPP is supported
-		if binfo, ok := rs.bidderInfo[string(bidderRequest.BidderCoreName)]; ok && (binfo.OpenRTB == nil || !binfo.OpenRTB.GPPSupported) {
+		if shouldSetLegacyPrivacy(rs.bidderInfo, string(bidderRequest.BidderCoreName)) {
 			setLegacyGDPRFromGPP(bidderRequest.BidRequest, gpp)
-			setLegacyprivacyFromGPP(bidderRequest.BidRequest, gpp)
+			setLegacyUSPFromGPP(bidderRequest.BidRequest, gpp)
 		}
 	}
 
 	return
+}
+
+func shouldSetLegacyPrivacy(bidderInfo config.BidderInfos, bidder string) bool {
+	binfo, defined := bidderInfo[bidder]
+
+	if !defined || binfo.OpenRTB == nil {
+		return true
+	}
+
+	return !binfo.OpenRTB.GPPSupported
 }
 
 func ccpaEnabled(account *config.Account, privacyConfig config.Privacy, requestType config.ChannelType) bool {
@@ -941,7 +951,7 @@ func setLegacyGDPRFromGPP(r *openrtb2.BidRequest, gpp gpplib.GppContainer) {
 	}
 
 }
-func setLegacyprivacyFromGPP(r *openrtb2.BidRequest, gpp gpplib.GppContainer) {
+func setLegacyUSPFromGPP(r *openrtb2.BidRequest, gpp gpplib.GppContainer) {
 	if r.Regs == nil {
 		return
 	}

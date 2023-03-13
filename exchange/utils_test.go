@@ -3581,6 +3581,38 @@ func TestGdprFromGPP(t *testing.T) {
 			},
 		},
 		{
+			name: "GDPR_Downgrade", // GDPR from GPP, into empty legacy, existing objects
+			initialRequest: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{
+					GPPSID:    []int8{2},
+					USPrivacy: "LegacyUSP",
+				},
+				User: &openrtb2.User{
+					ID: "1234",
+				},
+			},
+			gpp: gpplib.GppContainer{
+				SectionTypes: []constants.SectionID{2},
+				Sections: []gpplib.Section{
+					GPPMockSection{
+						sectionID: 2,
+						value:     "GDPRConsent",
+					},
+				},
+			},
+			expectedRequest: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{
+					GPPSID:    []int8{2},
+					GDPR:      ptrutil.ToPtr[int8](1),
+					USPrivacy: "LegacyUSP",
+				},
+				User: &openrtb2.User{
+					ID:      "1234",
+					Consent: "GDPRConsent",
+				},
+			},
+		},
+		{
 			name: "Downgrade_Blocked_By_Existing", // GDPR from GPP blocked by existing GDPR",
 			initialRequest: &openrtb2.BidRequest{
 				Regs: &openrtb2.Regs{
@@ -3687,6 +3719,52 @@ func TestGdprFromGPP(t *testing.T) {
 				},
 				User: &openrtb2.User{
 					Consent: "GDPRConsent",
+				},
+			},
+		},
+		{
+			name:           "GDPR_Nil_SID", // GDPR from GPP, into empty, but with nil SID
+			initialRequest: &openrtb2.BidRequest{},
+			gpp: gpplib.GppContainer{
+				SectionTypes: []constants.SectionID{2},
+				Sections: []gpplib.Section{
+					GPPMockSection{
+						sectionID: 2,
+						value:     "GDPRConsent",
+					},
+				},
+			},
+			expectedRequest: &openrtb2.BidRequest{
+				User: &openrtb2.User{
+					Consent: "GDPRConsent",
+				},
+			},
+		},
+		{
+			name: "Downgrade_Nil_SID_Blocked_By_Existing", // GDPR from GPP blocked by existing GDPR, with nil SID",
+			initialRequest: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{
+					GDPR: ptrutil.ToPtr[int8](1),
+				},
+				User: &openrtb2.User{
+					Consent: "LegacyConsent",
+				},
+			},
+			gpp: gpplib.GppContainer{
+				SectionTypes: []constants.SectionID{2},
+				Sections: []gpplib.Section{
+					GPPMockSection{
+						sectionID: 2,
+						value:     "GDPRConsent",
+					},
+				},
+			},
+			expectedRequest: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{
+					GDPR: ptrutil.ToPtr[int8](1),
+				},
+				User: &openrtb2.User{
+					Consent: "LegacyConsent",
 				},
 			},
 		},
@@ -3812,7 +3890,7 @@ func TestPrivacyFromGPP(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			setLegacyprivacyFromGPP(test.initialRequest, test.gpp)
+			setLegacyUSPFromGPP(test.initialRequest, test.gpp)
 			assert.Equal(t, test.expectedRequest, test.initialRequest)
 		})
 	}
