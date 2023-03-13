@@ -293,8 +293,8 @@ func preprocess(imp *openrtb2.Imp, defaultDisplayManagerVer string) (string, boo
 	if appnexusExt.TrafficSourceCode == "" && appnexusExt.LegacyTrafficSourceCode != "" {
 		appnexusExt.TrafficSourceCode = appnexusExt.LegacyTrafficSourceCode
 	}
-	if appnexusExt.UsePmtRule == nil && appnexusExt.DeprecatedUsePaymentRule != nil {
-		appnexusExt.UsePmtRule = appnexusExt.DeprecatedUsePaymentRule
+	if appnexusExt.UsePaymentRule == nil && appnexusExt.DeprecatedUsePaymentRule != nil {
+		appnexusExt.UsePaymentRule = appnexusExt.DeprecatedUsePaymentRule
 	}
 
 	if appnexusExt.PlacementId == 0 && (appnexusExt.InvCode == "" || appnexusExt.Member == "") {
@@ -335,7 +335,7 @@ func preprocess(imp *openrtb2.Imp, defaultDisplayManagerVer string) (string, boo
 		PlacementID:       int(appnexusExt.PlacementId),
 		TrafficSourceCode: appnexusExt.TrafficSourceCode,
 		Keywords:          makeKeywordStr(appnexusExt.Keywords),
-		UsePmtRule:        appnexusExt.UsePmtRule,
+		UsePmtRule:        appnexusExt.UsePaymentRule,
 		PrivateSizes:      appnexusExt.PrivateSizes,
 	}}
 	var err error
