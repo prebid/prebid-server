@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Limelight Digital Adapter Params",
+  "description": "A schema which validates params accepted by the Limelight Digital adapter",
+  "type": "object",
+
+  "properties": {
+    "host": {
+      "type": "string",
+      "description": "Ad network's RTB host",
+      "format": "hostname",
+      "pattern": "^.+\\..+$"
+    },
+    "publisherId": {
+      "type": ["integer", "string"],
+      "description": "Publisher ID",
+      "minimum": 1,
+      "pattern": "^[1-9][0-9]*$"
+    }
+  },
+
+  "required": ["host", "publisherId"]
+}

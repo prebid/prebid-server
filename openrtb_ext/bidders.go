@@ -168,6 +168,7 @@ const (
 	BidderGroupm            BidderName = "groupm"
 	BidderGumGum            BidderName = "gumgum"
 	BidderHuaweiAds         BidderName = "huaweiads"
+	BidderIionads           BidderName = "iionads"
 	BidderImds              BidderName = "imds"
 	BidderImpactify         BidderName = "impactify"
 	BidderImprovedigital    BidderName = "improvedigital"
@@ -185,6 +186,7 @@ const (
 	BidderKiviads           BidderName = "kiviads"
 	BidderKrushmedia        BidderName = "krushmedia"
 	BidderKubient           BidderName = "kubient"
+	BidderLimelightDigital  BidderName = "limelightDigital"
 	BidderLockerDome        BidderName = "lockerdome"
 	BidderLogan             BidderName = "logan"
 	BidderLogicad           BidderName = "logicad"
@@ -348,6 +350,7 @@ func CoreBidderNames() []BidderName {
 		BidderGroupm,
 		BidderGumGum,
 		BidderHuaweiAds,
+		BidderIionads,
 		BidderImds,
 		BidderImpactify,
 		BidderImprovedigital,
@@ -365,6 +368,7 @@ func CoreBidderNames() []BidderName {
 		BidderKiviads,
 		BidderKrushmedia,
 		BidderKubient,
+		BidderLimelightDigital,
 		BidderLockerDome,
 		BidderLogan,
 		BidderLogicad,

@@ -37,6 +37,7 @@ type Account struct {
 	Hooks                   AccountHooks                         `mapstructure:"hooks" json:"hooks"`
 	PriceFloors             AccountPriceFloors                   `mapstructure:"price_floors" json:"price_floors"`
 	Validations             Validations                          `mapstructure:"validations" json:"validations"`
+	DefaultBidLimit         int                                  `mapstructure:"default_bid_limit" json:"default_bid_limit"`
 }
 
 // CookieSync represents the account-level defaults for the cookie sync endpoint.

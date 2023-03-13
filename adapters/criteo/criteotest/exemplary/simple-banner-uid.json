@@ -109,7 +109,12 @@
                   "crid": "creative-123",
                   "adm": "<iframe id='789abc' name='789abc' src='http://creative-url.criteo.com'></iframe>",
                   "w": 300,
-                  "h": 250
+                  "h": 250,
+                  "ext": {
+                    "prebid": {
+                      "type": "banner"
+                    }
+                  }
                 }
               ]
             }
@@ -130,7 +135,12 @@
             "crid": "creative-123",
             "adm": "<iframe id='789abc' name='789abc' src='http://creative-url.criteo.com'></iframe>",
             "w": 300,
-            "h": 250
+            "h": 250,
+            "ext": {
+              "prebid": {
+                "type": "banner"
+              }
+            }
           },
           "type": "banner"
         }

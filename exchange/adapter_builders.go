@@ -97,6 +97,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/kiviads"
 	"github.com/prebid/prebid-server/adapters/krushmedia"
 	"github.com/prebid/prebid-server/adapters/kubient"
+	"github.com/prebid/prebid-server/adapters/limelightDigital"
 	"github.com/prebid/prebid-server/adapters/lockerdome"
 	"github.com/prebid/prebid-server/adapters/logan"
 	"github.com/prebid/prebid-server/adapters/logicad"
@@ -253,6 +254,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderGroupm:            pubmatic.Builder,
 		openrtb_ext.BidderGumGum:            gumgum.Builder,
 		openrtb_ext.BidderHuaweiAds:         huaweiads.Builder,
+		openrtb_ext.BidderIionads:           limelightDigital.Builder,
 		openrtb_ext.BidderImds:              imds.Builder,
 		openrtb_ext.BidderImpactify:         impactify.Builder,
 		openrtb_ext.BidderImprovedigital:    improvedigital.Builder,
@@ -270,6 +272,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderKiviads:           kiviads.Builder,
 		openrtb_ext.BidderKrushmedia:        krushmedia.Builder,
 		openrtb_ext.BidderKubient:           kubient.Builder,
+		openrtb_ext.BidderLimelightDigital:  limelightDigital.Builder,
 		openrtb_ext.BidderLockerDome:        lockerdome.Builder,
 		openrtb_ext.BidderLogan:             logan.Builder,
 		openrtb_ext.BidderLogicad:           logicad.Builder,
