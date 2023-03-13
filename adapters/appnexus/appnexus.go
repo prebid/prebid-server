@@ -82,8 +82,6 @@ type appnexusReqExt struct {
 var maxImpsPerReq = 10
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	memberIds := make(map[string]struct{})
-	errs := make([]error, 0, len(request.Imp))
 
 	// appnexus adapter expects imp.displaymanagerver to be populated in openrtb2 endpoint
 	// but some SDKs will put it in imp.ext.prebid instead
@@ -92,6 +90,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	var (
 		shouldGenerateAdPodId *bool
 		uniqueMemberIds       []string
+		memberIds             = make(map[string]struct{})
+		errs                  = make([]error, 0, len(request.Imp))
 	)
 
 	validImps := []openrtb2.Imp{}
