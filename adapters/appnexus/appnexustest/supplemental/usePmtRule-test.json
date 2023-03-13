@@ -22,7 +22,7 @@
               "inv_code": "abc",
               "reserve": 20,
               "position": "below",
-              "usePaymentRule": true
+              "use_payment_rule": true
             }
           }
         },
@@ -47,7 +47,7 @@
                 "reserve": 20,
                 "position": "below",
                 "use_pmt_rule": true,
-                "usePaymentRule": false
+                "use_payment_rule": false
               }
             }
           }
