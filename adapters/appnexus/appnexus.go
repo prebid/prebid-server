@@ -87,16 +87,16 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	// appnexus adapter expects imp.displaymanagerver to be populated in openrtb2 endpoint
 	// but some SDKs will put it in imp.ext.prebid instead
-	defaultDisplayManagerVer := buildDefaultDisplayManageVer(request)
+	displayManagerVer := buildDefaultDisplayManageVer(request)
 
 	var (
-		adPodId         *bool
-		uniqueMemberIds []string
+		shouldGenerateAdPodId *bool
+		uniqueMemberIds       []string
 	)
 
 	for i := 0; i < len(request.Imp); i++ {
 		// If the preprocessing failed, the server won't be able to bid on this Imp. Delete it, and note the error.
-		memberId, impAdPodId, err := preprocess(&request.Imp[i], defaultDisplayManagerVer)
+		memberId, shouldGenerateAdPodIdForImp, err := preprocess(&request.Imp[i], displayManagerVer)
 		if err != nil {
 			errs = append(errs, err)
 			request.Imp = append(request.Imp[:i], request.Imp[i+1:]...)
@@ -110,9 +110,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 				uniqueMemberIds = append(uniqueMemberIds, memberId)
 			}
 		}
-		if adPodId == nil {
-			adPodId = &impAdPodId
-		} else if *adPodId != impAdPodId {
+		if shouldGenerateAdPodId == nil {
+			shouldGenerateAdPodId = &shouldGenerateAdPodIdForImp
+		} else if *shouldGenerateAdPodId != shouldGenerateAdPodIdForImp {
 			errs = append(errs, errors.New("generate ad pod option should be same for all pods in request"))
 			return nil, errs
 		}
@@ -168,7 +168,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	// For this all impressions in  request should belong to the same pod
 	// If impressions number per pod is more than maxImpsPerReq - divide those imps to several requests but keep pod id the same
 	// If  adpodId feature disabled and impressions number per pod is more than maxImpsPerReq  - divide those imps to several requests but do not include ad pod id
-	if isVIDEO == 1 && *adPodId {
+	if isVIDEO == 1 && *shouldGenerateAdPodId {
 		podImps := groupByPods(imps)
 
 		requests := make([]*adapters.RequestData, 0, len(podImps))
