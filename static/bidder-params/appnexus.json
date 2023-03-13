@@ -69,7 +69,7 @@
     },
     "usePaymentRule": {
       "type": "boolean",
-      "description": "Deprecated, Boolean to signal AppNexus to apply the relevant payment rule"
+      "description": "Deprecated, Boolean to signal AppNexus to apply the relevant payment rule. use_pmt_rule will get precedence over usePaymentRule."
     },
     "generate_ad_pod_id": {
       "type": "boolean",

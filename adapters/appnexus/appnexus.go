@@ -293,7 +293,7 @@ func preprocess(imp *openrtb2.Imp, defaultDisplayManagerVer string) (string, boo
 	if appnexusExt.TrafficSourceCode == "" && appnexusExt.LegacyTrafficSourceCode != "" {
 		appnexusExt.TrafficSourceCode = appnexusExt.LegacyTrafficSourceCode
 	}
-	if appnexusExt.DeprecatedUsePaymentRule != nil && *appnexusExt.DeprecatedUsePaymentRule {
+	if appnexusExt.UsePmtRule == nil && appnexusExt.DeprecatedUsePaymentRule != nil {
 		appnexusExt.UsePmtRule = appnexusExt.DeprecatedUsePaymentRule
 	}
 
