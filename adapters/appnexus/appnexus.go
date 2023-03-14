@@ -304,53 +304,61 @@ func makeKeywordStr(keywords []*openrtb_ext.ExtImpAppnexusKeyVal) string {
 }
 
 func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if err := bidderutil.CheckResponseStatusCode(response); err != nil {
+	if bidderutil.IsResponseCodeStatusNoContent(response) {
+		return nil, nil
+	}
+
+	if err := bidderutil.CheckResponseStatusCodeForErrors(response); err != nil {
 		return nil, []error{err}
 	}
 
-	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	var appnexusResponse openrtb2.BidResponse
+	if err := json.Unmarshal(response.Body, &appnexusResponse); err != nil {
 		return nil, []error{err}
 	}
-
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
 
 	var errs []error
-	for _, sb := range bidResp.SeatBid {
-		for i := 0; i < len(sb.Bid); i++ {
+	bidderResponse := adapters.NewBidderResponseWithBidsCapacity(5)
+	for _, sb := range appnexusResponse.SeatBid {
+		for i := range sb.Bid {
 			bid := sb.Bid[i]
+
 			var bidExt appnexusBidExt
 			if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
 				errs = append(errs, err)
-			} else {
-				if bidType, err := getMediaTypeForBid(&bidExt); err == nil {
-					if iabCategory, err := a.getIabCategoryForBid(&bidExt); err == nil {
-						bid.Cat = []string{iabCategory}
-					} else if len(bid.Cat) > 1 {
-						//create empty categories array to force bid to be rejected
-						bid.Cat = make([]string, 0)
-					}
-
-					impVideo := &openrtb_ext.ExtBidPrebidVideo{
-						Duration: bidExt.Appnexus.CreativeInfo.Video.Duration,
-					}
-
-					bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-						Bid:          &bid,
-						BidType:      bidType,
-						BidVideo:     impVideo,
-						DealPriority: bidExt.Appnexus.DealPriority,
-					})
-				} else {
-					errs = append(errs, err)
-				}
+				continue
 			}
+
+			bidType, err := getMediaTypeForBid(&bidExt)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+
+			iabCategory, found := a.findIabCategoryForBid(&bidExt)
+			if found {
+				bid.Cat = []string{iabCategory}
+			}
+
+			if len(bid.Cat) > 1 {
+				//create empty categories array to force bid to be rejected
+				bid.Cat = make([]string, 0)
+			}
+
+			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
+				Bid:          &bid,
+				BidType:      bidType,
+				BidVideo:     &openrtb_ext.ExtBidPrebidVideo{Duration: bidExt.Appnexus.CreativeInfo.Video.Duration},
+				DealPriority: bidExt.Appnexus.DealPriority,
+			})
 		}
 	}
-	if bidResp.Cur != "" {
-		bidResponse.Currency = bidResp.Cur
+
+	if appnexusResponse.Cur != "" {
+		bidderResponse.Currency = appnexusResponse.Cur
 	}
-	return bidResponse, errs
+
+	return bidderResponse, errs
 }
 
 // getMediaTypeForBid determines which type of bid.
@@ -370,13 +378,10 @@ func getMediaTypeForBid(bid *appnexusBidExt) (openrtb_ext.BidType, error) {
 }
 
 // getIabCategoryForBid maps an appnexus brand id to an IAB category.
-func (a *adapter) getIabCategoryForBid(bid *appnexusBidExt) (string, error) {
+func (a *adapter) findIabCategoryForBid(bid *appnexusBidExt) (string, bool) {
 	brandIDString := strconv.Itoa(bid.Appnexus.BrandCategory)
-	if iabCategory, ok := a.iabCategoryMap[brandIDString]; ok {
-		return iabCategory, nil
-	} else {
-		return "", fmt.Errorf("category not in map: %s", brandIDString)
-	}
+	iabCategory, ok := a.iabCategoryMap[brandIDString]
+	return iabCategory, ok
 }
 
 func appendMemberId(uri string, memberId string) string {
