@@ -44,17 +44,14 @@ func TestExtractAdServerTargeting(t *testing.T) {
 	assert.NoError(t, err, "unexpected req marshal error")
 
 	res, warnings := collect(rw, reqBytes, params)
-	assert.Empty(t, warnings, "unexpected warnings")
+	assert.Len(t, warnings, 2, "incorrect warnings")
+	assert.Equal(t, "incorrect value type for path: imp.ext.prebid.test, value can only be string or number", warnings[0].Message, "incorrect warning")
+	assert.Equal(t, "incorrect value type for path: ext.prebid.targeting.includebrandcategory, value can only be string or number", warnings[1].Message, "incorrect warning")
 
-	assert.Len(t, res.RequestTargetingData, 7, "incorrect request targeting data length")
+	assert.Len(t, res.RequestTargetingData, 5, "incorrect request targeting data length")
 	assert.Len(t, res.ResponseTargetingData, 4, "incorrect response targeting data length")
 
 	assert.Equal(t, res.RequestTargetingData["hb_amp_param"].SingleVal, json.RawMessage(`testAmpKey`), "incorrect requestTargetingData value for key: hb_amp_param")
-
-	assert.Len(t, res.RequestTargetingData["hb_req_imp_ext_param"].TargetingValueByImpId, 3, "incorrect requestTargetingData length for key hb_req_imp_ext_param")
-	assert.Equal(t, res.RequestTargetingData["hb_req_imp_ext_param"].TargetingValueByImpId["imp1"], []byte(`{"testUser":"user1"}`), "incorrect requestTargetingData value for key: hb_req_imp_ext_param.imp1")
-	assert.Equal(t, res.RequestTargetingData["hb_req_imp_ext_param"].TargetingValueByImpId["imp2"], []byte(`{"testUser":"user2"}`), "incorrect requestTargetingData value for key: hb_req_imp_ext_param.imp2")
-	assert.Equal(t, res.RequestTargetingData["hb_req_imp_ext_param"].TargetingValueByImpId["imp3"], []byte(`{"testUser":"user3"}`), "incorrect requestTargetingData value for key: hb_req_imp_ext_param.imp3")
 
 	assert.Len(t, res.RequestTargetingData["hb_req_imp_ext_bidder_param"].TargetingValueByImpId, 3, "incorrect requestTargetingData length for key: hb_req_imp_ext_bidder_param")
 	assert.Equal(t, res.RequestTargetingData["hb_req_imp_ext_bidder_param"].TargetingValueByImpId["imp1"], []byte(`111`), "incorrect requestTargetingData value for key: hb_req_imp_ext_bidder_param.imp1")
@@ -66,7 +63,6 @@ func TestExtractAdServerTargeting(t *testing.T) {
 	assert.Equal(t, res.RequestTargetingData["hb_req_imp_param"].TargetingValueByImpId["imp2"], []byte(`20`), "incorrect requestTargetingData value for key: hb_req_imp_param.imp2")
 	assert.Equal(t, res.RequestTargetingData["hb_req_imp_param"].TargetingValueByImpId["imp3"], []byte(`30`), "incorrect requestTargetingData value for key: hb_req_imp_param.imp3")
 
-	assert.Equal(t, res.RequestTargetingData["hb_req_ext_param"].SingleVal, json.RawMessage(`{"primaryadserver":1,"publisher":"","withcategory":true}`), "incorrect requestTargetingData value for key: hb_req_ext_param")
 	assert.Equal(t, res.RequestTargetingData["hb_req_user_param"].SingleVal, json.RawMessage(`2000`), "incorrect requestTargetingData value for key: hb_req_user_param")
 	assert.Equal(t, res.RequestTargetingData["hb_static_thing"].SingleVal, json.RawMessage(`test-static-value`), "incorrect requestTargetingData value for key: hb_static_thing")
 
@@ -240,13 +236,15 @@ func TestProcessAdServerTargetingFull(t *testing.T) {
 		Ext: []byte(`{"prebid": {"seatExt": "true"}}`),
 	}
 
-	bidResponseExt := &openrtb_ext.ExtBidResponse{}
+	bidResponseExt := &openrtb_ext.ExtBidResponse{Warnings: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)}
 
 	reqBytes, err := json.Marshal(r)
 	assert.NoError(t, err, "unexpected req marshal error")
 	resResp := Apply(rw, reqBytes, resp, params, bidResponseExt, nil)
-	assert.Len(t, resResp.SeatBid, 2, "Incorrect response: seat bid number")
-	assert.Nil(t, bidResponseExt.Warnings, "Incorrect response: no warnings expected")
+	assert.Len(t, resResp.SeatBid, 2, "incorrect response: seat bid number")
+	assert.Len(t, bidResponseExt.Warnings[openrtb_ext.BidderReservedGeneral], 2, "incorrect warnings number")
+	assert.Equal(t, "incorrect value type for path: imp.ext.prebid.test, value can only be string or number", bidResponseExt.Warnings[openrtb_ext.BidderReservedGeneral][0].Message, "incorrect warning")
+	assert.Equal(t, "incorrect value type for path: ext.prebid.targeting.includebrandcategory, value can only be string or number", bidResponseExt.Warnings[openrtb_ext.BidderReservedGeneral][1].Message, "incorrect warning")
 
 	apnBids := resResp.SeatBid[0].Bid
 	rbcBids := resResp.SeatBid[1].Bid
@@ -334,12 +332,13 @@ func TestProcessAdServerTargetingWarnings(t *testing.T) {
 	assert.Len(t, rbcBids, 3, "Incorrect response: rubicon bid number")
 
 	warnings := bidResponseExt.Warnings[openrtb_ext.BidderReservedGeneral]
-	assert.Len(t, warnings, 5, "Incorrect response: seat bid number")
+	assert.Len(t, warnings, 6, "Incorrect response: seat bid number")
 	assert.Equal(t, "value not found for path: ext.prebid.amp.data.ampkey", warnings[0].Message, "Incorrect warning")
 	assert.Equal(t, "value not found for path: imp.ext.prebid.test", warnings[1].Message, "Incorrect warning")
 	assert.Equal(t, "value not found for path: imp.ext.bidder1.tagid", warnings[2].Message, "Incorrect warning")
 	assert.Equal(t, "value not found for path: imp.bidfloor", warnings[3].Message, "Incorrect warning")
-	assert.Equal(t, "value not found for path: user.yob", warnings[4].Message, "Incorrect warning")
+	assert.Equal(t, "incorrect value type for path: ext.prebid.targeting.includebrandcategory, value can only be string or number", warnings[4].Message, "Incorrect warning")
+	assert.Equal(t, "value not found for path: user.yob", warnings[5].Message, "Incorrect warning")
 }
 
 const (
@@ -418,7 +417,6 @@ const (
   "prebid": {
     "foo": "bar1",
     "targeting": {
-      "appnexus_custom1": "[\"cat11\",\"cat12\"]",
       "appnexus_custom6": "true",
       "custom2": "bar1",
       "custom3": "10",
@@ -435,7 +433,6 @@ const (
   "prebid": {
     "foo": "bar2",
     "targeting": {
-      "appnexus_custom1": "[\"cat21\",\"cat22\"]",
       "appnexus_custom6": "true",
       "custom2": "bar2",
       "custom3": "20",
@@ -451,7 +448,6 @@ const (
   "prebid": {
     "foo": "bar3",
     "targeting": {
-      "appnexus_custom1": "[\"cat31\",\"cat32\"]",
       "appnexus_custom6": "true",
       "custom2": "bar3",
       "custom3": "30",
@@ -473,7 +469,6 @@ const (
       "custom5": "USD",
       "hb_amp_param": "testAmpKey",
       "hb_imp_param": "111",
-      "rubicon_custom1": "[\"cat111\",\"cat112\"]",
       "rubicon_custom6": "true",
       "testInput": 111
     }
@@ -490,7 +485,6 @@ const (
       "custom5": "USD",
       "hb_amp_param": "testAmpKey",
       "hb_imp_param": "222",
-      "rubicon_custom1": "[\"cat221\",\"cat222\"]",
       "rubicon_custom6": "true",
       "testInput": 222
     }
@@ -507,7 +501,6 @@ const (
       "custom5": "USD",
       "hb_amp_param": "testAmpKey",
       "hb_imp_param": "333",
-      "rubicon_custom1": "[\"cat331\",\"cat332\"]",
       "rubicon_custom6": "true",
       "testInput": 333
     }
@@ -528,9 +521,7 @@ const (
       "appnexus_imp":"imp1",
       "custom2": "a1111",
       "hb_amp_param": "testAmpKey",
-      "hb_req_ext_param": "{\"primaryadserver\":1,\"publisher\":\"\",\"withcategory\":true}",
       "hb_req_imp_ext_bidde": "111",
-      "hb_req_imp_ext_param": "{\"testUser\":\"user1\"}",
       "hb_req_imp_param": "10",
       "hb_req_user_param": "2000",
       "hb_static_thing": "test-static-value",
@@ -549,9 +540,7 @@ const (
       "appnexus_imp":"imp2",
       "custom2": "a2222",
       "hb_amp_param": "testAmpKey",
-      "hb_req_ext_param": "{\"primaryadserver\":1,\"publisher\":\"\",\"withcategory\":true}",
       "hb_req_imp_ext_bidde": "222",
-      "hb_req_imp_ext_param": "{\"testUser\":\"user2\"}",
       "hb_req_imp_param": "20",
       "hb_req_user_param": "2000",
       "hb_static_thing": "test-static-value",
@@ -569,9 +558,7 @@ const (
       "appnexus_imp":"imp3",
       "custom2": "a3333",
       "hb_amp_param": "testAmpKey",
-      "hb_req_ext_param": "{\"primaryadserver\":1,\"publisher\":\"\",\"withcategory\":true}",
       "hb_req_imp_ext_bidde": "333",
-      "hb_req_imp_ext_param": "{\"testUser\":\"user3\"}",
       "hb_req_imp_param": "30",
       "hb_req_user_param": "2000",
       "hb_static_thing": "test-static-value",
@@ -589,9 +576,7 @@ const (
       "custom2": "r4444",
       "rubicon_imp":"imp1",
       "hb_amp_param": "testAmpKey",
-      "hb_req_ext_param": "{\"primaryadserver\":1,\"publisher\":\"\",\"withcategory\":true}",
       "hb_req_imp_ext_bidde": "111",
-      "hb_req_imp_ext_param": "{\"testUser\":\"user1\"}",
       "hb_req_imp_param": "10",
       "hb_req_user_param": "2000",
       "hb_static_thing": "test-static-value",
@@ -610,9 +595,7 @@ const (
       "custom2": "r5555",
       "rubicon_imp":"imp2",
       "hb_amp_param": "testAmpKey",
-      "hb_req_ext_param": "{\"primaryadserver\":1,\"publisher\":\"\",\"withcategory\":true}",
       "hb_req_imp_ext_bidde": "222",
-      "hb_req_imp_ext_param": "{\"testUser\":\"user2\"}",
       "hb_req_imp_param": "20",
       "hb_req_user_param": "2000",
       "hb_static_thing": "test-static-value",
@@ -631,9 +614,7 @@ const (
       "custom2": "r6666",
       "rubicon_imp":"imp3",
       "hb_amp_param": "testAmpKey",
-      "hb_req_ext_param": "{\"primaryadserver\":1,\"publisher\":\"\",\"withcategory\":true}",
       "hb_req_imp_ext_bidde": "333",
-      "hb_req_imp_ext_param": "{\"testUser\":\"user3\"}",
       "hb_req_imp_param": "30",
       "hb_req_user_param": "2000",
       "hb_static_thing": "test-static-value",

@@ -81,11 +81,9 @@ func getValueFromImp(path string, dataHolder *reqImpCache) (map[string][]byte, e
 			if err != nil {
 				return nil, err
 			}
-			value, _, _, err := jsonparser.Get(impData, keySplit...)
-			if err != nil && err != jsonparser.KeyPathNotFoundError {
+			value, err := getValueFromJson(impData, path, keySplit...)
+			if err != nil {
 				return nil, err
-			} else if err != nil && err == jsonparser.KeyPathNotFoundError {
-				return nil, errors.Errorf("value not found for path: %s", path)
 			}
 			impsDatas[string(id)] = value
 		}
@@ -96,9 +94,10 @@ func getValueFromImp(path string, dataHolder *reqImpCache) (map[string][]byte, e
 func getDataFromRequest(path string, dataHolder *reqImpCache) (json.RawMessage, error) {
 	keySplit := strings.Split(path, pathDelimiter)
 	reqJson := dataHolder.GetReqJson()
-	value, _, _, err := jsonparser.Get(reqJson, keySplit...)
+	value, err := getValueFromJson(reqJson, path, keySplit...)
+
 	if err != nil {
-		return nil, errors.Errorf("value not found for path: %s", path)
+		return nil, err
 	}
 	return value, nil
 }

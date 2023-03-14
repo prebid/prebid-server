@@ -10,10 +10,12 @@ import (
 
 func splitAndGet(path string, data []byte, delimiter string) (string, error) {
 	keySplit := strings.Split(path, delimiter)
-	value, _, _, err := jsonparser.Get(data, keySplit...)
+
+	value, err := getValueFromJson(data, path, keySplit...)
 	if err != nil {
-		return "", errors.Errorf("value not found for path: %s", path)
+		return "", err
 	}
+
 	return string(value), nil
 }
 
@@ -30,4 +32,17 @@ func verifyPrefixAndTrim(path, prefix string) (string, bool) {
 		return ampDataSplit[1], true
 	}
 	return "", false
+}
+
+func getValueFromJson(data []byte, path string, keys ...string) ([]byte, error) {
+	value, dataType, _, err := jsonparser.Get(data, keys...)
+	if err != nil && err != jsonparser.KeyPathNotFoundError {
+		return nil, err
+	} else if err != nil && err == jsonparser.KeyPathNotFoundError {
+		return nil, errors.Errorf("value not found for path: %s", path)
+	}
+	if dataType != jsonparser.String && dataType != jsonparser.Number {
+		return nil, errors.Errorf("incorrect value type for path: %s, value can only be string or number", path)
+	}
+	return value, nil
 }
