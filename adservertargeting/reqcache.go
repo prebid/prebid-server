@@ -33,8 +33,8 @@ func (dh *reqImpCache) GetImpsData() ([]json.RawMessage, error) {
 }
 
 type bidsCache struct {
-	//bidder name to bid id to bid data
 	// bidder name is another layer to avoid collisions in case bid ids from different bidders will be the same
+	// map[bidder name] map [bid id] bid data
 	bids map[string]map[string][]byte
 }
 

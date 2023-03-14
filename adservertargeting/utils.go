@@ -23,3 +23,11 @@ func createWarning(message string) openrtb_ext.ExtBidderMessage {
 		Message: message,
 	}
 }
+
+func verifyPrefixAndTrim(path, prefix string) (string, bool) {
+	ampDataSplit := strings.Split(path, prefix)
+	if len(ampDataSplit) == 2 && ampDataSplit[0] == "" {
+		return ampDataSplit[1], true
+	}
+	return "", false
+}

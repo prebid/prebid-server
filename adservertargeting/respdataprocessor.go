@@ -13,9 +13,6 @@ import (
 const MaxKeyLength = 20
 
 func processRequestTargetingData(adServerTargetingData *adServerTargetingData, targetingData map[string]string, bidImpId string) {
-	if len(adServerTargetingData.RequestTargetingData) == 0 {
-		return
-	}
 	for key, val := range adServerTargetingData.RequestTargetingData {
 		if len(val.SingleVal) > 0 {
 			targetingData[key] = string(val.SingleVal)
@@ -34,13 +31,13 @@ func processResponseTargetingData(
 	response *openrtb2.BidResponse,
 	seatExt json.RawMessage,
 	warnings []openrtb_ext.ExtBidderMessage) {
-	if len(adServerTargetingData.ResponseTargetingData) == 0 {
-		return
-	}
+
 	for _, respTargetingData := range adServerTargetingData.ResponseTargetingData {
 		key := resolveKey(respTargetingData, bidderName)
 		path := respTargetingData.Path
 
+		var value string
+		var err error
 		pathSplit := strings.Split(path, pathDelimiter)
 
 		switch pathSplit[0] {
@@ -48,20 +45,20 @@ func processResponseTargetingData(
 		case "seatbid":
 			switch pathSplit[1] {
 			case "bid":
-				getValueFromSeatBidBid(key, path, targetingData, bidsHolder, bidderName, bid, warnings)
+				value, err = getValueFromSeatBidBid(path, bidsHolder, bidderName, bid)
 			case "ext":
-				getValueFromSeatBidExt(key, path, targetingData, seatExt, warnings)
+				value, err = getValueFromExt(path, "seatbid.ext.", seatExt)
 			}
-
 		case "ext":
-			getValueFromRespExt(key, path, targetingData, response.Ext, warnings)
+			value, err = getValueFromExt(path, "ext.", response.Ext)
 		default:
-			// path points to value in response, not seat or ext
-			// bidder response has limited number of properties
-			// instead of unmarshal the whole response with seats and bids
-			// try to find data by field name
-			getValueFromResp(key, path, targetingData, response, warnings)
+			value, err = getValueFromResp(path, response)
+		}
 
+		if err != nil {
+			warnings = append(warnings, createWarning(err.Error()))
+		} else {
+			targetingData[key] = value
 		}
 	}
 }
@@ -117,66 +114,39 @@ func truncateTargetingKeys(targetingData map[string]string, truncateTargetAttrib
 	return targetingDataTruncated
 }
 
-func getValueFromSeatBidBid(
-	key, path string,
-	targetingData map[string]string,
-	bidsHolder bidsCache,
-	bidderName string,
-	bid openrtb2.Bid,
-	warnings []openrtb_ext.ExtBidderMessage) {
+func getValueFromSeatBidBid(path string, bidsHolder bidsCache, bidderName string, bid openrtb2.Bid) (string, error) {
 	bidBytes, err := bidsHolder.GetBid(bidderName, bid.ID, bid)
 	if err != nil {
-		warnings = append(warnings, createWarning(err.Error()))
-
+		return "", err
 	}
+
 	bidSplit := strings.Split(path, "seatbid.bid.")
 	value, err := splitAndGet(bidSplit[1], bidBytes, pathDelimiter)
 	if err != nil {
-		warnings = append(warnings, createWarning(err.Error()))
+		return "", err
 
 	}
-	targetingData[key] = value
+	return value, nil
 }
 
-func getValueFromSeatBidExt(
-	key, path string,
-	targetingData map[string]string,
-	seatExt json.RawMessage,
-	warnings []openrtb_ext.ExtBidderMessage) {
-	seatBidSplit := strings.Split(path, "seatbid.ext.")
-	value, err := splitAndGet(seatBidSplit[1], seatExt, pathDelimiter)
-	if err != nil {
-		warnings = append(warnings, createWarning(err.Error()))
-	}
-
-	targetingData[key] = value
-}
-
-func getValueFromRespExt(
-	key, path string,
-	targetingData map[string]string,
-	respExt json.RawMessage,
-	warnings []openrtb_ext.ExtBidderMessage) {
+func getValueFromExt(path, separator string, respExt json.RawMessage) (string, error) {
 	//path points to resp.ext, means path starts with ext
-	extSplit := strings.Split(path, "ext.")
+	extSplit := strings.Split(path, separator)
 	value, err := splitAndGet(extSplit[1], respExt, pathDelimiter)
 	if err != nil {
-		warnings = append(warnings, createWarning(err.Error()))
+		return "", err
 	}
-	targetingData[key] = value
+
+	return value, nil
 }
 
-func getValueFromResp(
-	key, path string,
-	targetingData map[string]string,
-	response *openrtb2.BidResponse,
-	warnings []openrtb_ext.ExtBidderMessage) {
-
+// getValueFromResp optimizes retrieval of paths for a bid response (not a seat or ext)
+func getValueFromResp(path string, response *openrtb2.BidResponse) (string, error) {
 	value, err := getRespData(response, path)
 	if err != nil {
-		warnings = append(warnings, createWarning(err.Error()))
+		return "", err
 	}
-	targetingData[key] = value
+	return value, nil
 }
 
 func getRespData(bidderResp *openrtb2.BidResponse, field string) (string, error) {

@@ -43,7 +43,7 @@ func TestExtractAdServerTargeting(t *testing.T) {
 	reqBytes, err := json.Marshal(r)
 	assert.NoError(t, err, "unexpected req marshal error")
 
-	res, warnings := CollectAdServerTargeting(rw, reqBytes, params)
+	res, warnings := collect(rw, reqBytes, params)
 	assert.Empty(t, warnings, "unexpected warnings")
 
 	assert.Len(t, res.RequestTargetingData, 7, "incorrect request targeting data length")
@@ -126,7 +126,7 @@ func TestResolveAdServerTargeting(t *testing.T) {
 			{Key: "{{BIDDER}}_custom6", HasMacro: true, Path: "ext.prebid.seatExt"},
 		},
 	}
-	bidResponse, warnings := ResolveAdServerTargeting(adServerTargeting, resp, nil, nil)
+	bidResponse, warnings := resolve(adServerTargeting, resp, nil, nil)
 
 	assert.Empty(t, warnings, "unexpected warnings")
 	assert.NotNil(t, bidResponse, "incorrect resolved targeting data")
@@ -169,7 +169,7 @@ func TestResolveAdServerTargetingForMultiBidAndOneImp(t *testing.T) {
 		},
 	}
 	truncateTargetingAttr := 11
-	bidResponse, warnings := ResolveAdServerTargeting(adServerTargeting, resp, nil, &truncateTargetingAttr)
+	bidResponse, warnings := resolve(adServerTargeting, resp, nil, &truncateTargetingAttr)
 
 	assert.Empty(t, warnings, "unexpected error")
 	assert.Equal(t, bidResponse.ID, "testResponse", "incorrect")
@@ -244,7 +244,7 @@ func TestProcessAdServerTargetingFull(t *testing.T) {
 
 	reqBytes, err := json.Marshal(r)
 	assert.NoError(t, err, "unexpected req marshal error")
-	resResp := ProcessAdServerTargeting(rw, reqBytes, resp, params, bidResponseExt, nil)
+	resResp := Apply(rw, reqBytes, resp, params, bidResponseExt, nil)
 	assert.Len(t, resResp.SeatBid, 2, "Incorrect response: seat bid number")
 	assert.Nil(t, bidResponseExt.Warnings, "Incorrect response: no warnings expected")
 
@@ -324,7 +324,7 @@ func TestProcessAdServerTargetingWarnings(t *testing.T) {
 
 	reqBytes, err := json.Marshal(r)
 	assert.NoError(t, err, "unexpected req marshal error")
-	resResp := ProcessAdServerTargeting(rw, reqBytes, resp, params, bidResponseExt, nil)
+	resResp := Apply(rw, reqBytes, resp, params, bidResponseExt, nil)
 	assert.Len(t, resResp.SeatBid, 2, "Incorrect response: seat bid number")
 
 	apnBids := resResp.SeatBid[0].Bid

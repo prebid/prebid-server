@@ -38,7 +38,7 @@ type adServerTargetingData struct {
 	ResponseTargetingData []ResponseTargetingData
 }
 
-func ProcessAdServerTargeting(
+func Apply(
 	reqWrapper *openrtb_ext.RequestWrapper,
 	resolvedRequest json.RawMessage,
 	response *openrtb2.BidResponse,
@@ -46,8 +46,8 @@ func ProcessAdServerTargeting(
 	bidResponseExt *openrtb_ext.ExtBidResponse,
 	truncateTargetAttribute *int) *openrtb2.BidResponse {
 
-	adServerTargeting, warnings := CollectAdServerTargeting(reqWrapper, resolvedRequest, queryParams)
-	response, warnings = ResolveAdServerTargeting(adServerTargeting, response, warnings, truncateTargetAttribute)
+	adServerTargeting, warnings := collect(reqWrapper, resolvedRequest, queryParams)
+	response, warnings = resolve(adServerTargeting, response, warnings, truncateTargetAttribute)
 
 	if len(warnings) > 0 {
 		bidResponseExt.Warnings[openrtb_ext.BidderReservedGeneral] = append(bidResponseExt.Warnings[openrtb_ext.BidderReservedGeneral], warnings...)
@@ -55,7 +55,9 @@ func ProcessAdServerTargeting(
 	return response
 }
 
-func CollectAdServerTargeting(
+// collect gathers targeting keys and values from request based on initial config
+// and optimizes future key and value that should be collected from response
+func collect(
 	reqWrapper *openrtb_ext.RequestWrapper, resolvedRequest json.RawMessage,
 	queryParams url.Values) (*adServerTargetingData, []openrtb_ext.ExtBidderMessage) {
 
@@ -63,29 +65,26 @@ func CollectAdServerTargeting(
 
 	adServerTargeting, err := getAdServerTargeting(reqWrapper)
 	if err != nil {
-		warnings = append(warnings, createWarning("Unable to extract adServerTargetingFrom req"))
-		return nil, warnings
-	}
-	if len(adServerTargeting) == 0 {
+		warnings = append(warnings, createWarning("unable to extract adServerTargeting from request"))
 		return nil, warnings
 	}
 
 	requestTargetingData := map[string]RequestTargetingData{}
 	responseTargetingData := []ResponseTargetingData{}
 
-	dataHolder := reqImpCache{resolverReq: resolvedRequest}
+	impsCache := reqImpCache{resolverReq: resolvedRequest}
 
 	for _, targetingObj := range adServerTargeting {
 		source := strings.ToLower(targetingObj.Source)
 		switch DataSource(source) {
 		case SourceBidRequest:
 			//causes PBS to treat 'value' as a path to pull from the request object
-			value, err := getValueFromBidRequest(&dataHolder, targetingObj.Value, queryParams)
+			value, err := getValueFromBidRequest(&impsCache, targetingObj.Value, queryParams)
 			if err != nil {
 				warnings = append(warnings, createWarning(err.Error()))
-				continue
+			} else {
+				requestTargetingData[targetingObj.Key] = value
 			}
-			requestTargetingData[targetingObj.Key] = value
 		case SourceStatic:
 			// causes PBS to just use the 'value' provided
 			staticValue := RequestTargetingData{SingleVal: json.RawMessage(targetingObj.Value)}
@@ -108,7 +107,7 @@ func CollectAdServerTargeting(
 	return adServerTargetingData, warnings
 }
 
-func ResolveAdServerTargeting(
+func resolve(
 	adServerTargetingData *adServerTargetingData,
 	response *openrtb2.BidResponse,
 	warnings []openrtb_ext.ExtBidderMessage,
@@ -118,16 +117,15 @@ func ResolveAdServerTargeting(
 	}
 
 	// ad server targeting data will go to seatbid[].bid[].ext.prebid.targeting
-	//TODO: truncate keys
 
-	bidsHolder := bidsCache{bids: make(map[string]map[string][]byte)}
+	bidCache := bidsCache{bids: make(map[string]map[string][]byte)}
 
 	for _, seat := range response.SeatBid {
 		bidderName := seat.Seat
 		for i, bid := range seat.Bid {
-			targetingData := make(map[string]string, 0)
+			targetingData := make(map[string]string)
 			processRequestTargetingData(adServerTargetingData, targetingData, bid.ImpID)
-			processResponseTargetingData(adServerTargetingData, targetingData, bidderName, bid, bidsHolder, response, seat.Ext, warnings)
+			processResponseTargetingData(adServerTargetingData, targetingData, bidderName, bid, bidCache, response, seat.Ext, warnings)
 			seat.Bid[i].Ext = buildBidExt(targetingData, bid, warnings, truncateTargetAttribute)
 		}
 	}

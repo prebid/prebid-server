@@ -14,10 +14,12 @@ func getAdServerTargeting(reqWrapper *openrtb_ext.RequestWrapper) ([]openrtb_ext
 	if err != nil {
 		return nil, err
 	}
+
 	reqExtPrebid := reqExt.GetPrebid()
 	if reqExtPrebid == nil {
 		return nil, err
 	}
+
 	return reqExtPrebid.AdServerTargeting, nil
 }
 
@@ -50,9 +52,9 @@ func getValueFromBidRequest(dataHolder *reqImpCache, path string, queryParams ur
 }
 
 func getValueFromQueryParam(path string, queryParams url.Values) (json.RawMessage, error) {
-	ampDataSplit := strings.Split(path, "ext.prebid.amp.data.")
-	if len(ampDataSplit) == 2 && ampDataSplit[0] == "" {
-		val := queryParams.Get(ampDataSplit[1])
+	ampDataSplit, hasPrefix := verifyPrefixAndTrim(path, "ext.prebid.amp.data.")
+	if hasPrefix {
+		val := queryParams.Get(ampDataSplit)
 		if val != "" {
 			return json.RawMessage(val), nil
 		} else {
@@ -63,15 +65,13 @@ func getValueFromQueryParam(path string, queryParams url.Values) (json.RawMessag
 }
 
 func getValueFromImp(path string, dataHolder *reqImpCache) (map[string][]byte, error) {
-	impSplit := strings.Split(path, "imp.")
 	impsDatas := make(map[string][]byte, 0)
-	if len(impSplit) == 2 && impSplit[0] == "" {
-
+	impSplit, hasPrefix := verifyPrefixAndTrim(path, "imp.")
+	if hasPrefix {
 		//If imp is specified in the path, the assumption is that the specific imp[] desired corresponds
 		//to the seatbid[].bid[] we're working on. i.e. imp[].id=seatbid[].bid[].impid
-
 		// key points to data in imp
-		keySplit := strings.Split(impSplit[1], pathDelimiter)
+		keySplit := strings.Split(impSplit, pathDelimiter)
 		impsData, err := dataHolder.GetImpsData()
 		if err != nil {
 			return nil, err
