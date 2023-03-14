@@ -19,6 +19,7 @@ type ExtBidPrebid struct {
 	DealTierSatisfied bool                `json:"dealtiersatisfied,omitempty"`
 	Meta              *ExtBidPrebidMeta   `json:"meta,omitempty"`
 	Targeting         map[string]string   `json:"targeting,omitempty"`
+	TargetBidderCode  string              `json:"targetbiddercode,omitempty"`
 	Type              BidType             `json:"type,omitempty"`
 	Video             *ExtBidPrebidVideo  `json:"video,omitempty"`
 	Events            *ExtBidPrebidEvents `json:"events,omitempty"`

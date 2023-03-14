@@ -2487,6 +2487,55 @@ func TestBuildRequestExtForBidder(t *testing.T) {
 			requestExt:           json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["foo2"]},"bar":{"enabled":true,"allowedbiddercodes":["ix"]}}}}}`),
 			expectedJson:         json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["foo2"]}}},"bidderparams":"bar"}}`),
 		},
+		{
+			description:  "Prebid + Other + Bider Params + MultiBid.Bidder",
+			bidderParams: map[string]json.RawMessage{bidder: bidderParams},
+			requestExt:   json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"multibid":[{"bidder":"foo","maxbids":2,"targetbiddercodeprefix":"fmb"},{"bidders":["appnexus","groupm"],"maxbids":2}]}}`),
+			expectedJson: json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"multibid":[{"bidder":"foo","maxbids":2,"targetbiddercodeprefix":"fmb"}],"bidderparams":"bar"}}`),
+		},
+		{
+			description:  "Prebid + Other + Bider Params + MultiBid.Bidders",
+			bidderParams: map[string]json.RawMessage{bidder: bidderParams},
+			requestExt:   json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"multibid":[{"bidder":"pubmatic","maxbids":3,"targetbiddercodeprefix":"pubM"},{"bidders":["foo","groupm"],"maxbids":4}]}}`),
+			expectedJson: json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"multibid":[{"bidders":["foo"],"maxbids":4}],"bidderparams":"bar"}}`),
+		},
+		{
+			description:  "Prebid + Other + Bider Params + MultiBid (foo not in MultiBid)",
+			bidderParams: map[string]json.RawMessage{bidder: bidderParams},
+			requestExt:   json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"multibid":[{"bidder":"foo2","maxbids":2,"targetbiddercodeprefix":"fmb"},{"bidders":["appnexus","groupm"],"maxbids":2}]}}`),
+			expectedJson: json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"bidderparams":"bar"}}`),
+		},
+		{
+			description:  "Prebid + Other + Bider Params + MultiBid (foo not in MultiBid)",
+			bidderParams: map[string]json.RawMessage{bidder: bidderParams},
+			requestExt:   json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"multibid":[{"bidder":"foo2","maxbids":2,"targetbiddercodeprefix":"fmb"},{"bidders":["appnexus","groupm"],"maxbids":2}]}}`),
+			expectedJson: json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"bidderparams":"bar"}}`),
+		},
+		{
+			description:  "Prebid + AlternateBidderCodes.MultiBid.Bidder",
+			requestExt:   json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["pubmatic"]}}},"multibid":[{"bidder":"foo","maxbids":3,"targetbiddercodeprefix":"fmb"},{"bidder":"foo2","maxbids":4,"targetbiddercodeprefix":"fmb2"},{"bidder":"pubmatic","maxbids":5,"targetbiddercodeprefix":"pm"}]}}`),
+			expectedJson: json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["pubmatic"]}}},"multibid":[{"bidder":"foo","maxbids":3,"targetbiddercodeprefix":"fmb"},{"bidder":"pubmatic","maxbids":5,"targetbiddercodeprefix":"pm"}]}}`),
+		},
+		{
+			description:  "Prebid + AlternateBidderCodes.MultiBid.Bidders",
+			requestExt:   json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["pubmatic"]}}},"multibid":[{"bidder":"foo","maxbids":3,"targetbiddercodeprefix":"fmb"},{"bidders":["pubmatic","groupm"],"maxbids":4}]}}`),
+			expectedJson: json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["pubmatic"]}}},"multibid":[{"bidder":"foo","maxbids":3,"targetbiddercodeprefix":"fmb"},{"bidders":["pubmatic"],"maxbids":4}]}}`),
+		},
+		{
+			description:  "Prebid + AlternateBidderCodes.MultiBid.Bidder with *",
+			requestExt:   json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["*"]}}},"multibid":[{"bidder":"foo","maxbids":3,"targetbiddercodeprefix":"fmb"},{"bidder":"foo2","maxbids":4,"targetbiddercodeprefix":"fmb2"},{"bidder":"pubmatic","maxbids":5,"targetbiddercodeprefix":"pm"}]}}`),
+			expectedJson: json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["*"]}}},"multibid":[{"bidder":"foo","maxbids":3,"targetbiddercodeprefix":"fmb"},{"bidder":"foo2","maxbids":4,"targetbiddercodeprefix":"fmb2"},{"bidder":"pubmatic","maxbids":5,"targetbiddercodeprefix":"pm"}]}}`),
+		},
+		{
+			description:  "Prebid + AlternateBidderCodes.MultiBid.Bidders with *",
+			requestExt:   json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["*"]}}},"multibid":[{"bidder":"foo","maxbids":3,"targetbiddercodeprefix":"fmb"},{"bidders":["pubmatic","groupm"],"maxbids":4}]}}`),
+			expectedJson: json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["*"]}}},"multibid":[{"bidder":"foo","maxbids":3,"targetbiddercodeprefix":"fmb"},{"bidders":["pubmatic"],"maxbids":4},{"bidders":["groupm"],"maxbids":4}]}}`),
+		},
+		{
+			description:  "Prebid + AlternateBidderCodes + MultiBid",
+			requestExt:   json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["foo2"]}}},"multibid":[{"bidder":"foo3","maxbids":3,"targetbiddercodeprefix":"fmb"},{"bidders":["pubmatic","groupm"],"maxbids":4}]}}`),
+			expectedJson: json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["foo2"]}}}}}`),
+		},
 	}
 
 	for _, test := range testCases {
@@ -3474,5 +3523,342 @@ func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
 		for i, wantBidderRequest := range test.wantExt {
 			assert.Equal(t, wantBidderRequest, bidderRequests[i].BidRequest.Ext, test.desc+" : "+string(bidderRequests[i].BidderCoreName)+"\n\t\tGotRequestExt : "+string(bidderRequests[i].BidRequest.Ext))
 		}
+	}
+}
+
+func Test_isBidderInExtAlternateBidderCodes(t *testing.T) {
+	type args struct {
+		adapter               string
+		currentMultiBidBidder string
+		adapterABC            *openrtb_ext.ExtAlternateBidderCodes
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "alternatebiddercodes not defined",
+			want: false,
+		},
+		{
+			name: "adapter not defined in alternatebiddercodes",
+			args: args{
+				adapter: string(openrtb_ext.BidderPubmatic),
+				adapterABC: &openrtb_ext.ExtAlternateBidderCodes{
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{string(openrtb_ext.BidderAppnexus): {}},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "adapter defined in alternatebiddercodes but currentMultiBidBidder not in AllowedBidders list",
+			args: args{
+				adapter:               string(openrtb_ext.BidderPubmatic),
+				currentMultiBidBidder: string(openrtb_ext.BidderGroupm),
+				adapterABC: &openrtb_ext.ExtAlternateBidderCodes{
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						string(openrtb_ext.BidderPubmatic): {
+							AllowedBidderCodes: []string{string(openrtb_ext.BidderAppnexus)},
+						},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "adapter defined in alternatebiddercodes with currentMultiBidBidder mentioned in AllowedBidders list",
+			args: args{
+				adapter:               string(openrtb_ext.BidderPubmatic),
+				currentMultiBidBidder: string(openrtb_ext.BidderGroupm),
+				adapterABC: &openrtb_ext.ExtAlternateBidderCodes{
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						string(openrtb_ext.BidderPubmatic): {
+							AllowedBidderCodes: []string{string(openrtb_ext.BidderGroupm)},
+						},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "adapter defined in alternatebiddercodes with AllowedBidders list as *",
+			args: args{
+				adapter:               string(openrtb_ext.BidderPubmatic),
+				currentMultiBidBidder: string(openrtb_ext.BidderGroupm),
+				adapterABC: &openrtb_ext.ExtAlternateBidderCodes{
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						string(openrtb_ext.BidderPubmatic): {
+							AllowedBidderCodes: []string{"*"},
+						},
+					},
+				},
+			},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isBidderInExtAlternateBidderCodes(tt.args.adapter, tt.args.currentMultiBidBidder, tt.args.adapterABC); got != tt.want {
+				t.Errorf("isBidderInExtAlternateBidderCodes() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_buildRequestExtMultiBid(t *testing.T) {
+	type args struct {
+		adapter     string
+		reqMultiBid []*openrtb_ext.ExtMultiBid
+		adapterABC  *openrtb_ext.ExtAlternateBidderCodes
+	}
+	tests := []struct {
+		name string
+		args args
+		want []*openrtb_ext.ExtMultiBid
+	}{
+		{
+			name: "multi-bid config not defined",
+			args: args{
+				adapter:     string(openrtb_ext.BidderPubmatic),
+				reqMultiBid: nil,
+			},
+			want: nil,
+		},
+		{
+			name: "adapter not defined in multi-bid config",
+			args: args{
+				adapter: string(openrtb_ext.BidderPubmatic),
+				reqMultiBid: []*openrtb_ext.ExtMultiBid{
+					{
+						Bidder:  string(openrtb_ext.BidderAppnexus),
+						MaxBids: ptrutil.ToPtr(2),
+					},
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "adapter defined in multi-bid config as Bidder object along with other bidders",
+			args: args{
+				adapter: string(openrtb_ext.BidderPubmatic),
+				reqMultiBid: []*openrtb_ext.ExtMultiBid{
+					{
+						Bidder:  string(openrtb_ext.BidderAppnexus),
+						MaxBids: ptrutil.ToPtr(3),
+					},
+					{
+						Bidder:  string(openrtb_ext.BidderPubmatic),
+						MaxBids: ptrutil.ToPtr(2),
+					},
+					{
+						Bidders: []string{string(openrtb_ext.Bidder33Across), string(openrtb_ext.BidderRubicon)},
+						MaxBids: ptrutil.ToPtr(2),
+					},
+				},
+			},
+			want: []*openrtb_ext.ExtMultiBid{
+				{
+					Bidder:  string(openrtb_ext.BidderPubmatic),
+					MaxBids: ptrutil.ToPtr(2),
+				},
+			},
+		},
+		{
+			name: "adapter defined in multi-bid config as a entry of Bidders list along with other bidders",
+			args: args{
+				adapter: string(openrtb_ext.BidderRubicon),
+				reqMultiBid: []*openrtb_ext.ExtMultiBid{
+					{
+						Bidder:  string(openrtb_ext.BidderAppnexus),
+						MaxBids: ptrutil.ToPtr(3),
+					},
+					{
+						Bidder:  string(openrtb_ext.BidderPubmatic),
+						MaxBids: ptrutil.ToPtr(2),
+					},
+					{
+						Bidders: []string{string(openrtb_ext.Bidder33Across), string(openrtb_ext.BidderRubicon)},
+						MaxBids: ptrutil.ToPtr(4),
+					},
+				},
+			},
+			want: []*openrtb_ext.ExtMultiBid{
+				{
+					Bidders: []string{string(openrtb_ext.BidderRubicon)},
+					MaxBids: ptrutil.ToPtr(4),
+				},
+			},
+		},
+		{
+			name: "adapter defined in multi-bid config as Bidder object along with other bidders with alternateBiddercode",
+			args: args{
+				adapter: string(openrtb_ext.BidderPubmatic),
+				reqMultiBid: []*openrtb_ext.ExtMultiBid{
+					{
+						Bidder:  string(openrtb_ext.BidderGroupm),
+						MaxBids: ptrutil.ToPtr(3),
+					},
+					{
+						Bidder:  string(openrtb_ext.BidderPubmatic),
+						MaxBids: ptrutil.ToPtr(2),
+					},
+					{
+						Bidders: []string{string(openrtb_ext.Bidder33Across), string(openrtb_ext.BidderRubicon)},
+						MaxBids: ptrutil.ToPtr(2),
+					},
+				},
+				adapterABC: &openrtb_ext.ExtAlternateBidderCodes{
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						string(openrtb_ext.BidderPubmatic): {
+							AllowedBidderCodes: []string{string(openrtb_ext.BidderGroupm)},
+						},
+					},
+				},
+			},
+			want: []*openrtb_ext.ExtMultiBid{
+				{
+					Bidder:  string(openrtb_ext.BidderGroupm),
+					MaxBids: ptrutil.ToPtr(3),
+				},
+				{
+					Bidder:  string(openrtb_ext.BidderPubmatic),
+					MaxBids: ptrutil.ToPtr(2),
+				},
+			},
+		},
+		{
+			name: "adapter defined in multi-bid config as a entry of Bidders list along with other bidders with alternateBiddercode",
+			args: args{
+				adapter: string(openrtb_ext.BidderAppnexus),
+				reqMultiBid: []*openrtb_ext.ExtMultiBid{
+					{
+						Bidder:  string(openrtb_ext.BidderGroupm),
+						MaxBids: ptrutil.ToPtr(3),
+					},
+					{
+						Bidder:  string(openrtb_ext.BidderPubmatic),
+						MaxBids: ptrutil.ToPtr(2),
+					},
+					{
+						Bidders: []string{string(openrtb_ext.Bidder33Across), string(openrtb_ext.BidderAppnexus)},
+						MaxBids: ptrutil.ToPtr(4),
+					},
+				},
+				adapterABC: &openrtb_ext.ExtAlternateBidderCodes{
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						string(openrtb_ext.BidderAppnexus): {
+							AllowedBidderCodes: []string{string(openrtb_ext.BidderGroupm)},
+						},
+					},
+				},
+			},
+			want: []*openrtb_ext.ExtMultiBid{
+				{
+					Bidder:  string(openrtb_ext.BidderGroupm),
+					MaxBids: ptrutil.ToPtr(3),
+				},
+				{
+					Bidders: []string{string(openrtb_ext.BidderAppnexus)},
+					MaxBids: ptrutil.ToPtr(4),
+				},
+			},
+		},
+		{
+			name: "adapter defined in multi-bid config as Bidder object along with other bidders with alternateBiddercode.AllowedBidders as *",
+			args: args{
+				adapter: string(openrtb_ext.BidderPubmatic),
+				reqMultiBid: []*openrtb_ext.ExtMultiBid{
+					{
+						Bidder:  string(openrtb_ext.BidderGroupm),
+						MaxBids: ptrutil.ToPtr(3),
+					},
+					{
+						Bidder:  string(openrtb_ext.BidderPubmatic),
+						MaxBids: ptrutil.ToPtr(2),
+					},
+					{
+						Bidders: []string{string(openrtb_ext.Bidder33Across), string(openrtb_ext.BidderRubicon)},
+						MaxBids: ptrutil.ToPtr(2),
+					},
+				},
+				adapterABC: &openrtb_ext.ExtAlternateBidderCodes{
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						string(openrtb_ext.BidderPubmatic): {
+							AllowedBidderCodes: []string{"*"},
+						},
+					},
+				},
+			},
+			want: []*openrtb_ext.ExtMultiBid{
+				{
+					Bidder:  string(openrtb_ext.BidderGroupm),
+					MaxBids: ptrutil.ToPtr(3),
+				},
+				{
+					Bidder:  string(openrtb_ext.BidderPubmatic),
+					MaxBids: ptrutil.ToPtr(2),
+				},
+				{
+					Bidders: []string{string(openrtb_ext.Bidder33Across)},
+					MaxBids: ptrutil.ToPtr(2),
+				},
+				{
+					Bidders: []string{string(openrtb_ext.BidderRubicon)},
+					MaxBids: ptrutil.ToPtr(2),
+				},
+			},
+		},
+		{
+			name: "adapter defined in multi-bid config as a entry of Bidders list along with other bidders with alternateBiddercode.AllowedBidders as *",
+			args: args{
+				adapter: string(openrtb_ext.BidderAppnexus),
+				reqMultiBid: []*openrtb_ext.ExtMultiBid{
+					{
+						Bidder:  string(openrtb_ext.BidderGroupm),
+						MaxBids: ptrutil.ToPtr(3),
+					},
+					{
+						Bidder:  string(openrtb_ext.BidderPubmatic),
+						MaxBids: ptrutil.ToPtr(2),
+					},
+					{
+						Bidders: []string{string(openrtb_ext.Bidder33Across), string(openrtb_ext.BidderAppnexus)},
+						MaxBids: ptrutil.ToPtr(4),
+					},
+				},
+				adapterABC: &openrtb_ext.ExtAlternateBidderCodes{
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						string(openrtb_ext.BidderAppnexus): {
+							AllowedBidderCodes: []string{"*"},
+						},
+					},
+				},
+			},
+			want: []*openrtb_ext.ExtMultiBid{
+				{
+					Bidder:  string(openrtb_ext.BidderGroupm),
+					MaxBids: ptrutil.ToPtr(3),
+				},
+				{
+					Bidder:  string(openrtb_ext.BidderPubmatic),
+					MaxBids: ptrutil.ToPtr(2),
+				},
+				{
+					Bidders: []string{string(openrtb_ext.Bidder33Across)},
+					MaxBids: ptrutil.ToPtr(4),
+				},
+				{
+					Bidders: []string{string(openrtb_ext.BidderAppnexus)},
+					MaxBids: ptrutil.ToPtr(4),
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := buildRequestExtMultiBid(tt.args.adapter, tt.args.reqMultiBid, tt.args.adapterABC)
+			assert.Equal(t, tt.want, got)
+		})
 	}
 }

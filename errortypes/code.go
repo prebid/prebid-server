@@ -24,6 +24,7 @@ const (
 	BidderLevelDebugDisabledWarningCode
 	DisabledCurrencyConversionWarningCode
 	AlternateBidderCodeWarningCode
+	MultiBidWarningCode
 	AdServerTargetingWarningCode
 )
 
