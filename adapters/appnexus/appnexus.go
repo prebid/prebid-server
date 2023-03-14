@@ -13,7 +13,7 @@ import (
 	"github.com/prebid/openrtb/v17/adcom1"
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/util/bidderutil"
+	"github.com/prebid/prebid-server/util/httputil"
 
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
@@ -304,11 +304,11 @@ func makeKeywordStr(keywords []*openrtb_ext.ExtImpAppnexusKeyVal) string {
 }
 
 func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if bidderutil.IsResponseCodeStatusNoContent(response) {
+	if httputil.IsResponseStatusCodeNoContent(response) {
 		return nil, nil
 	}
 
-	if err := bidderutil.CheckResponseStatusCodeForErrors(response); err != nil {
+	if err := httputil.CheckResponseStatusCodeForErrors(response); err != nil {
 		return nil, []error{err}
 	}
 

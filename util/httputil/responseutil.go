@@ -1,4 +1,4 @@
-package bidderutil
+package httputil
 
 import (
 	"fmt"
@@ -22,6 +22,6 @@ func CheckResponseStatusCodeForErrors(response *adapters.ResponseData) error {
 	return nil
 }
 
-func IsResponseCodeStatusNoContent(response *adapters.ResponseData) bool {
+func IsResponseStatusCodeNoContent(response *adapters.ResponseData) bool {
 	return response.StatusCode == http.StatusNoContent
 }
