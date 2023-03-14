@@ -31,52 +31,52 @@ type adapter struct {
 var maxImpsPerReq = 10
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	memberIds := make(map[string]bool)
-	errs := make([]error, 0, len(request.Imp))
 
-	// AppNexus openrtb2 endpoint expects imp.displaymanagerver to be populated, but some SDKs will put it in imp.ext.prebid instead
-	var defaultDisplayManagerVer string
-	if request.App != nil {
-		source, err1 := jsonparser.GetString(request.App.Ext, openrtb_ext.PrebidExtKey, "source")
-		version, err2 := jsonparser.GetString(request.App.Ext, openrtb_ext.PrebidExtKey, "version")
-		if (err1 == nil) && (err2 == nil) {
-			defaultDisplayManagerVer = fmt.Sprintf("%s-%s", source, version)
-		}
-	}
-	var adPodId *bool
+	// appnexus adapter expects imp.displaymanagerver to be populated in openrtb2 endpoint
+	// but some SDKs will put it in imp.ext.prebid instead
+	displayManagerVer := buildDefaultDisplayManageVer(request)
 
+	var (
+		shouldGenerateAdPodId *bool
+		uniqueMemberIds       []string
+		memberIds             = make(map[string]struct{})
+		errs                  = make([]error, 0, len(request.Imp))
+	)
+
+	validImps := []openrtb2.Imp{}
 	for i := 0; i < len(request.Imp); i++ {
-		memberId, impAdPodId, err := preprocess(&request.Imp[i], defaultDisplayManagerVer)
-		if memberId != "" {
-			memberIds[memberId] = true
+		// If the preprocessing failed, the server won't be able to bid on this Imp. Delete it, and note the error.
+		memberId, shouldGenerateAdPodIdForImp, err := preprocess(&request.Imp[i], displayManagerVer)
+		if err != nil {
+			errs = append(errs, err)
+			continue
 		}
-		if adPodId == nil {
-			adPodId = &impAdPodId
-		} else if *adPodId != impAdPodId {
+
+		if memberId != "" {
+			if _, ok := memberIds[memberId]; !ok {
+				memberIds[memberId] = struct{}{}
+				uniqueMemberIds = append(uniqueMemberIds, memberId)
+			}
+		}
+		if shouldGenerateAdPodId == nil {
+			shouldGenerateAdPodId = &shouldGenerateAdPodIdForImp
+		} else if *shouldGenerateAdPodId != shouldGenerateAdPodIdForImp {
 			errs = append(errs, errors.New("generate ad pod option should be same for all pods in request"))
 			return nil, errs
 		}
 
-		// If the preprocessing failed, the server won't be able to bid on this Imp. Delete it, and note the error.
-		if err != nil {
-			errs = append(errs, err)
-			request.Imp = append(request.Imp[:i], request.Imp[i+1:]...)
-			i--
-		}
+		validImps = append(validImps, request.Imp[i])
 	}
+	request.Imp = validImps
 
-	thisURI := a.URI
-
+	requestURI := a.URI
 	// The Appnexus API requires a Member ID in the URL. This means the request may fail if
 	// different impressions have different member IDs.
 	// Check for this condition, and log an error if it's a problem.
-	if len(memberIds) > 0 {
-		uniqueIds := keys(memberIds)
-		memberId := uniqueIds[0]
-		thisURI = appendMemberId(thisURI, memberId)
-
-		if len(uniqueIds) > 1 {
-			errs = append(errs, fmt.Errorf("All request.imp[i].ext.prebid.bidder.appnexus.member params must match. Request contained: %v", uniqueIds))
+	if len(uniqueMemberIds) > 0 {
+		requestURI = appendMemberId(requestURI, uniqueMemberIds[0])
+		if len(uniqueMemberIds) > 1 {
+			errs = append(errs, fmt.Errorf("All request.imp[i].ext.prebid.bidder.appnexus.member params must match. Request contained: %v", uniqueMemberIds))
 		}
 	}
 
@@ -119,26 +119,13 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	// For this all impressions in  request should belong to the same pod
 	// If impressions number per pod is more than maxImpsPerReq - divide those imps to several requests but keep pod id the same
 	// If  adpodId feature disabled and impressions number per pod is more than maxImpsPerReq  - divide those imps to several requests but do not include ad pod id
-	if isVIDEO == 1 && *adPodId {
-		podImps := groupByPods(imps)
-
-		requests := make([]*adapters.RequestData, 0, len(podImps))
-		for _, podImps := range podImps {
-			reqExt.Appnexus.AdPodId = generatePodID()
-
-			reqs, errors := splitRequests(podImps, request, reqExt, thisURI, errs)
-			requests = append(requests, reqs...)
-			errs = append(errs, errors...)
-		}
-		return requests, errs
+	if isVIDEO == 1 && *shouldGenerateAdPodId {
+		requests, errors := buildAdPodRequests(imps, request, reqExt, requestURI)
+		return requests, append(errs, errors...)
 	}
 
-	return splitRequests(imps, request, reqExt, thisURI, errs)
-}
-
-func generatePodID() string {
-	val := rand.Int63()
-	return fmt.Sprint(val)
+	requests, errors := splitRequests(imps, request, reqExt, requestURI)
+	return requests, append(errs, errors...)
 }
 
 func groupByPods(imps []openrtb2.Imp) map[string]([]openrtb2.Imp) {
@@ -151,16 +138,8 @@ func groupByPods(imps []openrtb2.Imp) map[string]([]openrtb2.Imp) {
 	return podImps
 }
 
-func marshalAndSetRequestExt(request *openrtb2.BidRequest, requestExtension appnexusReqExt, errs []error) {
-	var err error
-	request.Ext, err = json.Marshal(requestExtension)
-	if err != nil {
-		errs = append(errs, err)
-	}
-}
-
-func splitRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExtension appnexusReqExt, uri string, errs []error) ([]*adapters.RequestData, []error) {
-
+func splitRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExtension appnexusReqExt, uri string) ([]*adapters.RequestData, []error) {
+	errs := []error{}
 	// Initial capacity for future array of requests, memory optimization.
 	// Let's say there are 35 impressions and limit impressions per request equals to 10.
 	// In this case we need to create 4 requests with 10, 10, 10 and 5 impressions.
@@ -174,7 +153,11 @@ func splitRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExt
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 
-	marshalAndSetRequestExt(request, requestExtension, errs)
+	var err error
+	request.Ext, err = json.Marshal(requestExtension)
+	if err != nil {
+		errs = append(errs, err)
+	}
 
 	for impsLeft {
 
@@ -201,15 +184,6 @@ func splitRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExt
 		startInd = endInd
 	}
 	return resArr, errs
-}
-
-// get the keys from the map
-func keys(m map[string]bool) []string {
-	keys := make([]string, 0, len(m))
-	for key := range m {
-		keys = append(keys, key)
-	}
-	return keys
 }
 
 // preprocess mutates the imp to get it ready to send to appnexus.
@@ -417,4 +391,37 @@ func resolvePlatformID(platformID string) int {
 	}
 
 	return defaultPlatformID
+}
+
+func buildDefaultDisplayManageVer(req *openrtb2.BidRequest) string {
+	if req.App == nil {
+		return ""
+	}
+
+	source, err := jsonparser.GetString(req.App.Ext, openrtb_ext.PrebidExtKey, "source")
+	if err != nil {
+		return ""
+	}
+
+	version, err := jsonparser.GetString(req.App.Ext, openrtb_ext.PrebidExtKey, "version")
+	if err != nil {
+		return ""
+	}
+
+	return fmt.Sprintf("%s-%s", source, version)
+}
+
+func buildAdPodRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExtension appnexusReqExt, uri string) ([]*adapters.RequestData, []error) {
+	var errs []error
+	podImps := groupByPods(imps)
+	requests := make([]*adapters.RequestData, 0, len(podImps))
+	for _, podImps := range podImps {
+		requestExtension.Appnexus.AdPodId = fmt.Sprint(rand.Int63())
+
+		reqs, errors := splitRequests(podImps, request, requestExtension, uri)
+		requests = append(requests, reqs...)
+		errs = append(errs, errors...)
+	}
+
+	return requests, errs
 }
