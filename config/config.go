@@ -100,10 +100,9 @@ type Configuration struct {
 	// Refers to main.go `configFileName` constant
 	BidderInfos BidderInfos `mapstructure:"adapters"`
 	// Hooks provides a way to specify hook execution plan for specific endpoints and stages
-	Hooks                Hooks                `mapstructure:"hooks"`
-	Validations          Validations          `mapstructure:"validations"`
-	MacroProcessorConfig MacroProcessorConfig `mapstructure:"macroprocessorconfig"`
-	PriceFloors          PriceFloors          `mapstructure:"price_floors"`
+	Hooks       Hooks       `mapstructure:"hooks"`
+	Validations Validations `mapstructure:"validations"`
+	PriceFloors PriceFloors `mapstructure:"price_floors"`
 }
 
 type PriceFloors struct {
@@ -820,8 +819,6 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 
 	// Fixes #475: Some defaults will be set just so they are accessible via environment variables
 	// (basically so viper knows they exist)
-	v.SetDefault("macroprocessorconfig.processortype", 0) // empty processor
-	v.SetDefault("macroprocessorconfig.delimiter", "##")
 	v.SetDefault("external_url", "http://localhost:8000")
 	v.SetDefault("host", "")
 	v.SetDefault("port", 8000)
