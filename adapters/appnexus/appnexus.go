@@ -120,17 +120,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	// If impressions number per pod is more than maxImpsPerReq - divide those imps to several requests but keep pod id the same
 	// If  adpodId feature disabled and impressions number per pod is more than maxImpsPerReq  - divide those imps to several requests but do not include ad pod id
 	if isVIDEO == 1 && *shouldGenerateAdPodId {
-		podImps := groupByPods(imps)
-
-		requests := make([]*adapters.RequestData, 0, len(podImps))
-		for _, podImps := range podImps {
-			reqExt.Appnexus.AdPodId = fmt.Sprint(rand.Int63())
-
-			reqs, errors := splitRequests(podImps, request, reqExt, requestURI)
-			requests = append(requests, reqs...)
-			errs = append(errs, errors...)
-		}
-		return requests, errs
+		requests, errors := buildAdPodRequests(imps, request, reqExt, requestURI)
+		return requests, append(errs, errors...)
 	}
 
 	requests, errors := splitRequests(imps, request, reqExt, requestURI)
@@ -418,4 +409,19 @@ func buildDefaultDisplayManageVer(req *openrtb2.BidRequest) string {
 	}
 
 	return fmt.Sprintf("%s-%s", source, version)
+}
+
+func buildAdPodRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExtension appnexusReqExt, uri string) ([]*adapters.RequestData, []error) {
+	var errs []error
+	podImps := groupByPods(imps)
+	requests := make([]*adapters.RequestData, 0, len(podImps))
+	for _, podImps := range podImps {
+		requestExtension.Appnexus.AdPodId = fmt.Sprint(rand.Int63())
+
+		reqs, errors := splitRequests(podImps, request, requestExtension, uri)
+		requests = append(requests, reqs...)
+		errs = append(errs, errors...)
+	}
+
+	return requests, errs
 }
