@@ -4,21 +4,15 @@ import (
 	"bytes"
 	"strings"
 	"sync"
+)
 
-	"github.com/prebid/prebid-server/config"
+const (
+	delimiter = "##"
 )
 
 type stringBasedProcessor struct {
-	cfg       config.MacroProcessorConfig
 	templates map[string]urlMetaTemplate
 	sync.RWMutex
-}
-
-func newStringBasedProcessor(cfg config.MacroProcessorConfig) *stringBasedProcessor {
-	return &stringBasedProcessor{
-		cfg:       cfg,
-		templates: make(map[string]urlMetaTemplate),
-	}
 }
 
 type urlMetaTemplate struct {
@@ -62,7 +56,7 @@ func (processor *stringBasedProcessor) Replace(url string, macroProvider Provide
 	// iterate over macros startindex list to get position where value should be put
 	// http://tracker.com?macro_1=##PBS_EVENTTYPE##&macro_2=##PBS_GDPRCONSENT##&custom=##PBS_MACRO_profileid##&custom=##shri##
 	currentIndex := 0
-	delimLen := len(processor.cfg.Delimiter)
+	delimLen := len(delimiter)
 	for i, index := range tmplt.indices {
 		macro := url[index+delimLen : tmplt.macroLength[i]]
 		// copy prev part
@@ -88,7 +82,7 @@ func (processor *stringBasedProcessor) getTemplate(url string) urlMetaTemplate {
 
 	if !ok {
 		processor.Lock()
-		template = constructTemplate(url, processor.cfg.Delimiter)
+		template = constructTemplate(url, delimiter)
 		processor.templates[url] = template
 		processor.Unlock()
 	}
