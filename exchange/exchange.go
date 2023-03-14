@@ -1280,7 +1280,7 @@ func listBiddersWithRequests(bidderRequests []BidderRequest) []openrtb_ext.Bidde
 	return liveAdapters
 }
 
-func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+func getPrebidMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	if bid.Ext != nil {
 		var bidExt openrtb_ext.ExtBid
 		err := json.Unmarshal(bid.Ext, &bidExt)
@@ -1317,10 +1317,17 @@ func buildStoredAuctionResponse(storedAuctionResponses map[string]json.RawMessag
 				mType := seat.Bid[i].MType
 				var bidType openrtb_ext.BidType
 				if mType > 0 {
-					bidType = openrtb_ext.BidTypes()[mType-1]
+					if mType <= 4 {
+						//1 = Banner, 2 = Video,  3 = Audio, 4 = Native
+						bidType = openrtb_ext.BidTypes()[mType-1]
+					} else {
+						return nil, nil, nil, &errortypes.BadServerResponse{
+							Message: fmt.Sprintf("Failed to parse bid mType for impression \"%s\"", seat.Bid[i].ImpID),
+						}
+					}
 				} else {
 					var err error
-					bidType, err = getMediaTypeForBid(seat.Bid[i])
+					bidType, err = getPrebidMediaTypeForBid(seat.Bid[i])
 					if err != nil {
 						return nil, nil, nil, err
 					}

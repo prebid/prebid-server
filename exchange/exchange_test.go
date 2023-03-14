@@ -3972,9 +3972,10 @@ func TestBuildStoredAuctionResponses(t *testing.T) {
 	}
 
 	testCases := []struct {
-		desc     string
-		in       testIn
-		expected testResults
+		desc         string
+		in           testIn
+		expected     testResults
+		errorMessage string
 	}{
 		{
 			desc: "Single imp with single stored response bid",
@@ -4146,10 +4147,36 @@ func TestBuildStoredAuctionResponses(t *testing.T) {
 				liveAdapters: []openrtb_ext.BidderName{openrtb_ext.BidderName("appnexus")},
 			},
 		},
+		{
+			desc: "Single imp with single stored response bid with incorrect bid.mtype",
+			in: testIn{
+				StoredAuctionResponses: map[string]json.RawMessage{
+					"impression-id": json.RawMessage(`[{"bid": [{"id": "bid_id", "mtype": 10, "ext": {"prebid": {"type": "native"}}}],"seat": "appnexus"}]`),
+				},
+			},
+			expected: testResults{
+				adapterBids: map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid{
+					openrtb_ext.BidderName("appnexus"): {
+						Bids: []*entities.PbsOrtbBid{
+							{
+								Bid:     &openrtb2.Bid{ID: "bid_id", ImpID: "impression-id", MType: 2, Ext: []byte(`{"prebid": {"type": "native"}}`)},
+								BidType: openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+				},
+				liveAdapters: []openrtb_ext.BidderName{openrtb_ext.BidderName("appnexus")},
+			},
+			errorMessage: "Failed to parse bid mType for impression \"impression-id\"",
+		},
 	}
 	for _, test := range testCases {
 
 		bids, fledge, adapters, err := buildStoredAuctionResponse(test.in.StoredAuctionResponses)
+		if len(test.errorMessage) > 0 {
+			assert.Equal(t, test.errorMessage, err.Error(), " incorrect expected error")
+			continue
+		}
 		assert.NoErrorf(t, err, "%s. HoldAuction error: %v \n", test.desc, err)
 
 		assert.ElementsMatch(t, test.expected.liveAdapters, adapters, "Incorrect adapter list")
