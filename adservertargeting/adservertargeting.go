@@ -2,6 +2,7 @@ package adservertargeting
 
 import (
 	"encoding/json"
+	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/url"
@@ -19,6 +20,10 @@ const (
 const (
 	bidderMacro   = "{{BIDDER}}"
 	pathDelimiter = "."
+)
+
+var (
+	allowedTypes = []jsonparser.ValueType{jsonparser.String, jsonparser.Number}
 )
 
 // RequestTargetingData struct to hold pre-processed ad server targeting keys and values

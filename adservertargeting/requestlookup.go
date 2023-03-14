@@ -81,7 +81,7 @@ func getValueFromImp(path string, dataHolder *reqImpCache) (map[string][]byte, e
 			if err != nil {
 				return nil, err
 			}
-			value, err := getValueFromJson(impData, path, keySplit...)
+			value, err := typedLookup(impData, path, keySplit...)
 			if err != nil {
 				return nil, err
 			}
@@ -94,7 +94,7 @@ func getValueFromImp(path string, dataHolder *reqImpCache) (map[string][]byte, e
 func getDataFromRequest(path string, dataHolder *reqImpCache) (json.RawMessage, error) {
 	keySplit := strings.Split(path, pathDelimiter)
 	reqJson := dataHolder.GetReqJson()
-	value, err := getValueFromJson(reqJson, path, keySplit...)
+	value, err := typedLookup(reqJson, path, keySplit...)
 
 	if err != nil {
 		return nil, err
