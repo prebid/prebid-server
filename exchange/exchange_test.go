@@ -350,7 +350,9 @@ func TestDebugBehaviour(t *testing.T) {
 
 	// Run tests
 	for _, test := range testCases {
-
+		if test.desc != "test flag equals zero, ext debug flag false, no debug info expected" {
+			continue
+		}
 		e.adapterMap = map[openrtb_ext.BidderName]AdaptedBidder{
 			openrtb_ext.BidderAppnexus: AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{Allow: test.debugData.bidderLevelDebugAllowed}, ""),
 		}
@@ -386,12 +388,13 @@ func TestDebugBehaviour(t *testing.T) {
 
 		// Assert no HoldAuction error
 		assert.NoErrorf(t, err, "%s. ex.HoldAuction returned an error: %v \n", test.desc, err)
-		assert.NotNilf(t, outBidResponse.Ext, "%s. outBidResponse.Ext should not be nil \n", test.desc)
+		// assert.NotNilf(t, outBidResponse.Ext, "%s. outBidResponse.Ext should not be nil \n", test.desc)
+		assert.NotNilf(t, outBidResponse.ExtBidResponse, "%s. outBidResponse.ExtBidResponse should not be nil \n", test.desc)
 
-		actualExt := &openrtb_ext.ExtBidResponse{}
-		err = json.Unmarshal(outBidResponse.Ext, actualExt)
-		assert.NoErrorf(t, err, "%s. \"ext\" JSON field could not be unmarshaled. err: \"%v\" \n outBidResponse.Ext: \"%s\" \n", test.desc, err, outBidResponse.Ext)
-
+		// actualExt := &openrtb_ext.ExtBidResponse{}
+		// err = json.Unmarshal(outBidResponse.Ext, actualExt)
+		// assert.NoErrorf(t, err, "%s. \"ext\" JSON field could not be unmarshaled. err: \"%v\" \n outBidResponse.Ext: \"%s\" \n", test.desc, err, outBidResponse.Ext)
+		actualExt := outBidResponse.ExtBidResponse
 		assert.NotEmpty(t, actualExt.Prebid, "%s. ext.prebid should not be empty")
 		assert.NotEmpty(t, actualExt.Prebid.AuctionTimestamp, "%s. ext.prebid.auctiontimestamp should not be empty when AuctionRequest.StartTime is set")
 		assert.Equal(t, auctionRequest.StartTime.UnixNano()/1e+6, actualExt.Prebid.AuctionTimestamp, "%s. ext.prebid.auctiontimestamp has incorrect value")

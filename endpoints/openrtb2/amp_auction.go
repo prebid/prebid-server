@@ -240,6 +240,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	var response *openrtb2.BidResponse
 	if aucResponse != nil {
 		response = aucResponse.BidResponse
+		ao.SeatNonBid = aucResponse.GetSeatNonBid()
 	}
 	ao.AuctionResponse = response
 	rejectErr, isRejectErr := hookexecution.CastRejectErr(err)
@@ -337,6 +338,16 @@ func sendAmpResponse(
 	eRErr := json.Unmarshal(response.Ext, &extResponse)
 	if eRErr != nil {
 		ao.Errors = append(ao.Errors, fmt.Errorf("AMP response: failed to unpack OpenRTB response.ext, debug info cannot be forwarded: %v", eRErr))
+	}
+	// Extract global targeting
+	extPrebid := extResponse.Prebid
+	if extPrebid != nil {
+		for key, value := range extPrebid.Targeting {
+			_, exists := targets[key]
+			if !exists {
+				targets[key] = value
+			}
+		}
 	}
 	// Now JSONify the targets for the AMP response.
 	ampResponse := AmpResponse{Targeting: targets}
@@ -804,7 +815,7 @@ func setTrace(req *openrtb2.BidRequest, value string) (err error) {
 func setSeatNonBid(finalExtBidResponse *openrtb_ext.ExtBidResponse, request *openrtb_ext.RequestWrapper, aucResponse *exchange.AuctionResponse) error {
 	var err error
 	//TODO return if error or nil
-	if aucResponse.ExtBidResponse != nil && request != nil {
+	if aucResponse != nil && aucResponse.ExtBidResponse != nil && request != nil {
 		reqExt, err := request.GetRequestExt()
 		if err == nil {
 			prebid := reqExt.GetPrebid()

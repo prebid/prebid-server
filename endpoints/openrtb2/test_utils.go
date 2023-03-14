@@ -94,7 +94,7 @@ type testConfigValues struct {
 
 type brokenExchange struct{}
 
-func (e *brokenExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb_ext.ResponseWrapper, error) {
+func (e *brokenExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*exchange.AuctionResponse, error) {
 	return nil, errors.New("Critical, unrecoverable error.")
 }
 
@@ -848,10 +848,10 @@ type mockExchange struct {
 	lastRequest *openrtb2.BidRequest
 }
 
-func (m *mockExchange) HoldAuction(ctx context.Context, auctionRequest exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb_ext.ResponseWrapper, error) {
+func (m *mockExchange) HoldAuction(ctx context.Context, auctionRequest exchange.AuctionRequest, debugLog *exchange.DebugLog) (*exchange.AuctionResponse, error) {
 	r := auctionRequest.BidRequestWrapper
 	m.lastRequest = r.BidRequest
-	return &openrtb_ext.ResponseWrapper{
+	return &exchange.AuctionResponse{
 		BidResponse: &openrtb2.BidResponse{
 			SeatBid: []openrtb2.SeatBid{{
 				Bid: []openrtb2.Bid{{
@@ -887,7 +887,7 @@ type warningsCheckExchange struct {
 	auctionRequest exchange.AuctionRequest
 }
 
-func (e *warningsCheckExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb_ext.ResponseWrapper, error) {
+func (e *warningsCheckExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*exchange.AuctionResponse, error) {
 	e.auctionRequest = r
 	return nil, nil
 }
@@ -898,11 +898,11 @@ type nobidExchange struct {
 	gotRequest *openrtb2.BidRequest
 }
 
-func (e *nobidExchange) HoldAuction(ctx context.Context, auctionRequest exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb_ext.ResponseWrapper, error) {
+func (e *nobidExchange) HoldAuction(ctx context.Context, auctionRequest exchange.AuctionRequest, debugLog *exchange.DebugLog) (*exchange.AuctionResponse, error) {
 	r := auctionRequest.BidRequestWrapper
 	e.gotRequest = r.BidRequest
 
-	return &openrtb_ext.ResponseWrapper{
+	return &exchange.AuctionResponse{
 		BidResponse: &openrtb2.BidResponse{
 			ID:    r.BidRequest.ID,
 			BidID: "test bid id",

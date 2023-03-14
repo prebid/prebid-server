@@ -229,10 +229,12 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
 
-	if err != nil {
-		return
+	var response *openrtb2.BidResponse
+	if auctionResponse != nil {
+		response = auctionResponse.BidResponse
+		// Send SeatNonBid to analytics
+		ao.SeatNonBid = auctionResponse.GetSeatNonBid()
 	}
-	response := auctionResponse.BidResponse
 	ao.Request = req.BidRequest
 	ao.Response = response
 	ao.Account = account
@@ -254,13 +256,11 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
-	// Send SeatNonBid to analytics
-	ao.SeatNonBid = auctionResponse.GetSeatNonBid()
 	respExt := new(openrtb_ext.ExtBidResponse)
 
 	// unmarshalling is required here, until we are moving away from bidResponse.Ext
 	// references to auctionResponse.ExtBidResponse
-	if json.Unmarshal(response.Ext, &respExt) != nil && setSeatNonBid(respExt, req, auctionResponse) == nil {
+	if response != nil && json.Unmarshal(response.Ext, &respExt) != nil && setSeatNonBid(respExt, req, auctionResponse) == nil {
 		// marshal again
 		if respExtJson, err := json.Marshal(respExt); err == nil {
 			response.Ext = respExtJson
@@ -304,7 +304,7 @@ func sendAuctionResponse(
 		stageOutcomes := hookExecutor.GetOutcomes()
 		ao.HookExecutionOutcome = stageOutcomes
 
-		ext, warns, err := hookexecution.EnrichExtBidResponse(response.Ext, stageOutcomes, request, account, &openrtb_ext.ExtBidResponse{})
+		ext, warns, err := hookexecution.EnrichExtBidResponse(response.Ext, stageOutcomes, request, account)
 		if err != nil {
 			err = fmt.Errorf("Failed to enrich Bid Response with hook debug information: %s", err)
 			glog.Errorf(err.Error())

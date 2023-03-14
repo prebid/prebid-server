@@ -313,6 +313,8 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	var response *openrtb2.BidResponse
 	if auctionResponse != nil {
 		response = auctionResponse.BidResponse
+		// Send SeatNonBid to analytics
+		vo.SeatNonBid = auctionResponse.GetSeatNonBid()
 	}
 	vo.Request = bidReqWrapper.BidRequest
 	vo.Response = response
@@ -333,7 +335,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		// unmarshalling is required here, until we are moving away from bidResponse.Ext
 		// references to auctionResponse.ExtBidResponse
 		respExt := new(openrtb_ext.ExtBidResponse)
-		if json.Unmarshal(response.Ext, &respExt) != nil && setSeatNonBid(respExt, bidReqWrapper, auctionResponse) == nil {
+		if response != nil && json.Unmarshal(response.Ext, &respExt) != nil && setSeatNonBid(respExt, bidReqWrapper, auctionResponse) == nil {
 			// marshal again
 			if respExtJson, err := json.Marshal(respExt); err == nil {
 				response.Ext = respExtJson
@@ -366,9 +368,6 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		handleError(&labels, w, errL, &vo, &debugLog)
 		return
 	}
-
-	// Send SeatNonBid to analytics
-	vo.SeatNonBid = auctionResponse.GetSeatNonBid()
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(resp)

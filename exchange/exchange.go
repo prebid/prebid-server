@@ -778,10 +778,8 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 			bidResponse.Cur = adapterSeatBids.Currency
 		}
 	}
-
-	// bidResponse.SeatBid = seatBids
-
-	// bidResponse.Ext, err = encodeBidResponseExt(bidResponseExt)
+	bidResponse.SeatBid = seatBids
+	bidResponse.Ext, err = encodeBidResponseExt(bidResponseExt)
 
 	return bidResponse, err
 }
@@ -1072,9 +1070,10 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*en
 	}
 
 	//TODO create prebid if not exists
-	if bidResponseExt.Prebid != nil {
-		setSeatNonBid(seatNonBid, bidResponseExt.Prebid)
+	if bidResponseExt.Prebid == nil {
+		bidResponseExt.Prebid = &openrtb_ext.ExtResponsePrebid{}
 	}
+	setSeatNonBid(seatNonBid, bidResponseExt.Prebid)
 
 	return bidResponseExt
 }

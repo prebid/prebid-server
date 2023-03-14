@@ -159,13 +159,15 @@ func TestResponseExtMarshal(t *testing.T) {
 
 func TestResponseExtUnMarshal(t *testing.T) {
 	testCases := append(loadResponseExtTestCases(), responseExtTescase{
-		name:            "extmap - invalid",
-		responseExtJson: []byte(`{`),
-		expectedErr:     true,
+		name:                "extmap - invalid",
+		responseExtJson:     []byte(`{`),
+		expectedErr:         true,
+		expectedResponseExt: ResponseExt{extMap: make(map[string]json.RawMessage)},
 	}, responseExtTescase{
-		name:            "prebid - invalid",
-		responseExtJson: []byte(`{"prebid" : "invalid"}`),
-		expectedErr:     true,
+		name:                "prebid - invalid",
+		responseExtJson:     []byte(`{"prebid" : "invalid"}`),
+		expectedErr:         true,
+		expectedResponseExt: ResponseExt{extMap: map[string]json.RawMessage{"prebid": []byte(`"invalid"`)}, prebid: &ExtResponsePrebid{}},
 	}, responseExtTescase{
 		name:        "extMap - not empty",
 		responseExt: &ResponseExt{extMap: map[string]json.RawMessage{"key1": []byte(`value1`)}},
