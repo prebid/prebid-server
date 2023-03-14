@@ -338,9 +338,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 			iabCategory, found := a.findIabCategoryForBid(&bidExt)
 			if found {
 				bid.Cat = []string{iabCategory}
-			}
-
-			if len(bid.Cat) > 1 {
+			} else if len(bid.Cat) > 1 {
 				//create empty categories array to force bid to be rejected
 				bid.Cat = make([]string, 0)
 			}
