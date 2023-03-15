@@ -139,9 +139,6 @@ func (e *hookExecutor) ExecuteRawAuctionStage(requestBody []byte) ([]byte, *Reje
 	return payload, reject
 }
 
-// only want to rebuild request is needed, no plan.. then nothing to do
-// - but then how to represent a reject error?
-
 func (e *hookExecutor) ExecuteProcessedAuctionStage(request *openrtb_ext.RequestWrapper) error {
 	plan := e.planBuilder.PlanForProcessedAuctionStage(e.endpoint, e.account)
 	if len(plan) == 0 {
