@@ -240,8 +240,9 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		_, targData.cacheHost, targData.cachePath = e.cache.GetExtCacheData()
 	}
 	responseDebugAllow, accountDebugAllow, debugLog := getDebugInfo(r.BidRequestWrapper.BidRequest, requestExt, r.Account.DebugAllow, debugLog)
-	if responseDebugAllow {
+	if responseDebugAllow || len(requestExt.Prebid.AdServerTargeting) > 0 {
 		//save incoming request with stored requests (if applicable) to return in debug logs
+		//or use incoming request to fetch ad server targeting values
 		resolvedBidReq, err := json.Marshal(r.BidRequestWrapper.BidRequest)
 		if err != nil {
 			return nil, err
