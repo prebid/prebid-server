@@ -1,8 +1,6 @@
+@@ -1,37 +1,37 @@
 name: Chrome
-
-on:
-  workflow_dispatch
-
+on: pull_request
 jobs:
   cypress-run:
     runs-on: ubuntu-latest
@@ -13,11 +11,14 @@ jobs:
         run: npm install cypress
       # Install NPM dependencies, cache them correctly
       # and run all Cypress tests
+      
       - name: Cypress run
         uses: cypress-io/github-action@v5
         with:
           browser: chrome
           headed: true
           supportFile: false
-
-
+      - uses: actions/upload-artifact@v1
+        with:
+          name: redirect.cy.js.mp4
+          path: /home/runner/work/prebid-server/prebid-server/cypress/videos
