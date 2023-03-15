@@ -1,5 +1,9 @@
 {
-    "host_schain_flag": true,
+    "server": {
+        "externalURL": "http://anydomain.com/prebid",
+        "gvlID": 42,
+        "dataCenter": "us-east"
+    },
     "incomingRequest": {
         "ortbRequest": {
             "id": "some-request-id",
@@ -9,10 +13,9 @@
             "imp": [
                 {
                     "id": "my-imp-id",
-                    "video": {
-                        "mimes": [
-                            "video/mp4"
-                        ]
+                    "banner": {
+                        "w": 300,
+                        "h": 250
                     },
                     "ext": {
                         "prebid": {
@@ -24,15 +27,7 @@
                         }
                     }
                 }
-            ],
-            "ext": {
-                "prebid": {
-                    "debug": true,
-                    "nosale": [
-                        "appnexus"
-                    ]
-                }
-            }
+            ]
         }
     },
     "outgoingRequests": {
@@ -46,10 +41,9 @@
                     "imp": [
                         {
                             "id": "my-imp-id",
-                            "video": {
-                                "mimes": [
-                                    "video/mp4"
-                                ]
+                            "banner": {
+                                "w": 300,
+                                "h": 250
                             },
                             "ext": {
                                 "bidder": {
@@ -60,27 +54,14 @@
                     ],
                     "ext": {
                         "prebid": {
-                            "debug": true
-                        }
-                    },
-                    "source": {
-                        "ext": {
-                            "schain": {
-                                "complete": 0,
-                                "nodes": [
-                                    {
-                                        "asi": "pbshostcompany.com",
-                                        "sid": "00001",
-                                        "rid": "BidRequest",
-                                        "hp": 1
-                                    }
-                                ],
-                                "ver": "1.0"
+                            "server": {
+                                "externalurl": "http://anydomain.com/prebid",
+                                "gvlid": 42,
+                                "datacenter": "us-east"
                             }
                         }
                     }
-                },
-                "bidAdjustment": 1.0
+                }
             }
         }
     }

@@ -1,6 +1,7 @@
 package exchange
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -296,7 +297,7 @@ func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, request
 	alternateBidderCodes := buildRequestExtAlternateBidderCodes(bidder, cfgABC, reqABC)
 
 	if (len(requestExt) == 0 || requestExtParsed == nil) && alternateBidderCodes == nil {
-		return json.RawMessage(``), nil
+		return nil, nil
 	}
 
 	// Resolve Bidder Params
@@ -326,16 +327,26 @@ func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, request
 		return nil, err
 	}
 
-	// Update Ext With Prebid Json
+	// Parse Existing Ext
 	extMap := make(map[string]json.RawMessage)
 	if len(requestExt) != 0 {
 		if err := json.Unmarshal(requestExt, &extMap); err != nil {
 			return nil, err
 		}
 	}
-	extMap["prebid"] = prebidJson
 
-	return json.Marshal(extMap)
+	// Update Ext With Prebid Json
+	if bytes.Equal(prebidJson, []byte(`{}`)) {
+		delete(extMap, "prebid")
+	} else {
+		extMap["prebid"] = prebidJson
+	}
+
+	if len(extMap) > 0 {
+		return json.Marshal(extMap)
+	} else {
+		return nil, nil
+	}
 }
 
 func buildRequestExtAlternateBidderCodes(bidder string, accABC *openrtb_ext.ExtAlternateBidderCodes, reqABC *openrtb_ext.ExtAlternateBidderCodes) *openrtb_ext.ExtAlternateBidderCodes {

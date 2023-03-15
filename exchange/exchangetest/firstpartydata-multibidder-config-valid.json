@@ -107,9 +107,6 @@
           "site": {
             "domain": "fpd_appnexus_site_domain",
             "page": "fpd_appnexus_site_page"
-          },
-          "ext": {
-            "prebid": {}
           }
         }
       }
@@ -145,9 +142,6 @@
           "site": {
             "domain": "fpd_rubicon_site_domain",
             "page": "fpd_rubicon_site_page"
-          },
-          "ext": {
-            "prebid": {}
           }
         }
       }

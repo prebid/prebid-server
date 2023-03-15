@@ -79,16 +79,7 @@
                 }
               }
             }
-          ],
-          "ext": {
-            "prebid": {
-              "server": {
-                "datacenter": "Datacenter",
-                "externalurl": "http://hosturl.com",
-                "gvlid": 1
-              }
-            }
-          }
+          ]
         }
       },
       "mockResponse": {
@@ -123,16 +114,7 @@
                 }
               }
             }
-          ],
-          "ext": {
-            "prebid": {
-              "server": {
-                "datacenter": "Datacenter",
-                "externalurl": "http://hosturl.com",
-                "gvlid": 1
-              }
-            }
-          }
+          ]
         }
       },
       "mockResponse": {
@@ -165,16 +147,7 @@
                 }
               }
             }
-          ],
-          "ext": {
-            "prebid": {
-              "server": {
-                "datacenter": "Datacenter",
-                "externalurl": "http://hosturl.com",
-                "gvlid": 1
-              }
-            }
-          }
+          ]
         }
       },
       "mockResponse": {

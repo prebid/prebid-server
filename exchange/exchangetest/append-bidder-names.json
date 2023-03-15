@@ -254,11 +254,6 @@
                 "includewinners": true,
                 "includebidderkeys": true,
                 "appendbiddernames": true
-              },
-              "server": {
-                "datacenter": "Datacenter",
-                "externalurl": "http://hosturl.com",
-                "gvlid": 1
               }
             }
           }

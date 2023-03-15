@@ -1189,31 +1189,24 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 		hasError      bool
 	}{
 		{
-			description:   "source.ext is nil",
-			inExt:         json.RawMessage{},
+			description:   "nil",
+			inExt:         nil,
 			inSourceExt:   nil,
-			outRequestExt: json.RawMessage{},
+			outRequestExt: nil,
 			outSourceExt:  nil,
 		},
 		{
-			description:   "source.ext is defined with length 0",
-			inExt:         json.RawMessage{},
-			inSourceExt:   json.RawMessage{},
-			outRequestExt: json.RawMessage{},
-			outSourceExt:  json.RawMessage{},
-		},
-		{
 			description:   "ORTB 2.5 chain at source.ext.schain",
-			inExt:         json.RawMessage{},
+			inExt:         nil,
 			inSourceExt:   json.RawMessage(`{` + seller1SChain + `}`),
-			outRequestExt: json.RawMessage{},
+			outRequestExt: nil,
 			outSourceExt:  json.RawMessage(`{` + seller1SChain + `}`),
 		},
 		{
 			description:   "ORTB 2.5 schain at request.ext.prebid.schains",
 			inExt:         json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `}]}}`),
-			inSourceExt:   json.RawMessage{},
-			outRequestExt: json.RawMessage(`{"prebid":{}}`),
+			inSourceExt:   nil,
+			outRequestExt: nil,
 			outSourceExt:  json.RawMessage(`{` + seller1SChain + `}`),
 		},
 		{
@@ -1292,13 +1285,13 @@ func TestCleanOpenRTBRequestsBidderParams(t *testing.T) {
 		},
 		{
 			description: "Bidder params for single partner",
-			inExt:       json.RawMessage(`{"prebid":{"bidderparams": {"pubmatic": {"profile":1234,"version":2}}}}`),
+			inExt:       json.RawMessage(`{"prebid":{"bidderparams":{"pubmatic":{"profile":1234,"version":2}}}}`),
 			expectedExt: getExpectedReqExt(false, true, false),
 			hasError:    false,
 		},
 		{
 			description: "Bidder params for two partners",
-			inExt:       json.RawMessage(`{"prebid":{"bidderparams": {"pubmatic": {"profile":1234,"version":2}, "appnexus": {"key1": 123, "key2": {"innerKey1":"innerValue1"}} }}}`),
+			inExt:       json.RawMessage(`{"prebid":{"bidderparams":{"pubmatic":{"profile":1234,"version":2},"appnexus":{"key1":123,"key2":{"innerKey1":"innerValue1"}}}}}`),
 			expectedExt: getExpectedReqExt(false, true, true),
 			hasError:    false,
 		},
@@ -1357,21 +1350,21 @@ func getExpectedReqExt(nilExt, includePubmaticParams, includeAppnexusParams bool
 	bidderParamsMap := make(map[string]json.RawMessage)
 
 	if nilExt {
-		bidderParamsMap["pubmatic"] = json.RawMessage(``)
-		bidderParamsMap["appnexus"] = json.RawMessage(``)
+		bidderParamsMap["pubmatic"] = nil
+		bidderParamsMap["appnexus"] = nil
 		return bidderParamsMap
 	}
 
 	if includePubmaticParams {
 		bidderParamsMap["pubmatic"] = json.RawMessage(`{"prebid":{"bidderparams":{"profile":1234,"version":2}}}`)
 	} else {
-		bidderParamsMap["pubmatic"] = json.RawMessage(`{"prebid":{}}`)
+		bidderParamsMap["pubmatic"] = nil
 	}
 
 	if includeAppnexusParams {
 		bidderParamsMap["appnexus"] = json.RawMessage(`{"prebid":{"bidderparams":{"key1":123,"key2":{"innerKey1":"innerValue1"}}}}`)
 	} else {
-		bidderParamsMap["appnexus"] = json.RawMessage(`{"prebid":{}}`)
+		bidderParamsMap["appnexus"] = nil
 	}
 
 	return bidderParamsMap
@@ -2360,8 +2353,10 @@ func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 }
 
 func TestBuildRequestExtForBidder(t *testing.T) {
-	bidder := "foo"
-	bidderParams := json.RawMessage(`"bar"`)
+	var (
+		bidder       = "foo"
+		bidderParams = json.RawMessage(`"bar"`)
+	)
 
 	testCases := []struct {
 		description          string
@@ -2375,14 +2370,14 @@ func TestBuildRequestExtForBidder(t *testing.T) {
 			bidderParams:         nil,
 			requestExt:           nil,
 			alternateBidderCodes: nil,
-			expectedJson:         json.RawMessage(``),
+			expectedJson:         nil,
 		},
 		{
 			description:          "Empty",
 			bidderParams:         nil,
 			alternateBidderCodes: nil,
 			requestExt:           json.RawMessage(`{}`),
-			expectedJson:         json.RawMessage(`{"prebid":{}}`),
+			expectedJson:         nil,
 		},
 		{
 			description:  "Prebid - Allowed Fields Only",
@@ -2400,27 +2395,13 @@ func TestBuildRequestExtForBidder(t *testing.T) {
 			description:  "Other",
 			bidderParams: nil,
 			requestExt:   json.RawMessage(`{"other":"foo"}`),
-			expectedJson: json.RawMessage(`{"other":"foo","prebid":{}}`),
+			expectedJson: json.RawMessage(`{"other":"foo"}`),
 		},
 		{
 			description:  "Prebid + Other + Bider Params",
 			bidderParams: map[string]json.RawMessage{bidder: bidderParams},
 			requestExt:   json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true}, "server": {"externalurl": "url", "gvlid": 1, "datacenter": "2"}}}`),
 			expectedJson: json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true}, "server": {"externalurl": "url", "gvlid": 1, "datacenter": "2"}, "bidderparams":"bar"}}`),
-		},
-		{
-			description:          "Prebid + AlternateBidderCodes in pbs config (default explicitly defined)",
-			bidderParams:         map[string]json.RawMessage{bidder: bidderParams},
-			alternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{},
-			requestExt:           json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true}}}`),
-			expectedJson:         json.RawMessage(`{"other":"foo","prebid":{"alternatebiddercodes":{"enabled":false,"bidders":null},"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"bidderparams":"bar"}}`),
-		},
-		{
-			description:          "Prebid + AlternateBidderCodes in pbs config",
-			bidderParams:         map[string]json.RawMessage{bidder: bidderParams},
-			alternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{Enabled: true, Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{"foo": {Enabled: true, AllowedBidderCodes: []string{"*"}}}},
-			requestExt:           json.RawMessage(`{"other":"foo"}`),
-			expectedJson:         json.RawMessage(`{"other":"foo","prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["*"]}}},"bidderparams":"bar"}}`),
 		},
 		{
 			description:          "Prebid + AlternateBidderCodes in pbs config but current bidder not in AlternateBidderCodes config",
@@ -2481,7 +2462,7 @@ func TestBuildRequestExtForBidder_RequestExtParsedNil(t *testing.T) {
 	)
 
 	actualJson, actualErr := buildRequestExtForBidder(bidder, requestExt, requestExtParsed, bidderParams, alternateBidderCodes)
-	assert.Equal(t, json.RawMessage(``), actualJson)
+	assert.Nil(t, actualJson)
 	assert.NoError(t, actualErr)
 }
 
@@ -3255,13 +3236,10 @@ func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
 		wantError bool
 	}{
 		{
-			desc:     "Nil request ext, default account alternatebiddercodes config (nil)",
-			inExt:    nil,
-			inCfgABC: nil,
-			wantExt: []json.RawMessage{
-				json.RawMessage(""),
-				json.RawMessage(""),
-			},
+			desc:      "Nil request ext, default account alternatebiddercodes config (nil)",
+			inExt:     nil,
+			inCfgABC:  nil,
+			wantExt:   nil,
 			wantError: false,
 		},
 		{
@@ -3325,13 +3303,10 @@ func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
 			wantError: false,
 		},
 		{
-			desc:     "request ext with default alternatebiddercodes values (nil)",
-			inExt:    json.RawMessage(`{"prebid":{}}`),
-			inCfgABC: nil,
-			wantExt: []json.RawMessage{
-				json.RawMessage(`{"prebid":{}}`),
-				json.RawMessage(`{"prebid":{}}`),
-			},
+			desc:      "request ext with default alternatebiddercodes values (nil)",
+			inExt:     json.RawMessage(`{"prebid":{}}`),
+			inCfgABC:  nil,
+			wantExt:   nil,
 			wantError: false,
 		},
 		{

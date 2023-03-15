@@ -73,11 +73,6 @@
                 ]
               }
             }
-          },
-          "server": {
-            "datacenter": "Datacenter",
-            "externalurl": "http://hosturl.com",
-            "gvlid": 1
           }
         }
       }
@@ -131,11 +126,6 @@
                     ]
                   }
                 }
-              },
-              "server": {
-                "datacenter": "Datacenter",
-                "externalurl": "http://hosturl.com",
-                "gvlid": 1
               }
             }
           }
@@ -252,11 +242,6 @@
               "alternatebiddercodes": {
                 "enabled": true,
                 "bidders": null
-              },
-              "server": {
-                "datacenter": "Datacenter",
-                "externalurl": "http://hosturl.com",
-                "gvlid": 1
               }
             }
           }

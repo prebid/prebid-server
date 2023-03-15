@@ -2204,7 +2204,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	if spec.BidIDGenerator != nil {
 		*bidIdGenerator = *spec.BidIDGenerator
 	}
-	ex := newExchangeForTests(t, filename, spec.OutgoingRequests, aliases, privacyConfig, bidIdGenerator, spec.HostSChainFlag, spec.HostConfigBidValidation)
+	ex := newExchangeForTests(t, filename, spec.OutgoingRequests, aliases, privacyConfig, bidIdGenerator, spec.HostSChainFlag, spec.HostConfigBidValidation, spec.Server)
 	biddersInAuction := findBiddersInAuction(t, filename, &spec.IncomingRequest.OrtbRequest)
 	debugLog := &DebugLog{}
 	if spec.DebugLog != nil {
@@ -2381,7 +2381,7 @@ func extractResponseTimes(t *testing.T, context string, bid *openrtb2.BidRespons
 	}
 }
 
-func newExchangeForTests(t *testing.T, filename string, expectations map[string]*bidderSpec, aliases map[string]string, privacyConfig config.Privacy, bidIDGenerator BidIDGenerator, hostSChainFlag bool, hostBidValidation config.Validations) Exchange {
+func newExchangeForTests(t *testing.T, filename string, expectations map[string]*bidderSpec, aliases map[string]string, privacyConfig config.Privacy, bidIDGenerator BidIDGenerator, hostSChainFlag bool, hostBidValidation config.Validations, server exchangeServer) Exchange {
 	bidderAdapters := make(map[openrtb_ext.BidderName]AdaptedBidder, len(expectations))
 	bidderInfos := make(config.BidderInfos, len(expectations))
 	for _, bidderName := range openrtb_ext.CoreBidderNames() {
@@ -2438,13 +2438,11 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		gdprDefaultValue = gdpr.SignalNo
 	}
 
-	hostSChainNode := &openrtb2.SupplyChainNode{}
+	var hostSChainNode *openrtb2.SupplyChainNode
 	if hostSChainFlag {
 		hostSChainNode = &openrtb2.SupplyChainNode{
 			ASI: "pbshostcompany.com", SID: "00001", RID: "BidRequest", HP: openrtb2.Int8Ptr(1),
 		}
-	} else {
-		hostSChainNode = nil
 	}
 
 	metricsEngine := metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.CoreBidderNames(), nil, nil)
@@ -2474,7 +2472,7 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		externalURL:              "http://localhost",
 		bidIDGenerator:           bidIDGenerator,
 		hostSChainNode:           hostSChainNode,
-		server:                   config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "Datacenter"},
+		server:                   config.Server{ExternalUrl: server.ExternalUrl, GvlID: server.GvlID, DataCenter: server.DataCenter},
 		bidValidationEnforcement: hostBidValidation,
 		requestSplitter:          requestSplitter,
 	}
@@ -4756,6 +4754,7 @@ type exchangeSpec struct {
 	HostConfigBidValidation    config.Validations     `json:"host_bid_validations"`
 	AccountConfigBidValidation config.Validations     `json:"account_bid_validations"`
 	FledgeEnabled              bool                   `json:"fledge_enabled,omitempty"`
+	Server                     exchangeServer         `json:"server,omitempty"`
 }
 
 type exchangeRequest struct {
@@ -4767,6 +4766,12 @@ type exchangeResponse struct {
 	Bids  *openrtb2.BidResponse `json:"bids"`
 	Error string                `json:"error,omitempty"`
 	Ext   json.RawMessage       `json:"ext,omitempty"`
+}
+
+type exchangeServer struct {
+	ExternalUrl string `json:"externalURL"`
+	GvlID       int    `json:"gvlID"`
+	DataCenter  string `json:"dataCenter"`
 }
 
 type bidderSpec struct {
