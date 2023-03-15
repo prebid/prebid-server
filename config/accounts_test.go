@@ -825,6 +825,39 @@ func TestModulesGetConfig(t *testing.T) {
 	}
 }
 
+func TestAccountChannelIsSet(t *testing.T) {
+	trueBool := true
+	falseBool := false
+
+	testCases := []struct {
+		name                string
+		givenAccountChannel *AccountChannel
+		expected            bool
+	}{
+		{
+			name:                "AccountChannelSetAllFields",
+			givenAccountChannel: &AccountChannel{AMP: &trueBool, App: &falseBool, Video: &falseBool, Web: &falseBool},
+			expected:            true,
+		},
+		{
+			name:                "AccountChannelNotSet",
+			givenAccountChannel: &AccountChannel{},
+			expected:            false,
+		},
+		{
+			name:                "AccountChannelSetAmpOnly",
+			givenAccountChannel: &AccountChannel{AMP: &trueBool},
+			expected:            true,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			assert.Equal(t, test.expected, test.givenAccountChannel.IsSet())
+		})
+	}
+}
+
 func TestAccountPriceFloorsValidate(t *testing.T) {
 
 	tests := []struct {

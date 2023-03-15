@@ -1,0 +1,111 @@
+{
+  "description": "Well formed amp request with valid Site field",
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "pmp": {
+          "deals": [
+            {
+              "id": "some-deal-id"
+            }
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          }
+        }
+      }
+    ],
+    "ext": {
+      "prebid": {
+        "multibid": [
+          {
+            "bidder": "appnexus"
+          },
+          {
+            "maxbids": -1,
+            "bidder": "rubicon",
+            "targetbiddercodeprefix": "rubN"
+          },
+          {
+            "maxbids": 10,
+            "bidder": "pubmatic",
+            "targetbiddercodeprefix": "pm"
+          },
+          {
+            "maxbids": 4,
+            "bidder": "pubmatic",
+            "targetbiddercodeprefix": "pubM"
+          },
+          {
+            "maxbids": 5,
+            "bidder": "groupm",
+            "bidders": [
+              "someBidder"
+            ],
+            "targetbiddercodeprefix": "gm"
+          },
+          {
+            "maxbids": 6,
+            "bidders": [
+              "groupm"
+            ]
+          },
+          {
+            "maxbids": 7,
+            "bidders": [
+              "33across"
+            ],
+            "targetbiddercodeprefix": "abc"
+          },
+          {
+            "maxbids": 8,
+            "targetbiddercodeprefix": "xyz"
+          }
+        ]
+      }
+    }
+  },
+  "expectedReqExt": {
+    "prebid": {
+      "multibid": [
+        {
+          "maxbids": 1,
+          "bidder": "rubicon",
+          "targetbiddercodeprefix": "rubN"
+        },
+        {
+          "maxbids": 9,
+          "bidder": "pubmatic",
+          "targetbiddercodeprefix": "pm"
+        },
+        {
+          "maxbids": 5,
+          "bidder": "groupm",
+          "targetbiddercodeprefix": "gm"
+        },
+        {
+          "maxbids": 7,
+          "bidders": [
+            "33across"
+          ]
+        }
+      ]
+    }
+  },
+  "expectedReturnCode": 200
+}

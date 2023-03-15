@@ -9,6 +9,7 @@ const (
 	DefaultPriceGranularityPrecision  = 2
 	DefaultTargetingIncludeWinners    = true
 	DefaultTargetingIncludeBidderKeys = true
+	DefaultSecure                     = int8(1)
 )
 
 func SetDefaults(r *openrtb_ext.RequestWrapper) error {
@@ -23,6 +24,15 @@ func SetDefaults(r *openrtb_ext.RequestWrapper) error {
 
 		if modified {
 			requestExt.SetPrebid(requestExtPrebid)
+		}
+	}
+
+	imps := r.GetImp()
+	if len(imps) > 0 {
+		modified := setDefaultsImp(imps)
+
+		if modified {
+			r.SetImp(imps)
 		}
 	}
 
@@ -81,6 +91,19 @@ func setDefaultsPriceGranularityRange(ranges []openrtb_ext.GranularityRange) boo
 			modified = true
 		}
 		prevMax = r.Max
+	}
+
+	return modified
+}
+
+func setDefaultsImp(imps []*openrtb_ext.ImpWrapper) bool {
+	modified := false
+
+	for _, i := range imps {
+		if i != nil && i.Imp != nil && i.Secure == nil {
+			i.Secure = ptrutil.ToPtr(DefaultSecure)
+			modified = true
+		}
 	}
 
 	return modified

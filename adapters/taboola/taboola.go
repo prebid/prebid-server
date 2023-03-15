@@ -3,8 +3,7 @@ package taboola
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/openrtb/v17/native1"
-	nativeResponse "github.com/prebid/openrtb/v17/native1/response"
+	"github.com/prebid/openrtb/v17/adcom1"
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
@@ -103,20 +102,6 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 				errs = append(errs, err)
 				continue
 			}
-			if bidType == openrtb_ext.BidTypeNative {
-				var nativePayload nativeResponse.Response
-				if err := json.Unmarshal(json.RawMessage(seatBid.Bid[i].AdM), &nativePayload); err != nil {
-					errs = append(errs, err)
-					continue
-				}
-				overrideEventTrackers(&nativePayload)
-				nativePayloadJson, err := json.Marshal(nativePayload)
-				if err != nil {
-					errs = append(errs, err)
-					continue
-				}
-				seatBid.Bid[i].AdM = string(nativePayloadJson)
-			}
 			b := &adapters.TypedBid{
 				Bid:     &seatBid.Bid[i],
 				BidType: bidType,
@@ -201,10 +186,17 @@ func createTaboolaRequests(request *openrtb2.BidRequest) (taboolaRequests []*ope
 		}
 
 		if modifiedRequest.Imp[i].Banner != nil {
+			if taboolaExt.Position != nil {
+				bannerCopy := *imp.Banner
+				bannerCopy.Pos = adcom1.PlacementPosition(*taboolaExt.Position).Ptr()
+				imp.Banner = &bannerCopy
+				modifiedRequest.Imp[i] = imp
+			}
 			bannerImp = append(bannerImp, modifiedRequest.Imp[i])
 		} else if modifiedRequest.Imp[i].Native != nil {
 			nativeImp = append(nativeImp, modifiedRequest.Imp[i])
 		}
+
 	}
 
 	publisher := &openrtb2.Publisher{
@@ -236,10 +228,33 @@ func createTaboolaRequests(request *openrtb2.BidRequest) (taboolaRequests []*ope
 		modifiedRequest.BAdv = taboolaExt.BAdv
 	}
 
+	if taboolaExt.PageType != "" {
+		requestExt, requestExtErr := makeRequestExt(taboolaExt.PageType)
+		if requestExtErr == nil {
+			modifiedRequest.Ext = requestExt
+		} else {
+			errs = append(errs, requestExtErr)
+		}
+	}
+
 	taboolaRequests = append(taboolaRequests, overrideBidRequestImp(&modifiedRequest, nativeImp))
 	taboolaRequests = append(taboolaRequests, overrideBidRequestImp(&modifiedRequest, bannerImp))
 
 	return taboolaRequests, errs
+}
+
+func makeRequestExt(pageType string) (json.RawMessage, error) {
+	requestExt := &RequestExt{
+		PageType: pageType,
+	}
+
+	requestExtJson, err := json.Marshal(requestExt)
+	if err != nil {
+		fmt.Errorf("could not marshal %s", requestExt)
+		return nil, err
+	}
+	return requestExtJson, nil
+
 }
 
 func getMediaType(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
@@ -272,20 +287,4 @@ func overrideBidRequestImp(originBidRequest *openrtb2.BidRequest, imp []openrtb2
 	bidRequestResult := *originBidRequest
 	bidRequestResult.Imp = imp
 	return &bidRequestResult
-}
-
-func overrideEventTrackers(nativePayload *nativeResponse.Response) {
-	// convert eventrackers to the deprecated imptrackers and jstracker because it's not supported in native 1.1v
-	for _, eventTracker := range nativePayload.EventTrackers {
-		if eventTracker.Event != native1.EventTypeImpression {
-			continue
-		}
-		switch eventTracker.Method {
-		case native1.EventTrackingMethodImage:
-			nativePayload.ImpTrackers = append(nativePayload.ImpTrackers, eventTracker.URL)
-		case native1.EventTrackingMethodJS:
-			nativePayload.JSTracker = fmt.Sprintf("<script src=\"%s\"></script>", eventTracker.URL)
-		}
-	}
-	nativePayload.EventTrackers = nil
 }

@@ -25,18 +25,6 @@ func TestJsonSamples(t *testing.T) {
 	adapterstest.RunJSONBidderTest(t, "appnexustest", bidder)
 }
 
-func TestVideoSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
-		Endpoint:   "http://ib.adnxs.com/openrtb2",
-		PlatformID: "8"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
-
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
-
-	adapterstest.RunJSONBidderTest(t, "appnexusplatformtest", bidder)
-}
-
 func TestMemberQueryParam(t *testing.T) {
 	uriWithMember := appendMemberId("http://ib.adnxs.com/openrtb2?query_param=true", "102")
 	expected := "http://ib.adnxs.com/openrtb2?query_param=true&member_id=102"

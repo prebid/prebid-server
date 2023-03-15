@@ -7,4 +7,6 @@ type ImpExtTaboola struct {
 	TagId           string   `json:"tagid"`
 	BCat            []string `json:"bcat"`
 	BAdv            []string `json:"badv"`
+	PageType        string   `json:"pageType"`
+	Position        *int     `json:"position"`
 }

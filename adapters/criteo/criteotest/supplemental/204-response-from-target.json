@@ -38,7 +38,7 @@
     "httpCalls": [
       {
         "expectedRequest": {
-          "uri": "https://bidder.criteo.com/openrtb/prebid/auction/request?profile=230",
+          "uri": "https://ssp-bidder.criteo.com/openrtb/pbs/auction/request?profile=230",
           "headers": {},
           "body": {
             "id": "test-request-id",

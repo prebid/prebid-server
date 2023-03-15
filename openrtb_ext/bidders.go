@@ -164,10 +164,12 @@ const (
 	BidderFreewheelSSPOld   BidderName = "freewheel-ssp"
 	BidderGamma             BidderName = "gamma"
 	BidderGamoshi           BidderName = "gamoshi"
+	BidderGlobalsun         BidderName = "globalsun"
 	BidderGrid              BidderName = "grid"
 	BidderGroupm            BidderName = "groupm"
 	BidderGumGum            BidderName = "gumgum"
 	BidderHuaweiAds         BidderName = "huaweiads"
+	BidderIionads           BidderName = "iionads"
 	BidderImds              BidderName = "imds"
 	BidderImpactify         BidderName = "impactify"
 	BidderImprovedigital    BidderName = "improvedigital"
@@ -185,6 +187,7 @@ const (
 	BidderKiviads           BidderName = "kiviads"
 	BidderKrushmedia        BidderName = "krushmedia"
 	BidderKubient           BidderName = "kubient"
+	BidderLimelightDigital  BidderName = "limelightDigital"
 	BidderLockerDome        BidderName = "lockerdome"
 	BidderLogan             BidderName = "logan"
 	BidderLogicad           BidderName = "logicad"
@@ -243,6 +246,7 @@ const (
 	BidderTripleliftNative  BidderName = "triplelift_native"
 	BidderTrustX            BidderName = "trustx"
 	BidderUcfunnel          BidderName = "ucfunnel"
+	BidderUndertone         BidderName = "undertone"
 	BidderUnicorn           BidderName = "unicorn"
 	BidderUnruly            BidderName = "unruly"
 	BidderValueImpression   BidderName = "valueimpression"
@@ -251,6 +255,7 @@ const (
 	BidderVideoHeroes       BidderName = "videoheroes"
 	BidderVidoomy           BidderName = "vidoomy"
 	BidderViewdeos          BidderName = "viewdeos"
+	BidderVisibleMeasures   BidderName = "visiblemeasures"
 	BidderVisx              BidderName = "visx"
 	BidderVrtcal            BidderName = "vrtcal"
 	BidderYahooSSP          BidderName = "yahoossp"
@@ -342,10 +347,12 @@ func CoreBidderNames() []BidderName {
 		BidderFreewheelSSPOld,
 		BidderGamma,
 		BidderGamoshi,
+		BidderGlobalsun,
 		BidderGrid,
 		BidderGroupm,
 		BidderGumGum,
 		BidderHuaweiAds,
+		BidderIionads,
 		BidderImds,
 		BidderImpactify,
 		BidderImprovedigital,
@@ -363,6 +370,7 @@ func CoreBidderNames() []BidderName {
 		BidderKiviads,
 		BidderKrushmedia,
 		BidderKubient,
+		BidderLimelightDigital,
 		BidderLockerDome,
 		BidderLogan,
 		BidderLogicad,
@@ -421,6 +429,7 @@ func CoreBidderNames() []BidderName {
 		BidderTripleliftNative,
 		BidderTrustX,
 		BidderUcfunnel,
+		BidderUndertone,
 		BidderUnicorn,
 		BidderUnruly,
 		BidderValueImpression,
@@ -429,6 +438,7 @@ func CoreBidderNames() []BidderName {
 		BidderVideoHeroes,
 		BidderVidoomy,
 		BidderViewdeos,
+		BidderVisibleMeasures,
 		BidderVisx,
 		BidderVrtcal,
 		BidderYahooSSP,
