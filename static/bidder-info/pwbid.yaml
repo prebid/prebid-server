@@ -7,11 +7,14 @@ capabilities:
     mediaTypes:
       - banner
       - native
+      - video
   site:
     mediaTypes:
       - banner
       - native
+      - video
 userSync:
-  redirect:
-    url: https://gdpr-wrapper.privacymanager.io/gdpr/6543ee0a-dbc0-4ab5-bf52-3e12b1b58de8/gdpr-liveramp.js
-    userMacro: $UID
+  # PubWise supports user syncing, but requires configuration by the host. contact this
+  # bidder directly at the email address in this file to ask about enabling user sync.
+  supports:
+    - redirect

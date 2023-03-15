@@ -91,6 +91,9 @@ func getMediaTypeForBid(impressions []openrtb2.Imp, bid openrtb2.Bid) (openrtb_e
 			if impression.Native != nil {
 				return openrtb_ext.BidTypeNative, nil
 			}
+			if impression.Video != nil {
+				return openrtb_ext.BidTypeVideo, nil
+			}
 		}
 	}
 
