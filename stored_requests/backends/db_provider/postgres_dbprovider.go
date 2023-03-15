@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -77,7 +78,11 @@ func (provider *PostgresDbProvider) ConnString() (string, error) {
 		buffer.WriteString(provider.cfg.Database)
 	}
 
-	queryStr := provider.generateQueryString()
+	queryStr, err := provider.generateQueryString()
+	if err != nil {
+		return "", err
+	}
+
 	if queryStr != "" {
 		buffer.WriteString("?")
 		buffer.WriteString(queryStr)
@@ -86,7 +91,19 @@ func (provider *PostgresDbProvider) ConnString() (string, error) {
 	return buffer.String(), nil
 }
 
-func (provider *PostgresDbProvider) generateQueryString() string {
+func (provider *PostgresDbProvider) generateQueryString() (string, error) {
+	isTlsInConfigStruct := provider.cfg.TLS.RootCert != "" ||
+		provider.cfg.TLS.ClientCert != "" ||
+		provider.cfg.TLS.ClientKey != ""
+
+	isTlsInQueryString := strings.Contains(provider.cfg.QueryString, "sslrootcert=") ||
+		strings.Contains(provider.cfg.QueryString, "sslcert=") ||
+		strings.Contains(provider.cfg.QueryString, "sslkey=")
+
+	if isTlsInConfigStruct && isTlsInQueryString {
+		return "", errors.New("TLS cert information must either be specified in the TLS object or the query string but not both.")
+	}
+
 	sslmode := "disable"
 	sslrootcert := ""
 	sslcert := ""
@@ -114,7 +131,7 @@ func (provider *PostgresDbProvider) generateQueryString() string {
 	}
 
 	params := strings.Join([]string{sslmode, sslrootcert, sslcert, sslkey, queryString}, "")
-	return params[1:]
+	return params[1:], nil
 }
 
 func (provider *PostgresDbProvider) PrepareQuery(template string, params ...QueryParam) (query string, args []interface{}) {

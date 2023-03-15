@@ -1,6 +1,7 @@
 package db_provider
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
@@ -26,9 +27,10 @@ func TestConnStringPostgres(t *testing.T) {
 	}
 
 	tests := []struct {
-		name       string
-		params     Params
-		connString string
+		name          string
+		params        Params
+		connString    string
+		expectedError error
 	}{
 		{
 			params: Params{
@@ -182,6 +184,84 @@ func TestConnStringPostgres(t *testing.T) {
 			},
 			connString: "postgresql://someuser:somepassword@example.com:20/TestDB?sslrootcert=root-cert.pem&sslcert=client-cert.pem&sslkey=client-key.pem&param=value&sslmode=prefer",
 		},
+		{
+			params: Params{
+				QueryString: "sslrootcert=root-cert.pem",
+				TLS: TLS{
+					RootCert:   "root-cert.pem",
+					ClientCert: "client-cert.pem",
+					ClientKey:  "client-key.pem",
+				},
+			},
+			connString:    "",
+			expectedError: errors.New("TLS cert information must either be specified in the TLS object or the query string but not both."),
+		},
+		{
+			params: Params{
+				QueryString: "sslcert=client-cert.pem",
+				TLS: TLS{
+					RootCert:   "root-cert.pem",
+					ClientCert: "client-cert.pem",
+					ClientKey:  "client-key.pem",
+				},
+			},
+			connString:    "",
+			expectedError: errors.New("TLS cert information must either be specified in the TLS object or the query string but not both."),
+		},
+		{
+			params: Params{
+				QueryString: "sslkey=client-key.pem",
+				TLS: TLS{
+					RootCert:   "root-cert.pem",
+					ClientCert: "client-cert.pem",
+					ClientKey:  "client-key.pem",
+				},
+			},
+			connString:    "",
+			expectedError: errors.New("TLS cert information must either be specified in the TLS object or the query string but not both."),
+		},
+		{
+			params: Params{
+				QueryString: "sslrootcert=root-cert.pem&sslcert=client-cert.pem&sslkey=client-key.pem",
+				TLS: TLS{
+					RootCert: "root-cert.pem",
+				},
+			},
+			connString:    "",
+			expectedError: errors.New("TLS cert information must either be specified in the TLS object or the query string but not both."),
+		},
+		{
+			params: Params{
+				QueryString: "sslrootcert=root-cert.pem&sslcert=client-cert.pem&sslkey=client-key.pem",
+				TLS: TLS{
+					ClientCert: "client-cert.pem",
+				},
+			},
+			connString:    "",
+			expectedError: errors.New("TLS cert information must either be specified in the TLS object or the query string but not both."),
+		},
+		{
+			params: Params{
+				QueryString: "sslrootcert=root-cert.pem&sslcert=client-cert.pem&sslkey=client-key.pem",
+				TLS: TLS{
+					ClientKey: "client-key.pem",
+				},
+			},
+			connString:    "",
+			expectedError: errors.New("TLS cert information must either be specified in the TLS object or the query string but not both."),
+		},
+		{
+			params: Params{
+				QueryString: "sslrootcert=root-cert.pem&sslcert=client-cert.pem&sslkey=client-key.pem",
+				TLS: TLS{
+					RootCert:   "root-cert.pem",
+					ClientCert: "client-cert.pem",
+					ClientKey:  "client-key.pem",
+				},
+			},
+			connString:    "",
+			expectedError: errors.New("TLS cert information must either be specified in the TLS object or the query string but not both."),
+		},
 	}
 
 	for _, test := range tests {
@@ -199,7 +279,8 @@ func TestConnStringPostgres(t *testing.T) {
 			cfg: cfg,
 		}
 
-		connString, _ := provider.ConnString()
+		connString, err := provider.ConnString()
 		assert.Equal(t, test.connString, connString, "Strings did not match")
+		assert.Equal(t, test.expectedError, err)
 	}
 }
