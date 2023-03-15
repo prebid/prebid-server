@@ -19,10 +19,7 @@ type OpenxAdapter struct {
 	endpoint   string
 }
 
-type openxImpExt struct {
-	CustomParams       map[string]interface{}             `json:"customParams,omitempty"`
-	AuctionEnvironment openrtb_ext.AuctionEnvironmentType `json:"ae,omitempty"`
-}
+type openxImpExt map[string]json.RawMessage
 
 type openxReqExt struct {
 	DelDomain    string `json:"delDomain,omitempty"`
@@ -140,18 +137,26 @@ func preprocess(imp *openrtb2.Imp, reqExt *openxReqExt) error {
 		imp.BidFloor = openxExt.CustomFloor
 	}
 
+	// outgoing imp.ext should be same as incoming imp.ext minus prebid and bidder
 	impExt := openxImpExt{}
-	addImpExt := false
+	if err := json.Unmarshal(imp.Ext, &impExt); err != nil {
+		return &errortypes.BadInput{
+			Message: err.Error(),
+		}
+	}
+	delete(impExt, openrtb_ext.PrebidExtKey)
+	delete(impExt, openrtb_ext.PrebidExtBidderKey)
 
 	if openxExt.CustomParams != nil {
-		impExt.CustomParams = openxExt.CustomParams
-		addImpExt = true
+		var err error
+		if impExt["customParams"], err = json.Marshal(openxExt.CustomParams); err != nil {
+			return &errortypes.BadInput{
+				Message: err.Error(),
+			}
+		}
 	}
-	if bidderExt.AuctionEnvironment != openrtb_ext.ServerSideAuction {
-		impExt.AuctionEnvironment = bidderExt.AuctionEnvironment
-		addImpExt = true
-	}
-	if addImpExt {
+
+	if len(impExt) > 0 {
 		var err error
 		if imp.Ext, err = json.Marshal(impExt); err != nil {
 			return &errortypes.BadInput{

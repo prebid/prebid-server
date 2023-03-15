@@ -104,6 +104,8 @@ func getRegionInfo(region string) string {
 		return "apac.xyz"
 	case "USE":
 		return "use.xyz"
+	case "EUC":
+		return "euc.xyz"
 	default:
 		return "xyz"
 	}
