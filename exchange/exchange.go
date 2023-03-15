@@ -1317,10 +1317,16 @@ func buildStoredAuctionResponse(storedAuctionResponses map[string]json.RawMessag
 				mType := seat.Bid[i].MType
 				var bidType openrtb_ext.BidType
 				if mType > 0 {
-					if mType <= 4 {
-						//1 = Banner, 2 = Video,  3 = Audio, 4 = Native
-						bidType = openrtb_ext.BidTypes()[mType-1]
-					} else {
+					switch mType {
+					case openrtb2.MarkupBanner:
+						bidType = openrtb_ext.BidTypeBanner
+					case openrtb2.MarkupVideo:
+						bidType = openrtb_ext.BidTypeVideo
+					case openrtb2.MarkupAudio:
+						bidType = openrtb_ext.BidTypeAudio
+					case openrtb2.MarkupNative:
+						bidType = openrtb_ext.BidTypeNative
+					default:
 						return nil, nil, nil, &errortypes.BadServerResponse{
 							Message: fmt.Sprintf("Failed to parse bid mType for impression \"%s\"", seat.Bid[i].ImpID),
 						}

@@ -3999,6 +3999,28 @@ func TestBuildStoredAuctionResponses(t *testing.T) {
 			},
 		},
 		{
+			desc: "Single imp with single stored response bid with incorrect bid type",
+			in: testIn{
+				StoredAuctionResponses: map[string]json.RawMessage{
+					"impression-id": json.RawMessage(`[{"bid": [{"id": "bid_id", "ext": {"prebid": {"type": "incorrect"}}}],"seat": "appnexus"}]`),
+				},
+			},
+			expected: testResults{
+				adapterBids: map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid{
+					openrtb_ext.BidderName("appnexus"): {
+						Bids: []*entities.PbsOrtbBid{
+							{
+								Bid:     &openrtb2.Bid{ID: "bid_id", ImpID: "impression-id", Ext: []byte(`{"prebid": {"type": "native"}}`)},
+								BidType: openrtb_ext.BidTypeNative,
+							},
+						},
+					},
+				},
+				liveAdapters: []openrtb_ext.BidderName{openrtb_ext.BidderName("appnexus")},
+			},
+			errorMessage: "invalid BidType: incorrect",
+		},
+		{
 			desc: "Single imp with multiple bids in stored response one bidder",
 			in: testIn{
 				StoredAuctionResponses: map[string]json.RawMessage{
@@ -4148,6 +4170,42 @@ func TestBuildStoredAuctionResponses(t *testing.T) {
 			},
 		},
 		{
+			desc: "Multiple imps with multiple stored response bid with bid.mtype and different types",
+			in: testIn{
+				StoredAuctionResponses: map[string]json.RawMessage{
+					"impression-id1": json.RawMessage(`[{"bid": [{"id": "bid_id", "mtype": 1, "ext": {"prebid": {"type": "native"}}}],"seat": "appnexus"}]`),
+					"impression-id2": json.RawMessage(`[{"bid": [{"id": "bid_id", "mtype": 2, "ext": {"prebid": {"type": "native"}}}],"seat": "appnexus"}]`),
+					"impression-id3": json.RawMessage(`[{"bid": [{"id": "bid_id", "mtype": 3, "ext": {"prebid": {"type": "native"}}}],"seat": "appnexus"}]`),
+					"impression-id4": json.RawMessage(`[{"bid": [{"id": "bid_id", "mtype": 4, "ext": {"prebid": {"type": "native"}}}],"seat": "appnexus"}]`),
+				},
+			},
+			expected: testResults{
+				adapterBids: map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid{
+					openrtb_ext.BidderName("appnexus"): {
+						Bids: []*entities.PbsOrtbBid{
+							{
+								Bid:     &openrtb2.Bid{ID: "bid_id", ImpID: "impression-id1", MType: 1, Ext: []byte(`{"prebid": {"type": "native"}}`)},
+								BidType: openrtb_ext.BidTypeBanner,
+							},
+							{
+								Bid:     &openrtb2.Bid{ID: "bid_id", ImpID: "impression-id2", MType: 2, Ext: []byte(`{"prebid": {"type": "native"}}`)},
+								BidType: openrtb_ext.BidTypeVideo,
+							},
+							{
+								Bid:     &openrtb2.Bid{ID: "bid_id", ImpID: "impression-id3", MType: 3, Ext: []byte(`{"prebid": {"type": "native"}}`)},
+								BidType: openrtb_ext.BidTypeAudio,
+							},
+							{
+								Bid:     &openrtb2.Bid{ID: "bid_id", ImpID: "impression-id4", MType: 4, Ext: []byte(`{"prebid": {"type": "native"}}`)},
+								BidType: openrtb_ext.BidTypeNative,
+							},
+						},
+					},
+				},
+				liveAdapters: []openrtb_ext.BidderName{openrtb_ext.BidderName("appnexus")},
+			},
+		},
+		{
 			desc: "Single imp with single stored response bid with incorrect bid.mtype",
 			in: testIn{
 				StoredAuctionResponses: map[string]json.RawMessage{
@@ -4175,17 +4233,16 @@ func TestBuildStoredAuctionResponses(t *testing.T) {
 		bids, fledge, adapters, err := buildStoredAuctionResponse(test.in.StoredAuctionResponses)
 		if len(test.errorMessage) > 0 {
 			assert.Equal(t, test.errorMessage, err.Error(), " incorrect expected error")
-			continue
+		} else {
+			assert.NoErrorf(t, err, "%s. HoldAuction error: %v \n", test.desc, err)
+
+			assert.ElementsMatch(t, test.expected.liveAdapters, adapters, "Incorrect adapter list")
+			assert.Equal(t, fledge, test.expected.fledge, "Incorrect FLEDGE response")
+
+			for _, bidderName := range test.expected.liveAdapters {
+				assert.ElementsMatch(t, test.expected.adapterBids[bidderName].Bids, bids[bidderName].Bids, "Incorrect bids")
+			}
 		}
-		assert.NoErrorf(t, err, "%s. HoldAuction error: %v \n", test.desc, err)
-
-		assert.ElementsMatch(t, test.expected.liveAdapters, adapters, "Incorrect adapter list")
-		assert.Equal(t, fledge, test.expected.fledge, "Incorrect FLEDGE response")
-
-		for _, bidderName := range test.expected.liveAdapters {
-			assert.ElementsMatch(t, test.expected.adapterBids[bidderName].Bids, bids[bidderName].Bids, "Incorrect bids")
-		}
-
 	}
 }
 
