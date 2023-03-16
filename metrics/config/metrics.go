@@ -170,6 +170,13 @@ func (me *MultiMetricsEngine) RecordAdapterTime(labels metrics.AdapterLabels, le
 	}
 }
 
+// RecordAdapterTime across all engines
+func (me *MultiMetricsEngine) RecordAdapterOverheadTime(labels metrics.AdapterOverheadLabels, length time.Duration) {
+	for _, thisME := range *me {
+		thisME.RecordAdapterOverheadTime(labels, length)
+	}
+}
+
 // RecordCookieSync across all engines
 func (me *MultiMetricsEngine) RecordCookieSync(status metrics.CookieSyncStatus) {
 	for _, thisME := range *me {
@@ -428,6 +435,10 @@ func (me *NilMetricsEngine) RecordAdapterPrice(labels metrics.AdapterLabels, cpm
 
 // RecordAdapterTime as a noop
 func (me *NilMetricsEngine) RecordAdapterTime(labels metrics.AdapterLabels, length time.Duration) {
+}
+
+// RecordAdapterOverheadTime as a noop
+func (me *NilMetricsEngine) RecordAdapterOverheadTime(labels metrics.AdapterOverheadLabels, length time.Duration) {
 }
 
 // RecordCookieSync as a noop
