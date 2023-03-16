@@ -7,22 +7,24 @@ import (
 
 func preloadLabelValues(m *Metrics, syncerKeys []string, moduleStageNames map[string][]string) {
 	var (
-		setUidStatusValues        = setUidStatusesAsString()
-		adapterErrorValues        = adapterErrorsAsString()
-		adapterValues             = adaptersAsString()
-		bidTypeValues             = []string{markupDeliveryAdm, markupDeliveryNurl}
-		boolValues                = boolValuesAsString()
-		cacheResultValues         = cacheResultsAsString()
-		connectionErrorValues     = []string{connectionAcceptError, connectionCloseError}
-		cookieValues              = cookieTypesAsString()
-		cookieSyncStatusValues    = cookieSyncStatusesAsString()
-		requestTypeValues         = requestTypesAsString()
-		requestStatusValues       = requestStatusesAsString()
-		storedDataFetchTypeValues = storedDataFetchTypesAsString()
-		storedDataErrorValues     = storedDataErrorsAsString()
-		syncerRequestStatusValues = syncerRequestStatusesAsString()
-		syncerSetsStatusValues    = syncerSetStatusesAsString()
-		sourceValues              = []string{sourceRequest}
+		setUidStatusValues          = setUidStatusesAsString()
+		adapterErrorValues          = adapterErrorsAsString()
+		adapterOverheadTypes        = adapterOverheadTypesAsString()
+		adapterOverheadRequestTypes = adapterOverheadRequestTypesAsString()
+		adapterValues               = adaptersAsString()
+		bidTypeValues               = []string{markupDeliveryAdm, markupDeliveryNurl}
+		boolValues                  = boolValuesAsString()
+		cacheResultValues           = cacheResultsAsString()
+		connectionErrorValues       = []string{connectionAcceptError, connectionCloseError}
+		cookieValues                = cookieTypesAsString()
+		cookieSyncStatusValues      = cookieSyncStatusesAsString()
+		requestTypeValues           = requestTypesAsString()
+		requestStatusValues         = requestStatusesAsString()
+		storedDataFetchTypeValues   = storedDataFetchTypesAsString()
+		storedDataErrorValues       = storedDataErrorsAsString()
+		syncerRequestStatusValues   = syncerRequestStatusesAsString()
+		syncerSetsStatusValues      = syncerSetStatusesAsString()
+		sourceValues                = []string{sourceRequest}
 	)
 
 	preloadLabelValuesForCounter(m.connectionsError, map[string][]string{
@@ -185,6 +187,12 @@ func preloadLabelValues(m *Metrics, syncerKeys []string, moduleStageNames map[st
 
 	preloadLabelValuesForHistogram(m.adapterRequestsTimer, map[string][]string{
 		adapterLabel: adapterValues,
+	})
+
+	preloadLabelValuesForHistogram(m.adapterOverheadTimer, map[string][]string{
+		adapterLabel:      adapterValues,
+		overheadTypeLabel: adapterOverheadTypes,
+		requestTypeLabel:  adapterOverheadRequestTypes,
 	})
 
 	preloadLabelValuesForCounter(m.syncerRequests, map[string][]string{

@@ -63,6 +63,7 @@ type Metrics struct {
 	adapterPanics                         *prometheus.CounterVec
 	adapterPrices                         *prometheus.HistogramVec
 	adapterRequests                       *prometheus.CounterVec
+	adapterOverheadTimer                  *prometheus.HistogramVec
 	adapterRequestsTimer                  *prometheus.HistogramVec
 	adapterReusedConnections              *prometheus.CounterVec
 	adapterCreatedConnections             *prometheus.CounterVec
@@ -130,6 +131,7 @@ const (
 	isVideoLabel         = "video"
 	markupDeliveryLabel  = "delivery"
 	optOutLabel          = "opt_out"
+	overheadTypeLabel    = "overhead_type"
 	privacyBlockedLabel  = "privacy_blocked"
 	requestStatusLabel   = "request_status"
 	requestTypeLabel     = "request_type"
@@ -429,6 +431,12 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"adapter_response_validation_secure_warn",
 		"Count that tracks number of bids removed from bid response that had a invalid bidAdm (warn)",
 		[]string{adapterLabel, successLabel})
+
+	metrics.adapterOverheadTimer = newHistogramVec(cfg, reg,
+		"adapter_request_overhead_time_seconds",
+		"Seconds to prepare adapter request or resolve adapter response",
+		[]string{adapterLabel, overheadTypeLabel, requestTypeLabel},
+		standardTimeBuckets)
 
 	metrics.adapterRequestsTimer = newHistogramVec(cfg, reg,
 		"adapter_request_time_seconds",
@@ -911,6 +919,14 @@ func (m *Metrics) RecordAdapterPrice(labels metrics.AdapterLabels, cpm float64) 
 	m.adapterPrices.With(prometheus.Labels{
 		adapterLabel: string(labels.Adapter),
 	}).Observe(cpm)
+}
+
+func (m *Metrics) RecordAdapterOverheadTime(labels metrics.AdapterOverheadLabels, duration time.Duration) {
+	m.adapterOverheadTimer.With(prometheus.Labels{
+		adapterLabel:      labels.Adapter.String(),
+		overheadTypeLabel: labels.OverheadType.String(),
+		requestTypeLabel:  labels.RType.String(),
+	}).Observe(duration.Seconds())
 }
 
 func (m *Metrics) RecordAdapterTime(labels metrics.AdapterLabels, length time.Duration) {

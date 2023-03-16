@@ -65,7 +65,7 @@ func TestMetricCountGatekeeping(t *testing.T) {
 	// Verify Per-Adapter Cardinality
 	// - This assertion provides a warning for newly added adapter metrics. Threre are 40+ adapters which makes the
 	//   cost of new per-adapter metrics rather expensive. Thought should be given when adding new per-adapter metrics.
-	assert.True(t, perAdapterCardinalityCount <= 29, "Per-Adapter Cardinality count equals %d \n", perAdapterCardinalityCount)
+	assert.True(t, perAdapterCardinalityCount <= 39, "Per-Adapter Cardinality count equals %d \n", perAdapterCardinalityCount)
 }
 
 func TestConnectionMetrics(t *testing.T) {
@@ -516,6 +516,51 @@ func TestRequestTimeMetric(t *testing.T) {
 		test.testCase(m)
 
 		result := getHistogramFromHistogramVec(m.requestsTimer, requestTypeLabel, string(requestType))
+		assertHistogram(t, test.description, result, test.expectedCount, test.expectedSum)
+	}
+}
+
+func TestRecordAdapterOverheadTimeMetric(t *testing.T) {
+	testCases := []struct {
+		description   string
+		overheadType  metrics.AdapterOverheadType
+		timeInMs      float64
+		expectedCount uint64
+		expectedSum   float64
+	}{
+		{
+			description:   "record-pre-request-overhead-time-1",
+			overheadType:  metrics.PreBidderRequest,
+			timeInMs:      500,
+			expectedCount: 1,
+			expectedSum:   0.5,
+		},
+		{
+			description:   "record-pre-request-overhead-time-2",
+			overheadType:  metrics.PreBidderRequest,
+			timeInMs:      400,
+			expectedCount: 2,
+			expectedSum:   0.9,
+		},
+		{
+			description:   "record-post-request-overhead-time",
+			overheadType:  metrics.PostBidderResponse,
+			timeInMs:      500,
+			expectedCount: 1,
+			expectedSum:   0.5,
+		},
+	}
+
+	requestType := metrics.ReqTypeORTB2Web
+	adapter := "adapter"
+	metric := createMetricsForTesting()
+	for _, test := range testCases {
+		metric.RecordAdapterOverheadTime(metrics.AdapterOverheadLabels{
+			RType:        requestType,
+			Adapter:      openrtb_ext.BidderName(adapter),
+			OverheadType: test.overheadType,
+		}, time.Duration(test.timeInMs)*time.Millisecond)
+		result := getHistogramFromHistogramVecByTwoKeys(metric.adapterOverheadTimer, adapterLabel, adapter, overheadTypeLabel, test.overheadType.String())
 		assertHistogram(t, test.description, result, test.expectedCount, test.expectedSum)
 	}
 }
