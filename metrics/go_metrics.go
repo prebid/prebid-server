@@ -88,6 +88,7 @@ type AdapterMetrics struct {
 	NoBidMeter         metrics.Meter
 	GotBidsMeter       metrics.Meter
 	RequestTimer       metrics.Timer
+	OverheadTimer      map[RequestType]map[AdapterOverheadType]metrics.Timer
 	PriceHistogram     metrics.Histogram
 	BidsReceivedMeter  metrics.Meter
 	PanicMeter         metrics.Meter
@@ -379,6 +380,21 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	return newMetrics
 }
 
+func makeBlankOverheadTimerMetrics() map[RequestType]map[AdapterOverheadType]metrics.Timer {
+	getMetrics := func() map[AdapterOverheadType]metrics.Timer {
+		return map[AdapterOverheadType]metrics.Timer{
+			PreBidderRequest:   &metrics.NilTimer{},
+			PostBidderResponse: &metrics.NilTimer{},
+		}
+	}
+	requestTypes := AdapterOverheadRequestTypes()
+	m := make(map[RequestType]map[AdapterOverheadType]metrics.Timer, len(requestTypes))
+	for i, _ := range requestTypes {
+		m[requestTypes[i]] = getMetrics()
+	}
+	return m
+}
+
 // Part of setting up blank metrics, the adapter metrics.
 func makeBlankAdapterMetrics(disabledMetrics config.DisabledMetrics) *AdapterMetrics {
 	blankMeter := &metrics.NilMeter{}
@@ -388,6 +404,7 @@ func makeBlankAdapterMetrics(disabledMetrics config.DisabledMetrics) *AdapterMet
 		NoBidMeter:        blankMeter,
 		GotBidsMeter:      blankMeter,
 		RequestTimer:      &metrics.NilTimer{},
+		OverheadTimer:     makeBlankOverheadTimerMetrics(),
 		PriceHistogram:    &metrics.NilHistogram{},
 		BidsReceivedMeter: blankMeter,
 		PanicMeter:        blankMeter,
@@ -445,11 +462,22 @@ func makeBlankMarkupDeliveryMetrics() *MarkupDeliveryMetrics {
 	}
 }
 
+func makeOverheadTimerMetrics(registry metrics.Registry, prefix string, requestType RequestType) map[AdapterOverheadType]metrics.Timer {
+	return map[AdapterOverheadType]metrics.Timer{
+		PreBidderRequest:   metrics.GetOrRegisterTimer(prefix+requestType.String()+"."+PreBidderRequest.String()+".request_over_head_time", registry),
+		PostBidderResponse: metrics.GetOrRegisterTimer(prefix+requestType.String()+"."+PostBidderResponse.String()+".request_over_head_time", registry),
+	}
+}
+
 func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, exchange string, am *AdapterMetrics) {
 	am.NoCookieMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.no_cookie_requests", adapterOrAccount, exchange), registry)
 	am.NoBidMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.requests.nobid", adapterOrAccount, exchange), registry)
 	am.GotBidsMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.requests.gotbids", adapterOrAccount, exchange), registry)
 	am.RequestTimer = metrics.GetOrRegisterTimer(fmt.Sprintf("%[1]s.%[2]s.request_time", adapterOrAccount, exchange), registry)
+	requestTypes := AdapterOverheadRequestTypes()
+	for i, _ := range requestTypes {
+		am.OverheadTimer[requestTypes[i]] = makeOverheadTimerMetrics(registry, adapterOrAccount+"."+exchange+".", requestTypes[i])
+	}
 	am.PriceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("%[1]s.%[2]s.prices", adapterOrAccount, exchange), registry, metrics.NewExpDecaySample(1028, 0.015))
 	am.MarkupMetrics = map[openrtb_ext.BidType]*MarkupDeliveryMetrics{
 		openrtb_ext.BidTypeBanner: makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeBanner),
@@ -844,6 +872,18 @@ func (me *Metrics) RecordAdapterTime(labels AdapterLabels, length time.Duration)
 	// Account-Adapter metrics
 	if aam, ok := me.getAccountMetrics(labels.PubID).adapterMetrics[labels.Adapter]; ok {
 		aam.RequestTimer.Update(length)
+	}
+}
+
+// RecordAdapterOverheadTime implements a part of the MetricsEngine interface. Records the adapter overhead time
+func (me *Metrics) RecordAdapterOverheadTime(labels AdapterOverheadLabels, length time.Duration) {
+	if labels.Adapter != "" && labels.RType != "" && labels.OverheadType != "" {
+		am, ok := me.AdapterMetrics[labels.Adapter]
+		if !ok {
+			glog.Errorf("Trying to run adapter latency metrics on %s: adapter metrics not found", string(labels.Adapter))
+			return
+		}
+		am.OverheadTimer[labels.RType][labels.OverheadType].Update(length)
 	}
 }
 

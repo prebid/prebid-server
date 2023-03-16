@@ -126,6 +126,7 @@ func ensureContainsAdapterMetrics(t *testing.T, registry metrics.Registry, name 
 	ensureContains(t, registry, name+".request_time", adapterMetrics.RequestTimer)
 	ensureContains(t, registry, name+".prices", adapterMetrics.PriceHistogram)
 	ensureContainsBidTypeMetrics(t, registry, name, adapterMetrics.MarkupMetrics)
+	ensureContainsOverheadMetrics(t, registry, name, adapterMetrics.OverheadTimer)
 
 	ensureContains(t, registry, name+".connections_created", adapterMetrics.ConnCreated)
 	ensureContains(t, registry, name+".connections_reused", adapterMetrics.ConnReused)
@@ -1191,6 +1192,59 @@ func TestRecordAccountUpgradeStatusMetrics(t *testing.T) {
 			assert.Equal(t, test.expectedMetricCount, am.accountDeprecationSummaryMeter.Count())
 		})
 	}
+}
+
+func TestRecordAdapterOverheadTime(t *testing.T) {
+	testCases := []struct {
+		name          string
+		time          time.Duration
+		labels        AdapterOverheadLabels
+		expectedCount int64
+		expectedSum   int64
+	}{
+		{
+			name:          "record-amp-pre-request-overhead-time",
+			time:          time.Duration(500),
+			labels:        AdapterOverheadLabels{OverheadType: PreBidderRequest, Adapter: openrtb_ext.BidderAppnexus, RType: ReqTypeAMP},
+			expectedCount: 1,
+			expectedSum:   500,
+		},
+		{
+			name:          "record-amp-pre-request-overhead-time",
+			time:          time.Duration(500),
+			labels:        AdapterOverheadLabels{OverheadType: PreBidderRequest, Adapter: openrtb_ext.BidderAppnexus, RType: ReqTypeAMP},
+			expectedCount: 2,
+			expectedSum:   1000,
+		},
+		{
+			name:          "record-openrtb-post-response-overhead-time",
+			time:          time.Duration(500),
+			labels:        AdapterOverheadLabels{OverheadType: PostBidderResponse, Adapter: openrtb_ext.BidderAppnexus, RType: ReqTypeORTB2Web},
+			expectedCount: 1,
+			expectedSum:   500,
+		},
+	}
+	registry := metrics.NewRegistry()
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			m := NewMetrics(registry, []openrtb_ext.BidderName{test.labels.Adapter}, config.DisabledMetrics{}, nil, nil)
+			m.RecordAdapterOverheadTime(test.labels, test.time)
+			overheadMetrics := m.AdapterMetrics[test.labels.Adapter].OverheadTimer
+			assert.Equal(t, test.expectedCount, overheadMetrics[test.labels.RType][test.labels.OverheadType].Count())
+			assert.Equal(t, test.expectedSum, overheadMetrics[test.labels.RType][test.labels.OverheadType].Sum())
+		})
+	}
+}
+
+func ensureContainsOverheadMetrics(t *testing.T, registry metrics.Registry, prefix string, overheadMetrics map[RequestType]map[AdapterOverheadType]metrics.Timer) {
+	ensureContains(t, registry, prefix+".amp.pre-bidder-request.request_over_head_time", overheadMetrics[ReqTypeAMP][PreBidderRequest])
+	ensureContains(t, registry, prefix+".amp.post-bidder-request.request_over_head_time", overheadMetrics[ReqTypeAMP][PostBidderResponse])
+	ensureContains(t, registry, prefix+".openrtb2-web.pre-bidder-request.request_over_head_time", overheadMetrics[ReqTypeORTB2Web][PreBidderRequest])
+	ensureContains(t, registry, prefix+".openrtb2-web.post-bidder-request.request_over_head_time", overheadMetrics[ReqTypeORTB2Web][PostBidderResponse])
+	ensureContains(t, registry, prefix+".openrtb2-app.pre-bidder-request.request_over_head_time", overheadMetrics[ReqTypeORTB2App][PreBidderRequest])
+	ensureContains(t, registry, prefix+".openrtb2-app.post-bidder-request.request_over_head_time", overheadMetrics[ReqTypeORTB2App][PostBidderResponse])
+	ensureContains(t, registry, prefix+".video.pre-bidder-request.request_over_head_time", overheadMetrics[ReqTypeVideo][PreBidderRequest])
+	ensureContains(t, registry, prefix+".video.post-bidder-request.request_over_head_time", overheadMetrics[ReqTypeVideo][PostBidderResponse])
 }
 
 func ensureContainsBidTypeMetrics(t *testing.T, registry metrics.Registry, prefix string, mdm map[openrtb_ext.BidType]*MarkupDeliveryMetrics) {
