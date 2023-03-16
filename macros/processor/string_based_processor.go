@@ -54,7 +54,7 @@ func (processor *stringBasedProcessor) Replace(url string, macroProvider Provide
 
 	var result bytes.Buffer
 	// iterate over macros startindex list to get position where value should be put
-	// http://tracker.com?macro_1=##PBS_EVENTTYPE##&macro_2=##PBS_GDPRCONSENT##&custom=##PBS_MACRO_profileid##&custom=##shri##
+	// http://tracker.com?macro_1=##PBS-EVENTTYPE##&macro_2=##PBS-GDPRCONSENT##&custom=##PBS-MACRO_profileid##&custom=##shri##
 	currentIndex := 0
 	delimLen := len(delimiter)
 	for i, index := range tmplt.indices {

@@ -9,7 +9,7 @@ import (
 )
 
 var lmt int8 = 10
-var testURL string = "http://tracker.com?macro1=##PBS_BIDID##&macro2=##PBS_APPBUNDLE##&macro3=##PBS_APPBUNDLE##&macro4=##PBS_PUBDOMAIN##&macro5=##PBS_PAGEURL##&macro6=##PBS_ACCOUNTID##&macro6=##PBS_LIMITADTRACKING##&macro7=##PBS_GDPRCONSENT##&macro8=##PBS_GDPRCONSENT##&macro9=##PBS_MACRO_CUST1##&macro10=##PBS_MACRO_CUST2##"
+var testURL string = "http://tracker.com?macro1=##PBS-BIDID##&macro2=##PBS-APPBUNDLE##&macro3=##PBS-APPBUNDLE##&macro4=##PBS-PUBDOMAIN##&macro5=##PBS-PAGEURL##&macro6=##PBS-ACCOUNTID##&macro6=##PBS-LIMITADTRACKING##&macro7=##PBS-GDPRCONSENT##&macro8=##PBS-GDPRCONSENT##&macro9=##PBS-MACRO_CUST1##&macro10=##PBS-MACRO_CUST2##"
 var req *openrtb_ext.RequestWrapper = &openrtb_ext.RequestWrapper{
 	BidRequest: &openrtb2.BidRequest{
 		ID: "123",

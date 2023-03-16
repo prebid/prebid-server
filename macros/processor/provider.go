@@ -9,17 +9,17 @@ import (
 )
 
 const (
-	BidIDKey          = "PBS_BIDID"
-	AppBundleKey      = "PBS_APPBUNDLE"
-	DomainKey         = "PBS_APPBUNDLE"
-	PubDomainkey      = "PBS_PUBDOMAIN"
-	PageURLKey        = "PBS_PAGEURL"
-	AccountIDKey      = "PBS_ACCOUNTID"
-	LmtTrackingKey    = "PBS_LIMITADTRACKING"
-	ConsentKey        = "PBS_GDPRCONSENT"
-	CustomMacroPrefix = "PBS_MACRO_"
-	BidderKey         = "##PBS-BIDDER##"
-	IntegrationKey    = "##PBS-INTEGRATION##"
+	BidIDKey          = "PBS-BIDID"
+	AppBundleKey      = "PBS-APPBUNDLE"
+	DomainKey         = "PBS-APPBUNDLE"
+	PubDomainkey      = "PBS-PUBDOMAIN"
+	PageURLKey        = "PBS-PAGEURL"
+	AccountIDKey      = "PBS-ACCOUNTID"
+	LmtTrackingKey    = "PBS-LIMITADTRACKING"
+	ConsentKey        = "PBS-GDPRCONSENT"
+	CustomMacroPrefix = "PBS-MACRO_"
+	BidderKey         = "PBS-BIDDER"
+	IntegrationKey    = "PBS-INTEGRATION"
 )
 
 var (
@@ -52,7 +52,7 @@ func (b *macroProvider) populateRequestMacros(reqWrapper *openrtb_ext.RequestWra
 	reqExt, _ := reqWrapper.GetRequestExt()
 	if reqExt != nil && reqExt.GetPrebid() != nil {
 		for key, value := range reqExt.GetPrebid().Macros {
-			customMacroKey := CustomMacroPrefix + key       // Adding prefix PBS_MACRO to custom macro keys
+			customMacroKey := CustomMacroPrefix + key       // Adding prefix PBS-MACRO to custom macro keys
 			b.macros[customMacroKey] = truncate(value, 100) // limit the custom macro value  to 100 chars only
 		}
 
