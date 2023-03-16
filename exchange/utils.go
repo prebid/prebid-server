@@ -935,17 +935,16 @@ func setLegacyGDPRFromGPP(r *openrtb2.BidRequest, gpp gpplib.GppContainer) {
 	}
 
 	if r.User == nil || len(r.User.Consent) == 0 {
-		for i, id := range gpp.SectionTypes {
-			if id == gppConstants.SectionTCFEU2 {
+		for _, sec := range gpp.Sections {
+			if sec.GetID() == gppConstants.SectionTCFEU2 {
+				var user openrtb2.User
 				if r.User == nil {
-					r.User = &openrtb2.User{
-						Consent: gpp.Sections[i].GetValue(),
-					}
+					user = openrtb2.User{}
 				} else {
-					user := *r.User
-					user.Consent = gpp.Sections[i].GetValue()
-					r.User = &user
+					user = *r.User
 				}
+				user.Consent = sec.GetValue()
+				r.User = &user
 			}
 		}
 	}
@@ -959,12 +958,12 @@ func setLegacyUSPFromGPP(r *openrtb2.BidRequest, gpp gpplib.GppContainer) {
 	if len(r.Regs.USPrivacy) > 0 || r.Regs.GPPSID == nil {
 		return
 	}
-	for _, id := range r.Regs.GPPSID {
-		if id == int8(gppConstants.SectionUSPV1) {
-			for i, id := range gpp.SectionTypes {
-				if id == gppConstants.SectionUSPV1 {
+	for _, sid := range r.Regs.GPPSID {
+		if sid == int8(gppConstants.SectionUSPV1) {
+			for _, sec := range gpp.Sections {
+				if sec.GetID() == gppConstants.SectionUSPV1 {
 					regs := *r.Regs
-					regs.USPrivacy = gpp.Sections[i].GetValue()
+					regs.USPrivacy = sec.GetValue()
 					r.Regs = &regs
 				}
 			}
