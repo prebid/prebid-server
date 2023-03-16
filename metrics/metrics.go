@@ -26,6 +26,34 @@ type AdapterLabels struct {
 	AdapterErrors map[AdapterError]struct{}
 }
 
+// AdapterOverheadType: adapter overhead type enumeration
+type AdapterOverheadType string
+
+const (
+	PreBidderRequest   AdapterOverheadType = "pre-bidder-request"
+	PostBidderResponse AdapterOverheadType = "post-bidder-request"
+)
+
+func (t AdapterOverheadType) String() string {
+	return string(t)
+}
+
+func AdapterOverheadTypes() []AdapterOverheadType {
+	return []AdapterOverheadType{PreBidderRequest, PostBidderResponse}
+}
+
+// AdapterOverheadLabels defines labels describing the overhead time needed to prepare request or process response
+type AdapterOverheadLabels struct {
+	OverheadType AdapterOverheadType
+	Adapter      openrtb_ext.BidderName
+	RType        RequestType
+}
+
+// AdapterOverheadRequestTypes returns the types of requests for which overhead metric is supported
+func AdapterOverheadRequestTypes() []RequestType {
+	return []RequestType{ReqTypeORTB2Web, ReqTypeORTB2App, ReqTypeAMP, ReqTypeVideo}
+}
+
 // ImpLabels defines metric labels describing the impression type.
 type ImpLabels struct {
 	BannerImps bool
@@ -163,6 +191,10 @@ const (
 	ReqTypeAMP      RequestType = "amp"
 	ReqTypeVideo    RequestType = "video"
 )
+
+func (r RequestType) String() string {
+	return string(r)
+}
 
 // The media types described in the "imp" json objects
 const (
