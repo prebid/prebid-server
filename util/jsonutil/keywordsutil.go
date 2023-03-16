@@ -30,7 +30,7 @@ func (ks *KeywordsString) UnmarshalJSON(b []byte) error {
 		var keywords string
 		for key, values := range results {
 			for _, val := range values {
-				keywords = keywords + fmt.Sprintf("%s=%s", key, val)
+				keywords = keywords + fmt.Sprintf("%s=%s,", key, val)
 			}
 		}
 		*ks = KeywordsString(strings.TrimSuffix(keywords, ","))
