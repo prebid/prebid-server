@@ -14,7 +14,7 @@ type ExtImpAppnexus struct {
 	PlacementId              jsonutil.StringInt      `json:"placement_id"`
 	InvCode                  string                  `json:"inv_code"`
 	Member                   string                  `json:"member"`
-	Keywords                 []*ExtImpAppnexusKeyVal `json:"keywords"`
+	Keywords                 jsonutil.KeywordsString `json:"keywords"`
 	TrafficSourceCode        string                  `json:"traffic_source_code"`
 	Reserve                  float64                 `json:"reserve"`
 	Position                 string                  `json:"position"`
@@ -23,10 +23,4 @@ type ExtImpAppnexus struct {
 	// At this time we do no processing on the private sizes, so just leaving it as a JSON blob.
 	PrivateSizes json.RawMessage `json:"private_sizes"`
 	AdPodId      bool            `json:"generate_ad_pod_id"`
-}
-
-// ExtImpAppnexusKeyVal defines the contract for bidrequest.imp[i].ext.prebid.bidder.appnexus.keywords[i]
-type ExtImpAppnexusKeyVal struct {
-	Key    string   `json:"key,omitempty"`
-	Values []string `json:"value,omitempty"`
 }

@@ -253,7 +253,7 @@ func preprocess(imp *openrtb2.Imp, defaultDisplayManagerVer string) (string, boo
 	impExt := appnexusImpExt{Appnexus: appnexusImpExtAppnexus{
 		PlacementID:       int(appnexusExt.PlacementId),
 		TrafficSourceCode: appnexusExt.TrafficSourceCode,
-		Keywords:          makeKeywordStr(appnexusExt.Keywords),
+		Keywords:          string(appnexusExt.Keywords),
 		UsePmtRule:        appnexusExt.UsePaymentRule,
 		PrivateSizes:      appnexusExt.PrivateSizes,
 	}}
@@ -263,21 +263,6 @@ func preprocess(imp *openrtb2.Imp, defaultDisplayManagerVer string) (string, boo
 	}
 
 	return appnexusExt.Member, appnexusExt.AdPodId, nil
-}
-
-func makeKeywordStr(keywords []*openrtb_ext.ExtImpAppnexusKeyVal) string {
-	kvs := make([]string, 0, len(keywords)*2)
-	for _, kv := range keywords {
-		if len(kv.Values) == 0 {
-			kvs = append(kvs, kv.Key)
-		} else {
-			for _, val := range kv.Values {
-				kvs = append(kvs, fmt.Sprintf("%s=%s", kv.Key, val))
-			}
-		}
-	}
-
-	return strings.Join(kvs, ",")
 }
 
 func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
