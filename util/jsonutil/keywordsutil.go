@@ -53,7 +53,11 @@ func (ks *Keywords) UnmarshalJSON(b []byte) error {
 
 		*ks = Keywords(strings.TrimSuffix(kvs, ","))
 	case '"':
-		*ks = Keywords(string(b[1 : len(b)-1]))
+		var keywords string
+		if err := json.Unmarshal(b, &keywords); err != nil {
+			return err
+		}
+		*ks = Keywords(keywords)
 	}
 	return nil
 }
