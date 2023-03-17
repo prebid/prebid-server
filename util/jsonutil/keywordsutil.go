@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-type KeywordsString string
+type Keywords string
 
 // extImpAppnexusKeyVal defines the contract for bidrequest.imp[i].ext.prebid.bidder.appnexus.keywords[i]
 type extImpAppnexusKeyVal struct {
@@ -14,7 +14,7 @@ type extImpAppnexusKeyVal struct {
 	Values []string `json:"value,omitempty"`
 }
 
-func (ks *KeywordsString) UnmarshalJSON(b []byte) error {
+func (ks *Keywords) UnmarshalJSON(b []byte) error {
 	if len(b) == 0 {
 		return nil
 	}
@@ -33,7 +33,7 @@ func (ks *KeywordsString) UnmarshalJSON(b []byte) error {
 				keywords = keywords + fmt.Sprintf("%s=%s,", key, val)
 			}
 		}
-		*ks = KeywordsString(strings.TrimSuffix(keywords, ","))
+		*ks = Keywords(strings.TrimSuffix(keywords, ","))
 	case '[':
 		var results []extImpAppnexusKeyVal
 		err := json.Unmarshal(b, &results)
@@ -51,9 +51,9 @@ func (ks *KeywordsString) UnmarshalJSON(b []byte) error {
 			}
 		}
 
-		*ks = KeywordsString(strings.TrimSuffix(kvs, ","))
+		*ks = Keywords(strings.TrimSuffix(kvs, ","))
 	case '"':
-		*ks = KeywordsString(string(b[1 : len(b)-1]))
+		*ks = Keywords(string(b[1 : len(b)-1]))
 	}
 	return nil
 }
