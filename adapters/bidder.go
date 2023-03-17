@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/config"
@@ -145,6 +146,7 @@ func (r *RequestData) SetBasicAuth(username string, password string) {
 
 type ExtraRequestInfo struct {
 	PbsEntryPoint              metrics.RequestType
+	PbsRequestStartTime        time.Time
 	GlobalPrivacyControlHeader string
 	CurrencyConversions        currency.Conversions
 }
