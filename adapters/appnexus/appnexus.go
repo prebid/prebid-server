@@ -203,14 +203,17 @@ func preprocess(imp *openrtb2.Imp, defaultDisplayManagerVer string) (string, boo
 
 	// Accept legacy Appnexus parameters if we don't have modern ones
 	// Don't worry if both is set as validation rules should prevent, and this is temporary anyway.
-	if appnexusExt.PlacementId == 0 && appnexusExt.LegacyPlacementId != 0 {
-		appnexusExt.PlacementId = appnexusExt.LegacyPlacementId
+	if appnexusExt.PlacementId == 0 && appnexusExt.DeprecatedPlacementId != 0 {
+		appnexusExt.PlacementId = appnexusExt.DeprecatedPlacementId
 	}
 	if appnexusExt.InvCode == "" && appnexusExt.LegacyInvCode != "" {
 		appnexusExt.InvCode = appnexusExt.LegacyInvCode
 	}
 	if appnexusExt.TrafficSourceCode == "" && appnexusExt.LegacyTrafficSourceCode != "" {
 		appnexusExt.TrafficSourceCode = appnexusExt.LegacyTrafficSourceCode
+	}
+	if appnexusExt.UsePaymentRule == nil && appnexusExt.DeprecatedUsePaymentRule != nil {
+		appnexusExt.UsePaymentRule = appnexusExt.DeprecatedUsePaymentRule
 	}
 
 	if appnexusExt.PlacementId == 0 && (appnexusExt.InvCode == "" || appnexusExt.Member == "") {
@@ -248,10 +251,10 @@ func preprocess(imp *openrtb2.Imp, defaultDisplayManagerVer string) (string, boo
 	}
 
 	impExt := appnexusImpExt{Appnexus: appnexusImpExtAppnexus{
-		PlacementID:       appnexusExt.PlacementId,
+		PlacementID:       int(appnexusExt.PlacementId),
 		TrafficSourceCode: appnexusExt.TrafficSourceCode,
 		Keywords:          makeKeywordStr(appnexusExt.Keywords),
-		UsePmtRule:        appnexusExt.UsePmtRule,
+		UsePmtRule:        appnexusExt.UsePaymentRule,
 		PrivateSizes:      appnexusExt.PrivateSizes,
 	}}
 	var err error
