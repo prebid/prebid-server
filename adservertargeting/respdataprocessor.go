@@ -29,8 +29,9 @@ func processResponseTargetingData(
 	bid openrtb2.Bid,
 	bidsHolder bidsCache,
 	response *openrtb2.BidResponse,
-	seatExt json.RawMessage,
-	warnings []openrtb_ext.ExtBidderMessage) {
+	seatExt json.RawMessage) []openrtb_ext.ExtBidderMessage {
+
+	var warnings []openrtb_ext.ExtBidderMessage
 
 	for _, respTargetingData := range adServerTargetingData.ResponseTargetingData {
 		key := resolveKey(respTargetingData, bidderName)
@@ -56,11 +57,13 @@ func processResponseTargetingData(
 		}
 
 		if err != nil {
-			warnings = append(warnings, createWarning(err.Error()))
+			message := fmt.Sprintf("%s for bidder: %s, bid id: %s", err.Error(), bidderName, bid.ID)
+			warnings = append(warnings, createWarning(message))
 		} else {
 			targetingData[key] = value
 		}
 	}
+	return warnings
 }
 
 func buildBidExt(targetingData map[string]string,
@@ -101,7 +104,7 @@ func truncateTargetingKeys(targetingData map[string]string, truncateTargetAttrib
 	maxLength := MaxKeyLength
 	if truncateTargetAttribute != nil {
 		maxLength = *truncateTargetAttribute
-		if maxLength < 0 {
+		if maxLength <= 0 {
 			maxLength = MaxKeyLength
 		}
 	}
@@ -150,7 +153,7 @@ func getValueFromResp(path string, response *openrtb2.BidResponse) (string, erro
 }
 
 func getRespData(bidderResp *openrtb2.BidResponse, field string) (string, error) {
-	// this code should be modified if there are changes in Op[enRtb format
+	// this code should be modified if there are changes in OpenRtb format
 	// it's up to date with OpenRTB 2.5 and 2.6
 	switch field {
 	case "id":

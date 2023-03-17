@@ -3,6 +3,7 @@ package adservertargeting
 import (
 	"encoding/json"
 	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb3"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 	"net/url"
@@ -77,9 +78,13 @@ func TestExtractAdServerTargeting(t *testing.T) {
 }
 
 func TestResolveAdServerTargeting(t *testing.T) {
+	nbr := openrtb3.NoBidReason(2)
 	resp := &openrtb2.BidResponse{
-		ID:  "testResponse",
-		Cur: "USD",
+		ID:         "testResponse",
+		Cur:        "USD",
+		BidID:      "testBidId",
+		CustomData: "testCustomData",
+		NBR:        &nbr,
 		SeatBid: []openrtb2.SeatBid{
 			{
 				Seat: "appnexus",
@@ -119,12 +124,16 @@ func TestResolveAdServerTargeting(t *testing.T) {
 			{Key: "custom3", HasMacro: false, Path: "seatbid.bid.price"},
 			{Key: "custom4", HasMacro: false, Path: "seatbid.ext.testData.foo"},
 			{Key: "custom5", HasMacro: false, Path: "cur"},
+			{Key: "custom6", HasMacro: false, Path: "id"},
+			{Key: "custom7", HasMacro: false, Path: "bidid"},
+			{Key: "custom8", HasMacro: false, Path: "customdata"},
+			{Key: "custom9", HasMacro: false, Path: "nbr"},
 			{Key: "{{BIDDER}}_custom6", HasMacro: true, Path: "ext.prebid.seatExt"},
 		},
 	}
 	bidResponse, warnings := resolve(adServerTargeting, resp, nil, nil)
 
-	assert.Empty(t, warnings, "unexpected warnings")
+	assert.Len(t, warnings, 6, "incorrect warnings number")
 	assert.NotNil(t, bidResponse, "incorrect resolved targeting data")
 	assert.Len(t, bidResponse.SeatBid, 2, "incorrect seat bids number")
 
@@ -240,7 +249,8 @@ func TestProcessAdServerTargetingFull(t *testing.T) {
 
 	reqBytes, err := json.Marshal(r)
 	assert.NoError(t, err, "unexpected req marshal error")
-	resResp := Apply(rw, reqBytes, resp, params, bidResponseExt, nil)
+	targetingKeyLen := 0
+	resResp := Apply(rw, reqBytes, resp, params, bidResponseExt, &targetingKeyLen)
 	assert.Len(t, resResp.SeatBid, 2, "incorrect response: seat bid number")
 	assert.Len(t, bidResponseExt.Warnings[openrtb_ext.BidderReservedGeneral], 2, "incorrect warnings number")
 	assert.Equal(t, "incorrect value type for path: imp.ext.prebid.test, value can only be string or number", bidResponseExt.Warnings[openrtb_ext.BidderReservedGeneral][0].Message, "incorrect warning")
@@ -332,13 +342,26 @@ func TestProcessAdServerTargetingWarnings(t *testing.T) {
 	assert.Len(t, rbcBids, 3, "Incorrect response: rubicon bid number")
 
 	warnings := bidResponseExt.Warnings[openrtb_ext.BidderReservedGeneral]
-	assert.Len(t, warnings, 6, "Incorrect response: seat bid number")
+	assert.Len(t, warnings, 18, "Incorrect response: seat bid number")
 	assert.Equal(t, "value not found for path: ext.prebid.amp.data.ampkey", warnings[0].Message, "Incorrect warning")
 	assert.Equal(t, "value not found for path: imp.ext.prebid.test", warnings[1].Message, "Incorrect warning")
 	assert.Equal(t, "value not found for path: imp.ext.bidder1.tagid", warnings[2].Message, "Incorrect warning")
 	assert.Equal(t, "value not found for path: imp.bidfloor", warnings[3].Message, "Incorrect warning")
 	assert.Equal(t, "incorrect value type for path: ext.prebid.targeting.includebrandcategory, value can only be string or number", warnings[4].Message, "Incorrect warning")
 	assert.Equal(t, "value not found for path: user.yob", warnings[5].Message, "Incorrect warning")
+
+	assert.Equal(t, "value not found for path: ext.custom1 for bidder: appnexus, bid id: bidA1", warnings[6].Message, "Incorrect warning")
+	assert.Equal(t, "value not found for path: ext.custom2 for bidder: appnexus, bid id: bidA1", warnings[7].Message, "Incorrect warning")
+	assert.Equal(t, "value not found for path: ext.custom1 for bidder: appnexus, bid id: bidA2", warnings[8].Message, "Incorrect warning")
+	assert.Equal(t, "value not found for path: ext.custom2 for bidder: appnexus, bid id: bidA2", warnings[9].Message, "Incorrect warning")
+	assert.Equal(t, "value not found for path: ext.custom1 for bidder: appnexus, bid id: bidA3", warnings[10].Message, "Incorrect warning")
+	assert.Equal(t, "value not found for path: ext.custom2 for bidder: appnexus, bid id: bidA3", warnings[11].Message, "Incorrect warning")
+	assert.Equal(t, "value not found for path: ext.custom1 for bidder: rubicon, bid id: bidR1", warnings[12].Message, "Incorrect warning")
+	assert.Equal(t, "value not found for path: ext.custom2 for bidder: rubicon, bid id: bidR1", warnings[13].Message, "Incorrect warning")
+	assert.Equal(t, "value not found for path: ext.custom1 for bidder: rubicon, bid id: bidR2", warnings[14].Message, "Incorrect warning")
+	assert.Equal(t, "value not found for path: ext.custom2 for bidder: rubicon, bid id: bidR2", warnings[15].Message, "Incorrect warning")
+	assert.Equal(t, "value not found for path: ext.custom1 for bidder: rubicon, bid id: bidR3", warnings[16].Message, "Incorrect warning")
+	assert.Equal(t, "value not found for path: ext.custom2 for bidder: rubicon, bid id: bidR3", warnings[17].Message, "Incorrect warning")
 }
 
 const (
@@ -422,6 +445,10 @@ const (
       "custom3": "10",
       "custom4": "barApn",
       "custom5": "USD",
+      "custom6":"testResponse", 
+      "custom7":"testBidId", 
+      "custom8":"testCustomData", 
+      "custom9":"2",
       "hb_amp_param": "testAmpKey",
       "hb_imp_param": "111"
     }
@@ -438,6 +465,10 @@ const (
       "custom3": "20",
       "custom4": "barApn",
       "custom5": "USD",
+      "custom6":"testResponse", 
+      "custom7":"testBidId", 
+      "custom8":"testCustomData", 
+      "custom9":"2",
       "hb_amp_param": "testAmpKey",
       "hb_imp_param": "222"
     }
@@ -453,6 +484,10 @@ const (
       "custom3": "30",
       "custom4": "barApn",
       "custom5": "USD",
+      "custom6":"testResponse", 
+      "custom7":"testBidId", 
+      "custom8":"testCustomData", 
+      "custom9":"2",
       "hb_amp_param": "testAmpKey",
       "hb_imp_param": "333"
     }
@@ -467,6 +502,10 @@ const (
       "custom3": "11",
       "custom4": "barRubicon",
       "custom5": "USD",
+      "custom6":"testResponse", 
+      "custom7":"testBidId", 
+      "custom8":"testCustomData", 
+      "custom9":"2",
       "hb_amp_param": "testAmpKey",
       "hb_imp_param": "111",
       "rubicon_custom6": "true",
@@ -483,6 +522,10 @@ const (
       "custom3": "22",
       "custom4": "barRubicon",
       "custom5": "USD",
+      "custom6":"testResponse", 
+      "custom7":"testBidId", 
+      "custom8":"testCustomData", 
+      "custom9":"2",
       "hb_amp_param": "testAmpKey",
       "hb_imp_param": "222",
       "rubicon_custom6": "true",
@@ -499,6 +542,10 @@ const (
       "custom3": "33",
       "custom4": "barRubicon",
       "custom5": "USD",
+      "custom6":"testResponse", 
+      "custom7":"testBidId", 
+      "custom8":"testCustomData", 
+      "custom9":"2",
       "hb_amp_param": "testAmpKey",
       "hb_imp_param": "333",
       "rubicon_custom6": "true",

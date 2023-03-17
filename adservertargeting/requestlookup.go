@@ -2,6 +2,7 @@ package adservertargeting
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/buger/jsonparser"
 	"github.com/pkg/errors"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -23,7 +24,40 @@ func getAdServerTargeting(reqWrapper *openrtb_ext.RequestWrapper) ([]openrtb_ext
 	return reqExtPrebid.AdServerTargeting, nil
 }
 
-func getValueFromBidRequest(dataHolder *reqImpCache, path string, queryParams url.Values) (RequestTargetingData, error) {
+func validateAdServerTargeting(adServerTargeting []openrtb_ext.AdServerTargeting) ([]openrtb_ext.AdServerTargeting, []openrtb_ext.ExtBidderMessage) {
+	var validatedAdServerTargeting []openrtb_ext.AdServerTargeting
+	var warnings []openrtb_ext.ExtBidderMessage
+	for i, targetingObj := range adServerTargeting {
+
+		isDataCorrect := true
+
+		if len(targetingObj.Key) == 0 {
+			isDataCorrect = false
+			warnings = append(warnings, createWarning(fmt.Sprintf("Key is empty for the ad server targeting object at index %d", i)))
+		}
+
+		if len(targetingObj.Value) == 0 {
+			isDataCorrect = false
+			warnings = append(warnings, createWarning(fmt.Sprintf("Value is empty for the ad server targeting object at index %d", i)))
+		}
+
+		targetingObjSource := DataSource(strings.ToLower(targetingObj.Source))
+		if targetingObjSource != SourceStatic &&
+			targetingObjSource != SourceBidRequest &&
+			targetingObjSource != SourceBidResponse {
+			isDataCorrect = false
+			warnings = append(warnings, createWarning(fmt.Sprintf("Incorrect source for the ad server targeting object at index %d", i)))
+		}
+
+		if isDataCorrect {
+			validatedAdServerTargeting = append(validatedAdServerTargeting, targetingObj)
+		}
+
+	}
+	return validatedAdServerTargeting, warnings
+}
+
+func getValueFromBidRequest(dataHolder *requestImpCache, path string, queryParams url.Values) (RequestTargetingData, error) {
 	//use the path specified in 'value' to look for data in the ortb bidrequest.
 	res := RequestTargetingData{}
 
@@ -64,7 +98,7 @@ func getValueFromQueryParam(path string, queryParams url.Values) (json.RawMessag
 	return nil, nil
 }
 
-func getValueFromImp(path string, dataHolder *reqImpCache) (map[string][]byte, error) {
+func getValueFromImp(path string, dataHolder *requestImpCache) (map[string][]byte, error) {
 	impsDatas := make(map[string][]byte, 0)
 	impSplit, hasPrefix := verifyPrefixAndTrim(path, "imp.")
 	if hasPrefix {
@@ -91,7 +125,7 @@ func getValueFromImp(path string, dataHolder *reqImpCache) (map[string][]byte, e
 	return impsDatas, nil
 }
 
-func getDataFromRequest(path string, dataHolder *reqImpCache) (json.RawMessage, error) {
+func getDataFromRequest(path string, dataHolder *requestImpCache) (json.RawMessage, error) {
 	keySplit := strings.Split(path, pathDelimiter)
 	reqJson := dataHolder.GetReqJson()
 	value, err := typedLookup(reqJson, path, keySplit...)

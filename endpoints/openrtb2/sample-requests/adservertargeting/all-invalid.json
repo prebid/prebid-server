@@ -90,28 +90,23 @@
         "adservertargeting": [
           {
             "key": "adt_hb_req_imp_maxduration",
-            "source": "bidrequest",
+            "source": "incorrect",
             "value": "imp.video.mimes"
           },
           {
-            "key": "adt_hb_req_imp_w",
+            "key": "",
             "source": "bidrequest",
             "value": "imp.video"
           },
           {
             "key": "adt_hb_req_site_contest_param",
-            "source": "bidrequest",
+            "source": "",
             "value": "site.content"
           },
           {
             "key": "adt_{{BIDDER}}_impid",
             "source": "bidresponse",
-            "value": "seatbid.bid.ext.key"
-          },
-          {
-            "key": "adt_custom2",
-            "source": "bidresponse",
-            "value": "seatbid.bid.key"
+            "value": ""
           }
         ]
       }
@@ -173,31 +168,19 @@
           },
           {
             "code": 10007,
-            "message": "incorrect value type for path: imp.video.mimes, value can only be string or number"
+            "message": "Incorrect source for the ad server targeting object at index 0"
           },
           {
             "code": 10007,
-            "message": "incorrect value type for path: imp.video, value can only be string or number"
+            "message": "Key is empty for the ad server targeting object at index 1"
           },
           {
             "code": 10007,
-            "message": "incorrect value type for path: site.content, value can only be string or number"
+            "message": "Incorrect source for the ad server targeting object at index 2"
           },
           {
             "code": 10007,
-            "message": "value not found for path: ext.key for bidder"
-          },
-          {
-            "code": 10007,
-            "message": "value not found for path: key for bidder"
-          },
-          {
-            "code": 10007,
-            "message": "value not found for path: ext.key for bidder"
-          },
-          {
-            "code": 10007,
-            "message": "value not found for path: key for bidder"
+            "message": "Value is empty for the ad server targeting object at index 3"
           }
         ]
       }

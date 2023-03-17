@@ -91,6 +91,41 @@
           {
             "key": "adt_hb_req_imp_maxduration",
             "source": "bidrequest",
+            "value": "imp.video.maxduration"
+          },
+          {
+            "key": "adt_hb_req_imp_w",
+            "source": "bidrequest",
+            "value": "imp.video.w"
+          },
+          {
+            "key": "adt_hb_req_imp_h",
+            "source": "bidrequest",
+            "value": "imp.video.h"
+          },
+          {
+            "key": "adt_hb_req_site_contest_param",
+            "source": "bidrequest",
+            "value": "site.content.season"
+          },
+          {
+            "key": "adt_hb_static_thing",
+            "source": "static",
+            "value": "test-static-value"
+          },
+          {
+            "key": "adt_{{BIDDER}}_impid",
+            "source": "bidresponse",
+            "value": "seatbid.bid.impid"
+          },
+          {
+            "key": "adt_custom2",
+            "source": "bidresponse",
+            "value": "seatbid.bid.price"
+          },
+          {
+            "key": "adt_hb_req_imp_maxduration",
+            "source": "bidrequest",
             "value": "imp.video.mimes"
           },
           {
@@ -104,14 +139,24 @@
             "value": "site.content"
           },
           {
-            "key": "adt_{{BIDDER}}_impid",
-            "source": "bidresponse",
-            "value": "seatbid.bid.ext.key"
+            "key": "",
+            "source": "bidrequest",
+            "value": "imp.video"
           },
           {
-            "key": "adt_custom2",
+            "key": "adt_hb_req_site_contest_param",
+            "source": "",
+            "value": "site.content"
+          },
+          {
+            "key": "adt_{{BIDDER}}_impid",
             "source": "bidresponse",
-            "value": "seatbid.bid.key"
+            "value": ""
+          },
+          {
+            "key": "adt_incorrect_bidresp",
+            "source": "bidresponse",
+            "value": "incorrect"
           }
         ]
       }
@@ -133,6 +178,15 @@
                 "meta": {
                   "adaptercode": "appnexus"
                 },
+                "targeting": {
+                  "adt_appnexus_impid": "some-impression-id",
+                  "adt_custom2": "1.01",
+                  "adt_hb_req_imp_h": "480",
+                  "adt_hb_req_imp_maxdu": "30",
+                  "adt_hb_req_imp_w": "640",
+                  "adt_hb_req_site_cont": "season3",
+                  "adt_hb_static_thing": "test-static-value"
+                },
                 "type": "banner"
               }
             }
@@ -152,6 +206,15 @@
               "prebid": {
                 "meta": {
                   "adaptercode": "rubicon"
+                },
+                "targeting": {
+                  "adt_custom2": "0.99",
+                  "adt_hb_req_imp_h": "480",
+                  "adt_hb_req_imp_maxdu": "30",
+                  "adt_hb_req_imp_w": "640",
+                  "adt_hb_req_site_cont": "season3",
+                  "adt_hb_static_thing": "test-static-value",
+                  "adt_rubicon_impid": "some-impression-id"
                 },
                 "type": "banner"
               }
@@ -173,6 +236,18 @@
           },
           {
             "code": 10007,
+            "message": "Key is empty for the ad server targeting object at index 10"
+          },
+          {
+            "code": 10007,
+            "message": "Incorrect source for the ad server targeting object at index 11"
+          },
+          {
+            "code": 10007,
+            "message": "Value is empty for the ad server targeting object at index 12"
+          },
+          {
+            "code": 10007,
             "message": "incorrect value type for path: imp.video.mimes, value can only be string or number"
           },
           {
@@ -185,19 +260,11 @@
           },
           {
             "code": 10007,
-            "message": "value not found for path: ext.key for bidder"
+            "message": "key not found for field in bid response: incorrect for bidder"
           },
           {
             "code": 10007,
-            "message": "value not found for path: key for bidder"
-          },
-          {
-            "code": 10007,
-            "message": "value not found for path: ext.key for bidder"
-          },
-          {
-            "code": 10007,
-            "message": "value not found for path: key for bidder"
+            "message": "key not found for field in bid response: incorrect for bidder"
           }
         ]
       }

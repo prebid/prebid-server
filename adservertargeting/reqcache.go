@@ -6,18 +6,18 @@ import (
 	"github.com/prebid/openrtb/v17/openrtb2"
 )
 
-type reqImpCache struct {
+type requestImpCache struct {
 	resolverReq json.RawMessage
 	impsData    []json.RawMessage
 }
 
-func (dh *reqImpCache) GetReqJson() []byte {
-	return dh.resolverReq
+func (reqImpCache *requestImpCache) GetReqJson() []byte {
+	return reqImpCache.resolverReq
 }
 
-func (dh *reqImpCache) GetImpsData() ([]json.RawMessage, error) {
-	if len(dh.impsData) == 0 {
-		imps, _, _, err := jsonparser.Get(dh.resolverReq, "imp")
+func (reqImpCache *requestImpCache) GetImpsData() ([]json.RawMessage, error) {
+	if len(reqImpCache.impsData) == 0 {
+		imps, _, _, err := jsonparser.Get(reqImpCache.resolverReq, "imp")
 		if err != nil {
 			return nil, err
 		}
@@ -27,9 +27,9 @@ func (dh *reqImpCache) GetImpsData() ([]json.RawMessage, error) {
 		if err != nil {
 			return nil, err
 		}
-		dh.impsData = impsData
+		reqImpCache.impsData = impsData
 	}
-	return dh.impsData, nil
+	return reqImpCache.impsData, nil
 }
 
 type bidsCache struct {
@@ -38,20 +38,20 @@ type bidsCache struct {
 	bids map[string]map[string][]byte
 }
 
-func (bdh *bidsCache) GetBid(bidderName, bidId string, bid openrtb2.Bid) ([]byte, error) {
+func (bidsCache *bidsCache) GetBid(bidderName, bidId string, bid openrtb2.Bid) ([]byte, error) {
 
-	_, seatBidExists := bdh.bids[bidderName]
+	_, seatBidExists := bidsCache.bids[bidderName]
 	if !seatBidExists {
 		impToBid := make(map[string][]byte, 0)
-		bdh.bids[bidderName] = impToBid
+		bidsCache.bids[bidderName] = impToBid
 	}
-	_, biddExists := bdh.bids[bidderName][bidId]
-	if !biddExists {
+	_, bidExists := bidsCache.bids[bidderName][bidId]
+	if !bidExists {
 		bidBytes, err := json.Marshal(bid)
 		if err != nil {
 			return nil, err
 		}
-		bdh.bids[bidderName][bidId] = bidBytes
+		bidsCache.bids[bidderName][bidId] = bidBytes
 	}
-	return bdh.bids[bidderName][bidId], nil
+	return bidsCache.bids[bidderName][bidId], nil
 }

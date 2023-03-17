@@ -187,6 +187,38 @@ func runTestCase(t *testing.T, auctionEndpointHandler httprouter.Handle, test te
 	}
 }
 
+func compareWarnings(t *testing.T, expectedBidResponseExt, actualBidResponseExt []byte, warnPath string) {
+	expectedWarnings, _, _, err := jsonparser.Get(expectedBidResponseExt, warnPath)
+	if err != nil && err != jsonparser.KeyPathNotFoundError {
+		assert.Fail(t, "error getting data from response extension")
+	}
+	if len(expectedWarnings) > 0 {
+		actualWarnings, _, _, err := jsonparser.Get(actualBidResponseExt, warnPath)
+		if err != nil && err != jsonparser.KeyPathNotFoundError {
+			assert.Fail(t, "error getting data from response extension")
+		}
+
+		var expectedWarn []openrtb_ext.ExtBidderMessage
+		err = json.Unmarshal(expectedWarnings, &expectedWarn)
+		if err != nil {
+			assert.Fail(t, "error unmarshalling expected warnings data from response extension")
+		}
+
+		var actualWarn []openrtb_ext.ExtBidderMessage
+		err = json.Unmarshal(actualWarnings, &actualWarn)
+		if err != nil {
+			assert.Fail(t, "error unmarshalling actual warnings data from response extension")
+		}
+
+		// warnings from different bidders may be returned in different order.
+		assert.Equal(t, len(expectedWarn), len(actualWarn), "incorrect warnings number")
+		for i, expWarn := range expectedWarn {
+			actualWarning := actualWarn[i]
+			assert.Contains(t, actualWarning.Message, expWarn.Message, "incorrect warning")
+		}
+	}
+}
+
 // Once unmarshalled, bidResponse objects can't simply be compared with an `assert.Equalf()` call
 // because tests fail if the elements inside the `bidResponse.SeatBid` and `bidResponse.SeatBid.Bid`
 // arrays, if any, are not listed in the exact same order in the actual version and in the expected version.
@@ -197,18 +229,7 @@ func assertBidResponseEqual(t *testing.T, testFile string, expectedBidResponse o
 	assert.Equalf(t, expectedBidResponse.Cur, actualBidResponse.Cur, "BidResponse.Cur doesn't match expected. Test: %s\n", testFile)
 
 	if len(expectedBidResponse.Ext) > 0 {
-		expectedWarnings, _, _, err := jsonparser.Get(expectedBidResponse.Ext, "warnings")
-		if err != nil && err != jsonparser.KeyPathNotFoundError {
-			assert.Fail(t, "error getting data from response extension")
-		}
-		if len(expectedWarnings) > 0 {
-			actualWarnings, _, _, err := jsonparser.Get(actualBidResponse.Ext, "warnings")
-			if err != nil && err != jsonparser.KeyPathNotFoundError {
-				assert.Fail(t, "error getting data from response extension")
-			}
-			assert.JSONEq(t, string(expectedWarnings), string(actualWarnings), "incorrect warnings")
-		}
-
+		compareWarnings(t, expectedBidResponse.Ext, actualBidResponse.Ext, "warnings.general")
 	}
 
 	//Assert []SeatBid and their Bid elements independently of their order

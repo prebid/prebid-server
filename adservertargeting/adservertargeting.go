@@ -73,11 +73,15 @@ func collect(
 		warnings = append(warnings, createWarning("unable to extract adServerTargeting from request"))
 		return nil, warnings
 	}
+	adServerTargeting, validationWarnings := validateAdServerTargeting(adServerTargeting)
+	if len(validationWarnings) > 0 {
+		warnings = append(warnings, validationWarnings...)
+	}
 
 	requestTargetingData := map[string]RequestTargetingData{}
 	responseTargetingData := []ResponseTargetingData{}
 
-	impsCache := reqImpCache{resolverReq: resolvedRequest}
+	impsCache := requestImpCache{resolverReq: resolvedRequest}
 
 	for _, targetingObj := range adServerTargeting {
 		source := strings.ToLower(targetingObj.Source)
@@ -117,11 +121,6 @@ func resolve(
 	response *openrtb2.BidResponse,
 	warnings []openrtb_ext.ExtBidderMessage,
 	truncateTargetAttribute *int) (*openrtb2.BidResponse, []openrtb_ext.ExtBidderMessage) {
-	if adServerTargetingData == nil {
-		return response, nil
-	}
-
-	// ad server targeting data will go to seatbid[].bid[].ext.prebid.targeting
 
 	bidCache := bidsCache{bids: make(map[string]map[string][]byte)}
 
@@ -130,7 +129,10 @@ func resolve(
 		for i, bid := range seat.Bid {
 			targetingData := make(map[string]string)
 			processRequestTargetingData(adServerTargetingData, targetingData, bid.ImpID)
-			processResponseTargetingData(adServerTargetingData, targetingData, bidderName, bid, bidCache, response, seat.Ext, warnings)
+			respWarnings := processResponseTargetingData(adServerTargetingData, targetingData, bidderName, bid, bidCache, response, seat.Ext)
+			if len(respWarnings) > 0 {
+				warnings = append(warnings, respWarnings...)
+			}
 			seat.Bid[i].Ext = buildBidExt(targetingData, bid, warnings, truncateTargetAttribute)
 		}
 	}
