@@ -199,6 +199,18 @@ func TestReadFromRequestWrapper(t *testing.T) {
 			expectedError: true,
 		},
 		{
+			description: "Has regs.us_privacy",
+			request: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{USPrivacy: "present"},
+				Ext:  json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
+			},
+			expectedPolicy: Policy{
+				Consent:       "present",
+				NoSaleBidders: []string{"a", "b"},
+			},
+			expectedError: false,
+		},
+		{
 			description: "GPP Success, no USPV1",
 			request: &openrtb2.BidRequest{
 				Regs: &openrtb2.Regs{GPP: "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",

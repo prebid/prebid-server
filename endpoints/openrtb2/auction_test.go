@@ -3540,19 +3540,19 @@ func TestAuctionWarnings(t *testing.T) {
 			expectedWarning: "CCPA consent is invalid and will be ignored. (request.regs.ext.us_privacy must contain 4 characters)",
 		},
 		{
-			name:            "us-privacy-conflict",
+			name:            "us-privacy-signals-conflict",
 			file:            "us-privacy-conflict.json",
-			expectedWarning: "regs.us_privacy consent does not match uspv1 in GPP and will be ignored",
+			expectedWarning: "regs.us_privacy consent does not match uspv1 in GPP, using regs.gpp",
 		},
 		{
-			name:            "gdpr-conflict", // gdpr signals do not match
+			name:            "gdpr-signals-conflict", // gdpr signals do not match
 			file:            "gdpr-conflict.json",
 			expectedWarning: "regs.gdpr signal conflicts with GPP (regs.gpp_sid) and will be ignored",
 		},
 		{
-			name:            "gdpr-conflict2", // gdpr consent strings do not match
+			name:            "gdpr-signals-conflict2", // gdpr consent strings do not match
 			file:            "gdpr-conflict2.json",
-			expectedWarning: "user.consent GDPR string conflicts with GPP (regs.gpp) GDPR string and will be ignored",
+			expectedWarning: "user.consent GDPR string conflicts with GPP (regs.gpp) GDPR string, using regs.gpp",
 		},
 	}
 	deps := &endpointDeps{

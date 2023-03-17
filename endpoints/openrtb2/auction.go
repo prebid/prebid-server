@@ -1636,10 +1636,10 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 	}
 
 	if req.User.Consent != "" {
-		for _, sec := range gpp.Sections {
-			if sec.GetID() == constants.SectionTCFEU2 && sec.GetValue() != req.User.Consent {
+		for _, section := range gpp.Sections {
+			if section.GetID() == constants.SectionTCFEU2 && section.GetValue() != req.User.Consent {
 				errL = append(errL, &errortypes.Warning{
-					Message:     "user.consent GDPR string conflicts with GPP (regs.gpp) GDPR string and will be ignored",
+					Message:     "user.consent GDPR string conflicts with GPP (regs.gpp) GDPR string, using regs.gpp",
 					WarningCode: errortypes.InvalidPrivacyConsentWarningCode})
 			}
 		}

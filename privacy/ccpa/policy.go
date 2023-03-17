@@ -39,12 +39,10 @@ func ReadFromRequestWrapper(req *openrtb_ext.RequestWrapper, gpp gpplib.GppConta
 		if req.BidRequest.Regs.USPrivacy != "" {
 			if consent == "" {
 				consent = req.BidRequest.Regs.USPrivacy
-			} else {
-				if consent != req.BidRequest.Regs.USPrivacy {
-					warn = &errortypes.Warning{
-						Message:     "regs.us_privacy consent does not match uspv1 in GPP and will be ignored",
-						WarningCode: errortypes.InvalidPrivacyConsentWarningCode}
-				}
+			} else if consent != req.BidRequest.Regs.USPrivacy {
+				warn = &errortypes.Warning{
+					Message:     "regs.us_privacy consent does not match uspv1 in GPP, using regs.gpp",
+					WarningCode: errortypes.InvalidPrivacyConsentWarningCode}
 			}
 		}
 	}
