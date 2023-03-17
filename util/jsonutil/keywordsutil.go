@@ -8,8 +8,8 @@ import (
 
 type Keywords string
 
-// extImpAppnexusKeyVal defines the contract for bidrequest.imp[i].ext.prebid.bidder.appnexus.keywords[i]
-type extImpAppnexusKeyVal struct {
+// KeyVals defines the contract for bidrequest.imp[i].ext.prebid.bidder.appnexus.keywords[i]
+type KeyVals struct {
 	Key    string   `json:"key,omitempty"`
 	Values []string `json:"value,omitempty"`
 }
@@ -35,7 +35,7 @@ func (ks *Keywords) UnmarshalJSON(b []byte) error {
 		}
 		*ks = Keywords(keywords.String()[:keywords.Len()-1])
 	case '[':
-		var results []extImpAppnexusKeyVal
+		var results []KeyVals
 		err := json.Unmarshal(b, &results)
 		if err != nil {
 			return err
