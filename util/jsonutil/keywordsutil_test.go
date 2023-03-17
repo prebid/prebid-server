@@ -12,13 +12,13 @@ func TestKeywordsUtilUnmarshalJSON(t *testing.T) {
 		Keywords KeywordsString `json:"keywords"`
 	}
 
-	t.Run("dynamic json", func(t *testing.T) {
+	t.Run("dynamic-json", func(t *testing.T) {
 		jsonData := []byte(`{"keywords" : { "genre": ["rock", "pop"], "pets": ["dog"] }}`)
 		var keywords Keywords
 		assert.NoError(t, json.Unmarshal(jsonData, &keywords))
 	})
 
-	t.Run("json array", func(t *testing.T) {
+	t.Run("json-array", func(t *testing.T) {
 		jsonData := []byte(`{"keywords" : [{"key": "foo", "value": ["bar","baz"]},{"key": "valueless"}]}`)
 		var keywords Keywords
 		assert.NoError(t, json.Unmarshal(jsonData, &keywords))
