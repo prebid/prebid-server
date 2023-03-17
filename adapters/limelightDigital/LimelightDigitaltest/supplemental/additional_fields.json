@@ -26,7 +26,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://banner.ortb.net/openrtb/123456",
+        "uri": "http://test.ortb.net/openrtb/123456?host=banner.ortb.net",
         "body": {
           "id": "test-request-id-test-banner-id",
           "imp": [

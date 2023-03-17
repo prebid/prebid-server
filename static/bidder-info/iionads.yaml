@@ -1,4 +1,4 @@
-endpoint: "http://{{.Host}}.iionads.com/openrtb/{{.PublisherID}}"
+endpoint: "http://ads-pbs.iionads.com/openrtb/{{.PublisherID}}?host={{.Host}}"
 maintainer:
   email: "engineering@project-limelight.com"
 capabilities:
