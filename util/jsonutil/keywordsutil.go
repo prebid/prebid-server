@@ -22,8 +22,7 @@ func (ks *Keywords) UnmarshalJSON(b []byte) error {
 	switch b[0] {
 	case '{':
 		var results map[string][]string
-		err := json.Unmarshal(b, &results)
-		if err != nil {
+		if err := json.Unmarshal(b, &results); err != nil {
 			return err
 		}
 
@@ -36,8 +35,7 @@ func (ks *Keywords) UnmarshalJSON(b []byte) error {
 		*ks = Keywords(keywords.String()[:keywords.Len()-1])
 	case '[':
 		var results []KeyVals
-		err := json.Unmarshal(b, &results)
-		if err != nil {
+		if err := json.Unmarshal(b, &results); err != nil {
 			return err
 		}
 		var kvs strings.Builder
