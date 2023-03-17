@@ -23,7 +23,7 @@
             "reserve": 20,
             "position": "below",
             "traffic_source_code": "trafficSource",
-            "keywords": {"abc": ["bas"], "xyz": ["bar","baz"]},
+            "keywords": {"abc": ["bas"]},
             "use_pmt_rule": true,
             "private_sizes": [{"w": 300, "h": 250}]
           }
@@ -60,7 +60,7 @@
               "bidfloor": 20,
               "ext": {
                 "appnexus": {
-                  "keywords": "abc=bas,xyz=bar,xyz=baz",
+                  "keywords": "abc=bas",
                   "traffic_source_code": "trafficSource",
                   "use_pmt_rule": true,
                   "private_sizes": [{"w": 300, "h": 250}]
