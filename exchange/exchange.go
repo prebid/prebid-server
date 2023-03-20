@@ -298,13 +298,14 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	// Get currency rates conversions for the auction
 	conversions := e.getAuctionCurrencyRates(requestExt.Prebid.CurrencyConversions)
 
-	var adapterBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid
-	var adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra
-	var fledge *openrtb_ext.Fledge
-	var anyBidsReturned bool
-
-	// List of bidders we have requests for.
-	var liveAdapters []openrtb_ext.BidderName
+	var (
+		adapterBids     map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid
+		adapterExtra    map[openrtb_ext.BidderName]*seatResponseExtra
+		fledge          *openrtb_ext.Fledge
+		anyBidsReturned bool
+		// List of bidders we have requests for.
+		liveAdapters []openrtb_ext.BidderName
+	)
 
 	if len(r.StoredAuctionResponses) > 0 {
 		adapterBids, fledge, liveAdapters, err = buildStoredAuctionResponse(r.StoredAuctionResponses)
@@ -328,9 +329,12 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		adapterBids, adapterExtra, fledge, anyBidsReturned = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, alternateBidderCodes, requestExt.Prebid.Experiment, r.HookExecutor, r.StartTime)
 	}
 
-	var auc *auction
-	var cacheErrs []error
-	var bidResponseExt *openrtb_ext.ExtBidResponse
+	var (
+		auc            *auction
+		cacheErrs      []error
+		bidResponseExt *openrtb_ext.ExtBidResponse
+	)
+
 	if anyBidsReturned {
 
 		var bidCategory map[string]string

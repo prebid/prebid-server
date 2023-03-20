@@ -121,9 +121,11 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 		return nil, []error{reject}
 	}
 
-	var reqData []*adapters.RequestData
-	var errs []error
-	var responseChannel chan *httpCallInfo
+	var (
+		reqData         []*adapters.RequestData
+		errs            []error
+		responseChannel chan *httpCallInfo
+	)
 
 	//check if real request exists for this bidder or it only has stored responses
 	dataLen := 0
