@@ -430,6 +430,9 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 
 	// Build the response
 	bidResponse, err := e.buildBidResponse(ctx, liveAdapters, adapterBids, r.BidRequestWrapper.BidRequest, adapterExtra, auc, bidResponseExt, cacheInstructions.returnCreative, r.ImpExtInfoMap, r.PubID, errs)
+	if err == nil {
+		e.recordResponsePreparationMetrics(adapterExtra, r.RequestType, time.Now())
+	}
 	return bidResponse, err
 }
 
@@ -1444,4 +1447,16 @@ func setErrorMessageSecureMarkup(validationType string) string {
 		return "bidResponse secure markup warning: insecure creative in secure contexts"
 	}
 	return ""
+}
+
+func (e *exchange) recordResponsePreparationMetrics(ae map[openrtb_ext.BidderName]*seatResponseExtra, requestType metrics.RequestType, now time.Time) {
+	labels := metrics.AdapterOverheadLabels{
+		RType:        requestType,
+		OverheadType: metrics.PostBidderResponse,
+	}
+
+	for bidder, resp := range ae {
+		labels.Adapter = bidder
+		e.me.RecordAdapterOverheadTime(labels, resp.SeatBidsPreparationStartTime.Sub(now))
+	}
 }

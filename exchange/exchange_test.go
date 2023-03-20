@@ -5402,3 +5402,22 @@ func (e mockUpdateBidRequestHook) HandleBidderRequestHook(_ context.Context, mct
 
 	return hookstage.HookResult[hookstage.BidderRequestPayload]{ChangeSet: c, ModuleContext: mctx.ModuleContext}, nil
 }
+
+func TestRecordResponsePreparationMetrics(t *testing.T) {
+	duration := -500 * time.Millisecond
+	now := time.Now()
+	seatBidsPreparationStartTime := now.Add(duration)
+	bidder := openrtb_ext.BidderAppnexus
+	ae := map[openrtb_ext.BidderName]*seatResponseExtra{
+		bidder: {SeatBidsPreparationStartTime: seatBidsPreparationStartTime},
+	}
+	mockMetricEngine := &metrics.MetricsEngineMock{}
+	ex := exchange{me: mockMetricEngine}
+	labels := metrics.AdapterOverheadLabels{
+		RType:        metrics.ReqTypeORTB2Web,
+		OverheadType: metrics.PostRequestOverhead,
+		Adapter:      bidder,
+	}
+	mockMetricEngine.On("RecordAdapterOverheadTime", labels, duration)
+	ex.recordResponsePreparationMetrics(ae, metrics.ReqTypeORTB2Web, now)
+}
