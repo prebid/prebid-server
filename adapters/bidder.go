@@ -145,10 +145,11 @@ func (r *RequestData) SetBasicAuth(username string, password string) {
 }
 
 type ExtraRequestInfo struct {
-	PbsEntryPoint              metrics.RequestType
-	PbsEntryPointStartTime     time.Time
-	GlobalPrivacyControlHeader string
-	CurrencyConversions        currency.Conversions
+	PbsEntryPoint                metrics.RequestType
+	PbsEntryPointStartTime       time.Time
+	SeatBidsPreparationStartTime time.Time
+	GlobalPrivacyControlHeader   string
+	CurrencyConversions          currency.Conversions
 }
 
 func NewExtraRequestInfo(c currency.Conversions) ExtraRequestInfo {

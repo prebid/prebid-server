@@ -83,7 +83,8 @@ type seatResponseExtra struct {
 	Warnings           []openrtb_ext.ExtBidderMessage
 	// httpCalls is the list of debugging info. It should only be populated if the request.test == 1.
 	// This will become response.ext.debug.httpcalls.{bidder} on the final Response.
-	HttpCalls []*openrtb_ext.ExtHttpCall
+	HttpCalls                    []*openrtb_ext.ExtHttpCall
+	SeatBidsPreparationStartTime time.Time
 }
 
 type bidResponseWrapper struct {
@@ -614,7 +615,11 @@ func (e *exchange) getAllBids(
 			if len(seatBids) != 0 {
 				ae.HttpCalls = seatBids[0].HttpCalls
 			}
-
+			// SeatBidsPreparationStartTime is needed to calculate duration for openrtb response preparation time metric
+			//  No metric needs to be logged for requests which error out
+			if err == nil {
+				ae.SeatBidsPreparationStartTime = reqInfo.SeatBidsPreparationStartTime
+			}
 			// Timing statistics
 			e.me.RecordAdapterTime(bidderRequest.BidderLabels, time.Since(start))
 			bidderRequest.BidderLabels.AdapterBids = bidsToMetric(brw.adapterSeatBids)
