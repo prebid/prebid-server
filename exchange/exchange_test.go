@@ -5415,7 +5415,7 @@ func TestRecordResponsePreparationMetrics(t *testing.T) {
 	ex := exchange{me: mockMetricEngine}
 	labels := metrics.AdapterOverheadLabels{
 		RType:        metrics.ReqTypeORTB2Web,
-		OverheadType: metrics.PostRequestOverhead,
+		OverheadType: metrics.PostBidderResponse,
 		Adapter:      bidder,
 	}
 	mockMetricEngine.On("RecordAdapterOverheadTime", labels, duration)

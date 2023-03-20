@@ -389,7 +389,7 @@ func makeBlankOverheadTimerMetrics() map[RequestType]map[AdapterOverheadType]met
 	}
 	requestTypes := AdapterOverheadRequestTypes()
 	m := make(map[RequestType]map[AdapterOverheadType]metrics.Timer, len(requestTypes))
-	for i, _ := range requestTypes {
+	for i := range requestTypes {
 		m[requestTypes[i]] = getMetrics()
 	}
 	return m
@@ -475,7 +475,7 @@ func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, 
 	am.GotBidsMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.requests.gotbids", adapterOrAccount, exchange), registry)
 	am.RequestTimer = metrics.GetOrRegisterTimer(fmt.Sprintf("%[1]s.%[2]s.request_time", adapterOrAccount, exchange), registry)
 	requestTypes := AdapterOverheadRequestTypes()
-	for i, _ := range requestTypes {
+	for i := range requestTypes {
 		am.OverheadTimer[requestTypes[i]] = makeOverheadTimerMetrics(registry, adapterOrAccount+"."+exchange+".", requestTypes[i])
 	}
 	am.PriceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("%[1]s.%[2]s.prices", adapterOrAccount, exchange), registry, metrics.NewExpDecaySample(1028, 0.015))
