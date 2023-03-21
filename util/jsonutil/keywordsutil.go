@@ -59,3 +59,7 @@ func (ks *Keywords) UnmarshalJSON(b []byte) error {
 	}
 	return nil
 }
+
+func (ks *Keywords) String() string {
+	return *(*string)(ks)
+}

@@ -16,20 +16,20 @@ func TestKeywordsUtilUnmarshalJSON(t *testing.T) {
 		jsonData := []byte(`{"keywords" : { "pets": ["dog"] }}`)
 		var keywords keywords
 		assert.NoError(t, json.Unmarshal(jsonData, &keywords))
-		assert.Equal(t, "pets=dog", string(keywords.Keywords))
+		assert.Equal(t, "pets=dog", keywords.Keywords.String())
 	})
 
 	t.Run("json-array", func(t *testing.T) {
 		jsonData := []byte(`{"keywords" : [{"key": "foo", "value": ["bar","baz"]},{"key": "valueless"}]}`)
 		var keywords keywords
 		assert.NoError(t, json.Unmarshal(jsonData, &keywords))
-		assert.Equal(t, "foo=bar,foo=baz,valueless", string(keywords.Keywords))
+		assert.Equal(t, "foo=bar,foo=baz,valueless", keywords.Keywords.String())
 	})
 
 	t.Run("string", func(t *testing.T) {
 		jsonData := []byte(`{"keywords" : "foo=bar,foo=baz,valueless"}`)
 		var keywords keywords
 		assert.NoError(t, json.Unmarshal(jsonData, &keywords))
-		assert.Equal(t, "foo=bar,foo=baz,valueless", string(keywords.Keywords))
+		assert.Equal(t, "foo=bar,foo=baz,valueless", keywords.Keywords.String())
 	})
 }
