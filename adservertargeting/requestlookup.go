@@ -18,7 +18,7 @@ func getAdServerTargeting(reqWrapper *openrtb_ext.RequestWrapper) ([]openrtb_ext
 
 	reqExtPrebid := reqExt.GetPrebid()
 	if reqExtPrebid == nil {
-		return nil, err
+		return nil, nil
 	}
 
 	return reqExtPrebid.AdServerTargeting, nil
