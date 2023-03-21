@@ -2398,6 +2398,83 @@ func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 	}
 }
 
+func TestCleanOpenRTBRequestsWithOpenRTBDowngradde(t *testing.T) {
+	bidReq := newBidRequest(t)
+	bidReq.Regs = &openrtb2.Regs{}
+	bidReq.Regs.GPP = "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1NYN"
+	bidReq.Regs.GPPSID = []int8{6}
+	bidReq.User.ID = ""
+	bidReq.User.BuyerUID = ""
+
+	DowngradedRegs := *bidReq.Regs
+	DowngradedUser := *bidReq.User
+	DowngradedRegs.GDPR = ptrutil.ToPtr[int8](0)
+	DowngradedRegs.USPrivacy = "1NYN"
+	DowngradedUser.Consent = "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA"
+
+	testCases := []struct {
+		name        string
+		req         AuctionRequest
+		expectRegs  *openrtb2.Regs
+		expectUser  *openrtb2.User
+		bidderInfos config.BidderInfos
+	}{
+		{
+			name:        "NotSupported",
+			req:         AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: bidReq}, UserSyncs: &emptyUsersync{}},
+			expectRegs:  &DowngradedRegs,
+			expectUser:  &DowngradedUser,
+			bidderInfos: config.BidderInfos{"appnexus": config.BidderInfo{OpenRTB: &config.OpenRTBInfo{GPPSupported: false}}},
+		},
+		{
+			name:        "Supported",
+			req:         AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: bidReq}, UserSyncs: &emptyUsersync{}},
+			expectRegs:  bidReq.Regs,
+			expectUser:  bidReq.User,
+			bidderInfos: config.BidderInfos{"appnexus": config.BidderInfo{OpenRTB: &config.OpenRTBInfo{GPPSupported: true}}},
+		},
+	}
+
+	privacyConfig := config.Privacy{
+		CCPA: config.CCPA{
+			Enforce: true,
+		},
+		LMT: config.LMT{
+			Enforce: true,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+
+			gdprPermsBuilder := fakePermissionsBuilder{
+				permissions: &permissionsMock{
+					allowAllBidders: true,
+				},
+			}.Builder
+			tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
+				cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
+			}.Builder
+
+			reqSplitter := &requestSplitter{
+				bidderToSyncerKey: map[string]string{},
+				me:                &metrics.MetricsEngineMock{},
+				privacyConfig:     privacyConfig,
+				gdprPermsBuilder:  gdprPermsBuilder,
+				tcf2ConfigBuilder: tcf2ConfigBuilder,
+				hostSChainNode:    nil,
+				bidderInfo:        test.bidderInfos,
+			}
+			bidderRequests, _, err := reqSplitter.cleanOpenRTBRequests(context.Background(), test.req, nil, gdpr.SignalNo)
+			assert.Nil(t, err, "Err should be nil")
+			bidRequest := bidderRequests[0]
+			assert.Equal(t, test.expectRegs, bidRequest.BidRequest.Regs)
+			assert.Equal(t, test.expectUser, bidRequest.BidRequest.User)
+
+		})
+	}
+}
+
 func TestBuildRequestExtForBidder(t *testing.T) {
 	bidder := "foo"
 	bidderParams := json.RawMessage(`"bar"`)
