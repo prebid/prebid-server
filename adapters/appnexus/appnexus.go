@@ -46,19 +46,28 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	validImps := []openrtb2.Imp{}
 	for i := 0; i < len(request.Imp); i++ {
-		// If the preprocessing failed, the server won't be able to bid on this Imp. Delete it, and note the error.
-		memberId, shouldGenerateAdPodIdForImp, err := preprocess(&request.Imp[i], displayManagerVer)
+		appnexusExt, err := getAppNexusExt(&request.Imp[i])
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
+		// If the preprocessing failed, the server won't be able to bid on this Imp. Delete it, and note the error.
+		err = preprocess(&request.Imp[i], &appnexusExt, displayManagerVer)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		memberId := appnexusExt.Member
 		if memberId != "" {
 			if _, ok := memberIds[memberId]; !ok {
 				memberIds[memberId] = struct{}{}
 				uniqueMemberIds = append(uniqueMemberIds, memberId)
 			}
 		}
+
+		shouldGenerateAdPodIdForImp := appnexusExt.AdPodId
 		if shouldGenerateAdPodId == nil {
 			shouldGenerateAdPodId = &shouldGenerateAdPodIdForImp
 		} else if *shouldGenerateAdPodId != shouldGenerateAdPodIdForImp {
@@ -129,6 +138,20 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	return requests, append(errs, errors...)
 }
 
+func getAppNexusExt(imp *openrtb2.Imp) (openrtb_ext.ExtImpAppnexus, error) {
+	var bidderExt adapters.ExtImpBidder
+	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		return openrtb_ext.ExtImpAppnexus{}, err
+	}
+
+	var appnexusExt openrtb_ext.ExtImpAppnexus
+	if err := json.Unmarshal(bidderExt.Bidder, &appnexusExt); err != nil {
+		return openrtb_ext.ExtImpAppnexus{}, err
+	}
+
+	return appnexusExt, nil
+}
+
 func groupByPods(imps []openrtb2.Imp) map[string]([]openrtb2.Imp) {
 	// find number of pods in response
 	podImps := make(map[string][]openrtb2.Imp)
@@ -190,17 +213,7 @@ func splitRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExt
 // preprocess mutates the imp to get it ready to send to appnexus.
 //
 // It returns the member param, if it exists, and an error if anything went wrong during the preprocessing.
-func preprocess(imp *openrtb2.Imp, defaultDisplayManagerVer string) (string, bool, error) {
-	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return "", false, err
-	}
-
-	var appnexusExt openrtb_ext.ExtImpAppnexus
-	if err := json.Unmarshal(bidderExt.Bidder, &appnexusExt); err != nil {
-		return "", false, err
-	}
-
+func preprocess(imp *openrtb2.Imp, appnexusExt *openrtb_ext.ExtImpAppnexus, defaultDisplayManagerVer string) error {
 	// Accept legacy Appnexus parameters if we don't have modern ones
 	// Don't worry if both is set as validation rules should prevent, and this is temporary anyway.
 	if appnexusExt.PlacementId == 0 && appnexusExt.DeprecatedPlacementId != 0 {
@@ -217,7 +230,7 @@ func preprocess(imp *openrtb2.Imp, defaultDisplayManagerVer string) (string, boo
 	}
 
 	if appnexusExt.PlacementId == 0 && (appnexusExt.InvCode == "" || appnexusExt.Member == "") {
-		return "", false, &errortypes.BadInput{
+		return &errortypes.BadInput{
 			Message: "No placement or member+invcode provided",
 		}
 	}
@@ -259,10 +272,10 @@ func preprocess(imp *openrtb2.Imp, defaultDisplayManagerVer string) (string, boo
 	}}
 	var err error
 	if imp.Ext, err = json.Marshal(&impExt); err != nil {
-		return appnexusExt.Member, appnexusExt.AdPodId, err
+		return err
 	}
 
-	return appnexusExt.Member, appnexusExt.AdPodId, nil
+	return nil
 }
 
 func makeKeywordStr(keywords []*openrtb_ext.ExtImpAppnexusKeyVal) string {
