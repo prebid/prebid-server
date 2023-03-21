@@ -56,6 +56,28 @@ func TestSiteNotSupported(t *testing.T) {
 	assert.Len(t, bids, 0)
 }
 
+func TestDOOHNotSupported(t *testing.T) {
+	bidder := &mockBidder{}
+	info := config.BidderInfo{
+		Capabilities: &config.CapabilitiesInfo{
+			Site: &config.PlatformInfo{
+				MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner},
+			},
+		},
+	}
+	constrained := adapters.BuildInfoAwareBidder(bidder, info)
+	bids, errs := constrained.MakeRequests(&openrtb2.BidRequest{
+		Imp:  []openrtb2.Imp{{ID: "imp-1", Banner: &openrtb2.Banner{}}},
+		DOOH: &openrtb2.DOOH{},
+	}, &adapters.ExtraRequestInfo{})
+	if !assert.Len(t, errs, 1) {
+		return
+	}
+	assert.EqualError(t, errs[0], "this bidder does not support dooh requests")
+	assert.IsType(t, &errortypes.Warning{}, errs[0])
+	assert.Len(t, bids, 0)
+}
+
 func TestImpFiltering(t *testing.T) {
 	bidder := &mockBidder{}
 	info := config.BidderInfo{

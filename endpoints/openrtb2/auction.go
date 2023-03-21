@@ -410,6 +410,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 
 	accountId, isAppReq, errs := getAccountIdFromRawRequest(hasStoredBidRequest, storedRequests[storedBidRequestId], requestJson)
 	// fill labels here in order to pass correct metrics in case of errors
+	// TODO: DOOH
 	if isAppReq {
 		labels.Source = metrics.DemandApp
 		labels.RType = metrics.ReqTypeORTB2App
@@ -755,8 +756,21 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 		return []error{err}
 	}
 
-	if (req.Site == nil && req.App == nil) || (req.Site != nil && req.App != nil) {
-		return append(errL, errors.New("request.site or request.app must be defined, but not both."))
+	// Prep for mutual exclusion check
+	invTypeNumMatches := 0
+	if req.Site != nil {
+		invTypeNumMatches++
+	}
+	if req.App != nil {
+		invTypeNumMatches++
+	}
+	if req.DOOH != nil {
+		invTypeNumMatches++
+	}
+	if invTypeNumMatches == 0 {
+		return append(errL, errors.New("One of request.site or request.app or request.dooh must be defined"))
+	} else if invTypeNumMatches >= 2 {
+		return append(errL, errors.New("No more than one of request.site or request.app or request.dooh can be defined"))
 	}
 
 	if errs := validateRequestExt(req); len(errs) != 0 {
@@ -1885,6 +1899,7 @@ func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, r *openrtb_
 
 	setDeviceImplicitly(httpReq, r, deps.privateNetworkIPValidator)
 
+	// TODO: DOOH
 	// Per the OpenRTB spec: A bid request must not contain both a Site and an App object. If neither are
 	// present, we'll assume it's a site request.
 	if r.App == nil {

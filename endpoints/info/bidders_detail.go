@@ -122,6 +122,7 @@ type maintainer struct {
 type capabilities struct {
 	App  *platform `json:"app,omitempty"`
 	Site *platform `json:"site,omitempty"`
+	DOOH *platform `json:"dooh,omitempty"`
 }
 
 type platform struct {
@@ -155,6 +156,12 @@ func mapDetailFromConfig(c config.BidderInfo) bidderDetail {
 			if c.Capabilities.Site != nil {
 				bidderDetail.Capabilities.Site = &platform{
 					MediaTypes: mapMediaTypes(c.Capabilities.Site.MediaTypes),
+				}
+			}
+
+			if c.Capabilities.DOOH != nil {
+				bidderDetail.Capabilities.DOOH = &platform{
+					MediaTypes: mapMediaTypes(c.Capabilities.DOOH.MediaTypes),
 				}
 			}
 		}

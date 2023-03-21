@@ -1,5 +1,5 @@
 {
-  "description": "Request does not come with site field nor app field",
+  "description": "Request does not come with site nor app nor dooh field",
   "mockBidRequest": {
     "id": "req-id",
     "imp": [
@@ -19,5 +19,5 @@
     ]
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request: request.site or request.app must be defined, but not both.\n"
+  "expectedErrorMessage": "Invalid request: One of request.site or request.app or request.dooh must be defined\n"
 }

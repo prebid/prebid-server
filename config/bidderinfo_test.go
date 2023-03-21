@@ -31,6 +31,9 @@ capabilities:
       - banner
       - video
       - native
+  dooh:
+    mediaTypes:
+      - banner
 modifyingVastXmlAllowed: true
 debug:
   allow: true
@@ -393,7 +396,7 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 			},
 		},
 		{
-			"One bidder missing capabilities site and app",
+			"One bidder missing capabilities site and app and dooh",
 			BidderInfos{
 				"bidderA": BidderInfo{
 					Endpoint: "http://bidderA.com/openrtb2",
@@ -404,7 +407,7 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 				},
 			},
 			[]error{
-				errors.New("at least one of capabilities.site or capabilities.app must exist for adapter: bidderA"),
+				errors.New("at least one of capabilities.site or capabilities.app or capabilities.dooh must exist for adapter: bidderA"),
 			},
 		},
 		{
@@ -985,6 +988,9 @@ func TestReadFullYamlBidderConfig(t *testing.T) {
 				},
 				Site: &PlatformInfo{
 					MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative},
+				},
+				DOOH: &PlatformInfo{
+					MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner},
 				},
 			},
 			Debug:                   &DebugInfo{Allow: true},
