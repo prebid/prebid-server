@@ -52,6 +52,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			continue
 		}
 
+		handleLegacyParams(&appnexusExt)
 		// If the preprocessing failed, the server won't be able to bid on this Imp. Delete it, and note the error.
 		err = preprocess(&request.Imp[i], &appnexusExt, displayManagerVer)
 		if err != nil {
@@ -152,6 +153,21 @@ func getAppNexusExt(imp *openrtb2.Imp) (openrtb_ext.ExtImpAppnexus, error) {
 	return appnexusExt, nil
 }
 
+func handleLegacyParams(appnexusExt *openrtb_ext.ExtImpAppnexus) {
+	if appnexusExt.PlacementId == 0 && appnexusExt.DeprecatedPlacementId != 0 {
+		appnexusExt.PlacementId = appnexusExt.DeprecatedPlacementId
+	}
+	if appnexusExt.InvCode == "" && appnexusExt.LegacyInvCode != "" {
+		appnexusExt.InvCode = appnexusExt.LegacyInvCode
+	}
+	if appnexusExt.TrafficSourceCode == "" && appnexusExt.LegacyTrafficSourceCode != "" {
+		appnexusExt.TrafficSourceCode = appnexusExt.LegacyTrafficSourceCode
+	}
+	if appnexusExt.UsePaymentRule == nil && appnexusExt.DeprecatedUsePaymentRule != nil {
+		appnexusExt.UsePaymentRule = appnexusExt.DeprecatedUsePaymentRule
+	}
+}
+
 func groupByPods(imps []openrtb2.Imp) map[string]([]openrtb2.Imp) {
 	// find number of pods in response
 	podImps := make(map[string][]openrtb2.Imp)
@@ -214,21 +230,6 @@ func splitRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExt
 //
 // It returns the member param, if it exists, and an error if anything went wrong during the preprocessing.
 func preprocess(imp *openrtb2.Imp, appnexusExt *openrtb_ext.ExtImpAppnexus, defaultDisplayManagerVer string) error {
-	// Accept legacy Appnexus parameters if we don't have modern ones
-	// Don't worry if both is set as validation rules should prevent, and this is temporary anyway.
-	if appnexusExt.PlacementId == 0 && appnexusExt.DeprecatedPlacementId != 0 {
-		appnexusExt.PlacementId = appnexusExt.DeprecatedPlacementId
-	}
-	if appnexusExt.InvCode == "" && appnexusExt.LegacyInvCode != "" {
-		appnexusExt.InvCode = appnexusExt.LegacyInvCode
-	}
-	if appnexusExt.TrafficSourceCode == "" && appnexusExt.LegacyTrafficSourceCode != "" {
-		appnexusExt.TrafficSourceCode = appnexusExt.LegacyTrafficSourceCode
-	}
-	if appnexusExt.UsePaymentRule == nil && appnexusExt.DeprecatedUsePaymentRule != nil {
-		appnexusExt.UsePaymentRule = appnexusExt.DeprecatedUsePaymentRule
-	}
-
 	if appnexusExt.PlacementId == 0 && (appnexusExt.InvCode == "" || appnexusExt.Member == "") {
 		return &errortypes.BadInput{
 			Message: "No placement or member+invcode provided",
@@ -270,6 +271,7 @@ func preprocess(imp *openrtb2.Imp, appnexusExt *openrtb_ext.ExtImpAppnexus, defa
 		UsePmtRule:        appnexusExt.UsePaymentRule,
 		PrivateSizes:      appnexusExt.PrivateSizes,
 	}}
+
 	var err error
 	if imp.Ext, err = json.Marshal(&impExt); err != nil {
 		return err
