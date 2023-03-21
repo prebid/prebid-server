@@ -2398,7 +2398,7 @@ func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 	}
 }
 
-func TestCleanOpenRTBRequestsWithOpenRTBDowngradde(t *testing.T) {
+func TestCleanOpenRTBRequestsWithOpenRTBDowngrade(t *testing.T) {
 	bidReq := newBidRequest(t)
 	bidReq.Regs = &openrtb2.Regs{}
 	bidReq.Regs.GPP = "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1NYN"
@@ -2406,11 +2406,11 @@ func TestCleanOpenRTBRequestsWithOpenRTBDowngradde(t *testing.T) {
 	bidReq.User.ID = ""
 	bidReq.User.BuyerUID = ""
 
-	DowngradedRegs := *bidReq.Regs
-	DowngradedUser := *bidReq.User
-	DowngradedRegs.GDPR = ptrutil.ToPtr[int8](0)
-	DowngradedRegs.USPrivacy = "1NYN"
-	DowngradedUser.Consent = "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA"
+	downgradedRegs := *bidReq.Regs
+	downgradedUser := *bidReq.User
+	downgradedRegs.GDPR = ptrutil.ToPtr[int8](0)
+	downgradedRegs.USPrivacy = "1NYN"
+	downgradedUser.Consent = "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA"
 
 	testCases := []struct {
 		name        string
@@ -2422,8 +2422,8 @@ func TestCleanOpenRTBRequestsWithOpenRTBDowngradde(t *testing.T) {
 		{
 			name:        "NotSupported",
 			req:         AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: bidReq}, UserSyncs: &emptyUsersync{}},
-			expectRegs:  &DowngradedRegs,
-			expectUser:  &DowngradedUser,
+			expectRegs:  &downgradedRegs,
+			expectUser:  &downgradedUser,
 			bidderInfos: config.BidderInfos{"appnexus": config.BidderInfo{OpenRTB: &config.OpenRTBInfo{GPPSupported: false}}},
 		},
 		{
