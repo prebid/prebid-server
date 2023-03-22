@@ -220,12 +220,12 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	}
 
 	requestExt, err := r.BidRequestWrapper.GetRequestExt()
-	requestExtPrebid := requestExt.GetPrebid()
 	if err != nil {
 		return nil, err
 	}
 
 	// ensure prebid object always exists
+	requestExtPrebid := requestExt.GetPrebid()
 	if requestExtPrebid == nil {
 		requestExtPrebid = &openrtb_ext.ExtRequestPrebid{}
 	}
