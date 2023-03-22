@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math/rand"
 
@@ -729,37 +728,6 @@ func randomizeList(list []openrtb_ext.BidderName) {
 		j = perm[i]
 		list[i], list[j] = list[j], list[i]
 	}
-}
-
-func extractBidRequestExt(bidRequest *openrtb2.BidRequest) (*openrtb_ext.ExtRequest, error) {
-	requestExt := &openrtb_ext.ExtRequest{}
-
-	if bidRequest == nil {
-		return requestExt, errors.New("Error bidRequest should not be nil")
-	}
-
-	if len(bidRequest.Ext) > 0 {
-		err := json.Unmarshal(bidRequest.Ext, &requestExt)
-		if err != nil {
-			return requestExt, fmt.Errorf("Error decoding Request.ext : %s", err.Error())
-		}
-	}
-
-	// validation already done in validateRequestExt(), directly build a map here for downstream processing
-	if requestExt.Prebid.MultiBid != nil {
-		requestExt.Prebid.MultiBidMap = make(map[string]openrtb_ext.ExtMultiBid)
-		for _, multiBid := range requestExt.Prebid.MultiBid {
-			if multiBid.Bidder != "" {
-				requestExt.Prebid.MultiBidMap[multiBid.Bidder] = *multiBid
-			} else {
-				for _, bidder := range multiBid.Bidders {
-					requestExt.Prebid.MultiBidMap[bidder] = *multiBid
-				}
-			}
-		}
-	}
-
-	return requestExt, nil
 }
 
 func getExtCacheInstructions(requestExtPrebid *openrtb_ext.ExtRequestPrebid) extCacheInstructions {

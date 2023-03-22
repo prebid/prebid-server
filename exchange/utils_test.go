@@ -1228,9 +1228,9 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 		var extRequest *openrtb_ext.ExtRequest
 		if test.inExt != nil {
 			req.Ext = test.inExt
-			unmarshaledExt, err := extractBidRequestExt(req)
+			extRequest = &openrtb_ext.ExtRequest{}
+			err := json.Unmarshal(req.Ext, extRequest)
 			assert.NoErrorf(t, err, test.description+":Error unmarshaling inExt")
-			extRequest = unmarshaledExt
 		}
 
 		auctionReq := AuctionRequest{
@@ -1302,9 +1302,9 @@ func TestCleanOpenRTBRequestsBidderParams(t *testing.T) {
 		var extRequest *openrtb_ext.ExtRequest
 		if test.inExt != nil {
 			req.Ext = test.inExt
-			unmarshaledExt, err := extractBidRequestExt(req)
+			extRequest = &openrtb_ext.ExtRequest{}
+			err := json.Unmarshal(req.Ext, extRequest)
 			assert.NoErrorf(t, err, test.description+":Error unmarshaling inExt")
-			extRequest = unmarshaledExt
 		}
 
 		auctionReq := AuctionRequest{
@@ -1368,77 +1368,6 @@ func getExpectedReqExt(nilExt, includePubmaticParams, includeAppnexusParams bool
 	}
 
 	return bidderParamsMap
-}
-
-func TestExtractBidRequestExt(t *testing.T) {
-	var boolFalse, boolTrue *bool = new(bool), new(bool)
-	*boolFalse = false
-	*boolTrue = true
-
-	testCases := []struct {
-		desc          string
-		inBidRequest  *openrtb2.BidRequest
-		outRequestExt *openrtb_ext.ExtRequest
-		outError      error
-	}{
-		{
-			desc:         "Valid vastxml.returnCreative set to false",
-			inBidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"debug":true,"cache":{"vastxml":{"returnCreative":false}}}}`)},
-			outRequestExt: &openrtb_ext.ExtRequest{
-				Prebid: openrtb_ext.ExtRequestPrebid{
-					Debug: true,
-					Cache: &openrtb_ext.ExtRequestPrebidCache{
-						VastXML: &openrtb_ext.ExtRequestPrebidCacheVAST{
-							ReturnCreative: boolFalse,
-						},
-					},
-				},
-			},
-			outError: nil,
-		},
-		{
-			desc:         "Valid vastxml.returnCreative set to true",
-			inBidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"debug":true,"cache":{"vastxml":{"returnCreative":true}}}}`)},
-			outRequestExt: &openrtb_ext.ExtRequest{
-				Prebid: openrtb_ext.ExtRequestPrebid{
-					Debug: true,
-					Cache: &openrtb_ext.ExtRequestPrebidCache{
-						VastXML: &openrtb_ext.ExtRequestPrebidCacheVAST{
-							ReturnCreative: boolTrue,
-						},
-					},
-				},
-			},
-			outError: nil,
-		},
-		{
-			desc:          "bidRequest nil, we expect an error",
-			inBidRequest:  nil,
-			outRequestExt: &openrtb_ext.ExtRequest{},
-			outError:      fmt.Errorf("Error bidRequest should not be nil"),
-		},
-		{
-			desc:          "Non-nil bidRequest with empty Ext, we expect a blank requestExt",
-			inBidRequest:  &openrtb2.BidRequest{},
-			outRequestExt: &openrtb_ext.ExtRequest{},
-			outError:      nil,
-		},
-		{
-			desc:          "Non-nil bidRequest with non-empty, invalid Ext, we expect unmarshaling error",
-			inBidRequest:  &openrtb2.BidRequest{Ext: json.RawMessage(`invalid`)},
-			outRequestExt: &openrtb_ext.ExtRequest{},
-			outError:      fmt.Errorf("Error decoding Request.ext : invalid character 'i' looking for beginning of value"),
-		},
-	}
-	for _, test := range testCases {
-		actualRequestExt, actualErr := extractBidRequestExt(test.inBidRequest)
-
-		// Given that assert.Equal asserts pointer variable equality based on the equality of the referenced values (as opposed to
-		// the memory addresses) the call below asserts whether or not *test.outRequestExt.Prebid.Cache.VastXML.ReturnCreative boolean
-		// value is equal to that of *actualRequestExt.Prebid.Cache.VastXML.ReturnCreative
-		assert.Equal(t, test.outRequestExt, actualRequestExt, "%s. Unexpected RequestExt value. \n", test.desc)
-		assert.Equal(t, test.outError, actualErr, "%s. Unexpected error value. \n", test.desc)
-	}
 }
 
 func TestGetExtCacheInstructions(t *testing.T) {
@@ -3070,9 +2999,9 @@ func TestCleanOpenRTBRequestsSChainMultipleBidders(t *testing.T) {
 		Ext: json.RawMessage(`{"prebid":{"schains":[{ "bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}, {"bidders":["axonix"],"schain":{"complete":1,"nodes":[{"asi":"directseller2.com","sid":"00002","rid":"BidRequest2","hp":1}],"ver":"1.0"}}]}}`),
 	}
 
-	unmarshaledExt, err := extractBidRequestExt(req)
+	extRequest := &openrtb_ext.ExtRequest{}
+	err := json.Unmarshal(req.Ext, extRequest)
 	assert.NoErrorf(t, err, "Error unmarshaling inExt")
-	extRequest := unmarshaledExt
 
 	auctionReq := AuctionRequest{
 		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
@@ -3424,9 +3353,9 @@ func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
 		var extRequest *openrtb_ext.ExtRequest
 		if test.inExt != nil {
 			req.Ext = test.inExt
-			unmarshaledExt, err := extractBidRequestExt(req)
+			extRequest = &openrtb_ext.ExtRequest{}
+			err := json.Unmarshal(req.Ext, extRequest)
 			assert.NoErrorf(t, err, test.desc+":Error unmarshaling inExt")
-			extRequest = unmarshaledExt
 		}
 
 		auctionReq := AuctionRequest{
