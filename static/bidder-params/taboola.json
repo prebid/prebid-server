@@ -40,5 +40,12 @@
       "type": "integer"
     }
   },
-  "required": ["publisherId"]
+  "oneOf": [
+    {
+      "required": [ "tagid", "publisherId" ]
+    },
+    {
+      "required": [ "tagId", "publisherId" ]
+    }
+  ]
 }
