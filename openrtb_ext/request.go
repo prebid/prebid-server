@@ -76,10 +76,10 @@ type ExtRequestPrebid struct {
 	MultiBid    []*ExtMultiBid         `json:"multibid,omitempty"`
 	MultiBidMap map[string]ExtMultiBid `json:"-"`
 
-	AdServerTargeting []AdServerTargeting `json:"adservertargeting,omitempty"`
+	AdServerTargeting []AdServerTarget `json:"adservertargeting,omitempty"`
 }
 
-type AdServerTargeting struct {
+type AdServerTarget struct {
 	Key    string `json:"key,omitempty"`
 	Source string `json:"source,omitempty"`
 	Value  string `json:"value,omitempty"`

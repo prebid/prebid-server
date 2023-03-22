@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func getAdServerTargeting(reqWrapper *openrtb_ext.RequestWrapper) ([]openrtb_ext.AdServerTargeting, error) {
+func getAdServerTargeting(reqWrapper *openrtb_ext.RequestWrapper) ([]openrtb_ext.AdServerTarget, error) {
 	reqExt, err := reqWrapper.GetRequestExt()
 	if err != nil {
 		return nil, err
@@ -24,8 +24,8 @@ func getAdServerTargeting(reqWrapper *openrtb_ext.RequestWrapper) ([]openrtb_ext
 	return reqExtPrebid.AdServerTargeting, nil
 }
 
-func validateAdServerTargeting(adServerTargeting []openrtb_ext.AdServerTargeting) ([]openrtb_ext.AdServerTargeting, []openrtb_ext.ExtBidderMessage) {
-	var validatedAdServerTargeting []openrtb_ext.AdServerTargeting
+func validateAdServerTargeting(adServerTargeting []openrtb_ext.AdServerTarget) ([]openrtb_ext.AdServerTarget, []openrtb_ext.ExtBidderMessage) {
+	var validatedAdServerTargeting []openrtb_ext.AdServerTarget
 	var warnings []openrtb_ext.ExtBidderMessage
 	for i, targetingObj := range adServerTargeting {
 
@@ -76,7 +76,7 @@ func getValueFromBidRequest(dataHolder *requestImpCache, path string, queryParam
 	}
 
 	// get data by key from request
-	requestValue, err := getDataFromRequest(path, dataHolder)
+	requestValue, err := getDataFromRequestJson(path, dataHolder)
 	if requestValue != nil || err != nil {
 		res.SingleVal = requestValue
 		return res, err
@@ -125,7 +125,7 @@ func getValueFromImp(path string, dataHolder *requestImpCache) (map[string][]byt
 	return impsDatas, nil
 }
 
-func getDataFromRequest(path string, dataHolder *requestImpCache) (json.RawMessage, error) {
+func getDataFromRequestJson(path string, dataHolder *requestImpCache) (json.RawMessage, error) {
 	keySplit := strings.Split(path, pathDelimiter)
 	reqJson := dataHolder.GetReqJson()
 	value, err := typedLookup(reqJson, path, keySplit...)
