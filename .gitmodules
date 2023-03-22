@@ -1,0 +1,3 @@
+[submodule "modules/prebid-seat-module"]
+	path = modules/prebid-seat-module
+	url = https://github.com/DianomiLtd/prebid-seat-module.git
