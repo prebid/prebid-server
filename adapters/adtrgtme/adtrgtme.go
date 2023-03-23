@@ -38,7 +38,7 @@ func (v *adapter) MakeRequests(
 
 	for i, imp := range openRTBRequest.Imp {
 		var err error
-		ext, err = v.getImpressionExt(&imp)
+		ext, err = getImpressionExt(&imp)
 		if err != nil {
 			errors = append(errors, err)
 			break
@@ -74,7 +74,7 @@ func (v *adapter) MakeRequests(
 	return requests, errors
 }
 
-func (v *adapter) getImpressionExt(imp *openrtb2.Imp) (openrtb_ext.ExtImpAdtrgtme, error) {
+func getImpressionExt(imp *openrtb2.Imp) (openrtb_ext.ExtImpAdtrgtme, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return openrtb_ext.ExtImpAdtrgtme{}, &errortypes.BadInput{
