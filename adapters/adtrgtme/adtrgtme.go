@@ -36,9 +36,9 @@ func (v *adapter) MakeRequests(
 	var requests []*adapters.RequestData
 	var errors []error
 
-	for i, imp := range openRTBRequest.Imp {
+	for i := range openRTBRequest.Imp {
 		var err error
-		ext, err = getImpressionExt(&imp)
+		ext, err = getImpressionExt(&openRTBRequest.Imp[i])
 		if err != nil {
 			errors = append(errors, err)
 			break
