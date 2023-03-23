@@ -48,7 +48,6 @@ func EnrichExtBidResponse(
 	bidRequest *openrtb2.BidRequest,
 	account *config.Account,
 ) (json.RawMessage, []error, error) {
-
 	modules, warnings, err := GetModulesJSON(stageOutcomes, bidRequest, account)
 	if err != nil || modules == nil {
 		return ext, warnings, err
@@ -62,15 +61,6 @@ func EnrichExtBidResponse(
 	if ext != nil {
 		response, err = jsonpatch.MergePatch(ext, response)
 	}
-
-	// if extBidResponse != nil && extBidResponse.Prebid != nil {
-	// 	if extBidResponse.Prebid.Modules == nil {
-	// 		extBidResponse.Prebid.Modules = modules
-	// 	} else {
-	// 		extBidResponse.Prebid.Modules, _ = jsonpatch.MergePatch(extBidResponse.Prebid.Modules, modules)
-	// 	}
-	// }
-
 	return response, warnings, err
 }
 

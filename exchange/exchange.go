@@ -1069,11 +1069,7 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*en
 
 	}
 
-	//TODO create prebid if not exists
-	if bidResponseExt.Prebid == nil {
-		bidResponseExt.Prebid = &openrtb_ext.ExtResponsePrebid{}
-	}
-	setSeatNonBid(seatNonBid, bidResponseExt.Prebid)
+	setSeatNonBid(seatNonBid, bidResponseExt)
 
 	return bidResponseExt
 }
@@ -1433,22 +1429,12 @@ func (ex *exchange) buildAuctionResponse(ctx context.Context, bidResponse *openr
 }
 
 // setSeatNonBid  adds SeatNonBids within bidResponse.Ext.Prebid.SeatNonBid
-func setSeatNonBid(seatNonBid []openrtb_ext.SeatNonBid, prebid *openrtb_ext.ExtResponsePrebid) {
-	if prebid != nil {
-		prebid.SeatNonBid = seatNonBid
+func setSeatNonBid(seatNonBid []openrtb_ext.SeatNonBid, bidExt *openrtb_ext.ExtBidResponse) {
+	if bidExt == nil || seatNonBid == nil || len(seatNonBid) == 0 {
+		return
 	}
-}
-
-// AuctionResponse contains OpenRTB Bid Response object and its extension (un-marshalled) object
-type AuctionResponse struct {
-	*openrtb2.BidResponse                             // BidResponse defines the contract for openrtb bidresponse
-	ExtBidResponse        *openrtb_ext.ExtBidResponse // ExtBidResponse defines the contract for bidresponse.ext
-}
-
-// GetSeatNonBid returns array of seat non-bid if present. nil otherwise
-func (ar *AuctionResponse) GetSeatNonBid() []openrtb_ext.SeatNonBid {
-	if ar.ExtBidResponse != nil && ar.ExtBidResponse.Prebid != nil {
-		return ar.ExtBidResponse.Prebid.SeatNonBid
+	if bidExt.Prebid == nil {
+		bidExt.Prebid = &openrtb_ext.ExtResponsePrebid{}
 	}
-	return nil
+	bidExt.Prebid.SeatNonBid = seatNonBid
 }

@@ -2144,6 +2144,9 @@ func TestExchangeJSON(t *testing.T) {
 			fileName := "./exchangetest/" + specFile.Name()
 			fileDisplayName := "exchange/exchangetest/" + specFile.Name()
 			t.Run(fileDisplayName, func(t *testing.T) {
+				// if specFile.Name() != "append-bidder-names.json" {
+				// 	return
+				// }
 				specData, err := loadFile(fileName)
 				if assert.NoError(t, err, "Failed to load contents of file %s: %v", fileDisplayName, err) {
 					assert.NotPanics(t, func() { runSpec(t, fileDisplayName, specData) }, fileDisplayName)
@@ -5355,7 +5358,7 @@ func TestBuildAuctionResponse(t *testing.T) {
 		name             string
 		args             args
 		expectedResponse *openrtb_ext.ResponseWrapper
-		expctedErr       error
+		expctedErr       string
 	}{
 		{
 			name: "with_seat_non_bids",
@@ -5411,11 +5414,12 @@ func TestBuildAuctionResponse(t *testing.T) {
 				SeatNonBid: tt.args.seatNonBid,
 			}
 			actualResponse, actualErr := ex.buildAuctionResponse(tt.args.ctx, tt.args.bidResponse, bidResponseExt)
-			if assert.EqualError(t, actualErr, tt.expctedErr.Error()) {
+			if tt.expctedErr == "" {
+				assert.NoError(t, actualErr)
+			} else if !assert.EqualError(t, actualErr, tt.expctedErr) {
 				t.Errorf("exchange.buildAuctionResponse() error = %v, wantErr %v", actualErr, tt.expctedErr)
 				return
-			}
-			if !reflect.DeepEqual(actualResponse, tt.expectedResponse) {
+			} else if !reflect.DeepEqual(actualResponse, tt.expectedResponse) {
 				t.Errorf("exchange.buildAuctionResponse() = %v, want %v", actualResponse, tt.expectedResponse)
 			}
 		})
