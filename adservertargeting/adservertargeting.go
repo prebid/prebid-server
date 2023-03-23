@@ -81,7 +81,7 @@ func collect(
 	requestTargetingData := map[string]RequestTargetingData{}
 	responseTargetingData := []ResponseTargetingData{}
 
-	impsCache := requestImpCache{resolverReq: resolvedRequest}
+	impsCache := requestImpCache{resolvedReq: resolvedRequest}
 
 	for _, targetingObj := range adServerTargeting {
 		source := strings.ToLower(targetingObj.Source)

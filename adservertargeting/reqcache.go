@@ -7,17 +7,17 @@ import (
 )
 
 type requestImpCache struct {
-	resolverReq json.RawMessage
+	resolvedReq json.RawMessage
 	impsData    []json.RawMessage
 }
 
 func (reqImpCache *requestImpCache) GetReqJson() []byte {
-	return reqImpCache.resolverReq
+	return reqImpCache.resolvedReq
 }
 
 func (reqImpCache *requestImpCache) GetImpsData() ([]json.RawMessage, error) {
 	if len(reqImpCache.impsData) == 0 {
-		imps, _, _, err := jsonparser.Get(reqImpCache.resolverReq, "imp")
+		imps, _, _, err := jsonparser.Get(reqImpCache.resolvedReq, "imp")
 		if err != nil {
 			return nil, err
 		}
