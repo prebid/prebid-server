@@ -6,16 +6,16 @@ import (
 	"github.com/prebid/openrtb/v17/openrtb2"
 )
 
-type requestImpCache struct {
+type requestCache struct {
 	resolvedReq json.RawMessage
 	impsData    []json.RawMessage
 }
 
-func (reqImpCache *requestImpCache) GetReqJson() []byte {
+func (reqImpCache *requestCache) GetReqJson() []byte {
 	return reqImpCache.resolvedReq
 }
 
-func (reqImpCache *requestImpCache) GetImpsData() ([]json.RawMessage, error) {
+func (reqImpCache *requestCache) GetImpsData() ([]json.RawMessage, error) {
 	if len(reqImpCache.impsData) == 0 {
 		imps, _, _, err := jsonparser.Get(reqImpCache.resolvedReq, "imp")
 		if err != nil {

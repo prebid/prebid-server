@@ -57,7 +57,7 @@ func validateAdServerTargeting(adServerTargeting []openrtb_ext.AdServerTarget) (
 	return validatedAdServerTargeting, warnings
 }
 
-func getValueFromBidRequest(dataHolder *requestImpCache, path string, queryParams url.Values) (RequestTargetingData, error) {
+func getValueFromBidRequest(dataHolder *requestCache, path string, queryParams url.Values) (RequestTargetingData, error) {
 	//use the path specified in 'value' to look for data in the ortb bidrequest.
 	res := RequestTargetingData{}
 
@@ -98,7 +98,7 @@ func getValueFromQueryParam(path string, queryParams url.Values) (json.RawMessag
 	return nil, nil
 }
 
-func getValueFromImp(path string, dataHolder *requestImpCache) (map[string][]byte, error) {
+func getValueFromImp(path string, dataHolder *requestCache) (map[string][]byte, error) {
 	impsDatas := make(map[string][]byte, 0)
 	impSplit, hasPrefix := verifyPrefixAndTrim(path, "imp.")
 	if hasPrefix {
@@ -125,7 +125,7 @@ func getValueFromImp(path string, dataHolder *requestImpCache) (map[string][]byt
 	return impsDatas, nil
 }
 
-func getDataFromRequestJson(path string, dataHolder *requestImpCache) (json.RawMessage, error) {
+func getDataFromRequestJson(path string, dataHolder *requestCache) (json.RawMessage, error) {
 	keySplit := strings.Split(path, pathDelimiter)
 	reqJson := dataHolder.GetReqJson()
 	value, err := typedLookup(reqJson, path, keySplit...)

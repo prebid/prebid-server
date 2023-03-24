@@ -39,7 +39,7 @@ func TestRequestImpCache(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		reqImpCache := requestImpCache{resolvedReq: test.inputRequest}
+		reqImpCache := requestCache{resolvedReq: test.inputRequest}
 
 		actualReq := reqImpCache.GetReqJson()
 		assert.Len(t, actualReq, test.expectedReqSize, "incorrect request returned")

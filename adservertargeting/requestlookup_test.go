@@ -5,6 +5,7 @@ import (
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
+	"net/url"
 	"testing"
 )
 
@@ -132,3 +133,272 @@ func TestValidateAdServerTargeting(t *testing.T) {
 		assert.Equal(t, test.expectedWarnings, actualWarnings, "incorrect warnings")
 	}
 }
+
+func TestGetValueFromBidRequest(t *testing.T) {
+
+	testCases := []struct {
+		description       string
+		inputPath         string
+		expectedTargeting RequestTargetingData
+		expectedError     bool
+	}{
+		{
+			description:       "get existing value from query params",
+			inputPath:         "ext.prebid.amp.data.amp-key",
+			expectedTargeting: RequestTargetingData{SingleVal: json.RawMessage(`testAmpKey`)},
+			expectedError:     false,
+		},
+		{
+			description:       "get non-existing value from query params",
+			inputPath:         "ext.prebid.amp.data.amp-key-not-existing",
+			expectedTargeting: RequestTargetingData{},
+			expectedError:     true,
+		},
+		{
+			description: "get existing value from impressions",
+			inputPath:   "imp.banner.h",
+			expectedTargeting: RequestTargetingData{
+				TargetingValueByImpId: map[string][]byte{
+					"test_imp1": []byte(`350`),
+					"test_imp2": []byte(`360`),
+				},
+			},
+			expectedError: false,
+		},
+		{
+			description: "get existing value from impressions ext",
+			inputPath:   "imp.ext.appnexus.placementId",
+			expectedTargeting: RequestTargetingData{
+				TargetingValueByImpId: map[string][]byte{
+					"test_imp1": []byte(`123`),
+					"test_imp2": []byte(`456`),
+				},
+			},
+			expectedError: false,
+		},
+		{
+			description:       "get non-existing value from impressions",
+			inputPath:         "imp.video",
+			expectedTargeting: RequestTargetingData{},
+			expectedError:     true,
+		},
+		{
+			description: "get existing value from req",
+			inputPath:   "site.page",
+			expectedTargeting: RequestTargetingData{
+				SingleVal: json.RawMessage(`test.com`),
+			},
+			expectedError: false,
+		},
+		{
+			description:       "get non-existing value from req",
+			inputPath:         "app",
+			expectedTargeting: RequestTargetingData{},
+			expectedError:     true,
+		},
+	}
+
+	reqCache := requestCache{
+		resolvedReq: json.RawMessage(reqFullVaid),
+	}
+
+	u, _ := url.Parse(testUrl)
+	params := u.Query()
+
+	for _, test := range testCases {
+		resTargetingData, err := getValueFromBidRequest(&reqCache, test.inputPath, params)
+
+		assert.Equal(t, test.expectedTargeting, resTargetingData, "incorrect targeting data returned")
+
+		if test.expectedError {
+			assert.Error(t, err, "expected error not returned")
+		} else {
+			assert.NoError(t, err, "unexpected error returned")
+		}
+	}
+}
+
+func TestGetValueFromQueryParam(t *testing.T) {
+	u, _ := url.Parse(testUrl)
+	params := u.Query()
+
+	testCases := []struct {
+		description   string
+		inputPath     string
+		expectedValue json.RawMessage
+		expectedError bool
+	}{
+		{
+			description:   "get existing value from query params",
+			inputPath:     "ext.prebid.amp.data.amp-key",
+			expectedValue: json.RawMessage(`testAmpKey`),
+			expectedError: false,
+		},
+		{
+			description:   "get non-existing value from query params",
+			inputPath:     "ext.prebid.amp.data.amp-key-not-existing",
+			expectedValue: nil,
+			expectedError: true,
+		},
+		{
+			description:   "get value from not query params path",
+			inputPath:     "ext.data.amp-key-not-existing",
+			expectedValue: nil,
+			expectedError: false,
+		},
+	}
+
+	for _, test := range testCases {
+		res, err := getValueFromQueryParam(test.inputPath, params)
+
+		assert.Equal(t, test.expectedValue, res, "incorrect value found")
+		if test.expectedError {
+			assert.Error(t, err, "expected error not returned")
+		} else {
+			assert.NoError(t, err, "unexpected error returned")
+		}
+	}
+}
+
+func TestGetValueFromImp(t *testing.T) {
+
+	testCases := []struct {
+		description       string
+		inputPath         string
+		inputRequest      json.RawMessage
+		expectedTargeting map[string][]byte
+		expectedError     bool
+	}{
+
+		{
+			description:  "get existing value from impressions",
+			inputPath:    "imp.banner.h",
+			inputRequest: json.RawMessage(reqFullVaid),
+			expectedTargeting: map[string][]byte{
+				"test_imp1": []byte(`350`),
+				"test_imp2": []byte(`360`),
+			},
+			expectedError: false,
+		},
+		{
+			description: "get existing value from impressions ext",
+			inputPath:   "imp.ext.appnexus.placementId",
+			expectedTargeting: map[string][]byte{
+				"test_imp1": []byte(`123`),
+				"test_imp2": []byte(`456`),
+			},
+			inputRequest:  json.RawMessage(reqFullVaid),
+			expectedError: false,
+		},
+		{
+			description:       "get non-existing value from impressions",
+			inputPath:         "imp.video",
+			expectedTargeting: map[string][]byte(nil),
+			inputRequest:      json.RawMessage(reqFullVaid),
+			expectedError:     true,
+		},
+		{
+			description:       "get value from invalid impressions",
+			inputPath:         "imp.video",
+			expectedTargeting: map[string][]byte(nil),
+			inputRequest:      json.RawMessage(reqFullInvalid),
+			expectedError:     true,
+		},
+		{
+			description:       "get value from request without impressions",
+			inputPath:         "imp.video",
+			expectedTargeting: map[string][]byte(nil),
+			inputRequest:      json.RawMessage(`{}`),
+			expectedError:     true,
+		},
+	}
+
+	for _, test := range testCases {
+
+		reqCache := requestCache{
+			resolvedReq: test.inputRequest,
+		}
+
+		resData, err := getValueFromImp(test.inputPath, &reqCache)
+
+		assert.Equal(t, test.expectedTargeting, resData, "incorrect imp data returned")
+
+		if test.expectedError {
+			assert.Error(t, err, "expected error not returned")
+		} else {
+			assert.NoError(t, err, "unexpected error returned")
+		}
+	}
+}
+
+func TestGetValueFromRequestJson(t *testing.T) {
+
+	testCases := []struct {
+		description   string
+		inputPath     string
+		expectedValue json.RawMessage
+		expectedError bool
+	}{
+
+		{
+			description:   "get existing value from req",
+			inputPath:     "site.page",
+			expectedValue: json.RawMessage(`test.com`),
+			expectedError: false,
+		},
+		{
+			description:   "get non-existing value from req",
+			inputPath:     "app",
+			expectedValue: json.RawMessage(nil),
+			expectedError: true,
+		},
+	}
+
+	reqCache := requestCache{
+		resolvedReq: json.RawMessage(reqFullVaid),
+	}
+
+	for _, test := range testCases {
+		resValue, err := getDataFromRequestJson(test.inputPath, &reqCache)
+
+		assert.Equal(t, test.expectedValue, resValue, "incorrect request data returned")
+
+		if test.expectedError {
+			assert.Error(t, err, "expected error not returned")
+		} else {
+			assert.NoError(t, err, "unexpected error returned")
+		}
+	}
+}
+
+const (
+	testUrl = "https://www.test-url.com?amp-key=testAmpKey&data-override-height=400"
+
+	reqFullVaid = `{
+  "id": "req_id",
+  "imp": [
+    {
+      "id": "test_imp1",
+      "ext": {"appnexus": {"placementId": 123}},
+      "banner": {"format": [{"h": 250, "w": 300}], "w": 260, "h": 350}
+    },
+    {
+      "id": "test_imp2",
+      "ext": {"appnexus": {"placementId": 456}},
+      "banner": {"format": [{"h": 400, "w": 600}], "w": 270, "h": 360}
+    }
+  ],
+  "site": {"page": "test.com"}
+}`
+
+	reqFullInvalid = `{
+  "imp": [
+    {
+      "ext": {"appnexus": {"placementId": 123}}
+    },
+    {
+      "ext": {"appnexus": {"placementId": 456}}
+    }
+  ]
+}`
+)
