@@ -350,9 +350,6 @@ func TestDebugBehaviour(t *testing.T) {
 
 	// Run tests
 	for _, test := range testCases {
-		if test.desc != "test flag equals zero, ext debug flag false, no debug info expected" {
-			continue
-		}
 		e.adapterMap = map[openrtb_ext.BidderName]AdaptedBidder{
 			openrtb_ext.BidderAppnexus: AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{Allow: test.debugData.bidderLevelDebugAllowed}, ""),
 		}

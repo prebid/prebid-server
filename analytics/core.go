@@ -35,7 +35,7 @@ type AuctionObject struct {
 	Account              *config.Account
 	StartTime            time.Time
 	HookExecutionOutcome []hookexecution.StageOutcome
-	SeatNonBid           []openrtb_ext.SeatNonBid
+	SeatNonBid           []openrtb_ext.SeatNonBid    `json:"-"`
 	RequestWrapper       *openrtb_ext.RequestWrapper `json:"-"`
 }
 
@@ -49,7 +49,7 @@ type AmpObject struct {
 	Origin               string
 	StartTime            time.Time
 	HookExecutionOutcome []hookexecution.StageOutcome
-	SeatNonBid           []openrtb_ext.SeatNonBid
+	SeatNonBid           []openrtb_ext.SeatNonBid    `json:"-"`
 	RequestWrapper       *openrtb_ext.RequestWrapper `json:"-"`
 }
 
@@ -62,7 +62,7 @@ type VideoObject struct {
 	VideoRequest   *openrtb_ext.BidRequestVideo
 	VideoResponse  *openrtb_ext.BidResponseVideo
 	StartTime      time.Time
-	SeatNonBid     []openrtb_ext.SeatNonBid
+	SeatNonBid     []openrtb_ext.SeatNonBid    `json:"-"`
 	RequestWrapper *openrtb_ext.RequestWrapper `json:"-"`
 }
 

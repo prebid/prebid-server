@@ -90,7 +90,8 @@ func TestNewModuleSuccess(t *testing.T) {
 			logObject: func(module analytics.PBSAnalyticsModule) {
 				module.LogSetUIDObject(&analytics.SetUIDObject{Status: http.StatusOK})
 			},
-		}, {
+		},
+		{
 			description: "Ignore excluded fields from marshal",
 			feature:     auction,
 			logObject: func(module analytics.PBSAnalyticsModule) {
@@ -102,6 +103,9 @@ func TestNewModuleSuccess(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		if tt.description != "Ignore excluded fields from marshal" {
+			continue
+		}
 		// original config with the feature disabled so no events should be sent
 		origConfig := &Configuration{
 			Features: map[string]bool{

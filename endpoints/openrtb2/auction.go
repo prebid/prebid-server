@@ -256,18 +256,24 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		labels, ao = rejectAuctionRequest(*rejectErr, w, deps.hookExecutor, req.BidRequest, account, labels, ao)
 		return
 	}
+	response.Ext = setSeatNonBidRaw(response.Ext, req, auctionResponse)
+	labels, ao = sendAuctionResponse(w, deps.hookExecutor, response, req.BidRequest, account, labels, ao)
+}
 
+// setSeatNonBidRaw is temporary introduced function for setting SeatNonBid inside bidResponse.Ext
+// This function will go away in next PR of https://github.com/prebid/prebid-server/pull/2505/
+func setSeatNonBidRaw(respExtRawMessage json.RawMessage, request *openrtb_ext.RequestWrapper, aucResponse *exchange.AuctionResponse) json.RawMessage {
+	// unmarshalling is required here, until we are moving away from bidResponse.Ext, which is populated
+	// by HoldAuction
+	response := aucResponse.BidResponse
 	respExt := new(openrtb_ext.ExtBidResponse)
-
-	// unmarshalling is required here, until we are moving away from bidResponse.Ext
-	// references to auctionResponse.ExtBidResponse
-	if response != nil && json.Unmarshal(response.Ext, &respExt) != nil && setSeatNonBid(respExt, req, auctionResponse) == nil {
+	if response != nil && json.Unmarshal(respExtRawMessage, &respExt) != nil && setSeatNonBid(respExt, request, aucResponse) == nil {
 		// marshal again
 		if respExtJson, err := json.Marshal(respExt); err == nil {
 			response.Ext = respExtJson
 		}
 	}
-	labels, ao = sendAuctionResponse(w, deps.hookExecutor, response, req.BidRequest, account, labels, ao)
+	return respExtRawMessage
 }
 
 func rejectAuctionRequest(

@@ -106,26 +106,17 @@ type Prebid struct {
 }
 
 type NonBidExt struct {
-	Prebid Prebid `json:"bid"`
+	Prebid Prebid `json:"prebid"`
 }
 
-//PROPOSAL1 - Extend Bid Object
-
-// type NonBid struct {
-// 	openrtb2.Bid
-// 	StatusCode int
-// }
-
-// PROPOSAL2 - Introduce Bid Object
 type NonBid struct {
-	ImpId      string `json:"impid"`
-	StatusCode int    `json:"statuscode"`
-	// Bid        openrtb2.Bid
-	Ext NonBidExt `json:"ext"`
+	ImpId      string    `json:"impid"`
+	StatusCode int       `json:"statuscode"`
+	Ext        NonBidExt `json:"ext"`
 }
 
 type SeatNonBid struct {
-	NonBid []NonBid        `json:"nonbid"` // can be renamed to Bid
+	NonBid []NonBid        `json:"nonbid"`
 	Seat   string          `json:"seat"`
 	Ext    json.RawMessage `json:"ext"`
 }

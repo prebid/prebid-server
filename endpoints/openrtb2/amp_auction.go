@@ -814,20 +814,17 @@ func setTrace(req *openrtb2.BidRequest, value string) (err error) {
 
 // setSeatNonBid populates bidresponse.ext.prebid.seatnonbid if  bidrequest.ext.prebid.returnallbidstatus is true
 func setSeatNonBid(finalExtBidResponse *openrtb_ext.ExtBidResponse, request *openrtb_ext.RequestWrapper, aucResponse *exchange.AuctionResponse) error {
-	var err error
-	//TODO return if error or nil
-	if aucResponse != nil && aucResponse.ExtBidResponse != nil && request != nil {
-		reqExt, err := request.GetRequestExt()
-		if err == nil {
-			prebid := reqExt.GetPrebid()
-			if prebid != nil && prebid.ReturnAllBidStatus {
-				if finalExtBidResponse.Prebid == nil {
-					finalExtBidResponse.Prebid = &openrtb_ext.ExtResponsePrebid{}
-				}
-				finalExtBidResponse.Prebid.SeatNonBid = aucResponse.GetSeatNonBid()
-			} else {
-				err = errors.New("unable to determing prebid.ReturnAllBidStatus")
+	if aucResponse == nil || aucResponse.ExtBidResponse == nil && request == nil {
+		return nil
+	}
+	reqExt, err := request.GetRequestExt()
+	if err == nil {
+		prebid := reqExt.GetPrebid()
+		if prebid != nil && prebid.ReturnAllBidStatus {
+			if finalExtBidResponse.Prebid == nil {
+				finalExtBidResponse.Prebid = &openrtb_ext.ExtResponsePrebid{}
 			}
+			finalExtBidResponse.Prebid.SeatNonBid = aucResponse.GetSeatNonBid()
 		}
 	}
 	return err

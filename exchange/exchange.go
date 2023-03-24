@@ -1069,7 +1069,7 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*en
 
 	}
 
-	setSeatNonBid(seatNonBid, bidResponseExt)
+	bidResponseExt = setSeatNonBid(bidResponseExt, seatNonBid)
 
 	return bidResponseExt
 }
@@ -1429,12 +1429,16 @@ func (ex *exchange) buildAuctionResponse(ctx context.Context, bidResponse *openr
 }
 
 // setSeatNonBid  adds SeatNonBids within bidResponse.Ext.Prebid.SeatNonBid
-func setSeatNonBid(seatNonBid []openrtb_ext.SeatNonBid, bidExt *openrtb_ext.ExtBidResponse) {
-	if bidExt == nil || seatNonBid == nil || len(seatNonBid) == 0 {
-		return
+func setSeatNonBid(bidResponseExt *openrtb_ext.ExtBidResponse, seatNonBid []openrtb_ext.SeatNonBid) *openrtb_ext.ExtBidResponse {
+	if len(seatNonBid) == 0 {
+		return bidResponseExt
 	}
-	if bidExt.Prebid == nil {
-		bidExt.Prebid = &openrtb_ext.ExtResponsePrebid{}
+	if bidResponseExt == nil {
+		bidResponseExt = &openrtb_ext.ExtBidResponse{}
 	}
-	bidExt.Prebid.SeatNonBid = seatNonBid
+	if bidResponseExt.Prebid == nil {
+		bidResponseExt.Prebid = &openrtb_ext.ExtResponsePrebid{}
+	}
+	bidResponseExt.Prebid.SeatNonBid = seatNonBid
+	return bidResponseExt
 }
