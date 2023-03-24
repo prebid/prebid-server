@@ -34,7 +34,6 @@ import (
 	metricsConf "github.com/prebid/prebid-server/metrics/config"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/prebid_cache_client"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
@@ -350,6 +349,7 @@ func TestDebugBehaviour(t *testing.T) {
 
 	// Run tests
 	for _, test := range testCases {
+
 		e.adapterMap = map[openrtb_ext.BidderName]AdaptedBidder{
 			openrtb_ext.BidderAppnexus: AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{Allow: test.debugData.bidderLevelDebugAllowed}, ""),
 		}
@@ -385,13 +385,12 @@ func TestDebugBehaviour(t *testing.T) {
 
 		// Assert no HoldAuction error
 		assert.NoErrorf(t, err, "%s. ex.HoldAuction returned an error: %v \n", test.desc, err)
-		// assert.NotNilf(t, outBidResponse.Ext, "%s. outBidResponse.Ext should not be nil \n", test.desc)
-		assert.NotNilf(t, outBidResponse.ExtBidResponse, "%s. outBidResponse.ExtBidResponse should not be nil \n", test.desc)
+		assert.NotNilf(t, outBidResponse.Ext, "%s. outBidResponse.Ext should not be nil \n", test.desc)
 
-		// actualExt := &openrtb_ext.ExtBidResponse{}
-		// err = json.Unmarshal(outBidResponse.Ext, actualExt)
-		// assert.NoErrorf(t, err, "%s. \"ext\" JSON field could not be unmarshaled. err: \"%v\" \n outBidResponse.Ext: \"%s\" \n", test.desc, err, outBidResponse.Ext)
-		actualExt := outBidResponse.ExtBidResponse
+		actualExt := &openrtb_ext.ExtBidResponse{}
+		err = json.Unmarshal(outBidResponse.Ext, actualExt)
+		assert.NoErrorf(t, err, "%s. \"ext\" JSON field could not be unmarshaled. err: \"%v\" \n outBidResponse.Ext: \"%s\" \n", test.desc, err, outBidResponse.Ext)
+
 		assert.NotEmpty(t, actualExt.Prebid, "%s. ext.prebid should not be empty")
 		assert.NotEmpty(t, actualExt.Prebid.AuctionTimestamp, "%s. ext.prebid.auctiontimestamp should not be empty when AuctionRequest.StartTime is set")
 		assert.Equal(t, auctionRequest.StartTime.UnixNano()/1e+6, actualExt.Prebid.AuctionTimestamp, "%s. ext.prebid.auctiontimestamp has incorrect value")
@@ -2141,9 +2140,6 @@ func TestExchangeJSON(t *testing.T) {
 			fileName := "./exchangetest/" + specFile.Name()
 			fileDisplayName := "exchange/exchangetest/" + specFile.Name()
 			t.Run(fileDisplayName, func(t *testing.T) {
-				// if specFile.Name() != "append-bidder-names.json" {
-				// 	return
-				// }
 				specData, err := loadFile(fileName)
 				if assert.NoError(t, err, "Failed to load contents of file %s: %v", fileDisplayName, err) {
 					assert.NotPanics(t, func() { runSpec(t, fileDisplayName, specData) }, fileDisplayName)
@@ -2275,10 +2271,10 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	}
 	ctx := context.Background()
 
-	resWrapper, err := ex.HoldAuction(ctx, auctionRequest, debugLog)
+	aucResponse, err := ex.HoldAuction(ctx, auctionRequest, debugLog)
 	var bid *openrtb2.BidResponse
-	if resWrapper != nil {
-		bid = resWrapper.BidResponse
+	if aucResponse != nil {
+		bid = aucResponse.BidResponse
 	}
 	if len(spec.Response.Error) > 0 && spec.Response.Bids == nil {
 		if err.Error() != spec.Response.Error {
@@ -4163,17 +4159,13 @@ func TestStoredAuctionResponses(t *testing.T) {
 			HookExecutor:           &hookexecution.EmptyHookExecutor{},
 		}
 		// Run test
-		resWrapper, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{})
-		var outBidResponse *openrtb2.BidResponse
-		if resWrapper != nil {
-			outBidResponse = resWrapper.BidResponse
-		}
+		outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{})
 		if test.errorExpected {
 			assert.Error(t, err, "Error should be returned")
 		} else {
 			assert.NoErrorf(t, err, "%s. HoldAuction error: %v \n", test.desc, err)
 			outBidResponse.Ext = nil
-			assert.Equal(t, expectedBidResponse, outBidResponse, "Incorrect stored auction response")
+			assert.Equal(t, expectedBidResponse, outBidResponse.BidResponse, "Incorrect stored auction response")
 		}
 
 	}
@@ -4506,7 +4498,9 @@ func TestAuctionDebugEnabled(t *testing.T) {
 
 	debugLog := &DebugLog{DebugOverride: true, DebugEnabledOrOverridden: true}
 	resp, err := e.HoldAuction(ctx, auctionRequest, debugLog)
+
 	assert.NoError(t, err, "error should be nil")
+
 	expectedResolvedRequest := `{"id":"some-request-id","imp":null,"test":1}`
 	actualResolvedRequest, _, _, err := jsonparser.Get(resp.Ext, "debug", "resolvedrequest")
 	assert.NoError(t, err, "error should be nil")
@@ -5517,229 +5511,4 @@ func (e mockUpdateBidRequestHook) HandleBidderRequestHook(_ context.Context, mct
 	mctx.ModuleContext = map[string]interface{}{"some-ctx": "some-ctx"}
 
 	return hookstage.HookResult[hookstage.BidderRequestPayload]{ChangeSet: c, ModuleContext: mctx.ModuleContext}, nil
-}
-
-func TestMakeExtBidResponse(t *testing.T) {
-	type fields struct {
-		adapterMap               map[openrtb_ext.BidderName]AdaptedBidder
-		bidderInfo               config.BidderInfos
-		bidderToSyncerKey        map[string]string
-		me                       metrics.MetricsEngine
-		cache                    prebid_cache_client.Client
-		cacheTime                time.Duration
-		gdprPermsBuilder         gdpr.PermissionsBuilder
-		tcf2ConfigBuilder        gdpr.TCF2ConfigBuilder
-		currencyConverter        *currency.RateConverter
-		externalURL              string
-		gdprDefaultValue         gdpr.Signal
-		privacyConfig            config.Privacy
-		categoriesFetcher        stored_requests.CategoryFetcher
-		bidIDGenerator           BidIDGenerator
-		hostSChainNode           *openrtb2.SupplyChainNode
-		adsCertSigner            adscert.Signer
-		server                   config.Server
-		bidValidationEnforcement config.Validations
-		requestSplitter          requestSplitter
-	}
-	type args struct {
-		adapterBids  map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid
-		adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra
-		r            AuctionRequest
-		debugInfo    bool
-		passthrough  json.RawMessage
-		fledge       *openrtb_ext.Fledge
-		errList      []error
-		seatNonBid   []openrtb_ext.SeatNonBid
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   func(args, *openrtb_ext.ExtBidResponse) (*openrtb_ext.ExtBidResponse, bool)
-	}{
-		{
-			name: "set seat non bid in prebid extension",
-			args: args{
-				r: AuctionRequest{
-					BidRequestWrapper: &openrtb_ext.RequestWrapper{
-						BidRequest: &openrtb2.BidRequest{
-							Ext: []byte(`{
-								"prebid" : {
-									"returnallbidstatus" : true
-								}
-							}`),
-						},
-					},
-				},
-				seatNonBid: []openrtb_ext.SeatNonBid{
-					{
-						Seat: "pubmatic",
-						NonBid: []openrtb_ext.NonBid{
-							{
-								ImpId:      "imp_1_pubm",
-								StatusCode: 100,
-								Ext: openrtb_ext.NonBidExt{
-									Prebid: openrtb_ext.Prebid{
-										Bid: openrtb2.Bid{
-											ID:    "bid_imp1_pubm",
-											ImpID: "imp_1_pubm",
-											Price: 5.6,
-											AdM:   "some_adm",
-										},
-									},
-								},
-							},
-						},
-					},
-					{
-						Seat: "appnexus",
-						NonBid: []openrtb_ext.NonBid{
-							{
-								ImpId:      "imp_1_appnx",
-								StatusCode: 234,
-								Ext: openrtb_ext.NonBidExt{
-									Prebid: openrtb_ext.Prebid{
-										Bid: openrtb2.Bid{
-											ID:    "bid_imp1_appx",
-											ImpID: "imp_1_appnx",
-											Price: 3.4,
-											AdM:   "some_adm",
-										},
-									},
-								},
-							},
-							{
-								ImpId:      "imp_2_appnx",
-								StatusCode: 434,
-								Ext: openrtb_ext.NonBidExt{
-									Prebid: openrtb_ext.Prebid{
-										Bid: openrtb2.Bid{
-											ID:    "bid_imp2_appx",
-											ImpID: "imp_2_appnx",
-											Price: 4.4,
-											AdM:   "some_adm",
-										},
-									},
-								},
-							},
-						},
-					},
-				}},
-			want: func(args args, actual *openrtb_ext.ExtBidResponse) (*openrtb_ext.ExtBidResponse, bool) {
-				return &openrtb_ext.ExtBidResponse{
-					Prebid: &openrtb_ext.ExtResponsePrebid{
-						SeatNonBid: args.seatNonBid,
-					},
-				}, reflect.DeepEqual(actual.Prebid.SeatNonBid, args.seatNonBid)
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			e := &exchange{
-				adapterMap:               tt.fields.adapterMap,
-				bidderInfo:               tt.fields.bidderInfo,
-				bidderToSyncerKey:        tt.fields.bidderToSyncerKey,
-				me:                       tt.fields.me,
-				cache:                    tt.fields.cache,
-				cacheTime:                tt.fields.cacheTime,
-				gdprPermsBuilder:         tt.fields.gdprPermsBuilder,
-				tcf2ConfigBuilder:        tt.fields.tcf2ConfigBuilder,
-				currencyConverter:        tt.fields.currencyConverter,
-				externalURL:              tt.fields.externalURL,
-				gdprDefaultValue:         tt.fields.gdprDefaultValue,
-				privacyConfig:            tt.fields.privacyConfig,
-				categoriesFetcher:        tt.fields.categoriesFetcher,
-				bidIDGenerator:           tt.fields.bidIDGenerator,
-				hostSChainNode:           tt.fields.hostSChainNode,
-				adsCertSigner:            tt.fields.adsCertSigner,
-				server:                   tt.fields.server,
-				bidValidationEnforcement: tt.fields.bidValidationEnforcement,
-				requestSplitter:          tt.fields.requestSplitter,
-			}
-
-			actual := e.makeExtBidResponse(tt.args.adapterBids, tt.args.adapterExtra, tt.args.r, tt.args.debugInfo, tt.args.passthrough, tt.args.fledge, tt.args.errList, tt.args.seatNonBid)
-			if expected, ok := tt.want(tt.args, actual); !ok {
-				t.Errorf("exchange.makeExtBidResponse() = %v, want %v", actual, expected)
-			}
-		})
-	}
-}
-
-func TestBuildAuctionResponse(t *testing.T) {
-	type args struct {
-		ctx         context.Context
-		bidResponse *openrtb2.BidResponse
-		seatNonBid  []openrtb_ext.SeatNonBid
-	}
-	tests := []struct {
-		name             string
-		args             args
-		expectedResponse *openrtb_ext.ResponseWrapper
-		expctedErr       string
-	}{
-		{
-			name: "with_seat_non_bids",
-			args: args{
-				bidResponse: &openrtb2.BidResponse{
-					SeatBid: []openrtb2.SeatBid{
-						{
-							Bid:  []openrtb2.Bid{*bid084, *bid111},
-							Seat: "pubmatic",
-						},
-						{
-							Bid:  []openrtb2.Bid{*bid123},
-							Seat: "appnexus",
-						},
-					},
-					Ext: []byte(`{ "k1": "v1" }`),
-				},
-				seatNonBid: []openrtb_ext.SeatNonBid{
-					{
-						NonBid: []openrtb_ext.NonBid{
-							{
-								StatusCode: 123,
-								Ext: openrtb_ext.NonBidExt{
-									Prebid: openrtb_ext.Prebid{Bid: openrtb2.Bid{Price: -1.2}},
-								},
-							},
-						},
-						Seat: "appnexus",
-					},
-					{
-						NonBid: []openrtb_ext.NonBid{
-							{
-								StatusCode: 456,
-								Ext: openrtb_ext.NonBidExt{
-									Prebid: openrtb_ext.Prebid{Bid: openrtb2.Bid{Price: -3.4}},
-								},
-							},
-						},
-						Seat: "pubmatic",
-					},
-				},
-			},
-			expectedResponse: &openrtb_ext.ResponseWrapper{
-				BidResponse: &openrtb2.BidResponse{},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ex := &exchange{}
-			bidResponseExt := new(openrtb_ext.ExtBidResponse)
-			bidResponseExt.Prebid = &openrtb_ext.ExtResponsePrebid{
-				SeatNonBid: tt.args.seatNonBid,
-			}
-			actualResponse, actualErr := ex.buildAuctionResponse(tt.args.ctx, tt.args.bidResponse, bidResponseExt)
-			if tt.expctedErr == "" {
-				assert.NoError(t, actualErr)
-			} else if !assert.EqualError(t, actualErr, tt.expctedErr) {
-				t.Errorf("exchange.buildAuctionResponse() error = %v, wantErr %v", actualErr, tt.expctedErr)
-				return
-			} else if !reflect.DeepEqual(actualResponse, tt.expectedResponse) {
-				t.Errorf("exchange.buildAuctionResponse() = %v, want %v", actualResponse, tt.expectedResponse)
-			}
-		})
-	}
 }

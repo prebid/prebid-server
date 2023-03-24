@@ -333,15 +333,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 	if bidReq.Test == 1 {
-		// unmarshalling is required here, until we are moving away from bidResponse.Ext
-		// references to auctionResponse.ExtBidResponse
-		respExt := new(openrtb_ext.ExtBidResponse)
-		if response != nil && json.Unmarshal(response.Ext, &respExt) != nil && setSeatNonBid(respExt, bidReqWrapper, auctionResponse) == nil {
-			// marshal again
-			if respExtJson, err := json.Marshal(respExt); err == nil {
-				response.Ext = respExtJson
-			}
-		}
+		setSeatNonBidRaw(bidReqWrapper, auctionResponse)
 		bidResp.Ext = response.Ext
 	}
 
