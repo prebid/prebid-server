@@ -1,6 +1,6 @@
 {
   "mockBidRequest": {
-    "id": "test-req-id",
+    "id": "amazing-req-id",
     "at": 1,
     "tmax": 300,
     "imp": [
@@ -9,7 +9,17 @@
           "w": 300,
           "h": 250
         },
-        "id": "test-bid-id",
+        "id": "amazing-bid-id",
+        "bidfloor": 1,
+        "bidfloorcur": "USD",
+        "secure": 1
+      },
+      {
+        "banner": {
+          "w": 300,
+          "h": 50
+        },
+        "id": "amazing-bid-id",
         "bidfloor": 1,
         "bidfloorcur": "USD",
         "secure": 1
@@ -17,18 +27,18 @@
     ],
     "app": {
       "publisher": {
-        "id": "test-site-publisher-id"
+        "id": "amazing-site-publisher-id"
       },
       "cat": [
-        "test-cat"
+        "amazing-cat"
       ],
-      "bundle": "com.app.test",
-      "name": "Test App",
-      "domain": "testapp.com",
+      "bundle": "com.app.amazing",
+      "name": "amazing App",
+      "domain": "amazingapp.com",
       "id": "123456789"
     },
     "device": {
-      "ua": "test-device-user-agent",
+      "ua": "amazing-device-user-agent",
       "ip": "123.123.123.123",
       "geo": {
         "country": "TST"
@@ -37,10 +47,14 @@
       "language": "en"
     },
     "user": {
-      "id": "test-user-id"
+      "id": "amazing-user-id"
     }
   },
   "expectedMakeRequestsErrors": [
+    {
+      "value": "ext.bidder not provided",
+      "comparison": "literal"
+    },
     {
       "value": "ext.bidder not provided",
       "comparison": "literal"

@@ -18,7 +18,7 @@ type adapter struct {
 }
 
 // Builder builds a new instance of the Adtrgtme adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+func Builder(_ openrtb_ext.BidderName, config config.Adapter, _ config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
@@ -27,35 +27,26 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 
 func (v *adapter) MakeRequests(
 	openRTBRequest *openrtb2.BidRequest,
-	requestInfo *adapters.ExtraRequestInfo,
+	_ *adapters.ExtraRequestInfo,
 ) (
 	[]*adapters.RequestData,
 	[]error,
 ) {
-	var ext openrtb_ext.ExtImpAdtrgtme
 	var requests []*adapters.RequestData
 	var errors []error
 
+	requestCopy := *openRTBRequest
 	for i := range openRTBRequest.Imp {
-		var err error
-		ext, err = getImpressionExt(&openRTBRequest.Imp[i])
+		siteID, err := siteIDFromImp(&openRTBRequest.Imp[i])
 		if err != nil {
 			errors = append(errors, err)
-			break
+			continue
 		}
 		openRTBRequest.Imp[i].Ext = nil
-	}
 
-	if len(errors) > 0 {
-		return nil, errors
-	}
+		requestCopy.Imp = []openrtb2.Imp{openRTBRequest.Imp[i]}
 
-	requestCopy := *openRTBRequest
-
-	for _, imp := range openRTBRequest.Imp {
-		requestCopy.Imp = []openrtb2.Imp{imp}
-
-		requestJSON, err := json.Marshal(openRTBRequest)
+		requestJSON, err := json.Marshal(requestCopy)
 		if err != nil {
 			errors = append(errors, err)
 			continue
@@ -63,35 +54,34 @@ func (v *adapter) MakeRequests(
 
 		requestData := &adapters.RequestData{
 			Method:  http.MethodPost,
-			Uri:     v.buildRequestURI(ext),
+			Uri:     v.buildRequestURI(siteID),
 			Body:    requestJSON,
-			Headers: makeRequestHeaders(&requestCopy),
+			Headers: makeRequestHeaders(openRTBRequest),
 		}
-
 		requests = append(requests, requestData)
 	}
 
 	return requests, errors
 }
 
-func getImpressionExt(imp *openrtb2.Imp) (openrtb_ext.ExtImpAdtrgtme, error) {
+func siteIDFromImp(imp *openrtb2.Imp) (uint64, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return openrtb_ext.ExtImpAdtrgtme{}, &errortypes.BadInput{
+		return 0, &errortypes.BadInput{
 			Message: "ext.bidder not provided",
 		}
 	}
 	var ext openrtb_ext.ExtImpAdtrgtme
 	if err := json.Unmarshal(bidderExt.Bidder, &ext); err != nil {
-		return openrtb_ext.ExtImpAdtrgtme{}, &errortypes.BadInput{
+		return 0, &errortypes.BadInput{
 			Message: "ext.bidder not provided",
 		}
 	}
-	return ext, nil
+	return ext.SiteID, nil
 }
 
-func (v *adapter) buildRequestURI(params openrtb_ext.ExtImpAdtrgtme) string {
-	return fmt.Sprintf("%s?s=%d&prebid", v.endpoint, params.SiteID)
+func (v *adapter) buildRequestURI(siteID uint64) string {
+	return fmt.Sprintf("%s?s=%d&prebid", v.endpoint, siteID)
 }
 
 func makeRequestHeaders(openRTBRequest *openrtb2.BidRequest) http.Header {
@@ -140,7 +130,7 @@ func (v *adapter) checkResponseStatusCodes(response *adapters.ResponseData) erro
 
 func (v *adapter) MakeBids(
 	openRTBRequest *openrtb2.BidRequest,
-	requestToBidder *adapters.RequestData,
+	_ *adapters.RequestData,
 	bidderRawResponse *adapters.ResponseData,
 ) (
 	*adapters.BidderResponse,
