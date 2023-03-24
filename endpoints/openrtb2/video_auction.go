@@ -317,6 +317,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		vo.SeatNonBid = auctionResponse.GetSeatNonBid()
 	}
 	vo.Request = bidReqWrapper.BidRequest
+	vo.RequestWrapper = bidReqWrapper
 	vo.Response = response
 	if err != nil {
 		errL := []error{err}

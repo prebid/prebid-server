@@ -236,6 +236,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		ao.SeatNonBid = auctionResponse.GetSeatNonBid()
 	}
 	ao.Request = req.BidRequest
+	ao.RequestWrapper = req
 	ao.Response = response
 	ao.Account = account
 	rejectErr, isRejectErr := hookexecution.CastRejectErr(err)

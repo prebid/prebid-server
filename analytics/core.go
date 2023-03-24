@@ -36,6 +36,7 @@ type AuctionObject struct {
 	StartTime            time.Time
 	HookExecutionOutcome []hookexecution.StageOutcome
 	SeatNonBid           []openrtb_ext.SeatNonBid
+	RequestWrapper       *openrtb_ext.RequestWrapper `json:"-"`
 }
 
 // Loggable object of a transaction at /openrtb2/amp endpoint
@@ -49,18 +50,20 @@ type AmpObject struct {
 	StartTime            time.Time
 	HookExecutionOutcome []hookexecution.StageOutcome
 	SeatNonBid           []openrtb_ext.SeatNonBid
+	RequestWrapper       *openrtb_ext.RequestWrapper `json:"-"`
 }
 
 // Loggable object of a transaction at /openrtb2/video endpoint
 type VideoObject struct {
-	Status        int
-	Errors        []error
-	Request       *openrtb2.BidRequest
-	Response      *openrtb2.BidResponse
-	VideoRequest  *openrtb_ext.BidRequestVideo
-	VideoResponse *openrtb_ext.BidResponseVideo
-	StartTime     time.Time
-	SeatNonBid    []openrtb_ext.SeatNonBid
+	Status         int
+	Errors         []error
+	Request        *openrtb2.BidRequest
+	Response       *openrtb2.BidResponse
+	VideoRequest   *openrtb_ext.BidRequestVideo
+	VideoResponse  *openrtb_ext.BidResponseVideo
+	StartTime      time.Time
+	SeatNonBid     []openrtb_ext.SeatNonBid
+	RequestWrapper *openrtb_ext.RequestWrapper `json:"-"`
 }
 
 // Loggable object of a transaction at /setuid

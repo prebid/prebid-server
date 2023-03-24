@@ -243,6 +243,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		ao.SeatNonBid = aucResponse.GetSeatNonBid()
 	}
 	ao.AuctionResponse = response
+	ao.RequestWrapper = reqWrapper
 	rejectErr, isRejectErr := hookexecution.CastRejectErr(err)
 	if err != nil && !isRejectErr {
 		w.WriteHeader(http.StatusInternalServerError)

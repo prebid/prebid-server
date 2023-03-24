@@ -8,7 +8,9 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/analytics"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -55,7 +57,10 @@ func TestNewModuleSuccess(t *testing.T) {
 			description: "auction events are only published when logging an auction object with auction feature on",
 			feature:     auction,
 			logObject: func(module analytics.PBSAnalyticsModule) {
-				module.LogAuctionObject(&analytics.AuctionObject{Status: http.StatusOK})
+				module.LogAuctionObject(&analytics.AuctionObject{
+					Status:  http.StatusOK,
+					Request: &openrtb2.BidRequest{},
+				})
 			},
 		},
 		{
@@ -84,6 +89,14 @@ func TestNewModuleSuccess(t *testing.T) {
 			feature:     setUID,
 			logObject: func(module analytics.PBSAnalyticsModule) {
 				module.LogSetUIDObject(&analytics.SetUIDObject{Status: http.StatusOK})
+			},
+		}, {
+			description: "Ignore excluded fields from marshal",
+			feature:     auction,
+			logObject: func(module analytics.PBSAnalyticsModule) {
+				module.LogAuctionObject(&analytics.AuctionObject{
+					RequestWrapper: &openrtb_ext.RequestWrapper{},
+				})
 			},
 		},
 	}
