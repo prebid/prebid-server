@@ -43,7 +43,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://bidder.criteo.com/openrtb/prebid/auction/request?profile=230",
+        "uri": "https://ssp-bidder.criteo.com/openrtb/pbs/auction/request?profile=230",
         "headers": {},
         "body": {
           "id": "test-request-id",
@@ -102,7 +102,12 @@
                   "crid": "creative-123",
                   "adm": "<iframe id='789abc' name='789abc' src='http://creative-url.criteo.com'></iframe>",
                   "w": 300,
-                  "h": 250
+                  "h": 250,
+                  "ext": {
+                    "prebid": {
+                      "type": "banner"
+                    }
+                  }
                 }
               ] 
             }
@@ -123,7 +128,12 @@
             "crid": "creative-123",
             "adm": "<iframe id='789abc' name='789abc' src='http://creative-url.criteo.com'></iframe>",
             "w": 300,
-            "h": 250
+            "h": 250,
+            "ext": {
+              "prebid": {
+                "type": "banner"
+              }
+            }
           },
           "type": "banner"
         }

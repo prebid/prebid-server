@@ -10,6 +10,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/prebid/go-gdpr/vendorconsent"
 	gpplib "github.com/prebid/go-gpp"
+	gppConstants "github.com/prebid/go-gpp/constants"
 	"github.com/prebid/openrtb/v17/openrtb2"
 
 	"github.com/prebid/prebid-server/adapters"
@@ -23,6 +24,7 @@ import (
 	"github.com/prebid/prebid-server/privacy/lmt"
 	"github.com/prebid/prebid-server/schain"
 	"github.com/prebid/prebid-server/stored_responses"
+	"github.com/prebid/prebid-server/util/ptrutil"
 )
 
 var channelTypeMap = map[metrics.RequestType]config.ChannelType{
@@ -179,9 +181,24 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 			privacyEnforcement.Apply(bidderRequest.BidRequest)
 			allowedBidderRequests = append(allowedBidderRequests, bidderRequest)
 		}
+		// GPP downgrade: always downgrade unless we can confirm GPP is supported
+		if shouldSetLegacyPrivacy(rs.bidderInfo, string(bidderRequest.BidderCoreName)) {
+			setLegacyGDPRFromGPP(bidderRequest.BidRequest, gpp)
+			setLegacyUSPFromGPP(bidderRequest.BidRequest, gpp)
+		}
 	}
 
 	return
+}
+
+func shouldSetLegacyPrivacy(bidderInfo config.BidderInfos, bidder string) bool {
+	binfo, defined := bidderInfo[bidder]
+
+	if !defined || binfo.OpenRTB == nil {
+		return true
+	}
+
+	return !binfo.OpenRTB.GPPSupported
 }
 
 func ccpaEnabled(account *config.Account, privacyConfig config.Privacy, requestType config.ChannelType) bool {
@@ -318,6 +335,7 @@ func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, request
 		prebid.Channel = requestExtParsed.Prebid.Channel
 		prebid.Debug = requestExtParsed.Prebid.Debug
 		prebid.Server = requestExtParsed.Prebid.Server
+		prebid.MultiBid = buildRequestExtMultiBid(bidder, requestExtParsed.Prebid.MultiBid, alternateBidderCodes)
 	}
 
 	// Marshal New Prebid Object
@@ -364,6 +382,45 @@ func buildRequestExtAlternateBidderCodes(bidder string, accABC *openrtb_ext.ExtA
 	}
 
 	return nil
+}
+
+func buildRequestExtMultiBid(adapter string, reqMultiBid []*openrtb_ext.ExtMultiBid, adapterABC *openrtb_ext.ExtAlternateBidderCodes) []*openrtb_ext.ExtMultiBid {
+	adapterMultiBid := make([]*openrtb_ext.ExtMultiBid, 0)
+	for _, multiBid := range reqMultiBid {
+		if multiBid.Bidder != "" {
+			if multiBid.Bidder == adapter || isBidderInExtAlternateBidderCodes(adapter, multiBid.Bidder, adapterABC) {
+				adapterMultiBid = append(adapterMultiBid, multiBid)
+			}
+		} else {
+			for _, bidder := range multiBid.Bidders {
+				if bidder == adapter || isBidderInExtAlternateBidderCodes(adapter, bidder, adapterABC) {
+					adapterMultiBid = append(adapterMultiBid, &openrtb_ext.ExtMultiBid{
+						Bidders: []string{bidder},
+						MaxBids: multiBid.MaxBids,
+					})
+				}
+			}
+		}
+	}
+
+	if len(adapterMultiBid) > 0 {
+		return adapterMultiBid
+	}
+
+	return nil
+}
+
+func isBidderInExtAlternateBidderCodes(adapter, currentMultiBidBidder string, adapterABC *openrtb_ext.ExtAlternateBidderCodes) bool {
+	if adapterABC != nil {
+		if abc, ok := adapterABC.Bidders[adapter]; ok {
+			for _, bidder := range abc.AllowedBidderCodes {
+				if bidder == "*" || bidder == currentMultiBidBidder {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 // extractBuyerUIDs parses the values from user.ext.prebid.buyeruids, and then deletes those values from the ext.
@@ -693,6 +750,21 @@ func extractBidRequestExt(bidRequest *openrtb2.BidRequest) (*openrtb_ext.ExtRequ
 			return requestExt, fmt.Errorf("Error decoding Request.ext : %s", err.Error())
 		}
 	}
+
+	// validation already done in validateRequestExt(), directly build a map here for downstream processing
+	if requestExt.Prebid.MultiBid != nil {
+		requestExt.Prebid.MultiBidMap = make(map[string]openrtb_ext.ExtMultiBid)
+		for _, multiBid := range requestExt.Prebid.MultiBid {
+			if multiBid.Bidder != "" {
+				requestExt.Prebid.MultiBidMap[multiBid.Bidder] = *multiBid
+			} else {
+				for _, bidder := range multiBid.Bidders {
+					requestExt.Prebid.MultiBidMap[bidder] = *multiBid
+				}
+			}
+		}
+	}
+
 	return requestExt, nil
 }
 
@@ -845,6 +917,59 @@ func mergeBidderRequests(allBidderRequests []BidderRequest, bidderNameToBidderRe
 		}
 	}
 	return allBidderRequests
+}
+
+func setLegacyGDPRFromGPP(r *openrtb2.BidRequest, gpp gpplib.GppContainer) {
+	if r.Regs != nil && r.Regs.GDPR == nil {
+		if r.Regs.GPPSID != nil {
+			// Set to 0 unless SID exists
+			regs := *r.Regs
+			regs.GDPR = ptrutil.ToPtr[int8](0)
+			for _, id := range r.Regs.GPPSID {
+				if id == int8(gppConstants.SectionTCFEU2) {
+					regs.GDPR = ptrutil.ToPtr[int8](1)
+				}
+			}
+			r.Regs = &regs
+		}
+	}
+
+	if r.User == nil || len(r.User.Consent) == 0 {
+		for _, sec := range gpp.Sections {
+			if sec.GetID() == gppConstants.SectionTCFEU2 {
+				var user openrtb2.User
+				if r.User == nil {
+					user = openrtb2.User{}
+				} else {
+					user = *r.User
+				}
+				user.Consent = sec.GetValue()
+				r.User = &user
+			}
+		}
+	}
+
+}
+func setLegacyUSPFromGPP(r *openrtb2.BidRequest, gpp gpplib.GppContainer) {
+	if r.Regs == nil {
+		return
+	}
+
+	if len(r.Regs.USPrivacy) > 0 || r.Regs.GPPSID == nil {
+		return
+	}
+	for _, sid := range r.Regs.GPPSID {
+		if sid == int8(gppConstants.SectionUSPV1) {
+			for _, sec := range gpp.Sections {
+				if sec.GetID() == gppConstants.SectionUSPV1 {
+					regs := *r.Regs
+					regs.USPrivacy = sec.GetValue()
+					r.Regs = &regs
+				}
+			}
+		}
+	}
+
 }
 
 func WrapJSONInData(data []byte) []byte {
