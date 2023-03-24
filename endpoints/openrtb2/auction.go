@@ -413,10 +413,13 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 
 	accountId, isAppReq, isDOOHReq, errs := getAccountIdFromRawRequest(hasStoredBidRequest, storedRequests[storedBidRequestId], requestJson)
 	// fill labels here in order to pass correct metrics in case of errors
-	// TODO: DOOH
 	if isAppReq {
 		labels.Source = metrics.DemandApp
 		labels.RType = metrics.ReqTypeORTB2App
+		labels.PubID = accountId
+	} else if isDOOHReq {
+		labels.Source = metrics.DemandDOOH
+		labels.RType = metrics.ReqTypeORTB2DOOH
 		labels.PubID = accountId
 	} else { // is Site request
 		labels.Source = metrics.DemandWeb
