@@ -10,6 +10,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/prebid/go-gdpr/vendorconsent"
 	gpplib "github.com/prebid/go-gpp"
+	gppConstants "github.com/prebid/go-gpp/constants"
 	"github.com/prebid/openrtb/v17/openrtb2"
 
 	"github.com/prebid/prebid-server/adapters"
@@ -23,6 +24,7 @@ import (
 	"github.com/prebid/prebid-server/privacy/lmt"
 	"github.com/prebid/prebid-server/schain"
 	"github.com/prebid/prebid-server/stored_responses"
+	"github.com/prebid/prebid-server/util/ptrutil"
 )
 
 var channelTypeMap = map[metrics.RequestType]config.ChannelType{
@@ -179,9 +181,24 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 			privacyEnforcement.Apply(bidderRequest.BidRequest)
 			allowedBidderRequests = append(allowedBidderRequests, bidderRequest)
 		}
+		// GPP downgrade: always downgrade unless we can confirm GPP is supported
+		if shouldSetLegacyPrivacy(rs.bidderInfo, string(bidderRequest.BidderCoreName)) {
+			setLegacyGDPRFromGPP(bidderRequest.BidRequest, gpp)
+			setLegacyUSPFromGPP(bidderRequest.BidRequest, gpp)
+		}
 	}
 
 	return
+}
+
+func shouldSetLegacyPrivacy(bidderInfo config.BidderInfos, bidder string) bool {
+	binfo, defined := bidderInfo[bidder]
+
+	if !defined || binfo.OpenRTB == nil {
+		return true
+	}
+
+	return !binfo.OpenRTB.GPPSupported
 }
 
 func ccpaEnabled(account *config.Account, privacyConfig config.Privacy, requestType config.ChannelType) bool {
@@ -900,6 +917,59 @@ func mergeBidderRequests(allBidderRequests []BidderRequest, bidderNameToBidderRe
 		}
 	}
 	return allBidderRequests
+}
+
+func setLegacyGDPRFromGPP(r *openrtb2.BidRequest, gpp gpplib.GppContainer) {
+	if r.Regs != nil && r.Regs.GDPR == nil {
+		if r.Regs.GPPSID != nil {
+			// Set to 0 unless SID exists
+			regs := *r.Regs
+			regs.GDPR = ptrutil.ToPtr[int8](0)
+			for _, id := range r.Regs.GPPSID {
+				if id == int8(gppConstants.SectionTCFEU2) {
+					regs.GDPR = ptrutil.ToPtr[int8](1)
+				}
+			}
+			r.Regs = &regs
+		}
+	}
+
+	if r.User == nil || len(r.User.Consent) == 0 {
+		for _, sec := range gpp.Sections {
+			if sec.GetID() == gppConstants.SectionTCFEU2 {
+				var user openrtb2.User
+				if r.User == nil {
+					user = openrtb2.User{}
+				} else {
+					user = *r.User
+				}
+				user.Consent = sec.GetValue()
+				r.User = &user
+			}
+		}
+	}
+
+}
+func setLegacyUSPFromGPP(r *openrtb2.BidRequest, gpp gpplib.GppContainer) {
+	if r.Regs == nil {
+		return
+	}
+
+	if len(r.Regs.USPrivacy) > 0 || r.Regs.GPPSID == nil {
+		return
+	}
+	for _, sid := range r.Regs.GPPSID {
+		if sid == int8(gppConstants.SectionUSPV1) {
+			for _, sec := range gpp.Sections {
+				if sec.GetID() == gppConstants.SectionUSPV1 {
+					regs := *r.Regs
+					regs.USPrivacy = sec.GetValue()
+					r.Regs = &regs
+				}
+			}
+		}
+	}
+
 }
 
 func WrapJSONInData(data []byte) []byte {
