@@ -12,6 +12,7 @@ import (
 
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
@@ -715,6 +716,8 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "experiment.adscert.remote.signing_timeout_ms", cfg.Experiment.AdCerts.Remote.SigningTimeoutMs, 10)
 	cmpBools(t, "hooks.enabled", cfg.Hooks.Enabled, true)
 	cmpBools(t, "account_modules_metrics", cfg.Metrics.Disabled.AccountModulesMetrics, true)
+	cmpBools(t, "account_defaults.events_enabled", cfg.AccountDefaults.EventsEnabled, false)
+	cmpNils(t, "account_defaults.events.enabled", cfg.AccountDefaults.Events.Enabled)
 }
 
 func TestValidateConfig(t *testing.T) {
@@ -3189,5 +3192,83 @@ func TestTCF2FeatureOneVendorException(t *testing.T) {
 		value := tcf2.FeatureOneVendorException(tt.giveBidder)
 
 		assert.Equal(t, tt.wantIsVendorException, value, tt.description)
+	}
+}
+
+func TestMigrateConfigBoolFlag(t *testing.T) {
+
+	type want struct {
+		newField *bool
+		oldField *bool
+	}
+
+	tests := []struct {
+		description string
+		config      []byte
+		want        want
+	}{
+		{
+			description: "oldField and newField both are set, override oldField with newField value",
+			config: []byte(`
+				{
+					"account_defaults": {
+						"events_enabled": false,
+						"events": {
+							"enabled": true
+						}
+					}
+				}
+		  	`),
+			want: want{
+				newField: ptrutil.ToPtr(true),
+				oldField: ptrutil.ToPtr(true),
+			},
+		},
+		{
+			description: "newField is not set, dont change oldField",
+			config: []byte(`
+				{
+					"account_defaults": {
+						"events_enabled": false
+					}
+				}
+		    `),
+			want: want{
+				newField: nil,
+				oldField: ptrutil.ToPtr(false),
+			},
+		},
+		{
+			description: "both newField and oldField are not set, dont change oldField",
+			config:      []byte(``),
+			want: want{
+				newField: nil,
+				oldField: nil,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		v := viper.New()
+		v.SetConfigType("json")
+		v.ReadConfig(bytes.NewBuffer(tt.config))
+
+		migrateConfigEventsEnabled(v)
+
+		if tt.want.newField == nil {
+			if v.IsSet("account_defaults.events.enabled") {
+				t.Errorf("For test [%s], viper is not expected to set any value for newField 'events.enabled'", tt.description)
+			}
+		} else {
+			assert.Equal(t, *tt.want.newField, v.GetBool("account_defaults.events.enabled"), tt.description)
+		}
+
+		if tt.want.oldField == nil {
+			if v.IsSet("account_defaults.events_enabled") {
+				t.Errorf("For test [%s], viper is not expected to set any value for oldField 'events_enabled'", tt.description)
+			}
+		} else {
+			assert.Equal(t, *tt.want.oldField, v.GetBool("account_defaults.events_enabled"), tt.description)
+		}
 	}
 }

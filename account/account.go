@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/buger/jsonparser"
+	"github.com/golang/glog"
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -102,6 +103,14 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 		})
 		return nil, errs
 	}
+
+	// set the value of events.enabled field based on deprecated events_enabled field and ensure backward compatibility
+	deprecateEventsEnabledField(account)
+
+	if len(account.Events.VASTEvents) > 0 {
+		glog.Warningf("Account.%s.Events.VASTEvents will currently not do anything as the feature is still under development. Please follow https://github.com/prebid/prebid-server/issues/1725 for more updates.", accountID)
+	}
+
 	return account, nil
 }
 
@@ -251,4 +260,14 @@ func useGDPRChannelEnabled(account *config.Account) bool {
 
 func useCCPAChannelEnabled(account *config.Account) bool {
 	return account.CCPA.ChannelEnabled.IsSet() && !account.CCPA.IntegrationEnabled.IsSet()
+}
+
+// deprecateEventsEnabledField is responsible for ensuring backwards compatibility of "events_enabled" field.
+// This function favors "events.enabled" field over deprecated "events_enabled" field, if values for both are set.
+// If only deprecated "events_enabled" field is set then it sets the same value to "events.enabled" field.
+func deprecateEventsEnabledField(account *config.Account) {
+
+	if account != nil && account.Events.Enabled == nil {
+		account.Events.Enabled = &account.EventsEnabled
+	}
 }
