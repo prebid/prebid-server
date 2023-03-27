@@ -46,16 +46,13 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	validImps := []openrtb2.Imp{}
 	for i := 0; i < len(request.Imp); i++ {
-		appnexusExt, err := getAppNexusExt(&request.Imp[i])
+		appnexusExt, err := validateAndBuildAppNexusExt(&request.Imp[i])
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		handleLegacyParams(&appnexusExt)
-		// If the preprocessing failed, the server won't be able to bid on this Imp. Delete it, and note the error.
-		err = preprocess(&request.Imp[i], &appnexusExt, displayManagerVer)
-		if err != nil {
+		if err := buildRequestImp(&request.Imp[i], &appnexusExt, displayManagerVer); err != nil {
 			errs = append(errs, err)
 			continue
 		}
@@ -139,7 +136,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	return requests, append(errs, errors...)
 }
 
-func getAppNexusExt(imp *openrtb2.Imp) (openrtb_ext.ExtImpAppnexus, error) {
+func validateAndBuildAppNexusExt(imp *openrtb2.Imp) (openrtb_ext.ExtImpAppnexus, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return openrtb_ext.ExtImpAppnexus{}, err
@@ -147,6 +144,12 @@ func getAppNexusExt(imp *openrtb2.Imp) (openrtb_ext.ExtImpAppnexus, error) {
 
 	var appnexusExt openrtb_ext.ExtImpAppnexus
 	if err := json.Unmarshal(bidderExt.Bidder, &appnexusExt); err != nil {
+		return openrtb_ext.ExtImpAppnexus{}, err
+	}
+
+	handleLegacyParams(&appnexusExt)
+
+	if err := validateAppnexusExt(&appnexusExt); err != nil {
 		return openrtb_ext.ExtImpAppnexus{}, err
 	}
 
@@ -226,16 +229,16 @@ func splitRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExt
 	return resArr, errs
 }
 
-// preprocess mutates the imp to get it ready to send to appnexus.
-//
-// It returns the member param, if it exists, and an error if anything went wrong during the preprocessing.
-func preprocess(imp *openrtb2.Imp, appnexusExt *openrtb_ext.ExtImpAppnexus, defaultDisplayManagerVer string) error {
+func validateAppnexusExt(appnexusExt *openrtb_ext.ExtImpAppnexus) error {
 	if appnexusExt.PlacementId == 0 && (appnexusExt.InvCode == "" || appnexusExt.Member == "") {
 		return &errortypes.BadInput{
 			Message: "No placement or member+invcode provided",
 		}
 	}
+	return nil
+}
 
+func buildRequestImp(imp *openrtb2.Imp, appnexusExt *openrtb_ext.ExtImpAppnexus, displayManagerVer string) error {
 	if appnexusExt.InvCode != "" {
 		imp.TagID = appnexusExt.InvCode
 	}
@@ -260,17 +263,11 @@ func preprocess(imp *openrtb2.Imp, appnexusExt *openrtb_ext.ExtImpAppnexus, defa
 	}
 
 	// Populate imp.displaymanagerver if the SDK failed to do it.
-	if len(imp.DisplayManagerVer) == 0 && len(defaultDisplayManagerVer) > 0 {
-		imp.DisplayManagerVer = defaultDisplayManagerVer
+	if len(imp.DisplayManagerVer) == 0 && len(displayManagerVer) > 0 {
+		imp.DisplayManagerVer = displayManagerVer
 	}
 
-	impExt := appnexusImpExt{Appnexus: appnexusImpExtAppnexus{
-		PlacementID:       int(appnexusExt.PlacementId),
-		TrafficSourceCode: appnexusExt.TrafficSourceCode,
-		Keywords:          makeKeywordStr(appnexusExt.Keywords),
-		UsePmtRule:        appnexusExt.UsePaymentRule,
-		PrivateSizes:      appnexusExt.PrivateSizes,
-	}}
+	impExt := buildImpExt(appnexusExt)
 
 	var err error
 	if imp.Ext, err = json.Marshal(&impExt); err != nil {
@@ -278,6 +275,16 @@ func preprocess(imp *openrtb2.Imp, appnexusExt *openrtb_ext.ExtImpAppnexus, defa
 	}
 
 	return nil
+}
+
+func buildImpExt(appnexusExt *openrtb_ext.ExtImpAppnexus) *appnexusImpExt {
+	return &appnexusImpExt{Appnexus: appnexusImpExtAppnexus{
+		PlacementID:       int(appnexusExt.PlacementId),
+		TrafficSourceCode: appnexusExt.TrafficSourceCode,
+		Keywords:          makeKeywordStr(appnexusExt.Keywords),
+		UsePmtRule:        appnexusExt.UsePaymentRule,
+		PrivateSizes:      appnexusExt.PrivateSizes,
+	}}
 }
 
 func makeKeywordStr(keywords []*openrtb_ext.ExtImpAppnexusKeyVal) string {
