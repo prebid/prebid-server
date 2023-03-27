@@ -4,13 +4,13 @@
       "test": 0,
       "imp": [
         {
-          "id": "div-gpt-ad-1460505748561-0",
-          "video": {
-              "mimes": ["video/mp4"],
-                "w": 640,
-                "h": 480,
-                "placement": 1
-            },
+          "id": "div-gpt-ad-1460505748561-2",
+          "banner": {
+              "format" : [{
+                    "w": 300,
+                    "h": 250
+                  }]
+          },
           "bidfloor": 1e-05,
           "bidfloorcur": "USD",
           "ext": {
@@ -50,15 +50,15 @@
             "test": 1,
             "imp": [
               {
-                "id": "div-gpt-ad-1460505748561-0",
+                "id": "div-gpt-ad-1460505748561-2",
                 "tagid" : "OsNsyeF68q",
                 "secure": 1,
-                "video": {
-                    "mimes": ["video/mp4"],
-                      "w": 640,
-                      "h": 480,
-                      "placement": 1
-                  },
+                "banner": {
+                    "format" : [{
+                          "w": 300,
+                          "h": 250
+                        }]
+                },
                 "bidfloor": 1e-05,
                 "bidfloorcur": "USD",
                 "ext": {
@@ -96,10 +96,10 @@
                     "impid": "div-gpt-ad-1460505748561-0",
                     "price": 99,
                     "crid": "999999",
-                    "adm": "<!-- VAST video -->",
+                    "adm": "<!-- creative -->",
                     "adomain": ["richaudience.com"],
-                    "h": 640,
-                    "w": 480
+                    "h": 250,
+                    "w": 300
                 }]
             }]
           }
@@ -116,13 +116,13 @@
               "id": "47286888",
               "impid": "div-gpt-ad-1460505748561-0",
               "price": 99,
-              "adm": "<!-- VAST video -->",
+              "adm": "<!-- creative -->",
               "adomain": ["richaudience.com"],
               "crid": "999999",
-              "w": 640,
-              "h": 480
+              "w": 300,
+              "h": 250
             },
-            "type": "video"
+            "type": "no bidtype assigned"
           }
         ]
       }
