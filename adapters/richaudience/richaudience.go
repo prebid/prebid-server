@@ -51,6 +51,14 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			continue
 		}
 
+		if request.App != nil {
+			request.App.Keywords = "tagid=" + imp.TagID
+		}
+
+		if request.Site != nil {
+			request.Site.Keywords = "tagid=" + imp.TagID
+		}
+
 		if raiExt != nil {
 			if raiExt.Pid != "" {
 				imp.TagID = raiExt.Pid
