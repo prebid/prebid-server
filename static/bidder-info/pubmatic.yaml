@@ -1,4 +1,4 @@
-endpoint: "https://hbopenbid.pubmatic.com/translator?source=prebid-server"
+endpoint: "https://tech-stack-mgmt.pubmatic.com/owtools/keywords-based/owtools/getbid"
 maintainer:
   email: "header-bidding@pubmatic.com"
 gvlVendorID: 76
