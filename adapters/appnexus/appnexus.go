@@ -35,7 +35,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	// appnexus adapter expects imp.displaymanagerver to be populated in openrtb2 endpoint
 	// but some SDKs will put it in imp.ext.prebid instead
-	displayManagerVer := buildDefaultDisplayManageVer(request)
+	displayManagerVer := buildDisplayManageVer(request)
 
 	var (
 		shouldGenerateAdPodId *bool
@@ -405,7 +405,7 @@ func resolvePlatformID(platformID string) int {
 	return defaultPlatformID
 }
 
-func buildDefaultDisplayManageVer(req *openrtb2.BidRequest) string {
+func buildDisplayManageVer(req *openrtb2.BidRequest) string {
 	if req.App == nil {
 		return ""
 	}
