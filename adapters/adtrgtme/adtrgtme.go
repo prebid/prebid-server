@@ -18,7 +18,7 @@ type adapter struct {
 }
 
 // Builder builds a new instance of the Adtrgtme adapter for the given bidder with the given config.
-func Builder(_ openrtb_ext.BidderName, config config.Adapter, _ config.Server) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
@@ -27,7 +27,7 @@ func Builder(_ openrtb_ext.BidderName, config config.Adapter, _ config.Server) (
 
 func (v *adapter) MakeRequests(
 	openRTBRequest *openrtb2.BidRequest,
-	_ *adapters.ExtraRequestInfo,
+	requestInfo *adapters.ExtraRequestInfo,
 ) (
 	[]*adapters.RequestData,
 	[]error,
@@ -36,17 +36,17 @@ func (v *adapter) MakeRequests(
 	var errors []error
 
 	requestCopy := *openRTBRequest
-	for i := range openRTBRequest.Imp {
-		siteID, err := siteIDFromImp(&openRTBRequest.Imp[i])
+	for _, imp := range openRTBRequest.Imp {
+		siteID, err := getSiteIDFromImp(&imp)
 		if err != nil {
 			errors = append(errors, err)
 			continue
 		}
-		openRTBRequest.Imp[i].Ext = nil
 
-		requestCopy.Imp = []openrtb2.Imp{openRTBRequest.Imp[i]}
+		imp.Ext = nil
+		requestCopy.Imp = []openrtb2.Imp{imp}
 
-		requestJSON, err := json.Marshal(requestCopy)
+		requestBody, err := json.Marshal(requestCopy)
 		if err != nil {
 			errors = append(errors, err)
 			continue
@@ -55,16 +55,16 @@ func (v *adapter) MakeRequests(
 		requestData := &adapters.RequestData{
 			Method:  http.MethodPost,
 			Uri:     v.buildRequestURI(siteID),
-			Body:    requestJSON,
+			Body:    requestBody,
 			Headers: makeRequestHeaders(openRTBRequest),
 		}
+
 		requests = append(requests, requestData)
 	}
-
 	return requests, errors
 }
 
-func siteIDFromImp(imp *openrtb2.Imp) (uint64, error) {
+func getSiteIDFromImp(imp *openrtb2.Imp) (uint64, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return 0, &errortypes.BadInput{
@@ -130,7 +130,7 @@ func (v *adapter) checkResponseStatusCodes(response *adapters.ResponseData) erro
 
 func (v *adapter) MakeBids(
 	openRTBRequest *openrtb2.BidRequest,
-	_ *adapters.RequestData,
+	requestToBidder *adapters.RequestData,
 	bidderRawResponse *adapters.ResponseData,
 ) (
 	*adapters.BidderResponse,
