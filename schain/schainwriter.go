@@ -74,7 +74,6 @@ func (w SChainWriter) Write(req *openrtb2.BidRequest, bidder string) {
 	if err == nil {
 		req.Source.Ext = sourceExt
 	}
-
 }
 
 // extPrebidSChainExists checks if an schain exists in the ORTB 2.5 req.ext.prebid.schain location

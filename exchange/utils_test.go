@@ -1191,31 +1191,24 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 		hasError      bool
 	}{
 		{
-			description:   "source.ext is nil",
-			inExt:         json.RawMessage{},
+			description:   "nil",
+			inExt:         nil,
 			inSourceExt:   nil,
-			outRequestExt: json.RawMessage{},
+			outRequestExt: nil,
 			outSourceExt:  nil,
 		},
 		{
-			description:   "source.ext is defined with length 0",
-			inExt:         json.RawMessage{},
-			inSourceExt:   json.RawMessage{},
-			outRequestExt: json.RawMessage{},
-			outSourceExt:  json.RawMessage{},
-		},
-		{
 			description:   "ORTB 2.5 chain at source.ext.schain",
-			inExt:         json.RawMessage{},
+			inExt:         nil,
 			inSourceExt:   json.RawMessage(`{` + seller1SChain + `}`),
-			outRequestExt: json.RawMessage{},
+			outRequestExt: nil,
 			outSourceExt:  json.RawMessage(`{` + seller1SChain + `}`),
 		},
 		{
 			description:   "ORTB 2.5 schain at request.ext.prebid.schains",
 			inExt:         json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `}]}}`),
-			inSourceExt:   json.RawMessage{},
-			outRequestExt: json.RawMessage(`{"prebid":{}}`),
+			inSourceExt:   nil,
+			outRequestExt: nil,
 			outSourceExt:  json.RawMessage(`{` + seller1SChain + `}`),
 		},
 		{
@@ -1237,9 +1230,9 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 		var extRequest *openrtb_ext.ExtRequest
 		if test.inExt != nil {
 			req.Ext = test.inExt
-			unmarshaledExt, err := extractBidRequestExt(req)
+			extRequest = &openrtb_ext.ExtRequest{}
+			err := json.Unmarshal(req.Ext, extRequest)
 			assert.NoErrorf(t, err, test.description+":Error unmarshaling inExt")
-			extRequest = unmarshaledExt
 		}
 
 		auctionReq := AuctionRequest{
@@ -1294,13 +1287,13 @@ func TestCleanOpenRTBRequestsBidderParams(t *testing.T) {
 		},
 		{
 			description: "Bidder params for single partner",
-			inExt:       json.RawMessage(`{"prebid":{"bidderparams": {"pubmatic": {"profile":1234,"version":2}}}}`),
+			inExt:       json.RawMessage(`{"prebid":{"bidderparams":{"pubmatic":{"profile":1234,"version":2}}}}`),
 			expectedExt: getExpectedReqExt(false, true, false),
 			hasError:    false,
 		},
 		{
 			description: "Bidder params for two partners",
-			inExt:       json.RawMessage(`{"prebid":{"bidderparams": {"pubmatic": {"profile":1234,"version":2}, "appnexus": {"key1": 123, "key2": {"innerKey1":"innerValue1"}} }}}`),
+			inExt:       json.RawMessage(`{"prebid":{"bidderparams":{"pubmatic":{"profile":1234,"version":2},"appnexus":{"key1":123,"key2":{"innerKey1":"innerValue1"}}}}}`),
 			expectedExt: getExpectedReqExt(false, true, true),
 			hasError:    false,
 		},
@@ -1311,9 +1304,9 @@ func TestCleanOpenRTBRequestsBidderParams(t *testing.T) {
 		var extRequest *openrtb_ext.ExtRequest
 		if test.inExt != nil {
 			req.Ext = test.inExt
-			unmarshaledExt, err := extractBidRequestExt(req)
+			extRequest = &openrtb_ext.ExtRequest{}
+			err := json.Unmarshal(req.Ext, extRequest)
 			assert.NoErrorf(t, err, test.description+":Error unmarshaling inExt")
-			extRequest = unmarshaledExt
 		}
 
 		auctionReq := AuctionRequest{
@@ -1359,95 +1352,24 @@ func getExpectedReqExt(nilExt, includePubmaticParams, includeAppnexusParams bool
 	bidderParamsMap := make(map[string]json.RawMessage)
 
 	if nilExt {
-		bidderParamsMap["pubmatic"] = json.RawMessage(``)
-		bidderParamsMap["appnexus"] = json.RawMessage(``)
+		bidderParamsMap["pubmatic"] = nil
+		bidderParamsMap["appnexus"] = nil
 		return bidderParamsMap
 	}
 
 	if includePubmaticParams {
 		bidderParamsMap["pubmatic"] = json.RawMessage(`{"prebid":{"bidderparams":{"profile":1234,"version":2}}}`)
 	} else {
-		bidderParamsMap["pubmatic"] = json.RawMessage(`{"prebid":{}}`)
+		bidderParamsMap["pubmatic"] = nil
 	}
 
 	if includeAppnexusParams {
 		bidderParamsMap["appnexus"] = json.RawMessage(`{"prebid":{"bidderparams":{"key1":123,"key2":{"innerKey1":"innerValue1"}}}}`)
 	} else {
-		bidderParamsMap["appnexus"] = json.RawMessage(`{"prebid":{}}`)
+		bidderParamsMap["appnexus"] = nil
 	}
 
 	return bidderParamsMap
-}
-
-func TestExtractBidRequestExt(t *testing.T) {
-	var boolFalse, boolTrue *bool = new(bool), new(bool)
-	*boolFalse = false
-	*boolTrue = true
-
-	testCases := []struct {
-		desc          string
-		inBidRequest  *openrtb2.BidRequest
-		outRequestExt *openrtb_ext.ExtRequest
-		outError      error
-	}{
-		{
-			desc:         "Valid vastxml.returnCreative set to false",
-			inBidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"debug":true,"cache":{"vastxml":{"returnCreative":false}}}}`)},
-			outRequestExt: &openrtb_ext.ExtRequest{
-				Prebid: openrtb_ext.ExtRequestPrebid{
-					Debug: true,
-					Cache: &openrtb_ext.ExtRequestPrebidCache{
-						VastXML: &openrtb_ext.ExtRequestPrebidCacheVAST{
-							ReturnCreative: boolFalse,
-						},
-					},
-				},
-			},
-			outError: nil,
-		},
-		{
-			desc:         "Valid vastxml.returnCreative set to true",
-			inBidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"debug":true,"cache":{"vastxml":{"returnCreative":true}}}}`)},
-			outRequestExt: &openrtb_ext.ExtRequest{
-				Prebid: openrtb_ext.ExtRequestPrebid{
-					Debug: true,
-					Cache: &openrtb_ext.ExtRequestPrebidCache{
-						VastXML: &openrtb_ext.ExtRequestPrebidCacheVAST{
-							ReturnCreative: boolTrue,
-						},
-					},
-				},
-			},
-			outError: nil,
-		},
-		{
-			desc:          "bidRequest nil, we expect an error",
-			inBidRequest:  nil,
-			outRequestExt: &openrtb_ext.ExtRequest{},
-			outError:      fmt.Errorf("Error bidRequest should not be nil"),
-		},
-		{
-			desc:          "Non-nil bidRequest with empty Ext, we expect a blank requestExt",
-			inBidRequest:  &openrtb2.BidRequest{},
-			outRequestExt: &openrtb_ext.ExtRequest{},
-			outError:      nil,
-		},
-		{
-			desc:          "Non-nil bidRequest with non-empty, invalid Ext, we expect unmarshaling error",
-			inBidRequest:  &openrtb2.BidRequest{Ext: json.RawMessage(`invalid`)},
-			outRequestExt: &openrtb_ext.ExtRequest{},
-			outError:      fmt.Errorf("Error decoding Request.ext : invalid character 'i' looking for beginning of value"),
-		},
-	}
-	for _, test := range testCases {
-		actualRequestExt, actualErr := extractBidRequestExt(test.inBidRequest)
-
-		// Given that assert.Equal asserts pointer variable equality based on the equality of the referenced values (as opposed to
-		// the memory addresses) the call below asserts whether or not *test.outRequestExt.Prebid.Cache.VastXML.ReturnCreative boolean
-		// value is equal to that of *actualRequestExt.Prebid.Cache.VastXML.ReturnCreative
-		assert.Equal(t, test.outRequestExt, actualRequestExt, "%s. Unexpected RequestExt value. \n", test.desc)
-		assert.Equal(t, test.outError, actualErr, "%s. Unexpected error value. \n", test.desc)
-	}
 }
 
 func TestGetExtCacheInstructions(t *testing.T) {
@@ -1457,12 +1379,12 @@ func TestGetExtCacheInstructions(t *testing.T) {
 
 	testCases := []struct {
 		desc                 string
-		inRequestExt         *openrtb_ext.ExtRequest
+		requestExtPrebid     *openrtb_ext.ExtRequestPrebid
 		outCacheInstructions extCacheInstructions
 	}{
 		{
-			desc:         "Nil inRequestExt, all cache flags false except for returnCreative that defaults to true",
-			inRequestExt: nil,
+			desc:             "Nil request ext, all cache flags false except for returnCreative that defaults to true",
+			requestExtPrebid: nil,
 			outCacheInstructions: extCacheInstructions{
 				cacheBids:      false,
 				cacheVAST:      false,
@@ -1470,8 +1392,10 @@ func TestGetExtCacheInstructions(t *testing.T) {
 			},
 		},
 		{
-			desc:         "Non-nil inRequestExt, nil Cache field, all cache flags false except for returnCreative that defaults to true",
-			inRequestExt: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Cache: nil}},
+			desc: "Non-nil request ext, nil Cache field, all cache flags false except for returnCreative that defaults to true",
+			requestExtPrebid: &openrtb_ext.ExtRequestPrebid{
+				Cache: nil,
+			},
 			outCacheInstructions: extCacheInstructions{
 				cacheBids:      false,
 				cacheVAST:      false,
@@ -1480,12 +1404,10 @@ func TestGetExtCacheInstructions(t *testing.T) {
 		},
 		{
 			desc: "Non-nil Cache field, both ExtRequestPrebidCacheBids and ExtRequestPrebidCacheVAST nil returnCreative that defaults to true",
-			inRequestExt: &openrtb_ext.ExtRequest{
-				Prebid: openrtb_ext.ExtRequestPrebid{
-					Cache: &openrtb_ext.ExtRequestPrebidCache{
-						Bids:    nil,
-						VastXML: nil,
-					},
+			requestExtPrebid: &openrtb_ext.ExtRequestPrebid{
+				Cache: &openrtb_ext.ExtRequestPrebidCache{
+					Bids:    nil,
+					VastXML: nil,
 				},
 			},
 			outCacheInstructions: extCacheInstructions{
@@ -1496,12 +1418,10 @@ func TestGetExtCacheInstructions(t *testing.T) {
 		},
 		{
 			desc: "Non-nil ExtRequest.Cache.ExtRequestPrebidCacheVAST with unspecified ReturnCreative field, cacheVAST = true and returnCreative defaults to true",
-			inRequestExt: &openrtb_ext.ExtRequest{
-				Prebid: openrtb_ext.ExtRequestPrebid{
-					Cache: &openrtb_ext.ExtRequestPrebidCache{
-						Bids:    nil,
-						VastXML: &openrtb_ext.ExtRequestPrebidCacheVAST{},
-					},
+			requestExtPrebid: &openrtb_ext.ExtRequestPrebid{
+				Cache: &openrtb_ext.ExtRequestPrebidCache{
+					Bids:    nil,
+					VastXML: &openrtb_ext.ExtRequestPrebidCacheVAST{},
 				},
 			},
 			outCacheInstructions: extCacheInstructions{
@@ -1512,12 +1432,10 @@ func TestGetExtCacheInstructions(t *testing.T) {
 		},
 		{
 			desc: "Non-nil ExtRequest.Cache.ExtRequestPrebidCacheVAST where ReturnCreative is set to false, cacheVAST = true and returnCreative = false",
-			inRequestExt: &openrtb_ext.ExtRequest{
-				Prebid: openrtb_ext.ExtRequestPrebid{
-					Cache: &openrtb_ext.ExtRequestPrebidCache{
-						Bids:    nil,
-						VastXML: &openrtb_ext.ExtRequestPrebidCacheVAST{ReturnCreative: boolFalse},
-					},
+			requestExtPrebid: &openrtb_ext.ExtRequestPrebid{
+				Cache: &openrtb_ext.ExtRequestPrebidCache{
+					Bids:    nil,
+					VastXML: &openrtb_ext.ExtRequestPrebidCacheVAST{ReturnCreative: boolFalse},
 				},
 			},
 			outCacheInstructions: extCacheInstructions{
@@ -1528,12 +1446,10 @@ func TestGetExtCacheInstructions(t *testing.T) {
 		},
 		{
 			desc: "Non-nil ExtRequest.Cache.ExtRequestPrebidCacheVAST where ReturnCreative is set to true, cacheVAST = true and returnCreative = true",
-			inRequestExt: &openrtb_ext.ExtRequest{
-				Prebid: openrtb_ext.ExtRequestPrebid{
-					Cache: &openrtb_ext.ExtRequestPrebidCache{
-						Bids:    nil,
-						VastXML: &openrtb_ext.ExtRequestPrebidCacheVAST{ReturnCreative: boolTrue},
-					},
+			requestExtPrebid: &openrtb_ext.ExtRequestPrebid{
+				Cache: &openrtb_ext.ExtRequestPrebidCache{
+					Bids:    nil,
+					VastXML: &openrtb_ext.ExtRequestPrebidCacheVAST{ReturnCreative: boolTrue},
 				},
 			},
 			outCacheInstructions: extCacheInstructions{
@@ -1544,12 +1460,10 @@ func TestGetExtCacheInstructions(t *testing.T) {
 		},
 		{
 			desc: "Non-nil ExtRequest.Cache.ExtRequestPrebidCacheBids with unspecified ReturnCreative field, cacheBids = true and returnCreative defaults to true",
-			inRequestExt: &openrtb_ext.ExtRequest{
-				Prebid: openrtb_ext.ExtRequestPrebid{
-					Cache: &openrtb_ext.ExtRequestPrebidCache{
-						Bids:    &openrtb_ext.ExtRequestPrebidCacheBids{},
-						VastXML: nil,
-					},
+			requestExtPrebid: &openrtb_ext.ExtRequestPrebid{
+				Cache: &openrtb_ext.ExtRequestPrebidCache{
+					Bids:    &openrtb_ext.ExtRequestPrebidCacheBids{},
+					VastXML: nil,
 				},
 			},
 			outCacheInstructions: extCacheInstructions{
@@ -1560,12 +1474,10 @@ func TestGetExtCacheInstructions(t *testing.T) {
 		},
 		{
 			desc: "Non-nil ExtRequest.Cache.ExtRequestPrebidCacheBids where ReturnCreative is set to false, cacheBids = true and returnCreative  = false",
-			inRequestExt: &openrtb_ext.ExtRequest{
-				Prebid: openrtb_ext.ExtRequestPrebid{
-					Cache: &openrtb_ext.ExtRequestPrebidCache{
-						Bids:    &openrtb_ext.ExtRequestPrebidCacheBids{ReturnCreative: boolFalse},
-						VastXML: nil,
-					},
+			requestExtPrebid: &openrtb_ext.ExtRequestPrebid{
+				Cache: &openrtb_ext.ExtRequestPrebidCache{
+					Bids:    &openrtb_ext.ExtRequestPrebidCacheBids{ReturnCreative: boolFalse},
+					VastXML: nil,
 				},
 			},
 			outCacheInstructions: extCacheInstructions{
@@ -1576,12 +1488,10 @@ func TestGetExtCacheInstructions(t *testing.T) {
 		},
 		{
 			desc: "Non-nil ExtRequest.Cache.ExtRequestPrebidCacheBids where ReturnCreative is set to true, cacheBids = true and returnCreative  = true",
-			inRequestExt: &openrtb_ext.ExtRequest{
-				Prebid: openrtb_ext.ExtRequestPrebid{
-					Cache: &openrtb_ext.ExtRequestPrebidCache{
-						Bids:    &openrtb_ext.ExtRequestPrebidCacheBids{ReturnCreative: boolTrue},
-						VastXML: nil,
-					},
+			requestExtPrebid: &openrtb_ext.ExtRequestPrebid{
+				Cache: &openrtb_ext.ExtRequestPrebidCache{
+					Bids:    &openrtb_ext.ExtRequestPrebidCacheBids{ReturnCreative: boolTrue},
+					VastXML: nil,
 				},
 			},
 			outCacheInstructions: extCacheInstructions{
@@ -1592,12 +1502,10 @@ func TestGetExtCacheInstructions(t *testing.T) {
 		},
 		{
 			desc: "Non-nil ExtRequest.Cache.ExtRequestPrebidCacheBids and ExtRequest.Cache.ExtRequestPrebidCacheVAST, neither specify a ReturnCreative field value, all extCacheInstructions fields set to true",
-			inRequestExt: &openrtb_ext.ExtRequest{
-				Prebid: openrtb_ext.ExtRequestPrebid{
-					Cache: &openrtb_ext.ExtRequestPrebidCache{
-						Bids:    &openrtb_ext.ExtRequestPrebidCacheBids{},
-						VastXML: &openrtb_ext.ExtRequestPrebidCacheVAST{},
-					},
+			requestExtPrebid: &openrtb_ext.ExtRequestPrebid{
+				Cache: &openrtb_ext.ExtRequestPrebidCache{
+					Bids:    &openrtb_ext.ExtRequestPrebidCacheBids{},
+					VastXML: &openrtb_ext.ExtRequestPrebidCacheVAST{},
 				},
 			},
 			outCacheInstructions: extCacheInstructions{
@@ -1608,12 +1516,10 @@ func TestGetExtCacheInstructions(t *testing.T) {
 		},
 		{
 			desc: "Non-nil ExtRequest.Cache.ExtRequestPrebidCacheBids and ExtRequest.Cache.ExtRequestPrebidCacheVAST sets ReturnCreative to true, all extCacheInstructions fields set to true",
-			inRequestExt: &openrtb_ext.ExtRequest{
-				Prebid: openrtb_ext.ExtRequestPrebid{
-					Cache: &openrtb_ext.ExtRequestPrebidCache{
-						Bids:    &openrtb_ext.ExtRequestPrebidCacheBids{},
-						VastXML: &openrtb_ext.ExtRequestPrebidCacheVAST{ReturnCreative: boolTrue},
-					},
+			requestExtPrebid: &openrtb_ext.ExtRequestPrebid{
+				Cache: &openrtb_ext.ExtRequestPrebidCache{
+					Bids:    &openrtb_ext.ExtRequestPrebidCacheBids{},
+					VastXML: &openrtb_ext.ExtRequestPrebidCacheVAST{ReturnCreative: boolTrue},
 				},
 			},
 			outCacheInstructions: extCacheInstructions{
@@ -1624,12 +1530,10 @@ func TestGetExtCacheInstructions(t *testing.T) {
 		},
 		{
 			desc: "Non-nil ExtRequest.Cache.ExtRequestPrebidCacheBids and ExtRequest.Cache.ExtRequestPrebidCacheVAST sets ReturnCreative to false, returnCreative = false",
-			inRequestExt: &openrtb_ext.ExtRequest{
-				Prebid: openrtb_ext.ExtRequestPrebid{
-					Cache: &openrtb_ext.ExtRequestPrebidCache{
-						Bids:    &openrtb_ext.ExtRequestPrebidCacheBids{},
-						VastXML: &openrtb_ext.ExtRequestPrebidCacheVAST{ReturnCreative: boolFalse},
-					},
+			requestExtPrebid: &openrtb_ext.ExtRequestPrebid{
+				Cache: &openrtb_ext.ExtRequestPrebidCache{
+					Bids:    &openrtb_ext.ExtRequestPrebidCacheBids{},
+					VastXML: &openrtb_ext.ExtRequestPrebidCacheVAST{ReturnCreative: boolFalse},
 				},
 			},
 			outCacheInstructions: extCacheInstructions{
@@ -1640,12 +1544,10 @@ func TestGetExtCacheInstructions(t *testing.T) {
 		},
 		{
 			desc: "Non-nil ExtRequest.Cache.ExtRequestPrebidCacheVAST and ExtRequest.Cache.ExtRequestPrebidCacheBids sets ReturnCreative to true, all extCacheInstructions fields set to true",
-			inRequestExt: &openrtb_ext.ExtRequest{
-				Prebid: openrtb_ext.ExtRequestPrebid{
-					Cache: &openrtb_ext.ExtRequestPrebidCache{
-						Bids:    &openrtb_ext.ExtRequestPrebidCacheBids{ReturnCreative: boolTrue},
-						VastXML: &openrtb_ext.ExtRequestPrebidCacheVAST{},
-					},
+			requestExtPrebid: &openrtb_ext.ExtRequestPrebid{
+				Cache: &openrtb_ext.ExtRequestPrebidCache{
+					Bids:    &openrtb_ext.ExtRequestPrebidCacheBids{ReturnCreative: boolTrue},
+					VastXML: &openrtb_ext.ExtRequestPrebidCacheVAST{},
 				},
 			},
 			outCacheInstructions: extCacheInstructions{
@@ -1656,12 +1558,10 @@ func TestGetExtCacheInstructions(t *testing.T) {
 		},
 		{
 			desc: "Non-nil ExtRequest.Cache.ExtRequestPrebidCacheVAST and ExtRequest.Cache.ExtRequestPrebidCacheBids sets ReturnCreative to false, returnCreative = false",
-			inRequestExt: &openrtb_ext.ExtRequest{
-				Prebid: openrtb_ext.ExtRequestPrebid{
-					Cache: &openrtb_ext.ExtRequestPrebidCache{
-						Bids:    &openrtb_ext.ExtRequestPrebidCacheBids{ReturnCreative: boolFalse},
-						VastXML: &openrtb_ext.ExtRequestPrebidCacheVAST{},
-					},
+			requestExtPrebid: &openrtb_ext.ExtRequestPrebid{
+				Cache: &openrtb_ext.ExtRequestPrebidCache{
+					Bids:    &openrtb_ext.ExtRequestPrebidCacheBids{ReturnCreative: boolFalse},
+					VastXML: &openrtb_ext.ExtRequestPrebidCacheVAST{},
 				},
 			},
 			outCacheInstructions: extCacheInstructions{
@@ -1672,12 +1572,10 @@ func TestGetExtCacheInstructions(t *testing.T) {
 		},
 		{
 			desc: "Non-nil ExtRequest.Cache.ExtRequestPrebidCacheVAST and ExtRequest.Cache.ExtRequestPrebidCacheBids set different ReturnCreative values, returnCreative = true because one of them is true",
-			inRequestExt: &openrtb_ext.ExtRequest{
-				Prebid: openrtb_ext.ExtRequestPrebid{
-					Cache: &openrtb_ext.ExtRequestPrebidCache{
-						Bids:    &openrtb_ext.ExtRequestPrebidCacheBids{ReturnCreative: boolFalse},
-						VastXML: &openrtb_ext.ExtRequestPrebidCacheVAST{ReturnCreative: boolTrue},
-					},
+			requestExtPrebid: &openrtb_ext.ExtRequestPrebid{
+				Cache: &openrtb_ext.ExtRequestPrebidCache{
+					Bids:    &openrtb_ext.ExtRequestPrebidCacheBids{ReturnCreative: boolFalse},
+					VastXML: &openrtb_ext.ExtRequestPrebidCacheVAST{ReturnCreative: boolTrue},
 				},
 			},
 			outCacheInstructions: extCacheInstructions{
@@ -1688,12 +1586,10 @@ func TestGetExtCacheInstructions(t *testing.T) {
 		},
 		{
 			desc: "Non-nil ExtRequest.Cache.ExtRequestPrebidCacheVAST and ExtRequest.Cache.ExtRequestPrebidCacheBids set different ReturnCreative values, returnCreative = true because one of them is true",
-			inRequestExt: &openrtb_ext.ExtRequest{
-				Prebid: openrtb_ext.ExtRequestPrebid{
-					Cache: &openrtb_ext.ExtRequestPrebidCache{
-						Bids:    &openrtb_ext.ExtRequestPrebidCacheBids{ReturnCreative: boolTrue},
-						VastXML: &openrtb_ext.ExtRequestPrebidCacheVAST{ReturnCreative: boolFalse},
-					},
+			requestExtPrebid: &openrtb_ext.ExtRequestPrebid{
+				Cache: &openrtb_ext.ExtRequestPrebidCache{
+					Bids:    &openrtb_ext.ExtRequestPrebidCacheBids{ReturnCreative: boolTrue},
+					VastXML: &openrtb_ext.ExtRequestPrebidCacheVAST{ReturnCreative: boolFalse},
 				},
 			},
 			outCacheInstructions: extCacheInstructions{
@@ -1705,7 +1601,7 @@ func TestGetExtCacheInstructions(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		cacheInstructions := getExtCacheInstructions(test.inRequestExt)
+		cacheInstructions := getExtCacheInstructions(test.requestExtPrebid)
 
 		assert.Equal(t, test.outCacheInstructions.cacheBids, cacheInstructions.cacheBids, "%s. Unexpected shouldCacheBids value. \n", test.desc)
 		assert.Equal(t, test.outCacheInstructions.cacheVAST, cacheInstructions.cacheVAST, "%s. Unexpected shouldCacheVAST value. \n", test.desc)
@@ -1715,8 +1611,8 @@ func TestGetExtCacheInstructions(t *testing.T) {
 
 func TestGetExtTargetData(t *testing.T) {
 	type inTest struct {
-		requestExt        *openrtb_ext.ExtRequest
-		cacheInstructions *extCacheInstructions
+		requestExtPrebid  *openrtb_ext.ExtRequestPrebid
+		cacheInstructions extCacheInstructions
 	}
 	type outTest struct {
 		targetData    *targetData
@@ -1730,8 +1626,8 @@ func TestGetExtTargetData(t *testing.T) {
 		{
 			"nil requestExt, nil outTargetData",
 			inTest{
-				requestExt: nil,
-				cacheInstructions: &extCacheInstructions{
+				requestExtPrebid: nil,
+				cacheInstructions: extCacheInstructions{
 					cacheBids: true,
 					cacheVAST: true,
 				},
@@ -1741,12 +1637,10 @@ func TestGetExtTargetData(t *testing.T) {
 		{
 			"Valid requestExt, nil Targeting field, nil outTargetData",
 			inTest{
-				requestExt: &openrtb_ext.ExtRequest{
-					Prebid: openrtb_ext.ExtRequestPrebid{
-						Targeting: nil,
-					},
+				requestExtPrebid: &openrtb_ext.ExtRequestPrebid{
+					Targeting: nil,
 				},
-				cacheInstructions: &extCacheInstructions{
+				cacheInstructions: extCacheInstructions{
 					cacheBids: true,
 					cacheVAST: true,
 				},
@@ -1756,19 +1650,17 @@ func TestGetExtTargetData(t *testing.T) {
 		{
 			"Valid targeting data in requestExt, valid outTargetData",
 			inTest{
-				requestExt: &openrtb_ext.ExtRequest{
-					Prebid: openrtb_ext.ExtRequestPrebid{
-						Targeting: &openrtb_ext.ExtRequestTargeting{
-							PriceGranularity: &openrtb_ext.PriceGranularity{
-								Precision: ptrutil.ToPtr(2),
-								Ranges:    []openrtb_ext.GranularityRange{{Min: 0.00, Max: 5.00, Increment: 1.00}},
-							},
-							IncludeWinners:    ptrutil.ToPtr(true),
-							IncludeBidderKeys: ptrutil.ToPtr(true),
+				requestExtPrebid: &openrtb_ext.ExtRequestPrebid{
+					Targeting: &openrtb_ext.ExtRequestTargeting{
+						PriceGranularity: &openrtb_ext.PriceGranularity{
+							Precision: ptrutil.ToPtr(2),
+							Ranges:    []openrtb_ext.GranularityRange{{Min: 0.00, Max: 5.00, Increment: 1.00}},
 						},
+						IncludeWinners:    ptrutil.ToPtr(true),
+						IncludeBidderKeys: ptrutil.ToPtr(true),
 					},
 				},
-				cacheInstructions: &extCacheInstructions{
+				cacheInstructions: extCacheInstructions{
 					cacheBids: true,
 					cacheVAST: true,
 				},
@@ -1788,8 +1680,9 @@ func TestGetExtTargetData(t *testing.T) {
 			},
 		},
 	}
+
 	for _, test := range testCases {
-		actualTargetData := getExtTargetData(test.in.requestExt, test.in.cacheInstructions)
+		actualTargetData := getExtTargetData(test.in.requestExtPrebid, test.in.cacheInstructions)
 
 		if test.out.nilTargetData {
 			assert.Nil(t, actualTargetData, "%s. Targeting data should be nil. \n", test.desc)
@@ -1801,55 +1694,47 @@ func TestGetExtTargetData(t *testing.T) {
 }
 
 func TestParseRequestDebugValues(t *testing.T) {
-	type inTest struct {
-		bidRequest *openrtb2.BidRequest
-		requestExt *openrtb_ext.ExtRequest
-	}
 	testCases := []struct {
-		desc string
-		in   inTest
-		out  bool
+		desc           string
+		givenTest      int8
+		givenExtPrebid *openrtb_ext.ExtRequestPrebid
+		expected       bool
 	}{
 		{
-			desc: "Nil bid request, nil requestExt",
-			in:   inTest{nil, nil},
-			out:  false,
+			desc:           "bid request test == 0, nil requestExt",
+			givenTest:      0,
+			givenExtPrebid: nil,
+			expected:       false,
 		},
 		{
-			desc: "bid request test == 0, nil requestExt",
-			in:   inTest{&openrtb2.BidRequest{Test: 0}, nil},
-			out:  false,
+			desc:           "bid request test == 0, requestExt debug flag false",
+			givenTest:      0,
+			givenExtPrebid: &openrtb_ext.ExtRequestPrebid{Debug: false},
+			expected:       false,
 		},
 		{
-			desc: "Nil bid request, requestExt debug flag false",
-			in:   inTest{nil, &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Debug: false}}},
-			out:  false,
+			desc:           "bid request test == 1, requestExt debug flag false",
+			givenTest:      1,
+			givenExtPrebid: &openrtb_ext.ExtRequestPrebid{Debug: false},
+			expected:       true,
 		},
 		{
-			desc: "bid request test == 0, requestExt debug flag false",
-			in:   inTest{&openrtb2.BidRequest{Test: 0}, &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Debug: false}}},
-			out:  false,
+			desc:           "bid request test == 0, requestExt debug flag true",
+			givenTest:      0,
+			givenExtPrebid: &openrtb_ext.ExtRequestPrebid{Debug: true},
+			expected:       true,
 		},
 		{
-			desc: "bid request test == 1, requestExt debug flag false",
-			in:   inTest{&openrtb2.BidRequest{Test: 1}, &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Debug: false}}},
-			out:  true,
-		},
-		{
-			desc: "bid request test == 0, requestExt debug flag true",
-			in:   inTest{&openrtb2.BidRequest{Test: 0}, &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Debug: true}}},
-			out:  true,
-		},
-		{
-			desc: "bid request test == 1, requestExt debug flag true",
-			in:   inTest{&openrtb2.BidRequest{Test: 1}, &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Debug: true}}},
-			out:  true,
+			desc:           "bid request test == 1, requestExt debug flag true",
+			givenTest:      1,
+			givenExtPrebid: &openrtb_ext.ExtRequestPrebid{Debug: true},
+			expected:       true,
 		},
 	}
 	for _, test := range testCases {
-		actualDebugInfo := parseRequestDebugValues(test.in.bidRequest, test.in.requestExt)
+		actualDebugInfo := parseRequestDebugValues(test.givenTest, test.givenExtPrebid)
 
-		assert.Equal(t, test.out, actualDebugInfo, "%s. Unexpected debug value. \n", test.desc)
+		assert.Equal(t, test.expected, actualDebugInfo, "%s. Unexpected debug value. \n", test.desc)
 	}
 }
 
@@ -1928,27 +1813,27 @@ func TestSetDebugLogValues(t *testing.T) {
 func TestGetExtBidAdjustmentFactors(t *testing.T) {
 	testCases := []struct {
 		desc                    string
-		inRequestExt            *openrtb_ext.ExtRequest
+		requestExtPrebid        *openrtb_ext.ExtRequestPrebid
 		outBidAdjustmentFactors map[string]float64
 	}{
 		{
 			desc:                    "Nil request ext",
-			inRequestExt:            nil,
+			requestExtPrebid:        nil,
 			outBidAdjustmentFactors: nil,
 		},
 		{
 			desc:                    "Non-nil request ext, nil BidAdjustmentFactors field",
-			inRequestExt:            &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{BidAdjustmentFactors: nil}},
+			requestExtPrebid:        &openrtb_ext.ExtRequestPrebid{BidAdjustmentFactors: nil},
 			outBidAdjustmentFactors: nil,
 		},
 		{
 			desc:                    "Non-nil request ext, valid BidAdjustmentFactors field",
-			inRequestExt:            &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{BidAdjustmentFactors: map[string]float64{"bid-factor": 1.0}}},
+			requestExtPrebid:        &openrtb_ext.ExtRequestPrebid{BidAdjustmentFactors: map[string]float64{"bid-factor": 1.0}},
 			outBidAdjustmentFactors: map[string]float64{"bid-factor": 1.0},
 		},
 	}
 	for _, test := range testCases {
-		actualBidAdjustmentFactors := getExtBidAdjustmentFactors(test.inRequestExt)
+		actualBidAdjustmentFactors := getExtBidAdjustmentFactors(test.requestExtPrebid)
 
 		assert.Equal(t, test.outBidAdjustmentFactors, actualBidAdjustmentFactors, "%s. Unexpected BidAdjustmentFactors value. \n", test.desc)
 	}
@@ -2476,8 +2361,10 @@ func TestCleanOpenRTBRequestsWithOpenRTBDowngrade(t *testing.T) {
 }
 
 func TestBuildRequestExtForBidder(t *testing.T) {
-	bidder := "foo"
-	bidderParams := json.RawMessage(`"bar"`)
+	var (
+		bidder       = "foo"
+		bidderParams = json.RawMessage(`"bar"`)
+	)
 
 	testCases := []struct {
 		description          string
@@ -2491,14 +2378,14 @@ func TestBuildRequestExtForBidder(t *testing.T) {
 			bidderParams:         nil,
 			requestExt:           nil,
 			alternateBidderCodes: nil,
-			expectedJson:         json.RawMessage(``),
+			expectedJson:         nil,
 		},
 		{
 			description:          "Empty",
 			bidderParams:         nil,
 			alternateBidderCodes: nil,
 			requestExt:           json.RawMessage(`{}`),
-			expectedJson:         json.RawMessage(`{"prebid":{}}`),
+			expectedJson:         nil,
 		},
 		{
 			description:  "Prebid - Allowed Fields Only",
@@ -2516,27 +2403,13 @@ func TestBuildRequestExtForBidder(t *testing.T) {
 			description:  "Other",
 			bidderParams: nil,
 			requestExt:   json.RawMessage(`{"other":"foo"}`),
-			expectedJson: json.RawMessage(`{"other":"foo","prebid":{}}`),
+			expectedJson: json.RawMessage(`{"other":"foo"}`),
 		},
 		{
 			description:  "Prebid + Other + Bider Params",
 			bidderParams: map[string]json.RawMessage{bidder: bidderParams},
 			requestExt:   json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true}, "server": {"externalurl": "url", "gvlid": 1, "datacenter": "2"}}}`),
 			expectedJson: json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true}, "server": {"externalurl": "url", "gvlid": 1, "datacenter": "2"}, "bidderparams":"bar"}}`),
-		},
-		{
-			description:          "Prebid + AlternateBidderCodes in pbs config (default explicitly defined)",
-			bidderParams:         map[string]json.RawMessage{bidder: bidderParams},
-			alternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{},
-			requestExt:           json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true}}}`),
-			expectedJson:         json.RawMessage(`{"other":"foo","prebid":{"alternatebiddercodes":{"enabled":false,"bidders":null},"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"bidderparams":"bar"}}`),
-		},
-		{
-			description:          "Prebid + AlternateBidderCodes in pbs config",
-			bidderParams:         map[string]json.RawMessage{bidder: bidderParams},
-			alternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{Enabled: true, Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{"foo": {Enabled: true, AllowedBidderCodes: []string{"*"}}}},
-			requestExt:           json.RawMessage(`{"other":"foo"}`),
-			expectedJson:         json.RawMessage(`{"other":"foo","prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["*"]}}},"bidderparams":"bar"}}`),
 		},
 		{
 			description:          "Prebid + AlternateBidderCodes in pbs config but current bidder not in AlternateBidderCodes config",
@@ -2646,7 +2519,7 @@ func TestBuildRequestExtForBidder_RequestExtParsedNil(t *testing.T) {
 	)
 
 	actualJson, actualErr := buildRequestExtForBidder(bidder, requestExt, requestExtParsed, bidderParams, alternateBidderCodes)
-	assert.Equal(t, json.RawMessage(``), actualJson)
+	assert.Nil(t, actualJson)
 	assert.NoError(t, actualErr)
 }
 
@@ -3032,14 +2905,14 @@ func TestGetDebugInfo(t *testing.T) {
 	}
 
 	testGroups := []struct {
-		desc   string
-		bidReq *openrtb2.BidRequest
-		tests  []testCase
+		description   string
+		isTestRequest int8
+		testCases     []testCase
 	}{
 		{
-			"Bid request doesn't call for debug info",
-			&openrtb2.BidRequest{Test: 0},
-			[]testCase{
+			description:   "Bid request doesn't call for debug info",
+			isTestRequest: 0,
+			testCases: []testCase{
 				{
 					testInput{debugEnabledOrOverridden: false, accountDebugFlag: false},
 					testOut{
@@ -3075,9 +2948,9 @@ func TestGetDebugInfo(t *testing.T) {
 			},
 		},
 		{
-			"Bid request requires debug info",
-			&openrtb2.BidRequest{Test: 1},
-			[]testCase{
+			description:   "Bid request requires debug info",
+			isTestRequest: 1,
+			testCases: []testCase{
 				{
 					testInput{debugEnabledOrOverridden: false, accountDebugFlag: false},
 					testOut{
@@ -3114,16 +2987,16 @@ func TestGetDebugInfo(t *testing.T) {
 		},
 	}
 	for _, group := range testGroups {
-		for i, tc := range group.tests {
+		for i, tc := range group.testCases {
 			inDebugLog := &DebugLog{DebugEnabledOrOverridden: tc.in.debugEnabledOrOverridden}
 
 			// run
-			responseDebugAllow, accountDebugAllow, debugLog := getDebugInfo(group.bidReq, nil, tc.in.accountDebugFlag, inDebugLog)
+			responseDebugAllow, accountDebugAllow, debugLog := getDebugInfo(group.isTestRequest, nil, tc.in.accountDebugFlag, inDebugLog)
 
 			// assertions
-			assert.Equal(t, tc.expected.responseDebugAllow, responseDebugAllow, "%s - %d", group.desc, i)
-			assert.Equal(t, tc.expected.accountDebugAllow, accountDebugAllow, "%s - %d", group.desc, i)
-			assert.Equal(t, tc.expected.debugLog, debugLog, "%s - %d", group.desc, i)
+			assert.Equal(t, tc.expected.responseDebugAllow, responseDebugAllow, "%s - %d", group.description, i)
+			assert.Equal(t, tc.expected.accountDebugAllow, accountDebugAllow, "%s - %d", group.description, i)
+			assert.Equal(t, tc.expected.debugLog, debugLog, "%s - %d", group.description, i)
 		}
 	}
 }
@@ -3205,9 +3078,9 @@ func TestCleanOpenRTBRequestsSChainMultipleBidders(t *testing.T) {
 		Ext: json.RawMessage(`{"prebid":{"schains":[{ "bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}, {"bidders":["axonix"],"schain":{"complete":1,"nodes":[{"asi":"directseller2.com","sid":"00002","rid":"BidRequest2","hp":1}],"ver":"1.0"}}]}}`),
 	}
 
-	unmarshaledExt, err := extractBidRequestExt(req)
+	extRequest := &openrtb_ext.ExtRequest{}
+	err := json.Unmarshal(req.Ext, extRequest)
 	assert.NoErrorf(t, err, "Error unmarshaling inExt")
-	extRequest := unmarshaledExt
 
 	auctionReq := AuctionRequest{
 		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
@@ -3420,13 +3293,10 @@ func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
 		wantError bool
 	}{
 		{
-			desc:     "Nil request ext, default account alternatebiddercodes config (nil)",
-			inExt:    nil,
-			inCfgABC: nil,
-			wantExt: []json.RawMessage{
-				json.RawMessage(""),
-				json.RawMessage(""),
-			},
+			desc:      "Nil request ext, default account alternatebiddercodes config (nil)",
+			inExt:     nil,
+			inCfgABC:  nil,
+			wantExt:   nil,
 			wantError: false,
 		},
 		{
@@ -3490,13 +3360,10 @@ func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
 			wantError: false,
 		},
 		{
-			desc:     "request ext with default alternatebiddercodes values (nil)",
-			inExt:    json.RawMessage(`{"prebid":{}}`),
-			inCfgABC: nil,
-			wantExt: []json.RawMessage{
-				json.RawMessage(`{"prebid":{}}`),
-				json.RawMessage(`{"prebid":{}}`),
-			},
+			desc:      "request ext with default alternatebiddercodes values (nil)",
+			inExt:     json.RawMessage(`{"prebid":{}}`),
+			inCfgABC:  nil,
+			wantExt:   nil,
 			wantError: false,
 		},
 		{
@@ -3565,9 +3432,9 @@ func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
 		var extRequest *openrtb_ext.ExtRequest
 		if test.inExt != nil {
 			req.Ext = test.inExt
-			unmarshaledExt, err := extractBidRequestExt(req)
+			extRequest = &openrtb_ext.ExtRequest{}
+			err := json.Unmarshal(req.Ext, extRequest)
 			assert.NoErrorf(t, err, test.desc+":Error unmarshaling inExt")
-			extRequest = unmarshaledExt
 		}
 
 		auctionReq := AuctionRequest{
