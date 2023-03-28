@@ -74,12 +74,8 @@ type ExtRequestPrebid struct {
 	// any other value or an empty string disables trace output at all.
 	Trace string `json:"trace,omitempty"`
 
-	MultiBid    []*ExtMultiBid         `json:"multibid,omitempty"`
-	MultiBidMap map[string]ExtMultiBid `json:"-"`
-
 	AdServerTargeting []AdServerTarget `json:"adservertargeting,omitempty"`
 }
-
 
 type AdServerTarget struct {
 	Key    string `json:"key,omitempty"`

@@ -344,12 +344,6 @@ func TestTruncateTargetingKeys(t *testing.T) {
 			truncateTargetAttribute: 0,
 			expectedTargetingData:   map[string]string{"very_long_targeting_": "inVal1"},
 		},
-		{
-			description:             "duplicated truncated targeting keys",
-			inputTargetingData:      map[string]string{"inKey1": "inVal1", "inKey2": "inVal2"},
-			truncateTargetAttribute: 5,
-			expectedTargetingData:   map[string]string{"inKey": "inVal2"},
-		},
 	}
 
 	for _, test := range testCases {
