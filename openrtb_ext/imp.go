@@ -46,6 +46,16 @@ type ExtImpPrebid struct {
 	Floors *ExtImpPrebidFloors `json:"floors,omitempty"`
 }
 
+type ExtImpDataAdServer struct {
+	Name   string `json:"name"`
+	AdSlot string `json:"adslot"`
+}
+
+type ExtImpData struct {
+	PbAdslot string              `json:"pbadslot,omitempty"`
+	AdServer *ExtImpDataAdServer `json:"adserver,omitempty"`
+}
+
 type ExtImpPrebidFloors struct {
 	FloorRule      string  `json:"floorrule,omitempty"`
 	FloorRuleValue float64 `json:"floorrulevalue,omitempty"`

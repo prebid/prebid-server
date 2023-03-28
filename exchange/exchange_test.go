@@ -904,7 +904,7 @@ func TestFloorsSignalling(t *testing.T) {
 	for _, test := range testCases {
 		auctionRequest := AuctionRequest{
 			BidRequestWrapper: test.in,
-			Account:           config.Account{PriceFloors: config.AccountPriceFloors{Enabled: true}},
+			Account:           config.Account{PriceFloors: config.AccountPriceFloors{Enabled: true, MaxRule: 100, MaxSchemaDims: 5}},
 			UserSyncs:         &emptyUsersync{},
 			HookExecutor:      &hookexecution.EmptyHookExecutor{},
 		}

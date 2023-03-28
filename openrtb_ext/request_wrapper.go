@@ -51,6 +51,7 @@ const (
 	eidsKey                             = "eids"
 	gdprKey                             = "gdpr"
 	prebidKey                           = "prebid"
+	dataKey                             = "data"
 	schainKey                           = "schain"
 	us_privacyKey                       = "us_privacy"
 )
@@ -1272,8 +1273,10 @@ type ImpExt struct {
 	ext         map[string]json.RawMessage
 	extDirty    bool
 	prebid      *ExtImpPrebid
+	data        *ExtImpData
 	prebidDirty bool
 	tid         string
+	gpId        string
 	tidDirty    bool
 }
 
@@ -1300,9 +1303,24 @@ func (e *ImpExt) unmarshal(extJson json.RawMessage) error {
 		}
 	}
 
+	dataJson, hasData := e.ext[dataKey]
+	if hasData {
+		e.data = &ExtImpData{}
+		if err := json.Unmarshal(dataJson, e.data); err != nil {
+			return err
+		}
+	}
+
 	tidJson, hasTid := e.ext["tid"]
 	if hasTid {
 		if err := json.Unmarshal(tidJson, &e.tid); err != nil {
+			return err
+		}
+	}
+
+	gpIdJson, hasGpId := e.ext["gpid"]
+	if hasGpId {
+		if err := json.Unmarshal(gpIdJson, &e.gpId); err != nil {
 			return err
 		}
 	}
@@ -1373,6 +1391,14 @@ func (e *ImpExt) GetPrebid() *ExtImpPrebid {
 	return &prebid
 }
 
+func (e *ImpExt) GetData() *ExtImpData {
+	if e.data == nil {
+		return nil
+	}
+	data := *e.data
+	return &data
+}
+
 func (e *ImpExt) GetOrCreatePrebid() *ExtImpPrebid {
 	if e.prebid == nil {
 		e.prebid = &ExtImpPrebid{}
@@ -1388,6 +1414,11 @@ func (e *ImpExt) SetPrebid(prebid *ExtImpPrebid) {
 func (e *ImpExt) GetTid() string {
 	tid := e.tid
 	return tid
+}
+
+func (e *ImpExt) GetGpId() string {
+	gpId := e.gpId
+	return gpId
 }
 
 func (e *ImpExt) SetTid(tid string) {

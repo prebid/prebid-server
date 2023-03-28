@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
@@ -32,10 +33,10 @@ func TestValidateFloorParams(t *testing.T) {
 		{
 			name:     "Invalid Skip Rate at Root level",
 			floorExt: &openrtb_ext.PriceFloorRules{SkipRate: -10},
-			Err:      errors.New("Invalid SkipRate = '-10' at ext.floors.skiprate"),
+			Err:      errors.New("Invalid SkipRate = '-10' at ext.prebid.floors.skiprate"),
 		},
 		{
-			name: "Invalid Skip Rate at Date level",
+			name: "Invalid Skip Rate at Data level",
 			floorExt: &openrtb_ext.PriceFloorRules{Data: &openrtb_ext.PriceFloorData{
 				SkipRate: -10,
 				ModelGroups: []openrtb_ext.PriceFloorModelGroup{{
@@ -46,7 +47,7 @@ func TestValidateFloorParams(t *testing.T) {
 						"*|*|*":               16.01,
 					}, Default: 0.01},
 				}}},
-			Err: errors.New("Invalid SkipRate = '-10' at  at ext.floors.data.skiprate"),
+			Err: errors.New("Invalid SkipRate = '-10' at ext.prebid.floors.data.skiprate"),
 		},
 		{
 			name:     "Invalid FloorMin ",
@@ -82,10 +83,17 @@ func TestSelectValidFloorModelGroups(t *testing.T) {
 	tt := []struct {
 		name     string
 		floorExt *openrtb_ext.PriceFloorRules
+		account  config.Account
 		Err      []error
 	}{
 		{
 			name: "Invalid Skip Rate in model Group 1",
+			account: config.Account{
+				PriceFloors: config.AccountPriceFloors{
+					MaxRule:       100,
+					MaxSchemaDims: 5,
+				},
+			},
 			floorExt: &openrtb_ext.PriceFloorRules{Data: &openrtb_ext.PriceFloorData{
 				ModelGroups: []openrtb_ext.PriceFloorModelGroup{{
 					ModelWeight:  getIntPtr(50),
@@ -116,6 +124,12 @@ func TestSelectValidFloorModelGroups(t *testing.T) {
 		},
 		{
 			name: "Invalid model weight Model Group 1",
+			account: config.Account{
+				PriceFloors: config.AccountPriceFloors{
+					MaxRule:       100,
+					MaxSchemaDims: 5,
+				},
+			},
 			floorExt: &openrtb_ext.PriceFloorRules{Data: &openrtb_ext.PriceFloorData{
 				ModelGroups: []openrtb_ext.PriceFloorModelGroup{{
 					ModelWeight:  getIntPtr(-1),
@@ -146,6 +160,12 @@ func TestSelectValidFloorModelGroups(t *testing.T) {
 		},
 		{
 			name: "Invalid Default Value",
+			account: config.Account{
+				PriceFloors: config.AccountPriceFloors{
+					MaxRule:       100,
+					MaxSchemaDims: 5,
+				},
+			},
 			floorExt: &openrtb_ext.PriceFloorRules{Data: &openrtb_ext.PriceFloorData{
 				ModelGroups: []openrtb_ext.PriceFloorModelGroup{{
 					ModelWeight:  getIntPtr(50),
@@ -160,10 +180,58 @@ func TestSelectValidFloorModelGroups(t *testing.T) {
 				}}},
 			Err: []error{errors.New("Invalid Floor Model = 'Version 1' due to Default = '-1' is less than 0")},
 		},
+		{
+			name: "Invalid Number of Schema dimensions",
+			account: config.Account{
+				PriceFloors: config.AccountPriceFloors{
+					MaxRule:       100,
+					MaxSchemaDims: 2,
+				},
+			},
+			floorExt: &openrtb_ext.PriceFloorRules{Data: &openrtb_ext.PriceFloorData{
+				ModelGroups: []openrtb_ext.PriceFloorModelGroup{{
+					ModelVersion: "Version 1",
+					Schema:       openrtb_ext.PriceFloorSchema{Fields: []string{"mediaType", "size", "domain"}},
+					Values: map[string]float64{
+						"banner|300x250|www.website.com": 1.01,
+						"*|728x90|*":                     14.01,
+						"*|*|www.website.com":            15.01,
+						"*|*|*":                          16.01,
+					}},
+				}}},
+			Err: []error{errors.New("Invalid Floor Model = 'Version 1' due to number of schema fields = '3' are greater than limit 2")},
+		},
+		{
+			name: "Invalid Number of rules",
+			account: config.Account{
+				PriceFloors: config.AccountPriceFloors{
+					MaxRule:       3,
+					MaxSchemaDims: 5,
+				},
+			},
+			floorExt: &openrtb_ext.PriceFloorRules{Data: &openrtb_ext.PriceFloorData{
+				ModelGroups: []openrtb_ext.PriceFloorModelGroup{{
+					ModelVersion: "Version 1",
+					Schema:       openrtb_ext.PriceFloorSchema{Fields: []string{"mediaType", "size", "domain"}},
+					Values: map[string]float64{
+						"banner|300x250|www.website.com": 1.01,
+						"*|728x90|*":                     14.01,
+						"*|*|www.website.com":            15.01,
+						"*|*|*":                          16.01,
+					}},
+				}}},
+			Err: []error{errors.New("Invalid Floor Model = 'Version 1' due to number of rules = '4' are greater than limit 3")},
+		},
+		{
+			name: "No Modelgroup present",
+			floorExt: &openrtb_ext.PriceFloorRules{Data: &openrtb_ext.PriceFloorData{
+				ModelGroups: []openrtb_ext.PriceFloorModelGroup{}}},
+			Err: []error{errors.New("No model group present in floors.data")},
+		},
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			_, ErrList := selectValidFloorModelGroups(tc.floorExt.Data.ModelGroups)
+			_, ErrList := selectValidFloorModelGroups(tc.floorExt.Data.ModelGroups, tc.account)
 			assert.Equal(t, ErrList, tc.Err, tc.name)
 		})
 	}
@@ -272,6 +340,35 @@ func TestValidateFloorRulesAndLowerValidRuleKey(t *testing.T) {
 			ErrList := validateFloorRulesAndLowerValidRuleKey(tc.floorExt.Data.ModelGroups[0].Schema, tc.floorExt.Data.ModelGroups[0].Schema.Delimiter, tc.floorExt.Data.ModelGroups[0].Values)
 			assert.Equal(t, ErrList, tc.Err, tc.name)
 			assert.Equal(t, tc.floorExt.Data.ModelGroups[0].Values, tc.expctedFloor, tc.name)
+		})
+	}
+}
+
+func TestValidateSchemaDimensions(t *testing.T) {
+	type args struct {
+		Fields []string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name:    "valid_fields",
+			args:    args{Fields: []string{"deviceType", "size"}},
+			wantErr: false,
+		},
+		{
+			name:    "valid_fields",
+			args:    args{Fields: []string{"deviceType", "dealType"}},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := validateSchemaDimensions(tt.args.Fields); (err != nil) != tt.wantErr {
+				t.Errorf("validateSchemaDimensions() error = %v, wantErr %v", err, tt.wantErr)
+			}
 		})
 	}
 }

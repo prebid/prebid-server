@@ -1,7 +1,6 @@
 package floors
 
 import (
-	"encoding/json"
 	"fmt"
 	"math"
 	"math/bits"
@@ -9,7 +8,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/currency"
@@ -38,79 +36,97 @@ const (
 	NativeMedia         string = "native"
 )
 
-func getFloorCurrency(floorExt *openrtb_ext.PriceFloorRules) string {
-	var floorCur string
-	if floorExt == nil || floorExt.Data == nil {
-		return floorCur
-	}
-
-	if floorExt.Data.Currency != "" {
-		floorCur = floorExt.Data.Currency
-	}
-
-	if len(floorExt.Data.ModelGroups) > 0 && floorExt.Data.ModelGroups[0].Currency != "" {
-		floorCur = floorExt.Data.ModelGroups[0].Currency
-	}
-	return floorCur
+type ruleKeys struct {
+	keyMap    map[string]bool
+	keys      []string
+	delimiter string
 }
 
-func getMinFloorValue(floorExt *openrtb_ext.PriceFloorRules, imp openrtb2.Imp, conversions currency.Conversions) (float64, string, error) {
-	var err error
-	var rate float64
+// getFloorCurrency returns floors currency provided in floors JSON,
+// if currency is not provided then defaults to USD
+func getFloorCurrency(floorExt *openrtb_ext.PriceFloorRules) string {
+	var floorCur string
 
-	floorMin := floorExt.FloorMin
-	floorMinCur := floorExt.FloorMinCur
-	floorCur := getFloorCurrency(floorExt)
+	if floorExt != nil && floorExt.Data != nil {
+		if floorExt.Data.Currency != "" {
+			floorCur = floorExt.Data.Currency
+		}
+
+		if len(floorExt.Data.ModelGroups) > 0 && floorExt.Data.ModelGroups[0].Currency != "" {
+			floorCur = floorExt.Data.ModelGroups[0].Currency
+		}
+	}
+
 	if len(floorCur) == 0 {
 		floorCur = "USD"
 	}
-	floorMinValue, floorCurValue, err := getFloorMinAndCurFromImp(imp)
-	if err == nil {
-		if floorMinValue > 0.0 {
-			floorMin = floorMinValue
-		}
-		if floorCurValue != "" {
-			floorMinCur = floorCurValue
-		}
-	}
-	if floorMin > 0.0 && floorMinCur != "" {
-		if floorExt.FloorMinCur != "" && floorCurValue != "" && floorExt.FloorMinCur != floorCurValue {
-			glog.Warning("FloorMinCur are different in floorExt and ImpExt")
-		}
-		if floorCur != "" && floorMinCur != floorCur {
-			rate, err = conversions.GetRate(floorMinCur, floorCur)
-			floorMin = rate * floorMin
-		}
-	}
-	floorMin = math.Round(floorMin*10000) / 10000
-	return floorMin, floorCur, err
+
+	return floorCur
 }
 
-func getFloorMinAndCurFromImp(imp openrtb2.Imp) (float64, string, error) {
-	impExt := openrtb_ext.ExtImp{}
+// getMinFloorValue returns floorMin and floorMinCur,
+// values provided in impression extension are considered over floors JSON.
+func getMinFloorValue(floorExt *openrtb_ext.PriceFloorRules, imp *openrtb_ext.ImpWrapper, conversions currency.Conversions) (float64, string, error) {
+	var err error
+	var rate float64
+	var floorCur string
+	floorMin := floorExt.FloorMin
+	floorMinCur := floorExt.FloorMinCur
+
+	impFloorMin, impFloorCur, err := getFloorMinAndCurFromImp(imp)
+	if err == nil {
+		if impFloorMin > 0.0 {
+			floorMin = impFloorMin
+		}
+		if impFloorCur != "" {
+			floorMinCur = impFloorCur
+		}
+
+		floorCur = getFloorCurrency(floorExt)
+		if floorMin > 0.0 && floorMinCur != "" {
+			if floorExt.FloorMinCur != "" && impFloorCur != "" && floorExt.FloorMinCur != impFloorCur {
+				glog.Warning("FloorMinCur are different in floorExt and ImpExt")
+			}
+			if floorCur != "" && floorMinCur != floorCur {
+				rate, err = conversions.GetRate(floorMinCur, floorCur)
+				floorMin = rate * floorMin
+			}
+		}
+		floorMin = math.Round(floorMin*10000) / 10000
+	}
+	if err != nil {
+		return floorMin, floorCur, fmt.Errorf("Error in getting FloorMin value : '%v'", err.Error())
+	} else {
+		return floorMin, floorCur, err
+	}
+}
+
+// getFloorMinAndCurFromImp returns floorMin and floorMinCur from impression extension
+func getFloorMinAndCurFromImp(imp *openrtb_ext.ImpWrapper) (float64, string, error) {
 	var floorMin float64
 	var floorMinCur string
-	if len(imp.Ext) > 0 {
-		err := json.Unmarshal(imp.Ext, &impExt)
-		if err != nil {
-			return floorMin, "", fmt.Errorf("error decoding Request.ext : %s", err.Error())
+
+	impExt, err := imp.GetImpExt()
+	if impExt != nil {
+		impPrebidExt := impExt.GetPrebid()
+		if impPrebidExt != nil && impPrebidExt.Floors != nil {
+			if impPrebidExt.Floors.FloorMin > float64(0) {
+				floorMin = impPrebidExt.Floors.FloorMin
+			}
+
+			if impPrebidExt.Floors.FloorMinCur != "" {
+				floorMinCur = impPrebidExt.Floors.FloorMinCur
+			}
 		}
 	}
-	if impExt.Prebid != nil {
-		if impExt.Prebid.Floors.FloorMin > float64(0) {
-			floorMin = impExt.Prebid.Floors.FloorMin
-		}
-		if impExt.Prebid.Floors.FloorMinCur != "" {
-			floorMinCur = impExt.Prebid.Floors.FloorMinCur
-		}
-	}
-	return floorMin, floorMinCur, nil
+	return floorMin, floorMinCur, err
 }
 
-func updateImpExtWithFloorDetails(imp *openrtb_ext.ImpWrapper, matchedRule string, floorRuleVal, floorVal float64) {
+// updateImpExtWithFloorDetails updates floors related details into imp.ext.prebid.floors
+func updateImpExtWithFloorDetails(imp *openrtb_ext.ImpWrapper, matchedRule string, floorRuleVal, floorVal float64) error {
 	impExt, err := imp.GetImpExt()
 	if err != nil {
-		return
+		return err
 	}
 	extImpPrebid := impExt.GetPrebid()
 	if extImpPrebid == nil {
@@ -118,12 +134,14 @@ func updateImpExtWithFloorDetails(imp *openrtb_ext.ImpWrapper, matchedRule strin
 	}
 	extImpPrebid.Floors = &openrtb_ext.ExtImpPrebidFloors{
 		FloorRule:      matchedRule,
-		FloorRuleValue: math.Floor(floorRuleVal*10000) / 10000,
+		FloorRuleValue: floorRuleVal,
 		FloorValue:     floorVal,
 	}
 	impExt.SetPrebid(extImpPrebid)
+	return err
 }
 
+// selectFloorModelGroup selects one modelgroup based on modelweight out of multiple modelgroups, if provided into floors JSON.
 func selectFloorModelGroup(modelGroups []openrtb_ext.PriceFloorModelGroup, f func(int) int) []openrtb_ext.PriceFloorModelGroup {
 	totalModelWeight := 0
 	for i := 0; i < len(modelGroups); i++ {
@@ -131,9 +149,8 @@ func selectFloorModelGroup(modelGroups []openrtb_ext.PriceFloorModelGroup, f fun
 			modelGroups[i].ModelWeight = new(int)
 			*modelGroups[i].ModelWeight = 1
 		}
-		if modelGroups[i].ModelWeight != nil {
-			totalModelWeight += *modelGroups[i].ModelWeight
-		}
+		totalModelWeight += *modelGroups[i].ModelWeight
+
 	}
 
 	sort.SliceStable(modelGroups, func(i, j int) bool {
@@ -145,17 +162,17 @@ func selectFloorModelGroup(modelGroups []openrtb_ext.PriceFloorModelGroup, f fun
 
 	winWeight := f(totalModelWeight + 1)
 	for i, modelGroup := range modelGroups {
-		if modelGroup.ModelWeight != nil {
-			winWeight -= *modelGroup.ModelWeight
-			if winWeight <= 0 {
-				modelGroups[0], modelGroups[i] = modelGroups[i], modelGroups[0]
-				return modelGroups[:1]
-			}
+		winWeight -= *modelGroup.ModelWeight
+		if winWeight <= 0 {
+			modelGroups[0], modelGroups[i] = modelGroups[i], modelGroups[0]
+			return modelGroups[:1]
 		}
+
 	}
 	return modelGroups[:1]
 }
 
+// shouldSkipFloors returns flag to decide skipping of floors singalling based on skipRate provided
 func shouldSkipFloors(ModelGroupsSkipRate, DataSkipRate, RootSkipRate int, f func(int) int) bool {
 	skipRate := 0
 
@@ -166,11 +183,16 @@ func shouldSkipFloors(ModelGroupsSkipRate, DataSkipRate, RootSkipRate int, f fun
 	} else {
 		skipRate = RootSkipRate
 	}
-	return skipRate >= f(skipRateMax+1)
+
+	if skipRate == 0 {
+		return false
+	} else {
+		return skipRate >= f(skipRateMax+1)
+	}
 }
 
+// findRule selects rule based on rule keys provided into floors JSON and request values provided into
 func findRule(ruleValues map[string]float64, delimiter string, desiredRuleKey []string, numFields int) (string, bool) {
-
 	ruleKeys := prepareRuleCombinations(desiredRuleKey, numFields, delimiter)
 	for i := 0; i < len(ruleKeys); i++ {
 		if _, ok := ruleValues[ruleKeys[i]]; ok {
@@ -180,16 +202,17 @@ func findRule(ruleValues map[string]float64, delimiter string, desiredRuleKey []
 	return "", false
 }
 
-func createRuleKey(floorSchema openrtb_ext.PriceFloorSchema, request *openrtb2.BidRequest, imp openrtb2.Imp) []string {
+// createRuleKey prepares rule keys based on schema dimension and values present in request
+func createRuleKey(floorSchema openrtb_ext.PriceFloorSchema, request *openrtb_ext.RequestWrapper, imp *openrtb_ext.ImpWrapper) []string {
 	var ruleKeys []string
 
 	for _, field := range floorSchema.Fields {
 		value := catchAll
 		switch field {
 		case MediaType:
-			value = getMediaType(imp)
+			value = getMediaType(imp.Imp)
 		case Size:
-			value = getSizeValue(imp)
+			value = getSizeValue(imp.Imp)
 		case Domain:
 			value = getDomain(request)
 		case SiteDomain:
@@ -203,7 +226,7 @@ func createRuleKey(floorSchema openrtb_ext.PriceFloorSchema, request *openrtb2.B
 		case DeviceType:
 			value = getDeviceType(request)
 		case Channel:
-			value = extractChannelNameFromBidRequestExt(request)
+			value = getChannelName(request)
 		case GptSlot:
 			value = getGptSlot(imp)
 		case AdUnitCode:
@@ -214,7 +237,8 @@ func createRuleKey(floorSchema openrtb_ext.PriceFloorSchema, request *openrtb2.B
 	return ruleKeys
 }
 
-func getDeviceType(request *openrtb2.BidRequest) string {
+// getDeviceType returns device type provided into request
+func getDeviceType(request *openrtb_ext.RequestWrapper) string {
 	value := catchAll
 	if request.Device == nil || len(request.Device.UA) == 0 {
 		return value
@@ -229,7 +253,8 @@ func getDeviceType(request *openrtb2.BidRequest) string {
 	return value
 }
 
-func getDeviceCountry(request *openrtb2.BidRequest) string {
+// getDeviceCountry returns device country provided into request
+func getDeviceCountry(request *openrtb_ext.RequestWrapper) string {
 	value := catchAll
 	if request.Device != nil && request.Device.Geo != nil {
 		value = request.Device.Geo.Country
@@ -237,7 +262,8 @@ func getDeviceCountry(request *openrtb2.BidRequest) string {
 	return value
 }
 
-func getMediaType(imp openrtb2.Imp) string {
+// getMediaType returns media type for give impression
+func getMediaType(imp *openrtb2.Imp) string {
 	value := catchAll
 	formatCount := 0
 
@@ -268,7 +294,8 @@ func getMediaType(imp openrtb2.Imp) string {
 	return value
 }
 
-func getSizeValue(imp openrtb2.Imp) string {
+// getSizeValue returns size for given media type in WxH format
+func getSizeValue(imp *openrtb2.Imp) string {
 	size := catchAll
 	width := int64(0)
 	height := int64(0)
@@ -286,7 +313,8 @@ func getSizeValue(imp openrtb2.Imp) string {
 	return size
 }
 
-func getBannerSize(imp openrtb2.Imp) (int64, int64) {
+// getBannerSize returns width and height for given banner impression
+func getBannerSize(imp *openrtb2.Imp) (int64, int64) {
 	width := int64(0)
 	height := int64(0)
 
@@ -300,7 +328,9 @@ func getBannerSize(imp openrtb2.Imp) (int64, int64) {
 	}
 	return width, height
 }
-func getDomain(request *openrtb2.BidRequest) string {
+
+// getDomain returns domain provided into site or app object
+func getDomain(request *openrtb_ext.RequestWrapper) string {
 	var value string
 	if request.Site != nil {
 		if len(request.Site.Domain) > 0 {
@@ -318,7 +348,8 @@ func getDomain(request *openrtb2.BidRequest) string {
 	return value
 }
 
-func getSiteDomain(request *openrtb2.BidRequest) string {
+// getSiteDomain  returns domain provided into site object
+func getSiteDomain(request *openrtb_ext.RequestWrapper) string {
 	var value string
 	if request.Site != nil {
 		value = request.Site.Domain
@@ -328,7 +359,8 @@ func getSiteDomain(request *openrtb2.BidRequest) string {
 	return value
 }
 
-func getPublisherDomain(request *openrtb2.BidRequest) string {
+// getPublisherDomain returns publisher domain provided into site or app object
+func getPublisherDomain(request *openrtb_ext.RequestWrapper) string {
 	value := catchAll
 	if request.Site != nil && request.Site.Publisher != nil && len(request.Site.Publisher.Domain) > 0 {
 		value = request.Site.Publisher.Domain
@@ -338,7 +370,8 @@ func getPublisherDomain(request *openrtb2.BidRequest) string {
 	return value
 }
 
-func getBundle(request *openrtb2.BidRequest) string {
+// getBundle returns app bundle type
+func getBundle(request *openrtb_ext.RequestWrapper) string {
 	value := catchAll
 	if request.App != nil && len(request.App.Bundle) > 0 {
 		value = request.App.Bundle
@@ -346,71 +379,70 @@ func getBundle(request *openrtb2.BidRequest) string {
 	return value
 }
 
-func getGptSlot(imp openrtb2.Imp) string {
+// getGptSlot returns gptSlot
+func getGptSlot(imp *openrtb_ext.ImpWrapper) string {
 	value := catchAll
-	adsname, err := jsonparser.GetString(imp.Ext, "data", "adserver", "name")
-	if err == nil && adsname == "gam" {
-		gptSlot, _ := jsonparser.GetString(imp.Ext, "data", "adserver", "adslot")
-		if gptSlot != "" {
-			value = gptSlot
+
+	impExt, err := imp.GetImpExt()
+	if err == nil {
+		extData := impExt.GetData()
+		if extData != nil {
+			if extData.AdServer != nil && extData.AdServer.Name == "gam" {
+				gptSlot := extData.AdServer.AdSlot
+				if gptSlot != "" {
+					value = gptSlot
+				}
+			} else if extData.PbAdslot != "" {
+				value = extData.PbAdslot
+			}
 		}
-	} else {
-		value = getPbAdslot(imp)
 	}
 	return value
 }
 
-func extractChannelNameFromBidRequestExt(bidRequest *openrtb2.BidRequest) string {
-	requestExt := &openrtb_ext.ExtRequest{}
-	if bidRequest == nil {
-		return catchAll
-	}
+// getChannelName returns channel name
+func getChannelName(bidRequest *openrtb_ext.RequestWrapper) string {
 
-	if len(bidRequest.Ext) > 0 {
-		err := json.Unmarshal(bidRequest.Ext, &requestExt)
-		if err != nil {
-			return catchAll
+	reqExt, _ := bidRequest.GetRequestExt()
+	if reqExt != nil {
+		prebidExt := reqExt.GetPrebid()
+		if prebidExt != nil && prebidExt.Channel != nil {
+			return prebidExt.Channel.Name
 		}
 	}
 
-	if requestExt.Prebid.Channel != nil {
-		return requestExt.Prebid.Channel.Name
-	}
 	return catchAll
 }
 
-func getPbAdslot(imp openrtb2.Imp) string {
-	value := catchAll
-	pbAdSlot, err := jsonparser.GetString(imp.Ext, "data", "pbadslot")
-	if err == nil {
-		value = pbAdSlot
-	}
-	return value
-}
-
-func getAdUnitCode(imp openrtb2.Imp) string {
+// getAdUnitCode returns adUnit code
+func getAdUnitCode(imp *openrtb_ext.ImpWrapper) string {
 	adUnitCode := catchAll
-	gpId, err := jsonparser.GetString(imp.Ext, "gpid")
-	if err == nil && gpId != "" {
-		return gpId
+
+	impExt, _ := imp.GetImpExt()
+	if impExt != nil && impExt.GetGpId() != "" {
+		return impExt.GetGpId()
 	}
 
 	if imp.TagID != "" {
 		return imp.TagID
 	}
 
-	pbAdSlot, err := jsonparser.GetString(imp.Ext, "data", "pbadslot")
-	if err == nil && pbAdSlot != "" {
-		return pbAdSlot
+	if impExt != nil {
+		impExtData := impExt.GetData()
+		if impExtData != nil && impExtData.PbAdslot != "" {
+			return impExtData.PbAdslot
+		}
+
+		prebidExt := impExt.GetPrebid()
+		if prebidExt != nil && prebidExt.StoredRequest.ID != "" {
+			return prebidExt.StoredRequest.ID
+		}
 	}
 
-	storedRequestId, err := jsonparser.GetString(imp.Ext, "prebid", "storedrequest", "id")
-	if err == nil && storedRequestId != "" {
-		return storedRequestId
-	}
 	return adUnitCode
 }
 
+// isMobileDevice returns true if device is mobile
 func isMobileDevice(userAgent string) bool {
 	isMobile, err := regexp.MatchString("Phone|iPhone|[Mobile].*Android|[Android].*Mobile", userAgent)
 	if err != nil {
@@ -419,6 +451,7 @@ func isMobileDevice(userAgent string) bool {
 	return isMobile
 }
 
+// isTabletDevice returns true if device is tablet
 func isTabletDevice(userAgent string) bool {
 	isTablet, err := regexp.MatchString("tablet|iPad|Android|[Windows NT].*touch|[touch].*Windows NT", userAgent)
 	if err != nil {
@@ -427,45 +460,34 @@ func isTabletDevice(userAgent string) bool {
 	return isTablet
 }
 
+// prepareRuleCombinations prepares rule combinations based on schema dimensions and request fields
 func prepareRuleCombinations(keys []string, numSchemaFields int, delimiter string) []string {
-	var subset []string
+	var schemaFields []string
 	var comb []int
-	var desiredKeys [][]string
-	var ruleKeys []string
 
-	segNum := 1 << numSchemaFields
+	ruleKey := newFloorRuleKeys(delimiter)
 	for i := 0; i < numSchemaFields; i++ {
-		subset = append(subset, strings.ToLower(keys[i]))
+		schemaFields = append(schemaFields, strings.ToLower(keys[i]))
 		comb = append(comb, i)
 	}
-	desiredKeys = append(desiredKeys, subset)
+	ruleKey.appenedRuleKey(schemaFields)
+
+	segNum := 1 << (numSchemaFields)
 	for numWildCard := 1; numWildCard <= numSchemaFields; numWildCard++ {
 		newComb := generateCombinations(comb, numWildCard, segNum)
 		for i := 0; i < len(newComb); i++ {
-			eachSet := make([]string, len(desiredKeys[0]))
-			copy(eachSet, desiredKeys[0])
+			eachSet := make([]string, numSchemaFields)
+			copy(eachSet, schemaFields)
 			for j := 0; j < len(newComb[i]); j++ {
 				eachSet[newComb[i][j]] = catchAll
 			}
-			desiredKeys = append(desiredKeys, eachSet)
+			ruleKey.appenedRuleKey(eachSet)
 		}
 	}
-	ruleKeys = prepareRuleKeys(desiredKeys, delimiter)
-	return ruleKeys
+	return ruleKey.getAllRuleKeys()
 }
 
-func prepareRuleKeys(desiredKeys [][]string, delimiter string) []string {
-	var ruleKeys []string
-	for i := 0; i < len(desiredKeys); i++ {
-		subset := desiredKeys[i][0]
-		for j := 1; j < len(desiredKeys[i]); j++ {
-			subset += delimiter + desiredKeys[i][j]
-		}
-		ruleKeys = append(ruleKeys, subset)
-	}
-	return ruleKeys
-}
-
+// generateCombinations generates rule combinations based on priority mentioned in https://docs.prebid.org/dev-docs/modules/floors.html#rule-selection-process
 func generateCombinations(set []int, numWildCard int, segNum int) (comb [][]int) {
 	length := uint(len(set))
 
@@ -486,7 +508,7 @@ func generateCombinations(set []int, numWildCard int, segNum int) (comb [][]int)
 		comb = append(comb, subset)
 	}
 
-	// Sort combinations based on priority mentioned in https://docs.prebid.org/dev-docs/modules/floors.html#rule-selection-process
+	// Sort combinations based on priority
 	sort.SliceStable(comb, func(i, j int) bool {
 		wt1 := 0
 		for k := 0; k < len(comb[i]); k++ {
@@ -500,4 +522,31 @@ func generateCombinations(set []int, numWildCard int, segNum int) (comb [][]int)
 		return wt1 < wt2
 	})
 	return comb
+}
+
+// newFloorRuleKeys allocates and initialise ruleKeys
+func newFloorRuleKeys(delimiter string) *ruleKeys {
+	rulekey := new(ruleKeys)
+	rulekey.delimiter = delimiter
+	rulekey.keyMap = map[string]bool{}
+	return rulekey
+}
+
+// appenedRuleKey appends unique rules keys into ruleKeys array
+func (r *ruleKeys) appenedRuleKey(rawKey []string) {
+	var key string
+	key = rawKey[0]
+	for j := 1; j < len(rawKey); j++ {
+		key += r.delimiter + rawKey[j]
+	}
+
+	if _, found := r.keyMap[key]; !found {
+		r.keyMap[key] = true
+		r.keys = append(r.keys, key)
+	}
+}
+
+// getAllRuleKeys returns all the rules prepared
+func (r *ruleKeys) getAllRuleKeys() []string {
+	return r.keys
 }

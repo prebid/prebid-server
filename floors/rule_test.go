@@ -17,14 +17,15 @@ func TestPrepareRuleCombinations(t *testing.T) {
 		in   []string
 		n    int
 		del  string
-		out  []string
+		exp  []string
 	}{
+
 		{
 			name: "Schema items, n = 1",
 			in:   []string{"A"},
 			n:    1,
 			del:  "|",
-			out: []string{
+			exp: []string{
 				"a",
 				"*",
 			},
@@ -34,7 +35,7 @@ func TestPrepareRuleCombinations(t *testing.T) {
 			in:   []string{"A", "B"},
 			n:    2,
 			del:  "|",
-			out: []string{
+			exp: []string{
 				"a|b",
 				"a|*",
 				"*|b",
@@ -46,7 +47,7 @@ func TestPrepareRuleCombinations(t *testing.T) {
 			in:   []string{"A", "B", "C"},
 			n:    3,
 			del:  "|",
-			out: []string{
+			exp: []string{
 				"a|b|c",
 				"a|b|*",
 				"a|*|c",
@@ -62,7 +63,7 @@ func TestPrepareRuleCombinations(t *testing.T) {
 			in:   []string{"A", "B", "C", "D"},
 			n:    4,
 			del:  "|",
-			out: []string{
+			exp: []string{
 				"a|b|c|d",
 				"a|b|c|*",
 				"a|b|*|d",
@@ -81,11 +82,118 @@ func TestPrepareRuleCombinations(t *testing.T) {
 				"*|*|*|*",
 			},
 		},
+
+		{
+			name: "Schema items, n = 1 with wildcards",
+			in:   []string{"*"},
+			n:    1,
+			del:  "|",
+			exp: []string{
+				"*",
+			},
+		},
+		{
+			name: "Schema items, n = 2 with wildcard at index = 0",
+			in:   []string{"*", "B"},
+			n:    2,
+			del:  "|",
+			exp: []string{
+				"*|b",
+				"*|*",
+			},
+		},
+		{
+			name: "Schema items, n = 2 with wildcards at index = 1",
+			in:   []string{"A", "*"},
+			n:    2,
+			del:  "|",
+			exp: []string{
+				"a|*",
+				"*|*",
+			},
+		},
+
+		{
+			name: "Schema items, n = 2 wildcards at index = 0,1",
+			in:   []string{"*", "*"},
+			n:    2,
+			del:  "|",
+			exp: []string{
+				"*|*",
+			},
+		},
+
+		{
+			name: "Schema items, n = 3 wildcard at index = 0",
+			in:   []string{"*", "B", "C"},
+			n:    3,
+			del:  "|",
+			exp: []string{
+				"*|b|c",
+				"*|b|*",
+				"*|*|c",
+				"*|*|*",
+			},
+		},
+		{
+			name: "Schema items, n = 3 wildcard at index = 1",
+			in:   []string{"A", "*", "C"},
+			n:    3,
+			del:  "|",
+			exp: []string{
+				"a|*|c",
+				"a|*|*",
+				"*|*|c",
+				"*|*|*",
+			},
+		},
+		{
+			name: "Schema items, n = 3 with wildcard at index = 2",
+			in:   []string{"A", "B", "*"},
+			n:    3,
+			del:  "|",
+			exp: []string{
+				"a|b|*",
+				"a|*|*",
+				"*|b|*",
+				"*|*|*",
+			},
+		},
+		{
+			name: "Schema items, n = 3 with wildcard at index = 0,2",
+			in:   []string{"*", "B", "*"},
+			n:    3,
+			del:  "|",
+			exp: []string{
+				"*|b|*",
+				"*|*|*",
+			},
+		},
+		{
+			name: "Schema items, n = 3 with wildcard at index = 0,1",
+			in:   []string{"*", "*", "C"},
+			n:    3,
+			del:  "|",
+			exp: []string{
+				"*|*|c",
+				"*|*|*",
+			},
+		},
+		{
+			name: "Schema items, n = 3 with wildcard at index = 1,2",
+			in:   []string{"A", "*", "*"},
+			n:    3,
+			del:  "|",
+			exp: []string{
+				"a|*|*",
+				"*|*|*",
+			},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			out := prepareRuleCombinations(tc.in, tc.n, tc.del)
-			assert.Equal(t, out, tc.out, tc.name)
+			act := prepareRuleCombinations(tc.in, tc.n, tc.del)
+			assert.Equal(t, tc.exp, act, tc.name)
 		})
 	}
 }
@@ -415,7 +523,7 @@ func TestCreateRuleKeys(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			out := createRuleKey(tc.floorSchema, tc.request, tc.request.Imp[0])
+			out := createRuleKey(tc.floorSchema, &openrtb_ext.RequestWrapper{BidRequest: tc.request}, &openrtb_ext.ImpWrapper{Imp: &tc.request.Imp[0]})
 			assert.Equal(t, out, tc.out, tc.name)
 		})
 	}
@@ -452,7 +560,7 @@ func TestShouldSkipFloors(t *testing.T) {
 			ModelGroupsSkipRate: 0,
 			DataSkipRate:        0,
 			RootSkipRate:        0,
-			randomGen:           func(i int) int { return 5 },
+			randomGen:           func(i int) int { return 0 },
 			out:                 false,
 		},
 		{
@@ -654,7 +762,7 @@ func TestSelectFloorModelGroup(t *testing.T) {
 	}
 }
 
-func Test_getMinFloorValue(t *testing.T) {
+func TestGetMinFloorValue(t *testing.T) {
 	rates := map[string]map[string]float64{
 		"USD": {
 			"INR": 81.17,
@@ -761,16 +869,16 @@ func Test_getMinFloorValue(t *testing.T) {
 				imp:      openrtb2.Imp{Ext: json.RawMessage(`{`)},
 			},
 			want:    0.0,
-			want1:   "USD",
-			wantErr: errors.New("error decoding Request.ext : unexpected end of JSON input"),
+			want1:   "",
+			wantErr: errors.New("Error in getting FloorMin value : 'unexpected end of JSON input'"),
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, got1, err := getMinFloorValue(tc.args.floorExt, tc.args.imp, getCurrencyRates(rates))
-			assert.Equal(t, err, tc.wantErr, tc.name)
-			assert.Equal(t, got, tc.want, tc.name)
-			assert.Equal(t, got1, tc.want1, tc.name)
+			got, got1, err := getMinFloorValue(tc.args.floorExt, &openrtb_ext.ImpWrapper{Imp: &tc.args.imp}, getCurrencyRates(rates))
+			assert.Equal(t, tc.wantErr, err, tc.name)
+			assert.Equal(t, tc.want, got, tc.name)
+			assert.Equal(t, tc.want1, got1, tc.name)
 		})
 	}
 }

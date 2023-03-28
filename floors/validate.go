@@ -4,9 +4,36 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
+var validSchemaDimensions map[string]bool = map[string]bool{
+	SiteDomain: true,
+	PubDomain:  true,
+	Domain:     true,
+	Bundle:     true,
+	Channel:    true,
+	MediaType:  true,
+	Size:       true,
+	GptSlot:    true,
+	AdUnitCode: true,
+	Country:    true,
+	DeviceType: true,
+}
+
+// validateSchemaDimensions validates schema dimesions given in floors JSON
+func validateSchemaDimensions(fields []string) error {
+	for i := range fields {
+		if isPresent := validSchemaDimensions[fields[i]]; !isPresent {
+			return fmt.Errorf("Invalid schema dimension provided = '%s' in Schema Fields = '%v'", fields[i], fields)
+		}
+	}
+	return nil
+}
+
+// validateFloorRulesAndLowerValidRuleKey validates rule keys for number of schema dimension fields and drops invalid rules.
+// It also lower case of rule if any charactor in a rule is upper
 func validateFloorRulesAndLowerValidRuleKey(schema openrtb_ext.PriceFloorSchema, delimiter string, ruleValues map[string]float64) []error {
 	var errs []error
 	for key, val := range ruleValues {
@@ -26,6 +53,7 @@ func validateFloorRulesAndLowerValidRuleKey(schema openrtb_ext.PriceFloorSchema,
 	return errs
 }
 
+// validateFloorParams validates SchemaVersion, SkipRate and FloorMin
 func validateFloorParams(extFloorRules *openrtb_ext.PriceFloorRules) error {
 
 	if extFloorRules.Data != nil && len(extFloorRules.Data.FloorsSchemaVersion) > 0 && extFloorRules.Data.FloorsSchemaVersion != "2" {
@@ -33,11 +61,11 @@ func validateFloorParams(extFloorRules *openrtb_ext.PriceFloorRules) error {
 	}
 
 	if extFloorRules.Data != nil && (extFloorRules.Data.SkipRate < skipRateMin || extFloorRules.Data.SkipRate > skipRateMax) {
-		return fmt.Errorf("Invalid SkipRate = '%v' at  at ext.floors.data.skiprate", extFloorRules.Data.SkipRate)
+		return fmt.Errorf("Invalid SkipRate = '%v' at ext.prebid.floors.data.skiprate", extFloorRules.Data.SkipRate)
 	}
 
 	if extFloorRules.SkipRate < skipRateMin || extFloorRules.SkipRate > skipRateMax {
-		return fmt.Errorf("Invalid SkipRate = '%v' at ext.floors.skiprate", extFloorRules.SkipRate)
+		return fmt.Errorf("Invalid SkipRate = '%v' at ext.prebid.floors.skiprate", extFloorRules.SkipRate)
 	}
 
 	if extFloorRules.FloorMin < float64(0) {
@@ -47,10 +75,26 @@ func validateFloorParams(extFloorRules *openrtb_ext.PriceFloorRules) error {
 	return nil
 }
 
-func selectValidFloorModelGroups(modelGroups []openrtb_ext.PriceFloorModelGroup) ([]openrtb_ext.PriceFloorModelGroup, []error) {
+// selectValidFloorModelGroups validates each modelgroup for SkipRate and ModelGroup and drops invalid modelGroups
+func selectValidFloorModelGroups(modelGroups []openrtb_ext.PriceFloorModelGroup, account config.Account) ([]openrtb_ext.PriceFloorModelGroup, []error) {
 	var errs []error
 	var validModelGroups []openrtb_ext.PriceFloorModelGroup
+	if len(modelGroups) == 0 {
+		return validModelGroups, []error{fmt.Errorf("No model group present in floors.data")}
+	}
+
 	for _, modelGroup := range modelGroups {
+
+		if len(modelGroup.Schema.Fields) > account.PriceFloors.MaxSchemaDims {
+			errs = append(errs, fmt.Errorf("Invalid Floor Model = '%v' due to number of schema fields = '%v' are greater than limit %v", modelGroup.ModelVersion, len(modelGroup.Schema.Fields), account.PriceFloors.MaxSchemaDims))
+			continue
+		}
+
+		if len(modelGroup.Values) > account.PriceFloors.MaxRule {
+			errs = append(errs, fmt.Errorf("Invalid Floor Model = '%v' due to number of rules = '%v' are greater than limit %v", modelGroup.ModelVersion, len(modelGroup.Values), account.PriceFloors.MaxRule))
+			continue
+		}
+
 		if modelGroup.SkipRate < skipRateMin || modelGroup.SkipRate > skipRateMax {
 			errs = append(errs, fmt.Errorf("Invalid Floor Model = '%v' due to SkipRate = '%v' is out of range (1-100)", modelGroup.ModelVersion, modelGroup.SkipRate))
 			continue

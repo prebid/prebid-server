@@ -88,7 +88,7 @@ func TestEnrichWithPriceFloors(t *testing.T) {
 					Enabled: false,
 				},
 			},
-			err: "Floors feature is disabled at account level or request",
+			err: "Floors feature is disabled at account or in the request",
 		},
 		{
 			name: "Floors disabled in req.ext.prebid.floors.Enabled=false config",
@@ -105,9 +105,11 @@ func TestEnrichWithPriceFloors(t *testing.T) {
 				PriceFloors: config.AccountPriceFloors{
 					Enabled:        true,
 					UseDynamicData: false,
+					MaxRule:        100,
+					MaxSchemaDims:  5,
 				},
 			},
-			err: "Floors feature is disabled at account level or request",
+			err: "Floors feature is disabled at account or in the request",
 		},
 		{
 			name: "Floors enabled in req.ext.prebid.floors.Enabled and enabled account config",
@@ -124,6 +126,8 @@ func TestEnrichWithPriceFloors(t *testing.T) {
 				PriceFloors: config.AccountPriceFloors{
 					Enabled:        true,
 					UseDynamicData: false,
+					MaxRule:        100,
+					MaxSchemaDims:  5,
 				},
 			},
 			expFloorVal:    5,
@@ -145,6 +149,8 @@ func TestEnrichWithPriceFloors(t *testing.T) {
 				PriceFloors: config.AccountPriceFloors{
 					Enabled:        true,
 					UseDynamicData: false,
+					MaxRule:        100,
+					MaxSchemaDims:  5,
 				},
 			},
 			Skipped: true,
@@ -164,9 +170,11 @@ func TestEnrichWithPriceFloors(t *testing.T) {
 				PriceFloors: config.AccountPriceFloors{
 					Enabled:        true,
 					UseDynamicData: false,
+					MaxRule:        100,
+					MaxSchemaDims:  5,
 				},
 			},
-			err:            "Invalid SkipRate = '110' at ext.floors.skiprate",
+			err:            "Invalid SkipRate = '110' at ext.prebid.floors.skiprate",
 			expPriceFlrLoc: openrtb_ext.RequestLocation,
 		},
 		{
@@ -184,6 +192,8 @@ func TestEnrichWithPriceFloors(t *testing.T) {
 				PriceFloors: config.AccountPriceFloors{
 					Enabled:        true,
 					UseDynamicData: false,
+					MaxRule:        100,
+					MaxSchemaDims:  5,
 				},
 			},
 			err:            "Invalid Floor Model = 'version11' due to SkipRate = '110' is out of range (1-100)",
@@ -206,6 +216,8 @@ func TestEnrichWithPriceFloors(t *testing.T) {
 				PriceFloors: config.AccountPriceFloors{
 					Enabled:        true,
 					UseDynamicData: false,
+					MaxRule:        100,
+					MaxSchemaDims:  5,
 				},
 			},
 			expFloorVal:    5,
@@ -227,6 +239,8 @@ func TestEnrichWithPriceFloors(t *testing.T) {
 				PriceFloors: config.AccountPriceFloors{
 					Enabled:        true,
 					UseDynamicData: false,
+					MaxRule:        100,
+					MaxSchemaDims:  5,
 				},
 			},
 			expFloorVal:    15,
@@ -248,6 +262,8 @@ func TestEnrichWithPriceFloors(t *testing.T) {
 				PriceFloors: config.AccountPriceFloors{
 					Enabled:        true,
 					UseDynamicData: false,
+					MaxRule:        100,
+					MaxSchemaDims:  5,
 				},
 			},
 			expFloorVal:    10,
@@ -268,7 +284,9 @@ func TestEnrichWithPriceFloors(t *testing.T) {
 			},
 			account: config.Account{
 				PriceFloors: config.AccountPriceFloors{
-					Enabled: true,
+					Enabled:       true,
+					MaxRule:       100,
+					MaxSchemaDims: 5,
 				},
 			},
 			expFloorVal:    1.1429,
@@ -288,7 +306,9 @@ func TestEnrichWithPriceFloors(t *testing.T) {
 			},
 			account: config.Account{
 				PriceFloors: config.AccountPriceFloors{
-					Enabled: true,
+					Enabled:       true,
+					MaxRule:       100,
+					MaxSchemaDims: 5,
 				},
 			},
 			expFloorVal:    70,
@@ -308,7 +328,9 @@ func TestEnrichWithPriceFloors(t *testing.T) {
 			},
 			account: config.Account{
 				PriceFloors: config.AccountPriceFloors{
-					Enabled: true,
+					Enabled:       true,
+					MaxRule:       100,
+					MaxSchemaDims: 5,
 				},
 			},
 			expFloorVal:    2,
@@ -328,75 +350,18 @@ func TestEnrichWithPriceFloors(t *testing.T) {
 			},
 			account: config.Account{
 				PriceFloors: config.AccountPriceFloors{
-					Enabled: true,
+					Enabled:       true,
+					MaxRule:       100,
+					MaxSchemaDims: 5,
 				},
 			},
 			expFloorVal:    3,
 			expFloorCur:    "USD",
 			expPriceFlrLoc: openrtb_ext.RequestLocation,
 		},
+
 		{
-			name: "No rule matched, Default value  greater than MinBidFloor with same currency",
-			bidRequestWrapper: &openrtb_ext.RequestWrapper{
-				BidRequest: &openrtb2.BidRequest{
-					Site: &openrtb2.Site{
-						Publisher: &openrtb2.Publisher{Domain: "www.website.com"},
-					},
-					Imp: []openrtb2.Imp{{ID: "1234", Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}}}},
-					Ext: json.RawMessage(`{"prebid":{"floors":{"floormin":3,"floormincur":"USD","data":{"currency":"USD","modelgroups":[{"modelversion":"model 1 from req","values":{"banner|300x250|www.website.com1":2,"*|*|www.test2.com":1.5},"Default":15,"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"}}]},"enabled":true,"enforcement":{"enforcepbs":true,"floordeals":true,"enforcerate":100}}}}`),
-				},
-			},
-			account: config.Account{
-				PriceFloors: config.AccountPriceFloors{
-					Enabled: true,
-				},
-			},
-			expFloorVal:    15,
-			expFloorCur:    "USD",
-			expPriceFlrLoc: openrtb_ext.RequestLocation,
-		},
-		{
-			name: "No rule matched, Default value  less than MinBidFloor with same currency",
-			bidRequestWrapper: &openrtb_ext.RequestWrapper{
-				BidRequest: &openrtb2.BidRequest{
-					Site: &openrtb2.Site{
-						Publisher: &openrtb2.Publisher{Domain: "www.website.com"},
-					},
-					Imp: []openrtb2.Imp{{ID: "1234", Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}}}},
-					Ext: json.RawMessage(`{"prebid":{"floors":{"floormin":5,"floormincur":"USD","data":{"currency":"USD","modelgroups":[{"modelversion":"model 1 from req","values":{"banner|300x250|www.website.com1":2,"*|*|www.test2.com":1.5},"Default":2.5,"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"}}]},"enabled":true,"enforcement":{"enforcepbs":true,"floordeals":true,"enforcerate":100}}}}`),
-				},
-			},
-			account: config.Account{
-				PriceFloors: config.AccountPriceFloors{
-					Enabled: true,
-				},
-			},
-			expFloorVal:    5,
-			expFloorCur:    "USD",
-			expPriceFlrLoc: openrtb_ext.RequestLocation,
-		},
-		{
-			name: "imp.bidfloor provided, No Rule matching and MinBidFloor, default values not provided in floor JSON",
-			bidRequestWrapper: &openrtb_ext.RequestWrapper{
-				BidRequest: &openrtb2.BidRequest{
-					Site: &openrtb2.Site{
-						Publisher: &openrtb2.Publisher{Domain: "www.website.com"},
-					},
-					Imp: []openrtb2.Imp{{ID: "1234", BidFloor: 1.5, BidFloorCur: "INR", Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}}}},
-					Ext: json.RawMessage(`{"prebid":{"floors":{ "data":{"currency":"USD","modelgroups":[{"modelversion":"model 1 from req","values":{"banner|300x250|www.website.com1":2,"*|*|www.test2.com":1.5},"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"}}]},"enabled":true,"enforcement":{"enforcepbs":true,"floordeals":true,"enforcerate":100}}}}`),
-				},
-			},
-			account: config.Account{
-				PriceFloors: config.AccountPriceFloors{
-					Enabled: true,
-				},
-			},
-			expFloorVal:    1.5,
-			expFloorCur:    "INR",
-			expPriceFlrLoc: openrtb_ext.RequestLocation,
-		},
-		{
-			name: "imp.bidfloor provided, No Rule matching, MinBidFloor provided and default values not provided in floor JSON",
+			name: "imp.bidfloor provided, No Rule matching, MinBidFloor provided",
 			bidRequestWrapper: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					Site: &openrtb2.Site{
@@ -408,11 +373,13 @@ func TestEnrichWithPriceFloors(t *testing.T) {
 			},
 			account: config.Account{
 				PriceFloors: config.AccountPriceFloors{
-					Enabled: true,
+					Enabled:       true,
+					MaxRule:       100,
+					MaxSchemaDims: 5,
 				},
 			},
-			expFloorVal:    2,
-			expFloorCur:    "USD",
+			expFloorVal:    100,
+			expFloorCur:    "INR",
 			expPriceFlrLoc: openrtb_ext.RequestLocation,
 		},
 		{
@@ -420,7 +387,9 @@ func TestEnrichWithPriceFloors(t *testing.T) {
 			bidRequestWrapper: nil,
 			account: config.Account{
 				PriceFloors: config.AccountPriceFloors{
-					Enabled: true,
+					Enabled:       true,
+					MaxRule:       100,
+					MaxSchemaDims: 5,
 				},
 			},
 			err: "Empty bidrequest",
@@ -438,7 +407,9 @@ func TestEnrichWithPriceFloors(t *testing.T) {
 			},
 			account: config.Account{
 				PriceFloors: config.AccountPriceFloors{
-					Enabled: true,
+					Enabled:       true,
+					MaxRule:       100,
+					MaxSchemaDims: 5,
 				},
 			},
 			err:            "Error in getting FloorMin value : 'currency: tag is not well-formed'",
@@ -536,6 +507,7 @@ func printFloors(floors *openrtb_ext.PriceFloorRules) string {
 func TestCreateFloorsFrom(t *testing.T) {
 	type args struct {
 		floors        *openrtb_ext.PriceFloorRules
+		account       config.Account
 		fetchStatus   string
 		floorLocation string
 	}
@@ -548,6 +520,12 @@ func TestCreateFloorsFrom(t *testing.T) {
 		{
 			name: "floor provider should be selected from floor json",
 			args: args{
+				account: config.Account{
+					PriceFloors: config.AccountPriceFloors{
+						MaxRule:       100,
+						MaxSchemaDims: 5,
+					},
+				},
 				floors: &openrtb_ext.PriceFloorRules{
 					Enabled:     getTrue(),
 					FloorMin:    10.11,
@@ -611,6 +589,12 @@ func TestCreateFloorsFrom(t *testing.T) {
 		{
 			name: "floor provider will be empty if no value provided in floor json",
 			args: args{
+				account: config.Account{
+					PriceFloors: config.AccountPriceFloors{
+						MaxRule:       100,
+						MaxSchemaDims: 5,
+					},
+				},
 				floors: &openrtb_ext.PriceFloorRules{
 					Enabled:     getTrue(),
 					FloorMin:    10.11,
@@ -674,6 +658,12 @@ func TestCreateFloorsFrom(t *testing.T) {
 		{
 			name: "only floor enforcement object present",
 			args: args{
+				account: config.Account{
+					PriceFloors: config.AccountPriceFloors{
+						MaxRule:       100,
+						MaxSchemaDims: 5,
+					},
+				},
 				floors: &openrtb_ext.PriceFloorRules{
 					Enabled: getTrue(),
 					Enforcement: &openrtb_ext.PriceFloorEnforcement{
@@ -698,6 +688,12 @@ func TestCreateFloorsFrom(t *testing.T) {
 		{
 			name: "Invalid modelGroup with skipRate = 110",
 			args: args{
+				account: config.Account{
+					PriceFloors: config.AccountPriceFloors{
+						MaxRule:       100,
+						MaxSchemaDims: 5,
+					},
+				},
 				floors: &openrtb_ext.PriceFloorRules{
 					Enabled: getTrue(),
 					Data: &openrtb_ext.PriceFloorData{
@@ -732,7 +728,7 @@ func TestCreateFloorsFrom(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, got1 := createFloorsFrom(tc.args.floors, tc.args.fetchStatus, tc.args.floorLocation)
+			got, got1 := createFloorsFrom(tc.args.floors, tc.args.account, tc.args.fetchStatus, tc.args.floorLocation)
 			assert.Equal(t, got1, tc.want1, tc.name)
 			assert.Equal(t, got, tc.want, tc.name)
 		})
