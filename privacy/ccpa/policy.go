@@ -6,6 +6,7 @@ import (
 	gpplib "github.com/prebid/go-gpp"
 	gppConstants "github.com/prebid/go-gpp/constants"
 	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -19,7 +20,13 @@ type Policy struct {
 func ReadFromRequestWrapper(req *openrtb_ext.RequestWrapper, gpp gpplib.GppContainer) (Policy, error) {
 	var consent string
 	var noSaleBidders []string
-	if req.BidRequest != nil && req.BidRequest.Regs != nil {
+	var warn error = nil
+
+	if req == nil || req.BidRequest == nil {
+		return Policy{}, nil
+	}
+
+	if req.BidRequest.Regs != nil {
 		for _, s := range req.BidRequest.Regs.GPPSID {
 			if s == int8(gppConstants.SectionUSPV1) {
 				for i, id := range gpp.SectionTypes {
@@ -29,13 +36,18 @@ func ReadFromRequestWrapper(req *openrtb_ext.RequestWrapper, gpp gpplib.GppConta
 				}
 			}
 		}
+		if req.BidRequest.Regs.USPrivacy != "" {
+			if consent == "" {
+				consent = req.BidRequest.Regs.USPrivacy
+			} else if consent != req.BidRequest.Regs.USPrivacy {
+				warn = &errortypes.Warning{
+					Message:     "regs.us_privacy consent does not match uspv1 in GPP, using regs.gpp",
+					WarningCode: errortypes.InvalidPrivacyConsentWarningCode}
+			}
+		}
 	}
 
 	if consent == "" {
-		if req == nil {
-			return Policy{}, nil
-		}
-
 		// Read consent from request.regs.ext
 		regsExt, err := req.GetRegExt()
 		if err != nil {
@@ -55,7 +67,7 @@ func ReadFromRequestWrapper(req *openrtb_ext.RequestWrapper, gpp gpplib.GppConta
 		noSaleBidders = reqPrebid.NoSale
 	}
 
-	return Policy{consent, noSaleBidders}, nil
+	return Policy{consent, noSaleBidders}, warn
 }
 
 func ReadFromRequest(req *openrtb2.BidRequest) (Policy, error) {

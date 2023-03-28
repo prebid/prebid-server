@@ -51,6 +51,7 @@ type ExtRequestPrebid struct {
 	Events               json.RawMessage           `json:"events,omitempty"`
 	Experiment           *Experiment               `json:"experiment,omitempty"`
 	Integration          string                    `json:"integration,omitempty"`
+	MultiBid             []*ExtMultiBid            `json:"multibid,omitempty"`
 	Passthrough          json.RawMessage           `json:"passthrough,omitempty"`
 	SChains              []*ExtRequestPrebidSChain `json:"schains,omitempty"`
 	Server               *ExtRequestPrebidServer   `json:"server,omitempty"`
@@ -78,6 +79,7 @@ type ExtRequestPrebid struct {
 
 	AdServerTargeting []AdServerTarget `json:"adservertargeting,omitempty"`
 }
+
 
 type AdServerTarget struct {
 	Key    string `json:"key,omitempty"`
