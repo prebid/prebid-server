@@ -1,0 +1,64 @@
+{
+  "mockBidRequest": {
+    "id": "amazing-req-id",
+    "at": 1,
+    "tmax": 300,
+    "imp": [
+      {
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "id": "amazing-bid-id",
+        "bidfloor": 1,
+        "bidfloorcur": "USD",
+        "secure": 1
+      },
+      {
+        "banner": {
+          "w": 300,
+          "h": 50
+        },
+        "id": "amazing-bid-id",
+        "bidfloor": 1,
+        "bidfloorcur": "USD",
+        "secure": 1
+      }
+    ],
+    "app": {
+      "publisher": {
+        "id": "amazing-site-publisher-id"
+      },
+      "cat": [
+        "amazing-cat"
+      ],
+      "bundle": "com.app.amazing",
+      "name": "amazing App",
+      "domain": "amazingapp.com",
+      "id": "123456789"
+    },
+    "device": {
+      "ua": "amazing-device-user-agent",
+      "ip": "123.123.123.123",
+      "geo": {
+        "country": "TST"
+      },
+      "os": "Android",
+      "language": "en"
+    },
+    "user": {
+      "id": "amazing-user-id"
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "ext.bidder not provided",
+      "comparison": "literal"
+    },
+    {
+      "value": "ext.bidder not provided",
+      "comparison": "literal"
+    }
+  ],
+  "httpCalls": []
+}

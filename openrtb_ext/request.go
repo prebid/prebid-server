@@ -51,6 +51,7 @@ type ExtRequestPrebid struct {
 	Events               json.RawMessage           `json:"events,omitempty"`
 	Experiment           *Experiment               `json:"experiment,omitempty"`
 	Integration          string                    `json:"integration,omitempty"`
+	MultiBid             []*ExtMultiBid            `json:"multibid,omitempty"`
 	Passthrough          json.RawMessage           `json:"passthrough,omitempty"`
 	SChains              []*ExtRequestPrebidSChain `json:"schains,omitempty"`
 	Server               *ExtRequestPrebidServer   `json:"server,omitempty"`
@@ -71,10 +72,11 @@ type ExtRequestPrebid struct {
 	// - verbose: sets maximum level of output information
 	// - basic: excludes debugmessages and analytic_tags from output
 	// any other value or an empty string disables trace output at all.
+
 	Floors      *PriceFloorRules       `json:"floors,omitempty"`
-	Trace       string                 `json:"trace,omitempty"`
 	MultiBid    []*ExtMultiBid         `json:"multibid,omitempty"`
 	MultiBidMap map[string]ExtMultiBid `json:"-"`
+	Trace string `json:"trace,omitempty"`
 }
 
 // Experiment defines if experimental features are available for the request
