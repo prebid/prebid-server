@@ -1,6 +1,6 @@
 {
   "mockBidRequest": {
-    "id": "test-req-id",
+    "id": "super-req-id",
     "at": 1,
     "tmax": 300,
     "imp": [
@@ -9,26 +9,61 @@
           "w": 300,
           "h": 250
         },
-        "id": "test-bid-id",
+        "id": "super-bid-id",
         "bidfloor": 1,
         "bidfloorcur": "USD",
-        "secure": 1
+        "secure": 1,
+        "ext": {
+          "bidder": {
+            "site_id": 123456789
+          }
+        }
+      },
+      {
+        "banner": {
+          "w": 300,
+          "h": 50
+        },
+        "id": "incredible-bid-id",
+        "bidfloor": 1,
+        "bidfloorcur": "USD",
+        "secure": 1,
+        "ext": {
+          "bidder": {
+            "site_id": 987654321
+          }
+        }
+      },
+      {
+        "banner": {
+          "w": 160,
+          "h": 160
+        },
+        "id": "amazing-bid-id",
+        "bidfloor": 1,
+        "bidfloorcur": "USD",
+        "secure": 1,
+        "ext": {
+          "bidder": {
+            "site_id": 432198765
+          }
+        }
       }
     ],
     "app": {
       "publisher": {
-        "id": "test-site-publisher-id"
+        "id": "super-site-publisher-id"
       },
       "cat": [
-        "test-cat"
+        "super-cat"
       ],
-      "bundle": "com.app.test",
-      "name": "Test App",
-      "domain": "testapp.com",
+      "bundle": "com.superapp.test",
+      "name": "super App",
+      "domain": "superapp.com",
       "id": "123456789"
     },
     "device": {
-      "ua": "test-device-user-agent",
+      "ua": "super-device-user-agent",
       "ip": "123.123.123.123",
       "geo": {
         "country": "TST"
@@ -37,7 +72,7 @@
       "language": "en"
     },
     "user": {
-      "id": "test-user-id"
+      "id": "super-user-id"
     }
   },
   "httpCalls": [
@@ -55,14 +90,14 @@
             "2.5"
           ],
           "User-Agent": [
-            "test-device-user-agent"
+            "super-device-user-agent"
           ],
           "X-Forwarded-For": [
             "123.123.123.123"
           ]
         },
         "body": {
-          "id": "test-req-id",
+          "id": "super-req-id",
           "at": 1,
           "tmax": 300,
           "imp": [
@@ -71,7 +106,7 @@
                 "w": 300,
                 "h": 250
               },
-              "id": "test-bid-id",
+              "id": "super-bid-id",
               "bidfloor": 1,
               "bidfloorcur": "USD",
               "secure": 1
@@ -79,18 +114,18 @@
           ],
           "app": {
             "publisher": {
-              "id": "test-site-publisher-id"
+              "id": "super-site-publisher-id"
             },
             "cat": [
-              "test-cat"
+              "super-cat"
             ],
-            "bundle": "com.app.test",
-            "name": "Test App",
-            "domain": "testapp.com",
+            "bundle": "com.superapp.test",
+            "name": "super App",
+            "domain": "superapp.com",
             "id": "123456789"
           },
           "device": {
-            "ua": "test-device-user-agent",
+            "ua": "super-device-user-agent",
             "ip": "123.123.123.123",
             "geo": {
               "country": "TST"
@@ -99,28 +134,196 @@
             "language": "en"
           },
           "user": {
-            "id": "test-user-id"
+            "id": "super-user-id"
           }
         }
       },
       "mockResponse": {
         "status": 200,
         "body": {
-          "id": "test-req-id",
+          "id": "super-req-id",
           "seatbid": [
             {
               "bid": [
                 {
-                  "id": "test-bid-id",
-                  "impid": "test-bid-id",
+                  "id": "super-bid-id",
+                  "impid": "super-bid-id",
                   "price": 1,
-                  "adm": "<div>test</div>",
-                  "crid": "test-creative-id"
+                  "adm": "<div>super</div>",
+                  "crid": "super-creative-id"
                 }
               ]
             }
           ],
-          "bidid": "test-seatbid-id",
+          "bidid": "super-seatbid-id",
+          "cur": "USD"
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "http://localhost/ssp?s=987654321&prebid",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ],
+          "User-Agent": [
+            "super-device-user-agent"
+          ],
+          "X-Forwarded-For": [
+            "123.123.123.123"
+          ]
+        },
+        "body": {
+          "id": "super-req-id",
+          "at": 1,
+          "tmax": 300,
+          "imp": [
+            {
+              "banner": {
+                "w": 300,
+                "h": 50
+              },
+              "id": "incredible-bid-id",
+              "bidfloor": 1,
+              "bidfloorcur": "USD",
+              "secure": 1
+            }
+          ],
+          "app": {
+            "publisher": {
+              "id": "super-site-publisher-id"
+            },
+            "cat": [
+              "super-cat"
+            ],
+            "bundle": "com.superapp.test",
+            "name": "super App",
+            "domain": "superapp.com",
+            "id": "123456789"
+          },
+          "device": {
+            "ua": "super-device-user-agent",
+            "ip": "123.123.123.123",
+            "geo": {
+              "country": "TST"
+            },
+            "os": "Android",
+            "language": "en"
+          },
+          "user": {
+            "id": "super-user-id"
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "super-req-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "super-bid-id",
+                  "impid": "incredible-bid-id",
+                  "price": 1,
+                  "adm": "<div>incredible</div>",
+                  "crid": "incredible-creative-id"
+                }
+              ]
+            }
+          ],
+          "bidid": "incredible-seatbid-id",
+          "cur": "USD"
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "http://localhost/ssp?s=432198765&prebid",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ],
+          "User-Agent": [
+            "super-device-user-agent"
+          ],
+          "X-Forwarded-For": [
+            "123.123.123.123"
+          ]
+        },
+        "body": {
+          "id": "super-req-id",
+          "at": 1,
+          "tmax": 300,
+          "imp": [
+            {
+              "banner": {
+                "w": 160,
+                "h": 160
+              },
+              "id": "amazing-bid-id",
+              "bidfloor": 1,
+              "bidfloorcur": "USD",
+              "secure": 1
+            }
+          ],
+          "app": {
+            "publisher": {
+              "id": "super-site-publisher-id"
+            },
+            "cat": [
+              "super-cat"
+            ],
+            "bundle": "com.superapp.test",
+            "name": "super App",
+            "domain": "superapp.com",
+            "id": "123456789"
+          },
+          "device": {
+            "ua": "super-device-user-agent",
+            "ip": "123.123.123.123",
+            "geo": {
+              "country": "TST"
+            },
+            "os": "Android",
+            "language": "en"
+          },
+          "user": {
+            "id": "super-user-id"
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "super-req-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "super-bid-id",
+                  "impid": "amazing-bid-id",
+                  "price": 1,
+                  "adm": "<div>amazing</div>",
+                  "crid": "amazing-creative-id"
+                }
+              ]
+            }
+          ],
+          "bidid": "amazing-seatbid-id",
           "cur": "USD"
         }
       }
@@ -132,11 +335,41 @@
       "bids": [
         {
           "bid": {
-            "id": "test-bid-id",
-            "impid": "test-bid-id",
+            "id": "super-bid-id",
+            "impid": "super-bid-id",
             "price": 1,
-            "adm": "<div>test</div>",
-            "crid": "test-creative-id"
+            "adm": "<div>super</div>",
+            "crid": "super-creative-id"
+          },
+          "type": "banner"
+        }
+      ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "super-bid-id",
+            "impid": "incredible-bid-id",
+            "price": 1,
+            "adm": "<div>incredible</div>",
+            "crid": "incredible-creative-id"
+          },
+          "type": "banner"
+        }
+      ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "super-bid-id",
+            "impid": "amazing-bid-id",
+            "price": 1,
+            "adm": "<div>amazing</div>",
+            "crid": "amazing-creative-id"
           },
           "type": "banner"
         }
