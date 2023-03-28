@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
-	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
@@ -57,10 +56,7 @@ func TestNewModuleSuccess(t *testing.T) {
 			description: "auction events are only published when logging an auction object with auction feature on",
 			feature:     auction,
 			logObject: func(module analytics.PBSAnalyticsModule) {
-				module.LogAuctionObject(&analytics.AuctionObject{
-					Status:  http.StatusOK,
-					Request: &openrtb2.BidRequest{},
-				})
+				module.LogAuctionObject(&analytics.AuctionObject{Status: http.StatusOK})
 			},
 		},
 		{
@@ -103,9 +99,6 @@ func TestNewModuleSuccess(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		if tt.description != "Ignore excluded fields from marshal" {
-			continue
-		}
 		// original config with the feature disabled so no events should be sent
 		origConfig := &Configuration{
 			Features: map[string]bool{

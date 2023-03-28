@@ -815,15 +815,16 @@ func setSeatNonBid(finalExtBidResponse *openrtb_ext.ExtBidResponse, request *ope
 		return false
 	}
 	reqExt, err := request.GetRequestExt()
-	if err == nil {
-		prebid := reqExt.GetPrebid()
-		if prebid != nil && prebid.ReturnAllBidStatus {
-			if finalExtBidResponse.Prebid == nil {
-				finalExtBidResponse.Prebid = &openrtb_ext.ExtResponsePrebid{}
-			}
-			finalExtBidResponse.Prebid.SeatNonBid = aucResponse.GetSeatNonBid()
-			return true
-		}
+	if err != nil {
+		return false
 	}
-	return false
+	prebid := reqExt.GetPrebid()
+	if prebid == nil || !prebid.ReturnAllBidStatus {
+		return false
+	}
+	if finalExtBidResponse.Prebid == nil {
+		finalExtBidResponse.Prebid = &openrtb_ext.ExtResponsePrebid{}
+	}
+	finalExtBidResponse.Prebid.SeatNonBid = aucResponse.GetSeatNonBid()
+	return true
 }

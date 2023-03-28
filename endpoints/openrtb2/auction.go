@@ -274,6 +274,7 @@ func setSeatNonBidRaw(request *openrtb_ext.RequestWrapper, aucResponse *exchange
 	// by HoldAuction
 	response := aucResponse.BidResponse
 	respExt := new(openrtb_ext.ExtBidResponse)
+
 	if json.Unmarshal(response.Ext, &respExt) == nil && setSeatNonBid(respExt, request, aucResponse) {
 		// marshal again
 		if respExtJson, err := json.Marshal(respExt); err == nil {
