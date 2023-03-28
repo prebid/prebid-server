@@ -262,10 +262,10 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 }
 
 // setSeatNonBidRaw is temporary introduced function for setting SeatNonBid inside bidResponse.Ext
-//
-//	populates bidresponse.ext.prebid.seatnonbid if  bidrequest.ext.prebid.returnallbidstatus is true using setSeatNonBid()
-//
-// This function will go away in next PR of https://github.com/prebid/prebid-server/pull/2505/
+// Because,
+// 1. today exchange.HoldAuction prepares and marshals some piece of response.Ext which is then used by auction.go, amp_auction.go and video_auction.go
+// 2. As per discussion with Scott we are planning to move away from - HoldAuction building openrtb2.BidResponse. instead respective auction modules will build this object
+// 3. So, we will need this method to do first,  unmarshalling of response.Ext
 func setSeatNonBidRaw(request *openrtb_ext.RequestWrapper, aucResponse *exchange.AuctionResponse) bool {
 	if aucResponse == nil || aucResponse.BidResponse == nil {
 		return false

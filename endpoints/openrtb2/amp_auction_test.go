@@ -15,9 +15,6 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/openrtb/v17/openrtb2"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	"github.com/prebid/prebid-server/amp"
 	"github.com/prebid/prebid-server/analytics"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
@@ -30,6 +27,8 @@ import (
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestGoodRequests makes sure that the auction runs properly-formatted stored bids correctly.
@@ -2317,3 +2316,69 @@ func (e errorResponseWriter) Write(bytes []byte) (int, error) {
 }
 
 func (e errorResponseWriter) WriteHeader(statusCode int) {}
+
+func TestSetSeatNonBid(t *testing.T) {
+	type args struct {
+		finalExtBidResponse *openrtb_ext.ExtBidResponse
+		request             *openrtb_ext.RequestWrapper
+		aucResponse         *exchange.AuctionResponse
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "nil aucResponse",
+			args: args{aucResponse: nil},
+			want: false,
+		},
+		{
+			name: "nil request",
+			args: args{aucResponse: &exchange.AuctionResponse{}, request: nil},
+			want: false,
+		},
+		{
+			name: "nil request",
+			args: args{aucResponse: &exchange.AuctionResponse{}, request: nil},
+			want: false,
+		},
+		{
+			name: "invalid req ext",
+			args: args{aucResponse: &exchange.AuctionResponse{}, request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: []byte(`invalid json`)}}},
+			want: false,
+		},
+		{
+			name: "nil prebid",
+			args: args{aucResponse: &exchange.AuctionResponse{}, request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: nil}}},
+			want: false,
+		},
+		{
+			name: "returnallbidstatus is false",
+			args: args{aucResponse: &exchange.AuctionResponse{}, request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid" : {"returnallbidstatus" : false}}`)}}},
+			want: false,
+		},
+		{
+			name: "finalExtBidResponse is nil",
+			args: args{finalExtBidResponse: nil},
+			want: false,
+		},
+		{
+			name: "returnallbidstatus is true and responseExt.Prebid is nil",
+			args: args{finalExtBidResponse: &openrtb_ext.ExtBidResponse{Prebid: nil}, aucResponse: &exchange.AuctionResponse{}, request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid" : {"returnallbidstatus" : true}}`)}}},
+			want: true,
+		},
+		{
+			name: "returnallbidstatus is true and responseExt.Prebid is not nil",
+			args: args{finalExtBidResponse: &openrtb_ext.ExtBidResponse{Prebid: nil}, aucResponse: &exchange.AuctionResponse{}, request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid" : {"returnallbidstatus" : true}}`)}}},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := setSeatNonBid(tt.args.finalExtBidResponse, tt.args.request, tt.args.aucResponse); got != tt.want {
+				t.Errorf("setSeatNonBid() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
