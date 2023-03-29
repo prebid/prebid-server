@@ -360,6 +360,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 		isVideo := isVideo(*imp)
 		impType := openrtb_ext.BidTypeVideo
 		requestNative := make(map[string]interface{})
+		requestNativeCopy := make(map[string]interface{})
 		if isVideo {
 			videoCopy := *imp.Video
 
@@ -406,7 +407,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 				errs = append(errs, err)
 				continue
 			}
-			requestNative = translate10(requestNative)
+			requestNativeCopy = translate10(requestNative)
 			nativeCopy := *native
 			nativeCopy.Ver = "1.0"
 			nativeCopy.Request = ""
@@ -468,8 +469,8 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 		rubiconRequest.Ext = nil
 
 		reqJSON, err := json.Marshal(rubiconRequest)
-		if impType == openrtb_ext.BidTypeNative && len(requestNative) > 0 {
-			reqJSON, err = setImpNative(reqJSON, requestNative)
+		if impType == openrtb_ext.BidTypeNative && len(requestNativeCopy) > 0 {
+			reqJSON, err = setImpNative(reqJSON, requestNativeCopy)
 		}
 
 		if err != nil {
