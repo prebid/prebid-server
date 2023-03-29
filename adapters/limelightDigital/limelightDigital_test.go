@@ -11,7 +11,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderLimelightDigital, config.Adapter{
-		Endpoint: "http://{{.Host}}.ortb.net/openrtb/{{.PublisherID}}"},
+		Endpoint: "http://test.ortb.net/openrtb/{{.PublisherID}}?host={{.Host}}"},
 		config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
