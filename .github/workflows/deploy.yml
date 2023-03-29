@@ -1,5 +1,5 @@
 ---
-name: Build and Deploy to Google Artifact Repository
+name: Build and Deploy to Google Artifact Repository (nudge)
 
 on:
   push:
