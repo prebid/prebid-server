@@ -56,7 +56,7 @@ type AdaptedBidder interface {
 	//
 	// Any errors will be user-facing in the API.
 	// Error messages should help publishers understand what might account for "bad" bids.
-	requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, hookExecutor hookexecution.StageExecutor) ([]*entities.PbsOrtbSeatBid, []error)
+	requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, hookExecutor hookexecution.StageExecutor, bidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments) ([]*entities.PbsOrtbSeatBid, []error)
 }
 
 // bidRequestOptions holds additional options for bid request execution to maintain clean code and reasonable number of parameters
@@ -115,7 +115,7 @@ type bidderAdapterConfig struct {
 	EndpointCompression string
 }
 
-func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, hookExecutor hookexecution.StageExecutor) ([]*entities.PbsOrtbSeatBid, []error) {
+func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, hookExecutor hookexecution.StageExecutor, bidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments) ([]*entities.PbsOrtbSeatBid, []error) {
 	reject := hookExecutor.ExecuteBidderRequestStage(bidderRequest.BidRequest, string(bidderRequest.BidderName))
 	if reject != nil {
 		return nil, []error{reject}
@@ -331,10 +331,13 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 							adjustmentFactor = givenAdjustment
 						}
 
+						adjArray := bidAdjustments.GetAdjustmentArray(bidResponse.Bids[i].BidType, bidderRequest.BidderName, bidResponse.Bids[i].Bid.DealID)
+
 						originalBidCpm := 0.0
 						if bidResponse.Bids[i].Bid != nil {
 							originalBidCpm = bidResponse.Bids[i].Bid.Price
 							bidResponse.Bids[i].Bid.Price = bidResponse.Bids[i].Bid.Price * adjustmentFactor * conversionRate
+							bidResponse.Bids[i].Bid.Price = applyAdjustmentArray(adjArray, bidResponse.Bids[i].Bid.Price, bidResponse.Currency, reqInfo)
 						}
 
 						if _, ok := seatBidMap[bidderName]; !ok {
@@ -679,4 +682,28 @@ func compressToGZIP(requestBody []byte) []byte {
 	w.Write([]byte(requestBody))
 	w.Close()
 	return b.Bytes()
+}
+
+// TODO: If adjarray == nil
+func applyAdjustmentArray(adjArray []openrtb_ext.Adjustments, bidPrice float64, currency string, reqInfo *adapters.ExtraRequestInfo) float64 {
+	originalBidPrice := bidPrice
+
+	for _, adjustment := range adjArray {
+		if adjustment.AdjType == openrtb_ext.AdjTypeMultiplier {
+			bidPrice = bidPrice * adjustment.Value
+		} else if adjustment.AdjType == openrtb_ext.AdjTypeCpm {
+			convertedVal, err := reqInfo.ConvertCurrency(adjustment.Value, currency, adjustment.Currency)
+			if err != nil {
+				return originalBidPrice
+			}
+			bidPrice = bidPrice - convertedVal
+		} else if adjustment.AdjType == openrtb_ext.AdjTypeStatic {
+			convertedVal, err := reqInfo.ConvertCurrency(adjustment.Value, currency, adjustment.Currency)
+			if err != nil {
+				return originalBidPrice
+			}
+			bidPrice = convertedVal
+		}
+	}
+	return bidPrice
 }

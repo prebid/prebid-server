@@ -30,6 +30,14 @@ const NativeExchangeSpecificLowerBound = 500
 
 const MaxDecimalFigures int = 15
 
+const AdjTypeCpm string = "cpm"
+
+const AdjTypeMultiplier string = "multiplier"
+
+const AdjTypeStatic string = "static"
+
+const AdjWildCard string = "*"
+
 // ExtRequest defines the contract for bidrequest.ext
 type ExtRequest struct {
 	Prebid ExtRequestPrebid      `json:"prebid"`
@@ -75,6 +83,8 @@ type ExtRequestPrebid struct {
 
 	MultiBid    []*ExtMultiBid         `json:"multibid,omitempty"`
 	MultiBidMap map[string]ExtMultiBid `json:"-"`
+
+	BidAdjustments *ExtRequestPrebidBidAdjustments `json:"bidadjustments,omitempty"`
 }
 
 // Experiment defines if experimental features are available for the request
@@ -139,6 +149,28 @@ type ExtRequestPrebidCacheBids struct {
 // ExtRequestPrebidCacheVAST defines the contract for bidrequest.ext.prebid.cache.vastxml
 type ExtRequestPrebidCacheVAST struct {
 	ReturnCreative *bool `json:"returnCreative,omitempty"`
+}
+
+type ExtRequestPrebidBidAdjustments struct {
+	MediaType *MediaType `json:"mediatype,omitempty"`
+}
+
+// How the map is strucutred
+// Map #1 -- Key: BidderName, Value: Another Map
+// Map #2 -- Key: DealID, Value: Adjustments Array
+// Overall: BidderName maps to a DealID that maps to an Adjustments Array
+type MediaType struct {
+	Banner   map[string]map[string][]Adjustments `json:"banner,omitempty"`
+	Video    map[string]map[string][]Adjustments `json:"video,omitempty"`
+	Audio    map[string]map[string][]Adjustments `json:"audio,omitempty"`
+	Native   map[string]map[string][]Adjustments `json:"native,omitempty"`
+	WildCard map[string]map[string][]Adjustments `json:"*,omitempty"`
+}
+
+type Adjustments struct {
+	AdjType  string  `json:"adjtype,omitempty"`
+	Value    float64 `json:"value,omitempty"`
+	Currency string  `json:"currency,omitempty"`
 }
 
 // ExtRequestTargeting defines the contract for bidrequest.ext.prebid.targeting
@@ -305,4 +337,59 @@ func (m ExtMultiBid) String() string {
 		maxBid = fmt.Sprintf("%d", *m.MaxBids)
 	}
 	return fmt.Sprintf("{Bidder:%s, Bidders:%v, MaxBids:%s, TargetBidderCodePrefix:%s}", m.Bidder, m.Bidders, maxBid, m.TargetBidderCodePrefix)
+}
+
+func (bidAdj *ExtRequestPrebidBidAdjustments) GetAdjustmentArray(bidType BidType, bidderName BidderName, dealID string) []Adjustments {
+	if bidAdj.MediaType.Banner != nil && bidType == BidTypeBanner {
+		if adjArray := getAdjustmentArrayHelper(bidAdj.MediaType.Banner, bidderName.String(), dealID); adjArray != nil {
+			return adjArray
+		}
+	}
+	if bidAdj.MediaType.Video != nil && bidType == BidTypeVideo {
+		if adjArray := getAdjustmentArrayHelper(bidAdj.MediaType.Video, bidderName.String(), dealID); adjArray != nil {
+			return adjArray
+		}
+	}
+	if bidAdj.MediaType.Audio != nil && bidType == BidTypeAudio {
+		if adjArray := getAdjustmentArrayHelper(bidAdj.MediaType.Audio, bidderName.String(), dealID); adjArray != nil {
+			return adjArray
+		}
+
+	}
+	if bidAdj.MediaType.Native != nil && bidType == BidTypeNative {
+		if adjArray := getAdjustmentArrayHelper(bidAdj.MediaType.Native, bidderName.String(), dealID); adjArray != nil {
+			return adjArray
+		}
+	}
+	if bidAdj.MediaType.WildCard != nil {
+		if adjArray := getAdjustmentArrayHelper(bidAdj.MediaType.WildCard, bidderName.String(), dealID); adjArray != nil {
+			return adjArray
+		}
+	}
+	return nil
+}
+
+// TODO: Better function name?
+func getAdjustmentArrayHelper(bidAdjMap map[string]map[string][]Adjustments, bidderName string, dealID string) []Adjustments {
+
+	// Priority For Returning Adjustment Array
+	// #1: Matched bidderName and dealID
+	// #2: Matched bidderName and WildCard dealID field
+	// #3: Wildcard bidder field and matched DealID
+	// #4: Wildcard bidder and wildcard dealID
+
+	if _, ok := bidAdjMap[bidderName]; ok {
+		if _, ok := bidAdjMap[bidderName][dealID]; ok {
+			return bidAdjMap[bidderName][dealID]
+		} else if _, ok := bidAdjMap[bidderName][AdjWildCard]; ok {
+			return bidAdjMap[bidderName][AdjWildCard]
+		}
+	} else if _, ok := bidAdjMap[AdjWildCard]; ok {
+		if _, ok := bidAdjMap[AdjWildCard][dealID]; ok {
+			return bidAdjMap[AdjWildCard][dealID]
+		} else if _, ok := bidAdjMap[AdjWildCard][AdjWildCard]; ok {
+			return bidAdjMap[AdjWildCard][AdjWildCard]
+		}
+	}
+	return nil
 }
