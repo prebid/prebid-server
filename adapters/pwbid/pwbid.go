@@ -40,6 +40,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	var errors []error
+
 	if httputil.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
 	}
@@ -59,8 +61,10 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		for i, bid := range seatBid.Bid {
 			bidType, typeErr := getMediaTypeForBid(request.Imp, bid)
 			if typeErr != nil {
-				return nil, []error{typeErr}
+				errors = append(errors, typeErr)
+				continue
 			}
+
 			b := &adapters.TypedBid{
 				Bid:     &seatBid.Bid[i],
 				BidType: bidType,
@@ -69,7 +73,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		}
 	}
 
-	return bidResponse, nil
+	return bidResponse, errors
 }
 
 func getMediaTypeForBid(impressions []openrtb2.Imp, bid openrtb2.Bid) (openrtb_ext.BidType, error) {
