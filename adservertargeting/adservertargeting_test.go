@@ -140,12 +140,12 @@ func TestResolveAdServerTargeting(t *testing.T) {
 	assert.Len(t, bidResponse.SeatBid[0].Bid, 3, "incorrect bids number for bidder : %", "appnexus")
 	assert.Len(t, bidResponse.SeatBid[1].Bid, 3, "incorrect bids number for bidder : %", "rubicon")
 
-	assert.JSONEq(t, SeatBid0Bid0Ext, string(bidResponse.SeatBid[0].Bid[0].Ext), "incorrect ext for SeatBid[0].Bid[0]")
-	assert.JSONEq(t, SeatBid0Bid1Ext, string(bidResponse.SeatBid[0].Bid[1].Ext), "incorrect ext for SeatBid[0].Bid[1]")
-	assert.JSONEq(t, SeatBid0Bid2Ext, string(bidResponse.SeatBid[0].Bid[2].Ext), "incorrect ext for SeatBid[0].Bid[2]")
-	assert.JSONEq(t, SeatBid1Bid0Ext, string(bidResponse.SeatBid[1].Bid[0].Ext), "incorrect ext for SeatBid[1].Bid[0]")
-	assert.JSONEq(t, SeatBid1Bid1Ext, string(bidResponse.SeatBid[1].Bid[1].Ext), "incorrect ext for SeatBid[1].Bid[1]")
-	assert.JSONEq(t, SeatBid1Bid2Ext, string(bidResponse.SeatBid[1].Bid[2].Ext), "incorrect ext for SeatBid[1].Bid[2]")
+	assert.JSONEq(t, seatBid0Bid0Ext, string(bidResponse.SeatBid[0].Bid[0].Ext), "incorrect ext for SeatBid[0].Bid[0]")
+	assert.JSONEq(t, seatBid0Bid1Ext, string(bidResponse.SeatBid[0].Bid[1].Ext), "incorrect ext for SeatBid[0].Bid[1]")
+	assert.JSONEq(t, seatBid0Bid2Ext, string(bidResponse.SeatBid[0].Bid[2].Ext), "incorrect ext for SeatBid[0].Bid[2]")
+	assert.JSONEq(t, seatBid1Bid0Ext, string(bidResponse.SeatBid[1].Bid[0].Ext), "incorrect ext for SeatBid[1].Bid[0]")
+	assert.JSONEq(t, seatBid1Bid1Ext, string(bidResponse.SeatBid[1].Bid[1].Ext), "incorrect ext for SeatBid[1].Bid[1]")
+	assert.JSONEq(t, seatBid1Bid2Ext, string(bidResponse.SeatBid[1].Bid[2].Ext), "incorrect ext for SeatBid[1].Bid[2]")
 
 }
 
@@ -181,9 +181,9 @@ func TestResolveAdServerTargetingForMultiBidAndOneImp(t *testing.T) {
 	assert.Len(t, bidResponse.SeatBid, 1, "incorrect seat bids number")
 	assert.Len(t, bidResponse.SeatBid[0].Bid, 3, "incorrect bids number")
 
-	assert.JSONEq(t, Bid0Ext, string(bidResponse.SeatBid[0].Bid[0].Ext), "incorrect ext for SeatBid[0].Bid[0]")
-	assert.JSONEq(t, Bid1Ext, string(bidResponse.SeatBid[0].Bid[1].Ext), "incorrect ext for SeatBid[0].Bid[1]")
-	assert.JSONEq(t, Bid2Ext, string(bidResponse.SeatBid[0].Bid[2].Ext), "incorrect ext for SeatBid[0].Bid[2]")
+	assert.JSONEq(t, bid0Ext, string(bidResponse.SeatBid[0].Bid[0].Ext), "incorrect ext for SeatBid[0].Bid[0]")
+	assert.JSONEq(t, bid1Ext, string(bidResponse.SeatBid[0].Bid[1].Ext), "incorrect ext for SeatBid[0].Bid[1]")
+	assert.JSONEq(t, bid2Ext, string(bidResponse.SeatBid[0].Bid[2].Ext), "incorrect ext for SeatBid[0].Bid[2]")
 
 }
 
@@ -262,13 +262,13 @@ func TestProcessAdServerTargetingFull(t *testing.T) {
 	assert.Len(t, apnBids, 3, "Incorrect response: appnexus bids number")
 	assert.Len(t, rbcBids, 3, "Incorrect response: rubicon bid number")
 
-	assert.JSONEq(t, ApnBid0Ext, string(apnBids[0].Ext), "incorrect ext for appnexus bid[0]")
-	assert.JSONEq(t, ApnBid1Ext, string(apnBids[1].Ext), "incorrect ext for appnexus bid[1]")
-	assert.JSONEq(t, ApnBid2Ext, string(apnBids[2].Ext), "incorrect ext for appnexus bid[2]")
+	assert.JSONEq(t, apnBid0Ext, string(apnBids[0].Ext), "incorrect ext for appnexus bid[0]")
+	assert.JSONEq(t, apnBid1Ext, string(apnBids[1].Ext), "incorrect ext for appnexus bid[1]")
+	assert.JSONEq(t, apnBid2Ext, string(apnBids[2].Ext), "incorrect ext for appnexus bid[2]")
 
-	assert.JSONEq(t, RbcBid0Ext, string(rbcBids[0].Ext), "incorrect ext for rubicon bid[0]")
-	assert.JSONEq(t, RbcBid1Ext, string(rbcBids[1].Ext), "incorrect ext for rubicon bid[1]")
-	assert.JSONEq(t, RbcBid2Ext, string(rbcBids[2].Ext), "incorrect ext for rubicon bid[2]")
+	assert.JSONEq(t, rbcBid0Ext, string(rbcBids[0].Ext), "incorrect ext for rubicon bid[0]")
+	assert.JSONEq(t, rbcBid1Ext, string(rbcBids[1].Ext), "incorrect ext for rubicon bid[1]")
+	assert.JSONEq(t, rbcBid2Ext, string(rbcBids[2].Ext), "incorrect ext for rubicon bid[2]")
 
 }
 

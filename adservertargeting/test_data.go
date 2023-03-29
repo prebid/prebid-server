@@ -132,7 +132,7 @@ const (
   }
 }`
 
-	SeatBid0Bid0Ext = `{
+	seatBid0Bid0Ext = `{
   "prebid": {
     "foo": "bar1",
     "targeting": {
@@ -151,7 +151,7 @@ const (
   }
 }`
 
-	SeatBid0Bid1Ext = `
+	seatBid0Bid1Ext = `
 {
   "prebid": {
     "foo": "bar2",
@@ -170,7 +170,7 @@ const (
     }
   }
 }`
-	SeatBid0Bid2Ext = `
+	seatBid0Bid2Ext = `
 {
   "prebid": {
     "foo": "bar3",
@@ -190,7 +190,7 @@ const (
   }
 }`
 
-	SeatBid1Bid0Ext = `{
+	seatBid1Bid0Ext = `{
   "prebid": {
     "foo": "bar11",
     "targeting": {
@@ -209,7 +209,7 @@ const (
     }
   }
 }`
-	SeatBid1Bid1Ext = `
+	seatBid1Bid1Ext = `
 {
   "prebid": {
     "foo": "bar22",
@@ -230,7 +230,7 @@ const (
   }
 }`
 
-	SeatBid1Bid2Ext = `{
+	seatBid1Bid2Ext = `{
   "prebid": {
     "foo": "bar33",
     "targeting": {
@@ -250,11 +250,11 @@ const (
   }
 }`
 
-	Bid0Ext = `{"prebid": {"foo":"bar1", "targeting": {"custom_attr":"bar1"}}}`
-	Bid1Ext = `{"prebid": {"foo":"bar2", "targeting": {"custom_attr":"bar2"}}}`
-	Bid2Ext = `{"prebid": {"foo":"bar3", "targeting": {"custom_attr":"bar3"}}}`
+	bid0Ext = `{"prebid": {"foo":"bar1", "targeting": {"custom_attr":"bar1"}}}`
+	bid1Ext = `{"prebid": {"foo":"bar2", "targeting": {"custom_attr":"bar2"}}}`
+	bid2Ext = `{"prebid": {"foo":"bar3", "targeting": {"custom_attr":"bar3"}}}`
 
-	ApnBid0Ext = `{
+	apnBid0Ext = `{
   "custom1": 1111,
   "custom2": "a1111",
   "prebid": {
@@ -273,7 +273,7 @@ const (
   }
 }`
 
-	ApnBid1Ext = `{
+	apnBid1Ext = `{
   "custom1": 2222,
   "custom2": "a2222",
   "prebid": {
@@ -291,7 +291,7 @@ const (
     }
   }
 }`
-	ApnBid2Ext = `{
+	apnBid2Ext = `{
   "custom1": 3333,
   "custom2": "a3333",
   "prebid": {
@@ -310,7 +310,7 @@ const (
   }
 }`
 
-	RbcBid0Ext = `{
+	rbcBid0Ext = `{
   "custom1": 4444,
   "custom2": "r4444",
   "prebid": {
@@ -329,7 +329,7 @@ const (
     }
   }
 }`
-	RbcBid1Ext = `{
+	rbcBid1Ext = `{
   "custom1": 5555,
   "custom2": "r5555",
   "prebid": {
@@ -348,7 +348,7 @@ const (
     }
   }
 }`
-	RbcBid2Ext = `{
+	rbcBid2Ext = `{
   "custom1": 6666,
   "custom2": "r6666",
   "prebid": {
