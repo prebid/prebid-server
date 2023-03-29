@@ -257,7 +257,10 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		labels, ao = rejectAuctionRequest(*rejectErr, w, deps.hookExecutor, req.BidRequest, account, labels, ao)
 		return
 	}
-	setSeatNonBidRaw(req, auctionResponse)
+	err = setSeatNonBidRaw(req, auctionResponse)
+	if err != nil {
+		glog.Errorf("Error setting seat non-bid: %v", err)
+	}
 	labels, ao = sendAuctionResponse(w, deps.hookExecutor, response, req.BidRequest, account, labels, ao)
 }
 
@@ -266,23 +269,25 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 // 1. today exchange.HoldAuction prepares and marshals some piece of response.Ext which is then used by auction.go, amp_auction.go and video_auction.go
 // 2. As per discussion with Scott we are planning to move away from - HoldAuction building openrtb2.BidResponse. instead respective auction modules will build this object
 // 3. So, we will need this method to do first,  unmarshalling of response.Ext
-func setSeatNonBidRaw(request *openrtb_ext.RequestWrapper, aucResponse *exchange.AuctionResponse) bool {
+func setSeatNonBidRaw(request *openrtb_ext.RequestWrapper, aucResponse *exchange.AuctionResponse) error {
 	if aucResponse == nil || aucResponse.BidResponse == nil {
-		return false
+		return nil
 	}
 	// unmarshalling is required here, until we are moving away from bidResponse.Ext, which is populated
 	// by HoldAuction
 	response := aucResponse.BidResponse
 	respExt := new(openrtb_ext.ExtBidResponse)
-
-	if json.Unmarshal(response.Ext, &respExt) == nil && setSeatNonBid(respExt, request, aucResponse) {
+	if err := json.Unmarshal(response.Ext, &respExt); err != nil {
+		return err
+	}
+	if setSeatNonBid(respExt, request, aucResponse) {
 		// marshal again
 		if respExtJson, err := json.Marshal(respExt); err == nil {
 			response.Ext = respExtJson
-			return true
+			return nil
 		}
 	}
-	return false
+	return nil
 }
 
 func rejectAuctionRequest(

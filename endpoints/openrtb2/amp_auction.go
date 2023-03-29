@@ -432,7 +432,6 @@ func getExtBidResponse(
 		}
 	}
 
-	// Set seat non-bid if requested
 	setSeatNonBid(&extBidResponse, reqWrapper, aucResponse)
 
 	return ao, extBidResponse
