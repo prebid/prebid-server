@@ -407,10 +407,10 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 				continue
 			}
 			requestNative = translate10(requestNative)
-			native.Ver = "1.0"
-			native.Request = ""
-
-			imp.Native = native
+			nativeCopy := *native
+			nativeCopy.Ver = "1.0"
+			nativeCopy.Request = ""
+			imp.Native = &nativeCopy
 			imp.Video = nil
 			impType = openrtb_ext.BidTypeNative
 		}
