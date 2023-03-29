@@ -30,7 +30,7 @@ func TestGetAdServerTargeting(t *testing.T) {
 			expectedError:     false,
 		},
 		{
-			description:       "valid request with correct ext.prebid, no ad server targeting",
+			description:       "valid request with correct ext.prebid, and empty ad server targeting",
 			inputRequestExt:   json.RawMessage(`{"prebid":{"adservertargeting":[]}}`),
 			expectedTargeting: []openrtb_ext.AdServerTarget{},
 			expectedError:     false,
@@ -199,7 +199,7 @@ func TestGetValueFromBidRequest(t *testing.T) {
 	}
 
 	reqCache := requestCache{
-		resolvedReq: json.RawMessage(reqFullVaid),
+		resolvedReq: json.RawMessage(reqFullValid),
 	}
 
 	u, _ := url.Parse(testUrl)
@@ -273,7 +273,7 @@ func TestGetValueFromImp(t *testing.T) {
 		{
 			description:  "get existing value from impressions",
 			inputPath:    "imp.banner.h",
-			inputRequest: json.RawMessage(reqFullVaid),
+			inputRequest: json.RawMessage(reqFullValid),
 			expectedTargeting: map[string][]byte{
 				"test_imp1": []byte(`350`),
 				"test_imp2": []byte(`360`),
@@ -287,14 +287,14 @@ func TestGetValueFromImp(t *testing.T) {
 				"test_imp1": []byte(`123`),
 				"test_imp2": []byte(`456`),
 			},
-			inputRequest:  json.RawMessage(reqFullVaid),
+			inputRequest:  json.RawMessage(reqFullValid),
 			expectedError: false,
 		},
 		{
 			description:       "get non-existing value from impressions",
 			inputPath:         "imp.video",
 			expectedTargeting: map[string][]byte(nil),
-			inputRequest:      json.RawMessage(reqFullVaid),
+			inputRequest:      json.RawMessage(reqFullValid),
 			expectedError:     true,
 		},
 		{
@@ -355,7 +355,7 @@ func TestGetValueFromRequestJson(t *testing.T) {
 	}
 
 	reqCache := requestCache{
-		resolvedReq: json.RawMessage(reqFullVaid),
+		resolvedReq: json.RawMessage(reqFullValid),
 	}
 
 	for _, test := range testCases {
@@ -370,35 +370,3 @@ func TestGetValueFromRequestJson(t *testing.T) {
 		}
 	}
 }
-
-const (
-	testUrl = "https://www.test-url.com?amp-key=testAmpKey&data-override-height=400"
-
-	reqFullVaid = `{
-  "id": "req_id",
-  "imp": [
-    {
-      "id": "test_imp1",
-      "ext": {"appnexus": {"placementId": 123}},
-      "banner": {"format": [{"h": 250, "w": 300}], "w": 260, "h": 350}
-    },
-    {
-      "id": "test_imp2",
-      "ext": {"appnexus": {"placementId": 456}},
-      "banner": {"format": [{"h": 400, "w": 600}], "w": 270, "h": 360}
-    }
-  ],
-  "site": {"page": "test.com"}
-}`
-
-	reqFullInvalid = `{
-  "imp": [
-    {
-      "ext": {"appnexus": {"placementId": 123}}
-    },
-    {
-      "ext": {"appnexus": {"placementId": 456}}
-    }
-  ]
-}`
-)

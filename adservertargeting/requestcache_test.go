@@ -47,9 +47,9 @@ func TestRequestImpCache(t *testing.T) {
 		assert.Len(t, actualImps, test.expectedImpsNum, "incorrect number of impressions returned")
 
 		if test.expectedError {
-			assert.Error(t, err, "unexpected error returned")
+			assert.Error(t, err, "expected error not returned")
 		} else {
-			assert.NoError(t, err, "expected error not returned")
+			assert.NoError(t, err, "unexpected error returned")
 		}
 	}
 }
@@ -107,35 +107,3 @@ func TestBidsCache(t *testing.T) {
 		}
 	}
 }
-
-const (
-	reqValid = `{
-  "id": "req_id",
-  "imp": [
-    {
-      "id": "test_imp1",
-      "ext": {"appnexus": {"placementId": 250419771}},
-      "banner": {"format": [{"h": 250, "w": 300}]}
-    },
-    {
-      "id": "test_imp2",
-      "ext": {"appnexus": {"placementId": 250419771}},
-      "banner": {"format": [{"h": 250, "w": 300}]}
-    }
-  ],
-  "site": {"page": "test.com"}
-}`
-
-	reqInvalid = `{
-  "id": "req_id",
-  "imp": {
-	 "incorrect":true
-   },
-  "site": {"page": "test.com"}
-}`
-
-	reqNoImps = `{
-  "id": "req_id",
-  "site": {"page": "test.com"}
-}`
-)
