@@ -548,6 +548,13 @@ func TestRecordOverheadTimeMetric(t *testing.T) {
 			expectedCount: 1,
 			expectedSum:   0.5,
 		},
+		{
+			description:   "record-split-ortb-req-into-bidder-requests-overhead-time",
+			overheadType:  metrics.NonErrorSplitOrtbReqIntoBidderRequestsOverhead,
+			timeInMs:      500,
+			expectedCount: 1,
+			expectedSum:   0.5,
+		},
 	}
 
 	metric := createMetricsForTesting()

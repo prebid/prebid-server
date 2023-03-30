@@ -611,6 +611,8 @@ func (e *exchange) getAllBids(
 	chBids := make(chan *bidResponseWrapper, len(bidderRequests))
 	bidsFound := false
 
+	e.me.RecordOverheadTime(metrics.OverheadLabels{OverheadType: metrics.NonErrorSplitOrtbReqIntoBidderRequestsOverhead}, time.Since(pbsRequestStartTime))
+
 	for _, bidder := range bidderRequests {
 		// Here we actually call the adapters and collect the bids.
 		bidderRunner := e.recoverSafely(bidderRequests, func(bidderRequest BidderRequest, conversions currency.Conversions) {
