@@ -45,13 +45,6 @@ func AdapterOverheadTypes() []AdapterOverheadType {
 // AdapterOverheadLabels defines labels describing the overhead time needed to prepare request or process response
 type AdapterOverheadLabels struct {
 	OverheadType AdapterOverheadType
-	Adapter      openrtb_ext.BidderName
-	RType        RequestType
-}
-
-// AdapterOverheadRequestTypes returns the types of requests for which overhead metric is supported
-func AdapterOverheadRequestTypes() []RequestType {
-	return []RequestType{ReqTypeORTB2Web, ReqTypeORTB2App, ReqTypeAMP, ReqTypeVideo}
 }
 
 // ImpLabels defines metric labels describing the impression type.

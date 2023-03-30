@@ -435,7 +435,7 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 	metrics.adapterOverheadTimer = newHistogramVec(cfg, reg,
 		"adapter_request_overhead_time_seconds",
 		"Seconds to prepare adapter request or resolve adapter response",
-		[]string{adapterLabel, overheadTypeLabel, requestTypeLabel},
+		[]string{overheadTypeLabel},
 		standardTimeBuckets)
 
 	metrics.adapterRequestsTimer = newHistogramVec(cfg, reg,
@@ -923,9 +923,7 @@ func (m *Metrics) RecordAdapterPrice(labels metrics.AdapterLabels, cpm float64) 
 
 func (m *Metrics) RecordAdapterOverheadTime(labels metrics.AdapterOverheadLabels, duration time.Duration) {
 	m.adapterOverheadTimer.With(prometheus.Labels{
-		adapterLabel:      labels.Adapter.String(),
 		overheadTypeLabel: labels.OverheadType.String(),
-		requestTypeLabel:  labels.RType.String(),
 	}).Observe(duration.Seconds())
 }
 

@@ -79,6 +79,8 @@ type Metrics struct {
 
 	// Module metrics
 	ModuleMetrics map[string]map[string]*ModuleMetrics
+
+	OverheadTimer map[AdapterOverheadType]metrics.Timer
 }
 
 // AdapterMetrics houses the metrics for a particular adapter
@@ -88,7 +90,6 @@ type AdapterMetrics struct {
 	NoBidMeter         metrics.Meter
 	GotBidsMeter       metrics.Meter
 	RequestTimer       metrics.Timer
-	OverheadTimer      map[RequestType]map[AdapterOverheadType]metrics.Timer
 	PriceHistogram     metrics.Histogram
 	BidsReceivedMeter  metrics.Meter
 	PanicMeter         metrics.Meter
@@ -219,6 +220,8 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 
 		exchanges: exchanges,
 		modules:   getModuleNames(moduleStageNames),
+
+		OverheadTimer: makeBlankOverheadTimerMetrics(),
 	}
 
 	for _, a := range exchanges {
@@ -303,6 +306,7 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	newMetrics.PrebidCacheRequestTimerSuccess = metrics.GetOrRegisterTimer("prebid_cache_request_time.ok", registry)
 	newMetrics.PrebidCacheRequestTimerError = metrics.GetOrRegisterTimer("prebid_cache_request_time.err", registry)
 	newMetrics.StoredResponsesMeter = metrics.GetOrRegisterMeter("stored_responses", registry)
+	newMetrics.OverheadTimer = makeOverheadTimerMetrics(registry)
 
 	for _, dt := range StoredDataTypes() {
 		for _, ft := range StoredDataFetchTypes() {
@@ -380,19 +384,11 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	return newMetrics
 }
 
-func makeBlankOverheadTimerMetrics() map[RequestType]map[AdapterOverheadType]metrics.Timer {
-	getMetrics := func() map[AdapterOverheadType]metrics.Timer {
-		return map[AdapterOverheadType]metrics.Timer{
-			PreBidderRequest:   &metrics.NilTimer{},
-			PostBidderResponse: &metrics.NilTimer{},
-		}
+func makeBlankOverheadTimerMetrics() map[AdapterOverheadType]metrics.Timer {
+	return map[AdapterOverheadType]metrics.Timer{
+		PreBidderRequest:   &metrics.NilTimer{},
+		PostBidderResponse: &metrics.NilTimer{},
 	}
-	requestTypes := AdapterOverheadRequestTypes()
-	m := make(map[RequestType]map[AdapterOverheadType]metrics.Timer, len(requestTypes))
-	for i := range requestTypes {
-		m[requestTypes[i]] = getMetrics()
-	}
-	return m
 }
 
 // Part of setting up blank metrics, the adapter metrics.
@@ -404,7 +400,6 @@ func makeBlankAdapterMetrics(disabledMetrics config.DisabledMetrics) *AdapterMet
 		NoBidMeter:        blankMeter,
 		GotBidsMeter:      blankMeter,
 		RequestTimer:      &metrics.NilTimer{},
-		OverheadTimer:     makeBlankOverheadTimerMetrics(),
 		PriceHistogram:    &metrics.NilHistogram{},
 		BidsReceivedMeter: blankMeter,
 		PanicMeter:        blankMeter,
@@ -462,10 +457,10 @@ func makeBlankMarkupDeliveryMetrics() *MarkupDeliveryMetrics {
 	}
 }
 
-func makeOverheadTimerMetrics(registry metrics.Registry, prefix string, requestType RequestType) map[AdapterOverheadType]metrics.Timer {
+func makeOverheadTimerMetrics(registry metrics.Registry) map[AdapterOverheadType]metrics.Timer {
 	return map[AdapterOverheadType]metrics.Timer{
-		PreBidderRequest:   metrics.GetOrRegisterTimer(prefix+requestType.String()+"."+PreBidderRequest.String()+".request_over_head_time", registry),
-		PostBidderResponse: metrics.GetOrRegisterTimer(prefix+requestType.String()+"."+PostBidderResponse.String()+".request_over_head_time", registry),
+		PreBidderRequest:   metrics.GetOrRegisterTimer("request_over_head_time."+PreBidderRequest.String(), registry),
+		PostBidderResponse: metrics.GetOrRegisterTimer("request_over_head_time."+PostBidderResponse.String(), registry),
 	}
 }
 
@@ -474,10 +469,6 @@ func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, 
 	am.NoBidMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.requests.nobid", adapterOrAccount, exchange), registry)
 	am.GotBidsMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.requests.gotbids", adapterOrAccount, exchange), registry)
 	am.RequestTimer = metrics.GetOrRegisterTimer(fmt.Sprintf("%[1]s.%[2]s.request_time", adapterOrAccount, exchange), registry)
-	requestTypes := AdapterOverheadRequestTypes()
-	for i := range requestTypes {
-		am.OverheadTimer[requestTypes[i]] = makeOverheadTimerMetrics(registry, adapterOrAccount+"."+exchange+".", requestTypes[i])
-	}
 	am.PriceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("%[1]s.%[2]s.prices", adapterOrAccount, exchange), registry, metrics.NewExpDecaySample(1028, 0.015))
 	am.MarkupMetrics = map[openrtb_ext.BidType]*MarkupDeliveryMetrics{
 		openrtb_ext.BidTypeBanner: makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeBanner),
@@ -877,13 +868,8 @@ func (me *Metrics) RecordAdapterTime(labels AdapterLabels, length time.Duration)
 
 // RecordAdapterOverheadTime implements a part of the MetricsEngine interface. Records the adapter overhead time
 func (me *Metrics) RecordAdapterOverheadTime(labels AdapterOverheadLabels, length time.Duration) {
-	if labels.Adapter != "" && labels.RType != "" && labels.OverheadType != "" {
-		am, ok := me.AdapterMetrics[labels.Adapter]
-		if !ok {
-			glog.Errorf("Trying to run adapter latency metrics on %s: adapter metrics not found", string(labels.Adapter))
-			return
-		}
-		am.OverheadTimer[labels.RType][labels.OverheadType].Update(length)
+	if labels.OverheadType != "" {
+		me.OverheadTimer[labels.OverheadType].Update(length)
 	}
 }
 

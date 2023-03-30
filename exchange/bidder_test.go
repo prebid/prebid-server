@@ -2022,7 +2022,7 @@ func TestCallRecordAdapterConnections(t *testing.T) {
 
 	mockMetricEngine.On("RecordAdapterConnections", expectedAdapterName, false, mock.MatchedBy(compareConnWaitTime)).Once()
 
-	overheadLabels := metrics.AdapterOverheadLabels{OverheadType: metrics.PreBidderRequest, Adapter: openrtb_ext.BidderAppnexus, RType: metrics.ReqTypeORTB2Web}
+	overheadLabels := metrics.AdapterOverheadLabels{OverheadType: metrics.PreBidderRequest}
 	mockMetricEngine.On("RecordAdapterOverheadTime", overheadLabels, mock.Anything).Once()
 
 	// Run requestBid using an http.Client with a mock handler
@@ -2084,7 +2084,7 @@ func TestCallRecordDNSTime(t *testing.T) {
 	// setup a mock metrics engine and its expectation
 	metricsMock := &metrics.MetricsEngineMock{}
 	metricsMock.Mock.On("RecordDNSTime", mock.Anything).Return()
-	overheadLabels := metrics.AdapterOverheadLabels{OverheadType: metrics.PreBidderRequest, Adapter: openrtb_ext.BidderAppnexus, RType: metrics.ReqTypeORTB2Web}
+	overheadLabels := metrics.AdapterOverheadLabels{OverheadType: metrics.PreBidderRequest}
 	metricsMock.On("RecordAdapterOverheadTime", overheadLabels, mock.Anything).Once()
 
 	// Instantiate the bidder that will send the request. We'll make sure to use an
@@ -2107,7 +2107,7 @@ func TestCallRecordTLSHandshakeTime(t *testing.T) {
 	// setup a mock metrics engine and its expectation
 	metricsMock := &metrics.MetricsEngineMock{}
 	metricsMock.Mock.On("RecordTLSHandshakeTime", mock.Anything).Return()
-	overheadLabels := metrics.AdapterOverheadLabels{OverheadType: metrics.PreBidderRequest, Adapter: openrtb_ext.BidderAppnexus, RType: metrics.ReqTypeORTB2Web}
+	overheadLabels := metrics.AdapterOverheadLabels{OverheadType: metrics.PreBidderRequest}
 	metricsMock.On("RecordAdapterOverheadTime", overheadLabels, mock.Anything).Once()
 
 	// Instantiate the bidder that will send the request. We'll make sure to use an
