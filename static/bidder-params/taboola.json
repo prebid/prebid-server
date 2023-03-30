@@ -12,7 +12,8 @@
       "type": "string"
     },
     "tagid": {
-      "type": "string"
+      "type": "string",
+      "description": "Deprecated, use tagId instead."
     },
     "tagId": {
       "type": "string",

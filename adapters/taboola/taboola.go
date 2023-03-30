@@ -12,6 +12,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"strconv"
+	"strings"
 	"text/template"
 )
 
@@ -32,9 +33,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 		gvlID = strconv.Itoa(server.GvlID)
 	}
 
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
-	}
 	bidder := &adapter{
 		endpoint: endpointTemplate,
 		gvlID:    gvlID,
@@ -95,6 +93,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	for _, seatBid := range response.SeatBid {
 		for i := range seatBid.Bid {
 			bidType, err := getMediaType(seatBid.Bid[i].ImpID, request.Imp)
+			resolveMacros(&seatBid.Bid[i])
 			if err != nil {
 				errs = append(errs, err)
 				continue
@@ -146,7 +145,7 @@ func (a *adapter) buildRequest(request *openrtb2.BidRequest) (*adapters.RequestD
 
 // Builds endpoint url based on adapter-specific pub settings from imp.ext
 func (a *adapter) buildEndpointURL(publisherId string, mediaType string) (string, error) {
-	endpointParams := macros.EndpointTemplateParams{PublisherID: publisherId, MediaType: mediaType, Host: a.gvlID}
+	endpointParams := macros.EndpointTemplateParams{PublisherID: publisherId, MediaType: mediaType, GvlID: a.gvlID}
 	resolvedUrl, err := macros.ResolveMacros(a.endpoint, endpointParams)
 	if err != nil {
 		return "", err
@@ -179,10 +178,9 @@ func createTaboolaRequests(request *openrtb2.BidRequest) (taboolaRequests []*ope
 			tagId = taboolaExt.TagId
 		}
 
-		if tagId != "" {
-			imp.TagID = tagId
-			modifiedRequest.Imp[i] = imp
-		}
+		imp.TagID = tagId
+		modifiedRequest.Imp[i] = imp
+
 		if taboolaExt.BidFloor != 0 {
 			imp.BidFloor = taboolaExt.BidFloor
 			modifiedRequest.Imp[i] = imp
@@ -290,4 +288,13 @@ func overrideBidRequestImp(originBidRequest *openrtb2.BidRequest, imp []openrtb2
 	bidRequestResult := *originBidRequest
 	bidRequestResult.Imp = imp
 	return &bidRequestResult
+}
+
+func resolveMacros(bid *openrtb2.Bid) {
+	if bid == nil {
+		return
+	}
+	price := strconv.FormatFloat(bid.Price, 'f', -1, 64)
+	bid.NURL = strings.Replace(bid.NURL, "${AUCTION_PRICE}", price, -1)
+	bid.AdM = strings.Replace(bid.AdM, "${AUCTION_PRICE}", price, -1)
 }
