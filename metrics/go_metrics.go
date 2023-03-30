@@ -385,10 +385,12 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 }
 
 func makeBlankOverheadTimerMetrics() map[OverheadType]metrics.Timer {
-	return map[OverheadType]metrics.Timer{
-		NonErrorPreBidderRequestOverhead:   &metrics.NilTimer{},
-		NonErrorPostBidderResponseOverhead: &metrics.NilTimer{},
+	m := make(map[OverheadType]metrics.Timer)
+	overheads := OverheadTypes()
+	for idx := range overheads {
+		m[overheads[idx]] = &metrics.NilTimer{}
 	}
+	return m
 }
 
 // Part of setting up blank metrics, the adapter metrics.
@@ -458,10 +460,12 @@ func makeBlankMarkupDeliveryMetrics() *MarkupDeliveryMetrics {
 }
 
 func makeOverheadTimerMetrics(registry metrics.Registry) map[OverheadType]metrics.Timer {
-	return map[OverheadType]metrics.Timer{
-		NonErrorPreBidderRequestOverhead:   metrics.GetOrRegisterTimer("request_over_head_time."+NonErrorPreBidderRequestOverhead.String(), registry),
-		NonErrorPostBidderResponseOverhead: metrics.GetOrRegisterTimer("request_over_head_time."+NonErrorPostBidderResponseOverhead.String(), registry),
+	m := make(map[OverheadType]metrics.Timer)
+	overheads := OverheadTypes()
+	for idx := range overheads {
+		m[overheads[idx]] = metrics.GetOrRegisterTimer("request_over_head_time."+overheads[idx].String(), registry)
 	}
+	return m
 }
 
 func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, exchange string, am *AdapterMetrics) {
