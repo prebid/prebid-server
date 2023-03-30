@@ -3,7 +3,6 @@ package rubicon
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/mitchellh/copystructure"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -234,18 +233,14 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	requestCopy, err := copystructure.Copy(request)
+	requestCopy := request
+
+	err := openrtb_ext.ConvertUpTo26(&openrtb_ext.RequestWrapper{BidRequest: requestCopy})
 	if err != nil {
 		return nil, []error{err}
 	}
 
-	requestDeepCopy := requestCopy.(*openrtb2.BidRequest)
-	err = openrtb_ext.ConvertUpTo26(&openrtb_ext.RequestWrapper{BidRequest: requestDeepCopy})
-	if err != nil {
-		return nil, []error{err}
-	}
-
-	request = requestDeepCopy
+	request = requestCopy
 
 	numRequests := len(request.Imp)
 	requestData := make([]*adapters.RequestData, 0, numRequests)
