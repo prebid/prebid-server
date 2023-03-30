@@ -387,7 +387,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 				errs = append(errs, dealErrs...)
 			}
 
-			bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, responseDebugAllow, requestExtPrebid.Passthrough, fledge, errs, seatNonBids)
+			bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, responseDebugAllow, requestExtPrebid.Passthrough, fledge, errs)
 			if debugLog.DebugEnabledOrOverridden {
 				if bidRespExtBytes, err := json.Marshal(bidResponseExt); err == nil {
 					debugLog.Data.Response = string(bidRespExtBytes)
@@ -404,9 +404,9 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 
 			targData.setTargeting(auc, r.BidRequestWrapper.BidRequest.App != nil, bidCategory, r.Account.TruncateTargetAttribute, multiBidMap)
 		}
-		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, responseDebugAllow, requestExtPrebid.Passthrough, fledge, errs, seatNonBids)
+		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, responseDebugAllow, requestExtPrebid.Passthrough, fledge, errs)
 	} else {
-		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, responseDebugAllow, requestExtPrebid.Passthrough, fledge, errs, seatNonBids)
+		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, responseDebugAllow, requestExtPrebid.Passthrough, fledge, errs)
 
 		if debugLog.DebugEnabledOrOverridden {
 
@@ -1075,7 +1075,7 @@ func getPrimaryAdServer(adServerId int) (string, error) {
 }
 
 // Extract all the data from the SeatBids and build the ExtBidResponse
-func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, r AuctionRequest, debugInfo bool, passthrough json.RawMessage, fledge *openrtb_ext.Fledge, errList []error, seatNonBids seatNonBids) *openrtb_ext.ExtBidResponse {
+func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, r AuctionRequest, debugInfo bool, passthrough json.RawMessage, fledge *openrtb_ext.Fledge, errList []error) *openrtb_ext.ExtBidResponse {
 	bidResponseExt := &openrtb_ext.ExtBidResponse{
 		Errors:               make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage, len(adapterBids)),
 		Warnings:             make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage, len(adapterBids)),
@@ -1534,35 +1534,6 @@ func setSeatNonBid(bidResponseExt *openrtb_ext.ExtBidResponse, seatNonBids seatN
 		bidResponseExt.Prebid = &openrtb_ext.ExtResponsePrebid{}
 	}
 
-	// var seatNonBid []openrtb_ext.SeatNonBid
-	// for seat, nonBids := range seatNonBidMap {
-	// 	seatNonBid = append(seatNonBid, openrtb_ext.SeatNonBid{
-	// 		Seat:   seat,
-	// 		NonBid: nonBids,
-	// 	})
-	// }
 	bidResponseExt.Prebid.SeatNonBid = seatNonBids.get()
 	return bidResponseExt
 }
-
-// func appendSeatNonBid(seatNonBidMap map[string][]openrtb_ext.NonBid, seat string, nonBidReason int, bid entities.PbsOrtbBid) {
-// 	nonBid := openrtb_ext.NonBid{
-// 		ImpId:      bid.Bid.ImpID,
-// 		StatusCode: nonBidReason, //
-// 		Ext: openrtb_ext.NonBidExt{
-// 			Prebid: openrtb_ext.Prebid{Bid: *bid.Bid},
-// 		},
-// 	}
-
-// 	nonBids := seatNonBidMap[seat]
-// 	// seatNonBid = append(seatNonBid, openrtb_ext.SeatNonBid{
-// 	// 	Seat:   string(seat),
-// 	// 	NonBid: []openrtb_ext.NonBid{nonBid},
-// 	// })
-
-// 	if nonBids == nil {
-// 		seatNonBidMap[seat] = []openrtb_ext.NonBid{nonBid}
-// 	} else {
-// 		seatNonBidMap[seat] = append(nonBids, nonBid)
-// 	}
-// }
