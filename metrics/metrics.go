@@ -26,25 +26,25 @@ type AdapterLabels struct {
 	AdapterErrors map[AdapterError]struct{}
 }
 
-// AdapterOverheadType: adapter overhead type enumeration
-type AdapterOverheadType string
+// OverheadType: overhead type enumeration
+type OverheadType string
 
 const (
-	PreBidderRequest   AdapterOverheadType = "pre-bidder-request"
-	PostBidderResponse AdapterOverheadType = "post-bidder-request"
+	PreBidderRequest   OverheadType = "pre-bidder-request"
+	PostBidderResponse OverheadType = "post-bidder-request"
 )
 
-func (t AdapterOverheadType) String() string {
+func (t OverheadType) String() string {
 	return string(t)
 }
 
-func AdapterOverheadTypes() []AdapterOverheadType {
-	return []AdapterOverheadType{PreBidderRequest, PostBidderResponse}
+func OverheadTypes() []OverheadType {
+	return []OverheadType{PreBidderRequest, PostBidderResponse}
 }
 
-// AdapterOverheadLabels defines labels describing the overhead time needed to prepare request or process response
-type AdapterOverheadLabels struct {
-	OverheadType AdapterOverheadType
+// OverheadLabels defines labels describing the overhead time needed to prepare request or process response
+type OverheadLabels struct {
+	OverheadType OverheadType
 }
 
 // ImpLabels defines metric labels describing the impression type.
@@ -432,7 +432,7 @@ type MetricsEngine interface {
 	RecordRequest(labels Labels)                           // ignores adapter. only statusOk and statusErr fom status
 	RecordImps(labels ImpLabels)                           // RecordImps across openRTB2 engines that support the 'Native' Imp Type
 	RecordRequestTime(labels Labels, length time.Duration) // ignores adapter. only statusOk and statusErr fom status
-	RecordAdapterOverheadTime(labels AdapterOverheadLabels, length time.Duration)
+	RecordOverheadTime(labels OverheadLabels, length time.Duration)
 	RecordAdapterRequest(labels AdapterLabels)
 	RecordAdapterConnections(adapterName openrtb_ext.BidderName, connWasReused bool, connWaitTime time.Duration)
 	RecordDNSTime(dnsLookupTime time.Duration)

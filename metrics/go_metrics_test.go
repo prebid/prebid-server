@@ -1196,32 +1196,32 @@ func TestRecordAccountUpgradeStatusMetrics(t *testing.T) {
 	}
 }
 
-func TestRecordAdapterOverheadTime(t *testing.T) {
+func TestRecordOverheadTime(t *testing.T) {
 	testCases := []struct {
 		name          string
 		time          time.Duration
-		labels        AdapterOverheadLabels
+		labels        OverheadLabels
 		expectedCount int64
 		expectedSum   int64
 	}{
 		{
 			name:          "record-pre-request-overhead-time",
 			time:          time.Duration(500),
-			labels:        AdapterOverheadLabels{OverheadType: PreBidderRequest},
+			labels:        OverheadLabels{OverheadType: PreBidderRequest},
 			expectedCount: 1,
 			expectedSum:   500,
 		},
 		{
 			name:          "record-pre-request-overhead-time",
 			time:          time.Duration(500),
-			labels:        AdapterOverheadLabels{OverheadType: PreBidderRequest},
+			labels:        OverheadLabels{OverheadType: PreBidderRequest},
 			expectedCount: 2,
 			expectedSum:   1000,
 		},
 		{
 			name:          "record-post-response-overhead-time",
 			time:          time.Duration(500),
-			labels:        AdapterOverheadLabels{OverheadType: PostBidderResponse},
+			labels:        OverheadLabels{OverheadType: PostBidderResponse},
 			expectedCount: 1,
 			expectedSum:   500,
 		},
@@ -1230,7 +1230,7 @@ func TestRecordAdapterOverheadTime(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			m := NewMetrics(registry, []openrtb_ext.BidderName{}, config.DisabledMetrics{}, nil, nil)
-			m.RecordAdapterOverheadTime(test.labels, test.time)
+			m.RecordOverheadTime(test.labels, test.time)
 			overheadMetrics := m.OverheadTimer[test.labels.OverheadType]
 			assert.Equal(t, test.expectedCount, overheadMetrics.Count())
 			assert.Equal(t, test.expectedSum, overheadMetrics.Sum())

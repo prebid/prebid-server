@@ -80,7 +80,7 @@ type Metrics struct {
 	// Module metrics
 	ModuleMetrics map[string]map[string]*ModuleMetrics
 
-	OverheadTimer map[AdapterOverheadType]metrics.Timer
+	OverheadTimer map[OverheadType]metrics.Timer
 }
 
 // AdapterMetrics houses the metrics for a particular adapter
@@ -384,8 +384,8 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	return newMetrics
 }
 
-func makeBlankOverheadTimerMetrics() map[AdapterOverheadType]metrics.Timer {
-	return map[AdapterOverheadType]metrics.Timer{
+func makeBlankOverheadTimerMetrics() map[OverheadType]metrics.Timer {
+	return map[OverheadType]metrics.Timer{
 		PreBidderRequest:   &metrics.NilTimer{},
 		PostBidderResponse: &metrics.NilTimer{},
 	}
@@ -457,8 +457,8 @@ func makeBlankMarkupDeliveryMetrics() *MarkupDeliveryMetrics {
 	}
 }
 
-func makeOverheadTimerMetrics(registry metrics.Registry) map[AdapterOverheadType]metrics.Timer {
-	return map[AdapterOverheadType]metrics.Timer{
+func makeOverheadTimerMetrics(registry metrics.Registry) map[OverheadType]metrics.Timer {
+	return map[OverheadType]metrics.Timer{
 		PreBidderRequest:   metrics.GetOrRegisterTimer("request_over_head_time."+PreBidderRequest.String(), registry),
 		PostBidderResponse: metrics.GetOrRegisterTimer("request_over_head_time."+PostBidderResponse.String(), registry),
 	}
@@ -866,8 +866,8 @@ func (me *Metrics) RecordAdapterTime(labels AdapterLabels, length time.Duration)
 	}
 }
 
-// RecordAdapterOverheadTime implements a part of the MetricsEngine interface. Records the adapter overhead time
-func (me *Metrics) RecordAdapterOverheadTime(labels AdapterOverheadLabels, length time.Duration) {
+// RecordOverheadTime implements a part of the MetricsEngine interface. Records the adapter overhead time
+func (me *Metrics) RecordOverheadTime(labels OverheadLabels, length time.Duration) {
 	if labels.OverheadType != "" {
 		me.OverheadTimer[labels.OverheadType].Update(length)
 	}

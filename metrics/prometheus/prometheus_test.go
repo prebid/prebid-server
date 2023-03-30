@@ -519,10 +519,10 @@ func TestRequestTimeMetric(t *testing.T) {
 	}
 }
 
-func TestRecordAdapterOverheadTimeMetric(t *testing.T) {
+func TestRecordOverheadTimeMetric(t *testing.T) {
 	testCases := []struct {
 		description   string
-		overheadType  metrics.AdapterOverheadType
+		overheadType  metrics.OverheadType
 		timeInMs      float64
 		expectedCount uint64
 		expectedSum   float64
@@ -552,11 +552,11 @@ func TestRecordAdapterOverheadTimeMetric(t *testing.T) {
 
 	metric := createMetricsForTesting()
 	for _, test := range testCases {
-		metric.RecordAdapterOverheadTime(metrics.AdapterOverheadLabels{
+		metric.RecordOverheadTime(metrics.OverheadLabels{
 			OverheadType: test.overheadType,
 		}, time.Duration(test.timeInMs)*time.Millisecond)
-		result := getHistogramFromHistogramVec(metric.adapterOverheadTimer, overheadTypeLabel, test.overheadType.String())
-		assertHistogram(t, test.description, result, test.expectedCount, test.expectedSum)
+		resultingHistogram := getHistogramFromHistogramVec(metric.overheadTimer, overheadTypeLabel, test.overheadType.String())
+		assertHistogram(t, test.description, resultingHistogram, test.expectedCount, test.expectedSum)
 	}
 }
 

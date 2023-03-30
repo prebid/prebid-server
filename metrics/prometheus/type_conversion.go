@@ -77,8 +77,8 @@ func syncerRequestStatusesAsString() []string {
 	return valuesAsString
 }
 
-func adapterOverheadTypesAsString() []string {
-	overheadTypes := metrics.AdapterOverheadTypes()
+func overheadTypesAsString() []string {
+	overheadTypes := metrics.OverheadTypes()
 	overheadTypesAsString := make([]string, len(overheadTypes))
 	for i, ot := range overheadTypes {
 		overheadTypesAsString[i] = ot.String()

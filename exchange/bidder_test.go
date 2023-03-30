@@ -558,7 +558,7 @@ func TestBidderTimeout(t *testing.T) {
 	callInfo := bidder.doRequest(ctx, &adapters.RequestData{
 		Method: "POST",
 		Uri:    server.URL,
-	}, time.Now(), metrics.AdapterOverheadLabels{})
+	}, time.Now(), metrics.OverheadLabels{})
 	if callInfo.err == nil {
 		t.Errorf("The bidder should report an error if the context has expired already.")
 	}
@@ -577,7 +577,7 @@ func TestInvalidRequest(t *testing.T) {
 
 	callInfo := bidder.doRequest(context.Background(), &adapters.RequestData{
 		Method: "\"", // force http.NewRequest() to fail
-	}, time.Now(), metrics.AdapterOverheadLabels{})
+	}, time.Now(), metrics.OverheadLabels{})
 	if callInfo.err == nil {
 		t.Errorf("bidderAdapter.doRequest should return an error if the request data is malformed.")
 	}
@@ -601,7 +601,7 @@ func TestConnectionClose(t *testing.T) {
 	callInfo := bidder.doRequest(context.Background(), &adapters.RequestData{
 		Method: "POST",
 		Uri:    server.URL,
-	}, time.Now(), metrics.AdapterOverheadLabels{})
+	}, time.Now(), metrics.OverheadLabels{})
 	if callInfo.err == nil {
 		t.Errorf("bidderAdapter.doRequest should return an error if the connection closes unexpectedly.")
 	}
@@ -2022,8 +2022,8 @@ func TestCallRecordAdapterConnections(t *testing.T) {
 
 	mockMetricEngine.On("RecordAdapterConnections", expectedAdapterName, false, mock.MatchedBy(compareConnWaitTime)).Once()
 
-	overheadLabels := metrics.AdapterOverheadLabels{OverheadType: metrics.PreBidderRequest}
-	mockMetricEngine.On("RecordAdapterOverheadTime", overheadLabels, mock.Anything).Once()
+	overheadLabels := metrics.OverheadLabels{OverheadType: metrics.PreBidderRequest}
+	mockMetricEngine.On("RecordOverheadTime", overheadLabels, mock.Anything).Once()
 
 	// Run requestBid using an http.Client with a mock handler
 	bidder := AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, mockMetricEngine, openrtb_ext.BidderAppnexus, nil, "")
@@ -2084,8 +2084,8 @@ func TestCallRecordDNSTime(t *testing.T) {
 	// setup a mock metrics engine and its expectation
 	metricsMock := &metrics.MetricsEngineMock{}
 	metricsMock.Mock.On("RecordDNSTime", mock.Anything).Return()
-	overheadLabels := metrics.AdapterOverheadLabels{OverheadType: metrics.PreBidderRequest}
-	metricsMock.On("RecordAdapterOverheadTime", overheadLabels, mock.Anything).Once()
+	overheadLabels := metrics.OverheadLabels{OverheadType: metrics.PreBidderRequest}
+	metricsMock.On("RecordOverheadTime", overheadLabels, mock.Anything).Once()
 
 	// Instantiate the bidder that will send the request. We'll make sure to use an
 	// http.Client that runs our mock RoundTripper so DNSDone(httptrace.DNSDoneInfo{})
@@ -2107,8 +2107,8 @@ func TestCallRecordTLSHandshakeTime(t *testing.T) {
 	// setup a mock metrics engine and its expectation
 	metricsMock := &metrics.MetricsEngineMock{}
 	metricsMock.Mock.On("RecordTLSHandshakeTime", mock.Anything).Return()
-	overheadLabels := metrics.AdapterOverheadLabels{OverheadType: metrics.PreBidderRequest}
-	metricsMock.On("RecordAdapterOverheadTime", overheadLabels, mock.Anything).Once()
+	overheadLabels := metrics.OverheadLabels{OverheadType: metrics.PreBidderRequest}
+	metricsMock.On("RecordOverheadTime", overheadLabels, mock.Anything).Once()
 
 	// Instantiate the bidder that will send the request. We'll make sure to use an
 	// http.Client that runs our mock RoundTripper so DNSDone(httptrace.DNSDoneInfo{})
@@ -2208,7 +2208,7 @@ func TestTimeoutNotificationOn(t *testing.T) {
 		loggerBuffer.WriteString(fmt.Sprintf(fmt.Sprintln(msg), args...))
 	}
 
-	bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, time.Now(), metrics.AdapterOverheadLabels{})
+	bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, time.Now(), metrics.OverheadLabels{})
 
 	// Wait a little longer than the 205ms mock server sleep.
 	time.Sleep(210 * time.Millisecond)

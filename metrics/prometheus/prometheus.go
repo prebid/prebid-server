@@ -63,7 +63,7 @@ type Metrics struct {
 	adapterPanics                         *prometheus.CounterVec
 	adapterPrices                         *prometheus.HistogramVec
 	adapterRequests                       *prometheus.CounterVec
-	adapterOverheadTimer                  *prometheus.HistogramVec
+	overheadTimer                         *prometheus.HistogramVec
 	adapterRequestsTimer                  *prometheus.HistogramVec
 	adapterReusedConnections              *prometheus.CounterVec
 	adapterCreatedConnections             *prometheus.CounterVec
@@ -432,8 +432,8 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"Count that tracks number of bids removed from bid response that had a invalid bidAdm (warn)",
 		[]string{adapterLabel, successLabel})
 
-	metrics.adapterOverheadTimer = newHistogramVec(cfg, reg,
-		"adapter_request_overhead_time_seconds",
+	metrics.overheadTimer = newHistogramVec(cfg, reg,
+		"overhead_time_seconds",
 		"Seconds to prepare adapter request or resolve adapter response",
 		[]string{overheadTypeLabel},
 		standardTimeBuckets)
@@ -921,8 +921,8 @@ func (m *Metrics) RecordAdapterPrice(labels metrics.AdapterLabels, cpm float64) 
 	}).Observe(cpm)
 }
 
-func (m *Metrics) RecordAdapterOverheadTime(labels metrics.AdapterOverheadLabels, duration time.Duration) {
-	m.adapterOverheadTimer.With(prometheus.Labels{
+func (m *Metrics) RecordOverheadTime(labels metrics.OverheadLabels, duration time.Duration) {
+	m.overheadTimer.With(prometheus.Labels{
 		overheadTypeLabel: labels.OverheadType.String(),
 	}).Observe(duration.Seconds())
 }

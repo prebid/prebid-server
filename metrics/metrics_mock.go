@@ -86,8 +86,8 @@ func (me *MetricsEngineMock) RecordAdapterTime(labels AdapterLabels, length time
 	me.Called(labels, length)
 }
 
-// RecordAdapterOverheadTime mock
-func (me *MetricsEngineMock) RecordAdapterOverheadTime(labels AdapterOverheadLabels, length time.Duration) {
+// RecordOverheadTime mock
+func (me *MetricsEngineMock) RecordOverheadTime(labels OverheadLabels, length time.Duration) {
 	me.Called(labels, length)
 }
 
