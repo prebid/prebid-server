@@ -170,7 +170,7 @@ func (me *MultiMetricsEngine) RecordAdapterTime(labels metrics.AdapterLabels, le
 	}
 }
 
-// RecordAdapterTime across all engines
+// RecordOverheadTime across all engines
 func (me *MultiMetricsEngine) RecordOverheadTime(labels metrics.OverheadLabels, length time.Duration) {
 	for _, thisME := range *me {
 		thisME.RecordOverheadTime(labels, length)
