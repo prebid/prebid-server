@@ -442,7 +442,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	if err != nil {
 		return nil, err
 	}
-	return e.buildAuctionResponse(ctx, bidResponse, bidResponseExt)
+	return e.buildAuctionResponse(ctx, bidResponse, bidResponseExt, seatNonBids)
 }
 
 func buildMultiBidMap(prebid *openrtb_ext.ExtRequestPrebid) map[string]openrtb_ext.ExtMultiBid {
@@ -1124,8 +1124,6 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*en
 
 	}
 
-	bidResponseExt = setSeatNonBid(bidResponseExt, seatNonBids)
-
 	return bidResponseExt
 }
 
@@ -1515,7 +1513,9 @@ func setErrorMessageSecureMarkup(validationType string) string {
 }
 
 // buildAuctionResponse wraps the openrtb Bid Response object into AuctionResponse
-func (ex *exchange) buildAuctionResponse(ctx context.Context, bidResponse *openrtb2.BidResponse, bidResponseExt *openrtb_ext.ExtBidResponse) (*AuctionResponse, error) {
+func (ex *exchange) buildAuctionResponse(ctx context.Context, bidResponse *openrtb2.BidResponse, bidResponseExt *openrtb_ext.ExtBidResponse, seatNonBids seatNonBids) (*AuctionResponse, error) {
+
+	bidResponseExt = setSeatNonBid(bidResponseExt, seatNonBids)
 	return &AuctionResponse{
 		BidResponse:    bidResponse,
 		ExtBidResponse: bidResponseExt,

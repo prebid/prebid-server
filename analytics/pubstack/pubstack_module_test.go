@@ -93,6 +93,17 @@ func TestNewModuleSuccess(t *testing.T) {
 			logObject: func(module analytics.PBSAnalyticsModule) {
 				module.LogAuctionObject(&analytics.AuctionObject{
 					RequestWrapper: &openrtb_ext.RequestWrapper{},
+					SeatNonBid: []openrtb_ext.SeatNonBid{
+						{
+							NonBid: []openrtb_ext.NonBid{
+								{
+									ImpId:      "123",
+									StatusCode: 34,
+									Ext:        openrtb_ext.NonBidExt{Prebid: openrtb_ext.Prebid{Bid: openrtb_ext.Bid{}}},
+								},
+							},
+						},
+					},
 				})
 			},
 		},

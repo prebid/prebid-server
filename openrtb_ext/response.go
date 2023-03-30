@@ -101,8 +101,17 @@ const (
 	UserSyncPixel  UserSyncType = "pixel"
 )
 
+// Bid is Wrapper around original/proxy bid object
+type Bid struct {
+	openrtb2.Bid
+	ID    string `json:"id,omitempty"`    // added omitempty
+	ImpID string `json:"impid,omitempty"` // added omitempty
+
+	OriginalBidCPM float64 `json:"originalbidcpm,omitempty"`
+}
+
 type Prebid struct {
-	Bid openrtb2.Bid `json:"bid"`
+	Bid Bid `json:"bid"`
 }
 
 type NonBidExt struct {

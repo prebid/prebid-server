@@ -1,6 +1,7 @@
 package exchange
 
 import (
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/exchange/entities"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -26,7 +27,19 @@ func (snb *seatNonBids) add(bid *entities.PbsOrtbBid, nonBidReason int, seat str
 		ImpId:      bid.Bid.ImpID,
 		StatusCode: nonBidReason, //
 		Ext: openrtb_ext.NonBidExt{
-			Prebid: openrtb_ext.Prebid{Bid: *bid.Bid},
+			Prebid: openrtb_ext.Prebid{Bid: openrtb_ext.Bid{
+				Bid: openrtb2.Bid{
+					Price:   bid.Bid.Price,
+					ADomain: bid.Bid.ADomain,
+					CatTax:  bid.Bid.CatTax,
+					Cat:     bid.Bid.Cat,
+					DealID:  bid.Bid.DealID,
+					W:       bid.Bid.W,
+					H:       bid.Bid.H,
+					Dur:     bid.Bid.Dur,
+					MType:   bid.Bid.MType,
+				},
+			}},
 		},
 	}
 
