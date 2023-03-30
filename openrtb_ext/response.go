@@ -108,6 +108,7 @@ type Bid struct {
 	ImpID string `json:"impid,omitempty"` // added omitempty
 
 	OriginalBidCPM float64 `json:"originalbidcpm,omitempty"`
+	OriginalBidCur string  `json:"originalbidcur,omitempty"`
 }
 
 type Prebid struct {

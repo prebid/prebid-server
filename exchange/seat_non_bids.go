@@ -39,6 +39,8 @@ func (snb *seatNonBids) add(bid *entities.PbsOrtbBid, nonBidReason int, seat str
 					Dur:     bid.Bid.Dur,
 					MType:   bid.Bid.MType,
 				},
+				OriginalBidCPM: bid.OriginalBidCPM,
+				OriginalBidCur: bid.OriginalBidCur,
 			}},
 		},
 	}
