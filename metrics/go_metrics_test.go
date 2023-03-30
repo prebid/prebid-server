@@ -80,9 +80,9 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "ads_cert_requests.ok", m.AdsCertRequestsSuccess)
 	ensureContains(t, registry, "ads_cert_requests.failed", m.AdsCertRequestsFailure)
 
-	ensureContains(t, registry, "request_over_head_time.non-error-pre-bidder-request", m.OverheadTimer[NonErrorPreBidderRequestOverhead])
-	ensureContains(t, registry, "request_over_head_time.non-error-ortb-response-preparation", m.OverheadTimer[NonErrorOrtbResponsePreparationOverhead])
-	ensureContains(t, registry, "request_over_head_time.non-error-split-ortb-req-into-bidder-requests", m.OverheadTimer[NonErrorSplitOrtbReqIntoBidderRequestsOverhead])
+	ensureContains(t, registry, "request_over_head_time.non-error-pre-bidder-request", m.OverheadTimer[NonErrorPreBidderRequest])
+	ensureContains(t, registry, "request_over_head_time.non-error-prepare-ortb-response", m.OverheadTimer[NonErrorPrepareOrtbResponse])
+	ensureContains(t, registry, "request_over_head_time.non-error-prepare-ortb-bidder-requests", m.OverheadTimer[NonErrorPrepareOrtbBidderRequests])
 
 	for module, stages := range moduleStageNames {
 		for _, stage := range stages {
@@ -1208,28 +1208,28 @@ func TestRecordOverheadTime(t *testing.T) {
 		{
 			name:          "record-pre-request-overhead-time",
 			time:          time.Duration(500),
-			overheadType:  NonErrorPreBidderRequestOverhead,
+			overheadType:  NonErrorPreBidderRequest,
 			expectedCount: 1,
 			expectedSum:   500,
 		},
 		{
 			name:          "record-pre-request-overhead-time",
 			time:          time.Duration(500),
-			overheadType:  NonErrorPreBidderRequestOverhead,
+			overheadType:  NonErrorPreBidderRequest,
 			expectedCount: 2,
 			expectedSum:   1000,
 		},
 		{
 			name:          "record-post-response-overhead-time",
 			time:          time.Duration(500),
-			overheadType:  NonErrorOrtbResponsePreparationOverhead,
+			overheadType:  NonErrorPrepareOrtbResponse,
 			expectedCount: 1,
 			expectedSum:   500,
 		},
 		{
 			name:          "record-split-ortb-req-into-bidder-requests-overhead-time",
 			time:          time.Duration(500),
-			overheadType:  NonErrorSplitOrtbReqIntoBidderRequestsOverhead,
+			overheadType:  NonErrorPrepareOrtbBidderRequests,
 			expectedCount: 1,
 			expectedSum:   500,
 		},

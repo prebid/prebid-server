@@ -529,28 +529,28 @@ func TestRecordOverheadTimeMetric(t *testing.T) {
 	}{
 		{
 			description:   "record-pre-request-overhead-time-1",
-			overheadType:  metrics.NonErrorPreBidderRequestOverhead,
+			overheadType:  metrics.NonErrorPreBidderRequest,
 			timeInMs:      500,
 			expectedCount: 1,
 			expectedSum:   0.5,
 		},
 		{
 			description:   "record-pre-request-overhead-time-2",
-			overheadType:  metrics.NonErrorPreBidderRequestOverhead,
+			overheadType:  metrics.NonErrorPreBidderRequest,
 			timeInMs:      400,
 			expectedCount: 2,
 			expectedSum:   0.9,
 		},
 		{
 			description:   "record-post-request-overhead-time",
-			overheadType:  metrics.NonErrorOrtbResponsePreparationOverhead,
+			overheadType:  metrics.NonErrorPrepareOrtbResponse,
 			timeInMs:      500,
 			expectedCount: 1,
 			expectedSum:   0.5,
 		},
 		{
 			description:   "record-split-ortb-req-into-bidder-requests-overhead-time",
-			overheadType:  metrics.NonErrorSplitOrtbReqIntoBidderRequestsOverhead,
+			overheadType:  metrics.NonErrorPrepareOrtbBidderRequests,
 			timeInMs:      500,
 			expectedCount: 1,
 			expectedSum:   0.5,

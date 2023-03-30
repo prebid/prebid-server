@@ -611,7 +611,7 @@ func (e *exchange) getAllBids(
 	chBids := make(chan *bidResponseWrapper, len(bidderRequests))
 	bidsFound := false
 
-	e.me.RecordOverheadTime(metrics.NonErrorSplitOrtbReqIntoBidderRequestsOverhead, time.Since(pbsRequestStartTime))
+	e.me.RecordOverheadTime(metrics.NonErrorPrepareOrtbBidderRequests, time.Since(pbsRequestStartTime))
 
 	bidderRequestStartTime := time.Now()
 	for _, bidder := range bidderRequests {
@@ -1525,6 +1525,6 @@ func setErrorMessageSecureMarkup(validationType string) string {
 
 func (e *exchange) recordResponsePreparationMetrics(ae map[openrtb_ext.BidderName]*seatResponseExtra, requestType metrics.RequestType, now time.Time) {
 	for _, resp := range ae {
-		e.me.RecordOverheadTime(metrics.NonErrorOrtbResponsePreparationOverhead, resp.SeatBidsPreparationStartTime.Sub(now))
+		e.me.RecordOverheadTime(metrics.NonErrorPrepareOrtbResponse, resp.SeatBidsPreparationStartTime.Sub(now))
 	}
 }
