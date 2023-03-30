@@ -3,6 +3,7 @@ package openrtb_ext
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 
 	"github.com/prebid/openrtb/v17/openrtb2"
 )
@@ -392,4 +393,62 @@ func getAdjustmentArrayHelper(bidAdjMap map[string]map[string][]Adjustments, bid
 		}
 	}
 	return nil
+}
+
+func (bidAdjustments ExtRequestPrebidBidAdjustments) ValidateBidAdjustments() bool {
+	if bidAdjustments.MediaType.Banner != nil {
+		if valid := validateBidAdjustmentsHelper(bidAdjustments.MediaType.Banner); !valid {
+			return false
+		}
+	}
+	if bidAdjustments.MediaType.Video != nil {
+		if valid := validateBidAdjustmentsHelper(bidAdjustments.MediaType.Video); !valid {
+			return false
+		}
+	}
+	if bidAdjustments.MediaType.Audio != nil {
+		if valid := validateBidAdjustmentsHelper(bidAdjustments.MediaType.Audio); !valid {
+			return false
+		}
+	}
+	if bidAdjustments.MediaType.Native != nil {
+		if valid := validateBidAdjustmentsHelper(bidAdjustments.MediaType.Native); !valid {
+			return false
+		}
+	}
+	return true
+}
+
+func validateBidAdjustmentsHelper(bidAdjMap map[string]map[string][]Adjustments) bool {
+	for bidderName, _ := range bidAdjMap {
+		for dealId, _ := range bidAdjMap[bidderName] {
+			for _, adjustment := range bidAdjMap[bidderName][dealId] {
+				if !validateAdjustment(adjustment) {
+					return false
+				}
+			}
+		}
+	}
+	return true
+}
+
+func validateAdjustment(adjustment Adjustments) bool {
+	switch adjustment.AdjType {
+	case AdjTypeCpm:
+		if adjustment.Currency == "" || adjustment.Value < 0 || adjustment.Value > math.MaxFloat64 {
+			return false
+		}
+	case AdjTypeMultiplier:
+		if adjustment.Value < 0 || adjustment.Value > 100 {
+			return false
+		}
+		adjustment.Currency = ""
+	case AdjTypeStatic:
+		if adjustment.Currency == "" || adjustment.Value < 0 || adjustment.Value > math.MaxFloat64 {
+			return false
+		}
+	default:
+		return false
+	}
+	return true
 }

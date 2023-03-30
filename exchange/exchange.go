@@ -274,6 +274,20 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		}
 	}
 
+	mergedBidAdj, err := mergeBidAdjustments(r.BidRequestWrapper, r.Account.BidAdjustments)
+	if err != nil {
+		return nil, err
+	}
+	if valid := mergedBidAdj.ValidateBidAdjustments(); !valid {
+		mergedBidAdj = nil
+		if requestExt.Prebid.Debug {
+			errs = append(errs, &errortypes.Warning{
+				WarningCode: errortypes.BidAdjustmentWarningCode,
+				Message:     "Bid Adjustment Was Invalid",
+			})
+		}
+	}
+
 	bidAdjustmentFactors := getExtBidAdjustmentFactors(requestExt)
 
 	recordImpMetrics(r.BidRequestWrapper.BidRequest, e.me)
@@ -324,7 +338,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		} else if r.Account.AlternateBidderCodes != nil {
 			alternateBidderCodes = *r.Account.AlternateBidderCodes
 		}
-		adapterBids, adapterExtra, fledge, anyBidsReturned = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, alternateBidderCodes, requestExt.Prebid.Experiment, r.HookExecutor, requestExt.Prebid.BidAdjustments)
+		adapterBids, adapterExtra, fledge, anyBidsReturned = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, alternateBidderCodes, requestExt.Prebid.Experiment, r.HookExecutor, mergedBidAdj)
 	}
 
 	var auc *auction
@@ -1433,4 +1447,57 @@ func setErrorMessageSecureMarkup(validationType string) string {
 		return "bidResponse secure markup warning: insecure creative in secure contexts"
 	}
 	return ""
+}
+
+func mergeBidAdjustments(req *openrtb_ext.RequestWrapper, account *openrtb_ext.ExtRequestPrebidBidAdjustments) (*openrtb_ext.ExtRequestPrebidBidAdjustments, error) {
+	reqExt, err := req.GetRequestExt()
+	if err != nil {
+		return nil, err
+	}
+	extPrebid := reqExt.GetPrebid()
+
+	if extPrebid == nil && account != nil {
+		return account, nil
+	}
+
+	if extPrebid.BidAdjustments.MediaType.Banner != nil && account.MediaType.Banner != nil {
+		extPrebid.BidAdjustments.MediaType.Banner = mergeBidAdjustmentsHelper(extPrebid.BidAdjustments.MediaType.Banner, account.MediaType.Banner)
+	} else if account.MediaType.Banner != nil {
+		extPrebid.BidAdjustments.MediaType.Banner = account.MediaType.Banner
+	}
+
+	if extPrebid.BidAdjustments.MediaType.Video != nil && account.MediaType.Video != nil {
+		extPrebid.BidAdjustments.MediaType.Video = mergeBidAdjustmentsHelper(extPrebid.BidAdjustments.MediaType.Video, account.MediaType.Video)
+	} else if account.MediaType.Video != nil {
+		extPrebid.BidAdjustments.MediaType.Video = account.MediaType.Video
+	}
+
+	if extPrebid.BidAdjustments.MediaType.Native != nil && account.MediaType.Native != nil {
+		extPrebid.BidAdjustments.MediaType.Native = mergeBidAdjustmentsHelper(extPrebid.BidAdjustments.MediaType.Native, account.MediaType.Native)
+	} else if account.MediaType.Native != nil {
+		extPrebid.BidAdjustments.MediaType.Native = account.MediaType.Native
+	}
+
+	if extPrebid.BidAdjustments.MediaType.Audio != nil && account.MediaType.Audio != nil {
+		extPrebid.BidAdjustments.MediaType.Audio = mergeBidAdjustmentsHelper(extPrebid.BidAdjustments.MediaType.Audio, account.MediaType.Audio)
+	} else if account.MediaType.Audio != nil {
+		extPrebid.BidAdjustments.MediaType.Audio = account.MediaType.Audio
+	}
+	return extPrebid.BidAdjustments, nil
+}
+
+// TODO: Better function name?
+func mergeBidAdjustmentsHelper(hostAdjMap map[string]map[string][]openrtb_ext.Adjustments, accountAdjMap map[string]map[string][]openrtb_ext.Adjustments) map[string]map[string][]openrtb_ext.Adjustments {
+	for bidderName, dealIdToAdjustmentsMap := range accountAdjMap {
+		if _, ok := hostAdjMap[bidderName]; ok {
+			for dealID, acctAdjustmentsArray := range accountAdjMap[bidderName] {
+				if _, okay := hostAdjMap[bidderName][dealID]; !okay {
+					hostAdjMap[bidderName][dealID] = acctAdjustmentsArray
+				}
+			}
+		} else {
+			hostAdjMap[bidderName] = dealIdToAdjustmentsMap
+		}
+	}
+	return hostAdjMap
 }

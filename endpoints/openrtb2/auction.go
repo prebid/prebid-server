@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -438,12 +437,6 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		return
 	}
 
-	// Merge Host and Account Bid Adjustment Info
-	if err := mergeBidAdjustments(req, account.BidAdjustments); err != nil {
-		errs = []error{err}
-		return
-	}
-
 	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
 	deps.setFieldsImplicitly(httpRequest, req)
 
@@ -860,64 +853,6 @@ func (deps *endpointDeps) validateBidAdjustmentFactors(adjustmentFactors map[str
 		}
 	}
 	return nil
-}
-
-func validateBidAdjustments(bidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments) bool {
-	if bidAdjustments.MediaType.Banner != nil {
-		if valid := validateBidAdjustmentsHelper(bidAdjustments.MediaType.Banner); !valid {
-			return false
-		}
-	}
-	if bidAdjustments.MediaType.Video != nil {
-		if valid := validateBidAdjustmentsHelper(bidAdjustments.MediaType.Video); !valid {
-			return false
-		}
-	}
-	if bidAdjustments.MediaType.Audio != nil {
-		if valid := validateBidAdjustmentsHelper(bidAdjustments.MediaType.Audio); !valid {
-			return false
-		}
-	}
-	if bidAdjustments.MediaType.Native != nil {
-		if valid := validateBidAdjustmentsHelper(bidAdjustments.MediaType.Native); !valid {
-			return false
-		}
-	}
-	return true
-}
-
-func validateBidAdjustmentsHelper(bidAdjMap map[string]map[string][]openrtb_ext.Adjustments) bool {
-	for bidderName, _ := range bidAdjMap {
-		for dealId, _ := range bidAdjMap[bidderName] {
-			for _, adjustment := range bidAdjMap[bidderName][dealId] {
-				if !validateAdjustment(adjustment) {
-					return false
-				}
-			}
-		}
-	}
-	return true
-}
-
-func validateAdjustment(adjustment openrtb_ext.Adjustments) bool {
-	switch adjustment.AdjType {
-	case openrtb_ext.AdjTypeCpm:
-		if adjustment.Currency == "" || adjustment.Value < 0 || adjustment.Value > math.MaxFloat64 {
-			return false
-		}
-	case openrtb_ext.AdjTypeMultiplier:
-		if adjustment.Value < 0 || adjustment.Value > 100 {
-			return false
-		}
-		adjustment.Currency = ""
-	case openrtb_ext.AdjTypeStatic:
-		if adjustment.Currency == "" || adjustment.Value < 0 || adjustment.Value > math.MaxFloat64 {
-			return false
-		}
-	default:
-		return false
-	}
-	return true
 }
 
 func validateSChains(sChains []*openrtb_ext.ExtRequestPrebidSChain) error {
@@ -1600,7 +1535,7 @@ func validateRequestExt(req *openrtb_ext.RequestWrapper) []error {
 		reqExt.SetPrebid(prebid)
 	}
 
-	if valid := validateBidAdjustments(prebid.BidAdjustments); !valid {
+	if valid := prebid.BidAdjustments.ValidateBidAdjustments(); !valid {
 		prebid.BidAdjustments = nil
 		reqExt.SetPrebid(prebid)
 		if prebid.Debug {
@@ -2355,60 +2290,4 @@ func validateStoredBidRespAndImpExtBidders(bidderExts map[string]json.RawMessage
 
 func generateStoredBidResponseValidationError(impID string) error {
 	return fmt.Errorf("request validation failed. Stored bid responses are specified for imp %s. Bidders specified in imp.ext should match with bidders specified in imp.ext.prebid.storedbidresponse", impID)
-}
-
-func mergeBidAdjustments(req *openrtb_ext.RequestWrapper, account *openrtb_ext.ExtRequestPrebidBidAdjustments) error {
-	reqExt, err := req.GetRequestExt()
-	if err != nil {
-		return err
-	}
-	host := reqExt.GetPrebid()
-
-	if host == nil && account != nil {
-		host.BidAdjustments = account
-		reqExt.SetPrebid(host)
-	}
-
-	if host.BidAdjustments.MediaType.Banner != nil && account.MediaType.Banner != nil {
-		host.BidAdjustments.MediaType.Banner = mergeBidAdjustmentsHelper(host.BidAdjustments.MediaType.Banner, account.MediaType.Banner)
-	} else if account.MediaType.Banner != nil {
-		host.BidAdjustments.MediaType.Banner = account.MediaType.Banner
-	}
-
-	if host.BidAdjustments.MediaType.Video != nil && account.MediaType.Video != nil {
-		host.BidAdjustments.MediaType.Video = mergeBidAdjustmentsHelper(host.BidAdjustments.MediaType.Video, account.MediaType.Video)
-	} else if account.MediaType.Video != nil {
-		host.BidAdjustments.MediaType.Video = account.MediaType.Video
-	}
-
-	if host.BidAdjustments.MediaType.Native != nil && account.MediaType.Native != nil {
-		host.BidAdjustments.MediaType.Native = mergeBidAdjustmentsHelper(host.BidAdjustments.MediaType.Native, account.MediaType.Native)
-	} else if account.MediaType.Native != nil {
-		host.BidAdjustments.MediaType.Native = account.MediaType.Native
-	}
-
-	if host.BidAdjustments.MediaType.Audio != nil && account.MediaType.Audio != nil {
-		host.BidAdjustments.MediaType.Audio = mergeBidAdjustmentsHelper(host.BidAdjustments.MediaType.Audio, account.MediaType.Audio)
-	} else if account.MediaType.Audio != nil {
-		host.BidAdjustments.MediaType.Audio = account.MediaType.Audio
-	}
-
-	reqExt.SetPrebid(host)
-	return nil
-}
-
-// TODO: Better function name?
-func mergeBidAdjustmentsHelper(hostAdjMap map[string]map[string][]openrtb_ext.Adjustments, accountAdjMap map[string]map[string][]openrtb_ext.Adjustments) map[string]map[string][]openrtb_ext.Adjustments {
-	for bidderName, dealIdToAdjustmentsMap := range accountAdjMap {
-		if _, ok := hostAdjMap[bidderName]; ok {
-			for dealID, acctAdjustmentsArray := range accountAdjMap[bidderName] {
-				if _, okay := hostAdjMap[bidderName][dealID]; !okay {
-					hostAdjMap[bidderName][dealID] = acctAdjustmentsArray
-				}
-			}
-		} else {
-			hostAdjMap[bidderName] = dealIdToAdjustmentsMap
-		}
-	}
-	return hostAdjMap
 }
