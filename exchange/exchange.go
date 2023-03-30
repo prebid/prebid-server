@@ -1524,7 +1524,7 @@ func setErrorMessageSecureMarkup(validationType string) string {
 
 func (e *exchange) recordResponsePreparationMetrics(ae map[openrtb_ext.BidderName]*seatResponseExtra, requestType metrics.RequestType, now time.Time) {
 	labels := metrics.OverheadLabels{
-		OverheadType: metrics.NonErrorPostBidderResponseOverhead,
+		OverheadType: metrics.NonErrorOrtbResponsePreparationOverhead,
 	}
 
 	for _, resp := range ae {

@@ -543,7 +543,7 @@ func TestRecordOverheadTimeMetric(t *testing.T) {
 		},
 		{
 			description:   "record-post-request-overhead-time",
-			overheadType:  metrics.NonErrorPostBidderResponseOverhead,
+			overheadType:  metrics.NonErrorOrtbResponsePreparationOverhead,
 			timeInMs:      500,
 			expectedCount: 1,
 			expectedSum:   0.5,

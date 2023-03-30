@@ -81,7 +81,7 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "ads_cert_requests.failed", m.AdsCertRequestsFailure)
 
 	ensureContains(t, registry, "request_over_head_time.non-error-pre-bidder-request", m.OverheadTimer[NonErrorPreBidderRequestOverhead])
-	ensureContains(t, registry, "request_over_head_time.non-error-post-bidder-response", m.OverheadTimer[NonErrorPostBidderResponseOverhead])
+	ensureContains(t, registry, "request_over_head_time.non-error-ortb-response-preparation", m.OverheadTimer[NonErrorOrtbResponsePreparationOverhead])
 	ensureContains(t, registry, "request_over_head_time.non-error-split-ortb-req-into-bidder-requests", m.OverheadTimer[NonErrorSplitOrtbReqIntoBidderRequestsOverhead])
 
 	for module, stages := range moduleStageNames {
@@ -1222,7 +1222,7 @@ func TestRecordOverheadTime(t *testing.T) {
 		{
 			name:          "record-post-response-overhead-time",
 			time:          time.Duration(500),
-			labels:        OverheadLabels{OverheadType: NonErrorPostBidderResponseOverhead},
+			labels:        OverheadLabels{OverheadType: NonErrorOrtbResponsePreparationOverhead},
 			expectedCount: 1,
 			expectedSum:   500,
 		},

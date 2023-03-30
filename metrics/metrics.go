@@ -31,7 +31,7 @@ type OverheadType string
 
 const (
 	NonErrorPreBidderRequestOverhead               OverheadType = "non-error-pre-bidder-request"
-	NonErrorPostBidderResponseOverhead             OverheadType = "non-error-post-bidder-response"
+	NonErrorOrtbResponsePreparationOverhead        OverheadType = "non-error-ortb-response-preparation"
 	NonErrorSplitOrtbReqIntoBidderRequestsOverhead OverheadType = "non-error-split-ortb-req-into-bidder-requests"
 )
 
@@ -40,7 +40,7 @@ func (t OverheadType) String() string {
 }
 
 func OverheadTypes() []OverheadType {
-	return []OverheadType{NonErrorPreBidderRequestOverhead, NonErrorPostBidderResponseOverhead, NonErrorSplitOrtbReqIntoBidderRequestsOverhead}
+	return []OverheadType{NonErrorPreBidderRequestOverhead, NonErrorOrtbResponsePreparationOverhead, NonErrorSplitOrtbReqIntoBidderRequestsOverhead}
 }
 
 // OverheadLabels defines labels describing the overhead time needed to prepare request or process response
