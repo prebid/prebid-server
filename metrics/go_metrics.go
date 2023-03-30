@@ -386,8 +386,8 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 
 func makeBlankOverheadTimerMetrics() map[OverheadType]metrics.Timer {
 	return map[OverheadType]metrics.Timer{
-		PreBidderRequest:   &metrics.NilTimer{},
-		PostBidderResponse: &metrics.NilTimer{},
+		NonErrorPreBidderRequestOverhead:   &metrics.NilTimer{},
+		NonErrorPostBidderResponseOverhead: &metrics.NilTimer{},
 	}
 }
 
@@ -459,8 +459,8 @@ func makeBlankMarkupDeliveryMetrics() *MarkupDeliveryMetrics {
 
 func makeOverheadTimerMetrics(registry metrics.Registry) map[OverheadType]metrics.Timer {
 	return map[OverheadType]metrics.Timer{
-		PreBidderRequest:   metrics.GetOrRegisterTimer("request_over_head_time."+PreBidderRequest.String(), registry),
-		PostBidderResponse: metrics.GetOrRegisterTimer("request_over_head_time."+PostBidderResponse.String(), registry),
+		NonErrorPreBidderRequestOverhead:   metrics.GetOrRegisterTimer("request_over_head_time."+NonErrorPreBidderRequestOverhead.String(), registry),
+		NonErrorPostBidderResponseOverhead: metrics.GetOrRegisterTimer("request_over_head_time."+NonErrorPostBidderResponseOverhead.String(), registry),
 	}
 }
 

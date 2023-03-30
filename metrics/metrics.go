@@ -30,8 +30,8 @@ type AdapterLabels struct {
 type OverheadType string
 
 const (
-	PreBidderRequest   OverheadType = "pre-bidder-request"
-	PostBidderResponse OverheadType = "post-bidder-request"
+	NonErrorPreBidderRequestOverhead   OverheadType = "non-error-pre-bidder-request"
+	NonErrorPostBidderResponseOverhead OverheadType = "non-error-post-bidder-response"
 )
 
 func (t OverheadType) String() string {
@@ -39,7 +39,7 @@ func (t OverheadType) String() string {
 }
 
 func OverheadTypes() []OverheadType {
-	return []OverheadType{PreBidderRequest, PostBidderResponse}
+	return []OverheadType{NonErrorPreBidderRequestOverhead, NonErrorPostBidderResponseOverhead}
 }
 
 // OverheadLabels defines labels describing the overhead time needed to prepare request or process response

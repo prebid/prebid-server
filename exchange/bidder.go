@@ -170,7 +170,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 		// If the bidder only needs to make one, save some cycles by just using the current one.
 		dataLen = len(reqData) + len(bidderRequest.BidderStoredResponses)
 		responseChannel = make(chan *httpCallInfo, dataLen)
-		preReqOverheadlabels := metrics.OverheadLabels{OverheadType: metrics.PreBidderRequest}
+		preReqOverheadlabels := metrics.OverheadLabels{OverheadType: metrics.NonErrorPreBidderRequestOverhead}
 		if len(reqData) == 1 {
 			responseChannel <- bidder.doRequest(ctx, reqData[0], reqInfo.PbsEntryPointStartTime, preReqOverheadlabels)
 		} else {
