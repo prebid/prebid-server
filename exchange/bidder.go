@@ -172,11 +172,11 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 		responseChannel = make(chan *httpCallInfo, dataLen)
 		preReqOverheadlabels := metrics.OverheadLabels{OverheadType: metrics.NonErrorPreBidderRequestOverhead}
 		if len(reqData) == 1 {
-			responseChannel <- bidder.doRequest(ctx, reqData[0], reqInfo.PbsEntryPointStartTime, preReqOverheadlabels)
+			responseChannel <- bidder.doRequest(ctx, reqData[0], reqInfo.BidderRequestStartTime, preReqOverheadlabels)
 		} else {
 			for _, oneReqData := range reqData {
 				go func(data *adapters.RequestData) {
-					responseChannel <- bidder.doRequest(ctx, data, reqInfo.PbsEntryPointStartTime, preReqOverheadlabels)
+					responseChannel <- bidder.doRequest(ctx, data, reqInfo.BidderRequestStartTime, preReqOverheadlabels)
 				}(oneReqData) // Method arg avoids a race condition on oneReqData
 			}
 		}

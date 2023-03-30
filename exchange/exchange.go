@@ -613,6 +613,7 @@ func (e *exchange) getAllBids(
 
 	e.me.RecordOverheadTime(metrics.OverheadLabels{OverheadType: metrics.NonErrorSplitOrtbReqIntoBidderRequestsOverhead}, time.Since(pbsRequestStartTime))
 
+	bidderRequestStartTime := time.Now()
 	for _, bidder := range bidderRequests {
 		// Here we actually call the adapters and collect the bids.
 		bidderRunner := e.recoverSafely(bidderRequests, func(bidderRequest BidderRequest, conversions currency.Conversions) {
@@ -633,7 +634,7 @@ func (e *exchange) getAllBids(
 			reqInfo := adapters.NewExtraRequestInfo(conversions)
 			reqInfo.PbsEntryPoint = bidderRequest.BidderLabels.RType
 			reqInfo.GlobalPrivacyControlHeader = globalPrivacyControlHeader
-			reqInfo.PbsEntryPointStartTime = pbsRequestStartTime
+			reqInfo.BidderRequestStartTime = bidderRequestStartTime
 
 			bidReqOptions := bidRequestOptions{
 				accountDebugAllowed: accountDebugAllowed,
