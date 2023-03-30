@@ -559,9 +559,7 @@ func TestRecordOverheadTimeMetric(t *testing.T) {
 
 	metric := createMetricsForTesting()
 	for _, test := range testCases {
-		metric.RecordOverheadTime(metrics.OverheadLabels{
-			OverheadType: test.overheadType,
-		}, time.Duration(test.timeInMs)*time.Millisecond)
+		metric.RecordOverheadTime(test.overheadType, time.Duration(test.timeInMs)*time.Millisecond)
 		resultingHistogram := getHistogramFromHistogramVec(metric.overheadTimer, overheadTypeLabel, test.overheadType.String())
 		assertHistogram(t, test.description, resultingHistogram, test.expectedCount, test.expectedSum)
 	}

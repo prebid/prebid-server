@@ -43,11 +43,6 @@ func OverheadTypes() []OverheadType {
 	return []OverheadType{NonErrorPreBidderRequestOverhead, NonErrorOrtbResponsePreparationOverhead, NonErrorSplitOrtbReqIntoBidderRequestsOverhead}
 }
 
-// OverheadLabels defines labels describing the overhead time needed to prepare request or process response
-type OverheadLabels struct {
-	OverheadType OverheadType
-}
-
 // ImpLabels defines metric labels describing the impression type.
 type ImpLabels struct {
 	BannerImps bool
@@ -433,7 +428,7 @@ type MetricsEngine interface {
 	RecordRequest(labels Labels)                           // ignores adapter. only statusOk and statusErr fom status
 	RecordImps(labels ImpLabels)                           // RecordImps across openRTB2 engines that support the 'Native' Imp Type
 	RecordRequestTime(labels Labels, length time.Duration) // ignores adapter. only statusOk and statusErr fom status
-	RecordOverheadTime(labels OverheadLabels, length time.Duration)
+	RecordOverheadTime(overHead OverheadType, length time.Duration)
 	RecordAdapterRequest(labels AdapterLabels)
 	RecordAdapterConnections(adapterName openrtb_ext.BidderName, connWasReused bool, connWaitTime time.Duration)
 	RecordDNSTime(dnsLookupTime time.Duration)

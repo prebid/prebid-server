@@ -1201,35 +1201,35 @@ func TestRecordOverheadTime(t *testing.T) {
 	testCases := []struct {
 		name          string
 		time          time.Duration
-		labels        OverheadLabels
+		overheadType  OverheadType
 		expectedCount int64
 		expectedSum   int64
 	}{
 		{
 			name:          "record-pre-request-overhead-time",
 			time:          time.Duration(500),
-			labels:        OverheadLabels{OverheadType: NonErrorPreBidderRequestOverhead},
+			overheadType:  NonErrorPreBidderRequestOverhead,
 			expectedCount: 1,
 			expectedSum:   500,
 		},
 		{
 			name:          "record-pre-request-overhead-time",
 			time:          time.Duration(500),
-			labels:        OverheadLabels{OverheadType: NonErrorPreBidderRequestOverhead},
+			overheadType:  NonErrorPreBidderRequestOverhead,
 			expectedCount: 2,
 			expectedSum:   1000,
 		},
 		{
 			name:          "record-post-response-overhead-time",
 			time:          time.Duration(500),
-			labels:        OverheadLabels{OverheadType: NonErrorOrtbResponsePreparationOverhead},
+			overheadType:  NonErrorOrtbResponsePreparationOverhead,
 			expectedCount: 1,
 			expectedSum:   500,
 		},
 		{
 			name:          "record-split-ortb-req-into-bidder-requests-overhead-time",
 			time:          time.Duration(500),
-			labels:        OverheadLabels{OverheadType: NonErrorSplitOrtbReqIntoBidderRequestsOverhead},
+			overheadType:  NonErrorSplitOrtbReqIntoBidderRequestsOverhead,
 			expectedCount: 1,
 			expectedSum:   500,
 		},
@@ -1238,8 +1238,8 @@ func TestRecordOverheadTime(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			m := NewMetrics(registry, []openrtb_ext.BidderName{}, config.DisabledMetrics{}, nil, nil)
-			m.RecordOverheadTime(test.labels, test.time)
-			overheadMetrics := m.OverheadTimer[test.labels.OverheadType]
+			m.RecordOverheadTime(test.overheadType, test.time)
+			overheadMetrics := m.OverheadTimer[test.overheadType]
 			assert.Equal(t, test.expectedCount, overheadMetrics.Count())
 			assert.Equal(t, test.expectedSum, overheadMetrics.Sum())
 		})

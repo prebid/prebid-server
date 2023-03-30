@@ -171,9 +171,9 @@ func (me *MultiMetricsEngine) RecordAdapterTime(labels metrics.AdapterLabels, le
 }
 
 // RecordOverheadTime across all engines
-func (me *MultiMetricsEngine) RecordOverheadTime(labels metrics.OverheadLabels, length time.Duration) {
+func (me *MultiMetricsEngine) RecordOverheadTime(overhead metrics.OverheadType, length time.Duration) {
 	for _, thisME := range *me {
-		thisME.RecordOverheadTime(labels, length)
+		thisME.RecordOverheadTime(overhead, length)
 	}
 }
 
@@ -438,7 +438,7 @@ func (me *NilMetricsEngine) RecordAdapterTime(labels metrics.AdapterLabels, leng
 }
 
 // RecordOverheadTime as a noop
-func (me *NilMetricsEngine) RecordOverheadTime(labels metrics.OverheadLabels, length time.Duration) {
+func (me *NilMetricsEngine) RecordOverheadTime(overhead metrics.OverheadType, length time.Duration) {
 }
 
 // RecordCookieSync as a noop

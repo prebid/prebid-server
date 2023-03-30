@@ -871,10 +871,8 @@ func (me *Metrics) RecordAdapterTime(labels AdapterLabels, length time.Duration)
 }
 
 // RecordOverheadTime implements a part of the MetricsEngine interface. Records the adapter overhead time
-func (me *Metrics) RecordOverheadTime(labels OverheadLabels, length time.Duration) {
-	if labels.OverheadType != "" {
-		me.OverheadTimer[labels.OverheadType].Update(length)
-	}
+func (me *Metrics) RecordOverheadTime(overhead OverheadType, length time.Duration) {
+	me.OverheadTimer[overhead].Update(length)
 }
 
 // RecordCookieSync implements a part of the MetricsEngine interface. Records a cookie sync request

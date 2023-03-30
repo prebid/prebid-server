@@ -921,9 +921,9 @@ func (m *Metrics) RecordAdapterPrice(labels metrics.AdapterLabels, cpm float64) 
 	}).Observe(cpm)
 }
 
-func (m *Metrics) RecordOverheadTime(labels metrics.OverheadLabels, duration time.Duration) {
+func (m *Metrics) RecordOverheadTime(overhead metrics.OverheadType, duration time.Duration) {
 	m.overheadTimer.With(prometheus.Labels{
-		overheadTypeLabel: labels.OverheadType.String(),
+		overheadTypeLabel: overhead.String(),
 	}).Observe(duration.Seconds())
 }
 
