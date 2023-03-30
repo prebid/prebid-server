@@ -395,7 +395,7 @@ func TestShouldNotPassEventToAnalyticsReporterWhenAccountNotFoundAndDefaultIsFal
 
 	// validate
 	assert.Equal(t, 401, recorder.Result().StatusCode, "Expected 401 on account not found")
-	assert.Equal(t, "Account 'testacc' or server doesn't support events", string(d))
+	assert.Equal(t, "Account 'testacc' doesn't support events", string(d))
 }
 
 func TestShouldReturnBadRequestWhenIntegrationValueIsInvalid(t *testing.T) {

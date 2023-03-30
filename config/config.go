@@ -688,6 +688,12 @@ func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName func(strin
 
 	// Update account defaults and generate base json for patch
 	c.AccountDefaults.CacheTTL = c.CacheURL.DefaultTTLs // comment this out to set explicitly in config
+
+	// update deprecated and new events enabled values for account defaults
+	accountDefaultsEventsEnabled := IsAccountDefaultsEventEnabled(c.AccountDefaults.EventsEnabled, c.AccountDefaults.Events.Enabled)
+	*c.AccountDefaults.EventsEnabled = accountDefaultsEventsEnabled
+	c.AccountDefaults.Events.Enabled = false
+
 	if err := c.MarshalAccountDefaults(); err != nil {
 		return nil, err
 	}
@@ -1477,4 +1483,28 @@ func isValidCookieSize(maxCookieSize int) error {
 		return fmt.Errorf("Configured cookie size is less than allowed minimum size of %d \n", MIN_COOKIE_SIZE_BYTES)
 	}
 	return nil
+}
+
+// isAccountEventEnabled checks if event is enabled for account or not.
+// "account.events_enabled", which is deprecated, is still in use in some incoming requests so we'd like to still use its value whenever  "account.events.enabled" is not found.
+// Once we've identified if events are enabled or not, we can set the resulting boolean value into account.Events.Enabled and set account.EventsEnabled to nil.
+func IsAccountEventEnabled(deprecated_events_enabled *bool, events_enabled bool) bool {
+	if deprecated_events_enabled == nil {
+		return events_enabled
+	} else if *deprecated_events_enabled {
+		return true
+	} else {
+		return events_enabled
+	}
+}
+
+// isAccountEventEnabled checks if event is enabled by default for account or not.
+func IsAccountDefaultsEventEnabled(deprecated_accounts_defaults_events_enabled *bool, accounts_defaults_events_enabled bool) bool {
+	if deprecated_accounts_defaults_events_enabled == nil {
+		return accounts_defaults_events_enabled
+	} else if *deprecated_accounts_defaults_events_enabled {
+		return true
+	} else {
+		return accounts_defaults_events_enabled
+	}
 }

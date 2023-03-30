@@ -3196,3 +3196,155 @@ func TestTCF2FeatureOneVendorException(t *testing.T) {
 		assert.Equal(t, tt.wantIsVendorException, value, tt.description)
 	}
 }
+
+func TestIsAccountEventEnabled(t *testing.T) {
+	tests := []struct {
+		name                    string
+		deprecatedEventsEnabled *bool
+		eventsEnabled           bool
+		expectedIsEventEnabled  bool
+	}{
+		{
+			name:                    "events disabled, events.enabled false",
+			deprecatedEventsEnabled: boolPointer(false),
+			eventsEnabled:           false,
+			expectedIsEventEnabled:  false,
+		},
+		{
+			name:                    "events disabled, events.enabled true",
+			deprecatedEventsEnabled: boolPointer(false),
+			eventsEnabled:           true,
+			expectedIsEventEnabled:  true,
+		},
+		{
+			name:                    "events disabled, events.enabled not set",
+			deprecatedEventsEnabled: boolPointer(false),
+			eventsEnabled:           false,
+			expectedIsEventEnabled:  false,
+		},
+		{
+			name:                    "events enabled, events.enabled false",
+			deprecatedEventsEnabled: boolPointer(true),
+			eventsEnabled:           false,
+			expectedIsEventEnabled:  true,
+		},
+		{
+			name:                    "events enabled, events.enabled true",
+			deprecatedEventsEnabled: boolPointer(true),
+			eventsEnabled:           true,
+			expectedIsEventEnabled:  true,
+		},
+		{
+			name:                    "events enabled, events.enabled not set",
+			deprecatedEventsEnabled: boolPointer(true),
+			eventsEnabled:           true,
+			expectedIsEventEnabled:  true,
+		},
+		{
+			name:                    "events not set, events.enabled false",
+			deprecatedEventsEnabled: nil,
+			eventsEnabled:           false,
+			expectedIsEventEnabled:  false,
+		},
+		{
+			name:                    "events not set, events.enabled true",
+			deprecatedEventsEnabled: nil,
+			eventsEnabled:           true,
+			expectedIsEventEnabled:  true,
+		},
+		{
+			name:                    "events not set, events.enabled not set",
+			deprecatedEventsEnabled: nil,
+			eventsEnabled:           false,
+			expectedIsEventEnabled:  false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			actualIsEventEnabled := IsAccountEventEnabled(test.deprecatedEventsEnabled, test.eventsEnabled)
+
+			if actualIsEventEnabled != test.expectedIsEventEnabled {
+				t.Errorf("IsAccountEventEnabled() returned %v, but expected %v", actualIsEventEnabled, test.expectedIsEventEnabled)
+			}
+		})
+	}
+}
+
+func boolPointer(b bool) *bool {
+	return &b
+}
+
+func TestIsAccountDefaultsEventEnabled(t *testing.T) {
+	tests := []struct {
+		name                              string
+		deprecatedAccountsDefaultsEnabled *bool
+		accountsDefaultsEventsEnabled     bool
+		expectedIsAccountDefaultsEnabled  bool
+	}{
+		{
+			name:                              "deprecated event defaults disabled, account defaults event enabled false",
+			deprecatedAccountsDefaultsEnabled: boolPointer(false),
+			accountsDefaultsEventsEnabled:     false,
+			expectedIsAccountDefaultsEnabled:  false,
+		},
+		{
+			name:                              "deprecated event defaults disabled, account defaults event enabled true",
+			deprecatedAccountsDefaultsEnabled: boolPointer(false),
+			accountsDefaultsEventsEnabled:     true,
+			expectedIsAccountDefaultsEnabled:  true,
+		},
+		{
+			name:                              "deprecated event defaults disabled, account defaults event enabled not set",
+			deprecatedAccountsDefaultsEnabled: boolPointer(false),
+			accountsDefaultsEventsEnabled:     false,
+			expectedIsAccountDefaultsEnabled:  false,
+		},
+		{
+			name:                              "deprecated event defaults enabled, account defaults event enabled false",
+			deprecatedAccountsDefaultsEnabled: boolPointer(true),
+			accountsDefaultsEventsEnabled:     false,
+			expectedIsAccountDefaultsEnabled:  true,
+		},
+		{
+			name:                              "deprecated event defaults enabled, account defaults event enabled true",
+			deprecatedAccountsDefaultsEnabled: boolPointer(true),
+			accountsDefaultsEventsEnabled:     true,
+			expectedIsAccountDefaultsEnabled:  true,
+		},
+		{
+			name:                              "deprecated event defaults enabled, account defaults event enabled not set",
+			deprecatedAccountsDefaultsEnabled: boolPointer(true),
+			accountsDefaultsEventsEnabled:     true,
+			expectedIsAccountDefaultsEnabled:  true,
+		},
+		{
+			name:                              "deprecated event defaults not set, account defaults event enabled false",
+			deprecatedAccountsDefaultsEnabled: nil,
+			accountsDefaultsEventsEnabled:     false,
+			expectedIsAccountDefaultsEnabled:  false,
+		},
+		{
+			name:                              "deprecated event defaults not set, account defaults event enabled true",
+			deprecatedAccountsDefaultsEnabled: nil,
+			accountsDefaultsEventsEnabled:     true,
+			expectedIsAccountDefaultsEnabled:  true,
+		},
+		{
+			name:                              "deprecated event defaults not set, account defaults event enabled not set",
+			deprecatedAccountsDefaultsEnabled: nil,
+			accountsDefaultsEventsEnabled:     false,
+			expectedIsAccountDefaultsEnabled:  false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			actualIsAccountDefaultsEnabled := IsAccountDefaultsEventEnabled(test.deprecatedAccountsDefaultsEnabled, test.accountsDefaultsEventsEnabled)
+
+			if actualIsAccountDefaultsEnabled != test.expectedIsAccountDefaultsEnabled {
+				t.Errorf("IsAccountDefaultsEventEnabled() returned %v, but expected %v", actualIsAccountDefaultsEnabled, test.expectedIsAccountDefaultsEnabled)
+			}
+		})
+	}
+}

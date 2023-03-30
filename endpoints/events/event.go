@@ -107,17 +107,25 @@ func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprou
 		return
 	}
 
-	// account does not support events and events are not enabled by default for accounts
-	if account.EventsEnabled != nil {
-		if !*account.EventsEnabled {
+	// check if events are enabled for account and update deprecated and new event enabled fields.
+	accountEventEnabled := config.IsAccountEventEnabled(account.EventsEnabled, account.Events.Enabled)
+	account.Events.Enabled = accountEventEnabled
+	account.EventsEnabled = nil
+	// check if events are enabled by default for account
+	if !accountEventEnabled {
+		accountDefaultsEventsEnabled := config.IsAccountDefaultsEventEnabled(e.Cfg.AccountDefaults.EventsEnabled, e.Cfg.AccountDefaults.Events.Enabled)
+		if e.Cfg.AccountDefaults.EventsEnabled == nil {
+			e.Cfg.AccountDefaults.EventsEnabled = new(bool)
+			*e.Cfg.AccountDefaults.EventsEnabled = accountDefaultsEventsEnabled
+		} else {
+			*e.Cfg.AccountDefaults.EventsEnabled = accountDefaultsEventsEnabled
+		}
+		e.Cfg.AccountDefaults.Events.Enabled = false
+		if !accountDefaultsEventsEnabled {
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte(fmt.Sprintf("Account '%s' doesn't support events", eventRequest.AccountID)))
 			return
 		}
-	} else if e.Cfg.AccountDefaults.EventsEnabled == nil || !*e.Cfg.AccountDefaults.EventsEnabled {
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(fmt.Sprintf("Account '%s' or server doesn't support events", eventRequest.AccountID)))
-		return
 	}
 
 	// handle notification event
