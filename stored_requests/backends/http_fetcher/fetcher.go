@@ -218,11 +218,11 @@ func (fetcher *HttpFetcher) FetchCategories(ctx context.Context, primaryAdServer
 
 func buildRequest(endpoint string, requestIDs []string, impIDs []string) (*http.Request, error) {
 	if len(requestIDs) > 0 && len(impIDs) > 0 {
-		return http.NewRequest("GET", endpoint+"request-ids=[\""+strings.Join(requestIDs, "\",\"")+"\"]&imp-ids=[\""+strings.Join(impIDs, "\",\"")+"\"]", nil)
+		return http.NewRequest("GET", endpoint+"request-ids=[%22"+strings.Join(requestIDs, "%22,%22")+"%22]&imp-ids=[%22"+strings.Join(impIDs, "%22,%22")+"%22]", nil)
 	} else if len(requestIDs) > 0 {
-		return http.NewRequest("GET", endpoint+"request-ids=[\""+strings.Join(requestIDs, "\",\"")+"\"]", nil)
+		return http.NewRequest("GET", endpoint+"request-ids=[%22"+strings.Join(requestIDs, "%22,%22")+"%22]", nil)
 	} else {
-		return http.NewRequest("GET", endpoint+"imp-ids=[\""+strings.Join(impIDs, "\",\"")+"\"]", nil)
+		return http.NewRequest("GET", endpoint+"imp-ids=[%22"+strings.Join(impIDs, "%22,%22")+"%22]", nil)
 	}
 }
 
