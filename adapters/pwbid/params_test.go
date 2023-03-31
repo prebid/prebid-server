@@ -34,9 +34,16 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"siteId": "39f43a"}`,
+	`{"siteId":"39f43a","bidFloor":0.10,"isTest":false}`,
+	`{"siteId":"39f43a","bidFloor":0.10,"isTest":true}`,
+	`{"siteId":"39f43a","bidFloor":0.10}`,
+	`{"siteId":"39f43a"}`,
 }
 
 var invalidParams = []string{
-	`{"siteId": 42}`,
+	`{"siteId":42,"bidFloor":"asdf","isTest":123}`,
+	`{"siteId":}`,
+	`{"bidFloor":}`,
+	`{"bidFloor":0.10}`,
+	`null`,
 }
