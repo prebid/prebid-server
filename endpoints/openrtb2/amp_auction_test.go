@@ -22,6 +22,7 @@ import (
 	"github.com/prebid/prebid-server/analytics"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
@@ -398,8 +399,9 @@ func TestOverrideWithParams(t *testing.T) {
 		bidRequest *openrtb2.BidRequest
 	}
 	type testOutput struct {
-		bidRequest *openrtb2.BidRequest
-		errorMsgs  []string
+		bidRequest        *openrtb2.BidRequest
+		errorMsgs         []string
+		expectFatalErrors bool
 	}
 	testCases := []struct {
 		desc     string
@@ -419,7 +421,8 @@ func TestOverrideWithParams(t *testing.T) {
 					Imp:  []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}},
 					Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)},
 				},
-				errorMsgs: nil,
+				errorMsgs:         nil,
+				expectFatalErrors: false,
 			},
 		},
 		{
@@ -451,7 +454,8 @@ func TestOverrideWithParams(t *testing.T) {
 					},
 					Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)},
 				},
-				errorMsgs: nil,
+				errorMsgs:         nil,
+				expectFatalErrors: false,
 			},
 		},
 		{
@@ -469,7 +473,8 @@ func TestOverrideWithParams(t *testing.T) {
 						Ext:    json.RawMessage(`{"amp":1}`),
 					},
 				},
-				errorMsgs: nil,
+				errorMsgs:         nil,
+				expectFatalErrors: false,
 			},
 		},
 		{
@@ -484,7 +489,8 @@ func TestOverrideWithParams(t *testing.T) {
 					Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)},
 					Ext:  json.RawMessage(`{"prebid":{"trace":"verbose"}}`),
 				},
-				errorMsgs: nil,
+				errorMsgs:         nil,
+				expectFatalErrors: false,
 			},
 		},
 		{
@@ -502,7 +508,8 @@ func TestOverrideWithParams(t *testing.T) {
 					Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)},
 					Ext:  json.RawMessage(`{"prebid":{"debug":true,"trace":"verbose"}}`),
 				},
-				errorMsgs: nil,
+				errorMsgs:         nil,
+				expectFatalErrors: false,
 			},
 		},
 		{
@@ -520,7 +527,8 @@ func TestOverrideWithParams(t *testing.T) {
 					Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)},
 					User: &openrtb2.User{Ext: json.RawMessage(`malformed`)},
 				},
-				errorMsgs: []string{"invalid character 'm' looking for beginning of value"},
+				errorMsgs:         []string{"invalid character 'm' looking for beginning of value"},
+				expectFatalErrors: true,
 			},
 		},
 		{
@@ -546,7 +554,8 @@ func TestOverrideWithParams(t *testing.T) {
 					},
 					Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)},
 				},
-				errorMsgs: []string{"unable to merge imp.ext with targeting data, check targeting data is correct: Invalid JSON Patch"},
+				errorMsgs:         []string{"unable to merge imp.ext with targeting data, check targeting data is correct: Invalid JSON Patch"},
+				expectFatalErrors: false,
 			},
 		},
 		{
@@ -567,7 +576,8 @@ func TestOverrideWithParams(t *testing.T) {
 					User: &openrtb2.User{Ext: json.RawMessage(`{"prebid":{malformed}}`)},
 					Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)},
 				},
-				errorMsgs: []string{"invalid character 'm' looking for beginning of object key string"},
+				errorMsgs:         []string{"invalid character 'm' looking for beginning of object key string"},
+				expectFatalErrors: true,
 			},
 		},
 	}
@@ -579,6 +589,7 @@ func TestOverrideWithParams(t *testing.T) {
 		assert.Len(t, errs, len(test.expected.errorMsgs), test.desc)
 		if len(test.expected.errorMsgs) > 0 {
 			assert.Equal(t, test.expected.errorMsgs[0], errs[0].Error(), test.desc)
+			assert.Equal(t, test.expected.expectFatalErrors, errortypes.ContainsFatalError(errs), test.desc)
 		}
 	}
 }

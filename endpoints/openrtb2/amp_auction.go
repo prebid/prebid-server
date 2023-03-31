@@ -541,6 +541,7 @@ func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb2
 	if req.Site == nil {
 		req.Site = &openrtb2.Site{}
 	}
+	var errors []error
 
 	// Override the stored request sizes with AMP ones, if they exist.
 	if req.Imp[0].Banner != nil {
@@ -574,30 +575,30 @@ func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb2
 	}
 
 	if err := setConsentedProviders(req, ampParams); err != nil {
-		return []error{err}
+		return append(errors, err)
 	}
 
 	policyWriter, policyWriterErr := amp.ReadPolicy(ampParams, deps.cfg.GDPR.Enabled)
 	if policyWriterErr != nil {
-		return []error{policyWriterErr}
+		return append(errors, policyWriterErr)
 	}
 	if err := policyWriter.Write(req); err != nil {
-		return []error{err}
+		return append(errors, err)
 	}
 
 	if ampParams.Timeout != nil {
 		req.TMax = int64(*ampParams.Timeout) - deps.cfg.AMPTimeoutAdjustment
 	}
 
-	if err := setTargeting(req, ampParams.Targeting); err != nil {
-		return []error{err}
+	if warn := setTargeting(req, ampParams.Targeting); warn != nil {
+		errors = append(errors, warn)
 	}
 
 	if err := setTrace(req, ampParams.Trace); err != nil {
-		return []error{err}
+		return append(errors, err)
 	}
 
-	return nil
+	return errors
 }
 
 // setConsentedProviders sets the addtl_consent value to user.ext.ConsentedProvidersSettings.consented_providers
@@ -651,7 +652,12 @@ func setTargeting(req *openrtb2.BidRequest, targeting string) error {
 	if len(req.Imp[0].Ext) > 0 {
 		newImpExt, err := jsonpatch.MergePatch(req.Imp[0].Ext, targetingData)
 		if err != nil {
-			return fmt.Errorf("unable to merge imp.ext with targeting data, check targeting data is correct: %s", err.Error())
+			warn := errortypes.Warning{
+				WarningCode: errortypes.BadInputErrorCode,
+				Message:     fmt.Sprintf("unable to merge imp.ext with targeting data, check targeting data is correct: %s", err.Error()),
+			}
+
+			return &warn
 		}
 		req.Imp[0].Ext = newImpExt
 		return nil
