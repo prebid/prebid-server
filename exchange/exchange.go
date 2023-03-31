@@ -217,7 +217,7 @@ type BidderRequest struct {
 }
 
 func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *DebugLog) (*openrtb2.BidResponse, error) {
-  var floorErrs []error
+	var floorErrs []error
 	err := r.HookExecutor.ExecuteProcessedAuctionStage(r.BidRequestWrapper)
 	if err != nil {
 		return nil, err
@@ -281,9 +281,8 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 
 	bidAdjustmentFactors := getExtBidAdjustmentFactors(requestExtPrebid)
 
-
 	// Get currency rates conversions for the auction
-	conversions := e.getAuctionCurrencyRates(requestExt.Prebid.CurrencyConversions)
+	conversions := e.getAuctionCurrencyRates(requestExtPrebid.CurrencyConversions)
 
 	if e.floor.Enabled {
 		floorErrs = floors.EnrichWithPriceFloors(r.BidRequestWrapper, r.Account, conversions)
@@ -299,7 +298,6 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 
 	recordImpMetrics(r.BidRequestWrapper, e.me)
 
-
 	// Make our best guess if GDPR applies
 	gdprDefaultValue := e.parseGDPRDefaultValue(r.BidRequestWrapper)
 
@@ -314,7 +312,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		SChain: requestExt.GetSChain(),
 	}
 	bidderRequests, privacyLabels, errs := e.requestSplitter.cleanOpenRTBRequests(ctx, r, requestExtLegacy, gdprDefaultValue)
-  errs = append(errs, floorErrs...)
+	errs = append(errs, floorErrs...)
 
 	e.me.RecordRequestPrivacy(privacyLabels)
 

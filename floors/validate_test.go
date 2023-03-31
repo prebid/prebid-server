@@ -2,6 +2,7 @@ package floors
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
@@ -345,30 +346,25 @@ func TestValidateFloorRulesAndLowerValidRuleKey(t *testing.T) {
 }
 
 func TestValidateSchemaDimensions(t *testing.T) {
-	type args struct {
-		Fields []string
-	}
 	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
+		name   string
+		fields []string
+		err    error
 	}{
 		{
-			name:    "valid_fields",
-			args:    args{Fields: []string{"deviceType", "size"}},
-			wantErr: false,
+			name:   "valid_fields",
+			fields: []string{"deviceType", "size"},
 		},
 		{
-			name:    "valid_fields",
-			args:    args{Fields: []string{"deviceType", "dealType"}},
-			wantErr: true,
+			name:   "invalid_fields",
+			fields: []string{"deviceType", "dealType"},
+			err:    fmt.Errorf("Invalid schema dimension provided = 'dealType' in Schema Fields = '[deviceType dealType]'"),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := validateSchemaDimensions(tt.args.Fields); (err != nil) != tt.wantErr {
-				t.Errorf("validateSchemaDimensions() error = %v, wantErr %v", err, tt.wantErr)
-			}
+			err := validateSchemaDimensions(tt.fields)
+			assert.Equal(t, tt.err, err)
 		})
 	}
 }

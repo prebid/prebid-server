@@ -186,12 +186,12 @@ func shouldSkipFloors(ModelGroupsSkipRate, DataSkipRate, RootSkipRate int, f fun
 
 	if skipRate == 0 {
 		return false
-	} else {
-		return skipRate >= f(skipRateMax+1)
 	}
+	return skipRate >= f(skipRateMax+1)
 }
 
-// findRule selects rule based on rule keys provided into floors JSON and request values provided into
+// findRule prepares rule combinations based on schema dimensions provided in floors data, request values associated with these fields and
+// does matching with rules provided in floors data and returns matched rule
 func findRule(ruleValues map[string]float64, delimiter string, desiredRuleKey []string, numFields int) (string, bool) {
 	ruleKeys := prepareRuleCombinations(desiredRuleKey, numFields, delimiter)
 	for i := 0; i < len(ruleKeys); i++ {
@@ -403,8 +403,8 @@ func getGptSlot(imp *openrtb_ext.ImpWrapper) string {
 // getChannelName returns channel name
 func getChannelName(bidRequest *openrtb_ext.RequestWrapper) string {
 
-	reqExt, _ := bidRequest.GetRequestExt()
-	if reqExt != nil {
+	reqExt, err := bidRequest.GetRequestExt()
+	if err == nil && reqExt != nil {
 		prebidExt := reqExt.GetPrebid()
 		if prebidExt != nil && prebidExt.Channel != nil {
 			return prebidExt.Channel.Name
@@ -418,8 +418,8 @@ func getChannelName(bidRequest *openrtb_ext.RequestWrapper) string {
 func getAdUnitCode(imp *openrtb_ext.ImpWrapper) string {
 	adUnitCode := catchAll
 
-	impExt, _ := imp.GetImpExt()
-	if impExt != nil && impExt.GetGpId() != "" {
+	impExt, err := imp.GetImpExt()
+	if err == nil && impExt != nil && impExt.GetGpId() != "" {
 		return impExt.GetGpId()
 	}
 
@@ -470,7 +470,7 @@ func prepareRuleCombinations(keys []string, numSchemaFields int, delimiter strin
 		schemaFields = append(schemaFields, strings.ToLower(keys[i]))
 		comb = append(comb, i)
 	}
-	ruleKey.appenedRuleKey(schemaFields)
+	ruleKey.appendRuleKey(schemaFields)
 
 	segNum := 1 << (numSchemaFields)
 	for numWildCard := 1; numWildCard <= numSchemaFields; numWildCard++ {
@@ -481,7 +481,7 @@ func prepareRuleCombinations(keys []string, numSchemaFields int, delimiter strin
 			for j := 0; j < len(newComb[i]); j++ {
 				eachSet[newComb[i][j]] = catchAll
 			}
-			ruleKey.appenedRuleKey(eachSet)
+			ruleKey.appendRuleKey(eachSet)
 		}
 	}
 	return ruleKey.getAllRuleKeys()
@@ -532,8 +532,8 @@ func newFloorRuleKeys(delimiter string) *ruleKeys {
 	return rulekey
 }
 
-// appenedRuleKey appends unique rules keys into ruleKeys array
-func (r *ruleKeys) appenedRuleKey(rawKey []string) {
+// appendRuleKey appends unique rules keys into ruleKeys array
+func (r *ruleKeys) appendRuleKey(rawKey []string) {
 	var key string
 	key = rawKey[0]
 	for j := 1; j < len(rawKey); j++ {

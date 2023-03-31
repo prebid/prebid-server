@@ -26,8 +26,8 @@ const (
 	enforceRateMax   int    = 100
 )
 
-// EnrichWithPriceFloors checks for floors enabled in account and request and selects floors data from dynamic fetched floors JSON if present
-// else selects floors JSON from req.ext.prebid.floors and update request with selected floors details
+// EnrichWithPriceFloors checks for floors enabled in account and request and selects floors data from dynamic fetched if present
+// else selects floors data from req.ext.prebid.floors and update request with selected floors details
 func EnrichWithPriceFloors(bidRequestWrapper *openrtb_ext.RequestWrapper, account config.Account, conversions currency.Conversions) []error {
 
 	if bidRequestWrapper == nil || bidRequestWrapper.BidRequest == nil {
@@ -65,10 +65,6 @@ func updateBidRequestWithFloors(extFloorRules *openrtb_ext.PriceFloorRules, requ
 	if shouldSkipFloors(modelGroup.SkipRate, extFloorRules.Data.SkipRate, extFloorRules.SkipRate, rand.Intn) {
 		*extFloorRules.Skipped = true
 		return []error{}
-	}
-
-	if err := validateSchemaDimensions(modelGroup.Schema.Fields); err != nil {
-		return []error{err}
 	}
 
 	floorErrList = validateFloorRulesAndLowerValidRuleKey(modelGroup.Schema, modelGroup.Schema.Delimiter, modelGroup.Values)
@@ -125,7 +121,7 @@ func isPriceFloorsDisabledForRequest(bidRequestWrapper *openrtb_ext.RequestWrapp
 	return false
 }
 
-// resolveFloors does selection of floors fields from request JSON and dynamic fetched floors JSON if dynamic fetch is enabled
+// resolveFloors does selection of floors fields from request data and dynamic fetched data if dynamic fetch is enabled
 func resolveFloors(account config.Account, bidRequestWrapper *openrtb_ext.RequestWrapper, conversions currency.Conversions) (*openrtb_ext.PriceFloorRules, []error) {
 	var errList []error
 	var floorRules *openrtb_ext.PriceFloorRules

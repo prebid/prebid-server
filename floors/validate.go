@@ -8,24 +8,24 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-var validSchemaDimensions map[string]bool = map[string]bool{
-	SiteDomain: true,
-	PubDomain:  true,
-	Domain:     true,
-	Bundle:     true,
-	Channel:    true,
-	MediaType:  true,
-	Size:       true,
-	GptSlot:    true,
-	AdUnitCode: true,
-	Country:    true,
-	DeviceType: true,
+var validSchemaDimensions map[string]struct{} = map[string]struct{}{
+	SiteDomain: {},
+	PubDomain:  {},
+	Domain:     {},
+	Bundle:     {},
+	Channel:    {},
+	MediaType:  {},
+	Size:       {},
+	GptSlot:    {},
+	AdUnitCode: {},
+	Country:    {},
+	DeviceType: {},
 }
 
 // validateSchemaDimensions validates schema dimesions given in floors JSON
 func validateSchemaDimensions(fields []string) error {
 	for i := range fields {
-		if isPresent := validSchemaDimensions[fields[i]]; !isPresent {
+		if _, isPresent := validSchemaDimensions[fields[i]]; !isPresent {
 			return fmt.Errorf("Invalid schema dimension provided = '%s' in Schema Fields = '%v'", fields[i], fields)
 		}
 	}
@@ -85,12 +85,17 @@ func selectValidFloorModelGroups(modelGroups []openrtb_ext.PriceFloorModelGroup,
 
 	for _, modelGroup := range modelGroups {
 
-		if len(modelGroup.Schema.Fields) > account.PriceFloors.MaxSchemaDims {
+		if err := validateSchemaDimensions(modelGroup.Schema.Fields); err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		if account.PriceFloors.MaxSchemaDims > 0 && len(modelGroup.Schema.Fields) > account.PriceFloors.MaxSchemaDims {
 			errs = append(errs, fmt.Errorf("Invalid Floor Model = '%v' due to number of schema fields = '%v' are greater than limit %v", modelGroup.ModelVersion, len(modelGroup.Schema.Fields), account.PriceFloors.MaxSchemaDims))
 			continue
 		}
 
-		if len(modelGroup.Values) > account.PriceFloors.MaxRule {
+		if account.PriceFloors.MaxRule > 0 && len(modelGroup.Values) > account.PriceFloors.MaxRule {
 			errs = append(errs, fmt.Errorf("Invalid Floor Model = '%v' due to number of rules = '%v' are greater than limit %v", modelGroup.ModelVersion, len(modelGroup.Values), account.PriceFloors.MaxRule))
 			continue
 		}

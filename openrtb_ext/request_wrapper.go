@@ -1391,14 +1391,6 @@ func (e *ImpExt) GetPrebid() *ExtImpPrebid {
 	return &prebid
 }
 
-func (e *ImpExt) GetData() *ExtImpData {
-	if e.data == nil {
-		return nil
-	}
-	data := *e.data
-	return &data
-}
-
 func (e *ImpExt) GetOrCreatePrebid() *ExtImpPrebid {
 	if e.prebid == nil {
 		e.prebid = &ExtImpPrebid{}
@@ -1411,19 +1403,27 @@ func (e *ImpExt) SetPrebid(prebid *ExtImpPrebid) {
 	e.prebidDirty = true
 }
 
+func (e *ImpExt) GetData() *ExtImpData {
+	if e.data == nil {
+		return nil
+	}
+	data := *e.data
+	return &data
+}
+
 func (e *ImpExt) GetTid() string {
 	tid := e.tid
 	return tid
 }
 
-func (e *ImpExt) GetGpId() string {
-	gpId := e.gpId
-	return gpId
-}
-
 func (e *ImpExt) SetTid(tid string) {
 	e.tid = tid
 	e.tidDirty = true
+}
+
+func (e *ImpExt) GetGpId() string {
+	gpId := e.gpId
+	return gpId
 }
 
 func CreateImpExtForTesting(ext map[string]json.RawMessage, prebid *ExtImpPrebid) ImpExt {
