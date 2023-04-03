@@ -99,8 +99,6 @@ func NewEndpoint(
 		IPv6PrivateNetworks: cfg.RequestValidation.IPv6PrivateNetworksParsed,
 	}
 
-	hookExecutor := hookexecution.NewHookExecutor(hookExecutionPlanBuilder, hookexecution.EndpointAuction, metricsEngine)
-
 	return httprouter.Handle((&endpointDeps{
 		uuidGenerator,
 		ex,
@@ -119,7 +117,7 @@ func NewEndpoint(
 		nil,
 		ipValidator,
 		storedRespFetcher,
-		hookExecutor}).Auction), nil
+		hookExecutionPlanBuilder}).Auction), nil
 }
 
 type endpointDeps struct {
@@ -140,7 +138,7 @@ type endpointDeps struct {
 	debugLogRegexp            *regexp.Regexp
 	privateNetworkIPValidator iputil.IPValidator
 	storedRespFetcher         stored_requests.Fetcher
-	hookExecutor              hookexecution.HookStageExecutor
+	hookExecutionPlanBuilder  hooks.ExecutionPlanBuilder
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -151,6 +149,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// We can respect timeouts more accurately if we note the *real* start time, and use it
 	// to compute the auction timeout.
 	start := time.Now()
+
+	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
 
 	ao := analytics.AuctionObject{
 		Status:    http.StatusOK,
@@ -173,13 +173,13 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
 
-	req, impExtInfoMap, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, account, errL := deps.parseRequest(r, &labels)
+	req, impExtInfoMap, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, account, errL := deps.parseRequest(r, &labels, hookExecutor)
 	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels) {
 		return
 	}
 
 	if rejectErr := hookexecution.FindFirstRejectOrNil(errL); rejectErr != nil {
-		labels, ao = rejectAuctionRequest(*rejectErr, w, deps.hookExecutor, req.BidRequest, account, labels, ao)
+		labels, ao = rejectAuctionRequest(*rejectErr, w, hookExecutor, req.BidRequest, account, labels, ao)
 		return
 	}
 
@@ -226,7 +226,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		StoredBidResponses:         storedBidResponses,
 		BidderImpReplaceImpID:      bidderImpReplaceImp,
 		PubID:                      labels.PubID,
-		HookExecutor:               deps.hookExecutor,
+		HookExecutor:               hookExecutor,
 	}
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
 	ao.Request = req.BidRequest
@@ -246,11 +246,11 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		ao.Errors = append(ao.Errors, err)
 		return
 	} else if isRejectErr {
-		labels, ao = rejectAuctionRequest(*rejectErr, w, deps.hookExecutor, req.BidRequest, account, labels, ao)
+		labels, ao = rejectAuctionRequest(*rejectErr, w, hookExecutor, req.BidRequest, account, labels, ao)
 		return
 	}
 
-	labels, ao = sendAuctionResponse(w, deps.hookExecutor, response, req.BidRequest, account, labels, ao)
+	labels, ao = sendAuctionResponse(w, hookExecutor, response, req.BidRequest, account, labels, ao)
 }
 
 func rejectAuctionRequest(
@@ -329,7 +329,7 @@ func sendAuctionResponse(
 // possible, it will return errors with messages that suggest improvements.
 //
 // If the errors list has at least one element, then no guarantees are made about the returned request.
-func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metrics.Labels) (req *openrtb_ext.RequestWrapper, impExtInfoMap map[string]exchange.ImpExtInfo, storedAuctionResponses stored_responses.ImpsWithBidResponses, storedBidResponses stored_responses.ImpBidderStoredResp, bidderImpReplaceImpId stored_responses.BidderImpReplaceImpID, account *config.Account, errs []error) {
+func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metrics.Labels, hookExecutor hookexecution.HookStageExecutor) (req *openrtb_ext.RequestWrapper, impExtInfoMap map[string]exchange.ImpExtInfo, storedAuctionResponses stored_responses.ImpsWithBidResponses, storedBidResponses stored_responses.ImpBidderStoredResp, bidderImpReplaceImpId stored_responses.BidderImpReplaceImpID, account *config.Account, errs []error) {
 	req = &openrtb_ext.RequestWrapper{}
 	req.BidRequest = &openrtb2.BidRequest{}
 	errs = nil
@@ -352,7 +352,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		}
 	}
 
-	requestJson, rejectErr := deps.hookExecutor.ExecuteEntrypointStage(httpRequest, requestJson)
+	requestJson, rejectErr := hookExecutor.ExecuteEntrypointStage(httpRequest, requestJson)
 	if rejectErr != nil {
 		errs = []error{rejectErr}
 		if err = json.Unmarshal(requestJson, req.BidRequest); err != nil {
@@ -395,8 +395,8 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		return
 	}
 
-	deps.hookExecutor.SetAccount(account)
-	requestJson, rejectErr = deps.hookExecutor.ExecuteRawAuctionStage(requestJson)
+	hookExecutor.SetAccount(account)
+	requestJson, rejectErr = hookExecutor.ExecuteRawAuctionStage(requestJson)
 	if rejectErr != nil {
 		errs = []error{rejectErr}
 		if err = json.Unmarshal(requestJson, req.BidRequest); err != nil {
@@ -406,7 +406,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	}
 
 	// retrieve storedRequests and storedImps once more in case stored data was changed by the raw auction hook
-	if hasPayloadUpdatesAt(hooks.StageRawAuctionRequest.String(), deps.hookExecutor.GetOutcomes()) {
+	if hasPayloadUpdatesAt(hooks.StageRawAuctionRequest.String(), hookExecutor.GetOutcomes()) {
 		impInfo, errs = parseImpInfo(requestJson)
 		if len(errs) > 0 {
 			return nil, nil, nil, nil, nil, nil, errs
