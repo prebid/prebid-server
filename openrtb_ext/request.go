@@ -83,8 +83,6 @@ type ExtRequestPrebid struct {
 	// any other value or an empty string disables trace output at all.
 	Trace string `json:"trace,omitempty"`
 
-	MultiBidMap map[string]ExtMultiBid `json:"-"`
-
 	BidAdjustments *ExtRequestPrebidBidAdjustments `json:"bidadjustments,omitempty"`
 }
 
