@@ -253,6 +253,8 @@ func TestValidateVASTEvent(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
+	boolFalse := false
+	boolTrue := true
 	testCases := []struct {
 		description string
 		events      Events
@@ -261,14 +263,14 @@ func TestValidate(t *testing.T) {
 		{
 			description: "Empty default URL",
 			events: Events{
-				Enabled: true,
+				Enabled: &boolTrue,
 			},
 			expectErr: true,
 		},
 		{
 			description: "Events are disabled. Skips validations",
 			events: Events{
-				Enabled:    false,
+				Enabled:    &boolFalse,
 				DefaultURL: "",
 			},
 			expectErr: false,
@@ -276,7 +278,7 @@ func TestValidate(t *testing.T) {
 		{
 			description: "No VAST Events and default URL present",
 			events: Events{
-				Enabled:    true,
+				Enabled:    &boolTrue,
 				DefaultURL: "http://prebid.org",
 			},
 			expectErr: false,
@@ -284,7 +286,7 @@ func TestValidate(t *testing.T) {
 		{
 			description: "Invalid VAST Event",
 			events: Events{
-				Enabled:    true,
+				Enabled:    &boolTrue,
 				DefaultURL: "http://prebid.org",
 				VASTEvents: []VASTEvent{
 					{},

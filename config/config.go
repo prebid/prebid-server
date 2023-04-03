@@ -138,9 +138,6 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 	if cfg.AccountDefaults.Disabled {
 		glog.Warning(`With account_defaults.disabled=true, host-defined accounts must exist and have "disabled":false. All other requests will be rejected.`)
 	}
-	if cfg.AccountDefaults.Events.Enabled {
-		glog.Warning(`account_defaults.events will currently not do anything as the feature is still under development. Please follow https://github.com/prebid/prebid-server/issues/1725 for more updates`)
-	}
 
 	if cfg.PriceFloors.Enabled {
 		glog.Warning(`cfg.PriceFloors.Enabled will currently not do anything as price floors feature is still under development.`)
@@ -690,9 +687,10 @@ func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName func(strin
 	c.AccountDefaults.CacheTTL = c.CacheURL.DefaultTTLs // comment this out to set explicitly in config
 
 	// update deprecated and new events enabled values for account defaults
-	accountDefaultsEventsEnabled := IsAccountDefaultsEventEnabled(c.AccountDefaults.EventsEnabled, c.AccountDefaults.Events.Enabled)
+	accountDefaultsEventsEnabled := IsAccountEventEnabled(c.AccountDefaults.EventsEnabled, c.AccountDefaults.Events.Enabled)
 	*c.AccountDefaults.EventsEnabled = accountDefaultsEventsEnabled
-	c.AccountDefaults.Events.Enabled = false
+	boolFalse := false
+	c.AccountDefaults.Events.Enabled = &boolFalse
 
 	if err := c.MarshalAccountDefaults(); err != nil {
 		return nil, err
@@ -1485,26 +1483,25 @@ func isValidCookieSize(maxCookieSize int) error {
 	return nil
 }
 
-// isAccountEventEnabled checks if event is enabled for account or not.
-// "account.events_enabled", which is deprecated, is still in use in some incoming requests so we'd like to still use its value whenever  "account.events.enabled" is not found.
-// Once we've identified if events are enabled or not, we can set the resulting boolean value into account.Events.Enabled and set account.EventsEnabled to nil.
-func IsAccountEventEnabled(deprecated_events_enabled *bool, events_enabled bool) bool {
-	if deprecated_events_enabled == nil {
-		return events_enabled
-	} else if *deprecated_events_enabled {
-		return true
+// IsAccountEventEnabled checks if event is enabled for account or not.
+// account.events_enabled/accountDefaults.events_enabled, which is deprecated, is still in use in some incoming requests so we'd like to still use its value whenever account.events.enabled/accountDefaults.events.enabled is not found.
+// Once we've identified if events are enabled or not, we can set the resulting boolean value into account.Events.Enabled/accountDefaults.Events.Enabled and set account.EventsEnabled/accountDefaults.EventsEnabled to nil.
+func IsAccountEventEnabled(deprecated_events_enabled *bool, events_enabled *bool) bool {
+	if deprecated_events_enabled != nil {
+		if *deprecated_events_enabled {
+			return true // case 4, 5, 6
+		} else {
+			if events_enabled != nil {
+				return *events_enabled // case 2, 8
+			} else {
+				return false // case 3
+			}
+		}
 	} else {
-		return events_enabled
-	}
-}
-
-// isAccountEventEnabled checks if event is enabled by default for account or not.
-func IsAccountDefaultsEventEnabled(deprecated_accounts_defaults_events_enabled *bool, accounts_defaults_events_enabled bool) bool {
-	if deprecated_accounts_defaults_events_enabled == nil {
-		return accounts_defaults_events_enabled
-	} else if *deprecated_accounts_defaults_events_enabled {
-		return true
-	} else {
-		return accounts_defaults_events_enabled
+		if events_enabled != nil {
+			return *events_enabled // case 1, 7
+		} else {
+			return false // case 9
+		}
 	}
 }
