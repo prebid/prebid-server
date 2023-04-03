@@ -84,7 +84,7 @@ func updateBidRequestWithFloors(extFloorRules *openrtb_ext.PriceFloorRules, requ
 
 			floorMinVal, floorCur, err := getMinFloorValue(extFloorRules, imp, conversions)
 			if err == nil {
-				floorVal = math.Round(floorVal*10000) / 10000
+				floorVal = roundToFourDecimals(floorVal)
 				bidFloor := floorVal
 				if floorMinVal > 0.0 && floorVal < floorMinVal {
 					bidFloor = floorMinVal
@@ -103,6 +103,11 @@ func updateBidRequestWithFloors(extFloorRules *openrtb_ext.PriceFloorRules, requ
 		}
 	}
 	return floorErrList
+}
+
+// roundToFourDecimals retuns give value to 4 decimal points
+func roundToFourDecimals(in float64) float64 {
+	return math.Round(in*10000) / 10000
 }
 
 // isPriceFloorsDisabled check for floors are disabled at account or request level

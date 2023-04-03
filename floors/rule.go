@@ -2,7 +2,6 @@ package floors
 
 import (
 	"fmt"
-	"math"
 	"math/bits"
 	"regexp"
 	"sort"
@@ -64,7 +63,7 @@ func getMinFloorValue(floorExt *openrtb_ext.PriceFloorRules, imp *openrtb_ext.Im
 	var err error
 	var rate float64
 	var floorCur string
-	floorMin := math.Round(floorExt.FloorMin*10000) / 10000
+	floorMin := roundToFourDecimals(floorExt.FloorMin)
 	floorMinCur := floorExt.FloorMinCur
 
 	impFloorMin, impFloorCur, err := getFloorMinAndCurFromImp(imp)
@@ -86,7 +85,7 @@ func getMinFloorValue(floorExt *openrtb_ext.PriceFloorRules, imp *openrtb_ext.Im
 				floorMin = rate * floorMin
 			}
 		}
-		floorMin = math.Round(floorMin*10000) / 10000
+		floorMin = roundToFourDecimals(floorMin)
 	}
 	if err != nil {
 		return floorMin, floorCur, fmt.Errorf("Error in getting FloorMin value : '%v'", err.Error())
