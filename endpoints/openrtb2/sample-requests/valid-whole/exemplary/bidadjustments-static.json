@@ -78,7 +78,7 @@
               "id": "appnexus-bid",
               "impid": "some-impression-id",
               "price": 2.5,
-              "ext": {"prebid":{"type":"banner"}}
+              "ext": {"origbidcpm": 2, "origbidcur": "USD", "prebid": {"meta": {"adaptercode": "appnexus"}, "type": "banner"}}
             }
           ],
           "seat": "appnexus"
