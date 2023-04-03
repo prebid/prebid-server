@@ -31,10 +31,17 @@ func getEventTracking(requestExtPrebid *openrtb_ext.ExtRequestPrebid, ts time.Ti
 		enabledForAccount:  account.EventsEnabled,
 		enabledForRequest:  requestExtPrebid != nil && requestExtPrebid.Events != nil,
 		auctionTimestampMs: ts.UnixNano() / 1e+6,
-		integrationType:    requestExtPrebid.Integration,
+		integrationType:    getIntegrationType(requestExtPrebid),
 		bidderInfos:        bidderInfos,
 		externalURL:        externalURL,
 	}
+}
+
+func getIntegrationType(requestExtPrebid *openrtb_ext.ExtRequestPrebid) string {
+	if requestExtPrebid != nil {
+		return requestExtPrebid.Integration
+	}
+	return ""
 }
 
 // modifyBidsForEvents adds bidEvents and modifies VAST AdM if necessary.

@@ -155,12 +155,8 @@ func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ImpExtLimelightDigital, e
 }
 
 func (a *adapter) buildEndpointURL(params *openrtb_ext.ImpExtLimelightDigital) (string, error) {
-	firstDotIndex := strings.IndexByte(params.Host, '.')
-	if firstDotIndex < 1 || firstDotIndex == (len(params.Host)-1) {
-		return "", fmt.Errorf("hostname is invalid: %s", params.Host)
-	}
 	endpointParams := macros.EndpointTemplateParams{
-		Host:        params.Host[:firstDotIndex],
+		Host:        params.Host,
 		PublisherID: params.PublisherID.String(),
 	}
 	return macros.ResolveMacros(a.endpointTemplate, endpointParams)

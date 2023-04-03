@@ -60,6 +60,7 @@ type ExtRequestPrebid struct {
 	Events               json.RawMessage           `json:"events,omitempty"`
 	Experiment           *Experiment               `json:"experiment,omitempty"`
 	Integration          string                    `json:"integration,omitempty"`
+	MultiBid             []*ExtMultiBid            `json:"multibid,omitempty"`
 	Passthrough          json.RawMessage           `json:"passthrough,omitempty"`
 	SChains              []*ExtRequestPrebidSChain `json:"schains,omitempty"`
 	Server               *ExtRequestPrebidServer   `json:"server,omitempty"`
@@ -82,7 +83,6 @@ type ExtRequestPrebid struct {
 	// any other value or an empty string disables trace output at all.
 	Trace string `json:"trace,omitempty"`
 
-	MultiBid    []*ExtMultiBid         `json:"multibid,omitempty"`
 	MultiBidMap map[string]ExtMultiBid `json:"-"`
 
 	BidAdjustments *ExtRequestPrebidBidAdjustments `json:"bidadjustments,omitempty"`
