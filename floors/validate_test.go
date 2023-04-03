@@ -203,6 +203,27 @@ func TestSelectValidFloorModelGroups(t *testing.T) {
 			Err: []error{errors.New("Invalid Floor Model = 'Version 1' due to number of schema fields = '3' are greater than limit 2")},
 		},
 		{
+			name: "Invalid Schema field creativeType",
+			account: config.Account{
+				PriceFloors: config.AccountPriceFloors{
+					MaxRule:       100,
+					MaxSchemaDims: 3,
+				},
+			},
+			floorExt: &openrtb_ext.PriceFloorRules{Data: &openrtb_ext.PriceFloorData{
+				ModelGroups: []openrtb_ext.PriceFloorModelGroup{{
+					ModelVersion: "Version 1",
+					Schema:       openrtb_ext.PriceFloorSchema{Fields: []string{"creativeType", "size", "domain"}},
+					Values: map[string]float64{
+						"banner|300x250|www.website.com": 1.01,
+						"*|728x90|*":                     14.01,
+						"*|*|www.website.com":            15.01,
+						"*|*|*":                          16.01,
+					}},
+				}}},
+			Err: []error{errors.New("Invalid schema dimension provided = 'creativeType' in Schema Fields = '[creativeType size domain]'")},
+		},
+		{
 			name: "Invalid Number of rules",
 			account: config.Account{
 				PriceFloors: config.AccountPriceFloors{

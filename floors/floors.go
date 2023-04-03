@@ -71,29 +71,34 @@ func updateBidRequestWithFloors(extFloorRules *openrtb_ext.PriceFloorRules, requ
 	if len(modelGroup.Values) > 0 {
 		for _, imp := range request.GetImp() {
 			desiredRuleKey := createRuleKey(modelGroup.Schema, request, imp)
-			matchedRule, isRuleMatched := findRule(modelGroup.Values, modelGroup.Schema.Delimiter, desiredRuleKey, len(modelGroup.Schema.Fields))
-
+			matchedRule, isRuleMatched := findRule(modelGroup.Values, modelGroup.Schema.Delimiter, desiredRuleKey)
+			floorVal = modelGroup.Default
 			if isRuleMatched {
 				floorVal = modelGroup.Values[matchedRule]
+			}
 
-				floorMinVal, floorCur, err := getMinFloorValue(extFloorRules, imp, conversions)
-				if err == nil {
-					floorVal = math.Round(floorVal*10000) / 10000
-					bidFloor := floorVal
-					if floorMinVal > 0.0 && floorVal < floorMinVal {
-						bidFloor = floorMinVal
-					}
+			// No rule is matched or no default value provided or non-zero bidfloor not provided
+			if floorVal == 0.0 {
+				continue
+			}
 
-					if bidFloor > 0.0 {
-						imp.BidFloor = math.Round(bidFloor*10000) / 10000
-						imp.BidFloorCur = floorCur
-					}
+			floorMinVal, floorCur, err := getMinFloorValue(extFloorRules, imp, conversions)
+			if err == nil {
+				floorVal = math.Round(floorVal*10000) / 10000
+				bidFloor := floorVal
+				if floorMinVal > 0.0 && floorVal < floorMinVal {
+					bidFloor = floorMinVal
+				}
 
+				imp.BidFloor = bidFloor
+				imp.BidFloorCur = floorCur
+
+				if isRuleMatched {
 					err = updateImpExtWithFloorDetails(imp, matchedRule, floorVal, imp.BidFloor)
 				}
-				if err != nil {
-					floorErrList = append(floorErrList, err)
-				}
+			}
+			if err != nil {
+				floorErrList = append(floorErrList, err)
 			}
 		}
 	}

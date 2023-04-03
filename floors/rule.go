@@ -36,12 +36,6 @@ const (
 	NativeMedia         string = "native"
 )
 
-type ruleKeys struct {
-	keyMap    map[string]bool
-	keys      []string
-	delimiter string
-}
-
 // getFloorCurrency returns floors currency provided in floors JSON,
 // if currency is not provided then defaults to USD
 func getFloorCurrency(floorExt *openrtb_ext.PriceFloorRules) string {
@@ -70,7 +64,7 @@ func getMinFloorValue(floorExt *openrtb_ext.PriceFloorRules, imp *openrtb_ext.Im
 	var err error
 	var rate float64
 	var floorCur string
-	floorMin := floorExt.FloorMin
+	floorMin := math.Round(floorExt.FloorMin*10000) / 10000
 	floorMinCur := floorExt.FloorMinCur
 
 	impFloorMin, impFloorCur, err := getFloorMinAndCurFromImp(imp)
@@ -192,8 +186,8 @@ func shouldSkipFloors(ModelGroupsSkipRate, DataSkipRate, RootSkipRate int, f fun
 
 // findRule prepares rule combinations based on schema dimensions provided in floors data, request values associated with these fields and
 // does matching with rules provided in floors data and returns matched rule
-func findRule(ruleValues map[string]float64, delimiter string, desiredRuleKey []string, numFields int) (string, bool) {
-	ruleKeys := prepareRuleCombinations(desiredRuleKey, numFields, delimiter)
+func findRule(ruleValues map[string]float64, delimiter string, desiredRuleKey []string) (string, bool) {
+	ruleKeys := prepareRuleCombinations(desiredRuleKey, delimiter)
 	for i := 0; i < len(ruleKeys); i++ {
 		if _, ok := ruleValues[ruleKeys[i]]; ok {
 			return ruleKeys[i], true
@@ -461,20 +455,20 @@ func isTabletDevice(userAgent string) bool {
 }
 
 // prepareRuleCombinations prepares rule combinations based on schema dimensions and request fields
-func prepareRuleCombinations(keys []string, numSchemaFields int, delimiter string) []string {
+func prepareRuleCombinations(keys []string, delimiter string) []string {
 	var schemaFields []string
-	var comb []int
 
+	numSchemaFields := len(keys)
 	ruleKey := newFloorRuleKeys(delimiter)
 	for i := 0; i < numSchemaFields; i++ {
 		schemaFields = append(schemaFields, strings.ToLower(keys[i]))
-		comb = append(comb, i)
 	}
 	ruleKey.appendRuleKey(schemaFields)
 
-	segNum := 1 << (numSchemaFields)
 	for numWildCard := 1; numWildCard <= numSchemaFields; numWildCard++ {
-		newComb := generateCombinations(comb, numWildCard, segNum)
+		newComb := generateCombinations(numSchemaFields, numWildCard)
+		sortCombinations(newComb, numSchemaFields)
+
 		for i := 0; i < len(newComb); i++ {
 			eachSet := make([]string, numSchemaFields)
 			copy(eachSet, schemaFields)
@@ -487,41 +481,52 @@ func prepareRuleCombinations(keys []string, numSchemaFields int, delimiter strin
 	return ruleKey.getAllRuleKeys()
 }
 
-// generateCombinations generates rule combinations based on priority mentioned in https://docs.prebid.org/dev-docs/modules/floors.html#rule-selection-process
-func generateCombinations(set []int, numWildCard int, segNum int) (comb [][]int) {
-	length := uint(len(set))
+// generateCombinations generates every permutation for the given number of fields with the specified number of
+// wildcards. Permutations are returned as a list of integer lists where each integer list represents a single
+// permutation with each integer indicating the position of the fields that are wildcards
+// source: https://docs.prebid.org/dev-docs/modules/floors.html#rule-selection-process
+func generateCombinations(numSchemaFields int, numWildCard int) (comb [][]int) {
 
-	if numWildCard > len(set) {
-		numWildCard = len(set)
-	}
-
-	for subsetBits := 1; subsetBits < (1 << length); subsetBits++ {
-		if numWildCard > 0 && bits.OnesCount(uint(subsetBits)) != numWildCard {
+	for subsetBits := 1; subsetBits < (1 << numSchemaFields); subsetBits++ {
+		if bits.OnesCount(uint(subsetBits)) != numWildCard {
 			continue
 		}
 		var subset []int
-		for object := uint(0); object < length; object++ {
+		for object := 0; object < numSchemaFields; object++ {
 			if (subsetBits>>object)&1 == 1 {
-				subset = append(subset, set[object])
+				subset = append(subset, object)
 			}
 		}
 		comb = append(comb, subset)
 	}
+	return comb
+}
 
-	// Sort combinations based on priority
+// sortCombinations sorts the list of combinations from most specific to least specific. A combination is considered more specific than
+// another combination if it has more exact values (less wildcards). If two combinations have the same number of wildcards, a combination
+// is considered more specific than another if its left-most fields are more exact.
+func sortCombinations(comb [][]int, numSchemaFields int) {
+	totalComb := 1 << numSchemaFields
+
 	sort.SliceStable(comb, func(i, j int) bool {
 		wt1 := 0
 		for k := 0; k < len(comb[i]); k++ {
-			wt1 += 1 << (segNum - comb[i][k])
+			wt1 += 1 << (totalComb - comb[i][k])
 		}
 
 		wt2 := 0
 		for k := 0; k < len(comb[j]); k++ {
-			wt2 += 1 << (segNum - comb[j][k])
+			wt2 += 1 << (totalComb - comb[j][k])
 		}
 		return wt1 < wt2
 	})
-	return comb
+}
+
+// ruleKeys defines struct used for maintaining rule combinations generated from schema fields and reqeust values.
+type ruleKeys struct {
+	keyMap    map[string]bool
+	keys      []string
+	delimiter string
 }
 
 // newFloorRuleKeys allocates and initialise ruleKeys

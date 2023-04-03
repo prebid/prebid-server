@@ -8,7 +8,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-var validSchemaDimensions map[string]struct{} = map[string]struct{}{
+var validSchemaDimensions = map[string]struct{}{
 	SiteDomain: {},
 	PubDomain:  {},
 	Domain:     {},
@@ -84,7 +84,6 @@ func selectValidFloorModelGroups(modelGroups []openrtb_ext.PriceFloorModelGroup,
 	}
 
 	for _, modelGroup := range modelGroups {
-
 		if err := validateSchemaDimensions(modelGroup.Schema.Fields); err != nil {
 			errs = append(errs, err)
 			continue

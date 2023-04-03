@@ -15,15 +15,12 @@ func TestPrepareRuleCombinations(t *testing.T) {
 	testCases := []struct {
 		name string
 		in   []string
-		n    int
 		del  string
 		exp  []string
 	}{
-
 		{
 			name: "Schema items, n = 1",
 			in:   []string{"A"},
-			n:    1,
 			del:  "|",
 			exp: []string{
 				"a",
@@ -33,7 +30,6 @@ func TestPrepareRuleCombinations(t *testing.T) {
 		{
 			name: "Schema items, n = 2",
 			in:   []string{"A", "B"},
-			n:    2,
 			del:  "|",
 			exp: []string{
 				"a|b",
@@ -45,7 +41,6 @@ func TestPrepareRuleCombinations(t *testing.T) {
 		{
 			name: "Schema items, n = 3",
 			in:   []string{"A", "B", "C"},
-			n:    3,
 			del:  "|",
 			exp: []string{
 				"a|b|c",
@@ -61,7 +56,6 @@ func TestPrepareRuleCombinations(t *testing.T) {
 		{
 			name: "Schema items, n = 4",
 			in:   []string{"A", "B", "C", "D"},
-			n:    4,
 			del:  "|",
 			exp: []string{
 				"a|b|c|d",
@@ -82,11 +76,9 @@ func TestPrepareRuleCombinations(t *testing.T) {
 				"*|*|*|*",
 			},
 		},
-
 		{
 			name: "Schema items, n = 1 with wildcards",
 			in:   []string{"*"},
-			n:    1,
 			del:  "|",
 			exp: []string{
 				"*",
@@ -95,7 +87,6 @@ func TestPrepareRuleCombinations(t *testing.T) {
 		{
 			name: "Schema items, n = 2 with wildcard at index = 0",
 			in:   []string{"*", "B"},
-			n:    2,
 			del:  "|",
 			exp: []string{
 				"*|b",
@@ -105,7 +96,6 @@ func TestPrepareRuleCombinations(t *testing.T) {
 		{
 			name: "Schema items, n = 2 with wildcards at index = 1",
 			in:   []string{"A", "*"},
-			n:    2,
 			del:  "|",
 			exp: []string{
 				"a|*",
@@ -116,7 +106,6 @@ func TestPrepareRuleCombinations(t *testing.T) {
 		{
 			name: "Schema items, n = 2 wildcards at index = 0,1",
 			in:   []string{"*", "*"},
-			n:    2,
 			del:  "|",
 			exp: []string{
 				"*|*",
@@ -126,7 +115,6 @@ func TestPrepareRuleCombinations(t *testing.T) {
 		{
 			name: "Schema items, n = 3 wildcard at index = 0",
 			in:   []string{"*", "B", "C"},
-			n:    3,
 			del:  "|",
 			exp: []string{
 				"*|b|c",
@@ -138,7 +126,6 @@ func TestPrepareRuleCombinations(t *testing.T) {
 		{
 			name: "Schema items, n = 3 wildcard at index = 1",
 			in:   []string{"A", "*", "C"},
-			n:    3,
 			del:  "|",
 			exp: []string{
 				"a|*|c",
@@ -150,7 +137,6 @@ func TestPrepareRuleCombinations(t *testing.T) {
 		{
 			name: "Schema items, n = 3 with wildcard at index = 2",
 			in:   []string{"A", "B", "*"},
-			n:    3,
 			del:  "|",
 			exp: []string{
 				"a|b|*",
@@ -162,7 +148,6 @@ func TestPrepareRuleCombinations(t *testing.T) {
 		{
 			name: "Schema items, n = 3 with wildcard at index = 0,2",
 			in:   []string{"*", "B", "*"},
-			n:    3,
 			del:  "|",
 			exp: []string{
 				"*|b|*",
@@ -172,7 +157,6 @@ func TestPrepareRuleCombinations(t *testing.T) {
 		{
 			name: "Schema items, n = 3 with wildcard at index = 0,1",
 			in:   []string{"*", "*", "C"},
-			n:    3,
 			del:  "|",
 			exp: []string{
 				"*|*|c",
@@ -182,7 +166,6 @@ func TestPrepareRuleCombinations(t *testing.T) {
 		{
 			name: "Schema items, n = 3 with wildcard at index = 1,2",
 			in:   []string{"A", "*", "*"},
-			n:    3,
 			del:  "|",
 			exp: []string{
 				"a|*|*",
@@ -192,7 +175,7 @@ func TestPrepareRuleCombinations(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			act := prepareRuleCombinations(tc.in, tc.n, tc.del)
+			act := prepareRuleCombinations(tc.in, tc.del)
 			assert.Equal(t, tc.exp, act, tc.name)
 		})
 	}
@@ -610,154 +593,65 @@ func getIntPtr(v int) *int {
 }
 
 func TestSelectFloorModelGroup(t *testing.T) {
+	weightNilModelGroup := openrtb_ext.PriceFloorModelGroup{ModelWeight: nil}
+	weight01ModelGroup := openrtb_ext.PriceFloorModelGroup{ModelWeight: getIntPtr(1)}
+	weight25ModelGroup := openrtb_ext.PriceFloorModelGroup{ModelWeight: getIntPtr(25)}
+	weight50ModelGroup := openrtb_ext.PriceFloorModelGroup{ModelWeight: getIntPtr(50)}
+
 	testCases := []struct {
-		name                string
-		ModelGroup          []openrtb_ext.PriceFloorModelGroup
-		ModelVersion        string
-		fn                  func(int) int
-		expectedModelWeight int
+		name               string
+		ModelGroup         []openrtb_ext.PriceFloorModelGroup
+		fn                 func(int) int
+		expectedModelGroup []openrtb_ext.PriceFloorModelGroup
 	}{
 		{
-			name: "Version 3 Selection",
-			ModelGroup: []openrtb_ext.PriceFloorModelGroup{{
-				ModelWeight:  nil,
-				SkipRate:     20,
-				ModelVersion: "Version 3",
-				Schema:       openrtb_ext.PriceFloorSchema{Fields: []string{"mediaType", "size", "domain"}},
-				Values: map[string]float64{
-					"banner|300x250|www.website.com": 1.01,
-					"banner|300x250|*":               2.01,
-					"banner|300x600|www.website.com": 3.01,
-					"banner|300x600|*":               4.01,
-					"banner|728x90|www.website.com":  5.01,
-					"banner|728x90|*":                6.01,
-					"banner|*|www.website.com":       7.01,
-					"banner|*|*":                     8.01,
-					"*|300x250|www.website.com":      9.01,
-					"*|300x250|*":                    10.01,
-					"*|300x600|www.website.com":      11.01,
-					"*|300x600|*":                    12.01,
-					"*|728x90|www.website.com":       13.01,
-					"*|728x90|*":                     14.01,
-					"*|*|www.website.com":            15.01,
-					"*|*|*":                          16.01,
-				}, Default: 0.01}},
-			ModelVersion:        "Version 3",
-			fn:                  func(i int) int { return 0 },
-			expectedModelWeight: 1,
-		},
-		{
-			name: "Version 2 Selection",
-			ModelGroup: []openrtb_ext.PriceFloorModelGroup{{
-				ModelWeight:  getIntPtr(25),
-				SkipRate:     20,
-				ModelVersion: "Version 2",
-				Schema:       openrtb_ext.PriceFloorSchema{Fields: []string{"mediaType", "size", "domain"}},
-				Values: map[string]float64{
-					"banner|300x250|www.website.com": 1.01,
-					"banner|300x250|*":               2.01,
-					"banner|300x600|www.website.com": 3.01,
-					"banner|300x600|*":               4.01,
-					"banner|728x90|www.website.com":  5.01,
-					"banner|728x90|*":                6.01,
-					"banner|*|www.website.com":       7.01,
-					"banner|*|*":                     8.01,
-					"*|300x250|www.website.com":      9.01,
-					"*|300x250|*":                    10.01,
-					"*|300x600|www.website.com":      11.01,
-					"*|300x600|*":                    12.01,
-					"*|728x90|www.website.com":       13.01,
-					"*|728x90|*":                     14.01,
-					"*|*|www.website.com":            15.01,
-					"*|*|*":                          16.01,
-				}, Default: 0.01},
-				{
-					ModelWeight:  getIntPtr(50),
-					SkipRate:     10,
-					ModelVersion: "Version 1",
-					Schema:       openrtb_ext.PriceFloorSchema{Fields: []string{"mediaType", "size", "domain"}},
-					Values: map[string]float64{
-						"banner|300x250|www.website.com": 1.01,
-						"banner|300x250|*":               2.01,
-						"banner|300x600|www.website.com": 3.01,
-						"banner|300x600|*":               4.01,
-						"banner|728x90|www.website.com":  5.01,
-						"banner|728x90|*":                6.01,
-						"banner|*|www.website.com":       7.01,
-						"banner|*|*":                     8.01,
-						"*|300x250|www.website.com":      9.01,
-						"*|300x250|*":                    10.01,
-						"*|300x600|www.website.com":      11.01,
-						"*|300x600|*":                    12.01,
-						"*|728x90|www.website.com":       13.01,
-						"*|728x90|*":                     14.01,
-						"*|*|www.website.com":            15.01,
-						"*|*|*":                          16.01,
-					}, Default: 0.01},
+			name: "ModelGroup with default weight selection",
+			ModelGroup: []openrtb_ext.PriceFloorModelGroup{
+				weightNilModelGroup,
 			},
-			ModelVersion:        "Version 2",
-			fn:                  func(i int) int { return 5 },
-			expectedModelWeight: 25,
+			fn: func(i int) int { return 0 },
+			expectedModelGroup: []openrtb_ext.PriceFloorModelGroup{
+				weight01ModelGroup,
+			},
 		},
 		{
-			name: "Version 1 Selection",
-			ModelGroup: []openrtb_ext.PriceFloorModelGroup{{
-				ModelWeight:  getIntPtr(50),
-				SkipRate:     10,
-				ModelVersion: "Version 1",
-				Schema:       openrtb_ext.PriceFloorSchema{Fields: []string{"mediaType", "size", "domain"}},
-				Values: map[string]float64{
-					"banner|300x250|www.website.com": 1.01,
-					"banner|300x250|*":               2.01,
-					"banner|300x600|www.website.com": 3.01,
-					"banner|300x600|*":               4.01,
-					"banner|728x90|www.website.com":  5.01,
-					"banner|728x90|*":                6.01,
-					"banner|*|www.website.com":       7.01,
-					"banner|*|*":                     8.01,
-					"*|300x250|www.website.com":      9.01,
-					"*|300x250|*":                    10.01,
-					"*|300x600|www.website.com":      11.01,
-					"*|300x600|*":                    12.01,
-					"*|728x90|www.website.com":       13.01,
-					"*|728x90|*":                     14.01,
-					"*|*|www.website.com":            15.01,
-					"*|*|*":                          16.01,
-				}, Default: 0.01},
-				{
-					ModelWeight:  getIntPtr(25),
-					SkipRate:     20,
-					ModelVersion: "Version 2",
-					Schema:       openrtb_ext.PriceFloorSchema{Fields: []string{"mediaType", "size", "domain"}},
-					Values: map[string]float64{
-						"banner|300x250|www.website.com": 1.01,
-						"banner|300x250|*":               2.01,
-						"banner|300x600|www.website.com": 3.01,
-						"banner|300x600|*":               4.01,
-						"banner|728x90|www.website.com":  5.01,
-						"banner|728x90|*":                6.01,
-						"banner|*|www.website.com":       7.01,
-						"banner|*|*":                     8.01,
-						"*|300x250|www.website.com":      9.01,
-						"*|300x250|*":                    10.01,
-						"*|300x600|www.website.com":      11.01,
-						"*|300x600|*":                    12.01,
-						"*|728x90|www.website.com":       13.01,
-						"*|728x90|*":                     14.01,
-						"*|*|www.website.com":            15.01,
-						"*|*|*":                          16.01,
-					}, Default: 0.01}},
-			ModelVersion:        "Version 1",
-			fn:                  func(i int) int { return 55 },
-			expectedModelWeight: 50,
+			name: "ModelGroup with weight = 25 selection",
+			ModelGroup: []openrtb_ext.PriceFloorModelGroup{
+				weight25ModelGroup,
+				weight50ModelGroup,
+			},
+			fn: func(i int) int { return 5 },
+			expectedModelGroup: []openrtb_ext.PriceFloorModelGroup{
+				weight25ModelGroup,
+			},
+		},
+		{
+			name: "ModelGroup with weight = 50 selection",
+			ModelGroup: []openrtb_ext.PriceFloorModelGroup{
+				weight50ModelGroup,
+			},
+			fn: func(i int) int { return 55 },
+			expectedModelGroup: []openrtb_ext.PriceFloorModelGroup{
+				weight50ModelGroup,
+			},
+		},
+		{
+			name: "ModelGroup with weight = 25 selection",
+			ModelGroup: []openrtb_ext.PriceFloorModelGroup{
+				weight25ModelGroup,
+				weight50ModelGroup,
+			},
+			fn: func(i int) int { return 80 },
+			expectedModelGroup: []openrtb_ext.PriceFloorModelGroup{
+				weight25ModelGroup,
+			},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			resp := selectFloorModelGroup(tc.ModelGroup, tc.fn)
-			assert.Equal(t, *resp[0].ModelWeight, tc.expectedModelWeight, tc.name)
-			assert.Equal(t, tc.ModelGroup[0].ModelVersion, tc.ModelVersion, tc.name)
+			assert.Equal(t, resp, tc.expectedModelGroup)
 		})
 	}
 }
@@ -879,6 +773,84 @@ func TestGetMinFloorValue(t *testing.T) {
 			assert.Equal(t, tc.wantErr, err, tc.name)
 			assert.Equal(t, tc.want, got, tc.name)
 			assert.Equal(t, tc.want1, got1, tc.name)
+		})
+	}
+}
+
+func TestSortCombinations(t *testing.T) {
+	type args struct {
+		comb            [][]int
+		numSchemaFields int
+	}
+	tests := []struct {
+		name    string
+		args    args
+		expComb [][]int
+	}{
+		{
+			name: "With schema fields = 3",
+			args: args{
+				comb:            [][]int{{0}, {1}, {2}},
+				numSchemaFields: 3,
+			},
+			expComb: [][]int{{2}, {1}, {0}},
+		},
+		{
+			name: "With schema fields = 3",
+			args: args{
+				comb:            [][]int{{0, 1}, {1, 2}, {0, 2}},
+				numSchemaFields: 3,
+			},
+			expComb: [][]int{{1, 2}, {0, 2}, {0, 1}},
+		},
+		{
+			name: "With schema fields = 4",
+			args: args{
+				comb:            [][]int{{0, 1, 2}, {1, 2, 3}, {0, 2, 3}, {0, 1, 3}},
+				numSchemaFields: 3,
+			},
+			expComb: [][]int{{1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 1, 2}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sortCombinations(tt.args.comb, tt.args.numSchemaFields)
+			assert.Equal(t, tt.expComb, tt.args.comb)
+		})
+	}
+}
+
+func TestGenerateCombinations(t *testing.T) {
+
+	tests := []struct {
+		name            string
+		numSchemaFields int
+		numWildCard     int
+		expComb         [][]int
+	}{
+		{
+			name:            "With schema fields = 3, wildcard = 1",
+			numSchemaFields: 3,
+			numWildCard:     1,
+			expComb:         [][]int{{0}, {1}, {2}},
+		},
+		{
+			name:            "With schema fields = 3, wildcard = 2",
+			numSchemaFields: 3,
+			numWildCard:     2,
+			expComb:         [][]int{{0, 1}, {0, 2}, {1, 2}},
+		},
+		{
+			name:            "With schema fields = 3, wildcard = 3",
+			numSchemaFields: 3,
+			numWildCard:     3,
+			expComb:         [][]int{{0, 1, 2}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotComb := generateCombinations(tt.numSchemaFields, tt.numWildCard)
+			assert.Equal(t, tt.expComb, gotComb)
 		})
 	}
 }

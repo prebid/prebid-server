@@ -359,7 +359,50 @@ func TestEnrichWithPriceFloors(t *testing.T) {
 			expFloorCur:    "USD",
 			expPriceFlrLoc: openrtb_ext.RequestLocation,
 		},
-
+		{
+			name: "No Rule matching, default value provided",
+			bidRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Site: &openrtb2.Site{
+						Publisher: &openrtb2.Publisher{Domain: "www.website.com"},
+					},
+					Imp: []openrtb2.Imp{{ID: "1234", Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}}}},
+					Ext: json.RawMessage(`{"prebid":{"floors":{"data":{"currency":"USD","modelgroups":[{"modelversion":"model 1 from req","values":{"banner|300x250|www.website.com1":2,"*|*|www.test2.com":1.5},"schema":{"fields":["mediaType","size","domain"]}, "default": 20}]},"enabled":true,"enforcement":{"enforcepbs":true,"floordeals":true,"enforcerate":100}}}}`),
+				},
+			},
+			account: config.Account{
+				PriceFloors: config.AccountPriceFloors{
+					Enabled:       true,
+					MaxRule:       100,
+					MaxSchemaDims: 5,
+				},
+			},
+			expFloorVal:    20,
+			expFloorCur:    "USD",
+			expPriceFlrLoc: openrtb_ext.RequestLocation,
+		},
+		{
+			name: "No Rule matching, default value less than floorMin",
+			bidRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Site: &openrtb2.Site{
+						Publisher: &openrtb2.Publisher{Domain: "www.website.com"},
+					},
+					Imp: []openrtb2.Imp{{ID: "1234", Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}}}},
+					Ext: json.RawMessage(`{"prebid":{"floors":{"floormin":15,"floormincur":"USD","data":{"currency":"USD","modelgroups":[{"modelversion":"model 1 from req","values":{"banner|300x250|www.website.com1":2,"*|*|www.test2.com":1.5},"schema":{"fields":["mediaType","size","domain"]}, "default": 5}]},"enabled":true,"enforcement":{"enforcepbs":true,"floordeals":true,"enforcerate":100}}}}`),
+				},
+			},
+			account: config.Account{
+				PriceFloors: config.AccountPriceFloors{
+					Enabled:       true,
+					MaxRule:       100,
+					MaxSchemaDims: 5,
+				},
+			},
+			expFloorVal:    15,
+			expFloorCur:    "USD",
+			expPriceFlrLoc: openrtb_ext.RequestLocation,
+		},
 		{
 			name: "imp.bidfloor provided, No Rule matching, MinBidFloor provided",
 			bidRequestWrapper: &openrtb_ext.RequestWrapper{
