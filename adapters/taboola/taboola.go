@@ -291,10 +291,9 @@ func overrideBidRequestImp(originBidRequest *openrtb2.BidRequest, imp []openrtb2
 }
 
 func resolveMacros(bid *openrtb2.Bid) {
-	if bid == nil {
-		return
+	if bid != nil {
+		price := strconv.FormatFloat(bid.Price, 'f', -1, 64)
+		bid.NURL = strings.Replace(bid.NURL, "${AUCTION_PRICE}", price, -1)
+		bid.AdM = strings.Replace(bid.AdM, "${AUCTION_PRICE}", price, -1)
 	}
-	price := strconv.FormatFloat(bid.Price, 'f', -1, 64)
-	bid.NURL = strings.Replace(bid.NURL, "${AUCTION_PRICE}", price, -1)
-	bid.AdM = strings.Replace(bid.AdM, "${AUCTION_PRICE}", price, -1)
 }
