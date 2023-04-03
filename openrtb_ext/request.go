@@ -83,7 +83,14 @@ type ExtRequestPrebid struct {
 	// any other value or an empty string disables trace output at all.
 	Trace string `json:"trace,omitempty"`
 
-	BidAdjustments *ExtRequestPrebidBidAdjustments `json:"bidadjustments,omitempty"`
+	BidAdjustments    *ExtRequestPrebidBidAdjustments `json:"bidadjustments,omitempty"`
+	AdServerTargeting []AdServerTarget                `json:"adservertargeting,omitempty"`
+}
+
+type AdServerTarget struct {
+	Key    string `json:"key,omitempty"`
+	Source string `json:"source,omitempty"`
+	Value  string `json:"value,omitempty"`
 }
 
 // Experiment defines if experimental features are available for the request
