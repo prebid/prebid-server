@@ -3,7 +3,7 @@
     "id": "test-request-id",
     "imp": [
       {
-        "id": "test-imp-id",
+        "id": "test-imp-id-1",
         "banner": {
           "format": [
             {
@@ -18,7 +18,9 @@
         },
         "ext": {
           "bidder": {
-            "placement_id": 1,
+            "placementId": 1,
+            "invCode": "abc123",
+            "trafficSourceCode": "xyz",
             "position": "above"
           }
         }
@@ -40,7 +42,7 @@
           },
           "imp": [
             {
-              "id": "test-imp-id",
+              "id": "test-imp-id-1",
               "banner": {
                 "format": [
                   {
@@ -58,9 +60,11 @@
               },
               "ext": {
                 "appnexus": {
-                  "placement_id": 1
+                  "placement_id": 1,
+                  "traffic_source_code": "xyz"
                 }
-              }
+              },
+              "tagid": "abc123"
             }
           ]
         }
@@ -74,7 +78,7 @@
               "seat": "958",
               "bid": [{
                 "id": "7706636740145184841",
-                "impid": "test-imp-id",
+                "impid": "test-imp-id-1",
                 "price": 0.500000,
                 "adid": "29681110",
                 "adm": "some-test-ad",
@@ -84,6 +88,7 @@
                 "crid": "29681110",
                 "h": 250,
                 "w": 300,
+                "cat": ["IAB20-3"],
                 "ext": {
                   "appnexus": {
                     "brand_id": 1,
@@ -112,7 +117,7 @@
         {
           "bid": {
             "id": "7706636740145184841",
-            "impid": "test-imp-id",
+            "impid": "test-imp-id-1",
             "price": 0.5,
             "adm": "some-test-ad",
             "adid": "29681110",
