@@ -48,4 +48,4 @@ jobs:
         docker push -a "$REGION-docker.pkg.dev/$PROJECT_ID/$PROJECT_REPO/$IMAGE"
     - name: Deploy to Google Cloud Run.
       run: |-
-        gcloud run deploy prebid-cache --image "$REGION-docker.pkg.dev/$PROJECT_ID/$PROJECT_REPO/$IMAGE:latest" --region $REGION
+        gcloud run deploy prebid-server --image "$REGION-docker.pkg.dev/$PROJECT_ID/$PROJECT_REPO/$IMAGE:latest" --region $REGION
