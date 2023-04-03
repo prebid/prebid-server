@@ -5352,6 +5352,137 @@ func TestModulesCanBeExecutedForMultipleBiddersSimultaneously(t *testing.T) {
 	}
 }
 
+func TestMergeBidAdjustments(t *testing.T) {
+	currency := "USD"
+
+	testCases := []struct {
+		name                   string
+		givenRequestWrapper    *openrtb_ext.RequestWrapper
+		givenAccount           *config.Account
+		expectedBidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments
+	}{
+		{
+			name: "Different Bidder Names for Bid Adjustments Present in Request and Account",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid":{"bidadjustments":{"mediatype":{"banner":{"bidderA":{"dealId":[{ "adjtype": "multiplier", "value": 1.1}]}}}}}}`)},
+			},
+			givenAccount: &config.Account{
+				BidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+					MediaType: &openrtb_ext.MediaType{
+						Banner: map[string]map[string][]openrtb_ext.Adjustments{
+							"bidderB": {
+								"dealId": []openrtb_ext.Adjustments{{AdjType: "multiplier", Value: 1.5}},
+							},
+						},
+					},
+				},
+			},
+			expectedBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+				MediaType: &openrtb_ext.MediaType{
+					Banner: map[string]map[string][]openrtb_ext.Adjustments{
+						"bidderA": {
+							"dealId": []openrtb_ext.Adjustments{{AdjType: "multiplier", Value: 1.1}},
+						},
+						"bidderB": {
+							"dealId": []openrtb_ext.Adjustments{{AdjType: "multiplier", Value: 1.5}},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Same Bidder Name and DealIDs for Bid Adjustments Present in Request and Account. Request should take precedence",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid":{"bidadjustments":{"mediatype":{"banner":{"bidderA":{"dealId":[{ "adjtype": "multiplier", "value": 1.1}]}}}}}}`)},
+			},
+			givenAccount: &config.Account{
+				BidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+					MediaType: &openrtb_ext.MediaType{
+						Banner: map[string]map[string][]openrtb_ext.Adjustments{
+							"bidderA": {
+								"dealId": []openrtb_ext.Adjustments{{AdjType: "multiplier", Value: 1.5}},
+							},
+						},
+					},
+				},
+			},
+			expectedBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+				MediaType: &openrtb_ext.MediaType{
+					Banner: map[string]map[string][]openrtb_ext.Adjustments{
+						"bidderA": {
+							"dealId": []openrtb_ext.Adjustments{{AdjType: "multiplier", Value: 1.1}},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Same Bidder Name, different DealIDs for Bid Adjustments Present in Request and Account.",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid":{"bidadjustments":{"mediatype":{"banner":{"bidderA":{"dealId":[{ "adjtype": "static", "value": 3.00, "currency": "USD"}]}}}}}}`)},
+			},
+			givenAccount: &config.Account{
+				BidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+					MediaType: &openrtb_ext.MediaType{
+						Banner: map[string]map[string][]openrtb_ext.Adjustments{
+							"bidderA": {
+								"diffDealId": []openrtb_ext.Adjustments{{AdjType: "multiplier", Value: 1.5}},
+							},
+						},
+					},
+				},
+			},
+			expectedBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+				MediaType: &openrtb_ext.MediaType{
+					Banner: map[string]map[string][]openrtb_ext.Adjustments{
+						"bidderA": {
+							"dealId":     []openrtb_ext.Adjustments{{AdjType: "static", Value: 3.00, Currency: &currency}},
+							"diffDealId": []openrtb_ext.Adjustments{{AdjType: "multiplier", Value: 1.5}},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Different bidder names, request comes with CPM bid adjustment",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid":{"bidadjustments":{"mediatype":{"banner":{"bidderA":{"dealId":[{"adjtype": "cpm", "value": 0.18, "currency": "USD"}]}}}}}}`)},
+			},
+			givenAccount: &config.Account{
+				BidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+					MediaType: &openrtb_ext.MediaType{
+						Banner: map[string]map[string][]openrtb_ext.Adjustments{
+							"bidderB": {
+								"dealId": []openrtb_ext.Adjustments{{AdjType: "multiplier", Value: 1.5}},
+							},
+						},
+					},
+				},
+			},
+			expectedBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+				MediaType: &openrtb_ext.MediaType{
+					Banner: map[string]map[string][]openrtb_ext.Adjustments{
+						"bidderA": {
+							"dealId": []openrtb_ext.Adjustments{{AdjType: "cpm", Value: 0.18, Currency: &currency}},
+						},
+						"bidderB": {
+							"dealId": []openrtb_ext.Adjustments{{AdjType: "multiplier", Value: 1.5}},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			mergedBidAdj, err := mergeBidAdjustments(test.givenRequestWrapper, test.givenAccount.BidAdjustments)
+			assert.NoError(t, err, "Unexpected error recieved")
+			assert.Equal(t, test.expectedBidAdjustments, mergedBidAdj)
+		})
+	}
+}
+
 type TestApplyHookMutationsBuilder struct {
 	hooks.EmptyPlanBuilder
 }

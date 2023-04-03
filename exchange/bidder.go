@@ -331,7 +331,10 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 							adjustmentFactor = givenAdjustment
 						}
 
-						adjArray := bidAdjustments.GetAdjustmentArray(bidResponse.Bids[i].BidType, bidderRequest.BidderName, bidResponse.Bids[i].Bid.DealID)
+						adjArray := []openrtb_ext.Adjustments{}
+						if bidAdjustments != nil {
+							adjArray = bidAdjustments.GetAdjustmentArray(bidResponse.Bids[i].BidType, bidderRequest.BidderName, bidResponse.Bids[i].Bid.DealID)
+						}
 
 						originalBidCpm := 0.0
 						if bidResponse.Bids[i].Bid != nil {
@@ -692,13 +695,13 @@ func applyAdjustmentArray(adjArray []openrtb_ext.Adjustments, bidPrice float64, 
 		if adjustment.AdjType == openrtb_ext.AdjTypeMultiplier {
 			bidPrice = bidPrice * adjustment.Value
 		} else if adjustment.AdjType == openrtb_ext.AdjTypeCpm {
-			convertedVal, err := reqInfo.ConvertCurrency(adjustment.Value, currency, adjustment.Currency)
+			convertedVal, err := reqInfo.ConvertCurrency(adjustment.Value, currency, *adjustment.Currency)
 			if err != nil {
 				return originalBidPrice
 			}
 			bidPrice = bidPrice - convertedVal
 		} else if adjustment.AdjType == openrtb_ext.AdjTypeStatic {
-			convertedVal, err := reqInfo.ConvertCurrency(adjustment.Value, currency, adjustment.Currency)
+			convertedVal, err := reqInfo.ConvertCurrency(adjustment.Value, currency, *adjustment.Currency)
 			if err != nil {
 				return originalBidPrice
 			}

@@ -141,3 +141,260 @@ var validGranularityTests []granularityTestData = []granularityTestData{
 		},
 	},
 }
+
+func TestValidateBidAdjustments(t *testing.T) {
+	currency := "USD"
+
+	testCases := []struct {
+		name                string
+		givenBidAdjustments *ExtRequestPrebidBidAdjustments
+		expected            bool
+	}{
+		{
+			name: "Valid single bid adjustment multiplier",
+			givenBidAdjustments: &ExtRequestPrebidBidAdjustments{
+				MediaType: &MediaType{
+					Banner: map[string]map[string][]Adjustments{
+						"bidderA": {
+							"dealId": []Adjustments{{AdjType: "multiplier", Value: 1.1}},
+						},
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			name: "Invalid bid adjustment value, negative",
+			givenBidAdjustments: &ExtRequestPrebidBidAdjustments{
+				MediaType: &MediaType{
+					Banner: map[string]map[string][]Adjustments{
+						"bidderA": {
+							"dealId": []Adjustments{{AdjType: "multiplier", Value: -1.0}},
+						},
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "Invalid bid adjustment value, too big",
+			givenBidAdjustments: &ExtRequestPrebidBidAdjustments{
+				MediaType: &MediaType{
+					Banner: map[string]map[string][]Adjustments{
+						"bidderA": {
+							"dealId": []Adjustments{{AdjType: "multiplier", Value: 200}},
+						},
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "Valid bid adjustment cpm",
+			givenBidAdjustments: &ExtRequestPrebidBidAdjustments{
+				MediaType: &MediaType{
+					Banner: map[string]map[string][]Adjustments{
+						"bidderA": {
+							"dealId": []Adjustments{{AdjType: "cpm", Value: 1.0, Currency: &currency}},
+						},
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			name: "Invalid CPM bid adjustment, no currency given",
+			givenBidAdjustments: &ExtRequestPrebidBidAdjustments{
+				MediaType: &MediaType{
+					Banner: map[string]map[string][]Adjustments{
+						"bidderA": {
+							"dealId": []Adjustments{{AdjType: "cpm", Value: 1.0, Currency: nil}},
+						},
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "Invalid CPM bid adjustment, negative value",
+			givenBidAdjustments: &ExtRequestPrebidBidAdjustments{
+				MediaType: &MediaType{
+					Banner: map[string]map[string][]Adjustments{
+						"bidderA": {
+							"dealId": []Adjustments{{AdjType: "cpm", Value: -1.0, Currency: &currency}},
+						},
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "Valid static bid adjustment",
+			givenBidAdjustments: &ExtRequestPrebidBidAdjustments{
+				MediaType: &MediaType{
+					Banner: map[string]map[string][]Adjustments{
+						"bidderA": {
+							"dealId": []Adjustments{{AdjType: "static", Value: 1.0, Currency: &currency}},
+						},
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			name: "Invalid static bid adjustment, no currency",
+			givenBidAdjustments: &ExtRequestPrebidBidAdjustments{
+				MediaType: &MediaType{
+					Banner: map[string]map[string][]Adjustments{
+						"bidderA": {
+							"dealId": []Adjustments{{AdjType: "static", Value: 1.0, Currency: nil}},
+						},
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "Invalid static bid adjustment, negative value",
+			givenBidAdjustments: &ExtRequestPrebidBidAdjustments{
+				MediaType: &MediaType{
+					Banner: map[string]map[string][]Adjustments{
+						"bidderA": {
+							"dealId": []Adjustments{{AdjType: "static", Value: -1.0, Currency: &currency}},
+						},
+					},
+				},
+			},
+			expected: false,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			actual := test.givenBidAdjustments.ValidateBidAdjustments()
+			assert.Equal(t, test.expected, actual, "Boolean didn't match")
+		})
+	}
+}
+
+func TestGetAdjustmentArray(t *testing.T) {
+	currency := "USD"
+
+	testCases := []struct {
+		name                string
+		givenBidAdjustments *ExtRequestPrebidBidAdjustments
+		givenBidType        BidType
+		givenBidderName     BidderName
+		givenDealId         string
+		expected            []Adjustments
+	}{
+		{
+			name: "One bid adjustment, should return same adjustment",
+			givenBidAdjustments: &ExtRequestPrebidBidAdjustments{
+				MediaType: &MediaType{
+					Banner: map[string]map[string][]Adjustments{
+						"bidderA": {
+							"dealId": []Adjustments{{AdjType: "multiplier", Value: 1.1}},
+						},
+					},
+				},
+			},
+			givenBidType:    BidTypeBanner,
+			givenBidderName: "bidderA",
+			givenDealId:     "dealId",
+			expected:        []Adjustments{{AdjType: "multiplier", Value: 1.1}},
+		},
+		{
+			name: "Multiple bid adjs, WildCard MediaType, non WildCard should have precedence",
+			givenBidAdjustments: &ExtRequestPrebidBidAdjustments{
+				MediaType: &MediaType{
+					Audio: map[string]map[string][]Adjustments{
+						"bidderA": {
+							"dealId": []Adjustments{{AdjType: "static", Value: 1.0, Currency: &currency}},
+						},
+					},
+					WildCard: map[string]map[string][]Adjustments{
+						"bidderA": {
+							"dealId": []Adjustments{{AdjType: "cpm", Value: 1.0, Currency: &currency}},
+						},
+					},
+				},
+			},
+			givenBidType:    BidTypeAudio,
+			givenBidderName: "bidderA",
+			givenDealId:     "dealId",
+			expected:        []Adjustments{{AdjType: "static", Value: 1.0, Currency: &currency}},
+		},
+		{
+			name: "Single bid adj, Deal ID doesn't match, but wildcard present, should return given bid adj",
+			givenBidAdjustments: &ExtRequestPrebidBidAdjustments{
+				MediaType: &MediaType{
+					Native: map[string]map[string][]Adjustments{
+						"bidderA": {
+							"*": []Adjustments{{AdjType: "cpm", Value: 1.0, Currency: &currency}},
+						},
+					},
+				},
+			},
+			givenBidType:    BidTypeNative,
+			givenBidderName: "bidderA",
+			givenDealId:     "dealId",
+			expected:        []Adjustments{{AdjType: "cpm", Value: 1.0, Currency: &currency}},
+		},
+		{
+			name: "Single bid adj, Not matched bidder, but WildCard, should return given bid adj",
+			givenBidAdjustments: &ExtRequestPrebidBidAdjustments{
+				MediaType: &MediaType{
+					Video: map[string]map[string][]Adjustments{
+						"*": {
+							"dealId": []Adjustments{{AdjType: "multiplier", Value: 1.1}},
+						},
+					},
+				},
+			},
+			givenBidType:    BidTypeVideo,
+			givenBidderName: "bidderA",
+			givenDealId:     "dealId",
+			expected:        []Adjustments{{AdjType: "multiplier", Value: 1.1}},
+		},
+		{
+			name: "WildCard bidder and dealId, should return given bid adj",
+			givenBidAdjustments: &ExtRequestPrebidBidAdjustments{
+				MediaType: &MediaType{
+					WildCard: map[string]map[string][]Adjustments{
+						"*": {
+							"*": []Adjustments{{AdjType: "multiplier", Value: 1.1}},
+						},
+					},
+				},
+			},
+			givenBidType:    BidTypeVideo,
+			givenBidderName: "bidderA",
+			givenDealId:     "dealId",
+			expected:        []Adjustments{{AdjType: "multiplier", Value: 1.1}},
+		},
+		{
+			name: "WildCard bidder, but dealId doesn't match given, should return nil",
+			givenBidAdjustments: &ExtRequestPrebidBidAdjustments{
+				MediaType: &MediaType{
+					WildCard: map[string]map[string][]Adjustments{
+						"bidderB": {
+							"diffDealId": []Adjustments{{AdjType: "multiplier", Value: 1.1}},
+						},
+					},
+				},
+			},
+			givenBidType:    BidTypeVideo,
+			givenBidderName: "bidderA",
+			givenDealId:     "dealId",
+			expected:        nil,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			adjArray := test.givenBidAdjustments.GetAdjustmentArray(test.givenBidType, test.givenBidderName, test.givenDealId)
+			assert.Equal(t, test.expected, adjArray, "Adjustment Array doesn't match")
+		})
+	}
+}

@@ -171,7 +171,7 @@ type MediaType struct {
 type Adjustments struct {
 	AdjType  string  `json:"adjtype,omitempty"`
 	Value    float64 `json:"value,omitempty"`
-	Currency string  `json:"currency,omitempty"`
+	Currency *string `json:"currency,omitempty"`
 }
 
 // ExtRequestTargeting defines the contract for bidrequest.ext.prebid.targeting
@@ -378,7 +378,6 @@ func getAdjustmentArrayHelper(bidAdjMap map[string]map[string][]Adjustments, bid
 	// #2: Matched bidderName and WildCard dealID field
 	// #3: Wildcard bidder field and matched DealID
 	// #4: Wildcard bidder and wildcard dealID
-
 	if _, ok := bidAdjMap[bidderName]; ok {
 		if _, ok := bidAdjMap[bidderName][dealID]; ok {
 			return bidAdjMap[bidderName][dealID]
@@ -395,7 +394,10 @@ func getAdjustmentArrayHelper(bidAdjMap map[string]map[string][]Adjustments, bid
 	return nil
 }
 
-func (bidAdjustments ExtRequestPrebidBidAdjustments) ValidateBidAdjustments() bool {
+func (bidAdjustments *ExtRequestPrebidBidAdjustments) ValidateBidAdjustments() bool {
+	if bidAdjustments == nil {
+		return true
+	}
 	if bidAdjustments.MediaType.Banner != nil {
 		if valid := validateBidAdjustmentsHelper(bidAdjustments.MediaType.Banner); !valid {
 			return false
@@ -420,8 +422,8 @@ func (bidAdjustments ExtRequestPrebidBidAdjustments) ValidateBidAdjustments() bo
 }
 
 func validateBidAdjustmentsHelper(bidAdjMap map[string]map[string][]Adjustments) bool {
-	for bidderName, _ := range bidAdjMap {
-		for dealId, _ := range bidAdjMap[bidderName] {
+	for bidderName := range bidAdjMap {
+		for dealId := range bidAdjMap[bidderName] {
 			for _, adjustment := range bidAdjMap[bidderName][dealId] {
 				if !validateAdjustment(adjustment) {
 					return false
@@ -435,16 +437,16 @@ func validateBidAdjustmentsHelper(bidAdjMap map[string]map[string][]Adjustments)
 func validateAdjustment(adjustment Adjustments) bool {
 	switch adjustment.AdjType {
 	case AdjTypeCpm:
-		if adjustment.Currency == "" || adjustment.Value < 0 || adjustment.Value > math.MaxFloat64 {
+		if adjustment.Currency == nil || adjustment.Value < 0 || adjustment.Value > math.MaxFloat64 {
 			return false
 		}
 	case AdjTypeMultiplier:
 		if adjustment.Value < 0 || adjustment.Value > 100 {
 			return false
 		}
-		adjustment.Currency = ""
+		adjustment.Currency = nil
 	case AdjTypeStatic:
-		if adjustment.Currency == "" || adjustment.Value < 0 || adjustment.Value > math.MaxFloat64 {
+		if adjustment.Currency == nil || adjustment.Value < 0 || adjustment.Value > math.MaxFloat64 {
 			return false
 		}
 	default:

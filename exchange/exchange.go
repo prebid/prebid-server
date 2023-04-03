@@ -283,7 +283,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		if requestExt.Prebid.Debug {
 			errs = append(errs, &errortypes.Warning{
 				WarningCode: errortypes.BidAdjustmentWarningCode,
-				Message:     "Bid Adjustment Was Invalid",
+				Message:     "Bid Adjustment Was Invalid After Merge",
 			})
 		}
 	}
@@ -1456,8 +1456,14 @@ func mergeBidAdjustments(req *openrtb_ext.RequestWrapper, account *openrtb_ext.E
 	}
 	extPrebid := reqExt.GetPrebid()
 
+	if extPrebid == nil && account == nil {
+		return nil, nil
+	}
 	if extPrebid == nil && account != nil {
 		return account, nil
+	}
+	if extPrebid != nil && account == nil {
+		return extPrebid.BidAdjustments, nil
 	}
 
 	if extPrebid.BidAdjustments.MediaType.Banner != nil && account.MediaType.Banner != nil {
