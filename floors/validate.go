@@ -55,7 +55,6 @@ func validateFloorRulesAndLowerValidRuleKey(schema openrtb_ext.PriceFloorSchema,
 
 // validateFloorParams validates SchemaVersion, SkipRate and FloorMin
 func validateFloorParams(extFloorRules *openrtb_ext.PriceFloorRules) error {
-
 	if extFloorRules.Data != nil && len(extFloorRules.Data.FloorsSchemaVersion) > 0 && extFloorRules.Data.FloorsSchemaVersion != "2" {
 		return fmt.Errorf("Invalid FloorsSchemaVersion = '%v', supported version 2", extFloorRules.Data.FloorsSchemaVersion)
 	}
@@ -68,7 +67,7 @@ func validateFloorParams(extFloorRules *openrtb_ext.PriceFloorRules) error {
 		return fmt.Errorf("Invalid SkipRate = '%v' at ext.prebid.floors.skiprate", extFloorRules.SkipRate)
 	}
 
-	if extFloorRules.FloorMin < float64(0) {
+	if extFloorRules.FloorMin < 0.0 {
 		return fmt.Errorf("Invalid FloorMin = '%v', value should be >= 0", extFloorRules.FloorMin)
 	}
 
@@ -109,7 +108,7 @@ func selectValidFloorModelGroups(modelGroups []openrtb_ext.PriceFloorModelGroup,
 			continue
 		}
 
-		if modelGroup.Default < float64(0) {
+		if modelGroup.Default < 0.0 {
 			errs = append(errs, fmt.Errorf("Invalid Floor Model = '%v' due to Default = '%v' is less than 0", modelGroup.ModelVersion, modelGroup.Default))
 			continue
 		}

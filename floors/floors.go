@@ -95,9 +95,11 @@ func updateBidRequestWithFloors(extFloorRules *openrtb_ext.PriceFloorRules, requ
 
 				if isRuleMatched {
 					err = updateImpExtWithFloorDetails(imp, matchedRule, floorVal, imp.BidFloor)
+					if err != nil {
+						floorErrList = append(floorErrList, err)
+					}
 				}
-			}
-			if err != nil {
+			} else {
 				floorErrList = append(floorErrList, err)
 			}
 		}
@@ -105,7 +107,7 @@ func updateBidRequestWithFloors(extFloorRules *openrtb_ext.PriceFloorRules, requ
 	return floorErrList
 }
 
-// roundToFourDecimals retuns give value to 4 decimal points
+// roundToFourDecimals retuns given value to 4 decimal points
 func roundToFourDecimals(in float64) float64 {
 	return math.Round(in*10000) / 10000
 }

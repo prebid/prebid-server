@@ -101,14 +101,14 @@ func getFloorMinAndCurFromImp(imp *openrtb_ext.ImpWrapper) (float64, string, err
 
 	impExt, err := imp.GetImpExt()
 	if impExt != nil {
-		impPrebidExt := impExt.GetPrebid()
-		if impPrebidExt != nil && impPrebidExt.Floors != nil {
-			if impPrebidExt.Floors.FloorMin > float64(0) {
-				floorMin = impPrebidExt.Floors.FloorMin
+		impExtPrebid := impExt.GetPrebid()
+		if impExtPrebid != nil && impExtPrebid.Floors != nil {
+			if impExtPrebid.Floors.FloorMin > 0.0 {
+				floorMin = impExtPrebid.Floors.FloorMin
 			}
 
-			if impPrebidExt.Floors.FloorMinCur != "" {
-				floorMinCur = impPrebidExt.Floors.FloorMinCur
+			if impExtPrebid.Floors.FloorMinCur != "" {
+				floorMinCur = impExtPrebid.Floors.FloorMinCur
 			}
 		}
 	}
@@ -395,7 +395,6 @@ func getGptSlot(imp *openrtb_ext.ImpWrapper) string {
 
 // getChannelName returns channel name
 func getChannelName(bidRequest *openrtb_ext.RequestWrapper) string {
-
 	reqExt, err := bidRequest.GetRequestExt()
 	if err == nil && reqExt != nil {
 		prebidExt := reqExt.GetPrebid()
@@ -403,7 +402,6 @@ func getChannelName(bidRequest *openrtb_ext.RequestWrapper) string {
 			return prebidExt.Channel.Name
 		}
 	}
-
 	return catchAll
 }
 

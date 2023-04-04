@@ -74,7 +74,7 @@ type ExtRequestPrebid struct {
 	// - verbose: sets maximum level of output information
 	// - basic: excludes debugmessages and analytic_tags from output
 	// any other value or an empty string disables trace output at all.
-	Trace       string                 `json:"trace,omitempty"`
+	Trace string `json:"trace,omitempty"`
 
 	AdServerTargeting []AdServerTarget `json:"adservertargeting,omitempty"`
 }
