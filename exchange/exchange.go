@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/adservertargeting"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/errortypes"
@@ -200,6 +201,7 @@ type AuctionRequest struct {
 	BidderImpReplaceImpID stored_responses.BidderImpReplaceImpID
 	PubID                 string
 	HookExecutor          hookexecution.StageExecutor
+	QueryParams           url.Values
 }
 
 // BidderRequest holds the bidder specific request and all other
@@ -248,7 +250,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	responseDebugAllow, accountDebugAllow, debugLog := getDebugInfo(r.BidRequestWrapper.Test, requestExtPrebid, r.Account.DebugAllow, debugLog)
 
 	// save incoming request with stored requests (if applicable) to return in debug logs
-	if responseDebugAllow {
+	if responseDebugAllow || len(requestExtPrebid.AdServerTargeting) > 0 {
 		if err := r.BidRequestWrapper.RebuildRequest(); err != nil {
 			return nil, err
 		}
@@ -436,6 +438,11 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 
 	// Build the response
 	bidResponse, err := e.buildBidResponse(ctx, liveAdapters, adapterBids, r.BidRequestWrapper.BidRequest, adapterExtra, auc, bidResponseExt, cacheInstructions.returnCreative, r.ImpExtInfoMap, r.PubID, errs)
+
+	bidResponse = adservertargeting.Apply(r.BidRequestWrapper, r.ResolvedBidRequest, bidResponse, r.QueryParams, bidResponseExt, r.Account.TruncateTargetAttribute)
+
+	bidResponse.Ext, err = encodeBidResponseExt(bidResponseExt)
+
 	return bidResponse, err
 }
 
@@ -827,8 +834,6 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 	}
 
 	bidResponse.SeatBid = seatBids
-
-	bidResponse.Ext, err = encodeBidResponseExt(bidResponseExt)
 
 	return bidResponse, err
 }

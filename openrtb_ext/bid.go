@@ -20,7 +20,7 @@ type ExtBidPrebid struct {
 	Meta              *ExtBidPrebidMeta   `json:"meta,omitempty"`
 	Targeting         map[string]string   `json:"targeting,omitempty"`
 	TargetBidderCode  string              `json:"targetbiddercode,omitempty"`
-	Type              BidType             `json:"type"`
+	Type              BidType             `json:"type,omitempty"`
 	Video             *ExtBidPrebidVideo  `json:"video,omitempty"`
 	Events            *ExtBidPrebidEvents `json:"events,omitempty"`
 	BidId             string              `json:"bidid,omitempty"`
