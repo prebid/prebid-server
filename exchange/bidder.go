@@ -171,11 +171,11 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 		dataLen = len(reqData) + len(bidderRequest.BidderStoredResponses)
 		responseChannel = make(chan *httpCallInfo, dataLen)
 		if len(reqData) == 1 {
-			responseChannel <- bidder.doRequest(ctx, reqData[0], reqInfo.BidderRequestStartTime, metrics.NonErrorPreBidderRequest)
+			responseChannel <- bidder.doRequest(ctx, reqData[0], reqInfo.BidderRequestStartTime)
 		} else {
 			for _, oneReqData := range reqData {
 				go func(data *adapters.RequestData) {
-					responseChannel <- bidder.doRequest(ctx, data, reqInfo.BidderRequestStartTime, metrics.NonErrorPreBidderRequest)
+					responseChannel <- bidder.doRequest(ctx, data, reqInfo.BidderRequestStartTime)
 				}(oneReqData) // Method arg avoids a race condition on oneReqData
 			}
 		}
@@ -490,11 +490,11 @@ func makeExt(httpInfo *httpCallInfo) *openrtb_ext.ExtHttpCall {
 
 // doRequest makes a request, handles the response, and returns the data needed by the
 // Bidder interface.
-func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.RequestData, pbsRequestStartTime time.Time, overhead metrics.OverheadType) *httpCallInfo {
-	return bidder.doRequestImpl(ctx, req, glog.Warningf, pbsRequestStartTime, overhead)
+func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.RequestData, pbsRequestStartTime time.Time) *httpCallInfo {
+	return bidder.doRequestImpl(ctx, req, glog.Warningf, pbsRequestStartTime)
 }
 
-func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.RequestData, logger util.LogMsg, pbsRequestStartTime time.Time, overhead metrics.OverheadType) *httpCallInfo {
+func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.RequestData, logger util.LogMsg, pbsRequestStartTime time.Time) *httpCallInfo {
 	var requestBody []byte
 
 	switch strings.ToUpper(bidder.config.EndpointCompression) {
@@ -518,7 +518,7 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 	if !bidder.config.DisableConnMetrics {
 		ctx = bidder.addClientTrace(ctx)
 	}
-	bidder.me.RecordOverheadTime(overhead, time.Since(pbsRequestStartTime))
+	bidder.me.RecordOverheadTime(metrics.NonErrorPreBidderRequest, time.Since(pbsRequestStartTime))
 	httpResp, err := ctxhttp.Do(ctx, bidder.Client, httpReq)
 	if err != nil {
 		if err == context.DeadlineExceeded {
