@@ -204,7 +204,6 @@ const (
 	BidderNextMillennium    BidderName = "nextmillennium"
 	BidderNinthDecimal      BidderName = "ninthdecimal"
 	BidderNoBid             BidderName = "nobid"
-	BidderOFTMedia          BidderName = "oftmedia"
 	BidderOneTag            BidderName = "onetag"
 	BidderOpenWeb           BidderName = "openweb"
 	BidderOpenx             BidderName = "openx"
@@ -389,7 +388,6 @@ func CoreBidderNames() []BidderName {
 		BidderNextMillennium,
 		BidderNinthDecimal,
 		BidderNoBid,
-		BidderOFTMedia,
 		BidderOneTag,
 		BidderOpenWeb,
 		BidderOpenx,

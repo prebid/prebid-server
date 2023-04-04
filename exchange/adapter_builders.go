@@ -292,7 +292,6 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderNextMillennium:    nextmillennium.Builder,
 		openrtb_ext.BidderNinthDecimal:      ninthdecimal.Builder,
 		openrtb_ext.BidderNoBid:             nobid.Builder,
-		openrtb_ext.BidderOFTMedia:          adtelligent.Builder,
 		openrtb_ext.BidderOneTag:            onetag.Builder,
 		openrtb_ext.BidderOpenWeb:           openweb.Builder,
 		openrtb_ext.BidderOpenx:             openx.Builder,
