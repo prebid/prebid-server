@@ -17,7 +17,7 @@
     },
     "tagId": {
       "type": "string",
-      "description": "preferred"
+      "description": "preferred, will get precedence if both tagId and tagid are defined"
     },
     "bidfloor": {
       "type": "number"
