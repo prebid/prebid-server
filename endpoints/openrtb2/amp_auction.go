@@ -234,6 +234,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		BidderImpReplaceImpID:      bidderImpReplaceImp,
 		PubID:                      labels.PubID,
 		HookExecutor:               deps.hookExecutor,
+		QueryParams:                r.URL.Query(),
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
