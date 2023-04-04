@@ -347,42 +347,40 @@ func (m ExtMultiBid) String() string {
 
 func (bidAdj *ExtRequestPrebidBidAdjustments) GetAdjustmentArray(bidType BidType, bidderName BidderName, dealID string) []Adjustments {
 	if bidAdj.MediaType.Banner != nil && bidType == BidTypeBanner {
-		if adjArray := getAdjustmentArrayHelper(bidAdj.MediaType.Banner, bidderName.String(), dealID); adjArray != nil {
+		if adjArray := getAdjustmentArrayForMediaType(bidAdj.MediaType.Banner, bidderName.String(), dealID); adjArray != nil {
 			return adjArray
 		}
 	}
 	if bidAdj.MediaType.Video != nil && bidType == BidTypeVideo {
-		if adjArray := getAdjustmentArrayHelper(bidAdj.MediaType.Video, bidderName.String(), dealID); adjArray != nil {
+		if adjArray := getAdjustmentArrayForMediaType(bidAdj.MediaType.Video, bidderName.String(), dealID); adjArray != nil {
 			return adjArray
 		}
 	}
 	if bidAdj.MediaType.Audio != nil && bidType == BidTypeAudio {
-		if adjArray := getAdjustmentArrayHelper(bidAdj.MediaType.Audio, bidderName.String(), dealID); adjArray != nil {
+		if adjArray := getAdjustmentArrayForMediaType(bidAdj.MediaType.Audio, bidderName.String(), dealID); adjArray != nil {
 			return adjArray
 		}
 
 	}
 	if bidAdj.MediaType.Native != nil && bidType == BidTypeNative {
-		if adjArray := getAdjustmentArrayHelper(bidAdj.MediaType.Native, bidderName.String(), dealID); adjArray != nil {
+		if adjArray := getAdjustmentArrayForMediaType(bidAdj.MediaType.Native, bidderName.String(), dealID); adjArray != nil {
 			return adjArray
 		}
 	}
 	if bidAdj.MediaType.WildCard != nil {
-		if adjArray := getAdjustmentArrayHelper(bidAdj.MediaType.WildCard, bidderName.String(), dealID); adjArray != nil {
+		if adjArray := getAdjustmentArrayForMediaType(bidAdj.MediaType.WildCard, bidderName.String(), dealID); adjArray != nil {
 			return adjArray
 		}
 	}
 	return nil
 }
 
-// TODO: Better function name?
-func getAdjustmentArrayHelper(bidAdjMap map[string]map[string][]Adjustments, bidderName string, dealID string) []Adjustments {
-
-	// Priority For Returning Adjustment Array
-	// #1: Matched bidderName and dealID
-	// #2: Matched bidderName and WildCard dealID field
-	// #3: Wildcard bidder field and matched DealID
-	// #4: Wildcard bidder and wildcard dealID
+// Priority For Returning Adjustment Array Based on Passed BidderName and DealID
+// #1: Are able to match bidderName and dealID
+// #2: Are able to match bidderName and dealID field is WildCard
+// #3: Bidder field is WildCard and are able to match DealID
+// #4: Wildcard bidder and wildcard dealID
+func getAdjustmentArrayForMediaType(bidAdjMap map[string]map[string][]Adjustments, bidderName string, dealID string) []Adjustments {
 	if _, ok := bidAdjMap[bidderName]; ok {
 		if _, ok := bidAdjMap[bidderName][dealID]; ok {
 			return bidAdjMap[bidderName][dealID]
@@ -404,29 +402,29 @@ func (bidAdjustments *ExtRequestPrebidBidAdjustments) ValidateBidAdjustments() b
 		return true
 	}
 	if bidAdjustments.MediaType.Banner != nil {
-		if valid := validateBidAdjustmentsHelper(bidAdjustments.MediaType.Banner); !valid {
+		if valid := findAndValidateAdjustment(bidAdjustments.MediaType.Banner); !valid {
 			return false
 		}
 	}
 	if bidAdjustments.MediaType.Video != nil {
-		if valid := validateBidAdjustmentsHelper(bidAdjustments.MediaType.Video); !valid {
+		if valid := findAndValidateAdjustment(bidAdjustments.MediaType.Video); !valid {
 			return false
 		}
 	}
 	if bidAdjustments.MediaType.Audio != nil {
-		if valid := validateBidAdjustmentsHelper(bidAdjustments.MediaType.Audio); !valid {
+		if valid := findAndValidateAdjustment(bidAdjustments.MediaType.Audio); !valid {
 			return false
 		}
 	}
 	if bidAdjustments.MediaType.Native != nil {
-		if valid := validateBidAdjustmentsHelper(bidAdjustments.MediaType.Native); !valid {
+		if valid := findAndValidateAdjustment(bidAdjustments.MediaType.Native); !valid {
 			return false
 		}
 	}
 	return true
 }
 
-func validateBidAdjustmentsHelper(bidAdjMap map[string]map[string][]Adjustments) bool {
+func findAndValidateAdjustment(bidAdjMap map[string]map[string][]Adjustments) bool {
 	for bidderName := range bidAdjMap {
 		for dealId := range bidAdjMap[bidderName] {
 			for _, adjustment := range bidAdjMap[bidderName][dealId] {

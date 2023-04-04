@@ -1537,33 +1537,32 @@ func mergeBidAdjustments(req *openrtb_ext.RequestWrapper, account *openrtb_ext.E
 	}
 
 	if extPrebid.BidAdjustments.MediaType.Banner != nil && account.MediaType.Banner != nil {
-		extPrebid.BidAdjustments.MediaType.Banner = mergeBidAdjustmentsHelper(extPrebid.BidAdjustments.MediaType.Banner, account.MediaType.Banner)
+		extPrebid.BidAdjustments.MediaType.Banner = mergeAdjustmentsForMediaType(extPrebid.BidAdjustments.MediaType.Banner, account.MediaType.Banner)
 	} else if account.MediaType.Banner != nil {
 		extPrebid.BidAdjustments.MediaType.Banner = account.MediaType.Banner
 	}
 
 	if extPrebid.BidAdjustments.MediaType.Video != nil && account.MediaType.Video != nil {
-		extPrebid.BidAdjustments.MediaType.Video = mergeBidAdjustmentsHelper(extPrebid.BidAdjustments.MediaType.Video, account.MediaType.Video)
+		extPrebid.BidAdjustments.MediaType.Video = mergeAdjustmentsForMediaType(extPrebid.BidAdjustments.MediaType.Video, account.MediaType.Video)
 	} else if account.MediaType.Video != nil {
 		extPrebid.BidAdjustments.MediaType.Video = account.MediaType.Video
 	}
 
 	if extPrebid.BidAdjustments.MediaType.Native != nil && account.MediaType.Native != nil {
-		extPrebid.BidAdjustments.MediaType.Native = mergeBidAdjustmentsHelper(extPrebid.BidAdjustments.MediaType.Native, account.MediaType.Native)
+		extPrebid.BidAdjustments.MediaType.Native = mergeAdjustmentsForMediaType(extPrebid.BidAdjustments.MediaType.Native, account.MediaType.Native)
 	} else if account.MediaType.Native != nil {
 		extPrebid.BidAdjustments.MediaType.Native = account.MediaType.Native
 	}
 
 	if extPrebid.BidAdjustments.MediaType.Audio != nil && account.MediaType.Audio != nil {
-		extPrebid.BidAdjustments.MediaType.Audio = mergeBidAdjustmentsHelper(extPrebid.BidAdjustments.MediaType.Audio, account.MediaType.Audio)
+		extPrebid.BidAdjustments.MediaType.Audio = mergeAdjustmentsForMediaType(extPrebid.BidAdjustments.MediaType.Audio, account.MediaType.Audio)
 	} else if account.MediaType.Audio != nil {
 		extPrebid.BidAdjustments.MediaType.Audio = account.MediaType.Audio
 	}
 	return extPrebid.BidAdjustments, nil
 }
 
-// TODO: Better function name?
-func mergeBidAdjustmentsHelper(hostAdjMap map[string]map[string][]openrtb_ext.Adjustments, accountAdjMap map[string]map[string][]openrtb_ext.Adjustments) map[string]map[string][]openrtb_ext.Adjustments {
+func mergeAdjustmentsForMediaType(hostAdjMap map[string]map[string][]openrtb_ext.Adjustments, accountAdjMap map[string]map[string][]openrtb_ext.Adjustments) map[string]map[string][]openrtb_ext.Adjustments {
 	for bidderName, dealIdToAdjustmentsMap := range accountAdjMap {
 		if _, ok := hostAdjMap[bidderName]; ok {
 			for dealID, acctAdjustmentsArray := range accountAdjMap[bidderName] {
