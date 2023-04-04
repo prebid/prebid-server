@@ -276,3 +276,38 @@ func TestMakeRequestsErrIxDiag(t *testing.T) {
 	_, errs := bidder.MakeRequests(req, nil)
 	assert.Len(t, errs, 1)
 }
+
+func TestMoveSid(t *testing.T) {
+	testCases := []struct {
+		description string
+		imps        []openrtb2.Imp
+		expectedExt json.RawMessage
+	}{
+		{
+			description: "valid input with sid",
+			imps: []openrtb2.Imp{
+				{
+					Ext: json.RawMessage(`{"bidder":{"sid":"1234"}}`),
+				},
+			},
+			expectedExt: json.RawMessage(`{"bidder":{"sid":"1234"},"sid":"1234"}`),
+		},
+		{
+			description: "valid input without sid",
+			imps: []openrtb2.Imp{
+				{
+					Ext: json.RawMessage(`{"bidder":{"siteId":"1234"}}`),
+				},
+			},
+			expectedExt: json.RawMessage(`{"bidder":{"siteId":"1234"}}`),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			imps := tc.imps
+			moveSid(imps)
+			assert.Equal(t, tc.expectedExt, imps[0].Ext)
+		})
+	}
+}
