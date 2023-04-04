@@ -51,6 +51,7 @@ type ExtRequestPrebid struct {
 	Events               json.RawMessage           `json:"events,omitempty"`
 	Experiment           *Experiment               `json:"experiment,omitempty"`
 	Integration          string                    `json:"integration,omitempty"`
+	MultiBid             []*ExtMultiBid            `json:"multibid,omitempty"`
 	Passthrough          json.RawMessage           `json:"passthrough,omitempty"`
 	SChains              []*ExtRequestPrebidSChain `json:"schains,omitempty"`
 	Server               *ExtRequestPrebidServer   `json:"server,omitempty"`
@@ -75,9 +76,14 @@ type ExtRequestPrebid struct {
 
 	// Macros specifies list of custom macros along with the values. This is used while forming
 	// the tracker URLs, where PBS will replace the Custom Macro with its value with url-encoding
-	Macros      map[string]string      `json:"macros,omitempty"`
-	MultiBid    []*ExtMultiBid         `json:"multibid,omitempty"`
-	MultiBidMap map[string]ExtMultiBid `json:"-"`
+	Macros            map[string]string `json:"macros,omitempty"`
+	AdServerTargeting []AdServerTarget  `json:"adservertargeting,omitempty"`
+}
+
+type AdServerTarget struct {
+	Key    string `json:"key,omitempty"`
+	Source string `json:"source,omitempty"`
+	Value  string `json:"value,omitempty"`
 }
 
 // Experiment defines if experimental features are available for the request
