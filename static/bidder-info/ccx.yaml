@@ -8,7 +8,6 @@ capabilities:
       - banner
       - video
 userSync:
-  # Clickonometrics supports user syncing, but requires configuration by the host. contact this
-  # bidder directly at the email address in this file to ask about enabling user sync.
-  supports:
-    - redirect
+  redirect:
+    url: "https://sync.clickonometrics.pl/prebid/set-cookie?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirurl={{.RedirectURL}}"
+    userMacro: "${USER_ID}"

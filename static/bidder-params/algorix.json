@@ -24,8 +24,8 @@
     },
     "region": {
       "type": "string",
-      "enum": ["APAC", "USE"],
-      "description": "Server region for PBS request, null for global, APAC for SG Region, USE for US Region"
+      "enum": ["APAC", "USE", "EUC"],
+      "description": "Server region for PBS request, null for global, APAC for SG Region, USE for US Region, EUC for EU Region."
     }
   },
   "required": ["sid", "token"]

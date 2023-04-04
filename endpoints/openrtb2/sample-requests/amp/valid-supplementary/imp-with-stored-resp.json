@@ -2,7 +2,7 @@
   "description": "Amp request where impression makes reference to a valid stored response with a $5.00 bid",
   "query": "tag_id=101",
   "mockAmpStoredResponse": {
-    "6d718149": "[{\"bid\": [{\"id\": \"bid_id\", \"price\": 5.00, \"ext\": {\"prebid\": {\"targeting\": { \"hb_pb\": \"1.20\", \"hb_cat\": \"IAB-20\", \"hb_cache_id\": \"some_id\"}}}}],\"seat\": \"appnexus\"}]"
+    "6d718149": "[{\"bid\": [{\"id\": \"bid_id\", \"price\": 5.00, \"ext\": {\"prebid\": {\"type\":\"video\", \"targeting\": { \"hb_pb\": \"1.20\", \"hb_cat\": \"IAB-20\", \"hb_cache_id\": \"some_id\"}}}}],\"seat\": \"appnexus\"}]"
   },
   "mockBidRequest": {
     "id": "request-with-stored-resp",

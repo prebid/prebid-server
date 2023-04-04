@@ -34,18 +34,25 @@ func TestInvalidParams(t *testing.T) {
 
 var validParams = []string{
 	`{"publisherId" : "1", "tagid": "tag-id-for-example"}`,
+	`{"publisherId" : "1", "tagId": "tag-id-for-example"}`,
+	`{"publisherId" : "1", "tagid": "tag-id-for-example","position":1}`,
+	`{"publisherId" : "1", "tagid": "tag-id-for-example","pageType":"pageType"}`,
 	`{"publisherId" : "1", "tagid": "tag-id-for-example", "bcat": ["excluded-category"], "badv": ["excluded-advertiser"], "bidfloor": 1.2, "publisherDomain": "http://domain.com"}`,
 }
 
 var invalidParams = []string{
 	`{}`,
-	`{"publisherId" : "1"}`,
+	`{"tagId" : "1"}`,
+	`{"publisherId" : "1", "bcat": ["excluded-category"], "badv": ["excluded-advertiser"], "bidfloor": 1.2, "publisherDomain": "http://domain.com"}`,
 	`{"publisherId" : 1, "tagid": "tag-id-for-example"}`,
 	`{"publisherId" : "1"", "tagid": 2}`,
 	`{"publisherId" : "1", "tagid": "tag-id-for-example", "bcat":"incorrect-type"}`,
 	`{"publisherId" : "1", "tagid": "tag-id-for-example", "badv":"incorrect-type"}`,
 	`{"publisherId" : "1", "tagid": "tag-id-for-example", "bidfloor":"incorrect-type"}`,
 	`{"publisherId" : "1", "tagid": "tag-id-for-example", "publisherDomain":1}`,
-	`{"publisherId" : "1", "bcat": ["excluded-category"], "badv": ["excluded-advertiser"], "bidfloor": 1.2, "publisherDomain": "http://domain.com"}`,
 	`{"tagid": "tag-id-for-example", "bcat": ["excluded-category"], "badv": ["excluded-advertiser"], "bidfloor": 1.2, "publisherDomain": "http://domain.com"}`,
+	`{"publisherId" : "1", "tagid": "tag-id-for-example","position":null}`,
+	`{"publisherId" : "1", "tagid": "tag-id-for-example","position":"1"}`,
+	`{"publisherId" : "1", "tagid": "tag-id-for-example","pageType":1}`,
+	`{"publisherId" : "1", "tagid": "tag-id-for-example","pageType":null}`,
 }

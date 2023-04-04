@@ -34,5 +34,5 @@
     }
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request: request.user.ext.unknown is neither a known bidder name nor an alias in request.ext.prebid.aliases.\n"
+  "expectedErrorMessage": "Invalid request: request.user.ext.unknown is neither a known bidder name nor an alias in request.ext.prebid.aliases\n"
 }

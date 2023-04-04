@@ -9,13 +9,15 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
-	"reflect"
 	"strconv"
 	"testing"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/prebid/prebid-server/amp"
 	"github.com/prebid/prebid-server/analytics"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
@@ -28,8 +30,6 @@ import (
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
-
-	"github.com/stretchr/testify/assert"
 )
 
 // TestGoodRequests makes sure that the auction runs properly-formatted stored bids correctly.
@@ -1108,30 +1108,88 @@ func TestAmpDebug(t *testing.T) {
 	}
 }
 
-// Prevents #452
-func TestAmpTargetingDefaults(t *testing.T) {
-	req := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}}
-	if err := defaultRequestExt(req); err != nil {
-		t.Fatalf("Unexpected error defaulting request.ext for AMP: %v", err)
+func TestInitAmpTargetingAndCache(t *testing.T) {
+	trueVal := true
+	emptyTargetingAndCache := &openrtb_ext.ExtRequestPrebid{
+		Targeting: &openrtb_ext.ExtRequestTargeting{},
+		Cache: &openrtb_ext.ExtRequestPrebidCache{
+			Bids: &openrtb_ext.ExtRequestPrebidCacheBids{},
+		},
 	}
 
-	assert.NoError(t, req.RebuildRequest())
+	testCases := []struct {
+		name           string
+		request        *openrtb2.BidRequest
+		expectedPrebid *openrtb_ext.ExtRequestPrebid
+		expectedErrs   []string
+	}{
+		{
+			name:         "malformed",
+			request:      &openrtb2.BidRequest{Ext: json.RawMessage("malformed")},
+			expectedErrs: []string{"invalid character 'm' looking for beginning of value"},
+		},
+		{
+			name:           "nil",
+			request:        &openrtb2.BidRequest{},
+			expectedPrebid: emptyTargetingAndCache,
+		},
+		{
+			name:           "empty",
+			request:        &openrtb2.BidRequest{Ext: json.RawMessage(`{"ext":{}}`)},
+			expectedPrebid: emptyTargetingAndCache,
+		},
+		{
+			name:           "missing targeting + cache",
+			request:        &openrtb2.BidRequest{Ext: json.RawMessage(`{"ext":{"prebid":{}}}`)},
+			expectedPrebid: emptyTargetingAndCache,
+		},
+		{
+			name:    "missing targeting",
+			request: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"cache":{"bids":{"returnCreative":true}}}}`)},
+			expectedPrebid: &openrtb_ext.ExtRequestPrebid{
+				Targeting: &openrtb_ext.ExtRequestTargeting{},
+				Cache: &openrtb_ext.ExtRequestPrebidCache{
+					Bids: &openrtb_ext.ExtRequestPrebidCacheBids{
+						ReturnCreative: &trueVal,
+					},
+				},
+			},
+		},
+		{
+			name:    "missing cache",
+			request: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"targeting":{"includewinners":true}}}`)},
+			expectedPrebid: &openrtb_ext.ExtRequestPrebid{
+				Targeting: &openrtb_ext.ExtRequestTargeting{
+					IncludeWinners: &trueVal,
+				},
+				Cache: &openrtb_ext.ExtRequestPrebidCache{
+					Bids: &openrtb_ext.ExtRequestPrebidCacheBids{},
+				},
+			},
+		},
+	}
 
-	var extRequest openrtb_ext.ExtRequest
-	if err := json.Unmarshal(req.Ext, &extRequest); err != nil {
-		t.Fatalf("Unexpected error unmarshalling defaulted request.ext for AMP: %v", err)
-	}
-	if extRequest.Prebid.Targeting == nil {
-		t.Fatal("AMP defaults should set request.ext.targeting")
-	}
-	if !extRequest.Prebid.Targeting.IncludeWinners {
-		t.Error("AMP defaults should set request.ext.targeting.includewinners to true")
-	}
-	if !extRequest.Prebid.Targeting.IncludeBidderKeys {
-		t.Error("AMP defaults should set request.ext.targeting.includebidderkeys to true")
-	}
-	if !reflect.DeepEqual(extRequest.Prebid.Targeting.PriceGranularity, openrtb_ext.PriceGranularityFromString("med")) {
-		t.Error("AMP defaults should set request.ext.targeting.pricegranularity to medium")
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// setup
+			req := &openrtb_ext.RequestWrapper{BidRequest: tc.request}
+
+			// run
+			actualErrs := initAmpTargetingAndCache(req)
+
+			// assertions
+			require.NoError(t, req.RebuildRequest(), "rebuild request")
+
+			actualErrsMsgs := make([]string, len(actualErrs))
+			for i, v := range actualErrs {
+				actualErrsMsgs[i] = v.Error()
+			}
+			assert.ElementsMatch(t, tc.expectedErrs, actualErrsMsgs, "errors")
+
+			actualReqExt, _ := req.GetRequestExt()
+			actualPrebid := actualReqExt.GetPrebid()
+			assert.Equal(t, tc.expectedPrebid, actualPrebid, "prebid ext")
+		})
 	}
 }
 
@@ -1345,6 +1403,7 @@ func (s formatOverrideSpec) execute(t *testing.T) {
 
 type mockAmpExchange struct {
 	lastRequest *openrtb2.BidRequest
+	requestExt  json.RawMessage
 }
 
 var expectedErrorsFromHoldAuction map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage = map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{
@@ -1368,6 +1427,10 @@ func (m *mockAmpExchange) HoldAuction(ctx context.Context, auctionRequest exchan
 			}},
 		}},
 		Ext: json.RawMessage(`{ "errors": {"openx":[ { "code": 1, "message": "The request exceeded the timeout allocated" } ] } }`),
+	}
+
+	if m.requestExt != nil {
+		response.Ext = m.requestExt
 	}
 	if len(auctionRequest.StoredAuctionResponses) > 0 {
 		var seatBids []openrtb2.SeatBid
@@ -1588,6 +1651,7 @@ func TestBuildAmpObject(t *testing.T) {
 	testCases := []struct {
 		description       string
 		inTagId           string
+		exchange          *mockAmpExchange
 		inStoredRequest   json.RawMessage
 		expectedAmpObject *analytics.AmpObject
 	}{
@@ -1651,7 +1715,7 @@ func TestBuildAmpObject(t *testing.T) {
 					},
 					AT:   1,
 					TMax: 500,
-					Ext:  json.RawMessage(`{"prebid":{"cache":{"bids":{"returnCreative":null},"vastxml":null},"channel":{"name":"amp","version":""},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"includewinners":true,"includebidderkeys":true,"includebrandcategory":null,"includeformat":false,"durationrangesec":null,"preferdeals":false}}}`),
+					Ext:  json.RawMessage(`{"prebid":{"cache":{"bids":{}},"channel":{"name":"amp","version":""},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"includewinners":true,"includebidderkeys":true}}}`),
 				},
 				AuctionResponse: &openrtb2.BidResponse{
 					SeatBid: []openrtb2.SeatBid{{
@@ -1671,6 +1735,61 @@ func TestBuildAmpObject(t *testing.T) {
 				Origin: "",
 			},
 		},
+		{
+			description:     "Global targeting from bid response should be applied for Amp",
+			inTagId:         "test",
+			inStoredRequest: json.RawMessage(`{"id":"some-request-id","site":{"page":"prebid.org"},"imp":[{"id":"some-impression-id","banner":{"format":[{"w":300,"h":250}]},"ext":{"prebid":{"bidder":{"appnexus":{"placementId":12883451}}}}}],"tmax":500}`),
+			exchange:        &mockAmpExchange{requestExt: json.RawMessage(`{ "prebid": {"targeting": { "test_key": "test_value", "hb_appnexus_pb": "9999" } }, "errors": {"openx":[ { "code": 1, "message": "The request exceeded the timeout allocated" } ] } }`)},
+			expectedAmpObject: &analytics.AmpObject{
+				Status: http.StatusOK,
+				Errors: nil,
+				Request: &openrtb2.BidRequest{
+					ID: "some-request-id",
+					Device: &openrtb2.Device{
+						IP: "192.0.2.1",
+					},
+					Site: &openrtb2.Site{
+						Page: "prebid.org",
+						Ext:  json.RawMessage(`{"amp":1}`),
+					},
+					Imp: []openrtb2.Imp{
+						{
+							ID: "some-impression-id",
+							Banner: &openrtb2.Banner{
+								Format: []openrtb2.Format{
+									{
+										W: 300,
+										H: 250,
+									},
+								},
+							},
+							Secure: func(val int8) *int8 { return &val }(1), //(*int8)(1),
+							Ext:    json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placementId":12883451}}}}`),
+						},
+					},
+					AT:   1,
+					TMax: 500,
+					Ext:  json.RawMessage(`{"prebid":{"cache":{"bids":{}},"channel":{"name":"amp","version":""},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"includewinners":true,"includebidderkeys":true}}}`),
+				},
+				AuctionResponse: &openrtb2.BidResponse{
+					SeatBid: []openrtb2.SeatBid{{
+						Bid: []openrtb2.Bid{{
+							AdM: "<script></script>",
+							Ext: json.RawMessage(`{ "prebid": {"targeting": { "hb_pb": "1.20", "hb_appnexus_pb": "1.20", "hb_cache_id": "some_id"}}}`),
+						}},
+						Seat: "",
+					}},
+					Ext: json.RawMessage(`{ "prebid": {"targeting": { "test_key": "test_value", "hb_appnexus_pb": "9999" } }, "errors": {"openx":[ { "code": 1, "message": "The request exceeded the timeout allocated" } ] } }`),
+				},
+				AmpTargetingValues: map[string]string{
+					"hb_appnexus_pb": "1.20", // Bid level has higher priority than global
+					"hb_cache_id":    "some_id",
+					"hb_pb":          "1.20",
+					"test_key":       "test_value", // New global key added
+				},
+				Origin: "",
+			},
+		},
 	}
 
 	request := httptest.NewRequest("GET", "/openrtb2/auction/amp?tag_id=test", nil)
@@ -1678,7 +1797,11 @@ func TestBuildAmpObject(t *testing.T) {
 
 	for _, test := range testCases {
 		// Set up test, declare a new mock logger every time
-		actualAmpObject, endpoint := ampObjectTestSetup(t, test.inTagId, test.inStoredRequest, false)
+		exchange := test.exchange
+		if exchange == nil {
+			exchange = &mockAmpExchange{}
+		}
+		actualAmpObject, endpoint := ampObjectTestSetup(t, test.inTagId, test.inStoredRequest, false, exchange)
 		// Run test
 		endpoint(recorder, request, nil)
 
@@ -1744,13 +1867,13 @@ func TestIdGeneration(t *testing.T) {
 
 	for _, test := range testCases {
 		// Set up and run test
-		actualAmpObject, endpoint := ampObjectTestSetup(t, "test", test.givenInStoredRequest, test.givenGenerateRequestID)
+		actualAmpObject, endpoint := ampObjectTestSetup(t, "test", test.givenInStoredRequest, test.givenGenerateRequestID, &mockAmpExchange{})
 		endpoint(recorder, request, nil)
 		assert.Equalf(t, test.expectedID, actualAmpObject.Request.ID, "Bid Request ID is incorrect: %s\n", test.description)
 	}
 }
 
-func ampObjectTestSetup(t *testing.T, inTagId string, inStoredRequest json.RawMessage, generateRequestID bool) (*analytics.AmpObject, httprouter.Handle) {
+func ampObjectTestSetup(t *testing.T, inTagId string, inStoredRequest json.RawMessage, generateRequestID bool, exchange *mockAmpExchange) (*analytics.AmpObject, httprouter.Handle) {
 	actualAmpObject := analytics.AmpObject{}
 	logger := newMockLogger(&actualAmpObject, nil)
 
@@ -1762,7 +1885,7 @@ func ampObjectTestSetup(t *testing.T, inTagId string, inStoredRequest json.RawMe
 
 	endpoint, _ := NewAmpEndpoint(
 		fakeUUIDGenerator{id: "foo", err: nil},
-		&mockAmpExchange{},
+		exchange,
 		newParamsValidator(t),
 		mockAmpFetcher,
 		empty_fetcher.EmptyFetcher{},

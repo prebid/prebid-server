@@ -55,6 +55,18 @@
               15,
               30
             ],
+            "pricegranularity": {
+              "precision": 2,
+              "ranges": [
+                {
+                  "min": 0,
+                  "max": 20,
+                  "increment": 0.1
+                }
+              ]
+            },
+            "includewinners": true,
+            "includebidderkeys": true,
             "includebrandcategory": {
               "primaryadserver": 1,
               "publisher": "",
@@ -142,7 +154,6 @@
               "ext": {
                 "origbidcpm": 12.00,
                 "prebid": {
-                  "type": "",
                   "targeting": {
                     "hb_bidder": "appnexus",
                     "hb_bidder_appnexus": "appnexus",
@@ -249,6 +260,18 @@
                   15,
                   30
                 ],
+                "pricegranularity": {
+                  "precision": 2,
+                  "ranges": [
+                    {
+                      "min": 0,
+                      "max": 20,
+                      "increment": 0.1
+                    }
+                  ]
+                },
+                "includewinners": true,
+                "includebidderkeys": true,
                 "includebrandcategory": {
                   "primaryadserver": 1,
                   "publisher": "",

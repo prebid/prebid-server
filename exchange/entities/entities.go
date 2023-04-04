@@ -47,4 +47,5 @@ type PbsOrtbBid struct {
 	GeneratedBidID    string
 	OriginalBidCPM    float64
 	OriginalBidCur    string
+	TargetBidderCode  string
 }

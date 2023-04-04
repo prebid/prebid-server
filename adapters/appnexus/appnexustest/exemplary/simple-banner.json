@@ -18,7 +18,8 @@
         },
         "ext": {
           "bidder": {
-            "placement_id": 1
+            "placement_id": 1,
+            "position": "above"
           }
         }
       }
@@ -52,6 +53,7 @@
                   }
                 ],
                 "w": 300,
+                "pos": 1,
                 "h": 250
               },
               "ext": {
