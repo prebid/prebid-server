@@ -12,6 +12,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	metrics "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/randomutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -24,7 +25,7 @@ func TestBuildAdapters(t *testing.T) {
 	client := &http.Client{}
 	metricEngine := &metrics.NilMetricsEngine{}
 
-	appnexusBidder, _ := appnexus.Builder(openrtb_ext.BidderAppnexus, config.Adapter{}, config.Server{})
+	appnexusBidder, _ := appnexus.Builder(openrtb_ext.BidderAppnexus, config.Adapter{RandomGenerator: randomutil.RandomNumberGenerator{}}, config.Server{})
 	appnexusBidderWithInfo := adapters.BuildInfoAwareBidder(appnexusBidder, infoEnabled)
 	appnexusBidderAdapted := AdaptBidder(appnexusBidderWithInfo, client, &config.Configuration{}, metricEngine, openrtb_ext.BidderAppnexus, nil, "")
 	appnexusValidated := addValidatedBidderMiddleware(appnexusBidderAdapted)
