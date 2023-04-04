@@ -10,7 +10,8 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
-		Endpoint: "http://ib.adnxs.com/openrtb2"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+		Endpoint:        "http://ib.adnxs.com/openrtb2",
+		RandomGenerator: FakeRandomNumberGenerator{Number: 10}}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -25,4 +26,13 @@ func TestMemberQueryParam(t *testing.T) {
 	if uriWithMember != expected {
 		t.Errorf("appendMemberId() failed on URI with query string. Expected %s, got %s", expected, uriWithMember)
 	}
+}
+
+// fakerandomNumberGenerator
+type FakeRandomNumberGenerator struct {
+	Number int64
+}
+
+func (f FakeRandomNumberGenerator) GenerateInt63() int64 {
+	return f.Number
 }
