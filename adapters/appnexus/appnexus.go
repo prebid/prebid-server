@@ -267,7 +267,13 @@ func buildRequestImp(imp *openrtb2.Imp, appnexusExt *openrtb_ext.ExtImpAppnexus,
 		imp.DisplayManagerVer = displayManagerVer
 	}
 
-	impExt := buildImpExt(appnexusExt)
+	impExt := appnexusImpExt{Appnexus: appnexusImpExtAppnexus{
+		PlacementID:       int(appnexusExt.PlacementId),
+		TrafficSourceCode: appnexusExt.TrafficSourceCode,
+		Keywords:          makeKeywordStr(appnexusExt.Keywords),
+		UsePmtRule:        appnexusExt.UsePaymentRule,
+		PrivateSizes:      appnexusExt.PrivateSizes,
+	}}
 
 	var err error
 	if imp.Ext, err = json.Marshal(&impExt); err != nil {
@@ -275,16 +281,6 @@ func buildRequestImp(imp *openrtb2.Imp, appnexusExt *openrtb_ext.ExtImpAppnexus,
 	}
 
 	return nil
-}
-
-func buildImpExt(appnexusExt *openrtb_ext.ExtImpAppnexus) *appnexusImpExt {
-	return &appnexusImpExt{Appnexus: appnexusImpExtAppnexus{
-		PlacementID:       int(appnexusExt.PlacementId),
-		TrafficSourceCode: appnexusExt.TrafficSourceCode,
-		Keywords:          makeKeywordStr(appnexusExt.Keywords),
-		UsePmtRule:        appnexusExt.UsePaymentRule,
-		PrivateSizes:      appnexusExt.PrivateSizes,
-	}}
 }
 
 func makeKeywordStr(keywords []*openrtb_ext.ExtImpAppnexusKeyVal) string {
