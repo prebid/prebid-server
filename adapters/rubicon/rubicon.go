@@ -234,6 +234,10 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 
 func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	requestCopy := request
+	if request.User != nil {
+		userCopy := *request.User
+		requestCopy.User = &userCopy
+	}
 
 	err := openrtb_ext.ConvertUpTo26(&openrtb_ext.RequestWrapper{BidRequest: requestCopy})
 	if err != nil {
