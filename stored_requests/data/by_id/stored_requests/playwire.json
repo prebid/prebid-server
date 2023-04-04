@@ -1,8 +1,6 @@
 {
     "tmax": 2000,
-    "cur": [
-        "USD"
-    ],
+    "cur": ["USD"],
     "ext": {
         "prebid": {
             "targeting": {
