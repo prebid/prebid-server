@@ -24,7 +24,7 @@
           "bidder": {
             "publisherId": "publisher-id",
             "tagid": "tag-id",
-            "pageType": "homepage"
+            "tagId": "tag-Id"
           }
         }
       }
@@ -65,12 +65,12 @@
                   }
                 ]
               },
-              "tagid" : "tag-id",
+              "tagid" : "tag-Id",
               "ext": {
                 "bidder": {
                   "publisherId": "publisher-id",
                   "tagid": "tag-id",
-                  "pageType": "homepage"
+                  "tagId": "tag-Id"
                 }
               }
             }
@@ -89,9 +89,6 @@
             "ua": "Mozilla/5.0 (Linux; Android 12; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.62 Mobile Safari/537.36",
             "h": 300,
             "w": 300
-          },
-          "ext": {
-            "pageType": "homepage"
           }
         }
       },
@@ -107,7 +104,7 @@
                   "impid": "impression-id",
                   "price": 2.1,
                   "adid": "1",
-                  "adm": "<hrml></html>",
+                  "adm": "<hrml></html>&wp=${AUCTION_PRICE}",
                   "adomain": [
                     "adomain.com"
                   ],
@@ -138,7 +135,7 @@
             "impid": "impression-id",
             "price": 2.1,
             "adid": "1",
-            "adm": "<hrml></html>",
+            "adm": "<hrml></html>&wp=2.1",
             "adomain": [
               "adomain.com"
             ],
