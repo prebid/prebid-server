@@ -254,7 +254,7 @@ func TestCreateRuleKeys(t *testing.T) {
 				Imp: []openrtb2.Imp{{ID: "1234", Video: &openrtb2.Video{W: 640, H: 480, Placement: 1}}},
 			},
 			floorSchema: openrtb_ext.PriceFloorSchema{Delimiter: "|", Fields: []string{"mediaType", "size", "domain"}},
-			out:         []string{"video-instream", "640x480", "www.test.com"},
+			out:         []string{"video", "640x480", "www.test.com"},
 		},
 		{
 			name: "CreateRule with video mediatype, size and domain",
@@ -588,10 +588,6 @@ func TestShouldSkipFloors(t *testing.T) {
 
 }
 
-func getIntPtr(v int) *int {
-	return &v
-}
-
 func TestSelectFloorModelGroup(t *testing.T) {
 	weightNilModelGroup := openrtb_ext.PriceFloorModelGroup{ModelWeight: nil}
 	weight01ModelGroup := openrtb_ext.PriceFloorModelGroup{ModelWeight: getIntPtr(1)}
@@ -853,4 +849,353 @@ func TestGenerateCombinations(t *testing.T) {
 			assert.Equal(t, tt.expComb, gotComb)
 		})
 	}
+}
+
+func TestGetDeviceType(t *testing.T) {
+	tests := []struct {
+		name    string
+		request *openrtb2.BidRequest
+		want    string
+	}{
+		{
+			name:    "user agent contains device type as tablet",
+			request: &openrtb2.BidRequest{Device: &openrtb2.Device{UA: "Mozilla/5.0 (Windows NT touch 10.0; Win64; x64)"}},
+			want:    "tablet",
+		},
+		{
+			name:    "user agent contains Android.*Mobile",
+			request: &openrtb2.BidRequest{Device: &openrtb2.Device{UA: "Mozilla/5.0 (Android Redmi Mobile; Win64; x64)"}},
+			want:    "phone",
+		},
+		{
+			name:    "user agent contains Mobile.*Android",
+			request: &openrtb2.BidRequest{Device: &openrtb2.Device{UA: "Mozilla/5.0 (Mobile pixel Android; Win64; x64)"}},
+			want:    "phone",
+		},
+		{
+			name:    "user agent contains ipad",
+			request: &openrtb2.BidRequest{Device: &openrtb2.Device{UA: "Mozilla/5.0 (ipad 13.10; Win64; x64)"}},
+			want:    "tablet",
+		},
+		{
+			name:    "user agent contains Window NT.*touch",
+			request: &openrtb2.BidRequest{Device: &openrtb2.Device{UA: "Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.2; Win64; x64; Trident/6.0; Touch)"}},
+			want:    "tablet",
+		},
+		{
+			name:    "user agent contains touch.* Window NT",
+			request: &openrtb2.BidRequest{Device: &openrtb2.Device{UA: "Mozilla/5.0 (touch realme Windows NT Win64; x64)"}},
+			want:    "tablet",
+		},
+		{
+			name:    "user agent contains Android",
+			request: &openrtb2.BidRequest{Device: &openrtb2.Device{UA: "Mozilla/5.0 (Android; Win64; x64)"}},
+			want:    "tablet",
+		},
+		{
+			name:    "user agent contains desktop",
+			request: &openrtb2.BidRequest{Device: &openrtb2.Device{UA: "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}},
+			want:    "desktop",
+		},
+		{
+			name:    "empty user agent",
+			request: &openrtb2.BidRequest{Device: &openrtb2.Device{}},
+			want:    "*",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := getDeviceType(&openrtb_ext.RequestWrapper{BidRequest: tt.request})
+			assert.Equal(t, tt.want, got)
+
+		})
+	}
+}
+
+func TestGetAdUnitCode(t *testing.T) {
+	tests := []struct {
+		name string
+		imp  *openrtb_ext.ImpWrapper
+		want string
+	}{
+		{
+			name: "imp.ext.gpid",
+			imp:  &openrtb_ext.ImpWrapper{Imp: &openrtb2.Imp{Ext: json.RawMessage(`{"gpid":"test_gpid"}`)}},
+			want: "test_gpid",
+		},
+		{
+			name: "imp.TagID",
+			imp:  &openrtb_ext.ImpWrapper{Imp: &openrtb2.Imp{TagID: "tag_1"}},
+			want: "tag_1",
+		},
+		{
+			name: "imp.ext.data.pbadslot",
+			imp:  &openrtb_ext.ImpWrapper{Imp: &openrtb2.Imp{Ext: json.RawMessage(`{"data":{"pbadslot":"pbslot_1"}}`)}},
+			want: "pbslot_1",
+		},
+		{
+			name: "imp.ext.prebid.storedrequest.id",
+			imp:  &openrtb_ext.ImpWrapper{Imp: &openrtb2.Imp{Ext: json.RawMessage(`{"prebid": {"storedrequest":{"id":"123"}}}`)}},
+			want: "123",
+		},
+		{
+			name: "empty adUnitCode",
+			imp:  &openrtb_ext.ImpWrapper{Imp: &openrtb2.Imp{}},
+			want: "*",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := getAdUnitCode(tt.imp)
+			assert.Equal(t, tt.want, got)
+
+		})
+	}
+}
+
+func TestGetGptSlot(t *testing.T) {
+	tests := []struct {
+		name string
+		imp  *openrtb_ext.ImpWrapper
+		want string
+	}{
+		{
+			name: "imp.ext.data.adserver.adslot",
+			imp:  &openrtb_ext.ImpWrapper{Imp: &openrtb2.Imp{Ext: json.RawMessage(`{"data":{"adserver": {"name": "gam", "adslot": "slot_1"}}}`)}},
+			want: "slot_1",
+		},
+		{
+			name: "gptSlot = imp.ext.data.pbadslot",
+			imp:  &openrtb_ext.ImpWrapper{Imp: &openrtb2.Imp{Ext: json.RawMessage(`{"data":{"pbadslot":"pbslot_1"}}`)}},
+			want: "pbslot_1",
+		},
+		{
+			name: "empty gptSlot",
+			imp:  &openrtb_ext.ImpWrapper{Imp: &openrtb2.Imp{}},
+			want: "*",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := getGptSlot(tt.imp)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestGetSizeValue(t *testing.T) {
+	tests := []struct {
+		name string
+		imp  *openrtb2.Imp
+		want string
+	}{
+		{
+			name: "banner: only one size exists in imp.banner.format",
+			imp:  &openrtb2.Imp{Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}}},
+			want: "300x250",
+		},
+		{
+			name: "banner: no imp.banner.format",
+			imp:  &openrtb2.Imp{Banner: &openrtb2.Banner{W: getInt64Ptr(320), H: getInt64Ptr(240)}},
+			want: "320x240",
+		},
+		{
+			name: "video:  imp.video.w and  imp.video.h present",
+			imp:  &openrtb2.Imp{Video: &openrtb2.Video{W: 120, H: 240}},
+			want: "120x240",
+		},
+		{
+			name: "banner: more than one size exists in imp.banner.format",
+			imp:  &openrtb2.Imp{Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}, {W: 200, H: 300}}}},
+			want: "*",
+		},
+		{
+			name: "Audo creative",
+			imp:  &openrtb2.Imp{Audio: &openrtb2.Audio{}},
+			want: "*",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := getSizeValue(tt.imp)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestGetMediaType(t *testing.T) {
+	tests := []struct {
+		name string
+		imp  *openrtb2.Imp
+		want string
+	}{
+		{
+			name: "more than one of these: imp.banner, imp.video, imp.native, imp.audio present",
+			imp:  &openrtb2.Imp{Video: &openrtb2.Video{W: 120, H: 240}, Banner: &openrtb2.Banner{W: getInt64Ptr(320), H: getInt64Ptr(240)}},
+			want: "*",
+		},
+		{
+			name: "only banner present",
+			imp:  &openrtb2.Imp{Banner: &openrtb2.Banner{W: getInt64Ptr(320), H: getInt64Ptr(240)}},
+			want: "banner",
+		},
+		{
+			name: "video-outstream present",
+			imp:  &openrtb2.Imp{Video: &openrtb2.Video{W: 120, H: 240, Placement: 2}},
+			want: "video-outstream",
+		},
+		{
+			name: "video-instream present",
+			imp:  &openrtb2.Imp{Video: &openrtb2.Video{W: 120, H: 240, Placement: 1}},
+			want: "video",
+		},
+		{
+			name: "only audio",
+			imp:  &openrtb2.Imp{Audio: &openrtb2.Audio{MinDuration: 10}},
+			want: "audio",
+		},
+		{
+			name: "only native",
+			imp:  &openrtb2.Imp{Native: &openrtb2.Native{Request: "test_req"}},
+			want: "native",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := getMediaType(tt.imp)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestGetSiteDomain(t *testing.T) {
+	type args struct {
+		request *openrtb_ext.RequestWrapper
+	}
+	tests := []struct {
+		name    string
+		request *openrtb_ext.RequestWrapper
+		want    string
+	}{
+		{
+			name:    "Site Domain present",
+			request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Site: &openrtb2.Site{Domain: "abc.xyz.com"}}},
+			want:    "abc.xyz.com",
+		},
+		{
+			name:    "Site Domain not present",
+			request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Site: &openrtb2.Site{}}},
+			want:    "*",
+		},
+		{
+			name:    "App Domain present",
+			request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{App: &openrtb2.App{Domain: "cde.rtu.com"}}},
+			want:    "cde.rtu.com",
+		},
+		{
+			name:    "App Domain not present",
+			request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{App: &openrtb2.App{}}},
+			want:    "*",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := getSiteDomain(tt.request)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestGetPublisherDomain(t *testing.T) {
+	type args struct {
+	}
+	tests := []struct {
+		name    string
+		request *openrtb_ext.RequestWrapper
+		want    string
+	}{
+		{
+			name:    "Site publisher domain present",
+			request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Site: &openrtb2.Site{Publisher: &openrtb2.Publisher{Domain: "qwe.xyz.com"}}}},
+			want:    "qwe.xyz.com",
+		},
+		{
+			name:    "Site publisher domain not present",
+			request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Site: &openrtb2.Site{Publisher: &openrtb2.Publisher{}}}},
+			want:    "*",
+		},
+		{
+			name:    "App publisher domain present",
+			request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{App: &openrtb2.App{Publisher: &openrtb2.Publisher{Domain: "xyz.com"}}}},
+			want:    "xyz.com",
+		},
+		{
+			name:    "App publisher domain not present",
+			request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{App: &openrtb2.App{}}},
+			want:    "*",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := getPublisherDomain(tt.request)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestGetDomain(t *testing.T) {
+	type args struct {
+	}
+	tests := []struct {
+		name    string
+		request *openrtb_ext.RequestWrapper
+		want    string
+	}{
+		{
+			name:    "Site domain present",
+			request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Site: &openrtb2.Site{Domain: "qwe.xyz.com", Publisher: &openrtb2.Publisher{Domain: "abc.xyz.com"}}}},
+			want:    "qwe.xyz.com",
+		},
+		{
+			name:    "Site publisher domain present",
+			request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Site: &openrtb2.Site{Publisher: &openrtb2.Publisher{Domain: "abc.xyz.com"}}}},
+			want:    "abc.xyz.com",
+		},
+		{
+			name:    "Site domain not present",
+			request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Site: &openrtb2.Site{Publisher: &openrtb2.Publisher{}}}},
+			want:    "*",
+		},
+		{
+			name:    "App publisher domain present",
+			request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{App: &openrtb2.App{Domain: "abc.com", Publisher: &openrtb2.Publisher{Domain: "xyz.com"}}}},
+			want:    "abc.com",
+		},
+		{
+			name:    "App domain present",
+			request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{App: &openrtb2.App{Publisher: &openrtb2.Publisher{Domain: "xyz.com"}}}},
+			want:    "xyz.com",
+		},
+		{
+			name:    "App domain not present",
+			request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{App: &openrtb2.App{}}},
+			want:    "*",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := getDomain(tt.request)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func getIntPtr(v int) *int {
+	return &v
+}
+
+func getInt64Ptr(v int64) *int64 {
+	return &v
 }

@@ -29,7 +29,7 @@ const (
 	Desktop             string = "desktop"
 	Phone               string = "phone"
 	BannerMedia         string = "banner"
-	VideoMedia          string = "video-instream"
+	VideoMedia          string = "video"
 	VideoOutstreamMedia string = "video-outstream"
 	AudioMedia          string = "audio"
 	NativeMedia         string = "native"
@@ -324,7 +324,7 @@ func getBannerSize(imp *openrtb2.Imp) (int64, int64) {
 
 // getDomain returns domain provided into site or app object
 func getDomain(request *openrtb_ext.RequestWrapper) string {
-	var value string
+	value := catchAll
 	if request.Site != nil {
 		if len(request.Site.Domain) > 0 {
 			value = request.Site.Domain
@@ -343,10 +343,10 @@ func getDomain(request *openrtb_ext.RequestWrapper) string {
 
 // getSiteDomain  returns domain provided into site object
 func getSiteDomain(request *openrtb_ext.RequestWrapper) string {
-	var value string
-	if request.Site != nil {
+	value := catchAll
+	if request.Site != nil && len(request.Site.Domain) > 0 {
 		value = request.Site.Domain
-	} else {
+	} else if request.App != nil && len(request.App.Domain) > 0 {
 		value = request.App.Domain
 	}
 	return value
@@ -435,7 +435,7 @@ func getAdUnitCode(imp *openrtb_ext.ImpWrapper) string {
 
 // isMobileDevice returns true if device is mobile
 func isMobileDevice(userAgent string) bool {
-	isMobile, err := regexp.MatchString("Phone|iPhone|[Mobile].*Android|[Android].*Mobile", userAgent)
+	isMobile, err := regexp.MatchString("(?i)Phone|iPhone|Android.*Mobile|Mobile.*Android", userAgent)
 	if err != nil {
 		return false
 	}
@@ -444,7 +444,7 @@ func isMobileDevice(userAgent string) bool {
 
 // isTabletDevice returns true if device is tablet
 func isTabletDevice(userAgent string) bool {
-	isTablet, err := regexp.MatchString("tablet|iPad|Android|[Windows NT].*touch|[touch].*Windows NT", userAgent)
+	isTablet, err := regexp.MatchString("(?i)tablet|iPad|touch.*Windows NT|Windows NT.*touch|Android", userAgent)
 	if err != nil {
 		return false
 	}
