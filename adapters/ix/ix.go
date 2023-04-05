@@ -29,11 +29,6 @@ type ExtRequest struct {
 	IxDiag *IxDiag                       `json:"ixdiag,omitempty"`
 }
 
-type ExtImp struct {
-	IX  *openrtb_ext.ExtImpIx `json:"ix"`
-	Sid string                `json:"sid"`
-}
-
 type IxDiag struct {
 	PbsV  string `json:"pbsv,omitempty"`
 	PbjsV string `json:"pbjsv,omitempty"`
@@ -73,7 +68,9 @@ func (a *IxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters
 			}
 		}
 
-		moveSid(request.Imp)
+		if err := moveSid(request.Imp); err != nil {
+			errs = append(errs, err)
+		}
 
 		if request.Imp[0].Banner != nil {
 			banner := *request.Imp[0].Banner
@@ -367,36 +364,32 @@ func BuildIxDiag(request *openrtb2.BidRequest) error {
 	return nil
 }
 
-func moveSid(imps []openrtb2.Imp) {
+// moves sid from imp[].ext.bidder.sid to imp[].ext.sid
+func moveSid(imps []openrtb2.Imp) error {
 	if len(imps) < 1 {
-		return
+		return nil
 	}
 	imp := imps[0]
-	if imp.Ext == nil {
-		return
+	if imp.Ext == nil || len(imp.Ext) == 0 {
+		return nil
 	}
 
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return
+		return err
 	}
 
 	var ixExt openrtb_ext.ExtImpIx
 	if err := json.Unmarshal(bidderExt.Bidder, &ixExt); err != nil {
-		return
+		return err
 	}
 
 	if ixExt.Sid != "" {
 		var m map[string]interface{}
-		err := json.Unmarshal(imp.Ext, &m)
-		if err != nil {
-			return
-		}
+		json.Unmarshal(imp.Ext, &m)
 		m["sid"] = ixExt.Sid
-		ext, err := json.Marshal(m)
-		if err != nil {
-			return
-		}
+		ext, _ := json.Marshal(m)
 		imps[0].Ext = ext
 	}
+	return nil
 }

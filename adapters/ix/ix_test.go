@@ -44,7 +44,7 @@ func TestIxMakeBidsWithCategoryDuration(t *testing.T) {
 				`{
 					"prebid": {},
 					"bidder": {
-						"siteID": 123456
+						"siteID": "123456"
 					}
 				}`,
 			)},
@@ -124,7 +124,7 @@ func TestIxMakeRequestWithGppString(t *testing.T) {
 				`{
 					"prebid": {},
 					"bidder": {
-						"siteID": 123456
+						"siteID": "123456"
 					}
 				}`,
 			)},
@@ -282,6 +282,7 @@ func TestMoveSid(t *testing.T) {
 		description string
 		imps        []openrtb2.Imp
 		expectedExt json.RawMessage
+		expectErr   bool
 	}{
 		{
 			description: "valid input with sid",
@@ -291,6 +292,7 @@ func TestMoveSid(t *testing.T) {
 				},
 			},
 			expectedExt: json.RawMessage(`{"bidder":{"sid":"1234"},"sid":"1234"}`),
+			expectErr:   false,
 		},
 		{
 			description: "valid input without sid",
@@ -300,14 +302,54 @@ func TestMoveSid(t *testing.T) {
 				},
 			},
 			expectedExt: json.RawMessage(`{"bidder":{"siteId":"1234"}}`),
+			expectErr:   false,
+		},
+		{
+			description: "no imps",
+			imps:        []openrtb2.Imp{},
+			expectedExt: nil,
+			expectErr:   false,
+		},
+		{
+			description: "no ext",
+			imps:        []openrtb2.Imp{{ID: "1"}},
+			expectedExt: nil,
+			expectErr:   false,
+		},
+		{
+			description: "malformed json",
+			imps: []openrtb2.Imp{
+				{
+					Ext: json.RawMessage(`"bidder":{"sid":"1234"}`),
+				},
+			},
+			expectedExt: json.RawMessage(`"bidder":{"sid":"1234"}`),
+			expectErr:   true,
+		},
+		{
+			description: "malformed bidder json",
+			imps: []openrtb2.Imp{
+				{
+					Ext: json.RawMessage(`{"bidder":{"sid":1234}}`),
+				},
+			},
+			expectedExt: json.RawMessage(`{"bidder":{"sid":1234}}`),
+			expectErr:   true,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
 			imps := tc.imps
-			moveSid(imps)
-			assert.Equal(t, tc.expectedExt, imps[0].Ext)
+			err := moveSid(imps)
+			if len(imps) > 1 {
+				assert.Equal(t, tc.expectedExt, imps[0].Ext)
+			}
+			if tc.expectErr {
+				assert.NotNil(t, err)
+			} else {
+				assert.Nil(t, err)
+			}
 		})
 	}
 }
