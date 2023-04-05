@@ -289,8 +289,6 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		labels.PubID = getAccountID(bidReqWrapper.Site.Publisher)
 	}
 
-	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, "", deps.metricsEngine)
-
 	// Look up account now that we have resolved the pubID value
 	account, acctIDErrs := accountService.GetAccount(ctx, deps.cfg, deps.accounts, labels.PubID, deps.metricsEngine)
 	if len(acctIDErrs) > 0 {
@@ -299,7 +297,6 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 
 	secGPC := r.Header.Get("Sec-GPC")
-
 	auctionRequest := exchange.AuctionRequest{
 		BidRequestWrapper:          bidReqWrapper,
 		Account:                    *account,
@@ -309,7 +306,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		LegacyLabels:               labels,
 		GlobalPrivacyControlHeader: secGPC,
 		PubID:                      labels.PubID,
-		HookExecutor:               hookExecutor,
+		HookExecutor:               hookexecution.EmptyHookExecutor{},
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog)

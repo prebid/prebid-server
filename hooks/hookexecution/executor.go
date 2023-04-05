@@ -314,33 +314,33 @@ func (e *hookExecutor) pushStageOutcome(outcome StageOutcome) {
 
 type EmptyHookExecutor struct{}
 
-func (executor *EmptyHookExecutor) SetAccount(_ *config.Account) {}
+func (executor EmptyHookExecutor) SetAccount(_ *config.Account) {}
 
-func (executor *EmptyHookExecutor) GetOutcomes() []StageOutcome {
+func (executor EmptyHookExecutor) GetOutcomes() []StageOutcome {
 	return []StageOutcome{}
 }
 
-func (executor *EmptyHookExecutor) ExecuteEntrypointStage(_ *http.Request, body []byte) ([]byte, *RejectError) {
+func (executor EmptyHookExecutor) ExecuteEntrypointStage(_ *http.Request, body []byte) ([]byte, *RejectError) {
 	return body, nil
 }
 
-func (executor *EmptyHookExecutor) ExecuteRawAuctionStage(body []byte) ([]byte, *RejectError) {
+func (executor EmptyHookExecutor) ExecuteRawAuctionStage(body []byte) ([]byte, *RejectError) {
 	return body, nil
 }
 
-func (executor *EmptyHookExecutor) ExecuteProcessedAuctionStage(_ *openrtb_ext.RequestWrapper) error {
+func (executor EmptyHookExecutor) ExecuteProcessedAuctionStage(_ *openrtb_ext.RequestWrapper) error {
 	return nil
 }
 
-func (executor *EmptyHookExecutor) ExecuteBidderRequestStage(_ *openrtb2.BidRequest, bidder string) *RejectError {
+func (executor EmptyHookExecutor) ExecuteBidderRequestStage(_ *openrtb2.BidRequest, bidder string) *RejectError {
 	return nil
 }
 
-func (executor *EmptyHookExecutor) ExecuteRawBidderResponseStage(_ *adapters.BidderResponse, _ string) *RejectError {
+func (executor EmptyHookExecutor) ExecuteRawBidderResponseStage(_ *adapters.BidderResponse, _ string) *RejectError {
 	return nil
 }
 
-func (executor *EmptyHookExecutor) ExecuteAllProcessedBidResponsesStage(_ map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid) {
+func (executor EmptyHookExecutor) ExecuteAllProcessedBidResponsesStage(_ map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid) {
 }
 
-func (executor *EmptyHookExecutor) ExecuteAuctionResponseStage(_ *openrtb2.BidResponse) {}
+func (executor EmptyHookExecutor) ExecuteAuctionResponseStage(_ *openrtb2.BidResponse) {}
