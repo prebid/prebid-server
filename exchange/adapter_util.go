@@ -8,7 +8,6 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/util/randomutil"
 )
 
 func BuildAdapters(client *http.Client, cfg *config.Configuration, infos config.BidderInfos, me metrics.MetricsEngine) (map[openrtb_ext.BidderName]AdaptedBidder, []error) {
@@ -67,7 +66,6 @@ func buildAdapterInfo(bidderInfo config.BidderInfo) config.Adapter {
 	adapter.PlatformID = bidderInfo.PlatformID
 	adapter.AppSecret = bidderInfo.AppSecret
 	adapter.XAPI = bidderInfo.XAPI
-	adapter.RandomGenerator = randomutil.RandomNumberGenerator{}
 	return adapter
 }
 

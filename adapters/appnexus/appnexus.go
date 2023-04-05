@@ -377,7 +377,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 			"9": "IAB5-3",
 		},
 		hbSource:        resolvePlatformID(config.PlatformID),
-		randomGenerator: config.RandomGenerator,
+		randomGenerator: randomutil.RandomNumberGenerator{},
 	}
 	return bidder, nil
 }

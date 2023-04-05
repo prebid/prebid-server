@@ -10,12 +10,14 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
-		Endpoint:        "http://ib.adnxs.com/openrtb2",
-		RandomGenerator: FakeRandomNumberGenerator{Number: 10}}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+		Endpoint: "http://ib.adnxs.com/openrtb2"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
+
+	bidderAppNexus, _ := bidder.(*adapter)
+	bidderAppNexus.randomGenerator = FakeRandomNumberGenerator{Number: 10}
 
 	adapterstest.RunJSONBidderTest(t, "appnexustest", bidder)
 }
