@@ -1,4 +1,4 @@
-endpoint: "http://tech-stack-mgmt.pubmatic.com/owtools/keywords-based/owtools/getbid"
+endpoint: "http://ib.adnxs.com/openrtb2"
 platform_id: "5"
 maintainer:
   email: "prebid@microsoft.com"

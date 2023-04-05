@@ -12,7 +12,7 @@ type AuctionResponse struct {
 }
 
 // GetSeatNonBid returns array of seat non-bid if present. nil otherwise
-func (ar *AuctionResponse) GetSeatNonBid() []openrtb_ext.SeatNonBid {
+func (ar AuctionResponse) GetSeatNonBid() []openrtb_ext.SeatNonBid {
 	if ar.ExtBidResponse != nil && ar.ExtBidResponse.Prebid != nil {
 		return ar.ExtBidResponse.Prebid.SeatNonBid
 	}

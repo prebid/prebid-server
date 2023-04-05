@@ -16,7 +16,7 @@ func newSeatNonBids() seatNonBids {
 	}
 }
 
-func (snb *seatNonBids) add(bid *entities.PbsOrtbBid, nonBidReason int, seat string) {
+func (snb *seatNonBids) addBid(bid *entities.PbsOrtbBid, nonBidReason int, seat string) {
 	if bid == nil || bid.Bid == nil {
 		return
 	}
@@ -27,7 +27,7 @@ func (snb *seatNonBids) add(bid *entities.PbsOrtbBid, nonBidReason int, seat str
 		ImpId:      bid.Bid.ImpID,
 		StatusCode: nonBidReason, //
 		Ext: openrtb_ext.NonBidExt{
-			Prebid: openrtb_ext.Prebid{Bid: openrtb_ext.Bid{
+			Prebid: openrtb_ext.ExtResponseNonBidPrebid{Bid: openrtb_ext.Bid{
 				Bid: openrtb2.Bid{
 					Price:   bid.Bid.Price,
 					ADomain: bid.Bid.ADomain,
@@ -56,13 +56,11 @@ func (snb *seatNonBids) add(bid *entities.PbsOrtbBid, nonBidReason int, seat str
 
 func (snb *seatNonBids) get() []openrtb_ext.SeatNonBid {
 	var seatNonBid []openrtb_ext.SeatNonBid
-	if snb.seatNonBidsMap != nil {
-		for seat, nonBids := range snb.seatNonBidsMap {
-			seatNonBid = append(seatNonBid, openrtb_ext.SeatNonBid{
-				Seat:   seat,
-				NonBid: nonBids,
-			})
-		}
+	for seat, nonBids := range snb.seatNonBidsMap {
+		seatNonBid = append(seatNonBid, openrtb_ext.SeatNonBid{
+			Seat:   seat,
+			NonBid: nonBids,
+		})
 	}
 	return seatNonBid
 }

@@ -48,7 +48,7 @@ func TestSeatNonBidsAdd(t *testing.T) {
 			snb := &seatNonBids{
 				seatNonBidsMap: tt.fields.seatNonBidsMap,
 			}
-			snb.add(tt.args.bid, tt.args.nonBidReason, tt.args.seat)
+			snb.addBid(tt.args.bid, tt.args.nonBidReason, tt.args.seat)
 			assert.Equalf(t, tt.want, snb.seatNonBidsMap, "expected seatNonBidsMap not nil")
 		})
 	}
@@ -85,7 +85,7 @@ var sampleSeatNonBidMap = func(seat string, nonBidCount int) map[string][]openrt
 	nonBids := make([]openrtb_ext.NonBid, 0)
 	for i := 0; i < nonBidCount; i++ {
 		nonBids = append(nonBids, openrtb_ext.NonBid{
-			Ext: openrtb_ext.NonBidExt{Prebid: openrtb_ext.Prebid{Bid: openrtb_ext.Bid{Bid: openrtb2.Bid{}}}},
+			Ext: openrtb_ext.NonBidExt{Prebid: openrtb_ext.ExtResponseNonBidPrebid{Bid: openrtb_ext.Bid{Bid: openrtb2.Bid{}}}},
 		})
 	}
 	return map[string][]openrtb_ext.NonBid{
@@ -101,7 +101,7 @@ var sampleSeatBids = func(seat string, nonBidCount int) []openrtb_ext.SeatNonBid
 	}
 	for i := 0; i < nonBidCount; i++ {
 		seatNonBid.NonBid = append(seatNonBid.NonBid, openrtb_ext.NonBid{
-			Ext: openrtb_ext.NonBidExt{Prebid: openrtb_ext.Prebid{Bid: openrtb_ext.Bid{Bid: openrtb2.Bid{}}}},
+			Ext: openrtb_ext.NonBidExt{Prebid: openrtb_ext.ExtResponseNonBidPrebid{Bid: openrtb_ext.Bid{Bid: openrtb2.Bid{}}}},
 		})
 	}
 	seatNonBids = append(seatNonBids, seatNonBid)

@@ -99,7 +99,7 @@ func TestNewModuleSuccess(t *testing.T) {
 								{
 									ImpId:      "123",
 									StatusCode: 34,
-									Ext:        openrtb_ext.NonBidExt{Prebid: openrtb_ext.Prebid{Bid: openrtb_ext.Bid{}}},
+									Ext:        openrtb_ext.NonBidExt{Prebid: openrtb_ext.ExtResponseNonBidPrebid{Bid: openrtb_ext.Bid{}}},
 								},
 							},
 						},

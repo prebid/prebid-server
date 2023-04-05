@@ -111,20 +111,23 @@ type Bid struct {
 	OriginalBidCur string  `json:"originalbidcur,omitempty"`
 }
 
-type Prebid struct {
+// ExtResponseNonBidPrebid represents bidresponse.ext.prebid.seatnonbid[].nonbid[].ext
+type ExtResponseNonBidPrebid struct {
 	Bid Bid `json:"bid"`
 }
 
 type NonBidExt struct {
-	Prebid Prebid `json:"prebid"`
+	Prebid ExtResponseNonBidPrebid `json:"prebid"`
 }
 
+// NonBid represnts the Non Bid Reason (statusCode) for given impression ID
 type NonBid struct {
 	ImpId      string    `json:"impid"`
 	StatusCode int       `json:"statuscode"`
 	Ext        NonBidExt `json:"ext"`
 }
 
+// SeatNonBid is collection of NonBid objects with seat information
 type SeatNonBid struct {
 	NonBid []NonBid        `json:"nonbid"`
 	Seat   string          `json:"seat"`
