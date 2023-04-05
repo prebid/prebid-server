@@ -858,9 +858,19 @@ func TestGetDeviceType(t *testing.T) {
 		want    string
 	}{
 		{
-			name:    "user agent contains device type as tablet",
-			request: &openrtb2.BidRequest{Device: &openrtb2.Device{UA: "Mozilla/5.0 (Windows NT touch 10.0; Win64; x64)"}},
-			want:    "tablet",
+			name:    "user agent contains Phone",
+			request: &openrtb2.BidRequest{Device: &openrtb2.Device{UA: "Mozilla/5.0 (Phone Samsung Mobile; Win64; x64)"}},
+			want:    "phone",
+		},
+		{
+			name:    "user agent contains iPhone",
+			request: &openrtb2.BidRequest{Device: &openrtb2.Device{UA: "Safari(iPhone Apple Mobile)"}},
+			want:    "phone",
+		},
+		{
+			name:    "user agent contains Mobile.*Android",
+			request: &openrtb2.BidRequest{Device: &openrtb2.Device{UA: "Mozilla/5.0 (Mobile Android; Win64; x64)"}},
+			want:    "phone",
 		},
 		{
 			name:    "user agent contains Android.*Mobile",
@@ -871,6 +881,11 @@ func TestGetDeviceType(t *testing.T) {
 			name:    "user agent contains Mobile.*Android",
 			request: &openrtb2.BidRequest{Device: &openrtb2.Device{UA: "Mozilla/5.0 (Mobile pixel Android; Win64; x64)"}},
 			want:    "phone",
+		},
+		{
+			name:    "user agent contains Windows NT touch",
+			request: &openrtb2.BidRequest{Device: &openrtb2.Device{UA: "Mozilla/5.0 (Windows NT touch 10.0; Win64; x64)"}},
+			want:    "tablet",
 		},
 		{
 			name:    "user agent contains ipad",
@@ -893,7 +908,7 @@ func TestGetDeviceType(t *testing.T) {
 			want:    "tablet",
 		},
 		{
-			name:    "user agent contains desktop",
+			name:    "user agent not matching phone or tablet",
 			request: &openrtb2.BidRequest{Device: &openrtb2.Device{UA: "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}},
 			want:    "desktop",
 		},
@@ -907,7 +922,6 @@ func TestGetDeviceType(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := getDeviceType(&openrtb_ext.RequestWrapper{BidRequest: tt.request})
 			assert.Equal(t, tt.want, got)
-
 		})
 	}
 }
@@ -949,7 +963,6 @@ func TestGetAdUnitCode(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := getAdUnitCode(tt.imp)
 			assert.Equal(t, tt.want, got)
-
 		})
 	}
 }
