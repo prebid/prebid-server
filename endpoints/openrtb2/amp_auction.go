@@ -541,7 +541,6 @@ func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb2
 	if req.Site == nil {
 		req.Site = &openrtb2.Site{}
 	}
-	var errors []error
 
 	// Override the stored request sizes with AMP ones, if they exist.
 	if req.Imp[0].Banner != nil {
@@ -575,21 +574,22 @@ func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb2
 	}
 
 	if err := setConsentedProviders(req, ampParams); err != nil {
-		return append(errors, err)
+		return []error{err}
 	}
 
 	policyWriter, policyWriterErr := amp.ReadPolicy(ampParams, deps.cfg.GDPR.Enabled)
 	if policyWriterErr != nil {
-		return append(errors, policyWriterErr)
+		return []error{policyWriterErr}
 	}
 	if err := policyWriter.Write(req); err != nil {
-		return append(errors, err)
+		return []error{err}
 	}
 
 	if ampParams.Timeout != nil {
 		req.TMax = int64(*ampParams.Timeout) - deps.cfg.AMPTimeoutAdjustment
 	}
 
+	var errors []error
 	if warn := setTargeting(req, ampParams.Targeting); warn != nil {
 		errors = append(errors, warn)
 	}

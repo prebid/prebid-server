@@ -421,8 +421,7 @@ func TestOverrideWithParams(t *testing.T) {
 					Imp:  []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}},
 					Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)},
 				},
-				errorMsgs:         nil,
-				expectFatalErrors: false,
+				errorMsgs: nil,
 			},
 		},
 		{
@@ -454,8 +453,7 @@ func TestOverrideWithParams(t *testing.T) {
 					},
 					Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)},
 				},
-				errorMsgs:         nil,
-				expectFatalErrors: false,
+				errorMsgs: nil,
 			},
 		},
 		{
@@ -473,8 +471,7 @@ func TestOverrideWithParams(t *testing.T) {
 						Ext:    json.RawMessage(`{"amp":1}`),
 					},
 				},
-				errorMsgs:         nil,
-				expectFatalErrors: false,
+				errorMsgs: nil,
 			},
 		},
 		{
@@ -489,8 +486,7 @@ func TestOverrideWithParams(t *testing.T) {
 					Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)},
 					Ext:  json.RawMessage(`{"prebid":{"trace":"verbose"}}`),
 				},
-				errorMsgs:         nil,
-				expectFatalErrors: false,
+				errorMsgs: nil,
 			},
 		},
 		{
@@ -508,8 +504,7 @@ func TestOverrideWithParams(t *testing.T) {
 					Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)},
 					Ext:  json.RawMessage(`{"prebid":{"debug":true,"trace":"verbose"}}`),
 				},
-				errorMsgs:         nil,
-				expectFatalErrors: false,
+				errorMsgs: nil,
 			},
 		},
 		{
@@ -554,8 +549,7 @@ func TestOverrideWithParams(t *testing.T) {
 					},
 					Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)},
 				},
-				errorMsgs:         []string{"unable to merge imp.ext with targeting data, check targeting data is correct: Invalid JSON Patch"},
-				expectFatalErrors: false,
+				errorMsgs: []string{"unable to merge imp.ext with targeting data, check targeting data is correct: Invalid JSON Patch"},
 			},
 		},
 		{
