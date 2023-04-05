@@ -17,6 +17,7 @@ import (
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/ptrutil"
 )
 
 // Configuration specifies the static application config.
@@ -689,8 +690,7 @@ func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName func(strin
 	// update deprecated and new events enabled values for account defaults
 	accountDefaultsEventsEnabled := IsAccountEventEnabled(c.AccountDefaults.EventsEnabled, c.AccountDefaults.Events.Enabled)
 	*c.AccountDefaults.EventsEnabled = accountDefaultsEventsEnabled
-	boolFalse := false
-	c.AccountDefaults.Events.Enabled = &boolFalse
+	c.AccountDefaults.Events.Enabled = ptrutil.ToPtr(false)
 
 	if err := c.MarshalAccountDefaults(); err != nil {
 		return nil, err
@@ -1483,9 +1483,9 @@ func isValidCookieSize(maxCookieSize int) error {
 	return nil
 }
 
-// IsAccountEventEnabled checks if event is enabled for account or not.
-// account.events_enabled/accountDefaults.events_enabled, which is deprecated, is still in use in some incoming requests so we'd like to still use its value whenever account.events.enabled/accountDefaults.events.enabled is not found.
-// Once we've identified if events are enabled or not, we can set the resulting boolean value into account.Events.Enabled/accountDefaults.Events.Enabled and set account.EventsEnabled/accountDefaults.EventsEnabled to nil.
+// IsAccountEventEnabled checks whether events are enabled for an account. In some incoming requests,
+// the `account.events_enabled` field, which is deprecated, is still used. We want to use its value whenever
+// the `account.events.enabled` field is not found.
 func IsAccountEventEnabled(deprecated_events_enabled *bool, events_enabled *bool) bool {
 	if deprecated_events_enabled != nil {
 		if *deprecated_events_enabled {

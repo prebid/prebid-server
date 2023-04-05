@@ -3,6 +3,7 @@ package config
 import (
 	"testing"
 
+	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -253,8 +254,6 @@ func TestValidateVASTEvent(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
-	boolFalse := false
-	boolTrue := true
 	testCases := []struct {
 		description string
 		events      Events
@@ -263,14 +262,14 @@ func TestValidate(t *testing.T) {
 		{
 			description: "Empty default URL",
 			events: Events{
-				Enabled: &boolTrue,
+				Enabled: ptrutil.ToPtr(true),
 			},
 			expectErr: true,
 		},
 		{
 			description: "Events are disabled. Skips validations",
 			events: Events{
-				Enabled:    &boolFalse,
+				Enabled:    ptrutil.ToPtr(false),
 				DefaultURL: "",
 			},
 			expectErr: false,
@@ -278,7 +277,7 @@ func TestValidate(t *testing.T) {
 		{
 			description: "No VAST Events and default URL present",
 			events: Events{
-				Enabled:    &boolTrue,
+				Enabled:    ptrutil.ToPtr(true),
 				DefaultURL: "http://prebid.org",
 			},
 			expectErr: false,
@@ -286,7 +285,7 @@ func TestValidate(t *testing.T) {
 		{
 			description: "Invalid VAST Event",
 			events: Events{
-				Enabled:    &boolTrue,
+				Enabled:    ptrutil.ToPtr(true),
 				DefaultURL: "http://prebid.org",
 				VASTEvents: []VASTEvent{
 					{},

@@ -12,6 +12,7 @@ import (
 
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
@@ -3198,8 +3199,6 @@ func TestTCF2FeatureOneVendorException(t *testing.T) {
 }
 
 func TestIsAccountEventEnabled(t *testing.T) {
-	boolFalse := false
-	boolTrue := true
 	tests := []struct {
 		name                    string
 		deprecatedEventsEnabled *bool
@@ -3207,57 +3206,57 @@ func TestIsAccountEventEnabled(t *testing.T) {
 		expectedIsEventEnabled  bool
 	}{
 		{
-			name:                    "events disabled, events.enabled false",
-			deprecatedEventsEnabled: boolPointer(false),
-			eventsEnabled:           &boolFalse,
+			name:                    "deprecated events disabled, events.enabled false",
+			deprecatedEventsEnabled: ptrutil.ToPtr(false),
+			eventsEnabled:           ptrutil.ToPtr(false),
 			expectedIsEventEnabled:  false,
 		},
 		{
-			name:                    "events disabled, events.enabled true",
-			deprecatedEventsEnabled: boolPointer(false),
-			eventsEnabled:           &boolTrue,
+			name:                    "deprecated events disabled, events.enabled true",
+			deprecatedEventsEnabled: ptrutil.ToPtr(false),
+			eventsEnabled:           ptrutil.ToPtr(true),
 			expectedIsEventEnabled:  true,
 		},
 		{
-			name:                    "events disabled, events.enabled not set",
-			deprecatedEventsEnabled: boolPointer(false),
-			eventsEnabled:           &boolFalse,
+			name:                    "deprecated events disabled, events.enabled not set",
+			deprecatedEventsEnabled: ptrutil.ToPtr(false),
+			eventsEnabled:           ptrutil.ToPtr(false),
 			expectedIsEventEnabled:  false,
 		},
 		{
-			name:                    "events enabled, events.enabled false",
-			deprecatedEventsEnabled: boolPointer(true),
-			eventsEnabled:           &boolFalse,
+			name:                    "deprecated events enabled, events.enabled false",
+			deprecatedEventsEnabled: ptrutil.ToPtr(true),
+			eventsEnabled:           ptrutil.ToPtr(false),
 			expectedIsEventEnabled:  true,
 		},
 		{
-			name:                    "events enabled, events.enabled true",
-			deprecatedEventsEnabled: boolPointer(true),
-			eventsEnabled:           &boolTrue,
+			name:                    "deprecated events enabled, events.enabled true",
+			deprecatedEventsEnabled: ptrutil.ToPtr(true),
+			eventsEnabled:           ptrutil.ToPtr(true),
 			expectedIsEventEnabled:  true,
 		},
 		{
-			name:                    "events enabled, events.enabled not set",
-			deprecatedEventsEnabled: boolPointer(true),
-			eventsEnabled:           &boolTrue,
+			name:                    "deprecated events enabled, events.enabled not set",
+			deprecatedEventsEnabled: ptrutil.ToPtr(true),
+			eventsEnabled:           nil,
 			expectedIsEventEnabled:  true,
 		},
 		{
-			name:                    "events not set, events.enabled false",
+			name:                    "deprecated events not set, events.enabled false",
 			deprecatedEventsEnabled: nil,
-			eventsEnabled:           &boolFalse,
+			eventsEnabled:           ptrutil.ToPtr(false),
 			expectedIsEventEnabled:  false,
 		},
 		{
-			name:                    "events not set, events.enabled true",
+			name:                    "deprecated events not set, events.enabled true",
 			deprecatedEventsEnabled: nil,
-			eventsEnabled:           &boolTrue,
+			eventsEnabled:           ptrutil.ToPtr(true),
 			expectedIsEventEnabled:  true,
 		},
 		{
-			name:                    "events not set, events.enabled not set",
+			name:                    "deprecated events not set, events.enabled not set",
 			deprecatedEventsEnabled: nil,
-			eventsEnabled:           &boolFalse,
+			eventsEnabled:           nil,
 			expectedIsEventEnabled:  false,
 		},
 	}
@@ -3271,8 +3270,4 @@ func TestIsAccountEventEnabled(t *testing.T) {
 			}
 		})
 	}
-}
-
-func boolPointer(b bool) *bool {
-	return &b
 }
