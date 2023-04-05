@@ -1710,8 +1710,6 @@ func TestBidResponseCurrency(t *testing.T) {
 				ID:      "some-request-id",
 				SeatBid: sampleSeatBid,
 				Cur:     "USD",
-				Ext: json.RawMessage(`{"responsetimemillis":{"appnexus":5},"tmaxrequest":500}
-`),
 			},
 		},
 		{
@@ -1726,8 +1724,6 @@ func TestBidResponseCurrency(t *testing.T) {
 				ID:      "some-request-id",
 				SeatBid: emptySeatBid,
 				Cur:     "",
-				Ext: json.RawMessage(`{"responsetimemillis":{"appnexus":5},"tmaxrequest":500}
-`),
 			},
 		},
 		{
@@ -1742,8 +1738,6 @@ func TestBidResponseCurrency(t *testing.T) {
 				ID:      "some-request-id",
 				SeatBid: sampleSeatBid,
 				Cur:     "",
-				Ext: json.RawMessage(`{"responsetimemillis":{"appnexus":5},"tmaxrequest":500}
-`),
 			},
 		},
 		{
@@ -1758,8 +1752,6 @@ func TestBidResponseCurrency(t *testing.T) {
 				ID:      "some-request-id",
 				SeatBid: emptySeatBid,
 				Cur:     "",
-				Ext: json.RawMessage(`{"responsetimemillis":{"appnexus":5},"tmaxrequest":500}
-`),
 			},
 		},
 	}
@@ -3938,7 +3930,7 @@ func TestMakeBidExtJSON(t *testing.T) {
 			origbidcpm:         10.0000,
 			origbidcur:         "USD",
 			impExtInfo:         map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`), json.RawMessage(`{"imp_passthrough_val": 1}`)}},
-			expectedBidExt:     `{"prebid":{"passthrough":{"imp_passthrough_val":1}, "type":""},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]},"video":{"h":100}, "origbidcpm": 10, "origbidcur": "USD"}`,
+			expectedBidExt:     `{"prebid":{"passthrough":{"imp_passthrough_val":1}},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]},"video":{"h":100}, "origbidcpm": 10, "origbidcur": "USD"}`,
 			expectedErrMessage: "",
 		},
 		{
