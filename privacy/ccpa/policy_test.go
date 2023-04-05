@@ -184,6 +184,33 @@ func TestReadFromRequestWrapper(t *testing.T) {
 			},
 		},
 		{
+			description: "GPP Success, has regs.us_privacy",
+			request: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{GPP: "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~present",
+					GPPSID:    []int8{6},
+					USPrivacy: "conflicting"},
+				Ext: json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
+			},
+			giveGPP: gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{6}, Sections: []gpplib.Section{&upsv1Section}},
+			expectedPolicy: Policy{
+				Consent:       "present",
+				NoSaleBidders: []string{"a", "b"},
+			},
+			expectedError: true,
+		},
+		{
+			description: "Has regs.us_privacy",
+			request: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{USPrivacy: "present"},
+				Ext:  json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
+			},
+			expectedPolicy: Policy{
+				Consent:       "present",
+				NoSaleBidders: []string{"a", "b"},
+			},
+			expectedError: false,
+		},
+		{
 			description: "GPP Success, no USPV1",
 			request: &openrtb2.BidRequest{
 				Regs: &openrtb2.Regs{GPP: "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
