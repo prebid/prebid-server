@@ -618,7 +618,7 @@ func (e *exchange) getAllBids(
 	chBids := make(chan *bidResponseWrapper, len(bidderRequests))
 	bidsFound := false
 
-	e.me.RecordOverheadTime(metrics.NonErrorPrepareOrtbBidderRequests, time.Since(pbsRequestStartTime))
+	e.me.RecordOverheadTime(metrics.MakeBidderRequests, time.Since(pbsRequestStartTime))
 
 	bidderRequestStartTime := time.Now()
 	for _, bidder := range bidderRequests {
@@ -1535,6 +1535,6 @@ func (e *exchange) recordResponsePreparationMetrics(ae map[openrtb_ext.BidderNam
 		for _, makeBidsDuration := range resp.MakeBidsDurations {
 			duration += makeBidsDuration
 		}
-		e.me.RecordOverheadTime(metrics.NonErrorPrepareOrtbResponse, duration)
+		e.me.RecordOverheadTime(metrics.MakeAuctionResponse, duration)
 	}
 }

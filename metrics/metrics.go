@@ -30,12 +30,12 @@ type AdapterLabels struct {
 type OverheadType string
 
 const (
-	// NonErrorPreBidderRequest - used to measure the amount of time needed to make HTTP requests to bidder server
-	NonErrorPreBidderRequest OverheadType = "non-error-pre-bidder-request"
-	// NonErrorPrepareOrtbResponse - used to measure the amount of time needed to prepare a single ORTB (OpenRTB) response from multiple bidder responses
-	NonErrorPrepareOrtbResponse OverheadType = "non-error-prepare-ortb-response"
-	// NonErrorPrepareOrtbBidderRequests - used to measure the amount of time needed to split a single OpenRTB request into multiple bidder ORTB requests
-	NonErrorPrepareOrtbBidderRequests OverheadType = "non-error-prepare-ortb-bidder-requests"
+	// PreBidder - used to measure the amount of time needed to make HTTP requests to bidder server
+	PreBidder OverheadType = "pre-bidder"
+	// MakeAuctionResponse - used to measure the amount of time needed to prepare a single ORTB (OpenRTB) response from multiple bidder responses
+	MakeAuctionResponse OverheadType = "make-auction-response"
+	// MakeBidderRequests - used to measure the amount of time needed to split a single OpenRTB request into multiple bidder ORTB requests
+	MakeBidderRequests OverheadType = "make-bidder-requests"
 )
 
 func (t OverheadType) String() string {
@@ -43,7 +43,7 @@ func (t OverheadType) String() string {
 }
 
 func OverheadTypes() []OverheadType {
-	return []OverheadType{NonErrorPreBidderRequest, NonErrorPrepareOrtbResponse, NonErrorPrepareOrtbBidderRequests}
+	return []OverheadType{PreBidder, MakeAuctionResponse, MakeBidderRequests}
 }
 
 // ImpLabels defines metric labels describing the impression type.
