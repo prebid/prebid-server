@@ -80,8 +80,6 @@ func NewAmpEndpoint(
 		IPv6PrivateNetworks: cfg.RequestValidation.IPv6PrivateNetworksParsed,
 	}
 
-	hookExecutor := hookexecution.NewHookExecutor(hookExecutionPlanBuilder, hookexecution.EndpointAmp, metricsEngine)
-
 	return httprouter.Handle((&endpointDeps{
 		uuidGenerator,
 		ex,
@@ -100,7 +98,7 @@ func NewAmpEndpoint(
 		nil,
 		ipValidator,
 		storedRespFetcher,
-		hookExecutor}).AmpAuction), nil
+		hookExecutionPlanBuilder}).AmpAuction), nil
 
 }
 
@@ -112,6 +110,8 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	// We can respect timeouts more accurately if we note the *real* start time, and use it
 	// to compute the auction timeout.
 	start := time.Now()
+
+	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAmp, deps.metricsEngine)
 
 	ao := analytics.AmpObject{
 		Status:    http.StatusOK,
@@ -150,13 +150,13 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
 
 	// There is no body for AMP requests, so we pass a nil body and ignore the return value.
-	_, rejectErr := deps.hookExecutor.ExecuteEntrypointStage(r, nilBody)
+	_, rejectErr := hookExecutor.ExecuteEntrypointStage(r, nilBody)
 	reqWrapper, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, errL := deps.parseAmpRequest(r)
 	ao.Errors = append(ao.Errors, errL...)
 	// Process reject after parsing amp request, so we can use reqWrapper.
 	// There is no body for AMP requests, so we pass a nil body and ignore the return value.
 	if rejectErr != nil {
-		labels, ao = rejectAmpRequest(*rejectErr, w, deps.hookExecutor, reqWrapper, nil, labels, ao, nil)
+		labels, ao = rejectAmpRequest(*rejectErr, w, hookExecutor, reqWrapper, nil, labels, ao, nil)
 		return
 	}
 
@@ -233,7 +233,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		StoredBidResponses:         storedBidResponses,
 		BidderImpReplaceImpID:      bidderImpReplaceImp,
 		PubID:                      labels.PubID,
-		HookExecutor:               deps.hookExecutor,
+		HookExecutor:               hookExecutor,
 		QueryParams:                r.URL.Query(),
 	}
 
@@ -261,11 +261,11 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	}
 
 	if isRejectErr {
-		labels, ao = rejectAmpRequest(*rejectErr, w, deps.hookExecutor, reqWrapper, account, labels, ao, errL)
+		labels, ao = rejectAmpRequest(*rejectErr, w, hookExecutor, reqWrapper, account, labels, ao, errL)
 		return
 	}
 
-	labels, ao = sendAmpResponse(w, deps.hookExecutor, response, reqWrapper, account, labels, ao, errL)
+	labels, ao = sendAmpResponse(w, hookExecutor, response, reqWrapper, account, labels, ao, errL)
 }
 
 func rejectAmpRequest(

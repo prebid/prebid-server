@@ -16,7 +16,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
-	"github.com/prebid/prebid-server/hooks/hookexecution"
+	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/metrics"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -1224,7 +1224,7 @@ func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *m
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		&hookexecution.EmptyHookExecutor{},
+		hooks.EmptyPlanBuilder{},
 	}
 	return deps, metrics, mockModule
 }
@@ -1269,7 +1269,7 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		regexp.MustCompile(`[<>]`),
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		&hookexecution.EmptyHookExecutor{},
+		hooks.EmptyPlanBuilder{},
 	}
 }
 
@@ -1292,7 +1292,7 @@ func mockDepsAppendBidderNames(t *testing.T, ex *mockExchangeAppendBidderNames) 
 		regexp.MustCompile(`[<>]`),
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		&hookexecution.EmptyHookExecutor{},
+		hooks.EmptyPlanBuilder{},
 	}
 
 	return deps
@@ -1317,7 +1317,7 @@ func mockDepsNoBids(t *testing.T, ex *mockExchangeVideoNoBids) *endpointDeps {
 		regexp.MustCompile(`[<>]`),
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		&hookexecution.EmptyHookExecutor{},
+		hooks.EmptyPlanBuilder{},
 	}
 
 	return edep
