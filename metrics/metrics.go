@@ -184,10 +184,6 @@ const (
 	ReqTypeVideo    RequestType = "video"
 )
 
-func (r RequestType) String() string {
-	return string(r)
-}
-
 // The media types described in the "imp" json objects
 const (
 	ImpTypeBanner ImpMediaType = "banner"
