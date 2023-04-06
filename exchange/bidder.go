@@ -229,7 +229,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 		}
 
 		if httpInfo.err == nil {
-			reqInfo.SeatBidsPreparationStartTime = time.Now()
+			startTime := time.Now()
 			bidResponse, moreErrs := bidder.Bidder.MakeBids(bidderRequest.BidRequest, httpInfo.request, httpInfo.response)
 			errs = append(errs, moreErrs...)
 
@@ -366,11 +366,12 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 					errs = append(errs, err)
 				}
 			}
+			reqInfo.MakeBidsDurations = append(reqInfo.MakeBidsDurations, time.Since(startTime))
 		} else {
 			errs = append(errs, httpInfo.err)
 		}
 	}
-
+	reqInfo.AfterMakeBidsStartTime = time.Now()
 	seatBids := make([]*entities.PbsOrtbSeatBid, 0, len(seatBidMap))
 	for _, seatBid := range seatBidMap {
 		seatBids = append(seatBids, seatBid)

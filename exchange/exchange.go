@@ -84,8 +84,9 @@ type seatResponseExtra struct {
 	Warnings           []openrtb_ext.ExtBidderMessage
 	// httpCalls is the list of debugging info. It should only be populated if the request.test == 1.
 	// This will become response.ext.debug.httpcalls.{bidder} on the final Response.
-	HttpCalls                    []*openrtb_ext.ExtHttpCall
-	SeatBidsPreparationStartTime time.Time
+	HttpCalls              []*openrtb_ext.ExtHttpCall
+	AfterMakeBidsStartTime time.Time
+	MakeBidsDurations      []time.Duration
 }
 
 type bidResponseWrapper struct {
@@ -662,7 +663,8 @@ func (e *exchange) getAllBids(
 			// SeatBidsPreparationStartTime is needed to calculate duration for openrtb response preparation time metric
 			//  No metric needs to be logged for requests which error out
 			if err == nil {
-				ae.SeatBidsPreparationStartTime = reqInfo.SeatBidsPreparationStartTime
+				ae.AfterMakeBidsStartTime = reqInfo.AfterMakeBidsStartTime
+				ae.MakeBidsDurations = reqInfo.MakeBidsDurations
 			}
 			// Timing statistics
 			e.me.RecordAdapterTime(bidderRequest.BidderLabels, time.Since(start))
@@ -1529,6 +1531,10 @@ func setErrorMessageSecureMarkup(validationType string) string {
 
 func (e *exchange) recordResponsePreparationMetrics(ae map[openrtb_ext.BidderName]*seatResponseExtra) {
 	for _, resp := range ae {
-		e.me.RecordOverheadTime(metrics.NonErrorPrepareOrtbResponse, time.Since(resp.SeatBidsPreparationStartTime))
+		duration := time.Since(resp.AfterMakeBidsStartTime)
+		for _, makeBidsDuration := range resp.MakeBidsDurations {
+			duration += makeBidsDuration
+		}
+		e.me.RecordOverheadTime(metrics.NonErrorPrepareOrtbResponse, duration)
 	}
 }

@@ -5507,9 +5507,8 @@ func (e mockUpdateBidRequestHook) HandleBidderRequestHook(_ context.Context, mct
 }
 
 func TestRecordResponsePreparationMetrics(t *testing.T) {
-	bidder := openrtb_ext.BidderAppnexus
 	ae := map[openrtb_ext.BidderName]*seatResponseExtra{
-		bidder: {SeatBidsPreparationStartTime: time.Now()},
+		openrtb_ext.BidderAppnexus: {MakeBidsDurations: []time.Duration{10, 15}, AfterMakeBidsStartTime: time.Now()},
 	}
 	mockMetricEngine := &metrics.MetricsEngineMock{}
 	ex := exchange{me: mockMetricEngine}
