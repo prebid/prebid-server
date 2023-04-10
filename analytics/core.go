@@ -13,6 +13,8 @@ import (
 // activities. Do not use marshal the parameter objects directly as they can change over time. Use a separate
 // model for each analytics module and transform as appropriate.
 type PBSAnalyticsModule interface {
+	GetName() string
+	GetVendorID() uint16
 	LogAuctionObject(*AuctionObject)
 	LogVideoObject(*VideoObject)
 	LogCookieSyncObject(*CookieSyncObject)

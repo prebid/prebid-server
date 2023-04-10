@@ -1774,6 +1774,10 @@ type MockAnalytics struct {
 	mock.Mock
 }
 
+func (m *MockAnalytics) GetName() string { return "" }
+
+func (m *MockAnalytics) GetVendorID() uint16 { return 0 }
+
 func (m *MockAnalytics) LogAuctionObject(obj *analytics.AuctionObject) {
 	m.Called(obj)
 }

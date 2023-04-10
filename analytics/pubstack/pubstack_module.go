@@ -107,6 +107,16 @@ func NewModuleWithConfigTask(client *http.Client, scope, endpoint string, maxEve
 	return &pb, nil
 }
 
+// Returns the name of the analytics module
+func (p *PubstackModule) GetName() string {
+	return "pubstack"
+}
+
+// Returns a GVL ID of 0 since it is not associated with a vendor
+func (p *PubstackModule) GetVendorID() uint16 {
+	return 0
+}
+
 func (p *PubstackModule) LogAuctionObject(ao *analytics.AuctionObject) {
 	p.muxConfig.RLock()
 	defer p.muxConfig.RUnlock()

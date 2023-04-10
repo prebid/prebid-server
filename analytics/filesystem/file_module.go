@@ -25,6 +25,16 @@ type FileLogger struct {
 	Logger *glog.Logger
 }
 
+// Returns the name of the analytics module
+func (f *FileLogger) GetName() string {
+	return "filelogger"
+}
+
+// Returns a GVL ID of 0 since it is not associated with a vendor
+func (f *FileLogger) GetVendorID() uint16 {
+	return 0
+}
+
 // Writes AuctionObject to file
 func (f *FileLogger) LogAuctionObject(ao *analytics.AuctionObject) {
 	var b bytes.Buffer

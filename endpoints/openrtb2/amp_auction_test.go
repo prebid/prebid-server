@@ -1636,7 +1636,12 @@ func newMockLogger(ao *analytics.AmpObject, aucObj *analytics.AuctionObject) ana
 		auctionObject: aucObj,
 	}
 }
-
+func (logger mockLogger) GetName() string {
+	return ""
+}
+func (logger mockLogger) GetVendorID() uint16 {
+	return 0
+}
 func (logger mockLogger) LogAuctionObject(ao *analytics.AuctionObject) {
 	*logger.auctionObject = *ao
 }

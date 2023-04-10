@@ -27,6 +27,13 @@ type eventsMockAnalyticsModule struct {
 	Invoked bool
 }
 
+func (e *eventsMockAnalyticsModule) GetName() string {
+	return ""
+}
+func (e *eventsMockAnalyticsModule) GetVendorID() uint16 {
+	return 0
+}
+
 func (e *eventsMockAnalyticsModule) LogAuctionObject(ao *analytics.AuctionObject) {
 	if e.Fail {
 		panic(e.Error)

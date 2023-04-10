@@ -1234,6 +1234,14 @@ type mockAnalyticsModule struct {
 	videoObjects   []*analytics.VideoObject
 }
 
+func (m *mockAnalyticsModule) GetName() string {
+	return ""
+}
+
+func (m *mockAnalyticsModule) GetVendorID() uint16 {
+	return 0
+}
+
 func (m *mockAnalyticsModule) LogAuctionObject(ao *analytics.AuctionObject) {
 	m.auctionObjects = append(m.auctionObjects, ao)
 }

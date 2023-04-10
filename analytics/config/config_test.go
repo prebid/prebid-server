@@ -63,6 +63,10 @@ type sampleModule struct {
 	count *int
 }
 
+func (m *sampleModule) GetName() string { return "" }
+
+func (m *sampleModule) GetVendorID() uint16 { return 0 }
+
 func (m *sampleModule) LogAuctionObject(ao *analytics.AuctionObject) { *m.count++ }
 
 func (m *sampleModule) LogVideoObject(vo *analytics.VideoObject) { *m.count++ }
