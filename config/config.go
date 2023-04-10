@@ -1487,21 +1487,11 @@ func isValidCookieSize(maxCookieSize int) error {
 // the `account.events_enabled` field, which is deprecated, is still used. We want to use its value whenever
 // the `account.events.enabled` field is not found.
 func IsAccountEventEnabled(deprecated_events_enabled *bool, events_enabled *bool) bool {
-	if deprecated_events_enabled != nil {
-		if *deprecated_events_enabled {
-			return true // case 4, 5, 6
-		} else {
-			if events_enabled != nil {
-				return *events_enabled // case 2, 8
-			} else {
-				return false // case 3
-			}
-		}
+	if events_enabled != nil {
+		return *events_enabled
+	} else if deprecated_events_enabled != nil {
+		return *deprecated_events_enabled
 	} else {
-		if events_enabled != nil {
-			return *events_enabled // case 1, 7
-		} else {
-			return false // case 9
-		}
+		return false
 	}
 }

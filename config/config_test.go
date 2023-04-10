@@ -3220,14 +3220,14 @@ func TestIsAccountEventEnabled(t *testing.T) {
 		{
 			name:                    "deprecated events disabled, events.enabled not set",
 			deprecatedEventsEnabled: ptrutil.ToPtr(false),
-			eventsEnabled:           ptrutil.ToPtr(false),
+			eventsEnabled:           nil,
 			expectedIsEventEnabled:  false,
 		},
 		{
-			name:                    "deprecated events enabled, events.enabled false",
+			name:                    "deprecated events enabled, events.enabled false (takes precedence)",
 			deprecatedEventsEnabled: ptrutil.ToPtr(true),
 			eventsEnabled:           ptrutil.ToPtr(false),
-			expectedIsEventEnabled:  true,
+			expectedIsEventEnabled:  false,
 		},
 		{
 			name:                    "deprecated events enabled, events.enabled true",
