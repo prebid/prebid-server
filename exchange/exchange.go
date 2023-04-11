@@ -669,7 +669,7 @@ func (e *exchange) getAllBids(
 				ae.MakeBidsDurations = reqInfo.MakeBidsDurations
 			}
 			// Timing statistics
-			e.me.RecordAdapterTime(bidderRequest.BidderLabels, time.Since(start))
+			e.me.RecordAdapterTime(bidderRequest.BidderLabels, elapsed)
 			bidderRequest.BidderLabels.AdapterBids = bidsToMetric(brw.adapterSeatBids)
 			bidderRequest.BidderLabels.AdapterErrors = errorsToMetric(err)
 			// Append any bid validation errors to the error list
