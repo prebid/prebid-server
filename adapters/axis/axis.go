@@ -61,7 +61,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 		request.Imp[0].Ext = extJson
 
-		adapterReq, err := a.buildRequest(request, url)
+		adapterReq, err := buildRequest(request, url)
 		if err != nil {
 			return nil, []error{err}
 		}
@@ -83,7 +83,7 @@ func (a *adapter) buildEndpointURL(bidderExt *reqBodyExt) (string, error) {
 	return macros.ResolveMacros(a.endpoint, endpointParams)
 }
 
-func (a *adapter) buildRequest(request *openrtb2.BidRequest, url string) (*adapters.RequestData, error) {
+func buildRequest(request *openrtb2.BidRequest, url string) (*adapters.RequestData, error) {
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
 		return nil, err
