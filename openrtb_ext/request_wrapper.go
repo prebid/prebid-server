@@ -46,7 +46,7 @@ const (
 	jsonEmptyObjectLength               = 2
 	consentedProvidersSettingsStringKey = "ConsentedProvidersSettings"
 	consentedProvidersSettingsListKey   = "consented_providers_settings"
-	consentKey                          = "consent"
+	MacroKeyConsent                     = "consent"
 	ampKey                              = "amp"
 	eidsKey                             = "eids"
 	gdprKey                             = "gdpr"
@@ -384,7 +384,7 @@ func (ue *UserExt) unmarshal(extJson json.RawMessage) error {
 		return err
 	}
 
-	consentJson, hasConsent := ue.ext[consentKey]
+	consentJson, hasConsent := ue.ext[MacroKeyConsent]
 	if hasConsent {
 		if err := json.Unmarshal(consentJson, &ue.consent); err != nil {
 			return err
@@ -431,9 +431,9 @@ func (ue *UserExt) marshal() (json.RawMessage, error) {
 			if err != nil {
 				return nil, err
 			}
-			ue.ext[consentKey] = json.RawMessage(consentJson)
+			ue.ext[MacroKeyConsent] = json.RawMessage(consentJson)
 		} else {
-			delete(ue.ext, consentKey)
+			delete(ue.ext, MacroKeyConsent)
 		}
 		ue.consentDirty = false
 	}
