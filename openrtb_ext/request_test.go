@@ -2,72 +2,12 @@ package openrtb_ext
 
 import (
 	"encoding/json"
-	"reflect"
+	"fmt"
 	"testing"
 
+	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
-
-// Test the unmarshalling of the prebid extensions and setting default Price Granularity
-func TestExtRequestTargeting(t *testing.T) {
-	extRequest := &ExtRequest{}
-	err := json.Unmarshal([]byte(ext1), extRequest)
-	if err != nil {
-		t.Errorf("ext1 Unmarshall failure: %s", err.Error())
-	}
-	if extRequest.Prebid.Targeting != nil {
-		t.Error("ext1 Targeting is not nil")
-	}
-
-	extRequest = &ExtRequest{}
-	err = json.Unmarshal([]byte(ext2), extRequest)
-	if err != nil {
-		t.Errorf("ext2 Unmarshall failure: %s", err.Error())
-	}
-	if extRequest.Prebid.Targeting == nil {
-		t.Error("ext2 Targeting is nil")
-	} else {
-		pgDense := PriceGranularityFromString("dense")
-		if !reflect.DeepEqual(extRequest.Prebid.Targeting.PriceGranularity, pgDense) {
-			t.Errorf("ext2 expected Price granularity \"dense\" (%v), found \"%v\"", pgDense, extRequest.Prebid.Targeting.PriceGranularity)
-		}
-	}
-
-	extRequest = &ExtRequest{}
-	err = json.Unmarshal([]byte(ext3), extRequest)
-	if err != nil {
-		t.Errorf("ext3 Unmarshall failure: %s", err.Error())
-	}
-	if extRequest.Prebid.Targeting == nil {
-		t.Error("ext3 Targeting is nil")
-	} else {
-		pgMed := PriceGranularityFromString("medium")
-		if !reflect.DeepEqual(extRequest.Prebid.Targeting.PriceGranularity, pgMed) {
-			t.Errorf("ext3 expected Price granularity \"medium\", found \"%v\"", extRequest.Prebid.Targeting.PriceGranularity)
-		}
-	}
-}
-
-const ext1 = `{
-	"prebid": {
-		"non_target": "some junk"
-	}
-}
-`
-
-const ext2 = `{
-	"prebid": {
-		"targeting": {
-			"pricegranularity": "dense"
-		}
-	}
-}`
-
-const ext3 = `{
-	"prebid": {
-		"targeting": { }
-	}
-}`
 
 type granularityTestData struct {
 	json   []byte
@@ -75,14 +15,49 @@ type granularityTestData struct {
 }
 
 func TestGranularityUnmarshal(t *testing.T) {
-	for _, test := range validGranularityTests {
-		var resolved PriceGranularity
-		err := json.Unmarshal(test.json, &resolved)
-		if err != nil {
-			t.Errorf("Failed to Unmarshall granularity: %s", err.Error())
-		}
-		if !reflect.DeepEqual(test.target, resolved) {
-			t.Errorf("Granularity unmarshal failed, the unmarshalled JSON did not match the target\nExpected: %v\nActual  : %v", test.target, resolved)
+	testGroups := []struct {
+		desc        string
+		in          []granularityTestData
+		expectError bool
+	}{
+		{
+			desc:        "Unmarshal without error",
+			in:          validGranularityTests,
+			expectError: false,
+		},
+		{
+			desc: "Malformed json. Expect unmarshall error",
+			in: []granularityTestData{
+				{json: []byte(`[]`)},
+			},
+			expectError: true,
+		},
+	}
+	for _, tg := range testGroups {
+		for i, tc := range tg.in {
+			var resolved PriceGranularity
+			err := json.Unmarshal(tc.json, &resolved)
+
+			// Assert validation error
+			if tg.expectError && !assert.Errorf(t, err, "%s test case %d", tg.desc, i) {
+				continue
+			}
+
+			// Assert Targeting.Precision
+			assert.Equal(t, tc.target.Precision, resolved.Precision, "%s test case %d", tg.desc, i)
+
+			// Assert Targeting.Ranges
+			if assert.Len(t, resolved.Ranges, len(tc.target.Ranges), "%s test case %d", tg.desc, i) {
+				expected := make(map[string]struct{}, len(tc.target.Ranges))
+				for _, r := range tc.target.Ranges {
+					expected[fmt.Sprintf("%2.2f-%2.2f-%2.2f", r.Min, r.Max, r.Increment)] = struct{}{}
+				}
+				for _, actualRange := range resolved.Ranges {
+					targetRange := fmt.Sprintf("%2.2f-%2.2f-%2.2f", actualRange.Min, actualRange.Max, actualRange.Increment)
+					_, exists := expected[targetRange]
+					assert.True(t, exists, "%s test case %d target.range %s not found", tg.desc, i, targetRange)
+				}
+			}
 		}
 	}
 }
@@ -91,7 +66,7 @@ var validGranularityTests []granularityTestData = []granularityTestData{
 	{
 		json: []byte(`{"precision": 4, "ranges": [{"min": 0, "max": 5, "increment": 0.1}, {"min": 5, "max":10, "increment":0.5}, {"min":10, "max":20, "increment":1}]}`),
 		target: PriceGranularity{
-			Precision: 4,
+			Precision: ptrutil.ToPtr(4),
 			Ranges: []GranularityRange{
 				{Min: 0.0, Max: 5.0, Increment: 0.1},
 				{Min: 5.0, Max: 10.0, Increment: 0.5},
@@ -102,99 +77,67 @@ var validGranularityTests []granularityTestData = []granularityTestData{
 	{
 		json: []byte(`{"ranges":[{ "max":5, "increment": 0.05}, {"max": 10, "increment": 0.25}, {"max": 20, "increment": 0.5}]}`),
 		target: PriceGranularity{
-			Precision: 2,
 			Ranges: []GranularityRange{
 				{Min: 0.0, Max: 5.0, Increment: 0.05},
-				{Min: 5.0, Max: 10.0, Increment: 0.25},
-				{Min: 10.0, Max: 20.0, Increment: 0.5},
+				{Min: 0.0, Max: 10.0, Increment: 0.25},
+				{Min: 0.0, Max: 20.0, Increment: 0.5},
 			},
 		},
 	},
 	{
-		json:   []byte(`"medium"`),
-		target: priceGranularityMed,
+		json: []byte(`"medium"`),
+		target: PriceGranularity{
+			Precision: ptrutil.ToPtr(2),
+			Ranges: []GranularityRange{{
+				Min:       0,
+				Max:       20,
+				Increment: 0.1}},
+		},
 	},
 	{
 		json: []byte(`{ "precision": 3, "ranges": [{"max":20, "increment":0.005}]}`),
 		target: PriceGranularity{
-			Precision: 3,
+			Precision: ptrutil.ToPtr(3),
 			Ranges:    []GranularityRange{{Min: 0.0, Max: 20.0, Increment: 0.005}},
 		},
 	},
 	{
 		json: []byte(`{"precision": 0, "ranges": [{"max":5, "increment": 1}, {"max": 10, "increment": 2}, {"max": 20, "increment": 5}]}`),
 		target: PriceGranularity{
-			Precision: 0,
+			Precision: ptrutil.ToPtr(0),
 			Ranges: []GranularityRange{
 				{Min: 0.0, Max: 5.0, Increment: 1.0},
-				{Min: 5.0, Max: 10.0, Increment: 2.0},
-				{Min: 10.0, Max: 20.0, Increment: 5.0},
+				{Min: 0.0, Max: 10.0, Increment: 2.0},
+				{Min: 0.0, Max: 20.0, Increment: 5.0},
 			},
 		},
 	},
 	{
 		json: []byte(`{"precision": 2, "ranges": [{"min": 0.5, "max":5, "increment": 0.1}, {"min": 54, "max": 10, "increment": 1}, {"min": -42, "max": 20, "increment": 5}]}`),
 		target: PriceGranularity{
-			Precision: 2,
+			Precision: ptrutil.ToPtr(2),
 			Ranges: []GranularityRange{
-				{Min: 0.0, Max: 5.0, Increment: 0.1},
-				{Min: 5.0, Max: 10.0, Increment: 1.0},
-				{Min: 10.0, Max: 20.0, Increment: 5.0},
+				{Min: 0.5, Max: 5.0, Increment: 0.1},
+				{Min: 54.0, Max: 10.0, Increment: 1.0},
+				{Min: -42.0, Max: 20.0, Increment: 5.0},
 			},
 		},
 	},
 	{
 		json:   []byte(`{}`),
-		target: priceGranularityMed,
+		target: PriceGranularity{},
 	},
 	{
-		json:   []byte(`{"precision": 2}`),
-		target: priceGranularityMed,
+		json: []byte(`{"precision": 2}`),
+		target: PriceGranularity{
+			Precision: ptrutil.ToPtr(2),
+		},
 	},
 	{
-		json:   []byte(`{"precision": 2, "ranges":[]}`),
-		target: priceGranularityMed,
+		json: []byte(`{"precision": 2, "ranges":[]}`),
+		target: PriceGranularity{
+			Precision: ptrutil.ToPtr(2),
+			Ranges:    []GranularityRange{},
+		},
 	},
-}
-
-func TestGranularityUnmarshalBad(t *testing.T) {
-	testCases := []struct {
-		description          string
-		jsonPriceGranularity []byte
-	}{
-		{
-			"Malformed",
-			[]byte(`[]`),
-		},
-		{
-			"Negative precision",
-			[]byte(`{"precision": -1, "ranges": [{"max":20, "increment":0.5}]}`),
-		},
-		{
-			"Precision greater than MaxDecimalFigures supported",
-			[]byte(`{"precision": 16, "ranges": [{"max":20, "increment":0.5}]}`),
-		},
-		{
-			"Negative increment",
-			[]byte(`{"ranges":[{"max":20, "increment": -1}]}`),
-		},
-		{
-			"Range with non float64 max value",
-			[]byte(`{"ranges":[{"max":"20", "increment": "0.1"}]}`),
-		},
-		{
-			"Ranges in decreasing order",
-			[]byte(`{"ranges":[{"max":20, "increment":0.1}. {"max":10, "increment":0.02}]}`),
-		},
-		{
-			"Max equal to previous max",
-			[]byte(`{"ranges":[{"max":1.0, "increment": 0.07}, {"max" 1.0, "increment": 0.03}]}`),
-		},
-	}
-
-	for _, test := range testCases {
-		resolved := PriceGranularity{}
-		err := json.Unmarshal(test.jsonPriceGranularity, &resolved)
-		assert.Errorf(t, err, "Invalid granularity unmarshalled without error.\nJSON was: %s\n Resolved to: %v. Test: %s", string(test.jsonPriceGranularity), resolved, test.description)
-	}
 }

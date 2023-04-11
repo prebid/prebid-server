@@ -289,6 +289,7 @@
             {
               "id": "test-imp-id",
               "instl": 1,
+              "secure": 1,
               "native": {
                 "ver": "1.2",
                 "request": "{\"eventtrackers\":[],\"context\":1,\"plcmttype\":2}",
@@ -334,7 +335,7 @@
                   "cid": "test_cid",
                   "crid": "test_crid",
                   "dealid": "test_dealid",
-                  "admobject": {
+                  "adm_native": {
                     "property1": "value1"
                   },
                   "ext": {

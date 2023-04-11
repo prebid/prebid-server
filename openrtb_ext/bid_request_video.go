@@ -98,7 +98,7 @@ type BidRequestVideo struct {
 	//   object; optional
 	// Description:
 	//    Object to tell ad server how much money the “bidder” demand is worth to you
-	PriceGranularity PriceGranularity `json:"pricegranularity,omitempty"`
+	PriceGranularity *PriceGranularity `json:"pricegranularity,omitempty"`
 
 	// Attribute:
 	//   tmax

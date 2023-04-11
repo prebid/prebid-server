@@ -5,17 +5,19 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestGetPriceBucketString(t *testing.T) {
-	low := openrtb_ext.PriceGranularityFromString("low")
-	medium := openrtb_ext.PriceGranularityFromString("medium")
-	high := openrtb_ext.PriceGranularityFromString("high")
-	auto := openrtb_ext.PriceGranularityFromString("auto")
-	dense := openrtb_ext.PriceGranularityFromString("dense")
+	low, _ := openrtb_ext.NewPriceGranularityFromLegacyID("low")
+	medium, _ := openrtb_ext.NewPriceGranularityFromLegacyID("medium")
+	high, _ := openrtb_ext.NewPriceGranularityFromLegacyID("high")
+	auto, _ := openrtb_ext.NewPriceGranularityFromLegacyID("auto")
+	dense, _ := openrtb_ext.NewPriceGranularityFromLegacyID("dense")
+
 	custom1 := openrtb_ext.PriceGranularity{
-		Precision: 2,
+		Precision: ptrutil.ToPtr(2),
 		Ranges: []openrtb_ext.GranularityRange{
 			{
 				Min:       0.0,
@@ -26,6 +28,22 @@ func TestGetPriceBucketString(t *testing.T) {
 				Min:       5.0,
 				Max:       10.0,
 				Increment: 0.1,
+			},
+		},
+	}
+
+	custom2 := openrtb_ext.PriceGranularity{
+		Precision: ptrutil.ToPtr(2),
+		Ranges: []openrtb_ext.GranularityRange{
+			{
+				Min:       0.0,
+				Max:       1.5,
+				Increment: 1.0,
+			},
+			{
+				Min:       1.5,
+				Max:       10.0,
+				Increment: 1.2,
 			},
 		},
 	}
@@ -51,6 +69,7 @@ func TestGetPriceBucketString(t *testing.T) {
 				{"auto", auto, "1.85"},
 				{"dense", dense, "1.87"},
 				{"custom1", custom1, "1.86"},
+				{"custom2", custom2, "1.50"},
 			},
 		},
 		{
@@ -63,6 +82,15 @@ func TestGetPriceBucketString(t *testing.T) {
 				{"auto", auto, "5.70"},
 				{"dense", dense, "5.70"},
 				{"custom1", custom1, "5.70"},
+				{"custom2", custom2, "5.10"},
+			},
+		},
+		{
+			groupDesc: "cpm equal the max for custom granularity",
+			cpm:       10,
+			testCases: []aTest{
+				{"custom1", custom1, "10.00"},
+				{"custom2", custom2, "9.90"},
 			},
 		},
 		{
@@ -71,17 +99,17 @@ func TestGetPriceBucketString(t *testing.T) {
 			testCases: []aTest{
 				{
 					"Negative precision defaults to number of digits already in CPM float",
-					openrtb_ext.PriceGranularity{Precision: -1, Ranges: []openrtb_ext.GranularityRange{{Max: 5, Increment: 0.05}}},
+					openrtb_ext.PriceGranularity{Precision: ptrutil.ToPtr(-1), Ranges: []openrtb_ext.GranularityRange{{Max: 5, Increment: 0.05}}},
 					"1.85",
 				},
 				{
 					"Precision value equals zero, we expect to round up to the nearest integer",
-					openrtb_ext.PriceGranularity{Ranges: []openrtb_ext.GranularityRange{{Max: 5, Increment: 0.05}}},
+					openrtb_ext.PriceGranularity{Precision: ptrutil.ToPtr(0), Ranges: []openrtb_ext.GranularityRange{{Max: 5, Increment: 0.05}}},
 					"2",
 				},
 				{
 					"Largest precision value PBS supports 15",
-					openrtb_ext.PriceGranularity{Precision: 15, Ranges: []openrtb_ext.GranularityRange{{Max: 5, Increment: 0.05}}},
+					openrtb_ext.PriceGranularity{Precision: ptrutil.ToPtr(15), Ranges: []openrtb_ext.GranularityRange{{Max: 5, Increment: 0.05}}},
 					"1.850000000000000",
 				},
 			},
@@ -92,17 +120,17 @@ func TestGetPriceBucketString(t *testing.T) {
 			testCases: []aTest{
 				{
 					"Negative increment, return empty string",
-					openrtb_ext.PriceGranularity{Precision: 2, Ranges: []openrtb_ext.GranularityRange{{Max: 5, Increment: -0.05}}},
+					openrtb_ext.PriceGranularity{Precision: ptrutil.ToPtr(2), Ranges: []openrtb_ext.GranularityRange{{Max: 5, Increment: -0.05}}},
 					"",
 				},
 				{
 					"Zero increment, return empty string",
-					openrtb_ext.PriceGranularity{Precision: 2, Ranges: []openrtb_ext.GranularityRange{{Max: 5}}},
+					openrtb_ext.PriceGranularity{Precision: ptrutil.ToPtr(2), Ranges: []openrtb_ext.GranularityRange{{Max: 5}}},
 					"",
 				},
 				{
 					"Increment value is greater than CPM itself, return zero float value",
-					openrtb_ext.PriceGranularity{Precision: 2, Ranges: []openrtb_ext.GranularityRange{{Max: 5, Increment: 1.877}}},
+					openrtb_ext.PriceGranularity{Precision: ptrutil.ToPtr(2), Ranges: []openrtb_ext.GranularityRange{{Max: 5, Increment: 1.877}}},
 					"0.00",
 				},
 			},
@@ -125,9 +153,9 @@ func TestGetPriceBucketString(t *testing.T) {
 	}
 
 	for _, testGroup := range testGroups {
-		for _, test := range testGroup.testCases {
-			priceBucket := GetPriceBucket(testGroup.cpm, test.granularity)
-
+		for i, test := range testGroup.testCases {
+			var priceBucket string
+			assert.NotPanics(t, func() { priceBucket = GetPriceBucket(testGroup.cpm, test.granularity) }, "Group: %s Granularity: %d", testGroup.groupDesc, i)
 			assert.Equal(t, test.expectedPriceBucket, priceBucket, "Group: %s Granularity: %s :: Expected %s, got %s from %f", testGroup.groupDesc, test.granularityId, test.expectedPriceBucket, priceBucket, testGroup.cpm)
 		}
 	}

@@ -1,0 +1,19 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Define Media Adapter Params",
+    "description": "A schema which validates params accepted by the DM adapter",
+    "type": "object",
+  
+    "properties": {
+      "mandantId": {
+        "type": "integer",
+        "description": "The DEFINE-MEDIA mandant id. This is a unique identifier for your account. Please contact your account manager for more information."
+      },
+
+      "adslotId":{
+        "type": "integer",
+        "description": "The adslot id. This is a unique identifier for your adslot and may change on subparts on a website. Please contact your account manager for more information."
+      }
+    },
+    "required": ["mandantId"]
+  }

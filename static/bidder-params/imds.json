@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "iMedia Digital Services (IMDS) Adapter Params",
+  "description": "A schema which validates params accepted by the iMedia Digital Services (IMDS) adapter",
+
+  "type": "object",
+  "properties": {
+    "seatId": {
+      "type": "string",
+      "description": "The seat id."
+    },
+    "tagId": {
+      "type": "string",
+      "description": "The tag id."
+    }
+  },
+
+  "required": ["seatId"]
+}

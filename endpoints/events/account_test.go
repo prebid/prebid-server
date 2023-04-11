@@ -3,7 +3,7 @@ package events
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -12,6 +12,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/stretchr/testify/assert"
 )
@@ -135,7 +136,7 @@ func TestHandleAccountServiceErrors(t *testing.T) {
 
 				// execute
 				handler.h(recorder, handler.r, nil)
-				d, err := ioutil.ReadAll(recorder.Result().Body)
+				d, err := io.ReadAll(recorder.Result().Body)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -159,7 +160,7 @@ func event(cfg *config.Configuration, fetcher stored_requests.AccountFetcher, ac
 		r    *http.Request
 	}{
 		name: "event",
-		h:    NewEventEndpoint(cfg, fetcher, nil),
+		h:    NewEventEndpoint(cfg, fetcher, nil, &metrics.MetricsEngineMock{}),
 		r:    httptest.NewRequest("GET", "/event?t=win&b=test&ts=1234&f=b&x=1&a="+accountID, strings.NewReader("")),
 	}
 }
@@ -180,7 +181,7 @@ func vast(t *testing.T, cfg *config.Configuration, fetcher stored_requests.Accou
 		r    *http.Request
 	}{
 		name: "vast",
-		h:    NewVTrackEndpoint(cfg, fetcher, &vtrackMockCacheClient{}, config.BidderInfos{}),
+		h:    NewVTrackEndpoint(cfg, fetcher, &vtrackMockCacheClient{}, config.BidderInfos{}, &metrics.MetricsEngineMock{}),
 		r:    httptest.NewRequest("POST", "/vtrack?a="+accountID, strings.NewReader(vtrackBody)),
 	}
 }

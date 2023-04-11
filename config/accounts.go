@@ -1,6 +1,10 @@
 package config
 
 import (
+	"encoding/json"
+	"fmt"
+	"strings"
+
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -30,6 +34,10 @@ type Account struct {
 	Events                  Events                               `mapstructure:"events" json:"events"` // Don't enable this feature. It is still under developmment - https://github.com/prebid/prebid-server/issues/1725
 	TruncateTargetAttribute *int                                 `mapstructure:"truncate_target_attr" json:"truncate_target_attr"`
 	AlternateBidderCodes    *openrtb_ext.ExtAlternateBidderCodes `mapstructure:"alternatebiddercodes" json:"alternatebiddercodes"`
+	Hooks                   AccountHooks                         `mapstructure:"hooks" json:"hooks"`
+	PriceFloors             AccountPriceFloors                   `mapstructure:"price_floors" json:"price_floors"`
+	Validations             Validations                          `mapstructure:"validations" json:"validations"`
+	DefaultBidLimit         int                                  `mapstructure:"default_bid_limit" json:"default_bid_limit"`
 }
 
 // CookieSync represents the account-level defaults for the cookie sync endpoint.
@@ -44,6 +52,22 @@ type AccountCCPA struct {
 	Enabled            *bool          `mapstructure:"enabled" json:"enabled,omitempty"`
 	IntegrationEnabled AccountChannel `mapstructure:"integration_enabled" json:"integration_enabled"`
 	ChannelEnabled     AccountChannel `mapstructure:"channel_enabled" json:"channel_enabled"`
+}
+
+type AccountPriceFloors struct {
+	Enabled                bool `mapstructure:"enabled" json:"enabled"`
+	EnforceFloorsRate      int  `mapstructure:"enforce_floors_rate" json:"enforce_floors_rate"`
+	AdjustForBidAdjustment bool `mapstructure:"adjust_for_bid_adjustment" json:"adjust_for_bid_adjustment"`
+	EnforceDealFloors      bool `mapstructure:"enforce_deal_floors" json:"enforce_deal_floors"`
+	UseDynamicData         bool `mapstructure:"use_dynamic_data" json:"use_dynamic_data"`
+}
+
+func (pf *AccountPriceFloors) validate(errs []error) []error {
+
+	if pf.EnforceFloorsRate < 0 || pf.EnforceFloorsRate > 100 {
+		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.enforce_floors_rate should be between 0 and 100`))
+	}
+	return errs
 }
 
 // EnabledForChannelType indicates whether CCPA is turned on at the account level for the specified channel type
@@ -79,17 +103,6 @@ type AccountGDPR struct {
 	PurposeConfigs      map[consentconstants.Purpose]*AccountGDPRPurpose
 	PurposeOneTreatment AccountGDPRPurposeOneTreatment `mapstructure:"purpose_one_treatment" json:"purpose_one_treatment"`
 	SpecialFeature1     AccountGDPRSpecialFeature      `mapstructure:"special_feature1" json:"special_feature1"`
-}
-
-// BasicEnforcementVendor checks if the given bidder is considered a basic enforcement vendor which indicates whether
-// weak vendor enforcement applies to that bidder.
-func (a *AccountGDPR) BasicEnforcementVendor(bidder openrtb_ext.BidderName) (value, exists bool) {
-	if a.BasicEnforcementVendorsMap == nil {
-		return false, false
-	}
-	_, found := a.BasicEnforcementVendorsMap[string(bidder)]
-
-	return found, true
 }
 
 // EnabledForChannelType indicates whether GDPR is turned on at the account level for the specified channel type
@@ -135,6 +148,17 @@ func (a *AccountGDPR) PurposeEnforced(purpose consentconstants.Purpose) (value, 
 	return *a.PurposeConfigs[purpose].EnforcePurpose, true
 }
 
+// PurposeEnforcementAlgo checks the purpose enforcement algo for a given purpose by first
+// looking at the account settings, and if not set there, defaulting to the host configuration.
+func (a *AccountGDPR) PurposeEnforcementAlgo(purpose consentconstants.Purpose) (value TCF2EnforcementAlgo, exists bool) {
+	c, exists := a.PurposeConfigs[purpose]
+
+	if exists && (c.EnforceAlgoID == TCF2BasicEnforcement || c.EnforceAlgoID == TCF2FullEnforcement) {
+		return c.EnforceAlgoID, true
+	}
+	return TCF2UndefinedEnforcement, false
+}
+
 // PurposeEnforcingVendors gets the account level enforce vendors setting for a given purpose returning the value and
 // whether or not it is set. If not set, a default value of true is returned matching host default behavior.
 func (a *AccountGDPR) PurposeEnforcingVendors(purpose consentconstants.Purpose) (value, exists bool) {
@@ -147,17 +171,14 @@ func (a *AccountGDPR) PurposeEnforcingVendors(purpose consentconstants.Purpose) 
 	return *a.PurposeConfigs[purpose].EnforceVendors, true
 }
 
-// PurposeVendorException checks if the given bidder is a vendor exception for a given purpose.
-func (a *AccountGDPR) PurposeVendorException(purpose consentconstants.Purpose, bidder openrtb_ext.BidderName) (value, exists bool) {
-	if a.PurposeConfigs[purpose] == nil {
-		return false, false
-	}
-	if a.PurposeConfigs[purpose].VendorExceptionMap == nil {
-		return false, false
-	}
-	_, found := a.PurposeConfigs[purpose].VendorExceptionMap[bidder]
+// PurposeVendorExceptions returns the vendor exception map for a given purpose.
+func (a *AccountGDPR) PurposeVendorExceptions(purpose consentconstants.Purpose) (value map[openrtb_ext.BidderName]struct{}, exists bool) {
+	c, exists := a.PurposeConfigs[purpose]
 
-	return found, true
+	if exists && c.VendorExceptionMap != nil {
+		return c.VendorExceptionMap, true
+	}
+	return nil, false
 }
 
 // PurposeOneTreatmentEnabled gets the account level purpose one treatment enabled setting returning the value and
@@ -180,9 +201,11 @@ func (a *AccountGDPR) PurposeOneTreatmentAccessAllowed() (value, exists bool) {
 
 // AccountGDPRPurpose represents account-specific GDPR purpose configuration
 type AccountGDPRPurpose struct {
-	EnforceAlgo    string `mapstructure:"enforce_algo" json:"enforce_algo,omitempty"`
-	EnforcePurpose *bool  `mapstructure:"enforce_purpose" json:"enforce_purpose,omitempty"`
-	EnforceVendors *bool  `mapstructure:"enforce_vendors" json:"enforce_vendors,omitempty"`
+	EnforceAlgo string `mapstructure:"enforce_algo" json:"enforce_algo,omitempty"`
+	// Integer representation of enforcement algo for performance improvement on compares
+	EnforceAlgoID  TCF2EnforcementAlgo
+	EnforcePurpose *bool `mapstructure:"enforce_purpose" json:"enforce_purpose,omitempty"`
+	EnforceVendors *bool `mapstructure:"enforce_vendors" json:"enforce_vendors,omitempty"`
 	// Array of vendor exceptions that is used to create the hash table VendorExceptionMap so vendor names can be instantly accessed
 	VendorExceptions   []openrtb_ext.BidderName `mapstructure:"vendor_exceptions" json:"vendor_exceptions"`
 	VendorExceptionMap map[openrtb_ext.BidderName]struct{}
@@ -226,4 +249,32 @@ func (a *AccountChannel) GetByChannelType(channelType ChannelType) *bool {
 	}
 
 	return channelEnabled
+}
+
+// AccountHooks represents account-specific hooks configuration
+type AccountHooks struct {
+	Modules       AccountModules    `mapstructure:"modules" json:"modules"`
+	ExecutionPlan HookExecutionPlan `mapstructure:"execution_plan" json:"execution_plan"`
+}
+
+// AccountModules mapping provides account-level module configuration
+// format: map[vendor_name]map[module_name]json.RawMessage
+type AccountModules map[string]map[string]json.RawMessage
+
+// ModuleConfig returns the account-level module config.
+// The id argument must be passed in the form "vendor.module_name",
+// otherwise an error is returned.
+func (m AccountModules) ModuleConfig(id string) (json.RawMessage, error) {
+	ns := strings.SplitN(id, ".", 2)
+	if len(ns) < 2 {
+		return nil, fmt.Errorf("ID must consist of vendor and module names separated by dot, got: %s", id)
+	}
+
+	vendor := ns[0]
+	module := ns[1]
+	return m[vendor][module], nil
+}
+
+func (a *AccountChannel) IsSet() bool {
+	return a.AMP != nil || a.App != nil || a.Video != nil || a.Web != nil
 }

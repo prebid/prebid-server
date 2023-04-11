@@ -1,0 +1,16 @@
+endpoint: "http://ads-pbs.ortb.net/openrtb/{{.PublisherID}}?host={{.Host}}"
+maintainer:
+  email: "engineering@project-limelight.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - audio
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - audio
+      - native

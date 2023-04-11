@@ -13,13 +13,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var modulesStages = map[string][]string{"foobar": {"entry", "raw"}, "another_module": {"raw", "auction"}}
+
 func createMetricsForTesting() *Metrics {
 	syncerKeys := []string{}
 	return NewMetrics(config.PrometheusMetrics{
 		Port:      8080,
 		Namespace: "prebid",
 		Subsystem: "server",
-	}, config.DisabledMetrics{}, syncerKeys)
+	}, config.DisabledMetrics{}, syncerKeys, modulesStages)
 }
 
 func TestMetricCountGatekeeping(t *testing.T) {
@@ -63,7 +65,7 @@ func TestMetricCountGatekeeping(t *testing.T) {
 	// Verify Per-Adapter Cardinality
 	// - This assertion provides a warning for newly added adapter metrics. Threre are 40+ adapters which makes the
 	//   cost of new per-adapter metrics rather expensive. Thought should be given when adding new per-adapter metrics.
-	assert.True(t, perAdapterCardinalityCount <= 27, "Per-Adapter Cardinality count equals %d \n", perAdapterCardinalityCount)
+	assert.True(t, perAdapterCardinalityCount <= 29, "Per-Adapter Cardinality count equals %d \n", perAdapterCardinalityCount)
 }
 
 func TestConnectionMetrics(t *testing.T) {
@@ -201,6 +203,78 @@ func TestDebugRequestMetric(t *testing.T) {
 
 		assertCounterVecValue(t, "", "account debug requests", m.accountDebugRequests, test.expectedAccountDebugCount, prometheus.Labels{accountLabel: "acct-id"})
 		assertCounterValue(t, "", "debug requests", m.debugRequests, test.expectedDebugCount)
+	}
+}
+
+func TestBidValidationCreativeSizeMetric(t *testing.T) {
+	testCases := []struct {
+		description                        string
+		givenDebugEnabledFlag              bool
+		givenAccountAdapterMetricsDisabled bool
+		expectedAdapterCount               float64
+		expectedAccountCount               float64
+	}{
+		{
+			description:                        "Account Metric isn't disabled, so both metrics should be incremented",
+			givenAccountAdapterMetricsDisabled: false,
+			expectedAdapterCount:               1,
+			expectedAccountCount:               1,
+		},
+		{
+			description:                        "Account Metric is disabled, so only adapter metric should be incremented",
+			givenAccountAdapterMetricsDisabled: true,
+			expectedAdapterCount:               1,
+			expectedAccountCount:               0,
+		},
+	}
+
+	for _, test := range testCases {
+		m := createMetricsForTesting()
+		m.metricsDisabled.AccountAdapterDetails = test.givenAccountAdapterMetricsDisabled
+		m.RecordBidValidationCreativeSizeError(adapterLabel, "acct-id")
+		m.RecordBidValidationCreativeSizeWarn(adapterLabel, "acct-id")
+
+		assertCounterVecValue(t, "", "account bid validation", m.accountBidResponseValidationSizeError, test.expectedAccountCount, prometheus.Labels{accountLabel: "acct-id", successLabel: successLabel})
+		assertCounterVecValue(t, "", "adapter bid validation", m.adapterBidResponseValidationSizeError, test.expectedAdapterCount, prometheus.Labels{adapterLabel: adapterLabel, successLabel: successLabel})
+
+		assertCounterVecValue(t, "", "account bid validation", m.accountBidResponseValidationSizeWarn, test.expectedAccountCount, prometheus.Labels{accountLabel: "acct-id", successLabel: successLabel})
+		assertCounterVecValue(t, "", "adapter bid validation", m.adapterBidResponseValidationSizeWarn, test.expectedAdapterCount, prometheus.Labels{adapterLabel: adapterLabel, successLabel: successLabel})
+	}
+}
+
+func TestBidValidationSecureMarkupMetric(t *testing.T) {
+	testCases := []struct {
+		description                        string
+		givenDebugEnabledFlag              bool
+		givenAccountAdapterMetricsDisabled bool
+		expectedAdapterCount               float64
+		expectedAccountCount               float64
+	}{
+		{
+			description:                        "Account Metric isn't disabled, so both metrics should be incremented",
+			givenAccountAdapterMetricsDisabled: false,
+			expectedAdapterCount:               1,
+			expectedAccountCount:               1,
+		},
+		{
+			description:                        "Account Metric is disabled, so only adapter metric should be incremented",
+			givenAccountAdapterMetricsDisabled: true,
+			expectedAdapterCount:               1,
+			expectedAccountCount:               0,
+		},
+	}
+
+	for _, test := range testCases {
+		m := createMetricsForTesting()
+		m.metricsDisabled.AccountAdapterDetails = test.givenAccountAdapterMetricsDisabled
+		m.RecordBidValidationSecureMarkupError(adapterLabel, "acct-id")
+		m.RecordBidValidationSecureMarkupWarn(adapterLabel, "acct-id")
+
+		assertCounterVecValue(t, "", "Account Secure Markup Error", m.accountBidResponseSecureMarkupError, test.expectedAccountCount, prometheus.Labels{accountLabel: "acct-id", successLabel: successLabel})
+		assertCounterVecValue(t, "", "Adapter Secure Markup Error", m.adapterBidResponseSecureMarkupError, test.expectedAdapterCount, prometheus.Labels{adapterLabel: adapterLabel, successLabel: successLabel})
+
+		assertCounterVecValue(t, "", "Account Secure Markup Warn", m.accountBidResponseSecureMarkupWarn, test.expectedAccountCount, prometheus.Labels{accountLabel: "acct-id", successLabel: successLabel})
+		assertCounterVecValue(t, "", "Adapter Secure Markup Warn", m.adapterBidResponseSecureMarkupWarn, test.expectedAdapterCount, prometheus.Labels{adapterLabel: adapterLabel, successLabel: successLabel})
 	}
 }
 
@@ -1476,7 +1550,7 @@ func TestDisabledMetrics(t *testing.T) {
 		AdapterConnectionMetrics:  true,
 		AdapterGDPRRequestBlocked: true,
 	},
-		nil)
+		nil, nil)
 
 	// Assert counter vector was not initialized
 	assert.Nil(t, prometheusMetrics.adapterReusedConnections, "Counter Vector adapterReusedConnections should be nil")
@@ -1772,5 +1846,207 @@ func TestRecordAdsCertSignTime(t *testing.T) {
 
 		assert.Equal(t, test.out.expCount, histogram.GetSampleCount(), "[%d] Incorrect number of histogram entries. Desc: %s\n", i, test.description)
 		assert.Equal(t, test.out.expDuration, histogram.GetSampleSum(), "[%d] Incorrect number of histogram cumulative values. Desc: %s\n", i, test.description)
+	}
+}
+
+func TestRecordModuleMetrics(t *testing.T) {
+	m := createMetricsForTesting()
+
+	// check that each module has its own metric recorded with correct stage labels
+	for module, stages := range modulesStages {
+		for _, stage := range stages {
+			// first record the metrics
+			m.RecordModuleCalled(metrics.ModuleLabels{
+				Module: module,
+				Stage:  stage,
+			}, time.Millisecond*1)
+			m.RecordModuleFailed(metrics.ModuleLabels{
+				Module: module,
+				Stage:  stage,
+			})
+			m.RecordModuleSuccessNooped(metrics.ModuleLabels{
+				Module: module,
+				Stage:  stage,
+			})
+			m.RecordModuleSuccessUpdated(metrics.ModuleLabels{
+				Module: module,
+				Stage:  stage,
+			})
+			m.RecordModuleSuccessRejected(metrics.ModuleLabels{
+				Module: module,
+				Stage:  stage,
+			})
+			m.RecordModuleExecutionError(metrics.ModuleLabels{
+				Module: module,
+				Stage:  stage,
+			})
+			m.RecordModuleTimeout(metrics.ModuleLabels{
+				Module: module,
+				Stage:  stage,
+			})
+
+			// now check that the values are correct
+			result := getHistogramFromHistogramVec(m.moduleDuration[module], stageLabel, stage)
+			assertHistogram(t, fmt.Sprintf("module_%s_duration", module), result, 1, 0.001)
+			assertCounterVecValue(t, "Module calls performed", fmt.Sprintf("%s metric recorded during %s stage", module, stage), m.moduleCalls[module], 1, prometheus.Labels{stageLabel: stage})
+			assertCounterVecValue(t, "Module calls failed", fmt.Sprintf("%s metric recorded during %s stage", module, stage), m.moduleFailures[module], 1, prometheus.Labels{stageLabel: stage})
+			assertCounterVecValue(t, "Module success noop action", fmt.Sprintf("%s metric recorded during %s stage", module, stage), m.moduleSuccessNoops[module], 1, prometheus.Labels{stageLabel: stage})
+			assertCounterVecValue(t, "Module success update action", fmt.Sprintf("%s metric recorded during %s stage", module, stage), m.moduleSuccessUpdates[module], 1, prometheus.Labels{stageLabel: stage})
+			assertCounterVecValue(t, "Module success reject action", fmt.Sprintf("%s metric recorded during %s stage", module, stage), m.moduleSuccessRejects[module], 1, prometheus.Labels{stageLabel: stage})
+			assertCounterVecValue(t, "Module execution error", fmt.Sprintf("%s metric recorded during %s stage", module, stage), m.moduleExecutionErrors[module], 1, prometheus.Labels{stageLabel: stage})
+			assertCounterVecValue(t, "Module timeout", fmt.Sprintf("%s metric recorded during %s stage", module, stage), m.moduleTimeouts[module], 1, prometheus.Labels{stageLabel: stage})
+		}
+	}
+}
+
+func TestRecordAccountGDPRPurposeWarningMetrics(t *testing.T) {
+	testCases := []struct {
+		name                   string
+		givenPurposeName       string
+		expectedP1MetricCount  float64
+		expectedP2MetricCount  float64
+		expectedP3MetricCount  float64
+		expectedP4MetricCount  float64
+		expectedP5MetricCount  float64
+		expectedP6MetricCount  float64
+		expectedP7MetricCount  float64
+		expectedP8MetricCount  float64
+		expectedP9MetricCount  float64
+		expectedP10MetricCount float64
+	}{
+		{
+			name:                  "Purpose1MetricIncremented",
+			givenPurposeName:      "purpose1",
+			expectedP1MetricCount: 1,
+		},
+		{
+			name:                  "Purpose2MetricIncremented",
+			givenPurposeName:      "purpose2",
+			expectedP2MetricCount: 1,
+		},
+		{
+			name:                  "Purpose3MetricIncremented",
+			givenPurposeName:      "purpose3",
+			expectedP3MetricCount: 1,
+		},
+		{
+			name:                  "Purpose4MetricIncremented",
+			givenPurposeName:      "purpose4",
+			expectedP4MetricCount: 1,
+		},
+		{
+			name:                  "Purpose5MetricIncremented",
+			givenPurposeName:      "purpose5",
+			expectedP5MetricCount: 1,
+		},
+		{
+			name:                  "Purpose6MetricIncremented",
+			givenPurposeName:      "purpose6",
+			expectedP6MetricCount: 1,
+		},
+		{
+			name:                  "Purpose7MetricIncremented",
+			givenPurposeName:      "purpose7",
+			expectedP7MetricCount: 1,
+		},
+		{
+			name:                  "Purpose8MetricIncremented",
+			givenPurposeName:      "purpose8",
+			expectedP8MetricCount: 1,
+		},
+		{
+			name:                  "Purpose9MetricIncremented",
+			givenPurposeName:      "purpose9",
+			expectedP9MetricCount: 1,
+		},
+		{
+			name:                   "Purpose10MetricIncremented",
+			givenPurposeName:       "purpose10",
+			expectedP10MetricCount: 1,
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			m := createMetricsForTesting()
+			m.RecordAccountGDPRPurposeWarning("acct-id", test.givenPurposeName)
+
+			assertCounterValue(t, "", "Account Deprecation Warnings", m.accountDeprecationWarningsPurpose1, test.expectedP1MetricCount)
+			assertCounterValue(t, "", "Account Deprecation Warnings", m.accountDeprecationWarningsPurpose2, test.expectedP2MetricCount)
+			assertCounterValue(t, "", "Account Deprecation Warnings", m.accountDeprecationWarningsPurpose3, test.expectedP3MetricCount)
+			assertCounterValue(t, "", "Account Deprecation Warnings", m.accountDeprecationWarningsPurpose4, test.expectedP4MetricCount)
+			assertCounterValue(t, "", "Account Deprecation Warnings", m.accountDeprecationWarningsPurpose5, test.expectedP5MetricCount)
+			assertCounterValue(t, "", "Account Deprecation Warnings", m.accountDeprecationWarningsPurpose6, test.expectedP6MetricCount)
+			assertCounterValue(t, "", "Account Deprecation Warnings", m.accountDeprecationWarningsPurpose7, test.expectedP7MetricCount)
+			assertCounterValue(t, "", "Account Deprecation Warnings", m.accountDeprecationWarningsPurpose8, test.expectedP8MetricCount)
+			assertCounterValue(t, "", "Account Deprecation Warnings", m.accountDeprecationWarningsPurpose9, test.expectedP9MetricCount)
+			assertCounterValue(t, "", "Account Deprecation Warnings", m.accountDeprecationWarningsPurpose10, test.expectedP10MetricCount)
+		})
+	}
+}
+
+func TestRecordAccountGDPRChannelEnabledWarningMetrics(t *testing.T) {
+	testCases := []struct {
+		name                string
+		givenPubID          string
+		expectedMetricCount float64
+	}{
+		{
+			name:                "GdprChannelMetricIncremented",
+			givenPubID:          "acct-id",
+			expectedMetricCount: 1,
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			m := createMetricsForTesting()
+			m.RecordAccountGDPRChannelEnabledWarning(test.givenPubID)
+
+			assertCounterValue(t, "", "GDPR Channel Enabled Deprecation Warnings", m.channelEnabledGDPR, test.expectedMetricCount)
+		})
+	}
+}
+
+func TestRecordAccountCCPAChannelEnabledWarningMetrics(t *testing.T) {
+	testCases := []struct {
+		name                string
+		givenPubID          string
+		expectedMetricCount float64
+	}{
+		{
+			name:                "CcpaChannelMetricIncremented",
+			givenPubID:          "acct-id",
+			expectedMetricCount: 1,
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			m := createMetricsForTesting()
+			m.RecordAccountCCPAChannelEnabledWarning(test.givenPubID)
+
+			assertCounterValue(t, "", "CCPA Channel Enabled Deprecation Warnings", m.channelEnabledCCPA, test.expectedMetricCount)
+		})
+	}
+}
+
+func TestRecordAccountUpgradeStatusMetrics(t *testing.T) {
+	testCases := []struct {
+		name                string
+		givenPubID          string
+		expectedMetricCount float64
+	}{
+		{
+			name:                "AccountDeprecationMeterIncremented",
+			givenPubID:          "acct-id",
+			expectedMetricCount: 1,
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			m := createMetricsForTesting()
+			m.RecordAccountUpgradeStatus(test.givenPubID)
+
+			assertCounterValue(t, "", "Account Depreciation Summary Meter should be incremented", m.accountDeprecationSummary, test.expectedMetricCount)
+		})
+
 	}
 }

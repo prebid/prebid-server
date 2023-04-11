@@ -21,6 +21,7 @@ import (
 	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/privacy/ccpa"
 	gdprPrivacy "github.com/prebid/prebid-server/privacy/gdpr"
+	gppPrivacy "github.com/prebid/prebid-server/privacy/gpp"
 	"github.com/prebid/prebid-server/usersync"
 
 	"github.com/stretchr/testify/assert"
@@ -96,7 +97,6 @@ func TestNewCookieSyncEndpoint(t *testing.T) {
 	assert.Equal(t, expected.privacyConfig.bidderHashSet, result.privacyConfig.bidderHashSet)
 }
 
-// usersyncPrivacy
 func TestCookieSyncHandle(t *testing.T) {
 	syncTypeExpected := []usersync.SyncType{usersync.SyncTypeIFrame, usersync.SyncTypeRedirect}
 	sync := usersync.Sync{URL: "aURL", Type: usersync.SyncTypeRedirect, SupportCORS: true}
@@ -324,6 +324,8 @@ func TestCookieSyncParseRequest(t *testing.T) {
 				`"gdpr":1,` +
 				`"gdpr_consent":"anyGDPRConsent",` +
 				`"us_privacy":"1NYN",` +
+				`"gpp":"anyGPPString",` +
+				`"gpp_sid":"2",` +
 				`"limit":42,` +
 				`"coopSync":true,` +
 				`"filterSettings":{"iframe":{"bidders":"*","filter":"include"}, "image":{"bidders":["b"],"filter":"exclude"}}` +
@@ -343,6 +345,10 @@ func TestCookieSyncParseRequest(t *testing.T) {
 				},
 				CCPA: ccpa.Policy{
 					Consent: "1NYN",
+				},
+				GPP: gppPrivacy.Policy{
+					Consent: "anyGPPString",
+					RawSID:  "2",
 				},
 			},
 			expectedRequest: usersync.Request{
@@ -1359,7 +1365,7 @@ func TestCookieSyncWriteBidderMetrics(t *testing.T) {
 		test.setExpectations(&mockMetrics)
 
 		endpoint := &cookieSyncEndpoint{metrics: &mockMetrics}
-		endpoint.writeBidderMetrics(test.given)
+		endpoint.writeSyncerMetrics(test.given)
 
 		mockMetrics.AssertExpectations(t)
 	}
@@ -1815,8 +1821,8 @@ type FakeAccountsFetcher struct {
 	AccountData map[string]json.RawMessage
 }
 
-func (f FakeAccountsFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
-	defaultAccountJSON := json.RawMessage(`{"disabled":false}`)
+func (f FakeAccountsFetcher) FetchAccount(ctx context.Context, defaultAccountJSON json.RawMessage, accountID string) (json.RawMessage, []error) {
+	defaultAccountJSON = json.RawMessage(`{"disabled":false}`)
 
 	if accountID == metrics.PublisherUnknown {
 		return defaultAccountJSON, nil
