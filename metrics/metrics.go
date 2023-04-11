@@ -30,11 +30,11 @@ type AdapterLabels struct {
 type OverheadType string
 
 const (
-	// PreBidder - used to measure the amount of time needed to make HTTP requests to bidder server
+	// PreBidder - measures the time needed to execute the adapter's MakeRequests() implementation, build Prebid headers and apply GZip compression if needed
 	PreBidder OverheadType = "pre-bidder"
-	// MakeAuctionResponse - used to measure the amount of time needed to prepare a single ORTB (OpenRTB) response from multiple bidder responses
+	// MakeAuctionResponse - measures the amount of time spent doing all the MakeBids() calls as well as preparing PBS's response
 	MakeAuctionResponse OverheadType = "make-auction-response"
-	// MakeBidderRequests - used to measure the amount of time needed to split a single OpenRTB request into multiple bidder ORTB requests
+	// MakeBidderRequests - measures the time needed to fetch a stored request (if needed), parse, unmarshal, and validate the OpenRTB request, interpret its privacy policies, and split it into multiple requests sanitized for each bidder
 	MakeBidderRequests OverheadType = "make-bidder-requests"
 )
 
