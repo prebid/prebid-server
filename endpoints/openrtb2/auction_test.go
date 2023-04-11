@@ -4305,13 +4305,10 @@ func TestParseRequestStoredResponses(t *testing.T) {
 			expectedErrorCount: 0,
 		},
 		{
-			name:             "req has two imps with missing stored responses",
-			givenRequestBody: validRequest(t, "req-two-imps-missing-stored-response.json"),
-			expectedStoredResponses: map[string]json.RawMessage{
-				"imp-id1": json.RawMessage(`[{"bid": [{"id": "bid_id1"],"seat": "appnexus"}]`),
-				"imp-id2": json.RawMessage(nil),
-			},
-			expectedErrorCount: 0,
+			name:                    "req has two imps with missing stored responses",
+			givenRequestBody:        validRequest(t, "req-two-imps-missing-stored-response.json"),
+			expectedStoredResponses: nil,
+			expectedErrorCount:      2,
 		},
 		{
 			name:             "req has two imps: one with stored response and another imp without stored resp",
@@ -4404,13 +4401,10 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 			expectedErrorCount: 0,
 		},
 		{
-			name:             "req has two imps with missing stored bid responses",
-			givenRequestBody: validRequest(t, "req-two-imps-missing-stored-bid-response.json"),
-			expectedStoredBidResponses: map[string]map[string]json.RawMessage{
-				"imp-id1": {"testBidder1": nil},
-				"imp-id2": {"testBidder2": nil},
-			},
-			expectedErrorCount: 0,
+			name:                       "req has two imps with missing stored bid responses",
+			givenRequestBody:           validRequest(t, "req-two-imps-missing-stored-bid-response.json"),
+			expectedStoredBidResponses: nil,
+			expectedErrorCount:         2,
 		},
 	}
 	for _, test := range tests {
