@@ -36,35 +36,32 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	adapterRequests := make([]*adapters.RequestData, 0, len(request.Imp))
+	var adapterRequests []*adapters.RequestData
 
-	reqCopy := *request
-	for _, imp := range request.Imp {
-		reqCopy.Imp = []openrtb2.Imp{imp}
+	originalImpSlice := request.Imp
 
-		axisExt, err := a.getImpExt(&imp)
+	for i := range request.Imp {
+		currImp := originalImpSlice[i]
+		request.Imp = []openrtb2.Imp{currImp}
+
+		var bidderExt reqBodyExt
+		if err := json.Unmarshal(currImp.Ext, &bidderExt); err != nil {
+			continue
+		}
+
+		url, err := a.buildEndpointURL(&bidderExt)
 		if err != nil {
 			return nil, []error{err}
 		}
 
-		url, err := a.buildEndpointURL(axisExt)
+		extJson, err := json.Marshal(bidderExt)
 		if err != nil {
 			return nil, []error{err}
 		}
 
-		extJson, err := json.Marshal(reqBodyExt{
-			AxisBidderExt: openrtb_ext.ImpExtAxis{
-				Integration: axisExt.Integration,
-				Token:       axisExt.Token,
-			},
-		})
-		if err != nil {
-			return nil, []error{err}
-		}
+		request.Imp[0].Ext = extJson
 
-		reqCopy.Imp[0].Ext = extJson
-
-		adapterReq, err := a.makeRequest(&reqCopy, url)
+		adapterReq, err := a.buildRequest(request, url)
 		if err != nil {
 			return nil, []error{err}
 		}
@@ -73,36 +70,20 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			adapterRequests = append(adapterRequests, adapterReq)
 		}
 	}
+	request.Imp = originalImpSlice
 	return adapterRequests, nil
 }
 
-func (a *adapter) getImpExt(imp *openrtb2.Imp) (*openrtb_ext.ImpExtAxis, error) {
-	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return nil, &errortypes.BadInput{
-			Message: "Bidder extension not provided or can't be unmarshalled",
-		}
-	}
-
-	var axisExt openrtb_ext.ImpExtAxis
-	if err := json.Unmarshal(bidderExt.Bidder, &axisExt); err != nil {
-		return nil, &errortypes.BadInput{
-			Message: "Error while unmarshaling bidder extension",
-		}
-	}
-
-	return &axisExt, nil
-}
-
-func (a *adapter) buildEndpointURL(params *openrtb_ext.ImpExtAxis) (string, error) {
+func (a *adapter) buildEndpointURL(bidderExt *reqBodyExt) (string, error) {
 	endpointParams := macros.EndpointTemplateParams{
-		AccountID: params.Integration,
-		SourceId:  params.Token,
+		AccountID: bidderExt.AxisBidderExt.Integration,
+		SourceId:  bidderExt.AxisBidderExt.Token,
 	}
+
 	return macros.ResolveMacros(a.endpoint, endpointParams)
 }
 
-func (a *adapter) makeRequest(request *openrtb2.BidRequest, url string) (*adapters.RequestData, error) {
+func (a *adapter) buildRequest(request *openrtb2.BidRequest, url string) (*adapters.RequestData, error) {
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
 		return nil, err
@@ -111,12 +92,13 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest, url string) (*adapte
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
+
 	return &adapters.RequestData{
 		Method:  "POST",
 		Uri:     url,
 		Body:    reqJSON,
 		Headers: headers,
-	}, err
+	}, nil
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -138,9 +120,15 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
 	bidResponse.Currency = response.Cur
+
+	impsMappedByID := make(map[string]openrtb2.Imp, len(request.Imp))
+	for i, imp := range request.Imp {
+		impsMappedByID[request.Imp[i].ID] = imp
+	}
+
 	for _, seatBid := range response.SeatBid {
 		for i := range seatBid.Bid {
-			bidType, err := getMediaTypeForImp(seatBid.Bid[i].ImpID, request.Imp)
+			bidType, err := getMediaTypeForImp(seatBid.Bid[i].ImpID, impsMappedByID)
 			if err != nil {
 				return nil, []error{err}
 			}
@@ -155,18 +143,16 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return bidResponse, nil
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
-	for _, imp := range imps {
-		if imp.ID == impID {
-			if imp.Banner != nil {
-				return openrtb_ext.BidTypeBanner, nil
-			}
-			if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo, nil
-			}
-			if imp.Native != nil {
-				return openrtb_ext.BidTypeNative, nil
-			}
+func getMediaTypeForImp(impID string, impMap map[string]openrtb2.Imp) (openrtb_ext.BidType, error) {
+	if index, found := impMap[impID]; found {
+		if index.Banner != nil {
+			return openrtb_ext.BidTypeBanner, nil
+		}
+		if index.Video != nil {
+			return openrtb_ext.BidTypeVideo, nil
+		}
+		if index.Native != nil {
+			return openrtb_ext.BidTypeNative, nil
 		}
 	}
 
