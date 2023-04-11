@@ -5580,7 +5580,7 @@ func TestMergeBidAdjustments(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			mergedBidAdj, err := mergeBidAdjustments(test.givenRequestWrapper, test.givenAccount.BidAdjustments)
-			assert.NoError(t, err, "Unexpected error recieved")
+			assert.NoError(t, err, "Unexpected error received")
 			assert.Equal(t, test.expectedBidAdjustments, mergedBidAdj)
 		})
 	}

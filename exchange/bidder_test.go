@@ -2986,30 +2986,42 @@ func TestApplyAdjustmentArray(t *testing.T) {
 	}{
 		{
 			name:             "CPM adj type, value after currency conversion should be subtracted from given bid price",
-			givenAdjustments: []openrtb_ext.Adjustments{{AdjType: "cpm", Value: 1.0, Currency: &givenTo}},
+			givenAdjustments: []openrtb_ext.Adjustments{{AdjType: openrtb_ext.AdjTypeCpm, Value: 1.0, Currency: &givenTo}},
 			givenBidPrice:    10.0,
 			setMock:          func(m *mock.Mock) { m.On("GetRate", "EUR", "USA").Return(2.5, nil) },
 			expectedBidPrice: 7.5,
 		},
 		{
 			name:             "Static adj type, value after currency conversion should be the bid price",
-			givenAdjustments: []openrtb_ext.Adjustments{{AdjType: "static", Value: 4.0, Currency: &givenTo}},
+			givenAdjustments: []openrtb_ext.Adjustments{{AdjType: openrtb_ext.AdjTypeStatic, Value: 4.0, Currency: &givenTo}},
 			givenBidPrice:    10.0,
 			setMock:          func(m *mock.Mock) { m.On("GetRate", "EUR", "USA").Return(5.0, nil) },
 			expectedBidPrice: 20.0,
 		},
 		{
 			name:             "Multiplier adj type with no currency conversion",
-			givenAdjustments: []openrtb_ext.Adjustments{{AdjType: "multiplier", Value: 3.0}},
+			givenAdjustments: []openrtb_ext.Adjustments{{AdjType: openrtb_ext.AdjTypeMultiplier, Value: 3.0}},
 			givenBidPrice:    10.0,
 			expectedBidPrice: 30.0,
+		},
+		{
+			name:             "Bid price after conversions is equal or less than 0, should return original bid price instead",
+			givenAdjustments: []openrtb_ext.Adjustments{{AdjType: openrtb_ext.AdjTypeMultiplier, Value: -1.0}},
+			givenBidPrice:    10.0,
+			expectedBidPrice: 10.0,
+		},
+		{
+			name:             "Nil adjustment array",
+			givenAdjustments: nil,
+			givenBidPrice:    10.0,
+			expectedBidPrice: 10.0,
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			reqInfo := adapters.ExtraRequestInfo{}
-			if test.givenAdjustments[0].Currency != nil {
+			if test.givenAdjustments != nil && test.givenAdjustments[0].Currency != nil {
 				mockConversions := &mockConversions{}
 				test.setMock(&mockConversions.Mock)
 				reqInfo = adapters.NewExtraRequestInfo(mockConversions)

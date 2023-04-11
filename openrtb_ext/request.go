@@ -31,13 +31,12 @@ const NativeExchangeSpecificLowerBound = 500
 
 const MaxDecimalFigures int = 15
 
-const AdjTypeCpm string = "cpm"
-
-const AdjTypeMultiplier string = "multiplier"
-
-const AdjTypeStatic string = "static"
-
-const AdjWildCard string = "*"
+const (
+	AdjTypeCpm        = "cpm"
+	AdjTypeMultiplier = "multiplier"
+	AdjTypeStatic     = "static"
+	AdjWildCard       = "*"
+)
 
 // ExtRequest defines the contract for bidrequest.ext
 type ExtRequest struct {
@@ -402,24 +401,16 @@ func (bidAdjustments *ExtRequestPrebidBidAdjustments) ValidateBidAdjustments() b
 		return true
 	}
 	if bidAdjustments.MediaType.Banner != nil {
-		if valid := findAndValidateAdjustment(bidAdjustments.MediaType.Banner); !valid {
-			return false
-		}
+		return findAndValidateAdjustment(bidAdjustments.MediaType.Banner)
 	}
 	if bidAdjustments.MediaType.Video != nil {
-		if valid := findAndValidateAdjustment(bidAdjustments.MediaType.Video); !valid {
-			return false
-		}
+		return findAndValidateAdjustment(bidAdjustments.MediaType.Video)
 	}
 	if bidAdjustments.MediaType.Audio != nil {
-		if valid := findAndValidateAdjustment(bidAdjustments.MediaType.Audio); !valid {
-			return false
-		}
+		return findAndValidateAdjustment(bidAdjustments.MediaType.Audio)
 	}
 	if bidAdjustments.MediaType.Native != nil {
-		if valid := findAndValidateAdjustment(bidAdjustments.MediaType.Native); !valid {
-			return false
-		}
+		return findAndValidateAdjustment(bidAdjustments.MediaType.Native)
 	}
 	return true
 }
@@ -444,12 +435,12 @@ func validateAdjustment(adjustment Adjustments) bool {
 			return false
 		}
 	case AdjTypeMultiplier:
-		if adjustment.Value < 0 || adjustment.Value > 100 {
+		if adjustment.Value <= 0 || adjustment.Value > 100 {
 			return false
 		}
 		adjustment.Currency = nil
 	case AdjTypeStatic:
-		if adjustment.Currency == nil || adjustment.Value < 0 || adjustment.Value > math.MaxFloat64 {
+		if adjustment.Currency == nil || adjustment.Value <= 0 || adjustment.Value > math.MaxFloat64 {
 			return false
 		}
 	default:

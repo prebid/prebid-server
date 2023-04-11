@@ -1552,12 +1552,10 @@ func validateRequestExt(req *openrtb_ext.RequestWrapper) []error {
 	if valid := prebid.BidAdjustments.ValidateBidAdjustments(); !valid {
 		prebid.BidAdjustments = nil
 		reqExt.SetPrebid(prebid)
-		if prebid.Debug {
-			errs = append(errs, &errortypes.Warning{
-				WarningCode: errortypes.BidAdjustmentWarningCode,
-				Message:     "Bid Adjustment From Request Was Invalid",
-			})
-		}
+		errs = append(errs, &errortypes.Warning{
+			WarningCode: errortypes.BidAdjustmentWarningCode,
+			Message:     "Bid Adjustment From Request Was Invalid",
+		})
 	}
 
 	return errs

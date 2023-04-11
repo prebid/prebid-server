@@ -1519,60 +1519,60 @@ func setErrorMessageSecureMarkup(validationType string) string {
 	return ""
 }
 
-func mergeBidAdjustments(req *openrtb_ext.RequestWrapper, account *openrtb_ext.ExtRequestPrebidBidAdjustments) (*openrtb_ext.ExtRequestPrebidBidAdjustments, error) {
+func mergeBidAdjustments(req *openrtb_ext.RequestWrapper, acctBidAdjs *openrtb_ext.ExtRequestPrebidBidAdjustments) (*openrtb_ext.ExtRequestPrebidBidAdjustments, error) {
 	reqExt, err := req.GetRequestExt()
 	if err != nil {
 		return nil, err
 	}
 	extPrebid := reqExt.GetPrebid()
 
-	if extPrebid == nil && account == nil {
+	if extPrebid == nil && acctBidAdjs == nil {
 		return nil, nil
 	}
-	if extPrebid == nil && account != nil {
-		return account, nil
+	if extPrebid == nil && acctBidAdjs != nil {
+		return acctBidAdjs, nil
 	}
-	if extPrebid != nil && account == nil {
+	if extPrebid != nil && acctBidAdjs == nil {
 		return extPrebid.BidAdjustments, nil
 	}
 
-	if extPrebid.BidAdjustments.MediaType.Banner != nil && account.MediaType.Banner != nil {
-		extPrebid.BidAdjustments.MediaType.Banner = mergeAdjustmentsForMediaType(extPrebid.BidAdjustments.MediaType.Banner, account.MediaType.Banner)
-	} else if account.MediaType.Banner != nil {
-		extPrebid.BidAdjustments.MediaType.Banner = account.MediaType.Banner
+	if extPrebid.BidAdjustments.MediaType.Banner != nil && acctBidAdjs.MediaType.Banner != nil {
+		extPrebid.BidAdjustments.MediaType.Banner = mergeAdjustmentsForMediaType(extPrebid.BidAdjustments.MediaType.Banner, acctBidAdjs.MediaType.Banner)
+	} else if acctBidAdjs.MediaType.Banner != nil {
+		extPrebid.BidAdjustments.MediaType.Banner = acctBidAdjs.MediaType.Banner
 	}
 
-	if extPrebid.BidAdjustments.MediaType.Video != nil && account.MediaType.Video != nil {
-		extPrebid.BidAdjustments.MediaType.Video = mergeAdjustmentsForMediaType(extPrebid.BidAdjustments.MediaType.Video, account.MediaType.Video)
-	} else if account.MediaType.Video != nil {
-		extPrebid.BidAdjustments.MediaType.Video = account.MediaType.Video
+	if extPrebid.BidAdjustments.MediaType.Video != nil && acctBidAdjs.MediaType.Video != nil {
+		extPrebid.BidAdjustments.MediaType.Video = mergeAdjustmentsForMediaType(extPrebid.BidAdjustments.MediaType.Video, acctBidAdjs.MediaType.Video)
+	} else if acctBidAdjs.MediaType.Video != nil {
+		extPrebid.BidAdjustments.MediaType.Video = acctBidAdjs.MediaType.Video
 	}
 
-	if extPrebid.BidAdjustments.MediaType.Native != nil && account.MediaType.Native != nil {
-		extPrebid.BidAdjustments.MediaType.Native = mergeAdjustmentsForMediaType(extPrebid.BidAdjustments.MediaType.Native, account.MediaType.Native)
-	} else if account.MediaType.Native != nil {
-		extPrebid.BidAdjustments.MediaType.Native = account.MediaType.Native
+	if extPrebid.BidAdjustments.MediaType.Native != nil && acctBidAdjs.MediaType.Native != nil {
+		extPrebid.BidAdjustments.MediaType.Native = mergeAdjustmentsForMediaType(extPrebid.BidAdjustments.MediaType.Native, acctBidAdjs.MediaType.Native)
+	} else if acctBidAdjs.MediaType.Native != nil {
+		extPrebid.BidAdjustments.MediaType.Native = acctBidAdjs.MediaType.Native
 	}
 
-	if extPrebid.BidAdjustments.MediaType.Audio != nil && account.MediaType.Audio != nil {
-		extPrebid.BidAdjustments.MediaType.Audio = mergeAdjustmentsForMediaType(extPrebid.BidAdjustments.MediaType.Audio, account.MediaType.Audio)
-	} else if account.MediaType.Audio != nil {
-		extPrebid.BidAdjustments.MediaType.Audio = account.MediaType.Audio
+	if extPrebid.BidAdjustments.MediaType.Audio != nil && acctBidAdjs.MediaType.Audio != nil {
+		extPrebid.BidAdjustments.MediaType.Audio = mergeAdjustmentsForMediaType(extPrebid.BidAdjustments.MediaType.Audio, acctBidAdjs.MediaType.Audio)
+	} else if acctBidAdjs.MediaType.Audio != nil {
+		extPrebid.BidAdjustments.MediaType.Audio = acctBidAdjs.MediaType.Audio
 	}
 	return extPrebid.BidAdjustments, nil
 }
 
-func mergeAdjustmentsForMediaType(hostAdjMap map[string]map[string][]openrtb_ext.Adjustments, accountAdjMap map[string]map[string][]openrtb_ext.Adjustments) map[string]map[string][]openrtb_ext.Adjustments {
+func mergeAdjustmentsForMediaType(reqAdjMap map[string]map[string][]openrtb_ext.Adjustments, accountAdjMap map[string]map[string][]openrtb_ext.Adjustments) map[string]map[string][]openrtb_ext.Adjustments {
 	for bidderName, dealIdToAdjustmentsMap := range accountAdjMap {
-		if _, ok := hostAdjMap[bidderName]; ok {
+		if _, ok := reqAdjMap[bidderName]; ok {
 			for dealID, acctAdjustmentsArray := range accountAdjMap[bidderName] {
-				if _, okay := hostAdjMap[bidderName][dealID]; !okay {
-					hostAdjMap[bidderName][dealID] = acctAdjustmentsArray
+				if _, okay := reqAdjMap[bidderName][dealID]; !okay {
+					reqAdjMap[bidderName][dealID] = acctAdjustmentsArray
 				}
 			}
 		} else {
-			hostAdjMap[bidderName] = dealIdToAdjustmentsMap
+			reqAdjMap[bidderName] = dealIdToAdjustmentsMap
 		}
 	}
-	return hostAdjMap
+	return reqAdjMap
 }

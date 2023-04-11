@@ -167,7 +167,7 @@ func TestValidateBidAdjustments(t *testing.T) {
 			name: "Invalid bid adjustment value, negative",
 			givenBidAdjustments: &ExtRequestPrebidBidAdjustments{
 				MediaType: &MediaType{
-					Banner: map[string]map[string][]Adjustments{
+					Video: map[string]map[string][]Adjustments{
 						"bidderA": {
 							"dealId": []Adjustments{{AdjType: "multiplier", Value: -1.0}},
 						},
@@ -180,7 +180,7 @@ func TestValidateBidAdjustments(t *testing.T) {
 			name: "Invalid bid adjustment value, too big",
 			givenBidAdjustments: &ExtRequestPrebidBidAdjustments{
 				MediaType: &MediaType{
-					Banner: map[string]map[string][]Adjustments{
+					Audio: map[string]map[string][]Adjustments{
 						"bidderA": {
 							"dealId": []Adjustments{{AdjType: "multiplier", Value: 200}},
 						},
@@ -193,7 +193,7 @@ func TestValidateBidAdjustments(t *testing.T) {
 			name: "Valid bid adjustment cpm",
 			givenBidAdjustments: &ExtRequestPrebidBidAdjustments{
 				MediaType: &MediaType{
-					Banner: map[string]map[string][]Adjustments{
+					Native: map[string]map[string][]Adjustments{
 						"bidderA": {
 							"dealId": []Adjustments{{AdjType: "cpm", Value: 1.0, Currency: &currency}},
 						},
@@ -266,6 +266,11 @@ func TestValidateBidAdjustments(t *testing.T) {
 				},
 			},
 			expected: false,
+		},
+		{
+			name:                "Nil Bid Adjustment",
+			givenBidAdjustments: nil,
+			expected:            true,
 		},
 	}
 

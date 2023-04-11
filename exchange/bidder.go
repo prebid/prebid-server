@@ -687,8 +687,10 @@ func compressToGZIP(requestBody []byte) []byte {
 	return b.Bytes()
 }
 
-// TODO: If adjarray == nil
 func applyAdjustmentArray(adjArray []openrtb_ext.Adjustments, bidPrice float64, currency string, reqInfo *adapters.ExtraRequestInfo) float64 {
+	if adjArray == nil {
+		return bidPrice
+	}
 	originalBidPrice := bidPrice
 
 	for _, adjustment := range adjArray {
@@ -707,6 +709,9 @@ func applyAdjustmentArray(adjArray []openrtb_ext.Adjustments, bidPrice float64, 
 			}
 			bidPrice = convertedVal
 		}
+	}
+	if bidPrice <= 0 {
+		return originalBidPrice
 	}
 	return bidPrice
 }
