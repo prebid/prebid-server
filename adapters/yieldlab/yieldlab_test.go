@@ -2,9 +2,10 @@ package yieldlab
 
 import (
 	"encoding/json"
-	"github.com/prebid/openrtb/v17/openrtb2"
 	"strconv"
 	"testing"
+
+	"github.com/prebid/openrtb/v19/openrtb2"
 
 	"github.com/stretchr/testify/assert"
 

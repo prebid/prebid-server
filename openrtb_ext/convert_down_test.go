@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/openrtb/v17/adcom1"
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/adcom1"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -54,6 +54,17 @@ func TestConvertDownTo25(t *testing.T) {
 			expectedRequest: openrtb2.BidRequest{
 				ID:  "anyID",
 				App: &openrtb2.App{},
+			},
+		},
+		{
+			name: "2.6-202303-dropped", // integration with clear202303Fields
+			givenRequest: openrtb2.BidRequest{
+				ID:  "anyID",
+				Imp: []openrtb2.Imp{{ID: "1", Refresh: &openrtb2.Refresh{Count: 1}}},
+			},
+			expectedRequest: openrtb2.BidRequest{
+				ID:  "anyID",
+				Imp: []openrtb2.Imp{{ID: "1"}},
 			},
 		},
 		{
@@ -533,7 +544,7 @@ func TestClear26Fields(t *testing.T) {
 				MIMEs:        []string{"any/audio"},
 				PodDur:       30,
 				RqdDurs:      []int64{15, 60},
-				PodID:        1,
+				PodID:        "1",
 				PodSeq:       adcom1.PodSeqFirst,
 				SlotInPod:    adcom1.SlotPosFirst,
 				MinCPMPerSec: 100.0,
@@ -542,7 +553,7 @@ func TestClear26Fields(t *testing.T) {
 				MIMEs:        []string{"any/video"},
 				MaxSeq:       30,
 				PodDur:       30,
-				PodID:        1,
+				PodID:        "1",
 				PodSeq:       adcom1.PodSeqFirst,
 				RqdDurs:      []int64{15, 60},
 				SlotInPod:    adcom1.SlotPosFirst,
@@ -601,7 +612,6 @@ func TestClear26Fields(t *testing.T) {
 	r := &RequestWrapper{BidRequest: given}
 	clear26Fields(r)
 	assert.Equal(t, expected, r.BidRequest)
-
 }
 
 func TestClear202211Fields(t *testing.T) {
@@ -663,4 +673,31 @@ func TestClear202211Fields(t *testing.T) {
 			assert.Equal(t, &test.expected, r.BidRequest)
 		})
 	}
+}
+
+func TestClear202303Fields(t *testing.T) {
+	given := openrtb2.BidRequest{
+		ID: "anyID",
+		Imp: []openrtb2.Imp{
+			{
+				ID:      "imp1",
+				Video:   &openrtb2.Video{PodID: "1", Plcmt: adcom1.VideoPlcmtInstream},
+				Refresh: &openrtb2.Refresh{Count: 1},
+			},
+		},
+	}
+
+	expected := openrtb2.BidRequest{
+		ID: "anyID",
+		Imp: []openrtb2.Imp{
+			{
+				ID:    "imp1",
+				Video: &openrtb2.Video{PodID: "1"},
+			},
+		},
+	}
+
+	r := &RequestWrapper{BidRequest: &given}
+	clear202303Fields(r)
+	assert.Equal(t, expected, given)
 }
