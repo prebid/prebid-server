@@ -431,20 +431,18 @@ func findAndValidateAdjustment(bidAdjMap map[string]map[string][]Adjustments) bo
 func validateAdjustment(adjustment Adjustments) bool {
 	switch adjustment.AdjType {
 	case AdjTypeCpm:
-		if adjustment.Currency == nil || adjustment.Value < 0 || adjustment.Value > math.MaxFloat64 {
-			return false
+		if adjustment.Currency != nil && adjustment.Value >= 0 && adjustment.Value < math.MaxFloat64 {
+			return true
 		}
 	case AdjTypeMultiplier:
-		if adjustment.Value <= 0 || adjustment.Value > 100 {
-			return false
+		if adjustment.Value >= 0 && adjustment.Value < 100 {
+			return true
 		}
 		adjustment.Currency = nil
 	case AdjTypeStatic:
-		if adjustment.Currency == nil || adjustment.Value <= 0 || adjustment.Value > math.MaxFloat64 {
-			return false
+		if adjustment.Currency != nil && adjustment.Value >= 0 && adjustment.Value < math.MaxFloat64 {
+			return true
 		}
-	default:
-		return false
 	}
-	return true
+	return false
 }
