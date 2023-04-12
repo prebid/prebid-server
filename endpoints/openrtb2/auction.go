@@ -251,6 +251,9 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	labels, ao = sendAuctionResponse(w, hookExecutor, response, req.BidRequest, account, labels, ao)
+	if len(ao.Errors) == 0 {
+		exchange.RecordResponsePreparationMetrics(auctionRequest.MakeBidsTimeInfo, deps.metricsEngine)
+	}
 }
 
 func rejectAuctionRequest(

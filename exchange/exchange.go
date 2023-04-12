@@ -84,9 +84,8 @@ type seatResponseExtra struct {
 	Warnings           []openrtb_ext.ExtBidderMessage
 	// httpCalls is the list of debugging info. It should only be populated if the request.test == 1.
 	// This will become response.ext.debug.httpcalls.{bidder} on the final Response.
-	HttpCalls              []*openrtb_ext.ExtHttpCall
-	AfterMakeBidsStartTime time.Time
-	MakeBidsDurations      []time.Duration
+	HttpCalls        []*openrtb_ext.ExtHttpCall
+	MakeBidsTimeInfo adapters.MakeBidsTimeInfo
 }
 
 type bidResponseWrapper struct {
@@ -204,6 +203,8 @@ type AuctionRequest struct {
 	PubID                 string
 	HookExecutor          hookexecution.StageExecutor
 	QueryParams           url.Values
+	// map of bidder to store duration needed for the MakeBids() calls and start time after MakeBids() calls
+	MakeBidsTimeInfo map[openrtb_ext.BidderName]adapters.MakeBidsTimeInfo
 }
 
 // BidderRequest holds the bidder specific request and all other
@@ -347,6 +348,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		}
 
 		adapterBids, adapterExtra, fledge, anyBidsReturned = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, alternateBidderCodes, requestExtLegacy.Prebid.Experiment, r.HookExecutor, r.StartTime)
+		r.MakeBidsTimeInfo = buildMakeBidsTimeInfoMap(adapterExtra)
 	}
 
 	var (
@@ -454,10 +456,15 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	bidResponse = adservertargeting.Apply(r.BidRequestWrapper, r.ResolvedBidRequest, bidResponse, r.QueryParams, bidResponseExt, r.Account.TruncateTargetAttribute)
 
 	bidResponse.Ext, err = encodeBidResponseExt(bidResponseExt)
-	if err == nil {
-		e.recordResponsePreparationMetrics(adapterExtra)
-	}
 	return bidResponse, err
+}
+
+func buildMakeBidsTimeInfoMap(adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra) map[openrtb_ext.BidderName]adapters.MakeBidsTimeInfo {
+	makeBidsInfoMap := make(map[openrtb_ext.BidderName]adapters.MakeBidsTimeInfo)
+	for bidderName, responseExtra := range adapterExtra {
+		makeBidsInfoMap[bidderName] = responseExtra.MakeBidsTimeInfo
+	}
+	return makeBidsInfoMap
 }
 
 func buildMultiBidMap(prebid *openrtb_ext.ExtRequestPrebid) map[string]openrtb_ext.ExtMultiBid {
@@ -668,8 +675,7 @@ func (e *exchange) getAllBids(
 			// SeatBidsPreparationStartTime is needed to calculate duration for openrtb response preparation time metric
 			//  No metric needs to be logged for requests which error out
 			if err == nil {
-				ae.AfterMakeBidsStartTime = reqInfo.AfterMakeBidsStartTime
-				ae.MakeBidsDurations = reqInfo.MakeBidsDurations
+				ae.MakeBidsTimeInfo = reqInfo.MakeBidsTimeInfo
 			}
 			// Timing statistics
 			e.me.RecordAdapterTime(bidderRequest.BidderLabels, elapsed)
@@ -1534,12 +1540,12 @@ func setErrorMessageSecureMarkup(validationType string) string {
 	return ""
 }
 
-func (e *exchange) recordResponsePreparationMetrics(ae map[openrtb_ext.BidderName]*seatResponseExtra) {
-	for _, resp := range ae {
-		duration := time.Since(resp.AfterMakeBidsStartTime)
-		for _, makeBidsDuration := range resp.MakeBidsDurations {
+func RecordResponsePreparationMetrics(mbti map[openrtb_ext.BidderName]adapters.MakeBidsTimeInfo, me metrics.MetricsEngine) {
+	for _, info := range mbti {
+		duration := time.Since(info.AfterMakeBidsStartTime)
+		for _, makeBidsDuration := range info.Durations {
 			duration += makeBidsDuration
 		}
-		e.me.RecordOverheadTime(metrics.MakeAuctionResponse, duration)
+		me.RecordOverheadTime(metrics.MakeAuctionResponse, duration)
 	}
 }
