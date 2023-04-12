@@ -67,6 +67,8 @@ type ExtRequestPrebid struct {
 	//AlternateBidderCodes is populated with host's AlternateBidderCodes config if not defined in request
 	AlternateBidderCodes *ExtAlternateBidderCodes `json:"alternatebiddercodes,omitempty"`
 
+	Floors      *PriceFloorRules       `json:"floors,omitempty"`
+	MultiBidMap map[string]ExtMultiBid `json:"-"`
 	// Trace controls the level of detail in the output information returned from executing hooks.
 	// There are two options:
 	// - verbose: sets maximum level of output information

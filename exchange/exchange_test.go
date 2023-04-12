@@ -831,6 +831,179 @@ func TestAdapterCurrency(t *testing.T) {
 	}
 }
 
+func TestFloorsSignalling(t *testing.T) {
+
+	fakeCurrencyClient := &fakeCurrencyRatesHttpClient{
+		responseBody: `{"dataAsOf":"2023-04-10","conversions":{"USD":{"MXN":10.00}}}`,
+	}
+	currencyConverter := currency.NewRateConverter(
+		fakeCurrencyClient,
+		"currency.com",
+		24*time.Hour,
+	)
+	currencyConverter.Run()
+
+	// Initialize Real Exchange
+	e := exchange{
+		cache: &wellBehavedCache{},
+		me:    &metricsConf.NilMetricsEngine{},
+		gdprPermsBuilder: fakePermissionsBuilder{
+			permissions: &permissionsMock{
+				allowAllBidders: true,
+			},
+		}.Builder,
+		tcf2ConfigBuilder: fakeTCF2ConfigBuilder{
+			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
+		}.Builder,
+		currencyConverter: currencyConverter,
+		categoriesFetcher: nilCategoryFetcher{},
+		bidIDGenerator:    &mockBidIDGenerator{false, false},
+		floor:             config.PriceFloors{Enabled: true},
+	}
+	e.requestSplitter = requestSplitter{
+		me:                e.me,
+		gdprPermsBuilder:  e.gdprPermsBuilder,
+		tcf2ConfigBuilder: e.tcf2ConfigBuilder,
+	}
+
+	type testResults struct {
+		bidFloor    float64
+		bidFloorCur string
+		err         error
+		resolvedReq string
+	}
+
+	testCases := []struct {
+		desc         string
+		req          *openrtb_ext.RequestWrapper
+		floorsEnable bool
+		expected     testResults
+	}{
+		{
+			desc:         "no update in imp.bidfloor, floors disabled in account config",
+			floorsEnable: false,
+			req: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				ID: "some-request-id",
+				Imp: []openrtb2.Imp{{
+					ID:          "some-impression-id",
+					BidFloor:    15,
+					BidFloorCur: "USD",
+					Banner:      &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}},
+					Ext:         json.RawMessage(`{"prebid":{}}`),
+				}},
+				Site: &openrtb2.Site{
+					Page:   "prebid.org",
+					Ext:    json.RawMessage(`{"amp":0}`),
+					Domain: "www.website.com",
+				},
+				Cur: []string{"USD"},
+				Ext: json.RawMessage(`{"prebid":{"floors":{"floormin":1,"floormincur":"USD","data":{"currency":"USD","modelgroups":[{"modelversion":"model 1 from req","values":{"banner|300x250|www.website.com":11,"*|*|www.test.com":15,"*|*|*":20},"Default":50,"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"}}]},"enabled":true}}}`),
+			}},
+			expected: testResults{
+				bidFloor:    15.00,
+				bidFloorCur: "USD",
+			},
+		},
+		{
+			desc:         "no update in imp.bidfloor due to no rule matched",
+			floorsEnable: true,
+			req: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				ID: "some-request-id",
+				Imp: []openrtb2.Imp{{
+					ID:          "some-impression-id",
+					BidFloor:    15,
+					BidFloorCur: "USD",
+					Banner:      &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}},
+					Ext:         json.RawMessage(`{"prebid":{}}`),
+				}},
+				Site: &openrtb2.Site{
+					Page:   "prebid.org",
+					Ext:    json.RawMessage(`{"amp":0}`),
+					Domain: "www.website.com",
+				},
+				Cur: []string{"USD"},
+				Ext: json.RawMessage(`{"prebid":{"floors":{"floormin":1,"floormincur":"USD","data":{"currency":"USD","modelgroups":[{"modelversion":"model 1 from req","values":{"banner|300x250|www.website123.com":10,"*|*|www.test.com":15},"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"}}]},"enabled":true}}}`),
+			}},
+			expected: testResults{
+				bidFloor:    15.00,
+				bidFloorCur: "USD",
+			},
+		},
+		{
+			desc:         "update imp.bidfloor with matched rule value",
+			floorsEnable: true,
+			req: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				ID: "some-request-id",
+				Imp: []openrtb2.Imp{{
+					ID:          "some-impression-id",
+					BidFloor:    15,
+					BidFloorCur: "USD",
+					Banner:      &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}},
+					Ext:         json.RawMessage(`{"prebid":{}}`),
+				}},
+				Site: &openrtb2.Site{
+					Page:   "prebid.org",
+					Ext:    json.RawMessage(`{"amp":0}`),
+					Domain: "www.website.com",
+				},
+				Cur: []string{"USD"},
+				Ext: json.RawMessage(`{"prebid":{"floors":{"floormin":1,"floormincur":"USD","data":{"currency":"USD","modelgroups":[{"modelversion":"model 1 from req","values":{"banner|300x250|www.website.com":10,"*|*|www.test.com":15,"*|*|*":20},"Default":50,"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"}}]},"enabled":true}}}`),
+			}},
+			expected: testResults{
+				bidFloor:    10.00,
+				bidFloorCur: "USD",
+			},
+		},
+		{
+			desc:         "update resolved request with floors details",
+			floorsEnable: true,
+			req: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				ID: "some-request-id",
+				Imp: []openrtb2.Imp{{
+					ID:          "some-impression-id",
+					BidFloor:    15,
+					BidFloorCur: "USD",
+					Banner:      &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}},
+					Ext:         json.RawMessage(`{"prebid":{}}`),
+				}},
+				Site: &openrtb2.Site{
+					Page:   "prebid.org",
+					Ext:    json.RawMessage(`{"amp":0}`),
+					Domain: "www.website.com",
+				},
+				Test: 1,
+				Cur:  []string{"USD"},
+				Ext:  json.RawMessage(`{"prebid":{"floors":{"floormin":1,"floormincur":"USD","data":{"currency":"USD","modelgroups":[{"modelversion":"model 1 from req","values":{"banner|300x250|www.website.com":11,"*|*|www.test.com":15,"*|*|*":20},"Default":50,"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"}}]},"enabled":true}}}`),
+			}},
+			expected: testResults{
+				bidFloor:    11.00,
+				bidFloorCur: "USD",
+				resolvedReq: `{"id":"some-request-id","imp":[{"id":"some-impression-id","banner":{"format":[{"w":300,"h":250}]},"bidfloor":11,"bidfloorcur":"USD","ext":{"prebid":{"floors":{"floorrule":"banner|300x250|www.website.com","floorrulevalue":11,"floorvalue":11}}}}],"site":{"domain":"www.website.com","page":"prebid.org","ext":{"amp":0}},"test":1,"cur":["USD"],"ext":{"prebid":{"floors":{"floormin":1,"floormincur":"USD","data":{"currency":"USD","modelgroups":[{"modelversion":"model 1 from req","schema":{"fields":["mediaType","size","domain"],"delimiter":"|"},"values":{"*|*|*":20,"*|*|www.test.com":15,"banner|300x250|www.website.com":11},"default":50}]},"enabled":true,"skipped":false,"fetchstatus":"none","location":"request"}}}}`,
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		auctionRequest := AuctionRequest{
+			BidRequestWrapper: test.req,
+			Account:           config.Account{DebugAllow: true, PriceFloors: config.AccountPriceFloors{Enabled: test.floorsEnable, MaxRule: 100, MaxSchemaDims: 5}},
+			UserSyncs:         &emptyUsersync{},
+			HookExecutor:      &hookexecution.EmptyHookExecutor{},
+		}
+		outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{})
+
+		// Assertions
+		assert.Equal(t, test.expected.err, err, "Error")
+		assert.Equal(t, test.expected.bidFloor, auctionRequest.BidRequestWrapper.Imp[0].BidFloor, "Floor Value")
+		assert.Equal(t, test.expected.bidFloorCur, auctionRequest.BidRequestWrapper.Imp[0].BidFloorCur, "Floor Currency")
+
+		if test.req.Test == 1 {
+			actualResolvedRequest, _, _, _ := jsonparser.Get(outBidResponse.Ext, "debug", "resolvedrequest")
+			assert.JSONEq(t, test.expected.resolvedReq, string(actualResolvedRequest), "Resolved request is incorrect")
+		}
+	}
+
+}
 func TestGetAuctionCurrencyRates(t *testing.T) {
 
 	pbsRates := map[string]map[string]float64{
