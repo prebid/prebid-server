@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
-
 	"github.com/stretchr/testify/assert"
 
 	"github.com/prebid/prebid-server/adapters/adapterstest"
