@@ -52,7 +52,7 @@ import (
 	"github.com/prebid/prebid-server/version"
 )
 
-const storedRequestTimeoutMillis = 50
+const storedRequestTimeoutMillis = 500
 const ampChannel = "amp"
 const appChannel = "app"
 
