@@ -297,7 +297,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 
 	secGPC := r.Header.Get("Sec-GPC")
-	auctionRequest := exchange.AuctionRequest{
+	auctionRequest := &exchange.AuctionRequest{
 		BidRequestWrapper:          bidReqWrapper,
 		Account:                    *account,
 		UserSyncs:                  usersyncs,

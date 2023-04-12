@@ -212,7 +212,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	warnings := errortypes.WarningOnly(errL)
 
-	auctionRequest := exchange.AuctionRequest{
+	auctionRequest := &exchange.AuctionRequest{
 		BidRequestWrapper:          req,
 		Account:                    *account,
 		UserSyncs:                  usersyncs,
