@@ -174,12 +174,12 @@ func validateStoredAuctionResponses(impIdToStoredResp ImpsWithBidResponses, impI
 	return errs
 }
 
-func validateStoredBidResponses(impBidderToStoredBidResponse ImpBidderStoredResp, impBidderToStoredBidResponseId ImpBiddersWithBidResponseIDs) []error {
+func validateStoredBidResponses(impBidderToStoredResponse ImpBidderStoredResp, impBidderToStoredResponseId ImpBiddersWithBidResponseIDs) []error {
 	var errs []error
-	for impId, bidderStoredBidResp := range impBidderToStoredBidResponse {
+	for impId, bidderStoredBidResp := range impBidderToStoredResponse {
 		for bidderName, data := range bidderStoredBidResp {
 			if len(data) == 0 {
-				respId := impBidderToStoredBidResponseId[impId][bidderName]
+				respId := impBidderToStoredResponseId[impId][bidderName]
 				errs = append(errs, fmt.Errorf("failed to fetch stored bid response for impId = %s, bidder = %s and storedBidResponse id = %s", impId, bidderName, respId))
 			}
 		}
