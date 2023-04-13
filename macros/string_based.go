@@ -1,7 +1,6 @@
 package macros
 
 import (
-	"bytes"
 	"strings"
 	"sync"
 )
@@ -52,7 +51,7 @@ func constructTemplate(url string, delimiter string) urlMetaTemplate {
 func (processor *stringBasedProcessor) Replace(url string, macroProvider *macroProvider) (string, error) {
 	tmplt := processor.getTemplate(url)
 
-	var result bytes.Buffer
+	var result strings.Builder
 	currentIndex := 0
 	delimLen := len(delimiter)
 	for i, index := range tmplt.indices {
