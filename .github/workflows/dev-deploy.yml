@@ -43,11 +43,15 @@ jobs:
         echo "Pushing image to ECR..."
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
         echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+    - name: Download task definition
+      run: |
+        aws ecs describe-task-definition --task-definition my-task-definition-family --query taskDefinition > task-definition.json
+
     - name: Fill in the new image ID in the Amazon ECS task definition
       id: task-def
       uses: aws-actions/amazon-ecs-render-task-definition@v1
       with:
-        task-definition: ./.github/workflows/task-definition.json
+        task-definition: task-definition.json
         container-name: prebid-server
         image: ${{ steps.build-image.outputs.image }}
 
@@ -55,6 +59,6 @@ jobs:
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
       with:
         task-definition: ${{ steps.task-def.outputs.task-definition }}
-        service: prebid-server-dev
+        service: prebid-dev-service
         cluster:  prebid-server-dev-cluster
         wait-for-service-stability: true
