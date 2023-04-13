@@ -45,23 +45,13 @@ type MacroContext struct {
 	EventElement   string
 }
 
-type Provider interface {
-	// GetMacro returns the macro value for the given macro key
-	GetMacro(key string) string
-	// GetAllMacros return all the macros
-	GetAllMacros(keys []string) map[string]string
-	// SetContext set the bid and imp for the current provider
-	SetContext(ctx MacroContext)
-}
-
 type macroProvider struct {
 	// macros map stores macros key values
 	macros map[string]string
 }
 
 // NewBuilder returns the instance of macro buidler
-func NewProvider(reqWrapper *openrtb_ext.RequestWrapper) Provider {
-
+func NewProvider(reqWrapper *openrtb_ext.RequestWrapper) *macroProvider {
 	macroProvider := &macroProvider{macros: map[string]string{}}
 	macroProvider.populateRequestMacros(reqWrapper)
 	return macroProvider
@@ -69,8 +59,8 @@ func NewProvider(reqWrapper *openrtb_ext.RequestWrapper) Provider {
 
 func (b *macroProvider) populateRequestMacros(reqWrapper *openrtb_ext.RequestWrapper) {
 	b.macros[MacroKeyTimestamp] = strconv.Itoa(int(time.Now().Unix()))
-	reqExt, _ := reqWrapper.GetRequestExt()
-	if reqExt != nil && reqExt.GetPrebid() != nil {
+	reqExt, err := reqWrapper.GetRequestExt()
+	if err == nil && reqExt != nil && reqExt.GetPrebid() != nil {
 		for key, value := range reqExt.GetPrebid().Macros {
 			customMacroKey := CustomMacroPrefix + key       // Adding prefix PBS-MACRO to custom macro keys
 			b.macros[customMacroKey] = truncate(value, 100) // limit the custom macro value  to 100 chars only
@@ -107,8 +97,8 @@ func (b *macroProvider) populateRequestMacros(reqWrapper *openrtb_ext.RequestWra
 	if reqWrapper.Site != nil {
 		b.macros[MacroKeyPageURL] = reqWrapper.Site.Page
 	}
-	userExt, _ := reqWrapper.GetUserExt()
-	if userExt != nil && userExt.GetConsent() != nil {
+	userExt, err := reqWrapper.GetUserExt()
+	if err == nil && userExt != nil && userExt.GetConsent() != nil {
 		b.macros[MacroKeyConsent] = *userExt.GetConsent()
 	}
 	if reqWrapper.Device != nil && reqWrapper.Device.Lmt != nil {
@@ -154,13 +144,9 @@ func (b *macroProvider) resetcontext() {
 	}
 }
 
-func truncate(text string, width int) string {
-	if width < 0 {
-		return text
-	}
-
+func truncate(text string, width uint) string {
 	r := []rune(text)
-	if len(r) < width {
+	if uint(len(r)) < (width) {
 		return text
 	}
 	trunc := r[:width]

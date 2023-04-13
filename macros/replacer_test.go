@@ -1,7 +1,6 @@
 package macros
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/prebid/openrtb/v17/openrtb2"
@@ -56,7 +55,7 @@ func BenchmarkStringIndexCachedBasedProcessor(b *testing.B) {
 		})
 		_, err := processor.Replace(testURL, macroProvider)
 		if err != nil {
-			fmt.Println(err)
+			b.Errorf("Fail to replace macro in tracker")
 		}
 	}
 }

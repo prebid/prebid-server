@@ -12,7 +12,7 @@ func Test_stringBasedProcessor_Replace(t *testing.T) {
 
 	type args struct {
 		url              string
-		getMacroProvider func() Provider
+		getMacroProvider func() *macroProvider
 	}
 	tests := []struct {
 		name    string
@@ -24,7 +24,7 @@ func Test_stringBasedProcessor_Replace(t *testing.T) {
 			name: "success",
 			args: args{
 				url: "http://tracker.com?macro1=##PBS-BIDID##&macro2=##PBS-APPBUNDLE##&macro3=##PBS-DOMAIN##&macro4=##PBS-PUBDOMAIN##&macro5=##PBS-PAGEURL##&macro6=##PBS-ACCOUNTID##&macro7=##PBS-LIMITADTRACKING##&macro8=##PBS-GDPRCONSENT##&macro9=##PBS-MACRO-CUSTOMMACR1##&macro10=##PBS-BIDDER##&macro11=##PBS-INTEGRATION##&macro12=##PBS-VASTCRTID##&macro15=##PBS-AUCTIONID##&macro16=##PBS-CHANNEL##&macro17=##PBS-EVENTTYPE##&macro18=##PBS-VASTEVENT##",
-				getMacroProvider: func() Provider {
+				getMacroProvider: func() *macroProvider {
 					macroProvider := NewProvider(req)
 
 					macroProvider.SetContext(MacroContext{
@@ -45,7 +45,7 @@ func Test_stringBasedProcessor_Replace(t *testing.T) {
 			name: "url does not have macro",
 			args: args{
 				url: "http://tracker.com",
-				getMacroProvider: func() Provider {
+				getMacroProvider: func() *macroProvider {
 					macroProvider := NewProvider(req)
 
 					macroProvider.SetContext(MacroContext{
@@ -66,7 +66,7 @@ func Test_stringBasedProcessor_Replace(t *testing.T) {
 			name: "macro not found",
 			args: args{
 				url: "http://tracker.com?macro1=##PBS-test1##",
-				getMacroProvider: func() Provider {
+				getMacroProvider: func() *macroProvider {
 					macroProvider := NewProvider(&openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}})
 
 					macroProvider.SetContext(MacroContext{
@@ -87,7 +87,7 @@ func Test_stringBasedProcessor_Replace(t *testing.T) {
 			name: "tracker url is empty",
 			args: args{
 				url: "",
-				getMacroProvider: func() Provider {
+				getMacroProvider: func() *macroProvider {
 					macroProvider := NewProvider(&openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}})
 
 					macroProvider.SetContext(MacroContext{

@@ -49,7 +49,7 @@ func constructTemplate(url string, delimiter string) urlMetaTemplate {
 	return tmplt
 }
 
-func (processor *stringBasedProcessor) Replace(url string, macroProvider Provider) (string, error) {
+func (processor *stringBasedProcessor) Replace(url string, macroProvider *macroProvider) (string, error) {
 	tmplt := processor.getTemplate(url)
 
 	var result bytes.Buffer
