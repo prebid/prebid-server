@@ -42,6 +42,26 @@ type ExtImpPrebid struct {
 	Options *Options `json:"options,omitempty"`
 
 	Passthrough json.RawMessage `json:"passthrough,omitempty"`
+
+	Floors *ExtImpPrebidFloors `json:"floors,omitempty"`
+}
+
+type ExtImpDataAdServer struct {
+	Name   string `json:"name"`
+	AdSlot string `json:"adslot"`
+}
+
+type ExtImpData struct {
+	PbAdslot string              `json:"pbadslot,omitempty"`
+	AdServer *ExtImpDataAdServer `json:"adserver,omitempty"`
+}
+
+type ExtImpPrebidFloors struct {
+	FloorRule      string  `json:"floorrule,omitempty"`
+	FloorRuleValue float64 `json:"floorrulevalue,omitempty"`
+	FloorValue     float64 `json:"floorvalue,omitempty"`
+	FloorMin       float64 `json:"floormin,omitempty"`
+	FloorMinCur    string  `json:"floorminCur,omitempty"`
 }
 
 // ExtStoredRequest defines the contract for bidrequest.imp[i].ext.prebid.storedrequest
