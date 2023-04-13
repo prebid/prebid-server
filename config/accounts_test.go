@@ -869,6 +869,8 @@ func TestAccountPriceFloorsValidate(t *testing.T) {
 			description: "valid configuration",
 			pf: &AccountPriceFloors{
 				EnforceFloorsRate: 100,
+				MaxRule:           200,
+				MaxSchemaDims:     10,
 			},
 		},
 		{
@@ -884,6 +886,20 @@ func TestAccountPriceFloorsValidate(t *testing.T) {
 				EnforceFloorsRate: -10,
 			},
 			want: []error{errors.New("account_defaults.price_floors.enforce_floors_rate should be between 0 and 100")},
+		},
+		{
+			description: "Invalid configuration: MaxRule:-20",
+			pf: &AccountPriceFloors{
+				MaxRule: -20,
+			},
+			want: []error{errors.New("account_defaults.price_floors.max_rules should be between 0 and 2147483647")},
+		},
+		{
+			description: "Invalid configuration: MaxSchemaDims:100",
+			pf: &AccountPriceFloors{
+				MaxSchemaDims: 100,
+			},
+			want: []error{errors.New("account_defaults.price_floors.max_schema_dims should be between 0 and 20")},
 		},
 	}
 	for _, tt := range tests {

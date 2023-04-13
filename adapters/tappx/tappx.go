@@ -134,9 +134,9 @@ func (a *TappxAdapter) buildEndpointURL(params *openrtb_ext.ExtImpTappx, test in
 	tappxHost := "tappx.com"
 	isNewEndpoint, err := regexp.Match(`^(zz|vz)[0-9]{3,}([a-z]{2,3}|test)$`, []byte(params.Endpoint))
 	if isNewEndpoint {
-		tappxHost = params.Endpoint + ".pub." + tappxHost + "/rtb/"
+		tappxHost = params.Endpoint + ".pub.tappx.com/rtb/"
 	} else {
-		tappxHost = "ssp.api." + tappxHost + "/rtb/v2/"
+		tappxHost = "ssp.api.tappx.com/rtb/v2/"
 	}
 
 	endpointParams := macros.EndpointTemplateParams{Host: tappxHost}

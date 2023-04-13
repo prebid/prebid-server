@@ -116,6 +116,22 @@
         }
       ]
     },
+    "source": {
+      "schain": {
+        "complete": 0,
+        "nodes": [
+          {
+            "asi": "asi",
+            "sid": "sid"
+          }
+        ],
+        "ver": "1.0"
+      }
+    },
+    "regs": {
+      "gdpr": 1,
+      "us_privacy": "us_privacy"
+    },
     "imp": [
       {
         "id": "test-imp-id",
@@ -300,7 +316,25 @@
             "bundle": "com.wls.testwlsapplication"
           },
           "source": {
-            "pchain": "pchain"
+            "pchain": "pchain",
+            "ext": {
+              "schain": {
+                "complete": 0,
+                "nodes": [
+                  {
+                    "asi": "asi",
+                    "sid": "sid"
+                  }
+                ],
+                "ver": "1.0"
+              }
+            }
+          },
+          "regs": {
+            "ext": {
+              "gdpr": 1,
+              "us_privacy": "us_privacy"
+            }
           },
           "imp": [
             {
