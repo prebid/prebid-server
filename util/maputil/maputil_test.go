@@ -245,3 +245,43 @@ func TestHasElement(t *testing.T) {
 		assert.Equal(t, test.expected, result, test.description)
 	}
 }
+
+func TestCloneMap(t *testing.T) {
+	testCases := []struct {
+		name string
+		test func(t *testing.T)
+	}{
+		{
+			name: "NilMap", // Test we handle nils properly
+			test: func(t *testing.T) {
+				var testMap, copyMap map[string]string = nil, nil // copyMap is a manual copy of testMap
+				clone := CloneMap(testMap)
+				testMap = map[string]string{"foo": "bar"}
+				assert.Equal(t, copyMap, clone)
+			},
+		},
+		{
+			name: "StringMap", // Test a simple string map
+			test: func(t *testing.T) {
+				var testMap, copyMap map[string]string = map[string]string{"foo": "bar", "first": "one"}, map[string]string{"foo": "bar", "first": "one"}
+				clone := CloneMap(testMap)
+				testMap["foo"] = "baz"
+				testMap["bozo"] = "the clown"
+				assert.Equal(t, copyMap, clone)
+			},
+		},
+		{
+			name: "StringInt", // Test a simple map[string]int
+			test: func(t *testing.T) {
+				var testMap, copyMap map[string]int = map[string]int{"foo": 1, "first": 2}, map[string]int{"foo": 1, "first": 2}
+				clone := CloneMap(testMap)
+				testMap["foo"] = 7
+				testMap["bozo"] = 13
+				assert.Equal(t, copyMap, clone)
+			},
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.name, test.test)
+	}
+}

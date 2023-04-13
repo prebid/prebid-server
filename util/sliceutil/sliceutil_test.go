@@ -68,3 +68,43 @@ func TestContainsStringIgnoreCase(t *testing.T) {
 		assert.Equal(t, test.expected, result, test.description)
 	}
 }
+
+func TestCloneSlice(t *testing.T) {
+	testCases := []struct {
+		name string
+		test func(t *testing.T)
+	}{
+		{
+			name: "NilSlice", // Test we handle nils properly
+			test: func(t *testing.T) {
+				var testSlice, copySlice []int = nil, nil // copySlice is a manual copy of testSLice
+				clone := CloneSlice(testSlice)
+				testSlice = []int{5, 7}
+				assert.Equal(t, copySlice, clone)
+			},
+		},
+		{
+			name: "String", // Test a simple string map
+			test: func(t *testing.T) {
+				var testSlice, copySlice []string = []string{"foo", "bar", "first", "one"}, []string{"foo", "bar", "first", "one"}
+				clone := CloneSlice(testSlice)
+				testSlice[1] = "baz"
+				testSlice = append(testSlice, "the clown")
+				assert.Equal(t, copySlice, clone)
+			},
+		},
+		{
+			name: "Int", // Test a simple map[string]int
+			test: func(t *testing.T) {
+				var testSlice, copySlice []int = []int{2, 4, 5, 7}, []int{2, 4, 5, 7}
+				clone := CloneSlice(testSlice)
+				testSlice[2] = 7
+				testSlice = append(testSlice, 13)
+				assert.Equal(t, copySlice, clone)
+			},
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.name, test.test)
+	}
+}

@@ -48,3 +48,16 @@ func HasElement(m map[string]interface{}, k ...string) bool {
 
 	return exists
 }
+
+// CloneMap creates an indepent copy of a map,
+func CloneMap[K comparable, V any](m map[K]V) map[K]V {
+	if m == nil {
+		return nil
+	}
+	clone := make(map[K]V, len(m))
+	for key, value := range m {
+		clone[key] = value
+	}
+
+	return clone
+}

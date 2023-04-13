@@ -5,6 +5,9 @@ import (
 	"errors"
 
 	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/prebid-server/util/maputil"
+	"github.com/prebid/prebid-server/util/ptrutil"
+	"github.com/prebid/prebid-server/util/sliceutil"
 )
 
 // RequestWrapper wraps the OpenRTB request to provide a storage location for unmarshalled ext fields, so they
@@ -350,6 +353,27 @@ func (rw *RequestWrapper) rebuildSourceExt() error {
 	return nil
 }
 
+func (rw *RequestWrapper) Clone() *RequestWrapper {
+	if rw == nil {
+		return nil
+	}
+	clone := *rw
+	newImpWrappers := make([]*ImpWrapper, len(rw.impWrappers))
+	for i, iw := range rw.impWrappers {
+		newImpWrappers[i] = iw.Clone()
+	}
+	clone.impWrappers = newImpWrappers
+	clone.userExt = rw.userExt.Clone()
+	clone.deviceExt = rw.deviceExt.Clone()
+	clone.requestExt = rw.requestExt.Clone()
+	clone.appExt = rw.appExt.Clone()
+	clone.regExt = rw.regExt.Clone()
+	clone.siteExt = rw.siteExt.Clone()
+	clone.sourceExt = rw.sourceExt.Clone()
+
+	return &clone
+}
+
 // ---------------------------------------------------------------
 // UserExt provides an interface for request.user.ext
 // ---------------------------------------------------------------
@@ -605,6 +629,46 @@ func (ue *UserExt) SetEid(eid *[]openrtb2.EID) {
 	ue.eidsDirty = true
 }
 
+func (ue *UserExt) Clone() *UserExt {
+	if ue == nil {
+		return nil
+	}
+	clone := *ue
+	clone.ext = maputil.CloneMap[string, json.RawMessage](ue.ext)
+
+	if ue.consent != nil {
+		newConsent := *ue.consent
+		clone.consent = &newConsent
+	}
+
+	if ue.prebid != nil {
+		newPrebid := &ExtUserPrebid{}
+		newPrebid.BuyerUIDs = maputil.CloneMap[string, string](ue.prebid.BuyerUIDs)
+		clone.prebid = newPrebid
+	}
+
+	if ue.eids != nil {
+		newEids := make([]openrtb2.EID, 0, len(*ue.eids))
+		for _, eid := range *ue.eids {
+			newEid := eid
+			newEid.UIDs = sliceutil.CloneSlice[openrtb2.UID](eid.UIDs)
+			newEids = append(newEids, newEid)
+		}
+		clone.eids = &newEids
+	}
+
+	if ue.consentedProvidersSettingsIn != nil {
+		newProvidersIn := ue.consentedProvidersSettingsIn.ConsentedProvidersString
+		clone.consentedProvidersSettingsIn = &ConsentedProvidersSettingsIn{ConsentedProvidersString: newProvidersIn}
+	}
+	if ue.consentedProvidersSettingsOut != nil {
+		newProvidersOut := &ConsentedProvidersSettingsOut{ConsentedProvidersList: sliceutil.CloneSlice[int](ue.consentedProvidersSettingsOut.ConsentedProvidersList)}
+		clone.consentedProvidersSettingsOut = newProvidersOut
+	}
+
+	return &clone
+}
+
 // ---------------------------------------------------------------
 // RequestExt provides an interface for request.ext
 // ---------------------------------------------------------------
@@ -740,6 +804,34 @@ func (re *RequestExt) SetSChain(schain *openrtb2.SupplyChain) {
 	re.schainDirty = true
 }
 
+func (re *RequestExt) Clone() *RequestExt {
+	if re == nil {
+		return nil
+	}
+
+	clone := *re
+	clone.ext = maputil.CloneMap[string, json.RawMessage](re.ext)
+
+	if re.prebid != nil {
+		clone.prebid = re.prebid.Clone()
+	}
+
+	if re.schain != nil {
+		newNodes := make([]openrtb2.SupplyChainNode, len(re.schain.Nodes))
+		for i, node := range re.schain.Nodes {
+			newNodes[i] = node
+			if node.HP != nil {
+				newNodes[i].HP = ptrutil.ToPtr[int8](*re.schain.Nodes[i].HP)
+			}
+		}
+		newSchain := *re.schain
+		newSchain.Nodes = newNodes
+		clone.schain = &newSchain
+
+	}
+	return &clone
+}
+
 // ---------------------------------------------------------------
 // DeviceExt provides an interface for request.device.ext
 // ---------------------------------------------------------------
@@ -836,6 +928,26 @@ func (de *DeviceExt) SetPrebid(prebid *ExtDevicePrebid) {
 	de.prebidDirty = true
 }
 
+func (de *DeviceExt) Clone() *DeviceExt {
+	if de == nil {
+		return nil
+	}
+
+	clone := *de
+	clone.ext = maputil.CloneMap[string, json.RawMessage](de.ext)
+
+	if de.prebid != nil {
+		newPrebid := *de.prebid
+		if newPrebid.Interstitial != nil {
+			newInterstitial := *de.prebid.Interstitial
+			newPrebid.Interstitial = &newInterstitial
+		}
+		clone.prebid = &newPrebid
+	}
+
+	return &clone
+}
+
 // ---------------------------------------------------------------
 // AppExt provides an interface for request.app.ext
 // ---------------------------------------------------------------
@@ -926,6 +1038,22 @@ func (ae *AppExt) GetPrebid() *ExtAppPrebid {
 func (ae *AppExt) SetPrebid(prebid *ExtAppPrebid) {
 	ae.prebid = prebid
 	ae.prebidDirty = true
+}
+
+func (ae *AppExt) Clone() *AppExt {
+	if ae == nil {
+		return nil
+	}
+
+	clone := *ae
+	clone.ext = maputil.CloneMap[string, json.RawMessage](ae.ext)
+
+	if ae.prebid != nil {
+		newPrebid := *ae.prebid
+		clone.prebid = &newPrebid
+	}
+
+	return &clone
 }
 
 // ---------------------------------------------------------------
@@ -1044,6 +1172,21 @@ func (re *RegExt) SetUSPrivacy(usPrivacy string) {
 	re.usPrivacyDirty = true
 }
 
+func (re *RegExt) Clone() *RegExt {
+	if re == nil {
+		return nil
+	}
+
+	clone := *re
+	clone.ext = maputil.CloneMap[string, json.RawMessage](re.ext)
+
+	if re.gdpr != nil {
+		clone.gdpr = ptrutil.ToPtr(*re.gdpr)
+	}
+
+	return &clone
+}
+
 // ---------------------------------------------------------------
 // SiteExt provides an interface for request.site.ext
 // ---------------------------------------------------------------
@@ -1125,6 +1268,21 @@ func (se *SiteExt) GetAmp() *int8 {
 func (se *SiteExt) SetAmp(amp *int8) {
 	se.amp = amp
 	se.ampDirty = true
+}
+
+func (se *SiteExt) Clone() *SiteExt {
+	if se == nil {
+		return nil
+	}
+
+	clone := *se
+	clone.ext = maputil.CloneMap[string, json.RawMessage](se.ext)
+
+	if se.amp != nil {
+		clone.amp = ptrutil.ToPtr(*se.amp)
+	}
+
+	return &clone
 }
 
 // ---------------------------------------------------------------
@@ -1218,6 +1376,31 @@ func (se *SourceExt) SetSChain(schain *openrtb2.SupplyChain) {
 	se.schainDirty = true
 }
 
+func (se *SourceExt) Clone() *SourceExt {
+	if se == nil {
+		return nil
+	}
+
+	clone := *se
+	clone.ext = maputil.CloneMap[string, json.RawMessage](se.ext)
+
+	if se.schain != nil {
+		newNodes := make([]openrtb2.SupplyChainNode, len(se.schain.Nodes))
+		for i, node := range se.schain.Nodes {
+			newNodes[i] = node
+			if node.HP != nil {
+				newNodes[i].HP = ptrutil.ToPtr[int8](*se.schain.Nodes[i].HP)
+			}
+		}
+		newSchain := *se.schain
+		newSchain.Nodes = newNodes
+		clone.schain = &newSchain
+
+	}
+
+	return &clone
+}
+
 // ImpWrapper wraps an OpenRTB impression object to provide storage for unmarshalled ext fields, so they
 // will not need to be unmarshalled multiple times. It is intended to use the ImpWrapper via the RequestWrapper
 // and follow the same usage conventions.
@@ -1262,6 +1445,17 @@ func (w *ImpWrapper) rebuildImpExt() error {
 	w.Ext = impJson
 
 	return nil
+}
+
+func (w *ImpWrapper) Clone() *ImpWrapper {
+	if w == nil {
+		return nil
+	}
+
+	clone := *w
+	clone.impExt = w.impExt.Clone()
+
+	return &clone
 }
 
 // ---------------------------------------------------------------
@@ -1397,4 +1591,46 @@ func (e *ImpExt) SetTid(tid string) {
 
 func CreateImpExtForTesting(ext map[string]json.RawMessage, prebid *ExtImpPrebid) ImpExt {
 	return ImpExt{ext: ext, prebid: prebid}
+}
+
+func (e *ImpExt) Clone() *ImpExt {
+	if e == nil {
+		return nil
+	}
+
+	clone := *e
+	clone.ext = maputil.CloneMap[string, json.RawMessage](e.ext)
+
+	if e.prebid != nil {
+		newPrebid := *e.prebid
+		if e.prebid.StoredRequest != nil {
+			newPrebidStoredRequest := *e.prebid.StoredRequest
+			newPrebid.StoredRequest = &newPrebidStoredRequest
+		}
+		if e.prebid.StoredAuctionResponse != nil {
+			newPrebidStoredResponse := *e.prebid.StoredAuctionResponse
+			newPrebid.StoredAuctionResponse = &newPrebidStoredResponse
+		}
+		if e.prebid.StoredBidResponse != nil {
+			newPrebidStoredBidResponse := make([]ExtStoredBidResponse, len(e.prebid.StoredBidResponse))
+			for i, sbr := range e.prebid.StoredBidResponse {
+				newPrebidStoredBidResponse[i] = sbr
+				if sbr.ReplaceImpId != nil {
+					newPrebidStoredBidResponse[i].ReplaceImpId = ptrutil.ToPtr(*sbr.ReplaceImpId)
+				}
+			}
+			newPrebid.StoredBidResponse = newPrebidStoredBidResponse
+		}
+		if e.prebid.IsRewardedInventory != nil {
+			newPrebid.IsRewardedInventory = ptrutil.ToPtr(*e.prebid.IsRewardedInventory)
+		}
+		newPrebid.Bidder = maputil.CloneMap(e.prebid.Bidder)
+		if e.prebid.Options != nil {
+			newOptions := *e.prebid.Options
+			newPrebid.Options = &newOptions
+		}
+		clone.prebid = &newPrebid
+	}
+
+	return &clone
 }

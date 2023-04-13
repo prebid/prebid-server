@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
@@ -140,4 +141,413 @@ var validGranularityTests []granularityTestData = []granularityTestData{
 			Ranges:    []GranularityRange{},
 		},
 	},
+}
+
+func TestCloneExtRequestPrebid(t *testing.T) {
+	testCases := []struct {
+		name       string
+		prebid     *ExtRequestPrebid
+		prebidCopy *ExtRequestPrebid                            // manual copy of above prebid object to verify against
+		mutator    func(t *testing.T, prebid *ExtRequestPrebid) // function to modify the prebid object
+	}{{
+		name:       "Nil", // Verify the nil case
+		prebid:     nil,
+		prebidCopy: nil,
+		mutator:    func(t *testing.T, prebid *ExtRequestPrebid) {},
+	},
+		{
+			name: "NoMutateTest",
+			prebid: &ExtRequestPrebid{
+				Aliases:              map[string]string{"alias1": "bidder1"},
+				BidAdjustmentFactors: map[string]float64{"bidder5": 1.2},
+				BidderParams:         json.RawMessage(`{}`),
+				Channel: &ExtRequestPrebidChannel{
+					Name:    "ABC",
+					Version: "1.0",
+				},
+				Debug: true,
+				Experiment: &Experiment{
+					AdsCert: &AdsCert{
+						Enabled: false,
+					},
+				},
+				Server: &ExtRequestPrebidServer{
+					ExternalUrl: "http://www.example.com",
+					GvlID:       5,
+					DataCenter:  "Universe Central",
+				},
+				SupportDeals: true,
+			},
+			prebidCopy: &ExtRequestPrebid{
+				Aliases:              map[string]string{"alias1": "bidder1"},
+				BidAdjustmentFactors: map[string]float64{"bidder5": 1.2},
+				BidderParams:         json.RawMessage(`{}`),
+				Channel: &ExtRequestPrebidChannel{
+					Name:    "ABC",
+					Version: "1.0",
+				},
+				Debug: true,
+				Experiment: &Experiment{
+					AdsCert: &AdsCert{
+						Enabled: false,
+					},
+				},
+				Server: &ExtRequestPrebidServer{
+					ExternalUrl: "http://www.example.com",
+					GvlID:       5,
+					DataCenter:  "Universe Central",
+				},
+				SupportDeals: true,
+			},
+			mutator: func(t *testing.T, prebid *ExtRequestPrebid) {},
+		},
+		{
+			name: "GeneralTest",
+			prebid: &ExtRequestPrebid{
+				Aliases:              map[string]string{"alias1": "bidder1"},
+				BidAdjustmentFactors: map[string]float64{"bidder5": 1.2},
+				BidderParams:         json.RawMessage(`{}`),
+				Channel: &ExtRequestPrebidChannel{
+					Name:    "ABC",
+					Version: "1.0",
+				},
+				Debug: true,
+				Experiment: &Experiment{
+					AdsCert: &AdsCert{
+						Enabled: false,
+					},
+				},
+				Server: &ExtRequestPrebidServer{
+					ExternalUrl: "http://www.example.com",
+					GvlID:       5,
+					DataCenter:  "Universe Central",
+				},
+				SupportDeals: true,
+			},
+			prebidCopy: &ExtRequestPrebid{
+				Aliases:              map[string]string{"alias1": "bidder1"},
+				BidAdjustmentFactors: map[string]float64{"bidder5": 1.2},
+				BidderParams:         json.RawMessage(`{}`),
+				Channel: &ExtRequestPrebidChannel{
+					Name:    "ABC",
+					Version: "1.0",
+				},
+				Debug: true,
+				Experiment: &Experiment{
+					AdsCert: &AdsCert{
+						Enabled: false,
+					},
+				},
+				Server: &ExtRequestPrebidServer{
+					ExternalUrl: "http://www.example.com",
+					GvlID:       5,
+					DataCenter:  "Universe Central",
+				},
+				SupportDeals: true,
+			},
+			mutator: func(t *testing.T, prebid *ExtRequestPrebid) {
+				prebid.Aliases["alias2"] = "bidder52"
+				prebid.Aliases["alias1"] = "some other"
+				prebid.AliasGVLIDs = map[string]uint16{"alias2": 42}
+				prebid.BidAdjustmentFactors["alias2"] = 1.1
+				delete(prebid.BidAdjustmentFactors, "bidder5")
+				prebid.BidderParams = json.RawMessage(`{"someJSON": true}`)
+				prebid.Channel = nil
+				prebid.Data = &ExtRequestPrebidData{
+					EidPermissions: []ExtRequestPrebidDataEidPermission{{Source: "mySource", Bidders: []string{"sauceBidder"}}},
+				}
+				prebid.Events = json.RawMessage(`{}`)
+				prebid.Server.GvlID = 7
+				prebid.SupportDeals = false
+			},
+		},
+		{
+			name: "BidderConfig",
+			prebid: &ExtRequestPrebid{
+				BidderConfigs: []BidderConfig{
+					{
+						Bidders: []string{"Bidder1", "bidder2"},
+						Config:  &Config{&ORTB2{Site: map[string]json.RawMessage{"test": json.RawMessage(`{}`)}}},
+					},
+					{
+						Bidders: []string{"Bidder5", "bidder17"},
+						Config:  &Config{&ORTB2{Site: map[string]json.RawMessage{"test": json.RawMessage(`{"foo":"bar"}`), "more": json.RawMessage(`{}`)}}},
+					},
+					{
+						Bidders: []string{"foo"},
+						Config:  &Config{&ORTB2{User: map[string]json.RawMessage{"abc": json.RawMessage(`123`)}}},
+					},
+				},
+			},
+			prebidCopy: &ExtRequestPrebid{
+				BidderConfigs: []BidderConfig{
+					{
+						Bidders: []string{"Bidder1", "bidder2"},
+						Config:  &Config{&ORTB2{Site: map[string]json.RawMessage{"test": json.RawMessage(`{}`)}}},
+					},
+					{
+						Bidders: []string{"Bidder5", "bidder17"},
+						Config:  &Config{&ORTB2{Site: map[string]json.RawMessage{"test": json.RawMessage(`{"foo":"bar"}`), "more": json.RawMessage(`{}`)}}},
+					},
+					{
+						Bidders: []string{"foo"},
+						Config:  &Config{&ORTB2{User: map[string]json.RawMessage{"abc": json.RawMessage(`123`)}}},
+					},
+				},
+			},
+			mutator: func(t *testing.T, prebid *ExtRequestPrebid) {
+				prebid.BidderConfigs[0].Bidders = append(prebid.BidderConfigs[0].Bidders, "bidder4")
+				prebid.BidderConfigs[1] = BidderConfig{
+					Bidders: []string{"george"},
+					Config:  &Config{nil},
+				}
+				prebid.BidderConfigs[2].Config.ORTB2.User["abc"] = json.RawMessage(`{"id": 345}`)
+				prebid.BidderConfigs = append(prebid.BidderConfigs, BidderConfig{
+					Bidders: []string{"bidder2"},
+					Config:  &Config{&ORTB2{}},
+				})
+			},
+		},
+		{
+			name: "Cache",
+			prebid: &ExtRequestPrebid{
+				Cache: &ExtRequestPrebidCache{
+					Bids: &ExtRequestPrebidCacheBids{
+						ReturnCreative: ptrutil.ToPtr(true),
+					},
+				},
+			},
+			prebidCopy: &ExtRequestPrebid{
+				Cache: &ExtRequestPrebidCache{
+					Bids: &ExtRequestPrebidCacheBids{
+						ReturnCreative: ptrutil.ToPtr(true),
+					},
+				},
+			},
+			mutator: func(t *testing.T, prebid *ExtRequestPrebid) {
+				prebid.Cache.Bids = nil
+				prebid.Cache.VastXML = &ExtRequestPrebidCacheVAST{
+					ReturnCreative: ptrutil.ToPtr(true),
+				}
+			},
+		},
+		{
+			name: "Currency",
+			prebid: &ExtRequestPrebid{
+				CurrencyConversions: &ExtRequestCurrency{
+					ConversionRates: map[string]map[string]float64{"A": map[string]float64{"X": 5.4}},
+					UsePBSRates:     ptrutil.ToPtr(false),
+				},
+			},
+			prebidCopy: &ExtRequestPrebid{
+				CurrencyConversions: &ExtRequestCurrency{
+					ConversionRates: map[string]map[string]float64{"A": map[string]float64{"X": 5.4}},
+					UsePBSRates:     ptrutil.ToPtr(false),
+				},
+			},
+			mutator: func(t *testing.T, prebid *ExtRequestPrebid) {
+				prebid.CurrencyConversions.ConversionRates["A"]["X"] = 3.4
+				prebid.CurrencyConversions.ConversionRates["B"] = make(map[string]float64)
+				prebid.CurrencyConversions.ConversionRates["B"]["Y"] = 0.76
+				prebid.CurrencyConversions.UsePBSRates = ptrutil.ToPtr(true)
+			},
+		},
+		{
+			name: "Multibid",
+			prebid: &ExtRequestPrebid{
+				MultiBid: []*ExtMultiBid{
+					{Bidder: "somebidder", MaxBids: ptrutil.ToPtr(3), TargetBidderCodePrefix: "SB"},
+					{Bidders: []string{"A", "B", "C"}, MaxBids: ptrutil.ToPtr(4)},
+				},
+			},
+			prebidCopy: &ExtRequestPrebid{
+				MultiBid: []*ExtMultiBid{
+					{Bidder: "somebidder", MaxBids: ptrutil.ToPtr(3), TargetBidderCodePrefix: "SB"},
+					{Bidders: []string{"A", "B", "C"}, MaxBids: ptrutil.ToPtr(4)},
+				},
+			},
+			mutator: func(t *testing.T, prebid *ExtRequestPrebid) {
+				prebid.MultiBid[0].MaxBids = ptrutil.ToPtr(2)
+				prebid.MultiBid[1].Bidders = []string{"C", "D", "E", "F"}
+				prebid.MultiBid = []*ExtMultiBid{
+					{Bidder: "otherbid"},
+				}
+			},
+		},
+		{
+			name: "PassthroughSChains",
+			prebid: &ExtRequestPrebid{
+				SChains: []*ExtRequestPrebidSChain{
+					{
+						Bidders: []string{"A", "B", "C"},
+						SChain: openrtb2.SupplyChain{
+							Complete: 1,
+							Ver:      "2.2",
+							Ext:      json.RawMessage(`{"foo": "bar"}`),
+							Nodes: []openrtb2.SupplyChainNode{
+								{
+									ASI:    "something",
+									Domain: "example.com",
+									HP:     openrtb2.Int8Ptr(1),
+								},
+							},
+						},
+					},
+				},
+			},
+			prebidCopy: &ExtRequestPrebid{
+				SChains: []*ExtRequestPrebidSChain{
+					{
+						Bidders: []string{"A", "B", "C"},
+						SChain: openrtb2.SupplyChain{
+							Complete: 1,
+							Ver:      "2.2",
+							Ext:      json.RawMessage(`{"foo": "bar"}`),
+							Nodes: []openrtb2.SupplyChainNode{
+								{
+									ASI:    "something",
+									Domain: "example.com",
+									HP:     openrtb2.Int8Ptr(1),
+								},
+							},
+						},
+					},
+				},
+			},
+			mutator: func(t *testing.T, prebid *ExtRequestPrebid) {
+				prebid.Passthrough = json.RawMessage(`{"bar": "foo"}`)
+				prebid.SChains[0].Bidders = append(prebid.SChains[0].Bidders, "D")
+				prebid.SChains[0].SChain.Ver = "2.3"
+				prebid.SChains[0].SChain.Complete = 0
+				prebid.SChains[0].SChain.Nodes[0].Name = "Alice"
+				prebid.SChains[0].SChain.Nodes[0].ASI = "New ASI"
+				prebid.SChains[0].SChain.Nodes[0].HP = openrtb2.Int8Ptr(0)
+				prebid.SChains[0].SChain.Nodes = append(prebid.SChains[0].SChain.Nodes, prebid.SChains[0].SChain.Nodes[0])
+				prebid.SChains = append(prebid.SChains, prebid.SChains[0])
+			},
+		},
+		{
+			name: "StoredRequest",
+			prebid: &ExtRequestPrebid{
+				StoredRequest: &ExtStoredRequest{
+					ID: "abc123",
+				},
+			},
+			prebidCopy: &ExtRequestPrebid{
+				StoredRequest: &ExtStoredRequest{
+					ID: "abc123",
+				},
+			},
+			mutator: func(t *testing.T, prebid *ExtRequestPrebid) {
+				prebid.StoredRequest.ID = "nada"
+				prebid.StoredRequest = &ExtStoredRequest{ID: "ID"}
+			},
+		},
+		{
+			name: "Targeting",
+			prebid: &ExtRequestPrebid{
+				Targeting: &ExtRequestTargeting{
+					PriceGranularity: &PriceGranularity{
+						Precision: ptrutil.ToPtr(2),
+						Ranges: []GranularityRange{
+							{Max: 2.0, Increment: 0.1},
+							{Max: 10.0, Increment: 0.5},
+							{Max: 20.0, Increment: 1.0},
+						},
+					},
+					IncludeWinners: ptrutil.ToPtr(true),
+					IncludeBrandCategory: &ExtIncludeBrandCategory{
+						PrimaryAdServer:     1,
+						Publisher:           "Bob",
+						TranslateCategories: ptrutil.ToPtr(true),
+					},
+					DurationRangeSec: []int{1, 2, 3},
+				},
+			},
+			prebidCopy: &ExtRequestPrebid{
+				Targeting: &ExtRequestTargeting{
+					PriceGranularity: &PriceGranularity{
+						Precision: ptrutil.ToPtr(2),
+						Ranges: []GranularityRange{
+							{Max: 2.0, Increment: 0.1},
+							{Max: 10.0, Increment: 0.5},
+							{Max: 20.0, Increment: 1.0},
+						},
+					},
+					IncludeWinners: ptrutil.ToPtr(true),
+					IncludeBrandCategory: &ExtIncludeBrandCategory{
+						PrimaryAdServer:     1,
+						Publisher:           "Bob",
+						TranslateCategories: ptrutil.ToPtr(true),
+					},
+					DurationRangeSec: []int{1, 2, 3},
+				},
+			},
+			mutator: func(t *testing.T, prebid *ExtRequestPrebid) {
+				prebid.Targeting.PriceGranularity.Ranges[1].Max = 12
+				prebid.Targeting.PriceGranularity.Ranges[1].Min = 2.0
+				prebid.Targeting.PriceGranularity.Ranges = append(prebid.Targeting.PriceGranularity.Ranges, GranularityRange{Max: 50, Increment: 2.0})
+				prebid.Targeting.IncludeWinners = nil
+				prebid.Targeting.IncludeBidderKeys = ptrutil.ToPtr(true)
+				prebid.Targeting.IncludeBrandCategory.TranslateCategories = ptrutil.ToPtr(false)
+				prebid.Targeting.IncludeBrandCategory = nil
+				prebid.Targeting.DurationRangeSec[1] = 5
+				prebid.Targeting.DurationRangeSec = append(prebid.Targeting.DurationRangeSec, 1)
+				prebid.Targeting.AppendBidderNames = true
+			},
+		},
+		{
+			name: "NoSale",
+			prebid: &ExtRequestPrebid{
+				NoSale: []string{"A", "B", "C"},
+			},
+			prebidCopy: &ExtRequestPrebid{
+				NoSale: []string{"A", "B", "C"},
+			},
+			mutator: func(t *testing.T, prebid *ExtRequestPrebid) {
+				prebid.NoSale[1] = "G"
+				prebid.NoSale = append(prebid.NoSale, "D")
+			},
+		},
+		{
+			name: "AlternateBidderCodes",
+			prebid: &ExtRequestPrebid{
+				AlternateBidderCodes: &ExtAlternateBidderCodes{
+					Enabled: true,
+					Bidders: map[string]ExtAdapterAlternateBidderCodes{
+						"X": {Enabled: true, AllowedBidderCodes: []string{"A", "B", "C"}},
+						"Y": {Enabled: false, AllowedBidderCodes: []string{"C", "B", "G"}},
+					},
+				},
+			},
+			prebidCopy: &ExtRequestPrebid{
+				AlternateBidderCodes: &ExtAlternateBidderCodes{
+					Enabled: true,
+					Bidders: map[string]ExtAdapterAlternateBidderCodes{
+						"X": {Enabled: true, AllowedBidderCodes: []string{"A", "B", "C"}},
+						"Y": {Enabled: false, AllowedBidderCodes: []string{"C", "B", "G"}},
+					},
+				},
+			},
+			mutator: func(t *testing.T, prebid *ExtRequestPrebid) {
+				newAABC := prebid.AlternateBidderCodes.Bidders["X"]
+				newAABC.Enabled = false
+				newAABC.AllowedBidderCodes[1] = "F"
+				newAABC.AllowedBidderCodes = append(newAABC.AllowedBidderCodes, "Z")
+				prebid.AlternateBidderCodes.Bidders["X"] = newAABC
+				prebid.AlternateBidderCodes.Bidders["Z"] = ExtAdapterAlternateBidderCodes{Enabled: true, AllowedBidderCodes: []string{"G", "Z"}}
+				prebid.AlternateBidderCodes.Enabled = false
+				prebid.AlternateBidderCodes = nil
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			clone := test.prebid.Clone()
+			test.mutator(t, test.prebid)
+			assert.Equal(t, test.prebidCopy, clone)
+		})
+	}
+
 }
