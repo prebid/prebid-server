@@ -6,6 +6,12 @@ import (
 	"github.com/prebid/prebid-server/util/sliceutil"
 )
 
+// site
+
+// user
+
+// dooh
+
 func CloneApp(s *openrtb2.App) *openrtb2.App {
 	if s == nil {
 		return nil
