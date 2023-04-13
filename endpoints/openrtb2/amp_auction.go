@@ -267,7 +267,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 
 	labels, ao = sendAmpResponse(w, hookExecutor, response, reqWrapper, account, labels, ao, errL)
 	if len(ao.Errors) == 0 {
-		exchange.RecordResponsePreparationMetrics(auctionRequest.MakeBidsTimeInfo, deps.metricsEngine)
+		recordResponsePreparationMetrics(auctionRequest.MakeBidsTimeInfo, deps.metricsEngine)
 	}
 }
 

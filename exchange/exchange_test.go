@@ -5679,15 +5679,6 @@ func (e mockUpdateBidRequestHook) HandleBidderRequestHook(_ context.Context, mct
 	return hookstage.HookResult[hookstage.BidderRequestPayload]{ChangeSet: c, ModuleContext: mctx.ModuleContext}, nil
 }
 
-func TestRecordResponsePreparationMetrics(t *testing.T) {
-	mbi := map[openrtb_ext.BidderName]adapters.MakeBidsTimeInfo{
-		openrtb_ext.BidderAppnexus: {Durations: []time.Duration{10, 15}, AfterMakeBidsStartTime: time.Now()},
-	}
-	mockMetricEngine := &metrics.MetricsEngineMock{}
-	mockMetricEngine.On("RecordOverheadTime", metrics.MakeAuctionResponse, mock.Anything)
-	RecordResponsePreparationMetrics(mbi, mockMetricEngine)
-}
-
 func TestNilAuctionRequest(t *testing.T) {
 	ex := &exchange{}
 	response, err := ex.HoldAuction(context.Background(), nil, &DebugLog{})

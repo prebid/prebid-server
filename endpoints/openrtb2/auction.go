@@ -24,6 +24,7 @@ import (
 	nativeRequests "github.com/prebid/openrtb/v17/native1/request"
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/openrtb/v17/openrtb3"
+	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/ortb"
 	"golang.org/x/net/publicsuffix"
@@ -252,7 +253,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	labels, ao = sendAuctionResponse(w, hookExecutor, response, req.BidRequest, account, labels, ao)
 	if len(ao.Errors) == 0 {
-		exchange.RecordResponsePreparationMetrics(auctionRequest.MakeBidsTimeInfo, deps.metricsEngine)
+		recordResponsePreparationMetrics(auctionRequest.MakeBidsTimeInfo, deps.metricsEngine)
 	}
 }
 
@@ -2327,4 +2328,14 @@ func validateStoredBidRespAndImpExtBidders(bidderExts map[string]json.RawMessage
 
 func generateStoredBidResponseValidationError(impID string) error {
 	return fmt.Errorf("request validation failed. Stored bid responses are specified for imp %s. Bidders specified in imp.ext should match with bidders specified in imp.ext.prebid.storedbidresponse", impID)
+}
+
+func recordResponsePreparationMetrics(mbti map[openrtb_ext.BidderName]adapters.MakeBidsTimeInfo, me metrics.MetricsEngine) {
+	for _, info := range mbti {
+		duration := time.Since(info.AfterMakeBidsStartTime)
+		for _, makeBidsDuration := range info.Durations {
+			duration += makeBidsDuration
+		}
+		me.RecordOverheadTime(metrics.MakeAuctionResponse, duration)
+	}
 }

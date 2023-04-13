@@ -1548,13 +1548,3 @@ func setErrorMessageSecureMarkup(validationType string) string {
 	}
 	return ""
 }
-
-func RecordResponsePreparationMetrics(mbti map[openrtb_ext.BidderName]adapters.MakeBidsTimeInfo, me metrics.MetricsEngine) {
-	for _, info := range mbti {
-		duration := time.Since(info.AfterMakeBidsStartTime)
-		for _, makeBidsDuration := range info.Durations {
-			duration += makeBidsDuration
-		}
-		me.RecordOverheadTime(metrics.MakeAuctionResponse, duration)
-	}
-}
