@@ -790,13 +790,10 @@ func TestProcessStoredResponsesNotFoundResponse(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		storedAuctionResponses, storedBidResponses, bidderImpReplaceImpId, errorList := ProcessStoredResponses(nil, test.requestJson, fetcher, bidderMap)
+		_, _, _, errorList := ProcessStoredResponses(nil, test.requestJson, fetcher, bidderMap)
 		for _, err := range test.expectedErrors {
 			assert.Contains(t, errorList, err, "incorrect errors returned: %s", test.description)
 		}
-		assert.Nil(t, storedAuctionResponses, "storedAuctionResponses doesn't match: %s\n", test.description)
-		assert.Nil(t, storedBidResponses, "storedBidResponses doesn't match: %s\n", test.description)
-		assert.Nil(t, bidderImpReplaceImpId, "bidderImpReplaceImpId doesn't match: %s\n", test.description)
 	}
 }
 

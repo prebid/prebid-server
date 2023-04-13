@@ -146,45 +146,11 @@ func ProcessStoredResponses(ctx context.Context, requestJson []byte, storedRespF
 		}
 		bidderImpIdReplaceImp := flipMap(impBidderReplaceImp)
 
-		impIdToStoredResp, impBidderToStoredBidResponse := buildStoredResponsesMaps(storedResponses, impBidderToStoredBidResponseId, impIdToRespId)
+		impIdToStoredResp, impBidderToStoredBidResponse, errs := buildStoredResponsesMaps(storedResponses, impBidderToStoredBidResponseId, impIdToRespId)
 
-		errs = validateStoredAuctionResponses(impIdToStoredResp, impIdToRespId)
-		if len(errs) > 0 {
-			return nil, nil, nil, errs
-		}
-
-		errs = validateStoredBidResponses(impBidderToStoredBidResponse, impBidderToStoredBidResponseId)
-		if len(errs) > 0 {
-			return nil, nil, nil, errs
-		}
-
-		return impIdToStoredResp, impBidderToStoredBidResponse, bidderImpIdReplaceImp, nil
+		return impIdToStoredResp, impBidderToStoredBidResponse, bidderImpIdReplaceImp, errs
 	}
 	return nil, nil, nil, nil
-}
-
-func validateStoredAuctionResponses(impIdToStoredResp ImpsWithBidResponses, impIdToRespId ImpsWithAuctionResponseIDs) []error {
-	var errs []error
-	for impId, data := range impIdToStoredResp {
-		if len(data) == 0 {
-			respId := impIdToRespId[impId]
-			errs = append(errs, fmt.Errorf("failed to fetch stored auction response for impId = %s and storedAuctionResponse id = %s", impId, respId))
-		}
-	}
-	return errs
-}
-
-func validateStoredBidResponses(impBidderToStoredResponse ImpBidderStoredResp, impBidderToStoredResponseId ImpBiddersWithBidResponseIDs) []error {
-	var errs []error
-	for impId, bidderStoredBidResp := range impBidderToStoredResponse {
-		for bidderName, data := range bidderStoredBidResp {
-			if len(data) == 0 {
-				respId := impBidderToStoredResponseId[impId][bidderName]
-				errs = append(errs, fmt.Errorf("failed to fetch stored bid response for impId = %s, bidder = %s and storedBidResponse id = %s", impId, bidderName, respId))
-			}
-		}
-	}
-	return errs
 }
 
 // flipMap takes map[impID][bidderName]replaceImpId and modifies it to map[bidderName][impId]replaceImpId
@@ -201,24 +167,33 @@ func flipMap(impBidderReplaceImpId ImpBidderReplaceImpID) BidderImpReplaceImpID 
 	return flippedMap
 }
 
-func buildStoredResponsesMaps(storedResponses StoredResponseIdToStoredResponse, impBidderToStoredBidResponseId ImpBiddersWithBidResponseIDs, impIdToRespId ImpsWithAuctionResponseIDs) (ImpsWithBidResponses, ImpBidderStoredResp) {
+func buildStoredResponsesMaps(storedResponses StoredResponseIdToStoredResponse, impBidderToStoredBidResponseId ImpBiddersWithBidResponseIDs, impIdToRespId ImpsWithAuctionResponseIDs) (ImpsWithBidResponses, ImpBidderStoredResp, []error) {
+	var errs []error
 	//imp id to stored resp body
 	impIdToStoredResp := ImpsWithBidResponses{}
 	//stored bid responses: imp id to bidder to stored response body
 	impBidderToStoredBidResponse := ImpBidderStoredResp{}
 
 	for impId, respId := range impIdToRespId {
-		impIdToStoredResp[impId] = storedResponses[respId]
+		if len(storedResponses[respId]) == 0 {
+			errs = append(errs, fmt.Errorf("failed to fetch stored auction response for impId = %s and storedAuctionResponse id = %s", impId, respId))
+		} else {
+			impIdToStoredResp[impId] = storedResponses[respId]
+		}
 	}
 
 	for impId, bidderStoredResp := range impBidderToStoredBidResponseId {
 		bidderStoredResponses := StoredResponseIdToStoredResponse{}
 		for bidderName, id := range bidderStoredResp {
-			bidderStoredResponses[bidderName] = storedResponses[id]
+			if len(storedResponses[id]) == 0 {
+				errs = append(errs, fmt.Errorf("failed to fetch stored bid response for impId = %s, bidder = %s and storedBidResponse id = %s", impId, bidderName, id))
+			} else {
+				bidderStoredResponses[bidderName] = storedResponses[id]
+			}
 		}
 		impBidderToStoredBidResponse[impId] = bidderStoredResponses
 	}
-	return impIdToStoredResp, impBidderToStoredBidResponse
+	return impIdToStoredResp, impBidderToStoredBidResponse, errs
 }
 
 // parseImpInfo parses the request JSON and returns the impressions with their unmarshalled imp.ext.prebid
