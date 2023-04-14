@@ -17,6 +17,13 @@ func TestCloneApp(t *testing.T) {
 		assert.Nil(t, result)
 	})
 
+	t.Run("empty", func(t *testing.T) {
+		given := &openrtb2.App{}
+		result := CloneApp(given)
+		assert.Equal(t, given, result)
+		assert.NotSame(t, given, result)
+	})
+
 	t.Run("populated", func(t *testing.T) {
 		given := &openrtb2.App{
 			ID:                     "anyID",
@@ -72,6 +79,13 @@ func TestClonePublisher(t *testing.T) {
 		assert.Nil(t, result)
 	})
 
+	t.Run("empty", func(t *testing.T) {
+		given := &openrtb2.Publisher{}
+		result := ClonePublisher(given)
+		assert.Equal(t, given, result)
+		assert.NotSame(t, given, result)
+	})
+
 	t.Run("populated", func(t *testing.T) {
 		given := &openrtb2.Publisher{
 			ID:     "anyID",
@@ -101,6 +115,13 @@ func TestCloneContent(t *testing.T) {
 	t.Run("nil", func(t *testing.T) {
 		result := CloneContent(nil)
 		assert.Nil(t, result)
+	})
+
+	t.Run("empty", func(t *testing.T) {
+		given := &openrtb2.Content{}
+		result := CloneContent(given)
+		assert.Equal(t, given, result)
+		assert.NotSame(t, given, result)
 	})
 
 	t.Run("populated", func(t *testing.T) {
@@ -176,6 +197,13 @@ func TestCloneProducer(t *testing.T) {
 	t.Run("nil", func(t *testing.T) {
 		result := CloneProducer(nil)
 		assert.Nil(t, result)
+	})
+
+	t.Run("empty", func(t *testing.T) {
+		given := &openrtb2.Producer{}
+		result := CloneProducer(given)
+		assert.Equal(t, given, result)
+		assert.NotSame(t, given, result)
 	})
 
 	t.Run("populated", func(t *testing.T) {
@@ -331,6 +359,13 @@ func TestCloneNetwork(t *testing.T) {
 		assert.Nil(t, result)
 	})
 
+	t.Run("empty", func(t *testing.T) {
+		given := &openrtb2.Network{}
+		result := CloneNetwork(given)
+		assert.Empty(t, result)
+		assert.NotSame(t, given, result)
+	})
+
 	t.Run("populated", func(t *testing.T) {
 		given := &openrtb2.Network{
 			ID:     "anyID",
@@ -358,6 +393,13 @@ func TestCloneChannel(t *testing.T) {
 		assert.Nil(t, result)
 	})
 
+	t.Run("empty", func(t *testing.T) {
+		given := &openrtb2.Channel{}
+		result := CloneChannel(given)
+		assert.Empty(t, result)
+		assert.NotSame(t, given, result)
+	})
+
 	t.Run("populated", func(t *testing.T) {
 		given := &openrtb2.Channel{
 			ID:     "anyID",
@@ -383,6 +425,13 @@ func TestCloneSite(t *testing.T) {
 	t.Run("nil", func(t *testing.T) {
 		result := CloneSite(nil)
 		assert.Nil(t, result)
+	})
+
+	t.Run("empty", func(t *testing.T) {
+		given := &openrtb2.Site{}
+		result := CloneSite(given)
+		assert.Empty(t, result)
+		assert.NotSame(t, given, result)
 	})
 
 	t.Run("populated", func(t *testing.T) {
@@ -440,6 +489,13 @@ func TestCloneUser(t *testing.T) {
 		assert.Nil(t, result)
 	})
 
+	t.Run("empty", func(t *testing.T) {
+		given := &openrtb2.User{}
+		result := CloneUser(given)
+		assert.Empty(t, result)
+		assert.NotSame(t, given, result)
+	})
+
 	t.Run("populated", func(t *testing.T) {
 		given := &openrtb2.User{
 			ID:         "anyID",
@@ -484,6 +540,13 @@ func TestCloneGeo(t *testing.T) {
 	t.Run("nil", func(t *testing.T) {
 		result := CloneGeo(nil)
 		assert.Nil(t, result)
+	})
+
+	t.Run("empty", func(t *testing.T) {
+		given := &openrtb2.Geo{}
+		result := CloneGeo(given)
+		assert.Empty(t, result)
+		assert.NotSame(t, given, result)
 	})
 
 	t.Run("populated", func(t *testing.T) {
@@ -641,6 +704,13 @@ func TestCloneDOOH(t *testing.T) {
 	t.Run("nil", func(t *testing.T) {
 		result := CloneDOOH(nil)
 		assert.Nil(t, result)
+	})
+
+	t.Run("empty", func(t *testing.T) {
+		given := &openrtb2.DOOH{}
+		result := CloneDOOH(given)
+		assert.Empty(t, result)
+		assert.NotSame(t, given, result)
 	})
 
 	t.Run("populated", func(t *testing.T) {
