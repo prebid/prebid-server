@@ -84,6 +84,38 @@ type ImpExtPrebid struct {
 	Floors Price `json:"floors,omitempty"`
 }
 
+// GetEnforcePBS will check if floors enforcement is enabled in request
+func (Floors *PriceFloorRules) GetEnforcePBS() bool {
+	if Floors != nil && Floors.Enforcement != nil && Floors.Enforcement.EnforcePBS != nil {
+		return *Floors.Enforcement.EnforcePBS
+	}
+	return true
+}
+
+// GetFloorsSkippedFlag  will retun  floors skipped flag
+func (Floors *PriceFloorRules) GetFloorsSkippedFlag() bool {
+	if Floors != nil && Floors.Skipped != nil {
+		return *Floors.Skipped
+	}
+	return false
+}
+
+// GetEnforceRate will return enforcement rate in request
+func (Floors *PriceFloorRules) GetEnforceRate() int {
+	if Floors != nil && Floors.Enforcement != nil {
+		return Floors.Enforcement.EnforceRate
+	}
+	return 0
+}
+
+// GetEnforceDealsFlag will return FloorDeals flag in request
+func (Floors *PriceFloorRules) GetEnforceDealsFlag() bool {
+	if Floors != nil && Floors.Enforcement != nil && Floors.Enforcement.FloorDeals != nil {
+		return *Floors.Enforcement.FloorDeals
+	}
+	return false
+}
+
 // GetEnabled will check if floors is enabled in request
 func (Floors *PriceFloorRules) GetEnabled() bool {
 	if Floors != nil && Floors.Enabled != nil {

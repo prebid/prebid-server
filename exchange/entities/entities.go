@@ -42,6 +42,7 @@ type PbsOrtbBid struct {
 	BidTargets        map[string]string
 	BidVideo          *openrtb_ext.ExtBidPrebidVideo
 	BidEvents         *openrtb_ext.ExtBidPrebidEvents
+	BidFloors         *openrtb_ext.ExtBidFloors
 	DealPriority      int
 	DealTierSatisfied bool
 	GeneratedBidID    string

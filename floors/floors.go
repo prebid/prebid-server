@@ -200,10 +200,11 @@ func updateFloorsInRequest(bidRequestWrapper *openrtb_ext.RequestWrapper, priceF
 	requestExt, err := bidRequestWrapper.GetRequestExt()
 	if err == nil {
 		prebidExt := requestExt.GetPrebid()
-		if prebidExt != nil {
-			prebidExt.Floors = priceFloors
-			requestExt.SetPrebid(prebidExt)
-			bidRequestWrapper.RebuildRequest()
+		if prebidExt == nil {
+			prebidExt = &openrtb_ext.ExtRequestPrebid{}
 		}
+		prebidExt.Floors = priceFloors
+		requestExt.SetPrebid(prebidExt)
+		bidRequestWrapper.RebuildRequest()
 	}
 }
