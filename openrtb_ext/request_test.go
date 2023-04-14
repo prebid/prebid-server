@@ -335,13 +335,13 @@ func TestCloneExtRequestPrebid(t *testing.T) {
 			name: "Currency",
 			prebid: &ExtRequestPrebid{
 				CurrencyConversions: &ExtRequestCurrency{
-					ConversionRates: map[string]map[string]float64{"A": map[string]float64{"X": 5.4}},
+					ConversionRates: map[string]map[string]float64{"A": {"X": 5.4}},
 					UsePBSRates:     ptrutil.ToPtr(false),
 				},
 			},
 			prebidCopy: &ExtRequestPrebid{
 				CurrencyConversions: &ExtRequestCurrency{
-					ConversionRates: map[string]map[string]float64{"A": map[string]float64{"X": 5.4}},
+					ConversionRates: map[string]map[string]float64{"A": {"X": 5.4}},
 					UsePBSRates:     ptrutil.ToPtr(false),
 				},
 			},

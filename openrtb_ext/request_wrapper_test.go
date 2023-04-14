@@ -1828,8 +1828,8 @@ func TestCloneImpExt(t *testing.T) {
 					StoredRequest:         &ExtStoredRequest{ID: "abc123"},
 					StoredAuctionResponse: &ExtStoredAuctionResponse{ID: "123abc"},
 					StoredBidResponse: []ExtStoredBidResponse{
-						ExtStoredBidResponse{ID: "foo", Bidder: "bar", ReplaceImpId: ptrutil.ToPtr(true)},
-						ExtStoredBidResponse{ID: "def", Bidder: "xyz", ReplaceImpId: ptrutil.ToPtr(false)},
+						{ID: "foo", Bidder: "bar", ReplaceImpId: ptrutil.ToPtr(true)},
+						{ID: "def", Bidder: "xyz", ReplaceImpId: ptrutil.ToPtr(false)},
 					},
 					IsRewardedInventory: ptrutil.ToPtr[int8](1),
 					Bidder: map[string]json.RawMessage{
@@ -1845,8 +1845,8 @@ func TestCloneImpExt(t *testing.T) {
 					StoredRequest:         &ExtStoredRequest{ID: "abc123"},
 					StoredAuctionResponse: &ExtStoredAuctionResponse{ID: "123abc"},
 					StoredBidResponse: []ExtStoredBidResponse{
-						ExtStoredBidResponse{ID: "foo", Bidder: "bar", ReplaceImpId: ptrutil.ToPtr(true)},
-						ExtStoredBidResponse{ID: "def", Bidder: "xyz", ReplaceImpId: ptrutil.ToPtr(false)},
+						{ID: "foo", Bidder: "bar", ReplaceImpId: ptrutil.ToPtr(true)},
+						{ID: "def", Bidder: "xyz", ReplaceImpId: ptrutil.ToPtr(false)},
 					},
 					IsRewardedInventory: ptrutil.ToPtr[int8](1),
 					Bidder: map[string]json.RawMessage{
