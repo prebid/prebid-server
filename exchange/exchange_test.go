@@ -5586,6 +5586,71 @@ func TestMergeBidAdjustments(t *testing.T) {
 	}
 }
 
+func TestProcessBidAdjustments(t *testing.T) {
+	testCases := []struct {
+		name                   string
+		givenRequestWrapper    *openrtb_ext.RequestWrapper
+		givenAccount           *config.Account
+		expectedBidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments
+	}{
+		{
+			name: "Valid Request and Account Adjustments with different bidder names, should properly merge",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid":{"bidadjustments":{"mediatype":{"banner":{"bidderA":{"dealId":[{ "adjtype": "multiplier", "value": 1.1}]}}}}}}`)},
+			},
+			givenAccount: &config.Account{
+				BidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+					MediaType: &openrtb_ext.MediaType{
+						Banner: map[string]map[string][]openrtb_ext.Adjustments{
+							"bidderB": {
+								"dealId": []openrtb_ext.Adjustments{{AdjType: "multiplier", Value: 1.5}},
+							},
+						},
+					},
+				},
+			},
+			expectedBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+				MediaType: &openrtb_ext.MediaType{
+					Banner: map[string]map[string][]openrtb_ext.Adjustments{
+						"bidderA": {
+							"dealId": []openrtb_ext.Adjustments{{AdjType: "multiplier", Value: 1.1}},
+						},
+						"bidderB": {
+							"dealId": []openrtb_ext.Adjustments{{AdjType: "multiplier", Value: 1.5}},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Invalid Request Adjustment, Expect Nil Merged Adjustments",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid":{"bidadjustments":{"mediatype":{"banner":{"bidderA":{"dealId":[{ "adjtype": "multiplier", "value": 200}]}}}}}}`)},
+			},
+			givenAccount: &config.Account{
+				BidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+					MediaType: &openrtb_ext.MediaType{
+						Banner: map[string]map[string][]openrtb_ext.Adjustments{
+							"bidderB": {
+								"dealId": []openrtb_ext.Adjustments{{AdjType: "multiplier", Value: 1.5}},
+							},
+						},
+					},
+				},
+			},
+			expectedBidAdjustments: nil,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			mergedBidAdj, err := processBidAdjustments(test.givenRequestWrapper, test.givenAccount.BidAdjustments)
+			assert.NoError(t, err, "Unexpected error received")
+			assert.Equal(t, test.expectedBidAdjustments, mergedBidAdj)
+		})
+	}
+}
+
 type TestApplyHookMutationsBuilder struct {
 	hooks.EmptyPlanBuilder
 }

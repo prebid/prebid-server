@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/http/httptrace"
 	"regexp"
@@ -73,6 +74,8 @@ const ImpIdReqBody = "Stored bid response for impression id: "
 const (
 	Gzip string = "GZIP"
 )
+
+const amountOfDecimalPlaces float64 = 4.0
 
 // AdaptBidder converts an adapters.Bidder into an exchange.AdaptedBidder.
 //
@@ -331,16 +334,11 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 							adjustmentFactor = givenAdjustment
 						}
 
-						adjArray := []openrtb_ext.Adjustments{}
-						if bidAdjustments != nil {
-							adjArray = bidAdjustments.GetAdjustmentArray(bidResponse.Bids[i].BidType, bidderRequest.BidderName, bidResponse.Bids[i].Bid.DealID)
-						}
-
 						originalBidCpm := 0.0
 						if bidResponse.Bids[i].Bid != nil {
 							originalBidCpm = bidResponse.Bids[i].Bid.Price
 							bidResponse.Bids[i].Bid.Price = bidResponse.Bids[i].Bid.Price * adjustmentFactor * conversionRate
-							bidResponse.Bids[i].Bid.Price = applyAdjustmentArray(adjArray, bidResponse.Bids[i].Bid.Price, bidResponse.Currency, reqInfo)
+							bidResponse.Bids[i].Bid.Price = getAndApplyAdjustmentArray(bidAdjustments, bidResponse.Bids[i], bidderRequest.BidderName, bidResponse.Currency, reqInfo)
 						}
 
 						if _, ok := seatBidMap[bidderName]; !ok {
@@ -713,5 +711,16 @@ func applyAdjustmentArray(adjArray []openrtb_ext.Adjustments, bidPrice float64, 
 	if bidPrice <= 0 {
 		return originalBidPrice
 	}
-	return bidPrice
+	roundTo := math.Pow(10, amountOfDecimalPlaces)
+	return math.Round(bidPrice*roundTo) / roundTo // Returns Bid Price rounded to 4 decimal places
+}
+
+func getAndApplyAdjustmentArray(bidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments, bidInfo *adapters.TypedBid, bidderName openrtb_ext.BidderName, currency string, reqInfo *adapters.ExtraRequestInfo) float64 {
+	adjArray := []openrtb_ext.Adjustments{}
+	if bidAdjustments != nil {
+		adjArray = bidAdjustments.GetAdjustmentArray(bidInfo.BidType, bidderName, bidInfo.Bid.DealID)
+	} else {
+		return bidInfo.Bid.Price
+	}
+	return applyAdjustmentArray(adjArray, bidInfo.Bid.Price, currency, reqInfo)
 }

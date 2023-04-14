@@ -277,12 +277,9 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		r.FirstPartyData = resolvedFPD
 	}
 
-	mergedBidAdj, err := mergeBidAdjustments(r.BidRequestWrapper, r.Account.BidAdjustments)
+	mergedBidAdj, err := processBidAdjustments(r.BidRequestWrapper, r.Account.BidAdjustments)
 	if err != nil {
 		return nil, err
-	}
-	if valid := mergedBidAdj.ValidateBidAdjustments(); !valid {
-		mergedBidAdj = nil
 	}
 
 	bidAdjustmentFactors := getExtBidAdjustmentFactors(requestExtPrebid)
@@ -1575,4 +1572,15 @@ func mergeAdjustmentsForMediaType(reqAdjMap map[string]map[string][]openrtb_ext.
 		}
 	}
 	return reqAdjMap
+}
+
+func processBidAdjustments(req *openrtb_ext.RequestWrapper, acctBidAdjs *openrtb_ext.ExtRequestPrebidBidAdjustments) (*openrtb_ext.ExtRequestPrebidBidAdjustments, error) {
+	mergedBidAdj, err := mergeBidAdjustments(req, acctBidAdjs)
+	if err != nil {
+		return nil, err
+	}
+	if valid := mergedBidAdj.ValidateBidAdjustments(); !valid {
+		mergedBidAdj = nil
+	}
+	return mergedBidAdj, err
 }
