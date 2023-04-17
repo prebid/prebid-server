@@ -232,19 +232,38 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	return bidder, nil
 }
 
-func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	requestCopy := request
-	if request.User != nil {
-		userCopy := *request.User
-		requestCopy.User = &userCopy
+func updateRequestTo26(r *openrtb2.BidRequest) error {
+	if r.Regs != nil {
+		regsCopy := *r.Regs
+		r.Regs = &regsCopy
 	}
 
-	err := openrtb_ext.ConvertUpTo26(&openrtb_ext.RequestWrapper{BidRequest: requestCopy})
+	if r.Source != nil {
+		sourceCopy := *r.Source
+		r.Source = &sourceCopy
+	}
+
+	if r.User != nil {
+		userCopy := *r.User
+		r.User = &userCopy
+	}
+
+	requestWrapper := &openrtb_ext.RequestWrapper{BidRequest: r}
+
+	if err := openrtb_ext.ConvertUpTo26(requestWrapper); err != nil {
+		return err
+	}
+
+	return requestWrapper.RebuildRequest()
+}
+
+func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+
+	err := updateRequestTo26(request)
+
 	if err != nil {
 		return nil, []error{err}
 	}
-
-	request = requestCopy
 
 	numRequests := len(request.Imp)
 	requestData := make([]*adapters.RequestData, 0, numRequests)
