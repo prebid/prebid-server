@@ -17,7 +17,6 @@ import (
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/util/ptrutil"
 )
 
 // Configuration specifies the static application config.
@@ -687,10 +686,15 @@ func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName func(strin
 	// Update account defaults and generate base json for patch
 	c.AccountDefaults.CacheTTL = c.CacheURL.DefaultTTLs // comment this out to set explicitly in config
 
-	// update deprecated and new events enabled values for account defaults
+	// Update the deprecated and new events enabled values for account defaults.
+	// Given the current fetchers behavior where a fetched account is JSON merge patched with the host config account
+	// defaults, in order to maintain the typical PBS order of precedence of account config over host config, we do
+	// some unorthodox work here to set the resolved host config events enabled value on the deprecated field only while
+	// clearing the new field. This ensures that when the fetcher performs a JSON merge patch operation we don't lose any
+	// information needed to determine if events should be enabled.
 	accountDefaultsEventsEnabled := IsAccountEventEnabled(c.AccountDefaults.EventsEnabled, c.AccountDefaults.Events.Enabled)
 	*c.AccountDefaults.EventsEnabled = accountDefaultsEventsEnabled
-	c.AccountDefaults.Events.Enabled = ptrutil.ToPtr(false)
+	c.AccountDefaults.Events.Enabled = nil
 
 	if err := c.MarshalAccountDefaults(); err != nil {
 		return nil, err

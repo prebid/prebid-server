@@ -73,10 +73,9 @@ func (e *eventsMockAnalyticsModule) LogNotificationEventObject(ne *analytics.Not
 
 // Mock Account fetcher
 var mockAccountData = map[string]json.RawMessage{
-	"events_enabled":     json.RawMessage(`{"events_enabled":true}`),
-	"events_disabled":    json.RawMessage(`{"events_enabled":false}`),
-	"malformed_acct":     json.RawMessage(`{"events_enabled":"invalid type"}`),
-	"events_not_defined": json.RawMessage(`{}`),
+	"events_enabled":  json.RawMessage(`{"events_enabled":true}`),
+	"events_disabled": json.RawMessage(`{"events_enabled":false}`),
+	"malformed_acct":  json.RawMessage(`{"events_enabled":"invalid type"}`),
 }
 
 type mockAccountsFetcher struct {
@@ -502,45 +501,6 @@ func TestShouldPassEventToAnalyticsReporterWhenAccountEventEnabled(t *testing.T)
 
 	// validate
 	assert.Equal(t, 204, recorder.Result().StatusCode, "Expected 204 when account has events enabled")
-	assert.Equal(t, true, mockAnalyticsModule.Invoked)
-}
-
-func TestShouldPassEventToAnalyticsReporterWhenAccountDefaultsEventEnabled(t *testing.T) {
-	// instance level event enabled flag
-
-	// mock AccountsFetcher
-	mockAccountsFetcher := &mockAccountsFetcher{
-		Fail: false,
-	}
-
-	// mock PBS Analytics Module
-	mockAnalyticsModule := &eventsMockAnalyticsModule{
-		Fail: false,
-	}
-
-	accountDefaultsEventEnabled := true
-	// mock config
-	cfg := &config.Configuration{
-		AccountDefaults: config.Account{
-			EventsEnabled: &accountDefaultsEventEnabled,
-		},
-	}
-	cfg.MarshalAccountDefaults()
-
-	// prepare
-	reqData := ""
-
-	// account level not defined but instance level enabled
-	req := httptest.NewRequest("GET", "/event?t=win&b=test&ts=1234&f=b&x=1&a=events_not_defined", strings.NewReader(reqData))
-	recorder := httptest.NewRecorder()
-
-	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule, &metrics.MetricsEngineMock{})
-
-	// execute
-	e(recorder, req, nil)
-
-	// validate
-	assert.Equal(t, 204, recorder.Result().StatusCode, "Expected 204 when server has events enabled")
 	assert.Equal(t, true, mockAnalyticsModule.Invoked)
 }
 

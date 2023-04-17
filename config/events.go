@@ -68,7 +68,7 @@ type Events struct {
 
 // validate verifies the events object  and returns error if at least one is invalid.
 func (e Events) validate(errs []error) []error {
-	if *e.Enabled {
+	if e.Enabled != nil && *e.Enabled {
 		if !isValidURL(e.DefaultURL) {
 			return append(errs, errors.New("Invalid events.default_url"))
 		}

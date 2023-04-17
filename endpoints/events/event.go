@@ -18,7 +18,6 @@ import (
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/util/httputil"
-	"github.com/prebid/prebid-server/util/ptrutil"
 )
 
 const (
@@ -108,27 +107,12 @@ func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprou
 		return
 	}
 
-	// Check if events are enabled for the account and update both deprecated and new event enabled fields accordingly.
-	// Once we have determined whether events are enabled or not, we set the resulting boolean value
-	// into the `account.Events.Enabled` field and set `account.EventsEnabled` to nil.
+	// Check if events are enabled for the account
 	accountEventEnabled := config.IsAccountEventEnabled(account.EventsEnabled, account.Events.Enabled)
-	account.Events.Enabled = &accountEventEnabled
-	account.EventsEnabled = nil
-	// check if events are enabled by default for account
 	if !accountEventEnabled {
-		accountDefaultsEventsEnabled := config.IsAccountEventEnabled(e.Cfg.AccountDefaults.EventsEnabled, e.Cfg.AccountDefaults.Events.Enabled)
-		if e.Cfg.AccountDefaults.EventsEnabled == nil {
-			e.Cfg.AccountDefaults.EventsEnabled = new(bool)
-			*e.Cfg.AccountDefaults.EventsEnabled = accountDefaultsEventsEnabled
-		} else {
-			*e.Cfg.AccountDefaults.EventsEnabled = accountDefaultsEventsEnabled
-		}
-		e.Cfg.AccountDefaults.Events.Enabled = ptrutil.ToPtr(false)
-		if !accountDefaultsEventsEnabled {
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte(fmt.Sprintf("Account '%s' doesn't support events", eventRequest.AccountID)))
-			return
-		}
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte(fmt.Sprintf("Account '%s' doesn't support events", eventRequest.AccountID)))
+		return
 	}
 
 	// handle notification event

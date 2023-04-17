@@ -957,8 +957,3 @@ func WrapJSONInData(data []byte) []byte {
 	res = append(res, []byte(`}`)...)
 	return res
 }
-
-// isEventAllowed checks if events are enabled by default or on account/request level
-func isEventAllowed(requestEnabled bool, accountEnabled *bool) bool {
-	return (accountEnabled != nil && *accountEnabled) || requestEnabled
-}

@@ -275,6 +275,13 @@ func TestValidate(t *testing.T) {
 			expectErr: false,
 		},
 		{
+			description: "Events are nil. Skip validations",
+			events: Events{
+				Enabled: nil,
+			},
+			expectErr: false,
+		},
+		{
 			description: "No VAST Events and default URL present",
 			events: Events{
 				Enabled:    ptrutil.ToPtr(true),

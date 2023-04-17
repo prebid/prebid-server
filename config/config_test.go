@@ -3264,10 +3264,7 @@ func TestIsAccountEventEnabled(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			actualIsEventEnabled := IsAccountEventEnabled(test.deprecatedEventsEnabled, test.eventsEnabled)
-
-			if actualIsEventEnabled != test.expectedIsEventEnabled {
-				t.Errorf("IsAccountEventEnabled() returned %v, but expected %v", actualIsEventEnabled, test.expectedIsEventEnabled)
-			}
+			assert.Equal(t, test.expectedIsEventEnabled, actualIsEventEnabled)
 		})
 	}
 }
