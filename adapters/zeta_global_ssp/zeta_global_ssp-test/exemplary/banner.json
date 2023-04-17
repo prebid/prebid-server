@@ -98,7 +98,12 @@
                   "cid": "1234",
                   "crid": "2345",
                   "h": 1,
-                  "w": 1
+                  "w": 1,
+                  "ext": {
+                    "prebid": {
+                      "type": "banner"
+                    }
+                  }
                 }
               ],
               "seat": "zeta_global_ssp"
@@ -126,7 +131,12 @@
             "cid": "1234",
             "crid": "2345",
             "h": 1,
-            "w": 1
+            "w": 1,
+            "ext": {
+              "prebid": {
+                "type": "banner"
+              }
+            }
           },
           "type": "banner"
         }

@@ -15,6 +15,6 @@ capabilities:
       - video
 userSync:
   redirect:
-    url: https://ssp.disqus.com/redirectuser?gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}&us_privacy={{us_privacy}}&r={{redirect_url}}&partner=GET_SHORTNAME_FROM_ZETA
-    uid-macro: 'BUYERUID'
+    url: https://ssp.disqus.com/redirectuser?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&r={{.RedirectURL}}&partner=GET_SHORTNAME_FROM_ZETA
+    userMacro: 'BUYERUID'
 

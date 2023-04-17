@@ -91,7 +91,12 @@
                   "adm": "<VAST>TAG</VAST>",
                   "price": 20,
                   "w": 640,
-                  "h": 480
+                  "h": 480,
+                  "ext": {
+                    "prebid": {
+                      "type": "video"
+                    }
+                  }
                 }
               ]
             }
@@ -112,7 +117,12 @@
             "adm": "<VAST>TAG</VAST>",
             "price": 20,
             "w": 640,
-            "h": 480
+            "h": 480,
+            "ext": {
+              "prebid": {
+                "type": "video"
+              }
+            }
           },
           "type": "video"
         }
