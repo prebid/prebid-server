@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/util/maputil"
 	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/prebid/prebid-server/util/sliceutil"
@@ -70,12 +70,22 @@ type ExtRequestPrebid struct {
 	//AlternateBidderCodes is populated with host's AlternateBidderCodes config if not defined in request
 	AlternateBidderCodes *ExtAlternateBidderCodes `json:"alternatebiddercodes,omitempty"`
 
+	Floors      *PriceFloorRules       `json:"floors,omitempty"`
+	MultiBidMap map[string]ExtMultiBid `json:"-"`
 	// Trace controls the level of detail in the output information returned from executing hooks.
 	// There are two options:
 	// - verbose: sets maximum level of output information
 	// - basic: excludes debugmessages and analytic_tags from output
 	// any other value or an empty string disables trace output at all.
 	Trace string `json:"trace,omitempty"`
+
+	AdServerTargeting []AdServerTarget `json:"adservertargeting,omitempty"`
+}
+
+type AdServerTarget struct {
+	Key    string `json:"key,omitempty"`
+	Source string `json:"source,omitempty"`
+	Value  string `json:"value,omitempty"`
 }
 
 // Experiment defines if experimental features are available for the request

@@ -17,9 +17,9 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/openrtb/v17/native1"
-	nativeRequests "github.com/prebid/openrtb/v17/native1/request"
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/native1"
+	nativeRequests "github.com/prebid/openrtb/v19/native1/request"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
@@ -108,6 +108,10 @@ func TestJsonSampleRequests(t *testing.T) {
 			"Assert we correctly validate request-defined custom currency rates when present in root.ext",
 			"currency-conversion/custom-rates/errors",
 		},
+		{
+			"Assert request with ad server targeting is processing correctly",
+			"adservertargeting",
+		},
 	}
 
 	for _, tc := range testSuites {
@@ -183,6 +187,38 @@ func runTestCase(t *testing.T, auctionEndpointHandler httprouter.Handle, test te
 	}
 }
 
+func compareWarnings(t *testing.T, expectedBidResponseExt, actualBidResponseExt []byte, warnPath string) {
+	expectedWarnings, _, _, err := jsonparser.Get(expectedBidResponseExt, warnPath)
+	if err != nil && err != jsonparser.KeyPathNotFoundError {
+		assert.Fail(t, "error getting data from response extension")
+	}
+	if len(expectedWarnings) > 0 {
+		actualWarnings, _, _, err := jsonparser.Get(actualBidResponseExt, warnPath)
+		if err != nil && err != jsonparser.KeyPathNotFoundError {
+			assert.Fail(t, "error getting data from response extension")
+		}
+
+		var expectedWarn []openrtb_ext.ExtBidderMessage
+		err = json.Unmarshal(expectedWarnings, &expectedWarn)
+		if err != nil {
+			assert.Fail(t, "error unmarshalling expected warnings data from response extension")
+		}
+
+		var actualWarn []openrtb_ext.ExtBidderMessage
+		err = json.Unmarshal(actualWarnings, &actualWarn)
+		if err != nil {
+			assert.Fail(t, "error unmarshalling actual warnings data from response extension")
+		}
+
+		// warnings from different bidders may be returned in different order.
+		assert.Equal(t, len(expectedWarn), len(actualWarn), "incorrect warnings number")
+		for i, expWarn := range expectedWarn {
+			actualWarning := actualWarn[i]
+			assert.Contains(t, actualWarning.Message, expWarn.Message, "incorrect warning")
+		}
+	}
+}
+
 // Once unmarshalled, bidResponse objects can't simply be compared with an `assert.Equalf()` call
 // because tests fail if the elements inside the `bidResponse.SeatBid` and `bidResponse.SeatBid.Bid`
 // arrays, if any, are not listed in the exact same order in the actual version and in the expected version.
@@ -191,6 +227,10 @@ func assertBidResponseEqual(t *testing.T, testFile string, expectedBidResponse o
 	//Assert non-array BidResponse fields
 	assert.Equalf(t, expectedBidResponse.ID, actualBidResponse.ID, "BidResponse.ID doesn't match expected. Test: %s\n", testFile)
 	assert.Equalf(t, expectedBidResponse.Cur, actualBidResponse.Cur, "BidResponse.Cur doesn't match expected. Test: %s\n", testFile)
+
+	if len(expectedBidResponse.Ext) > 0 {
+		compareWarnings(t, expectedBidResponse.Ext, actualBidResponse.Ext, "warnings.general")
+	}
 
 	//Assert []SeatBid and their Bid elements independently of their order
 	assert.Len(t, actualBidResponse.SeatBid, len(expectedBidResponse.SeatBid), "BidResponse.SeatBid is expected to contain %d elements but contains %d. Test: %s\n", len(expectedBidResponse.SeatBid), len(actualBidResponse.SeatBid), testFile)
@@ -235,6 +275,10 @@ func assertBidResponseEqual(t *testing.T, testFile string, expectedBidResponse o
 			}
 			assert.Equalf(t, expectedBid.ImpID, actualBidMap[bidID].ImpID, "BidResponse.SeatBid[%s].Bid[%s].ImpID doesn't match expected. Test: %s\n", bidderName, bidID, testFile)
 			assert.Equalf(t, expectedBid.Price, actualBidMap[bidID].Price, "BidResponse.SeatBid[%s].Bid[%s].Price doesn't match expected. Test: %s\n", bidderName, bidID, testFile)
+
+			if len(expectedBid.Ext) > 0 {
+				assert.JSONEq(t, string(expectedBid.Ext), string(actualBidMap[bidID].Ext), "Incorrect bid extension")
+			}
 		}
 	}
 }
@@ -1074,7 +1118,7 @@ func TestStoredRequests(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+		hooks.EmptyPlanBuilder{},
 	}
 
 	testStoreVideoAttr := []bool{true, true, false, false, false}
@@ -1447,7 +1491,7 @@ func TestValidateRequest(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+		hooks.EmptyPlanBuilder{},
 	}
 
 	testCases := []struct {
@@ -1979,7 +2023,7 @@ func TestSetIntegrationType(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+		hooks.EmptyPlanBuilder{},
 	}
 
 	testCases := []struct {
@@ -2044,7 +2088,7 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+		hooks.EmptyPlanBuilder{},
 	}
 
 	req := &openrtb2.BidRequest{}
@@ -2147,7 +2191,7 @@ func TestOversizedRequest(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+		hooks.EmptyPlanBuilder{},
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -2185,7 +2229,7 @@ func TestRequestSizeEdgeCase(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+		hooks.EmptyPlanBuilder{},
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -2521,7 +2565,7 @@ func TestValidateImpExt(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+		hooks.EmptyPlanBuilder{},
 	}
 
 	for _, group := range testGroups {
@@ -2573,7 +2617,7 @@ func TestCurrencyTrunc(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+		hooks.EmptyPlanBuilder{},
 	}
 
 	ui := int64(1)
@@ -2620,7 +2664,7 @@ func TestCCPAInvalid(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+		hooks.EmptyPlanBuilder{},
 	}
 
 	ui := int64(1)
@@ -2671,7 +2715,7 @@ func TestNoSaleInvalid(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+		hooks.EmptyPlanBuilder{},
 	}
 
 	ui := int64(1)
@@ -2725,7 +2769,7 @@ func TestValidateSourceTID(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+		hooks.EmptyPlanBuilder{},
 	}
 
 	ui := int64(1)
@@ -2769,7 +2813,7 @@ func TestSChainInvalid(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+		hooks.EmptyPlanBuilder{},
 	}
 
 	ui := int64(1)
@@ -3264,7 +3308,7 @@ func TestEidPermissionsInvalid(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+		hooks.EmptyPlanBuilder{},
 	}
 
 	ui := int64(1)
@@ -3573,7 +3617,7 @@ func TestAuctionWarnings(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+		hooks.EmptyPlanBuilder{},
 	}
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
@@ -3618,12 +3662,14 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+		hooks.EmptyPlanBuilder{},
 	}
+
+	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
 
-	resReq, impExtInfoMap, _, _, _, _, errL := deps.parseRequest(req, &metrics.Labels{})
+	resReq, impExtInfoMap, _, _, _, _, errL := deps.parseRequest(req, &metrics.Labels{}, hookExecutor)
 
 	assert.Nil(t, resReq, "Result request should be nil due to incorrect imp")
 	assert.Nil(t, impExtInfoMap, "Impression info map should be nil due to incorrect imp")
@@ -4193,12 +4239,14 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 				nil,
 				hardcodedResponseIPValidator{response: true},
 				empty_fetcher.EmptyFetcher{},
-				hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+				hooks.EmptyPlanBuilder{},
 			}
+
+			hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
 
-			resReq, _, _, _, _, _, errL := deps.parseRequest(req, &metrics.Labels{})
+			resReq, _, _, _, _, _, errL := deps.parseRequest(req, &metrics.Labels{}, hookExecutor)
 
 			assert.NoError(t, resReq.RebuildRequest())
 
@@ -4296,12 +4344,14 @@ func TestParseRequestStoredResponses(t *testing.T) {
 				nil,
 				hardcodedResponseIPValidator{response: true},
 				&mockStoredResponseFetcher{mockStoredResponses},
-				hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+				hooks.EmptyPlanBuilder{},
 			}
+
+			hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
 
-			_, _, storedResponses, _, _, _, errL := deps.parseRequest(req, &metrics.Labels{})
+			_, _, storedResponses, _, _, _, errL := deps.parseRequest(req, &metrics.Labels{}, hookExecutor)
 
 			if test.expectedErrorCount == 0 {
 				assert.Equal(t, test.expectedStoredResponses, storedResponses, "stored responses should match")
@@ -4384,11 +4434,13 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 				nil,
 				hardcodedResponseIPValidator{response: true},
 				&mockStoredResponseFetcher{mockStoredBidResponses},
-				hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+				hooks.EmptyPlanBuilder{},
 			}
 
+			hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
+
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
-			_, _, _, storedBidResponses, _, _, errL := deps.parseRequest(req, &metrics.Labels{})
+			_, _, _, storedBidResponses, _, _, errL := deps.parseRequest(req, &metrics.Labels{}, hookExecutor)
 
 			if test.expectedErrorCount == 0 {
 				assert.Equal(t, test.expectedStoredBidResponses, storedBidResponses, "stored responses should match")
@@ -4418,7 +4470,7 @@ func TestValidateStoredResp(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		&mockStoredResponseFetcher{},
-		hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+		hooks.EmptyPlanBuilder{},
 	}
 
 	testCases := []struct {
@@ -5225,12 +5277,14 @@ func TestParseRequestMultiBid(t *testing.T) {
 				nil,
 				hardcodedResponseIPValidator{response: true},
 				empty_fetcher.EmptyFetcher{},
-				hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+				hooks.EmptyPlanBuilder{},
 			}
+
+			hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
 
-			resReq, _, _, _, _, _, errL := deps.parseRequest(req, &metrics.Labels{})
+			resReq, _, _, _, _, _, errL := deps.parseRequest(req, &metrics.Labels{}, hookExecutor)
 
 			assert.NoError(t, resReq.RebuildRequest())
 

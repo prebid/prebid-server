@@ -23,6 +23,7 @@
         }
       ],
       "site": {
+        "keywords": "tagid=",
         "domain": "bridge.richmediastudio.com",
         "page": "http://bridge.richmediastudio.com//ab083674fb8200b877a6983126e4477d/PrebidServer/indexRa.html?pbjs_debug=true"
       },
@@ -71,6 +72,7 @@
               }
             ],
             "site": {
+              "keywords": "tagid=",
               "domain": "bridge.richmediastudio.com",
               "page": "http://bridge.richmediastudio.com//ab083674fb8200b877a6983126e4477d/PrebidServer/indexRa.html?pbjs_debug=true"
             },

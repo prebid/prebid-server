@@ -204,7 +204,6 @@ const (
 	BidderNextMillennium    BidderName = "nextmillennium"
 	BidderNinthDecimal      BidderName = "ninthdecimal"
 	BidderNoBid             BidderName = "nobid"
-	BidderOFTMedia          BidderName = "oftmedia"
 	BidderOneTag            BidderName = "onetag"
 	BidderOpenWeb           BidderName = "openweb"
 	BidderOpenx             BidderName = "openx"
@@ -216,6 +215,7 @@ const (
 	BidderPubmatic          BidderName = "pubmatic"
 	BidderPubnative         BidderName = "pubnative"
 	BidderPulsepoint        BidderName = "pulsepoint"
+	BidderPWBid             BidderName = "pwbid"
 	BidderQuantumdex        BidderName = "quantumdex"
 	BidderRevcontent        BidderName = "revcontent"
 	BidderRhythmone         BidderName = "rhythmone"
@@ -388,7 +388,6 @@ func CoreBidderNames() []BidderName {
 		BidderNextMillennium,
 		BidderNinthDecimal,
 		BidderNoBid,
-		BidderOFTMedia,
 		BidderOneTag,
 		BidderOpenWeb,
 		BidderOpenx,
@@ -400,6 +399,7 @@ func CoreBidderNames() []BidderName {
 		BidderPubmatic,
 		BidderPubnative,
 		BidderPulsepoint,
+		BidderPWBid,
 		BidderQuantumdex,
 		BidderRevcontent,
 		BidderRhythmone,
