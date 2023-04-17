@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math"
 	"net/http"
 	"net/http/httptrace"
 	"regexp"
@@ -74,8 +73,6 @@ const ImpIdReqBody = "Stored bid response for impression id: "
 const (
 	Gzip string = "GZIP"
 )
-
-const amountOfDecimalPlaces float64 = 4.0
 
 // AdaptBidder converts an adapters.Bidder into an exchange.AdaptedBidder.
 //
@@ -683,44 +680,4 @@ func compressToGZIP(requestBody []byte) []byte {
 	w.Write([]byte(requestBody))
 	w.Close()
 	return b.Bytes()
-}
-
-func applyAdjustmentArray(adjArray []openrtb_ext.Adjustments, bidPrice float64, currency string, reqInfo *adapters.ExtraRequestInfo) float64 {
-	if adjArray == nil {
-		return bidPrice
-	}
-	originalBidPrice := bidPrice
-
-	for _, adjustment := range adjArray {
-		if adjustment.AdjType == openrtb_ext.AdjTypeMultiplier {
-			bidPrice = bidPrice * adjustment.Value
-		} else if adjustment.AdjType == openrtb_ext.AdjTypeCpm {
-			convertedVal, err := reqInfo.ConvertCurrency(adjustment.Value, currency, *adjustment.Currency)
-			if err != nil {
-				return originalBidPrice
-			}
-			bidPrice = bidPrice - convertedVal
-		} else if adjustment.AdjType == openrtb_ext.AdjTypeStatic {
-			convertedVal, err := reqInfo.ConvertCurrency(adjustment.Value, currency, *adjustment.Currency)
-			if err != nil {
-				return originalBidPrice
-			}
-			bidPrice = convertedVal
-		}
-	}
-	if bidPrice <= 0 {
-		return originalBidPrice
-	}
-	roundTo := math.Pow(10, amountOfDecimalPlaces)
-	return math.Round(bidPrice*roundTo) / roundTo // Returns Bid Price rounded to 4 decimal places
-}
-
-func getAndApplyAdjustmentArray(bidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments, bidInfo *adapters.TypedBid, bidderName openrtb_ext.BidderName, currency string, reqInfo *adapters.ExtraRequestInfo) float64 {
-	adjArray := []openrtb_ext.Adjustments{}
-	if bidAdjustments != nil {
-		adjArray = bidAdjustments.GetAdjustmentArray(bidInfo.BidType, bidderName, bidInfo.Bid.DealID)
-	} else {
-		return bidInfo.Bid.Price
-	}
-	return applyAdjustmentArray(adjArray, bidInfo.Bid.Price, currency, reqInfo)
 }
