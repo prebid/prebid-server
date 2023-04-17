@@ -1,0 +1,23 @@
+name: User Sync Update
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  check_update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Check for update
+        run: |
+          if git diff --name-only HEAD^ HEAD | grep -q '\.yml$'; then
+            if git diff --unified=0 HEAD^ HEAD | grep -q -F '+  url: "https://ib.adnxs.com/getuid?{{.RedirectURL}}"'; then
+              echo "UserSync redirect URL was updated"
+            else
+              echo "UserSync redirect URL was not updated"
+              exit 1
+            fi
+          fi
