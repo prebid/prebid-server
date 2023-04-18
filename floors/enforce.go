@@ -14,21 +14,21 @@ import (
 
 // EnforceFloors does floors enforcement for bids from all bidders based on floors provided in request, account level floors config
 func EnforceFloors(bidRequestWrapper *openrtb_ext.RequestWrapper, seatBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, account config.Account, conversions currency.Conversions) (map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, []error, []*entities.PbsOrtbSeatBid) {
-	rejectionsErrs := []error{}
-	rejecteBids := []*entities.PbsOrtbSeatBid{}
+	rejectionErrs := []error{}
+	rejectedBids := []*entities.PbsOrtbSeatBid{}
 
-	if isPriceFloorsDisabled(account, bidRequestWrapper) || isPriceFloorsEnforcementDisabledForRequest(bidRequestWrapper) {
-		return seatBids, []error{errors.New("Floors enforcement is disabled at account or in the request")}, rejecteBids
+	if isPriceFloorsDisabled(account, bidRequestWrapper) || isPriceFloorsEnforcementDisabled(bidRequestWrapper) {
+		return seatBids, []error{errors.New("Floors enforcement is disabled at account or in the request")}, rejectedBids
 	}
 
-	if !isFloorsSignallingSkipped(bidRequestWrapper) && isValidImpBidfloorPresentInRequest(bidRequestWrapper.BidRequest) {
+	if !isFloorsSignallingSkipped(bidRequestWrapper) && isValidImpBidFloorPresent(bidRequestWrapper.BidRequest) {
 		if enforceFloors := isSatisfiedByEnforceRate(bidRequestWrapper, account.PriceFloors.EnforceFloorsRate, rand.Intn); enforceFloors {
 			enforceDealFloors := account.PriceFloors.EnforceDealFloors && getEnforceDealsFlag(bidRequestWrapper)
 
-			seatBids, rejectionsErrs, rejecteBids = enforceFloorToBids(bidRequestWrapper, seatBids, conversions, enforceDealFloors)
+			seatBids, rejectionErrs, rejectedBids = enforceFloorToBids(bidRequestWrapper, seatBids, conversions, enforceDealFloors)
 		}
 	}
-	return seatBids, rejectionsErrs, rejecteBids
+	return seatBids, rejectionErrs, rejectedBids
 }
 
 // enforceFloorToBids function does floors enforcement for each bid,
@@ -45,9 +45,9 @@ func enforceFloorToBids(bidRequestWrapper *openrtb_ext.RequestWrapper, seatBids 
 	for bidderName, seatBid := range seatBids {
 		eligibleBids := make([]*entities.PbsOrtbBid, 0, len(seatBid.Bids))
 		for _, bid := range seatBid.Bids {
-			retBid := checkDealsForEnforcement(bid, enforceDealFloors)
-			if retBid != nil {
-				eligibleBids = append(eligibleBids, retBid)
+			dealBid := checkDealBidForEnforcement(bid, enforceDealFloors)
+			if dealBid != nil {
+				eligibleBids = append(eligibleBids, dealBid)
 				continue
 			}
 
@@ -88,8 +88,8 @@ func enforceFloorToBids(bidRequestWrapper *openrtb_ext.RequestWrapper, seatBids 
 	return seatBids, errs, rejectedBids
 }
 
-// isPriceFloorsEnforcementDisabledForRequest check for floors are disabled at request using Floors.Enforcement.EnforcePBS flag
-func isPriceFloorsEnforcementDisabledForRequest(bidRequestWrapper *openrtb_ext.RequestWrapper) bool {
+// isPriceFloorsEnforcementDisabled check for floors are disabled at request using Floors.Enforcement.EnforcePBS flag
+func isPriceFloorsEnforcementDisabled(bidRequestWrapper *openrtb_ext.RequestWrapper) bool {
 	requestExt, err := bidRequestWrapper.GetRequestExt()
 	if err == nil {
 		if prebidExt := requestExt.GetPrebid(); prebidExt != nil && prebidExt.Floors != nil && !prebidExt.Floors.GetEnforcePBS() {
@@ -132,8 +132,8 @@ func getEnforceDealsFlag(bidRequestWrapper *openrtb_ext.RequestWrapper) bool {
 	return false
 }
 
-// isValidImpBidfloorPresentInRequest checks if non zero imp.bidfloor is present in request
-func isValidImpBidfloorPresentInRequest(bidRequest *openrtb2.BidRequest) bool {
+// isValidImpBidFloorPresent checks if non zero imp.bidfloor is present in request
+func isValidImpBidFloorPresent(bidRequest *openrtb2.BidRequest) bool {
 	for i := range bidRequest.Imp {
 		if bidRequest.Imp[i].BidFloor > 0 {
 			return true
@@ -142,7 +142,7 @@ func isValidImpBidfloorPresentInRequest(bidRequest *openrtb2.BidRequest) bool {
 	return false
 }
 
-// isSatisfiedByEnforceRate check enfocements should be done or not based on enforceRate in config and in request
+// isSatisfiedByEnforceRate check enforcements should be done or not based on enforceRate in config and in request
 func isSatisfiedByEnforceRate(bidRequestWrapper *openrtb_ext.RequestWrapper, configEnforceRate int, f func(int) int) bool {
 	requestEnforceRate := getEnforceRateRequest(bidRequestWrapper)
 	enforceRate := f(enforceRateMax)
@@ -153,8 +153,8 @@ func isSatisfiedByEnforceRate(bidRequestWrapper *openrtb_ext.RequestWrapper, con
 	return shouldEnforce
 }
 
-// checkDealsForEnforcement checks for floors enforcement for deals if DealID is present in bid
-func checkDealsForEnforcement(bid *entities.PbsOrtbBid, enforceDealFloors bool) *entities.PbsOrtbBid {
+// checkDealBidForEnforcement checks for floors enforcement for deal bids
+func checkDealBidForEnforcement(bid *entities.PbsOrtbBid, enforceDealFloors bool) *entities.PbsOrtbBid {
 	if !enforceDealFloors && bid != nil && bid.Bid != nil && bid.Bid.DealID != "" {
 		return bid
 	}

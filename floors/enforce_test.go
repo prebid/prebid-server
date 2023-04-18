@@ -56,7 +56,7 @@ func TestIsValidImpBidfloorPresentInRequest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := isValidImpBidfloorPresentInRequest(tt.bidRequest)
+			got := isValidImpBidFloorPresent(tt.bidRequest)
 			assert.Equal(t, tt.want, got, tt.name)
 		})
 	}
@@ -592,7 +592,7 @@ func TestIsPriceFloorsEnforcementDisabledForRequest(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := isPriceFloorsEnforcementDisabledForRequest(tt.bidRequestWrapper)
+			got := isPriceFloorsEnforcementDisabled(tt.bidRequestWrapper)
 			assert.Equal(t, tt.want, got, tt.name)
 		})
 	}

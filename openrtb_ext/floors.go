@@ -92,7 +92,7 @@ func (Floors *PriceFloorRules) GetEnforcePBS() bool {
 	return true
 }
 
-// GetFloorsSkippedFlag  will retun  floors skipped flag
+// GetFloorsSkippedFlag will return  floors skipped flag
 func (Floors *PriceFloorRules) GetFloorsSkippedFlag() bool {
 	if Floors != nil && Floors.Skipped != nil {
 		return *Floors.Skipped
