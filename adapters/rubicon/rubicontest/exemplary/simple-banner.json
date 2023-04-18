@@ -60,6 +60,7 @@
         "lon": -122.346200
       },
       "gender": "f",
+      "consent": "consent",
       "data": [
         {
           "ext": {
@@ -130,7 +131,21 @@
           "bidder": {
             "accountId": 1001,
             "siteId": 113932,
-            "zoneId": 535510
+            "zoneId": 535510,
+            "pchain": "pchain"
+          },
+          "skadn": {
+            "version": "1.0",
+            "sourceapp": "000",
+            "skadnetlist": {
+              "max": 0,
+              "excl": [
+                1
+              ],
+              "addl": [
+                "x.skadnetwork"
+              ]
+            }
           }
         }
       }
@@ -269,6 +284,7 @@
               }
             ],
             "ext": {
+              "consent": "consent",
               "rp": {
                 "target": {
                   "iab": [
@@ -282,6 +298,9 @@
           "app": {
             "id": "1",
             "bundle": "com.wls.testwlsapplication"
+          },
+          "source": {
+            "pchain": "pchain"
           },
           "imp": [
             {
@@ -311,6 +330,19 @@
                     "mint_version": ""
                   },
                   "zone_id": 535510
+                },
+                "skadn": {
+                  "skadnetlist": {
+                    "max": 0,
+                    "excl": [
+                      1
+                    ],
+                    "addl": [
+                      "x.skadnetwork"
+                    ]
+                  },
+                  "sourceapp": "000",
+                  "version": "1.0"
                 }
               }
             }

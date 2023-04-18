@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/prebid/openrtb/v17/native1"
-	nativeResponse "github.com/prebid/openrtb/v17/native1/response"
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/native1"
+	nativeResponse "github.com/prebid/openrtb/v19/native1/response"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"

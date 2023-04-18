@@ -23,6 +23,7 @@
         }
       ],
       "site": {
+        "keywords": "tagid=",
         "domain": "bridge.richmediastudio.com",
         "page": "https://bridge.richmediastudio.com//ab083674fb8200b877a6983126e4477d/PrebidServer/indexRa.html?pbjs_debug=true"
       },
@@ -71,6 +72,7 @@
               }
             ],
             "site": {
+              "keywords": "tagid=",
               "domain": "bridge.richmediastudio.com",
               "page": "https://bridge.richmediastudio.com//ab083674fb8200b877a6983126e4477d/PrebidServer/indexRa.html?pbjs_debug=true"
             },
@@ -98,8 +100,8 @@
                     "crid": "999999",
                     "adm": "<!-- VAST video -->",
                     "adomain": ["richaudience.com"],
-                    "h": 250,
-                    "w": 300
+                    "h": 640,
+                    "w": 480
                 }]
             }]
           }
@@ -119,8 +121,8 @@
               "adm": "<!-- VAST video -->",
               "adomain": ["richaudience.com"],
               "crid": "999999",
-              "w": 300,
-              "h": 250
+              "w": 640,
+              "h": 480
             },
             "type": "video"
           }

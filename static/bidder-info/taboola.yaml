@@ -1,4 +1,4 @@
-endpoint: "https://{{.MediaType}}.bidder.taboola.com/OpenRTB/PS/auction/{{.Host}}/{{.PublisherID}}"
+endpoint: "https://{{.MediaType}}.bidder.taboola.com/OpenRTB/PS/auction/{{.GvlID}}/{{.PublisherID}}"
 maintainer:
   email:  ps-team@taboola.com
 gvlVendorID: 42

@@ -9,3 +9,8 @@ capabilities:
   site:
     mediaTypes:
       - banner
+userSync:
+  redirect:
+    url: "http://pb.adsinteractive.com/getuid?{{.RedirectURL}}"
+    userMacro: "$AUID"
+ 
