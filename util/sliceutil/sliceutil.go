@@ -14,7 +14,7 @@ func ContainsStringIgnoreCase(s []string, v string) bool {
 }
 
 // CloneSlice creates an indepent copy of a slice,
-func CloneSlice[T any](s []T) []T {
+func Clone[T any](s []T) []T {
 	if s == nil {
 		return nil
 	}

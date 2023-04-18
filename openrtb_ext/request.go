@@ -324,21 +324,21 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 	}
 
 	clone := *erp
-	clone.Aliases = maputil.CloneMap(erp.Aliases)
-	clone.AliasGVLIDs = maputil.CloneMap(erp.AliasGVLIDs)
-	clone.BidAdjustmentFactors = maputil.CloneMap(erp.BidAdjustmentFactors)
+	clone.Aliases = maputil.Clone(erp.Aliases)
+	clone.AliasGVLIDs = maputil.Clone(erp.AliasGVLIDs)
+	clone.BidAdjustmentFactors = maputil.Clone(erp.BidAdjustmentFactors)
 
 	if erp.BidderConfigs != nil {
 		newBidderConfigs := make([]BidderConfig, len(erp.BidderConfigs))
 		for i, bc := range erp.BidderConfigs {
-			newBidderConfig := BidderConfig{Bidders: sliceutil.CloneSlice(bc.Bidders)}
+			newBidderConfig := BidderConfig{Bidders: sliceutil.Clone(bc.Bidders)}
 			if bc.Config != nil {
 				config := &Config{}
 				if bc.Config.ORTB2 != nil {
 					config.ORTB2 = &ORTB2{
-						Site: maputil.CloneMap(bc.Config.ORTB2.Site),
-						App:  maputil.CloneMap(bc.Config.ORTB2.App),
-						User: maputil.CloneMap(bc.Config.ORTB2.User),
+						Site: maputil.Clone(bc.Config.ORTB2.Site),
+						App:  maputil.Clone(bc.Config.ORTB2.App),
+						User: maputil.Clone(bc.Config.ORTB2.User),
 					}
 				}
 				newBidderConfig.Config = config
@@ -372,7 +372,7 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 	if erp.CurrencyConversions != nil {
 		newConvRates := make(map[string]map[string]float64, len(erp.CurrencyConversions.ConversionRates))
 		for key, val := range erp.CurrencyConversions.ConversionRates {
-			newConvRates[key] = maputil.CloneMap(val)
+			newConvRates[key] = maputil.Clone(val)
 		}
 		clone.CurrencyConversions = &ExtRequestCurrency{ConversionRates: newConvRates}
 		if erp.CurrencyConversions.UsePBSRates != nil {
@@ -381,13 +381,13 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 	}
 
 	if erp.Data != nil {
-		clone.Data = &ExtRequestPrebidData{Bidders: sliceutil.CloneSlice(erp.Data.Bidders)}
+		clone.Data = &ExtRequestPrebidData{Bidders: sliceutil.Clone(erp.Data.Bidders)}
 		if erp.Data.EidPermissions != nil {
 			newEidPermissions := make([]ExtRequestPrebidDataEidPermission, 0, len(erp.Data.EidPermissions))
 			for _, eidp := range erp.Data.EidPermissions {
 				newEIDP := &ExtRequestPrebidDataEidPermission{
 					Source:  eidp.Source,
-					Bidders: sliceutil.CloneSlice(eidp.Bidders),
+					Bidders: sliceutil.Clone(eidp.Bidders),
 				}
 				newEidPermissions = append(newEidPermissions, *newEIDP)
 			}
@@ -407,7 +407,7 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 		for _, mulBid := range erp.MultiBid {
 			newMulBid := &ExtMultiBid{
 				Bidder:                 mulBid.Bidder,
-				Bidders:                sliceutil.CloneSlice(mulBid.Bidders),
+				Bidders:                sliceutil.Clone(mulBid.Bidders),
 				TargetBidderCodePrefix: mulBid.TargetBidderCodePrefix,
 			}
 			if mulBid.MaxBids != nil {
@@ -422,7 +422,7 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 		newSChains := make([]*ExtRequestPrebidSChain, len(erp.SChains))
 		for i, schain := range erp.SChains {
 			newChain := *schain
-			newNodes := sliceutil.CloneSlice(schain.SChain.Nodes)
+			newNodes := sliceutil.Clone(schain.SChain.Nodes)
 			for j, node := range newNodes {
 				if node.HP != nil {
 					newNodes[j].HP = ptrutil.ToPtr(*newNodes[j].HP)
@@ -434,47 +434,35 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 		clone.SChains = newSChains
 	}
 
-	if erp.Server != nil {
-		clone.Server = ptrutil.ToPtr(*erp.Server)
-	}
+	clone.Server = ptrutil.Clone(erp.Server)
 
-	if erp.StoredRequest != nil {
-		clone.StoredRequest = ptrutil.ToPtr(*erp.StoredRequest)
-	}
+	clone.StoredRequest = ptrutil.Clone(erp.StoredRequest)
 
 	if erp.Targeting != nil {
 		newTargeting := &ExtRequestTargeting{
 			IncludeFormat:     erp.Targeting.IncludeFormat,
-			DurationRangeSec:  sliceutil.CloneSlice(erp.Targeting.DurationRangeSec),
+			DurationRangeSec:  sliceutil.Clone(erp.Targeting.DurationRangeSec),
 			PreferDeals:       erp.Targeting.PreferDeals,
 			AppendBidderNames: erp.Targeting.AppendBidderNames,
 		}
 		if erp.Targeting.PriceGranularity != nil {
 			newPriceGranularity := &PriceGranularity{
-				Ranges: sliceutil.CloneSlice(erp.Targeting.PriceGranularity.Ranges),
+				Ranges: sliceutil.Clone(erp.Targeting.PriceGranularity.Ranges),
 			}
-			if erp.Targeting.PriceGranularity.Precision != nil {
-				newPriceGranularity.Precision = ptrutil.ToPtr(*erp.Targeting.PriceGranularity.Precision)
-			}
+			newPriceGranularity.Precision = ptrutil.Clone(erp.Targeting.PriceGranularity.Precision)
 			newTargeting.PriceGranularity = newPriceGranularity
 		}
-		if erp.Targeting.IncludeWinners != nil {
-			newTargeting.IncludeWinners = ptrutil.ToPtr(*erp.Targeting.IncludeWinners)
-		}
-		if erp.Targeting.IncludeBidderKeys != nil {
-			newTargeting.IncludeBidderKeys = ptrutil.ToPtr(*erp.Targeting.IncludeBidderKeys)
-		}
+		newTargeting.IncludeWinners = ptrutil.Clone(erp.Targeting.IncludeWinners)
+		newTargeting.IncludeBidderKeys = ptrutil.Clone(erp.Targeting.IncludeBidderKeys)
 		if erp.Targeting.IncludeBrandCategory != nil {
 			newIncludeBrandCategory := *erp.Targeting.IncludeBrandCategory
-			if erp.Targeting.IncludeBrandCategory.TranslateCategories != nil {
-				newIncludeBrandCategory.TranslateCategories = ptrutil.ToPtr(*erp.Targeting.IncludeBrandCategory.TranslateCategories)
-			}
+			newIncludeBrandCategory.TranslateCategories = ptrutil.Clone(erp.Targeting.IncludeBrandCategory.TranslateCategories)
 			newTargeting.IncludeBrandCategory = &newIncludeBrandCategory
 		}
 		clone.Targeting = newTargeting
 	}
 
-	clone.NoSale = sliceutil.CloneSlice(erp.NoSale)
+	clone.NoSale = sliceutil.Clone(erp.NoSale)
 
 	if erp.AlternateBidderCodes != nil {
 		newAlternateBidderCodes := ExtAlternateBidderCodes{Enabled: erp.AlternateBidderCodes.Enabled}
@@ -483,7 +471,7 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 			for key, val := range erp.AlternateBidderCodes.Bidders {
 				newBidders[key] = ExtAdapterAlternateBidderCodes{
 					Enabled:            val.Enabled,
-					AllowedBidderCodes: sliceutil.CloneSlice(val.AllowedBidderCodes),
+					AllowedBidderCodes: sliceutil.Clone(val.AllowedBidderCodes),
 				}
 			}
 			newAlternateBidderCodes.Bidders = newBidders

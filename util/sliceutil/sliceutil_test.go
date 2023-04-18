@@ -78,7 +78,7 @@ func TestCloneSlice(t *testing.T) {
 			name: "NilSlice", // Test we handle nils properly
 			test: func(t *testing.T) {
 				var testSlice, copySlice []int = nil, nil // copySlice is a manual copy of testSLice
-				clone := CloneSlice(testSlice)
+				clone := Clone(testSlice)
 				testSlice = []int{5, 7}
 				assert.Equal(t, copySlice, clone)
 			},
@@ -87,7 +87,7 @@ func TestCloneSlice(t *testing.T) {
 			name: "String", // Test a simple string map
 			test: func(t *testing.T) {
 				var testSlice, copySlice []string = []string{"foo", "bar", "first", "one"}, []string{"foo", "bar", "first", "one"}
-				clone := CloneSlice(testSlice)
+				clone := Clone(testSlice)
 				testSlice[1] = "baz"
 				testSlice = append(testSlice, "the clown")
 				assert.Equal(t, copySlice, clone)
@@ -97,7 +97,7 @@ func TestCloneSlice(t *testing.T) {
 			name: "Int", // Test a simple map[string]int
 			test: func(t *testing.T) {
 				var testSlice, copySlice []int = []int{2, 4, 5, 7}, []int{2, 4, 5, 7}
-				clone := CloneSlice(testSlice)
+				clone := Clone(testSlice)
 				testSlice[2] = 7
 				testSlice = append(testSlice, 13)
 				assert.Equal(t, copySlice, clone)
