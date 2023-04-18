@@ -179,6 +179,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	if rejectErr := hookexecution.FindFirstRejectOrNil(errL); rejectErr != nil {
+		ao.Request = req.BidRequest
 		labels, ao = rejectAuctionRequest(*rejectErr, w, hookExecutor, req.BidRequest, account, labels, ao)
 		return
 	}
