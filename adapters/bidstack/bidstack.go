@@ -37,7 +37,7 @@ func Builder(_ openrtb_ext.BidderName, config config.Adapter, _ config.Server) (
 	return bidder, nil
 }
 
-func (a adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	headers, err := prepareHeaders(request)
 	if err != nil {
 		return nil, []error{fmt.Errorf("headers prepare: %v", err)}
