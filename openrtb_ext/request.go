@@ -324,14 +324,14 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 	}
 
 	clone := *erp
-	clone.Aliases = maputil.CloneMap[string, string](erp.Aliases)
-	clone.AliasGVLIDs = maputil.CloneMap[string, uint16](erp.AliasGVLIDs)
-	clone.BidAdjustmentFactors = maputil.CloneMap[string, float64](erp.BidAdjustmentFactors)
+	clone.Aliases = maputil.CloneMap(erp.Aliases)
+	clone.AliasGVLIDs = maputil.CloneMap(erp.AliasGVLIDs)
+	clone.BidAdjustmentFactors = maputil.CloneMap(erp.BidAdjustmentFactors)
 
 	if erp.BidderConfigs != nil {
 		newBidderConfigs := make([]BidderConfig, len(erp.BidderConfigs))
 		for i, bc := range erp.BidderConfigs {
-			newBidderConfig := BidderConfig{Bidders: sliceutil.CloneSlice[string](bc.Bidders)}
+			newBidderConfig := BidderConfig{Bidders: sliceutil.CloneSlice(bc.Bidders)}
 			if bc.Config != nil {
 				config := &Config{}
 				if bc.Config.ORTB2 != nil {
@@ -353,13 +353,13 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 		if erp.Cache.Bids != nil {
 			clone.Cache.Bids = &ExtRequestPrebidCacheBids{}
 			if erp.Cache.Bids.ReturnCreative != nil {
-				clone.Cache.Bids.ReturnCreative = ptrutil.ToPtr[bool](*erp.Cache.Bids.ReturnCreative)
+				clone.Cache.Bids.ReturnCreative = ptrutil.ToPtr(*erp.Cache.Bids.ReturnCreative)
 			}
 		}
 		if erp.Cache.VastXML != nil {
 			clone.Cache.VastXML = &ExtRequestPrebidCacheVAST{}
 			if erp.Cache.VastXML.ReturnCreative != nil {
-				clone.Cache.VastXML.ReturnCreative = ptrutil.ToPtr[bool](*erp.Cache.VastXML.ReturnCreative)
+				clone.Cache.VastXML.ReturnCreative = ptrutil.ToPtr(*erp.Cache.VastXML.ReturnCreative)
 			}
 		}
 	}
@@ -376,7 +376,7 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 		}
 		clone.CurrencyConversions = &ExtRequestCurrency{ConversionRates: newConvRates}
 		if erp.CurrencyConversions.UsePBSRates != nil {
-			clone.CurrencyConversions.UsePBSRates = ptrutil.ToPtr[bool](*erp.CurrencyConversions.UsePBSRates)
+			clone.CurrencyConversions.UsePBSRates = ptrutil.ToPtr(*erp.CurrencyConversions.UsePBSRates)
 		}
 	}
 
@@ -391,6 +391,7 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 				}
 				newEidPermissions = append(newEidPermissions, *newEIDP)
 			}
+			clone.Data.EidPermissions = newEidPermissions
 		}
 	}
 
@@ -424,7 +425,7 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 			newNodes := sliceutil.CloneSlice(schain.SChain.Nodes)
 			for j, node := range newNodes {
 				if node.HP != nil {
-					newNodes[j].HP = ptrutil.ToPtr[int8](*newNodes[j].HP)
+					newNodes[j].HP = ptrutil.ToPtr(*newNodes[j].HP)
 				}
 			}
 			newChain.SChain.Nodes = newNodes
@@ -434,11 +435,11 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 	}
 
 	if erp.Server != nil {
-		clone.Server = ptrutil.ToPtr[ExtRequestPrebidServer](*erp.Server)
+		clone.Server = ptrutil.ToPtr(*erp.Server)
 	}
 
 	if erp.StoredRequest != nil {
-		clone.StoredRequest = ptrutil.ToPtr[ExtStoredRequest](*erp.StoredRequest)
+		clone.StoredRequest = ptrutil.ToPtr(*erp.StoredRequest)
 	}
 
 	if erp.Targeting != nil {
@@ -450,10 +451,10 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 		}
 		if erp.Targeting.PriceGranularity != nil {
 			newPriceGranularity := &PriceGranularity{
-				Ranges: sliceutil.CloneSlice[GranularityRange](erp.Targeting.PriceGranularity.Ranges),
+				Ranges: sliceutil.CloneSlice(erp.Targeting.PriceGranularity.Ranges),
 			}
 			if erp.Targeting.PriceGranularity.Precision != nil {
-				newPriceGranularity.Precision = ptrutil.ToPtr[int](*erp.Targeting.PriceGranularity.Precision)
+				newPriceGranularity.Precision = ptrutil.ToPtr(*erp.Targeting.PriceGranularity.Precision)
 			}
 			newTargeting.PriceGranularity = newPriceGranularity
 		}

@@ -635,7 +635,7 @@ func (ue *UserExt) Clone() *UserExt {
 		return nil
 	}
 	clone := *ue
-	clone.ext = maputil.CloneMap[string, json.RawMessage](ue.ext)
+	clone.ext = maputil.CloneMap(ue.ext)
 
 	if ue.consent != nil {
 		newConsent := *ue.consent
@@ -644,7 +644,7 @@ func (ue *UserExt) Clone() *UserExt {
 
 	if ue.prebid != nil {
 		newPrebid := &ExtUserPrebid{}
-		newPrebid.BuyerUIDs = maputil.CloneMap[string, string](ue.prebid.BuyerUIDs)
+		newPrebid.BuyerUIDs = maputil.CloneMap(ue.prebid.BuyerUIDs)
 		clone.prebid = newPrebid
 	}
 
@@ -652,7 +652,7 @@ func (ue *UserExt) Clone() *UserExt {
 		newEids := make([]openrtb2.EID, 0, len(*ue.eids))
 		for _, eid := range *ue.eids {
 			newEid := eid
-			newEid.UIDs = sliceutil.CloneSlice[openrtb2.UID](eid.UIDs)
+			newEid.UIDs = sliceutil.CloneSlice(eid.UIDs)
 			newEids = append(newEids, newEid)
 		}
 		clone.eids = &newEids
@@ -663,7 +663,7 @@ func (ue *UserExt) Clone() *UserExt {
 		clone.consentedProvidersSettingsIn = &ConsentedProvidersSettingsIn{ConsentedProvidersString: newProvidersIn}
 	}
 	if ue.consentedProvidersSettingsOut != nil {
-		newProvidersOut := &ConsentedProvidersSettingsOut{ConsentedProvidersList: sliceutil.CloneSlice[int](ue.consentedProvidersSettingsOut.ConsentedProvidersList)}
+		newProvidersOut := &ConsentedProvidersSettingsOut{ConsentedProvidersList: sliceutil.CloneSlice(ue.consentedProvidersSettingsOut.ConsentedProvidersList)}
 		clone.consentedProvidersSettingsOut = newProvidersOut
 	}
 
@@ -811,7 +811,7 @@ func (re *RequestExt) Clone() *RequestExt {
 	}
 
 	clone := *re
-	clone.ext = maputil.CloneMap[string, json.RawMessage](re.ext)
+	clone.ext = maputil.CloneMap(re.ext)
 
 	if re.prebid != nil {
 		clone.prebid = re.prebid.Clone()
@@ -822,7 +822,7 @@ func (re *RequestExt) Clone() *RequestExt {
 		for i, node := range re.schain.Nodes {
 			newNodes[i] = node
 			if node.HP != nil {
-				newNodes[i].HP = ptrutil.ToPtr[int8](*re.schain.Nodes[i].HP)
+				newNodes[i].HP = ptrutil.ToPtr(*re.schain.Nodes[i].HP)
 			}
 		}
 		newSchain := *re.schain
@@ -935,7 +935,7 @@ func (de *DeviceExt) Clone() *DeviceExt {
 	}
 
 	clone := *de
-	clone.ext = maputil.CloneMap[string, json.RawMessage](de.ext)
+	clone.ext = maputil.CloneMap(de.ext)
 
 	if de.prebid != nil {
 		newPrebid := *de.prebid
@@ -1047,7 +1047,7 @@ func (ae *AppExt) Clone() *AppExt {
 	}
 
 	clone := *ae
-	clone.ext = maputil.CloneMap[string, json.RawMessage](ae.ext)
+	clone.ext = maputil.CloneMap(ae.ext)
 
 	if ae.prebid != nil {
 		newPrebid := *ae.prebid
@@ -1179,7 +1179,7 @@ func (re *RegExt) Clone() *RegExt {
 	}
 
 	clone := *re
-	clone.ext = maputil.CloneMap[string, json.RawMessage](re.ext)
+	clone.ext = maputil.CloneMap(re.ext)
 
 	if re.gdpr != nil {
 		clone.gdpr = ptrutil.ToPtr(*re.gdpr)
@@ -1277,7 +1277,7 @@ func (se *SiteExt) Clone() *SiteExt {
 	}
 
 	clone := *se
-	clone.ext = maputil.CloneMap[string, json.RawMessage](se.ext)
+	clone.ext = maputil.CloneMap(se.ext)
 
 	if se.amp != nil {
 		clone.amp = ptrutil.ToPtr(*se.amp)
@@ -1383,14 +1383,14 @@ func (se *SourceExt) Clone() *SourceExt {
 	}
 
 	clone := *se
-	clone.ext = maputil.CloneMap[string, json.RawMessage](se.ext)
+	clone.ext = maputil.CloneMap(se.ext)
 
 	if se.schain != nil {
 		newNodes := make([]openrtb2.SupplyChainNode, len(se.schain.Nodes))
 		for i, node := range se.schain.Nodes {
 			newNodes[i] = node
 			if node.HP != nil {
-				newNodes[i].HP = ptrutil.ToPtr[int8](*se.schain.Nodes[i].HP)
+				newNodes[i].HP = ptrutil.ToPtr(*se.schain.Nodes[i].HP)
 			}
 		}
 		newSchain := *se.schain
@@ -1630,7 +1630,7 @@ func (e *ImpExt) Clone() *ImpExt {
 	}
 
 	clone := *e
-	clone.ext = maputil.CloneMap[string, json.RawMessage](e.ext)
+	clone.ext = maputil.CloneMap(e.ext)
 
 	if e.prebid != nil {
 		newPrebid := *e.prebid
