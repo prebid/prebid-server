@@ -1,4 +1,4 @@
-name: User Sync Update
+name: User Sync URL Update
 
 on:
   pull_request:
@@ -17,7 +17,7 @@ jobs:
             # Iterate over all YAML files in the pull request
             for yaml_file in $(git diff --name-only HEAD^ HEAD | grep '\.yml$'); do
               # Check if the YAML file contains the UserSync redirect URL
-              if yq eval '.userSync.redirect.url' "$yaml_file" | grep -q -F '$UID'; then
+              if yq eval '.userSync.redirect.url' "$yaml_file"; then
                 echo "UserSync redirect URL was not updated in $yaml_file"
                 exit 1
               else
