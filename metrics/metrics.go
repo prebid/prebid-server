@@ -157,12 +157,20 @@ func DemandTypes() []DemandSource {
 
 // The request types (endpoints)
 const (
-	ReqTypeLegacy   RequestType = "legacy"
 	ReqTypeORTB2Web RequestType = "openrtb2-web"
 	ReqTypeORTB2App RequestType = "openrtb2-app"
 	ReqTypeAMP      RequestType = "amp"
 	ReqTypeVideo    RequestType = "video"
 )
+
+func RequestTypes() []RequestType {
+	return []RequestType{
+		ReqTypeORTB2Web,
+		ReqTypeORTB2App,
+		ReqTypeAMP,
+		ReqTypeVideo,
+	}
+}
 
 // The media types described in the "imp" json objects
 const (
@@ -171,16 +179,6 @@ const (
 	ImpTypeAudio  ImpMediaType = "audio"
 	ImpTypeNative ImpMediaType = "native"
 )
-
-func RequestTypes() []RequestType {
-	return []RequestType{
-		ReqTypeLegacy,
-		ReqTypeORTB2Web,
-		ReqTypeORTB2App,
-		ReqTypeAMP,
-		ReqTypeVideo,
-	}
-}
 
 func ImpTypes() []ImpMediaType {
 	return []ImpMediaType{
@@ -412,8 +410,6 @@ type MetricsEngine interface {
 	RecordDNSTime(dnsLookupTime time.Duration)
 	RecordTLSHandshakeTime(tlsHandshakeTime time.Duration)
 	RecordAdapterPanic(labels AdapterLabels)
-	// This records whether or not a bid of a particular type uses `adm` or `nurl`.
-	// Since the legacy endpoints don't have a bid type, it can only count bids from OpenRTB and AMP.
 	RecordAdapterBidReceived(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool)
 	RecordAdapterPrice(labels AdapterLabels, cpm float64)
 	RecordAdapterTime(labels AdapterLabels, length time.Duration)
