@@ -81,9 +81,45 @@
         }
       },
       "mockResponse": {
-        "status": 204
+        "status": 200,
+        "body": {
+          "id": "some-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "1",
+                  "impid": "some-impression-id",
+                  "price": 1.234,
+                  "adm": "<script type=\"text/javascript\" src=\"http://some-url\"></script>",
+                  "adomain": [
+                    "some-adomain"
+                  ],
+                  "cid": "1234",
+                  "crid": "2345",
+                  "h": 1,
+                  "w": 1,
+                  "ext": {
+                    "prebid": {
+                      "type": "invalid"
+                    }
+                  }
+                }
+              ],
+              "seat": "zeta_global_ssp"
+            }
+          ],
+          "bidid": "some-bidid",
+          "cur": "USD"
+        }
       }
     }
   ],
-  "expectedBidResponses": []
+  "expectedBidResponses": [],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "invalid BidType: invalid",
+      "comparison": "literal"
+    }
+  ]
 }

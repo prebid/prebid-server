@@ -3,14 +3,14 @@ package zeta_global_ssp
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/util/httputil"
 	"net/http"
 
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/httputil"
 )
 
 type adapter struct {
