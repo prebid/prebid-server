@@ -17,8 +17,8 @@ func EnforceFloors(bidRequestWrapper *openrtb_ext.RequestWrapper, seatBids map[o
 	rejectionErrs := []error{}
 	rejectedBids := []*entities.PbsOrtbSeatBid{}
 
-	if isPriceFloorsDisabled(account, bidRequestWrapper) || isPriceFloorsEnforcementDisabled(bidRequestWrapper) {
-		return seatBids, []error{errors.New("Floors enforcement is disabled at account or in the request")}, rejectedBids
+	if isPriceFloorsDisabled(account, bidRequestWrapper) {
+		return seatBids, []error{errors.New("Floors feature is disabled at account or in the request")}, rejectedBids
 	}
 
 	if !isFloorsSignallingSkipped(bidRequestWrapper) && isValidImpBidFloorPresent(bidRequestWrapper.BidRequest) {
