@@ -1,16 +1,24 @@
-name: Check user sync url
+name: List PR Changes
 
 on:
   pull_request:
-    types: [opened, edited, reopened, synchronize]
 
 jobs:
-  check:
+  list-changes:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
 
       - name: List PR Changes
+        uses: dorny/changed-files@v1
+        id: files
+        with:
+          only: |
+            A # List added files
+            M # List modified files
+
+      - name: Print PR Changes
         run: |
-          git diff --name-only ${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}
+          echo "Added or modified files:"
+          echo "${{ steps.files.outputs.files }}"
