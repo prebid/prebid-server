@@ -8,7 +8,7 @@ import (
 
 	"net/http"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 )
 
 // OrtbMockService Represents a scaffolded OpenRTB service.

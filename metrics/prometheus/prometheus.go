@@ -24,7 +24,6 @@ type Metrics struct {
 	cookieSync                   *prometheus.CounterVec
 	setUid                       *prometheus.CounterVec
 	impressions                  *prometheus.CounterVec
-	impressionsLegacy            prometheus.Counter
 	prebidCacheWriteTimer        *prometheus.HistogramVec
 	requests                     *prometheus.CounterVec
 	debugRequests                prometheus.Counter
@@ -208,10 +207,6 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"impressions_requests",
 		"Count of requested impressions to Prebid Server labeled by type.",
 		[]string{isBannerLabel, isVideoLabel, isAudioLabel, isNativeLabel})
-
-	metrics.impressionsLegacy = newCounterWithoutLabels(cfg, reg,
-		"impressions_requests_legacy",
-		"Count of requested impressions to Prebid Server using the legacy endpoint.")
 
 	metrics.prebidCacheWriteTimer = newHistogramVec(cfg, reg,
 		"prebidcache_write_time_seconds",

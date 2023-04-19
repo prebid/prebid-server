@@ -1,6 +1,6 @@
 package privacy
 
-import "github.com/prebid/openrtb/v17/openrtb2"
+import "github.com/prebid/openrtb/v19/openrtb2"
 
 // Enforcement represents the privacy policies to enforce for an OpenRTB bid request.
 type Enforcement struct {
