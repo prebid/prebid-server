@@ -3,9 +3,10 @@ package floors
 import (
 	"encoding/json"
 	"errors"
+	"sort"
 	"testing"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/exchange/entities"
@@ -467,9 +468,17 @@ func TestEnforceFloors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			actEligibleBids, actErrs, actRejecteBids := EnforceFloors(tt.args.bidRequestWrapper, tt.args.seatBids, config.Account{PriceFloors: tt.args.priceFloorsCfg}, tt.args.conversions)
-			assert.Equal(t, tt.expEligibleBids, actEligibleBids, tt.name)
-			assert.Equal(t, tt.expRejectedBids, actRejecteBids, tt.name)
 			assert.Equal(t, tt.expErrs, actErrs, tt.name)
+			assert.Equal(t, tt.expEligibleBids, actEligibleBids, tt.name)
+
+			sort.Slice(tt.expRejectedBids, func(i, j int) bool {
+				return tt.expRejectedBids[i].Seat < tt.expRejectedBids[i].Seat
+			})
+			sort.Slice(actRejecteBids, func(i, j int) bool {
+				return actRejecteBids[i].Seat < actRejecteBids[i].Seat
+			})
+			assert.Equal(t, tt.expRejectedBids, actRejecteBids, tt.name)
+
 		})
 	}
 }
