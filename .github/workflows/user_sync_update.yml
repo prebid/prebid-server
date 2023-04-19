@@ -11,14 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Check YAML file
+      - name: List PR Changes
         run: |
-          if git diff-tree --no-commit-id --name-only -r HEAD | grep --quiet '\.yaml$'; then
-            if yq eval '.userSync.redirect.url' $(git diff --unified=0 HEAD^..HEAD -- '*.yaml'); then
-              echo "The userSync.redirect.url property was added or updated in the YAML file."
-            else
-              echo "The userSync.redirect.url property was not added or updated in the YAML file."
-            fi
-          else
-            echo "No YAML files were modified or added."
-          fi
+          git fetch origin ${{ github.event.pull_request.base.ref }}:${{ github.event.pull_request.base.ref }}
+          git diff --name-only HEAD...${{ github.event.pull_request.base.ref }}
