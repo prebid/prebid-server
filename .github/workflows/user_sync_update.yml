@@ -11,10 +11,10 @@ jobs:
         uses: actions/checkout@v2
 
       - name: List PR Changes
-        uses: juliangruber/pull-request-changed-files@v1
-        id: files
+        uses: jitterbit/get-changed-files@v1
+        id: changed_files
 
       - name: Print PR Changes
         run: |
           echo "Added or modified files:"
-          echo "${{ steps.files.outputs.files }}"
+          echo "${{ steps.changed_files.outputs.files }}"
