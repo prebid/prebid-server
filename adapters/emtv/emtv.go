@@ -10,6 +10,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/httputil"
 )
 
 type adapter struct {
@@ -51,17 +52,19 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			return nil, []error{err}
 		}
 
-		temp := reqBodyExt{EmtvBidderExt: reqBodyExtBidder{}}
+		impExt := reqBodyExt{EmtvBidderExt: reqBodyExtBidder{}}
 
 		if emtvExt.PlacementID != "" {
-			temp.EmtvBidderExt.PlacementID = emtvExt.PlacementID
-			temp.EmtvBidderExt.Type = "publisher"
+			impExt.EmtvBidderExt.PlacementID = emtvExt.PlacementID
+			impExt.EmtvBidderExt.Type = "publisher"
 		} else if emtvExt.EndpointID != "" {
-			temp.EmtvBidderExt.EndpointID = emtvExt.EndpointID
-			temp.EmtvBidderExt.Type = "network"
+			impExt.EmtvBidderExt.EndpointID = emtvExt.EndpointID
+			impExt.EmtvBidderExt.Type = "network"
+		} else {
+			continue
 		}
 
-		finalyImpExt, err := json.Marshal(temp)
+		finalyImpExt, err := json.Marshal(impExt)
 		if err != nil {
 			return nil, []error{err}
 		}
@@ -98,14 +101,11 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestDa
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if responseData.StatusCode == http.StatusNoContent {
+	if httputil.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
 	}
 
-	if responseData.StatusCode != http.StatusOK {
-		err := &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info.", responseData.StatusCode),
-		}
+	if err := httputil.CheckResponseStatusCodeForErrors(responseData); err != nil {
 		return nil, []error{err}
 	}
 
