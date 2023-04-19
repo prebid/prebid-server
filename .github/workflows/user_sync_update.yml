@@ -1,21 +1,24 @@
-name: Check YAML file changes
+name: Check user sync url
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
+    types: [opened, edited, reopened, synchronize]
 
 jobs:
-  check-yaml-file:
+  check:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-      - name: Check YAML files
+      - uses: actions/checkout@v2
+
+      - name: Check YAML file
         run: |
-          if git diff --name-only HEAD^..HEAD | grep --quiet '\.yaml$'; then
-            echo "A YAML file was modified or added"
+          if git diff-tree --no-commit-id --name-only -r HEAD | grep --quiet '\.yaml$'; then
+            if git diff --unified=0 HEAD^..HEAD -- '*.yaml' | grep --quiet '^[+-]\{1\}userSync.redirect.url'; then
+              echo "The userSync.redirect.url property was added or updated in the YAML file."
+            else
+              echo "The userSync.redirect.url property was not added or updated in the YAML file."
+            fi
           else
-            echo "No YAML files were modified or added"
+            echo "No YAML files were modified or added."
           fi
