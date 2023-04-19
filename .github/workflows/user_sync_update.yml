@@ -13,5 +13,4 @@ jobs:
 
       - name: List PR Changes
         run: |
-          git fetch --all
-          git diff --name-only origin/${{ github.event.pull_request.head.ref }}..${{ github.event.pull_request.base.ref }}
+          git diff --name-only ${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}
