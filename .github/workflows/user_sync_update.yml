@@ -10,10 +10,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Check YAML file changes
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Check YAML files
         run: |
-          if git diff --name-only HEAD~1 | grep -qE '\.yml$'; then
-            echo "A YAML file was added or updated in this PR."
+          if git diff --name-only HEAD^ | grep --quiet '\.yml$'; then
+            echo "A YAML file was modified or added"
           else
-            echo "No YAML files were added or updated in this PR."
+            echo "No YAML files were modified or added"
           fi
