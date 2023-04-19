@@ -14,7 +14,7 @@ jobs:
       - name: Check YAML file
         run: |
           if git diff-tree --no-commit-id --name-only -r HEAD | grep --quiet '\.yaml$'; then
-            if git diff --unified=0 HEAD^..HEAD -- '*.yaml' | grep --quiet '^[+-]\{1\}userSync.redirect.url'; then
+            if yq eval '.userSync.redirect.url' $(git diff --unified=0 HEAD^..HEAD -- '*.yaml'); then
               echo "The userSync.redirect.url property was added or updated in the YAML file."
             else
               echo "The userSync.redirect.url property was not added or updated in the YAML file."
