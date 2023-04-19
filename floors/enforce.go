@@ -45,11 +45,6 @@ func enforceFloorToBids(bidRequestWrapper *openrtb_ext.RequestWrapper, seatBids 
 	for bidderName, seatBid := range seatBids {
 		eligibleBids := make([]*entities.PbsOrtbBid, 0, len(seatBid.Bids))
 		for _, bid := range seatBid.Bids {
-			dealBid := checkDealBidForEnforcement(bid, enforceDealFloors)
-			if dealBid != nil {
-				eligibleBids = append(eligibleBids, dealBid)
-				continue
-			}
 
 			reqImp, ok := impMap[bid.Bid.ImpID]
 			if !ok {
@@ -63,23 +58,32 @@ func enforceFloorToBids(bidRequestWrapper *openrtb_ext.RequestWrapper, seatBids 
 					reqImpCur = bidRequestWrapper.Cur[0]
 				}
 			}
-
-			rate, err := getCurrencyConversionRate(seatBid.Currency, reqImpCur, conversions)
-			if err != nil {
-				errs = append(errs, fmt.Errorf("error in rate conversion from = %s to %s with bidder %s for impression id %s and bid id %s error = %v", seatBid.Currency, reqImpCur, bidderName, bid.Bid.ImpID, bid.Bid.ID, err.Error()))
-				continue
-			}
-
-			bidPrice := rate * bid.Bid.Price
 			updateBidExtWithFloors(reqImp, bid, reqImpCur)
-			if reqImp.BidFloor > bidPrice {
-				rejectedBid := &entities.PbsOrtbSeatBid{
-					Currency: seatBid.Currency,
-					Seat:     seatBid.Seat,
-					Bids:     []*entities.PbsOrtbBid{bid},
+
+			if !isPriceFloorsEnforcementDisabled(bidRequestWrapper) {
+				dealBid := checkDealBidForEnforcement(bid, enforceDealFloors)
+				if dealBid != nil {
+					eligibleBids = append(eligibleBids, dealBid)
+					continue
 				}
-				rejectedBids = append(rejectedBids, rejectedBid)
-				continue
+
+				rate, err := getCurrencyConversionRate(seatBid.Currency, reqImpCur, conversions)
+				if err != nil {
+					errs = append(errs, fmt.Errorf("error in rate conversion from = %s to %s with bidder %s for impression id %s and bid id %s error = %v", seatBid.Currency, reqImpCur, bidderName, bid.Bid.ImpID, bid.Bid.ID, err.Error()))
+					continue
+				}
+
+				bidPrice := rate * bid.Bid.Price
+
+				if reqImp.BidFloor > bidPrice {
+					rejectedBid := &entities.PbsOrtbSeatBid{
+						Currency: seatBid.Currency,
+						Seat:     seatBid.Seat,
+						Bids:     []*entities.PbsOrtbBid{bid},
+					}
+					rejectedBids = append(rejectedBids, rejectedBid)
+					continue
+				}
 			}
 			eligibleBids = append(eligibleBids, bid)
 		}

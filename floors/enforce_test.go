@@ -83,6 +83,67 @@ func TestEnforceFloorToBids(t *testing.T) {
 		expErrs         []error
 		expRejectedBids []*entities.PbsOrtbSeatBid
 	}{
+
+		{
+			name: "Floors enforcement disabled using enforcepbs = false",
+			args: args{
+				bidRequestWrapper: func() *openrtb_ext.RequestWrapper {
+					bw := openrtb_ext.RequestWrapper{
+						BidRequest: &openrtb2.BidRequest{
+							ID: "some-request-id",
+							Imp: []openrtb2.Imp{
+								{ID: "some-impression-id-1", BidFloor: 1.01, BidFloorCur: "USD"},
+								{ID: "some-impression-id-2", BidFloor: 2.01, BidFloorCur: "USD"},
+							},
+							Ext: json.RawMessage(`{"prebid":{"floors":{"floormin":1,"data":{"currency":"USD","skiprate":100,"modelgroups":[{"modelversion":"version1","skiprate":10,"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"},"values":{"*|*|*":20.01,"*|*|www.website1.com":16.01},"default":21}]},"enforcement":{"enforcepbs":false,"floordeals":false},"enabled":true}}}`),
+						},
+					}
+					bw.RebuildRequest()
+					return &bw
+				}(),
+				seatBids: map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid{
+					"pubmatic": {
+						Bids: []*entities.PbsOrtbBid{
+							&imp1_bid_1_2,
+							&imp2_bid_1_5,
+						},
+						Seat:     "pubmatic",
+						Currency: "USD",
+					},
+					"appnexus": {
+						Bids: []*entities.PbsOrtbBid{
+							&imp1_bid_0_5,
+							&imp2_bid_2_2,
+						},
+						Seat:     "appnexus",
+						Currency: "USD",
+					},
+				},
+				conversions:       currency.Conversions(convert{}),
+				enforceDealFloors: false,
+			},
+			expEligibleBids: map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid{
+				"pubmatic": {
+					Bids: []*entities.PbsOrtbBid{
+						&imp1_bid_1_2,
+						&imp2_bid_1_5,
+					},
+					Seat:     "pubmatic",
+					Currency: "USD",
+				},
+				"appnexus": {
+					Bids: []*entities.PbsOrtbBid{
+						&imp1_bid_0_5,
+						&imp2_bid_2_2,
+					},
+					Seat:     "appnexus",
+					Currency: "USD",
+				},
+			},
+			expRejectedBids: []*entities.PbsOrtbSeatBid{},
+			expErrs:         []error{},
+		},
+
 		{
 			name: "Bids with price less than bidfloor",
 			args: args{
