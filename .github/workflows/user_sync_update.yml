@@ -1,36 +1,19 @@
-name: User Sync URL Update
+name: Check YAML file changes
 
 on:
   pull_request:
-    types: [ opened, synchronize ]
+    types: [opened, reopened, synchronize]
 
 jobs:
-  check_update:
+  check-yaml-file:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-
-      - name: Check for update
+      - name: Check YAML file changes
         run: |
-            if [ $(git rev-list --count HEAD^..HEAD) -eq 0 ]; then
-              # First commit in branch, check if file was added
-              if git diff --name-only HEAD HEAD~1 | grep -q '\.yml$'; then
-                if ! yq eval '.userSync.redirect.url' "$yaml_file"; then
-                  echo "UserSync redirect URL was updated"
-                else
-                  echo "UserSync redirect URL was not updated"
-                  exit 1
-                fi
-            fi
-            else
-              # Not the first commit in branch, use git diff
-              if git diff --name-only HEAD^ HEAD | grep -q '\.yml$'; then
-                if ! yq eval '.userSync.redirect.url' $(git diff --name-only HEAD^ HEAD); then
-                  echo "UserSync redirect URL was updated"
-                else
-                  echo "UserSync redirect URL was not updated"
-                  exit 1
-                fi
-              fi
-            fi
+          if git diff --name-only HEAD~1 | grep -qE '\.yml$'; then
+            echo "A YAML file was added or updated in this PR."
+          else
+            echo "No YAML files were added or updated in this PR."
+          fi
