@@ -3,7 +3,7 @@ name: List PR Changes
 on:
   pull_request:
     paths:
-      - 'static/**/**.yaml'
+      - 'static/bidder-info/**/**.yaml'
 
 jobs:
   list-changes:
