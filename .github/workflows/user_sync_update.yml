@@ -2,6 +2,8 @@ name: List PR Changes
 
 on:
   pull_request:
+    paths:
+      - 'static/**/**.yaml'
 
 jobs:
   list-changes:
@@ -9,12 +11,3 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-
-      - name: List PR Changes
-        uses: jitterbit/get-changed-files@v1
-        id: changed_files
-
-      - name: Print PR Changes
-        run: |
-          echo "Added or modified files:"
-          echo "${{ steps.changed_files.outputs.files }}"
