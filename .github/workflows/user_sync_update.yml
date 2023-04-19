@@ -14,7 +14,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
       - name: Check YAML files
         run: |
-          if git diff --name-only HEAD^ | grep --quiet '\.yml$'; then
+          if git diff --name-only HEAD^ | grep --quiet '\.yaml$'; then
             echo "A YAML file was modified or added"
           else
             echo "No YAML files were modified or added"
