@@ -16,6 +16,7 @@ import (
 
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adservertargeting"
+	"github.com/prebid/prebid-server/bidadjustments"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/errortypes"
@@ -290,7 +291,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		r.FirstPartyData = resolvedFPD
 	}
 
-	mergedBidAdj, err := processBidAdjustments(r.BidRequestWrapper, r.Account.BidAdjustments)
+	mergedBidAdj, err := bidadjustments.ProcessBidAdjustments(r.BidRequestWrapper, r.Account.BidAdjustments)
 	if err != nil {
 		return nil, err
 	}

@@ -3,7 +3,6 @@ package openrtb_ext
 import (
 	"encoding/json"
 	"fmt"
-	"math"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
 )
@@ -30,13 +29,6 @@ const AuctionEnvironmentKey = string(BidderReservedAE)
 const NativeExchangeSpecificLowerBound = 500
 
 const MaxDecimalFigures int = 15
-
-const (
-	AdjTypeCpm        = "cpm"
-	AdjTypeMultiplier = "multiplier"
-	AdjTypeStatic     = "static"
-	AdjWildCard       = "*"
-)
 
 // ExtRequest defines the contract for bidrequest.ext
 type ExtRequest struct {
@@ -344,107 +336,4 @@ func (m ExtMultiBid) String() string {
 		maxBid = fmt.Sprintf("%d", *m.MaxBids)
 	}
 	return fmt.Sprintf("{Bidder:%s, Bidders:%v, MaxBids:%s, TargetBidderCodePrefix:%s}", m.Bidder, m.Bidders, maxBid, m.TargetBidderCodePrefix)
-}
-
-func (bidAdj *ExtRequestPrebidBidAdjustments) GetAdjustmentArray(bidType BidType, bidderName BidderName, dealID string) []Adjustments {
-	if bidAdj.MediaType.Banner != nil && bidType == BidTypeBanner {
-		if adjArray := getAdjustmentArrayForMediaType(bidAdj.MediaType.Banner, bidderName.String(), dealID); adjArray != nil {
-			return adjArray
-		}
-	}
-	if bidAdj.MediaType.Video != nil && bidType == BidTypeVideo {
-		if adjArray := getAdjustmentArrayForMediaType(bidAdj.MediaType.Video, bidderName.String(), dealID); adjArray != nil {
-			return adjArray
-		}
-	}
-	if bidAdj.MediaType.Audio != nil && bidType == BidTypeAudio {
-		if adjArray := getAdjustmentArrayForMediaType(bidAdj.MediaType.Audio, bidderName.String(), dealID); adjArray != nil {
-			return adjArray
-		}
-
-	}
-	if bidAdj.MediaType.Native != nil && bidType == BidTypeNative {
-		if adjArray := getAdjustmentArrayForMediaType(bidAdj.MediaType.Native, bidderName.String(), dealID); adjArray != nil {
-			return adjArray
-		}
-	}
-	if bidAdj.MediaType.WildCard != nil {
-		if adjArray := getAdjustmentArrayForMediaType(bidAdj.MediaType.WildCard, bidderName.String(), dealID); adjArray != nil {
-			return adjArray
-		}
-	}
-	return nil
-}
-
-// Priority For Returning Adjustment Array Based on Passed BidderName and DealID
-// #1: Are able to match bidderName and dealID
-// #2: Are able to match bidderName and dealID field is WildCard
-// #3: Bidder field is WildCard and are able to match DealID
-// #4: Wildcard bidder and wildcard dealID
-func getAdjustmentArrayForMediaType(bidAdjMap map[string]map[string][]Adjustments, bidderName string, dealID string) []Adjustments {
-	if _, ok := bidAdjMap[bidderName]; ok {
-		if _, ok := bidAdjMap[bidderName][dealID]; ok {
-			return bidAdjMap[bidderName][dealID]
-		} else if _, ok := bidAdjMap[bidderName][AdjWildCard]; ok {
-			return bidAdjMap[bidderName][AdjWildCard]
-		}
-	} else if _, ok := bidAdjMap[AdjWildCard]; ok {
-		if _, ok := bidAdjMap[AdjWildCard][dealID]; ok {
-			return bidAdjMap[AdjWildCard][dealID]
-		} else if _, ok := bidAdjMap[AdjWildCard][AdjWildCard]; ok {
-			return bidAdjMap[AdjWildCard][AdjWildCard]
-		}
-	}
-	return nil
-}
-
-func (bidAdjustments *ExtRequestPrebidBidAdjustments) ValidateBidAdjustments() bool {
-	if bidAdjustments == nil {
-		return true
-	}
-	if bidAdjustments.MediaType.Banner != nil && !findAndValidateAdjustment(bidAdjustments.MediaType.Banner) {
-		return false
-	}
-	if bidAdjustments.MediaType.Audio != nil && !findAndValidateAdjustment(bidAdjustments.MediaType.Audio) {
-		return false
-	}
-	if bidAdjustments.MediaType.Video != nil && !findAndValidateAdjustment(bidAdjustments.MediaType.Video) {
-		return false
-	}
-	if bidAdjustments.MediaType.Native != nil && !findAndValidateAdjustment(bidAdjustments.MediaType.Native) {
-		return false
-	}
-	return true
-}
-
-func findAndValidateAdjustment(bidAdjMap map[string]map[string][]Adjustments) bool {
-	for bidderName := range bidAdjMap {
-		for dealId := range bidAdjMap[bidderName] {
-			for _, adjustment := range bidAdjMap[bidderName][dealId] {
-				if !validateAdjustment(adjustment) {
-					return false
-				}
-			}
-		}
-	}
-	return true
-}
-
-func validateAdjustment(adjustment Adjustments) bool {
-	switch adjustment.AdjType {
-	case AdjTypeCpm:
-		if adjustment.Currency != "" && adjustment.Value >= 0 && adjustment.Value < math.MaxFloat64 {
-			return true
-		}
-	case AdjTypeMultiplier:
-		if adjustment.Value >= 0 && adjustment.Value < 100 {
-			return true
-		}
-		adjustment.Currency = ""
-	case AdjTypeStatic:
-		if adjustment.Currency != "" && adjustment.Value >= 0 && adjustment.Value < math.MaxFloat64 {
-			return true
-		}
-	}
-	return false
 }

@@ -1,10 +1,17 @@
-package exchange
+package bidadjustments
 
 import (
 	"math"
 
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/openrtb_ext"
+)
+
+const (
+	AdjTypeCpm        = "cpm"
+	AdjTypeMultiplier = "multiplier"
+	AdjTypeStatic     = "static"
+	AdjWildCard       = "*"
 )
 
 const roundTo float64 = 10000 // Rounds to 4 Decimal Places
@@ -17,15 +24,15 @@ func applyAdjustmentArray(adjArray []openrtb_ext.Adjustments, bidPrice float64, 
 	originalCurrency := currency
 
 	for _, adjustment := range adjArray {
-		if adjustment.AdjType == openrtb_ext.AdjTypeMultiplier {
+		if adjustment.AdjType == AdjTypeMultiplier {
 			bidPrice = bidPrice * adjustment.Value
-		} else if adjustment.AdjType == openrtb_ext.AdjTypeCpm {
+		} else if adjustment.AdjType == AdjTypeCpm {
 			convertedVal, err := reqInfo.ConvertCurrency(adjustment.Value, adjustment.Currency, currency) // Convert Adjustment to Bid Currency
 			if err != nil {
 				return originalBidPrice, currency
 			}
 			bidPrice = bidPrice - convertedVal
-		} else if adjustment.AdjType == openrtb_ext.AdjTypeStatic {
+		} else if adjustment.AdjType == AdjTypeStatic {
 			bidPrice = adjustment.Value
 			currency = adjustment.Currency
 		}
@@ -38,10 +45,10 @@ func applyAdjustmentArray(adjArray []openrtb_ext.Adjustments, bidPrice float64, 
 	return roundedBidPrice, currency
 }
 
-func getAndApplyAdjustmentArray(bidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments, bidInfo *adapters.TypedBid, bidderName openrtb_ext.BidderName, currency string, reqInfo *adapters.ExtraRequestInfo) (float64, string) {
+func GetAndApplyAdjustmentArray(bidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments, bidInfo *adapters.TypedBid, bidderName openrtb_ext.BidderName, currency string, reqInfo *adapters.ExtraRequestInfo) (float64, string) {
 	adjArray := []openrtb_ext.Adjustments{}
 	if bidAdjustments != nil {
-		adjArray = bidAdjustments.GetAdjustmentArray(bidInfo.BidType, bidderName, bidInfo.Bid.DealID)
+		adjArray = GetAdjustmentArray(bidAdjustments, bidInfo.BidType, bidderName, bidInfo.Bid.DealID)
 	} else {
 		return bidInfo.Bid.Price, currency
 	}
@@ -106,12 +113,12 @@ func mergeAdjustmentsForMediaType(reqAdjMap map[string]map[string][]openrtb_ext.
 	return reqAdjMap
 }
 
-func processBidAdjustments(req *openrtb_ext.RequestWrapper, acctBidAdjs *openrtb_ext.ExtRequestPrebidBidAdjustments) (*openrtb_ext.ExtRequestPrebidBidAdjustments, error) {
+func ProcessBidAdjustments(req *openrtb_ext.RequestWrapper, acctBidAdjs *openrtb_ext.ExtRequestPrebidBidAdjustments) (*openrtb_ext.ExtRequestPrebidBidAdjustments, error) {
 	mergedBidAdj, err := mergeBidAdjustments(req, acctBidAdjs)
 	if err != nil {
 		return nil, err
 	}
-	if valid := mergedBidAdj.ValidateBidAdjustments(); !valid {
+	if !Validate(mergedBidAdj) {
 		mergedBidAdj = nil
 	}
 	return mergedBidAdj, err
