@@ -168,18 +168,18 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	bidResponse.Currency = bidResp.Cur
 
 	for _, reqBid := range bidReq.Imp {
-		for _, seatBid := range bidResp.SeatBid {
-			for i := range seatBid.Bid {
+		for j := range bidResp.SeatBid {
+			for i := range bidResp.SeatBid[j].Bid {
 
-				bidType := getMediaType(seatBid.Bid[i].ImpID, reqBid)
+				bidType := getMediaType(bidResp.SeatBid[j].Bid[i].ImpID, reqBid)
 
 				if bidType == "video" {
-					seatBid.Bid[i].W = reqBid.Video.W
-					seatBid.Bid[i].H = reqBid.Video.H
+					bidResp.SeatBid[j].Bid[i].W = reqBid.Video.W
+					bidResp.SeatBid[j].Bid[i].H = reqBid.Video.H
 				}
 
 				b := &adapters.TypedBid{
-					Bid:     &seatBid.Bid[i],
+					Bid:     &bidResp.SeatBid[j].Bid[i],
 					BidType: bidType,
 				}
 
