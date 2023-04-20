@@ -638,33 +638,30 @@ func (ue *UserExt) Clone() *UserExt {
 	clone.ext = maputil.Clone(ue.ext)
 
 	if ue.consent != nil {
-		newConsent := *ue.consent
-		clone.consent = &newConsent
+		clonedConsent := *ue.consent
+		clone.consent = &clonedConsent
 	}
 
 	if ue.prebid != nil {
-		newPrebid := &ExtUserPrebid{}
-		newPrebid.BuyerUIDs = maputil.Clone(ue.prebid.BuyerUIDs)
-		clone.prebid = newPrebid
+		clone.prebid = &ExtUserPrebid{}
+		clone.prebid.BuyerUIDs = maputil.Clone(ue.prebid.BuyerUIDs)
 	}
 
 	if ue.eids != nil {
-		newEids := make([]openrtb2.EID, 0, len(*ue.eids))
-		for _, eid := range *ue.eids {
+		clonedEids := make([]openrtb2.EID, len(*ue.eids))
+		for i, eid := range *ue.eids {
 			newEid := eid
 			newEid.UIDs = sliceutil.Clone(eid.UIDs)
-			newEids = append(newEids, newEid)
+			clonedEids[i] = newEid
 		}
-		clone.eids = &newEids
+		clone.eids = &clonedEids
 	}
 
 	if ue.consentedProvidersSettingsIn != nil {
-		newProvidersIn := ue.consentedProvidersSettingsIn.ConsentedProvidersString
-		clone.consentedProvidersSettingsIn = &ConsentedProvidersSettingsIn{ConsentedProvidersString: newProvidersIn}
+		clone.consentedProvidersSettingsIn = &ConsentedProvidersSettingsIn{ConsentedProvidersString: ue.consentedProvidersSettingsIn.ConsentedProvidersString}
 	}
 	if ue.consentedProvidersSettingsOut != nil {
-		newProvidersOut := &ConsentedProvidersSettingsOut{ConsentedProvidersList: sliceutil.Clone(ue.consentedProvidersSettingsOut.ConsentedProvidersList)}
-		clone.consentedProvidersSettingsOut = newProvidersOut
+		clone.consentedProvidersSettingsOut = &ConsentedProvidersSettingsOut{ConsentedProvidersList: sliceutil.Clone(ue.consentedProvidersSettingsOut.ConsentedProvidersList)}
 	}
 
 	return &clone
@@ -817,17 +814,8 @@ func (re *RequestExt) Clone() *RequestExt {
 		clone.prebid = re.prebid.Clone()
 	}
 
-	if re.schain != nil {
-		newNodes := make([]openrtb2.SupplyChainNode, len(re.schain.Nodes))
-		for i, node := range re.schain.Nodes {
-			newNodes[i] = node
-			newNodes[i].HP = ptrutil.Clone(re.schain.Nodes[i].HP)
-		}
-		newSchain := *re.schain
-		newSchain.Nodes = newNodes
-		clone.schain = &newSchain
+	clone.schain = cloneSupplyChain(re.schain)
 
-	}
 	return &clone
 }
 
@@ -936,12 +924,12 @@ func (de *DeviceExt) Clone() *DeviceExt {
 	clone.ext = maputil.Clone(de.ext)
 
 	if de.prebid != nil {
-		newPrebid := *de.prebid
-		if newPrebid.Interstitial != nil {
-			newInterstitial := *de.prebid.Interstitial
-			newPrebid.Interstitial = &newInterstitial
+		clonedPrebid := *de.prebid
+		if clonedPrebid.Interstitial != nil {
+			clonedInterstitial := *de.prebid.Interstitial
+			clonedPrebid.Interstitial = &clonedInterstitial
 		}
-		clone.prebid = &newPrebid
+		clone.prebid = &clonedPrebid
 	}
 
 	return &clone
@@ -1047,10 +1035,7 @@ func (ae *AppExt) Clone() *AppExt {
 	clone := *ae
 	clone.ext = maputil.Clone(ae.ext)
 
-	if ae.prebid != nil {
-		newPrebid := *ae.prebid
-		clone.prebid = &newPrebid
-	}
+	clone.prebid = ptrutil.Clone(ae.prebid)
 
 	return &clone
 }
@@ -1378,17 +1363,7 @@ func (se *SourceExt) Clone() *SourceExt {
 	clone := *se
 	clone.ext = maputil.Clone(se.ext)
 
-	if se.schain != nil {
-		newNodes := make([]openrtb2.SupplyChainNode, len(se.schain.Nodes))
-		for i, node := range se.schain.Nodes {
-			newNodes[i] = node
-			newNodes[i].HP = ptrutil.Clone(se.schain.Nodes[i].HP)
-		}
-		newSchain := *se.schain
-		newSchain.Nodes = newNodes
-		clone.schain = &newSchain
-
-	}
+	clone.schain = cloneSupplyChain(se.schain)
 
 	return &clone
 }
@@ -1624,30 +1599,20 @@ func (e *ImpExt) Clone() *ImpExt {
 	clone.ext = maputil.Clone(e.ext)
 
 	if e.prebid != nil {
-		newPrebid := *e.prebid
-		if e.prebid.StoredRequest != nil {
-			newPrebidStoredRequest := *e.prebid.StoredRequest
-			newPrebid.StoredRequest = &newPrebidStoredRequest
-		}
-		if e.prebid.StoredAuctionResponse != nil {
-			newPrebidStoredResponse := *e.prebid.StoredAuctionResponse
-			newPrebid.StoredAuctionResponse = &newPrebidStoredResponse
-		}
+		clonedPrebid := *e.prebid
+		clonedPrebid.StoredRequest = ptrutil.Clone(e.prebid.StoredRequest)
+		clonedPrebid.StoredAuctionResponse = ptrutil.Clone(e.prebid.StoredAuctionResponse)
 		if e.prebid.StoredBidResponse != nil {
-			newPrebidStoredBidResponse := make([]ExtStoredBidResponse, len(e.prebid.StoredBidResponse))
+			clonedPrebid.StoredBidResponse = make([]ExtStoredBidResponse, len(e.prebid.StoredBidResponse))
 			for i, sbr := range e.prebid.StoredBidResponse {
-				newPrebidStoredBidResponse[i] = sbr
-				newPrebidStoredBidResponse[i].ReplaceImpId = ptrutil.Clone(sbr.ReplaceImpId)
+				clonedPrebid.StoredBidResponse[i] = sbr
+				clonedPrebid.StoredBidResponse[i].ReplaceImpId = ptrutil.Clone(sbr.ReplaceImpId)
 			}
-			newPrebid.StoredBidResponse = newPrebidStoredBidResponse
 		}
-		newPrebid.IsRewardedInventory = ptrutil.Clone(e.prebid.IsRewardedInventory)
-		newPrebid.Bidder = maputil.Clone(e.prebid.Bidder)
-		if e.prebid.Options != nil {
-			newOptions := *e.prebid.Options
-			newPrebid.Options = &newOptions
-		}
-		clone.prebid = &newPrebid
+		clonedPrebid.IsRewardedInventory = ptrutil.Clone(e.prebid.IsRewardedInventory)
+		clonedPrebid.Bidder = maputil.Clone(e.prebid.Bidder)
+		clonedPrebid.Options = ptrutil.Clone(e.prebid.Options)
+		clone.prebid = &clonedPrebid
 	}
 
 	return &clone

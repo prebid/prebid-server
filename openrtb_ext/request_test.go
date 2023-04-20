@@ -149,12 +149,13 @@ func TestCloneExtRequestPrebid(t *testing.T) {
 		prebid     *ExtRequestPrebid
 		prebidCopy *ExtRequestPrebid                            // manual copy of above prebid object to verify against
 		mutator    func(t *testing.T, prebid *ExtRequestPrebid) // function to modify the prebid object
-	}{{
-		name:       "Nil", // Verify the nil case
-		prebid:     nil,
-		prebidCopy: nil,
-		mutator:    func(t *testing.T, prebid *ExtRequestPrebid) {},
-	},
+	}{
+		{
+			name:       "Nil", // Verify the nil case
+			prebid:     nil,
+			prebidCopy: nil,
+			mutator:    func(t *testing.T, prebid *ExtRequestPrebid) {},
+		},
 		{
 			name: "NoMutateTest",
 			prebid: &ExtRequestPrebid{
@@ -540,11 +541,101 @@ func TestCloneExtRequestPrebid(t *testing.T) {
 				prebid.AlternateBidderCodes = nil
 			},
 		},
+		{
+			name: "Floors",
+			prebid: &ExtRequestPrebid{
+				Floors: &PriceFloorRules{
+					FloorMin:    0.25,
+					FloorMinCur: "EUR",
+					Location: &PriceFloorEndpoint{
+						URL: "http://www.example.com",
+					},
+					Data: &PriceFloorData{
+						Currency: "USD",
+						SkipRate: 3,
+						ModelGroups: []PriceFloorModelGroup{
+							{
+								Currency:    "USD",
+								ModelWeight: ptrutil.ToPtr(0),
+								SkipRate:    2,
+								Schema: PriceFloorSchema{
+									Fields:    []string{"A", "B"},
+									Delimiter: "^",
+								},
+								Values: map[string]float64{"A": 2, "B": 1},
+							},
+						},
+					},
+					Enforcement: &PriceFloorEnforcement{
+						EnforceJS:   ptrutil.ToPtr(true),
+						FloorDeals:  ptrutil.ToPtr(false),
+						EnforceRate: 5,
+					},
+					Enabled:       ptrutil.ToPtr(true),
+					FloorProvider: "Someone",
+				},
+			},
+			prebidCopy: &ExtRequestPrebid{
+				Floors: &PriceFloorRules{
+					FloorMin:    0.25,
+					FloorMinCur: "EUR",
+					Location: &PriceFloorEndpoint{
+						URL: "http://www.example.com",
+					},
+					Data: &PriceFloorData{
+						Currency: "USD",
+						SkipRate: 3,
+						ModelGroups: []PriceFloorModelGroup{
+							{
+								Currency:    "USD",
+								ModelWeight: ptrutil.ToPtr(0),
+								SkipRate:    2,
+								Schema: PriceFloorSchema{
+									Fields:    []string{"A", "B"},
+									Delimiter: "^",
+								},
+								Values: map[string]float64{"A": 2, "B": 1},
+							},
+						},
+					},
+					Enforcement: &PriceFloorEnforcement{
+						EnforceJS:   ptrutil.ToPtr(true),
+						FloorDeals:  ptrutil.ToPtr(false),
+						EnforceRate: 5,
+					},
+					Enabled:       ptrutil.ToPtr(true),
+					FloorProvider: "Someone",
+				},
+			},
+			mutator: func(t *testing.T, prebid *ExtRequestPrebid) {
+				prebid.Floors.Data.ModelGroups[0].Schema.Fields[1] = "C"
+				prebid.Floors.Data.ModelGroups[0].Schema.Fields = append(prebid.Floors.Data.ModelGroups[0].Schema.Fields, "D")
+				prebid.Floors.Data.ModelGroups[0].Schema.Delimiter = ","
+				prebid.Floors.Data.ModelGroups[0].Currency = "CRO"
+				prebid.Floors.Data.ModelGroups[0].ModelWeight = ptrutil.ToPtr(8)
+				prebid.Floors.Data.ModelGroups[0].Values["A"] = 0
+				prebid.Floors.Data.ModelGroups[0].Values["C"] = 7
+				prebid.Floors.Data.ModelGroups = append(prebid.Floors.Data.ModelGroups, PriceFloorModelGroup{})
+				prebid.Floors.FloorMin = 0.3
+				prebid.Floors.FetchStatus = "arf"
+				prebid.Floors.Location.URL = "www.nothere.com"
+				prebid.Floors.Location = nil
+				prebid.Floors.Enabled = nil
+				prebid.Floors.Skipped = ptrutil.ToPtr(true)
+				prebid.Floors.Enforcement.BidAdjustment = ptrutil.ToPtr(true)
+				prebid.Floors.Enforcement.EnforceJS = ptrutil.ToPtr(false)
+				prebid.Floors.Enforcement.FloorDeals = nil
+				prebid.Floors.FloorProvider = ""
+			},
+		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			clone := test.prebid.Clone()
+			if test.prebid != nil {
+				assert.NotSame(t, test.prebid, clone)
+			}
 			test.mutator(t, test.prebid)
 			assert.Equal(t, test.prebidCopy, clone)
 		})

@@ -329,9 +329,9 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 	clone.BidAdjustmentFactors = maputil.Clone(erp.BidAdjustmentFactors)
 
 	if erp.BidderConfigs != nil {
-		newBidderConfigs := make([]BidderConfig, len(erp.BidderConfigs))
+		clone.BidderConfigs = make([]BidderConfig, len(erp.BidderConfigs))
 		for i, bc := range erp.BidderConfigs {
-			newBidderConfig := BidderConfig{Bidders: sliceutil.Clone(bc.Bidders)}
+			clonedBidderConfig := BidderConfig{Bidders: sliceutil.Clone(bc.Bidders)}
 			if bc.Config != nil {
 				config := &Config{}
 				if bc.Config.ORTB2 != nil {
@@ -341,11 +341,10 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 						User: maputil.Clone(bc.Config.ORTB2.User),
 					}
 				}
-				newBidderConfig.Config = config
+				clonedBidderConfig.Config = config
 			}
-			newBidderConfigs[i] = newBidderConfig
+			clone.BidderConfigs[i] = clonedBidderConfig
 		}
-		clone.BidderConfigs = newBidderConfigs
 	}
 
 	if erp.Cache != nil {
@@ -383,13 +382,12 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 	if erp.Data != nil {
 		clone.Data = &ExtRequestPrebidData{Bidders: sliceutil.Clone(erp.Data.Bidders)}
 		if erp.Data.EidPermissions != nil {
-			newEidPermissions := make([]ExtRequestPrebidDataEidPermission, 0, len(erp.Data.EidPermissions))
-			for _, eidp := range erp.Data.EidPermissions {
-				newEIDP := &ExtRequestPrebidDataEidPermission{
+			newEidPermissions := make([]ExtRequestPrebidDataEidPermission, len(erp.Data.EidPermissions))
+			for i, eidp := range erp.Data.EidPermissions {
+				newEidPermissions[i] = ExtRequestPrebidDataEidPermission{
 					Source:  eidp.Source,
 					Bidders: sliceutil.Clone(eidp.Bidders),
 				}
-				newEidPermissions = append(newEidPermissions, *newEIDP)
 			}
 			clone.Data.EidPermissions = newEidPermissions
 		}
@@ -403,8 +401,8 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 	}
 
 	if erp.MultiBid != nil {
-		newMultiBid := make([]*ExtMultiBid, 0, len(erp.MultiBid))
-		for _, mulBid := range erp.MultiBid {
+		clone.MultiBid = make([]*ExtMultiBid, len(erp.MultiBid))
+		for i, mulBid := range erp.MultiBid {
 			newMulBid := &ExtMultiBid{
 				Bidder:                 mulBid.Bidder,
 				Bidders:                sliceutil.Clone(mulBid.Bidders),
@@ -413,13 +411,12 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 			if mulBid.MaxBids != nil {
 				newMulBid.MaxBids = ptrutil.ToPtr(*mulBid.MaxBids)
 			}
-			newMultiBid = append(newMultiBid, newMulBid)
+			clone.MultiBid[i] = newMulBid
 		}
-		clone.MultiBid = newMultiBid
 	}
 
 	if erp.SChains != nil {
-		newSChains := make([]*ExtRequestPrebidSChain, len(erp.SChains))
+		clone.SChains = make([]*ExtRequestPrebidSChain, len(erp.SChains))
 		for i, schain := range erp.SChains {
 			newChain := *schain
 			newNodes := sliceutil.Clone(schain.SChain.Nodes)
@@ -429,9 +426,8 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 				}
 			}
 			newChain.SChain.Nodes = newNodes
-			newSChains[i] = &newChain
+			clone.SChains[i] = &newChain
 		}
-		clone.SChains = newSChains
 	}
 
 	clone.Server = ptrutil.Clone(erp.Server)
@@ -477,6 +473,36 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 			newAlternateBidderCodes.Bidders = newBidders
 		}
 		clone.AlternateBidderCodes = &newAlternateBidderCodes
+	}
+
+	if erp.Floors != nil {
+		clonedFloors := *erp.Floors
+		clonedFloors.Location = ptrutil.Clone(erp.Floors.Location)
+		if erp.Floors.Data != nil {
+			clonedData := *erp.Floors.Data
+			if erp.Floors.Data.ModelGroups != nil {
+				clonedData.ModelGroups = make([]PriceFloorModelGroup, len(erp.Floors.Data.ModelGroups))
+				for i, pfmg := range erp.Floors.Data.ModelGroups {
+					clonedData.ModelGroups[i] = pfmg
+					clonedData.ModelGroups[i].ModelWeight = ptrutil.Clone(pfmg.ModelWeight)
+					clonedData.ModelGroups[i].Schema.Fields = sliceutil.Clone(pfmg.Schema.Fields)
+					clonedData.ModelGroups[i].Values = maputil.Clone(pfmg.Values)
+				}
+			}
+			clonedFloors.Data = &clonedData
+		}
+		if erp.Floors.Enforcement != nil {
+			clonedFloors.Enforcement = &PriceFloorEnforcement{
+				EnforceJS:     ptrutil.Clone(erp.Floors.Enforcement.EnforceJS),
+				EnforcePBS:    ptrutil.Clone(erp.Floors.Enforcement.EnforcePBS),
+				FloorDeals:    ptrutil.Clone(erp.Floors.Enforcement.FloorDeals),
+				BidAdjustment: ptrutil.Clone(erp.Floors.Enforcement.BidAdjustment),
+				EnforceRate:   erp.Floors.Enforcement.EnforceRate,
+			}
+		}
+		clonedFloors.Enabled = ptrutil.Clone(erp.Floors.Enabled)
+		clonedFloors.Skipped = ptrutil.Clone(erp.Floors.Skipped)
+		clone.Floors = &clonedFloors
 	}
 
 	return &clone
