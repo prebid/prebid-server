@@ -92,8 +92,7 @@ func CloneDataSlice(s []openrtb2.Data) []openrtb2.Data {
 }
 
 func CloneData(s openrtb2.Data) openrtb2.Data {
-	// Shallow Copy (Value Fields)
-	// - Already copied from argument pass by value.
+	// Shallow Copy (Value Fields) Occurred By Passing Argument By Value
 
 	// Deep Copy (Pointers)
 	s.Segment = CloneSegmentSlice(s.Segment)
@@ -116,8 +115,7 @@ func CloneSegmentSlice(s []openrtb2.Segment) []openrtb2.Segment {
 }
 
 func CloneSegment(s openrtb2.Segment) openrtb2.Segment {
-	// Shallow Copy (Value Fields)
-	// - Already copied from argument pass by value.
+	// Shallow Copy (Value Fields) Occurred By Passing Argument By Value
 
 	// Deep Copy (Pointers)
 	s.Ext = sliceutil.Clone(s.Ext)
@@ -219,8 +217,7 @@ func CloneEIDSlice(s []openrtb2.EID) []openrtb2.EID {
 }
 
 func CloneEID(s openrtb2.EID) openrtb2.EID {
-	// Shallow Copy (Value Fields)
-	// - Already copied from argument pass by value.
+	// Shallow Copy (Value Fields) Occurred By Passing Argument By Value
 
 	// Deep Copy (Pointers)
 	s.UIDs = CloneUIDSlice(s.UIDs)
@@ -243,8 +240,7 @@ func CloneUIDSlice(s []openrtb2.UID) []openrtb2.UID {
 }
 
 func CloneUID(s openrtb2.UID) openrtb2.UID {
-	// Shallow Copy (Value Fields)
-	// - Already copied from argument pass by value.
+	// Shallow Copy (Value Fields) Occurred By Passing Argument By Value
 
 	// Deep Copy (Pointers)
 	s.Ext = sliceutil.Clone(s.Ext)
