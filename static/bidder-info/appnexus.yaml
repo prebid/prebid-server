@@ -18,4 +18,4 @@ userSync:
   key: "adnxs"
   redirect:
     url: "https://ib.adnxs.com/getuid?{{.RedirectURL}}"
-    userMacro: "$UID"
+    userMacro: "$uid"
