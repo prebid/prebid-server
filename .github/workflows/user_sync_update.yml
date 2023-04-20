@@ -26,7 +26,6 @@ jobs:
               url_changed=$(git diff ${{ github.event.before }} ${{ github.event.after }} -- $file | grep -q '^\+ *url:' && echo true || echo false)
               if [ "$url_changed" = "true" ]; then
                 echo "URL is updated"
-                break
               fi
             done
           fi
