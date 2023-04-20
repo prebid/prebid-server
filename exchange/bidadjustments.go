@@ -9,43 +9,41 @@ import (
 
 const roundTo float64 = 10000 // Rounds to 4 Decimal Places
 
-func applyAdjustmentArray(adjArray []openrtb_ext.Adjustments, bidPrice float64, currency string, reqInfo *adapters.ExtraRequestInfo) float64 {
+func applyAdjustmentArray(adjArray []openrtb_ext.Adjustments, bidPrice float64, currency string, reqInfo *adapters.ExtraRequestInfo) (float64, string) {
 	if adjArray == nil {
-		return bidPrice
+		return bidPrice, currency
 	}
 	originalBidPrice := bidPrice
+	originalCurrency := currency
 
 	for _, adjustment := range adjArray {
 		if adjustment.AdjType == openrtb_ext.AdjTypeMultiplier {
 			bidPrice = bidPrice * adjustment.Value
 		} else if adjustment.AdjType == openrtb_ext.AdjTypeCpm {
-			convertedVal, err := reqInfo.ConvertCurrency(adjustment.Value, currency, adjustment.Currency)
+			convertedVal, err := reqInfo.ConvertCurrency(adjustment.Value, adjustment.Currency, currency) // Convert Adjustment to Bid Currency
 			if err != nil {
-				return originalBidPrice
+				return originalBidPrice, currency
 			}
 			bidPrice = bidPrice - convertedVal
 		} else if adjustment.AdjType == openrtb_ext.AdjTypeStatic {
-			convertedVal, err := reqInfo.ConvertCurrency(adjustment.Value, currency, adjustment.Currency)
-			if err != nil {
-				return originalBidPrice
-			}
-			bidPrice = convertedVal
+			bidPrice = adjustment.Value
+			currency = adjustment.Currency
 		}
 	}
 	roundedBidPrice := math.Round(bidPrice*roundTo) / roundTo // Returns Bid Price rounded to 4 decimal places
 
 	if roundedBidPrice <= 0 {
-		return originalBidPrice
+		return originalBidPrice, originalCurrency
 	}
-	return roundedBidPrice
+	return roundedBidPrice, currency
 }
 
-func getAndApplyAdjustmentArray(bidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments, bidInfo *adapters.TypedBid, bidderName openrtb_ext.BidderName, currency string, reqInfo *adapters.ExtraRequestInfo) float64 {
+func getAndApplyAdjustmentArray(bidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments, bidInfo *adapters.TypedBid, bidderName openrtb_ext.BidderName, currency string, reqInfo *adapters.ExtraRequestInfo) (float64, string) {
 	adjArray := []openrtb_ext.Adjustments{}
 	if bidAdjustments != nil {
 		adjArray = bidAdjustments.GetAdjustmentArray(bidInfo.BidType, bidderName, bidInfo.Bid.DealID)
 	} else {
-		return bidInfo.Bid.Price
+		return bidInfo.Bid.Price, currency
 	}
 	return applyAdjustmentArray(adjArray, bidInfo.Bid.Price, currency, reqInfo)
 }

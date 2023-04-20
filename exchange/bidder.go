@@ -332,10 +332,11 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 						}
 
 						originalBidCpm := 0.0
+						currencyAfterAdjustments := ""
 						if bidResponse.Bids[i].Bid != nil {
 							originalBidCpm = bidResponse.Bids[i].Bid.Price
 							bidResponse.Bids[i].Bid.Price = bidResponse.Bids[i].Bid.Price * adjustmentFactor * conversionRate
-							bidResponse.Bids[i].Bid.Price = getAndApplyAdjustmentArray(bidAdjustments, bidResponse.Bids[i], bidderRequest.BidderName, bidResponse.Currency, reqInfo)
+							bidResponse.Bids[i].Bid.Price, currencyAfterAdjustments = getAndApplyAdjustmentArray(bidAdjustments, bidResponse.Bids[i], bidderRequest.BidderName, seatBidMap[bidderRequest.BidderName].Currency, reqInfo)
 						}
 
 						if _, ok := seatBidMap[bidderName]; !ok {
@@ -358,6 +359,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 							OriginalBidCPM: originalBidCpm,
 							OriginalBidCur: bidResponse.Currency,
 						})
+						seatBidMap[bidderName].Currency = currencyAfterAdjustments
 					}
 				} else {
 					// If no conversions found, do not handle the bid

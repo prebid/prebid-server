@@ -50,7 +50,7 @@
                           "some-deal-id": [
                               {
                                   "adjtype": "static",
-                                  "value": 5.0,
+                                  "value": 10.0,
                                   "currency": "EUR"
                               }
                           ]
@@ -77,7 +77,7 @@
             {
               "id": "appnexus-bid",
               "impid": "some-impression-id",
-              "price": 2.5,
+              "price": 10.0,
               "ext": {"origbidcpm": 2, "origbidcur": "USD", "prebid": {"meta": {"adaptercode": "appnexus"}, "type": "banner"}}
             }
           ],
@@ -85,7 +85,7 @@
         }
       ],
       "bidid":"test bid id",
-      "cur":"USD",
+      "cur":"EUR",
       "nbr":0
   },
   "expectedReturnCode": 200

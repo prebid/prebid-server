@@ -13,8 +13,8 @@ import (
 
 func TestApplyAdjustmentArray(t *testing.T) {
 	var (
-		givenFrom string = "EUR"
-		givenTo   string = "USA"
+		adjCur string = "EUR"
+		bidCur string = "USA"
 	)
 
 	testCases := []struct {
@@ -23,60 +23,70 @@ func TestApplyAdjustmentArray(t *testing.T) {
 		setMock          func(m *mock.Mock)
 		givenBidPrice    float64
 		expectedBidPrice float64
+		expectedCurrency string
 	}{
 		{
 			name:             "CPM adj type, value after currency conversion should be subtracted from given bid price. Price should round to 4 decimal places",
-			givenAdjustments: []openrtb_ext.Adjustments{{AdjType: openrtb_ext.AdjTypeCpm, Value: 1.0, Currency: givenTo}},
+			givenAdjustments: []openrtb_ext.Adjustments{{AdjType: openrtb_ext.AdjTypeCpm, Value: 1.0, Currency: adjCur}},
 			givenBidPrice:    10.58687,
-			setMock:          func(m *mock.Mock) { m.On("GetRate", "EUR", "USA").Return(2.5, nil) },
+			setMock:          func(m *mock.Mock) { m.On("GetRate", adjCur, bidCur).Return(2.5, nil) },
 			expectedBidPrice: 8.0869,
+			expectedCurrency: bidCur,
 		},
 		{
-			name:             "Static adj type, value after currency conversion should be the bid price",
-			givenAdjustments: []openrtb_ext.Adjustments{{AdjType: openrtb_ext.AdjTypeStatic, Value: 4.0, Currency: givenTo}},
+			name:             "Static adj type, that static value should be the bid price, currency should be updated as well",
+			givenAdjustments: []openrtb_ext.Adjustments{{AdjType: openrtb_ext.AdjTypeStatic, Value: 4.0, Currency: adjCur}},
 			givenBidPrice:    10.0,
-			setMock:          func(m *mock.Mock) { m.On("GetRate", "EUR", "USA").Return(5.0, nil) },
-			expectedBidPrice: 20.0,
+			setMock:          nil,
+			expectedBidPrice: 4.0,
+			expectedCurrency: adjCur,
 		},
 		{
 			name:             "Multiplier adj type with no currency conversion",
 			givenAdjustments: []openrtb_ext.Adjustments{{AdjType: openrtb_ext.AdjTypeMultiplier, Value: 3.0}},
 			givenBidPrice:    10.0,
+			setMock:          nil,
 			expectedBidPrice: 30.0,
+			expectedCurrency: bidCur,
 		},
 		{
 			name:             "Bid price after conversions is equal or less than 0, should return original bid price instead",
 			givenAdjustments: []openrtb_ext.Adjustments{{AdjType: openrtb_ext.AdjTypeMultiplier, Value: -1.0}},
 			givenBidPrice:    10.0,
+			setMock:          nil,
 			expectedBidPrice: 10.0,
+			expectedCurrency: bidCur,
 		},
 		{
 			name:             "Nil adjustment array",
 			givenAdjustments: nil,
 			givenBidPrice:    10.0,
+			setMock:          nil,
 			expectedBidPrice: 10.0,
+			expectedCurrency: bidCur,
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			reqInfo := adapters.ExtraRequestInfo{}
-			if test.givenAdjustments != nil && test.givenAdjustments[0].Currency != "" {
+			if test.setMock != nil {
 				mockConversions := &mockConversions{}
 				test.setMock(&mockConversions.Mock)
 				reqInfo = adapters.NewExtraRequestInfo(mockConversions)
 			}
 
-			bidPrice := applyAdjustmentArray(test.givenAdjustments, test.givenBidPrice, givenFrom, &reqInfo)
+			bidPrice, currencyAfterAdjustment := applyAdjustmentArray(test.givenAdjustments, test.givenBidPrice, bidCur, &reqInfo)
 			assert.Equal(t, test.expectedBidPrice, bidPrice, "Incorrect bid prices")
+			assert.Equal(t, test.expectedCurrency, currencyAfterAdjustment, "Incorrect currency")
 		})
 	}
 }
 
 func TestGetAndApplyAdjustmentArray(t *testing.T) {
 	var (
-		givenFrom string = "EUR"
-		givenTo   string = "USA"
+		adjCur string = "EUR"
+		bidCur string = "USA"
 	)
 
 	testCases := []struct {
@@ -86,6 +96,7 @@ func TestGetAndApplyAdjustmentArray(t *testing.T) {
 		givenBidInfo        *adapters.TypedBid
 		setMock             func(m *mock.Mock)
 		expectedBidPrice    float64
+		expectedCurrency    string
 	}{
 		{
 			name: "Valid Bid Adjustments, CPM adj type, function should Get and Apply the adjustment properly",
@@ -100,14 +111,38 @@ func TestGetAndApplyAdjustmentArray(t *testing.T) {
 				MediaType: openrtb_ext.MediaType{
 					Banner: map[string]map[string][]openrtb_ext.Adjustments{
 						"bidderA": {
-							"dealId": []openrtb_ext.Adjustments{{AdjType: openrtb_ext.AdjTypeCpm, Value: 1.0, Currency: givenTo}},
+							"dealId": []openrtb_ext.Adjustments{{AdjType: openrtb_ext.AdjTypeCpm, Value: 1.0, Currency: adjCur}},
 						},
 					},
 				},
 			},
 			givenBidderName:  "bidderA",
-			setMock:          func(m *mock.Mock) { m.On("GetRate", "EUR", "USA").Return(2.5, nil) },
+			setMock:          func(m *mock.Mock) { m.On("GetRate", adjCur, bidCur).Return(2.5, nil) },
 			expectedBidPrice: 7.5,
+			expectedCurrency: bidCur,
+		},
+		{
+			name: "Valid Bid Adjustments, static adj type, function should Get and Apply the adjustment properly",
+			givenBidInfo: &adapters.TypedBid{
+				Bid: &openrtb2.Bid{
+					Price:  10.0,
+					DealID: "dealId",
+				},
+				BidType: openrtb_ext.BidTypeBanner,
+			},
+			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+				MediaType: openrtb_ext.MediaType{
+					Banner: map[string]map[string][]openrtb_ext.Adjustments{
+						"bidderA": {
+							"dealId": []openrtb_ext.Adjustments{{AdjType: openrtb_ext.AdjTypeStatic, Value: 5.0, Currency: adjCur}},
+						},
+					},
+				},
+			},
+			givenBidderName:  "bidderA",
+			setMock:          nil,
+			expectedBidPrice: 5.0,
+			expectedCurrency: adjCur,
 		},
 		{
 			name: "Nil adjustment array, expect no change to the bid price",
@@ -119,20 +154,22 @@ func TestGetAndApplyAdjustmentArray(t *testing.T) {
 			},
 			givenBidAdjustments: nil,
 			expectedBidPrice:    10.0,
+			expectedCurrency:    bidCur,
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			reqInfo := adapters.ExtraRequestInfo{}
-			if test.givenBidAdjustments != nil {
+			if test.setMock != nil {
 				mockConversions := &mockConversions{}
 				test.setMock(&mockConversions.Mock)
 				reqInfo = adapters.NewExtraRequestInfo(mockConversions)
 			}
 
-			bidPrice := getAndApplyAdjustmentArray(test.givenBidAdjustments, test.givenBidInfo, test.givenBidderName, givenFrom, &reqInfo)
+			bidPrice, currencyAfterAdjustment := getAndApplyAdjustmentArray(test.givenBidAdjustments, test.givenBidInfo, test.givenBidderName, bidCur, &reqInfo)
 			assert.Equal(t, test.expectedBidPrice, bidPrice, "Incorrect bid prices")
+			assert.Equal(t, test.expectedCurrency, currencyAfterAdjustment, "Incorrect currency")
 		})
 	}
 }
