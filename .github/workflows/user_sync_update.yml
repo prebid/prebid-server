@@ -26,7 +26,7 @@ jobs:
           
             # Check if the URL in each updated YAML file is updated
             for file in $updated_files; do
-              url_changed=$(git diff ${{ github.event.before }} ${{ github.event.after }} -- $file | grep -q '^\+url:' && echo true || echo false)
+              url_changed=$(git diff ${{ github.event.before }} ${{ github.event.after }} -- $file | grep -q '^[+ ]*url:' && echo true || echo false)
               echo "Is URL changed: $url_changed"
               if [ "$url_changed" = "true" ]; then
                 echo "URL is updated"
