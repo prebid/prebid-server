@@ -1,9 +1,10 @@
 {
     "mockBidRequest": {
       "id": "4d3f84eb-787b-42fb-a0cf-062690dadce3",
+      "test": 0,
       "imp": [
         {
-          "id": "div-gpt-ad-1460505748561-0",
+          "id": "div-gpt-ad-1460505748561-2",
           "banner": {
               "format" : [{
                     "w": 300,
@@ -16,7 +17,7 @@
            "bidder": {
               "pid": "OsNsyeF68q",
               "supplyType": "site",
-              "test": false
+              "test": true
             }
           }
         }
@@ -40,13 +41,19 @@
       {
         "expectedRequest": {
           "uri": "http://ortb.richaudience.com/ortb/?bidder=pbs",
+          "headers": {
+            "Content-Type": ["application/json;charset=utf-8"],
+            "Accept": ["application/json"],
+            "X-Openrtb-Version": ["2.5"]
+          },
           "body": {
             "id": "4d3f84eb-787b-42fb-a0cf-062690dadce3",
+            "test": 1,
             "imp": [
               {
-                "id": "div-gpt-ad-1460505748561-0",
-                "secure": 1,
+                "id": "div-gpt-ad-1460505748561-2",
                 "tagid" : "OsNsyeF68q",
+                "secure": 1,
                 "banner": {
                     "format" : [{
                           "w": 300,
@@ -59,7 +66,7 @@
                   "bidder": {
                     "pid": "OsNsyeF68q",
                     "supplyType": "site",
-                   "test": false
+                   "test": true
                   }
                 }
               }
@@ -82,14 +89,44 @@
           }
         },
         "mockResponse": {
-          "status": 502
+          "status": 200,
+          "body": {
+            "id": "ff935bea-4661-40bf-95b7-80c354cf0cdc",
+            "seatbid": [{
+                "bid": [{
+                    "id": "47286888",
+                    "impid": "div-gpt-ad-1460505748561-0",
+                    "price": 99,
+                    "crid": "999999",
+                    "adm": "<!-- creative -->",
+                    "adomain": ["richaudience.com"],
+                    "h": 250,
+                    "w": 300
+                }]
+            }]
+          }
         }
       }
     ],
-    "expectedMakeBidsErrors": [
+  
+    "expectedBidResponses": [
       {
-        "value": "Unexpected status code: 502. Run with request.debug = 1 for more info.",
-        "comparison": "literal"
+        "currency": "USD",
+        "bids": [
+          {
+            "bid": {
+              "id": "47286888",
+              "impid": "div-gpt-ad-1460505748561-0",
+              "price": 99,
+              "adm": "<!-- creative -->",
+              "adomain": ["richaudience.com"],
+              "crid": "999999",
+              "w": 300,
+              "h": 250
+            },
+            "type": "no bidtype assigned"
+          }
+        ]
       }
     ]
   }

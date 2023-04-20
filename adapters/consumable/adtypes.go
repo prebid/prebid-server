@@ -3,7 +3,7 @@ package consumable
 import (
 	"strconv"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 )
 
 /* Turn array of openrtb formats into consumable's code*/

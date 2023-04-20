@@ -5,8 +5,7 @@
       "imp": [
         {
           "id": "div-gpt-ad-1460505748561-0",
-          "banner": {
-              "format" : []
+          "video": {
           },
           "bidfloor": 1e-05,
           "bidfloorcur": "USD",
@@ -35,7 +34,7 @@
     },
     
     "expectedMakeRequestsErrors": [{
-        "value": "request.Banner.Format is required",
+        "value": "request.Video.Sizes is required",
         "comparison": "literal"
       }]
   }
