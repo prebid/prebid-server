@@ -17,5 +17,5 @@ capabilities:
 userSync:
   key: "adnxs"
   redirect:
-    url: "https://ib.adnxs.com/getuid?{{.RedirectURL}}"
+    url: "https://ib.adnxs.com/getuid"
     userMacro: "$uid"
