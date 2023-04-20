@@ -3,7 +3,7 @@ name: Bidder Info Update
 on:
   push:
     paths:
-      - 'static/bidder-info/**.yaml'
+      - 'static/bidder-info/**/*.yaml'
 
 jobs:
   build:
@@ -30,8 +30,3 @@ jobs:
               fi
             done
           fi
-
-      - name: Build and deploy
-        if: steps.check-bidder-info-updated.outputs.url-updated == 'true'
-        run: |
-          # Your build and deploy commands go here
