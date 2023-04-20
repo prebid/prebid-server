@@ -265,6 +265,7 @@ const (
 	BidderYieldmo           BidderName = "yieldmo"
 	BidderYieldone          BidderName = "yieldone"
 	BidderZeroClickFraud    BidderName = "zeroclickfraud"
+	BidderZetaGlobalSsp     BidderName = "zeta_global_ssp"
 )
 
 // CoreBidderNames returns a slice of all core bidders.
@@ -449,6 +450,7 @@ func CoreBidderNames() []BidderName {
 		BidderYieldmo,
 		BidderYieldone,
 		BidderZeroClickFraud,
+		BidderZetaGlobalSsp,
 	}
 }
 
