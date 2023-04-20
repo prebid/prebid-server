@@ -24,8 +24,9 @@ jobs:
           
             for file in $updated_files; do
               url_changed=$(git diff ${{ github.event.before }} ${{ github.event.after }} -- $file | grep -q '^\+ *url:' && echo true || echo false)
-              if [ "$url_changed" = "true" ]; then
-                echo "URL is updated"
+              macro_changed=$(git diff ${{ github.event.before }} ${{ github.event.after }} -- $file | grep -q '^\+ *userMacro:' && echo true || echo false)
+              if [ "$url_changed" = "true" ] || [ "$macro_changed" = "true" ]; then
+                echo "URL/UserMacro is updated"
               fi
             done
           fi
