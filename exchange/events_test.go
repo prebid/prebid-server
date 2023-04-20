@@ -174,6 +174,11 @@ func Test_isEventAllowed(t *testing.T) {
 			args: args{enabledForAccount: false, enabledForRequest: true},
 			want: true,
 		},
+		{
+			name: "disabled for account and request",
+			args: args{enabledForAccount: false, enabledForRequest: false},
+			want: false,
+		},
 	}
 
 	for _, tt := range tests {

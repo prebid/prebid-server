@@ -68,7 +68,7 @@ type Events struct {
 
 // validate verifies the events object  and returns error if at least one is invalid.
 func (e Events) validate(errs []error) []error {
-	if e.Enabled != nil && *e.Enabled {
+	if e.IsEnabled() {
 		if !isValidURL(e.DefaultURL) {
 			return append(errs, errors.New("Invalid events.default_url"))
 		}
@@ -146,4 +146,9 @@ func isValidURL(eventURL string) bool {
 // isTrackingEvent returns true if event object contains event.CreateElement == "tracking"
 func (e VASTEvent) isTrackingEvent() bool {
 	return e.CreateElement == TrackingVASTElement
+}
+
+// IsEnabled function returns the value of events.enabled field
+func (e Events) IsEnabled() bool {
+	return e.Enabled != nil && *e.Enabled
 }

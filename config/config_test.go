@@ -3198,73 +3198,45 @@ func TestTCF2FeatureOneVendorException(t *testing.T) {
 	}
 }
 
-func TestIsAccountEventEnabled(t *testing.T) {
-	tests := []struct {
-		name                    string
-		deprecatedEventsEnabled *bool
-		eventsEnabled           *bool
-		expectedIsEventEnabled  bool
+func TestMigrateConfigEventsEnabled(t *testing.T) {
+	testCases := []struct {
+		name                  string
+		oldFieldValue         *bool
+		newFieldValue         *bool
+		expectedOldFieldValue *bool
 	}{
 		{
-			name:                    "deprecated events disabled, events.enabled false",
-			deprecatedEventsEnabled: ptrutil.ToPtr(false),
-			eventsEnabled:           ptrutil.ToPtr(false),
-			expectedIsEventEnabled:  false,
+			name:                  "Both old and new fields are nil",
+			oldFieldValue:         nil,
+			newFieldValue:         nil,
+			expectedOldFieldValue: nil,
 		},
 		{
-			name:                    "deprecated events disabled, events.enabled true",
-			deprecatedEventsEnabled: ptrutil.ToPtr(false),
-			eventsEnabled:           ptrutil.ToPtr(true),
-			expectedIsEventEnabled:  true,
+			name:                  "Only old field is set",
+			oldFieldValue:         ptrutil.ToPtr(true),
+			newFieldValue:         nil,
+			expectedOldFieldValue: ptrutil.ToPtr(true),
 		},
 		{
-			name:                    "deprecated events disabled, events.enabled not set",
-			deprecatedEventsEnabled: ptrutil.ToPtr(false),
-			eventsEnabled:           nil,
-			expectedIsEventEnabled:  false,
+			name:                  "Only new field is set",
+			oldFieldValue:         nil,
+			newFieldValue:         ptrutil.ToPtr(true),
+			expectedOldFieldValue: ptrutil.ToPtr(true),
 		},
 		{
-			name:                    "deprecated events enabled, events.enabled false (takes precedence)",
-			deprecatedEventsEnabled: ptrutil.ToPtr(true),
-			eventsEnabled:           ptrutil.ToPtr(false),
-			expectedIsEventEnabled:  false,
-		},
-		{
-			name:                    "deprecated events enabled, events.enabled true",
-			deprecatedEventsEnabled: ptrutil.ToPtr(true),
-			eventsEnabled:           ptrutil.ToPtr(true),
-			expectedIsEventEnabled:  true,
-		},
-		{
-			name:                    "deprecated events enabled, events.enabled not set",
-			deprecatedEventsEnabled: ptrutil.ToPtr(true),
-			eventsEnabled:           nil,
-			expectedIsEventEnabled:  true,
-		},
-		{
-			name:                    "deprecated events not set, events.enabled false",
-			deprecatedEventsEnabled: nil,
-			eventsEnabled:           ptrutil.ToPtr(false),
-			expectedIsEventEnabled:  false,
-		},
-		{
-			name:                    "deprecated events not set, events.enabled true",
-			deprecatedEventsEnabled: nil,
-			eventsEnabled:           ptrutil.ToPtr(true),
-			expectedIsEventEnabled:  true,
-		},
-		{
-			name:                    "deprecated events not set, events.enabled not set",
-			deprecatedEventsEnabled: nil,
-			eventsEnabled:           nil,
-			expectedIsEventEnabled:  false,
+			name:                  "Both old and new fields are set, override old field with new field value",
+			oldFieldValue:         ptrutil.ToPtr(false),
+			newFieldValue:         ptrutil.ToPtr(true),
+			expectedOldFieldValue: ptrutil.ToPtr(true),
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			actualIsEventEnabled := IsAccountEventEnabled(test.deprecatedEventsEnabled, test.eventsEnabled)
-			assert.Equal(t, test.expectedIsEventEnabled, actualIsEventEnabled)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			updatedOldFieldValue, updatedNewFieldValue := migrateConfigEventsEnabled(tc.oldFieldValue, tc.newFieldValue)
+
+			assert.Equal(t, tc.expectedOldFieldValue, updatedOldFieldValue)
+			assert.Nil(t, updatedNewFieldValue)
 		})
 	}
 }

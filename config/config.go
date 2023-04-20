@@ -17,6 +17,7 @@ import (
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/ptrutil"
 )
 
 // Configuration specifies the static application config.
@@ -141,6 +142,10 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 
 	if cfg.PriceFloors.Enabled {
 		glog.Warning(`cfg.PriceFloors.Enabled will currently not do anything as price floors feature is still under development.`)
+	}
+
+	if len(cfg.AccountDefaults.Events.VASTEvents) > 0 {
+		errs = append(errs, errors.New("account_defaults.Events.VASTEvents will currently not do anything as the feature is still under development. Please follow https://github.com/prebid/prebid-server/issues/1725 for more updates"))
 	}
 
 	errs = cfg.Experiment.validate(errs)
@@ -687,14 +692,7 @@ func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName func(strin
 	c.AccountDefaults.CacheTTL = c.CacheURL.DefaultTTLs // comment this out to set explicitly in config
 
 	// Update the deprecated and new events enabled values for account defaults.
-	// Given the current fetchers behavior where a fetched account is JSON merge patched with the host config account
-	// defaults, in order to maintain the typical PBS order of precedence of account config over host config, we do
-	// some unorthodox work here to set the resolved host config events enabled value on the deprecated field only while
-	// clearing the new field. This ensures that when the fetcher performs a JSON merge patch operation we don't lose any
-	// information needed to determine if events should be enabled.
-	accountDefaultsEventsEnabled := IsAccountEventEnabled(c.AccountDefaults.EventsEnabled, c.AccountDefaults.Events.Enabled)
-	*c.AccountDefaults.EventsEnabled = accountDefaultsEventsEnabled
-	c.AccountDefaults.Events.Enabled = nil
+	c.AccountDefaults.EventsEnabled, c.AccountDefaults.Events.Enabled = migrateConfigEventsEnabled(c.AccountDefaults.EventsEnabled, c.AccountDefaults.Events.Enabled)
 
 	if err := c.MarshalAccountDefaults(); err != nil {
 		return nil, err
@@ -1380,6 +1378,30 @@ func migrateConfigDatabaseConnection(v *viper.Viper) {
 	}
 }
 
+// migrateConfigEventsEnabled is responsible for ensuring backward compatibility of events_enabled field.
+// This function copies the value of newField "events.enabled" and set it to the oldField "events_enabled".
+// This is necessary to achieve the desired order of precedence favoring the account values over the host values given the account fetcher JSON merge mechanics.
+func migrateConfigEventsEnabled(oldFieldValue *bool, newFieldValue *bool) (updatedOldFieldValue, updatedNewFieldValue *bool) {
+	newField := "account_defaults.events.enabled"
+	oldField := "account_defaults.events_enabled"
+
+	if oldFieldValue != nil {
+		glog.Warningf("%s is deprecated and should be changed to %s", oldField, newField)
+	}
+	if newFieldValue != nil {
+		if oldFieldValue != nil {
+			glog.Warningf("using %s and ignoring deprecated %s", newField, oldField)
+		}
+	}
+
+	updatedOldFieldValue = oldFieldValue
+	if newFieldValue != nil {
+		updatedOldFieldValue = ptrutil.ToPtr(*newFieldValue)
+	}
+
+	return
+}
+
 func isConfigInfoPresent(v *viper.Viper, prefix string, fields []string) bool {
 	prefix = prefix + "."
 	for _, field := range fields {
@@ -1485,17 +1507,4 @@ func isValidCookieSize(maxCookieSize int) error {
 		return fmt.Errorf("Configured cookie size is less than allowed minimum size of %d \n", MIN_COOKIE_SIZE_BYTES)
 	}
 	return nil
-}
-
-// IsAccountEventEnabled checks whether events are enabled for an account. In some incoming requests,
-// the `account.events_enabled` field, which is deprecated, is still used. We want to use its value whenever
-// the `account.events.enabled` field is not found.
-func IsAccountEventEnabled(deprecated_events_enabled *bool, events_enabled *bool) bool {
-	if events_enabled != nil {
-		return *events_enabled
-	} else if deprecated_events_enabled != nil {
-		return *deprecated_events_enabled
-	} else {
-		return false
-	}
 }
