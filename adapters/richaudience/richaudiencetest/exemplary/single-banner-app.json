@@ -13,6 +13,7 @@
           },
           "bidfloor": 1e-05,
           "bidfloorcur": "USD",
+          "tagid": "testTag",
           "ext": {
            "bidder": {
               "pid": "OsNsyeF68q",
@@ -86,7 +87,7 @@
             ],
             "app": {
               "id": "12345678",
-              "keywords": "tagid=",
+              "keywords": "tagid=testTag",
               "name": "Richaudience TV",
               "bundle": "R12345678901011",
               "publisher": {

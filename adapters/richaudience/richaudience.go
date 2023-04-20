@@ -52,10 +52,18 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}
 
 		if request.App != nil {
+
+			appCopy := *request.App
+			request.App = &appCopy
+
 			request.App.Keywords = "tagid=" + imp.TagID
 		}
 
 		if request.Site != nil {
+
+			siteCopy := *request.Site
+			request.Site = &siteCopy
+
 			request.Site.Keywords = "tagid=" + imp.TagID
 		}
 
