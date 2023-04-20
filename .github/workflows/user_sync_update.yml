@@ -13,7 +13,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Check if any .yaml file in static/bidder-info/{any-adapter} is updated
+      - name: Check if any .yaml file is updated
         id: check-bidder-info-updated
         run: |
           # Check if any .yaml file in static/bidder-info/{any-adapter} is updated
@@ -23,6 +23,7 @@ jobs:
           
             # Check if the URL in each updated YAML file is updated
             for file in $updated_files; do
+              echo "modified file: $file"
               url_changed=$(git diff ${{ github.event.before }} ${{ github.event.after }} -- $file | grep -q '^\+url:' && echo true || echo false)
               if [ "$url_changed" = "true" ]; then
                 echo "::set-output name=url-updated::true"
