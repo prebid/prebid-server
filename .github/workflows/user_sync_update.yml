@@ -3,7 +3,7 @@ name: Bidder Info Update
 on:
   push:
     paths:
-      - 'static/bidder-info/**/*.yaml'
+      - 'static/bidder-info/**.yaml'
 
 jobs:
   build:
@@ -18,16 +18,11 @@ jobs:
       - name: Check if any .yaml file is updated
         id: check-bidder-info-updated
         run: |
-          # Check if any .yaml file in static/bidder-info/{any-adapter} is updated
           if git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep -q '^static/bidder-info/.*\.yaml$'; then
-            # Get the list of updated YAML files
             updated_files=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep '^static/bidder-info/.*\.yaml$')
-            echo "Updated YAML files: $updated_files"
           
-            # Check if the URL in each updated YAML file is updated
             for file in $updated_files; do
               url_changed=$(git diff ${{ github.event.before }} ${{ github.event.after }} -- $file | grep -q '^\+ *url:' && echo true || echo false)
-              echo "Is URL changed: $url_changed"
               if [ "$url_changed" = "true" ]; then
                 echo "URL is updated"
                 break
