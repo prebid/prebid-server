@@ -19,13 +19,13 @@ func applyAdjustmentArray(adjArray []openrtb_ext.Adjustments, bidPrice float64, 
 		if adjustment.AdjType == openrtb_ext.AdjTypeMultiplier {
 			bidPrice = bidPrice * adjustment.Value
 		} else if adjustment.AdjType == openrtb_ext.AdjTypeCpm {
-			convertedVal, err := reqInfo.ConvertCurrency(adjustment.Value, currency, *adjustment.Currency)
+			convertedVal, err := reqInfo.ConvertCurrency(adjustment.Value, currency, adjustment.Currency)
 			if err != nil {
 				return originalBidPrice
 			}
 			bidPrice = bidPrice - convertedVal
 		} else if adjustment.AdjType == openrtb_ext.AdjTypeStatic {
-			convertedVal, err := reqInfo.ConvertCurrency(adjustment.Value, currency, *adjustment.Currency)
+			convertedVal, err := reqInfo.ConvertCurrency(adjustment.Value, currency, adjustment.Currency)
 			if err != nil {
 				return originalBidPrice
 			}
