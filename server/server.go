@@ -92,8 +92,8 @@ func newAdminServer(cfg *config.Configuration, handler http.Handler) *http.Serve
 
 func newMainServer(cfg *config.Configuration, handler http.Handler) *http.Server {
 	var serverHandler = handler
-	if cfg.EnableGzip {
-		serverHandler = gziphandler.GzipHandler(handler)
+	if cfg.Compression.Response.Enabled {
+		serverHandler = getCompressionEnabledHandler(handler, cfg.Compression.Response.CType)
 	}
 
 	return &http.Server{
@@ -107,8 +107,8 @@ func newMainServer(cfg *config.Configuration, handler http.Handler) *http.Server
 
 func newSocketServer(cfg *config.Configuration, handler http.Handler) *http.Server {
 	var serverHandler = handler
-	if cfg.EnableGzip {
-		serverHandler = gziphandler.GzipHandler(handler)
+	if cfg.Compression.Response.Enabled {
+		serverHandler = getCompressionEnabledHandler(handler, cfg.Compression.Response.CType)
 	}
 
 	return &http.Server{
@@ -116,6 +116,15 @@ func newSocketServer(cfg *config.Configuration, handler http.Handler) *http.Serv
 		Handler:      serverHandler,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
+	}
+}
+
+func getCompressionEnabledHandler(h http.Handler, compressionType string) http.Handler {
+	switch compressionType {
+	case config.CompressionTypeGZIP:
+		return gziphandler.GzipHandler(h)
+	default:
+		return h
 	}
 }
 

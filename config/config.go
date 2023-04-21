@@ -21,15 +21,16 @@ import (
 
 // Configuration specifies the static application config.
 type Configuration struct {
-	ExternalURL      string     `mapstructure:"external_url"`
-	Host             string     `mapstructure:"host"`
-	Port             int        `mapstructure:"port"`
-	UnixSocketEnable bool       `mapstructure:"unix_socket_enable"`
-	UnixSocketName   string     `mapstructure:"unix_socket_name"`
-	Client           HTTPClient `mapstructure:"http_client"`
-	CacheClient      HTTPClient `mapstructure:"http_client_cache"`
-	AdminPort        int        `mapstructure:"admin_port"`
-	EnableGzip       bool       `mapstructure:"enable_gzip"`
+	ExternalURL      string      `mapstructure:"external_url"`
+	Host             string      `mapstructure:"host"`
+	Port             int         `mapstructure:"port"`
+	UnixSocketEnable bool        `mapstructure:"unix_socket_enable"`
+	UnixSocketName   string      `mapstructure:"unix_socket_name"`
+	Client           HTTPClient  `mapstructure:"http_client"`
+	CacheClient      HTTPClient  `mapstructure:"http_client_cache"`
+	AdminPort        int         `mapstructure:"admin_port"`
+	EnableGzip       bool        `mapstructure:"enable_gzip"`
+	Compression      Compression `mapstructure:"compression"`
 	// GarbageCollectorThreshold allocates virtual memory (in bytes) which is not used by PBS but
 	// serves as a hack to trigger the garbage collector only when the heap reaches at least this size.
 	// More info: https://github.com/golang/go/issues/48409
@@ -121,6 +122,7 @@ type HTTPClient struct {
 func (cfg *Configuration) validate(v *viper.Viper) []error {
 	var errs []error
 	errs = cfg.AuctionTimeouts.validate(errs)
+	errs = cfg.Compression.validate(errs)
 	errs = cfg.StoredRequests.validate(errs)
 	errs = cfg.StoredRequestsAMP.validate(errs)
 	errs = cfg.Accounts.validate(errs)
@@ -161,6 +163,32 @@ type AuctionTimeouts struct {
 func (cfg *AuctionTimeouts) validate(errs []error) []error {
 	if cfg.Max < cfg.Default {
 		errs = append(errs, fmt.Errorf("auction_timeouts_ms.max cannot be less than auction_timeouts_ms.default. max=%d, default=%d", cfg.Max, cfg.Default))
+	}
+	return errs
+}
+
+type Compression struct {
+	Request  CompressionConfig `mapstructure:"request"`
+	Response CompressionConfig `mapstructure:"response"`
+}
+
+// CompressionConfig defines if compression is enabled and what type of compression to use
+type CompressionConfig struct {
+	Enabled bool   `mapstructure:"enabled"`
+	CType   string `mapstructure:"type"`
+}
+
+const CompressionTypeGZIP = "gzip"
+
+func (cfg *Compression) validate(errs []error) []error {
+	errs = cfg.Request.validate(errs)
+	errs = cfg.Response.validate(errs)
+	return errs
+}
+
+func (cfg *CompressionConfig) validate(errs []error) []error {
+	if cfg.Enabled && cfg.CType != CompressionTypeGZIP {
+		errs = append(errs, fmt.Errorf("compression type %s is not supported", cfg.CType))
 	}
 	return errs
 }
@@ -825,7 +853,6 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("unix_socket_enable", false)              // boolean which decide if the socket-server will be started.
 	v.SetDefault("unix_socket_name", "prebid-server.sock") // path of the socket's file which must be listened.
 	v.SetDefault("admin_port", 6060)
-	v.SetDefault("enable_gzip", false)
 	v.SetDefault("garbage_collector_threshold", 0)
 	v.SetDefault("status_response", "")
 	v.SetDefault("datacenter", "")
@@ -1009,6 +1036,11 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("account_defaults.price_floors.max_rules", 100)
 	v.SetDefault("account_defaults.price_floors.max_schema_dims", 3)
 
+	v.SetDefault("compression.response.enabled", false)
+	v.SetDefault("compression.response.type", CompressionTypeGZIP)
+	v.SetDefault("compression.request.enabled", false)
+	v.SetDefault("compression.request.type", CompressionTypeGZIP)
+
 	v.SetDefault("certificates_file", "")
 	v.SetDefault("auto_gen_source_tid", true)
 	v.SetDefault("generate_bid_id", false)
@@ -1052,6 +1084,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	migrateConfigSpecialFeature1(v)
 	migrateConfigTCF2PurposeFlags(v)
 	migrateConfigDatabaseConnection(v)
+	migrateConfigCompression(v)
 
 	// These defaults must be set after the migrate functions because those functions look for the presence of these
 	// config fields and there isn't a way to detect presence of a config field using the viper package if a default
@@ -1092,6 +1125,8 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("gdpr.tcf2.special_feature1.vendor_exceptions", []openrtb_ext.BidderName{})
 	v.SetDefault("price_floors.enabled", false)
 
+	v.SetDefault("enable_gzip", false)
+
 	// Defaults for account_defaults.events.default_url
 	v.SetDefault("account_defaults.events.default_url", "https://PBS_HOST/event?t=##PBS-EVENTTYPE##&vtype=##PBS-VASTEVENT##&b=##PBS-BIDID##&f=i&a=##PBS-ACCOUNTID##&ts=##PBS-TIMESTAMP##&bidder=##PBS-BIDDER##&int=##PBS-INTEGRATION##&mt=##PBS-MEDIATYPE##&ch=##PBS-CHANNEL##&aid=##PBS-AUCTIONID##&l=##PBS-LINEID##")
 
@@ -1120,6 +1155,20 @@ func migrateConfig(v *viper.Viper) {
 		m["enabled"] = v.GetBool("stored_requests.filesystem")
 		m["directorypath"] = v.GetString("stored_requests.directorypath")
 		v.Set("stored_requests.filesystem", m)
+	}
+}
+
+func migrateConfigCompression(v *viper.Viper) {
+	oldField := "enable_gzip"
+	newField := "compression.response.enabled"
+	if v.IsSet(oldField) {
+		oldConfig := v.GetBool(oldField)
+		if v.IsSet(newField) {
+			glog.Warningf("using %s and ignoring deprecated %s", newField, oldField)
+		} else {
+			glog.Warningf("%s is deprecated and should be changed to %s", oldField, newField)
+			v.Set(newField, oldConfig)
+		}
 	}
 }
 

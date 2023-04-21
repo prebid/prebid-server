@@ -1,11 +1,13 @@
 package openrtb2
 
 import (
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -335,27 +337,48 @@ func sendAuctionResponse(
 //
 // If the errors list has at least one element, then no guarantees are made about the returned request.
 func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metrics.Labels, hookExecutor hookexecution.HookStageExecutor) (req *openrtb_ext.RequestWrapper, impExtInfoMap map[string]exchange.ImpExtInfo, storedAuctionResponses stored_responses.ImpsWithBidResponses, storedBidResponses stored_responses.ImpBidderStoredResp, bidderImpReplaceImpId stored_responses.BidderImpReplaceImpID, account *config.Account, errs []error) {
-	req = &openrtb_ext.RequestWrapper{}
-	req.BidRequest = &openrtb2.BidRequest{}
 	errs = nil
-
-	// Pull the request body into a buffer, so we have it for later usage.
-	lr := &io.LimitedReader{
-		R: httpRequest.Body,
-		N: deps.cfg.MaxRequestSize,
+	var limitedReqReader *io.LimitedReader
+	reqContentEnc := httpRequest.Header.Get("Content-Encoding")
+	if reqContentEnc == "gzip" {
+		if !deps.cfg.Compression.Request.Enabled ||
+			deps.cfg.Compression.Request.CType != config.CompressionTypeGZIP {
+			errs = []error{fmt.Errorf("Content-Encoding of type %s is not supported", reqContentEnc)}
+			return
+		}
+		if gzReader, err := gzip.NewReader(httpRequest.Body); err == nil {
+			limitedReqReader = &io.LimitedReader{
+				R: gzReader,
+				N: deps.cfg.MaxRequestSize,
+			}
+			defer gzReader.Close()
+		} else {
+			errs = []error{err}
+			return
+		}
+	} else {
+		limitedReqReader = &io.LimitedReader{
+			R: httpRequest.Body,
+			N: deps.cfg.MaxRequestSize,
+		}
 	}
-	requestJson, err := io.ReadAll(lr)
+
+	requestJson, err := ioutil.ReadAll(limitedReqReader)
 	if err != nil {
 		errs = []error{err}
 		return
 	}
-	// If the request size was too large, read through the rest of the request body so that the connection can be reused.
-	if lr.N <= 0 {
-		if written, err := io.Copy(io.Discard, httpRequest.Body); written > 0 || err != nil {
-			errs = []error{fmt.Errorf("Request size exceeded max size of %d bytes.", deps.cfg.MaxRequestSize)}
+	// If the request size was too large, discard the rest of the request body so that the connection can be reused.
+	if limitedReqReader.N <= 0 {
+		if _, err := limitedReqReader.R.Read(make([]byte, 1)); err != io.EOF {
+			io.Copy(io.Discard, httpRequest.Body)
+			errs = []error{fmt.Errorf("request size exceeded max size of %d bytes.", deps.cfg.MaxRequestSize)}
 			return
 		}
 	}
+
+	req = &openrtb_ext.RequestWrapper{}
+	req.BidRequest = &openrtb2.BidRequest{}
 
 	requestJson, rejectErr := hookExecutor.ExecuteEntrypointStage(httpRequest, requestJson)
 	if rejectErr != nil {
