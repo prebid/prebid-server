@@ -628,6 +628,83 @@ func TestCloneExtRequestPrebid(t *testing.T) {
 				prebid.Floors.FloorProvider = ""
 			},
 		},
+		{
+			name: "MultiBidMap",
+			prebid: &ExtRequestPrebid{
+				MultiBidMap: map[string]ExtMultiBid{
+					"A": {
+						Bidder:                 "J",
+						Bidders:                []string{"X", "Y", "Z"},
+						MaxBids:                ptrutil.ToPtr(5),
+						TargetBidderCodePrefix: ">>",
+					},
+					"B": {
+						Bidder:  "J",
+						Bidders: []string{"One", "Two", "Three"},
+					},
+				},
+			},
+			prebidCopy: &ExtRequestPrebid{
+				MultiBidMap: map[string]ExtMultiBid{
+					"A": {
+						Bidder:                 "J",
+						Bidders:                []string{"X", "Y", "Z"},
+						MaxBids:                ptrutil.ToPtr(5),
+						TargetBidderCodePrefix: ">>",
+					},
+					"B": {
+						Bidder:  "J",
+						Bidders: []string{"One", "Two", "Three"},
+					},
+				},
+			},
+			mutator: func(t *testing.T, prebid *ExtRequestPrebid) {
+				mulbidB := prebid.MultiBidMap["B"]
+				mulbidB.TargetBidderCodePrefix = "|"
+				mulbidB.Bidders[1] = "Five"
+				mulbidB.Bidders = append(mulbidB.Bidders, "Six")
+				mulbidB.MaxBids = ptrutil.ToPtr(2)
+				prebid.MultiBidMap["B"] = mulbidB
+				prebid.MultiBidMap["C"] = ExtMultiBid{Bidder: "alpha", MaxBids: ptrutil.ToPtr(3)}
+			},
+		},
+		{
+			name: "MultiBidMap",
+			prebid: &ExtRequestPrebid{
+				AdServerTargeting: []AdServerTarget{
+					{
+						Key:    "A",
+						Source: "Sauce",
+						Value:  "Gold",
+					},
+					{
+						Key:    "B",
+						Source: "Omega",
+						Value:  "Dirt",
+					},
+				},
+			},
+			prebidCopy: &ExtRequestPrebid{
+				AdServerTargeting: []AdServerTarget{
+					{
+						Key:    "A",
+						Source: "Sauce",
+						Value:  "Gold",
+					},
+					{
+						Key:    "B",
+						Source: "Omega",
+						Value:  "Dirt",
+					},
+				},
+			},
+			mutator: func(t *testing.T, prebid *ExtRequestPrebid) {
+				prebid.AdServerTargeting[0].Key = "Five"
+				prebid.AdServerTargeting[1].Value = "Dust"
+				prebid.AdServerTargeting = append(prebid.AdServerTargeting, AdServerTarget{Key: "Val"})
+				prebid.AdServerTargeting = nil
+			},
+		},
 	}
 
 	for _, test := range testCases {

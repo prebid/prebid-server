@@ -504,6 +504,16 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 		clonedFloors.Skipped = ptrutil.Clone(erp.Floors.Skipped)
 		clone.Floors = &clonedFloors
 	}
+	if erp.MultiBidMap != nil {
+		clone.MultiBidMap = make(map[string]ExtMultiBid, len(erp.MultiBidMap))
+		for k, v := range erp.MultiBidMap {
+			// Make v a deep copy of the ExtMultiBid struct
+			v.Bidders = sliceutil.Clone(v.Bidders)
+			v.MaxBids = ptrutil.Clone(v.MaxBids)
+			clone.MultiBidMap[k] = v
+		}
+	}
+	clone.AdServerTargeting = sliceutil.Clone(erp.AdServerTargeting)
 
 	return &clone
 }
