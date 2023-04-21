@@ -52,7 +52,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}
 
 		if request.App != nil {
-
 			appCopy := *request.App
 			request.App = &appCopy
 
@@ -60,7 +59,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}
 
 		if request.Site != nil {
-
 			siteCopy := *request.Site
 			request.Site = &siteCopy
 
