@@ -4,5 +4,12 @@
   "description": "A schema which validates params accepted by the Adtrgtme adapter",
   "type": "object",
 
-  "properties": {}
+  "properties": {
+    "site_id": {
+      "type": "integer",
+      "description": "Site ID"
+    }
+  },
+
+  "required": ["site_id"]
 }
