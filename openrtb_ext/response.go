@@ -3,6 +3,7 @@ package openrtb_ext
 import (
 	"encoding/json"
 
+	"github.com/prebid/openrtb/v17/adcom1"
 	"github.com/prebid/openrtb/v17/openrtb2"
 )
 
@@ -101,14 +102,22 @@ const (
 	UserSyncPixel  UserSyncType = "pixel"
 )
 
-// Bid is Wrapper around original/proxy bid object
+// Bid is subset of Bid object with exact json signature
+// defined at https://github.com/prebid/openrtb/blob/v17.1.0/openrtb2/bid.go.
+// It also contains the custom fields
 type Bid struct {
-	openrtb2.Bid
-	ID    string `json:"id,omitempty"`    // added omitempty
-	ImpID string `json:"impid,omitempty"` // added omitempty
+	Price   float64                 `json:"price,omitempty"`
+	ADomain []string                `json:"adomain,omitempty"`
+	CatTax  adcom1.CategoryTaxonomy `json:"cattax,omitempty"`
+	Cat     []string                `json:"cat,omitempty"`
+	DealID  string                  `json:"dealid,omitempty"`
+	W       int64                   `json:"w,omitempty"`
+	H       int64                   `json:"h,omitempty"`
+	Dur     int64                   `json:"dur,omitempty"`
+	MType   openrtb2.MarkupType     `json:"mtype,omitempty"`
 
-	OriginalBidCPM float64 `json:"originalbidcpm,omitempty"`
-	OriginalBidCur string  `json:"originalbidcur,omitempty"`
+	OriginalBidCPM float64 `json:"origbidcpm,omitempty"`
+	OriginalBidCur string  `json:"origbidcur,omitempty"`
 }
 
 // ExtResponseNonBidPrebid represents bidresponse.ext.prebid.seatnonbid[].nonbid[].ext
