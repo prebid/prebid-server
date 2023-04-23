@@ -22,6 +22,9 @@ func Validate(bidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments) bool {
 	if bidAdjustments.MediaType.Native != nil && !findAndValidateAdjustment(bidAdjustments.MediaType.Native) {
 		return false
 	}
+	if bidAdjustments.MediaType.WildCard != nil && !findAndValidateAdjustment(bidAdjustments.MediaType.WildCard) {
+		return false
+	}
 	return true
 }
 

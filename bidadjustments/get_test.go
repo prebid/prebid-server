@@ -9,119 +9,212 @@ import (
 
 func TestGetAdjustmentArray(t *testing.T) {
 	testCases := []struct {
-		name                string
-		givenBidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments
-		givenBidType        openrtb_ext.BidType
-		givenBidderName     openrtb_ext.BidderName
-		givenDealId         string
-		expected            []openrtb_ext.Adjustments
+		name                   string
+		givenRuleToAdjustments map[string][]openrtb_ext.Adjustments
+		givenBidType           openrtb_ext.BidType
+		givenBidderName        openrtb_ext.BidderName
+		givenDealId            string
+		expected               []openrtb_ext.Adjustments
 	}{
 		{
-			name: "One bid adjustment, should return same adjustment",
-			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
-				MediaType: openrtb_ext.MediaType{
-					Banner: map[string]map[string][]openrtb_ext.Adjustments{
-						"bidderA": {
-							"dealId": []openrtb_ext.Adjustments{{AdjType: "multiplier", Value: 1.1}},
-						},
+			name: "Priority #1 should be chosen",
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustments{
+				"banner|bidderA|dealId": {
+					{
+						AdjType: AdjTypeMultiplier,
+						Value:   1.1,
+					},
+				},
+				"banner|bidderA|*": {
+					{
+						AdjType: AdjTypeMultiplier,
+						Value:   2.0,
 					},
 				},
 			},
 			givenBidType:    openrtb_ext.BidTypeBanner,
 			givenBidderName: "bidderA",
 			givenDealId:     "dealId",
-			expected:        []openrtb_ext.Adjustments{{AdjType: "multiplier", Value: 1.1}},
+			expected:        []openrtb_ext.Adjustments{{AdjType: AdjTypeMultiplier, Value: 1.1}},
 		},
 		{
-			name: "Multiple bid adjs, WildCard MediaType, non WildCard should have precedence",
-			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
-				MediaType: openrtb_ext.MediaType{
-					Audio: map[string]map[string][]openrtb_ext.Adjustments{
-						"bidderA": {
-							"dealId": []openrtb_ext.Adjustments{{AdjType: "static", Value: 1.0, Currency: "USD"}},
-						},
+			name: "Priority #2 should be chosen",
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustments{
+				"banner|bidderA|*": {
+					{
+						AdjType: AdjTypeStatic,
+						Value:   5.0,
 					},
-					WildCard: map[string]map[string][]openrtb_ext.Adjustments{
-						"bidderA": {
-							"dealId": []openrtb_ext.Adjustments{{AdjType: "cpm", Value: 1.0, Currency: "USD"}},
-						},
+				},
+				"banner|*|dealId": {
+					{
+						AdjType: AdjTypeMultiplier,
+						Value:   2.0,
 					},
 				},
 			},
-			givenBidType:    openrtb_ext.BidTypeAudio,
+			givenBidType:    openrtb_ext.BidTypeBanner,
 			givenBidderName: "bidderA",
 			givenDealId:     "dealId",
-			expected:        []openrtb_ext.Adjustments{{AdjType: "static", Value: 1.0, Currency: "USD"}},
+			expected:        []openrtb_ext.Adjustments{{AdjType: AdjTypeStatic, Value: 5.0}},
 		},
 		{
-			name: "Single bid adj, Deal ID doesn't match, but wildcard present, should return given bid adj",
-			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
-				MediaType: openrtb_ext.MediaType{
-					Native: map[string]map[string][]openrtb_ext.Adjustments{
-						"bidderA": {
-							"*": []openrtb_ext.Adjustments{{AdjType: "cpm", Value: 1.0, Currency: "USD"}},
-						},
+			name: "Priority #3 should be chosen",
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustments{
+				"banner|*|dealId": {
+					{
+						AdjType:  AdjTypeCpm,
+						Value:    3.0,
+						Currency: "USD",
+					},
+				},
+				"*|bidderA|dealId": {
+					{
+						AdjType: AdjTypeMultiplier,
+						Value:   1.1,
 					},
 				},
 			},
-			givenBidType:    openrtb_ext.BidTypeNative,
+			givenBidType:    openrtb_ext.BidTypeBanner,
 			givenBidderName: "bidderA",
 			givenDealId:     "dealId",
-			expected:        []openrtb_ext.Adjustments{{AdjType: "cpm", Value: 1.0, Currency: "USD"}},
+			expected:        []openrtb_ext.Adjustments{{AdjType: AdjTypeCpm, Value: 3.0, Currency: "USD"}},
 		},
 		{
-			name: "Single bid adj, Not matched bidder, but WildCard, should return given bid adj",
-			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
-				MediaType: openrtb_ext.MediaType{
-					Video: map[string]map[string][]openrtb_ext.Adjustments{
-						"*": {
-							"dealId": []openrtb_ext.Adjustments{{AdjType: "multiplier", Value: 1.1}},
-						},
+			name: "Priority #4 should be chosen",
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustments{
+				"*|bidderA|dealId": {
+					{
+						AdjType:  AdjTypeCpm,
+						Value:    3.0,
+						Currency: "USD",
+					},
+				},
+				"banner|*|*": {
+					{
+						AdjType: AdjTypeMultiplier,
+						Value:   1.1,
 					},
 				},
 			},
-			givenBidType:    openrtb_ext.BidTypeVideo,
+			givenBidType:    openrtb_ext.BidTypeBanner,
 			givenBidderName: "bidderA",
 			givenDealId:     "dealId",
-			expected:        []openrtb_ext.Adjustments{{AdjType: "multiplier", Value: 1.1}},
+			expected:        []openrtb_ext.Adjustments{{AdjType: AdjTypeCpm, Value: 3.0, Currency: "USD"}},
 		},
 		{
-			name: "WildCard bidder and dealId, should return given bid adj",
-			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
-				MediaType: openrtb_ext.MediaType{
-					WildCard: map[string]map[string][]openrtb_ext.Adjustments{
-						"*": {
-							"*": []openrtb_ext.Adjustments{{AdjType: "multiplier", Value: 1.1}},
-						},
+			name: "Priority #5 should be chosen",
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustments{
+				"banner|*|*": {
+					{
+						AdjType:  AdjTypeCpm,
+						Value:    3.0,
+						Currency: "USD",
+					},
+				},
+				"*|bidderA|*": {
+					{
+						AdjType: AdjTypeMultiplier,
+						Value:   1.1,
 					},
 				},
 			},
-			givenBidType:    openrtb_ext.BidTypeVideo,
+			givenBidType:    openrtb_ext.BidTypeBanner,
 			givenBidderName: "bidderA",
 			givenDealId:     "dealId",
-			expected:        []openrtb_ext.Adjustments{{AdjType: "multiplier", Value: 1.1}},
+			expected:        []openrtb_ext.Adjustments{{AdjType: AdjTypeCpm, Value: 3.0, Currency: "USD"}},
 		},
 		{
-			name: "WildCard bidder, but dealId doesn't match given, should return nil",
-			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
-				MediaType: openrtb_ext.MediaType{
-					WildCard: map[string]map[string][]openrtb_ext.Adjustments{
-						"bidderB": {
-							"diffDealId": []openrtb_ext.Adjustments{{AdjType: "multiplier", Value: 1.1}},
-						},
+			name: "Priority #6 should be chosen",
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustments{
+				"*|bidderA|*": {
+					{
+						AdjType:  AdjTypeCpm,
+						Value:    3.0,
+						Currency: "USD",
+					},
+				},
+				"*|*|dealId": {
+					{
+						AdjType: AdjTypeMultiplier,
+						Value:   1.1,
 					},
 				},
 			},
-			givenBidType:    openrtb_ext.BidTypeVideo,
+			givenBidType:    openrtb_ext.BidTypeBanner,
 			givenBidderName: "bidderA",
 			givenDealId:     "dealId",
-			expected:        nil,
+			expected:        []openrtb_ext.Adjustments{{AdjType: AdjTypeCpm, Value: 3.0, Currency: "USD"}},
+		},
+		{
+			name: "Priority #7 should be chosen",
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustments{
+				"*|*|dealId": {
+					{
+						AdjType:  AdjTypeCpm,
+						Value:    3.0,
+						Currency: "USD",
+					},
+				},
+				"*|*|*": {
+					{
+						AdjType: AdjTypeMultiplier,
+						Value:   1.1,
+					},
+				},
+			},
+			givenBidType:    openrtb_ext.BidTypeBanner,
+			givenBidderName: "bidderA",
+			givenDealId:     "dealId",
+			expected:        []openrtb_ext.Adjustments{{AdjType: AdjTypeCpm, Value: 3.0, Currency: "USD"}},
+		},
+		{
+			name: "Priority #8 should be chosen, given the provided info doesn't match the other provided rules",
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustments{
+				"*|*|*": {
+					{
+						AdjType: AdjTypeMultiplier,
+						Value:   1.1,
+					},
+				},
+				"banner|bidderA|dealId": {
+					{
+						AdjType: AdjTypeMultiplier,
+						Value:   1.1,
+					},
+				},
+			},
+			givenBidType:    openrtb_ext.BidTypeBanner,
+			givenBidderName: "bidderB",
+			givenDealId:     "dealId",
+			expected:        []openrtb_ext.Adjustments{{AdjType: AdjTypeMultiplier, Value: 1.1}},
+		},
+		{
+			name: "No dealID given, should choose correct rule",
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustments{
+				"banner|bidderA|*": {
+					{
+						AdjType: AdjTypeMultiplier,
+						Value:   1.1,
+					},
+				},
+				"banner|*|*": {
+					{
+						AdjType: AdjTypeMultiplier,
+						Value:   1.1,
+					},
+				},
+			},
+			givenBidType:    openrtb_ext.BidTypeBanner,
+			givenBidderName: "bidderA",
+			givenDealId:     "",
+			expected:        []openrtb_ext.Adjustments{{AdjType: AdjTypeMultiplier, Value: 1.1}},
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			adjArray := GetAdjustmentArray(test.givenBidAdjustments, test.givenBidType, test.givenBidderName, test.givenDealId)
+			adjArray := getAdjustmentArray(test.givenRuleToAdjustments, string(test.givenBidType), string(test.givenBidderName), test.givenDealId)
 			assert.Equal(t, test.expected, adjArray, "Adjustment Array doesn't match")
 		})
 	}

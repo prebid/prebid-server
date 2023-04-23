@@ -90,16 +90,16 @@ func TestGetAndApplyAdjustmentArray(t *testing.T) {
 	)
 
 	testCases := []struct {
-		name                string
-		givenBidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments
-		givenBidderName     openrtb_ext.BidderName
-		givenBidInfo        *adapters.TypedBid
-		setMock             func(m *mock.Mock)
-		expectedBidPrice    float64
-		expectedCurrency    string
+		name                   string
+		givenRuleToAdjustments map[string][]openrtb_ext.Adjustments
+		givenBidderName        openrtb_ext.BidderName
+		givenBidInfo           *adapters.TypedBid
+		setMock                func(m *mock.Mock)
+		expectedBidPrice       float64
+		expectedCurrency       string
 	}{
 		{
-			name: "Valid Bid Adjustments, CPM adj type, function should Get and Apply the adjustment properly",
+			name: "CPM adjustment type should be chosen, function should Get and Apply the adjustment properly",
 			givenBidInfo: &adapters.TypedBid{
 				Bid: &openrtb2.Bid{
 					Price:  10.0,
@@ -107,12 +107,18 @@ func TestGetAndApplyAdjustmentArray(t *testing.T) {
 				},
 				BidType: openrtb_ext.BidTypeBanner,
 			},
-			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
-				MediaType: openrtb_ext.MediaType{
-					Banner: map[string]map[string][]openrtb_ext.Adjustments{
-						"bidderA": {
-							"dealId": []openrtb_ext.Adjustments{{AdjType: AdjTypeCpm, Value: 1.0, Currency: adjCur}},
-						},
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustments{
+				"banner|bidderA|dealId": {
+					{
+						AdjType:  AdjTypeCpm,
+						Value:    1.0,
+						Currency: adjCur,
+					},
+				},
+				"banner|bidderA|*": {
+					{
+						AdjType: AdjTypeMultiplier,
+						Value:   2.0,
 					},
 				},
 			},
@@ -122,7 +128,7 @@ func TestGetAndApplyAdjustmentArray(t *testing.T) {
 			expectedCurrency: bidCur,
 		},
 		{
-			name: "Valid Bid Adjustments, static adj type, function should Get and Apply the adjustment properly",
+			name: "Static adj type should be chosen, function should Get and Apply the adjustment properly",
 			givenBidInfo: &adapters.TypedBid{
 				Bid: &openrtb2.Bid{
 					Price:  10.0,
@@ -130,31 +136,71 @@ func TestGetAndApplyAdjustmentArray(t *testing.T) {
 				},
 				BidType: openrtb_ext.BidTypeBanner,
 			},
-			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
-				MediaType: openrtb_ext.MediaType{
-					Banner: map[string]map[string][]openrtb_ext.Adjustments{
-						"bidderA": {
-							"dealId": []openrtb_ext.Adjustments{{AdjType: AdjTypeStatic, Value: 5.0, Currency: adjCur}},
-						},
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustments{
+				"*|bidderA|dealId": {
+					{
+						AdjType:  AdjTypeCpm,
+						Value:    1.0,
+						Currency: adjCur,
+					},
+				},
+				"banner|bidderA|*": {
+					{
+						AdjType:  AdjTypeStatic,
+						Value:    2.0,
+						Currency: adjCur,
 					},
 				},
 			},
 			givenBidderName:  "bidderA",
 			setMock:          nil,
-			expectedBidPrice: 5.0,
+			expectedBidPrice: 2.0,
 			expectedCurrency: adjCur,
 		},
 		{
-			name: "Nil adjustment array, expect no change to the bid price",
+			name: "Multiplier adj type should be chosen, function should Get and Apply the adjustment properly",
 			givenBidInfo: &adapters.TypedBid{
 				Bid: &openrtb2.Bid{
-					Price: 10.0,
+					Price:  10.0,
+					DealID: "dealId",
 				},
 				BidType: openrtb_ext.BidTypeBanner,
 			},
-			givenBidAdjustments: nil,
-			expectedBidPrice:    10.0,
-			expectedCurrency:    bidCur,
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustments{
+				"*|*|dealId": {
+					{
+						AdjType:  AdjTypeCpm,
+						Value:    1.0,
+						Currency: adjCur,
+					},
+				},
+				"banner|*|*": {
+					{
+						AdjType:  AdjTypeMultiplier,
+						Value:    2.0,
+						Currency: adjCur,
+					},
+				},
+			},
+			givenBidderName:  "bidderA",
+			setMock:          nil,
+			expectedBidPrice: 20.0,
+			expectedCurrency: bidCur,
+		},
+		{
+			name: "Nil rule to adjustments map, function should return provided bid info",
+			givenBidInfo: &adapters.TypedBid{
+				Bid: &openrtb2.Bid{
+					Price:  10.0,
+					DealID: "dealId",
+				},
+				BidType: openrtb_ext.BidTypeBanner,
+			},
+			givenRuleToAdjustments: nil,
+			givenBidderName:        "bidderA",
+			setMock:                nil,
+			expectedBidPrice:       10.0,
+			expectedCurrency:       bidCur,
 		},
 	}
 
@@ -167,7 +213,7 @@ func TestGetAndApplyAdjustmentArray(t *testing.T) {
 				reqInfo = adapters.NewExtraRequestInfo(mockConversions)
 			}
 
-			bidPrice, currencyAfterAdjustment := GetAndApplyAdjustmentArray(test.givenBidAdjustments, test.givenBidInfo, test.givenBidderName, bidCur, &reqInfo)
+			bidPrice, currencyAfterAdjustment := GetAndApplyAdjustmentArray(test.givenRuleToAdjustments, test.givenBidInfo, test.givenBidderName, bidCur, &reqInfo)
 			assert.Equal(t, test.expectedBidPrice, bidPrice, "Incorrect bid prices")
 			assert.Equal(t, test.expectedCurrency, currencyAfterAdjustment, "Incorrect currency")
 		})
@@ -363,6 +409,37 @@ func TestMergeBidAdjustments(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Account has Wildcard Adjustment, Request has Video Adjustment",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid":{"bidadjustments":{"mediatype":{"video":{"bidderA":{"dealId":[{ "adjtype": "multiplier", "value": 1.1}]}}}}}}`)},
+			},
+			givenAccount: &config.Account{
+				BidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+					MediaType: openrtb_ext.MediaType{
+						WildCard: map[string]map[string][]openrtb_ext.Adjustments{
+							"bidderB": {
+								"dealId": []openrtb_ext.Adjustments{{AdjType: "multiplier", Value: 1.5}},
+							},
+						},
+					},
+				},
+			},
+			expectedBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+				MediaType: openrtb_ext.MediaType{
+					WildCard: map[string]map[string][]openrtb_ext.Adjustments{
+						"bidderB": {
+							"dealId": []openrtb_ext.Adjustments{{AdjType: "multiplier", Value: 1.5}},
+						},
+					},
+					Video: map[string]map[string][]openrtb_ext.Adjustments{
+						"bidderA": {
+							"dealId": []openrtb_ext.Adjustments{{AdjType: "multiplier", Value: 1.1}},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, test := range testCases {
@@ -370,6 +447,101 @@ func TestMergeBidAdjustments(t *testing.T) {
 			mergedBidAdj, err := mergeBidAdjustments(test.givenRequestWrapper, test.givenAccount.BidAdjustments)
 			assert.NoError(t, err, "Unexpected error received")
 			assert.Equal(t, test.expectedBidAdjustments, mergedBidAdj)
+		})
+	}
+}
+
+func TestGenerateMap(t *testing.T) {
+	testCases := []struct {
+		name                string
+		givenBidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments
+		expectedMap         map[string][]openrtb_ext.Adjustments
+	}{
+		{
+			name: "Simple example, only one adjustment given",
+			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+				MediaType: openrtb_ext.MediaType{
+					Banner: map[string]map[string][]openrtb_ext.Adjustments{
+						"bidderA": {
+							"dealId": []openrtb_ext.Adjustments{{AdjType: "multiplier", Value: 1.1}},
+						},
+					},
+				},
+			},
+			expectedMap: map[string][]openrtb_ext.Adjustments{
+				"banner|bidderA|dealId": {
+					{
+						AdjType: AdjTypeMultiplier,
+						Value:   1.1,
+					},
+				},
+			},
+		},
+		{
+			name: "Many adjustments given",
+			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+				MediaType: openrtb_ext.MediaType{
+					Banner: map[string]map[string][]openrtb_ext.Adjustments{
+						"bidderA": {
+							"dealId": []openrtb_ext.Adjustments{{AdjType: AdjTypeMultiplier, Value: 1.1}},
+						},
+						"*": {
+							"diffDealId": []openrtb_ext.Adjustments{{AdjType: AdjTypeCpm, Value: 1.1, Currency: "USD"}},
+							"*":          []openrtb_ext.Adjustments{{AdjType: AdjTypeStatic, Value: 5.0, Currency: "USD"}},
+						},
+					},
+					Video: map[string]map[string][]openrtb_ext.Adjustments{
+						"*": {
+							"*": []openrtb_ext.Adjustments{{AdjType: AdjTypeMultiplier, Value: 1.1}, {AdjType: AdjTypeCpm, Value: 0.18, Currency: "USD"}},
+						},
+					},
+				},
+			},
+			expectedMap: map[string][]openrtb_ext.Adjustments{
+				"banner|bidderA|dealId": {
+					{
+						AdjType: AdjTypeMultiplier,
+						Value:   1.1,
+					},
+				},
+				"banner|*|diffDealId": {
+					{
+						AdjType:  AdjTypeCpm,
+						Value:    1.1,
+						Currency: "USD",
+					},
+				},
+				"banner|*|*": {
+					{
+						AdjType:  AdjTypeStatic,
+						Value:    5.0,
+						Currency: "USD",
+					},
+				},
+				"video|*|*": {
+					{
+						AdjType: AdjTypeMultiplier,
+						Value:   1.1,
+					},
+					{
+						AdjType:  AdjTypeCpm,
+						Value:    0.18,
+						Currency: "USD",
+					},
+				},
+			},
+		},
+		{
+			name:                "Nil adjustments given",
+			givenBidAdjustments: nil,
+			expectedMap:         nil,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			ruleToAdjustmentMap := GenerateMap(test.givenBidAdjustments)
+			assert.Equal(t, test.expectedMap, ruleToAdjustmentMap)
 		})
 	}
 }

@@ -11,7 +11,8 @@ const (
 	AdjTypeCpm        = "cpm"
 	AdjTypeMultiplier = "multiplier"
 	AdjTypeStatic     = "static"
-	AdjWildCard       = "*"
+	WildCard          = "*"
+	PipeDelimiter     = "|"
 )
 
 const roundTo float64 = 10000 // Rounds to 4 Decimal Places
@@ -43,16 +44,6 @@ func applyAdjustmentArray(adjArray []openrtb_ext.Adjustments, bidPrice float64, 
 		return originalBidPrice, originalCurrency
 	}
 	return roundedBidPrice, currency
-}
-
-func GetAndApplyAdjustmentArray(bidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments, bidInfo *adapters.TypedBid, bidderName openrtb_ext.BidderName, currency string, reqInfo *adapters.ExtraRequestInfo) (float64, string) {
-	adjArray := []openrtb_ext.Adjustments{}
-	if bidAdjustments != nil {
-		adjArray = GetAdjustmentArray(bidAdjustments, bidInfo.BidType, bidderName, bidInfo.Bid.DealID)
-	} else {
-		return bidInfo.Bid.Price, currency
-	}
-	return applyAdjustmentArray(adjArray, bidInfo.Bid.Price, currency, reqInfo)
 }
 
 func mergeBidAdjustments(req *openrtb_ext.RequestWrapper, acctBidAdjs *openrtb_ext.ExtRequestPrebidBidAdjustments) (*openrtb_ext.ExtRequestPrebidBidAdjustments, error) {
@@ -95,6 +86,12 @@ func mergeBidAdjustments(req *openrtb_ext.RequestWrapper, acctBidAdjs *openrtb_e
 	} else if acctBidAdjs.MediaType.Audio != nil {
 		extPrebid.BidAdjustments.MediaType.Audio = acctBidAdjs.MediaType.Audio
 	}
+
+	if extPrebid.BidAdjustments.MediaType.WildCard != nil && acctBidAdjs.MediaType.WildCard != nil {
+		extPrebid.BidAdjustments.MediaType.WildCard = mergeAdjustmentsForMediaType(extPrebid.BidAdjustments.MediaType.WildCard, acctBidAdjs.MediaType.WildCard)
+	} else if acctBidAdjs.MediaType.WildCard != nil {
+		extPrebid.BidAdjustments.MediaType.WildCard = acctBidAdjs.MediaType.WildCard
+	}
 	return extPrebid.BidAdjustments, nil
 }
 
@@ -122,4 +119,28 @@ func ProcessBidAdjustments(req *openrtb_ext.RequestWrapper, acctBidAdjs *openrtb
 		mergedBidAdj = nil
 	}
 	return mergedBidAdj, err
+}
+
+func GenerateMap(bidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments) map[string][]openrtb_ext.Adjustments {
+	if bidAdjustments == nil {
+		return nil
+	}
+	ruleToAdjustmentMap := make(map[string][]openrtb_ext.Adjustments)
+	ruleToAdjustmentMap = generateMapForMediaType(bidAdjustments.MediaType.Banner, string(openrtb_ext.BidTypeBanner), ruleToAdjustmentMap)
+	ruleToAdjustmentMap = generateMapForMediaType(bidAdjustments.MediaType.Video, string(openrtb_ext.BidTypeVideo), ruleToAdjustmentMap)
+	ruleToAdjustmentMap = generateMapForMediaType(bidAdjustments.MediaType.Audio, string(openrtb_ext.BidTypeAudio), ruleToAdjustmentMap)
+	ruleToAdjustmentMap = generateMapForMediaType(bidAdjustments.MediaType.Native, string(openrtb_ext.BidTypeNative), ruleToAdjustmentMap)
+	ruleToAdjustmentMap = generateMapForMediaType(bidAdjustments.MediaType.WildCard, WildCard, ruleToAdjustmentMap)
+
+	return ruleToAdjustmentMap
+}
+
+func generateMapForMediaType(bidAdj map[string]map[string][]openrtb_ext.Adjustments, mediaType string, ruleToAdjustmentMap map[string][]openrtb_ext.Adjustments) map[string][]openrtb_ext.Adjustments {
+	for bidderName := range bidAdj {
+		for dealID, adjArray := range bidAdj[bidderName] {
+			rule := mediaType + PipeDelimiter + bidderName + PipeDelimiter + dealID
+			ruleToAdjustmentMap[rule] = adjArray
+		}
+	}
+	return ruleToAdjustmentMap
 }

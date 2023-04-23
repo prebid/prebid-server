@@ -295,6 +295,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	if err != nil {
 		return nil, err
 	}
+	ruleToAdjustments := bidadjustments.GenerateMap(mergedBidAdj)
 
 	bidAdjustmentFactors := getExtBidAdjustmentFactors(requestExtPrebid)
 
@@ -353,7 +354,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		} else if r.Account.AlternateBidderCodes != nil {
 			alternateBidderCodes = *r.Account.AlternateBidderCodes
 		}
-		adapterBids, adapterExtra, fledge, anyBidsReturned = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, alternateBidderCodes, requestExtLegacy.Prebid.Experiment, r.HookExecutor, mergedBidAdj)
+		adapterBids, adapterExtra, fledge, anyBidsReturned = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, alternateBidderCodes, requestExtLegacy.Prebid.Experiment, r.HookExecutor, ruleToAdjustments)
 	}
 
 	var auc *auction
@@ -615,7 +616,7 @@ func (e *exchange) getAllBids(
 	alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes,
 	experiment *openrtb_ext.Experiment,
 	hookExecutor hookexecution.StageExecutor,
-	upgradedBidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments) (
+	ruleToAdjustments map[string][]openrtb_ext.Adjustments) (
 	map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid,
 	map[openrtb_ext.BidderName]*seatResponseExtra,
 	*openrtb_ext.Fledge,
@@ -653,7 +654,7 @@ func (e *exchange) getAllBids(
 				addCallSignHeader:   isAdsCertEnabled(experiment, e.bidderInfo[string(bidderRequest.BidderName)]),
 				bidAdjustments:      bidAdjustments,
 			}
-			seatBids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest, conversions, &reqInfo, e.adsCertSigner, bidReqOptions, alternateBidderCodes, hookExecutor, upgradedBidAdjustments)
+			seatBids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest, conversions, &reqInfo, e.adsCertSigner, bidReqOptions, alternateBidderCodes, hookExecutor, ruleToAdjustments)
 
 			// Add in time reporting
 			elapsed := time.Since(start)

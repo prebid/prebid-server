@@ -45,7 +45,7 @@ func TestValidateBidAdjustments(t *testing.T) {
 			expected: false,
 		},
 		{
-			name: "Invalid bid adjustment value, too big",
+			name: "Invalid bid adjustment value, too large",
 			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
 					Audio: map[string]map[string][]openrtb_ext.Adjustments{
@@ -127,6 +127,19 @@ func TestValidateBidAdjustments(t *testing.T) {
 			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
 					Banner: map[string]map[string][]openrtb_ext.Adjustments{
+						"bidderA": {
+							"dealId": []openrtb_ext.Adjustments{{AdjType: "static", Value: -1.0, Currency: "USD"}},
+						},
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "Invalid wildcard adjustment, negative value",
+			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+				MediaType: openrtb_ext.MediaType{
+					WildCard: map[string]map[string][]openrtb_ext.Adjustments{
 						"bidderA": {
 							"dealId": []openrtb_ext.Adjustments{{AdjType: "static", Value: -1.0, Currency: "USD"}},
 						},
