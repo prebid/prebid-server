@@ -56,10 +56,8 @@ func TestIsValidImpBidfloorPresentInRequest(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := isValidImpBidFloorPresent(tt.bidRequest)
-			assert.Equal(t, tt.want, got, tt.name)
-		})
+		got := isValidImpBidFloorPresent(tt.bidRequest)
+		assert.Equal(t, tt.want, got, tt.name)
 	}
 }
 
@@ -310,12 +308,10 @@ func TestEnforceFloorToBids(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			seatbids, errs, rejBids := enforceFloorToBids(tt.args.bidRequestWrapper, tt.args.seatBids, tt.args.conversions, tt.args.enforceDealFloors)
-			assert.Equal(t, tt.expEligibleBids, seatbids, tt.name)
-			assert.Equal(t, tt.expErrs, errs)
-			assert.Equal(t, tt.expRejectedBids, rejBids)
-		})
+		seatbids, errs, rejBids := enforceFloorToBids(tt.args.bidRequestWrapper, tt.args.seatBids, tt.args.conversions, tt.args.enforceDealFloors)
+		assert.Equal(t, tt.expEligibleBids, seatbids, tt.name)
+		assert.Equal(t, tt.expErrs, errs)
+		assert.Equal(t, tt.expRejectedBids, rejBids)
 	}
 }
 
@@ -566,20 +562,18 @@ func TestEnforceFloors(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			actEligibleBids, actErrs, actRejecteBids := EnforceFloors(tt.args.bidRequestWrapper, tt.args.seatBids, config.Account{PriceFloors: tt.args.priceFloorsCfg}, tt.args.conversions)
-			assert.Equal(t, tt.expErrs, actErrs, tt.name)
-			assert.Equal(t, tt.expEligibleBids, actEligibleBids, tt.name)
+		actEligibleBids, actErrs, actRejecteBids := EnforceFloors(tt.args.bidRequestWrapper, tt.args.seatBids, config.Account{PriceFloors: tt.args.priceFloorsCfg}, tt.args.conversions)
+		assert.Equal(t, tt.expErrs, actErrs, tt.name)
+		assert.Equal(t, tt.expEligibleBids, actEligibleBids, tt.name)
 
-			sort.Slice(tt.expRejectedBids, func(i, j int) bool {
-				return tt.expRejectedBids[i].Seat < tt.expRejectedBids[i].Seat
-			})
-			sort.Slice(actRejecteBids, func(i, j int) bool {
-				return actRejecteBids[i].Seat < actRejecteBids[i].Seat
-			})
-			assert.Equal(t, tt.expRejectedBids, actRejecteBids, tt.name)
-
+		sort.Slice(tt.expRejectedBids, func(i, j int) bool {
+			return tt.expRejectedBids[i].Seat < tt.expRejectedBids[i].Seat
 		})
+		sort.Slice(actRejecteBids, func(i, j int) bool {
+			return actRejecteBids[i].Seat < actRejecteBids[i].Seat
+		})
+		assert.Equal(t, tt.expRejectedBids, actRejecteBids, tt.name)
+
 	}
 }
 
@@ -634,10 +628,8 @@ func TestUpdateBidExtWithFloors(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			updateBidExtWithFloors(tt.args.reqImp, tt.args.bid, tt.args.floorCurrency)
-			assert.Equal(t, tt.expBidFloor, tt.args.bid.BidFloors, tt.name)
-		})
+		updateBidExtWithFloors(tt.args.reqImp, tt.args.bid, tt.args.floorCurrency)
+		assert.Equal(t, tt.expBidFloor, tt.args.bid.BidFloors, tt.name)
 	}
 }
 
@@ -700,10 +692,8 @@ func TestIsPriceFloorsEnforcementDisabledForRequest(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := isPriceFloorsEnforcementDisabled(tt.bidRequestWrapper)
-			assert.Equal(t, tt.want, got, tt.name)
-		})
+		got := isPriceFloorsEnforcementDisabled(tt.bidRequestWrapper)
+		assert.Equal(t, tt.want, got, tt.name)
 	}
 }
 
@@ -769,10 +759,8 @@ func TestIsFloorsSignallingSkipped(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := isFloorsSignallingSkipped(tt.reqExt)
-			assert.Equal(t, tt.want, got, tt.name)
-		})
+		got := isFloorsSignallingSkipped(tt.reqExt)
+		assert.Equal(t, tt.want, got, tt.name)
 	}
 }
 
@@ -856,10 +844,8 @@ func TestGetEnforceRateRequest(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := getEnforceRateRequest(tt.reqExt)
-			assert.Equal(t, tt.want, got, tt.name)
-		})
+		got := getEnforceRateRequest(tt.reqExt)
+		assert.Equal(t, tt.want, got, tt.name)
 	}
 }
 
@@ -943,10 +929,8 @@ func TestGetEnforceDealsFlag(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := getEnforceDealsFlag(tt.reqExt)
-			assert.Equal(t, tt.want, got, tt.name)
-		})
+		got := getEnforceDealsFlag(tt.reqExt)
+		assert.Equal(t, tt.want, got, tt.name)
 	}
 }
 
@@ -1035,9 +1019,7 @@ func TestIsSatisfiedByEnforceRate(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := isSatisfiedByEnforceRate(tt.args.reqExt, tt.args.configEnforceRate, tt.args.f)
-			assert.Equal(t, tt.want, got, tt.name)
-		})
+		got := isSatisfiedByEnforceRate(tt.args.reqExt, tt.args.configEnforceRate, tt.args.f)
+		assert.Equal(t, tt.want, got, tt.name)
 	}
 }
