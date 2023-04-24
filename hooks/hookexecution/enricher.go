@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/buger/jsonparser"
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/hooks/hookanalytics"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"

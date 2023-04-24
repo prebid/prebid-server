@@ -3,13 +3,15 @@ package undertone
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"net/http"
+	"strconv"
+
+	"github.com/prebid/openrtb/v19/openrtb2"
+
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"net/http"
-	"strconv"
 )
 
 const adapterId = 4

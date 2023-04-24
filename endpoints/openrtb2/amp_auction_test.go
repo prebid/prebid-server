@@ -14,11 +14,15 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/prebid/prebid-server/amp"
 	"github.com/prebid/prebid-server/analytics"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
@@ -27,8 +31,6 @@ import (
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // TestGoodRequests makes sure that the auction runs properly-formatted stored bids correctly.
@@ -397,8 +399,9 @@ func TestOverrideWithParams(t *testing.T) {
 		bidRequest *openrtb2.BidRequest
 	}
 	type testOutput struct {
-		bidRequest *openrtb2.BidRequest
-		errorMsgs  []string
+		bidRequest        *openrtb2.BidRequest
+		errorMsgs         []string
+		expectFatalErrors bool
 	}
 	testCases := []struct {
 		desc     string
@@ -519,7 +522,8 @@ func TestOverrideWithParams(t *testing.T) {
 					Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)},
 					User: &openrtb2.User{Ext: json.RawMessage(`malformed`)},
 				},
-				errorMsgs: []string{"invalid character 'm' looking for beginning of value"},
+				errorMsgs:         []string{"invalid character 'm' looking for beginning of value"},
+				expectFatalErrors: true,
 			},
 		},
 		{
@@ -566,7 +570,8 @@ func TestOverrideWithParams(t *testing.T) {
 					User: &openrtb2.User{Ext: json.RawMessage(`{"prebid":{malformed}}`)},
 					Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)},
 				},
-				errorMsgs: []string{"invalid character 'm' looking for beginning of object key string"},
+				errorMsgs:         []string{"invalid character 'm' looking for beginning of object key string"},
+				expectFatalErrors: true,
 			},
 		},
 	}
@@ -578,6 +583,7 @@ func TestOverrideWithParams(t *testing.T) {
 		assert.Len(t, errs, len(test.expected.errorMsgs), test.desc)
 		if len(test.expected.errorMsgs) > 0 {
 			assert.Equal(t, test.expected.errorMsgs[0], errs[0].Error(), test.desc)
+			assert.Equal(t, test.expected.expectFatalErrors, errortypes.ContainsFatalError(errs), test.desc)
 		}
 	}
 }

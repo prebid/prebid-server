@@ -6,7 +6,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
@@ -588,6 +588,213 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
 		assert.Nil(t, errorList, "Error should be nil")
 	}
 
+}
+
+func TestProcessStoredResponsesNotFoundResponse(t *testing.T) {
+	bidderMap := map[string]openrtb_ext.BidderName{"bidderA": "bidderA", "bidderB": "bidderB"}
+	bidStoredResp1 := json.RawMessage(`[{"bid": [{"id": "bid_id1"],"seat": "bidderA"}]`)
+	bidStoredResp2 := json.RawMessage(`[{"bid": [{"id": "bid_id2"],"seat": "bidderB"}]`)
+	mockStoredResponses := map[string]json.RawMessage{
+		"1": bidStoredResp1,
+		"2": bidStoredResp2,
+		"3": nil,
+		"4": nil,
+	}
+	fetcher := &mockStoredBidResponseFetcher{mockStoredResponses}
+
+	testCases := []struct {
+		description    string
+		requestJson    []byte
+		expectedErrors []error
+	}{
+		{
+			description: "Stored bid response with nil data, one bidder one imp",
+			requestJson: []byte(`{"imp": [
+    			  {
+    			    "id": "imp-id1",
+    			    "ext": {
+                		"appnexus": {
+							"placementId": 123
+                		},
+                		"prebid": {
+                    		"storedbidresponse": [
+                        		{"bidder":"bidderB", "id": "3"}
+                    		]
+                		}
+            		}
+    			  }
+    			]}`),
+			expectedErrors: []error{
+				errors.New("failed to fetch stored bid response for impId = imp-id1, bidder = bidderB and storedBidResponse id = 3"),
+			},
+		},
+		{
+			description: "Stored bid response with nil data, one bidder, two imps, one with correct stored response",
+			requestJson: []byte(`{"imp": [
+    			  {
+    			    "id": "imp-id1",
+    			    "ext": {
+                		"appnexus": {
+							"placementId": 123
+                		},
+                		"prebid": {
+                    		"storedbidresponse": [
+                        		{"bidder":"bidderB", "id": "1"}
+                    		]
+                		}
+            		}
+    			  },
+                  {
+    			    "id": "imp-id2",
+    			    "ext": {
+                		"appnexus": {
+							"placementId": 123
+                		},
+                		"prebid": {
+                    		"storedbidresponse": [
+                        		{"bidder":"bidderB", "id": "3"}
+                    		]
+                		}
+            		}
+    			  }
+    			]}`),
+			expectedErrors: []error{
+				errors.New("failed to fetch stored bid response for impId = imp-id2, bidder = bidderB and storedBidResponse id = 3"),
+			},
+		},
+		{
+			description: "Stored bid response with nil data, one bidder, two imps, both with correct stored response",
+			requestJson: []byte(`{"imp": [
+    			  {
+    			    "id": "imp-id1",
+    			    "ext": {
+                		"appnexus": {
+							"placementId": 123
+                		},
+                		"prebid": {
+                    		"storedbidresponse": [
+                        		{"bidder":"bidderB", "id": "4"}
+                    		]
+                		}
+            		}
+    			  },
+                  {
+    			    "id": "imp-id2",
+    			    "ext": {
+                		"appnexus": {
+							"placementId": 123
+                		},
+                		"prebid": {
+                    		"storedbidresponse": [
+                        		{"bidder":"bidderB", "id": "3"}
+                    		]
+                		}
+            		}
+    			  }
+    			]}`),
+			expectedErrors: []error{
+				errors.New("failed to fetch stored bid response for impId = imp-id1, bidder = bidderB and storedBidResponse id = 4"),
+				errors.New("failed to fetch stored bid response for impId = imp-id2, bidder = bidderB and storedBidResponse id = 3"),
+			},
+		},
+		{
+			description: "Stored auction response with nil data and one imp",
+			requestJson: []byte(`{"imp": [
+    			  {
+    			    "id": "imp-id1",
+    			    "ext": {
+                		"appnexus": {
+							"placementId": 123
+                		},
+                		"prebid": {
+                    		"storedauctionresponse": {
+                        		"id": "4"
+                    		}
+                		}
+            		}
+    			  }
+    			]}`),
+			expectedErrors: []error{
+				errors.New("failed to fetch stored auction response for impId = imp-id1 and storedAuctionResponse id = 4"),
+			},
+		},
+		{
+			description: "Stored auction response with nil data, and two imps with nil responses",
+			requestJson: []byte(`{"imp": [
+    			  {
+    			    "id": "imp-id1",
+    			    "ext": {
+                		"appnexus": {
+							"placementId": 123
+                		},
+                		"prebid": {
+                    		"storedauctionresponse": {
+                        		"id": "4"
+                    		}
+                		}
+            		}
+    			  },
+                  {
+    			    "id": "imp-id2",
+    			    "ext": {
+                		"appnexus": {
+							"placementId": 123
+                		},
+                		"prebid": {
+                    		"storedauctionresponse": {
+                        		"id": "3"
+                    		}
+                		}
+            		}
+    			  }
+    			]}`),
+			expectedErrors: []error{
+				errors.New("failed to fetch stored auction response for impId = imp-id1 and storedAuctionResponse id = 4"),
+				errors.New("failed to fetch stored auction response for impId = imp-id2 and storedAuctionResponse id = 3"),
+			},
+		},
+		{
+			description: "Stored auction response with nil data, two imps, one with nil responses",
+			requestJson: []byte(`{"imp": [
+    			  {
+    			    "id": "imp-id1",
+    			    "ext": {
+                		"appnexus": {
+							"placementId": 123
+                		},
+                		"prebid": {
+                    		"storedauctionresponse": {
+                        		"id": "2"
+                    		}
+                		}
+            		}
+    			  },
+                  {
+    			    "id": "imp-id2",
+    			    "ext": {
+                		"appnexus": {
+							"placementId": 123
+                		},
+                		"prebid": {
+                    		"storedauctionresponse": {
+                        		"id": "3"
+                    		}
+                		}
+            		}
+    			  }
+    			]}`),
+			expectedErrors: []error{
+				errors.New("failed to fetch stored auction response for impId = imp-id2 and storedAuctionResponse id = 3"),
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		_, _, _, errorList := ProcessStoredResponses(nil, test.requestJson, fetcher, bidderMap)
+		for _, err := range test.expectedErrors {
+			assert.Contains(t, errorList, err, "incorrect errors returned: %s", test.description)
+		}
+	}
 }
 
 func TestFlipMap(t *testing.T) {

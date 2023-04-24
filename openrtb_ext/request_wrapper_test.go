@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -963,14 +963,24 @@ func TestImpWrapperGetImpExt(t *testing.T) {
 		},
 		{
 			description:  "Populated - Ext",
-			givenWrapper: ImpWrapper{Imp: &openrtb2.Imp{Ext: json.RawMessage(`{"prebid":{"is_rewarded_inventory":1},"other":42, "tid": "test-tid"}`)}},
+			givenWrapper: ImpWrapper{Imp: &openrtb2.Imp{Ext: json.RawMessage(`{"prebid":{"is_rewarded_inventory":1},"other":42,"tid":"test-tid","gpid":"test-gpid","data":{"adserver":{"name":"ads","adslot":"adslot123"},"pbadslot":"pbadslot123"}}`)}},
 			expectedImpExt: ImpExt{
 				ext: map[string]json.RawMessage{
 					"prebid": json.RawMessage(`{"is_rewarded_inventory":1}`),
 					"other":  json.RawMessage(`42`),
 					"tid":    json.RawMessage(`"test-tid"`),
+					"gpid":   json.RawMessage(`"test-gpid"`),
+					"data":   json.RawMessage(`{"adserver":{"name":"ads","adslot":"adslot123"},"pbadslot":"pbadslot123"}`),
 				},
-				tid:    "test-tid",
+				tid:  "test-tid",
+				gpId: "test-gpid",
+				data: &ExtImpData{
+					AdServer: &ExtImpDataAdServer{
+						Name:   "ads",
+						AdSlot: "adslot123",
+					},
+					PbAdslot: "pbadslot123",
+				},
 				prebid: &ExtImpPrebid{IsRewardedInventory: &isRewardedInventoryOne},
 			},
 		},
