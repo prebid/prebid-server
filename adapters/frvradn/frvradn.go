@@ -128,13 +128,13 @@ func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ImpExtFRVRAdn, error) {
 	var extImpBidder adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &extImpBidder); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: "missing ext.bidder",
+			Message: "missing ext",
 		}
 	}
 	var frvrAdnExt openrtb_ext.ImpExtFRVRAdn
 	if err := json.Unmarshal(extImpBidder.Bidder, &frvrAdnExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: "missing ext.bidder.frvradn",
+			Message: "missing ext.bidder",
 		}
 	}
 
@@ -154,9 +154,6 @@ func getBidMediaType(impId string, imps []openrtb2.Imp) (openrtb_ext.BidType, er
 			}
 			if imp.Video != nil {
 				return openrtb_ext.BidTypeVideo, nil
-			}
-			if imp.Audio != nil {
-				return openrtb_ext.BidTypeAudio, nil
 			}
 			if imp.Native != nil {
 				return openrtb_ext.BidTypeNative, nil
