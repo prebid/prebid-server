@@ -1,0 +1,53 @@
+name: Usersync Redirect Check
+
+on:
+  push:
+    paths:
+      - 'static/bidder-info/**.yaml'
+
+jobs:
+  check_yaml_files:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Check if any .yaml file is updated
+        id: check-bidder-info-updated
+        run: |
+          if git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep -q '^static/bidder-info/.*\.yaml$'; then
+            updated_files=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep '^static/bidder-info/.*\.yaml$')
+          
+            for file in $updated_files; do
+              if [ -f "$file" ]; then
+                if git diff --name-only --diff-filter=A ${{ github.event.before }} ${{ github.event.after }} | grep -q "^$file$"; then
+                  echo "File $file was added in this PR"
+                  redirectURL="$(yq eval '.userSync.redirect.url' "$file")"
+                  redirectMacro="$(yq eval '.userSync.redirect.userMacro' "$file")"
+                  urlLength=$(echo -n "$redirectURL" | wc -c)
+                  macroLength="$(echo -n "redirectMacro" | wc -c)"
+                  if [ "$redirectURL" == null ] || [ $urlLength == 0 ] || [ "$redirectMacro" == null ] || [ $macroLength == 0 ]; then
+                    echo "userSync.redirect.url/userSync.redirect.userMacro not found in $file"
+                  else
+                    echo "userSync.redirect.url/userSync.redirect.userMacro found in $file"
+                  fi
+                else
+                  echo "File $file was updated in this PR"
+                  prUrlChanges=$(yq eval '.userSync.redirect.url' "$file")
+                  masterUrlChanges=$(yq eval '.userSync.redirect.url' <(git show origin/master:$file))
+                  prMacroChanges=$(yq eval '.userSync.redirect.userMacro' "$file")
+                  masterMacroChanges=$(yq eval '.userSync.redirect.userMacro' <(git show origin/master:$file))
+                  if [ "$prUrlChanges" != "$masterUrlChanges" ] || [ "$prMacroChanges" != "$masterMacroChanges"]; then
+                    echo "userSync.redirect.url/userSync.redirect.userMacro was updated in $file"
+                  else
+                    echo "userSync.redirect.url/userSync.redirect.userMacro was not updated in $file"
+                  fi
+                fi
+              else
+                echo "File $file does not exist"
+              fi
+            done
+          fi
