@@ -340,6 +340,45 @@ func TestEnforceFloors(t *testing.T) {
 		expRejectedBids []*entities.PbsOrtbSeatBid
 	}{
 		{
+			name: "Error in getting request extension",
+			args: args{
+				bidRequestWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						ID: "some-request-id",
+						Imp: []openrtb2.Imp{{
+							ID:          "some-impression-id-1",
+							Banner:      &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}},
+							BidFloor:    5.01,
+							BidFloorCur: "USD",
+						}},
+						Ext: json.RawMessage(`{"prebid":{"floors":{"floormin":1,"data":{"currency":"USD","skiprate":100,"modelgroups":[{"modelversion":"version1","skiprate":10,"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"},"values":{"*|*|*":20.01,"*|*|www.website1.com":16.01},"default":21}]},"enforcement":{"enforcepbs":true,"floordeals":false},"enabled":false,"skipped":false}}`),
+					},
+				},
+				seatBids: map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid{
+					"pubmatic": {
+						Bids: []*entities.PbsOrtbBid{
+							&imp2_bid_4_5,
+						},
+						Seat:     "pubmatic",
+						Currency: "USD",
+					},
+				},
+				conversions:    convert{},
+				priceFloorsCfg: config.AccountPriceFloors{Enabled: false, EnforceFloorsRate: 100, EnforceDealFloors: true},
+			},
+			expEligibleBids: map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid{
+				"pubmatic": {
+					Bids: []*entities.PbsOrtbBid{
+						&imp2_bid_4_5,
+					},
+					Seat:     "pubmatic",
+					Currency: "USD",
+				},
+			},
+			expErrs:         []error{errors.New("Error in getting request extension")},
+			expRejectedBids: []*entities.PbsOrtbSeatBid{},
+		},
+		{
 			name: "Should not enforce floors when req.ext.prebid.floors.enabled = false",
 			args: args{
 				bidRequestWrapper: &openrtb_ext.RequestWrapper{
@@ -671,13 +710,13 @@ func TestIsPriceFloorsEnforcementDisabledForRequest(t *testing.T) {
 func TestIsFloorsSignallingSkipped(t *testing.T) {
 
 	tests := []struct {
-		name              string
-		bidRequestWrapper *openrtb_ext.RequestWrapper
-		want              bool
+		name   string
+		reqExt *openrtb_ext.RequestExt
+		want   bool
 	}{
 		{
 			name: "Req.ext not provided",
-			bidRequestWrapper: func() *openrtb_ext.RequestWrapper {
+			reqExt: func() *openrtb_ext.RequestExt {
 				bw := openrtb_ext.RequestWrapper{
 					BidRequest: &openrtb2.BidRequest{
 						ID: "some-request-id",
@@ -687,13 +726,14 @@ func TestIsFloorsSignallingSkipped(t *testing.T) {
 					},
 				}
 				bw.RebuildRequest()
-				return &bw
+				reqExt, _ := bw.GetRequestExt()
+				return reqExt
 			}(),
 			want: false,
 		},
 		{
 			name: "Req.ext provided Skipped = true",
-			bidRequestWrapper: func() *openrtb_ext.RequestWrapper {
+			reqExt: func() *openrtb_ext.RequestExt {
 				bw := openrtb_ext.RequestWrapper{
 					BidRequest: &openrtb2.BidRequest{
 						ID: "some-request-id",
@@ -704,13 +744,14 @@ func TestIsFloorsSignallingSkipped(t *testing.T) {
 					},
 				}
 				bw.RebuildRequest()
-				return &bw
+				reqExt, _ := bw.GetRequestExt()
+				return reqExt
 			}(),
 			want: true,
 		},
 		{
 			name: "Req.ext provided Skipped = false",
-			bidRequestWrapper: func() *openrtb_ext.RequestWrapper {
+			reqExt: func() *openrtb_ext.RequestExt {
 				bw := openrtb_ext.RequestWrapper{
 					BidRequest: &openrtb2.BidRequest{
 						ID: "some-request-id",
@@ -721,14 +762,15 @@ func TestIsFloorsSignallingSkipped(t *testing.T) {
 					},
 				}
 				bw.RebuildRequest()
-				return &bw
+				reqExt, _ := bw.GetRequestExt()
+				return reqExt
 			}(),
 			want: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := isFloorsSignallingSkipped(tt.bidRequestWrapper)
+			got := isFloorsSignallingSkipped(tt.reqExt)
 			assert.Equal(t, tt.want, got, tt.name)
 		})
 	}
@@ -737,13 +779,13 @@ func TestIsFloorsSignallingSkipped(t *testing.T) {
 func TestGetEnforceRateRequest(t *testing.T) {
 
 	tests := []struct {
-		name              string
-		bidRequestWrapper *openrtb_ext.RequestWrapper
-		want              int
+		name   string
+		reqExt *openrtb_ext.RequestExt
+		want   int
 	}{
 		{
 			name: "Req.ext not provided",
-			bidRequestWrapper: func() *openrtb_ext.RequestWrapper {
+			reqExt: func() *openrtb_ext.RequestExt {
 				bw := openrtb_ext.RequestWrapper{
 					BidRequest: &openrtb2.BidRequest{
 						ID: "some-request-id",
@@ -753,13 +795,14 @@ func TestGetEnforceRateRequest(t *testing.T) {
 					},
 				}
 				bw.RebuildRequest()
-				return &bw
+				reqExt, _ := bw.GetRequestExt()
+				return reqExt
 			}(),
 			want: 0,
 		},
 		{
 			name: "Req.ext.prebid.floors provided with EnforceRate = 0",
-			bidRequestWrapper: func() *openrtb_ext.RequestWrapper {
+			reqExt: func() *openrtb_ext.RequestExt {
 				bw := openrtb_ext.RequestWrapper{
 					BidRequest: &openrtb2.BidRequest{
 						ID: "some-request-id",
@@ -770,13 +813,14 @@ func TestGetEnforceRateRequest(t *testing.T) {
 					},
 				}
 				bw.RebuildRequest()
-				return &bw
+				reqExt, _ := bw.GetRequestExt()
+				return reqExt
 			}(),
 			want: 0,
 		},
 		{
 			name: "Req.ext.prebid.floors provided with EnforceRate = 50",
-			bidRequestWrapper: func() *openrtb_ext.RequestWrapper {
+			reqExt: func() *openrtb_ext.RequestExt {
 				bw := openrtb_ext.RequestWrapper{
 					BidRequest: &openrtb2.BidRequest{
 						ID: "some-request-id",
@@ -787,13 +831,14 @@ func TestGetEnforceRateRequest(t *testing.T) {
 					},
 				}
 				bw.RebuildRequest()
-				return &bw
+				reqExt, _ := bw.GetRequestExt()
+				return reqExt
 			}(),
 			want: 50,
 		},
 		{
 			name: "Req.ext.prebid.floors provided with EnforceRate = 100",
-			bidRequestWrapper: func() *openrtb_ext.RequestWrapper {
+			reqExt: func() *openrtb_ext.RequestExt {
 				bw := openrtb_ext.RequestWrapper{
 					BidRequest: &openrtb2.BidRequest{
 						ID: "some-request-id",
@@ -804,14 +849,15 @@ func TestGetEnforceRateRequest(t *testing.T) {
 					},
 				}
 				bw.RebuildRequest()
-				return &bw
+				reqExt, _ := bw.GetRequestExt()
+				return reqExt
 			}(),
 			want: 100,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := getEnforceRateRequest(tt.bidRequestWrapper)
+			got := getEnforceRateRequest(tt.reqExt)
 			assert.Equal(t, tt.want, got, tt.name)
 		})
 	}
@@ -820,13 +866,13 @@ func TestGetEnforceRateRequest(t *testing.T) {
 func TestGetEnforceDealsFlag(t *testing.T) {
 
 	tests := []struct {
-		name              string
-		bidRequestWrapper *openrtb_ext.RequestWrapper
-		want              bool
+		name   string
+		reqExt *openrtb_ext.RequestExt
+		want   bool
 	}{
 		{
 			name: "Req.ext not provided",
-			bidRequestWrapper: func() *openrtb_ext.RequestWrapper {
+			reqExt: func() *openrtb_ext.RequestExt {
 				bw := openrtb_ext.RequestWrapper{
 					BidRequest: &openrtb2.BidRequest{
 						ID: "some-request-id",
@@ -836,13 +882,14 @@ func TestGetEnforceDealsFlag(t *testing.T) {
 					},
 				}
 				bw.RebuildRequest()
-				return &bw
+				reqExt, _ := bw.GetRequestExt()
+				return reqExt
 			}(),
 			want: false,
 		},
 		{
 			name: "Req.ext.prebid.floors provided,  enforceDeals not provided",
-			bidRequestWrapper: func() *openrtb_ext.RequestWrapper {
+			reqExt: func() *openrtb_ext.RequestExt {
 				bw := openrtb_ext.RequestWrapper{
 					BidRequest: &openrtb2.BidRequest{
 						ID: "some-request-id",
@@ -853,13 +900,14 @@ func TestGetEnforceDealsFlag(t *testing.T) {
 					},
 				}
 				bw.RebuildRequest()
-				return &bw
+				reqExt, _ := bw.GetRequestExt()
+				return reqExt
 			}(),
 			want: false,
 		},
 		{
 			name: "Req.ext.prebid.floors provided with enforceDeals = false",
-			bidRequestWrapper: func() *openrtb_ext.RequestWrapper {
+			reqExt: func() *openrtb_ext.RequestExt {
 				bw := openrtb_ext.RequestWrapper{
 					BidRequest: &openrtb2.BidRequest{
 						ID: "some-request-id",
@@ -870,13 +918,14 @@ func TestGetEnforceDealsFlag(t *testing.T) {
 					},
 				}
 				bw.RebuildRequest()
-				return &bw
+				reqExt, _ := bw.GetRequestExt()
+				return reqExt
 			}(),
 			want: false,
 		},
 		{
 			name: "Req.ext.prebid.floors provided with enforceDeals = true",
-			bidRequestWrapper: func() *openrtb_ext.RequestWrapper {
+			reqExt: func() *openrtb_ext.RequestExt {
 				bw := openrtb_ext.RequestWrapper{
 					BidRequest: &openrtb2.BidRequest{
 						ID: "some-request-id",
@@ -887,14 +936,15 @@ func TestGetEnforceDealsFlag(t *testing.T) {
 					},
 				}
 				bw.RebuildRequest()
-				return &bw
+				reqExt, _ := bw.GetRequestExt()
+				return reqExt
 			}(),
 			want: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := getEnforceDealsFlag(tt.bidRequestWrapper)
+			got := getEnforceDealsFlag(tt.reqExt)
 			assert.Equal(t, tt.want, got, tt.name)
 		})
 	}
@@ -902,7 +952,7 @@ func TestGetEnforceDealsFlag(t *testing.T) {
 
 func TestIsSatisfiedByEnforceRate(t *testing.T) {
 	type args struct {
-		bidRequestWrapper *openrtb_ext.RequestWrapper
+		reqExt            *openrtb_ext.RequestExt
 		configEnforceRate int
 		f                 func(int) int
 	}
@@ -914,7 +964,7 @@ func TestIsSatisfiedByEnforceRate(t *testing.T) {
 		{
 			name: "With EnforceRate = 50",
 			args: args{
-				bidRequestWrapper: func() *openrtb_ext.RequestWrapper {
+				reqExt: func() *openrtb_ext.RequestExt {
 					bw := openrtb_ext.RequestWrapper{
 						BidRequest: &openrtb2.BidRequest{
 							ID: "some-request-id",
@@ -925,7 +975,8 @@ func TestIsSatisfiedByEnforceRate(t *testing.T) {
 						},
 					}
 					bw.RebuildRequest()
-					return &bw
+					reqExt, _ := bw.GetRequestExt()
+					return reqExt
 				}(),
 				configEnforceRate: 100,
 				f: func(n int) int {
@@ -937,7 +988,7 @@ func TestIsSatisfiedByEnforceRate(t *testing.T) {
 		{
 			name: "With EnforceRate = 100",
 			args: args{
-				bidRequestWrapper: func() *openrtb_ext.RequestWrapper {
+				reqExt: func() *openrtb_ext.RequestExt {
 					bw := openrtb_ext.RequestWrapper{
 						BidRequest: &openrtb2.BidRequest{
 							ID: "some-request-id",
@@ -948,7 +999,8 @@ func TestIsSatisfiedByEnforceRate(t *testing.T) {
 						},
 					}
 					bw.RebuildRequest()
-					return &bw
+					reqExt, _ := bw.GetRequestExt()
+					return reqExt
 				}(),
 				configEnforceRate: 100,
 				f: func(n int) int {
@@ -960,7 +1012,7 @@ func TestIsSatisfiedByEnforceRate(t *testing.T) {
 		{
 			name: "With configEnforceRate = 0",
 			args: args{
-				bidRequestWrapper: func() *openrtb_ext.RequestWrapper {
+				reqExt: func() *openrtb_ext.RequestExt {
 					bw := openrtb_ext.RequestWrapper{
 						BidRequest: &openrtb2.BidRequest{
 							ID: "some-request-id",
@@ -971,7 +1023,8 @@ func TestIsSatisfiedByEnforceRate(t *testing.T) {
 						},
 					}
 					bw.RebuildRequest()
-					return &bw
+					reqExt, _ := bw.GetRequestExt()
+					return reqExt
 				}(),
 				configEnforceRate: 0,
 				f: func(n int) int {
@@ -983,7 +1036,7 @@ func TestIsSatisfiedByEnforceRate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := isSatisfiedByEnforceRate(tt.args.bidRequestWrapper, tt.args.configEnforceRate, tt.args.f)
+			got := isSatisfiedByEnforceRate(tt.args.reqExt, tt.args.configEnforceRate, tt.args.f)
 			assert.Equal(t, tt.want, got, tt.name)
 		})
 	}

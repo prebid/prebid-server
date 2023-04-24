@@ -17,13 +17,18 @@ func EnforceFloors(bidRequestWrapper *openrtb_ext.RequestWrapper, seatBids map[o
 	rejectionErrs := []error{}
 	rejectedBids := []*entities.PbsOrtbSeatBid{}
 
+	requestExt, err := bidRequestWrapper.GetRequestExt()
+	if err != nil {
+		return seatBids, []error{errors.New("Error in getting request extension")}, rejectedBids
+	}
+
 	if isPriceFloorsDisabled(account, bidRequestWrapper) {
 		return seatBids, []error{errors.New("Floors feature is disabled at account or in the request")}, rejectedBids
 	}
 
-	if !isFloorsSignallingSkipped(bidRequestWrapper) && isValidImpBidFloorPresent(bidRequestWrapper.BidRequest) {
-		if enforceFloors := isSatisfiedByEnforceRate(bidRequestWrapper, account.PriceFloors.EnforceFloorsRate, rand.Intn); enforceFloors {
-			enforceDealFloors := account.PriceFloors.EnforceDealFloors && getEnforceDealsFlag(bidRequestWrapper)
+	if !isFloorsSignallingSkipped(requestExt) && isValidImpBidFloorPresent(bidRequestWrapper.BidRequest) {
+		if enforceFloors := isSatisfiedByEnforceRate(requestExt, account.PriceFloors.EnforceFloorsRate, rand.Intn); enforceFloors {
+			enforceDealFloors := account.PriceFloors.EnforceDealFloors && getEnforceDealsFlag(requestExt)
 
 			seatBids, rejectionErrs, rejectedBids = enforceFloorToBids(bidRequestWrapper, seatBids, conversions, enforceDealFloors)
 		}
@@ -53,7 +58,7 @@ func enforceFloorToBids(bidRequestWrapper *openrtb_ext.RequestWrapper, seatBids 
 
 			reqImpCur := reqImp.BidFloorCur
 			if reqImpCur == "" {
-				reqImpCur = "USD"
+				reqImpCur = defaultCurrency
 				if bidRequestWrapper.Cur != nil {
 					reqImpCur = bidRequestWrapper.Cur[0]
 				}
@@ -104,9 +109,8 @@ func isPriceFloorsEnforcementDisabled(bidRequestWrapper *openrtb_ext.RequestWrap
 }
 
 // isFloorsSignallingSkipped check for floors signalling is skipped due to skip rate
-func isFloorsSignallingSkipped(bidRequestWrapper *openrtb_ext.RequestWrapper) bool {
-	requestExt, err := bidRequestWrapper.GetRequestExt()
-	if err == nil {
+func isFloorsSignallingSkipped(requestExt *openrtb_ext.RequestExt) bool {
+	if requestExt != nil {
 		if prebidExt := requestExt.GetPrebid(); prebidExt != nil && prebidExt.Floors != nil {
 			return prebidExt.Floors.GetFloorsSkippedFlag()
 		}
@@ -115,9 +119,8 @@ func isFloorsSignallingSkipped(bidRequestWrapper *openrtb_ext.RequestWrapper) bo
 }
 
 // getEnforceRateRequest returns enforceRate provided in request
-func getEnforceRateRequest(bidRequestWrapper *openrtb_ext.RequestWrapper) int {
-	requestExt, err := bidRequestWrapper.GetRequestExt()
-	if err == nil {
+func getEnforceRateRequest(requestExt *openrtb_ext.RequestExt) int {
+	if requestExt != nil {
 		if prebidExt := requestExt.GetPrebid(); prebidExt != nil && prebidExt.Floors != nil {
 			return prebidExt.Floors.GetEnforceRate()
 		}
@@ -126,9 +129,8 @@ func getEnforceRateRequest(bidRequestWrapper *openrtb_ext.RequestWrapper) int {
 }
 
 // getEnforceDealsFlag returns FloorDeals flag from req.ext.prebid.floors.enforcement
-func getEnforceDealsFlag(bidRequestWrapper *openrtb_ext.RequestWrapper) bool {
-	requestExt, err := bidRequestWrapper.GetRequestExt()
-	if err == nil {
+func getEnforceDealsFlag(requestExt *openrtb_ext.RequestExt) bool {
+	if requestExt != nil {
 		if prebidExt := requestExt.GetPrebid(); prebidExt != nil && prebidExt.Floors != nil {
 			return prebidExt.Floors.GetEnforceDealsFlag()
 		}
@@ -147,8 +149,8 @@ func isValidImpBidFloorPresent(bidRequest *openrtb2.BidRequest) bool {
 }
 
 // isSatisfiedByEnforceRate check enforcements should be done or not based on enforceRate in config and in request
-func isSatisfiedByEnforceRate(bidRequestWrapper *openrtb_ext.RequestWrapper, configEnforceRate int, f func(int) int) bool {
-	requestEnforceRate := getEnforceRateRequest(bidRequestWrapper)
+func isSatisfiedByEnforceRate(requestExt *openrtb_ext.RequestExt, configEnforceRate int, f func(int) int) bool {
+	requestEnforceRate := getEnforceRateRequest(requestExt)
 	enforceRate := f(enforceRateMax)
 	satisfiedByRequest := requestEnforceRate == 0 || enforceRate < requestEnforceRate
 	satisfiedByAccount := configEnforceRate == 0 || enforceRate < configEnforceRate

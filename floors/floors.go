@@ -16,6 +16,7 @@ type Price struct {
 }
 
 const (
+	defaultCurrency  string = "USD"
 	defaultDelimiter string = "|"
 	catchAll         string = "*"
 	skipRateMin      int    = 0
