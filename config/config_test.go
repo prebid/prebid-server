@@ -3,6 +3,7 @@ package config
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"net"
 	"os"
 	"strconv"
@@ -3189,5 +3190,56 @@ func TestTCF2FeatureOneVendorException(t *testing.T) {
 		value := tcf2.FeatureOneVendorException(tt.giveBidder)
 
 		assert.Equal(t, tt.wantIsVendorException, value, tt.description)
+	}
+}
+
+func TestTmaxAdjustmentsValidate(t *testing.T) {
+	tests := []struct {
+		description  string
+		errs         []error
+		expectedErrs []error
+		adjustments  *TmaxAdjustments
+	}{
+		{
+			description:  "tmax-feature-is-not-enabled",
+			errs:         []error{},
+			expectedErrs: []error{},
+			adjustments:  &TmaxAdjustments{},
+		},
+		{
+			description: "returns-validation-errors-when-tmax-values-are-not-specified",
+			errs: []error{
+				fmt.Errorf("missing max_request_size"),
+			},
+			expectedErrs: []error{
+				fmt.Errorf("missing max_request_size"),
+				fmt.Errorf("tmax_adjustments.auction_max cannot be less than or equal to zero"),
+				fmt.Errorf("tmax_adjustments.video_max cannot be less than or equal to zero"),
+				fmt.Errorf("tmax_adjustments.amp_max cannot be less than or equal to zero"),
+				fmt.Errorf("tmax_adjustments.bidder_response_min cannot be less than or equal to zero"),
+			},
+			adjustments: &TmaxAdjustments{Enabled: true},
+		},
+		{
+			description:  "returns-no-error-when-tmax-values-are-specified",
+			errs:         []error{},
+			expectedErrs: []error{},
+			adjustments: &TmaxAdjustments{
+				Enabled:                  true,
+				AuctionMax:               900,
+				VideoMax:                 900,
+				AmpMax:                   900,
+				BidderResponseMin:        700,
+				BidderLatencyAdjustment:  100,
+				UpstreamResponseDuration: 100,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			err := test.adjustments.validate(test.errs)
+			assert.Equal(t, test.expectedErrs, err)
+		})
 	}
 }
