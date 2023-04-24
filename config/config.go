@@ -1477,3 +1477,47 @@ func isValidCookieSize(maxCookieSize int) error {
 	}
 	return nil
 }
+
+type TmaxAdjustments struct {
+	// Flag indicating whether the tmax feature is enabled or not
+	Enabled bool `mapstructure:"enabled"`
+	// The maximum allowable tmax for the auction endpoint
+	// The tmax value used for the auction endpoint will be the minimum of the auction_max and tmax specified in the incoming request
+	AuctionMax int `mapstructure:"auction_max"`
+	// The maximum allowable tmax for the video endpoint
+	// The tmax value used for the video endpoint will be the minimum of the video_max and tmax specified in the incoming request
+	VideoMax int `mapstructure:"video_max"`
+	// The maximum allowable tmax for the AMP endpoint
+	// The tmax value used for the AMP endpoint will be the minimum of the amp_max and tmax specified in the incoming request
+	AmpMax int `mapstructure:"amp_max"`
+	// The minimum duration needed for a bidder to respond back
+	// PBS will not send an HTTP request to the bidder server, if the time needed for PBS processing, adapter's MakeRequests() implementation, building Prebid headers, and applying GZip compression (if needed) is less than bidder_response_min.
+	BidderResponseMin int `mapstructure:"bidder_response_min"`
+	// Adjustment factor providing a buffer for network delays between PBS and the bidder server
+	// PBS will subtract the bidder_latency_adjustment from the endpoint's tmax to account for network delays between PBS and the bidder server
+	BidderLatencyAdjustment int `mapstructure:"bidder_latency_adjustment"`
+	// The duration needed to prepare PBS's response for an upstream client
+	// PBS will subtract the upstream_response_duration from the endpoint's tmax to account for time needed for adapter's MakeBids() calls and PBS processing to prepare auction response
+	UpstreamResponseDuration int `mapstructure:"upstream_response_duration"`
+}
+
+func (adj *TmaxAdjustments) validate(errs []error) []error {
+	if adj.Enabled {
+		if adj.AuctionMax <= 0 {
+			errs = append(errs, fmt.Errorf("tmax_adjustments.auction_max cannot be less than or equal to zero"))
+		}
+
+		if adj.VideoMax <= 0 {
+			errs = append(errs, fmt.Errorf("tmax_adjustments.video_max cannot be less than or equal to zero"))
+		}
+
+		if adj.AmpMax <= 0 {
+			errs = append(errs, fmt.Errorf("tmax_adjustments.amp_max cannot be less than or equal to zero"))
+		}
+
+		if adj.BidderResponseMin == 0 {
+			errs = append(errs, fmt.Errorf("tmax_adjustments.bidder_response_min cannot be less than or equal to zero"))
+		}
+	}
+	return errs
+}
