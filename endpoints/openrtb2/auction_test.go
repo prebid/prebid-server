@@ -20,11 +20,13 @@ import (
 	"github.com/prebid/openrtb/v19/native1"
 	nativeRequests "github.com/prebid/openrtb/v19/native1/request"
 	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
@@ -4305,13 +4307,10 @@ func TestParseRequestStoredResponses(t *testing.T) {
 			expectedErrorCount: 0,
 		},
 		{
-			name:             "req has two imps with missing stored responses",
-			givenRequestBody: validRequest(t, "req-two-imps-missing-stored-response.json"),
-			expectedStoredResponses: map[string]json.RawMessage{
-				"imp-id1": json.RawMessage(`[{"bid": [{"id": "bid_id1"],"seat": "appnexus"}]`),
-				"imp-id2": json.RawMessage(nil),
-			},
-			expectedErrorCount: 0,
+			name:                    "req has two imps with missing stored responses",
+			givenRequestBody:        validRequest(t, "req-two-imps-missing-stored-response.json"),
+			expectedStoredResponses: nil,
+			expectedErrorCount:      2,
 		},
 		{
 			name:             "req has two imps: one with stored response and another imp without stored resp",
@@ -4404,13 +4403,10 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 			expectedErrorCount: 0,
 		},
 		{
-			name:             "req has two imps with missing stored bid responses",
-			givenRequestBody: validRequest(t, "req-two-imps-missing-stored-bid-response.json"),
-			expectedStoredBidResponses: map[string]map[string]json.RawMessage{
-				"imp-id1": {"testBidder1": nil},
-				"imp-id2": {"testBidder2": nil},
-			},
-			expectedErrorCount: 0,
+			name:                       "req has two imps with missing stored bid responses",
+			givenRequestBody:           validRequest(t, "req-two-imps-missing-stored-bid-response.json"),
+			expectedStoredBidResponses: nil,
+			expectedErrorCount:         2,
 		},
 	}
 	for _, test := range tests {
@@ -5340,4 +5336,13 @@ type mockStageExecutor struct {
 
 func (e mockStageExecutor) GetOutcomes() []hookexecution.StageOutcome {
 	return e.outcomes
+}
+
+func TestRecordResponsePreparationMetrics(t *testing.T) {
+	mbi := map[openrtb_ext.BidderName]adapters.MakeBidsTimeInfo{
+		openrtb_ext.BidderAppnexus: {Durations: []time.Duration{10, 15}, AfterMakeBidsStartTime: time.Now()},
+	}
+	mockMetricEngine := &metrics.MetricsEngineMock{}
+	mockMetricEngine.On("RecordOverheadTime", metrics.MakeAuctionResponse, mock.Anything)
+	recordResponsePreparationMetrics(mbi, mockMetricEngine)
 }

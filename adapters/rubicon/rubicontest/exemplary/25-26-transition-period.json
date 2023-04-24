@@ -60,7 +60,6 @@
         "lon": -122.346200
       },
       "gender": "f",
-      "consent": "consent",
       "data": [
         {
           "ext": {
@@ -114,23 +113,31 @@
             }
           ]
         }
-      ]
-    },
-    "source": {
-      "schain": {
-        "complete": 0,
-        "nodes": [
-          {
-            "asi": "asi",
-            "sid": "sid"
-          }
-        ],
-        "ver": "1.0"
+      ],
+      "ext": {
+        "consent": "consent"
       }
     },
+    "source": {
+      "ext": {
+        "schain": {
+          "complete": 0,
+          "nodes": [
+            {
+              "asi": "asi",
+              "sid": "sid"
+            }
+          ],
+          "ver": "1.0"
+        }
+      }
+
+    },
     "regs": {
-      "gdpr": 1,
-      "us_privacy": "us_privacy"
+      "ext": {
+        "gdpr": 1,
+        "us_privacy": "us_privacy"
+      }
     },
     "imp": [
       {
