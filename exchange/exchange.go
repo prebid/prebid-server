@@ -302,7 +302,8 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	if err != nil {
 		return nil, err
 	}
-	ruleToAdjustments := bidadjustment.GenerateMap(mergedBidAdj)
+	ruleToAdjustments := make(map[string][]openrtb_ext.Adjustment)
+	bidadjustment.PopulateMap(mergedBidAdj, ruleToAdjustments)
 
 	bidAdjustmentFactors := getExtBidAdjustmentFactors(requestExtPrebid)
 

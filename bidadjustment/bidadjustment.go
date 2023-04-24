@@ -18,7 +18,7 @@ const (
 const pricePrecision float64 = 10000 // Rounds to 4 Decimal Places
 
 func apply(adjustments []openrtb_ext.Adjustment, bidPrice float64, currency string, reqInfo *adapters.ExtraRequestInfo) (float64, string) {
-	if adjustments == nil {
+	if adjustments == nil || len(adjustments) == 0 {
 		return bidPrice, currency
 	}
 	originalBidPrice := bidPrice
@@ -122,26 +122,22 @@ func mergeAdjustmentsForMediaType(reqAdjMap map[openrtb_ext.BidderName]openrtb_e
 	return reqAdjMap
 }
 
-func GenerateMap(bidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments) map[string][]openrtb_ext.Adjustment {
+func PopulateMap(bidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments, ruleToAdjustments map[string][]openrtb_ext.Adjustment) {
 	if bidAdjustments == nil {
-		return nil
+		return
 	}
-	ruleToAdjustmentMap := make(map[string][]openrtb_ext.Adjustment)
-	ruleToAdjustmentMap = populateMapForMediaType(bidAdjustments.MediaType.Banner, string(openrtb_ext.BidTypeBanner), ruleToAdjustmentMap)
-	ruleToAdjustmentMap = populateMapForMediaType(bidAdjustments.MediaType.Video, string(openrtb_ext.BidTypeVideo), ruleToAdjustmentMap)
-	ruleToAdjustmentMap = populateMapForMediaType(bidAdjustments.MediaType.Audio, string(openrtb_ext.BidTypeAudio), ruleToAdjustmentMap)
-	ruleToAdjustmentMap = populateMapForMediaType(bidAdjustments.MediaType.Native, string(openrtb_ext.BidTypeNative), ruleToAdjustmentMap)
-	ruleToAdjustmentMap = populateMapForMediaType(bidAdjustments.MediaType.WildCard, WildCard, ruleToAdjustmentMap)
-
-	return ruleToAdjustmentMap
+	populateMapForMediaType(bidAdjustments.MediaType.Banner, string(openrtb_ext.BidTypeBanner), ruleToAdjustments)
+	populateMapForMediaType(bidAdjustments.MediaType.Video, string(openrtb_ext.BidTypeVideo), ruleToAdjustments)
+	populateMapForMediaType(bidAdjustments.MediaType.Audio, string(openrtb_ext.BidTypeAudio), ruleToAdjustments)
+	populateMapForMediaType(bidAdjustments.MediaType.Native, string(openrtb_ext.BidTypeNative), ruleToAdjustments)
+	populateMapForMediaType(bidAdjustments.MediaType.WildCard, WildCard, ruleToAdjustments)
 }
 
-func populateMapForMediaType(bidAdj map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID, mediaType string, ruleToAdjustmentMap map[string][]openrtb_ext.Adjustment) map[string][]openrtb_ext.Adjustment {
+func populateMapForMediaType(bidAdj map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID, mediaType string, ruleToAdjustmentMap map[string][]openrtb_ext.Adjustment) {
 	for bidderName := range bidAdj {
 		for dealID, adjustments := range bidAdj[bidderName] {
 			rule := mediaType + Delimiter + string(bidderName) + Delimiter + dealID
 			ruleToAdjustmentMap[rule] = adjustments
 		}
 	}
-	return ruleToAdjustmentMap
 }

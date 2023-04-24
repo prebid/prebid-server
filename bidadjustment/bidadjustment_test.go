@@ -534,14 +534,15 @@ func TestGenerateMap(t *testing.T) {
 		{
 			name:                "NilAdjustments",
 			givenBidAdjustments: nil,
-			expectedMap:         nil,
+			expectedMap:         map[string][]openrtb_ext.Adjustment{},
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			ruleToAdjustmentMap := GenerateMap(test.givenBidAdjustments)
-			assert.Equal(t, test.expectedMap, ruleToAdjustmentMap)
+			ruleToAdjustments := make(map[string][]openrtb_ext.Adjustment)
+			PopulateMap(test.givenBidAdjustments, ruleToAdjustments)
+			assert.Equal(t, test.expectedMap, ruleToAdjustments)
 		})
 	}
 }
