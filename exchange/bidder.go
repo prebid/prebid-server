@@ -122,9 +122,11 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 		return nil, []error{reject}
 	}
 
-	var reqData []*adapters.RequestData
-	var errs []error
-	var responseChannel chan *httpCallInfo
+	var (
+		reqData         []*adapters.RequestData
+		errs            []error
+		responseChannel chan *httpCallInfo
+	)
 
 	//check if real request exists for this bidder or it only has stored responses
 	dataLen := 0
@@ -170,11 +172,11 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 		dataLen = len(reqData) + len(bidderRequest.BidderStoredResponses)
 		responseChannel = make(chan *httpCallInfo, dataLen)
 		if len(reqData) == 1 {
-			responseChannel <- bidder.doRequest(ctx, reqData[0])
+			responseChannel <- bidder.doRequest(ctx, reqData[0], reqInfo.BidderRequestStartTime)
 		} else {
 			for _, oneReqData := range reqData {
 				go func(data *adapters.RequestData) {
-					responseChannel <- bidder.doRequest(ctx, data)
+					responseChannel <- bidder.doRequest(ctx, data, reqInfo.BidderRequestStartTime)
 				}(oneReqData) // Method arg avoids a race condition on oneReqData
 			}
 		}
@@ -228,6 +230,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 		}
 
 		if httpInfo.err == nil {
+			startTime := time.Now()
 			bidResponse, moreErrs := bidder.Bidder.MakeBids(bidderRequest.BidRequest, httpInfo.request, httpInfo.response)
 			errs = append(errs, moreErrs...)
 
@@ -367,11 +370,12 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 					errs = append(errs, err)
 				}
 			}
+			reqInfo.MakeBidsTimeInfo.Durations = append(reqInfo.MakeBidsTimeInfo.Durations, time.Since(startTime))
 		} else {
 			errs = append(errs, httpInfo.err)
 		}
 	}
-
+	reqInfo.MakeBidsTimeInfo.AfterMakeBidsStartTime = time.Now()
 	seatBids := make([]*entities.PbsOrtbSeatBid, 0, len(seatBidMap))
 	for _, seatBid := range seatBidMap {
 		seatBids = append(seatBids, seatBid)
@@ -491,11 +495,11 @@ func makeExt(httpInfo *httpCallInfo) *openrtb_ext.ExtHttpCall {
 
 // doRequest makes a request, handles the response, and returns the data needed by the
 // Bidder interface.
-func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.RequestData) *httpCallInfo {
-	return bidder.doRequestImpl(ctx, req, glog.Warningf)
+func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.RequestData, pbsRequestStartTime time.Time) *httpCallInfo {
+	return bidder.doRequestImpl(ctx, req, glog.Warningf, pbsRequestStartTime)
 }
 
-func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.RequestData, logger util.LogMsg) *httpCallInfo {
+func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.RequestData, logger util.LogMsg, pbsRequestStartTime time.Time) *httpCallInfo {
 	var requestBody []byte
 
 	switch strings.ToUpper(bidder.config.EndpointCompression) {
@@ -519,6 +523,7 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 	if !bidder.config.DisableConnMetrics {
 		ctx = bidder.addClientTrace(ctx)
 	}
+	bidder.me.RecordOverheadTime(metrics.PreBidder, time.Since(pbsRequestStartTime))
 	httpResp, err := ctxhttp.Do(ctx, bidder.Client, httpReq)
 	if err != nil {
 		if err == context.DeadlineExceeded {
