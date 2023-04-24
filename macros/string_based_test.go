@@ -8,7 +8,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-func Test_stringBasedProcessor_Replace(t *testing.T) {
+func TestStringBasedProcessorReplace(t *testing.T) {
 
 	type args struct {
 		url              string

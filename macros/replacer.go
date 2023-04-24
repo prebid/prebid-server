@@ -8,7 +8,7 @@ type Replacer interface {
 
 // NewReplacer will return instance of macro processor
 func NewReplacer() Replacer {
-	return &stringBasedProcessor{
+	return &stringBasedReplacer{
 		templates: make(map[string]urlMetaTemplate),
 	}
 }
