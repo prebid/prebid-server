@@ -297,7 +297,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 
 	secGPC := r.Header.Get("Sec-GPC")
-	auctionRequest := exchange.AuctionRequest{
+	auctionRequest := &exchange.AuctionRequest{
 		BidRequestWrapper:          bidReqWrapper,
 		Account:                    *account,
 		UserSyncs:                  usersyncs,
@@ -352,6 +352,10 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		errL := []error{err}
 		handleError(&labels, w, errL, &vo, &debugLog)
 		return
+	}
+
+	if len(vo.Errors) == 0 {
+		recordResponsePreparationMetrics(auctionRequest.MakeBidsTimeInfo, deps.metricsEngine)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
