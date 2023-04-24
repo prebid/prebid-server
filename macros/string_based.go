@@ -19,7 +19,7 @@ type urlMetaTemplate struct {
 	macroLength []int
 }
 
-func constructTemplate(url string, delimiter string) urlMetaTemplate {
+func constructTemplate(url string) urlMetaTemplate {
 	currentIndex := 0
 	tmplt := urlMetaTemplate{
 		indices:     []int{},
@@ -79,7 +79,7 @@ func (processor *stringBasedReplacer) getTemplate(url string) urlMetaTemplate {
 
 	if !ok {
 		processor.Lock()
-		template = constructTemplate(url, delimiter)
+		template = constructTemplate(url)
 		processor.templates[url] = template
 		processor.Unlock()
 	}
