@@ -123,6 +123,7 @@ const (
 	BidderAudienceNetwork   BidderName = "audienceNetwork"
 	BidderAutomatad         BidderName = "automatad"
 	BidderAvocet            BidderName = "avocet"
+	BidderAxis              BidderName = "axis"
 	BidderAxonix            BidderName = "axonix"
 	BidderBeachfront        BidderName = "beachfront"
 	BidderBeintoo           BidderName = "beintoo"
@@ -308,6 +309,7 @@ func CoreBidderNames() []BidderName {
 		BidderAudienceNetwork,
 		BidderAutomatad,
 		BidderAvocet,
+		BidderAxis,
 		BidderAxonix,
 		BidderBeachfront,
 		BidderBeintoo,
