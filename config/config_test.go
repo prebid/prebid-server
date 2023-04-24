@@ -456,6 +456,14 @@ account_defaults:
         use_dynamic_data: true
         max_rules: 120
         max_schema_dims: 5
+tmax_adjustments:
+  enabled: true
+  auction_max: 900
+  video_max: 900
+  amp_max: 900
+  bidder_response_min: 700
+  bidder_latency_adjustment: 100
+  upstream_response_duration: 100
 `)
 
 var oldStoredRequestsConfig = []byte(`
@@ -510,6 +518,13 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "garbage_collector_threshold", cfg.GarbageCollectorThreshold, 1)
 	cmpInts(t, "auction_timeouts_ms.default", int(cfg.AuctionTimeouts.Default), 50)
 	cmpInts(t, "auction_timeouts_ms.max", int(cfg.AuctionTimeouts.Max), 123)
+	cmpBools(t, "tmax_adjustments.enabled", cfg.TmaxAdjustments.Enabled, true)
+	cmpInts(t, "tmax_adjustments.auction_max", cfg.TmaxAdjustments.AuctionMax, 900)
+	cmpInts(t, "tmax_adjustments.video_max", cfg.TmaxAdjustments.VideoMax, 900)
+	cmpInts(t, "tmax_adjustments.amp_max", cfg.TmaxAdjustments.AmpMax, 900)
+	cmpInts(t, "tmax_adjustments.bidder_response_min", cfg.TmaxAdjustments.BidderResponseMin, 700)
+	cmpInts(t, "tmax_adjustments.bidder_latency_adjustment", cfg.TmaxAdjustments.BidderLatencyAdjustment, 100)
+	cmpInts(t, "tmax_adjustments.upstream_response_duration", cfg.TmaxAdjustments.UpstreamResponseDuration, 100)
 	cmpStrings(t, "cache.scheme", cfg.CacheURL.Scheme, "http")
 	cmpStrings(t, "cache.host", cfg.CacheURL.Host, "prebidcache.net")
 	cmpStrings(t, "cache.query", cfg.CacheURL.Query, "uuid=%PBS_CACHE_UUID%")
