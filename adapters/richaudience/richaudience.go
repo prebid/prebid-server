@@ -71,6 +71,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			}
 
 			if raiExt.Test {
+				deviceCopy := *request.Device
+				request.Device = &deviceCopy
+
 				request.Device.IP = "11.222.33.44"
 				request.Test = int8(1)
 			}
@@ -166,18 +169,18 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	bidResponse.Currency = bidResp.Cur
 
 	for _, reqBid := range bidReq.Imp {
-		for j := range bidResp.SeatBid {
-			for i := range bidResp.SeatBid[j].Bid {
+		for _, seatBid := range bidResp.SeatBid {
+			for i := range seatBid.Bid {
 
-				bidType := getMediaType(bidResp.SeatBid[j].Bid[i].ImpID, reqBid)
+				bidType := getMediaType(seatBid.Bid[i].ImpID, reqBid)
 
 				if bidType == "video" {
-					bidResp.SeatBid[j].Bid[i].W = reqBid.Video.W
-					bidResp.SeatBid[j].Bid[i].H = reqBid.Video.H
+					seatBid.Bid[i].W = reqBid.Video.W
+					seatBid.Bid[i].H = reqBid.Video.H
 				}
 
 				b := &adapters.TypedBid{
-					Bid:     &bidResp.SeatBid[j].Bid[i],
+					Bid:     &seatBid.Bid[i],
 					BidType: bidType,
 				}
 
