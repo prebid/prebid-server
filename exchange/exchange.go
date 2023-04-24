@@ -64,7 +64,6 @@ type exchange struct {
 	cache                    prebid_cache_client.Client
 	cacheTime                time.Duration
 	gdprPermsBuilder         gdpr.PermissionsBuilder
-	tcf2ConfigBuilder        gdpr.TCF2ConfigBuilder
 	currencyConverter        *currency.RateConverter
 	externalURL              string
 	gdprDefaultValue         gdpr.Signal
@@ -125,7 +124,7 @@ func (randomDeduplicateBidBooleanGenerator) Generate() bool {
 	return rand.Intn(100) < 50
 }
 
-func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, gdprPermsBuilder gdpr.PermissionsBuilder, tcf2CfgBuilder gdpr.TCF2ConfigBuilder, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher, adsCertSigner adscert.Signer) Exchange {
+func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, gdprPermsBuilder gdpr.PermissionsBuilder, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher, adsCertSigner adscert.Signer) Exchange {
 	bidderToSyncerKey := map[string]string{}
 	for bidder, syncer := range syncersByBidder {
 		bidderToSyncerKey[bidder] = syncer.Key()
@@ -146,7 +145,6 @@ func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid
 		me:                metricsEngine,
 		privacyConfig:     privacyConfig,
 		gdprPermsBuilder:  gdprPermsBuilder,
-		tcf2ConfigBuilder: tcf2CfgBuilder,
 		hostSChainNode:    cfg.HostSChainNode,
 		bidderInfo:        infos,
 	}
@@ -161,7 +159,6 @@ func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid
 		currencyConverter:        currencyConverter,
 		externalURL:              cfg.ExternalURL,
 		gdprPermsBuilder:         gdprPermsBuilder,
-		tcf2ConfigBuilder:        tcf2CfgBuilder,
 		me:                       metricsEngine,
 		gdprDefaultValue:         gdprDefaultValue,
 		privacyConfig:            privacyConfig,
@@ -193,6 +190,7 @@ type AuctionRequest struct {
 	Warnings                   []error
 	GlobalPrivacyControlHeader string
 	ImpExtInfoMap              map[string]ImpExtInfo
+	TCF2Config                 gdpr.TCF2ConfigReader
 
 	// LegacyLabels is included here for temporary compatibility with cleanOpenRTBRequests
 	// in HoldAuction until we get to factoring it away. Do not use for anything new.
