@@ -3,7 +3,8 @@ name: DEV Deployment to ECS
 on:
   push:
     branches: ["ci-cd"]
-
+# on:
+#   workflow_dispatch
 env:
   AWS_REGION: "us-east-1"
   AWS_ROLE: arn:aws:iam::885182695675:role/PrebidDeploymentDevRole
