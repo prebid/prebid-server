@@ -66,7 +66,9 @@ func (b *macroProvider) populateRequestMacros(reqWrapper *openrtb_ext.RequestWra
 			b.macros[customMacroKey] = truncate(value, 100) // limit the custom macro value  to 100 chars only
 		}
 
-		b.macros[MacroKeyIntegration] = reqExt.GetPrebid().Integration
+		if reqExt.GetPrebid().Integration != "" {
+			b.macros[MacroKeyIntegration] = reqExt.GetPrebid().Integration
+		}
 		channel := reqExt.GetPrebid().Channel
 		if channel != nil {
 			b.macros[MacroKeyChannel] = channel.Name
