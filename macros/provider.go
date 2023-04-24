@@ -76,29 +76,45 @@ func (b *macroProvider) populateRequestMacros(reqWrapper *openrtb_ext.RequestWra
 
 	}
 	b.macros[MacroKeyAuctionID] = reqWrapper.ID
-	if reqWrapper.App != nil && reqWrapper.App.Bundle != "" {
-		b.macros[MacroKeyAppBundle] = reqWrapper.App.Bundle
-	}
+	if reqWrapper.App != nil {
+		if reqWrapper.App.Bundle != "" {
+			b.macros[MacroKeyAppBundle] = reqWrapper.App.Bundle
+		}
 
-	if reqWrapper.App != nil && reqWrapper.App.Domain != "" {
-		b.macros[MacroKeyDomain] = reqWrapper.App.Domain
-	}
+		if reqWrapper.App.Domain != "" {
+			b.macros[MacroKeyDomain] = reqWrapper.App.Domain
+		}
 
-	if reqWrapper.Site != nil && reqWrapper.Site.Domain != "" {
-		b.macros[MacroKeyDomain] = reqWrapper.Site.Domain
-	}
-
-	if reqWrapper.Site != nil && reqWrapper.Site.Publisher != nil && reqWrapper.Site.Publisher.Domain != "" {
-		b.macros[MacroKeyPubDomain] = reqWrapper.Site.Publisher.Domain
-	}
-
-	if reqWrapper.App != nil && reqWrapper.App.Publisher != nil && reqWrapper.App.Publisher.Domain != "" {
-		b.macros[MacroKeyPubDomain] = reqWrapper.App.Publisher.Domain
+		if reqWrapper.App.Publisher != nil {
+			if reqWrapper.App.Publisher.Domain != "" {
+				b.macros[MacroKeyPubDomain] = reqWrapper.App.Publisher.Domain
+			}
+			if reqWrapper.App.Publisher.ID != "" {
+				b.macros[MacroKeyAccountID] = reqWrapper.App.Publisher.ID
+			}
+		}
 	}
 
 	if reqWrapper.Site != nil {
-		b.macros[MacroKeyPageURL] = reqWrapper.Site.Page
+		if reqWrapper.Site.Page != "" {
+			b.macros[MacroKeyPageURL] = reqWrapper.Site.Page
+		}
+
+		if reqWrapper.Site.Domain != "" {
+			b.macros[MacroKeyDomain] = reqWrapper.Site.Domain
+		}
+
+		if reqWrapper.Site.Publisher != nil {
+			if reqWrapper.Site.Publisher.Domain != "" {
+				b.macros[MacroKeyPubDomain] = reqWrapper.Site.Publisher.Domain
+			}
+
+			if reqWrapper.Site.Publisher.ID != "" {
+				b.macros[MacroKeyAccountID] = reqWrapper.Site.Publisher.ID
+			}
+		}
 	}
+
 	userExt, err := reqWrapper.GetUserExt()
 	if err == nil && userExt != nil && userExt.GetConsent() != nil {
 		b.macros[MacroKeyConsent] = *userExt.GetConsent()
@@ -107,14 +123,6 @@ func (b *macroProvider) populateRequestMacros(reqWrapper *openrtb_ext.RequestWra
 		b.macros[MacroKeyLmtTracking] = strconv.Itoa(int(*reqWrapper.Device.Lmt))
 	}
 
-	b.macros[MacroKeyAccountID] = reqWrapper.ID
-	if reqWrapper.Site != nil && reqWrapper.Site.Publisher != nil && reqWrapper.Site.Publisher.ID != "" {
-		b.macros[MacroKeyAccountID] = reqWrapper.Site.Publisher.ID
-	}
-
-	if reqWrapper.App != nil && reqWrapper.App.Publisher != nil && reqWrapper.App.Publisher.ID != "" {
-		b.macros[MacroKeyAccountID] = reqWrapper.App.Publisher.ID
-	}
 }
 
 func (b *macroProvider) GetMacro(key string) string {
