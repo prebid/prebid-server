@@ -1,4 +1,4 @@
-package bidadjustments
+package bidadjustment
 
 import (
 	"testing"
@@ -14,12 +14,12 @@ func TestValidateBidAdjustments(t *testing.T) {
 		expected            bool
 	}{
 		{
-			name: "Valid single bid adjustment multiplier",
+			name: "ValidMultiplierAdjustment",
 			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
-					Banner: map[string]map[string][]openrtb_ext.Adjustments{
+					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
 						"bidderA": {
-							"dealId": []openrtb_ext.Adjustments{{AdjType: "multiplier", Value: 1.1}},
+							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}},
 						},
 					},
 				},
@@ -27,30 +27,17 @@ func TestValidateBidAdjustments(t *testing.T) {
 			expected: true,
 		},
 		{
-			name: "Valid banner bid adjustment, invalid video bid adjustment, negative value",
+			name: "InvalidAdjustmentNegative",
 			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
-					Banner: map[string]map[string][]openrtb_ext.Adjustments{
+					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
 						"bidderA": {
-							"dealId": []openrtb_ext.Adjustments{{AdjType: "multiplier", Value: 1.1}},
+							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}},
 						},
 					},
-					Video: map[string]map[string][]openrtb_ext.Adjustments{
+					Video: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
 						"bidderA": {
-							"dealId": []openrtb_ext.Adjustments{{AdjType: "multiplier", Value: -1.0}},
-						},
-					},
-				},
-			},
-			expected: false,
-		},
-		{
-			name: "Invalid bid adjustment value, too large",
-			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
-				MediaType: openrtb_ext.MediaType{
-					Audio: map[string]map[string][]openrtb_ext.Adjustments{
-						"bidderA": {
-							"dealId": []openrtb_ext.Adjustments{{AdjType: "multiplier", Value: 200}},
+							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: -1.0}},
 						},
 					},
 				},
@@ -58,12 +45,25 @@ func TestValidateBidAdjustments(t *testing.T) {
 			expected: false,
 		},
 		{
-			name: "Valid bid adjustment cpm",
+			name: "InvalidAdjustmentTooLarge",
 			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
-					Native: map[string]map[string][]openrtb_ext.Adjustments{
+					Audio: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
 						"bidderA": {
-							"dealId": []openrtb_ext.Adjustments{{AdjType: "cpm", Value: 1.0, Currency: "USD"}},
+							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 200}},
+						},
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "ValidCpmAdjustment",
+			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+				MediaType: openrtb_ext.MediaType{
+					Native: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
+						"bidderA": {
+							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCpm, Value: 1.0, Currency: "USD"}},
 						},
 					},
 				},
@@ -71,12 +71,12 @@ func TestValidateBidAdjustments(t *testing.T) {
 			expected: true,
 		},
 		{
-			name: "Invalid CPM bid adjustment, no currency given",
+			name: "InvalidCpmAdjustmentNoCurrency",
 			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
-					Banner: map[string]map[string][]openrtb_ext.Adjustments{
+					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
 						"bidderA": {
-							"dealId": []openrtb_ext.Adjustments{{AdjType: "cpm", Value: 1.0, Currency: ""}},
+							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCpm, Value: 1.0, Currency: ""}},
 						},
 					},
 				},
@@ -84,12 +84,12 @@ func TestValidateBidAdjustments(t *testing.T) {
 			expected: false,
 		},
 		{
-			name: "Invalid CPM bid adjustment, negative value",
+			name: "InvalidAdjustmentNegative",
 			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
-					Native: map[string]map[string][]openrtb_ext.Adjustments{
+					Native: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
 						"bidderA": {
-							"dealId": []openrtb_ext.Adjustments{{AdjType: "cpm", Value: -1.0, Currency: "USD"}},
+							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCpm, Value: -1.0, Currency: "USD"}},
 						},
 					},
 				},
@@ -97,12 +97,12 @@ func TestValidateBidAdjustments(t *testing.T) {
 			expected: false,
 		},
 		{
-			name: "Valid static bid adjustment",
+			name: "ValidStaticAdjustment",
 			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
-					Banner: map[string]map[string][]openrtb_ext.Adjustments{
+					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
 						"bidderA": {
-							"dealId": []openrtb_ext.Adjustments{{AdjType: "static", Value: 1.0, Currency: "USD"}},
+							"dealId": []openrtb_ext.Adjustment{{Type: "static", Value: 1.0, Currency: "USD"}},
 						},
 					},
 				},
@@ -110,12 +110,12 @@ func TestValidateBidAdjustments(t *testing.T) {
 			expected: true,
 		},
 		{
-			name: "Invalid static bid adjustment, no currency",
+			name: "InvalidStaticAdjustmentNoCurrency",
 			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
-					Banner: map[string]map[string][]openrtb_ext.Adjustments{
+					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
 						"bidderA": {
-							"dealId": []openrtb_ext.Adjustments{{AdjType: "static", Value: 1.0, Currency: ""}},
+							"dealId": []openrtb_ext.Adjustment{{Type: "static", Value: 1.0, Currency: ""}},
 						},
 					},
 				},
@@ -123,12 +123,12 @@ func TestValidateBidAdjustments(t *testing.T) {
 			expected: false,
 		},
 		{
-			name: "Invalid static bid adjustment, negative value",
+			name: "InvalidStaticAdjustmentNegative",
 			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
-					Banner: map[string]map[string][]openrtb_ext.Adjustments{
+					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
 						"bidderA": {
-							"dealId": []openrtb_ext.Adjustments{{AdjType: "static", Value: -1.0, Currency: "USD"}},
+							"dealId": []openrtb_ext.Adjustment{{Type: "static", Value: -1.0, Currency: "USD"}},
 						},
 					},
 				},
@@ -136,12 +136,12 @@ func TestValidateBidAdjustments(t *testing.T) {
 			expected: false,
 		},
 		{
-			name: "Invalid wildcard adjustment, negative value",
+			name: "InvalidWildcardAdjustmentNegative",
 			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
-					WildCard: map[string]map[string][]openrtb_ext.Adjustments{
+					WildCard: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
 						"bidderA": {
-							"dealId": []openrtb_ext.Adjustments{{AdjType: "static", Value: -1.0, Currency: "USD"}},
+							"dealId": []openrtb_ext.Adjustment{{Type: "static", Value: -1.0, Currency: "USD"}},
 						},
 					},
 				},
@@ -149,7 +149,7 @@ func TestValidateBidAdjustments(t *testing.T) {
 			expected: false,
 		},
 		{
-			name:                "Nil Bid Adjustment",
+			name:                "NilAdjustment",
 			givenBidAdjustments: nil,
 			expected:            true,
 		},

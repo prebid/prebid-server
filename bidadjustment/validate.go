@@ -1,4 +1,4 @@
-package bidadjustments
+package bidadjustment
 
 import (
 	"math"
@@ -28,7 +28,7 @@ func Validate(bidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments) bool {
 	return true
 }
 
-func findAndValidateAdjustment(bidAdjMap map[string]map[string][]openrtb_ext.Adjustments) bool {
+func findAndValidateAdjustment(bidAdjMap map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID) bool {
 	for bidderName := range bidAdjMap {
 		for dealId := range bidAdjMap[bidderName] {
 			for _, adjustment := range bidAdjMap[bidderName][dealId] {
@@ -41,18 +41,17 @@ func findAndValidateAdjustment(bidAdjMap map[string]map[string][]openrtb_ext.Adj
 	return true
 }
 
-func validateAdjustment(adjustment openrtb_ext.Adjustments) bool {
-	switch adjustment.AdjType {
-	case AdjTypeCpm:
+func validateAdjustment(adjustment openrtb_ext.Adjustment) bool {
+	switch adjustment.Type {
+	case AdjustmentTypeCpm:
 		if adjustment.Currency != "" && adjustment.Value >= 0 && adjustment.Value < math.MaxFloat64 {
 			return true
 		}
-	case AdjTypeMultiplier:
+	case AdjustmentTypeMultiplier:
 		if adjustment.Value >= 0 && adjustment.Value < 100 {
 			return true
 		}
-		adjustment.Currency = ""
-	case AdjTypeStatic:
+	case AdjustmentTypeStatic:
 		if adjustment.Currency != "" && adjustment.Value >= 0 && adjustment.Value < math.MaxFloat64 {
 			return true
 		}

@@ -16,7 +16,7 @@ import (
 
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adservertargeting"
-	"github.com/prebid/prebid-server/bidadjustments"
+	"github.com/prebid/prebid-server/bidadjustment"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/errortypes"
@@ -298,11 +298,11 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		r.FirstPartyData = resolvedFPD
 	}
 
-	mergedBidAdj, err := bidadjustments.ProcessBidAdjustments(r.BidRequestWrapper, r.Account.BidAdjustments)
+	mergedBidAdj, err := bidadjustment.Process(r.BidRequestWrapper, r.Account.BidAdjustments)
 	if err != nil {
 		return nil, err
 	}
-	ruleToAdjustments := bidadjustments.GenerateMap(mergedBidAdj)
+	ruleToAdjustments := bidadjustment.GenerateMap(mergedBidAdj)
 
 	bidAdjustmentFactors := getExtBidAdjustmentFactors(requestExtPrebid)
 
@@ -636,7 +636,7 @@ func (e *exchange) getAllBids(
 	experiment *openrtb_ext.Experiment,
 	hookExecutor hookexecution.StageExecutor,
 	pbsRequestStartTime time.Time,
-	ruleToAdjustments map[string][]openrtb_ext.Adjustments) (
+	ruleToAdjustments map[string][]openrtb_ext.Adjustment) (
 	map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid,
 	map[openrtb_ext.BidderName]*seatResponseExtra,
 	*openrtb_ext.Fledge,

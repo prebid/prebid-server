@@ -1,4 +1,4 @@
-package bidadjustments
+package bidadjustment
 
 import (
 	"math"
@@ -8,37 +8,38 @@ import (
 )
 
 const (
-	AdjTypeCpm        = "cpm"
-	AdjTypeMultiplier = "multiplier"
-	AdjTypeStatic     = "static"
-	WildCard          = "*"
-	PipeDelimiter     = "|"
+	AdjustmentTypeCpm        = "cpm"
+	AdjustmentTypeMultiplier = "multiplier"
+	AdjustmentTypeStatic     = "static"
+	WildCard                 = "*"
+	Delimiter                = "|"
 )
 
-const roundTo float64 = 10000 // Rounds to 4 Decimal Places
+const pricePrecision float64 = 10000 // Rounds to 4 Decimal Places
 
-func applyAdjustmentArray(adjArray []openrtb_ext.Adjustments, bidPrice float64, currency string, reqInfo *adapters.ExtraRequestInfo) (float64, string) {
-	if adjArray == nil {
+func apply(adjustments []openrtb_ext.Adjustment, bidPrice float64, currency string, reqInfo *adapters.ExtraRequestInfo) (float64, string) {
+	if adjustments == nil {
 		return bidPrice, currency
 	}
 	originalBidPrice := bidPrice
 	originalCurrency := currency
 
-	for _, adjustment := range adjArray {
-		if adjustment.AdjType == AdjTypeMultiplier {
+	for _, adjustment := range adjustments {
+		switch adjustment.Type {
+		case AdjustmentTypeMultiplier:
 			bidPrice = bidPrice * adjustment.Value
-		} else if adjustment.AdjType == AdjTypeCpm {
+		case AdjustmentTypeCpm:
 			convertedVal, err := reqInfo.ConvertCurrency(adjustment.Value, adjustment.Currency, currency) // Convert Adjustment to Bid Currency
 			if err != nil {
 				return originalBidPrice, currency
 			}
 			bidPrice = bidPrice - convertedVal
-		} else if adjustment.AdjType == AdjTypeStatic {
+		case AdjustmentTypeStatic:
 			bidPrice = adjustment.Value
 			currency = adjustment.Currency
 		}
 	}
-	roundedBidPrice := math.Round(bidPrice*roundTo) / roundTo // Returns Bid Price rounded to 4 decimal places
+	roundedBidPrice := math.Round(bidPrice*pricePrecision) / pricePrecision
 
 	if roundedBidPrice <= 0 {
 		return originalBidPrice, originalCurrency
@@ -46,7 +47,18 @@ func applyAdjustmentArray(adjArray []openrtb_ext.Adjustments, bidPrice float64, 
 	return roundedBidPrice, currency
 }
 
-func mergeBidAdjustments(req *openrtb_ext.RequestWrapper, acctBidAdjs *openrtb_ext.ExtRequestPrebidBidAdjustments) (*openrtb_ext.ExtRequestPrebidBidAdjustments, error) {
+func Process(req *openrtb_ext.RequestWrapper, acctBidAdjs *openrtb_ext.ExtRequestPrebidBidAdjustments) (*openrtb_ext.ExtRequestPrebidBidAdjustments, error) {
+	mergedBidAdj, err := merge(req, acctBidAdjs)
+	if err != nil {
+		return nil, err
+	}
+	if !Validate(mergedBidAdj) {
+		mergedBidAdj = nil
+	}
+	return mergedBidAdj, err
+}
+
+func merge(req *openrtb_ext.RequestWrapper, acctBidAdjs *openrtb_ext.ExtRequestPrebidBidAdjustments) (*openrtb_ext.ExtRequestPrebidBidAdjustments, error) {
 	reqExt, err := req.GetRequestExt()
 	if err != nil {
 		return nil, err
@@ -95,7 +107,7 @@ func mergeBidAdjustments(req *openrtb_ext.RequestWrapper, acctBidAdjs *openrtb_e
 	return extPrebid.BidAdjustments, nil
 }
 
-func mergeAdjustmentsForMediaType(reqAdjMap map[string]map[string][]openrtb_ext.Adjustments, accountAdjMap map[string]map[string][]openrtb_ext.Adjustments) map[string]map[string][]openrtb_ext.Adjustments {
+func mergeAdjustmentsForMediaType(reqAdjMap map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID, accountAdjMap map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID) map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID {
 	for bidderName, dealIdToAdjustmentsMap := range accountAdjMap {
 		if _, ok := reqAdjMap[bidderName]; ok {
 			for dealID, acctAdjustmentsArray := range accountAdjMap[bidderName] {
@@ -110,36 +122,25 @@ func mergeAdjustmentsForMediaType(reqAdjMap map[string]map[string][]openrtb_ext.
 	return reqAdjMap
 }
 
-func ProcessBidAdjustments(req *openrtb_ext.RequestWrapper, acctBidAdjs *openrtb_ext.ExtRequestPrebidBidAdjustments) (*openrtb_ext.ExtRequestPrebidBidAdjustments, error) {
-	mergedBidAdj, err := mergeBidAdjustments(req, acctBidAdjs)
-	if err != nil {
-		return nil, err
-	}
-	if !Validate(mergedBidAdj) {
-		mergedBidAdj = nil
-	}
-	return mergedBidAdj, err
-}
-
-func GenerateMap(bidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments) map[string][]openrtb_ext.Adjustments {
+func GenerateMap(bidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments) map[string][]openrtb_ext.Adjustment {
 	if bidAdjustments == nil {
 		return nil
 	}
-	ruleToAdjustmentMap := make(map[string][]openrtb_ext.Adjustments)
-	ruleToAdjustmentMap = generateMapForMediaType(bidAdjustments.MediaType.Banner, string(openrtb_ext.BidTypeBanner), ruleToAdjustmentMap)
-	ruleToAdjustmentMap = generateMapForMediaType(bidAdjustments.MediaType.Video, string(openrtb_ext.BidTypeVideo), ruleToAdjustmentMap)
-	ruleToAdjustmentMap = generateMapForMediaType(bidAdjustments.MediaType.Audio, string(openrtb_ext.BidTypeAudio), ruleToAdjustmentMap)
-	ruleToAdjustmentMap = generateMapForMediaType(bidAdjustments.MediaType.Native, string(openrtb_ext.BidTypeNative), ruleToAdjustmentMap)
-	ruleToAdjustmentMap = generateMapForMediaType(bidAdjustments.MediaType.WildCard, WildCard, ruleToAdjustmentMap)
+	ruleToAdjustmentMap := make(map[string][]openrtb_ext.Adjustment)
+	ruleToAdjustmentMap = populateMapForMediaType(bidAdjustments.MediaType.Banner, string(openrtb_ext.BidTypeBanner), ruleToAdjustmentMap)
+	ruleToAdjustmentMap = populateMapForMediaType(bidAdjustments.MediaType.Video, string(openrtb_ext.BidTypeVideo), ruleToAdjustmentMap)
+	ruleToAdjustmentMap = populateMapForMediaType(bidAdjustments.MediaType.Audio, string(openrtb_ext.BidTypeAudio), ruleToAdjustmentMap)
+	ruleToAdjustmentMap = populateMapForMediaType(bidAdjustments.MediaType.Native, string(openrtb_ext.BidTypeNative), ruleToAdjustmentMap)
+	ruleToAdjustmentMap = populateMapForMediaType(bidAdjustments.MediaType.WildCard, WildCard, ruleToAdjustmentMap)
 
 	return ruleToAdjustmentMap
 }
 
-func generateMapForMediaType(bidAdj map[string]map[string][]openrtb_ext.Adjustments, mediaType string, ruleToAdjustmentMap map[string][]openrtb_ext.Adjustments) map[string][]openrtb_ext.Adjustments {
+func populateMapForMediaType(bidAdj map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID, mediaType string, ruleToAdjustmentMap map[string][]openrtb_ext.Adjustment) map[string][]openrtb_ext.Adjustment {
 	for bidderName := range bidAdj {
-		for dealID, adjArray := range bidAdj[bidderName] {
-			rule := mediaType + PipeDelimiter + bidderName + PipeDelimiter + dealID
-			ruleToAdjustmentMap[rule] = adjArray
+		for dealID, adjustments := range bidAdj[bidderName] {
+			rule := mediaType + Delimiter + string(bidderName) + Delimiter + dealID
+			ruleToAdjustmentMap[rule] = adjustments
 		}
 	}
 	return ruleToAdjustmentMap

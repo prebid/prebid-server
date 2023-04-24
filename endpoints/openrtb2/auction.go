@@ -25,7 +25,7 @@ import (
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/openrtb/v19/openrtb3"
 	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/bidadjustments"
+	"github.com/prebid/prebid-server/bidadjustment"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/ortb"
 	"golang.org/x/net/publicsuffix"
@@ -1555,7 +1555,7 @@ func validateRequestExt(req *openrtb_ext.RequestWrapper) []error {
 		reqExt.SetPrebid(prebid)
 	}
 
-	if !bidadjustments.Validate(prebid.BidAdjustments) {
+	if !bidadjustment.Validate(prebid.BidAdjustments) {
 		prebid.BidAdjustments = nil
 		reqExt.SetPrebid(prebid)
 		errs = append(errs, &errortypes.Warning{
