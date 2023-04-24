@@ -22,16 +22,13 @@ import (
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/analytics"
-	"github.com/prebid/prebid-server/hooks"
-	"github.com/prebid/prebid-server/hooks/hookexecution"
-	"github.com/prebid/prebid-server/hooks/hookstage"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/hooks"
+	"github.com/prebid/prebid-server/hooks/hookexecution"
+	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/prebid/prebid-server/metrics"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -39,6 +36,8 @@ import (
 	"github.com/prebid/prebid-server/stored_responses"
 	"github.com/prebid/prebid-server/util/iputil"
 	"github.com/prebid/prebid-server/util/ptrutil"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestJsonSampleRequests(t *testing.T) {
@@ -5345,4 +5344,49 @@ func TestRecordResponsePreparationMetrics(t *testing.T) {
 	mockMetricEngine := &metrics.MetricsEngineMock{}
 	mockMetricEngine.On("RecordOverheadTime", metrics.MakeAuctionResponse, mock.Anything)
 	recordResponsePreparationMetrics(mbi, mockMetricEngine)
+}
+
+func TestLimitAuctionTimeout(t *testing.T) {
+	tests := []struct {
+		description string
+		requested   time.Duration
+		tmax        *config.TmaxAdjustments
+		requestType metrics.RequestType
+		expected    time.Duration
+	}{
+		{
+			description: "use-requested-duration-when-tmax.enabled-is-false",
+			requested:   500,
+			tmax:        &config.TmaxAdjustments{},
+			requestType: metrics.ReqTypeORTB2Web,
+			expected:    500,
+		},
+		{
+			description: "requested-duration-is-less-than-server-tmax",
+			requested:   300,
+			tmax: &config.TmaxAdjustments{
+				Enabled: true,
+				AmpMax:  600,
+			},
+			requestType: metrics.ReqTypeAMP,
+			expected:    300,
+		},
+		{
+			description: "requested-duration-is-greater-than-server-tmax",
+			requested:   9000,
+			tmax: &config.TmaxAdjustments{
+				Enabled:  true,
+				VideoMax: 600,
+			},
+			requestType: metrics.ReqTypeVideo,
+			expected:    600,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			duration := LimitAuctionTimeout(test.tmax, test.requested, test.requestType)
+			assert.Equal(t, test.expected, duration)
+		})
+	}
 }

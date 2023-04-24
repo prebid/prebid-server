@@ -2340,3 +2340,23 @@ func recordResponsePreparationMetrics(mbti map[openrtb_ext.BidderName]adapters.M
 		me.RecordOverheadTime(metrics.MakeAuctionResponse, duration)
 	}
 }
+
+func LimitAuctionTimeout(adj *config.TmaxAdjustments, requested time.Duration, requestType metrics.RequestType) time.Duration {
+	if !adj.Enabled {
+		return requested
+	}
+
+	serverTmax := adj.AuctionMax
+	if requestType == metrics.ReqTypeAMP {
+		serverTmax = adj.AmpMax
+	} else if requestType == metrics.ReqTypeVideo {
+		serverTmax = adj.VideoMax
+	}
+
+	max := time.Duration(serverTmax)
+	if requested == 0 || requested > max {
+		return max
+	}
+
+	return requested
+}
