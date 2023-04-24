@@ -40,6 +40,7 @@ type Configuration struct {
 	// If empty, it will return a 204 with no content.
 	StatusResponse    string          `mapstructure:"status_response"`
 	AuctionTimeouts   AuctionTimeouts `mapstructure:"auction_timeouts_ms"`
+	TmaxAdjustments   TmaxAdjustments `mapstructure:"tmax_adjustments"`
 	CacheURL          Cache           `mapstructure:"cache"`
 	ExtCacheURL       ExternalCache   `mapstructure:"external_cache"`
 	RecaptchaSecret   string          `mapstructure:"recaptcha_secret"`
@@ -149,6 +150,7 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 		errs = append(errs, errors.New("account_defaults.Events.VASTEvents has no effect as the feature is under development."))
 	}
 
+	errs = cfg.TmaxAdjustments.validate(errs)
 	errs = cfg.Experiment.validate(errs)
 	errs = cfg.BidderInfos.validate(errs)
 	return errs
@@ -1029,6 +1031,14 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("debug.timeout_notification.sampling_rate", 0.0)
 	v.SetDefault("debug.timeout_notification.fail_only", false)
 	v.SetDefault("debug.override_token", "")
+
+	v.SetDefault("tmax_adjustments.enabled", false)
+	v.SetDefault("tmax_adjustments.auction_max", 900)
+	v.SetDefault("tmax_adjustments.video_max", 900)
+	v.SetDefault("tmax_adjustments.amp_max", 900)
+	v.SetDefault("tmax_adjustments.bidder_response_min", 700)
+	v.SetDefault("tmax_adjustments.bidder_latency_adjustment", 100)
+	v.SetDefault("tmax_adjustments.upstream_response_duration", 100)
 
 	/* IPv4
 	/*  Site Local: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
