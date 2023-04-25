@@ -1848,6 +1848,11 @@ func TestCloneImpExt(t *testing.T) {
 					},
 					Options:     &Options{EchoVideoAttrs: true},
 					Passthrough: json.RawMessage(`{"foo":"bar"}`),
+					Floors: &ExtImpPrebidFloors{
+						FloorRule:      "Rule 16",
+						FloorRuleValue: 16.17,
+						FloorValue:     6.7,
+					},
 				},
 			},
 			impExtCopy: &ImpExt{
@@ -1865,6 +1870,11 @@ func TestCloneImpExt(t *testing.T) {
 					},
 					Options:     &Options{EchoVideoAttrs: true},
 					Passthrough: json.RawMessage(`{"foo":"bar"}`),
+					Floors: &ExtImpPrebidFloors{
+						FloorRule:      "Rule 16",
+						FloorRuleValue: 16.17,
+						FloorValue:     6.7,
+					},
 				},
 			},
 			mutator: func(t *testing.T, impExt *ImpExt) {
@@ -1883,6 +1893,9 @@ func TestCloneImpExt(t *testing.T) {
 				impExt.prebid.Options.EchoVideoAttrs = false
 				impExt.prebid.Options = nil
 				impExt.prebid.Passthrough = json.RawMessage(`{}`)
+				impExt.prebid.Floors.FloorRule = "Friday"
+				impExt.prebid.Floors.FloorMinCur = "EUR"
+				impExt.prebid.Floors = nil
 			},
 		},
 	}

@@ -316,6 +316,9 @@ func TestCloneExtRequestPrebid(t *testing.T) {
 					Bids: &ExtRequestPrebidCacheBids{
 						ReturnCreative: ptrutil.ToPtr(true),
 					},
+					VastXML: &ExtRequestPrebidCacheVAST{
+						ReturnCreative: ptrutil.ToPtr(false),
+					},
 				},
 			},
 			prebidCopy: &ExtRequestPrebid{
@@ -323,9 +326,13 @@ func TestCloneExtRequestPrebid(t *testing.T) {
 					Bids: &ExtRequestPrebidCacheBids{
 						ReturnCreative: ptrutil.ToPtr(true),
 					},
+					VastXML: &ExtRequestPrebidCacheVAST{
+						ReturnCreative: ptrutil.ToPtr(false),
+					},
 				},
 			},
 			mutator: func(t *testing.T, prebid *ExtRequestPrebid) {
+				prebid.Cache.Bids.ReturnCreative = ptrutil.ToPtr(false)
 				prebid.Cache.Bids = nil
 				prebid.Cache.VastXML = &ExtRequestPrebidCacheVAST{
 					ReturnCreative: ptrutil.ToPtr(true),
@@ -351,6 +358,47 @@ func TestCloneExtRequestPrebid(t *testing.T) {
 				prebid.CurrencyConversions.ConversionRates["B"] = make(map[string]float64)
 				prebid.CurrencyConversions.ConversionRates["B"]["Y"] = 0.76
 				prebid.CurrencyConversions.UsePBSRates = ptrutil.ToPtr(true)
+			},
+		},
+		{
+			name: "Data",
+			prebid: &ExtRequestPrebid{
+				Data: &ExtRequestPrebidData{
+					EidPermissions: []ExtRequestPrebidDataEidPermission{
+						{
+							Source:  "Sauce",
+							Bidders: []string{"G", "H"},
+						},
+						{
+							Source:  "Black Hole",
+							Bidders: []string{"Q", "P"},
+						},
+					},
+					Bidders: []string{"A", "B", "C"},
+				},
+			},
+			prebidCopy: &ExtRequestPrebid{
+				Data: &ExtRequestPrebidData{
+					EidPermissions: []ExtRequestPrebidDataEidPermission{
+						{
+							Source:  "Sauce",
+							Bidders: []string{"G", "H"},
+						},
+						{
+							Source:  "Black Hole",
+							Bidders: []string{"Q", "P"},
+						},
+					},
+					Bidders: []string{"A", "B", "C"},
+				},
+			},
+			mutator: func(t *testing.T, prebid *ExtRequestPrebid) {
+				prebid.Data.EidPermissions[0].Source = "Fuzzy Bunnies"
+				prebid.Data.EidPermissions[1].Bidders[0] = "X"
+				prebid.Data.EidPermissions[0].Bidders = append(prebid.Data.EidPermissions[0].Bidders, "R")
+				prebid.Data.EidPermissions = append(prebid.Data.EidPermissions, ExtRequestPrebidDataEidPermission{Source: "Harry"})
+				prebid.Data.Bidders[1] = "D"
+				prebid.Data.Bidders = append(prebid.Data.Bidders, "E")
 			},
 		},
 		{
