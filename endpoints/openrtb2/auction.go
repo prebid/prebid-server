@@ -25,6 +25,7 @@ import (
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/openrtb/v19/openrtb3"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/enums"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/ortb"
 	"golang.org/x/net/publicsuffix"
@@ -161,7 +162,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	labels := metrics.Labels{
 		Source:        metrics.DemandUnknown,
-		RType:         metrics.ReqTypeORTB2Web,
+		RType:         enums.ReqTypeORTB2Web,
 		PubID:         metrics.PublisherUnknown,
 		CookieFlag:    metrics.CookieFlagUnknown,
 		RequestStatus: metrics.RequestStatusOK,
@@ -384,7 +385,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	// fill labels here in order to pass correct metrics in case of errors
 	if isAppReq {
 		labels.Source = metrics.DemandApp
-		labels.RType = metrics.ReqTypeORTB2App
+		labels.RType = enums.ReqTypeORTB2App
 		labels.PubID = accountId
 	} else { // is Site request
 		labels.Source = metrics.DemandWeb

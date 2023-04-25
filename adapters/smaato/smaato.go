@@ -11,8 +11,8 @@ import (
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/enums"
 	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/util/timeutil"
 )
@@ -85,7 +85,7 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adap
 		return nil, []error{err}
 	}
 
-	isVideoEntryPoint := reqInfo.PbsEntryPoint == metrics.ReqTypeVideo
+	isVideoEntryPoint := reqInfo.PbsEntryPoint == enums.ReqTypeVideo
 
 	if isVideoEntryPoint {
 		return adapter.makePodRequests(request)

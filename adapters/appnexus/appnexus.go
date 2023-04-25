@@ -12,12 +12,12 @@ import (
 	"github.com/prebid/openrtb/v19/adcom1"
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/enums"
 	"github.com/prebid/prebid-server/util/httputil"
 	"github.com/prebid/prebid-server/util/randomutil"
 
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -120,9 +120,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	// Add Appnexus request level extension
 	var isAMP, isVIDEO int
-	if reqInfo.PbsEntryPoint == metrics.ReqTypeAMP {
+	if reqInfo.PbsEntryPoint == enums.ReqTypeAMP {
 		isAMP = 1
-	} else if reqInfo.PbsEntryPoint == metrics.ReqTypeVideo {
+	} else if reqInfo.PbsEntryPoint == enums.ReqTypeVideo {
 		isVIDEO = 1
 	}
 

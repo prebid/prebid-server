@@ -3,13 +3,14 @@ package metrics
 import (
 	"time"
 
+	"github.com/prebid/prebid-server/enums"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 // Labels defines the labels that can be attached to the metrics.
 type Labels struct {
 	Source        DemandSource
-	RType         RequestType
+	RType         enums.RequestType
 	PubID         string // exchange specific ID, so we cannot compile in values
 	CookieFlag    CookieFlag
 	RequestStatus RequestStatus
@@ -18,7 +19,7 @@ type Labels struct {
 // AdapterLabels defines the labels that can be attached to the adapter metrics.
 type AdapterLabels struct {
 	Source        DemandSource
-	RType         RequestType
+	RType         enums.RequestType
 	Adapter       openrtb_ext.BidderName
 	PubID         string // exchange specific ID, so we cannot compile in values
 	CookieFlag    CookieFlag
@@ -139,9 +140,6 @@ type DemandSource string
 // ImpMediaType : Media type described in the "imp" JSON object  TODO is this still needed?
 type ImpMediaType string
 
-// RequestType : Request type enumeration
-type RequestType string
-
 // CookieFlag : User ID cookie exists flag
 type CookieFlag string
 
@@ -172,23 +170,6 @@ func DemandTypes() []DemandSource {
 		DemandWeb,
 		DemandApp,
 		DemandUnknown,
-	}
-}
-
-// The request types (endpoints)
-const (
-	ReqTypeORTB2Web RequestType = "openrtb2-web"
-	ReqTypeORTB2App RequestType = "openrtb2-app"
-	ReqTypeAMP      RequestType = "amp"
-	ReqTypeVideo    RequestType = "video"
-)
-
-func RequestTypes() []RequestType {
-	return []RequestType{
-		ReqTypeORTB2Web,
-		ReqTypeORTB2App,
-		ReqTypeAMP,
-		ReqTypeVideo,
 	}
 }
 
@@ -445,7 +426,7 @@ type MetricsEngine interface {
 	RecordStoredDataFetchTime(labels StoredDataLabels, length time.Duration)
 	RecordStoredDataError(labels StoredDataLabels)
 	RecordPrebidCacheRequestTime(success bool, length time.Duration)
-	RecordRequestQueueTime(success bool, requestType RequestType, length time.Duration)
+	RecordRequestQueueTime(success bool, requestType enums.RequestType, length time.Duration)
 	RecordTimeoutNotice(success bool)
 	RecordRequestPrivacy(privacy PrivacyLabels)
 	RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.BidderName)

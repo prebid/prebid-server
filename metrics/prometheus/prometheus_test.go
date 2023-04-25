@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/enums"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prometheus/client_golang/prometheus"
@@ -140,7 +141,7 @@ func TestConnectionMetrics(t *testing.T) {
 
 func TestRequestMetric(t *testing.T) {
 	m := createMetricsForTesting()
-	requestType := metrics.ReqTypeORTB2Web
+	requestType := enums.ReqTypeORTB2Web
 	requestStatus := metrics.RequestStatusBlacklisted
 
 	m.RecordRequest(metrics.Labels{
@@ -278,7 +279,7 @@ func TestBidValidationSecureMarkupMetric(t *testing.T) {
 }
 
 func TestRequestMetricWithoutCookie(t *testing.T) {
-	requestType := metrics.ReqTypeORTB2Web
+	requestType := enums.ReqTypeORTB2Web
 	performTest := func(m *Metrics, cookieFlag metrics.CookieFlag) {
 		m.RecordRequest(metrics.Labels{
 			RType:         requestType,
@@ -333,7 +334,7 @@ func TestAccountMetric(t *testing.T) {
 	knownPubID := "knownPublisher"
 	performTest := func(m *Metrics, pubID string) {
 		m.RecordRequest(metrics.Labels{
-			RType:         metrics.ReqTypeORTB2Web,
+			RType:         enums.ReqTypeORTB2Web,
 			RequestStatus: metrics.RequestStatusBlacklisted,
 			PubID:         pubID,
 		})
@@ -477,7 +478,7 @@ func TestImpressionsMetric(t *testing.T) {
 }
 
 func TestRequestTimeMetric(t *testing.T) {
-	requestType := metrics.ReqTypeORTB2Web
+	requestType := enums.ReqTypeORTB2Web
 	performTest := func(m *Metrics, requestStatus metrics.RequestStatus, timeInMs float64) {
 		m.RecordRequestTime(metrics.Labels{
 			RType:         requestType,
@@ -1335,7 +1336,7 @@ func TestPrebidCacheRequestTimeMetric(t *testing.T) {
 }
 
 func TestRecordRequestQueueTimeMetric(t *testing.T) {
-	performTest := func(m *Metrics, requestStatus bool, requestType metrics.RequestType, timeInSec float64) {
+	performTest := func(m *Metrics, requestStatus bool, requestType enums.RequestType, timeInSec float64) {
 		m.RecordRequestQueueTime(requestStatus, requestType, time.Duration(timeInSec*float64(time.Second)))
 	}
 
@@ -1350,7 +1351,7 @@ func TestRecordRequestQueueTimeMetric(t *testing.T) {
 			description: "Success",
 			status:      requestSuccessLabel,
 			testCase: func(m *Metrics) {
-				performTest(m, true, metrics.ReqTypeVideo, 2)
+				performTest(m, true, enums.ReqTypeVideo, 2)
 			},
 			expectedCount: 1,
 			expectedSum:   2,
@@ -1359,7 +1360,7 @@ func TestRecordRequestQueueTimeMetric(t *testing.T) {
 			description: "TimeoutError",
 			status:      requestRejectLabel,
 			testCase: func(m *Metrics) {
-				performTest(m, false, metrics.ReqTypeVideo, 50)
+				performTest(m, false, enums.ReqTypeVideo, 50)
 			},
 			expectedCount: 1,
 			expectedSum:   50,
