@@ -74,7 +74,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "unknown imp id: random-imp",
+      "value": "unable to deserialize imp random-imp bid.ext",
       "comparison": "literal"
     }
   ]

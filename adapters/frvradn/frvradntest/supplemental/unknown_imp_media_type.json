@@ -47,7 +47,8 @@
                   "adomain": ["advertiser.com"],
                   "crid": "9999",
                   "w": 300,
-                  "h": 600
+                  "h": 600,
+                  "ext": {}
                 }
               ]
             }

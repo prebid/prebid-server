@@ -9,6 +9,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/httputil"
 	"net/http"
 	"strings"
 )
@@ -76,14 +77,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if responseData.StatusCode == http.StatusNoContent {
+	if httputil.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
 	}
 
-	if responseData.StatusCode == http.StatusBadRequest {
-		err := &errortypes.BadInput{
-			Message: "Unexpected status code: 400. Bad request from publisher. Run with request.debug = 1 for more info.",
-		}
+	if err := httputil.CheckResponseStatusCodeForErrors(responseData); err != nil {
 		return nil, []error{err}
 	}
 
@@ -108,7 +106,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	var errs []error
 	for _, seatBid := range response.SeatBid {
 		for i, bid := range seatBid.Bid {
-			bidType, err := getBidMediaType(bid.ImpID, request.Imp)
+			bidType, err := getBidMediaType(bid)
 			if err != nil {
 				errs = append(errs, err)
 				continue
@@ -146,20 +144,16 @@ func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ImpExtFRVRAdn, error) {
 	return &frvrAdnExt, nil
 }
 
-func getBidMediaType(impId string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
-	for _, imp := range imps {
-		if imp.ID == impId {
-			if imp.Banner != nil {
-				return openrtb_ext.BidTypeBanner, nil
-			}
-			if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo, nil
-			}
-			if imp.Native != nil {
-				return openrtb_ext.BidTypeNative, nil
-			}
-			return "", fmt.Errorf("imp %v with unknown media type", impId)
-		}
+func getBidMediaType(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	var extBid openrtb_ext.ExtBid
+	err := json.Unmarshal(bid.Ext, &extBid)
+	if err != nil {
+		return "", fmt.Errorf("unable to deserialize imp %v bid.ext", bid.ImpID)
 	}
-	return "", fmt.Errorf("unknown imp id: %s", impId)
+
+	if extBid.Prebid == nil {
+		return "", fmt.Errorf("imp %v with unknown media type", bid.ImpID)
+	}
+
+	return extBid.Prebid.Type, nil
 }
