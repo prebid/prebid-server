@@ -237,12 +237,12 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		QueryParams:                r.URL.Query(),
 	}
 
-	aucResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
+	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
 	var response *openrtb2.BidResponse
-	if aucResponse != nil {
-		response = aucResponse.BidResponse
-		ao.SeatNonBid = aucResponse.GetSeatNonBid()
+	if auctionResponse != nil {
+		response = auctionResponse.BidResponse
 	}
+	ao.SeatNonBid = auctionResponse.GetSeatNonBid()
 	ao.AuctionResponse = response
 	ao.RequestWrapper = reqWrapper
 	rejectErr, isRejectErr := hookexecution.CastRejectErr(err)
@@ -271,7 +271,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		return
 	}
 
-	labels, ao = sendAmpResponse(w, hookExecutor, aucResponse, reqWrapper, account, labels, ao, errL)
+	labels, ao = sendAmpResponse(w, hookExecutor, auctionResponse, reqWrapper, account, labels, ao, errL)
 	if len(ao.Errors) == 0 {
 		recordResponsePreparationMetrics(auctionRequest.MakeBidsTimeInfo, deps.metricsEngine)
 	}
@@ -297,15 +297,17 @@ func rejectAmpRequest(
 func sendAmpResponse(
 	w http.ResponseWriter,
 	hookExecutor hookexecution.HookStageExecutor,
-	aucResponse *exchange.AuctionResponse,
+	auctionResponse *exchange.AuctionResponse,
 	reqWrapper *openrtb_ext.RequestWrapper,
 	account *config.Account,
 	labels metrics.Labels,
 	ao analytics.AmpObject,
 	errs []error,
 ) (metrics.Labels, analytics.AmpObject) {
-	// assuming aucResponse is never nil here
-	response := aucResponse.BidResponse
+	var response *openrtb2.BidResponse
+	if auctionResponse != nil {
+		response = auctionResponse.BidResponse
+	}
 	hookExecutor.ExecuteAuctionResponseStage(response)
 	// Need to extract the targeting parameters from the response, as those are all that
 	// go in the AMP response
@@ -356,7 +358,7 @@ func sendAmpResponse(
 	}
 	// Now JSONify the targets for the AMP response.
 	ampResponse := AmpResponse{Targeting: targets}
-	ao, ampResponse.ORTB2.Ext = getExtBidResponse(hookExecutor, aucResponse, reqWrapper, account, ao, errs)
+	ao, ampResponse.ORTB2.Ext = getExtBidResponse(hookExecutor, auctionResponse, reqWrapper, account, ao, errs)
 
 	ao.AmpTargetingValues = targets
 
@@ -383,8 +385,10 @@ func getExtBidResponse(
 	ao analytics.AmpObject,
 	errs []error,
 ) (analytics.AmpObject, openrtb_ext.ExtBidResponse) {
-	// assuming aucResponse is never nil here
-	response := aucResponse.BidResponse
+	var response *openrtb2.BidResponse
+	if aucResponse != nil {
+		response = aucResponse.BidResponse
+	}
 	// Extract any errors
 	var extResponse openrtb_ext.ExtBidResponse
 	eRErr := json.Unmarshal(response.Ext, &extResponse)

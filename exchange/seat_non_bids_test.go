@@ -45,7 +45,7 @@ func TestSeatNonBidsAdd(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			snb := &seatNonBids{
+			snb := &nonBids{
 				seatNonBidsMap: tt.fields.seatNonBidsMap,
 			}
 			snb.addBid(tt.args.bid, tt.args.nonBidReason, tt.args.seat)
@@ -71,7 +71,7 @@ func TestSeatNonBidsGet(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			snb := &seatNonBids{
+			snb := &nonBids{
 				seatNonBidsMap: tt.fields.seatNonBidsMap,
 			}
 			if got := snb.get(); !assert.Equal(t, tt.want, got) {

@@ -5,17 +5,11 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type seatNonBids struct {
+type nonBids struct {
 	seatNonBidsMap map[string][]openrtb_ext.NonBid
 }
 
-func newSeatNonBids() seatNonBids {
-	return seatNonBids{
-		seatNonBidsMap: make(map[string][]openrtb_ext.NonBid),
-	}
-}
-
-func (snb *seatNonBids) addBid(bid *entities.PbsOrtbBid, nonBidReason int, seat string) {
+func (snb *nonBids) addBid(bid *entities.PbsOrtbBid, nonBidReason int, seat string) {
 	if bid == nil || bid.Bid == nil {
 		return
 	}
@@ -24,7 +18,7 @@ func (snb *seatNonBids) addBid(bid *entities.PbsOrtbBid, nonBidReason int, seat 
 	}
 	nonBid := openrtb_ext.NonBid{
 		ImpId:      bid.Bid.ImpID,
-		StatusCode: nonBidReason, //
+		StatusCode: nonBidReason,
 		Ext: openrtb_ext.NonBidExt{
 			Prebid: openrtb_ext.ExtResponseNonBidPrebid{Bid: openrtb_ext.Bid{
 				Price:          bid.Bid.Price,
@@ -42,16 +36,13 @@ func (snb *seatNonBids) addBid(bid *entities.PbsOrtbBid, nonBidReason int, seat 
 		},
 	}
 
-	nonBids := snb.seatNonBidsMap[seat]
-
-	if nonBids == nil {
-		snb.seatNonBidsMap[seat] = []openrtb_ext.NonBid{nonBid}
-	} else {
-		snb.seatNonBidsMap[seat] = append(nonBids, nonBid)
-	}
+	snb.seatNonBidsMap[seat] = append(snb.seatNonBidsMap[seat], nonBid)
 }
 
-func (snb *seatNonBids) get() []openrtb_ext.SeatNonBid {
+func (snb *nonBids) get() []openrtb_ext.SeatNonBid {
+	if snb == nil {
+		return nil
+	}
 	var seatNonBid []openrtb_ext.SeatNonBid
 	for seat, nonBids := range snb.seatNonBidsMap {
 		seatNonBid = append(seatNonBid, openrtb_ext.SeatNonBid{

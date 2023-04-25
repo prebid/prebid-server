@@ -364,7 +364,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		auc            *auction
 		cacheErrs      []error
 		bidResponseExt *openrtb_ext.ExtBidResponse
-		seatNonBids    = newSeatNonBids()
+		seatNonBids    = nonBids{}
 	)
 
 	if anyBidsReturned {
@@ -890,7 +890,7 @@ func encodeBidResponseExt(bidResponseExt *openrtb_ext.ExtBidResponse) ([]byte, e
 	return buffer.Bytes(), err
 }
 
-func applyCategoryMapping(ctx context.Context, targeting openrtb_ext.ExtRequestTargeting, seatBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, categoriesFetcher stored_requests.CategoryFetcher, targData *targetData, booleanGenerator deduplicateChanceGenerator, seatNonBids seatNonBids) (map[string]string, map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, []string, error) {
+func applyCategoryMapping(ctx context.Context, targeting openrtb_ext.ExtRequestTargeting, seatBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, categoriesFetcher stored_requests.CategoryFetcher, targData *targetData, booleanGenerator deduplicateChanceGenerator, seatNonBids nonBids) (map[string]string, map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, []string, error) {
 	res := make(map[string]string)
 
 	type bidDedupe struct {
@@ -1556,7 +1556,7 @@ func setErrorMessageSecureMarkup(validationType string) string {
 }
 
 // buildAuctionResponse wraps the openrtb Bid Response object into AuctionResponse
-func (ex *exchange) buildAuctionResponse(ctx context.Context, bidResponse *openrtb2.BidResponse, bidResponseExt *openrtb_ext.ExtBidResponse, seatNonBids seatNonBids) (*AuctionResponse, error) {
+func (ex *exchange) buildAuctionResponse(ctx context.Context, bidResponse *openrtb2.BidResponse, bidResponseExt *openrtb_ext.ExtBidResponse, seatNonBids nonBids) (*AuctionResponse, error) {
 
 	bidResponseExt = setSeatNonBid(bidResponseExt, seatNonBids)
 	return &AuctionResponse{
@@ -1566,7 +1566,7 @@ func (ex *exchange) buildAuctionResponse(ctx context.Context, bidResponse *openr
 }
 
 // setSeatNonBid  adds SeatNonBids within bidResponse.Ext.Prebid.SeatNonBid
-func setSeatNonBid(bidResponseExt *openrtb_ext.ExtBidResponse, seatNonBids seatNonBids) *openrtb_ext.ExtBidResponse {
+func setSeatNonBid(bidResponseExt *openrtb_ext.ExtBidResponse, seatNonBids nonBids) *openrtb_ext.ExtBidResponse {
 	if len(seatNonBids.seatNonBidsMap) == 0 {
 		return bidResponseExt
 	}

@@ -310,15 +310,14 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog)
+	vo.Request = bidReqWrapper.BidRequest
+	vo.RequestWrapper = bidReqWrapper
 	var response *openrtb2.BidResponse
 	if auctionResponse != nil {
 		response = auctionResponse.BidResponse
-		// Send SeatNonBid to analytics
-		vo.SeatNonBid = auctionResponse.GetSeatNonBid()
 	}
-	vo.Request = bidReqWrapper.BidRequest
-	vo.RequestWrapper = bidReqWrapper
 	vo.Response = response
+	vo.SeatNonBid = auctionResponse.GetSeatNonBid()
 	if err != nil {
 		errL := []error{err}
 		handleError(&labels, w, errL, &vo, &debugLog)
