@@ -150,6 +150,10 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 		errs = append(errs, errors.New("account_defaults.Events.VASTEvents has no effect as the feature is under development."))
 	}
 
+	if cfg.TmaxAdjustments.Enabled {
+		glog.Warning(`cfg.TmaxAdjustments.Enabled will currently not do anything as tmax adjustment feature is still under development.`)
+		cfg.TmaxAdjustments.Enabled = false
+	}
 	errs = cfg.TmaxAdjustments.validate(errs)
 	errs = cfg.Experiment.validate(errs)
 	errs = cfg.BidderInfos.validate(errs)
