@@ -77,6 +77,15 @@ func syncerRequestStatusesAsString() []string {
 	return valuesAsString
 }
 
+func overheadTypesAsString() []string {
+	overheadTypes := metrics.OverheadTypes()
+	overheadTypesAsString := make([]string, len(overheadTypes))
+	for i, ot := range overheadTypes {
+		overheadTypesAsString[i] = ot.String()
+	}
+	return overheadTypesAsString
+}
+
 func syncerSetStatusesAsString() []string {
 	values := metrics.SyncerSetUidStatuses()
 	valuesAsString := make([]string, len(values))
