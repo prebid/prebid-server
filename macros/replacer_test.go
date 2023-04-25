@@ -1,8 +1,6 @@
 package macros
 
 import (
-	"regexp"
-	"strings"
 	"testing"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
@@ -73,37 +71,37 @@ func BenchmarkStringIndexCachedBasedReplacer(b *testing.B) {
 	}
 }
 
-func BenchmarkGolangReplacer(b *testing.B) {
+// func BenchmarkGolangReplacer(b *testing.B) {
 
-	for n := 0; n < b.N; n++ {
-		for _, url := range benchmarkURL {
-			macroProvider := NewProvider(req)
+// 	for n := 0; n < b.N; n++ {
+// 		for _, url := range benchmarkURL {
+// 			macroProvider := NewProvider(req)
 
-			macroProvider.SetContext(MacroContext{
-				Bid:            &entities.PbsOrtbBid{Bid: bid},
-				Imp:            nil,
-				Seat:           "test",
-				VastCreativeID: "123",
-				VastEventType:  "firstQuartile",
-				EventElement:   "tracking",
-			})
-			StringReplacer(url, macroProvider)
-		}
-	}
-}
+// 			macroProvider.SetContext(MacroContext{
+// 				Bid:            &entities.PbsOrtbBid{Bid: bid},
+// 				Imp:            nil,
+// 				Seat:           "test",
+// 				VastCreativeID: "123",
+// 				VastEventType:  "firstQuartile",
+// 				EventElement:   "tracking",
+// 			})
+// 			StringReplacer(url, macroProvider)
+// 		}
+// 	}
+// }
 
-func StringReplacer(url string, mp *macroProvider) string {
-	keyValue := []string{}
-	for key, value := range mp.GetAllMacro() {
-		keyValue = append(keyValue, "##"+key+"##")
-		keyValue = append(keyValue, value)
-	}
+// func StringReplacer(url string, mp *macroProvider) string {
+// 	keyValue := []string{}
+// 	for key, value := range mp.GetAllMacro() {
+// 		keyValue = append(keyValue, "##"+key+"##")
+// 		keyValue = append(keyValue, value)
+// 	}
 
-	rplcr := strings.NewReplacer(keyValue...)
-	output := rplcr.Replace(url)
-	r := regexp.MustCompile(`##(.*?)##`)
-	return r.ReplaceAllString(output, "")
-}
+// 	rplcr := strings.NewReplacer(keyValue...)
+// 	output := rplcr.Replace(url)
+// 	r := regexp.MustCompile(`##(.*?)##`)
+// 	return r.ReplaceAllString(output, "")
+// }
 
 // 1) ^BenchmarkStringIndexCachedBasedReplacer$ github.com/prebid/prebid-server/macros
 // goos: darwin
