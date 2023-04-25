@@ -14,8 +14,8 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/openrtb/v17/openrtb2"
-	"github.com/prebid/openrtb/v17/openrtb3"
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb3"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/ortb"
 	"github.com/prebid/prebid-server/util/uuidutil"
@@ -221,7 +221,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 
 	secGPC := r.Header.Get("Sec-GPC")
 
-	auctionRequest := exchange.AuctionRequest{
+	auctionRequest := &exchange.AuctionRequest{
 		BidRequestWrapper:          reqWrapper,
 		Account:                    *account,
 		UserSyncs:                  usersyncs,
@@ -266,6 +266,9 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	}
 
 	labels, ao = sendAmpResponse(w, hookExecutor, response, reqWrapper, account, labels, ao, errL)
+	if len(ao.Errors) == 0 {
+		recordResponsePreparationMetrics(auctionRequest.MakeBidsTimeInfo, deps.metricsEngine)
+	}
 }
 
 func rejectAmpRequest(

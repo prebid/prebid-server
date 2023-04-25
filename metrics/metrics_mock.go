@@ -86,6 +86,11 @@ func (me *MetricsEngineMock) RecordAdapterTime(labels AdapterLabels, length time
 	me.Called(labels, length)
 }
 
+// RecordOverheadTime mock
+func (me *MetricsEngineMock) RecordOverheadTime(overhead OverheadType, length time.Duration) {
+	me.Called(overhead, length)
+}
+
 // RecordCookieSync mock
 func (me *MetricsEngineMock) RecordCookieSync(status CookieSyncStatus) {
 	me.Called(status)

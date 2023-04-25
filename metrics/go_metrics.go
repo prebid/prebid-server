@@ -11,7 +11,6 @@ import (
 	metrics "github.com/rcrowley/go-metrics"
 )
 
-// Metrics is the legacy Metrics object (go-metrics) expanded to also satisfy the MetricsEngine interface
 type Metrics struct {
 	MetricsRegistry                metrics.Registry
 	ConnectionCounter              metrics.Counter
@@ -34,8 +33,7 @@ type Metrics struct {
 	TLSHandshakeTimer              metrics.Timer
 	StoredResponsesMeter           metrics.Meter
 
-	// Metrics for OpenRTB requests specifically. So we can track what % of RequestsMeter are OpenRTB
-	// and know when legacy requests have been abandoned.
+	// Metrics for OpenRTB requests specifically
 	RequestStatuses       map[RequestType]map[RequestStatus]metrics.Meter
 	AmpNoCookieMeter      metrics.Meter
 	CookieSyncMeter       metrics.Meter
@@ -79,6 +77,8 @@ type Metrics struct {
 
 	// Module metrics
 	ModuleMetrics map[string]map[string]*ModuleMetrics
+
+	OverheadTimer map[OverheadType]metrics.Timer
 }
 
 // AdapterMetrics houses the metrics for a particular adapter
@@ -155,7 +155,7 @@ type ModuleMetrics struct {
 // testing routines to ensure that no metrics are written anywhere.
 //
 // This will be useful when removing endpoints, we can just run will the blank metrics function
-// rather than loading legacy metrics that never get filled.
+// rather than loading metrics that never get filled.
 // This will also eventually let us configure metrics, such as setting a limited set of metrics
 // for a production instance, and then expanding again when we need more debugging.
 func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, disabledMetrics config.DisabledMetrics, moduleStageNames map[string][]string) *Metrics {
@@ -218,6 +218,8 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 
 		exchanges: exchanges,
 		modules:   getModuleNames(moduleStageNames),
+
+		OverheadTimer: makeBlankOverheadTimerMetrics(),
 	}
 
 	for _, a := range exchanges {
@@ -302,6 +304,7 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	newMetrics.PrebidCacheRequestTimerSuccess = metrics.GetOrRegisterTimer("prebid_cache_request_time.ok", registry)
 	newMetrics.PrebidCacheRequestTimerError = metrics.GetOrRegisterTimer("prebid_cache_request_time.err", registry)
 	newMetrics.StoredResponsesMeter = metrics.GetOrRegisterMeter("stored_responses", registry)
+	newMetrics.OverheadTimer = makeOverheadTimerMetrics(registry)
 
 	for _, dt := range StoredDataTypes() {
 		for _, ft := range StoredDataFetchTypes() {
@@ -379,6 +382,15 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	return newMetrics
 }
 
+func makeBlankOverheadTimerMetrics() map[OverheadType]metrics.Timer {
+	m := make(map[OverheadType]metrics.Timer)
+	overheads := OverheadTypes()
+	for idx := range overheads {
+		m[overheads[idx]] = &metrics.NilTimer{}
+	}
+	return m
+}
+
 // Part of setting up blank metrics, the adapter metrics.
 func makeBlankAdapterMetrics(disabledMetrics config.DisabledMetrics) *AdapterMetrics {
 	blankMeter := &metrics.NilMeter{}
@@ -443,6 +455,15 @@ func makeBlankMarkupDeliveryMetrics() *MarkupDeliveryMetrics {
 		AdmMeter:  &metrics.NilMeter{},
 		NurlMeter: &metrics.NilMeter{},
 	}
+}
+
+func makeOverheadTimerMetrics(registry metrics.Registry) map[OverheadType]metrics.Timer {
+	m := make(map[OverheadType]metrics.Timer)
+	overheads := OverheadTypes()
+	for idx := range overheads {
+		m[overheads[idx]] = metrics.GetOrRegisterTimer("request_over_head_time."+overheads[idx].String(), registry)
+	}
+	return m
 }
 
 func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, exchange string, am *AdapterMetrics) {
@@ -845,6 +866,11 @@ func (me *Metrics) RecordAdapterTime(labels AdapterLabels, length time.Duration)
 	if aam, ok := me.getAccountMetrics(labels.PubID).adapterMetrics[labels.Adapter]; ok {
 		aam.RequestTimer.Update(length)
 	}
+}
+
+// RecordOverheadTime implements a part of the MetricsEngine interface. Records the adapter overhead time
+func (me *Metrics) RecordOverheadTime(overhead OverheadType, length time.Duration) {
+	me.OverheadTimer[overhead].Update(length)
 }
 
 // RecordCookieSync implements a part of the MetricsEngine interface. Records a cookie sync request

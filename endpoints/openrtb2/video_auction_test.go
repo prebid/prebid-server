@@ -24,8 +24,8 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/util/ptrutil"
 
-	"github.com/prebid/openrtb/v17/adcom1"
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/adcom1"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	gometrics "github.com/rcrowley/go-metrics"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -1354,7 +1354,7 @@ type mockExchangeVideo struct {
 	cache       *mockCacheClient
 }
 
-func (m *mockExchangeVideo) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (m *mockExchangeVideo) HoldAuction(ctx context.Context, r *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
 	if err := r.BidRequestWrapper.RebuildRequest(); err != nil {
 		return nil, err
 	}
@@ -1394,7 +1394,7 @@ type mockExchangeAppendBidderNames struct {
 	cache       *mockCacheClient
 }
 
-func (m *mockExchangeAppendBidderNames) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (m *mockExchangeAppendBidderNames) HoldAuction(ctx context.Context, r *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
 	m.lastRequest = r.BidRequestWrapper.BidRequest
 	if debugLog != nil && debugLog.Enabled {
 		m.cache.called = true
@@ -1430,7 +1430,7 @@ type mockExchangeVideoNoBids struct {
 	cache       *mockCacheClient
 }
 
-func (m *mockExchangeVideoNoBids) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (m *mockExchangeVideoNoBids) HoldAuction(ctx context.Context, r *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
 	m.lastRequest = r.BidRequestWrapper.BidRequest
 	return &openrtb2.BidResponse{
 		SeatBid: []openrtb2.SeatBid{{}},
