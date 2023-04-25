@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/prebid/go-gdpr/consentconstants"
+	"github.com/prebid/prebid-server/enums"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -3240,6 +3241,50 @@ func TestTmaxAdjustmentsValidate(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			err := test.adjustments.validate(test.errs)
 			assert.Equal(t, test.expectedErrs, err)
+		})
+	}
+}
+func TestLimitAuctionTimeout(t *testing.T) {
+	tests := []struct {
+		description     string
+		requested       time.Duration
+		tmaxAdjustments *TmaxAdjustments
+		requestType     enums.RequestType
+		expected        time.Duration
+	}{
+		{
+			description:     "use-requested-duration-when-tmax.enabled-is-false",
+			requested:       500,
+			tmaxAdjustments: &TmaxAdjustments{},
+			requestType:     enums.ReqTypeORTB2Web,
+			expected:        500,
+		},
+		{
+			description: "requested-duration-is-less-than-server-tmax",
+			requested:   300,
+			tmaxAdjustments: &TmaxAdjustments{
+				Enabled: true,
+				AmpMax:  600,
+			},
+			requestType: enums.ReqTypeAMP,
+			expected:    300,
+		},
+		{
+			description: "requested-duration-is-greater-than-server-tmax",
+			requested:   9000,
+			tmaxAdjustments: &TmaxAdjustments{
+				Enabled:  true,
+				VideoMax: 600,
+			},
+			requestType: enums.ReqTypeVideo,
+			expected:    600,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			duration := test.tmaxAdjustments.LimitAuctionTimeout(test.requested, test.requestType)
+			assert.Equal(t, test.expected, duration)
 		})
 	}
 }

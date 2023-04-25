@@ -15,6 +15,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/prebid/go-gdpr/consentconstants"
+	"github.com/prebid/prebid-server/enums"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -1520,4 +1521,24 @@ func (adj *TmaxAdjustments) validate(errs []error) []error {
 		}
 	}
 	return errs
+}
+
+func (adj *TmaxAdjustments) LimitAuctionTimeout(requested time.Duration, requestType enums.RequestType) time.Duration {
+	if !adj.Enabled {
+		return requested
+	}
+
+	serverTmax := adj.AuctionMax
+	if requestType == enums.ReqTypeAMP {
+		serverTmax = adj.AmpMax
+	} else if requestType == enums.ReqTypeVideo {
+		serverTmax = adj.VideoMax
+	}
+
+	max := time.Duration(serverTmax)
+	if requested == 0 || requested > max {
+		return max
+	}
+
+	return requested
 }
