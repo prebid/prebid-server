@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/enums"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prometheus/client_golang/prometheus"
@@ -981,7 +982,7 @@ func (m *Metrics) RecordPrebidCacheRequestTime(success bool, length time.Duratio
 	}).Observe(length.Seconds())
 }
 
-func (m *Metrics) RecordRequestQueueTime(success bool, requestType metrics.RequestType, length time.Duration) {
+func (m *Metrics) RecordRequestQueueTime(success bool, requestType enums.RequestType, length time.Duration) {
 	successLabelFormatted := requestRejectLabel
 	if success {
 		successLabelFormatted = requestSuccessLabel

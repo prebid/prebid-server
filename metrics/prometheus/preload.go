@@ -1,7 +1,7 @@
 package prometheusmetrics
 
 import (
-	"github.com/prebid/prebid-server/metrics"
+	"github.com/prebid/prebid-server/enums"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -205,7 +205,7 @@ func preloadLabelValues(m *Metrics, syncerKeys []string, moduleStageNames map[st
 	//to minimize memory usage, queuedTimeout metric is now supported for video endpoint only
 	//boolean value represents 2 general request statuses: accepted and rejected
 	preloadLabelValuesForHistogram(m.requestsQueueTimer, map[string][]string{
-		requestTypeLabel:   {string(metrics.ReqTypeVideo)},
+		requestTypeLabel:   {string(enums.ReqTypeVideo)},
 		requestStatusLabel: {requestSuccessLabel, requestRejectLabel},
 	})
 
