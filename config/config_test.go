@@ -518,7 +518,7 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "garbage_collector_threshold", cfg.GarbageCollectorThreshold, 1)
 	cmpInts(t, "auction_timeouts_ms.default", int(cfg.AuctionTimeouts.Default), 50)
 	cmpInts(t, "auction_timeouts_ms.max", int(cfg.AuctionTimeouts.Max), 123)
-	cmpBools(t, "tmax_adjustments.enabled", cfg.TmaxAdjustments.Enabled, true)
+	cmpBools(t, "tmax_adjustments.enabled", cfg.TmaxAdjustments.Enabled, false) // Tmax adjustment feature is still under development. Therefore enabled flag is set to false
 	cmpInts(t, "tmax_adjustments.auction_max", cfg.TmaxAdjustments.AuctionMax, 900)
 	cmpInts(t, "tmax_adjustments.video_max", cfg.TmaxAdjustments.VideoMax, 900)
 	cmpInts(t, "tmax_adjustments.amp_max", cfg.TmaxAdjustments.AmpMax, 900)

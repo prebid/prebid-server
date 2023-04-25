@@ -148,6 +148,10 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 		glog.Warning(`cfg.PriceFloors.Enabled will currently not do anything as price floors feature is still under development.`)
 	}
 
+	if cfg.TmaxAdjustments.Enabled {
+		glog.Warning(`cfg.TmaxAdjustments.Enabled will currently not do anything as tmax adjustment feature is still under development.`)
+		cfg.TmaxAdjustments.Enabled = false
+	}
 	errs = cfg.TmaxAdjustments.validate(errs)
 	errs = cfg.Experiment.validate(errs)
 	errs = cfg.BidderInfos.validate(errs)
