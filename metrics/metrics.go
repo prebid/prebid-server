@@ -36,8 +36,8 @@ const (
 	MakeAuctionResponse OverheadType = "make-auction-response"
 	// MakeBidderRequests - measures the time needed to fetch a stored request (if needed), parse, unmarshal, and validate the OpenRTB request, interpret its privacy policies, and split it into multiple requests sanitized for each bidder
 	MakeBidderRequests OverheadType = "make-bidder-requests"
-	// MakeHTTPRequest - measures the time needed to receive response back from the bidder server
-	MakeHTTPRequest OverheadType = "make-http-request"
+	// BidderServerResponse - measures the time needed to receive response back from the bidder server
+	BidderServerResponse OverheadType = "bidder-server-response"
 )
 
 func (t OverheadType) String() string {
@@ -45,7 +45,7 @@ func (t OverheadType) String() string {
 }
 
 func OverheadTypes() []OverheadType {
-	return []OverheadType{PreBidder, MakeAuctionResponse, MakeBidderRequests, MakeHTTPRequest}
+	return []OverheadType{PreBidder, MakeAuctionResponse, MakeBidderRequests, BidderServerResponse}
 }
 
 // ImpLabels defines metric labels describing the impression type.
