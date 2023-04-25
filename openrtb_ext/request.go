@@ -151,14 +151,15 @@ type ExtRequestPrebidCacheVAST struct {
 
 // ExtRequestTargeting defines the contract for bidrequest.ext.prebid.targeting
 type ExtRequestTargeting struct {
-	PriceGranularity     *PriceGranularity        `json:"pricegranularity,omitempty"`
-	IncludeWinners       *bool                    `json:"includewinners,omitempty"`
-	IncludeBidderKeys    *bool                    `json:"includebidderkeys,omitempty"`
-	IncludeBrandCategory *ExtIncludeBrandCategory `json:"includebrandcategory,omitempty"`
-	IncludeFormat        bool                     `json:"includeformat,omitempty"`
-	DurationRangeSec     []int                    `json:"durationrangesec,omitempty"`
-	PreferDeals          bool                     `json:"preferdeals,omitempty"`
-	AppendBidderNames    bool                     `json:"appendbiddernames,omitempty"`
+	PriceGranularity          *PriceGranularity          `json:"pricegranularity,omitempty"`
+	IncludeWinners            *bool                      `json:"includewinners,omitempty"`
+	IncludeBidderKeys         *bool                      `json:"includebidderkeys,omitempty"`
+	IncludeBrandCategory      *ExtIncludeBrandCategory   `json:"includebrandcategory,omitempty"`
+	IncludeFormat             bool                       `json:"includeformat,omitempty"`
+	DurationRangeSec          []int                      `json:"durationrangesec,omitempty"`
+	PreferDeals               bool                       `json:"preferdeals,omitempty"`
+	AppendBidderNames         bool                       `json:"appendbiddernames,omitempty"`
+	MediaTypePriceGranularity *MediaTypePriceGranularity `json:"mediatypepricegranularity,omitempty"`
 }
 
 type ExtIncludeBrandCategory struct {
@@ -166,6 +167,13 @@ type ExtIncludeBrandCategory struct {
 	Publisher           string `json:"publisher"`
 	WithCategory        bool   `json:"withcategory"`
 	TranslateCategories *bool  `json:"translatecategories,omitempty"`
+}
+
+type MediaTypePriceGranularity struct {
+
+	//only video and Banner ?
+	Banner *PriceGranularity `json:"banner,omitempty"`
+	Video  *PriceGranularity `json:"video,omitempty"`
 }
 
 // PriceGranularity defines the allowed values for bidrequest.ext.prebid.targeting.pricegranularity

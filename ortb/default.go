@@ -46,11 +46,24 @@ func setDefaultsTargeting(targeting *openrtb_ext.ExtRequestTargeting) bool {
 
 	modified := false
 
-	if targeting.PriceGranularity == nil || len(targeting.PriceGranularity.Ranges) == 0 {
-		targeting.PriceGranularity = ptrutil.ToPtr(openrtb_ext.NewPriceGranularityDefault())
+	if newPG, updated := adjustDefaultsPriceGranularity(targeting.PriceGranularity); updated {
 		modified = true
-	} else if setDefaultsPriceGranularity(targeting.PriceGranularity) {
-		modified = true
+		targeting.PriceGranularity = newPG
+	}
+
+	if targeting.MediaTypePriceGranularity != nil {
+		if targeting.MediaTypePriceGranularity.Video != nil {
+			if newVideoPG, updated := adjustDefaultsPriceGranularity(targeting.MediaTypePriceGranularity.Video); updated {
+				modified = true
+				targeting.MediaTypePriceGranularity.Video = newVideoPG
+			}
+		}
+		if targeting.MediaTypePriceGranularity.Banner != nil {
+			if newBannerPG, updated := adjustDefaultsPriceGranularity(targeting.MediaTypePriceGranularity.Banner); updated {
+				modified = true
+				targeting.MediaTypePriceGranularity.Banner = newBannerPG
+			}
+		}
 	}
 
 	if targeting.IncludeWinners == nil {
@@ -64,6 +77,16 @@ func setDefaultsTargeting(targeting *openrtb_ext.ExtRequestTargeting) bool {
 	}
 
 	return modified
+}
+
+func adjustDefaultsPriceGranularity(priceGranularity *openrtb_ext.PriceGranularity) (*openrtb_ext.PriceGranularity, bool) {
+	if priceGranularity == nil || len(priceGranularity.Ranges) == 0 {
+		priceGranularity = ptrutil.ToPtr(openrtb_ext.NewPriceGranularityDefault())
+		return priceGranularity, true
+	} else if setDefaultsPriceGranularity(priceGranularity) {
+		return priceGranularity, true
+	}
+	return priceGranularity, false
 }
 
 func setDefaultsPriceGranularity(pg *openrtb_ext.PriceGranularity) bool {

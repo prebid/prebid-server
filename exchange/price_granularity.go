@@ -1,20 +1,33 @@
 package exchange
 
 import (
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"math"
 	"strconv"
-
-	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 // GetPriceBucket is the externally facing function for computing CPM buckets
-func GetPriceBucket(cpm float64, config openrtb_ext.PriceGranularity) string {
+func GetPriceBucket(bid openrtb2.Bid, targetingData *targetData) string {
 	cpmStr := ""
 	bucketMax := 0.0
 	bucketMin := 0.0
 	increment := 0.0
+
+	config := targetingData.priceGranularity //assign default price granularity
+	if targetingData.mediaTypePriceGranularity != nil {
+		bidType, err := getMediaTypeForBid(bid)
+		if err != nil {
+			config = targetingData.priceGranularity //assign default price granularity?
+		} else if bidType == openrtb_ext.BidTypeVideo && targetingData.mediaTypePriceGranularity.Video != nil {
+			config = *targetingData.mediaTypePriceGranularity.Video
+		} else if bidType == openrtb_ext.BidTypeBanner && targetingData.mediaTypePriceGranularity.Banner != nil {
+			config = *targetingData.mediaTypePriceGranularity.Banner
+		}
+	}
 	precision := *config.Precision
 
+	cpm := bid.Price
 	for i := 0; i < len(config.Ranges); i++ {
 		if config.Ranges[i].Max > bucketMax {
 			bucketMax = config.Ranges[i].Max
@@ -40,4 +53,28 @@ func GetPriceBucket(cpm float64, config openrtb_ext.PriceGranularity) string {
 func getCpmTarget(cpm float64, bucketMin float64, increment float64, precision int) string {
 	roundedCPM := math.Floor((cpm-bucketMin)/increment)*increment + bucketMin
 	return strconv.FormatFloat(roundedCPM, 'f', precision, 64)
+}
+
+func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	mType := bid.MType
+	var bidType openrtb_ext.BidType
+	if mType > 0 {
+		switch mType {
+		case openrtb2.MarkupBanner:
+			bidType = openrtb_ext.BidTypeBanner
+		case openrtb2.MarkupVideo:
+			bidType = openrtb_ext.BidTypeVideo
+		case openrtb2.MarkupAudio:
+			bidType = openrtb_ext.BidTypeAudio
+		case openrtb2.MarkupNative:
+			bidType = openrtb_ext.BidTypeNative
+		}
+	} else {
+		var err error
+		bidType, err = getPrebidMediaTypeForBid(bid)
+		if err != nil {
+			return openrtb_ext.BidType(0), err
+		}
+	}
+	return bidType, nil
 }
