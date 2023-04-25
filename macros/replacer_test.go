@@ -1,6 +1,8 @@
 package macros
 
 import (
+	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/prebid/openrtb/v17/openrtb2"
@@ -39,7 +41,7 @@ var req *openrtb_ext.RequestWrapper = &openrtb_ext.RequestWrapper{
 
 var bid *openrtb2.Bid = &openrtb2.Bid{ID: "bidId123", CID: "campaign_1", CrID: "creative_1"}
 
-func BenchmarkStringIndexCachedBasedProcessor(b *testing.B) {
+func BenchmarkStringIndexCachedBasedReplacer(b *testing.B) {
 
 	processor := NewReplacer()
 	for n := 0; n < b.N; n++ {
@@ -59,3 +61,53 @@ func BenchmarkStringIndexCachedBasedProcessor(b *testing.B) {
 		}
 	}
 }
+
+func BenchmarkGolangReplacer(b *testing.B) {
+
+	for n := 0; n < b.N; n++ {
+		macroProvider := NewProvider(req)
+
+		macroProvider.SetContext(MacroContext{
+			Bid:            &entities.PbsOrtbBid{Bid: bid},
+			Imp:            nil,
+			Seat:           "test",
+			VastCreativeID: "123",
+			VastEventType:  "firstQuartile",
+			EventElement:   "tracking",
+		})
+		StringReplacer(testURL, macroProvider)
+	}
+}
+
+func StringReplacer(url string, mp *macroProvider) string {
+	keyValue := []string{}
+	for key, value := range mp.GetAllMacro() {
+		keyValue = append(keyValue, "##"+key+"##")
+		keyValue = append(keyValue, value)
+	}
+
+	rplcr := strings.NewReplacer(keyValue...)
+	output := rplcr.Replace(url)
+	r := regexp.MustCompile(`##(.*?)##`)
+	return r.ReplaceAllString(output, "")
+}
+
+// ^BenchmarkStringIndexCachedBasedReplacer$ github.com/prebid/prebid-server/macros
+
+// goos: darwin
+// goarch: amd64
+// pkg: github.com/prebid/prebid-server/macros
+// cpu: Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz
+// BenchmarkStringIndexCachedBasedReplacer-12    	  351223	      3060 ns/op	    2522 B/op	      11 allocs/op
+// PASS
+// ok  	github.com/prebid/prebid-server/macros	2.464s
+
+// ^BenchmarkGolangReplacer$ github.com/prebid/prebid-server/macros
+
+// goos: darwin
+// goarch: amd64
+// pkg: github.com/prebid/prebid-server/macros
+// cpu: Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz
+// BenchmarkGolangReplacer-12    	   63328	     17184 ns/op	   16375 B/op	     120 allocs/op
+// PASS
+// ok  	github.com/prebid/prebid-server/macros	1.485s

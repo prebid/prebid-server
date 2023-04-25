@@ -129,6 +129,15 @@ func (b *macroProvider) GetMacro(key string) string {
 	return url.QueryEscape(b.macros[key])
 }
 
+func (b *macroProvider) GetAllMacro() map[string]string {
+	finalMacros := map[string]string{}
+
+	for key, value := range b.macros {
+		finalMacros[key] = url.QueryEscape(value)
+	}
+	return finalMacros
+}
+
 func (b *macroProvider) SetContext(ctx MacroContext) {
 	b.resetcontext()
 
