@@ -298,7 +298,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		r.FirstPartyData = resolvedFPD
 	}
 
-	mergedBidAdj, err := bidadjustment.Process(r.BidRequestWrapper, r.Account.BidAdjustments)
+	mergedBidAdj, err := bidadjustment.Merge(r.BidRequestWrapper, r.Account.BidAdjustments)
 	if err != nil {
 		return nil, err
 	}

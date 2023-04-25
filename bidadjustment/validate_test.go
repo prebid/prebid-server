@@ -7,17 +7,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestValidateBidAdjustments(t *testing.T) {
+func TestValidate(t *testing.T) {
 	testCases := []struct {
 		name                string
 		givenBidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments
 		expected            bool
 	}{
 		{
-			name: "ValidMultiplierAdjustment",
+			name: "OneAdjustmentValid",
 			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
-					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
+					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 						"bidderA": {
 							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}},
 						},
@@ -27,43 +27,17 @@ func TestValidateBidAdjustments(t *testing.T) {
 			expected: true,
 		},
 		{
-			name: "InvalidAdjustmentNegative",
+			name: "MultipleAdjustmentsValid",
 			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
-					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
+					Audio: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 						"bidderA": {
 							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}},
 						},
 					},
-					Video: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
+					Video: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 						"bidderA": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: -1.0}},
-						},
-					},
-				},
-			},
-			expected: false,
-		},
-		{
-			name: "InvalidAdjustmentTooLarge",
-			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
-				MediaType: openrtb_ext.MediaType{
-					Audio: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
-						"bidderA": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 200}},
-						},
-					},
-				},
-			},
-			expected: false,
-		},
-		{
-			name: "ValidCpmAdjustment",
-			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
-				MediaType: openrtb_ext.MediaType{
-					Native: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
-						"bidderA": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCpm, Value: 1.0, Currency: "USD"}},
+							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeStatic, Value: 3.0, Currency: "USD"}},
 						},
 					},
 				},
@@ -71,12 +45,17 @@ func TestValidateBidAdjustments(t *testing.T) {
 			expected: true,
 		},
 		{
-			name: "InvalidCpmAdjustmentNoCurrency",
+			name: "MixOfValidandInvalid",
 			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
-					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
+					Native: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 						"bidderA": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCpm, Value: 1.0, Currency: ""}},
+							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}},
+						},
+					},
+					Video: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+						"bidderA": {
+							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCpm, Value: 3.0, Currency: ""}},
 						},
 					},
 				},
@@ -84,12 +63,12 @@ func TestValidateBidAdjustments(t *testing.T) {
 			expected: false,
 		},
 		{
-			name: "InvalidAdjustmentNegative",
+			name: "WildCardInvalid",
 			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
-					Native: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
+					WildCard: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 						"bidderA": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCpm, Value: -1.0, Currency: "USD"}},
+							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCpm, Value: -1.1, Currency: "USD"}},
 						},
 					},
 				},
@@ -97,25 +76,12 @@ func TestValidateBidAdjustments(t *testing.T) {
 			expected: false,
 		},
 		{
-			name: "ValidStaticAdjustment",
+			name: "AudioInvalid",
 			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
-					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
+					Audio: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 						"bidderA": {
-							"dealId": []openrtb_ext.Adjustment{{Type: "static", Value: 1.0, Currency: "USD"}},
-						},
-					},
-				},
-			},
-			expected: true,
-		},
-		{
-			name: "InvalidStaticAdjustmentNoCurrency",
-			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
-				MediaType: openrtb_ext.MediaType{
-					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
-						"bidderA": {
-							"dealId": []openrtb_ext.Adjustment{{Type: "static", Value: 1.0, Currency: ""}},
+							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeStatic, Value: 5.0, Currency: ""}},
 						},
 					},
 				},
@@ -123,12 +89,12 @@ func TestValidateBidAdjustments(t *testing.T) {
 			expected: false,
 		},
 		{
-			name: "InvalidStaticAdjustmentNegative",
+			name: "NativeInvalid",
 			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
-					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
+					Native: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 						"bidderA": {
-							"dealId": []openrtb_ext.Adjustment{{Type: "static", Value: -1.0, Currency: "USD"}},
+							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCpm, Value: -1.1, Currency: "USD"}},
 						},
 					},
 				},
@@ -136,12 +102,12 @@ func TestValidateBidAdjustments(t *testing.T) {
 			expected: false,
 		},
 		{
-			name: "InvalidWildcardAdjustmentNegative",
+			name: "BannerInvalid",
 			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
-					WildCard: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
+					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 						"bidderA": {
-							"dealId": []openrtb_ext.Adjustment{{Type: "static", Value: -1.0, Currency: "USD"}},
+							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 150}},
 						},
 					},
 				},
@@ -149,7 +115,12 @@ func TestValidateBidAdjustments(t *testing.T) {
 			expected: false,
 		},
 		{
-			name:                "NilAdjustment",
+			name:                "EmptyBidAdjustments",
+			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{},
+			expected:            true,
+		},
+		{
+			name:                "NilBidAdjustments",
 			givenBidAdjustments: nil,
 			expected:            true,
 		},
@@ -158,6 +129,187 @@ func TestValidateBidAdjustments(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			actual := Validate(test.givenBidAdjustments)
+			assert.Equal(t, test.expected, actual, "Boolean didn't match")
+		})
+	}
+}
+
+func TestValidateForMediaType(t *testing.T) {
+	testCases := []struct {
+		name           string
+		givenBidAdjMap map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID
+		expected       bool
+	}{
+		{
+			name: "OneAdjustmentValid",
+			givenBidAdjMap: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+				"bidderA": {
+					"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}},
+				},
+			},
+			expected: true,
+		},
+		{
+			name: "OneAdjustmentInvalid",
+			givenBidAdjMap: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+				"bidderA": {
+					"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: -1.1}},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "MultipleAdjustmentsValid",
+			givenBidAdjMap: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+				"bidderA": {
+					"dealId": []openrtb_ext.Adjustment{
+						{Type: AdjustmentTypeMultiplier, Value: 1.1},
+						{Type: AdjustmentTypeStatic, Value: 3.0, Currency: "USD"},
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			name: "MultipleAdjustmentsInvalid",
+			givenBidAdjMap: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+				"bidderA": {
+					"dealId": []openrtb_ext.Adjustment{
+						{Type: AdjustmentTypeMultiplier, Value: -1.1},
+						{Type: AdjustmentTypeCpm, Value: -3.0, Currency: "USD"},
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "MultipleDealIdsValid",
+			givenBidAdjMap: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+				"bidderA": {
+					"dealId": []openrtb_ext.Adjustment{
+						{Type: AdjustmentTypeStatic, Value: 3.0, Currency: "USD"},
+					},
+					"diffDealId": []openrtb_ext.Adjustment{
+						{Type: AdjustmentTypeMultiplier, Value: 1.1},
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			name: "MultipleBiddersValid",
+			givenBidAdjMap: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+				"bidderA": {
+					"dealId": []openrtb_ext.Adjustment{
+						{Type: AdjustmentTypeStatic, Value: 5.0, Currency: "USD"},
+					},
+				},
+				"bidderB": {
+					"dealId": []openrtb_ext.Adjustment{
+						{Type: AdjustmentTypeCpm, Value: 3.0, Currency: "USD"},
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			name:           "NilMediaTypeMap",
+			givenBidAdjMap: nil,
+			expected:       true,
+		},
+		{
+			name: "NilBidderMap",
+			givenBidAdjMap: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+				"bidderA": nil,
+			},
+			expected: true,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			actual := validateForMediaType(test.givenBidAdjMap)
+			assert.Equal(t, test.expected, actual, "Boolean didn't match")
+		})
+	}
+}
+
+func TestValidateAdjustment(t *testing.T) {
+	testCases := []struct {
+		name            string
+		givenAdjustment openrtb_ext.Adjustment
+		expected        bool
+	}{
+		{
+			name: "ValidCpm",
+			givenAdjustment: openrtb_ext.Adjustment{
+				Type:     AdjustmentTypeCpm,
+				Value:    5.0,
+				Currency: "USD",
+			},
+			expected: true,
+		},
+		{
+			name: "ValidMultiplier",
+			givenAdjustment: openrtb_ext.Adjustment{
+				Type:  AdjustmentTypeMultiplier,
+				Value: 2.0,
+			},
+			expected: true,
+		},
+		{
+			name: "ValidStatic",
+			givenAdjustment: openrtb_ext.Adjustment{
+				Type:     AdjustmentTypeStatic,
+				Value:    3.0,
+				Currency: "USD",
+			},
+			expected: true,
+		},
+		{
+			name: "InvalidCpm",
+			givenAdjustment: openrtb_ext.Adjustment{
+				Type:     AdjustmentTypeCpm,
+				Value:    5.0,
+				Currency: "",
+			},
+			expected: false,
+		},
+		{
+			name: "InvalidMultiplier",
+			givenAdjustment: openrtb_ext.Adjustment{
+				Type:  AdjustmentTypeMultiplier,
+				Value: 200,
+			},
+			expected: false,
+		},
+		{
+			name: "InvalidStatic",
+			givenAdjustment: openrtb_ext.Adjustment{
+				Type:     AdjustmentTypeStatic,
+				Value:    -3.0,
+				Currency: "USD",
+			},
+			expected: false,
+		},
+		{
+			name: "InvalidAdjType",
+			givenAdjustment: openrtb_ext.Adjustment{
+				Type:  "Invalid",
+				Value: 1.0,
+			},
+			expected: false,
+		},
+		{
+			name:            "EmptyAdjustment",
+			givenAdjustment: openrtb_ext.Adjustment{},
+			expected:        false,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			actual := validateAdjustment(test.givenAdjustment)
 			assert.Equal(t, test.expected, actual, "Boolean didn't match")
 		})
 	}

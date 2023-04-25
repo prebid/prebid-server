@@ -249,7 +249,7 @@ func TestMergeBidAdjustments(t *testing.T) {
 			givenAccount: &config.Account{
 				BidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 					MediaType: openrtb_ext.MediaType{
-						Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
+						Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 							"bidderB": {
 								"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.5}},
 							},
@@ -259,7 +259,7 @@ func TestMergeBidAdjustments(t *testing.T) {
 			},
 			expectedBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
-					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
+					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 						"bidderA": {
 							"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.1}},
 						},
@@ -278,7 +278,7 @@ func TestMergeBidAdjustments(t *testing.T) {
 			givenAccount: &config.Account{
 				BidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 					MediaType: openrtb_ext.MediaType{
-						Audio: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
+						Audio: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 							"bidderA": {
 								"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.5}},
 							},
@@ -288,7 +288,7 @@ func TestMergeBidAdjustments(t *testing.T) {
 			},
 			expectedBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
-					Audio: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
+					Audio: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 						"bidderA": {
 							"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.1}},
 						},
@@ -304,7 +304,7 @@ func TestMergeBidAdjustments(t *testing.T) {
 			givenAccount: &config.Account{
 				BidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 					MediaType: openrtb_ext.MediaType{
-						Video: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
+						Video: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 							"bidderA": {
 								"diffDealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.5}},
 							},
@@ -314,7 +314,7 @@ func TestMergeBidAdjustments(t *testing.T) {
 			},
 			expectedBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
-					Video: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
+					Video: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 						"bidderA": {
 							"dealId":     []openrtb_ext.Adjustment{{Type: "static", Value: 3.00, Currency: "USD"}},
 							"diffDealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.5}},
@@ -331,7 +331,7 @@ func TestMergeBidAdjustments(t *testing.T) {
 			givenAccount: &config.Account{
 				BidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 					MediaType: openrtb_ext.MediaType{
-						Native: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
+						Native: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 							"bidderB": {
 								"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.5}},
 							},
@@ -341,7 +341,7 @@ func TestMergeBidAdjustments(t *testing.T) {
 			},
 			expectedBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
-					Native: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
+					Native: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 						"bidderA": {
 							"dealId": []openrtb_ext.Adjustment{{Type: "cpm", Value: 0.18, Currency: "USD"}},
 						},
@@ -360,7 +360,7 @@ func TestMergeBidAdjustments(t *testing.T) {
 			givenAccount: &config.Account{
 				BidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 					MediaType: openrtb_ext.MediaType{
-						Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
+						Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 							"bidderB": {
 								"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.5}},
 							},
@@ -370,12 +370,12 @@ func TestMergeBidAdjustments(t *testing.T) {
 			},
 			expectedBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
-					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
+					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 						"bidderB": {
 							"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.5}},
 						},
 					},
-					Video: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
+					Video: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 						"bidderA": {
 							"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.1}},
 						},
@@ -391,7 +391,7 @@ func TestMergeBidAdjustments(t *testing.T) {
 			givenAccount: &config.Account{
 				BidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 					MediaType: openrtb_ext.MediaType{
-						Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
+						Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 							"bidderB": {
 								"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.5}},
 							},
@@ -401,7 +401,7 @@ func TestMergeBidAdjustments(t *testing.T) {
 			},
 			expectedBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
-					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
+					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 						"bidderB": {
 							"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.5}},
 						},
@@ -417,7 +417,7 @@ func TestMergeBidAdjustments(t *testing.T) {
 			givenAccount: &config.Account{
 				BidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 					MediaType: openrtb_ext.MediaType{
-						WildCard: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
+						WildCard: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 							"bidderB": {
 								"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.5}},
 							},
@@ -427,12 +427,12 @@ func TestMergeBidAdjustments(t *testing.T) {
 			},
 			expectedBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
-					WildCard: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
+					WildCard: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 						"bidderB": {
 							"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.5}},
 						},
 					},
-					Video: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
+					Video: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 						"bidderA": {
 							"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.1}},
 						},
@@ -461,7 +461,7 @@ func TestGenerateMap(t *testing.T) {
 			name: "OneAdjustment",
 			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
-					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
+					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 						"bidderA": {
 							"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.1}},
 						},
@@ -481,7 +481,7 @@ func TestGenerateMap(t *testing.T) {
 			name: "MultipleAdjustments",
 			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
-					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
+					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 						"bidderA": {
 							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}},
 						},
@@ -490,7 +490,7 @@ func TestGenerateMap(t *testing.T) {
 							"*":          []openrtb_ext.Adjustment{{Type: AdjustmentTypeStatic, Value: 5.0, Currency: "USD"}},
 						},
 					},
-					Video: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
+					Video: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 						"*": {
 							"*": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}, {Type: AdjustmentTypeCpm, Value: 0.18, Currency: "USD"}},
 						},
@@ -562,7 +562,7 @@ func TestProcessBidAdjustments(t *testing.T) {
 			givenAccount: &config.Account{
 				BidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 					MediaType: openrtb_ext.MediaType{
-						Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
+						Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 							"bidderB": {
 								"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.5}},
 							},
@@ -572,7 +572,7 @@ func TestProcessBidAdjustments(t *testing.T) {
 			},
 			expectedBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
-					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
+					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 						"bidderA": {
 							"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.1}},
 						},
@@ -591,7 +591,7 @@ func TestProcessBidAdjustments(t *testing.T) {
 			givenAccount: &config.Account{
 				BidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 					MediaType: openrtb_ext.MediaType{
-						Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjusmentsByDealID{
+						Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 							"bidderB": {
 								"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.5}},
 							},
@@ -605,7 +605,7 @@ func TestProcessBidAdjustments(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			mergedBidAdj, err := Process(test.givenRequestWrapper, test.givenAccount.BidAdjustments)
+			mergedBidAdj, err := Merge(test.givenRequestWrapper, test.givenAccount.BidAdjustments)
 			assert.NoError(t, err, "Unexpected error received")
 			assert.Equal(t, test.expectedBidAdjustments, mergedBidAdj)
 		})

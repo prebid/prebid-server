@@ -154,15 +154,15 @@ type ExtRequestPrebidBidAdjustments struct {
 	MediaType MediaType `json:"mediatype,omitempty"`
 }
 
-type AdjusmentsByDealID map[string][]Adjustment
+type AdjustmentsByDealID map[string][]Adjustment
 
 // BidderName maps to a DealID that maps to the Adjustments
 type MediaType struct {
-	Banner   map[BidderName]AdjusmentsByDealID `json:"banner,omitempty"`
-	Video    map[BidderName]AdjusmentsByDealID `json:"video,omitempty"`
-	Audio    map[BidderName]AdjusmentsByDealID `json:"audio,omitempty"`
-	Native   map[BidderName]AdjusmentsByDealID `json:"native,omitempty"`
-	WildCard map[BidderName]AdjusmentsByDealID `json:"*,omitempty"`
+	Banner   map[BidderName]AdjustmentsByDealID `json:"banner,omitempty"`
+	Video    map[BidderName]AdjustmentsByDealID `json:"video,omitempty"`
+	Audio    map[BidderName]AdjustmentsByDealID `json:"audio,omitempty"`
+	Native   map[BidderName]AdjustmentsByDealID `json:"native,omitempty"`
+	WildCard map[BidderName]AdjustmentsByDealID `json:"*,omitempty"`
 }
 
 type Adjustment struct {
