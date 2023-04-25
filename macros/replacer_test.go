@@ -12,6 +12,15 @@ import (
 
 var lmt int8 = 10
 var testURL string = "http://tracker.com?macro1=##PBS-BIDID##&macro2=##PBS-APPBUNDLE##&macro3=##PBS-APPBUNDLE##&macro4=##PBS-PUBDOMAIN##&macro5=##PBS-PAGEURL##&macro6=##PBS-ACCOUNTID##&macro6=##PBS-LIMITADTRACKING##&macro7=##PBS-GDPRCONSENT##&macro8=##PBS-GDPRCONSENT##&macro9=##PBS-MACRO-CUSTOMMACR1CUST1##&macro10=##PBS-MACRO-CUSTOMMACR1CUST2##"
+
+var benchmarkURL = []string{
+	"http://tracker1.com?macro1=##PBS-BIDID##&macro2=##PBS-APPBUNDLE##&macro3=##PBS-APPBUNDLE##&macro4=##PBS-PUBDOMAIN##&macro5=##PBS-PAGEURL##&macro6=##PBS-ACCOUNTID##&macro6=##PBS-LIMITADTRACKING##&macro7=##PBS-GDPRCONSENT##&macro8=##PBS-GDPRCONSENT##&macro9=##PBS-MACRO-CUSTOMMACR1CUST1##&macro10=##PBS-MACRO-CUSTOMMACR1CUST2##",
+	"http://google.com?macro1=##PBS-BIDID##&macro2=##PBS-APPBUNDLE##&macro3=##PBS-APPBUNDLE##&macro4=##PBS-PUBDOMAIN##&macro5=##PBS-PAGEURL##&macro6=##PBS-ACCOUNTID##&macro6=##PBS-LIMITADTRACKING##&macro7=##PBS-GDPRCONSENT##&macro8=##PBS-GDPRCONSENT##&macro9=##PBS-MACRO-CUSTOMMACR1CUST1##&macro10=##PBS-MACRO-CUSTOMMACR1CUST2##",
+	"http://pubmatic.com?macro1=##PBS-BIDID##&macro2=##PBS-APPBUNDLE##&macro3=##PBS-APPBUNDLE##&macro4=##PBS-PUBDOMAIN##&macro5=##PBS-PAGEURL##&macro6=##PBS-ACCOUNTID##&macro6=##PBS-LIMITADTRACKING##&macro7=##PBS-GDPRCONSENT##&macro8=##PBS-GDPRCONSENT##&macro9=##PBS-MACRO-CUSTOMMACR1CUST1##&macro10=##PBS-MACRO-CUSTOMMACR1CUST2##",
+	"http://testbidder.com?macro1=##PBS-BIDID##&macro2=##PBS-APPBUNDLE##&macro3=##PBS-APPBUNDLE##&macro4=##PBS-PUBDOMAIN##&macro5=##PBS-PAGEURL##&macro6=##PBS-ACCOUNTID##&macro6=##PBS-LIMITADTRACKING##&macro7=##PBS-GDPRCONSENT##&macro8=##PBS-GDPRCONSENT##&macro9=##PBS-MACRO-CUSTOMMACR1CUST1##&macro10=##PBS-MACRO-CUSTOMMACR1CUST2##",
+	"http://dummybidder.com?macro1=##PBS-BIDID##&macro2=##PBS-APPBUNDLE##&macro3=##PBS-APPBUNDLE##&macro4=##PBS-PUBDOMAIN##&macro5=##PBS-PAGEURL##&macro6=##PBS-ACCOUNTID##&macro6=##PBS-LIMITADTRACKING##&macro7=##PBS-GDPRCONSENT##&macro8=##PBS-GDPRCONSENT##&macro9=##PBS-MACRO-CUSTOMMACR1CUST1##&macro10=##PBS-MACRO-CUSTOMMACR1CUST2##",
+}
+
 var req *openrtb_ext.RequestWrapper = &openrtb_ext.RequestWrapper{
 	BidRequest: &openrtb2.BidRequest{
 		ID: "123",
@@ -45,19 +54,21 @@ func BenchmarkStringIndexCachedBasedReplacer(b *testing.B) {
 
 	processor := NewReplacer()
 	for n := 0; n < b.N; n++ {
-		macroProvider := NewProvider(req)
+		for _, url := range benchmarkURL {
+			macroProvider := NewProvider(req)
 
-		macroProvider.SetContext(MacroContext{
-			Bid:            &entities.PbsOrtbBid{Bid: bid},
-			Imp:            nil,
-			Seat:           "test",
-			VastCreativeID: "123",
-			VastEventType:  "firstQuartile",
-			EventElement:   "tracking",
-		})
-		_, err := processor.Replace(testURL, macroProvider)
-		if err != nil {
-			b.Errorf("Fail to replace macro in tracker")
+			macroProvider.SetContext(MacroContext{
+				Bid:            &entities.PbsOrtbBid{Bid: bid},
+				Imp:            nil,
+				Seat:           "test",
+				VastCreativeID: "123",
+				VastEventType:  "firstQuartile",
+				EventElement:   "tracking",
+			})
+			_, err := processor.Replace(url, macroProvider)
+			if err != nil {
+				b.Errorf("Fail to replace macro in tracker")
+			}
 		}
 	}
 }
@@ -65,17 +76,19 @@ func BenchmarkStringIndexCachedBasedReplacer(b *testing.B) {
 func BenchmarkGolangReplacer(b *testing.B) {
 
 	for n := 0; n < b.N; n++ {
-		macroProvider := NewProvider(req)
+		for _, url := range benchmarkURL {
+			macroProvider := NewProvider(req)
 
-		macroProvider.SetContext(MacroContext{
-			Bid:            &entities.PbsOrtbBid{Bid: bid},
-			Imp:            nil,
-			Seat:           "test",
-			VastCreativeID: "123",
-			VastEventType:  "firstQuartile",
-			EventElement:   "tracking",
-		})
-		StringReplacer(testURL, macroProvider)
+			macroProvider.SetContext(MacroContext{
+				Bid:            &entities.PbsOrtbBid{Bid: bid},
+				Imp:            nil,
+				Seat:           "test",
+				VastCreativeID: "123",
+				VastEventType:  "firstQuartile",
+				EventElement:   "tracking",
+			})
+			StringReplacer(url, macroProvider)
+		}
 	}
 }
 
@@ -92,22 +105,20 @@ func StringReplacer(url string, mp *macroProvider) string {
 	return r.ReplaceAllString(output, "")
 }
 
-// ^BenchmarkStringIndexCachedBasedReplacer$ github.com/prebid/prebid-server/macros
-
+// 1) ^BenchmarkStringIndexCachedBasedReplacer$ github.com/prebid/prebid-server/macros
 // goos: darwin
 // goarch: amd64
 // pkg: github.com/prebid/prebid-server/macros
 // cpu: Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz
-// BenchmarkStringIndexCachedBasedReplacer-12    	  351223	      3060 ns/op	    2522 B/op	      11 allocs/op
+// BenchmarkStringIndexCachedBasedReplacer-12    	   65348	     17148 ns/op	   12617 B/op	      56 allocs/op
 // PASS
-// ok  	github.com/prebid/prebid-server/macros	2.464s
+// ok  	github.com/prebid/prebid-server/macros	2.446s
 
-// ^BenchmarkGolangReplacer$ github.com/prebid/prebid-server/macros
-
+// 2) ^BenchmarkGolangReplacer$ github.com/prebid/prebid-server/macros
 // goos: darwin
 // goarch: amd64
 // pkg: github.com/prebid/prebid-server/macros
 // cpu: Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz
-// BenchmarkGolangReplacer-12    	   63328	     17184 ns/op	   16375 B/op	     120 allocs/op
+// BenchmarkGolangReplacer-12    	   10926	     99165 ns/op	   81887 B/op	     603 allocs/op
 // PASS
-// ok  	github.com/prebid/prebid-server/macros	1.485s
+// ok  	github.com/prebid/prebid-server/macros	2.144s
