@@ -115,7 +115,7 @@ func Test_eventsData_modifyBidJSON(t *testing.T) {
 		},
 		{
 			name:      "video: events enabled for account and request",
-			args:      args{enabledForAccount: false, enabledForRequest: true, bidType: openrtb_ext.BidTypeVideo, generatedBidId: ""},
+			args:      args{enabledForAccount: true, enabledForRequest: true, bidType: openrtb_ext.BidTypeVideo, generatedBidId: ""},
 			jsonBytes: []byte(`{"ID": "something"}`),
 			want:      []byte(`{"ID": "something"}`),
 		},
@@ -184,11 +184,8 @@ func Test_isEventAllowed(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			evData := &eventTracking{
-				enabledForAccount:  tt.args.enabledForAccount,
-				enabledForRequest:  tt.args.enabledForRequest,
-				accountID:          "123456",
-				auctionTimestampMs: 1234567890,
-				externalURL:        "http://localhost",
+				enabledForAccount: tt.args.enabledForAccount,
+				enabledForRequest: tt.args.enabledForRequest,
 			}
 			isEventAllowed := evData.isEventAllowed()
 			assert.Equal(t, tt.want, isEventAllowed)

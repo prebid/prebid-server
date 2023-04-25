@@ -261,8 +261,11 @@ func useCCPAChannelEnabled(account *config.Account) bool {
 // This function favors "events.enabled" field over deprecated "events_enabled" field, if values for both are set.
 // If only deprecated "events_enabled" field is set then it sets the same value to "events.enabled" field.
 func deprecateEventsEnabledField(account *config.Account) {
-
 	if account != nil && account.Events.Enabled == nil {
 		account.Events.Enabled = account.EventsEnabled
+	}
+	if account != nil {
+		// assign the old value to the new value so old and new are always the same even though the new value is what is used in the application code.
+		account.EventsEnabled = account.Events.Enabled
 	}
 }

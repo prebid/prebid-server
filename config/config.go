@@ -1399,7 +1399,7 @@ func migrateConfigEventsEnabled(oldFieldValue *bool, newFieldValue *bool) (updat
 		updatedOldFieldValue = ptrutil.ToPtr(*newFieldValue)
 	}
 
-	return
+	return updatedOldFieldValue, nil
 }
 
 func isConfigInfoPresent(v *viper.Viper, prefix string, fields []string) bool {

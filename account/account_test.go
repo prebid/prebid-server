@@ -582,14 +582,38 @@ func TestAccountUpgradeStatusGetAccount(t *testing.T) {
 }
 
 func TestDeprecateEventsEnabledField(t *testing.T) {
-
 	testCases := []struct {
 		name    string
 		account *config.Account
 		want    *bool
 	}{
 		{
-			name: "events.enabled is nil",
+			name:    "account is nil",
+			account: nil,
+			want:    nil,
+		},
+		{
+			name: "account.EventsEnabled is nil, account.Events.Enabled is nil",
+			account: &config.Account{
+				EventsEnabled: nil,
+				Events: config.Events{
+					Enabled: nil,
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "account.EventsEnabled is nil, account.Events.Enabled is non-nil",
+			account: &config.Account{
+				EventsEnabled: nil,
+				Events: config.Events{
+					Enabled: ptrutil.ToPtr(true),
+				},
+			},
+			want: ptrutil.ToPtr(true),
+		},
+		{
+			name: "account.EventsEnabled is non-nil, account.Events.Enabled is nil",
 			account: &config.Account{
 				EventsEnabled: ptrutil.ToPtr(true),
 				Events: config.Events{
@@ -599,12 +623,12 @@ func TestDeprecateEventsEnabledField(t *testing.T) {
 			want: ptrutil.ToPtr(true),
 		},
 		{
-			name: "events.enabled is non-nil",
+			name: "account.EventsEnabled is non-nil, account.Events.Enabled is non-nil",
 			account: &config.Account{
+				EventsEnabled: ptrutil.ToPtr(false),
 				Events: config.Events{
 					Enabled: ptrutil.ToPtr(true),
 				},
-				EventsEnabled: ptrutil.ToPtr(false),
 			},
 			want: ptrutil.ToPtr(true),
 		},
@@ -613,7 +637,9 @@ func TestDeprecateEventsEnabledField(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			deprecateEventsEnabledField(test.account)
-			assert.Equal(t, test.want, test.account.Events.Enabled, test.name)
+			if test.account != nil {
+				assert.Equal(t, test.want, test.account.Events.Enabled)
+			}
 		})
 	}
 }

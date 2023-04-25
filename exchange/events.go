@@ -132,5 +132,5 @@ func (ev *eventTracking) makeEventURL(evType analytics.EventType, pbsBid *entiti
 
 // isEnabled checks if events are enabled by default or on account/request level
 func (ev *eventTracking) isEventAllowed() bool {
-	return (ev.enabledForAccount) || ev.enabledForRequest
+	return ev.enabledForAccount || ev.enabledForRequest
 }

@@ -335,3 +335,34 @@ func TestValidateVASTEvents(t *testing.T) {
 		assert.Equal(t, !test.expectErr, err == nil, test.description)
 	}
 }
+
+func TestIsEnabled(t *testing.T) {
+	testCases := []struct {
+		name     string
+		events   Events
+		expected bool
+	}{
+		{
+			name:     "nil pointer",
+			events:   Events{},
+			expected: false,
+		},
+		{
+			name:     "event false",
+			events:   Events{Enabled: ptrutil.ToPtr(false)},
+			expected: false,
+		},
+		{
+			name:     "event true",
+			events:   Events{Enabled: ptrutil.ToPtr(true)},
+			expected: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			actual := tc.events.IsEnabled()
+			assert.Equal(t, tc.expected, actual)
+		})
+	}
+}

@@ -314,6 +314,7 @@ func TestDefaults(t *testing.T) {
 	assert.Equal(t, expectedTCF2, cfg.GDPR.TCF2, "gdpr.tcf2")
 }
 
+// When adding a new field, make sure the indentations are spaces not tabs otherwise read config may fail to parse the new field value.
 var fullConfig = []byte(`
 gdpr:
   host_vendor_id: 15
@@ -449,7 +450,9 @@ hooks:
 price_floors:
     enabled: true
 account_defaults:
-    events_enabled: true
+    events_enabled: false
+    events:
+        enabled: true
     price_floors:
         enabled: true
         enforce_floors_rate: 50
@@ -3204,30 +3207,35 @@ func TestMigrateConfigEventsEnabled(t *testing.T) {
 		oldFieldValue         *bool
 		newFieldValue         *bool
 		expectedOldFieldValue *bool
+		expectedNewFieldValue *bool
 	}{
 		{
 			name:                  "Both old and new fields are nil",
 			oldFieldValue:         nil,
 			newFieldValue:         nil,
 			expectedOldFieldValue: nil,
+			expectedNewFieldValue: nil,
 		},
 		{
 			name:                  "Only old field is set",
 			oldFieldValue:         ptrutil.ToPtr(true),
 			newFieldValue:         nil,
 			expectedOldFieldValue: ptrutil.ToPtr(true),
+			expectedNewFieldValue: nil,
 		},
 		{
 			name:                  "Only new field is set",
 			oldFieldValue:         nil,
 			newFieldValue:         ptrutil.ToPtr(true),
 			expectedOldFieldValue: ptrutil.ToPtr(true),
+			expectedNewFieldValue: nil,
 		},
 		{
 			name:                  "Both old and new fields are set, override old field with new field value",
 			oldFieldValue:         ptrutil.ToPtr(false),
 			newFieldValue:         ptrutil.ToPtr(true),
 			expectedOldFieldValue: ptrutil.ToPtr(true),
+			expectedNewFieldValue: nil,
 		},
 	}
 
