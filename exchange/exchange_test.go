@@ -4388,7 +4388,7 @@ func TestBuildStoredAuctionResponses(t *testing.T) {
 				},
 				liveAdapters: []openrtb_ext.BidderName{openrtb_ext.BidderName("appnexus")},
 			},
-			errorMessage: "invalid BidType: incorrect",
+			errorMessage: "Failed to parse bid mType for impression \"impression-id\"",
 		},
 		{
 			desc: "Single imp with multiple bids in stored response one bidder",

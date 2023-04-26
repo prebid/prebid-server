@@ -974,13 +974,13 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 		case openrtb2.MarkupNative:
 			bidType = openrtb_ext.BidTypeNative
 		default:
-			return openrtb_ext.BidType(0), fmt.Errorf("unable to determine bid type by Mtype")
+			return bidType, fmt.Errorf("unable to determine bid type by Mtype")
 		}
 	} else {
 		var err error
 		bidType, err = getPrebidMediaTypeForBid(bid)
 		if err != nil {
-			return openrtb_ext.BidType(0), err
+			return bidType, err
 		}
 	}
 	return bidType, nil
