@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/mitchellh/copystructure"
@@ -65,7 +66,12 @@ func RunJSONBidderTest(t *testing.T, rootDir string, bidder adapters.Bidder) {
 func runTests(t *testing.T, directory string, bidder adapters.Bidder, allowErrors, isAmpTest, isVideoTest bool) {
 	if specFiles, err := os.ReadDir(directory); err == nil {
 		for _, specFile := range specFiles {
+			if !strings.HasSuffix(specFile.Name(), ".json") {
+				continue
+			}
+
 			fileName := fmt.Sprintf("%s/%s", directory, specFile.Name())
+
 			specData, err := loadFile(fileName)
 			if err != nil {
 				t.Fatalf("Failed to load contents of file %s: %v", fileName, err)
