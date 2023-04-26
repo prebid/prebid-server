@@ -1,13 +1,24 @@
 package bidadjustment
 
 import (
+	"math"
+
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const maxNumOfCombos = 8
+const (
+	AdjustmentTypeCpm        = "cpm"
+	AdjustmentTypeMultiplier = "multiplier"
+	AdjustmentTypeStatic     = "static"
+	WildCard                 = "*"
+	Delimiter                = "|"
+)
 
-func GetAndApplyAdjustments(ruleToAdjustments map[string][]openrtb_ext.Adjustment, bidInfo *adapters.TypedBid, bidderName openrtb_ext.BidderName, currency string, reqInfo *adapters.ExtraRequestInfo) (float64, string) {
+const maxNumOfCombos = 8
+const pricePrecision float64 = 10000 // Rounds to 4 Decimal Places
+
+func Apply(ruleToAdjustments map[string][]openrtb_ext.Adjustment, bidInfo *adapters.TypedBid, bidderName openrtb_ext.BidderName, currency string, reqInfo *adapters.ExtraRequestInfo) (float64, string) {
 	adjustments := []openrtb_ext.Adjustment{}
 	if ruleToAdjustments != nil {
 		adjustments = get(ruleToAdjustments, string(bidInfo.BidType), string(bidderName), bidInfo.Bid.DealID)
@@ -15,6 +26,36 @@ func GetAndApplyAdjustments(ruleToAdjustments map[string][]openrtb_ext.Adjustmen
 		return bidInfo.Bid.Price, currency
 	}
 	return apply(adjustments, bidInfo.Bid.Price, currency, reqInfo)
+}
+
+func apply(adjustments []openrtb_ext.Adjustment, bidPrice float64, currency string, reqInfo *adapters.ExtraRequestInfo) (float64, string) {
+	if adjustments == nil || len(adjustments) == 0 {
+		return bidPrice, currency
+	}
+	originalBidPrice := bidPrice
+	originalCurrency := currency
+
+	for _, adjustment := range adjustments {
+		switch adjustment.Type {
+		case AdjustmentTypeMultiplier:
+			bidPrice = bidPrice * adjustment.Value
+		case AdjustmentTypeCpm:
+			convertedVal, err := reqInfo.ConvertCurrency(adjustment.Value, adjustment.Currency, currency) // Convert Adjustment to Bid Currency
+			if err != nil {
+				return originalBidPrice, currency
+			}
+			bidPrice = bidPrice - convertedVal
+		case AdjustmentTypeStatic:
+			bidPrice = adjustment.Value
+			currency = adjustment.Currency
+		}
+	}
+	roundedBidPrice := math.Round(bidPrice*pricePrecision) / pricePrecision
+
+	if roundedBidPrice <= 0 {
+		return originalBidPrice, originalCurrency
+	}
+	return roundedBidPrice, currency
 }
 
 // get() should return the highest priority slice of adjustments from the map that we can match with the given bid info

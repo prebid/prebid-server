@@ -1,0 +1,388 @@
+package bidadjustment
+
+import (
+	"testing"
+
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestBuildRules(t *testing.T) {
+	testCases := []struct {
+		name                string
+		givenBidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments
+		expectedMap         map[string][]openrtb_ext.Adjustment
+	}{
+		{
+			name: "OneAdjustment",
+			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+				MediaType: openrtb_ext.MediaType{
+					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+						"bidderA": {
+							"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.1}},
+						},
+					},
+				},
+			},
+			expectedMap: map[string][]openrtb_ext.Adjustment{
+				"banner|bidderA|dealId": {
+					{
+						Type:  AdjustmentTypeMultiplier,
+						Value: 1.1,
+					},
+				},
+			},
+		},
+		{
+			name: "MultipleAdjustments",
+			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+				MediaType: openrtb_ext.MediaType{
+					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+						"bidderA": {
+							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}},
+						},
+						"*": {
+							"diffDealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCpm, Value: 1.1, Currency: "USD"}},
+							"*":          []openrtb_ext.Adjustment{{Type: AdjustmentTypeStatic, Value: 5.0, Currency: "USD"}},
+						},
+					},
+					Video: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+						"*": {
+							"*": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}, {Type: AdjustmentTypeCpm, Value: 0.18, Currency: "USD"}},
+						},
+					},
+				},
+			},
+			expectedMap: map[string][]openrtb_ext.Adjustment{
+				"banner|bidderA|dealId": {
+					{
+						Type:  AdjustmentTypeMultiplier,
+						Value: 1.1,
+					},
+				},
+				"banner|*|diffDealId": {
+					{
+						Type:     AdjustmentTypeCpm,
+						Value:    1.1,
+						Currency: "USD",
+					},
+				},
+				"banner|*|*": {
+					{
+						Type:     AdjustmentTypeStatic,
+						Value:    5.0,
+						Currency: "USD",
+					},
+				},
+				"video|*|*": {
+					{
+						Type:  AdjustmentTypeMultiplier,
+						Value: 1.1,
+					},
+					{
+						Type:     AdjustmentTypeCpm,
+						Value:    0.18,
+						Currency: "USD",
+					},
+				},
+			},
+		},
+		{
+			name:                "NilAdjustments",
+			givenBidAdjustments: nil,
+			expectedMap:         map[string][]openrtb_ext.Adjustment{},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			ruleToAdjustments := make(map[string][]openrtb_ext.Adjustment)
+			BuildRules(test.givenBidAdjustments, ruleToAdjustments)
+			assert.Equal(t, test.expectedMap, ruleToAdjustments)
+		})
+	}
+}
+
+func TestMergeAndValidate(t *testing.T) {
+	testCases := []struct {
+		name                   string
+		givenRequestWrapper    *openrtb_ext.RequestWrapper
+		givenAccount           *config.Account
+		expectedBidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments
+	}{
+		{
+			name: "ValidReqAndAcctAdjustments",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid":{"bidadjustments":{"mediatype":{"banner":{"bidderA":{"dealId":[{ "adjtype": "multiplier", "value": 1.1}]}}}}}}`)},
+			},
+			givenAccount: &config.Account{
+				BidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+					MediaType: openrtb_ext.MediaType{
+						Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+							"bidderB": {
+								"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.5}},
+							},
+						},
+					},
+				},
+			},
+			expectedBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+				MediaType: openrtb_ext.MediaType{
+					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+						"bidderA": {
+							"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.1}},
+						},
+						"bidderB": {
+							"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.5}},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "InvalidReqAdjustment",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid":{"bidadjustments":{"mediatype":{"banner":{"bidderA":{"dealId":[{ "adjtype": "multiplier", "value": 200}]}}}}}}`)},
+			},
+			givenAccount: &config.Account{
+				BidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+					MediaType: openrtb_ext.MediaType{
+						Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+							"bidderB": {
+								"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.5}},
+							},
+						},
+					},
+				},
+			},
+			expectedBidAdjustments: nil,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			mergedBidAdj, err := Merge(test.givenRequestWrapper, test.givenAccount.BidAdjustments)
+			assert.NoError(t, err, "Unexpected error received")
+			assert.Equal(t, test.expectedBidAdjustments, mergedBidAdj)
+		})
+	}
+}
+
+func TestMerge(t *testing.T) {
+	testCases := []struct {
+		name                   string
+		givenRequestWrapper    *openrtb_ext.RequestWrapper
+		givenAccount           *config.Account
+		expectedBidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments
+	}{
+		{
+			name: "DiffBidderNames",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid":{"bidadjustments":{"mediatype":{"banner":{"bidderA":{"dealId":[{ "adjtype": "multiplier", "value": 1.1}]}}}}}}`)},
+			},
+			givenAccount: &config.Account{
+				BidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+					MediaType: openrtb_ext.MediaType{
+						Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+							"bidderB": {
+								"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.5}},
+							},
+						},
+					},
+				},
+			},
+			expectedBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+				MediaType: openrtb_ext.MediaType{
+					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+						"bidderA": {
+							"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.1}},
+						},
+						"bidderB": {
+							"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.5}},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "RequestTakesPrecedence",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid":{"bidadjustments":{"mediatype":{"audio":{"bidderA":{"dealId":[{ "adjtype": "multiplier", "value": 1.1}]}}}}}}`)},
+			},
+			givenAccount: &config.Account{
+				BidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+					MediaType: openrtb_ext.MediaType{
+						Audio: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+							"bidderA": {
+								"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.5}},
+							},
+						},
+					},
+				},
+			},
+			expectedBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+				MediaType: openrtb_ext.MediaType{
+					Audio: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+						"bidderA": {
+							"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.1}},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "DiffDealIds",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid":{"bidadjustments":{"mediatype":{"video":{"bidderA":{"dealId":[{ "adjtype": "static", "value": 3.00, "currency": "USD"}]}}}}}}`)},
+			},
+			givenAccount: &config.Account{
+				BidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+					MediaType: openrtb_ext.MediaType{
+						Video: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+							"bidderA": {
+								"diffDealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.5}},
+							},
+						},
+					},
+				},
+			},
+			expectedBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+				MediaType: openrtb_ext.MediaType{
+					Video: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+						"bidderA": {
+							"dealId":     []openrtb_ext.Adjustment{{Type: "static", Value: 3.00, Currency: "USD"}},
+							"diffDealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.5}},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "DiffBidderNamesCpm",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid":{"bidadjustments":{"mediatype":{"native":{"bidderA":{"dealId":[{"adjtype": "cpm", "value": 0.18, "currency": "USD"}]}}}}}}`)},
+			},
+			givenAccount: &config.Account{
+				BidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+					MediaType: openrtb_ext.MediaType{
+						Native: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+							"bidderB": {
+								"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.5}},
+							},
+						},
+					},
+				},
+			},
+			expectedBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+				MediaType: openrtb_ext.MediaType{
+					Native: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+						"bidderA": {
+							"dealId": []openrtb_ext.Adjustment{{Type: "cpm", Value: 0.18, Currency: "USD"}},
+						},
+						"bidderB": {
+							"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.5}},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "ReqAdjVideoAcctAdjBanner",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid":{"bidadjustments":{"mediatype":{"video":{"bidderA":{"dealId":[{ "adjtype": "multiplier", "value": 1.1}]}}}}}}`)},
+			},
+			givenAccount: &config.Account{
+				BidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+					MediaType: openrtb_ext.MediaType{
+						Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+							"bidderB": {
+								"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.5}},
+							},
+						},
+					},
+				},
+			},
+			expectedBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+				MediaType: openrtb_ext.MediaType{
+					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+						"bidderB": {
+							"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.5}},
+						},
+					},
+					Video: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+						"bidderA": {
+							"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.1}},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "RequestNilPrebid",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"ext":{"bidder": {}}}`)},
+			},
+			givenAccount: &config.Account{
+				BidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+					MediaType: openrtb_ext.MediaType{
+						Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+							"bidderB": {
+								"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.5}},
+							},
+						},
+					},
+				},
+			},
+			expectedBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+				MediaType: openrtb_ext.MediaType{
+					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+						"bidderB": {
+							"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.5}},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "AcctWildCardRequestVideo",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid":{"bidadjustments":{"mediatype":{"video":{"bidderA":{"dealId":[{ "adjtype": "multiplier", "value": 1.1}]}}}}}}`)},
+			},
+			givenAccount: &config.Account{
+				BidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+					MediaType: openrtb_ext.MediaType{
+						WildCard: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+							"bidderB": {
+								"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.5}},
+							},
+						},
+					},
+				},
+			},
+			expectedBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+				MediaType: openrtb_ext.MediaType{
+					WildCard: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+						"bidderB": {
+							"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.5}},
+						},
+					},
+					Video: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+						"bidderA": {
+							"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.1}},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			mergedBidAdj, err := merge(test.givenRequestWrapper, test.givenAccount.BidAdjustments)
+			assert.NoError(t, err, "Unexpected error received")
+			assert.Equal(t, test.expectedBidAdjustments, mergedBidAdj)
+		})
+	}
+}

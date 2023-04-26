@@ -1,50 +1,29 @@
 package bidadjustment
 
 import (
-	"math"
-
-	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const (
-	AdjustmentTypeCpm        = "cpm"
-	AdjustmentTypeMultiplier = "multiplier"
-	AdjustmentTypeStatic     = "static"
-	WildCard                 = "*"
-	Delimiter                = "|"
-)
-
-const pricePrecision float64 = 10000 // Rounds to 4 Decimal Places
-
-func apply(adjustments []openrtb_ext.Adjustment, bidPrice float64, currency string, reqInfo *adapters.ExtraRequestInfo) (float64, string) {
-	if adjustments == nil || len(adjustments) == 0 {
-		return bidPrice, currency
+// BuildRules() will populate the rules map with a rule that's a combination of the mediaType, bidderName, and dealId for a particular adjustment
+// The result will be a map that'll map a given rule with its adjustment
+func BuildRules(bidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments, rules map[string][]openrtb_ext.Adjustment) {
+	if bidAdjustments == nil {
+		return
 	}
-	originalBidPrice := bidPrice
-	originalCurrency := currency
+	buildRulesForMediaType(string(openrtb_ext.BidTypeBanner), bidAdjustments.MediaType.Banner, rules)
+	buildRulesForMediaType(string(openrtb_ext.BidTypeVideo), bidAdjustments.MediaType.Video, rules)
+	buildRulesForMediaType(string(openrtb_ext.BidTypeAudio), bidAdjustments.MediaType.Audio, rules)
+	buildRulesForMediaType(string(openrtb_ext.BidTypeNative), bidAdjustments.MediaType.Native, rules)
+	buildRulesForMediaType(WildCard, bidAdjustments.MediaType.WildCard, rules)
+}
 
-	for _, adjustment := range adjustments {
-		switch adjustment.Type {
-		case AdjustmentTypeMultiplier:
-			bidPrice = bidPrice * adjustment.Value
-		case AdjustmentTypeCpm:
-			convertedVal, err := reqInfo.ConvertCurrency(adjustment.Value, adjustment.Currency, currency) // Convert Adjustment to Bid Currency
-			if err != nil {
-				return originalBidPrice, currency
-			}
-			bidPrice = bidPrice - convertedVal
-		case AdjustmentTypeStatic:
-			bidPrice = adjustment.Value
-			currency = adjustment.Currency
+func buildRulesForMediaType(mediaType string, rulesByBidder map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID, rules map[string][]openrtb_ext.Adjustment) {
+	for bidderName := range rulesByBidder {
+		for dealID, adjustments := range rulesByBidder[bidderName] {
+			rule := mediaType + Delimiter + string(bidderName) + Delimiter + dealID
+			rules[rule] = adjustments
 		}
 	}
-	roundedBidPrice := math.Round(bidPrice*pricePrecision) / pricePrecision
-
-	if roundedBidPrice <= 0 {
-		return originalBidPrice, originalCurrency
-	}
-	return roundedBidPrice, currency
 }
 
 func Merge(req *openrtb_ext.RequestWrapper, acctBidAdjs *openrtb_ext.ExtRequestPrebidBidAdjustments) (*openrtb_ext.ExtRequestPrebidBidAdjustments, error) {
@@ -104,24 +83,4 @@ func mergeForMediaType(reqAdjMap map[openrtb_ext.BidderName]openrtb_ext.Adjustme
 		}
 	}
 	return reqAdjMap
-}
-
-func PopulateMap(bidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments, ruleToAdjustments map[string][]openrtb_ext.Adjustment) {
-	if bidAdjustments == nil {
-		return
-	}
-	populateMapForMediaType(bidAdjustments.MediaType.Banner, string(openrtb_ext.BidTypeBanner), ruleToAdjustments)
-	populateMapForMediaType(bidAdjustments.MediaType.Video, string(openrtb_ext.BidTypeVideo), ruleToAdjustments)
-	populateMapForMediaType(bidAdjustments.MediaType.Audio, string(openrtb_ext.BidTypeAudio), ruleToAdjustments)
-	populateMapForMediaType(bidAdjustments.MediaType.Native, string(openrtb_ext.BidTypeNative), ruleToAdjustments)
-	populateMapForMediaType(bidAdjustments.MediaType.WildCard, WildCard, ruleToAdjustments)
-}
-
-func populateMapForMediaType(bidAdj map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID, mediaType string, ruleToAdjustmentMap map[string][]openrtb_ext.Adjustment) {
-	for bidderName := range bidAdj {
-		for dealID, adjustments := range bidAdj[bidderName] {
-			rule := mediaType + Delimiter + string(bidderName) + Delimiter + dealID
-			ruleToAdjustmentMap[rule] = adjustments
-		}
-	}
 }
