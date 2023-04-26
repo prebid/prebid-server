@@ -462,24 +462,24 @@ stored_requests:
   directorypath: "/somepath"
 `)
 
-func cmpStrings(t *testing.T, key string, a string, b string) {
+func cmpStrings(t *testing.T, key, expected, actual string) {
 	t.Helper()
-	assert.Equal(t, a, b, "%s: %s != %s", key, a, b)
+	assert.Equal(t, expected, actual, "%s: %s != %s", key, expected, actual)
 }
 
-func cmpInts(t *testing.T, key string, a int, b int) {
+func cmpInts(t *testing.T, key string, expected, actual int) {
 	t.Helper()
-	assert.Equal(t, a, b, "%s: %d != %d", key, a, b)
+	assert.Equal(t, expected, actual, "%s: %d != %d", key, expected, actual)
 }
 
-func cmpInt8s(t *testing.T, key string, a *int8, b *int8) {
+func cmpInt8s(t *testing.T, key string, expected, actual *int8) {
 	t.Helper()
-	assert.Equal(t, a, b, "%s: %d != %d", key, a, b)
+	assert.Equal(t, expected, actual, "%s: %d != %d", key, expected, actual)
 }
 
-func cmpBools(t *testing.T, key string, a bool, b bool) {
+func cmpBools(t *testing.T, key string, expected, actual bool) {
 	t.Helper()
-	assert.Equal(t, a, b, "%s: %t != %t", key, a, b)
+	assert.Equal(t, expected, actual, "%s: %t != %t", key, expected, actual)
 }
 
 func cmpNils(t *testing.T, key string, a interface{}) {
