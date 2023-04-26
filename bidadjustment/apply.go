@@ -18,10 +18,10 @@ const (
 const maxNumOfCombos = 8
 const pricePrecision float64 = 10000 // Rounds to 4 Decimal Places
 
-func Apply(ruleToAdjustments map[string][]openrtb_ext.Adjustment, bidInfo *adapters.TypedBid, bidderName openrtb_ext.BidderName, currency string, reqInfo *adapters.ExtraRequestInfo) (float64, string) {
+func Apply(rules map[string][]openrtb_ext.Adjustment, bidInfo *adapters.TypedBid, bidderName openrtb_ext.BidderName, currency string, reqInfo *adapters.ExtraRequestInfo) (float64, string) {
 	adjustments := []openrtb_ext.Adjustment{}
-	if ruleToAdjustments != nil {
-		adjustments = get(ruleToAdjustments, string(bidInfo.BidType), string(bidderName), bidInfo.Bid.DealID)
+	if rules != nil {
+		adjustments = get(rules, string(bidInfo.BidType), string(bidderName), bidInfo.Bid.DealID)
 	} else {
 		return bidInfo.Bid.Price, currency
 	}

@@ -28,10 +28,16 @@ func Validate(bidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments) bool {
 	return true
 }
 
-func validateForMediaType(bidAdjMap map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID) bool {
-	for bidderName := range bidAdjMap {
-		for dealId := range bidAdjMap[bidderName] {
-			for _, adjustment := range bidAdjMap[bidderName][dealId] {
+func validateForMediaType(bidAdj map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID) bool {
+	for bidderName := range bidAdj {
+		if bidAdj[bidderName] == nil {
+			return false
+		}
+		for dealId := range bidAdj[bidderName] {
+			if bidAdj[bidderName][dealId] == nil {
+				return false
+			}
+			for _, adjustment := range bidAdj[bidderName][dealId] {
 				if !validateAdjustment(adjustment) {
 					return false
 				}
