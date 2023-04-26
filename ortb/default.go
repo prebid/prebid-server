@@ -51,6 +51,9 @@ func setDefaultsTargeting(targeting *openrtb_ext.ExtRequestTargeting) bool {
 		targeting.PriceGranularity = newPG
 	}
 
+	// If price granularity is not specified in request then default one should be set.
+	// Default price granularity can be overwritten for video or banner bid type
+	// only in case targeting.MediaTypePriceGranularity.Video|Banner != nil.
 	if targeting.MediaTypePriceGranularity != nil {
 		if targeting.MediaTypePriceGranularity.Video != nil {
 			if newVideoPG, updated := adjustDefaultsPriceGranularity(targeting.MediaTypePriceGranularity.Video); updated {

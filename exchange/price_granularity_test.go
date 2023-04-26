@@ -1,6 +1,7 @@
 package exchange
 
 import (
+	"encoding/json"
 	"math"
 	"testing"
 
@@ -84,6 +85,33 @@ func TestGetPriceBucketString(t *testing.T) {
 				{"dense", targetData{priceGranularity: dense}, "5.70"},
 				{"custom1", targetData{priceGranularity: custom1}, "5.70"},
 				{"custom2", targetData{priceGranularity: custom2}, "5.10"},
+			},
+		},
+		{
+			groupDesc: "media type price granularity video for bid type video",
+			bid:       openrtb2.Bid{Price: 5.0, MType: openrtb2.MarkupVideo},
+			testCases: []aTest{
+				{"medium", targetData{priceGranularity: medium}, "5.00"},
+				{"video-custom2", targetData{priceGranularity: medium, mediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{Video: &custom2}}, "3.90"},
+				{"banner-custom2", targetData{priceGranularity: medium, mediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{Banner: &custom2}}, "5.00"},
+			},
+		},
+		{
+			groupDesc: "media type price granularity video for bid type banner",
+			bid:       openrtb2.Bid{Price: 5.0, MType: openrtb2.MarkupBanner},
+			testCases: []aTest{
+				{"medium", targetData{priceGranularity: medium}, "5.00"},
+				{"video-custom2", targetData{priceGranularity: medium, mediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{Video: &custom2}}, "5.00"},
+				{"banner-custom2", targetData{priceGranularity: medium, mediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{Banner: &custom2}}, "3.90"},
+			},
+		},
+		{
+			groupDesc: "media type price granularity video for incorrect bid type",
+			bid:       openrtb2.Bid{Price: 5.0, Ext: json.RawMessage(`{`)},
+			testCases: []aTest{
+				{"medium", targetData{priceGranularity: medium}, "5.00"},
+				{"video-custom2", targetData{priceGranularity: medium, mediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{Video: &custom2}}, "5.00"},
+				{"banner-custom2", targetData{priceGranularity: medium, mediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{Banner: &custom2}}, "5.00"},
 			},
 		},
 		{

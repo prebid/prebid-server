@@ -153,6 +153,35 @@ func TestSetDefaultsTargeting(t *testing.T) {
 			expectedModified: true,
 		},
 		{
+			name: "populated-ranges-nil-mediatypepricegranularity-video-banner",
+			givenTargeting: &openrtb_ext.ExtRequestTargeting{
+				PriceGranularity: &openrtb_ext.PriceGranularity{
+					Precision: ptrutil.ToPtr(4),
+					Ranges:    nil,
+				},
+				MediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{
+					Video: &openrtb_ext.PriceGranularity{
+						Precision: ptrutil.ToPtr(4),
+						Ranges:    nil,
+					},
+					Banner: &openrtb_ext.PriceGranularity{
+						Precision: ptrutil.ToPtr(4),
+						Ranges:    nil,
+					},
+				},
+			},
+			expectedTargeting: &openrtb_ext.ExtRequestTargeting{
+				PriceGranularity: &defaultGranularity,
+				MediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{
+					Video:  &defaultGranularity,
+					Banner: &defaultGranularity,
+				},
+				IncludeWinners:    ptrutil.ToPtr(DefaultTargetingIncludeWinners),
+				IncludeBidderKeys: ptrutil.ToPtr(DefaultTargetingIncludeBidderKeys),
+			},
+			expectedModified: true,
+		},
+		{
 			name: "populated-ranges-empty",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
 				PriceGranularity: &openrtb_ext.PriceGranularity{
@@ -162,6 +191,35 @@ func TestSetDefaultsTargeting(t *testing.T) {
 			},
 			expectedTargeting: &openrtb_ext.ExtRequestTargeting{
 				PriceGranularity:  &defaultGranularity,
+				IncludeWinners:    ptrutil.ToPtr(DefaultTargetingIncludeWinners),
+				IncludeBidderKeys: ptrutil.ToPtr(DefaultTargetingIncludeBidderKeys),
+			},
+			expectedModified: true,
+		},
+		{
+			name: "populated-ranges-empty-mediatypepricegranularity-video-banner",
+			givenTargeting: &openrtb_ext.ExtRequestTargeting{
+				PriceGranularity: &openrtb_ext.PriceGranularity{
+					Precision: ptrutil.ToPtr(4),
+					Ranges:    []openrtb_ext.GranularityRange{},
+				},
+				MediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{
+					Video: &openrtb_ext.PriceGranularity{
+						Precision: ptrutil.ToPtr(4),
+						Ranges:    []openrtb_ext.GranularityRange{},
+					},
+					Banner: &openrtb_ext.PriceGranularity{
+						Precision: ptrutil.ToPtr(4),
+						Ranges:    []openrtb_ext.GranularityRange{},
+					},
+				},
+			},
+			expectedTargeting: &openrtb_ext.ExtRequestTargeting{
+				PriceGranularity: &defaultGranularity,
+				MediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{
+					Video:  &defaultGranularity,
+					Banner: &defaultGranularity,
+				},
 				IncludeWinners:    ptrutil.ToPtr(DefaultTargetingIncludeWinners),
 				IncludeBidderKeys: ptrutil.ToPtr(DefaultTargetingIncludeBidderKeys),
 			},
@@ -181,6 +239,44 @@ func TestSetDefaultsTargeting(t *testing.T) {
 				PriceGranularity: &openrtb_ext.PriceGranularity{
 					Precision: ptrutil.ToPtr(4),
 					Ranges:    []openrtb_ext.GranularityRange{{Min: 0, Max: 10, Increment: 1}},
+				},
+				IncludeWinners:    ptrutil.ToPtr(false),
+				IncludeBidderKeys: ptrutil.ToPtr(false),
+			},
+			expectedModified: false,
+		},
+		{
+			name: "populated-full-mediatypepricegranularity-video-banner", // no defaults set
+			givenTargeting: &openrtb_ext.ExtRequestTargeting{
+				PriceGranularity: &openrtb_ext.PriceGranularity{
+					Precision: ptrutil.ToPtr(4),
+					Ranges:    []openrtb_ext.GranularityRange{{Min: 0, Max: 10, Increment: 1}},
+				},
+				MediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{
+					Video: &openrtb_ext.PriceGranularity{
+						Precision: ptrutil.ToPtr(4),
+						Ranges:    []openrtb_ext.GranularityRange{{Min: 0, Max: 10, Increment: 1}},
+					},
+					Banner: &openrtb_ext.PriceGranularity{
+						Precision: ptrutil.ToPtr(4),
+						Ranges:    []openrtb_ext.GranularityRange{{Min: 0, Max: 10, Increment: 1}},
+					},
+				},
+				IncludeWinners:    ptrutil.ToPtr(false),
+				IncludeBidderKeys: ptrutil.ToPtr(false),
+			},
+			expectedTargeting: &openrtb_ext.ExtRequestTargeting{
+				PriceGranularity: &openrtb_ext.PriceGranularity{
+					Precision: ptrutil.ToPtr(4),
+					Ranges:    []openrtb_ext.GranularityRange{{Min: 0, Max: 10, Increment: 1}},
+				},
+				MediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{
+					Video: &openrtb_ext.PriceGranularity{
+						Precision: ptrutil.ToPtr(4),
+						Ranges:    []openrtb_ext.GranularityRange{{Min: 0, Max: 10, Increment: 1}}},
+					Banner: &openrtb_ext.PriceGranularity{
+						Precision: ptrutil.ToPtr(4),
+						Ranges:    []openrtb_ext.GranularityRange{{Min: 0, Max: 10, Increment: 1}}},
 				},
 				IncludeWinners:    ptrutil.ToPtr(false),
 				IncludeBidderKeys: ptrutil.ToPtr(false),
