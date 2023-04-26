@@ -4,10 +4,12 @@ import (
 	"errors"
 	"math"
 	"math/rand"
+	"strings"
 
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/ptrutil"
 )
 
 type Price struct {
@@ -28,7 +30,7 @@ const (
 
 // EnrichWithPriceFloors checks for floors enabled in account and request and selects floors data from dynamic fetched if present
 // else selects floors data from req.ext.prebid.floors and update request with selected floors details
-func EnrichWithPriceFloors(bidRequestWrapper *openrtb_ext.RequestWrapper, account config.Account, conversions currency.Conversions) []error {
+func EnrichWithPriceFloors(bidRequestWrapper *openrtb_ext.RequestWrapper, account config.Account, conversions currency.Conversions, priceFloorFetcher FloorFetcher) []error {
 
 	if bidRequestWrapper == nil || bidRequestWrapper.BidRequest == nil {
 		return []error{errors.New("Empty bidrequest")}
@@ -38,7 +40,7 @@ func EnrichWithPriceFloors(bidRequestWrapper *openrtb_ext.RequestWrapper, accoun
 		return []error{errors.New("Floors feature is disabled at account or in the request")}
 	}
 
-	floors, err := resolveFloors(account, bidRequestWrapper, conversions)
+	floors, err := resolveFloors(account, bidRequestWrapper, conversions, priceFloorFetcher)
 
 	updateReqErrs := updateBidRequestWithFloors(floors, bidRequestWrapper, conversions)
 	updateFloorsInRequest(bidRequestWrapper, floors)
@@ -134,12 +136,21 @@ func isPriceFloorsDisabledForRequest(bidRequestWrapper *openrtb_ext.RequestWrapp
 }
 
 // resolveFloors does selection of floors fields from request data and dynamic fetched data if dynamic fetch is enabled
-func resolveFloors(account config.Account, bidRequestWrapper *openrtb_ext.RequestWrapper, conversions currency.Conversions) (*openrtb_ext.PriceFloorRules, []error) {
+func resolveFloors(account config.Account, bidRequestWrapper *openrtb_ext.RequestWrapper, conversions currency.Conversions, priceFloorFetcher FloorFetcher) (*openrtb_ext.PriceFloorRules, []error) {
 	var errList []error
 	var floorRules *openrtb_ext.PriceFloorRules
 
 	reqFloor := extractFloorsFromRequest(bidRequestWrapper)
-	if reqFloor != nil {
+	if reqFloor != nil && reqFloor.Location != nil && len(reqFloor.Location.URL) > 0 {
+		account.PriceFloors.Fetch.URL = reqFloor.Location.URL
+	}
+	account.PriceFloors.Fetch.AccountID = account.ID
+	fetchResult, fetchStatus := priceFloorFetcher.Fetch(account.PriceFloors)
+
+	if account.PriceFloors.UseDynamicData && fetchResult != nil && fetchStatus == openrtb_ext.FetchSuccess {
+		mergedFloor := mergeFloors(reqFloor, fetchResult, conversions)
+		floorRules, errList = createFloorsFrom(mergedFloor, account, fetchStatus, openrtb_ext.FetchLocation)
+	} else if reqFloor != nil {
 		floorRules, errList = createFloorsFrom(reqFloor, account, openrtb_ext.FetchNone, openrtb_ext.RequestLocation)
 	} else {
 		floorRules, errList = createFloorsFrom(nil, account, openrtb_ext.FetchNone, openrtb_ext.NoDataLocation)
@@ -206,4 +217,99 @@ func updateFloorsInRequest(bidRequestWrapper *openrtb_ext.RequestWrapper, priceF
 			bidRequestWrapper.RebuildRequest()
 		}
 	}
+}
+
+// resolveFloorMin gets floorMin value from request and dynamic fetched data
+func resolveFloorMin(reqFloors *openrtb_ext.PriceFloorRules, fetchFloors *openrtb_ext.PriceFloorRules, conversions currency.Conversions) Price {
+	var requestFloorMinCur, providerFloorMinCur string
+	var requestFloorMin, providerFloorMin float64
+
+	if reqFloors != nil {
+		requestFloorMin = reqFloors.FloorMin
+		requestFloorMinCur = reqFloors.FloorMinCur
+		if len(requestFloorMinCur) == 0 && reqFloors.Data != nil {
+			requestFloorMinCur = reqFloors.Data.Currency
+		}
+	}
+
+	if fetchFloors != nil {
+		providerFloorMin = fetchFloors.FloorMin
+		providerFloorMinCur = fetchFloors.FloorMinCur
+		if len(providerFloorMinCur) == 0 && fetchFloors.Data != nil {
+			providerFloorMinCur = fetchFloors.Data.Currency
+		}
+	}
+
+	if len(requestFloorMinCur) > 0 {
+		if requestFloorMin > 0 {
+			return Price{FloorMin: requestFloorMin, FloorMinCur: requestFloorMinCur}
+		}
+
+		if providerFloorMin > 0 {
+			if strings.Compare(providerFloorMinCur, requestFloorMinCur) == 0 || len(providerFloorMinCur) == 0 {
+				return Price{FloorMin: providerFloorMin, FloorMinCur: requestFloorMinCur}
+			}
+			rate, err := conversions.GetRate(providerFloorMinCur, requestFloorMinCur)
+			if err != nil {
+				return Price{FloorMin: 0, FloorMinCur: requestFloorMinCur}
+			}
+			return Price{FloorMin: roundToFourDecimals(rate * providerFloorMin), FloorMinCur: requestFloorMinCur}
+		}
+	}
+
+	// Question :: What should be the behaviour if request floorMin present and currency is not defined?
+	if len(providerFloorMinCur) > 0 {
+		if providerFloorMin > 0 {
+			return Price{FloorMin: providerFloorMin, FloorMinCur: providerFloorMinCur}
+		}
+		if requestFloorMin > 0 {
+			return Price{FloorMin: requestFloorMin, FloorMinCur: providerFloorMinCur}
+		}
+	}
+
+	return Price{FloorMin: 0, FloorMinCur: ""}
+
+}
+
+// mergeFloors does merging for floors data from request and dynamic fetch
+func mergeFloors(reqFloors *openrtb_ext.PriceFloorRules, fetchFloors *openrtb_ext.PriceFloorRules, conversions currency.Conversions) *openrtb_ext.PriceFloorRules {
+
+	mergedFloors := fetchFloors.DeepCopy()
+	if mergedFloors.Enabled == nil {
+		mergedFloors.Enabled = new(bool)
+	}
+	*mergedFloors.Enabled = mergedFloors.GetEnabled() && reqFloors.GetEnabled()
+
+	if reqFloors == nil {
+		return mergedFloors
+	}
+
+	var enforceRate int
+	if reqFloors.Enforcement != nil {
+		enforceRate = reqFloors.Enforcement.EnforceRate
+	}
+
+	// Question :: Should we copy entire Enforcement Object from request?
+	if enforceRate > 0 {
+		if mergedFloors.Enforcement == nil {
+			mergedFloors.Enforcement = new(openrtb_ext.PriceFloorEnforcement)
+		}
+		mergedFloors.Enforcement.EnforceRate = enforceRate
+
+		if reqFloors != nil && reqFloors.Enforcement != nil && reqFloors.Enforcement.EnforcePBS != nil {
+			mergedFloors.Enforcement.EnforcePBS = ptrutil.Clone(reqFloors.Enforcement.EnforcePBS)
+		}
+	}
+
+	floorMinPrice := resolveFloorMin(reqFloors, fetchFloors, conversions)
+	if floorMinPrice.FloorMin > 0 {
+		mergedFloors.FloorMin = floorMinPrice.FloorMin
+		mergedFloors.FloorMinCur = floorMinPrice.FloorMinCur
+	}
+
+	if reqFloors != nil && reqFloors.Location != nil && reqFloors.Location.URL != "" {
+		mergedFloors.Location = ptrutil.Clone(reqFloors.Location)
+	}
+
+	return mergedFloors
 }

@@ -185,6 +185,10 @@ func TestDefaults(t *testing.T) {
 	cmpBools(t, "account_defaults.price_floors.use_dynamic_data", cfg.AccountDefaults.PriceFloors.UseDynamicData, false)
 	cmpInts(t, "account_defaults.price_floors.max_rules", cfg.AccountDefaults.PriceFloors.MaxRule, 100)
 	cmpInts(t, "account_defaults.price_floors.max_schema_dims", cfg.AccountDefaults.PriceFloors.MaxSchemaDims, 3)
+	cmpBools(t, "account_defaults.price_floors.fetch.enabled", cfg.AccountDefaults.PriceFloors.Fetch.Enabled, false)
+	cmpInts(t, "account_defaults.price_floors.fetch.timeout_ms", cfg.AccountDefaults.PriceFloors.Fetch.Timeout, 100)
+	cmpInts(t, "account_defaults.price_floors.fetch.period_sec", cfg.AccountDefaults.PriceFloors.Fetch.Period, 300)
+	cmpInts(t, "account_defaults.price_floors.fetch.max_age_sec", cfg.AccountDefaults.PriceFloors.Fetch.MaxAge, 600)
 
 	cmpBools(t, "hooks.enabled", cfg.Hooks.Enabled, false)
 	cmpStrings(t, "validations.banner_creative_max_size", cfg.Validations.BannerCreativeMaxSize, "skip")
@@ -445,6 +449,9 @@ hooks:
     enabled: true
 price_floors:
     enabled: true
+    fetcher:
+      worker: 20
+      capacity: 20000
 account_defaults:
     price_floors:
         enabled: true
@@ -454,6 +461,11 @@ account_defaults:
         use_dynamic_data: true
         max_rules: 120
         max_schema_dims: 5
+        fetch:
+          enabled: true
+          timeout_ms: 100
+          period_sec: 300
+          max_age_sec: 600
 `)
 
 var oldStoredRequestsConfig = []byte(`
@@ -543,6 +555,10 @@ func TestFullConfig(t *testing.T) {
 	cmpBools(t, "account_defaults.price_floors.use_dynamic_data", cfg.AccountDefaults.PriceFloors.UseDynamicData, true)
 	cmpInts(t, "account_defaults.price_floors.max_rules", cfg.AccountDefaults.PriceFloors.MaxRule, 120)
 	cmpInts(t, "account_defaults.price_floors.max_schema_dims", cfg.AccountDefaults.PriceFloors.MaxSchemaDims, 5)
+	cmpBools(t, "account_defaults.price_floors.fetch.enabled", cfg.AccountDefaults.PriceFloors.Fetch.Enabled, true)
+	cmpInts(t, "account_defaults.price_floors.fetch.timeout_ms", cfg.AccountDefaults.PriceFloors.Fetch.Timeout, 100)
+	cmpInts(t, "account_defaults.price_floors.fetch.period_sec", cfg.AccountDefaults.PriceFloors.Fetch.Period, 300)
+	cmpInts(t, "account_defaults.price_floors.fetch.max_age_sec", cfg.AccountDefaults.PriceFloors.Fetch.MaxAge, 600)
 
 	//Assert the NonStandardPublishers was correctly unmarshalled
 	assert.Equal(t, []string{"pub1", "pub2"}, cfg.GDPR.NonStandardPublishers, "gdpr.non_standard_publishers")
@@ -752,6 +768,15 @@ func TestValidateConfig(t *testing.T) {
 		Accounts: StoredRequests{
 			Files:         FileFetcherConfig{Enabled: true},
 			InMemoryCache: InMemoryCache{Type: "none"},
+		},
+		AccountDefaults: Account{
+			PriceFloors: AccountPriceFloors{
+				Fetch: AccountFloorFetch{
+					Timeout: 100,
+					Period:  300,
+					MaxAge:  600,
+				},
+			},
 		},
 	}
 

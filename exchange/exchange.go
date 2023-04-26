@@ -77,6 +77,7 @@ type exchange struct {
 	bidValidationEnforcement config.Validations
 	requestSplitter          requestSplitter
 	floor                    config.PriceFloors
+	priceFloorFetcher        floors.FloorFetcher
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -125,7 +126,7 @@ func (randomDeduplicateBidBooleanGenerator) Generate() bool {
 	return rand.Intn(100) < 50
 }
 
-func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, gdprPermsBuilder gdpr.PermissionsBuilder, tcf2CfgBuilder gdpr.TCF2ConfigBuilder, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher, adsCertSigner adscert.Signer) Exchange {
+func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, gdprPermsBuilder gdpr.PermissionsBuilder, tcf2CfgBuilder gdpr.TCF2ConfigBuilder, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher, adsCertSigner adscert.Signer, pricefloorFetcher floors.FloorFetcher) Exchange {
 	bidderToSyncerKey := map[string]string{}
 	for bidder, syncer := range syncersByBidder {
 		bidderToSyncerKey[bidder] = syncer.Key()
@@ -172,6 +173,7 @@ func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid
 		bidValidationEnforcement: cfg.Validations,
 		requestSplitter:          requestSplitter,
 		floor:                    cfg.PriceFloors,
+		priceFloorFetcher:        pricefloorFetcher,
 	}
 }
 
@@ -262,7 +264,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	conversions := e.getAuctionCurrencyRates(requestExtPrebid.CurrencyConversions)
 
 	if e.floor.Enabled {
-		floorErrs = floors.EnrichWithPriceFloors(r.BidRequestWrapper, r.Account, conversions)
+		floorErrs = floors.EnrichWithPriceFloors(r.BidRequestWrapper, r.Account, conversions, e.priceFloorFetcher)
 	}
 
 	responseDebugAllow, accountDebugAllow, debugLog := getDebugInfo(r.BidRequestWrapper.Test, requestExtPrebid, r.Account.DebugAllow, debugLog)

@@ -98,6 +98,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
 		empty_fetcher.EmptyFetcher{},
 		&adscert.NilSigner{},
+		nil,
 	)
 
 	endpoint, _ := NewEndpoint(

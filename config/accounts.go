@@ -56,13 +56,26 @@ type AccountCCPA struct {
 }
 
 type AccountPriceFloors struct {
-	Enabled                bool `mapstructure:"enabled" json:"enabled"`
-	EnforceFloorsRate      int  `mapstructure:"enforce_floors_rate" json:"enforce_floors_rate"`
-	AdjustForBidAdjustment bool `mapstructure:"adjust_for_bid_adjustment" json:"adjust_for_bid_adjustment"`
-	EnforceDealFloors      bool `mapstructure:"enforce_deal_floors" json:"enforce_deal_floors"`
-	UseDynamicData         bool `mapstructure:"use_dynamic_data" json:"use_dynamic_data"`
-	MaxRule                int  `mapstructure:"max_rules" json:"max_rules"`
-	MaxSchemaDims          int  `mapstructure:"max_schema_dims" json:"max_schema_dims"`
+	Enabled                bool              `mapstructure:"enabled" json:"enabled"`
+	EnforceFloorsRate      int               `mapstructure:"enforce_floors_rate" json:"enforce_floors_rate"`
+	AdjustForBidAdjustment bool              `mapstructure:"adjust_for_bid_adjustment" json:"adjust_for_bid_adjustment"`
+	EnforceDealFloors      bool              `mapstructure:"enforce_deal_floors" json:"enforce_deal_floors"`
+	UseDynamicData         bool              `mapstructure:"use_dynamic_data" json:"use_dynamic_data"`
+	MaxRule                int               `mapstructure:"max_rules" json:"max_rules"`
+	MaxSchemaDims          int               `mapstructure:"max_schema_dims" json:"max_schema_dims"`
+	Fetch                  AccountFloorFetch `mapstructure:"fetch" json:"fetch"`
+}
+
+// Dynamic price floors fetching configuration
+type AccountFloorFetch struct {
+	Enabled     bool   `mapstructure:"enabled" json:"enabled"`
+	URL         string `mapstructure:"url" json:"url"`
+	Timeout     int    `mapstructure:"timeout_ms" json:"timeout_ms"`
+	MaxFileSize int    `mapstructure:"max_file_size_kb" json:"max_file_size_kb"`
+	MaxRules    int    `mapstructure:"max_rules" json:"max_rules"`
+	MaxAge      int    `mapstructure:"max_age_sec" json:"max_age_sec"`
+	Period      int    `mapstructure:"period_sec" json:"period_sec"`
+	AccountID   string `mapstructure:"accountID" json:"accountID"`
 }
 
 func (pf *AccountPriceFloors) validate(errs []error) []error {
@@ -77,6 +90,30 @@ func (pf *AccountPriceFloors) validate(errs []error) []error {
 
 	if pf.MaxSchemaDims < 0 || pf.MaxSchemaDims > 20 {
 		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.max_schema_dims should be between 0 and 20`))
+	}
+
+	if pf.Fetch.Period > pf.Fetch.MaxAge {
+		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.fetch.period_sec should be less than account_defaults.price_floors.fetch.max_age_sec`))
+	}
+
+	if pf.Fetch.Period < 300 {
+		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.fetch.period_sec should not be less than 300 seconds`))
+	}
+
+	if !(pf.Fetch.MaxAge >= 600 && pf.Fetch.MaxAge < math.MaxInt32) {
+		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.fetch.max_age_sec should not be less than 600 seconds and greater than maximum integer value`))
+	}
+
+	if !(pf.Fetch.Timeout > 10 && pf.Fetch.Timeout < 10000) {
+		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.fetch.timeout_ms should be between 10 to 10,000 mili seconds`))
+	}
+
+	if !(pf.Fetch.MaxRules >= 0 && pf.Fetch.MaxRules < math.MaxInt32) {
+		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.fetch.max_rules should not be less than 0 seconds and greater than maximum integer value`))
+	}
+
+	if !(pf.Fetch.MaxFileSize >= 0 && pf.Fetch.MaxFileSize < math.MaxInt32) {
+		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.fetch.max_file_size_kb should not be less than 0 seconds and greater than maximum integer value`))
 	}
 
 	return errs

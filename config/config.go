@@ -106,7 +106,13 @@ type Configuration struct {
 }
 
 type PriceFloors struct {
-	Enabled bool `mapstructure:"enabled"`
+	Enabled bool              `mapstructure:"enabled"`
+	Fetcher PriceFloorFetcher `mapstructure:"fetcher"`
+}
+
+type PriceFloorFetcher struct {
+	Worker   int `mapstructure:"worker"`
+	Capacity int `mapstructure:"capacity"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -1008,6 +1014,14 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("account_defaults.price_floors.use_dynamic_data", false)
 	v.SetDefault("account_defaults.price_floors.max_rules", 100)
 	v.SetDefault("account_defaults.price_floors.max_schema_dims", 3)
+	v.SetDefault("account_defaults.price_floors.fetch.enabled", false)
+	v.SetDefault("account_defaults.price_floors.fetch.timeout_ms", 100)
+	v.SetDefault("account_defaults.price_floors.fetch.period_sec", 300)
+	v.SetDefault("account_defaults.price_floors.fetch.max_age_sec", 600)
+
+	//Defaults for Price floor fetcher
+	v.SetDefault("price_floor.fetcher.worker", 20)
+	v.SetDefault("price_floor.fetcher.capacity", 20000)
 
 	v.SetDefault("certificates_file", "")
 	v.SetDefault("auto_gen_source_tid", true)

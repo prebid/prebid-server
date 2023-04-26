@@ -20,6 +20,7 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/experiment/adscert"
+	"github.com/prebid/prebid-server/floors"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/metrics"
@@ -213,8 +214,12 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		glog.Fatalf("Failed to create ads cert signer: %v", err)
 	}
 
+	//Price Floor Fetcher
+	priceFloorFetcher := floors.NewPriceFloorFetcher(cfg.PriceFloors.Fetcher.Worker, cfg.PriceFloors.Fetcher.Capacity,
+		cfg.AccountDefaults.PriceFloors.Fetch.Period, cfg.AccountDefaults.PriceFloors.Fetch.MaxAge)
+
 	planBuilder := hooks.NewExecutionPlanBuilder(cfg.Hooks, repo)
-	theExchange := exchange.NewExchange(adapters, cacheClient, cfg, syncersByBidder, r.MetricsEngine, cfg.BidderInfos, gdprPermsBuilder, tcf2CfgBuilder, rateConvertor, categoriesFetcher, adsCertSigner)
+	theExchange := exchange.NewExchange(adapters, cacheClient, cfg, syncersByBidder, r.MetricsEngine, cfg.BidderInfos, gdprPermsBuilder, tcf2CfgBuilder, rateConvertor, categoriesFetcher, adsCertSigner, priceFloorFetcher)
 	var uuidGenerator uuidutil.UUIDRandomGenerator
 	openrtbEndpoint, err := openrtb2.NewEndpoint(uuidGenerator, theExchange, paramsValidator, fetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBidders, storedRespFetcher, planBuilder)
 	if err != nil {

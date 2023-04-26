@@ -1230,6 +1230,7 @@ func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.Bid
 		mockCurrencyConverter,
 		mockFetcher,
 		&adscert.NilSigner{},
+		nil,
 	)
 
 	testExchange = &exchangeTestWrapper{
