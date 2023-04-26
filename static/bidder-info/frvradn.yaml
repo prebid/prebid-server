@@ -1,6 +1,6 @@
 endpoint: "https://fran.frvr.com/api/v1/openrtb"
 maintainer:
-  email: "frvr.limited@frvr.com"
+  email: "info@frvr.com"
 gvlVendorID: 1107
 modifyingVastXmlAllowed: false
 capabilities:
