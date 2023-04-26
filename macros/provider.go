@@ -129,22 +129,20 @@ func (b *macroProvider) GetMacro(key string) string {
 	return url.QueryEscape(b.macros[key])
 }
 
-func (b *macroProvider) SetContext(ctx MacroContext) {
-	b.resetcontext()
+func (b *macroProvider) PopulateBidMacros(bid *entities.PbsOrtbBid, seat string) {
 
-	b.macros[MacroKeyBidID] = ctx.Bid.Bid.ID
-	if ctx.Bid.GeneratedBidID != "" {
-		b.macros[MacroKeyBidID] = ctx.Bid.GeneratedBidID
+	if bid.GeneratedBidID != "" {
+		b.macros[MacroKeyBidID] = bid.GeneratedBidID
+	} else {
+		b.macros[MacroKeyBidID] = bid.Bid.ID
 	}
-	b.macros[MacroKeyBidder] = ctx.Seat
-	b.macros[MacroKeyVastCRTID] = ctx.VastCreativeID
-	b.macros[MacroKeyVastEvent] = string(ctx.EventElement)
-	b.macros[MacroKeyEventType] = string(ctx.VastEventType)
+	b.macros[MacroKeyBidder] = seat
 }
-func (b *macroProvider) resetcontext() {
-	for _, key := range bidLevelKeys {
-		delete(b.macros, key)
-	}
+
+func (b *macroProvider) PopulateEventMacros(vastCreativeID, eventElement, vastEventType string) {
+	b.macros[MacroKeyVastCRTID] = vastCreativeID
+	b.macros[MacroKeyVastEvent] = vastEventType
+	b.macros[MacroKeyEventType] = eventElement
 }
 
 func truncate(text string, width uint) string {

@@ -26,14 +26,8 @@ func Test_macroProvider_GetMacro(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			macroProvider := NewProvider(req)
 
-			macroProvider.SetContext(MacroContext{
-				Bid:            &entities.PbsOrtbBid{Bid: bid},
-				Imp:            nil,
-				Seat:           "test",
-				VastCreativeID: "123",
-				VastEventType:  "firstQuartile",
-				EventElement:   "tracking",
-			})
+			macroProvider.PopulateBidMacros(&entities.PbsOrtbBid{Bid: bid}, "test")
+			macroProvider.PopulateEventMacros("123", "tracking", "firstQuartile")
 			for _, key := range tt.args.keys {
 				if got := macroProvider.GetMacro(key); got != tt.want[key] {
 					t.Errorf("macroProvider.GetMacro() = %v, want %v", got, tt.want[key])
