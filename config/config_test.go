@@ -3245,6 +3245,7 @@ func TestMigrateConfigEventsEnabled(t *testing.T) {
 
 			assert.Equal(t, tc.expectedOldFieldValue, updatedOldFieldValue)
 			assert.Nil(t, updatedNewFieldValue)
+			assert.Nil(t, tc.expectedNewFieldValue)
 		})
 	}
 }

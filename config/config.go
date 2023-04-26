@@ -1380,7 +1380,8 @@ func migrateConfigDatabaseConnection(v *viper.Viper) {
 
 // migrateConfigEventsEnabled is responsible for ensuring backward compatibility of events_enabled field.
 // This function copies the value of newField "events.enabled" and set it to the oldField "events_enabled".
-// This is necessary to achieve the desired order of precedence favoring the account values over the host values given the account fetcher JSON merge mechanics.
+// This is necessary to achieve the desired order of precedence favoring the account values over the host values
+// given the account fetcher JSON merge mechanics.
 func migrateConfigEventsEnabled(oldFieldValue *bool, newFieldValue *bool) (updatedOldFieldValue, updatedNewFieldValue *bool) {
 	newField := "account_defaults.events.enabled"
 	oldField := "account_defaults.events_enabled"
