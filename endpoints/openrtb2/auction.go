@@ -1710,6 +1710,7 @@ func validateRegs(req *openrtb_ext.RequestWrapper, gpp gpplib.GppContainer) []er
 		for _, id := range req.BidRequest.Regs.GPPSID {
 			if id == int8(constants.SectionTCFEU2) {
 				gdpr = 1
+				break
 			}
 		}
 		if gdpr != *req.BidRequest.Regs.GDPR {

@@ -47,86 +47,79 @@ func TestJsonSampleRequests(t *testing.T) {
 		sampleRequestsSubDir string
 	}{
 		{
-			"This folder was not been tested here",
-			"valid-whole/supplementary",
+			"Assert 200s on all bidRequests from exemplary folder",
+			"valid-whole/exemplary",
 		},
-		//{
-		//	"Assert 200s on all bidRequests from exemplary folder",
-		//	"valid-whole/exemplary",
-		//},
-		//{
-		//	"Asserts we return 200s on well-formed Native requests.",
-		//	"valid-native",
-		//},
-		//{
-		//	"Asserts we return 400s on requests that are not supposed to pass validation",
-		//	"invalid-whole",
-		//},
-		//{
-		//	"Asserts we return 400s on requests with Native requests that don't pass validation",
-		//	"invalid-native",
-		//},
-		//{
-		//	"Makes sure we handle (default) aliased bidders properly",
-		//	"aliased",
-		//},
-		//{
-		//	"Asserts we return 500s on requests referencing accounts with malformed configs.",
-		//	"account-malformed",
-		//},
-		//{
-		//	"Asserts we return 503s on requests with blacklisted accounts and apps.",
-		//	"blacklisted",
-		//},
-		//{
-		//	"Assert that requests that come with no user id nor app id return error if the `AccountRequired` field in the `config.Configuration` structure is set to true",
-		//	"account-required/no-account",
-		//},
-		//{
-		//	"Assert requests that come with a valid user id or app id when account is required",
-		//	"account-required/with-account",
-		//},
-		//{
-		//	"Tests diagnostic messages for invalid stored requests",
-		//	"invalid-stored",
-		//},
-		//{
-		//	"Make sure requests with disabled bidders will fail",
-		//	"disabled/bad",
-		//},
-		//{
-		//	"There are both disabled and non-disabled bidders, we expect a 200",
-		//	"disabled/good",
-		//},
-		//{
-		//	"Assert we correctly use the server conversion rates when needed",
-		//	"currency-conversion/server-rates/valid",
-		//},
-		//{
-		//	"Assert we correctly throw an error when no conversion rate was found in the server conversions map",
-		//	"currency-conversion/server-rates/errors",
-		//},
-		//{
-		//	"Assert we correctly use request-defined custom currency rates when present in root.ext",
-		//	"currency-conversion/custom-rates/valid",
-		//},
-		//{
-		//	"Assert we correctly validate request-defined custom currency rates when present in root.ext",
-		//	"currency-conversion/custom-rates/errors",
-		//},
-		//{
-		//	"Assert request with ad server targeting is processing correctly",
-		//	"adservertargeting",
-		//},
+		{
+			"Asserts we return 200s on well-formed Native requests.",
+			"valid-native",
+		},
+		{
+			"Asserts we return 400s on requests that are not supposed to pass validation",
+			"invalid-whole",
+		},
+		{
+			"Asserts we return 400s on requests with Native requests that don't pass validation",
+			"invalid-native",
+		},
+		{
+			"Makes sure we handle (default) aliased bidders properly",
+			"aliased",
+		},
+		{
+			"Asserts we return 500s on requests referencing accounts with malformed configs.",
+			"account-malformed",
+		},
+		{
+			"Asserts we return 503s on requests with blacklisted accounts and apps.",
+			"blacklisted",
+		},
+		{
+			"Assert that requests that come with no user id nor app id return error if the `AccountRequired` field in the `config.Configuration` structure is set to true",
+			"account-required/no-account",
+		},
+		{
+			"Assert requests that come with a valid user id or app id when account is required",
+			"account-required/with-account",
+		},
+		{
+			"Tests diagnostic messages for invalid stored requests",
+			"invalid-stored",
+		},
+		{
+			"Make sure requests with disabled bidders will fail",
+			"disabled/bad",
+		},
+		{
+			"There are both disabled and non-disabled bidders, we expect a 200",
+			"disabled/good",
+		},
+		{
+			"Assert we correctly use the server conversion rates when needed",
+			"currency-conversion/server-rates/valid",
+		},
+		{
+			"Assert we correctly throw an error when no conversion rate was found in the server conversions map",
+			"currency-conversion/server-rates/errors",
+		},
+		{
+			"Assert we correctly use request-defined custom currency rates when present in root.ext",
+			"currency-conversion/custom-rates/valid",
+		},
+		{
+			"Assert we correctly validate request-defined custom currency rates when present in root.ext",
+			"currency-conversion/custom-rates/errors",
+		},
+		{
+			"Assert request with ad server targeting is processing correctly",
+			"adservertargeting",
+		},
 	}
 
 	for _, tc := range testSuites {
 		testCaseFiles, err := getTestFiles(filepath.Join("sample-requests", tc.sampleRequestsSubDir))
 		if assert.NoError(t, err, "Test case %s. Error reading files from directory %s \n", tc.description, tc.sampleRequestsSubDir) {
 			for _, testFile := range testCaseFiles {
-				if !strings.HasSuffix(testFile, ".json") {
-					continue
-				}
 				fileData, err := os.ReadFile(testFile)
 				if assert.NoError(t, err, "Test case %s. Error reading file %s \n", tc.description, testFile) {
 					// Retrieve test case input and expected output from JSON file
