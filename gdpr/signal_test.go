@@ -3,7 +3,6 @@ package gdpr
 import (
 	"testing"
 
-	"github.com/prebid/prebid-server/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -105,11 +104,7 @@ func TestSignalNormalize(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		config := config.GDPR{
-			DefaultValue: test.defaultValue,
-		}
-
-		normalizedSignal := SignalNormalize(test.giveSignal, config)
+		normalizedSignal := SignalNormalize(test.giveSignal, test.defaultValue)
 
 		assert.Equal(t, test.wantSignal, normalizedSignal, test.description)
 	}

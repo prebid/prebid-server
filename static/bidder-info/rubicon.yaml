@@ -1,3 +1,5 @@
+endpoint: "http://exapi-us-east.rubiconproject.com/a/api/exchange.json"
+disabled: true
 maintainer:
   email: "header-bidding@rubiconproject.com"
 gvlVendorID: 52
@@ -5,10 +7,13 @@ capabilities:
   app:
     mediaTypes:
       - banner
+      - video
+      - native
   site:
     mediaTypes:
       - banner
       - video
+      - native
 userSync:
   # rubicon supports user syncing, but requires configuration by the host. contact this
   # bidder directly at the email address in this file to ask about enabling user sync.

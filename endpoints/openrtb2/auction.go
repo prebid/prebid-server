@@ -5,51 +5,74 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/firstpartydata"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/buger/jsonparser"
-	"github.com/evanphx/json-patch"
 	"github.com/gofrs/uuid"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
-	"github.com/mxmCherry/openrtb/v15/native1"
-	nativeRequests "github.com/mxmCherry/openrtb/v15/native1/request"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	accountService "github.com/prebid/prebid-server/account"
+	gpplib "github.com/prebid/go-gpp"
+	"github.com/prebid/go-gpp/constants"
+	"github.com/prebid/openrtb/v19/adcom1"
+	"github.com/prebid/openrtb/v19/native1"
+	nativeRequests "github.com/prebid/openrtb/v19/native1/request"
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb3"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/hooks"
+	"github.com/prebid/prebid-server/ortb"
+	"golang.org/x/net/publicsuffix"
+	jsonpatch "gopkg.in/evanphx/json-patch.v4"
+
+	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/privacy/ccpa"
 	"github.com/prebid/prebid-server/privacy/lmt"
+	"github.com/prebid/prebid-server/schain"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/stored_responses"
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/prebid/prebid-server/util/httputil"
 	"github.com/prebid/prebid-server/util/iputil"
 	"github.com/prebid/prebid-server/util/uuidutil"
-	"golang.org/x/net/publicsuffix"
+	"github.com/prebid/prebid-server/version"
 )
 
 const storedRequestTimeoutMillis = 50
+const ampChannel = "amp"
+const appChannel = "app"
 
 var (
 	dntKey      string = http.CanonicalHeaderKey("DNT")
 	dntDisabled int8   = 0
 	dntEnabled  int8   = 1
+	notAmp      int8   = 0
 )
+
+var accountIdSearchPath = [...]struct {
+	isApp bool
+	key   []string
+}{
+	{true, []string{"app", "publisher", "ext", openrtb_ext.PrebidExtKey, "parentAccount"}},
+	{true, []string{"app", "publisher", "id"}},
+	{false, []string{"site", "publisher", "ext", openrtb_ext.PrebidExtKey, "parentAccount"}},
+	{false, []string{"site", "publisher", "id"}},
+}
 
 func NewEndpoint(
 	uuidGenerator uuidutil.UUIDGenerator,
@@ -58,13 +81,15 @@ func NewEndpoint(
 	requestsById stored_requests.Fetcher,
 	accounts stored_requests.AccountFetcher,
 	cfg *config.Configuration,
-	met metrics.MetricsEngine,
+	metricsEngine metrics.MetricsEngine,
 	pbsAnalytics analytics.PBSAnalyticsModule,
 	disabledBidders map[string]string,
 	defReqJSON []byte,
 	bidderMap map[string]openrtb_ext.BidderName,
+	storedRespFetcher stored_requests.Fetcher,
+	hookExecutionPlanBuilder hooks.ExecutionPlanBuilder,
 ) (httprouter.Handle, error) {
-	if ex == nil || validator == nil || requestsById == nil || accounts == nil || cfg == nil || met == nil {
+	if ex == nil || validator == nil || requestsById == nil || accounts == nil || cfg == nil || metricsEngine == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
 
@@ -83,7 +108,7 @@ func NewEndpoint(
 		empty_fetcher.EmptyFetcher{},
 		accounts,
 		cfg,
-		met,
+		metricsEngine,
 		pbsAnalytics,
 		disabledBidders,
 		defRequest,
@@ -91,7 +116,9 @@ func NewEndpoint(
 		bidderMap,
 		nil,
 		nil,
-		ipValidator}).Auction), nil
+		ipValidator,
+		storedRespFetcher,
+		hookExecutionPlanBuilder}).Auction), nil
 }
 
 type endpointDeps struct {
@@ -111,6 +138,8 @@ type endpointDeps struct {
 	cache                     prebid_cache_client.Client
 	debugLogRegexp            *regexp.Regexp
 	privateNetworkIPValidator iputil.IPValidator
+	storedRespFetcher         stored_requests.Fetcher
+	hookExecutionPlanBuilder  hooks.ExecutionPlanBuilder
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -121,6 +150,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// We can respect timeouts more accurately if we note the *real* start time, and use it
 	// to compute the auction timeout.
 	start := time.Now()
+
+	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
 
 	ao := analytics.AuctionObject{
 		Status:    http.StatusOK,
@@ -141,19 +172,18 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		deps.analytics.LogAuctionObject(&ao)
 	}()
 
-	req, impExtInfoMap, errL := deps.parseRequest(r)
+	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
+
+	req, impExtInfoMap, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, account, errL := deps.parseRequest(r, &labels, hookExecutor)
 	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels) {
 		return
 	}
 
-	resolvedFPD, fpdErrors := firstpartydata.ExtractFPDForBidders(req)
-	if len(fpdErrors) > 0 {
-		if errortypes.ContainsFatalError(fpdErrors) && writeError(fpdErrors, w, &labels) {
-			return
-		}
-		errL = append(errL, fpdErrors...)
+	if rejectErr := hookexecution.FindFirstRejectOrNil(errL); rejectErr != nil {
+		ao.Request = req.BidRequest
+		labels, ao = rejectAuctionRequest(*rejectErr, w, hookExecutor, req.BidRequest, account, labels, ao)
+		return
 	}
-	warnings := errortypes.WarningOnly(errL)
 
 	ctx := context.Background()
 
@@ -165,39 +195,27 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	usersyncs := usersync.ParseCookieFromRequest(r, &(deps.cfg.HostCookie))
-	if req.App != nil {
-		labels.Source = metrics.DemandApp
-		labels.RType = metrics.ReqTypeORTB2App
-		labels.PubID = getAccountID(req.App.Publisher)
-	} else { //req.Site != nil
-		labels.Source = metrics.DemandWeb
+	if req.Site != nil {
 		if usersyncs.HasAnyLiveSyncs() {
 			labels.CookieFlag = metrics.CookieFlagYes
 		} else {
 			labels.CookieFlag = metrics.CookieFlagNo
 		}
-		labels.PubID = getAccountID(req.Site.Publisher)
 	}
 
-	// Look up account now that we have resolved the pubID value
-	account, acctIDErrs := accountService.GetAccount(ctx, deps.cfg, deps.accounts, labels.PubID)
-	if len(acctIDErrs) > 0 {
-		errL = append(errL, acctIDErrs...)
-		writeError(errL, w, &labels)
-		return
-	}
-
-	// rebuild/resync the request in the request wrapper.
-	if err := req.RebuildRequest(); err != nil {
+	// Set Integration Information
+	err := deps.setIntegrationType(req, account)
+	if err != nil {
 		errL = append(errL, err)
 		writeError(errL, w, &labels)
 		return
 	}
-
 	secGPC := r.Header.Get("Sec-GPC")
 
-	auctionRequest := exchange.AuctionRequest{
-		BidRequest:                 req.BidRequest,
+	warnings := errortypes.WarningOnly(errL)
+
+	auctionRequest := &exchange.AuctionRequest{
+		BidRequestWrapper:          req,
 		Account:                    *account,
 		UserSyncs:                  usersyncs,
 		RequestType:                labels.RType,
@@ -206,14 +224,22 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		Warnings:                   warnings,
 		GlobalPrivacyControlHeader: secGPC,
 		ImpExtInfoMap:              impExtInfoMap,
-		FirstPartyData:             resolvedFPD,
+		StoredAuctionResponses:     storedAuctionResponses,
+		StoredBidResponses:         storedBidResponses,
+		BidderImpReplaceImpID:      bidderImpReplaceImp,
+		PubID:                      labels.PubID,
+		HookExecutor:               hookExecutor,
 	}
-
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
 	ao.Request = req.BidRequest
 	ao.Response = response
 	ao.Account = account
-	if err != nil {
+	rejectErr, isRejectErr := hookexecution.CastRejectErr(err)
+	if err != nil && !isRejectErr {
+		if errortypes.ReadCode(err) == errortypes.BadInputErrorCode {
+			writeError([]error{err}, w, &labels)
+			return
+		}
 		labels.RequestStatus = metrics.RequestStatusErr
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
@@ -221,13 +247,70 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		ao.Status = http.StatusInternalServerError
 		ao.Errors = append(ao.Errors, err)
 		return
+	} else if isRejectErr {
+		labels, ao = rejectAuctionRequest(*rejectErr, w, hookExecutor, req.BidRequest, account, labels, ao)
+		return
+	}
+
+	labels, ao = sendAuctionResponse(w, hookExecutor, response, req.BidRequest, account, labels, ao)
+	if len(ao.Errors) == 0 {
+		recordResponsePreparationMetrics(auctionRequest.MakeBidsTimeInfo, deps.metricsEngine)
+	}
+}
+
+func rejectAuctionRequest(
+	rejectErr hookexecution.RejectError,
+	w http.ResponseWriter,
+	hookExecutor hookexecution.HookStageExecutor,
+	request *openrtb2.BidRequest,
+	account *config.Account,
+	labels metrics.Labels,
+	ao analytics.AuctionObject,
+) (metrics.Labels, analytics.AuctionObject) {
+	response := &openrtb2.BidResponse{NBR: openrtb3.NoBidReason(rejectErr.NBR).Ptr()}
+	if request != nil {
+		response.ID = request.ID
+	}
+
+	ao.Response = response
+	ao.Errors = append(ao.Errors, rejectErr)
+
+	return sendAuctionResponse(w, hookExecutor, response, request, account, labels, ao)
+}
+
+func sendAuctionResponse(
+	w http.ResponseWriter,
+	hookExecutor hookexecution.HookStageExecutor,
+	response *openrtb2.BidResponse,
+	request *openrtb2.BidRequest,
+	account *config.Account,
+	labels metrics.Labels,
+	ao analytics.AuctionObject,
+) (metrics.Labels, analytics.AuctionObject) {
+	hookExecutor.ExecuteAuctionResponseStage(response)
+
+	if response != nil {
+		stageOutcomes := hookExecutor.GetOutcomes()
+		ao.HookExecutionOutcome = stageOutcomes
+
+		ext, warns, err := hookexecution.EnrichExtBidResponse(response.Ext, stageOutcomes, request, account)
+		if err != nil {
+			err = fmt.Errorf("Failed to enrich Bid Response with hook debug information: %s", err)
+			glog.Errorf(err.Error())
+			ao.Errors = append(ao.Errors, err)
+		} else {
+			response.Ext = ext
+		}
+
+		if len(warns) > 0 {
+			ao.Errors = append(ao.Errors, warns...)
+		}
 	}
 
 	// Fixes #231
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
 
-	// Fixes #328
 	w.Header().Set("Content-Type", "application/json")
 
 	// If an error happens when encoding the response, there isn't much we can do.
@@ -237,6 +320,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		labels.RequestStatus = metrics.RequestStatusNetworkErr
 		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/auction Failed to send response: %v", err))
 	}
+
+	return labels, ao
 }
 
 // parseRequest turns the HTTP request into an OpenRTB request. This is guaranteed to return:
@@ -249,7 +334,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 // possible, it will return errors with messages that suggest improvements.
 //
 // If the errors list has at least one element, then no guarantees are made about the returned request.
-func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_ext.RequestWrapper, impExtInfoMap map[string]exchange.ImpExtInfo, errs []error) {
+func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metrics.Labels, hookExecutor hookexecution.HookStageExecutor) (req *openrtb_ext.RequestWrapper, impExtInfoMap map[string]exchange.ImpExtInfo, storedAuctionResponses stored_responses.ImpsWithBidResponses, storedBidResponses stored_responses.ImpBidderStoredResp, bidderImpReplaceImpId stored_responses.BidderImpReplaceImpID, account *config.Account, errs []error) {
 	req = &openrtb_ext.RequestWrapper{}
 	req.BidRequest = &openrtb2.BidRequest{}
 	errs = nil
@@ -259,17 +344,26 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_
 		R: httpRequest.Body,
 		N: deps.cfg.MaxRequestSize,
 	}
-	requestJson, err := ioutil.ReadAll(lr)
+	requestJson, err := io.ReadAll(lr)
 	if err != nil {
 		errs = []error{err}
 		return
 	}
 	// If the request size was too large, read through the rest of the request body so that the connection can be reused.
 	if lr.N <= 0 {
-		if written, err := io.Copy(ioutil.Discard, httpRequest.Body); written > 0 || err != nil {
+		if written, err := io.Copy(io.Discard, httpRequest.Body); written > 0 || err != nil {
 			errs = []error{fmt.Errorf("Request size exceeded max size of %d bytes.", deps.cfg.MaxRequestSize)}
 			return
 		}
+	}
+
+	requestJson, rejectErr := hookExecutor.ExecuteEntrypointStage(httpRequest, requestJson)
+	if rejectErr != nil {
+		errs = []error{rejectErr}
+		if err = json.Unmarshal(requestJson, req.BidRequest); err != nil {
+			glog.Errorf("Failed to unmarshal BidRequest during entrypoint rejection: %s", err)
+		}
+		return
 	}
 
 	timeout := parseTimeout(requestJson, time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
@@ -278,12 +372,65 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_
 
 	impInfo, errs := parseImpInfo(requestJson)
 	if len(errs) > 0 {
-		return nil, nil, errs
+		return nil, nil, nil, nil, nil, nil, errs
+	}
+
+	storedBidRequestId, hasStoredBidRequest, storedRequests, storedImps, errs := deps.getStoredRequests(ctx, requestJson, impInfo)
+	if len(errs) > 0 {
+		return
+	}
+
+	accountId, isAppReq, errs := getAccountIdFromRawRequest(hasStoredBidRequest, storedRequests[storedBidRequestId], requestJson)
+	// fill labels here in order to pass correct metrics in case of errors
+	if isAppReq {
+		labels.Source = metrics.DemandApp
+		labels.RType = metrics.ReqTypeORTB2App
+		labels.PubID = accountId
+	} else { // is Site request
+		labels.Source = metrics.DemandWeb
+		labels.PubID = accountId
+	}
+	if errs != nil {
+		return
+	}
+
+	// Look up account
+	account, errs = accountService.GetAccount(ctx, deps.cfg, deps.accounts, accountId, deps.metricsEngine)
+	if len(errs) > 0 {
+		return
+	}
+
+	hookExecutor.SetAccount(account)
+	requestJson, rejectErr = hookExecutor.ExecuteRawAuctionStage(requestJson)
+	if rejectErr != nil {
+		errs = []error{rejectErr}
+		if err = json.Unmarshal(requestJson, req.BidRequest); err != nil {
+			glog.Errorf("Failed to unmarshal BidRequest during raw auction stage rejection: %s", err)
+		}
+		return
+	}
+
+	// retrieve storedRequests and storedImps once more in case stored data was changed by the raw auction hook
+	if hasPayloadUpdatesAt(hooks.StageRawAuctionRequest.String(), hookExecutor.GetOutcomes()) {
+		impInfo, errs = parseImpInfo(requestJson)
+		if len(errs) > 0 {
+			return nil, nil, nil, nil, nil, nil, errs
+		}
+		storedBidRequestId, hasStoredBidRequest, storedRequests, storedImps, errs = deps.getStoredRequests(ctx, requestJson, impInfo)
+		if len(errs) > 0 {
+			return
+		}
 	}
 
 	// Fetch the Stored Request data and merge it into the HTTP request.
-	if requestJson, impExtInfoMap, errs = deps.processStoredRequests(ctx, requestJson, impInfo); len(errs) > 0 {
+	if requestJson, impExtInfoMap, errs = deps.processStoredRequests(requestJson, impInfo, storedRequests, storedImps, storedBidRequestId, hasStoredBidRequest); len(errs) > 0 {
 		return
+	}
+
+	//Stored auction responses should be processed after stored requests due to possible impression modification
+	storedAuctionResponses, storedBidResponses, bidderImpReplaceImpId, errs = stored_responses.ProcessStoredResponses(ctx, requestJson, deps.storedRespFetcher, deps.bidderMap)
+	if len(errs) > 0 {
+		return nil, nil, nil, nil, nil, nil, errs
 	}
 
 	if err := json.Unmarshal(requestJson, req.BidRequest); err != nil {
@@ -297,7 +444,12 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_
 	}
 
 	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
-	deps.setFieldsImplicitly(httpRequest, req.BidRequest)
+	deps.setFieldsImplicitly(httpRequest, req)
+
+	if err := ortb.SetDefaults(req); err != nil {
+		errs = []error{err}
+		return
+	}
 
 	if err := processInterstitials(req); err != nil {
 		errs = []error{err}
@@ -306,12 +458,33 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_
 
 	lmt.ModifyForIOS(req.BidRequest)
 
-	errL := deps.validateRequest(req)
+	hasStoredResponses := len(storedAuctionResponses) > 0
+	errL := deps.validateRequest(req, false, hasStoredResponses, storedBidResponses, hasStoredBidRequest)
 	if len(errL) > 0 {
 		errs = append(errs, errL...)
 	}
 
 	return
+}
+
+// hasPayloadUpdatesAt checks if there are any successful payload updates at given stage
+func hasPayloadUpdatesAt(stageName string, outcomes []hookexecution.StageOutcome) bool {
+	for _, outcome := range outcomes {
+		if stageName != outcome.Stage {
+			continue
+		}
+
+		for _, group := range outcome.Groups {
+			for _, invocationResult := range group.InvocationResults {
+				if invocationResult.Status == hookexecution.StatusSuccess &&
+					invocationResult.Action == hookexecution.ActionUpdate {
+					return true
+				}
+			}
+		}
+	}
+
+	return false
 }
 
 // parseTimeout returns parses tmax from the requestJson, or returns the default if it doesn't exist.
@@ -329,118 +502,149 @@ func parseTimeout(requestJson []byte, defaultTimeout time.Duration) time.Duratio
 	return defaultTimeout
 }
 
-// mergeBidderParams merges bidder parameters passed at req.ext level with imp[].ext level.
-// Preference is given to parameters at imp[].ext level over req.ext level.
-// Parameters at req.ext level are propagated to adapters as is without any validation.
+// mergeBidderParams merges bidder parameters in req.ext down to the imp[].ext level, with
+// priority given to imp[].ext in case of a conflict. No validation of bidder parameters or
+// of the ext json is performed. Unmarshal errors are not expected since the ext json was
+// validated during the bid request unmarshal.
 func mergeBidderParams(req *openrtb_ext.RequestWrapper) error {
-	reqBidderParams, err := adapters.ExtractReqExtBidderParams(req.BidRequest)
+	reqExt, err := req.GetRequestExt()
 	if err != nil {
-		return err
+		return nil
 	}
 
-	impCpy := make([]openrtb2.Imp, 0, len(req.BidRequest.Imp))
-	for _, imp := range req.BidRequest.Imp {
-		updatedImp := imp
+	prebid := reqExt.GetPrebid()
+	if prebid == nil {
+		return nil
+	}
 
-		if len(imp.Ext) == 0 {
-			impCpy = append(impCpy, updatedImp)
+	bidderParamsJson := prebid.BidderParams
+	if len(bidderParamsJson) == 0 {
+		return nil
+	}
+
+	bidderParams := map[string]map[string]json.RawMessage{}
+	if err := json.Unmarshal(bidderParamsJson, &bidderParams); err != nil {
+		return nil
+	}
+
+	for i, imp := range req.GetImp() {
+		impExt, err := imp.GetImpExt()
+		if err != nil {
 			continue
 		}
 
-		var impExt map[string]map[string]json.RawMessage
-		err := json.Unmarshal(imp.Ext, &impExt)
-		if err != nil {
-			return err
+		// merges bidder parameters passed at req.ext level with imp[].ext.BIDDER level
+		if err := mergeBidderParamsImpExt(impExt, bidderParams); err != nil {
+			return fmt.Errorf("error processing bidder parameters for imp[%d]: %s", i, err.Error())
 		}
 
-		//merges bidder parameters passed at req.ext level with imp[].ext level.
-		err = addMissingReqExtParamsInImpExt(impExt, reqBidderParams)
-		if err != nil {
-			return err
+		// merges bidder parameters passed at req.ext level with imp[].ext.prebid.bidder.BIDDER level
+		if err := mergeBidderParamsImpExtPrebid(impExt, bidderParams); err != nil {
+			return fmt.Errorf("error processing bidder parameters for imp[%d]: %s", i, err.Error())
 		}
-
-		//merges bidder parameters passed at req.ext level with imp[].ext.prebid.bidder level.
-		err = addMissingReqExtParamsInImpExtPrebid(impExt, reqBidderParams)
-		if err != nil {
-			return err
-		}
-
-		iExt, err := json.Marshal(impExt)
-		if err != nil {
-			return fmt.Errorf("error marshalling imp[].ext : %s", err.Error())
-		}
-		updatedImp.Ext = iExt
-		impCpy = append(impCpy, updatedImp)
 	}
 
-	req.BidRequest.Imp = impCpy
 	return nil
 }
 
-// addMissingReqExtParamsInImpExtPrebid merges bidder parameters passed at req.ext level with imp[].ext.prebid.bidder level.
-func addMissingReqExtParamsInImpExtPrebid(impExtBidder map[string]map[string]json.RawMessage, reqExtParams map[string]map[string]json.RawMessage) error {
-	var bidderParams map[string]json.RawMessage
-	if impExtBidder["prebid"] != nil && impExtBidder["prebid"]["bidder"] != nil {
-		err := json.Unmarshal(impExtBidder["prebid"]["bidder"], &bidderParams)
-		if err != nil {
-			return err
-		}
-	}
+// mergeBidderParamsImpExt merges bidder parameters in req.ext down to the imp[].ext.BIDDER
+// level, giving priority to imp[].ext.BIDDER in case of a conflict. Unmarshal errors are not
+// expected since the ext json was validated during the bid request unmarshal.
+func mergeBidderParamsImpExt(impExt *openrtb_ext.ImpExt, reqExtParams map[string]map[string]json.RawMessage) error {
+	extMap := impExt.GetExt()
+	extMapModified := false
 
-	if len(bidderParams) != 0 {
-		for bidder, bidderExt := range bidderParams {
-			if !isBidderToValidate(bidder) {
+	for bidder, params := range reqExtParams {
+		if !isPossibleBidder(bidder) {
+			continue
+		}
+
+		impExtBidder, impExtBidderExists := extMap[bidder]
+		if !impExtBidderExists || impExtBidder == nil {
+			continue
+		}
+
+		impExtBidderMap := map[string]json.RawMessage{}
+		if len(impExtBidder) > 0 {
+			if err := json.Unmarshal(impExtBidder, &impExtBidderMap); err != nil {
 				continue
 			}
+		}
 
-			var params map[string]json.RawMessage
-			err := json.Unmarshal(bidderExt, &params)
-
-			for key, value := range reqExtParams[bidder] {
-				if _, present := params[key]; !present {
-					params[key] = value
-				}
+		modified := false
+		for key, value := range params {
+			if _, present := impExtBidderMap[key]; !present {
+				impExtBidderMap[key] = value
+				modified = true
 			}
+		}
 
-			paramsJson, err := json.Marshal(params)
+		if modified {
+			impExtBidderJson, err := json.Marshal(impExtBidderMap)
 			if err != nil {
-				return err
+				return fmt.Errorf("error marshalling ext.BIDDER: %s", err.Error())
 			}
-			bidderParams[bidder] = paramsJson
+			extMap[bidder] = impExtBidderJson
+			extMapModified = true
 		}
+	}
 
-		bidderParamsJson, err := json.Marshal(bidderParams)
-		if err != nil {
-			return err
-		}
-		impExtBidder["prebid"]["bidder"] = bidderParamsJson
+	if extMapModified {
+		impExt.SetExt(extMap)
 	}
 
 	return nil
 }
 
-// addMissingReqExtParamsInImpExt merges bidder parameters passed at req.ext level with imp[].ext level.
-func addMissingReqExtParamsInImpExt(impExtBidder map[string]map[string]json.RawMessage, reqExtParams map[string]map[string]json.RawMessage) error {
-	for bidder, bidderExt := range impExtBidder {
-		if !isBidderToValidate(bidder) {
+// mergeBidderParamsImpExtPrebid merges bidder parameters in req.ext down to the imp[].ext.prebid.bidder.BIDDER
+// level, giving priority to imp[].ext.prebid.bidder.BIDDER in case of a conflict.
+func mergeBidderParamsImpExtPrebid(impExt *openrtb_ext.ImpExt, reqExtParams map[string]map[string]json.RawMessage) error {
+	prebid := impExt.GetPrebid()
+	prebidModified := false
+
+	if prebid == nil || len(prebid.Bidder) == 0 {
+		return nil
+	}
+
+	for bidder, params := range reqExtParams {
+		impExtPrebidBidder, impExtPrebidBidderExists := prebid.Bidder[bidder]
+		if !impExtPrebidBidderExists || impExtPrebidBidder == nil {
 			continue
 		}
 
-		wasModified := false
-		for key, value := range reqExtParams[bidder] {
-			if _, present := bidderExt[key]; !present {
-				bidderExt[key] = value
-				wasModified = true
+		impExtPrebidBidderMap := map[string]json.RawMessage{}
+		if len(impExtPrebidBidder) > 0 {
+			if err := json.Unmarshal(impExtPrebidBidder, &impExtPrebidBidderMap); err != nil {
+				continue
 			}
 		}
-		if wasModified {
-			impExtBidder[bidder] = bidderExt
+
+		modified := false
+		for key, value := range params {
+			if _, present := impExtPrebidBidderMap[key]; !present {
+				impExtPrebidBidderMap[key] = value
+				modified = true
+			}
+		}
+
+		if modified {
+			impExtPrebidBidderJson, err := json.Marshal(impExtPrebidBidderMap)
+			if err != nil {
+				return fmt.Errorf("error marshalling ext.prebid.bidder.BIDDER: %s", err.Error())
+			}
+			prebid.Bidder[bidder] = impExtPrebidBidderJson
+			prebidModified = true
 		}
 	}
+
+	if prebidModified {
+		impExt.SetPrebid(prebid)
+	}
+
 	return nil
 }
 
-func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper) []error {
+func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp bool, hasStoredResponses bool, storedBidResp stored_responses.ImpBidderStoredResp, hasStoredBidRequest bool) []error {
 	errL := []error{}
 	if req.ID == "" {
 		return []error{errors.New("request missing required field: \"id\"")}
@@ -450,7 +654,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper) []err
 		return []error{fmt.Errorf("request.tmax must be nonnegative. Got %d", req.TMax)}
 	}
 
-	if len(req.Imp) < 1 {
+	if req.LenImp() < 1 {
 		return []error{errors.New("request.imp must contain at least one element.")}
 	}
 
@@ -462,7 +666,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper) []err
 	// If automatically filling source TID is enabled then validate that
 	// source.TID exists and If it doesn't, fill it with a randomly generated UUID
 	if deps.cfg.AutoGenSourceTID {
-		if err := validateAndFillSourceTID(req.BidRequest); err != nil {
+		if err := validateAndFillSourceTID(req, deps.cfg.GenerateRequestID, hasStoredBidRequest, isAmp); err != nil {
 			return []error{err}
 		}
 	}
@@ -472,13 +676,20 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper) []err
 	if err != nil {
 		return []error{fmt.Errorf("request.ext is invalid: %v", err)}
 	}
+
 	reqPrebid := reqExt.GetPrebid()
 	if err := deps.parseBidExt(req); err != nil {
 		return []error{err}
-	} else if reqPrebid != nil {
+	}
+
+	if reqPrebid != nil {
 		aliases = reqPrebid.Aliases
 
 		if err := deps.validateAliases(aliases); err != nil {
+			return []error{err}
+		}
+
+		if err := deps.validateAliasesGVLIDs(reqPrebid.AliasGVLIDs, aliases); err != nil {
 			return []error{err}
 		}
 
@@ -499,8 +710,20 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper) []err
 		}
 	}
 
+	if err := mapSChains(req); err != nil {
+		return []error{err}
+	}
+
+	if err := validateOrFillChannel(req, isAmp); err != nil {
+		return []error{err}
+	}
+
 	if (req.Site == nil && req.App == nil) || (req.Site != nil && req.App != nil) {
 		return append(errL, errors.New("request.site or request.app must be defined, but not both."))
+	}
+
+	if errs := validateRequestExt(req); len(errs) != 0 {
+		return append(errL, errs...)
 	}
 
 	if err := deps.validateSite(req); err != nil {
@@ -511,20 +734,43 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper) []err
 		return append(errL, err)
 	}
 
-	if err := deps.validateUser(req, aliases); err != nil {
-		return append(errL, err)
+	var gpp gpplib.GppContainer
+	if req.BidRequest.Regs != nil && len(req.BidRequest.Regs.GPP) > 0 {
+		gpp, err = gpplib.Parse(req.BidRequest.Regs.GPP)
+		if err != nil {
+			errL = append(errL, &errortypes.Warning{
+				Message:     fmt.Sprintf("GPP consent string is invalid and will be ignored. (%v)", err),
+				WarningCode: errortypes.InvalidPrivacyConsentWarningCode})
+		}
 	}
 
-	if err := validateRegs(req); err != nil {
-		return append(errL, err)
+	if errs := deps.validateUser(req, aliases, gpp); errs != nil {
+		if len(errs) > 0 {
+			errL = append(errL, errs...)
+		}
+		if errortypes.ContainsFatalError(errs) {
+			return errL
+		}
+	}
+
+	if errs := validateRegs(req, gpp); errs != nil {
+		if len(errs) > 0 {
+			errL = append(errL, errs...)
+		}
+		if errortypes.ContainsFatalError(errs) {
+			return errL
+		}
 	}
 
 	if err := validateDevice(req.Device); err != nil {
 		return append(errL, err)
 	}
 
-	if ccpaPolicy, err := ccpa.ReadFromRequestWrapper(req); err != nil {
-		return append(errL, err)
+	if ccpaPolicy, err := ccpa.ReadFromRequestWrapper(req, gpp); err != nil {
+		errL = append(errL, err)
+		if errortypes.ContainsFatalError([]error{err}) {
+			return errL
+		}
 	} else if _, err := ccpaPolicy.Parse(exchange.GetValidBidders(aliases)); err != nil {
 		if _, invalidConsent := err.(*errortypes.Warning); invalidConsent {
 			errL = append(errL, &errortypes.Warning{
@@ -540,14 +786,15 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper) []err
 		}
 	}
 
-	impIDs := make(map[string]int, len(req.Imp))
-	for index := range req.Imp {
-		imp := &req.Imp[index]
+	impIDs := make(map[string]int, req.LenImp())
+	for i, imp := range req.GetImp() {
+		// check for unique imp id
 		if firstIndex, ok := impIDs[imp.ID]; ok {
-			errL = append(errL, fmt.Errorf(`request.imp[%d].id and request.imp[%d].id are both "%s". Imp IDs must be unique.`, firstIndex, index, imp.ID))
+			errL = append(errL, fmt.Errorf(`request.imp[%d].id and request.imp[%d].id are both "%s". Imp IDs must be unique.`, firstIndex, i, imp.ID))
 		}
-		impIDs[imp.ID] = index
-		errs := deps.validateImp(imp, aliases, index)
+		impIDs[imp.ID] = i
+
+		errs := deps.validateImp(imp, aliases, i, hasStoredResponses, storedBidResp)
 		if len(errs) > 0 {
 			errL = append(errL, errs...)
 		}
@@ -559,17 +806,57 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper) []err
 	return errL
 }
 
-func validateAndFillSourceTID(req *openrtb2.BidRequest) error {
+// mapSChains maps an schain defined in an ORTB 2.4 location (req.ext.schain) to the ORTB 2.5 location
+// (req.source.ext.schain) if no ORTB 2.5 schain (req.source.ext.schain, req.ext.prebid.schains) exists.
+// An ORTB 2.4 schain is always deleted from the 2.4 location regardless of whether an ORTB 2.5 schain exists.
+func mapSChains(req *openrtb_ext.RequestWrapper) error {
+	reqExt, err := req.GetRequestExt()
+	if err != nil {
+		return fmt.Errorf("req.ext is invalid: %v", err)
+	}
+	sourceExt, err := req.GetSourceExt()
+	if err != nil {
+		return fmt.Errorf("source.ext is invalid: %v", err)
+	}
+
+	reqExtSChain := reqExt.GetSChain()
+	reqExt.SetSChain(nil)
+
+	if reqPrebid := reqExt.GetPrebid(); reqPrebid != nil && reqPrebid.SChains != nil {
+		return nil
+	} else if sourceExt.GetSChain() != nil {
+		return nil
+	} else if reqExtSChain != nil {
+		sourceExt.SetSChain(reqExtSChain)
+	}
+	return nil
+}
+
+func validateAndFillSourceTID(req *openrtb_ext.RequestWrapper, generateRequestID bool, hasStoredBidRequest bool, isAmp bool) error {
 	if req.Source == nil {
 		req.Source = &openrtb2.Source{}
 	}
-	if req.Source.TID == "" {
-		if rawUUID, err := uuid.NewV4(); err == nil {
-			req.Source.TID = rawUUID.String()
-		} else {
-			return errors.New("req.Source.TID missing in the req and error creating a random UID")
+
+	if req.Source.TID == "" || req.Source.TID == "{{UUID}}" || (generateRequestID && (isAmp || hasStoredBidRequest)) {
+		rawUUID, err := uuid.NewV4()
+		if err != nil {
+			return errors.New("error creating a random UUID for source.tid")
+		}
+		req.Source.TID = rawUUID.String()
+	}
+
+	for _, impWrapper := range req.GetImp() {
+		ie, _ := impWrapper.GetImpExt()
+		if ie.GetTid() == "" || ie.GetTid() == "{{UUID}}" || (generateRequestID && (isAmp || hasStoredBidRequest)) {
+			rawUUID, err := uuid.NewV4()
+			if err != nil {
+				return errors.New("imp.ext.tid missing in the imp and error creating a random UID")
+			}
+			ie.SetTid(rawUUID.String())
+			impWrapper.RebuildImp()
 		}
 	}
+
 	return nil
 }
 
@@ -588,7 +875,7 @@ func (deps *endpointDeps) validateBidAdjustmentFactors(adjustmentFactors map[str
 }
 
 func validateSChains(sChains []*openrtb_ext.ExtRequestPrebidSChain) error {
-	_, err := exchange.BidderToPrebidSChains(sChains)
+	_, err := schain.BidderToPrebidSChains(sChains)
 	return err
 }
 
@@ -637,7 +924,7 @@ func validateBidders(bidders []string, knownBidders map[string]openrtb_ext.Bidde
 	return nil
 }
 
-func (deps *endpointDeps) validateImp(imp *openrtb2.Imp, aliases map[string]string, index int) []error {
+func (deps *endpointDeps) validateImp(imp *openrtb_ext.ImpWrapper, aliases map[string]string, index int, hasStoredResponses bool, storedBidResp stored_responses.ImpBidderStoredResp) []error {
 	if imp.ID == "" {
 		return []error{fmt.Errorf("request.imp[%d] missing required field: \"id\"", index)}
 	}
@@ -670,7 +957,7 @@ func (deps *endpointDeps) validateImp(imp *openrtb2.Imp, aliases map[string]stri
 		return []error{err}
 	}
 
-	errL := deps.validateImpExt(imp, aliases, index)
+	errL := deps.validateImpExt(imp, aliases, index, hasStoredResponses, storedBidResp)
 	if len(errL) != 0 {
 		return errL
 	}
@@ -678,7 +965,7 @@ func (deps *endpointDeps) validateImp(imp *openrtb2.Imp, aliases map[string]stri
 	return nil
 }
 
-func isInterstitial(imp *openrtb2.Imp) bool {
+func isInterstitial(imp *openrtb_ext.ImpWrapper) bool {
 	return imp.Instl == 1
 }
 
@@ -855,7 +1142,7 @@ func validateNativeContextTypes(cType native1.ContextType, cSubtype native1.Cont
 
 func validateNativePlacementType(pt native1.PlacementType, impIndex int) error {
 	if pt == 0 {
-		// Placement Type is only reccomended, not required.
+		// Placement Type is only recommended, not required.
 		return nil
 	}
 	if pt < native1.PlacementTypeFeed || (pt > native1.PlacementTypeRecommendationWidget && pt < openrtb_ext.NativeExchangeSpecificLowerBound) {
@@ -1020,7 +1307,7 @@ func validateNativeAssetData(data *nativeRequests.Data, impIndex int, assetIndex
 	return nil
 }
 
-func validateNativeVideoProtocols(protocols []native1.Protocol, impIndex int, assetIndex int) error {
+func validateNativeVideoProtocols(protocols []adcom1.MediaCreativeSubtype, impIndex int, assetIndex int) error {
 	if len(protocols) < 1 {
 		return fmt.Errorf("request.imp[%d].native.request.assets[%d].video.protocols must be an array with at least one element", impIndex, assetIndex)
 	}
@@ -1032,8 +1319,8 @@ func validateNativeVideoProtocols(protocols []native1.Protocol, impIndex int, as
 	return nil
 }
 
-func validateNativeVideoProtocol(protocol native1.Protocol, impIndex int, assetIndex int, protocolIndex int) error {
-	if protocol < native1.ProtocolVAST10 || protocol > native1.ProtocolDAAST10Wrapper {
+func validateNativeVideoProtocol(protocol adcom1.MediaCreativeSubtype, impIndex int, assetIndex int, protocolIndex int) error {
+	if protocol < adcom1.CreativeVAST10 || protocol > adcom1.CreativeDAAST10Wrapper {
 		return fmt.Errorf("request.imp[%d].native.request.assets[%d].video.protocols[%d] is invalid. See Section 5.8: https://www.iab.com/wp-content/uploads/2016/03/OpenRTB-API-Specification-Version-2-5-FINAL.pdf#page=52", impIndex, assetIndex, protocolIndex)
 	}
 	return nil
@@ -1089,88 +1376,102 @@ func validatePmp(pmp *openrtb2.PMP, impIndex int) error {
 	return nil
 }
 
-func (deps *endpointDeps) validateImpExt(imp *openrtb2.Imp, aliases map[string]string, impIndex int) []error {
-	errL := []error{}
+func (deps *endpointDeps) validateImpExt(imp *openrtb_ext.ImpWrapper, aliases map[string]string, impIndex int, hasStoredResponses bool, storedBidResp stored_responses.ImpBidderStoredResp) []error {
 	if len(imp.Ext) == 0 {
 		return []error{fmt.Errorf("request.imp[%d].ext is required", impIndex)}
 	}
 
-	var bidderExts map[string]json.RawMessage
-	if err := json.Unmarshal(imp.Ext, &bidderExts); err != nil {
+	impExt, err := imp.GetImpExt()
+	if err != nil {
 		return []error{err}
 	}
 
-	// Prefer bidder params from request.imp.ext.prebid.bidder.BIDDER over request.imp.ext.BIDDER
-	// to avoid confusion beteween prebid specific adapter config and other ext protocols.
-	if extPrebidJSON, ok := bidderExts[openrtb_ext.PrebidExtKey]; ok {
-		var extPrebid openrtb_ext.ExtImpPrebid
-		if err := json.Unmarshal(extPrebidJSON, &extPrebid); err == nil && extPrebid.Bidder != nil {
-			for bidder, ext := range extPrebid.Bidder {
-				if ext == nil {
-					continue
-				}
-				bidderExts[bidder] = ext
+	prebid := impExt.GetOrCreatePrebid()
+	prebidModified := false
+
+	if prebid.Bidder == nil {
+		prebid.Bidder = make(map[string]json.RawMessage)
+	}
+
+	ext := impExt.GetExt()
+	extModified := false
+
+	// promote imp[].ext.BIDDER to newer imp[].ext.prebid.bidder.BIDDER location, with the later taking precedence
+	for k, v := range ext {
+		if isPossibleBidder(k) {
+			if _, exists := prebid.Bidder[k]; !exists {
+				prebid.Bidder[k] = v
+				prebidModified = true
 			}
+			delete(ext, k)
+			extModified = true
 		}
 	}
 
-	/* Process all the bidder exts in the request */
-	disabledBidders := []string{}
-	otherExtElements := 0
-	for bidder, ext := range bidderExts {
-		if isBidderToValidate(bidder) {
-			coreBidder := bidder
-			if tmp, isAlias := aliases[bidder]; isAlias {
-				coreBidder = tmp
-			}
-			if bidderName, isValid := deps.bidderMap[coreBidder]; isValid {
-				if err := deps.paramsValidator.Validate(bidderName, ext); err != nil {
-					return []error{fmt.Errorf("request.imp[%d].ext.%s failed validation.\n%v", impIndex, coreBidder, err)}
-				}
-			} else {
-				if msg, isDisabled := deps.disabledBidders[bidder]; isDisabled {
-					errL = append(errL, &errortypes.BidderTemporarilyDisabled{Message: msg})
-					disabledBidders = append(disabledBidders, bidder)
-				} else {
-					return []error{fmt.Errorf("request.imp[%d].ext contains unknown bidder: %s. Did you forget an alias in request.ext.prebid.aliases?", impIndex, bidder)}
-				}
-			}
-		} else {
-			otherExtElements++
-		}
+	if hasStoredResponses && prebid.StoredAuctionResponse == nil {
+		return []error{fmt.Errorf("request validation failed. The StoredAuctionResponse.ID field must be completely present with, or completely absent from, all impressions in request. No StoredAuctionResponse data found for request.imp[%d].ext.prebid \n", impIndex)}
 	}
 
-	// defer deleting disabled bidders so we don't disrupt the loop
-	if len(disabledBidders) > 0 {
-		for _, bidder := range disabledBidders {
-			delete(bidderExts, bidder)
-		}
-		extJSON, err := json.Marshal(bidderExts)
-		if err != nil {
+	if len(storedBidResp) > 0 {
+		if err := validateStoredBidRespAndImpExtBidders(prebid.Bidder, storedBidResp, imp.ID); err != nil {
 			return []error{err}
 		}
-		imp.Ext = extJSON
 	}
 
-	if len(bidderExts)-otherExtElements == 0 {
-		errL = append(errL, fmt.Errorf("request.imp[%d].ext must contain at least one bidder", impIndex))
+	errL := []error{}
+
+	for bidder, ext := range prebid.Bidder {
+		coreBidder := bidder
+		if tmp, isAlias := aliases[bidder]; isAlias {
+			coreBidder = tmp
+		}
+
+		if coreBidderNormalized, isValid := deps.bidderMap[coreBidder]; isValid {
+			if err := deps.paramsValidator.Validate(coreBidderNormalized, ext); err != nil {
+				return []error{fmt.Errorf("request.imp[%d].ext.prebid.bidder.%s failed validation.\n%v", impIndex, bidder, err)}
+			}
+		} else {
+			if msg, isDisabled := deps.disabledBidders[bidder]; isDisabled {
+				errL = append(errL, &errortypes.BidderTemporarilyDisabled{Message: msg})
+				delete(prebid.Bidder, bidder)
+				prebidModified = true
+			} else {
+				return []error{fmt.Errorf("request.imp[%d].ext.prebid.bidder contains unknown bidder: %s. Did you forget an alias in request.ext.prebid.aliases?", impIndex, bidder)}
+			}
+		}
+	}
+
+	if len(prebid.Bidder) == 0 {
+		errL = append(errL, fmt.Errorf("request.imp[%d].ext.prebid.bidder must contain at least one bidder", impIndex))
+		return errL
+	}
+
+	if prebidModified {
+		impExt.SetPrebid(prebid)
+	}
+	if extModified {
+		impExt.SetExt(ext)
 	}
 
 	return errL
 }
 
-// isBidderToValidate determines if the bidder name in request.imp[].prebid should be validated.
-func isBidderToValidate(bidder string) bool {
+// isPossibleBidder determines if a bidder name is a potential real bidder.
+func isPossibleBidder(bidder string) bool {
 	switch openrtb_ext.BidderName(bidder) {
 	case openrtb_ext.BidderReservedContext:
 		return false
 	case openrtb_ext.BidderReservedData:
 		return false
+	case openrtb_ext.BidderReservedGPID:
+		return false
 	case openrtb_ext.BidderReservedPrebid:
 		return false
 	case openrtb_ext.BidderReservedSKAdN:
 		return false
-	case openrtb_ext.BidderReservedBidder:
+	case openrtb_ext.BidderReservedTID:
+		return false
+	case openrtb_ext.BidderReservedAE:
 		return false
 	default:
 		return true
@@ -1201,6 +1502,97 @@ func (deps *endpointDeps) validateAliases(aliases map[string]string) error {
 	return nil
 }
 
+func (deps *endpointDeps) validateAliasesGVLIDs(aliasesGVLIDs map[string]uint16, aliases map[string]string) error {
+	for alias, vendorId := range aliasesGVLIDs {
+
+		if _, aliasExist := aliases[alias]; !aliasExist {
+			return fmt.Errorf("request.ext.prebid.aliasgvlids. vendorId %d refers to unknown bidder alias: %s", vendorId, alias)
+		}
+
+		if vendorId < 1 {
+			return fmt.Errorf("request.ext.prebid.aliasgvlids. Invalid vendorId %d for alias: %s. Choose a different vendorId, or remove this entry.", vendorId, alias)
+		}
+	}
+	return nil
+}
+
+func validateRequestExt(req *openrtb_ext.RequestWrapper) []error {
+	reqExt, err := req.GetRequestExt()
+	if err != nil {
+		return []error{err}
+	}
+
+	prebid := reqExt.GetPrebid()
+	// exit early if there is no request.ext.prebid to validate
+	if prebid == nil {
+		return nil
+	}
+
+	if prebid.Cache != nil {
+		if prebid.Cache.Bids == nil && prebid.Cache.VastXML == nil {
+			return []error{errors.New(`request.ext is invalid: request.ext.prebid.cache requires one of the "bids" or "vastxml" properties`)}
+		}
+	}
+
+	if err := validateTargeting(prebid.Targeting); err != nil {
+		return []error{err}
+	}
+
+	var errs []error
+	if prebid.MultiBid != nil {
+		validatedMultiBids, multBidErrs := openrtb_ext.ValidateAndBuildExtMultiBid(prebid)
+
+		for _, err := range multBidErrs {
+			errs = append(errs, &errortypes.Warning{
+				WarningCode: errortypes.MultiBidWarningCode,
+				Message:     err.Error(),
+			})
+		}
+
+		// update the downstream multibid to avoid passing unvalidated ext to bidders, etc.
+		prebid.MultiBid = validatedMultiBids
+		reqExt.SetPrebid(prebid)
+	}
+
+	return errs
+}
+
+func validateTargeting(t *openrtb_ext.ExtRequestTargeting) error {
+	if t == nil {
+		return nil
+	}
+
+	if (t.IncludeWinners == nil || !*t.IncludeWinners) && (t.IncludeBidderKeys == nil || !*t.IncludeBidderKeys) {
+		return errors.New("ext.prebid.targeting: At least one of includewinners or includebidderkeys must be enabled to enable targeting support")
+	}
+
+	if t.PriceGranularity != nil {
+		pg := t.PriceGranularity
+
+		if pg.Precision == nil {
+			return errors.New("Price granularity error: precision is required")
+		} else if *pg.Precision < 0 {
+			return errors.New("Price granularity error: precision must be non-negative")
+		} else if *pg.Precision > openrtb_ext.MaxDecimalFigures {
+			return fmt.Errorf("Price granularity error: precision of more than %d significant figures is not supported", openrtb_ext.MaxDecimalFigures)
+		}
+
+		var prevMax float64 = 0
+		for _, gr := range pg.Ranges {
+			if gr.Max <= prevMax {
+				return errors.New(`Price granularity error: range list must be ordered with increasing "max"`)
+			}
+
+			if gr.Increment <= 0.0 {
+				return errors.New("Price granularity error: increment must be a nonzero positive number")
+			}
+			prevMax = gr.Max
+		}
+	}
+
+	return nil
+}
+
 func (deps *endpointDeps) validateSite(req *openrtb_ext.RequestWrapper) error {
 	if req.Site == nil {
 		return nil
@@ -1214,7 +1606,7 @@ func (deps *endpointDeps) validateSite(req *openrtb_ext.RequestWrapper) error {
 		return err
 	}
 	siteAmp := siteExt.GetAmp()
-	if siteAmp < 0 || siteAmp > 1 {
+	if siteAmp != nil && (*siteAmp < 0 || *siteAmp > 1) {
 		return errors.New(`request.site.ext.amp must be either 1, 0, or undefined`)
 	}
 
@@ -1236,29 +1628,41 @@ func (deps *endpointDeps) validateApp(req *openrtb_ext.RequestWrapper) error {
 	return err
 }
 
-func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases map[string]string) error {
+func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases map[string]string, gpp gpplib.GppContainer) []error {
+	var errL []error
+
+	if req == nil || req.BidRequest == nil || req.BidRequest.User == nil {
+		return nil
+	}
 	// The following fields were previously uints in the OpenRTB library we use, but have
 	// since been changed to ints. We decided to maintain the non-negative check.
-	if req != nil && req.BidRequest != nil && req.User != nil {
-		if req.User.Geo != nil && req.User.Geo.Accuracy < 0 {
-			return errors.New("request.user.geo.accuracy must be a positive number")
-		}
+	if req.User.Geo != nil && req.User.Geo.Accuracy < 0 {
+		return append(errL, errors.New("request.user.geo.accuracy must be a positive number"))
 	}
 
+	if req.User.Consent != "" {
+		for _, section := range gpp.Sections {
+			if section.GetID() == constants.SectionTCFEU2 && section.GetValue() != req.User.Consent {
+				errL = append(errL, &errortypes.Warning{
+					Message:     "user.consent GDPR string conflicts with GPP (regs.gpp) GDPR string, using regs.gpp",
+					WarningCode: errortypes.InvalidPrivacyConsentWarningCode})
+			}
+		}
+	}
 	userExt, err := req.GetUserExt()
 	if err != nil {
-		return fmt.Errorf("request.user.ext object is not valid: %v", err)
+		return append(errL, fmt.Errorf("request.user.ext object is not valid: %v", err))
 	}
 	// Check if the buyeruids are valid
 	prebid := userExt.GetPrebid()
 	if prebid != nil {
 		if len(prebid.BuyerUIDs) < 1 {
-			return errors.New(`request.user.ext.prebid requires a "buyeruids" property with at least one ID defined. If none exist, then request.user.ext.prebid should not be defined.`)
+			return append(errL, errors.New(`request.user.ext.prebid requires a "buyeruids" property with at least one ID defined. If none exist, then request.user.ext.prebid should not be defined.`))
 		}
 		for bidderName := range prebid.BuyerUIDs {
 			if _, ok := deps.bidderMap[bidderName]; !ok {
 				if _, ok := aliases[bidderName]; !ok {
-					return fmt.Errorf("request.user.ext.%s is neither a known bidder name nor an alias in request.ext.prebid.aliases.", bidderName)
+					return append(errL, fmt.Errorf("request.user.ext.%s is neither a known bidder name nor an alias in request.ext.prebid.aliases", bidderName))
 				}
 			}
 		}
@@ -1267,48 +1671,64 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 	eids := userExt.GetEid()
 	if eids != nil {
 		if len(*eids) == 0 {
-			return errors.New("request.user.ext.eids must contain at least one element or be undefined")
+			return append(errL, errors.New("request.user.ext.eids must contain at least one element or be undefined"))
 		}
 		uniqueSources := make(map[string]struct{}, len(*eids))
 		for eidIndex, eid := range *eids {
 			if eid.Source == "" {
-				return fmt.Errorf("request.user.ext.eids[%d] missing required field: \"source\"", eidIndex)
+				return append(errL, fmt.Errorf("request.user.ext.eids[%d] missing required field: \"source\"", eidIndex))
 			}
 			if _, ok := uniqueSources[eid.Source]; ok {
-				return errors.New("request.user.ext.eids must contain unique sources")
+				return append(errL, errors.New("request.user.ext.eids must contain unique sources"))
 			}
 			uniqueSources[eid.Source] = struct{}{}
 
-			if eid.ID == "" && eid.Uids == nil {
-				return fmt.Errorf("request.user.ext.eids[%d] must contain either \"id\" or \"uids\" field", eidIndex)
+			if len(eid.UIDs) == 0 {
+				return append(errL, fmt.Errorf("request.user.ext.eids[%d].uids must contain at least one element or be undefined", eidIndex))
 			}
-			if eid.ID == "" {
-				if len(eid.Uids) == 0 {
-					return fmt.Errorf("request.user.ext.eids[%d].uids must contain at least one element or be undefined", eidIndex)
-				}
-				for uidIndex, uid := range eid.Uids {
-					if uid.ID == "" {
-						return fmt.Errorf("request.user.ext.eids[%d].uids[%d] missing required field: \"id\"", eidIndex, uidIndex)
-					}
+
+			for uidIndex, uid := range eid.UIDs {
+				if uid.ID == "" {
+					return append(errL, fmt.Errorf("request.user.ext.eids[%d].uids[%d] missing required field: \"id\"", eidIndex, uidIndex))
 				}
 			}
 		}
 	}
 
-	return nil
+	return errL
 }
 
-func validateRegs(req *openrtb_ext.RequestWrapper) error {
+func validateRegs(req *openrtb_ext.RequestWrapper, gpp gpplib.GppContainer) []error {
+	var errL []error
+
+	if req == nil || req.BidRequest == nil || req.BidRequest.Regs == nil {
+		return nil
+	}
+
+	if req.BidRequest.Regs.GDPR != nil && req.BidRequest.Regs.GPPSID != nil {
+		gdpr := int8(0)
+		for _, id := range req.BidRequest.Regs.GPPSID {
+			if id == int8(constants.SectionTCFEU2) {
+				gdpr = 1
+			}
+		}
+		if gdpr != *req.BidRequest.Regs.GDPR {
+			errL = append(errL, &errortypes.Warning{
+				Message:     "regs.gdpr signal conflicts with GPP (regs.gpp_sid) and will be ignored",
+				WarningCode: errortypes.InvalidPrivacyConsentWarningCode})
+		}
+	}
 	regsExt, err := req.GetRegExt()
 	if err != nil {
-		return fmt.Errorf("request.regs.ext is invalid: %v", err)
+		return append(errL, fmt.Errorf("request.regs.ext is invalid: %v", err))
 	}
-	regExt := regsExt.GetExt()
-	gdprJSON, hasGDPR := regExt["gdpr"]
-	if hasGDPR && (string(gdprJSON) != "0" && string(gdprJSON) != "1") {
-		return errors.New("request.regs.ext.gdpr must be either 0 or 1.")
+
+	gdpr := regsExt.GetGDPR()
+	if gdpr != nil && *gdpr != 0 && *gdpr != 1 {
+		return append(errL, errors.New("request.regs.ext.gdpr must be either 0 or 1"))
 	}
-	return nil
+
+	return errL
 }
 
 func validateDevice(device *openrtb2.Device) error {
@@ -1334,7 +1754,47 @@ func validateDevice(device *openrtb2.Device) error {
 	return nil
 }
 
-func sanitizeRequest(r *openrtb2.BidRequest, ipValidator iputil.IPValidator) {
+func validateOrFillChannel(reqWrapper *openrtb_ext.RequestWrapper, isAmp bool) error {
+	requestExt, err := reqWrapper.GetRequestExt()
+	if err != nil {
+		return err
+	}
+	requestPrebid := requestExt.GetPrebid()
+
+	if requestPrebid == nil || requestPrebid.Channel == nil {
+		fillChannel(reqWrapper, isAmp)
+	} else if requestPrebid.Channel.Name == "" {
+		return errors.New("ext.prebid.channel.name can't be empty")
+	}
+	return nil
+}
+
+func fillChannel(reqWrapper *openrtb_ext.RequestWrapper, isAmp bool) error {
+	var channelName string
+	requestExt, err := reqWrapper.GetRequestExt()
+	if err != nil {
+		return err
+	}
+	requestPrebid := requestExt.GetPrebid()
+	if isAmp {
+		channelName = ampChannel
+	}
+	if reqWrapper.App != nil {
+		channelName = appChannel
+	}
+	if channelName != "" {
+		if requestPrebid == nil {
+			requestPrebid = &openrtb_ext.ExtRequestPrebid{}
+		}
+		requestPrebid.Channel = &openrtb_ext.ExtRequestPrebidChannel{Name: channelName}
+		requestExt.SetPrebid(requestPrebid)
+		reqWrapper.RebuildRequest()
+	}
+	return nil
+
+}
+
+func sanitizeRequest(r *openrtb_ext.RequestWrapper, ipValidator iputil.IPValidator) {
 	if r.Device != nil {
 		if ip, ver := iputil.ParseIP(r.Device.IP); ip == nil || ver != iputil.IPv4 || !ipValidator.IsValid(ip, ver) {
 			r.Device.IP = ""
@@ -1351,69 +1811,80 @@ func sanitizeRequest(r *openrtb2.BidRequest, ipValidator iputil.IPValidator) {
 // OpenRTB properties from the headers and other implicit info.
 //
 // This function _should not_ override any fields which were defined explicitly by the caller in the request.
-func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, bidReq *openrtb2.BidRequest) {
-	sanitizeRequest(bidReq, deps.privateNetworkIPValidator)
+func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
+	sanitizeRequest(r, deps.privateNetworkIPValidator)
 
-	setDeviceImplicitly(httpReq, bidReq, deps.privateNetworkIPValidator)
+	setDeviceImplicitly(httpReq, r, deps.privateNetworkIPValidator)
 
-	// Per the OpenRTB spec: A bid request must not contain both a Site and an App object.
-	if bidReq.App == nil {
-		setSiteImplicitly(httpReq, bidReq)
+	// Per the OpenRTB spec: A bid request must not contain both a Site and an App object. If neither are
+	// present, we'll assume it's a site request.
+	if r.App == nil {
+		setSiteImplicitly(httpReq, r)
 	}
-	setImpsImplicitly(httpReq, bidReq.Imp)
 
-	setAuctionTypeImplicitly(bidReq)
+	setAuctionTypeImplicitly(r)
 }
 
 // setDeviceImplicitly uses implicit info from httpReq to populate bidReq.Device
-func setDeviceImplicitly(httpReq *http.Request, bidReq *openrtb2.BidRequest, ipValidtor iputil.IPValidator) {
-	setIPImplicitly(httpReq, bidReq, ipValidtor)
-	setUAImplicitly(httpReq, bidReq)
-	setDoNotTrackImplicitly(httpReq, bidReq)
+func setDeviceImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper, ipValidtor iputil.IPValidator) {
+	setIPImplicitly(httpReq, r, ipValidtor)
+	setUAImplicitly(httpReq, r)
+	setDoNotTrackImplicitly(httpReq, r)
 
 }
 
 // setAuctionTypeImplicitly sets the auction type to 1 if it wasn't on the request,
 // since header bidding is generally a first-price auction.
-func setAuctionTypeImplicitly(bidReq *openrtb2.BidRequest) {
-	if bidReq.AT == 0 {
-		bidReq.AT = 1
+func setAuctionTypeImplicitly(r *openrtb_ext.RequestWrapper) {
+	if r.AT == 0 {
+		r.AT = 1
 	}
-	return
 }
 
-// setSiteImplicitly uses implicit info from httpReq to populate bidReq.Site
-func setSiteImplicitly(httpReq *http.Request, bidReq *openrtb2.BidRequest) {
-	if bidReq.Site == nil || bidReq.Site.Page == "" || bidReq.Site.Domain == "" {
-		referrerCandidate := httpReq.Referer()
-		if parsedUrl, err := url.Parse(referrerCandidate); err == nil {
-			if domain, err := publicsuffix.EffectiveTLDPlusOne(parsedUrl.Host); err == nil {
-				if bidReq.Site == nil {
-					bidReq.Site = &openrtb2.Site{}
-				}
-				if bidReq.Site.Domain == "" {
-					bidReq.Site.Domain = domain
-				}
+func setSiteImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
+	referrerCandidate := httpReq.Referer()
+	if referrerCandidate == "" && r.Site != nil && r.Site.Page != "" {
+		referrerCandidate = r.Site.Page // If http referer is disabled and thus has empty value - use site.page instead
+	}
 
-				// This looks weird... but is not a bug. The site which called prebid-server (the "referer"), is
-				// (almost certainly) the page where the ad will be hosted. In the OpenRTB spec, this is *page*, not *ref*.
-				if bidReq.Site.Page == "" {
-					bidReq.Site.Page = referrerCandidate
-				}
+	if referrerCandidate != "" {
+		setSitePageIfEmpty(r.Site, referrerCandidate)
+		if parsedUrl, err := url.Parse(referrerCandidate); err == nil {
+			setSiteDomainIfEmpty(r.Site, parsedUrl.Host)
+			if publisherDomain, err := publicsuffix.EffectiveTLDPlusOne(parsedUrl.Host); err == nil {
+				setSitePublisherDomainIfEmpty(r.Site, publisherDomain)
 			}
 		}
 	}
-	if bidReq.Site != nil {
-		setAmpExt(bidReq.Site, "0")
+
+	if r.Site != nil {
+		if siteExt, err := r.GetSiteExt(); err == nil && siteExt.GetAmp() == nil {
+			siteExt.SetAmp(&notAmp)
+		}
 	}
 }
 
-func setImpsImplicitly(httpReq *http.Request, imps []openrtb2.Imp) {
-	secure := int8(1)
-	for i := 0; i < len(imps); i++ {
-		if imps[i].Secure == nil && httputil.IsSecure(httpReq) {
-			imps[i].Secure = &secure
-		}
+func setSitePageIfEmpty(site *openrtb2.Site, sitePage string) {
+	if site == nil {
+		site = &openrtb2.Site{}
+	}
+	if site.Page == "" {
+		site.Page = sitePage
+	}
+}
+
+func setSiteDomainIfEmpty(site *openrtb2.Site, siteDomain string) {
+	if site.Domain == "" {
+		site.Domain = siteDomain
+	}
+}
+
+func setSitePublisherDomainIfEmpty(site *openrtb2.Site, publisherDomain string) {
+	if site.Publisher == nil {
+		site.Publisher = &openrtb2.Publisher{}
+	}
+	if site.Publisher.Domain == "" {
+		site.Publisher.Domain = publisherDomain
 	}
 }
 
@@ -1434,11 +1905,11 @@ func getJsonSyntaxError(testJSON []byte) (bool, string) {
 	return false, ""
 }
 
-func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson []byte, impInfo []ImpExtPrebidData) ([]byte, map[string]exchange.ImpExtInfo, []error) {
+func (deps *endpointDeps) getStoredRequests(ctx context.Context, requestJson []byte, impInfo []ImpExtPrebidData) (string, bool, map[string]json.RawMessage, map[string]json.RawMessage, []error) {
 	// Parse the Stored Request IDs from the BidRequest and Imps.
 	storedBidRequestId, hasStoredBidRequest, err := getStoredRequestId(requestJson)
 	if err != nil {
-		return nil, nil, []error{err}
+		return "", false, nil, nil, []error{err}
 	}
 
 	// Fetch the Stored Request data
@@ -1460,10 +1931,14 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	}
 
 	storedRequests, storedImps, errs := deps.storedReqFetcher.FetchRequests(ctx, storedReqIds, impStoredReqIds)
-
 	if len(errs) != 0 {
-		return nil, nil, errs
+		return "", false, nil, nil, errs
 	}
+
+	return storedBidRequestId, hasStoredBidRequest, storedRequests, storedImps, errs
+}
+
+func (deps *endpointDeps) processStoredRequests(requestJson []byte, impInfo []ImpExtPrebidData, storedRequests map[string]json.RawMessage, storedImps map[string]json.RawMessage, storedBidRequestId string, hasStoredBidRequest bool) ([]byte, map[string]exchange.ImpExtInfo, []error) {
 	bidRequestID, err := getBidRequestID(storedRequests[storedBidRequestId])
 	if err != nil {
 		return nil, nil, []error{err}
@@ -1477,7 +1952,7 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 		if err != nil {
 			return nil, nil, []error{err}
 		}
-		if isAppRequest && (deps.cfg.GenerateRequestID || bidRequestID == "{{UUID}}") {
+		if (deps.cfg.GenerateRequestID && isAppRequest) || bidRequestID == "{{UUID}}" {
 			uuidPatch, err := generateUuidForBidRequest(deps.uuidGenerator)
 			if err != nil {
 				return nil, nil, []error{err}
@@ -1541,7 +2016,6 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 				return nil, nil, []error{err}
 			}
 			resolvedImps = append(resolvedImps, resolvedImp)
-
 			impId, err := jsonparser.GetString(resolvedImp, "id")
 			if err != nil {
 				return nil, nil, []error{err}
@@ -1551,12 +2025,25 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 			if impData.ImpExtPrebid.Options != nil {
 				echoVideoAttributes = impData.ImpExtPrebid.Options.EchoVideoAttrs
 			}
-			impExtInfoMap[impId] = exchange.ImpExtInfo{EchoVideoAttrs: echoVideoAttributes, StoredImp: storedImps[impData.ImpExtPrebid.StoredRequest.ID]}
+
+			// Extract Passthrough from Merged Imp
+			passthrough, _, _, err := jsonparser.Get(resolvedImp, "ext", "prebid", "passthrough")
+			if err != nil && err != jsonparser.KeyPathNotFoundError {
+				return nil, nil, []error{err}
+			}
+			impExtInfoMap[impId] = exchange.ImpExtInfo{EchoVideoAttrs: echoVideoAttributes, StoredImp: storedImps[impData.ImpExtPrebid.StoredRequest.ID], Passthrough: passthrough}
 
 		} else {
 			resolvedImps = append(resolvedImps, impData.Imp)
+			impId, err := jsonparser.GetString(impData.Imp, "id")
+			if err != nil {
+				if err == jsonparser.KeyPathNotFoundError {
+					err = fmt.Errorf("request.imp[%d] missing required field: \"id\"\n", i)
+				}
+				return nil, nil, []error{err}
+			}
+			impExtInfoMap[impId] = exchange.ImpExtInfo{Passthrough: impData.ImpExtPrebid.Passthrough}
 		}
-
 	}
 	if len(resolvedImps) > 0 {
 		newImpJson, err := json.Marshal(resolvedImps)
@@ -1574,7 +2061,6 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 
 // parseImpInfo parses the request JSON and returns impression and unmarshalled imp.ext.prebid
 func parseImpInfo(requestJson []byte) (impData []ImpExtPrebidData, errs []error) {
-
 	if impArray, dataType, _, err := jsonparser.Get(requestJson, "imp"); err == nil && dataType == jsonparser.Array {
 		_, err = jsonparser.ArrayEach(impArray, func(imp []byte, _ jsonparser.ValueType, _ int, err error) {
 			impExtData, _, _, err := jsonparser.Get(imp, "ext", "prebid")
@@ -1627,50 +2113,50 @@ func getBidRequestID(data json.RawMessage) (string, error) {
 }
 
 // setIPImplicitly sets the IP address on bidReq, if it's not explicitly defined and we can figure it out.
-func setIPImplicitly(httpReq *http.Request, bidReq *openrtb2.BidRequest, ipValidator iputil.IPValidator) {
-	if bidReq.Device == nil || (bidReq.Device.IP == "" && bidReq.Device.IPv6 == "") {
+func setIPImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper, ipValidator iputil.IPValidator) {
+	if r.Device == nil || (r.Device.IP == "" && r.Device.IPv6 == "") {
 		if ip, ver := httputil.FindIP(httpReq, ipValidator); ip != nil {
 			switch ver {
 			case iputil.IPv4:
-				if bidReq.Device == nil {
-					bidReq.Device = &openrtb2.Device{}
+				if r.Device == nil {
+					r.Device = &openrtb2.Device{}
 				}
-				bidReq.Device.IP = ip.String()
+				r.Device.IP = ip.String()
 			case iputil.IPv6:
-				if bidReq.Device == nil {
-					bidReq.Device = &openrtb2.Device{}
+				if r.Device == nil {
+					r.Device = &openrtb2.Device{}
 				}
-				bidReq.Device.IPv6 = ip.String()
+				r.Device.IPv6 = ip.String()
 			}
 		}
 	}
 }
 
 // setUAImplicitly sets the User Agent on bidReq, if it's not explicitly defined and it's defined on the request.
-func setUAImplicitly(httpReq *http.Request, bidReq *openrtb2.BidRequest) {
-	if bidReq.Device == nil || bidReq.Device.UA == "" {
+func setUAImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
+	if r.Device == nil || r.Device.UA == "" {
 		if ua := httpReq.UserAgent(); ua != "" {
-			if bidReq.Device == nil {
-				bidReq.Device = &openrtb2.Device{}
+			if r.Device == nil {
+				r.Device = &openrtb2.Device{}
 			}
-			bidReq.Device.UA = ua
+			r.Device.UA = ua
 		}
 	}
 }
 
-func setDoNotTrackImplicitly(httpReq *http.Request, bidReq *openrtb2.BidRequest) {
-	if bidReq.Device == nil || bidReq.Device.DNT == nil {
+func setDoNotTrackImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
+	if r.Device == nil || r.Device.DNT == nil {
 		dnt := httpReq.Header.Get(dntKey)
 		if dnt == "0" || dnt == "1" {
-			if bidReq.Device == nil {
-				bidReq.Device = &openrtb2.Device{}
+			if r.Device == nil {
+				r.Device = &openrtb2.Device{}
 			}
 
 			switch dnt {
 			case "0":
-				bidReq.Device.DNT = &dntDisabled
+				r.Device.DNT = &dntDisabled
 			case "1":
-				bidReq.Device.DNT = &dntEnabled
+				r.Device.DNT = &dntEnabled
 			}
 		}
 	}
@@ -1687,6 +2173,10 @@ func writeError(errs []error, w http.ResponseWriter, labels *metrics.Labels) boo
 			if erVal == errortypes.BlacklistedAppErrorCode || erVal == errortypes.BlacklistedAcctErrorCode {
 				httpStatus = http.StatusServiceUnavailable
 				metricsStatus = metrics.RequestStatusBlacklisted
+				break
+			} else if erVal == errortypes.MalformedAcctErrorCode {
+				httpStatus = http.StatusInternalServerError
+				metricsStatus = metrics.RequestStatusAccountConfigErr
 				break
 			}
 		}
@@ -1717,6 +2207,59 @@ func getAccountID(pub *openrtb2.Publisher) string {
 	return metrics.PublisherUnknown
 }
 
+func getAccountIdFromRawRequest(hasStoredRequest bool, storedRequest json.RawMessage, originalRequest []byte) (string, bool, []error) {
+	request := originalRequest
+	if hasStoredRequest {
+		request = storedRequest
+	}
+
+	accountId, isAppReq, err := searchAccountId(request)
+	if err != nil {
+		return "", isAppReq, []error{err}
+	}
+
+	// In case the stored request did not have account data we specifically search it in the original request
+	if accountId == "" && hasStoredRequest {
+		accountId, _, err = searchAccountId(originalRequest)
+		if err != nil {
+			return "", isAppReq, []error{err}
+		}
+	}
+
+	if accountId == "" {
+		return metrics.PublisherUnknown, isAppReq, nil
+	}
+
+	return accountId, isAppReq, nil
+}
+
+func searchAccountId(request []byte) (string, bool, error) {
+	for _, path := range accountIdSearchPath {
+		accountId, exists, err := getStringValueFromRequest(request, path.key)
+		if err != nil {
+			return "", path.isApp, err
+		}
+		if exists {
+			return accountId, path.isApp, nil
+		}
+	}
+	return "", false, nil
+}
+
+func getStringValueFromRequest(request []byte, key []string) (string, bool, error) {
+	val, dataType, _, err := jsonparser.Get(request, key...)
+	if dataType == jsonparser.NotExist {
+		return "", false, nil
+	}
+	if err != nil {
+		return "", false, err
+	}
+	if dataType != jsonparser.String {
+		return "", true, fmt.Errorf("%s must be a string", strings.Join(key, "."))
+	}
+	return string(val), true, nil
+}
+
 func storedRequestErrorChecker(requestJson []byte, storedRequests map[string]json.RawMessage, storedBidRequestId string) []error {
 	if hasErr, syntaxErr := getJsonSyntaxError(requestJson); hasErr {
 		return []error{fmt.Errorf("Invalid JSON in Incoming Request: %s", syntaxErr)}
@@ -1735,6 +2278,26 @@ func generateUuidForBidRequest(uuidGenerator uuidutil.UUIDGenerator) ([]byte, er
 	return []byte(`{"id":"` + newBidRequestID + `"}`), nil
 }
 
+func (deps *endpointDeps) setIntegrationType(req *openrtb_ext.RequestWrapper, account *config.Account) error {
+	reqExt, err := req.GetRequestExt()
+	if err != nil {
+		return err
+	}
+	reqPrebid := reqExt.GetPrebid()
+
+	if account == nil || account.DefaultIntegration == "" {
+		return nil
+	}
+	if reqPrebid == nil {
+		reqPrebid = &openrtb_ext.ExtRequestPrebid{Integration: account.DefaultIntegration}
+		reqExt.SetPrebid(reqPrebid)
+	} else if reqPrebid.Integration == "" {
+		reqPrebid.Integration = account.DefaultIntegration
+		reqExt.SetPrebid(reqPrebid)
+	}
+	return nil
+}
+
 func checkIfAppRequest(request []byte) (bool, error) {
 	requestApp, dataType, _, err := jsonparser.Get(request, "app")
 	if dataType == jsonparser.NotExist {
@@ -1747,4 +2310,33 @@ func checkIfAppRequest(request []byte) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+}
+
+func validateStoredBidRespAndImpExtBidders(bidderExts map[string]json.RawMessage, storedBidResp stored_responses.ImpBidderStoredResp, impId string) error {
+	if bidResponses, ok := storedBidResp[impId]; ok {
+		if len(bidResponses) != len(bidderExts) {
+			return generateStoredBidResponseValidationError(impId)
+		}
+
+		for bidderName := range bidResponses {
+			if _, present := bidderExts[bidderName]; !present {
+				return generateStoredBidResponseValidationError(impId)
+			}
+		}
+	}
+	return nil
+}
+
+func generateStoredBidResponseValidationError(impID string) error {
+	return fmt.Errorf("request validation failed. Stored bid responses are specified for imp %s. Bidders specified in imp.ext should match with bidders specified in imp.ext.prebid.storedbidresponse", impID)
+}
+
+func recordResponsePreparationMetrics(mbti map[openrtb_ext.BidderName]adapters.MakeBidsTimeInfo, me metrics.MetricsEngine) {
+	for _, info := range mbti {
+		duration := time.Since(info.AfterMakeBidsStartTime)
+		for _, makeBidsDuration := range info.Durations {
+			duration += makeBidsDuration
+		}
+		me.RecordOverheadTime(metrics.MakeAuctionResponse, duration)
+	}
 }

@@ -1,16 +1,17 @@
+endpoint: "https://btlr.sharethrough.com/universal/v1?supply_id=FGMrCMMc"
 maintainer:
-  email: "pubgrowth.engineering@sharethrough.com"
+  email: pubgrowth.engineering@sharethrough.com
 gvlVendorID: 80
 capabilities:
   app:
     mediaTypes:
-      - native
       - banner
+      - video
   site:
     mediaTypes:
-      - native
       - banner
+      - video
 userSync:
   redirect:
-    url: "https://match.sharethrough.com/FGMrCMMc/v1?redirectUri={{.RedirectURL}}"
-    userMacro: "$UID"
+    url: https://match.sharethrough.com/FGMrCMMc/v1?redirectUri={{.RedirectURL}}
+    userMacro: $UID

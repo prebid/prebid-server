@@ -9,7 +9,7 @@ import (
 
 // This file actually intends to test static/bidder-params/marsmedia.json
 //
-// These also validate the format of the external API: request.imp[i].ext.marsmedia
+// These also validate the format of the external API: request.imp[i].ext.prebid.bidder.marsmedia
 
 // TestValidParams makes sure that the Marsmedia schema accepts all imp.ext fields which we intend to support.
 func TestValidParams(t *testing.T) {
@@ -41,10 +41,10 @@ func TestInvalidParams(t *testing.T) {
 
 var validParams = []string{
 	`{"zoneId": "9999"}`,
+	`{"zoneId": 9999}`,
 }
 
 var invalidParams = []string{
-	`{"zoneId": 100}`,
 	`{"zoneId": true}`,
 	``,
 	`null`,

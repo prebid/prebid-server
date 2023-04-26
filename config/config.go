@@ -6,24 +6,30 @@ import (
 	"fmt"
 	"net/url"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/spf13/viper"
+
+	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/spf13/viper"
 )
 
 // Configuration specifies the static application config.
 type Configuration struct {
-	ExternalURL string     `mapstructure:"external_url"`
-	Host        string     `mapstructure:"host"`
-	Port        int        `mapstructure:"port"`
-	Client      HTTPClient `mapstructure:"http_client"`
-	CacheClient HTTPClient `mapstructure:"http_client_cache"`
-	AdminPort   int        `mapstructure:"admin_port"`
-	EnableGzip  bool       `mapstructure:"enable_gzip"`
+	ExternalURL      string     `mapstructure:"external_url"`
+	Host             string     `mapstructure:"host"`
+	Port             int        `mapstructure:"port"`
+	UnixSocketEnable bool       `mapstructure:"unix_socket_enable"`
+	UnixSocketName   string     `mapstructure:"unix_socket_name"`
+	Client           HTTPClient `mapstructure:"http_client"`
+	CacheClient      HTTPClient `mapstructure:"http_client_cache"`
+	AdminPort        int        `mapstructure:"admin_port"`
+	EnableGzip       bool       `mapstructure:"enable_gzip"`
 	// GarbageCollectorThreshold allocates virtual memory (in bytes) which is not used by PBS but
 	// serves as a hack to trigger the garbage collector only when the heap reaches at least this size.
 	// More info: https://github.com/golang/go/issues/48409
@@ -45,19 +51,17 @@ type Configuration struct {
 	Accounts          StoredRequests  `mapstructure:"accounts"`
 	UserSync          UserSync        `mapstructure:"user_sync"`
 	// Note that StoredVideo refers to stored video requests, and has nothing to do with caching video creatives.
-	StoredVideo StoredRequests `mapstructure:"stored_video_req"`
+	StoredVideo     StoredRequests `mapstructure:"stored_video_req"`
+	StoredResponses StoredRequests `mapstructure:"stored_responses"`
 
-	// Adapters should have a key for every openrtb_ext.BidderName, converted to lower-case.
-	// Se also: https://github.com/spf13/viper/issues/371#issuecomment-335388559
-	Adapters             map[string]Adapter `mapstructure:"adapters"`
-	MaxRequestSize       int64              `mapstructure:"max_request_size"`
-	Analytics            Analytics          `mapstructure:"analytics"`
-	AMPTimeoutAdjustment int64              `mapstructure:"amp_timeout_adjustment_ms"`
-	GDPR                 GDPR               `mapstructure:"gdpr"`
-	CCPA                 CCPA               `mapstructure:"ccpa"`
-	LMT                  LMT                `mapstructure:"lmt"`
-	CurrencyConverter    CurrencyConverter  `mapstructure:"currency_converter"`
-	DefReqConfig         DefReqConfig       `mapstructure:"default_request"`
+	MaxRequestSize       int64             `mapstructure:"max_request_size"`
+	Analytics            Analytics         `mapstructure:"analytics"`
+	AMPTimeoutAdjustment int64             `mapstructure:"amp_timeout_adjustment_ms"`
+	GDPR                 GDPR              `mapstructure:"gdpr"`
+	CCPA                 CCPA              `mapstructure:"ccpa"`
+	LMT                  LMT               `mapstructure:"lmt"`
+	CurrencyConverter    CurrencyConverter `mapstructure:"currency_converter"`
+	DefReqConfig         DefReqConfig      `mapstructure:"default_request"`
 
 	VideoStoredRequestRequired bool `mapstructure:"video_stored_request_required"`
 
@@ -87,7 +91,22 @@ type Configuration struct {
 	//When true, new bid id will be generated in seatbid[].bid[].ext.prebid.bidid and used in event urls instead
 	GenerateBidID bool `mapstructure:"generate_bid_id"`
 	// GenerateRequestID overrides the bidrequest.id in an AMP Request or an App Stored Request with a generated UUID if set to true. The default is false.
-	GenerateRequestID bool `mapstructure:"generate_request_id"`
+	GenerateRequestID bool                      `mapstructure:"generate_request_id"`
+	HostSChainNode    *openrtb2.SupplyChainNode `mapstructure:"host_schain_node"`
+	// Experiment configures non-production ready features.
+	Experiment Experiment `mapstructure:"experiment"`
+	DataCenter string     `mapstructure:"datacenter"`
+	// BidderInfos supports adapter overrides in extra configs like pbs.json, pbs.yaml, etc.
+	// Refers to main.go `configFileName` constant
+	BidderInfos BidderInfos `mapstructure:"adapters"`
+	// Hooks provides a way to specify hook execution plan for specific endpoints and stages
+	Hooks       Hooks       `mapstructure:"hooks"`
+	Validations Validations `mapstructure:"validations"`
+	PriceFloors PriceFloors `mapstructure:"price_floors"`
+}
+
+type PriceFloors struct {
+	Enabled bool `mapstructure:"enabled"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -113,12 +132,22 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 	}
 	errs = cfg.GDPR.validate(v, errs)
 	errs = cfg.CurrencyConverter.validate(errs)
-	errs = validateAdapters(cfg.Adapters, errs)
 	errs = cfg.Debug.validate(errs)
 	errs = cfg.ExtCacheURL.validate(errs)
+	errs = cfg.AccountDefaults.PriceFloors.validate(errs)
 	if cfg.AccountDefaults.Disabled {
 		glog.Warning(`With account_defaults.disabled=true, host-defined accounts must exist and have "disabled":false. All other requests will be rejected.`)
 	}
+	if cfg.AccountDefaults.Events.Enabled {
+		glog.Warning(`account_defaults.events will currently not do anything as the feature is still under development. Please follow https://github.com/prebid/prebid-server/issues/1725 for more updates`)
+	}
+
+	if cfg.PriceFloors.Enabled {
+		glog.Warning(`cfg.PriceFloors.Enabled will currently not do anything as price floors feature is still under development.`)
+	}
+
+	errs = cfg.Experiment.validate(errs)
+	errs = cfg.BidderInfos.validate(errs)
 	return errs
 }
 
@@ -246,11 +275,11 @@ func (cfg *GDPR) validatePurposes(errs []error) []error {
 	}
 
 	for i := 0; i < len(purposeConfigs); i++ {
-		enforcePurposeValue := purposeConfigs[i].EnforcePurpose
-		enforcePurposeField := fmt.Sprintf("gdpr.tcf2.purpose%d.enforce_purpose", (i + 1))
+		enforceAlgoValue := purposeConfigs[i].EnforceAlgo
+		enforceAlgoField := fmt.Sprintf("gdpr.tcf2.purpose%d.enforce_algo", (i + 1))
 
-		if enforcePurposeValue != TCF2NoEnforcement && enforcePurposeValue != TCF2FullEnforcement {
-			errs = append(errs, fmt.Errorf("%s must be \"no\" or \"full\". Got %s", enforcePurposeField, enforcePurposeValue))
+		if enforceAlgoValue != TCF2EnforceAlgoFull && enforceAlgoValue != TCF2EnforceAlgoBasic {
+			errs = append(errs, fmt.Errorf("%s must be \"basic\" or \"full\". Got %s", enforceAlgoField, enforceAlgoValue))
 		}
 	}
 	return errs
@@ -270,32 +299,125 @@ func (t *GDPRTimeouts) ActiveTimeout() time.Duration {
 }
 
 const (
-	TCF2FullEnforcement = "full"
-	TCF2NoEnforcement   = "no"
+	TCF2EnforceAlgoBasic = "basic"
+	TCF2EnforceAlgoFull  = "full"
+)
+
+type TCF2EnforcementAlgo int
+
+const (
+	TCF2UndefinedEnforcement TCF2EnforcementAlgo = iota
+	TCF2BasicEnforcement
+	TCF2FullEnforcement
 )
 
 // TCF2 defines the TCF2 specific configurations for GDPR
 type TCF2 struct {
-	Enabled             bool                    `mapstructure:"enabled"`
-	Purpose1            TCF2Purpose             `mapstructure:"purpose1"`
-	Purpose2            TCF2Purpose             `mapstructure:"purpose2"`
-	Purpose3            TCF2Purpose             `mapstructure:"purpose3"`
-	Purpose4            TCF2Purpose             `mapstructure:"purpose4"`
-	Purpose5            TCF2Purpose             `mapstructure:"purpose5"`
-	Purpose6            TCF2Purpose             `mapstructure:"purpose6"`
-	Purpose7            TCF2Purpose             `mapstructure:"purpose7"`
-	Purpose8            TCF2Purpose             `mapstructure:"purpose8"`
-	Purpose9            TCF2Purpose             `mapstructure:"purpose9"`
-	Purpose10           TCF2Purpose             `mapstructure:"purpose10"`
-	SpecialPurpose1     TCF2Purpose             `mapstructure:"special_purpose1"`
+	Enabled   bool        `mapstructure:"enabled"`
+	Purpose1  TCF2Purpose `mapstructure:"purpose1"`
+	Purpose2  TCF2Purpose `mapstructure:"purpose2"`
+	Purpose3  TCF2Purpose `mapstructure:"purpose3"`
+	Purpose4  TCF2Purpose `mapstructure:"purpose4"`
+	Purpose5  TCF2Purpose `mapstructure:"purpose5"`
+	Purpose6  TCF2Purpose `mapstructure:"purpose6"`
+	Purpose7  TCF2Purpose `mapstructure:"purpose7"`
+	Purpose8  TCF2Purpose `mapstructure:"purpose8"`
+	Purpose9  TCF2Purpose `mapstructure:"purpose9"`
+	Purpose10 TCF2Purpose `mapstructure:"purpose10"`
+	// Map of purpose configs for easy purpose lookup
+	PurposeConfigs      map[consentconstants.Purpose]*TCF2Purpose
+	SpecialFeature1     TCF2SpecialFeature      `mapstructure:"special_feature1"`
 	PurposeOneTreatment TCF2PurposeOneTreatment `mapstructure:"purpose_one_treatment"`
+}
+
+// ChannelEnabled checks if a given channel type is enabled. All channel types are considered either
+// enabled or disabled based on the Enabled flag.
+func (t *TCF2) ChannelEnabled(channelType ChannelType) bool {
+	return t.Enabled
+}
+
+// IsEnabled indicates if TCF2 is enabled
+func (t *TCF2) IsEnabled() bool {
+	return t.Enabled
+}
+
+// PurposeEnforced checks if full enforcement is turned on for a given purpose. With full enforcement enabled, the
+// GDPR full enforcement algorithm will execute for that purpose determining legal basis; otherwise it's skipped.
+func (t *TCF2) PurposeEnforced(purpose consentconstants.Purpose) (value bool) {
+	if t.PurposeConfigs[purpose] == nil {
+		return false
+	}
+	return t.PurposeConfigs[purpose].EnforcePurpose
+}
+
+// PurposeEnforcementAlgo returns the default enforcement algorithm for a given purpose
+func (t *TCF2) PurposeEnforcementAlgo(purpose consentconstants.Purpose) (value TCF2EnforcementAlgo) {
+	if c, exists := t.PurposeConfigs[purpose]; exists {
+		return c.EnforceAlgoID
+	}
+	return TCF2FullEnforcement
+}
+
+// PurposeEnforcingVendors checks if enforcing vendors is turned on for a given purpose. With enforcing vendors
+// enabled, the GDPR full enforcement algorithm considers the GVL when determining legal basis; otherwise it's skipped.
+func (t *TCF2) PurposeEnforcingVendors(purpose consentconstants.Purpose) (value bool) {
+	if t.PurposeConfigs[purpose] == nil {
+		return false
+	}
+	return t.PurposeConfigs[purpose].EnforceVendors
+}
+
+// PurposeVendorExceptions returns the vendor exception map for a given purpose if it exists, otherwise it returns
+// an empty map of vendor exceptions
+func (t *TCF2) PurposeVendorExceptions(purpose consentconstants.Purpose) (value map[openrtb_ext.BidderName]struct{}) {
+	c, exists := t.PurposeConfigs[purpose]
+
+	if exists && c.VendorExceptionMap != nil {
+		return c.VendorExceptionMap
+	}
+	return make(map[openrtb_ext.BidderName]struct{}, 0)
+}
+
+// FeatureOneEnforced checks if special feature one is enforced. If it is enforced, PBS will determine whether geo
+// information may be passed through in the bid request.
+func (t *TCF2) FeatureOneEnforced() (value bool) {
+	return t.SpecialFeature1.Enforce
+}
+
+// FeatureOneVendorException checks if the specified bidder is considered a vendor exception for special feature one.
+// If a bidder is a vendor exception, PBS will bypass the pass geo calculation passing the geo information in the bid request.
+func (t *TCF2) FeatureOneVendorException(bidder openrtb_ext.BidderName) (value bool) {
+	if _, ok := t.SpecialFeature1.VendorExceptionMap[bidder]; ok {
+		return true
+	}
+	return false
+}
+
+// PurposeOneTreatmentEnabled checks if purpose one treatment is enabled.
+func (t *TCF2) PurposeOneTreatmentEnabled() (value bool) {
+	return t.PurposeOneTreatment.Enabled
+}
+
+// PurposeOneTreatmentAccessAllowed checks if purpose one treatment access is allowed.
+func (t *TCF2) PurposeOneTreatmentAccessAllowed() (value bool) {
+	return t.PurposeOneTreatment.AccessAllowed
 }
 
 // Making a purpose struct so purpose specific details can be added later.
 type TCF2Purpose struct {
-	Enabled        bool   `mapstructure:"enabled"` // Deprecated: Use enforce_purpose instead
-	EnforcePurpose string `mapstructure:"enforce_purpose"`
-	EnforceVendors bool   `mapstructure:"enforce_vendors"`
+	Enabled     bool   `mapstructure:"enabled"` // Deprecated: Use enforce_purpose instead
+	EnforceAlgo string `mapstructure:"enforce_algo"`
+	// Integer representation of enforcement algo for performance improvement on compares
+	EnforceAlgoID  TCF2EnforcementAlgo
+	EnforcePurpose bool `mapstructure:"enforce_purpose"`
+	EnforceVendors bool `mapstructure:"enforce_vendors"`
+	// Array of vendor exceptions that is used to create the hash table VendorExceptionMap so vendor names can be instantly accessed
+	VendorExceptions   []openrtb_ext.BidderName `mapstructure:"vendor_exceptions"`
+	VendorExceptionMap map[openrtb_ext.BidderName]struct{}
+}
+
+type TCF2SpecialFeature struct {
+	Enforce bool `mapstructure:"enforce"`
 	// Array of vendor exceptions that is used to create the hash table VendorExceptionMap so vendor names can be instantly accessed
 	VendorExceptions   []openrtb_ext.BidderName `mapstructure:"vendor_exceptions"`
 	VendorExceptionMap map[openrtb_ext.BidderName]struct{}
@@ -392,6 +514,12 @@ type DisabledMetrics struct {
 	// True if we want to stop collecting account-to-adapter metrics
 	AccountAdapterDetails bool `mapstructure:"account_adapter_details"`
 
+	// True if we want to stop collecting account debug request metrics
+	AccountDebug bool `mapstructure:"account_debug"`
+
+	// True if we want to stop collecting account stored respponses metrics
+	AccountStoredResponses bool `mapstructure:"account_stored_responses"`
+
 	// True if we don't want to collect metrics about the connections prebid
 	// server establishes with bidder servers such as the number of connections
 	// that were created or reused.
@@ -399,6 +527,9 @@ type DisabledMetrics struct {
 
 	// True if we don't want to collect the per adapter GDPR request blocked metric
 	AdapterGDPRRequestBlocked bool `mapstructure:"adapter_gdpr_request_blocked"`
+
+	// True if we want to stop collecting account modules metrics
+	AccountModulesMetrics bool `mapstructure:"account_modules_metrics"`
 }
 
 func (cfg *Metrics) validate(errs []error) []error {
@@ -408,8 +539,10 @@ func (cfg *Metrics) validate(errs []error) []error {
 type InfluxMetrics struct {
 	Host               string `mapstructure:"host"`
 	Database           string `mapstructure:"database"`
+	Measurement        string `mapstructure:"measurement"`
 	Username           string `mapstructure:"username"`
 	Password           string `mapstructure:"password"`
+	AlignTimestamps    bool   `mapstructure:"align_timestamps"`
 	MetricSendInterval int    `mapstructure:"metric_send_interval"`
 }
 
@@ -488,6 +621,16 @@ type Debug struct {
 	OverrideToken       string              `mapstructure:"override_token"`
 }
 
+type Server struct {
+	ExternalUrl string
+	GvlID       int
+	DataCenter  string
+}
+
+func (server *Server) Empty() bool {
+	return server == nil || (server.DataCenter == "" && server.ExternalUrl == "" && server.GvlID == 0)
+}
+
 func (cfg *Debug) validate(errs []error) []error {
 	return cfg.TimeoutNotification.validate(errs)
 }
@@ -501,6 +644,25 @@ type TimeoutNotification struct {
 	FailOnly bool `mapstructure:"fail_only"`
 }
 
+type Validations struct {
+	BannerCreativeMaxSize string `mapstructure:"banner_creative_max_size" json:"banner_creative_max_size"`
+	SecureMarkup          string `mapstructure:"secure_markup" json:"secure_markup"`
+	MaxCreativeWidth      int64  `mapstructure:"max_creative_width" json:"max_creative_width"`
+	MaxCreativeHeight     int64  `mapstructure:"max_creative_height" json:"max_creative_height"`
+}
+
+const (
+	ValidationEnforce string = "enforce"
+	ValidationWarn    string = "warn"
+	ValidationSkip    string = "skip"
+)
+
+func (host *Validations) SetBannerCreativeMaxSize(account Validations) {
+	if len(account.BannerCreativeMaxSize) > 0 {
+		host.BannerCreativeMaxSize = account.BannerCreativeMaxSize
+	}
+}
+
 func (cfg *TimeoutNotification) validate(errs []error) []error {
 	if cfg.SamplingRate < 0.0 || cfg.SamplingRate > 1.0 {
 		errs = append(errs, fmt.Errorf("debug.timeout_notification.sampling_rate must be positive and not greater than 1.0. Got %f", cfg.SamplingRate))
@@ -509,7 +671,7 @@ func (cfg *TimeoutNotification) validate(errs []error) []error {
 }
 
 // New uses viper to get our server configurations.
-func New(v *viper.Viper) (*Configuration, error) {
+func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName func(string) (openrtb_ext.BidderName, bool)) (*Configuration, error) {
 	var c Configuration
 	if err := v.Unmarshal(&c); err != nil {
 		return nil, fmt.Errorf("viper failed to unmarshal app config: %v", err)
@@ -543,28 +705,46 @@ func New(v *viper.Viper) (*Configuration, error) {
 		c.GDPR.EEACountriesMap[v] = s
 	}
 
-	// To look for a purpose's vendor exceptions in O(1) time, for each purpose we fill this hash table located in the
-	// VendorExceptions field of the GDPR.TCF2.PurposeX struct defined in this file
-	purposeConfigs := []*TCF2Purpose{
-		&c.GDPR.TCF2.Purpose1,
-		&c.GDPR.TCF2.Purpose2,
-		&c.GDPR.TCF2.Purpose3,
-		&c.GDPR.TCF2.Purpose4,
-		&c.GDPR.TCF2.Purpose5,
-		&c.GDPR.TCF2.Purpose6,
-		&c.GDPR.TCF2.Purpose7,
-		&c.GDPR.TCF2.Purpose8,
-		&c.GDPR.TCF2.Purpose9,
-		&c.GDPR.TCF2.Purpose10,
-		&c.GDPR.TCF2.SpecialPurpose1,
+	// for each purpose we capture a reference to the purpose config in a map for easy purpose config lookup
+	c.GDPR.TCF2.PurposeConfigs = map[consentconstants.Purpose]*TCF2Purpose{
+		1:  &c.GDPR.TCF2.Purpose1,
+		2:  &c.GDPR.TCF2.Purpose2,
+		3:  &c.GDPR.TCF2.Purpose3,
+		4:  &c.GDPR.TCF2.Purpose4,
+		5:  &c.GDPR.TCF2.Purpose5,
+		6:  &c.GDPR.TCF2.Purpose6,
+		7:  &c.GDPR.TCF2.Purpose7,
+		8:  &c.GDPR.TCF2.Purpose8,
+		9:  &c.GDPR.TCF2.Purpose9,
+		10: &c.GDPR.TCF2.Purpose10,
 	}
-	for c := 0; c < len(purposeConfigs); c++ {
-		purposeConfigs[c].VendorExceptionMap = make(map[openrtb_ext.BidderName]struct{})
 
-		for v := 0; v < len(purposeConfigs[c].VendorExceptions); v++ {
-			bidderName := purposeConfigs[c].VendorExceptions[v]
-			purposeConfigs[c].VendorExceptionMap[bidderName] = struct{}{}
+	// As an alternative to performing several string compares per request, we set the integer representation of
+	// the enforcement algorithm on each purpose config
+	for _, pc := range c.GDPR.TCF2.PurposeConfigs {
+		if pc.EnforceAlgo == TCF2EnforceAlgoBasic {
+			pc.EnforceAlgoID = TCF2BasicEnforcement
+		} else {
+			pc.EnforceAlgoID = TCF2FullEnforcement
 		}
+	}
+
+	// To look for a purpose's vendor exceptions in O(1) time, for each purpose we fill this hash table with bidders
+	// located in the VendorExceptions field of the GDPR.TCF2.PurposeX struct defined in this file
+	for _, pc := range c.GDPR.TCF2.PurposeConfigs {
+		pc.VendorExceptionMap = make(map[openrtb_ext.BidderName]struct{})
+		for v := 0; v < len(pc.VendorExceptions); v++ {
+			bidderName := pc.VendorExceptions[v]
+			pc.VendorExceptionMap[bidderName] = struct{}{}
+		}
+	}
+
+	// To look for a special feature's vendor exceptions in O(1) time, we fill this hash table with bidders located in the
+	// VendorExceptions field of the GDPR.TCF2.SpecialFeature1 struct defined in this file
+	c.GDPR.TCF2.SpecialFeature1.VendorExceptionMap = make(map[openrtb_ext.BidderName]struct{})
+	for v := 0; v < len(c.GDPR.TCF2.SpecialFeature1.VendorExceptions); v++ {
+		bidderName := c.GDPR.TCF2.SpecialFeature1.VendorExceptions[v]
+		c.GDPR.TCF2.SpecialFeature1.VendorExceptionMap[bidderName] = struct{}{}
 	}
 
 	// To look for a request's app_id in O(1) time, we fill this hash table located in the
@@ -583,6 +763,12 @@ func New(v *viper.Viper) (*Configuration, error) {
 
 	// Migrate combo stored request config to separate stored_reqs and amp stored_reqs configs.
 	resolvedStoredRequestsConfig(&c)
+
+	mergedBidderInfos, err := applyBidderInfoConfigOverrides(c.BidderInfos, bidderInfos, normalizeBidderName)
+	if err != nil {
+		return nil, err
+	}
+	c.BidderInfos = mergedBidderInfos
 
 	glog.Info("Logging the resolved configuration:")
 	logGeneral(reflect.ValueOf(c), "  \t")
@@ -607,7 +793,7 @@ func (cfg *Configuration) AccountDefaultsJSON() json.RawMessage {
 	return cfg.accountDefaultsJSON
 }
 
-//Allows for protocol relative URL if scheme is empty
+// GetBaseURL allows for protocol relative URL if scheme is empty
 func (cfg *Cache) GetBaseURL() string {
 	cfg.Scheme = strings.ToLower(cfg.Scheme)
 	if strings.Contains(cfg.Scheme, "https") {
@@ -624,7 +810,7 @@ func (cfg *Configuration) GetCachedAssetURL(uuid string) string {
 }
 
 // Set the default config values for the viper object we are using.
-func SetupViper(v *viper.Viper, filename string) {
+func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	if filename != "" {
 		v.SetConfigName(filename)
 		v.AddConfigPath(".")
@@ -636,10 +822,13 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("external_url", "http://localhost:8000")
 	v.SetDefault("host", "")
 	v.SetDefault("port", 8000)
+	v.SetDefault("unix_socket_enable", false)              // boolean which decide if the socket-server will be started.
+	v.SetDefault("unix_socket_name", "prebid-server.sock") // path of the socket's file which must be listened.
 	v.SetDefault("admin_port", 6060)
 	v.SetDefault("enable_gzip", false)
 	v.SetDefault("garbage_collector_threshold", 0)
 	v.SetDefault("status_response", "")
+	v.SetDefault("datacenter", "")
 	v.SetDefault("auction_timeouts_ms.default", 0)
 	v.SetDefault("auction_timeouts_ms.max", 0)
 	v.SetDefault("cache.scheme", "")
@@ -663,6 +852,11 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("host_cookie.value", "")
 	v.SetDefault("host_cookie.ttl_days", 90)
 	v.SetDefault("host_cookie.max_cookie_size_bytes", 0)
+	v.SetDefault("host_schain_node", nil)
+	v.SetDefault("validations.banner_creative_max_size", ValidationSkip)
+	v.SetDefault("validations.secure_markup", ValidationSkip)
+	v.SetDefault("validations.max_creative_size.height", 0)
+	v.SetDefault("validations.max_creative_size.width", 0)
 	v.SetDefault("http_client.max_connections_per_host", 0) // unlimited
 	v.SetDefault("http_client.max_idle_connections", 400)
 	v.SetDefault("http_client.max_idle_connections_per_host", 10)
@@ -673,12 +867,16 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("http_client_cache.idle_connection_timeout_seconds", 60)
 	// no metrics configured by default (metrics{host|database|username|password})
 	v.SetDefault("metrics.disabled_metrics.account_adapter_details", false)
+	v.SetDefault("metrics.disabled_metrics.account_debug", true)
+	v.SetDefault("metrics.disabled_metrics.account_stored_responses", true)
 	v.SetDefault("metrics.disabled_metrics.adapter_connections_metrics", true)
 	v.SetDefault("metrics.disabled_metrics.adapter_gdpr_request_blocked", false)
 	v.SetDefault("metrics.influxdb.host", "")
 	v.SetDefault("metrics.influxdb.database", "")
+	v.SetDefault("metrics.influxdb.measurement", "")
 	v.SetDefault("metrics.influxdb.username", "")
 	v.SetDefault("metrics.influxdb.password", "")
+	v.SetDefault("metrics.influxdb.align_timestamps", false)
 	v.SetDefault("metrics.influxdb.metric_send_interval", 20)
 	v.SetDefault("metrics.prometheus.port", 0)
 	v.SetDefault("metrics.prometheus.namespace", "")
@@ -690,26 +888,13 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("stored_requests.filesystem.enabled", false)
 	v.SetDefault("stored_requests.filesystem.directorypath", "./stored_requests/data/by_id")
 	v.SetDefault("stored_requests.directorypath", "./stored_requests/data/by_id")
-	v.SetDefault("stored_requests.postgres.connection.dbname", "")
-	v.SetDefault("stored_requests.postgres.connection.host", "")
-	v.SetDefault("stored_requests.postgres.connection.port", 0)
-	v.SetDefault("stored_requests.postgres.connection.user", "")
-	v.SetDefault("stored_requests.postgres.connection.password", "")
-	v.SetDefault("stored_requests.postgres.fetcher.query", "")
-	v.SetDefault("stored_requests.postgres.fetcher.amp_query", "")
-	v.SetDefault("stored_requests.postgres.initialize_caches.timeout_ms", 0)
-	v.SetDefault("stored_requests.postgres.initialize_caches.query", "")
-	v.SetDefault("stored_requests.postgres.initialize_caches.amp_query", "")
-	v.SetDefault("stored_requests.postgres.poll_for_updates.refresh_rate_seconds", 0)
-	v.SetDefault("stored_requests.postgres.poll_for_updates.timeout_ms", 0)
-	v.SetDefault("stored_requests.postgres.poll_for_updates.query", "")
-	v.SetDefault("stored_requests.postgres.poll_for_updates.amp_query", "")
 	v.SetDefault("stored_requests.http.endpoint", "")
 	v.SetDefault("stored_requests.http.amp_endpoint", "")
 	v.SetDefault("stored_requests.in_memory_cache.type", "none")
 	v.SetDefault("stored_requests.in_memory_cache.ttl_seconds", 0)
 	v.SetDefault("stored_requests.in_memory_cache.request_cache_size_bytes", 0)
 	v.SetDefault("stored_requests.in_memory_cache.imp_cache_size_bytes", 0)
+	v.SetDefault("stored_requests.in_memory_cache.resp_cache_size_bytes", 0)
 	v.SetDefault("stored_requests.cache_events_api", false)
 	v.SetDefault("stored_requests.http_events.endpoint", "")
 	v.SetDefault("stored_requests.http_events.amp_endpoint", "")
@@ -719,27 +904,30 @@ func SetupViper(v *viper.Viper, filename string) {
 	// PBS is not in the business of storing video content beyond the normal prebid cache system.
 	v.SetDefault("stored_video_req.filesystem.enabled", false)
 	v.SetDefault("stored_video_req.filesystem.directorypath", "")
-	v.SetDefault("stored_video_req.postgres.connection.dbname", "")
-	v.SetDefault("stored_video_req.postgres.connection.host", "")
-	v.SetDefault("stored_video_req.postgres.connection.port", 0)
-	v.SetDefault("stored_video_req.postgres.connection.user", "")
-	v.SetDefault("stored_video_req.postgres.connection.password", "")
-	v.SetDefault("stored_video_req.postgres.fetcher.query", "")
-	v.SetDefault("stored_video_req.postgres.initialize_caches.timeout_ms", 0)
-	v.SetDefault("stored_video_req.postgres.initialize_caches.query", "")
-	v.SetDefault("stored_video_req.postgres.poll_for_updates.refresh_rate_seconds", 0)
-	v.SetDefault("stored_video_req.postgres.poll_for_updates.timeout_ms", 0)
-	v.SetDefault("stored_video_req.postgres.poll_for_updates.query", "")
 	v.SetDefault("stored_video_req.http.endpoint", "")
 	v.SetDefault("stored_video_req.in_memory_cache.type", "none")
 	v.SetDefault("stored_video_req.in_memory_cache.ttl_seconds", 0)
 	v.SetDefault("stored_video_req.in_memory_cache.request_cache_size_bytes", 0)
 	v.SetDefault("stored_video_req.in_memory_cache.imp_cache_size_bytes", 0)
+	v.SetDefault("stored_video_req.in_memory_cache.resp_cache_size_bytes", 0)
 	v.SetDefault("stored_video_req.cache_events.enabled", false)
 	v.SetDefault("stored_video_req.cache_events.endpoint", "")
 	v.SetDefault("stored_video_req.http_events.endpoint", "")
 	v.SetDefault("stored_video_req.http_events.refresh_rate_seconds", 0)
 	v.SetDefault("stored_video_req.http_events.timeout_ms", 0)
+	v.SetDefault("stored_responses.filesystem.enabled", false)
+	v.SetDefault("stored_responses.filesystem.directorypath", "")
+	v.SetDefault("stored_responses.http.endpoint", "")
+	v.SetDefault("stored_responses.in_memory_cache.type", "none")
+	v.SetDefault("stored_responses.in_memory_cache.ttl_seconds", 0)
+	v.SetDefault("stored_responses.in_memory_cache.request_cache_size_bytes", 0)
+	v.SetDefault("stored_responses.in_memory_cache.imp_cache_size_bytes", 0)
+	v.SetDefault("stored_responses.in_memory_cache.resp_cache_size_bytes", 0)
+	v.SetDefault("stored_responses.cache_events.enabled", false)
+	v.SetDefault("stored_responses.cache_events.endpoint", "")
+	v.SetDefault("stored_responses.http_events.endpoint", "")
+	v.SetDefault("stored_responses.http_events.refresh_rate_seconds", 0)
+	v.SetDefault("stored_responses.http_events.timeout_ms", 0)
 
 	v.SetDefault("vtrack.timeout_ms", 2000)
 	v.SetDefault("vtrack.allow_unknown_bidder", true)
@@ -751,161 +939,12 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("accounts.filesystem.directorypath", "./stored_requests/data/by_id")
 	v.SetDefault("accounts.in_memory_cache.type", "none")
 
+	v.BindEnv("user_sync.external_url")
+	v.BindEnv("user_sync.coop_sync.default")
+
 	// some adapters append the user id to the end of the redirect url instead of using
 	// macro substitution. it is important for the uid to be the last query parameter.
-	v.SetDefault("user_sync.redirect_url", "{{.ExternalURL}}/setuid?bidder={{.SyncerKey}}&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&f={{.SyncType}}&uid={{.UserMacro}}")
-
-	for _, bidder := range openrtb_ext.CoreBidderNames() {
-		setBidderDefaults(v, strings.ToLower(string(bidder)))
-	}
-
-	// Disabling adapters by default that require some specific config params.
-	// If you're using one of these, make sure you check out the documentation (https://github.com/prebid/prebid-server/tree/master/docs/bidders)
-	// for them and specify all the parameters they need for them to work correctly.
-	v.SetDefault("adapters.33across.endpoint", "https://ssc.33across.com/api/v1/s2s")
-	v.SetDefault("adapters.33across.partner_id", "")
-	v.SetDefault("adapters.aceex.endpoint", "http://bl-us.aceex.io/?uqhash={{.AccountID}}")
-	v.SetDefault("adapters.acuityads.endpoint", "http://{{.Host}}.admanmedia.com/bid?token={{.AccountID}}")
-	v.SetDefault("adapters.adagio.endpoint", "https://mp.4dex.io/ortb2")
-	v.SetDefault("adapters.adf.endpoint", "https://adx.adform.net/adx/openrtb")
-	v.SetDefault("adapters.adform.endpoint", "https://adx.adform.net/adx/openrtb")
-	v.SetDefault("adapters.adgeneration.endpoint", "https://d.socdm.com/adsv/v1")
-	v.SetDefault("adapters.adhese.endpoint", "https://ads-{{.AccountID}}.adhese.com/json")
-	v.SetDefault("adapters.adkernel.endpoint", "http://{{.Host}}/hb?zone={{.ZoneID}}")
-	v.SetDefault("adapters.adkerneladn.endpoint", "http://{{.Host}}/rtbpub?account={{.PublisherID}}")
-	v.SetDefault("adapters.adman.endpoint", "http://pub.admanmedia.com/?c=o&m=ortb")
-	v.SetDefault("adapters.admixer.endpoint", "http://inv-nets.admixer.net/pbs.aspx")
-	v.SetDefault("adapters.adocean.endpoint", "https://{{.Host}}")
-	v.SetDefault("adapters.adnuntius.endpoint", "https://ads.adnuntius.delivery/i")
-	v.SetDefault("adapters.adoppler.endpoint", "http://{{.AccountID}}.trustedmarketplace.io/ads/processHeaderBid/{{.AdUnit}}")
-	v.SetDefault("adapters.adot.endpoint", "https://dsp.adotmob.com/headerbidding/bidrequest")
-	v.SetDefault("adapters.adpone.endpoint", "http://rtb.adpone.com/bid-request?src=prebid_server")
-	v.SetDefault("adapters.adprime.endpoint", "http://delta.adprime.com/pserver")
-	v.SetDefault("adapters.adtarget.endpoint", "http://ghb.console.adtarget.com.tr/pbs/ortb")
-	v.SetDefault("adapters.adtelligent.endpoint", "http://ghb.adtelligent.com/pbs/ortb")
-	v.SetDefault("adapters.advangelists.endpoint", "http://nep.advangelists.com/xp/get?pubid={{.PublisherID}}")
-	v.SetDefault("adapters.adview.endpoint", "https://bid.adview.com/agent/thirdAdxService/{{.AccountID}}")
-	v.SetDefault("adapters.adxcg.disabled", true)
-	v.SetDefault("adapters.adyoulike.endpoint", "https://broker.omnitagjs.com/broker/bid?partnerId=19340f4f097d16f41f34fc0274981ca4")
-	v.SetDefault("adapters.aja.endpoint", "https://ad.as.amanad.adtdp.com/v1/bid/4")
-	v.SetDefault("adapters.algorix.endpoint", "https://xyz.svr-algorix.com/rtb/sa?sid={{.SourceId}}&token={{.AccountID}}")
-	v.SetDefault("adapters.amx.endpoint", "http://pbs.amxrtb.com/auction/openrtb")
-	v.SetDefault("adapters.applogy.endpoint", "http://rtb.applogy.com/v1/prebid")
-	v.SetDefault("adapters.appnexus.endpoint", "http://ib.adnxs.com/openrtb2") // Docs: https://wiki.appnexus.com/display/supply/Incoming+Bid+Request+from+SSPs
-	v.SetDefault("adapters.appnexus.platform_id", "5")
-	v.SetDefault("adapters.audiencenetwork.disabled", true)
-	v.SetDefault("adapters.audiencenetwork.endpoint", "https://an.facebook.com/placementbid.ortb")
-	v.SetDefault("adapters.avocet.disabled", true)
-	v.SetDefault("adapters.axonix.endpoint", "https://openrtb-us-east-1.axonix.com/supply/prebid-server/{{.AccountID}}")
-	v.SetDefault("adapters.beachfront.endpoint", "https://display.bfmio.com/prebid_display")
-	v.SetDefault("adapters.beachfront.extra_info", "{\"video_endpoint\":\"https://reachms.bfmio.com/bid.json?exchange_id\"}")
-	v.SetDefault("adapters.beintoo.endpoint", "https://ib.beintoo.com/um")
-	v.SetDefault("adapters.between.endpoint", "http://{{.Host}}.betweendigital.com/openrtb_bid?sspId={{.PublisherID}}")
-	v.SetDefault("adapters.bidmachine.endpoint", "https://{{.Host}}.bidmachine.io")
-	v.SetDefault("adapters.bidmyadz.endpoint", "http://endpoint.bidmyadz.com/c0f68227d14ed938c6c49f3967cbe9bc")
-	v.SetDefault("adapters.bidscube.endpoint", "http://supply.bidscube.com/?c=o&m=rtb")
-	v.SetDefault("adapters.bmtm.endpoint", "https://one.elitebidder.com/api/pbs")
-	v.SetDefault("adapters.brightroll.endpoint", "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
-	v.SetDefault("adapters.colossus.endpoint", "http://colossusssp.com/?c=o&m=rtb")
-	v.SetDefault("adapters.connectad.endpoint", "http://bidder.connectad.io/API?src=pbs")
-	v.SetDefault("adapters.consumable.endpoint", "https://e.serverbid.com/api/v2")
-	v.SetDefault("adapters.conversant.endpoint", "http://api.hb.ad.cpe.dotomi.com/cvx/server/hb/ortb/25")
-	v.SetDefault("adapters.cpmstar.endpoint", "https://server.cpmstar.com/openrtbbidrq.aspx")
-	v.SetDefault("adapters.criteo.endpoint", "https://bidder.criteo.com/cdb?profileId=230")
-	v.SetDefault("adapters.datablocks.endpoint", "http://{{.Host}}/openrtb2?sid={{.SourceId}}")
-	v.SetDefault("adapters.decenterads.endpoint", "http://supply.decenterads.com/?c=o&m=rtb")
-	v.SetDefault("adapters.deepintent.endpoint", "https://prebid.deepintent.com/prebid")
-	v.SetDefault("adapters.dmx.endpoint", "https://dmx-direct.districtm.io/b/v2")
-	v.SetDefault("adapters.emx_digital.endpoint", "https://hb.emxdgt.com")
-	v.SetDefault("adapters.engagebdr.endpoint", "http://dsp.bnmla.com/hb")
-	v.SetDefault("adapters.eplanning.endpoint", "http://rtb.e-planning.net/pbs/1")
-	v.SetDefault("adapters.epom.endpoint", "https://an.epom.com/ortb")
-	v.SetDefault("adapters.epom.disabled", true)
-	v.SetDefault("adapters.e_volution.endpoint", "http://service.e-volution.ai/pbserver")
-	v.SetDefault("adapters.gamma.endpoint", "https://hb.gammaplatform.com/adx/request/")
-	v.SetDefault("adapters.gamoshi.endpoint", "https://rtb.gamoshi.io")
-	v.SetDefault("adapters.grid.endpoint", "https://grid.bidswitch.net/sp_bid?sp=prebid")
-	v.SetDefault("adapters.gumgum.endpoint", "https://g2.gumgum.com/providers/prbds2s/bid")
-	v.SetDefault("adapters.huaweiads.endpoint", "https://acd.op.hicloud.com/ppsadx/getResult")
-	v.SetDefault("adapters.huaweiads.disabled", true)
-	v.SetDefault("adapters.impactify.endpoint", "https://sonic.impactify.media/bidder")
-	v.SetDefault("adapters.improvedigital.endpoint", "http://ad.360yield.com/pbs")
-	v.SetDefault("adapters.inmobi.endpoint", "https://api.w.inmobi.com/showad/openrtb/bidder/prebid")
-	v.SetDefault("adapters.interactiveoffers.endpoint", "https://prebid-server.ioadx.com/bidRequest/?partnerId={{.AccountID}}")
-	v.SetDefault("adapters.ix.disabled", true)
-	v.SetDefault("adapters.jixie.endpoint", "https://hb.jixie.io/v2/hbsvrpost")
-	v.SetDefault("adapters.kayzen.endpoint", "https://bids-{{.ZoneID}}.bidder.kayzen.io/?exchange={{.AccountID}}")
-	v.SetDefault("adapters.krushmedia.endpoint", "http://ads4.krushmedia.com/?c=rtb&m=req&key={{.AccountID}}")
-	v.SetDefault("adapters.invibes.endpoint", "https://{{.Host}}/bid/ServerBidAdContent")
-	v.SetDefault("adapters.iqzone.endpoint", "http://smartssp-us-east.iqzone.com/pserver")
-	v.SetDefault("adapters.kidoz.endpoint", "http://prebid-adapter.kidoz.net/openrtb2/auction?src=prebid-server")
-	v.SetDefault("adapters.kubient.endpoint", "https://kssp.kbntx.ch/prebid")
-	v.SetDefault("adapters.lockerdome.endpoint", "https://lockerdome.com/ladbid/prebidserver/openrtb2")
-	v.SetDefault("adapters.logicad.endpoint", "https://pbs.ladsp.com/adrequest/prebidserver")
-	v.SetDefault("adapters.lunamedia.endpoint", "http://api.lunamedia.io/xp/get?pubid={{.PublisherID}}")
-	v.SetDefault("adapters.sa_lunamedia.endpoint", "http://balancer.lmgssp.com/pserver")
-	v.SetDefault("adapters.madvertise.endpoint", "https://mobile.mng-ads.com/bidrequest{{.ZoneID}}")
-	v.SetDefault("adapters.marsmedia.endpoint", "https://bid306.rtbsrv.com/bidder/?bid=f3xtet")
-	v.SetDefault("adapters.mediafuse.endpoint", "http://ghb.hbmp.mediafuse.com/pbs/ortb")
-	v.SetDefault("adapters.mgid.endpoint", "https://prebid.mgid.com/prebid/")
-	v.SetDefault("adapters.mobilefuse.endpoint", "http://mfx.mobilefuse.com/openrtb?pub_id={{.PublisherID}}")
-	v.SetDefault("adapters.mobfoxpb.endpoint", "http://bes.mobfox.com/?c=__route__&m=__method__&key=__key__")
-	v.SetDefault("adapters.nanointeractive.endpoint", "https://ad.audiencemanager.de/hbs")
-	v.SetDefault("adapters.nextmillennium.endpoint", "https://pbs.nextmillmedia.com/openrtb2/auction")
-	v.SetDefault("adapters.ninthdecimal.endpoint", "http://rtb.ninthdecimal.com/xp/get?pubid={{.PublisherID}}")
-	v.SetDefault("adapters.nobid.endpoint", "https://ads.servenobid.com/ortb_adreq?tek=pbs&ver=1")
-	v.SetDefault("adapters.onetag.endpoint", "https://prebid-server.onetag-sys.com/prebid-server/{{.PublisherID}}")
-	v.SetDefault("adapters.openweb.endpoint", "http://ghb.spotim.market/pbs/ortb")
-	v.SetDefault("adapters.openx.endpoint", "http://rtb.openx.net/prebid")
-	v.SetDefault("adapters.operaads.endpoint", "https://s.adx.opera.com/ortb/v2/{{.PublisherID}}?ep={{.AccountID}}")
-	v.SetDefault("adapters.orbidder.endpoint", "https://orbidder.otto.de/openrtb2")
-	v.SetDefault("adapters.outbrain.endpoint", "https://prebidtest.zemanta.com/api/bidder/prebidtest/bid/")
-	v.SetDefault("adapters.pangle.disabled", true)
-	v.SetDefault("adapters.pubmatic.endpoint", "https://hbopenbid.pubmatic.com/translator?source=prebid-server")
-	v.SetDefault("adapters.pubnative.endpoint", "http://dsp.pubnative.net/bid/v1/request")
-	v.SetDefault("adapters.pulsepoint.endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
-	v.SetDefault("adapters.revcontent.disabled", true)
-	v.SetDefault("adapters.revcontent.endpoint", "https://trends.revcontent.com/rtb")
-	v.SetDefault("adapters.rhythmone.endpoint", "http://tag.1rx.io/rmp")
-	v.SetDefault("adapters.richaudience.endpoint", "http://ortb.richaudience.com/ortb/?bidder=pbs")
-	v.SetDefault("adapters.rtbhouse.endpoint", "http://prebidserver-s2s-ams.creativecdn.com/bidder/prebidserver/bids")
-	v.SetDefault("adapters.rubicon.disabled", true)
-	v.SetDefault("adapters.rubicon.endpoint", "http://exapi-us-east.rubiconproject.com/a/api/exchange.json")
-	v.SetDefault("adapters.sharethrough.endpoint", "http://btlr.sharethrough.com/FGMrCMMc/v1")
-	v.SetDefault("adapters.silvermob.endpoint", "http://{{.Host}}.silvermob.com/marketplace/api/dsp/bid/{{.ZoneID}}")
-	v.SetDefault("adapters.smaato.endpoint", "https://prebid.ad.smaato.net/oapi/prebid")
-	v.SetDefault("adapters.smartadserver.endpoint", "https://ssb-global.smartadserver.com")
-	v.SetDefault("adapters.smarthub.endpoint", "http://{{.Host}}-prebid.smart-hub.io/?seat={{.AccountID}}&token={{.SourceId}}")
-	v.SetDefault("adapters.smartrtb.endpoint", "http://market-east.smrtb.com/json/publisher/rtb?pubid={{.PublisherID}}")
-	v.SetDefault("adapters.smartyads.endpoint", "http://{{.Host}}.smartyads.com/bid?rtb_seat_id={{.SourceId}}&secret_key={{.AccountID}}")
-	v.SetDefault("adapters.smilewanted.endpoint", "http://prebid-server.smilewanted.com")
-	v.SetDefault("adapters.somoaudience.endpoint", "http://publisher-east.mobileadtrading.com/rtb/bid")
-	v.SetDefault("adapters.sonobi.endpoint", "https://apex.go.sonobi.com/prebid?partnerid=71d9d3d8af")
-	v.SetDefault("adapters.sovrn.endpoint", "http://ap.lijit.com/rtb/bid?src=prebid_server")
-	v.SetDefault("adapters.streamkey.endpoint", "http://ghb.hb.streamkey.net/pbs/ortb")
-	v.SetDefault("adapters.synacormedia.endpoint", "http://{{.Host}}.technoratimedia.com/openrtb/bids/{{.Host}}")
-	v.SetDefault("adapters.tappx.endpoint", "http://{{.Host}}")
-	v.SetDefault("adapters.telaria.endpoint", "https://ads.tremorhub.com/ad/rtb/prebid")
-	v.SetDefault("adapters.triplelift_native.disabled", true)
-	v.SetDefault("adapters.triplelift_native.extra_info", "{\"publisher_whitelist\":[]}")
-	v.SetDefault("adapters.triplelift.endpoint", "https://tlx.3lift.com/s2s/auction?sra=1&supplier_id=20")
-	v.SetDefault("adapters.trustx.endpoint", "https://grid.bidswitch.net/sp_bid?sp=trustx")
-	v.SetDefault("adapters.ucfunnel.endpoint", "https://pbs.aralego.com/prebid")
-	v.SetDefault("adapters.unicorn.endpoint", "https://ds.uncn.jp/pb/0/bid.json")
-	v.SetDefault("adapters.unruly.endpoint", "https://targeting.unrulymedia.com/unruly_prebid_server")
-	v.SetDefault("adapters.valueimpression.endpoint", "https://rtb.valueimpression.com/endpoint")
-	v.SetDefault("adapters.verizonmedia.disabled", true)
-	v.SetDefault("adapters.videobyte.endpoint", "https://x.videobyte.com/ortbhb")
-	v.SetDefault("adapters.viewdeos.endpoint", "http://ghb.sync.viewdeos.com/pbs/ortb")
-	v.SetDefault("adapters.visx.endpoint", "https://t.visx.net/s2s_bid?wrapperType=s2s_prebid_standard:0.1.0")
-	v.SetDefault("adapters.vrtcal.endpoint", "http://rtb.vrtcal.com/bidder_prebid.vap?ssp=1804")
-	v.SetDefault("adapters.yahoossp.disabled", true)
-	v.SetDefault("adapters.yeahmobi.endpoint", "https://{{.Host}}/prebid/bid")
-	v.SetDefault("adapters.yieldlab.endpoint", "https://ad.yieldlab.net/yp/")
-	v.SetDefault("adapters.yieldmo.endpoint", "https://ads.yieldmo.com/exchange/prebid-server")
-	v.SetDefault("adapters.yieldone.endpoint", "https://y.one.impact-ad.jp/hbs_imp")
-	v.SetDefault("adapters.yssp.disabled", true)
-	v.SetDefault("adapters.zeroclickfraud.endpoint", "http://{{.Host}}/openrtb2?sid={{.SourceId}}")
+	v.SetDefault("user_sync.redirect_url", "{{.ExternalURL}}/setuid?bidder={{.SyncerKey}}&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&f={{.SyncType}}&uid={{.UserMacro}}")
 
 	v.SetDefault("max_request_size", 1024*256)
 	v.SetDefault("analytics.file.filename", "")
@@ -944,8 +983,6 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("gdpr.tcf2.purpose8.vendor_exceptions", []openrtb_ext.BidderName{})
 	v.SetDefault("gdpr.tcf2.purpose9.vendor_exceptions", []openrtb_ext.BidderName{})
 	v.SetDefault("gdpr.tcf2.purpose10.vendor_exceptions", []openrtb_ext.BidderName{})
-	v.SetDefault("gdpr.tcf2.special_purpose1.enabled", true)
-	v.SetDefault("gdpr.tcf2.special_purpose1.vendor_exceptions", []openrtb_ext.BidderName{})
 	v.SetDefault("gdpr.amp_exception", false)
 	v.SetDefault("gdpr.eea_countries", []string{"ALA", "AUT", "BEL", "BGR", "HRV", "CYP", "CZE", "DNK", "EST",
 		"FIN", "FRA", "GUF", "DEU", "GIB", "GRC", "GLP", "GGY", "HUN", "ISL", "IRL", "IMN", "ITA", "JEY", "LVA",
@@ -964,6 +1001,14 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("account_required", false)
 	v.SetDefault("account_defaults.disabled", false)
 	v.SetDefault("account_defaults.debug_allow", true)
+	v.SetDefault("account_defaults.price_floors.enabled", false)
+	v.SetDefault("account_defaults.price_floors.enforce_floors_rate", 100)
+	v.SetDefault("account_defaults.price_floors.adjust_for_bid_adjustment", true)
+	v.SetDefault("account_defaults.price_floors.enforce_deal_floors", false)
+	v.SetDefault("account_defaults.price_floors.use_dynamic_data", false)
+	v.SetDefault("account_defaults.price_floors.max_rules", 100)
+	v.SetDefault("account_defaults.price_floors.max_schema_dims", 3)
+
 	v.SetDefault("certificates_file", "")
 	v.SetDefault("auto_gen_source_tid", true)
 	v.SetDefault("generate_bid_id", false)
@@ -992,6 +1037,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("request_validation.ipv4_private_networks", []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "169.254.0.0/16", "127.0.0.0/8"})
 	v.SetDefault("request_validation.ipv6_private_networks", []string{"::1/128", "fc00::/7", "fe80::/10", "ff00::/8", "2001:db8::/32"})
 
+	bindDatabaseEnvVars(v)
+
 	// Set environment variable support:
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.SetTypeByDefaultValue(true)
@@ -1002,7 +1049,9 @@ func SetupViper(v *viper.Viper, filename string) {
 	// Migrate config settings to maintain compatibility with old configs
 	migrateConfig(v)
 	migrateConfigPurposeOneTreatment(v)
-	migrateConfigTCF2PurposeEnabledFlags(v)
+	migrateConfigSpecialFeature1(v)
+	migrateConfigTCF2PurposeFlags(v)
+	migrateConfigDatabaseConnection(v)
 
 	// These defaults must be set after the migrate functions because those functions look for the presence of these
 	// config fields and there isn't a way to detect presence of a config field using the viper package if a default
@@ -1017,18 +1066,48 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("gdpr.tcf2.purpose8.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose9.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose10.enabled", true)
-	v.SetDefault("gdpr.tcf2.purpose1.enforce_purpose", TCF2FullEnforcement)
-	v.SetDefault("gdpr.tcf2.purpose2.enforce_purpose", TCF2FullEnforcement)
-	v.SetDefault("gdpr.tcf2.purpose3.enforce_purpose", TCF2FullEnforcement)
-	v.SetDefault("gdpr.tcf2.purpose4.enforce_purpose", TCF2FullEnforcement)
-	v.SetDefault("gdpr.tcf2.purpose5.enforce_purpose", TCF2FullEnforcement)
-	v.SetDefault("gdpr.tcf2.purpose6.enforce_purpose", TCF2FullEnforcement)
-	v.SetDefault("gdpr.tcf2.purpose7.enforce_purpose", TCF2FullEnforcement)
-	v.SetDefault("gdpr.tcf2.purpose8.enforce_purpose", TCF2FullEnforcement)
-	v.SetDefault("gdpr.tcf2.purpose9.enforce_purpose", TCF2FullEnforcement)
-	v.SetDefault("gdpr.tcf2.purpose10.enforce_purpose", TCF2FullEnforcement)
+	v.SetDefault("gdpr.tcf2.purpose1.enforce_algo", TCF2EnforceAlgoFull)
+	v.SetDefault("gdpr.tcf2.purpose2.enforce_algo", TCF2EnforceAlgoFull)
+	v.SetDefault("gdpr.tcf2.purpose3.enforce_algo", TCF2EnforceAlgoFull)
+	v.SetDefault("gdpr.tcf2.purpose4.enforce_algo", TCF2EnforceAlgoFull)
+	v.SetDefault("gdpr.tcf2.purpose5.enforce_algo", TCF2EnforceAlgoFull)
+	v.SetDefault("gdpr.tcf2.purpose6.enforce_algo", TCF2EnforceAlgoFull)
+	v.SetDefault("gdpr.tcf2.purpose7.enforce_algo", TCF2EnforceAlgoFull)
+	v.SetDefault("gdpr.tcf2.purpose8.enforce_algo", TCF2EnforceAlgoFull)
+	v.SetDefault("gdpr.tcf2.purpose9.enforce_algo", TCF2EnforceAlgoFull)
+	v.SetDefault("gdpr.tcf2.purpose10.enforce_algo", TCF2EnforceAlgoFull)
+	v.SetDefault("gdpr.tcf2.purpose1.enforce_purpose", true)
+	v.SetDefault("gdpr.tcf2.purpose2.enforce_purpose", true)
+	v.SetDefault("gdpr.tcf2.purpose3.enforce_purpose", true)
+	v.SetDefault("gdpr.tcf2.purpose4.enforce_purpose", true)
+	v.SetDefault("gdpr.tcf2.purpose5.enforce_purpose", true)
+	v.SetDefault("gdpr.tcf2.purpose6.enforce_purpose", true)
+	v.SetDefault("gdpr.tcf2.purpose7.enforce_purpose", true)
+	v.SetDefault("gdpr.tcf2.purpose8.enforce_purpose", true)
+	v.SetDefault("gdpr.tcf2.purpose9.enforce_purpose", true)
+	v.SetDefault("gdpr.tcf2.purpose10.enforce_purpose", true)
 	v.SetDefault("gdpr.tcf2.purpose_one_treatment.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose_one_treatment.access_allowed", true)
+	v.SetDefault("gdpr.tcf2.special_feature1.enforce", true)
+	v.SetDefault("gdpr.tcf2.special_feature1.vendor_exceptions", []openrtb_ext.BidderName{})
+	v.SetDefault("price_floors.enabled", false)
+
+	// Defaults for account_defaults.events.default_url
+	v.SetDefault("account_defaults.events.default_url", "https://PBS_HOST/event?t=##PBS-EVENTTYPE##&vtype=##PBS-VASTEVENT##&b=##PBS-BIDID##&f=i&a=##PBS-ACCOUNTID##&ts=##PBS-TIMESTAMP##&bidder=##PBS-BIDDER##&int=##PBS-INTEGRATION##&mt=##PBS-MEDIATYPE##&ch=##PBS-CHANNEL##&aid=##PBS-AUCTIONID##&l=##PBS-LINEID##")
+
+	v.SetDefault("experiment.adscert.mode", "off")
+	v.SetDefault("experiment.adscert.inprocess.origin", "")
+	v.SetDefault("experiment.adscert.inprocess.key", "")
+	v.SetDefault("experiment.adscert.inprocess.domain_check_interval_seconds", 30)
+	v.SetDefault("experiment.adscert.inprocess.domain_renewal_interval_seconds", 30)
+	v.SetDefault("experiment.adscert.remote.url", "")
+	v.SetDefault("experiment.adscert.remote.signing_timeout_ms", 5)
+
+	v.SetDefault("hooks.enabled", false)
+
+	for bidderName := range bidderInfos {
+		setBidderDefaults(v, strings.ToLower(bidderName))
+	}
 }
 
 func migrateConfig(v *viper.Viper) {
@@ -1056,6 +1135,54 @@ func migrateConfigPurposeOneTreatment(v *viper.Viper) {
 	}
 }
 
+func migrateConfigSpecialFeature1(v *viper.Viper) {
+	if oldConfig, ok := v.Get("gdpr.tcf2.special_purpose1").(map[string]interface{}); ok {
+		if v.IsSet("gdpr.tcf2.special_feature1") {
+			glog.Warning("using gdpr.tcf2.special_feature1 and ignoring deprecated gdpr.tcf2.special_purpose1")
+		} else {
+			glog.Warning("gdpr.tcf2.special_purpose1.enabled is deprecated and should be changed to gdpr.tcf2.special_feature1.enforce")
+			glog.Warning("gdpr.tcf2.special_purpose1.vendor_exceptions is deprecated and should be changed to gdpr.tcf2.special_feature1.vendor_exceptions")
+			v.Set("gdpr.tcf2.special_feature1.enforce", oldConfig["enabled"])
+			v.Set("gdpr.tcf2.special_feature1.vendor_exceptions", oldConfig["vendor_exceptions"])
+		}
+	}
+}
+
+func migrateConfigTCF2PurposeFlags(v *viper.Viper) {
+	migrateConfigTCF2EnforcePurposeFlags(v)
+	migrateConfigTCF2PurposeEnabledFlags(v)
+}
+
+func migrateConfigTCF2EnforcePurposeFlags(v *viper.Viper) {
+	for i := 1; i <= 10; i++ {
+		algoField := fmt.Sprintf("gdpr.tcf2.purpose%d.enforce_algo", i)
+		purposeField := fmt.Sprintf("gdpr.tcf2.purpose%d.enforce_purpose", i)
+
+		if !v.IsSet(purposeField) {
+			continue
+		}
+		if _, ok := v.Get(purposeField).(string); !ok {
+			continue
+		}
+		if v.IsSet(algoField) {
+			glog.Warningf("using %s and ignoring deprecated %s string type", algoField, purposeField)
+		} else {
+			v.Set(algoField, TCF2EnforceAlgoFull)
+
+			glog.Warningf("setting %s to \"%s\" based on deprecated %s string type \"%s\"", algoField, TCF2EnforceAlgoFull, purposeField, v.GetString(purposeField))
+		}
+
+		oldPurposeFieldValue := v.GetString(purposeField)
+		newPurposeFieldValue := "false"
+		if oldPurposeFieldValue == TCF2EnforceAlgoFull {
+			newPurposeFieldValue = "true"
+		}
+
+		glog.Warningf("converting %s from string \"%s\" to bool \"%s\"; string type is deprecated", purposeField, oldPurposeFieldValue, newPurposeFieldValue)
+		v.Set(purposeField, newPurposeFieldValue)
+	}
+}
+
 func migrateConfigTCF2PurposeEnabledFlags(v *viper.Viper) {
 	for i := 1; i <= 10; i++ {
 		oldField := fmt.Sprintf("gdpr.tcf2.purpose%d.enabled", i)
@@ -1067,36 +1194,266 @@ func migrateConfigTCF2PurposeEnabledFlags(v *viper.Viper) {
 				glog.Warningf("using %s and ignoring deprecated %s", newField, oldField)
 			} else {
 				glog.Warningf("%s is deprecated and should be changed to %s", oldField, newField)
-				if oldConfig {
-					v.Set(newField, TCF2FullEnforcement)
-				} else {
-					v.Set(newField, TCF2NoEnforcement)
-				}
+				v.Set(newField, oldConfig)
 			}
 		}
 
 		if v.IsSet(newField) {
-			if v.GetString(newField) == TCF2FullEnforcement {
-				v.Set(oldField, "true")
-			} else {
-				v.Set(oldField, "false")
+			v.Set(oldField, strconv.FormatBool(v.GetBool(newField)))
+		}
+	}
+}
+
+func migrateConfigDatabaseConnection(v *viper.Viper) {
+
+	type QueryParamMigration struct {
+		old string
+		new string
+	}
+
+	type QueryMigration struct {
+		name   string
+		params []QueryParamMigration
+	}
+
+	type Migration struct {
+		old             string
+		new             string
+		fields          []string
+		queryMigrations []QueryMigration
+	}
+
+	queryParamMigrations := struct {
+		RequestIdList QueryParamMigration
+		ImpIdList     QueryParamMigration
+		IdList        QueryParamMigration
+		LastUpdated   QueryParamMigration
+	}{
+		RequestIdList: QueryParamMigration{
+			old: "%REQUEST_ID_LIST%",
+			new: "$REQUEST_ID_LIST",
+		},
+		ImpIdList: QueryParamMigration{
+			old: "%IMP_ID_LIST%",
+			new: "$IMP_ID_LIST",
+		},
+		IdList: QueryParamMigration{
+			old: "%ID_LIST%",
+			new: "$ID_LIST",
+		},
+		LastUpdated: QueryParamMigration{
+			old: "$1",
+			new: "$LAST_UPDATED",
+		},
+	}
+
+	queryMigrations := []QueryMigration{
+		{
+			name:   "fetcher.query",
+			params: []QueryParamMigration{queryParamMigrations.RequestIdList, queryParamMigrations.ImpIdList, queryParamMigrations.IdList},
+		},
+		{
+			name:   "fetcher.amp_query",
+			params: []QueryParamMigration{queryParamMigrations.RequestIdList, queryParamMigrations.ImpIdList, queryParamMigrations.IdList},
+		},
+		{
+			name:   "poll_for_updates.query",
+			params: []QueryParamMigration{queryParamMigrations.LastUpdated},
+		},
+		{
+			name:   "poll_for_updates.amp_query",
+			params: []QueryParamMigration{queryParamMigrations.LastUpdated},
+		},
+	}
+
+	migrations := []Migration{
+		{
+			old: "stored_requests.postgres",
+			new: "stored_requests.database",
+			fields: []string{
+				"connection.dbname",
+				"connection.host",
+				"connection.port",
+				"connection.user",
+				"connection.password",
+				"fetcher.query",
+				"fetcher.amp_query",
+				"initialize_caches.timeout_ms",
+				"initialize_caches.query",
+				"initialize_caches.amp_query",
+				"poll_for_updates.refresh_rate_seconds",
+				"poll_for_updates.timeout_ms",
+				"poll_for_updates.query",
+				"poll_for_updates.amp_query",
+			},
+			queryMigrations: queryMigrations,
+		},
+		{
+			old: "stored_video_req.postgres",
+			new: "stored_video_req.database",
+			fields: []string{
+				"connection.dbname",
+				"connection.host",
+				"connection.port",
+				"connection.user",
+				"connection.password",
+				"fetcher.query",
+				"initialize_caches.timeout_ms",
+				"initialize_caches.query",
+				"poll_for_updates.refresh_rate_seconds",
+				"poll_for_updates.timeout_ms",
+				"poll_for_updates.query",
+			},
+			queryMigrations: queryMigrations,
+		},
+		{
+			old: "stored_responses.postgres",
+			new: "stored_responses.database",
+			fields: []string{
+				"connection.dbname",
+				"connection.host",
+				"connection.port",
+				"connection.user",
+				"connection.password",
+				"fetcher.query",
+				"initialize_caches.timeout_ms",
+				"initialize_caches.query",
+				"poll_for_updates.refresh_rate_seconds",
+				"poll_for_updates.timeout_ms",
+				"poll_for_updates.query",
+			},
+			queryMigrations: queryMigrations,
+		},
+	}
+
+	for _, migration := range migrations {
+		driverField := migration.new + ".connection.driver"
+		newConfigInfoPresent := isConfigInfoPresent(v, migration.new, migration.fields)
+		oldConfigInfoPresent := isConfigInfoPresent(v, migration.old, migration.fields)
+
+		if !newConfigInfoPresent && oldConfigInfoPresent {
+			glog.Warning(fmt.Sprintf("%s is deprecated and should be changed to %s", migration.old, migration.new))
+			glog.Warning(fmt.Sprintf("%s is not set, using default (postgres)", driverField))
+			v.Set(driverField, "postgres")
+
+			for _, field := range migration.fields {
+				oldField := migration.old + "." + field
+				newField := migration.new + "." + field
+				if v.IsSet(oldField) {
+					glog.Warning(fmt.Sprintf("%s is deprecated and should be changed to %s", oldField, newField))
+					v.Set(newField, v.Get(oldField))
+				}
+			}
+
+			for _, queryMigration := range migration.queryMigrations {
+				oldQueryField := migration.old + "." + queryMigration.name
+				newQueryField := migration.new + "." + queryMigration.name
+				queryString := v.GetString(oldQueryField)
+				for _, queryParam := range queryMigration.params {
+					if strings.Contains(queryString, queryParam.old) {
+						glog.Warning(fmt.Sprintf("Query param %s for %s is deprecated and should be changed to %s", queryParam.old, oldQueryField, queryParam.new))
+						queryString = strings.ReplaceAll(queryString, queryParam.old, queryParam.new)
+						v.Set(newQueryField, queryString)
+					}
+				}
+			}
+		} else if newConfigInfoPresent && oldConfigInfoPresent {
+			glog.Warning(fmt.Sprintf("using %s and ignoring deprecated %s", migration.new, migration.old))
+
+			for _, field := range migration.fields {
+				oldField := migration.old + "." + field
+				newField := migration.new + "." + field
+				if v.IsSet(oldField) {
+					glog.Warning(fmt.Sprintf("using %s and ignoring deprecated %s", newField, oldField))
+				}
 			}
 		}
 	}
 }
 
+func isConfigInfoPresent(v *viper.Viper, prefix string, fields []string) bool {
+	prefix = prefix + "."
+	for _, field := range fields {
+		fieldName := prefix + field
+		if v.IsSet(fieldName) {
+			return true
+		}
+	}
+	return false
+}
+
+func bindDatabaseEnvVars(v *viper.Viper) {
+	v.BindEnv("stored_requests.database.connection.driver")
+	v.BindEnv("stored_requests.database.connection.dbname")
+	v.BindEnv("stored_requests.database.connection.host")
+	v.BindEnv("stored_requests.database.connection.port")
+	v.BindEnv("stored_requests.database.connection.user")
+	v.BindEnv("stored_requests.database.connection.password")
+	v.BindEnv("stored_requests.database.connection.query_string")
+	v.BindEnv("stored_requests.database.connection.tls.root_cert")
+	v.BindEnv("stored_requests.database.connection.tls.client_cert")
+	v.BindEnv("stored_requests.database.connection.tls.client_key")
+	v.BindEnv("stored_requests.database.fetcher.query")
+	v.BindEnv("stored_requests.database.fetcher.amp_query")
+	v.BindEnv("stored_requests.database.initialize_caches.timeout_ms")
+	v.BindEnv("stored_requests.database.initialize_caches.query")
+	v.BindEnv("stored_requests.database.initialize_caches.amp_query")
+	v.BindEnv("stored_requests.database.poll_for_updates.refresh_rate_seconds")
+	v.BindEnv("stored_requests.database.poll_for_updates.timeout_ms")
+	v.BindEnv("stored_requests.database.poll_for_updates.query")
+	v.BindEnv("stored_requests.database.poll_for_updates.amp_query")
+	v.BindEnv("stored_video_req.database.connection.driver")
+	v.BindEnv("stored_video_req.database.connection.dbname")
+	v.BindEnv("stored_video_req.database.connection.host")
+	v.BindEnv("stored_video_req.database.connection.port")
+	v.BindEnv("stored_video_req.database.connection.user")
+	v.BindEnv("stored_video_req.database.connection.password")
+	v.BindEnv("stored_video_req.database.connection.query_string")
+	v.BindEnv("stored_video_req.database.connection.tls.root_cert")
+	v.BindEnv("stored_video_req.database.connection.tls.client_cert")
+	v.BindEnv("stored_video_req.database.connection.tls.client_key")
+	v.BindEnv("stored_video_req.database.fetcher.query")
+	v.BindEnv("stored_video_req.database.initialize_caches.timeout_ms")
+	v.BindEnv("stored_video_req.database.initialize_caches.query")
+	v.BindEnv("stored_video_req.database.poll_for_updates.refresh_rate_seconds")
+	v.BindEnv("stored_video_req.database.poll_for_updates.timeout_ms")
+	v.BindEnv("stored_video_req.database.poll_for_updates.query")
+	v.BindEnv("stored_responses.database.connection.driver")
+	v.BindEnv("stored_responses.database.connection.dbname")
+	v.BindEnv("stored_responses.database.connection.host")
+	v.BindEnv("stored_responses.database.connection.port")
+	v.BindEnv("stored_responses.database.connection.user")
+	v.BindEnv("stored_responses.database.connection.password")
+	v.BindEnv("stored_responses.database.connection.query_string")
+	v.BindEnv("stored_responses.database.connection.tls.root_cert")
+	v.BindEnv("stored_responses.database.connection.tls.client_cert")
+	v.BindEnv("stored_responses.database.connection.tls.client_key")
+	v.BindEnv("stored_responses.database.fetcher.query")
+	v.BindEnv("stored_responses.database.initialize_caches.timeout_ms")
+	v.BindEnv("stored_responses.database.initialize_caches.query")
+	v.BindEnv("stored_responses.database.poll_for_updates.refresh_rate_seconds")
+	v.BindEnv("stored_responses.database.poll_for_updates.timeout_ms")
+	v.BindEnv("stored_responses.database.poll_for_updates.query")
+}
+
 func setBidderDefaults(v *viper.Viper, bidder string) {
 	adapterCfgPrefix := "adapters." + bidder
-	v.SetDefault(adapterCfgPrefix+".endpoint", "")
-	v.SetDefault(adapterCfgPrefix+".usersync_url", "")
-	v.SetDefault(adapterCfgPrefix+".platform_id", "")
-	v.SetDefault(adapterCfgPrefix+".app_secret", "")
-	v.SetDefault(adapterCfgPrefix+".xapi.username", "")
-	v.SetDefault(adapterCfgPrefix+".xapi.password", "")
-	v.SetDefault(adapterCfgPrefix+".xapi.tracker", "")
-	v.SetDefault(adapterCfgPrefix+".disabled", false)
-	v.SetDefault(adapterCfgPrefix+".partner_id", "")
-	v.SetDefault(adapterCfgPrefix+".extra_info", "")
+	v.BindEnv(adapterCfgPrefix + ".disabled")
+	v.BindEnv(adapterCfgPrefix + ".endpoint")
+	v.BindEnv(adapterCfgPrefix + ".extra_info")
+	v.BindEnv(adapterCfgPrefix + ".modifyingVastXmlAllowed")
+	v.BindEnv(adapterCfgPrefix + ".debug.allow")
+	v.BindEnv(adapterCfgPrefix + ".gvlVendorID")
+	v.BindEnv(adapterCfgPrefix + ".usersync_url")
+	v.BindEnv(adapterCfgPrefix + ".experiment.adsCert.enabled")
+	v.BindEnv(adapterCfgPrefix + ".platform_id")
+	v.BindEnv(adapterCfgPrefix + ".app_secret")
+	v.BindEnv(adapterCfgPrefix + ".xapi.username")
+	v.BindEnv(adapterCfgPrefix + ".xapi.password")
+	v.BindEnv(adapterCfgPrefix + ".xapi.tracker")
+	v.BindEnv(adapterCfgPrefix + ".endpointCompression")
+	v.BindEnv(adapterCfgPrefix + ".openrtb.version")
+	v.BindEnv(adapterCfgPrefix + ".openrtb.gpp-supported")
 
 	v.BindEnv(adapterCfgPrefix + ".usersync.key")
 	v.BindEnv(adapterCfgPrefix + ".usersync.default")
@@ -1108,6 +1465,7 @@ func setBidderDefaults(v *viper.Viper, bidder string) {
 	v.BindEnv(adapterCfgPrefix + ".usersync.redirect.redirect_url")
 	v.BindEnv(adapterCfgPrefix + ".usersync.redirect.external_url")
 	v.BindEnv(adapterCfgPrefix + ".usersync.redirect.user_macro")
+	v.BindEnv(adapterCfgPrefix + ".usersync.external_url")
 	v.BindEnv(adapterCfgPrefix + ".usersync.support_cors")
 }
 

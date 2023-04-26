@@ -1,17 +1,16 @@
+endpoint: "http://ib.adnxs.com/openrtb2"
 maintainer:
   email: "support@mediafuse.com"
-gvlVendorID: 411
 capabilities:
   app:
     mediaTypes:
       - banner
       - video
+      - native
   site:
     mediaTypes:
       - banner
       - video
+      - native
 userSync:
-  # mediafuse supports user syncing, but requires configuration by the host. contact this
-  # bidder directly at the email address in this file to ask about enabling user sync.
-  supports:
-    - iframe
+  key: "adnxs"

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -117,14 +117,15 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 				}}
 			}
 
-			if openrtb_ext.BidTypeBanner != mediaTypeId {
-				//only banner is supported, anything else is ignored
+			if openrtb_ext.BidTypeBanner != mediaTypeId &&
+				openrtb_ext.BidTypeVideo != mediaTypeId {
+				//only banner and video are mediaTypeId, anything else is ignored
 				continue
 			}
 
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &bid,
-				BidType: openrtb_ext.BidTypeBanner,
+				BidType: mediaTypeId,
 			})
 		}
 	}
@@ -140,6 +141,8 @@ func getImpInfo(impId string, imps []openrtb2.Imp) (bool, openrtb_ext.BidType) {
 			exists = true
 			if imp.Banner != nil {
 				mediaType = openrtb_ext.BidTypeBanner
+			} else if imp.Video != nil {
+				mediaType = openrtb_ext.BidTypeVideo
 			}
 			break
 		}
@@ -156,13 +159,48 @@ func changeRequestForBidService(request *openrtb2.BidRequest, extension *openrtb
 		request.App.ID = extension.Dcn
 	}
 
-	if request.Imp[0].Banner == nil {
-		return nil
+	if request.Imp[0].Banner != nil {
+		banner := *request.Imp[0].Banner
+		request.Imp[0].Banner = &banner
+
+		err := validateBanner(&banner)
+		if err != nil {
+			return err
+		}
 	}
 
-	banner := *request.Imp[0].Banner
-	request.Imp[0].Banner = &banner
+	if request.Regs != nil && request.Regs.GPP != "" {
+		requestRegs := *request.Regs
+		if requestRegs.Ext == nil {
+			requestRegs.Ext = json.RawMessage("{}")
+		}
+		var regsExt map[string]json.RawMessage
+		err := json.Unmarshal(requestRegs.Ext, &regsExt)
+		if err != nil {
+			return err
+		}
+		regsExt["gpp"], err = json.Marshal(&requestRegs.GPP)
 
+		if requestRegs.GPPSID != nil {
+			regsExt["gpp_sid"], err = json.Marshal(&requestRegs.GPPSID)
+			if err != nil {
+				return err
+			}
+		}
+
+		requestRegs.Ext, err = json.Marshal(&regsExt)
+		if err != nil {
+			return err
+		}
+		requestRegs.GPP = ""
+		requestRegs.GPPSID = nil
+		request.Regs = &requestRegs
+	}
+
+	return nil
+}
+
+func validateBanner(banner *openrtb2.Banner) error {
 	if banner.W != nil && banner.H != nil {
 		if *banner.W == 0 || *banner.H == 0 {
 			return fmt.Errorf("Invalid sizes provided for Banner %dx%d", *banner.W, *banner.H)
@@ -181,7 +219,7 @@ func changeRequestForBidService(request *openrtb2.BidRequest, extension *openrtb
 }
 
 // Builder builds a new instance of the YahooSSP adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		URI: config.Endpoint,
 	}

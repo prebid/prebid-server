@@ -1,0 +1,49 @@
+{
+  "description": "Bid request where more than one request.user.ext.eids array elements share the same source field value",
+  "mockBidRequest": {
+    "id": "anyRequestID",
+    "site": {
+      "page": "prebid.org",
+      "publisher": {
+        "id": "anyPublisher"
+      }
+    },
+    "imp": [{
+      "id": "anyImpID",
+      "ext": {
+        "appnexus": {
+          "placementId": 42
+        }
+      },
+      "banner": {
+        "format": [{
+            "w": 300,
+            "h": 250
+          },
+          {
+            "w": 300,
+            "h": 300
+          }
+        ]
+      }
+    }],
+    "tmax": 1000,
+    "user": {
+      "ext": {
+        "eids": [{
+          "source": "source1",
+          "uids": [{
+            "id": "A"
+          }]
+        }, {
+          "source": "source1",
+          "uids": [{
+            "id": "B"
+          }]
+        }]
+      }
+    }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: request.user.ext.eids must contain unique sources\n"
+}

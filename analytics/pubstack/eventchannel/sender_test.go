@@ -1,7 +1,7 @@
 package eventchannel
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,7 +13,7 @@ func TestBuildEndpointSender(t *testing.T) {
 	requestBody := make([]byte, 10)
 	server := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		defer req.Body.Close()
-		requestBody, _ = ioutil.ReadAll(req.Body)
+		requestBody, _ = io.ReadAll(req.Body)
 		res.WriteHeader(200)
 	}))
 
@@ -22,8 +22,8 @@ func TestBuildEndpointSender(t *testing.T) {
 	sender := BuildEndpointSender(server.Client(), server.URL, "module")
 	err := sender([]byte("message"))
 
-	assert.Equal(t, requestBody, []byte("message"))
-	assert.Nil(t, err)
+	assert.Equal(t, []byte("message"), requestBody)
+	assert.NoError(t, err)
 }
 
 func TestBuildEndpointSender_Error(t *testing.T) {
@@ -36,5 +36,5 @@ func TestBuildEndpointSender_Error(t *testing.T) {
 	sender := BuildEndpointSender(server.Client(), server.URL, "module")
 	err := sender([]byte("message"))
 
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }

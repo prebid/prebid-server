@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -37,7 +37,7 @@ func TestScrubDevice(t *testing.T) {
 		geo         ScrubStrategyGeo
 	}{
 		{
-			description: "All Strageties - None",
+			description: "All Strategies - None",
 			expected:    device,
 			id:          ScrubStrategyDeviceIDNone,
 			ipv4:        ScrubStrategyIPV4None,
@@ -45,7 +45,7 @@ func TestScrubDevice(t *testing.T) {
 			geo:         ScrubStrategyGeoNone,
 		},
 		{
-			description: "All Strageties - Strictest",
+			description: "All Strategies - Strictest",
 			expected: &openrtb2.Device{
 				DIDMD5:   "",
 				DIDSHA1:  "",

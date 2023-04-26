@@ -3,8 +3,10 @@ package firstpartydata
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/evanphx/json-patch"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+
+	"github.com/prebid/openrtb/v19/openrtb2"
+	jsonpatch "gopkg.in/evanphx/json-patch.v4"
+
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -34,6 +36,7 @@ const (
 	bundleKey     = "bundle"
 	storeUrlKey   = "storeurl"
 	verKey        = "ver"
+	contentKey    = "content"
 )
 
 type ResolvedFirstPartyData struct {
@@ -95,7 +98,7 @@ func ExtractGlobalFPD(req *openrtb_ext.RequestWrapper) (map[string][]byte, error
 	return fpdReqData, nil
 }
 
-//ExtractOpenRtbGlobalFPD extracts and deletes user.data and {app/site}.content.data from request
+// ExtractOpenRtbGlobalFPD extracts and deletes user.data and {app/site}.content.data from request
 func ExtractOpenRtbGlobalFPD(bidRequest *openrtb2.BidRequest) map[string][]openrtb2.Data {
 
 	openRtbGlobalFPD := make(map[string][]openrtb2.Data, 3)
@@ -118,7 +121,7 @@ func ExtractOpenRtbGlobalFPD(bidRequest *openrtb2.BidRequest) map[string][]openr
 
 }
 
-//ResolveFPD consolidates First Party Data from different sources and returns valid FPD that will be applied to bidders later or returns errors
+// ResolveFPD consolidates First Party Data from different sources and returns valid FPD that will be applied to bidders later or returns errors
 func ResolveFPD(bidRequest *openrtb2.BidRequest, fpdBidderConfigData map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data, biddersWithGlobalFPD []string) (map[openrtb_ext.BidderName]*ResolvedFirstPartyData, []error) {
 	var errL []error
 
@@ -184,13 +187,11 @@ func resolveUser(fpdConfig *openrtb_ext.ORTB2, bidRequestUser *openrtb2.User, gl
 		return nil, nil
 	}
 
-	if bidRequestUser == nil && fpdConfigUser != nil {
-		return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("incorrect First Party Data for bidder %s: User object is not defined in request, but defined in FPD config", bidderName),
-		}
+	newUser := openrtb2.User{}
+	if bidRequestUser != nil {
+		newUser = *bidRequestUser
 	}
 
-	newUser := *bidRequestUser
 	var err error
 
 	//apply global fpd
@@ -219,23 +220,35 @@ func unmarshalJSONToInt64(input json.RawMessage) (int64, error) {
 	if err != nil {
 		return -1, err
 	}
-	resNum, err := num.Int64()
-	return resNum, err
+	result, err := num.Int64()
+	return result, err
 }
 
 func unmarshalJSONToString(input json.RawMessage) (string, error) {
-	var inputString string
-	err := json.Unmarshal(input, &inputString)
-	return inputString, err
+	var result string
+	err := json.Unmarshal(input, &result)
+	return result, err
+}
+
+func unmarshalJSONToData(input json.RawMessage) ([]openrtb2.Data, error) {
+	var result []openrtb2.Data
+	err := json.Unmarshal(input, &result)
+	return result, err
 }
 
 func unmarshalJSONToStringArray(input json.RawMessage) ([]string, error) {
-	var inputString []string
-	err := json.Unmarshal(input, &inputString)
-	return inputString, err
+	var result []string
+	err := json.Unmarshal(input, &result)
+	return result, err
 }
 
-//resolveExtension inserts remaining {site/app/user} attributes back to {site/app/user}.ext.data
+func unmarshalJSONToContent(input json.RawMessage) (*openrtb2.Content, error) {
+	var result openrtb2.Content
+	err := json.Unmarshal(input, &result)
+	return &result, err
+}
+
+// resolveExtension inserts remaining {site/app/user} attributes back to {site/app/user}.ext.data
 func resolveExtension(fpdConfig map[string]json.RawMessage, originalExt json.RawMessage) ([]byte, error) {
 	resExt := originalExt
 	var err error
@@ -292,6 +305,15 @@ func mergeUsers(original *openrtb2.User, fpdConfigUser map[string]json.RawMessag
 		delete(fpdConfigUser, yobKey)
 	}
 
+	if userData, present := fpdConfigUser[dataKey]; present {
+		newUserData, err := unmarshalJSONToData(userData)
+		if err != nil {
+			return newUser, err
+		}
+		newUser.Data = append(newUser.Data, newUserData...)
+		delete(fpdConfigUser, dataKey)
+	}
+
 	if len(fpdConfigUser) > 0 {
 		newUser.Ext, err = resolveExtension(fpdConfigUser, original.Ext)
 	}
@@ -327,19 +349,18 @@ func resolveSite(fpdConfig *openrtb_ext.ORTB2, bidRequestSite *openrtb2.Site, gl
 			newSite.Ext = extData
 		}
 	}
-	if openRtbGlobalFPD != nil && len(openRtbGlobalFPD[siteContentDataKey]) > 0 {
-		if newSite.Content != nil {
-			contentCopy := *newSite.Content
-			contentCopy.Data = openRtbGlobalFPD[siteContentDataKey]
-			newSite.Content = &contentCopy
+	// apply global openRTB fpd if exists
+	if len(openRtbGlobalFPD) > 0 && len(openRtbGlobalFPD[siteContentDataKey]) > 0 {
+		if newSite.Content == nil {
+			newSite.Content = &openrtb2.Content{}
 		} else {
-			newSite.Content = &openrtb2.Content{Data: openRtbGlobalFPD[siteContentDataKey]}
+			contentCopy := *newSite.Content
+			newSite.Content = &contentCopy
 		}
+		newSite.Content.Data = openRtbGlobalFPD[siteContentDataKey]
 	}
 
-	if fpdConfigSite != nil {
-		newSite, err = mergeSites(&newSite, fpdConfigSite, bidderName)
-	}
+	newSite, err = mergeSites(&newSite, fpdConfigSite, bidderName)
 	return &newSite, err
 
 }
@@ -348,6 +369,11 @@ func mergeSites(originalSite *openrtb2.Site, fpdConfigSite map[string]json.RawMe
 	var err error
 	newSite := *originalSite
 
+	if fpdConfigSite == nil {
+		return newSite, err
+	}
+
+	//apply bidder specific fpd if present
 	if page, present := fpdConfigSite[pageKey]; present {
 		sitePage, err := unmarshalJSONToString(page)
 		if err != nil {
@@ -420,6 +446,13 @@ func mergeSites(originalSite *openrtb2.Site, fpdConfigSite map[string]json.RawMe
 		}
 		delete(fpdConfigSite, refKey)
 	}
+	if siteContent, present := fpdConfigSite[contentKey]; present {
+		newSite.Content, err = mergeContents(originalSite.Content, siteContent)
+		if err != nil {
+			return newSite, err
+		}
+		delete(fpdConfigSite, contentKey)
+	}
 
 	if len(fpdConfigSite) > 0 {
 		newSite.Ext, err = resolveExtension(fpdConfigSite, originalSite.Ext)
@@ -458,20 +491,19 @@ func resolveApp(fpdConfig *openrtb_ext.ORTB2, bidRequestApp *openrtb2.App, globa
 			newApp.Ext = extData
 		}
 	}
-	if openRtbGlobalFPD != nil && len(openRtbGlobalFPD[appContentDataKey]) > 0 {
-		if newApp.Content != nil {
-			contentCopy := *newApp.Content
-			contentCopy.Data = openRtbGlobalFPD[appContentDataKey]
-			newApp.Content = &contentCopy
+
+	// apply global openRTB fpd if exists
+	if len(openRtbGlobalFPD) > 0 && len(openRtbGlobalFPD[appContentDataKey]) > 0 {
+		if newApp.Content == nil {
+			newApp.Content = &openrtb2.Content{}
 		} else {
-			newApp.Content = &openrtb2.Content{Data: openRtbGlobalFPD[appContentDataKey]}
+			contentCopy := *newApp.Content
+			newApp.Content = &contentCopy
 		}
+		newApp.Content.Data = openRtbGlobalFPD[appContentDataKey]
 	}
 
-	if fpdConfigApp != nil {
-		//apply bidder specific fpd if present
-		newApp, err = mergeApps(&newApp, fpdConfigApp)
-	}
+	newApp, err = mergeApps(&newApp, fpdConfigApp)
 
 	return &newApp, err
 }
@@ -481,6 +513,10 @@ func mergeApps(originalApp *openrtb2.App, fpdConfigApp map[string]json.RawMessag
 	var err error
 	newApp := *originalApp
 
+	if fpdConfigApp == nil {
+		return newApp, err
+	}
+	//apply bidder specific fpd if present
 	if name, present := fpdConfigApp[nameKey]; present {
 		newApp.Name, err = unmarshalJSONToString(name)
 		if err != nil {
@@ -544,6 +580,13 @@ func mergeApps(originalApp *openrtb2.App, fpdConfigApp map[string]json.RawMessag
 		}
 		delete(fpdConfigApp, keywordsKey)
 	}
+	if appContent, present := fpdConfigApp[contentKey]; present {
+		newApp.Content, err = mergeContents(originalApp.Content, appContent)
+		if err != nil {
+			return newApp, err
+		}
+		delete(fpdConfigApp, contentKey)
+	}
 
 	if len(fpdConfigApp) > 0 {
 		newApp.Ext, err = resolveExtension(fpdConfigApp, originalApp.Ext)
@@ -560,7 +603,7 @@ func buildExtData(data []byte) []byte {
 	return res
 }
 
-//ExtractBidderConfigFPD extracts bidder specific configs from req.ext.prebid.bidderconfig
+// ExtractBidderConfigFPD extracts bidder specific configs from req.ext.prebid.bidderconfig
 func ExtractBidderConfigFPD(reqExt *openrtb_ext.RequestExt) (map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, error) {
 
 	fpd := make(map[openrtb_ext.BidderName]*openrtb_ext.ORTB2)
@@ -599,7 +642,7 @@ func ExtractBidderConfigFPD(reqExt *openrtb_ext.RequestExt) (map[openrtb_ext.Bid
 
 }
 
-//ExtractFPDForBidders extracts FPD data from request if specified
+// ExtractFPDForBidders extracts FPD data from request if specified
 func ExtractFPDForBidders(req *openrtb_ext.RequestWrapper) (map[openrtb_ext.BidderName]*ResolvedFirstPartyData, []error) {
 
 	reqExt, err := req.GetRequestExt()
@@ -638,4 +681,23 @@ func ExtractFPDForBidders(req *openrtb_ext.RequestWrapper) (map[openrtb_ext.Bidd
 
 	return ResolveFPD(req.BidRequest, fbdBidderConfigData, globalFpd, openRtbGlobalFPD, biddersWithGlobalFPD)
 
+}
+
+func mergeContents(originalContent *openrtb2.Content, fpdBidderConfigContent json.RawMessage) (*openrtb2.Content, error) {
+	if originalContent == nil {
+		return unmarshalJSONToContent(fpdBidderConfigContent)
+	}
+	originalContentBytes, err := json.Marshal(originalContent)
+	if err != nil {
+		return nil, err
+	}
+	newFinalContentBytes, err := jsonpatch.MergePatch(originalContentBytes, fpdBidderConfigContent)
+	if err != nil {
+		return nil, err
+	}
+	newFinalContent, err := unmarshalJSONToContent(newFinalContentBytes)
+	if err != nil {
+		return nil, err
+	}
+	return newFinalContent, nil
 }

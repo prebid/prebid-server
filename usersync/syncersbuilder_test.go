@@ -22,14 +22,15 @@ func TestBuildSyncers(t *testing.T) {
 	var (
 		hostConfig              = config.Configuration{ExternalURL: "http://host.com", UserSync: config.UserSync{RedirectURL: "{{.ExternalURL}}/{{.SyncerKey}}/host"}}
 		iframeConfig            = &config.SyncerEndpoint{URL: "https://bidder.com/iframe?redirect={{.RedirectURL}}"}
-		infoKeyAPopulated       = config.BidderInfo{Enabled: true, Syncer: &config.Syncer{Key: "a", IFrame: iframeConfig}}
-		infoKeyADisabled        = config.BidderInfo{Enabled: false, Syncer: &config.Syncer{Key: "a", IFrame: iframeConfig}}
-		infoKeyAEmpty           = config.BidderInfo{Enabled: true, Syncer: &config.Syncer{Key: "a"}}
-		infoKeyAError           = config.BidderInfo{Enabled: true, Syncer: &config.Syncer{Key: "a", Default: "redirect", IFrame: iframeConfig}} // Error caused by invalid default sync type
-		infoKeyASupportsOnly    = config.BidderInfo{Enabled: true, Syncer: &config.Syncer{Supports: []string{"iframe"}}}
-		infoKeyBPopulated       = config.BidderInfo{Enabled: true, Syncer: &config.Syncer{Key: "b", IFrame: iframeConfig}}
-		infoKeyBEmpty           = config.BidderInfo{Enabled: true, Syncer: &config.Syncer{Key: "b"}}
-		infoKeyMissingPopulated = config.BidderInfo{Enabled: true, Syncer: &config.Syncer{IFrame: iframeConfig}}
+		iframeConfigError       = &config.SyncerEndpoint{URL: "https://bidder.com/iframe?redirect={{xRedirectURL}}"} // Error caused by invalid macro
+		infoKeyAPopulated       = config.BidderInfo{Disabled: false, Syncer: &config.Syncer{Key: "a", IFrame: iframeConfig}}
+		infoKeyADisabled        = config.BidderInfo{Disabled: true, Syncer: &config.Syncer{Key: "a", IFrame: iframeConfig}}
+		infoKeyAEmpty           = config.BidderInfo{Disabled: false, Syncer: &config.Syncer{Key: "a"}}
+		infoKeyAError           = config.BidderInfo{Disabled: false, Syncer: &config.Syncer{Key: "a", IFrame: iframeConfigError}}
+		infoKeyASupportsOnly    = config.BidderInfo{Disabled: false, Syncer: &config.Syncer{Supports: []string{"iframe"}}}
+		infoKeyBPopulated       = config.BidderInfo{Disabled: false, Syncer: &config.Syncer{Key: "b", IFrame: iframeConfig}}
+		infoKeyBEmpty           = config.BidderInfo{Disabled: false, Syncer: &config.Syncer{Key: "b"}}
+		infoKeyMissingPopulated = config.BidderInfo{Disabled: false, Syncer: &config.Syncer{IFrame: iframeConfig}}
 	)
 
 	// NOTE: The hostConfig includes the syncer key in the RedirectURL to distinguish between the syncer keys
@@ -63,7 +64,7 @@ func TestBuildSyncers(t *testing.T) {
 			givenConfig:      hostConfig,
 			givenBidderInfos: map[string]config.BidderInfo{"bidder1": infoKeyAError},
 			expectedErrors: []string{
-				"cannot create syncer for bidder bidder1 with key a: default is set to redirect but no redirect endpoint is configured",
+				"cannot create syncer for bidder bidder1 with key a: iframe template: a_usersync_url:1: function \"xRedirectURL\" not defined",
 			},
 		},
 		{
@@ -105,7 +106,7 @@ func TestBuildSyncers(t *testing.T) {
 			givenConfig:      hostConfig,
 			givenBidderInfos: map[string]config.BidderInfo{"bidder1": infoKeyAEmpty, "bidder2": infoKeyAError},
 			expectedErrors: []string{
-				"cannot create syncer for bidder bidder2 with key a: default is set to redirect but no redirect endpoint is configured",
+				"cannot create syncer for bidder bidder2 with key a: iframe template: a_usersync_url:1: function \"xRedirectURL\" not defined",
 			},
 		},
 		{
@@ -137,7 +138,7 @@ func TestBuildSyncers(t *testing.T) {
 			givenConfig:      hostConfig,
 			givenBidderInfos: map[string]config.BidderInfo{"bidder1": infoKeyAError, "bidder2": infoKeyBEmpty},
 			expectedErrors: []string{
-				"cannot create syncer for bidder bidder1 with key a: default is set to redirect but no redirect endpoint is configured",
+				"cannot create syncer for bidder bidder1 with key a: iframe template: a_usersync_url:1: function \"xRedirectURL\" not defined",
 				"cannot create syncer for bidder bidder2 with key b: at least one endpoint (iframe and/or redirect) is required",
 			},
 		},
@@ -189,92 +190,82 @@ func TestShouldCreateSyncer(t *testing.T) {
 	}{
 		{
 			description: "Enabled, No Syncer",
-			given:       config.BidderInfo{Enabled: true, Syncer: nil},
+			given:       config.BidderInfo{Disabled: false, Syncer: nil},
 			expected:    false,
 		},
 		{
 			description: "Enabled, Syncer",
-			given:       config.BidderInfo{Enabled: true, Syncer: &config.Syncer{Key: "anyKey"}},
+			given:       config.BidderInfo{Disabled: false, Syncer: &config.Syncer{Key: "anyKey"}},
 			expected:    true,
 		},
 		{
 			description: "Enabled, Syncer - Fully Loaded",
-			given:       config.BidderInfo{Enabled: true, Syncer: &config.Syncer{Key: "anyKey", Default: "iframe", Supports: anySupports, IFrame: anyEndpoint, Redirect: anyEndpoint, SupportCORS: &anyCORS}},
+			given:       config.BidderInfo{Disabled: false, Syncer: &config.Syncer{Key: "anyKey", Supports: anySupports, IFrame: anyEndpoint, Redirect: anyEndpoint, SupportCORS: &anyCORS}},
 			expected:    true,
 		},
 		{
 			description: "Enabled, Syncer - Only Key",
-			given:       config.BidderInfo{Enabled: true, Syncer: &config.Syncer{Key: "anyKey"}},
-			expected:    true,
-		},
-		{
-			description: "Enabled, Syncer - Only Default",
-			given:       config.BidderInfo{Enabled: true, Syncer: &config.Syncer{Default: "iframe"}},
+			given:       config.BidderInfo{Disabled: false, Syncer: &config.Syncer{Key: "anyKey"}},
 			expected:    true,
 		},
 		{
 			description: "Enabled, Syncer - Only Supports",
-			given:       config.BidderInfo{Enabled: true, Syncer: &config.Syncer{Supports: anySupports}},
+			given:       config.BidderInfo{Disabled: false, Syncer: &config.Syncer{Supports: anySupports}},
 			expected:    false,
 		},
 		{
 			description: "Enabled, Syncer - Only IFrame",
-			given:       config.BidderInfo{Enabled: true, Syncer: &config.Syncer{IFrame: anyEndpoint}},
+			given:       config.BidderInfo{Disabled: false, Syncer: &config.Syncer{IFrame: anyEndpoint}},
 			expected:    true,
 		},
 		{
 			description: "Enabled, Syncer - Only Redirect",
-			given:       config.BidderInfo{Enabled: true, Syncer: &config.Syncer{Redirect: anyEndpoint}},
+			given:       config.BidderInfo{Disabled: false, Syncer: &config.Syncer{Redirect: anyEndpoint}},
 			expected:    true,
 		},
 		{
 			description: "Enabled, Syncer - Only SupportCORS",
-			given:       config.BidderInfo{Enabled: true, Syncer: &config.Syncer{SupportCORS: &anyCORS}},
+			given:       config.BidderInfo{Disabled: false, Syncer: &config.Syncer{SupportCORS: &anyCORS}},
 			expected:    true,
 		},
 		{
 			description: "Disabled, No Syncer",
-			given:       config.BidderInfo{Enabled: false, Syncer: nil},
+			given:       config.BidderInfo{Disabled: true, Syncer: nil},
 			expected:    false,
 		},
 		{
 			description: "Disabled, Syncer",
-			given:       config.BidderInfo{Enabled: false, Syncer: &config.Syncer{Key: "anyKey"}},
+			given:       config.BidderInfo{Disabled: true, Syncer: &config.Syncer{Key: "anyKey"}},
 			expected:    false,
 		},
 		{
 			description: "Disabled, Syncer - Fully Loaded",
-			given:       config.BidderInfo{Enabled: false, Syncer: &config.Syncer{Key: "anyKey", Default: "iframe", Supports: anySupports, IFrame: anyEndpoint, Redirect: anyEndpoint, SupportCORS: &anyCORS}},
+			given:       config.BidderInfo{Disabled: true, Syncer: &config.Syncer{Key: "anyKey", Supports: anySupports, IFrame: anyEndpoint, Redirect: anyEndpoint, SupportCORS: &anyCORS}},
 			expected:    false,
 		},
 		{
 			description: "Disabled, Syncer - Only Key",
-			given:       config.BidderInfo{Enabled: false, Syncer: &config.Syncer{Key: "anyKey"}},
-			expected:    false,
-		},
-		{
-			description: "Disabled, Syncer - Only Default",
-			given:       config.BidderInfo{Enabled: false, Syncer: &config.Syncer{Default: "iframe"}},
+			given:       config.BidderInfo{Disabled: true, Syncer: &config.Syncer{Key: "anyKey"}},
 			expected:    false,
 		},
 		{
 			description: "Disabled, Syncer - Only Supports",
-			given:       config.BidderInfo{Enabled: false, Syncer: &config.Syncer{Supports: anySupports}},
+			given:       config.BidderInfo{Disabled: true, Syncer: &config.Syncer{Supports: anySupports}},
 			expected:    false,
 		},
 		{
 			description: "Disabled, Syncer - Only IFrame",
-			given:       config.BidderInfo{Enabled: false, Syncer: &config.Syncer{IFrame: anyEndpoint}},
+			given:       config.BidderInfo{Disabled: true, Syncer: &config.Syncer{IFrame: anyEndpoint}},
 			expected:    false,
 		},
 		{
 			description: "Disabled, Syncer - Only Redirect",
-			given:       config.BidderInfo{Enabled: false, Syncer: &config.Syncer{Redirect: anyEndpoint}},
+			given:       config.BidderInfo{Disabled: true, Syncer: &config.Syncer{Redirect: anyEndpoint}},
 			expected:    false,
 		},
 		{
 			description: "Disabled, Syncer - Only SupportCORS",
-			given:       config.BidderInfo{Enabled: false, Syncer: &config.Syncer{SupportCORS: &anyCORS}},
+			given:       config.BidderInfo{Disabled: true, Syncer: &config.Syncer{SupportCORS: &anyCORS}},
 			expected:    false,
 		},
 	}

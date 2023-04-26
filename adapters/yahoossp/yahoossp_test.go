@@ -3,7 +3,8 @@ package yahoossp
 import (
 	"testing"
 
-	"github.com/influxdata/influxdb/pkg/testing/assert"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -12,7 +13,7 @@ import (
 func TestYahooSSPBidderEndpointConfig(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderYahooSSP, config.Adapter{
 		Endpoint: "http://localhost/bid",
-	})
+	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -24,7 +25,7 @@ func TestYahooSSPBidderEndpointConfig(t *testing.T) {
 }
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderYahooSSP, config.Adapter{})
+	bidder, buildErr := Builder(openrtb_ext.BidderYahooSSP, config.Adapter{}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)

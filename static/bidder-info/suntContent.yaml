@@ -1,0 +1,13 @@
+endpoint: "https://b.suntcontent.se/cds/rtb/bid?ssp=pbs"
+maintainer:
+  email: tech@seeding-alliance.de
+gvlVendorID: 1097
+capabilities:
+  site:
+    mediaTypes:
+      - native
+      - banner
+userSync:
+  redirect:
+    url: "https://dmp.suntcontent.se/set-uuid?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&redirect_url={{.RedirectURL}}"
+    userMacro: "$UID"

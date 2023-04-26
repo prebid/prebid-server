@@ -8,7 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/buger/jsonparser"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -18,34 +19,43 @@ import (
 
 type QueryString map[string]string
 type adapter struct {
-	time     timeutil.Time
-	endpoint string
+	time      timeutil.Time
+	endpoint  string
+	extraInfo string
 }
 type adnAdunit struct {
-	AuId     string `json:"auId"`
-	TargetId string `json:"targetId"`
+	AuId       string    `json:"auId"`
+	TargetId   string    `json:"targetId"`
+	Dimensions [][]int64 `json:"dimensions,omitempty"`
+}
+
+type extDeviceAdnuntius struct {
+	NoCookies bool `json:"noCookies,omitempty"`
+}
+
+type AdUnit struct {
+	AuId       string
+	TargetId   string
+	Html       string
+	ResponseId string
+	Ads        []struct {
+		Bid struct {
+			Amount   float64
+			Currency string
+		}
+		DealID          string `json:"dealId,omitempty"`
+		AdId            string
+		CreativeWidth   string
+		CreativeHeight  string
+		CreativeId      string
+		LineItemId      string
+		Html            string
+		DestinationUrls map[string]string
+	}
 }
 
 type AdnResponse struct {
-	AdUnits []struct {
-		AuId       string
-		TargetId   string
-		Html       string
-		ResponseId string
-		Ads        []struct {
-			Bid struct {
-				Amount   float64
-				Currency string
-			}
-			AdId            string
-			CreativeWidth   string
-			CreativeHeight  string
-			CreativeId      string
-			LineItemId      string
-			Html            string
-			DestinationUrls map[string]string
-		}
-	}
+	AdUnits []AdUnit
 }
 type adnMetaData struct {
 	Usi string `json:"usi,omitempty"`
@@ -56,15 +66,20 @@ type adnRequest struct {
 	Context  string      `json:"context,omitempty"`
 }
 
+type RequestExt struct {
+	Bidder adnAdunit `json:"bidder"`
+}
+
 const defaultNetwork = "default"
 const defaultSite = "unknown"
 const minutesInHour = 60
 
 // Builder builds a new instance of the Adnuntius adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
-		time:     &timeutil.RealTime{},
-		endpoint: config.Endpoint,
+		time:      &timeutil.RealTime{},
+		endpoint:  config.Endpoint,
+		extraInfo: config.ExtraAdapterInfo,
 	}
 
 	return bidder, nil
@@ -74,15 +89,25 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	return a.generateRequests(*request)
 }
 
-func setHeaders() http.Header {
+func setHeaders(ortbRequest openrtb2.BidRequest) http.Header {
+
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
+	if ortbRequest.Device != nil {
+		if ortbRequest.Device.IP != "" {
+			headers.Add("X-Forwarded-For", ortbRequest.Device.IP)
+		}
+		if ortbRequest.Device.UA != "" {
+			headers.Add("user-agent", ortbRequest.Device.UA)
+		}
+	}
 	return headers
 }
 
-func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter) (string, []error) {
+func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter, noCookies bool) (string, []error) {
 	uri, err := url.Parse(a.endpoint)
+	endpointUrl := a.endpoint
 	if err != nil {
 		return "", []error{fmt.Errorf("failed to parse Adnuntius endpoint: %v", err)}
 	}
@@ -92,35 +117,72 @@ func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter) (string, []err
 		return "", []error{fmt.Errorf("failed to parse Adnuntius endpoint: %v", err)}
 	}
 
+	if !noCookies {
+		var deviceExt extDeviceAdnuntius
+		if ortbRequest.Device != nil && ortbRequest.Device.Ext != nil {
+			if err := json.Unmarshal(ortbRequest.Device.Ext, &deviceExt); err != nil {
+				return "", []error{fmt.Errorf("failed to parse Adnuntius endpoint: %v", err)}
+			}
+		}
+
+		if deviceExt.NoCookies {
+			noCookies = true
+		}
+
+	}
+
 	_, offset := a.time.Now().Zone()
 	tzo := -offset / minutesInHour
 
 	q := uri.Query()
-	if gdpr != "" && consent != "" {
+	if gdpr != "" {
+		endpointUrl = a.extraInfo
 		q.Set("gdpr", gdpr)
+	}
+
+	if consent != "" {
 		q.Set("consentString", consent)
 	}
+
+	if noCookies {
+		q.Set("noCookies", "true")
+	}
+
 	q.Set("tzo", fmt.Sprint(tzo))
 	q.Set("format", "json")
 
-	url := a.endpoint + "?" + q.Encode()
+	url := endpointUrl + "?" + q.Encode()
 	return url, nil
 }
 
+func getImpSizes(imp openrtb2.Imp) [][]int64 {
+
+	if len(imp.Banner.Format) > 0 {
+		sizes := make([][]int64, len(imp.Banner.Format))
+		for i, format := range imp.Banner.Format {
+			sizes[i] = []int64{format.W, format.H}
+		}
+
+		return sizes
+	}
+
+	if imp.Banner.W != nil && imp.Banner.H != nil {
+		size := make([][]int64, 1)
+		size[0] = []int64{*imp.Banner.W, *imp.Banner.H}
+		return size
+	}
+
+	return nil
+}
+
 /*
-	Generate the requests to Adnuntius to reduce the amount of requests going out.
+Generate the requests to Adnuntius to reduce the amount of requests going out.
 */
 func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters.RequestData, []error) {
 	var requestData []*adapters.RequestData
 	networkAdunitMap := make(map[string][]adnAdunit)
-	headers := setHeaders()
-
-	endpoint, err := makeEndpointUrl(ortbRequest, a)
-	if err != nil {
-		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("failed to parse URL: %s", err),
-		}}
-	}
+	headers := setHeaders(ortbRequest)
+	var noCookies bool = false
 
 	for _, imp := range ortbRequest.Imp {
 		if imp.Banner == nil {
@@ -142,6 +204,10 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 			}}
 		}
 
+		if adnuntiusExt.NoCookies == true {
+			noCookies = true
+		}
+
 		network := defaultNetwork
 		if adnuntiusExt.Network != "" {
 			network = adnuntiusExt.Network
@@ -150,9 +216,17 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 		networkAdunitMap[network] = append(
 			networkAdunitMap[network],
 			adnAdunit{
-				AuId:     adnuntiusExt.Auid,
-				TargetId: fmt.Sprintf("%s-%s", adnuntiusExt.Auid, imp.ID),
+				AuId:       adnuntiusExt.Auid,
+				TargetId:   fmt.Sprintf("%s-%s", adnuntiusExt.Auid, imp.ID),
+				Dimensions: getImpSizes(imp),
 			})
+	}
+
+	endpoint, err := makeEndpointUrl(ortbRequest, a, noCookies)
+	if err != nil {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("failed to parse URL: %s", err),
+		}}
 	}
 
 	site := defaultSite
@@ -222,9 +296,10 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapte
 }
 
 func getGDPR(request *openrtb2.BidRequest) (string, string, error) {
+
 	gdpr := ""
 	var extRegs openrtb_ext.ExtRegs
-	if request.Regs != nil {
+	if request.Regs != nil && request.Regs.Ext != nil {
 		if err := json.Unmarshal(request.Regs.Ext, &extRegs); err != nil {
 			return "", "", fmt.Errorf("failed to parse ExtRegs in Adnuntius GDPR check: %v", err)
 		}
@@ -248,8 +323,23 @@ func getGDPR(request *openrtb2.BidRequest) (string, string, error) {
 func generateBidResponse(adnResponse *AdnResponse, request *openrtb2.BidRequest) (*adapters.BidderResponse, []error) {
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(adnResponse.AdUnits))
 	var currency string
+	adunitMap := map[string]AdUnit{}
 
-	for i, adunit := range adnResponse.AdUnits {
+	for _, adnRespAdunit := range adnResponse.AdUnits {
+		adunitMap[adnRespAdunit.TargetId] = adnRespAdunit
+	}
+
+	for i, imp := range request.Imp {
+
+		auId, _, _, err := jsonparser.Get(imp.Ext, "bidder", "auId")
+		if err != nil {
+			return nil, []error{&errortypes.BadInput{
+				Message: fmt.Sprintf("Error at Bidder auId: %s", err.Error()),
+			}}
+		}
+
+		targetID := fmt.Sprintf("%s-%s", string(auId), imp.ID)
+		adunit := adunitMap[targetID]
 
 		if len(adunit.Ads) > 0 {
 
@@ -284,6 +374,7 @@ func generateBidResponse(adnResponse *AdnResponse, request *openrtb2.BidRequest)
 				W:       creativeWidth,
 				H:       creativeHeight,
 				AdID:    ad.AdId,
+				DealID:  ad.DealID,
 				CID:     ad.LineItemId,
 				CrID:    ad.CreativeId,
 				Price:   ad.Bid.Amount * 1000,

@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/evanphx/json-patch"
+	"github.com/prebid/prebid-server/exchange/entities"
+	jsonpatch "gopkg.in/evanphx/json-patch.v4"
+
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/endpoints/events"
-	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -18,7 +19,7 @@ type eventTracking struct {
 	enabledForAccount  bool
 	enabledForRequest  bool
 	auctionTimestampMs int64
-	integration        metrics.DemandSource // web app amp
+	integrationType    string
 	bidderInfos        config.BidderInfos
 	externalURL        string
 }
@@ -30,21 +31,28 @@ func getEventTracking(requestExtPrebid *openrtb_ext.ExtRequestPrebid, ts time.Ti
 		enabledForAccount:  account.EventsEnabled,
 		enabledForRequest:  requestExtPrebid != nil && requestExtPrebid.Events != nil,
 		auctionTimestampMs: ts.UnixNano() / 1e+6,
-		integration:        "", // TODO: add integration support, see #1428
+		integrationType:    getIntegrationType(requestExtPrebid),
 		bidderInfos:        bidderInfos,
 		externalURL:        externalURL,
 	}
 }
 
+func getIntegrationType(requestExtPrebid *openrtb_ext.ExtRequestPrebid) string {
+	if requestExtPrebid != nil {
+		return requestExtPrebid.Integration
+	}
+	return ""
+}
+
 // modifyBidsForEvents adds bidEvents and modifies VAST AdM if necessary.
-func (ev *eventTracking) modifyBidsForEvents(seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid) map[openrtb_ext.BidderName]*pbsOrtbSeatBid {
+func (ev *eventTracking) modifyBidsForEvents(seatBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid) map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid {
 	for bidderName, seatBid := range seatBids {
 		modifyingVastXMLAllowed := ev.isModifyingVASTXMLAllowed(bidderName.String())
-		for _, pbsBid := range seatBid.bids {
+		for _, pbsBid := range seatBid.Bids {
 			if modifyingVastXMLAllowed {
 				ev.modifyBidVAST(pbsBid, bidderName)
 			}
-			pbsBid.bidEvents = ev.makeBidExtEvents(pbsBid, bidderName)
+			pbsBid.BidEvents = ev.makeBidExtEvents(pbsBid, bidderName)
 		}
 	}
 	return seatBids
@@ -56,29 +64,29 @@ func (ev *eventTracking) isModifyingVASTXMLAllowed(bidderName string) bool {
 }
 
 // modifyBidVAST injects event Impression url if needed, otherwise returns original VAST string
-func (ev *eventTracking) modifyBidVAST(pbsBid *pbsOrtbBid, bidderName openrtb_ext.BidderName) {
-	bid := pbsBid.bid
-	if pbsBid.bidType != openrtb_ext.BidTypeVideo || len(bid.AdM) == 0 && len(bid.NURL) == 0 {
+func (ev *eventTracking) modifyBidVAST(pbsBid *entities.PbsOrtbBid, bidderName openrtb_ext.BidderName) {
+	bid := pbsBid.Bid
+	if pbsBid.BidType != openrtb_ext.BidTypeVideo || len(bid.AdM) == 0 && len(bid.NURL) == 0 {
 		return
 	}
 	vastXML := makeVAST(bid)
 	bidID := bid.ID
-	if len(pbsBid.generatedBidID) > 0 {
-		bidID = pbsBid.generatedBidID
+	if len(pbsBid.GeneratedBidID) > 0 {
+		bidID = pbsBid.GeneratedBidID
 	}
-	if newVastXML, ok := events.ModifyVastXmlString(ev.externalURL, vastXML, bidID, bidderName.String(), ev.accountID, ev.auctionTimestampMs); ok {
+	if newVastXML, ok := events.ModifyVastXmlString(ev.externalURL, vastXML, bidID, bidderName.String(), ev.accountID, ev.auctionTimestampMs, ev.integrationType); ok {
 		bid.AdM = newVastXML
 	}
 }
 
 // modifyBidJSON injects "wurl" (win) event url if needed, otherwise returns original json
-func (ev *eventTracking) modifyBidJSON(pbsBid *pbsOrtbBid, bidderName openrtb_ext.BidderName, jsonBytes []byte) ([]byte, error) {
-	if !(ev.enabledForAccount || ev.enabledForRequest) || pbsBid.bidType == openrtb_ext.BidTypeVideo {
+func (ev *eventTracking) modifyBidJSON(pbsBid *entities.PbsOrtbBid, bidderName openrtb_ext.BidderName, jsonBytes []byte) ([]byte, error) {
+	if !(ev.enabledForAccount || ev.enabledForRequest) || pbsBid.BidType == openrtb_ext.BidTypeVideo {
 		return jsonBytes, nil
 	}
 	var winEventURL string
-	if pbsBid.bidEvents != nil { // All bids should have already been updated with win/imp event URLs
-		winEventURL = pbsBid.bidEvents.Win
+	if pbsBid.BidEvents != nil { // All bids should have already been updated with win/imp event URLs
+		winEventURL = pbsBid.BidEvents.Win
 	} else {
 		winEventURL = ev.makeEventURL(analytics.Win, pbsBid, bidderName)
 	}
@@ -95,8 +103,8 @@ func (ev *eventTracking) modifyBidJSON(pbsBid *pbsOrtbBid, bidderName openrtb_ex
 }
 
 // makeBidExtEvents make the data for bid.ext.prebid.events if needed, otherwise returns nil
-func (ev *eventTracking) makeBidExtEvents(pbsBid *pbsOrtbBid, bidderName openrtb_ext.BidderName) *openrtb_ext.ExtBidPrebidEvents {
-	if !(ev.enabledForAccount || ev.enabledForRequest) || pbsBid.bidType == openrtb_ext.BidTypeVideo {
+func (ev *eventTracking) makeBidExtEvents(pbsBid *entities.PbsOrtbBid, bidderName openrtb_ext.BidderName) *openrtb_ext.ExtBidPrebidEvents {
+	if !(ev.enabledForAccount || ev.enabledForRequest) || pbsBid.BidType == openrtb_ext.BidTypeVideo {
 		return nil
 	}
 	return &openrtb_ext.ExtBidPrebidEvents{
@@ -106,17 +114,18 @@ func (ev *eventTracking) makeBidExtEvents(pbsBid *pbsOrtbBid, bidderName openrtb
 }
 
 // makeEventURL returns an analytics event url for the requested type (win or imp)
-func (ev *eventTracking) makeEventURL(evType analytics.EventType, pbsBid *pbsOrtbBid, bidderName openrtb_ext.BidderName) string {
-	bidId := pbsBid.bid.ID
-	if len(pbsBid.generatedBidID) > 0 {
-		bidId = pbsBid.generatedBidID
+func (ev *eventTracking) makeEventURL(evType analytics.EventType, pbsBid *entities.PbsOrtbBid, bidderName openrtb_ext.BidderName) string {
+	bidId := pbsBid.Bid.ID
+	if len(pbsBid.GeneratedBidID) > 0 {
+		bidId = pbsBid.GeneratedBidID
 	}
 	return events.EventRequestToUrl(ev.externalURL,
 		&analytics.EventRequest{
-			Type:      evType,
-			BidID:     bidId,
-			Bidder:    string(bidderName),
-			AccountID: ev.accountID,
-			Timestamp: ev.auctionTimestampMs,
+			Type:        evType,
+			BidID:       bidId,
+			Bidder:      string(bidderName),
+			AccountID:   ev.accountID,
+			Timestamp:   ev.auctionTimestampMs,
+			Integration: ev.integrationType,
 		})
 }

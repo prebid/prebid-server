@@ -145,10 +145,16 @@
             "data": {
               "adserver": {
                 "name": "gam",
-                "adslot": "someAdSlot"
+                "adslot": "adSlotFromContextData"
               },
               "dataAttr1": "dataVal1",
               "dataAttr2": "dataVal2"
+            }
+          },
+          "data": {
+            "adserver": {
+              "name": "gam",
+              "adslot": "adSlotFromData"
             }
           },
           "bidder": {
@@ -157,7 +163,8 @@
             "accountId": 1001,
             "siteId": 113932,
             "zoneId": 535510
-          }
+          },
+          "gpid": "gpid"
         }
       }
     ]
@@ -288,6 +295,7 @@
             {
               "id": "test-imp-id",
               "instl": 1,
+              "secure": 1,
               "video": {
                 "placement": 3,
                 "ext": {
@@ -306,9 +314,9 @@
                 "h": 576
               },
               "ext": {
-                "gpid": "someAdSlot",
                 "rp": {
                   "target": {
+                    "dfp_ad_unit_code": "adSlotFromContextData",
                     "dataAttr1": [
                       "dataVal1"
                     ],
@@ -348,7 +356,8 @@
                     "mint_version": ""
                   },
                   "zone_id": 535510
-                }
+                },
+                "gpid": "gpid"
               }
             }
           ]

@@ -132,6 +132,9 @@
           "h": 576
         },
         "ext": {
+          "data": {
+            "pbadslot": "pbadslot"
+          },
           "bidder": {
             "video": {
             },
@@ -294,6 +297,7 @@
             {
               "id": "test-imp-id",
               "instl": 1,
+              "secure": 1,
               "video": {
                 "placement": 3,
                 "ext": {
@@ -314,6 +318,7 @@
               "ext": {
                 "rp": {
                   "target": {
+                    "pbadslot": "pbadslot",
                     "pagecat": [
                       "val1",
                       "val2"

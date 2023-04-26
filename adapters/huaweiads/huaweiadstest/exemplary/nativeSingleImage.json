@@ -28,8 +28,7 @@
     "device": {
       "ua": "useragent",
       "h": 1920,
-      "language": "zh",
-      "geoCountry": "CH",
+      "language": "en",
       "model": "COL-TEST",
       "os": "android",
       "osv": "10.0.0",
@@ -40,7 +39,7 @@
       "dnt": 0,
       "pxratio": 23.01,
       "geo": {
-        "country": ""
+        "country": "DEU"
       }
     },
     "user": {
@@ -64,7 +63,7 @@
   "httpcalls": [
     {
       "expectedRequest": {
-        "uri": "https://huaweiads.com/adxtest/",
+        "uri": "https://adx-dre.op.hicloud.com/ppsadx/getResult",
         "headers": {
           "Accept": [
             "application/json"
@@ -82,7 +81,7 @@
         "body": {
           "app": {
             "lang": "en",
-            "country": "ZA",
+            "country": "DE",
             "name": "Huawei Browser",
             "pkgname": "com.huawei.browser",
             "version": "9.1.0.301"
@@ -92,21 +91,21 @@
               "adtype": 3,
               "slotid": "u42ohmaufh",
               "detailedCreativeTypeList": [
-                "909"
+                "901"
               ],
               "h": 200,
-              "test": 0,
+              "test": 1,
               "w": 200
             }
           ],
           "device": {
             "height": 1920,
-            "language": "zh",
+            "language": "en",
             "oaid": "oaid",
             "os": "android",
             "type": 4,
             "ip": "ip",
-            "localeCountry": "ZA",
+            "localeCountry": "DE",
             "pxratio": 23.01,
             "model": "COL-TEST",
             "width": 1080,
@@ -117,7 +116,7 @@
             "useragent": "useragent",
             "version": "10.0.0",
             "maker": "huawei",
-            "belongCountry": "ZA"
+            "belongCountry": "DE"
           },
           "geo": {
           },
@@ -126,7 +125,8 @@
           },
           "regs": {
           },
-          "version": "3.4"
+          "version": "3.4",
+          "clientAdRequestId": "test-req-id"
         }
       },
       "mockResponse": {
@@ -144,7 +144,7 @@
                   "creativetype": 106,
                   "ctrlSwitchs": "001011101001010212",
                   "endtime": 1621344684645,
-                  "interactiontype": 2,
+                  "interactiontype": 1,
                   "landingTitle": 1,
                   "metaData": {
                     "adSign": "2",

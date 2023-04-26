@@ -9,7 +9,7 @@ import (
 
 // This file actually intends to test static/bidder-params/adf.json
 //
-// These also validate the format of the external API: request.imp[i].ext.adf
+// These also validate the format of the external API: request.imp[i].ext.prebid.bidder.adf
 
 // TestValidParams makes sure that the adform schema accepts all imp.ext fields which we intend to support.
 func TestValidParams(t *testing.T) {
@@ -46,6 +46,8 @@ var validParams = []string{
 	`{"inv":321,"mname":"12345"}`,
 	`{"mid":123,"inv":321,"mname":"pcl1"}`,
 	`{"mid":"123","inv":321,"mname":"pcl1"}`,
+	`{"mid":"123","priceType":"gross"}`,
+	`{"mid":"123","priceType":"net"}`,
 }
 
 var invalidParams = []string{
@@ -62,4 +64,5 @@ var invalidParams = []string{
 	`{"inv":321}`,
 	`{"inv":"321"}`,
 	`{"mname":"12345"}`,
+	`{"mid":"123","priceType":"GROSS"}`,
 }

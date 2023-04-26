@@ -60,9 +60,8 @@ const (
 
 var ErrSyncerEndpointRequired = errors.New("at least one endpoint (iframe and/or redirect) is required")
 var ErrSyncerKeyRequired = errors.New("key is required")
-var ErrSyncerDefaultSyncTypeRequired = errors.New("default sync type is required when more then one sync endpoint is configured")
 
-// NewSyncer creates a new Syncer from the provided configuration, or an error if macro substition
+// NewSyncer creates a new Syncer from the provided configuration, or return an error if macro substition
 // fails or an endpoint url is invalid.
 func NewSyncer(hostConfig config.UserSync, syncerConfig config.Syncer) (Syncer, error) {
 	if syncerConfig.Key == "" {
@@ -74,19 +73,14 @@ func NewSyncer(hostConfig config.UserSync, syncerConfig config.Syncer) (Syncer, 
 	}
 
 	syncer := standardSyncer{
-		key:         syncerConfig.Key,
-		supportCORS: syncerConfig.SupportCORS != nil && *syncerConfig.SupportCORS,
-	}
-
-	if defaultSyncType, err := resolveDefaultSyncType(syncerConfig); err != nil {
-		return nil, err
-	} else {
-		syncer.defaultSyncType = defaultSyncType
+		key:             syncerConfig.Key,
+		defaultSyncType: resolveDefaultSyncType(syncerConfig),
+		supportCORS:     syncerConfig.SupportCORS != nil && *syncerConfig.SupportCORS,
 	}
 
 	if syncerConfig.IFrame != nil {
 		var err error
-		syncer.iframe, err = buildTemplate(syncerConfig.Key, setuidSyncTypeIFrame, hostConfig, *syncerConfig.IFrame)
+		syncer.iframe, err = buildTemplate(syncerConfig.Key, setuidSyncTypeIFrame, hostConfig, syncerConfig.ExternalURL, *syncerConfig.IFrame)
 		if err != nil {
 			return nil, fmt.Errorf("iframe %v", err)
 		}
@@ -97,7 +91,7 @@ func NewSyncer(hostConfig config.UserSync, syncerConfig config.Syncer) (Syncer, 
 
 	if syncerConfig.Redirect != nil {
 		var err error
-		syncer.redirect, err = buildTemplate(syncerConfig.Key, setuidSyncTypeRedirect, hostConfig, *syncerConfig.Redirect)
+		syncer.redirect, err = buildTemplate(syncerConfig.Key, setuidSyncTypeRedirect, hostConfig, syncerConfig.ExternalURL, *syncerConfig.Redirect)
 		if err != nil {
 			return nil, fmt.Errorf("redirect %v", err)
 		}
@@ -109,32 +103,11 @@ func NewSyncer(hostConfig config.UserSync, syncerConfig config.Syncer) (Syncer, 
 	return syncer, nil
 }
 
-func resolveDefaultSyncType(syncerConfig config.Syncer) (SyncType, error) {
-	if syncerConfig.Default == "" {
-		if syncerConfig.IFrame != nil && syncerConfig.Redirect != nil {
-			return SyncTypeUnknown, ErrSyncerDefaultSyncTypeRequired
-		} else if syncerConfig.IFrame != nil {
-			return SyncTypeIFrame, nil
-		} else {
-			return SyncTypeRedirect, nil
-		}
+func resolveDefaultSyncType(syncerConfig config.Syncer) SyncType {
+	if syncerConfig.IFrame != nil {
+		return SyncTypeIFrame
 	}
-
-	if syncType, err := SyncTypeParse(syncerConfig.Default); err == nil {
-		switch syncType {
-		case SyncTypeIFrame:
-			if syncerConfig.IFrame == nil {
-				return SyncTypeUnknown, errDefaultTypeMissingIFrame
-			}
-		case SyncTypeRedirect:
-			if syncerConfig.Redirect == nil {
-				return SyncTypeUnknown, errDefaultTypeMissingRedirect
-			}
-		}
-		return syncType, nil
-	}
-
-	return SyncTypeUnknown, fmt.Errorf("invalid default sync type '%s'", syncerConfig.Default)
+	return SyncTypeRedirect
 }
 
 // macro substitution regex
@@ -147,16 +120,13 @@ var (
 	macroRegex             = regexp.MustCompile(`{{\s*\..*?\s*}}`)
 )
 
-func buildTemplate(key, syncTypeValue string, hostConfig config.UserSync, syncerEndpoint config.SyncerEndpoint) (*template.Template, error) {
+func buildTemplate(key, syncTypeValue string, hostConfig config.UserSync, syncerExternalURL string, syncerEndpoint config.SyncerEndpoint) (*template.Template, error) {
 	redirectTemplate := syncerEndpoint.RedirectURL
 	if redirectTemplate == "" {
 		redirectTemplate = hostConfig.RedirectURL
 	}
 
-	externalURL := syncerEndpoint.ExternalURL
-	if externalURL == "" {
-		externalURL = hostConfig.ExternalURL
-	}
+	externalURL := chooseExternalURL(syncerEndpoint.ExternalURL, syncerExternalURL, hostConfig.ExternalURL)
 
 	redirectURL := macroRegexSyncerKey.ReplaceAllLiteralString(redirectTemplate, key)
 	redirectURL = macroRegexSyncType.ReplaceAllLiteralString(redirectURL, syncTypeValue)
@@ -168,6 +138,19 @@ func buildTemplate(key, syncTypeValue string, hostConfig config.UserSync, syncer
 
 	templateName := strings.ToLower(key) + "_usersync_url"
 	return template.New(templateName).Parse(url)
+}
+
+// chooseExternalURL selects the external url to use for the template, where the most specific config wins.
+func chooseExternalURL(syncerEndpointURL, syncerURL, hostConfigURL string) string {
+	if syncerEndpointURL != "" {
+		return syncerEndpointURL
+	}
+
+	if syncerURL != "" {
+		return syncerURL
+	}
+
+	return hostConfigURL
 }
 
 // escapeTemplate url encodes a string template leaving the macro tags unaffected.
@@ -246,6 +229,8 @@ func (s standardSyncer) GetSync(syncTypes []SyncType, privacyPolicies privacy.Po
 		GDPR:        privacyPolicies.GDPR.Signal,
 		GDPRConsent: privacyPolicies.GDPR.Consent,
 		USPrivacy:   privacyPolicies.CCPA.Consent,
+		GPP:         privacyPolicies.GPP.Consent,
+		GPPSID:      privacyPolicies.GPP.RawSID,
 	})
 	if err != nil {
 		return Sync{}, err

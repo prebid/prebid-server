@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Dianomi Adapter Params",
+  "description": "A schema which validates params accepted by the Dianomi adapter",
+  "type": "object",
+  "properties": {
+    "smartadId": {
+      "type": ["integer", "string"],
+      "pattern": "^\\d+$",
+      "description": "An ID which identifies the smartad/placement selling the impression"
+    },
+    "priceType": {
+      "type": ["string"],
+      "description": "gross or net. Default is net.",
+      "pattern": "gross|net"
+    }
+  },
+
+  "required": ["smartadId"]
+}

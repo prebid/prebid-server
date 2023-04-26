@@ -9,32 +9,10 @@ import (
 )
 
 var (
-	trueClientIP    = http.CanonicalHeaderKey("True-Client-IP")
-	xForwardedProto = http.CanonicalHeaderKey("X-Forwarded-Proto")
-	xForwardedFor   = http.CanonicalHeaderKey("X-Forwarded-For")
-	xRealIP         = http.CanonicalHeaderKey("X-Real-IP")
+	trueClientIP  = http.CanonicalHeaderKey("True-Client-IP")
+	xForwardedFor = http.CanonicalHeaderKey("X-Forwarded-For")
+	xRealIP       = http.CanonicalHeaderKey("X-Real-IP")
 )
-
-const (
-	https = "https"
-)
-
-// IsSecure determines if a http request uses https.
-func IsSecure(r *http.Request) bool {
-	if strings.EqualFold(r.Header.Get(xForwardedProto), https) {
-		return true
-	}
-
-	if strings.EqualFold(r.URL.Scheme, https) {
-		return true
-	}
-
-	if r.TLS != nil {
-		return true
-	}
-
-	return false
-}
 
 // FindIP returns the first ip address found in the http request matching the predicate v.
 func FindIP(r *http.Request, v iputil.IPValidator) (net.IP, iputil.IPVersion) {

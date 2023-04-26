@@ -70,7 +70,7 @@ type ExtDevicePrebid struct {
 
 // ExtDeviceInt defines the contract for bidrequest.device.ext.prebid.interstitial
 type ExtDeviceInt struct {
-	MinWidthPerc  int64 `json:"minwidtheperc"`
+	MinWidthPerc  int64 `json:"minwidthperc"`
 	MinHeightPerc int64 `json:"minheightperc"`
 }
 

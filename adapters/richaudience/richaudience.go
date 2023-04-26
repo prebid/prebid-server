@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -18,7 +18,7 @@ type adapter struct {
 }
 
 // Builder builds a new instance of the RichAudience adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
@@ -26,36 +26,101 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	var requestDataRequest []*adapters.RequestData
+	errs := make([]error, 0, len(request.Imp))
 	raiHeaders := http.Header{}
-
 	setHeaders(&raiHeaders)
 
 	isUrlSecure := getIsUrlSecure(request)
 
-	resImps, err := setImp(request, isUrlSecure)
-	if err != nil {
-		return nil, []error{err}
+	if err := validateDevice(request); err != nil {
+		errs = append(errs, &errortypes.BadInput{
+			Message: err.Error(),
+		})
+		return nil, errs
 	}
 
-	request.Imp = resImps
+	for _, imp := range request.Imp {
+		var secure = int8(0)
 
-	if err = validateDevice(request); err != nil {
-		return nil, []error{err}
+		raiExt, err := parseImpExt(&imp)
+		if err != nil {
+			errs = append(errs, &errortypes.BadInput{
+				Message: err.Error(),
+			})
+			continue
+		}
+
+		if request.App != nil {
+			request.App.Keywords = "tagid=" + imp.TagID
+		}
+
+		if request.Site != nil {
+			request.Site.Keywords = "tagid=" + imp.TagID
+		}
+
+		if raiExt != nil {
+			if raiExt.Pid != "" {
+				imp.TagID = raiExt.Pid
+			}
+
+			if raiExt.Test {
+				request.Device.IP = "11.222.33.44"
+				request.Test = int8(1)
+			}
+
+			if raiExt.BidFloorCur != "" {
+				imp.BidFloorCur = raiExt.BidFloorCur
+			} else if imp.BidFloorCur == "" {
+				imp.BidFloorCur = "USD"
+			}
+		}
+		if isUrlSecure {
+			secure = int8(1)
+		}
+
+		imp.Secure = &secure
+
+		if imp.Banner != nil {
+			if imp.Banner.W == nil && imp.Banner.H == nil {
+				if len(imp.Banner.Format) == 0 {
+					errs = append(errs, &errortypes.BadInput{
+						Message: "request.Banner.Format is required",
+					})
+					continue
+				}
+			}
+		}
+
+		if imp.Video != nil {
+			if imp.Video.W == 0 || imp.Video.H == 0 {
+				errs = append(errs, &errortypes.BadInput{
+					Message: "request.Video.Sizes is required",
+				})
+				continue
+			}
+		}
+
+		request.Imp = []openrtb2.Imp{imp}
+
+		req, err := json.Marshal(request)
+		if err != nil {
+			errs = append(errs, &errortypes.BadInput{
+				Message: err.Error(),
+			})
+			continue
+		}
+
+		requestDataRequest = append(requestDataRequest, &adapters.RequestData{
+			Method:  "POST",
+			Uri:     a.endpoint,
+			Body:    req,
+			Headers: raiHeaders,
+		})
+
 	}
 
-	req, err := json.Marshal(request)
-	if err != nil {
-		return nil, []error{err}
-	}
-
-	requestData := &adapters.RequestData{
-		Method:  "POST",
-		Uri:     a.endpoint,
-		Body:    req,
-		Headers: raiHeaders,
-	}
-
-	return []*adapters.RequestData{requestData}, nil
+	return requestDataRequest, errs
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -77,28 +142,41 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		return nil, []error{err}
 	}
 
-	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &bidResp); err != nil {
-
+	var bidReq openrtb2.BidRequest
+	if err := json.Unmarshal(requestData.Body, &bidReq); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: err.Error(),
 		}}
 	}
 
-	var response openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &response); err != nil {
-		return nil, []error{err}
+	var bidResp openrtb2.BidResponse
+	if err := json.Unmarshal(responseData.Body, &bidResp); err != nil {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: err.Error(),
+		}}
 	}
 
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
-	bidResponse.Currency = response.Cur
-	for _, seatBid := range response.SeatBid {
-		for i := range seatBid.Bid {
-			b := &adapters.TypedBid{
-				Bid:     &seatBid.Bid[i],
-				BidType: openrtb_ext.BidTypeBanner,
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidReq.Imp))
+	bidResponse.Currency = bidResp.Cur
+
+	for _, reqBid := range bidReq.Imp {
+		for _, seatBid := range bidResp.SeatBid {
+			for i := range seatBid.Bid {
+
+				bidType := getMediaType(seatBid.Bid[i].ImpID, reqBid)
+
+				if bidType == "video" {
+					seatBid.Bid[i].W = reqBid.Video.W
+					seatBid.Bid[i].H = reqBid.Video.H
+				}
+
+				b := &adapters.TypedBid{
+					Bid:     &seatBid.Bid[i],
+					BidType: bidType,
+				}
+
+				bidResponse.Bids = append(bidResponse.Bids, b)
 			}
-			bidResponse.Bids = append(bidResponse.Bids, b)
 		}
 	}
 
@@ -109,50 +187,6 @@ func setHeaders(raiHeaders *http.Header) {
 	raiHeaders.Set("Content-Type", "application/json;charset=utf-8")
 	raiHeaders.Set("Accept", "application/json")
 	raiHeaders.Add("X-Openrtb-Version", "2.5")
-}
-
-func setImp(request *openrtb2.BidRequest, isUrlSecure bool) (resImps []openrtb2.Imp, err error) {
-	for _, imp := range request.Imp {
-		var secure = int8(0)
-		raiExt, errImp := parseImpExt(&imp)
-		if errImp != nil {
-			return nil, errImp
-		}
-
-		if raiExt != nil {
-			if raiExt.Pid != "" {
-				imp.TagID = raiExt.Pid
-			}
-
-			if raiExt.Test {
-				request.Test = int8(1)
-			}
-
-			if raiExt.BidFloorCur != "" {
-				imp.BidFloorCur = raiExt.BidFloorCur
-			} else if imp.BidFloorCur == "" {
-				imp.BidFloorCur = "USD"
-			}
-		}
-		if isUrlSecure {
-			secure = int8(1)
-		}
-
-		imp.Secure = &secure
-
-		if imp.Banner.W == nil && imp.Banner.H == nil {
-			if len(imp.Banner.Format) == 0 {
-				err = &errortypes.BadInput{
-					Message: "request.Banner.Format is required",
-				}
-				return nil, err
-			}
-		}
-
-		resImps = append(resImps, imp)
-
-	}
-	return resImps, nil
 }
 
 func getIsUrlSecure(request *openrtb2.BidRequest) (isUrlSecure bool) {
@@ -171,7 +205,6 @@ func getIsUrlSecure(request *openrtb2.BidRequest) (isUrlSecure bool) {
 }
 
 func validateDevice(request *openrtb2.BidRequest) (err error) {
-
 	if request.Device != nil && request.Device.IP == "" && request.Device.IPv6 == "" {
 		err = &errortypes.BadInput{
 			Message: "request.Device.IP is required",
@@ -199,4 +232,14 @@ func parseImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpRichaudience, error) {
 	}
 
 	return &richaudienceExt, nil
+}
+
+func getMediaType(impId string, imp openrtb2.Imp) openrtb_ext.BidType {
+	if imp.ID == impId {
+		if imp.Video != nil {
+			return openrtb_ext.BidTypeVideo
+		}
+		return openrtb_ext.BidTypeBanner
+	}
+	return "no bidtype assigned"
 }

@@ -9,13 +9,13 @@ jobs:
   release:
     name: Create Release
     if: github.event.base_ref == 'refs/heads/master'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - name: Get Version
         id: get_version
         run: |
-          echo ::set-output name=tag::${GITHUB_REF/refs\/tags\/}
-          echo ::set-output name=version::${GITHUB_REF/refs\/tags\/v}
+          echo "tag=${GITHUB_REF/refs\/tags\/}" >> $GITHUB_OUTPUT
+          echo "version=${GITHUB_REF/refs\/tags\/v}" >> $GITHUB_OUTPUT
 
       - name: Create & Publish Release
         uses: release-drafter/release-drafter@v5.12.1

@@ -1,0 +1,167 @@
+{
+  "description": "Auction request",
+  "config": {
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 0.00}
+    ]
+  },
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "prebid.org"
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          }
+        }
+      }
+    ],
+    "tmax": 500,
+    "test": 1,
+    "ext": {
+      "prebid": {
+        "trace": "verbose"
+      }
+    }
+  },
+  "expectedBidResponse": {
+    "id": "some-request-id",
+    "bidid": "test bid id",
+    "cur":"USD",
+    "nbr":null,
+    "seatbid": [
+      {
+        "bid": [
+          {
+            "id": "appnexus-bid",
+            "impid": "some-impression-id",
+            "price": 0
+          }
+        ],
+        "seat": "appnexus"
+      }
+    ],
+    "ext": {
+      "prebid": {
+        "modules": {
+          "errors": {
+            "foobar": {
+              "foo": [
+                "error 1"
+              ],
+              "bar": [
+                "error 1"
+              ]
+            }
+          },
+          "warnings": {
+            "foobar": {
+              "bar": [
+                "warning 1"
+              ]
+            }
+          },
+          "trace": {
+            "stages": [
+              {
+                "stage": "entrypoint",
+                "outcomes": [
+                  {
+                    "entity": "http-request",
+                    "groups": [
+                      {
+                        "invocation_results": [
+                          {
+                            "analytics_tags": {},
+                            "hook_id": {
+                              "module_code": "foobar",
+                              "hook_impl_code": "foo"
+                            },
+                            "status": "success",
+                            "action": "update",
+                            "message": "",
+                            "debug_messages": [
+                              "Hook mutation successfully applied, affected key: header.foo, mutation type: update"
+                            ]
+                          },
+                          {
+                            "analytics_tags": {},
+                            "hook_id": {
+                              "module_code": "foobar",
+                              "hook_impl_code": "bar"
+                            },
+                            "status": "success",
+                            "action": "update",
+                            "message": "",
+                            "debug_messages": [
+                              "Hook mutation successfully applied, affected key: param.foo, mutation type: update"
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "invocation_results": [
+                          {
+                            "analytics_tags": {},
+                            "hook_id": {
+                              "module_code": "foobar",
+                              "hook_impl_code": "baz"
+                            },
+                            "status": "success",
+                            "action": "update",
+                            "message": "",
+                            "debug_messages": [
+                              "Hook mutation successfully applied, affected key: body.tmax, mutation type: update",
+                              "Hook mutation successfully applied, affected key: body.regs.ext.us_privacy, mutation type: add"
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "stage": "raw_auction_request",
+                "outcomes": [
+                  {
+                    "entity": "auction-request",
+                    "groups": [
+                      {
+                        "invocation_results": [
+                          {
+                            "analytics_tags": {},
+                            "hook_id": {
+                              "module_code": "vendor.module",
+                              "hook_impl_code": "foobar"
+                            },
+                            "status": "success",
+                            "action": "no_action",
+                            "message": ""
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "expectedReturnCode": 200
+}
