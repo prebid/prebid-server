@@ -54,27 +54,3 @@ func getCpmTarget(cpm float64, bucketMin float64, increment float64, precision i
 	roundedCPM := math.Floor((cpm-bucketMin)/increment)*increment + bucketMin
 	return strconv.FormatFloat(roundedCPM, 'f', precision, 64)
 }
-
-func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
-	mType := bid.MType
-	var bidType openrtb_ext.BidType
-	if mType > 0 {
-		switch mType {
-		case openrtb2.MarkupBanner:
-			bidType = openrtb_ext.BidTypeBanner
-		case openrtb2.MarkupVideo:
-			bidType = openrtb_ext.BidTypeVideo
-		case openrtb2.MarkupAudio:
-			bidType = openrtb_ext.BidTypeAudio
-		case openrtb2.MarkupNative:
-			bidType = openrtb_ext.BidTypeNative
-		}
-	} else {
-		var err error
-		bidType, err = getPrebidMediaTypeForBid(bid)
-		if err != nil {
-			return openrtb_ext.BidType(0), err
-		}
-	}
-	return bidType, nil
-}

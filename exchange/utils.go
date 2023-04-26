@@ -15,6 +15,7 @@ import (
 
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/firstpartydata"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
@@ -957,4 +958,44 @@ func WrapJSONInData(data []byte) []byte {
 	res = append(res, data...)
 	res = append(res, []byte(`}`)...)
 	return res
+}
+
+func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	mType := bid.MType
+	var bidType openrtb_ext.BidType
+	if mType > 0 {
+		switch mType {
+		case openrtb2.MarkupBanner:
+			bidType = openrtb_ext.BidTypeBanner
+		case openrtb2.MarkupVideo:
+			bidType = openrtb_ext.BidTypeVideo
+		case openrtb2.MarkupAudio:
+			bidType = openrtb_ext.BidTypeAudio
+		case openrtb2.MarkupNative:
+			bidType = openrtb_ext.BidTypeNative
+		default:
+			return openrtb_ext.BidType(0), fmt.Errorf("unable to determine bid type by Mtype")
+		}
+	} else {
+		var err error
+		bidType, err = getPrebidMediaTypeForBid(bid)
+		if err != nil {
+			return openrtb_ext.BidType(0), err
+		}
+	}
+	return bidType, nil
+}
+
+func getPrebidMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	if bid.Ext != nil {
+		var bidExt openrtb_ext.ExtBid
+		err := json.Unmarshal(bid.Ext, &bidExt)
+		if err == nil && bidExt.Prebid != nil {
+			return openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
+		}
+	}
+
+	return "", &errortypes.BadServerResponse{
+		Message: fmt.Sprintf("Failed to parse bid mediatype for impression \"%s\"", bid.ImpID),
+	}
 }
