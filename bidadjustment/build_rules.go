@@ -4,6 +4,11 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
+const (
+	VideoInstream  = "video-instream"
+	VideoOutstream = "video-outstream"
+)
+
 // BuildRules() will populate the rules map with a rule that's a combination of the mediaType, bidderName, and dealId for a particular adjustment
 // The result will be a map that'll map a given rule with its adjustment
 func BuildRules(bidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments, rules map[string][]openrtb_ext.Adjustment) {
@@ -11,9 +16,10 @@ func BuildRules(bidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments, rule
 		return
 	}
 	buildRulesForMediaType(string(openrtb_ext.BidTypeBanner), bidAdjustments.MediaType.Banner, rules)
-	buildRulesForMediaType(string(openrtb_ext.BidTypeVideo), bidAdjustments.MediaType.Video, rules)
 	buildRulesForMediaType(string(openrtb_ext.BidTypeAudio), bidAdjustments.MediaType.Audio, rules)
 	buildRulesForMediaType(string(openrtb_ext.BidTypeNative), bidAdjustments.MediaType.Native, rules)
+	buildRulesForMediaType(VideoInstream, bidAdjustments.MediaType.VideoInstream, rules)
+	buildRulesForMediaType(VideoOutstream, bidAdjustments.MediaType.VideoOutstream, rules)
 	buildRulesForMediaType(WildCard, bidAdjustments.MediaType.WildCard, rules)
 }
 
@@ -37,50 +43,51 @@ func Merge(req *openrtb_ext.RequestWrapper, acctBidAdjs *openrtb_ext.ExtRequestP
 	return mergedBidAdj, err
 }
 
-func merge(req *openrtb_ext.RequestWrapper, acctBidAdjs *openrtb_ext.ExtRequestPrebidBidAdjustments) (*openrtb_ext.ExtRequestPrebidBidAdjustments, error) {
+func merge(req *openrtb_ext.RequestWrapper, acct *openrtb_ext.ExtRequestPrebidBidAdjustments) (*openrtb_ext.ExtRequestPrebidBidAdjustments, error) {
 	reqExt, err := req.GetRequestExt()
 	if err != nil {
 		return nil, err
 	}
 	extPrebid := reqExt.GetPrebid()
 
-	if extPrebid == nil && acctBidAdjs == nil {
+	if extPrebid == nil && acct == nil {
 		return nil, nil
 	}
-	if extPrebid == nil && acctBidAdjs != nil {
-		return acctBidAdjs, nil
+	if extPrebid == nil && acct != nil {
+		return acct, nil
 	}
-	if extPrebid != nil && acctBidAdjs == nil {
+	if extPrebid != nil && acct == nil {
 		return extPrebid.BidAdjustments, nil
 	}
 
-	extPrebid.BidAdjustments.MediaType.Banner = mergeForMediaType(extPrebid.BidAdjustments.MediaType.Banner, acctBidAdjs.MediaType.Banner)
-	extPrebid.BidAdjustments.MediaType.Video = mergeForMediaType(extPrebid.BidAdjustments.MediaType.Video, acctBidAdjs.MediaType.Video)
-	extPrebid.BidAdjustments.MediaType.Native = mergeForMediaType(extPrebid.BidAdjustments.MediaType.Native, acctBidAdjs.MediaType.Native)
-	extPrebid.BidAdjustments.MediaType.Audio = mergeForMediaType(extPrebid.BidAdjustments.MediaType.Audio, acctBidAdjs.MediaType.Audio)
-	extPrebid.BidAdjustments.MediaType.WildCard = mergeForMediaType(extPrebid.BidAdjustments.MediaType.WildCard, acctBidAdjs.MediaType.WildCard)
+	extPrebid.BidAdjustments.MediaType.Banner = mergeForMediaType(extPrebid.BidAdjustments.MediaType.Banner, acct.MediaType.Banner)
+	extPrebid.BidAdjustments.MediaType.Native = mergeForMediaType(extPrebid.BidAdjustments.MediaType.Native, acct.MediaType.Native)
+	extPrebid.BidAdjustments.MediaType.Audio = mergeForMediaType(extPrebid.BidAdjustments.MediaType.Audio, acct.MediaType.Audio)
+	extPrebid.BidAdjustments.MediaType.VideoInstream = mergeForMediaType(extPrebid.BidAdjustments.MediaType.VideoInstream, acct.MediaType.VideoInstream)
+	extPrebid.BidAdjustments.MediaType.VideoOutstream = mergeForMediaType(extPrebid.BidAdjustments.MediaType.VideoOutstream, acct.MediaType.VideoOutstream)
+	extPrebid.BidAdjustments.MediaType.WildCard = mergeForMediaType(extPrebid.BidAdjustments.MediaType.WildCard, acct.MediaType.WildCard)
 
 	return extPrebid.BidAdjustments, nil
 }
 
-func mergeForMediaType(reqAdjMap map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID, accountAdjMap map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID) map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID {
-	if reqAdjMap != nil && accountAdjMap == nil {
-		return reqAdjMap
+func mergeForMediaType(reqAdj map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID, acctAdj map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID) map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID {
+	if reqAdj != nil && acctAdj == nil {
+		return reqAdj
 	}
-	if reqAdjMap == nil && accountAdjMap != nil {
-		return accountAdjMap
+	if reqAdj == nil && acctAdj != nil {
+		return acctAdj
 	}
 
-	for bidderName, dealIdToAdjustmentsMap := range accountAdjMap {
-		if _, ok := reqAdjMap[bidderName]; ok {
-			for dealID, acctAdjustmentsArray := range accountAdjMap[bidderName] {
-				if _, okay := reqAdjMap[bidderName][dealID]; !okay {
-					reqAdjMap[bidderName][dealID] = acctAdjustmentsArray
+	for bidderName, dealIdToAdjustmentsMap := range acctAdj {
+		if _, ok := reqAdj[bidderName]; ok {
+			for dealID, acctAdjustmentsArray := range acctAdj[bidderName] {
+				if _, okay := reqAdj[bidderName][dealID]; !okay {
+					reqAdj[bidderName][dealID] = acctAdjustmentsArray
 				}
 			}
 		} else {
-			reqAdjMap[bidderName] = dealIdToAdjustmentsMap
+			reqAdj[bidderName] = dealIdToAdjustmentsMap
 		}
 	}
-	return reqAdjMap
+	return reqAdj
 }

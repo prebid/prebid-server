@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/prebid/openrtb/v19/adcom1"
 	nativeRequests "github.com/prebid/openrtb/v19/native1/request"
 	nativeResponse "github.com/prebid/openrtb/v19/native1/response"
 	"github.com/prebid/openrtb/v19/openrtb2"
@@ -2987,4 +2988,57 @@ func TestExtraBidWithMultiCurrencies(t *testing.T) {
 		return len(seatBids[i].Seat) < len(seatBids[j].Seat)
 	})
 	assert.Equal(t, wantSeatBids, seatBids)
+}
+
+func TestGetBidType(t *testing.T) {
+	testCases := []struct {
+		name         string
+		givenBidType openrtb_ext.BidType
+		givenImpId   string
+		givenImp     []openrtb2.Imp
+		expected     string
+	}{
+		{
+			name: "VideoInstream",
+			givenImp: []openrtb2.Imp{
+				{
+					ID: "imp-id",
+					Video: &openrtb2.Video{
+						Plcmt: adcom1.VideoPlcmtInstream,
+					},
+				},
+			},
+			givenBidType: openrtb_ext.BidTypeVideo,
+			givenImpId:   "imp-id",
+			expected:     "video-instream",
+		},
+		{
+			name: "VideoOutstream",
+			givenImp: []openrtb2.Imp{
+				{
+					ID: "imp-id",
+					Video: &openrtb2.Video{
+						Plcmt: adcom1.VideoPlcmtAccompanyingContent,
+					},
+				},
+			},
+			givenBidType: openrtb_ext.BidTypeVideo,
+			givenImpId:   "imp-id",
+			expected:     "video-outstream",
+		},
+		{
+			name:         "NonVideoBidType",
+			givenImp:     []openrtb2.Imp{},
+			givenBidType: openrtb_ext.BidTypeBanner,
+			givenImpId:   "imp-id",
+			expected:     string(openrtb_ext.BidTypeBanner),
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			actual := GetBidType(test.givenBidType, test.givenImpId, test.givenImp)
+			assert.Equal(t, test.expected, actual, "Bid type doesn't match")
+		})
+	}
 }

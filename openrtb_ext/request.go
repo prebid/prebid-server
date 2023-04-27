@@ -158,11 +158,12 @@ type AdjustmentsByDealID map[string][]Adjustment
 
 // BidderName maps to a DealID that maps to the Adjustments
 type MediaType struct {
-	Banner   map[BidderName]AdjustmentsByDealID `json:"banner,omitempty"`
-	Video    map[BidderName]AdjustmentsByDealID `json:"video,omitempty"`
-	Audio    map[BidderName]AdjustmentsByDealID `json:"audio,omitempty"`
-	Native   map[BidderName]AdjustmentsByDealID `json:"native,omitempty"`
-	WildCard map[BidderName]AdjustmentsByDealID `json:"*,omitempty"`
+	Banner         map[BidderName]AdjustmentsByDealID `json:"banner,omitempty"`
+	VideoInstream  map[BidderName]AdjustmentsByDealID `json:"video-instream,omitempty"`
+	VideoOutstream map[BidderName]AdjustmentsByDealID `json:"video-outstream,omitempty"`
+	Audio          map[BidderName]AdjustmentsByDealID `json:"audio,omitempty"`
+	Native         map[BidderName]AdjustmentsByDealID `json:"native,omitempty"`
+	WildCard       map[BidderName]AdjustmentsByDealID `json:"*,omitempty"`
 }
 
 type Adjustment struct {

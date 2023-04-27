@@ -21,6 +21,7 @@ func TestGetAndApply(t *testing.T) {
 		givenRuleToAdjustments map[string][]openrtb_ext.Adjustment
 		givenBidderName        openrtb_ext.BidderName
 		givenBidInfo           *adapters.TypedBid
+		givenBidType           string
 		setMock                func(m *mock.Mock)
 		expectedBidPrice       float64
 		expectedCurrency       string
@@ -32,8 +33,8 @@ func TestGetAndApply(t *testing.T) {
 					Price:  10.0,
 					DealID: "dealId",
 				},
-				BidType: openrtb_ext.BidTypeBanner,
 			},
+			givenBidType: string(openrtb_ext.BidTypeBanner),
 			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
 				"banner|bidderA|dealId": {
 					{
@@ -61,8 +62,8 @@ func TestGetAndApply(t *testing.T) {
 					Price:  10.0,
 					DealID: "dealId",
 				},
-				BidType: openrtb_ext.BidTypeBanner,
 			},
+			givenBidType: string(openrtb_ext.BidTypeBanner),
 			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
 				"*|bidderA|dealId": {
 					{
@@ -91,8 +92,8 @@ func TestGetAndApply(t *testing.T) {
 					Price:  10.0,
 					DealID: "dealId",
 				},
-				BidType: openrtb_ext.BidTypeBanner,
 			},
+			givenBidType: VideoInstream,
 			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
 				"*|*|dealId": {
 					{
@@ -101,7 +102,7 @@ func TestGetAndApply(t *testing.T) {
 						Currency: adjCur,
 					},
 				},
-				"banner|*|*": {
+				"video-instream|*|*": {
 					{
 						Type:     AdjustmentTypeMultiplier,
 						Value:    2.0,
@@ -121,8 +122,8 @@ func TestGetAndApply(t *testing.T) {
 					Price:  10.0,
 					DealID: "dealId",
 				},
-				BidType: openrtb_ext.BidTypeBanner,
 			},
+			givenBidType:           string(openrtb_ext.BidTypeBanner),
 			givenRuleToAdjustments: nil,
 			givenBidderName:        "bidderA",
 			setMock:                nil,
@@ -139,8 +140,7 @@ func TestGetAndApply(t *testing.T) {
 				test.setMock(&mockConversions.Mock)
 				reqInfo = adapters.NewExtraRequestInfo(mockConversions)
 			}
-
-			bidPrice, currencyAfterAdjustment := Apply(test.givenRuleToAdjustments, test.givenBidInfo, test.givenBidderName, bidCur, &reqInfo)
+			bidPrice, currencyAfterAdjustment := Apply(test.givenRuleToAdjustments, test.givenBidInfo, test.givenBidderName, bidCur, &reqInfo, test.givenBidType)
 			assert.Equal(t, test.expectedBidPrice, bidPrice, "Incorrect bid prices")
 			assert.Equal(t, test.expectedCurrency, currencyAfterAdjustment, "Incorrect currency")
 		})

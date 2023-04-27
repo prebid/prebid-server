@@ -16,7 +16,10 @@ func Validate(bidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments) bool {
 	if !validateForMediaType(bidAdjustments.MediaType.Audio) {
 		return false
 	}
-	if !validateForMediaType(bidAdjustments.MediaType.Video) {
+	if !validateForMediaType(bidAdjustments.MediaType.VideoInstream) {
+		return false
+	}
+	if !validateForMediaType(bidAdjustments.MediaType.VideoOutstream) {
 		return false
 	}
 	if !validateForMediaType(bidAdjustments.MediaType.Native) {

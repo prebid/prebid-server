@@ -24,6 +24,7 @@ import (
 	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/version"
 
+	"github.com/prebid/openrtb/v19/adcom1"
 	nativeRequests "github.com/prebid/openrtb/v19/native1/request"
 	nativeResponse "github.com/prebid/openrtb/v19/native1/response"
 	"github.com/prebid/openrtb/v19/openrtb2"
@@ -340,7 +341,9 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 						if bidResponse.Bids[i].Bid != nil {
 							originalBidCpm = bidResponse.Bids[i].Bid.Price
 							bidResponse.Bids[i].Bid.Price = bidResponse.Bids[i].Bid.Price * adjustmentFactor * conversionRate
-							bidResponse.Bids[i].Bid.Price, currencyAfterAdjustments = bidadjustment.Apply(ruleToAdjustments, bidResponse.Bids[i], bidderRequest.BidderName, seatBidMap[bidderRequest.BidderName].Currency, reqInfo)
+
+							bidType := GetBidType(bidResponse.Bids[i].BidType, bidResponse.Bids[i].Bid.ImpID, bidderRequest.BidRequest.Imp)
+							bidResponse.Bids[i].Bid.Price, currencyAfterAdjustments = bidadjustment.Apply(ruleToAdjustments, bidResponse.Bids[i], bidderRequest.BidderName, seatBidMap[bidderRequest.BidderName].Currency, reqInfo, bidType)
 						}
 
 						if _, ok := seatBidMap[bidderName]; !ok {
@@ -688,4 +691,19 @@ func compressToGZIP(requestBody []byte) []byte {
 	w.Write([]byte(requestBody))
 	w.Close()
 	return b.Bytes()
+}
+
+func GetBidType(bidType openrtb_ext.BidType, impId string, imp []openrtb2.Imp) string {
+	if bidType == openrtb_ext.BidTypeVideo {
+		for _, imp := range imp {
+			if imp.ID == impId {
+				if imp.Video.Plcmt == adcom1.VideoPlcmtInstream {
+					return "video-instream"
+				} else if imp.Video.Plcmt == adcom1.VideoPlcmtAccompanyingContent {
+					return "video-outstream"
+				}
+			}
+		}
+	}
+	return string(bidType)
 }

@@ -18,10 +18,10 @@ const (
 const maxNumOfCombos = 8
 const pricePrecision float64 = 10000 // Rounds to 4 Decimal Places
 
-func Apply(rules map[string][]openrtb_ext.Adjustment, bidInfo *adapters.TypedBid, bidderName openrtb_ext.BidderName, currency string, reqInfo *adapters.ExtraRequestInfo) (float64, string) {
+func Apply(rules map[string][]openrtb_ext.Adjustment, bidInfo *adapters.TypedBid, bidderName openrtb_ext.BidderName, currency string, reqInfo *adapters.ExtraRequestInfo, bidType string) (float64, string) {
 	adjustments := []openrtb_ext.Adjustment{}
-	if rules != nil {
-		adjustments = get(rules, string(bidInfo.BidType), string(bidderName), bidInfo.Bid.DealID)
+	if len(rules) > 0 {
+		adjustments = get(rules, bidType, string(bidderName), bidInfo.Bid.DealID)
 	} else {
 		return bidInfo.Bid.Price, currency
 	}
@@ -29,7 +29,7 @@ func Apply(rules map[string][]openrtb_ext.Adjustment, bidInfo *adapters.TypedBid
 }
 
 func apply(adjustments []openrtb_ext.Adjustment, bidPrice float64, currency string, reqInfo *adapters.ExtraRequestInfo) (float64, string) {
-	if adjustments == nil || len(adjustments) == 0 {
+	if len(adjustments) == 0 {
 		return bidPrice, currency
 	}
 	originalBidPrice := bidPrice
@@ -61,7 +61,7 @@ func apply(adjustments []openrtb_ext.Adjustment, bidPrice float64, currency stri
 // get() should return the highest priority slice of adjustments from the map that we can match with the given bid info
 // given the bid info, we create the same format of combinations that's present in the key of the ruleToAdjustments map
 // the slice is ordered by priority from highest to lowest, as soon as we find a match, we return that slice
-func get(ruleToAdjustments map[string][]openrtb_ext.Adjustment, bidType, bidderName, dealID string) []openrtb_ext.Adjustment {
+func get(rules map[string][]openrtb_ext.Adjustment, bidType, bidderName, dealID string) []openrtb_ext.Adjustment {
 	priorityRules := [maxNumOfCombos]string{}
 	if dealID != "" {
 		priorityRules[0] = bidType + Delimiter + bidderName + Delimiter + dealID
@@ -80,8 +80,8 @@ func get(ruleToAdjustments map[string][]openrtb_ext.Adjustment, bidType, bidderN
 	}
 
 	for _, rule := range priorityRules {
-		if _, ok := ruleToAdjustments[rule]; ok {
-			return ruleToAdjustments[rule]
+		if _, ok := rules[rule]; ok {
+			return rules[rule]
 		}
 	}
 	return nil

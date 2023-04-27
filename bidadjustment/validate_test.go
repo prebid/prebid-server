@@ -35,7 +35,7 @@ func TestValidate(t *testing.T) {
 							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}},
 						},
 					},
-					Video: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+					VideoInstream: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 						"bidderA": {
 							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeStatic, Value: 3.0, Currency: "USD"}},
 						},
@@ -53,7 +53,7 @@ func TestValidate(t *testing.T) {
 							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}},
 						},
 					},
-					Video: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+					VideoOutstream: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 						"bidderA": {
 							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCpm, Value: 3.0, Currency: ""}},
 						},
@@ -106,6 +106,19 @@ func TestValidate(t *testing.T) {
 			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
 					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+						"bidderA": {
+							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 150}},
+						},
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "InstreamInvalid",
+			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+				MediaType: openrtb_ext.MediaType{
+					VideoInstream: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 						"bidderA": {
 							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 150}},
 						},
