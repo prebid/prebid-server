@@ -379,15 +379,15 @@ func sendAmpResponse(
 
 func getExtBidResponse(
 	hookExecutor hookexecution.HookStageExecutor,
-	aucResponse *exchange.AuctionResponse,
+	auctionResponse *exchange.AuctionResponse,
 	reqWrapper *openrtb_ext.RequestWrapper,
 	account *config.Account,
 	ao analytics.AmpObject,
 	errs []error,
 ) (analytics.AmpObject, openrtb_ext.ExtBidResponse) {
 	var response *openrtb2.BidResponse
-	if aucResponse != nil {
-		response = aucResponse.BidResponse
+	if auctionResponse != nil {
+		response = auctionResponse.BidResponse
 	}
 	// Extract any errors
 	var extResponse openrtb_ext.ExtBidResponse
@@ -440,7 +440,7 @@ func getExtBidResponse(
 		}
 	}
 
-	setSeatNonBid(&extBidResponse, reqWrapper, aucResponse)
+	setSeatNonBid(&extBidResponse, reqWrapper, auctionResponse)
 
 	return ao, extBidResponse
 }
@@ -823,8 +823,8 @@ func setTrace(req *openrtb2.BidRequest, value string) (err error) {
 }
 
 // setSeatNonBid populates bidresponse.ext.prebid.seatnonbid if  bidrequest.ext.prebid.returnallbidstatus is true
-func setSeatNonBid(finalExtBidResponse *openrtb_ext.ExtBidResponse, request *openrtb_ext.RequestWrapper, aucResponse *exchange.AuctionResponse) bool {
-	if finalExtBidResponse == nil || aucResponse == nil || request == nil {
+func setSeatNonBid(finalExtBidResponse *openrtb_ext.ExtBidResponse, request *openrtb_ext.RequestWrapper, auctionResponse *exchange.AuctionResponse) bool {
+	if finalExtBidResponse == nil || auctionResponse == nil || request == nil {
 		return false
 	}
 	reqExt, err := request.GetRequestExt()
@@ -838,6 +838,6 @@ func setSeatNonBid(finalExtBidResponse *openrtb_ext.ExtBidResponse, request *ope
 	if finalExtBidResponse.Prebid == nil {
 		finalExtBidResponse.Prebid = &openrtb_ext.ExtResponsePrebid{}
 	}
-	finalExtBidResponse.Prebid.SeatNonBid = aucResponse.GetSeatNonBid()
+	finalExtBidResponse.Prebid.SeatNonBid = auctionResponse.GetSeatNonBid()
 	return true
 }

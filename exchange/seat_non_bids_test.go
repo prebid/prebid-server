@@ -25,19 +25,19 @@ func TestSeatNonBidsAdd(t *testing.T) {
 		want   map[string][]openrtb_ext.NonBid
 	}{
 		{
-			name:   "nil seatNonBidsMap",
+			name:   "nil-seatNonBidsMap",
 			fields: fields{seatNonBidsMap: nil},
 			args:   args{},
 			want:   nil,
 		},
 		{
-			name:   "nil seatNonBidsMap with bid object",
+			name:   "nil-seatNonBidsMap-with-bid-object",
 			fields: fields{seatNonBidsMap: nil},
 			args:   args{bid: &entities.PbsOrtbBid{Bid: &openrtb2.Bid{}}, seat: "bidder1"},
 			want:   sampleSeatNonBidMap("bidder1", 1),
 		},
 		{
-			name:   "multiple nonbids for same seat",
+			name:   "multiple-nonbids-for-same-seat",
 			fields: fields{seatNonBidsMap: sampleSeatNonBidMap("bidder2", 1)},
 			args:   args{bid: &entities.PbsOrtbBid{Bid: &openrtb2.Bid{}}, seat: "bidder2"},
 			want:   sampleSeatNonBidMap("bidder2", 2),
@@ -56,7 +56,8 @@ func TestSeatNonBidsAdd(t *testing.T) {
 
 func TestSeatNonBidsGet(t *testing.T) {
 	type fields struct {
-		seatNonBidsMap map[string][]openrtb_ext.NonBid
+		// seatNonBidsMap map[string][]openrtb_ext.NonBid
+		snb *nonBids
 	}
 	tests := []struct {
 		name   string
@@ -64,17 +65,18 @@ func TestSeatNonBidsGet(t *testing.T) {
 		want   []openrtb_ext.SeatNonBid
 	}{
 		{
-			name:   "get seat bids",
-			fields: fields{sampleSeatNonBidMap("bidder1", 2)},
+			name:   "get-seat-nonbids",
+			fields: fields{&nonBids{sampleSeatNonBidMap("bidder1", 2)}},
 			want:   sampleSeatBids("bidder1", 2),
+		},
+		{
+			name:   "nil-seat-nonbids",
+			fields: fields{nil},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			snb := &nonBids{
-				seatNonBidsMap: tt.fields.seatNonBidsMap,
-			}
-			if got := snb.get(); !assert.Equal(t, tt.want, got) {
+			if got := tt.fields.snb.get(); !assert.Equal(t, tt.want, got) {
 				t.Errorf("seatNonBids.get() = %v, want %v", got, tt.want)
 			}
 		})

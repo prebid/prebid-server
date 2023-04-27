@@ -467,10 +467,16 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 
 	bidResponse.Ext, err = encodeBidResponseExt(bidResponseExt)
 
+	bidResponseExt = setSeatNonBid(bidResponseExt, seatNonBids)
+
 	if err != nil {
 		return nil, err
 	}
-	return e.buildAuctionResponse(ctx, bidResponse, bidResponseExt, seatNonBids)
+
+	return &AuctionResponse{
+		BidResponse:    bidResponse,
+		ExtBidResponse: bidResponseExt,
+	}, nil
 }
 
 func buildMakeBidsTimeInfoMap(adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra) map[openrtb_ext.BidderName]adapters.MakeBidsTimeInfo {
@@ -1553,16 +1559,6 @@ func setErrorMessageSecureMarkup(validationType string) string {
 		return "bidResponse secure markup warning: insecure creative in secure contexts"
 	}
 	return ""
-}
-
-// buildAuctionResponse wraps the openrtb Bid Response object into AuctionResponse
-func (ex *exchange) buildAuctionResponse(ctx context.Context, bidResponse *openrtb2.BidResponse, bidResponseExt *openrtb_ext.ExtBidResponse, seatNonBids nonBids) (*AuctionResponse, error) {
-
-	bidResponseExt = setSeatNonBid(bidResponseExt, seatNonBids)
-	return &AuctionResponse{
-		BidResponse:    bidResponse,
-		ExtBidResponse: bidResponseExt,
-	}, nil
 }
 
 // setSeatNonBid  adds SeatNonBids within bidResponse.Ext.Prebid.SeatNonBid

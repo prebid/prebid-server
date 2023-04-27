@@ -2327,7 +2327,7 @@ func TestSetSeatNonBid(t *testing.T) {
 	type args struct {
 		finalExtBidResponse *openrtb_ext.ExtBidResponse
 		request             *openrtb_ext.RequestWrapper
-		aucResponse         *exchange.AuctionResponse
+		auctionResponse     *exchange.AuctionResponse
 	}
 	tests := []struct {
 		name string
@@ -2335,54 +2335,49 @@ func TestSetSeatNonBid(t *testing.T) {
 		want bool
 	}{
 		{
-			name: "nil aucResponse",
-			args: args{aucResponse: nil},
+			name: "nil-auctionResponse",
+			args: args{auctionResponse: nil},
 			want: false,
 		},
 		{
-			name: "nil request",
-			args: args{aucResponse: &exchange.AuctionResponse{}, request: nil},
+			name: "nil-request",
+			args: args{auctionResponse: &exchange.AuctionResponse{}, request: nil},
 			want: false,
 		},
 		{
-			name: "nil request",
-			args: args{aucResponse: &exchange.AuctionResponse{}, request: nil},
+			name: "invalid-req-ext",
+			args: args{auctionResponse: &exchange.AuctionResponse{}, request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: []byte(`invalid json`)}}},
 			want: false,
 		},
 		{
-			name: "invalid req ext",
-			args: args{aucResponse: &exchange.AuctionResponse{}, request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: []byte(`invalid json`)}}},
+			name: "nil-prebid",
+			args: args{auctionResponse: &exchange.AuctionResponse{}, request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: nil}}},
 			want: false,
 		},
 		{
-			name: "nil prebid",
-			args: args{aucResponse: &exchange.AuctionResponse{}, request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: nil}}},
+			name: "returnallbidstatus-is-false",
+			args: args{auctionResponse: &exchange.AuctionResponse{}, request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid" : {"returnallbidstatus" : false}}`)}}},
 			want: false,
 		},
 		{
-			name: "returnallbidstatus is false",
-			args: args{aucResponse: &exchange.AuctionResponse{}, request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid" : {"returnallbidstatus" : false}}`)}}},
-			want: false,
-		},
-		{
-			name: "finalExtBidResponse is nil",
+			name: "finalExtBidResponse-is-nil",
 			args: args{finalExtBidResponse: nil},
 			want: false,
 		},
 		{
-			name: "returnallbidstatus is true and responseExt.Prebid is nil",
-			args: args{finalExtBidResponse: &openrtb_ext.ExtBidResponse{Prebid: nil}, aucResponse: &exchange.AuctionResponse{}, request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid" : {"returnallbidstatus" : true}}`)}}},
+			name: "returnallbidstatus-is-true-and-responseExt.Prebid-is-nil",
+			args: args{finalExtBidResponse: &openrtb_ext.ExtBidResponse{Prebid: nil}, auctionResponse: &exchange.AuctionResponse{}, request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid" : {"returnallbidstatus" : true}}`)}}},
 			want: true,
 		},
 		{
-			name: "returnallbidstatus is true and responseExt.Prebid is not nil",
-			args: args{finalExtBidResponse: &openrtb_ext.ExtBidResponse{Prebid: nil}, aucResponse: &exchange.AuctionResponse{}, request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid" : {"returnallbidstatus" : true}}`)}}},
+			name: "returnallbidstatus-is-true-and-responseExt.Prebid-is-not-nil",
+			args: args{finalExtBidResponse: &openrtb_ext.ExtBidResponse{Prebid: nil}, auctionResponse: &exchange.AuctionResponse{}, request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid" : {"returnallbidstatus" : true}}`)}}},
 			want: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := setSeatNonBid(tt.args.finalExtBidResponse, tt.args.request, tt.args.aucResponse); got != tt.want {
+			if got := setSeatNonBid(tt.args.finalExtBidResponse, tt.args.request, tt.args.auctionResponse); got != tt.want {
 				t.Errorf("setSeatNonBid() = %v, want %v", got, tt.want)
 			}
 		})
