@@ -1670,11 +1670,9 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 	// Check Universal User ID
 	eids := userExt.GetEid()
 	if eids != nil {
-		if len(*eids) == 0 {
-			return append(errL, errors.New("request.user.ext.eids must contain at least one element or be undefined"))
-		}
-		uniqueSources := make(map[string]struct{}, len(*eids))
-		for eidIndex, eid := range *eids {
+		eidsValue := *eids
+		uniqueSources := make(map[string]struct{}, len(eidsValue))
+		for eidIndex, eid := range eidsValue {
 			if eid.Source == "" {
 				return append(errL, fmt.Errorf("request.user.ext.eids[%d] missing required field: \"source\"", eidIndex))
 			}
