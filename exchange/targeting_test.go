@@ -18,7 +18,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/util/ptrutil"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -125,7 +125,7 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 		req.Site = &openrtb2.Site{}
 	}
 
-	auctionRequest := AuctionRequest{
+	auctionRequest := &AuctionRequest{
 		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
 		Account:           config.Account{},
 		UserSyncs:         &emptyUsersync{},

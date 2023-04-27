@@ -24,7 +24,6 @@ type Metrics struct {
 	cookieSync                   *prometheus.CounterVec
 	setUid                       *prometheus.CounterVec
 	impressions                  *prometheus.CounterVec
-	impressionsLegacy            prometheus.Counter
 	prebidCacheWriteTimer        *prometheus.HistogramVec
 	requests                     *prometheus.CounterVec
 	debugRequests                prometheus.Counter
@@ -63,6 +62,7 @@ type Metrics struct {
 	adapterPanics                         *prometheus.CounterVec
 	adapterPrices                         *prometheus.HistogramVec
 	adapterRequests                       *prometheus.CounterVec
+	overheadTimer                         *prometheus.HistogramVec
 	adapterRequestsTimer                  *prometheus.HistogramVec
 	adapterReusedConnections              *prometheus.CounterVec
 	adapterCreatedConnections             *prometheus.CounterVec
@@ -130,6 +130,7 @@ const (
 	isVideoLabel         = "video"
 	markupDeliveryLabel  = "delivery"
 	optOutLabel          = "opt_out"
+	overheadTypeLabel    = "overhead_type"
 	privacyBlockedLabel  = "privacy_blocked"
 	requestStatusLabel   = "request_status"
 	requestTypeLabel     = "request_type"
@@ -176,6 +177,7 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 	cacheWriteTimeBuckets := []float64{0.001, 0.002, 0.005, 0.01, 0.025, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 1}
 	priceBuckets := []float64{250, 500, 750, 1000, 1500, 2000, 2500, 3000, 3500, 4000}
 	queuedRequestTimeBuckets := []float64{0, 1, 5, 30, 60, 120, 180, 240, 300}
+	overheadTimeBuckets := []float64{0.00005, 0.0001, 0.0005, 0.001, 0.002, 0.005, 0.01, 0.05}
 
 	metrics := Metrics{}
 	reg := prometheus.NewRegistry()
@@ -208,10 +210,6 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"impressions_requests",
 		"Count of requested impressions to Prebid Server labeled by type.",
 		[]string{isBannerLabel, isVideoLabel, isAudioLabel, isNativeLabel})
-
-	metrics.impressionsLegacy = newCounterWithoutLabels(cfg, reg,
-		"impressions_requests_legacy",
-		"Count of requested impressions to Prebid Server using the legacy endpoint.")
 
 	metrics.prebidCacheWriteTimer = newHistogramVec(cfg, reg,
 		"prebidcache_write_time_seconds",
@@ -429,6 +427,12 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"adapter_response_validation_secure_warn",
 		"Count that tracks number of bids removed from bid response that had a invalid bidAdm (warn)",
 		[]string{adapterLabel, successLabel})
+
+	metrics.overheadTimer = newHistogramVec(cfg, reg,
+		"overhead_time_seconds",
+		"Seconds to prepare adapter request or resolve adapter response",
+		[]string{overheadTypeLabel},
+		overheadTimeBuckets)
 
 	metrics.adapterRequestsTimer = newHistogramVec(cfg, reg,
 		"adapter_request_time_seconds",
@@ -911,6 +915,12 @@ func (m *Metrics) RecordAdapterPrice(labels metrics.AdapterLabels, cpm float64) 
 	m.adapterPrices.With(prometheus.Labels{
 		adapterLabel: string(labels.Adapter),
 	}).Observe(cpm)
+}
+
+func (m *Metrics) RecordOverheadTime(overhead metrics.OverheadType, duration time.Duration) {
+	m.overheadTimer.With(prometheus.Labels{
+		overheadTypeLabel: overhead.String(),
+	}).Observe(duration.Seconds())
 }
 
 func (m *Metrics) RecordAdapterTime(labels metrics.AdapterLabels, length time.Duration) {
