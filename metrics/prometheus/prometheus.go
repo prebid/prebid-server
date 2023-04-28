@@ -442,8 +442,8 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		standardTimeBuckets)
 
 	metrics.bidderServerResponseTimer = newHistogram(cfg, reg,
-		"bidder_server_response_time",
-		"Seconds to make a roundtrip to an adapter's bid server",
+		"bidder_server_response_time_seconds",
+		"Duration needed to send HTTP request and receive response back from bidder server.",
 		standardTimeBuckets)
 
 	metrics.syncerRequests = newCounter(cfg, reg,
