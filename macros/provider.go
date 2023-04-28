@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/exchange/entities"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -31,19 +30,6 @@ const (
 const (
 	CustomMacroPrefix = "PBS-MACRO-"
 )
-
-var (
-	bidLevelKeys = []string{MacroKeyBidID, MacroKeyBidder, MacroKeyVastEvent, MacroKeyEventType, MacroKeyVastCRTID}
-)
-
-type MacroContext struct {
-	Bid            *entities.PbsOrtbBid
-	Imp            *openrtb2.Imp
-	Seat           string
-	VastCreativeID string
-	VastEventType  string
-	EventElement   string
-}
 
 type macroProvider struct {
 	// macros map stores macros key values
