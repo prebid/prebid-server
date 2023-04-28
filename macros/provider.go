@@ -46,20 +46,21 @@ func NewProvider(reqWrapper *openrtb_ext.RequestWrapper) *macroProvider {
 func (b *macroProvider) populateRequestMacros(reqWrapper *openrtb_ext.RequestWrapper) {
 	b.macros[MacroKeyTimestamp] = strconv.Itoa(int(time.Now().Unix()))
 	reqExt, err := reqWrapper.GetRequestExt()
-	if err == nil && reqExt != nil && reqExt.GetPrebid() != nil {
-		for key, value := range reqExt.GetPrebid().Macros {
-			customMacroKey := CustomMacroPrefix + key       // Adding prefix PBS-MACRO to custom macro keys
-			b.macros[customMacroKey] = truncate(value, 100) // limit the custom macro value  to 100 chars only
-		}
+	if err == nil && reqExt != nil {
+		if reqPrebidExt := reqExt.GetPrebid(); reqPrebidExt != nil {
+			for key, value := range reqPrebidExt.Macros {
+				customMacroKey := CustomMacroPrefix + key       // Adding prefix PBS-MACRO to custom macro keys
+				b.macros[customMacroKey] = truncate(value, 100) // limit the custom macro value  to 100 chars only
+			}
 
-		if reqExt.GetPrebid().Integration != "" {
-			b.macros[MacroKeyIntegration] = reqExt.GetPrebid().Integration
-		}
-		channel := reqExt.GetPrebid().Channel
-		if channel != nil {
-			b.macros[MacroKeyChannel] = channel.Name
-		}
+			if reqPrebidExt.Integration != "" {
+				b.macros[MacroKeyIntegration] = reqPrebidExt.Integration
+			}
 
+			if reqPrebidExt.Channel != nil {
+				b.macros[MacroKeyChannel] = reqPrebidExt.Channel.Name
+			}
+		}
 	}
 	b.macros[MacroKeyAuctionID] = reqWrapper.ID
 	if reqWrapper.App != nil {
