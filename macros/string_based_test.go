@@ -27,11 +27,11 @@ func TestStringBasedProcessorReplace(t *testing.T) {
 				getMacroProvider: func() *macroProvider {
 					macroProvider := NewProvider(req)
 					macroProvider.PopulateBidMacros(&entities.PbsOrtbBid{Bid: bid}, "test")
-					macroProvider.PopulateEventMacros("123", "tracking", "firstQuartile")
+					macroProvider.PopulateEventMacros("123", "vast", "firstQuartile")
 					return macroProvider
 				},
 			},
-			want:    "http://tracker.com?macro1=bidId123&macro2=testbundle&macro3=testdomain&macro4=publishertestdomain&macro5=pageurltest&macro6=testpublisherID&macro7=10&macro8=yes&macro9=value1&macro10=test&macro11=&macro12=123&macro15=123&macro16=test1&macro17=tracking&macro18=firstQuartile",
+			want:    "http://tracker.com?macro1=bidId123&macro2=testbundle&macro3=testdomain&macro4=publishertestdomain&macro5=pageurltest&macro6=testpublisherID&macro7=10&macro8=yes&macro9=value1&macro10=test&macro11=&macro12=123&macro15=123&macro16=test1&macro17=vast&macro18=firstQuartile",
 			wantErr: false,
 		},
 		{
@@ -41,7 +41,7 @@ func TestStringBasedProcessorReplace(t *testing.T) {
 				getMacroProvider: func() *macroProvider {
 					macroProvider := NewProvider(req)
 					macroProvider.PopulateBidMacros(&entities.PbsOrtbBid{Bid: bid}, "test")
-					macroProvider.PopulateEventMacros("123", "tracking", "firstQuartile")
+					macroProvider.PopulateEventMacros("123", "vast", "firstQuartile")
 					return macroProvider
 				},
 			},
@@ -55,7 +55,7 @@ func TestStringBasedProcessorReplace(t *testing.T) {
 				getMacroProvider: func() *macroProvider {
 					macroProvider := NewProvider(&openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}})
 					macroProvider.PopulateBidMacros(&entities.PbsOrtbBid{Bid: bid}, "test")
-					macroProvider.PopulateEventMacros("123", "tracking", "firstQuartile")
+					macroProvider.PopulateEventMacros("123", "vast", "firstQuartile")
 					return macroProvider
 				},
 			},
@@ -69,7 +69,7 @@ func TestStringBasedProcessorReplace(t *testing.T) {
 				getMacroProvider: func() *macroProvider {
 					macroProvider := NewProvider(&openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}})
 					macroProvider.PopulateBidMacros(&entities.PbsOrtbBid{Bid: bid}, "test")
-					macroProvider.PopulateEventMacros("123", "tracking", "firstQuartile")
+					macroProvider.PopulateEventMacros("123", "vast", "firstQuartile")
 					return macroProvider
 				},
 			},

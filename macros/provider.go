@@ -126,10 +126,10 @@ func (b *macroProvider) PopulateBidMacros(bid *entities.PbsOrtbBid, seat string)
 	b.macros[MacroKeyBidder] = seat
 }
 
-func (b *macroProvider) PopulateEventMacros(vastCreativeID, eventElement, vastEventType string) {
+func (b *macroProvider) PopulateEventMacros(vastCreativeID, eventType, vastEvent string) {
 	b.macros[MacroKeyVastCRTID] = vastCreativeID
-	b.macros[MacroKeyVastEvent] = vastEventType
-	b.macros[MacroKeyEventType] = eventElement
+	b.macros[MacroKeyEventType] = eventType
+	b.macros[MacroKeyVastEvent] = vastEvent
 }
 
 func truncate(text string, width uint) string {

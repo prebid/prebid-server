@@ -55,7 +55,7 @@ func BenchmarkStringIndexCachedBasedReplacer(b *testing.B) {
 		for _, url := range benchmarkURL {
 			macroProvider := NewProvider(req)
 			macroProvider.PopulateBidMacros(&entities.PbsOrtbBid{Bid: bid}, "test")
-			macroProvider.PopulateEventMacros("123", "tracking", "firstQuartile")
+			macroProvider.PopulateEventMacros("123", "vast", "firstQuartile")
 			_, err := processor.Replace(url, macroProvider)
 			if err != nil {
 				b.Errorf("Fail to replace macro in tracker")
