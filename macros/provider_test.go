@@ -182,7 +182,7 @@ func TestGetMacro(t *testing.T) {
 			want: "123",
 		},
 		{
-			name: "get PBS-ACCOUNTID key",
+			name: "get PBS-BIDDER key",
 			args: args{
 				key: MacroKeyBidder,
 				reqWrapper: &openrtb_ext.RequestWrapper{
@@ -228,62 +228,205 @@ func TestGetMacro(t *testing.T) {
 }
 
 func TestPopulateRequestMacros(t *testing.T) {
-	type fields struct {
-		macros map[string]string
-	}
 	type args struct {
 		reqWrapper *openrtb_ext.RequestWrapper
 	}
 	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   map[string]string
+		name string
+		key  string
+		args args
+		want string
 	}{
 		{
-			name: "Populate Request Level macros",
-			fields: fields{
-				macros: map[string]string{},
-			},
+			name: "populate PBS-AUCTIONID key",
+			key:  MacroKeyAuctionID,
 			args: args{
 				reqWrapper: &openrtb_ext.RequestWrapper{
 					BidRequest: &openrtb2.BidRequest{
 						ID: "123",
-						Site: &openrtb2.Site{
-							Domain: "testdomain",
-							Publisher: &openrtb2.Publisher{
-								Domain: "publishertestdomain",
-								ID:     "testpublisherID",
-							},
-							Page: "pageurltest",
-						},
-						App: &openrtb2.App{
-							Domain: "testdomain",
-							Bundle: "testbundle",
-							Publisher: &openrtb2.Publisher{
-								Domain: "publishertestdomain",
-								ID:     "testpublisherID",
-							},
-						},
-						Device: &openrtb2.Device{
-							Lmt: &lmt,
-						},
-						User: &openrtb2.User{Ext: []byte(`{"consent":"yes" }`)},
-						Ext:  []byte(`{"prebid":{"channel": {"name":"test1"},"macros":{"CUSTOMMACR1":"value1","CUSTOMMACR2":"value2","CUSTOMMACR3":"value3"}}}`),
 					},
 				},
 			},
-			want: map[string]string{"PBS-ACCOUNTID": "testpublisherID", "PBS-APPBUNDLE": "testbundle", "PBS-AUCTIONID": "123", "PBS-CHANNEL": "test1", "PBS-DOMAIN": "testdomain", "PBS-GDPRCONSENT": "yes", "PBS-LIMITADTRACKING": "10", "PBS-MACRO-CUSTOMMACR1": "value1", "PBS-MACRO-CUSTOMMACR2": "value2", "PBS-MACRO-CUSTOMMACR3": "value3", "PBS-PAGEURL": "pageurltest", "PBS-PUBDOMAIN": "publishertestdomain"},
+			want: "123",
+		},
+		{
+			name: "populate PBS-APPBUNDLE key",
+			key:  MacroKeyAppBundle,
+			args: args{
+				reqWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						App: &openrtb2.App{
+							Bundle: "testbundle",
+						},
+					},
+				},
+			},
+			want: "testbundle",
+		},
+		{
+			name: "populate App PBS-DOMAIN key",
+			key:  MacroKeyDomain,
+			args: args{
+				reqWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						App: &openrtb2.App{
+							Domain: "testDomain",
+						},
+					},
+				},
+			},
+			want: "testDomain",
+		},
+		{
+			name: "populate Site PBS-DOMAIN key",
+			key:  MacroKeyDomain,
+			args: args{
+				reqWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Site: &openrtb2.Site{
+							Domain: "testDomain",
+						},
+					},
+				},
+			},
+			want: "testDomain",
+		},
+		{
+			name: "populate App PBS-PUBDOMAIN key",
+			key:  MacroKeyPubDomain,
+			args: args{
+				reqWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						App: &openrtb2.App{
+							Publisher: &openrtb2.Publisher{
+								Domain: "pubDomain",
+							},
+						},
+					},
+				},
+			},
+			want: "pubDomain",
+		},
+		{
+			name: "populate Site PBS-PUBDOMAIN key",
+			key:  MacroKeyPubDomain,
+			args: args{
+				reqWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Site: &openrtb2.Site{
+							Publisher: &openrtb2.Publisher{
+								Domain: "pubDomain",
+							},
+						},
+					},
+				},
+			},
+			want: "pubDomain",
+		},
+		{
+			name: "populate PBS-PAGEURL key",
+			key:  MacroKeyPageURL,
+			args: args{
+				reqWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Site: &openrtb2.Site{
+							Page: "pageurltest",
+						},
+					},
+				},
+			},
+			want: "pageurltest",
+		},
+		{
+			name: "populate App PBS-ACCOUNTID key",
+			key:  MacroKeyAccountID,
+			args: args{
+				reqWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						App: &openrtb2.App{
+							Publisher: &openrtb2.Publisher{
+								ID: "pubID",
+							},
+						},
+					},
+				},
+			},
+			want: "pubID",
+		},
+		{
+			name: "populate Site PBS-ACCOUNTID key",
+			key:  MacroKeyAccountID,
+			args: args{
+				reqWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Site: &openrtb2.Site{
+							Publisher: &openrtb2.Publisher{
+								ID: "pubID",
+							},
+						},
+					},
+				},
+			},
+			want: "pubID",
+		},
+		{
+			name: "populate PBS-LIMITADTRACKING key",
+			key:  MacroKeyLmtTracking,
+			args: args{
+				reqWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Device: &openrtb2.Device{
+							Lmt: &lmt,
+						},
+					},
+				},
+			},
+			want: "10",
+		},
+		{
+			name: "populate PBS-CONSENT key",
+			key:  MacroKeyConsent,
+			args: args{
+				reqWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						User: &openrtb2.User{Ext: []byte(`{"consent":"1" }`)},
+					},
+				},
+			},
+			want: "1",
+		},
+		{
+			name: "populate PBS-INTEGRATION key",
+			key:  MacroKeyIntegration,
+			args: args{
+				reqWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Ext: []byte(`{"prebid":{"integration":"testIntegration","channel": {"name":"test1"},"macros":{"CUSTOMMACR1":"value1","CUSTOMMACR2":"value2","CUSTOMMACR3":"value3"}}}`),
+					},
+				},
+			},
+			want: "testIntegration",
+		},
+		{
+			name: "populate PBS-CHANNEL key",
+			key:  MacroKeyChannel,
+			args: args{
+				reqWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Ext: []byte(`{"prebid":{"channel": {"name":"test1"}}}`),
+					},
+				},
+			},
+			want: "test1",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			b := &macroProvider{
-				macros: tt.fields.macros,
+				macros: map[string]string{},
 			}
 			b.populateRequestMacros(tt.args.reqWrapper)
-			delete(b.macros, MacroKeyTimestamp)
-			assert.Equal(t, tt.want, b.macros, tt.name)
+			assert.Equal(t, tt.want, b.GetMacro(tt.key), tt.name)
 		})
 	}
 }
@@ -342,7 +485,7 @@ func TestPopulateBidMacros(t *testing.T) {
 				macros: map[string]string{},
 			}
 			b.PopulateBidMacros(tt.args.bid, tt.args.seat)
-			assert.Equal(t, tt.want, b.macros[tt.key], tt.name)
+			assert.Equal(t, tt.want, b.GetMacro(tt.key), tt.name)
 		})
 	}
 }
@@ -391,7 +534,50 @@ func TestPopulateEventMacros(t *testing.T) {
 				macros: map[string]string{},
 			}
 			b.PopulateEventMacros(tt.args.vastCreativeID, tt.args.eventType, tt.args.vastEvent)
-			assert.Equal(t, tt.want, b.macros[tt.key], tt.name)
+			assert.Equal(t, tt.want, b.GetMacro(tt.key), tt.name)
+		})
+	}
+}
+
+func TestTruncate(t *testing.T) {
+	type args struct {
+		text  string
+		width uint
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "text is empty",
+			args: args{
+				text:  "",
+				width: customMacroLength,
+			},
+			want: "",
+		},
+		{
+			name: "width less than 100 chars",
+			args: args{
+				text:  "abcdef",
+				width: customMacroLength,
+			},
+			want: "abcdef",
+		},
+		{
+			name: "width greater than 100 chars",
+			args: args{
+				text:  "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz",
+				width: customMacroLength,
+			},
+			want: "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuv",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := truncate(tt.args.text, tt.args.width)
+			assert.Equal(t, tt.want, got, tt.name)
 		})
 	}
 }
