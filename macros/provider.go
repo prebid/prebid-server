@@ -27,7 +27,9 @@ const (
 	MacroKeyEventType   = "PBS-EVENTTYPE"
 	MacroKeyVastEvent   = "PBS-VASTEVENT"
 )
+
 const (
+	customMacroLength = 100
 	CustomMacroPrefix = "PBS-MACRO-"
 )
 
@@ -49,8 +51,8 @@ func (b *macroProvider) populateRequestMacros(reqWrapper *openrtb_ext.RequestWra
 	if err == nil && reqExt != nil {
 		if reqPrebidExt := reqExt.GetPrebid(); reqPrebidExt != nil {
 			for key, value := range reqPrebidExt.Macros {
-				customMacroKey := CustomMacroPrefix + key       // Adding prefix PBS-MACRO to custom macro keys
-				b.macros[customMacroKey] = truncate(value, 100) // limit the custom macro value  to 100 chars only
+				customMacroKey := CustomMacroPrefix + key                     // Adding prefix PBS-MACRO to custom macro keys
+				b.macros[customMacroKey] = truncate(value, customMacroLength) // limit the custom macro value  to 100 chars only
 			}
 
 			if reqPrebidExt.Integration != "" {
