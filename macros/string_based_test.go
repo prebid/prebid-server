@@ -6,9 +6,10 @@ import (
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/exchange/entities"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestStringBasedProcessorReplace(t *testing.T) {
+func TestStringIndexBasedReplace(t *testing.T) {
 
 	type args struct {
 		url              string
@@ -79,14 +80,13 @@ func TestStringBasedProcessorReplace(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			processor := NewStringIndexBasedReplacer()
-			got, err := processor.Replace(tt.args.url, tt.args.getMacroProvider())
-			if (err != nil) != tt.wantErr {
-				t.Errorf("stringBasedProcessor.Replace() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("stringBasedProcessor.Replace() = %v, want %v", got, tt.want)
+			replacer := NewStringIndexBasedReplacer()
+			got, err := replacer.Replace(tt.args.url, tt.args.getMacroProvider())
+			if tt.wantErr {
+				assert.Error(t, err, tt.name)
+			} else {
+				assert.NoError(t, err, tt.name)
+				assert.Equal(t, tt.want, got, tt.name)
 			}
 		})
 	}

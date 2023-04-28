@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/exchange/entities"
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_macroProvider_GetMacro(t *testing.T) {
@@ -29,9 +30,8 @@ func Test_macroProvider_GetMacro(t *testing.T) {
 			macroProvider.PopulateBidMacros(&entities.PbsOrtbBid{Bid: bid}, "test")
 			macroProvider.PopulateEventMacros("123", "vast", "firstQuartile")
 			for _, key := range tt.args.keys {
-				if got := macroProvider.GetMacro(key); got != tt.want[key] {
-					t.Errorf("macroProvider.GetMacro() = %v, want %v", got, tt.want[key])
-				}
+				got := macroProvider.GetMacro(key)
+				assert.Equal(t, tt.want[key], got, tt.name)
 			}
 		})
 	}
