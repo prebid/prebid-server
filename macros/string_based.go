@@ -9,7 +9,7 @@ const (
 	delimiter = "##"
 )
 
-type stringBasedReplacer struct {
+type stringIndexBasedReplacer struct {
 	templates map[string]urlMetaTemplate
 	sync.RWMutex
 }
@@ -17,6 +17,13 @@ type stringBasedReplacer struct {
 type urlMetaTemplate struct {
 	indices     []int
 	macroLength []int
+}
+
+// NewReplacer will return instance of macro processor
+func NewStringIndexBasedReplacer() Replacer {
+	return &stringIndexBasedReplacer{
+		templates: make(map[string]urlMetaTemplate),
+	}
 }
 
 func constructTemplate(url string) urlMetaTemplate {
@@ -48,7 +55,7 @@ func constructTemplate(url string) urlMetaTemplate {
 	return tmplt
 }
 
-func (processor *stringBasedReplacer) Replace(url string, macroProvider *macroProvider) (string, error) {
+func (processor *stringIndexBasedReplacer) Replace(url string, macroProvider *macroProvider) (string, error) {
 	tmplt := processor.getTemplate(url)
 
 	var result strings.Builder
@@ -68,7 +75,7 @@ func (processor *stringBasedReplacer) Replace(url string, macroProvider *macroPr
 	return result.String(), nil
 }
 
-func (processor *stringBasedReplacer) getTemplate(url string) urlMetaTemplate {
+func (processor *stringIndexBasedReplacer) getTemplate(url string) urlMetaTemplate {
 	var (
 		template urlMetaTemplate
 		ok       bool

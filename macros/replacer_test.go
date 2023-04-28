@@ -50,7 +50,7 @@ var bid *openrtb2.Bid = &openrtb2.Bid{ID: "bidId123", CID: "campaign_1", CrID: "
 
 func BenchmarkStringIndexCachedBasedReplacer(b *testing.B) {
 
-	processor := NewReplacer()
+	processor := NewStringIndexBasedReplacer()
 	for n := 0; n < b.N; n++ {
 		for _, url := range benchmarkURL {
 			macroProvider := NewProvider(req)
@@ -90,7 +90,7 @@ func BenchmarkStringIndexCachedBasedReplacer(b *testing.B) {
 // 		keyValue = append(keyValue, value)
 // 	}
 
-// 	rplcr := strings.NewReplacer(keyValue...)
+// 	rplcr := strings.NewStringIndexBasedReplacer(keyValue...)
 // 	output := rplcr.Replace(url)
 // 	r := regexp.MustCompile(`##(.*?)##`)
 // 	return r.ReplaceAllString(output, "")
