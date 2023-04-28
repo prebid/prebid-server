@@ -98,7 +98,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	var errs []error
 	for _, seatBid := range response.SeatBid {
 		for i, bid := range seatBid.Bid {
-			bidType, err := getBidMediaType(bid)
+			bidType, err := getBidMediaType(&bid)
 			if err != nil {
 				errs = append(errs, err)
 				continue
@@ -136,7 +136,7 @@ func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ImpExtFRVRAdn, error) {
 	return &frvrAdnExt, nil
 }
 
-func getBidMediaType(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+func getBidMediaType(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 	var extBid openrtb_ext.ExtBid
 	err := json.Unmarshal(bid.Ext, &extBid)
 	if err != nil {
