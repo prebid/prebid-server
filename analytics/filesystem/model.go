@@ -55,7 +55,7 @@ type logAMP struct {
 	HookExecutionOutcome []hookexecution.StageOutcome
 }
 
-type logEvent struct {
+type logNotificationEvent struct {
 	Request *analytics.EventRequest `json:"request"`
 	Account *config.Account         `json:"account"`
 }

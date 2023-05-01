@@ -242,9 +242,9 @@ func jsonifyAmpObject(ao *analytics.AmpObject) string {
 }
 
 func jsonifyNotificationEventObject(ne *analytics.NotificationEvent) string {
-	var logEntry *logEvent
+	var logEntry *logNotificationEvent
 	if ne != nil {
-		logEntry = &logEvent{
+		logEntry = &logNotificationEvent{
 			Request: ne.Request,
 			Account: ne.Account,
 		}
@@ -252,10 +252,10 @@ func jsonifyNotificationEventObject(ne *analytics.NotificationEvent) string {
 
 	b, err := json.Marshal(&struct {
 		Type RequestType `json:"type"`
-		*logEvent
+		*logNotificationEvent
 	}{
-		Type:     NOTIFICATION_EVENT,
-		logEvent: logEntry,
+		Type:                 NOTIFICATION_EVENT,
+		logNotificationEvent: logEntry,
 	})
 
 	if err == nil {
