@@ -14,6 +14,7 @@
           ]
         },
         "bidfloor": 1e-05,
+        "bidfloorcur": "USD",
         "tagid": "testTag",
         "ext": {
           "bidder": {
@@ -24,13 +25,22 @@
         }
       }
     ],
-    "site": {
-      "domain": "bridge.richmediastudio.com",
-      "page": "https://bridge.richmediastudio.com//ab083674fb8200b877a6983126e4477d/PrebidServer/indexRa.html?pbjs_debug=true"
-    },
-    "device": {
-      "ip": "10.20.30.40",
-      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36"
+    "app": {
+      "id": "12345678",
+      "name": "Richaudience TV",
+      "bundle": "R12345678901011",
+      "publisher": {
+        "id": "1234567",
+        "ext": {
+          "prebid": {
+            "parentAccount": "891011"
+          }
+        }
+      },
+      "content": {
+        "title": "Richaudience TV",
+        "series": "Richaudience TV"
+      }
     },
     "user": {
       "buyeruid": "189f4055-78a3-46eb-b7fd-0915a1a43bd2a",
@@ -59,7 +69,7 @@
             {
               "id": "div-gpt-ad-1460505748561-0",
               "tagid": "OsNsyeF68q",
-              "secure": 1,
+              "secure": 0,
               "banner": {
                 "format": [
                   {
@@ -79,18 +89,31 @@
               }
             }
           ],
-          "site": {
+          "app": {
+            "id": "12345678",
             "keywords": "tagid=testTag",
-            "domain": "bridge.richmediastudio.com",
-            "page": "https://bridge.richmediastudio.com//ab083674fb8200b877a6983126e4477d/PrebidServer/indexRa.html?pbjs_debug=true"
+            "name": "Richaudience TV",
+            "bundle": "R12345678901011",
+            "publisher": {
+              "id": "1234567",
+              "ext": {
+                "prebid": {
+                  "parentAccount": "891011"
+                }
+              }
+            },
+            "content": {
+              "title": "Richaudience TV",
+              "series": "Richaudience TV"
+            }
           },
           "device": {
-            "ip": "11.222.33.44",
-            "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36"
+            "ip": "11.222.33.44"
           },
           "user": {
             "buyeruid": "189f4055-78a3-46eb-b7fd-0915a1a43bd2a",
-            "ext": {}
+            "ext": {
+            }
           }
         }
       },
