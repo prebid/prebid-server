@@ -351,15 +351,11 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 		clone.Cache = &ExtRequestPrebidCache{}
 		if erp.Cache.Bids != nil {
 			clone.Cache.Bids = &ExtRequestPrebidCacheBids{}
-			if erp.Cache.Bids.ReturnCreative != nil {
-				clone.Cache.Bids.ReturnCreative = ptrutil.ToPtr(*erp.Cache.Bids.ReturnCreative)
-			}
+			clone.Cache.Bids.ReturnCreative = ptrutil.Clone(erp.Cache.Bids.ReturnCreative)
 		}
 		if erp.Cache.VastXML != nil {
 			clone.Cache.VastXML = &ExtRequestPrebidCacheVAST{}
-			if erp.Cache.VastXML.ReturnCreative != nil {
-				clone.Cache.VastXML.ReturnCreative = ptrutil.ToPtr(*erp.Cache.VastXML.ReturnCreative)
-			}
+			clone.Cache.VastXML.ReturnCreative = ptrutil.Clone(erp.Cache.VastXML.ReturnCreative)
 		}
 	}
 
