@@ -71,8 +71,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			}
 
 			if raiExt.Test {
-				deviceCopy := *request.Device
-				request.Device = &deviceCopy
+				if request.Device != nil {
+					deviceCopy := *request.Device
+					request.Device = &deviceCopy
+				} else {
+					request.Device = &openrtb2.Device{}
+				}
 
 				request.Device.IP = "11.222.33.44"
 				request.Test = int8(1)
