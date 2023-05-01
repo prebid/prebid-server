@@ -181,9 +181,9 @@ func TestDefaults(t *testing.T) {
 	// Assert compression related defaults
 	cmpBools(t, "enable_gzip", false, cfg.EnableGzip)
 	cmpBools(t, "compression.request.enabled", false, cfg.Compression.Request.Enabled)
-	cmpStrings(t, "compression.request.type", CompressionTypeGZIP, cfg.Compression.Request.CType)
+	cmpStrings(t, "compression.request.kind", CompressionTypeGZIP, cfg.Compression.Request.Kind)
 	cmpBools(t, "compression.response.enabled", false, cfg.Compression.Response.Enabled)
-	cmpStrings(t, "compression.response.type", CompressionTypeGZIP, cfg.Compression.Response.CType)
+	cmpStrings(t, "compression.response.kind", CompressionTypeGZIP, cfg.Compression.Response.Kind)
 
 	cmpBools(t, "account_defaults.price_floors.enabled", cfg.AccountDefaults.PriceFloors.Enabled, false)
 	cmpInts(t, "account_defaults.price_floors.enforce_floors_rate", cfg.AccountDefaults.PriceFloors.EnforceFloorsRate, 100)
@@ -561,7 +561,7 @@ func TestFullConfig(t *testing.T) {
 	// Assert compression related defaults
 	cmpBools(t, "enable_gzip", false, cfg.EnableGzip)
 	cmpBools(t, "compression.request.enabled", true, cfg.Compression.Request.Enabled)
-	cmpStrings(t, "compression.request.type", CompressionTypeGZIP, cfg.Compression.Request.CType)
+	cmpStrings(t, "compression.request.type", CompressionTypeGZIP, cfg.Compression.Request.Kind)
 	cmpBools(t, "compression.response.enabled", false, cfg.Compression.Response.Enabled)
 
 	//Assert the NonStandardPublishers was correctly unmarshalled
@@ -2581,7 +2581,7 @@ func TestMigrateConfigCompression(t *testing.T) {
 		{
 			desc: "Old config set, new config not set",
 			config: []byte(`
-                        enable_gzip: true
+                    enable_gzip: true
                        `),
 			wantEnableGZIP:             true,
 			wantCompressionRespEnabled: true,
@@ -2592,7 +2592,7 @@ func TestMigrateConfigCompression(t *testing.T) {
                         compression:
                             response:
                                 enabled: true
-                                type: gzip
+                                kind: gzip
                             request:
                                 enabled: false
                         `),
@@ -2611,7 +2611,7 @@ func TestMigrateConfigCompression(t *testing.T) {
                                 enabled: false
                             request:
                                 enabled: true
-                                type: gzip
+                                kind: gzip
                        `),
 			wantEnableGZIP:             true,
 			wantCompressionReqEnabled:  true,
@@ -2632,9 +2632,9 @@ func TestMigrateConfigCompression(t *testing.T) {
 		if len(test.config) > 0 {
 			assert.Equal(t, test.wantEnableGZIP, v.GetBool("enable_gzip"), test.desc)
 			assert.Equal(t, test.wantCompressionReqEnabled, v.GetBool("compression.request.enabled"), test.desc)
-			assert.Equal(t, test.wantCompressionReqType, v.GetString("compression.request.type"), test.desc)
+			assert.Equal(t, test.wantCompressionReqType, v.GetString("compression.request.kind"), test.desc)
 			assert.Equal(t, test.wantCompressionRespEnabled, v.GetBool("compression.response.enabled"), test.desc)
-			assert.Equal(t, test.wantCompressionRespType, v.GetString("compression.response.type"), test.desc)
+			assert.Equal(t, test.wantCompressionRespType, v.GetString("compression.response.kind"), test.desc)
 		}
 	}
 }

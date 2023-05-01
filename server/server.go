@@ -93,7 +93,7 @@ func newAdminServer(cfg *config.Configuration, handler http.Handler) *http.Serve
 func newMainServer(cfg *config.Configuration, handler http.Handler) *http.Server {
 	var serverHandler = handler
 	if cfg.Compression.Response.Enabled {
-		serverHandler = getCompressionEnabledHandler(handler, cfg.Compression.Response.CType)
+		serverHandler = getCompressionEnabledHandler(handler, cfg.Compression.Response.Kind)
 	}
 
 	return &http.Server{
@@ -108,7 +108,7 @@ func newMainServer(cfg *config.Configuration, handler http.Handler) *http.Server
 func newSocketServer(cfg *config.Configuration, handler http.Handler) *http.Server {
 	var serverHandler = handler
 	if cfg.Compression.Response.Enabled {
-		serverHandler = getCompressionEnabledHandler(handler, cfg.Compression.Response.CType)
+		serverHandler = getCompressionEnabledHandler(handler, cfg.Compression.Response.Kind)
 	}
 
 	return &http.Server{

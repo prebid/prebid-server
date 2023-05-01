@@ -175,7 +175,7 @@ type Compression struct {
 // CompressionConfig defines if compression is enabled and what type of compression to use
 type CompressionConfig struct {
 	Enabled bool   `mapstructure:"enabled"`
-	CType   string `mapstructure:"type"`
+	Kind    string `mapstructure:"kind"`
 }
 
 const CompressionTypeGZIP = "gzip"
@@ -187,8 +187,8 @@ func (cfg *Compression) validate(errs []error) []error {
 }
 
 func (cfg *CompressionConfig) validate(errs []error) []error {
-	if cfg.Enabled && cfg.CType != CompressionTypeGZIP {
-		errs = append(errs, fmt.Errorf("compression type %s is not supported", cfg.CType))
+	if cfg.Enabled && strings.ToLower(cfg.Kind) != CompressionTypeGZIP {
+		errs = append(errs, fmt.Errorf("compression type %s is not supported", cfg.Kind))
 	}
 	return errs
 }
@@ -1037,9 +1037,9 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("account_defaults.price_floors.max_schema_dims", 3)
 
 	v.SetDefault("compression.response.enabled", false)
-	v.SetDefault("compression.response.type", CompressionTypeGZIP)
+	v.SetDefault("compression.response.kind", CompressionTypeGZIP)
 	v.SetDefault("compression.request.enabled", false)
-	v.SetDefault("compression.request.type", CompressionTypeGZIP)
+	v.SetDefault("compression.request.kind", CompressionTypeGZIP)
 
 	v.SetDefault("certificates_file", "")
 	v.SetDefault("auto_gen_source_tid", true)

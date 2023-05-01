@@ -342,7 +342,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	reqContentEnc := httpRequest.Header.Get("Content-Encoding")
 	if reqContentEnc == "gzip" {
 		if !deps.cfg.Compression.Request.Enabled ||
-			deps.cfg.Compression.Request.CType != config.CompressionTypeGZIP {
+			deps.cfg.Compression.Request.Kind != config.CompressionTypeGZIP {
 			errs = []error{fmt.Errorf("Content-Encoding of type %s is not supported", reqContentEnc)}
 			return
 		}
