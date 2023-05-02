@@ -39,6 +39,7 @@ type Account struct {
 	PriceFloors             AccountPriceFloors                   `mapstructure:"price_floors" json:"price_floors"`
 	Validations             Validations                          `mapstructure:"validations" json:"validations"`
 	DefaultBidLimit         int                                  `mapstructure:"default_bid_limit" json:"default_bid_limit"`
+	Privacy                 AccountPrivacy                       `mapstructure:"privacy" json:"privacy"`
 }
 
 // CookieSync represents the account-level defaults for the cookie sync endpoint.
@@ -289,4 +290,8 @@ func (m AccountModules) ModuleConfig(id string) (json.RawMessage, error) {
 
 func (a *AccountChannel) IsSet() bool {
 	return a.AMP != nil || a.App != nil || a.Video != nil || a.Web != nil
+}
+
+type AccountPrivacy struct {
+	AllowActivities AllowActivities `mapstructure:"allowactivities" json:"allowactivities"`
 }
