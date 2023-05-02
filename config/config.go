@@ -145,7 +145,7 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 	}
 
 	if len(cfg.AccountDefaults.Events.VASTEvents) > 0 {
-		errs = append(errs, errors.New("account_defaults.Events.VASTEvents will currently not do anything as the feature is still under development. Please follow https://github.com/prebid/prebid-server/issues/1725 for more updates"))
+		errs = append(errs, errors.New("account_defaults.Events.VASTEvents has no effect as the feature is under development."))
 	}
 
 	errs = cfg.Experiment.validate(errs)
@@ -1386,6 +1386,7 @@ func migrateConfigEventsEnabled(oldFieldValue *bool, newFieldValue *bool) (updat
 	newField := "account_defaults.events.enabled"
 	oldField := "account_defaults.events_enabled"
 
+	updatedOldFieldValue = oldFieldValue
 	if oldFieldValue != nil {
 		glog.Warningf("%s is deprecated and should be changed to %s", oldField, newField)
 	}
@@ -1393,10 +1394,6 @@ func migrateConfigEventsEnabled(oldFieldValue *bool, newFieldValue *bool) (updat
 		if oldFieldValue != nil {
 			glog.Warningf("using %s and ignoring deprecated %s", newField, oldField)
 		}
-	}
-
-	updatedOldFieldValue = oldFieldValue
-	if newFieldValue != nil {
 		updatedOldFieldValue = ptrutil.ToPtr(*newFieldValue)
 	}
 
