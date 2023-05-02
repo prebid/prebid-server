@@ -1,0 +1,44 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-banner-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "bidfloor": 1,
+        "bidfloorcur": "EUR",
+        "ext": {
+          "bidder": {
+            "ad_unit_id": "33c76a5f-d9ef-4630-9e1e-7705673f1693",
+            "publisher_id": "0c0ac25e-e0b5-46d7-94d1-e1bf68034dd9"
+          }
+        }
+      }
+    ],
+    "ext": {
+      "prebid": {
+        "currency": {
+          "rates": {
+            "GBP": {
+              "USD": 1.5
+            }
+          },
+          "usepbsrates": false
+        }
+      }
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Currency conversion rate not found: 'EUR' => 'USD'",
+      "comparison": "literal"
+    }
+  ]
+}
