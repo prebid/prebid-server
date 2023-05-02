@@ -133,7 +133,7 @@ func TestParseImpressionObject(t *testing.T) {
 			expectedBidfloor: 0.12,
 		},
 		{
-			name: "imp.bidfloor set and kadfloor set, kadfloor",
+			name: "imp.bidfloor set and kadfloor set, higher kadfloor",
 			args: args{
 				imp: &openrtb2.Imp{
 					BidFloor: 0.12,
