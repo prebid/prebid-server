@@ -1585,7 +1585,6 @@ func validateTargeting(t *openrtb_ext.ExtRequestTargeting) error {
 }
 
 func validatePriceGranularity(pg *openrtb_ext.PriceGranularity) error {
-
 	if pg.Precision == nil {
 		return errors.New("Price granularity error: precision is required")
 	} else if *pg.Precision < 0 {

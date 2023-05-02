@@ -18,7 +18,8 @@ func GetPriceBucket(bid openrtb2.Bid, targetingData *targetData) string {
 	if targetingData.mediaTypePriceGranularity != nil {
 		bidType, err := getMediaTypeForBid(bid)
 		if err != nil {
-			config = targetingData.priceGranularity //assign default price granularity
+			//assign default price granularity if error is not nil, meaning bid type is not found
+			config = targetingData.priceGranularity
 		} else if bidType == openrtb_ext.BidTypeVideo && targetingData.mediaTypePriceGranularity.Video != nil {
 			config = *targetingData.mediaTypePriceGranularity.Video
 		} else if bidType == openrtb_ext.BidTypeBanner && targetingData.mediaTypePriceGranularity.Banner != nil {

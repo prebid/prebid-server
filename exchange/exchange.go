@@ -908,7 +908,7 @@ func applyCategoryMapping(ctx context.Context, targeting openrtb_ext.ExtRequestT
 			bidID := bid.Bid.ID
 			var duration int
 			var category string
-			var pb string
+			var priceBucket string
 
 			if bid.BidVideo != nil {
 				duration = bid.BidVideo.Duration
@@ -942,7 +942,7 @@ func applyCategoryMapping(ctx context.Context, targeting openrtb_ext.ExtRequestT
 
 			// TODO: consider should we remove bids with zero duration here?
 
-			pb = GetPriceBucket(*bid.Bid, targData)
+			priceBucket = GetPriceBucket(*bid.Bid, targData)
 
 			newDur := duration
 			if len(targeting.DurationRangeSec) > 0 {
@@ -967,10 +967,10 @@ func applyCategoryMapping(ctx context.Context, targeting openrtb_ext.ExtRequestT
 			var categoryDuration string
 			var dupeKey string
 			if brandCatExt.WithCategory {
-				categoryDuration = fmt.Sprintf("%s_%s_%ds", pb, category, newDur)
+				categoryDuration = fmt.Sprintf("%s_%s_%ds", priceBucket, category, newDur)
 				dupeKey = category
 			} else {
-				categoryDuration = fmt.Sprintf("%s_%ds", pb, newDur)
+				categoryDuration = fmt.Sprintf("%s_%ds", priceBucket, newDur)
 				dupeKey = categoryDuration
 			}
 
@@ -984,7 +984,7 @@ func applyCategoryMapping(ctx context.Context, targeting openrtb_ext.ExtRequestT
 				if err != nil {
 					dupeBidPrice = 0
 				}
-				currBidPrice, err := strconv.ParseFloat(pb, 64)
+				currBidPrice, err := strconv.ParseFloat(priceBucket, 64)
 				if err != nil {
 					currBidPrice = 0
 				}
@@ -1025,7 +1025,7 @@ func applyCategoryMapping(ctx context.Context, targeting openrtb_ext.ExtRequestT
 				}
 			}
 			res[bidID] = categoryDuration
-			dedupe[dupeKey] = bidDedupe{bidderName: bidderName, bidIndex: bidInd, bidID: bidID, bidPrice: pb}
+			dedupe[dupeKey] = bidDedupe{bidderName: bidderName, bidIndex: bidInd, bidID: bidID, bidPrice: priceBucket}
 		}
 
 		if len(bidsToRemove) > 0 {
