@@ -16,7 +16,6 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/openrtb/v19/openrtb3"
-	"github.com/prebid/prebid-server/enums"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/ortb"
 	"github.com/prebid/prebid-server/util/uuidutil"
@@ -124,7 +123,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 
 	labels := metrics.Labels{
 		Source:        metrics.DemandWeb,
-		RType:         enums.ReqTypeAMP,
+		RType:         config.ReqTypeAMP,
 		PubID:         metrics.PublisherUnknown,
 		CookieFlag:    metrics.CookieFlagUnknown,
 		RequestStatus: metrics.RequestStatusOK,

@@ -18,7 +18,6 @@ import (
 	"github.com/prebid/prebid-server/adservertargeting"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
-	"github.com/prebid/prebid-server/enums"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange/entities"
 	"github.com/prebid/prebid-server/experiment/adscert"
@@ -189,7 +188,7 @@ type AuctionRequest struct {
 	ResolvedBidRequest         json.RawMessage
 	Account                    config.Account
 	UserSyncs                  IdFetcher
-	RequestType                enums.RequestType
+	RequestType                config.RequestType
 	StartTime                  time.Time
 	Warnings                   []error
 	GlobalPrivacyControlHeader string
@@ -281,9 +280,9 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	}
 	e.me.RecordDebugRequest(responseDebugAllow || accountDebugAllow, r.PubID)
 
-	if r.RequestType == enums.ReqTypeORTB2Web ||
-		r.RequestType == enums.ReqTypeORTB2App ||
-		r.RequestType == enums.ReqTypeAMP {
+	if r.RequestType == config.ReqTypeORTB2Web ||
+		r.RequestType == config.ReqTypeORTB2App ||
+		r.RequestType == config.ReqTypeAMP {
 		//Extract First party data for auction endpoint only
 		resolvedFPD, fpdErrors := firstpartydata.ExtractFPDForBidders(r.BidRequestWrapper)
 		if len(fpdErrors) > 0 {

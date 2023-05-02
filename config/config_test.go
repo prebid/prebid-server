@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/prebid/go-gdpr/consentconstants"
-	"github.com/prebid/prebid-server/enums"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -3264,14 +3263,14 @@ func TestLimitAuctionTimeout(t *testing.T) {
 		description     string
 		requested       time.Duration
 		tmaxAdjustments *TmaxAdjustments
-		requestType     enums.RequestType
+		requestType     RequestType
 		expected        time.Duration
 	}{
 		{
 			description:     "use-requested-duration-when-tmax.enabled-is-false",
 			requested:       500,
 			tmaxAdjustments: &TmaxAdjustments{},
-			requestType:     enums.ReqTypeORTB2Web,
+			requestType:     ReqTypeORTB2Web,
 			expected:        500,
 		},
 		{
@@ -3281,7 +3280,7 @@ func TestLimitAuctionTimeout(t *testing.T) {
 				Enabled: true,
 				AmpMax:  600,
 			},
-			requestType: enums.ReqTypeAMP,
+			requestType: ReqTypeAMP,
 			expected:    300,
 		},
 		{
@@ -3291,7 +3290,7 @@ func TestLimitAuctionTimeout(t *testing.T) {
 				Enabled:  true,
 				VideoMax: 600,
 			},
-			requestType: enums.ReqTypeVideo,
+			requestType: ReqTypeVideo,
 			expected:    600,
 		},
 	}

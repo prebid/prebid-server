@@ -23,7 +23,6 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
-	"github.com/prebid/prebid-server/enums"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange/entities"
 	"github.com/prebid/prebid-server/experiment/adscert"
@@ -2171,7 +2170,7 @@ func TestPanicRecovery(t *testing.T) {
 
 	apnLabels := metrics.AdapterLabels{
 		Source:      metrics.DemandWeb,
-		RType:       enums.ReqTypeORTB2Web,
+		RType:       config.ReqTypeORTB2Web,
 		Adapter:     openrtb_ext.BidderAppnexus,
 		PubID:       "test1",
 		CookieFlag:  metrics.CookieFlagYes,
@@ -4652,7 +4651,7 @@ func TestAuctionDebugEnabled(t *testing.T) {
 		Account:           config.Account{DebugAllow: false},
 		UserSyncs:         &emptyUsersync{},
 		StartTime:         time.Now(),
-		RequestType:       enums.ReqTypeORTB2Web,
+		RequestType:       config.ReqTypeORTB2Web,
 		HookExecutor:      &hookexecution.EmptyHookExecutor{},
 	}
 
@@ -5227,7 +5226,7 @@ type exchangeSpec struct {
 	EventsEnabled              bool                   `json:"events_enabled,omitempty"`
 	StartTime                  int64                  `json:"start_time_ms,omitempty"`
 	BidIDGenerator             *mockBidIDGenerator    `json:"bidIDGenerator,omitempty"`
-	RequestType                *enums.RequestType     `json:"requestType,omitempty"`
+	RequestType                *config.RequestType    `json:"requestType,omitempty"`
 	PassthroughFlag            bool                   `json:"passthrough_flag,omitempty"`
 	HostSChainFlag             bool                   `json:"host_schain_flag,omitempty"`
 	HostConfigBidValidation    config.Validations     `json:"host_bid_validations"`

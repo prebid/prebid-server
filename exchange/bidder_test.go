@@ -23,7 +23,6 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
-	"github.com/prebid/prebid-server/enums"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange/entities"
 	"github.com/prebid/prebid-server/experiment/adscert"
@@ -2042,7 +2041,7 @@ func TestCallRecordAdapterConnections(t *testing.T) {
 		addCallSignHeader:   false,
 		bidAdjustments:      bidAdjustments,
 	}
-	_, errs := bidder.requestBid(context.Background(), bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{PbsEntryPoint: enums.ReqTypeORTB2Web}, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{})
+	_, errs := bidder.requestBid(context.Background(), bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{PbsEntryPoint: config.ReqTypeORTB2Web}, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{})
 
 	// Assert no errors
 	assert.Equal(t, 0, len(errs), "bidder.requestBid returned errors %v \n", errs)

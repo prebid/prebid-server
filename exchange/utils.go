@@ -15,7 +15,6 @@ import (
 
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/enums"
 	"github.com/prebid/prebid-server/firstpartydata"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
@@ -28,11 +27,11 @@ import (
 	"github.com/prebid/prebid-server/util/ptrutil"
 )
 
-var channelTypeMap = map[enums.RequestType]config.ChannelType{
-	enums.ReqTypeAMP:      config.ChannelAMP,
-	enums.ReqTypeORTB2App: config.ChannelApp,
-	enums.ReqTypeVideo:    config.ChannelVideo,
-	enums.ReqTypeORTB2Web: config.ChannelWeb,
+var channelTypeMap = map[config.RequestType]config.ChannelType{
+	config.ReqTypeAMP:      config.ChannelAMP,
+	config.ReqTypeORTB2App: config.ChannelApp,
+	config.ReqTypeVideo:    config.ChannelVideo,
+	config.ReqTypeORTB2Web: config.ChannelWeb,
 }
 
 const unknownBidder string = ""

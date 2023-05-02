@@ -14,7 +14,6 @@ import (
 	"github.com/prebid/prebid-server/analytics"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/enums"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/hooks"
@@ -857,7 +856,7 @@ func TestHandleError(t *testing.T) {
 
 		labels := metrics.Labels{
 			Source:        metrics.DemandUnknown,
-			RType:         enums.ReqTypeVideo,
+			RType:         config.ReqTypeVideo,
 			PubID:         metrics.PublisherUnknown,
 			CookieFlag:    metrics.CookieFlagUnknown,
 			RequestStatus: metrics.RequestStatusOK,
@@ -882,8 +881,8 @@ func TestHandleErrorMetrics(t *testing.T) {
 	deps, met, mod := mockDepsWithMetrics(t, ex)
 	deps.VideoAuctionEndpoint(recorder, req, nil)
 
-	assert.Equal(t, int64(0), met.RequestStatuses[enums.ReqTypeVideo][metrics.RequestStatusOK].Count(), "OK requests count should be 0")
-	assert.Equal(t, int64(1), met.RequestStatuses[enums.ReqTypeVideo][metrics.RequestStatusErr].Count(), "Error requests count should be 1")
+	assert.Equal(t, int64(0), met.RequestStatuses[config.ReqTypeVideo][metrics.RequestStatusOK].Count(), "OK requests count should be 0")
+	assert.Equal(t, int64(1), met.RequestStatuses[config.ReqTypeVideo][metrics.RequestStatusErr].Count(), "Error requests count should be 1")
 	assert.Equal(t, 1, len(mod.videoObjects), "Mock AnalyticsModule should have 1 AuctionObject")
 	assert.Equal(t, 500, mod.videoObjects[0].Status, "AnalyticsObject should have 500 status")
 	assert.Equal(t, 2, len(mod.videoObjects[0].Errors), "AnalyticsObject should have Errors length of 2")
@@ -991,7 +990,7 @@ func TestHandleErrorDebugLog(t *testing.T) {
 
 	labels := metrics.Labels{
 		Source:        metrics.DemandUnknown,
-		RType:         enums.ReqTypeVideo,
+		RType:         config.ReqTypeVideo,
 		PubID:         metrics.PublisherUnknown,
 		CookieFlag:    metrics.CookieFlagUnknown,
 		RequestStatus: metrics.RequestStatusOK,

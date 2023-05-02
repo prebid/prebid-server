@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/enums"
 	"github.com/prebid/prebid-server/metrics"
 	prometheusmetrics "github.com/prebid/prebid-server/metrics/prometheus"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -235,7 +234,7 @@ func (me *MultiMetricsEngine) RecordPrebidCacheRequestTime(success bool, length 
 }
 
 // RecordRequestQueueTime across all engines
-func (me *MultiMetricsEngine) RecordRequestQueueTime(success bool, requestType enums.RequestType, length time.Duration) {
+func (me *MultiMetricsEngine) RecordRequestQueueTime(success bool, requestType config.RequestType, length time.Duration) {
 	for _, thisME := range *me {
 		thisME.RecordRequestQueueTime(success, requestType, length)
 	}
@@ -475,7 +474,7 @@ func (me *NilMetricsEngine) RecordPrebidCacheRequestTime(success bool, length ti
 }
 
 // RecordRequestQueueTime as a noop
-func (me *NilMetricsEngine) RecordRequestQueueTime(success bool, requestType enums.RequestType, length time.Duration) {
+func (me *NilMetricsEngine) RecordRequestQueueTime(success bool, requestType config.RequestType, length time.Duration) {
 }
 
 // RecordTimeoutNotice as a noop
