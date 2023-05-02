@@ -139,6 +139,8 @@ func TestJsonSampleRequests(t *testing.T) {
 }
 
 func runJsonBasedTest(t *testing.T, filename, desc string) {
+	t.Helper()
+
 	fileData, err := os.ReadFile(filename)
 	if !assert.NoError(t, err, "Test case %s. Error reading file %s \n", desc, filename) {
 		return
