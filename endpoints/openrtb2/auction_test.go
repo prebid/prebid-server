@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"io/fs"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -117,46 +118,63 @@ func TestJsonSampleRequests(t *testing.T) {
 	}
 
 	for _, tc := range testSuites {
-		testCaseFiles, err := getTestFiles(filepath.Join("sample-requests", tc.sampleRequestsSubDir))
-		if assert.NoError(t, err, "Test case %s. Error reading files from directory %s \n", tc.description, tc.sampleRequestsSubDir) {
-			for _, testFile := range testCaseFiles {
-				fileData, err := os.ReadFile(testFile)
-				if assert.NoError(t, err, "Test case %s. Error reading file %s \n", tc.description, testFile) {
-					// Retrieve test case input and expected output from JSON file
-					test, err := parseTestFile(fileData, testFile)
-					if !assert.NoError(t, err) {
-						continue
-					}
-
-					// Build endpoint for testing. If no error, run test case
-					cfg := &config.Configuration{MaxRequestSize: maxSize}
-					if test.Config != nil {
-						cfg.BlacklistedApps = test.Config.BlacklistedApps
-						cfg.BlacklistedAppMap = test.Config.getBlacklistedAppMap()
-						cfg.BlacklistedAccts = test.Config.BlacklistedAccounts
-						cfg.BlacklistedAcctMap = test.Config.getBlackListedAccountMap()
-						cfg.AccountRequired = test.Config.AccountRequired
-					}
-					cfg.MarshalAccountDefaults()
-					test.endpointType = OPENRTB_ENDPOINT
-
-					auctionEndpointHandler, _, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
-					if assert.NoError(t, err) {
-						assert.NotPanics(t, func() { runTestCase(t, auctionEndpointHandler, test, fileData, testFile) }, testFile)
-					}
-
-					// Close servers regardless if the test case was run or not
-					for _, mockBidServer := range mockBidServers {
-						mockBidServer.Close()
-					}
-					mockCurrencyRatesServer.Close()
-				}
+		err := filepath.WalkDir(filepath.Join("sample-requests", tc.sampleRequestsSubDir), func(path string, info fs.DirEntry, err error) error {
+			// According to documentation, needed to avoid panics
+			if err != nil {
+				return err
 			}
-		}
+
+			// Test suite won't traverse the directory tree recursively and will only
+			// consider files with `json` extension
+			if !info.IsDir() && filepath.Ext(info.Name()) == "json" {
+				t.Run(tc.description, func(t *testing.T) {
+					runJsonBasedTest(t, info.Name(), tc.description)
+				})
+			}
+
+			return nil
+		})
+		assert.NoError(t, err, "Test case %s. Error reading files from directory %s \n", tc.description, tc.sampleRequestsSubDir)
 	}
 }
 
-func runTestCase(t *testing.T, auctionEndpointHandler httprouter.Handle, test testCase, fileData []byte, testFile string) {
+func runJsonBasedTest(t *testing.T, filename, desc string) {
+	fileData, err := os.ReadFile(filename)
+	if !assert.NoError(t, err, "Test case %s. Error reading file %s \n", desc, filename) {
+		return
+	}
+
+	// Retrieve test case input and expected output from JSON file
+	test, err := parseTestData(fileData, filename)
+	if !assert.NoError(t, err) {
+		return
+	}
+
+	// Build endpoint for testing. If no error, run test case
+	cfg := &config.Configuration{MaxRequestSize: maxSize}
+	if test.Config != nil {
+		cfg.BlacklistedApps = test.Config.BlacklistedApps
+		cfg.BlacklistedAppMap = test.Config.getBlacklistedAppMap()
+		cfg.BlacklistedAccts = test.Config.BlacklistedAccounts
+		cfg.BlacklistedAcctMap = test.Config.getBlackListedAccountMap()
+		cfg.AccountRequired = test.Config.AccountRequired
+	}
+	cfg.MarshalAccountDefaults()
+	test.endpointType = OPENRTB_ENDPOINT
+
+	auctionEndpointHandler, _, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
+	if assert.NoError(t, err) {
+		assert.NotPanics(t, func() { runEndToEndTest(t, auctionEndpointHandler, test, fileData, filename) }, filename)
+	}
+
+	// Close servers regardless if the test case was run or not
+	for _, mockBidServer := range mockBidServers {
+		mockBidServer.Close()
+	}
+	mockCurrencyRatesServer.Close()
+}
+
+func runEndToEndTest(t *testing.T, auctionEndpointHandler httprouter.Handle, test testCase, fileData []byte, testFile string) {
 	t.Helper()
 
 	// Hit the auction endpoint with the test case configuration and mockBidRequest
@@ -5089,7 +5107,7 @@ func TestValidResponseAfterExecutingStages(t *testing.T) {
 			fileData, err := os.ReadFile(tc.file)
 			assert.NoError(t, err, "Failed to read test file.")
 
-			test, err := parseTestFile(fileData, tc.file)
+			test, err := parseTestData(fileData, tc.file)
 			assert.NoError(t, err, "Failed to parse test file.")
 			test.planBuilder = tc.planBuilder
 			test.endpointType = OPENRTB_ENDPOINT

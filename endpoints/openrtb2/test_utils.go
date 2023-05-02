@@ -10,9 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"path/filepath"
 	"strconv"
-	"strings"
 	"testing"
 	"time"
 
@@ -1093,25 +1091,7 @@ func newBidderInfo(isDisabled bool) config.BidderInfo {
 	}
 }
 
-func getTestFiles(dir string) ([]string, error) {
-	var filesToAssert []string
-
-	fileList, err := os.ReadDir(dir)
-	if err != nil {
-		return nil, err
-	}
-
-	// Append the path of every file found in `dir` to the `filesToAssert` array
-	for _, fileInfo := range fileList {
-		if strings.HasSuffix(fileInfo.Name(), ".json") {
-			filesToAssert = append(filesToAssert, filepath.Join(dir, fileInfo.Name()))
-		}
-	}
-
-	return filesToAssert, nil
-}
-
-func parseTestFile(fileData []byte, testFile string) (testCase, error) {
+func parseTestData(fileData []byte, testFile string) (testCase, error) {
 
 	parsedTestData := testCase{}
 	var err, errEm error
