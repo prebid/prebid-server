@@ -3591,6 +3591,11 @@ func TestAuctionWarnings(t *testing.T) {
 			expectedWarning: "regs.us_privacy consent does not match uspv1 in GPP, using regs.gpp",
 		},
 		{
+			name:            "empty-gppsid-array-conflicts-with-regs-gdpr", // gdpr set to 1, an empty non-nil gpp_sid array doesn't match
+			file:            "empty-gppsid-conflict.json",
+			expectedWarning: "regs.gdpr signal conflicts with GPP (regs.gpp_sid) and will be ignored",
+		},
+		{
 			name:            "gdpr-signals-conflict", // gdpr signals do not match
 			file:            "gdpr-conflict.json",
 			expectedWarning: "regs.gdpr signal conflicts with GPP (regs.gpp_sid) and will be ignored",
