@@ -60,15 +60,14 @@ func RunJSONBidderTest(t *testing.T, rootDir string, bidder adapters.Bidder) {
 			return err
 		}
 
-		var validDir, allowErrors, isAmpTest, isVideoTest bool
-		realDir := filepath.Base(filepath.Dir(path))
-		switch realDir {
+		var approvedPath, allowErrors, isAmpTest, isVideoTest bool
+		switch filepath.Base(filepath.Dir(path)) {
 		case "amp":
 			isAmpTest = true
 			fallthrough
 		case "supplemental":
 			allowErrors = true
-			validDir = true
+			approvedPath = true
 
 		case "videosupplemental":
 			allowErrors = true
@@ -77,10 +76,10 @@ func RunJSONBidderTest(t *testing.T, rootDir string, bidder adapters.Bidder) {
 			isVideoTest = true
 			fallthrough
 		case "exemplary":
-			validDir = true
+			approvedPath = true
 		}
 
-		if !info.IsDir() && validDir && filepath.Ext(info.Name()) == ".json" {
+		if !info.IsDir() && approvedPath && filepath.Ext(info.Name()) == ".json" {
 			specData, err := loadFile(path)
 			if err != nil {
 				t.Fatalf("Failed to load contents of file %s: %v", path, err)
