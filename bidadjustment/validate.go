@@ -6,6 +6,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
+// Validate checks whether all provided bid adjustments are valid or not against the requirements defined in the issue
 func Validate(bidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments) bool {
 	if bidAdjustments == nil {
 		return true
@@ -36,11 +37,11 @@ func validateForMediaType(bidAdj map[openrtb_ext.BidderName]openrtb_ext.Adjustme
 		if bidAdj[bidderName] == nil {
 			return false
 		}
-		for dealId := range bidAdj[bidderName] {
-			if bidAdj[bidderName][dealId] == nil {
+		for dealID := range bidAdj[bidderName] {
+			if bidAdj[bidderName][dealID] == nil {
 				return false
 			}
-			for _, adjustment := range bidAdj[bidderName][dealId] {
+			for _, adjustment := range bidAdj[bidderName][dealID] {
 				if !validateAdjustment(adjustment) {
 					return false
 				}
@@ -52,7 +53,7 @@ func validateForMediaType(bidAdj map[openrtb_ext.BidderName]openrtb_ext.Adjustme
 
 func validateAdjustment(adjustment openrtb_ext.Adjustment) bool {
 	switch adjustment.Type {
-	case AdjustmentTypeCpm:
+	case AdjustmentTypeCPM:
 		if adjustment.Currency != "" && adjustment.Value >= 0 && adjustment.Value < math.MaxFloat64 {
 			return true
 		}

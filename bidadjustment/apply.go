@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	AdjustmentTypeCpm        = "cpm"
+	AdjustmentTypeCPM        = "cpm"
 	AdjustmentTypeMultiplier = "multiplier"
 	AdjustmentTypeStatic     = "static"
 	WildCard                 = "*"
@@ -18,6 +18,7 @@ const (
 const maxNumOfCombos = 8
 const pricePrecision float64 = 10000 // Rounds to 4 Decimal Places
 
+// Apply gets the highest priority adjustment slice given a map of rules, and applies those adjustments to a bid's price
 func Apply(rules map[string][]openrtb_ext.Adjustment, bidInfo *adapters.TypedBid, bidderName openrtb_ext.BidderName, currency string, reqInfo *adapters.ExtraRequestInfo, bidType string) (float64, string) {
 	adjustments := []openrtb_ext.Adjustment{}
 	if len(rules) > 0 {
@@ -39,8 +40,8 @@ func apply(adjustments []openrtb_ext.Adjustment, bidPrice float64, currency stri
 		switch adjustment.Type {
 		case AdjustmentTypeMultiplier:
 			bidPrice = bidPrice * adjustment.Value
-		case AdjustmentTypeCpm:
-			convertedVal, err := reqInfo.ConvertCurrency(adjustment.Value, adjustment.Currency, currency) // Convert Adjustment to Bid Currency
+		case AdjustmentTypeCPM:
+			convertedVal, err := reqInfo.ConvertCurrency(adjustment.Value, adjustment.Currency, currency)
 			if err != nil {
 				return originalBidPrice, currency
 			}

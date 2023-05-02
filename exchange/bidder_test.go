@@ -3037,7 +3037,7 @@ func TestGetBidType(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			actual := GetBidType(test.givenBidType, test.givenImpId, test.givenImp)
+			actual := getBidTypeForAdjustments(test.givenBidType, test.givenImpId, test.givenImp)
 			assert.Equal(t, test.expected, actual, "Bid type doesn't match")
 		})
 	}

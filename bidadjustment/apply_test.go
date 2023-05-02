@@ -38,7 +38,7 @@ func TestGetAndApply(t *testing.T) {
 			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
 				"banner|bidderA|dealId": {
 					{
-						Type:     AdjustmentTypeCpm,
+						Type:     AdjustmentTypeCPM,
 						Value:    1.0,
 						Currency: adjCur,
 					},
@@ -67,7 +67,7 @@ func TestGetAndApply(t *testing.T) {
 			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
 				"*|bidderA|dealId": {
 					{
-						Type:     AdjustmentTypeCpm,
+						Type:     AdjustmentTypeCPM,
 						Value:    1.0,
 						Currency: adjCur,
 					},
@@ -97,22 +97,48 @@ func TestGetAndApply(t *testing.T) {
 			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
 				"*|*|dealId": {
 					{
-						Type:     AdjustmentTypeCpm,
+						Type:     AdjustmentTypeCPM,
 						Value:    1.0,
 						Currency: adjCur,
 					},
 				},
 				"video-instream|*|*": {
 					{
-						Type:     AdjustmentTypeMultiplier,
-						Value:    2.0,
-						Currency: adjCur,
+						Type:  AdjustmentTypeMultiplier,
+						Value: 2.0,
 					},
 				},
 			},
 			givenBidderName:  "bidderA",
 			setMock:          nil,
 			expectedBidPrice: 20.0,
+			expectedCurrency: bidCur,
+		},
+		{
+			name: "CpmAndMultiplierAdjustments",
+			givenBidInfo: &adapters.TypedBid{
+				Bid: &openrtb2.Bid{
+					Price:  10.0,
+					DealID: "dealId",
+				},
+			},
+			givenBidType: VideoInstream,
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
+				"video-instream|*|*": {
+					{
+						Type:  AdjustmentTypeMultiplier,
+						Value: 2.0,
+					},
+					{
+						Type:     AdjustmentTypeCPM,
+						Value:    1.0,
+						Currency: adjCur,
+					},
+				},
+			},
+			givenBidderName:  "bidderA",
+			setMock:          func(m *mock.Mock) { m.On("GetRate", adjCur, bidCur).Return(2.5, nil) },
+			expectedBidPrice: 17.5,
 			expectedCurrency: bidCur,
 		},
 		{
@@ -141,8 +167,8 @@ func TestGetAndApply(t *testing.T) {
 				reqInfo = adapters.NewExtraRequestInfo(mockConversions)
 			}
 			bidPrice, currencyAfterAdjustment := Apply(test.givenRuleToAdjustments, test.givenBidInfo, test.givenBidderName, bidCur, &reqInfo, test.givenBidType)
-			assert.Equal(t, test.expectedBidPrice, bidPrice, "Incorrect bid prices")
-			assert.Equal(t, test.expectedCurrency, currencyAfterAdjustment, "Incorrect currency")
+			assert.Equal(t, test.expectedBidPrice, bidPrice)
+			assert.Equal(t, test.expectedCurrency, currencyAfterAdjustment)
 		})
 	}
 }
@@ -177,7 +203,7 @@ func TestApply(t *testing.T) {
 	}{
 		{
 			name:             "CpmAdjustment",
-			givenAdjustments: []openrtb_ext.Adjustment{{Type: AdjustmentTypeCpm, Value: 1.0, Currency: adjCur}},
+			givenAdjustments: []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 1.0, Currency: adjCur}},
 			givenBidPrice:    10.58687,
 			setMock:          func(m *mock.Mock) { m.On("GetRate", adjCur, bidCur).Return(2.5, nil) },
 			expectedBidPrice: 8.0869,
@@ -227,8 +253,8 @@ func TestApply(t *testing.T) {
 			}
 
 			bidPrice, currencyAfterAdjustment := apply(test.givenAdjustments, test.givenBidPrice, bidCur, &reqInfo)
-			assert.Equal(t, test.expectedBidPrice, bidPrice, "Incorrect bid prices")
-			assert.Equal(t, test.expectedCurrency, currencyAfterAdjustment, "Incorrect currency")
+			assert.Equal(t, test.expectedBidPrice, bidPrice)
+			assert.Equal(t, test.expectedCurrency, currencyAfterAdjustment)
 		})
 	}
 }
@@ -289,7 +315,7 @@ func TestGet(t *testing.T) {
 			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
 				"banner|*|dealId": {
 					{
-						Type:     AdjustmentTypeCpm,
+						Type:     AdjustmentTypeCPM,
 						Value:    3.0,
 						Currency: "USD",
 					},
@@ -304,14 +330,14 @@ func TestGet(t *testing.T) {
 			givenBidType:    openrtb_ext.BidTypeBanner,
 			givenBidderName: "bidderA",
 			givenDealId:     "dealId",
-			expected:        []openrtb_ext.Adjustment{{Type: AdjustmentTypeCpm, Value: 3.0, Currency: "USD"}},
+			expected:        []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3.0, Currency: "USD"}},
 		},
 		{
 			name: "Priority4",
 			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
 				"*|bidderA|dealId": {
 					{
-						Type:     AdjustmentTypeCpm,
+						Type:     AdjustmentTypeCPM,
 						Value:    3.0,
 						Currency: "USD",
 					},
@@ -326,14 +352,14 @@ func TestGet(t *testing.T) {
 			givenBidType:    openrtb_ext.BidTypeBanner,
 			givenBidderName: "bidderA",
 			givenDealId:     "dealId",
-			expected:        []openrtb_ext.Adjustment{{Type: AdjustmentTypeCpm, Value: 3.0, Currency: "USD"}},
+			expected:        []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3.0, Currency: "USD"}},
 		},
 		{
 			name: "Priority5",
 			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
 				"banner|*|*": {
 					{
-						Type:     AdjustmentTypeCpm,
+						Type:     AdjustmentTypeCPM,
 						Value:    3.0,
 						Currency: "USD",
 					},
@@ -348,14 +374,14 @@ func TestGet(t *testing.T) {
 			givenBidType:    openrtb_ext.BidTypeBanner,
 			givenBidderName: "bidderA",
 			givenDealId:     "dealId",
-			expected:        []openrtb_ext.Adjustment{{Type: AdjustmentTypeCpm, Value: 3.0, Currency: "USD"}},
+			expected:        []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3.0, Currency: "USD"}},
 		},
 		{
 			name: "Priority6",
 			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
 				"*|bidderA|*": {
 					{
-						Type:     AdjustmentTypeCpm,
+						Type:     AdjustmentTypeCPM,
 						Value:    3.0,
 						Currency: "USD",
 					},
@@ -370,14 +396,14 @@ func TestGet(t *testing.T) {
 			givenBidType:    openrtb_ext.BidTypeBanner,
 			givenBidderName: "bidderA",
 			givenDealId:     "dealId",
-			expected:        []openrtb_ext.Adjustment{{Type: AdjustmentTypeCpm, Value: 3.0, Currency: "USD"}},
+			expected:        []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3.0, Currency: "USD"}},
 		},
 		{
 			name: "Priority7",
 			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
 				"*|*|dealId": {
 					{
-						Type:     AdjustmentTypeCpm,
+						Type:     AdjustmentTypeCPM,
 						Value:    3.0,
 						Currency: "USD",
 					},
@@ -392,7 +418,7 @@ func TestGet(t *testing.T) {
 			givenBidType:    openrtb_ext.BidTypeBanner,
 			givenBidderName: "bidderA",
 			givenDealId:     "dealId",
-			expected:        []openrtb_ext.Adjustment{{Type: AdjustmentTypeCpm, Value: 3.0, Currency: "USD"}},
+			expected:        []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3.0, Currency: "USD"}},
 		},
 		{
 			name: "Priority8",
@@ -436,12 +462,33 @@ func TestGet(t *testing.T) {
 			givenDealId:     "",
 			expected:        []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}},
 		},
+		{
+			name: "NoPriorityRulesMatch",
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
+				"banner|bidderA|dealId": {
+					{
+						Type:  AdjustmentTypeMultiplier,
+						Value: 1.1,
+					},
+				},
+				"banner|bidderA|*": {
+					{
+						Type:  AdjustmentTypeMultiplier,
+						Value: 2.0,
+					},
+				},
+			},
+			givenBidType:    openrtb_ext.BidTypeVideo,
+			givenBidderName: "bidderB",
+			givenDealId:     "diffDealId",
+			expected:        nil,
+		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			adjArray := get(test.givenRuleToAdjustments, string(test.givenBidType), string(test.givenBidderName), test.givenDealId)
-			assert.Equal(t, test.expected, adjArray, "Adjustment Array doesn't match")
+			assert.Equal(t, test.expected, adjArray)
 		})
 	}
 }

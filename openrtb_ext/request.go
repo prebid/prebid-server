@@ -150,13 +150,16 @@ type ExtRequestPrebidCacheVAST struct {
 	ReturnCreative *bool `json:"returnCreative,omitempty"`
 }
 
+// ExtRequestPrebidBidAdjustments defines the contract for bidrequest.ext.prebid.bidadjustments
 type ExtRequestPrebidBidAdjustments struct {
 	MediaType MediaType `json:"mediatype,omitempty"`
 }
 
+// AdjustmentsByDealID maps a dealID to a slice of bid adjustments
 type AdjustmentsByDealID map[string][]Adjustment
 
-// BidderName maps to a DealID that maps to the Adjustments
+// MediaType defines contract for bidrequest.ext.prebid.bidadjustments.mediatype
+// BidderName will map to a DealID that will map to a slice of bid adjustments
 type MediaType struct {
 	Banner         map[BidderName]AdjustmentsByDealID `json:"banner,omitempty"`
 	VideoInstream  map[BidderName]AdjustmentsByDealID `json:"video-instream,omitempty"`
@@ -166,6 +169,7 @@ type MediaType struct {
 	WildCard       map[BidderName]AdjustmentsByDealID `json:"*,omitempty"`
 }
 
+// Adjustment defines the object that will be present in the slice of bid adjustments found from MediaType map
 type Adjustment struct {
 	Type     string  `json:"adjtype,omitempty"`
 	Value    float64 `json:"value,omitempty"`

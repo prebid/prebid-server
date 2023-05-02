@@ -13,7 +13,7 @@ func TestBuildRules(t *testing.T) {
 	testCases := []struct {
 		name                string
 		givenBidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments
-		expectedMap         map[string][]openrtb_ext.Adjustment
+		expectedRules       map[string][]openrtb_ext.Adjustment
 	}{
 		{
 			name: "OneAdjustment",
@@ -26,7 +26,7 @@ func TestBuildRules(t *testing.T) {
 					},
 				},
 			},
-			expectedMap: map[string][]openrtb_ext.Adjustment{
+			expectedRules: map[string][]openrtb_ext.Adjustment{
 				"banner|bidderA|dealId": {
 					{
 						Type:  AdjustmentTypeMultiplier,
@@ -44,13 +44,13 @@ func TestBuildRules(t *testing.T) {
 							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}},
 						},
 						"*": {
-							"diffDealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCpm, Value: 1.1, Currency: "USD"}},
+							"diffDealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 1.1, Currency: "USD"}},
 							"*":          []openrtb_ext.Adjustment{{Type: AdjustmentTypeStatic, Value: 5.0, Currency: "USD"}},
 						},
 					},
 					VideoInstream: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 						"*": {
-							"*": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}, {Type: AdjustmentTypeCpm, Value: 0.18, Currency: "USD"}},
+							"*": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}, {Type: AdjustmentTypeCPM, Value: 0.18, Currency: "USD"}},
 						},
 					},
 					VideoOutstream: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
@@ -60,7 +60,7 @@ func TestBuildRules(t *testing.T) {
 					},
 				},
 			},
-			expectedMap: map[string][]openrtb_ext.Adjustment{
+			expectedRules: map[string][]openrtb_ext.Adjustment{
 				"banner|bidderA|dealId": {
 					{
 						Type:  AdjustmentTypeMultiplier,
@@ -69,7 +69,7 @@ func TestBuildRules(t *testing.T) {
 				},
 				"banner|*|diffDealId": {
 					{
-						Type:     AdjustmentTypeCpm,
+						Type:     AdjustmentTypeCPM,
 						Value:    1.1,
 						Currency: "USD",
 					},
@@ -87,7 +87,7 @@ func TestBuildRules(t *testing.T) {
 						Value: 1.1,
 					},
 					{
-						Type:     AdjustmentTypeCpm,
+						Type:     AdjustmentTypeCPM,
 						Value:    0.18,
 						Currency: "USD",
 					},
@@ -104,15 +104,14 @@ func TestBuildRules(t *testing.T) {
 		{
 			name:                "NilAdjustments",
 			givenBidAdjustments: nil,
-			expectedMap:         map[string][]openrtb_ext.Adjustment{},
+			expectedRules:       nil,
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			ruleToAdjustments := make(map[string][]openrtb_ext.Adjustment)
-			BuildRules(test.givenBidAdjustments, ruleToAdjustments)
-			assert.Equal(t, test.expectedMap, ruleToAdjustments)
+			rules := BuildRules(test.givenBidAdjustments)
+			assert.Equal(t, test.expectedRules, rules)
 		})
 	}
 }
@@ -122,6 +121,7 @@ func TestMergeAndValidate(t *testing.T) {
 		name                   string
 		givenRequestWrapper    *openrtb_ext.RequestWrapper
 		givenAccount           *config.Account
+		expectError            bool
 		expectedBidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments
 	}{
 		{
@@ -140,6 +140,7 @@ func TestMergeAndValidate(t *testing.T) {
 					},
 				},
 			},
+			expectError: false,
 			expectedBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
 					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
@@ -169,6 +170,16 @@ func TestMergeAndValidate(t *testing.T) {
 					},
 				},
 			},
+			expectError:            true,
+			expectedBidAdjustments: nil,
+		},
+		{
+			name: "InvalidJSON",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{Ext: []byte(`{}}`)},
+			},
+			givenAccount:           &config.Account{},
+			expectError:            true,
 			expectedBidAdjustments: nil,
 		},
 	}
@@ -176,7 +187,11 @@ func TestMergeAndValidate(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			mergedBidAdj, err := Merge(test.givenRequestWrapper, test.givenAccount.BidAdjustments)
-			assert.NoError(t, err, "Unexpected error received")
+			if !test.expectError {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+			}
 			assert.Equal(t, test.expectedBidAdjustments, mergedBidAdj)
 		})
 	}
@@ -291,7 +306,7 @@ func TestMerge(t *testing.T) {
 				MediaType: openrtb_ext.MediaType{
 					Native: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 						"bidderA": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCpm, Value: 0.18, Currency: "USD"}},
+							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 0.18, Currency: "USD"}},
 						},
 						"bidderB": {
 							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.5}},
@@ -417,7 +432,7 @@ func TestMerge(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			mergedBidAdj, err := merge(test.givenRequestWrapper, test.givenAccount.BidAdjustments)
-			assert.NoError(t, err, "Unexpected error received")
+			assert.NoError(t, err)
 			assert.Equal(t, test.expectedBidAdjustments, mergedBidAdj)
 		})
 	}

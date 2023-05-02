@@ -55,7 +55,7 @@ func TestValidate(t *testing.T) {
 					},
 					VideoOutstream: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 						"bidderA": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCpm, Value: 3.0, Currency: ""}},
+							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3.0, Currency: ""}},
 						},
 					},
 				},
@@ -68,7 +68,7 @@ func TestValidate(t *testing.T) {
 				MediaType: openrtb_ext.MediaType{
 					WildCard: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 						"bidderA": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCpm, Value: -1.1, Currency: "USD"}},
+							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: -1.1, Currency: "USD"}},
 						},
 					},
 				},
@@ -94,7 +94,7 @@ func TestValidate(t *testing.T) {
 				MediaType: openrtb_ext.MediaType{
 					Native: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
 						"bidderA": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCpm, Value: -1.1, Currency: "USD"}},
+							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: -1.1, Currency: "USD"}},
 						},
 					},
 				},
@@ -142,7 +142,7 @@ func TestValidate(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			actual := Validate(test.givenBidAdjustments)
-			assert.Equal(t, test.expected, actual, "Boolean didn't match")
+			assert.Equal(t, test.expected, actual)
 		})
 	}
 }
@@ -189,7 +189,7 @@ func TestValidateForMediaType(t *testing.T) {
 				"bidderA": {
 					"dealId": []openrtb_ext.Adjustment{
 						{Type: AdjustmentTypeMultiplier, Value: -1.1},
-						{Type: AdjustmentTypeCpm, Value: -3.0, Currency: "USD"},
+						{Type: AdjustmentTypeCPM, Value: -3.0, Currency: "USD"},
 					},
 				},
 			},
@@ -219,7 +219,7 @@ func TestValidateForMediaType(t *testing.T) {
 				},
 				"bidderB": {
 					"dealId": []openrtb_ext.Adjustment{
-						{Type: AdjustmentTypeCpm, Value: 3.0, Currency: "USD"},
+						{Type: AdjustmentTypeCPM, Value: 3.0, Currency: "USD"},
 					},
 				},
 			},
@@ -251,7 +251,7 @@ func TestValidateForMediaType(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			actual := validateForMediaType(test.givenBidAdj)
-			assert.Equal(t, test.expected, actual, "Boolean didn't match")
+			assert.Equal(t, test.expected, actual)
 		})
 	}
 }
@@ -265,7 +265,7 @@ func TestValidateAdjustment(t *testing.T) {
 		{
 			name: "ValidCpm",
 			givenAdjustment: openrtb_ext.Adjustment{
-				Type:     AdjustmentTypeCpm,
+				Type:     AdjustmentTypeCPM,
 				Value:    5.0,
 				Currency: "USD",
 			},
@@ -291,7 +291,7 @@ func TestValidateAdjustment(t *testing.T) {
 		{
 			name: "InvalidCpm",
 			givenAdjustment: openrtb_ext.Adjustment{
-				Type:     AdjustmentTypeCpm,
+				Type:     AdjustmentTypeCPM,
 				Value:    5.0,
 				Currency: "",
 			},
@@ -332,7 +332,7 @@ func TestValidateAdjustment(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			actual := validateAdjustment(test.givenAdjustment)
-			assert.Equal(t, test.expected, actual, "Boolean didn't match")
+			assert.Equal(t, test.expected, actual)
 		})
 	}
 }

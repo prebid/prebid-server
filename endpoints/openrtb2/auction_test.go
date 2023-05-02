@@ -114,6 +114,10 @@ func TestJsonSampleRequests(t *testing.T) {
 			"Assert request with ad server targeting is processing correctly",
 			"adservertargeting",
 		},
+		{
+			"Assert request with bid adjustments defined is processing correctly",
+			"bidadjustments",
+		},
 	}
 
 	for _, tc := range testSuites {

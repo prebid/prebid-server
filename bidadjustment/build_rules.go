@@ -1,6 +1,7 @@
 package bidadjustment
 
 import (
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -11,16 +12,20 @@ const (
 
 // BuildRules() will populate the rules map with a rule that's a combination of the mediaType, bidderName, and dealId for a particular adjustment
 // The result will be a map that'll map a given rule with its adjustment
-func BuildRules(bidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments, rules map[string][]openrtb_ext.Adjustment) {
+func BuildRules(bidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments) map[string][]openrtb_ext.Adjustment {
 	if bidAdjustments == nil {
-		return
+		return nil
 	}
+	rules := make(map[string][]openrtb_ext.Adjustment)
+
 	buildRulesForMediaType(string(openrtb_ext.BidTypeBanner), bidAdjustments.MediaType.Banner, rules)
 	buildRulesForMediaType(string(openrtb_ext.BidTypeAudio), bidAdjustments.MediaType.Audio, rules)
 	buildRulesForMediaType(string(openrtb_ext.BidTypeNative), bidAdjustments.MediaType.Native, rules)
 	buildRulesForMediaType(VideoInstream, bidAdjustments.MediaType.VideoInstream, rules)
 	buildRulesForMediaType(VideoOutstream, bidAdjustments.MediaType.VideoOutstream, rules)
 	buildRulesForMediaType(WildCard, bidAdjustments.MediaType.WildCard, rules)
+
+	return rules
 }
 
 func buildRulesForMediaType(mediaType string, rulesByBidder map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID, rules map[string][]openrtb_ext.Adjustment) {
@@ -32,6 +37,7 @@ func buildRulesForMediaType(mediaType string, rulesByBidder map[openrtb_ext.Bidd
 	}
 }
 
+// Merge takes bid adjustments defined on the request and on the account, and combines/validates them, with the adjustments on the request taking precedence.
 func Merge(req *openrtb_ext.RequestWrapper, acctBidAdjs *openrtb_ext.ExtRequestPrebidBidAdjustments) (*openrtb_ext.ExtRequestPrebidBidAdjustments, error) {
 	mergedBidAdj, err := merge(req, acctBidAdjs)
 	if err != nil {
@@ -39,6 +45,10 @@ func Merge(req *openrtb_ext.RequestWrapper, acctBidAdjs *openrtb_ext.ExtRequestP
 	}
 	if !Validate(mergedBidAdj) {
 		mergedBidAdj = nil
+		err = &errortypes.Warning{
+			WarningCode: errortypes.BidAdjustmentWarningCode,
+			Message:     "bid adjustment after merge was invalid",
+		}
 	}
 	return mergedBidAdj, err
 }
@@ -70,7 +80,7 @@ func merge(req *openrtb_ext.RequestWrapper, acct *openrtb_ext.ExtRequestPrebidBi
 	return extPrebid.BidAdjustments, nil
 }
 
-func mergeForMediaType(reqAdj map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID, acctAdj map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID) map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID {
+func mergeForMediaType(reqAdj, acctAdj map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID) map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID {
 	if reqAdj != nil && acctAdj == nil {
 		return reqAdj
 	}
@@ -78,15 +88,15 @@ func mergeForMediaType(reqAdj map[openrtb_ext.BidderName]openrtb_ext.Adjustments
 		return acctAdj
 	}
 
-	for bidderName, dealIdToAdjustmentsMap := range acctAdj {
+	for bidderName, dealIDToAdjustments := range acctAdj {
 		if _, ok := reqAdj[bidderName]; ok {
-			for dealID, acctAdjustmentsArray := range acctAdj[bidderName] {
-				if _, okay := reqAdj[bidderName][dealID]; !okay {
-					reqAdj[bidderName][dealID] = acctAdjustmentsArray
+			for dealID, acctAdjustments := range acctAdj[bidderName] {
+				if _, ok := reqAdj[bidderName][dealID]; !ok {
+					reqAdj[bidderName][dealID] = acctAdjustments
 				}
 			}
 		} else {
-			reqAdj[bidderName] = dealIdToAdjustmentsMap
+			reqAdj[bidderName] = dealIDToAdjustments
 		}
 	}
 	return reqAdj
