@@ -38,6 +38,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/audienceNetwork"
 	"github.com/prebid/prebid-server/adapters/automatad"
 	"github.com/prebid/prebid-server/adapters/avocet"
+	"github.com/prebid/prebid-server/adapters/axis"
 	"github.com/prebid/prebid-server/adapters/axonix"
 	"github.com/prebid/prebid-server/adapters/beachfront"
 	"github.com/prebid/prebid-server/adapters/beintoo"
@@ -167,6 +168,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/yieldmo"
 	"github.com/prebid/prebid-server/adapters/yieldone"
 	"github.com/prebid/prebid-server/adapters/zeroclickfraud"
+	"github.com/prebid/prebid-server/adapters/zeta_global_ssp"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -212,6 +214,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAudienceNetwork:   audienceNetwork.Builder,
 		openrtb_ext.BidderAutomatad:         automatad.Builder,
 		openrtb_ext.BidderAvocet:            avocet.Builder,
+		openrtb_ext.BidderAxis:              axis.Builder,
 		openrtb_ext.BidderAxonix:            axonix.Builder,
 		openrtb_ext.BidderBeachfront:        beachfront.Builder,
 		openrtb_ext.BidderBeintoo:           beintoo.Builder,
@@ -355,5 +358,6 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderYieldmo:           yieldmo.Builder,
 		openrtb_ext.BidderYieldone:          yieldone.Builder,
 		openrtb_ext.BidderZeroClickFraud:    zeroclickfraud.Builder,
+		openrtb_ext.BidderZetaGlobalSsp:     zeta_global_ssp.Builder,
 	}
 }

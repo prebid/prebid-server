@@ -16,6 +16,9 @@ func TestJsonSamples(t *testing.T) {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
+	bidderAppNexus, _ := bidder.(*adapter)
+	bidderAppNexus.randomGenerator = FakeRandomNumberGenerator{Number: 10}
+
 	adapterstest.RunJSONBidderTest(t, "appnexustest", bidder)
 }
 
@@ -25,4 +28,13 @@ func TestMemberQueryParam(t *testing.T) {
 	if uriWithMember != expected {
 		t.Errorf("appendMemberId() failed on URI with query string. Expected %s, got %s", expected, uriWithMember)
 	}
+}
+
+// fakerandomNumberGenerator
+type FakeRandomNumberGenerator struct {
+	Number int64
+}
+
+func (f FakeRandomNumberGenerator) GenerateInt63() int64 {
+	return f.Number
 }

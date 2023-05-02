@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
@@ -362,7 +362,7 @@ func TestDebugBehaviour(t *testing.T) {
 			bidRequest.Ext = nil
 		}
 
-		auctionRequest := AuctionRequest{
+		auctionRequest := &AuctionRequest{
 			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: bidRequest},
 			Account:           config.Account{DebugAllow: test.debugData.accountLevelDebugAllowed},
 			UserSyncs:         &emptyUsersync{},
@@ -533,7 +533,7 @@ func TestTwoBiddersDebugDisabledAndEnabled(t *testing.T) {
 
 		bidRequest.Ext = json.RawMessage(`{"prebid":{"debug":true}}`)
 
-		auctionRequest := AuctionRequest{
+		auctionRequest := &AuctionRequest{
 			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: bidRequest},
 			Account:           config.Account{DebugAllow: true},
 			UserSyncs:         &emptyUsersync{},
@@ -716,7 +716,7 @@ func TestOverrideWithCustomCurrency(t *testing.T) {
 		// Set bidRequest currency list
 		mockBidRequest.Cur = []string{test.in.bidRequestCurrency}
 
-		auctionRequest := AuctionRequest{
+		auctionRequest := &AuctionRequest{
 			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: mockBidRequest},
 			Account:           config.Account{},
 			UserSyncs:         &emptyUsersync{},
@@ -811,7 +811,7 @@ func TestAdapterCurrency(t *testing.T) {
 	}
 
 	// Run Auction
-	auctionRequest := AuctionRequest{
+	auctionRequest := &AuctionRequest{
 		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: request},
 		Account:           config.Account{},
 		UserSyncs:         &emptyUsersync{},
@@ -831,6 +831,179 @@ func TestAdapterCurrency(t *testing.T) {
 	}
 }
 
+func TestFloorsSignalling(t *testing.T) {
+
+	fakeCurrencyClient := &fakeCurrencyRatesHttpClient{
+		responseBody: `{"dataAsOf":"2023-04-10","conversions":{"USD":{"MXN":10.00}}}`,
+	}
+	currencyConverter := currency.NewRateConverter(
+		fakeCurrencyClient,
+		"currency.com",
+		24*time.Hour,
+	)
+	currencyConverter.Run()
+
+	// Initialize Real Exchange
+	e := exchange{
+		cache: &wellBehavedCache{},
+		me:    &metricsConf.NilMetricsEngine{},
+		gdprPermsBuilder: fakePermissionsBuilder{
+			permissions: &permissionsMock{
+				allowAllBidders: true,
+			},
+		}.Builder,
+		tcf2ConfigBuilder: fakeTCF2ConfigBuilder{
+			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
+		}.Builder,
+		currencyConverter: currencyConverter,
+		categoriesFetcher: nilCategoryFetcher{},
+		bidIDGenerator:    &mockBidIDGenerator{false, false},
+		floor:             config.PriceFloors{Enabled: true},
+	}
+	e.requestSplitter = requestSplitter{
+		me:                e.me,
+		gdprPermsBuilder:  e.gdprPermsBuilder,
+		tcf2ConfigBuilder: e.tcf2ConfigBuilder,
+	}
+
+	type testResults struct {
+		bidFloor    float64
+		bidFloorCur string
+		err         error
+		resolvedReq string
+	}
+
+	testCases := []struct {
+		desc         string
+		req          *openrtb_ext.RequestWrapper
+		floorsEnable bool
+		expected     testResults
+	}{
+		{
+			desc:         "no update in imp.bidfloor, floors disabled in account config",
+			floorsEnable: false,
+			req: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				ID: "some-request-id",
+				Imp: []openrtb2.Imp{{
+					ID:          "some-impression-id",
+					BidFloor:    15,
+					BidFloorCur: "USD",
+					Banner:      &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}},
+					Ext:         json.RawMessage(`{"prebid":{}}`),
+				}},
+				Site: &openrtb2.Site{
+					Page:   "prebid.org",
+					Ext:    json.RawMessage(`{"amp":0}`),
+					Domain: "www.website.com",
+				},
+				Cur: []string{"USD"},
+				Ext: json.RawMessage(`{"prebid":{"floors":{"floormin":1,"floormincur":"USD","data":{"currency":"USD","modelgroups":[{"modelversion":"model 1 from req","values":{"banner|300x250|www.website.com":11,"*|*|www.test.com":15,"*|*|*":20},"Default":50,"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"}}]},"enabled":true}}}`),
+			}},
+			expected: testResults{
+				bidFloor:    15.00,
+				bidFloorCur: "USD",
+			},
+		},
+		{
+			desc:         "no update in imp.bidfloor due to no rule matched",
+			floorsEnable: true,
+			req: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				ID: "some-request-id",
+				Imp: []openrtb2.Imp{{
+					ID:          "some-impression-id",
+					BidFloor:    15,
+					BidFloorCur: "USD",
+					Banner:      &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}},
+					Ext:         json.RawMessage(`{"prebid":{}}`),
+				}},
+				Site: &openrtb2.Site{
+					Page:   "prebid.org",
+					Ext:    json.RawMessage(`{"amp":0}`),
+					Domain: "www.website.com",
+				},
+				Cur: []string{"USD"},
+				Ext: json.RawMessage(`{"prebid":{"floors":{"floormin":1,"floormincur":"USD","data":{"currency":"USD","modelgroups":[{"modelversion":"model 1 from req","values":{"banner|300x250|www.website123.com":10,"*|*|www.test.com":15},"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"}}]},"enabled":true}}}`),
+			}},
+			expected: testResults{
+				bidFloor:    15.00,
+				bidFloorCur: "USD",
+			},
+		},
+		{
+			desc:         "update imp.bidfloor with matched rule value",
+			floorsEnable: true,
+			req: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				ID: "some-request-id",
+				Imp: []openrtb2.Imp{{
+					ID:          "some-impression-id",
+					BidFloor:    15,
+					BidFloorCur: "USD",
+					Banner:      &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}},
+					Ext:         json.RawMessage(`{"prebid":{}}`),
+				}},
+				Site: &openrtb2.Site{
+					Page:   "prebid.org",
+					Ext:    json.RawMessage(`{"amp":0}`),
+					Domain: "www.website.com",
+				},
+				Cur: []string{"USD"},
+				Ext: json.RawMessage(`{"prebid":{"floors":{"floormin":1,"floormincur":"USD","data":{"currency":"USD","modelgroups":[{"modelversion":"model 1 from req","values":{"banner|300x250|www.website.com":10,"*|*|www.test.com":15,"*|*|*":20},"Default":50,"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"}}]},"enabled":true}}}`),
+			}},
+			expected: testResults{
+				bidFloor:    10.00,
+				bidFloorCur: "USD",
+			},
+		},
+		{
+			desc:         "update resolved request with floors details",
+			floorsEnable: true,
+			req: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				ID: "some-request-id",
+				Imp: []openrtb2.Imp{{
+					ID:          "some-impression-id",
+					BidFloor:    15,
+					BidFloorCur: "USD",
+					Banner:      &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}},
+					Ext:         json.RawMessage(`{"prebid":{}}`),
+				}},
+				Site: &openrtb2.Site{
+					Page:   "prebid.org",
+					Ext:    json.RawMessage(`{"amp":0}`),
+					Domain: "www.website.com",
+				},
+				Test: 1,
+				Cur:  []string{"USD"},
+				Ext:  json.RawMessage(`{"prebid":{"floors":{"floormin":1,"floormincur":"USD","data":{"currency":"USD","modelgroups":[{"modelversion":"model 1 from req","values":{"banner|300x250|www.website.com":11,"*|*|www.test.com":15,"*|*|*":20},"Default":50,"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"}}]},"enabled":true}}}`),
+			}},
+			expected: testResults{
+				bidFloor:    11.00,
+				bidFloorCur: "USD",
+				resolvedReq: `{"id":"some-request-id","imp":[{"id":"some-impression-id","banner":{"format":[{"w":300,"h":250}]},"bidfloor":11,"bidfloorcur":"USD","ext":{"prebid":{"floors":{"floorrule":"banner|300x250|www.website.com","floorrulevalue":11,"floorvalue":11}}}}],"site":{"domain":"www.website.com","page":"prebid.org","ext":{"amp":0}},"test":1,"cur":["USD"],"ext":{"prebid":{"floors":{"floormin":1,"floormincur":"USD","data":{"currency":"USD","modelgroups":[{"modelversion":"model 1 from req","schema":{"fields":["mediaType","size","domain"],"delimiter":"|"},"values":{"*|*|*":20,"*|*|www.test.com":15,"banner|300x250|www.website.com":11},"default":50}]},"enabled":true,"skipped":false,"fetchstatus":"none","location":"request"}}}}`,
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		auctionRequest := &AuctionRequest{
+			BidRequestWrapper: test.req,
+			Account:           config.Account{DebugAllow: true, PriceFloors: config.AccountPriceFloors{Enabled: test.floorsEnable, MaxRule: 100, MaxSchemaDims: 5}},
+			UserSyncs:         &emptyUsersync{},
+			HookExecutor:      &hookexecution.EmptyHookExecutor{},
+		}
+		outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{})
+
+		// Assertions
+		assert.Equal(t, test.expected.err, err, "Error")
+		assert.Equal(t, test.expected.bidFloor, auctionRequest.BidRequestWrapper.Imp[0].BidFloor, "Floor Value")
+		assert.Equal(t, test.expected.bidFloorCur, auctionRequest.BidRequestWrapper.Imp[0].BidFloorCur, "Floor Currency")
+
+		if test.req.Test == 1 {
+			actualResolvedRequest, _, _, _ := jsonparser.Get(outBidResponse.Ext, "debug", "resolvedrequest")
+			assert.JSONEq(t, test.expected.resolvedReq, string(actualResolvedRequest), "Resolved request is incorrect")
+		}
+	}
+
+}
 func TestGetAuctionCurrencyRates(t *testing.T) {
 
 	pbsRates := map[string]map[string]float64{
@@ -1195,7 +1368,7 @@ func TestReturnCreativeEndToEnd(t *testing.T) {
 		for _, test := range testGroup.testCases {
 			mockBidRequest.Ext = test.inExt
 
-			auctionRequest := AuctionRequest{
+			auctionRequest := &AuctionRequest{
 				BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: mockBidRequest},
 				Account:           config.Account{},
 				UserSyncs:         &emptyUsersync{},
@@ -1869,7 +2042,7 @@ func TestRaceIntegration(t *testing.T) {
 
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 
-	auctionRequest := AuctionRequest{
+	auctionRequest := &AuctionRequest{
 		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: getTestBuildRequest(t)},
 		Account:           config.Account{},
 		UserSyncs:         &emptyUsersync{},
@@ -2094,7 +2267,7 @@ func TestPanicRecoveryHighLevel(t *testing.T) {
 		}},
 	}
 
-	auctionRequest := AuctionRequest{
+	auctionRequest := &AuctionRequest{
 		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: request},
 		Account:           config.Account{},
 		UserSyncs:         &emptyUsersync{},
@@ -2222,7 +2395,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		impExtInfoMap[impID] = ImpExtInfo{}
 	}
 
-	auctionRequest := AuctionRequest{
+	auctionRequest := &AuctionRequest{
 		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &spec.IncomingRequest.OrtbRequest},
 		Account: config.Account{
 			ID:            "testaccount",
@@ -4137,7 +4310,7 @@ func TestStoredAuctionResponses(t *testing.T) {
 
 	for _, test := range testCases {
 
-		auctionRequest := AuctionRequest{
+		auctionRequest := &AuctionRequest{
 			BidRequestWrapper:      &openrtb_ext.RequestWrapper{BidRequest: mockBidRequest},
 			Account:                config.Account{},
 			UserSyncs:              &emptyUsersync{},
@@ -4473,7 +4646,7 @@ func TestAuctionDebugEnabled(t *testing.T) {
 		Test: 1,
 	}
 
-	auctionRequest := AuctionRequest{
+	auctionRequest := &AuctionRequest{
 		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: bidRequest},
 		Account:           config.Account{DebugAllow: false},
 		UserSyncs:         &emptyUsersync{},
@@ -4547,7 +4720,7 @@ func TestPassExperimentConfigsToHoldAuction(t *testing.T) {
 		Ext:  json.RawMessage(`{"prebid":{"experiment":{"adscert":{"enabled": true}}}}`),
 	}
 
-	auctionRequest := AuctionRequest{
+	auctionRequest := &AuctionRequest{
 		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: mockBidRequest},
 		Account:           config.Account{},
 		UserSyncs:         &emptyUsersync{},
@@ -5002,7 +5175,7 @@ func TestOverrideConfigAlternateBidderCodesWithRequestValues(t *testing.T) {
 
 		mockBidRequest.Ext = test.in.requestExt
 
-		auctionRequest := AuctionRequest{
+		auctionRequest := &AuctionRequest{
 			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: mockBidRequest},
 			Account:           test.in.config.AccountDefaults,
 			UserSyncs:         &emptyUsersync{},
@@ -5422,7 +5595,7 @@ func TestModulesCanBeExecutedForMultipleBiddersSimultaneously(t *testing.T) {
 
 	exec := hookexecution.NewHookExecutor(TestApplyHookMutationsBuilder{}, "/openrtb2/auction", &metricsConfig.NilMetricsEngine{})
 
-	auctionRequest := AuctionRequest{
+	auctionRequest := &AuctionRequest{
 		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: bidRequest},
 		Account:           config.Account{DebugAllow: true},
 		UserSyncs:         &emptyUsersync{},
@@ -5504,4 +5677,11 @@ func (e mockUpdateBidRequestHook) HandleBidderRequestHook(_ context.Context, mct
 	mctx.ModuleContext = map[string]interface{}{"some-ctx": "some-ctx"}
 
 	return hookstage.HookResult[hookstage.BidderRequestPayload]{ChangeSet: c, ModuleContext: mctx.ModuleContext}, nil
+}
+
+func TestNilAuctionRequest(t *testing.T) {
+	ex := &exchange{}
+	response, err := ex.HoldAuction(context.Background(), nil, &DebugLog{})
+	assert.Nil(t, response)
+	assert.Nil(t, err)
 }
