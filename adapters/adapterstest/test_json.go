@@ -61,23 +61,23 @@ func RunJSONBidderTest(t *testing.T, rootDir string, bidder adapters.Bidder) {
 		}
 
 		var validDir, allowErrors, isAmpTest, isVideoTest bool
-		switch filepath.Base(filepath.Dir(path)) {
+		realDir := filepath.Base(filepath.Dir(path))
+		switch realDir {
+		case "amp":
+			isAmpTest = true
+			fallthrough
+		case "supplemental":
+			allowErrors = true
+			validDir = true
+
+		case "videosupplemental":
+			allowErrors = true
+			fallthrough
+		case "video":
+			isVideoTest = true
+			fallthrough
 		case "exemplary":
 			validDir = true
-		case "supplemental":
-			validDir = true
-			allowErrors = true
-		case "amp":
-			validDir = true
-			allowErrors = true
-			isAmpTest = true
-		case "video":
-			validDir = true
-			isVideoTest = true
-		case "videosupplemental":
-			validDir = true
-			allowErrors = true
-			isVideoTest = true
 		}
 
 		if !info.IsDir() && validDir && filepath.Ext(info.Name()) == ".json" {
