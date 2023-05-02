@@ -3,10 +3,11 @@ package adapterstest
 import (
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"os"
+	"path/filepath"
 	"regexp"
-	"strings"
 	"testing"
 
 	"github.com/mitchellh/copystructure"
@@ -54,35 +55,45 @@ import (
 //	  adapterstest.RunJSONBidderTest(t, "{bidder}test", instanceOfYourBidder)
 //	}
 func RunJSONBidderTest(t *testing.T, rootDir string, bidder adapters.Bidder) {
-	runTests(t, fmt.Sprintf("%s/exemplary", rootDir), bidder, false, false, false)
-	runTests(t, fmt.Sprintf("%s/supplemental", rootDir), bidder, true, false, false)
-	runTests(t, fmt.Sprintf("%s/amp", rootDir), bidder, true, true, false)
-	runTests(t, fmt.Sprintf("%s/video", rootDir), bidder, false, false, true)
-	runTests(t, fmt.Sprintf("%s/videosupplemental", rootDir), bidder, true, false, true)
-}
+	err := filepath.WalkDir(rootDir, func(path string, info fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
 
-// runTests runs all the *.json files in a directory. If allowErrors is false, and one of the test files
-// expects errors from the bidder, then the test will fail.
-func runTests(t *testing.T, directory string, bidder adapters.Bidder, allowErrors, isAmpTest, isVideoTest bool) {
-	if specFiles, err := os.ReadDir(directory); err == nil {
-		for _, specFile := range specFiles {
-			if !strings.HasSuffix(specFile.Name(), ".json") {
-				continue
-			}
+		var validDir, allowErrors, isAmpTest, isVideoTest bool
+		switch filepath.Base(filepath.Dir(path)) {
+		case "exemplary":
+			validDir = true
+		case "supplemental":
+			validDir = true
+			allowErrors = true
+		case "amp":
+			validDir = true
+			allowErrors = true
+			isAmpTest = true
+		case "video":
+			validDir = true
+			isVideoTest = true
+		case "videosupplemental":
+			validDir = true
+			allowErrors = true
+			isVideoTest = true
+		}
 
-			fileName := fmt.Sprintf("%s/%s", directory, specFile.Name())
-
-			specData, err := loadFile(fileName)
+		if !info.IsDir() && validDir && filepath.Ext(info.Name()) == ".json" {
+			specData, err := loadFile(path)
 			if err != nil {
-				t.Fatalf("Failed to load contents of file %s: %v", fileName, err)
+				t.Fatalf("Failed to load contents of file %s: %v", path, err)
 			}
 
 			if !allowErrors && specData.expectsErrors() {
-				t.Fatalf("Exemplary spec %s must not expect errors.", fileName)
+				t.Fatalf("Exemplary spec %s must not expect errors.", path)
 			}
-			runSpec(t, fileName, specData, bidder, isAmpTest, isVideoTest)
+			runSpec(t, path, specData, bidder, isAmpTest, isVideoTest)
 		}
-	}
+		return nil
+	})
+	assert.NoError(t, err, "Error reading files from directory %s \n", rootDir)
 }
 
 // LoadFile reads and parses a file as a test case. If something goes wrong, it returns an error.

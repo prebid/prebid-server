@@ -124,11 +124,10 @@ func TestJsonSampleRequests(t *testing.T) {
 				return err
 			}
 
-			// Test suite won't traverse the directory tree recursively and will only
-			// consider files with `json` extension
-			if !info.IsDir() && filepath.Ext(info.Name()) == "json" {
+			// Test suite won't traverse the directory tree recursively and will only consider files with `json` extension
+			if !info.IsDir() && filepath.Ext(info.Name()) == ".json" {
 				t.Run(tc.description, func(t *testing.T) {
-					runJsonBasedTest(t, info.Name(), tc.description)
+					runJsonBasedTest(t, path, tc.description)
 				})
 			}
 
