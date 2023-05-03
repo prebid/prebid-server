@@ -29,7 +29,10 @@
                                 "publisherNameIdentifier": "wishabi-test-publisher",
                                 "creativeType": "NativeX",
                                 "siteId": 1243066,
-                                "zoneIds": [285431]
+                                "zoneIds": [285431],
+                                "options": {
+                                   "startCompact": false
+                                }
                         }
                     }
                 }
@@ -64,7 +67,10 @@
                       "siteId":1.243066e+06,
                       "zoneIds":[
                          285431
-                      ]
+                      ],
+                      "options": {
+                         "startCompact": false
+                      }
                    }
                 ],
                 "url":"http://www.example.com/test?flipp-content-code=publisher-test",

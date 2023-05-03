@@ -91,6 +91,7 @@ func (a *adapter) processImp(request *openrtb2.BidRequest, imp openrtb2.Imp) (*a
 	if publisherUrl != nil {
 		contentCode = publisherUrl.Query().Get("flipp-content-code")
 	}
+
 	placement := Placement{
 		DivName: InlineDivName,
 		SiteID:  &flippExtParams.SiteID,
@@ -101,6 +102,7 @@ func (a *adapter) processImp(request *openrtb2.BidRequest, imp openrtb2.Imp) (*a
 		Properties: &Properties{
 			ContentCode: &contentCode,
 		},
+		Options: flippExtParams.Options,
 	}
 
 	var userKey string

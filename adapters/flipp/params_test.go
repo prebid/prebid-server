@@ -40,6 +40,30 @@ var validParams = []string{
 		"siteId": 1243066,
 		"zoneIds": [285431]
 	}`,
+	`{
+		"publisherNameIdentifier": "wishabi-test-publisher",
+		"creativeType": "NativeX",
+		"siteId": 1243066,
+		"options": {}
+	}`,
+	`{
+		"publisherNameIdentifier": "wishabi-test-publisher",
+		"creativeType": "NativeX",
+		"siteId": 1243066,
+		"zoneIds": [285431],
+		"options": {
+			"startCompact": true
+		}
+	}`,
+	`{
+		"publisherNameIdentifier": "wishabi-test-publisher",
+		"creativeType": "NativeX",
+		"siteId": 1243066,
+		"zoneIds": [285431],
+		"options": {
+			"startCompact": false
+		}
+	}`,
 }
 
 var invalidParams = []string{
@@ -75,5 +99,17 @@ var invalidParams = []string{
 		"creativeType": "NativeX",
 		"siteId": 1243066,
 		"zoneIds": ["abc123"]
+	}`,
+	`{
+		"publisherNameIdentifier": "wishabi-test-publisher",
+		"siteId": 1243066,
+		"startCompact": "true"
+	}`,
+	`{
+		"publisherNameIdentifier": "wishabi-test-publisher",
+		"siteId": 1243066,
+		"options": {
+			"startCompact": "true"
+		}
 	}`,
 }
