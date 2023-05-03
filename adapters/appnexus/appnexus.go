@@ -35,11 +35,8 @@ var maxImpsPerReq = 10
 // Builder builds a new instance of the AppNexus adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
-		URI: config.Endpoint,
-		iabCategoryMap: map[string]string{
-			"1": "IAB20-3",
-			"9": "IAB5-3",
-		},
+		URI:             config.Endpoint,
+		iabCategoryMap:  iabCategoryMap,
 		hbSource:        resolvePlatformID(config.PlatformID),
 		randomGenerator: randomutil.RandomNumberGenerator{},
 	}
