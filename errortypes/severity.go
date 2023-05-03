@@ -15,7 +15,7 @@ const (
 	SeverityWarning
 )
 
-func isFatal(err error) bool {
+func IsFatal(err error) bool {
 	s, ok := err.(Coder)
 	return !ok || s.Severity() == SeverityFatal
 }
@@ -28,7 +28,7 @@ func isWarning(err error) bool {
 // ContainsFatalError checks if the error list contains a fatal error.
 func ContainsFatalError(errors []error) bool {
 	for _, err := range errors {
-		if isFatal(err) {
+		if IsFatal(err) {
 			return true
 		}
 	}
@@ -41,7 +41,7 @@ func FatalOnly(errs []error) []error {
 	errsFatal := make([]error, 0, len(errs))
 
 	for _, err := range errs {
-		if isFatal(err) {
+		if IsFatal(err) {
 			errsFatal = append(errsFatal, err)
 		}
 	}

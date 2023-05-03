@@ -47,7 +47,7 @@ func Merge(req *openrtb_ext.RequestWrapper, acctBidAdjs *openrtb_ext.ExtRequestP
 		mergedBidAdj = nil
 		err = &errortypes.Warning{
 			WarningCode: errortypes.BidAdjustmentWarningCode,
-			Message:     "bid adjustment after merge was invalid",
+			Message:     "bid adjustment on account was invalid",
 		}
 	}
 	return mergedBidAdj, err

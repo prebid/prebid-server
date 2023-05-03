@@ -142,6 +142,52 @@ func TestGetAndApply(t *testing.T) {
 			expectedCurrency: bidCur,
 		},
 		{
+			name: "DealIdPresentAndNegativeAdjustedPrice",
+			givenBidInfo: &adapters.TypedBid{
+				Bid: &openrtb2.Bid{
+					Price:  1.0,
+					DealID: "dealId",
+				},
+			},
+			givenBidType: VideoInstream,
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
+				"*|*|dealId": {
+					{
+						Type:     AdjustmentTypeCPM,
+						Value:    1.0,
+						Currency: adjCur,
+					},
+				},
+			},
+			givenBidderName:  "bidderA",
+			setMock:          func(m *mock.Mock) { m.On("GetRate", adjCur, bidCur).Return(2.5, nil) },
+			expectedBidPrice: 0.0,
+			expectedCurrency: bidCur,
+		},
+		{
+			name: "NoDealIdNegativeAdjustedPrice",
+			givenBidInfo: &adapters.TypedBid{
+				Bid: &openrtb2.Bid{
+					Price:  1.0,
+					DealID: "",
+				},
+			},
+			givenBidType: string(openrtb_ext.BidTypeAudio),
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
+				"*|*|*": {
+					{
+						Type:     AdjustmentTypeCPM,
+						Value:    1.0,
+						Currency: adjCur,
+					},
+				},
+			},
+			givenBidderName:  "bidderA",
+			setMock:          func(m *mock.Mock) { m.On("GetRate", adjCur, bidCur).Return(2.5, nil) },
+			expectedBidPrice: 0.1,
+			expectedCurrency: bidCur,
+		},
+		{
 			name: "NilMap",
 			givenBidInfo: &adapters.TypedBid{
 				Bid: &openrtb2.Bid{
@@ -223,14 +269,6 @@ func TestApply(t *testing.T) {
 			givenBidPrice:    10.0,
 			setMock:          nil,
 			expectedBidPrice: 30.0,
-			expectedCurrency: bidCur,
-		},
-		{
-			name:             "ReturnOriginalPrice",
-			givenAdjustments: []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: -1.0}},
-			givenBidPrice:    10.0,
-			setMock:          nil,
-			expectedBidPrice: 10.0,
 			expectedCurrency: bidCur,
 		},
 		{

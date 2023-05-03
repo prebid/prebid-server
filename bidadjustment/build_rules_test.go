@@ -174,6 +174,25 @@ func TestMergeAndValidate(t *testing.T) {
 			expectedBidAdjustments: nil,
 		},
 		{
+			name: "InvalidAcctAdjustment",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid":{"bidadjustments":{"mediatype":{"banner":{"bidderA":{"dealId":[{ "adjtype": "multiplier", "value": 1.1}]}}}}}}`)},
+			},
+			givenAccount: &config.Account{
+				BidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+					MediaType: openrtb_ext.MediaType{
+						Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+							"bidderB": {
+								"dealId": []openrtb_ext.Adjustment{{Type: "multiplier", Value: -1.5}},
+							},
+						},
+					},
+				},
+			},
+			expectError:            true,
+			expectedBidAdjustments: nil,
+		},
+		{
 			name: "InvalidJSON",
 			givenRequestWrapper: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{Ext: []byte(`{}}`)},

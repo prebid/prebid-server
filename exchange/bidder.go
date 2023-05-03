@@ -701,11 +701,11 @@ func getBidTypeForAdjustments(bidType openrtb_ext.BidType, impID string, imp []o
 			if imp.ID == impID {
 				if imp.Video.Plcmt == adcom1.VideoPlcmtAccompanyingContent {
 					return "video-outstream"
-				} else {
-					return "video-instream"
 				}
+				break
 			}
 		}
+		return "video-instream"
 	}
 	return string(bidType)
 }

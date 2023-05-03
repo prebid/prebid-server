@@ -17,6 +17,7 @@ const (
 
 const maxNumOfCombos = 8
 const pricePrecision float64 = 10000 // Rounds to 4 Decimal Places
+const minBid = 0.1
 
 // Apply gets the highest priority adjustment slice given a map of rules, and applies those adjustments to a bid's price
 func Apply(rules map[string][]openrtb_ext.Adjustment, bidInfo *adapters.TypedBid, bidderName openrtb_ext.BidderName, currency string, reqInfo *adapters.ExtraRequestInfo, bidType string) (float64, string) {
@@ -26,7 +27,15 @@ func Apply(rules map[string][]openrtb_ext.Adjustment, bidInfo *adapters.TypedBid
 	} else {
 		return bidInfo.Bid.Price, currency
 	}
-	return apply(adjustments, bidInfo.Bid.Price, currency, reqInfo)
+	adjustedPrice, adjustedCurrency := apply(adjustments, bidInfo.Bid.Price, currency, reqInfo)
+
+	if bidInfo.Bid.DealID != "" && adjustedPrice < 0 {
+		return 0, currency
+	}
+	if bidInfo.Bid.DealID == "" && adjustedPrice <= 0 {
+		return minBid, currency
+	}
+	return adjustedPrice, adjustedCurrency
 }
 
 func apply(adjustments []openrtb_ext.Adjustment, bidPrice float64, currency string, reqInfo *adapters.ExtraRequestInfo) (float64, string) {
@@ -34,7 +43,6 @@ func apply(adjustments []openrtb_ext.Adjustment, bidPrice float64, currency stri
 		return bidPrice, currency
 	}
 	originalBidPrice := bidPrice
-	originalCurrency := currency
 
 	for _, adjustment := range adjustments {
 		switch adjustment.Type {
@@ -53,9 +61,6 @@ func apply(adjustments []openrtb_ext.Adjustment, bidPrice float64, currency stri
 	}
 	roundedBidPrice := math.Round(bidPrice*pricePrecision) / pricePrecision
 
-	if roundedBidPrice <= 0 {
-		return originalBidPrice, originalCurrency
-	}
 	return roundedBidPrice, currency
 }
 

@@ -298,12 +298,6 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		r.FirstPartyData = resolvedFPD
 	}
 
-	mergedBidAdj, err := bidadjustment.Merge(r.BidRequestWrapper, r.Account.BidAdjustments)
-	if err != nil {
-		return nil, err
-	}
-	bidAdjustmentRules := bidadjustment.BuildRules(mergedBidAdj)
-
 	bidAdjustmentFactors := getExtBidAdjustmentFactors(requestExtPrebid)
 
 	recordImpMetrics(r.BidRequestWrapper, e.me)
@@ -323,6 +317,16 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	}
 	bidderRequests, privacyLabels, errs := e.requestSplitter.cleanOpenRTBRequests(ctx, *r, requestExtLegacy, gdprDefaultValue)
 	errs = append(errs, floorErrs...)
+
+	mergedBidAdj, err := bidadjustment.Merge(r.BidRequestWrapper, r.Account.BidAdjustments)
+	if err != nil {
+		if !errortypes.IsFatal(err) {
+			errs = append(errs, err)
+		} else {
+			return nil, err
+		}
+	}
+	bidAdjustmentRules := bidadjustment.BuildRules(mergedBidAdj)
 
 	e.me.RecordRequestPrivacy(privacyLabels)
 
