@@ -66,10 +66,12 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
 	bidResponse.Currency = response.Cur
 	for _, seatBid := range response.SeatBid {
-		for i, bid := range seatBid.Bid {
+		//for i, bid := range seatBid.Bid {
+		for i, _ := range seatBid.Bid {
 			b := &adapters.TypedBid{
-				Bid:     &seatBid.Bid[i],
-				BidType: getMediaTypeForBid(bid),
+				Bid: &seatBid.Bid[i],
+				//BidType: getMediaTypeForBid(bid),
+				BidType: openrtb_ext.BidTypeBanner,
 			}
 			bidResponse.Bids = append(bidResponse.Bids, b)
 		}
