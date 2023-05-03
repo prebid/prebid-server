@@ -164,6 +164,7 @@ const (
 	BidderEvtech            BidderName = "evtech"
 	BidderFreewheelSSP      BidderName = "freewheelssp"
 	BidderFreewheelSSPOld   BidderName = "freewheel-ssp"
+	BidderFRVRAdNetwork     BidderName = "frvradn"
 	BidderGamma             BidderName = "gamma"
 	BidderGamoshi           BidderName = "gamoshi"
 	BidderGlobalsun         BidderName = "globalsun"
@@ -350,6 +351,7 @@ func CoreBidderNames() []BidderName {
 		BidderEvtech,
 		BidderFreewheelSSP,
 		BidderFreewheelSSPOld,
+		BidderFRVRAdNetwork,
 		BidderGamma,
 		BidderGamoshi,
 		BidderGlobalsun,
