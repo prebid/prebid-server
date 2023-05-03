@@ -430,6 +430,7 @@ type MetricsEngine interface {
 	RecordAdapterConnections(adapterName openrtb_ext.BidderName, connWasReused bool, connWaitTime time.Duration)
 	RecordDNSTime(dnsLookupTime time.Duration)
 	RecordTLSHandshakeTime(tlsHandshakeTime time.Duration)
+	RecordBidderServerResponseTime(bidderServerResponseTime time.Duration)
 	RecordAdapterPanic(labels AdapterLabels)
 	RecordAdapterBidReceived(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool)
 	RecordAdapterPrice(labels AdapterLabels, cpm float64)

@@ -520,6 +520,7 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 		ctx = bidder.addClientTrace(ctx)
 	}
 	bidder.me.RecordOverheadTime(metrics.PreBidder, time.Since(pbsRequestStartTime))
+	httpCallStart := time.Now()
 	httpResp, err := ctxhttp.Do(ctx, bidder.Client, httpReq)
 	if err != nil {
 		if err == context.DeadlineExceeded {
@@ -560,6 +561,7 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 		}
 	}
 
+	bidder.me.RecordBidderServerResponseTime(time.Since(httpCallStart))
 	return &httpCallInfo{
 		request: req,
 		response: &adapters.ResponseData{
