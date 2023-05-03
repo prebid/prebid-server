@@ -1,4 +1,4 @@
-package jsonutil
+package openrtb_ext
 
 import (
 	"encoding/json"
