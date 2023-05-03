@@ -724,7 +724,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 	}
 
 	if errs := validateRequestExt(req); len(errs) != 0 {
-		return append(errL, errs...)
+		if errortypes.ContainsFatalError(errs) {
+			return append(errL, errs...)
+		}
+		errL = append(errL, errs...)
 	}
 
 	if err := deps.validateSite(req); err != nil {
