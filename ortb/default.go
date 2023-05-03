@@ -52,8 +52,8 @@ func setDefaultsTargeting(targeting *openrtb_ext.ExtRequestTargeting) bool {
 	}
 
 	// If price granularity is not specified in request then default one should be set.
-	// Default price granularity can be overwritten for video or banner bid type
-	// only in case targeting.MediaTypePriceGranularity.Video|Banner != nil.
+	// Default price granularity can be overwritten for video, banner or native bid type
+	// only in case targeting.MediaTypePriceGranularity.Video|Banner|Native != nil.
 	if targeting.MediaTypePriceGranularity != nil {
 		if targeting.MediaTypePriceGranularity.Video != nil {
 			if newVideoPG, updated := adjustDefaultsPriceGranularity(targeting.MediaTypePriceGranularity.Video); updated {
@@ -65,6 +65,12 @@ func setDefaultsTargeting(targeting *openrtb_ext.ExtRequestTargeting) bool {
 			if newBannerPG, updated := adjustDefaultsPriceGranularity(targeting.MediaTypePriceGranularity.Banner); updated {
 				modified = true
 				targeting.MediaTypePriceGranularity.Banner = newBannerPG
+			}
+		}
+		if targeting.MediaTypePriceGranularity.Native != nil {
+			if newNativePG, updated := adjustDefaultsPriceGranularity(targeting.MediaTypePriceGranularity.Native); updated {
+				modified = true
+				targeting.MediaTypePriceGranularity.Native = newNativePG
 			}
 		}
 	}

@@ -1579,8 +1579,12 @@ func validateTargeting(t *openrtb_ext.ExtRequestTargeting) error {
 				return err
 			}
 		}
+		if t.MediaTypePriceGranularity.Native != nil {
+			if err := validatePriceGranularity(t.MediaTypePriceGranularity.Native); err != nil {
+				return err
+			}
+		}
 	}
-
 	return nil
 }
 

@@ -172,6 +172,7 @@ type ExtIncludeBrandCategory struct {
 type MediaTypePriceGranularity struct {
 	Banner *PriceGranularity `json:"banner,omitempty"`
 	Video  *PriceGranularity `json:"video,omitempty"`
+	Native *PriceGranularity `json:"native,omitempty"`
 }
 
 // PriceGranularity defines the allowed values for bidrequest.ext.prebid.targeting.pricegranularity

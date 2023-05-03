@@ -24,6 +24,8 @@ func GetPriceBucket(bid openrtb2.Bid, targetingData *targetData) string {
 			config = *targetingData.mediaTypePriceGranularity.Video
 		} else if bidType == openrtb_ext.BidTypeBanner && targetingData.mediaTypePriceGranularity.Banner != nil {
 			config = *targetingData.mediaTypePriceGranularity.Banner
+		} else if bidType == openrtb_ext.BidTypeNative && targetingData.mediaTypePriceGranularity.Native != nil {
+			config = *targetingData.mediaTypePriceGranularity.Native
 		}
 	}
 	precision := *config.Precision

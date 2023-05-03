@@ -88,7 +88,7 @@ func TestGetPriceBucketString(t *testing.T) {
 			},
 		},
 		{
-			groupDesc: "media type price granularity video for bid type video",
+			groupDesc: "media type price granularity for bid type video",
 			bid:       openrtb2.Bid{Price: 5.0, MType: openrtb2.MarkupVideo},
 			testCases: []aTest{
 				{"medium", targetData{priceGranularity: medium}, "5.00"},
@@ -97,12 +97,21 @@ func TestGetPriceBucketString(t *testing.T) {
 			},
 		},
 		{
-			groupDesc: "media type price granularity video for bid type banner",
+			groupDesc: "media type price granularity for bid type banner",
 			bid:       openrtb2.Bid{Price: 5.0, MType: openrtb2.MarkupBanner},
 			testCases: []aTest{
 				{"medium", targetData{priceGranularity: medium}, "5.00"},
 				{"video-custom2", targetData{priceGranularity: medium, mediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{Video: &custom2}}, "5.00"},
 				{"banner-custom2", targetData{priceGranularity: medium, mediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{Banner: &custom2}}, "3.90"},
+			},
+		},
+		{
+			groupDesc: "media type price granularity for bid type native",
+			bid:       openrtb2.Bid{Price: 5.0, MType: openrtb2.MarkupNative},
+			testCases: []aTest{
+				{"medium", targetData{priceGranularity: medium}, "5.00"},
+				{"video-custom2", targetData{priceGranularity: medium, mediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{Video: &custom2}}, "5.00"},
+				{"native-custom2", targetData{priceGranularity: medium, mediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{Native: &custom2}}, "3.90"},
 			},
 		},
 		{
@@ -112,6 +121,7 @@ func TestGetPriceBucketString(t *testing.T) {
 				{"medium", targetData{priceGranularity: medium}, "5.00"},
 				{"video-custom2", targetData{priceGranularity: medium, mediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{Video: &custom2}}, "5.00"},
 				{"banner-custom2", targetData{priceGranularity: medium, mediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{Banner: &custom2}}, "5.00"},
+				{"native-custom2", targetData{priceGranularity: medium, mediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{Native: &custom2}}, "5.00"},
 			},
 		},
 		{
