@@ -338,29 +338,25 @@ func sendAuctionResponse(
 // If the errors list has at least one element, then no guarantees are made about the returned request.
 func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metrics.Labels, hookExecutor hookexecution.HookStageExecutor) (req *openrtb_ext.RequestWrapper, impExtInfoMap map[string]exchange.ImpExtInfo, storedAuctionResponses stored_responses.ImpsWithBidResponses, storedBidResponses stored_responses.ImpBidderStoredResp, bidderImpReplaceImpId stored_responses.BidderImpReplaceImpID, account *config.Account, errs []error) {
 	errs = nil
-	var limitedReqReader *io.LimitedReader
-	reqContentEnc := httpRequest.Header.Get("Content-Encoding")
-	if reqContentEnc == "gzip" {
-		if !deps.cfg.Compression.Request.Enabled ||
-			deps.cfg.Compression.Request.Kind != config.CompressionTypeGZIP {
-			errs = []error{fmt.Errorf("Content-Encoding of type %s is not supported", reqContentEnc)}
+	var err error
+	var r io.Reader = httpRequest.Body
+	contentEnc := strings.ToLower(httpRequest.Header.Get("Content-Encoding"))
+	if contentEnc != "" {
+		reqCompressionKind := config.CompressionKind(contentEnc)
+		if !reqCompressionKind.IsValid() || !deps.cfg.Compression.Request.IsSupported(reqCompressionKind) {
+			errs = []error{fmt.Errorf("Content-Encoding of type %s is not supported", reqCompressionKind)}
 			return
-		}
-		if gzReader, err := gzip.NewReader(httpRequest.Body); err == nil {
-			limitedReqReader = &io.LimitedReader{
-				R: gzReader,
-				N: deps.cfg.MaxRequestSize,
-			}
-			defer gzReader.Close()
 		} else {
-			errs = []error{err}
-			return
+			r, err = getCompressionEnabledReader(httpRequest.Body, reqCompressionKind)
+			if err != nil {
+				errs = []error{err}
+				return
+			}
 		}
-	} else {
-		limitedReqReader = &io.LimitedReader{
-			R: httpRequest.Body,
-			N: deps.cfg.MaxRequestSize,
-		}
+	}
+	limitedReqReader := &io.LimitedReader{
+		R: r,
+		N: deps.cfg.MaxRequestSize,
 	}
 
 	requestJson, err := ioutil.ReadAll(limitedReqReader)
@@ -488,6 +484,15 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	}
 
 	return
+}
+
+func getCompressionEnabledReader(body io.ReadCloser, compressionKind config.CompressionKind) (io.Reader, error) {
+	switch compressionKind {
+	case config.CompressionGZIP:
+		return gzip.NewReader(body)
+	default:
+		return nil, fmt.Errorf("unsupported compression type '%s'", compressionKind)
+	}
 }
 
 // hasPayloadUpdatesAt checks if there are any successful payload updates at given stage
