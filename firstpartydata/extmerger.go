@@ -2,10 +2,15 @@ package firstpartydata
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 
 	"github.com/prebid/prebid-server/util/sliceutil"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 )
+
+var ErrBadRequest = fmt.Errorf("invalid request ext")
+var ErrBadFPD = fmt.Errorf("invalid first party data ext")
 
 type extMerger struct {
 	ext      *json.RawMessage
@@ -33,6 +38,11 @@ func (e extMerger) Merge() error {
 
 	merged, err := jsonpatch.MergePatch(e.snapshot, *e.ext)
 	if err != nil {
+		if errors.Is(err, jsonpatch.ErrBadJSONDoc) {
+			return ErrBadRequest
+		} else if errors.Is(err, jsonpatch.ErrBadJSONPatch) {
+			return ErrBadFPD
+		}
 		return err
 	}
 
