@@ -1,0 +1,81 @@
+package config
+
+import "fmt"
+
+type Compression struct {
+	Request  ReqCompressionConfig  `mapstructure:"request"`
+	Response RespCompressionConfig `mapstructure:"response"`
+}
+
+// CompressionConfig defines if compression is enabled and what type of compression to use
+type ReqCompressionConfig struct {
+	Enabled bool     `mapstructure:"enabled"`
+	Kind    []string `mapstructure:"kind,flow"`
+	kindMap map[CompressionKind]bool
+}
+
+type RespCompressionConfig struct {
+	Enabled bool   `mapstructure:"enabled"`
+	Kind    string `mapstructure:"kind"`
+}
+
+type CompressionKind string
+
+const (
+	CompressionGZIP CompressionKind = "gzip"
+)
+
+func (k CompressionKind) IsValid() bool {
+	switch k {
+	// Case for valid types. As new compression types are added they should
+	// be added here as a comma separated list.
+	case CompressionGZIP:
+		return true
+	default:
+		return false
+	}
+}
+
+func (cfg *Compression) validate(errs []error) []error {
+	errs = cfg.Request.Validate(errs)
+	errs = cfg.Response.Validate(errs)
+	return errs
+}
+
+func (cfg *ReqCompressionConfig) IsSupported(kind CompressionKind) bool {
+	if cfg.Enabled {
+		return cfg.kindMap[kind]
+	}
+
+	return false
+}
+
+func (cfg *ReqCompressionConfig) Validate(errs []error) []error {
+	if cfg.Enabled {
+		if len(cfg.Kind) == 0 {
+			errs = append(errs, fmt.Errorf("compression is enabled but no compression types are specified"))
+		}
+
+		// This is to enabled O(1) lookups for supported compression types
+		cfg.kindMap = make(map[CompressionKind]bool, len(cfg.Kind))
+		for _, kind := range cfg.Kind {
+			k := CompressionKind(kind)
+			if !k.IsValid() {
+				errs = append(errs, fmt.Errorf("compression type %s is not valid", kind))
+			} else {
+				cfg.kindMap[k] = true
+			}
+		}
+	}
+	return errs
+}
+
+func (cfg *RespCompressionConfig) Validate(errs []error) []error {
+	if cfg.Enabled {
+		k := CompressionKind(cfg.Kind)
+		if !k.IsValid() {
+			errs = append(errs, fmt.Errorf("compression type %s is not valid", cfg.Kind))
+		}
+	}
+	return errs
+}
