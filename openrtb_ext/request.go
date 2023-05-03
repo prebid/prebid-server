@@ -105,9 +105,9 @@ type Config struct {
 }
 
 type ORTB2 struct { //First party data
-	Site map[string]json.RawMessage `json:"site,omitempty"`
-	App  map[string]json.RawMessage `json:"app,omitempty"`
-	User map[string]json.RawMessage `json:"user,omitempty"`
+	Site json.RawMessage `json:"site,omitempty"`
+	App  json.RawMessage `json:"app,omitempty"`
+	User json.RawMessage `json:"user,omitempty"`
 }
 
 type ExtRequestCurrency struct {

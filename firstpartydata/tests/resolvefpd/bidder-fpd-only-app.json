@@ -11,11 +11,7 @@
         "id": "apnAppId",
         "ext": {
           "data": {
-            "morefpdData": "morefpddata",
-            "appFpddata": "appFpddata",
-            "moreFpd": {
-              "fpd": 123
-            }
+            "other": "data"
           }
         }
       }
@@ -23,22 +19,12 @@
   },
   "outputRequestData": {
     "app": {
-      "id": "reqUserID",
+      "id": "apnAppId",
       "ext": {
         "data": {
-          "ext": {
-            "data": {
-              "morefpdData": "morefpddata",
-              "appFpddata": "appFpddata",
-              "moreFpd": {
-                "fpd": 123
-              }
-            }
-          },
-          "id": "apnAppId"
+          "other": "data"
         }
       }
     }
   }
 }
-

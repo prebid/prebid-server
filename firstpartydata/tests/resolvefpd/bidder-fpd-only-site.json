@@ -11,11 +11,7 @@
         "id": "apnSiteId",
         "ext": {
           "data": {
-            "morefpdData": "morefpddata",
-            "siteFpddata": "siteFpddata",
-            "moreFpd": {
-              "fpd": 123
-            }
+            "other": "data"
           }
         }
       }
@@ -23,22 +19,12 @@
   },
   "outputRequestData": {
     "site": {
-      "id": "reqUserID",
+      "id": "apnSiteId",
       "ext": {
         "data": {
-          "ext": {
-            "data": {
-              "morefpdData": "morefpddata",
-              "siteFpddata": "siteFpddata",
-              "moreFpd": {
-                "fpd": 123
-              }
-            }
-          },
-          "id": "apnSiteId"
+          "other": "data"
         }
       }
     }
   }
 }
-

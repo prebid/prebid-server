@@ -14,11 +14,7 @@
         "yob": 1982,
         "ext": {
           "data": {
-            "morefpdData": "morefpddata",
-            "userFpddata": "userFpddata",
-            "moreFpd": {
-              "fpd": 123
-            }
+            "other": "data"
           }
         }
       }
@@ -26,24 +22,14 @@
   },
   "outputRequestData": {
     "user": {
-      "id": "reqUserID",
+      "id": "apnUserId",
       "yob": 1982,
       "gender": "M",
       "ext": {
         "data": {
-          "ext": {
-            "data": {
-              "morefpdData": "morefpddata",
-              "userFpddata": "userFpddata",
-              "moreFpd": {
-                "fpd": 123
-              }
-            }
-          },
-          "id": "apnUserId"
+          "other": "data"
         }
       }
     }
   }
 }
-
