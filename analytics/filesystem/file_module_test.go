@@ -1,7 +1,6 @@
 package filesystem
 
 import (
-	"fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -24,8 +23,6 @@ func TestAmpObject_ToJson(t *testing.T) {
 	}
 	if aoJson := jsonifyAmpObject(ao); strings.Contains(aoJson, "Transactional Logs Error") {
 		t.Fatalf("AmpObject failed to convert to json")
-	} else {
-		fmt.Println(aoJson)
 	}
 }
 
