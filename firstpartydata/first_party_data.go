@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
 	"github.com/prebid/prebid-server/errortypes"

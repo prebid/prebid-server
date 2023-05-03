@@ -4,16 +4,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/buger/jsonparser"
-	"github.com/prebid/openrtb/v17/adcom1"
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/adcom1"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/util/httputil"
+	"github.com/prebid/prebid-server/util/randomutil"
 
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
@@ -24,9 +24,10 @@ import (
 const defaultPlatformID int = 5
 
 type adapter struct {
-	URI            string
-	iabCategoryMap map[string]string
-	hbSource       int
+	URI             string
+	iabCategoryMap  map[string]string
+	hbSource        int
+	randomGenerator randomutil.RandomGenerator
 }
 
 var maxImpsPerReq = 10
@@ -39,7 +40,8 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 			"1": "IAB20-3",
 			"9": "IAB5-3",
 		},
-		hbSource: resolvePlatformID(config.PlatformID),
+		hbSource:        resolvePlatformID(config.PlatformID),
+		randomGenerator: randomutil.RandomNumberGenerator{},
 	}
 	return bidder, nil
 }
@@ -151,7 +153,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	// If impressions number per pod is more than maxImpsPerReq - divide those imps to several requests but keep pod id the same
 	// If  adpodId feature disabled and impressions number per pod is more than maxImpsPerReq  - divide those imps to several requests but do not include ad pod id
 	if isVIDEO == 1 && *shouldGenerateAdPodId {
-		requests, errors := buildAdPodRequests(imps, request, reqExt, requestURI)
+		requests, errors := a.buildAdPodRequests(imps, request, reqExt, requestURI)
 		return requests, append(errs, errors...)
 	}
 
@@ -411,12 +413,12 @@ func buildDisplayManageVer(req *openrtb2.BidRequest) string {
 	return fmt.Sprintf("%s-%s", source, version)
 }
 
-func buildAdPodRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExtension appnexusReqExt, uri string) ([]*adapters.RequestData, []error) {
+func (a *adapter) buildAdPodRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExtension appnexusReqExt, uri string) ([]*adapters.RequestData, []error) {
 	var errs []error
 	podImps := groupByPods(imps)
 	requests := make([]*adapters.RequestData, 0, len(podImps))
 	for _, podImps := range podImps {
-		requestExtension.Appnexus.AdPodId = fmt.Sprint(rand.Int63())
+		requestExtension.Appnexus.AdPodId = fmt.Sprint(a.randomGenerator.GenerateInt63())
 
 		reqs, errors := splitRequests(podImps, request, requestExtension, uri)
 		requests = append(requests, reqs...)

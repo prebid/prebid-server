@@ -35,6 +35,7 @@ func ConvertDownTo25(r *RequestWrapper) error {
 	// bidders must tolerate new or unexpected fields.
 	clear26Fields(r)
 	clear202211Fields(r)
+	clear202303Fields(r)
 
 	return nil
 }
@@ -180,7 +181,7 @@ func moveRewardedFrom26ToPrebidExt(i *ImpWrapper) error {
 }
 
 // clear26Fields sets all fields introduced in OpenRTB 2.6 to default values, which
-// will cause them to omitted during json marshal.
+// will cause them to be omitted during json marshal.
 func clear26Fields(r *RequestWrapper) {
 	r.WLangB = nil
 	r.CatTax = 0
@@ -254,7 +255,7 @@ func clear26Fields(r *RequestWrapper) {
 		if audio := imp.Audio; audio != nil {
 			audio.PodDur = 0
 			audio.RqdDurs = nil
-			audio.PodID = 0
+			audio.PodID = ""
 			audio.PodSeq = 0
 			audio.SlotInPod = 0
 			audio.MinCPMPerSec = 0
@@ -263,7 +264,7 @@ func clear26Fields(r *RequestWrapper) {
 		if video := imp.Video; video != nil {
 			video.MaxSeq = 0
 			video.PodDur = 0
-			video.PodID = 0
+			video.PodID = ""
 			video.PodSeq = 0
 			video.RqdDurs = nil
 			video.SlotInPod = 0
@@ -273,7 +274,7 @@ func clear26Fields(r *RequestWrapper) {
 }
 
 // clear202211Fields sets all fields introduced in OpenRTB 2.6-202211 to default values
-// which will cause them to omitted during json marshal.
+// which will cause them to be omitted during json marshal.
 func clear202211Fields(r *RequestWrapper) {
 	r.DOOH = nil
 
@@ -293,5 +294,17 @@ func clear202211Fields(r *RequestWrapper) {
 	for _, imp := range r.GetImp() {
 		imp.Qty = nil
 		imp.DT = 0
+	}
+}
+
+// clear202303Fields sets all fields introduced in OpenRTB 2.6-202303 to default values
+// which will cause them to be omitted during json marshal.
+func clear202303Fields(r *RequestWrapper) {
+	for _, imp := range r.GetImp() {
+		imp.Refresh = nil
+
+		if video := imp.Video; video != nil {
+			video.Plcmt = 0
+		}
 	}
 }

@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"strings"
 
 	"github.com/prebid/go-gdpr/consentconstants"
@@ -60,6 +61,8 @@ type AccountPriceFloors struct {
 	AdjustForBidAdjustment bool `mapstructure:"adjust_for_bid_adjustment" json:"adjust_for_bid_adjustment"`
 	EnforceDealFloors      bool `mapstructure:"enforce_deal_floors" json:"enforce_deal_floors"`
 	UseDynamicData         bool `mapstructure:"use_dynamic_data" json:"use_dynamic_data"`
+	MaxRule                int  `mapstructure:"max_rules" json:"max_rules"`
+	MaxSchemaDims          int  `mapstructure:"max_schema_dims" json:"max_schema_dims"`
 }
 
 func (pf *AccountPriceFloors) validate(errs []error) []error {
@@ -67,6 +70,15 @@ func (pf *AccountPriceFloors) validate(errs []error) []error {
 	if pf.EnforceFloorsRate < 0 || pf.EnforceFloorsRate > 100 {
 		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.enforce_floors_rate should be between 0 and 100`))
 	}
+
+	if pf.MaxRule < 0 || pf.MaxRule > math.MaxInt32 {
+		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.max_rules should be between 0 and %v`, math.MaxInt32))
+	}
+
+	if pf.MaxSchemaDims < 0 || pf.MaxSchemaDims > 20 {
+		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.max_schema_dims should be between 0 and 20`))
+	}
+
 	return errs
 }
 

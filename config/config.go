@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/spf13/viper"
 
 	"github.com/prebid/go-gdpr/consentconstants"
@@ -1006,6 +1006,8 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("account_defaults.price_floors.adjust_for_bid_adjustment", true)
 	v.SetDefault("account_defaults.price_floors.enforce_deal_floors", false)
 	v.SetDefault("account_defaults.price_floors.use_dynamic_data", false)
+	v.SetDefault("account_defaults.price_floors.max_rules", 100)
+	v.SetDefault("account_defaults.price_floors.max_schema_dims", 3)
 
 	v.SetDefault("certificates_file", "")
 	v.SetDefault("auto_gen_source_tid", true)
