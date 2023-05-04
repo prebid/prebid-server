@@ -25,7 +25,6 @@ const defaultPlatformID int = 5
 
 type adapter struct {
 	URI             string
-	iabCategoryMap  map[string]string
 	hbSource        int
 	randomGenerator randomutil.RandomGenerator
 }
@@ -36,7 +35,6 @@ var maxImpsPerReq = 10
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		URI:             config.Endpoint,
-		iabCategoryMap:  iabCategoryMap,
 		hbSource:        resolvePlatformID(config.PlatformID),
 		randomGenerator: randomutil.RandomNumberGenerator{},
 	}
@@ -395,7 +393,7 @@ func getMediaTypeForBid(bid *appnexusBidExt) (openrtb_ext.BidType, error) {
 // getIabCategoryForBid maps an appnexus brand id to an IAB category.
 func (a *adapter) findIabCategoryForBid(bid *appnexusBidExt) (string, bool) {
 	brandIDString := strconv.Itoa(bid.Appnexus.BrandCategory)
-	iabCategory, ok := a.iabCategoryMap[brandIDString]
+	iabCategory, ok := iabCategoryMap[brandIDString]
 	return iabCategory, ok
 }
 
