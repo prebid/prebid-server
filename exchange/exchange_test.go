@@ -2290,11 +2290,46 @@ func TestTimeoutComputation(t *testing.T) {
 	ctx, cancel := context.WithDeadline(context.Background(), deadline)
 	defer cancel()
 
-	auctionCtx, cancel := ex.makeAuctionContext(ctx, true)
+	auctionCtx, cancel := ex.makeAuctionContext(ctx, true, &config.TmaxAdjustments{})
 	defer cancel()
 
 	if finalDeadline, ok := auctionCtx.Deadline(); !ok || deadline.Add(-time.Duration(cacheTimeMillis)*time.Millisecond) != finalDeadline {
 		t.Errorf("The auction should allocate cacheTime amount of time from the whole request timeout.")
+	}
+}
+
+func TestMakeAuctionContextWithTmaxAdjustment(t *testing.T) {
+	upstreamResponseDuration := 30000 //in milliseconds
+	ex := exchange{}
+	deadline := time.Now()
+
+	callAssertion := func(auctionCtx context.Context, deadline time.Time) {
+		if resultDeadline, ok := auctionCtx.Deadline(); ok {
+			assert.Equal(t, deadline, resultDeadline)
+		} else {
+			t.Errorf("The context should have deadline set.")
+		}
+	}
+
+	ctx, cancel := context.WithDeadline(context.Background(), deadline)
+	defer cancel()
+
+	testCases := []struct {
+		description    string
+		tmaxAdjustment config.TmaxAdjustments
+		deadline       time.Time
+	}{
+		{description: "with_tmax_disabled", tmaxAdjustment: config.TmaxAdjustments{Enabled: false}, deadline: deadline},
+		{description: "with_tmax_enabled", tmaxAdjustment: config.TmaxAdjustments{Enabled: true, UpstreamResponseDuration: upstreamResponseDuration}, deadline: deadline.Add(-time.Duration(upstreamResponseDuration * int(time.Millisecond)))},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			auctionCtx, cancel := ex.makeAuctionContext(ctx, false, &test.tmaxAdjustment)
+			defer cancel()
+
+			callAssertion(auctionCtx, test.deadline)
+		})
 	}
 }
 
