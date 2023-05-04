@@ -12,6 +12,7 @@ import (
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -576,6 +577,69 @@ func TestAccountUpgradeStatusGetAccount(t *testing.T) {
 				_, _ = GetAccount(context.Background(), cfg, fetcher, accountID, metrics)
 			}
 			metrics.AssertNumberOfCalls(t, "RecordAccountUpgradeStatus", test.expectedMetricCount)
+		})
+	}
+}
+
+func TestDeprecateEventsEnabledField(t *testing.T) {
+	testCases := []struct {
+		name    string
+		account *config.Account
+		want    *bool
+	}{
+		{
+			name:    "account is nil",
+			account: nil,
+			want:    nil,
+		},
+		{
+			name: "account.EventsEnabled is nil, account.Events.Enabled is nil",
+			account: &config.Account{
+				EventsEnabled: nil,
+				Events: config.Events{
+					Enabled: nil,
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "account.EventsEnabled is nil, account.Events.Enabled is non-nil",
+			account: &config.Account{
+				EventsEnabled: nil,
+				Events: config.Events{
+					Enabled: ptrutil.ToPtr(true),
+				},
+			},
+			want: ptrutil.ToPtr(true),
+		},
+		{
+			name: "account.EventsEnabled is non-nil, account.Events.Enabled is nil",
+			account: &config.Account{
+				EventsEnabled: ptrutil.ToPtr(true),
+				Events: config.Events{
+					Enabled: nil,
+				},
+			},
+			want: ptrutil.ToPtr(true),
+		},
+		{
+			name: "account.EventsEnabled is non-nil, account.Events.Enabled is non-nil",
+			account: &config.Account{
+				EventsEnabled: ptrutil.ToPtr(false),
+				Events: config.Events{
+					Enabled: ptrutil.ToPtr(true),
+				},
+			},
+			want: ptrutil.ToPtr(true),
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			deprecateEventsEnabledField(test.account)
+			if test.account != nil {
+				assert.Equal(t, test.want, test.account.Events.Enabled)
+			}
 		})
 	}
 }

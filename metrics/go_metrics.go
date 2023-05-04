@@ -31,6 +31,7 @@ type Metrics struct {
 	AccountCacheMeter              map[CacheResult]metrics.Meter
 	DNSLookupTimer                 metrics.Timer
 	TLSHandshakeTimer              metrics.Timer
+	BidderServerResponseTimer      metrics.Timer
 	StoredResponsesMeter           metrics.Meter
 
 	// Metrics for OpenRTB requests specifically
@@ -219,7 +220,8 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		exchanges: exchanges,
 		modules:   getModuleNames(moduleStageNames),
 
-		OverheadTimer: makeBlankOverheadTimerMetrics(),
+		OverheadTimer:             makeBlankOverheadTimerMetrics(),
+		BidderServerResponseTimer: blankTimer,
 	}
 
 	for _, a := range exchanges {
@@ -305,6 +307,7 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	newMetrics.PrebidCacheRequestTimerError = metrics.GetOrRegisterTimer("prebid_cache_request_time.err", registry)
 	newMetrics.StoredResponsesMeter = metrics.GetOrRegisterMeter("stored_responses", registry)
 	newMetrics.OverheadTimer = makeOverheadTimerMetrics(registry)
+	newMetrics.BidderServerResponseTimer = metrics.GetOrRegisterTimer("bidder_server_response_time_seconds", registry)
 
 	for _, dt := range StoredDataTypes() {
 		for _, ft := range StoredDataFetchTypes() {
@@ -809,6 +812,10 @@ func (me *Metrics) RecordDNSTime(dnsLookupTime time.Duration) {
 
 func (me *Metrics) RecordTLSHandshakeTime(tlsHandshakeTime time.Duration) {
 	me.TLSHandshakeTimer.Update(tlsHandshakeTime)
+}
+
+func (me *Metrics) RecordBidderServerResponseTime(bidderServerResponseTime time.Duration) {
+	me.BidderServerResponseTimer.Update(bidderServerResponseTime)
 }
 
 // RecordAdapterBidReceived implements a part of the MetricsEngine interface.

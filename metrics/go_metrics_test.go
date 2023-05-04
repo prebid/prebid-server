@@ -83,6 +83,7 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "request_over_head_time.pre-bidder", m.OverheadTimer[PreBidder])
 	ensureContains(t, registry, "request_over_head_time.make-auction-response", m.OverheadTimer[MakeAuctionResponse])
 	ensureContains(t, registry, "request_over_head_time.make-bidder-requests", m.OverheadTimer[MakeBidderRequests])
+	ensureContains(t, registry, "bidder_server_response_time_seconds", m.BidderServerResponseTimer)
 
 	for module, stages := range moduleStageNames {
 		for _, stage := range stages {
@@ -417,6 +418,36 @@ func TestRecordTLSHandshakeTime(t *testing.T) {
 		m.RecordTLSHandshakeTime(test.tLSHandshakeDuration)
 
 		assert.Equal(t, test.expectedDuration.Nanoseconds(), m.TLSHandshakeTimer.Sum(), test.description)
+	}
+}
+
+func TestRecordBidderServerResponseTime(t *testing.T) {
+	testCases := []struct {
+		name          string
+		time          time.Duration
+		expectedCount int64
+		expectedSum   int64
+	}{
+		{
+			name:          "record-bidder-server-response-time-1",
+			time:          time.Duration(500),
+			expectedCount: 1,
+			expectedSum:   500,
+		},
+		{
+			name:          "record-bidder-server-response-time-2",
+			time:          time.Duration(500),
+			expectedCount: 2,
+			expectedSum:   1000,
+		},
+	}
+	for _, test := range testCases {
+		registry := metrics.NewRegistry()
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: true}, nil, nil)
+
+		m.RecordBidderServerResponseTime(test.time)
+
+		assert.Equal(t, test.time.Nanoseconds(), m.BidderServerResponseTimer.Sum(), test.name)
 	}
 }
 
