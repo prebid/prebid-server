@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -403,11 +404,11 @@ func (a *adapter) findIabCategoryForBid(bid *appnexusBidExt) (string, bool) {
 }
 
 func appendMemberId(uri string, memberId string) string {
-	if strings.Contains(uri, "?") {
-		return uri + "&member_id=" + memberId
-	}
-
-	return uri + "?member_id=" + memberId
+	u, _ := url.Parse(uri)
+	q := u.Query()
+	q.Set("member_id", memberId)
+	u.RawQuery = q.Encode()
+	return u.String()
 }
 
 func buildDisplayManageVer(req *openrtb2.BidRequest) string {

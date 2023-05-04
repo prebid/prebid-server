@@ -24,7 +24,7 @@ func TestJsonSamples(t *testing.T) {
 
 func TestMemberQueryParam(t *testing.T) {
 	uriWithMember := appendMemberId("http://ib.adnxs.com/openrtb2?query_param=true", "102")
-	expected := "http://ib.adnxs.com/openrtb2?query_param=true&member_id=102"
+	expected := "http://ib.adnxs.com/openrtb2?member_id=102&query_param=true"
 	if uriWithMember != expected {
 		t.Errorf("appendMemberId() failed on URI with query string. Expected %s, got %s", expected, uriWithMember)
 	}
