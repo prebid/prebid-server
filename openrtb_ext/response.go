@@ -102,10 +102,10 @@ const (
 	UserSyncPixel  UserSyncType = "pixel"
 )
 
-// Bid is subset of Bid object with exact json signature
-// defined at https://github.com/prebid/openrtb/blob/v17.1.0/openrtb2/bid.go.
+// NonBidObject is subset of Bid object with exact json signature
+// defined at https://github.com/prebid/openrtb/blob/v19.0.0/openrtb2/bid.go
 // It also contains the custom fields
-type Bid struct {
+type NonBidObject struct {
 	Price   float64                 `json:"price,omitempty"`
 	ADomain []string                `json:"adomain,omitempty"`
 	CatTax  adcom1.CategoryTaxonomy `json:"cattax,omitempty"`
@@ -122,7 +122,7 @@ type Bid struct {
 
 // ExtResponseNonBidPrebid represents bidresponse.ext.prebid.seatnonbid[].nonbid[].ext
 type ExtResponseNonBidPrebid struct {
-	Bid Bid `json:"bid"`
+	Bid NonBidObject `json:"bid"`
 }
 
 type NonBidExt struct {

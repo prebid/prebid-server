@@ -958,6 +958,7 @@ func applyCategoryMapping(ctx context.Context, targeting openrtb_ext.ExtRequestT
 					//on receiving bids from adapters if no unique IAB category is returned  or if no ad server category is returned discard the bid
 					bidsToRemove = append(bidsToRemove, bidInd)
 					rejections = updateRejections(rejections, bidID, "Bid did not contain a category")
+					//TODO: move 303 to constant and maintain list of Non Bid Reason
 					seatNonBids.addBid(bid, 303, string(bidderName))
 					continue
 				}
@@ -1561,7 +1562,7 @@ func setErrorMessageSecureMarkup(validationType string) string {
 	return ""
 }
 
-// setSeatNonBid  adds SeatNonBids within bidResponse.Ext.Prebid.SeatNonBid
+// setSeatNonBid adds SeatNonBids within bidResponse.Ext.Prebid.SeatNonBid
 func setSeatNonBid(bidResponseExt *openrtb_ext.ExtBidResponse, seatNonBids nonBids) *openrtb_ext.ExtBidResponse {
 	if len(seatNonBids.seatNonBidsMap) == 0 {
 		return bidResponseExt
