@@ -18,7 +18,7 @@ func TestReqCompressionCfgIsSupported(t *testing.T) {
 			description: "Compression type not supported",
 			cfg: ReqCompression{
 				Enabled: true,
-				Kind:    []string{"gzip"},
+				Kind:    []CompressionKind{"gzip"},
 			},
 			compressionKind: CompressionKind("invalid"),
 			wantSupported:   false,
@@ -27,7 +27,7 @@ func TestReqCompressionCfgIsSupported(t *testing.T) {
 			description: "Compression type supported",
 			cfg: ReqCompression{
 				Enabled: true,
-				Kind:    []string{"gzip"},
+				Kind:    []CompressionKind{"gzip"},
 			},
 			compressionKind: CompressionGZIP,
 			wantSupported:   true,
@@ -36,7 +36,7 @@ func TestReqCompressionCfgIsSupported(t *testing.T) {
 			description: "Compression not enabled",
 			cfg: ReqCompression{
 				Enabled: false,
-				Kind:    []string{"gzip"},
+				Kind:    []CompressionKind{"gzip"},
 			},
 			compressionKind: CompressionGZIP,
 			wantSupported:   false,
@@ -84,7 +84,7 @@ func TestReqCompressionCfgValidate(t *testing.T) {
 			description: "Compression type not supported",
 			cfg: ReqCompression{
 				Enabled: true,
-				Kind:    []string{"foo"},
+				Kind:    []CompressionKind{"foo"},
 			},
 			wantErrs: []error{errors.New("compression type foo is not valid")},
 		},
@@ -92,7 +92,7 @@ func TestReqCompressionCfgValidate(t *testing.T) {
 			description: "Compression type supported",
 			cfg: ReqCompression{
 				Enabled: true,
-				Kind:    []string{"gzip"},
+				Kind:    []CompressionKind{"gzip"},
 			},
 			wantErrs: []error{},
 		},
@@ -100,7 +100,7 @@ func TestReqCompressionCfgValidate(t *testing.T) {
 			description: "Compression type supported but compression kind value not in lower case",
 			cfg: ReqCompression{
 				Enabled: true,
-				Kind:    []string{"GZIP"},
+				Kind:    []CompressionKind{"GZIP"},
 			},
 			wantErrs: []error{},
 		},
@@ -108,7 +108,7 @@ func TestReqCompressionCfgValidate(t *testing.T) {
 			description: "Compression not enabled",
 			cfg: ReqCompression{
 				Enabled: false,
-				Kind:    []string{"gzip"},
+				Kind:    []CompressionKind{"gzip"},
 			},
 			wantErrs: []error{},
 		},
@@ -116,7 +116,7 @@ func TestReqCompressionCfgValidate(t *testing.T) {
 			description: "Compression enabled but no compression types specified",
 			cfg: ReqCompression{
 				Enabled: true,
-				Kind:    []string{},
+				Kind:    []CompressionKind{},
 			},
 			wantErrs: []error{errors.New("compression is enabled but no compression types are specified")},
 		},

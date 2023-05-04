@@ -181,9 +181,10 @@ func TestDefaults(t *testing.T) {
 	// Assert compression related defaults
 	cmpBools(t, "enable_gzip", false, cfg.EnableGzip)
 	cmpBools(t, "compression.request.enabled", false, cfg.Compression.Request.Enabled)
-	assert.Equal(t, []string{}, cfg.Compression.Request.Kind, "compression.request.kind")
+	assert.Equal(t, []CompressionKind{}, cfg.Compression.Request.Kind, "compression.request.kind")
 	cmpBools(t, "compression.response.enabled", false, cfg.Compression.Response.Enabled)
-	cmpStrings(t, "compression.response.kind", "", cfg.Compression.Response.Kind)
+	assert.Equal(t, CompressionKind(""), cfg.Compression.Response.Kind, "compression.response.kind")
+	// cmpStrings(t, "compression.response.kind", CompressionKind(""), cfg.Compression.Response.Kind)
 
 	cmpBools(t, "account_defaults.price_floors.enabled", false, cfg.AccountDefaults.PriceFloors.Enabled)
 	cmpInts(t, "account_defaults.price_floors.enforce_floors_rate", 100, cfg.AccountDefaults.PriceFloors.EnforceFloorsRate)
@@ -561,7 +562,7 @@ func TestFullConfig(t *testing.T) {
 	// Assert compression related defaults
 	cmpBools(t, "enable_gzip", false, cfg.EnableGzip)
 	cmpBools(t, "compression.request.enabled", true, cfg.Compression.Request.Enabled)
-	assert.Equal(t, []string{string(CompressionGZIP)}, cfg.Compression.Request.Kind, "compression.request.kind")
+	assert.Equal(t, []CompressionKind{CompressionGZIP}, cfg.Compression.Request.Kind, "compression.request.kind")
 	cmpBools(t, "compression.response.enabled", false, cfg.Compression.Response.Enabled)
 
 	//Assert the NonStandardPublishers was correctly unmarshalled

@@ -12,14 +12,14 @@ type Compression struct {
 
 // CompressionConfig defines if compression is enabled and what type of compression to use
 type ReqCompression struct {
-	Enabled bool     `mapstructure:"enabled"`
-	Kind    []string `mapstructure:"kind,flow"`
-	kindMap map[CompressionKind]bool
+	Enabled bool              `mapstructure:"enabled"`
+	Kind    []CompressionKind `mapstructure:"kind,flow"`
+	kindMap map[CompressionKind]struct{}
 }
 
 type RespCompression struct {
-	Enabled bool   `mapstructure:"enabled"`
-	Kind    string `mapstructure:"kind"`
+	Enabled bool            `mapstructure:"enabled"`
+	Kind    CompressionKind `mapstructure:"kind"`
 }
 
 type CompressionKind string
@@ -28,7 +28,12 @@ const (
 	CompressionGZIP CompressionKind = "gzip"
 )
 
+func (k CompressionKind) ToLower() CompressionKind {
+	return CompressionKind(strings.ToLower(string(k)))
+}
+
 func (k CompressionKind) IsValid() bool {
+	k = k.ToLower()
 	switch k {
 	// Case for valid types. As new compression types are added they should
 	// be added here as a comma separated list.
@@ -47,7 +52,9 @@ func (cfg *Compression) validate(errs []error) []error {
 
 func (cfg *ReqCompression) IsSupported(kind CompressionKind) bool {
 	if cfg.Enabled {
-		return cfg.kindMap[kind]
+		if _, ok := cfg.kindMap[kind.ToLower()]; ok {
+			return true
+		}
 	}
 
 	return false
@@ -60,13 +67,14 @@ func (cfg *ReqCompression) Validate(errs []error) []error {
 		}
 
 		// This is to enabled O(1) lookups for supported compression types
-		cfg.kindMap = make(map[CompressionKind]bool, len(cfg.Kind))
+		cfg.kindMap = make(map[CompressionKind]struct{}, len(cfg.Kind))
 		for _, kind := range cfg.Kind {
-			k := CompressionKind(strings.ToLower(kind))
+			k := kind
+			//k := CompressionKind(strings.ToLower(kind))
 			if !k.IsValid() {
 				errs = append(errs, fmt.Errorf("compression type %s is not valid", kind))
 			} else {
-				cfg.kindMap[k] = true
+				cfg.kindMap[k] = struct{}{}
 			}
 		}
 	}
@@ -75,7 +83,7 @@ func (cfg *ReqCompression) Validate(errs []error) []error {
 
 func (cfg *RespCompression) Validate(errs []error) []error {
 	if cfg.Enabled {
-		k := CompressionKind(strings.ToLower(cfg.Kind))
+		k := cfg.Kind
 		if !k.IsValid() {
 			errs = append(errs, fmt.Errorf("compression type %s is not valid", cfg.Kind))
 		}

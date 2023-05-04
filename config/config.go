@@ -1013,7 +1013,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("compression.response.enabled", false)
 	v.SetDefault("compression.response.kind", "")
 	v.SetDefault("compression.request.enabled", false)
-	v.SetDefault("compression.request.kind", []string{})
+	v.SetDefault("compression.request.kind", []CompressionKind{})
 
 	v.SetDefault("certificates_file", "")
 	v.SetDefault("auto_gen_source_tid", true)

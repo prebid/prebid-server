@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
-	"strings"
 	"syscall"
 	"time"
 
@@ -120,9 +119,9 @@ func newSocketServer(cfg *config.Configuration, handler http.Handler) *http.Serv
 	}
 }
 
-func getCompressionEnabledHandler(h http.Handler, compressionType string) http.Handler {
-	c := config.CompressionKind(strings.ToLower(compressionType))
-	switch c {
+func getCompressionEnabledHandler(h http.Handler, compressionType config.CompressionKind) http.Handler {
+	compressionType = compressionType.ToLower()
+	switch compressionType {
 	case config.CompressionGZIP:
 		return gziphandler.GzipHandler(h)
 	default:
