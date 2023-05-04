@@ -70,7 +70,6 @@ func (cfg *ReqCompression) Validate(errs []error) []error {
 		cfg.kindMap = make(map[CompressionKind]struct{}, len(cfg.Kind))
 		for _, kind := range cfg.Kind {
 			k := kind
-			//k := CompressionKind(strings.ToLower(kind))
 			if !k.IsValid() {
 				errs = append(errs, fmt.Errorf("compression type %s is not valid", kind))
 			} else {
@@ -81,7 +80,7 @@ func (cfg *ReqCompression) Validate(errs []error) []error {
 	return errs
 }
 
-func (cfg *RespCompression) Validate(errs []error) []error {
+func (cfg RespCompression) Validate(errs []error) []error {
 	if cfg.Enabled {
 		k := cfg.Kind
 		if !k.IsValid() {
