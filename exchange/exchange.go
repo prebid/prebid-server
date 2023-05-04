@@ -208,6 +208,7 @@ type AuctionRequest struct {
 	QueryParams           url.Values
 	// map of bidder to store duration needed for the MakeBids() calls and start time after MakeBids() calls
 	MakeBidsTimeInfo map[openrtb_ext.BidderName]adapters.MakeBidsTimeInfo
+	TmaxAdjustments  config.TmaxAdjustments
 }
 
 // BidderRequest holds the bidder specific request and all other

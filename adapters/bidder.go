@@ -146,6 +146,7 @@ func (r *RequestData) SetBasicAuth(username string, password string) {
 type ExtraRequestInfo struct {
 	PbsEntryPoint              config.RequestType
 	BidderRequestStartTime     time.Time
+	TmaxAdjustments            *config.TmaxAdjustments
 	GlobalPrivacyControlHeader string
 	CurrencyConversions        currency.Conversions
 	MakeBidsTimeInfo           MakeBidsTimeInfo
