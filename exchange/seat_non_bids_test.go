@@ -87,7 +87,7 @@ var sampleSeatNonBidMap = func(seat string, nonBidCount int) map[string][]openrt
 	nonBids := make([]openrtb_ext.NonBid, 0)
 	for i := 0; i < nonBidCount; i++ {
 		nonBids = append(nonBids, openrtb_ext.NonBid{
-			Ext: openrtb_ext.NonBidExt{Prebid: openrtb_ext.ExtResponseNonBidPrebid{Bid: openrtb_ext.Bid{}}},
+			Ext: openrtb_ext.NonBidExt{Prebid: openrtb_ext.ExtResponseNonBidPrebid{Bid: openrtb_ext.NonBidObject{}}},
 		})
 	}
 	return map[string][]openrtb_ext.NonBid{
@@ -103,7 +103,7 @@ var sampleSeatBids = func(seat string, nonBidCount int) []openrtb_ext.SeatNonBid
 	}
 	for i := 0; i < nonBidCount; i++ {
 		seatNonBid.NonBid = append(seatNonBid.NonBid, openrtb_ext.NonBid{
-			Ext: openrtb_ext.NonBidExt{Prebid: openrtb_ext.ExtResponseNonBidPrebid{Bid: openrtb_ext.Bid{}}},
+			Ext: openrtb_ext.NonBidExt{Prebid: openrtb_ext.ExtResponseNonBidPrebid{Bid: openrtb_ext.NonBidObject{}}},
 		})
 	}
 	seatNonBids = append(seatNonBids, seatNonBid)
