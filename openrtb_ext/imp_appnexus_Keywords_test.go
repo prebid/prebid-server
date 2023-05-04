@@ -9,7 +9,7 @@ import (
 
 func TestKeywordsUnmarshalJSON(t *testing.T) {
 	type keywords struct {
-		Keywords Keywords `json:"keywords"`
+		Keywords ExtImpAppnexusKeywords `json:"keywords"`
 	}
 
 	type validTest struct {

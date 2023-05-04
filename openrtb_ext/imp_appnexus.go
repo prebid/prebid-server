@@ -10,24 +10,24 @@ import (
 
 // ExtImpAppnexus defines the contract for bidrequest.imp[i].ext.prebid.bidder.appnexus
 type ExtImpAppnexus struct {
-	DeprecatedPlacementId    jsonutil.StringInt `json:"placementId"`
-	LegacyInvCode            string             `json:"invCode"`
-	LegacyTrafficSourceCode  string             `json:"trafficSourceCode"`
-	PlacementId              jsonutil.StringInt `json:"placement_id"`
-	InvCode                  string             `json:"inv_code"`
-	Member                   string             `json:"member"`
-	Keywords                 Keywords           `json:"keywords"`
-	TrafficSourceCode        string             `json:"traffic_source_code"`
-	Reserve                  float64            `json:"reserve"`
-	Position                 string             `json:"position"`
-	UsePaymentRule           *bool              `json:"use_pmt_rule"`
-	DeprecatedUsePaymentRule *bool              `json:"use_payment_rule"`
+	DeprecatedPlacementId    jsonutil.StringInt     `json:"placementId"`
+	LegacyInvCode            string                 `json:"invCode"`
+	LegacyTrafficSourceCode  string                 `json:"trafficSourceCode"`
+	PlacementId              jsonutil.StringInt     `json:"placement_id"`
+	InvCode                  string                 `json:"inv_code"`
+	Member                   string                 `json:"member"`
+	Keywords                 ExtImpAppnexusKeywords `json:"keywords"`
+	TrafficSourceCode        string                 `json:"traffic_source_code"`
+	Reserve                  float64                `json:"reserve"`
+	Position                 string                 `json:"position"`
+	UsePaymentRule           *bool                  `json:"use_pmt_rule"`
+	DeprecatedUsePaymentRule *bool                  `json:"use_payment_rule"`
 	// At this time we do no processing on the private sizes, so just leaving it as a JSON blob.
 	PrivateSizes json.RawMessage `json:"private_sizes"`
 	AdPodId      bool            `json:"generate_ad_pod_id"`
 }
 
-type Keywords string
+type ExtImpAppnexusKeywords string
 
 // extImpAppnexusKeyVal defines the contract for bidrequest.imp[i].ext.prebid.bidder.appnexus.keywords[i]
 type extImpAppnexusKeyVal struct {
@@ -35,7 +35,7 @@ type extImpAppnexusKeyVal struct {
 	Values []string `json:"value,omitempty"`
 }
 
-func (ks *Keywords) UnmarshalJSON(b []byte) error {
+func (ks *ExtImpAppnexusKeywords) UnmarshalJSON(b []byte) error {
 	if len(b) == 0 {
 		return nil
 	}
@@ -58,7 +58,7 @@ func (ks *Keywords) UnmarshalJSON(b []byte) error {
 			}
 		}
 		if len(keywords.String()) > 0 {
-			*ks = Keywords(keywords.String()[:keywords.Len()-1])
+			*ks = ExtImpAppnexusKeywords(keywords.String()[:keywords.Len()-1])
 		}
 	case '[':
 		var results []extImpAppnexusKeyVal
@@ -76,18 +76,18 @@ func (ks *Keywords) UnmarshalJSON(b []byte) error {
 			}
 		}
 		if len(kvs.String()) > 0 {
-			*ks = Keywords(kvs.String()[:kvs.Len()-1])
+			*ks = ExtImpAppnexusKeywords(kvs.String()[:kvs.Len()-1])
 		}
 	case '"':
 		var keywords string
 		if err := json.Unmarshal(b, &keywords); err != nil {
 			return err
 		}
-		*ks = Keywords(keywords)
+		*ks = ExtImpAppnexusKeywords(keywords)
 	}
 	return nil
 }
 
-func (ks *Keywords) String() string {
+func (ks *ExtImpAppnexusKeywords) String() string {
 	return *(*string)(ks)
 }
