@@ -49,11 +49,17 @@ func (ks *Keywords) UnmarshalJSON(b []byte) error {
 
 		var keywords strings.Builder
 		for key, values := range results {
-			for _, val := range values {
-				keywords.WriteString(fmt.Sprintf("%s=%s,", key, val))
+			if len(values) == 0 {
+				keywords.WriteString(fmt.Sprintf("%s,", key))
+			} else {
+				for _, val := range values {
+					keywords.WriteString(fmt.Sprintf("%s=%s,", key, val))
+				}
 			}
 		}
-		*ks = Keywords(keywords.String()[:keywords.Len()-1])
+		if len(keywords.String()) > 0 {
+			*ks = Keywords(keywords.String()[:keywords.Len()-1])
+		}
 	case '[':
 		var results []extImpAppnexusKeyVal
 		if err := json.Unmarshal(b, &results); err != nil {
@@ -69,8 +75,9 @@ func (ks *Keywords) UnmarshalJSON(b []byte) error {
 				}
 			}
 		}
-
-		*ks = Keywords(kvs.String()[:kvs.Len()-1])
+		if len(kvs.String()) > 0 {
+			*ks = Keywords(kvs.String()[:kvs.Len()-1])
+		}
 	case '"':
 		var keywords string
 		if err := json.Unmarshal(b, &keywords); err != nil {
