@@ -357,7 +357,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 			alternateBidderCodes = *r.Account.AlternateBidderCodes
 		}
 
-		adapterBids, adapterExtra, fledge, anyBidsReturned = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, alternateBidderCodes, requestExtLegacy.Prebid.Experiment, r.HookExecutor, r.StartTime)
+		adapterBids, adapterExtra, fledge, anyBidsReturned = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, alternateBidderCodes, requestExtLegacy.Prebid.Experiment, r.HookExecutor, r.StartTime, &r.TmaxAdjustments)
 		r.MakeBidsTimeInfo = buildMakeBidsTimeInfoMap(adapterExtra)
 	}
 
@@ -636,7 +636,8 @@ func (e *exchange) getAllBids(
 	alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes,
 	experiment *openrtb_ext.Experiment,
 	hookExecutor hookexecution.StageExecutor,
-	pbsRequestStartTime time.Time) (
+	pbsRequestStartTime time.Time,
+	tmaxAdjustments *config.TmaxAdjustments) (
 	map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid,
 	map[openrtb_ext.BidderName]*seatResponseExtra,
 	*openrtb_ext.Fledge,
@@ -670,6 +671,7 @@ func (e *exchange) getAllBids(
 			reqInfo.PbsEntryPoint = bidderRequest.BidderLabels.RType
 			reqInfo.GlobalPrivacyControlHeader = globalPrivacyControlHeader
 			reqInfo.BidderRequestStartTime = start
+			reqInfo.TmaxAdjustments = tmaxAdjustments
 
 			bidReqOptions := bidRequestOptions{
 				accountDebugAllowed: accountDebugAllowed,
