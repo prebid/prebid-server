@@ -562,7 +562,7 @@ func TestBidderTimeout(t *testing.T) {
 	callInfo := bidder.doRequest(ctx, &adapters.RequestData{
 		Method: "POST",
 		Uri:    server.URL,
-	}, time.Now())
+	}, time.Now(), &config.TmaxAdjustments{Enabled: false})
 	if callInfo.err == nil {
 		t.Errorf("The bidder should report an error if the context has expired already.")
 	}
@@ -581,7 +581,7 @@ func TestInvalidRequest(t *testing.T) {
 
 	callInfo := bidder.doRequest(context.Background(), &adapters.RequestData{
 		Method: "\"", // force http.NewRequest() to fail
-	}, time.Now())
+	}, time.Now(), &config.TmaxAdjustments{Enabled: false})
 	if callInfo.err == nil {
 		t.Errorf("bidderAdapter.doRequest should return an error if the request data is malformed.")
 	}
@@ -605,7 +605,7 @@ func TestConnectionClose(t *testing.T) {
 	callInfo := bidder.doRequest(context.Background(), &adapters.RequestData{
 		Method: "POST",
 		Uri:    server.URL,
-	}, time.Now())
+	}, time.Now(), &config.TmaxAdjustments{Enabled: false})
 	if callInfo.err == nil {
 		t.Errorf("bidderAdapter.doRequest should return an error if the connection closes unexpectedly.")
 	}
@@ -2100,7 +2100,7 @@ func TestCallRecordDNSTime(t *testing.T) {
 	}
 
 	// Run test
-	bidder.doRequest(context.Background(), &adapters.RequestData{Method: "POST", Uri: "http://www.example.com/"}, time.Now())
+	bidder.doRequest(context.Background(), &adapters.RequestData{Method: "POST", Uri: "http://www.example.com/"}, time.Now(), &config.TmaxAdjustments{Enabled: false})
 
 	// Tried one or another, none seem to work without panicking
 	metricsMock.AssertExpectations(t)
@@ -2123,7 +2123,7 @@ func TestCallRecordTLSHandshakeTime(t *testing.T) {
 	}
 
 	// Run test
-	bidder.doRequest(context.Background(), &adapters.RequestData{Method: "POST", Uri: "http://www.example.com/"}, time.Now())
+	bidder.doRequest(context.Background(), &adapters.RequestData{Method: "POST", Uri: "http://www.example.com/"}, time.Now(), &config.TmaxAdjustments{Enabled: false})
 
 	// Tried one or another, none seem to work without panicking
 	metricsMock.AssertExpectations(t)
@@ -2211,7 +2211,7 @@ func TestTimeoutNotificationOn(t *testing.T) {
 		loggerBuffer.WriteString(fmt.Sprintf(fmt.Sprintln(msg), args...))
 	}
 
-	bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, time.Now())
+	bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, time.Now(), &config.TmaxAdjustments{Enabled: false})
 
 	// Wait a little longer than the 205ms mock server sleep.
 	time.Sleep(210 * time.Millisecond)
@@ -2219,6 +2219,32 @@ func TestTimeoutNotificationOn(t *testing.T) {
 	logExpected := "TimeoutNotification: error:(context deadline exceeded) body:\n"
 	logActual := loggerBuffer.String()
 	assert.EqualValues(t, logExpected, logActual)
+}
+
+func TestTmaxInDoRequest(t *testing.T) {
+	ctx, cancelFunc := context.WithDeadline(context.Background(), time.Now().Add(50*time.Second))
+	defer cancelFunc()
+
+	bidRequest := adapters.RequestData{
+		Method: "POST",
+		Uri:    "test.url.com",
+		Body:   []byte(`{"id":"this-id","app":{"publisher":{"id":"pub-id"}}}`),
+	}
+
+	bidderAdapter := bidderAdapter{
+		me: &metricsConfig.NilMetricsEngine{},
+	}
+	logger := func(msg string, args ...interface{}) {}
+
+	httpCallInfo := bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, time.Now(), &config.TmaxAdjustments{Enabled: true, BidderLatencyAdjustment: 20000, UpstreamResponseDuration: 40000})
+	assert.NotNil(t, httpCallInfo.err)
+	assert.Equal(t, ErrTmaxAdjustment, httpCallInfo.err)
+
+	httpCallInfo = bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, time.Now(), &config.TmaxAdjustments{Enabled: true, BidderLatencyAdjustment: 20000, UpstreamResponseDuration: 10000})
+	assert.NotEqual(t, ErrTmaxAdjustment, httpCallInfo.err)
+
+	httpCallInfo = bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, time.Now(), &config.TmaxAdjustments{Enabled: false, BidderLatencyAdjustment: 20000, UpstreamResponseDuration: 40000})
+	assert.NotEqual(t, ErrTmaxAdjustment, httpCallInfo.err)
 }
 
 func TestParseDebugInfoTrue(t *testing.T) {
