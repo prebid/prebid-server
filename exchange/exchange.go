@@ -334,7 +334,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 
 	// If we need to cache bids, then it will take some time to call prebid cache.
 	// We should reduce the amount of time the bidders have, to compensate.
-	auctionCtx, cancel := e.makeAuctionContext(ctx, cacheInstructions.cacheBids)
+	auctionCtx, cancel := e.makeAuctionContext(ctx, cacheInstructions.cacheBids, &r.TmaxAdjustments)
 	defer cancel()
 
 	var (
@@ -614,12 +614,18 @@ func updateHbPbCatDur(bid *entities.PbsOrtbBid, dealTier openrtb_ext.DealTier, b
 	}
 }
 
-func (e *exchange) makeAuctionContext(ctx context.Context, needsCache bool) (auctionCtx context.Context, cancel context.CancelFunc) {
+func (e *exchange) makeAuctionContext(ctx context.Context, needsCache bool, tmaxAdjustments *config.TmaxAdjustments) (auctionCtx context.Context, cancel context.CancelFunc) {
 	auctionCtx = ctx
 	cancel = func() {}
 	if needsCache {
 		if deadline, ok := ctx.Deadline(); ok {
 			auctionCtx, cancel = context.WithDeadline(ctx, deadline.Add(-e.cacheTime))
+		}
+	}
+	if tmaxAdjustments != nil && tmaxAdjustments.Enabled {
+		if deadline, ok := ctx.Deadline(); ok {
+			enforcedTmax := deadline.Add(-time.Duration(tmaxAdjustments.UpstreamResponseDuration * int(time.Millisecond)))
+			auctionCtx, cancel = context.WithDeadline(ctx, enforcedTmax)
 		}
 	}
 	return
