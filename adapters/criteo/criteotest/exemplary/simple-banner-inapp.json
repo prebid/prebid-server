@@ -84,7 +84,8 @@
                   "h": 250,
                   "ext": {
                     "prebid": {
-                      "type": "banner"
+                      "type": "banner",
+                      "networkName": "Criteo"
                     }
                   }
                 }
@@ -110,7 +111,8 @@
             "h": 250,
             "ext": {
               "prebid": {
-                "type": "banner"
+                "type": "banner",
+                "networkName": "Criteo"
               }
             }
           },
