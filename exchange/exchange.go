@@ -320,11 +320,10 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 
 	mergedBidAdj, err := bidadjustment.Merge(r.BidRequestWrapper, r.Account.BidAdjustments)
 	if err != nil {
-		if !errortypes.ContainsFatalError([]error{err}) {
-			errs = append(errs, err)
-		} else {
+		if errortypes.ContainsFatalError([]error{err}) {
 			return nil, err
 		}
+		errs = append(errs, err)
 	}
 	bidAdjustmentRules := bidadjustment.BuildRules(mergedBidAdj)
 
