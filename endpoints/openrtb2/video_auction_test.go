@@ -73,6 +73,10 @@ func TestVideoEndpointImpressionsDuration(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	deps := mockDeps(t, ex)
+	deps.cfg.TmaxAdjustments = config.TmaxAdjustments{
+		Enabled:  true,
+		VideoMax: 900,
+	}
 	deps.VideoAuctionEndpoint(recorder, req, nil)
 
 	if ex.lastRequest == nil {
