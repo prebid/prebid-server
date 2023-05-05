@@ -376,6 +376,10 @@ func TestExplicitUserId(t *testing.T) {
 		HostCookie: config.HostCookie{
 			CookieName: cookieName,
 		},
+		TmaxAdjustments: config.TmaxAdjustments{
+			Enabled:    true,
+			AuctionMax: 900,
+		},
 	}
 	ex := &mockExchange{}
 
