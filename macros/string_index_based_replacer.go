@@ -19,7 +19,7 @@ type urlMetaTemplate struct {
 	endingIndices   []int
 }
 
-// NewReplacer will return instance of macro s
+// NewStringIndexBasedReplacer will return instance of string index based macro replacer
 func NewStringIndexBasedReplacer() Replacer {
 	return &stringIndexBasedReplacer{
 		templates: make(map[string]urlMetaTemplate),
