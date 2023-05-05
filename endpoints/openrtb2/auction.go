@@ -25,6 +25,7 @@ import (
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/openrtb/v19/openrtb3"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/bidadjustment"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/ortb"
 	"golang.org/x/net/publicsuffix"
@@ -723,7 +724,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 	}
 
 	if errs := validateRequestExt(req); len(errs) != 0 {
-		return append(errL, errs...)
+		if errortypes.ContainsFatalError(errs) {
+			return append(errL, errs...)
+		}
+		errL = append(errL, errs...)
 	}
 
 	if err := deps.validateSite(req); err != nil {
@@ -1554,6 +1558,15 @@ func validateRequestExt(req *openrtb_ext.RequestWrapper) []error {
 		reqExt.SetPrebid(prebid)
 	}
 
+	if !bidadjustment.Validate(prebid.BidAdjustments) {
+		prebid.BidAdjustments = nil
+		reqExt.SetPrebid(prebid)
+		errs = append(errs, &errortypes.Warning{
+			WarningCode: errortypes.BidAdjustmentWarningCode,
+			Message:     "bid adjustment from request was invalid",
+		})
+	}
+
 	return errs
 }
 
@@ -1670,11 +1683,9 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 	// Check Universal User ID
 	eids := userExt.GetEid()
 	if eids != nil {
-		if len(*eids) == 0 {
-			return append(errL, errors.New("request.user.ext.eids must contain at least one element or be undefined"))
-		}
-		uniqueSources := make(map[string]struct{}, len(*eids))
-		for eidIndex, eid := range *eids {
+		eidsValue := *eids
+		uniqueSources := make(map[string]struct{}, len(eidsValue))
+		for eidIndex, eid := range eidsValue {
 			if eid.Source == "" {
 				return append(errL, fmt.Errorf("request.user.ext.eids[%d] missing required field: \"source\"", eidIndex))
 			}
@@ -1710,6 +1721,7 @@ func validateRegs(req *openrtb_ext.RequestWrapper, gpp gpplib.GppContainer) []er
 		for _, id := range req.BidRequest.Regs.GPPSID {
 			if id == int8(constants.SectionTCFEU2) {
 				gdpr = 1
+				break
 			}
 		}
 		if gdpr != *req.BidRequest.Regs.GDPR {
