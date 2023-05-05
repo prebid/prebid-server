@@ -566,6 +566,14 @@ func TestTruncate(t *testing.T) {
 			want: "abcdef",
 		},
 		{
+			name: "width exactly 100 chars",
+			args: args{
+				text:  "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuv",
+				width: customMacroLength,
+			},
+			want: "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuv",
+		},
+		{
 			name: "width greater than 100 chars",
 			args: args{
 				text:  "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz",
