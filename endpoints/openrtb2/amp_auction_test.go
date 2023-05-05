@@ -172,6 +172,10 @@ func TestAccountErrors(t *testing.T) {
 			BlacklistedAccts:   []string{"bad_acct"},
 			BlacklistedAcctMap: map[string]bool{"bad_acct": true},
 			MaxRequestSize:     maxSize,
+			TmaxAdjustments: config.TmaxAdjustments{
+				Enabled: true,
+				AmpMax:  900,
+			},
 		}
 		cfg.MarshalAccountDefaults()
 
