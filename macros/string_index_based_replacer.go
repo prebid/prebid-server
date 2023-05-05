@@ -15,11 +15,11 @@ type stringIndexBasedReplacer struct {
 }
 
 type urlMetaTemplate struct {
-	indices     []int
-	macroLength []int
+	startingIndices []int
+	endingIndices   []int
 }
 
-// NewReplacer will return instance of macro processor
+// NewReplacer will return instance of macro s
 func NewStringIndexBasedReplacer() Replacer {
 	return &stringIndexBasedReplacer{
 		templates: make(map[string]urlMetaTemplate),
@@ -29,8 +29,8 @@ func NewStringIndexBasedReplacer() Replacer {
 func constructTemplate(url string) urlMetaTemplate {
 	currentIndex := 0
 	tmplt := urlMetaTemplate{
-		indices:     []int{},
-		macroLength: []int{},
+		startingIndices: []int{},
+		endingIndices:   []int{},
 	}
 	delimiterLen := len(delimiter)
 	for {
@@ -38,15 +38,14 @@ func constructTemplate(url string) urlMetaTemplate {
 		if currentIndex == -1 {
 			break
 		}
-		middleIndex := currentIndex + delimiterLen
-		endingIndex := strings.Index(url[middleIndex:], delimiter) // ending Delimiter
+		startIndex := currentIndex + delimiterLen
+		endingIndex := strings.Index(url[startIndex:], delimiter) // ending Delimiter
 		if endingIndex == -1 {
 			break
 		}
-		endingIndex = endingIndex + middleIndex // offset adjustment (Delimiter inclusive)
-		macroLength := endingIndex              // just for readiability
-		tmplt.indices = append(tmplt.indices, currentIndex)
-		tmplt.macroLength = append(tmplt.macroLength, macroLength)
+		endingIndex = endingIndex + startIndex // offset adjustment (Delimiter inclusive)
+		tmplt.startingIndices = append(tmplt.startingIndices, startIndex)
+		tmplt.endingIndices = append(tmplt.endingIndices, endingIndex)
 		currentIndex = endingIndex + 1
 		if currentIndex >= len(url) {
 			break
@@ -55,40 +54,40 @@ func constructTemplate(url string) urlMetaTemplate {
 	return tmplt
 }
 
-func (processor *stringIndexBasedReplacer) Replace(url string, macroProvider *macroProvider) (string, error) {
-	tmplt := processor.getTemplate(url)
+func (s *stringIndexBasedReplacer) Replace(url string, macroProvider *macroProvider) (string, error) {
+	tmplt := s.getTemplate(url)
 
 	var result strings.Builder
 	currentIndex := 0
 	delimLen := len(delimiter)
-	for i, index := range tmplt.indices {
-		macro := url[index+delimLen : tmplt.macroLength[i]]
+	for i, index := range tmplt.startingIndices {
+		macro := url[index:tmplt.endingIndices[i]]
 		// copy prev part
-		result.WriteString(url[currentIndex:index])
+		result.WriteString(url[currentIndex : index-delimLen])
 		value := macroProvider.GetMacro(macro)
 		if value != "" {
 			result.WriteString(value)
 		}
-		currentIndex = index + len(macro) + 2*delimLen
+		currentIndex = index + len(macro) + delimLen
 	}
 	result.WriteString(url[currentIndex:])
 	return result.String(), nil
 }
 
-func (processor *stringIndexBasedReplacer) getTemplate(url string) urlMetaTemplate {
+func (s *stringIndexBasedReplacer) getTemplate(url string) urlMetaTemplate {
 	var (
 		template urlMetaTemplate
 		ok       bool
 	)
-	processor.RLock()
-	template, ok = processor.templates[url]
-	processor.RUnlock()
+	s.RLock()
+	template, ok = s.templates[url]
+	s.RUnlock()
 
 	if !ok {
-		processor.Lock()
+		s.Lock()
 		template = constructTemplate(url)
-		processor.templates[url] = template
-		processor.Unlock()
+		s.templates[url] = template
+		s.Unlock()
 	}
 	return template
 }

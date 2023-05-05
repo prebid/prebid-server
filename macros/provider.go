@@ -119,7 +119,6 @@ func (b *macroProvider) GetMacro(key string) string {
 }
 
 func (b *macroProvider) PopulateBidMacros(bid *entities.PbsOrtbBid, seat string) {
-
 	if bid.GeneratedBidID != "" {
 		b.macros[MacroKeyBidID] = bid.GeneratedBidID
 	} else {
