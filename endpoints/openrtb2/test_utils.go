@@ -936,6 +936,7 @@ type mockBidderHandler struct {
 	BidderName string  `json:"bidderName"`
 	Currency   string  `json:"currency"`
 	Price      float64 `json:"price"`
+	DealID     string  `json:"dealid"`
 }
 
 func (b mockBidderHandler) bid(w http.ResponseWriter, req *http.Request) {
@@ -970,9 +971,10 @@ func (b mockBidderHandler) bid(w http.ResponseWriter, req *http.Request) {
 			{
 				Bid: []openrtb2.Bid{
 					{
-						ID:    b.BidderName + "-bid",
-						ImpID: openrtb2Request.Imp[0].ID,
-						Price: b.Price,
+						ID:     b.BidderName + "-bid",
+						ImpID:  openrtb2Request.Imp[0].ID,
+						Price:  b.Price,
+						DealID: b.DealID,
 					},
 				},
 				Seat: b.BidderName,
