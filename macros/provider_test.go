@@ -452,7 +452,7 @@ func TestPopulateRequestMacros(t *testing.T) {
 			}
 			b.populateRequestMacros(tt.args.reqWrapper)
 			output := map[string]string{}
-			for key, _ := range tt.want {
+			for key := range tt.want {
 				output[key] = b.GetMacro(key)
 			}
 			assert.Equal(t, output, tt.want, tt.name)
