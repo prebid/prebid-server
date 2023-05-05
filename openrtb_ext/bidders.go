@@ -261,6 +261,7 @@ const (
 	BidderVisibleMeasures   BidderName = "visiblemeasures"
 	BidderVisx              BidderName = "visx"
 	BidderVrtcal            BidderName = "vrtcal"
+	BidderXeworks           BidderName = "xeworks"
 	BidderYahooSSP          BidderName = "yahoossp"
 	BidderYeahmobi          BidderName = "yeahmobi"
 	BidderYieldlab          BidderName = "yieldlab"
@@ -448,6 +449,7 @@ func CoreBidderNames() []BidderName {
 		BidderVisibleMeasures,
 		BidderVisx,
 		BidderVrtcal,
+		BidderXeworks,
 		BidderYahooSSP,
 		BidderYeahmobi,
 		BidderYieldlab,
