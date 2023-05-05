@@ -119,10 +119,12 @@ func (b *macroProvider) GetMacro(key string) string {
 }
 
 func (b *macroProvider) PopulateBidMacros(bid *entities.PbsOrtbBid, seat string) {
-	if bid.GeneratedBidID != "" {
-		b.macros[MacroKeyBidID] = bid.GeneratedBidID
-	} else {
-		b.macros[MacroKeyBidID] = bid.Bid.ID
+	if bid.Bid != nil {
+		if bid.GeneratedBidID != "" {
+			b.macros[MacroKeyBidID] = bid.GeneratedBidID
+		} else {
+			b.macros[MacroKeyBidID] = bid.Bid.ID
+		}
 	}
 	b.macros[MacroKeyBidder] = seat
 }
@@ -141,3 +143,7 @@ func truncate(text string, width uint) string {
 	trunc := r[:width]
 	return string(trunc)
 }
+
+
+
+

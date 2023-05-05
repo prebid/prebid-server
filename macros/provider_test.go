@@ -328,86 +328,43 @@ func TestPopulateRequestMacros(t *testing.T) {
 	}
 	tests := []struct {
 		name string
-		key  string
 		args args
-		want string
+		want map[string]string
 	}{
 		{
-			name: "populate PBS-AUCTIONID key",
-			key:  MacroKeyAuctionID,
+			name: "No request level macros present",
+			args: args{
+				reqWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{},
+				},
+			},
+			want: map[string]string{MacroKeyBidID: "", MacroKeyAppBundle: "", MacroKeyDomain: "", MacroKeyPubDomain: "", MacroKeyPageURL: "", MacroKeyAccountID: "", MacroKeyLmtTracking: "", MacroKeyConsent: "", MacroKeyBidder: "", MacroKeyIntegration: "", MacroKeyVastCRTID: "", MacroKeyAuctionID: "", MacroKeyChannel: "", MacroKeyEventType: "", MacroKeyVastEvent: ""},
+		},
+		{
+			name: " AUCTIONID, AppBundle, PageURL present key",
 			args: args{
 				reqWrapper: &openrtb_ext.RequestWrapper{
 					BidRequest: &openrtb2.BidRequest{
 						ID: "123",
-					},
-				},
-			},
-			want: "123",
-		},
-		{
-			name: "populate PBS-APPBUNDLE key",
-			key:  MacroKeyAppBundle,
-			args: args{
-				reqWrapper: &openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
 						App: &openrtb2.App{
-							Bundle: "testbundle",
+							Bundle: "testBundle",
 						},
-					},
-				},
-			},
-			want: "testbundle",
-		},
-		{
-			name: "populate App PBS-DOMAIN key",
-			key:  MacroKeyDomain,
-			args: args{
-				reqWrapper: &openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						App: &openrtb2.App{
-							Domain: "testDomain",
-						},
-					},
-				},
-			},
-			want: "testDomain",
-		},
-		{
-			name: "populate Site PBS-DOMAIN key",
-			key:  MacroKeyDomain,
-			args: args{
-				reqWrapper: &openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
 						Site: &openrtb2.Site{
-							Domain: "testDomain",
+							Page: "testPage",
 						},
 					},
 				},
 			},
-			want: "testDomain",
+			want: map[string]string{MacroKeyBidID: "", MacroKeyAppBundle: "testBundle", MacroKeyDomain: "", MacroKeyPubDomain: "", MacroKeyPageURL: "testPage", MacroKeyAccountID: "", MacroKeyLmtTracking: "", MacroKeyConsent: "", MacroKeyBidder: "", MacroKeyIntegration: "", MacroKeyVastCRTID: "", MacroKeyAuctionID: "123", MacroKeyChannel: "", MacroKeyEventType: "", MacroKeyVastEvent: ""},
 		},
 		{
-			name: "populate App PBS-PUBDOMAIN key",
-			key:  MacroKeyPubDomain,
+			name: " AppDomain, PubDomain, present key",
 			args: args{
 				reqWrapper: &openrtb_ext.RequestWrapper{
 					BidRequest: &openrtb2.BidRequest{
 						App: &openrtb2.App{
-							Publisher: &openrtb2.Publisher{
-								Domain: "pubDomain",
-							},
+							Domain: "testDomain",
 						},
-					},
-				},
-			},
-			want: "pubDomain",
-		},
-		{
-			name: "populate Site PBS-PUBDOMAIN key",
-			key:  MacroKeyPubDomain,
-			args: args{
-				reqWrapper: &openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
 						Site: &openrtb2.Site{
 							Publisher: &openrtb2.Publisher{
 								Domain: "pubDomain",
@@ -416,103 +373,76 @@ func TestPopulateRequestMacros(t *testing.T) {
 					},
 				},
 			},
-			want: "pubDomain",
+			want: map[string]string{MacroKeyBidID: "", MacroKeyAppBundle: "", MacroKeyDomain: "testDomain", MacroKeyPubDomain: "pubDomain", MacroKeyPageURL: "", MacroKeyAccountID: "", MacroKeyLmtTracking: "", MacroKeyConsent: "", MacroKeyBidder: "", MacroKeyIntegration: "", MacroKeyVastCRTID: "", MacroKeyAuctionID: "", MacroKeyChannel: "", MacroKeyEventType: "", MacroKeyVastEvent: ""},
 		},
 		{
-			name: "populate PBS-PAGEURL key",
-			key:  MacroKeyPageURL,
+			name: " Integration, Consent present key",
 			args: args{
 				reqWrapper: &openrtb_ext.RequestWrapper{
 					BidRequest: &openrtb2.BidRequest{
-						Site: &openrtb2.Site{
-							Page: "pageurltest",
-						},
+						User: &openrtb2.User{Ext: []byte(`{"consent":"1" }`)},
+						Ext:  []byte(`{"prebid":{"integration":"testIntegration"}}`),
 					},
 				},
 			},
-			want: "pageurltest",
+			want: map[string]string{MacroKeyBidID: "", MacroKeyAppBundle: "", MacroKeyDomain: "", MacroKeyPubDomain: "", MacroKeyPageURL: "", MacroKeyAccountID: "", MacroKeyLmtTracking: "", MacroKeyConsent: "1", MacroKeyBidder: "", MacroKeyIntegration: "testIntegration", MacroKeyVastCRTID: "", MacroKeyAuctionID: "", MacroKeyChannel: "", MacroKeyEventType: "", MacroKeyVastEvent: ""},
 		},
 		{
-			name: "populate App PBS-ACCOUNTID key",
-			key:  MacroKeyAccountID,
-			args: args{
-				reqWrapper: &openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						App: &openrtb2.App{
-							Publisher: &openrtb2.Publisher{
-								ID: "pubID",
-							},
-						},
-					},
-				},
-			},
-			want: "pubID",
-		},
-		{
-			name: "populate Site PBS-ACCOUNTID key",
-			key:  MacroKeyAccountID,
-			args: args{
-				reqWrapper: &openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						Site: &openrtb2.Site{
-							Publisher: &openrtb2.Publisher{
-								ID: "pubID",
-							},
-						},
-					},
-				},
-			},
-			want: "pubID",
-		},
-		{
-			name: "populate PBS-LIMITADTRACKING key",
-			key:  MacroKeyLmtTracking,
+			name: " PBS-CHANNEL, LIMITADTRACKING present key",
 			args: args{
 				reqWrapper: &openrtb_ext.RequestWrapper{
 					BidRequest: &openrtb2.BidRequest{
 						Device: &openrtb2.Device{
 							Lmt: &lmt,
 						},
-					},
-				},
-			},
-			want: "10",
-		},
-		{
-			name: "populate PBS-CONSENT key",
-			key:  MacroKeyConsent,
-			args: args{
-				reqWrapper: &openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						User: &openrtb2.User{Ext: []byte(`{"consent":"1" }`)},
-					},
-				},
-			},
-			want: "1",
-		},
-		{
-			name: "populate PBS-INTEGRATION key",
-			key:  MacroKeyIntegration,
-			args: args{
-				reqWrapper: &openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						Ext: []byte(`{"prebid":{"integration":"testIntegration","channel": {"name":"test1"},"macros":{"CUSTOMMACR1":"value1","CUSTOMMACR2":"value2","CUSTOMMACR3":"value3"}}}`),
-					},
-				},
-			},
-			want: "testIntegration",
-		},
-		{
-			name: "populate PBS-CHANNEL key",
-			key:  MacroKeyChannel,
-			args: args{
-				reqWrapper: &openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
 						Ext: []byte(`{"prebid":{"channel": {"name":"test1"}}}`),
 					},
 				},
 			},
-			want: "test1",
+			want: map[string]string{MacroKeyBidID: "", MacroKeyAppBundle: "", MacroKeyDomain: "", MacroKeyPubDomain: "", MacroKeyPageURL: "", MacroKeyAccountID: "", MacroKeyLmtTracking: "10", MacroKeyConsent: "", MacroKeyBidder: "", MacroKeyIntegration: "", MacroKeyVastCRTID: "", MacroKeyAuctionID: "", MacroKeyChannel: "test1", MacroKeyEventType: "", MacroKeyVastEvent: ""},
+		},
+		{
+			name: " custom macros present key",
+			args: args{
+				reqWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Ext: []byte(`{"prebid":{"macros":{"CUSTOMMACR1":"value1"}}}`),
+					},
+				},
+			},
+			want: map[string]string{"PBS-MACRO-CUSTOMMACR1": "value1", MacroKeyBidID: "", MacroKeyAppBundle: "", MacroKeyDomain: "", MacroKeyPubDomain: "", MacroKeyPageURL: "", MacroKeyAccountID: "", MacroKeyLmtTracking: "", MacroKeyConsent: "", MacroKeyBidder: "", MacroKeyIntegration: "", MacroKeyVastCRTID: "", MacroKeyAuctionID: "", MacroKeyChannel: "", MacroKeyEventType: "", MacroKeyVastEvent: ""},
+		},
+		{
+			name: " All request macros present key",
+			args: args{
+				reqWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						ID: "123",
+						Site: &openrtb2.Site{
+							Domain: "testdomain",
+							Publisher: &openrtb2.Publisher{
+								Domain: "publishertestdomain",
+								ID:     "testpublisherID",
+							},
+							Page: "pageurltest",
+						},
+						App: &openrtb2.App{
+							Domain: "testdomain",
+							Bundle: "testbundle",
+							Publisher: &openrtb2.Publisher{
+								Domain: "publishertestdomain",
+								ID:     "testpublisherID",
+							},
+						},
+						Device: &openrtb2.Device{
+							Lmt: &lmt,
+						},
+						User: &openrtb2.User{Ext: []byte(`{"consent":"1" }`)},
+						Ext:  []byte(`{"prebid":{"channel": {"name":"test1"},"macros":{"CUSTOMMACR1":"value1"}}}`),
+					},
+				},
+			},
+			want: map[string]string{"PBS-MACRO-CUSTOMMACR1": "value1", MacroKeyBidID: "", MacroKeyAppBundle: "testbundle", MacroKeyDomain: "testdomain", MacroKeyPubDomain: "publishertestdomain", MacroKeyPageURL: "pageurltest", MacroKeyAccountID: "testpublisherID", MacroKeyLmtTracking: "10", MacroKeyConsent: "1", MacroKeyBidder: "", MacroKeyIntegration: "", MacroKeyVastCRTID: "", MacroKeyAuctionID: "123", MacroKeyChannel: "test1", MacroKeyEventType: "", MacroKeyVastEvent: ""},
 		},
 	}
 	for _, tt := range tests {
@@ -521,7 +451,11 @@ func TestPopulateRequestMacros(t *testing.T) {
 				macros: map[string]string{},
 			}
 			b.populateRequestMacros(tt.args.reqWrapper)
-			assert.Equal(t, tt.want, b.GetMacro(tt.key), tt.name)
+			output := map[string]string{}
+			for key, _ := range tt.want {
+				output[key] = b.GetMacro(key)
+			}
+			assert.Equal(t, output, tt.want, tt.name)
 		})
 	}
 }
@@ -533,45 +467,83 @@ func TestPopulateBidMacros(t *testing.T) {
 		seat string
 	}
 	tests := []struct {
-		name string
-		args args
-		key  string
-		want string
+		name      string
+		args      args
+		wantBidID string
+		wantSeat  string
 	}{
 		{
-			name: "Populate seat name",
+			name: "Bid ID set, no generatedbid id, no seat",
 			args: args{
-				seat: "testBidder",
-				bid: &entities.PbsOrtbBid{
-					GeneratedBidID: "bid123",
-				},
-			},
-			key:  MacroKeyBidder,
-			want: "testBidder",
-		},
-		{
-			name: "Populate generatedbid id",
-			args: args{
-				seat: "testBidder",
-				bid: &entities.PbsOrtbBid{
-					GeneratedBidID: "bid123",
-				},
-			},
-			key:  MacroKeyBidID,
-			want: "bid123",
-		},
-		{
-			name: "Populate bid id",
-			args: args{
-				seat: "testBidder",
 				bid: &entities.PbsOrtbBid{
 					Bid: &openrtb2.Bid{
 						ID: "bid123",
 					},
 				},
 			},
-			key:  MacroKeyBidID,
-			want: "bid123",
+			wantBidID: "bid123",
+			wantSeat:  "",
+		},
+		{
+			name: "Bid ID set, no generatedbid id, seat set",
+			args: args{
+				bid: &entities.PbsOrtbBid{
+					Bid: &openrtb2.Bid{
+						ID: "bid123",
+					},
+				},
+				seat: "testSeat",
+			},
+			wantBidID: "bid123",
+			wantSeat:  "testSeat",
+		},
+		{
+			name: "Bid ID set, generatedbid id set, no seat",
+			args: args{
+				bid: &entities.PbsOrtbBid{
+					GeneratedBidID: "generatedbid123",
+					Bid: &openrtb2.Bid{
+						ID: "bid123",
+					},
+				},
+			},
+			wantBidID: "generatedbid123",
+			wantSeat:  "",
+		},
+		{
+			name: "Bid ID set, generatedbid id set, seat set",
+			args: args{
+				bid: &entities.PbsOrtbBid{
+					GeneratedBidID: "generatedbid123",
+					Bid: &openrtb2.Bid{
+						ID: "bid123",
+					},
+				},
+				seat: "testseat",
+			},
+			wantBidID: "generatedbid123",
+			wantSeat:  "testseat",
+		},
+		{
+			name: "Bid ID not set, generatedbid id set, seat set",
+			args: args{
+				seat: "test-seat",
+				bid: &entities.PbsOrtbBid{
+					GeneratedBidID: "generatedbid123",
+					Bid:            &openrtb2.Bid{},
+				},
+			},
+			wantBidID: "generatedbid123",
+			wantSeat:  "test-seat",
+		},
+		{
+			name: "Bid ID not set, generatedbid id not set, seat set",
+			args: args{
+				seat: "test-seat",
+				bid:  &entities.PbsOrtbBid{},
+			},
+			wantBidID: "",
+			wantSeat:  "test-seat",
 		},
 	}
 	for _, tt := range tests {
@@ -580,11 +552,11 @@ func TestPopulateBidMacros(t *testing.T) {
 				macros: map[string]string{},
 			}
 			b.PopulateBidMacros(tt.args.bid, tt.args.seat)
-			assert.Equal(t, tt.want, b.GetMacro(tt.key), tt.name)
+			assert.Equal(t, tt.wantBidID, b.GetMacro(MacroKeyBidID), tt.name)
+			assert.Equal(t, tt.wantSeat, b.GetMacro(MacroKeyBidder), tt.name)
 		})
 	}
 }
-
 func TestPopulateEventMacros(t *testing.T) {
 
 	type args struct {
@@ -593,34 +565,86 @@ func TestPopulateEventMacros(t *testing.T) {
 		vastEvent      string
 	}
 	tests := []struct {
-		name string
-		args args
-		key  string
-		want string
+		name               string
+		args               args
+		wantVastCreativeID string
+		wantEventType      string
+		wantVastEvent      string
 	}{
 		{
-			name: "Populate creative Id",
-			args: args{
-				vastCreativeID: "crtID123",
-			},
-			key:  MacroKeyVastCRTID,
-			want: "crtID123",
+			name:               "creativeId not set, eventType not set, vastEvent not set",
+			args:               args{},
+			wantVastCreativeID: "",
+			wantEventType:      "",
+			wantVastEvent:      "",
 		},
 		{
-			name: "Populate eventType",
+			name: "creativeId set, eventType not set, vastEvent not set",
+			args: args{
+				vastCreativeID: "123",
+			},
+			wantVastCreativeID: "123",
+			wantEventType:      "",
+			wantVastEvent:      "",
+		},
+		{
+			name: "creativeId not set, eventType  set, vastEvent not set",
 			args: args{
 				eventType: "win",
 			},
-			key:  MacroKeyEventType,
-			want: "win",
+			wantVastCreativeID: "",
+			wantEventType:      "win",
+			wantVastEvent:      "",
 		},
 		{
-			name: "Populate vastEvent",
+			name: "creativeId not set, eventType not set, vastEvent set",
 			args: args{
 				vastEvent: "firstQuartile",
 			},
-			key:  MacroKeyVastEvent,
-			want: "firstQuartile",
+			wantVastCreativeID: "",
+			wantEventType:      "",
+			wantVastEvent:      "firstQuartile",
+		},
+		{
+			name: "creativeId not set, eventType  set, vastEvent set",
+			args: args{
+				vastEvent: "firstQuartile",
+				eventType: "win",
+			},
+			wantVastCreativeID: "",
+			wantEventType:      "win",
+			wantVastEvent:      "firstQuartile",
+		},
+		{
+			name: "creativeId  set, eventType not set, vastEvent set",
+			args: args{
+				vastEvent:      "firstQuartile",
+				vastCreativeID: "123",
+			},
+			wantVastCreativeID: "123",
+			wantEventType:      "",
+			wantVastEvent:      "firstQuartile",
+		},
+		{
+			name: "creativeId set, eventType set, vastEvent not set",
+			args: args{
+				eventType:      "win",
+				vastCreativeID: "123",
+			},
+			wantVastCreativeID: "123",
+			wantEventType:      "win",
+			wantVastEvent:      "",
+		},
+		{
+			name: "creativeId set, eventType set, vastEvent set",
+			args: args{
+				vastEvent:      "firstQuartile",
+				eventType:      "win",
+				vastCreativeID: "123",
+			},
+			wantVastCreativeID: "123",
+			wantEventType:      "win",
+			wantVastEvent:      "firstQuartile",
 		},
 	}
 	for _, tt := range tests {
@@ -629,7 +653,9 @@ func TestPopulateEventMacros(t *testing.T) {
 				macros: map[string]string{},
 			}
 			b.PopulateEventMacros(tt.args.vastCreativeID, tt.args.eventType, tt.args.vastEvent)
-			assert.Equal(t, tt.want, b.GetMacro(tt.key), tt.name)
+			assert.Equal(t, tt.wantVastCreativeID, b.GetMacro(MacroKeyVastCRTID), tt.name)
+			assert.Equal(t, tt.wantVastEvent, b.GetMacro(MacroKeyVastEvent), tt.name)
+			assert.Equal(t, tt.wantEventType, b.GetMacro(MacroKeyEventType), tt.name)
 		})
 	}
 }
