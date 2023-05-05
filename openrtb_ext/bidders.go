@@ -202,6 +202,7 @@ const (
 	BidderMgid              BidderName = "mgid"
 	BidderMobfoxpb          BidderName = "mobfoxpb"
 	BidderMobileFuse        BidderName = "mobilefuse"
+	BidderMotorik           BidderName = "motorik"
 	BidderNanoInteractive   BidderName = "nanointeractive"
 	BidderNextMillennium    BidderName = "nextmillennium"
 	BidderNinthDecimal      BidderName = "ninthdecimal"
@@ -389,6 +390,7 @@ func CoreBidderNames() []BidderName {
 		BidderMgid,
 		BidderMobfoxpb,
 		BidderMobileFuse,
+		BidderMotorik,
 		BidderNanoInteractive,
 		BidderNextMillennium,
 		BidderNinthDecimal,
