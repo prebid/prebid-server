@@ -529,7 +529,7 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 	if tmaxAdjustments != nil && tmaxAdjustments.Enabled {
 		if deadline, ok := ctx.Deadline(); ok {
 			bidderTmax := deadline.Add(-time.Duration(tmaxAdjustments.BidderLatencyAdjustment * int(time.Millisecond)))
-			if int(bidderTmax.Sub(time.Now())) < tmaxAdjustments.UpstreamResponseDuration*int(time.Millisecond) {
+			if int(bidderTmax.Sub(time.Now())) < tmaxAdjustments.BidderResponseMin*int(time.Millisecond) {
 				return &httpCallInfo{
 					request: req,
 					err:     ErrTmaxAdjustment,

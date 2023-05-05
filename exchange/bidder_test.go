@@ -2236,14 +2236,14 @@ func TestTmaxInDoRequest(t *testing.T) {
 	}
 	logger := func(msg string, args ...interface{}) {}
 
-	httpCallInfo := bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, time.Now(), &config.TmaxAdjustments{Enabled: true, BidderLatencyAdjustment: 20000, UpstreamResponseDuration: 40000})
+	httpCallInfo := bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, time.Now(), &config.TmaxAdjustments{Enabled: true, BidderLatencyAdjustment: 20000, BidderResponseMin: 40000})
 	assert.NotNil(t, httpCallInfo.err)
 	assert.Equal(t, ErrTmaxAdjustment, httpCallInfo.err)
 
-	httpCallInfo = bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, time.Now(), &config.TmaxAdjustments{Enabled: true, BidderLatencyAdjustment: 20000, UpstreamResponseDuration: 10000})
+	httpCallInfo = bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, time.Now(), &config.TmaxAdjustments{Enabled: true, BidderLatencyAdjustment: 20000, BidderResponseMin: 10000})
 	assert.NotEqual(t, ErrTmaxAdjustment, httpCallInfo.err)
 
-	httpCallInfo = bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, time.Now(), &config.TmaxAdjustments{Enabled: false, BidderLatencyAdjustment: 20000, UpstreamResponseDuration: 40000})
+	httpCallInfo = bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, time.Now(), &config.TmaxAdjustments{Enabled: false, BidderLatencyAdjustment: 20000, BidderResponseMin: 40000})
 	assert.NotEqual(t, ErrTmaxAdjustment, httpCallInfo.err)
 }
 
