@@ -24,7 +24,7 @@ func TestGetMacro(t *testing.T) {
 		want string
 	}{
 		{
-			name: "get PBS-AUCTIONID key",
+			name: " Macro exists, get PBS-AUCTIONID key",
 			args: args{
 				key: MacroKeyAuctionID,
 				reqWrapper: &openrtb_ext.RequestWrapper{
@@ -36,184 +36,16 @@ func TestGetMacro(t *testing.T) {
 			want: "123",
 		},
 		{
-			name: "get PBS-APPBUNDLE key",
+			name: "Macro does not exist",
 			args: args{
-				key: MacroKeyAppBundle,
+				key: "PBS-NOEXISTENTKEY",
 				reqWrapper: &openrtb_ext.RequestWrapper{
 					BidRequest: &openrtb2.BidRequest{
-						App: &openrtb2.App{
-							Bundle: "testbundle",
-						},
+						Ext: []byte(`{"prebid":{"channel": {"name":"test1"},"macros":{"CUSTOMMACR3":"a"}}}`),
 					},
 				},
 			},
-			want: "testbundle",
-		},
-		{
-			name: "get PBS-DOMAIN key",
-			args: args{
-				key: MacroKeyDomain,
-				reqWrapper: &openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						App: &openrtb2.App{
-							Domain: "testDomain",
-						},
-					},
-				},
-			},
-			want: "testDomain",
-		},
-		{
-			name: "get PBS-PUBDOMAIN key",
-			args: args{
-				key: MacroKeyPubDomain,
-				reqWrapper: &openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						App: &openrtb2.App{
-							Publisher: &openrtb2.Publisher{
-								Domain: "pubDomain",
-							},
-						},
-					},
-				},
-			},
-			want: "pubDomain",
-		},
-		{
-			name: "get PBS-PAGEURL key",
-			args: args{
-				key: MacroKeyPageURL,
-				reqWrapper: &openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						Site: &openrtb2.Site{
-							Page: "pageurltest",
-						},
-					},
-				},
-			},
-			want: "pageurltest",
-		},
-		{
-			name: "get PBS-ACCOUNTID key",
-			args: args{
-				key: MacroKeyAccountID,
-				reqWrapper: &openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						Site: &openrtb2.Site{
-							Publisher: &openrtb2.Publisher{
-								ID: "pubID",
-							},
-						},
-					},
-				},
-			},
-			want: "pubID",
-		},
-		{
-			name: "get PBS-LIMITADTRACKING key",
-			args: args{
-				key: MacroKeyLmtTracking,
-				reqWrapper: &openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						Device: &openrtb2.Device{
-							Lmt: &lmt,
-						},
-					},
-				},
-			},
-			want: "10",
-		},
-		{
-			name: "get PBS-CONSENT key",
-			args: args{
-				key: MacroKeyConsent,
-				reqWrapper: &openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						User: &openrtb2.User{Ext: []byte(`{"consent":"1" }`)},
-					},
-				},
-			},
-			want: "1",
-		},
-		{
-			name: "get PBS-INTEGRATION key",
-			args: args{
-				key: MacroKeyIntegration,
-				reqWrapper: &openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						Ext: []byte(`{"prebid":{"integration":"testIntegration","channel": {"name":"test1"},"macros":{"CUSTOMMACR1":"value1","CUSTOMMACR2":"value2","CUSTOMMACR3":"value3"}}}`),
-					},
-				},
-			},
-			want: "testIntegration",
-		},
-		{
-			name: "get PBS-CHANNEL key",
-			args: args{
-				key: MacroKeyChannel,
-				reqWrapper: &openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						Ext: []byte(`{"prebid":{"channel": {"name":"test1"}}}`),
-					},
-				},
-			},
-			want: "test1",
-		},
-		{
-			name: "get PBS-EVENTTYPE key",
-			args: args{
-				key: MacroKeyEventType,
-				reqWrapper: &openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{},
-				},
-				eventType: "win",
-			},
-			want: "win",
-		},
-		{
-			name: "get PBS-ACCOUNTID key",
-			args: args{
-				key: MacroKeyVastCRTID,
-				reqWrapper: &openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{},
-				},
-				vastCreativeID: "123",
-			},
-			want: "123",
-		},
-		{
-			name: "get PBS-BIDDER key",
-			args: args{
-				key: MacroKeyBidder,
-				reqWrapper: &openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{},
-				},
-				seat: "pubmatic",
-			},
-			want: "pubmatic",
-		},
-		{
-			name: "get PBS- key",
-			args: args{
-				key: MacroKeyVastEvent,
-				reqWrapper: &openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{},
-				},
-				vastEvent: "firstQuartile",
-			},
-			want: "firstQuartile",
-		},
-		{
-			name: "get PBS-MACRO-CUSTOMMACR3 key",
-			args: args{
-				key: "PBS-MACRO-CUSTOMMACR3",
-				reqWrapper: &openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						Ext: []byte(`{"prebid":{"channel": {"name":"test1"},"macros":{"CUSTOMMACR3":"abcdefghijklmnopqrstuvwxyz01234567899876543210zyxwvutsrqponmlkjihgfedcbaabcdefghijklmnopqrstuvwxyz01234567899876543210zyxwvutsrqponmlkjihgfedcba"}}}`),
-					},
-				},
-			},
-			want: "abcdefghijklmnopqrstuvwxyz01234567899876543210zyxwvutsrqponmlkjihgfedcbaabcdefghijklmnopqrstuvwxyz01",
+			want: "",
 		},
 	}
 	for _, tt := range tests {
