@@ -47,7 +47,7 @@ func constructTemplate(url string) urlMetaTemplate {
 		tmplt.startingIndices = append(tmplt.startingIndices, startIndex)
 		tmplt.endingIndices = append(tmplt.endingIndices, endingIndex)
 		currentIndex = endingIndex + delimiterLen
-		if currentIndex >= len(url) {
+		if currentIndex >= len(url)-1 {
 			break
 		}
 	}
