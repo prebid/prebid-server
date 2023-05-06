@@ -1153,11 +1153,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.koddi.commerceparams.impurl", "https://{{.Host}}.koddi.io/event-collection/beacon/?action=impression")
 	v.SetDefault("adapters.koddi.commerceparams.clickurl", "https://{{.Host}}.koddi.io/event-collection/beacon/?action=click")
 	v.SetDefault("adapters.koddi.commerceparams.conversionurl", "https://{{.Host}}.koddi.io/event-collection/beacon/conversion")
-	v.SetDefault("adapters.adbuttler.endpoint", "http://{{.Host}}:8001/TestCommerce")
-	v.SetDefault("adapters.adbuttler.commerceparams.impurl", "https://{{.Host}}.adbuttler.io/event-collection/beacon/?action=impression")
-	v.SetDefault("adapters.adbuttler.commerceparams.clickurl", "https://{{.Host}}.adbuttler.io/event-collection/beacon/?action=click")
-	v.SetDefault("adapters.adbuttler.commerceparams.conversionurl", "https://{{.Host}}.adbuttler.io/event-collection/beacon/conversion")
-
+	v.SetDefault("adapters.adbuttler.endpoint",  "https://servedbyadbutler.com/adserve/;ID={{.AccountID}};setID={{.ZoneID}};type=pdb_query")
 
 	v.SetDefault("max_request_size", 1024*256)
 	v.SetDefault("analytics.file.filename", "")

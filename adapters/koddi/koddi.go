@@ -56,11 +56,11 @@ type ExtCustomConfig struct {
 }
 // ImpExtensionCommerce - Impression Commerce Extension
 type CommerceParams struct {
-	MaxRequested   *int               `json:"max_requested,omitempty"`
-	SlotsAvailable *int               `json:"slots_available,omitempty"`
-	Preferred      []*ExtImpPreferred `json:"preferred,omitempty"`
-	Filtering      *ExtImpFiltering   `json:"filtering,omitempty"`
-	Targeting      []*ExtImpTargeting `json:"targeting,omitempty"`
+	SlotsRequested *int               `json:"slots_requested,omitempty"`
+	SearchTerm     string            `json:"search_term,omitempty"`
+	Preferred      []string `json:"preferred,omitempty"`
+	Filtering      map[string][]string   `json:"filtering,omitempty"`
+	Targeting      map[string]interface{} `json:"targeting,omitempty"`
 }
 
 // ImpExtensionCommerce - Impression Commerce Extension
@@ -117,7 +117,7 @@ func GetRequestSlotCount(internalRequest *openrtb2.BidRequest)int {
 	for _, eachImp := range impArray {
 		var commerceExt ExtImpCommerce
 		json.Unmarshal(eachImp.Ext, &commerceExt)
-		reqCount += *commerceExt.ComParams.SlotsAvailable
+		reqCount += *commerceExt.ComParams.SlotsRequested
 	}
 	return reqCount
 }
@@ -156,7 +156,7 @@ func GetRandomClickPrice() float64 {
 	return truncated
 }
 
-func GetDummyBids(impUrl , clickUrl , conversionUrl, seatName string, requestCount int) (*adapters.BidderResponse) {
+func GetDummyBids(impUrl , clickUrl , conversionUrl, seatName string, requestCount int, ImpID string) (*adapters.BidderResponse) {
 	var typedArray     []*adapters.TypedBid
 
 	if requestCount > MAX_COUNT {
@@ -168,22 +168,17 @@ func GetDummyBids(impUrl , clickUrl , conversionUrl, seatName string, requestCou
 		bidPrice := GetRandomBidPrice()
 		clikcPrice := GetRandomClickPrice()
 		bidID := GetDefaultBidID(seatName) + "_" + strconv.Itoa(i)
-		newIurl := impUrl + "_ImpID=" +bidID
-		newCurl := clickUrl + "_ImpID=" +bidID
-		newPurl := conversionUrl + "_ImpID=" +bidID
+		impID := ImpID + "_" + strconv.Itoa(i)
 		bidExt := &ExtBidCommerce{
 			ProductId:  &productid,
-			ClickUrl: &newCurl,
-			ConversionUrl: &newPurl,
 			ClickPrice: &clikcPrice,
 		}
 		
 		bid := &openrtb2.Bid {
 			ID: bidID,
-			ImpID: bidID,
+			ImpID: impID,
 			Price: bidPrice,
 			CID: campaignID,
-			IURL: newIurl,
 		}
 
 		AddDefaultFields(bid)
@@ -265,7 +260,7 @@ func GetHostName(internalRequest *openrtb2.BidRequest) string {
 	json.Unmarshal(internalRequest.Ext, &extension)
 	json.Unmarshal(extension["prebid"], &preBidExt)
 	json.Unmarshal(internalRequest.Imp[0].Ext, &commerceExt)
-	return *commerceExt.Bidder.HostName
+	return *commerceExt.Bidder.BidderCode
 }
 
 func (a *KoddiAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -306,8 +301,9 @@ func (a *KoddiAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRe
 	curl, _ := a.buildClickURL(hostName)
 	purl, _ := a.buildConversionURL(hostName)
 	requestCount := GetRequestSlotCount(internalRequest)
+	impiD := internalRequest.Imp[0].ID
 	
-	responseF := GetDummyBids(iurl, curl, purl, "koddi", requestCount)
+	responseF := GetDummyBids(iurl, curl, purl, "koddi", requestCount, impiD)
 	//responseF := commerce.GetDummyBids_NoBid(iurl, curl, purl, "koddi", 1)
     //err := fmt.Errorf("No Bids available for the given request from Koddi")
 	//errors = append(errors,err )

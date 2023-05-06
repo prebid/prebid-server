@@ -3,15 +3,10 @@ package adbuttler
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"strconv"
-	"text/template"
 
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/koddi"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -22,9 +17,9 @@ func (a *AdButtlerAdapter) MakeBids(internalRequest *openrtb2.BidRequest, extern
 	if len(hostName) == 0 {
 		hostName = koddi.COMMERCE_DEFAULT_HOSTNAME
 	}
-	iurl, _ := a.buildImpressionURL(hostName) 
-	curl, _ := a.buildClickURL(hostName)
-	purl, _ := a.buildConversionURL(hostName)
+	iurl := hostName
+	curl := hostName
+	purl := hostName
 	requestCount := koddi.GetRequestSlotCount(internalRequest)
 	var extension map[string]json.RawMessage
 	var preBidExt openrtb_ext.ExtRequestPrebid
