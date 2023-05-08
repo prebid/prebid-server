@@ -26,6 +26,7 @@ func TestKeywordsUnmarshalJSON(t *testing.T) {
 		{input: []byte(`{"keywords" : ""}`), expected: "", desc: "empty string"},
 		{input: []byte(`{"keywords" : {}}`), expected: "", desc: "empty keywords object"},
 		{input: []byte(`{"keywords" : [{}]}`), expected: "", desc: "empty keywords object array"},
+		{input: []byte(`{"keywords": []}`), expected: "", desc: "empty keywords array"},
 	}
 
 	for _, test := range validTestCases {
@@ -35,8 +36,7 @@ func TestKeywordsUnmarshalJSON(t *testing.T) {
 	}
 
 	invalidTestCases := []testCase{
-		{input: []byte(`{keywords": []}`), desc: "empty keywords array"},
-		{input: []byte(`{keywords": [{]}`), desc: "invalid keywords array"},
+		{input: []byte(`{"keywords": [{]}`), desc: "invalid keywords array"},
 		{input: []byte(`{"keywords" : {"}}`), desc: "invalid keywords object"},
 	}
 
