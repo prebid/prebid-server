@@ -238,8 +238,7 @@ func (c *cookieSyncEndpoint) setCooperativeSync(request cookieSyncRequest, cooki
 
 func parseTypeFilter(request *cookieSyncRequestFilterSettings) (usersync.SyncTypeFilter, error) {
 	syncTypeFilter := usersync.SyncTypeFilter{
-		IFrame: cookieSyncBidderFilterAllowAll,
-
+		IFrame:   cookieSyncBidderFilterAllowAll,
 		Redirect: cookieSyncBidderFilterAllowAll,
 	}
 
