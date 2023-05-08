@@ -342,7 +342,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	var r io.Reader = httpRequest.Body
 	reqCompressionKind := config.CompressionKind(httpRequest.Header.Get("Content-Encoding"))
 	if reqCompressionKind != "" {
-		if !reqCompressionKind.IsValid() || !deps.cfg.Compression.Request.IsSupported(reqCompressionKind) {
+		if !deps.cfg.Compression.Request.IsSupported(reqCompressionKind) {
 			errs = []error{fmt.Errorf("Content-Encoding of type %s is not supported", reqCompressionKind)}
 			return
 		} else {

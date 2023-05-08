@@ -180,11 +180,8 @@ func TestDefaults(t *testing.T) {
 
 	// Assert compression related defaults
 	cmpBools(t, "enable_gzip", false, cfg.EnableGzip)
-	cmpBools(t, "compression.request.enabled", false, cfg.Compression.Request.Enabled)
-	assert.Equal(t, []CompressionKind{}, cfg.Compression.Request.Kind, "compression.request.kind")
-	cmpBools(t, "compression.response.enabled", false, cfg.Compression.Response.Enabled)
-	assert.Equal(t, CompressionKind(""), cfg.Compression.Response.Kind, "compression.response.kind")
-	// cmpStrings(t, "compression.response.kind", CompressionKind(""), cfg.Compression.Response.Kind)
+	cmpBools(t, "compression.request.enable_gzip", false, cfg.Compression.Request.GZIP)
+	cmpBools(t, "compression.response.enable_gzip", false, cfg.Compression.Response.GZIP)
 
 	cmpBools(t, "account_defaults.price_floors.enabled", false, cfg.AccountDefaults.PriceFloors.Enabled)
 	cmpInts(t, "account_defaults.price_floors.enforce_floors_rate", 100, cfg.AccountDefaults.PriceFloors.EnforceFloorsRate)
@@ -380,10 +377,9 @@ admin_port: 5678
 enable_gzip: false
 compression:
     request:
-        enabled: true
-        kind: ["gzip"]
+        enable_gzip: true
     response:
-        enabled: false
+        enable_gzip: false
 garbage_collector_threshold: 1
 datacenter: "1"
 auction_timeouts_ms:
@@ -561,9 +557,8 @@ func TestFullConfig(t *testing.T) {
 
 	// Assert compression related defaults
 	cmpBools(t, "enable_gzip", false, cfg.EnableGzip)
-	cmpBools(t, "compression.request.enabled", true, cfg.Compression.Request.Enabled)
-	assert.Equal(t, []CompressionKind{CompressionGZIP}, cfg.Compression.Request.Kind, "compression.request.kind")
-	cmpBools(t, "compression.response.enabled", false, cfg.Compression.Response.Enabled)
+	cmpBools(t, "compression.request.enable_gzip", true, cfg.Compression.Request.GZIP)
+	cmpBools(t, "compression.response.enable_gzip", false, cfg.Compression.Response.GZIP)
 
 	//Assert the NonStandardPublishers was correctly unmarshalled
 	assert.Equal(t, []string{"pub1", "pub2"}, cfg.GDPR.NonStandardPublishers, "gdpr.non_standard_publishers")
@@ -2592,10 +2587,9 @@ func TestMigrateConfigCompression(t *testing.T) {
 			config: []byte(`
                         compression:
                             response:
-                                enabled: true
-                                kind: gzip
+                                enable_gzip: true
                             request:
-                                enabled: false
+                                enable_gzip: false
                         `),
 			wantEnableGZIP:             false,
 			wantCompressionReqEnabled:  false,
@@ -2609,10 +2603,9 @@ func TestMigrateConfigCompression(t *testing.T) {
                         enable_gzip: true
                         compression:
                             response:
-                                enabled: false
+                                enable_gzip: false
                             request:
-                                enabled: true
-                                kind: gzip
+                                enable_gzip: true
                        `),
 			wantEnableGZIP:             true,
 			wantCompressionReqEnabled:  true,
@@ -2632,10 +2625,8 @@ func TestMigrateConfigCompression(t *testing.T) {
 
 		if len(test.config) > 0 {
 			assert.Equal(t, test.wantEnableGZIP, v.GetBool("enable_gzip"), test.desc)
-			assert.Equal(t, test.wantCompressionReqEnabled, v.GetBool("compression.request.enabled"), test.desc)
-			assert.Equal(t, test.wantCompressionReqType, v.GetString("compression.request.kind"), test.desc)
-			assert.Equal(t, test.wantCompressionRespEnabled, v.GetBool("compression.response.enabled"), test.desc)
-			assert.Equal(t, test.wantCompressionRespType, v.GetString("compression.response.kind"), test.desc)
+			assert.Equal(t, test.wantCompressionReqEnabled, v.GetBool("compression.request.enable_gzip"), test.desc)
+			assert.Equal(t, test.wantCompressionRespEnabled, v.GetBool("compression.response.enable_gzip"), test.desc)
 		}
 	}
 }

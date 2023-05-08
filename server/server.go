@@ -91,10 +91,7 @@ func newAdminServer(cfg *config.Configuration, handler http.Handler) *http.Serve
 }
 
 func newMainServer(cfg *config.Configuration, handler http.Handler) *http.Server {
-	var serverHandler = handler
-	if cfg.Compression.Response.Enabled {
-		serverHandler = getCompressionEnabledHandler(handler, cfg.Compression.Response.Kind)
-	}
+	serverHandler := getCompressionEnabledHandler(handler, cfg.Compression.Response)
 
 	return &http.Server{
 		Addr:         cfg.Host + ":" + strconv.Itoa(cfg.Port),
@@ -106,10 +103,7 @@ func newMainServer(cfg *config.Configuration, handler http.Handler) *http.Server
 }
 
 func newSocketServer(cfg *config.Configuration, handler http.Handler) *http.Server {
-	var serverHandler = handler
-	if cfg.Compression.Response.Enabled {
-		serverHandler = getCompressionEnabledHandler(handler, cfg.Compression.Response.Kind)
-	}
+	serverHandler := getCompressionEnabledHandler(handler, cfg.Compression.Response)
 
 	return &http.Server{
 		Addr:         cfg.UnixSocketName,
@@ -119,14 +113,11 @@ func newSocketServer(cfg *config.Configuration, handler http.Handler) *http.Serv
 	}
 }
 
-func getCompressionEnabledHandler(h http.Handler, compressionType config.CompressionKind) http.Handler {
-	compressionType = compressionType.ToLower()
-	switch compressionType {
-	case config.CompressionGZIP:
-		return gziphandler.GzipHandler(h)
-	default:
-		return h
+func getCompressionEnabledHandler(h http.Handler, compressionType config.CompressionInfo) http.Handler {
+	if compressionType.GZIP {
+		h = gziphandler.GzipHandler(h)
 	}
+	return h
 }
 
 func runServer(server *http.Server, name string, listener net.Listener) (err error) {

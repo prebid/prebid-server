@@ -3698,34 +3698,34 @@ func TestParseGzipedRequest(t *testing.T) {
 				desc:           "Gzip compression enabled, request size exceeds max request size",
 				reqContentEnc:  "gzip",
 				maxReqSize:     10,
-				compressionCfg: config.Compression{Request: config.ReqCompression{Enabled: true, Kind: []config.CompressionKind{"gzip"}}},
+				compressionCfg: config.Compression{Request: config.CompressionInfo{GZIP: true}},
 				expectedErr:    "request size exceeded max size of 10 bytes.",
 			},
 			{
 				desc:           "Gzip compression enabled, request size is within max request size",
 				reqContentEnc:  "gzip",
 				maxReqSize:     2000,
-				compressionCfg: config.Compression{Request: config.ReqCompression{Enabled: true, Kind: []config.CompressionKind{"gzip"}}},
+				compressionCfg: config.Compression{Request: config.CompressionInfo{GZIP: true}},
 				expectedErr:    "",
 			},
 			{
 				desc:           "Gzip compression enabled, request size is within max request size, content-encoding value not in lower case",
 				reqContentEnc:  "GZIP",
 				maxReqSize:     2000,
-				compressionCfg: config.Compression{Request: config.ReqCompression{Enabled: true, Kind: []config.CompressionKind{"gzip"}}},
+				compressionCfg: config.Compression{Request: config.CompressionInfo{GZIP: true}},
 				expectedErr:    "",
 			},
 			{
 				desc:           "Request is Gzip compressed, but Gzip compression is disabled",
 				reqContentEnc:  "gzip",
-				compressionCfg: config.Compression{Request: config.ReqCompression{Enabled: false}},
+				compressionCfg: config.Compression{Request: config.CompressionInfo{GZIP: false}},
 				expectedErr:    "Content-Encoding of type gzip is not supported",
 			},
 			{
 				desc:           "Request is not Gzip compressed, but Gzip compression is enabled",
 				reqContentEnc:  "",
 				maxReqSize:     2000,
-				compressionCfg: config.Compression{Request: config.ReqCompression{Enabled: true, Kind: []config.CompressionKind{"gzip"}}},
+				compressionCfg: config.Compression{Request: config.CompressionInfo{GZIP: true}},
 				expectedErr:    "",
 			},
 		}
@@ -3738,7 +3738,7 @@ func TestParseGzipedRequest(t *testing.T) {
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
-		&config.Configuration{MaxRequestSize: int64(50), Compression: config.Compression{Request: config.ReqCompression{Enabled: false, Kind: []config.CompressionKind{}}}},
+		&config.Configuration{MaxRequestSize: int64(50), Compression: config.Compression{Request: config.CompressionInfo{GZIP: false}}},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
@@ -3757,7 +3757,6 @@ func TestParseGzipedRequest(t *testing.T) {
 		var req *http.Request
 		deps.cfg.MaxRequestSize = test.maxReqSize
 		deps.cfg.Compression = test.compressionCfg
-		assert.Empty(t, deps.cfg.Compression.Request.Validate([]error{}), test.desc)
 		if test.reqContentEnc == "gzip" {
 			var compressed bytes.Buffer
 			gw := gzip.NewWriter(&compressed)

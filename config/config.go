@@ -122,7 +122,6 @@ type HTTPClient struct {
 func (cfg *Configuration) validate(v *viper.Viper) []error {
 	var errs []error
 	errs = cfg.AuctionTimeouts.validate(errs)
-	errs = cfg.Compression.validate(errs)
 	errs = cfg.StoredRequests.validate(errs)
 	errs = cfg.StoredRequestsAMP.validate(errs)
 	errs = cfg.Accounts.validate(errs)
@@ -1010,10 +1009,8 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("account_defaults.price_floors.max_rules", 100)
 	v.SetDefault("account_defaults.price_floors.max_schema_dims", 3)
 
-	v.SetDefault("compression.response.enabled", false)
-	v.SetDefault("compression.response.kind", "")
-	v.SetDefault("compression.request.enabled", false)
-	v.SetDefault("compression.request.kind", []CompressionKind{})
+	v.SetDefault("compression.response.enable_gzip", false)
+	v.SetDefault("compression.request.enable_gzip", false)
 
 	v.SetDefault("certificates_file", "")
 	v.SetDefault("auto_gen_source_tid", true)
@@ -1134,7 +1131,7 @@ func migrateConfig(v *viper.Viper) {
 
 func migrateConfigCompression(v *viper.Viper) {
 	oldField := "enable_gzip"
-	newField := "compression.response.enabled"
+	newField := "compression.response.enable_gzip"
 	if v.IsSet(oldField) {
 		oldConfig := v.GetBool(oldField)
 		if v.IsSet(newField) {
