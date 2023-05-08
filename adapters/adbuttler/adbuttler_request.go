@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
@@ -57,6 +59,40 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 	adButlerReq.Params = commerceExt.ComParams.Filtering
 	adButlerReq.Target = commerceExt.ComParams.Targeting
 
+	if adButlerReq.Target == nil {
+		adButlerReq.Target = make(map[string]interface{})
+	}
+
+	if request.User != nil {
+		if(request.User.Yob > 0) {
+			now := time.Now()	
+			age := now.Year() - request.User.Yob
+			adButlerReq.Target[USER_AGE] = age
+		}
+
+		if request.User.Gender != "" {
+			if strings.EqualFold(request.User.Gender, "M") {
+				adButlerReq.Target[USER_GENDER] = GENDER_MALE
+			} else if strings.EqualFold(request.User.Gender, "F") {
+				adButlerReq.Target[USER_GENDER] = GENDER_FEMALE
+			} else if strings.EqualFold(request.User.Gender, "O") {
+				adButlerReq.Target[USER_GENDER] = GENDER_OTHER
+			}
+		}	
+	}
+
+	if request.Device != nil && request.Device.Geo != nil {
+		if request.Device.Geo.Country != "" {
+			adButlerReq.Target[COUNTRY] = request.Device.Geo.Country
+		}
+		if request.Device.Geo.Region != "" {
+			adButlerReq.Target[REGION] = request.Device.Geo.Region
+		}
+		if request.Device.Geo.City != "" {
+			adButlerReq.Target[CITY] = request.Device.Geo.City
+		}
+	}
+
 	//Assign Search Term if present along with searchType
 	if commerceExt.ComParams.SearchTerm != "" {
 		adButlerReq.SearchString = commerceExt.ComParams.SearchTerm
@@ -105,8 +141,6 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 		}
 	}*/
 
-	accountID = "184856"
-	zoneID = "604323"
 	//Assign Page Source if Present
 	val, ok = configValueMap[ACCOUNT_ID]
 	if ok {

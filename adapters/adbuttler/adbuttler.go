@@ -12,11 +12,19 @@ import (
 
 const (
 	FLOOR_PRICE                   = "floor_price"
-	ZONE_ID                       = "set_id"
+	ZONE_ID                       = "zone_id"
 	ACCOUNT_ID                    = "account_id"
 	SEARCHTYPE_DEFAULT            = "exact"
 	SEARCHTYPE                    = "search_type"
 	PAGE_SOURCE                   = "page_source"
+	USER_AGE					  = "user_age"
+	GENDER_MALE					  = "male"
+	GENDER_FEMALE                 = "female"
+	GENDER_OTHER                  = "other"
+	USER_GENDER                   = "user_gender"
+	COUNTRY                       = "country"
+	REGION                        = "region"
+	CITY                          = "city"
 )
 
 type AdButtlerAdapter struct {
