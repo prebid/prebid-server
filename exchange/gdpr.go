@@ -7,6 +7,7 @@ import (
 	gppConstants "github.com/prebid/go-gpp/constants"
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/gdpr"
+	gppPolicy "github.com/prebid/prebid-server/privacy/gpp"
 )
 
 // ExtractGDPR will pull the gdpr flag from an openrtb request
@@ -15,10 +16,8 @@ func extractGDPR(bidRequest *openrtb2.BidRequest) (gdpr.Signal, error) {
 	var err error
 
 	if bidRequest.Regs != nil && len(bidRequest.Regs.GPPSID) > 0 {
-		for _, id := range bidRequest.Regs.GPPSID {
-			if id == int8(gppConstants.SectionTCFEU2) {
-				return gdpr.SignalYes, nil
-			}
+		if gppPolicy.IsSIDInList(bidRequest.Regs.GPPSID, gppConstants.SectionTCFEU2) {
+			return gdpr.SignalYes, nil
 		}
 		return gdpr.SignalNo, nil
 	}
@@ -33,11 +32,9 @@ func extractGDPR(bidRequest *openrtb2.BidRequest) (gdpr.Signal, error) {
 
 // ExtractConsent will pull the consent string from an openrtb request
 func extractConsent(bidRequest *openrtb2.BidRequest, gpp gpplib.GppContainer) (consent string, err error) {
-	for i, id := range gpp.SectionTypes {
-		if id == gppConstants.SectionTCFEU2 {
-			consent = gpp.Sections[i].GetValue()
-			return
-		}
+	if i := gppPolicy.IndexOfSID(gpp, gppConstants.SectionTCFEU2); i >= 0 {
+		consent = gpp.Sections[i].GetValue()
+		return
 	}
 	var ue userExt
 	if bidRequest.User != nil && bidRequest.User.Ext != nil {

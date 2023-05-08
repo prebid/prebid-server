@@ -43,10 +43,16 @@ func TestSignalParse(t *testing.T) {
 			wantSignal:  SignalAmbiguous,
 			wantError:   true,
 		},
+		{
+			description: "Out of bounds signal - raw signal is 5",
+			rawSignal:   "5",
+			wantSignal:  SignalAmbiguous,
+			wantError:   true,
+		},
 	}
 
 	for _, test := range tests {
-		signal, err := SignalParse(test.rawSignal)
+		signal, err := StrSignalParse(test.rawSignal)
 
 		assert.Equal(t, test.wantSignal, signal, test.description)
 
@@ -55,6 +61,41 @@ func TestSignalParse(t *testing.T) {
 		} else {
 			assert.Nil(t, err, test.description)
 		}
+	}
+}
+
+func TestIntSignalParse(t *testing.T) {
+	type testOutput struct {
+		signal Signal
+		err    error
+	}
+	testCases := []struct {
+		desc     string
+		input    int
+		expected testOutput
+	}{
+		{
+			desc:  "input out of bounds, return SgnalAmbituous and gdprSignalError",
+			input: -1,
+			expected: testOutput{
+				signal: SignalAmbiguous,
+				err:    gdprSignalError,
+			},
+		},
+		{
+			desc:  "input in bounds, return valid signal and nil error",
+			input: 1,
+			expected: testOutput{
+				signal: SignalYes,
+				err:    nil,
+			},
+		},
+	}
+	for _, tc := range testCases {
+		outSignal, outErr := IntSignalParse(tc.input)
+
+		assert.Equal(t, tc.expected.signal, outSignal, tc.desc)
+		assert.Equal(t, tc.expected.err, outErr, tc.desc)
 	}
 }
 
