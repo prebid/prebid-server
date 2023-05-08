@@ -339,7 +339,7 @@ func sendAuctionResponse(
 func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metrics.Labels, hookExecutor hookexecution.HookStageExecutor) (req *openrtb_ext.RequestWrapper, impExtInfoMap map[string]exchange.ImpExtInfo, storedAuctionResponses stored_responses.ImpsWithBidResponses, storedBidResponses stored_responses.ImpBidderStoredResp, bidderImpReplaceImpId stored_responses.BidderImpReplaceImpID, account *config.Account, errs []error) {
 	errs = nil
 	var err error
-	var r io.Reader = httpRequest.Body
+	var r io.ReadCloser = httpRequest.Body
 	reqCompressionKind := config.CompressionKind(httpRequest.Header.Get("Content-Encoding"))
 	if reqCompressionKind != "" {
 		if !deps.cfg.Compression.Request.IsSupported(reqCompressionKind) {
@@ -353,6 +353,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 			}
 		}
 	}
+	defer r.Close()
 	limitedReqReader := &io.LimitedReader{
 		R: r,
 		N: deps.cfg.MaxRequestSize,
@@ -485,7 +486,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	return
 }
 
-func getCompressionEnabledReader(body io.ReadCloser, compressionKind config.CompressionKind) (io.Reader, error) {
+func getCompressionEnabledReader(body io.ReadCloser, compressionKind config.CompressionKind) (io.ReadCloser, error) {
 	switch compressionKind {
 	case config.CompressionGZIP:
 		return gzip.NewReader(body)
