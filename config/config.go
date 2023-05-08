@@ -17,6 +17,7 @@ import (
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/ptrutil"
 )
 
 // Configuration specifies the static application config.
@@ -138,12 +139,13 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 	if cfg.AccountDefaults.Disabled {
 		glog.Warning(`With account_defaults.disabled=true, host-defined accounts must exist and have "disabled":false. All other requests will be rejected.`)
 	}
-	if cfg.AccountDefaults.Events.Enabled {
-		glog.Warning(`account_defaults.events will currently not do anything as the feature is still under development. Please follow https://github.com/prebid/prebid-server/issues/1725 for more updates`)
-	}
 
 	if cfg.PriceFloors.Enabled {
 		glog.Warning(`cfg.PriceFloors.Enabled will currently not do anything as price floors feature is still under development.`)
+	}
+
+	if len(cfg.AccountDefaults.Events.VASTEvents) > 0 {
+		errs = append(errs, errors.New("account_defaults.Events.VASTEvents has no effect as the feature is under development."))
 	}
 
 	errs = cfg.Experiment.validate(errs)
@@ -688,6 +690,10 @@ func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName func(strin
 
 	// Update account defaults and generate base json for patch
 	c.AccountDefaults.CacheTTL = c.CacheURL.DefaultTTLs // comment this out to set explicitly in config
+
+	// Update the deprecated and new events enabled values for account defaults.
+	c.AccountDefaults.EventsEnabled, c.AccountDefaults.Events.Enabled = migrateConfigEventsEnabled(c.AccountDefaults.EventsEnabled, c.AccountDefaults.Events.Enabled)
+
 	if err := c.MarshalAccountDefaults(); err != nil {
 		return nil, err
 	}
@@ -1008,6 +1014,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("account_defaults.price_floors.use_dynamic_data", false)
 	v.SetDefault("account_defaults.price_floors.max_rules", 100)
 	v.SetDefault("account_defaults.price_floors.max_schema_dims", 3)
+	v.SetDefault("account_defaults.events_enabled", false)
 
 	v.SetDefault("certificates_file", "")
 	v.SetDefault("auto_gen_source_tid", true)
@@ -1369,6 +1376,28 @@ func migrateConfigDatabaseConnection(v *viper.Viper) {
 			}
 		}
 	}
+}
+
+// migrateConfigEventsEnabled is responsible for ensuring backward compatibility of events_enabled field.
+// This function copies the value of newField "events.enabled" and set it to the oldField "events_enabled".
+// This is necessary to achieve the desired order of precedence favoring the account values over the host values
+// given the account fetcher JSON merge mechanics.
+func migrateConfigEventsEnabled(oldFieldValue *bool, newFieldValue *bool) (updatedOldFieldValue, updatedNewFieldValue *bool) {
+	newField := "account_defaults.events.enabled"
+	oldField := "account_defaults.events_enabled"
+
+	updatedOldFieldValue = oldFieldValue
+	if oldFieldValue != nil {
+		glog.Warningf("%s is deprecated and should be changed to %s", oldField, newField)
+	}
+	if newFieldValue != nil {
+		if oldFieldValue != nil {
+			glog.Warningf("using %s and ignoring deprecated %s", newField, oldField)
+		}
+		updatedOldFieldValue = ptrutil.ToPtr(*newFieldValue)
+	}
+
+	return updatedOldFieldValue, nil
 }
 
 func isConfigInfoPresent(v *viper.Viper, prefix string, fields []string) bool {

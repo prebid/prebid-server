@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/bidadjustment"
 	"github.com/prebid/prebid-server/config/util"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/exchange/entities"
@@ -23,6 +24,7 @@ import (
 	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/version"
 
+	"github.com/prebid/openrtb/v19/adcom1"
 	nativeRequests "github.com/prebid/openrtb/v19/native1/request"
 	nativeResponse "github.com/prebid/openrtb/v19/native1/response"
 	"github.com/prebid/openrtb/v19/openrtb2"
@@ -56,7 +58,7 @@ type AdaptedBidder interface {
 	//
 	// Any errors will be user-facing in the API.
 	// Error messages should help publishers understand what might account for "bad" bids.
-	requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, hookExecutor hookexecution.StageExecutor) ([]*entities.PbsOrtbSeatBid, []error)
+	requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, hookExecutor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) ([]*entities.PbsOrtbSeatBid, []error)
 }
 
 // bidRequestOptions holds additional options for bid request execution to maintain clean code and reasonable number of parameters
@@ -115,7 +117,7 @@ type bidderAdapterConfig struct {
 	EndpointCompression string
 }
 
-func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, hookExecutor hookexecution.StageExecutor) ([]*entities.PbsOrtbSeatBid, []error) {
+func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, hookExecutor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) ([]*entities.PbsOrtbSeatBid, []error) {
 	reject := hookExecutor.ExecuteBidderRequestStage(bidderRequest.BidRequest, string(bidderRequest.BidderName))
 	if reject != nil {
 		return nil, []error{reject}
@@ -335,9 +337,13 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 						}
 
 						originalBidCpm := 0.0
+						currencyAfterAdjustments := ""
 						if bidResponse.Bids[i].Bid != nil {
 							originalBidCpm = bidResponse.Bids[i].Bid.Price
 							bidResponse.Bids[i].Bid.Price = bidResponse.Bids[i].Bid.Price * adjustmentFactor * conversionRate
+
+							bidType := getBidTypeForAdjustments(bidResponse.Bids[i].BidType, bidResponse.Bids[i].Bid.ImpID, bidderRequest.BidRequest.Imp)
+							bidResponse.Bids[i].Bid.Price, currencyAfterAdjustments = bidadjustment.Apply(ruleToAdjustments, bidResponse.Bids[i], bidderRequest.BidderName, seatBidMap[bidderRequest.BidderName].Currency, reqInfo, bidType)
 						}
 
 						if _, ok := seatBidMap[bidderName]; !ok {
@@ -360,6 +366,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 							OriginalBidCPM: originalBidCpm,
 							OriginalBidCur: bidResponse.Currency,
 						})
+						seatBidMap[bidderName].Currency = currencyAfterAdjustments
 					}
 				} else {
 					// If no conversions found, do not handle the bid
@@ -686,4 +693,19 @@ func compressToGZIP(requestBody []byte) []byte {
 	w.Write([]byte(requestBody))
 	w.Close()
 	return b.Bytes()
+}
+
+func getBidTypeForAdjustments(bidType openrtb_ext.BidType, impID string, imp []openrtb2.Imp) string {
+	if bidType == openrtb_ext.BidTypeVideo {
+		for _, imp := range imp {
+			if imp.ID == impID {
+				if imp.Video.Plcmt == adcom1.VideoPlcmtAccompanyingContent {
+					return "video-outstream"
+				}
+				break
+			}
+		}
+		return "video-instream"
+	}
+	return string(bidType)
 }
