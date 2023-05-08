@@ -20,11 +20,13 @@ import (
 	"github.com/prebid/openrtb/v19/native1"
 	nativeRequests "github.com/prebid/openrtb/v19/native1/request"
 	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
@@ -111,6 +113,10 @@ func TestJsonSampleRequests(t *testing.T) {
 		{
 			"Assert request with ad server targeting is processing correctly",
 			"adservertargeting",
+		},
+		{
+			"Assert request with bid adjustments defined is processing correctly",
+			"bidadjustments",
 		},
 	}
 
@@ -3589,6 +3595,11 @@ func TestAuctionWarnings(t *testing.T) {
 			expectedWarning: "regs.us_privacy consent does not match uspv1 in GPP, using regs.gpp",
 		},
 		{
+			name:            "empty-gppsid-array-conflicts-with-regs-gdpr", // gdpr set to 1, an empty non-nil gpp_sid array doesn't match
+			file:            "empty-gppsid-conflict.json",
+			expectedWarning: "regs.gdpr signal conflicts with GPP (regs.gpp_sid) and will be ignored",
+		},
+		{
 			name:            "gdpr-signals-conflict", // gdpr signals do not match
 			file:            "gdpr-conflict.json",
 			expectedWarning: "regs.gdpr signal conflicts with GPP (regs.gpp_sid) and will be ignored",
@@ -5334,4 +5345,13 @@ type mockStageExecutor struct {
 
 func (e mockStageExecutor) GetOutcomes() []hookexecution.StageOutcome {
 	return e.outcomes
+}
+
+func TestRecordResponsePreparationMetrics(t *testing.T) {
+	mbi := map[openrtb_ext.BidderName]adapters.MakeBidsTimeInfo{
+		openrtb_ext.BidderAppnexus: {Durations: []time.Duration{10, 15}, AfterMakeBidsStartTime: time.Now()},
+	}
+	mockMetricEngine := &metrics.MetricsEngineMock{}
+	mockMetricEngine.On("RecordOverheadTime", metrics.MakeAuctionResponse, mock.Anything)
+	recordResponsePreparationMetrics(mbi, mockMetricEngine)
 }

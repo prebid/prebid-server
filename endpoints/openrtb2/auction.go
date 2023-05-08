@@ -24,6 +24,8 @@ import (
 	nativeRequests "github.com/prebid/openrtb/v19/native1/request"
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/openrtb/v19/openrtb3"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/bidadjustment"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/ortb"
 	"golang.org/x/net/publicsuffix"
@@ -213,7 +215,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	warnings := errortypes.WarningOnly(errL)
 
-	auctionRequest := exchange.AuctionRequest{
+	auctionRequest := &exchange.AuctionRequest{
 		BidRequestWrapper:          req,
 		Account:                    *account,
 		UserSyncs:                  usersyncs,
@@ -252,6 +254,9 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	labels, ao = sendAuctionResponse(w, hookExecutor, response, req.BidRequest, account, labels, ao)
+	if len(ao.Errors) == 0 {
+		recordResponsePreparationMetrics(auctionRequest.MakeBidsTimeInfo, deps.metricsEngine)
+	}
 }
 
 func rejectAuctionRequest(
@@ -719,7 +724,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 	}
 
 	if errs := validateRequestExt(req); len(errs) != 0 {
-		return append(errL, errs...)
+		if errortypes.ContainsFatalError(errs) {
+			return append(errL, errs...)
+		}
+		errL = append(errL, errs...)
 	}
 
 	if err := deps.validateSite(req); err != nil {
@@ -1550,6 +1558,15 @@ func validateRequestExt(req *openrtb_ext.RequestWrapper) []error {
 		reqExt.SetPrebid(prebid)
 	}
 
+	if !bidadjustment.Validate(prebid.BidAdjustments) {
+		prebid.BidAdjustments = nil
+		reqExt.SetPrebid(prebid)
+		errs = append(errs, &errortypes.Warning{
+			WarningCode: errortypes.BidAdjustmentWarningCode,
+			Message:     "bid adjustment from request was invalid",
+		})
+	}
+
 	return errs
 }
 
@@ -1666,11 +1683,9 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 	// Check Universal User ID
 	eids := userExt.GetEid()
 	if eids != nil {
-		if len(*eids) == 0 {
-			return append(errL, errors.New("request.user.ext.eids must contain at least one element or be undefined"))
-		}
-		uniqueSources := make(map[string]struct{}, len(*eids))
-		for eidIndex, eid := range *eids {
+		eidsValue := *eids
+		uniqueSources := make(map[string]struct{}, len(eidsValue))
+		for eidIndex, eid := range eidsValue {
 			if eid.Source == "" {
 				return append(errL, fmt.Errorf("request.user.ext.eids[%d] missing required field: \"source\"", eidIndex))
 			}
@@ -1706,6 +1721,7 @@ func validateRegs(req *openrtb_ext.RequestWrapper, gpp gpplib.GppContainer) []er
 		for _, id := range req.BidRequest.Regs.GPPSID {
 			if id == int8(constants.SectionTCFEU2) {
 				gdpr = 1
+				break
 			}
 		}
 		if gdpr != *req.BidRequest.Regs.GDPR {
@@ -2325,4 +2341,14 @@ func validateStoredBidRespAndImpExtBidders(bidderExts map[string]json.RawMessage
 
 func generateStoredBidResponseValidationError(impID string) error {
 	return fmt.Errorf("request validation failed. Stored bid responses are specified for imp %s. Bidders specified in imp.ext should match with bidders specified in imp.ext.prebid.storedbidresponse", impID)
+}
+
+func recordResponsePreparationMetrics(mbti map[openrtb_ext.BidderName]adapters.MakeBidsTimeInfo, me metrics.MetricsEngine) {
+	for _, info := range mbti {
+		duration := time.Since(info.AfterMakeBidsStartTime)
+		for _, makeBidsDuration := range info.Durations {
+			duration += makeBidsDuration
+		}
+		me.RecordOverheadTime(metrics.MakeAuctionResponse, duration)
+	}
 }

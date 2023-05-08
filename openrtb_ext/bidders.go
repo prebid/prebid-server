@@ -106,6 +106,7 @@ const (
 	BidderAdprime           BidderName = "adprime"
 	BidderAdrino            BidderName = "adrino"
 	BidderAdsinteractive    BidderName = "adsinteractive"
+	BidderAdsyield          BidderName = "adsyield"
 	BidderAdtarget          BidderName = "adtarget"
 	BidderAdtrgtme          BidderName = "adtrgtme"
 	BidderAdtelligent       BidderName = "adtelligent"
@@ -123,6 +124,7 @@ const (
 	BidderAudienceNetwork   BidderName = "audienceNetwork"
 	BidderAutomatad         BidderName = "automatad"
 	BidderAvocet            BidderName = "avocet"
+	BidderAxis              BidderName = "axis"
 	BidderAxonix            BidderName = "axonix"
 	BidderBeachfront        BidderName = "beachfront"
 	BidderBeintoo           BidderName = "beintoo"
@@ -163,6 +165,7 @@ const (
 	BidderEvtech            BidderName = "evtech"
 	BidderFreewheelSSP      BidderName = "freewheelssp"
 	BidderFreewheelSSPOld   BidderName = "freewheel-ssp"
+	BidderFRVRAdNetwork     BidderName = "frvradn"
 	BidderGamma             BidderName = "gamma"
 	BidderGamoshi           BidderName = "gamoshi"
 	BidderGlobalsun         BidderName = "globalsun"
@@ -265,6 +268,7 @@ const (
 	BidderYieldmo           BidderName = "yieldmo"
 	BidderYieldone          BidderName = "yieldone"
 	BidderZeroClickFraud    BidderName = "zeroclickfraud"
+	BidderZetaGlobalSsp     BidderName = "zeta_global_ssp"
 )
 
 // CoreBidderNames returns a slice of all core bidders.
@@ -290,6 +294,7 @@ func CoreBidderNames() []BidderName {
 		BidderAdprime,
 		BidderAdrino,
 		BidderAdsinteractive,
+		BidderAdsyield,
 		BidderAdtarget,
 		BidderAdtrgtme,
 		BidderAdtelligent,
@@ -307,6 +312,7 @@ func CoreBidderNames() []BidderName {
 		BidderAudienceNetwork,
 		BidderAutomatad,
 		BidderAvocet,
+		BidderAxis,
 		BidderAxonix,
 		BidderBeachfront,
 		BidderBeintoo,
@@ -347,6 +353,7 @@ func CoreBidderNames() []BidderName {
 		BidderEvtech,
 		BidderFreewheelSSP,
 		BidderFreewheelSSPOld,
+		BidderFRVRAdNetwork,
 		BidderGamma,
 		BidderGamoshi,
 		BidderGlobalsun,
@@ -449,6 +456,7 @@ func CoreBidderNames() []BidderName {
 		BidderYieldmo,
 		BidderYieldone,
 		BidderZeroClickFraud,
+		BidderZetaGlobalSsp,
 	}
 }
 

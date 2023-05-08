@@ -11,6 +11,6 @@ capabilities:
       - banner
 userSync:
   redirect:
-    url: "http://pb.adsinteractive.com/getuid?{{.RedirectURL}}"
+    url: "http://bid.adsinteractive.com/getuid?{{.RedirectURL}}"
     userMacro: "$AUID"
  
