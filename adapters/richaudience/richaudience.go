@@ -52,10 +52,16 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}
 
 		if request.App != nil {
+			appCopy := *request.App
+			request.App = &appCopy
+
 			request.App.Keywords = "tagid=" + imp.TagID
 		}
 
 		if request.Site != nil {
+			siteCopy := *request.Site
+			request.Site = &siteCopy
+
 			request.Site.Keywords = "tagid=" + imp.TagID
 		}
 
@@ -65,6 +71,13 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			}
 
 			if raiExt.Test {
+				if request.Device != nil {
+					deviceCopy := *request.Device
+					request.Device = &deviceCopy
+				} else {
+					request.Device = &openrtb2.Device{}
+				}
+
 				request.Device.IP = "11.222.33.44"
 				request.Test = int8(1)
 			}
