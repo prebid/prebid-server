@@ -31,11 +31,13 @@ func TestMemberQueryParam(t *testing.T) {
 	}
 }
 
-func TestBuilder(t *testing.T) {
-	_, buildErr := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
+func TestBuilderWithPlatformID(t *testing.T) {
+	bidder, buildErr := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
 		Endpoint: "http://ib.adnxs.com/openrtb2", PlatformID: "3"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	assert.NoError(t, buildErr)
+	assert.NotNil(t, bidder)
+	assert.Equal(t, 3, (*bidder.(*adapter)).hbSource)
 }
 
 // fakerandomNumberGenerator
