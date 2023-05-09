@@ -2,9 +2,11 @@
   "mockBidRequest": {
     "id": "test-request-id",
     "app": {
-      "prebid": {
-        "source": "source",
-        "version": "version"
+      "ext": {
+        "prebid": {
+          "source": "source",
+          "version": "version"
+        }
       }
     },
     "imp": [
@@ -38,7 +40,14 @@
         "uri": "http://ib.adnxs.com/openrtb2",
         "body": {
           "id": "test-request-id",
-          "app": {},
+          "app": {
+            "ext": {
+              "prebid": {
+                "source": "source",
+                "version": "version"
+              }
+            }
+          },
           "ext": {
             "appnexus": {
               "hb_source": 5
@@ -63,6 +72,7 @@
                 "pos": 1,
                 "h": 250
               },
+              "displaymanagerver": "source-version",
               "ext": {
                 "appnexus": {
                   "placement_id": 1
