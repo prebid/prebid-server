@@ -488,6 +488,11 @@ func cmpInts(t *testing.T, key string, expected, actual int) {
 	assert.Equal(t, expected, actual, "%s: %d != %d", key, expected, actual)
 }
 
+func cmpUnsignedInts(t *testing.T, key string, expected, actual uint) {
+	t.Helper()
+	assert.Equal(t, expected, actual, "%s: %d != %d", key, expected, actual)
+}
+
 func cmpInt8s(t *testing.T, key string, expected, actual *int8) {
 	t.Helper()
 	assert.Equal(t, expected, actual, "%s: %d != %d", key, expected, actual)
@@ -550,12 +555,12 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "validations.max_creative_width", 0, int(cfg.Validations.MaxCreativeWidth))
 	cmpInts(t, "validations.max_creative_height", 0, int(cfg.Validations.MaxCreativeHeight))
 	cmpBools(t, "tmax_adjustments.enabled", false, cfg.TmaxAdjustments.Enabled) // Tmax adjustment feature is still under development. Therefore enabled flag is set to false
-	cmpInts(t, "tmax_adjustments.auction_max", 900, cfg.TmaxAdjustments.AuctionMax)
-	cmpInts(t, "tmax_adjustments.video_max", 900, cfg.TmaxAdjustments.VideoMax)
-	cmpInts(t, "tmax_adjustments.amp_max", 900, cfg.TmaxAdjustments.AmpMax)
-	cmpInts(t, "tmax_adjustments.bidder_response_min", 700, cfg.TmaxAdjustments.BidderResponseMin)
-	cmpInts(t, "tmax_adjustments.bidder_network_latency_buffer", 100, cfg.TmaxAdjustments.BidderNetworkLatencyBuffer)
-	cmpInts(t, "tmax_adjustments.pbs_response_preparation_duration", 100, cfg.TmaxAdjustments.PBSResponsePreparationDuration)
+	cmpUnsignedInts(t, "tmax_adjustments.auction_max", 900, cfg.TmaxAdjustments.AuctionMax)
+	cmpUnsignedInts(t, "tmax_adjustments.video_max", 900, cfg.TmaxAdjustments.VideoMax)
+	cmpUnsignedInts(t, "tmax_adjustments.amp_max", 900, cfg.TmaxAdjustments.AmpMax)
+	cmpUnsignedInts(t, "tmax_adjustments.bidder_response_min", 700, cfg.TmaxAdjustments.BidderResponseMin)
+	cmpUnsignedInts(t, "tmax_adjustments.bidder_network_latency_buffer", 100, cfg.TmaxAdjustments.BidderNetworkLatencyBuffer)
+	cmpUnsignedInts(t, "tmax_adjustments.pbs_response_preparation_duration", 100, cfg.TmaxAdjustments.PBSResponsePreparationDuration)
 
 	//Assert the price floor values
 	cmpBools(t, "price_floors.enabled", true, cfg.PriceFloors.Enabled)
