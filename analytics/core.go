@@ -9,14 +9,9 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-/*
-  	PBSAnalyticsModule must be implemented by any analytics module that does transactional logging.
-
-	New modules can use the /analytics/endpoint_data_objects, extract the
-	information required and are responsible for handling all their logging activities inside LogAuctionObject, LogAmpObject
-	LogCookieSyncObject and LogSetUIDObject method implementations.
-*/
-
+// PBSAnalyticsModule must be implemented by analytics modules to extract the required information and logging
+// activities. Do not use marshal the parameter objects directly as they can change over time. Use a separate
+// model for each analytics module and transform as appropriate.
 type PBSAnalyticsModule interface {
 	LogAuctionObject(*AuctionObject)
 	LogVideoObject(*VideoObject)
@@ -88,7 +83,7 @@ type UsersyncInfo struct {
 	SupportCORS bool   `json:"supportCORS,omitempty"`
 }
 
-// NotificationEvent is a loggable object
+// NotificationEvent object of a transaction at /event
 type NotificationEvent struct {
 	Request *EventRequest   `json:"request"`
 	Account *config.Account `json:"account"`
