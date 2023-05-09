@@ -19,11 +19,13 @@ import (
 	"github.com/julienschmidt/httprouter"
 	gpplib "github.com/prebid/go-gpp"
 	"github.com/prebid/go-gpp/constants"
-	"github.com/prebid/openrtb/v17/adcom1"
-	"github.com/prebid/openrtb/v17/native1"
-	nativeRequests "github.com/prebid/openrtb/v17/native1/request"
-	"github.com/prebid/openrtb/v17/openrtb2"
-	"github.com/prebid/openrtb/v17/openrtb3"
+	"github.com/prebid/openrtb/v19/adcom1"
+	"github.com/prebid/openrtb/v19/native1"
+	nativeRequests "github.com/prebid/openrtb/v19/native1/request"
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb3"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/bidadjustment"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/ortb"
 	"golang.org/x/net/publicsuffix"
@@ -99,8 +101,6 @@ func NewEndpoint(
 		IPv6PrivateNetworks: cfg.RequestValidation.IPv6PrivateNetworksParsed,
 	}
 
-	hookExecutor := hookexecution.NewHookExecutor(hookExecutionPlanBuilder, hookexecution.EndpointAuction, metricsEngine)
-
 	return httprouter.Handle((&endpointDeps{
 		uuidGenerator,
 		ex,
@@ -119,7 +119,7 @@ func NewEndpoint(
 		nil,
 		ipValidator,
 		storedRespFetcher,
-		hookExecutor}).Auction), nil
+		hookExecutionPlanBuilder}).Auction), nil
 }
 
 type endpointDeps struct {
@@ -140,7 +140,7 @@ type endpointDeps struct {
 	debugLogRegexp            *regexp.Regexp
 	privateNetworkIPValidator iputil.IPValidator
 	storedRespFetcher         stored_requests.Fetcher
-	hookExecutor              hookexecution.HookStageExecutor
+	hookExecutionPlanBuilder  hooks.ExecutionPlanBuilder
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -151,6 +151,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// We can respect timeouts more accurately if we note the *real* start time, and use it
 	// to compute the auction timeout.
 	start := time.Now()
+
+	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
 
 	ao := analytics.AuctionObject{
 		Status:    http.StatusOK,
@@ -173,13 +175,14 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
 
-	req, impExtInfoMap, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, account, errL := deps.parseRequest(r, &labels)
+	req, impExtInfoMap, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, account, errL := deps.parseRequest(r, &labels, hookExecutor)
 	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels) {
 		return
 	}
 
 	if rejectErr := hookexecution.FindFirstRejectOrNil(errL); rejectErr != nil {
-		labels, ao = rejectAuctionRequest(*rejectErr, w, deps.hookExecutor, req.BidRequest, account, labels, ao)
+		ao.Request = req.BidRequest
+		labels, ao = rejectAuctionRequest(*rejectErr, w, hookExecutor, req.BidRequest, account, labels, ao)
 		return
 	}
 
@@ -212,7 +215,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	warnings := errortypes.WarningOnly(errL)
 
-	auctionRequest := exchange.AuctionRequest{
+	auctionRequest := &exchange.AuctionRequest{
 		BidRequestWrapper:          req,
 		Account:                    *account,
 		UserSyncs:                  usersyncs,
@@ -226,7 +229,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		StoredBidResponses:         storedBidResponses,
 		BidderImpReplaceImpID:      bidderImpReplaceImp,
 		PubID:                      labels.PubID,
-		HookExecutor:               deps.hookExecutor,
+		HookExecutor:               hookExecutor,
 	}
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
 	ao.Request = req.BidRequest
@@ -246,11 +249,14 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		ao.Errors = append(ao.Errors, err)
 		return
 	} else if isRejectErr {
-		labels, ao = rejectAuctionRequest(*rejectErr, w, deps.hookExecutor, req.BidRequest, account, labels, ao)
+		labels, ao = rejectAuctionRequest(*rejectErr, w, hookExecutor, req.BidRequest, account, labels, ao)
 		return
 	}
 
-	labels, ao = sendAuctionResponse(w, deps.hookExecutor, response, req.BidRequest, account, labels, ao)
+	labels, ao = sendAuctionResponse(w, hookExecutor, response, req.BidRequest, account, labels, ao)
+	if len(ao.Errors) == 0 {
+		recordResponsePreparationMetrics(auctionRequest.MakeBidsTimeInfo, deps.metricsEngine)
+	}
 }
 
 func rejectAuctionRequest(
@@ -329,7 +335,7 @@ func sendAuctionResponse(
 // possible, it will return errors with messages that suggest improvements.
 //
 // If the errors list has at least one element, then no guarantees are made about the returned request.
-func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metrics.Labels) (req *openrtb_ext.RequestWrapper, impExtInfoMap map[string]exchange.ImpExtInfo, storedAuctionResponses stored_responses.ImpsWithBidResponses, storedBidResponses stored_responses.ImpBidderStoredResp, bidderImpReplaceImpId stored_responses.BidderImpReplaceImpID, account *config.Account, errs []error) {
+func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metrics.Labels, hookExecutor hookexecution.HookStageExecutor) (req *openrtb_ext.RequestWrapper, impExtInfoMap map[string]exchange.ImpExtInfo, storedAuctionResponses stored_responses.ImpsWithBidResponses, storedBidResponses stored_responses.ImpBidderStoredResp, bidderImpReplaceImpId stored_responses.BidderImpReplaceImpID, account *config.Account, errs []error) {
 	req = &openrtb_ext.RequestWrapper{}
 	req.BidRequest = &openrtb2.BidRequest{}
 	errs = nil
@@ -352,7 +358,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		}
 	}
 
-	requestJson, rejectErr := deps.hookExecutor.ExecuteEntrypointStage(httpRequest, requestJson)
+	requestJson, rejectErr := hookExecutor.ExecuteEntrypointStage(httpRequest, requestJson)
 	if rejectErr != nil {
 		errs = []error{rejectErr}
 		if err = json.Unmarshal(requestJson, req.BidRequest); err != nil {
@@ -395,8 +401,8 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		return
 	}
 
-	deps.hookExecutor.SetAccount(account)
-	requestJson, rejectErr = deps.hookExecutor.ExecuteRawAuctionStage(requestJson)
+	hookExecutor.SetAccount(account)
+	requestJson, rejectErr = hookExecutor.ExecuteRawAuctionStage(requestJson)
 	if rejectErr != nil {
 		errs = []error{rejectErr}
 		if err = json.Unmarshal(requestJson, req.BidRequest); err != nil {
@@ -406,7 +412,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	}
 
 	// retrieve storedRequests and storedImps once more in case stored data was changed by the raw auction hook
-	if hasPayloadUpdatesAt(hooks.StageRawAuctionRequest.String(), deps.hookExecutor.GetOutcomes()) {
+	if hasPayloadUpdatesAt(hooks.StageRawAuctionRequest.String(), hookExecutor.GetOutcomes()) {
 		impInfo, errs = parseImpInfo(requestJson)
 		if len(errs) > 0 {
 			return nil, nil, nil, nil, nil, nil, errs
@@ -718,7 +724,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 	}
 
 	if errs := validateRequestExt(req); len(errs) != 0 {
-		return append(errL, errs...)
+		if errortypes.ContainsFatalError(errs) {
+			return append(errL, errs...)
+		}
+		errL = append(errL, errs...)
 	}
 
 	if err := deps.validateSite(req); err != nil {
@@ -1549,6 +1558,15 @@ func validateRequestExt(req *openrtb_ext.RequestWrapper) []error {
 		reqExt.SetPrebid(prebid)
 	}
 
+	if !bidadjustment.Validate(prebid.BidAdjustments) {
+		prebid.BidAdjustments = nil
+		reqExt.SetPrebid(prebid)
+		errs = append(errs, &errortypes.Warning{
+			WarningCode: errortypes.BidAdjustmentWarningCode,
+			Message:     "bid adjustment from request was invalid",
+		})
+	}
+
 	return errs
 }
 
@@ -1665,11 +1683,9 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 	// Check Universal User ID
 	eids := userExt.GetEid()
 	if eids != nil {
-		if len(*eids) == 0 {
-			return append(errL, errors.New("request.user.ext.eids must contain at least one element or be undefined"))
-		}
-		uniqueSources := make(map[string]struct{}, len(*eids))
-		for eidIndex, eid := range *eids {
+		eidsValue := *eids
+		uniqueSources := make(map[string]struct{}, len(eidsValue))
+		for eidIndex, eid := range eidsValue {
 			if eid.Source == "" {
 				return append(errL, fmt.Errorf("request.user.ext.eids[%d] missing required field: \"source\"", eidIndex))
 			}
@@ -1705,6 +1721,7 @@ func validateRegs(req *openrtb_ext.RequestWrapper, gpp gpplib.GppContainer) []er
 		for _, id := range req.BidRequest.Regs.GPPSID {
 			if id == int8(constants.SectionTCFEU2) {
 				gdpr = 1
+				break
 			}
 		}
 		if gdpr != *req.BidRequest.Regs.GDPR {
@@ -2324,4 +2341,14 @@ func validateStoredBidRespAndImpExtBidders(bidderExts map[string]json.RawMessage
 
 func generateStoredBidResponseValidationError(impID string) error {
 	return fmt.Errorf("request validation failed. Stored bid responses are specified for imp %s. Bidders specified in imp.ext should match with bidders specified in imp.ext.prebid.storedbidresponse", impID)
+}
+
+func recordResponsePreparationMetrics(mbti map[openrtb_ext.BidderName]adapters.MakeBidsTimeInfo, me metrics.MetricsEngine) {
+	for _, info := range mbti {
+		duration := time.Since(info.AfterMakeBidsStartTime)
+		for _, makeBidsDuration := range info.Durations {
+			duration += makeBidsDuration
+		}
+		me.RecordOverheadTime(metrics.MakeAuctionResponse, duration)
+	}
 }

@@ -4,16 +4,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/buger/jsonparser"
-	"github.com/prebid/openrtb/v17/adcom1"
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/adcom1"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/util/httputil"
+	"github.com/prebid/prebid-server/util/randomutil"
 
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
@@ -24,18 +24,38 @@ import (
 const defaultPlatformID int = 5
 
 type adapter struct {
-	URI            string
-	iabCategoryMap map[string]string
-	hbSource       int
+	URI             string
+	hbSource        int
+	randomGenerator randomutil.RandomGenerator
 }
 
 var maxImpsPerReq = 10
+
+// Builder builds a new instance of the AppNexus adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	bidder := &adapter{
+		URI:             config.Endpoint,
+		hbSource:        resolvePlatformID(config.PlatformID),
+		randomGenerator: randomutil.RandomNumberGenerator{},
+	}
+	return bidder, nil
+}
+
+func resolvePlatformID(platformID string) int {
+	if len(platformID) > 0 {
+		if val, err := strconv.Atoi(platformID); err == nil {
+			return val
+		}
+	}
+
+	return defaultPlatformID
+}
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
 	// appnexus adapter expects imp.displaymanagerver to be populated in openrtb2 endpoint
 	// but some SDKs will put it in imp.ext.prebid instead
-	displayManagerVer := buildDefaultDisplayManageVer(request)
+	displayManagerVer := buildDisplayManageVer(request)
 
 	var (
 		shouldGenerateAdPodId *bool
@@ -46,19 +66,26 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	validImps := []openrtb2.Imp{}
 	for i := 0; i < len(request.Imp); i++ {
-		// If the preprocessing failed, the server won't be able to bid on this Imp. Delete it, and note the error.
-		memberId, shouldGenerateAdPodIdForImp, err := preprocess(&request.Imp[i], displayManagerVer)
+		appnexusExt, err := validateAndBuildAppNexusExt(&request.Imp[i])
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
+		if err := buildRequestImp(&request.Imp[i], &appnexusExt, displayManagerVer); err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		memberId := appnexusExt.Member
 		if memberId != "" {
 			if _, ok := memberIds[memberId]; !ok {
 				memberIds[memberId] = struct{}{}
 				uniqueMemberIds = append(uniqueMemberIds, memberId)
 			}
 		}
+
+		shouldGenerateAdPodIdForImp := appnexusExt.AdPodId
 		if shouldGenerateAdPodId == nil {
 			shouldGenerateAdPodId = &shouldGenerateAdPodIdForImp
 		} else if *shouldGenerateAdPodId != shouldGenerateAdPodIdForImp {
@@ -121,12 +148,103 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	// If impressions number per pod is more than maxImpsPerReq - divide those imps to several requests but keep pod id the same
 	// If  adpodId feature disabled and impressions number per pod is more than maxImpsPerReq  - divide those imps to several requests but do not include ad pod id
 	if isVIDEO == 1 && *shouldGenerateAdPodId {
-		requests, errors := buildAdPodRequests(imps, request, reqExt, requestURI)
+		requests, errors := a.buildAdPodRequests(imps, request, reqExt, requestURI)
 		return requests, append(errs, errors...)
 	}
 
 	requests, errors := splitRequests(imps, request, reqExt, requestURI)
 	return requests, append(errs, errors...)
+}
+
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	if httputil.IsResponseStatusCodeNoContent(response) {
+		return nil, nil
+	}
+
+	if err := httputil.CheckResponseStatusCodeForErrors(response); err != nil {
+		return nil, []error{err}
+	}
+
+	var appnexusResponse openrtb2.BidResponse
+	if err := json.Unmarshal(response.Body, &appnexusResponse); err != nil {
+		return nil, []error{err}
+	}
+
+	var errs []error
+	bidderResponse := adapters.NewBidderResponseWithBidsCapacity(5)
+	for _, sb := range appnexusResponse.SeatBid {
+		for i := range sb.Bid {
+			bid := sb.Bid[i]
+
+			var bidExt appnexusBidExt
+			if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
+				errs = append(errs, err)
+				continue
+			}
+
+			bidType, err := getMediaTypeForBid(&bidExt)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+
+			iabCategory, found := a.findIabCategoryForBid(&bidExt)
+			if found {
+				bid.Cat = []string{iabCategory}
+			} else if len(bid.Cat) > 1 {
+				//create empty categories array to force bid to be rejected
+				bid.Cat = make([]string, 0)
+			}
+
+			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
+				Bid:          &bid,
+				BidType:      bidType,
+				BidVideo:     &openrtb_ext.ExtBidPrebidVideo{Duration: bidExt.Appnexus.CreativeInfo.Video.Duration},
+				DealPriority: bidExt.Appnexus.DealPriority,
+			})
+		}
+	}
+
+	if appnexusResponse.Cur != "" {
+		bidderResponse.Currency = appnexusResponse.Cur
+	}
+
+	return bidderResponse, errs
+}
+
+func validateAndBuildAppNexusExt(imp *openrtb2.Imp) (openrtb_ext.ExtImpAppnexus, error) {
+	var bidderExt adapters.ExtImpBidder
+	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		return openrtb_ext.ExtImpAppnexus{}, err
+	}
+
+	var appnexusExt openrtb_ext.ExtImpAppnexus
+	if err := json.Unmarshal(bidderExt.Bidder, &appnexusExt); err != nil {
+		return openrtb_ext.ExtImpAppnexus{}, err
+	}
+
+	handleLegacyParams(&appnexusExt)
+
+	if err := validateAppnexusExt(&appnexusExt); err != nil {
+		return openrtb_ext.ExtImpAppnexus{}, err
+	}
+
+	return appnexusExt, nil
+}
+
+func handleLegacyParams(appnexusExt *openrtb_ext.ExtImpAppnexus) {
+	if appnexusExt.PlacementId == 0 && appnexusExt.DeprecatedPlacementId != 0 {
+		appnexusExt.PlacementId = appnexusExt.DeprecatedPlacementId
+	}
+	if appnexusExt.InvCode == "" && appnexusExt.LegacyInvCode != "" {
+		appnexusExt.InvCode = appnexusExt.LegacyInvCode
+	}
+	if appnexusExt.TrafficSourceCode == "" && appnexusExt.LegacyTrafficSourceCode != "" {
+		appnexusExt.TrafficSourceCode = appnexusExt.LegacyTrafficSourceCode
+	}
+	if appnexusExt.UsePaymentRule == nil && appnexusExt.DeprecatedUsePaymentRule != nil {
+		appnexusExt.UsePaymentRule = appnexusExt.DeprecatedUsePaymentRule
+	}
 }
 
 func groupByPods(imps []openrtb2.Imp) map[string]([]openrtb2.Imp) {
@@ -187,41 +305,16 @@ func splitRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExt
 	return resArr, errs
 }
 
-// preprocess mutates the imp to get it ready to send to appnexus.
-//
-// It returns the member param, if it exists, and an error if anything went wrong during the preprocessing.
-func preprocess(imp *openrtb2.Imp, defaultDisplayManagerVer string) (string, bool, error) {
-	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return "", false, err
-	}
-
-	var appnexusExt openrtb_ext.ExtImpAppnexus
-	if err := json.Unmarshal(bidderExt.Bidder, &appnexusExt); err != nil {
-		return "", false, err
-	}
-
-	// Accept legacy Appnexus parameters if we don't have modern ones
-	// Don't worry if both is set as validation rules should prevent, and this is temporary anyway.
-	if appnexusExt.PlacementId == 0 && appnexusExt.DeprecatedPlacementId != 0 {
-		appnexusExt.PlacementId = appnexusExt.DeprecatedPlacementId
-	}
-	if appnexusExt.InvCode == "" && appnexusExt.LegacyInvCode != "" {
-		appnexusExt.InvCode = appnexusExt.LegacyInvCode
-	}
-	if appnexusExt.TrafficSourceCode == "" && appnexusExt.LegacyTrafficSourceCode != "" {
-		appnexusExt.TrafficSourceCode = appnexusExt.LegacyTrafficSourceCode
-	}
-	if appnexusExt.UsePaymentRule == nil && appnexusExt.DeprecatedUsePaymentRule != nil {
-		appnexusExt.UsePaymentRule = appnexusExt.DeprecatedUsePaymentRule
-	}
-
+func validateAppnexusExt(appnexusExt *openrtb_ext.ExtImpAppnexus) error {
 	if appnexusExt.PlacementId == 0 && (appnexusExt.InvCode == "" || appnexusExt.Member == "") {
-		return "", false, &errortypes.BadInput{
+		return &errortypes.BadInput{
 			Message: "No placement or member+invcode provided",
 		}
 	}
+	return nil
+}
 
+func buildRequestImp(imp *openrtb2.Imp, appnexusExt *openrtb_ext.ExtImpAppnexus, displayManagerVer string) error {
 	if appnexusExt.InvCode != "" {
 		imp.TagID = appnexusExt.InvCode
 	}
@@ -246,8 +339,8 @@ func preprocess(imp *openrtb2.Imp, defaultDisplayManagerVer string) (string, boo
 	}
 
 	// Populate imp.displaymanagerver if the SDK failed to do it.
-	if len(imp.DisplayManagerVer) == 0 && len(defaultDisplayManagerVer) > 0 {
-		imp.DisplayManagerVer = defaultDisplayManagerVer
+	if len(imp.DisplayManagerVer) == 0 && len(displayManagerVer) > 0 {
+		imp.DisplayManagerVer = displayManagerVer
 	}
 
 	impExt := appnexusImpExt{Appnexus: appnexusImpExtAppnexus{
@@ -257,12 +350,13 @@ func preprocess(imp *openrtb2.Imp, defaultDisplayManagerVer string) (string, boo
 		UsePmtRule:        appnexusExt.UsePaymentRule,
 		PrivateSizes:      appnexusExt.PrivateSizes,
 	}}
+
 	var err error
 	if imp.Ext, err = json.Marshal(&impExt); err != nil {
-		return appnexusExt.Member, appnexusExt.AdPodId, err
+		return err
 	}
 
-	return appnexusExt.Member, appnexusExt.AdPodId, nil
+	return nil
 }
 
 func makeKeywordStr(keywords []*openrtb_ext.ExtImpAppnexusKeyVal) string {
@@ -280,62 +374,6 @@ func makeKeywordStr(keywords []*openrtb_ext.ExtImpAppnexusKeyVal) string {
 	return strings.Join(kvs, ",")
 }
 
-func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if httputil.IsResponseStatusCodeNoContent(response) {
-		return nil, nil
-	}
-
-	if err := httputil.CheckResponseStatusCodeForErrors(response); err != nil {
-		return nil, []error{err}
-	}
-
-	var appnexusResponse openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &appnexusResponse); err != nil {
-		return nil, []error{err}
-	}
-
-	var errs []error
-	bidderResponse := adapters.NewBidderResponseWithBidsCapacity(5)
-	for _, sb := range appnexusResponse.SeatBid {
-		for i := range sb.Bid {
-			bid := sb.Bid[i]
-
-			var bidExt appnexusBidExt
-			if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
-				errs = append(errs, err)
-				continue
-			}
-
-			bidType, err := getMediaTypeForBid(&bidExt)
-			if err != nil {
-				errs = append(errs, err)
-				continue
-			}
-
-			iabCategory, found := a.findIabCategoryForBid(&bidExt)
-			if found {
-				bid.Cat = []string{iabCategory}
-			} else if len(bid.Cat) > 1 {
-				//create empty categories array to force bid to be rejected
-				bid.Cat = make([]string, 0)
-			}
-
-			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
-				Bid:          &bid,
-				BidType:      bidType,
-				BidVideo:     &openrtb_ext.ExtBidPrebidVideo{Duration: bidExt.Appnexus.CreativeInfo.Video.Duration},
-				DealPriority: bidExt.Appnexus.DealPriority,
-			})
-		}
-	}
-
-	if appnexusResponse.Cur != "" {
-		bidderResponse.Currency = appnexusResponse.Cur
-	}
-
-	return bidderResponse, errs
-}
-
 // getMediaTypeForBid determines which type of bid.
 func getMediaTypeForBid(bid *appnexusBidExt) (openrtb_ext.BidType, error) {
 	switch bid.Appnexus.BidType {
@@ -343,8 +381,6 @@ func getMediaTypeForBid(bid *appnexusBidExt) (openrtb_ext.BidType, error) {
 		return openrtb_ext.BidTypeBanner, nil
 	case 1:
 		return openrtb_ext.BidTypeVideo, nil
-	case 2:
-		return openrtb_ext.BidTypeAudio, nil
 	case 3:
 		return openrtb_ext.BidTypeNative, nil
 	default:
@@ -355,7 +391,7 @@ func getMediaTypeForBid(bid *appnexusBidExt) (openrtb_ext.BidType, error) {
 // getIabCategoryForBid maps an appnexus brand id to an IAB category.
 func (a *adapter) findIabCategoryForBid(bid *appnexusBidExt) (string, bool) {
 	brandIDString := strconv.Itoa(bid.Appnexus.BrandCategory)
-	iabCategory, ok := a.iabCategoryMap[brandIDString]
+	iabCategory, ok := iabCategoryMap[brandIDString]
 	return iabCategory, ok
 }
 
@@ -367,30 +403,7 @@ func appendMemberId(uri string, memberId string) string {
 	return uri + "?member_id=" + memberId
 }
 
-// Builder builds a new instance of the AppNexus adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	bidder := &adapter{
-		URI: config.Endpoint,
-		iabCategoryMap: map[string]string{
-			"1": "IAB20-3",
-			"9": "IAB5-3",
-		},
-		hbSource: resolvePlatformID(config.PlatformID),
-	}
-	return bidder, nil
-}
-
-func resolvePlatformID(platformID string) int {
-	if len(platformID) > 0 {
-		if val, err := strconv.Atoi(platformID); err == nil {
-			return val
-		}
-	}
-
-	return defaultPlatformID
-}
-
-func buildDefaultDisplayManageVer(req *openrtb2.BidRequest) string {
+func buildDisplayManageVer(req *openrtb2.BidRequest) string {
 	if req.App == nil {
 		return ""
 	}
@@ -408,12 +421,12 @@ func buildDefaultDisplayManageVer(req *openrtb2.BidRequest) string {
 	return fmt.Sprintf("%s-%s", source, version)
 }
 
-func buildAdPodRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExtension appnexusReqExt, uri string) ([]*adapters.RequestData, []error) {
+func (a *adapter) buildAdPodRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExtension appnexusReqExt, uri string) ([]*adapters.RequestData, []error) {
 	var errs []error
 	podImps := groupByPods(imps)
 	requests := make([]*adapters.RequestData, 0, len(podImps))
 	for _, podImps := range podImps {
-		requestExtension.Appnexus.AdPodId = fmt.Sprint(rand.Int63())
+		requestExtension.Appnexus.AdPodId = fmt.Sprint(a.randomGenerator.GenerateInt63())
 
 		reqs, errors := splitRequests(podImps, request, requestExtension, uri)
 		requests = append(requests, reqs...)

@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/appnexus"
 	"github.com/prebid/prebid-server/adapters/rubicon"
@@ -212,6 +212,7 @@ func TestGetDisabledBiddersErrorMessages(t *testing.T) {
 				"somoaudience":   `Bidder "somoaudience" is no longer available in Prebid Server. Please update your configuration.`,
 				"yssp":           `Bidder "yssp" is no longer available in Prebid Server. If you're looking to use the Yahoo SSP adapter, please rename it to "yahoossp" in your configuration.`,
 				"andbeyondmedia": `Bidder "andbeyondmedia" is no longer available in Prebid Server. If you're looking to use the AndBeyond.Media SSP adapter, please rename it to "beyondmedia" in your configuration.`,
+				"oftmedia":       `Bidder "oftmedia" is no longer available in Prebid Server. Please update your configuration.`,
 			},
 		},
 		{
@@ -223,6 +224,7 @@ func TestGetDisabledBiddersErrorMessages(t *testing.T) {
 				"somoaudience":   `Bidder "somoaudience" is no longer available in Prebid Server. Please update your configuration.`,
 				"yssp":           `Bidder "yssp" is no longer available in Prebid Server. If you're looking to use the Yahoo SSP adapter, please rename it to "yahoossp" in your configuration.`,
 				"andbeyondmedia": `Bidder "andbeyondmedia" is no longer available in Prebid Server. If you're looking to use the AndBeyond.Media SSP adapter, please rename it to "beyondmedia" in your configuration.`,
+				"oftmedia":       `Bidder "oftmedia" is no longer available in Prebid Server. Please update your configuration.`,
 			},
 		},
 		{
@@ -235,6 +237,7 @@ func TestGetDisabledBiddersErrorMessages(t *testing.T) {
 				"yssp":           `Bidder "yssp" is no longer available in Prebid Server. If you're looking to use the Yahoo SSP adapter, please rename it to "yahoossp" in your configuration.`,
 				"appnexus":       `Bidder "appnexus" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`,
 				"andbeyondmedia": `Bidder "andbeyondmedia" is no longer available in Prebid Server. If you're looking to use the AndBeyond.Media SSP adapter, please rename it to "beyondmedia" in your configuration.`,
+				"oftmedia":       `Bidder "oftmedia" is no longer available in Prebid Server. Please update your configuration.`,
 			},
 		},
 		{
@@ -247,6 +250,7 @@ func TestGetDisabledBiddersErrorMessages(t *testing.T) {
 				"yssp":           `Bidder "yssp" is no longer available in Prebid Server. If you're looking to use the Yahoo SSP adapter, please rename it to "yahoossp" in your configuration.`,
 				"appnexus":       `Bidder "appnexus" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`,
 				"andbeyondmedia": `Bidder "andbeyondmedia" is no longer available in Prebid Server. If you're looking to use the AndBeyond.Media SSP adapter, please rename it to "beyondmedia" in your configuration.`,
+				"oftmedia":       `Bidder "oftmedia" is no longer available in Prebid Server. Please update your configuration.`,
 			},
 		},
 	}

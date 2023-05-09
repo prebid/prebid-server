@@ -3,7 +3,7 @@ package schain
 import (
 	"encoding/json"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -74,7 +74,6 @@ func (w SChainWriter) Write(req *openrtb2.BidRequest, bidder string) {
 	if err == nil {
 		req.Source.Ext = sourceExt
 	}
-
 }
 
 // extPrebidSChainExists checks if an schain exists in the ORTB 2.5 req.ext.prebid.schain location

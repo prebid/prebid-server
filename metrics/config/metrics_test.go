@@ -34,7 +34,7 @@ func TestGoMetricsEngine(t *testing.T) {
 	testEngine := NewMetricsEngine(&cfg, adapterList, syncerKeys, modulesStages)
 	_, ok := testEngine.MetricsEngine.(*metrics.Metrics)
 	if !ok {
-		t.Error("Expected a legacy Metrics as MetricsEngine, but didn't get it")
+		t.Error("Expected a Metrics as MetricsEngine, but didn't get it")
 	}
 }
 
@@ -148,7 +148,6 @@ func TestMultiMetricsEngine(t *testing.T) {
 
 	//Make the metrics engine, instantiated here with goEngine, fill its RequestStatuses[RequestType][metrics.RequestStatusXX] with the new boolean values added to metrics.Labels
 	VerifyMetrics(t, "RequestStatuses.OpenRTB2.OK", goEngine.RequestStatuses[metrics.ReqTypeORTB2Web][metrics.RequestStatusOK].Count(), 5)
-	VerifyMetrics(t, "RequestStatuses.Legacy.OK", goEngine.RequestStatuses[metrics.ReqTypeLegacy][metrics.RequestStatusOK].Count(), 0)
 	VerifyMetrics(t, "RequestStatuses.AMP.OK", goEngine.RequestStatuses[metrics.ReqTypeAMP][metrics.RequestStatusOK].Count(), 0)
 	VerifyMetrics(t, "RequestStatuses.AMP.BlacklistedAcctOrApp", goEngine.RequestStatuses[metrics.ReqTypeAMP][metrics.RequestStatusBlacklisted].Count(), 1)
 	VerifyMetrics(t, "RequestStatuses.Video.OK", goEngine.RequestStatuses[metrics.ReqTypeVideo][metrics.RequestStatusOK].Count(), 0)
