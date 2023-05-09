@@ -10,14 +10,18 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
+	gpplib "github.com/prebid/go-gpp"
+	gppConstants "github.com/prebid/go-gpp/constants"
 	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
+	gppPrivacy "github.com/prebid/prebid-server/privacy/gpp"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/prebid/prebid-server/util/httputil"
+	stringutil "github.com/prebid/prebid-server/util/stringutil"
 )
 
 const (
@@ -101,9 +105,19 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 			return
 		}
 
+		gdprRequestInfo, err := extractGDPRInfo(query)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(err.Error()))
+			metricsEngine.RecordSetUid(metrics.SetUidBadRequest)
+			so.Errors = []error{err}
+			so.Status = http.StatusBadRequest
+			return
+		}
+
 		tcf2Cfg := tcf2CfgBuilder(cfg.GDPR.TCF2, account.GDPR)
 
-		if shouldReturn, status, body := preventSyncsGDPR(query.Get("gdpr"), query.Get("gdpr_consent"), gdprPermsBuilder, tcf2Cfg); shouldReturn {
+		if shouldReturn, status, body := preventSyncsGDPR(gdprRequestInfo, gdprPermsBuilder, tcf2Cfg); shouldReturn {
 			w.WriteHeader(status)
 			w.Write([]byte(body))
 			switch status {
@@ -146,6 +160,60 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 			w.WriteHeader(http.StatusOK)
 		}
 	})
+}
+
+// extractGDPRInfo looks for the GDPR consent string and GDPR signal in the GPP query params
+// first and the 'gdpr' and 'gdpr_consent' query params second.
+func extractGDPRInfo(query url.Values) (gdpr.RequestInfo, error) {
+	var gdprSignal gdpr.Signal = gdpr.SignalNo
+	var gdprConsent string = query.Get("gdpr_consent")
+	var signalSet bool = false
+
+	// Signal
+	if gppSID := stringutil.StrToInt8Slice(query.Get("gpp_sid")); len(gppSID) > 0 {
+		if gppPrivacy.IsSIDInList(gppSID, gppConstants.SectionTCFEU2) {
+			gdprSignal = gdpr.SignalYes
+			signalSet = true
+		}
+	}
+
+	if !signalSet {
+		gdprQuerySignal := query.Get("gdpr")
+		if gdprQuerySignal != "" && gdprQuerySignal != "0" && gdprQuerySignal != "1" {
+			return gdpr.RequestInfo{}, errors.New("the gdpr query param must be either 0 or 1. You gave " + gdprQuerySignal)
+		}
+
+		if gdprQuerySignal == "1" && gdprConsent == "" {
+			return gdpr.RequestInfo{}, errors.New("gdpr_consent is required when gdpr=1")
+		}
+		if i, err := strconv.Atoi(gdprQuerySignal); err == nil {
+			gdprSignal = gdpr.Signal(i)
+		}
+	}
+
+	// Consent
+	var gpp gpplib.GppContainer
+	gppString := query.Get("gpp")
+	if len(gppString) > 0 {
+		var err error
+		gpp, err = gpplib.Parse(gppString)
+		if err != nil {
+			return gdpr.RequestInfo{}, err
+		}
+	}
+
+	if i := gppPrivacy.IndexOfSID(gpp, gppConstants.SectionTCFEU2); i >= 0 {
+		gdprConsent = gpp.Sections[i].GetValue()
+	}
+
+	if gdprConsent == "" && gdprSignal == gdpr.SignalYes {
+		return gdpr.RequestInfo{}, errors.New("gdpr_consent is required when gdpr=1")
+	}
+
+	return gdpr.RequestInfo{
+		Consent:    gdprConsent,
+		GDPRSignal: gdprSignal,
+	}, nil
 }
 
 func getSyncer(query url.Values, syncersByKey map[string]usersync.Syncer) (usersync.Syncer, error) {
@@ -216,26 +284,7 @@ func checkChromeBrowserVersion(ua string, index int, chromeStrLength int) bool {
 	return result
 }
 
-func preventSyncsGDPR(gdprEnabled string, gdprConsent string, permsBuilder gdpr.PermissionsBuilder, tcf2Cfg gdpr.TCF2ConfigReader) (shouldReturn bool, status int, body string) {
-	if gdprEnabled != "" && gdprEnabled != "0" && gdprEnabled != "1" {
-		return true, http.StatusBadRequest, "the gdpr query param must be either 0 or 1. You gave " + gdprEnabled
-	}
-
-	if gdprEnabled == "1" && gdprConsent == "" {
-		return true, http.StatusBadRequest, "gdpr_consent is required when gdpr=1"
-	}
-
-	gdprSignal := gdpr.SignalAmbiguous
-
-	if i, err := strconv.Atoi(gdprEnabled); err == nil {
-		gdprSignal = gdpr.Signal(i)
-	}
-
-	gdprRequestInfo := gdpr.RequestInfo{
-		Consent:    gdprConsent,
-		GDPRSignal: gdprSignal,
-	}
-
+func preventSyncsGDPR(gdprRequestInfo gdpr.RequestInfo, permsBuilder gdpr.PermissionsBuilder, tcf2Cfg gdpr.TCF2ConfigReader) (shouldReturn bool, status int, body string) {
 	perms := permsBuilder(tcf2Cfg, gdprRequestInfo)
 
 	allowed, err := perms.HostCookiesAllowed(context.Background())
