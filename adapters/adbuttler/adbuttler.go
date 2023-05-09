@@ -20,6 +20,8 @@ const (
 	ZONE_ID                       = "zone_id"
 	ACCOUNT_ID                    = "account_id"
 	SEARCHTYPE_DEFAULT            = "exact"
+	SEARCHTYPE_EXACT              = "exact"
+	SEARCHTYPE_BROAD              = "broad"
 	SEARCHTYPE                    = "search_type"
 	PAGE_SOURCE                   = "page_source"
 	USER_AGE					  = "user_age"
@@ -30,43 +32,50 @@ const (
 	COUNTRY                       = "country"
 	REGION                        = "region"
 	CITY                          = "city"
+	CATEGORY                      = "category"
+	BRAND                          = "brand"
+
+	DATATYE_INT                   = 1
+	DATATYE_FLOAT                 = 2
+	DATATYE_STRING                = 3
+	DATATYE_BOOL                  = 4
+
 )
 
 type AdButtlerAdapter struct {
 	endpoint *template.Template
 }
 
-
 // ExtImpFilteringSubCategory - Impression Filtering SubCategory Extension
 type ExtImpFilteringSubCategory struct {
-	Name  *string   `json:"name,omitempty"`
-	Value []*string `json:"value,omitempty"`
+	Name  string   `json:"name,omitempty"`
+	Value []string `json:"value,omitempty"`
 }
 
 // ExtImpPreferred - Impression Preferred Extension
 type ExtImpPreferred struct {
-	ProductID *string  `json:"pid,omitempty"`
-	Rating    *float64 `json:"rating,omitempty"`
+	ProductID string  `json:"pid,omitempty"`
+	Rating    float64 `json:"rating,omitempty"`
 }
 
 // ExtImpFiltering - Impression Filtering Extension
 type ExtImpFiltering struct {
-	Category    []*string                     `json:"category,omitempty"`
-	Brand       []*string                     `json:"brand,omitempty"`
+	Category    []string                     `json:"category,omitempty"`
+	Brand       []string                     `json:"brand,omitempty"`
 	SubCategory []*ExtImpFilteringSubCategory `json:"subcategory,omitempty"`
 }
 
 // ExtImpTargeting - Impression Targeting Extension
 type ExtImpTargeting struct {
-	Name  *string   `json:"name,omitempty"`
-	Value []*string `json:"value,omitempty"`
-	Type  *int      `json:"type,omitempty"`
+	Name  string   `json:"name,omitempty"`
+	Value string   `json:"value,omitempty"`
+	Type  int      `json:"type,omitempty"`
 }
 
 type ExtCustomConfig struct {
-	Key   *string `json:"key,omitempty"`
-	Value *string `json:"value,omitempty"`
-	Type  *int    `json:"type,omitempty"`
+	Key   string `json:"key,omitempty"`
+	Value string `json:"value,omitempty"`
+	Type  int    `json:"type,omitempty"`
 }
 
 // ImpExtensionCommerce - Impression Commerce Extension
@@ -84,39 +93,36 @@ type ExtImpCommerce struct {
 	ComParams   *CommerceParams        `json:"commerce,omitempty"`
 	Bidder *ExtBidderCommerce          `json:"bidder,omitempty"`
 }
-
 // UserExtensionCommerce - User Commerce Extension
 type ExtUserCommerce struct {
-	IsAuthenticated *bool   `json:"is_authenticated,omitempty"`
+	IsAuthenticated bool   `json:"is_authenticated,omitempty"`
 	Consent         *string `json:"consent,omitempty"`
 }
 
 // SiteExtensionCommerce - Site Commerce Extension
 type ExtSiteCommerce struct {
-	Page *string `json:"page,omitempty"`
+	Page *string `json:"page_name,omitempty"`
 }
 
 // AppExtensionCommerce - App Commerce Extension
 type ExtAppCommerce struct {
-	Page *string `json:"page,omitempty"`
+	Page *string `json:"page_name,omitempty"`
 }
 
 type ExtBidderCommerce struct {
-	PrebidBidderName  *string            `json:"prebidname,omitempty"`
-	BidderCode        *string            `json:"biddercode,omitempty"`
-	HostName          *string            `json:"hostname,omitempty"`
+	PrebidBidderName  string            `json:"prebidname,omitempty"`
+	BidderCode        string            `json:"biddercode,omitempty"`
+	HostName          string            `json:"hostname,omitempty"`
 	CustomConfig      []*ExtCustomConfig `json:"config,omitempty"`
 }
 
 type ExtBidCommerce struct {
-	ProductId  *string              `json:"productid,omitempty"`
-	ClickUrl        *string         `json:"curl,omitempty"`
-	ConversionUrl        *string            `json:"purl,omitempty"`
-	ClickPrice        *float64            `json:"clickprice,omitempty"`
-	Rate          *float64             `json:"rate,omitempty"`
-
+	ProductId        string               `json:"productid,omitempty"`
+	ClickUrl         string               `json:"curl,omitempty"`
+	ConversionUrl    string               `json:"purl,omitempty"`
+	ClickPrice       float64              `json:"clickprice,omitempty"`
+	Rate             float64              `json:"rate,omitempty"`
 }
-
 
 const MAX_COUNT = 10
 const COMMERCE_DEFAULT_HOSTNAME = "pubMatic"
@@ -182,12 +188,12 @@ func GetDummyBids(impUrl , clickUrl , conversionUrl, seatName string, requestCou
 		productid := GetRandomProductID()
 		campaignID := GetRandomCampaignID()
 		bidPrice := GetRandomBidPrice()
-		clikcPrice := GetRandomClickPrice()
+		clickPrice := GetRandomClickPrice()
 		bidID := GetDefaultBidID(seatName) + "_" + strconv.Itoa(i)
 		impID := ImpID + "_" + strconv.Itoa(i)
 		bidExt := &ExtBidCommerce{
-			ProductId:  &productid,
-			ClickPrice: &clikcPrice,
+			ProductId:  productid,
+			ClickPrice: clickPrice,
 		}
 		
 		bid := &openrtb2.Bid {
@@ -233,10 +239,10 @@ func GetDummyBids_NoBid(impUrl , clickUrl , conversionUrl, seatName string, requ
 		newCurl := clickUrl + "_ImpID=" +bidID
 		newPurl := conversionUrl + "_ImpID=" +bidID
 		bidExt := &ExtBidCommerce{
-			ProductId:  &productid,
-			ClickUrl: &newCurl,
-			ConversionUrl: &newPurl,
-			ClickPrice: &clickPrice,
+			ProductId:  productid,
+			ClickUrl: newCurl,
+			ConversionUrl: newPurl,
+			ClickPrice: clickPrice,
 			
 		}
 		
@@ -276,7 +282,7 @@ func GetHostName(internalRequest *openrtb2.BidRequest) string {
 	json.Unmarshal(internalRequest.Ext, &extension)
 	json.Unmarshal(extension["prebid"], &preBidExt)
 	json.Unmarshal(internalRequest.Imp[0].Ext, &commerceExt)
-	return *commerceExt.Bidder.BidderCode
+	return commerceExt.Bidder.BidderCode
 }
 
 // Builder builds a new instance of the AdButtler adapter for the given bidder with the given config.

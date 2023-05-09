@@ -9,7 +9,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type AdButlerRequest struct { 
+type AdButlerResponse struct { 
 	Status      string                  `json:"search,omitempty"`
 	SearchType        string                  `json:"search_type,omitempty"`
 	Params            map[string][]string     `json:"params,omitempty"`
@@ -43,9 +43,9 @@ func (a *AdButtlerAdapter) MakeBids(internalRequest *openrtb2.BidRequest, extern
 	customConfig := commerceExt.Bidder.CustomConfig
 	Nobid := false
 	for _, eachCustomConfig := range customConfig {
-		if *eachCustomConfig.Key == "no_bid"{
+		if eachCustomConfig.Key == "no_bid"{
 			//fff
-			val := *eachCustomConfig.Value
+			val := eachCustomConfig.Value
 			if val == "true" {
 				Nobid = true
 			}
