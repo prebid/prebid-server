@@ -1042,7 +1042,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("tmax_adjustments.amp_max", 900)
 	v.SetDefault("tmax_adjustments.bidder_response_min", 700)
 	v.SetDefault("tmax_adjustments.bidder_network_latency_buffer", 100)
-	v.SetDefault("tmax_adjustments.upstream_response_duration", 100)
+	v.SetDefault("tmax_adjustments.pbs_response_preparation_duration", 100)
 
 	/* IPv4
 	/*  Site Local: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
@@ -1541,8 +1541,8 @@ type TmaxAdjustments struct {
 	// PBS will subtract the bidder_network_latency_buffer from the endpoint's tmax to account for network delays between PBS and the bidder server
 	BidderNetworkLatencyBuffer int `mapstructure:"bidder_network_latency_buffer"`
 	// The duration needed to prepare PBS's response for an upstream client
-	// PBS will subtract the upstream_response_duration from the endpoint's tmax to account for time needed for adapter's MakeBids() calls and PBS processing to prepare auction response
-	UpstreamResponseDuration int `mapstructure:"upstream_response_duration"`
+	// PBS will subtract the pbs_response_preparation_duration from the endpoint's tmax to account for time needed for adapter's MakeBids() calls and PBS processing to prepare auction response
+	PBSResponsePreparationDuration int `mapstructure:"pbs_response_preparation_duration"`
 }
 
 func (adj *TmaxAdjustments) validate(errs []error) []error {
