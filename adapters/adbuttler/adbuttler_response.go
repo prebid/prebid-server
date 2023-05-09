@@ -18,7 +18,7 @@ type AdButlerBeacon struct {
 }
 
 type AdButlerBid struct {
-	CPCBid         float64                `json:"cpc_bid,omitempty"`
+	CPCBid         string                 `json:"cpc_bid,omitempty"`
 	CPCSpend       float64                `json:"cpc_spend,omitempty"`
     CampaignID     string                 `json:"campaign_id,omitempty"`
 	ProductData    map[string]string      `json:"item,omitempty"`
