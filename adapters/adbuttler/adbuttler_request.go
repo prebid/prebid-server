@@ -10,22 +10,22 @@ import (
 
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/adapters/koddi"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type AdButlerRequest struct {
-	SearchString      string            `json:"search,omitempty"`
-	SearchType        string            `json:"search_type,omitempty"`
-	Params            map[string][]string `json:"params,omitempty"`
-	Target            map[string]interface{} `json:"_abdk_json,omitempty"`
-	Limit             int               `json:"limit,omitempty"`
-	Source            int64             `json:"source,omitempty"`
-	UserID            string            `json:"udb_uid,omitempty"`
-	IP                string            `json:"ip,omitempty"`
-	UserAgent         string            `json:"ua,omitempty"`
-	Referrer          string            `json:"referrer,omitempty"`
-	FloorCPC          float64           `json:"bid_floor_cpc,omitempty"`
+type AdButlerRequest struct { 
+	SearchString      string                  `json:"search,omitempty"`
+	SearchType        string                  `json:"search_type,omitempty"`
+	Params            map[string][]string     `json:"params,omitempty"`
+	Identifiers       []string                `json:"identifiers,omitempty"`
+	Target            map[string]interface{}  `json:"_abdk_json,omitempty"`
+	Limit             int                     `json:"limit,omitempty"`
+	Source            int64                   `json:"source,omitempty"`
+	UserID            string                  `json:"udb_uid,omitempty"`
+	IP                string                  `json:"ip,omitempty"`
+	UserAgent         string                  `json:"ua,omitempty"`
+	Referrer          string                  `json:"referrer,omitempty"`
+	FloorCPC          float64                 `json:"bid_floor_cpc,omitempty"`
 }
 
 
@@ -36,7 +36,7 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 	
 	var extension map[string]json.RawMessage
 	var preBidExt openrtb_ext.ExtRequestPrebid
-	var commerceExt koddi.ExtImpCommerce
+	var commerceExt ExtImpCommerce
 	var accountID, zoneID string
 
 	json.Unmarshal(request.Ext, &extension)
@@ -57,6 +57,7 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 	}
 
 	adButlerReq.Params = commerceExt.ComParams.Filtering
+	adButlerReq.Identifiers = commerceExt.ComParams.Preferred
 	adButlerReq.Target = commerceExt.ComParams.Targeting
 
 	if adButlerReq.Target == nil {
@@ -66,7 +67,7 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 	if request.User != nil {
 		if(request.User.Yob > 0) {
 			now := time.Now()	
-			age := now.Year() - request.User.Yob
+			age := int64(now.Year()) - request.User.Yob
 			adButlerReq.Target[USER_AGE] = age
 		}
 
@@ -155,7 +156,7 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 	endPoint,_ := a.buildEndpointURL(accountID, zoneID)
 	errs := make([]error, 0, len(request.Imp))
 
-	reqJSON, err := json.Marshal(request)
+	reqJSON, err := json.Marshal(adButlerReq)
 	if err != nil {
 		errs = append(errs, err)
 		return nil, errs

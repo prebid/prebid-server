@@ -11,6 +11,7 @@ import (
 
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/adapters/adbuttler"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -21,84 +22,6 @@ type KoddiAdapter struct {
 	impurl *template.Template
 	clickurl *template.Template
 	conversionurl *template.Template
-}
-
-// ExtImpFilteringSubCategory - Impression Filtering SubCategory Extension
-type ExtImpFilteringSubCategory struct {
-	Name  *string   `json:"name,omitempty"`
-	Value []*string `json:"value,omitempty"`
-}
-
-// ExtImpPreferred - Impression Preferred Extension
-type ExtImpPreferred struct {
-	ProductID *string  `json:"pid,omitempty"`
-	Rating    *float64 `json:"rating,omitempty"`
-}
-
-// ExtImpFiltering - Impression Filtering Extension
-type ExtImpFiltering struct {
-	Category    []*string                     `json:"category,omitempty"`
-	Brand       []*string                     `json:"brand,omitempty"`
-	SubCategory []*ExtImpFilteringSubCategory `json:"subcategory,omitempty"`
-}
-
-// ExtImpTargeting - Impression Targeting Extension
-type ExtImpTargeting struct {
-	Name  *string   `json:"name,omitempty"`
-	Value []*string `json:"value,omitempty"`
-	Type  *int      `json:"type,omitempty"`
-}
-
-type ExtCustomConfig struct {
-	Key   *string `json:"key,omitempty"`
-	Value *string `json:"value,omitempty"`
-	Type  *int    `json:"type,omitempty"`
-}
-// ImpExtensionCommerce - Impression Commerce Extension
-type CommerceParams struct {
-	SlotsRequested *int               `json:"slots_requested,omitempty"`
-	SearchTerm     string            `json:"search_term,omitempty"`
-	Preferred      []string `json:"preferred,omitempty"`
-	Filtering      map[string][]string   `json:"filtering,omitempty"`
-	Targeting      map[string]interface{} `json:"targeting,omitempty"`
-}
-
-// ImpExtensionCommerce - Impression Commerce Extension
-type ExtImpCommerce struct {
-	ComParams   *CommerceParams        `json:"commerce,omitempty"`
-	Bidder *ExtBidderCommerce          `json:"bidder,omitempty"`
-}
-
-// UserExtensionCommerce - User Commerce Extension
-type ExtUserCommerce struct {
-	IsAuthenticated *bool   `json:"is_authenticated,omitempty"`
-	Consent         *string `json:"consent,omitempty"`
-}
-
-// SiteExtensionCommerce - Site Commerce Extension
-type ExtSiteCommerce struct {
-	Page *string `json:"page,omitempty"`
-}
-
-// AppExtensionCommerce - App Commerce Extension
-type ExtAppCommerce struct {
-	Page *string `json:"page,omitempty"`
-}
-
-type ExtBidderCommerce struct {
-	PrebidBidderName  *string            `json:"prebidname,omitempty"`
-	BidderCode        *string            `json:"biddercode,omitempty"`
-	HostName          *string            `json:"hostname,omitempty"`
-	CustomConfig      []*ExtCustomConfig `json:"config,omitempty"`
-}
-
-type ExtBidCommerce struct {
-	ProductId  *string              `json:"productid,omitempty"`
-	ClickUrl        *string         `json:"curl,omitempty"`
-	ConversionUrl        *string            `json:"purl,omitempty"`
-	ClickPrice        *float64            `json:"clickprice,omitempty"`
-	Rate          *float64             `json:"rate,omitempty"`
-
 }
 
 const MAX_COUNT = 10
@@ -115,7 +38,7 @@ func GetRequestSlotCount(internalRequest *openrtb2.BidRequest)int {
 	impArray := internalRequest.Imp
 	reqCount := 0
 	for _, eachImp := range impArray {
-		var commerceExt ExtImpCommerce
+		var commerceExt adbuttler.ExtImpCommerce
 		json.Unmarshal(eachImp.Ext, &commerceExt)
 		reqCount += *commerceExt.ComParams.SlotsRequested
 	}
@@ -169,7 +92,7 @@ func GetDummyBids(impUrl , clickUrl , conversionUrl, seatName string, requestCou
 		clikcPrice := GetRandomClickPrice()
 		bidID := GetDefaultBidID(seatName) + "_" + strconv.Itoa(i)
 		impID := ImpID + "_" + strconv.Itoa(i)
-		bidExt := &ExtBidCommerce{
+		bidExt := &adbuttler.ExtBidCommerce{
 			ProductId:  &productid,
 			ClickPrice: &clikcPrice,
 		}
@@ -216,7 +139,7 @@ func GetDummyBids_NoBid(impUrl , clickUrl , conversionUrl, seatName string, requ
 		newIurl := impUrl + "_ImpID=" +bidID
 		newCurl := clickUrl + "_ImpID=" +bidID
 		newPurl := conversionUrl + "_ImpID=" +bidID
-		bidExt := &ExtBidCommerce{
+		bidExt := &adbuttler.ExtBidCommerce{
 			ProductId:  &productid,
 			ClickUrl: &newCurl,
 			ConversionUrl: &newPurl,
@@ -256,7 +179,7 @@ func GetDummyBids_NoBid(impUrl , clickUrl , conversionUrl, seatName string, requ
 func GetHostName(internalRequest *openrtb2.BidRequest) string {
 	var extension map[string]json.RawMessage
 	var preBidExt openrtb_ext.ExtRequestPrebid
-	var commerceExt ExtImpCommerce
+	var commerceExt adbuttler.ExtImpCommerce
 	json.Unmarshal(internalRequest.Ext, &extension)
 	json.Unmarshal(extension["prebid"], &preBidExt)
 	json.Unmarshal(internalRequest.Imp[0].Ext, &commerceExt)
@@ -267,7 +190,7 @@ func (a *KoddiAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 	host := "localhost"
 	var extension map[string]json.RawMessage
 	var preBidExt openrtb_ext.ExtRequestPrebid
-	var commerceExt ExtImpCommerce
+	var commerceExt adbuttler.ExtImpCommerce
 	json.Unmarshal(request.Ext, &extension)
 	json.Unmarshal(extension["prebid"], &preBidExt)
 	json.Unmarshal(request.Imp[0].Ext, &commerceExt)

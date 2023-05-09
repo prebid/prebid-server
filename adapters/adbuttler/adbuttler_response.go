@@ -10,6 +10,20 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
+type AdButlerRequest struct { 
+	Status      string                  `json:"search,omitempty"`
+	SearchType        string                  `json:"search_type,omitempty"`
+	Params            map[string][]string     `json:"params,omitempty"`
+	Identifiers       []string                `json:"identifiers,omitempty"`
+	Target            map[string]interface{}  `json:"_abdk_json,omitempty"`
+	Limit             int                     `json:"limit,omitempty"`
+	Source            int64                   `json:"source,omitempty"`
+	UserID            string                  `json:"udb_uid,omitempty"`
+	IP                string                  `json:"ip,omitempty"`
+	UserAgent         string                  `json:"ua,omitempty"`
+	Referrer          string                  `json:"referrer,omitempty"`
+	FloorCPC          float64                 `json:"bid_floor_cpc,omitempty"`
+}
 
 func (a *AdButtlerAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var errors []error 
@@ -23,7 +37,7 @@ func (a *AdButtlerAdapter) MakeBids(internalRequest *openrtb2.BidRequest, extern
 	requestCount := koddi.GetRequestSlotCount(internalRequest)
 	var extension map[string]json.RawMessage
 	var preBidExt openrtb_ext.ExtRequestPrebid
-	var commerceExt koddi.ExtImpCommerce
+	var commerceExt ExtImpCommerce
 	json.Unmarshal(internalRequest.Ext, &extension)
 	json.Unmarshal(extension["prebid"], &preBidExt)
 	json.Unmarshal(internalRequest.Imp[0].Ext, &commerceExt)
@@ -46,7 +60,7 @@ func (a *AdButtlerAdapter) MakeBids(internalRequest *openrtb2.BidRequest, extern
 		return responseF,nil
 	}
 	
-	err := fmt.Errorf("No Bids available for the given request from Koddi")
+	err := fmt.Errorf("No Bids available for the given request from adbuttler")
 	errors = append(errors,err )
 	return nil, errors
 }
