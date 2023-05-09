@@ -2,6 +2,7 @@ package emtv
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -80,6 +81,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			adapterRequests = append(adapterRequests, adapterReq)
 		}
 	}
+
+	if len(adapterRequests) == 0 {
+		return nil, []error{errors.New("found no valid impressions")}
+	}
+
 	return adapterRequests, nil
 }
 
