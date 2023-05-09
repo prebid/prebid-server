@@ -26,12 +26,12 @@ func NewStringIndexBasedReplacer() Replacer {
 	}
 }
 
-// constructTemplate create a template  which store starting and ending indexes of each macro in the order they apper in event url.
-// constructTemplate scans the url from start to end and looks for pair of delimiter(##).
-// The string between the delimiter(##) pair is a macro key in valid event url.
-// The index position after the first delimiter(##) is stored as starting index of macro and
-// the index position before the second delimiter(##) is stored as ending index of the macro in the template.
-// Scanning stop when start and end index position of all the macros are stored or no more macros are present in the url.
+// constructTemplate func finds index bounds of all macros in an input string where macro format is ##data##.
+// constructTemplate func returns two arrays with start indexes and end indexes for all macros found in the input string.
+// Start index of the macro points to the index of the delimiter(##) start.
+// End index of the macro points to the end index of the delimiter.
+// For the valid input string number of start and end indexes should be equal, and they should not intersect.
+// This approach shows better performance results compare to standard GoLang string replacer.
 func constructTemplate(url string) urlMetaTemplate {
 	currentIndex := 0
 	tmplt := urlMetaTemplate{
@@ -60,11 +60,11 @@ func constructTemplate(url string) urlMetaTemplate {
 	return tmplt
 }
 
-// Replace will replace the macros in the given  event url.
-// Check if urlMetaTemplate exist in cache for given url if not construct the template (start and end index info of each macro) and store in cache.
-// Iterate over the startingIndices in the template and for each starting index and corresponding ending index, extract macro from the url.
-// Get the value of the macro from the macroProvider.
-// Prepend the url string present before the macro to the macro value and append the remaining url.
+// Replace function replaces macros in a given string with the data from macroProvider and returns modified input string.
+// If a given string was previously processed this function fetches its metadata from the cache.
+// If input string is not found in cache then template metadata will be created.
+// Iterates over start and end indexes of the template arrays and extracts macro name from the input string.
+// Gets the value of the extracted macro from the macroProvider. Replaces macro with corresponding value.
 func (s *stringIndexBasedReplacer) Replace(url string, macroProvider *macroProvider) (string, error) {
 	tmplt := s.getTemplate(url)
 
