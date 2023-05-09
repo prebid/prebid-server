@@ -55,13 +55,13 @@
                          "creativeType":"NativeX",
                          "height":1800,
                          "publisherNameIdentifier":"wishabi-test-publisher",
-                         "requestId":"test-request-id",
+                         "requestId":"test-imp-id",
                          "width":300
                       },
                       "properties":{
                          "contentCode":"publisher-test"
                       },
-                      "siteId":1.243066e+06,
+                      "siteId":1243066,
                       "zoneIds":[
                          285431
                       ]
