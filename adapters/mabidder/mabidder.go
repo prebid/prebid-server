@@ -1,4 +1,4 @@
-package foo
+package mabidder
 
 import (
 	"encoding/json"
