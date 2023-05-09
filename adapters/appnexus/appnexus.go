@@ -381,8 +381,6 @@ func getMediaTypeForBid(bid *appnexusBidExt) (openrtb_ext.BidType, error) {
 		return openrtb_ext.BidTypeBanner, nil
 	case 1:
 		return openrtb_ext.BidTypeVideo, nil
-	case 2:
-		return openrtb_ext.BidTypeAudio, nil
 	case 3:
 		return openrtb_ext.BidTypeNative, nil
 	default:
