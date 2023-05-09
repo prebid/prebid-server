@@ -8,7 +8,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/PubMatic-OpenWrap/openrtb/v16/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/macros"
@@ -131,7 +131,7 @@ func GetRequestSlotCount(internalRequest *openrtb2.BidRequest)int {
 	impArray := internalRequest.Imp
 	reqCount := 0
 	for _, eachImp := range impArray {
-		var commerceExt adbuttler.ExtImpCommerce
+		var commerceExt ExtImpCommerce
 		json.Unmarshal(eachImp.Ext, &commerceExt)
 		reqCount += *commerceExt.ComParams.SlotsRequested
 	}
@@ -185,7 +185,7 @@ func GetDummyBids(impUrl , clickUrl , conversionUrl, seatName string, requestCou
 		clikcPrice := GetRandomClickPrice()
 		bidID := GetDefaultBidID(seatName) + "_" + strconv.Itoa(i)
 		impID := ImpID + "_" + strconv.Itoa(i)
-		bidExt := &adbuttler.ExtBidCommerce{
+		bidExt := &ExtBidCommerce{
 			ProductId:  &productid,
 			ClickPrice: &clikcPrice,
 		}
@@ -232,7 +232,7 @@ func GetDummyBids_NoBid(impUrl , clickUrl , conversionUrl, seatName string, requ
 		newIurl := impUrl + "_ImpID=" +bidID
 		newCurl := clickUrl + "_ImpID=" +bidID
 		newPurl := conversionUrl + "_ImpID=" +bidID
-		bidExt := &adbuttler.ExtBidCommerce{
+		bidExt := &ExtBidCommerce{
 			ProductId:  &productid,
 			ClickUrl: &newCurl,
 			ConversionUrl: &newPurl,
@@ -272,7 +272,7 @@ func GetDummyBids_NoBid(impUrl , clickUrl , conversionUrl, seatName string, requ
 func GetHostName(internalRequest *openrtb2.BidRequest) string {
 	var extension map[string]json.RawMessage
 	var preBidExt openrtb_ext.ExtRequestPrebid
-	var commerceExt adbuttler.ExtImpCommerce
+	var commerceExt ExtImpCommerce
 	json.Unmarshal(internalRequest.Ext, &extension)
 	json.Unmarshal(extension["prebid"], &preBidExt)
 	json.Unmarshal(internalRequest.Imp[0].Ext, &commerceExt)
