@@ -185,6 +185,7 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 	adButlerReq.UserAgent = request.Device.UA
 	adButlerReq.Limit = *commerceExt.ComParams.SlotsRequested
 
+	//Temporarily for Debugging
 	u, _ := json.Marshal(adButlerReq)
 	fmt.Println(string(u))
 
