@@ -468,7 +468,7 @@ tmax_adjustments:
   video_max: 900
   amp_max: 900
   bidder_response_min: 700
-  bidder_latency_adjustment: 100
+  bidder_network_latency_buffer: 100
   upstream_response_duration: 100
 `)
 
@@ -554,7 +554,7 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "tmax_adjustments.video_max", 900, cfg.TmaxAdjustments.VideoMax)
 	cmpInts(t, "tmax_adjustments.amp_max", 900, cfg.TmaxAdjustments.AmpMax)
 	cmpInts(t, "tmax_adjustments.bidder_response_min", 700, cfg.TmaxAdjustments.BidderResponseMin)
-	cmpInts(t, "tmax_adjustments.bidder_latency_adjustment", 100, cfg.TmaxAdjustments.BidderLatencyAdjustment)
+	cmpInts(t, "tmax_adjustments.bidder_network_latency_buffer", 100, cfg.TmaxAdjustments.BidderNetworkLatencyBuffer)
 	cmpInts(t, "tmax_adjustments.upstream_response_duration", 100, cfg.TmaxAdjustments.UpstreamResponseDuration)
 
 	//Assert the price floor values
@@ -3298,13 +3298,13 @@ func TestTmaxAdjustmentsValidate(t *testing.T) {
 			errs:         []error{},
 			expectedErrs: []error{},
 			adjustments: &TmaxAdjustments{
-				Enabled:                  true,
-				AuctionMax:               900,
-				VideoMax:                 900,
-				AmpMax:                   900,
-				BidderResponseMin:        700,
-				BidderLatencyAdjustment:  100,
-				UpstreamResponseDuration: 100,
+				Enabled:                    true,
+				AuctionMax:                 900,
+				VideoMax:                   900,
+				AmpMax:                     900,
+				BidderResponseMin:          700,
+				BidderNetworkLatencyBuffer: 100,
+				UpstreamResponseDuration:   100,
 			},
 		},
 	}

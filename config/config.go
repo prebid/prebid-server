@@ -1041,7 +1041,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("tmax_adjustments.video_max", 900)
 	v.SetDefault("tmax_adjustments.amp_max", 900)
 	v.SetDefault("tmax_adjustments.bidder_response_min", 700)
-	v.SetDefault("tmax_adjustments.bidder_latency_adjustment", 100)
+	v.SetDefault("tmax_adjustments.bidder_network_latency_buffer", 100)
 	v.SetDefault("tmax_adjustments.upstream_response_duration", 100)
 
 	/* IPv4
@@ -1538,8 +1538,8 @@ type TmaxAdjustments struct {
 	// PBS will not send an HTTP request to the bidder server, if the time needed for PBS processing, adapter's MakeRequests() implementation, building Prebid headers, and applying GZip compression (if needed) is less than bidder_response_min.
 	BidderResponseMin int `mapstructure:"bidder_response_min"`
 	// Adjustment factor providing a buffer for network delays between PBS and the bidder server
-	// PBS will subtract the bidder_latency_adjustment from the endpoint's tmax to account for network delays between PBS and the bidder server
-	BidderLatencyAdjustment int `mapstructure:"bidder_latency_adjustment"`
+	// PBS will subtract the bidder_network_latency_buffer from the endpoint's tmax to account for network delays between PBS and the bidder server
+	BidderNetworkLatencyBuffer int `mapstructure:"bidder_network_latency_buffer"`
 	// The duration needed to prepare PBS's response for an upstream client
 	// PBS will subtract the upstream_response_duration from the endpoint's tmax to account for time needed for adapter's MakeBids() calls and PBS processing to prepare auction response
 	UpstreamResponseDuration int `mapstructure:"upstream_response_duration"`
