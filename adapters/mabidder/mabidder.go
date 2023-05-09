@@ -16,7 +16,7 @@ type adapter struct {
 	endpoint string
 }
 
-// Builder builds a new instance of the Foo adapter for the given bidder with the given config.
+// Builder builds a new instance of the Mabidder adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
@@ -67,7 +67,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	bidResponse.Currency = response.Cur
 	for _, seatBid := range response.SeatBid {
 		//for i, bid := range seatBid.Bid {
-		for i, _ := range seatBid.Bid {
+		for i := range seatBid.Bid {
 			b := &adapters.TypedBid{
 				Bid: &seatBid.Bid[i],
 				//BidType: getMediaTypeForBid(bid),
