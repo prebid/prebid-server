@@ -219,9 +219,7 @@ func buildBid(decision *InlineModel, impId string) *openrtb2.Bid {
 		if decision.Contents[0].Data.Width != 0 {
 			bid.W = decision.Contents[0].Data.Width
 		}
-		if decision.Contents[0].Data.Width != 0 {
-			bid.H = decision.Contents[0].Data.Height
-		}
+		bid.H = 0
 	}
 	return bid
 }
