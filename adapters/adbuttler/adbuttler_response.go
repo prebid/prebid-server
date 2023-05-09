@@ -6,7 +6,6 @@ import (
 
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/adapters/koddi"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -27,14 +26,14 @@ type AdButlerRequest struct {
 
 func (a *AdButtlerAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var errors []error 
-	hostName := koddi.GetHostName(internalRequest)
+	hostName := GetHostName(internalRequest)
 	if len(hostName) == 0 {
-		hostName = koddi.COMMERCE_DEFAULT_HOSTNAME
+		hostName = COMMERCE_DEFAULT_HOSTNAME
 	}
 	iurl := hostName
 	curl := hostName
 	purl := hostName
-	requestCount := koddi.GetRequestSlotCount(internalRequest)
+	requestCount := GetRequestSlotCount(internalRequest)
 	var extension map[string]json.RawMessage
 	var preBidExt openrtb_ext.ExtRequestPrebid
 	var commerceExt ExtImpCommerce
@@ -56,7 +55,7 @@ func (a *AdButtlerAdapter) MakeBids(internalRequest *openrtb2.BidRequest, extern
 	impiD := internalRequest.Imp[0].ID
 	
 	if !Nobid {
-		responseF := koddi.GetDummyBids(iurl, curl, purl, "adbuttler", requestCount, impiD)
+		responseF := GetDummyBids(iurl, curl, purl, "adbuttler", requestCount, impiD)
 		return responseF,nil
 	}
 	
