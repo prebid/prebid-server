@@ -15,27 +15,24 @@ import (
 
 func TestOptOutCookie(t *testing.T) {
 	cookie := &Cookie{
-		uids:     make(map[string]uidWithExpiry),
-		optOut:   true,
-		birthday: timestamp(),
+		uids:   make(map[string]uidWithExpiry),
+		optOut: true,
 	}
 	ensureConsistency(t, cookie)
 }
 
 func TestEmptyOptOutCookie(t *testing.T) {
 	cookie := &Cookie{
-		uids:     make(map[string]uidWithExpiry),
-		optOut:   true,
-		birthday: timestamp(),
+		uids:   make(map[string]uidWithExpiry),
+		optOut: true,
 	}
 	ensureConsistency(t, cookie)
 }
 
 func TestEmptyCookie(t *testing.T) {
 	cookie := &Cookie{
-		uids:     make(map[string]uidWithExpiry),
-		optOut:   false,
-		birthday: timestamp(),
+		uids:   make(map[string]uidWithExpiry),
+		optOut: false,
 	}
 	ensureConsistency(t, cookie)
 }
@@ -69,8 +66,7 @@ func TestRejectAudienceNetworkCookie(t *testing.T) {
 		uids: map[string]uidWithExpiry{
 			"audienceNetwork": newTempId("0", 10),
 		},
-		optOut:   false,
-		birthday: timestamp(),
+		optOut: false,
 	}
 	parsed := ParseCookie(raw.ToHTTPCookie(90 * 24 * time.Hour))
 	if parsed.HasLiveSync("audienceNetwork") {
@@ -98,9 +94,8 @@ func TestOptOutReset(t *testing.T) {
 
 func TestOptIn(t *testing.T) {
 	cookie := &Cookie{
-		uids:     make(map[string]uidWithExpiry),
-		optOut:   true,
-		birthday: timestamp(),
+		uids:   make(map[string]uidWithExpiry),
+		optOut: true,
 	}
 
 	cookie.SetOptOut(false)
@@ -130,7 +125,7 @@ func TestParseCorruptedCookieJSON(t *testing.T) {
 }
 
 func TestParseNilSyncMap(t *testing.T) {
-	cookieJSON := "{\"bday\":123,\"optout\":true}"
+	cookieJSON := "{\"optoutt\":true}"
 	cookieData := base64.URLEncoding.EncodeToString([]byte(cookieJSON))
 	raw := http.Cookie{
 		Name:  uidCookieName,
@@ -168,8 +163,7 @@ func TestParseCookieFromRequestOptOut(t *testing.T) {
 			"foo": newTempId("fooID", 1),
 			"bar": newTempId("barID", 2),
 		},
-		optOut:   false,
-		birthday: timestamp(),
+		optOut: false,
 	}).ToHTTPCookie(24 * time.Hour)
 
 	testCases := []struct {
@@ -348,8 +342,7 @@ func TestTrimCookiesClosestExpirationDates(t *testing.T) {
 			"k6": newTempId("12345678901234567890123456789012345678901234567890", 3),
 			"k7": newTempId("abcdefghijklmnopqrstuvwxyz", 2),
 		},
-		optOut:   false,
-		birthday: timestamp(),
+		optOut: false,
 	}
 
 	type aTest struct {
@@ -359,8 +352,8 @@ func TestTrimCookiesClosestExpirationDates(t *testing.T) {
 	testCases := []aTest{
 		{maxCookieSize: 2000, expKeys: []string{"k1", "k2", "k3", "k4", "k5", "k6", "k7"}}, //1 don't trim, set
 		{maxCookieSize: 0, expKeys: []string{"k1", "k2", "k3", "k4", "k5", "k6", "k7"}},    //2 unlimited size: don't trim, set
-		{maxCookieSize: 800, expKeys: []string{"k1", "k5", "k4", "k3"}},                    //3 trim to size and set
-		{maxCookieSize: 500, expKeys: []string{"k1", "k3"}},                                //4 trim to size and set
+		{maxCookieSize: 800, expKeys: []string{"k1", "k5", "k4", "k3", "k6"}},              //3 trim to size and set
+		{maxCookieSize: 500, expKeys: []string{"k1", "k4", "k3"}},                          //4 trim to size and set
 		{maxCookieSize: 200, expKeys: []string{}},                                          //5 insufficient size, trim to zero length and set
 		{maxCookieSize: -100, expKeys: []string{}},                                         //6 invalid size, trim to zero length and set
 	}
@@ -459,8 +452,7 @@ func newSampleCookie() *Cookie {
 			"adnxs":   newTempId("123", 10),
 			"rubicon": newTempId("456", 10),
 		},
-		optOut:   false,
-		birthday: timestamp(),
+		optOut: false,
 	}
 }
 

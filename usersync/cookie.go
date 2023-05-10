@@ -23,9 +23,8 @@ const uidTTL = 14 * 24 * time.Hour
 // To get an instance of this from a request, use ParseCookieFromRequest.
 // To write an instance onto a response, use SetCookieOnResponse.
 type Cookie struct {
-	uids     map[string]uidWithExpiry
-	optOut   bool
-	birthday *time.Time
+	uids   map[string]uidWithExpiry
+	optOut bool
 }
 
 // uidWithExpiry bundles the UID with an Expiration date.
@@ -83,8 +82,7 @@ func ParseCookie(httpCookie *http.Cookie) *Cookie {
 // NewCookie returns a new empty cookie.
 func NewCookie() *Cookie {
 	return &Cookie{
-		uids:     make(map[string]uidWithExpiry),
-		birthday: timestamp(),
+		uids: make(map[string]uidWithExpiry),
 	}
 }
 
@@ -229,14 +227,12 @@ type cookieJson struct {
 	LegacyUIDs map[string]string        `json:"uids,omitempty"`
 	UIDs       map[string]uidWithExpiry `json:"tempUIDs,omitempty"`
 	OptOut     bool                     `json:"optout,omitempty"`
-	Birthday   *time.Time               `json:"bday,omitempty"`
 }
 
 func (cookie *Cookie) MarshalJSON() ([]byte, error) {
 	return json.Marshal(cookieJson{
-		UIDs:     cookie.uids,
-		OptOut:   cookie.optOut,
-		Birthday: cookie.birthday,
+		UIDs:   cookie.uids,
+		OptOut: cookie.optOut,
 	})
 }
 
@@ -253,7 +249,6 @@ func (cookie *Cookie) UnmarshalJSON(b []byte) error {
 	err := json.Unmarshal(b, &cookieContract)
 	if err == nil {
 		cookie.optOut = cookieContract.OptOut
-		cookie.birthday = cookieContract.Birthday
 
 		if cookie.optOut {
 			cookie.uids = make(map[string]uidWithExpiry)
@@ -287,9 +282,4 @@ func (cookie *Cookie) UnmarshalJSON(b []byte) error {
 		}
 	}
 	return err
-}
-
-func timestamp() *time.Time {
-	birthday := time.Now()
-	return &birthday
 }
