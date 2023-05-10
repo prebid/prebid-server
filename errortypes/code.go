@@ -26,6 +26,7 @@ const (
 	AlternateBidderCodeWarningCode
 	MultiBidWarningCode
 	AdServerTargetingWarningCode
+	BidAdjustmentWarningCode
 )
 
 // Coder provides an error or warning code with severity.
