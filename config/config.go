@@ -153,7 +153,6 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 		glog.Warning(`cfg.TmaxAdjustments.Enabled will currently not do anything as tmax adjustment feature is still under development.`)
 		cfg.TmaxAdjustments.Enabled = false
 	}
-	errs = cfg.TmaxAdjustments.validate(errs)
 
 	errs = cfg.Experiment.validate(errs)
 	errs = cfg.BidderInfos.validate(errs)
@@ -1037,9 +1036,6 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("debug.override_token", "")
 
 	v.SetDefault("tmax_adjustments.enabled", false)
-	v.SetDefault("tmax_adjustments.auction_max", 900)
-	v.SetDefault("tmax_adjustments.video_max", 900)
-	v.SetDefault("tmax_adjustments.amp_max", 900)
 	v.SetDefault("tmax_adjustments.bidder_response_min", 700)
 	v.SetDefault("tmax_adjustments.bidder_network_latency_buffer", 100)
 	v.SetDefault("tmax_adjustments.pbs_response_preparation_duration", 100)
@@ -1525,15 +1521,6 @@ func isValidCookieSize(maxCookieSize int) error {
 type TmaxAdjustments struct {
 	// Flag indicating whether the tmax feature is enabled or not
 	Enabled bool `mapstructure:"enabled"`
-	// The maximum allowable tmax for the auction endpoint
-	// The tmax value used for the auction endpoint will be the minimum of the auction_max and tmax specified in the incoming request
-	AuctionMax uint `mapstructure:"auction_max"`
-	// The maximum allowable tmax for the video endpoint
-	// The tmax value used for the video endpoint will be the minimum of the video_max and tmax specified in the incoming request
-	VideoMax uint `mapstructure:"video_max"`
-	// The maximum allowable tmax for the AMP endpoint
-	// The tmax value used for the AMP endpoint will be the minimum of the amp_max and tmax specified in the incoming request
-	AmpMax uint `mapstructure:"amp_max"`
 	// The minimum duration needed for a bidder to respond back
 	// PBS will not send an HTTP request to the bidder server, if the time needed for PBS processing, adapter's MakeRequests() implementation, building Prebid headers, and applying GZip compression (if needed) is less than bidder_response_min.
 	BidderResponseMin uint `mapstructure:"bidder_response_min"`
@@ -1543,45 +1530,4 @@ type TmaxAdjustments struct {
 	// The duration needed to prepare PBS's response for an upstream client
 	// PBS will subtract the pbs_response_preparation_duration from the endpoint's tmax to account for time needed for adapter's MakeBids() calls and PBS processing to prepare auction response
 	PBSResponsePreparationDuration uint `mapstructure:"pbs_response_preparation_duration"`
-}
-
-func (adj *TmaxAdjustments) validate(errs []error) []error {
-	if adj.Enabled {
-		if adj.AuctionMax <= 0 {
-			errs = append(errs, fmt.Errorf("tmax_adjustments.auction_max cannot be less than or equal to zero"))
-		}
-
-		if adj.VideoMax <= 0 {
-			errs = append(errs, fmt.Errorf("tmax_adjustments.video_max cannot be less than or equal to zero"))
-		}
-
-		if adj.AmpMax <= 0 {
-			errs = append(errs, fmt.Errorf("tmax_adjustments.amp_max cannot be less than or equal to zero"))
-		}
-
-		if adj.BidderResponseMin == 0 {
-			errs = append(errs, fmt.Errorf("tmax_adjustments.bidder_response_min cannot be less than or equal to zero"))
-		}
-	}
-	return errs
-}
-
-func (adj *TmaxAdjustments) LimitAuctionTimeout(requested time.Duration, requestType RequestType) time.Duration {
-	if !adj.Enabled {
-		return requested
-	}
-
-	serverTmax := adj.AuctionMax
-	if requestType == ReqTypeAMP {
-		serverTmax = adj.AmpMax
-	} else if requestType == ReqTypeVideo {
-		serverTmax = adj.VideoMax
-	}
-
-	max := time.Duration(serverTmax)
-	if requested == 0 || requested > max {
-		return max
-	}
-
-	return requested
 }

@@ -3,7 +3,6 @@ package config
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"net"
 	"os"
 	"strconv"
@@ -464,9 +463,6 @@ account_defaults:
         max_schema_dims: 5
 tmax_adjustments:
   enabled: true
-  auction_max: 900
-  video_max: 900
-  amp_max: 900
   bidder_response_min: 700
   bidder_network_latency_buffer: 100
   pbs_response_preparation_duration: 100
@@ -555,9 +551,6 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "validations.max_creative_width", 0, int(cfg.Validations.MaxCreativeWidth))
 	cmpInts(t, "validations.max_creative_height", 0, int(cfg.Validations.MaxCreativeHeight))
 	cmpBools(t, "tmax_adjustments.enabled", false, cfg.TmaxAdjustments.Enabled) // Tmax adjustment feature is still under development. Therefore enabled flag is set to false
-	cmpUnsignedInts(t, "tmax_adjustments.auction_max", 900, cfg.TmaxAdjustments.AuctionMax)
-	cmpUnsignedInts(t, "tmax_adjustments.video_max", 900, cfg.TmaxAdjustments.VideoMax)
-	cmpUnsignedInts(t, "tmax_adjustments.amp_max", 900, cfg.TmaxAdjustments.AmpMax)
 	cmpUnsignedInts(t, "tmax_adjustments.bidder_response_min", 700, cfg.TmaxAdjustments.BidderResponseMin)
 	cmpUnsignedInts(t, "tmax_adjustments.bidder_network_latency_buffer", 100, cfg.TmaxAdjustments.BidderNetworkLatencyBuffer)
 	cmpUnsignedInts(t, "tmax_adjustments.pbs_response_preparation_duration", 100, cfg.TmaxAdjustments.PBSResponsePreparationDuration)
@@ -3267,101 +3260,6 @@ func TestMigrateConfigEventsEnabled(t *testing.T) {
 			assert.Equal(t, tc.expectedOldFieldValue, updatedOldFieldValue)
 			assert.Nil(t, updatedNewFieldValue)
 			assert.Nil(t, tc.expectedNewFieldValue)
-		})
-	}
-}
-
-func TestTmaxAdjustmentsValidate(t *testing.T) {
-	tests := []struct {
-		description  string
-		errs         []error
-		expectedErrs []error
-		adjustments  *TmaxAdjustments
-	}{
-		{
-			description:  "tmax-feature-is-not-enabled",
-			errs:         []error{},
-			expectedErrs: []error{},
-			adjustments:  &TmaxAdjustments{},
-		},
-		{
-			description: "returns-validation-errors-when-tmax-values-are-not-specified",
-			errs: []error{
-				fmt.Errorf("missing max_request_size"),
-			},
-			expectedErrs: []error{
-				fmt.Errorf("missing max_request_size"),
-				fmt.Errorf("tmax_adjustments.auction_max cannot be less than or equal to zero"),
-				fmt.Errorf("tmax_adjustments.video_max cannot be less than or equal to zero"),
-				fmt.Errorf("tmax_adjustments.amp_max cannot be less than or equal to zero"),
-				fmt.Errorf("tmax_adjustments.bidder_response_min cannot be less than or equal to zero"),
-			},
-			adjustments: &TmaxAdjustments{Enabled: true},
-		},
-		{
-			description:  "returns-no-error-when-tmax-values-are-specified",
-			errs:         []error{},
-			expectedErrs: []error{},
-			adjustments: &TmaxAdjustments{
-				Enabled:                        true,
-				AuctionMax:                     900,
-				VideoMax:                       900,
-				AmpMax:                         900,
-				BidderResponseMin:              700,
-				BidderNetworkLatencyBuffer:     100,
-				PBSResponsePreparationDuration: 100,
-			},
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			err := test.adjustments.validate(test.errs)
-			assert.Equal(t, test.expectedErrs, err)
-		})
-	}
-}
-func TestLimitAuctionTimeout(t *testing.T) {
-	tests := []struct {
-		description     string
-		requested       time.Duration
-		tmaxAdjustments *TmaxAdjustments
-		requestType     RequestType
-		expected        time.Duration
-	}{
-		{
-			description:     "use-requested-duration-when-tmax.enabled-is-false",
-			requested:       500,
-			tmaxAdjustments: &TmaxAdjustments{},
-			requestType:     ReqTypeORTB2Web,
-			expected:        500,
-		},
-		{
-			description: "requested-duration-is-less-than-server-tmax",
-			requested:   300,
-			tmaxAdjustments: &TmaxAdjustments{
-				Enabled: true,
-				AmpMax:  600,
-			},
-			requestType: ReqTypeAMP,
-			expected:    300,
-		},
-		{
-			description: "requested-duration-is-greater-than-server-tmax",
-			requested:   9000,
-			tmaxAdjustments: &TmaxAdjustments{
-				Enabled:  true,
-				VideoMax: 600,
-			},
-			requestType: ReqTypeVideo,
-			expected:    600,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			duration := test.tmaxAdjustments.LimitAuctionTimeout(test.requested, test.requestType)
-			assert.Equal(t, test.expected, duration)
 		})
 	}
 }
