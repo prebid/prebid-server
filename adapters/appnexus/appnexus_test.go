@@ -1,6 +1,7 @@
 package appnexus
 
 import (
+	"net/url"
 	"testing"
 
 	"github.com/prebid/prebid-server/adapters/adapterstest"
@@ -24,10 +25,14 @@ func TestJsonSamples(t *testing.T) {
 }
 
 func TestMemberQueryParam(t *testing.T) {
-	uriWithMember := appendMemberId("http://ib.adnxs.com/openrtb2?query_param=true", "102")
+	uri, err := url.Parse("http://ib.adnxs.com/openrtb2?query_param=true")
+	if err != nil {
+		t.Errorf("URL cannot be parsed")
+	}
+	uriWithMember := appendMemberId(*uri, "102")
 	expected := "http://ib.adnxs.com/openrtb2?member_id=102&query_param=true"
-	if uriWithMember != expected {
-		t.Errorf("appendMemberId() failed on URI with query string. Expected %s, got %s", expected, uriWithMember)
+	if uriWithMember.String() != expected {
+		t.Errorf("appendMemberId() failed on URI with query string. Expected %s, got %s", expected, uriWithMember.String())
 	}
 }
 

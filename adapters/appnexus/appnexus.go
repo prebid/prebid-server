@@ -25,7 +25,7 @@ import (
 const defaultPlatformID int = 5
 
 type adapter struct {
-	URI             string
+	URI             url.URL
 	hbSource        int
 	randomGenerator randomutil.RandomGenerator
 }
@@ -34,8 +34,13 @@ var maxImpsPerReq = 10
 
 // Builder builds a new instance of the AppNexus adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	uri, err := url.Parse(config.Endpoint)
+	if err != nil {
+		return nil, err
+	}
+
 	bidder := &adapter{
-		URI:             config.Endpoint,
+		URI:             *uri,
 		hbSource:        resolvePlatformID(config.PlatformID),
 		randomGenerator: randomutil.RandomNumberGenerator{},
 	}
@@ -149,11 +154,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	// If impressions number per pod is more than maxImpsPerReq - divide those imps to several requests but keep pod id the same
 	// If  adpodId feature disabled and impressions number per pod is more than maxImpsPerReq  - divide those imps to several requests but do not include ad pod id
 	if isVIDEO == 1 && *shouldGenerateAdPodId {
-		requests, errors := a.buildAdPodRequests(imps, request, reqExt, requestURI)
+		requests, errors := a.buildAdPodRequests(imps, request, reqExt, requestURI.String())
 		return requests, append(errs, errors...)
 	}
 
-	requests, errors := splitRequests(imps, request, reqExt, requestURI)
+	requests, errors := splitRequests(imps, request, reqExt, requestURI.String())
 	return requests, append(errs, errors...)
 }
 
@@ -396,12 +401,11 @@ func (a *adapter) findIabCategoryForBid(bid *appnexusBidExt) (string, bool) {
 	return iabCategory, ok
 }
 
-func appendMemberId(uri string, memberId string) string {
-	u, _ := url.Parse(uri)
-	q := u.Query()
+func appendMemberId(uri url.URL, memberId string) url.URL {
+	q := uri.Query()
 	q.Set("member_id", memberId)
-	u.RawQuery = q.Encode()
-	return u.String()
+	uri.RawQuery = q.Encode()
+	return uri
 }
 
 func buildDisplayManageVer(req *openrtb2.BidRequest) string {
