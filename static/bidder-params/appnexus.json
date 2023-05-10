@@ -28,7 +28,8 @@
     "keywords": {
       "anyOf": [
         {
-          "type": "string"
+          "type": "string",
+          "minLength": 1
         },
         {
           "type": "array",
