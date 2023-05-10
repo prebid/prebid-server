@@ -9,27 +9,31 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/gofrs/uuid"
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/httputil"
 )
 
-const BannerType = "banner"
-const InlineDivName = "inline"
-const FlippBidder = "flipp"
-const DefaultCurrency = "USD"
+const (
+	bannerType      = "banner"
+	inlineDivName   = "inline"
+	flippBidder     = "flipp"
+	defaultCurrency = "USD"
+)
 
-var Count = int64(1)
-var AdTypes = []int64{4309, 641}
-var DtxTypes = []int64{5061}
+var (
+	count    int64 = 1
+	adTypes        = []int64{4309, 641}
+	dtxTypes       = []int64{5061}
+)
 
 type adapter struct {
 	endpoint string
 }
 
-// Builder builds a new instance of the Foo adapter for the given bidder with the given config.
+// Builder builds a new instance of the Flipp adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
@@ -93,11 +97,11 @@ func (a *adapter) processImp(request *openrtb2.BidRequest, imp openrtb2.Imp) (*a
 	}
 
 	placement := Placement{
-		DivName: InlineDivName,
+		DivName: inlineDivName,
 		SiteID:  &flippExtParams.SiteID,
 		AdTypes: getAdTypes(flippExtParams.CreativeType),
 		ZoneIds: flippExtParams.ZoneIds,
-		Count:   &Count,
+		Count:   &count,
 		Prebid:  buildPrebidRequest(flippExtParams, request, imp),
 		Properties: &Properties{
 			ContentCode: &contentCode,
@@ -161,21 +165,11 @@ func buildPrebidRequest(flippExtParams openrtb_ext.ImpExtFlipp, request *openrtb
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if responseData.StatusCode == http.StatusNoContent {
+	if httputil.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
 	}
 
-	if responseData.StatusCode == http.StatusBadRequest {
-		err := &errortypes.BadInput{
-			Message: "Unexpected status code: 400. Bad request from publisher. Run with request.debug = 1 for more info.",
-		}
-		return nil, []error{err}
-	}
-
-	if responseData.StatusCode != http.StatusOK {
-		err := &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info.", responseData.StatusCode),
-		}
+	if err := httputil.CheckResponseStatusCodeForErrors(responseData); err != nil {
 		return nil, []error{err}
 	}
 
@@ -185,13 +179,13 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
-	bidResponse.Currency = DefaultCurrency
+	bidResponse.Currency = defaultCurrency
 	for _, imp := range request.Imp {
 		for _, decision := range campaignResponseBody.Decisions.Inline {
 			if *decision.Prebid.RequestID == imp.ID {
 				b := &adapters.TypedBid{
 					Bid:     buildBid(decision, imp.ID),
-					BidType: openrtb_ext.BidType(BannerType),
+					BidType: openrtb_ext.BidType(bannerType),
 				}
 				bidResponse.Bids = append(bidResponse.Bids, b)
 			}
@@ -202,9 +196,9 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 func getAdTypes(creativeType string) []int64 {
 	if creativeType == "DTX" {
-		return DtxTypes
+		return dtxTypes
 	}
-	return AdTypes
+	return adTypes
 }
 
 func buildBid(decision *InlineModel, impId string) *openrtb2.Bid {

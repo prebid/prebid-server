@@ -25,6 +25,9 @@
     "userKey": {
       "type": "string",
       "format": "uuid"
+    },
+    "options": {
+      "type": "object"
     }
   },
   "required": [
