@@ -93,12 +93,12 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		}
 	}
 
-	gdprSignal, err := extractGDPR(req.BidRequest)
+	gdprSignal, err := getGDPR(req)
 	if err != nil {
 		errs = append(errs, err)
 	}
 
-	consent, err := extractConsent(req.BidRequest, gpp)
+	consent, err := getConsent(req, gpp)
 	if err != nil {
 		errs = append(errs, err)
 	}
