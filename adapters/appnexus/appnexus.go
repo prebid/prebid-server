@@ -21,15 +21,16 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const defaultPlatformID int = 5
+const (
+	defaultPlatformID int = 5
+	maxImpsPerReq         = 10
+)
 
 type adapter struct {
 	URI             string
 	hbSource        int
 	randomGenerator randomutil.RandomGenerator
 }
-
-var maxImpsPerReq = 10
 
 // Builder builds a new instance of the AppNexus adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
