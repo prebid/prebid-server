@@ -16,16 +16,14 @@ func GetPriceBucket(bid openrtb2.Bid, targetingData *targetData) string {
 
 	config := targetingData.priceGranularity //assign default price granularity
 	if targetingData.mediaTypePriceGranularity != nil {
-		bidType, err := getMediaTypeForBid(bid)
-		if err != nil {
-			//assign default price granularity if error is not nil, meaning bid type is not found
-			config = targetingData.priceGranularity
-		} else if bidType == openrtb_ext.BidTypeVideo && targetingData.mediaTypePriceGranularity.Video != nil {
-			config = *targetingData.mediaTypePriceGranularity.Video
-		} else if bidType == openrtb_ext.BidTypeBanner && targetingData.mediaTypePriceGranularity.Banner != nil {
-			config = *targetingData.mediaTypePriceGranularity.Banner
-		} else if bidType == openrtb_ext.BidTypeNative && targetingData.mediaTypePriceGranularity.Native != nil {
-			config = *targetingData.mediaTypePriceGranularity.Native
+		if bidType, err := getMediaTypeForBid(bid); err == nil {
+			if bidType == openrtb_ext.BidTypeBanner && targetingData.mediaTypePriceGranularity.Banner != nil {
+				config = *targetingData.mediaTypePriceGranularity.Banner
+			} else if bidType == openrtb_ext.BidTypeVideo && targetingData.mediaTypePriceGranularity.Video != nil {
+				config = *targetingData.mediaTypePriceGranularity.Video
+			} else if bidType == openrtb_ext.BidTypeNative && targetingData.mediaTypePriceGranularity.Native != nil {
+				config = *targetingData.mediaTypePriceGranularity.Native
+			}
 		}
 	}
 	precision := *config.Precision

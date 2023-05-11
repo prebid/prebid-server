@@ -46,7 +46,7 @@ func setDefaultsTargeting(targeting *openrtb_ext.ExtRequestTargeting) bool {
 
 	modified := false
 
-	if newPG, updated := adjustDefaultsPriceGranularity(targeting.PriceGranularity); updated {
+	if newPG, updated := setDefaultsPriceGranularity(targeting.PriceGranularity); updated {
 		modified = true
 		targeting.PriceGranularity = newPG
 	}
@@ -56,19 +56,19 @@ func setDefaultsTargeting(targeting *openrtb_ext.ExtRequestTargeting) bool {
 	// only in case targeting.MediaTypePriceGranularity.Video|Banner|Native != nil.
 	if targeting.MediaTypePriceGranularity != nil {
 		if targeting.MediaTypePriceGranularity.Video != nil {
-			if newVideoPG, updated := adjustDefaultsPriceGranularity(targeting.MediaTypePriceGranularity.Video); updated {
+			if newVideoPG, updated := setDefaultsPriceGranularity(targeting.MediaTypePriceGranularity.Video); updated {
 				modified = true
 				targeting.MediaTypePriceGranularity.Video = newVideoPG
 			}
 		}
 		if targeting.MediaTypePriceGranularity.Banner != nil {
-			if newBannerPG, updated := adjustDefaultsPriceGranularity(targeting.MediaTypePriceGranularity.Banner); updated {
+			if newBannerPG, updated := setDefaultsPriceGranularity(targeting.MediaTypePriceGranularity.Banner); updated {
 				modified = true
 				targeting.MediaTypePriceGranularity.Banner = newBannerPG
 			}
 		}
 		if targeting.MediaTypePriceGranularity.Native != nil {
-			if newNativePG, updated := adjustDefaultsPriceGranularity(targeting.MediaTypePriceGranularity.Native); updated {
+			if newNativePG, updated := setDefaultsPriceGranularity(targeting.MediaTypePriceGranularity.Native); updated {
 				modified = true
 				targeting.MediaTypePriceGranularity.Native = newNativePG
 			}
@@ -88,17 +88,12 @@ func setDefaultsTargeting(targeting *openrtb_ext.ExtRequestTargeting) bool {
 	return modified
 }
 
-func adjustDefaultsPriceGranularity(priceGranularity *openrtb_ext.PriceGranularity) (*openrtb_ext.PriceGranularity, bool) {
-	if priceGranularity == nil || len(priceGranularity.Ranges) == 0 {
-		priceGranularity = ptrutil.ToPtr(openrtb_ext.NewPriceGranularityDefault())
-		return priceGranularity, true
-	} else if setDefaultsPriceGranularity(priceGranularity) {
-		return priceGranularity, true
+func setDefaultsPriceGranularity(pg *openrtb_ext.PriceGranularity) (*openrtb_ext.PriceGranularity, bool) {
+	if pg == nil || len(pg.Ranges) == 0 {
+		pg = ptrutil.ToPtr(openrtb_ext.NewPriceGranularityDefault())
+		return pg, true
 	}
-	return priceGranularity, false
-}
 
-func setDefaultsPriceGranularity(pg *openrtb_ext.PriceGranularity) bool {
 	modified := false
 
 	if pg.Precision == nil {
@@ -110,7 +105,7 @@ func setDefaultsPriceGranularity(pg *openrtb_ext.PriceGranularity) bool {
 		modified = true
 	}
 
-	return modified
+	return pg, modified
 }
 
 func setDefaultsPriceGranularityRange(ranges []openrtb_ext.GranularityRange) bool {

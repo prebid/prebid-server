@@ -390,9 +390,9 @@ func TestSetDefaultsPriceGranularity(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			actualModified := setDefaultsPriceGranularity(test.givenGranularity)
+			pg, actualModified := setDefaultsPriceGranularity(test.givenGranularity)
 			assert.Equal(t, test.expectedModified, actualModified)
-			assert.Equal(t, test.expectedGranularity, test.givenGranularity)
+			assert.Equal(t, test.expectedGranularity, pg)
 		})
 	}
 }
