@@ -27,6 +27,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -219,6 +220,8 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		return
 	}
 
+	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
+
 	secGPC := r.Header.Get("Sec-GPC")
 
 	auctionRequest := &exchange.AuctionRequest{
@@ -235,6 +238,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		PubID:                      labels.PubID,
 		HookExecutor:               hookExecutor,
 		QueryParams:                r.URL.Query(),
+		TCF2Config:                 tcf2Config,
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
