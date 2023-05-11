@@ -191,7 +191,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 				bid.Cat = []string{iabCategory}
 			} else if len(bid.Cat) > 1 {
 				//create empty categories array to force bid to be rejected
-				bid.Cat = make([]string, 0)
+				bid.Cat = []string{}
 			}
 
 			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
