@@ -327,7 +327,6 @@ func buildRequestImp(imp *openrtb2.Imp, appnexusExt *openrtb_ext.ExtImpAppnexus,
 			bannerCopy.Pos = adcom1.PositionBelowFold.Ptr()
 		}
 
-		// Fixes #307
 		if bannerCopy.W == nil && bannerCopy.H == nil && len(bannerCopy.Format) > 0 {
 			firstFormat := bannerCopy.Format[0]
 			bannerCopy.W = &(firstFormat.W)
