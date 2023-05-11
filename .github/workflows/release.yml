@@ -101,7 +101,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
       - name: Publish to docker Hub
         run: |
-          docker push docker.io/onkarvh/prebid-server:${{ needs.publish-tag.outputs.releaseTag }}
+          docker push docker.io/onkarvh/ps:${{ needs.publish-tag.outputs.releaseTag }}
 
   publish-release:
     name: Publish release
