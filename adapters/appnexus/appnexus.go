@@ -349,11 +349,9 @@ func buildRequestImp(imp *openrtb2.Imp, appnexusExt *openrtb_ext.ExtImpAppnexus,
 	}}
 
 	var err error
-	if imp.Ext, err = json.Marshal(&impExt); err != nil {
-		return err
-	}
-
-	return nil
+	imp.Ext, err = json.Marshal(&impExt)
+	
+	return err
 }
 
 func makeKeywordStr(keywords []*openrtb_ext.ExtImpAppnexusKeyVal) string {
