@@ -17,12 +17,12 @@ const (
 var gdprSignalError = &errortypes.BadInput{Message: "GDPR signal should be integer 0 or 1"}
 
 // StrSignalParse returns a parsed GDPR signal or a parse error.
-func StrSignalParse(strSignal string) (Signal, error) {
-	if strSignal == "" {
+func StrSignalParse(signal string) (Signal, error) {
+	if signal == "" {
 		return SignalAmbiguous, nil
 	}
 
-	i, err := strconv.Atoi(strSignal)
+	i, err := strconv.Atoi(signal)
 
 	if err != nil {
 		return SignalAmbiguous, gdprSignalError

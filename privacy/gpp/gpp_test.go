@@ -19,7 +19,7 @@ func TestIsSIDInList(t *testing.T) {
 		expected bool
 	}{
 		{
-			desc: "nil gppSID array, expect false",
+			desc: "nil_gppSID_array,_expect_false",
 			in: testInput{
 				gppSIDs: nil,
 				sid:     gppConstants.SectionTCFEU2,
@@ -27,7 +27,7 @@ func TestIsSIDInList(t *testing.T) {
 			expected: false,
 		},
 		{
-			desc: "empty gppSID array, expect false",
+			desc: "empty_gppSID_array, expect_false",
 			in: testInput{
 				gppSIDs: []int8{},
 				sid:     gppConstants.SectionTCFEU2,
@@ -35,7 +35,7 @@ func TestIsSIDInList(t *testing.T) {
 			expected: false,
 		},
 		{
-			desc: "SID not found in gppSID array, expect false",
+			desc: "SID_not_found_in_gppSID_array,_expect_false",
 			in: testInput{
 				gppSIDs: []int8{int8(8), int8(9)},
 				sid:     gppConstants.SectionTCFEU2,
@@ -43,7 +43,7 @@ func TestIsSIDInList(t *testing.T) {
 			expected: false,
 		},
 		{
-			desc: "SID found in gppSID array, expect true",
+			desc: "SID_found_in_gppSID_array,_expect_true",
 			in: testInput{
 				gppSIDs: []int8{int8(2)},
 				sid:     gppConstants.SectionTCFEU2,
@@ -52,10 +52,7 @@ func TestIsSIDInList(t *testing.T) {
 		},
 	}
 	for _, tc := range testCases {
-		// run
-		out := IsSIDInList(tc.in.gppSIDs, tc.in.sid)
-		// assertions
-		assert.Equal(t, tc.expected, out, tc.desc)
+		t.Run(tc.desc, func(t *testing.T) { assert.Equal(t, tc.expected, IsSIDInList(tc.in.gppSIDs, tc.in.sid)) })
 	}
 }
 
@@ -70,7 +67,7 @@ func TestIndexOfSID(t *testing.T) {
 		expected int
 	}{
 		{
-			desc: "Empty SectionTypes array, expect -1 out",
+			desc: "Empty_SectionTypes_array,_expect_-1_out",
 			in: testInput{
 				gpp: gpplib.GppContainer{},
 				sid: gppConstants.SectionTCFEU2,
@@ -78,7 +75,7 @@ func TestIndexOfSID(t *testing.T) {
 			expected: -1,
 		},
 		{
-			desc: "SID not found in SectionTypes array, expect -1 out",
+			desc: "SID_not_found_in_SectionTypes_array,_expect_-1_out",
 			in: testInput{
 				gpp: gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{gppConstants.SectionUSPV1}},
 				sid: gppConstants.SectionTCFEU2,
@@ -86,7 +83,7 @@ func TestIndexOfSID(t *testing.T) {
 			expected: -1,
 		},
 		{
-			desc: "SID matches an element in SectionTypes array, expect index 1 out",
+			desc: "SID_matches_an_element_in_SectionTypes_array,_expect_index_1_out",
 			in: testInput{
 				gpp: gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{gppConstants.SectionUSPV1, gppConstants.SectionTCFEU2}},
 				sid: gppConstants.SectionTCFEU2,
@@ -95,9 +92,6 @@ func TestIndexOfSID(t *testing.T) {
 		},
 	}
 	for _, tc := range testCases {
-		// run
-		out := IndexOfSID(tc.in.gpp, tc.in.sid)
-		// assertions
-		assert.Equal(t, tc.expected, out, tc.desc)
+		t.Run(tc.desc, func(t *testing.T) { assert.Equal(t, tc.expected, IndexOfSID(tc.in.gpp, tc.in.sid)) })
 	}
 }

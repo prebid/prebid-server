@@ -20,12 +20,10 @@ type Policy struct {
 
 // ReadFromRequestWrapper extracts the CCPA regulatory information from an OpenRTB bid request.
 func ReadFromRequestWrapper(req *openrtb_ext.RequestWrapper, gpp gpplib.GppContainer) (Policy, error) {
-	var consent string
 	var noSaleBidders []string
 	var gppSIDs []int8
 	var requestUSPrivacy string
-	var warn error = nil
-	var err error = nil
+	var warn error
 
 	if req == nil || req.BidRequest == nil {
 		return Policy{}, nil
@@ -36,7 +34,7 @@ func ReadFromRequestWrapper(req *openrtb_ext.RequestWrapper, gpp gpplib.GppConta
 		gppSIDs = req.BidRequest.Regs.GPPSID
 	}
 
-	consent, err = SelectCCPAConsent(requestUSPrivacy, gpp, gppSIDs)
+	consent, err := SelectCCPAConsent(requestUSPrivacy, gpp, gppSIDs)
 	if err != nil {
 		warn = &errortypes.Warning{
 			Message:     "regs.us_privacy consent does not match uspv1 in GPP, using regs.gpp",

@@ -45,8 +45,6 @@ func TestStrToInt8Slice(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		out := StrToInt8Slice(tt.in)
-
-		assert.Equal(t, tt.expected, out)
+		t.Run(tt.desc, func(t *testing.T) { assert.Equal(t, tt.expected, StrToInt8Slice(tt.in)) })
 	}
 }

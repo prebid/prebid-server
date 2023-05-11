@@ -5,6 +5,8 @@ import (
 	"strings"
 )
 
+// StrToInt8Slice breaks a string into a series of tokens using a comma as a delimiter but only
+// appends the tokens into the return array if tokens can be interpreted as an 'int8'
 func StrToInt8Slice(str string) []int8 {
 	var r []int8
 
