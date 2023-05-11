@@ -80,9 +80,32 @@ jobs:
     outputs:
       releaseTag: ${{ steps.release.outputs.tag }}
 
+  publish-docker-image:
+    name: Publish docker image
+    needs: publish-tag
+    if: contains(inputs.debug, 'false')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout prebid cache
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Build image
+        run: |
+          docker build --build-arg DEPLOY_VERSION=${{ needs.publish-tag.outputs.releaseTag }} -t docker.io/prebid/prebid-server:${{ needs.publish-tag.outputs.releaseTag }} .
+      - name: Login to docker Hub
+        if: contains(inputs.debug, 'false')
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+      - name: Publish to docker Hub
+        run: |
+          docker push docker.io/prebid/prebid-server:${{ needs.publish-tag.outputs.releaseTag }}
+
   publish-release:
     name: Publish release
-    needs: [publish-tag] 
+    needs: [publish-tag, publish-docker-image] 
     if: contains(inputs.debug, 'false')
     permissions:
       contents: write
