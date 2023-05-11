@@ -140,8 +140,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	reqExt.Appnexus.IsAMP = isAMP
 	reqExt.Appnexus.HeaderBiddingSource = a.hbSource + isVIDEO
 
-	imps := request.Imp
-
 	// For long form requests if adpodId feature enabled, adpod_id must be sent downstream.
 	// Adpod id is a unique identifier for pod
 	// All impressions in the same pod must have the same pod id in request extension
@@ -149,11 +147,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	// If impressions number per pod is more than maxImpsPerReq - divide those imps to several requests but keep pod id the same
 	// If  adpodId feature disabled and impressions number per pod is more than maxImpsPerReq  - divide those imps to several requests but do not include ad pod id
 	if isVIDEO == 1 && *shouldGenerateAdPodId {
-		requests, errors := a.buildAdPodRequests(imps, request, reqExt, requestURI)
+		requests, errors := a.buildAdPodRequests(request.Imp, request, reqExt, requestURI)
 		return requests, append(errs, errors...)
 	}
 
-	requests, errors := splitRequests(imps, request, reqExt, requestURI)
+	requests, errors := splitRequests(request.Imp, request, reqExt, requestURI)
 	return requests, append(errs, errors...)
 }
 
