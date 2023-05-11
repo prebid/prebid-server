@@ -137,6 +137,9 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 			if bidReq.Imp[0].Video != nil {
 				bidType = openrtb_ext.BidTypeVideo
 			}
+			if bidReq.Imp[0].Native != nil {
+				bidType = openrtb_ext.BidTypeNative
+			}
 
 			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
 				BidType: bidType,
