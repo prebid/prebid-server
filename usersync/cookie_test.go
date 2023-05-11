@@ -125,7 +125,7 @@ func TestParseCorruptedCookieJSON(t *testing.T) {
 }
 
 func TestParseNilSyncMap(t *testing.T) {
-	cookieJSON := "{\"optoutt\":true}"
+	cookieJSON := "{\"optout\":123}"
 	cookieData := base64.URLEncoding.EncodeToString([]byte(cookieJSON))
 	raw := http.Cookie{
 		Name:  uidCookieName,
