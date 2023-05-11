@@ -24,16 +24,12 @@ func TestJsonSamples(t *testing.T) {
 	adapterstest.RunJSONBidderTest(t, "appnexustest", bidder)
 }
 
-func TestMemberQueryParam(t *testing.T) {
+func TestAppendMemberID(t *testing.T) {
 	uri, err := url.Parse("http://ib.adnxs.com/openrtb2?query_param=true")
-	if err != nil {
-		t.Errorf("URL cannot be parsed")
-	}
+	assert.NoError(t, err, "Failed to parse URI with query string")
 	uriWithMember := appendMemberId(*uri, "102")
 	expected := "http://ib.adnxs.com/openrtb2?member_id=102&query_param=true"
-	if uriWithMember.String() != expected {
-		t.Errorf("appendMemberId() failed on URI with query string. Expected %s, got %s", expected, uriWithMember.String())
-	}
+	assert.Equal(t, expected, uriWithMember.String(), "Failed to append member id to URI with query string")
 }
 
 func TestBuilderWithPlatformID(t *testing.T) {
