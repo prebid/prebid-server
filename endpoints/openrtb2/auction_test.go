@@ -42,6 +42,8 @@ import (
 	"github.com/prebid/prebid-server/util/ptrutil"
 )
 
+const JsonFileExtension string = ".json"
+
 func TestJsonSampleRequests(t *testing.T) {
 	testSuites := []struct {
 		description          string
@@ -125,7 +127,7 @@ func TestJsonSampleRequests(t *testing.T) {
 			}
 
 			// Test suite will traverse the directory tree recursively and will only consider files with `json` extension
-			if !info.IsDir() && filepath.Ext(info.Name()) == ".json" {
+			if !info.IsDir() && filepath.Ext(info.Name()) == JsonFileExtension {
 				t.Run(tc.description, func(t *testing.T) {
 					runJsonBasedTest(t, path, tc.description)
 				})

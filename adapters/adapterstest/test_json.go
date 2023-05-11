@@ -20,6 +20,8 @@ import (
 	"github.com/yudai/gojsondiff/formatter"
 )
 
+const JsonFileExtension string = ".json"
+
 // RunJSONBidderTest is a helper method intended to unit test Bidders' adapters.
 // It requires that:
 //
@@ -80,7 +82,7 @@ func RunJSONBidderTest(t *testing.T, rootDir string, bidder adapters.Bidder) {
 			isVideoTest = true
 		}
 
-		if !info.IsDir() && approvedPath && filepath.Ext(info.Name()) == ".json" {
+		if !info.IsDir() && approvedPath && filepath.Ext(info.Name()) == JsonFileExtension {
 			specData, err := loadFile(path)
 			if err != nil {
 				t.Fatalf("Failed to load contents of file %s: %v", path, err)
