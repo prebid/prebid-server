@@ -13,24 +13,19 @@ type Policy struct {
 }
 
 func IsSIDInList(gppSIDs []int8, sid gppConstants.SectionID) bool {
-	var rc bool = false
-
 	for _, id := range gppSIDs {
 		if id == int8(sid) {
-			rc = true
-			break
+			return true
 		}
 	}
-	return rc
+	return false
 }
 
 func IndexOfSID(gpp gpplib.GppContainer, sid gppConstants.SectionID) int {
-	var rv int = -1
-
 	for i, id := range gpp.SectionTypes {
 		if id == sid {
 			return i
 		}
 	}
-	return rv
+	return -1
 }

@@ -83,7 +83,15 @@ func TestIntSignalParse(t *testing.T) {
 			},
 		},
 		{
-			desc:  "input in bounds, return valid signal and nil error",
+			desc:  "input in bounds equals signalNo, return signalNo and nil error",
+			input: 0,
+			expected: testOutput{
+				signal: SignalNo,
+				err:    nil,
+			},
+		},
+		{
+			desc:  "input in bounds equals signalYes, return signalYes and nil error",
 			input: 1,
 			expected: testOutput{
 				signal: SignalYes,
