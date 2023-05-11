@@ -1,9 +1,20 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
+    inputs:
+      releaseType:
+        type: choice
+        options:
+          - minor
+          - patch
+        default: minor
+        required: true
+        description: 'minor: v0.X.0, patch: v0.0.X'
+      debug:
+        type: boolean
+        default: true
+        description: 'executes the workflow in debug mode (skip the publishing tag, docker image and release steps)'
 
 jobs:
   release:
