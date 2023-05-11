@@ -31,59 +31,6 @@ type PriceFloorRules struct {
 	PriceFloorLocation string                 `json:"location,omitempty"`
 }
 
-type PriceFloorEndpoint struct {
-	URL string `json:"url,omitempty"`
-}
-
-type PriceFloorData struct {
-	Currency            string                 `json:"currency,omitempty"`
-	SkipRate            int                    `json:"skiprate,omitempty"`
-	FloorsSchemaVersion string                 `json:"floorsschemaversion,omitempty"`
-	ModelTimestamp      int                    `json:"modeltimestamp,omitempty"`
-	ModelGroups         []PriceFloorModelGroup `json:"modelgroups,omitempty"`
-	FloorProvider       string                 `json:"floorprovider,omitempty"`
-}
-
-type PriceFloorModelGroup struct {
-	Currency     string             `json:"currency,omitempty"`
-	ModelWeight  *int               `json:"modelweight,omitempty"`
-	ModelVersion string             `json:"modelversion,omitempty"`
-	SkipRate     int                `json:"skiprate,omitempty"`
-	Schema       PriceFloorSchema   `json:"schema,omitempty"`
-	Values       map[string]float64 `json:"values,omitempty"`
-	Default      float64            `json:"default,omitempty"`
-}
-type PriceFloorSchema struct {
-	Fields    []string `json:"fields,omitempty"`
-	Delimiter string   `json:"delimiter,omitempty"`
-}
-
-type PriceFloorEnforcement struct {
-	EnforceJS     *bool `json:"enforcejs,omitempty"`
-	EnforcePBS    *bool `json:"enforcepbs,omitempty"`
-	FloorDeals    *bool `json:"floordeals,omitempty"`
-	BidAdjustment *bool `json:"bidadjustment,omitempty"`
-	EnforceRate   int   `json:"enforcerate,omitempty"`
-}
-
-type ImpFloorExt struct {
-	FloorRule      string  `json:"floorrule,omitempty"`
-	FloorRuleValue float64 `json:"floorrulevalue,omitempty"`
-	FloorValue     float64 `json:"floorvalue,omitempty"`
-}
-type Price struct {
-	FloorMin    float64 `json:"floormin,omitempty"`
-	FloorMinCur string  `json:"floormincur,omitempty"`
-}
-
-type ExtImp struct {
-	Prebid *ImpExtPrebid `json:"prebid,omitempty"`
-}
-
-type ImpExtPrebid struct {
-	Floors Price `json:"floors,omitempty"`
-}
-
 // GetEnforcePBS will check if floors enforcement is enabled in request
 func (Floors *PriceFloorRules) GetEnforcePBS() bool {
 	if Floors != nil && Floors.Enforcement != nil && Floors.Enforcement.EnforcePBS != nil {
@@ -124,6 +71,29 @@ func (Floors *PriceFloorRules) GetEnabled() bool {
 	return true
 }
 
+type PriceFloorEndpoint struct {
+	URL string `json:"url,omitempty"`
+}
+
+type PriceFloorData struct {
+	Currency            string                 `json:"currency,omitempty"`
+	SkipRate            int                    `json:"skiprate,omitempty"`
+	FloorsSchemaVersion string                 `json:"floorsschemaversion,omitempty"`
+	ModelTimestamp      int                    `json:"modeltimestamp,omitempty"`
+	ModelGroups         []PriceFloorModelGroup `json:"modelgroups,omitempty"`
+	FloorProvider       string                 `json:"floorprovider,omitempty"`
+}
+
+type PriceFloorModelGroup struct {
+	Currency     string             `json:"currency,omitempty"`
+	ModelWeight  *int               `json:"modelweight,omitempty"`
+	ModelVersion string             `json:"modelversion,omitempty"`
+	SkipRate     int                `json:"skiprate,omitempty"`
+	Schema       PriceFloorSchema   `json:"schema,omitempty"`
+	Values       map[string]float64 `json:"values,omitempty"`
+	Default      float64            `json:"default,omitempty"`
+}
+
 func (modelGroup PriceFloorModelGroup) Copy() PriceFloorModelGroup {
 	newModelGroup := new(PriceFloorModelGroup)
 	newModelGroup.Currency = modelGroup.Currency
@@ -143,4 +113,35 @@ func (modelGroup PriceFloorModelGroup) Copy() PriceFloorModelGroup {
 		newModelGroup.Values[key] = val
 	}
 	return *newModelGroup
+}
+
+type PriceFloorSchema struct {
+	Fields    []string `json:"fields,omitempty"`
+	Delimiter string   `json:"delimiter,omitempty"`
+}
+
+type PriceFloorEnforcement struct {
+	EnforceJS     *bool `json:"enforcejs,omitempty"`
+	EnforcePBS    *bool `json:"enforcepbs,omitempty"`
+	FloorDeals    *bool `json:"floordeals,omitempty"`
+	BidAdjustment *bool `json:"bidadjustment,omitempty"`
+	EnforceRate   int   `json:"enforcerate,omitempty"`
+}
+
+type ImpFloorExt struct {
+	FloorRule      string  `json:"floorrule,omitempty"`
+	FloorRuleValue float64 `json:"floorrulevalue,omitempty"`
+	FloorValue     float64 `json:"floorvalue,omitempty"`
+}
+type Price struct {
+	FloorMin    float64 `json:"floormin,omitempty"`
+	FloorMinCur string  `json:"floormincur,omitempty"`
+}
+
+type ExtImp struct {
+	Prebid *ImpExtPrebid `json:"prebid,omitempty"`
+}
+
+type ImpExtPrebid struct {
+	Floors Price `json:"floors,omitempty"`
 }

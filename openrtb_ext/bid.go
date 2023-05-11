@@ -25,11 +25,11 @@ type ExtBidPrebid struct {
 	Events            *ExtBidPrebidEvents `json:"events,omitempty"`
 	BidId             string              `json:"bidid,omitempty"`
 	Passthrough       json.RawMessage     `json:"passthrough,omitempty"`
-	Floors            *ExtBidFloors       `json:"floors,omitempty"`
+	Floors            *ExtBidPrebidFloors `json:"floors,omitempty"`
 }
 
 // ExtBidPrebidFloors defines the contract for bidresponse.seatbid.bid[i].ext.prebid.floors
-type ExtBidFloors struct {
+type ExtBidPrebidFloors struct {
 	FloorRule      string  `json:"floorRule,omitempty"`
 	FloorRuleValue float64 `json:"floorRuleValue,omitempty"`
 	FloorValue     float64 `json:"floorValue,omitempty"`

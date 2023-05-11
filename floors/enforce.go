@@ -13,8 +13,9 @@ import (
 )
 
 // EnforceFloors does floors enforcement for bids from all bidders based on floors provided in request, account level floors config
-func EnforceFloors(bidRequestWrapper *openrtb_ext.RequestWrapper, seatBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, account config.Account, conversions currency.Conversions) (map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, []error, []*entities.PbsOrtbSeatBid) {
+func Enforce(bidRequestWrapper *openrtb_ext.RequestWrapper, seatBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, account config.Account, conversions currency.Conversions) (map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, []error, []*entities.PbsOrtbSeatBid) {
 	rejectionErrs := []error{}
+
 	rejectedBids := []*entities.PbsOrtbSeatBid{}
 
 	requestExt, err := bidRequestWrapper.GetRequestExt()
@@ -22,18 +23,59 @@ func EnforceFloors(bidRequestWrapper *openrtb_ext.RequestWrapper, seatBids map[o
 		return seatBids, []error{errors.New("Error in getting request extension")}, rejectedBids
 	}
 
-	if isPriceFloorsDisabled(account, bidRequestWrapper) {
+	if !isPriceFloorsEnabled(account, bidRequestWrapper) {
 		return seatBids, []error{errors.New("Floors feature is disabled at account or in the request")}, rejectedBids
 	}
 
-	if !isFloorsSignallingSkipped(requestExt) && isValidImpBidFloorPresent(bidRequestWrapper.BidRequest) {
-		if enforceFloors := isSatisfiedByEnforceRate(requestExt, account.PriceFloors.EnforceFloorsRate, rand.Intn); enforceFloors {
-			enforceDealFloors := account.PriceFloors.EnforceDealFloors && getEnforceDealsFlag(requestExt)
+	if isSignalingSkipped(requestExt) || !isValidImpBidFloorPresent(bidRequestWrapper.BidRequest.Imp) {
+		return seatBids, nil, rejectedBids
+	}
 
-			seatBids, rejectionErrs, rejectedBids = enforceFloorToBids(bidRequestWrapper, seatBids, conversions, enforceDealFloors)
+	enforceFloors := isSatisfiedByEnforceRate(requestExt, account.PriceFloors.EnforceFloorsRate, rand.Intn)
+	if updateEnforcePBS(enforceFloors, requestExt) {
+		err := bidRequestWrapper.RebuildRequest()
+		if err != nil {
+			return seatBids, []error{err}, rejectedBids
 		}
 	}
+
+	enforceDealFloors := account.PriceFloors.EnforceDealFloors && getEnforceDealsFlag(requestExt)
+	seatBids, rejectionErrs, rejectedBids = enforceFloorToBids(bidRequestWrapper, seatBids, conversions, enforceDealFloors)
+
 	return seatBids, rejectionErrs, rejectedBids
+}
+
+// updateEnforcePBS updates prebid extension in request if enforcePBS needs to be updated
+func updateEnforcePBS(enforceFloors bool, requestExt *openrtb_ext.RequestExt) bool {
+	updateReqExt := false
+
+	prebidExt := requestExt.GetPrebid()
+	if prebidExt.Floors == nil {
+		updateReqExt = true
+		prebidExt.Floors = new(openrtb_ext.PriceFloorRules)
+	}
+	floorExt := prebidExt.Floors
+
+	if floorExt.Enforcement == nil {
+		updateReqExt = true
+		floorExt.Enforcement = new(openrtb_ext.PriceFloorEnforcement)
+	}
+
+	if floorExt.Enforcement.EnforcePBS == nil {
+		updateReqExt = true
+		floorExt.Enforcement.EnforcePBS = new(bool)
+		*floorExt.Enforcement.EnforcePBS = enforceFloors
+	} else {
+		oldEnforcePBS := *floorExt.Enforcement.EnforcePBS
+		*floorExt.Enforcement.EnforcePBS = enforceFloors && *floorExt.Enforcement.EnforcePBS
+		updateReqExt = oldEnforcePBS != *floorExt.Enforcement.EnforcePBS
+	}
+
+	if updateReqExt {
+		requestExt.SetPrebid(prebidExt)
+	}
+
+	return updateReqExt
 }
 
 // enforceFloorToBids function does floors enforcement for each bid,
@@ -57,18 +99,17 @@ func enforceFloorToBids(bidRequestWrapper *openrtb_ext.RequestWrapper, seatBids 
 			}
 
 			reqImpCur := reqImp.BidFloorCur
-			if reqImpCur == "" {
-				reqImpCur = defaultCurrency
-				if bidRequestWrapper.Cur != nil {
-					reqImpCur = bidRequestWrapper.Cur[0]
-				}
-			}
 			updateBidExtWithFloors(reqImp, bid, reqImpCur)
 
-			if !isPriceFloorsEnforcementDisabled(bidRequestWrapper) {
-				dealBid := checkDealBidForEnforcement(bid, enforceDealFloors)
-				if dealBid != nil {
-					eligibleBids = append(eligibleBids, dealBid)
+			requestExt, err := bidRequestWrapper.GetRequestExt()
+			if err != nil {
+				errs = append(errs, fmt.Errorf("error in getting req extension = %v", err.Error()))
+				continue
+			}
+
+			if isEnforcementEnabled(requestExt) {
+				if hasDealID(bid) && !enforceDealFloors {
+					eligibleBids = append(eligibleBids, bid)
 					continue
 				}
 
@@ -79,7 +120,6 @@ func enforceFloorToBids(bidRequestWrapper *openrtb_ext.RequestWrapper, seatBids 
 				}
 
 				bidPrice := rate * bid.Bid.Price
-
 				if reqImp.BidFloor > bidPrice {
 					rejectedBid := &entities.PbsOrtbSeatBid{
 						Currency: seatBid.Currency,
@@ -87,35 +127,44 @@ func enforceFloorToBids(bidRequestWrapper *openrtb_ext.RequestWrapper, seatBids 
 						Bids:     []*entities.PbsOrtbBid{bid},
 					}
 					rejectedBids = append(rejectedBids, rejectedBid)
-					continue
+				} else {
+					eligibleBids = append(eligibleBids, bid)
 				}
+			} else {
+				eligibleBids = append(eligibleBids, bid)
 			}
-			eligibleBids = append(eligibleBids, bid)
 		}
 		seatBids[bidderName].Bids = eligibleBids
 	}
 	return seatBids, errs, rejectedBids
 }
 
-// isPriceFloorsEnforcementDisabled check for floors are disabled at request using Floors.Enforcement.EnforcePBS flag
-func isPriceFloorsEnforcementDisabled(bidRequestWrapper *openrtb_ext.RequestWrapper) bool {
-	requestExt, err := bidRequestWrapper.GetRequestExt()
-	if err == nil {
-		if prebidExt := requestExt.GetPrebid(); prebidExt != nil && prebidExt.Floors != nil && !prebidExt.Floors.GetEnforcePBS() {
-			return true
-		}
+// isEnforcementEnabled check for floors enforcement enabled in request
+func isEnforcementEnabled(requestExt *openrtb_ext.RequestExt) bool {
+	if prebidExt := requestExt.GetPrebid(); prebidExt != nil && prebidExt.Floors != nil {
+		return prebidExt.Floors.GetEnforcePBS()
 	}
-	return false
+	return true
 }
 
-// isFloorsSignallingSkipped check for floors signalling is skipped due to skip rate
-func isFloorsSignallingSkipped(requestExt *openrtb_ext.RequestExt) bool {
+// isSignalingSkipped check for floors signalling is skipped due to skip rate
+func isSignalingSkipped(requestExt *openrtb_ext.RequestExt) bool {
 	if requestExt != nil {
 		if prebidExt := requestExt.GetPrebid(); prebidExt != nil && prebidExt.Floors != nil {
 			return prebidExt.Floors.GetFloorsSkippedFlag()
 		}
 	}
 	return false
+}
+
+// getFloorsExt returns req.ext.prebid.floors
+func getFloorsExt(requestExt *openrtb_ext.RequestExt) *openrtb_ext.PriceFloorRules {
+	if requestExt != nil {
+		if prebidExt := requestExt.GetPrebid(); prebidExt != nil && prebidExt.Floors != nil {
+			return prebidExt.Floors
+		}
+	}
+	return nil
 }
 
 // getEnforceRateRequest returns enforceRate provided in request
@@ -139,9 +188,9 @@ func getEnforceDealsFlag(requestExt *openrtb_ext.RequestExt) bool {
 }
 
 // isValidImpBidFloorPresent checks if non zero imp.bidfloor is present in request
-func isValidImpBidFloorPresent(bidRequest *openrtb2.BidRequest) bool {
-	for i := range bidRequest.Imp {
-		if bidRequest.Imp[i].BidFloor > 0 {
+func isValidImpBidFloorPresent(imp []openrtb2.Imp) bool {
+	for i := range imp {
+		if imp[i].BidFloor > 0 {
 			return true
 		}
 	}
@@ -159,12 +208,12 @@ func isSatisfiedByEnforceRate(requestExt *openrtb_ext.RequestExt, configEnforceR
 	return shouldEnforce
 }
 
-// checkDealBidForEnforcement checks for floors enforcement for deal bids
-func checkDealBidForEnforcement(bid *entities.PbsOrtbBid, enforceDealFloors bool) *entities.PbsOrtbBid {
-	if !enforceDealFloors && bid != nil && bid.Bid != nil && bid.Bid.DealID != "" {
-		return bid
+// hasDealID checks for dealID presence in bid
+func hasDealID(bid *entities.PbsOrtbBid) bool {
+	if bid != nil && bid.Bid != nil && bid.Bid.DealID != "" {
+		return true
 	}
-	return nil
+	return false
 }
 
 // getCurrencyConversionRate gets conversion rate in case floor currency and seatBid currency are not same
@@ -184,7 +233,7 @@ func updateBidExtWithFloors(reqImp *openrtb_ext.ImpWrapper, bid *entities.PbsOrt
 		return
 	}
 
-	var bidExtFloors openrtb_ext.ExtBidFloors
+	var bidExtFloors openrtb_ext.ExtBidPrebidFloors
 	prebidExt := impExt.GetPrebid()
 	if prebidExt == nil || prebidExt.Floors == nil {
 		if reqImp.BidFloor > 0 {
