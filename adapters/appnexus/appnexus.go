@@ -27,7 +27,7 @@ const (
 )
 
 type adapter struct {
-	URI             string
+	uri             string
 	hbSource        int
 	randomGenerator randomutil.RandomGenerator
 }
@@ -35,7 +35,7 @@ type adapter struct {
 // Builder builds a new instance of the AppNexus adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
-		URI:             config.Endpoint,
+		uri:             config.Endpoint,
 		hbSource:        resolvePlatformID(config.PlatformID),
 		randomGenerator: randomutil.RandomNumberGenerator{},
 	}
@@ -98,7 +98,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	}
 	request.Imp = validImps
 
-	requestURI := a.URI
+	requestURI := a.uri
 	// The Appnexus API requires a Member ID in the URL. This means the request may fail if
 	// different impressions have different member IDs.
 	// Check for this condition, and log an error if it's a problem.
