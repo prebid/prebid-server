@@ -20,7 +20,15 @@ import (
 	"github.com/yudai/gojsondiff/formatter"
 )
 
-const JsonFileExtension string = ".json"
+const jsonFileExtension string = ".json"
+
+var supportedDirs = map[string]struct{}{
+	"exemplary":         {},
+	"supplemental":      {},
+	"amp":               {},
+	"video":             {},
+	"videosupplemental": {},
+}
 
 // RunJSONBidderTest is a helper method intended to unit test Bidders' adapters.
 // It requires that:
@@ -62,27 +70,13 @@ func RunJSONBidderTest(t *testing.T, rootDir string, bidder adapters.Bidder) {
 			return err
 		}
 
-		var approvedPath, allowErrors, isAmpTest, isVideoTest bool
-		switch filepath.Base(filepath.Dir(path)) {
-		case "exemplary":
-			approvedPath = true
-		case "supplemental":
-			approvedPath = true
-			allowErrors = true
-		case "amp":
-			approvedPath = true
-			allowErrors = true
-			isAmpTest = true
-		case "video":
-			approvedPath = true
-			isVideoTest = true
-		case "videosupplemental":
-			approvedPath = true
-			allowErrors = true
-			isVideoTest = true
+		base := filepath.Base(filepath.Dir(path))
+		if _, ok := supportedDirs[base]; !ok {
+			return nil
 		}
 
-		if !info.IsDir() && approvedPath && filepath.Ext(info.Name()) == JsonFileExtension {
+		allowErrors := base != "exemplary" && base != "video"
+		if !info.IsDir() && filepath.Ext(info.Name()) == jsonFileExtension {
 			specData, err := loadFile(path)
 			if err != nil {
 				t.Fatalf("Failed to load contents of file %s: %v", path, err)
@@ -91,7 +85,8 @@ func RunJSONBidderTest(t *testing.T, rootDir string, bidder adapters.Bidder) {
 			if !allowErrors && specData.expectsErrors() {
 				t.Fatalf("Exemplary spec %s must not expect errors.", path)
 			}
-			runSpec(t, path, specData, bidder, isAmpTest, isVideoTest)
+
+			runSpec(t, path, specData, bidder, base == "amp", base == "videosupplemental" || base == "video")
 		}
 		return nil
 	})
