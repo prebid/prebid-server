@@ -11,7 +11,6 @@ func getFlag(in bool) *bool {
 }
 
 func TestPriceFloorRulesGetEnforcePBS(t *testing.T) {
-
 	tests := []struct {
 		name   string
 		floors *PriceFloorRules
