@@ -1,16 +1,16 @@
 {
   "mockBidRequest": {
-    "id": "web-banner",
+    "id": "web-native",
     "tmax": 3000,
     "imp": [
       {
-        "id": "banner-imp-id",
+        "id": "native-imp-id",
         "ext": {
           "bidder": {
             "pkey": "pkey"
           }
         },
-        "banner": {
+        "native": {
           "format": [
             {
               "w": 300,
@@ -45,18 +45,18 @@
           ]
         },
         "body": {
-          "id": "web-banner",
+          "id": "web-native",
           "tmax": 3000,
           "imp": [
             {
-              "id": "banner-imp-id",
+              "id": "native-imp-id",
               "tagid": "pkey",
               "ext": {
                 "bidder": {
                   "pkey": "pkey"
                 }
               },
-              "banner": {
+              "native": {
                 "format": [
                   {
                     "w": 300,
@@ -88,14 +88,14 @@
       "mockResponse": {
         "status": 200,
         "body": {
-          "id": "web-banner",
+          "id": "web-native",
           "cur": "USD",
           "seatbid": [
             {
               "bid": [
                 {
-                  "id": "web-banner",
-                  "impid": "banner-imp-id",
+                  "id": "web-native",
+                  "impid": "native-imp-id",
                   "crid": "some-creative-id",
                   "adm": "<div>Ad</div>",
                   "price": 20,
@@ -115,15 +115,15 @@
       "bids": [
         {
           "bid": {
-            "id": "web-banner",
-            "impid": "banner-imp-id",
+            "id": "web-native",
+            "impid": "native-imp-id",
             "crid": "some-creative-id",
             "adm": "<div>Ad</div>",
             "price": 20,
             "w": 300,
             "h": 250
           },
-          "type": "banner"
+          "type": "native"
         }
       ]
     }
