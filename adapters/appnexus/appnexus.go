@@ -350,7 +350,7 @@ func buildRequestImp(imp *openrtb2.Imp, appnexusExt *openrtb_ext.ExtImpAppnexus,
 
 	var err error
 	imp.Ext, err = json.Marshal(&impExt)
-	
+
 	return err
 }
 
