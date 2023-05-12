@@ -52,15 +52,17 @@ func TestSignalParse(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		signal, err := StrSignalParse(test.rawSignal)
+		t.Run(test.description, func(t *testing.T) {
+			signal, err := StrSignalParse(test.rawSignal)
 
-		assert.Equal(t, test.wantSignal, signal, test.description)
+			assert.Equal(t, test.wantSignal, signal, test.description)
 
-		if test.wantError {
-			assert.NotNil(t, err, test.description)
-		} else {
-			assert.Nil(t, err, test.description)
-		}
+			if test.wantError {
+				assert.NotNil(t, err, test.description)
+			} else {
+				assert.Nil(t, err, test.description)
+			}
+		})
 	}
 }
 
@@ -100,10 +102,12 @@ func TestIntSignalParse(t *testing.T) {
 		},
 	}
 	for _, tc := range testCases {
-		outSignal, outErr := IntSignalParse(tc.input)
+		t.Run(tc.desc, func(t *testing.T) {
+			outSignal, outErr := IntSignalParse(tc.input)
 
-		assert.Equal(t, tc.expected.signal, outSignal, tc.desc)
-		assert.Equal(t, tc.expected.err, outErr, tc.desc)
+			assert.Equal(t, tc.expected.signal, outSignal, tc.desc)
+			assert.Equal(t, tc.expected.err, outErr, tc.desc)
+		})
 	}
 }
 

@@ -77,7 +77,10 @@ func TestIndexOfSID(t *testing.T) {
 		{
 			desc: "SID_not_found_in_SectionTypes_array,_expect_-1_out",
 			in: testInput{
-				gpp: gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{gppConstants.SectionUSPV1}},
+				gpp: gpplib.GppContainer{
+					Version:      1,
+					SectionTypes: []gppConstants.SectionID{gppConstants.SectionUSPV1},
+				},
 				sid: gppConstants.SectionTCFEU2,
 			},
 			expected: -1,
@@ -85,7 +88,14 @@ func TestIndexOfSID(t *testing.T) {
 		{
 			desc: "SID_matches_an_element_in_SectionTypes_array,_expect_index_1_out",
 			in: testInput{
-				gpp: gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{gppConstants.SectionUSPV1, gppConstants.SectionTCFEU2}},
+				gpp: gpplib.GppContainer{
+					Version: 1,
+					SectionTypes: []gppConstants.SectionID{
+						gppConstants.SectionUSPV1,
+						gppConstants.SectionTCFEU2,
+						gppConstants.SectionUSPCA,
+					},
+				},
 				sid: gppConstants.SectionTCFEU2,
 			},
 			expected: 1,
