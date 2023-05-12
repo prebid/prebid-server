@@ -1,0 +1,18 @@
+endpoint: "https://fran.frvr.com/api/v1/openrtb"
+maintainer:
+  email: "info@frvr.com"
+gvlVendorID: 1107
+modifyingVastXmlAllowed: false
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  iframe:
+    url: "https://fran.frvr.com/api/v1/sync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect_uri={{.RedirectURL}}"
+    userMacro: "{{UID}}"

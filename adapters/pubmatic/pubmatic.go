@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -283,8 +284,8 @@ func parseImpressionObject(imp *openrtb2.Imp, extractWrapperExtFromImp, extractP
 	if pubmaticExt.Kadfloor != "" {
 		bidfloor, err := strconv.ParseFloat(strings.TrimSpace(pubmaticExt.Kadfloor), 64)
 		if err == nil {
-			//do not overwrite existing value if kadfloor is invalid
-			imp.BidFloor = bidfloor
+			// In case of valid kadfloor, select maximum of original imp.bidfloor and kadfloor
+			imp.BidFloor = math.Max(bidfloor, imp.BidFloor)
 		}
 	}
 

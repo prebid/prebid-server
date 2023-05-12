@@ -2,11 +2,14 @@ package adservertargeting
 
 import (
 	"encoding/json"
-	"github.com/prebid/openrtb/v17/openrtb2"
-	"github.com/prebid/openrtb/v17/openrtb3"
+	"reflect"
+	"strings"
+	"testing"
+
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb3"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestProcessRequestTargetingData(t *testing.T) {
@@ -558,4 +561,31 @@ func TestGetRespData(t *testing.T) {
 		}
 	}
 
+}
+
+func TestResponseObjectStructure(t *testing.T) {
+	// in case BidResponse format will change in next versions this test will show the error
+	// current implementation is up to date with OpenRTB 2.5 and OpenRTB 2.6 formats
+	fieldsToCheck := map[string]reflect.Kind{
+		"id":         reflect.String,
+		"bidid":      reflect.String,
+		"cur":        reflect.String,
+		"customdata": reflect.String,
+		"nbr":        reflect.Pointer,
+	}
+
+	tt := reflect.TypeOf(openrtb2.BidResponse{})
+	fields := reflect.VisibleFields(tt)
+
+	for fieldName, fieldType := range fieldsToCheck {
+		fieldFound := false
+		for _, field := range fields {
+			if fieldName == strings.ToLower(field.Name) {
+				fieldFound = true
+				assert.Equal(t, fieldType, field.Type.Kind(), "incorrect type for field: %s", fieldName)
+				break
+			}
+		}
+		assert.True(t, fieldFound, "field %s is not found in bidResponse object", fieldName)
+	}
 }

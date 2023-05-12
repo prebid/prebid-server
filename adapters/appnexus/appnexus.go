@@ -4,16 +4,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/buger/jsonparser"
-	"github.com/prebid/openrtb/v17/adcom1"
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/adcom1"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/util/httputil"
+	"github.com/prebid/prebid-server/util/randomutil"
 
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
@@ -24,9 +24,9 @@ import (
 const defaultPlatformID int = 5
 
 type adapter struct {
-	URI            string
-	iabCategoryMap map[string]string
-	hbSource       int
+	URI             string
+	hbSource        int
+	randomGenerator randomutil.RandomGenerator
 }
 
 var maxImpsPerReq = 10
@@ -34,12 +34,9 @@ var maxImpsPerReq = 10
 // Builder builds a new instance of the AppNexus adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
-		URI: config.Endpoint,
-		iabCategoryMap: map[string]string{
-			"1": "IAB20-3",
-			"9": "IAB5-3",
-		},
-		hbSource: resolvePlatformID(config.PlatformID),
+		URI:             config.Endpoint,
+		hbSource:        resolvePlatformID(config.PlatformID),
+		randomGenerator: randomutil.RandomNumberGenerator{},
 	}
 	return bidder, nil
 }
@@ -151,7 +148,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	// If impressions number per pod is more than maxImpsPerReq - divide those imps to several requests but keep pod id the same
 	// If  adpodId feature disabled and impressions number per pod is more than maxImpsPerReq  - divide those imps to several requests but do not include ad pod id
 	if isVIDEO == 1 && *shouldGenerateAdPodId {
-		requests, errors := buildAdPodRequests(imps, request, reqExt, requestURI)
+		requests, errors := a.buildAdPodRequests(imps, request, reqExt, requestURI)
 		return requests, append(errs, errors...)
 	}
 
@@ -349,7 +346,7 @@ func buildRequestImp(imp *openrtb2.Imp, appnexusExt *openrtb_ext.ExtImpAppnexus,
 	impExt := appnexusImpExt{Appnexus: appnexusImpExtAppnexus{
 		PlacementID:       int(appnexusExt.PlacementId),
 		TrafficSourceCode: appnexusExt.TrafficSourceCode,
-		Keywords:          makeKeywordStr(appnexusExt.Keywords),
+		Keywords:          appnexusExt.Keywords.String(),
 		UsePmtRule:        appnexusExt.UsePaymentRule,
 		PrivateSizes:      appnexusExt.PrivateSizes,
 	}}
@@ -362,21 +359,6 @@ func buildRequestImp(imp *openrtb2.Imp, appnexusExt *openrtb_ext.ExtImpAppnexus,
 	return nil
 }
 
-func makeKeywordStr(keywords []*openrtb_ext.ExtImpAppnexusKeyVal) string {
-	kvs := make([]string, 0, len(keywords)*2)
-	for _, kv := range keywords {
-		if len(kv.Values) == 0 {
-			kvs = append(kvs, kv.Key)
-		} else {
-			for _, val := range kv.Values {
-				kvs = append(kvs, fmt.Sprintf("%s=%s", kv.Key, val))
-			}
-		}
-	}
-
-	return strings.Join(kvs, ",")
-}
-
 // getMediaTypeForBid determines which type of bid.
 func getMediaTypeForBid(bid *appnexusBidExt) (openrtb_ext.BidType, error) {
 	switch bid.Appnexus.BidType {
@@ -384,8 +366,6 @@ func getMediaTypeForBid(bid *appnexusBidExt) (openrtb_ext.BidType, error) {
 		return openrtb_ext.BidTypeBanner, nil
 	case 1:
 		return openrtb_ext.BidTypeVideo, nil
-	case 2:
-		return openrtb_ext.BidTypeAudio, nil
 	case 3:
 		return openrtb_ext.BidTypeNative, nil
 	default:
@@ -396,7 +376,7 @@ func getMediaTypeForBid(bid *appnexusBidExt) (openrtb_ext.BidType, error) {
 // getIabCategoryForBid maps an appnexus brand id to an IAB category.
 func (a *adapter) findIabCategoryForBid(bid *appnexusBidExt) (string, bool) {
 	brandIDString := strconv.Itoa(bid.Appnexus.BrandCategory)
-	iabCategory, ok := a.iabCategoryMap[brandIDString]
+	iabCategory, ok := iabCategoryMap[brandIDString]
 	return iabCategory, ok
 }
 
@@ -426,12 +406,12 @@ func buildDisplayManageVer(req *openrtb2.BidRequest) string {
 	return fmt.Sprintf("%s-%s", source, version)
 }
 
-func buildAdPodRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExtension appnexusReqExt, uri string) ([]*adapters.RequestData, []error) {
+func (a *adapter) buildAdPodRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExtension appnexusReqExt, uri string) ([]*adapters.RequestData, []error) {
 	var errs []error
 	podImps := groupByPods(imps)
 	requests := make([]*adapters.RequestData, 0, len(podImps))
 	for _, podImps := range podImps {
-		requestExtension.Appnexus.AdPodId = fmt.Sprint(rand.Int63())
+		requestExtension.Appnexus.AdPodId = fmt.Sprint(a.randomGenerator.GenerateInt63())
 
 		reqs, errors := splitRequests(podImps, request, requestExtension, uri)
 		requests = append(requests, reqs...)
