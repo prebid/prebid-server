@@ -697,7 +697,7 @@ func makeRequest(uri string, existingSyncs map[string]string) *http.Request {
 	if len(existingSyncs) > 0 {
 		pbsCookie := usersync.NewCookie()
 		for key, value := range existingSyncs {
-			pbsCookie.TrySync(key, value)
+			pbsCookie.Sync(key, value)
 		}
 		addCookie(request, pbsCookie)
 	}

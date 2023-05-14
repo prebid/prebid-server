@@ -57,7 +57,7 @@ func ParseCookieFromRequest(r *http.Request, cookie *config.HostCookie) *Cookie 
 	// Fixes #582
 	if uid, _, _ := parsed.GetUID(cookie.Family); uid == "" && cookie.CookieName != "" {
 		if hostCookie, err := r.Cookie(cookie.CookieName); err == nil {
-			parsed.TrySync(cookie.Family, hostCookie.Value)
+			parsed.Sync(cookie.Family, hostCookie.Value)
 		}
 	}
 	return parsed
@@ -201,8 +201,8 @@ func (cookie *Cookie) HasAnyLiveSyncs() bool {
 	return false
 }
 
-// TrySync tries to set the UID for some syncer key. It returns an error if the set didn't happen.
-func (cookie *Cookie) TrySync(key string, uid string) error {
+// Sync tries to set the UID for some syncer key. It returns an error if the set didn't happen.
+func (cookie *Cookie) Sync(key string, uid string) error {
 	if !cookie.AllowSyncs() {
 		return errors.New("The user has opted out of prebid server cookie syncs.")
 	}

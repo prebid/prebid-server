@@ -104,7 +104,7 @@ func TestCookieSyncHandle(t *testing.T) {
 	syncer.On("GetSync", syncTypeExpected, privacy.Policies{}).Return(sync, nil).Maybe()
 
 	cookieWithSyncs := usersync.NewCookie()
-	cookieWithSyncs.TrySync("foo", "anyID")
+	cookieWithSyncs.Sync("foo", "anyID")
 
 	testCases := []struct {
 		description              string
@@ -1482,7 +1482,7 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 
 		cookie := usersync.NewCookie()
 		if test.givenCookieHasSyncs {
-			if err := cookie.TrySync("foo", "anyID"); err != nil {
+			if err := cookie.Sync("foo", "anyID"); err != nil {
 				assert.FailNow(t, test.description+":set_cookie")
 			}
 		}

@@ -125,7 +125,7 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 			metricsEngine.RecordSetUid(metrics.SetUidOK)
 			metricsEngine.RecordSyncerSet(syncer.Key(), metrics.SyncerSetUidCleared)
 			so.Success = true
-		} else if err = pc.TrySync(syncer.Key(), uid); err == nil {
+		} else if err = pc.Sync(syncer.Key(), uid); err == nil {
 			metricsEngine.RecordSetUid(metrics.SetUidOK)
 			metricsEngine.RecordSyncerSet(syncer.Key(), metrics.SyncerSetUidOK)
 			so.Success = true

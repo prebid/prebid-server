@@ -77,7 +77,7 @@ func TestRejectAudienceNetworkCookie(t *testing.T) {
 		t.Errorf("Cookie serializing and deserializing should delete audienceNetwork values of 0")
 	}
 
-	err := parsed.TrySync("audienceNetwork", "0")
+	err := parsed.Sync("audienceNetwork", "0")
 	if err == nil {
 		t.Errorf("Cookie should reject audienceNetwork values of 0.")
 	}
@@ -387,7 +387,7 @@ func ensureEmptyMap(t *testing.T, cookie *Cookie) {
 
 func ensureConsistency(t *testing.T, cookie *Cookie) {
 	if cookie.AllowSyncs() {
-		err := cookie.TrySync("pulsepoint", "1")
+		err := cookie.Sync("pulsepoint", "1")
 		if err != nil {
 			t.Errorf("Cookie sync should succeed if the user has opted in.")
 		}
@@ -416,7 +416,7 @@ func ensureConsistency(t *testing.T, cookie *Cookie) {
 			t.Error("If the user opted out, the PBSCookie should have no user syncs.")
 		}
 
-		err := cookie.TrySync("adnxs", "123")
+		err := cookie.Sync("adnxs", "123")
 		if err == nil {
 			t.Error("TrySync should fail if the user has opted out of PBSCookie syncs, but it succeeded.")
 		}
