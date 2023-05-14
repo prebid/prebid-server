@@ -1,6 +1,6 @@
 endpoint: "http://prebid-{{.Host}}.xe.works/?pid={{.SourceId}}"
 maintainer:
-  email: "dima@xe.works"
+  email: "team@xe.works"
 capabilities:
   app:
     mediaTypes:
