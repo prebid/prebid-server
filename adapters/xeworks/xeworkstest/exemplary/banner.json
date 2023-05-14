@@ -3,18 +3,35 @@
     "id": "id",
     "imp": [
       {
-        "id": "id",
+        "id": "1",
         "secure": 1,
         "bidfloor": 0.01,
         "bidfloorcur": "USD",
         "banner": {
           "w": 300,
-          "h": 250
+          "h": 250,
+          "pos": 0
         },
         "ext": {
           "bidder": {
             "env": "xe-stage",
             "pid": "dc230510f7eb516f0eb9a10e5913d3b2"
+          }
+        }
+      }, {
+        "id": "2",
+        "secure": 1,
+        "bidfloor": 0.2,
+        "bidfloorcur": "USD",
+        "banner": {
+          "w": 300,
+          "h": 250,
+          "pos": 4
+        },
+        "ext": {
+          "bidder": {
+            "env": "xe-stage",
+            "pid": "4fe619bebbc21fb13e5798a008d76d62"
           }
         }
       }
@@ -50,18 +67,35 @@
           "id": "id",
           "imp": [
             {
-              "id": "id",
+              "id": "1",
               "secure": 1,
               "bidfloor": 0.01,
               "bidfloorcur": "USD",
               "banner": {
                 "w": 300,
-                "h": 250
+                "h": 250,
+                "pos": 0
               },
               "ext": {
                 "bidder": {
                   "env": "xe-stage",
                   "pid": "dc230510f7eb516f0eb9a10e5913d3b2"
+                }
+              }
+            }, {
+              "id": "2",
+              "secure": 1,
+              "bidfloor": 0.2,
+              "bidfloorcur": "USD",
+              "banner": {
+                "w": 300,
+                "h": 250,
+                "pos": 4
+              },
+              "ext": {
+                "bidder": {
+                  "env": "xe-stage",
+                  "pid": "4fe619bebbc21fb13e5798a008d76d62"
                 }
               }
             }
@@ -100,11 +134,11 @@
               "bid": [
                 {
                   "id": "id",
-                  "impid": "id",
+                  "impid": "1",
                   "price": 0.1,
                   "nurl": "http://test.com/nurl",
                   "burl": "http://test.com/burl",
-                  "adm": "<span>Test</span>",
+                  "adm": "<span>Test1</span>",
                   "adomain": [
                     "test.com"
                   ],
@@ -114,7 +148,34 @@
                   "cid": "cid",
                   "crid": "crid",
                   "w": 300,
-                  "h": 250
+                  "h": 250,
+                  "ext": {
+                    "prebid": {
+                      "type": "banner"
+                    }
+                  }
+                }, {
+                  "id": "id",
+                  "impid": "2",
+                  "price": 1.2,
+                  "nurl": "http://test.com/nurl",
+                  "burl": "http://test.com/burl",
+                  "adm": "<span>Test2</span>",
+                  "adomain": [
+                    "test.com"
+                  ],
+                  "cat": [
+                    "IAB1"
+                  ],
+                  "cid": "cid",
+                  "crid": "crid",
+                  "w": 300,
+                  "h": 250,
+                  "ext": {
+                    "prebid": {
+                      "type": "banner"
+                    }
+                  }
                 }
               ],
               "seat": "seat"
@@ -132,11 +193,32 @@
         {
           "bid": {
             "id": "id",
-            "impid": "id",
+            "impid": "1",
             "price": 0.1,
             "nurl": "http://test.com/nurl",
             "burl": "http://test.com/burl",
-            "adm": "<span>Test</span>",
+            "adm": "<span>Test1</span>",
+            "adomain": [
+              "test.com"
+            ],
+            "cat": [
+              "IAB1"
+            ],
+            "cid": "cid",
+            "crid": "crid",
+            "w": 300,
+            "h": 250
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "id",
+            "impid": "2",
+            "price": 1.2,
+            "nurl": "http://test.com/nurl",
+            "burl": "http://test.com/burl",
+            "adm": "<span>Test2</span>",
             "adomain": [
               "test.com"
             ],

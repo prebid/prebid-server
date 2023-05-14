@@ -152,7 +152,12 @@
                     "IAB1"
                   ],
                   "cid": "cid",
-                  "crid": "crid"
+                  "crid": "crid",
+                  "ext": {
+                    "prebid": {
+                      "type": "video"
+                    }
+                  }
                 }
               ],
               "seat": "seat"

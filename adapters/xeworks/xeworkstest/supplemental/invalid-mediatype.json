@@ -7,14 +7,14 @@
         "secure": 1,
         "bidfloor": 0.01,
         "bidfloorcur": "USD",
-        "native": {
-          "request": "{\"ver\":\"1.1\",\"layout\":1,\"adunit\":2,\"plcmtcnt\":6,\"plcmttype\":4,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":75}},{\"id\":2,\"required\":1,\"img\":{\"wmin\":492,\"hmin\":328,\"type\":3,\"mimes\":[\"image/jpeg\",\"image/jpg\",\"image/png\"]}},{\"id\":4,\"required\":0,\"data\":{\"type\":6}},{\"id\":5,\"required\":0,\"data\":{\"type\":7}},{\"id\":6,\"required\":0,\"data\":{\"type\":1,\"len\":20}}]}",
-          "ver": "1.1"
+        "banner": {
+          "w": 300,
+          "h": 250
         },
         "ext": {
           "bidder": {
             "env": "xe-stage",
-            "pid": "dc230510f7eb516f0eb9a10e5913d3b2"
+            "pid": "dc230510f7eb516f0eb9a10e5913d3b5"
           }
         }
       }
@@ -45,7 +45,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://prebid-xe-stage.xe.works/?pid=dc230510f7eb516f0eb9a10e5913d3b2",
+        "uri": "http://prebid-xe-stage.xe.works/?pid=dc230510f7eb516f0eb9a10e5913d3b5",
         "body": {
           "id": "id",
           "imp": [
@@ -54,14 +54,14 @@
               "secure": 1,
               "bidfloor": 0.01,
               "bidfloorcur": "USD",
-              "native": {
-                "request": "{\"ver\":\"1.1\",\"layout\":1,\"adunit\":2,\"plcmtcnt\":6,\"plcmttype\":4,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":75}},{\"id\":2,\"required\":1,\"img\":{\"wmin\":492,\"hmin\":328,\"type\":3,\"mimes\":[\"image/jpeg\",\"image/jpg\",\"image/png\"]}},{\"id\":4,\"required\":0,\"data\":{\"type\":6}},{\"id\":5,\"required\":0,\"data\":{\"type\":7}},{\"id\":6,\"required\":0,\"data\":{\"type\":1,\"len\":20}}]}",
-                "ver": "1.1"
+              "banner": {
+                "w": 300,
+                "h": 250
               },
               "ext": {
                 "bidder": {
                   "env": "xe-stage",
-                  "pid": "dc230510f7eb516f0eb9a10e5913d3b2"
+                  "pid": "dc230510f7eb516f0eb9a10e5913d3b5"
                 }
               }
             }
@@ -100,11 +100,11 @@
               "bid": [
                 {
                   "id": "id",
-                  "impid": "id",
+                  "impid": "1",
                   "price": 0.1,
                   "nurl": "http://test.com/nurl",
                   "burl": "http://test.com/burl",
-                  "adm": "{}",
+                  "adm": "<span>Test1</span>",
                   "adomain": [
                     "test.com"
                   ],
@@ -113,9 +113,33 @@
                   ],
                   "cid": "cid",
                   "crid": "crid",
+                  "w": 300,
+                  "h": 250,
                   "ext": {
                     "prebid": {
                       "type": "banner"
+                    }
+                  }
+                }, {
+                  "id": "id",
+                  "impid": "2",
+                  "price": 1.2,
+                  "nurl": "http://test.com/nurl",
+                  "burl": "http://test.com/burl",
+                  "adm": "<span>Test2</span>",
+                  "adomain": [
+                    "test.com"
+                  ],
+                  "cat": [
+                    "IAB1"
+                  ],
+                  "cid": "cid",
+                  "crid": "crid",
+                  "w": 300,
+                  "h": 250,
+                  "ext": {
+                    "prebid": {
+                      "type": "wrong"
                     }
                   }
                 }
@@ -128,30 +152,11 @@
       }
     }
   ],
-  "expectedBidResponses": [
+  "expectedMakeBidsErrors": [
     {
-      "currency": "USD",
-      "bids": [
-        {
-          "bid": {
-            "id": "id",
-            "impid": "id",
-            "price": 0.1,
-            "nurl": "http://test.com/nurl",
-            "burl": "http://test.com/burl",
-            "adm": "{}",
-            "adomain": [
-              "test.com"
-            ],
-            "cat": [
-              "IAB1"
-            ],
-            "cid": "cid",
-            "crid": "crid"
-          },
-          "type": "native"
-        }
-      ]
+      "value": "Array SeatBid[0].Bid.Ext.Prebid.Type expects one of the following values: 'banner', 'native', 'video', 'audio'.",
+      "comparison": "literal"
     }
-  ]
+  ],
+  "expectedBidResponses": []
 }
