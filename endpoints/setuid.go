@@ -28,6 +28,8 @@ const (
 	chromeiOSStrLen = len(chromeiOSStr)
 )
 
+const uidCookieName = "uids"
+
 func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, gdprPermsBuilder gdpr.PermissionsBuilder, tcf2CfgBuilder gdpr.TCF2ConfigBuilder, pbsanalytics analytics.PBSAnalyticsModule, accountsFetcher stored_requests.AccountFetcher, metricsEngine metrics.MetricsEngine) httprouter.Handle {
 	cookieTTL := time.Duration(cfg.HostCookie.TTL) * 24 * time.Hour
 
@@ -256,4 +258,27 @@ func preventSyncsGDPR(gdprEnabled string, gdprConsent string, permsBuilder gdpr.
 	}
 
 	return true, http.StatusUnavailableForLegalReasons, "The gdpr_consent string prevents cookies from being saved"
+}
+
+func WriteCookie(cookie *usersync.Cookie, ttl time.Duration, w http.ResponseWriter, setSiteCookie bool, domain string) {
+	encoder := usersync.EncoderV1{}
+	b64 := encoder.Encode(cookie)
+
+	httpCookie := &http.Cookie{
+		Name:    uidCookieName,
+		Value:   b64,
+		Expires: time.Now().Add(ttl),
+		Path:    "/",
+	}
+
+	if domain != "" {
+		httpCookie.Domain = domain
+	}
+
+	if setSiteCookie {
+		httpCookie.Secure = true
+		httpCookie.SameSite = http.SameSiteNoneMode
+	}
+
+	w.Header().Add("Set-Cookie", httpCookie.String())
 }
