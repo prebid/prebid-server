@@ -15,7 +15,7 @@ import (
 
 func TestOptOutCookie(t *testing.T) {
 	cookie := &Cookie{
-		uids:     make(map[string]uidWithExpiry),
+		uids:     make(map[string]UIDEntry),
 		optOut:   true,
 		birthday: timestamp(),
 	}
@@ -24,7 +24,7 @@ func TestOptOutCookie(t *testing.T) {
 
 func TestEmptyOptOutCookie(t *testing.T) {
 	cookie := &Cookie{
-		uids:     make(map[string]uidWithExpiry),
+		uids:     make(map[string]UIDEntry),
 		optOut:   true,
 		birthday: timestamp(),
 	}
@@ -33,7 +33,7 @@ func TestEmptyOptOutCookie(t *testing.T) {
 
 func TestEmptyCookie(t *testing.T) {
 	cookie := &Cookie{
-		uids:     make(map[string]uidWithExpiry),
+		uids:     make(map[string]UIDEntry),
 		optOut:   false,
 		birthday: timestamp(),
 	}
@@ -66,7 +66,7 @@ func TestBidderNameGets(t *testing.T) {
 
 func TestRejectAudienceNetworkCookie(t *testing.T) {
 	raw := &Cookie{
-		uids: map[string]uidWithExpiry{
+		uids: map[string]UIDEntry{
 			"audienceNetwork": newTempId("0", 10),
 		},
 		optOut:   false,
@@ -98,7 +98,7 @@ func TestOptOutReset(t *testing.T) {
 
 func TestOptIn(t *testing.T) {
 	cookie := &Cookie{
-		uids:     make(map[string]uidWithExpiry),
+		uids:     make(map[string]UIDEntry),
 		optOut:   true,
 		birthday: timestamp(),
 	}
@@ -164,7 +164,7 @@ func TestParseCookieFromRequestOptOut(t *testing.T) {
 	optOutCookieValue := "optOutCookieValue"
 
 	existingCookie := *(&Cookie{
-		uids: map[string]uidWithExpiry{
+		uids: map[string]UIDEntry{
 			"foo": newTempId("fooID", 1),
 			"bar": newTempId("barID", 2),
 		},
@@ -339,7 +339,7 @@ func TestGetUIDsWithNilCookie(t *testing.T) {
 
 func TestTrimCookiesClosestExpirationDates(t *testing.T) {
 	cookieToSend := &Cookie{
-		uids: map[string]uidWithExpiry{
+		uids: map[string]UIDEntry{
 			"k1": newTempId("12345678901234567890123456789012345678901234567890", 7),
 			"k2": newTempId("abcdefghijklmnopqrstuvwxyz", 1),
 			"k3": newTempId("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 6),
@@ -446,8 +446,8 @@ func ensureConsistency(t *testing.T, cookie *Cookie) {
 	}
 }
 
-func newTempId(uid string, offset int) uidWithExpiry {
-	return uidWithExpiry{
+func newTempId(uid string, offset int) UIDEntry {
+	return UIDEntry{
 		UID:     uid,
 		Expires: time.Now().Add(time.Duration(offset) * time.Minute).UTC(),
 	}
@@ -455,7 +455,7 @@ func newTempId(uid string, offset int) uidWithExpiry {
 
 func newSampleCookie() *Cookie {
 	return &Cookie{
-		uids: map[string]uidWithExpiry{
+		uids: map[string]UIDEntry{
 			"adnxs":   newTempId("123", 10),
 			"rubicon": newTempId("456", 10),
 		},
