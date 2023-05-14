@@ -282,3 +282,15 @@ func WriteCookie(cookie *usersync.Cookie, ttl time.Duration, w http.ResponseWrit
 
 	w.Header().Add("Set-Cookie", httpCookie.String())
 }
+
+func ReadCookie(r *http.Request) *usersync.Cookie {
+	encodedCookie, err := r.Cookie(uidCookieName)
+	if err != nil {
+		return usersync.NewCookie()
+	}
+
+	decoder := usersync.DecodeV1{}
+	decodedCookie := decoder.Decode(encodedCookie.Value)
+
+	return decodedCookie
+}
