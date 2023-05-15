@@ -10,6 +10,7 @@ import (
 
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -36,7 +37,7 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 	
 	var extension map[string]json.RawMessage
 	var preBidExt openrtb_ext.ExtRequestPrebid
-	var commerceExt ExtImpCommerce
+	var commerceExt openrtb_ext.ExtImpCommerce
 	var accountID, zoneID string
 
 	adButlerReq.Target = make(map[string]interface{})
@@ -205,8 +206,9 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 
 	reqJSON, err := json.Marshal(adButlerReq)
 	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
+		return nil, []error{&errortypes.FailedToRequestBids{
+			Message: err.Error(),
+		}}
 	}
 
 	headers := http.Header{}
