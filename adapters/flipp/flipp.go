@@ -49,11 +49,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		adapterReq, err := a.processImp(request, imp)
 		if err != nil {
 			errors = append(errors, err)
+			continue
 		}
-
-		if adapterReq != nil {
-			adapterRequests = append(adapterRequests, adapterReq)
-		}
+		adapterRequests = append(adapterRequests, adapterReq)
+	}
+	if len(adapterRequests) == 0 {
+		return nil, append(errors, fmt.Errorf("adapterRequest is empty"))
 	}
 	return adapterRequests, errors
 }
@@ -83,12 +84,12 @@ func (a *adapter) processImp(request *openrtb2.BidRequest, imp openrtb2.Imp) (*a
 	}
 	err = json.Unmarshal(params, &flippExtParams)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to extract flipp params. %v", err)
+		return nil, fmt.Errorf("unable to extract flipp params. %v", err)
 	}
 
 	publisherUrl, err := url.Parse(request.Site.Page)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to parse site url. %v", err)
+		return nil, fmt.Errorf("unable to parse site url. %v", err)
 	}
 
 	var contentCode string
@@ -117,7 +118,7 @@ func (a *adapter) processImp(request *openrtb2.BidRequest, imp openrtb2.Imp) (*a
 	} else {
 		uid, err := uuid.NewV4()
 		if err != nil {
-			return nil, fmt.Errorf("Unable to generate user uuid. %v", err)
+			return nil, fmt.Errorf("unable to generate user uuid. %v", err)
 		}
 		userKey = uid.String()
 	}
@@ -141,7 +142,7 @@ func (a *adapter) processImp(request *openrtb2.BidRequest, imp openrtb2.Imp) (*a
 
 	adapterReq, err := a.makeRequest(request, campaignRequestBody)
 	if err != nil {
-		return nil, fmt.Errorf("Make request faile with err %v", err)
+		return nil, fmt.Errorf("make request failed with err %v", err)
 	}
 
 	return adapterReq, nil
