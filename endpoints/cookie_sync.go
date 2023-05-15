@@ -178,7 +178,11 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 
 func extractPrivacyPolicies(request cookieSyncRequest, usersyncDefaultGDPRValue string) (privacy.Policies, gdpr.Signal, error) {
 	// GDPR
-	gppSID := stringutil.StrToInt8Slice(request.GPPSid)
+	gppSID, err := stringutil.StrToInt8Slice(request.GPPSid)
+	if err != nil {
+		return privacy.Policies{}, gdpr.SignalNo, err
+	}
+
 	gdprSignal, gdprString, err := extractGDPRSignal(request.GDPR, gppSID)
 	if err != nil {
 		return privacy.Policies{}, gdpr.SignalNo, err
