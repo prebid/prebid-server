@@ -3,6 +3,7 @@ package endpoints
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -172,7 +173,7 @@ func extractGDPRInfo(query url.Values) (gdpr.RequestInfo, error) {
 	// Signal
 	gppSID, err := stringutil.StrToInt8Slice(query.Get("gpp_sid"))
 	if err != nil {
-		return gdpr.RequestInfo{}, errors.New("gdpr_consent is required when gdpr=1")
+		return gdpr.RequestInfo{}, fmt.Errorf("Error parsing gpp_sid %s", err.Error())
 	}
 	if len(gppSID) > 0 && gppPrivacy.IsSIDInList(gppSID, gppConstants.SectionTCFEU2) {
 		gdprSignal = gdpr.SignalYes

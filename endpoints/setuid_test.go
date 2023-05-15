@@ -288,7 +288,7 @@ func TestSetUIDEndpoint(t *testing.T) {
 	}
 }
 
-func TestFunc(t *testing.T) {
+func TestExtractGDPRInfo(t *testing.T) {
 	type testOutput struct {
 		requestInfo gdpr.RequestInfo
 		err         error
@@ -330,8 +330,7 @@ func TestFunc(t *testing.T) {
 					},
 				},
 				{
-					desc: "GDPR equals 0, blank consent, expect blank consent, signalNo and nil error",
-					//inUri: "/setuid?gdpr=1&gdpr_consent=someConsent",
+					desc:  "GDPR equals 0, blank consent, expect blank consent, signalNo and nil error",
 					inUri: "/setuid?gdpr=0",
 					expected: testOutput{
 						requestInfo: gdpr.RequestInfo{GDPRSignal: gdpr.SignalNo},
@@ -373,6 +372,14 @@ func TestFunc(t *testing.T) {
 		{
 			"missing gdpr, gpp only",
 			[]testCase{
+				{
+					desc:  "Non-digit found in GPP_SID string, expect blank request info and error",
+					inUri: "/setuid?gpp_sid=malformed",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{},
+						err:         errors.New("Error parsing gpp_sid strconv.ParseInt: parsing \"malformed\": invalid syntax"),
+					},
+				},
 				{
 					desc:  "Invalid GPP string in query, expect blank request info and error",
 					inUri: "/setuid?gpp=malformed&gpp_sid=2",
