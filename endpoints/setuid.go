@@ -15,6 +15,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/prebid/prebid-server/util/httputil"
@@ -48,7 +49,7 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 
 		defer pbsanalytics.LogSetUIDObject(&so)
 
-		pc := usersync.ParseCookieFromRequest(r, &cfg.HostCookie)
+		pc := usersync.ReadCookie(r)
 		if !pc.AllowSyncs() {
 			w.WriteHeader(http.StatusUnauthorized)
 			metricsEngine.RecordSetUid(metrics.SetUidOptOut)
@@ -127,6 +128,9 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 			metricsEngine.RecordSetUid(metrics.SetUidOK)
 			metricsEngine.RecordSyncerSet(syncer.Key(), metrics.SyncerSetUidCleared)
 			so.Success = true
+		} else if syncer.Key() == string(openrtb_ext.BidderAudienceNetwork) && uid == "0" {
+			so.Errors = []error{errors.New("audienceNetwork uses a UID of 0 as \"not yet recognized\".")}
+			return
 		} else if err = pc.Sync(syncer.Key(), uid); err == nil {
 			metricsEngine.RecordSetUid(metrics.SetUidOK)
 			metricsEngine.RecordSyncerSet(syncer.Key(), metrics.SyncerSetUidOK)
@@ -258,39 +262,4 @@ func preventSyncsGDPR(gdprEnabled string, gdprConsent string, permsBuilder gdpr.
 	}
 
 	return true, http.StatusUnavailableForLegalReasons, "The gdpr_consent string prevents cookies from being saved"
-}
-
-func WriteCookie(cookie *usersync.Cookie, ttl time.Duration, w http.ResponseWriter, setSiteCookie bool, domain string) {
-	encoder := usersync.EncoderV1{}
-	b64 := encoder.Encode(cookie)
-
-	httpCookie := &http.Cookie{
-		Name:    uidCookieName,
-		Value:   b64,
-		Expires: time.Now().Add(ttl),
-		Path:    "/",
-	}
-
-	if domain != "" {
-		httpCookie.Domain = domain
-	}
-
-	if setSiteCookie {
-		httpCookie.Secure = true
-		httpCookie.SameSite = http.SameSiteNoneMode
-	}
-
-	w.Header().Add("Set-Cookie", httpCookie.String())
-}
-
-func ReadCookie(r *http.Request) *usersync.Cookie {
-	encodedCookie, err := r.Cookie(uidCookieName)
-	if err != nil {
-		return usersync.NewCookie()
-	}
-
-	decoder := usersync.DecodeV1{}
-	decodedCookie := decoder.Decode(encodedCookie.Value)
-
-	return decodedCookie
 }

@@ -1,10 +1,7 @@
 package usersync
 
 import (
-	"encoding/base64"
 	"encoding/json"
-	"errors"
-	"math"
 	"net/http"
 	"time"
 
@@ -37,47 +34,43 @@ type UIDEntry struct {
 	Expires time.Time `json:"expires"`
 }
 
-// ParseCookieFromRequest parses the UserSyncMap from an HTTP Request.
-func ParseCookieFromRequest(r *http.Request, cookie *config.HostCookie) *Cookie {
-	if cookie.OptOutCookie.Name != "" {
-		optOutCookie, err1 := r.Cookie(cookie.OptOutCookie.Name)
-		if err1 == nil && optOutCookie.Value == cookie.OptOutCookie.Value {
-			pc := NewCookie()
-			pc.SetOptOut(true)
-			return pc
-		}
+// ReadCookie will replace ParseCookieFromRequest
+func ReadCookie(r *http.Request) *Cookie {
+	//TODO: ParseCookieFromRequest OptOut Logic?
+
+	cookieFromRequest, err := r.Cookie(uidCookieName)
+	if err != nil {
+		return NewCookie()
 	}
-	var parsed *Cookie
-	uidCookie, err2 := r.Cookie(uidCookieName)
-	if err2 == nil {
-		parsed = ParseCookie(uidCookie)
-	} else {
-		parsed = NewCookie()
-	}
-	// Fixes #582
-	if uid, _, _ := parsed.GetUID(cookie.Family); uid == "" && cookie.CookieName != "" {
-		if hostCookie, err := r.Cookie(cookie.CookieName); err == nil {
-			parsed.Sync(cookie.Family, hostCookie.Value)
-		}
-	}
-	return parsed
+
+	decoder := DecodeV1{}
+	decodedCookie := decoder.Decode(cookieFromRequest.Value)
+
+	return decodedCookie
 }
 
-// ParseCookie parses the UserSync cookie from a raw HTTP cookie.
-func ParseCookie(httpCookie *http.Cookie) *Cookie {
-	jsonValue, err := base64.URLEncoding.DecodeString(httpCookie.Value)
-	if err != nil {
-		// corrupted cookie; we should reset
-		return NewCookie()
+// WriteCookie
+func WriteCookie(cookie *Cookie, ttl time.Duration, w http.ResponseWriter, setSiteCookie bool, domain string) {
+	encoder := EncoderV1{}
+	b64 := encoder.Encode(cookie)
+
+	httpCookie := &http.Cookie{
+		Name:    uidCookieName,
+		Value:   b64,
+		Expires: time.Now().Add(ttl),
+		Path:    "/",
 	}
 
-	var cookie Cookie
-	if err = json.Unmarshal(jsonValue, &cookie); err != nil {
-		// corrupted cookie; we should reset
-		return NewCookie()
+	if domain != "" {
+		httpCookie.Domain = domain
 	}
 
-	return &cookie
+	if setSiteCookie {
+		httpCookie.Secure = true
+		httpCookie.SameSite = http.SameSiteNoneMode
+	}
+
+	w.Header().Add("Set-Cookie", httpCookie.String())
 }
 
 // NewCookie returns a new empty cookie.
@@ -99,19 +92,6 @@ func (cookie *Cookie) SetOptOut(optOut bool) {
 
 	if optOut {
 		cookie.uids = make(map[string]UIDEntry)
-	}
-}
-
-// Gets an HTTP cookie containing all the data from this UserSyncMap. This is a snapshot--not a live view.
-func (cookie *Cookie) ToHTTPCookie(ttl time.Duration) *http.Cookie {
-	j, _ := json.Marshal(cookie)
-	b64 := base64.URLEncoding.EncodeToString(j)
-
-	return &http.Cookie{
-		Name:    uidCookieName,
-		Value:   b64,
-		Expires: time.Now().Add(ttl),
-		Path:    "/",
 	}
 }
 
@@ -142,39 +122,22 @@ func (cookie *Cookie) GetUIDs() map[string]string {
 	return uids
 }
 
-// SetCookieOnResponse is a shortcut for "ToHTTPCookie(); cookie.setDomain(domain); setCookie(w, cookie)"
 func (cookie *Cookie) SetCookieOnResponse(w http.ResponseWriter, setSiteCookie bool, cfg *config.HostCookie, ttl time.Duration) {
-	httpCookie := cookie.ToHTTPCookie(ttl)
-	var domain string = cfg.Domain
+	encoder := EncoderV1{}
+	encodedCookie := encoder.Encode(cookie)
 
-	if domain != "" {
-		httpCookie.Domain = domain
-	}
+	isCookieTooBig := len(encodedCookie) > cfg.MaxCookieSizeBytes && cfg.MaxCookieSizeBytes > 0
 
-	var currSize int = len([]byte(httpCookie.String()))
-	for cfg.MaxCookieSizeBytes > 0 && currSize > cfg.MaxCookieSizeBytes && len(cookie.uids) > 0 {
-		var oldestElem string = ""
-		var oldestDate int64 = math.MaxInt64
-		for key, value := range cookie.uids {
-			timeUntilExpiration := time.Until(value.Expires)
-			if timeUntilExpiration < time.Duration(oldestDate) {
-				oldestElem = key
-				oldestDate = int64(timeUntilExpiration)
-			}
+	for isCookieTooBig && len(cookie.uids) > 0 {
+		uidToDelete, err := ejector.Choose(cookie.uids)
+		if err != nil {
+			return err
 		}
-		delete(cookie.uids, oldestElem)
-		httpCookie = cookie.ToHTTPCookie(ttl)
-		if domain != "" {
-			httpCookie.Domain = domain
-		}
-		currSize = len([]byte(httpCookie.String()))
+		delete(cookie.uids, uidToDelete)
+		encodedCookie = encoder.Encode(cookie)
+		isCookieTooBig = len(encodedCookie) > cfg.MaxCookieSizeBytes && cfg.MaxCookieSizeBytes > 0
 	}
-
-	if setSiteCookie {
-		httpCookie.Secure = true
-		httpCookie.SameSite = http.SameSiteNoneMode
-	}
-	w.Header().Add("Set-Cookie", httpCookie.String())
+	WriteCookie(cookie, ttl, w, setSiteCookie, cfg.Domain)
 }
 
 // Unsync removes the user's ID for the given syncer key from this cookie.
@@ -203,16 +166,6 @@ func (cookie *Cookie) HasAnyLiveSyncs() bool {
 
 // Sync tries to set the UID for some syncer key. It returns an error if the set didn't happen.
 func (cookie *Cookie) Sync(key string, uid string) error {
-	if !cookie.AllowSyncs() {
-		return errors.New("The user has opted out of prebid server cookie syncs.")
-	}
-
-	// At the moment, Facebook calls /setuid with a UID of 0 if the user isn't logged into Facebook.
-	// They shouldn't be sending us a sentinel value... but since they are, we're refusing to save that ID.
-	if key == string(openrtb_ext.BidderAudienceNetwork) && uid == "0" {
-		return errors.New("audienceNetwork uses a UID of 0 as \"not yet recognized\".")
-	}
-
 	cookie.uids[key] = UIDEntry{
 		UID:     uid,
 		Expires: time.Now().Add(uidTTL),
