@@ -1371,9 +1371,7 @@ func buildStoredAuctionResponse(storedAuctionResponses map[string]json.RawMessag
 				seat.Bid[i].ImpID = impId
 				bidType, err := getMediaTypeForBid(seat.Bid[i])
 				if err != nil {
-					return nil, nil, nil, &errortypes.BadServerResponse{
-						Message: fmt.Sprintf("Failed to parse bid mType for impression \"%s\"", seat.Bid[i].ImpID),
-					}
+					return nil, nil, nil, err
 				}
 				bidsToAdd = append(bidsToAdd, &entities.PbsOrtbBid{Bid: &seat.Bid[i], BidType: bidType})
 			}

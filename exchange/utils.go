@@ -974,7 +974,7 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 		case openrtb2.MarkupNative:
 			bidType = openrtb_ext.BidTypeNative
 		default:
-			return bidType, fmt.Errorf("unable to determine bid type by Mtype")
+			return bidType, fmt.Errorf("Failed to parse bid mType for impression \"%s\"", bid.ImpID)
 		}
 	} else {
 		var err error
@@ -991,7 +991,13 @@ func getPrebidMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 		var bidExt openrtb_ext.ExtBid
 		err := json.Unmarshal(bid.Ext, &bidExt)
 		if err == nil && bidExt.Prebid != nil {
-			return openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
+			bidType, bidTypeErr := openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
+			if bidTypeErr != nil {
+				return "", &errortypes.BadServerResponse{
+					Message: fmt.Sprintf("Failed to parse bid mediatype for impression \"%s\", %s", bid.ImpID, bidTypeErr.Error()),
+				}
+			}
+			return bidType, nil
 		}
 	}
 
