@@ -21,20 +21,21 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const defaultPlatformID int = 5
+const (
+	defaultPlatformID int = 5
+	maxImpsPerReq         = 10
+)
 
 type adapter struct {
-	URI             string
+	uri             string
 	hbSource        int
 	randomGenerator randomutil.RandomGenerator
 }
 
-var maxImpsPerReq = 10
-
 // Builder builds a new instance of the AppNexus adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
-		URI:             config.Endpoint,
+		uri:             config.Endpoint,
 		hbSource:        resolvePlatformID(config.PlatformID),
 		randomGenerator: randomutil.RandomNumberGenerator{},
 	}
@@ -52,7 +53,6 @@ func resolvePlatformID(platformID string) int {
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-
 	// appnexus adapter expects imp.displaymanagerver to be populated in openrtb2 endpoint
 	// but some SDKs will put it in imp.ext.prebid instead
 	displayManagerVer := buildDisplayManageVer(request)
@@ -97,7 +97,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	}
 	request.Imp = validImps
 
-	requestURI := a.URI
+	// If all the requests were malformed, don't bother making a server call with no impressions.
+	if len(request.Imp) == 0 {
+		return nil, errs
+	}
+
+	requestURI := a.uri
 	// The Appnexus API requires a Member ID in the URL. This means the request may fail if
 	// different impressions have different member IDs.
 	// Check for this condition, and log an error if it's a problem.
@@ -106,11 +111,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		if len(uniqueMemberIds) > 1 {
 			errs = append(errs, fmt.Errorf("All request.imp[i].ext.prebid.bidder.appnexus.member params must match. Request contained: %v", uniqueMemberIds))
 		}
-	}
-
-	// If all the requests were malformed, don't bother making a server call with no impressions.
-	if len(request.Imp) == 0 {
-		return nil, errs
 	}
 
 	// Add Appnexus request level extension
@@ -139,8 +139,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	reqExt.Appnexus.IsAMP = isAMP
 	reqExt.Appnexus.HeaderBiddingSource = a.hbSource + isVIDEO
 
-	imps := request.Imp
-
 	// For long form requests if adpodId feature enabled, adpod_id must be sent downstream.
 	// Adpod id is a unique identifier for pod
 	// All impressions in the same pod must have the same pod id in request extension
@@ -148,11 +146,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	// If impressions number per pod is more than maxImpsPerReq - divide those imps to several requests but keep pod id the same
 	// If  adpodId feature disabled and impressions number per pod is more than maxImpsPerReq  - divide those imps to several requests but do not include ad pod id
 	if isVIDEO == 1 && *shouldGenerateAdPodId {
-		requests, errors := a.buildAdPodRequests(imps, request, reqExt, requestURI)
+		requests, errors := a.buildAdPodRequests(request.Imp, request, reqExt, requestURI)
 		return requests, append(errs, errors...)
 	}
 
-	requests, errors := splitRequests(imps, request, reqExt, requestURI)
+	requests, errors := splitRequests(request.Imp, request, reqExt, requestURI)
 	return requests, append(errs, errors...)
 }
 
@@ -193,7 +191,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 				bid.Cat = []string{iabCategory}
 			} else if len(bid.Cat) > 1 {
 				//create empty categories array to force bid to be rejected
-				bid.Cat = make([]string, 0)
+				bid.Cat = []string{}
 			}
 
 			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
@@ -258,7 +256,7 @@ func groupByPods(imps []openrtb2.Imp) map[string]([]openrtb2.Imp) {
 }
 
 func splitRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExtension appnexusReqExt, uri string) ([]*adapters.RequestData, []error) {
-	errs := []error{}
+	var errs []error
 	// Initial capacity for future array of requests, memory optimization.
 	// Let's say there are 35 impressions and limit impressions per request equals to 10.
 	// In this case we need to create 4 requests with 10, 10, 10 and 5 impressions.
@@ -329,7 +327,6 @@ func buildRequestImp(imp *openrtb2.Imp, appnexusExt *openrtb_ext.ExtImpAppnexus,
 			bannerCopy.Pos = adcom1.PositionBelowFold.Ptr()
 		}
 
-		// Fixes #307
 		if bannerCopy.W == nil && bannerCopy.H == nil && len(bannerCopy.Format) > 0 {
 			firstFormat := bannerCopy.Format[0]
 			bannerCopy.W = &(firstFormat.W)
@@ -352,11 +349,9 @@ func buildRequestImp(imp *openrtb2.Imp, appnexusExt *openrtb_ext.ExtImpAppnexus,
 	}}
 
 	var err error
-	if imp.Ext, err = json.Marshal(&impExt); err != nil {
-		return err
-	}
+	imp.Ext, err = json.Marshal(&impExt)
 
-	return nil
+	return err
 }
 
 // getMediaTypeForBid determines which type of bid.
