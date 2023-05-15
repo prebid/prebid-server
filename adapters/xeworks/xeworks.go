@@ -12,7 +12,18 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/httputil"
 )
+
+// { prebid: { type: 'banner' } }
+
+type bidType struct {
+	Type string `json:"type"`
+}
+
+type bidExt struct {
+	Prebid bidType `json:"prebid"`
+}
 
 type adapter struct {
 	endpoint *template.Template
@@ -20,19 +31,19 @@ type adapter struct {
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
-
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
-	bidder := new(adapter)
-	bidder.endpoint = template
+	bidder := &adapter{
+		endpoint: template,
+	}
 
 	return bidder, nil
 }
 
-func (a *adapter) buildEndpointFromRequest(bidRequest *openrtb2.BidRequest) (string, error) {
-	impExtRaw := bidRequest.Imp[0].Ext
+func (a *adapter) buildEndpointFromRequest(imp *openrtb2.Imp) (string, error) {
+	impExtRaw := imp.Ext
 	var impExt adapters.ExtImpBidder
 
 	if err := json.Unmarshal(impExtRaw, &impExt); err != nil {
@@ -56,14 +67,17 @@ func (a *adapter) buildEndpointFromRequest(bidRequest *openrtb2.BidRequest) (str
 	return macros.ResolveMacros(a.endpoint, endpointParams)
 }
 
-func (a *adapter) MakeRequests(
-	openRTBRequest *openrtb2.BidRequest,
-	requestInfo *adapters.ExtraRequestInfo,
-) ([]*adapters.RequestData, []error) {
-	endpoint, err := a.buildEndpointFromRequest(openRTBRequest)
-	if err != nil {
-		return nil, []error{err}
+func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	if len(openRTBRequest.Imp) == 0 {
+		return nil, []error{
+			&errortypes.BadInput{
+				Message: "Imp array can't be empty",
+			},
+		}
 	}
+
+	requests := make([]*adapters.RequestData, 0, len(openRTBRequest.Imp))
+	errs := make([]error, 0)
 
 	body, err := json.Marshal(openRTBRequest)
 	if err != nil {
@@ -74,27 +88,29 @@ func (a *adapter) MakeRequests(
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 
-	return []*adapters.RequestData{{
-		Method:  http.MethodPost,
-		Body:    body,
-		Uri:     endpoint,
-		Headers: headers,
-	}}, nil
-}
+	for _, imp := range openRTBRequest.Imp {
+		endpoint, err := a.buildEndpointFromRequest(&imp)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
 
-func (a *adapter) MakeBids(
-	openRTBRequest *openrtb2.BidRequest,
-	requestToBidder *adapters.RequestData,
-	bidderRawResponse *adapters.ResponseData,
-) (*adapters.BidderResponse, []error) {
-	if bidderRawResponse.StatusCode == http.StatusNoContent {
-		return nil, nil
+		request := &adapters.RequestData{
+			Method:  http.MethodPost,
+			Body:    body,
+			Uri:     endpoint,
+			Headers: headers,
+		}
+
+		requests = append(requests, request)
 	}
 
-	if bidderRawResponse.StatusCode == http.StatusBadRequest {
-		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Bad Request. %s", string(bidderRawResponse.Body)),
-		}}
+	return requests, errs
+}
+
+func (a *adapter) MakeBids(openRTBRequest *openrtb2.BidRequest, requestToBidder *adapters.RequestData, bidderRawResponse *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	if httputil.IsResponseStatusCodeNoContent(bidderRawResponse) {
+		return nil, nil
 	}
 
 	if bidderRawResponse.StatusCode == http.StatusServiceUnavailable {
@@ -103,10 +119,8 @@ func (a *adapter) MakeBids(
 		}}
 	}
 
-	if bidderRawResponse.StatusCode != http.StatusOK {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Status Code: [ %d ] %s", bidderRawResponse.StatusCode, string(bidderRawResponse.Body)),
-		}}
+	if err := httputil.CheckResponseStatusCodeForErrors(bidderRawResponse); err != nil {
+		return nil, []error{err}
 	}
 
 	responseBody := bidderRawResponse.Body
@@ -121,36 +135,46 @@ func (a *adapter) MakeBids(
 		}}
 	}
 
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
-
-	bids := bidResp.SeatBid[0].Bid
-
-	if len(bids) == 0 {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: "Array SeatBid[0].Bid cannot be empty",
-		}}
-	}
-
-	bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-		Bid:     &bids[0],
-		BidType: getMediaTypeForImp(bids[0].ImpID, openRTBRequest.Imp),
-	})
-	return bidResponse, nil
+	return prepareBidResponse(bidResp.SeatBid)
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
-	for _, imp := range imps {
-		if imp.ID == impID {
-			if imp.Banner != nil {
-				return openrtb_ext.BidTypeBanner
-			} else if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo
-			} else if imp.Native != nil {
-				return openrtb_ext.BidTypeNative
-			} else if imp.Audio != nil {
-				return openrtb_ext.BidTypeAudio
+func prepareBidResponse(seats []openrtb2.SeatBid) (*adapters.BidderResponse, []error) {
+	errs := make([]error, 0)
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(seats))
+
+	for seatId, seatBid := range seats {
+		if len(seatBid.Bid) == 0 {
+			errs = append(errs, &errortypes.BadServerResponse{
+				Message: fmt.Sprintf("Array SeatBid[%d].Bid cannot be empty", seatId),
+			})
+		}
+
+		for bidId, bid := range seatBid.Bid {
+			var bidExt bidExt
+			if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
+				errs = append(errs, &errortypes.BadServerResponse{
+					Message: fmt.Sprintf("Couldn't parse SeatBid[%d].Bid[%d].Ext, err: %s", seatId, bidId, err.Error()),
+				})
+				continue
 			}
+
+			bidType, err := openrtb_ext.ParseBidType(bidExt.Prebid.Type)
+
+			if err != nil {
+				errs = append(errs, &errortypes.BadServerResponse{
+					Message: fmt.Sprintf("SeatBid[%d].Bid[%d].Ext.Prebid.Type expects one of the following values: 'banner', 'native', 'video', 'audio', got '%s'", seatId, bidId, bidExt.Prebid.Type),
+				})
+			}
+
+			// create copy if bid struct since without it bid address get's polluted with previous value
+			// because of range
+			bidCopy := bid
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+				Bid:     &bidCopy,
+				BidType: bidType,
+			})
 		}
 	}
-	return openrtb_ext.BidTypeBanner
+
+	return bidResponse, errs
 }

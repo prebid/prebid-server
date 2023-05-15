@@ -152,7 +152,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "Array SeatBid[0].Bid.Ext.Prebid cannot be empty",
+      "value": "SeatBid[0].Bid[1].Ext.Prebid.Type expects one of the following values: 'banner', 'native', 'video', 'audio', got ''",
       "comparison": "literal"
     }
   ],

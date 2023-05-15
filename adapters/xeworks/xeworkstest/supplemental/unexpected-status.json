@@ -98,7 +98,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "Status Code: [ 403 ] \"Access is denied\"",
+      "value": "Unexpected status code: 403. Run with request.debug = 1 for more info",
       "comparison": "literal"
     }
   ],

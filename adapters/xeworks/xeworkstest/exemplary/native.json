@@ -115,7 +115,7 @@
                   "crid": "crid",
                   "ext": {
                     "prebid": {
-                      "type": "banner"
+                      "type": "native"
                     }
                   }
                 }
@@ -147,7 +147,12 @@
               "IAB1"
             ],
             "cid": "cid",
-            "crid": "crid"
+            "crid": "crid",
+            "ext": {
+              "prebid": {
+                "type": "native"
+              }
+            }
           },
           "type": "native"
         }

@@ -98,7 +98,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "Bad Request. \"The Key has a different ad format\"",
+      "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
       "comparison": "literal"
     }
   ],
