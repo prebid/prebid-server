@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
@@ -18,15 +19,28 @@ import (
 	"github.com/prebid/openrtb/v19/openrtb2"
 )
 
+const (
+	FtHandleMultiImpOnSingleRequest = "pbs_handle_multi_imp_on_single_req"
+)
+
+const ExpireFtTime = 3600 //1 hour
+
 type IxAdapter struct {
-	URI         string
-	maxRequests int
+	URI                    string
+	maxRequests            int
+	clientFeatureStatusMap map[string]FeatureTimestamp
+	featuresToRequest      []string
 }
 
 type ExtRequest struct {
-	Prebid *openrtb_ext.ExtRequestPrebid `json:"prebid"`
-	SChain *openrtb2.SupplyChain         `json:"schain,omitempty"`
-	IxDiag *IxDiag                       `json:"ixdiag,omitempty"`
+	Prebid   *openrtb_ext.ExtRequestPrebid `json:"prebid"`
+	SChain   *openrtb2.SupplyChain         `json:"schain,omitempty"`
+	IxDiag   *IxDiag                       `json:"ixdiag,omitempty"`
+	Features map[string]Activated          `json:"features,omitempty"`
+}
+
+type Activated struct {
+	Activated bool `json:"activated"`
 }
 
 type IxDiag struct {
@@ -34,30 +48,40 @@ type IxDiag struct {
 	PbjsV string `json:"pbjsv,omitempty"`
 }
 
+type FeatureTimestamp struct {
+	Timestamp int64
+	Activated bool
+}
+
 func (a *IxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	if isFeatureToggleActive(a, FtHandleMultiImpOnSingleRequest) == true {
+		return handleMultiImpInSingleRequest(request, a)
+	} else {
+		return handleMultiImpByFlattening(request, a)
+	}
+}
+
+func handleMultiImpByFlattening(request *openrtb2.BidRequest, a *IxAdapter) ([]*adapters.RequestData, []error) {
 	nImp := len(request.Imp)
 	if nImp > a.maxRequests {
 		request.Imp = request.Imp[:a.maxRequests]
 		nImp = a.maxRequests
 	}
-
-	errs := make([]error, 0)
-
-	if err := BuildIxDiag(request); err != nil {
-		errs = append(errs, err)
-	}
-
 	// Multi-size banner imps are split into single-size requests.
 	// The first size imp requests are added to the first slice.
 	// Additional size requests are added to the second slice and are merged with the first at the end.
 	// Preallocate the max possible size to avoid reallocating arrays.
 	requests := make([]*adapters.RequestData, 0, a.maxRequests)
 	multiSizeRequests := make([]*adapters.RequestData, 0, a.maxRequests-nImp)
+	errs := make([]error, 0, 1)
+
+	if err := BuildIxDiag(request); err != nil {
+		errs = append(errs, err)
+	}
 
 	headers := http.Header{
 		"Content-Type": {"application/json;charset=utf-8"},
 		"Accept":       {"application/json"}}
-
 	imps := request.Imp
 	for iImp := range imps {
 		request.Imp = imps[iImp : iImp+1]
@@ -67,7 +91,10 @@ func (a *IxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters
 				continue
 			}
 		}
-
+		if err := moveSid(&request.Imp[0]); err != nil {
+			errs = append(errs, err)
+		}
+		requestFeatureToggles(a, request)
 		if request.Imp[0].Banner != nil {
 			banner := *request.Imp[0].Banner
 			request.Imp[0].Banner = &banner
@@ -100,6 +127,129 @@ func (a *IxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters
 	return append(requests, multiSizeRequests...), errs
 }
 
+func handleMultiImpInSingleRequest(request *openrtb2.BidRequest, a *IxAdapter) ([]*adapters.RequestData, []error) {
+	nImp := len(request.Imp)
+	if nImp > a.maxRequests {
+		request.Imp = request.Imp[:a.maxRequests]
+		nImp = a.maxRequests
+	}
+	// Multi-size banner imps are split into single-size requests.
+	// The first size imp requests are added to the first slice.
+	// Additional size requests are added to the second slice and are merged with the first at the end.
+	requests := make([]*adapters.RequestData, 0, a.maxRequests)
+	multiSizeRequests := make([]*adapters.RequestData, 0, a.maxRequests-1)
+	errs := make([]error, 0)
+
+	if err := BuildIxDiag(request); err != nil {
+		errs = append(errs, err)
+	}
+
+	headers := http.Header{
+		"Content-Type": {"application/json;charset=utf-8"},
+		"Accept":       {"application/json"}}
+
+	siteIds := make(map[string]bool)
+	originalImps := make([]openrtb2.Imp, 0, len(request.Imp))
+	additionalMultiSizeImps := make([]openrtb2.Imp, 0)
+	requestCopy := *request
+	for _, imp := range requestCopy.Imp {
+		if err := parseSiteId(&imp, siteIds); err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		if err := moveSid(&imp); err != nil {
+			errs = append(errs, err)
+		}
+
+		if imp.Banner != nil {
+			bannerCopy := *imp.Banner
+
+			if len(bannerCopy.Format) == 0 && bannerCopy.W != nil && bannerCopy.H != nil {
+				bannerCopy.Format = []openrtb2.Format{{W: *bannerCopy.W, H: *bannerCopy.H}}
+			}
+
+			if len(bannerCopy.Format) == 1 {
+				bannerCopy.W = openrtb2.Int64Ptr(bannerCopy.Format[0].W)
+				bannerCopy.H = openrtb2.Int64Ptr(bannerCopy.Format[0].H)
+			}
+
+			if len(bannerCopy.Format) > 1 {
+				formats := bannerCopy.Format
+				// Creating additional imp from multiple formats. First format is part of original imp. Rest format will be converted to individual single imp & later request.
+				for iFmt := range formats {
+					additionalBannerCopy := *imp.Banner
+					additionalBannerCopy.Format = formats[iFmt : iFmt+1]
+					additionalBannerCopy.W = openrtb2.Int64Ptr(additionalBannerCopy.Format[0].W)
+					additionalBannerCopy.H = openrtb2.Int64Ptr(additionalBannerCopy.Format[0].H)
+					if iFmt == 0 {
+						bannerCopy = additionalBannerCopy
+					} else {
+						imp.Banner = &additionalBannerCopy
+						additionalMultiSizeImps = append(additionalMultiSizeImps, imp)
+					}
+				}
+			}
+
+			imp.Banner = &bannerCopy
+		}
+		originalImps = append(originalImps, imp)
+	}
+
+	if requestCopy.Site != nil {
+		site := *requestCopy.Site
+		if site.Publisher == nil {
+			site.Publisher = &openrtb2.Publisher{}
+		}
+		if len(siteIds) == 1 {
+			for siteId := range siteIds {
+				site.Publisher.ID = siteId
+			}
+		}
+		requestCopy.Site = &site
+	}
+
+	requestCopy.Imp = originalImps
+
+	requestFeatureToggles(a, &requestCopy)
+
+	if len(requestCopy.Imp) != 0 {
+		if requestData, err := createRequestData(a, &requestCopy, &headers); err == nil {
+			requests = append(requests, requestData)
+		} else {
+			errs = append(errs, err)
+		}
+	}
+
+	for i := range additionalMultiSizeImps {
+		requestCopy.Imp = additionalMultiSizeImps[i : i+1]
+		if requestData, err := createRequestData(a, &requestCopy, &headers); err == nil {
+			multiSizeRequests = append(multiSizeRequests, requestData)
+		} else {
+			errs = append(errs, err)
+		}
+	}
+
+	return append(requests, multiSizeRequests...), errs
+}
+
+func parseSiteId(imp *openrtb2.Imp, siteIds map[string]bool) error {
+	var bidderExt adapters.ExtImpBidder
+	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		return err
+	}
+
+	var ixExt openrtb_ext.ExtImpIx
+	if err := json.Unmarshal(bidderExt.Bidder, &ixExt); err != nil {
+		return err
+	}
+
+	if ixExt.SiteId != "" {
+		siteIds[ixExt.SiteId] = true
+	}
+	return nil
+}
+
 func setSitePublisherId(request *openrtb2.BidRequest, iImp int) error {
 	if iImp == 0 {
 		// first impression - create a site and pub copy
@@ -112,17 +262,14 @@ func setSitePublisherId(request *openrtb2.BidRequest, iImp int) error {
 		}
 		request.Site = &site
 	}
-
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil {
 		return err
 	}
-
 	var ixExt openrtb_ext.ExtImpIx
 	if err := json.Unmarshal(bidderExt.Bidder, &ixExt); err != nil {
 		return err
 	}
-
 	request.Site.Publisher.ID = ixExt.SiteId
 	return nil
 }
@@ -165,6 +312,8 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 		}}
 	}
 
+	setFeatureToggles(a, &bidResponse.Ext)
+
 	// Store media type per impression in a map for later use to set in bid.ext.prebid.type
 	// Won't work for multiple bid case with a multi-format ad unit. We expect to get type from exchange on such case.
 	impMediaTypeReq := map[string]openrtb_ext.BidType{}
@@ -180,7 +329,8 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 		}
 	}
 
-	bidderResponse := adapters.NewBidderResponseWithBidsCapacity(5)
+	// capacity 0 will make channel unbuffered
+	bidderResponse := adapters.NewBidderResponseWithBidsCapacity(0)
 	bidderResponse.Currency = bidResponse.Cur
 
 	var errs []error
@@ -275,8 +425,10 @@ func getMediaTypeForBid(bid openrtb2.Bid, impMediaTypeReq map[string]openrtb_ext
 // Builder builds a new instance of the Ix adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &IxAdapter{
-		URI:         config.Endpoint,
-		maxRequests: 20,
+		URI:                    config.Endpoint,
+		maxRequests:            100,
+		clientFeatureStatusMap: make(map[string]FeatureTimestamp),
+		featuresToRequest:      []string{FtHandleMultiImpOnSingleRequest},
 	}
 	return bidder, nil
 }
@@ -336,18 +488,15 @@ func BuildIxDiag(request *openrtb2.BidRequest) error {
 		}
 	}
 	ixdiag := &IxDiag{}
-
 	if extRequest.Prebid != nil && extRequest.Prebid.Channel != nil {
 		ixdiag.PbjsV = extRequest.Prebid.Channel.Version
 	}
-
 	// Slice commit hash out of version
 	if strings.Contains(version.Ver, "-") {
 		ixdiag.PbsV = version.Ver[:strings.Index(version.Ver, "-")]
 	} else if version.Ver != "" {
 		ixdiag.PbsV = version.Ver
 	}
-
 	// Only set request.ext if ixDiag is not empty
 	if *ixdiag != (IxDiag{}) {
 		extRequest.IxDiag = ixdiag
@@ -357,5 +506,106 @@ func BuildIxDiag(request *openrtb2.BidRequest) error {
 		}
 		request.Ext = extRequestJson
 	}
+	return nil
+}
+
+// moves sid from imp[].ext.bidder.sid to imp[].ext.sid
+func moveSid(imp *openrtb2.Imp) error {
+	if imp.Ext == nil || len(imp.Ext) == 0 {
+		return nil
+	}
+
+	var bidderExt adapters.ExtImpBidder
+	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		return err
+	}
+
+	var ixExt openrtb_ext.ExtImpIx
+	if err := json.Unmarshal(bidderExt.Bidder, &ixExt); err != nil {
+		return err
+	}
+
+	if ixExt.Sid != "" {
+		var m map[string]interface{}
+		if err := json.Unmarshal(imp.Ext, &m); err != nil {
+			return err
+		}
+		m["sid"] = ixExt.Sid
+		ext, err := json.Marshal(m)
+		if err != nil {
+			return err
+		}
+		imp.Ext = ext
+	}
+	return nil
+}
+
+func setFeatureToggles(a *IxAdapter, ext *json.RawMessage) {
+	if *ext == nil {
+		return
+	}
+
+	var f interface{}
+	err := json.Unmarshal(*ext, &f)
+
+	if err != nil {
+		return
+	}
+
+	if features, ok := f.(map[string]interface{})["features"]; ok {
+		if ft, ok := features.(map[string]interface{}); ok {
+			for k, v := range ft {
+				if activated, ok := v.(map[string]interface{})["activated"]; ok {
+					a.clientFeatureStatusMap[k] = FeatureTimestamp{
+						Activated: activated.(bool),
+						Timestamp: time.Now().Unix(),
+					}
+				}
+			}
+		}
+	}
+}
+
+func isFeatureToggleActive(a *IxAdapter, ft string) bool {
+	if value, ok := a.clientFeatureStatusMap[ft]; ok {
+		timeNow := time.Now().Unix()
+		if timeNow-value.Timestamp > ExpireFtTime {
+			return false
+		}
+		return value.Activated
+	}
+	return false
+}
+
+func requestFeatureToggles(a *IxAdapter, request *openrtb2.BidRequest) error {
+	if len(a.featuresToRequest) == 0 {
+		return nil
+	}
+
+	extRequest := &ExtRequest{}
+	if request.Ext != nil {
+		if err := json.Unmarshal(request.Ext, &extRequest); err != nil {
+			return err
+		}
+	}
+
+	for _, ft := range a.featuresToRequest {
+		if extRequest.Features == nil {
+			extRequest.Features = make(map[string]Activated)
+		}
+
+		status := isFeatureToggleActive(a, ft)
+
+		extRequest.Features[ft] = Activated{
+			Activated: status,
+		}
+
+	}
+
+	extRequestJson, err := json.Marshal(extRequest)
+	if err != nil {
+		return err
+	}
+	request.Ext = extRequestJson
 	return nil
 }

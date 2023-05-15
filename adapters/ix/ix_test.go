@@ -3,6 +3,7 @@ package ix
 import (
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/adapterstest"
@@ -21,7 +22,24 @@ func TestJsonSamples(t *testing.T) {
 	if bidder, err := Builder(openrtb_ext.BidderIx, config.Adapter{Endpoint: endpoint}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"}); err == nil {
 		ixBidder := bidder.(*IxAdapter)
 		ixBidder.maxRequests = 2
+		ixBidder.featuresToRequest = nil
 		adapterstest.RunJSONBidderTest(t, "ixtest", bidder)
+	} else {
+		t.Fatalf("Builder returned unexpected error %v", err)
+	}
+}
+
+func TestJsonForMultiImpAndSize(t *testing.T) {
+	if bidder, err := Builder(openrtb_ext.BidderIx, config.Adapter{Endpoint: endpoint}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"}); err == nil {
+		ixBidder := bidder.(*IxAdapter)
+		ixBidder.maxRequests = 2
+		ixBidder.clientFeatureStatusMap = map[string]FeatureTimestamp{
+			"pbs_handle_multi_imp_on_single_req": {
+				Activated: true,
+				Timestamp: time.Now().Unix(),
+			},
+		}
+		adapterstest.RunJSONBidderTest(t, "ixtestmulti", bidder)
 	} else {
 		t.Fatalf("Builder returned unexpected error %v", err)
 	}
@@ -44,7 +62,7 @@ func TestIxMakeBidsWithCategoryDuration(t *testing.T) {
 				`{
 					"prebid": {},
 					"bidder": {
-						"siteID": 123456
+						"siteID": "123456"
 					}
 				}`,
 			)},
@@ -124,7 +142,7 @@ func TestIxMakeRequestWithGppString(t *testing.T) {
 				`{
 					"prebid": {},
 					"bidder": {
-						"siteID": 123456
+						"siteId": "123456"
 					}
 				}`,
 			)},
@@ -275,4 +293,221 @@ func TestMakeRequestsErrIxDiag(t *testing.T) {
 	}
 	_, errs := bidder.MakeRequests(req, nil)
 	assert.Len(t, errs, 1)
+}
+
+func TestSetFeatureToggles(t *testing.T) {
+	testCases := []struct {
+		description string
+		ext         json.RawMessage
+		expected    map[string]FeatureTimestamp
+	}{
+		{
+			description: "nil ext",
+			ext:         nil,
+			expected:    map[string]FeatureTimestamp{},
+		},
+		{
+			description: "Empty input",
+			ext:         json.RawMessage(``),
+			expected:    map[string]FeatureTimestamp{},
+		},
+		{
+			description: "valid input with one feature toggle",
+			ext:         json.RawMessage(`{"features":{"ft_test_1":{"activated":true}}}`),
+			expected: map[string]FeatureTimestamp{
+				"ft_test_1": {
+					Activated: true,
+					Timestamp: time.Now().Unix(),
+				},
+			},
+		},
+		{
+			description: "valid input with two feature toggles",
+			ext:         json.RawMessage(`{"features":{"ft_test_1":{"activated":true},"ft_test_2":{"activated":false}}}`),
+			expected: map[string]FeatureTimestamp{
+				"ft_test_1": {
+					Activated: true,
+					Timestamp: time.Now().Unix(),
+				},
+				"ft_test_2": {
+					Activated: false,
+					Timestamp: time.Now().Unix(),
+				},
+			},
+		},
+		{
+			description: "input with one feature toggle, no activated key",
+			ext:         json.RawMessage(`{"features":{"ft_test_1":{"exists":true}}}`),
+			expected:    map[string]FeatureTimestamp{},
+		},
+		{
+			description: "features not formatted correctly",
+			ext:         json.RawMessage(`{"features":"helloworld"}`),
+			expected:    map[string]FeatureTimestamp{},
+		},
+		{
+			description: "no features",
+			ext:         json.RawMessage(`{"prebid":{"test":"helloworld"}}`),
+			expected:    map[string]FeatureTimestamp{},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			bidder, _ := Builder(openrtb_ext.BidderIx, config.Adapter{Endpoint: endpoint}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+			ixBidder := bidder.(*IxAdapter)
+			setFeatureToggles(ixBidder, &tc.ext)
+			assert.Equal(t, tc.expected, ixBidder.clientFeatureStatusMap)
+		})
+	}
+}
+
+func TestGetFeatureToggle(t *testing.T) {
+	clientFeatureMap := map[string]FeatureTimestamp{
+		"feature1": {
+			Activated: true,
+			Timestamp: time.Now().Unix(),
+		},
+		"feature2": {
+			Activated: true,
+			Timestamp: time.Now().Unix() - 3700,
+		},
+		"feature3": {
+			Activated: false,
+			Timestamp: time.Now().Unix(),
+		},
+	}
+
+	tests := []struct {
+		description string
+		ftName      string
+		expected    bool
+	}{
+		{"ActivatedFeature", "feature1", true},
+		{"ExpiredFeature", "feature2", false},
+		{"NotExpiredFeature", "feature3", false},
+		{"NonExistentFeature", "nonexistent", false},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			bidder, _ := Builder(openrtb_ext.BidderIx, config.Adapter{Endpoint: endpoint}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+			ixBidder := bidder.(*IxAdapter)
+			ixBidder.clientFeatureStatusMap = clientFeatureMap
+			result := isFeatureToggleActive(ixBidder, test.ftName)
+			assert.Equal(t, test.expected, result)
+		})
+	}
+}
+
+func TestRequestFeatureToggles(t *testing.T) {
+	type testCase struct {
+		name              string
+		inputRequest      *openrtb2.BidRequest
+		featuresToRequest []string
+		expectedExt       json.RawMessage
+		initialFeatureMap *FeatureTimestamp
+	}
+
+	testCases := []testCase{
+		{
+			name:              "empty features",
+			inputRequest:      &openrtb2.BidRequest{ID: "1"},
+			featuresToRequest: []string{},
+			expectedExt:       json.RawMessage(nil),
+		},
+		{
+			name:              "no features existing internally, request feature expect false",
+			inputRequest:      &openrtb2.BidRequest{ID: "1"},
+			featuresToRequest: []string{"ft1"},
+			expectedExt:       json.RawMessage(`{"prebid":null,"features":{"ft1":{"activated":false}}}`),
+		},
+		{
+			name:              "feature exists internally and activated",
+			inputRequest:      &openrtb2.BidRequest{ID: "1"},
+			featuresToRequest: []string{"ft1"},
+			expectedExt:       json.RawMessage(`{"prebid":null,"features":{"ft1":{"activated":true}}}`),
+			initialFeatureMap: &FeatureTimestamp{Timestamp: time.Now().Unix(), Activated: true},
+		},
+		{
+			name:              "feature exists internally and not activated",
+			inputRequest:      &openrtb2.BidRequest{ID: "1"},
+			featuresToRequest: []string{"ft1"},
+			expectedExt:       json.RawMessage(`{"prebid":null,"features":{"ft1":{"activated":false}}}`),
+			initialFeatureMap: &FeatureTimestamp{Timestamp: time.Now().Unix(), Activated: false},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			bidder, _ := Builder(openrtb_ext.BidderIx, config.Adapter{Endpoint: endpoint}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+			ixBidder := bidder.(*IxAdapter)
+			if tc.initialFeatureMap != nil {
+				ixBidder.clientFeatureStatusMap["ft1"] = *tc.initialFeatureMap
+			}
+			ixBidder.featuresToRequest = tc.featuresToRequest
+			requestFeatureToggles(ixBidder, tc.inputRequest)
+			assert.Equal(t, tc.expectedExt, tc.inputRequest.Ext)
+		})
+	}
+}
+
+func TestMoveSid(t *testing.T) {
+	testCases := []struct {
+		description string
+		imp         openrtb2.Imp
+		expectedExt json.RawMessage
+		expectErr   bool
+	}{
+		{
+			description: "valid input with sid",
+			imp: openrtb2.Imp{
+				Ext: json.RawMessage(`{"bidder":{"sid":"1234"}}`),
+			},
+			expectedExt: json.RawMessage(`{"bidder":{"sid":"1234"},"sid":"1234"}`),
+			expectErr:   false,
+		},
+		{
+			description: "valid input without sid",
+			imp: openrtb2.Imp{
+				Ext: json.RawMessage(`{"bidder":{"siteId":"1234"}}`),
+			},
+			expectedExt: json.RawMessage(`{"bidder":{"siteId":"1234"}}`),
+			expectErr:   false,
+		},
+		{
+			description: "no ext",
+			imp:         openrtb2.Imp{ID: "1"},
+			expectedExt: nil,
+			expectErr:   false,
+		},
+		{
+			description: "malformed json",
+			imp: openrtb2.Imp{
+				Ext: json.RawMessage(`"bidder":{"sid":"1234"}`),
+			},
+			expectedExt: json.RawMessage(`"bidder":{"sid":"1234"}`),
+			expectErr:   true,
+		},
+		{
+			description: "malformed bidder json",
+			imp: openrtb2.Imp{
+				Ext: json.RawMessage(`{"bidder":{"sid":1234}}`),
+			},
+			expectedExt: json.RawMessage(`{"bidder":{"sid":1234}}`),
+			expectErr:   true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			err := moveSid(&tc.imp)
+			assert.Equal(t, tc.expectedExt, tc.imp.Ext)
+			if tc.expectErr {
+				assert.NotNil(t, err)
+			} else {
+				assert.Nil(t, err)
+			}
+		})
+	}
 }
