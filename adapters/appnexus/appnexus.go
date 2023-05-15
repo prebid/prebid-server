@@ -346,7 +346,7 @@ func buildRequestImp(imp *openrtb2.Imp, appnexusExt *openrtb_ext.ExtImpAppnexus,
 	impExt := appnexusImpExt{Appnexus: appnexusImpExtAppnexus{
 		PlacementID:       int(appnexusExt.PlacementId),
 		TrafficSourceCode: appnexusExt.TrafficSourceCode,
-		Keywords:          makeKeywordStr(appnexusExt.Keywords),
+		Keywords:          appnexusExt.Keywords.String(),
 		UsePmtRule:        appnexusExt.UsePaymentRule,
 		PrivateSizes:      appnexusExt.PrivateSizes,
 	}}
@@ -357,21 +357,6 @@ func buildRequestImp(imp *openrtb2.Imp, appnexusExt *openrtb_ext.ExtImpAppnexus,
 	}
 
 	return nil
-}
-
-func makeKeywordStr(keywords []*openrtb_ext.ExtImpAppnexusKeyVal) string {
-	kvs := make([]string, 0, len(keywords)*2)
-	for _, kv := range keywords {
-		if len(kv.Values) == 0 {
-			kvs = append(kvs, kv.Key)
-		} else {
-			for _, val := range kv.Values {
-				kvs = append(kvs, fmt.Sprintf("%s=%s", kv.Key, val))
-			}
-		}
-	}
-
-	return strings.Join(kvs, ",")
 }
 
 // getMediaTypeForBid determines which type of bid.

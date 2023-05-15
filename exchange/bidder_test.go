@@ -3036,6 +3036,17 @@ func TestGetBidType(t *testing.T) {
 			givenImpId:   "imp-id",
 			expected:     string(openrtb_ext.BidTypeBanner),
 		},
+		{
+			name: "VideoBidTypeImpVideoIsNil",
+			givenImp: []openrtb2.Imp{
+				{
+					ID: "imp-id",
+				},
+			},
+			givenBidType: openrtb_ext.BidTypeVideo,
+			givenImpId:   "imp-id",
+			expected:     "video-instream",
+		},
 	}
 
 	for _, test := range testCases {
