@@ -170,11 +170,13 @@ func extractGDPRInfo(query url.Values) (gdpr.RequestInfo, error) {
 	var signalSet bool = false
 
 	// Signal
-	if gppSID := stringutil.StrToInt8Slice(query.Get("gpp_sid")); len(gppSID) > 0 {
-		if gppPrivacy.IsSIDInList(gppSID, gppConstants.SectionTCFEU2) {
-			gdprSignal = gdpr.SignalYes
-			signalSet = true
-		}
+	gppSID, err := stringutil.StrToInt8Slice(query.Get("gpp_sid"))
+	if err != nil {
+		return gdpr.RequestInfo{}, errors.New("gdpr_consent is required when gdpr=1")
+	}
+	if len(gppSID) > 0 && gppPrivacy.IsSIDInList(gppSID, gppConstants.SectionTCFEU2) {
+		gdprSignal = gdpr.SignalYes
+		signalSet = true
 	}
 
 	if !signalSet {
