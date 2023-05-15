@@ -241,32 +241,24 @@ func (cookie *Cookie) MarshalJSON() ([]byte, error) {
 
 func (cookie *Cookie) UnmarshalJSON(b []byte) error {
 	var cookieContract cookieJson
-	err := json.Unmarshal(b, &cookieContract)
-	if err == nil {
-		cookie.optOut = cookieContract.OptOut
-		cookie.birthday = cookieContract.Birthday
+	if err := json.Unmarshal(b, &cookieContract); err != nil {
+		return err
+	}
 
-		if cookie.optOut {
-			cookie.uids = make(map[string]uidWithExpiry)
-		} else {
+	cookie.optOut = cookieContract.OptOut
+	cookie.birthday = cookieContract.Birthday
+	cookie.uids = make(map[string]uidWithExpiry)
+
+	if !cookie.optOut {
+		if cookieContract.UIDs != nil {
 			cookie.uids = cookieContract.UIDs
-
-			if cookie.uids == nil {
-				cookie.uids = make(map[string]uidWithExpiry)
-			}
-
-			// Any "0" values from audienceNetwork really meant "no ID available." This happens if they've never
-			// logged into Facebook. However... once we know a user's ID, we stop trying to re-sync them until the
-			// expiration date has passed.
-			//
-			// Since users may log into facebook later, this is a bad strategy.
-			// Since "0" is a fake ID for this bidder, we'll just treat it like it doesn't exist.
-			if id, ok := cookie.uids[string(openrtb_ext.BidderAudienceNetwork)]; ok && id.UID == "0" {
-				delete(cookie.uids, string(openrtb_ext.BidderAudienceNetwork))
-			}
+		}
+		// Audience Network / Facebook Handling
+		if id, ok := cookie.uids[string(openrtb_ext.BidderAudienceNetwork)]; ok && id.UID == "0" {
+			delete(cookie.uids, string(openrtb_ext.BidderAudienceNetwork))
 		}
 	}
-	return err
+	return nil
 }
 
 func timestamp() *time.Time {
