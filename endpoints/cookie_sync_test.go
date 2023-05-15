@@ -418,6 +418,21 @@ func TestExtractPrivacyPolicies(t *testing.T) {
 			},
 		},
 		{
+			desc: "Malformed GPPSid string",
+			in: testInput{
+				request: cookieSyncRequest{
+					GPP:       "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
+					GPPSid:    "malformed",
+					USPrivacy: "1YYY",
+				},
+			},
+			expected: testOutput{
+				policies:   privacy.Policies{},
+				gdprSignal: gdpr.SignalNo,
+				err:        &strconv.NumError{"ParseInt", "malformed", strconv.ErrSyntax},
+			},
+		},
+		{
 			desc: "request USPrivacy string is different from the one in the GPP string, expect empty policies, signalNo and error",
 			in: testInput{
 				request: cookieSyncRequest{
