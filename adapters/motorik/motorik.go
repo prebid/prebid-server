@@ -12,6 +12,7 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/httputil"
 )
 
 type adapter struct {
@@ -60,7 +61,7 @@ func (a *adapter) MakeRequests(
 	requestsToBidder []*adapters.RequestData,
 	errs []error,
 ) {
-	motorikExt, err := a.getImpressionExt(&openRTBRequest.Imp[0])
+	motorikExt, err := getImpressionExt(&openRTBRequest.Imp[0])
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -86,17 +87,17 @@ func (a *adapter) MakeRequests(
 	}}, nil
 }
 
-func (a *adapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtMotorik, error) {
+func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtMotorik, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: "ext.bidder not provided",
+			Message: "Error parsing motorikExt - " + err.Error(),
 		}
 	}
 	var motorikExt openrtb_ext.ExtMotorik
 	if err := json.Unmarshal(bidderExt.Bidder, &motorikExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: "ext.bidder not provided",
+			Message: "Error parsing bidderExt - " + err.Error(),
 		}
 	}
 
@@ -108,26 +109,14 @@ func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtMotorik) (string, erro
 	return macros.ResolveMacros(a.endpoint, endpointParams)
 }
 
-func (a *adapter) checkResponseStatusCodes(response *adapters.ResponseData) error {
-	if response.StatusCode == http.StatusBadRequest {
-		return &errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code: [ %d ]", response.StatusCode),
-		}
-	}
-
+func checkResponseStatusCodes(response *adapters.ResponseData) error {
 	if response.StatusCode == http.StatusServiceUnavailable {
 		return &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Something went wrong, please contact your Account Manager. Status Code: [ %d ] ", response.StatusCode),
+			Message: fmt.Sprintf("Something went wrong Status Code: [ %d ] ", response.StatusCode),
 		}
 	}
 
-	if response.StatusCode != http.StatusOK {
-		return &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: [ %d ]. Run with request.debug = 1 for more info", response.StatusCode),
-		}
-	}
-
-	return nil
+	return httputil.CheckResponseStatusCodeForErrors(response)
 }
 
 func (a *adapter) MakeBids(
@@ -138,11 +127,11 @@ func (a *adapter) MakeBids(
 	bidderResponse *adapters.BidderResponse,
 	errs []error,
 ) {
-	if bidderRawResponse.StatusCode == http.StatusNoContent {
+	if httputil.IsResponseStatusCodeNoContent(bidderRawResponse) {
 		return nil, nil
 	}
 
-	httpStatusError := a.checkResponseStatusCodes(bidderRawResponse)
+	httpStatusError := checkResponseStatusCodes(bidderRawResponse)
 	if httpStatusError != nil {
 		return nil, []error{httpStatusError}
 	}

@@ -72,7 +72,7 @@
   "expectedBidResponses": [],
   "expectedMakeBidsErrors": [
     {
-      "value": "Something went wrong, please contact your Account Manager. Status Code: [ 503 ] ",
+      "value": "Something went wrong Status Code: [ 503 ] ",
       "comparison": "literal"
     }
   ]

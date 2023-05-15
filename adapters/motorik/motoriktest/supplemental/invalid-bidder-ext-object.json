@@ -1,7 +1,7 @@
 {
   "expectedMakeRequestsErrors": [
     {
-      "value": "Error parsing motorikExt - json: cannot unmarshal string into Go value of type adapters.ExtImpBidder",
+      "value": "Error parsing bidderExt - json: cannot unmarshal string into Go value of type openrtb_ext.ExtMotorik",
       "comparison": "literal"
     }
   ],
@@ -20,7 +20,9 @@
           "minduration": 120,
           "maxduration": 150
         },
-        "ext": "wrontMotorikExt"
+        "ext": {
+          "bidder": "wrongBidderExt"
+        }
       }
     ],
     "site": {
