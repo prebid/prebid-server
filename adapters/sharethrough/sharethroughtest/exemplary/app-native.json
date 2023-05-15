@@ -1,7 +1,6 @@
 {
   "mockBidRequest": {
     "id": "web-native",
-    "tmax": 3000,
     "imp": [
       {
         "id": "native-imp-id",
@@ -15,18 +14,7 @@
           "request": "placeholder request"
         }
       }
-    ],
-    "app": {
-      "bundle": "com.fake.app",
-      "publisher": {
-        "id": "42",
-        "name": "whatever.pub"
-      }
-    },
-    "device": {
-      "w": 1200,
-      "h": 900
-    }
+    ]
   },
   "httpCalls": [
     {
@@ -42,7 +30,6 @@
         },
         "body": {
           "id": "web-native",
-          "tmax": 3000,
           "imp": [
             {
               "id": "native-imp-id",
@@ -58,17 +45,6 @@
               }
             }
           ],
-          "device": {
-            "w": 1200,
-            "h": 900
-          },
-          "app": {
-            "bundle": "com.fake.app",
-            "publisher": {
-              "id": "42",
-              "name": "whatever.pub"
-            }
-          },
           "source": {
             "ext": {
               "version": "",
