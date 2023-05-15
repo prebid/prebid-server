@@ -11,6 +11,7 @@ import (
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/exchange/entities"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -42,11 +43,11 @@ func TestIsValidImpBidfloorPresentInRequest(t *testing.T) {
 		want bool
 	}{
 		{
-			imp:  []openrtb2.Imp{{ID: "1234", Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}}}},
+			imp:  []openrtb2.Imp{{ID: "1234"}},
 			want: false,
 		},
 		{
-			imp:  []openrtb2.Imp{{ID: "1234", BidFloor: 10, BidFloorCur: "USD", Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}}}},
+			imp:  []openrtb2.Imp{{ID: "1234", BidFloor: 10, BidFloorCur: "USD"}},
 			want: true,
 		},
 	}
@@ -58,7 +59,6 @@ func TestIsValidImpBidfloorPresentInRequest(t *testing.T) {
 }
 
 func TestEnforceFloorToBids(t *testing.T) {
-
 	type args struct {
 		bidRequestWrapper *openrtb_ext.RequestWrapper
 		seatBids          map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid
@@ -72,7 +72,6 @@ func TestEnforceFloorToBids(t *testing.T) {
 		expErrs         []error
 		expRejectedBids []*entities.PbsOrtbSeatBid
 	}{
-
 		{
 			name: "Floors enforcement disabled using enforcepbs = false",
 			args: args{
@@ -84,7 +83,7 @@ func TestEnforceFloorToBids(t *testing.T) {
 								{ID: "some-impression-id-1", BidFloor: 1.01, BidFloorCur: "USD"},
 								{ID: "some-impression-id-2", BidFloor: 2.01, BidFloorCur: "USD"},
 							},
-							Ext: json.RawMessage(`{"prebid":{"floors":{"floormin":1,"data":{"currency":"USD","skiprate":100,"modelgroups":[{"modelversion":"version1","skiprate":10,"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"},"values":{"*|*|*":20.01,"*|*|www.website1.com":16.01},"default":21}]},"enforcement":{"enforcepbs":false,"floordeals":false},"enabled":true}}}`),
+							Ext: json.RawMessage(`{"prebid":{"floors":{"enforcement":{"enforcepbs":false}}}}`),
 						},
 					}
 					bw.RebuildRequest()
@@ -132,7 +131,6 @@ func TestEnforceFloorToBids(t *testing.T) {
 			expRejectedBids: []*entities.PbsOrtbSeatBid{},
 			expErrs:         []error{},
 		},
-
 		{
 			name: "Bids with price less than bidfloor",
 			args: args{
@@ -296,6 +294,43 @@ func TestEnforceFloorToBids(t *testing.T) {
 			},
 			expRejectedBids: []*entities.PbsOrtbSeatBid{},
 			expErrs:         []error{errors.New("error in rate conversion from = EUR to  with bidder pubmatic for impression id some-impression-id-1 and bid id some-bid-1 error = currency conversion not supported")},
+		},
+		{
+			name: "Bids with invalid impression ID",
+			args: args{
+				bidRequestWrapper: func() *openrtb_ext.RequestWrapper {
+					bw := openrtb_ext.RequestWrapper{
+						BidRequest: &openrtb2.BidRequest{
+							ID: "some-request-id",
+							Imp: []openrtb2.Imp{
+								{ID: "some-impression-id-2", BidFloor: 2.01, BidFloorCur: "USD"},
+							},
+						},
+					}
+					bw.RebuildRequest()
+					return &bw
+				}(),
+				seatBids: map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid{
+					"pubmatic": {
+						Bids: []*entities.PbsOrtbBid{
+							{Bid: &openrtb2.Bid{ID: "some-bid-1", Price: 1.2, ImpID: "some-impression-id-123"}},
+						},
+						Seat:     "pubmatic",
+						Currency: "USD",
+					},
+				},
+				conversions:       currency.Conversions(convert{}),
+				enforceDealFloors: false,
+			},
+			expEligibleBids: map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid{
+				"pubmatic": {
+					Bids:     []*entities.PbsOrtbBid{},
+					Seat:     "pubmatic",
+					Currency: "USD",
+				},
+			},
+			expRejectedBids: []*entities.PbsOrtbSeatBid{},
+			expErrs:         []error{},
 		},
 	}
 	for _, tt := range tests {
@@ -695,7 +730,6 @@ func TestUpdateBidExtWithFloors(t *testing.T) {
 }
 
 func TestIsEnforcementEnabledForRequest(t *testing.T) {
-
 	tests := []struct {
 		name   string
 		reqExt *openrtb_ext.RequestExt
@@ -704,53 +738,39 @@ func TestIsEnforcementEnabledForRequest(t *testing.T) {
 		{
 			name: "Req.ext not provided",
 			reqExt: func() *openrtb_ext.RequestExt {
-				bw := openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						ID: "some-request-id",
-						Imp: []openrtb2.Imp{
-							{ID: "some-impression-id-1", BidFloor: 1.01, BidFloorCur: "USD"},
-						},
-					},
-				}
-				bw.RebuildRequest()
-				reqExt, _ := bw.GetRequestExt()
-				return reqExt
+				return &openrtb_ext.RequestExt{}
 			}(),
 			want: true,
 		},
 		{
 			name: "Req.ext provided EnforcePBS = false",
 			reqExt: func() *openrtb_ext.RequestExt {
-				bw := openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						ID: "some-request-id",
-						Imp: []openrtb2.Imp{
-							{ID: "some-impression-id-1", BidFloor: 1.01, BidFloorCur: "USD"},
+				reqExt := openrtb_ext.RequestExt{}
+				prebidExt := openrtb_ext.ExtRequestPrebid{
+					Floors: &openrtb_ext.PriceFloorRules{
+						Enforcement: &openrtb_ext.PriceFloorEnforcement{
+							EnforcePBS: ptrutil.ToPtr(false),
 						},
-						Ext: json.RawMessage(`{"prebid":{"floors":{"floormin":1,"floormincur":"EUR","data":{"currency":"USD","floorsschemaversion":"2","modelgroups":[{"modelweight":40,"modelversion":"version2","skiprate":10,"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"},"values":{"*|*|*":21.01,"*|*|www.website1.com":16.01,"*|300x250|*":11.01,"*|300x250|www.website1.com":100.01},"default":21}]},"enforcement":{"enforcepbs":false,"floordeals":true},"enabled":true}}}`),
 					},
 				}
-				bw.RebuildRequest()
-				reqExt, _ := bw.GetRequestExt()
-				return reqExt
+				reqExt.SetPrebid(&prebidExt)
+				return &reqExt
 			}(),
 			want: false,
 		},
 		{
 			name: "Req.ext provided EnforcePBS = true",
 			reqExt: func() *openrtb_ext.RequestExt {
-				bw := openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						ID: "some-request-id",
-						Imp: []openrtb2.Imp{
-							{ID: "some-impression-id-1", BidFloor: 1.01, BidFloorCur: "USD"},
+				reqExt := openrtb_ext.RequestExt{}
+				prebidExt := openrtb_ext.ExtRequestPrebid{
+					Floors: &openrtb_ext.PriceFloorRules{
+						Enforcement: &openrtb_ext.PriceFloorEnforcement{
+							EnforcePBS: ptrutil.ToPtr(true),
 						},
-						Ext: json.RawMessage(`{"prebid":{"floors":{"floormin":1,"floormincur":"EUR","data":{"currency":"USD","floorsschemaversion":"2","modelgroups":[{"modelweight":40,"modelversion":"version2","skiprate":10,"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"},"values":{"*|*|*":21.01,"*|*|www.website1.com":16.01,"*|300x250|*":11.01,"*|300x250|www.website1.com":100.01},"default":21}]},"enforcement":{"enforcepbs":true,"floordeals":true},"enabled":true}}}`),
 					},
 				}
-				bw.RebuildRequest()
-				reqExt, _ := bw.GetRequestExt()
-				return reqExt
+				reqExt.SetPrebid(&prebidExt)
+				return &reqExt
 			}(),
 			want: true,
 		},
@@ -762,62 +782,60 @@ func TestIsEnforcementEnabledForRequest(t *testing.T) {
 }
 
 func TestIsSignalingSkipped(t *testing.T) {
-
 	tests := []struct {
 		name   string
 		reqExt *openrtb_ext.RequestExt
 		want   bool
 	}{
 		{
-			name: "Req.ext not provided",
+			name: "Req.ext nil",
 			reqExt: func() *openrtb_ext.RequestExt {
-				bw := openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						ID: "some-request-id",
-						Imp: []openrtb2.Imp{
-							{ID: "some-impression-id-1", BidFloor: 1.01, BidFloorCur: "USD"},
-						},
-					},
-				}
-				bw.RebuildRequest()
-				reqExt, _ := bw.GetRequestExt()
-				return reqExt
+				return nil
+			}(),
+			want: false,
+		},
+		{
+			name: "Req.ext provided without prebid ext",
+			reqExt: func() *openrtb_ext.RequestExt {
+				return &openrtb_ext.RequestExt{}
+			}(),
+			want: false,
+		},
+		{
+			name: "Req.ext provided without Floors in prebid ext",
+			reqExt: func() *openrtb_ext.RequestExt {
+				reqExt := openrtb_ext.RequestExt{}
+				prebidExt := openrtb_ext.ExtRequestPrebid{}
+				reqExt.SetPrebid(&prebidExt)
+				return &reqExt
 			}(),
 			want: false,
 		},
 		{
 			name: "Req.ext provided Skipped = true",
 			reqExt: func() *openrtb_ext.RequestExt {
-				bw := openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						ID: "some-request-id",
-						Imp: []openrtb2.Imp{
-							{ID: "some-impression-id-1", BidFloor: 1.01, BidFloorCur: "USD"},
-						},
-						Ext: json.RawMessage(`{"prebid":{"floors":{"floormin":1,"floormincur":"EUR","data":{"currency":"USD","floorsschemaversion":"2","modelgroups":[{"modelweight":40,"modelversion":"version2","skiprate":10,"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"},"values":{"*|*|*":21.01,"*|*|www.website1.com":16.01,"*|300x250|*":11.01,"*|300x250|www.website1.com":100.01},"default":21}]},"enforcement":{"enforcepbs":true,"floordeals":true},"enabled":true,"skipped":true}}}`),
+				reqExt := openrtb_ext.RequestExt{}
+				prebidExt := openrtb_ext.ExtRequestPrebid{
+					Floors: &openrtb_ext.PriceFloorRules{
+						Skipped: ptrutil.ToPtr(true),
 					},
 				}
-				bw.RebuildRequest()
-				reqExt, _ := bw.GetRequestExt()
-				return reqExt
+				reqExt.SetPrebid(&prebidExt)
+				return &reqExt
 			}(),
 			want: true,
 		},
 		{
 			name: "Req.ext provided Skipped = false",
 			reqExt: func() *openrtb_ext.RequestExt {
-				bw := openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						ID: "some-request-id",
-						Imp: []openrtb2.Imp{
-							{ID: "some-impression-id-1", BidFloor: 1.01, BidFloorCur: "USD"},
-						},
-						Ext: json.RawMessage(`{"prebid":{"floors":{"floormin":1,"floormincur":"EUR","data":{"currency":"USD","floorsschemaversion":"2","modelgroups":[{"modelweight":40,"modelversion":"version2","skiprate":10,"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"},"values":{"*|*|*":21.01,"*|*|www.website1.com":16.01,"*|300x250|*":11.01,"*|300x250|www.website1.com":100.01},"default":21}]},"enforcement":{"enforcepbs":true,"floordeals":true},"enabled":true,"skipped":false}}}`),
+				reqExt := openrtb_ext.RequestExt{}
+				prebidExt := openrtb_ext.ExtRequestPrebid{
+					Floors: &openrtb_ext.PriceFloorRules{
+						Skipped: ptrutil.ToPtr(false),
 					},
 				}
-				bw.RebuildRequest()
-				reqExt, _ := bw.GetRequestExt()
-				return reqExt
+				reqExt.SetPrebid(&prebidExt)
+				return &reqExt
 			}(),
 			want: false,
 		},
@@ -829,7 +847,6 @@ func TestIsSignalingSkipped(t *testing.T) {
 }
 
 func TestGetEnforceRateRequest(t *testing.T) {
-
 	tests := []struct {
 		name   string
 		reqExt *openrtb_ext.RequestExt
@@ -838,71 +855,55 @@ func TestGetEnforceRateRequest(t *testing.T) {
 		{
 			name: "Req.ext not provided",
 			reqExt: func() *openrtb_ext.RequestExt {
-				bw := openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						ID: "some-request-id",
-						Imp: []openrtb2.Imp{
-							{ID: "some-impression-id-1", BidFloor: 1.01, BidFloorCur: "USD"},
-						},
-					},
-				}
-				bw.RebuildRequest()
-				reqExt, _ := bw.GetRequestExt()
-				return reqExt
+				return &openrtb_ext.RequestExt{}
 			}(),
 			want: 0,
 		},
 		{
 			name: "Req.ext.prebid.floors provided with EnforceRate = 0",
 			reqExt: func() *openrtb_ext.RequestExt {
-				bw := openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						ID: "some-request-id",
-						Imp: []openrtb2.Imp{
-							{ID: "some-impression-id-1", BidFloor: 1.01, BidFloorCur: "USD"},
+				reqExt := openrtb_ext.RequestExt{}
+				prebidExt := openrtb_ext.ExtRequestPrebid{
+					Floors: &openrtb_ext.PriceFloorRules{
+						Enforcement: &openrtb_ext.PriceFloorEnforcement{
+							EnforceRate: 0,
 						},
-						Ext: json.RawMessage(`{"prebid":{"floors":{"floormin":1,"floormincur":"EUR","data":{"currency":"USD","floorsschemaversion":"2","modelgroups":[{"modelweight":40,"modelversion":"version2","skiprate":10,"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"},"values":{"*|*|*":21.01,"*|*|www.website1.com":16.01,"*|300x250|*":11.01,"*|300x250|www.website1.com":100.01},"default":21}]},"enforcement":{"enforcepbs":true,"floordeals":true,"enforcerate":0},"enabled":true,"skipped":false}}}`),
 					},
 				}
-				bw.RebuildRequest()
-				reqExt, _ := bw.GetRequestExt()
-				return reqExt
+				reqExt.SetPrebid(&prebidExt)
+				return &reqExt
 			}(),
 			want: 0,
 		},
 		{
 			name: "Req.ext.prebid.floors provided with EnforceRate = 50",
 			reqExt: func() *openrtb_ext.RequestExt {
-				bw := openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						ID: "some-request-id",
-						Imp: []openrtb2.Imp{
-							{ID: "some-impression-id-1", BidFloor: 1.01, BidFloorCur: "USD"},
+				reqExt := openrtb_ext.RequestExt{}
+				prebidExt := openrtb_ext.ExtRequestPrebid{
+					Floors: &openrtb_ext.PriceFloorRules{
+						Enforcement: &openrtb_ext.PriceFloorEnforcement{
+							EnforceRate: 50,
 						},
-						Ext: json.RawMessage(`{"prebid":{"floors":{"floormin":1,"floormincur":"EUR","data":{"currency":"USD","floorsschemaversion":"2","modelgroups":[{"modelweight":40,"modelversion":"version2","skiprate":10,"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"},"values":{"*|*|*":21.01,"*|*|www.website1.com":16.01,"*|300x250|*":11.01,"*|300x250|www.website1.com":100.01},"default":21}]},"enforcement":{"enforcepbs":true,"floordeals":true,"enforcerate":50},"enabled":true,"skipped":true}}}`),
 					},
 				}
-				bw.RebuildRequest()
-				reqExt, _ := bw.GetRequestExt()
-				return reqExt
+				reqExt.SetPrebid(&prebidExt)
+				return &reqExt
 			}(),
 			want: 50,
 		},
 		{
 			name: "Req.ext.prebid.floors provided with EnforceRate = 100",
 			reqExt: func() *openrtb_ext.RequestExt {
-				bw := openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						ID: "some-request-id",
-						Imp: []openrtb2.Imp{
-							{ID: "some-impression-id-1", BidFloor: 1.01, BidFloorCur: "USD"},
+				reqExt := openrtb_ext.RequestExt{}
+				prebidExt := openrtb_ext.ExtRequestPrebid{
+					Floors: &openrtb_ext.PriceFloorRules{
+						Enforcement: &openrtb_ext.PriceFloorEnforcement{
+							EnforceRate: 100,
 						},
-						Ext: json.RawMessage(`{"prebid":{"floors":{"floormin":1,"floormincur":"EUR","data":{"currency":"USD","floorsschemaversion":"2","modelgroups":[{"modelweight":40,"modelversion":"version2","skiprate":10,"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"},"values":{"*|*|*":21.01,"*|*|www.website1.com":16.01,"*|300x250|*":11.01,"*|300x250|www.website1.com":100.01},"default":21}]},"enforcement":{"enforcepbs":true,"floordeals":true,"enforcerate":100},"enabled":true,"skipped":true}}}`),
 					},
 				}
-				bw.RebuildRequest()
-				reqExt, _ := bw.GetRequestExt()
-				return reqExt
+				reqExt.SetPrebid(&prebidExt)
+				return &reqExt
 			}(),
 			want: 100,
 		},
@@ -914,7 +915,6 @@ func TestGetEnforceRateRequest(t *testing.T) {
 }
 
 func TestGetEnforceDealsFlag(t *testing.T) {
-
 	tests := []struct {
 		name   string
 		reqExt *openrtb_ext.RequestExt
@@ -923,71 +923,53 @@ func TestGetEnforceDealsFlag(t *testing.T) {
 		{
 			name: "Req.ext not provided",
 			reqExt: func() *openrtb_ext.RequestExt {
-				bw := openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						ID: "some-request-id",
-						Imp: []openrtb2.Imp{
-							{ID: "some-impression-id-1", BidFloor: 1.01, BidFloorCur: "USD"},
-						},
-					},
-				}
-				bw.RebuildRequest()
-				reqExt, _ := bw.GetRequestExt()
-				return reqExt
+				return &openrtb_ext.RequestExt{}
 			}(),
 			want: false,
 		},
 		{
-			name: "Req.ext.prebid.floors provided,  enforceDeals not provided",
+			name: "Req.ext.prebid.floors provided, enforceDeals not provided",
 			reqExt: func() *openrtb_ext.RequestExt {
-				bw := openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						ID: "some-request-id",
-						Imp: []openrtb2.Imp{
-							{ID: "some-impression-id-1", BidFloor: 1.01, BidFloorCur: "USD"},
-						},
-						Ext: json.RawMessage(`{"prebid":{"floors":{"floormin":1,"floormincur":"EUR","data":{"currency":"USD","floorsschemaversion":"2","modelgroups":[{"modelweight":40,"modelversion":"version2","skiprate":10,"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"},"values":{"*|*|*":21.01,"*|*|www.website1.com":16.01,"*|300x250|*":11.01,"*|300x250|www.website1.com":100.01},"default":21}]},"enforcement":{"enforcepbs":true,"enforcerate":0},"enabled":true,"skipped":false}}}`),
+				reqExt := openrtb_ext.RequestExt{}
+				prebidExt := openrtb_ext.ExtRequestPrebid{
+					Floors: &openrtb_ext.PriceFloorRules{
+						Enforcement: &openrtb_ext.PriceFloorEnforcement{},
 					},
 				}
-				bw.RebuildRequest()
-				reqExt, _ := bw.GetRequestExt()
-				return reqExt
+				reqExt.SetPrebid(&prebidExt)
+				return &reqExt
 			}(),
 			want: false,
 		},
 		{
 			name: "Req.ext.prebid.floors provided with enforceDeals = false",
 			reqExt: func() *openrtb_ext.RequestExt {
-				bw := openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						ID: "some-request-id",
-						Imp: []openrtb2.Imp{
-							{ID: "some-impression-id-1", BidFloor: 1.01, BidFloorCur: "USD"},
+				reqExt := openrtb_ext.RequestExt{}
+				prebidExt := openrtb_ext.ExtRequestPrebid{
+					Floors: &openrtb_ext.PriceFloorRules{
+						Enforcement: &openrtb_ext.PriceFloorEnforcement{
+							FloorDeals: ptrutil.ToPtr(false),
 						},
-						Ext: json.RawMessage(`{"prebid":{"floors":{"floormin":1,"floormincur":"EUR","data":{"currency":"USD","floorsschemaversion":"2","modelgroups":[{"modelweight":40,"modelversion":"version2","skiprate":10,"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"},"values":{"*|*|*":21.01,"*|*|www.website1.com":16.01,"*|300x250|*":11.01,"*|300x250|www.website1.com":100.01},"default":21}]},"enforcement":{"enforcepbs":true,"floordeals":false,"enforcerate":0},"enabled":true,"skipped":false}}}`),
 					},
 				}
-				bw.RebuildRequest()
-				reqExt, _ := bw.GetRequestExt()
-				return reqExt
+				reqExt.SetPrebid(&prebidExt)
+				return &reqExt
 			}(),
 			want: false,
 		},
 		{
 			name: "Req.ext.prebid.floors provided with enforceDeals = true",
 			reqExt: func() *openrtb_ext.RequestExt {
-				bw := openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						ID: "some-request-id",
-						Imp: []openrtb2.Imp{
-							{ID: "some-impression-id-1", BidFloor: 1.01, BidFloorCur: "USD"},
+				reqExt := openrtb_ext.RequestExt{}
+				prebidExt := openrtb_ext.ExtRequestPrebid{
+					Floors: &openrtb_ext.PriceFloorRules{
+						Enforcement: &openrtb_ext.PriceFloorEnforcement{
+							FloorDeals: ptrutil.ToPtr(true),
 						},
-						Ext: json.RawMessage(`{"prebid":{"floors":{"floormin":1,"floormincur":"EUR","data":{"currency":"USD","floorsschemaversion":"2","modelgroups":[{"modelweight":40,"modelversion":"version2","skiprate":10,"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"},"values":{"*|*|*":21.01,"*|*|www.website1.com":16.01,"*|300x250|*":11.01,"*|300x250|www.website1.com":100.01},"default":21}]},"enforcement":{"enforcepbs":true,"floordeals":true,"enforcerate":50},"enabled":true,"skipped":true}}}`),
 					},
 				}
-				bw.RebuildRequest()
-				reqExt, _ := bw.GetRequestExt()
-				return reqExt
+				reqExt.SetPrebid(&prebidExt)
+				return &reqExt
 			}(),
 			want: true,
 		},
@@ -1013,18 +995,17 @@ func TestIsSatisfiedByEnforceRate(t *testing.T) {
 			name: "With EnforceRate = 50",
 			args: args{
 				reqExt: func() *openrtb_ext.RequestExt {
-					bw := openrtb_ext.RequestWrapper{
-						BidRequest: &openrtb2.BidRequest{
-							ID: "some-request-id",
-							Imp: []openrtb2.Imp{
-								{ID: "some-impression-id-1", BidFloor: 1.01, BidFloorCur: "USD"},
+					reqExt := openrtb_ext.RequestExt{}
+					prebidExt := openrtb_ext.ExtRequestPrebid{
+						Floors: &openrtb_ext.PriceFloorRules{
+							Enforcement: &openrtb_ext.PriceFloorEnforcement{
+								EnforceRate: 50,
+								EnforcePBS:  ptrutil.ToPtr(true),
 							},
-							Ext: json.RawMessage(`{"prebid":{"floors":{"floormin":1,"floormincur":"EUR","data":{"currency":"USD","floorsschemaversion":"2","modelgroups":[{"modelweight":40,"modelversion":"version2","skiprate":10,"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"},"values":{"*|*|*":21.01,"*|*|www.website1.com":16.01,"*|300x250|*":11.01,"*|300x250|www.website1.com":100.01},"default":21}]},"enforcement":{"enforcepbs":true,"floordeals":true,"enforcerate":50},"enabled":true}}}`),
 						},
 					}
-					bw.RebuildRequest()
-					reqExt, _ := bw.GetRequestExt()
-					return reqExt
+					reqExt.SetPrebid(&prebidExt)
+					return &reqExt
 				}(),
 				configEnforceRate: 100,
 				f: func(n int) int {
@@ -1037,18 +1018,17 @@ func TestIsSatisfiedByEnforceRate(t *testing.T) {
 			name: "With EnforceRate = 100",
 			args: args{
 				reqExt: func() *openrtb_ext.RequestExt {
-					bw := openrtb_ext.RequestWrapper{
-						BidRequest: &openrtb2.BidRequest{
-							ID: "some-request-id",
-							Imp: []openrtb2.Imp{
-								{ID: "some-impression-id-1", BidFloor: 1.01, BidFloorCur: "USD"},
+					reqExt := openrtb_ext.RequestExt{}
+					prebidExt := openrtb_ext.ExtRequestPrebid{
+						Floors: &openrtb_ext.PriceFloorRules{
+							Enforcement: &openrtb_ext.PriceFloorEnforcement{
+								EnforceRate: 100,
+								EnforcePBS:  ptrutil.ToPtr(true),
 							},
-							Ext: json.RawMessage(`{"prebid":{"floors":{"floormin":1,"floormincur":"EUR","data":{"currency":"USD","floorsschemaversion":"2","modelgroups":[{"modelweight":40,"modelversion":"version2","skiprate":10,"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"},"values":{"*|*|*":21.01,"*|*|www.website1.com":16.01,"*|300x250|*":11.01,"*|300x250|www.website1.com":100.01},"default":21}]},"enforcement":{"enforcepbs":true,"floordeals":true,"enforcerate":100},"enabled":true}}}`),
 						},
 					}
-					bw.RebuildRequest()
-					reqExt, _ := bw.GetRequestExt()
-					return reqExt
+					reqExt.SetPrebid(&prebidExt)
+					return &reqExt
 				}(),
 				configEnforceRate: 100,
 				f: func(n int) int {
@@ -1061,18 +1041,17 @@ func TestIsSatisfiedByEnforceRate(t *testing.T) {
 			name: "With configEnforceRate = 0",
 			args: args{
 				reqExt: func() *openrtb_ext.RequestExt {
-					bw := openrtb_ext.RequestWrapper{
-						BidRequest: &openrtb2.BidRequest{
-							ID: "some-request-id",
-							Imp: []openrtb2.Imp{
-								{ID: "some-impression-id-1", BidFloor: 1.01, BidFloorCur: "USD"},
+					reqExt := openrtb_ext.RequestExt{}
+					prebidExt := openrtb_ext.ExtRequestPrebid{
+						Floors: &openrtb_ext.PriceFloorRules{
+							Enforcement: &openrtb_ext.PriceFloorEnforcement{
+								EnforceRate: 0,
+								EnforcePBS:  ptrutil.ToPtr(true),
 							},
-							Ext: json.RawMessage(`{"prebid":{"floors":{"floormin":1,"floormincur":"EUR","data":{"currency":"USD","floorsschemaversion":"2","modelgroups":[{"modelweight":40,"modelversion":"version2","skiprate":10,"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"},"values":{"*|*|*":21.01,"*|*|www.website1.com":16.01,"*|300x250|*":11.01,"*|300x250|www.website1.com":100.01},"default":21}]},"enforcement":{"enforcepbs":true,"floordeals":true,"enforcerate":100},"enabled":true}}}`),
 						},
 					}
-					bw.RebuildRequest()
-					reqExt, _ := bw.GetRequestExt()
-					return reqExt
+					reqExt.SetPrebid(&prebidExt)
+					return &reqExt
 				}(),
 				configEnforceRate: 0,
 				f: func(n int) int {
@@ -1091,7 +1070,7 @@ func TestIsSatisfiedByEnforceRate(t *testing.T) {
 func TestUpdateEnforcePBS(t *testing.T) {
 	type args struct {
 		enforceFloors bool
-		requestExt    *openrtb_ext.RequestExt
+		reqExt        *openrtb_ext.RequestExt
 	}
 	tests := []struct {
 		name string
@@ -1100,60 +1079,57 @@ func TestUpdateEnforcePBS(t *testing.T) {
 	}{
 		{
 			name: "Enforce PBS is true in request and to be updated = true",
-			args: args{enforceFloors: true,
-				requestExt: func() *openrtb_ext.RequestExt {
-					bw := openrtb_ext.RequestWrapper{
-						BidRequest: &openrtb2.BidRequest{
-							ID: "some-request-id",
-							Imp: []openrtb2.Imp{
-								{ID: "some-impression-id-1", BidFloor: 1.01, BidFloorCur: "USD"},
+			args: args{
+				enforceFloors: true,
+				reqExt: func() *openrtb_ext.RequestExt {
+					reqExt := openrtb_ext.RequestExt{}
+					prebidExt := openrtb_ext.ExtRequestPrebid{
+						Floors: &openrtb_ext.PriceFloorRules{
+							Enforcement: &openrtb_ext.PriceFloorEnforcement{
+								EnforcePBS: ptrutil.ToPtr(true),
 							},
-							Ext: json.RawMessage(`{"prebid":{"floors":{"floormin":1,"floormincur":"EUR","data":{"currency":"USD","floorsschemaversion":"2","modelgroups":[{"modelweight":40,"modelversion":"version2","skiprate":10,"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"},"values":{"*|*|*":21.01,"*|*|www.website1.com":16.01,"*|300x250|*":11.01,"*|300x250|www.website1.com":100.01},"default":21}]},"enforcement":{"enforcepbs":true,"floordeals":true},"enabled":true}}}`),
 						},
 					}
-					bw.RebuildRequest()
-					reqExt, _ := bw.GetRequestExt()
-					return reqExt
+					reqExt.SetPrebid(&prebidExt)
+					return &reqExt
 				}(),
 			},
 			want: false,
 		},
 		{
 			name: "Enforce PBS is false in request and to be updated = true",
-			args: args{enforceFloors: true,
-				requestExt: func() *openrtb_ext.RequestExt {
-					bw := openrtb_ext.RequestWrapper{
-						BidRequest: &openrtb2.BidRequest{
-							ID: "some-request-id",
-							Imp: []openrtb2.Imp{
-								{ID: "some-impression-id-1", BidFloor: 1.01, BidFloorCur: "USD"},
+			args: args{
+				enforceFloors: true,
+				reqExt: func() *openrtb_ext.RequestExt {
+					reqExt := openrtb_ext.RequestExt{}
+					prebidExt := openrtb_ext.ExtRequestPrebid{
+						Floors: &openrtb_ext.PriceFloorRules{
+							Enforcement: &openrtb_ext.PriceFloorEnforcement{
+								EnforcePBS: ptrutil.ToPtr(false),
 							},
-							Ext: json.RawMessage(`{"prebid":{"floors":{"floormin":1,"floormincur":"EUR","data":{"currency":"USD","floorsschemaversion":"2","modelgroups":[{"modelweight":40,"modelversion":"version2","skiprate":10,"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"},"values":{"*|*|*":21.01,"*|*|www.website1.com":16.01,"*|300x250|*":11.01,"*|300x250|www.website1.com":100.01},"default":21}]},"enforcement":{"enforcepbs":false,"floordeals":true},"enabled":true}}}`),
 						},
 					}
-					bw.RebuildRequest()
-					reqExt, _ := bw.GetRequestExt()
-					return reqExt
+					reqExt.SetPrebid(&prebidExt)
+					return &reqExt
 				}(),
 			},
 			want: false,
 		},
 		{
 			name: "Enforce PBS is true in request and to be updated = false",
-			args: args{enforceFloors: false,
-				requestExt: func() *openrtb_ext.RequestExt {
-					bw := openrtb_ext.RequestWrapper{
-						BidRequest: &openrtb2.BidRequest{
-							ID: "some-request-id",
-							Imp: []openrtb2.Imp{
-								{ID: "some-impression-id-1", BidFloor: 1.01, BidFloorCur: "USD"},
+			args: args{
+				enforceFloors: false,
+				reqExt: func() *openrtb_ext.RequestExt {
+					reqExt := openrtb_ext.RequestExt{}
+					prebidExt := openrtb_ext.ExtRequestPrebid{
+						Floors: &openrtb_ext.PriceFloorRules{
+							Enforcement: &openrtb_ext.PriceFloorEnforcement{
+								EnforcePBS: ptrutil.ToPtr(true),
 							},
-							Ext: json.RawMessage(`{"prebid":{"floors":{"floormin":1,"floormincur":"EUR","data":{"currency":"USD","floorsschemaversion":"2","modelgroups":[{"modelweight":40,"modelversion":"version2","skiprate":10,"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"},"values":{"*|*|*":21.01,"*|*|www.website1.com":16.01,"*|300x250|*":11.01,"*|300x250|www.website1.com":100.01},"default":21}]},"enforcement":{"enforcepbs":true,"floordeals":true},"enabled":true}}}`),
 						},
 					}
-					bw.RebuildRequest()
-					reqExt, _ := bw.GetRequestExt()
-					return reqExt
+					reqExt.SetPrebid(&prebidExt)
+					return &reqExt
 				}(),
 			},
 			want: true,
@@ -1161,19 +1137,8 @@ func TestUpdateEnforcePBS(t *testing.T) {
 		{
 			name: "empty prebid ext and to be updated = false",
 			args: args{enforceFloors: false,
-				requestExt: func() *openrtb_ext.RequestExt {
-					bw := openrtb_ext.RequestWrapper{
-						BidRequest: &openrtb2.BidRequest{
-							ID: "some-request-id",
-							Imp: []openrtb2.Imp{
-								{ID: "some-impression-id-1", BidFloor: 1.01, BidFloorCur: "USD"},
-							},
-							Ext: json.RawMessage(`{"prebid": {}}`),
-						},
-					}
-					bw.RebuildRequest()
-					reqExt, _ := bw.GetRequestExt()
-					return reqExt
+				reqExt: func() *openrtb_ext.RequestExt {
+					return &openrtb_ext.RequestExt{}
 				}(),
 			},
 			want: true,
@@ -1181,19 +1146,11 @@ func TestUpdateEnforcePBS(t *testing.T) {
 		{
 			name: "empty prebid ext and to be updated = true",
 			args: args{enforceFloors: true,
-				requestExt: func() *openrtb_ext.RequestExt {
-					bw := openrtb_ext.RequestWrapper{
-						BidRequest: &openrtb2.BidRequest{
-							ID: "some-request-id",
-							Imp: []openrtb2.Imp{
-								{ID: "some-impression-id-1", BidFloor: 1.01, BidFloorCur: "USD"},
-							},
-							Ext: json.RawMessage(`{"prebid": {}}`),
-						},
-					}
-					bw.RebuildRequest()
-					reqExt, _ := bw.GetRequestExt()
-					return reqExt
+				reqExt: func() *openrtb_ext.RequestExt {
+					reqExt := openrtb_ext.RequestExt{}
+					prebidExt := openrtb_ext.ExtRequestPrebid{}
+					reqExt.SetPrebid(&prebidExt)
+					return &reqExt
 				}(),
 			},
 			want: true,
@@ -1201,7 +1158,7 @@ func TestUpdateEnforcePBS(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := updateEnforcePBS(tt.args.enforceFloors, tt.args.requestExt)
+			got := updateEnforcePBS(tt.args.enforceFloors, tt.args.reqExt)
 			assert.Equal(t, tt.want, got, tt.name)
 
 		})

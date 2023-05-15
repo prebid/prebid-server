@@ -50,8 +50,11 @@ func updateEnforcePBS(enforceFloors bool, requestExt *openrtb_ext.RequestExt) bo
 	updateReqExt := false
 
 	prebidExt := requestExt.GetPrebid()
+	if prebidExt == nil {
+		prebidExt = new(openrtb_ext.ExtRequestPrebid)
+	}
+
 	if prebidExt.Floors == nil {
-		updateReqExt = true
 		prebidExt.Floors = new(openrtb_ext.PriceFloorRules)
 	}
 	floorExt := prebidExt.Floors
@@ -127,12 +130,10 @@ func enforceFloorToBids(bidRequestWrapper *openrtb_ext.RequestWrapper, seatBids 
 						Bids:     []*entities.PbsOrtbBid{bid},
 					}
 					rejectedBids = append(rejectedBids, rejectedBid)
-				} else {
-					eligibleBids = append(eligibleBids, bid)
+					continue
 				}
-			} else {
-				eligibleBids = append(eligibleBids, bid)
 			}
+			eligibleBids = append(eligibleBids, bid)
 		}
 		seatBids[bidderName].Bids = eligibleBids
 	}
