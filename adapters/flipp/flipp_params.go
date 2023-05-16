@@ -1,5 +1,7 @@
 package flipp
 
+import "github.com/prebid/prebid-server/openrtb_ext"
+
 type CampaignRequestBodyUser struct {
 	Key *string `json:"key"`
 }
@@ -17,15 +19,15 @@ type PrebidRequest struct {
 }
 
 type Placement struct {
-	AdTypes    []int64                 `json:"adTypes"`
-	Count      *int64                  `json:"count"`
-	DivName    string                  `json:"divName,omitempty"`
-	NetworkID  int64                   `json:"networkId,omitempty"`
-	Prebid     *PrebidRequest          `json:"prebid,omitempty"`
-	Properties *Properties             `json:"properties,omitempty"`
-	SiteID     *int64                  `json:"siteId"`
-	ZoneIds    []int64                 `json:"zoneIds"`
-	Options    *map[string]interface{} `json:"options,omitempty"`
+	AdTypes    []int64                        `json:"adTypes"`
+	Count      *int64                         `json:"count"`
+	DivName    string                         `json:"divName,omitempty"`
+	NetworkID  int64                          `json:"networkId,omitempty"`
+	Prebid     *PrebidRequest                 `json:"prebid,omitempty"`
+	Properties *Properties                    `json:"properties,omitempty"`
+	SiteID     *int64                         `json:"siteId"`
+	ZoneIds    []int64                        `json:"zoneIds"`
+	Options    openrtb_ext.ImpExtFlippOptions `json:"options,omitempty"`
 }
 
 type CampaignRequestBody struct {

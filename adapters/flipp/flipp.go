@@ -95,7 +95,9 @@ func (a *adapter) processImp(request *openrtb2.BidRequest, imp openrtb2.Imp) (*a
 	}
 
 	var contentCode string
-	if publisherUrl != nil {
+	if flippExtParams.Options.ContentCode != "" {
+		contentCode = flippExtParams.Options.ContentCode
+	} else if publisherUrl != nil {
 		contentCode = publisherUrl.Query().Get("flipp-content-code")
 	}
 

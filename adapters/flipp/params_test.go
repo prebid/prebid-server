@@ -61,7 +61,9 @@ var validParams = []string{
 		"siteId": 1243066,
 		"zoneIds": [285431],
 		"options": {
-			"startCompact": false
+			"startCompact": false,
+			"dwellExpand": true,
+			"contentCode": "test-code"
 		}
 	}`,
 	`{

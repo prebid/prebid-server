@@ -32,7 +32,8 @@
                                 "zoneIds": [285431],
                                 "ip": "123.123.123.124",
                                 "options": {
-                                   "startCompact": true
+                                   "startCompact": true,
+                                   "contentCode": "publisher-test-2"
                                 }
                         }
                 }
@@ -65,14 +66,15 @@
                              "width":300
                           },
                           "properties":{
-                             "contentCode":"publisher-test"
+                             "contentCode":"publisher-test-2"
                           },
                           "siteId":1243066,
                           "zoneIds":[
                              285431
                           ],
                           "options": {
-                             "startCompact": true
+                             "startCompact": true,
+                             "contentCode": "publisher-test-2"
                           }
                        }
                     ],

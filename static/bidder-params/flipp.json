@@ -37,6 +37,9 @@
         },
         "dwellExpand": {
           "type": "boolean"
+        },
+        "contentCode": {
+          "type": "string"
         }
       }
     }
