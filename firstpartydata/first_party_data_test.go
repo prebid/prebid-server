@@ -1406,7 +1406,7 @@ func TestMergeUser(t *testing.T) {
 			name:        "toplevel-ext-err",
 			givenUser:   openrtb2.User{ID: "1", Ext: []byte(`malformed`)},
 			givenFPD:    []byte(`{"id":"2"}`),
-			expectedErr: "Invalid JSON Document",
+			expectedErr: "invalid request ext",
 		},
 		{
 			name:         "nested-geo",
@@ -1424,7 +1424,7 @@ func TestMergeUser(t *testing.T) {
 			name:        "nested-geo-ext-err",
 			givenUser:   openrtb2.User{Geo: &openrtb2.Geo{Ext: []byte(`malformed`)}},
 			givenFPD:    []byte(`{"geo":{"ext":{"b":100,"c":3}}}`),
-			expectedErr: "Invalid JSON Document",
+			expectedErr: "invalid request ext",
 		},
 		{
 			name:        "fpd-err",
@@ -1448,6 +1448,7 @@ func TestMergeUser(t *testing.T) {
 	}
 }
 
+// fails
 func TestMergeUserMemoryProtection(t *testing.T) {
 	inputGeo := &openrtb2.Geo{
 		Ext: json.RawMessage(`{"a":1,"b":2}`),
