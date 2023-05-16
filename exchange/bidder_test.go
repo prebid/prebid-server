@@ -2245,13 +2245,13 @@ func TestTmaxInDoRequest(t *testing.T) {
 
 	httpCallInfo := bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, time.Now(), &config.TmaxAdjustments{Enabled: true, BidderLatencyAdjustment: 20000, BidderResponseMin: 40000})
 	assert.NotNil(t, httpCallInfo.err)
-	assert.Equal(t, ErrTmaxAdjustment, httpCallInfo.err)
+	assert.Equal(t, tmaxTimeoutErr, httpCallInfo.err)
 
 	httpCallInfo = bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, time.Now(), &config.TmaxAdjustments{Enabled: true, BidderLatencyAdjustment: 20000, BidderResponseMin: 10000})
-	assert.NotEqual(t, ErrTmaxAdjustment, httpCallInfo.err)
+	assert.NotEqual(t, tmaxTimeoutErr, httpCallInfo.err)
 
 	httpCallInfo = bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, time.Now(), &config.TmaxAdjustments{Enabled: false, BidderLatencyAdjustment: 20000, BidderResponseMin: 40000})
-	assert.NotEqual(t, ErrTmaxAdjustment, httpCallInfo.err)
+	assert.NotEqual(t, tmaxTimeoutErr, httpCallInfo.err)
 }
 
 func TestParseDebugInfoTrue(t *testing.T) {

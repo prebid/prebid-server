@@ -77,7 +77,7 @@ const (
 )
 
 var (
-	ErrTmaxAdjustment = errors.New("PBS cannot get response from bidder within time left for request hence timing out.")
+	tmaxTimeoutErr = errors.New("exceeded tmax duration")
 )
 
 // AdaptBidder converts an adapters.Bidder into an exchange.AdaptedBidder.
@@ -539,7 +539,7 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 			if int(bidderTmax.Sub(time.Now())) < tmaxAdjustments.BidderResponseMin*int(time.Millisecond) {
 				return &httpCallInfo{
 					request: req,
-					err:     ErrTmaxAdjustment,
+					err:     tmaxTimeoutErr,
 				}
 			}
 		}
