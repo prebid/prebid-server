@@ -9,6 +9,7 @@ import (
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
+	"github.com/prebid/prebid-server/enums"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -144,7 +145,7 @@ func (r *RequestData) SetBasicAuth(username string, password string) {
 }
 
 type ExtraRequestInfo struct {
-	PbsEntryPoint              config.RequestType
+	PbsEntryPoint              enums.RequestType
 	BidderRequestStartTime     time.Time
 	GlobalPrivacyControlHeader string
 	CurrencyConversions        currency.Conversions

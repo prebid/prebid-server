@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/config"
 	mainConfig "github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/enums"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 
@@ -52,14 +52,14 @@ func TestMultiMetricsEngine(t *testing.T) {
 	metricsEngine = &engineList
 	labels := metrics.Labels{
 		Source:        metrics.DemandWeb,
-		RType:         config.ReqTypeORTB2Web,
+		RType:         enums.ReqTypeORTB2Web,
 		PubID:         "test1",
 		CookieFlag:    metrics.CookieFlagYes,
 		RequestStatus: metrics.RequestStatusOK,
 	}
 	apnLabels := metrics.AdapterLabels{
 		Source:      metrics.DemandWeb,
-		RType:       config.ReqTypeORTB2Web,
+		RType:       enums.ReqTypeORTB2Web,
 		Adapter:     openrtb_ext.BidderAppnexus,
 		PubID:       "test1",
 		CookieFlag:  metrics.CookieFlagYes,
@@ -67,7 +67,7 @@ func TestMultiMetricsEngine(t *testing.T) {
 	}
 	pubLabels := metrics.AdapterLabels{
 		Source:      metrics.DemandWeb,
-		RType:       config.ReqTypeORTB2Web,
+		RType:       enums.ReqTypeORTB2Web,
 		Adapter:     openrtb_ext.BidderPubmatic,
 		PubID:       "test1",
 		CookieFlag:  metrics.CookieFlagYes,
@@ -112,14 +112,14 @@ func TestMultiMetricsEngine(t *testing.T) {
 	labelsBlacklist := []metrics.Labels{
 		{
 			Source:        metrics.DemandWeb,
-			RType:         config.ReqTypeAMP,
+			RType:         enums.ReqTypeAMP,
 			PubID:         "test2",
 			CookieFlag:    metrics.CookieFlagYes,
 			RequestStatus: metrics.RequestStatusBlacklisted,
 		},
 		{
 			Source:        metrics.DemandWeb,
-			RType:         config.ReqTypeVideo,
+			RType:         enums.ReqTypeVideo,
 			PubID:         "test2",
 			CookieFlag:    metrics.CookieFlagYes,
 			RequestStatus: metrics.RequestStatusBlacklisted,
@@ -145,19 +145,19 @@ func TestMultiMetricsEngine(t *testing.T) {
 
 	metricsEngine.RecordAdapterGDPRRequestBlocked(openrtb_ext.BidderAppnexus)
 
-	metricsEngine.RecordRequestQueueTime(false, config.ReqTypeVideo, time.Duration(1))
+	metricsEngine.RecordRequestQueueTime(false, enums.ReqTypeVideo, time.Duration(1))
 
 	//Make the metrics engine, instantiated here with goEngine, fill its RequestStatuses[RequestType][metrics.RequestStatusXX] with the new boolean values added to metrics.Labels
-	VerifyMetrics(t, "RequestStatuses.OpenRTB2.OK", goEngine.RequestStatuses[config.ReqTypeORTB2Web][metrics.RequestStatusOK].Count(), 5)
-	VerifyMetrics(t, "RequestStatuses.AMP.OK", goEngine.RequestStatuses[config.ReqTypeAMP][metrics.RequestStatusOK].Count(), 0)
-	VerifyMetrics(t, "RequestStatuses.AMP.BlacklistedAcctOrApp", goEngine.RequestStatuses[config.ReqTypeAMP][metrics.RequestStatusBlacklisted].Count(), 1)
-	VerifyMetrics(t, "RequestStatuses.Video.OK", goEngine.RequestStatuses[config.ReqTypeVideo][metrics.RequestStatusOK].Count(), 0)
-	VerifyMetrics(t, "RequestStatuses.Video.Error", goEngine.RequestStatuses[config.ReqTypeVideo][metrics.RequestStatusErr].Count(), 0)
-	VerifyMetrics(t, "RequestStatuses.Video.BadInput", goEngine.RequestStatuses[config.ReqTypeVideo][metrics.RequestStatusBadInput].Count(), 0)
-	VerifyMetrics(t, "RequestStatuses.Video.BlacklistedAcctOrApp", goEngine.RequestStatuses[config.ReqTypeVideo][metrics.RequestStatusBlacklisted].Count(), 1)
-	VerifyMetrics(t, "RequestStatuses.OpenRTB2.Error", goEngine.RequestStatuses[config.ReqTypeORTB2Web][metrics.RequestStatusErr].Count(), 0)
-	VerifyMetrics(t, "RequestStatuses.OpenRTB2.BadInput", goEngine.RequestStatuses[config.ReqTypeORTB2Web][metrics.RequestStatusBadInput].Count(), 0)
-	VerifyMetrics(t, "RequestStatuses.OpenRTB2.BlacklistedAcctOrApp", goEngine.RequestStatuses[config.ReqTypeORTB2Web][metrics.RequestStatusBlacklisted].Count(), 0)
+	VerifyMetrics(t, "RequestStatuses.OpenRTB2.OK", goEngine.RequestStatuses[enums.ReqTypeORTB2Web][metrics.RequestStatusOK].Count(), 5)
+	VerifyMetrics(t, "RequestStatuses.AMP.OK", goEngine.RequestStatuses[enums.ReqTypeAMP][metrics.RequestStatusOK].Count(), 0)
+	VerifyMetrics(t, "RequestStatuses.AMP.BlacklistedAcctOrApp", goEngine.RequestStatuses[enums.ReqTypeAMP][metrics.RequestStatusBlacklisted].Count(), 1)
+	VerifyMetrics(t, "RequestStatuses.Video.OK", goEngine.RequestStatuses[enums.ReqTypeVideo][metrics.RequestStatusOK].Count(), 0)
+	VerifyMetrics(t, "RequestStatuses.Video.Error", goEngine.RequestStatuses[enums.ReqTypeVideo][metrics.RequestStatusErr].Count(), 0)
+	VerifyMetrics(t, "RequestStatuses.Video.BadInput", goEngine.RequestStatuses[enums.ReqTypeVideo][metrics.RequestStatusBadInput].Count(), 0)
+	VerifyMetrics(t, "RequestStatuses.Video.BlacklistedAcctOrApp", goEngine.RequestStatuses[enums.ReqTypeVideo][metrics.RequestStatusBlacklisted].Count(), 1)
+	VerifyMetrics(t, "RequestStatuses.OpenRTB2.Error", goEngine.RequestStatuses[enums.ReqTypeORTB2Web][metrics.RequestStatusErr].Count(), 0)
+	VerifyMetrics(t, "RequestStatuses.OpenRTB2.BadInput", goEngine.RequestStatuses[enums.ReqTypeORTB2Web][metrics.RequestStatusBadInput].Count(), 0)
+	VerifyMetrics(t, "RequestStatuses.OpenRTB2.BlacklistedAcctOrApp", goEngine.RequestStatuses[enums.ReqTypeORTB2Web][metrics.RequestStatusBlacklisted].Count(), 0)
 
 	VerifyMetrics(t, "ImpsTypeBanner", goEngine.ImpsTypeBanner.Count(), 5)
 	VerifyMetrics(t, "ImpsTypeVideo", goEngine.ImpsTypeVideo.Count(), 3)
@@ -166,7 +166,7 @@ func TestMultiMetricsEngine(t *testing.T) {
 
 	VerifyMetrics(t, "RecordPrebidCacheRequestTime", goEngine.PrebidCacheRequestTimerSuccess.Count(), 5)
 
-	VerifyMetrics(t, "Request", goEngine.RequestStatuses[config.ReqTypeORTB2Web][metrics.RequestStatusOK].Count(), 5)
+	VerifyMetrics(t, "Request", goEngine.RequestStatuses[enums.ReqTypeORTB2Web][metrics.RequestStatusOK].Count(), 5)
 	VerifyMetrics(t, "ImpMeter", goEngine.ImpMeter.Count(), 8)
 	VerifyMetrics(t, "NoCookieMeter", goEngine.NoCookieMeter.Count(), 0)
 	VerifyMetrics(t, "AdapterMetrics.Pubmatic.GotBidsMeter", goEngine.AdapterMetrics[openrtb_ext.BidderPubmatic].GotBidsMeter.Count(), 5)
@@ -177,8 +177,8 @@ func TestMultiMetricsEngine(t *testing.T) {
 	VerifyMetrics(t, "AdapterMetrics.AppNexus.GotBidsMeter", goEngine.AdapterMetrics[openrtb_ext.BidderAppnexus].GotBidsMeter.Count(), 0)
 	VerifyMetrics(t, "AdapterMetrics.AppNexus.NoBidMeter", goEngine.AdapterMetrics[openrtb_ext.BidderAppnexus].NoBidMeter.Count(), 5)
 
-	VerifyMetrics(t, "RecordRequestQueueTime.Video.Rejected", goEngine.RequestsQueueTimer[config.ReqTypeVideo][false].Count(), 1)
-	VerifyMetrics(t, "RecordRequestQueueTime.Video.Accepted", goEngine.RequestsQueueTimer[config.ReqTypeVideo][true].Count(), 0)
+	VerifyMetrics(t, "RecordRequestQueueTime.Video.Rejected", goEngine.RequestsQueueTimer[enums.ReqTypeVideo][false].Count(), 1)
+	VerifyMetrics(t, "RecordRequestQueueTime.Video.Accepted", goEngine.RequestsQueueTimer[enums.ReqTypeVideo][true].Count(), 0)
 
 	VerifyMetrics(t, "StoredReqCache.Miss", goEngine.StoredReqCacheMeter[metrics.CacheMiss].Count(), 1)
 	VerifyMetrics(t, "StoredImpCache.Miss", goEngine.StoredImpCacheMeter[metrics.CacheMiss].Count(), 2)

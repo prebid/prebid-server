@@ -3,7 +3,7 @@ package metrics
 import (
 	"time"
 
-	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/enums"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/mock"
 )
@@ -138,7 +138,7 @@ func (me *MetricsEngineMock) RecordPrebidCacheRequestTime(success bool, length t
 }
 
 // RecordRequestQueueTime mock
-func (me *MetricsEngineMock) RecordRequestQueueTime(success bool, requestType config.RequestType, length time.Duration) {
+func (me *MetricsEngineMock) RecordRequestQueueTime(success bool, requestType enums.RequestType, length time.Duration) {
 	me.Called(success, requestType, length)
 }
 

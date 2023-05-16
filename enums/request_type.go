@@ -1,4 +1,4 @@
-package config
+package enums
 
 // RequestType : Request type enumeration
 type RequestType string

@@ -3,7 +3,7 @@ package prometheusmetrics
 import (
 	"strconv"
 
-	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/enums"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -97,7 +97,7 @@ func syncerSetStatusesAsString() []string {
 }
 
 func requestTypesAsString() []string {
-	values := config.RequestTypes()
+	values := enums.RequestTypes()
 	valuesAsString := make([]string, len(values))
 	for i, v := range values {
 		valuesAsString[i] = string(v)
