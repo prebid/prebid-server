@@ -41,7 +41,6 @@ type requestSplitter struct {
 	me                metrics.MetricsEngine
 	privacyConfig     config.Privacy
 	gdprPermsBuilder  gdpr.PermissionsBuilder
-	tcf2ConfigBuilder gdpr.TCF2ConfigBuilder
 	hostSChainNode    *openrtb2.SupplyChainNode
 	bidderInfo        config.BidderInfos
 }
@@ -122,13 +121,11 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 	privacyLabels.COPPAEnforced = privacyEnforcement.COPPA
 	privacyLabels.LMTEnforced = lmtEnforcer.ShouldEnforce(unknownBidder)
 
-	tcf2Cfg := rs.tcf2ConfigBuilder(rs.privacyConfig.GDPR.TCF2, auctionReq.Account.GDPR)
-
 	var gdprEnforced bool
 	var gdprPerms gdpr.Permissions = &gdpr.AlwaysAllow{}
 
 	if gdprApplies {
-		gdprEnforced = tcf2Cfg.ChannelEnabled(channelTypeMap[auctionReq.LegacyLabels.RType])
+		gdprEnforced = auctionReq.TCF2Config.ChannelEnabled(channelTypeMap[auctionReq.LegacyLabels.RType])
 	}
 
 	if gdprEnforced {
@@ -145,7 +142,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 			GDPRSignal:  gdprSignal,
 			PublisherID: auctionReq.LegacyLabels.PubID,
 		}
-		gdprPerms = rs.gdprPermsBuilder(tcf2Cfg, gdprRequestInfo)
+		gdprPerms = rs.gdprPermsBuilder(auctionReq.TCF2Config, gdprRequestInfo)
 	}
 
 	// bidder level privacy policies
