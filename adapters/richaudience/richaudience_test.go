@@ -64,7 +64,7 @@ func TestGetBuilder(t *testing.T) {
 		t.Errorf("error %s", buildErr)
 	}
 
-	adapterstest.RunJSONBidderTest(t, "richaudience", bidder)
+	adapterstest.RunJSONBidderTest(t, "richaudiencetest", bidder)
 }
 
 func TestGetSite(t *testing.T) {
