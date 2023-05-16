@@ -332,7 +332,8 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		e.me.RecordStoredResponse(r.PubID)
 	}
 
-	// If we need to cache bids, then it will take some time to call prebid cache.
+	// PBS will need some time to prepare auction response.
+	// Additionally, if we need to cache bids, then it will take some time to call prebid cache.
 	// We should reduce the amount of time the bidders have, to compensate.
 	auctionCtx, cancel := e.makeAuctionContext(ctx, cacheInstructions.cacheBids, &r.TmaxAdjustments)
 	defer cancel()
@@ -623,7 +624,7 @@ func (e *exchange) makeAuctionContext(ctx context.Context, needsCache bool, tmax
 			auctionCtx, cancel = context.WithDeadline(ctx, deadline.Add(-e.cacheTime))
 		}
 	}
-	if tmaxAdjustments != nil && tmaxAdjustments.Enabled {
+	if tmaxAdjustments != nil && tmaxAdjustments.Enabled && tmaxAdjustments.UpstreamResponseDuration > 0 {
 		if deadline, ok := ctx.Deadline(); ok {
 			enforcedTmax := deadline.Add(-time.Duration(tmaxAdjustments.UpstreamResponseDuration * int(time.Millisecond)))
 			auctionCtx, cancel = context.WithDeadline(ctx, enforcedTmax)
