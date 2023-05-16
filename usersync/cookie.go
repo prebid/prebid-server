@@ -247,17 +247,20 @@ func (cookie *Cookie) UnmarshalJSON(b []byte) error {
 
 	cookie.optOut = cookieContract.OptOut
 	cookie.birthday = cookieContract.Birthday
-	cookie.uids = make(map[string]uidWithExpiry)
 
 	if !cookie.optOut {
-		if cookieContract.UIDs != nil {
-			cookie.uids = cookieContract.UIDs
-		}
-		// Audience Network / Facebook Handling
-		if id, ok := cookie.uids[string(openrtb_ext.BidderAudienceNetwork)]; ok && id.UID == "0" {
-			delete(cookie.uids, string(openrtb_ext.BidderAudienceNetwork))
-		}
+		cookie.uids = cookieContract.UIDs
 	}
+
+	if cookie.uids == nil {
+		cookie.uids = make(map[string]uidWithExpiry)
+	}
+
+	// Audience Network / Facebook Handling
+	if id, ok := cookie.uids[string(openrtb_ext.BidderAudienceNetwork)]; ok && id.UID == "0" {
+		delete(cookie.uids, string(openrtb_ext.BidderAudienceNetwork))
+	}
+
 	return nil
 }
 
