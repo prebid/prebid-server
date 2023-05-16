@@ -135,16 +135,11 @@ func (a *adapter) processImp(request *openrtb2.BidRequest, imp openrtb2.Imp) (*a
 	}
 
 	keywordsArray := strings.Split(request.Site.Keywords, ",")
-	var keywordsSlice []Keyword
-
-	for _, k := range keywordsArray {
-		keywordsSlice = append(keywordsSlice, Keyword(k))
-	}
 
 	campaignRequestBody := CampaignRequestBody{
 		Placements: []*Placement{&placement},
 		URL:        request.Site.Page,
-		Keywords:   keywordsSlice,
+		Keywords:   keywordsArray,
 		IP:         userIP,
 		User: &CampaignRequestBodyUser{
 			Key: &userKey,

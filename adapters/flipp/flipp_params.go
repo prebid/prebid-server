@@ -1,7 +1,5 @@
 package flipp
 
-type Keyword string
-
 type CampaignRequestBodyUser struct {
 	Key *string `json:"key"`
 }
@@ -32,7 +30,7 @@ type Placement struct {
 
 type CampaignRequestBody struct {
 	IP                string                   `json:"ip,omitempty"`
-	Keywords          []Keyword                `json:"keywords"`
+	Keywords          []string                 `json:"keywords"`
 	Placements        []*Placement             `json:"placements"`
 	PreferredLanguage *string                  `json:"preferred_language,omitempty"`
 	URL               string                   `json:"url,omitempty"`
