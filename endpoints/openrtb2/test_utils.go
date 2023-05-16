@@ -1217,9 +1217,6 @@ func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.Bid
 	gdprPermsBuilder := fakePermissionsBuilder{
 		permissions: &fakePermissions{},
 	}.Builder
-	tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-	}.Builder
 
 	testExchange := exchange.NewExchange(adapterMap,
 		&wellBehavedCache{},
@@ -1228,7 +1225,6 @@ func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.Bid
 		met,
 		bidderInfos,
 		gdprPermsBuilder,
-		tcf2ConfigBuilder,
 		mockCurrencyConverter,
 		mockFetcher,
 		&adscert.NilSigner{},
@@ -1413,14 +1409,6 @@ type fakePermissionsBuilder struct {
 
 func (fpb fakePermissionsBuilder) Builder(gdpr.TCF2ConfigReader, gdpr.RequestInfo) gdpr.Permissions {
 	return fpb.permissions
-}
-
-type fakeTCF2ConfigBuilder struct {
-	cfg gdpr.TCF2ConfigReader
-}
-
-func (fcr fakeTCF2ConfigBuilder) Builder(hostConfig config.TCF2, accountConfig config.AccountGDPR) gdpr.TCF2ConfigReader {
-	return fcr.cfg
 }
 
 type fakePermissions struct {
