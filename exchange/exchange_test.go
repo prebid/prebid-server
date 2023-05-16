@@ -2258,7 +2258,7 @@ func TestTimeoutComputation(t *testing.T) {
 }
 
 func TestMakeAuctionContextWithTmaxAdjustment(t *testing.T) {
-	upstreamResponseDuration := 30000 //in milliseconds
+	upstreamResponseDuration := 300 //in milliseconds
 	ex := exchange{}
 	deadline := time.Now()
 
@@ -2280,6 +2280,7 @@ func TestMakeAuctionContextWithTmaxAdjustment(t *testing.T) {
 	}{
 		{description: "with_tmax_disabled", tmaxAdjustment: config.TmaxAdjustments{Enabled: false}, deadline: deadline},
 		{description: "with_tmax_enabled", tmaxAdjustment: config.TmaxAdjustments{Enabled: true, UpstreamResponseDuration: upstreamResponseDuration}, deadline: deadline.Add(-time.Duration(upstreamResponseDuration * int(time.Millisecond)))},
+		{description: "with_tmax_enabled_upstreamResponseDuration_is_zero", tmaxAdjustment: config.TmaxAdjustments{Enabled: true, UpstreamResponseDuration: 0}, deadline: deadline},
 	}
 
 	for _, test := range testCases {
