@@ -196,6 +196,11 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "validations.max_creative_height", 0, int(cfg.Validations.MaxCreativeHeight))
 	cmpBools(t, "account_modules_metrics", false, cfg.Metrics.Disabled.AccountModulesMetrics)
 
+	cmpBools(t, "tmax_adjustments.enabled", false, cfg.TmaxAdjustments.Enabled)
+	cmpUnsignedInts(t, "tmax_adjustments.bidder_response_min", 0, cfg.TmaxAdjustments.BidderResponseMin)
+	cmpUnsignedInts(t, "tmax_adjustments.bidder_network_latency_buffer", 0, cfg.TmaxAdjustments.BidderNetworkLatencyBuffer)
+	cmpUnsignedInts(t, "tmax_adjustments.pbs_response_preparation_duration", 0, cfg.TmaxAdjustments.PBSResponsePreparationDuration)
+
 	//Assert purpose VendorExceptionMap hash tables were built correctly
 	expectedTCF2 := TCF2{
 		Enabled: true,
