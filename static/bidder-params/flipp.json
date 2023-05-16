@@ -26,6 +26,9 @@
       "type": "string",
       "format": "uuid"
     },
+    "ip": {
+      "type": "string"
+    },
     "options": {
       "type": "object"
     }

@@ -64,6 +64,16 @@ var validParams = []string{
 			"startCompact": false
 		}
 	}`,
+	`{
+		"publisherNameIdentifier": "wishabi-test-publisher",
+		"creativeType": "NativeX",
+		"siteId": 1243066,
+		"zoneIds": [285431],
+		"ip": "123.123.123.123",
+		"options": {
+			"startCompact": false
+		}
+	}`,
 }
 
 var invalidParams = []string{

@@ -30,6 +30,7 @@
                                 "creativeType": "NativeX",
                                 "siteId": 1243066,
                                 "zoneIds": [285431],
+                                "ip": "123.123.123.124",
                                 "options": {
                                    "startCompact": true
                                 }
@@ -44,7 +45,7 @@
             "expectedRequest": {
                 "uri": "http://example.com/pserver",
                 "body": {
-                    "ip":"123.123.123.123",
+                    "ip":"123.123.123.124",
                     "keywords":[
                        ""
                     ],
@@ -145,7 +146,7 @@
                         "accuracy_radius": 5,
                         "city": "Toronto",
                         "country": "CA",
-                        "ip": "142.181.58.52",
+                        "ip": "123.123.123.124",
                         "postal_code": "M4S",
                         "region": "ON",
                         "region_name": "Ontario"

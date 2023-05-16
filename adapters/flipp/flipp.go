@@ -67,7 +67,9 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest, campaignRequestBody 
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json")
-	headers.Add("User-Agent", request.Device.UA)
+	if request.Device != nil && request.Device.UA != "" {
+		headers.Add("User-Agent", request.Device.UA)
+	}
 	return &adapters.RequestData{
 		Method:  http.MethodPost,
 		Uri:     a.endpoint,
@@ -110,6 +112,15 @@ func (a *adapter) processImp(request *openrtb2.BidRequest, imp openrtb2.Imp) (*a
 		Options: flippExtParams.Options,
 	}
 
+	var userIP string
+	if flippExtParams.IP != "" {
+		userIP = flippExtParams.IP
+	} else if request.Device != nil && request.Device.IP != "" {
+		userIP = request.Device.IP
+	} else {
+		return nil, fmt.Errorf("no IP set in flipp bidder params or request device")
+	}
+
 	var userKey string
 	if request.User != nil && request.User.ID != "" {
 		userKey = request.User.ID
@@ -134,7 +145,7 @@ func (a *adapter) processImp(request *openrtb2.BidRequest, imp openrtb2.Imp) (*a
 		Placements: []*Placement{&placement},
 		URL:        request.Site.Page,
 		Keywords:   keywordsSlice,
-		IP:         request.Device.IP,
+		IP:         userIP,
 		User: &CampaignRequestBodyUser{
 			Key: &userKey,
 		},
