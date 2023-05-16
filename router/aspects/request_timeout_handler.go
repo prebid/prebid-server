@@ -7,11 +7,10 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/enums"
 	"github.com/prebid/prebid-server/metrics"
 )
 
-func QueuedRequestTimeout(f httprouter.Handle, reqTimeoutHeaders config.RequestTimeoutHeaders, metricsEngine metrics.MetricsEngine, requestType enums.RequestType) httprouter.Handle {
+func QueuedRequestTimeout(f httprouter.Handle, reqTimeoutHeaders config.RequestTimeoutHeaders, metricsEngine metrics.MetricsEngine, requestType metrics.RequestType) httprouter.Handle {
 
 	return func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 

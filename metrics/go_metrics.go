@@ -7,7 +7,6 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/enums"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	metrics "github.com/rcrowley/go-metrics"
 )
@@ -22,7 +21,7 @@ type Metrics struct {
 	NoCookieMeter                  metrics.Meter
 	DebugRequestMeter              metrics.Meter
 	RequestTimer                   metrics.Timer
-	RequestsQueueTimer             map[enums.RequestType]map[bool]metrics.Timer
+	RequestsQueueTimer             map[RequestType]map[bool]metrics.Timer
 	PrebidCacheRequestTimerSuccess metrics.Timer
 	PrebidCacheRequestTimerError   metrics.Timer
 	StoredDataFetchTimer           map[StoredDataType]map[StoredDataFetchType]metrics.Timer
@@ -36,7 +35,7 @@ type Metrics struct {
 	StoredResponsesMeter           metrics.Meter
 
 	// Metrics for OpenRTB requests specifically
-	RequestStatuses       map[enums.RequestType]map[RequestStatus]metrics.Meter
+	RequestStatuses       map[RequestType]map[RequestStatus]metrics.Meter
 	AmpNoCookieMeter      metrics.Meter
 	CookieSyncMeter       metrics.Meter
 	CookieSyncStatusMeter map[CookieSyncStatus]metrics.Meter
@@ -166,7 +165,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 
 	newMetrics := &Metrics{
 		MetricsRegistry:                registry,
-		RequestStatuses:                make(map[enums.RequestType]map[RequestStatus]metrics.Meter),
+		RequestStatuses:                make(map[RequestType]map[RequestStatus]metrics.Meter),
 		ConnectionCounter:              metrics.NilCounter{},
 		ConnectionAcceptErrorMeter:     blankMeter,
 		ConnectionCloseErrorMeter:      blankMeter,
@@ -177,7 +176,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		RequestTimer:                   blankTimer,
 		DNSLookupTimer:                 blankTimer,
 		TLSHandshakeTimer:              blankTimer,
-		RequestsQueueTimer:             make(map[enums.RequestType]map[bool]metrics.Timer),
+		RequestsQueueTimer:             make(map[RequestType]map[bool]metrics.Timer),
 		PrebidCacheRequestTimerSuccess: blankTimer,
 		PrebidCacheRequestTimerError:   blankTimer,
 		StoredDataFetchTimer:           make(map[StoredDataType]map[StoredDataFetchType]metrics.Timer),
@@ -233,7 +232,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		newMetrics.ModuleMetrics[module] = makeBlankModuleStageMetrics(stages)
 	}
 
-	for _, t := range enums.RequestTypes() {
+	for _, t := range RequestTypes() {
 		newMetrics.RequestStatuses[t] = make(map[RequestStatus]metrics.Meter)
 		for _, s := range RequestStatuses() {
 			newMetrics.RequestStatuses[t][s] = blankMeter
@@ -943,8 +942,8 @@ func (me *Metrics) RecordPrebidCacheRequestTime(success bool, length time.Durati
 	}
 }
 
-func (me *Metrics) RecordRequestQueueTime(success bool, requestType enums.RequestType, length time.Duration) {
-	if requestType == enums.ReqTypeVideo { //remove this check when other request types are supported
+func (me *Metrics) RecordRequestQueueTime(success bool, requestType RequestType, length time.Duration) {
+	if requestType == ReqTypeVideo { //remove this check when other request types are supported
 		me.RequestsQueueTimer[requestType][success].Update(length)
 	}
 

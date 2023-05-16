@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/enums"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	metrics "github.com/rcrowley/go-metrics"
 	"github.com/stretchr/testify/assert"
@@ -41,25 +40,25 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "prebid_cache_request_time.ok", m.PrebidCacheRequestTimerSuccess)
 	ensureContains(t, registry, "prebid_cache_request_time.err", m.PrebidCacheRequestTimerError)
 
-	ensureContains(t, registry, "requests.ok.openrtb2-web", m.RequestStatuses[enums.ReqTypeORTB2Web][RequestStatusOK])
-	ensureContains(t, registry, "requests.badinput.openrtb2-web", m.RequestStatuses[enums.ReqTypeORTB2Web][RequestStatusBadInput])
-	ensureContains(t, registry, "requests.err.openrtb2-web", m.RequestStatuses[enums.ReqTypeORTB2Web][RequestStatusErr])
-	ensureContains(t, registry, "requests.networkerr.openrtb2-web", m.RequestStatuses[enums.ReqTypeORTB2Web][RequestStatusNetworkErr])
-	ensureContains(t, registry, "requests.ok.openrtb2-app", m.RequestStatuses[enums.ReqTypeORTB2App][RequestStatusOK])
-	ensureContains(t, registry, "requests.badinput.openrtb2-app", m.RequestStatuses[enums.ReqTypeORTB2App][RequestStatusBadInput])
-	ensureContains(t, registry, "requests.err.openrtb2-app", m.RequestStatuses[enums.ReqTypeORTB2App][RequestStatusErr])
-	ensureContains(t, registry, "requests.networkerr.openrtb2-app", m.RequestStatuses[enums.ReqTypeORTB2App][RequestStatusNetworkErr])
-	ensureContains(t, registry, "requests.ok.amp", m.RequestStatuses[enums.ReqTypeAMP][RequestStatusOK])
-	ensureContains(t, registry, "requests.badinput.amp", m.RequestStatuses[enums.ReqTypeAMP][RequestStatusBadInput])
-	ensureContains(t, registry, "requests.err.amp", m.RequestStatuses[enums.ReqTypeAMP][RequestStatusErr])
-	ensureContains(t, registry, "requests.networkerr.amp", m.RequestStatuses[enums.ReqTypeAMP][RequestStatusNetworkErr])
-	ensureContains(t, registry, "requests.ok.video", m.RequestStatuses[enums.ReqTypeVideo][RequestStatusOK])
-	ensureContains(t, registry, "requests.badinput.video", m.RequestStatuses[enums.ReqTypeVideo][RequestStatusBadInput])
-	ensureContains(t, registry, "requests.err.video", m.RequestStatuses[enums.ReqTypeVideo][RequestStatusErr])
-	ensureContains(t, registry, "requests.networkerr.video", m.RequestStatuses[enums.ReqTypeVideo][RequestStatusNetworkErr])
+	ensureContains(t, registry, "requests.ok.openrtb2-web", m.RequestStatuses[ReqTypeORTB2Web][RequestStatusOK])
+	ensureContains(t, registry, "requests.badinput.openrtb2-web", m.RequestStatuses[ReqTypeORTB2Web][RequestStatusBadInput])
+	ensureContains(t, registry, "requests.err.openrtb2-web", m.RequestStatuses[ReqTypeORTB2Web][RequestStatusErr])
+	ensureContains(t, registry, "requests.networkerr.openrtb2-web", m.RequestStatuses[ReqTypeORTB2Web][RequestStatusNetworkErr])
+	ensureContains(t, registry, "requests.ok.openrtb2-app", m.RequestStatuses[ReqTypeORTB2App][RequestStatusOK])
+	ensureContains(t, registry, "requests.badinput.openrtb2-app", m.RequestStatuses[ReqTypeORTB2App][RequestStatusBadInput])
+	ensureContains(t, registry, "requests.err.openrtb2-app", m.RequestStatuses[ReqTypeORTB2App][RequestStatusErr])
+	ensureContains(t, registry, "requests.networkerr.openrtb2-app", m.RequestStatuses[ReqTypeORTB2App][RequestStatusNetworkErr])
+	ensureContains(t, registry, "requests.ok.amp", m.RequestStatuses[ReqTypeAMP][RequestStatusOK])
+	ensureContains(t, registry, "requests.badinput.amp", m.RequestStatuses[ReqTypeAMP][RequestStatusBadInput])
+	ensureContains(t, registry, "requests.err.amp", m.RequestStatuses[ReqTypeAMP][RequestStatusErr])
+	ensureContains(t, registry, "requests.networkerr.amp", m.RequestStatuses[ReqTypeAMP][RequestStatusNetworkErr])
+	ensureContains(t, registry, "requests.ok.video", m.RequestStatuses[ReqTypeVideo][RequestStatusOK])
+	ensureContains(t, registry, "requests.badinput.video", m.RequestStatuses[ReqTypeVideo][RequestStatusBadInput])
+	ensureContains(t, registry, "requests.err.video", m.RequestStatuses[ReqTypeVideo][RequestStatusErr])
+	ensureContains(t, registry, "requests.networkerr.video", m.RequestStatuses[ReqTypeVideo][RequestStatusNetworkErr])
 
-	ensureContains(t, registry, "queued_requests.video.rejected", m.RequestsQueueTimer[enums.ReqTypeVideo][false])
-	ensureContains(t, registry, "queued_requests.video.accepted", m.RequestsQueueTimer[enums.ReqTypeVideo][true])
+	ensureContains(t, registry, "queued_requests.video.rejected", m.RequestsQueueTimer[ReqTypeVideo][false])
+	ensureContains(t, registry, "queued_requests.video.accepted", m.RequestsQueueTimer[ReqTypeVideo][true])
 
 	ensureContains(t, registry, "timeout_notification.ok", m.TimeoutNotificationSuccess)
 	ensureContains(t, registry, "timeout_notification.failed", m.TimeoutNotificationFailure)
