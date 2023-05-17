@@ -3,13 +3,18 @@
     "title": "Kargo Adapter Params",
     "description": "A schema which validates params accepted by the Kargo adapter",
     "type": "object",
-
     "properties": {
-        "placementId": {
-          "type": "string",
-          "description": "An ID which identifies the adslot placement. Equivalent to the id of target inventory, ad unit code, or placement id"
-        }
+      "placementId": {
+        "type": "string",
+        "description": "An ID which identifies the adslot placement. Equivalent to the id of target inventory, ad unit code, or placement id"
       },
-
-    "required": ["placementId"]
+      "adSlotID": {
+        "type": "string",
+        "description": "[Deprecated] An ID which identifies the adslot placement. Equivalent to the id of target inventory, ad unit code, or placement id"
+      }
+    },
+    "oneOf": [
+      { "required": ["placementId"] },
+      { "required": ["adSlotID"] }
+    ]
   }
