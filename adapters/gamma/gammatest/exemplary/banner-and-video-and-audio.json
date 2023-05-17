@@ -1,0 +1,162 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "id": "sample-id",
+            "zid": "sample-zone-id",
+            "wid": "sample-web-id"
+          }
+        }
+      },
+      {
+        "id": "test-imp-video-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "protocols": [
+            2,
+            5
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "bidder": {
+            "id": "sample-id",
+            "zid": "sample-zone-id",
+            "wid": "sample-web-id"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://hb.gammaplatform.com/adx/request/?id=sample-id&zid=sample-zone-id&wid=sample-web-id&bidid=test-imp-id&hb=pbmobile"
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "gamma",
+              "bid": [
+                {
+                  "id": "7706636740145184841",
+                  "impid": "test-imp-id",
+                  "price": 0.500000,
+                  "adid": "29681110",
+                  "adm": "some-test-ad",
+                  "adomain": [
+                    "sample.com"
+                  ],
+                  "cid": "958",
+                  "crid": "29681110",
+                  "h": 250,
+                  "w": 300
+                }
+              ]
+            }
+          ],
+          "bidid": "5778926625248726496",
+          "cur": "USD"
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "https://hb.gammaplatform.com/adx/request/?id=sample-id&zid=sample-zone-id&wid=sample-web-id&bidid=test-imp-video-id&hb=pbmobile"
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-imp-video-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "gamma",
+              "bid": [
+                {
+                  "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                  "impid": "test-imp-video-id",
+                  "price": 0.500000,
+                  "adm": "",
+                  "adomain": [
+                    "sample.com"
+                  ],
+                  "vastXml": "some-test-ad",
+                  "vastUrl": "some-test-url",
+                  "crid": "29484110",
+                  "w": 640,
+                  "h": 480
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "7706636740145184841",
+            "impid": "test-imp-id",
+            "price": 0.5,
+            "adm": "some-test-ad",
+            "adid": "29681110",
+            "adomain": [
+              "sample.com"
+            ],
+            "cid": "958",
+            "crid": "29681110",
+            "w": 300,
+            "h": 250
+          },
+          "type": "banner"
+        }
+      ]
+    },
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+            "impid": "test-imp-video-id",
+            "price": 0.5,
+            "adm": "some-test-ad",
+            "nurl": "some-test-url",
+            "adomain": [
+              "sample.com"
+            ],
+            "crid": "29484110",
+            "w": 640,
+            "h": 480
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

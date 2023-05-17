@@ -1,0 +1,33 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": "some not exist"
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "json: cannot unmarshal string into Go value of type openrtb_ext.ExtImpGrid",
+      "comparison": "literal"
+    },
+    {
+      "value": "No valid impressions for grid",
+      "comparison": "literal"
+    }
+  ],
+  "httpCalls":[],
+  "expectedBidResponses": []
+}

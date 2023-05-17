@@ -1,0 +1,28 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "tagid": "my-adcode",
+        "video": {
+          "mimes": ["video/mp4"],
+          "w": 640,
+          "h": 480,
+          "minduration": 120,
+          "maxduration": 150
+        },
+        "ext": "Awesome"
+      }
+    ],
+    "site": {
+      "page": "test.com"
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value":  "error unmarshaling imp.ext: json: cannot unmarshal string into Go value of type adapters.ExtImpBidder",
+      "comparison": "literal"
+    }
+  ]
+}

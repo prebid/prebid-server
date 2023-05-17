@@ -1,0 +1,17 @@
+disabled: true
+maintainer:
+  email: "developers@avocet.io"
+gvlVendorID: 63
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  redirect:
+    url: "https://ads.avct.cloud/getuid?&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&url={{.RedirectURL}}"
+    userMacro: "{{UUID}}"

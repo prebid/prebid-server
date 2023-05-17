@@ -1,0 +1,52 @@
+{
+  "id": "test",
+  "name": "test account",
+  "disabled": true,
+  "cache_ttl": {
+    "banner": 600,
+    "video": 3600,
+    "native": 3600,
+    "audio": 3600
+  },
+  "events": {
+    "enabled": true
+  },
+  "cookie_sync": {
+    "default_limt": 20,
+    "max_limit": 50,
+    "default_coop_sync": true
+  },
+  "hooks": {
+    "execution_plan": {
+      "endpoints": {
+        "/openrtb2/auction": {
+          "stages": {
+            "entrypoint": {
+              "groups": [
+                {
+                  "timeout": 5,
+                  "hook_sequence": [
+                    {
+                      "module_code": "acme.foobar",
+                      "hook_impl_code": "validate-query-params"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "modules": {
+      "acme": {
+        "foobar": {
+          "allow_reject": false,
+          "attributes": {
+            "name": "foo"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+    "expectedMakeRequestsErrors": [
+        {
+          "value": "No Imps in Bid Request",
+          "comparison": "literal"
+        }
+    ],
+    "mockBidRequest": {
+      "id": "test-request-id",
+      "imp": []
+    },
+    "httpCalls": []
+  }
+  

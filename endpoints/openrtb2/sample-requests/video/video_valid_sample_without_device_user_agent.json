@@ -1,0 +1,69 @@
+{
+  "description": "Video endpoint valid request without device data.",
+
+  "requestPayload": {
+    "podconfig": {
+      "durationrangesec": [
+        30
+      ],
+      "requireexactduration": true,
+      "pods": [{
+          "podid": 1,
+          "adpoddurationsec": 180,
+          "configid": "fba10607-0c12-43d1-ad07-b8a513bc75d6"
+        },
+        {
+          "podid": 2,
+          "adpoddurationsec": 150,
+          "configid": "8b452b41-2681-4a20-9086-6f16ffad7773"
+        }
+      ]
+    },
+    "site": {
+      "page": "prebid.com"
+    },
+    "regs": {
+      "ext": {
+        "gdpr": 0
+      }
+    },
+    "user": {
+      "yob": 1991,
+      "gender": "F",
+      "keywords": "Hotels, Travelling",
+      "ext": {
+        "prebid": {
+          "buyeruids": {
+            "appnexus": "unique_id_an",
+            "rubicon": "unique_id_rubi"
+          }
+        }
+      }
+    },
+    "includebrandcategory": {
+      "primaryadserver": 1,
+      "publisher": ""
+    },
+    "video": {
+      "w": 640,
+      "h": 480,
+      "mimes": [
+        "video/mp4"
+      ],
+      "protocols": [
+        2, 3, 5, 6
+      ]
+    },
+    "content": {
+      "episode": 6,
+      "title": "episodeName",
+      "series": "TvName",
+      "season": "season3",
+      "len": 900,
+      "livestream": 0
+    },
+    "cacheconfig": {
+      "ttl": 42
+    }
+  }
+}

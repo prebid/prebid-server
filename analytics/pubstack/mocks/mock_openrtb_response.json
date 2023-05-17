@@ -1,0 +1,91 @@
+{
+  "id": "19c2eeb8-824c-4604-af41-a59b2b7bb895",
+  "seatbid": [{
+    "seat": "958",
+    "bid": [
+      {
+      "id": "7706636740145184841",
+      "impid": "0341252e-b3b0-4dff-a0ef-1ced63369bd5",
+      "price": 0.500000,
+      "adid": "29681110",
+      "adm": "some-test-ad",
+      "adomain": ["appnexus.com"],
+      "iurl": "http://nym1-ib.adnxs.com/cr?id=29681110",
+      "cid": "958",
+      "crid": "29681110",
+      "h": 970,
+      "w": 250,
+      "ext": {
+        "appnexus": {
+          "brand_id": 1,
+          "brand_category_id": 1,
+          "auction_id": 8189378542222915032,
+          "bid_ad_type": 0,
+          "bidder_id": 2,
+          "ranking_price": 0.000000
+        }
+      }
+    },
+      {
+        "id": "7706636740145184842",
+        "impid": "0341252e-b3b0-4dff-a0ef-1ced63369bd5",
+        "price": 0.0,
+        "adid": "29681114",
+        "adm": "some-test-ad2",
+        "adomain": ["appnexus.com"],
+        "iurl": "http://nym1-ib.adnxs.com/cr?id=29681114",
+        "cid": "959",
+        "crid": "29681114",
+        "h": 970,
+        "w": 250,
+        "ext": {
+          "appnexus": {
+            "brand_id": 1,
+            "brand_category_id": 1,
+            "auction_id": 8189378542222915032,
+            "bid_ad_type": 0,
+            "bidder_id": 2,
+            "ranking_price": 0.000000
+          }
+        }
+      },{
+        "id": "7706636740145184842",
+        "impid": "3ac0ffa3-01de-44d2-9baf-1fee79026624",
+        "price": 0.5234,
+        "adid": "29681113",
+        "adm": "some-test-ad2",
+        "adomain": ["appnexus.com"],
+        "iurl": "http://nym1-ib.adnxs.com/cr?id=29681113",
+        "cid": "959",
+        "crid": "29681113",
+        "h": 970,
+        "w": 250,
+        "ext": {
+          "appnexus": {
+            "brand_id": 1,
+            "brand_category_id": 1,
+            "auction_id": 8189378542222915032,
+            "bid_ad_type": 0,
+            "bidder_id": 2,
+            "ranking_price": 0.000000
+          }
+        }
+      }]
+  },      {
+    "seat": "improvedigital",
+    "bid": [{
+      "id": "randomid",
+      "impid": "0341252e-b3b0-4dff-a0ef-1ced63369bd5",
+      "price": 0.510000,
+      "adid": "12345678",
+      "adm": "some-test-ad",
+      "cid": "987",
+      "crid": "12345678",
+      "h": 250,
+      "w": 300
+    }]
+  }
+  ],
+  "bidid": "5778926625248726496",
+  "cur": "USD"
+}

@@ -1,0 +1,70 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "page": "prebid.org"
+    },
+    "user": {
+      "buyeruid": "be5e209ad46927520000000000000000"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "zone": "3e56bd58-865c-47ce-af7f-a918108c3fd2"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://inv-nets.admixer.net/pbs.aspx",
+        "body": {
+          "id": "test-request-id",
+          "site": {
+            "page": "prebid.org"
+          },
+          "user": {
+            "buyeruid": "be5e209ad46927520000000000000000"
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 728,
+                    "h": 90
+                  }
+                ]
+              },
+              "tagid": "3e56bd58-865c-47ce-af7f-a918108c3fd2"
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 500,
+        "body": {
+        }
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 500. Dsp server internal error",
+      "comparison": "literal"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "LunaMedia Adapter Params",
+  "description": "A schema which validates params accepted by the LunaMedia adapter",
+  "type": "object",
+  "properties": {
+    "pubid": {
+      "type": "string",
+      "description": "An id used to identify LunaMedia publisher.",
+      "minLength": 8
+    },
+    "placement": {
+      "type": "string",
+      "description": "A placement created on adserver."
+    }
+  },
+  "required": ["pubid"]
+}

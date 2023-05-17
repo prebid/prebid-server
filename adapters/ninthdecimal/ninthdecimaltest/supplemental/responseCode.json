@@ -1,0 +1,78 @@
+{
+  "mockBidRequest": {
+      "id": "testid",
+      "site": {
+          "id": "test"
+      },
+      "imp": [
+          {
+              "id": "testimpid",
+              "banner": {
+                  "format": [
+                      {
+                          "w": 320,
+                          "h": 250
+                      },
+                      {
+                          "w": 320,
+                          "h": 300
+                      }
+                  ],
+                  "w": 320,
+                  "h": 250
+              },
+              "ext": {
+                  "bidder": {
+                      "pubid": "yu",
+                      "placement": "dummyplacement"
+                  }
+              }
+          }
+      ]
+  },
+  "httpCalls": [
+      {
+          "expectedRequest": {
+              "uri": "http://rtb.ninthdecimal.com/xp/get?pubid=yu",
+              "body": {
+                  "id": "testid",
+                  "imp": [
+                      {
+                          "banner": {
+                              "format": [
+                                  {
+                                      "h": 250,
+                                      "w": 320
+                                  },
+                                  {
+                                      "h": 300,
+                                      "w": 320
+                                  }
+                              ],
+                              "h": 250,
+                              "w": 320
+                          },
+                          "id": "testimpid",
+                          "tagid": "dummyplacement"
+                      }
+                  ],
+                  "site": {
+                      "id": "test"
+                  }
+              }
+          },
+          "mockResponse": {
+            "body": {
+                "seatbid": []
+            }
+        }
+    }
+
+  ],
+  "expectedMakeBidsErrors": [
+    {
+        "value": "Unexpected http status code: 0",
+        "comparison": "literal"
+      }
+    ]
+}

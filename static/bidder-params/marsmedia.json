@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Marsmedia Adapter Params",
+  "description": "A schema which validates params accepted by the Marsmedia adapter",
+  "type": "object",
+  "properties": {
+    "zoneId": {
+      "type": ["integer", "string"],
+      "description": "The zone ID from Mars Media Group."
+    }
+  }
+}

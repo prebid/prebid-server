@@ -1,0 +1,15 @@
+endpoint: "https://pbs.ladsp.com/adrequest/prebidserver"
+maintainer:
+  email: "prebid@so-netmedia.jp"
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+  app:
+    mediaTypes:
+      - banner
+userSync:
+  redirect:
+    url: "https://cr-p31.ladsp.com/cookiesender/31?r=true&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ru={{.RedirectURL}}"
+    userMacro: "$UID"
+

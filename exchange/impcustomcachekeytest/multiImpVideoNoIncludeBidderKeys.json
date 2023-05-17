@@ -1,0 +1,86 @@
+{
+	"bidRequest": {
+		"imp": [{
+					"id": "1_0"
+				},
+				{
+					"id": "1_1"
+				}
+		]
+	},
+	"pbsBids": [{
+		"bid": {
+			"id": "apn_1_0",
+			"impid": "1_0",
+			"price": 12.00,
+			"nurl": "http://apn_1_0.com",
+			"cat": ["12.00_sports_30s"]
+		},
+		"bidType": "video",
+		"bidder": "appnexus"
+	}, {
+		"bid": {
+			"id": "spotx_1_0",
+			"impid": "1_0",
+			"price": 20.00,
+			"nurl": "http://spotx_1_0.com",
+			"cat": ["20_news_30s"]
+		},
+		"bidType": "video",
+		"bidder": "spotx"
+	}, {
+		"bid": {
+			"id": "apn_1_1",
+			"impid": "1_1",
+			"price": 18.00,
+			"nurl": "http://apn_1_1.com",
+			"cat": ["18_furniture_30s"]
+		},
+		"bidType": "video",
+		"bidder": "appnexus"
+	}, {
+		"bid": {
+			"id": "spotx_1_1",
+			"impid": "1_1",
+			"price": 17.00,
+			"nurl": "http://spotx_1_1.com",
+			"cat": ["17_auto_30s"]
+		},
+		"bidType": "video",
+		"bidder": "spotx"
+	}, {
+		"bid": {
+			"id": "rubicon_1_1",
+			"impid": "1_1",
+			"price": 17.50,
+			"nurl": "http://rubicon_1_1.com",
+			"cat": ["17_music_30s"]
+		},
+		"bidType": "video",
+		"bidder": "rubicon"
+	}],
+	"expectedCacheables": [
+		{
+			"type": "xml",
+			"ttlseconds": 3660,
+			"value": "\u003cVAST version=\"3.0\"\u003e\u003cAd\u003e\u003cWrapper\u003e\u003cAdSystem\u003eprebid.org wrapper\u003c/AdSystem\u003e\u003cVASTAdTagURI\u003e\u003c![CDATA[http://spotx_1_0.com]]\u003e\u003c/VASTAdTagURI\u003e\u003cImpression\u003e\u003c/Impression\u003e\u003cCreatives\u003e\u003c/Creatives\u003e\u003c/Wrapper\u003e\u003c/Ad\u003e\u003c/VAST\u003e",
+			"key": "20_news_30s"
+		},
+		{
+			"type": "xml",
+			"ttlseconds": 3660,
+			"value": "\u003cVAST version=\"3.0\"\u003e\u003cAd\u003e\u003cWrapper\u003e\u003cAdSystem\u003eprebid.org wrapper\u003c/AdSystem\u003e\u003cVASTAdTagURI\u003e\u003c![CDATA[http://apn_1_1.com]]\u003e\u003c/VASTAdTagURI\u003e\u003cImpression\u003e\u003c/Impression\u003e\u003cCreatives\u003e\u003c/Creatives\u003e\u003c/Wrapper\u003e\u003c/Ad\u003e\u003c/VAST\u003e",
+			"key": "18_furniture_30s"
+		}
+	],
+	"defaultTTLs": {
+		"banner": 300,
+		"video": 3600,
+		"audio": 1800,
+		"native": 300
+	},
+	"targetDataIncludeWinners": true,
+	"targetDataIncludeBidderKeys": false,
+	"targetDataIncludeCacheBids": false,
+	"targetDataIncludeCacheVast": true
+}

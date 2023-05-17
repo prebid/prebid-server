@@ -1,0 +1,13 @@
+endpoint: "https://hb.gammaplatform.com/adx/request/"
+maintainer:
+  email: "support@gammassp.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  # gamma supports user syncing, but requires configuration by the host. contact this
+  # bidder directly at the email address in this file to ask about enabling user sync.
+  supports:
+    - iframe

@@ -1,0 +1,16 @@
+endpoint: "https://bids-{{.ZoneID}}.bidder.kayzen.io/?exchange={{.AccountID}}"
+maintainer:
+  email: "platform-dev@kayzen.io"
+gvlVendorID: 528
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native

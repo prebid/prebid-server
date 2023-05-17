@@ -1,48 +1,55 @@
 package endpoints
 
 import (
-	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http/httptest"
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestVersion(t *testing.T) {
-	// Setup:
 	var testCases = []struct {
-		input    string
-		expected string
+		description string
+		version     string
+		revision    string
+		expected    string
 	}{
-		{"", `{"revision": "not-set"}`},
-		{"abc", `{"revision": "abc"}`},
-		{"d6cd1e2bd19e03a81132a23b2025920577f84e37", `{"revision": "d6cd1e2bd19e03a81132a23b2025920577f84e37"}`},
+		{
+			description: "Empty",
+			version:     "",
+			revision:    "",
+			expected:    `{"revision":"not-set","version":"not-set"}`,
+		},
+		{
+			description: "Version Only",
+			version:     "1.2.3",
+			revision:    "",
+			expected:    `{"revision":"not-set","version":"1.2.3"}`,
+		},
+		{
+			description: "Revision Only",
+			version:     "",
+			revision:    "d6cd1e2bd19e03a81132a23b2025920577f84e37",
+			expected:    `{"revision":"d6cd1e2bd19e03a81132a23b2025920577f84e37","version":"not-set"}`,
+		},
+		{
+			description: "Fully Populated",
+			version:     "1.2.3",
+			revision:    "d6cd1e2bd19e03a81132a23b2025920577f84e37",
+			expected:    `{"revision":"d6cd1e2bd19e03a81132a23b2025920577f84e37","version":"1.2.3"}`,
+		},
 	}
 
-	for _, tc := range testCases {
-
-		handler := NewVersionEndpoint(tc.input)
+	for _, test := range testCases {
+		handler := NewVersionEndpoint(test.version, test.revision)
 		w := httptest.NewRecorder()
 
-		// Execute:
 		handler(w, nil)
 
-		// Verify:
-		var result, expected versionModel
-		err := json.NewDecoder(w.Body).Decode(&result)
-		if err != nil {
-			t.Errorf("Bad response body. Expected: %s, got an error %s", tc.expected, err)
-		}
-
-		err = json.Unmarshal([]byte(tc.expected), &expected)
-		if err != nil {
-			t.Errorf("Error while trying to unmarshal expected result JSON")
-		}
-
-		if !reflect.DeepEqual(expected, result) {
-			responseBodyBytes, _ := ioutil.ReadAll(w.Body)
-			responseBodyString := string(responseBodyBytes)
-			t.Errorf("Bad response body. Expected: %s, got %s", tc.expected, responseBodyString)
+		response, err := io.ReadAll(w.Result().Body)
+		if assert.NoError(t, err, test.description+":read") {
+			assert.JSONEq(t, test.expected, string(response), test.description+":response")
 		}
 	}
 }

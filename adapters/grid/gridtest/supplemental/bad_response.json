@@ -14,6 +14,7 @@
         },
         "ext": {
           "bidder": {
+            "uid": 1
           }
         }
       }
@@ -39,6 +40,7 @@
               },
               "ext": {
                 "bidder": {
+                  "uid": 1
                 }
               }
             }
@@ -53,6 +55,9 @@
   ],
 
   "expectedMakeBidsErrors": [
-    "json: cannot unmarshal string into Go value of type openrtb.BidResponse"
+    {
+      "value": "json: cannot unmarshal string into Go value of type grid.GridResponse",
+      "comparison": "literal"
+    }
   ]
 }

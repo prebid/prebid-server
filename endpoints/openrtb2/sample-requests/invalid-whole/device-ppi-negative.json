@@ -1,0 +1,28 @@
+{
+    "description": "Request has a negative PPI height.",
+    "mockBidRequest": {
+        "id": "req-id",
+        "site": {
+            "id": "some-site"
+        },
+        "device": {
+            "w": 50,
+            "h": 50,
+            "ppi": -1
+        },
+        "imp": [{
+            "id": "imp-id",
+            "banner": {
+                "w": 50,
+                "h": 50
+            },
+            "ext": {
+                "appnexus": {
+                    "placementId": 12883451
+                }
+            }
+        }]
+    },
+    "expectedReturnCode": 400,
+    "expectedErrorMessage": "Invalid request: request.device.ppi must be a positive number"
+}

@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Smaato Adapter Params",
+  "description": "A schema which validates params accepted by the Smaato adapter",
+  "type": "object",
+  "properties": {
+    "publisherId": {
+      "type": "string",
+      "description": "A unique identifier for this impression within the context of the bid request"
+    },
+    "adspaceId": {
+      "type": "string",
+      "description": "Identifier for specific ad placement is SOMA `adspaceId`"
+    },
+    "adbreakId": {
+      "type": "string",
+      "description": "Identifier for specific adpod placement is SOMA `adbreakId`"
+    }
+  },
+  "required": [
+    "publisherId"
+  ],
+  "anyOf": [
+    {
+      "required": [
+        "adspaceId"
+      ]
+    },
+    {
+      "required": [
+        "adbreakId"
+      ]
+    }
+  ]
+}

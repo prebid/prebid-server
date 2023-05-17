@@ -1,0 +1,21 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [{"w": 300, "h": 50}]
+        },
+        "ext": "aaa"
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "json: cannot unmarshal string into Go value of type adapters.ExtImpBidder",
+      "comparison": "literal"
+    }
+  ]
+}

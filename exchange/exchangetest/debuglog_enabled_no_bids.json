@@ -1,0 +1,96 @@
+{
+  "debugLog": {
+    "Enabled": true,
+    "DebugEnabledOrOverridden": true,
+    "DebugOverride": false,
+    "CacheType": "xml",
+    "TTL": 3600,
+    "Data": {
+      "Request": "test request string",
+      "Headers": "test headers string",
+      "Response": ""
+    }
+  },
+  "incomingRequest": {
+    "ortbRequest": {
+      "id": "some-request-id",
+      "site": {
+        "page": "test.somepage.com"
+      },
+      "imp": [
+        {
+          "id": "my-imp-id",
+          "video": {
+            "mimes": [
+              "video/mp4"
+            ]
+          },
+          "ext": {
+            "prebid": {
+              "bidder": {
+                "appnexus": {
+                  "placementId": 1
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": "imp-id-2",
+          "video": {
+            "mimes": [
+              "video/mp4"
+            ]
+          },
+          "ext": {
+            "prebid": {
+              "bidder": {
+                "appnexus": {
+                  "placementId": 1
+                }
+              }
+            }
+          }
+        }
+      ],
+      "ext": {
+        "prebid": {
+          "targeting": {
+            "pricegranularity": {
+              "precision": 2,
+              "ranges": [
+                {
+                  "min": 0,
+                  "max": 20,
+                  "increment": 0.1
+                }
+              ]
+            },
+            "includewinners": false,
+            "includebidderkeys": true,
+            "includebrandcategory": {
+              "primaryadserver": 1,
+              "publisher": "",
+              "withcategory": true
+            }
+          }
+        }
+      }
+    },
+    "usersyncs": {
+      "appnexus": "123"
+    }
+  },
+  "outgoingRequests": {
+    "appnexus": {
+      "mockResponse": {
+        "pbsSeatBids": [
+          {}
+        ]
+      }
+    }
+  },
+  "response": {
+    "bids": {}
+  }
+}

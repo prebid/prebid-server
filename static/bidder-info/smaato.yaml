@@ -1,0 +1,21 @@
+endpoint: "https://prebid.ad.smaato.net/oapi/prebid"
+endpointCompression: gzip
+maintainer:
+  email: "prebid@smaato.com"
+gvlVendorID: 82
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  redirect:
+    url: "https://s.ad.smaato.net/c/?adExInit=p&redir={{.RedirectURL}}"
+    userMacro: "$UID"
+

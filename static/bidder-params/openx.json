@@ -16,6 +16,11 @@
       "pattern": "\\.[a-zA-Z]{2,3}$",
       "format": "hostname"
     },
+    "platform": {
+      "type": "string",
+      "description": "The platform id for the customer.",
+      "format": "uuid"
+    },
     "customFloor": {
       "type": "number",
       "description": "The minimum CPM price in USD.",
@@ -26,6 +31,19 @@
       "description": "User-defined targeting key-value pairs."
     }
   },
-
-  "required": ["unit", "delDomain"]
+  "required": [
+    "unit"
+  ],
+  "anyOf": [
+    {
+      "required": [
+        "delDomain"
+      ]
+    },
+    {
+      "required": [
+        "platform"
+      ]
+    }
+  ]
 }

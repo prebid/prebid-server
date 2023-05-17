@@ -1,0 +1,37 @@
+{
+  "mockBidRequest": {
+    "id": "abc",
+    "site": {
+      "page": "prebid.org"
+    },
+    "imp": [
+      {
+        "id": "imp123",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ],
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "pub_id": 0,
+            "zone_id": "N4zTDq3PPEHBIODv7cXK",
+            "force_bid": true
+          }
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "json: cannot unmarshal number into Go struct field ExtImpSmartRTB.pub_id of type string",
+      "comparison": "literal"
+    }
+  ]
+}

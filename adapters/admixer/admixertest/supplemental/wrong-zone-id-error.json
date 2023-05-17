@@ -1,0 +1,30 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "format": [{
+          "w": 728,
+          "h": 90
+        }],
+        "ext": {
+          "bidder": {
+            "zone": "12345"
+          }
+        }
+      }
+    ],
+    "app": {
+      "bundle": "com.prebid"
+    },
+    "device": {
+      "ifa": "ec943cb9-61ec-460f-a925-6489c3fcc4e3"
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "ZoneId must be UUID/GUID",
+      "comparison": "literal"
+    }
+  ]
+}

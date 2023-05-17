@@ -1,0 +1,63 @@
+{
+  "description": "bid request calls for a bid in foreign currency MXN but conversion rate is not found in the currency conversion service.",
+  "config": {
+    "currencyRates":{
+      "USD": {
+        "GBP": 0.80
+      }
+    },
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 1.00}
+    ]
+  },
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "cur": ["MXN"],
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          }
+        }
+      }
+    ]
+  },
+  "expectedBidResponse": {
+    "id": "some-request-id",
+    "ext": {
+      "errors": {
+        "appnexus": [
+          {
+            "code": 999,
+            "message": "Currency conversion rate not found: 'USD' => 'MXN'"
+          }
+        ]
+      },
+      "warnings": {
+        "general": [
+          {
+            "code": 10002,
+            "message": "debug turned off for account"
+          }
+        ]
+      },
+      "responsetimemillis": {
+        "appnexus": 0
+      },
+      "prebid": {
+        "auctiontimestamp": 1643437745429
+      }
+    }
+  },
+  "expectedReturnCode": 200
+}

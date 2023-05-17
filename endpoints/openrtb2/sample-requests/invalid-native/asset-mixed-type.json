@@ -1,15 +1,25 @@
 {
-    "context": 1,
-    "plcmttype": 1,
-    "assets": [
-        {
-            "title": {
-                "len": 140
-            },
-            "img": {
-                "wmin": 20,
-                "hmin": 30
-            }
+  "description": "Native request with mixed asset type in the sole element of the assets arary in the imp.native.request field",
+  "mockBidRequest": {
+    "id": "req-id",
+    "site": {
+      "page": "some.page.com"
+    },
+    "tmax": 500,
+    "imp": [
+      {
+        "id": "some-imp",
+        "native": {
+          "request": "{\"context\":1,\"plcmttype\":1,\"assets\":[{\"title\":{\"len\":140},\"img\":{\"wmin\":20,\"hmin\":30}}]}"
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          }
         }
+      }
     ]
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request"
 }

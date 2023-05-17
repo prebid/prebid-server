@@ -3,76 +3,69 @@ package router
 import (
 	"context"
 	"crypto/tls"
-	"database/sql"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
-	"path/filepath"
+	"os"
 	"strings"
 	"time"
 
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/adapters/adform"
-	"github.com/prebid/prebid-server/adapters/appnexus"
-	"github.com/prebid/prebid-server/adapters/audienceNetwork"
-	"github.com/prebid/prebid-server/adapters/conversant"
-	"github.com/prebid/prebid-server/adapters/ix"
-	"github.com/prebid/prebid-server/adapters/lifestreet"
-	"github.com/prebid/prebid-server/adapters/pubmatic"
-	"github.com/prebid/prebid-server/adapters/pulsepoint"
-	"github.com/prebid/prebid-server/adapters/rubicon"
-	"github.com/prebid/prebid-server/adapters/sovrn"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
-	"github.com/prebid/prebid-server/cache"
-	"github.com/prebid/prebid-server/cache/dummycache"
-	"github.com/prebid/prebid-server/cache/filecache"
-	"github.com/prebid/prebid-server/cache/postgrescache"
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/currencies"
+	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/endpoints"
+	"github.com/prebid/prebid-server/endpoints/events"
 	infoEndpoints "github.com/prebid/prebid-server/endpoints/info"
 	"github.com/prebid/prebid-server/endpoints/openrtb2"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/experiment/adscert"
 	"github.com/prebid/prebid-server/gdpr"
+	"github.com/prebid/prebid-server/hooks"
+	"github.com/prebid/prebid-server/metrics"
+	metricsConf "github.com/prebid/prebid-server/metrics/config"
+	"github.com/prebid/prebid-server/modules"
+	"github.com/prebid/prebid-server/modules/moduledeps"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
-	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
-	"github.com/prebid/prebid-server/ssl"
+	"github.com/prebid/prebid-server/router/aspects"
+	"github.com/prebid/prebid-server/server/ssl"
 	storedRequestsConf "github.com/prebid/prebid-server/stored_requests/config"
-	"github.com/prebid/prebid-server/usersync/usersyncers"
+	"github.com/prebid/prebid-server/usersync"
+	"github.com/prebid/prebid-server/util/uuidutil"
+	"github.com/prebid/prebid-server/version"
 
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	_ "github.com/lib/pq"
 	"github.com/rs/cors"
 )
 
-var dataCache cache.Cache
-var exchanges map[string]adapters.Adapter
-
 // NewJsonDirectoryServer is used to serve .json files from a directory as a single blob. For example,
 // given a directory containing the files "a.json" and "b.json", this returns a Handle which serves JSON like:
 //
-// {
-//   "a": { ... content from the file a.json ... },
-//   "b": { ... content from the file b.json ... }
-// }
+//	{
+//	  "a": { ... content from the file a.json ... },
+//	  "b": { ... content from the file b.json ... }
+//	}
 //
 // This function stores the file contents in memory, and should not be used on large directories.
 // If the root directory, or any of the files in it, cannot be read, then the program will exit.
 func NewJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.BidderParamValidator, aliases map[string]string) httprouter.Handle {
 	// Slurp the files into memory first, since they're small and it minimizes request latency.
-	files, err := ioutil.ReadDir(schemaDirectory)
+	files, err := os.ReadDir(schemaDirectory)
 	if err != nil {
 		glog.Fatalf("Failed to read directory %s: %v", schemaDirectory, err)
 	}
 
+	bidderMap := openrtb_ext.BuildBidderMap()
+
 	data := make(map[string]json.RawMessage, len(files))
 	for _, file := range files {
 		bidder := strings.TrimSuffix(file.Name(), ".json")
-		bidderName, isValid := openrtb_ext.BidderMap[bidder]
+		bidderName, isValid := bidderMap[bidder]
 		if !isValid {
 			glog.Fatalf("Schema exists for an unknown bidder: %s", bidder)
 		}
@@ -114,53 +107,6 @@ func (m NoCache) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	m.Handler.ServeHTTP(w, r)
 }
 
-func loadDataCache(cfg *config.Configuration, db *sql.DB) (err error) {
-	switch cfg.DataCache.Type {
-	case "dummy":
-		dataCache, err = dummycache.New()
-		if err != nil {
-			glog.Fatalf("Dummy cache not configured: %s", err.Error())
-		}
-
-	case "postgres":
-		if db == nil {
-			return fmt.Errorf("Nil db cannot connect to postgres. Did you forget to set the config.stored_requests.postgres values?")
-		}
-		dataCache = postgrescache.New(db, postgrescache.CacheConfig{
-			Size: cfg.DataCache.CacheSize,
-			TTL:  cfg.DataCache.TTLSeconds,
-		})
-		return nil
-	case "filecache":
-		dataCache, err = filecache.New(cfg.DataCache.Filename)
-		if err != nil {
-			return fmt.Errorf("FileCache Error: %s", err.Error())
-		}
-
-	default:
-		return fmt.Errorf("Unknown datacache.type: %s", cfg.DataCache.Type)
-	}
-	return nil
-}
-
-func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
-	// These keys _must_ coincide with the bidder code in Prebid.js, if the adapter exists in both projects
-	return map[string]adapters.Adapter{
-		"appnexus":   appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint),
-		"districtm":  appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint),
-		"ix":         ix.NewIxAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderIx))].Endpoint),
-		"pubmatic":   pubmatic.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint),
-		"pulsepoint": pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPulsepoint)].Endpoint),
-		"rubicon": rubicon.NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderRubicon)].Endpoint,
-			cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Username, cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Password, cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Tracker),
-		"audienceNetwork": audienceNetwork.NewAdapterFromFacebook(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))].PlatformID),
-		"lifestreet":      lifestreet.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderLifestreet)].Endpoint),
-		"conversant":      conversant.NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderConversant)].Endpoint),
-		"adform":          adform.NewAdformAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderAdform)].Endpoint),
-		"sovrn":           sovrn.NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderSovrn)].Endpoint),
-	}
-}
-
 type Router struct {
 	*httprouter.Router
 	MetricsEngine   *metricsConf.DetailedMetricsEngine
@@ -168,34 +114,72 @@ type Router struct {
 	Shutdown        func()
 }
 
-func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r *Router, err error) {
+func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *Router, err error) {
 	const schemaDirectory = "./static/bidder-params"
-	const infoDirectory = "./static/bidder-info"
 
 	r = &Router{
 		Router: httprouter.New(),
 	}
-	theClient := &http.Client{
+
+	// For bid processing, we need both the hardcoded certificates and the certificates found in container's
+	// local file system
+	certPool := ssl.GetRootCAPool()
+	var readCertErr error
+	certPool, readCertErr = ssl.AppendPEMFileToRootCAPool(certPool, cfg.PemCertsFile)
+	if readCertErr != nil {
+		glog.Infof("Could not read certificates file: %s \n", readCertErr.Error())
+	}
+
+	generalHttpClient := &http.Client{
 		Transport: &http.Transport{
+			Proxy:               http.ProxyFromEnvironment,
+			MaxConnsPerHost:     cfg.Client.MaxConnsPerHost,
 			MaxIdleConns:        cfg.Client.MaxIdleConns,
 			MaxIdleConnsPerHost: cfg.Client.MaxIdleConnsPerHost,
 			IdleConnTimeout:     time.Duration(cfg.Client.IdleConnTimeout) * time.Second,
-			TLSClientConfig:     &tls.Config{RootCAs: ssl.GetRootCAPool()},
+			TLSClientConfig:     &tls.Config{RootCAs: certPool},
 		},
 	}
-	// Hack because of how legacy handles districtm
-	legacyBidderList := openrtb_ext.BidderList()
-	legacyBidderList = append(legacyBidderList, openrtb_ext.BidderName("districtm"))
+
+	cacheHttpClient := &http.Client{
+		Transport: &http.Transport{
+			Proxy:               http.ProxyFromEnvironment,
+			MaxConnsPerHost:     cfg.CacheClient.MaxConnsPerHost,
+			MaxIdleConns:        cfg.CacheClient.MaxIdleConns,
+			MaxIdleConnsPerHost: cfg.CacheClient.MaxIdleConnsPerHost,
+			IdleConnTimeout:     time.Duration(cfg.CacheClient.IdleConnTimeout) * time.Second,
+		},
+	}
+
+	if err := checkSupportedUserSyncEndpoints(cfg.BidderInfos); err != nil {
+		return nil, err
+	}
+
+	syncersByBidder, errs := usersync.BuildSyncers(cfg, cfg.BidderInfos)
+	if len(errs) > 0 {
+		return nil, errortypes.NewAggregateError("user sync", errs)
+	}
+
+	syncerKeys := make([]string, 0, len(syncersByBidder))
+	syncerKeysHashSet := map[string]struct{}{}
+	for _, syncer := range syncersByBidder {
+		syncerKeysHashSet[syncer.Key()] = struct{}{}
+	}
+	for k := range syncerKeysHashSet {
+		syncerKeys = append(syncerKeys, k)
+	}
+
+	moduleDeps := moduledeps.ModuleDeps{HTTPClient: generalHttpClient}
+	repo, moduleStageNames, err := modules.NewBuilder().Build(cfg.Hooks.Modules, moduleDeps)
+	if err != nil {
+		glog.Fatalf("Failed to init hook modules: %v", err)
+	}
 
 	// Metrics engine
-	r.MetricsEngine = metricsConf.NewMetricsEngine(cfg, legacyBidderList)
-	db, shutdown, fetcher, ampFetcher, categoriesFetcher, videoFetcher := storedRequestsConf.NewStoredRequests(cfg, r.MetricsEngine, theClient, r.Router)
-
+	r.MetricsEngine = metricsConf.NewMetricsEngine(cfg, openrtb_ext.CoreBidderNames(), syncerKeys, moduleStageNames)
+	shutdown, fetcher, ampFetcher, accounts, categoriesFetcher, videoFetcher, storedRespFetcher := storedRequestsConf.NewStoredRequests(cfg, r.MetricsEngine, generalHttpClient, r.Router)
 	// todo(zachbadgett): better shutdown
 	r.Shutdown = shutdown
-	if err := loadDataCache(cfg, db); err != nil {
-		return nil, fmt.Errorf("Prebid Server could not load data cache: %v", err)
-	}
 
 	pbsAnalytics := analyticsConf.NewPBSAnalytics(&cfg.Analytics)
 
@@ -204,65 +188,113 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 		glog.Fatalf("Failed to create the bidder params validator. %v", err)
 	}
 
-	disabledBidders := map[string]string{
-		"indexExchange": "Bidder \"indexExchange\" has been deprecated and is no longer available. Please use bidder \"ix\" and note that the bidder params have changed.",
-	}
-	bidderList, bidderMap := exchange.DisableBidders(cfg.Adapters, openrtb_ext.BidderList(), disabledBidders)
-
-	p, _ := filepath.Abs(infoDirectory)
-	bidderInfos := adapters.ParseBidderInfos(p, bidderList)
+	activeBidders := exchange.GetActiveBidders(cfg.BidderInfos)
+	disabledBidders := exchange.GetDisabledBiddersErrorMessages(cfg.BidderInfos)
 
 	defaultAliases, defReqJSON := readDefaultRequest(cfg.DefReqConfig)
-
-	syncers := usersyncers.NewSyncerMap(cfg)
-	gdprPerms := gdpr.NewPermissions(context.Background(), cfg.GDPR, adapters.GDPRAwareSyncerIDs(syncers), theClient)
-
-	exchanges = newExchangeMap(cfg)
-	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, r.MetricsEngine, bidderInfos, gdprPerms, rateConvertor)
-
-	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, fetcher, categoriesFetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, bidderMap)
-
-	if err != nil {
-		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
+	if err := validateDefaultAliases(defaultAliases); err != nil {
+		return nil, err
 	}
 
-	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, ampFetcher, categoriesFetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, bidderMap)
+	gvlVendorIDs := cfg.BidderInfos.ToGVLVendorIDMap()
+	vendorListFetcher := gdpr.NewVendorListFetcher(context.Background(), cfg.GDPR, generalHttpClient, gdpr.VendorListURLMaker)
+	gdprPermsBuilder := gdpr.NewPermissionsBuilder(cfg.GDPR, gvlVendorIDs, vendorListFetcher)
+	tcf2CfgBuilder := gdpr.NewTCF2Config
 
+	cacheClient := pbc.NewClient(cacheHttpClient, &cfg.CacheURL, &cfg.ExtCacheURL, r.MetricsEngine)
+
+	adapters, adaptersErrs := exchange.BuildAdapters(generalHttpClient, cfg, cfg.BidderInfos, r.MetricsEngine)
+	if len(adaptersErrs) > 0 {
+		errs := errortypes.NewAggregateError("Failed to initialize adapters", adaptersErrs)
+		return nil, errs
+	}
+	adsCertSigner, err := adscert.NewAdCertsSigner(cfg.Experiment.AdCerts)
+	if err != nil {
+		glog.Fatalf("Failed to create ads cert signer: %v", err)
+	}
+
+	planBuilder := hooks.NewExecutionPlanBuilder(cfg.Hooks, repo)
+	theExchange := exchange.NewExchange(adapters, cacheClient, cfg, syncersByBidder, r.MetricsEngine, cfg.BidderInfos, gdprPermsBuilder, rateConvertor, categoriesFetcher, adsCertSigner)
+	var uuidGenerator uuidutil.UUIDRandomGenerator
+	openrtbEndpoint, err := openrtb2.NewEndpoint(uuidGenerator, theExchange, paramsValidator, fetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBidders, storedRespFetcher, planBuilder)
+	if err != nil {
+		glog.Fatalf("Failed to create the openrtb2 endpoint handler. %v", err)
+	}
+
+	ampEndpoint, err := openrtb2.NewAmpEndpoint(uuidGenerator, theExchange, paramsValidator, ampFetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBidders, storedRespFetcher, planBuilder)
 	if err != nil {
 		glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
 	}
 
-	videoEndpoint, err := openrtb2.NewVideoEndpoint(theExchange, paramsValidator, fetcher, videoFetcher, categoriesFetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, bidderMap)
+	videoEndpoint, err := openrtb2.NewVideoEndpoint(uuidGenerator, theExchange, paramsValidator, fetcher, videoFetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBidders, cacheClient)
 	if err != nil {
 		glog.Fatalf("Failed to create the video endpoint handler. %v", err)
 	}
 
-	r.POST("/auction", endpoints.Auction(cfg, syncers, gdprPerms, r.MetricsEngine, dataCache, exchanges))
+	requestTimeoutHeaders := config.RequestTimeoutHeaders{}
+	if cfg.RequestTimeoutHeaders != requestTimeoutHeaders {
+		videoEndpoint = aspects.QueuedRequestTimeout(videoEndpoint, cfg.RequestTimeoutHeaders, r.MetricsEngine, metrics.ReqTypeVideo)
+	}
+
 	r.POST("/openrtb2/auction", openrtbEndpoint)
 	r.POST("/openrtb2/video", videoEndpoint)
 	r.GET("/openrtb2/amp", ampEndpoint)
-	r.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint(defaultAliases))
-	r.GET("/info/bidders/:bidderName", infoEndpoints.NewBidderDetailsEndpoint(bidderInfos, defaultAliases))
+	r.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint(cfg.BidderInfos, defaultAliases))
+	r.GET("/info/bidders/:bidderName", infoEndpoints.NewBiddersDetailEndpoint(cfg.BidderInfos, defaultAliases))
 	r.GET("/bidders/params", NewJsonDirectoryServer(schemaDirectory, paramsValidator, defaultAliases))
-	r.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncers, cfg, gdprPerms, r.MetricsEngine, pbsAnalytics))
+	r.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncersByBidder, cfg, gdprPermsBuilder, tcf2CfgBuilder, r.MetricsEngine, pbsAnalytics, accounts, activeBidders).Handle)
 	r.GET("/status", endpoints.NewStatusEndpoint(cfg.StatusResponse))
 	r.GET("/", serveIndex)
+	r.Handler("GET", "/version", endpoints.NewVersionEndpoint(version.Ver, version.Rev))
 	r.ServeFiles("/static/*filepath", http.Dir("static"))
+
+	// vtrack endpoint
+	if cfg.VTrack.Enabled {
+		vtrackEndpoint := events.NewVTrackEndpoint(cfg, accounts, cacheClient, cfg.BidderInfos, r.MetricsEngine)
+		r.POST("/vtrack", vtrackEndpoint)
+	}
+
+	// event endpoint
+	eventEndpoint := events.NewEventEndpoint(cfg, accounts, pbsAnalytics, r.MetricsEngine)
+	r.GET("/event", eventEndpoint)
 
 	userSyncDeps := &pbs.UserSyncDeps{
 		HostCookieConfig: &(cfg.HostCookie),
 		ExternalUrl:      cfg.ExternalURL,
 		RecaptchaSecret:  cfg.RecaptchaSecret,
-		MetricsEngine:    r.MetricsEngine,
-		PBSAnalytics:     pbsAnalytics,
 	}
 
-	r.GET("/setuid", endpoints.NewSetUIDEndpoint(cfg.HostCookie, gdprPerms, pbsAnalytics, r.MetricsEngine))
+	r.GET("/setuid", endpoints.NewSetUIDEndpoint(cfg, syncersByBidder, gdprPermsBuilder, tcf2CfgBuilder, pbsAnalytics, accounts, r.MetricsEngine))
 	r.GET("/getuids", endpoints.NewGetUIDsEndpoint(cfg.HostCookie))
 	r.POST("/optout", userSyncDeps.OptOut)
 	r.GET("/optout", userSyncDeps.OptOut)
 
 	return r, nil
+}
+
+func checkSupportedUserSyncEndpoints(bidderInfos config.BidderInfos) error {
+	for name, info := range bidderInfos {
+		if info.Syncer == nil {
+			continue
+		}
+
+		for _, endpoint := range info.Syncer.Supports {
+			endpointLower := strings.ToLower(endpoint)
+			switch endpointLower {
+			case "iframe":
+				if info.Syncer.IFrame == nil {
+					glog.Warningf("bidder %s supports iframe user sync, but doesn't have a default and must be configured by the host", name)
+				}
+			case "redirect":
+				if info.Syncer.Redirect == nil {
+					glog.Warningf("bidder %s supports redirect user sync, but doesn't have a default and must be configured by the host", name)
+				}
+			default:
+				return fmt.Errorf("failed to load bidder info for %s, user sync supported endpoint '%s' is unrecognized", name, endpoint)
+			}
+		}
+	}
+	return nil
 }
 
 // Fixes #648
@@ -307,7 +339,7 @@ func readDefaultRequest(defReqConfig config.DefReqConfig) (map[string]string, []
 		if len(defReqConfig.FileSystem.FileName) == 0 {
 			return aliases, []byte{}
 		}
-		defReqJSON, err := ioutil.ReadFile(defReqConfig.FileSystem.FileName)
+		defReqJSON, err := os.ReadFile(defReqConfig.FileSystem.FileName)
 		if err != nil {
 			glog.Fatalf("error reading aliases from file %s: %v", defReqConfig.FileSystem.FileName, err)
 			return aliases, []byte{}
@@ -326,4 +358,20 @@ func readDefaultRequest(defReqConfig config.DefReqConfig) (map[string]string, []
 		return aliases, defReqJSON
 	}
 	return aliases, []byte{}
+}
+
+func validateDefaultAliases(aliases map[string]string) error {
+	var errs []error
+
+	for alias := range aliases {
+		if openrtb_ext.IsBidderNameReserved(alias) {
+			errs = append(errs, fmt.Errorf("alias %s is a reserved bidder name and cannot be used", alias))
+		}
+	}
+
+	if len(errs) > 0 {
+		return errortypes.NewAggregateError("default request alias errors", errs)
+	}
+
+	return nil
 }

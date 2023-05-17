@@ -1,0 +1,103 @@
+{
+  "mockBidRequest": {
+    "id": "test-banner-request-id",
+    "imp": [
+      {
+        "id": "test-imp-banner-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "zoneid": "9042"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://127.0.0.1:5000/bid",
+        "body": {
+          "id": "test-banner-request-id",
+          "imp": [
+            {
+              "id": "test-imp-banner-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  },
+                  {
+                    "w": 300,
+                    "h": 600
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "zoneid": "9042"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-banner-request-id",
+          "seatbid": [
+            {
+              "seat": "772",
+              "bid": [{
+                "id": "7706636740145184841",
+                "impid": "test-imp-banner-id",
+                "price": 0.500000,
+                "adid": "29681110",
+                "adm": "some-test-ad",
+                "adomain": ["advertsite.com"],
+                "cid": "772",
+                "crid": "29681110",
+                "h": 576,
+                "w": 1024
+              }]
+            }
+          ],
+          "bidid": "5778926625248726496",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [{
+        "bid": {
+          "id": "7706636740145184841",
+          "impid": "test-imp-banner-id",
+          "price": 0.5,
+          "adm": "some-test-ad",
+          "adid": "29681110",
+          "adomain": ["advertsite.com"],
+          "cid": "772",
+          "crid": "29681110",
+          "w": 1024,
+          "h": 576
+        },
+        "type": "banner"
+      }]
+    }
+  ]
+}

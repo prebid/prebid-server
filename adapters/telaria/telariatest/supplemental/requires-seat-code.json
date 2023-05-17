@@ -1,0 +1,30 @@
+{
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Telaria: Seat Code required",
+      "comparison": "literal"
+    }
+  ],
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-impression-1",
+        "video": {
+          "w": 640,
+          "h": 480,
+          "linearity": 1
+        },
+        "ext": {
+          "bidder": {
+            "adCode": "my-adcode"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "test.com"
+    }
+  },
+  "httpCalls": []
+}

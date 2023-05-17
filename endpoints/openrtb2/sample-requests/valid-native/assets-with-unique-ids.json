@@ -1,0 +1,42 @@
+{
+  "description": "Multi-asset native request with different ids",
+  "mockBidRequest": {
+    "id": "req-id",
+    "site": {
+      "page": "some.page.com"
+    },
+    "tmax": 500,
+    "imp": [
+      {
+        "id": "some-imp",
+        "native": {
+          "request": "{\"context\":1,\"plcmttype\":1,\"assets\":[{\"id\":1,\"img\":{\"wmin\":30}},{\"id\":2,\"title\":{\"len\":20}}]}"
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          }
+        }
+      }
+    ]
+  },
+  "expectedBidResponse": {
+    "id": "req-id",
+    "bidid": "test bid id",
+    "cur": "USD",
+    "nbr": 0,
+    "seatbid": [
+      {
+        "bid": [
+          {
+            "id": "appnexus-bid",
+            "impid": "some-imp",
+            "price": 0
+          }
+        ],
+        "seat": "appnexus"
+      }
+    ]
+  },
+  "expectedReturnCode": 200
+}

@@ -1,0 +1,15 @@
+
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Yieldone Adapter Params",
+    "description": "A schema which validates params accepted by the Yieldone adapter",
+  
+    "type": "object",
+    "properties": {
+      "placementId": {
+        "type": "string",
+        "description": "Internal Yieldone Placement ID"
+      }
+    },
+    "required": ["placementId"]
+  }

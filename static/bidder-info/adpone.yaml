@@ -1,0 +1,15 @@
+endpoint: "http://rtb.adpone.com/bid-request?src=prebid_server"
+maintainer:
+  email: "tech@adpone.com"
+gvlVendorID: 799
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner
+userSync:
+  redirect:
+    url: "https://usersync.adpone.com/csync?redir={{.RedirectURL}}"
+    userMacro: "{uid}"

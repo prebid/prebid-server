@@ -1,0 +1,44 @@
+{
+  "mockBidRequest": {
+    "id": "test-req-id",
+    "imp": [
+      {
+        "id": "1",
+        "banner": {
+            "format": [
+                {
+                    "w": 640,
+                    "h": 480
+                }
+            ],
+            "w": 640,
+            "h": 480
+        },
+        "ext": {
+          "bidder": {
+              "placementId": "plmt1",
+              "publisherId": "pub1"
+          }
+        }
+      }
+    ],
+    "app": {
+      "id": "app-abc",
+      "bundle": "com.prebid"
+    },
+    "device": {
+      "ip": "152.193.6.74"
+    },
+    "user": {
+      "id": "db089de9-a62e-4861-a881-0ff15e052516",
+      "buyeruid": "v4_bidder_token"
+    },
+    "tmax": 500
+  },
+  "expectedMakeRequestsErrors": [
+      {
+          "value": "imp #1: only banner heights 50 and 250 are supported",
+          "comparison": "literal"
+      }
+  ]
+}

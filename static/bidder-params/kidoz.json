@@ -1,0 +1,22 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Kidoz Adapter Params",
+    "description": "A schema which validates params accepted by the Kidoz adapter",
+    "type": "object",
+    "properties": {
+        "access_token": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Kidoz access_token"
+        },
+        "publisher_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Kidoz publisher_id"
+        }
+    },
+    "required": [
+        "access_token",
+        "publisher_id"
+    ]
+}

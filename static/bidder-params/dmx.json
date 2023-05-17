@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "District M DMX Adapter Params",
+  "description": "A schema which validates params accepted by the DMX adapter",
+  "type": "object",
+  "properties": {
+    "memberid" : {
+      "type": "string",
+      "description": "Represent boost MemberId from districtm UI"
+    },
+    "placement_id" : {
+      "type": "string",
+      "description": "memberid replacement / alternative value or equivalent"
+    },
+    "seller_id" : {
+      "type": "string",
+      "description": "Represent DMX Partner when you get onboarded, this is for specific setup BURL vs NURL"
+    },
+    "dmxid": {
+      "type": "string",
+      "description": "Represent the placement ID dmxid equivalent to 'tagid', this value is optional"
+    },
+    "tagid": {
+      "type": "string",
+      "description": "Represent the placement ID tagid equivalent to 'dmxid', this value is optional"
+    },
+    "bidfloor": {
+      "type": "number",
+      "description": "The minimum price acceptable for a bid, this is optional since we do get the one from the original openrtb request"
+    }
+  },
+
+  "required": ["memberid"]
+}

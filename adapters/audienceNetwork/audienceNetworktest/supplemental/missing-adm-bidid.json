@@ -1,0 +1,107 @@
+{
+    "mockBidRequest": {
+        "id": "test-req-id",
+        "imp": [{
+            "id": "test-imp-id",
+            "banner": {
+                "format": [{
+                    "w": 300,
+                    "h": 250
+                }],
+                "w": 300,
+                "h": 250
+            },
+            "ext": {
+                "bidder": {
+                    "publisherid": "123",
+                    "placementid": "456"
+                }
+            }
+        }],
+        "app": {
+            "id": "app-abc",
+            "bundle": "com.prebid"
+        },
+        "device": {
+            "ip": "152.193.6.74"
+        },
+        "user": {
+            "id": "db089de9-a62e-4861-a881-0ff15e052516",
+            "buyeruid": "v4_bidder_token"
+        },
+        "tmax": 500
+    },
+    "httpcalls": [{
+        "expectedRequest": {
+            "uri": "https://an.facebook.com/placementbid.ortb",
+            "headers": {
+                "Accept": [
+                    "application/json"
+                ],
+                "Content-Type": [
+                    "application/json;charset=utf-8"
+                ],
+                "X-Fb-Pool-Routing-Token": [
+                    "v4_bidder_token"
+                ]
+            },
+            "body": {
+                "id": "test-imp-id",
+                "imp": [{
+                    "id": "test-imp-id",
+                    "banner": {
+                        "w": -1,
+                        "h": 250
+                    },
+                    "tagid": "123_456"
+                }],
+                "app": {
+                    "id": "app-abc",
+                    "bundle": "com.prebid",
+                    "publisher": {
+                        "id": "123"
+                    }
+                },
+                "device": {
+                    "ip": "152.193.6.74"
+                },
+                "user": {
+                    "id": "db089de9-a62e-4861-a881-0ff15e052516",
+                    "buyeruid": "v4_bidder_token"
+                },
+                "tmax": 500,
+                "ext": {
+                    "authentication_id": "4e24a2b23fbfb5e41a9093b921d6cddf497c24dd5f63879038cec2ab2f27d174",
+                    "platformid": "test-platform-id"
+                }
+            }
+        },
+        "mockResponse": {
+            "status": 200,
+            "body": {
+                "id": "test-imp-id",
+                "seatbid": [{
+                    "bid": [{
+                        "id": "987",
+                        "impid": "test-imp-id",
+                        "price": 1.000000,
+                        "adm": "{\"type\":\"ID\",\"placement_id\":\"123_456\",\"resolved_placement_id\":\"123_456\",\"sdk_version\":\"5.5.0\",\"device_id\":\"abc\",\"template\":1,\"payload\":null,\"bid_time_token\":\"v4_bidder_token=\"}",
+                        "nurl": "https://www.facebook.com/audiencenetwork/nurl/?partner=test-platform-id&app=def&placement=456&auction=123&impression=123&request=123478&bid=987&ortb_loss_code=0&clearing_price=${AUCTION_PRICE}&app_version=iOS-1.0",
+                        "lurl": "https://www.facebook.com/audiencenetwork/nurl/?partner=test-platform-id&app=def&placement=456&auction=123&impression=123&request=123478&bid=987&ortb_loss_code=${AUCTION_LOSS}&clearing_price=${AUCTION_PRICE}&app_version=iOS-1.0",
+                        "burl": "https://www.facebook.com/audiencenetwork/burl/?partner=test-platform-id&app=def&placement=456&auction=123&impression=123&request=123478&bid=987&clearing_price=${AUCTION_PRICE}"
+                    }]
+                }],
+                "bidid": "654",
+                "cur": "USD"
+            }
+        }
+    }],
+    "expectedBidResponses": [{
+        "currency": "USD",
+        "bids": []
+    }],
+    "expectedMakeBidsErrors": [{
+        "value": "bid 987 missing 'bid_id' in 'adm'",
+        "comparison": "literal"
+    }]
+}

@@ -1,0 +1,81 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id-1",
+        "banner": {},
+        "ext": {
+          "bidder": {}
+        }
+      },
+      {
+        "id": "test-imp-id-2",
+        "banner": {
+          "format": [{"w": 300, "h": 250}]
+        },
+        "ext": {
+
+        }
+      },
+      {
+        "id": "test-imp-id-3",
+        "banner": {
+          "format": [{"w": 300, "h": 250}]
+        }
+      },
+      {
+        "id": "test-imp-id-4",
+        "video": {},
+        "ext": {
+          "bidder": {}
+        }
+      },
+      {
+        "id": "test-imp-id-5",
+        "audio": {
+          "startdelay": 0,
+          "api": []
+        },
+        "ext": {
+          "bidder": {}
+        }
+      }
+    ],
+    "site": {
+      "id": "siteID",
+      "publisher": {
+        "id": "1234"
+      }
+    },
+    "device": {
+      "os": "android"
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "pid is empty; ImpID=test-imp-id-1",
+      "comparison": "literal"
+    },
+    {
+      "value": "ext.bidder not provided; ImpID=test-imp-id-2",
+      "comparison": "literal"
+    },
+    {
+      "value": "ext not provided; ImpID=test-imp-id-3",
+      "comparison": "literal"
+    },
+    {
+      "value": "invalid MediaType. NanoInteractive only supports Banner type. ImpID=test-imp-id-4",
+      "comparison": "literal"
+    },
+    {
+      "value": "invalid MediaType. NanoInteractive only supports Banner type. ImpID=test-imp-id-5",
+      "comparison": "literal"
+    },
+    {
+      "value": "no impressions in the bid request",
+      "comparison": "literal"
+    }
+  ]
+}

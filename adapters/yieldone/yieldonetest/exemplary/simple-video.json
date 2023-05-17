@@ -1,0 +1,87 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "site": {
+            "page": "https://good.site/url"
+        },
+        "imp": [{
+            "id": "test-imp-id",
+            "video": {
+                "mimes": ["video/mp4"],
+                "protocols": [2, 5],
+                "w": 300,
+                "h": 250
+            },
+            "ext": {
+                "bidder": {
+                    "placementId": "41993"
+                }
+            }
+        }]
+    },
+
+    "httpCalls": [{
+        "expectedRequest": {
+            "uri": "http://localhost/prebid",
+            "body": {
+                "id": "test-request-id",
+                "site": {
+                    "page": "https://good.site/url"
+                },
+                "imp": [{
+                    "id": "test-imp-id",
+                    "video": {
+                        "mimes": ["video/mp4"],
+                        "protocols": [2, 5],
+                        "w": 300,
+                        "h": 250
+                    },
+                    "ext": {
+                        "bidder": {
+                            "placementId": "41993"
+                        }
+                    }
+                }]
+            }
+        },
+        "mockResponse": {
+            "status": 200,
+            "body": {
+                "id": "test-request-id",
+                "seatbid": [{
+                    "seat": "yieldone",
+                    "bid": [{
+                        "id": "randomid",
+                        "impid": "test-imp-id",
+                        "price": 0.500000,
+                        "adid": "12345678",
+                        "adm": "some-test-ad-vast",
+                        "cid": "987",
+                        "crid": "12345678",
+                        "h": 250,
+                        "w": 300
+                    }]
+                }],
+                "cur": "JPY"
+            }
+        }
+    }],
+
+    "expectedBidResponses": [{
+        "currency": "JPY",
+        "bids": [{
+            "bid": {
+                "id": "randomid",
+                "impid": "test-imp-id",
+                "price": 0.5,
+                "adm": "some-test-ad-vast",
+                "adid": "12345678",
+                "cid": "987",
+                "crid": "12345678",
+                "w": 300,
+                "h": 250
+            },
+            "type": "video"
+        }]
+    }]
+}

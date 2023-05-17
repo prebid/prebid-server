@@ -1,0 +1,14 @@
+endpoint: "http://delta.adprime.com/pserver"
+maintainer:
+  email: "prebid@adprime.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video 
+      - native

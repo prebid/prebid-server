@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "AJA Adapter Params",
+  "description": "A schema which validates params accepted by the AJA adapter",
+  "type": "object",
+  "properties": {
+    "asi": {
+      "type": "string",
+      "description": "Ad spot ID"
+    }
+  },
+  "required": ["asi"]
+}

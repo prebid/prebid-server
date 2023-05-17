@@ -1,0 +1,18 @@
+endpoint: "https://hb-ss.omnitagjs.com/broker/bid?partnerId=19340f4f097d16f41f34fc0274981ca4"
+maintainer:
+  email: "core@adyoulike.com"
+gvlVendorID: 259
+modifyingVastXmlAllowed: true
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  iframe:
+    url: "https://visitor.omnitagjs.com/visitor/isync?uid=19340f4f097d16f41f34fc0274981ca4&name=PrebidServer&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&url={{.RedirectURL}}"
+    userMacro: "[BUYER_USERID]"
+  redirect:
+    url: "https://visitor.omnitagjs.com/visitor/bsync?uid=19340f4f097d16f41f34fc0274981ca4&name=PrebidServer&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&url={{.RedirectURL}}"
+    userMacro: "[BUYER_USERID]"

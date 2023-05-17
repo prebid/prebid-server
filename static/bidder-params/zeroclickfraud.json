@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "ZeroClickFraud Adapter Params",
+  "description": "A schema which validates params accepted by the ZeroClickFraud adapter",
+
+  "type": "object",
+  "properties": {
+      "sourceId": {
+        "type": "integer",
+        "minimum": 1,
+        "description": "Website Source Id"
+      },
+      "host": {
+        "type": "string",
+        "description": "Network Host to request from"
+      }
+  },
+  "required": ["host", "sourceId"]
+}

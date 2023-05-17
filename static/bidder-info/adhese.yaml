@@ -1,0 +1,14 @@
+endpoint: "https://ads-{{.AccountID}}.adhese.com/json"
+maintainer:
+  email: info@adhese.com
+gvlVendorID: 553
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video

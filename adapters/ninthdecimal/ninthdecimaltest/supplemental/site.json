@@ -1,0 +1,103 @@
+{
+  "mockBidRequest": {
+      "id": "testid",
+      "site": {
+          "id": "test"
+      },
+      "imp": [
+          {
+              "id": "testimpid",
+              "banner": {
+                  "format": [
+                      {
+                          "w": 320,
+                          "h": 250
+                      },
+                      {
+                          "w": 320,
+                          "h": 300
+                      }
+                  ],
+                  "w": 320,
+                  "h": 250
+              },
+              "ext": {
+                  "bidder": {
+                      "pubid": "19f1b372c7548ec1fe734d2c9f8dc688",
+                      "placement": "dummyplacement"
+                  }
+              }
+          }
+      ]
+  },
+  "httpCalls": [
+      {
+          "expectedRequest": {
+              "uri": "http://rtb.ninthdecimal.com/xp/get?pubid=19f1b372c7548ec1fe734d2c9f8dc688",
+              "body": {
+                  "id": "testid",
+                  "imp": [
+                      {
+                          "banner": {
+                              "format": [
+                                  {
+                                      "h": 250,
+                                      "w": 320
+                                  },
+                                  {
+                                      "h": 300,
+                                      "w": 320
+                                  }
+                              ],
+                              "h": 250,
+                              "w": 320
+                          },
+                          "id": "testimpid",
+                          "tagid": "dummyplacement"
+                      }
+                  ],
+                  "site": {
+                      "id": "test"
+                  }
+              }
+          },
+          "mockResponse": {
+              "status": 200,
+              "body": {
+                  "seatbid": [
+                      {
+                          "bid": [
+                              {
+                                  "crid": "24080",
+                                  "adid": "2068416",
+                                  "price": 0.01,
+                                  "id": "testid",
+                                  "impid": "testimpid",
+                                  "cid": "8048"
+                              }
+                          ]
+                      }
+                  ]
+              }
+          }
+      }
+  ],
+  "expectedBidResponses": [
+      {
+          "currency": "USD",
+          "bids": [
+              {
+                  "bid": {
+                      "crid": "24080",
+                      "adid": "2068416",
+                      "price": 0.01,
+                      "id": "testid",
+                      "impid": "testimpid",
+                      "cid": "8048"
+                  },
+                  "type": "banner"
+              }
+          ]
+      }
+  ]
+}

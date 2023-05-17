@@ -1,0 +1,15 @@
+# DEPRECATED: Use imds bidder instead
+endpoint: "http://{{.Host}}.technoratimedia.com/openrtb/bids/{{.Host}}"
+maintainer:
+  email: "eng-demand@imds.tv"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  key: "imds"

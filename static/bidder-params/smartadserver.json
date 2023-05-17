@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Smartadserver Adapter Params",
+  "description": "A schema which validates params accepted by the Smartadserver adapter",
+
+  "type": "object",
+  "properties": {
+    "siteId": {
+      "type": "integer",
+      "description": "The site id.",
+      "minimum": 1
+    },
+    "pageId": {
+      "type": "integer",
+      "description": "The page id.",
+      "minimum": 1
+    },
+    "formatId": {
+      "type": "integer",
+      "description": "The format id.",
+      "minimum": 1
+    },
+    "networkId": {
+      "type": "integer",
+      "description": "The network id.",
+      "minimum": 1
+    }
+  },
+  "dependencies": {
+    "siteId": { "required": ["pageId", "formatId"] },
+    "pageId": { "required": ["siteId", "formatId"] },
+    "formatId": { "required": ["siteId", "pageId"] }
+  },
+  "required": ["networkId"]
+}

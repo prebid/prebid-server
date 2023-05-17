@@ -1,0 +1,62 @@
+{
+    "mockBidRequest": {
+      "id": "some_test_auction",
+      "imp": [
+        {
+          "id": "test-imp-id",
+          "banner": {
+            "format": [{
+              "w": 300,
+              "h": 600
+          }],
+            "w": 300,
+            "h": 600
+          },
+          "ext": {
+            "bidder": {
+              "tagid": "123456"
+            }
+          }
+        }
+      ],
+      "site": {
+        "domain": "www.publisher.com",
+        "page": "http://www.publisher.com/awesome/site?with=some&parameters=here"
+      }
+    },
+
+    "httpCalls": [
+      {
+        "expectedRequest": {
+          "uri": "https://ib.beintoo.com",
+          "body": {
+            "id": "some_test_auction",
+            "imp": [{
+                "id": "test-imp-id",
+                "banner": {
+                    "format": [{
+                        "w": 300,
+                        "h": 600
+                    }],
+                    "w": 300,
+                    "h": 600
+                },
+                "tagid": "123456",
+                "secure": 0
+            }],
+            "site": {
+                "domain": "www.publisher.com",
+                "page": "http://www.publisher.com/awesome/site?with=some&parameters=here"
+            }
+          }
+        },
+        "mockResponse": {
+          "status": 200,
+          "body": {
+
+          }
+        }
+      }
+    ],
+    "expectedBidResponses": []
+  }

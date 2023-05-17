@@ -6,17 +6,32 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/openrtb/v19/adcom1"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 type BrightrollAdapter struct {
-	URI string
+	URI       string
+	extraInfo ExtraInfo
 }
 
-func (a *BrightrollAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+type ExtraInfo struct {
+	Accounts []Account `json:"accounts"`
+}
+
+type Account struct {
+	ID       string   `json:"id"`
+	Badv     []string `json:"badv"`
+	Bcat     []string `json:"bcat"`
+	Battr    []int8   `json:"battr"`
+	BidFloor float64  `json:"bidfloor"`
+}
+
+func (a *BrightrollAdapter) MakeRequests(requestIn *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
 	request := *requestIn
 	errs := make([]error, 0, len(request.Imp))
@@ -55,6 +70,23 @@ func (a *BrightrollAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo 
 		errors = append(errors, err)
 		return nil, errors
 	}
+
+	var account *Account
+	for _, a := range a.extraInfo.Accounts {
+		if a.ID == brightrollExt.Publisher {
+			account = &a
+			break
+		}
+	}
+
+	if account == nil {
+		err = &errortypes.BadInput{
+			Message: "Invalid publisher",
+		}
+		errors = append(errors, err)
+		return nil, errors
+	}
+
 	validImpExists := false
 	for i := 0; i < len(request.Imp); i++ {
 		//Brightroll supports only banner and video impressions as of now
@@ -65,9 +97,9 @@ func (a *BrightrollAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo 
 				bannerCopy.W = &(firstFormat.W)
 				bannerCopy.H = &(firstFormat.H)
 			}
-			if brightrollExt.Publisher == "adthrive" {
-				bannerCopy.BAttr = getBlockedCreativetypesForAdThrive()
 
+			if len(account.Battr) > 0 {
+				bannerCopy.BAttr = getBlockedCreativetypes(account.Battr)
 			}
 			request.Imp[i].Banner = &bannerCopy
 			validImpExists = true
@@ -75,9 +107,14 @@ func (a *BrightrollAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo 
 			validImpExists = true
 			if brightrollExt.Publisher == "adthrive" {
 				videoCopy := *request.Imp[i].Video
-				videoCopy.BAttr = getBlockedCreativetypesForAdThrive()
+				if len(account.Battr) > 0 {
+					videoCopy.BAttr = getBlockedCreativetypes(account.Battr)
+				}
 				request.Imp[i].Video = &videoCopy
 			}
+		}
+		if validImpExists && request.Imp[i].BidFloor == 0 && account.BidFloor > 0 {
+			request.Imp[i].BidFloor = account.BidFloor
 		}
 	}
 	if !validImpExists {
@@ -90,8 +127,12 @@ func (a *BrightrollAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo 
 
 	request.AT = 1 //Defaulting to first price auction for all prebid requests
 
-	if brightrollExt.Publisher == "adthrive" {
-		request.BCat = getBlockedCategoriesForAdthrive()
+	if len(account.Bcat) > 0 {
+		request.BCat = account.Bcat
+	}
+
+	if len(account.Badv) > 0 {
+		request.BAdv = account.Badv
 	}
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
@@ -122,7 +163,7 @@ func (a *BrightrollAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo 
 	}}, errors
 }
 
-func (a *BrightrollAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *BrightrollAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -140,7 +181,7 @@ func (a *BrightrollAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("bad server response: %d. ", err),
@@ -159,16 +200,15 @@ func (a *BrightrollAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 	return bidResponse, nil
 }
 
-//customized request, need following blocked categories
-func getBlockedCategoriesForAdthrive() []string {
-	return []string{"IAB8-5", "IAB8-18", "IAB15-1", "IAB7-30", "IAB14-1", "IAB22-1", "IAB3-7", "IAB7-3", "IAB14-3", "IAB11", "IAB11-1", "IAB11-2", "IAB11-3", "IAB11-4", "IAB11-5", "IAB23", "IAB23-1", "IAB23-2", "IAB23-3", "IAB23-4", "IAB23-5", "IAB23-6", "IAB23-7", "IAB23-8", "IAB23-9", "IAB23-10", "IAB7-39", "IAB9-30", "IAB7-44", "IAB25", "IAB25-1", "IAB25-2", "IAB25-3", "IAB25-4", "IAB25-5", "IAB25-6", "IAB25-7", "IAB26", "IAB26-1", "IAB26-2", "IAB26-3", "IAB26-4"}
+func getBlockedCreativetypes(attr []int8) []adcom1.CreativeAttribute {
+	var creativeAttr []adcom1.CreativeAttribute
+	for i := 0; i < len(attr); i++ {
+		creativeAttr = append(creativeAttr, adcom1.CreativeAttribute(attr[i]))
+	}
+	return creativeAttr
 }
 
-func getBlockedCreativetypesForAdThrive() []openrtb.CreativeAttribute {
-	return []openrtb.CreativeAttribute{openrtb.CreativeAttribute(1), openrtb.CreativeAttribute(2), openrtb.CreativeAttribute(3), openrtb.CreativeAttribute(6), openrtb.CreativeAttribute(9), openrtb.CreativeAttribute(10)}
-}
-
-//Adding header fields to request header
+// Adding header fields to request header
 func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue string) {
 	if len(headerValue) > 0 {
 		headers.Add(headerName, headerValue)
@@ -176,7 +216,7 @@ func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue str
 }
 
 // getMediaTypeForImp figures out which media type this bid is for.
-func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
+func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	mediaType := openrtb_ext.BidTypeBanner //default type
 	for _, imp := range imps {
 		if imp.ID == impId {
@@ -189,8 +229,35 @@ func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
 	return mediaType
 }
 
-func NewBrightrollBidder(endpoint string) *BrightrollAdapter {
-	return &BrightrollAdapter{
-		URI: endpoint,
+// Builder builds a new instance of the Brightroll adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	extraInfo, err := getExtraInfo(config.ExtraAdapterInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	bidder := &BrightrollAdapter{
+		URI:       config.Endpoint,
+		extraInfo: extraInfo,
+	}
+	return bidder, nil
+}
+
+func getExtraInfo(v string) (ExtraInfo, error) {
+	if len(v) == 0 {
+		return getDefaultExtraInfo(), nil
+	}
+
+	var extraInfo ExtraInfo
+	if err := json.Unmarshal([]byte(v), &extraInfo); err != nil {
+		return extraInfo, fmt.Errorf("invalid extra info: %v", err)
+	}
+
+	return extraInfo, nil
+}
+
+func getDefaultExtraInfo() ExtraInfo {
+	return ExtraInfo{
+		Accounts: []Account{},
 	}
 }

@@ -1,0 +1,76 @@
+{
+  "mockBidRequest": {
+    "id": "abc",
+    "site": {
+      "page": "prebid.org"
+    },
+    "imp": [
+      {
+        "id": "imp123",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ],
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "pub_id": "test",
+            "zone_id": "N4zTDq3PPEHBIODv7cXK",
+            "force_bid": true
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://market-east.smrtb.com/json/publisher/rtb?pubid=test",
+        "body":{
+          "id": "abc",
+          "site": {
+            "page": "prebid.org"
+          },
+          "imp": [{
+            "id": "imp123",
+            "tagid": "N4zTDq3PPEHBIODv7cXK",
+            "banner": {
+              "format": [{
+                "w": 300,
+                "h": 250
+              }],
+              "w": 300,
+              "h": 250
+            },
+            "ext": {
+              "bidder": {
+                "pub_id": "test",
+                "zone_id": "N4zTDq3PPEHBIODv7cXK",
+                "force_bid": true
+              }
+            }
+          }],
+          "ext": {
+            "pub_id": "test"
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": "imnotyourfather"
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "json: cannot unmarshal string into Go value of type openrtb2.BidResponse",
+      "comparison": "literal"
+    }
+  ]
+}

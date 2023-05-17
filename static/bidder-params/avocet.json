@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Avocet Adapter Params",
+  "description": "A schema which validates params accepted by the Avocet adapter",
+  "type": "object",
+  "properties": {
+    "placement": {
+      "type": "string",
+      "description": "An Avocet placement ID"
+    },
+    "placement_code": {
+      "type": "string",
+      "description": "An Avocet placement external code"
+    }
+  },
+  "oneOf": [
+    {
+      "required": ["placement"]
+    },
+    {
+      "required": ["placement_code"]
+    }
+  ]
+}

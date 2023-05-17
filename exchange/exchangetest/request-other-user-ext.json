@@ -12,11 +12,6 @@
             "buyeruids": {
               "appnexus": "explicit-appnexus"
             }
-          },
-          "digitrust": {
-            "id": "digi-id",
-            "keyv": 1,
-            "pref": 2
           }
         }
       },
@@ -24,11 +19,17 @@
         {
           "id": "my-imp-id",
           "video": {
-            "mimes": ["video/mp4"]
+            "mimes": [
+              "video/mp4"
+            ]
           },
           "ext": {
-            "appnexus": {
-              "placementId": 1
+            "prebid": {
+              "bidder": {
+                "appnexus": {
+                  "placementId": 1
+                }
+              }
             }
           }
         }
@@ -48,20 +49,15 @@
           },
           "user": {
             "id": "foo",
-            "buyeruid": "explicit-appnexus",
-            "ext": {
-              "digitrust": {
-                "id": "digi-id",
-                "keyv": 1,
-                "pref": 2
-              }
-            }
+            "buyeruid": "explicit-appnexus"
           },
           "imp": [
             {
               "id": "my-imp-id",
               "video": {
-                "mimes": ["video/mp4"]
+                "mimes": [
+                  "video/mp4"
+                ]
               },
               "ext": {
                 "bidder": {
@@ -70,11 +66,12 @@
               }
             }
           ]
-        },
-        "bidAdjustment": 1.0
+        }
       },
       "mockResponse": {
-        "errors": ["appnexus-error"]
+        "errors": [
+          "appnexus-error"
+        ]
       }
     }
   }

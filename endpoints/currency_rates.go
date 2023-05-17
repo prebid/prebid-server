@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/currencies"
+	"github.com/prebid/prebid-server/currency"
 )
 
 // currencyRatesInfo holds currency rates information.
@@ -20,11 +20,11 @@ type currencyRatesInfo struct {
 }
 
 type rateConverter interface {
-	GetInfo() currencies.ConverterInfo
+	GetInfo() currency.ConverterInfo
 }
 
 // newCurrencyRatesInfo creates a new CurrencyRatesInfo instance.
-func newCurrencyRatesInfo(rateConverter rateConverter) currencyRatesInfo {
+func newCurrencyRatesInfo(rateConverter rateConverter, fetchingInterval time.Duration) currencyRatesInfo {
 
 	currencyRatesInfo := currencyRatesInfo{
 		Active: false,
@@ -44,7 +44,6 @@ func newCurrencyRatesInfo(rateConverter rateConverter) currencyRatesInfo {
 	source := infos.Source()
 	currencyRatesInfo.Source = &source
 
-	fetchingInterval := infos.FetchingInterval()
 	currencyRatesInfo.FetchingInterval = &fetchingInterval
 
 	lastUpdated := infos.LastUpdated()
@@ -57,8 +56,8 @@ func newCurrencyRatesInfo(rateConverter rateConverter) currencyRatesInfo {
 }
 
 // NewCurrencyRatesEndpoint returns current currency rates applied by the PBS server.
-func NewCurrencyRatesEndpoint(rateConverter rateConverter) http.HandlerFunc {
-	currencyRateInfo := newCurrencyRatesInfo(rateConverter)
+func NewCurrencyRatesEndpoint(rateConverter rateConverter, fetchingInterval time.Duration) http.HandlerFunc {
+	currencyRateInfo := newCurrencyRatesInfo(rateConverter, fetchingInterval)
 
 	return func(w http.ResponseWriter, _ *http.Request) {
 		jsonOutput, err := json.Marshal(currencyRateInfo)

@@ -33,13 +33,12 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://tag.test.com/rtbpub?account=102",
+        "uri": "https://pbs2.adksrv.com/rtbpub?account=102",
         "body": {
           "id": "0000000000001",
           "imp": [
             {
               "id": "video-adunit-2",
-              "tagid": "video-adunit-2",
               "video": {
                 "mimes": [
                   "video/mp4"

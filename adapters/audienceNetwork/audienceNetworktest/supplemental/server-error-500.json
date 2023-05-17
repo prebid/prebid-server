@@ -1,0 +1,87 @@
+{
+    "mockBidRequest": {
+        "id": "test-req-id",
+        "imp": [{
+            "id": "test-imp-id",
+            "native": {
+                "request": "{\"ver\":\"1.1\",\"context\":1,\"contextsubtype\":11,\"plcmttype\":4,\"plcmtcnt\":1,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":500}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1,\"hmin\":1}},{\"id\":3,\"required\":0,\"data\":{\"type\":1,\"len\":200}},{\"id\":4,\"required\":0,\"data\":{\"type\":2,\"len\":15000}},{\"id\":5,\"required\":0,\"data\":{\"type\":6,\"len\":40}},{\"id\":6,\"required\":0,\"data\":{\"type\":500}}]}",
+                "ver": "1.1"
+            },
+            "ext": {
+                "bidder": {
+                    "publisherid": "123",
+                    "placementid": "456"
+                }
+            }
+        }],
+        "app": {
+            "id": "app-abc",
+            "bundle": "com.prebid"
+        },
+        "device": {
+            "ip": "152.193.6.74"
+        },
+        "user": {
+            "id": "db089de9-a62e-4861-a881-0ff15e052516",
+            "buyeruid": "v4_bidder_token"
+        },
+        "tmax": 500
+    },
+    "httpcalls": [{
+        "expectedRequest": {
+            "uri": "https://an.facebook.com/placementbid.ortb",
+            "headers": {
+                "Accept": [
+                    "application/json"
+                ],
+                "Content-Type": [
+                    "application/json;charset=utf-8"
+                ],
+                "X-Fb-Pool-Routing-Token": [
+                    "v4_bidder_token"
+                ]
+            },
+            "body": {
+                "id": "test-imp-id",
+                "imp": [{
+                    "id": "test-imp-id",
+                    "native": {
+                        "w": -1,
+                        "h": -1
+                    },
+                    "tagid": "123_456"
+                }],
+                "app": {
+                    "id": "app-abc",
+                    "bundle": "com.prebid",
+                    "publisher": {
+                        "id": "123"
+                    }
+                },
+                "device": {
+                    "ip": "152.193.6.74"
+                },
+                "user": {
+                    "id": "db089de9-a62e-4861-a881-0ff15e052516",
+                    "buyeruid": "v4_bidder_token"
+                },
+                "tmax": 500,
+                "ext": {
+                    "authentication_id": "4e24a2b23fbfb5e41a9093b921d6cddf497c24dd5f63879038cec2ab2f27d174",
+                    "platformid": "test-platform-id"
+                }
+            }
+        },
+        "mockResponse": {
+            "headers": {
+            "X-Fb-An-Errors": [
+                "someError"
+            ]},
+            "status": 500
+        }
+    }],
+    "expectedMakeBidsErrors": [{
+        "value": "Unexpected status code 500 with error message 'someError'",
+        "comparison": "literal"
+    }]
+}

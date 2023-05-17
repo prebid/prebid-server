@@ -1,0 +1,68 @@
+{
+    "mockBidRequest": {
+        "id": "some_test_auction",
+        "imp": [{
+            "id": "some_test_ad",
+            "banner": {
+                "w": 90,
+                "h": 728
+            },
+            "ext": {
+                "bidder": {
+                    "tagid": "654321"
+                }
+            }
+        }]
+    },
+
+    "httpCalls": [{
+        "expectedRequest": {
+            "uri": "https://hb.emxdgt.com?t=1000&ts=2060541160",
+            "body": {
+                "id": "some_test_auction",
+                "imp": [{
+                    "banner": {
+                        "h": 728,
+                        "w": 90
+                    },
+                    "id": "some_test_ad",
+                    "secure": 0,
+                    "ext": {
+                        "bidder": {
+                            "tagid": "654321"
+                        }
+                    },
+                    "tagid": "654321"
+                }]
+            }
+        },
+        "mockResponse": {
+            "status": 200,
+            "body": {
+              "id": "some_test_auction",
+              "seatbid": [{
+                  "seat": "12356",
+                  "bid": [{
+                    "adm": "<div id=\"123456789_ad\"><script>!function(){console.log\"Hello, world.\";}();<\/script><\/div>",
+                    "id": "uuid",
+                    "impid": "some_test_ad_id",
+                    "ttl": 300,
+                    "crid": "94395500",
+                    "w": "300",
+                    "price": 2.942808,
+                    "adid": "94395500",
+                    "h": 250
+                  }]
+              }],
+              "cur": "USD"
+          }
+          }
+    }],
+
+    "expectedMakeBidsErrors": [
+        {
+            "value": "Unable to unpackage bid response\\. Error: json: cannot unmarshal string into Go struct field (Bid\\.seatbid\\.bid\\.w|Bid\\.w) of type int64",
+            "comparison": "regex"
+        }
+    ]
+}

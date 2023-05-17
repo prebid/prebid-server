@@ -1,0 +1,27 @@
+{
+	"mockBidRequest": {
+		"id": "test-request-id",
+		"imp": [
+			{
+				"id": "test-impression-id-0",
+				"audio": {
+				}
+			},
+			{
+				"id": "test-impression-id-1",
+				"native": {
+				}
+			}
+		]
+	},
+	"expectedMakeRequestsErrors": [
+		{
+			"value": "Kidoz only supports banner or video ads",
+			"comparison": "literal"
+		},
+		{
+			"value": "Kidoz only supports banner or video ads",
+			"comparison": "literal"
+		}
+	]
+}

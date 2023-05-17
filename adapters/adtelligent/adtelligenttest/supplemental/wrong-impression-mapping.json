@@ -24,7 +24,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://hb.adtelligent.com/auction?aid=1000",
+        "uri": "http://ghb.adtelligent.com/pbs/ortb?aid=1000",
         "body": {
           "id": "test-request-id",
           "imp": [
@@ -69,6 +69,9 @@
     }
   ],
   "expectedMakeBidsErrors": [
-    "ignoring bid id=test-bid-id, request doesn't contain any impression with id=SOME-WRONG-IMP-ID"
+    {
+      "value": "ignoring bid id=test-bid-id, request doesn't contain any impression with id=SOME-WRONG-IMP-ID",
+      "comparison": "literal"
+    }
   ]
 }

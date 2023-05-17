@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Admixer Adapter Params",
+  "description": "A schema which validates params accepted by the Admixer adapter",
+
+  "type": "object",
+  "properties": {
+    "zone": {
+      "type": "string",
+      "description": "Zone ID.",
+      "pattern": "^([a-fA-F\\d\\-]{32,36})$"
+    },
+    "customFloor": {
+      "type": "number",
+      "description": "The minimum CPM price in USD.",
+      "minimum": 0
+    },
+    "customParams": {
+      "type": "object",
+      "description": "User-defined targeting key-value pairs."
+    }
+  },
+
+  "required": ["zone"]
+}

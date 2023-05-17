@@ -1,0 +1,16 @@
+{
+  "mockBidRequest": {
+    "id": "abc",
+    "site": {
+      "page": "prebid.org"
+    },
+    "publisher": {},
+    "imp": [
+      {
+        "id": "imp123"
+      }
+    ]
+  },
+  "httpCalls": [],
+  "expectedBidResponses": []
+}

@@ -1,0 +1,17 @@
+endpoint: "http://market-east.smrtb.com/json/publisher/rtb?pubid={{.PublisherID}}"
+maintainer:
+  email: "engineering@smrtb.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  redirect:
+    url: "https://market-global.smrtb.com/sync/all?nid=smartrtb&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&rr={{.RedirectURL}}"
+    userMacro: "{XID}"
+

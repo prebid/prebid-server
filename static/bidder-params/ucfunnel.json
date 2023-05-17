@@ -1,0 +1,17 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Ucfunnel Adapter Params",
+    "description": "A schema which validates params accepted by the Ucfunnel adapter",
+    "type": "object",
+    "properties": {
+      "adunitid": {
+        "type": "string",
+        "description": "ID for ad unit"
+      },
+      "partnerid": {
+        "type": "string",
+        "description": "ID for partner"
+      }
+    },
+    "required": ["partnerid"]
+}

@@ -1,0 +1,16 @@
+{
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Missing Imp Object",
+      "comparison": "literal"
+    }
+  ],
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [],
+    "site": {
+      "page": "test.com"
+    }
+  },
+  "httpCalls": []
+}

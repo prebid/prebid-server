@@ -1,8 +1,6 @@
 package openrtb_ext
 
-import (
-	"github.com/mxmCherry/openrtb"
-)
+import "github.com/prebid/openrtb/v19/openrtb2"
 
 type BidRequestVideo struct {
 	// Attribute:
@@ -27,7 +25,7 @@ type BidRequestVideo struct {
 	//   object; App or Site required
 	// Description:
 	//   Application where the impression will be shown
-	App openrtb.App `json:"app"`
+	App *openrtb2.App `json:"app"`
 
 	// Attribute:
 	//   site
@@ -35,7 +33,7 @@ type BidRequestVideo struct {
 	//   object; App or Site required
 	// Description:
 	//   Site where the impression will be shown
-	Site openrtb.Site `json:"site"`
+	Site *openrtb2.Site `json:"site"`
 
 	// Attribute:
 	//   user
@@ -43,7 +41,7 @@ type BidRequestVideo struct {
 	//   object; optional
 	// Description:
 	//   Container object for the user of of the actual device
-	User SimplifiedUser `json:"user,omitempty"`
+	User *openrtb2.User `json:"user,omitempty"`
 
 	// Attribute:
 	//   device
@@ -51,7 +49,7 @@ type BidRequestVideo struct {
 	//   object; optional
 	// Description:
 	//   Device specific data
-	Device openrtb.Device `json:"device,omitempty"`
+	Device openrtb2.Device `json:"device,omitempty"`
 
 	// Attribute:
 	//   includebrandcategory
@@ -59,7 +57,7 @@ type BidRequestVideo struct {
 	//   object; optional
 	// Description:
 	//   Indicates that the response requires an adserver specific content category
-	IncludeBrandCategory IncludeBrandCategory `json:"includebrandcategory"`
+	IncludeBrandCategory *IncludeBrandCategory `json:"includebrandcategory,omitempty"`
 
 	// Attribute:
 	//   video
@@ -67,7 +65,7 @@ type BidRequestVideo struct {
 	//   object; required
 	// Description:
 	//   Player container object
-	Video SimplifiedVideo `json:"video,omitempty"`
+	Video *openrtb2.Video `json:"video,omitempty"`
 
 	// Attribute:
 	//   content
@@ -75,7 +73,7 @@ type BidRequestVideo struct {
 	//   object; optional
 	// Description:
 	//  Misc content meta data that can be used for targeting the adPod(s)
-	Content openrtb.Content `json:"content,omitempty"`
+	Content openrtb2.Content `json:"content,omitempty"`
 
 	// Attribute:
 	//   cacheconfig
@@ -100,7 +98,7 @@ type BidRequestVideo struct {
 	//   object; optional
 	// Description:
 	//    Object to tell ad server how much money the “bidder” demand is worth to you
-	PriceGranularity PriceGranularity `json:"pricegranularity,omitempty"`
+	PriceGranularity *PriceGranularity `json:"pricegranularity,omitempty"`
 
 	// Attribute:
 	//   tmax
@@ -128,6 +126,29 @@ type BidRequestVideo struct {
 	// Description:
 	//   Block list of advertisers by their domains (e.g., “ford.com”).
 	BAdv []string `json:"badv,omitempty"`
+
+	// Attribute:
+	//   regs
+	// Type:
+	//   object; optional
+	// Description:
+	//   Contains the OpenRTB Regs object to be passed to OpenRTB request
+	Regs *openrtb2.Regs `json:"regs,omitempty"`
+
+	// Attribute:
+	//   supportdeals
+	// Type:
+	//   bool; optional
+	// Description:
+	//   Indicates that the response should update key to include prefix and tier
+	SupportDeals bool `json:"supportdeals,omitempty"`
+
+	// Attribute:
+	//   appendbiddernames
+	// Type:
+	//   boolean, optional
+	//  Flag indicating if the bidder name will be added to the hb_pb_cat_dur. Default is false.
+	AppendBidderNames bool `json:"appendbiddernames,omitempty"`
 }
 
 type PodConfig struct {
@@ -191,6 +212,14 @@ type IncludeBrandCategory struct {
 	//   string; optional
 	//  Identifier for the Publisher
 	Publisher string `json:"publisher"`
+
+	// Attribute:
+	//   translatecategories
+	// Type:
+	//   *bool; optional
+	// Description:
+	//   Indicates if IAB categories should be translated to adserver category
+	TranslateCategories *bool `json:"translatecategories,omitempty"`
 }
 
 type Cacheconfig struct {
@@ -200,87 +229,4 @@ type Cacheconfig struct {
 	//   int; optional
 	//  Time to Live for a cache entry specified in seconds
 	Ttl int `json:"ttl"`
-}
-
-type Gdpr struct {
-	// Attribute:
-	//   consentrequired
-	// Type:
-	//   boolean; optional
-	//  Indicates whether GDPR is in effect
-	ConsentRequired bool `json:"consentrequired"`
-
-	// Attribute:
-	//   consentstring
-	// Type:
-	//   string; optional
-	//  Contains the data structure developed by the GDPR
-	ConsentString string `json:"consentstring"`
-}
-
-type SimplifiedUser struct {
-	// Attribute:
-	//   buyeruids
-	// Type:
-	//   map; optional
-	//  ID of the stored config that corresponds to a single pod request
-	Buyeruids map[string]string `json:"buyeruids"`
-
-	// Attribute:
-	//   gdpr
-	// Type:
-	//   object; optional
-	//  Container object for GDPR
-	Gdpr Gdpr `json:"gdpr"`
-
-	// Attribute:
-	//   yob
-	// Type:
-	//   int; optional
-	//  Year of birth as a 4-digit integer
-	Yob int64 `json:"yob"`
-
-	// Attribute:
-	//   gender
-	// Type:
-	//   string; optional
-	//  Gender, where “M” = male, “F” = female, “O” = known to be other
-	Gender string `json:"gender"`
-
-	// Attribute:
-	//   keywords
-	// Type:
-	//   string; optional
-	//  Comma separated list of keywords, interests, or intent.
-	Keywords string `json:"keywords"`
-}
-
-type SimplifiedVideo struct {
-	// Attribute:
-	//   w
-	// Type:
-	//   uint64; optional
-	//  Width of video
-	W uint64 `json:"w"`
-
-	// Attribute:
-	//   h
-	// Type:
-	//   uint64; optional
-	//  Height of video
-	H uint64 `json:"h"`
-
-	// Attribute:
-	//   mimes
-	// Type:
-	//   array of strings; optional
-	//  Video mime types
-	Mimes []string `json:"mimes"`
-
-	// Attribute:
-	//   protocols
-	// Type:
-	//   array of objects; optional
-	//  protocols
-	Protocols []openrtb.Protocol `json:"protocols"`
 }

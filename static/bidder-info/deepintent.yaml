@@ -1,0 +1,16 @@
+endpoint: "https://prebid.deepintent.com/prebid"
+maintainer:
+  email: "prebiddev@deepintent.com"
+gvlVendorID: 541
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner
+userSync:
+  redirect:
+    url: "https://match.deepintent.com/usersync/136?id=unk&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir={{.RedirectURL}}"
+    userMacro: "[UID]"
+

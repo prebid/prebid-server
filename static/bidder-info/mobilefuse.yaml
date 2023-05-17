@@ -1,0 +1,11 @@
+endpoint: "http://mfx.mobilefuse.com/openrtb?pub_id={{.PublisherID}}"
+maintainer:
+  email: prebid@mobilefuse.com
+gvlVendorID: 909
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+endpointCompression: "GZIP"

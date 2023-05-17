@@ -1,0 +1,75 @@
+{
+  "description": "request.ext.prebid.currency.rates empty, usepbsrates is false, a conversion is needed but conversions are disabled",
+  "config": {
+    "currencyRates":{
+      "USD": {
+        "MXN": 2.00
+      }
+    },
+    "mockBidders": [
+      {
+        "bidderName": "appnexus",
+        "currency": "USD",
+        "price": 1.00
+      }
+    ]
+  },
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          }
+        }
+      }
+    ],
+    "cur": ["MXN"],
+    "ext": {
+      "prebid": {
+        "currency": {
+          "rates": {},
+          "usepbsrates": false
+        }
+      }
+    }
+  },
+  "expectedBidResponse": {
+    "id": "some-request-id",
+    "ext": {
+      "errors": {
+        "appnexus": [
+          {
+            "code": 999,
+            "message": "Currency conversion rate not found: 'USD' => 'MXN'"
+          }
+        ]
+      },
+      "warnings": {
+        "general": [
+          {
+            "code": 10002,
+            "message": "debug turned off for account"
+          }
+        ]
+      },
+      "responsetimemillis": {
+        "appnexus": 0
+      },
+      "prebid": {
+        "auctiontimestamp": 1643437745488
+      }
+    }
+  },
+  "expectedReturnCode": 200
+}

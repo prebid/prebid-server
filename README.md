@@ -1,5 +1,6 @@
-[![Build Status](https://travis-ci.org/prebid/prebid-server.svg?branch=master)](https://travis-ci.org/prebid/prebid-server)
+[![Build](https://img.shields.io/github/actions/workflow/status/prebid/prebid-server/validate.yml?branch=master&style=flat-square)](https://github.com/prebid/prebid-server/actions/workflows/validate.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/prebid/prebid-server?style=flat-square)](https://goreportcard.com/report/github.com/prebid/prebid-server)
+![Go Version](https://img.shields.io/github/go-mod/go-version/prebid/prebid-server?style=flat-square)
 
 # Prebid Server
 
@@ -8,30 +9,29 @@ It is managed by [Prebid.org](http://prebid.org/overview/what-is-prebid-org.html
 and upholds the principles from the [Prebid Code of Conduct](http://prebid.org/wrapper_code_of_conduct.html).
 
 This project does not support the same set of Bidders as Prebid.js, although there is overlap.
-The current set can be found in the [adapters](./adapters) package. If you don't see the one you want, feel free to [contribute it](docs/developers/add-new-bidder.md).
+The current set can be found in the [adapters](./adapters) package. If you don't see the one you want, feel free to [contribute it](https://docs.prebid.org/prebid-server/developers/add-new-bidder-go.html).
 
 For more information, see:
 
-- [What is Prebid?](http://prebid.org/overview/intro.html)
-- [Getting started with Prebid Server](http://prebid.org/dev-docs/get-started-with-prebid-server.html)
-- [Current Bidders](http://prebid.org/dev-docs/prebid-server-bidders.html)
+- [What is Prebid?](https://prebid.org/overview/intro.html)
+- [Prebid Server Overview](https://docs.prebid.org/prebid-server/overview/prebid-server-overview.html)
+- [Current Bidders](http://prebid.org/dev-docs/pbs-bidders.html)
+
+Please consider [registering your Prebid Server](https://docs.prebid.org/prebid-server/hosting/pbs-hosting.html#optional-registration) to get on the mailing list for updates, etc.
 
 ## Installation
 
-First install [Go 1.11](https://golang.org/doc/install) or later and [dep](https://golang.github.io/dep/docs/installation.html). Note that dep requires an explicit GOPATH to be set.
+First install [Go](https://golang.org/doc/install) version 1.18 or newer.
+
+Note that prebid-server is using [Go modules](https://blog.golang.org/using-go-modules).
+We officially support the most recent two major versions of the Go runtime. However, if you'd like to use a version <1.13 and are inside GOPATH `GO111MODULE` needs to be set to `GO111MODULE=on`.
+
+Download and prepare Prebid Server:
 
 ```bash
-export GOPATH=$(go env GOPATH)
-mkdir -p $GOPATH
-```
-
-Then download and prepare Prebid Server:
-
-```bash
-cd $GOPATH
+cd YOUR_DIRECTORY
 git clone https://github.com/prebid/prebid-server src/github.com/prebid/prebid-server
 cd src/github.com/prebid/prebid-server
-dep ensure
 ```
 
 Run the automated tests:
@@ -48,15 +48,23 @@ go build .
 ```
 
 Load the landing page in your browser at `http://localhost:8000/`.
-For the full API reference, see [docs/endpoints](docs/endpoints)
+For the full API reference, see [the endpoint documentation](https://docs.prebid.org/prebid-server/endpoints/pbs-endpoint-overview.html)
 
+## Go Modules
+
+The packages within this repository are intended to be used as part of the Prebid Server compiled binary. If you
+choose to import Prebid Server packages in other projects, please understand we make no promises on the stability
+of exported types.
 
 ## Contributing
 
-Want to [add an adapter](docs/developers/add-new-bidder.md)? Found a bug? Great!
-This project is in its infancy, and many things can be improved.
-
+Want to [add an adapter](https://docs.prebid.org/prebid-server/developers/add-new-bidder-go.html)? Found a bug? Great!
 
 Report bugs, request features, and suggest improvements [on Github](https://github.com/prebid/prebid-server/issues).
 
 Or better yet, [open a pull request](https://github.com/prebid/prebid-server/compare) with the changes you'd like to see.
+
+## IDE Recommendations
+
+The quickest way to start developing Prebid Server in a reproducible environment isolated from your host OS
+is by using Visual Studio Code with [Remote Container Setup](devcontainer.md).

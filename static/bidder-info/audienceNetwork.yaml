@@ -1,7 +1,14 @@
+endpoint: "https://an.facebook.com/placementbid.ortb"
+disabled: true
 maintainer:
-  email: "info@prebid.org"
+  email: "none"
 capabilities:
-  site:
+  app:
     mediaTypes:
       - banner
       - video
+      - native
+userSync:
+  # facebook's audience network supports user syncing, but requires configuration by the host.
+  supports:
+    - redirect

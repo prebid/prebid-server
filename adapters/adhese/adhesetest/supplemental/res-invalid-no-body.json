@@ -1,0 +1,62 @@
+{
+    "mockBidRequest": {
+      "id": "test-req",
+      "user": {
+        "ext": {
+          "consent" : "dummy"
+        }
+      },
+      "imp": [
+        {
+          "id": "test-req",
+          "banner": {
+            "format": [
+              {
+                "w": 300,
+                "h": 250
+              }
+            ]
+          },
+          "ext": {
+            "bidder": {
+              "account": "demo",
+              "location": "_adhese_prebid_demo_",
+              "format": "leaderboard",
+              "targets": 
+              {
+                "ci": ["gent", "brussels"],
+                "ag": ["55"],
+                "tl": ["all"]
+              }
+            }
+          }
+        }
+      ],
+      "site": {
+        "id": "test",
+        "publisher": {
+          "id": "123"
+        }
+      }
+    },
+    "httpCalls": [
+      {
+        "expectedRequest": {
+          "uri": "https://ads-demo.adhese.com/json/sl_adhese_prebid_demo_-leaderboard/ag55/cigent;brussels/tlall/xtdummy"
+        },
+        "mockResponse": {
+          "status": 200
+        }
+      }
+    ],
+    "expectedBidResponses": [],
+    "expectedMakeBidsErrors": [
+      {
+        "value": "unexpected end of JSON input",
+        "comparison": "literal"
+      },{
+        "value": "Response  could not be parsed as generic Adhese bid.",
+        "comparison": "literal"
+      }
+    ]
+  }

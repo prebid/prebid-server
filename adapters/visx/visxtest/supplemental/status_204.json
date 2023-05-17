@@ -26,6 +26,7 @@
         "uri": "http://localhost/prebid",
         "body": {
           "id": "test-request-id",
+          "cur": ["USD"],
           "imp": [
             {
               "id": "test-imp-id",

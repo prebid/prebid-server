@@ -1,0 +1,41 @@
+{
+    "mockBidRequest": {
+      "id": "4d3f84eb-787b-42fb-a0cf-062690dadce3",
+      "test": 0,
+      "imp": [
+        {
+          "id": "div-gpt-ad-1460505748561-0",
+          "banner": {
+              "format" : []
+          },
+          "bidfloor": 1e-05,
+          "bidfloorcur": "USD",
+          "ext": {
+           "bidder": {
+              "pid": "OsNsyeF68q",
+              "supplyType": "site",
+              "test": false
+            }
+          }
+        }
+      ],
+      "site": {
+        "keywords": "tagid=",
+        "domain": "bridge.richmediastudio.com",
+        "page": "https://bridge.richmediastudio.com//ab083674fb8200b877a6983126e4477d/PrebidServer/indexRa.html?pbjs_debug=true"
+      },
+      "device": {
+        "ip": "11.222.33.44",
+        "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36"
+    },
+      "user": {
+        "buyeruid": "",
+        "ext": {}
+      }
+    },
+    
+    "expectedMakeRequestsErrors": [{
+        "value": "request.Banner.Format is required",
+        "comparison": "literal"
+      }]
+  }

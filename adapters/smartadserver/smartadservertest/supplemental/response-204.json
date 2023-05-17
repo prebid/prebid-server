@@ -1,0 +1,57 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [{"w": 728, "h": 90}]
+        },
+        "ext": {
+          "bidder": {
+            "siteId": 1,
+            "pageId": 2,
+            "formatId": 3,
+            "networkId": 73
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://ssb.smartadserver.com/api/bid?callerId=5",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [{"w": 728, "h": 90}]
+              },
+              "ext": {
+                "bidder": {
+                  "siteId": 1,
+                  "pageId": 2,
+                  "formatId": 3,
+                  "networkId": 73
+                }
+              }
+            }
+          ],
+          "site": {
+            "publisher": {
+              "id": "73"
+            }
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}

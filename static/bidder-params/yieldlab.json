@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Yieldlab Adapter Params",
+  "description": "A schema which validates params accepted by the Yieldlab adapter",
+  "type": "object",
+  "properties": {
+    "adslotId": {
+      "type": "string",
+      "description": "Yieldlab ID of the ad slot"
+    },
+    "supplyId": {
+      "type": "string",
+      "description": "Yieldlab ID of the supply"
+    },
+    "extId": {
+      "type": "string",
+      "description": "External ID used for reporting"
+    },
+    "targeting": {
+      "type": "object",
+      "description": "Targeting information in key value pairs"
+    }
+  },
+  "required": [
+    "adslotId",
+    "supplyId"
+  ]
+}

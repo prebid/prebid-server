@@ -1,0 +1,42 @@
+{
+  "description": "Well formed native request that defines a 'hmin' on its 'img' field",
+  "mockBidRequest": {
+    "id": "req-id",
+    "site": {
+      "page": "some.page.com"
+    },
+    "tmax": 500,
+    "imp": [
+      {
+        "id": "some-imp",
+        "native": {
+          "request": "{\"context\":1,\"plcmttype\":1,\"assets\":[{\"img\":{\"hmin\":30}}]}"
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          }
+        }
+      }
+    ]
+  },
+  "expectedBidResponse": {
+    "id": "req-id",
+    "bidid": "test bid id",
+    "cur":"USD",
+    "nbr": 0,
+    "seatbid": [
+      {
+        "bid": [
+          {
+            "id": "appnexus-bid",
+            "impid": "some-imp",
+            "price": 0
+          }
+        ],
+        "seat": "appnexus"
+      }
+    ]
+  },
+  "expectedReturnCode": 200
+}

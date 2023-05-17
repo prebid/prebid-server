@@ -1,0 +1,159 @@
+{
+  "mockBidRequest": {
+    "id": "test-req-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "asi": "test-asi"
+          }
+        }
+      },
+      {
+        "id": "test-imp-id2",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "asi": "test-asi2"
+          }
+        }
+      }
+    ],
+    "user": {
+      "buyeruid": "test-uid"
+    },
+    "tmax": 500
+  },
+
+  "httpcalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://localhost/bid/4",
+        "headers": {},
+        "body": {
+          "id": "test-req-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "w": 300,
+                "h": 250
+              },
+              "tagid": "test-asi"
+            }
+          ],
+          "user": {
+            "buyeruid": "test-uid"
+          },
+          "tmax": 500
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-req-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "test-bid-id",
+                  "impid": "test-imp-id",
+                  "price": 1,
+                  "adm": "<div>test</div>",
+                  "crid": "test-creative-id"
+                }
+              ]
+            }
+          ],
+          "bidid": "test-seatbid-id",
+          "cur": "USD"
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "https://localhost/bid/4",
+        "headers": {},
+        "body": {
+          "id": "test-req-id",
+          "imp": [
+            {
+              "id": "test-imp-id2",
+              "banner": {
+                "w": 300,
+                "h": 250
+              },
+              "tagid": "test-asi2"
+            }
+          ],
+          "user": {
+            "buyeruid": "test-uid"
+          },
+          "tmax": 500
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-req-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "test-bid-id2",
+                  "impid": "test-imp-id2",
+                  "price": 1,
+                  "adm": "<div>test2</div>",
+                  "crid": "test-creative-id2"
+                }
+              ]
+            }
+          ],
+          "bidid": "test-seatbid-id",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-bid-id",
+            "impid": "test-imp-id",
+            "price": 1,
+            "adm": "<div>test</div>",
+            "crid": "test-creative-id"
+          },
+          "type": "banner"
+        }
+      ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-bid-id2",
+            "impid": "test-imp-id2",
+            "price": 1,
+            "adm": "<div>test2</div>",
+            "crid": "test-creative-id2"
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

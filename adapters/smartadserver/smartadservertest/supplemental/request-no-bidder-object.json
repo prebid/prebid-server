@@ -1,0 +1,21 @@
+{
+  "mockBidRequest": {
+    "id": "test-no-bidder",
+    "imp": [
+      {
+        "id": "test-imp-id-no-bidder",
+        "banner": {
+          "format": [{"w": 728, "h": 90}]
+        },
+        "ext": {
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Error parsing smartadserverExt parameters",
+      "comparison": "literal"
+    }
+  ]
+}

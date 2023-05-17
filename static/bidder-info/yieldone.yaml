@@ -1,0 +1,16 @@
+endpoint: "https://y.one.impact-ad.jp/hbs_imp"
+maintainer:
+  email: "y1dev@platform-one.co.jp"
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+  app:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  redirect:
+    url: "https://y.one.impact-ad.jp/hbs_cs?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirectUri={{.RedirectURL}}"
+    userMacro: "$UID"

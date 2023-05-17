@@ -1,0 +1,27 @@
+{
+  "description": "Native bid request. Context type social (2) is incompatible with 'product' subcontext types (30~39). Return error",
+  "mockBidRequest": {
+    "id": "req-id",
+    "site": {
+      "page": "some.page.com"
+    },
+    "tmax": 500,
+    "imp": [
+      {
+        "id": "some-imp",
+        "native": {
+          "request": "{\"context\":2,\"contextsubtype\":31,\"plcmttype\":1,\"assets\":[{\"title\":{\"len\":90}},{\"img\":{\"hmin\":30,\"wmin\":20}},{\"video\":{\"mimes\":[\"video/mp4\"],\"minduration\":5,\"maxduration\":10,\"protocols\":[1]}},{\"data\":{\"type\":2}}]}"
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          }
+        }
+      }
+    ]
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request"
+}
+
+

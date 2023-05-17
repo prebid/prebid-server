@@ -11,8 +11,7 @@
         "ext": {
           "bidder": {
             "tappxkey": 1,
-            "endpoint": "PREBIDTEMPLATE",
-            "host": "test.tappx.com/"
+            "endpoint": "ZZ123456PS"
           }
         }
       }
@@ -20,6 +19,9 @@
   },
 
   "expectedMakeRequestsErrors": [
-    "Error parsing tappxExt parameters"
+    {
+      "value": "Error parsing tappxExt parameters",
+      "comparison": "literal"
+    }
   ]
 }

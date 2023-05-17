@@ -1,0 +1,25 @@
+{
+  "mockBidRequest": {
+    "id": "unsupported-native-request",
+    "imp": [
+      {
+        "id": "unsupported-native-imp",
+        "native": {
+          "ver": "1.1"
+        },
+        "ext": {
+          "bidder": {
+            "placementId": 1
+          }
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "ignoring imp id=unsupported-native-imp, Adtarget supports only Video and Banner",
+      "comparison": "literal"
+    }
+  ]
+}

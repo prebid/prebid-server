@@ -1,0 +1,16 @@
+endpoint: "http://supply.bidscube.com/?c=o&m=rtb"
+maintainer:
+  email: "support@bidscube.com"
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+

@@ -1,0 +1,146 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "adUnitId": "LD9434769725128806"
+          }
+        }
+      },
+      {
+        "id": "test-imp-id-2",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "adUnitId": "LD9360401292656742"
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://lockerdome.com/ladbid/prebidserver/openrtb2",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "adUnitId": "LD9434769725128806"
+                }
+              }
+            },
+            {
+              "id": "test-imp-id-2",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "adUnitId": "LD9360401292656742"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "lockerdome",
+              "bid": [
+                {
+                  "id": "729c0d99-3b45-4225-9ad5-64aef2b46df3",
+                  "impid": "test-imp-id",
+                  "price": 0.23,
+                  "adm": "<html>test ad markup #1</html>",
+                  "crid": "LD12134555163033624",
+                  "h": 250,
+                  "w": 300
+                },
+                {
+                  "id": "9euij6w8-sj89-6397-6er4-5we9t1a67wkj",
+                  "impid": "test-imp-id-2",
+                  "price": 0.5,
+                  "adm": "<html>test ad markup #2</html>",
+                  "crid": "LD12258417590730764",
+                  "h": 250,
+                  "w": 300
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "729c0d99-3b45-4225-9ad5-64aef2b46df3",
+            "impid": "test-imp-id",
+            "price": 0.23,
+            "adm": "<html>test ad markup #1</html>",
+            "crid": "LD12134555163033624",
+            "w": 300,
+            "h": 250
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "9euij6w8-sj89-6397-6er4-5we9t1a67wkj",
+            "impid": "test-imp-id-2",
+            "price": 0.5,
+            "adm": "<html>test ad markup #2</html>",
+            "crid": "LD12258417590730764",
+            "w": 300,
+            "h": 250
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

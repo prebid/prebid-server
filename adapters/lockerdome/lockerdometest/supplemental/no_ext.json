@@ -1,0 +1,29 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "ext was not provided.",
+      "comparison": "literal"
+    },
+    {
+      "value": "No valid or supported impressions in the bid request.",
+      "comparison": "literal"
+    }
+  ]
+}

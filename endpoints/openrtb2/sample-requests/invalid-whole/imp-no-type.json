@@ -1,11 +1,16 @@
 {
-  "message": "Invalid request: request.imp[0] must contain at least one of \"banner\", \"video\", \"audio\", or \"native\"\n",
-  "requestPayload": {
+  "description": "Bid request's sole imp element comes with no Banner, Video, Audio, nor Native field",
+  "mockBidRequest": {
     "id":"req-id",
     "imp": [
       {
         "id":"imp-id"
       }
-    ]
-  }
+    ],
+    "app": {
+      "id": "app_001"
+    }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: request.imp[0] must contain at least one of \"banner\", \"video\", \"audio\", or \"native\"\n"
 }

@@ -1,0 +1,115 @@
+{
+  "description": "add missing bidder-params from req.ext.prebid.bidderparams to imp[].ext.prebid.bidder with preference for imp[].ext.prebid.bidder params",
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "pmp": {
+          "deals": [
+            {
+              "id": "some-deal-id"
+            }
+          ]
+        },
+        "ext": {
+          "prebid": {
+            "bidder": {
+              "appnexus": {
+                "placementId": 111111
+              },
+              "pubmatic": {
+                "publisherId": "1234",
+                "wrapper": {
+                  "profile": 1234
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "ext": {
+      "prebid": {
+        "targeting": {
+          "pricegranularity": "low"
+        },
+        "cache": {
+          "bids": {}
+        },
+        "bidderparams": {
+          "appnexus": {
+            "placementId": 222222
+          },
+          "pubmatic": {
+            "publisherId": "5678",
+            "wrapper": {
+              "profile": 5678,
+              "version": 2
+            }
+          }
+        }
+      }
+    }
+  },
+  "expectedReqExt": {
+    "prebid": {
+      "targeting": {
+        "pricegranularity": {
+          "precision": 2,
+          "ranges": [
+            {
+              "min": 0,
+              "max": 5,
+              "increment": 0.5
+            }
+          ]
+        },
+        "includewinners": true,
+        "includebidderkeys": true
+      },
+      "cache": {
+        "bids": {}
+      },
+      "bidderparams": {
+        "appnexus": {
+          "placementId": 222222
+        },
+        "pubmatic": {
+          "publisherId": "5678",
+          "wrapper": {
+            "profile": 5678,
+            "version": 2
+          }
+        }
+      }
+    }
+  },
+  "expectedImpExt": {
+    "prebid": {
+      "bidder": {
+        "appnexus": {
+          "placementId": 111111
+        },
+        "pubmatic": {
+          "publisherId": "1234",
+          "wrapper": {
+            "profile": 1234
+          }
+        }
+      }
+    }
+  },
+  "expectedReturnCode": 200
+}

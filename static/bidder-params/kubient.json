@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Kubient Adapter Params",
+  "description": "A schema which validates params accepted by the Kubient adapter",
+  "type": "object",
+  "properties": {
+    "zoneid": {
+      "type": "string",
+      "description": "Zone ID identifies Kubient placement ID.",
+      "minLength": 1
+    }
+  }
+}

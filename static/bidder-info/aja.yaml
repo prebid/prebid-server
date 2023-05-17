@@ -1,0 +1,18 @@
+endpoint: "https://ad.as.amanad.adtdp.com/v1/bid/4"
+maintainer:
+  email: "dev@aja-kk.co.jp"
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+
+  app:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  redirect:
+    url: "https://ad.as.amanad.adtdp.com/v1/sync/ssp?ssp=4&gdpr={{.GDPR}}&us_privacy={{.USPrivacy}}&redir={{.RedirectURL}}"
+    userMacro: "%s"
+

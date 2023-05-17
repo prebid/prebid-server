@@ -1,0 +1,88 @@
+{
+    "mockBidRequest":
+    {
+        "id": "some-request-id",
+        "imp": [
+        {
+            "id": "some-impression-id",
+            "banner":
+            {
+                "format": [
+                {
+                    "w": 300,
+                    "h": 250
+                }]
+            },
+            "ext":
+            {
+                "bidder":
+                {
+                    "host": "search.nutella.datablocks.net",
+                    "sourceId": 123
+                }
+            }
+        }],
+        "site":
+        {
+            "page": "prebid.org"
+        },
+        "device":
+        {
+            "ip": "8.8.8.10"
+        },
+        "at": 1,
+        "tmax": 500
+    },
+    "httpCalls": [
+    {
+        "expectedRequest":
+        {
+            "uri": "http://search.nutella.datablocks.net/openrtb2?sid=123",
+            "body":
+            {
+                "id": "some-request-id",
+                "imp": [
+                {
+                    "id": "some-impression-id",
+                    "banner":
+                    {
+                        "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }]
+                    },
+                    "ext":
+                    {
+                        "bidder":
+                        {
+                            "host": "search.nutella.datablocks.net",
+                            "sourceId": 123
+                        }
+                    }
+                }],
+                "site":
+                {
+                    "page": "prebid.org"
+                },
+                "device":
+                {
+                    "ip": "8.8.8.10"
+                },
+                "at": 1,
+                "tmax": 500
+            }
+        },
+        "mockResponse":
+        {
+            "status": 200,
+            "body":"foobar"
+        }
+    }],
+    "expectedMakeBidsErrors": [
+      {
+        "value": "json: cannot unmarshal string into Go value of type openrtb2.BidResponse",
+        "comparison": "literal"  
+      }
+    ]
+}

@@ -1,6 +1,6 @@
 {
-  "message": "Invalid request: request.imp[0].audio.mimes must contain at least one supported MIME type\n",
-  "requestPayload": {
+  "description": "Empty request.imp[0].audio.mimes array",
+  "mockBidRequest": {
     "id": "req-id",
     "imp": [
       {
@@ -9,6 +9,11 @@
           "mimes": []
         }
       }
-    ]
-  }
+    ],
+    "app": {
+      "id": "app_001"
+    }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: request.imp[0].audio.mimes must contain at least one supported MIME type\n"
 }

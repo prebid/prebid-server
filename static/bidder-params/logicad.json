@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Logicad Adapter Params",
+  "description": "A schema which validates params accepted by the Logicad adapter",
+  "type": "object",
+  "properties": {
+    "tid": {
+      "type": "string",
+      "description": "Logicad for Publishers placement ID"
+    }
+  },
+  "required": ["tid"]
+}

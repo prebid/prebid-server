@@ -1,0 +1,66 @@
+{
+    "mockBidRequest": {
+        "id": "some_test_auction",
+        "imp": [
+            {
+                "id": "some_test_ad",
+                "banner": {
+                    "w": 90,
+                    "h": 728
+                },
+                "ext": {
+                    "bidder": {
+                        "placementId": 154
+                    }
+                }
+            }
+        ]
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "//host",
+                "body": {
+                    "id": "some_test_auction",
+                    "imp": [
+                        {
+                            "id": "some_test_ad",
+                            "banner": {
+                                "h": 728,
+                                "w": 90
+                            },
+                            "ext": {
+                                "placementId": 154
+                            }
+                        }
+                    ]
+                }
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "some_test_auction",
+                    "seatbid": [
+                        {
+                            "bid": [
+                                {
+                                    "id": "uuid",
+                                    "impid": "some_test_ad",
+                                    "w": "728",
+                                    "h": 90
+                                }
+                            ]
+                        }
+                    ],
+                    "cur": "USD"
+                }
+            }
+        }
+    ],
+    "expectedMakeBidsErrors": [
+        {
+            "value": "json: cannot unmarshal string into Go struct field Bid(\\.seatbid\\.bid)?\\.w of type int64",
+            "comparison": "regex"
+        }
+    ]
+}

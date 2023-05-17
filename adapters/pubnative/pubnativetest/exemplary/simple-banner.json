@@ -1,0 +1,172 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "domain": "good.site",
+      "page": "https://good.site/url",
+      "publisher": {
+        "id": "test-publisher-id"
+      },
+      "ext": {
+        "amp": 0
+      }
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "secure": 1,
+        "ext": {
+          "bidder": {
+            "zone_id": 1,
+            "app_auth_token": "4fd53a12b78af4b39835de9e449c3082"
+          }
+        }
+      }
+    ],
+    "device": {
+      "os": "android",
+      "ua": "test-user-agent",
+      "ip": "123.123.123.123",
+      "h": 700,
+      "w": 375,
+      "ext": {
+        "prebid": {
+          "interstitial": {
+            "minwidthperc": 50,
+            "minheightperc": 40
+          }
+        }
+      }
+    },
+    "at": 1,
+    "tmax": 200,
+    "test": 1,
+    "source": {
+      "tid": "283746293874293"
+    },
+    "ext": {
+      "prebid": {}
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://example.com/prebid?apptoken=4fd53a12b78af4b39835de9e449c3082&zoneid=1",
+        "body": {
+          "id": "test-request-id",
+          "site": {
+            "domain": "good.site",
+            "page": "https://good.site/url",
+            "publisher": {
+              "id": "test-publisher-id"
+            },
+            "ext": {
+              "amp": 0
+            }
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "h": 250,
+                "w": 300,
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "secure": 1,
+              "ext": {
+                "bidder": {
+                  "zone_id": 1,
+                  "app_auth_token": "4fd53a12b78af4b39835de9e449c3082"
+                }
+              }
+            }
+          ],
+          "device": {
+            "os": "android",
+            "ua": "test-user-agent",
+            "ip": "123.123.123.123",
+            "h": 700,
+            "w": 375,
+            "ext": {
+              "prebid": {
+                "interstitial": {
+                  "minwidthperc": 50,
+                  "minheightperc": 40
+                }
+              }
+            }
+          },
+          "at": 1,
+          "tmax": 200,
+          "test": 1,
+          "source": {
+            "tid": "283746293874293"
+          },
+          "ext": {
+            "prebid": {}
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "1519967420713_259406708_583019428",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "price": 0.5,
+                  "adm": "some-test-ad",
+                  "impid": "1",
+                  "auid": 46,
+                  "id": "1",
+                  "h": 250,
+                  "adomain": [
+                    "goodadvertiser.com"
+                  ],
+                  "crid": "11_222222",
+                  "w": 300
+                }
+              ],
+              "seat": "51"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "price": 0.5,
+            "adm": "some-test-ad",
+            "impid": "1",
+            "id": "1",
+            "h": 250,
+            "adomain": [
+              "goodadvertiser.com"
+            ],
+            "crid": "11_222222",
+            "w": 300
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

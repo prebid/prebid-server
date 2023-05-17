@@ -1,0 +1,138 @@
+{
+  "mockBidRequest": {
+    "id": "testauction",
+    "imp": [
+      {
+        "id": "1",
+        "video": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "site_id": "108060",
+            "bidfloor": 0.01,
+            "tag_id": "mytag",
+            "secure": 1,
+            "mimes": ["video/mp4", "video/x-flv"],
+            "position": 1,
+            "mobile": 0,
+            "api": [1,2,3,4],
+            "protocols": [1,2,3,5,6],
+            "maxduration": 60
+          }
+        }
+      }
+    ],
+    "device": {
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.91 Safari/537.36",
+      "ip": "192.168.1.1",
+      "dnt": 1
+    },
+    "site": {
+      "domain": "www.mypage.com"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "",
+        "body": {
+          "id": "testauction",
+          "site": {
+            "id": "108060",
+            "domain": "www.mypage.com"
+          },
+          "imp": [
+            {
+              "id": "1",
+              "tagid": "mytag",
+              "secure": 1,
+              "bidfloor": 0.01,
+              "displaymanager": "prebid-s2s",
+              "displaymanagerver": "2.0.0",
+              "video": {
+                "w": 300,
+                "h": 250,
+                "mimes": [
+                  "video/mp4",
+                  "video/x-flv"
+                ],
+                "pos": 1,
+                "api": [ 1, 2, 3, 4 ],
+                "protocols": [ 1, 2, 3, 5, 6 ],
+                "maxduration": 60
+              },
+              "ext": {
+                "bidder": {
+                  "site_id": "108060",
+                  "bidfloor": 0.01,
+                  "tag_id": "mytag",
+                  "secure": 1,
+                  "mimes": [
+                    "video/mp4",
+                    "video/x-flv"
+                  ],
+                  "position": 1,
+                  "mobile": 0,
+                  "api": [ 1, 2, 3, 4 ],
+                  "protocols": [ 1, 2, 3, 5, 6 ],
+                  "maxduration": 60
+                }
+              }
+            }
+          ],
+          "device": {
+            "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.91 Safari/537.36",
+            "ip": "192.168.1.1",
+            "dnt": 1
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "testauction",
+          "bidid": "c8d95f4b-bcbb-4a6c-adbb-4c7f33af3c24",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "1",
+                  "impid": "1",
+                  "price": 0.0340,
+                  "nurl": "https:\/\/event.ad.cpe.dotomi.com\/cvx\/event\/imp?enc=eyJ1c2VyaWQiOiI3MTI3MDUzNzM3NTM3MTAzMjIiLCJwYXJ0bmVyVHhpZCI6ImUyZWUzNjZlLWEyMjgtNDI0Mi1hNjJlLTk4ODk3ODhiYzgxNCIsInR4aWQiOiI3MTE1NzQwNDg3NTczODUwMDIiLCJuZXR3b3JrUmVxdWVzdElkIjoiNzExNTc0MDQ4NzU3Mzg1ODc0Iiwic2lkIjoxMTgwOTgsImRpdmlzaW9uSWQiOjgsInRpZCI6OCwibW9iaWxlRGF0YSI6IjU5IiwiYmlkUHJpY2UiOjAuMDY4MCwicHViQ29zdCI6MC4wMzQwLCJwYXJ0bmVyRmVlIjowLjAxMzYsImlwU3RyaW5nIjoiNzMuMTE4LjEzMC4xODYiLCJzdXBwbHlUeXBlIjoxLCJpbnRlZ3JhdGlvblR5cGUiOjQsIm1lZGlhdGlvblR5cGUiOjEyNiwicGxhY2VtZW50SWQiOiIxMTY5ODcwIiwiaGVhZGVyQmlkIjoxLCJpc0RpcmVjdFB1Ymxpc2hlciI6MCwiaGFzQ29uc2VudCI6MSwib3BlcmF0aW9uIjoiQ0xJRU5UX0hFQURFUl8yNSIsImlzQ29yZVNoaWVsZCI6MCwicGFydG5lckNyZWF0aXZlSWQiOiIyNDk2NDRfMzAweDI1MCIsInBhcnRuZXJEb21haW5zIjpbIndhbG1hcnQuY29tIl0sInNlbGxlclJlcXVlc3RJZCI6ImE3ODcyMWQ3LWE2ZmUtNGJiNS1hNjFkLTFhMDg1MzkxZTVlZCIsInNlbGxlckltcElkIjoiMzAwNDIxZDY0NWY2ZjRjOWMifQ&",
+                  "adm": "<div id='beacon_97896' style='position:absolute;left:0px;top:0px;visibility:hidden;'><img src='https:\/\/rtb-us-east1.openx.net\/win\/conversant?p=0.068000&t=2DAABBgABAAECAAIBAAsAAgAAAyIcGAozeG96d1E1ekpoHBbYlLq-s8_-0YUBFu-eiJTkjsmfjAEAHBb79r3dq-TkkToW19-h99Dds9GzAQAW0Nm29AsVBjgkNTIzZDJkNzgtYjc1Yi0wM2VmLTI1Y2MtMmM2MjJmYTlhN2ZhACwcFQIAHBUCABwVAgAAHCbEvIODBBUEFQQmvLyDgwQWruuBgwTWiAEWiAEWiAEWZBZkFmQWZBbUAQAcHCwWgLGKpLvsg60qFuuytdnn4oDnpQEAABam-p2ABBaopLKABBaIrIKBBBaC1NKABBUYHBT0AxTYBAAVBCbUARbUARbUARE1DibUAQAsLBaXzu2B6O7j1_ABFrHv8IeZkI7RzAEAFtDZtvQLBiim-p2ABBaopLKABBaC1NKABBaIrIKBBBgOMjQ5NjQ0XzMwMHgyNTAWjAwW1AElBBZMJQKWwMqMAhEoAk9YDHoU-AMU2gQAFgIYA3J0YoEA3BsEiApiaWRfc291cmNlBVNTUlRCCGJpZF91dWlkJDgzZTVlOGRlLThjNzktNGE4ZC05OTQyLThiOGFkYTc1ZDI2MhhkZWxpdmVyeV9tZWRpdW1fY2F0ZWdvcnkDV0VCIXJldHJpZXZlZF9mcm9tX3NzcnRiX2Vwb2NoX21pbGxpcw0xNTk4NDc3OTI5MDgxAKwYmwJodHRwczovL21wZC5teHB0aW50Lm5ldC8xL1MxL0cxL1Q0ODA2L2RpP3Npej0zMDB4MjUwJmNwZD0yNDk2NDQmY3BzPTI3NSZzc2w9MSZtaWQ9QjMzNkI0X0NGQTRBNTczXzUyRDA1REEmbXBpZD1SMUIzNDJfQzZFRjI3MUVfMTMxRjQwOTZEJmJwPTAuMTA2MDYzNCZkbT0xNDkzREIyMDZGN0M0MUQ2NTRERDI1OUZDRjk2RTVDNSZyaT0wJnY9cTcxbzlGS0d4VVpGNUlONUEycGU5QUpRSWVEYlVSSjFIQ2p2cmRBbmx3M1F2UTFuVkQtSWhnJmFkaWQ9MSZ1dWlkPUE4emxpcHVrLUJJTEZIcl90SDVoT1p3KAt3YWxtYXJ0LmNvbQAAAA&ph=bec2690e-a73d-4d95-9901-75ad2a8d91b8'\/><\/div><script type=\"text\/javascript\" src=\"https:\/\/mpd.mxptint.net\/1\/S1\/G1\/T4806\/js?siz=300x250&cpd=249644&cps=275&ssl=1&mid=B336B4_CFA4A573_52D05DA&mpid=R1B342_C6EF271E_131F4096D&bp=0.1060634&dm=1493DB206F7C41D654DD259FCF96E5C5&ri=0&v=q71o9FKGxUZF5IN5A2pe9AJQIeDbURJ1HCjvrdAnlw3QvQ1nVD-Ihg&adid=1&uuid=A8zlipuk-BILFHr_tH5hOZw&spox=AAABdCy1ioekWBgw3-MoY-mUAAZXsF6Wi8M83w\"><\/script><noscript><iframe src=\"https:\/\/mpd.mxptint.net\/1\/S1\/G1\/T4806\/if?siz=300x250&cpd=249644&cps=275&ssl=1&mid=B336B4_CFA4A573_52D05DA&mpid=R1B342_C6EF271E_131F4096D&bp=0.1060634&dm=1493DB206F7C41D654DD259FCF96E5C5&ri=0&v=q71o9FKGxUZF5IN5A2pe9AJQIeDbURJ1HCjvrdAnlw3QvQ1nVD-Ihg&adid=1&uuid=A8zlipuk-BILFHr_tH5hOZw&spox=AAABdCy1ioekWBgw3-MoY-mUAAZXsF6Wi8M83w\" width=\"300px\" height=\"250px\" marginwidth=\"0\" marginheight=\"0\" frameborder=\"0\" scrolling=\"no\"><img src=\"https:\/\/mpc.mxptint.net\/11S2SEECE726S6C47S3CF2CS12CSFAS12C6SB336B4_CFA4A573_52D05DAS%3fhttp:\/\/noredir.mxptint.net\"\/><\/iframe><\/noscript><iframe src='https:\/\/us-u.openx.net\/w\/1.0\/pd?plm=6&ph=bec2690e-a73d-4d95-9901-75ad2a8d91b8' width='0' height='0' style='display:none;'><\/iframe>",
+                  "adomain": [
+                    "walmart.com"
+                  ],
+                  "crid": "249644_300x250",
+                  "w": 300,
+                  "h": 250
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }],
+  "expectedBidResponses": [
+    {
+      "bids": [{
+        "bid": {
+          "id": "1",
+          "impid": "1",
+          "price": 0.0340,
+          "nurl": "https:\/\/event.ad.cpe.dotomi.com\/cvx\/event\/imp?enc=eyJ1c2VyaWQiOiI3MTI3MDUzNzM3NTM3MTAzMjIiLCJwYXJ0bmVyVHhpZCI6ImUyZWUzNjZlLWEyMjgtNDI0Mi1hNjJlLTk4ODk3ODhiYzgxNCIsInR4aWQiOiI3MTE1NzQwNDg3NTczODUwMDIiLCJuZXR3b3JrUmVxdWVzdElkIjoiNzExNTc0MDQ4NzU3Mzg1ODc0Iiwic2lkIjoxMTgwOTgsImRpdmlzaW9uSWQiOjgsInRpZCI6OCwibW9iaWxlRGF0YSI6IjU5IiwiYmlkUHJpY2UiOjAuMDY4MCwicHViQ29zdCI6MC4wMzQwLCJwYXJ0bmVyRmVlIjowLjAxMzYsImlwU3RyaW5nIjoiNzMuMTE4LjEzMC4xODYiLCJzdXBwbHlUeXBlIjoxLCJpbnRlZ3JhdGlvblR5cGUiOjQsIm1lZGlhdGlvblR5cGUiOjEyNiwicGxhY2VtZW50SWQiOiIxMTY5ODcwIiwiaGVhZGVyQmlkIjoxLCJpc0RpcmVjdFB1Ymxpc2hlciI6MCwiaGFzQ29uc2VudCI6MSwib3BlcmF0aW9uIjoiQ0xJRU5UX0hFQURFUl8yNSIsImlzQ29yZVNoaWVsZCI6MCwicGFydG5lckNyZWF0aXZlSWQiOiIyNDk2NDRfMzAweDI1MCIsInBhcnRuZXJEb21haW5zIjpbIndhbG1hcnQuY29tIl0sInNlbGxlclJlcXVlc3RJZCI6ImE3ODcyMWQ3LWE2ZmUtNGJiNS1hNjFkLTFhMDg1MzkxZTVlZCIsInNlbGxlckltcElkIjoiMzAwNDIxZDY0NWY2ZjRjOWMifQ&",
+          "adm": "<div id='beacon_97896' style='position:absolute;left:0px;top:0px;visibility:hidden;'><img src='https:\/\/rtb-us-east1.openx.net\/win\/conversant?p=0.068000&t=2DAABBgABAAECAAIBAAsAAgAAAyIcGAozeG96d1E1ekpoHBbYlLq-s8_-0YUBFu-eiJTkjsmfjAEAHBb79r3dq-TkkToW19-h99Dds9GzAQAW0Nm29AsVBjgkNTIzZDJkNzgtYjc1Yi0wM2VmLTI1Y2MtMmM2MjJmYTlhN2ZhACwcFQIAHBUCABwVAgAAHCbEvIODBBUEFQQmvLyDgwQWruuBgwTWiAEWiAEWiAEWZBZkFmQWZBbUAQAcHCwWgLGKpLvsg60qFuuytdnn4oDnpQEAABam-p2ABBaopLKABBaIrIKBBBaC1NKABBUYHBT0AxTYBAAVBCbUARbUARbUARE1DibUAQAsLBaXzu2B6O7j1_ABFrHv8IeZkI7RzAEAFtDZtvQLBiim-p2ABBaopLKABBaC1NKABBaIrIKBBBgOMjQ5NjQ0XzMwMHgyNTAWjAwW1AElBBZMJQKWwMqMAhEoAk9YDHoU-AMU2gQAFgIYA3J0YoEA3BsEiApiaWRfc291cmNlBVNTUlRCCGJpZF91dWlkJDgzZTVlOGRlLThjNzktNGE4ZC05OTQyLThiOGFkYTc1ZDI2MhhkZWxpdmVyeV9tZWRpdW1fY2F0ZWdvcnkDV0VCIXJldHJpZXZlZF9mcm9tX3NzcnRiX2Vwb2NoX21pbGxpcw0xNTk4NDc3OTI5MDgxAKwYmwJodHRwczovL21wZC5teHB0aW50Lm5ldC8xL1MxL0cxL1Q0ODA2L2RpP3Npej0zMDB4MjUwJmNwZD0yNDk2NDQmY3BzPTI3NSZzc2w9MSZtaWQ9QjMzNkI0X0NGQTRBNTczXzUyRDA1REEmbXBpZD1SMUIzNDJfQzZFRjI3MUVfMTMxRjQwOTZEJmJwPTAuMTA2MDYzNCZkbT0xNDkzREIyMDZGN0M0MUQ2NTRERDI1OUZDRjk2RTVDNSZyaT0wJnY9cTcxbzlGS0d4VVpGNUlONUEycGU5QUpRSWVEYlVSSjFIQ2p2cmRBbmx3M1F2UTFuVkQtSWhnJmFkaWQ9MSZ1dWlkPUE4emxpcHVrLUJJTEZIcl90SDVoT1p3KAt3YWxtYXJ0LmNvbQAAAA&ph=bec2690e-a73d-4d95-9901-75ad2a8d91b8'\/><\/div><script type=\"text\/javascript\" src=\"https:\/\/mpd.mxptint.net\/1\/S1\/G1\/T4806\/js?siz=300x250&cpd=249644&cps=275&ssl=1&mid=B336B4_CFA4A573_52D05DA&mpid=R1B342_C6EF271E_131F4096D&bp=0.1060634&dm=1493DB206F7C41D654DD259FCF96E5C5&ri=0&v=q71o9FKGxUZF5IN5A2pe9AJQIeDbURJ1HCjvrdAnlw3QvQ1nVD-Ihg&adid=1&uuid=A8zlipuk-BILFHr_tH5hOZw&spox=AAABdCy1ioekWBgw3-MoY-mUAAZXsF6Wi8M83w\"><\/script><noscript><iframe src=\"https:\/\/mpd.mxptint.net\/1\/S1\/G1\/T4806\/if?siz=300x250&cpd=249644&cps=275&ssl=1&mid=B336B4_CFA4A573_52D05DA&mpid=R1B342_C6EF271E_131F4096D&bp=0.1060634&dm=1493DB206F7C41D654DD259FCF96E5C5&ri=0&v=q71o9FKGxUZF5IN5A2pe9AJQIeDbURJ1HCjvrdAnlw3QvQ1nVD-Ihg&adid=1&uuid=A8zlipuk-BILFHr_tH5hOZw&spox=AAABdCy1ioekWBgw3-MoY-mUAAZXsF6Wi8M83w\" width=\"300px\" height=\"250px\" marginwidth=\"0\" marginheight=\"0\" frameborder=\"0\" scrolling=\"no\"><img src=\"https:\/\/mpc.mxptint.net\/11S2SEECE726S6C47S3CF2CS12CSFAS12C6SB336B4_CFA4A573_52D05DAS%3fhttp:\/\/noredir.mxptint.net\"\/><\/iframe><\/noscript><iframe src='https:\/\/us-u.openx.net\/w\/1.0\/pd?plm=6&ph=bec2690e-a73d-4d95-9901-75ad2a8d91b8' width='0' height='0' style='display:none;'><\/iframe>",
+          "adomain": ["walmart.com"],
+          "crid": "249644_300x250",
+          "w": 300,
+          "h": 250
+        },
+        "type": "video"
+      }]
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "NanoInteractive Adapter Params",
+  "description": "A schema which validates params accepted by the NanoInteractive adapter",
+  "type": "object",
+  "properties": {
+    "pid": {
+      "type": "string",
+      "description": "Placement id"
+    },
+    "nq": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "search queries"
+    },
+    "category": {
+      "type": "string",
+      "description": "IAB Category"
+    },
+    "subId": {
+      "type": "string",
+      "description": "any segment value provided by publisher"
+    },
+    "ref" : {
+      "type": "string",
+      "description": "referer"
+    }
+  },
+  "required": ["pid"]
+}

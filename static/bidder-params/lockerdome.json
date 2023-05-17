@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "LockerDome Adapter Params",
+  "description": "A schema which validates params accepted by the LockerDome adapter",
+  "type": "object",
+  "properties": {
+    "adUnitId": {
+      "type": "string",
+      "description": "A tag which identifies the LockerDome ad unit by adUnitId"
+    }
+  },
+  "required": ["adUnitId"]
+}

@@ -1,0 +1,17 @@
+endpoint: "https://x.videobyte.com/ortbhb"
+maintainer:
+  email: "prebid@videobyte.com"
+gvlVendorID: 1011
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  redirect:
+    url: "https://x.videobyte.com/usync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&cb={{.RedirectURL}}"
+    userMacro: "$UID"

@@ -3,14 +3,17 @@ package consumable
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/privacy/ccpa"
 )
 
 type ConsumableAdapter struct {
@@ -19,19 +22,24 @@ type ConsumableAdapter struct {
 }
 
 type bidRequest struct {
-	Placements         []placement `json:"placements"`
-	Time               int64       `json:"time"`
-	NetworkId          int         `json:"networkId,omitempty"`
-	SiteId             int         `json:"siteId"`
-	UnitId             int         `json:"unitId"`
-	UnitName           string      `json:"unitName,omitempty"`
-	IncludePricingData bool        `json:"includePricingData"`
-	User               user        `json:"user,omitempty"`
-	Referrer           string      `json:"referrer,omitempty"`
-	Ip                 string      `json:"ip,omitempty"`
-	Url                string      `json:"url,omitempty"`
-	EnableBotFiltering bool        `json:"enableBotFiltering,omitempty"`
-	Parallel           bool        `json:"parallel"`
+	Placements         []placement          `json:"placements"`
+	Time               int64                `json:"time"`
+	NetworkId          int                  `json:"networkId,omitempty"`
+	SiteId             int                  `json:"siteId"`
+	UnitId             int                  `json:"unitId"`
+	UnitName           string               `json:"unitName,omitempty"`
+	IncludePricingData bool                 `json:"includePricingData"`
+	User               user                 `json:"user,omitempty"`
+	Referrer           string               `json:"referrer,omitempty"`
+	Ip                 string               `json:"ip,omitempty"`
+	Url                string               `json:"url,omitempty"`
+	EnableBotFiltering bool                 `json:"enableBotFiltering,omitempty"`
+	Parallel           bool                 `json:"parallel"`
+	CCPA               string               `json:"ccpa,omitempty"`
+	GDPR               *bidGdpr             `json:"gdpr,omitempty"`
+	Coppa              bool                 `json:"coppa,omitempty"`
+	SChain             openrtb2.SupplyChain `json:"schain"`
+	Content            *openrtb2.Content    `json:"content,omitempty"`
 }
 
 type placement struct {
@@ -44,7 +52,13 @@ type placement struct {
 }
 
 type user struct {
-	Key string `json:"key,omitempty"`
+	Key  string         `json:"key,omitempty"`
+	Eids []openrtb2.EID `json:"eids,omitempty"`
+}
+
+type bidGdpr struct {
+	Applies *bool  `json:"applies,omitempty"`
+	Consent string `json:"consent,omitempty"`
 }
 
 type bidResponse struct {
@@ -61,6 +75,10 @@ type decision struct {
 	CreativeID    string     `json:"creativeId,omitempty"`
 	Contents      []contents `json:"contents"`
 	ImpressionUrl *string    `json:"impressionUrl,omitempty"`
+	Width         uint64     `json:"width,omitempty"`  // Consumable extension, not defined by Adzerk
+	Height        uint64     `json:"height,omitempty"` // Consumable extension, not defined by Adzerk
+	Adomain       []string   `json:"adomain,omitempty"`
+	Cats          []string   `json:"cats,omitempty"`
 }
 
 type contents struct {
@@ -71,7 +89,9 @@ type pricing struct {
 	ClearPrice *float64 `json:"clearPrice"`
 }
 
-func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *ConsumableAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	var errs []error
+
 	headers := http.Header{
 		"Content-Type": {"application/json"},
 		"Accept":       {"application/json"},
@@ -100,13 +120,14 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		headers.Set("Referer", request.Site.Page)
 
 		pageUrl, err := url.Parse(request.Site.Page)
-		if err == nil {
+		if err != nil {
+			errs = append(errs, err)
+		} else {
 			origin := url.URL{
 				Scheme: pageUrl.Scheme,
 				Opaque: pageUrl.Opaque,
 				Host:   pageUrl.Host,
 			}
-
 			headers.Set("Origin", origin.String())
 		}
 	}
@@ -122,6 +143,59 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	if request.Site != nil {
 		body.Referrer = request.Site.Ref // Effectively the previous page to the page where the ad will be shown
 		body.Url = request.Site.Page     // where the impression will be made
+	}
+
+	gdpr := bidGdpr{}
+
+	ccpaPolicy, err := ccpa.ReadFromRequest(request)
+	if err != nil {
+		errs = append(errs, err)
+	} else {
+		body.CCPA = ccpaPolicy.Consent
+	}
+
+	if request.Regs != nil && request.Regs.Ext != nil {
+		var extRegs openrtb_ext.ExtRegs
+		if err := json.Unmarshal(request.Regs.Ext, &extRegs); err != nil {
+			errs = append(errs, err)
+		} else {
+			if extRegs.GDPR != nil {
+				applies := *extRegs.GDPR != 0
+				gdpr.Applies = &applies
+				body.GDPR = &gdpr
+			}
+		}
+	}
+
+	if request.User != nil && request.User.Ext != nil {
+		var extUser openrtb_ext.ExtUser
+		if err := json.Unmarshal(request.User.Ext, &extUser); err != nil {
+			errs = append(errs, err)
+		} else {
+			gdpr.Consent = extUser.Consent
+			body.GDPR = &gdpr
+
+			if hasEids(extUser.Eids) {
+				body.User.Eids = extUser.Eids
+			}
+		}
+	}
+
+	if request.Source != nil && request.Source.Ext != nil {
+		var extSChain openrtb_ext.ExtRequestPrebidSChain
+		if err := json.Unmarshal(request.Source.Ext, &extSChain); err != nil {
+			errs = append(errs, err)
+		} else {
+			body.SChain = extSChain.SChain
+		}
+	}
+
+	body.Coppa = request.Regs != nil && request.Regs.COPPA > 0
+
+	if request.Site != nil && request.Site.Content != nil {
+		body.Content = request.Site.Content
+	} else if request.App != nil && request.App.Content != nil {
+		body.Content = request.App.Content
 	}
 
 	for i, impression := range request.Imp {
@@ -164,14 +238,14 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		},
 	}
 
-	return requests, nil
+	return requests, errs
 }
 
 /*
 internal original request in OpenRTB, external = result of us having converted it (what comes out of MakeRequests)
 */
 func (a *ConsumableAdapter) MakeBids(
-	internalRequest *openrtb.BidRequest,
+	internalRequest *openrtb2.BidRequest,
 	externalRequest *adapters.RequestData,
 	response *adapters.ResponseData,
 ) (*adapters.BidderResponse, []error) {
@@ -205,26 +279,17 @@ func (a *ConsumableAdapter) MakeBids(
 	for impID, decision := range serverResponse.Decisions {
 
 		if decision.Pricing != nil && decision.Pricing.ClearPrice != nil {
-
-			imp := getImp(impID, internalRequest.Imp)
-			if imp == nil {
-				errors = append(errors, &errortypes.BadServerResponse{
-					Message: fmt.Sprintf(
-						"ignoring bid id=%s, request doesn't contain any impression with id=%s", internalRequest.ID, impID),
-				})
-				continue
-			}
-
-			bid := openrtb.Bid{}
+			bid := openrtb2.Bid{}
 			bid.ID = internalRequest.ID
 			bid.ImpID = impID
 			bid.Price = *decision.Pricing.ClearPrice
 			bid.AdM = retrieveAd(decision)
-			bid.W = imp.Banner.Format[0].W // TODO: Review to check if this is correct behaviour
-			bid.H = imp.Banner.Format[0].H
+			bid.W = int64(decision.Width)
+			bid.H = int64(decision.Height)
 			bid.CrID = strconv.FormatInt(decision.AdID, 10)
 			bid.Exp = 30 // TODO: Check this is intention of TTL
-
+			bid.ADomain = decision.Adomain
+			bid.Cat = decision.Cats
 			// not yet ported from prebid.js adapter
 			//bid.requestId = bidId;
 			//bid.currency = 'USD';
@@ -232,24 +297,18 @@ func (a *ConsumableAdapter) MakeBids(
 			//bid.referrer = utils.getTopWindowUrl();
 
 			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
-				Bid:     &bid,
-				BidType: getMediaTypeForImp(getImp(bid.ImpID, internalRequest.Imp)),
+				Bid: &bid,
+				// Consumable units are always HTML, never VAST.
+				// From Prebid's point of view, this means that Consumable units
+				// are always "banners".
+				BidType: openrtb_ext.BidTypeBanner,
 			})
 		}
 	}
 	return bidderResponse, errors
 }
 
-func getImp(impId string, imps []openrtb.Imp) *openrtb.Imp {
-	for _, imp := range imps {
-		if imp.ID == impId {
-			return &imp
-		}
-	}
-	return nil
-}
-
-func extractExtensions(impression openrtb.Imp) (*adapters.ExtImpBidder, *openrtb_ext.ExtImpConsumable, []error) {
+func extractExtensions(impression openrtb2.Imp) (*adapters.ExtImpBidder, *openrtb_ext.ExtImpConsumable, []error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(impression.Ext, &bidderExt); err != nil {
 		return nil, nil, []error{&errortypes.BadInput{
@@ -267,20 +326,20 @@ func extractExtensions(impression openrtb.Imp) (*adapters.ExtImpBidder, *openrtb
 	return &bidderExt, &consumableExt, nil
 }
 
-func getMediaTypeForImp(imp *openrtb.Imp) openrtb_ext.BidType {
-	// TODO: Whatever logic we need here possibly as follows - may always be Video when we bid
-	if imp.Banner != nil {
-		return openrtb_ext.BidTypeBanner
-	} else if imp.Video != nil {
-		return openrtb_ext.BidTypeVideo
+// Builder builds a new instance of the Consumable adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	bidder := &ConsumableAdapter{
+		clock:    realInstant{},
+		endpoint: config.Endpoint,
 	}
-	return openrtb_ext.BidTypeVideo
+	return bidder, nil
 }
 
-func testConsumableBidder(testClock instant, endpoint string) *ConsumableAdapter {
-	return &ConsumableAdapter{testClock, endpoint}
-}
-
-func NewConsumableBidder(endpoint string) *ConsumableAdapter {
-	return &ConsumableAdapter{realInstant{}, endpoint}
+func hasEids(eids []openrtb2.EID) bool {
+	for i := 0; i < len(eids); i++ {
+		if len(eids[i].UIDs) > 0 && eids[i].UIDs[0].ID != "" {
+			return true
+		}
+	}
+	return false
 }

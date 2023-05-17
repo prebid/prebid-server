@@ -16,5 +16,10 @@
         }
       ]
     },
-    "expectedMakeRequestsErrors": ["Ignoring imp id=test-imp-id, no ClientID present"]
+    "expectedMakeRequestsErrors": [
+      {
+        "value": "Ignoring imp id=test-imp-id, no ClientID present",
+        "comparison": "literal"
+      }
+    ]
 }

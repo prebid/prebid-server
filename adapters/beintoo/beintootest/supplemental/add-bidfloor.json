@@ -1,0 +1,43 @@
+{
+    "mockBidRequest": {
+        "id": "some_test_auction",
+        "imp": [{
+            "id": "some_test_ad",
+            "banner": {
+                "h": 728,
+                "w": 90
+            },
+            "ext": {
+                "bidder": {
+                    "tagid": "1234568",
+                    "bidfloor": "1.25"
+                }
+            }
+        }]
+    },
+    "httpCalls": [{
+        "expectedRequest": {
+            "uri": "https://ib.beintoo.com",
+            "body": {
+                "id": "some_test_auction",
+                "imp": [{
+                    "banner": {
+                        "h": 728,
+                        "w": 90
+                    },
+                    "id": "some_test_ad",
+                    "secure": 0,
+                    "tagid": "1234568",
+                    "bidfloor": 1.25
+                }]
+            }
+        },
+        "mockResponse": {
+          "status": 200,
+          "body": {
+
+          }
+        }
+    }],
+    "expectedBidResponses": []
+}

@@ -1,0 +1,63 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id-1",
+        "banner": {},
+        "ext": {
+          "bidder": {}
+        }
+      },
+      {
+        "id": "test-imp-id-1",
+        "audio": {
+          "startdelay": 0,
+          "minduration": 10,
+          "maxduration": 30,
+          "maxextended": 30,
+          "minbitrate": 300,
+          "maxbitrate": 1500,
+          "api": [
+            1,
+            2
+          ],
+          "protocols": [
+            9,
+            10
+          ],
+          "mimes": [
+            "audio/aac",
+            "audio/mp4",
+            "audio/mpeg"
+          ],
+          "delivery": [
+            2
+          ]
+        },
+        "ext": {
+          "bidder": {}
+        }
+      }
+    ],
+    "site": {
+      "id": "siteID",
+      "publisher": {
+        "id": "1234"
+      }
+    },
+    "device": {
+      "os": "android"
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Size information missing for banner",
+      "comparison": "literal"
+    },
+    {
+      "value": "Pubnative only supports banner, video or native ads.",
+      "comparison": "literal"
+    }
+  ]
+}

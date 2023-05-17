@@ -1,0 +1,21 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Colossus Adapter Params",
+    "description": "A schema which validates params accepted by the Colossus adapter",
+
+    "type": "object",
+    "properties": {
+      "TagID": {
+        "type": "string",
+        "description": "An ID which identifies the colossus ad tag"
+      },
+      "groupId": {
+        "type": "string",
+        "description": "An ID which identifies the colossus group"
+      }
+    },
+    "oneOf": [
+      { "required": ["TagID"] },
+      { "required": ["groupId"] }
+    ]
+  }

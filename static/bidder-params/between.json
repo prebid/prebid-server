@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "BetweenDigital Adapter Params",
+  "description": "A schema which validates params accepted by the BetweenDigital adapter",
+  "type": "object",
+  "properties": {
+    "host": {
+      "type": "string",
+      "description": "Network Host to request from",
+      "enum": ["lbs-eu1.ads", "lbs-ru1.ads", "lbs-us-east1.ads", "lbs-asia1.ads"]
+    },
+    "publisher_id": {
+      "type": "string",
+      "description": "Publisher ID from Between Exchange control panel"
+    }
+  },
+  "required": ["host", "publisher_id"]
+}

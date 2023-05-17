@@ -1,0 +1,67 @@
+{
+    "mockBidRequest": {
+      "id": "some_test_auction",
+      "imp": [
+        {
+          "id": "test-imp-id",
+          "banner": {
+            "format": [{
+              "w": 300,
+              "h": 600
+          }],
+            "w": 300,
+            "h": 600
+          },
+          "ext": {
+            "bidder": {
+              "tagid": "123456"
+            }
+          }
+        }
+      ],
+      "app": {
+        "domain": "www.publisher.com",
+        "storeurl": "http://www.publisher.com/awesome/site?with=some&parameters=here"
+      }
+    },
+
+    "httpCalls": [
+      {
+        "expectedRequest": {
+          "uri": "https://hb.emxdgt.com?t=1000&ts=2060541160",
+          "body": {
+            "id": "some_test_auction",
+            "imp": [{
+                "id": "test-imp-id",
+                "banner": {
+                    "format": [{
+                        "w": 300,
+                        "h": 600
+                    }],
+                    "w": 300,
+                    "h": 600
+                },
+                "ext": {
+                  "bidder": {
+                    "tagid": "123456"
+                  }
+                },
+                "tagid": "123456",
+                "secure": 0
+            }],
+            "app": {
+                "domain": "www.publisher.com",
+                "storeurl": "http://www.publisher.com/awesome/site?with=some&parameters=here"
+            }
+          }
+        },
+        "mockResponse": {
+          "status": 200,
+          "body": {
+
+          }
+        }
+      }
+    ],
+    "expectedBidResponses":[]
+  }

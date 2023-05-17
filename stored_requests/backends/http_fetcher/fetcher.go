@@ -5,11 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/prebid/prebid-server/stored_requests"
+	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
 	"github.com/golang/glog"
 	"golang.org/x/net/context/ctxhttp"
@@ -19,35 +21,50 @@ import (
 //
 // This file expects the endpoint to satisfy the following API:
 //
+// Stored requests
 // GET {endpoint}?request-ids=["req1","req2"]&imp-ids=["imp1","imp2","imp3"]
 //
-// This endpoint should return a payload like:
+// Accounts
+// GET {endpoint}?account-ids=["acc1","acc2"]
 //
-// {
-//   "requests": {
-//     "req1": { ... stored data for req1 ... },
-//     "req2": { ... stored data for req2 ... },
-//   },
-//   "imps": {
-//     "imp1": { ... stored data for imp1 ... },
-//     "imp2": { ... stored data for imp2 ... },
-//     "imp3": null // If imp3 is not found
-//   }
-// }
+// The above endpoints should return a payload like:
 //
+//	{
+//	  "requests": {
+//	    "req1": { ... stored data for req1 ... },
+//	    "req2": { ... stored data for req2 ... },
+//	  },
+//	  "imps": {
+//	    "imp1": { ... stored data for imp1 ... },
+//	    "imp2": { ... stored data for imp2 ... },
+//	    "imp3": null // If imp3 is not found
+//	  }
+//	}
 //
+// or
+//
+//	{
+//	  "accounts": {
+//	    "acc1": { ... config data for acc1 ... },
+//	    "acc2": { ... config data for acc2 ... },
+//	  },
+//	}
 func NewFetcher(client *http.Client, endpoint string) *HttpFetcher {
 	// Do some work up-front to figure out if the (configurable) endpoint has a query string or not.
 	// When we build requests, we'll either want to add `?request-ids=...&imp-ids=...` _or_
-	// `&request-ids=...&imp-ids=...`, depending.
+	// `&request-ids=...&imp-ids=...`.
+
+	if _, err := url.Parse(endpoint); err != nil {
+		glog.Fatalf(`Invalid endpoint "%s": %v`, endpoint, err)
+	}
+	glog.Infof("Making http_fetcher for endpoint %v", endpoint)
+
 	urlPrefix := endpoint
 	if strings.Contains(endpoint, "?") {
 		urlPrefix = urlPrefix + "&"
 	} else {
 		urlPrefix = urlPrefix + "?"
 	}
-
-	glog.Info("Making http_fetcher which calls GET " + urlPrefix + "request-ids=%REQUEST_ID_LIST%&imp-ids=%IMP_ID_LIST%")
 
 	return &HttpFetcher{
 		client:   client,
@@ -58,7 +75,6 @@ func NewFetcher(client *http.Client, endpoint string) *HttpFetcher {
 type HttpFetcher struct {
 	client     *http.Client
 	Endpoint   string
-	hasQuery   bool
 	Categories map[string]map[string]stored_requests.Category
 }
 
@@ -79,6 +95,80 @@ func (fetcher *HttpFetcher) FetchRequests(ctx context.Context, requestIDs []stri
 	defer httpResp.Body.Close()
 	requestData, impData, errs = unpackResponse(httpResp)
 	return
+}
+
+func (fetcher *HttpFetcher) FetchResponses(ctx context.Context, ids []string) (data map[string]json.RawMessage, errs []error) {
+	return nil, nil
+}
+
+// FetchAccounts retrieves account configurations
+//
+// Request format is similar to the one for requests:
+// GET {endpoint}?account-ids=["account1","account2",...]
+//
+// The endpoint is expected to respond with a JSON map with accountID -> json.RawMessage
+//
+//	{
+//	  "account1": { ... account json ... }
+//	}
+//
+// The JSON contents of account config is returned as-is (NOT validated)
+func (fetcher *HttpFetcher) FetchAccounts(ctx context.Context, accountIDs []string) (map[string]json.RawMessage, []error) {
+	if len(accountIDs) == 0 {
+		return nil, nil
+	}
+	httpReq, err := http.NewRequestWithContext(ctx, "GET", fetcher.Endpoint+"account-ids=[\""+strings.Join(accountIDs, "\",\"")+"\"]", nil)
+	if err != nil {
+		return nil, []error{
+			fmt.Errorf(`Error fetching accounts %v via http: build request failed with %v`, accountIDs, err),
+		}
+	}
+	httpResp, err := ctxhttp.Do(ctx, fetcher.client, httpReq)
+	if err != nil {
+		return nil, []error{
+			fmt.Errorf(`Error fetching accounts %v via http: %v`, accountIDs, err),
+		}
+	}
+	defer httpResp.Body.Close()
+	respBytes, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, []error{
+			fmt.Errorf(`Error fetching accounts %v via http: error reading response: %v`, accountIDs, err),
+		}
+	}
+	if httpResp.StatusCode != http.StatusOK {
+		return nil, []error{
+			fmt.Errorf(`Error fetching accounts %v via http: unexpected response status %d`, accountIDs, httpResp.StatusCode),
+		}
+	}
+	var responseData accountsResponseContract
+	if err = json.Unmarshal(respBytes, &responseData); err != nil {
+		return nil, []error{
+			fmt.Errorf(`Error fetching accounts %v via http: failed to parse response: %v`, accountIDs, err),
+		}
+	}
+	errs := convertNullsToErrs(responseData.Accounts, "Account", []error{})
+	return responseData.Accounts, errs
+}
+
+// FetchAccount fetchers a single accountID and returns its corresponding json
+func (fetcher *HttpFetcher) FetchAccount(ctx context.Context, accountDefaultsJSON json.RawMessage, accountID string) (accountJSON json.RawMessage, errs []error) {
+	accountData, errs := fetcher.FetchAccounts(ctx, []string{accountID})
+	if len(errs) > 0 {
+		return nil, errs
+	}
+	accountJSON, ok := accountData[accountID]
+	if !ok {
+		return nil, []error{stored_requests.NotFoundError{
+			ID:       accountID,
+			DataType: "Account",
+		}}
+	}
+	completeJSON, err := jsonpatch.MergePatch(accountDefaultsJSON, accountJSON)
+	if err != nil {
+		return nil, []error{err}
+	}
+	return completeJSON, nil
 }
 
 func (fetcher *HttpFetcher) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {
@@ -116,7 +206,7 @@ func (fetcher *HttpFetcher) FetchCategories(ctx context.Context, primaryAdServer
 	}
 	defer httpResp.Body.Close()
 
-	respBytes, err := ioutil.ReadAll(httpResp.Body)
+	respBytes, err := io.ReadAll(httpResp.Body)
 	tmp := make(map[string]stored_requests.Category)
 
 	if err := json.Unmarshal(respBytes, &tmp); err != nil {
@@ -142,7 +232,7 @@ func buildRequest(endpoint string, requestIDs []string, impIDs []string) (*http.
 }
 
 func unpackResponse(resp *http.Response) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
-	respBytes, err := ioutil.ReadAll(resp.Body)
+	respBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		errs = append(errs, err)
 		return
@@ -185,4 +275,8 @@ func convertNullsToErrs(m map[string]json.RawMessage, dataType string, errs []er
 type responseContract struct {
 	Requests map[string]json.RawMessage `json:"requests"`
 	Imps     map[string]json.RawMessage `json:"imps"`
+}
+
+type accountsResponseContract struct {
+	Accounts map[string]json.RawMessage `json:"accounts"`
 }

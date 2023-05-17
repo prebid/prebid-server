@@ -1,0 +1,64 @@
+{
+  "id": "19c2eeb8-824c-4604-af41-a59b2b7bb895",
+  "site": {
+    "page": "https%3A%2F%2Fdebug.mediasquare.fr%2Fdebug%2Fprebid%2Fmsq_desktop.html%3Fpbjs_debug%3Dtrue"
+  },
+  "user": {
+    "ext": {}
+  },
+  "regs": {
+    "ext": {}
+  },
+  "test": 1,
+  "imp": [
+    {
+      "id": "0341252e-b3b0-4dff-a0ef-1ced63369bd5",
+      "ext": {
+        "appnexus": {
+          "placementId": 5724999
+        }
+      },
+      "secure": 1,
+      "banner": {
+        "format": [
+          {
+            "w": 970,
+            "h": 250
+          }
+        ]
+      }
+    },
+    {
+      "id": "3ac0ffa3-01de-44d2-9baf-1fee79026624",
+      "ext": {
+        "msqClassic": {
+          "placementId": 10471298
+        }
+      },
+      "secure": 1,
+      "banner": {
+        "format": [
+          {
+            "w": 300,
+            "h": 250
+          },
+          {
+            "w": 300,
+            "h": 600
+          }
+        ]
+      }
+    }
+  ],
+  "tmax": 500,
+  "ext": {
+    "prebid": {
+      "bidadjustmentfactors": {
+        "msqClassic": 0.8,
+        "msqBrand": 0.8,
+        "msqMax": 0.8,
+        "msqMaxView": 0.8
+      }
+    }
+  }
+}

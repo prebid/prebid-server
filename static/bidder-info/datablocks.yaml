@@ -1,0 +1,18 @@
+endpoint: "http://{{.Host}}/openrtb2?sid={{.SourceId}}"
+maintainer:
+  email: "prebid@datablocks.net"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - native
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - native
+      - video
+userSync:
+  redirect:
+    url: "https://sync.v5prebid.datablocks.net/s2ssync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&r={{.RedirectURL}}"
+    userMacro: "${uid}"

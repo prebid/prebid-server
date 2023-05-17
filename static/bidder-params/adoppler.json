@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Adoppler Adapter Params",
+  "description": "A schema which validates params accepted by the Adoppler adapter",
+  "type": "object",
+  "properties": {
+      "adunit": {
+        "type": "string",
+        "description": "AdUnit to bid against to."
+      },
+      "client": {
+        "type": "string",
+        "description": "Client name."
+      }
+  },
+  "required": ["adunit"]
+}

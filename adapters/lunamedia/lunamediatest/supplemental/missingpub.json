@@ -1,0 +1,35 @@
+{
+    "mockBidRequest": {
+      "id": "testid",
+      "imp": [
+        {
+          "id": "testimpid",
+          "banner": {
+            "format": [
+              {
+                "w": 320,
+                "h": 250
+              },
+              {
+                "w": 320,
+                "h": 300
+              }
+            ],
+            "w": 320,
+            "h": 250
+          },
+          "ext": {
+            "bidder": {
+              "pubid": "",
+              "placement": "dummyplacement"
+            }
+          }
+        }
+      ]
+    },
+    "expectedMakeRequestsErrors": [
+      {
+          "value": "No pubid value provided",
+          "comparison": "literal"
+      }]
+  }

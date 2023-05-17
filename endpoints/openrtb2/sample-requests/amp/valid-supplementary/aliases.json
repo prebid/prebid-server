@@ -1,0 +1,75 @@
+{
+  "description": "Amp request impression requests a bid from a bidder alias defined in root.ext.prebid.aliases",
+  "query": "tag_id=101",
+  "config": {
+    "mockBidders": [
+      {
+        "bidderName": "appnexus",
+        "currency": "USD",
+        "price": 2
+      }
+    ]
+  },
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "prebid": {
+            "bidder": {
+              "unknown": {
+                "placementId": 12883451
+              }
+            }
+          }
+        }
+      }
+    ],
+    "ext": {
+      "prebid": {
+        "aliases": {
+          "unknown": "appnexus"
+        }
+      }
+    }
+  },
+  "expectedAmpResponse": {
+    "targeting": {
+      "hb_bidder": "unknown",
+      "hb_bidder_unknown": "unknown",
+      "hb_cache_host": "www.pbcserver.com",
+      "hb_cache_host_unknow": "www.pbcserver.com",
+      "hb_cache_id": "0",
+      "hb_cache_id_unknown": "0",
+      "hb_cache_path": "/pbcache/endpoint",
+      "hb_cache_path_unknow": "/pbcache/endpoint",
+      "hb_pb": "2.00",
+      "hb_pb_unknown": "2.00"
+    },
+    "ortb2": {
+      "ext": {
+        "warnings": {
+          "general": [
+            {
+              "code": 10002,
+              "message": "debug turned off for account"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "expectedReturnCode": 200
+}

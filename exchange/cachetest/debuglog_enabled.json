@@ -1,0 +1,64 @@
+{    
+    "debugLog": {
+        "Enabled": true,
+        "DebugEnabledOrOverridden": true,
+        "DebugOverride": false,
+        "CacheType": "xml",
+        "TTL": 3600,
+        "Data": {
+            "Request": "test request string",
+            "Headers": "test headers string",
+            "Response": "test response string"
+        }
+    },
+    "bidRequest": {
+        "imp": [{
+            "id":  "oneImp",
+            "exp":   600
+        }, {
+            "id":  "twoImp"
+        }]
+    },
+    "pbsBids": [{
+        "bid":{
+            "id": "bidOne",
+            "impid": "oneImp",
+            "price": 7.64
+        },
+        "bidType": "video",
+        "bidder": "appnexus"
+    }, {
+        "bid": {
+            "id": "bidTwo",
+            "impid": "twoImp",
+            "price": 5.64
+        },
+        "bidType": "video",
+        "bidder": "pubmatic"
+    }],
+    "expectedCacheables": [
+        {
+            "type": "json",
+            "ttlseconds": 660,
+            "value": "{\"id\": \"bidOne\", \"impid\": \"oneImp\", \"price\": 7.64}"
+        }, {
+            "type": "json",
+            "ttlseconds": 3660,
+            "value": "{\"id\": \"bidTwo\", \"impid\": \"twoImp\", \"price\": 5.64}"
+        }, {
+            "type": "xml",
+            "ttlseconds": 3600,
+            "value": "\u003c?xml version=\"1.0\" encoding=\"UTF-8\"?\u003e\n\u003cLog\u003e\u003cRequest\u003etest request string\u003c/Request\u003e\u003cHeaders\u003etest headers string\u003c/Headers\u003e\u003cResponse\u003etest response string\u003c/Response\u003e\u003c/Log\u003e"
+        }
+    ],
+    "defaultTTLs": {
+        "banner": 300,
+        "video": 3600,
+        "audio": 1800,
+        "native": 300
+    },
+    "targetDataIncludeWinners":true,
+    "targetDataIncludeBidderKeys":true,
+    "targetDataIncludeCacheBids":true,
+    "targetDataIncludeCacheVast":false
+}

@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Advangelists Adapter Params",
+  "description": "A schema which validates params accepted by the Advangelists adapter",
+  "type": "object",
+  "properties": {
+    "pubid": {
+      "type": "string",
+      "description": "An id used to identify Advangelists publisher.",
+      "minLength": 8
+    },
+    "placement": {
+      "type": "string",
+      "description": "An id used to identify placements."
+    }
+  },
+  "required": ["pubid"]
+}

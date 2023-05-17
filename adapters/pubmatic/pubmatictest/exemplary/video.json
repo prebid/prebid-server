@@ -28,6 +28,7 @@
                         "value": ["Zone1", "Zone2"]
                       }
                     ],
+                    "kadfloor": "0.12",
                     "wrapper": {
                         "version": 1,
                         "profile": 5123
@@ -43,13 +44,20 @@
 		    	"publisher": {
 			    	"id": "1234"
 		  	}
-	  	}
+	  	},
+      "ext": {
+        "prebid": {
+          "bidderparams": {
+            "acat": ["drg","dlu","ssr"]
+          }
+        }
+      }
     },
   
     "httpCalls": [
       {
         "expectedRequest": {
-          "uri": "http://hbopenbid.pubmatic.com/translator?source=prebid-server",
+          "uri": "https://hbopenbid.pubmatic.com/translator?source=prebid-server",
           "body": {
             "id": "test-video-request",
             "imp": [
@@ -72,8 +80,9 @@
                     "minbitrate": 10,
                     "maxbitrate": 10
                 },
+                "bidfloor": 0.12,
                 "ext": {
-                    "pmZoneID": "Zone1,Zone2"
+                    "pmZoneId": "Zone1,Zone2"
                 }
               }
             ], 
@@ -90,6 +99,12 @@
                 "wrapper": {
                     "profile": 5123,
                     "version":1
+                },
+                "acat": ["drg","dlu","ssr"],
+                "prebid": {
+                  "bidderparams": {
+                    "acat": ["drg","dlu","ssr"]
+                  }
                 }
             }
           }
@@ -112,9 +127,14 @@
                   "h": 250,
                   "w": 300,
                   "dealid":"test deal",
+                  "cat" : ["IAB-1", "IAB-2"], 
                   "ext": {
                     "dspid": 6,
-                    "deal_channel": 1
+                    "deal_channel": 1,
+                    "BidType": 1,
+                    "video" : {
+                      "duration" : 5  
+                    }
                   }
                 }]
               }
@@ -138,16 +158,26 @@
               "adid": "29681110",
               "adm": "some-test-ad",
               "adomain": ["pubmatic.com"],
+              "cat": [
+                "IAB-1"
+              ],
               "crid": "29681110",
               "w": 300,
               "h": 250,
               "dealid":"test deal",
               "ext": {
                 "dspid": 6,
-                "deal_channel": 1
+                "deal_channel": 1,
+                "BidType": 1,
+                "video" : {
+                  "duration" : 5  
+                }
               }
             },
-            "type": "video"
+            "type": "video",
+            "video" :{
+              "duration" : 5
+            }
           }
         ]
       }

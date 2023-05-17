@@ -1,0 +1,80 @@
+{
+    "mockBidRequest": {
+        "imp": [{
+            "ext": {
+                "bidder": {
+                    "account": "demo",
+                    "location": "_adhese_prebid_demo_",
+                    "format": "leaderboard",
+                    "targets":
+                    {
+                      "ci": ["gent", "brussels"],
+                      "ag": ["55"],
+                      "tl": ["all"]
+                    }
+                }
+            }
+        }]
+     },
+  
+    "httpCalls": [
+      {
+        "expectedRequest": {
+          "uri": "https://ads-demo.adhese.com/json/sl_adhese_prebid_demo_-leaderboard/ag55/cigent;brussels/tlall"
+        },
+        "mockResponse": {
+          "status": 200,
+          "body": [{
+            "origin": "RUBICON",
+            "ext": "js",
+            "slotName": "_main_page_-leaderboard",
+            "adType": "leaderboard",
+            "originData": {
+              "seatbid": [
+                {
+                  "bid": [
+                    {
+                      "crid": "60613369",
+                      "dealid": null
+                    }
+                  ],
+                  "seat": "958"
+                }
+              ]
+            },
+            "width": "640",
+            "height": "350",
+            "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><VAST xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" version=\"2.0\" xsi:noNamespaceSchemaLocation=\"vast.xsd\"></VAST>",
+            "extension": {
+                "prebid": {
+                    "cpm": {
+                        "amount": "2.1", 
+                        "currency": "USD"
+                        }
+                    }
+                }
+            }]
+        }
+      }
+    ],
+  
+    "expectedBidResponses": [
+      {
+        "currency": "USD",
+          "bids": [
+            {
+              "bid": {
+                "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><VAST xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" version=\"2.0\" xsi:noNamespaceSchemaLocation=\"vast.xsd\"></VAST>",
+                "w": 640,
+                "h": 350,
+                "id": "",
+                "impid": "",
+                "crid": "60613369",
+                "price": 2.1
+              },
+              "type": "video"
+            }
+          ]
+      }
+  ]
+  }

@@ -1,0 +1,100 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "w": 300,
+          "mimes": null,
+          "h": 250
+        },
+        "ext": {
+            "bidder": {
+                "sspid":"99998"
+            }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://dsp.bnmla.com/hb?zoneid=99998",
+        "body":{
+          "id": "test-request-id",
+          "imp": [{
+            "id": "test-imp-id",
+            "video": {
+              "w": 300,
+              "mimes": null,
+              "h": 250
+            },
+            "ext": {
+                "bidder": {
+                    "sspid":"99998"
+                }
+            }
+          }]
+        }
+      },
+      "mockResponse": {
+          "status": 200,
+          "body": {
+              "id": "test-request-id",
+              "seatbid": [
+              {
+                  "bid": [
+                  {
+                      "id": "test-imp-id",
+                      "impid": "test-imp-id",
+                      "price": 9.81,
+                      "adid": "abcde-12345",
+                      "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<VAST version=\"3.0\"><Ad id=\"static\"><InLine><AdSystem>Static VAST</AdSystem><AdTitle>Static VAST Tag</AdTitle><Error><![CDATA[https://video.bnmla.com/count?vTracking=ERROR&vStatus=[ERRORCODE]&vBaId=6&vZId=9100&VGuid=eng-c719ae10-2349-4c6f-9b93-1bb872e2f13d]]></Error><Impression><![CDATA[https://video.bnmla.com/count?vTracking=IMPRESSION&vStatus=61&vBaId=6&vZId=9100&VGuid=eng-c719ae10-2349-4c6f-9b93-1bb872e2f13d]]></Impression><Creatives><Creative><Linear><Duration><![CDATA[00:00:15]]></Duration><TrackingEvents><Tracking event=\"start\" /><Tracking event=\"firstQuartile\" /><Tracking event=\"midpoint\" /><Tracking event=\"thirdQuartile\" /><Tracking event=\"complete\" /><Tracking event=\"pause\" /><Tracking event=\"mute\" /><Tracking event=\"fullscreen\" /><Tracking event=\"start\"><![CDATA[https://video.bnmla.com/count?vTracking=START&vStatus=61&vBaId=6&vZId=9100&VGuid=eng-c719ae10-2349-4c6f-9b93-1bb872e2f13d]]></Tracking></TrackingEvents><VideoClicks><ClickThrough><![CDATA[http://www.engagebdr.com/]]></ClickThrough><ClickTracking /><ClickTracking><![CDATA[https://video.bnmla.com/count?vTracking=VIDEOCLICKING&vStatus=61&vBaId=6&vZId=9100&VGuid=eng-c719ae10-2349-4c6f-9b93-1bb872e2f13d]]></ClickTracking></VideoClicks><MediaFiles><MediaFile delivery=\"progressive\" type=\"video/mp4\" bitrate=\"350\" width=\"428\" height=\"240\"><![CDATA[http://cdnin.bnmla.com/vsbmedia/AEX_Outdoors_HD_ENG_15_exp2016-01-21_sm.mp4]]></MediaFile><MediaFile delivery=\"progressive\" type=\"video/mp4\" bitrate=\"700\" width=\"640\" height=\"360\"><![CDATA[http://cdnin.bnmla.com/vsbmedia/AEX_Outdoors_HD_ENG_15_exp2016-01-21_md.mp4]]></MediaFile><MediaFile delivery=\"progressive\" type=\"video/mp4\" bitrate=\"1600\" width=\"1024\" height=\"576\"><![CDATA[http://cdnin.bnmla.com/vsbmedia/AEX_Outdoors_HD_ENG_15_exp2016-01-21_lg.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+                      "adomain":[
+                          "advertiserdomain.com"
+                      ],
+                      "iurl": "https://cdn0.bnmla.com/vtest.xml",
+                      "cid": "campaign1",
+                      "crid": "abcde-12345",
+                      "w": 300,
+                      "h": 250
+                  }
+                  ],
+                  "seat": "test-request-id"
+              }
+              ],
+              "bidid": "test-request-id",
+              "cur": "USD"
+          }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+  {
+      "currency": "USD",
+      "bids": [
+      {
+          "bid": {
+              "id": "test-imp-id",
+              "impid": "test-imp-id",
+              "price": 9.81,
+              "adid": "abcde-12345",
+              "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<VAST version=\"3.0\"><Ad id=\"static\"><InLine><AdSystem>Static VAST</AdSystem><AdTitle>Static VAST Tag</AdTitle><Error><![CDATA[https://video.bnmla.com/count?vTracking=ERROR&vStatus=[ERRORCODE]&vBaId=6&vZId=9100&VGuid=eng-c719ae10-2349-4c6f-9b93-1bb872e2f13d]]></Error><Impression><![CDATA[https://video.bnmla.com/count?vTracking=IMPRESSION&vStatus=61&vBaId=6&vZId=9100&VGuid=eng-c719ae10-2349-4c6f-9b93-1bb872e2f13d]]></Impression><Creatives><Creative><Linear><Duration><![CDATA[00:00:15]]></Duration><TrackingEvents><Tracking event=\"start\" /><Tracking event=\"firstQuartile\" /><Tracking event=\"midpoint\" /><Tracking event=\"thirdQuartile\" /><Tracking event=\"complete\" /><Tracking event=\"pause\" /><Tracking event=\"mute\" /><Tracking event=\"fullscreen\" /><Tracking event=\"start\"><![CDATA[https://video.bnmla.com/count?vTracking=START&vStatus=61&vBaId=6&vZId=9100&VGuid=eng-c719ae10-2349-4c6f-9b93-1bb872e2f13d]]></Tracking></TrackingEvents><VideoClicks><ClickThrough><![CDATA[http://www.engagebdr.com/]]></ClickThrough><ClickTracking /><ClickTracking><![CDATA[https://video.bnmla.com/count?vTracking=VIDEOCLICKING&vStatus=61&vBaId=6&vZId=9100&VGuid=eng-c719ae10-2349-4c6f-9b93-1bb872e2f13d]]></ClickTracking></VideoClicks><MediaFiles><MediaFile delivery=\"progressive\" type=\"video/mp4\" bitrate=\"350\" width=\"428\" height=\"240\"><![CDATA[http://cdnin.bnmla.com/vsbmedia/AEX_Outdoors_HD_ENG_15_exp2016-01-21_sm.mp4]]></MediaFile><MediaFile delivery=\"progressive\" type=\"video/mp4\" bitrate=\"700\" width=\"640\" height=\"360\"><![CDATA[http://cdnin.bnmla.com/vsbmedia/AEX_Outdoors_HD_ENG_15_exp2016-01-21_md.mp4]]></MediaFile><MediaFile delivery=\"progressive\" type=\"video/mp4\" bitrate=\"1600\" width=\"1024\" height=\"576\"><![CDATA[http://cdnin.bnmla.com/vsbmedia/AEX_Outdoors_HD_ENG_15_exp2016-01-21_lg.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+              "adomain": ["advertiserdomain.com"],
+              "iurl": "https://cdn0.bnmla.com/vtest.xml",
+              "cid": "campaign1",
+              "crid": "abcde-12345",
+              "w": 300,
+              "h": 250
+          },
+          "type": "video"
+      }
+      ]
+
+  }
+  ]
+}
+

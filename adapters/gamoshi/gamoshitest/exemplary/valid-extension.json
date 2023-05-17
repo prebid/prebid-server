@@ -22,7 +22,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://rtb.gamoshi.io/r/1707/bidr?reqformat=RTB_JSON",
+        "uri": "https://rtb.gamoshi.io/r/1707/bidr?bidder=prebid-server",
         "body": {
           "id": "test-request-id",
           "imp": [
@@ -67,18 +67,20 @@
     }
   ],
 
-  "expectedBids": [
+  "expectedBidResponses": [
     {
-      "bid": {
-        "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
-        "impid": "test-imp-id",
-        "price": 0.5,
-        "adm": "some-test-ad",
-        "crid": "crid_10",
-        "w": 1024,
-        "h": 576
-      },
-      "type": "video"
+      "bids": [{
+        "bid": {
+          "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+          "impid": "test-imp-id",
+          "price": 0.5,
+          "adm": "some-test-ad",
+          "crid": "crid_10",
+          "w": 1024,
+          "h": 576
+        },
+        "type": "video"
+      }]
     }
   ]
 }

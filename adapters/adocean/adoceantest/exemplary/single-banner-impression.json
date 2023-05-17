@@ -1,0 +1,117 @@
+{
+  "mockBidRequest": {
+    "id": "9ed903f4-383d-406b-8011-4f06526cb02c",
+    "source": {
+      "tid": "9ed903f4-383d-406b-8011-4f06526cb02c"
+    },
+    "tmax": 1000,
+    "imp": [
+      {
+        "id": "ao-test",
+        "ext": {
+          "bidder": {
+            "emiter": "myao.adocean.pl",
+            "masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7",
+            "slaveId": "adoceanmyaozpniqismex"
+          }
+        },
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        }
+      }
+    ],
+    "test": 1,
+    "ext": {
+      "prebid": {
+        "targeting": {
+          "includewinners": true,
+          "includebidderkeys": false
+        }
+      }
+    },
+    "site": {
+      "publisher": {
+        "id": "1"
+      },
+      "page": "http://example.com/test.html"
+    },
+    "device": {
+      "w": 1280,
+      "h": 720,
+      "ip": "192.168.1.1",
+      "ifa": "f2ba45ece57cff9477d5a8083b138c9a"
+    },
+    "regs": {
+      "ext": {
+        "gdpr": 1
+      }
+    },
+    "user": {
+      "ext": {
+        "consent": "COwK6gaOwK6gaFmAAAENAPCAAAAAAAAAAAAAAAAAAAAA.IFoEUQQgAIQwgIwQABAEAAAAOIAACAIAAAAQAIAgEAACEAAAAAgAQBAAAAAAAGBAAgAAAAAAAFAAECAAAgAAQARAEQAAAAAJAAIAAgAAAYQEAAAQmAgBC3ZAYzUw"
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://myao.adocean.pl/_10000000/ad.json?aid=adoceanmyaozpniqismex%3Aao-test&aosspsizes=myaozpniqismex~300x250&devmake=&devmodel=&devos=&devosv=&gdpr=1&gdpr_consent=COwK6gaOwK6gaFmAAAENAPCAAAAAAAAAAAAAAAAAAAAA.IFoEUQQgAIQwgIwQABAEAAAAOIAACAIAAAAQAIAgEAACEAAAAAgAQBAAAAAAAGBAAgAAAAAAAFAAECAAAgAAQARAEQAAAAAJAAIAAgAAAYQEAAAQmAgBC3ZAYzUw&id=tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7&ifa=f2ba45ece57cff9477d5a8083b138c9a&nc=1&nosecure=1&pbsrv_v=1.2.0"
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": [
+          {
+            "id": "adoceanmyaozpniqismex",
+            "price": "1",
+            "winurl": "https://win-url.com",
+            "statsUrl": "https://stats-url.com",
+            "code": " <!-- code 1 --> ",
+            "currency": "EUR",
+            "minFloorPrice": "0.01",
+            "width": "300",
+            "height": "250",
+            "crid": "0af345b42983cc4bc0",
+            "ttl": "300"
+          },
+          {
+            "id": "adoceanmyaowafpdwlrks",
+            "price": "1",
+            "winurl": "",
+            "statsUrl": "",
+            "code": " <!-- code 2 -->",
+            "currency": "EUR",
+            "minFloorPrice": "0.01",
+            "width": "300",
+            "height": "250",
+            "crid": "0af345b42983cc4bc0",
+            "ttl": "300"
+          }
+        ]
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "adoceanmyaozpniqismex",
+            "impid": "ao-test",
+            "price": 1,
+            "adm": " <script> +function() { var wu = \"https://win-url.com\"; var su = \"https://stats-url.com\".replace(/\\[TIMESTAMP\\]/, Date.now()); if (wu && !(navigator.sendBeacon && navigator.sendBeacon(wu))) { (new Image(1,1)).src = wu } if (su && !(navigator.sendBeacon && navigator.sendBeacon(su))) { (new Image(1,1)).src = su } }(); </script>  <!-- code 1 --> ",
+            "crid": "0af345b42983cc4bc0",
+            "w": 300,
+            "h": 250
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

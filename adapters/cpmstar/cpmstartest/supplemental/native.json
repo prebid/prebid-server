@@ -1,0 +1,25 @@
+{
+  "mockBidRequest": {
+    "id": "unsupported-native-request",
+    "imp": [
+      {
+        "id": "unsupported-native-imp",
+        "native": {
+          "ver": "1.1"
+        },
+        "ext": {
+          "bidder": {
+            "placementId": 154
+          }
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Only Banner and Video bid-types are supported at this time",
+      "comparison": "literal"
+    }
+  ]
+}

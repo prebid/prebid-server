@@ -1,0 +1,19 @@
+endpoint: "http://balancer.lmgssp.com/pserver"
+maintainer:
+  email: "support@lunamedia.io"
+gvlVendorID: 998
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  redirect:
+    url: "https://cookie.lmgssp.com/pserver?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&redirect={{.RedirectURL}}"
+    userMacro: "[UID]"

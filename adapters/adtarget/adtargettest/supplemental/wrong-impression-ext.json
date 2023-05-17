@@ -1,0 +1,26 @@
+{
+  "mockBidRequest": {
+    "id": "unsupported-native-request",
+    "imp": [
+      {
+        "id": "unsupported-native-imp",
+        "video": {
+         "w": 100,
+          "h": 200
+        },
+        "ext": {
+          "bidder": {
+            "aid": "some string instead of int"
+          }
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "ignoring imp id=unsupported-native-imp, error while decoding impExt, err: json: cannot unmarshal string into Go struct field ExtImpAdtarget.aid of type int",
+      "comparison": "literal"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+endpoint: "https://d.socdm.com/adsv/v1"
+maintainer:
+  email: "ssp-ope@supership.jp"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner

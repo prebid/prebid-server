@@ -48,6 +48,12 @@
               }
             }
           ],
+          "ext": {
+            "appnexus": {
+              "hb_source": 5
+            },
+            "prebid": {}
+          },
           "site": {
             "domain": "prebid.org",
             "page": "prebid.org"
@@ -90,7 +96,8 @@
                       "brand_category_id": 350,
                       "auction_id": 5607483846416358664,
                       "bidder_id": 2,
-                      "bid_ad_type": 3
+                      "bid_ad_type": 3,
+                      "deal_priority": 5
                     }
                   }
                 }
@@ -130,7 +137,8 @@
                 "brand_category_id": 350,
                 "auction_id": 5607483846416358664,
                 "bidder_id": 2,
-                "bid_ad_type": 3
+                "bid_ad_type": 3,
+                "deal_priority": 5
               }
             }
           },

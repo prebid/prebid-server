@@ -1,0 +1,13 @@
+endpoint: "https://ib.beintoo.com/um"
+maintainer:
+  email: "adops@beintoo.com"
+gvlVendorID: 618
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+userSync:
+  key: "Beintoo"
+  iframe:
+    url: "https://ib.beintoo.com/um?ssp=pbs&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+    userMacro: "$UID"

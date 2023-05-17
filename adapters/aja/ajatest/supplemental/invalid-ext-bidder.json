@@ -1,0 +1,36 @@
+{
+  "mockBidRequest": {
+    "id": "test-req-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "mimes": ["video/mp4"],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "bidder": {
+            "asi": 111
+          }
+        }
+      }
+    ],
+    "user": {
+      "buyeruid": "test-uid"
+    },
+    "tmax": 500
+  },
+
+  "httpCalls": [],
+
+  "expectedBidResponses": [],
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Failed to unmarshal ext.bidder impID: test-imp-id err: json: cannot unmarshal number into Go struct field ExtImpAJA.asi of type string",
+      "comparison": "literal"
+    }
+
+  ]
+}

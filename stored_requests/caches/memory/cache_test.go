@@ -7,52 +7,34 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/caches/cachestest"
 )
 
 func TestLRURobustness(t *testing.T) {
-	cachestest.AssertCacheRobustness(t, func() stored_requests.Cache {
-		return NewCache(&config.InMemoryCache{
-			RequestCacheSize: 256 * 1024,
-			ImpCacheSize:     256 * 1024,
-			TTL:              -1,
-		})
+	cachestest.AssertCacheRobustness(t, func() stored_requests.CacheJSON {
+		return NewCache(256*1024, -1, "TestData")
 	})
 }
 
 func TestUnboundedRobustness(t *testing.T) {
-	cachestest.AssertCacheRobustness(t, func() stored_requests.Cache {
-		return NewCache(&config.InMemoryCache{
-			RequestCacheSize: 0,
-			ImpCacheSize:     0,
-			TTL:              -1,
-		})
+	cachestest.AssertCacheRobustness(t, func() stored_requests.CacheJSON {
+		return NewCache(0, -1, "TestData")
 	})
 }
 
 func TestRaceLRUConcurrency(t *testing.T) {
-	cache := NewCache(&config.InMemoryCache{
-		RequestCacheSize: 256 * 1024,
-		ImpCacheSize:     256 * 1024,
-		TTL:              -1,
-	})
-
+	cache := NewCache(256*1024, -1, "TestData")
 	doRaceTest(t, cache)
 }
 
 func TestRaceUnboundedConcurrency(t *testing.T) {
-	cache := NewCache(&config.InMemoryCache{
-		RequestCacheSize: 0,
-		ImpCacheSize:     0,
-		TTL:              -1,
-	})
+	cache := NewCache(0, -1, "TestData")
 
 	doRaceTest(t, cache)
 }
 
-func doRaceTest(t *testing.T, cache stored_requests.Cache) {
+func doRaceTest(t *testing.T, cache stored_requests.CacheJSON) {
 	done := make(chan struct{})
 	sets := [][]int{rand.Perm(100), rand.Perm(100), rand.Perm(100)}
 
@@ -70,26 +52,26 @@ func doRaceTest(t *testing.T, cache stored_requests.Cache) {
 	}
 }
 
-func readLots(cache stored_requests.Cache, done chan<- struct{}, reads []int) {
+func readLots(cache stored_requests.CacheJSON, done chan<- struct{}, reads []int) {
 	var s struct{}
 	for _, i := range reads {
-		cache.Get(context.Background(), sliceForVal(i), sliceForVal(-i))
+		cache.Get(context.Background(), sliceForVal(i))
 	}
 	done <- s
 }
 
-func writeLots(cache stored_requests.Cache, done chan<- struct{}, writes []int) {
+func writeLots(cache stored_requests.CacheJSON, done chan<- struct{}, writes []int) {
 	var s struct{}
 	for _, i := range writes {
-		cache.Save(context.Background(), mapForVal(i), mapForVal(-i))
+		cache.Save(context.Background(), mapForVal(i))
 	}
 	done <- s
 }
 
-func invalidateLots(cache stored_requests.Cache, done chan<- struct{}, invalidates []int) {
+func invalidateLots(cache stored_requests.CacheJSON, done chan<- struct{}, invalidates []int) {
 	var s struct{}
 	for _, i := range invalidates {
-		cache.Invalidate(context.Background(), sliceForVal(i), sliceForVal(-i))
+		cache.Invalidate(context.Background(), sliceForVal(i))
 	}
 	done <- s
 }

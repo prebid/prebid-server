@@ -1,0 +1,26 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+            "bidder": {
+            }
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Ignoring imp id=test-imp-id, no sspid present.",
+      "comparison": "literal"
+    }
+  ]
+}
+

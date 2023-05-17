@@ -1,0 +1,12 @@
+endpoint: "http://prebid-adapter.kidoz.net/openrtb2/auction?src=prebid-server"
+maintainer:
+  email: prebid-support@kidoz.net
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video

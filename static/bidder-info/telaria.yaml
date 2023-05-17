@@ -1,0 +1,15 @@
+endpoint: "https://ads.tremorhub.com/ad/rtb/prebid"
+maintainer:
+  email: "github@telaria.com"
+gvlVendorID: 202
+capabilities:
+  app:
+    mediaTypes:
+      - video
+  site:
+    mediaTypes:
+      - video
+userSync:
+  redirect:
+    url: "https://pbs.publishers.tremorhub.com/pubsync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&redir={{.RedirectURL}}"
+    userMacro: "[tvid]"
