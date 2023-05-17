@@ -113,16 +113,16 @@ func TestEnforceFloorToBids(t *testing.T) {
 			expEligibleBids: map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid{
 				"pubmatic": {
 					Bids: []*entities.PbsOrtbBid{
-						{Bid: &openrtb2.Bid{ID: "some-bid-1", Price: 1.2, ImpID: "some-impression-id-1"}, BidFloors: &openrtb_ext.ExtBidPrebidFloors{FloorValue: 1.01, FloorCurrency: "USD"}},
-						{Bid: &openrtb2.Bid{ID: "some-bid-2", Price: 1.5, DealID: "deal_Id", ImpID: "some-impression-id-2"}, BidFloors: &openrtb_ext.ExtBidPrebidFloors{FloorValue: 2.01, FloorCurrency: "USD"}},
+						{Bid: &openrtb2.Bid{ID: "some-bid-1", Price: 1.2, ImpID: "some-impression-id-1"}},
+						{Bid: &openrtb2.Bid{ID: "some-bid-2", Price: 1.5, DealID: "deal_Id", ImpID: "some-impression-id-2"}},
 					},
 					Seat:     "pubmatic",
 					Currency: "USD",
 				},
 				"appnexus": {
 					Bids: []*entities.PbsOrtbBid{
-						{Bid: &openrtb2.Bid{ID: "some-bid-11", Price: 0.5, ImpID: "some-impression-id-1"}, BidFloors: &openrtb_ext.ExtBidPrebidFloors{FloorValue: 1.01, FloorCurrency: "USD"}},
-						{Bid: &openrtb2.Bid{ID: "some-bid-12", Price: 2.2, ImpID: "some-impression-id-2"}, BidFloors: &openrtb_ext.ExtBidPrebidFloors{FloorValue: 2.01, FloorCurrency: "USD"}},
+						{Bid: &openrtb2.Bid{ID: "some-bid-11", Price: 0.5, ImpID: "some-impression-id-1"}},
+						{Bid: &openrtb2.Bid{ID: "some-bid-12", Price: 2.2, ImpID: "some-impression-id-2"}},
 					},
 					Seat:     "appnexus",
 					Currency: "USD",
@@ -171,15 +171,15 @@ func TestEnforceFloorToBids(t *testing.T) {
 			expEligibleBids: map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid{
 				"pubmatic": {
 					Bids: []*entities.PbsOrtbBid{
-						{Bid: &openrtb2.Bid{ID: "some-bid-1", Price: 1.2, ImpID: "some-impression-id-1"}, BidFloors: &openrtb_ext.ExtBidPrebidFloors{FloorValue: 1.01, FloorCurrency: "USD"}},
-						{Bid: &openrtb2.Bid{ID: "some-bid-2", Price: 1.5, DealID: "deal_Id", ImpID: "some-impression-id-2"}, BidFloors: &openrtb_ext.ExtBidPrebidFloors{FloorValue: 2.01, FloorCurrency: "USD"}},
+						{Bid: &openrtb2.Bid{ID: "some-bid-1", Price: 1.2, ImpID: "some-impression-id-1"}},
+						{Bid: &openrtb2.Bid{ID: "some-bid-2", Price: 1.5, DealID: "deal_Id", ImpID: "some-impression-id-2"}},
 					},
 					Seat:     "pubmatic",
 					Currency: "USD",
 				},
 				"appnexus": {
 					Bids: []*entities.PbsOrtbBid{
-						{Bid: &openrtb2.Bid{ID: "some-bid-12", Price: 2.2, ImpID: "some-impression-id-2"}, BidFloors: &openrtb_ext.ExtBidPrebidFloors{FloorValue: 2.01, FloorCurrency: "USD"}},
+						{Bid: &openrtb2.Bid{ID: "some-bid-12", Price: 2.2, ImpID: "some-impression-id-2"}},
 					},
 					Seat:     "appnexus",
 					Currency: "USD",
@@ -190,7 +190,7 @@ func TestEnforceFloorToBids(t *testing.T) {
 					Seat:     "appnexus",
 					Currency: "USD",
 					Bids: []*entities.PbsOrtbBid{
-						{Bid: &openrtb2.Bid{ID: "some-bid-11", Price: 0.5, ImpID: "some-impression-id-1"}, BidFloors: &openrtb_ext.ExtBidPrebidFloors{FloorValue: 1.01, FloorCurrency: "USD"}},
+						{Bid: &openrtb2.Bid{ID: "some-bid-11", Price: 0.5, ImpID: "some-impression-id-1"}},
 					},
 				},
 			},
@@ -236,15 +236,15 @@ func TestEnforceFloorToBids(t *testing.T) {
 			expEligibleBids: map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid{
 				"pubmatic": {
 					Bids: []*entities.PbsOrtbBid{
-						{Bid: &openrtb2.Bid{ID: "some-bid-1", Price: 1.2, ImpID: "some-impression-id-1"}, BidFloors: &openrtb_ext.ExtBidPrebidFloors{FloorValue: 60, FloorCurrency: "INR"}},
-						{Bid: &openrtb2.Bid{ID: "some-bid-2", Price: 1.5, DealID: "deal_Id", ImpID: "some-impression-id-2"}, BidFloors: &openrtb_ext.ExtBidPrebidFloors{FloorValue: 100, FloorCurrency: "INR"}},
+						{Bid: &openrtb2.Bid{ID: "some-bid-1", Price: 1.2, ImpID: "some-impression-id-1"}},
+						{Bid: &openrtb2.Bid{ID: "some-bid-2", Price: 1.5, DealID: "deal_Id", ImpID: "some-impression-id-2"}},
 					},
 					Seat:     "pubmatic",
 					Currency: "USD",
 				},
 				"appnexus": {
 					Bids: []*entities.PbsOrtbBid{
-						{Bid: &openrtb2.Bid{ID: "some-bid-12", Price: 2.2, ImpID: "some-impression-id-2"}, BidFloors: &openrtb_ext.ExtBidPrebidFloors{FloorValue: 100, FloorCurrency: "INR"}},
+						{Bid: &openrtb2.Bid{ID: "some-bid-12", Price: 2.2, ImpID: "some-impression-id-2"}},
 					},
 					Seat:     "appnexus",
 					Currency: "USD",
@@ -255,7 +255,7 @@ func TestEnforceFloorToBids(t *testing.T) {
 					Seat:     "appnexus",
 					Currency: "USD",
 					Bids: []*entities.PbsOrtbBid{
-						{Bid: &openrtb2.Bid{ID: "some-bid-11", Price: 0.5, ImpID: "some-impression-id-1"}, BidFloors: &openrtb_ext.ExtBidPrebidFloors{FloorValue: 60, FloorCurrency: "INR"}},
+						{Bid: &openrtb2.Bid{ID: "some-bid-11", Price: 0.5, ImpID: "some-impression-id-1"}},
 					},
 				},
 			},

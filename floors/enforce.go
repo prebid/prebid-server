@@ -38,10 +38,11 @@ func Enforce(bidRequestWrapper *openrtb_ext.RequestWrapper, seatBids map[openrtb
 			return seatBids, []error{err}, rejectedBids
 		}
 	}
-
-	enforceDealFloors := account.PriceFloors.EnforceDealFloors && getEnforceDealsFlag(requestExt)
-	seatBids, rejectionErrs, rejectedBids = enforceFloorToBids(bidRequestWrapper, seatBids, conversions, enforceDealFloors)
-
+	updateBidExt(bidRequestWrapper, seatBids)
+	if enforceFloors {
+		enforceDealFloors := account.PriceFloors.EnforceDealFloors && getEnforceDealsFlag(requestExt)
+		seatBids, rejectionErrs, rejectedBids = enforceFloorToBids(bidRequestWrapper, seatBids, conversions, enforceDealFloors)
+	}
 	return seatBids, rejectionErrs, rejectedBids
 }
 
@@ -60,7 +61,6 @@ func updateEnforcePBS(enforceFloors bool, requestExt *openrtb_ext.RequestExt) bo
 	floorExt := prebidExt.Floors
 
 	if floorExt.Enforcement == nil {
-		updateReqExt = true
 		floorExt.Enforcement = new(openrtb_ext.PriceFloorEnforcement)
 	}
 
@@ -79,6 +79,23 @@ func updateEnforcePBS(enforceFloors bool, requestExt *openrtb_ext.RequestExt) bo
 	}
 
 	return updateReqExt
+}
+
+// updateBidExt updates bid extension for floors related details
+func updateBidExt(bidRequestWrapper *openrtb_ext.RequestWrapper, seatBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid) {
+	impMap := make(map[string]*openrtb_ext.ImpWrapper, bidRequestWrapper.LenImp())
+	for _, v := range bidRequestWrapper.GetImp() {
+		impMap[v.ID] = v
+	}
+
+	for _, seatBid := range seatBids {
+		for _, bid := range seatBid.Bids {
+			reqImp, ok := impMap[bid.Bid.ImpID]
+			if ok {
+				updateBidExtWithFloors(reqImp, bid, reqImp.BidFloorCur)
+			}
+		}
+	}
 }
 
 // enforceFloorToBids function does floors enforcement for each bid,
@@ -101,9 +118,6 @@ func enforceFloorToBids(bidRequestWrapper *openrtb_ext.RequestWrapper, seatBids 
 				continue
 			}
 
-			reqImpCur := reqImp.BidFloorCur
-			updateBidExtWithFloors(reqImp, bid, reqImpCur)
-
 			requestExt, err := bidRequestWrapper.GetRequestExt()
 			if err != nil {
 				errs = append(errs, fmt.Errorf("error in getting req extension = %v", err.Error()))
@@ -116,9 +130,9 @@ func enforceFloorToBids(bidRequestWrapper *openrtb_ext.RequestWrapper, seatBids 
 					continue
 				}
 
-				rate, err := getCurrencyConversionRate(seatBid.Currency, reqImpCur, conversions)
+				rate, err := getCurrencyConversionRate(seatBid.Currency, reqImp.BidFloorCur, conversions)
 				if err != nil {
-					errs = append(errs, fmt.Errorf("error in rate conversion from = %s to %s with bidder %s for impression id %s and bid id %s error = %v", seatBid.Currency, reqImpCur, bidderName, bid.Bid.ImpID, bid.Bid.ID, err.Error()))
+					errs = append(errs, fmt.Errorf("error in rate conversion from = %s to %s with bidder %s for impression id %s and bid id %s error = %v", seatBid.Currency, reqImp.BidFloorCur, bidderName, bid.Bid.ImpID, bid.Bid.ID, err.Error()))
 					continue
 				}
 
