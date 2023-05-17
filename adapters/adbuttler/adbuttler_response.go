@@ -21,7 +21,7 @@ type AdButlerBeacon struct {
 type AdButlerBid struct {
 	CPCBid      float64           `json:"cpc_bid,omitempty"`
 	CPCSpend    float64           `json:"cpc_spend,omitempty"`
-	CampaignID  string            `json:"campaign_id,omitempty"`
+	CampaignID  int64            `json:"campaign_id,omitempty"`
 	ProductData map[string]string `json:"item,omitempty"`
 	Beacons     []*AdButlerBeacon `json:"beacons,omitempty"`
 }
@@ -77,9 +77,31 @@ func (a *AdButtlerAdapter) MakeBids(internalRequest *openrtb2.BidRequest, extern
 	u, _ := json.Marshal(adButlerResp)
 	fmt.Println(string(u))
 
-	impID := internalRequest.Imp[0].ID
-	responseF := GetBidderResponse(&adButlerResp, impID)
-	return responseF, errors
+	if adButlerResp.Status == RESPONSE_NOADS {
+		return nil, []error{&errortypes.BidderFailedSchemaValidation{
+			Message: fmt.Sprintf("Error Occured at Adbutler for the given request with ErrorCode %d", adButlerResp.Code),
+			}}
+	}
+
+
+	if adButlerResp.Status == RESPONSE_SUCCESS &&  (adButlerResp.Bids == nil || 
+		len(adButlerResp.Bids) <=0 ){
+		return nil, []error{&errortypes.NoBidPrice{
+			Message: "No Bid For the given Request",
+			}}
+	}
+
+	if adButlerResp.Status == RESPONSE_SUCCESS &&  (adButlerResp.Bids != nil &&
+		len(adButlerResp.Bids) >0 ){
+		impID := internalRequest.Imp[0].ID
+		responseF := GetBidderResponse(&adButlerResp, impID)
+		return responseF, errors
+	}
+
+    err := fmt.Errorf("unknown error occcured for the given request from adbutler")
+	errors = append(errors,err )
+
+	return nil, errors
 
 }
 
@@ -88,14 +110,16 @@ func GetBidderResponse(adButlerResp *AdButlerResponse, requestImpID string) (*ad
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(adButlerResp.Bids))
 
 	for index, adButlerBid := range adButlerResp.Bids {
+		var impressionUrl string
+		var clickUrl string
+
 		bidID := GetDefaultBidID(SEAT_ADBUTLER) + "_" + strconv.Itoa(index)
 		impID := requestImpID + "_" + strconv.Itoa(index)
 		bidPrice := adButlerBid.CPCBid
-		campaignID := adButlerBid.CampaignID
+		campaignID := strconv.FormatInt(adButlerBid.CampaignID, 10)
 		productid := adButlerBid.ProductData[RESPONSE_PRODUCTID]
 		clickPrice := adButlerBid.CPCSpend
-		var impressionUrl string
-		var clickUrl string
+		
 		for _, beacon := range adButlerBid.Beacons {
 			switch beacon.Type {
 			case BEACONTYPE_IMP:

@@ -127,7 +127,7 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 	}
 
 	//Add Category Params from AdRequest
-	if commerceExt.ComParams.Filtering != nil {
+	if len(adButlerReq.Identifiers) <= 0 && commerceExt.ComParams.Filtering != nil {
 		adButlerReq.Params = make(map[string][]string)
 		if commerceExt.ComParams.Filtering.Category != nil && len(commerceExt.ComParams.Filtering.Category) > 0 {
 			adButlerReq.Params[CATEGORY] = commerceExt.ComParams.Filtering.Category
