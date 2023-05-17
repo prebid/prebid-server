@@ -1,5 +1,5 @@
 package openrtb_ext
 
 type ImpExtKargo struct {
-	AdSlotID string `json:"adSlotID"`
+	PlacementId string `json:"placementId"`
 }
