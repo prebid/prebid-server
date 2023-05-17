@@ -169,6 +169,7 @@ type ExtIncludeBrandCategory struct {
 	TranslateCategories *bool  `json:"translatecategories,omitempty"`
 }
 
+// MediaTypePriceGranularity defines values for bidrequest.ext.prebid.targeting.mediatypepricegranularity
 type MediaTypePriceGranularity struct {
 	Banner *PriceGranularity `json:"banner,omitempty"`
 	Video  *PriceGranularity `json:"video,omitempty"`
@@ -176,7 +177,7 @@ type MediaTypePriceGranularity struct {
 }
 
 // PriceGranularity defines the allowed values for bidrequest.ext.prebid.targeting.pricegranularity
-// or bidrequest.ext.prebid.targeting.mediatypepricegranularity
+// or bidrequest.ext.prebid.targeting.mediatypepricegranularity.banner|video|native
 type PriceGranularity struct {
 	Precision *int               `json:"precision,omitempty"`
 	Ranges    []GranularityRange `json:"ranges,omitempty"`
