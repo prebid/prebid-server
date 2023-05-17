@@ -12,6 +12,7 @@ import (
 
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
@@ -185,6 +186,8 @@ func TestDefaults(t *testing.T) {
 	cmpBools(t, "account_defaults.price_floors.use_dynamic_data", false, cfg.AccountDefaults.PriceFloors.UseDynamicData)
 	cmpInts(t, "account_defaults.price_floors.max_rules", 100, cfg.AccountDefaults.PriceFloors.MaxRule)
 	cmpInts(t, "account_defaults.price_floors.max_schema_dims", 3, cfg.AccountDefaults.PriceFloors.MaxSchemaDims)
+	cmpBools(t, "account_defaults.events_enabled", *cfg.AccountDefaults.EventsEnabled, false)
+	cmpNils(t, "account_defaults.events.enabled", cfg.AccountDefaults.Events.Enabled)
 
 	cmpBools(t, "hooks.enabled", false, cfg.Hooks.Enabled)
 	cmpStrings(t, "validations.banner_creative_max_size", "skip", cfg.Validations.BannerCreativeMaxSize)
@@ -311,6 +314,7 @@ func TestDefaults(t *testing.T) {
 	assert.Equal(t, expectedTCF2, cfg.GDPR.TCF2, "gdpr.tcf2")
 }
 
+// When adding a new field, make sure the indentations are spaces not tabs otherwise read config may fail to parse the new field value.
 var fullConfig = []byte(`
 gdpr:
   host_vendor_id: 15
@@ -446,6 +450,9 @@ hooks:
 price_floors:
     enabled: true
 account_defaults:
+    events_enabled: false
+    events:
+        enabled: true
     price_floors:
         enabled: true
         enforce_floors_rate: 50
@@ -543,6 +550,8 @@ func TestFullConfig(t *testing.T) {
 	cmpBools(t, "account_defaults.price_floors.use_dynamic_data", true, cfg.AccountDefaults.PriceFloors.UseDynamicData)
 	cmpInts(t, "account_defaults.price_floors.max_rules", 120, cfg.AccountDefaults.PriceFloors.MaxRule)
 	cmpInts(t, "account_defaults.price_floors.max_schema_dims", 5, cfg.AccountDefaults.PriceFloors.MaxSchemaDims)
+	cmpBools(t, "account_defaults.events_enabled", *cfg.AccountDefaults.EventsEnabled, true)
+	cmpNils(t, "account_defaults.events.enabled", cfg.AccountDefaults.Events.Enabled)
 
 	//Assert the NonStandardPublishers was correctly unmarshalled
 	assert.Equal(t, []string{"pub1", "pub2"}, cfg.GDPR.NonStandardPublishers, "gdpr.non_standard_publishers")
@@ -3189,5 +3198,54 @@ func TestTCF2FeatureOneVendorException(t *testing.T) {
 		value := tcf2.FeatureOneVendorException(tt.giveBidder)
 
 		assert.Equal(t, tt.wantIsVendorException, value, tt.description)
+	}
+}
+
+func TestMigrateConfigEventsEnabled(t *testing.T) {
+	testCases := []struct {
+		name                  string
+		oldFieldValue         *bool
+		newFieldValue         *bool
+		expectedOldFieldValue *bool
+		expectedNewFieldValue *bool
+	}{
+		{
+			name:                  "Both old and new fields are nil",
+			oldFieldValue:         nil,
+			newFieldValue:         nil,
+			expectedOldFieldValue: nil,
+			expectedNewFieldValue: nil,
+		},
+		{
+			name:                  "Only old field is set",
+			oldFieldValue:         ptrutil.ToPtr(true),
+			newFieldValue:         nil,
+			expectedOldFieldValue: ptrutil.ToPtr(true),
+			expectedNewFieldValue: nil,
+		},
+		{
+			name:                  "Only new field is set",
+			oldFieldValue:         nil,
+			newFieldValue:         ptrutil.ToPtr(true),
+			expectedOldFieldValue: ptrutil.ToPtr(true),
+			expectedNewFieldValue: nil,
+		},
+		{
+			name:                  "Both old and new fields are set, override old field with new field value",
+			oldFieldValue:         ptrutil.ToPtr(false),
+			newFieldValue:         ptrutil.ToPtr(true),
+			expectedOldFieldValue: ptrutil.ToPtr(true),
+			expectedNewFieldValue: nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			updatedOldFieldValue, updatedNewFieldValue := migrateConfigEventsEnabled(tc.oldFieldValue, tc.newFieldValue)
+
+			assert.Equal(t, tc.expectedOldFieldValue, updatedOldFieldValue)
+			assert.Nil(t, updatedNewFieldValue)
+			assert.Nil(t, tc.expectedNewFieldValue)
+		})
 	}
 }

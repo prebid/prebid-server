@@ -106,6 +106,7 @@ const (
 	BidderAdprime           BidderName = "adprime"
 	BidderAdrino            BidderName = "adrino"
 	BidderAdsinteractive    BidderName = "adsinteractive"
+	BidderAdsyield          BidderName = "adsyield"
 	BidderAdtarget          BidderName = "adtarget"
 	BidderAdtrgtme          BidderName = "adtrgtme"
 	BidderAdtelligent       BidderName = "adtelligent"
@@ -156,6 +157,7 @@ const (
 	BidderDefinemedia       BidderName = "definemedia"
 	BidderDianomi           BidderName = "dianomi"
 	BidderDmx               BidderName = "dmx"
+	BidderEmtv              BidderName = "emtv"
 	BidderEmxDigital        BidderName = "emx_digital"
 	BidderEngageBDR         BidderName = "engagebdr"
 	BidderEPlanning         BidderName = "eplanning"
@@ -293,6 +295,7 @@ func CoreBidderNames() []BidderName {
 		BidderAdprime,
 		BidderAdrino,
 		BidderAdsinteractive,
+		BidderAdsyield,
 		BidderAdtarget,
 		BidderAdtrgtme,
 		BidderAdtelligent,
@@ -343,6 +346,7 @@ func CoreBidderNames() []BidderName {
 		BidderDefinemedia,
 		BidderDianomi,
 		BidderDmx,
+		BidderEmtv,
 		BidderEmxDigital,
 		BidderEngageBDR,
 		BidderEPlanning,
