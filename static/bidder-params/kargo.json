@@ -10,7 +10,7 @@
       },
       "adSlotID": {
         "type": "string",
-        "description": "[Deprecated: use `placementId`] An ID which identifies the adslot placement. Equivalent to the id of target inventory, ad unit code, or placement id"
+        "description": "[Deprecated: Use `placementId`] An ID which identifies the adslot placement. Equivalent to the id of target inventory, ad unit code, or placement id"
       }
     },
     "oneOf": [
