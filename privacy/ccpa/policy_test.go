@@ -2,6 +2,7 @@ package ccpa
 
 import (
 	"encoding/json"
+	"errors"
 	"testing"
 
 	gpplib "github.com/prebid/go-gpp"
@@ -165,7 +166,7 @@ func TestReadFromRequestWrapper(t *testing.T) {
 			},
 			giveGPP: gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{6}, Sections: []gpplib.Section{&upsv1Section}},
 			expectedPolicy: Policy{
-				Consent:       "present",
+				Consent:       "gppContainerConsent",
 				NoSaleBidders: []string{"a", "b"},
 			},
 		},
@@ -179,7 +180,7 @@ func TestReadFromRequestWrapper(t *testing.T) {
 			},
 			giveGPP: gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{6}, Sections: []gpplib.Section{&upsv1Section}},
 			expectedPolicy: Policy{
-				Consent:       "present",
+				Consent:       "gppContainerConsent",
 				NoSaleBidders: []string{"a", "b"},
 			},
 		},
@@ -193,7 +194,7 @@ func TestReadFromRequestWrapper(t *testing.T) {
 			},
 			giveGPP: gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{6}, Sections: []gpplib.Section{&upsv1Section}},
 			expectedPolicy: Policy{
-				Consent:       "present",
+				Consent:       "gppContainerConsent",
 				NoSaleBidders: []string{"a", "b"},
 			},
 			expectedError: true,
@@ -816,6 +817,87 @@ func TestBuildExtWrite(t *testing.T) {
 	}
 }
 
+func TestSelectCCPAConsent(t *testing.T) {
+	type testInput struct {
+		requestUSPrivacy string
+		gpp              gpplib.GppContainer
+		gppSIDs          []int8
+	}
+	testCases := []struct {
+		desc         string
+		in           testInput
+		expectedCCPA string
+		expectedErr  error
+	}{
+		{
+			desc: "SectionUSPV1 in both GPP_SID and GPP container. Consent equal to request US_Privacy. Expect valid string and nil error",
+			in: testInput{
+				requestUSPrivacy: "gppContainerConsent",
+				gpp:              gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{gppConstants.SectionUSPV1}, Sections: []gpplib.Section{upsv1Section}},
+				gppSIDs:          []int8{int8(6)},
+			},
+			expectedCCPA: "gppContainerConsent",
+			expectedErr:  nil,
+		},
+		{
+			desc: "No SectionUSPV1 in GPP_SID array expect request US_Privacy",
+			in: testInput{
+				requestUSPrivacy: "requestConsent",
+				gpp:              gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{gppConstants.SectionUSPV1}, Sections: []gpplib.Section{upsv1Section}},
+				gppSIDs:          []int8{int8(2), int8(4)},
+			},
+			expectedCCPA: "requestConsent",
+			expectedErr:  nil,
+		},
+		{
+			desc: "No SectionUSPV1 in gpp.SectionTypes array expect request US_Privacy",
+			in: testInput{
+				requestUSPrivacy: "requestConsent",
+				gpp:              gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{}, Sections: []gpplib.Section{upsv1Section}},
+				gppSIDs:          []int8{int8(6)},
+			},
+			expectedCCPA: "requestConsent",
+			expectedErr:  nil,
+		},
+		{
+			desc: "No SectionUSPV1 in GPP_SID array, blank request US_Privacy, expect blank consent",
+			in: testInput{
+				requestUSPrivacy: "",
+				gpp:              gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{gppConstants.SectionUSPV1}, Sections: []gpplib.Section{upsv1Section}},
+				gppSIDs:          []int8{int8(2), int8(4)},
+			},
+			expectedCCPA: "",
+			expectedErr:  nil,
+		},
+		{
+			desc: "No SectionUSPV1 in gpp.SectionTypes array, blank request US_Privacy, expect blank consent",
+			in: testInput{
+				requestUSPrivacy: "",
+				gpp:              gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{}, Sections: []gpplib.Section{upsv1Section}},
+				gppSIDs:          []int8{int8(6)},
+			},
+			expectedCCPA: "",
+			expectedErr:  nil,
+		},
+		{
+			desc: "SectionUSPV1 in both GPP_SID and GPP container. Consent equal to request US_Privacy. Expect valid string and nil error",
+			in: testInput{
+				requestUSPrivacy: "requestConsent",
+				gpp:              gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{gppConstants.SectionUSPV1}, Sections: []gpplib.Section{upsv1Section}},
+				gppSIDs:          []int8{int8(6)},
+			},
+			expectedCCPA: "gppContainerConsent",
+			expectedErr:  errors.New("request.us_privacy consent does not match uspv1"),
+		},
+	}
+	for _, tc := range testCases {
+		out, outErr := SelectCCPAConsent(tc.in.requestUSPrivacy, tc.in.gpp, tc.in.gppSIDs)
+
+		assert.Equal(t, tc.expectedCCPA, out, tc.desc)
+		assert.Equal(t, tc.expectedErr, outErr, tc.desc)
+	}
+}
+
 func assertError(t *testing.T, expectError bool, err error, description string) {
 	t.Helper()
 	if expectError {
@@ -825,7 +907,7 @@ func assertError(t *testing.T, expectError bool, err error, description string) 
 	}
 }
 
-var upsv1Section mockGPPSection = mockGPPSection{sectionID: 6, value: "present"}
+var upsv1Section mockGPPSection = mockGPPSection{sectionID: 6, value: "gppContainerConsent"}
 var tcf1Section mockGPPSection = mockGPPSection{sectionID: 2, value: "BOS2bx5OS2bx5ABABBAAABoAAAAAFA"}
 
 type mockGPPSection struct {

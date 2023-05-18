@@ -137,7 +137,7 @@ func BenchmarkValidWholeExemplary(b *testing.B) {
 			if err != nil {
 				b.Fatalf("unable to read file %s", testFile)
 			}
-			test, err := parseTestFile(fileData, testFile)
+			test, err := parseTestData(fileData, testFile)
 			if err != nil {
 				b.Fatal(err.Error())
 			}
