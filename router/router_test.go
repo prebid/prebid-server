@@ -53,7 +53,7 @@ func TestNewJsonDirectoryServer(t *testing.T) {
 	}
 
 	for _, adapterFile := range adapterFiles {
-		if adapterFile.IsDir() && adapterFile.Name() != "adapterstest" {
+		if adapterFile.IsDir() && adapterFile.Name() != "adapterstest" && adapterFile.Name() != "util" {
 			ensureHasKey(t, data, adapterFile.Name())
 		}
 	}
