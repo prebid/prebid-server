@@ -113,8 +113,8 @@ func newSocketServer(cfg *config.Configuration, handler http.Handler) *http.Serv
 	}
 }
 
-func getCompressionEnabledHandler(h http.Handler, compressionType config.CompressionInfo) http.Handler {
-	if compressionType.GZIP {
+func getCompressionEnabledHandler(h http.Handler, compressionInfo config.CompressionInfo) http.Handler {
+	if compressionInfo.GZIP {
 		h = gziphandler.GzipHandler(h)
 	}
 	return h

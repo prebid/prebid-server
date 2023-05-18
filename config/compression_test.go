@@ -10,7 +10,7 @@ func TestReqCompressionCfgIsSupported(t *testing.T) {
 	testCases := []struct {
 		description     string
 		cfg             CompressionInfo
-		CompressionType CompressionType
+		contentEncoding ContentEncoding
 		wantSupported   bool
 	}{
 		{
@@ -18,7 +18,7 @@ func TestReqCompressionCfgIsSupported(t *testing.T) {
 			cfg: CompressionInfo{
 				GZIP: true,
 			},
-			CompressionType: CompressionType("invalid"),
+			contentEncoding: ContentEncoding("invalid"),
 			wantSupported:   false,
 		},
 		{
@@ -26,7 +26,7 @@ func TestReqCompressionCfgIsSupported(t *testing.T) {
 			cfg: CompressionInfo{
 				GZIP: true,
 			},
-			CompressionType: CompressionGZIP,
+			contentEncoding: ContentEncodingGZIP,
 			wantSupported:   true,
 		},
 		{
@@ -34,13 +34,13 @@ func TestReqCompressionCfgIsSupported(t *testing.T) {
 			cfg: CompressionInfo{
 				GZIP: false,
 			},
-			CompressionType: CompressionGZIP,
+			contentEncoding: ContentEncodingGZIP,
 			wantSupported:   false,
 		},
 	}
 
 	for _, test := range testCases {
-		got := test.cfg.IsSupported(test.CompressionType)
+		got := test.cfg.IsSupported(test.contentEncoding)
 		assert.Equal(t, got, test.wantSupported, test.description)
 	}
 }

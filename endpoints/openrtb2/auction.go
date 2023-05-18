@@ -340,13 +340,13 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	errs = nil
 	var err error
 	var r io.ReadCloser = httpRequest.Body
-	reqCompressionType := config.CompressionType(httpRequest.Header.Get("Content-Encoding"))
-	if reqCompressionType != "" {
-		if !deps.cfg.Compression.Request.IsSupported(reqCompressionType) {
-			errs = []error{fmt.Errorf("Content-Encoding of type %s is not supported", reqCompressionType)}
+	reqContentEncoding := config.ContentEncoding(httpRequest.Header.Get("Content-Encoding"))
+	if reqContentEncoding != "" {
+		if !deps.cfg.Compression.Request.IsSupported(reqContentEncoding) {
+			errs = []error{fmt.Errorf("Content-Encoding of type %s is not supported", reqContentEncoding)}
 			return
 		} else {
-			r, err = getCompressionEnabledReader(httpRequest.Body, reqCompressionType)
+			r, err = getCompressionEnabledReader(httpRequest.Body, reqContentEncoding)
 			if err != nil {
 				errs = []error{err}
 				return
@@ -490,12 +490,12 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	return
 }
 
-func getCompressionEnabledReader(body io.ReadCloser, CompressionType config.CompressionType) (io.ReadCloser, error) {
-	switch CompressionType {
-	case config.CompressionGZIP:
+func getCompressionEnabledReader(body io.ReadCloser, contentEncoding config.ContentEncoding) (io.ReadCloser, error) {
+	switch contentEncoding {
+	case config.ContentEncodingGZIP:
 		return gzip.NewReader(body)
 	default:
-		return nil, fmt.Errorf("unsupported compression type '%s'", CompressionType)
+		return nil, fmt.Errorf("unsupported compression type '%s'", contentEncoding)
 	}
 }
 

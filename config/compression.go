@@ -12,20 +12,20 @@ type CompressionInfo struct {
 	GZIP bool `mapstructure:"enable_gzip"`
 }
 
-type CompressionType string
+type ContentEncoding string
 
 const (
-	CompressionGZIP CompressionType = "gzip"
+	ContentEncodingGZIP ContentEncoding = "gzip"
 )
 
-func (k CompressionType) ToLower() CompressionType {
-	return CompressionType(strings.ToLower(string(k)))
+func (k ContentEncoding) ToLower() ContentEncoding {
+	return ContentEncoding(strings.ToLower(string(k)))
 }
 
-func (cfg *CompressionInfo) IsSupported(compressionType CompressionType) bool {
-	compressionType = compressionType.ToLower()
-	switch compressionType {
-	case CompressionGZIP:
+func (cfg *CompressionInfo) IsSupported(contentEncoding ContentEncoding) bool {
+	contentEncoding = contentEncoding.ToLower()
+	switch contentEncoding {
+	case ContentEncodingGZIP:
 		return cfg.GZIP
 	}
 	return false
