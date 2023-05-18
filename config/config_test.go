@@ -197,9 +197,9 @@ func TestDefaults(t *testing.T) {
 	cmpBools(t, "account_modules_metrics", false, cfg.Metrics.Disabled.AccountModulesMetrics)
 
 	cmpBools(t, "tmax_adjustments.enabled", false, cfg.TmaxAdjustments.Enabled)
-	cmpUnsignedInts(t, "tmax_adjustments.bidder_response_min", 0, cfg.TmaxAdjustments.BidderResponseMin)
-	cmpUnsignedInts(t, "tmax_adjustments.bidder_network_latency_buffer", 0, cfg.TmaxAdjustments.BidderNetworkLatencyBuffer)
-	cmpUnsignedInts(t, "tmax_adjustments.pbs_response_preparation_duration", 0, cfg.TmaxAdjustments.PBSResponsePreparationDuration)
+	cmpUnsignedInts(t, "tmax_adjustments.bidder_response_duration_min_ms", 0, cfg.TmaxAdjustments.BidderResponseDurationMin)
+	cmpUnsignedInts(t, "tmax_adjustments.bidder_network_latency_buffer_ms", 0, cfg.TmaxAdjustments.BidderNetworkLatencyBuffer)
+	cmpUnsignedInts(t, "tmax_adjustments.pbs_response_preparation_duration_ms", 0, cfg.TmaxAdjustments.PBSResponsePreparationDuration)
 
 	//Assert purpose VendorExceptionMap hash tables were built correctly
 	expectedTCF2 := TCF2{
@@ -468,9 +468,9 @@ account_defaults:
         max_schema_dims: 5
 tmax_adjustments:
   enabled: true
-  bidder_response_min: 700
-  bidder_network_latency_buffer: 100
-  pbs_response_preparation_duration: 100
+  bidder_response_duration_min_ms: 700
+  bidder_network_latency_buffer_ms: 100
+  pbs_response_preparation_duration_ms: 100
 `)
 
 var oldStoredRequestsConfig = []byte(`
@@ -556,9 +556,9 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "validations.max_creative_width", 0, int(cfg.Validations.MaxCreativeWidth))
 	cmpInts(t, "validations.max_creative_height", 0, int(cfg.Validations.MaxCreativeHeight))
 	cmpBools(t, "tmax_adjustments.enabled", false, cfg.TmaxAdjustments.Enabled) // Tmax adjustment feature is still under development. Therefore enabled flag is set to false
-	cmpUnsignedInts(t, "tmax_adjustments.bidder_response_min", 700, cfg.TmaxAdjustments.BidderResponseMin)
-	cmpUnsignedInts(t, "tmax_adjustments.bidder_network_latency_buffer", 100, cfg.TmaxAdjustments.BidderNetworkLatencyBuffer)
-	cmpUnsignedInts(t, "tmax_adjustments.pbs_response_preparation_duration", 100, cfg.TmaxAdjustments.PBSResponsePreparationDuration)
+	cmpUnsignedInts(t, "tmax_adjustments.bidder_response_duration_min_ms", 700, cfg.TmaxAdjustments.BidderResponseDurationMin)
+	cmpUnsignedInts(t, "tmax_adjustments.bidder_network_latency_buffer_ms", 100, cfg.TmaxAdjustments.BidderNetworkLatencyBuffer)
+	cmpUnsignedInts(t, "tmax_adjustments.pbs_response_preparation_duration_ms", 100, cfg.TmaxAdjustments.PBSResponsePreparationDuration)
 
 	//Assert the price floor values
 	cmpBools(t, "price_floors.enabled", true, cfg.PriceFloors.Enabled)
