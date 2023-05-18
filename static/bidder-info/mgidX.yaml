@@ -1,0 +1,20 @@
+endpoint: "https://us-east-x.mgid.com/pserver"
+maintainer:
+  email: "prebid@mgid.com"
+gvlVendorID: 358
+capabilities:
+  site:
+    mediaTypes:
+    - banner
+    - video
+    - native
+    
+  app:
+    mediaTypes:
+    - banner
+    - video
+    - native
+userSync:
+  redirect:
+    url: "https://cm.mgid.com/m?cdsp=363893&adu={{.RedirectURL}}"
+    userMacro: "{muidn}"
