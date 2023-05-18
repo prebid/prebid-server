@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"path/filepath"
 	"strconv"
 	"testing"
 	"time"
@@ -1094,23 +1093,7 @@ func newBidderInfo(isDisabled bool) config.BidderInfo {
 	}
 }
 
-func getTestFiles(dir string) ([]string, error) {
-	var filesToAssert []string
-
-	fileList, err := os.ReadDir(dir)
-	if err != nil {
-		return nil, err
-	}
-
-	// Append the path of every file found in `dir` to the `filesToAssert` array
-	for _, fileInfo := range fileList {
-		filesToAssert = append(filesToAssert, filepath.Join(dir, fileInfo.Name()))
-	}
-
-	return filesToAssert, nil
-}
-
-func parseTestFile(fileData []byte, testFile string) (testCase, error) {
+func parseTestData(fileData []byte, testFile string) (testCase, error) {
 
 	parsedTestData := testCase{}
 	var err, errEm error
@@ -1143,9 +1126,9 @@ func parseTestFile(fileData []byte, testFile string) (testCase, error) {
 	parsedTestData.ExpectedErrorMessage, errEm = jsonparser.GetString(fileData, "expectedErrorMessage")
 
 	if err == nil && errEm == nil {
-		return parsedTestData, errors.New("Test case file can't have both a valid expectedBidResponse and a valid expectedErrorMessage, fields are mutually exclusive")
+		return parsedTestData, fmt.Errorf("Test case %s can't have both a valid expectedBidResponse and a valid expectedErrorMessage, fields are mutually exclusive", testFile)
 	} else if err != nil && errEm != nil {
-		return parsedTestData, errors.New("Test case file should come with either a valid expectedBidResponse or a valid expectedErrorMessage, not both.")
+		return parsedTestData, fmt.Errorf("Test case %s should come with either a valid expectedBidResponse or a valid expectedErrorMessage, not both.", testFile)
 	}
 
 	parsedTestData.ExpectedReturnCode = int(parsedReturnCode)
