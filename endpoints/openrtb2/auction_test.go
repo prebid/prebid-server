@@ -5084,28 +5084,33 @@ func TestValidResponseAfterExecutingStages(t *testing.T) {
 		{
 			description: "Assert correct BidResponse when request rejected at entrypoint stage",
 			file:        "sample-requests/hooks/auction_entrypoint_reject.json",
-			planBuilder: mockPlanBuilder{entrypointPlan: makePlan[hookstage.Entrypoint](mockRejectionHook{nbr})},
+			planBuilder: mockPlanBuilder{entrypointPlan: makePlan[hookstage.Entrypoint](mockRejectionHook{nbr, nil})},
 		},
 		{
 			description: "Assert correct BidResponse when request rejected at raw-auction stage",
 			file:        "sample-requests/hooks/auction_raw_auction_request_reject.json",
-			planBuilder: mockPlanBuilder{rawAuctionPlan: makePlan[hookstage.RawAuctionRequest](mockRejectionHook{nbr})},
+			planBuilder: mockPlanBuilder{rawAuctionPlan: makePlan[hookstage.RawAuctionRequest](mockRejectionHook{nbr, nil})},
 		},
 		{
 			description: "Assert correct BidResponse when request rejected at processed-auction stage",
 			file:        "sample-requests/hooks/auction_processed_auction_request_reject.json",
-			planBuilder: mockPlanBuilder{processedAuctionPlan: makePlan[hookstage.ProcessedAuctionRequest](mockRejectionHook{nbr})},
+			planBuilder: mockPlanBuilder{processedAuctionPlan: makePlan[hookstage.ProcessedAuctionRequest](mockRejectionHook{nbr, nil})},
 		},
 		{
 			// bidder-request stage doesn't reject whole request, so we do not expect NBR code in response
 			description: "Assert correct BidResponse when request rejected at bidder-request stage",
 			file:        "sample-requests/hooks/auction_bidder_reject.json",
-			planBuilder: mockPlanBuilder{bidderRequestPlan: makePlan[hookstage.BidderRequest](mockRejectionHook{nbr})},
+			planBuilder: mockPlanBuilder{bidderRequestPlan: makePlan[hookstage.BidderRequest](mockRejectionHook{nbr, nil})},
 		},
 		{
 			description: "Assert correct BidResponse when request rejected at raw-bidder-response stage",
 			file:        "sample-requests/hooks/auction_bidder_response_reject.json",
-			planBuilder: mockPlanBuilder{rawBidderResponsePlan: makePlan[hookstage.RawBidderResponse](mockRejectionHook{nbr})},
+			planBuilder: mockPlanBuilder{rawBidderResponsePlan: makePlan[hookstage.RawBidderResponse](mockRejectionHook{nbr, nil})},
+		},
+		{
+			description: "Assert correct BidResponse when request rejected with error from hook",
+			file:        "sample-requests/hooks/auction_reject_with_error.json",
+			planBuilder: mockPlanBuilder{entrypointPlan: makePlan[hookstage.Entrypoint](mockRejectionHook{nbr, errors.New("dummy")})},
 		},
 		{
 			description: "Assert correct BidResponse with debug information from modules added to ext.prebid.modules",

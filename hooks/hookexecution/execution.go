@@ -190,12 +190,12 @@ func handleHookResponse[P any](
 		ExecutionTime: ExecutionTime{ExecutionTimeMillis: hr.ExecutionTime},
 	}
 
-	switch true {
-	case hr.Err != nil:
+	if hr.Err != nil || hr.Result.Reject {
 		handleHookError(hr, &hookOutcome, metricEngine, labels)
-	case hr.Result.Reject:
-		rejectErr = handleHookReject(ctx, hr, &hookOutcome, metricEngine, labels)
-	default:
+		if hr.Result.Reject {
+			rejectErr = handleHookReject(ctx, hr, &hookOutcome, metricEngine, labels)
+		}
+	} else {
 		payload = handleHookMutations(payload, hr, &hookOutcome, metricEngine, labels)
 	}
 
