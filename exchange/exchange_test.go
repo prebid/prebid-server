@@ -79,11 +79,8 @@ func TestNewExchange(t *testing.T) {
 			allowAllBidders: true,
 		},
 	}.Builder
-	tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-	}.Builder
 
-	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, tcf2ConfigBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer()).(*exchange)
+	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer()).(*exchange)
 	for _, bidderName := range knownAdapters {
 		if _, ok := e.adapterMap[bidderName]; !ok {
 			if biddersInfo[string(bidderName)].IsEnabled() {
@@ -132,11 +129,8 @@ func TestCharacterEscape(t *testing.T) {
 			allowAllBidders: true,
 		},
 	}.Builder
-	tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-	}.Builder
 
-	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, tcf2ConfigBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer()).(*exchange)
+	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer()).(*exchange)
 
 	// 	3) Build all the parameters e.buildBidResponse(ctx.Background(), liveA... ) needs
 	//liveAdapters []openrtb_ext.BidderName,
@@ -336,15 +330,11 @@ func TestDebugBehaviour(t *testing.T) {
 			allowAllBidders: true,
 		},
 	}.Builder
-	e.tcf2ConfigBuilder = fakeTCF2ConfigBuilder{
-		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-	}.Builder
 	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	e.categoriesFetcher = categoriesFetcher
 	e.requestSplitter = requestSplitter{
-		me:                &metricsConf.NilMetricsEngine{},
-		gdprPermsBuilder:  e.gdprPermsBuilder,
-		tcf2ConfigBuilder: e.tcf2ConfigBuilder,
+		me:               &metricsConf.NilMetricsEngine{},
+		gdprPermsBuilder: e.gdprPermsBuilder,
 	}
 	ctx := context.Background()
 
@@ -369,6 +359,7 @@ func TestDebugBehaviour(t *testing.T) {
 			UserSyncs:         &emptyUsersync{},
 			StartTime:         time.Now(),
 			HookExecutor:      &hookexecution.EmptyHookExecutor{},
+			TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}
 		if test.generateWarnings {
 			var errL []error
@@ -505,15 +496,11 @@ func TestTwoBiddersDebugDisabledAndEnabled(t *testing.T) {
 			allowAllBidders: true,
 		},
 	}.Builder
-	e.tcf2ConfigBuilder = fakeTCF2ConfigBuilder{
-		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-	}.Builder
 	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	e.categoriesFetcher = categoriesFetcher
 	e.requestSplitter = requestSplitter{
-		me:                e.me,
-		gdprPermsBuilder:  e.gdprPermsBuilder,
-		tcf2ConfigBuilder: e.tcf2ConfigBuilder,
+		me:               e.me,
+		gdprPermsBuilder: e.gdprPermsBuilder,
 	}
 
 	debugLog := DebugLog{Enabled: true}
@@ -540,6 +527,7 @@ func TestTwoBiddersDebugDisabledAndEnabled(t *testing.T) {
 			UserSyncs:         &emptyUsersync{},
 			StartTime:         time.Now(),
 			HookExecutor:      &hookexecution.EmptyHookExecutor{},
+			TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}
 
 		e.adapterMap = map[openrtb_ext.BidderName]AdaptedBidder{
@@ -672,16 +660,12 @@ func TestOverrideWithCustomCurrency(t *testing.T) {
 			allowAllBidders: true,
 		},
 	}.Builder
-	e.tcf2ConfigBuilder = fakeTCF2ConfigBuilder{
-		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-	}.Builder
 	e.currencyConverter = mockCurrencyConverter
 	e.categoriesFetcher = categoriesFetcher
 	e.bidIDGenerator = &mockBidIDGenerator{false, false}
 	e.requestSplitter = requestSplitter{
-		me:                e.me,
-		gdprPermsBuilder:  e.gdprPermsBuilder,
-		tcf2ConfigBuilder: e.tcf2ConfigBuilder,
+		me:               e.me,
+		gdprPermsBuilder: e.gdprPermsBuilder,
 	}
 
 	// Define mock incoming bid requeset
@@ -722,6 +706,7 @@ func TestOverrideWithCustomCurrency(t *testing.T) {
 			Account:           config.Account{},
 			UserSyncs:         &emptyUsersync{},
 			HookExecutor:      &hookexecution.EmptyHookExecutor{},
+			TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}
 
 		// Run test
@@ -779,9 +764,6 @@ func TestAdapterCurrency(t *testing.T) {
 				allowAllBidders: true,
 			},
 		}.Builder,
-		tcf2ConfigBuilder: fakeTCF2ConfigBuilder{
-			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-		}.Builder,
 		currencyConverter: currencyConverter,
 		categoriesFetcher: nilCategoryFetcher{},
 		bidIDGenerator:    &mockBidIDGenerator{false, false},
@@ -790,9 +772,8 @@ func TestAdapterCurrency(t *testing.T) {
 		},
 	}
 	e.requestSplitter = requestSplitter{
-		me:                e.me,
-		gdprPermsBuilder:  e.gdprPermsBuilder,
-		tcf2ConfigBuilder: e.tcf2ConfigBuilder,
+		me:               e.me,
+		gdprPermsBuilder: e.gdprPermsBuilder,
 	}
 
 	// Define Bid Request
@@ -817,6 +798,7 @@ func TestAdapterCurrency(t *testing.T) {
 		Account:           config.Account{},
 		UserSyncs:         &emptyUsersync{},
 		HookExecutor:      &hookexecution.EmptyHookExecutor{},
+		TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 	}
 	response, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{})
 	assert.NoError(t, err)
@@ -853,18 +835,14 @@ func TestFloorsSignalling(t *testing.T) {
 				allowAllBidders: true,
 			},
 		}.Builder,
-		tcf2ConfigBuilder: fakeTCF2ConfigBuilder{
-			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-		}.Builder,
 		currencyConverter: currencyConverter,
 		categoriesFetcher: nilCategoryFetcher{},
 		bidIDGenerator:    &mockBidIDGenerator{false, false},
 		floor:             config.PriceFloors{Enabled: true},
 	}
 	e.requestSplitter = requestSplitter{
-		me:                e.me,
-		gdprPermsBuilder:  e.gdprPermsBuilder,
-		tcf2ConfigBuilder: e.tcf2ConfigBuilder,
+		me:               e.me,
+		gdprPermsBuilder: e.gdprPermsBuilder,
 	}
 
 	type testResults struct {
@@ -1341,16 +1319,12 @@ func TestReturnCreativeEndToEnd(t *testing.T) {
 			allowAllBidders: true,
 		},
 	}.Builder
-	e.tcf2ConfigBuilder = fakeTCF2ConfigBuilder{
-		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-	}.Builder
 	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	e.categoriesFetcher = categoriesFetcher
 	e.bidIDGenerator = &mockBidIDGenerator{false, false}
 	e.requestSplitter = requestSplitter{
-		me:                e.me,
-		gdprPermsBuilder:  e.gdprPermsBuilder,
-		tcf2ConfigBuilder: e.tcf2ConfigBuilder,
+		me:               e.me,
+		gdprPermsBuilder: e.gdprPermsBuilder,
 	}
 
 	// Define mock incoming bid requeset
@@ -1374,6 +1348,7 @@ func TestReturnCreativeEndToEnd(t *testing.T) {
 				Account:           config.Account{},
 				UserSyncs:         &emptyUsersync{},
 				HookExecutor:      &hookexecution.EmptyHookExecutor{},
+				TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 			}
 
 			// Run test
@@ -1449,11 +1424,8 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 			allowAllBidders: true,
 		},
 	}.Builder
-	tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-	}.Builder
 
-	e := NewExchange(adapters, pbc, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, tcf2ConfigBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer()).(*exchange)
+	e := NewExchange(adapters, pbc, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer()).(*exchange)
 	// 	3) Build all the parameters e.buildBidResponse(ctx.Background(), liveA... ) needs
 	liveAdapters := []openrtb_ext.BidderName{bidderName}
 
@@ -1812,11 +1784,8 @@ func TestBidResponseCurrency(t *testing.T) {
 			allowAllBidders: true,
 		},
 	}.Builder
-	tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-	}.Builder
 
-	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, tcf2ConfigBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer()).(*exchange)
+	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer()).(*exchange)
 
 	liveAdapters := make([]openrtb_ext.BidderName, 1)
 	liveAdapters[0] = "appnexus"
@@ -1951,9 +1920,6 @@ func TestBidResponseImpExtInfo(t *testing.T) {
 			allowAllBidders: true,
 		},
 	}.Builder
-	tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-	}.Builder
 
 	noBidHandler := func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) }
 	server := httptest.NewServer(http.HandlerFunc(noBidHandler))
@@ -1966,7 +1932,7 @@ func TestBidResponseImpExtInfo(t *testing.T) {
 		t.Fatalf("Error intializing adapters: %v", adaptersErr)
 	}
 
-	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, nil, gdprPermsBuilder, tcf2ConfigBuilder, nil, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer()).(*exchange)
+	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, nil, gdprPermsBuilder, nil, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer()).(*exchange)
 
 	liveAdapters := make([]openrtb_ext.BidderName, 1)
 	liveAdapters[0] = "appnexus"
@@ -2048,6 +2014,7 @@ func TestRaceIntegration(t *testing.T) {
 		Account:           config.Account{},
 		UserSyncs:         &emptyUsersync{},
 		HookExecutor:      &hookexecution.EmptyHookExecutor{},
+		TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 	}
 
 	debugLog := DebugLog{}
@@ -2057,11 +2024,8 @@ func TestRaceIntegration(t *testing.T) {
 			allowAllBidders: true,
 		},
 	}.Builder
-	tcf2CfgBuilder := fakeTCF2ConfigBuilder{
-		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-	}.Builder
 
-	ex := NewExchange(adapters, &wellBehavedCache{}, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, tcf2CfgBuilder, currencyConverter, &nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer()).(*exchange)
+	ex := NewExchange(adapters, &wellBehavedCache{}, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, &nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer()).(*exchange)
 	_, err = ex.HoldAuction(context.Background(), auctionRequest, &debugLog)
 	if err != nil {
 		t.Errorf("HoldAuction returned unexpected error: %v", err)
@@ -2158,11 +2122,8 @@ func TestPanicRecovery(t *testing.T) {
 			allowAllBidders: true,
 		},
 	}.Builder
-	tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-	}.Builder
 
-	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, tcf2ConfigBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer()).(*exchange)
+	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer()).(*exchange)
 
 	chBids := make(chan *bidResponseWrapper, 1)
 	panicker := func(bidderRequest BidderRequest, conversions currency.Conversions) {
@@ -2232,10 +2193,7 @@ func TestPanicRecoveryHighLevel(t *testing.T) {
 			allowAllBidders: true,
 		},
 	}.Builder
-	tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-	}.Builder
-	e := NewExchange(adapters, &mockCache{}, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, tcf2ConfigBuilder, currencyConverter, categoriesFetcher, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer()).(*exchange)
+	e := NewExchange(adapters, &mockCache{}, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, categoriesFetcher, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer()).(*exchange)
 
 	e.adapterMap[openrtb_ext.BidderBeachfront] = panicingAdapter{}
 	e.adapterMap[openrtb_ext.BidderAppnexus] = panicingAdapter{}
@@ -2273,6 +2231,7 @@ func TestPanicRecoveryHighLevel(t *testing.T) {
 		Account:           config.Account{},
 		UserSyncs:         &emptyUsersync{},
 		HookExecutor:      &hookexecution.EmptyHookExecutor{},
+		TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 	}
 	debugLog := DebugLog{}
 	_, err = e.HoldAuction(context.Background(), auctionRequest, &debugLog)
@@ -2409,6 +2368,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		UserSyncs:     mockIdFetcher(spec.IncomingRequest.Usersyncs),
 		ImpExtInfoMap: impExtInfoMap,
 		HookExecutor:  &hookexecution.EmptyHookExecutor{},
+		TCF2Config:    gdpr.NewTCF2Config(privacyConfig.GDPR.TCF2, config.AccountGDPR{}),
 	}
 
 	if spec.MultiBid != nil {
@@ -2617,9 +2577,6 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 			allowAllBidders: true,
 		},
 	}.Builder
-	tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-		cfg: gdpr.NewTCF2Config(privacyConfig.GDPR.TCF2, config.AccountGDPR{}),
-	}.Builder
 
 	bidderToSyncerKey := map[string]string{}
 	for _, bidderName := range openrtb_ext.CoreBidderNames() {
@@ -2644,7 +2601,6 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		me:                metricsEngine,
 		privacyConfig:     privacyConfig,
 		gdprPermsBuilder:  gdprPermsBuilder,
-		tcf2ConfigBuilder: tcf2ConfigBuilder,
 		hostSChainNode:    hostSChainNode,
 		bidderInfo:        bidderInfos,
 	}
@@ -2657,7 +2613,6 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		currencyConverter:        currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
 		gdprDefaultValue:         gdprDefaultValue,
 		gdprPermsBuilder:         gdprPermsBuilder,
-		tcf2ConfigBuilder:        tcf2ConfigBuilder,
 		privacyConfig:            privacyConfig,
 		categoriesFetcher:        categoriesFetcher,
 		bidderInfo:               bidderInfos,
@@ -4265,9 +4220,6 @@ func TestStoredAuctionResponses(t *testing.T) {
 			allowAllBidders: true,
 		},
 	}.Builder
-	e.tcf2ConfigBuilder = fakeTCF2ConfigBuilder{
-		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-	}.Builder
 
 	// Define mock incoming bid requeset
 	mockBidRequest := &openrtb2.BidRequest{
@@ -4319,6 +4271,7 @@ func TestStoredAuctionResponses(t *testing.T) {
 			UserSyncs:              &emptyUsersync{},
 			StoredAuctionResponses: test.storedAuctionResp,
 			HookExecutor:           &hookexecution.EmptyHookExecutor{},
+			TCF2Config:             gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}
 		// Run test
 		outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{})
@@ -4633,13 +4586,9 @@ func TestAuctionDebugEnabled(t *testing.T) {
 			allowAllBidders: true,
 		},
 	}.Builder
-	e.tcf2ConfigBuilder = fakeTCF2ConfigBuilder{
-		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-	}.Builder
 	e.requestSplitter = requestSplitter{
-		me:                e.me,
-		gdprPermsBuilder:  e.gdprPermsBuilder,
-		tcf2ConfigBuilder: e.tcf2ConfigBuilder,
+		me:               e.me,
+		gdprPermsBuilder: e.gdprPermsBuilder,
 	}
 
 	ctx := context.Background()
@@ -4656,6 +4605,7 @@ func TestAuctionDebugEnabled(t *testing.T) {
 		StartTime:         time.Now(),
 		RequestType:       metrics.ReqTypeORTB2Web,
 		HookExecutor:      &hookexecution.EmptyHookExecutor{},
+		TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 	}
 
 	debugLog := &DebugLog{DebugOverride: true, DebugEnabledOrOverridden: true}
@@ -4705,11 +4655,8 @@ func TestPassExperimentConfigsToHoldAuction(t *testing.T) {
 			allowAllBidders: true,
 		},
 	}.Builder
-	tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-	}.Builder
 
-	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, tcf2ConfigBuilder, currencyConverter, nilCategoryFetcher{}, &signer, macros.NewStringIndexBasedReplacer()).(*exchange)
+	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &signer, macros.NewStringIndexBasedReplacer()).(*exchange)
 
 	// Define mock incoming bid requeset
 	mockBidRequest := &openrtb2.BidRequest{
@@ -4728,6 +4675,7 @@ func TestPassExperimentConfigsToHoldAuction(t *testing.T) {
 		Account:           config.Account{},
 		UserSyncs:         &emptyUsersync{},
 		HookExecutor:      &hookexecution.EmptyHookExecutor{},
+		TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 	}
 
 	debugLog := DebugLog{}
@@ -5147,16 +5095,12 @@ func TestOverrideConfigAlternateBidderCodesWithRequestValues(t *testing.T) {
 			allowAllBidders: true,
 		},
 	}.Builder
-	e.tcf2ConfigBuilder = fakeTCF2ConfigBuilder{
-		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-	}.Builder
 	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	e.categoriesFetcher = categoriesFetcher
 	e.bidIDGenerator = &mockBidIDGenerator{false, false}
 	e.requestSplitter = requestSplitter{
-		me:                e.me,
-		gdprPermsBuilder:  e.gdprPermsBuilder,
-		tcf2ConfigBuilder: e.tcf2ConfigBuilder,
+		me:               e.me,
+		gdprPermsBuilder: e.gdprPermsBuilder,
 	}
 
 	// Define mock incoming bid requeset
@@ -5183,6 +5127,7 @@ func TestOverrideConfigAlternateBidderCodesWithRequestValues(t *testing.T) {
 			Account:           test.in.config.AccountDefaults,
 			UserSyncs:         &emptyUsersync{},
 			HookExecutor:      &hookexecution.EmptyHookExecutor{},
+			TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}
 
 		// Run test
@@ -5571,14 +5516,10 @@ func TestModulesCanBeExecutedForMultipleBiddersSimultaneously(t *testing.T) {
 
 	e := new(exchange)
 	e.me = &metricsConf.NilMetricsEngine{}
-	e.tcf2ConfigBuilder = fakeTCF2ConfigBuilder{
-		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-	}.Builder
 	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	e.requestSplitter = requestSplitter{
-		me:                e.me,
-		gdprPermsBuilder:  e.gdprPermsBuilder,
-		tcf2ConfigBuilder: e.tcf2ConfigBuilder,
+		me:               e.me,
+		gdprPermsBuilder: e.gdprPermsBuilder,
 	}
 
 	bidRequest := &openrtb2.BidRequest{
@@ -5604,6 +5545,7 @@ func TestModulesCanBeExecutedForMultipleBiddersSimultaneously(t *testing.T) {
 		UserSyncs:         &emptyUsersync{},
 		StartTime:         time.Now(),
 		HookExecutor:      exec,
+		TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 	}
 
 	e.adapterMap = map[openrtb_ext.BidderName]AdaptedBidder{

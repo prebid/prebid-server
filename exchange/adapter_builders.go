@@ -72,10 +72,12 @@ import (
 	"github.com/prebid/prebid-server/adapters/dianomi"
 	"github.com/prebid/prebid-server/adapters/dmx"
 	evolution "github.com/prebid/prebid-server/adapters/e_volution"
+	"github.com/prebid/prebid-server/adapters/emtv"
 	"github.com/prebid/prebid-server/adapters/emx_digital"
 	"github.com/prebid/prebid-server/adapters/engagebdr"
 	"github.com/prebid/prebid-server/adapters/eplanning"
 	"github.com/prebid/prebid-server/adapters/epom"
+	"github.com/prebid/prebid-server/adapters/flipp"
 	"github.com/prebid/prebid-server/adapters/freewheelssp"
 	"github.com/prebid/prebid-server/adapters/frvradn"
 	"github.com/prebid/prebid-server/adapters/gamma"
@@ -248,12 +250,14 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderDefinemedia:       definemedia.Builder,
 		openrtb_ext.BidderDianomi:           dianomi.Builder,
 		openrtb_ext.BidderDmx:               dmx.Builder,
+		openrtb_ext.BidderEmtv:              emtv.Builder,
 		openrtb_ext.BidderEmxDigital:        emx_digital.Builder,
 		openrtb_ext.BidderEngageBDR:         engagebdr.Builder,
 		openrtb_ext.BidderEPlanning:         eplanning.Builder,
 		openrtb_ext.BidderEpom:              epom.Builder,
 		openrtb_ext.BidderEVolution:         evolution.Builder,
 		openrtb_ext.BidderEvtech:            limelightDigital.Builder,
+		openrtb_ext.BidderFlipp:             flipp.Builder,
 		openrtb_ext.BidderFreewheelSSP:      freewheelssp.Builder,
 		openrtb_ext.BidderFreewheelSSPOld:   freewheelssp.Builder,
 		openrtb_ext.BidderFRVRAdNetwork:     frvradn.Builder,

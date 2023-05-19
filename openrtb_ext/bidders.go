@@ -157,12 +157,14 @@ const (
 	BidderDefinemedia       BidderName = "definemedia"
 	BidderDianomi           BidderName = "dianomi"
 	BidderDmx               BidderName = "dmx"
+	BidderEmtv              BidderName = "emtv"
 	BidderEmxDigital        BidderName = "emx_digital"
 	BidderEngageBDR         BidderName = "engagebdr"
 	BidderEPlanning         BidderName = "eplanning"
 	BidderEpom              BidderName = "epom"
 	BidderEVolution         BidderName = "e_volution"
 	BidderEvtech            BidderName = "evtech"
+	BidderFlipp             BidderName = "flipp"
 	BidderFreewheelSSP      BidderName = "freewheelssp"
 	BidderFreewheelSSPOld   BidderName = "freewheel-ssp"
 	BidderFRVRAdNetwork     BidderName = "frvradn"
@@ -345,12 +347,14 @@ func CoreBidderNames() []BidderName {
 		BidderDefinemedia,
 		BidderDianomi,
 		BidderDmx,
+		BidderEmtv,
 		BidderEmxDigital,
 		BidderEngageBDR,
 		BidderEPlanning,
 		BidderEpom,
 		BidderEVolution,
 		BidderEvtech,
+		BidderFlipp,
 		BidderFreewheelSSP,
 		BidderFreewheelSSPOld,
 		BidderFRVRAdNetwork,
