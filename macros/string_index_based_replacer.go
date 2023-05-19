@@ -45,14 +45,14 @@ func constructTemplate(url string) urlMetaTemplate {
 			break
 		}
 		startIndex := currentIndex + delimiterLen
-		endingIndex := strings.Index(url[startIndex:], delimiter) // ending Delimiter
+		endingIndex := strings.Index(url[startIndex:], delimiter)
 		if endingIndex == -1 {
 			break
 		}
-		endingIndex = endingIndex + startIndex // offset adjustment (Delimiter inclusive)
+		endingIndex = endingIndex + startIndex - 1
 		tmplt.startingIndices = append(tmplt.startingIndices, startIndex)
 		tmplt.endingIndices = append(tmplt.endingIndices, endingIndex)
-		currentIndex = endingIndex + delimiterLen
+		currentIndex = endingIndex + delimiterLen + 1
 		if currentIndex >= len(url)-1 {
 			break
 		}
@@ -72,7 +72,7 @@ func (s *stringIndexBasedReplacer) Replace(url string, macroProvider *macroProvi
 	currentIndex := 0
 	delimLen := len(delimiter)
 	for i, index := range tmplt.startingIndices {
-		macro := url[index:tmplt.endingIndices[i]]
+		macro := url[index : tmplt.endingIndices[i]+1]
 		// copy prev part
 		result.WriteString(url[currentIndex : index-delimLen])
 		value := macroProvider.GetMacro(macro)
