@@ -16,5 +16,5 @@ capabilities:
     - native
 userSync:
   redirect:
-    url: "https://cm.mgid.com/m?cdsp=363893&adu={{.RedirectURL}}"
+    url: "https://t.adx.opera.com/pub/sync?pubid&gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}"
     userMacro: "{muidn}"
