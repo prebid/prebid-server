@@ -66,7 +66,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	var (
 		shouldGenerateAdPodId *bool
 		uniqueMemberIds       []string
-		memberIds             = make(map[string]struct{})
+		memberIds             = make(map[string]struct{}, len(request.Imp))
 		errs                  = make([]error, 0, len(request.Imp))
 	)
 
