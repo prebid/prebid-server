@@ -979,24 +979,11 @@ func applyCategoryMapping(ctx context.Context, targeting openrtb_ext.ExtRequestT
 
 			pb = GetPriceBucket(bid.Bid.Price, targData.priceGranularity)
 
-			newDur := duration
-			if len(targeting.DurationRangeSec) > 0 {
-				durationRange := make([]int, len(targeting.DurationRangeSec))
-				copy(durationRange, targeting.DurationRangeSec)
-				sort.Ints(durationRange)
-
-				//if the bid is above the range of the listed durations (and outside the buffer), reject the bid
-				if duration > durationRange[len(durationRange)-1] {
-					bidsToRemove = append(bidsToRemove, bidInd)
-					rejections = updateRejections(rejections, bidID, "Bid duration exceeds maximum allowed")
-					continue
-				}
-				for _, dur := range durationRange {
-					if duration <= dur {
-						newDur = dur
-						break
-					}
-				}
+			newDur, err := findDurationRange(duration, targeting.DurationRangeSec)
+			if err != nil {
+				bidsToRemove = append(bidsToRemove, bidInd)
+				rejections = updateRejections(rejections, bidID, err.Error())
+				continue
 			}
 
 			var categoryDuration string
@@ -1084,6 +1071,33 @@ func applyCategoryMapping(ctx context.Context, targeting openrtb_ext.ExtRequestT
 	}
 
 	return res, seatBids, rejections, nil
+}
+
+// findDurationRange returns the value greater than 'dur' that is closest to dur's value the array 'a'
+// unless it finds a value equal to 'dur', in which case it will return it, or an error if all values
+// in 'a' are less than 'dur'.
+func findDurationRange(dur int, a []int) (int, error) {
+	newDur := dur
+	madeSelection := false
+	var err error
+
+	for i := range a {
+		if dur > a[i] {
+			continue
+		}
+		if dur == a[i] {
+			return a[i], nil
+		}
+		// dur < a[i]
+		if a[i] < newDur || !madeSelection {
+			newDur = a[i]
+			madeSelection = true
+		}
+	}
+	if !madeSelection && len(a) > 0 {
+		err = errors.New("Bid duration exceeds maximum allowed")
+	}
+	return newDur, err
 }
 
 func removeBidById(seatBid *entities.PbsOrtbSeatBid, bidID string) {
