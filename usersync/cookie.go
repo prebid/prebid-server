@@ -248,7 +248,9 @@ func (cookie *Cookie) UnmarshalJSON(b []byte) error {
 	cookie.optOut = cookieContract.OptOut
 	cookie.birthday = cookieContract.Birthday
 
-	if !cookie.optOut {
+	if cookie.optOut {
+		cookie.uids = nil
+	} else {
 		cookie.uids = cookieContract.UIDs
 	}
 
