@@ -87,8 +87,9 @@ func (c *cookieSyncEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ ht
 		c.handleError(w, err, http.StatusBadRequest)
 		return
 	}
+	decoder := usersync.DecodeV1{}
 
-	cookie := usersync.ParseCookieFromRequest(r, &c.config.HostCookie)
+	cookie := usersync.ReadCookie(r, decoder)
 
 	result := c.chooser.Choose(request, cookie)
 	switch result.Status {

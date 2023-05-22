@@ -58,6 +58,8 @@ func (deps *UserSyncDeps) VerifyRecaptcha(response string) error {
 func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	optout := r.FormValue("optout")
 	rr := r.FormValue("g-recaptcha-response")
+	encoder := usersync.EncoderV1{}
+	decoder := usersync.DecodeV1{}
 
 	if rr == "" {
 		http.Redirect(w, r, fmt.Sprintf("%s/static/optout.html", deps.ExternalUrl), http.StatusMovedPermanently)
@@ -73,10 +75,11 @@ func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httpr
 		return
 	}
 
-	pc := usersync.ParseCookieFromRequest(r, deps.HostCookieConfig)
+	pc := usersync.ReadCookie(r, decoder)
 	pc.SetOptOut(optout != "")
 
-	pc.SetCookieOnResponse(w, false, deps.HostCookieConfig, deps.HostCookieConfig.TTLDuration())
+	encodedCookie := pc.PrepareCookieForWrite(deps.HostCookieConfig, deps.HostCookieConfig.TTLDuration(), encoder)
+	usersync.WriteCookie(w, encodedCookie, deps.HostCookieConfig, false)
 
 	if optout == "" {
 		http.Redirect(w, r, deps.HostCookieConfig.OptInURL, http.StatusMovedPermanently)

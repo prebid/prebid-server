@@ -33,6 +33,8 @@ const uidCookieName = "uids"
 
 func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, gdprPermsBuilder gdpr.PermissionsBuilder, tcf2CfgBuilder gdpr.TCF2ConfigBuilder, pbsanalytics analytics.PBSAnalyticsModule, accountsFetcher stored_requests.AccountFetcher, metricsEngine metrics.MetricsEngine) httprouter.Handle {
 	cookieTTL := time.Duration(cfg.HostCookie.TTL) * 24 * time.Hour
+	encoder := usersync.EncoderV1{}
+	decoder := usersync.DecodeV1{}
 
 	// convert map of syncers by bidder to map of syncers by key
 	// - its safe to assume that if multiple bidders map to the same key, the syncers are interchangeable.
@@ -49,7 +51,7 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 
 		defer pbsanalytics.LogSetUIDObject(&so)
 
-		pc := usersync.ReadCookie(r)
+		pc := usersync.ReadCookie(r, decoder)
 		if !pc.AllowSyncs() {
 			w.WriteHeader(http.StatusUnauthorized)
 			metricsEngine.RecordSetUid(metrics.SetUidOptOut)
@@ -138,7 +140,9 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 		}
 
 		setSiteCookie := siteCookieCheck(r.UserAgent())
-		pc.SetCookieOnResponse(w, setSiteCookie, &cfg.HostCookie, cookieTTL)
+
+		encodedCookie := pc.PrepareCookieForWrite(&cfg.HostCookie, cookieTTL, encoder)
+		usersync.WriteCookie(w, encodedCookie, &cfg.HostCookie, setSiteCookie)
 
 		switch responseFormat {
 		case "i":

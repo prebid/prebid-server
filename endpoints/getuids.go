@@ -18,7 +18,8 @@ type userSyncs struct {
 // returns all the existing syncs for the user
 func NewGetUIDsEndpoint(cfg config.HostCookie) httprouter.Handle {
 	return httprouter.Handle(func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-		pc := usersync.ParseCookieFromRequest(r, &cfg)
+		decoder := usersync.DecodeV1{}
+		pc := usersync.ReadCookie(r, decoder)
 		userSyncs := new(userSyncs)
 		userSyncs.BuyerUIDs = pc.GetUIDs()
 		json.NewEncoder(w).Encode(userSyncs)

@@ -2,6 +2,7 @@ package usersync
 
 import (
 	"encoding/json"
+	"math"
 	"net/http"
 	"time"
 
@@ -17,8 +18,8 @@ const uidTTL = 14 * 24 * time.Hour
 
 // Cookie is the cookie used in Prebid Server.
 //
-// To get an instance of this from a request, use ParseCookieFromRequest.
-// To write an instance onto a response, use SetCookieOnResponse.
+// To get an instance of this from a request, use ReadCookie.
+// To write an instance onto a response, use WriteCookie.
 type Cookie struct {
 	uids     map[string]UIDEntry
 	optOut   bool
@@ -35,34 +36,31 @@ type UIDEntry struct {
 }
 
 // ReadCookie will replace ParseCookieFromRequest
-func ReadCookie(r *http.Request) *Cookie {
+func ReadCookie(r *http.Request, decoder Decoder) *Cookie {
 	//TODO: ParseCookieFromRequest OptOut Logic?
 
 	cookieFromRequest, err := r.Cookie(uidCookieName)
 	if err != nil {
 		return NewCookie()
 	}
-
-	decoder := DecodeV1{}
 	decodedCookie := decoder.Decode(cookieFromRequest.Value)
 
 	return decodedCookie
 }
 
 // WriteCookie
-func WriteCookie(cookie *Cookie, ttl time.Duration, w http.ResponseWriter, setSiteCookie bool, domain string) {
-	encoder := EncoderV1{}
-	b64 := encoder.Encode(cookie)
+func WriteCookie(w http.ResponseWriter, encodedCookie string, cfg *config.HostCookie, setSiteCookie bool) {
+	ttl := cfg.TTLDuration()
 
 	httpCookie := &http.Cookie{
 		Name:    uidCookieName,
-		Value:   b64,
+		Value:   encodedCookie,
 		Expires: time.Now().Add(ttl),
 		Path:    "/",
 	}
 
-	if domain != "" {
-		httpCookie.Domain = domain
+	if cfg.Domain != "" {
+		httpCookie.Domain = cfg.Domain
 	}
 
 	if setSiteCookie {
@@ -122,22 +120,19 @@ func (cookie *Cookie) GetUIDs() map[string]string {
 	return uids
 }
 
-func (cookie *Cookie) SetCookieOnResponse(w http.ResponseWriter, setSiteCookie bool, cfg *config.HostCookie, ttl time.Duration) {
-	encoder := EncoderV1{}
+func (cookie *Cookie) PrepareCookieForWrite(cfg *config.HostCookie, ttl time.Duration, encoder Encoder) string {
 	encodedCookie := encoder.Encode(cookie)
 
 	isCookieTooBig := len(encodedCookie) > cfg.MaxCookieSizeBytes && cfg.MaxCookieSizeBytes > 0
 
 	for isCookieTooBig && len(cookie.uids) > 0 {
-		uidToDelete, err := ejector.Choose(cookie.uids)
-		if err != nil {
-			return err
-		}
+		uidToDelete := getOldestUid(cookie)
 		delete(cookie.uids, uidToDelete)
+
 		encodedCookie = encoder.Encode(cookie)
 		isCookieTooBig = len(encodedCookie) > cfg.MaxCookieSizeBytes && cfg.MaxCookieSizeBytes > 0
 	}
-	WriteCookie(cookie, ttl, w, setSiteCookie, cfg.Domain)
+	return encodedCookie
 }
 
 // Unsync removes the user's ID for the given syncer key from this cookie.
@@ -245,4 +240,18 @@ func (cookie *Cookie) UnmarshalJSON(b []byte) error {
 func timestamp() *time.Time {
 	birthday := time.Now()
 	return &birthday
+}
+
+// getOldestUid will be replaced with ejection framework in a future PR
+func getOldestUid(cookie *Cookie) string {
+	oldestElem := ""
+	var oldestDate int64 = math.MaxInt64
+	for key, value := range cookie.uids {
+		timeUntilExpiration := time.Until(value.Expires)
+		if timeUntilExpiration < time.Duration(oldestDate) {
+			oldestElem = key
+			oldestDate = int64(timeUntilExpiration)
+		}
+	}
+	return oldestElem
 }
