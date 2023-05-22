@@ -3,6 +3,7 @@ package floors
 import (
 	"encoding/json"
 	"errors"
+	"reflect"
 	"testing"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
@@ -660,8 +661,13 @@ func TestEnforce(t *testing.T) {
 	for _, tt := range tests {
 		actEligibleBids, actErrs, actRejecteBids := Enforce(tt.args.bidRequestWrapper, tt.args.seatBids, config.Account{PriceFloors: tt.args.priceFloorsCfg}, tt.args.conversions)
 		assert.Equal(t, tt.expErrs, actErrs, tt.name)
-		assert.Equal(t, len(tt.expEligibleBids), len(actEligibleBids), "Number of eligible bids mismatch for test "+tt.name)
-		assert.Equal(t, len(tt.expRejectedBids), len(actRejecteBids), "Number of rejected bids mismatch for test "+tt.name)
+		if !reflect.DeepEqual(tt.expRejectedBids, actRejecteBids) {
+			assert.Fail(t, "rejected bids don't match")
+		}
+
+		if !reflect.DeepEqual(tt.expEligibleBids, actEligibleBids) {
+			assert.Fail(t, "eligible bids don't match")
+		}
 	}
 }
 
