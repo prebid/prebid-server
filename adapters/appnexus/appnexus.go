@@ -65,8 +65,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	var (
 		shouldGenerateAdPodId *bool
-		uniqueMemberIds       []string
-		memberIds             = make(map[string]struct{})
+		uniqueMemberIds       = make([]string, 0, len(request.Imp))
+		memberIds             = make(map[string]struct{}, len(request.Imp))
 		errs                  = make([]error, 0, len(request.Imp))
 	)
 
@@ -116,6 +116,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		requestURI = appendMemberId(requestURI, uniqueMemberIds[0])
 		if len(uniqueMemberIds) > 1 {
 			errs = append(errs, fmt.Errorf("All request.imp[i].ext.prebid.bidder.appnexus.member params must match. Request contained: %v", uniqueMemberIds))
+			return nil, errs
 		}
 	}
 
