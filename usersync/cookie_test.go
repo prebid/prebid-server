@@ -14,7 +14,7 @@ import (
 
 func TestOptOutCookie(t *testing.T) {
 	cookie := &Cookie{
-		uids:     make(map[string]uidWithExpiry),
+		uids:     map[string]uidWithExpiry{"appnexus": {UID: "test"}},
 		optOut:   true,
 		birthday: timestamp(),
 	}
@@ -400,7 +400,11 @@ func ensureConsistency(t *testing.T, cookie *Cookie) {
 		t.Error("The PBSCookie interface shouldn't let modifications happen if the user has opted out")
 	}
 
-	assert.Equal(t, len(cookie.uids), len(copiedCookie.uids), "Incorrect sync count on reparsed cookie.")
+	if cookie.optOut {
+		assert.Equal(t, 0, len(copiedCookie.uids), "Incorrect sync count on reparsed cookie.")
+	} else {
+		assert.Equal(t, len(cookie.uids), len(copiedCookie.uids), "Incorrect sync count on reparsed cookie.")
+	}
 
 	for family, uid := range copiedCookie.uids {
 		if !cookie.HasLiveSync(family) {
