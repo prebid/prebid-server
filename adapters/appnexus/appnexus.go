@@ -12,7 +12,6 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v19/adcom1"
 	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters/util"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/util/randomutil"
 
@@ -161,11 +160,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 }
 
 func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if util.IsResponseStatusCodeNoContent(response) {
+	if adapters.IsResponseStatusCodeNoContent(response) {
 		return nil, nil
 	}
 
-	if err := util.CheckResponseStatusCodeForErrors(response); err != nil {
+	if err := adapters.CheckResponseStatusCodeForErrors(response); err != nil {
 		return nil, []error{err}
 	}
 

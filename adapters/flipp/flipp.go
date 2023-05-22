@@ -11,7 +11,6 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/adapters/util"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -174,11 +173,11 @@ func buildPrebidRequest(flippExtParams openrtb_ext.ImpExtFlipp, request *openrtb
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if util.IsResponseStatusCodeNoContent(responseData) {
+	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
 	}
 
-	if err := util.CheckResponseStatusCodeForErrors(responseData); err != nil {
+	if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil {
 		return nil, []error{err}
 	}
 
