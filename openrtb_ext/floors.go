@@ -94,25 +94,25 @@ type PriceFloorModelGroup struct {
 	Default      float64            `json:"default,omitempty"`
 }
 
-func (modelGroup PriceFloorModelGroup) Copy() PriceFloorModelGroup {
-	newModelGroup := new(PriceFloorModelGroup)
-	newModelGroup.Currency = modelGroup.Currency
-	newModelGroup.ModelVersion = modelGroup.ModelVersion
-	newModelGroup.SkipRate = modelGroup.SkipRate
-	newModelGroup.Default = modelGroup.Default
-	if modelGroup.ModelWeight != nil {
-		newModelGroup.ModelWeight = new(int)
-		*newModelGroup.ModelWeight = *modelGroup.ModelWeight
+func (mg PriceFloorModelGroup) Copy() PriceFloorModelGroup {
+	newMg := new(PriceFloorModelGroup)
+	newMg.Currency = mg.Currency
+	newMg.ModelVersion = mg.ModelVersion
+	newMg.SkipRate = mg.SkipRate
+	newMg.Default = mg.Default
+	if mg.ModelWeight != nil {
+		newMg.ModelWeight = new(int)
+		*newMg.ModelWeight = *mg.ModelWeight
 	}
 
-	newModelGroup.Schema.Delimiter = modelGroup.Schema.Delimiter
-	newModelGroup.Schema.Fields = make([]string, len(modelGroup.Schema.Fields))
-	copy(newModelGroup.Schema.Fields, modelGroup.Schema.Fields)
-	newModelGroup.Values = make(map[string]float64, len(modelGroup.Values))
-	for key, val := range modelGroup.Values {
-		newModelGroup.Values[key] = val
+	newMg.Schema.Delimiter = mg.Schema.Delimiter
+	newMg.Schema.Fields = make([]string, len(mg.Schema.Fields))
+	copy(newMg.Schema.Fields, mg.Schema.Fields)
+	newMg.Values = make(map[string]float64, len(mg.Values))
+	for key, val := range mg.Values {
+		newMg.Values[key] = val
 	}
-	return *newModelGroup
+	return *newMg
 }
 
 type PriceFloorSchema struct {

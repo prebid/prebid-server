@@ -84,8 +84,8 @@ func updateEnforcePBS(enforceFloors bool, requestExt *openrtb_ext.RequestExt) bo
 // updateBidExt updates bid extension for floors related details
 func updateBidExt(bidRequestWrapper *openrtb_ext.RequestWrapper, seatBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid) {
 	impMap := make(map[string]*openrtb_ext.ImpWrapper, bidRequestWrapper.LenImp())
-	for _, v := range bidRequestWrapper.GetImp() {
-		impMap[v.ID] = v
+	for _, imp := range bidRequestWrapper.GetImp() {
+		impMap[imp.ID] = imp
 	}
 
 	for _, seatBid := range seatBids {
