@@ -49,4 +49,5 @@ var invalidParams = []string{
 	`{"adSlotId": "32321"}`,
 	`{"id": }`,
 	`{}`,
+	`{"placementId": "11523", "adSlotID": "12345"}`, // Can't include both
 }
