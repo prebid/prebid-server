@@ -139,18 +139,19 @@ func (a *AdButtlerAdapter) GetBidderResponse(request *openrtb2.BidRequest, adBut
 		productid := adButlerBid.ProductData[RESPONSE_PRODUCTID]
 		clickPrice := adButlerBid.CPCSpend
 
-		var impressionUrl, clickUrl, conversionUrl string
+		var impressionUrl, clickUrl, conversionUrl, adbutlerClick string
 
 		for _, beacon := range adButlerBid.Beacons {
 			switch beacon.Type {
 			case BEACONTYPE_IMP:
 				impressionUrl = IMP_KEY + url.QueryEscape(beacon.TrackingUrl)
 			case BEACONTYPE_CLICK:
+				adbutlerClick = beacon.TrackingUrl
 				clickUrl = CLICK_KEY + url.QueryEscape(beacon.TrackingUrl)
 			}
 		}
 
-		conversionUrl = GenerateConversionUrl(adbutlerID, zoneID, adbUID, productid)
+		conversionUrl = GenerateConversionUrl(adbutlerClick, adbutlerID, zoneID, adbUID, productid)
 
 		bidExt := &openrtb_ext.ExtBidCommerce{
 			ProductId:     productid,
@@ -183,8 +184,14 @@ func (a *AdButtlerAdapter) GetBidderResponse(request *openrtb2.BidRequest, adBut
 	return bidResponse
 }
 
-func GenerateConversionUrl(adbutlerID, zoneID,adbUID, productID string) string {
-	conversionUrl := strings.Replace(CONVERSION_URL, CONV_ADBUTLERID, adbutlerID, 1)
+func GenerateConversionUrl(clickurl, adbutlerID, zoneID,adbUID, productID string) string {
+	var hostname string
+	url, err := url.Parse(clickurl)
+    if err == nil {
+		hostname = url.Hostname()
+	 }
+
+	conversionUrl := strings.Replace(CONVERSION_URL, CONV_HOSTNAME, hostname, 1)
 	conversionUrl = strings.Replace(conversionUrl, CONV_ZONEID, zoneID, 1)
 	conversionUrl = strings.Replace(conversionUrl, CONV_ADBUID, adbUID, 1)
 	conversionUrl = strings.Replace(conversionUrl, CONV_IDENTIFIER, productID, 1)

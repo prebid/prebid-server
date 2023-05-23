@@ -27,12 +27,12 @@ const (
 	RESPONSE_PRODUCTID            = "sku"
     IMP_KEY                       = "tps_impurl="
 	CLICK_KEY                     = "tps_clkurl="
+	CONV_HOSTNAME                 = "conv_host"
 	CONV_ADBUTLERID               = "conv_adbutlerID"
 	CONV_ZONEID                   = "conv_zoneID"
 	CONV_ADBUID                   = "conv_adbUID"
 	CONV_IDENTIFIER               = "conv_Identifier"
-	CONVERSION_URL                = `tps_ID=conv_adbutlerID&tps_setID=conv_zoneID&tps_adb_uid=conv_adbUID&tps_identifier=conv_Identifier`
-
+	CONVERSION_URL                = `tps_host=conv_host&tps_ID=conv_adbutlerID&tps_setID=conv_zoneID&tps_adb_uid=conv_adbUID&tps_identifier=conv_Identifier`
 
 	DATATYE_NUMBER                = 1
 	DATATYE_STRING                = 2
