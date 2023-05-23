@@ -2,6 +2,7 @@ package usersync
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -124,7 +125,7 @@ func TestParseCorruptedCookieJSON(t *testing.T) {
 }
 
 func TestParseNilSyncMap(t *testing.T) {
-	cookieJSON := "{\"optout\":123}"
+	cookieJSON := json.RawMessage(`malformed`)
 	cookieData := base64.URLEncoding.EncodeToString([]byte(cookieJSON))
 	raw := http.Cookie{
 		Name:  uidCookieName,
