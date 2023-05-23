@@ -374,6 +374,19 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	)
 
 	if anyBidsReturned {
+		if e.floor.Enabled {
+			var rejectedBids []*entities.PbsOrtbSeatBid
+			var enforceErrs []error
+
+			adapterBids, enforceErrs, rejectedBids = floors.Enforce(r.BidRequestWrapper, adapterBids, r.Account, conversions)
+			errs = append(errs, enforceErrs...)
+			for _, rejectedBid := range rejectedBids {
+				errs = append(errs, &errortypes.Warning{
+					Message:     fmt.Sprintf("%s bid id %s rejected - bid price %.4f %s is less than bid floor %.4f %s for imp %s", rejectedBid.Seat, rejectedBid.Bids[0].Bid.ID, rejectedBid.Bids[0].Bid.Price, rejectedBid.Currency, rejectedBid.Bids[0].BidFloors.FloorValue, rejectedBid.Bids[0].BidFloors.FloorCurrency, rejectedBid.Bids[0].Bid.ImpID),
+					WarningCode: errortypes.FloorBidRejectionWarningCode})
+			}
+		}
+
 		var bidCategory map[string]string
 		//If includebrandcategory is present in ext then CE feature is on.
 		if requestExtPrebid.Targeting != nil && requestExtPrebid.Targeting.IncludeBrandCategory != nil {
@@ -1216,6 +1229,7 @@ func (e *exchange) makeBid(bids []*entities.PbsOrtbBid, auc *auction, returnCrea
 			DealTierSatisfied: bid.DealTierSatisfied,
 			Events:            bid.BidEvents,
 			Targeting:         bid.BidTargets,
+			Floors:            bid.BidFloors,
 			Type:              bid.BidType,
 			Meta:              bid.BidMeta,
 			Video:             bid.BidVideo,
