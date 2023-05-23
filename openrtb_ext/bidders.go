@@ -148,6 +148,7 @@ const (
 	BidderConnectAd         BidderName = "connectad"
 	BidderConsumable        BidderName = "consumable"
 	BidderConversant        BidderName = "conversant"
+	BidderCopper6           BidderName = "copper6"
 	BidderCpmstar           BidderName = "cpmstar"
 	BidderCriteo            BidderName = "criteo"
 	BidderCWire             BidderName = "cwire"
@@ -157,12 +158,14 @@ const (
 	BidderDefinemedia       BidderName = "definemedia"
 	BidderDianomi           BidderName = "dianomi"
 	BidderDmx               BidderName = "dmx"
+	BidderEmtv              BidderName = "emtv"
 	BidderEmxDigital        BidderName = "emx_digital"
 	BidderEngageBDR         BidderName = "engagebdr"
 	BidderEPlanning         BidderName = "eplanning"
 	BidderEpom              BidderName = "epom"
 	BidderEVolution         BidderName = "e_volution"
 	BidderEvtech            BidderName = "evtech"
+	BidderFlipp             BidderName = "flipp"
 	BidderFreewheelSSP      BidderName = "freewheelssp"
 	BidderFreewheelSSPOld   BidderName = "freewheel-ssp"
 	BidderFRVRAdNetwork     BidderName = "frvradn"
@@ -336,6 +339,7 @@ func CoreBidderNames() []BidderName {
 		BidderConnectAd,
 		BidderConsumable,
 		BidderConversant,
+		BidderCopper6,
 		BidderCpmstar,
 		BidderCriteo,
 		BidderCWire,
@@ -345,12 +349,14 @@ func CoreBidderNames() []BidderName {
 		BidderDefinemedia,
 		BidderDianomi,
 		BidderDmx,
+		BidderEmtv,
 		BidderEmxDigital,
 		BidderEngageBDR,
 		BidderEPlanning,
 		BidderEpom,
 		BidderEVolution,
 		BidderEvtech,
+		BidderFlipp,
 		BidderFreewheelSSP,
 		BidderFreewheelSSPOld,
 		BidderFRVRAdNetwork,

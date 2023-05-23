@@ -771,7 +771,7 @@ func convertCountryCode(country string) (out string) {
 		return mappedCountry
 	}
 
-	if len(country) >= 3 {
+	if len(country) >= 2 {
 		return country[0:2]
 	}
 

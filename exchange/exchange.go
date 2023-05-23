@@ -65,7 +65,6 @@ type exchange struct {
 	cache                    prebid_cache_client.Client
 	cacheTime                time.Duration
 	gdprPermsBuilder         gdpr.PermissionsBuilder
-	tcf2ConfigBuilder        gdpr.TCF2ConfigBuilder
 	currencyConverter        *currency.RateConverter
 	externalURL              string
 	gdprDefaultValue         gdpr.Signal
@@ -126,7 +125,7 @@ func (randomDeduplicateBidBooleanGenerator) Generate() bool {
 	return rand.Intn(100) < 50
 }
 
-func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, gdprPermsBuilder gdpr.PermissionsBuilder, tcf2CfgBuilder gdpr.TCF2ConfigBuilder, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher, adsCertSigner adscert.Signer) Exchange {
+func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, gdprPermsBuilder gdpr.PermissionsBuilder, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher, adsCertSigner adscert.Signer) Exchange {
 	bidderToSyncerKey := map[string]string{}
 	for bidder, syncer := range syncersByBidder {
 		bidderToSyncerKey[bidder] = syncer.Key()
@@ -147,7 +146,6 @@ func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid
 		me:                metricsEngine,
 		privacyConfig:     privacyConfig,
 		gdprPermsBuilder:  gdprPermsBuilder,
-		tcf2ConfigBuilder: tcf2CfgBuilder,
 		hostSChainNode:    cfg.HostSChainNode,
 		bidderInfo:        infos,
 	}
@@ -162,7 +160,6 @@ func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid
 		currencyConverter:        currencyConverter,
 		externalURL:              cfg.ExternalURL,
 		gdprPermsBuilder:         gdprPermsBuilder,
-		tcf2ConfigBuilder:        tcf2CfgBuilder,
 		me:                       metricsEngine,
 		gdprDefaultValue:         gdprDefaultValue,
 		privacyConfig:            privacyConfig,
@@ -194,6 +191,7 @@ type AuctionRequest struct {
 	Warnings                   []error
 	GlobalPrivacyControlHeader string
 	ImpExtInfoMap              map[string]ImpExtInfo
+	TCF2Config                 gdpr.TCF2ConfigReader
 
 	// LegacyLabels is included here for temporary compatibility with cleanOpenRTBRequests
 	// in HoldAuction until we get to factoring it away. Do not use for anything new.
@@ -376,6 +374,19 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	)
 
 	if anyBidsReturned {
+		if e.floor.Enabled {
+			var rejectedBids []*entities.PbsOrtbSeatBid
+			var enforceErrs []error
+
+			adapterBids, enforceErrs, rejectedBids = floors.Enforce(r.BidRequestWrapper, adapterBids, r.Account, conversions)
+			errs = append(errs, enforceErrs...)
+			for _, rejectedBid := range rejectedBids {
+				errs = append(errs, &errortypes.Warning{
+					Message:     fmt.Sprintf("%s bid id %s rejected - bid price %.4f %s is less than bid floor %.4f %s for imp %s", rejectedBid.Seat, rejectedBid.Bids[0].Bid.ID, rejectedBid.Bids[0].Bid.Price, rejectedBid.Currency, rejectedBid.Bids[0].BidFloors.FloorValue, rejectedBid.Bids[0].BidFloors.FloorCurrency, rejectedBid.Bids[0].Bid.ImpID),
+					WarningCode: errortypes.FloorBidRejectionWarningCode})
+			}
+		}
+
 		var bidCategory map[string]string
 		//If includebrandcategory is present in ext then CE feature is on.
 		if requestExtPrebid.Targeting != nil && requestExtPrebid.Targeting.IncludeBrandCategory != nil {
@@ -1218,6 +1229,7 @@ func (e *exchange) makeBid(bids []*entities.PbsOrtbBid, auc *auction, returnCrea
 			DealTierSatisfied: bid.DealTierSatisfied,
 			Events:            bid.BidEvents,
 			Targeting:         bid.BidTargets,
+			Floors:            bid.BidFloors,
 			Type:              bid.BidType,
 			Meta:              bid.BidMeta,
 			Video:             bid.BidVideo,
