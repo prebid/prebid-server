@@ -33,7 +33,7 @@ func (a *AdButtlerAdapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.Ext
 	var commerceExt openrtb_ext.ExtImpCommerce
 	if err := json.Unmarshal(imp.Ext, &commerceExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: "Bidder extension not provided or can't be unmarshalled",
+			Message: "Impression extension not provided or can't be unmarshalled",
 		}
 	}
 
@@ -131,7 +131,7 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 	for _,targetObj := range commerceExt.ComParams.Targeting {
 		key := targetObj.Name
 		datatype := targetObj.Type
-        if targetObj.Value != nil && len(targetObj.Value) > 0 {
+        if len(targetObj.Value) > 0 {
 			switch datatype {
 				case DATATYE_NUMBER, DATATYE_STRING, DATATYE_DATETIME, DATATYE_DATE, DATATYE_TIME :
 					adButlerReq.Target[key] = targetObj.Value[0]

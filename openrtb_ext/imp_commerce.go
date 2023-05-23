@@ -22,7 +22,7 @@ type ExtImpFiltering struct {
 // ExtImpTargeting - Impression Targeting Extension
 type ExtImpTargeting struct {
 	Name  string   `json:"name,omitempty"`
-	Value string   `json:"value,omitempty"`
+	Value []string   `json:"value,omitempty"`
 	Type  int      `json:"type,omitempty"`
 }
 
