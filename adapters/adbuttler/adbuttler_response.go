@@ -105,9 +105,9 @@ func (a *AdButtlerAdapter) MakeBids(internalRequest *openrtb2.BidRequest, extern
 
 }
 
-func EncodeURl(string url) string{
+func EncodeURl(url string) string{
 	str := base64.StdEncoding.EncodeToString([]byte(url))
-	return string
+	return str
 }
 
 func (a *AdButtlerAdapter) GetBidderResponse(request *openrtb2.BidRequest, adButlerResp *AdButlerResponse, requestImpID string) *adapters.BidderResponse {
