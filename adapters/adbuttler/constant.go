@@ -25,10 +25,19 @@ const (
 	BEACONTYPE_IMP                = "impression"
 	BEACONTYPE_CLICK              = "click"
 	RESPONSE_PRODUCTID            = "sku"
-    
-	DATATYE_INT                   = 1
-	DATATYE_FLOAT                 = 2
-	DATATYE_STRING                = 3
-	DATATYE_BOOL                  = 4
+    IMP_KEY                       = "tps_impurl="
+	CLICK_KEY                     = "tps_clkurl="
+	CONV_ADBUTLERID               = "ADBUTLERID"
+	CONV_ZONEID                   = "ZONEID"
+	CONV_ADBUID                   = "adb_uid"
+	CONV_IDENTIFIER               = "IDENTIFIER"
+	CONVERSION_URL                = `tps_ID=CONV_ADBUTLERID&tps_setID=CONV_ZONEID&tps_adb_uid=CONV_ADBUID&tps_identifier=CONV_IDENTIFIER`
 
+
+	DATATYE_NUMBER                = 1
+	DATATYE_STRING                = 2
+	DATATYE_DATE                  = 3
+	DATATYE_TIME                  = 4
+	DATATYE_DATETIME              = 5
+	DATATYE_ARRAY                 = 6
 )

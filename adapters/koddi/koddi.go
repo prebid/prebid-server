@@ -89,7 +89,7 @@ func GetDummyBids(impUrl , clickUrl , conversionUrl, seatName string, requestCou
 		campaignID := GetRandomCampaignID()
 		bidPrice := GetRandomBidPrice()
 		clickPrice := GetRandomClickPrice()
-		bidID := adbuttler.GetDefaultBidID(seatName) + "_" + strconv.Itoa(i)
+		bidID := adbuttler.GenerateUniqueBidID()
 		impID := ImpID + "_" + strconv.Itoa(i)
 
 		bidExt := &openrtb_ext.ExtBidCommerce{
@@ -130,12 +130,12 @@ func GetDummyBids_NoBid(impUrl , clickUrl , conversionUrl, seatName string, requ
 	if requestCount > MAX_COUNT {
 		requestCount = MAX_COUNT
 	}
-	for i := 1; i <= requestCount; i++ {
+	for i := 0; i < requestCount; i++ {
 		productid := GetRandomProductID()
 		campaignID := GetRandomCampaignID()
 		bidPrice := GetRandomBidPrice()
 		clickPrice := GetRandomClickPrice()
-		bidID := adbuttler.GetDefaultBidID(seatName) + "_" + strconv.Itoa(i)
+		bidID := adbuttler.GenerateUniqueBidID()
 		newIurl := impUrl + "_ImpID=" +bidID
 		newCurl := clickUrl + "_ImpID=" +bidID
 		newPurl := conversionUrl + "_ImpID=" +bidID

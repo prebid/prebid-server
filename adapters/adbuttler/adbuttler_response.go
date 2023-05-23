@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
-	"time"
+	"strings"
 
+	"github.com/google/uuid"
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
@@ -21,7 +23,7 @@ type AdButlerBeacon struct {
 type AdButlerBid struct {
 	CPCBid      float64           `json:"cpc_bid,omitempty"`
 	CPCSpend    float64           `json:"cpc_spend,omitempty"`
-	CampaignID  int64            `json:"campaign_id,omitempty"`
+	CampaignID  int64             `json:"campaign_id,omitempty"`
 	ProductData map[string]string `json:"item,omitempty"`
 	Beacons     []*AdButlerBeacon `json:"beacons,omitempty"`
 }
@@ -32,21 +34,19 @@ type AdButlerResponse struct {
 	Bids   []*AdButlerBid `json:"items,omitempty"`
 }
 
-
-func AddDefaultFields(bid *openrtb2.Bid){
+func AddDefaultFields(bid *openrtb2.Bid) {
 	if bid != nil {
 		bid.CrID = "DefaultCRID"
 	}
 }
 
-func GetDefaultBidID(name string) string {
-	prefix := "BidResponse_" + name+ "_"
-	t := time.Now().UnixNano() / int64(time.Microsecond)
-	return prefix + strconv.Itoa(int(t))
+func GenerateUniqueBidID() string {
+	id := uuid.New()
+	return id.String()
 }
 
 func (a *AdButtlerAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-    var errors []error
+	var errors []error
 
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -80,59 +80,83 @@ func (a *AdButtlerAdapter) MakeBids(internalRequest *openrtb2.BidRequest, extern
 	if adButlerResp.Status == RESPONSE_NOADS {
 		return nil, []error{&errortypes.BidderFailedSchemaValidation{
 			Message: fmt.Sprintf("Error Occured at Adbutler for the given request with ErrorCode %d", adButlerResp.Code),
-			}}
+		}}
 	}
 
-
-	if adButlerResp.Status == RESPONSE_SUCCESS &&  (adButlerResp.Bids == nil || 
-		len(adButlerResp.Bids) <=0 ){
+	if adButlerResp.Status == RESPONSE_SUCCESS && (adButlerResp.Bids == nil ||
+		len(adButlerResp.Bids) <= 0) {
 		return nil, []error{&errortypes.NoBidPrice{
 			Message: "No Bid For the given Request",
-			}}
+		}}
 	}
 
-	if adButlerResp.Status == RESPONSE_SUCCESS &&  (adButlerResp.Bids != nil &&
-		len(adButlerResp.Bids) >0 ){
+	if adButlerResp.Status == RESPONSE_SUCCESS && (adButlerResp.Bids != nil &&
+		len(adButlerResp.Bids) > 0) {
 		impID := internalRequest.Imp[0].ID
-		responseF := GetBidderResponse(&adButlerResp, impID)
+		responseF := a.GetBidderResponse(internalRequest, &adButlerResp, impID)
 		return responseF, errors
 	}
 
-    err := fmt.Errorf("unknown error occcured for the given request from adbutler")
-	errors = append(errors,err )
+	err := fmt.Errorf("unknown error occcured for the given request from adbutler")
+	errors = append(errors, err)
 
 	return nil, errors
 
 }
 
-func GetBidderResponse(adButlerResp *AdButlerResponse, requestImpID string) (*adapters.BidderResponse){
+func (a *AdButtlerAdapter) GetBidderResponse(request *openrtb2.BidRequest, adButlerResp *AdButlerResponse, requestImpID string) *adapters.BidderResponse {
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(adButlerResp.Bids))
+	var commerceExt *openrtb_ext.ExtImpCommerce
+    var adbutlerID, zoneID, adbUID string
+	
+	if len(request.Imp) > 0 {
+		commerceExt, _ = a.getImpressionExt(&(request.Imp[0]))	
+		var configValueMap = make(map[string]string)
+		for _,obj := range commerceExt.Bidder.CustomConfig {
+			configValueMap[obj.Key] = obj.Value
+		}	
+	
+		val, ok := configValueMap[ACCOUNT_ID]
+		if ok {
+			adbutlerID = val
+		}
+	
+		val, ok = configValueMap[ZONE_ID]
+		if ok {
+			zoneID = val
+		} 
+		adbUID = request.User.ID
+	
+    } 
 
 	for index, adButlerBid := range adButlerResp.Bids {
-		var impressionUrl string
-		var clickUrl string
 
-		bidID := GetDefaultBidID(SEAT_ADBUTLER) + "_" + strconv.Itoa(index)
+		bidID := GenerateUniqueBidID()
 		impID := requestImpID + "_" + strconv.Itoa(index)
 		bidPrice := adButlerBid.CPCBid
 		campaignID := strconv.FormatInt(adButlerBid.CampaignID, 10)
 		productid := adButlerBid.ProductData[RESPONSE_PRODUCTID]
 		clickPrice := adButlerBid.CPCSpend
-		
+
+		var impressionUrl, clickUrl, conversionUrl string
+
 		for _, beacon := range adButlerBid.Beacons {
 			switch beacon.Type {
 			case BEACONTYPE_IMP:
-				impressionUrl = beacon.TrackingUrl
+				impressionUrl = IMP_KEY + url.QueryEscape(beacon.TrackingUrl)
 			case BEACONTYPE_CLICK:
-				clickUrl = beacon.TrackingUrl
+				clickUrl = CLICK_KEY + url.QueryEscape(beacon.TrackingUrl)
 			}
 		}
 
+		conversionUrl = GenerateConversionUrl(adbutlerID, zoneID, adbUID, productid)
+
 		bidExt := &openrtb_ext.ExtBidCommerce{
-			ProductId:  productid,
-			ClickUrl:   clickUrl,
-			ClickPrice: clickPrice,
+			ProductId:     productid,
+			ClickUrl:      clickUrl,
+			ClickPrice:    clickPrice,
+			ConversionUrl: conversionUrl,
 		}
 
 		bid := &openrtb2.Bid{
@@ -155,6 +179,16 @@ func GetBidderResponse(adButlerResp *AdButlerResponse, requestImpID string) (*ad
 			Seat: openrtb_ext.BidderName(SEAT_ADBUTLER),
 		}
 		bidResponse.Bids = append(bidResponse.Bids, typedbid)
-	} 
+	}
 	return bidResponse
+}
+
+func GenerateConversionUrl(adbutlerID, zoneID,adbUID, productID string) string {
+	conversionUrl := strings.Replace(CONVERSION_URL, CONV_ADBUTLERID, adbutlerID, 1)
+	conversionUrl = strings.Replace(conversionUrl, CONV_ZONEID, zoneID, 1)
+	conversionUrl = strings.Replace(conversionUrl, CONV_ADBUID, adbUID, 1)
+	conversionUrl = strings.Replace(conversionUrl, CONV_IDENTIFIER, productID, 1)
+
+	return conversionUrl
+
 }

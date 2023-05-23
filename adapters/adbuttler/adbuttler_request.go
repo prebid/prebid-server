@@ -22,30 +22,48 @@ type AdButlerRequest struct {
 	Target            map[string]interface{}  `json:"_abdk_json,omitempty"`
 	Limit             int                     `json:"limit,omitempty"`
 	Source            int64                   `json:"source,omitempty"`
-	UserID            string                  `json:"udb_uid,omitempty"`
+	UserID            string                  `json:"adb_uid,omitempty"`
 	IP                string                  `json:"ip,omitempty"`
 	UserAgent         string                  `json:"ua,omitempty"`
 	Referrer          string                  `json:"referrer,omitempty"`
 	FloorCPC          float64                 `json:"bid_floor_cpc,omitempty"`
 }
 
+func (a *AdButtlerAdapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpCommerce, error) {
+	var commerceExt openrtb_ext.ExtImpCommerce
+	if err := json.Unmarshal(imp.Ext, &commerceExt); err != nil {
+		return nil, &errortypes.BadInput{
+			Message: "Bidder extension not provided or can't be unmarshalled",
+		}
+	}
+
+	return &commerceExt, nil
+
+}
 
 func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	var commerceExt *openrtb_ext.ExtImpCommerce
+	var errors []error
+
+	if len(request.Imp) > 0 {
+		var err error
+		commerceExt, err = a.getImpressionExt(&(request.Imp[0]))
+		if err != nil {
+			errors = append(errors, err)
+		}
+	} else {
+		errors = append(errors, &errortypes.BadInput{
+			Message: "Missing Imp Object",
+		})
+	}
+
+	if len(errors) > 0 {
+		return nil, errors
+	}
+
 	var adButlerReq AdButlerRequest 
     var configValueMap = make(map[string]string)
     var configTypeMap = make(map[string]int)
-	
-	var extension map[string]json.RawMessage
-	var preBidExt openrtb_ext.ExtRequestPrebid
-	var commerceExt openrtb_ext.ExtImpCommerce
-	var accountID, zoneID string
-
-	adButlerReq.Target = make(map[string]interface{})
-
-	json.Unmarshal(request.Ext, &extension)
-	json.Unmarshal(extension["prebid"], &preBidExt)
-	json.Unmarshal(request.Imp[0].Ext, &commerceExt)
-	
 	for _,obj := range commerceExt.Bidder.CustomConfig {
 		configValueMap[obj.Key] = obj.Value
 		configTypeMap[obj.Key] = obj.Type
@@ -59,6 +77,24 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 		}
 	}
 
+    //Retrieve AccountID and ZoneID from Request and Build endpoint Url
+	var accountID, zoneID string
+	val, ok = configValueMap[ACCOUNT_ID]
+	if ok {
+		accountID = val
+	}
+	
+	val, ok = configValueMap[ZONE_ID]
+	if ok {
+		zoneID = val
+	} 
+		
+	endPoint, err := a.buildEndpointURL(accountID, zoneID)
+	if err != nil {
+		return nil, []error{err}
+	}
+		
+	adButlerReq.Target = make(map[string]interface{})
 	//Add User Targeting
 	if request.User != nil {
 		if(request.User.Yob > 0) {
@@ -95,32 +131,19 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 	for _,targetObj := range commerceExt.ComParams.Targeting {
 		key := targetObj.Name
 		datatype := targetObj.Type
-
-		switch datatype {
-			case DATATYE_INT:
-				value, err := strconv.ParseInt(targetObj.Value, 10, 64)
-				if err == nil {
-					adButlerReq.Target[key] = value
-				}
-			
-			case DATATYE_FLOAT:
-				value, err := strconv.ParseFloat(targetObj.Value, 64)
-				if err == nil {
-					adButlerReq.Target[key] = value
-				}
-		  
-		    case DATATYE_STRING:
-				adButlerReq.Target[key] = targetObj.Value
-
-			case DATATYE_BOOL:
-				if targetObj.Value == "true" {
-					adButlerReq.Target[key] = true
-				} else if targetObj.Value == "false" {
-					adButlerReq.Target[key] = false
-				}
+        if targetObj.Value != nil && len(targetObj.Value) > 0 {
+			switch datatype {
+				case DATATYE_NUMBER, DATATYE_STRING, DATATYE_DATETIME, DATATYE_DATE, DATATYE_TIME :
+					adButlerReq.Target[key] = targetObj.Value[0]
+		    	case DATATYE_ARRAY:
+					if len(targetObj.Value) == 1 {
+						adButlerReq.Target[key] = targetObj.Value[0]
+					} else {
+						adButlerReq.Target[key] = targetObj.Value
+					}
+			}
 		}
 	}
-
 	//Add Identifiers from AdRequest
 	for _,prefObj := range commerceExt.ComParams.Preferred {
 		adButlerReq.Identifiers = append(adButlerReq.Identifiers, prefObj.ProductID)
@@ -190,25 +213,9 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 	u, _ := json.Marshal(adButlerReq)
 	fmt.Println(string(u))
 
-	//Assign Page Source if Present
-	val, ok = configValueMap[ACCOUNT_ID]
-	if ok {
-		accountID = val
-	}
-
-	val, ok = configValueMap[ZONE_ID]
-	if ok {
-		zoneID = val
-	} 
-	
-	endPoint,_ := a.buildEndpointURL(accountID, zoneID)
-	errs := make([]error, 0, len(request.Imp))
-
 	reqJSON, err := json.Marshal(adButlerReq)
 	if err != nil {
-		return nil, []error{&errortypes.FailedToRequestBids{
-			Message: err.Error(),
-		}}
+		return nil, []error{err}
 	}
 
 	headers := http.Header{}
@@ -219,6 +226,6 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 		Uri:     endPoint,
 		Body:    reqJSON,
 		Headers: headers,
-	}}, errs
+	}}, nil
 	
 }
