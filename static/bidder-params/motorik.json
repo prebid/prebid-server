@@ -11,7 +11,7 @@
       },
       "placementId": {
         "type": "string",
-        "description": "PlacementId id",
+        "description": "Placement id",
         "minLength": 1
       }
     },

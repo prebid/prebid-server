@@ -106,7 +106,7 @@
               "bid": [
                 {
                   "id": "a3ae1b4e2fc24a4fb45540082e98e161",
-                  "impid": "1",
+                  "impid": "test-imp-id",
                   "price": 3.5,
                   "adm": "awesome-markup",
                   "adomain": [
@@ -126,25 +126,10 @@
       }
     }
   ],
-  "expectedBidResponses": [
+  "expectedMakeBidsErrors": [
     {
-      "bids": [
-        {
-          "bid": {
-            "id": "a3ae1b4e2fc24a4fb45540082e98e161",
-            "impid": "1",
-            "price": 3.5,
-            "adm": "awesome-markup",
-            "adomain": [
-              "awesome.com"
-            ],
-            "crid": "20",
-            "w": 320,
-            "h": 50
-          },
-          "type": "banner"
-        }
-      ]
+      "value": "Failed to find impression \"test-imp-id\"",
+      "comparison": "literal"
     }
   ]
 }
