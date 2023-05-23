@@ -4198,7 +4198,7 @@ func TestGetPrebidMediaTypeForBid(t *testing.T) {
 		{
 			description:   "Invalid bid ext",
 			inputBid:      openrtb2.Bid{ID: "bidId", ImpID: "impId", Ext: json.RawMessage(`[true`)},
-			expectedError: "Failed to parse bid mediatype for impression \"impId\"",
+			expectedError: "Failed to parse bid mediatype for impression \"impId\", unexpected end of JSON input",
 		},
 	}
 	for _, tt := range tests {
@@ -4230,7 +4230,7 @@ func TestGetMediaTypeForBid(t *testing.T) {
 		{
 			description:   "invalid bid ext",
 			inputBid:      openrtb2.Bid{ID: "bidId", ImpID: "impId", Ext: json.RawMessage(`{"prebid"`)},
-			expectedError: "Failed to parse bid mediatype for impression \"impId\"",
+			expectedError: "Failed to parse bid mediatype for impression \"impId\", unexpected end of JSON input",
 		},
 		{
 			description:     "Valid bid ext with mtype native",
