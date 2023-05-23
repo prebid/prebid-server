@@ -1448,7 +1448,6 @@ func TestMergeUser(t *testing.T) {
 	}
 }
 
-// fails
 func TestMergeUserMemoryProtection(t *testing.T) {
 	inputGeo := &openrtb2.Geo{
 		Ext: json.RawMessage(`{"a":1,"b":2}`),
@@ -1532,7 +1531,6 @@ func TestMergeObjectStructure(t *testing.T) {
 	}
 }
 
-// app
-// app memory protect
-// site [copy-paste from app. same extract structure.]
-// site memory protect
+// todo:
+// add: app memory protect test
+// add: site memory protect test

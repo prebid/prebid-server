@@ -189,7 +189,6 @@ func resolveUser(fpdConfig *openrtb_ext.ORTB2, bidRequestUser *openrtb2.User, gl
 		newUser.Data = openRtbGlobalFPD[userDataKey]
 	}
 	if fpdConfigUser != nil {
-
 		//apply bidder specific fpd if present
 		if err := mergeUser(&newUser, fpdConfigUser); err != nil {
 			return nil, err
@@ -200,6 +199,8 @@ func resolveUser(fpdConfig *openrtb_ext.ORTB2, bidRequestUser *openrtb2.User, gl
 }
 
 func mergeUser(v *openrtb2.User, overrideJSON json.RawMessage) error {
+	*v = *ortb.CloneUser(v)
+
 	// Track EXTs
 	var ext, extGeo extMerger
 	ext.Track(&v.Ext)
@@ -273,6 +274,8 @@ func resolveSite(fpdConfig *openrtb_ext.ORTB2, bidRequestSite *openrtb2.Site, gl
 }
 
 func mergeSite(v *openrtb2.Site, overrideJSON json.RawMessage, bidderName string) error {
+	*v = *ortb.CloneSite(v)
+
 	// Track EXTs
 	var ext, extPublisher, extContent, extContentProducer, extContentNetwork, extContentChannel extMerger
 	ext.Track(&v.Ext)
@@ -379,6 +382,8 @@ func resolveApp(fpdConfig *openrtb_ext.ORTB2, bidRequestApp *openrtb2.App, globa
 }
 
 func mergeApp(v *openrtb2.App, overrideJSON json.RawMessage) error {
+	*v = *ortb.CloneApp(v)
+
 	// Track EXTs
 	var ext, extPublisher, extContent, extContentProducer, extContentNetwork, extContentChannel extMerger
 	ext.Track(&v.Ext)
