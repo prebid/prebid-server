@@ -1,6 +1,7 @@
 package adbuttler
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -104,6 +105,11 @@ func (a *AdButtlerAdapter) MakeBids(internalRequest *openrtb2.BidRequest, extern
 
 }
 
+func EncodeURl(string url) string{
+	str := base64.StdEncoding.EncodeToString([]byte(url))
+	return string
+}
+
 func (a *AdButtlerAdapter) GetBidderResponse(request *openrtb2.BidRequest, adButlerResp *AdButlerResponse, requestImpID string) *adapters.BidderResponse {
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(adButlerResp.Bids))
@@ -144,10 +150,10 @@ func (a *AdButtlerAdapter) GetBidderResponse(request *openrtb2.BidRequest, adBut
 		for _, beacon := range adButlerBid.Beacons {
 			switch beacon.Type {
 			case BEACONTYPE_IMP:
-				impressionUrl = IMP_KEY + url.QueryEscape(beacon.TrackingUrl)
+				impressionUrl = IMP_KEY + EncodeURl(beacon.TrackingUrl)
 			case BEACONTYPE_CLICK:
 				adbutlerClick = beacon.TrackingUrl
-				clickUrl = CLICK_KEY + url.QueryEscape(beacon.TrackingUrl)
+				clickUrl = CLICK_KEY + EncodeURl(beacon.TrackingUrl)
 			}
 		}
 

@@ -66,7 +66,6 @@ type ExtAppCommerce struct {
 type ExtBidderCommerce struct {
 	PrebidBidderName  string            `json:"prebidname,omitempty"`
 	BidderCode        string            `json:"biddercode,omitempty"`
-	HostName          string            `json:"hostname,omitempty"`
 	CustomConfig      []*ExtCustomConfig `json:"config,omitempty"`
 }
 
