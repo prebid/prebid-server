@@ -9,19 +9,27 @@ import (
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 )
 
-var ErrBadRequest = fmt.Errorf("invalid request ext")
-var ErrBadFPD = fmt.Errorf("invalid first party data ext")
+var (
+	ErrBadRequest = fmt.Errorf("invalid request ext")
+	ErrBadFPD     = fmt.Errorf("invalid first party data ext")
+)
 
+// extMerger assists in tracking and merging changes to extension json after
+// unmarshalling override json on top of an existing OpenRTB object.
 type extMerger struct {
 	ext      *json.RawMessage
 	snapshot json.RawMessage
 }
 
+// Track saves a copy of the extension json and stores a reference to the extension
+// object for comparison later in the Merge call.
 func (e *extMerger) Track(ext *json.RawMessage) {
 	e.ext = ext
 	e.snapshot = sliceutil.Clone(*ext)
 }
 
+// Merge applies a json merge of the stored extension snapshot on top of the current
+// json of the tracked extension object.
 func (e extMerger) Merge() error {
 	if e.ext == nil {
 		return nil
