@@ -61,7 +61,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://prebid-xe-stage.xe.works/?pid=533faf0754cd43ceab591077781b909b",
+        "uri": "http://prebid-srv.xe.works/?pid=533faf0754cd43ceab591077781b909b&host=xe-stage",
         "body": {
           "id": "id",
           "imp": [
@@ -141,7 +141,7 @@
     },
     {
       "expectedRequest": {
-        "uri": "http://prebid-xe-stage.xe.works/?pid=533faf0754cd43ceab591077781b909b",
+        "uri": "http://prebid-srv.xe.works/?pid=533faf0754cd43ceab591077781b909b&host=xe-stage",
         "body": {
           "id": "id",
           "imp": [

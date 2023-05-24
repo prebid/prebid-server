@@ -14,7 +14,7 @@
         "ext": {
           "bidder": {
             "env": "xe-stage",
-            "pid": "dc230510f7eb516f0eb9a10e5913d3b5"
+            "pid": "533faf0754cd43ceab591077781b902"
           }
         }
       }
@@ -45,7 +45,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://prebid-xe-stage.xe.works/?pid=dc230510f7eb516f0eb9a10e5913d3b5",
+        "uri": "http://prebid-srv.xe.works/?pid=533faf0754cd43ceab591077781b902&host=xe-stage",
         "body": {
           "id": "id",
           "imp": [
@@ -61,7 +61,7 @@
               "ext": {
                 "bidder": {
                   "env": "xe-stage",
-                  "pid": "dc230510f7eb516f0eb9a10e5913d3b5"
+                  "pid": "533faf0754cd43ceab591077781b909b"
                 }
               }
             }

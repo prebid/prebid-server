@@ -45,7 +45,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://prebid-xe-stage.xe.works/?pid=dc230510f7eb516f0eb9a10e5913d3b5",
+        "uri": "http://prebid-srv.xe.works/?pid=dc230510f7eb516f0eb9a10e5913d3b5&host=xe-stage",
         "body": {
           "id": "id",
           "imp": [

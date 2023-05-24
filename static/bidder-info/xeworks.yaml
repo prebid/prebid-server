@@ -1,4 +1,4 @@
-endpoint: "http://prebid-{{.Host}}.xe.works/?pid={{.SourceId}}"
+endpoint: "http://prebid-srv.xe.works/?pid={{.SourceId}}&host={{.Host}}"
 maintainer:
   email: "team@xe.works"
 capabilities:
