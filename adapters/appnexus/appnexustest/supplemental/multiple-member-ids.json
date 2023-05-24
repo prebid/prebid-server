@@ -71,7 +71,7 @@
               "include_brand_category": true
             },
             "prebid": {
-              "targeting": {"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"includebidderkeys":true,"includewinners":true,"includebrandcategory":{"primaryadserver":1,"publisher":"","withcategory":true}}
+              "targeting": {"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"mediatypepricegranularity":{},"includebidderkeys":true,"includewinners":true,"includebrandcategory":{"primaryadserver":1,"publisher":"","withcategory":true}}
             }
           },
           "imp": [

@@ -19,7 +19,7 @@ const MaxKeyLength = 20
 // If the value is nil, then no targeting data will be tracked.
 type targetData struct {
 	priceGranularity          openrtb_ext.PriceGranularity
-	mediaTypePriceGranularity *openrtb_ext.MediaTypePriceGranularity
+	mediaTypePriceGranularity openrtb_ext.MediaTypePriceGranularity
 	includeWinners            bool
 	includeBidderKeys         bool
 	includeCacheBids          bool

@@ -1853,7 +1853,7 @@ func TestValidateTargeting(t *testing.T) {
 			name: "media type price granularity video correct",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
 				IncludeWinners: ptrutil.ToPtr(true),
-				MediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{
+				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
 					Video: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(2),
 						Ranges: []openrtb_ext.GranularityRange{
@@ -1868,7 +1868,7 @@ func TestValidateTargeting(t *testing.T) {
 			name: "media type price granularity banner correct",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
 				IncludeWinners: ptrutil.ToPtr(true),
-				MediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{
+				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
 					Banner: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(2),
 						Ranges: []openrtb_ext.GranularityRange{
@@ -1883,7 +1883,7 @@ func TestValidateTargeting(t *testing.T) {
 			name: "media type price granularity native correct",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
 				IncludeWinners: ptrutil.ToPtr(true),
-				MediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{
+				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
 					Native: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(2),
 						Ranges: []openrtb_ext.GranularityRange{
@@ -1898,7 +1898,7 @@ func TestValidateTargeting(t *testing.T) {
 			name: "media type price granularity video and banner correct",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
 				IncludeWinners: ptrutil.ToPtr(true),
-				MediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{
+				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
 					Banner: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(2),
 						Ranges: []openrtb_ext.GranularityRange{
@@ -1919,7 +1919,7 @@ func TestValidateTargeting(t *testing.T) {
 			name: "media type price granularity video incorrect",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
 				IncludeWinners: ptrutil.ToPtr(true),
-				MediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{
+				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
 					Video: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(2),
 						Ranges: []openrtb_ext.GranularityRange{
@@ -1934,7 +1934,7 @@ func TestValidateTargeting(t *testing.T) {
 			name: "media type price granularity banner incorrect",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
 				IncludeWinners: ptrutil.ToPtr(true),
-				MediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{
+				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
 					Banner: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(2),
 						Ranges: []openrtb_ext.GranularityRange{
@@ -1949,7 +1949,7 @@ func TestValidateTargeting(t *testing.T) {
 			name: "media type price granularity native incorrect",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
 				IncludeWinners: ptrutil.ToPtr(true),
-				MediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{
+				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
 					Native: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(2),
 						Ranges: []openrtb_ext.GranularityRange{
@@ -1964,7 +1964,7 @@ func TestValidateTargeting(t *testing.T) {
 			name: "media type price granularity video correct and banner incorrect",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
 				IncludeWinners: ptrutil.ToPtr(true),
-				MediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{
+				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
 					Banner: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(2),
 						Ranges: []openrtb_ext.GranularityRange{
@@ -1985,7 +1985,7 @@ func TestValidateTargeting(t *testing.T) {
 			name: "media type price granularity native incorrect and banner correct",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
 				IncludeWinners: ptrutil.ToPtr(true),
-				MediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{
+				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
 					Native: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(2),
 						Ranges: []openrtb_ext.GranularityRange{

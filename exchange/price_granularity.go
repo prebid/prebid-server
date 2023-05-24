@@ -15,17 +15,17 @@ func GetPriceBucket(bid openrtb2.Bid, targetingData *targetData) string {
 	increment := 0.0
 
 	config := targetingData.priceGranularity //assign default price granularity
-	if targetingData.mediaTypePriceGranularity != nil {
-		if bidType, err := getMediaTypeForBid(bid); err == nil {
-			if bidType == openrtb_ext.BidTypeBanner && targetingData.mediaTypePriceGranularity.Banner != nil {
-				config = *targetingData.mediaTypePriceGranularity.Banner
-			} else if bidType == openrtb_ext.BidTypeVideo && targetingData.mediaTypePriceGranularity.Video != nil {
-				config = *targetingData.mediaTypePriceGranularity.Video
-			} else if bidType == openrtb_ext.BidTypeNative && targetingData.mediaTypePriceGranularity.Native != nil {
-				config = *targetingData.mediaTypePriceGranularity.Native
-			}
+
+	if bidType, err := getMediaTypeForBid(bid); err == nil {
+		if bidType == openrtb_ext.BidTypeBanner && targetingData.mediaTypePriceGranularity.Banner != nil {
+			config = *targetingData.mediaTypePriceGranularity.Banner
+		} else if bidType == openrtb_ext.BidTypeVideo && targetingData.mediaTypePriceGranularity.Video != nil {
+			config = *targetingData.mediaTypePriceGranularity.Video
+		} else if bidType == openrtb_ext.BidTypeNative && targetingData.mediaTypePriceGranularity.Native != nil {
+			config = *targetingData.mediaTypePriceGranularity.Native
 		}
 	}
+
 	precision := *config.Precision
 
 	cpm := bid.Price

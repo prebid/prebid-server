@@ -36,7 +36,7 @@ func TestSetDefaults(t *testing.T) {
 		{
 			name:            "targeting", // tests integration with setDefaultsTargeting
 			givenRequest:    openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"targeting":{}}}`)},
-			expectedRequest: openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"includewinners":true,"includebidderkeys":true}}}`)},
+			expectedRequest: openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"mediatypepricegranularity":{},"includewinners":true,"includebidderkeys":true}}}`)},
 		},
 		{
 			name:            "imp", // tests integration with setDefaultsImp
@@ -159,7 +159,7 @@ func TestSetDefaultsTargeting(t *testing.T) {
 					Precision: ptrutil.ToPtr(4),
 					Ranges:    nil,
 				},
-				MediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{
+				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
 					Video: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(4),
 						Ranges:    nil,
@@ -176,7 +176,7 @@ func TestSetDefaultsTargeting(t *testing.T) {
 			},
 			expectedTargeting: &openrtb_ext.ExtRequestTargeting{
 				PriceGranularity: &defaultGranularity,
-				MediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{
+				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
 					Video:  &defaultGranularity,
 					Banner: &defaultGranularity,
 					Native: &defaultGranularity,
@@ -208,7 +208,7 @@ func TestSetDefaultsTargeting(t *testing.T) {
 					Precision: ptrutil.ToPtr(4),
 					Ranges:    []openrtb_ext.GranularityRange{},
 				},
-				MediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{
+				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
 					Video: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(4),
 						Ranges:    []openrtb_ext.GranularityRange{},
@@ -225,7 +225,7 @@ func TestSetDefaultsTargeting(t *testing.T) {
 			},
 			expectedTargeting: &openrtb_ext.ExtRequestTargeting{
 				PriceGranularity: &defaultGranularity,
-				MediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{
+				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
 					Video:  &defaultGranularity,
 					Banner: &defaultGranularity,
 					Native: &defaultGranularity,
@@ -262,7 +262,7 @@ func TestSetDefaultsTargeting(t *testing.T) {
 					Precision: ptrutil.ToPtr(4),
 					Ranges:    []openrtb_ext.GranularityRange{{Min: 0, Max: 10, Increment: 1}},
 				},
-				MediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{
+				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
 					Video: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(4),
 						Ranges:    []openrtb_ext.GranularityRange{{Min: 0, Max: 10, Increment: 1}},
@@ -284,7 +284,7 @@ func TestSetDefaultsTargeting(t *testing.T) {
 					Precision: ptrutil.ToPtr(4),
 					Ranges:    []openrtb_ext.GranularityRange{{Min: 0, Max: 10, Increment: 1}},
 				},
-				MediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{
+				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
 					Video: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(4),
 						Ranges:    []openrtb_ext.GranularityRange{{Min: 0, Max: 10, Increment: 1}}},

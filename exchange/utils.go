@@ -988,21 +988,24 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 
 func getPrebidMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	var err error
-	errFormat := "Failed to parse bid mediatype for impression \"%s\", %s"
+	var bidType openrtb_ext.BidType
+
 	if bid.Ext != nil {
 		var bidExt openrtb_ext.ExtBid
 		err = json.Unmarshal(bid.Ext, &bidExt)
 		if err == nil && bidExt.Prebid != nil {
-			bidType, bidTypeErr := openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
-			if bidTypeErr != nil {
-				return "", &errortypes.BadServerResponse{
-					Message: fmt.Sprintf(errFormat, bid.ImpID, bidTypeErr.Error()),
-				}
+			if bidType, err = openrtb_ext.ParseBidType(string(bidExt.Prebid.Type)); err == nil {
+				return bidType, nil
 			}
-			return bidType, nil
 		}
 	}
-	return "", &errortypes.BadServerResponse{
-		Message: fmt.Sprintf(errFormat, bid.ImpID, err.Error()),
+
+	errMsg := fmt.Sprintf("Failed to parse bid mediatype for impression \"%s\"", bid.ImpID)
+	if err != nil {
+		errMsg = fmt.Sprintf("%s, %s", errMsg, err.Error())
+	}
+
+	return bidType, &errortypes.BadServerResponse{
+		Message: errMsg,
 	}
 }

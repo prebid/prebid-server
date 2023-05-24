@@ -92,8 +92,8 @@ func TestGetPriceBucketString(t *testing.T) {
 			bid:       openrtb2.Bid{Price: 5.0, MType: openrtb2.MarkupVideo},
 			testCases: []aTest{
 				{"medium", targetData{priceGranularity: medium}, "5.00"},
-				{"video-custom2", targetData{priceGranularity: medium, mediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{Video: &custom2}}, "3.90"},
-				{"banner-custom2", targetData{priceGranularity: medium, mediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{Banner: &custom2}}, "5.00"},
+				{"video-custom2", targetData{priceGranularity: medium, mediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{Video: &custom2}}, "3.90"},
+				{"banner-custom2", targetData{priceGranularity: medium, mediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{Banner: &custom2}}, "5.00"},
 			},
 		},
 		{
@@ -101,8 +101,8 @@ func TestGetPriceBucketString(t *testing.T) {
 			bid:       openrtb2.Bid{Price: 5.0, MType: openrtb2.MarkupBanner},
 			testCases: []aTest{
 				{"medium", targetData{priceGranularity: medium}, "5.00"},
-				{"video-custom2", targetData{priceGranularity: medium, mediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{Video: &custom2}}, "5.00"},
-				{"banner-custom2", targetData{priceGranularity: medium, mediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{Banner: &custom2}}, "3.90"},
+				{"video-custom2", targetData{priceGranularity: medium, mediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{Video: &custom2}}, "5.00"},
+				{"banner-custom2", targetData{priceGranularity: medium, mediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{Banner: &custom2}}, "3.90"},
 			},
 		},
 		{
@@ -110,8 +110,8 @@ func TestGetPriceBucketString(t *testing.T) {
 			bid:       openrtb2.Bid{Price: 5.0, MType: openrtb2.MarkupNative},
 			testCases: []aTest{
 				{"medium", targetData{priceGranularity: medium}, "5.00"},
-				{"video-custom2", targetData{priceGranularity: medium, mediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{Video: &custom2}}, "5.00"},
-				{"native-custom2", targetData{priceGranularity: medium, mediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{Native: &custom2}}, "3.90"},
+				{"video-custom2", targetData{priceGranularity: medium, mediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{Video: &custom2}}, "5.00"},
+				{"native-custom2", targetData{priceGranularity: medium, mediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{Native: &custom2}}, "3.90"},
 			},
 		},
 		{
@@ -119,9 +119,9 @@ func TestGetPriceBucketString(t *testing.T) {
 			bid:       openrtb2.Bid{Price: 5.0, Ext: json.RawMessage(`{`)},
 			testCases: []aTest{
 				{"medium", targetData{priceGranularity: medium}, "5.00"},
-				{"video-custom2", targetData{priceGranularity: medium, mediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{Video: &custom2}}, "5.00"},
-				{"banner-custom2", targetData{priceGranularity: medium, mediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{Banner: &custom2}}, "5.00"},
-				{"native-custom2", targetData{priceGranularity: medium, mediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{Native: &custom2}}, "5.00"},
+				{"video-custom2", targetData{priceGranularity: medium, mediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{Video: &custom2}}, "5.00"},
+				{"banner-custom2", targetData{priceGranularity: medium, mediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{Banner: &custom2}}, "5.00"},
+				{"native-custom2", targetData{priceGranularity: medium, mediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{Native: &custom2}}, "5.00"},
 			},
 		},
 		{
