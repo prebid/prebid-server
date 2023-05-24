@@ -449,15 +449,21 @@ func testMakeBidsImpl(t *testing.T, filename string, spec *testSpec, bidder adap
 		// output inside testMakeRequestsImpl
 		thisBidResponse, theseErrs := bidder.MakeBids(&spec.BidRequest, spec.HttpCalls[i].Request.ToRequestData(t), spec.HttpCalls[i].Response.ToResponseData(t))
 
-		bidsErrs = append(bidsErrs, theseErrs...)
-		bidResponses = append(bidResponses, thisBidResponse)
+		if theseErrs != nil {
+			bidsErrs = append(bidsErrs, theseErrs...)
+		}
+		if thisBidResponse != nil {
+			bidResponses = append(bidResponses, thisBidResponse)
+		}
 	}
 
 	// Assert actual errors thrown by MakeBids implementation versus expected JSON-defined spec.MakeBidsErrors
 	assertErrorList(t, fmt.Sprintf("%s: MakeBids", filename), bidsErrs, spec.MakeBidsErrors)
 
 	// Assert MakeBids implementation BidResponses with expected JSON-defined spec.BidResponses[i].Bids
-	for i := 0; i < len(spec.BidResponses); i++ {
-		assertMakeBidsOutput(t, filename, bidResponses[i], spec.BidResponses[i])
+	if assert.Len(t, bidResponses, len(spec.BidResponses), "%s: MakeBids len(bidResponses) = %d vs len(spec.BidResponses) = %d", filename, len(bidResponses), len(spec.BidResponses)) {
+		for i := 0; i < len(spec.BidResponses); i++ {
+			assertMakeBidsOutput(t, filename, bidResponses[i], spec.BidResponses[i])
+		}
 	}
 }
