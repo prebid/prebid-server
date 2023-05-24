@@ -255,3 +255,11 @@ func getOldestUid(cookie *Cookie) string {
 	}
 	return oldestElem
 }
+
+func SyncHostCookie(r *http.Request, requestCookie *Cookie, host *config.HostCookie) {
+	if uid, _, _ := requestCookie.GetUID(host.Family); uid == "" && host.CookieName != "" {
+		if hostCookie, err := r.Cookie(host.CookieName); err == nil {
+			requestCookie.Sync(host.Family, hostCookie.Value)
+		}
+	}
+}

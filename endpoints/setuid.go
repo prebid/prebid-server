@@ -58,6 +58,7 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 			so.Status = http.StatusUnauthorized
 			return
 		}
+		usersync.SyncHostCookie(r, pc, &cfg.HostCookie)
 
 		query := r.URL.Query()
 
