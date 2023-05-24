@@ -1,0 +1,17 @@
+name: Adapter checks
+on: pull_request
+permissions: write-all
+jobs:
+  semgrep-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        with:
+          fetch-depth: 0
+        uses: actions/checkout@v3
+
+      - name: Dump GitHub context
+        run: echo '${{ toJSON(github) }}'
+
+      - name: sha
+        run: echo '${{ github.sha }}'        
