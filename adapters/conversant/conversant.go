@@ -17,7 +17,7 @@ type ConversantAdapter struct {
 	URI string
 }
 
-func (c ConversantAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (c *ConversantAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	for i := 0; i < len(request.Imp); i++ {
 		var bidderExt adapters.ExtImpBidder
 		if err := json.Unmarshal(request.Imp[i].Ext, &bidderExt); err != nil {
@@ -132,7 +132,7 @@ func parseCnvrParams(imp *openrtb2.Imp, cnvrExt openrtb_ext.ExtImpConversant) {
 	}
 }
 
-func (c ConversantAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (c *ConversantAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil // no bid response
 	}

@@ -13,6 +13,7 @@
           },
           "bidfloor": 1e-05,
           "bidfloorcur": "USD",
+          "tagid": "testTag",
           "ext": {
            "bidder": {
               "pid": "OsNsyeF68q",
@@ -24,7 +25,6 @@
       ],
       "app": {
         "id": "12345678",
-        "keywords": "tagid=",
         "name": "Richaudience TV",
         "bundle": "R12345678901011",
         "publisher": {
@@ -41,7 +41,7 @@
         }
     },
       "device": {
-        "ip": "11.222.33.44",
+        "ip": "10.20.30.40",
         "ifa": "zxcjbzxmc-zxcbmz-zxbcz-zxczx"
     },
       "user": {
@@ -86,7 +86,7 @@
             ],
             "app": {
               "id": "12345678",
-              "keywords": "tagid=",
+              "keywords": "tagid=testTag",
               "name": "Richaudience TV",
               "bundle": "R12345678901011",
               "publisher": {

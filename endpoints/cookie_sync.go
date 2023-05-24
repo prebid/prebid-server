@@ -129,7 +129,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 	if request.GDPR != nil {
 		gdprString = strconv.Itoa(*request.GDPR)
 	}
-	gdprSignal, err := gdpr.SignalParse(gdprString)
+	gdprSignal, err := gdpr.StrSignalParse(gdprString)
 	if err != nil {
 		return usersync.Request{}, privacy.Policies{}, err
 	}
