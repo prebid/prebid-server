@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 
@@ -75,8 +74,8 @@ func (a *AdButtlerAdapter) MakeBids(internalRequest *openrtb2.BidRequest, extern
 	}
 
 	//Temporarily for Debugging
-	u, _ := json.Marshal(adButlerResp)
-	fmt.Println(string(u))
+	//u, _ := json.Marshal(adButlerResp)
+	//fmt.Println(string(u))
 
 	if adButlerResp.Status == RESPONSE_NOADS {
 		return nil, []error{&errortypes.BidderFailedSchemaValidation{
@@ -139,25 +138,24 @@ func (a *AdButtlerAdapter) GetBidderResponse(request *openrtb2.BidRequest, adBut
 	for index, adButlerBid := range adButlerResp.Bids {
 
 		bidID := GenerateUniqueBidID()
-		impID := requestImpID + "_" + strconv.Itoa(index)
+		impID := requestImpID + "_" + strconv.Itoa(index+1)
 		bidPrice := adButlerBid.CPCBid
 		campaignID := strconv.FormatInt(adButlerBid.CampaignID, 10)
 		productid := adButlerBid.ProductData[RESPONSE_PRODUCTID]
 		clickPrice := adButlerBid.CPCSpend
 
-		var impressionUrl, clickUrl, conversionUrl, adbutlerClick string
+		var impressionUrl, clickUrl, conversionUrl string
 
 		for _, beacon := range adButlerBid.Beacons {
 			switch beacon.Type {
 			case BEACONTYPE_IMP:
 				impressionUrl = IMP_KEY + EncodeURl(beacon.TrackingUrl)
 			case BEACONTYPE_CLICK:
-				adbutlerClick = beacon.TrackingUrl
 				clickUrl = CLICK_KEY + EncodeURl(beacon.TrackingUrl)
 			}
 		}
 
-		conversionUrl = GenerateConversionUrl(adbutlerClick, adbutlerID, zoneID, adbUID, productid)
+		conversionUrl = GenerateConversionUrl(adbutlerID, zoneID, adbUID, productid)
 
 		bidExt := &openrtb_ext.ExtBidCommerce{
 			ProductId:     productid,
@@ -190,14 +188,15 @@ func (a *AdButtlerAdapter) GetBidderResponse(request *openrtb2.BidRequest, adBut
 	return bidResponse
 }
 
-func GenerateConversionUrl(clickurl, adbutlerID, zoneID,adbUID, productID string) string {
-	var hostname string
+func GenerateConversionUrl(adbutlerID, zoneID,adbUID, productID string) string {
+	/*var hostname string
 	url, err := url.Parse(clickurl)
     if err == nil {
 		hostname = url.Hostname()
 	 }
 
-	conversionUrl := strings.Replace(CONVERSION_URL, CONV_HOSTNAME, hostname, 1)
+	conversionUrl := strings.Replace(CONVERSION_URL, CONV_HOSTNAME, hostname, 1)*/
+	conversionUrl := strings.Replace(CONVERSION_URL, CONV_ADBUTLERID, adbutlerID, 1)
 	conversionUrl = strings.Replace(conversionUrl, CONV_ZONEID, zoneID, 1)
 	conversionUrl = strings.Replace(conversionUrl, CONV_ADBUID, adbUID, 1)
 	conversionUrl = strings.Replace(conversionUrl, CONV_IDENTIFIER, productID, 1)

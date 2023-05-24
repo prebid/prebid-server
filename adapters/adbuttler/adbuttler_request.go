@@ -2,7 +2,6 @@ package adbuttler
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -210,8 +209,8 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 	adButlerReq.Limit = *commerceExt.ComParams.SlotsRequested
 
 	//Temporarily for Debugging
-	u, _ := json.Marshal(adButlerReq)
-	fmt.Println(string(u))
+	//u, _ := json.Marshal(adButlerReq)
+	//fmt.Println(string(u))
 
 	reqJSON, err := json.Marshal(adButlerReq)
 	if err != nil {

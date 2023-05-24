@@ -32,7 +32,7 @@ const (
 	CONV_ZONEID                   = "conv_zoneID"
 	CONV_ADBUID                   = "conv_adbUID"
 	CONV_IDENTIFIER               = "conv_Identifier"
-	CONVERSION_URL                = `tps_host=conv_host&tps_ID=conv_adbutlerID&tps_setID=conv_zoneID&tps_adb_uid=conv_adbUID&tps_identifier=conv_Identifier`
+	CONVERSION_URL                = `tps_ID=conv_adbutlerID&tps_setID=conv_zoneID&tps_adb_uid=conv_adbUID&tps_identifier=conv_Identifier`
 
 	DATATYE_NUMBER                = 1
 	DATATYE_STRING                = 2
