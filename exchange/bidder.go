@@ -136,6 +136,9 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 	//check if real request exists for this bidder or it only has stored responses
 	dataLen := 0
 	if len(bidderRequest.BidRequest.Imp) > 0 {
+		// Reducing the amount of time bidders have to compensate for the processing time used by PBS to fetch a stored request (if needed), validate the OpenRTB request and split it into multiple requests sanitized for each bidder.
+		// As well as for the time needed by PBS to prepare the auction response
+		bidderRequest.BidRequest.TMax = getBidderTmax(ctx, bidderRequest.BidRequest.TMax, reqInfo.TmaxAdjustments)
 		reqData, errs = bidder.Bidder.MakeRequests(bidderRequest.BidRequest, reqInfo)
 
 		if len(reqData) == 0 {
@@ -725,4 +728,14 @@ func getBidTypeForAdjustments(bidType openrtb_ext.BidType, impID string, imp []o
 		return "video-instream"
 	}
 	return string(bidType)
+}
+
+func getBidderTmax(ctx context.Context, requestTmaxMS int64, tmaxAdjustments *config.TmaxAdjustments) int64 {
+	if tmaxAdjustments != nil && tmaxAdjustments.Enabled {
+		if deadline, ok := ctx.Deadline(); ok {
+			remainingDurationInMS := int64(time.Until(deadline)) / int64(time.Millisecond)
+			return remainingDurationInMS - int64(tmaxAdjustments.BidderNetworkLatencyBuffer) - int64(tmaxAdjustments.PBSResponsePreparationDuration)
+		}
+	}
+	return requestTmaxMS
 }

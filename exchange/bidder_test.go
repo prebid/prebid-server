@@ -73,7 +73,10 @@ func TestSingleBidder(t *testing.T) {
 		bidResponse: nil,
 	}
 
-	ctx := context.Background()
+	var requestTmaxMS int64 = 700
+	deadline := time.Now().Add(time.Duration(requestTmaxMS) * time.Millisecond)
+	ctx, cancel := context.WithDeadline(context.Background(), deadline)
+	defer cancel()
 
 	for _, test := range testCases {
 		mockBidderResponse := &adapters.BidderResponse{
@@ -109,7 +112,7 @@ func TestSingleBidder(t *testing.T) {
 			addCallSignHeader:   false,
 			bidAdjustments:      bidAdjustments,
 		}
-		extraInfo := &adapters.ExtraRequestInfo{}
+		extraInfo := &adapters.ExtraRequestInfo{TmaxAdjustments: &config.TmaxAdjustments{Enabled: true, PBSResponsePreparationDuration: 50, BidderNetworkLatencyBuffer: 10}}
 		seatBids, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), extraInfo, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
 		assert.NotEmpty(t, extraInfo.MakeBidsTimeInfo.Durations)
 		assert.False(t, extraInfo.MakeBidsTimeInfo.AfterMakeBidsStartTime.IsZero())
@@ -163,6 +166,7 @@ func TestSingleBidder(t *testing.T) {
 		for index, bid := range seatBid.Bids {
 			assert.NotEqual(t, mockBidderResponse.Bids[index].Bid.Price, bid.OriginalBidCPM, "The bid price was adjusted, so the originally bid CPM should be different")
 		}
+		assert.Less(t, bidderImpl.bidRequest.TMax, requestTmaxMS)
 	}
 }
 
@@ -199,7 +203,10 @@ func TestSingleBidderGzip(t *testing.T) {
 		bidResponse: nil,
 	}
 
-	ctx := context.Background()
+	var requestTmaxMS int64 = 700
+	deadline := time.Now().Add(time.Duration(requestTmaxMS) * time.Millisecond)
+	ctx, cancel := context.WithDeadline(context.Background(), deadline)
+	defer cancel()
 
 	for _, test := range testCases {
 		mockBidderResponse := &adapters.BidderResponse{
@@ -235,7 +242,7 @@ func TestSingleBidderGzip(t *testing.T) {
 			addCallSignHeader:   false,
 			bidAdjustments:      bidAdjustments,
 		}
-		extraInfo := &adapters.ExtraRequestInfo{}
+		extraInfo := &adapters.ExtraRequestInfo{TmaxAdjustments: &config.TmaxAdjustments{Enabled: true, PBSResponsePreparationDuration: 50, BidderNetworkLatencyBuffer: 10}}
 		seatBids, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), extraInfo, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
 		assert.NotEmpty(t, extraInfo.MakeBidsTimeInfo.Durations)
 		assert.False(t, extraInfo.MakeBidsTimeInfo.AfterMakeBidsStartTime.IsZero())
@@ -292,6 +299,7 @@ func TestSingleBidderGzip(t *testing.T) {
 		for index, bid := range seatBid.Bids {
 			assert.NotEqual(t, mockBidderResponse.Bids[index].Bid.Price, bid.OriginalBidCPM, "The bid price was adjusted, so the originally bid CPM should be different")
 		}
+		assert.Less(t, bidderImpl.bidRequest.TMax, requestTmaxMS)
 	}
 }
 
@@ -322,7 +330,10 @@ func TestRequestBidRemovesSensitiveHeaders(t *testing.T) {
 	}
 
 	debugInfo := &config.DebugInfo{Allow: true}
-	ctx := context.Background()
+	var requestTmaxMS int64 = 700
+	deadline := time.Now().Add(time.Duration(requestTmaxMS) * time.Millisecond)
+	ctx, cancel := context.WithDeadline(context.Background(), deadline)
+	defer cancel()
 
 	bidder := AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, debugInfo, "")
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
@@ -338,7 +349,7 @@ func TestRequestBidRemovesSensitiveHeaders(t *testing.T) {
 		addCallSignHeader:   false,
 		bidAdjustments:      bidAdjustments,
 	}
-	extraInfo := &adapters.ExtraRequestInfo{}
+	extraInfo := &adapters.ExtraRequestInfo{TmaxAdjustments: &config.TmaxAdjustments{Enabled: true, PBSResponsePreparationDuration: 50, BidderNetworkLatencyBuffer: 10}}
 	seatBids, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), extraInfo, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
 	expectedHttpCalls := []*openrtb_ext.ExtHttpCall{
 		{
@@ -355,6 +366,7 @@ func TestRequestBidRemovesSensitiveHeaders(t *testing.T) {
 	assert.NotEmpty(t, extraInfo.MakeBidsTimeInfo.Durations)
 	assert.False(t, extraInfo.MakeBidsTimeInfo.AfterMakeBidsStartTime.IsZero())
 	assert.ElementsMatch(t, seatBids[0].HttpCalls, expectedHttpCalls)
+	assert.Less(t, bidderImpl.bidRequest.TMax, requestTmaxMS)
 }
 
 func TestSetGPCHeader(t *testing.T) {
@@ -377,8 +389,10 @@ func TestSetGPCHeader(t *testing.T) {
 	}
 
 	debugInfo := &config.DebugInfo{Allow: true}
-	ctx := context.Background()
-
+	var requestTmaxMS int64 = 700
+	deadline := time.Now().Add(time.Duration(requestTmaxMS) * time.Millisecond)
+	ctx, cancel := context.WithDeadline(context.Background(), deadline)
+	defer cancel()
 	bidder := AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, debugInfo, "")
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	bidderReq := BidderRequest{
@@ -392,7 +406,7 @@ func TestSetGPCHeader(t *testing.T) {
 		addCallSignHeader:   false,
 		bidAdjustments:      bidAdjustments,
 	}
-	extraInfo := &adapters.ExtraRequestInfo{GlobalPrivacyControlHeader: "1"}
+	extraInfo := &adapters.ExtraRequestInfo{GlobalPrivacyControlHeader: "1", TmaxAdjustments: &config.TmaxAdjustments{Enabled: true, PBSResponsePreparationDuration: 50, BidderNetworkLatencyBuffer: 10}}
 	seatBids, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), extraInfo, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
 
 	expectedHttpCall := []*openrtb_ext.ExtHttpCall{
@@ -410,6 +424,7 @@ func TestSetGPCHeader(t *testing.T) {
 	assert.NotEmpty(t, extraInfo.MakeBidsTimeInfo.Durations)
 	assert.False(t, extraInfo.MakeBidsTimeInfo.AfterMakeBidsStartTime.IsZero())
 	assert.ElementsMatch(t, seatBids[0].HttpCalls, expectedHttpCall)
+	assert.Less(t, bidderImpl.bidRequest.TMax, requestTmaxMS)
 }
 
 func TestSetGPCHeaderNil(t *testing.T) {
@@ -429,7 +444,10 @@ func TestSetGPCHeaderNil(t *testing.T) {
 	}
 
 	debugInfo := &config.DebugInfo{Allow: true}
-	ctx := context.Background()
+	var requestTmaxMS int64 = 700
+	deadline := time.Now().Add(time.Duration(requestTmaxMS) * time.Millisecond)
+	ctx, cancel := context.WithDeadline(context.Background(), deadline)
+	defer cancel()
 
 	bidder := AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, debugInfo, "")
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
@@ -445,7 +463,8 @@ func TestSetGPCHeaderNil(t *testing.T) {
 		addCallSignHeader:   false,
 		bidAdjustments:      bidAdjustments,
 	}
-	extraInfo := &adapters.ExtraRequestInfo{GlobalPrivacyControlHeader: "1"}
+
+	extraInfo := &adapters.ExtraRequestInfo{GlobalPrivacyControlHeader: "1", TmaxAdjustments: &config.TmaxAdjustments{Enabled: true, PBSResponsePreparationDuration: 50, BidderNetworkLatencyBuffer: 10}}
 	seatBids, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), extraInfo, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
 
 	expectedHttpCall := []*openrtb_ext.ExtHttpCall{
@@ -463,6 +482,7 @@ func TestSetGPCHeaderNil(t *testing.T) {
 	assert.False(t, extraInfo.MakeBidsTimeInfo.AfterMakeBidsStartTime.IsZero())
 	assert.Len(t, seatBids, 1)
 	assert.ElementsMatch(t, seatBids[0].HttpCalls, expectedHttpCall)
+	assert.Less(t, bidderImpl.bidRequest.TMax, requestTmaxMS)
 }
 
 // TestMultiBidder makes sure all the requests get sent, and the responses processed.
@@ -518,7 +538,12 @@ func TestMultiBidder(t *testing.T) {
 		addCallSignHeader:   false,
 		bidAdjustments:      bidAdjustments,
 	}
-	seatBids, errs := bidder.requestBid(context.Background(), bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
+	var requestTmaxMS int64 = 700
+	deadline := time.Now().Add(time.Duration(requestTmaxMS) * time.Millisecond)
+	ctx, cancel := context.WithDeadline(context.Background(), deadline)
+	defer cancel()
+	extraInfo := &adapters.ExtraRequestInfo{TmaxAdjustments: &config.TmaxAdjustments{Enabled: true, PBSResponsePreparationDuration: 50, BidderNetworkLatencyBuffer: 10}}
+	seatBids, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), extraInfo, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
 
 	if len(seatBids) != 1 {
 		t.Fatalf("SeatBid should exist, because bids exist.")
@@ -530,7 +555,7 @@ func TestMultiBidder(t *testing.T) {
 	if len(seatBids[0].Bids) != len(bidderImpl.httpResponses)*len(mockBidderResponse.Bids) {
 		t.Errorf("Expected %d bids. Got %d", len(bidderImpl.httpResponses)*len(mockBidderResponse.Bids), len(seatBids[0].Bids))
 	}
-
+	assert.Less(t, bidderImpl.bidRequest.TMax, requestTmaxMS)
 }
 
 // TestBidderTimeout makes sure that things work smoothly if the context expires before the Bidder
@@ -3092,6 +3117,53 @@ func TestGetBidType(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			actual := getBidTypeForAdjustments(test.givenBidType, test.givenImpId, test.givenImp)
 			assert.Equal(t, test.expected, actual, "Bid type doesn't match")
+		})
+	}
+}
+
+func TestGetBidderTmax(t *testing.T) {
+	var requestTmaxMS int64 = 700
+	deadline := time.Now().Add(time.Duration(requestTmaxMS) * time.Millisecond)
+
+	ctx, cancel := context.WithDeadline(context.Background(), deadline)
+	defer cancel()
+
+	tmaxAdjustments := &config.TmaxAdjustments{Enabled: true, PBSResponsePreparationDuration: 50, BidderNetworkLatencyBuffer: 10}
+
+	tests := []struct {
+		description     string
+		ctx             context.Context
+		requestTmax     int64
+		tmaxAdjustments *config.TmaxAdjustments
+	}{
+		{
+			description:     "returns-remaining-duration-as-bidderTmax",
+			ctx:             ctx,
+			requestTmax:     requestTmaxMS,
+			tmaxAdjustments: tmaxAdjustments,
+		},
+		{
+			description:     "returns-requestTmax-when-context-deadline-is-not-set",
+			ctx:             context.Background(),
+			requestTmax:     requestTmaxMS,
+			tmaxAdjustments: tmaxAdjustments,
+		},
+		{
+			description:     "returns-requestTmax-when-tmax-adjustment-is-not-enabled",
+			ctx:             ctx,
+			requestTmax:     requestTmaxMS,
+			tmaxAdjustments: tmaxAdjustments,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			if _, ok := test.ctx.Deadline(); ok {
+				bidderTmax := getBidderTmax(test.ctx, test.requestTmax, test.tmaxAdjustments)
+				assert.NotZero(t, bidderTmax)
+				assert.Less(t, bidderTmax, test.requestTmax)
+			} else {
+				assert.Equal(t, test.requestTmax, getBidderTmax(test.ctx, test.requestTmax, test.tmaxAdjustments))
+			}
 		})
 	}
 }
