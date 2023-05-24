@@ -77,6 +77,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/engagebdr"
 	"github.com/prebid/prebid-server/adapters/eplanning"
 	"github.com/prebid/prebid-server/adapters/epom"
+	"github.com/prebid/prebid-server/adapters/flipp"
 	"github.com/prebid/prebid-server/adapters/freewheelssp"
 	"github.com/prebid/prebid-server/adapters/frvradn"
 	"github.com/prebid/prebid-server/adapters/gamma"
@@ -240,6 +241,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderConnectAd:         connectad.Builder,
 		openrtb_ext.BidderConsumable:        consumable.Builder,
 		openrtb_ext.BidderConversant:        conversant.Builder,
+		openrtb_ext.BidderCopper6:           adtelligent.Builder,
 		openrtb_ext.BidderCpmstar:           cpmstar.Builder,
 		openrtb_ext.BidderCriteo:            criteo.Builder,
 		openrtb_ext.BidderCWire:             cwire.Builder,
@@ -256,6 +258,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderEpom:              epom.Builder,
 		openrtb_ext.BidderEVolution:         evolution.Builder,
 		openrtb_ext.BidderEvtech:            limelightDigital.Builder,
+		openrtb_ext.BidderFlipp:             flipp.Builder,
 		openrtb_ext.BidderFreewheelSSP:      freewheelssp.Builder,
 		openrtb_ext.BidderFreewheelSSPOld:   freewheelssp.Builder,
 		openrtb_ext.BidderFRVRAdNetwork:     frvradn.Builder,

@@ -1036,9 +1036,9 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("debug.override_token", "")
 
 	v.SetDefault("tmax_adjustments.enabled", false)
-	v.SetDefault("tmax_adjustments.bidder_response_min", 0)
-	v.SetDefault("tmax_adjustments.bidder_network_latency_buffer", 0)
-	v.SetDefault("tmax_adjustments.pbs_response_preparation_duration", 0)
+	v.SetDefault("tmax_adjustments.bidder_response_duration_min_ms", 0)
+	v.SetDefault("tmax_adjustments.bidder_network_latency_buffer_ms", 0)
+	v.SetDefault("tmax_adjustments.pbs_response_preparation_duration_ms", 0)
 
 	/* IPv4
 	/*  Site Local: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
@@ -1518,19 +1518,21 @@ func isValidCookieSize(maxCookieSize int) error {
 	return nil
 }
 
+// Tmax Adjustments enables PBS to estimate the tmax value for bidders, indicating the allotted time for them to respond to a request.
+// It's important to note that the calculated tmax is just an estimate and will not be entirely precise.
+// PBS will calculate the bidder tmax as follows:
+// bidderTmax = request.tmax - reqProcessingTime - BidderNetworkLatencyBuffer - PBSResponsePreparationDuration
+// Note that reqProcessingTime is time taken by PBS to process a given request before it is sent to bid adapters and is computed at run time.
 type TmaxAdjustments struct {
-	// Flag indicating whether the tmax feature is enabled or not
+	// Enabled indicates whether bidder tmax should be calculated and passed on to bid adapters
 	Enabled bool `mapstructure:"enabled"`
-	// The minimum duration needed for a bidder to respond back
-	// PBS will not send an HTTP request to the bidder server, if the time needed for PBS processing, adapter's MakeRequests() implementation, building Prebid headers, and applying GZip compression (if needed) is less than bidder_response_min.
-	// By default bidder_response_min will be set to 0. PBS will always send HTTP request to the bidder server if bidder_response_min is 0
-	BidderResponseMin uint `mapstructure:"bidder_response_min"`
-	// Adjustment factor providing a buffer for network delays between PBS and the bidder server
-	// PBS will subtract the bidder_network_latency_buffer from the endpoint's tmax to account for network delays between PBS and the bidder server
-	// If there is no specific buffer to set, the value of bidder_network_latency_buffer should be set to 0
-	BidderNetworkLatencyBuffer uint `mapstructure:"bidder_network_latency_buffer"`
-	// The duration needed to prepare PBS's response for an upstream client
-	// PBS will subtract the pbs_response_preparation_duration from the endpoint's tmax to account for time needed for adapter's MakeBids() calls and PBS processing to prepare auction response
-	// If there is no specific duration to set, the value of pbs_response_preparation_duration should be set to 0
-	PBSResponsePreparationDuration uint `mapstructure:"pbs_response_preparation_duration"`
+	// BidderNetworkLatencyBuffer accounts for network delays between PBS and bidder servers.
+	// A value of 0 indicates no network latency buffer should be accounted for when calculating the bidder tmax.
+	BidderNetworkLatencyBuffer uint `mapstructure:"bidder_network_latency_buffer_ms"`
+	// PBSResponsePreparationDuration accounts for amount of time required for PBS to process all bidder responses and generate final response for a request.
+	// A value of 0 indicates PBS response preparation time shouldn't be accounted for when calculating bidder tmax.
+	PBSResponsePreparationDuration uint `mapstructure:"pbs_response_preparation_duration_ms"`
+	// BidderResponseDurationMin is the minimum amount of time expected to get a response from a bidder request.
+	// PBS won't send a request to the bidder if the bidder tmax calculated is less than the BidderResponseDurationMin value
+	BidderResponseDurationMin uint `mapstructure:"bidder_response_duration_min_ms"`
 }
