@@ -2,7 +2,6 @@ package usersync
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -15,7 +14,7 @@ import (
 
 func TestOptOutCookie(t *testing.T) {
 	cookie := &Cookie{
-		uids:     make(map[string]uidWithExpiry),
+		uids:     map[string]uidWithExpiry{"appnexus": {UID: "test"}},
 		optOut:   true,
 		birthday: timestamp(),
 	}
@@ -260,32 +259,6 @@ func TestCookieReadWrite(t *testing.T) {
 	assert.Len(t, received.uids, 2, "Sync Count")
 }
 
-func TestPopulatedLegacyCookieRead(t *testing.T) {
-	legacyJson := `{"uids":{"adnxs":"123","audienceNetwork":"456"},"bday":"2017-08-03T21:04:52.629198911Z"}`
-	var cookie Cookie
-	json.Unmarshal([]byte(legacyJson), &cookie)
-
-	if cookie.HasAnyLiveSyncs() {
-		t.Error("Expected 0 user syncs. Found at least 1.")
-	}
-	if cookie.HasLiveSync("adnxs") {
-		t.Errorf("Received cookie should act like it has no ID for adnxs.")
-	}
-	if cookie.HasLiveSync("audienceNetwork") {
-		t.Errorf("Received cookie should act like it has no ID for audienceNetwork.")
-	}
-}
-
-func TestEmptyLegacyCookieRead(t *testing.T) {
-	legacyJson := `{"bday":"2017-08-29T18:54:18.393925772Z"}`
-	var cookie Cookie
-	json.Unmarshal([]byte(legacyJson), &cookie)
-
-	if cookie.HasAnyLiveSyncs() {
-		t.Error("Expected 0 user syncs. Found at least 1.")
-	}
-}
-
 func TestNilCookie(t *testing.T) {
 	var nilCookie *Cookie
 
@@ -427,7 +400,11 @@ func ensureConsistency(t *testing.T, cookie *Cookie) {
 		t.Error("The PBSCookie interface shouldn't let modifications happen if the user has opted out")
 	}
 
-	assert.Equal(t, len(cookie.uids), len(copiedCookie.uids), "Incorrect sync count on reparsed cookie.")
+	if cookie.optOut {
+		assert.Equal(t, 0, len(copiedCookie.uids), "Incorrect sync count on reparsed cookie.")
+	} else {
+		assert.Equal(t, len(cookie.uids), len(copiedCookie.uids), "Incorrect sync count on reparsed cookie.")
+	}
 
 	for family, uid := range copiedCookie.uids {
 		if !cookie.HasLiveSync(family) {

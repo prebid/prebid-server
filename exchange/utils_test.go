@@ -67,14 +67,6 @@ func (fpb fakePermissionsBuilder) Builder(gdpr.TCF2ConfigReader, gdpr.RequestInf
 	return fpb.permissions
 }
 
-type fakeTCF2ConfigBuilder struct {
-	cfg gdpr.TCF2ConfigReader
-}
-
-func (fcr fakeTCF2ConfigBuilder) Builder(hostConfig config.TCF2, accountConfig config.AccountGDPR) gdpr.TCF2ConfigReader {
-	return fcr.cfg
-}
-
 func assertReq(t *testing.T, bidderRequests []BidderRequest,
 	applyCOPPA bool, consentedVendors map[string]bool) {
 	// assert individual bidder requests
@@ -444,6 +436,8 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 }
 
 func TestCleanOpenRTBRequests(t *testing.T) {
+	emptyTCF2Config := gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{})
+
 	testCases := []struct {
 		req              AuctionRequest
 		bidReqAssertions func(t *testing.T, bidderRequests []BidderRequest,
@@ -453,14 +447,14 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 		consentedVendors map[string]bool
 	}{
 		{
-			req:              AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: getTestBuildRequest(t)}, UserSyncs: &emptyUsersync{}},
+			req:              AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: getTestBuildRequest(t)}, UserSyncs: &emptyUsersync{}, TCF2Config: emptyTCF2Config},
 			bidReqAssertions: assertReq,
 			hasError:         false,
 			applyCOPPA:       true,
 			consentedVendors: map[string]bool{"appnexus": true},
 		},
 		{
-			req:              AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: newAdapterAliasBidRequest(t)}, UserSyncs: &emptyUsersync{}},
+			req:              AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: newAdapterAliasBidRequest(t)}, UserSyncs: &emptyUsersync{}, TCF2Config: emptyTCF2Config},
 			bidReqAssertions: assertReq,
 			hasError:         false,
 			applyCOPPA:       false,
@@ -484,16 +478,12 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 				allowAllBidders: true,
 			},
 		}.Builder
-		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-		}.Builder
 
 		reqSplitter := &requestSplitter{
 			bidderToSyncerKey: map[string]string{},
 			me:                &metrics.MetricsEngineMock{},
 			privacyConfig:     privacyConfig,
 			gdprPermsBuilder:  gdprPermsBuilder,
-			tcf2ConfigBuilder: tcf2ConfigBuilder,
 			hostSChainNode:    nil,
 			bidderInfo:        config.BidderInfos{},
 		}
@@ -524,6 +514,8 @@ func TestCleanOpenRTBRequestsWithFPD(t *testing.T) {
 	}
 	fpd[openrtb_ext.BidderName("brightroll")] = &brightrollFpd
 
+	emptyTCF2Config := gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{})
+
 	testCases := []struct {
 		description string
 		req         AuctionRequest
@@ -531,22 +523,22 @@ func TestCleanOpenRTBRequestsWithFPD(t *testing.T) {
 	}{
 		{
 			description: "Pass valid FPD data for bidder not found in the request",
-			req:         AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: getTestBuildRequest(t)}, UserSyncs: &emptyUsersync{}, FirstPartyData: fpd},
+			req:         AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: getTestBuildRequest(t)}, UserSyncs: &emptyUsersync{}, FirstPartyData: fpd, TCF2Config: emptyTCF2Config},
 			fpdExpected: false,
 		},
 		{
 			description: "Pass valid FPD data for bidders specified in request",
-			req:         AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: newAdapterAliasBidRequest(t)}, UserSyncs: &emptyUsersync{}, FirstPartyData: fpd},
+			req:         AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: newAdapterAliasBidRequest(t)}, UserSyncs: &emptyUsersync{}, FirstPartyData: fpd, TCF2Config: emptyTCF2Config},
 			fpdExpected: true,
 		},
 		{
 			description: "Bidders specified in request but there is no fpd data for this bidder",
-			req:         AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: newAdapterAliasBidRequest(t)}, UserSyncs: &emptyUsersync{}, FirstPartyData: make(map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData)},
+			req:         AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: newAdapterAliasBidRequest(t)}, UserSyncs: &emptyUsersync{}, FirstPartyData: make(map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData), TCF2Config: emptyTCF2Config},
 			fpdExpected: false,
 		},
 		{
 			description: "No FPD data passed",
-			req:         AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: newAdapterAliasBidRequest(t)}, UserSyncs: &emptyUsersync{}, FirstPartyData: nil},
+			req:         AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: newAdapterAliasBidRequest(t)}, UserSyncs: &emptyUsersync{}, FirstPartyData: nil, TCF2Config: emptyTCF2Config},
 			fpdExpected: false,
 		},
 	}
@@ -558,16 +550,12 @@ func TestCleanOpenRTBRequestsWithFPD(t *testing.T) {
 				allowAllBidders: true,
 			},
 		}.Builder
-		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-		}.Builder
 
 		reqSplitter := &requestSplitter{
 			bidderToSyncerKey: map[string]string{},
 			me:                &metrics.MetricsEngineMock{},
 			privacyConfig:     config.Privacy{},
 			gdprPermsBuilder:  gdprPermissionsBuilder,
-			tcf2ConfigBuilder: tcf2ConfigBuilder,
 			hostSChainNode:    nil,
 			bidderInfo:        config.BidderInfos{},
 		}
@@ -829,14 +817,12 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 				allowAllBidders: true,
 			},
 		}.Builder
-		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-		}.Builder
 
 		auctionReq := AuctionRequest{
 			BidRequestWrapper:  &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Imp: test.imps}},
 			UserSyncs:          &emptyUsersync{},
 			StoredBidResponses: test.storedBidResponses,
+			TCF2Config:         gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}
 
 		reqSplitter := &requestSplitter{
@@ -844,7 +830,6 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 			me:                &metrics.MetricsEngineMock{},
 			privacyConfig:     config.Privacy{},
 			gdprPermsBuilder:  gdprPermissionsBuilder,
-			tcf2ConfigBuilder: tcf2ConfigBuilder,
 			hostSChainNode:    nil,
 			bidderInfo:        config.BidderInfos{},
 		}
@@ -999,15 +984,13 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
 			UserSyncs:         &emptyUsersync{},
 			Account:           accountConfig,
+			TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, accountConfig.GDPR),
 		}
 
 		gdprPermissionsBuilder := fakePermissionsBuilder{
 			permissions: &permissionsMock{
 				allowAllBidders: true,
 			},
-		}.Builder
-		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-			cfg: gdpr.NewTCF2Config(config.TCF2{}, accountConfig.GDPR),
 		}.Builder
 
 		bidderToSyncerKey := map[string]string{}
@@ -1016,7 +999,6 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 			me:                &metrics.MetricsEngineMock{},
 			privacyConfig:     privacyConfig,
 			gdprPermsBuilder:  gdprPermissionsBuilder,
-			tcf2ConfigBuilder: tcf2ConfigBuilder,
 			hostSChainNode:    nil,
 			bidderInfo:        config.BidderInfos{},
 		}
@@ -1072,15 +1054,13 @@ func TestCleanOpenRTBRequestsCCPAErrors(t *testing.T) {
 		auctionReq := AuctionRequest{
 			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
 			UserSyncs:         &emptyUsersync{},
+			TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}
 
 		gdprPermissionsBuilder := fakePermissionsBuilder{
 			permissions: &permissionsMock{
 				allowAllBidders: true,
 			},
-		}.Builder
-		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}.Builder
 
 		privacyConfig := config.Privacy{
@@ -1096,7 +1076,6 @@ func TestCleanOpenRTBRequestsCCPAErrors(t *testing.T) {
 			me:                &metrics,
 			privacyConfig:     privacyConfig,
 			gdprPermsBuilder:  gdprPermissionsBuilder,
-			tcf2ConfigBuilder: tcf2ConfigBuilder,
 			hostSChainNode:    nil,
 			bidderInfo:        config.BidderInfos{},
 		}
@@ -1139,15 +1118,13 @@ func TestCleanOpenRTBRequestsCOPPA(t *testing.T) {
 		auctionReq := AuctionRequest{
 			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
 			UserSyncs:         &emptyUsersync{},
+			TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}
 
 		gdprPermissionsBuilder := fakePermissionsBuilder{
 			permissions: &permissionsMock{
 				allowAllBidders: true,
 			},
-		}.Builder
-		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}.Builder
 
 		bidderToSyncerKey := map[string]string{}
@@ -1158,7 +1135,6 @@ func TestCleanOpenRTBRequestsCOPPA(t *testing.T) {
 			me:                &metrics,
 			privacyConfig:     config.Privacy{},
 			gdprPermsBuilder:  gdprPermissionsBuilder,
-			tcf2ConfigBuilder: tcf2ConfigBuilder,
 			hostSChainNode:    nil,
 			bidderInfo:        config.BidderInfos{},
 		}
@@ -1238,6 +1214,7 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 		auctionReq := AuctionRequest{
 			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
 			UserSyncs:         &emptyUsersync{},
+			TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}
 
 		gdprPermissionsBuilder := fakePermissionsBuilder{
@@ -1245,16 +1222,12 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 				allowAllBidders: true,
 			},
 		}.Builder
-		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-		}.Builder
 
 		reqSplitter := &requestSplitter{
 			bidderToSyncerKey: map[string]string{},
 			me:                &metrics.MetricsEngineMock{},
 			privacyConfig:     config.Privacy{},
 			gdprPermsBuilder:  gdprPermissionsBuilder,
-			tcf2ConfigBuilder: tcf2ConfigBuilder,
 			hostSChainNode:    nil,
 			bidderInfo:        config.BidderInfos{},
 		}
@@ -1312,6 +1285,7 @@ func TestCleanOpenRTBRequestsBidderParams(t *testing.T) {
 		auctionReq := AuctionRequest{
 			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
 			UserSyncs:         &emptyUsersync{},
+			TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}
 
 		gdprPermissionsBuilder := fakePermissionsBuilder{
@@ -1319,16 +1293,12 @@ func TestCleanOpenRTBRequestsBidderParams(t *testing.T) {
 				allowAllBidders: true,
 			},
 		}.Builder
-		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-		}.Builder
 
 		reqSplitter := &requestSplitter{
 			bidderToSyncerKey: map[string]string{},
 			me:                &metrics.MetricsEngineMock{},
 			privacyConfig:     config.Privacy{},
 			gdprPermsBuilder:  gdprPermissionsBuilder,
-			tcf2ConfigBuilder: tcf2ConfigBuilder,
 			hostSChainNode:    nil,
 			bidderInfo:        config.BidderInfos{},
 		}
@@ -1896,15 +1866,13 @@ func TestCleanOpenRTBRequestsLMT(t *testing.T) {
 		auctionReq := AuctionRequest{
 			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
 			UserSyncs:         &emptyUsersync{},
+			TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}
 
 		gdprPermissionsBuilder := fakePermissionsBuilder{
 			permissions: &permissionsMock{
 				allowAllBidders: true,
 			},
-		}.Builder
-		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}.Builder
 
 		privacyConfig := config.Privacy{
@@ -1918,7 +1886,6 @@ func TestCleanOpenRTBRequestsLMT(t *testing.T) {
 			me:                &metrics.MetricsEngineMock{},
 			privacyConfig:     privacyConfig,
 			gdprPermsBuilder:  gdprPermissionsBuilder,
-			tcf2ConfigBuilder: tcf2ConfigBuilder,
 			hostSChainNode:    nil,
 			bidderInfo:        config.BidderInfos{},
 		}
@@ -2127,6 +2094,10 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
 			UserSyncs:         &emptyUsersync{},
 			Account:           accountConfig,
+			TCF2Config: gdpr.NewTCF2Config(
+				privacyConfig.GDPR.TCF2,
+				accountConfig.GDPR,
+			),
 		}
 
 		gdprPermissionsBuilder := fakePermissionsBuilder{
@@ -2136,12 +2107,6 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 				passID:          !test.gdprScrub,
 				activitiesError: test.permissionsError,
 			},
-		}.Builder
-		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-			cfg: gdpr.NewTCF2Config(
-				privacyConfig.GDPR.TCF2,
-				accountConfig.GDPR,
-			),
 		}.Builder
 
 		gdprDefaultValue := gdpr.SignalYes
@@ -2154,7 +2119,6 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			me:                &metrics.MetricsEngineMock{},
 			privacyConfig:     privacyConfig,
 			gdprPermsBuilder:  gdprPermissionsBuilder,
-			tcf2ConfigBuilder: tcf2ConfigBuilder,
 			hostSChainNode:    nil,
 			bidderInfo:        config.BidderInfos{},
 		}
@@ -2236,6 +2200,7 @@ func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
 			UserSyncs:         &emptyUsersync{},
 			Account:           accountConfig,
+			TCF2Config:        gdpr.NewTCF2Config(privacyConfig.GDPR.TCF2, accountConfig.GDPR),
 		}
 
 		gdprPermissionsBuilder := fakePermissionsBuilder{
@@ -2246,9 +2211,6 @@ func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 				activitiesError: nil,
 			},
 		}.Builder
-		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-			cfg: gdpr.NewTCF2Config(privacyConfig.GDPR.TCF2, accountConfig.GDPR),
-		}.Builder
 
 		metricsMock := metrics.MetricsEngineMock{}
 		metricsMock.Mock.On("RecordAdapterGDPRRequestBlocked", mock.Anything).Return()
@@ -2258,7 +2220,6 @@ func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 			me:                &metricsMock,
 			privacyConfig:     privacyConfig,
 			gdprPermsBuilder:  gdprPermissionsBuilder,
-			tcf2ConfigBuilder: tcf2ConfigBuilder,
 			hostSChainNode:    nil,
 			bidderInfo:        config.BidderInfos{},
 		}
@@ -2284,6 +2245,8 @@ func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 }
 
 func TestCleanOpenRTBRequestsWithOpenRTBDowngrade(t *testing.T) {
+	emptyTCF2Config := gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{})
+
 	bidReq := newBidRequest(t)
 	bidReq.Regs = &openrtb2.Regs{}
 	bidReq.Regs.GPP = "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1NYN"
@@ -2306,14 +2269,14 @@ func TestCleanOpenRTBRequestsWithOpenRTBDowngrade(t *testing.T) {
 	}{
 		{
 			name:        "NotSupported",
-			req:         AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: bidReq}, UserSyncs: &emptyUsersync{}},
+			req:         AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: bidReq}, UserSyncs: &emptyUsersync{}, TCF2Config: emptyTCF2Config},
 			expectRegs:  &downgradedRegs,
 			expectUser:  &downgradedUser,
 			bidderInfos: config.BidderInfos{"appnexus": config.BidderInfo{OpenRTB: &config.OpenRTBInfo{GPPSupported: false}}},
 		},
 		{
 			name:        "Supported",
-			req:         AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: bidReq}, UserSyncs: &emptyUsersync{}},
+			req:         AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: bidReq}, UserSyncs: &emptyUsersync{}, TCF2Config: emptyTCF2Config},
 			expectRegs:  bidReq.Regs,
 			expectUser:  bidReq.User,
 			bidderInfos: config.BidderInfos{"appnexus": config.BidderInfo{OpenRTB: &config.OpenRTBInfo{GPPSupported: true}}},
@@ -2337,16 +2300,12 @@ func TestCleanOpenRTBRequestsWithOpenRTBDowngrade(t *testing.T) {
 					allowAllBidders: true,
 				},
 			}.Builder
-			tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-				cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-			}.Builder
 
 			reqSplitter := &requestSplitter{
 				bidderToSyncerKey: map[string]string{},
 				me:                &metrics.MetricsEngineMock{},
 				privacyConfig:     privacyConfig,
 				gdprPermsBuilder:  gdprPermsBuilder,
-				tcf2ConfigBuilder: tcf2ConfigBuilder,
 				hostSChainNode:    nil,
 				bidderInfo:        test.bidderInfos,
 			}
@@ -3085,6 +3044,7 @@ func TestCleanOpenRTBRequestsSChainMultipleBidders(t *testing.T) {
 	auctionReq := AuctionRequest{
 		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
 		UserSyncs:         &emptyUsersync{},
+		TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 	}
 
 	gdprPermissionsBuilder := fakePermissionsBuilder{
@@ -3095,16 +3055,12 @@ func TestCleanOpenRTBRequestsSChainMultipleBidders(t *testing.T) {
 			activitiesError: nil,
 		},
 	}.Builder
-	tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-	}.Builder
 
 	reqSplitter := &requestSplitter{
 		bidderToSyncerKey: map[string]string{},
 		me:                &metrics.MetricsEngineMock{},
 		privacyConfig:     config.Privacy{},
 		gdprPermsBuilder:  gdprPermissionsBuilder,
-		tcf2ConfigBuilder: tcf2ConfigBuilder,
 		hostSChainNode:    nil,
 		bidderInfo:        config.BidderInfos{},
 	}
@@ -3441,14 +3397,12 @@ func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
 			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
 			UserSyncs:         &emptyUsersync{},
 			Account:           config.Account{AlternateBidderCodes: test.inCfgABC},
+			TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}
 		gdprPermissionsBuilder := fakePermissionsBuilder{
 			permissions: &permissionsMock{
 				allowAllBidders: true,
 			},
-		}.Builder
-		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}.Builder
 
 		reqSplitter := &requestSplitter{
@@ -3456,7 +3410,6 @@ func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
 			me:                &metrics.MetricsEngineMock{},
 			privacyConfig:     config.Privacy{},
 			gdprPermsBuilder:  gdprPermissionsBuilder,
-			tcf2ConfigBuilder: tcf2ConfigBuilder,
 			hostSChainNode:    nil,
 			bidderInfo:        config.BidderInfos{},
 		}

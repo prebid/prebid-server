@@ -8,10 +8,11 @@ import (
 	gppConstants "github.com/prebid/go-gpp/constants"
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/gdpr"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestExtractGDPR(t *testing.T) {
+func TestGetGDPR(t *testing.T) {
 	tests := []struct {
 		description string
 		giveRegs    *openrtb2.Regs
@@ -78,11 +79,12 @@ func TestExtractGDPR(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.description, func(t *testing.T) {
-			bidReq := openrtb2.BidRequest{
-				Regs: tt.giveRegs,
+			req := openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: tt.giveRegs,
+				},
 			}
-
-			result, err := extractGDPR(&bidReq)
+			result, err := getGDPR(&req)
 			assert.Equal(t, tt.wantGDPR, result)
 
 			if tt.wantError {
@@ -94,7 +96,7 @@ func TestExtractGDPR(t *testing.T) {
 	}
 }
 
-func TestExtractConsent(t *testing.T) {
+func TestGetConsent(t *testing.T) {
 	tests := []struct {
 		description string
 		giveUser    *openrtb2.User
@@ -150,11 +152,13 @@ func TestExtractConsent(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.description, func(t *testing.T) {
-			bidReq := openrtb2.BidRequest{
-				User: tt.giveUser,
+			req := openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					User: tt.giveUser,
+				},
 			}
 
-			result, err := extractConsent(&bidReq, tt.giveGPP)
+			result, err := getConsent(&req, tt.giveGPP)
 			assert.Equal(t, tt.wantConsent, result, tt.description)
 
 			if tt.wantError {
