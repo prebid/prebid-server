@@ -219,7 +219,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		cfg.AccountDefaults.PriceFloors.Fetch.Period, cfg.AccountDefaults.PriceFloors.Fetch.MaxAge)
 
 	planBuilder := hooks.NewExecutionPlanBuilder(cfg.Hooks, repo)
-	theExchange := exchange.NewExchange(adapters, cacheClient, cfg, syncersByBidder, r.MetricsEngine, cfg.BidderInfos, gdprPermsBuilder, tcf2CfgBuilder, rateConvertor, categoriesFetcher, adsCertSigner, priceFloorFetcher)
+	theExchange := exchange.NewExchange(adapters, cacheClient, cfg, syncersByBidder, r.MetricsEngine, cfg.BidderInfos, gdprPermsBuilder, rateConvertor, categoriesFetcher, adsCertSigner, priceFloorFetcher)
 	var uuidGenerator uuidutil.UUIDRandomGenerator
 	openrtbEndpoint, err := openrtb2.NewEndpoint(uuidGenerator, theExchange, paramsValidator, fetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBidders, storedRespFetcher, planBuilder)
 	if err != nil {

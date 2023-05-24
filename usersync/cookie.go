@@ -226,10 +226,9 @@ func (cookie *Cookie) TrySync(key string, uid string) error {
 // This exists so that Cookie (which is public) can have private fields, and the rest of
 // the code doesn't have to worry about the cookie data storage format.
 type cookieJson struct {
-	LegacyUIDs map[string]string        `json:"uids,omitempty"`
-	UIDs       map[string]uidWithExpiry `json:"tempUIDs,omitempty"`
-	OptOut     bool                     `json:"optout,omitempty"`
-	Birthday   *time.Time               `json:"bday,omitempty"`
+	UIDs     map[string]uidWithExpiry `json:"tempUIDs,omitempty"`
+	OptOut   bool                     `json:"optout,omitempty"`
+	Birthday *time.Time               `json:"bday,omitempty"`
 }
 
 func (cookie *Cookie) MarshalJSON() ([]byte, error) {
@@ -240,53 +239,31 @@ func (cookie *Cookie) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// UnmarshalJSON holds some transition code.
-//
-// "Legacy" cookies had UIDs *without* expiration dates, and recognized "0" as a legitimate UID for audienceNetwork.
-// "Current" cookies always include UIDs with expiration dates, and never allow "0" for audienceNetwork.
-//
-// This Unmarshal method interprets both data formats, and does some conversions on legacy data to make it current.
-// If you're seeing this message after March 2018, it's safe to assume that all the legacy cookies have been
-// updated and remove the legacy logic.
 func (cookie *Cookie) UnmarshalJSON(b []byte) error {
 	var cookieContract cookieJson
-	err := json.Unmarshal(b, &cookieContract)
-	if err == nil {
-		cookie.optOut = cookieContract.OptOut
-		cookie.birthday = cookieContract.Birthday
-
-		if cookie.optOut {
-			cookie.uids = make(map[string]uidWithExpiry)
-		} else {
-			cookie.uids = cookieContract.UIDs
-
-			if cookie.uids == nil {
-				cookie.uids = make(map[string]uidWithExpiry, len(cookieContract.LegacyUIDs))
-			}
-
-			// Interpret "legacy" UIDs as having been expired already.
-			// This should cause us to re-sync, since it would be time for a new one.
-			for bidder, uid := range cookieContract.LegacyUIDs {
-				if _, ok := cookie.uids[bidder]; !ok {
-					cookie.uids[bidder] = uidWithExpiry{
-						UID:     uid,
-						Expires: time.Now().Add(-5 * time.Minute),
-					}
-				}
-			}
-
-			// Any "0" values from audienceNetwork really meant "no ID available." This happens if they've never
-			// logged into Facebook. However... once we know a user's ID, we stop trying to re-sync them until the
-			// expiration date has passed.
-			//
-			// Since users may log into facebook later, this is a bad strategy.
-			// Since "0" is a fake ID for this bidder, we'll just treat it like it doesn't exist.
-			if id, ok := cookie.uids[string(openrtb_ext.BidderAudienceNetwork)]; ok && id.UID == "0" {
-				delete(cookie.uids, string(openrtb_ext.BidderAudienceNetwork))
-			}
-		}
+	if err := json.Unmarshal(b, &cookieContract); err != nil {
+		return err
 	}
-	return err
+
+	cookie.optOut = cookieContract.OptOut
+	cookie.birthday = cookieContract.Birthday
+
+	if cookie.optOut {
+		cookie.uids = nil
+	} else {
+		cookie.uids = cookieContract.UIDs
+	}
+
+	if cookie.uids == nil {
+		cookie.uids = make(map[string]uidWithExpiry)
+	}
+
+	// Audience Network / Facebook Handling
+	if id, ok := cookie.uids[string(openrtb_ext.BidderAudienceNetwork)]; ok && id.UID == "0" {
+		delete(cookie.uids, string(openrtb_ext.BidderAudienceNetwork))
+	}
+
+	return nil
 }
 
 func timestamp() *time.Time {
