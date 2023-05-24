@@ -114,7 +114,7 @@
     }
   ],
 
-  "expectedBids": [
+  "expectedBidResponses": [
     {
       "bid": {
         "id": "7706636740145184841",

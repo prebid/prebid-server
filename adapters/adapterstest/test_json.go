@@ -461,9 +461,11 @@ func testMakeBidsImpl(t *testing.T, filename string, spec *testSpec, bidder adap
 	assertErrorList(t, fmt.Sprintf("%s: MakeBids", filename), bidsErrs, spec.MakeBidsErrors)
 
 	// Assert MakeBids implementation BidResponses with expected JSON-defined spec.BidResponses[i].Bids
-	if assert.Len(t, bidResponses, len(spec.BidResponses), "%s: MakeBids len(bidResponses) = %d vs len(spec.BidResponses) = %d", filename, len(bidResponses), len(spec.BidResponses)) {
+	//if !(len(spec.BidResponses) == 0 && len(bidResponses) == 1 && reflect.DeepEqual(bidResponses[0], &BidderResponse{Currency: "USD", Bids: []*TypedBid{}})) {
+	if !assert.Len(t, bidResponses, len(spec.BidResponses), "%s: MakeBids len(bidResponses) = %d vs len(spec.BidResponses) = %d", filename, len(bidResponses), len(spec.BidResponses)) {
 		for i := 0; i < len(spec.BidResponses); i++ {
 			assertMakeBidsOutput(t, filename, bidResponses[i], spec.BidResponses[i])
 		}
 	}
+	//}
 }

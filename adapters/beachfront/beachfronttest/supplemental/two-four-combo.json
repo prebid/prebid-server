@@ -269,5 +269,10 @@
         }
       }
     }
+  ],
+  "expectedBidResponses": [
+      {"currency":"USD","bids":[]},
+      {"currency":"USD","bids":[]},
+      {"currency":"USD","bids":[]}
   ]
 }

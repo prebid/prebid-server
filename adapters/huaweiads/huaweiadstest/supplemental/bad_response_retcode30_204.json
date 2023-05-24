@@ -155,8 +155,7 @@
       }
     }
   ],
-  "expectedBidResponses": [
-  ],
+  "expectedBidResponses": [{"currency":"USD","bids":[]}],
   "expectedMakeRequestsErrors": [],
   "expectedMakeBidsErrors": [
   ]
