@@ -637,9 +637,9 @@ func (e *exchange) makeAuctionContext(ctx context.Context, needsCache bool, tmax
 			auctionCtx, cancel = context.WithDeadline(ctx, deadline.Add(-e.cacheTime))
 		}
 	}
-	if tmaxAdjustments != nil && tmaxAdjustments.Enabled && tmaxAdjustments.UpstreamResponseDuration > 0 {
+	if tmaxAdjustments != nil && tmaxAdjustments.Enabled && tmaxAdjustments.PBSResponsePreparationDuration > 0 {
 		if deadline, ok := ctx.Deadline(); ok {
-			enforcedTmax := deadline.Add(-time.Duration(tmaxAdjustments.UpstreamResponseDuration * int(time.Millisecond)))
+			enforcedTmax := deadline.Add(-time.Duration(int(tmaxAdjustments.PBSResponsePreparationDuration) * int(time.Millisecond)))
 			auctionCtx, cancel = context.WithDeadline(ctx, enforcedTmax)
 		}
 	}
