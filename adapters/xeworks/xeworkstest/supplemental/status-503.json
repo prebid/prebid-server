@@ -97,7 +97,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "Bidder unavailable. Please contact the bidder support.",
+      "value": "Bidder Xeworks is unavailable. Please contact the bidder support.",
       "comparison": "literal"
     }
   ],

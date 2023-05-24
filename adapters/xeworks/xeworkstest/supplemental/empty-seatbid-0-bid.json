@@ -106,11 +106,6 @@
       }
     }
   ],
-  "expectedMakeBidsErrors": [
-    {
-      "value": "Array SeatBid[0].Bid cannot be empty",
-      "comparison": "literal"
-    }
-  ],
+  "expectedMakeBidsErrors": [],
   "expectedBidResponses": []
 }

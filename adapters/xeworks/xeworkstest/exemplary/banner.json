@@ -15,7 +15,7 @@
         "ext": {
           "bidder": {
             "env": "xe-stage",
-            "pid": "dc230510f7eb516f0eb9a10e5913d3b2"
+            "pid": "533faf0754cd43ceab591077781b909b"
           }
         }
       },
@@ -32,7 +32,7 @@
         "ext": {
           "bidder": {
             "env": "xe-stage",
-            "pid": "4fe619bebbc21fb13e5798a008d76d62"
+            "pid": "533faf0754cd43ceab591077781b909b"
           }
         }
       }
@@ -61,7 +61,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://prebid-xe-stage.xe.works/?pid=dc230510f7eb516f0eb9a10e5913d3b2",
+        "uri": "http://prebid-xe-stage.xe.works/?pid=533faf0754cd43ceab591077781b909b",
         "body": {
           "id": "id",
           "imp": [
@@ -78,24 +78,7 @@
               "ext": {
                 "bidder": {
                   "env": "xe-stage",
-                  "pid": "dc230510f7eb516f0eb9a10e5913d3b2"
-                }
-              }
-            },
-            {
-              "id": "2",
-              "secure": 1,
-              "bidfloor": 0.2,
-              "bidfloorcur": "USD",
-              "banner": {
-                "w": 300,
-                "h": 250,
-                "pos": 4
-              },
-              "ext": {
-                "bidder": {
-                  "env": "xe-stage",
-                  "pid": "4fe619bebbc21fb13e5798a008d76d62"
+                  "pid": "533faf0754cd43ceab591077781b909b"
                 }
               }
             }
@@ -126,32 +109,12 @@
         "status": 200,
         "body": {
           "id": "id",
-          "bidid": "id",
           "seatbid": [
             {
               "bid": [
                 {
                   "id": "id",
                   "impid": "1",
-                  "price": 0.1,
-                  "nurl": "http://test.com/nurl",
-                  "burl": "http://test.com/burl",
-                  "adm": "<span>Test1</span>",
-                  "adomain": ["test.com"],
-                  "cat": ["IAB1"],
-                  "cid": "cid",
-                  "crid": "crid",
-                  "w": 300,
-                  "h": 250,
-                  "ext": {
-                    "prebid": {
-                      "type": "banner"
-                    }
-                  }
-                },
-                {
-                  "id": "id",
-                  "impid": "2",
                   "price": 1.2,
                   "nurl": "http://test.com/nurl",
                   "burl": "http://test.com/burl",
@@ -159,7 +122,7 @@
                   "adomain": ["test.com"],
                   "cat": ["IAB1"],
                   "cid": "cid",
-                  "crid": "crid",
+                  "crid": "crid1",
                   "w": 300,
                   "h": 250,
                   "ext": {
@@ -178,27 +141,10 @@
     },
     {
       "expectedRequest": {
-        "uri": "http://prebid-xe-stage.xe.works/?pid=4fe619bebbc21fb13e5798a008d76d62",
+        "uri": "http://prebid-xe-stage.xe.works/?pid=533faf0754cd43ceab591077781b909b",
         "body": {
           "id": "id",
           "imp": [
-            {
-              "id": "1",
-              "secure": 1,
-              "bidfloor": 0.01,
-              "bidfloorcur": "USD",
-              "banner": {
-                "w": 300,
-                "h": 250,
-                "pos": 0
-              },
-              "ext": {
-                "bidder": {
-                  "env": "xe-stage",
-                  "pid": "dc230510f7eb516f0eb9a10e5913d3b2"
-                }
-              }
-            },
             {
               "id": "2",
               "secure": 1,
@@ -212,7 +158,7 @@
               "ext": {
                 "bidder": {
                   "env": "xe-stage",
-                  "pid": "4fe619bebbc21fb13e5798a008d76d62"
+                  "pid": "533faf0754cd43ceab591077781b909b"
                 }
               }
             }
@@ -243,36 +189,16 @@
         "status": 200,
         "body": {
           "id": "id",
-          "bidid": "id",
           "seatbid": [
             {
               "bid": [
                 {
                   "id": "id",
-                  "impid": "1",
+                  "impid": "2",
                   "price": 2.4,
                   "nurl": "http://test.com/nurl",
                   "burl": "http://test.com/burl",
                   "adm": "<span>Test3</span>",
-                  "adomain": ["test.com"],
-                  "cat": ["IAB1"],
-                  "cid": "cid",
-                  "crid": "crid",
-                  "w": 300,
-                  "h": 250,
-                  "ext": {
-                    "prebid": {
-                      "type": "banner"
-                    }
-                  }
-                },
-                {
-                  "id": "id",
-                  "impid": "2",
-                  "price": 1.2,
-                  "nurl": "http://test.com/nurl",
-                  "burl": "http://test.com/burl",
-                  "adm": "<span>Test4</span>",
                   "adomain": ["test.com"],
                   "cat": ["IAB1"],
                   "cid": "cid",
@@ -302,28 +228,6 @@
           "bid": {
             "id": "id",
             "impid": "1",
-            "price": 0.1,
-            "nurl": "http://test.com/nurl",
-            "burl": "http://test.com/burl",
-            "adm": "<span>Test1</span>",
-            "adomain": ["test.com"],
-            "cat": ["IAB1"],
-            "cid": "cid",
-            "crid": "crid",
-            "w": 300,
-            "h": 250,
-            "ext": {
-              "prebid": {
-                "type": "banner"
-              }
-            }
-          },
-          "type": "banner"
-        },
-        {
-          "bid": {
-            "id": "id",
-            "impid": "2",
             "price": 1.2,
             "nurl": "http://test.com/nurl",
             "burl": "http://test.com/burl",
@@ -331,56 +235,7 @@
             "adomain": ["test.com"],
             "cat": ["IAB1"],
             "cid": "cid",
-            "crid": "crid",
-            "w": 300,
-            "h": 250,
-            "ext": {
-              "prebid": {
-                "type": "banner"
-              }
-            }
-          },
-          "type": "banner"
-        }
-      ]
-    },
-    {
-      "currency": "USD",
-      "bids": [
-        {
-          "bid": {
-            "id": "id",
-            "impid": "1",
-            "price": 2.4,
-            "nurl": "http://test.com/nurl",
-            "burl": "http://test.com/burl",
-            "adm": "<span>Test3</span>",
-            "adomain": ["test.com"],
-            "cat": ["IAB1"],
-            "cid": "cid",
-            "crid": "crid",
-            "w": 300,
-            "h": 250,
-            "ext": {
-              "prebid": {
-                "type": "banner"
-              }
-            }
-          },
-          "type": "banner"
-        },
-        {
-          "bid": {
-            "id": "id",
-            "impid": "2",
-            "price": 1.2,
-            "nurl": "http://test.com/nurl",
-            "burl": "http://test.com/burl",
-            "adm": "<span>Test4</span>",
-            "adomain": ["test.com"],
-            "cat": ["IAB1"],
-            "cid": "cid",
-            "crid": "crid",
+            "crid": "crid1",
             "w": 300,
             "h": 250,
             "ext": {
