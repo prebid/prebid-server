@@ -28,4 +28,4 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            console.log("sss >>" + "${{ steps.determine_commit.outputs }}")
+            console.log("sss >>" + JSON.stringify(${{ steps.determine_commit.outputs }}))
