@@ -3,7 +3,8 @@ on:
     pull_request:
         paths:
             - 'adapters/*/*.go'
-            - '!*_test.go'
+            - '!adapters/*/*_test.go'
+            - '!adapters/*_test.go'
 
 jobs:
   semgrep-check:
