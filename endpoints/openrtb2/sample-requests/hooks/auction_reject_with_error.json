@@ -39,7 +39,49 @@
   "expectedBidResponse": {
     "id": "some-request-id",
     "bidid": "test bid id",
-    "nbr": 123
+    "nbr": 123,
+    "ext": {
+      "prebid": {
+        "modules": {
+          "errors": {
+            "foobar": {
+              "foo": [
+                "dummy",
+                "Module foobar (hook: foo) rejected request with code 123 at entrypoint stage"
+              ]
+            }
+          },
+          "trace": {
+            "stages": [
+              {
+                "stage": "entrypoint",
+                "outcomes": [
+                  {
+                    "entity": "http-request",
+                    "groups": [
+                      {
+                        "invocation_results": [
+                          {
+                            "analytics_tags": {},
+                            "hook_id": {
+                              "module_code": "foobar",
+                              "hook_impl_code": "foo"
+                            },
+                            "status": "execution_failure",
+                            "action": "reject",
+                            "message": ""
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    }
   },
   "expectedReturnCode": 200
 }

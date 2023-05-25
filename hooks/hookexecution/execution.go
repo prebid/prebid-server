@@ -192,9 +192,7 @@ func handleHookResponse[P any](
 
 	if hr.Err != nil || hr.Result.Reject {
 		handleHookError(hr, &hookOutcome, metricEngine, labels)
-		if hr.Result.Reject {
-			rejectErr = handleHookReject(ctx, hr, &hookOutcome, metricEngine, labels)
-		}
+		rejectErr = handleHookReject(ctx, hr, &hookOutcome, metricEngine, labels)
 	} else {
 		payload = handleHookMutations(payload, hr, &hookOutcome, metricEngine, labels)
 	}
