@@ -817,6 +817,9 @@ func getDeviceIDFromUserExt(device *device, openRTBRequest *openrtb2.BidRequest)
 			device.Gaid = deviceId.Gaid[0]
 			isValidDeviceId = true
 		}
+		if len(device.Gaid) > 0 {
+			isValidDeviceId = true
+		}
 		if len(deviceId.Imei) > 0 {
 			device.Imei = deviceId.Imei[0]
 			isValidDeviceId = true
