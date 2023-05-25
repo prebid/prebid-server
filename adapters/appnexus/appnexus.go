@@ -352,6 +352,8 @@ func buildRequestImp(imp *openrtb2.Imp, appnexusExt *openrtb_ext.ExtImpAppnexus,
 		Keywords:          appnexusExt.Keywords.String(),
 		UsePmtRule:        appnexusExt.UsePaymentRule,
 		PrivateSizes:      appnexusExt.PrivateSizes,
+		ExtInvCode:        appnexusExt.ExtInvCode,
+		ExternalImpId:     appnexusExt.ExternalImpId,
 	}}
 
 	var err error
