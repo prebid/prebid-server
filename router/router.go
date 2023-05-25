@@ -214,7 +214,6 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		glog.Fatalf("Failed to create ads cert signer: %v", err)
 	}
 
-	//Price Floor Fetcher
 	priceFloorFetcher := floors.NewPriceFloorFetcher(cfg.PriceFloors.Fetcher.Worker, cfg.PriceFloors.Fetcher.Capacity,
 		cfg.AccountDefaults.PriceFloors.Fetch.Period, cfg.AccountDefaults.PriceFloors.Fetch.MaxAge)
 

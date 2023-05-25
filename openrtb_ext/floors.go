@@ -153,7 +153,6 @@ type ImpExtPrebid struct {
 }
 
 func (pf *PriceFloorRules) DeepCopy() *PriceFloorRules {
-
 	if pf == nil {
 		return nil
 	}
@@ -169,7 +168,6 @@ func (pf *PriceFloorRules) DeepCopy() *PriceFloorRules {
 }
 
 func (data *PriceFloorData) DeepCopy() *PriceFloorData {
-
 	if data == nil {
 		return nil
 	}
@@ -197,7 +195,6 @@ func (data *PriceFloorData) DeepCopy() *PriceFloorData {
 }
 
 func (enforcement *PriceFloorEnforcement) DeepCopy() *PriceFloorEnforcement {
-
 	if enforcement == nil {
 		return nil
 	}

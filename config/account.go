@@ -81,7 +81,6 @@ type AccountFloorFetch struct {
 }
 
 func (pf *AccountPriceFloors) validate(errs []error) []error {
-
 	if pf.EnforceFloorsRate < 0 || pf.EnforceFloorsRate > 100 {
 		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.enforce_floors_rate should be between 0 and 100`))
 	}

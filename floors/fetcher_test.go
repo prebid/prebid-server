@@ -771,7 +771,7 @@ func TestFetcherWhenRequestGetSameURLInrequest(t *testing.T) {
 	}
 
 	assert.Never(t, func() bool { return len(fectherInstance.fetchQueue) > 1 }, time.Duration(2*time.Second), 100*time.Millisecond, "Queue Got more than one entry")
-	assert.Never(t, func() bool { return len(fectherInstance.fetchInprogress) > 1 }, time.Duration(2*time.Second), 100*time.Millisecond, "Map Got more than one entry")
+	assert.Never(t, func() bool { return len(fectherInstance.fetchInProgress) > 1 }, time.Duration(2*time.Second), 100*time.Millisecond, "Map Got more than one entry")
 
 }
 
@@ -852,7 +852,7 @@ func TestPriceFloorFetcherWorker(t *testing.T) {
 	fectherInstance := PriceFloorFetcher{
 		pool:            nil,
 		fetchQueue:      nil,
-		fetchInprogress: nil,
+		fetchInProgress: nil,
 		configReceiver:  make(chan FetchInfo, 1),
 		done:            nil,
 		cache:           cache.New(time.Duration(5)*time.Second, time.Duration(2)*time.Second),
@@ -901,7 +901,7 @@ func TestPriceFloorFetcherWorkerDefaultCacheExpiry(t *testing.T) {
 	fectherInstance := &PriceFloorFetcher{
 		pool:            nil,
 		fetchQueue:      nil,
-		fetchInprogress: nil,
+		fetchInProgress: nil,
 		configReceiver:  make(chan FetchInfo, 1),
 		done:            nil,
 		cache:           cache.New(time.Duration(5)*time.Second, time.Duration(2)*time.Second),
@@ -945,7 +945,7 @@ func TestPriceFloorFetcherSubmit(t *testing.T) {
 	fectherInstance := &PriceFloorFetcher{
 		pool:            pond.New(1, 1),
 		fetchQueue:      make(FetchQueue, 0),
-		fetchInprogress: nil,
+		fetchInProgress: nil,
 		configReceiver:  make(chan FetchInfo, 1),
 		done:            nil,
 		cache:           cache.New(time.Duration(2)*time.Second, time.Duration(1)*time.Second),
@@ -989,7 +989,7 @@ func TestPriceFloorFetcherSubmitFailed(t *testing.T) {
 	fectherInstance := &PriceFloorFetcher{
 		pool:            &testPool{},
 		fetchQueue:      make(FetchQueue, 0),
-		fetchInprogress: nil,
+		fetchInProgress: nil,
 		configReceiver:  nil,
 		done:            nil,
 		cache:           nil,
@@ -1060,5 +1060,5 @@ func TestFetcherWhenRequestGetDifferentURLInrequest(t *testing.T) {
 	}
 
 	assert.Never(t, func() bool { return len(fectherInstance.fetchQueue) > 10 }, time.Duration(2*time.Second), 100*time.Millisecond, "Queue Got more than one entry")
-	assert.Never(t, func() bool { return len(fectherInstance.fetchInprogress) > 10 }, time.Duration(2*time.Second), 100*time.Millisecond, "Map Got more than one entry")
+	assert.Never(t, func() bool { return len(fectherInstance.fetchInProgress) > 10 }, time.Duration(2*time.Second), 100*time.Millisecond, "Map Got more than one entry")
 }

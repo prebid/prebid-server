@@ -38,7 +38,6 @@ const (
 // getFloorCurrency returns floors currency provided in floors JSON,
 // if currency is not provided then defaults to USD
 func getFloorCurrency(floorExt *openrtb_ext.PriceFloorRules) string {
-
 	floorCur := defaultCurrency
 	if floorExt != nil && floorExt.Data != nil {
 		if floorExt.Data.Currency != "" {

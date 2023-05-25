@@ -32,7 +32,6 @@ const (
 // EnrichWithPriceFloors checks for floors enabled in account and request and selects floors data from dynamic fetched if present
 // else selects floors data from req.ext.prebid.floors and update request with selected floors details
 func EnrichWithPriceFloors(bidRequestWrapper *openrtb_ext.RequestWrapper, account config.Account, conversions currency.Conversions, priceFloorFetcher FloorFetcher) []error {
-
 	if bidRequestWrapper == nil || bidRequestWrapper.BidRequest == nil {
 		return []error{errors.New("Empty bidrequest")}
 	}
@@ -275,7 +274,6 @@ func resolveFloorMin(reqFloors *openrtb_ext.PriceFloorRules, fetchFloors *openrt
 
 // mergeFloors does merging for floors data from request and dynamic fetch
 func mergeFloors(reqFloors *openrtb_ext.PriceFloorRules, fetchFloors *openrtb_ext.PriceFloorRules, conversions currency.Conversions) *openrtb_ext.PriceFloorRules {
-
 	mergedFloors := fetchFloors.DeepCopy()
 	if mergedFloors.Enabled == nil {
 		mergedFloors.Enabled = new(bool)
