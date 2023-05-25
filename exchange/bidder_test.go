@@ -3149,7 +3149,7 @@ func TestGetBidderTmax(t *testing.T) {
 			tmaxAdjustments: tmaxAdjustments,
 		},
 		{
-			description:     "returns-requestTmax-when-tmax-adjustment-is-not-enabled",
+			description:     "returns-requestTmax-when-tmax-adjustment-is-disabled",
 			ctx:             ctx,
 			requestTmax:     requestTmaxMS,
 			tmaxAdjustments: tmaxAdjustments,
