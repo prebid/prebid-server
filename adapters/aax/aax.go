@@ -13,6 +13,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
+// test
 type adapter struct {
 	endpoint string
 }

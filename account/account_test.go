@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+// test
 var mockAccountData = map[string]json.RawMessage{
 	"valid_acct":                json.RawMessage(`{"disabled":false}`),
 	"disabled_acct":             json.RawMessage(`{"disabled":true}`),
