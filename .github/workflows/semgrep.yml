@@ -2,9 +2,9 @@ name: run semgrep checks on adapters
 on: 
     pull_request:
         paths:
-            - 'adapters/*/*.go'
-            - '!adapters/*/*_test.go'
-            - '!adapters/*_test.go'
+            - 'adapters/*/**.go'
+            - '!adapters/*/**_test.go'
+            - '!adapters/**_test.go'
 
 jobs:
   semgrep-check:
