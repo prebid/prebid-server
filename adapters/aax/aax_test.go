@@ -10,6 +10,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
+// test
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAax, config.Adapter{
 		Endpoint:         "https://example.aax.media/rtb/prebid",
