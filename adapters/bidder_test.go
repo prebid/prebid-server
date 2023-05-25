@@ -12,6 +12,8 @@ import (
 // test
 // test
 // test
+// test
+// test
 func TestExtraRequestInfoConvertCurrency(t *testing.T) {
 	var (
 		givenValue float64 = 2
