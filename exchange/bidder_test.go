@@ -2243,15 +2243,28 @@ func TestTmaxInDoRequest(t *testing.T) {
 	}
 	logger := func(msg string, args ...interface{}) {}
 
-	httpCallInfo := bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, time.Now(), &config.TmaxAdjustments{Enabled: true, BidderNetworkLatencyBuffer: 20000, BidderResponseDurationMin: 40000})
-	assert.NotNil(t, httpCallInfo.err)
-	assert.Equal(t, tmaxTimeoutErr, httpCallInfo.err)
+	t.Run("reject-request", func(t *testing.T) {
+		httpCallInfo := bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, time.Now(), &config.TmaxAdjustments{Enabled: true, BidderNetworkLatencyBuffer: 20000, BidderResponseDurationMin: 40000})
+		assert.NotNil(t, httpCallInfo.err)
+		assert.Equal(t, errTmaxTimeout, httpCallInfo.err)
+	})
 
-	httpCallInfo = bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, time.Now(), &config.TmaxAdjustments{Enabled: true, BidderNetworkLatencyBuffer: 20000, BidderResponseDurationMin: 10000})
-	assert.NotEqual(t, tmaxTimeoutErr, httpCallInfo.err)
+	testCases := []struct {
+		description    string
+		tmaxAdjustment config.TmaxAdjustments
+	}{
+		{description: "accept-request", tmaxAdjustment: config.TmaxAdjustments{Enabled: true, BidderNetworkLatencyBuffer: 20000, BidderResponseDurationMin: 10000}},
+		{description: "disabled", tmaxAdjustment: config.TmaxAdjustments{Enabled: false, BidderNetworkLatencyBuffer: 20000, BidderResponseDurationMin: 40000}},
+		{description: "dur-zero", tmaxAdjustment: config.TmaxAdjustments{Enabled: true, BidderNetworkLatencyBuffer: 20000, BidderResponseDurationMin: 0}},
+	}
 
-	httpCallInfo = bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, time.Now(), &config.TmaxAdjustments{Enabled: false, BidderNetworkLatencyBuffer: 20000, BidderResponseDurationMin: 40000})
-	assert.NotEqual(t, tmaxTimeoutErr, httpCallInfo.err)
+	for _, testCase := range testCases {
+		t.Run(testCase.description, func(t *testing.T) {
+			httpCallInfo := bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, time.Now(), &testCase.tmaxAdjustment)
+			assert.NotEqual(t, errTmaxTimeout, httpCallInfo.err)
+		})
+	}
+
 }
 
 func TestParseDebugInfoTrue(t *testing.T) {

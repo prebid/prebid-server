@@ -2278,9 +2278,9 @@ func TestMakeAuctionContextWithTmaxAdjustment(t *testing.T) {
 		tmaxAdjustment config.TmaxAdjustments
 		deadline       time.Time
 	}{
-		{description: "with_tmax_disabled", tmaxAdjustment: config.TmaxAdjustments{Enabled: false}, deadline: deadline},
-		{description: "with_tmax_enabled", tmaxAdjustment: config.TmaxAdjustments{Enabled: true, PBSResponsePreparationDuration: pBSResponsePreparationDuration}, deadline: deadline.Add(-time.Duration(int(pBSResponsePreparationDuration) * int(time.Millisecond)))},
-		{description: "with_tmax_enabled_upstreamResponseDuration_is_zero", tmaxAdjustment: config.TmaxAdjustments{Enabled: true, PBSResponsePreparationDuration: 0}, deadline: deadline},
+		{description: "disabled", tmaxAdjustment: config.TmaxAdjustments{Enabled: false}, deadline: deadline},
+		{description: "enabled", tmaxAdjustment: config.TmaxAdjustments{Enabled: true, PBSResponsePreparationDuration: pBSResponsePreparationDuration}, deadline: deadline.Add(-time.Duration(int(pBSResponsePreparationDuration) * int(time.Millisecond)))},
+		{description: "enabled-dur-zero", tmaxAdjustment: config.TmaxAdjustments{Enabled: true, PBSResponsePreparationDuration: 0}, deadline: deadline},
 	}
 
 	for _, test := range testCases {

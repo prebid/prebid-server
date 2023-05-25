@@ -77,7 +77,7 @@ const (
 )
 
 var (
-	tmaxTimeoutErr = errors.New("exceeded tmax duration")
+	errTmaxTimeout = errors.New("exceeded tmax duration")
 )
 
 // AdaptBidder converts an adapters.Bidder into an exchange.AdaptedBidder.
@@ -533,13 +533,13 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 	bidder.me.RecordOverheadTime(metrics.PreBidder, time.Since(pbsRequestStartTime))
 	httpCallStart := time.Now()
 
-	if tmaxAdjustments != nil && tmaxAdjustments.Enabled {
+	if tmaxAdjustments != nil && tmaxAdjustments.Enabled && tmaxAdjustments.BidderResponseDurationMin > 0 {
 		if deadline, ok := ctx.Deadline(); ok {
 			bidderTmax := deadline.Add(-time.Duration(int(tmaxAdjustments.BidderNetworkLatencyBuffer) * int(time.Millisecond)))
 			if int(bidderTmax.Sub(time.Now())) < int(tmaxAdjustments.BidderResponseDurationMin)*int(time.Millisecond) {
 				return &httpCallInfo{
 					request: req,
-					err:     tmaxTimeoutErr,
+					err:     errTmaxTimeout,
 				}
 			}
 		}
