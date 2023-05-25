@@ -11,5 +11,6 @@ jobs:
         with:
           fetch-depth: 0
 
+        #  opened - when PR is created
       - name: determine pull request event
         run: echo "${{ github.event.action}}"
