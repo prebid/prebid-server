@@ -106,11 +106,11 @@
     },
     "ext_inv_code" : {
       "type": "string",
-      "description": "Unique identifier of an externally generated auction"
+      "description": "Specifies predefined value passed on the query string that can be used in reporting"
     },
     "external_imp_id" : {
       "type": "string",
-      "description": "Specifies predefined value passed on the query string that can be used in reporting"
+      "description": "Unique identifier of an externally generated auction"
     }
   },
 
