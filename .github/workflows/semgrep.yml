@@ -1,0 +1,14 @@
+name: run semgrep checks on adapters
+on: 
+    pull_request:
+        paths:
+            - 'prebid_server/adapters/**/*.go'
+            - '!*_test.go'
+jobs:
+  semgrep-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v3
+        with:
+            fetch-depth: 0
