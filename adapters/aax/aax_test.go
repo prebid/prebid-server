@@ -21,6 +21,8 @@ import (
 // test
 // test
 // test
+// test
+// test
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAax, config.Adapter{
 		Endpoint:         "https://example.aax.media/rtb/prebid",
