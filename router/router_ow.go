@@ -48,7 +48,7 @@ func getTransport(cfg *config.Configuration, certPool *x509.CertPool) *http.Tran
 		Proxy:           http.ProxyFromEnvironment,
 		MaxConnsPerHost: cfg.Client.MaxConnsPerHost,
 		IdleConnTimeout: time.Duration(cfg.Client.IdleConnTimeout) * time.Second,
-		TLSClientConfig: &tls.Config{RootCAs: certPool},
+		TLSClientConfig: &tls.Config{RootCAs: certPool, InsecureSkipVerify: cfg.Client.InsecureSkipVerify},
 	}
 
 	if cfg.Client.DialTimeout > 0 {

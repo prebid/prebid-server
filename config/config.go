@@ -129,6 +129,7 @@ type HTTPClient struct {
 	ResponseHeaderTimeout int `mapstructure:"response_header_timeout"`
 	DialTimeout           int `mapstructure:"dial_timeout"`
 	DialKeepAlive         int `mapstructure:"dial_keepalive"`
+	InsecureSkipVerify    bool `mapstructure:"insecure_skipverify"`
 }
 
 func (cfg *Configuration) validate(v *viper.Viper) []error {
