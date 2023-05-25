@@ -21,11 +21,11 @@ jobs:
                 commit=${{ github.event.pull_request.head.sha }}
             fi
             echo "commit: ${commit}"
-            echo "commit=${commit}" >> GITHUB_OUTPUT
+            echo "commit=${commit}" >> $GITHUB_OUTPUT
 
       - name: determine files changed
         uses: actions/github-script@v4
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            console.log("sss >>" + JSON.stringify(${{ steps.determine_commit.outputs }}))
+            console.log("sss >>" + "${{ steps.determine_commit.outputs.commit }}")
