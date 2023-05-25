@@ -661,12 +661,10 @@ func TestEnforce(t *testing.T) {
 	for _, tt := range tests {
 		actEligibleBids, actErrs, actRejecteBids := Enforce(tt.args.bidRequestWrapper, tt.args.seatBids, config.Account{PriceFloors: tt.args.priceFloorsCfg}, tt.args.conversions)
 		assert.Equal(t, tt.expErrs, actErrs, tt.name)
-		if !reflect.DeepEqual(tt.expRejectedBids, actRejecteBids) {
-			assert.Fail(t, tt.name+": rejected bids don't match. Got: ", actRejecteBids)
-		}
+		assert.ElementsMatch(t, tt.expRejectedBids, actRejecteBids, tt.name)
 
 		if !reflect.DeepEqual(tt.expEligibleBids, actEligibleBids) {
-			assert.Fail(t, tt.name+": eligible bids don't match. Got: ", actEligibleBids)
+			assert.Failf(t, "eligible bids don't match", "Expected: %v, Got: %v", tt.expEligibleBids, actEligibleBids)
 		}
 	}
 }
