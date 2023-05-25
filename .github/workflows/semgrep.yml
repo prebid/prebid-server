@@ -17,7 +17,7 @@ jobs:
             #  opened - when PR is created
             #  synchronize - when new commit is pushed
             commit=${{ github.sha }}
-            if [${{ github.event.action }} == "synchronize"]; then
+            if [ "${{ github.event.action }}" == "synchronize" ]; then
                 commit=${{ github.event.pull_request.head.sha }}
             fi
             echo "commit=${commit}" >> GITHUB_OUTPUT
