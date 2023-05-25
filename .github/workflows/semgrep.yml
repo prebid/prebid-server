@@ -1,12 +1,31 @@
 name: run semgrep checks on adapters
 on:
-  pull_request:
-    paths: ["adapters/*/*.go"]
+  pull_request
+    # paths: ["adapters/*/*.go"]
 jobs:
   semgrep-check:
     runs-on: ubuntu-latest
     steps:
-      - name: checkout repo
+      - name: Checkout repo
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+
+      - name: Determine commit
+        id: determine_commit
+        run: |
+            #  opened - when PR is created
+            #  synchronize - when new commit is pushed
+            commit=${{ github.sha }}
+            if [ "${{ github.event.action }}" == "synchronize" ]; then
+                commit=${{ github.event.pull_request.head.sha }}
+            fi
+            echo "commit: ${commit}"
+            echo "commit=${commit}" >> $GITHUB_OUTPUT
+
+      - name: determine files changed
+        uses: actions/github-script@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            console.log("sss >>" + "${{ steps.determine_commit.outputs.commit }}")
