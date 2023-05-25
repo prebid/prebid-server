@@ -20,6 +20,7 @@ jobs:
             if [ "${{ github.event.action }}" == "synchronize" ]; then
                 commit=${{ github.event.pull_request.head.sha }}
             fi
+            echo "commit: ${commit}"
             echo "commit=${commit}" >> GITHUB_OUTPUT
 
       - name: determine files changed
@@ -27,4 +28,4 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            console.log("${{ steps.determine_commit.outputs.commit }}")
+            console.log("sss >>" + "${{ steps.determine_commit.outputs.commit }}")
