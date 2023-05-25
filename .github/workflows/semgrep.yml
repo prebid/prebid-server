@@ -2,7 +2,7 @@ name: run semgrep checks on adapters
 on: 
     pull_request:
         paths:
-            - 'prebid-server/adapters/*/*.go'
+            - 'adapters/*/*.go'
             - '!*_test.go'
 
 jobs:

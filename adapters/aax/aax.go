@@ -19,6 +19,8 @@ import (
 // test
 // test
 // test
+// test
+// test
 type adapter struct {
 	endpoint string
 }
