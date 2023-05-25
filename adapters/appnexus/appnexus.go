@@ -20,9 +20,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-// test
-// test
-
 const defaultPlatformID int = 5
 
 type adapter struct {
