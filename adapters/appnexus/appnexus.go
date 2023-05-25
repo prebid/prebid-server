@@ -21,6 +21,8 @@ import (
 )
 
 // test
+// test
+
 const defaultPlatformID int = 5
 
 type adapter struct {
