@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -12,7 +13,6 @@ import (
 	"github.com/prebid/openrtb/v19/adcom1"
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/util/httputil"
 	"github.com/prebid/prebid-server/util/randomutil"
 
 	"github.com/prebid/prebid-server/adapters"
@@ -21,25 +21,26 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const defaultPlatformID int = 5
+const (
+	defaultPlatformID int = 5
+	maxImpsPerReq         = 10
+)
 
 type adapter struct {
-	URI             string
-	iabCategoryMap  map[string]string
+	uri             url.URL
 	hbSource        int
 	randomGenerator randomutil.RandomGenerator
 }
 
-var maxImpsPerReq = 10
-
 // Builder builds a new instance of the AppNexus adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	uri, err := url.Parse(config.Endpoint)
+	if err != nil {
+		return nil, err
+	}
+
 	bidder := &adapter{
-		URI: config.Endpoint,
-		iabCategoryMap: map[string]string{
-			"1": "IAB20-3",
-			"9": "IAB5-3",
-		},
+		uri:             *uri,
 		hbSource:        resolvePlatformID(config.PlatformID),
 		randomGenerator: randomutil.RandomNumberGenerator{},
 	}
@@ -57,15 +58,14 @@ func resolvePlatformID(platformID string) int {
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-
 	// appnexus adapter expects imp.displaymanagerver to be populated in openrtb2 endpoint
 	// but some SDKs will put it in imp.ext.prebid instead
 	displayManagerVer := buildDisplayManageVer(request)
 
 	var (
 		shouldGenerateAdPodId *bool
-		uniqueMemberIds       []string
-		memberIds             = make(map[string]struct{})
+		uniqueMemberIds       = make([]string, 0, len(request.Imp))
+		memberIds             = make(map[string]struct{}, len(request.Imp))
 		errs                  = make([]error, 0, len(request.Imp))
 	)
 
@@ -102,7 +102,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	}
 	request.Imp = validImps
 
-	requestURI := a.URI
+	// If all the requests were malformed, don't bother making a server call with no impressions.
+	if len(request.Imp) == 0 {
+		return nil, errs
+	}
+
+	requestURI := a.uri
 	// The Appnexus API requires a Member ID in the URL. This means the request may fail if
 	// different impressions have different member IDs.
 	// Check for this condition, and log an error if it's a problem.
@@ -110,12 +115,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		requestURI = appendMemberId(requestURI, uniqueMemberIds[0])
 		if len(uniqueMemberIds) > 1 {
 			errs = append(errs, fmt.Errorf("All request.imp[i].ext.prebid.bidder.appnexus.member params must match. Request contained: %v", uniqueMemberIds))
+			return nil, errs
 		}
-	}
-
-	// If all the requests were malformed, don't bother making a server call with no impressions.
-	if len(request.Imp) == 0 {
-		return nil, errs
 	}
 
 	// Add Appnexus request level extension
@@ -144,8 +145,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	reqExt.Appnexus.IsAMP = isAMP
 	reqExt.Appnexus.HeaderBiddingSource = a.hbSource + isVIDEO
 
-	imps := request.Imp
-
 	// For long form requests if adpodId feature enabled, adpod_id must be sent downstream.
 	// Adpod id is a unique identifier for pod
 	// All impressions in the same pod must have the same pod id in request extension
@@ -153,20 +152,20 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	// If impressions number per pod is more than maxImpsPerReq - divide those imps to several requests but keep pod id the same
 	// If  adpodId feature disabled and impressions number per pod is more than maxImpsPerReq  - divide those imps to several requests but do not include ad pod id
 	if isVIDEO == 1 && *shouldGenerateAdPodId {
-		requests, errors := a.buildAdPodRequests(imps, request, reqExt, requestURI)
+		requests, errors := a.buildAdPodRequests(request.Imp, request, reqExt, requestURI.String())
 		return requests, append(errs, errors...)
 	}
 
-	requests, errors := splitRequests(imps, request, reqExt, requestURI)
+	requests, errors := splitRequests(request.Imp, request, reqExt, requestURI.String())
 	return requests, append(errs, errors...)
 }
 
 func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if httputil.IsResponseStatusCodeNoContent(response) {
+	if adapters.IsResponseStatusCodeNoContent(response) {
 		return nil, nil
 	}
 
-	if err := httputil.CheckResponseStatusCodeForErrors(response); err != nil {
+	if err := adapters.CheckResponseStatusCodeForErrors(response); err != nil {
 		return nil, []error{err}
 	}
 
@@ -198,7 +197,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 				bid.Cat = []string{iabCategory}
 			} else if len(bid.Cat) > 1 {
 				//create empty categories array to force bid to be rejected
-				bid.Cat = make([]string, 0)
+				bid.Cat = []string{}
 			}
 
 			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
@@ -263,7 +262,7 @@ func groupByPods(imps []openrtb2.Imp) map[string]([]openrtb2.Imp) {
 }
 
 func splitRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExtension appnexusReqExt, uri string) ([]*adapters.RequestData, []error) {
-	errs := []error{}
+	var errs []error
 	// Initial capacity for future array of requests, memory optimization.
 	// Let's say there are 35 impressions and limit impressions per request equals to 10.
 	// In this case we need to create 4 requests with 10, 10, 10 and 5 impressions.
@@ -334,7 +333,6 @@ func buildRequestImp(imp *openrtb2.Imp, appnexusExt *openrtb_ext.ExtImpAppnexus,
 			bannerCopy.Pos = adcom1.PositionBelowFold.Ptr()
 		}
 
-		// Fixes #307
 		if bannerCopy.W == nil && bannerCopy.H == nil && len(bannerCopy.Format) > 0 {
 			firstFormat := bannerCopy.Format[0]
 			bannerCopy.W = &(firstFormat.W)
@@ -351,32 +349,17 @@ func buildRequestImp(imp *openrtb2.Imp, appnexusExt *openrtb_ext.ExtImpAppnexus,
 	impExt := appnexusImpExt{Appnexus: appnexusImpExtAppnexus{
 		PlacementID:       int(appnexusExt.PlacementId),
 		TrafficSourceCode: appnexusExt.TrafficSourceCode,
-		Keywords:          makeKeywordStr(appnexusExt.Keywords),
+		Keywords:          appnexusExt.Keywords.String(),
 		UsePmtRule:        appnexusExt.UsePaymentRule,
 		PrivateSizes:      appnexusExt.PrivateSizes,
+		ExtInvCode:        appnexusExt.ExtInvCode,
+		ExternalImpId:     appnexusExt.ExternalImpId,
 	}}
 
 	var err error
-	if imp.Ext, err = json.Marshal(&impExt); err != nil {
-		return err
-	}
+	imp.Ext, err = json.Marshal(&impExt)
 
-	return nil
-}
-
-func makeKeywordStr(keywords []*openrtb_ext.ExtImpAppnexusKeyVal) string {
-	kvs := make([]string, 0, len(keywords)*2)
-	for _, kv := range keywords {
-		if len(kv.Values) == 0 {
-			kvs = append(kvs, kv.Key)
-		} else {
-			for _, val := range kv.Values {
-				kvs = append(kvs, fmt.Sprintf("%s=%s", kv.Key, val))
-			}
-		}
-	}
-
-	return strings.Join(kvs, ",")
+	return err
 }
 
 // getMediaTypeForBid determines which type of bid.
@@ -386,8 +369,6 @@ func getMediaTypeForBid(bid *appnexusBidExt) (openrtb_ext.BidType, error) {
 		return openrtb_ext.BidTypeBanner, nil
 	case 1:
 		return openrtb_ext.BidTypeVideo, nil
-	case 2:
-		return openrtb_ext.BidTypeAudio, nil
 	case 3:
 		return openrtb_ext.BidTypeNative, nil
 	default:
@@ -398,16 +379,15 @@ func getMediaTypeForBid(bid *appnexusBidExt) (openrtb_ext.BidType, error) {
 // getIabCategoryForBid maps an appnexus brand id to an IAB category.
 func (a *adapter) findIabCategoryForBid(bid *appnexusBidExt) (string, bool) {
 	brandIDString := strconv.Itoa(bid.Appnexus.BrandCategory)
-	iabCategory, ok := a.iabCategoryMap[brandIDString]
+	iabCategory, ok := iabCategoryMap[brandIDString]
 	return iabCategory, ok
 }
 
-func appendMemberId(uri string, memberId string) string {
-	if strings.Contains(uri, "?") {
-		return uri + "&member_id=" + memberId
-	}
-
-	return uri + "?member_id=" + memberId
+func appendMemberId(uri url.URL, memberId string) url.URL {
+	q := uri.Query()
+	q.Set("member_id", memberId)
+	uri.RawQuery = q.Encode()
+	return uri
 }
 
 func buildDisplayManageVer(req *openrtb2.BidRequest) string {

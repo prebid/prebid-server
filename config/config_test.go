@@ -12,6 +12,7 @@ import (
 
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
@@ -190,6 +191,8 @@ func TestDefaults(t *testing.T) {
 	cmpBools(t, "account_defaults.price_floors.use_dynamic_data", false, cfg.AccountDefaults.PriceFloors.UseDynamicData)
 	cmpInts(t, "account_defaults.price_floors.max_rules", 100, cfg.AccountDefaults.PriceFloors.MaxRule)
 	cmpInts(t, "account_defaults.price_floors.max_schema_dims", 3, cfg.AccountDefaults.PriceFloors.MaxSchemaDims)
+	cmpBools(t, "account_defaults.events_enabled", *cfg.AccountDefaults.EventsEnabled, false)
+	cmpNils(t, "account_defaults.events.enabled", cfg.AccountDefaults.Events.Enabled)
 
 	cmpBools(t, "hooks.enabled", false, cfg.Hooks.Enabled)
 	cmpStrings(t, "validations.banner_creative_max_size", "skip", cfg.Validations.BannerCreativeMaxSize)
@@ -197,6 +200,11 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "validations.max_creative_width", 0, int(cfg.Validations.MaxCreativeWidth))
 	cmpInts(t, "validations.max_creative_height", 0, int(cfg.Validations.MaxCreativeHeight))
 	cmpBools(t, "account_modules_metrics", false, cfg.Metrics.Disabled.AccountModulesMetrics)
+
+	cmpBools(t, "tmax_adjustments.enabled", false, cfg.TmaxAdjustments.Enabled)
+	cmpUnsignedInts(t, "tmax_adjustments.bidder_response_duration_min_ms", 0, cfg.TmaxAdjustments.BidderResponseDurationMin)
+	cmpUnsignedInts(t, "tmax_adjustments.bidder_network_latency_buffer_ms", 0, cfg.TmaxAdjustments.BidderNetworkLatencyBuffer)
+	cmpUnsignedInts(t, "tmax_adjustments.pbs_response_preparation_duration_ms", 0, cfg.TmaxAdjustments.PBSResponsePreparationDuration)
 
 	//Assert purpose VendorExceptionMap hash tables were built correctly
 	expectedTCF2 := TCF2{
@@ -316,6 +324,7 @@ func TestDefaults(t *testing.T) {
 	assert.Equal(t, expectedTCF2, cfg.GDPR.TCF2, "gdpr.tcf2")
 }
 
+// When adding a new field, make sure the indentations are spaces not tabs otherwise read config may fail to parse the new field value.
 var fullConfig = []byte(`
 gdpr:
   host_vendor_id: 15
@@ -457,6 +466,9 @@ hooks:
 price_floors:
     enabled: true
 account_defaults:
+    events_enabled: false
+    events:
+        enabled: true
     price_floors:
         enabled: true
         enforce_floors_rate: 50
@@ -465,6 +477,11 @@ account_defaults:
         use_dynamic_data: true
         max_rules: 120
         max_schema_dims: 5
+tmax_adjustments:
+  enabled: true
+  bidder_response_duration_min_ms: 700
+  bidder_network_latency_buffer_ms: 100
+  pbs_response_preparation_duration_ms: 100
 `)
 
 var oldStoredRequestsConfig = []byte(`
@@ -479,6 +496,11 @@ func cmpStrings(t *testing.T, key, expected, actual string) {
 }
 
 func cmpInts(t *testing.T, key string, expected, actual int) {
+	t.Helper()
+	assert.Equal(t, expected, actual, "%s: %d != %d", key, expected, actual)
+}
+
+func cmpUnsignedInts(t *testing.T, key string, expected, actual uint) {
 	t.Helper()
 	assert.Equal(t, expected, actual, "%s: %d != %d", key, expected, actual)
 }
@@ -544,6 +566,10 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "validations.secure_markup", "skip", cfg.Validations.SecureMarkup)
 	cmpInts(t, "validations.max_creative_width", 0, int(cfg.Validations.MaxCreativeWidth))
 	cmpInts(t, "validations.max_creative_height", 0, int(cfg.Validations.MaxCreativeHeight))
+	cmpBools(t, "tmax_adjustments.enabled", false, cfg.TmaxAdjustments.Enabled) // Tmax adjustment feature is still under development. Therefore enabled flag is set to false
+	cmpUnsignedInts(t, "tmax_adjustments.bidder_response_duration_min_ms", 700, cfg.TmaxAdjustments.BidderResponseDurationMin)
+	cmpUnsignedInts(t, "tmax_adjustments.bidder_network_latency_buffer_ms", 100, cfg.TmaxAdjustments.BidderNetworkLatencyBuffer)
+	cmpUnsignedInts(t, "tmax_adjustments.pbs_response_preparation_duration_ms", 100, cfg.TmaxAdjustments.PBSResponsePreparationDuration)
 
 	//Assert the price floor values
 	cmpBools(t, "price_floors.enabled", true, cfg.PriceFloors.Enabled)
@@ -554,6 +580,8 @@ func TestFullConfig(t *testing.T) {
 	cmpBools(t, "account_defaults.price_floors.use_dynamic_data", true, cfg.AccountDefaults.PriceFloors.UseDynamicData)
 	cmpInts(t, "account_defaults.price_floors.max_rules", 120, cfg.AccountDefaults.PriceFloors.MaxRule)
 	cmpInts(t, "account_defaults.price_floors.max_schema_dims", 5, cfg.AccountDefaults.PriceFloors.MaxSchemaDims)
+	cmpBools(t, "account_defaults.events_enabled", *cfg.AccountDefaults.EventsEnabled, true)
+	cmpNils(t, "account_defaults.events.enabled", cfg.AccountDefaults.Events.Enabled)
 
 	// Assert compression related defaults
 	cmpBools(t, "enable_gzip", false, cfg.EnableGzip)
@@ -3278,5 +3306,54 @@ func TestTCF2FeatureOneVendorException(t *testing.T) {
 		value := tcf2.FeatureOneVendorException(tt.giveBidder)
 
 		assert.Equal(t, tt.wantIsVendorException, value, tt.description)
+	}
+}
+
+func TestMigrateConfigEventsEnabled(t *testing.T) {
+	testCases := []struct {
+		name                  string
+		oldFieldValue         *bool
+		newFieldValue         *bool
+		expectedOldFieldValue *bool
+		expectedNewFieldValue *bool
+	}{
+		{
+			name:                  "Both old and new fields are nil",
+			oldFieldValue:         nil,
+			newFieldValue:         nil,
+			expectedOldFieldValue: nil,
+			expectedNewFieldValue: nil,
+		},
+		{
+			name:                  "Only old field is set",
+			oldFieldValue:         ptrutil.ToPtr(true),
+			newFieldValue:         nil,
+			expectedOldFieldValue: ptrutil.ToPtr(true),
+			expectedNewFieldValue: nil,
+		},
+		{
+			name:                  "Only new field is set",
+			oldFieldValue:         nil,
+			newFieldValue:         ptrutil.ToPtr(true),
+			expectedOldFieldValue: ptrutil.ToPtr(true),
+			expectedNewFieldValue: nil,
+		},
+		{
+			name:                  "Both old and new fields are set, override old field with new field value",
+			oldFieldValue:         ptrutil.ToPtr(false),
+			newFieldValue:         ptrutil.ToPtr(true),
+			expectedOldFieldValue: ptrutil.ToPtr(true),
+			expectedNewFieldValue: nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			updatedOldFieldValue, updatedNewFieldValue := migrateConfigEventsEnabled(tc.oldFieldValue, tc.newFieldValue)
+
+			assert.Equal(t, tc.expectedOldFieldValue, updatedOldFieldValue)
+			assert.Nil(t, updatedNewFieldValue)
+			assert.Nil(t, tc.expectedNewFieldValue)
+		})
 	}
 }

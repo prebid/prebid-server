@@ -27,6 +27,7 @@ import (
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/openrtb/v19/openrtb3"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/bidadjustment"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/ortb"
 	"golang.org/x/net/publicsuffix"
@@ -38,6 +39,7 @@ import (
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -187,6 +189,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
+	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
+
 	ctx := context.Background()
 
 	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(req.TMax) * time.Millisecond)
@@ -231,6 +235,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		BidderImpReplaceImpID:      bidderImpReplaceImp,
 		PubID:                      labels.PubID,
 		HookExecutor:               hookExecutor,
+		TCF2Config:                 tcf2Config,
 	}
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
 	ao.Request = req.BidRequest
@@ -755,7 +760,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 	}
 
 	if errs := validateRequestExt(req); len(errs) != 0 {
-		return append(errL, errs...)
+		if errortypes.ContainsFatalError(errs) {
+			return append(errL, errs...)
+		}
+		errL = append(errL, errs...)
 	}
 
 	if err := deps.validateSite(req); err != nil {
@@ -1584,6 +1592,15 @@ func validateRequestExt(req *openrtb_ext.RequestWrapper) []error {
 		// update the downstream multibid to avoid passing unvalidated ext to bidders, etc.
 		prebid.MultiBid = validatedMultiBids
 		reqExt.SetPrebid(prebid)
+	}
+
+	if !bidadjustment.Validate(prebid.BidAdjustments) {
+		prebid.BidAdjustments = nil
+		reqExt.SetPrebid(prebid)
+		errs = append(errs, &errortypes.Warning{
+			WarningCode: errortypes.BidAdjustmentWarningCode,
+			Message:     "bid adjustment from request was invalid",
+		})
 	}
 
 	return errs
