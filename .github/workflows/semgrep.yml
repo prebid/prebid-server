@@ -1,7 +1,7 @@
 name: run semgrep checks on adapters
 on:
-  pull_request:
-    paths: ["adapters/*/*.go"]
+  pull_request
+    # paths: ["adapters/*/*.go"]
 jobs:
   semgrep-check:
     runs-on: ubuntu-latest
@@ -28,4 +28,4 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            console.log("sss >>" + "${{ steps.determine_commit.outputs.commit }}")
+            console.log("sss >>" + "${{ steps.determine_commit.outputs }}")
