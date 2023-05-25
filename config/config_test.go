@@ -2589,57 +2589,55 @@ func TestMigrateConfigDatabaseQueryParams(t *testing.T) {
 
 func TestMigrateConfigCompression(t *testing.T) {
 	testCases := []struct {
-		desc                       string
-		config                     []byte
-		wantEnableGZIP             bool
-		wantCompressionReqEnabled  bool
-		wantCompressionReqType     string
-		wantCompressionRespEnabled bool
-		wantCompressionRespType    string
+		desc                string
+		config              []byte
+		wantEnableGZIP      bool
+		wantReqGZIPEnabled  bool
+		wantRespGZIPEnabled bool
 	}{
 
 		{
-			desc:   "New config and old config not set",
-			config: []byte{},
+			desc:                "New config and old config not set",
+			config:              []byte{},
+			wantEnableGZIP:      false,
+			wantReqGZIPEnabled:  false,
+			wantRespGZIPEnabled: false,
 		},
 		{
 			desc: "Old config set, new config not set",
 			config: []byte(`
                     enable_gzip: true
-                       `),
-			wantEnableGZIP:             true,
-			wantCompressionRespEnabled: true,
+                    `),
+			wantEnableGZIP:      true,
+			wantRespGZIPEnabled: true,
+			wantReqGZIPEnabled:  false,
 		},
 		{
 			desc: "Old config not set, new config set",
 			config: []byte(`
-                        compression:
-                            response:
-                                enable_gzip: true
-                            request:
-                                enable_gzip: false
-                        `),
-			wantEnableGZIP:             false,
-			wantCompressionReqEnabled:  false,
-			wantCompressionReqType:     "",
-			wantCompressionRespEnabled: true,
-			wantCompressionRespType:    "gzip",
+                    compression:
+                        response:
+                            enable_gzip: true
+                        request:
+                            enable_gzip: false
+                    `),
+			wantEnableGZIP:      false,
+			wantRespGZIPEnabled: true,
+			wantReqGZIPEnabled:  false,
 		},
 		{
 			desc: "Old config set and new config set",
 			config: []byte(`
-                        enable_gzip: true
-                        compression:
-                            response:
-                                enable_gzip: false
-                            request:
-                                enable_gzip: true
-                       `),
-			wantEnableGZIP:             true,
-			wantCompressionReqEnabled:  true,
-			wantCompressionReqType:     "gzip",
-			wantCompressionRespEnabled: false,
-			wantCompressionRespType:    "",
+                    enable_gzip: true
+                    compression:
+                        response:
+                            enable_gzip: false
+                        request:
+                            enable_gzip: true
+                    `),
+			wantEnableGZIP:      true,
+			wantRespGZIPEnabled: false,
+			wantReqGZIPEnabled:  true,
 		},
 	}
 
@@ -2651,11 +2649,9 @@ func TestMigrateConfigCompression(t *testing.T) {
 
 		migrateConfigCompression(v)
 
-		if len(test.config) > 0 {
-			assert.Equal(t, test.wantEnableGZIP, v.GetBool("enable_gzip"), test.desc)
-			assert.Equal(t, test.wantCompressionReqEnabled, v.GetBool("compression.request.enable_gzip"), test.desc)
-			assert.Equal(t, test.wantCompressionRespEnabled, v.GetBool("compression.response.enable_gzip"), test.desc)
-		}
+		assert.Equal(t, test.wantEnableGZIP, v.GetBool("enable_gzip"), test.desc)
+		assert.Equal(t, test.wantReqGZIPEnabled, v.GetBool("compression.request.enable_gzip"), test.desc)
+		assert.Equal(t, test.wantRespGZIPEnabled, v.GetBool("compression.response.enable_gzip"), test.desc)
 	}
 }
 

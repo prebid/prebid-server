@@ -1,31 +1,20 @@
 package config
 
-import "strings"
+import "github.com/prebid/prebid-server/util/httputil"
 
 type Compression struct {
 	Request  CompressionInfo `mapstructure:"request"`
 	Response CompressionInfo `mapstructure:"response"`
 }
 
-// CompressionInfo defines what types of compressions are supported
+// CompressionInfo defines what types of compression algorithms are supported.
 type CompressionInfo struct {
 	GZIP bool `mapstructure:"enable_gzip"`
 }
 
-type ContentEncoding string
-
-const (
-	ContentEncodingGZIP ContentEncoding = "gzip"
-)
-
-func (k ContentEncoding) ToLower() ContentEncoding {
-	return ContentEncoding(strings.ToLower(string(k)))
-}
-
-func (cfg *CompressionInfo) IsSupported(contentEncoding ContentEncoding) bool {
-	contentEncoding = contentEncoding.ToLower()
-	switch contentEncoding {
-	case ContentEncodingGZIP:
+func (cfg *CompressionInfo) IsSupported(contentEncoding httputil.ContentEncoding) bool {
+	switch contentEncoding.Normalize() {
+	case httputil.ContentEncodingGZIP:
 		return cfg.GZIP
 	}
 	return false

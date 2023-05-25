@@ -3,6 +3,7 @@ package config
 import (
 	"testing"
 
+	"github.com/prebid/prebid-server/util/httputil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -10,7 +11,7 @@ func TestReqCompressionCfgIsSupported(t *testing.T) {
 	testCases := []struct {
 		description     string
 		cfg             CompressionInfo
-		contentEncoding ContentEncoding
+		contentEncoding httputil.ContentEncoding
 		wantSupported   bool
 	}{
 		{
@@ -18,7 +19,7 @@ func TestReqCompressionCfgIsSupported(t *testing.T) {
 			cfg: CompressionInfo{
 				GZIP: true,
 			},
-			contentEncoding: ContentEncoding("invalid"),
+			contentEncoding: httputil.ContentEncoding("invalid"),
 			wantSupported:   false,
 		},
 		{
@@ -26,7 +27,7 @@ func TestReqCompressionCfgIsSupported(t *testing.T) {
 			cfg: CompressionInfo{
 				GZIP: true,
 			},
-			contentEncoding: ContentEncodingGZIP,
+			contentEncoding: httputil.ContentEncodingGZIP,
 			wantSupported:   true,
 		},
 		{
@@ -34,7 +35,7 @@ func TestReqCompressionCfgIsSupported(t *testing.T) {
 			cfg: CompressionInfo{
 				GZIP: false,
 			},
-			contentEncoding: ContentEncodingGZIP,
+			contentEncoding: httputil.ContentEncodingGZIP,
 			wantSupported:   false,
 		},
 	}
