@@ -13,7 +13,7 @@ func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(
 		openrtb_ext.BidderSmartHub,
 		config.Adapter{
-			Endpoint: "http://prebid-{{.Host}}.xe.works/?pid={{.SourceId}}",
+			Endpoint: "http://prebid-srv.xe.works/?pid={{.SourceId}}&host={{.Host}}",
 		},
 		config.Server{
 			ExternalUrl: "http://hosturl.com",
