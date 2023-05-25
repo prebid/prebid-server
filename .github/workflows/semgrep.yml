@@ -2,7 +2,7 @@ name: run semgrep checks on adapters
 on:
   pull_request:
     paths-ignore: ["*_test.go"]
-    paths: ["adapters/**/**.go"]
+    paths: ["adapters/*/*.go"]
 jobs:
   semgrep-check:
     runs-on: ubuntu-latest
