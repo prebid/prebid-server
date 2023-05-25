@@ -207,7 +207,7 @@ func TestPopulateRequestMacros(t *testing.T) {
 			for key := range tt.want {
 				output[key] = b.GetMacro(key)
 			}
-			assert.Equal(t, output, tt.want, tt.name)
+			assert.Equal(t, tt.want, output, tt.name)
 		})
 	}
 }
