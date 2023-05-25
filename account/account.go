@@ -16,6 +16,9 @@ import (
 )
 
 // GetAccount looks up the config.Account object referenced by the given accountID, with access rules applied
+// GetAccount looks up the config.Account object referenced by the given accountID, with access rules applied
+// GetAccount looks up the config.Account object referenced by the given accountID, with access rules applied
+// GetAccount looks up the config.Account object referenced by the given accountID, with access rules applied
 func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_requests.AccountFetcher, accountID string, me metrics.MetricsEngine) (account *config.Account, errs []error) {
 	// Check BlacklistedAcctMap until we have deprecated it
 	if _, found := cfg.BlacklistedAcctMap[accountID]; found {
