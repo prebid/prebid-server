@@ -133,12 +133,12 @@ func prepareBidResponse(seats []openrtb2.SeatBid) (*adapters.BidderResponse, []e
 	errs := []error{}
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(seats))
 
-	for seatId, seatBid := range seats {
+	for _, seatBid := range seats {
 		for bidId, bid := range seatBid.Bid {
 			var bidExt bidExt
 			if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
 				errs = append(errs, &errortypes.BadServerResponse{
-					Message: fmt.Sprintf("Failed to parse SeatBid[%d].Bid[%d].Ext: %s", seatId, bidId, err.Error()),
+					Message: fmt.Sprintf("Failed to parse Bid[%d].Ext: %s", bidId, err.Error()),
 				})
 				continue
 			}
@@ -146,21 +146,17 @@ func prepareBidResponse(seats []openrtb2.SeatBid) (*adapters.BidderResponse, []e
 			bidType, err := openrtb_ext.ParseBidType(bidExt.Prebid.Type)
 			if err != nil {
 				errs = append(errs, &errortypes.BadServerResponse{
-					Message: fmt.Sprintf("SeatBid[%d].Bid[%d].Ext.Prebid.Type expects one of the following values: 'banner', 'native', 'video', 'audio', got '%s'", seatId, bidId, bidExt.Prebid.Type),
+					Message: fmt.Sprintf("Bid[%d].Ext.Prebid.Type expects one of the following values: 'banner', 'native', 'video', 'audio', got '%s'", bidId, bidExt.Prebid.Type),
 				})
 				continue
 			}
 
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &bid,
+				Bid:     &seatBid.Bid[bidId],
 				BidType: bidType,
 			})
 		}
 	}
 
-	if len(errs) > 0 {
-		return nil, errs
-	}
-
-	return bidResponse, nil
+	return bidResponse, errs
 }
