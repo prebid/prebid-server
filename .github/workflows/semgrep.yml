@@ -1,7 +1,7 @@
 name: run semgrep checks on adapters
 on:
   pull_request:
-    paths-ignore: [adapters/**/*_test.go, adapters/**/**/*_test.go]
+    paths-ignore: ["*_test.go"]
     paths: ["adapters/**/**.go"]
 jobs:
   semgrep-check:
