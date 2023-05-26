@@ -30,8 +30,8 @@ type AuctionObject struct {
 	Account              *config.Account
 	StartTime            time.Time
 	HookExecutionOutcome []hookexecution.StageOutcome
-	SeatNonBid           []openrtb_ext.SeatNonBid    `json:"-"`
-	RequestWrapper       *openrtb_ext.RequestWrapper `json:"-"`
+	SeatNonBid           []openrtb_ext.SeatNonBid
+	RequestWrapper       *openrtb_ext.RequestWrapper
 }
 
 // Loggable object of a transaction at /openrtb2/amp endpoint
