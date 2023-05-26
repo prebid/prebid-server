@@ -5678,7 +5678,7 @@ func TestSelectNewDuration(t *testing.T) {
 			expected: testOutput{8, nil},
 		},
 		{
-			desc: "some duration range array elements greater than duration, expect value an element greater than dur, but closest in value.",
+			desc: "some array elements greater than duration, expect the value greater than dur that is closest in value.",
 			in: testInput{
 				dur:       5,
 				durRanges: []int{math.MaxInt32, -3, 7, 2},
