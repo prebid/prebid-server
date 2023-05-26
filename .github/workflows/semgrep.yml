@@ -109,7 +109,7 @@ jobs:
             env:
                 DIRS: ${{ steps.export_file_changes.outputs.dirs }}
             run: |
-                outputs=$(semgrep --gitlab-sast --config=./semgrep/rules/adapter/prefer_http_utils.yml $DIRS | jq '[.vulnerabilities[] | {"file": .location.file, "start": .location.start_line, "end": .location.end_line, "message": .message}]')                
+                outputs=$(semgrep --gitlab-sast --config=./semgrep/rules/adapter/prefer_http_utils.yml '${{ steps.export_file_changes.outputs.dirs }}' | jq '[.vulnerabilities[] | {"file": .location.file, "start": .location.start_line, "end": .location.end_line, "message": .message}]')                
                 parsed_outputs=$(echo "$cleaned_outputs" | jq -c '.[]')
                 echo "$parsed_outputs" | while IFS= read -r obj; do
                     file=$(echo "$obj" | jq .'file')
