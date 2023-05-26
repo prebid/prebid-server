@@ -217,13 +217,14 @@ func getIsUrlSecure(request *openrtb2.BidRequest) (isUrlSecure bool) {
 	return
 }
 
-func validateDevice(request *openrtb2.BidRequest) error {
+func validateDevice(request *openrtb2.BidRequest) (err error) {
 	if request.Device != nil && request.Device.IP == "" && request.Device.IPv6 == "" {
-		return &errortypes.BadInput{
+		err = &errortypes.BadInput{
 			Message: "request.Device.IP is required",
 		}
+		return err
 	}
-	return nil
+	return err
 }
 
 func parseImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpRichaudience, error) {
