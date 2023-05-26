@@ -749,8 +749,8 @@ func TestFetcherWhenRequestGetSameURLInrequest(t *testing.T) {
 	mockHttpServer := httptest.NewServer(mockHandler(response, 200))
 	defer mockHttpServer.Close()
 
-	fectherInstance := NewPriceFloorFetcher(5, 10, 1, 20)
-	defer fectherInstance.Stop()
+	fetcherInstance := NewPriceFloorFetcher(5, 10, 1, 20)
+	defer fetcherInstance.Stop()
 
 	fetchConfig := config.AccountPriceFloors{
 		Enabled:        true,
@@ -767,18 +767,18 @@ func TestFetcherWhenRequestGetSameURLInrequest(t *testing.T) {
 	}
 
 	for i := 0; i < 50; i++ {
-		fectherInstance.Fetch(fetchConfig)
+		fetcherInstance.Fetch(fetchConfig)
 	}
 
-	assert.Never(t, func() bool { return len(fectherInstance.fetchQueue) > 1 }, time.Duration(2*time.Second), 100*time.Millisecond, "Queue Got more than one entry")
-	assert.Never(t, func() bool { return len(fectherInstance.fetchInProgress) > 1 }, time.Duration(2*time.Second), 100*time.Millisecond, "Map Got more than one entry")
+	assert.Never(t, func() bool { return len(fetcherInstance.fetchQueue) > 1 }, time.Duration(2*time.Second), 100*time.Millisecond, "Queue Got more than one entry")
+	assert.Never(t, func() bool { return len(fetcherInstance.fetchInProgress) > 1 }, time.Duration(2*time.Second), 100*time.Millisecond, "Map Got more than one entry")
 
 }
 
 func TestFetcherDataPresentInCache(t *testing.T) {
 
-	fectherInstance := NewPriceFloorFetcher(2, 5, 5, 20)
-	defer fectherInstance.Stop()
+	fetcherInstance := NewPriceFloorFetcher(2, 5, 5, 20)
+	defer fetcherInstance.Stop()
 
 	fetchConfig := config.AccountPriceFloors{
 		Enabled:        true,
@@ -796,17 +796,17 @@ func TestFetcherDataPresentInCache(t *testing.T) {
 	var res *openrtb_ext.PriceFloorRules
 	data := `{"data":{"currency":"USD","modelgroups":[{"modelweight":40,"modelversion":"version1","default":5,"values":{"banner|300x600|www.website.com":3,"banner|728x90|www.website.com":5,"banner|300x600|*":4,"banner|300x250|*":2,"*|*|*":16,"*|300x250|*":10,"*|300x600|*":12,"*|300x600|www.website.com":11,"banner|*|*":8,"banner|300x250|www.website.com":1,"*|728x90|www.website.com":13,"*|300x250|www.website.com":9,"*|728x90|*":14,"banner|728x90|*":6,"banner|*|www.website.com":7,"*|*|www.website.com":15},"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"}}]},"enabled":true,"floormin":1,"enforcement":{"enforcepbs":false,"floordeals":true}}`
 	_ = json.Unmarshal([]byte(data), &res)
-	fectherInstance.SetWithExpiry("http://test.com/floor", res, fectherInstance.cacheExpiry)
+	fetcherInstance.SetWithExpiry("http://test.com/floor", res, fetcherInstance.cacheExpiry)
 
-	val, status := fectherInstance.Fetch(fetchConfig)
+	val, status := fetcherInstance.Fetch(fetchConfig)
 	assert.Equal(t, res, val, "Invalid value in cache or cache is empty")
 	assert.Equal(t, "success", status, "Floor fetch should be success")
 }
 
 func TestFetcherDataNotPresentInCache(t *testing.T) {
 
-	fectherInstance := NewPriceFloorFetcher(2, 5, 5, 20)
-	defer fectherInstance.Stop()
+	fetcherInstance := NewPriceFloorFetcher(2, 5, 5, 20)
+	defer fetcherInstance.Stop()
 
 	fetchConfig := config.AccountPriceFloors{
 		Enabled:        true,
@@ -821,9 +821,9 @@ func TestFetcherDataNotPresentInCache(t *testing.T) {
 			Period:      5,
 		},
 	}
-	fectherInstance.SetWithExpiry("http://test.com/floor", nil, fectherInstance.cacheExpiry)
+	fetcherInstance.SetWithExpiry("http://test.com/floor", nil, fetcherInstance.cacheExpiry)
 
-	val, status := fectherInstance.Fetch(fetchConfig)
+	val, status := fetcherInstance.Fetch(fetchConfig)
 
 	assert.Equal(t, (*openrtb_ext.PriceFloorRules)(nil), val, "Floor data should be nil")
 	assert.Equal(t, "error", status, "Floor fetch should be error")
@@ -849,7 +849,7 @@ func TestPriceFloorFetcherWorker(t *testing.T) {
 	mockHttpServer := httptest.NewServer(mockHandler(response, 200))
 	defer mockHttpServer.Close()
 
-	fectherInstance := PriceFloorFetcher{
+	fetcherInstance := PriceFloorFetcher{
 		pool:            nil,
 		fetchQueue:      nil,
 		fetchInProgress: nil,
@@ -858,6 +858,7 @@ func TestPriceFloorFetcherWorker(t *testing.T) {
 		cache:           cache.New(time.Duration(5)*time.Second, time.Duration(2)*time.Second),
 		cacheExpiry:     10,
 	}
+	defer close(fetcherInstance.configReceiver)
 
 	fetchConfig := config.AccountFloorFetch{
 		Enabled:     true,
@@ -869,11 +870,11 @@ func TestPriceFloorFetcherWorker(t *testing.T) {
 		Period:      1,
 	}
 
-	fectherInstance.worker(fetchConfig)
-	dataInCache, _ := fectherInstance.Get(mockHttpServer.URL)
+	fetcherInstance.worker(fetchConfig)
+	dataInCache, _ := fetcherInstance.Get(mockHttpServer.URL)
 	assert.Equal(t, floorResp, dataInCache, "Data should be stored in cache")
 
-	info := <-fectherInstance.configReceiver
+	info := <-fetcherInstance.configReceiver
 	assert.Equal(t, true, info.RefetchRequest, "Recieved request is not refetch request")
 	assert.Equal(t, mockHttpServer.URL, info.AccountFloorFetch.URL, "Recieved request with different url")
 
@@ -898,7 +899,7 @@ func TestPriceFloorFetcherWorkerDefaultCacheExpiry(t *testing.T) {
 	mockHttpServer := httptest.NewServer(mockHandler(response, 200))
 	defer mockHttpServer.Close()
 
-	fectherInstance := &PriceFloorFetcher{
+	fetcherInstance := &PriceFloorFetcher{
 		pool:            nil,
 		fetchQueue:      nil,
 		fetchInProgress: nil,
@@ -918,12 +919,12 @@ func TestPriceFloorFetcherWorkerDefaultCacheExpiry(t *testing.T) {
 		Period:      1,
 	}
 
-	fectherInstance.worker(fetchConfig)
-	dataInCache, _ := fectherInstance.Get(mockHttpServer.URL)
+	fetcherInstance.worker(fetchConfig)
+	dataInCache, _ := fetcherInstance.Get(mockHttpServer.URL)
 	assert.Equal(t, floorResp, dataInCache, "Data should be stored in cache")
 
-	info := <-fectherInstance.configReceiver
-	close(fectherInstance.configReceiver)
+	info := <-fetcherInstance.configReceiver
+	defer close(fetcherInstance.configReceiver)
 	assert.Equal(t, true, info.RefetchRequest, "Recieved request is not refetch request")
 	assert.Equal(t, mockHttpServer.URL, info.AccountFloorFetch.URL, "Recieved request with different url")
 
@@ -942,16 +943,16 @@ func TestPriceFloorFetcherSubmit(t *testing.T) {
 	mockHttpServer := httptest.NewServer(mockHandler(response, 200))
 	defer mockHttpServer.Close()
 
-	fectherInstance := &PriceFloorFetcher{
+	fetcherInstance := &PriceFloorFetcher{
 		pool:            pond.New(1, 1),
 		fetchQueue:      make(FetchQueue, 0),
 		fetchInProgress: nil,
 		configReceiver:  make(chan FetchInfo, 1),
-		done:            nil,
+		done:            make(chan struct{}),
 		cache:           cache.New(time.Duration(2)*time.Second, time.Duration(1)*time.Second),
 		cacheExpiry:     2,
 	}
-	defer fectherInstance.pool.Stop()
+	defer fetcherInstance.Stop()
 
 	fetchInfo := FetchInfo{
 		RefetchRequest: false,
@@ -967,10 +968,9 @@ func TestPriceFloorFetcherSubmit(t *testing.T) {
 		},
 	}
 
-	fectherInstance.submit(&fetchInfo)
+	fetcherInstance.submit(&fetchInfo)
 
-	info := <-fectherInstance.configReceiver
-	close(fectherInstance.configReceiver)
+	info := <-fetcherInstance.configReceiver
 	assert.Equal(t, true, info.RefetchRequest, "Recieved request is not refetch request")
 	assert.Equal(t, mockHttpServer.URL, info.AccountFloorFetch.URL, "Recieved request with different url")
 
@@ -986,7 +986,7 @@ func (t *testPool) Stop() {}
 
 func TestPriceFloorFetcherSubmitFailed(t *testing.T) {
 
-	fectherInstance := &PriceFloorFetcher{
+	fetcherInstance := &PriceFloorFetcher{
 		pool:            &testPool{},
 		fetchQueue:      make(FetchQueue, 0),
 		fetchInProgress: nil,
@@ -995,7 +995,7 @@ func TestPriceFloorFetcherSubmitFailed(t *testing.T) {
 		cache:           nil,
 		cacheExpiry:     2,
 	}
-	defer fectherInstance.pool.Stop()
+	defer fetcherInstance.pool.Stop()
 
 	fetchInfo := FetchInfo{
 		RefetchRequest: false,
@@ -1011,8 +1011,8 @@ func TestPriceFloorFetcherSubmitFailed(t *testing.T) {
 		},
 	}
 
-	fectherInstance.submit(&fetchInfo)
-	assert.Equal(t, 1, len(fectherInstance.fetchQueue), "Unable to submit the task")
+	fetcherInstance.submit(&fetchInfo)
+	assert.Equal(t, 1, len(fetcherInstance.fetchQueue), "Unable to submit the task")
 }
 
 func getRandomNumber() int {
@@ -1036,9 +1036,8 @@ func TestFetcherWhenRequestGetDifferentURLInrequest(t *testing.T) {
 	mockHttpServer := httptest.NewServer(mockHandler(response, 200))
 	defer mockHttpServer.Close()
 
-	fectherInstance := NewPriceFloorFetcher(5, 10, 1, 20)
-	defer fectherInstance.Stop()
-	defer fectherInstance.pool.Stop()
+	fetcherInstance := NewPriceFloorFetcher(5, 10, 1, 20)
+	defer fetcherInstance.Stop()
 
 	fetchConfig := config.AccountPriceFloors{
 		Enabled:        true,
@@ -1056,9 +1055,9 @@ func TestFetcherWhenRequestGetDifferentURLInrequest(t *testing.T) {
 
 	for i := 0; i < 50; i++ {
 		fetchConfig.Fetch.URL = fmt.Sprintf("%s?id=%d", mockHttpServer.URL, getRandomNumber())
-		fectherInstance.Fetch(fetchConfig)
+		fetcherInstance.Fetch(fetchConfig)
 	}
 
-	assert.Never(t, func() bool { return len(fectherInstance.fetchQueue) > 10 }, time.Duration(2*time.Second), 100*time.Millisecond, "Queue Got more than one entry")
-	assert.Never(t, func() bool { return len(fectherInstance.fetchInProgress) > 10 }, time.Duration(2*time.Second), 100*time.Millisecond, "Map Got more than one entry")
+	assert.Never(t, func() bool { return len(fetcherInstance.fetchQueue) > 10 }, time.Duration(2*time.Second), 100*time.Millisecond, "Queue Got more than one entry")
+	assert.Never(t, func() bool { return len(fetcherInstance.fetchInProgress) > 10 }, time.Duration(2*time.Second), 100*time.Millisecond, "Map Got more than one entry")
 }

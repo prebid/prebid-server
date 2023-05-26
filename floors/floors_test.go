@@ -1042,7 +1042,7 @@ func TestResolveFloorMin(t *testing.T) {
 			expPrice: Price{FloorMin: 15, FloorMinCur: "EUR"},
 		},
 		{
-			name: "FloorMinCur present in reqFloors And FloorsMin, FloorMinCur present fetched floors (Same Currency)",
+			name: "FloorMinCur present in reqFloors And FloorsMin, FloorMinCur present in fetched floors (Same Currency)",
 			reqFloors: openrtb_ext.PriceFloorRules{
 				FloorMinCur: "EUR",
 			},
@@ -1053,7 +1053,7 @@ func TestResolveFloorMin(t *testing.T) {
 			expPrice: Price{FloorMin: 15, FloorMinCur: "EUR"},
 		},
 		{
-			name: "FloorMinCur present in reqFloors And FloorsMin, FloorMinCur present fetched floors (Different Currency)",
+			name: "FloorMinCur present in reqFloors And FloorsMin, FloorMinCur present in fetched floors (Different Currency)",
 			reqFloors: openrtb_ext.PriceFloorRules{
 				FloorMinCur: "USD",
 			},
@@ -1064,7 +1064,7 @@ func TestResolveFloorMin(t *testing.T) {
 			expPrice: Price{FloorMin: 16.6667, FloorMinCur: "USD"},
 		},
 		{
-			name: "FloorMin present in reqFloors And FloorMinCur present fetched floors",
+			name: "FloorMin present in reqFloors And FloorMinCur present in fetched floors",
 			reqFloors: openrtb_ext.PriceFloorRules{
 				FloorMin: 11,
 			},
@@ -1074,7 +1074,7 @@ func TestResolveFloorMin(t *testing.T) {
 			expPrice: Price{FloorMin: 11, FloorMinCur: "EUR"},
 		},
 		{
-			name: "FloorMinCur present in reqFloors And FloorMin present fetched floors",
+			name: "FloorMinCur present in reqFloors And FloorMin present in fetched floors",
 			reqFloors: openrtb_ext.PriceFloorRules{
 				FloorMinCur: "INR",
 			},
@@ -1084,7 +1084,7 @@ func TestResolveFloorMin(t *testing.T) {
 			expPrice: Price{FloorMin: 12, FloorMinCur: "INR"},
 		},
 		{
-			name: "FloorMinCur present in reqFloors And FloorMin present fetched floors",
+			name: "FloorMinCur present in reqFloors And FloorMin, data currency present in fetched floors",
 			reqFloors: openrtb_ext.PriceFloorRules{
 				FloorMinCur: "INR",
 			},
@@ -1095,7 +1095,7 @@ func TestResolveFloorMin(t *testing.T) {
 			expPrice: Price{FloorMin: 70, FloorMinCur: "INR"},
 		},
 		{
-			name: "FloorMinCur present in fetched Floors And FloorMin present reqFloors",
+			name: "FloorMinCur present in fetched Floors And data currency present in reqFloors",
 			reqFloors: openrtb_ext.PriceFloorRules{
 				FloorMin: 2,
 			},
@@ -1105,7 +1105,7 @@ func TestResolveFloorMin(t *testing.T) {
 			expPrice: Price{FloorMin: 2, FloorMinCur: "USD"},
 		},
 		{
-			name:      "FloorMinCur and FloorMin present in fetched floors",
+			name:      "Data currency and FloorMin present in fetched floors",
 			reqFloors: openrtb_ext.PriceFloorRules{},
 			fetchFloors: openrtb_ext.PriceFloorRules{
 				FloorMin: 12,
