@@ -54,10 +54,7 @@ func getHeaders(request *openrtb2.BidRequest) http.Header {
 	return headers
 }
 
-func (a *adapter) MakeRequests(
-	openRTBRequest *openrtb2.BidRequest,
-	reqInfo *adapters.ExtraRequestInfo,
-) (
+func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) (
 	requestsToBidder []*adapters.RequestData,
 	errs []error,
 ) {
@@ -123,10 +120,7 @@ func (a *adapter) MakeBids(
 	openRTBRequest *openrtb2.BidRequest,
 	requestToBidder *adapters.RequestData,
 	bidderRawResponse *adapters.ResponseData,
-) (
-	bidderResponse *adapters.BidderResponse,
-	errs []error,
-) {
+) (bidderResponse *adapters.BidderResponse, errs []error) {
 	if httputil.IsResponseStatusCodeNoContent(bidderRawResponse) {
 		return nil, nil
 	}
@@ -150,20 +144,21 @@ func (a *adapter) MakeBids(
 		}}
 	}
 
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
-	sb := bidResp.SeatBid[0]
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
 	var bidsArray []*adapters.TypedBid
 
-	for idx, bid := range sb.Bid {
-		bidType, err := getMediaTypeForImp(bid.ImpID, openRTBRequest.Imp)
-		if err != nil {
-			return nil, []error{err}
-		}
+	for _, sb := range bidResp.SeatBid {
+		for idx, bid := range sb.Bid {
+			bidType, err := getMediaTypeForImp(bid.ImpID, openRTBRequest.Imp)
+			if err != nil {
+				return nil, []error{err}
+			}
 
-		bidsArray = append(bidsArray, &adapters.TypedBid{
-			Bid:     &sb.Bid[idx],
-			BidType: bidType,
-		})
+			bidsArray = append(bidsArray, &adapters.TypedBid{
+				Bid:     &sb.Bid[idx],
+				BidType: bidType,
+			})
+		}
 	}
 
 	bidResponse.Bids = bidsArray
