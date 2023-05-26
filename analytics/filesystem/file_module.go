@@ -138,10 +138,14 @@ func jsonifyAuctionObject(ao *analytics.AuctionObject) string {
 func jsonifyVideoObject(vo *analytics.VideoObject) string {
 	var logEntry *logVideo
 	if vo != nil {
+		var request *openrtb2.BidRequest
+		if vo.RequestWrapper != nil {
+			request = vo.RequestWrapper.BidRequest
+		}
 		logEntry = &logVideo{
 			Status:        vo.Status,
 			Errors:        vo.Errors,
-			Request:       vo.Request,
+			Request:       request,
 			Response:      vo.Response,
 			VideoRequest:  vo.VideoRequest,
 			VideoResponse: vo.VideoResponse,

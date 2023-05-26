@@ -51,7 +51,6 @@ type AmpObject struct {
 type VideoObject struct {
 	Status         int
 	Errors         []error
-	Request        *openrtb2.BidRequest
 	Response       *openrtb2.BidResponse
 	VideoRequest   *openrtb_ext.BidRequestVideo
 	VideoResponse  *openrtb_ext.BidResponseVideo

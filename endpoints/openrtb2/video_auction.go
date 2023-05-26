@@ -310,7 +310,6 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog)
-	vo.Request = bidReqWrapper.BidRequest
 	vo.RequestWrapper = bidReqWrapper
 	var response *openrtb2.BidResponse
 	if auctionResponse != nil {
