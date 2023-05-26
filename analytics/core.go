@@ -37,7 +37,6 @@ type AuctionObject struct {
 type AmpObject struct {
 	Status               int
 	Errors               []error
-	Request              *openrtb2.BidRequest
 	AuctionResponse      *openrtb2.BidResponse
 	AmpTargetingValues   map[string]string
 	Origin               string

@@ -170,7 +170,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		return
 	}
 
-	ao.Request = reqWrapper.BidRequest
+	ao.RequestWrapper = reqWrapper
 
 	ctx := context.Background()
 	var cancel context.CancelFunc
@@ -248,7 +248,6 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	}
 	ao.SeatNonBid = auctionResponse.GetSeatNonBid()
 	ao.AuctionResponse = response
-	ao.RequestWrapper = reqWrapper
 	rejectErr, isRejectErr := hookexecution.CastRejectErr(err)
 	if err != nil && !isRejectErr {
 		w.WriteHeader(http.StatusInternalServerError)

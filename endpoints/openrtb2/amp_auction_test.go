@@ -1694,33 +1694,35 @@ func TestBuildAmpObject(t *testing.T) {
 			expectedAmpObject: &analytics.AmpObject{
 				Status: http.StatusOK,
 				Errors: nil,
-				Request: &openrtb2.BidRequest{
-					ID: "some-request-id",
-					Device: &openrtb2.Device{
-						IP: "192.0.2.1",
-					},
-					Site: &openrtb2.Site{
-						Page: "prebid.org",
-						Ext:  json.RawMessage(`{"amp":1}`),
-					},
-					Imp: []openrtb2.Imp{
-						{
-							ID: "some-impression-id",
-							Banner: &openrtb2.Banner{
-								Format: []openrtb2.Format{
-									{
-										W: 300,
-										H: 250,
+				RequestWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						ID: "some-request-id",
+						Device: &openrtb2.Device{
+							IP: "192.0.2.1",
+						},
+						Site: &openrtb2.Site{
+							Page: "prebid.org",
+							Ext:  json.RawMessage(`{"amp":1}`),
+						},
+						Imp: []openrtb2.Imp{
+							{
+								ID: "some-impression-id",
+								Banner: &openrtb2.Banner{
+									Format: []openrtb2.Format{
+										{
+											W: 300,
+											H: 250,
+										},
 									},
 								},
+								Secure: func(val int8) *int8 { return &val }(1), //(*int8)(1),
+								Ext:    json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placementId":12883451}}}}`),
 							},
-							Secure: func(val int8) *int8 { return &val }(1), //(*int8)(1),
-							Ext:    json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placementId":12883451}}}}`),
 						},
+						AT:   1,
+						TMax: 500,
+						Ext:  json.RawMessage(`{"prebid":{"cache":{"bids":{}},"channel":{"name":"amp","version":""},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"includewinners":true,"includebidderkeys":true}}}`),
 					},
-					AT:   1,
-					TMax: 500,
-					Ext:  json.RawMessage(`{"prebid":{"cache":{"bids":{}},"channel":{"name":"amp","version":""},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"includewinners":true,"includebidderkeys":true}}}`),
 				},
 				AuctionResponse: &openrtb2.BidResponse{
 					SeatBid: []openrtb2.SeatBid{{
@@ -1748,33 +1750,35 @@ func TestBuildAmpObject(t *testing.T) {
 			expectedAmpObject: &analytics.AmpObject{
 				Status: http.StatusOK,
 				Errors: nil,
-				Request: &openrtb2.BidRequest{
-					ID: "some-request-id",
-					Device: &openrtb2.Device{
-						IP: "192.0.2.1",
-					},
-					Site: &openrtb2.Site{
-						Page: "prebid.org",
-						Ext:  json.RawMessage(`{"amp":1}`),
-					},
-					Imp: []openrtb2.Imp{
-						{
-							ID: "some-impression-id",
-							Banner: &openrtb2.Banner{
-								Format: []openrtb2.Format{
-									{
-										W: 300,
-										H: 250,
+				RequestWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						ID: "some-request-id",
+						Device: &openrtb2.Device{
+							IP: "192.0.2.1",
+						},
+						Site: &openrtb2.Site{
+							Page: "prebid.org",
+							Ext:  json.RawMessage(`{"amp":1}`),
+						},
+						Imp: []openrtb2.Imp{
+							{
+								ID: "some-impression-id",
+								Banner: &openrtb2.Banner{
+									Format: []openrtb2.Format{
+										{
+											W: 300,
+											H: 250,
+										},
 									},
 								},
+								Secure: func(val int8) *int8 { return &val }(1), //(*int8)(1),
+								Ext:    json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placementId":12883451}}}}`),
 							},
-							Secure: func(val int8) *int8 { return &val }(1), //(*int8)(1),
-							Ext:    json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placementId":12883451}}}}`),
 						},
+						AT:   1,
+						TMax: 500,
+						Ext:  json.RawMessage(`{"prebid":{"cache":{"bids":{}},"channel":{"name":"amp","version":""},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"includewinners":true,"includebidderkeys":true}}}`),
 					},
-					AT:   1,
-					TMax: 500,
-					Ext:  json.RawMessage(`{"prebid":{"cache":{"bids":{}},"channel":{"name":"amp","version":""},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"includewinners":true,"includebidderkeys":true}}}`),
 				},
 				AuctionResponse: &openrtb2.BidResponse{
 					SeatBid: []openrtb2.SeatBid{{
@@ -1813,7 +1817,15 @@ func TestBuildAmpObject(t *testing.T) {
 		// assert AmpObject
 		assert.Equalf(t, test.expectedAmpObject.Status, actualAmpObject.Status, "Amp Object Status field doesn't match expected: %s\n", test.description)
 		assert.Lenf(t, actualAmpObject.Errors, len(test.expectedAmpObject.Errors), "Amp Object Errors array doesn't match expected: %s\n", test.description)
-		assert.Equalf(t, test.expectedAmpObject.Request, actualAmpObject.Request, "Amp Object BidRequest doesn't match expected: %s\n", test.description)
+		var expectedRequest *openrtb2.BidRequest
+		var actualRequest *openrtb2.BidRequest
+		if test.expectedAmpObject.RequestWrapper != nil {
+			expectedRequest = test.expectedAmpObject.RequestWrapper.BidRequest
+		}
+		if actualAmpObject.RequestWrapper != nil {
+			actualRequest = test.expectedAmpObject.RequestWrapper.BidRequest
+		}
+		assert.Equalf(t, expectedRequest, actualRequest, "Amp Object BidRequest doesn't match expected: %s\n", test.description)
 		assert.Equalf(t, test.expectedAmpObject.AuctionResponse, actualAmpObject.AuctionResponse, "Amp Object BidResponse doesn't match expected: %s\n", test.description)
 		assert.Equalf(t, test.expectedAmpObject.AmpTargetingValues, actualAmpObject.AmpTargetingValues, "Amp Object AmpTargetingValues doesn't match expected: %s\n", test.description)
 		assert.Equalf(t, test.expectedAmpObject.Origin, actualAmpObject.Origin, "Amp Object Origin field doesn't match expected: %s\n", test.description)
@@ -1874,7 +1886,7 @@ func TestIdGeneration(t *testing.T) {
 		// Set up and run test
 		actualAmpObject, endpoint := ampObjectTestSetup(t, "test", test.givenInStoredRequest, test.givenGenerateRequestID, &mockAmpExchange{})
 		endpoint(recorder, request, nil)
-		assert.Equalf(t, test.expectedID, actualAmpObject.Request.ID, "Bid Request ID is incorrect: %s\n", test.description)
+		assert.Equalf(t, test.expectedID, actualAmpObject.RequestWrapper.ID, "Bid Request ID is incorrect: %s\n", test.description)
 	}
 }
 
