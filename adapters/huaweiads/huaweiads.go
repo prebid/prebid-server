@@ -723,6 +723,7 @@ func getReqDeviceInfo(request *huaweiAdsRequest, openRTBRequest *openrtb2.BidReq
 		device.LocaleCountry = country
 		device.Ip = openRTBRequest.Device.IP
 		device.Gaid = openRTBRequest.Device.IFA
+		device.ClientTime = getClientTime("")
 	}
 
 	// get oaid gaid imei in openRTBRequest.User.Ext.Data
