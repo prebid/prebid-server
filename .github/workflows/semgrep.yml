@@ -6,99 +6,99 @@ jobs:
   semgrep-check:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
+        -   name: install semgrep
+            run: pip3 install semgrep==1.22.0
+        
+        -   name: check semgrep version
+            run: semgrep --version
+                
+        -   name: install jq
+            run: pip3 install jq==1.4.1
+                
+        -   name: check jq version
+            run: jq --version
 
-      - name: Determine commit
-        id: determine_commit
-        run: |
-            # run semgrep tests on all files when a pull request is opened
-            # github.sha corresponds to the merged commit, enabling to fetch all updated files
-            commit=${{ github.sha }}
-            if [ "${{ github.event.action }}" == "synchronize" ]; then
-                # run semgrep tests only on files updated by latest non-merge commit
-                commit=${{ github.event.pull_request.head.sha }}
-            fi
-            echo "commit=${commit}" >> $GITHUB_OUTPUT
+        -   name: Checkout repo
+            uses: actions/checkout@v3
+            with:
+                fetch-depth: 0
 
-      - name: Compute file change details
-        id: compute_file_changes
-        uses: actions/github-script@v4
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          result-encoding: string
-          script: |
-            const ref = "${{ steps.determine_commit.outputs.commit }}"
-            const { owner, repo } = context.repo
-            let stats = {}
-            let dirs = []
-            
-            const response = await github.repos.getCommit({owner,repo,ref})
-            if (response != null && response.status === 200) {
-                const files = response.data.files
-                for (let i = 0; i < files.length; i++) {
-                    const { filename, patch } = files[i];
-                    const fileNameList = filename.split("/")
+        -   name: Determine commit
+            id: determine_commit
+            run: |
+                # run semgrep tests on all files when a pull request is opened
+                # github.sha corresponds to the merged commit, enabling to fetch all updated files
+                commit=${{ github.sha }}
+                if [ "${{ github.event.action }}" == "synchronize" ]; then
+                    # run semgrep tests only on files updated by latest non-merge commit
+                    commit=${{ github.event.pull_request.head.sha }}
+                fi
+                echo "commit=${commit}" >> $GITHUB_OUTPUT
+
+        -   name: Compute file change details
+            id: compute_file_changes
+            uses: actions/github-script@v4
+            with:
+                github-token: ${{ secrets.GITHUB_TOKEN }}
+                result-encoding: string
+                script: |
+                    const ref = "${{ steps.determine_commit.outputs.commit }}"
+                    const { owner, repo } = context.repo
+                    let stats = {}
+                    let dirs = []
                     
-                    if (
-                      filename.endsWith(".go") && !filename.endsWith("_test.go") &&
-                      filename.startsWith("adapters/") && fileNameList.length > 2
-                    ) {
-                        const lines = patch.split("\n");
-                        if (lines.length === 1) {
-                          continue;
-                        }
-                  
-                        let lineNumber
-                        for (let i = 0; i < lines.length; i++) {
-                            /*
-                                check if line is diff hunk header
-                                for example: 
-                                    @@ -47,23 +47,26 @@
-                                    +   func foo () {
-                                here @@ -47,23 +47,26 @@ is diff hunk header and 47 is lineNumber
-                            */ 
-                            if (lines[i].match(/@@\s.*?@@/) != null) {
-                                lineNumber = lines[i].match(/(\d+)/)[0]
-                                continue
-                            }
-
-                            if (lines[i].startsWith("-")) {
-                                continue
-                            }
-
-                            if (lines[i].startsWith("+")) {
-                                if (stats[filename] === undefined) {
-                                    stats[filename] = [];
-                                    let dir = "./adapters/"+fileNameList[1]+"/*"
-                                    if (!dirs.includes(dir)) {
-                                        dirs.push(dir)
-                                    }
+                    const response = await github.repos.getCommit({owner,repo,ref})
+                    if (response != null && response.status === 200) {
+                        const files = response.data.files
+                        for (let i = 0; i < files.length; i++) {
+                            const { filename, patch } = files[i];
+                            const fileNameList = filename.split("/")
+                            
+                            if (
+                            filename.endsWith(".go") && !filename.endsWith("_test.go") &&
+                            filename.startsWith("adapters/") && fileNameList.length > 2
+                            ) {
+                                const lines = patch.split("\n");
+                                if (lines.length === 1) {
+                                continue;
                                 }
-                                stats[filename].push(lineNumber)
+                        
+                                let lineNumber
+                                for (let i = 0; i < lines.length; i++) {
+                                    /*
+                                        check if line is diff hunk header
+                                        for example: 
+                                            @@ -47,23 +47,26 @@
+                                            +   func foo () {
+                                        here @@ -47,23 +47,26 @@ is diff hunk header and 47 is lineNumber
+                                    */ 
+                                    if (lines[i].match(/@@\s.*?@@/) != null) {
+                                        lineNumber = lines[i].match(/(\d+)/)[0]
+                                        continue
+                                    }
+
+                                    if (lines[i].startsWith("-")) {
+                                        continue
+                                    }
+
+                                    if (lines[i].startsWith("+")) {
+                                        if (stats[filename] === undefined) {
+                                            stats[filename] = [];
+                                            let dir = "./adapters/"+fileNameList[1]+"/*"
+                                            if (!dirs.includes(dir)) {
+                                                dirs.push(dir)
+                                            }
+                                        }
+                                        stats[filename].push(lineNumber)
+                                    }
+                                    lineNumber++;
+                                }
                             }
-                            lineNumber++;
                         }
                     }
-                }
-            }
-            return JSON.stringify({hasChanges: Object.keys(stats).length != 0, stats: stats, dirs: dirs.join(" ")})
+                    return JSON.stringify({hasChanges: Object.keys(stats).length != 0, stats: stats, dirs: dirs.join(" ")})
 
-      - name: Use stats output
-        run: |
-            echo "${{ steps.compute_file_changes.outputs.result }}"
-            echo "${{ steps.compute_file_changes.outputs }}"
-     
-      - name: install semgrep
-        run: pip3 install semgrep==1.22.0
-            
-      - name: check semgrep version
-        run: semgrep --version
-            
-      - name: install jq
-        run: pip3 install jq==1.4.1
-            
-      - name: check jq version
-        run: jq --version
+        -   name: Use stats output
+            run: |
+                echo "${{ steps.compute_file_changes.outputs.result }}"
+                echo "${{ steps.compute_file_changes.outputs }}"
