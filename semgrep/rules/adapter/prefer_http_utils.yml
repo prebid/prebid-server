@@ -1,0 +1,39 @@
+rules:
+  - id: Prefer http utils for HTTP status code check
+    languages: [go]
+    message: |
+      ```
+      Recommended to use of util function from httputil package
+      1. Use IsResponseStatusCodeNoContent to check if status code is http.StatusNoContent
+        if httputil.IsResponseStatusCodeNoContent(response) { 
+          return nil, nil 
+        }
+      2. Use CheckResponseStatusCodeForErrors to check if status code is http.StatusBadRequest or status code is not http.StatusOK
+        if err := httputil.CheckResponseStatusCodeForErrors(response); err != nil {
+          return nil, []error{err}
+        }
+      ```
+    severity: WARNING
+    pattern-either:
+      - patterns:
+          - pattern: |
+              ...
+              if $RESPONSE_STATUS_CODE == $STATUS_CODE {
+                ...
+              }
+              ...
+          - focus-metavariable: $STATUS_CODE
+          - metavariable-regex:
+              metavariable: "$STATUS_CODE"
+              regex: "(http.StatusNoContent|http.StatusBadRequest)"
+      - patterns:
+          - pattern: |
+              ...
+              if $RESPONSE_STATUS_CODE != $STATUS_CODE {
+                ...
+              }
+              ...
+          - focus-metavariable: $STATUS_CODE
+          - metavariable-regex:
+              metavariable: "$STATUS_CODE"
+              regex: "(http.StatusOK)"

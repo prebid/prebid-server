@@ -1,0 +1,89 @@
+rules:
+  - id: BidRequest shared memory reference check
+    languages:
+      - go
+    mode: taint
+    message: Found updates made to shared memory references of $REQ
+    severity: ERROR
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern-inside: func $FUNC(...,$REQ *openrtb2.BidRequest, ...) (...) {...}
+              - pattern-inside: func $FUNC(...,$REQ *openrtb2.BidRequest, ...) {...}
+              - pattern-inside: func (t $TYPE) $FUNC(...,$REQ *openrtb2.BidRequest, ...) (...) {...}
+          - focus-metavariable:
+              - $REQ
+    pattern-sanitizers:
+      - pattern-either:
+          - patterns:
+              - pattern: |
+                  $REQ.$FIELD = &$COPY
+                  ...
+                  $REQ.$FIELD.$SUB_FIELD = ...
+              - metavariable-regex:
+                  metavariable: $FIELD
+                  regex: (^App|Site|User|DOOH|Device|Source|Regs$)
+          - patterns:
+              - pattern: |
+                  if $REQ.$FIELD != nil {
+                    ...
+                    $COPY := *$REQ.$FIELD
+                    ...
+                    $REQ.$FIELD = &$COPY
+                    ...
+                  } else {
+                    $REQ.$FIELD = ...
+                  }
+                  ...
+                  $REQ.$FIELD.$SUB_FIELD = ...
+              - metavariable-regex:
+                  metavariable: $FIELD
+                  regex: (^App|Site|User|DOOH|Device|Source|Regs$)
+          # - patterns:
+          #     - pattern: |
+          #         if ... {
+          #           ...
+          #           $REQ.$FIELD.$SUB_FIELD = ...
+          #           ...
+          #         }
+          #     - metavariable-regex:
+          #         metavariable: $FIELD
+          #         regex: (^App|Site|User|DOOH|Device|Source|Regs$)
+          # - patterns:
+          #     - pattern: |
+          #         if ... {
+          #           ...
+          #           $COPY := *$REQ.$FIELD.$SUB_FIELD
+          #           ...
+          #           $REQ.$FIELD.$SUB_FIELD = &$COPY
+          #           ...
+          #         } else {
+          #           $REQ.$FIELD.$SUB_FIELD = ...
+          #         }
+          #         ...
+          #         $REQ.$FIELD.$SUB_FIELD.$D = ...
+          #     - metavariable-regex:
+          #         metavariable: $FIELD
+          #         regex: (^App|Site|User|DOOH|Device|Source|Regs$)
+    pattern-sinks:
+      - pattern-either:
+          - patterns:
+              # covers incorrect assignment made to,
+              # - req.Site.(Publisher|Content)
+              # - req.DOOH.(VenueTypeTax|Publisher)
+              # - req.(Device|User).Geo
+              # - req.Device.(DNT|Lmt|SUA)
+              # - req.(User|Source).Schain
+              # - req.Regs.GDPR
+              - pattern: $REQ.$B.$C = ...
+              - metavariable-regex:
+                  metavariable: $B
+                  regex: (^App|Site|User|DOOH|Device|Source|Regs$)
+      - pattern-either:
+          - patterns:
+              # covers incorrect assignment made to,
+              # - req.(App|Site|DOOH).Content.(Producer|ProdQ|VideoQuality)
+              - pattern: $REQ.$B.$C.$D = ...
+              - metavariable-regex:
+                  metavariable: $B
+                  regex: (^App|Site|User|DOOH|Device|Source|Regs$)
