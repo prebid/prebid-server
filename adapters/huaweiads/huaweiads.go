@@ -771,7 +771,7 @@ func convertCountryCode(country string) (out string) {
 		return mappedCountry
 	}
 
-	if len(country) >= 3 {
+	if len(country) >= 2 {
 		return country[0:2]
 	}
 
@@ -815,6 +815,9 @@ func getDeviceIDFromUserExt(device *device, openRTBRequest *openrtb2.BidRequest)
 		}
 		if len(deviceId.Gaid) > 0 {
 			device.Gaid = deviceId.Gaid[0]
+			isValidDeviceId = true
+		}
+		if len(device.Gaid) > 0 {
 			isValidDeviceId = true
 		}
 		if len(deviceId.Imei) > 0 {

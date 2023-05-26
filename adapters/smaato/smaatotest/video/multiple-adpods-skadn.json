@@ -28,6 +28,19 @@
                     "bidder": {
                         "publisherId": "1100042525",
                         "adbreakId": "400000001"
+                    },
+                    "skadn": {
+                        "versions": ["2.0", "2.1", "2.2", "3.0", "4.0"],
+                        "sourceapp": "880047117",
+                        "productpage": 1,
+                        "skadnetlist": {
+                          "max": 306,
+                          "excl": [2, 8, 10, 55],
+                          "addl": [
+                            "cdkw7geqsh.skadnetwork",
+                            "qyJfv329m4.skadnetwork"
+                          ]
+                        }
                     }
                 }
             },
@@ -57,6 +70,19 @@
                     "bidder": {
                         "publisherId": "1100042525",
                         "adbreakId": "400000001"
+                    },
+                    "skadn": {
+                        "versions": ["2.0", "2.1", "2.2", "3.0", "4.0"],
+                        "sourceapp": "880047118",
+                        "productpage": 1,
+                        "skadnetlist": {
+                          "max": 306,
+                          "excl": [2, 8, 10, 55],
+                          "addl": [
+                            "cdkw7geqsh.skadnetwork",
+                            "qyJfv329m4.skadnetwork"
+                          ]
+                        }
                     }
                 }
             },
@@ -86,6 +112,19 @@
                     "bidder": {
                         "publisherId": "1100042525",
                         "adbreakId": "400000001"
+                    },
+                    "skadn": {
+                        "versions": ["2.0", "2.1", "2.2", "3.0", "4.0"],
+                        "sourceapp": "880047119",
+                        "productpage": 1,
+                        "skadnetlist": {
+                          "max": 306,
+                          "excl": [2, 8, 10, 55],
+                          "addl": [
+                            "cdkw7geqsh.skadnetwork",
+                            "qyJfv329m4.skadnetwork"
+                          ]
+                        }
                     }
                 }
             },
@@ -115,6 +154,19 @@
                     "bidder": {
                         "publisherId": "1100042525",
                         "adbreakId": "400000001"
+                    },
+                    "skadn": {
+                        "versions": ["2.0", "2.1", "2.2", "3.0", "4.0"],
+                        "sourceapp": "880047120",
+                        "productpage": 1,
+                        "skadnetlist": {
+                          "max": 306,
+                          "excl": [2, 8, 10, 55],
+                          "addl": [
+                            "cdkw7geqsh.skadnetwork",
+                            "qyJfv329m4.skadnetwork"
+                          ]
+                        }
                     }
                 }
             }
@@ -181,6 +233,21 @@
                                 "sequence": 1,
                                 "ext": {
                                     "context": "adpod"
+                                }
+                            },
+                            "ext": {
+                                "skadn": {
+                                    "versions": ["2.0", "2.1", "2.2", "3.0", "4.0"],
+                                    "sourceapp": "880047117",
+                                    "productpage": 1,
+                                    "skadnetlist": {
+                                      "max": 306,
+                                      "excl": [2, 8, 10, 55],
+                                      "addl": [
+                                        "cdkw7geqsh.skadnetwork",
+                                        "qyJfv329m4.skadnetwork"
+                                      ]
+                                    }
                                 }
                             }
                         },
@@ -263,7 +330,29 @@
                                     "h": 768,
                                     "cat": ["IAB1"],
                                     "ext": {
-                                        "duration": 5
+                                        "duration": 5,
+                                        "skadn": {
+                                            "version": "2.2",
+                                            "network": "cdkw7geqsh.skadnetwork",
+                                            "campaign": "45",
+                                            "itunesitem": "123456789",
+                                            "sourceapp": "880047117",
+                                            "productpageid": "45812c9b-c296-43d3-c6a0-c5a02f74bf6e",
+                                            "fidelities": [
+                                              {
+                                                "fidelity": 0,
+                                                "signature": "MEQCIEQlmZRNfYzKBSE8QnhLTIHZZZWCFgZpRqRxHss65KoFAiAJgJKjdrWdkLUOCCjuEx2RmFS7daRzSVZRVZ8RyMyUXg==",
+                                                "nonce": "473b1a16-b4ef-43ad-9591-fcf3aefa82a7",
+                                                "timestamp": "1594406341"
+                                              },
+                                              {
+                                                "fidelity": 1,
+                                                "signature": "GRlMDktMmE5Zi00ZGMzLWE0ZDEtNTQ0YzQwMmU5MDk1IiwKICAgICAgICAgICAgICAgICAgInRpbWVzdGTk0NDA2MzQyIg==",
+                                                "nonce": "e650de09-2a9f-4dc3-a4d1-544c402e9095",
+                                                "timestamp": "1594406342"
+                                              }
+                                            ]
+                                        }
                                     }
                                 },
                                 {
@@ -283,7 +372,29 @@
                                     "h": 768,
                                     "cat": ["IAB2"],
                                     "ext": {
-                                        "duration": 30
+                                        "duration": 30,
+                                        "skadn": {
+                                            "version": "2.2",
+                                            "network": "qyJfv329m4.skadnetwork",
+                                            "campaign": "45",
+                                            "itunesitem": "123456789",
+                                            "sourceapp": "880047117",
+                                            "productpageid": "45812c9b-c296-43d3-c6a0-c5a02f74bf6e",
+                                            "fidelities": [
+                                              {
+                                                "fidelity": 0,
+                                                "signature": "MEQCIEQlmZRNfYzKBSE8QnhLTIHZZZWCFgZpRqRxHss65KoFAiAJgJKjdrWdkLUOCCjuEx2RmFS7daRzSVZRVZ8RyMyUXg==",
+                                                "nonce": "473b1a16-b4ef-43ad-9591-fcf3aefa82a7",
+                                                "timestamp": "1594406341"
+                                              },
+                                              {
+                                                "fidelity": 1,
+                                                "signature": "GRlMDktMmE5Zi00ZGMzLWE0ZDEtNTQ0YzQwMmU5MDk1IiwKICAgICAgICAgICAgICAgICAgInRpbWVzdGTk0NDA2MzQyIg==",
+                                                "nonce": "e650de09-2a9f-4dc3-a4d1-544c402e9095",
+                                                "timestamp": "1594406342"
+                                              }
+                                            ]
+                                        }
                                     }
                                 }
                             ]
@@ -333,6 +444,21 @@
                                 "sequence": 1,
                                 "ext": {
                                     "context": "adpod"
+                                }
+                            },
+                            "ext": {
+                                "skadn": {
+                                    "versions": ["2.0", "2.1", "2.2", "3.0", "4.0"],
+                                    "sourceapp": "880047119",
+                                    "productpage": 1,
+                                    "skadnetlist": {
+                                      "max": 306,
+                                      "excl": [2, 8, 10, 55],
+                                      "addl": [
+                                        "cdkw7geqsh.skadnetwork",
+                                        "qyJfv329m4.skadnetwork"
+                                      ]
+                                    }
                                 }
                             }
                         },
@@ -415,7 +541,29 @@
                                     "h": 768,
                                     "cat": ["IAB1"],
                                     "ext": {
-                                        "duration": 5
+                                        "duration": 5,
+                                        "skadn": {
+                                            "version": "2.2",
+                                            "network": "cdkw7geqsh.skadnetwork",
+                                            "campaign": "45",
+                                            "itunesitem": "123456789",
+                                            "sourceapp": "880047119",
+                                            "productpageid": "45812c9b-c296-43d3-c6a0-c5a02f74bf6e",
+                                            "fidelities": [
+                                              {
+                                                "fidelity": 0,
+                                                "signature": "MEQCIEQlmZRNfYzKBSE8QnhLTIHZZZWCFgZpRqRxHss65KoFAiAJgJKjdrWdkLUOCCjuEx2RmFS7daRzSVZRVZ8RyMyUXg==",
+                                                "nonce": "473b1a16-b4ef-43ad-9591-fcf3aefa82a7",
+                                                "timestamp": "1594406341"
+                                              },
+                                              {
+                                                "fidelity": 1,
+                                                "signature": "GRlMDktMmE5Zi00ZGMzLWE0ZDEtNTQ0YzQwMmU5MDk1IiwKICAgICAgICAgICAgICAgICAgInRpbWVzdGTk0NDA2MzQyIg==",
+                                                "nonce": "e650de09-2a9f-4dc3-a4d1-544c402e9095",
+                                                "timestamp": "1594406342"
+                                              }
+                                            ]
+                                        }
                                     }
                                 },
                                 {
@@ -435,7 +583,29 @@
                                     "h": 768,
                                     "cat": ["IAB2"],
                                     "ext": {
-                                        "duration": 30
+                                        "duration": 30,
+                                        "skadn": {
+                                            "version": "2.2",
+                                            "network": "qyJfv329m4.skadnetwork",
+                                            "campaign": "45",
+                                            "itunesitem": "123456789",
+                                            "sourceapp": "880047119",
+                                            "productpageid": "45812c9b-c296-43d3-c6a0-c5a02f74bf6e",
+                                            "fidelities": [
+                                              {
+                                                "fidelity": 0,
+                                                "signature": "MEQCIEQlmZRNfYzKBSE8QnhLTIHZZZWCFgZpRqRxHss65KoFAiAJgJKjdrWdkLUOCCjuEx2RmFS7daRzSVZRVZ8RyMyUXg==",
+                                                "nonce": "473b1a16-b4ef-43ad-9591-fcf3aefa82a7",
+                                                "timestamp": "1594406341"
+                                              },
+                                              {
+                                                "fidelity": 1,
+                                                "signature": "GRlMDktMmE5Zi00ZGMzLWE0ZDEtNTQ0YzQwMmU5MDk1IiwKICAgICAgICAgICAgICAgICAgInRpbWVzdGTk0NDA2MzQyIg==",
+                                                "nonce": "e650de09-2a9f-4dc3-a4d1-544c402e9095",
+                                                "timestamp": "1594406342"
+                                              }
+                                            ]
+                                        }
                                     }
                                 }
                             ]
@@ -468,7 +638,29 @@
                         "h": 768,
                         "cat": ["IAB1"],
                         "ext": {
-                            "duration": 5
+                            "duration": 5,
+                            "skadn": {
+                                "version": "2.2",
+                                "network": "cdkw7geqsh.skadnetwork",
+                                "campaign": "45",
+                                "itunesitem": "123456789",
+                                "sourceapp": "880047117",
+                                "productpageid": "45812c9b-c296-43d3-c6a0-c5a02f74bf6e",
+                                "fidelities": [
+                                  {
+                                    "fidelity": 0,
+                                    "signature": "MEQCIEQlmZRNfYzKBSE8QnhLTIHZZZWCFgZpRqRxHss65KoFAiAJgJKjdrWdkLUOCCjuEx2RmFS7daRzSVZRVZ8RyMyUXg==",
+                                    "nonce": "473b1a16-b4ef-43ad-9591-fcf3aefa82a7",
+                                    "timestamp": "1594406341"
+                                  },
+                                  {
+                                    "fidelity": 1,
+                                    "signature": "GRlMDktMmE5Zi00ZGMzLWE0ZDEtNTQ0YzQwMmU5MDk1IiwKICAgICAgICAgICAgICAgICAgInRpbWVzdGTk0NDA2MzQyIg==",
+                                    "nonce": "e650de09-2a9f-4dc3-a4d1-544c402e9095",
+                                    "timestamp": "1594406342"
+                                  }
+                                ]
+                            }
                         },
                         "exp": 300
                     },
@@ -492,7 +684,29 @@
                         "h": 768,
                         "cat": ["IAB2"],
                         "ext": {
-                            "duration": 30
+                            "duration": 30,
+                            "skadn": {
+                                "version": "2.2",
+                                "network": "qyJfv329m4.skadnetwork",
+                                "campaign": "45",
+                                "itunesitem": "123456789",
+                                "sourceapp": "880047117",
+                                "productpageid": "45812c9b-c296-43d3-c6a0-c5a02f74bf6e",
+                                "fidelities": [
+                                  {
+                                    "fidelity": 0,
+                                    "signature": "MEQCIEQlmZRNfYzKBSE8QnhLTIHZZZWCFgZpRqRxHss65KoFAiAJgJKjdrWdkLUOCCjuEx2RmFS7daRzSVZRVZ8RyMyUXg==",
+                                    "nonce": "473b1a16-b4ef-43ad-9591-fcf3aefa82a7",
+                                    "timestamp": "1594406341"
+                                  },
+                                  {
+                                    "fidelity": 1,
+                                    "signature": "GRlMDktMmE5Zi00ZGMzLWE0ZDEtNTQ0YzQwMmU5MDk1IiwKICAgICAgICAgICAgICAgICAgInRpbWVzdGTk0NDA2MzQyIg==",
+                                    "nonce": "e650de09-2a9f-4dc3-a4d1-544c402e9095",
+                                    "timestamp": "1594406342"
+                                  }
+                                ]
+                            }
                         },
                         "exp": 300
                     },
@@ -520,7 +734,29 @@
                         "h": 768,
                         "cat": ["IAB1"],
                         "ext": {
-                            "duration": 5
+                            "duration": 5,
+                            "skadn": {
+                                "version": "2.2",
+                                "network": "cdkw7geqsh.skadnetwork",
+                                "campaign": "45",
+                                "itunesitem": "123456789",
+                                "sourceapp": "880047119",
+                                "productpageid": "45812c9b-c296-43d3-c6a0-c5a02f74bf6e",
+                                "fidelities": [
+                                  {
+                                    "fidelity": 0,
+                                    "signature": "MEQCIEQlmZRNfYzKBSE8QnhLTIHZZZWCFgZpRqRxHss65KoFAiAJgJKjdrWdkLUOCCjuEx2RmFS7daRzSVZRVZ8RyMyUXg==",
+                                    "nonce": "473b1a16-b4ef-43ad-9591-fcf3aefa82a7",
+                                    "timestamp": "1594406341"
+                                  },
+                                  {
+                                    "fidelity": 1,
+                                    "signature": "GRlMDktMmE5Zi00ZGMzLWE0ZDEtNTQ0YzQwMmU5MDk1IiwKICAgICAgICAgICAgICAgICAgInRpbWVzdGTk0NDA2MzQyIg==",
+                                    "nonce": "e650de09-2a9f-4dc3-a4d1-544c402e9095",
+                                    "timestamp": "1594406342"
+                                  }
+                                ]
+                            }
                         },
                         "exp": 300
                     },
@@ -543,7 +779,29 @@
                         "h": 768,
                         "cat": ["IAB2"],
                         "ext": {
-                            "duration": 30
+                            "duration": 30,
+                            "skadn": {
+                                "version": "2.2",
+                                "network": "qyJfv329m4.skadnetwork",
+                                "campaign": "45",
+                                "itunesitem": "123456789",
+                                "sourceapp": "880047119",
+                                "productpageid": "45812c9b-c296-43d3-c6a0-c5a02f74bf6e",
+                                "fidelities": [
+                                  {
+                                    "fidelity": 0,
+                                    "signature": "MEQCIEQlmZRNfYzKBSE8QnhLTIHZZZWCFgZpRqRxHss65KoFAiAJgJKjdrWdkLUOCCjuEx2RmFS7daRzSVZRVZ8RyMyUXg==",
+                                    "nonce": "473b1a16-b4ef-43ad-9591-fcf3aefa82a7",
+                                    "timestamp": "1594406341"
+                                  },
+                                  {
+                                    "fidelity": 1,
+                                    "signature": "GRlMDktMmE5Zi00ZGMzLWE0ZDEtNTQ0YzQwMmU5MDk1IiwKICAgICAgICAgICAgICAgICAgInRpbWVzdGTk0NDA2MzQyIg==",
+                                    "nonce": "e650de09-2a9f-4dc3-a4d1-544c402e9095",
+                                    "timestamp": "1594406342"
+                                  }
+                                ]
+                            }
                         },
                         "exp": 300
                     },

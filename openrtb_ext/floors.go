@@ -31,6 +31,46 @@ type PriceFloorRules struct {
 	PriceFloorLocation string                 `json:"location,omitempty"`
 }
 
+// GetEnforcePBS will check if floors enforcement is enabled in request
+func (Floors *PriceFloorRules) GetEnforcePBS() bool {
+	if Floors != nil && Floors.Enforcement != nil && Floors.Enforcement.EnforcePBS != nil {
+		return *Floors.Enforcement.EnforcePBS
+	}
+	return true
+}
+
+// GetFloorsSkippedFlag will return  floors skipped flag
+func (Floors *PriceFloorRules) GetFloorsSkippedFlag() bool {
+	if Floors != nil && Floors.Skipped != nil {
+		return *Floors.Skipped
+	}
+	return false
+}
+
+// GetEnforceRate will return enforcement rate in request
+func (Floors *PriceFloorRules) GetEnforceRate() int {
+	if Floors != nil && Floors.Enforcement != nil {
+		return Floors.Enforcement.EnforceRate
+	}
+	return 0
+}
+
+// GetEnforceDealsFlag will return FloorDeals flag in request
+func (Floors *PriceFloorRules) GetEnforceDealsFlag() bool {
+	if Floors != nil && Floors.Enforcement != nil && Floors.Enforcement.FloorDeals != nil {
+		return *Floors.Enforcement.FloorDeals
+	}
+	return false
+}
+
+// GetEnabled will check if floors is enabled in request
+func (Floors *PriceFloorRules) GetEnabled() bool {
+	if Floors != nil && Floors.Enabled != nil {
+		return *Floors.Enabled
+	}
+	return true
+}
+
 type PriceFloorEndpoint struct {
 	URL string `json:"url,omitempty"`
 }
@@ -53,6 +93,28 @@ type PriceFloorModelGroup struct {
 	Values       map[string]float64 `json:"values,omitempty"`
 	Default      float64            `json:"default,omitempty"`
 }
+
+func (mg PriceFloorModelGroup) Copy() PriceFloorModelGroup {
+	newMg := new(PriceFloorModelGroup)
+	newMg.Currency = mg.Currency
+	newMg.ModelVersion = mg.ModelVersion
+	newMg.SkipRate = mg.SkipRate
+	newMg.Default = mg.Default
+	if mg.ModelWeight != nil {
+		newMg.ModelWeight = new(int)
+		*newMg.ModelWeight = *mg.ModelWeight
+	}
+
+	newMg.Schema.Delimiter = mg.Schema.Delimiter
+	newMg.Schema.Fields = make([]string, len(mg.Schema.Fields))
+	copy(newMg.Schema.Fields, mg.Schema.Fields)
+	newMg.Values = make(map[string]float64, len(mg.Values))
+	for key, val := range mg.Values {
+		newMg.Values[key] = val
+	}
+	return *newMg
+}
+
 type PriceFloorSchema struct {
 	Fields    []string `json:"fields,omitempty"`
 	Delimiter string   `json:"delimiter,omitempty"`
@@ -82,33 +144,4 @@ type ExtImp struct {
 
 type ImpExtPrebid struct {
 	Floors Price `json:"floors,omitempty"`
-}
-
-// GetEnabled will check if floors is enabled in request
-func (Floors *PriceFloorRules) GetEnabled() bool {
-	if Floors != nil && Floors.Enabled != nil {
-		return *Floors.Enabled
-	}
-	return true
-}
-
-func (modelGroup PriceFloorModelGroup) Copy() PriceFloorModelGroup {
-	newModelGroup := new(PriceFloorModelGroup)
-	newModelGroup.Currency = modelGroup.Currency
-	newModelGroup.ModelVersion = modelGroup.ModelVersion
-	newModelGroup.SkipRate = modelGroup.SkipRate
-	newModelGroup.Default = modelGroup.Default
-	if modelGroup.ModelWeight != nil {
-		newModelGroup.ModelWeight = new(int)
-		*newModelGroup.ModelWeight = *modelGroup.ModelWeight
-	}
-
-	newModelGroup.Schema.Delimiter = modelGroup.Schema.Delimiter
-	newModelGroup.Schema.Fields = make([]string, len(modelGroup.Schema.Fields))
-	copy(newModelGroup.Schema.Fields, modelGroup.Schema.Fields)
-	newModelGroup.Values = make(map[string]float64, len(modelGroup.Values))
-	for key, val := range modelGroup.Values {
-		newModelGroup.Values[key] = val
-	}
-	return *newModelGroup
 }

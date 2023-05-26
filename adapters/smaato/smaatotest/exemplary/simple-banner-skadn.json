@@ -37,6 +37,19 @@
           "bidder": {
             "publisherId": "1100042525",
             "adspaceId": "130563103"
+          },
+          "skadn": {
+            "versions": ["2.0", "2.1", "2.2", "3.0", "4.0"],
+            "sourceapp": "880047117",
+            "productpage": 1,
+            "skadnetlist": {
+              "max": 306,
+              "excl": [2, 8, 10, 55],
+              "addl": [
+                "cdkw7geqsh.skadnetwork",
+                "qyJfv329m4.skadnetwork"
+              ]
+            }
           }
         }
       }
@@ -66,7 +79,9 @@
         "gdpr": 1,
         "us_privacy": "uspConsentString",
         "gpp": "gppString",
-        "gpp_sid": [7]
+        "gpp_sid": [
+          7
+        ]
       }
     }
   },
@@ -74,8 +89,12 @@
     {
       "expectedRequest": {
         "headers": {
-          "Content-Type": ["application/json;charset=utf-8"],
-          "Accept": ["application/json"]
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
         },
         "uri": "https://prebid/bidder",
         "body": {
@@ -99,6 +118,21 @@
                     "h": 250
                   }
                 ]
+              },
+              "ext": {
+                "skadn": {
+                  "versions": ["2.0", "2.1", "2.2", "3.0", "4.0"],
+                  "sourceapp": "880047117",
+                  "productpage": 1,
+                  "skadnetlist": {
+                    "max": 306,
+                    "excl": [2, 8, 10, 55],
+                    "addl": [
+                      "cdkw7geqsh.skadnetwork",
+                      "qyJfv329m4.skadnetwork"
+                    ]
+                  }
+                }
               }
             }
           ],
@@ -122,7 +156,9 @@
               "gdpr": 1,
               "us_privacy": "uspConsentString",
               "gpp": "gppString",
-              "gpp_sid": [7]
+              "gpp_sid": [
+                7
+              ]
             }
           },
           "site": {
@@ -159,7 +195,31 @@
                   "nurl": "https://ets-eu-west-1.track.smaato.net/v1/view?sessionId=e4e17adb-9599-42b1-bb5f-a1f1b3bee572&adSourceId=6906aae8-7f74-4edd-9a4f-f49379a3cadd&originalRequestTime=1552310449698&expires=1552311350698&winurl=ama8JbpJVpFWxvEja5viE3cLXFu58qRI8dGUh23xtsOn3N2-5UU0IwkgNEmR82pI37fcMXejL5IWTNAoW6Cnsjf-Dxl_vx2dUqMrVEevX-Vdx2VVnf-D5f73gZhvi4t36iPL8Dsw4aACekoLvVOV7-eXDjz7GHy60QFqcwKf5g2AlKPOInyZ6vJg_fn4qA9argvCRgwVybXE9Ndm2W0v8La4uFYWpJBOUveDDUrSQfzal7RsYvLb_OyaMlPHdrd_bwA9qqZWuyJXd-L9lxr7RQ%3D%3D%7CMw3kt91KJR0Uy5L-oNztAg%3D%3D&dpid=4XVofb_lH-__hr2JNGhKfg%3D%3D%7Cr9ciCU1cx3zmHXihItKO0g%3D%3D",
                   "price": 0.01,
                   "w": 350,
-                  "h": 50
+                  "h": 50,
+                  "ext": {
+                    "skadn": {
+                      "version": "2.2",
+                      "network": "cdkw7geqsh.skadnetwork",
+                      "campaign": "45",
+                      "itunesitem": "123456789",
+                      "sourceapp": "880047117",
+                      "productpageid": "45812c9b-c296-43d3-c6a0-c5a02f74bf6e",
+                      "fidelities": [
+                        {
+                          "fidelity": 0,
+                          "signature": "MEQCIEQlmZRNfYzKBSE8QnhLTIHZZZWCFgZpRqRxHss65KoFAiAJgJKjdrWdkLUOCCjuEx2RmFS7daRzSVZRVZ8RyMyUXg==",
+                          "nonce": "473b1a16-b4ef-43ad-9591-fcf3aefa82a7",
+                          "timestamp": "1594406341"
+                        },
+                        {
+                          "fidelity": 1,
+                          "signature": "GRlMDktMmE5Zi00ZGMzLWE0ZDEtNTQ0YzQwMmU5MDk1IiwKICAgICAgICAgICAgICAgICAgInRpbWVzdGTk0NDA2MzQyIg==",
+                          "nonce": "e650de09-2a9f-4dc3-a4d1-544c402e9095",
+                          "timestamp": "1594406342"
+                        }
+                      ]
+                    }
+                  }
                 }
               ]
             }
@@ -189,7 +249,31 @@
             "price": 0.01,
             "w": 350,
             "h": 50,
-            "exp": 300
+            "exp": 300,
+            "ext": {
+              "skadn": {
+                "version": "2.2",
+                "network": "cdkw7geqsh.skadnetwork",
+                "campaign": "45",
+                "itunesitem": "123456789",
+                "sourceapp": "880047117",
+                "productpageid": "45812c9b-c296-43d3-c6a0-c5a02f74bf6e",
+                "fidelities": [
+                  {
+                    "fidelity": 0,
+                    "signature": "MEQCIEQlmZRNfYzKBSE8QnhLTIHZZZWCFgZpRqRxHss65KoFAiAJgJKjdrWdkLUOCCjuEx2RmFS7daRzSVZRVZ8RyMyUXg==",
+                    "nonce": "473b1a16-b4ef-43ad-9591-fcf3aefa82a7",
+                    "timestamp": "1594406341"
+                  },
+                  {
+                    "fidelity": 1,
+                    "signature": "GRlMDktMmE5Zi00ZGMzLWE0ZDEtNTQ0YzQwMmU5MDk1IiwKICAgICAgICAgICAgICAgICAgInRpbWVzdGTk0NDA2MzQyIg==",
+                    "nonce": "e650de09-2a9f-4dc3-a4d1-544c402e9095",
+                    "timestamp": "1594406342"
+                  }
+                ]
+              }
+            }
           },
           "type": "banner"
         }

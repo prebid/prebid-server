@@ -39,6 +39,7 @@ type Configuration struct {
 	// If empty, it will return a 204 with no content.
 	StatusResponse    string          `mapstructure:"status_response"`
 	AuctionTimeouts   AuctionTimeouts `mapstructure:"auction_timeouts_ms"`
+	TmaxAdjustments   TmaxAdjustments `mapstructure:"tmax_adjustments"`
 	CacheURL          Cache           `mapstructure:"cache"`
 	ExtCacheURL       ExternalCache   `mapstructure:"external_cache"`
 	RecaptchaSecret   string          `mapstructure:"recaptcha_secret"`
@@ -146,6 +147,11 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 
 	if len(cfg.AccountDefaults.Events.VASTEvents) > 0 {
 		errs = append(errs, errors.New("account_defaults.Events.VASTEvents has no effect as the feature is under development."))
+	}
+
+	if cfg.TmaxAdjustments.Enabled {
+		glog.Warning(`cfg.TmaxAdjustments.Enabled will currently not do anything as tmax adjustment feature is still under development.`)
+		cfg.TmaxAdjustments.Enabled = false
 	}
 
 	errs = cfg.Experiment.validate(errs)
@@ -1029,6 +1035,11 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("debug.timeout_notification.fail_only", false)
 	v.SetDefault("debug.override_token", "")
 
+	v.SetDefault("tmax_adjustments.enabled", false)
+	v.SetDefault("tmax_adjustments.bidder_response_duration_min_ms", 0)
+	v.SetDefault("tmax_adjustments.bidder_network_latency_buffer_ms", 0)
+	v.SetDefault("tmax_adjustments.pbs_response_preparation_duration_ms", 0)
+
 	/* IPv4
 	/*  Site Local: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
 	/*  Link Local: 169.254.0.0/16
@@ -1505,4 +1516,23 @@ func isValidCookieSize(maxCookieSize int) error {
 		return fmt.Errorf("Configured cookie size is less than allowed minimum size of %d \n", MIN_COOKIE_SIZE_BYTES)
 	}
 	return nil
+}
+
+// Tmax Adjustments enables PBS to estimate the tmax value for bidders, indicating the allotted time for them to respond to a request.
+// It's important to note that the calculated tmax is just an estimate and will not be entirely precise.
+// PBS will calculate the bidder tmax as follows:
+// bidderTmax = request.tmax - reqProcessingTime - BidderNetworkLatencyBuffer - PBSResponsePreparationDuration
+// Note that reqProcessingTime is time taken by PBS to process a given request before it is sent to bid adapters and is computed at run time.
+type TmaxAdjustments struct {
+	// Enabled indicates whether bidder tmax should be calculated and passed on to bid adapters
+	Enabled bool `mapstructure:"enabled"`
+	// BidderNetworkLatencyBuffer accounts for network delays between PBS and bidder servers.
+	// A value of 0 indicates no network latency buffer should be accounted for when calculating the bidder tmax.
+	BidderNetworkLatencyBuffer uint `mapstructure:"bidder_network_latency_buffer_ms"`
+	// PBSResponsePreparationDuration accounts for amount of time required for PBS to process all bidder responses and generate final response for a request.
+	// A value of 0 indicates PBS response preparation time shouldn't be accounted for when calculating bidder tmax.
+	PBSResponsePreparationDuration uint `mapstructure:"pbs_response_preparation_duration_ms"`
+	// BidderResponseDurationMin is the minimum amount of time expected to get a response from a bidder request.
+	// PBS won't send a request to the bidder if the bidder tmax calculated is less than the BidderResponseDurationMin value
+	BidderResponseDurationMin uint `mapstructure:"bidder_response_duration_min_ms"`
 }

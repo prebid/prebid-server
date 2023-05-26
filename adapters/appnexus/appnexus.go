@@ -13,7 +13,6 @@ import (
 	"github.com/prebid/openrtb/v19/adcom1"
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/util/httputil"
 	"github.com/prebid/prebid-server/util/randomutil"
 
 	"github.com/prebid/prebid-server/adapters"
@@ -65,8 +64,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	var (
 		shouldGenerateAdPodId *bool
-		uniqueMemberIds       []string
-		memberIds             = make(map[string]struct{})
+		uniqueMemberIds       = make([]string, 0, len(request.Imp))
+		memberIds             = make(map[string]struct{}, len(request.Imp))
 		errs                  = make([]error, 0, len(request.Imp))
 	)
 
@@ -116,6 +115,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		requestURI = appendMemberId(requestURI, uniqueMemberIds[0])
 		if len(uniqueMemberIds) > 1 {
 			errs = append(errs, fmt.Errorf("All request.imp[i].ext.prebid.bidder.appnexus.member params must match. Request contained: %v", uniqueMemberIds))
+			return nil, errs
 		}
 	}
 
@@ -161,11 +161,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 }
 
 func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if httputil.IsResponseStatusCodeNoContent(response) {
+	if adapters.IsResponseStatusCodeNoContent(response) {
 		return nil, nil
 	}
 
-	if err := httputil.CheckResponseStatusCodeForErrors(response); err != nil {
+	if err := adapters.CheckResponseStatusCodeForErrors(response); err != nil {
 		return nil, []error{err}
 	}
 
@@ -352,6 +352,8 @@ func buildRequestImp(imp *openrtb2.Imp, appnexusExt *openrtb_ext.ExtImpAppnexus,
 		Keywords:          appnexusExt.Keywords.String(),
 		UsePmtRule:        appnexusExt.UsePaymentRule,
 		PrivateSizes:      appnexusExt.PrivateSizes,
+		ExtInvCode:        appnexusExt.ExtInvCode,
+		ExternalImpId:     appnexusExt.ExternalImpId,
 	}}
 
 	var err error

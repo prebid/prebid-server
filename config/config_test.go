@@ -196,6 +196,11 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "validations.max_creative_height", 0, int(cfg.Validations.MaxCreativeHeight))
 	cmpBools(t, "account_modules_metrics", false, cfg.Metrics.Disabled.AccountModulesMetrics)
 
+	cmpBools(t, "tmax_adjustments.enabled", false, cfg.TmaxAdjustments.Enabled)
+	cmpUnsignedInts(t, "tmax_adjustments.bidder_response_duration_min_ms", 0, cfg.TmaxAdjustments.BidderResponseDurationMin)
+	cmpUnsignedInts(t, "tmax_adjustments.bidder_network_latency_buffer_ms", 0, cfg.TmaxAdjustments.BidderNetworkLatencyBuffer)
+	cmpUnsignedInts(t, "tmax_adjustments.pbs_response_preparation_duration_ms", 0, cfg.TmaxAdjustments.PBSResponsePreparationDuration)
+
 	//Assert purpose VendorExceptionMap hash tables were built correctly
 	expectedTCF2 := TCF2{
 		Enabled: true,
@@ -461,6 +466,11 @@ account_defaults:
         use_dynamic_data: true
         max_rules: 120
         max_schema_dims: 5
+tmax_adjustments:
+  enabled: true
+  bidder_response_duration_min_ms: 700
+  bidder_network_latency_buffer_ms: 100
+  pbs_response_preparation_duration_ms: 100
 `)
 
 var oldStoredRequestsConfig = []byte(`
@@ -475,6 +485,11 @@ func cmpStrings(t *testing.T, key, expected, actual string) {
 }
 
 func cmpInts(t *testing.T, key string, expected, actual int) {
+	t.Helper()
+	assert.Equal(t, expected, actual, "%s: %d != %d", key, expected, actual)
+}
+
+func cmpUnsignedInts(t *testing.T, key string, expected, actual uint) {
 	t.Helper()
 	assert.Equal(t, expected, actual, "%s: %d != %d", key, expected, actual)
 }
@@ -540,6 +555,10 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "validations.secure_markup", "skip", cfg.Validations.SecureMarkup)
 	cmpInts(t, "validations.max_creative_width", 0, int(cfg.Validations.MaxCreativeWidth))
 	cmpInts(t, "validations.max_creative_height", 0, int(cfg.Validations.MaxCreativeHeight))
+	cmpBools(t, "tmax_adjustments.enabled", false, cfg.TmaxAdjustments.Enabled) // Tmax adjustment feature is still under development. Therefore enabled flag is set to false
+	cmpUnsignedInts(t, "tmax_adjustments.bidder_response_duration_min_ms", 700, cfg.TmaxAdjustments.BidderResponseDurationMin)
+	cmpUnsignedInts(t, "tmax_adjustments.bidder_network_latency_buffer_ms", 100, cfg.TmaxAdjustments.BidderNetworkLatencyBuffer)
+	cmpUnsignedInts(t, "tmax_adjustments.pbs_response_preparation_duration_ms", 100, cfg.TmaxAdjustments.PBSResponsePreparationDuration)
 
 	//Assert the price floor values
 	cmpBools(t, "price_floors.enabled", true, cfg.PriceFloors.Enabled)
