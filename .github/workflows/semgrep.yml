@@ -99,4 +99,5 @@ jobs:
         -   name: Use stats output
             run: |
                 echo "${{ steps.compute_file_changes.outputs.result }}"
-                echo "${{ steps.compute_file_changes.outputs }}"
+                echo "${{ steps.compute_file_changes.outputs.result.dirs }}"
+        
