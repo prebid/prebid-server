@@ -1074,8 +1074,8 @@ func applyCategoryMapping(ctx context.Context, targeting openrtb_ext.ExtRequestT
 }
 
 // findDurationRange returns the element in the array 'a' that is both greater than 'dur' and closest
-// in value unless a value equal to 'dur' if found. It may also return an error if all elements in
-// 'a' are less than 'dur'.
+// in value to 'dur' unless a value equal to 'dur' is found. Returns an error if all elements in 'a'
+// are less than 'dur'.
 func findDurationRange(dur int, a []int) (int, error) {
 	newDur := dur
 	madeSelection := false
