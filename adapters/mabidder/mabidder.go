@@ -12,6 +12,30 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
+type maServerResponse struct {
+	Responses       []maBidResponse
+	PrivateIdStatus string `json:"-"`
+}
+
+type maBidResponse struct {
+	RequestID         string  `json:"requestId"`
+	Currency          string  `json:"currency"`
+	Width             int32   `json:"width"`
+	Height            int32   `json:"height"`
+	PlacementId       string  `json:"creativeId"`
+	Deal              string  `json:"dealId,omitempty"`
+	NetRevenue        bool    `json:"netRevenue"`
+	TimeToLiveSeconds int32   `json:"ttl"`
+	AdTag             string  `json:"ad"`
+	MediaType         string  `json:"mediaType"`
+	Meta              maMeta  `json:"meta"`
+	CPM               float32 `json:"cpm"`
+}
+
+type maMeta struct {
+	AdDomain []string `json:"advertiserDomains"`
+}
+
 type adapter struct {
 	endpoint string
 }
@@ -58,23 +82,31 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		return nil, []error{err}
 	}
 
-	var response openrtb2.BidResponse
+	var response maServerResponse
+	//var response openrtb2.BidResponse
+
 	if err := json.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
-	bidResponse.Currency = response.Cur
-	for _, seatBid := range response.SeatBid {
-		//for i, bid := range seatBid.Bid {
-		for i := range seatBid.Bid {
-			b := &adapters.TypedBid{
-				Bid: &seatBid.Bid[i],
-				//BidType: getMediaTypeForBid(bid),
-				BidType: openrtb_ext.BidTypeBanner,
-			}
-			bidResponse.Bids = append(bidResponse.Bids, b)
+	//bidResponse.Currency = response.Currency
+	for _, maBidResp := range response.Responses {
+		b := &adapters.TypedBid{
+			Bid: &openrtb2.Bid{
+				ID:     maBidResp.RequestID,
+				ImpID:  maBidResp.RequestID,
+				Price:  float64(maBidResp.CPM),
+				AdM:    maBidResp.AdTag,
+				W:      int64(maBidResp.Width),
+				H:      int64(maBidResp.Height),
+				CrID:   maBidResp.PlacementId,
+				DealID: maBidResp.Deal,
+			},
+			//BidType: getMediaTypeForBid(bid),
+			BidType: openrtb_ext.BidTypeBanner,
 		}
+		bidResponse.Bids = append(bidResponse.Bids, b)
 	}
 	return bidResponse, nil
 }
