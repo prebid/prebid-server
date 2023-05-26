@@ -110,16 +110,6 @@ jobs:
                 DIRS: ${{ steps.export_file_changes.outputs.dirs }}
             run: |
                 new_string=$(echo ${{ steps.export_file_changes.outputs.dirs }} | tr -d '"')
-                outputs=$(semgrep --gitlab-sast --config=./semgrep/rules/adapter/prefer_http_utils.yml $new_string | jq '[.vulnerabilities[] | {"file": .location.file, "start": .location.start_line, "end": .location.end_line, "message": .message}]')                
-                parsed_outputs=$(echo "$cleaned_outputs" | jq -c '.[]')
-                echo "$parsed_outputs" | while IFS= read -r obj; do
-                    file=$(echo "$obj" | jq .'file')
-                    start_line=$(echo "$obj" | jq .start)
-                    end_line=$(echo "$obj" | jq .end)
-                    message=$(echo "$obj" | jq .message)
-  
-                    echo "${file}"
-                    echo "${start_line}"
-                    echo "${end_line}"
-                    echo "${message}"
-                done
+                echo $new_string
+                semgrep --config=./semgrep/rules/adapter/prefer_http_utils.yml $new_string 
+                               
