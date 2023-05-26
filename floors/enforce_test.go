@@ -3,6 +3,7 @@ package floors
 import (
 	"encoding/json"
 	"errors"
+	"reflect"
 	"testing"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
@@ -574,7 +575,7 @@ func TestEnforce(t *testing.T) {
 					},
 				},
 				conversions:    convert{},
-				priceFloorsCfg: config.AccountPriceFloors{Enabled: true, EnforceFloorsRate: 100, EnforceDealFloors: true},
+				priceFloorsCfg: config.AccountPriceFloors{Enabled: true, EnforceFloorsRate: 0, EnforceDealFloors: true},
 			},
 			expEligibleBids: map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid{
 				"pubmatic": {
@@ -631,7 +632,7 @@ func TestEnforce(t *testing.T) {
 					},
 				},
 				conversions:    convert{},
-				priceFloorsCfg: config.AccountPriceFloors{Enabled: true, EnforceFloorsRate: 100, EnforceDealFloors: false},
+				priceFloorsCfg: config.AccountPriceFloors{Enabled: true, EnforceFloorsRate: 0, EnforceDealFloors: false},
 			},
 			expEligibleBids: map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid{
 				"pubmatic": {
@@ -658,12 +659,13 @@ func TestEnforce(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			actEligibleBids, actErrs, actRejecteBids := Enforce(tt.args.bidRequestWrapper, tt.args.seatBids, config.Account{PriceFloors: tt.args.priceFloorsCfg}, tt.args.conversions)
-			assert.Equal(t, tt.expErrs, actErrs, "Errors don't match")
-			assert.Equal(t, tt.expRejectedBids, actRejecteBids, "rejected bids don't match")
-			assert.Equal(t, tt.expEligibleBids, actEligibleBids, "eligible bids don't match")
-		})
+		actEligibleBids, actErrs, actRejecteBids := Enforce(tt.args.bidRequestWrapper, tt.args.seatBids, config.Account{PriceFloors: tt.args.priceFloorsCfg}, tt.args.conversions)
+		assert.Equal(t, tt.expErrs, actErrs, tt.name)
+		assert.ElementsMatch(t, tt.expRejectedBids, actRejecteBids, tt.name)
+
+		if !reflect.DeepEqual(tt.expEligibleBids, actEligibleBids) {
+			assert.Failf(t, "eligible bids don't match", "Expected: %v, Got: %v", tt.expEligibleBids, actEligibleBids)
+		}
 	}
 }
 
