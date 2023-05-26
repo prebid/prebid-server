@@ -2,7 +2,6 @@ package usersync
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -125,11 +124,9 @@ func TestParseCorruptedCookieJSON(t *testing.T) {
 }
 
 func TestParseNilSyncMap(t *testing.T) {
-	cookieJSON := json.RawMessage(`malformed`)
-	cookieData := base64.URLEncoding.EncodeToString([]byte(cookieJSON))
 	raw := http.Cookie{
 		Name:  uidCookieName,
-		Value: cookieData,
+		Value: "",
 	}
 	parsed := ParseCookie(&raw)
 	ensureEmptyMap(t, parsed)
