@@ -111,5 +111,5 @@ jobs:
             run: |
                 new_string=$(echo ${{ steps.export_file_changes.outputs.dirs }} | tr -d '"')
                 echo $new_string
-                semgrep --config=./semgrep/rules/adapter/prefer_http_utils.yml $new_string 
+                semgrep --gitlab-sast --config=./semgrep/rules/adapter/prefer_http_utils.yml $new_string 
                                
