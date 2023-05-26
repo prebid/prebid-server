@@ -107,7 +107,6 @@ func jsonifyAuctionObject(ao *analytics.AuctionObject) string {
 		logEntry = &logAuction{
 			Status:               ao.Status,
 			Errors:               ao.Errors,
-			Request:              ao.Request,
 			Response:             ao.Response,
 			Account:              ao.Account,
 			StartTime:            ao.StartTime,

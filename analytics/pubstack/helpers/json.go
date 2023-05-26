@@ -4,16 +4,21 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/analytics"
 )
 
 func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]byte, error) {
 	var logEntry *logAuction
 	if ao != nil {
+		var request *openrtb2.BidRequest
+		if ao.RequestWrapper != nil {
+			request = ao.RequestWrapper.BidRequest
+		}
 		logEntry = &logAuction{
 			Status:               ao.Status,
 			Errors:               ao.Errors,
-			Request:              ao.Request,
+			Request:              request,
 			Response:             ao.Response,
 			Account:              ao.Account,
 			StartTime:            ao.StartTime,

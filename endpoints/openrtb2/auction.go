@@ -182,7 +182,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	if rejectErr := hookexecution.FindFirstRejectOrNil(errL); rejectErr != nil {
-		ao.Request = req.BidRequest
+		ao.RequestWrapper = req
 		labels, ao = rejectAuctionRequest(*rejectErr, w, hookExecutor, req.BidRequest, account, labels, ao)
 		return
 	}
@@ -236,7 +236,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		TCF2Config:                 tcf2Config,
 	}
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
-	ao.Request = req.BidRequest
 	ao.RequestWrapper = req
 	ao.Account = account
 	var response *openrtb2.BidResponse

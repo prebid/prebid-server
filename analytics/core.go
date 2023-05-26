@@ -25,7 +25,6 @@ type PBSAnalyticsModule interface {
 type AuctionObject struct {
 	Status               int
 	Errors               []error
-	Request              *openrtb2.BidRequest
 	Response             *openrtb2.BidResponse
 	Account              *config.Account
 	StartTime            time.Time
