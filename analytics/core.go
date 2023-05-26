@@ -43,8 +43,8 @@ type AmpObject struct {
 	Origin               string
 	StartTime            time.Time
 	HookExecutionOutcome []hookexecution.StageOutcome
-	SeatNonBid           []openrtb_ext.SeatNonBid    `json:"-"`
-	RequestWrapper       *openrtb_ext.RequestWrapper `json:"-"`
+	SeatNonBid           []openrtb_ext.SeatNonBid
+	RequestWrapper       *openrtb_ext.RequestWrapper
 }
 
 // Loggable object of a transaction at /openrtb2/video endpoint
@@ -56,8 +56,8 @@ type VideoObject struct {
 	VideoRequest   *openrtb_ext.BidRequestVideo
 	VideoResponse  *openrtb_ext.BidResponseVideo
 	StartTime      time.Time
-	SeatNonBid     []openrtb_ext.SeatNonBid    `json:"-"`
-	RequestWrapper *openrtb_ext.RequestWrapper `json:"-"`
+	SeatNonBid     []openrtb_ext.SeatNonBid
+	RequestWrapper *openrtb_ext.RequestWrapper
 }
 
 // Loggable object of a transaction at /setuid
