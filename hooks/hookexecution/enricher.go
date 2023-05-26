@@ -61,6 +61,7 @@ func EnrichExtBidResponse(
 	if ext != nil {
 		response, err = jsonpatch.MergePatch(ext, response)
 	}
+
 	return response, warnings, err
 }
 
