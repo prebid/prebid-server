@@ -202,6 +202,14 @@ func mergeUser(v *openrtb2.User, overrideJSON json.RawMessage) error {
 	*v = *ortb.CloneUser(v)
 
 	// Track EXTs
+	//Question: should we track all exts in user? Here is a list of all exts:
+	//user.ext - tracked
+	//user.geo.ext - tracked
+	//user.data[].ext
+	//user.data[].segment[].ext
+	//user.aid[].ext
+	//user.aid[].uid[].ext
+
 	var ext, extGeo extMerger
 	ext.Track(&v.Ext)
 	if v.Geo != nil {
@@ -277,6 +285,8 @@ func mergeSite(v *openrtb2.Site, overrideJSON json.RawMessage, bidderName string
 	*v = *ortb.CloneSite(v)
 
 	// Track EXTs
+	// site.data[].ext
+	// site.data[].segment[].ext
 	var ext, extPublisher, extContent, extContentProducer, extContentNetwork, extContentChannel extMerger
 	ext.Track(&v.Ext)
 	if v.Publisher != nil {
@@ -385,6 +395,8 @@ func mergeApp(v *openrtb2.App, overrideJSON json.RawMessage) error {
 	*v = *ortb.CloneApp(v)
 
 	// Track EXTs
+	// app.data[].ext
+	// app.data[].segment[].ext
 	var ext, extPublisher, extContent, extContentProducer, extContentNetwork, extContentChannel extMerger
 	ext.Track(&v.Ext)
 	if v.Publisher != nil {

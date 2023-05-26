@@ -17,6 +17,8 @@ var (
 // extMerger assists in tracking and merging changes to extension json after
 // unmarshalling override json on top of an existing OpenRTB object.
 type extMerger struct {
+	// wow! It's really tricky to understand e.ext will change after unmarshal one level upper because it's a pointer.
+	// this is applicable for all sub-extensions, maybe add a comment about it?
 	ext      *json.RawMessage
 	snapshot json.RawMessage
 }
