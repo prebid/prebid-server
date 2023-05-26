@@ -114,4 +114,10 @@ jobs:
                     file=$(echo "$obj" | jq .'file')
                     start_line=$(echo "$obj" | jq .start)
                     end_line=$(echo "$obj" | jq .end)
-                fi
+                    message=$(echo "$obj" | jq .message)
+  
+                    echo "${file}"
+                    echo "${start_line}"
+                    echo "${end_line}"
+                    echo "${message}"
+                done
