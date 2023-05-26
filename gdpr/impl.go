@@ -132,12 +132,14 @@ func (p *permissionsImpl) defaultPermissions() AuctionPermissions {
 
 // resolveVendorID gets the vendor ID for the specified bidder from either the alias GVL IDs
 // provided in the request or from the bidder configs loaded at startup
-func (p *permissionsImpl) resolveVendorID(bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (uint16, bool) {
-	if id, ok := p.aliasGVLIDs[string(bidder)]; ok {
+func (p *permissionsImpl) resolveVendorID(bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (id uint16, ok bool) {
+	if id, ok = p.aliasGVLIDs[string(bidder)]; ok {
 		return id, ok
 	}
 
-	return p.vendorIDs[bidderCoreName]
+	id, ok = p.vendorIDs[bidderCoreName]
+
+	return id, ok
 }
 
 // allowSync computes cookie sync activity legal basis for a given bidder using the enforcement

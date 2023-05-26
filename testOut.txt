@@ -1,0 +1,259 @@
+FAIL	github.com/prebid/prebid-server [build failed]
+ok  	github.com/prebid/prebid-server/account	0.138s
+ok  	github.com/prebid/prebid-server/adapters	0.195s
+ok  	github.com/prebid/prebid-server/adapters/33across	0.236s
+ok  	github.com/prebid/prebid-server/adapters/aax	0.422s
+ok  	github.com/prebid/prebid-server/adapters/aceex	0.363s
+ok  	github.com/prebid/prebid-server/adapters/acuityads	0.297s
+?   	github.com/prebid/prebid-server/adapters/adapterstest	[no test files]
+ok  	github.com/prebid/prebid-server/adapters/adf	0.437s
+ok  	github.com/prebid/prebid-server/adapters/adgeneration	0.476s
+ok  	github.com/prebid/prebid-server/adapters/adhese	0.567s
+ok  	github.com/prebid/prebid-server/adapters/adkernel	0.422s
+ok  	github.com/prebid/prebid-server/adapters/adkernelAdn	0.551s
+ok  	github.com/prebid/prebid-server/adapters/adman	0.617s
+ok  	github.com/prebid/prebid-server/adapters/admixer	0.513s
+ok  	github.com/prebid/prebid-server/adapters/adnuntius	0.520s
+ok  	github.com/prebid/prebid-server/adapters/adocean	0.528s
+ok  	github.com/prebid/prebid-server/adapters/adoppler	0.522s
+ok  	github.com/prebid/prebid-server/adapters/adot	0.571s
+ok  	github.com/prebid/prebid-server/adapters/adpone	0.447s
+ok  	github.com/prebid/prebid-server/adapters/adprime	0.573s
+ok  	github.com/prebid/prebid-server/adapters/adrino	0.521s
+ok  	github.com/prebid/prebid-server/adapters/adsinteractive	0.573s
+ok  	github.com/prebid/prebid-server/adapters/adtarget	0.500s
+ok  	github.com/prebid/prebid-server/adapters/adtelligent	0.516s
+ok  	github.com/prebid/prebid-server/adapters/adtrgtme	0.524s
+ok  	github.com/prebid/prebid-server/adapters/advangelists	0.606s
+ok  	github.com/prebid/prebid-server/adapters/adview	0.632s
+ok  	github.com/prebid/prebid-server/adapters/adxcg	0.465s
+ok  	github.com/prebid/prebid-server/adapters/adyoulike	0.574s
+ok  	github.com/prebid/prebid-server/adapters/aja	0.452s
+ok  	github.com/prebid/prebid-server/adapters/algorix	0.528s
+ok  	github.com/prebid/prebid-server/adapters/amx	0.497s
+ok  	github.com/prebid/prebid-server/adapters/apacdex	0.553s
+ok  	github.com/prebid/prebid-server/adapters/applogy	0.434s
+ok  	github.com/prebid/prebid-server/adapters/appnexus	0.530s
+ok  	github.com/prebid/prebid-server/adapters/appush	0.561s
+ok  	github.com/prebid/prebid-server/adapters/audienceNetwork	0.550s
+ok  	github.com/prebid/prebid-server/adapters/automatad	0.571s
+ok  	github.com/prebid/prebid-server/adapters/avocet	0.498s
+ok  	github.com/prebid/prebid-server/adapters/axis	0.539s
+ok  	github.com/prebid/prebid-server/adapters/axonix	0.487s
+ok  	github.com/prebid/prebid-server/adapters/beachfront	0.521s
+ok  	github.com/prebid/prebid-server/adapters/beintoo	0.578s
+ok  	github.com/prebid/prebid-server/adapters/between	0.521s
+ok  	github.com/prebid/prebid-server/adapters/beyondmedia	0.460s
+ok  	github.com/prebid/prebid-server/adapters/bidmachine	0.483s
+ok  	github.com/prebid/prebid-server/adapters/bidmyadz	0.552s
+ok  	github.com/prebid/prebid-server/adapters/bidscube	0.619s
+ok  	github.com/prebid/prebid-server/adapters/bidstack	0.559s
+ok  	github.com/prebid/prebid-server/adapters/bizzclick	0.492s
+ok  	github.com/prebid/prebid-server/adapters/bliink	0.605s
+ok  	github.com/prebid/prebid-server/adapters/blue	0.474s
+ok  	github.com/prebid/prebid-server/adapters/bmtm	0.555s
+ok  	github.com/prebid/prebid-server/adapters/boldwin	0.535s
+ok  	github.com/prebid/prebid-server/adapters/brave	0.518s
+ok  	github.com/prebid/prebid-server/adapters/brightroll	0.525s
+ok  	github.com/prebid/prebid-server/adapters/ccx	0.524s
+ok  	github.com/prebid/prebid-server/adapters/coinzilla	0.485s
+ok  	github.com/prebid/prebid-server/adapters/colossus	0.504s
+ok  	github.com/prebid/prebid-server/adapters/compass	0.535s
+ok  	github.com/prebid/prebid-server/adapters/connectad	0.601s
+ok  	github.com/prebid/prebid-server/adapters/consumable	0.594s
+ok  	github.com/prebid/prebid-server/adapters/conversant	0.460s
+ok  	github.com/prebid/prebid-server/adapters/cpmstar	0.535s
+ok  	github.com/prebid/prebid-server/adapters/criteo	0.557s
+ok  	github.com/prebid/prebid-server/adapters/cwire	0.518s
+ok  	github.com/prebid/prebid-server/adapters/datablocks	0.527s
+ok  	github.com/prebid/prebid-server/adapters/decenterads	0.524s
+ok  	github.com/prebid/prebid-server/adapters/deepintent	0.534s
+ok  	github.com/prebid/prebid-server/adapters/definemedia	0.499s
+ok  	github.com/prebid/prebid-server/adapters/dianomi	0.525s
+ok  	github.com/prebid/prebid-server/adapters/dmx	0.586s
+ok  	github.com/prebid/prebid-server/adapters/e_volution	0.530s
+ok  	github.com/prebid/prebid-server/adapters/emtv	0.497s
+ok  	github.com/prebid/prebid-server/adapters/emx_digital	0.563s
+ok  	github.com/prebid/prebid-server/adapters/engagebdr	0.657s
+ok  	github.com/prebid/prebid-server/adapters/eplanning	0.456s
+ok  	github.com/prebid/prebid-server/adapters/epom	0.535s
+ok  	github.com/prebid/prebid-server/adapters/flipp	0.530s
+ok  	github.com/prebid/prebid-server/adapters/freewheelssp	0.436s
+ok  	github.com/prebid/prebid-server/adapters/frvradn	0.508s
+ok  	github.com/prebid/prebid-server/adapters/gamma	0.540s
+ok  	github.com/prebid/prebid-server/adapters/gamoshi	0.525s
+ok  	github.com/prebid/prebid-server/adapters/globalsun	0.563s
+ok  	github.com/prebid/prebid-server/adapters/grid	0.396s
+ok  	github.com/prebid/prebid-server/adapters/gumgum	0.470s
+ok  	github.com/prebid/prebid-server/adapters/huaweiads	0.500s
+ok  	github.com/prebid/prebid-server/adapters/imds	0.518s
+ok  	github.com/prebid/prebid-server/adapters/impactify	0.589s
+ok  	github.com/prebid/prebid-server/adapters/improvedigital	0.541s
+ok  	github.com/prebid/prebid-server/adapters/infytv	0.565s
+ok  	github.com/prebid/prebid-server/adapters/inmobi	0.479s
+ok  	github.com/prebid/prebid-server/adapters/interactiveoffers	0.559s
+ok  	github.com/prebid/prebid-server/adapters/invibes	0.524s
+ok  	github.com/prebid/prebid-server/adapters/iqzone	0.526s
+ok  	github.com/prebid/prebid-server/adapters/ix	0.527s
+ok  	github.com/prebid/prebid-server/adapters/jixie	0.478s
+ok  	github.com/prebid/prebid-server/adapters/kargo	0.527s
+ok  	github.com/prebid/prebid-server/adapters/kayzen	0.491s
+ok  	github.com/prebid/prebid-server/adapters/kidoz	0.532s
+ok  	github.com/prebid/prebid-server/adapters/kiviads	0.586s
+ok  	github.com/prebid/prebid-server/adapters/krushmedia	0.618s
+ok  	github.com/prebid/prebid-server/adapters/kubient	0.473s
+ok  	github.com/prebid/prebid-server/adapters/limelightDigital	0.508s
+ok  	github.com/prebid/prebid-server/adapters/lockerdome	0.537s
+ok  	github.com/prebid/prebid-server/adapters/logan	0.521s
+ok  	github.com/prebid/prebid-server/adapters/logicad	0.530s
+ok  	github.com/prebid/prebid-server/adapters/lunamedia	0.518s
+ok  	github.com/prebid/prebid-server/adapters/madvertise	0.574s
+ok  	github.com/prebid/prebid-server/adapters/marsmedia	0.566s
+ok  	github.com/prebid/prebid-server/adapters/medianet	0.608s
+ok  	github.com/prebid/prebid-server/adapters/mgid	0.439s
+ok  	github.com/prebid/prebid-server/adapters/mobfoxpb	0.551s
+ok  	github.com/prebid/prebid-server/adapters/mobilefuse	0.503s
+ok  	github.com/prebid/prebid-server/adapters/nanointeractive	0.517s
+ok  	github.com/prebid/prebid-server/adapters/nextmillennium	0.540s
+ok  	github.com/prebid/prebid-server/adapters/ninthdecimal	0.543s
+ok  	github.com/prebid/prebid-server/adapters/nobid	0.529s
+ok  	github.com/prebid/prebid-server/adapters/onetag	0.542s
+ok  	github.com/prebid/prebid-server/adapters/openweb	0.560s
+ok  	github.com/prebid/prebid-server/adapters/openx	0.548s
+ok  	github.com/prebid/prebid-server/adapters/operaads	0.548s
+ok  	github.com/prebid/prebid-server/adapters/orbidder	0.506s
+ok  	github.com/prebid/prebid-server/adapters/outbrain	0.533s
+ok  	github.com/prebid/prebid-server/adapters/pangle	0.527s
+ok  	github.com/prebid/prebid-server/adapters/pubmatic	0.607s
+ok  	github.com/prebid/prebid-server/adapters/pubnative	0.478s
+ok  	github.com/prebid/prebid-server/adapters/pulsepoint	0.487s
+ok  	github.com/prebid/prebid-server/adapters/pwbid	0.569s
+ok  	github.com/prebid/prebid-server/adapters/revcontent	0.450s
+ok  	github.com/prebid/prebid-server/adapters/rhythmone	0.515s
+ok  	github.com/prebid/prebid-server/adapters/richaudience	0.559s
+ok  	github.com/prebid/prebid-server/adapters/rtbhouse	0.421s
+ok  	github.com/prebid/prebid-server/adapters/rubicon	0.520s
+ok  	github.com/prebid/prebid-server/adapters/sa_lunamedia	0.482s
+ok  	github.com/prebid/prebid-server/adapters/seedingAlliance	0.507s
+ok  	github.com/prebid/prebid-server/adapters/sharethrough	0.469s
+ok  	github.com/prebid/prebid-server/adapters/silvermob	0.477s
+ok  	github.com/prebid/prebid-server/adapters/smaato	0.580s
+ok  	github.com/prebid/prebid-server/adapters/smartadserver	0.461s
+ok  	github.com/prebid/prebid-server/adapters/smarthub	0.564s
+ok  	github.com/prebid/prebid-server/adapters/smartrtb	0.438s
+ok  	github.com/prebid/prebid-server/adapters/smartyads	0.522s
+ok  	github.com/prebid/prebid-server/adapters/smilewanted	0.601s
+ok  	github.com/prebid/prebid-server/adapters/sonobi	0.565s
+ok  	github.com/prebid/prebid-server/adapters/sovrn	0.479s
+ok  	github.com/prebid/prebid-server/adapters/sspBC	0.491s
+ok  	github.com/prebid/prebid-server/adapters/stroeerCore	0.488s
+ok  	github.com/prebid/prebid-server/adapters/suntContent	0.441s
+ok  	github.com/prebid/prebid-server/adapters/taboola	0.510s
+ok  	github.com/prebid/prebid-server/adapters/tappx	0.582s
+ok  	github.com/prebid/prebid-server/adapters/telaria	0.510s
+ok  	github.com/prebid/prebid-server/adapters/trafficgate	0.735s
+ok  	github.com/prebid/prebid-server/adapters/triplelift	0.553s
+ok  	github.com/prebid/prebid-server/adapters/triplelift_native	0.580s
+ok  	github.com/prebid/prebid-server/adapters/ucfunnel	0.567s
+ok  	github.com/prebid/prebid-server/adapters/undertone	0.616s
+ok  	github.com/prebid/prebid-server/adapters/unicorn	0.545s
+ok  	github.com/prebid/prebid-server/adapters/unruly	0.514s
+ok  	github.com/prebid/prebid-server/adapters/videobyte	0.485s
+ok  	github.com/prebid/prebid-server/adapters/videoheroes	0.494s
+ok  	github.com/prebid/prebid-server/adapters/vidoomy	0.479s
+ok  	github.com/prebid/prebid-server/adapters/visiblemeasures	0.502s
+ok  	github.com/prebid/prebid-server/adapters/visx	0.574s
+ok  	github.com/prebid/prebid-server/adapters/vrtcal	0.596s
+ok  	github.com/prebid/prebid-server/adapters/yahoossp	0.496s
+ok  	github.com/prebid/prebid-server/adapters/yeahmobi	0.460s
+ok  	github.com/prebid/prebid-server/adapters/yieldlab	0.497s
+ok  	github.com/prebid/prebid-server/adapters/yieldmo	0.526s
+ok  	github.com/prebid/prebid-server/adapters/yieldone	0.583s
+ok  	github.com/prebid/prebid-server/adapters/zeroclickfraud	0.566s
+ok  	github.com/prebid/prebid-server/adapters/zeta_global_ssp	0.610s
+ok  	github.com/prebid/prebid-server/adservertargeting	0.445s
+ok  	github.com/prebid/prebid-server/amp	0.546s
+?   	github.com/prebid/prebid-server/analytics	[no test files]
+?   	github.com/prebid/prebid-server/analytics/clients	[no test files]
+ok  	github.com/prebid/prebid-server/analytics/config	0.486s
+ok  	github.com/prebid/prebid-server/analytics/filesystem	0.528s
+ok  	github.com/prebid/prebid-server/analytics/pubstack	1.866s
+ok  	github.com/prebid/prebid-server/analytics/pubstack/eventchannel	0.447s
+ok  	github.com/prebid/prebid-server/analytics/pubstack/helpers	0.422s
+ok  	github.com/prebid/prebid-server/bidadjustment	0.460s
+ok  	github.com/prebid/prebid-server/config	0.556s
+ok  	github.com/prebid/prebid-server/config/util	0.364s
+ok  	github.com/prebid/prebid-server/currency	0.448s
+FAIL	github.com/prebid/prebid-server/endpoints [build failed]
+ok  	github.com/prebid/prebid-server/endpoints/events	0.470s
+ok  	github.com/prebid/prebid-server/endpoints/info	0.444s
+FAIL	github.com/prebid/prebid-server/endpoints/openrtb2 [build failed]
+ok  	github.com/prebid/prebid-server/errortypes	0.455s
+FAIL	github.com/prebid/prebid-server/exchange [build failed]
+?   	github.com/prebid/prebid-server/exchange/entities	[no test files]
+ok  	github.com/prebid/prebid-server/experiment/adscert	0.356s
+ok  	github.com/prebid/prebid-server/firstpartydata	0.340s
+--- FAIL: TestEnforce (0.00s)
+    enforce_test.go:665: 
+        	Error Trace:	/Users/gcarreongutierrez/newgo/src/github.com/prebid/prebid-server/floors/enforce_test.go:665
+        	Error:      	rejected bids don't match
+        	Test:       	TestEnforce
+FAIL
+FAIL	github.com/prebid/prebid-server/floors	0.335s
+FAIL	github.com/prebid/prebid-server/gdpr [build failed]
+ok  	github.com/prebid/prebid-server/hooks	0.413s
+ok  	github.com/prebid/prebid-server/hooks/hookanalytics	0.337s
+ok  	github.com/prebid/prebid-server/hooks/hookexecution	0.394s
+?   	github.com/prebid/prebid-server/hooks/hookstage	[no test files]
+ok  	github.com/prebid/prebid-server/macros	0.234s
+ok  	github.com/prebid/prebid-server/metrics	0.277s
+ok  	github.com/prebid/prebid-server/metrics/config	0.270s
+ok  	github.com/prebid/prebid-server/metrics/prometheus	0.996s
+ok  	github.com/prebid/prebid-server/modules	0.378s
+?   	github.com/prebid/prebid-server/modules/moduledeps	[no test files]
+ok  	github.com/prebid/prebid-server/modules/prebid/ortb2blocking	0.412s
+ok  	github.com/prebid/prebid-server/openrtb_ext	0.493s
+ok  	github.com/prebid/prebid-server/ortb	0.338s
+?   	github.com/prebid/prebid-server/pbs	[no test files]
+ok  	github.com/prebid/prebid-server/prebid_cache_client	0.370s
+ok  	github.com/prebid/prebid-server/privacy	0.359s
+ok  	github.com/prebid/prebid-server/privacy/ccpa	0.291s
+ok  	github.com/prebid/prebid-server/privacy/gdpr	0.405s
+ok  	github.com/prebid/prebid-server/privacy/gpp	0.340s
+ok  	github.com/prebid/prebid-server/privacy/lmt	0.364s
+FAIL	github.com/prebid/prebid-server/router [build failed]
+ok  	github.com/prebid/prebid-server/router/aspects	0.354s
+ok  	github.com/prebid/prebid-server/schain	0.381s
+ok  	github.com/prebid/prebid-server/server	0.270s
+ok  	github.com/prebid/prebid-server/server/ssl	0.271s
+ok  	github.com/prebid/prebid-server/stored_requests	0.269s
+ok  	github.com/prebid/prebid-server/stored_requests/backends/db_fetcher	0.289s
+ok  	github.com/prebid/prebid-server/stored_requests/backends/db_provider	0.343s
+ok  	github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher	0.333s
+ok  	github.com/prebid/prebid-server/stored_requests/backends/file_fetcher	0.372s
+ok  	github.com/prebid/prebid-server/stored_requests/backends/http_fetcher	0.376s
+?   	github.com/prebid/prebid-server/stored_requests/caches/cachestest	[no test files]
+ok  	github.com/prebid/prebid-server/stored_requests/caches/memory	0.400s
+?   	github.com/prebid/prebid-server/stored_requests/caches/nil_cache	[no test files]
+ok  	github.com/prebid/prebid-server/stored_requests/config	0.443s
+ok  	github.com/prebid/prebid-server/stored_requests/events	0.358s
+ok  	github.com/prebid/prebid-server/stored_requests/events/api	0.466s
+ok  	github.com/prebid/prebid-server/stored_requests/events/database	0.982s
+ok  	github.com/prebid/prebid-server/stored_requests/events/http	0.395s
+ok  	github.com/prebid/prebid-server/stored_responses	0.429s
+ok  	github.com/prebid/prebid-server/usersync	0.447s
+ok  	github.com/prebid/prebid-server/util/httputil	0.370s
+ok  	github.com/prebid/prebid-server/util/iosutil	0.466s
+ok  	github.com/prebid/prebid-server/util/iputil	0.468s
+ok  	github.com/prebid/prebid-server/util/jsonutil	0.452s
+ok  	github.com/prebid/prebid-server/util/maputil	0.448s
+?   	github.com/prebid/prebid-server/util/ptrutil	[no test files]
+?   	github.com/prebid/prebid-server/util/randomutil	[no test files]
+ok  	github.com/prebid/prebid-server/util/sliceutil	0.448s
+ok  	github.com/prebid/prebid-server/util/stringutil	0.372s
+ok  	github.com/prebid/prebid-server/util/task	0.465s
+?   	github.com/prebid/prebid-server/util/timeutil	[no test files]
+?   	github.com/prebid/prebid-server/util/uuidutil	[no test files]
+ok  	github.com/prebid/prebid-server/version	0.339s
+FAIL
+~/newgo/src/github.com/prebid/prebid-server
