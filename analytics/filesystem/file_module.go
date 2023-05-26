@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/chasex/glog"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/analytics"
 )
 
@@ -104,9 +105,14 @@ func NewFileLogger(filename string) (analytics.PBSAnalyticsModule, error) {
 func jsonifyAuctionObject(ao *analytics.AuctionObject) string {
 	var logEntry *logAuction
 	if ao != nil {
+		var request *openrtb2.BidRequest
+		if ao.RequestWrapper != nil {
+			request = ao.RequestWrapper.BidRequest
+		}
 		logEntry = &logAuction{
 			Status:               ao.Status,
 			Errors:               ao.Errors,
+			Request:              request,
 			Response:             ao.Response,
 			Account:              ao.Account,
 			StartTime:            ao.StartTime,
