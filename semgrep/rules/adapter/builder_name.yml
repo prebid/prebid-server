@@ -1,0 +1,22 @@
+rules:
+  - id: Builder name check
+    languages: [go]
+    message: Recommended to rename $BUILDER to Adapter
+    severity: WARNING
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+                ...
+                ... := &$BUILDER{...}
+                ...
+              }
+          - pattern-inside: |
+              func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+                ...
+                return &$BUILDER{...}, ...
+              }
+      - focus-metavariable: $BUILDER
+      - metavariable-regex:
+          metavariable: "$BUILDER"
+          regex: "\\w+Adapter|Adapter\\w+|(?!.*Adapter).*$"
