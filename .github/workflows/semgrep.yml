@@ -33,7 +33,7 @@ jobs:
                 fi
                 echo "commit=${commit}" >> $GITHUB_OUTPUT
 
-        -   name: Compute file change details
+        -   name: Compute file changes
             id: compute_file_changes
             uses: actions/github-script@v4
             with:
@@ -96,8 +96,22 @@ jobs:
                     }
                     return JSON.stringify({hasChanges: Object.keys(stats).length != 0, stats: stats, dirs: dirs.join(" ")})
 
-        -   name: Use stats output
+        -   name: Export file changes
+            id: export_file_changes
             run: |
-                echo "${{ steps.compute_file_changes.outputs.result }}"
-                echo "${{ steps.compute_file_changes.outputs.result.dirs }}"
-        
+                dirs=$(echo '${{ steps.compute_file_changes.outputs.result }}' | jq .dirs)
+                hasChanges=$(echo '${{ steps.compute_file_changes.outputs.result }}' | jq .hasChanges)
+                echo "dirs=${dirs}" >> $GITHUB_OUTPUT
+                echo "hasChanges=${hasChanges}" >> $GITHUB_OUTPUT
+                    
+        -   name: Run semgrep tests
+            if: contains(steps.export_file_changes.outputs.hasChanges, 'true')
+            run: |
+                outputs=$(semgrep --gitlab-sast --config=./semgrep/rules/adapter/prefer_http_utils.yml ${{ steps.export_file_changes.outputs.dirs }} | jq '[.vulnerabilities[] | {"file": .location.file, "start": .location.start_line, "end": .location.end_line, "message": .message}]')
+                cleaned_outputs=$(echo "$outputs" | tr -d '\n')
+                parsed_outputs=$(echo "$cleaned_outputs" | jq -c '.[]')
+                echo "$parsed_outputs" | while IFS= read -r obj; do
+                    file=$(echo "$obj" | jq .'file')
+                    start_line=$(echo "$obj" | jq .start)
+                    end_line=$(echo "$obj" | jq .end)
+                fi
