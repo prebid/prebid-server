@@ -158,5 +158,7 @@ func buildEndpoint(aaxUrl, hostUrl string) string {
 	// urlObject.RawQuery = values.Encode()
 	// urlObject.RawQuery = values.Encode()
 	// urlObject.RawQuery = values.Encode()
+	// urlObject.RawQuery = values.Encode()
+	// urlObject.RawQuery = values.Encode()
 	return urlObject.String()
 }
