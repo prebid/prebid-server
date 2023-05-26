@@ -6,18 +6,16 @@ jobs:
   semgrep-check:
     runs-on: ubuntu-latest
     steps:
-        -   name: install semgrep
-            run: pip3 install semgrep==1.22.0
-        
-        -   name: check semgrep version
-            run: semgrep --version
+        -   name: Install semgrep
+            run: |
+                pip3 install semgrep==1.22.0
+                semgrep --version
                 
-        -   name: install jq
-            run: pip3 install jq==1.4.1
+        -   name: Install jq
+            run: |
+                pip3 install jq==1.4.1
+                jq --version
                 
-        -   name: check jq version
-            run: jq --version
-
         -   name: Checkout repo
             uses: actions/checkout@v3
             with:
