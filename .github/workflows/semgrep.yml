@@ -110,6 +110,6 @@ jobs:
                 DIRS: ${{ steps.export_file_changes.outputs.dirs }}
             run: |
                 new_string=$(echo ${{ steps.export_file_changes.outputs.dirs }} | tr -d '"')
-                echo $new_string
+                echo "new_string:" + $new_string
                 semgrep --gitlab-sast --config=./semgrep/rules/adapter/prefer_http_utils.yml $new_string 
                                
