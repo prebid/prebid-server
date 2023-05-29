@@ -12,7 +12,6 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/util/httputil"
 )
 
 type bidType struct {
@@ -101,7 +100,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 }
 
 func (a *adapter) MakeBids(openRTBRequest *openrtb2.BidRequest, requestToBidder *adapters.RequestData, bidderRawResponse *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if httputil.IsResponseStatusCodeNoContent(bidderRawResponse) {
+	if adapters.IsResponseStatusCodeNoContent(bidderRawResponse) {
 		return nil, nil
 	}
 
@@ -111,7 +110,7 @@ func (a *adapter) MakeBids(openRTBRequest *openrtb2.BidRequest, requestToBidder 
 		}}
 	}
 
-	if err := httputil.CheckResponseStatusCodeForErrors(bidderRawResponse); err != nil {
+	if err := adapters.CheckResponseStatusCodeForErrors(bidderRawResponse); err != nil {
 		return nil, []error{err}
 	}
 
