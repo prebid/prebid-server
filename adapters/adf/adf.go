@@ -12,6 +12,8 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
+// test
+
 type adapter struct {
 	endpoint string
 }
@@ -153,3 +155,26 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 		Message: fmt.Sprintf("Failed to parse impression \"%s\" mediatype", bid.ImpID),
 	}
 }
+
+// test
+// test
+// test
+// test
+// test
+// test
+// test
+// test
+// test
+// test
+// test
+// test
+// test
+// test
+// test
+// test
+// test
+// test
+// test
+// test
+// test
+// test

@@ -33,7 +33,7 @@ jobs:
                 fi
                 echo "commit=${commit}" >> $GITHUB_OUTPUT
 
-        -   name: Compute file change details
+        -   name: Compute file changes
             id: compute_file_changes
             uses: actions/github-script@v4
             with:
@@ -43,7 +43,6 @@ jobs:
                     const ref = "${{ steps.determine_commit.outputs.commit }}"
                     const { owner, repo } = context.repo
                     let stats = {}
-                    let dirs = []
                     
                     const response = await github.repos.getCommit({owner,repo,ref})
                     if (response != null && response.status === 200) {
@@ -82,10 +81,6 @@ jobs:
                                     if (lines[i].startsWith("+")) {
                                         if (stats[filename] === undefined) {
                                             stats[filename] = [];
-                                            let dir = "./adapters/"+fileNameList[1]+"/*"
-                                            if (!dirs.includes(dir)) {
-                                                dirs.push(dir)
-                                            }
                                         }
                                         stats[filename].push(lineNumber)
                                     }
@@ -94,9 +89,39 @@ jobs:
                             }
                         }
                     }
-                    return JSON.stringify({hasChanges: Object.keys(stats).length != 0, stats: stats, dirs: dirs.join(" ")})
+                    const files = Object.keys(stats).join(" ")
+                    return JSON.stringify({hasChanges: files.length != 0, stats: stats, files: files})
 
-        -   name: Use stats output
+        -   name: Export file changes
+            id: export_file_changes
             run: |
-                echo "${{ steps.compute_file_changes.outputs.result }}"
-                echo "${{ steps.compute_file_changes.outputs }}"
+                files=$(echo '${{ steps.compute_file_changes.outputs.result }}' | jq .files)
+                hasChanges=$(echo '${{ steps.compute_file_changes.outputs.result }}' | jq .hasChanges)
+                echo "files=${files}" >> $GITHUB_OUTPUT
+                echo "hasChanges=${hasChanges}" >> $GITHUB_OUTPUT
+                    
+        -   name: Run semgrep tests
+            if: contains(steps.export_file_changes.outputs.hasChanges, 'true')
+            run: |
+                new_string=$(echo ${{ steps.export_file_changes.outputs.files }} | tr -d '"')
+                output=$(semgrep --gitlab-sast --config=./semgrep/rules/adapter/prefer_http_utils.yml $new_string | jq '[.vulnerabilities[] | {"file": .location.file, "start": .location.start_line, "end": .location.end_line, "message": .message}]')
+                cleaned_output=$(echo "$output" | tr -d '\n')
+                echo "cleaned_output: ${cleaned_output}"
+                
+                parsed_output=$(echo "$cleaned_output" | jq -c '.[]')
+                echo "parsed_output: ${parsed_output}"
+                echo "$parsed_output" | while IFS= read -r obj; do
+                    echo "$obj"
+                    file=$(echo "$obj" | jq .'file')
+                    start_line=$(echo "$obj" | jq .start)
+                    end_line=$(echo "$obj" | jq .end)
+                    message=$(echo "$obj" | jq .message)
+
+                    echo "${file}"
+                    echo "${start_line}"
+                    echo "${end_line}"
+                    echo "${message}"
+                    echo "\n\n\n\n\n"
+                done
+
+                               
