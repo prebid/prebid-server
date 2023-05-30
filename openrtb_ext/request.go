@@ -79,7 +79,8 @@ type ExtRequestPrebid struct {
 	// any other value or an empty string disables trace output at all.
 	Trace string `json:"trace,omitempty"`
 
-	AdServerTargeting []AdServerTarget `json:"adservertargeting,omitempty"`
+	BidAdjustments    *ExtRequestPrebidBidAdjustments `json:"bidadjustments,omitempty"`
+	AdServerTargeting []AdServerTarget                `json:"adservertargeting,omitempty"`
 }
 
 type AdServerTarget struct {
@@ -150,6 +151,32 @@ type ExtRequestPrebidCacheBids struct {
 // ExtRequestPrebidCacheVAST defines the contract for bidrequest.ext.prebid.cache.vastxml
 type ExtRequestPrebidCacheVAST struct {
 	ReturnCreative *bool `json:"returnCreative,omitempty"`
+}
+
+// ExtRequestPrebidBidAdjustments defines the contract for bidrequest.ext.prebid.bidadjustments
+type ExtRequestPrebidBidAdjustments struct {
+	MediaType MediaType `json:"mediatype,omitempty"`
+}
+
+// AdjustmentsByDealID maps a dealID to a slice of bid adjustments
+type AdjustmentsByDealID map[string][]Adjustment
+
+// MediaType defines contract for bidrequest.ext.prebid.bidadjustments.mediatype
+// BidderName will map to a DealID that will map to a slice of bid adjustments
+type MediaType struct {
+	Banner         map[BidderName]AdjustmentsByDealID `json:"banner,omitempty"`
+	VideoInstream  map[BidderName]AdjustmentsByDealID `json:"video-instream,omitempty"`
+	VideoOutstream map[BidderName]AdjustmentsByDealID `json:"video-outstream,omitempty"`
+	Audio          map[BidderName]AdjustmentsByDealID `json:"audio,omitempty"`
+	Native         map[BidderName]AdjustmentsByDealID `json:"native,omitempty"`
+	WildCard       map[BidderName]AdjustmentsByDealID `json:"*,omitempty"`
+}
+
+// Adjustment defines the object that will be present in the slice of bid adjustments found from MediaType map
+type Adjustment struct {
+	Type     string  `json:"adjtype,omitempty"`
+	Value    float64 `json:"value,omitempty"`
+	Currency string  `json:"currency,omitempty"`
 }
 
 // ExtRequestTargeting defines the contract for bidrequest.ext.prebid.targeting
