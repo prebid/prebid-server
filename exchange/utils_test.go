@@ -4131,7 +4131,6 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 }
 
 func TestGetPrebidMediaTypeForBid(t *testing.T) {
-
 	tests := []struct {
 		description     string
 		inputBid        openrtb2.Bid
@@ -4168,7 +4167,6 @@ func TestGetPrebidMediaTypeForBid(t *testing.T) {
 }
 
 func TestGetMediaTypeForBid(t *testing.T) {
-
 	tests := []struct {
 		description     string
 		inputBid        openrtb2.Bid
