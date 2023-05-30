@@ -733,7 +733,7 @@ func getBidTypeForAdjustments(bidType openrtb_ext.BidType, impID string, imp []o
 func getBidderTmax(ctx context.Context, requestTmaxMS int64, tmaxAdjustments *config.TmaxAdjustments) int64 {
 	if tmaxAdjustments != nil && tmaxAdjustments.Enabled {
 		if deadline, ok := ctx.Deadline(); ok {
-			remainingDurationInMS := int64(time.Until(deadline)) / int64(time.Millisecond)
+			remainingDurationInMS := time.Until(deadline).Milliseconds()
 			return remainingDurationInMS - int64(tmaxAdjustments.BidderNetworkLatencyBuffer) - int64(tmaxAdjustments.PBSResponsePreparationDuration)
 		}
 	}
