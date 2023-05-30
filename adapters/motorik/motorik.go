@@ -12,7 +12,6 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/util/httputil"
 )
 
 type adapter struct {
@@ -113,7 +112,7 @@ func checkResponseStatusCodes(response *adapters.ResponseData) error {
 		}
 	}
 
-	return httputil.CheckResponseStatusCodeForErrors(response)
+	return adapters.CheckResponseStatusCodeForErrors(response)
 }
 
 func (a *adapter) MakeBids(
@@ -121,7 +120,7 @@ func (a *adapter) MakeBids(
 	requestToBidder *adapters.RequestData,
 	bidderRawResponse *adapters.ResponseData,
 ) (bidderResponse *adapters.BidderResponse, errs []error) {
-	if httputil.IsResponseStatusCodeNoContent(bidderRawResponse) {
+	if adapters.IsResponseStatusCodeNoContent(bidderRawResponse) {
 		return nil, nil
 	}
 
