@@ -14,6 +14,13 @@ import (
 	"github.com/prebid/prebid-server/version"
 )
 
+// test
+// test
+// test
+// test
+// test
+// test
+
 var adapterVersion = "10.0"
 
 type adapter struct {

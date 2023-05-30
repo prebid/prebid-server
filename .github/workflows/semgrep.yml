@@ -43,7 +43,6 @@ jobs:
                     const ref = "${{ steps.determine_commit.outputs.commit }}"
                     const { owner, repo } = context.repo
                     let stats = {}
-                    let dirs = []
                     
                     const response = await github.repos.getCommit({owner,repo,ref})
                     if (response != null && response.status === 200) {
@@ -82,10 +81,6 @@ jobs:
                                     if (lines[i].startsWith("+")) {
                                         if (stats[filename] === undefined) {
                                             stats[filename] = [];
-                                            let dir = "./adapters/"+fileNameList[1]+"/*"
-                                            if (!dirs.includes(dir)) {
-                                                dirs.push(dir)
-                                            }
                                         }
                                         stats[filename].push(lineNumber)
                                     }
@@ -94,22 +89,21 @@ jobs:
                             }
                         }
                     }
-                    return JSON.stringify({hasChanges: Object.keys(stats).length != 0, stats: stats, dirs: dirs.join(" ")})
+                    const files = Object.keys(stats).join(" ")
+                    return JSON.stringify({hasChanges: files.length != 0, stats: stats, files: files})
 
         -   name: Export file changes
             id: export_file_changes
             run: |
-                dirs=$(echo '${{ steps.compute_file_changes.outputs.result }}' | jq .dirs)
+                files=$(echo '${{ steps.compute_file_changes.outputs.result }}' | jq .files)
                 hasChanges=$(echo '${{ steps.compute_file_changes.outputs.result }}' | jq .hasChanges)
-                echo "dirs=${dirs}" >> $GITHUB_OUTPUT
+                echo "files=${files}" >> $GITHUB_OUTPUT
                 echo "hasChanges=${hasChanges}" >> $GITHUB_OUTPUT
                     
         -   name: Run semgrep tests
             if: contains(steps.export_file_changes.outputs.hasChanges, 'true')
-            env:
-                DIRS: ${{ steps.export_file_changes.outputs.dirs }}
             run: |
-                new_string=$(echo ${{ steps.export_file_changes.outputs.dirs }} | tr -d '"')
+                new_string=$(echo ${{ steps.export_file_changes.outputs.files }} | tr -d '"')
                 echo "new_string:" + $new_string
                 semgrep --gitlab-sast --config=./semgrep/rules/adapter/prefer_http_utils.yml $new_string 
                                
