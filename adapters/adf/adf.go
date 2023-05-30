@@ -118,6 +118,12 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		// return nil, []error{err}
 		// return nil, []error{err}
 		// return nil, []error{err}
+		// return nil, []error{err}
+		// return nil, []error{err}
+		// return nil, []error{err}
+		// return nil, []error{err}
+		// return nil, []error{err}
+		// return nil, []error{err}
 	}
 
 	var response openrtb2.BidResponse

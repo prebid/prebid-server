@@ -51,10 +51,7 @@ jobs:
                             const { filename, patch } = files[i];
                             const fileNameList = filename.split("/")
                             
-                            if (
-                            filename.endsWith(".go") && !filename.endsWith("_test.go") &&
-                            filename.startsWith("adapters/") && fileNameList.length > 2
-                            ) {
+                            if (filename.endsWith(".go") && !filename.endsWith("_test.go") && filename.startsWith("adapters/") && fileNameList.length > 2) {
                                 const lines = patch.split("\n");
                                 if (lines.length === 1) {
                                 continue;
@@ -105,9 +102,8 @@ jobs:
             if: contains(steps.export_file_changes.outputs.hasChanges, 'true')
             run: |
                 unqouted_string=$(echo ${{ steps.export_file_changes.outputs.files }} | tr -d '"')
-                outputs=$(semgrep --gitlab-sast --config=./semgrep/rules/adapter/prefer_http_utils.yml $unqouted_string | jq '[.vulnerabilities[] | {"file": .location.file, "start": .location.start_line, "end": .location.end_line, "message": (.message | gsub("\\n"; "\n"))}]')
-                echo "semgrep_result=${outputs}" >> $GITHUB_OUTPUT
-
+                outputs=$(semgrep --gitlab-sast --config=./semgrep/rules/adapter/prefer_http_utils.yml $unquoted_string | jq '[.vulnerabilities[] | {"file": .location.file, "start": .location.start_line, "end": .location.end_line, "message": (.message | gsub("\\n"; "\n"))}]')
+                echo "semgrep_result=${outputs}" >> "$GITHUB_OUTPUT"
 
         -   name: Add pull request comment
             if: contains(steps.export_file_changes.outputs.hasChanges, 'true')
