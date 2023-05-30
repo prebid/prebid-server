@@ -110,7 +110,7 @@ jobs:
                 
                 parsed_output=$(echo "$cleaned_output" | jq -c '.[]')
                 echo "parsed_output: ${parsed_output}"
-                echo "$parsed_outputs" | while IFS= read -r obj; do
+                echo "$parsed_output" | while IFS= read -r obj; do
                     echo "$obj"
                     file=$(echo "$obj" | jq .'file')
                     start_line=$(echo "$obj" | jq .start)
