@@ -178,3 +178,5 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 // test
 // test
 // test
+// test
+// test
