@@ -138,7 +138,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 	if len(bidderRequest.BidRequest.Imp) > 0 {
 		// Reducing the amount of time bidders have to compensate for the processing time used by PBS to fetch a stored request (if needed), validate the OpenRTB request and split it into multiple requests sanitized for each bidder.
 		// As well as for the time needed by PBS to prepare the auction response
-		bidderRequest.BidRequest.TMax = getBidderTmax(ctx, bidderRequest.BidRequest.TMax, reqInfo.TmaxAdjustments)
+		bidderRequest.BidRequest.TMax = getBidderTmax(&bidderTmaxCtx{ctx}, bidderRequest.BidRequest.TMax, reqInfo.TmaxAdjustments)
 		reqData, errs = bidder.Bidder.MakeRequests(bidderRequest.BidRequest, reqInfo)
 
 		if len(reqData) == 0 {
@@ -730,11 +730,24 @@ func getBidTypeForAdjustments(bidType openrtb_ext.BidType, impID string, imp []o
 	return string(bidType)
 }
 
-func getBidderTmax(ctx context.Context, requestTmaxMS int64, tmaxAdjustments *config.TmaxAdjustments) int64 {
+type bidderTmaxContext interface {
+	Deadline() (deadline time.Time, ok bool)
+	RemainingDurationMS(deadline time.Time) int64
+}
+type bidderTmaxCtx struct{ ctx context.Context }
+
+func (b *bidderTmaxCtx) RemainingDurationMS(deadline time.Time) int64 {
+	return time.Until(deadline).Milliseconds()
+}
+func (b *bidderTmaxCtx) Deadline() (deadline time.Time, ok bool) {
+	deadline, ok = b.ctx.Deadline()
+	return
+}
+
+func getBidderTmax(ctx bidderTmaxContext, requestTmaxMS int64, tmaxAdjustments *config.TmaxAdjustments) int64 {
 	if tmaxAdjustments != nil && tmaxAdjustments.Enabled {
 		if deadline, ok := ctx.Deadline(); ok {
-			remainingDurationInMS := time.Until(deadline).Milliseconds()
-			return remainingDurationInMS - int64(tmaxAdjustments.BidderNetworkLatencyBuffer) - int64(tmaxAdjustments.PBSResponsePreparationDuration)
+			return ctx.RemainingDurationMS(deadline) - int64(tmaxAdjustments.BidderNetworkLatencyBuffer) - int64(tmaxAdjustments.PBSResponsePreparationDuration)
 		}
 	}
 	return requestTmaxMS

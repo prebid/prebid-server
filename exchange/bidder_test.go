@@ -3121,18 +3121,31 @@ func TestGetBidType(t *testing.T) {
 	}
 }
 
+type mockBidderTmaxCtx struct {
+	startTime, deadline time.Time
+	ok                  bool
+}
+
+func (m *mockBidderTmaxCtx) Deadline() (deadline time.Time, _ bool) {
+	return m.deadline, m.ok
+}
+func (m *mockBidderTmaxCtx) RemainingDurationMS(deadline time.Time) int64 {
+	return deadline.Sub(m.startTime).Milliseconds()
+}
+
 func TestGetBidderTmax(t *testing.T) {
 	var requestTmaxMS int64 = 700
-	deadline := time.Now().Add(time.Duration(requestTmaxMS) * time.Millisecond)
+	requestTmaxNS := requestTmaxMS * int64(time.Millisecond)
 
-	ctx, cancel := context.WithDeadline(context.Background(), deadline)
-	defer cancel()
+	startTime := time.Date(2023, 5, 30, 1, 0, 0, 0, time.UTC)
+	deadline := time.Date(2023, 5, 30, 1, 0, 0, int(requestTmaxNS), time.UTC)
+	ctx := &mockBidderTmaxCtx{startTime: startTime, deadline: deadline, ok: true}
 
 	tmaxAdjustments := &config.TmaxAdjustments{Enabled: true, PBSResponsePreparationDuration: 50, BidderNetworkLatencyBuffer: 10}
 
 	tests := []struct {
 		description     string
-		ctx             context.Context
+		ctx             bidderTmaxContext
 		requestTmax     int64
 		tmaxAdjustments *config.TmaxAdjustments
 	}{
@@ -3144,7 +3157,7 @@ func TestGetBidderTmax(t *testing.T) {
 		},
 		{
 			description:     "returns-requestTmax-when-context-deadline-is-not-set",
-			ctx:             context.Background(),
+			ctx:             &mockBidderTmaxCtx{ok: false},
 			requestTmax:     requestTmaxMS,
 			tmaxAdjustments: tmaxAdjustments,
 		},
@@ -3159,8 +3172,7 @@ func TestGetBidderTmax(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			if _, ok := test.ctx.Deadline(); ok {
 				bidderTmax := getBidderTmax(test.ctx, test.requestTmax, test.tmaxAdjustments)
-				assert.NotZero(t, bidderTmax)
-				assert.Less(t, bidderTmax, test.requestTmax)
+				assert.Equal(t, test.requestTmax-int64(test.tmaxAdjustments.BidderNetworkLatencyBuffer)-int64(test.tmaxAdjustments.PBSResponsePreparationDuration), bidderTmax)
 			} else {
 				assert.Equal(t, test.requestTmax, getBidderTmax(test.ctx, test.requestTmax, test.tmaxAdjustments))
 			}
