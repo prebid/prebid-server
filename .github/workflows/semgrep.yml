@@ -104,6 +104,8 @@ jobs:
             if: contains(steps.export_file_changes.outputs.hasChanges, 'true')
             run: |
                 new_string=$(echo ${{ steps.export_file_changes.outputs.files }} | tr -d '"')
-                echo "new_string:" + $new_string
-                semgrep --gitlab-sast --config=./semgrep/rules/adapter/prefer_http_utils.yml $new_string 
+                output=$(semgrep --gitlab-sast --config=./semgrep/rules/adapter/prefer_http_utils.yml $new_string | {"file": .location.file, "start": .location.start_line, "end": .location.end_line, "message": .message}]')
+                cleaned_outputs=$(echo "$outputs" | tr -d '\n')
+                parsed_outputs=$(echo "$cleaned_outputs" | jq -c '.[]')
+                echo ">>"+ $parsed_outputs
                                
