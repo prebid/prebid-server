@@ -89,12 +89,14 @@ jobs:
                             }
                         }
                     }
-                    return JSON.stringify({stats: stats, files: Object.keys(stats).join(" ")})
+                    const files = Object.keys(stats).join(" ")
+                    return JSON.stringify({hasChanges: files.length != 0, stats: stats, files: files})
 
         -   name: Export file changes
             id: export_file_changes
             run: |
                 files=$(echo '${{ steps.compute_file_changes.outputs.result }}' | jq .files)
+                hasChanges=$(echo '${{ steps.compute_file_changes.outputs.result }}' | jq .hasChanges)
                 echo "files=${files}" >> $GITHUB_OUTPUT
                 echo "hasChanges=${hasChanges}" >> $GITHUB_OUTPUT
                     
