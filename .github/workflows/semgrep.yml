@@ -101,7 +101,7 @@ jobs:
                 echo "hasChanges=${hasChanges}" >> $GITHUB_OUTPUT
                     
         -   name: Run semgrep tests
-            if: contains(steps.export_file_changes.outputs.hasChanges, 'true')
+            if: contains(steps.export_file_changes.outputs.files, '')
             run: |
                 new_string=$(echo ${{ steps.export_file_changes.outputs.files }} | tr -d '"')
                 output=$(semgrep --gitlab-sast --config=./semgrep/rules/adapter/prefer_http_utils.yml $new_string | jq '[.vulnerabilities[] | {"file": .location.file, "start": .location.start_line, "end": .location.end_line, "message": .message}]')
