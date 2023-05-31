@@ -113,7 +113,7 @@ jobs:
                 result-encoding: string
                 script: |
                     const ref = "${{ steps.determine_commit.outputs.commit }}"
-                    const semgrepResult = "${{ steps.run_semgrep_tests.outputs.semgrep_result }}"
+                    const semgrepResult = JSON.parse(${{ steps.run_semgrep_tests.outputs.semgrep_result }})
                     const filesUpdated = ${{ steps.compute_file_changes.outputs.result }}
                     console.log("semgrepResult:", semgrepResult)
                     console.log("filesUpdated:", filesUpdated)
