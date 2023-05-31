@@ -2,6 +2,7 @@ package firstpartydata
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"reflect"
 	"testing"
@@ -521,8 +522,7 @@ func TestExtractBidderConfigFPD(t *testing.T) {
 	}
 }
 
-// fails ///!!!!
-func T1estResolveFPD(t *testing.T) {
+func TestResolveFPD(t *testing.T) {
 	testPath := "tests/resolvefpd"
 
 	tests, err := os.ReadDir(testPath)
@@ -611,12 +611,6 @@ func T1estResolveFPD(t *testing.T) {
 					bidderFPD.App.Ext = nil
 					outputReq.App.Ext = nil
 
-					// fmt.Println("expected:")
-					// fmt.Println(string(expectedAppExt))
-
-					// fmt.Println("\nhave:")
-					// fmt.Println(string(resAppExt))
-
 					assert.JSONEq(t, string(expectedAppExt), string(resAppExt), "app.ext is incorrect")
 
 					assert.Equal(t, outputReq.App, bidderFPD.App, "App is incorrect")
@@ -637,11 +631,11 @@ func T1estResolveFPD(t *testing.T) {
 	}
 }
 
-// fails //!!!
-func T1estExtractFPDForBidders(t *testing.T) {
+func TestExtractFPDForBidders(t *testing.T) {
 	if specFiles, err := os.ReadDir("./tests/extractfpdforbidders"); err == nil {
 		for _, specFile := range specFiles {
 			fileName := "./tests/extractfpdforbidders/" + specFile.Name()
+			fmt.Println(fileName)
 
 			fpdFile, err := loadFpdFile(fileName)
 
@@ -751,591 +745,462 @@ type fpdFile struct {
 	ValidationErrors   []*errortypes.BadInput                             `json:"validationErrors,omitempty"`
 }
 
-// func TestResolveUser(t *testing.T) {
+func TestResolveUser(t *testing.T) {
+	testCases := []struct {
+		description      string
+		fpdConfig        *openrtb_ext.ORTB2
+		bidRequestUser   *openrtb2.User
+		globalFPD        map[string][]byte
+		openRtbGlobalFPD map[string][]openrtb2.Data
+		expectedUser     *openrtb2.User
+		expectedError    string
+	}{
+		{
+			description:  "FPD config and bid request user are not specified",
+			expectedUser: nil,
+		},
+		{
+			description:  "FPD config user only is specified",
+			fpdConfig:    &openrtb_ext.ORTB2{User: json.RawMessage(`{"id": "test"}`)},
+			expectedUser: &openrtb2.User{ID: "test"},
+		},
+		{
+			description:    "FPD config and bid request user are specified",
+			fpdConfig:      &openrtb_ext.ORTB2{User: json.RawMessage(`{"id": "test1"}`)},
+			bidRequestUser: &openrtb2.User{ID: "test2"},
+			expectedUser:   &openrtb2.User{ID: "test1"},
+		},
+		{
+			description:    "FPD config, bid request and global fpd user are specified, no input user ext",
+			fpdConfig:      &openrtb_ext.ORTB2{User: json.RawMessage(`{"id": "test1"}`)},
+			bidRequestUser: &openrtb2.User{ID: "test2"},
+			globalFPD:      map[string][]byte{userKey: []byte(`{"globalFPDUserData": "globalFPDUserDataValue"}`)},
+			expectedUser:   &openrtb2.User{ID: "test1", Ext: json.RawMessage(`{"data":{"globalFPDUserData":"globalFPDUserDataValue"}}`)},
+		},
+		{
+			description:    "FPD config, bid request user with ext and global fpd user are specified, no input user ext",
+			fpdConfig:      &openrtb_ext.ORTB2{User: json.RawMessage(`{"id": "test1"}`)},
+			bidRequestUser: &openrtb2.User{ID: "test2", Ext: json.RawMessage(`{"test":{"inputFPDUserData":"inputFPDUserDataValue"}}`)},
+			globalFPD:      map[string][]byte{userKey: []byte(`{"globalFPDUserData": "globalFPDUserDataValue"}`)},
+			expectedUser:   &openrtb2.User{ID: "test1", Ext: json.RawMessage(`{"data":{"globalFPDUserData":"globalFPDUserDataValue"},"test":{"inputFPDUserData":"inputFPDUserDataValue"}}`)},
+		},
+		{
+			description:    "FPD config, bid request and global fpd user are specified, with input user ext.data",
+			fpdConfig:      &openrtb_ext.ORTB2{User: json.RawMessage(`{"id": "test1"}`)},
+			bidRequestUser: &openrtb2.User{ID: "test2", Ext: json.RawMessage(`{"data":{"inputFPDUserData":"inputFPDUserDataValue"}}`)},
+			globalFPD:      map[string][]byte{userKey: []byte(`{"globalFPDUserData": "globalFPDUserDataValue"}`)},
+			expectedUser:   &openrtb2.User{ID: "test1", Ext: json.RawMessage(`{"data":{"globalFPDUserData":"globalFPDUserDataValue","inputFPDUserData":"inputFPDUserDataValue"}}`)},
+		},
+		{
+			description:    "FPD config, bid request and global fpd user are specified, with input user ext.data malformed",
+			fpdConfig:      &openrtb_ext.ORTB2{User: json.RawMessage(`{"id": "test1"}`)},
+			bidRequestUser: &openrtb2.User{ID: "test2", Ext: json.RawMessage(`{"data":{"inputFPDUserData":"inputFPDUserDataValue"}}`)},
+			globalFPD:      map[string][]byte{userKey: []byte(`malformed`)},
+			expectedError:  "Invalid JSON Patch",
+		},
+		{
+			description:    "bid request and openrtb global fpd user are specified, no input user ext",
+			bidRequestUser: &openrtb2.User{ID: "test2"},
+			openRtbGlobalFPD: map[string][]openrtb2.Data{userDataKey: {
+				{ID: "DataId1", Name: "Name1"},
+				{ID: "DataId2", Name: "Name2"},
+			}},
+			expectedUser: &openrtb2.User{ID: "test2", Data: []openrtb2.Data{
+				{ID: "DataId1", Name: "Name1"},
+				{ID: "DataId2", Name: "Name2"},
+			}},
+		},
+		{
+			description:    "fpd config user, bid request and openrtb global fpd user are specified, no input user ext",
+			fpdConfig:      &openrtb_ext.ORTB2{User: json.RawMessage(`{"id": "test1"}`)},
+			bidRequestUser: &openrtb2.User{ID: "test2"},
+			openRtbGlobalFPD: map[string][]openrtb2.Data{userDataKey: {
+				{ID: "DataId1", Name: "Name1"},
+				{ID: "DataId2", Name: "Name2"},
+			}},
+			expectedUser: &openrtb2.User{ID: "test1", Data: []openrtb2.Data{
+				{ID: "DataId1", Name: "Name1"},
+				{ID: "DataId2", Name: "Name2"},
+			}},
+		},
+		{
+			description:    "fpd config user with ext, bid request and openrtb global fpd user are specified, no input user ext",
+			fpdConfig:      &openrtb_ext.ORTB2{User: json.RawMessage(`{"id": "test1", "ext":{"test":1}}`)},
+			bidRequestUser: &openrtb2.User{ID: "test2"},
+			openRtbGlobalFPD: map[string][]openrtb2.Data{userDataKey: {
+				{ID: "DataId1", Name: "Name1"},
+				{ID: "DataId2", Name: "Name2"},
+			}},
+			expectedUser: &openrtb2.User{ID: "test1", Data: []openrtb2.Data{
+				{ID: "DataId1", Name: "Name1"},
+				{ID: "DataId2", Name: "Name2"},
+			},
+				Ext: json.RawMessage(`{"test":1}`)},
+		},
+		{
+			description:    "fpd config user with ext, bid requestuser with ext and openrtb global fpd user are specified, no input user ext",
+			fpdConfig:      &openrtb_ext.ORTB2{User: json.RawMessage(`{"id": "test1", "ext":{"test":1}}`)},
+			bidRequestUser: &openrtb2.User{ID: "test2", Ext: json.RawMessage(`{"test":2, "key": "value"}`)},
+			openRtbGlobalFPD: map[string][]openrtb2.Data{userDataKey: {
+				{ID: "DataId1", Name: "Name1"},
+				{ID: "DataId2", Name: "Name2"},
+			}},
+			expectedUser: &openrtb2.User{ID: "test1", Data: []openrtb2.Data{
+				{ID: "DataId1", Name: "Name1"},
+				{ID: "DataId2", Name: "Name2"},
+			},
+				Ext: json.RawMessage(`{"key":"value","test":1}`)},
+		},
+		{
+			description:    "fpd config user with malformed ext, bid requestuser with ext and openrtb global fpd user are specified, no input user ext",
+			fpdConfig:      &openrtb_ext.ORTB2{User: json.RawMessage(`{"id": "test1", "ext":{malformed}}`)},
+			bidRequestUser: &openrtb2.User{ID: "test2", Ext: json.RawMessage(`{"test":2, "key": "value"}`)},
+			openRtbGlobalFPD: map[string][]openrtb2.Data{userDataKey: {
+				{ID: "DataId1", Name: "Name1"},
+				{ID: "DataId2", Name: "Name2"},
+			}},
+			expectedUser: &openrtb2.User{ID: "test1", Data: []openrtb2.Data{
+				{ID: "DataId1", Name: "Name1"},
+				{ID: "DataId2", Name: "Name2"},
+			},
+				Ext: json.RawMessage(`{"key":"value","test":1}`),
+			},
+			expectedError: "invalid character 'm' looking for beginning of object key string",
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			resultUser, err := resolveUser(test.fpdConfig, test.bidRequestUser, test.globalFPD, test.openRtbGlobalFPD, "bidderA")
 
-// 	fpdConfigUser := make(map[string]json.RawMessage, 0)
-// 	fpdConfigUser["id"] = []byte(`"fpdConfigUserId"`)
-// 	fpdConfigUser[yobKey] = []byte(`1980`)
-// 	fpdConfigUser[genderKey] = []byte(`"M"`)
-// 	fpdConfigUser[keywordsKey] = []byte(`"fpdConfigUserKeywords"`)
-// 	fpdConfigUser[dataKey] = []byte(`[{"id":"UserDataId1", "name":"UserDataName1"}, {"id":"UserDataId2", "name":"UserDataName2"}]`)
-// 	fpdConfigUser["ext"] = []byte(`{"data":{"fpdConfigUserExt": 123}}`)
-
-// 	bidRequestUser := &openrtb2.User{
-// 		ID:       "bidRequestUserId",
-// 		Yob:      1990,
-// 		Gender:   "F",
-// 		Keywords: "bidRequestUserKeywords",
-// 	}
-
-// 	globalFPD := make(map[string][]byte, 0)
-// 	globalFPD[userKey] = []byte(`{"globalFPDUserData": "globalFPDUserDataValue"}`)
-
-// 	openRtbGlobalFPD := make(map[string][]openrtb2.Data, 0)
-// 	openRtbGlobalFPD[userDataKey] = []openrtb2.Data{
-// 		{ID: "openRtbGlobalFPDUserDataId1", Name: "openRtbGlobalFPDUserDataName1"},
-// 		{ID: "openRtbGlobalFPDUserDataId2", Name: "openRtbGlobalFPDUserDataName2"},
-// 	}
-
-// 	expectedUser := &openrtb2.User{
-// 		ID:       "bidRequestUserId",
-// 		Yob:      1980,
-// 		Gender:   "M",
-// 		Keywords: "fpdConfigUserKeywords",
-// 		Data: []openrtb2.Data{
-// 			{ID: "openRtbGlobalFPDUserDataId1", Name: "openRtbGlobalFPDUserDataName1"},
-// 			{ID: "openRtbGlobalFPDUserDataId2", Name: "openRtbGlobalFPDUserDataName2"},
-// 			{ID: "UserDataId1", Name: "UserDataName1"},
-// 			{ID: "UserDataId2", Name: "UserDataName2"},
-// 		},
-// 	}
-
-// 	testCases := []struct {
-// 		description       string
-// 		bidRequestUserExt []byte
-// 		expectedUserExt   string
-// 	}{
-// 		{
-// 			description:       "bid request user.ext is nil",
-// 			bidRequestUserExt: nil,
-// 			expectedUserExt: `{"data":{
-// 									"fpdConfigUserExt":123,
-// 									"globalFPDUserData":"globalFPDUserDataValue",
-// 									"id":"fpdConfigUserId"
-// 									}
-// 							}`,
-// 		},
-// 		{
-// 			description:       "bid request user.ext is not nil",
-// 			bidRequestUserExt: []byte(`{"bidRequestUserExt": 1234}`),
-// 			expectedUserExt: `{"data":{
-// 									"fpdConfigUserExt":123,
-// 									"globalFPDUserData":"globalFPDUserDataValue",
-// 									"id":"fpdConfigUserId"
-// 									},
-// 								"bidRequestUserExt":1234
-// 							}`,
-// 		},
-// 	}
-
-// 	for _, test := range testCases {
-// 		bidRequestUser.Ext = test.bidRequestUserExt
-
-// 		fpdConfigUser := make(map[string]json.RawMessage, 0)
-// 		fpdConfigUser["id"] = []byte(`"fpdConfigUserId"`)
-// 		fpdConfigUser[yobKey] = []byte(`1980`)
-// 		fpdConfigUser[genderKey] = []byte(`"M"`)
-// 		fpdConfigUser[keywordsKey] = []byte(`"fpdConfigUserKeywords"`)
-// 		fpdConfigUser[dataKey] = []byte(`[{"id":"UserDataId1", "name":"UserDataName1"}, {"id":"UserDataId2", "name":"UserDataName2"}]`)
-// 		fpdConfigUser["ext"] = []byte(`{"data":{"fpdConfigUserExt": 123}}`)
-// 		fpdConfig := &openrtb_ext.ORTB2{User: fpdConfigUser}
-
-// 		resultUser, err := resolveUser(fpdConfig, bidRequestUser, globalFPD, openRtbGlobalFPD, "appnexus")
-// 		assert.NoError(t, err, "No error should be returned")
-
-// 		assert.JSONEq(t, test.expectedUserExt, string(resultUser.Ext), "Result user.Ext is incorrect")
-// 		resultUser.Ext = nil
-// 		assert.Equal(t, expectedUser, resultUser, "Result user is incorrect")
-// 	}
-
-// }
-
-func TestResolveUserNilValues(t *testing.T) {
-	resultUser, err := resolveUser(nil, nil, nil, nil, "appnexus")
-	assert.NoError(t, err, "No error should be returned")
-	assert.Nil(t, resultUser, "Result user should be nil")
+			if test.expectedError == "" {
+				assert.NoError(t, err, "unexpected error returned")
+				assert.Equal(t, test.expectedUser, resultUser, "Result user is incorrect")
+			} else {
+				assert.EqualError(t, err, test.expectedError, "expected error incorrect")
+			}
+		})
+	}
 }
 
-// func TestMergeUsers(t *testing.T) {
+func TestResolveSite(t *testing.T) {
+	testCases := []struct {
+		description      string
+		fpdConfig        *openrtb_ext.ORTB2
+		bidRequestSite   *openrtb2.Site
+		globalFPD        map[string][]byte
+		openRtbGlobalFPD map[string][]openrtb2.Data
+		expectedSite     *openrtb2.Site
+		expectedError    string
+	}{
+		{
+			description:  "FPD config and bid request site are not specified",
+			expectedSite: nil,
+		},
+		{
+			description:   "FPD config site only is specified",
+			fpdConfig:     &openrtb_ext.ORTB2{Site: json.RawMessage(`{"id": "test"}`)},
+			expectedError: "incorrect First Party Data for bidder bidderA: Site object is not defined in request, but defined in FPD config",
+		},
+		{
+			description:    "FPD config and bid request site are specified",
+			fpdConfig:      &openrtb_ext.ORTB2{Site: json.RawMessage(`{"id": "test1"}`)},
+			bidRequestSite: &openrtb2.Site{ID: "test2"},
+			expectedSite:   &openrtb2.Site{ID: "test1"},
+		},
+		{
+			description:    "FPD config, bid request and global fpd site are specified, no input site ext",
+			fpdConfig:      &openrtb_ext.ORTB2{Site: json.RawMessage(`{"id": "test1"}`)},
+			bidRequestSite: &openrtb2.Site{ID: "test2"},
+			globalFPD:      map[string][]byte{siteKey: []byte(`{"globalFPDSiteData": "globalFPDSiteDataValue"}`)},
+			expectedSite:   &openrtb2.Site{ID: "test1", Ext: json.RawMessage(`{"data":{"globalFPDSiteData":"globalFPDSiteDataValue"}}`)},
+		},
+		{
+			description:    "FPD config, bid request site with ext and global fpd site are specified, no input site ext",
+			fpdConfig:      &openrtb_ext.ORTB2{Site: json.RawMessage(`{"id": "test1"}`)},
+			bidRequestSite: &openrtb2.Site{ID: "test2", Ext: json.RawMessage(`{"test":{"inputFPDSiteData":"inputFPDSiteDataValue"}}`)},
+			globalFPD:      map[string][]byte{siteKey: []byte(`{"globalFPDSiteData": "globalFPDSiteDataValue"}`)},
+			expectedSite:   &openrtb2.Site{ID: "test1", Ext: json.RawMessage(`{"data":{"globalFPDSiteData":"globalFPDSiteDataValue"},"test":{"inputFPDSiteData":"inputFPDSiteDataValue"}}`)},
+		},
+		{
+			description:    "FPD config, bid request and global fpd site are specified, with input site ext.data",
+			fpdConfig:      &openrtb_ext.ORTB2{Site: json.RawMessage(`{"id": "test1"}`)},
+			bidRequestSite: &openrtb2.Site{ID: "test2", Ext: json.RawMessage(`{"data":{"inputFPDSiteData":"inputFPDSiteDataValue"}}`)},
+			globalFPD:      map[string][]byte{siteKey: []byte(`{"globalFPDSiteData": "globalFPDSiteDataValue"}`)},
+			expectedSite:   &openrtb2.Site{ID: "test1", Ext: json.RawMessage(`{"data":{"globalFPDSiteData":"globalFPDSiteDataValue","inputFPDSiteData":"inputFPDSiteDataValue"}}`)},
+		},
+		{
+			description:    "FPD config, bid request and global fpd site are specified, with input site ext.data malformed",
+			fpdConfig:      &openrtb_ext.ORTB2{Site: json.RawMessage(`{"id": "test1"}`)},
+			bidRequestSite: &openrtb2.Site{ID: "test2", Ext: json.RawMessage(`{"data":{"inputFPDSiteData":"inputFPDSiteDataValue"}}`)},
+			globalFPD:      map[string][]byte{siteKey: []byte(`malformed`)},
+			expectedError:  "Invalid JSON Patch",
+		},
+		{
+			description:    "bid request and openrtb global fpd site are specified, no input site ext",
+			bidRequestSite: &openrtb2.Site{ID: "test2"},
+			openRtbGlobalFPD: map[string][]openrtb2.Data{siteContentDataKey: {
+				{ID: "DataId1", Name: "Name1"},
+				{ID: "DataId2", Name: "Name2"},
+			}},
+			expectedSite: &openrtb2.Site{ID: "test2", Content: &openrtb2.Content{Data: []openrtb2.Data{
+				{ID: "DataId1", Name: "Name1"},
+				{ID: "DataId2", Name: "Name2"},
+			}}},
+		},
+		{
+			description: "bid request with content and openrtb global fpd site are specified, no input site ext",
+			bidRequestSite: &openrtb2.Site{ID: "test2", Content: &openrtb2.Content{
+				ID: "InputSiteContentId",
+				Data: []openrtb2.Data{
+					{ID: "1", Name: "N1"},
+					{ID: "2", Name: "N2"},
+				},
+				Ext: json.RawMessage(`{"contentPresent":true}`),
+			}},
+			openRtbGlobalFPD: map[string][]openrtb2.Data{siteContentDataKey: {
+				{ID: "DataId1", Name: "Name1"},
+				{ID: "DataId2", Name: "Name2"},
+			}},
+			expectedSite: &openrtb2.Site{ID: "test2", Content: &openrtb2.Content{
+				ID: "InputSiteContentId",
+				Data: []openrtb2.Data{
+					{ID: "DataId1", Name: "Name1"},
+					{ID: "DataId2", Name: "Name2"},
+				},
+				Ext: json.RawMessage(`{"contentPresent":true}`),
+			}},
+		},
+		{
+			description:    "fpd config site, bid request and openrtb global fpd site are specified, no input site ext",
+			fpdConfig:      &openrtb_ext.ORTB2{Site: json.RawMessage(`{"id": "test1"}`)},
+			bidRequestSite: &openrtb2.Site{ID: "test2"},
+			openRtbGlobalFPD: map[string][]openrtb2.Data{siteContentDataKey: {
+				{ID: "DataId1", Name: "Name1"},
+				{ID: "DataId2", Name: "Name2"},
+			}},
+			expectedSite: &openrtb2.Site{ID: "test1", Content: &openrtb2.Content{Data: []openrtb2.Data{
+				{ID: "DataId1", Name: "Name1"},
+				{ID: "DataId2", Name: "Name2"},
+			}}},
+		},
+		{
+			description:    "fpd config site with ext, bid request and openrtb global fpd site are specified, no input site ext",
+			fpdConfig:      &openrtb_ext.ORTB2{Site: json.RawMessage(`{"id": "test1", "ext":{"test":1}}`)},
+			bidRequestSite: &openrtb2.Site{ID: "test2"},
+			openRtbGlobalFPD: map[string][]openrtb2.Data{siteContentDataKey: {
+				{ID: "DataId1", Name: "Name1"},
+				{ID: "DataId2", Name: "Name2"},
+			}},
+			expectedSite: &openrtb2.Site{ID: "test1", Content: &openrtb2.Content{Data: []openrtb2.Data{
+				{ID: "DataId1", Name: "Name1"},
+				{ID: "DataId2", Name: "Name2"},
+			}},
+				Ext: json.RawMessage(`{"test":1}`)},
+		},
+		{
+			description:    "fpd config site with ext, bid request site with ext and openrtb global fpd site are specified, no input site ext",
+			fpdConfig:      &openrtb_ext.ORTB2{Site: json.RawMessage(`{"id": "test1", "ext":{"test":1}}`)},
+			bidRequestSite: &openrtb2.Site{ID: "test2", Ext: json.RawMessage(`{"test":2, "key": "value"}`)},
+			openRtbGlobalFPD: map[string][]openrtb2.Data{siteContentDataKey: {
+				{ID: "DataId1", Name: "Name1"},
+				{ID: "DataId2", Name: "Name2"},
+			}},
+			expectedSite: &openrtb2.Site{ID: "test1", Content: &openrtb2.Content{Data: []openrtb2.Data{
+				{ID: "DataId1", Name: "Name1"},
+				{ID: "DataId2", Name: "Name2"},
+			}},
+				Ext: json.RawMessage(`{"key":"value","test":1}`)},
+		},
+		{
+			description:    "fpd config site with malformed ext, bid request site with ext and openrtb global fpd site are specified, no input site ext",
+			fpdConfig:      &openrtb_ext.ORTB2{Site: json.RawMessage(`{"id": "test1", "ext":{malformed}}`)},
+			bidRequestSite: &openrtb2.Site{ID: "test2", Ext: json.RawMessage(`{"test":2, "key": "value"}`)},
+			openRtbGlobalFPD: map[string][]openrtb2.Data{siteContentDataKey: {
+				{ID: "DataId1", Name: "Name1"},
+				{ID: "DataId2", Name: "Name2"},
+			}},
+			expectedSite: &openrtb2.Site{ID: "test1", Content: &openrtb2.Content{Data: []openrtb2.Data{
+				{ID: "DataId1", Name: "Name1"},
+				{ID: "DataId2", Name: "Name2"},
+			}},
+				Ext: json.RawMessage(`{"key":"value","test":1}`),
+			},
+			expectedError: "invalid character 'm' looking for beginning of object key string",
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			resultSite, err := resolveSite(test.fpdConfig, test.bidRequestSite, test.globalFPD, test.openRtbGlobalFPD, "bidderA")
 
-// 	originalUser := &openrtb2.User{
-// 		ID:       "bidRequestUserId",
-// 		Yob:      1980,
-// 		Gender:   "M",
-// 		Keywords: "fpdConfigUserKeywords",
-// 		Data: []openrtb2.Data{
-// 			{ID: "openRtbGlobalFPDUserDataId1", Name: "openRtbGlobalFPDUserDataName1"},
-// 			{ID: "openRtbGlobalFPDUserDataId2", Name: "openRtbGlobalFPDUserDataName2"},
-// 		},
-// 		Ext: []byte(`{"bidRequestUserExt": 1234}`),
-// 	}
-// 	fpdConfigUser := make(map[string]json.RawMessage, 0)
-// 	fpdConfigUser["id"] = []byte(`"fpdConfigUserId"`)
-// 	fpdConfigUser[yobKey] = []byte(`1980`)
-// 	fpdConfigUser[genderKey] = []byte(`"M"`)
-// 	fpdConfigUser[keywordsKey] = []byte(`"fpdConfigUserKeywords"`)
-// 	fpdConfigUser[dataKey] = []byte(`[{"id":"UserDataId1", "name":"UserDataName1"}, {"id":"UserDataId2", "name":"UserDataName2"}]`)
-// 	fpdConfigUser["ext"] = []byte(`{"data":{"fpdConfigUserExt": 123}}`)
-
-// 	resultUser, err := mergeUsers(originalUser, fpdConfigUser)
-// 	assert.NoError(t, err, "No error should be returned")
-
-// 	expectedUserExt := `{"bidRequestUserExt":1234,
-// 						 "data":{
-// 							"fpdConfigUserExt":123,
-// 							"id":"fpdConfigUserId"}
-// 						 }`
-// 	assert.JSONEq(t, expectedUserExt, string(resultUser.Ext), "Result user.Ext is incorrect")
-// 	resultUser.Ext = nil
-
-// 	expectedUser := openrtb2.User{
-// 		ID:       "bidRequestUserId",
-// 		Yob:      1980,
-// 		Gender:   "M",
-// 		Keywords: "fpdConfigUserKeywords",
-// 		Data: []openrtb2.Data{
-// 			{ID: "openRtbGlobalFPDUserDataId1", Name: "openRtbGlobalFPDUserDataName1"},
-// 			{ID: "openRtbGlobalFPDUserDataId2", Name: "openRtbGlobalFPDUserDataName2"},
-// 			{ID: "UserDataId1", Name: "UserDataName1"},
-// 			{ID: "UserDataId2", Name: "UserDataName2"},
-// 		},
-// 	}
-// 	assert.Equal(t, expectedUser, resultUser, "Result user is incorrect")
-// }
-
-// func TestResolveSite(t *testing.T) {
-
-// 	fpdConfigSite := make(map[string]json.RawMessage, 0)
-// 	fpdConfigSite["id"] = []byte(`"fpdConfigSiteId"`)
-// 	fpdConfigSite[keywordsKey] = []byte(`"fpdConfigSiteKeywords"`)
-// 	fpdConfigSite[nameKey] = []byte(`"fpdConfigSiteName"`)
-// 	fpdConfigSite[pageKey] = []byte(`"fpdConfigSitePage"`)
-// 	fpdConfigSite[dataKey] = []byte(`[{"id":"SiteDataId1", "name":"SiteDataName1"}, {"id":"SiteDataId2", "name":"SiteDataName2"}]`)
-// 	fpdConfigSite["ext"] = []byte(`{"data":{"fpdConfigSiteExt": 123}}`)
-
-// 	bidRequestSite := &openrtb2.Site{
-// 		ID:       "bidRequestSiteId",
-// 		Keywords: "bidRequestSiteKeywords",
-// 		Name:     "bidRequestSiteName",
-// 		Page:     "bidRequestSitePage",
-// 		Content: &openrtb2.Content{
-// 			ID:      "bidRequestSiteContentId",
-// 			Episode: 4,
-// 			Data: []openrtb2.Data{
-// 				{ID: "bidRequestSiteContentDataId1", Name: "bidRequestSiteContentDataName1"},
-// 				{ID: "bidRequestSiteContentDataId2", Name: "bidRequestSiteContentDataName2"},
-// 			},
-// 		},
-// 	}
-
-// 	globalFPD := make(map[string][]byte, 0)
-// 	globalFPD[siteKey] = []byte(`{"globalFPDSiteData": "globalFPDSiteDataValue"}`)
-
-// 	openRtbGlobalFPD := make(map[string][]openrtb2.Data, 0)
-// 	openRtbGlobalFPD[siteContentDataKey] = []openrtb2.Data{
-// 		{ID: "openRtbGlobalFPDSiteContentDataId1", Name: "openRtbGlobalFPDSiteContentDataName1"},
-// 		{ID: "openRtbGlobalFPDSiteContentDataId2", Name: "openRtbGlobalFPDSiteContentDataName2"},
-// 	}
-
-// 	expectedSite := &openrtb2.Site{
-// 		ID:       "bidRequestSiteId",
-// 		Keywords: "fpdConfigSiteKeywords",
-// 		Name:     "bidRequestSiteName",
-// 		Page:     "bidRequestSitePage",
-// 		Content: &openrtb2.Content{
-// 			ID:      "bidRequestSiteContentId",
-// 			Episode: 4,
-// 			Data: []openrtb2.Data{
-// 				{ID: "openRtbGlobalFPDSiteContentDataId1", Name: "openRtbGlobalFPDSiteContentDataName1"},
-// 				{ID: "openRtbGlobalFPDSiteContentDataId2", Name: "openRtbGlobalFPDSiteContentDataName2"},
-// 			},
-// 		},
-// 	}
-
-// 	testCases := []struct {
-// 		description       string
-// 		bidRequestSiteExt []byte
-// 		expectedSiteExt   string
-// 		siteContentNil    bool
-// 	}{
-// 		{
-// 			description:       "bid request site.ext is nil",
-// 			bidRequestSiteExt: nil,
-// 			expectedSiteExt: `{"data":{
-// 									"data":[
-// 										{"id":"SiteDataId1","name":"SiteDataName1"},
-// 										{"id":"SiteDataId2","name":"SiteDataName2"}
-// 									],
-// 									"fpdConfigSiteExt":123,
-// 									"globalFPDSiteData":"globalFPDSiteDataValue",
-// 									"id":"fpdConfigSiteId"
-// 									}
-// 							}`,
-// 			siteContentNil: false,
-// 		},
-// 		{
-// 			description:       "bid request site.ext is not nil",
-// 			bidRequestSiteExt: []byte(`{"bidRequestSiteExt": 1234}`),
-// 			expectedSiteExt: `{"data":{
-// 									"data":[
-// 										{"id":"SiteDataId1","name":"SiteDataName1"},
-// 										{"id":"SiteDataId2","name":"SiteDataName2"}
-// 									],
-// 									"fpdConfigSiteExt":123,
-// 									"globalFPDSiteData":"globalFPDSiteDataValue",
-// 									"id":"fpdConfigSiteId"
-// 									},
-// 								"bidRequestSiteExt":1234
-// 							}`,
-// 			siteContentNil: false,
-// 		},
-// 		{
-// 			description:       "bid request site.content.data is nil ",
-// 			bidRequestSiteExt: []byte(`{"bidRequestSiteExt": 1234}`),
-// 			expectedSiteExt: `{"data":{
-// 									"data":[
-// 										{"id":"SiteDataId1","name":"SiteDataName1"},
-// 										{"id":"SiteDataId2","name":"SiteDataName2"}
-// 									],
-// 									"fpdConfigSiteExt":123,
-// 									"globalFPDSiteData":"globalFPDSiteDataValue",
-// 									"id":"fpdConfigSiteId"
-// 									},
-// 								"bidRequestSiteExt":1234
-// 							}`,
-// 			siteContentNil: true,
-// 		},
-// 	}
-
-// 	for _, test := range testCases {
-// 		if test.siteContentNil {
-// 			bidRequestSite.Content = nil
-// 			expectedSite.Content = &openrtb2.Content{Data: []openrtb2.Data{
-// 				{ID: "openRtbGlobalFPDSiteContentDataId1", Name: "openRtbGlobalFPDSiteContentDataName1"},
-// 				{ID: "openRtbGlobalFPDSiteContentDataId2", Name: "openRtbGlobalFPDSiteContentDataName2"},
-// 			}}
-// 		}
-
-// 		bidRequestSite.Ext = test.bidRequestSiteExt
-
-// 		fpdConfigSite := make(map[string]json.RawMessage, 0)
-// 		fpdConfigSite["id"] = []byte(`"fpdConfigSiteId"`)
-// 		fpdConfigSite[keywordsKey] = []byte(`"fpdConfigSiteKeywords"`)
-// 		fpdConfigSite[dataKey] = []byte(`[{"id":"SiteDataId1", "name":"SiteDataName1"}, {"id":"SiteDataId2", "name":"SiteDataName2"}]`)
-// 		fpdConfigSite["ext"] = []byte(`{"data":{"fpdConfigSiteExt": 123}}`)
-// 		fpdConfig := &openrtb_ext.ORTB2{Site: fpdConfigSite}
-
-// 		resultSite, err := resolveSite(fpdConfig, bidRequestSite, globalFPD, openRtbGlobalFPD, "appnexus")
-// 		assert.NoError(t, err, "No error should be returned")
-
-// 		assert.JSONEq(t, test.expectedSiteExt, string(resultSite.Ext), "Result site.Ext is incorrect")
-// 		resultSite.Ext = nil
-// 		assert.Equal(t, expectedSite, resultSite, "Result site is incorrect")
-// 	}
-
-// }
-
-func TestResolveSiteNilValues(t *testing.T) {
-	resultSite, err := resolveSite(nil, nil, nil, nil, "appnexus")
-	assert.NoError(t, err, "No error should be returned")
-	assert.Nil(t, resultSite, "Result site should be nil")
+			if test.expectedError == "" {
+				assert.NoError(t, err, "unexpected error returned")
+				assert.Equal(t, test.expectedSite, resultSite, "Result site is incorrect")
+			} else {
+				assert.EqualError(t, err, test.expectedError, "expected error incorrect")
+			}
+		})
+	}
 }
 
-// func TestResolveSiteBadInput(t *testing.T) {
-// 	fpdConfigSite := make(map[string]json.RawMessage, 0)
-// 	fpdConfigSite["id"] = []byte(`"fpdConfigSiteId"`)
-// 	fpdConfig := &openrtb_ext.ORTB2{Site: fpdConfigSite}
+func TestResolveApp(t *testing.T) {
+	testCases := []struct {
+		description      string
+		fpdConfig        *openrtb_ext.ORTB2
+		bidRequestApp    *openrtb2.App
+		globalFPD        map[string][]byte
+		openRtbGlobalFPD map[string][]openrtb2.Data
+		expectedApp      *openrtb2.App
+		expectedError    string
+	}{
+		{
+			description: "FPD config and bid request app are not specified",
+			expectedApp: nil,
+		},
+		{
+			description:   "FPD config app only is specified",
+			fpdConfig:     &openrtb_ext.ORTB2{App: json.RawMessage(`{"id": "test"}`)},
+			expectedError: "incorrect First Party Data for bidder bidderA: App object is not defined in request, but defined in FPD config",
+		},
+		{
+			description:   "FPD config and bid request app are specified",
+			fpdConfig:     &openrtb_ext.ORTB2{App: json.RawMessage(`{"id": "test1"}`)},
+			bidRequestApp: &openrtb2.App{ID: "test2"},
+			expectedApp:   &openrtb2.App{ID: "test1"},
+		},
+		{
+			description:   "FPD config, bid request and global fpd app are specified, no input app ext",
+			fpdConfig:     &openrtb_ext.ORTB2{App: json.RawMessage(`{"id": "test1"}`)},
+			bidRequestApp: &openrtb2.App{ID: "test2"},
+			globalFPD:     map[string][]byte{appKey: []byte(`{"globalFPDAppData": "globalFPDAppDataValue"}`)},
+			expectedApp:   &openrtb2.App{ID: "test1", Ext: json.RawMessage(`{"data":{"globalFPDAppData":"globalFPDAppDataValue"}}`)},
+		},
+		{
+			description:   "FPD config, bid request app with ext and global fpd app are specified, no input app ext",
+			fpdConfig:     &openrtb_ext.ORTB2{App: json.RawMessage(`{"id": "test1"}`)},
+			bidRequestApp: &openrtb2.App{ID: "test2", Ext: json.RawMessage(`{"test":{"inputFPDAppData":"inputFPDAppDataValue"}}`)},
+			globalFPD:     map[string][]byte{appKey: []byte(`{"globalFPDAppData": "globalFPDAppDataValue"}`)},
+			expectedApp:   &openrtb2.App{ID: "test1", Ext: json.RawMessage(`{"data":{"globalFPDAppData":"globalFPDAppDataValue"},"test":{"inputFPDAppData":"inputFPDAppDataValue"}}`)},
+		},
+		{
+			description:   "FPD config, bid request and global fpd app are specified, with input app ext.data",
+			fpdConfig:     &openrtb_ext.ORTB2{App: json.RawMessage(`{"id": "test1"}`)},
+			bidRequestApp: &openrtb2.App{ID: "test2", Ext: json.RawMessage(`{"data":{"inputFPDAppData":"inputFPDAppDataValue"}}`)},
+			globalFPD:     map[string][]byte{appKey: []byte(`{"globalFPDAppData": "globalFPDAppDataValue"}`)},
+			expectedApp:   &openrtb2.App{ID: "test1", Ext: json.RawMessage(`{"data":{"globalFPDAppData":"globalFPDAppDataValue","inputFPDAppData":"inputFPDAppDataValue"}}`)},
+		},
+		{
+			description:   "FPD config, bid request and global fpd app are specified, with input app ext.data malformed",
+			fpdConfig:     &openrtb_ext.ORTB2{App: json.RawMessage(`{"id": "test1"}`)},
+			bidRequestApp: &openrtb2.App{ID: "test2", Ext: json.RawMessage(`{"data":{"inputFPDAppData":"inputFPDAppDataValue"}}`)},
+			globalFPD:     map[string][]byte{appKey: []byte(`malformed`)},
+			expectedError: "Invalid JSON Patch",
+		},
+		{
+			description:   "bid request and openrtb global fpd app are specified, no input app ext",
+			bidRequestApp: &openrtb2.App{ID: "test2"},
+			openRtbGlobalFPD: map[string][]openrtb2.Data{appContentDataKey: {
+				{ID: "DataId1", Name: "Name1"},
+				{ID: "DataId2", Name: "Name2"},
+			}},
+			expectedApp: &openrtb2.App{ID: "test2", Content: &openrtb2.Content{Data: []openrtb2.Data{
+				{ID: "DataId1", Name: "Name1"},
+				{ID: "DataId2", Name: "Name2"},
+			}}},
+		},
+		{
+			description: "bid request with content and openrtb global fpd app are specified, no input app ext",
+			bidRequestApp: &openrtb2.App{ID: "test2", Content: &openrtb2.Content{
+				ID: "InputAppContentId",
+				Data: []openrtb2.Data{
+					{ID: "1", Name: "N1"},
+					{ID: "2", Name: "N2"},
+				},
+				Ext: json.RawMessage(`{"contentPresent":true}`),
+			}},
+			openRtbGlobalFPD: map[string][]openrtb2.Data{appContentDataKey: {
+				{ID: "DataId1", Name: "Name1"},
+				{ID: "DataId2", Name: "Name2"},
+			}},
+			expectedApp: &openrtb2.App{ID: "test2", Content: &openrtb2.Content{
+				ID: "InputAppContentId",
+				Data: []openrtb2.Data{
+					{ID: "DataId1", Name: "Name1"},
+					{ID: "DataId2", Name: "Name2"},
+				},
+				Ext: json.RawMessage(`{"contentPresent":true}`),
+			}},
+		},
+		{
+			description:   "fpd config app, bid request and openrtb global fpd app are specified, no input app ext",
+			fpdConfig:     &openrtb_ext.ORTB2{App: json.RawMessage(`{"id": "test1"}`)},
+			bidRequestApp: &openrtb2.App{ID: "test2"},
+			openRtbGlobalFPD: map[string][]openrtb2.Data{appContentDataKey: {
+				{ID: "DataId1", Name: "Name1"},
+				{ID: "DataId2", Name: "Name2"},
+			}},
+			expectedApp: &openrtb2.App{ID: "test1", Content: &openrtb2.Content{Data: []openrtb2.Data{
+				{ID: "DataId1", Name: "Name1"},
+				{ID: "DataId2", Name: "Name2"},
+			}}},
+		},
+		{
+			description:   "fpd config app with ext, bid request and openrtb global fpd app are specified, no input app ext",
+			fpdConfig:     &openrtb_ext.ORTB2{App: json.RawMessage(`{"id": "test1", "ext":{"test":1}}`)},
+			bidRequestApp: &openrtb2.App{ID: "test2"},
+			openRtbGlobalFPD: map[string][]openrtb2.Data{appContentDataKey: {
+				{ID: "DataId1", Name: "Name1"},
+				{ID: "DataId2", Name: "Name2"},
+			}},
+			expectedApp: &openrtb2.App{ID: "test1", Content: &openrtb2.Content{Data: []openrtb2.Data{
+				{ID: "DataId1", Name: "Name1"},
+				{ID: "DataId2", Name: "Name2"},
+			}},
+				Ext: json.RawMessage(`{"test":1}`)},
+		},
+		{
+			description:   "fpd config app with ext, bid request app with ext and openrtb global fpd app are specified, no input app ext",
+			fpdConfig:     &openrtb_ext.ORTB2{App: json.RawMessage(`{"id": "test1", "ext":{"test":1}}`)},
+			bidRequestApp: &openrtb2.App{ID: "test2", Ext: json.RawMessage(`{"test":2, "key": "value"}`)},
+			openRtbGlobalFPD: map[string][]openrtb2.Data{appContentDataKey: {
+				{ID: "DataId1", Name: "Name1"},
+				{ID: "DataId2", Name: "Name2"},
+			}},
+			expectedApp: &openrtb2.App{ID: "test1", Content: &openrtb2.Content{Data: []openrtb2.Data{
+				{ID: "DataId1", Name: "Name1"},
+				{ID: "DataId2", Name: "Name2"},
+			}},
+				Ext: json.RawMessage(`{"key":"value","test":1}`)},
+		},
+		{
+			description:   "fpd config app with malformed ext, bid request app with ext and openrtb global fpd app are specified, no input app ext",
+			fpdConfig:     &openrtb_ext.ORTB2{App: json.RawMessage(`{"id": "test1", "ext":{malformed}}`)},
+			bidRequestApp: &openrtb2.App{ID: "test2", Ext: json.RawMessage(`{"test":2, "key": "value"}`)},
+			openRtbGlobalFPD: map[string][]openrtb2.Data{appContentDataKey: {
+				{ID: "DataId1", Name: "Name1"},
+				{ID: "DataId2", Name: "Name2"},
+			}},
+			expectedApp: &openrtb2.App{ID: "test1", Content: &openrtb2.Content{Data: []openrtb2.Data{
+				{ID: "DataId1", Name: "Name1"},
+				{ID: "DataId2", Name: "Name2"},
+			}},
+				Ext: json.RawMessage(`{"key":"value","test":1}`),
+			},
+			expectedError: "invalid character 'm' looking for beginning of object key string",
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			resultApp, err := resolveApp(test.fpdConfig, test.bidRequestApp, test.globalFPD, test.openRtbGlobalFPD, "bidderA")
 
-// 	resultSite, err := resolveSite(fpdConfig, nil, nil, nil, "appnexus")
-// 	assert.Error(t, err, "Error should be returned")
-// 	assert.Equal(t, "incorrect First Party Data for bidder appnexus: Site object is not defined in request, but defined in FPD config", err.Error(), "Incorrect error message")
-// 	assert.Nil(t, resultSite, "Result site should be nil")
-// }
-
-// func TestMergeSites(t *testing.T) {
-
-// 	originalSite := &openrtb2.Site{
-// 		ID:         "bidRequestSiteId",
-// 		Keywords:   "bidRequestSiteKeywords",
-// 		Page:       "bidRequestSitePage",
-// 		Name:       "bidRequestSiteName",
-// 		Domain:     "bidRequestSiteDomain",
-// 		Cat:        []string{"books1", "magazines1"},
-// 		SectionCat: []string{"books2", "magazines2"},
-// 		PageCat:    []string{"books3", "magazines3"},
-// 		Search:     "bidRequestSiteSearch",
-// 		Ref:        "bidRequestSiteRef",
-// 		Content: &openrtb2.Content{
-// 			Title: "bidRequestSiteContentTitle",
-// 			Data: []openrtb2.Data{
-// 				{ID: "openRtbGlobalFPDSiteDataId1", Name: "openRtbGlobalFPDSiteDataName1"},
-// 				{ID: "openRtbGlobalFPDSiteDataId2", Name: "openRtbGlobalFPDSiteDataName2"},
-// 			},
-// 		},
-// 		Ext: []byte(`{"bidRequestSiteExt": 1234}`),
-// 	}
-// 	fpdConfigSite := make(map[string]json.RawMessage, 0)
-// 	fpdConfigSite["id"] = []byte(`"fpdConfigSiteId"`)
-// 	fpdConfigSite[keywordsKey] = []byte(`"fpdConfigSiteKeywords"`)
-// 	fpdConfigSite[pageKey] = []byte(`"fpdConfigSitePage"`)
-// 	fpdConfigSite[nameKey] = []byte(`"fpdConfigSiteName"`)
-// 	fpdConfigSite[domainKey] = []byte(`"fpdConfigSiteDomain"`)
-// 	fpdConfigSite[catKey] = []byte(`["cars1", "auto1"]`)
-// 	fpdConfigSite[sectionCatKey] = []byte(`["cars2", "auto2"]`)
-// 	fpdConfigSite[pageCatKey] = []byte(`["cars3", "auto3"]`)
-// 	fpdConfigSite[searchKey] = []byte(`"fpdConfigSiteSearch"`)
-// 	fpdConfigSite[refKey] = []byte(`"fpdConfigSiteRef"`)
-// 	fpdConfigSite[dataKey] = []byte(`[{"id":"SiteDataId1", "name":"SiteDataName1"}, {"id":"SiteDataId2", "name":"SiteDataName2"}]`)
-// 	fpdConfigSite["ext"] = []byte(`{"data":{"fpdConfigSiteExt": 123}}`)
-
-// 	resultSite, err := mergeSites(originalSite, fpdConfigSite, "appnexus")
-// 	assert.NoError(t, err, "No error should be returned")
-
-// 	expectedSiteExt := `{"bidRequestSiteExt":1234,
-// 						 "data":{
-// 							"data":[
-// 								{"id":"SiteDataId1","name":"SiteDataName1"},
-// 								{"id":"SiteDataId2","name":"SiteDataName2"}],
-// 							"fpdConfigSiteExt":123,
-// 							"id":"fpdConfigSiteId"}
-// 						 }`
-// 	assert.JSONEq(t, expectedSiteExt, string(resultSite.Ext), "Result user.Ext is incorrect")
-// 	resultSite.Ext = nil
-
-// 	expectedSite := openrtb2.Site{
-// 		ID:         "bidRequestSiteId",
-// 		Keywords:   "fpdConfigSiteKeywords",
-// 		Page:       "fpdConfigSitePage",
-// 		Name:       "fpdConfigSiteName",
-// 		Domain:     "fpdConfigSiteDomain",
-// 		Cat:        []string{"cars1", "auto1"},
-// 		SectionCat: []string{"cars2", "auto2"},
-// 		PageCat:    []string{"cars3", "auto3"},
-// 		Search:     "fpdConfigSiteSearch",
-// 		Ref:        "fpdConfigSiteRef",
-// 		Content: &openrtb2.Content{
-// 			Title: "bidRequestSiteContentTitle",
-// 			Data: []openrtb2.Data{
-// 				{ID: "openRtbGlobalFPDSiteDataId1", Name: "openRtbGlobalFPDSiteDataName1"},
-// 				{ID: "openRtbGlobalFPDSiteDataId2", Name: "openRtbGlobalFPDSiteDataName2"},
-// 			},
-// 		},
-// 		Ext: nil,
-// 	}
-// 	assert.Equal(t, expectedSite, resultSite, "Result user is incorrect")
-// }
-
-// func TestResolveApp(t *testing.T) {
-
-// 	fpdConfigApp := make(map[string]json.RawMessage, 0)
-// 	fpdConfigApp["id"] = []byte(`"fpdConfigAppId"`)
-// 	fpdConfigApp[keywordsKey] = []byte(`"fpdConfigAppKeywords"`)
-// 	fpdConfigApp[nameKey] = []byte(`"fpdConfigAppName"`)
-// 	fpdConfigApp[bundleKey] = []byte(`"fpdConfigAppBundle"`)
-// 	fpdConfigApp[dataKey] = []byte(`[{"id":"AppDataId1", "name":"AppDataName1"}, {"id":"AppDataId2", "name":"AppDataName2"}]`)
-// 	fpdConfigApp["ext"] = []byte(`{"data":{"fpdConfigAppExt": 123}}`)
-
-// 	bidRequestApp := &openrtb2.App{
-// 		ID:       "bidRequestAppId",
-// 		Keywords: "bidRequestAppKeywords",
-// 		Name:     "bidRequestAppName",
-// 		Bundle:   "bidRequestAppBundle",
-// 		Content: &openrtb2.Content{
-// 			ID:      "bidRequestAppContentId",
-// 			Episode: 4,
-// 			Data: []openrtb2.Data{
-// 				{ID: "bidRequestAppContentDataId1", Name: "bidRequestAppContentDataName1"},
-// 				{ID: "bidRequestAppContentDataId2", Name: "bidRequestAppContentDataName2"},
-// 			},
-// 		},
-// 	}
-
-// 	globalFPD := make(map[string][]byte, 0)
-// 	globalFPD[appKey] = []byte(`{"globalFPDAppData": "globalFPDAppDataValue"}`)
-
-// 	openRtbGlobalFPD := make(map[string][]openrtb2.Data, 0)
-// 	openRtbGlobalFPD[appContentDataKey] = []openrtb2.Data{
-// 		{ID: "openRtbGlobalFPDAppContentDataId1", Name: "openRtbGlobalFPDAppContentDataName1"},
-// 		{ID: "openRtbGlobalFPDAppContentDataId2", Name: "openRtbGlobalFPDAppContentDataName2"},
-// 	}
-
-// 	expectedApp := &openrtb2.App{
-// 		ID:       "bidRequestAppId",
-// 		Keywords: "fpdConfigAppKeywords",
-// 		Name:     "bidRequestAppName",
-// 		Bundle:   "bidRequestAppBundle",
-// 		Content: &openrtb2.Content{
-// 			ID:      "bidRequestAppContentId",
-// 			Episode: 4,
-// 			Data: []openrtb2.Data{
-// 				{ID: "openRtbGlobalFPDAppContentDataId1", Name: "openRtbGlobalFPDAppContentDataName1"},
-// 				{ID: "openRtbGlobalFPDAppContentDataId2", Name: "openRtbGlobalFPDAppContentDataName2"},
-// 			},
-// 		},
-// 	}
-
-// 	testCases := []struct {
-// 		description      string
-// 		bidRequestAppExt []byte
-// 		expectedAppExt   string
-// 		appContentNil    bool
-// 	}{
-// 		{
-// 			description:      "bid request app.ext is nil",
-// 			bidRequestAppExt: nil,
-// 			expectedAppExt: `{"data":{
-// 									"data":[
-// 										{"id":"AppDataId1","name":"AppDataName1"},
-// 										{"id":"AppDataId2","name":"AppDataName2"}
-// 									],
-// 									"fpdConfigAppExt":123,
-// 									"globalFPDAppData":"globalFPDAppDataValue",
-// 									"id":"fpdConfigAppId"
-// 									}
-// 							}`,
-// 			appContentNil: false,
-// 		},
-// 		{
-// 			description:      "bid request app.ext is not nil",
-// 			bidRequestAppExt: []byte(`{"bidRequestAppExt": 1234}`),
-// 			expectedAppExt: `{"data":{
-// 									"data":[
-// 										{"id":"AppDataId1","name":"AppDataName1"},
-// 										{"id":"AppDataId2","name":"AppDataName2"}
-// 									],
-// 									"fpdConfigAppExt":123,
-// 									"globalFPDAppData":"globalFPDAppDataValue",
-// 									"id":"fpdConfigAppId"
-// 									},
-// 								"bidRequestAppExt":1234
-// 							}`,
-// 			appContentNil: false,
-// 		},
-// 		{
-// 			description:      "bid request app.content.data is nil ",
-// 			bidRequestAppExt: []byte(`{"bidRequestAppExt": 1234}`),
-// 			expectedAppExt: `{"data":{
-// 									"data":[
-// 										{"id":"AppDataId1","name":"AppDataName1"},
-// 										{"id":"AppDataId2","name":"AppDataName2"}
-// 									],
-// 									"fpdConfigAppExt":123,
-// 									"globalFPDAppData":"globalFPDAppDataValue",
-// 									"id":"fpdConfigAppId"
-// 									},
-// 								"bidRequestAppExt":1234
-// 							}`,
-// 			appContentNil: true,
-// 		},
-// 	}
-
-// 	for _, test := range testCases {
-// 		if test.appContentNil {
-// 			bidRequestApp.Content = nil
-// 			expectedApp.Content = &openrtb2.Content{Data: []openrtb2.Data{
-// 				{ID: "openRtbGlobalFPDAppContentDataId1", Name: "openRtbGlobalFPDAppContentDataName1"},
-// 				{ID: "openRtbGlobalFPDAppContentDataId2", Name: "openRtbGlobalFPDAppContentDataName2"},
-// 			}}
-// 		}
-
-// 		bidRequestApp.Ext = test.bidRequestAppExt
-
-// 		fpdConfigApp := make(map[string]json.RawMessage, 0)
-// 		fpdConfigApp["id"] = []byte(`"fpdConfigAppId"`)
-// 		fpdConfigApp[keywordsKey] = []byte(`"fpdConfigAppKeywords"`)
-// 		fpdConfigApp[dataKey] = []byte(`[{"id":"AppDataId1", "name":"AppDataName1"}, {"id":"AppDataId2", "name":"AppDataName2"}]`)
-// 		fpdConfigApp["ext"] = []byte(`{"data":{"fpdConfigAppExt": 123}}`)
-// 		fpdConfig := &openrtb_ext.ORTB2{App: fpdConfigApp}
-
-// 		resultApp, err := resolveApp(fpdConfig, bidRequestApp, globalFPD, openRtbGlobalFPD, "appnexus")
-// 		assert.NoError(t, err, "No error should be returned")
-
-// 		assert.JSONEq(t, test.expectedAppExt, string(resultApp.Ext), "Result app.Ext is incorrect")
-// 		resultApp.Ext = nil
-// 		assert.Equal(t, expectedApp, resultApp, "Result app is incorrect")
-// 	}
-
-// }
-
-func TestResolveAppNilValues(t *testing.T) {
-	resultApp, err := resolveApp(nil, nil, nil, nil, "appnexus")
-	assert.NoError(t, err, "No error should be returned")
-	assert.Nil(t, resultApp, "Result app should be nil")
+			if test.expectedError == "" {
+				assert.NoError(t, err, "unexpected error returned")
+				assert.Equal(t, test.expectedApp, resultApp, "Result app is incorrect")
+			} else {
+				assert.EqualError(t, err, test.expectedError, "expected error incorrect")
+			}
+		})
+	}
 }
-
-// func TestResolveAppBadInput(t *testing.T) {
-// 	fpdConfigApp := make(map[string]json.RawMessage, 0)
-// 	fpdConfigApp["id"] = []byte(`"fpdConfigAppId"`)
-// 	fpdConfig := &openrtb_ext.ORTB2{App: fpdConfigApp}
-
-// 	resultApp, err := resolveApp(fpdConfig, nil, nil, nil, "appnexus")
-// 	assert.Error(t, err, "Error should be returned")
-// 	assert.Equal(t, "incorrect First Party Data for bidder appnexus: App object is not defined in request, but defined in FPD config", err.Error(), "Incorrect error message")
-// 	assert.Nil(t, resultApp, "Result app should be nil")
-// }
-
-// func TestMergeApps(t *testing.T) {
-
-// 	originalApp := &openrtb2.App{
-// 		ID:         "bidRequestAppId",
-// 		Keywords:   "bidRequestAppKeywords",
-// 		Name:       "bidRequestAppName",
-// 		Domain:     "bidRequestAppDomain",
-// 		Bundle:     "bidRequestAppBundle",
-// 		StoreURL:   "bidRequestAppStoreUrl",
-// 		Ver:        "bidRequestAppVer",
-// 		Cat:        []string{"books1", "magazines1"},
-// 		SectionCat: []string{"books2", "magazines2"},
-// 		PageCat:    []string{"books3", "magazines3"},
-// 		Content: &openrtb2.Content{
-// 			Title: "bidRequestAppContentTitle",
-// 			Data: []openrtb2.Data{
-// 				{ID: "openRtbGlobalFPDAppDataId1", Name: "openRtbGlobalFPDAppDataName1"},
-// 				{ID: "openRtbGlobalFPDAppDataId2", Name: "openRtbGlobalFPDAppDataName2"},
-// 			},
-// 		},
-// 		Ext: []byte(`{"bidRequestAppExt": 1234}`),
-// 	}
-// 	fpdConfigApp := make(map[string]json.RawMessage, 0)
-// 	fpdConfigApp["id"] = []byte(`"fpdConfigAppId"`)
-// 	fpdConfigApp[keywordsKey] = []byte(`"fpdConfigAppKeywords"`)
-// 	fpdConfigApp[nameKey] = []byte(`"fpdConfigAppName"`)
-// 	fpdConfigApp[domainKey] = []byte(`"fpdConfigAppDomain"`)
-// 	fpdConfigApp[bundleKey] = []byte(`"fpdConfigAppBundle"`)
-// 	fpdConfigApp[storeUrlKey] = []byte(`"fpdConfigAppStoreUrl"`)
-// 	fpdConfigApp[verKey] = []byte(`"fpdConfigAppVer"`)
-// 	fpdConfigApp[catKey] = []byte(`["cars1", "auto1"]`)
-// 	fpdConfigApp[sectionCatKey] = []byte(`["cars2", "auto2"]`)
-// 	fpdConfigApp[pageCatKey] = []byte(`["cars3", "auto3"]`)
-// 	fpdConfigApp[dataKey] = []byte(`[{"id":"AppDataId1", "name":"AppDataName1"}, {"id":"AppDataId2", "name":"AppDataName2"}]`)
-// 	fpdConfigApp["ext"] = []byte(`{"data":{"fpdConfigAppExt": 123}}`)
-
-// 	resultApp, err := mergeApps(originalApp, fpdConfigApp)
-// 	assert.NoError(t, err, "No error should be returned")
-
-// 	expectedAppExt := `{"bidRequestAppExt":1234,
-// 						 "data":{
-// 							"data":[
-// 								{"id":"AppDataId1","name":"AppDataName1"},
-// 								{"id":"AppDataId2","name":"AppDataName2"}],
-// 							"fpdConfigAppExt":123,
-// 							"id":"fpdConfigAppId"}
-// 						 }`
-// 	assert.JSONEq(t, expectedAppExt, string(resultApp.Ext), "Result user.Ext is incorrect")
-// 	resultApp.Ext = nil
-
-// 	expectedApp := openrtb2.App{
-// 		ID:         "bidRequestAppId",
-// 		Keywords:   "fpdConfigAppKeywords",
-// 		Name:       "fpdConfigAppName",
-// 		Domain:     "fpdConfigAppDomain",
-// 		Bundle:     "fpdConfigAppBundle",
-// 		Ver:        "fpdConfigAppVer",
-// 		StoreURL:   "fpdConfigAppStoreUrl",
-// 		Cat:        []string{"cars1", "auto1"},
-// 		SectionCat: []string{"cars2", "auto2"},
-// 		PageCat:    []string{"cars3", "auto3"},
-// 		Content: &openrtb2.Content{
-// 			Title: "bidRequestAppContentTitle",
-// 			Data: []openrtb2.Data{
-// 				{ID: "openRtbGlobalFPDAppDataId1", Name: "openRtbGlobalFPDAppDataName1"},
-// 				{ID: "openRtbGlobalFPDAppDataId2", Name: "openRtbGlobalFPDAppDataName2"},
-// 			},
-// 		},
-// 		Ext: nil,
-// 	}
-// 	assert.Equal(t, expectedApp, resultApp, "Result user is incorrect")
-// }
 
 func TestBuildExtData(t *testing.T) {
 	testCases := []struct {
@@ -2045,6 +1910,20 @@ var (
     "channel": {
       "id": "FPDChannelId",
       "ext": {"a": "FPDChannelExt", "b": 2}
+    }
+  }
+}
+`)
+
+	user = []byte(`
+{
+  "id": "2",
+  "yob": 2000,
+  "geo": {
+    "city": "LA",
+    "ext": {
+      "b": 100,
+      "c": 3
     }
   }
 }

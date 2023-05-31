@@ -273,11 +273,14 @@ func resolveSite(fpdConfig *openrtb_ext.ORTB2, bidRequestSite *openrtb2.Site, gl
 		}
 		newSite.Content.Data = openRtbGlobalFPD[siteContentDataKey]
 	}
+	if fpdConfigSite != nil { // TODO: Please confirm this if case is needed.
+		// It's similar to user. FPD config is optional
 
-	if err := mergeSite(&newSite, fpdConfigSite, bidderName); err != nil {
-		return nil, err
+		//apply bidder specific fpd if present
+		if err := mergeSite(&newSite, fpdConfigSite, bidderName); err != nil {
+			return nil, err
+		}
 	}
-
 	return &newSite, nil
 }
 
@@ -384,8 +387,10 @@ func resolveApp(fpdConfig *openrtb_ext.ORTB2, bidRequestApp *openrtb2.App, globa
 		newApp.Content.Data = openRtbGlobalFPD[appContentDataKey]
 	}
 
-	if err := mergeApp(newApp, fpdConfigApp); err != nil {
-		return nil, err
+	if fpdConfigApp != nil { //TODO: confirm this if case is needed, similar to site
+		if err := mergeApp(newApp, fpdConfigApp); err != nil {
+			return nil, err
+		}
 	}
 
 	return newApp, nil

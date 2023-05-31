@@ -88,7 +88,8 @@
       },
       "ext": {
         "data": {
-          "other": "data"
+          "other": "data",
+          "testSiteFpd": "testSite"
         }
       }
     },
