@@ -118,17 +118,16 @@ jobs:
                     const  { stats } = ${{ steps.compute_file_changes.outputs.result }}
                     const { owner, repo } = context.repo
                     const pullRequestNumber = context.payload.pull_request.number;
-                   
 
                     for (let i=0; i < semgrepResult.length; i++) {
                         const { file, start, end, message } = semgrepResult[i]
+                        // check if semgrep suggested change is part of commit changes
                         const fileStats =  stats[file]
-                        console.log("fileStats::", fileStats)
                         if (fileStats != undefined && (fileStats.includes(start) || fileStats.includes(end))) {
-                            const response = await github.pulls.createReviewComment({
-                                owner:owner, repo:repo,
-                                pull_number: pullRequestNumber, body: message,
-                                commit_id: commit, path: file, line: start});
+                            
+                            // add review on commit
+                            const response = await github.pulls.createReviewComment({owner: owner, repo: repo, pull_number: 55, body: message, commit_id: commit, path: file, line: start});
+                            console.log(response)
                         }
                     }
             env:
