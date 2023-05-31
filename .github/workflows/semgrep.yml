@@ -41,7 +41,7 @@ jobs:
                 github-token: ${{ secrets.GITHUB_TOKEN }}
                 result-encoding: string
                 script: |
-                    function computeCommitChanges() {
+                    async function computeCommitChanges() {
                       function greet() {
                         return "hello";
                       }
