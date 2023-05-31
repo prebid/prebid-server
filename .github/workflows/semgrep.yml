@@ -41,63 +41,62 @@ jobs:
                 github-token: ${{ secrets.GITHUB_TOKEN }}
                 result-encoding: string
                 script: |
+                    function getStats(files) {
+                        let stats = {};
+                        for (let i = 0; i < files.length; i++) {
+                            const { filename, patch } = files[i];
+            
+                            // check if go file is part of the adapter code and not test files
+                            const fileNameList = filename.split("/");
+                            if (filename.endsWith(".go") && !filename.endsWith("_test.go") && filename.startsWith("adapters/") && fileNameList.length > 2) {
+                                const lines = patch.split("\n");
+                                if (lines.length === 1) {
+                                    continue;
+                                }
+            
+                                let lineNumber;
+                                for (let i = 0; i < lines.length; i++) {
+                                    /*
+                                        check if line is diff hunk header
+                                        for example:
+                                            @@ -1,4 +1,7 @@
+                                            1    var a
+                                            2
+                                            3   -// test
+                                            3   +var b
+                                            4    // foo bar
+                                            5   +// loreum ipsum
+                                            6   +// loreum ipsum
+                                            7   +// loreum ipsum
+                                        here @@ -1,4 +1,7 @@ is diff hunk header
+                                    */
+                                    if (lines[i].match(/@@\s.*?@@/) != null) {
+                                    lineNumber = lines[i].match(/(\d+)/)[0];
+                                    continue;
+                                    }
+                    
+                                    // '-' indicates line was deleted. So do not consider deleted line
+                                    if (lines[i].startsWith("-")) {
+                                    continue;
+                                    }
+            
+                                    // '+' indicates line was added or updated. Include line number in commit change details
+                                    if (lines[i].startsWith("+")) {
+                                    if (stats[filename] === undefined) {
+                                        stats[filename] = [];
+                                    }
+                                    stats[filename].push(lineNumber);
+                                    }
+                                    lineNumber++;
+                                }
+                            }
+                        }
+                        return stats
+                    }
+                    
                     async function computeCommitChanges() {
                         const ref = "${{ steps.determine_commit.outputs.commit }}";
                         const { owner, repo } = context.repo;
-                       
-
-                        function getStats(files) {
-                            let stats = {};
-                            for (let i = 0; i < files.length; i++) {
-                                const { filename, patch } = files[i];
-                
-                                // check if go file is part of the adapter code and not test files
-                                const fileNameList = filename.split("/");
-                                if (filename.endsWith(".go") && !filename.endsWith("_test.go") && filename.startsWith("adapters/") && fileNameList.length > 2) {
-                                    const lines = patch.split("\n");
-                                    if (lines.length === 1) {
-                                        continue;
-                                    }
-                
-                                    let lineNumber;
-                                    for (let i = 0; i < lines.length; i++) {
-                                        /*
-                                            check if line is diff hunk header
-                                            for example:
-                                                @@ -1,4 +1,7 @@
-                                                1    var a
-                                                2
-                                                3   -// test
-                                                3   +var b
-                                                4    // foo bar
-                                                5   +// loreum ipsum
-                                                6   +// loreum ipsum
-                                                7   +// loreum ipsum
-                                            here @@ -1,4 +1,7 @@ is diff hunk header
-                                        */
-                                        if (lines[i].match(/@@\s.*?@@/) != null) {
-                                        lineNumber = lines[i].match(/(\d+)/)[0];
-                                        continue;
-                                        }
-                        
-                                        // '-' indicates line was deleted. So do not consider deleted line
-                                        if (lines[i].startsWith("-")) {
-                                        continue;
-                                        }
-                
-                                        // '+' indicates line was added or updated. Include line number in commit change details
-                                        if (lines[i].startsWith("+")) {
-                                        if (stats[filename] === undefined) {
-                                            stats[filename] = [];
-                                        }
-                                        stats[filename].push(lineNumber);
-                                        }
-                                         lineNumber++;
-                                     }
-                                }
-                            }
-                            return stats
-                        } 
                           
                         let stats = {}
                         const response = await github.repos.getCommit({ owner, repo, ref });
