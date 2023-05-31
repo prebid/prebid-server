@@ -41,6 +41,12 @@ jobs:
                 github-token: ${{ secrets.GITHUB_TOKEN }}
                 result-encoding: string
                 script: |
+                    function greet() {
+                        return "hello"
+                    }
+
+                    const msg = greet()
+                    console.log("msg:" + msg)
                     const ref = "${{ steps.determine_commit.outputs.commit }}"
                     const { owner, repo } = context.repo
                     let stats = {}

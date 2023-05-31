@@ -127,7 +127,6 @@ func (a *adapter) checkResponseStatusCodes(response *adapters.ResponseData) erro
 			Message: fmt.Sprintf("Unexpected status code: [ %d ]. Run with request.debug = 1 for more info", response.StatusCode),
 		}
 	}
-	//
 	return nil
 }
 
