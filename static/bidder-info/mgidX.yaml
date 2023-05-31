@@ -16,5 +16,8 @@ capabilities:
     - native
 userSync:
   redirect:
-    url: "https://cm.mgid.com/m?cdsp=363893&gdpr_consent={{.GDPR_CONSENT}}&gdpr={{.GDPR}}&us_privacy={{.CCPA_CONSENT}}&adu={{.RedirectURL}}"
+    url: "https://cm.mgid.com/i.gif?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&adu={{.RedirectURL}}"
+    userMacro: "{muidn}"
+  iframe:
+    url: "https://cm.mgid.com/i.html?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&adu={{.RedirectURL}}"
     userMacro: "{muidn}"
