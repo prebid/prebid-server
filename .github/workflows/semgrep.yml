@@ -34,8 +34,8 @@ jobs:
                 fi
                 echo "commit=${commit}" >> $GITHUB_OUTPUT
 
-        -   name: Compute file changes
-            id: compute_file_changes
+        -   name: Compute commit changes
+            id: compute_commit_changes
             uses: actions/github-script@v4
             with:
                 github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -50,8 +50,9 @@ jobs:
                         const files = response.data.files
                         for (let i = 0; i < files.length; i++) {
                             const { filename, patch } = files[i];
-                            const fileNameList = filename.split("/")
                             
+                            // check if go file is part of the adapter code and not test files
+                            const fileNameList = filename.split("/")
                             if (filename.endsWith(".go") && !filename.endsWith("_test.go") && filename.startsWith("adapters/") && fileNameList.length > 2) {
                                 const lines = patch.split("\n");
                                 if (lines.length === 1) {
@@ -62,20 +63,29 @@ jobs:
                                 for (let i = 0; i < lines.length; i++) {
                                     /*
                                         check if line is diff hunk header
-                                        for example: 
-                                            @@ -47,23 +47,26 @@
-                                            +   func foo () {
-                                        here @@ -47,23 +47,26 @@ is diff hunk header and 47 is lineNumber
+                                        for example:
+                                            @@ -1,4 +1,7 @@
+                                            1    var a
+                                            2
+                                            3   -// test
+                                            3   +var b
+                                            4    // foo bar
+                                            5   +// loreum ipsum
+                                            6   +// loreum ipsum
+                                            7   +// loreum ipsum                                
+                                        here @@ -1,4 +1,7 @@ is diff hunk header
                                     */ 
                                     if (lines[i].match(/@@\s.*?@@/) != null) {
                                         lineNumber = lines[i].match(/(\d+)/)[0]
                                         continue
                                     }
 
+                                    // '-' indicates line was deleted. So do not consider deleted line
                                     if (lines[i].startsWith("-")) {
                                         continue
                                     }
 
+                                    // '+' indicates line was added or updated. Include line number in commit change details
                                     if (lines[i].startsWith("+")) {
                                         if (stats[filename] === undefined) {
                                             stats[filename] = [];
@@ -87,27 +97,29 @@ jobs:
                             }
                         }
                     }
+
                     const files = Object.keys(stats).join(" ")
                     return JSON.stringify({hasChanges: files.length != 0, stats: stats, files: files})
 
-        -   name: Export file changes
-            id: export_file_changes
+        -   name: Export commit changes
+            id: export_commit_changes
             run: |
-                files=$(echo '${{ steps.compute_file_changes.outputs.result }}' | jq .files)
-                hasChanges=$(echo '${{ steps.compute_file_changes.outputs.result }}' | jq .hasChanges)
+                files=$(echo '${{ steps.compute_commit_changes.outputs.result }}' | jq .files)
+                hasChanges=$(echo '${{ steps.compute_commit_changes.outputs.result }}' | jq .hasChanges)
                 echo "files=${files}" >> $GITHUB_OUTPUT
                 echo "hasChanges=${hasChanges}" >> $GITHUB_OUTPUT
                     
         -   name: Run semgrep tests
             id: run_semgrep_tests
-            if: contains(steps.export_file_changes.outputs.hasChanges, 'true')
+            if: contains(steps.export_commit_changes.outputs.hasChanges, 'true')
             run: |
-                unqouted_string=$(echo ${{ steps.export_file_changes.outputs.files }} | tr -d '"')
+                unqouted_string=$(echo ${{ steps.export_commit_changes.outputs.files }} | tr -d '"')
+                # run semgrep and export result as string
                 outputs=$(semgrep --gitlab-sast --config=./semgrep/rules/adapter/prefer_http_utils.yml $unqouted_string  | jq '[.vulnerabilities[] | {"file": .location.file, "start": .location.start_line, "end": .location.end_line, "message": (.message | gsub("\\n"; "\n"))}]' | jq -c | jq -R)
                 echo "semgrep_result=${outputs}" >> "$GITHUB_OUTPUT"
 
         -   name: Add pull request comment
-            if: contains(steps.export_file_changes.outputs.hasChanges, 'true')
+            if: contains(steps.export_commit_changes.outputs.hasChanges, 'true')
             uses: actions/github-script@v4
             with:
                 github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -115,19 +127,19 @@ jobs:
                 script: |
                     const commit = "${{ steps.determine_commit.outputs.commit }}"
                     const semgrepResult = JSON.parse(${{ steps.run_semgrep_tests.outputs.semgrep_result }})
-                    const  { stats } = ${{ steps.compute_file_changes.outputs.result }}
+                    const  { stats } = ${{ steps.compute_commit_changes.outputs.result }}
                     const { owner, repo } = context.repo
                     const pullRequestNumber = context.payload.pull_request.number;
 
                     for (let i=0; i < semgrepResult.length; i++) {
                         const { file, start, end, message } = semgrepResult[i]
+                        
                         // check if semgrep suggested change is part of commit changes
                         const fileStats =  stats[file]
                         if (fileStats != undefined && (fileStats.includes(start) || fileStats.includes(end))) {
-                            
+                           
                             // add review on commit
-                            const response = await github.pulls.createReviewComment({owner: owner, repo: repo, pull_number: 55, body: message, commit_id: commit, path: file, line: start});
-                            console.log(response)
+                           await github.pulls.createReviewComment({owner: owner, repo: repo, pull_number: pullRequestNumber, body: message, commit_id: commit, path: file, line: start});
                         }
                     }
             env:
