@@ -121,4 +121,6 @@ jobs:
                         console.log(response)
                         console.log("====")
                     }
+            env:
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
