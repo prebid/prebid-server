@@ -112,12 +112,22 @@ jobs:
                 github-token: ${{ secrets.GITHUB_TOKEN }}
                 result-encoding: string
                 script: |
-                    const commit_sha = "${{ steps.determine_commit.outputs.commit }}"
+                    const commit = "${{ steps.determine_commit.outputs.commit }}"
                     const semgrepResult = JSON.parse(${{ steps.run_semgrep_tests.outputs.semgrep_result }})
                     const filesUpdated = ${{ steps.compute_file_changes.outputs.result }}
                     const { owner, repo } = context.repo
+                    const pullRequestNumber = context.payload.pull_request.number;
+
                     for (let i=0; i < semgrepResult.length; i++) {
-                        const response = await github.repos.createCommitComment({owner,repo,commit_sha,body:semgrepResult[i].message});
+                        const { file, start, message } = semgrepResult[i]
+                        const response = await github.pulls.createReviewComment({
+                            owner:owner,
+                            repo:repo,
+                            pull_number: pullRequestNumber,
+                            body: message,
+                            commit_id: commit,
+                            path: file,
+                            line: start});
                         console.log(response)
                         console.log("====")
                     }
