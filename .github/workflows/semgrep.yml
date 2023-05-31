@@ -117,7 +117,7 @@ jobs:
                     const filesUpdated = ${{ steps.compute_file_changes.outputs.result }}
                     const { owner, repo } = context.repo
                     for (let i=0; i < semgrepResult.length; i++) {
-                        const response = await repos.createCommitComment({owner,repo,commit_sha,body:semgrepResult[i].message});
+                        const response = await github.repos.createCommitComment({owner,repo,commit_sha,body:semgrepResult[i].message});
                         console.log(response)
                         console.log("====")
                     }
