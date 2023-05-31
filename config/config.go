@@ -351,7 +351,7 @@ func (t *TCF2) IsEnabled() bool {
 
 // PurposeEnforced checks if full enforcement is turned on for a given purpose. With full enforcement enabled, the
 // GDPR full enforcement algorithm will execute for that purpose determining legal basis; otherwise it's skipped.
-func (t *TCF2) PurposeEnforced(purpose consentconstants.Purpose) bool {
+func (t *TCF2) PurposeEnforced(purpose consentconstants.Purpose) (enforce bool) {
 	if t.PurposeConfigs[purpose] == nil {
 		return false
 	}
@@ -368,7 +368,7 @@ func (t *TCF2) PurposeEnforcementAlgo(purpose consentconstants.Purpose) TCF2Enfo
 
 // PurposeEnforcingVendors checks if enforcing vendors is turned on for a given purpose. With enforcing vendors
 // enabled, the GDPR full enforcement algorithm considers the GVL when determining legal basis; otherwise it's skipped.
-func (t *TCF2) PurposeEnforcingVendors(purpose consentconstants.Purpose) bool {
+func (t *TCF2) PurposeEnforcingVendors(purpose consentconstants.Purpose) (enforce bool) {
 	if t.PurposeConfigs[purpose] == nil {
 		return false
 	}
@@ -377,7 +377,7 @@ func (t *TCF2) PurposeEnforcingVendors(purpose consentconstants.Purpose) bool {
 
 // PurposeVendorExceptions returns the vendor exception map for a given purpose if it exists, otherwise it returns
 // an empty map of vendor exceptions
-func (t *TCF2) PurposeVendorExceptions(purpose consentconstants.Purpose) map[openrtb_ext.BidderName]struct{} {
+func (t *TCF2) PurposeVendorExceptions(purpose consentconstants.Purpose) (vendorExceptionMap map[openrtb_ext.BidderName]struct{}) {
 	c, exists := t.PurposeConfigs[purpose]
 
 	if exists && c.VendorExceptionMap != nil {

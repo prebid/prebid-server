@@ -351,7 +351,7 @@ func valOrZero(useVal bool, val int) int {
 	return 0
 }
 
-func cacheTTL(impTTL int64, bidTTL int64, defTTL int64, buffer int64) int64 {
+func cacheTTL(impTTL int64, bidTTL int64, defTTL int64, buffer int64) (ttl int64) {
 	if impTTL <= 0 && bidTTL <= 0 {
 		// Only use default if there is no imp nor bid TTL provided. We don't want the default
 		// to cut short a requested longer TTL.
@@ -377,7 +377,7 @@ func addBuffer(base int64, buffer int64) int64 {
 	return base + buffer
 }
 
-func defTTL(bidType openrtb_ext.BidType, defaultTTLs *config.DefaultTTLs) int64 {
+func defTTL(bidType openrtb_ext.BidType, defaultTTLs *config.DefaultTTLs) (ttl int64) {
 	switch bidType {
 	case openrtb_ext.BidTypeBanner:
 		return int64(defaultTTLs.Banner)

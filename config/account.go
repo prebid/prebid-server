@@ -164,8 +164,9 @@ func (a *AccountGDPR) PurposeEnforced(purpose consentconstants.Purpose) (value, 
 
 // PurposeEnforcementAlgo checks the purpose enforcement algo for a given purpose by first
 // looking at the account settings, and if not set there, defaulting to the host configuration.
-func (a *AccountGDPR) PurposeEnforcementAlgo(purpose consentconstants.Purpose) (TCF2EnforcementAlgo, bool) {
-	c, exists := a.PurposeConfigs[purpose]
+func (a *AccountGDPR) PurposeEnforcementAlgo(purpose consentconstants.Purpose) (value TCF2EnforcementAlgo, exists bool) {
+	var c *AccountGDPRPurpose
+	c, exists = a.PurposeConfigs[purpose]
 
 	if exists && (c.EnforceAlgoID == TCF2BasicEnforcement || c.EnforceAlgoID == TCF2FullEnforcement) {
 		return c.EnforceAlgoID, true
