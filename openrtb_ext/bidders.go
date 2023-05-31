@@ -204,6 +204,7 @@ const (
 	BidderMediafuse         BidderName = "mediafuse"
 	BidderMedianet          BidderName = "medianet"
 	BidderMgid              BidderName = "mgid"
+	BidderMgidX             BidderName = "mgidX"
 	BidderMobfoxpb          BidderName = "mobfoxpb"
 	BidderMobileFuse        BidderName = "mobilefuse"
 	BidderNanoInteractive   BidderName = "nanointeractive"
@@ -396,6 +397,7 @@ func CoreBidderNames() []BidderName {
 		BidderMediafuse,
 		BidderMedianet,
 		BidderMgid,
+		BidderMgidX,
 		BidderMobfoxpb,
 		BidderMobileFuse,
 		BidderNanoInteractive,
