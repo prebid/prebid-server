@@ -148,6 +148,7 @@ const (
 	BidderConnectAd         BidderName = "connectad"
 	BidderConsumable        BidderName = "consumable"
 	BidderConversant        BidderName = "conversant"
+	BidderCopper6           BidderName = "copper6"
 	BidderCpmstar           BidderName = "cpmstar"
 	BidderCriteo            BidderName = "criteo"
 	BidderCWire             BidderName = "cwire"
@@ -264,6 +265,7 @@ const (
 	BidderVisibleMeasures   BidderName = "visiblemeasures"
 	BidderVisx              BidderName = "visx"
 	BidderVrtcal            BidderName = "vrtcal"
+	BidderXeworks           BidderName = "xeworks"
 	BidderYahooSSP          BidderName = "yahoossp"
 	BidderYeahmobi          BidderName = "yeahmobi"
 	BidderYieldlab          BidderName = "yieldlab"
@@ -338,6 +340,7 @@ func CoreBidderNames() []BidderName {
 		BidderConnectAd,
 		BidderConsumable,
 		BidderConversant,
+		BidderCopper6,
 		BidderCpmstar,
 		BidderCriteo,
 		BidderCWire,
@@ -454,6 +457,7 @@ func CoreBidderNames() []BidderName {
 		BidderVisibleMeasures,
 		BidderVisx,
 		BidderVrtcal,
+		BidderXeworks,
 		BidderYahooSSP,
 		BidderYeahmobi,
 		BidderYieldlab,

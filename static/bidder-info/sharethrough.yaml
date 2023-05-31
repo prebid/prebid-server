@@ -7,10 +7,12 @@ capabilities:
     mediaTypes:
       - banner
       - video
+      - native
   site:
     mediaTypes:
       - banner
       - video
+      - native
 userSync:
   redirect:
     url: https://match.sharethrough.com/FGMrCMMc/v1?redirectUri={{.RedirectURL}}

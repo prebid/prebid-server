@@ -671,3 +671,69 @@ func TestCreateFloorsFrom(t *testing.T) {
 		})
 	}
 }
+
+func TestIsPriceFloorsEnabled(t *testing.T) {
+	type args struct {
+		account           config.Account
+		bidRequestWrapper *openrtb_ext.RequestWrapper
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "Disabled in account and req",
+			args: args{
+				account: config.Account{PriceFloors: config.AccountPriceFloors{Enabled: false}},
+				bidRequestWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Ext: json.RawMessage(`{"prebid":{"floors":{"enabled": false} }}`),
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "Enabled  in account and req",
+			args: args{
+				account: config.Account{PriceFloors: config.AccountPriceFloors{Enabled: true}},
+				bidRequestWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Ext: json.RawMessage(`{"prebid":{"floors":{"enabled": true} }}`),
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "disabled  in account and enabled req",
+			args: args{
+				account: config.Account{PriceFloors: config.AccountPriceFloors{Enabled: false}},
+				bidRequestWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Ext: json.RawMessage(`{"prebid":{"floors":{"enabled": true} }}`),
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "Enabled  in account and disabled in req",
+			args: args{
+				account: config.Account{PriceFloors: config.AccountPriceFloors{Enabled: true}},
+				bidRequestWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Ext: json.RawMessage(`{"prebid":{"floors":{"enabled": false} }}`)},
+				},
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := isPriceFloorsEnabled(tt.args.account, tt.args.bidRequestWrapper)
+			assert.Equal(t, got, tt.want, tt.name)
+		})
+	}
+}
