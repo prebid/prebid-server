@@ -1,4 +1,4 @@
-endpoint: "http://{{.Host}}.technoratimedia.com/openrtb/bids/{{.Host}}"
+endpoint: "https://pbs.technoratimedia.com/openrtb/bids/{{.AccountID}}?src={{.SourceId}}&adapter=imds"
 maintainer:
   email: "eng-demand@imds.tv"
 capabilities:

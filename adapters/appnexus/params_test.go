@@ -53,6 +53,8 @@ var validParams = []string{
 	`{"placement_id":123, "keywords":"foo=bar,foo=baz"}`,
 	`{"placement_id":123, "keywords":{"genre": ["rock", "pop"], "pets": ["dog"]}}`,
 	`{"placement_id":123, "use_pmt_rule": true, "private_sizes": [{"w": 300, "h":250}]}`,
+	`{"placementId":123, "ext_inv_code": "invCode"}`,
+	`{"placementId":123, "external_imp_id": "impId"}`,
 }
 
 var invalidParams = []string{
@@ -78,4 +80,6 @@ var invalidParams = []string{
 	`{"placement_id":123, "use_pmt_rule": "true"}`,
 	`{"placement_id":123, "private_sizes": [[300,250]]}`,
 	`{"placement_id":123, "private_sizes": [{"w": "300", "h": "250"}]}`,
+	`{"placementId":123, "ext_inv_code": 1}`,
+	`{"placementId":123, "external_imp_id": 2}`,
 }
