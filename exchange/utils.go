@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/rand"
 
@@ -13,7 +14,6 @@ import (
 	gppConstants "github.com/prebid/go-gpp/constants"
 	"github.com/prebid/openrtb/v19/openrtb2"
 
-	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/firstpartydata"
 	"github.com/prebid/prebid-server/gdpr"
@@ -232,6 +232,32 @@ func extractLMT(orig *openrtb2.BidRequest, privacyConfig config.Privacy) privacy
 	}
 }
 
+func ExtractReqExtBidderParamsMap(bidRequest *openrtb2.BidRequest) (map[string]json.RawMessage, error) {
+	if bidRequest == nil {
+		return nil, errors.New("error bidRequest should not be nil")
+	}
+
+	reqExt := &openrtb_ext.ExtRequest{}
+	if len(bidRequest.Ext) > 0 {
+		err := json.Unmarshal(bidRequest.Ext, &reqExt)
+		if err != nil {
+			return nil, fmt.Errorf("error decoding Request.ext : %s", err.Error())
+		}
+	}
+
+	if reqExt.Prebid.BidderParams == nil {
+		return nil, nil
+	}
+
+	var bidderParams map[string]json.RawMessage
+	err := json.Unmarshal(reqExt.Prebid.BidderParams, &bidderParams)
+	if err != nil {
+		return nil, err
+	}
+
+	return bidderParams, nil
+}
+
 func getAuctionBidderRequests(auctionRequest AuctionRequest,
 	requestExt *openrtb_ext.ExtRequest,
 	bidderToSyncerKey map[string]string,
@@ -246,7 +272,7 @@ func getAuctionBidderRequests(auctionRequest AuctionRequest,
 		return nil, []error{err}
 	}
 
-	bidderParamsInReqExt, err := adapters.ExtractReqExtBidderParamsMap(req.BidRequest)
+	bidderParamsInReqExt, err := ExtractReqExtBidderParamsMap(req.BidRequest)
 	if err != nil {
 		return nil, []error{err}
 	}

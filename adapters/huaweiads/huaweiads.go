@@ -723,6 +723,7 @@ func getReqDeviceInfo(request *huaweiAdsRequest, openRTBRequest *openrtb2.BidReq
 		device.LocaleCountry = country
 		device.Ip = openRTBRequest.Device.IP
 		device.Gaid = openRTBRequest.Device.IFA
+		device.ClientTime = getClientTime("")
 	}
 
 	// get oaid gaid imei in openRTBRequest.User.Ext.Data
@@ -815,6 +816,9 @@ func getDeviceIDFromUserExt(device *device, openRTBRequest *openrtb2.BidRequest)
 		}
 		if len(deviceId.Gaid) > 0 {
 			device.Gaid = deviceId.Gaid[0]
+			isValidDeviceId = true
+		}
+		if len(device.Gaid) > 0 {
 			isValidDeviceId = true
 		}
 		if len(deviceId.Imei) > 0 {
@@ -1552,10 +1556,14 @@ func getDigestAuthorization(huaweiAdsImpExt *openrtb_ext.ExtImpHuaweiAds, isTest
 	if isTestAuthorization {
 		nonce = "1629473330823"
 	}
-	var apiKey = huaweiAdsImpExt.PublisherId + ":ppsadx/getResult:" + huaweiAdsImpExt.SignKey
-	return "Digest username=" + huaweiAdsImpExt.PublisherId + "," +
+	publisher_id := strings.TrimSpace(huaweiAdsImpExt.PublisherId)
+	sign_key := strings.TrimSpace(huaweiAdsImpExt.SignKey)
+	key_id := strings.TrimSpace(huaweiAdsImpExt.KeyId)
+
+	var apiKey = publisher_id + ":ppsadx/getResult:" + sign_key
+	return "Digest username=" + publisher_id + "," +
 		"realm=ppsadx/getResult," +
 		"nonce=" + nonce + "," +
 		"response=" + computeHmacSha256(nonce+":POST:/ppsadx/getResult", apiKey) + "," +
-		"algorithm=HmacSHA256,usertype=1,keyid=" + huaweiAdsImpExt.KeyId
+		"algorithm=HmacSHA256,usertype=1,keyid=" + key_id
 }
