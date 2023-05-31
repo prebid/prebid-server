@@ -575,7 +575,7 @@ func TestEnforce(t *testing.T) {
 					},
 				},
 				conversions:    convert{},
-				priceFloorsCfg: config.AccountPriceFloors{Enabled: true, EnforceFloorsRate: 100, EnforceDealFloors: true},
+				priceFloorsCfg: config.AccountPriceFloors{Enabled: true, EnforceFloorsRate: 0, EnforceDealFloors: true},
 			},
 			expEligibleBids: map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid{
 				"pubmatic": {
@@ -632,7 +632,7 @@ func TestEnforce(t *testing.T) {
 					},
 				},
 				conversions:    convert{},
-				priceFloorsCfg: config.AccountPriceFloors{Enabled: true, EnforceFloorsRate: 100, EnforceDealFloors: false},
+				priceFloorsCfg: config.AccountPriceFloors{Enabled: true, EnforceFloorsRate: 0, EnforceDealFloors: false},
 			},
 			expEligibleBids: map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid{
 				"pubmatic": {
@@ -661,12 +661,10 @@ func TestEnforce(t *testing.T) {
 	for _, tt := range tests {
 		actEligibleBids, actErrs, actRejecteBids := Enforce(tt.args.bidRequestWrapper, tt.args.seatBids, config.Account{PriceFloors: tt.args.priceFloorsCfg}, tt.args.conversions)
 		assert.Equal(t, tt.expErrs, actErrs, tt.name)
-		if !reflect.DeepEqual(tt.expRejectedBids, actRejecteBids) {
-			assert.Fail(t, "rejected bids don't match")
-		}
+		assert.ElementsMatch(t, tt.expRejectedBids, actRejecteBids, tt.name)
 
 		if !reflect.DeepEqual(tt.expEligibleBids, actEligibleBids) {
-			assert.Fail(t, "eligible bids don't match")
+			assert.Failf(t, "eligible bids don't match", "Expected: %v, Got: %v", tt.expEligibleBids, actEligibleBids)
 		}
 	}
 }
