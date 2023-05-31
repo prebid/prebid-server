@@ -122,7 +122,7 @@ jobs:
 
                     for (let i=0; i < semgrepResult.length; i++) {
                         const { file, start, end, message } = semgrepResult[i]
-                        const fileStats =  stats.[file]
+                        const fileStats =  stats[file]
                         console.log("fileStats::", fileStats)
                         if (fileStats != undefined && (fileStats.includes(start) || fileStats.includes(end))) {
                             const response = await github.pulls.createReviewComment({
