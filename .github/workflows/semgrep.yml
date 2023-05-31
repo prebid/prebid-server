@@ -119,7 +119,7 @@ jobs:
                     const { owner, repo } = context.repo
                     const pullRequestNumber = context.payload.pull_request.number;
                    
-                    console.log("fileChanges::" + JSON.Stringify(fileChanges))
+                    console.log("fileChanges::" + JSON.stringify(fileChanges))
 
                     for (let i=0; i < semgrepResult.length; i++) {
                         const { file, start, end, message } = semgrepResult[i]
