@@ -115,9 +115,10 @@ jobs:
                 script: |
                     const commit = "${{ steps.determine_commit.outputs.commit }}"
                     const semgrepResult = JSON.parse(${{ steps.run_semgrep_tests.outputs.semgrep_result }})
-                    const fileChanges = JSON.parse(${{ steps.compute_file_changes.outputs.result }})
+                    const fileChanges = ${{ steps.compute_file_changes.outputs.result }}
                     const { owner, repo } = context.repo
                     const pullRequestNumber = context.payload.pull_request.number;
+                   
                     console.log("fileChanges::" + fileChanges)
 
                     for (let i=0; i < semgrepResult.length; i++) {
