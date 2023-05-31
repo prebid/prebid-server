@@ -2,7 +2,6 @@ package firstpartydata
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"reflect"
 	"testing"
@@ -635,7 +634,6 @@ func TestExtractFPDForBidders(t *testing.T) {
 	if specFiles, err := os.ReadDir("./tests/extractfpdforbidders"); err == nil {
 		for _, specFile := range specFiles {
 			fileName := "./tests/extractfpdforbidders/" + specFile.Name()
-			fmt.Println(fileName)
 
 			fpdFile, err := loadFpdFile(fileName)
 
