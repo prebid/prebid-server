@@ -53,10 +53,7 @@ func getHeaders(request *openrtb2.BidRequest) http.Header {
 	return headers
 }
 
-func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) (
-	requestsToBidder []*adapters.RequestData,
-	errs []error,
-) {
+func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) (requestsToBidder []*adapters.RequestData, errs []error) {
 	motorikExt, err := getImpressionExt(&openRTBRequest.Imp[0])
 	if err != nil {
 		return nil, []error{err}
@@ -115,11 +112,7 @@ func checkResponseStatusCodes(response *adapters.ResponseData) error {
 	return adapters.CheckResponseStatusCodeForErrors(response)
 }
 
-func (a *adapter) MakeBids(
-	openRTBRequest *openrtb2.BidRequest,
-	requestToBidder *adapters.RequestData,
-	bidderRawResponse *adapters.ResponseData,
-) (bidderResponse *adapters.BidderResponse, errs []error) {
+func (a *adapter) MakeBids(openRTBRequest *openrtb2.BidRequest, requestToBidder *adapters.RequestData, bidderRawResponse *adapters.ResponseData) (bidderResponse *adapters.BidderResponse, errs []error) {
 	if adapters.IsResponseStatusCodeNoContent(bidderRawResponse) {
 		return nil, nil
 	}
