@@ -121,17 +121,7 @@ jobs:
                    
                     console.log("fileChanges::" + fileChanges)
 
-                    for (let i=0; i < semgrepResult.length; i++) {
-                        const { file, start, end, message } = semgrepResult[i]
-                        const changes = fileChanges[file]
-                        console.log("changes::", changes)
-                        if changes != undefined && (changes.includes(start) || changes.includes(end)) {
-                            const response = await github.pulls.createReviewComment({
-                                owner:owner, repo:repo,
-                                pull_number: pullRequestNumber, body: message,
-                                commit_id: commit, path: file, line: start});
-                        }
-                    }
+
             env:
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
