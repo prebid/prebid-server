@@ -2,6 +2,7 @@ name: adapter semgrep checks
 on:
   pull_request
     # paths: ["adapters/*/*.go"]
+permissions: write-all
 jobs:
   semgrep-check:
     runs-on: ubuntu-latest
