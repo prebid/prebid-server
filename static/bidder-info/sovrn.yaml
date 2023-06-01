@@ -17,6 +17,6 @@ userSync:
     url: "https://ap.lijit.com/pixel?redir={{.RedirectURL}}"
     userMacro: "$UID"
   iframe:
-    url: "https://ap.lijit.com/beacon/prebid-server/?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&url={{.RedirectURL}}"
+    url: "https://ap.lijit.com/beacon/prebid-server/?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&url={{.RedirectURL}}"
     userMacro: "$UID"
     
