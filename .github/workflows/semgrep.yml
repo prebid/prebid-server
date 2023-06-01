@@ -97,12 +97,13 @@ jobs:
                         return stats
                     }
 
-                    function computeCommitChanges() {
+                    async function computeCommitChanges() {
                         const ref = "${{ steps.determine_commit.outputs.commit }}";
                         const { owner, repo } = context.repo;
                           
                         let stats = {}
                         const response = await github.repos.getCommit({ owner, repo, ref });
+                        console.log('response', JSON.stringify(response))
                         if (response != null && response.status === 200) {
                             stats = getStats(response.data.files)
                         }
@@ -111,7 +112,7 @@ jobs:
                         return JSON.stringify({ hasChanges: files.length != 0, stats: stats, files: files });
                     }
               
-                    return  computeCommitChanges();              
+                    return await computeCommitChanges();              
 
         -   name: Export commit changes
             id: export_commit_changes
