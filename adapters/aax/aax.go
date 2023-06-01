@@ -109,11 +109,16 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{&errortypes.BadInput{
+		return nil, []error{&errortypes.BadInput{ // test
 			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
 		}}
 	}
 
+	if response.StatusCode == http.StatusBadRequest {
+		return nil, []error{&errortypes.BadInput{ // test
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}}
+	}
 	// test
 
 	if response.StatusCode != http.StatusOK { // test //test test
