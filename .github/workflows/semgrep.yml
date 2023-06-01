@@ -7,55 +7,11 @@ jobs:
   semgrep-check:
     runs-on: ubuntu-latest
     steps:
-        -   name: Install semgrep
-            run: |
-                pip3 install semgrep==1.22.0
-                semgrep --version
-                
-        -   name: Install jq
-            run: |
-                pip3 install jq==1.4.1
-                jq --version
-                
         -   name: Checkout repo
             uses: actions/checkout@v3
             with:
                 fetch-depth: 0
         
-        -   name: Determine merged commit and last non-merged master commit
-            uses: actions/github-script@v4
-            with:
-                github-token: ${{ secrets.GITHUB_TOKEN }}
-                result-encoding: string
-                script: |
-                    const { owner, repo } = context.repo
-                    const pullRequestNumber = context.payload.pull_request.number
-
-                    const response = await github.pulls.listCommits({
-                        owner,
-                        repo,
-                        pull_number: pullRequestNumber,
-                    });
-
-                    console.log("response:", JSON.stringify(response))
-
-        -   name: Dump GitHub context
-            env:
-                GITHUB_CONTEXT: ${{ toJson(github) }}
-            run: echo "$GITHUB_CONTEXT"
-
-        -   name: Determine commit
-            id: determine_commit
-            run: |
-                # run semgrep tests on all files when a pull request is opened
-                # github.sha corresponds to the merged commit, enabling to fetch all updated files
-                commit=${{ github.sha }}
-                if [ "${{ github.event.action }}" == "synchronize" ]; then
-                    # run semgrep tests only on files updated by latest non-merge commit
-                    commit=${{ github.event.pull_request.head.sha }}
-                fi
-                echo "commit=${commit}" >> $GITHUB_OUTPUT
-
         -   name: Compute commit changes
             id: compute_commit_changes
             uses: actions/github-script@v4
@@ -63,73 +19,126 @@ jobs:
                 github-token: ${{ secrets.GITHUB_TOKEN }}
                 result-encoding: string
                 script: |
-                    function getStats(files) {
+                    const { owner, repo } = context.repo
+                    const pullRequestNumber = context.payload.pull_request.number
+                    let commit
+
+                    async function getLatestCommit() {
+                        const { data } = await github.pulls.listCommits({owner, repo, pull_number: pullRequestNumber}) 
+                        // api returns commits in ascending order so loop in reverse to get latest commit
+                        // latest commit can be merged master commit, such commit have more than one parent commits
+                        // semgrep shouldn't scan changes part of merged master commit
+                        for (let i = data.length-1; i >= 0; i--) {
+                            const { sha, parents } = data[i]
+                            if (parents.length == 1) {
+                                return sha
+                            }
+                        }
+                    }
+
+                    async function getStats(files) {
                         let stats = {}
                         for (let i = 0; i < files.length; i++) {
                             const { filename, patch } = files[i]
             
-                            // check if go file is part of the adapter code and not test files
+                            // only consider non test go files that are part of adapter code
                             const fileNameList = filename.split("/")
                             if (filename.endsWith(".go") && !filename.endsWith("_test.go") && filename.startsWith("adapters/") && fileNameList.length > 2) {
                                 const lines = patch.split("\n")
                                 if (lines.length === 1) {
-                                    continue;
+                                    continue
                                 }
             
-                                let lineNumber;
+                                let lineNumber
                                 for (let i = 0; i < lines.length; i++) {
-                                    /*
-                                        check if line is diff hunk header
-                                        for example:
-                                            @@ -1,4 +1,7 @@
-                                            1    var a
-                                            2
-                                            3   -// test
-                                            3   +var b
-                                            4    // foo bar
-                                            5   +// loreum ipsum
-                                            6   +// loreum ipsum
-                                            7   +// loreum ipsum
-                                        here @@ -1,4 +1,7 @@ is diff hunk header
+                                    /* check if line is diff hunk header
+                                    example:
+                                        @@ -1,3 +1,3 @@
+                                        1    var a
+                                        2
+                                        3   - //test
+                                        3   +var b
+                                    '@@ -1,3 +1,3 @@' is diff hunk header 
                                     */
                                     if (lines[i].match(/@@\s.*?@@/) != null) {
-                                        lineNumber = lines[i].match(/(\d+)/)[0]
+                                        lineNumber = lines[i].match(/\+(\d+)/)[0]
                                         continue
                                     }
                     
                                     // '-' indicates line was deleted. So do not consider deleted line
-                                    if (lines[i].startsWith("-")) { continue; }
+                                    if (lines[i].startsWith("-")) { continue }
             
                                     // '+' indicates line was added or updated. Include line number in commit change details
                                     if (lines[i].startsWith("+")) {
-                                    if (stats[filename] === undefined) {
-                                        stats[filename] = [];
+                                        if (stats[filename] === undefined) {
+                                            stats[filename] = []
+                                        }
+                                        stats[filename].push(lineNumber)
                                     }
-                                    stats[filename].push(lineNumber);
-                                    }
-                                    lineNumber++;
+                                    lineNumber++
                                 }
                             }
                         }
                         return stats
                     }
 
-                    async function computeCommitChanges() {
-                        const ref = "${{ steps.determine_commit.outputs.commit }}";
-                        const { owner, repo } = context.repo;
-                          
-                        let stats = {}
-                        const response = await github.repos.getCommit({ owner, repo, ref });
-                        console.log('response', JSON.stringify(response))
-                        if (response != null && response.status === 200) {
-                            stats = getStats(response.data.files)
+                    async function isTestExecutedOnCommit(ref) {
+                        const response = await github.checks.listForRef({owner, repo, ref})
+                        const checkRuns = response.data.check_runs
+                        for (let i = 0; i < checkRuns.length; i++) {
+                            if (checkRuns[i].status == "completed" && checkRuns[i].name == "semgrep-check") {
+                                return true
+                            }
                         }
-              
-                        const files = Object.keys(stats).join(" ");
-                        return JSON.stringify({ hasChanges: files.length != 0, stats: stats, files: files });
+
+                        return false
                     }
-              
-                    return await computeCommitChanges();              
+
+                    async function computeCommitChanges() {
+                        const pullRequestEvent = "${{ github.event.action }}"
+                        let stats = {}
+
+                        const { data } = await github.pulls.listFiles({ owner, repo, pull_number:pullRequestNumber })
+                        const pullRequestStats = await getStats(data)                        
+                        
+                        //  check if a new commit was pushed after the pull request was opened
+                        if (pullRequestStats != {} && pullRequestEvent == "synchronize") {
+                            commit = await getLatestCommit()
+                            const isTestExecuted = await isTestExecutedOnCommit(commit)
+                            if (!isTestExecuted) {
+                                const { data } = await github.repos.getCommit({ owner, repo, ref:commit })
+                                const latestCommitStats = await getStats(data.files)
+        
+                                const fileNames = latestCommitStats == {} ? []: Object.keys(latestCommitStats)
+                                for (let i = 0; i < fileNames.length; i++) {
+                                    const fileName = fileNames[i]
+                                    
+                                    const pullRequestChanges = pullRequestStats[fileName]
+                                    if (pullRequestChanges == undefined || pullRequestChanges == null) {
+                                        continue
+                                    }
+
+                                    const commitChanges = latestCommitStats[fileName]
+                                    const changes = []
+                                    for (let i = 0; i < commitChanges.length; i++) {
+                                        if (pullRequestChanges.includes(commitChanges[i])) {
+                                            changes.push(commitChanges[i])
+                                        }
+                                    }    
+                                    if (changes.length != 0) {
+                                        stats[fileName] = changes
+                                    }
+                                }
+                            }
+                        } else {
+                            stats = pullRequestStats
+                            commit = pullRequestMergeCommit
+                        }
+                        const files = Object.keys(stats).join(" ")
+                        return JSON.stringify({ hasChanges: files.length != 0, stats, files, commit })
+                    }
+
+                    return await computeCommitChanges()
 
         -   name: Export commit changes
             id: export_commit_changes
@@ -138,7 +147,19 @@ jobs:
                 hasChanges=$(echo '${{ steps.compute_commit_changes.outputs.result }}' | jq .hasChanges)
                 echo "files=${files}" >> $GITHUB_OUTPUT
                 echo "hasChanges=${hasChanges}" >> $GITHUB_OUTPUT
+
+        -   name: Install semgrep
+            if: contains(steps.export_commit_changes.outputs.hasChanges, 'true')
+            run: |
+                pip3 install semgrep==1.22.0
+                semgrep --version
                     
+        -   name: Install jq
+            if: contains(steps.export_commit_changes.outputs.hasChanges, 'true')
+            run: |
+                pip3 install jq==1.4.1
+                jq --version
+                                    
         -   name: Run semgrep tests
             id: run_semgrep_tests
             if: contains(steps.export_commit_changes.outputs.hasChanges, 'true')
@@ -155,21 +176,18 @@ jobs:
                 github-token: ${{ secrets.GITHUB_TOKEN }}
                 result-encoding: string
                 script: |
-                    const commit = "${{ steps.determine_commit.outputs.commit }}"
                     const semgrepResult = JSON.parse(${{ steps.run_semgrep_tests.outputs.semgrep_result }})
-                    const  { stats } = ${{ steps.compute_commit_changes.outputs.result }}
+                    const  { stats, commit } = ${{ steps.compute_commit_changes.outputs.result }}
                     const { owner, repo } = context.repo
-                    const pullRequestNumber = context.payload.pull_request.number;
+                    const pullRequestNumber = context.payload.pull_request.number
 
                     for (let i=0; i < semgrepResult.length; i++) {
                         const { file, start, end, message } = semgrepResult[i]
-                        
                         // check if semgrep suggested change is part of commit changes
                         const fileStats =  stats[file]
                         if (fileStats != undefined && (fileStats.includes(start) || fileStats.includes(end))) {
-                           
                             // add review on commit
-                           await github.pulls.createReviewComment({owner: owner, repo: repo, pull_number: pullRequestNumber, body: message, commit_id: commit, path: file, line: start});
+                           await github.pulls.createReviewComment({owner: owner, repo: repo, pull_number: pullRequestNumber, body: message, commit_id: commit, path: file, line: start})
                         }
                     }
             env:
