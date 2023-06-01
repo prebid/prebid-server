@@ -12,6 +12,8 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
+	gpplib "github.com/prebid/go-gpp"
+	gppConstants "github.com/prebid/go-gpp/constants"
 	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
@@ -25,6 +27,7 @@ import (
 	gppPrivacy "github.com/prebid/prebid-server/privacy/gpp"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/usersync"
+	stringutil "github.com/prebid/prebid-server/util/stringutil"
 )
 
 var (
@@ -125,40 +128,12 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 		return usersync.Request{}, privacy.Policies{}, combineErrors(fetchErrs)
 	}
 
-	var gdprString string
-	if request.GDPR != nil {
-		gdprString = strconv.Itoa(*request.GDPR)
-	}
-	gdprSignal, err := gdpr.StrSignalParse(gdprString)
-	if err != nil {
-		return usersync.Request{}, privacy.Policies{}, err
-	}
-
-	if request.GDPRConsent == "" {
-		if gdprSignal == gdpr.SignalYes {
-			return usersync.Request{}, privacy.Policies{}, errCookieSyncGDPRConsentMissing
-		}
-
-		if gdprSignal == gdpr.SignalAmbiguous && gdpr.SignalNormalize(gdprSignal, c.privacyConfig.gdprConfig.DefaultValue) == gdpr.SignalYes {
-			return usersync.Request{}, privacy.Policies{}, errCookieSyncGDPRConsentMissingSignalAmbiguous
-		}
-	}
-
 	request = c.setLimit(request, account.CookieSync)
 	request = c.setCooperativeSync(request, account.CookieSync)
 
-	privacyPolicies := privacy.Policies{
-		GDPR: gdprPrivacy.Policy{
-			Signal:  gdprString,
-			Consent: request.GDPRConsent,
-		},
-		CCPA: ccpa.Policy{
-			Consent: request.USPrivacy,
-		},
-		GPP: gppPrivacy.Policy{
-			Consent: request.GPP,
-			RawSID:  request.GPPSid,
-		},
+	privacyPolicies, gdprSignal, err := extractPrivacyPolicies(request, c.privacyConfig.gdprConfig.DefaultValue)
+	if err != nil {
+		return usersync.Request{}, privacy.Policies{}, err
 	}
 
 	ccpaParsedPolicy := ccpa.ParsedPolicy{}
@@ -178,7 +153,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 	}
 
 	gdprRequestInfo := gdpr.RequestInfo{
-		Consent:    request.GDPRConsent,
+		Consent:    privacyPolicies.GDPR.Consent,
 		GDPRSignal: gdprSignal,
 	}
 
@@ -199,6 +174,82 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 		SyncTypeFilter: syncTypeFilter,
 	}
 	return rx, privacyPolicies, nil
+}
+
+func extractPrivacyPolicies(request cookieSyncRequest, usersyncDefaultGDPRValue string) (privacy.Policies, gdpr.Signal, error) {
+	// GDPR
+	gppSID, err := stringutil.StrToInt8Slice(request.GPPSid)
+	if err != nil {
+		return privacy.Policies{}, gdpr.SignalNo, err
+	}
+
+	gdprSignal, gdprString, err := extractGDPRSignal(request.GDPR, gppSID)
+	if err != nil {
+		return privacy.Policies{}, gdpr.SignalNo, err
+	}
+
+	var gpp gpplib.GppContainer
+	if len(request.GPP) > 0 {
+		var err error
+		gpp, err = gpplib.Parse(request.GPP)
+		if err != nil {
+			return privacy.Policies{}, gdpr.SignalNo, err
+		}
+	}
+
+	gdprConsent := request.GDPRConsent
+	if i := gppPrivacy.IndexOfSID(gpp, gppConstants.SectionTCFEU2); i >= 0 {
+		gdprConsent = gpp.Sections[i].GetValue()
+	}
+
+	if gdprConsent == "" {
+		if gdprSignal == gdpr.SignalYes {
+			return privacy.Policies{}, gdpr.SignalNo, errCookieSyncGDPRConsentMissing
+		}
+
+		if gdprSignal == gdpr.SignalAmbiguous && gdpr.SignalNormalize(gdprSignal, usersyncDefaultGDPRValue) == gdpr.SignalYes {
+			return privacy.Policies{}, gdpr.SignalNo, errCookieSyncGDPRConsentMissingSignalAmbiguous
+		}
+	}
+
+	// CCPA
+	ccpaString, err := ccpa.SelectCCPAConsent(request.USPrivacy, gpp, gppSID)
+	if err != nil {
+		return privacy.Policies{}, gdpr.SignalNo, err
+	}
+
+	return privacy.Policies{
+		GDPR: gdprPrivacy.Policy{
+			Signal:  gdprString,
+			Consent: gdprConsent,
+		},
+		CCPA: ccpa.Policy{
+			Consent: ccpaString,
+		},
+		GPP: gppPrivacy.Policy{
+			Consent: request.GPP,
+			RawSID:  request.GPPSid,
+		},
+	}, gdprSignal, nil
+}
+
+func extractGDPRSignal(requestGDPR *int, gppSID []int8) (gdpr.Signal, string, error) {
+	if len(gppSID) > 0 {
+		if gppPrivacy.IsSIDInList(gppSID, gppConstants.SectionTCFEU2) {
+			return gdpr.SignalYes, strconv.Itoa(int(gdpr.SignalYes)), nil
+		}
+		return gdpr.SignalNo, strconv.Itoa(int(gdpr.SignalNo)), nil
+	}
+
+	if requestGDPR == nil {
+		return gdpr.SignalAmbiguous, "", nil
+	}
+
+	gdprSignal, err := gdpr.IntSignalParse(*requestGDPR)
+	if err != nil {
+		return gdpr.SignalAmbiguous, strconv.Itoa(*requestGDPR), err
+	}
+	return gdprSignal, strconv.Itoa(*requestGDPR), nil
 }
 
 func (c *cookieSyncEndpoint) writeParseRequestErrorMetrics(err error) {
