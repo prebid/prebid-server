@@ -2108,30 +2108,30 @@ func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
 		{
 			description: "Assert correct AmpResponse when request rejected at entrypoint stage",
 			file:        "sample-requests/hooks/amp_entrypoint_reject.json",
-			planBuilder: mockPlanBuilder{entrypointPlan: makePlan[hookstage.Entrypoint](mockRejectionHook{nbr})},
+			planBuilder: mockPlanBuilder{entrypointPlan: makePlan[hookstage.Entrypoint](mockRejectionHook{nbr, nil})},
 		},
 		{
 			// raw_auction stage not executed for AMP endpoint, so we expect full response
 			description: "Assert correct AmpResponse when request rejected at raw_auction stage",
 			file:        "sample-requests/amp/valid-supplementary/aliased-buyeruids.json",
-			planBuilder: mockPlanBuilder{rawAuctionPlan: makePlan[hookstage.RawAuctionRequest](mockRejectionHook{nbr})},
+			planBuilder: mockPlanBuilder{rawAuctionPlan: makePlan[hookstage.RawAuctionRequest](mockRejectionHook{nbr, nil})},
 		},
 		{
 			description: "Assert correct AmpResponse when request rejected at processed_auction stage",
 			file:        "sample-requests/hooks/amp_processed_auction_request_reject.json",
-			planBuilder: mockPlanBuilder{processedAuctionPlan: makePlan[hookstage.ProcessedAuctionRequest](mockRejectionHook{nbr})},
+			planBuilder: mockPlanBuilder{processedAuctionPlan: makePlan[hookstage.ProcessedAuctionRequest](mockRejectionHook{nbr, nil})},
 		},
 		{
 			// bidder_request stage rejects only bidder, so we expect bidder rejection warning added
 			description: "Assert correct AmpResponse when request rejected at bidder-request stage",
 			file:        "sample-requests/hooks/amp_bidder_reject.json",
-			planBuilder: mockPlanBuilder{bidderRequestPlan: makePlan[hookstage.BidderRequest](mockRejectionHook{nbr})},
+			planBuilder: mockPlanBuilder{bidderRequestPlan: makePlan[hookstage.BidderRequest](mockRejectionHook{nbr, nil})},
 		},
 		{
 			// raw_bidder_response stage rejects only bidder, so we expect bidder rejection warning added
 			description: "Assert correct AmpResponse when request rejected at raw_bidder_response stage",
 			file:        "sample-requests/hooks/amp_bidder_response_reject.json",
-			planBuilder: mockPlanBuilder{rawBidderResponsePlan: makePlan[hookstage.RawBidderResponse](mockRejectionHook{nbr})},
+			planBuilder: mockPlanBuilder{rawBidderResponsePlan: makePlan[hookstage.RawBidderResponse](mockRejectionHook{nbr, nil})},
 		},
 		{
 			// no debug information should be added for raw_auction stage because it's not executed for amp endpoint
