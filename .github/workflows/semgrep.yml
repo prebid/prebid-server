@@ -93,9 +93,9 @@ jobs:
                     }
 
                     async function isTestExecutedOnCommit(ref) {
-                        const { check_runs } = await github.checks.listForRef({owner, repo, ref})
-                        console.log("check_runs", JSON.stringify(check_runs))
-                        for (let i = 0; i <= check_runs.length; i++) {
+                        const res = await github.checks.listForRef({owner, repo, ref})
+                        console.log("check_runs", JSON.stringify(res))
+                        for (let i = 0; i <= res.check_runs.length; i++) {
                             if (check_runs[i].name == "semgrep-check") {
                                 return true
                             }
@@ -114,7 +114,7 @@ jobs:
                         if (pullRequestStats != {} && pullRequestEvent == "synchronize") {
                             //  check if a new commit was pushed after the pull request was opened
                             commit = await getLatestCommit()
-
+                            console.log("commit", JSON.stringify(commit))
                             if (!isTestExecutedOnCommit(commit)) {
                                 const { data } = await github.repos.getCommit({ owner, repo, ref:commit })
                                 const latestCommitStats = await getStats(data.files)
