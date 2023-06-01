@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Rise Adapter Params",
+  "description": "A schema which validates params accepted by the Rise adapter",
+  "type": "object",
+  "properties": {
+    "publisher_id": {
+      "type": "string",
+      "description": "The publisher ID"
+    }
+  },
+  "required": ["publisher_id"]
+}
