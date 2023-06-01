@@ -8,7 +8,7 @@ import (
 )
 
 // GetPriceBucket is the externally facing function for computing CPM buckets
-func GetPriceBucket(bid openrtb2.Bid, targetingData *targetData) string {
+func GetPriceBucket(bid openrtb2.Bid, targetingData targetData) string {
 	cpmStr := ""
 	bucketMax := 0.0
 	bucketMin := 0.0

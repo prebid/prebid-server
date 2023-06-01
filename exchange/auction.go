@@ -185,7 +185,7 @@ func (a *auction) validateAndUpdateMultiBid(adapterBids map[openrtb_ext.BidderNa
 	}
 }
 
-func (a *auction) setRoundedPrices(targetingData *targetData) {
+func (a *auction) setRoundedPrices(targetingData targetData) {
 	roundedPrices := make(map[*entities.PbsOrtbBid]string, 5*len(a.winningBids))
 	for _, topBidsPerImp := range a.winningBidsByBidder {
 		for _, topBidsPerBidder := range topBidsPerImp {

@@ -202,7 +202,7 @@ type ExtIncludeBrandCategory struct {
 	TranslateCategories *bool  `json:"translatecategories,omitempty"`
 }
 
-// MediaTypePriceGranularity defines values for bidrequest.ext.prebid.targeting.mediatypepricegranularity
+// MediaTypePriceGranularity specify price granularity configuration at the bid type level
 type MediaTypePriceGranularity struct {
 	Banner *PriceGranularity `json:"banner,omitempty"`
 	Video  *PriceGranularity `json:"video,omitempty"`

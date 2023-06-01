@@ -2096,6 +2096,13 @@ func TestValidatePriceGranularity(t *testing.T) {
 			},
 			expectedError: nil,
 		},
+		{
+			description: "price granularity with correct precision and ranges not specified",
+			givenPriceGranularity: &openrtb_ext.PriceGranularity{
+				Precision: ptrutil.ToPtr(2),
+			},
+			expectedError: nil,
+		},
 	}
 
 	for _, tc := range testCases {
