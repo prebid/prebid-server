@@ -115,7 +115,7 @@ jobs:
                             commit = await getLatestCommit()
                             const { data } = await github.repos.getCommit({ owner, repo, ref:commit })
                             
-                            if !(isTestExecutedOnCommit(commit)) {
+                            if (!isTestExecutedOnCommit(commit)) {
                                 const latestCommitStats = await getStats(data.files)
                                 const fileNames = Object.keys(latestCommitStats)
                                 for (let i = 0; i < fileNames.length; i++) {
