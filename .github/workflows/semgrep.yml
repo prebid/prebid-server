@@ -56,10 +56,10 @@ jobs:
                             if (filename.endsWith(".go") && !filename.endsWith("_test.go") && filename.startsWith("adapters/") && fileNameList.length > 2) {
                                 const lines = patch.split("\n")
                                 if (lines.length === 1) {
-                                    continue;
+                                    continue
                                 }
             
-                                let lineNumber;
+                                let lineNumber
                                 for (let i = 0; i < lines.length; i++) {
                                     /* check if line is diff hunk header
                                     example:
@@ -76,20 +76,30 @@ jobs:
                                     }
                     
                                     // '-' indicates line was deleted. So do not consider deleted line
-                                    if (lines[i].startsWith("-")) { continue; }
+                                    if (lines[i].startsWith("-")) { continue }
             
                                     // '+' indicates line was added or updated. Include line number in commit change details
                                     if (lines[i].startsWith("+")) {
-                                    if (stats[filename] === undefined) {
-                                        stats[filename] = [];
+                                        if (stats[filename] === undefined) {
+                                            stats[filename] = []
+                                        }
+                                        stats[filename].push(lineNumber)
                                     }
-                                    stats[filename].push(lineNumber);
-                                    }
-                                    lineNumber++;
+                                    lineNumber++
                                 }
                             }
                         }
                         return stats
+                    }
+
+                    async function isTestExecutedOnCommit(ref) {
+                        const { check_runs } = await github.checks.listForRef({owner, repo, ref})
+                        for (let i = 0; i <= check_runs.length; i++) {
+                            if (check_runs[i].name == "semgrep-check") {
+                                return true
+                            }
+                        }
+                        return false
                     }
 
                     async function computeCommitChanges() {
@@ -100,40 +110,42 @@ jobs:
                         const pullRequestStats = await getStats(data.files)
                         let stats = {}
 
-                        // new commits are pushed after pull request is opened
+                        //  check if a new commit was pushed after the pull request was opened
                         if (pullRequestEvent == "synchronize") {
                             commit = await getLatestCommit()
                             const { data } = await github.repos.getCommit({ owner, repo, ref:commit })
-                            const latestCommitStats = await getStats(data.files)
-
-                            const fileNames = Object.keys(latestCommitStats)
-                            for (let i = 0; i < fileNames.length; i++) {
-                                const fileName = fileNames[i]
-                                const commitChanges = latestCommitStats[fileName]
-                                const pullRequestChanges = pullRequestStats[fileName]
-                                if (pullRequestChanges == undefined) {
-                                    continue
-                                }
-                                const changes = []
-                                for (let i = 0; i < commitChanges.length; i++) {
-                                    if (pullRequestChanges.includes(commitChanges[i])) {
-                                        changes.push(commitChanges[i])
+                            
+                            if !isTestExecutedOnCommit(commit) {
+                                const latestCommitStats = await getStats(data.files)
+                                const fileNames = Object.keys(latestCommitStats)
+                                for (let i = 0; i < fileNames.length; i++) {
+                                    const fileName = fileNames[i]
+                                    const commitChanges = latestCommitStats[fileName]
+                                    const pullRequestChanges = pullRequestStats[fileName]
+                                    if (pullRequestChanges == undefined) {
+                                        continue
+                                    }
+                                    const changes = []
+                                    for (let i = 0; i < commitChanges.length; i++) {
+                                        if (pullRequestChanges.includes(commitChanges[i])) {
+                                            changes.push(commitChanges[i])
+                                        }
+                                    }
+                                    if (changes.length != 0) {
+                                        stats[fileName] = changes
                                     }
                                 }
-                                if (changes.length != 0) {
-                                    stats[fileName] = changes
-                                }
-                            }
+                            }    
                         } else {
                             stats = pullRequestStats
                             commit = pullRequestMergeCommit
                         }
                         
-                        const files = Object.keys(stats).join(" ");
-                        return JSON.stringify({ hasChanges: files.length != 0, stats, files, commit });
+                        const files = Object.keys(stats).join(" ")
+                        return JSON.stringify({ hasChanges: files.length != 0, stats, files, commit })
                     }
 
-                    return await computeCommitChanges();
+                    return await computeCommitChanges()
 
         -   name: Export commit changes
             id: export_commit_changes
@@ -162,7 +174,7 @@ jobs:
                     const semgrepResult = JSON.parse(${{ steps.run_semgrep_tests.outputs.semgrep_result }})
                     const  { stats, commit } = ${{ steps.compute_commit_changes.outputs.result }}
                     const { owner, repo } = context.repo
-                    const pullRequestNumber = context.payload.pull_request.number;
+                    const pullRequestNumber = context.payload.pull_request.number
 
                     for (let i=0; i < semgrepResult.length; i++) {
                         const { file, start, end, message } = semgrepResult[i]
@@ -170,7 +182,7 @@ jobs:
                         const fileStats =  stats[file]
                         if (fileStats != undefined && (fileStats.includes(start) || fileStats.includes(end))) {
                             // add review on commit
-                           await github.pulls.createReviewComment({owner: owner, repo: repo, pull_number: pullRequestNumber, body: message, commit_id: commit, path: file, line: start});
+                           await github.pulls.createReviewComment({owner: owner, repo: repo, pull_number: pullRequestNumber, body: message, commit_id: commit, path: file, line: start})
                         }
                     }
             env:
