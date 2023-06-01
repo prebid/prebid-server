@@ -1,36 +1,20 @@
 {
   "mockBidRequest": {
-    "id": "web-banner",
-    "tmax": 3000,
+    "id": "web-native",
     "imp": [
       {
-        "id": "banner-imp-id",
+        "id": "native-imp-id",
         "ext": {
           "bidder": {
             "pkey": "pkey"
           }
         },
-        "banner": {
-          "format": [
-            {
-              "w": 300,
-              "h": 250
-            }
-          ]
+        "native": {
+          "ver": "1.2",
+          "request": "placeholder request"
         }
       }
-    ],
-    "app": {
-      "bundle": "com.fake.app",
-      "publisher": {
-        "id": "42",
-        "name": "whatever.pub"
-      }
-    },
-    "device": {
-      "w": 1200,
-      "h": 900
-    }
+    ]
   },
   "httpCalls": [
     {
@@ -41,38 +25,22 @@
           "Accept": ["application/json"]
         },
         "body": {
-          "id": "web-banner",
-          "tmax": 3000,
+          "id": "web-native",
           "imp": [
             {
-              "id": "banner-imp-id",
+              "id": "native-imp-id",
               "tagid": "pkey",
               "ext": {
                 "bidder": {
                   "pkey": "pkey"
                 }
               },
-              "banner": {
-                "format": [
-                  {
-                    "w": 300,
-                    "h": 250
-                  }
-                ]
+              "native": {
+                "ver": "1.2",
+                "request": "placeholder request"
               }
             }
           ],
-          "device": {
-            "w": 1200,
-            "h": 900
-          },
-          "app": {
-            "bundle": "com.fake.app",
-            "publisher": {
-              "id": "42",
-              "name": "whatever.pub"
-            }
-          },
           "source": {
             "ext": {
               "version": "",
@@ -84,14 +52,14 @@
       "mockResponse": {
         "status": 200,
         "body": {
-          "id": "web-banner",
+          "id": "web-native",
           "cur": "USD",
           "seatbid": [
             {
               "bid": [
                 {
-                  "id": "web-banner",
-                  "impid": "banner-imp-id",
+                  "id": "web-native",
+                  "impid": "native-imp-id",
                   "crid": "some-creative-id",
                   "adm": "<div>Ad</div>",
                   "price": 20,
@@ -99,7 +67,7 @@
                   "h": 250,
                   "ext": {
                     "prebid": {
-                      "type": "banner"
+                      "type": "native"
                     }
                   }
                 }
@@ -116,8 +84,8 @@
       "bids": [
         {
           "bid": {
-            "id": "web-banner",
-            "impid": "banner-imp-id",
+            "id": "web-native",
+            "impid": "native-imp-id",
             "crid": "some-creative-id",
             "adm": "<div>Ad</div>",
             "price": 20,
@@ -125,11 +93,11 @@
             "h": 250,
             "ext": {
               "prebid": {
-                "type": "banner"
+                "type": "native"
               }
             }
           },
-          "type": "banner"
+          "type": "native"
         }
       ]
     }

@@ -77,9 +77,13 @@ type ExtRequestPrebid struct {
 	// - verbose: sets maximum level of output information
 	// - basic: excludes debugmessages and analytic_tags from output
 	// any other value or an empty string disables trace output at all.
-	Trace             string                          `json:"trace,omitempty"`
-	BidAdjustments    *ExtRequestPrebidBidAdjustments `json:"bidadjustments,omitempty"`
+	Trace string `json:"trace,omitempty"`
+
+	// Macros specifies list of custom macros along with the values. This is used while forming
+	// the tracker URLs, where PBS will replace the Custom Macro with its value with url-encoding
+	Macros            map[string]string               `json:"macros,omitempty"`
 	AdServerTargeting []AdServerTarget                `json:"adservertargeting,omitempty"`
+	BidAdjustments    *ExtRequestPrebidBidAdjustments `json:"bidadjustments,omitempty"`
 	// ReturnAllBidStatus if true populates bidresponse.ext.prebid.seatnonbid with all bids which was
 	// either rejected, nobid, input error
 	ReturnAllBidStatus bool `json:"returnallbidstatus,omitempty"`

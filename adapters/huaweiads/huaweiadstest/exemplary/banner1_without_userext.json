@@ -18,8 +18,8 @@
           "bidder": {
             "slotid": "m8x9x3rzff",
             "adtype": "banner",
-            "publisherid": "123",
-            "signkey": "signkey",
+            "publisherid": "123 ",
+            "signkey": "signkey ",
             "keyid": "41",
             "isTestAuthorization": "true"
           }
