@@ -105,42 +105,45 @@ jobs:
                     async function computeCommitChanges() {
                         const pullRequestEvent = "${{ github.event.action }}"
                         const pullRequestMergeCommit = "${{ github.sha }}"
-        
-                        const { data } = await github.repos.getCommit({ owner, repo, ref:pullRequestMergeCommit })
-                        const pullRequestStats = await getStats(data.files)
                         let stats = {}
 
-                        //  check if a new commit was pushed after the pull request was opened
-                        if (pullRequestEvent == "synchronize") {
+                        const { data } = await github.repos.getCommit({ owner, repo, ref:pullRequestMergeCommit })
+                        const pullRequestStats = await getStats(data.files)
+                        
+                        if (pullRequestStats != {} && pullRequestEvent == "synchronize") {
+                            //  check if a new commit was pushed after the pull request was opened
                             commit = await getLatestCommit()
-                            const { data } = await github.repos.getCommit({ owner, repo, ref:commit })
-                            
+
                             if (!isTestExecutedOnCommit(commit)) {
+                                const { data } = await github.repos.getCommit({ owner, repo, ref:commit })
                                 const latestCommitStats = await getStats(data.files)
-                                const fileNames = Object.keys(latestCommitStats)
+                                const fileNames = latestCommitStats == {} ? []:Object.keys(latestCommitStats)
+
                                 for (let i = 0; i < fileNames.length; i++) {
                                     const fileName = fileNames[i]
                                     const commitChanges = latestCommitStats[fileName]
                                     const pullRequestChanges = pullRequestStats[fileName]
+                                    
                                     if (pullRequestChanges == undefined) {
                                         continue
                                     }
+
                                     const changes = []
                                     for (let i = 0; i < commitChanges.length; i++) {
                                         if (pullRequestChanges.includes(commitChanges[i])) {
                                             changes.push(commitChanges[i])
                                         }
                                     }
+                                    
                                     if (changes.length != 0) {
                                         stats[fileName] = changes
                                     }
                                 }
-                            }    
+                            }
                         } else {
                             stats = pullRequestStats
                             commit = pullRequestMergeCommit
                         }
-                        
                         const files = Object.keys(stats).join(" ")
                         return JSON.stringify({ hasChanges: files.length != 0, stats, files, commit })
                     }
