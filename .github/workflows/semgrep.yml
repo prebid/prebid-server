@@ -62,12 +62,6 @@ jobs:
                                     */
                                     if (lines[i].match(/@@\s.*?@@/) != null) {
                                         lineNumber = lines[i].match(/\+(\d+)/)[0]
-                                        console.log("lineNumber", lineNumber)
-                                        console.log("filename", filename)
-                                        console.log("patch", patch)
-                                        console.log("\n")
-                                        console.log("\n")
-                                        console.log("\n")
                                         continue
                                     }
                     
@@ -102,29 +96,20 @@ jobs:
 
                     async function computeCommitChanges() {
                         const pullRequestEvent = "${{ github.event.action }}"
-                        console.log("pullRequestEvent", JSON.stringify(pullRequestEvent))
-
-                        const pullRequestMergeCommit = "${{ github.sha }}"
                         let stats = {}
 
-                        // const { data } = await github.repos.getCommit({ owner, repo, ref:pullRequestMergeCommit })
                         const { data } = await github.pulls.listFiles({ owner, repo, pull_number:pullRequestNumber })
-                        const pullRequestStats = await getStats(data)
-                        console.log("pullRequestStats", JSON.stringify(pullRequestStats))
+                        const pullRequestStats = await getStats(data)                        
                         
+                        //  check if a new commit was pushed after the pull request was opened
                         if (pullRequestStats != {} && pullRequestEvent == "synchronize") {
-                            //  check if a new commit was pushed after the pull request was opened
                             commit = await getLatestCommit()
-                            console.log("commit", JSON.stringify(commit))
                             const isTestExecuted = await isTestExecutedOnCommit(commit)
-                            console.log("isTestExecuted", isTestExecuted)
                             if (!isTestExecuted) {
                                 const { data } = await github.repos.getCommit({ owner, repo, ref:commit })
                                 const latestCommitStats = await getStats(data.files)
-                                console.log("latestCommitStats", JSON.stringify(latestCommitStats))
-
+        
                                 const fileNames = latestCommitStats == {} ? []: Object.keys(latestCommitStats)
-
                                 for (let i = 0; i < fileNames.length; i++) {
                                     const fileName = fileNames[i]
                                     
