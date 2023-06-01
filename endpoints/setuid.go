@@ -15,7 +15,6 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/prebid/prebid-server/util/httputil"
@@ -131,9 +130,6 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 			metricsEngine.RecordSetUid(metrics.SetUidOK)
 			metricsEngine.RecordSyncerSet(syncer.Key(), metrics.SyncerSetUidCleared)
 			so.Success = true
-		} else if syncer.Key() == string(openrtb_ext.BidderAudienceNetwork) && uid == "0" {
-			so.Errors = []error{errors.New("audienceNetwork uses a UID of 0 as \"not yet recognized\".")}
-			return
 		} else if err = pc.Sync(syncer.Key(), uid); err == nil {
 			metricsEngine.RecordSetUid(metrics.SetUidOK)
 			metricsEngine.RecordSyncerSet(syncer.Key(), metrics.SyncerSetUidOK)

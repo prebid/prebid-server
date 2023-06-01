@@ -2,6 +2,7 @@ package usersync
 
 import (
 	"encoding/json"
+	"errors"
 	"math"
 	"net/http"
 	"time"
@@ -27,7 +28,6 @@ type Cookie struct {
 }
 
 // UIDEntry bundles the UID with an Expiration date.
-// After the expiration, the UID is no longer valid.
 type UIDEntry struct {
 	// UID is the ID given to a user by a particular bidder
 	UID string `json:"uid"`
@@ -35,10 +35,17 @@ type UIDEntry struct {
 	Expires time.Time `json:"expires"`
 }
 
+// NewCookie returns a new empty cookie.
+func NewCookie() *Cookie {
+	return &Cookie{
+		uids:     make(map[string]UIDEntry),
+		birthday: timestamp(),
+	}
+}
+
 // ReadCookie will replace ParseCookieFromRequest
 func ReadCookie(r *http.Request, decoder Decoder) *Cookie {
 	//TODO: ParseCookieFromRequest OptOut Logic?
-
 	cookieFromRequest, err := r.Cookie(uidCookieName)
 	if err != nil {
 		return NewCookie()
@@ -46,6 +53,22 @@ func ReadCookie(r *http.Request, decoder Decoder) *Cookie {
 	decodedCookie := decoder.Decode(cookieFromRequest.Value)
 
 	return decodedCookie
+}
+
+// PrepareCookieForWrite
+func (cookie *Cookie) PrepareCookieForWrite(cfg *config.HostCookie, ttl time.Duration, encoder Encoder) string {
+	encodedCookie := encoder.Encode(cookie)
+
+	isCookieTooBig := len(encodedCookie) > cfg.MaxCookieSizeBytes && cfg.MaxCookieSizeBytes > 0
+
+	for isCookieTooBig && len(cookie.uids) > 0 {
+		uidToDelete := getOldestUID(cookie)
+		delete(cookie.uids, uidToDelete)
+
+		encodedCookie = encoder.Encode(cookie)
+		isCookieTooBig = len(encodedCookie) > cfg.MaxCookieSizeBytes && cfg.MaxCookieSizeBytes > 0
+	}
+	return encodedCookie
 }
 
 // WriteCookie
@@ -71,11 +94,38 @@ func WriteCookie(w http.ResponseWriter, encodedCookie string, cfg *config.HostCo
 	w.Header().Add("Set-Cookie", httpCookie.String())
 }
 
-// NewCookie returns a new empty cookie.
-func NewCookie() *Cookie {
-	return &Cookie{
-		uids:     make(map[string]UIDEntry),
-		birthday: timestamp(),
+// Sync tries to set the UID for some syncer key. It returns an error if the set didn't happen.
+func (cookie *Cookie) Sync(key string, uid string) error {
+	if key == string(openrtb_ext.BidderAudienceNetwork) && uid == "0" {
+		return errors.New("audienceNetwork uses a UID of 0 as \"not yet recognized\".")
+	}
+	cookie.uids[key] = UIDEntry{
+		UID:     uid,
+		Expires: time.Now().Add(uidTTL),
+	}
+
+	return nil
+}
+
+// getOldestUID will be replaced with ejection framework in a future PR
+func getOldestUID(cookie *Cookie) string {
+	oldestElem := ""
+	var oldestDate int64 = math.MaxInt64
+	for key, value := range cookie.uids {
+		timeUntilExpiration := time.Until(value.Expires)
+		if timeUntilExpiration < time.Duration(oldestDate) {
+			oldestElem = key
+			oldestDate = int64(timeUntilExpiration)
+		}
+	}
+	return oldestElem
+}
+
+func SyncHostCookie(r *http.Request, requestCookie *Cookie, host *config.HostCookie) {
+	if uid, _, _ := requestCookie.GetUID(host.Family); uid == "" && host.CookieName != "" {
+		if hostCookie, err := r.Cookie(host.CookieName); err == nil {
+			requestCookie.Sync(host.Family, hostCookie.Value)
+		}
 	}
 }
 
@@ -94,11 +144,6 @@ func (cookie *Cookie) SetOptOut(optOut bool) {
 }
 
 // GetUID Gets this user's ID for the given syncer key.
-// The first returned value is the user's ID.
-// The second returned value is true if we had a value stored, and false if we didn't.
-// The third returned value is true if that value is "active", and false if it's expired.
-//
-// If no value was stored, then the "isActive" return value will be false.
 func (cookie *Cookie) GetUID(key string) (string, bool, bool) {
 	if cookie != nil {
 		if uid, ok := cookie.uids[key]; ok {
@@ -118,21 +163,6 @@ func (cookie *Cookie) GetUIDs() map[string]string {
 		}
 	}
 	return uids
-}
-
-func (cookie *Cookie) PrepareCookieForWrite(cfg *config.HostCookie, ttl time.Duration, encoder Encoder) string {
-	encodedCookie := encoder.Encode(cookie)
-
-	isCookieTooBig := len(encodedCookie) > cfg.MaxCookieSizeBytes && cfg.MaxCookieSizeBytes > 0
-
-	for isCookieTooBig && len(cookie.uids) > 0 {
-		uidToDelete := getOldestUid(cookie)
-		delete(cookie.uids, uidToDelete)
-
-		encodedCookie = encoder.Encode(cookie)
-		isCookieTooBig = len(encodedCookie) > cfg.MaxCookieSizeBytes && cfg.MaxCookieSizeBytes > 0
-	}
-	return encodedCookie
 }
 
 // Unsync removes the user's ID for the given syncer key from this cookie.
@@ -157,16 +187,6 @@ func (cookie *Cookie) HasAnyLiveSyncs() bool {
 		}
 	}
 	return false
-}
-
-// Sync tries to set the UID for some syncer key. It returns an error if the set didn't happen.
-func (cookie *Cookie) Sync(key string, uid string) error {
-	cookie.uids[key] = UIDEntry{
-		UID:     uid,
-		Expires: time.Now().Add(uidTTL),
-	}
-
-	return nil
 }
 
 // cookieJson defines the JSON contract for the cookie data's storage format.
@@ -240,26 +260,4 @@ func (cookie *Cookie) UnmarshalJSON(b []byte) error {
 func timestamp() *time.Time {
 	birthday := time.Now()
 	return &birthday
-}
-
-// getOldestUid will be replaced with ejection framework in a future PR
-func getOldestUid(cookie *Cookie) string {
-	oldestElem := ""
-	var oldestDate int64 = math.MaxInt64
-	for key, value := range cookie.uids {
-		timeUntilExpiration := time.Until(value.Expires)
-		if timeUntilExpiration < time.Duration(oldestDate) {
-			oldestElem = key
-			oldestDate = int64(timeUntilExpiration)
-		}
-	}
-	return oldestElem
-}
-
-func SyncHostCookie(r *http.Request, requestCookie *Cookie, host *config.HostCookie) {
-	if uid, _, _ := requestCookie.GetUID(host.Family); uid == "" && host.CookieName != "" {
-		if hostCookie, err := r.Cookie(host.CookieName); err == nil {
-			requestCookie.Sync(host.Family, hostCookie.Value)
-		}
-	}
 }
