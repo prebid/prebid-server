@@ -166,47 +166,43 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 // extractGDPRInfo looks for the GDPR consent string and GDPR signal in the GPP query params
 // first and the 'gdpr' and 'gdpr_consent' query params second.
 func extractGDPRInfo(query url.Values) (gdpr.RequestInfo, error) {
-	var gdprSignal gdpr.Signal = gdpr.SignalNo
-	var gdprConsent string = query.Get("gdpr_consent")
-	var signalSet bool = false
+	// Defualt GDPR values
+	gdprConsent := query.Get("gdpr_consent")
+	gdprSignal := gdpr.SignalAmbiguous
 
-	// Signal
+	// Signal from gpp_sid list takes precedence
 	gppSID, err := stringutil.StrToInt8Slice(query.Get("gpp_sid"))
 	if err != nil {
 		return gdpr.RequestInfo{}, fmt.Errorf("Error parsing gpp_sid %s", err.Error())
 	}
-	if len(gppSID) > 0 && gppPrivacy.IsSIDInList(gppSID, gppConstants.SectionTCFEU2) {
-		gdprSignal = gdpr.SignalYes
-		signalSet = true
-	}
 
-	if !signalSet {
+	if len(gppSID) > 0 {
+		gdprSignal = gdpr.SignalNo
+		if gppPrivacy.IsSIDInList(gppSID, gppConstants.SectionTCFEU2) {
+			gdprSignal = gdpr.SignalYes
+		}
+	} else {
+		// Signal from gdpr field, if any
 		gdprQuerySignal := query.Get("gdpr")
 		if gdprQuerySignal != "" && gdprQuerySignal != "0" && gdprQuerySignal != "1" {
 			return gdpr.RequestInfo{}, errors.New("the gdpr query param must be either 0 or 1. You gave " + gdprQuerySignal)
 		}
 
-		if gdprQuerySignal == "1" && gdprConsent == "" {
-			return gdpr.RequestInfo{}, errors.New("gdpr_consent is required when gdpr=1")
-		}
 		if i, err := strconv.Atoi(gdprQuerySignal); err == nil {
 			gdprSignal = gdpr.Signal(i)
 		}
 	}
 
-	// Consent
-	var gpp gpplib.GppContainer
-	gppString := query.Get("gpp")
-	if len(gppString) > 0 {
-		var err error
-		gpp, err = gpplib.Parse(gppString)
+	// Consent from gpp string takes precedence, override gdprConsent in found in "gpp" field
+	if gppString := query.Get("gpp"); len(gppString) > 0 {
+		gpp, err := gpplib.Parse(gppString)
 		if err != nil {
 			return gdpr.RequestInfo{}, err
 		}
-	}
 
-	if i := gppPrivacy.IndexOfSID(gpp, gppConstants.SectionTCFEU2); i >= 0 {
-		gdprConsent = gpp.Sections[i].GetValue()
+		if i := gppPrivacy.IndexOfSID(gpp, gppConstants.SectionTCFEU2); i >= 0 {
+			gdprConsent = gpp.Sections[i].GetValue()
+		}
 	}
 
 	if gdprConsent == "" && gdprSignal == gdpr.SignalYes {

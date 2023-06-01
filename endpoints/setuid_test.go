@@ -311,7 +311,7 @@ func TestExtractGDPRInfo(t *testing.T) {
 					expected: testOutput{
 						requestInfo: gdpr.RequestInfo{
 							Consent:    "",
-							GDPRSignal: gdpr.SignalNo,
+							GDPRSignal: gdpr.SignalAmbiguous,
 						},
 						err: nil,
 					},
@@ -373,7 +373,7 @@ func TestExtractGDPRInfo(t *testing.T) {
 			"missing gdpr, gpp only",
 			[]testCase{
 				{
-					desc:  "Non-digit found in GPP_SID string, expect blank request info and error",
+					desc:  "Malformed GPP_SID string, expect blank request info and error",
 					inUri: "/setuid?gpp_sid=malformed",
 					expected: testOutput{
 						requestInfo: gdpr.RequestInfo{},
@@ -381,7 +381,7 @@ func TestExtractGDPRInfo(t *testing.T) {
 					},
 				},
 				{
-					desc:  "Invalid GPP string in query, expect blank request info and error",
+					desc:  "Valid GPP_SID string but invalid GPP string in query, expect blank request info and error",
 					inUri: "/setuid?gpp=malformed&gpp_sid=2",
 					expected: testOutput{
 						requestInfo: gdpr.RequestInfo{},
@@ -389,18 +389,18 @@ func TestExtractGDPRInfo(t *testing.T) {
 					},
 				},
 				{
-					desc:  "SectionTCFEU2 not found in GPP string, expect blank consent and signalNo",
+					desc:  "SectionTCFEU2 not found in GPP string, expect blank consent and signalAmbiguous",
 					inUri: "/setuid?gpp=DBABBgA~xlgWEYCZAA",
 					expected: testOutput{
 						requestInfo: gdpr.RequestInfo{
 							Consent:    "",
-							GDPRSignal: gdpr.SignalNo,
+							GDPRSignal: gdpr.SignalAmbiguous,
 						},
 						err: nil,
 					},
 				},
 				{
-					desc:  "No GPP string, no SectionTCFEU2 found in SID list in query, expect blank consent and signalNo",
+					desc:  "No GPP string, nor SectionTCFEU2 found in SID list in query, expect blank consent and signalAmbiguous",
 					inUri: "/setuid?gpp_sid=3,6",
 					expected: testOutput{
 						requestInfo: gdpr.RequestInfo{
@@ -427,8 +427,19 @@ func TestExtractGDPRInfo(t *testing.T) {
 					},
 				},
 				{
-					desc:  "SectionTCFEU2 found in GPP string but not in SID list, expect valid consent and signalNo",
+					desc:  "SectionTCFEU2 found in GPP string but SID list is nil, expect valid consent and SignalAmbiguous",
 					inUri: "/setuid?gpp=DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{
+							Consent:    "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+							GDPRSignal: gdpr.SignalAmbiguous,
+						},
+						err: nil,
+					},
+				},
+				{
+					desc:  "SectionTCFEU2 found in GPP string but not in the non-nil SID list, expect valid consent and signalNo",
+					inUri: "/setuid?gpp=DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA&gpp_sid=6",
 					expected: testOutput{
 						requestInfo: gdpr.RequestInfo{
 							Consent:    "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
@@ -454,11 +465,33 @@ func TestExtractGDPRInfo(t *testing.T) {
 			"GPP values take priority over GDPR",
 			[]testCase{
 				{
-					desc:  "SectionTCFEU2 found both in GPP string and SID list, not in GDPR strings, expect GPP to prevail",
+					desc:  "SignalNo in gdpr field but SignalYes in SID list, CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA consent in gpp but legacyConsent in gdpr_consent, expect GPP values to prevail",
 					inUri: "/setuid?gpp=DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA&gpp_sid=2,4&gdpr=0&gdpr_consent=legacyConsent",
 					expected: testOutput{
 						requestInfo: gdpr.RequestInfo{
 							Consent:    "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+							GDPRSignal: gdpr.SignalYes,
+						},
+						err: nil,
+					},
+				},
+				{
+					desc:  "SignalNo in gdpr field but SignalYes in SID list because SectionTCFEU2 is listed, expect GPP to prevail",
+					inUri: "/setuid?gpp=DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA&gpp_sid=2,4&gdpr=0",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{
+							Consent:    "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+							GDPRSignal: gdpr.SignalYes,
+						},
+						err: nil,
+					},
+				},
+				{
+					desc:  "No gpp string in URL query, use gdpr_consent and SignalYes found in SID list because SectionTCFEU2 is listed",
+					inUri: "/setuid?gpp_sid=2,4&gdpr_consent=legacyConsent",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{
+							Consent:    "legacyConsent",
 							GDPRSignal: gdpr.SignalYes,
 						},
 						err: nil,
@@ -481,18 +514,18 @@ func TestExtractGDPRInfo(t *testing.T) {
 					expected: testOutput{
 						requestInfo: gdpr.RequestInfo{
 							Consent:    "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
-							GDPRSignal: gdpr.SignalYes,
+							GDPRSignal: gdpr.SignalNo,
 						},
 						err: nil,
 					},
 				},
 				{
-					desc:  "SectionTCFEU2 not found in GPP nor SID list, choose GDPR and GDPR_CONSENT values",
+					desc:  "SectionTCFEU2 not found in GPP, use GDPR_CONSENT value. SignalYes found in gdpr field, but not in the valid SID list, expect SignalNo",
 					inUri: "/setuid?gpp=DBABBgA~xlgWEYCZAA&gpp_sid=6&gdpr=1&gdpr_consent=legacyConsent",
 					expected: testOutput{
 						requestInfo: gdpr.RequestInfo{
 							Consent:    "legacyConsent",
-							GDPRSignal: gdpr.SignalYes,
+							GDPRSignal: gdpr.SignalNo,
 						},
 						err: nil,
 					},

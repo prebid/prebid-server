@@ -407,7 +407,7 @@ func TestExtractPrivacyPolicies(t *testing.T) {
 		expected testOutput
 	}{
 		{
-			desc: "request GPP string is malformed, expect empty policies, signal No and error",
+			desc: "request GPP string is malformed, expect empty policies, gdpr.SignalNo and error",
 			in: testInput{
 				request: cookieSyncRequest{GPP: "malformedGPPString"},
 			},
@@ -418,7 +418,7 @@ func TestExtractPrivacyPolicies(t *testing.T) {
 			},
 		},
 		{
-			desc: "Malformed GPPSid string",
+			desc: "Malformed GPPSid string, expect empty policies, gdpr.SignalNo and error",
 			in: testInput{
 				request: cookieSyncRequest{
 					GPP:       "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
@@ -433,7 +433,7 @@ func TestExtractPrivacyPolicies(t *testing.T) {
 			},
 		},
 		{
-			desc: "request USPrivacy string is different from the one in the GPP string, expect empty policies, signalNo and error",
+			desc: "request USPrivacy is different from the one in the GPP string, expect empty policies, gdpr.SignalNo and error",
 			in: testInput{
 				request: cookieSyncRequest{
 					GPP:       "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
@@ -448,7 +448,7 @@ func TestExtractPrivacyPolicies(t *testing.T) {
 			},
 		},
 		{
-			desc: "no issues extracting privacy policies from request GPP and request GPPSid strings",
+			desc: "Both TCF2 and CCPA strings in GPP but only CCPA in GPP_SID array. Expect SignalNo, and CCPA consent string correctly parsed",
 			in: testInput{
 				request: cookieSyncRequest{
 					GPP:    "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
@@ -467,6 +467,54 @@ func TestExtractPrivacyPolicies(t *testing.T) {
 					GPP: gppPrivacy.Policy{
 						Consent: "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
 						RawSID:  "6",
+					},
+				},
+				gdprSignal: gdpr.SignalNo,
+				err:        nil,
+			},
+		},
+		{
+			desc: "SectionTCFEU2 found in GPP string but not in SID list, expect valid GDPR consent and gdpr.SignalNo",
+			in: testInput{
+				request: cookieSyncRequest{
+					GPP:    "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+					GPPSid: "6",
+				},
+			},
+			expected: testOutput{
+				policies: privacy.Policies{
+					GDPR: gdprPrivacy.Policy{
+						Signal:  "0",
+						Consent: "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+					},
+					CCPA: ccpa.Policy{},
+					GPP: gppPrivacy.Policy{
+						Consent: "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+						RawSID:  "6",
+					},
+				},
+				gdprSignal: gdpr.SignalNo,
+				err:        nil,
+			},
+		},
+		{
+			desc: "CCPA string in GPP but not in GPP_SID array. Expect SignalNo, and CCPA consent string to not be parsed",
+			in: testInput{
+				request: cookieSyncRequest{
+					GPP:    "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
+					GPPSid: "8",
+				},
+			},
+			expected: testOutput{
+				policies: privacy.Policies{
+					GDPR: gdprPrivacy.Policy{
+						Signal:  "0",
+						Consent: "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+					},
+					CCPA: ccpa.Policy{},
+					GPP: gppPrivacy.Policy{
+						Consent: "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
+						RawSID:  "8",
 					},
 				},
 				gdprSignal: gdpr.SignalNo,
