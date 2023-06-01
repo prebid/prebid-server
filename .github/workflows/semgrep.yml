@@ -148,11 +148,13 @@ jobs:
                 echo "hasChanges=${hasChanges}" >> $GITHUB_OUTPUT
 
         -   name: Install semgrep
+            if: contains(steps.export_commit_changes.outputs.hasChanges, 'true')
             run: |
                 pip3 install semgrep==1.22.0
                 semgrep --version
                     
         -   name: Install jq
+            if: contains(steps.export_commit_changes.outputs.hasChanges, 'true')
             run: |
                 pip3 install jq==1.4.1
                 jq --version
