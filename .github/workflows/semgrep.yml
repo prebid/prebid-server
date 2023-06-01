@@ -61,7 +61,13 @@ jobs:
                                     '@@ -1,3 +1,3 @@' is diff hunk header 
                                     */
                                     if (lines[i].match(/@@\s.*?@@/) != null) {
-                                        lineNumber = lines[i].match(/(\d+)/)[0]
+                                        lineNumber = lines[i].match(/\+(\d+)/)[0]
+                                        console.log("lineNumber", lineNumber)
+                                        console.log("filename", filename)
+                                        console.log("patch", patch)
+                                        console.log("\n")
+                                        console.log("\n")
+                                        console.log("\n")
                                         continue
                                     }
                     
@@ -83,12 +89,14 @@ jobs:
                     }
 
                     async function isTestExecutedOnCommit(ref) {
-                        const { data } = await github.checks.listForRef({owner, repo, ref})
-                        for (let i = 0; i <= data.check_runs.length; i++) {
-                            if (data.check_runs[i].name == "semgrep-check") {
+                        const response = await github.checks.listForRef({owner, repo, ref})
+                        const checkRuns = response.data.check_runs
+                        for (let i = 0; i < checkRuns.length; i++) {
+                            if (checkRuns[i].status == "completed" && checkRuns[i].name == "semgrep-check") {
                                 return true
                             }
                         }
+
                         return false
                     }
 
@@ -99,8 +107,9 @@ jobs:
                         const pullRequestMergeCommit = "${{ github.sha }}"
                         let stats = {}
 
-                        const { data } = await github.repos.getCommit({ owner, repo, ref:pullRequestMergeCommit })
-                        const pullRequestStats = await getStats(data.files)
+                        // const { data } = await github.repos.getCommit({ owner, repo, ref:pullRequestMergeCommit })
+                        const { data } = await github.pulls.listFiles({ owner, repo, pull_number:pullRequestNumber })
+                        const pullRequestStats = await getStats(data)
                         console.log("pullRequestStats", JSON.stringify(pullRequestStats))
                         
                         if (pullRequestStats != {} && pullRequestEvent == "synchronize") {
