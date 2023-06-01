@@ -129,7 +129,7 @@ jobs:
                                     console.log("pullRequestChanges", pullRequestChanges)
                                     console.log("pullRequestChanges", JSON.stringify(pullRequestChanges))
 
-                                    if (pullRequestChanges == undefined) {
+                                    if (pullRequestChanges == undefined || commitChanges == undefined || pullRequestChanges == null || commitChanges == null) {
                                         continue
                                     }
 
