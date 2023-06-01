@@ -36,7 +36,7 @@ jobs:
                         repo,
                         pull_number: pullRequestNumber,
                     });
-
+                    console.log("=========")
                     console.log("response:", JSON.stringify(response))
 
         -   name: Dump GitHub context
