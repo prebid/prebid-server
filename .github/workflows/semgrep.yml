@@ -22,6 +22,11 @@ jobs:
             with:
                 fetch-depth: 0
 
+        -   name: Dump GitHub context
+            env:
+                GITHUB_CONTEXT: ${{ toJson(github) }}
+            run: echo "$GITHUB_CONTEXT"
+
         -   name: Determine commit
             id: determine_commit
             run: |
@@ -42,14 +47,14 @@ jobs:
                 result-encoding: string
                 script: |
                     function getStats(files) {
-                        let stats = {};
+                        let stats = {}
                         for (let i = 0; i < files.length; i++) {
-                            const { filename, patch } = files[i];
+                            const { filename, patch } = files[i]
             
                             // check if go file is part of the adapter code and not test files
-                            const fileNameList = filename.split("/");
+                            const fileNameList = filename.split("/")
                             if (filename.endsWith(".go") && !filename.endsWith("_test.go") && filename.startsWith("adapters/") && fileNameList.length > 2) {
-                                const lines = patch.split("\n");
+                                const lines = patch.split("\n")
                                 if (lines.length === 1) {
                                     continue;
                                 }
@@ -71,14 +76,12 @@ jobs:
                                         here @@ -1,4 +1,7 @@ is diff hunk header
                                     */
                                     if (lines[i].match(/@@\s.*?@@/) != null) {
-                                    lineNumber = lines[i].match(/(\d+)/)[0];
-                                    continue;
+                                        lineNumber = lines[i].match(/(\d+)/)[0]
+                                        continue
                                     }
                     
                                     // '-' indicates line was deleted. So do not consider deleted line
-                                    if (lines[i].startsWith("-")) {
-                                    continue;
-                                    }
+                                    if (lines[i].startsWith("-")) { continue; }
             
                                     // '+' indicates line was added or updated. Include line number in commit change details
                                     if (lines[i].startsWith("+")) {
@@ -93,8 +96,8 @@ jobs:
                         }
                         return stats
                     }
-                    
-                    async function computeCommitChanges() {
+
+                    function computeCommitChanges() {
                         const ref = "${{ steps.determine_commit.outputs.commit }}";
                         const { owner, repo } = context.repo;
                           
@@ -108,7 +111,7 @@ jobs:
                         return JSON.stringify({ hasChanges: files.length != 0, stats: stats, files: files });
                     }
               
-                    return await computeCommitChanges();              
+                    return  computeCommitChanges();              
 
         -   name: Export commit changes
             id: export_commit_changes
