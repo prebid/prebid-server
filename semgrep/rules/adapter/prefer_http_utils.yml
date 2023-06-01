@@ -2,14 +2,16 @@ rules:
   - id: Prefer http utils for HTTP status code check
     languages: [go]
     message: |
-      ```
-      Recommended to use of util function from httputil package
+      Recommended to use of util function from adapters package
       1. Use IsResponseStatusCodeNoContent to check if status code is http.StatusNoContent
-        if httputil.IsResponseStatusCodeNoContent(response) { 
+      ```
+        if adapters.IsResponseStatusCodeNoContent(response) { 
           return nil, nil 
         }
+      ```
       2. Use CheckResponseStatusCodeForErrors to check if status code is http.StatusBadRequest or status code is not http.StatusOK
-        if err := httputil.CheckResponseStatusCodeForErrors(response); err != nil {
+      ```
+        if err := adapters.CheckResponseStatusCodeForErrors(response); err != nil {
           return nil, []error{err}
         }
       ```

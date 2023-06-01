@@ -21,10 +21,30 @@ import (
 // test
 // test
 // test
+// test
+// test
+// test
+// test
+// test
+// test
+// test
+// test
+// test
+// test
+// test
+// test
+// test
+// test
+// test
 // test// test
 
 // test// test
 
+// test// test
+// test// test
+// test// test
+// test// test
+// test// test
 // test// test
 // test// test
 // test// test
@@ -84,7 +104,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var errs []error
 
-	if response.StatusCode == http.StatusNoContent {
+	if response.StatusCode == http.StatusNoContent { // test
 		return nil, nil
 	}
 
@@ -94,7 +114,9 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		}}
 	}
 
-	if response.StatusCode != http.StatusOK {
+	// test
+
+	if response.StatusCode != http.StatusOK { // test //test test
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
 		}}

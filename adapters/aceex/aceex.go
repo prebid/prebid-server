@@ -110,13 +110,13 @@ func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtAceex) (string, error)
 }
 
 func (a *adapter) checkResponseStatusCodes(response *adapters.ResponseData) error {
-	if response.StatusCode == http.StatusBadRequest {
+	if response.StatusCode == http.StatusBadRequest { // test
 		return &errortypes.BadInput{
 			Message: fmt.Sprintf("Unexpected status code: [ %d ]", response.StatusCode),
 		}
 	}
 
-	if response.StatusCode == http.StatusServiceUnavailable {
+	if response.StatusCode == http.StatusServiceUnavailable { // test
 		return &errortypes.BadInput{
 			Message: fmt.Sprintf("Something went wrong, please contact your Account Manager. Status Code: [ %d ] ", response.StatusCode),
 		}
@@ -127,7 +127,7 @@ func (a *adapter) checkResponseStatusCodes(response *adapters.ResponseData) erro
 			Message: fmt.Sprintf("Unexpected status code: [ %d ]. Run with request.debug = 1 for more info", response.StatusCode),
 		}
 	}
-
+	// sssssss
 	return nil
 }
 
