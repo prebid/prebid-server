@@ -95,7 +95,7 @@ jobs:
                     async function isTestExecutedOnCommit(ref) {
                         const { data } = await github.checks.listForRef({owner, repo, ref})
                         for (let i = 0; i <= data.check_runs.length; i++) {
-                            if (check_runs[i].name == "semgrep-check") {
+                            if (data.check_runs[i].name == "semgrep-check") {
                                 return true
                             }
                         }
