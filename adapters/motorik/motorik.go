@@ -59,9 +59,8 @@ func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, reqInfo *ada
 		return nil, []error{err}
 	}
 
-	for idx := range openRTBRequest.Imp {
-		openRTBRequest.Imp[idx].Ext = nil
-	}
+	openRTBRequest.Imp[0].Ext = nil
+
 	url, err := a.buildEndpointURL(motorikExt)
 	if err != nil {
 		return nil, []error{err}
