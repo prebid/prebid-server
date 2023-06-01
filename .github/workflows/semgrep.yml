@@ -118,12 +118,17 @@ jobs:
                                 const { data } = await github.repos.getCommit({ owner, repo, ref:commit })
                                 const latestCommitStats = await getStats(data.files)
                                 const fileNames = latestCommitStats == {} ? []:Object.keys(latestCommitStats)
-
+                                console.log("fileNames", fileNames)
                                 for (let i = 0; i < fileNames.length; i++) {
                                     const fileName = fileNames[i]
                                     const commitChanges = latestCommitStats[fileName]
+                                    console.log("commitChanges", commitChanges)
+                                    console.log("commitChanges", JSON.stringify(commitChanges))
+
                                     const pullRequestChanges = pullRequestStats[fileName]
-                                    
+                                    console.log("pullRequestChanges", pullRequestChanges)
+                                    console.log("pullRequestChanges", JSON.stringify(pullRequestChanges))
+
                                     if (pullRequestChanges == undefined) {
                                         continue
                                     }
