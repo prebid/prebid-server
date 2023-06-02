@@ -173,7 +173,6 @@ const (
 	BidderGamoshi           BidderName = "gamoshi"
 	BidderGlobalsun         BidderName = "globalsun"
 	BidderGrid              BidderName = "grid"
-	BidderGroupm            BidderName = "groupm"
 	BidderGumGum            BidderName = "gumgum"
 	BidderHuaweiAds         BidderName = "huaweiads"
 	BidderIionads           BidderName = "iionads"
@@ -365,7 +364,6 @@ func CoreBidderNames() []BidderName {
 		BidderGamoshi,
 		BidderGlobalsun,
 		BidderGrid,
-		BidderGroupm,
 		BidderGumGum,
 		BidderHuaweiAds,
 		BidderIionads,

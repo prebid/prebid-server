@@ -3863,7 +3863,7 @@ func Test_isBidderInExtAlternateBidderCodes(t *testing.T) {
 			name: "adapter defined in alternatebiddercodes but currentMultiBidBidder not in AllowedBidders list",
 			args: args{
 				adapter:               string(openrtb_ext.BidderPubmatic),
-				currentMultiBidBidder: string(openrtb_ext.BidderGroupm),
+				currentMultiBidBidder: "groupm",
 				adapterABC: &openrtb_ext.ExtAlternateBidderCodes{
 					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
 						string(openrtb_ext.BidderPubmatic): {
@@ -3878,11 +3878,11 @@ func Test_isBidderInExtAlternateBidderCodes(t *testing.T) {
 			name: "adapter defined in alternatebiddercodes with currentMultiBidBidder mentioned in AllowedBidders list",
 			args: args{
 				adapter:               string(openrtb_ext.BidderPubmatic),
-				currentMultiBidBidder: string(openrtb_ext.BidderGroupm),
+				currentMultiBidBidder: "groupm",
 				adapterABC: &openrtb_ext.ExtAlternateBidderCodes{
 					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
 						string(openrtb_ext.BidderPubmatic): {
-							AllowedBidderCodes: []string{string(openrtb_ext.BidderGroupm)},
+							AllowedBidderCodes: []string{"groupm"},
 						},
 					},
 				},
@@ -3893,7 +3893,7 @@ func Test_isBidderInExtAlternateBidderCodes(t *testing.T) {
 			name: "adapter defined in alternatebiddercodes with AllowedBidders list as *",
 			args: args{
 				adapter:               string(openrtb_ext.BidderPubmatic),
-				currentMultiBidBidder: string(openrtb_ext.BidderGroupm),
+				currentMultiBidBidder: "groupm",
 				adapterABC: &openrtb_ext.ExtAlternateBidderCodes{
 					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
 						string(openrtb_ext.BidderPubmatic): {
@@ -4004,7 +4004,7 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 				adapter: string(openrtb_ext.BidderPubmatic),
 				reqMultiBid: []*openrtb_ext.ExtMultiBid{
 					{
-						Bidder:  string(openrtb_ext.BidderGroupm),
+						Bidder:  "groupm",
 						MaxBids: ptrutil.ToPtr(3),
 					},
 					{
@@ -4019,14 +4019,14 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 				adapterABC: &openrtb_ext.ExtAlternateBidderCodes{
 					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
 						string(openrtb_ext.BidderPubmatic): {
-							AllowedBidderCodes: []string{string(openrtb_ext.BidderGroupm)},
+							AllowedBidderCodes: []string{"groupm"},
 						},
 					},
 				},
 			},
 			want: []*openrtb_ext.ExtMultiBid{
 				{
-					Bidder:  string(openrtb_ext.BidderGroupm),
+					Bidder:  "groupm",
 					MaxBids: ptrutil.ToPtr(3),
 				},
 				{
@@ -4041,7 +4041,7 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 				adapter: string(openrtb_ext.BidderAppnexus),
 				reqMultiBid: []*openrtb_ext.ExtMultiBid{
 					{
-						Bidder:  string(openrtb_ext.BidderGroupm),
+						Bidder:  "groupm",
 						MaxBids: ptrutil.ToPtr(3),
 					},
 					{
@@ -4056,14 +4056,14 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 				adapterABC: &openrtb_ext.ExtAlternateBidderCodes{
 					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
 						string(openrtb_ext.BidderAppnexus): {
-							AllowedBidderCodes: []string{string(openrtb_ext.BidderGroupm)},
+							AllowedBidderCodes: []string{"groupm"},
 						},
 					},
 				},
 			},
 			want: []*openrtb_ext.ExtMultiBid{
 				{
-					Bidder:  string(openrtb_ext.BidderGroupm),
+					Bidder:  "groupm",
 					MaxBids: ptrutil.ToPtr(3),
 				},
 				{
@@ -4078,7 +4078,7 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 				adapter: string(openrtb_ext.BidderPubmatic),
 				reqMultiBid: []*openrtb_ext.ExtMultiBid{
 					{
-						Bidder:  string(openrtb_ext.BidderGroupm),
+						Bidder:  "groupm",
 						MaxBids: ptrutil.ToPtr(3),
 					},
 					{
@@ -4100,7 +4100,7 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 			},
 			want: []*openrtb_ext.ExtMultiBid{
 				{
-					Bidder:  string(openrtb_ext.BidderGroupm),
+					Bidder:  "groupm",
 					MaxBids: ptrutil.ToPtr(3),
 				},
 				{
@@ -4123,7 +4123,7 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 				adapter: string(openrtb_ext.BidderAppnexus),
 				reqMultiBid: []*openrtb_ext.ExtMultiBid{
 					{
-						Bidder:  string(openrtb_ext.BidderGroupm),
+						Bidder:  "groupm",
 						MaxBids: ptrutil.ToPtr(3),
 					},
 					{
@@ -4145,7 +4145,7 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 			},
 			want: []*openrtb_ext.ExtMultiBid{
 				{
-					Bidder:  string(openrtb_ext.BidderGroupm),
+					Bidder:  "groupm",
 					MaxBids: ptrutil.ToPtr(3),
 				},
 				{
