@@ -748,7 +748,7 @@ func (b *bidderTmaxCtx) Deadline() (deadline time.Time, ok bool) {
 
 func getBidderTmax(ctx bidderTmaxContext, requestTmaxMS int64, tmaxAdjustments config.TmaxAdjustments) int64 {
 	if deadline, ok := ctx.Deadline(); ok {
-		return ctx.RemainingDurationMS(deadline) - int64(tmaxAdjustments.BidderNetworkLatencyBuffer) - int64(tmaxAdjustments.PBSResponsePreparationDuration)
+		return ctx.RemainingDurationMS(deadline) - int64(tmaxAdjustments.BidderNetworkLatencyBuffer)
 	}
 	return requestTmaxMS
 }

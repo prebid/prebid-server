@@ -3172,7 +3172,7 @@ func TestGetBidderTmax(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			if _, ok := test.ctx.Deadline(); ok {
 				bidderTmax := getBidderTmax(test.ctx, test.requestTmax, test.tmaxAdjustments)
-				assert.Equal(t, test.requestTmax-int64(test.tmaxAdjustments.BidderNetworkLatencyBuffer)-int64(test.tmaxAdjustments.PBSResponsePreparationDuration), bidderTmax)
+				assert.Equal(t, test.requestTmax-int64(test.tmaxAdjustments.BidderNetworkLatencyBuffer), bidderTmax)
 			} else {
 				assert.Equal(t, test.requestTmax, getBidderTmax(test.ctx, test.requestTmax, test.tmaxAdjustments))
 			}
