@@ -13,19 +13,19 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type blueseaAdapter struct {
+type adapater struct {
 	Endpoint string
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 
-	bidder := &blueseaAdapter{
+	bidder := &adapater{
 		Endpoint: config.Endpoint,
 	}
 	return bidder, nil
 }
 
-func (a *blueseaAdapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapater) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	impCount := len(request.Imp)
 
 	if impCount == 0 {
@@ -94,7 +94,7 @@ func extraImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpBluesea, error) {
 	return &blueseaImpExt, nil
 }
 
-func (a *blueseaAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapater) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if responseData.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
