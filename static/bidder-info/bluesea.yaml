@@ -1,4 +1,4 @@
-endpoint: "https://bid.bluevoox.com/prebid/bid"
+endpoint: "https://bid.bluevoox.com/rtb/prebid"
 maintainer:
   email: prebid@blueseasx.com
 endpointCompression: gzip
