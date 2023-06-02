@@ -3141,13 +3141,13 @@ func TestGetBidderTmax(t *testing.T) {
 	deadline := time.Date(2023, 5, 30, 1, 0, 0, int(requestTmaxNS), time.UTC)
 	ctx := &mockBidderTmaxCtx{startTime: startTime, deadline: deadline, ok: true}
 
-	tmaxAdjustments := &config.TmaxAdjustments{Enabled: true, PBSResponsePreparationDuration: 50, BidderNetworkLatencyBuffer: 10}
+	tmaxAdjustments := config.TmaxAdjustments{Enabled: true, PBSResponsePreparationDuration: 50, BidderNetworkLatencyBuffer: 10}
 
 	tests := []struct {
 		description     string
 		ctx             bidderTmaxContext
 		requestTmax     int64
-		tmaxAdjustments *config.TmaxAdjustments
+		tmaxAdjustments config.TmaxAdjustments
 	}{
 		{
 			description:     "returns-remaining-duration-as-bidderTmax",

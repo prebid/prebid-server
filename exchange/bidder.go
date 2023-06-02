@@ -138,7 +138,9 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 	if len(bidderRequest.BidRequest.Imp) > 0 {
 		// Reducing the amount of time bidders have to compensate for the processing time used by PBS to fetch a stored request (if needed), validate the OpenRTB request and split it into multiple requests sanitized for each bidder.
 		// As well as for the time needed by PBS to prepare the auction response
-		bidderRequest.BidRequest.TMax = getBidderTmax(&bidderTmaxCtx{ctx}, bidderRequest.BidRequest.TMax, reqInfo.TmaxAdjustments)
+		if reqInfo.TmaxAdjustments != nil && reqInfo.TmaxAdjustments.Enabled && reqInfo.TmaxAdjustments.BidderResponseDurationMin > 0 {
+			bidderRequest.BidRequest.TMax = getBidderTmax(&bidderTmaxCtx{ctx}, bidderRequest.BidRequest.TMax, *reqInfo.TmaxAdjustments)
+		}
 		reqData, errs = bidder.Bidder.MakeRequests(bidderRequest.BidRequest, reqInfo)
 
 		if len(reqData) == 0 {
@@ -744,11 +746,9 @@ func (b *bidderTmaxCtx) Deadline() (deadline time.Time, ok bool) {
 	return
 }
 
-func getBidderTmax(ctx bidderTmaxContext, requestTmaxMS int64, tmaxAdjustments *config.TmaxAdjustments) int64 {
-	if tmaxAdjustments != nil && tmaxAdjustments.Enabled {
-		if deadline, ok := ctx.Deadline(); ok {
-			return ctx.RemainingDurationMS(deadline) - int64(tmaxAdjustments.BidderNetworkLatencyBuffer) - int64(tmaxAdjustments.PBSResponsePreparationDuration)
-		}
+func getBidderTmax(ctx bidderTmaxContext, requestTmaxMS int64, tmaxAdjustments config.TmaxAdjustments) int64 {
+	if deadline, ok := ctx.Deadline(); ok {
+		return ctx.RemainingDurationMS(deadline) - int64(tmaxAdjustments.BidderNetworkLatencyBuffer) - int64(tmaxAdjustments.PBSResponsePreparationDuration)
 	}
 	return requestTmaxMS
 }
