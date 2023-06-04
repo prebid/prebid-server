@@ -183,7 +183,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 
 	decoder := usersync.DecodeV1{}
 
-	usersyncs := usersync.ReadCookie(r, decoder)
+	usersyncs := usersync.ReadCookie(r, decoder, &deps.cfg.HostCookie)
 	if usersyncs.HasAnyLiveSyncs() {
 		labels.CookieFlag = metrics.CookieFlagYes
 	} else {

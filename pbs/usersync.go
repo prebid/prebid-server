@@ -75,7 +75,7 @@ func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httpr
 		return
 	}
 
-	pc := usersync.ReadCookie(r, decoder)
+	pc := usersync.ReadCookie(r, decoder, deps.HostCookieConfig)
 	pc.SetOptOut(optout != "")
 
 	encodedCookie := pc.PrepareCookieForWrite(deps.HostCookieConfig, deps.HostCookieConfig.TTLDuration(), encoder)

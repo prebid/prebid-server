@@ -200,7 +200,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	decoder := usersync.DecodeV1{}
 
-	usersyncs := usersync.ReadCookie(r, decoder)
+	usersyncs := usersync.ReadCookie(r, decoder, &deps.cfg.HostCookie)
 	usersync.SyncHostCookie(r, usersyncs, &deps.cfg.HostCookie)
 
 	if req.Site != nil {

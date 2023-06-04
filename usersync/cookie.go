@@ -44,8 +44,12 @@ func NewCookie() *Cookie {
 }
 
 // ReadCookie will replace ParseCookieFromRequest
-func ReadCookie(r *http.Request, decoder Decoder) *Cookie {
-	//TODO: ParseCookieFromRequest OptOut Logic?
+func ReadCookie(r *http.Request, decoder Decoder, host *config.HostCookie) *Cookie {
+	cookieFromHost := ReadCookieFromHost(r, host)
+	if cookieFromHost != nil {
+		return cookieFromHost
+	}
+
 	cookieFromRequest, err := r.Cookie(uidCookieName)
 	if err != nil {
 		return NewCookie()
@@ -96,9 +100,15 @@ func WriteCookie(w http.ResponseWriter, encodedCookie string, cfg *config.HostCo
 
 // Sync tries to set the UID for some syncer key. It returns an error if the set didn't happen.
 func (cookie *Cookie) Sync(key string, uid string) error {
+	if !cookie.AllowSyncs() {
+		return errors.New("The user has opted out of prebid server cookie syncs.")
+	}
+
 	if key == string(openrtb_ext.BidderAudienceNetwork) && uid == "0" {
 		return errors.New("audienceNetwork uses a UID of 0 as \"not yet recognized\".")
 	}
+
+	// Sync
 	cookie.uids[key] = UIDEntry{
 		UID:     uid,
 		Expires: time.Now().Add(uidTTL),
@@ -127,6 +137,18 @@ func SyncHostCookie(r *http.Request, requestCookie *Cookie, host *config.HostCoo
 			requestCookie.Sync(host.Family, hostCookie.Value)
 		}
 	}
+}
+
+func ReadCookieFromHost(r *http.Request, host *config.HostCookie) *Cookie {
+	if host.OptOutCookie.Name != "" {
+		optOutCookie, err1 := r.Cookie(host.OptOutCookie.Name)
+		if err1 == nil && optOutCookie.Value == host.OptOutCookie.Value {
+			pc := NewCookie()
+			pc.SetOptOut(true)
+			return pc
+		}
+	}
+	return nil
 }
 
 // AllowSyncs is true if the user lets bidders sync cookies, and false otherwise.

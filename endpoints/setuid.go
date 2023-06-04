@@ -50,7 +50,7 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 
 		defer pbsanalytics.LogSetUIDObject(&so)
 
-		pc := usersync.ReadCookie(r, decoder)
+		pc := usersync.ReadCookie(r, decoder, &cfg.HostCookie)
 		if !pc.AllowSyncs() {
 			w.WriteHeader(http.StatusUnauthorized)
 			metricsEngine.RecordSetUid(metrics.SetUidOptOut)
