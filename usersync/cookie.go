@@ -4,8 +4,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"math"
 	"net/http"
+	"sort"
 	"time"
 
 	"github.com/prebid/prebid-server/config"
@@ -150,22 +150,33 @@ func (cookie *Cookie) SetCookieOnResponse(w http.ResponseWriter, setSiteCookie b
 	}
 
 	var currSize int = len([]byte(httpCookie.String()))
-	for cfg.MaxCookieSizeBytes > 0 && currSize > cfg.MaxCookieSizeBytes && len(cookie.uids) > 0 {
-		var oldestElem string = ""
-		var oldestDate int64 = math.MaxInt64
-		for key, value := range cookie.uids {
-			timeUntilExpiration := time.Until(value.Expires)
-			if timeUntilExpiration < time.Duration(oldestDate) {
-				oldestElem = key
-				oldestDate = int64(timeUntilExpiration)
+	if cfg.MaxCookieSizeBytes > 0 && currSize > cfg.MaxCookieSizeBytes && len(cookie.uids) > 0 {
+		// O(n) time, O(n) space
+		uuidKeys := make([]string, 0, len(cookie.uids))
+		for key := range cookie.uids {
+			uuidKeys = append(uuidKeys, key)
+		}
+
+		// O(n*logn)
+		sort.SliceStable(uuidKeys, func(i, j int) bool {
+			return cookie.uids[uuidKeys[i]].Expires.Before(cookie.uids[uuidKeys[j]].Expires)
+		})
+
+		// Delete elements until we need no more space to free
+		for _, oldestKey := range uuidKeys {
+			delete(cookie.uids, oldestKey)
+
+			httpCookie = cookie.ToHTTPCookie(ttl)
+			if domain != "" {
+				httpCookie.Domain = domain
+			}
+			currSize = len([]byte(httpCookie.String()))
+
+			// If we meet max size, stop
+			if currSize <= cfg.MaxCookieSizeBytes {
+				break
 			}
 		}
-		delete(cookie.uids, oldestElem)
-		httpCookie = cookie.ToHTTPCookie(ttl)
-		if domain != "" {
-			httpCookie.Domain = domain
-		}
-		currSize = len([]byte(httpCookie.String()))
 	}
 
 	if setSiteCookie {

@@ -302,41 +302,89 @@ func TestGetUIDsWithNilCookie(t *testing.T) {
 	assert.Len(t, uids, 0, "GetUIDs shouldn't return any user syncs for a nil cookie")
 }
 
-func TestTrimCookiesClosestExpirationDates(t *testing.T) {
-	cookieToSend := &Cookie{
+func getTestCookie() *Cookie {
+	return &Cookie{
 		uids: map[string]uidWithExpiry{
-			"k1": newTempId("12345678901234567890123456789012345678901234567890", 7),
-			"k2": newTempId("abcdefghijklmnopqrstuvwxyz", 1),
-			"k3": newTempId("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 6),
-			"k4": newTempId("12345678901234567890123456789612345678901234567890", 5),
-			"k5": newTempId("aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ", 4),
-			"k6": newTempId("12345678901234567890123456789012345678901234567890", 3),
-			"k7": newTempId("abcdefghijklmnopqrstuvwxyz", 2),
+			"1": newTempId("1234567890123456789012345678901234567890123456", 7),
+			"2": newTempId("abcdefghijklmnopqrstuvwxy", 1),
+			"3": newTempId("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 6),
+			"4": newTempId("123456789012345678901234567896123456789012345678", 5),
+			"5": newTempId("aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ", 4),
+			"6": newTempId("12345678901234567890123456789012345678901234567890", 3),
+			"7": newTempId("abcdefghij", 2),
 		},
 		optOut: false,
 	}
+}
 
+func TestTrimCookiesClosestExpirationDates(t *testing.T) {
 	type aTest struct {
+		desc          string
 		maxCookieSize int
-		expKeys       []string
+		inputCookie   *Cookie
+		expectedUids  []string
 	}
+
 	testCases := []aTest{
-		{maxCookieSize: 2000, expKeys: []string{"k1", "k2", "k3", "k4", "k5", "k6", "k7"}}, //1 don't trim, set
-		{maxCookieSize: 0, expKeys: []string{"k1", "k2", "k3", "k4", "k5", "k6", "k7"}},    //2 unlimited size: don't trim, set
-		{maxCookieSize: 800, expKeys: []string{"k1", "k5", "k4", "k3", "k6"}},              //3 trim to size and set
-		{maxCookieSize: 500, expKeys: []string{"k1", "k4", "k3"}},                          //4 trim to size and set
-		{maxCookieSize: 200, expKeys: []string{}},                                          //5 insufficient size, trim to zero length and set
-		{maxCookieSize: -100, expKeys: []string{}},                                         //6 invalid size, trim to zero length and set
+		{
+			desc:          "maxCookieSize big enough to fit all uid entries in sample cookie. Don't trim, set",
+			maxCookieSize: 2000,
+			inputCookie:   getTestCookie(),
+			expectedUids:  []string{"1", "2", "3", "4", "5", "6", "7"},
+		},
+		{
+			desc:          "maxCookieSize equals zero. Interpret as unlimited size: don't trim, set",
+			maxCookieSize: 0,
+			inputCookie:   getTestCookie(),
+			expectedUids:  []string{"1", "2", "3", "4", "5", "6", "7"},
+		},
+		{
+			desc:          "maxCookieSize insufficient to hold any cookies. Expect empty",
+			maxCookieSize: 1,
+			inputCookie:   getTestCookie(),
+			expectedUids:  []string{},
+		},
+		{
+			desc:          "maxCookieSize insufficient to hold any cookies and input cookie.uids is also empty. Expect empty",
+			maxCookieSize: 1,
+			inputCookie:   &Cookie{},
+			expectedUids:  []string{},
+		},
+		{
+			desc:          "maxCookieSize big enough to hold some elements, discard oldest",
+			maxCookieSize: 500,
+			inputCookie:   getTestCookie(),
+			expectedUids:  []string{"1", "3", "4"},
+		},
+		{
+			desc:          "maxCookieSize big enough to hold some elements but input cookie.uids is empty. Expect empty",
+			maxCookieSize: 500,
+			inputCookie:   &Cookie{},
+			expectedUids:  []string{},
+		},
+		{
+			desc:          "maxCookieSize big enough to only hold one element: the newest element. Discard the rest",
+			maxCookieSize: 230,
+			inputCookie:   getTestCookie(),
+			expectedUids:  []string{"1"},
+		},
+		{
+			desc:          "Negative maxCookieSize. Expect non-trimmed input cookie.uids",
+			maxCookieSize: -100,
+			inputCookie:   getTestCookie(),
+			expectedUids:  []string{"1", "2", "3", "4", "5", "6", "7"},
+		},
 	}
+
 	for i := range testCases {
-		processedCookie := writeThenRead(cookieToSend, testCases[i].maxCookieSize)
+		processedCookie := writeThenRead(testCases[i].inputCookie, testCases[i].maxCookieSize)
 
 		actualKeys := make([]string, 0, 7)
 		for key := range processedCookie.uids {
 			actualKeys = append(actualKeys, key)
 		}
 
-		assert.ElementsMatch(t, testCases[i].expKeys, actualKeys, "[Test %d]", i+1)
+		assert.ElementsMatch(t, testCases[i].expectedUids, actualKeys, testCases[i].desc)
 	}
 }
 
