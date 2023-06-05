@@ -103,6 +103,14 @@
         "required": [ "w", "h"]
       },
       "description": "Private sizes (ex: [{\"w\": 300, \"h\": 250},{...}]), experimental, may not be supported."
+    },
+    "ext_inv_code" : {
+      "type": "string",
+      "description": "Specifies predefined value passed on the query string that can be used in reporting"
+    },
+    "external_imp_id" : {
+      "type": "string",
+      "description": "Unique identifier of an externally generated auction"
     }
   },
 

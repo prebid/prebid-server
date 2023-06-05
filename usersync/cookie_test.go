@@ -400,34 +400,6 @@ func TestBidderNameGets(t *testing.T) {
 	}
 }
 
-func TestNilCookie(t *testing.T) {
-	var nilCookie *Cookie
-
-	if nilCookie.HasLiveSync("anything") {
-		t.Error("nil cookies should respond with false when asked if they have a sync")
-	}
-
-	if nilCookie.HasAnyLiveSyncs() {
-		t.Error("nil cookies shouldn't have any syncs.")
-	}
-
-	if nilCookie.AllowSyncs() {
-		t.Error("nil cookies shouldn't allow syncs to take place.")
-	}
-
-	uid, hadUID, isLive := nilCookie.GetUID("anything")
-
-	if uid != "" {
-		t.Error("nil cookies should return empty strings for the UID.")
-	}
-	if hadUID {
-		t.Error("nil cookies shouldn't claim to have a UID mapping.")
-	}
-	if isLive {
-		t.Error("nil cookies shouldn't report live UID mappings.")
-	}
-}
-
 func TestReadCookieOptOut(t *testing.T) {
 	optOutCookieName := "optOutCookieName"
 	optOutCookieValue := "optOutCookieValue"
@@ -438,8 +410,7 @@ func TestReadCookieOptOut(t *testing.T) {
 			"foo": newTempId("fooID", 1),
 			"bar": newTempId("barID", 2),
 		},
-		optOut:   false,
-		birthday: timestamp(),
+		optOut: false,
 	}).ToHTTPCookie()
 
 	testCases := []struct {
@@ -512,6 +483,47 @@ func TestReadCookieOptOut(t *testing.T) {
 	}
 }
 
+func TestNilCookie(t *testing.T) {
+	var nilCookie *Cookie
+
+	if nilCookie.HasLiveSync("anything") {
+		t.Error("nil cookies should respond with false when asked if they have a sync")
+	}
+
+	if nilCookie.HasAnyLiveSyncs() {
+		t.Error("nil cookies shouldn't have any syncs.")
+	}
+
+	if nilCookie.AllowSyncs() {
+		t.Error("nil cookies shouldn't allow syncs to take place.")
+	}
+
+	uid, hadUID, isLive := nilCookie.GetUID("anything")
+
+	if uid != "" {
+		t.Error("nil cookies should return empty strings for the UID.")
+	}
+	if hadUID {
+		t.Error("nil cookies shouldn't claim to have a UID mapping.")
+	}
+	if isLive {
+		t.Error("nil cookies shouldn't report live UID mappings.")
+	}
+}
+
+func TestOptIn(t *testing.T) {
+	cookie := &Cookie{
+		uids:   make(map[string]UIDEntry),
+		optOut: true,
+	}
+
+	cookie.SetOptOut(false)
+	if !cookie.AllowSyncs() {
+		t.Error("After SetOptOut(false), a cookie should allow more user syncs.")
+	}
+	ensureConsistency(t, cookie)
+}
+
 func TestOptOutReset(t *testing.T) {
 	cookie := newSampleCookie()
 
@@ -522,25 +534,10 @@ func TestOptOutReset(t *testing.T) {
 	ensureConsistency(t, cookie)
 }
 
-func TestOptIn(t *testing.T) {
-	cookie := &Cookie{
-		uids:     make(map[string]UIDEntry),
-		optOut:   true,
-		birthday: timestamp(),
-	}
-
-	cookie.SetOptOut(false)
-	if !cookie.AllowSyncs() {
-		t.Error("After SetOptOut(false), a cookie should allow more user syncs.")
-	}
-	ensureConsistency(t, cookie)
-}
-
 func TestOptOutCookie(t *testing.T) {
 	cookie := &Cookie{
-		uids:     make(map[string]UIDEntry),
-		optOut:   true,
-		birthday: timestamp(),
+		uids:   make(map[string]UIDEntry),
+		optOut: true,
 	}
 	ensureConsistency(t, cookie)
 }

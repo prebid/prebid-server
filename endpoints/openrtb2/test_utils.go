@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"path/filepath"
 	"strconv"
 	"testing"
 	"time"
@@ -31,6 +30,7 @@ import (
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/hooks/hookstage"
+	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/metrics"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -1094,23 +1094,7 @@ func newBidderInfo(isDisabled bool) config.BidderInfo {
 	}
 }
 
-func getTestFiles(dir string) ([]string, error) {
-	var filesToAssert []string
-
-	fileList, err := os.ReadDir(dir)
-	if err != nil {
-		return nil, err
-	}
-
-	// Append the path of every file found in `dir` to the `filesToAssert` array
-	for _, fileInfo := range fileList {
-		filesToAssert = append(filesToAssert, filepath.Join(dir, fileInfo.Name()))
-	}
-
-	return filesToAssert, nil
-}
-
-func parseTestFile(fileData []byte, testFile string) (testCase, error) {
+func parseTestData(fileData []byte, testFile string) (testCase, error) {
 
 	parsedTestData := testCase{}
 	var err, errEm error
@@ -1143,9 +1127,9 @@ func parseTestFile(fileData []byte, testFile string) (testCase, error) {
 	parsedTestData.ExpectedErrorMessage, errEm = jsonparser.GetString(fileData, "expectedErrorMessage")
 
 	if err == nil && errEm == nil {
-		return parsedTestData, errors.New("Test case file can't have both a valid expectedBidResponse and a valid expectedErrorMessage, fields are mutually exclusive")
+		return parsedTestData, fmt.Errorf("Test case %s can't have both a valid expectedBidResponse and a valid expectedErrorMessage, fields are mutually exclusive", testFile)
 	} else if err != nil && errEm != nil {
-		return parsedTestData, errors.New("Test case file should come with either a valid expectedBidResponse or a valid expectedErrorMessage, not both.")
+		return parsedTestData, fmt.Errorf("Test case %s should come with either a valid expectedBidResponse or a valid expectedErrorMessage, not both.", testFile)
 	}
 
 	parsedTestData.ExpectedReturnCode = int(parsedReturnCode)
@@ -1228,6 +1212,7 @@ func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.Bid
 		mockCurrencyConverter,
 		mockFetcher,
 		&adscert.NilSigner{},
+		macros.NewStringIndexBasedReplacer(),
 	)
 
 	testExchange = &exchangeTestWrapper{
@@ -1483,6 +1468,7 @@ func makePlan[H any](hook H) hooks.Plan[H] {
 
 type mockRejectionHook struct {
 	nbr int
+	err error
 }
 
 func (m mockRejectionHook) HandleEntrypointHook(
@@ -1490,7 +1476,7 @@ func (m mockRejectionHook) HandleEntrypointHook(
 	_ hookstage.ModuleInvocationContext,
 	_ hookstage.EntrypointPayload,
 ) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
-	return hookstage.HookResult[hookstage.EntrypointPayload]{Reject: true, NbrCode: m.nbr}, nil
+	return hookstage.HookResult[hookstage.EntrypointPayload]{Reject: true, NbrCode: m.nbr}, m.err
 }
 
 func (m mockRejectionHook) HandleRawAuctionHook(
@@ -1498,7 +1484,7 @@ func (m mockRejectionHook) HandleRawAuctionHook(
 	_ hookstage.ModuleInvocationContext,
 	_ hookstage.RawAuctionRequestPayload,
 ) (hookstage.HookResult[hookstage.RawAuctionRequestPayload], error) {
-	return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{Reject: true, NbrCode: m.nbr}, nil
+	return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{Reject: true, NbrCode: m.nbr}, m.err
 }
 
 func (m mockRejectionHook) HandleProcessedAuctionHook(
@@ -1506,7 +1492,7 @@ func (m mockRejectionHook) HandleProcessedAuctionHook(
 	_ hookstage.ModuleInvocationContext,
 	_ hookstage.ProcessedAuctionRequestPayload,
 ) (hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload], error) {
-	return hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload]{Reject: true, NbrCode: m.nbr}, nil
+	return hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload]{Reject: true, NbrCode: m.nbr}, m.err
 }
 
 func (m mockRejectionHook) HandleBidderRequestHook(
@@ -1520,7 +1506,7 @@ func (m mockRejectionHook) HandleBidderRequestHook(
 		result.NbrCode = m.nbr
 	}
 
-	return result, nil
+	return result, m.err
 }
 
 func (m mockRejectionHook) HandleRawBidderResponseHook(
