@@ -1,0 +1,23 @@
+rules:
+  - id: no-content-status-code-check
+    languages: [go]
+    message: |
+      Recommended to use of util function from `adapters` package. Use `IsResponseStatusCodeNoContent()` to check if status code is `http.StatusNoContent`
+      ```
+        if adapters.IsResponseStatusCodeNoContent(response) { 
+          return nil, nil 
+        }
+      ```
+    severity: WARNING
+    pattern-either:
+      - patterns:
+          - pattern: |
+              ...
+              if $RESPONSE_STATUS_CODE == $STATUS_CODE {
+                ...
+              }
+              ...
+          - focus-metavariable: $STATUS_CODE
+          - metavariable-regex:
+              metavariable: "$STATUS_CODE"
+              regex: "http.StatusNoContent"

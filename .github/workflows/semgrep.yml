@@ -1,7 +1,7 @@
 name: adapter semgrep checks
 on:
-  pull_request
-    # paths: ["adapters/*/*.go"]
+  pull_request:
+    paths: ["adapters/*/*.go"]
 permissions: write-all
 jobs:
   semgrep-check:
@@ -14,7 +14,7 @@ jobs:
         
         -   name: Compute commit changes
             id: compute_commit_changes
-            uses: actions/github-script@v4
+            uses: actions/github-script@v6.4.1
             with:
                 github-token: ${{ secrets.GITHUB_TOKEN }}
                 result-encoding: string
@@ -24,7 +24,7 @@ jobs:
                     let commit
 
                     async function getLatestCommit() {
-                        const { data } = await github.pulls.listCommits({owner, repo, pull_number: pullRequestNumber}) 
+                        const { data } = await github.rest.pulls.listCommits({owner, repo, pull_number: pullRequestNumber}) 
                         // api returns commits in ascending order so loop in reverse to get latest commit
                         // latest commit can be merged master commit, such commit have more than one parent commits
                         // semgrep shouldn't scan changes part of merged master commit
@@ -83,7 +83,7 @@ jobs:
                     }
 
                     async function isTestExecutedOnCommit(ref) {
-                        const response = await github.checks.listForRef({owner, repo, ref})
+                        const response = await github.rest.checks.listForRef({owner, repo, ref})
                         const checkRuns = response.data.check_runs
                         for (let i = 0; i < checkRuns.length; i++) {
                             if (checkRuns[i].status == "completed" && checkRuns[i].name == "semgrep-check") {
@@ -98,7 +98,7 @@ jobs:
                         const pullRequestEvent = "${{ github.event.action }}"
                         let stats = {}
 
-                        const { data } = await github.pulls.listFiles({ owner, repo, pull_number:pullRequestNumber })
+                        const { data } = await github.rest.pulls.listFiles({ owner, repo, pull_number:pullRequestNumber })
                         const pullRequestStats = await getStats(data)                        
                         
                         //  check if a new commit was pushed after the pull request was opened
@@ -106,7 +106,7 @@ jobs:
                             commit = await getLatestCommit()
                             const isTestExecuted = await isTestExecutedOnCommit(commit)
                             if (!isTestExecuted) {
-                                const { data } = await github.repos.getCommit({ owner, repo, ref:commit })
+                                const { data } = await github.rest.repos.getCommit({ owner, repo, ref:commit })
                                 const latestCommitStats = await getStats(data.files)
         
                                 const fileNames = latestCommitStats == {} ? []: Object.keys(latestCommitStats)
@@ -132,7 +132,7 @@ jobs:
                             }
                         } else {
                             stats = pullRequestStats
-                            commit = pullRequestMergeCommit
+                            commit = "${{ github.sha }}"
                         }
                         const files = Object.keys(stats).join(" ")
                         return JSON.stringify({ hasChanges: files.length != 0, stats, files, commit })
@@ -166,12 +166,12 @@ jobs:
             run: |
                 unqouted_string=$(echo ${{ steps.export_commit_changes.outputs.files }} | tr -d '"')
                 # run semgrep and export result as string
-                outputs=$(semgrep --gitlab-sast --config=./semgrep/rules/adapter/prefer_http_utils.yml $unqouted_string  | jq '[.vulnerabilities[] | {"file": .location.file, "start": .location.start_line, "end": .location.end_line, "message": (.message | gsub("\\n"; "\n"))}]' | jq -c | jq -R)
+                outputs=$(semgrep --gitlab-sast --config=./semgrep/rules/adapter/* $unqouted_string  | jq '[.vulnerabilities[] | {"file": .location.file, "start": .location.start_line, "end": .location.end_line, "message": (.message | gsub("\\n"; "\n"))}]' | jq -c | jq -R)
                 echo "semgrep_result=${outputs}" >> "$GITHUB_OUTPUT"
 
         -   name: Add pull request comment
             if: contains(steps.export_commit_changes.outputs.hasChanges, 'true')
-            uses: actions/github-script@v4
+            uses: actions/github-script@v6.4.1
             with:
                 github-token: ${{ secrets.GITHUB_TOKEN }}
                 result-encoding: string
@@ -180,14 +180,21 @@ jobs:
                     const  { stats, commit } = ${{ steps.compute_commit_changes.outputs.result }}
                     const { owner, repo } = context.repo
                     const pullRequestNumber = context.payload.pull_request.number
-
                     for (let i=0; i < semgrepResult.length; i++) {
                         const { file, start, end, message } = semgrepResult[i]
                         // check if semgrep suggested change is part of commit changes
                         const fileStats =  stats[file]
-                        if (fileStats != undefined && (fileStats.includes(start) || fileStats.includes(end))) {
-                            // add review on commit
-                           await github.pulls.createReviewComment({owner: owner, repo: repo, pull_number: pullRequestNumber, body: message, commit_id: commit, path: file, line: start})
+                        if (fileStats != undefined) {
+                            let line
+                            if (fileStats.includes(start)) {
+                                line = start
+                            } else if (fileStats.includes(end)) {
+                                line = end
+                            } else {
+                                // semgrep reported change are not part of commit
+                                continue
+                            }
+                            await github.rest.pulls.createReviewComment({owner: owner, repo: repo, pull_number: pullRequestNumber, body: message, commit_id: commit, path: file, line: line})
                         }
                     }
             env:
