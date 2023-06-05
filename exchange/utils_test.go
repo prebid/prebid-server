@@ -4170,3 +4170,105 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 		})
 	}
 }
+
+func TestGetPrebidMediaTypeForBid(t *testing.T) {
+	tests := []struct {
+		description     string
+		inputBid        openrtb2.Bid
+		expectedBidType openrtb_ext.BidType
+		expectedError   string
+	}{
+		{
+			description:     "Valid bid ext with bid type native",
+			inputBid:        openrtb2.Bid{ID: "bidId", ImpID: "impId", Ext: json.RawMessage(`{"prebid": {"type": "native"}}`)},
+			expectedBidType: openrtb_ext.BidTypeNative,
+		},
+		{
+			description:   "Valid bid ext with non-existing bid type",
+			inputBid:      openrtb2.Bid{ID: "bidId", ImpID: "impId", Ext: json.RawMessage(`{"prebid": {"type": "unknown"}}`)},
+			expectedError: "Failed to parse bid mediatype for impression \"impId\", invalid BidType: unknown",
+		},
+		{
+			description:   "Invalid bid ext",
+			inputBid:      openrtb2.Bid{ID: "bidId", ImpID: "impId", Ext: json.RawMessage(`[true`)},
+			expectedError: "Failed to parse bid mediatype for impression \"impId\", unexpected end of JSON input",
+		},
+		{
+			description:   "Bid ext is nil",
+			inputBid:      openrtb2.Bid{ID: "bidId", ImpID: "impId", Ext: nil},
+			expectedError: "Failed to parse bid mediatype for impression \"impId\"",
+		},
+		{
+			description:   "Empty bid ext",
+			inputBid:      openrtb2.Bid{ID: "bidId", ImpID: "impId", Ext: json.RawMessage(`{}`)},
+			expectedError: "Failed to parse bid mediatype for impression \"impId\"",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.description, func(t *testing.T) {
+			bidType, err := getPrebidMediaTypeForBid(tt.inputBid)
+			if len(tt.expectedError) == 0 {
+				assert.Equal(t, tt.expectedBidType, bidType)
+			} else {
+				assert.Equal(t, tt.expectedError, err.Error())
+			}
+
+		})
+	}
+}
+
+func TestGetMediaTypeForBid(t *testing.T) {
+	tests := []struct {
+		description     string
+		inputBid        openrtb2.Bid
+		expectedBidType openrtb_ext.BidType
+		expectedError   string
+	}{
+		{
+			description:     "Valid bid ext with bid type native",
+			inputBid:        openrtb2.Bid{ID: "bidId", ImpID: "impId", Ext: json.RawMessage(`{"prebid": {"type": "native"}}`)},
+			expectedBidType: openrtb_ext.BidTypeNative,
+		},
+		{
+			description:   "invalid bid ext",
+			inputBid:      openrtb2.Bid{ID: "bidId", ImpID: "impId", Ext: json.RawMessage(`{"prebid"`)},
+			expectedError: "Failed to parse bid mediatype for impression \"impId\", unexpected end of JSON input",
+		},
+		{
+			description:     "Valid bid ext with mtype native",
+			inputBid:        openrtb2.Bid{ID: "bidId", ImpID: "impId", MType: openrtb2.MarkupNative},
+			expectedBidType: openrtb_ext.BidTypeNative,
+		},
+		{
+			description:     "Valid bid ext with mtype banner",
+			inputBid:        openrtb2.Bid{ID: "bidId", ImpID: "impId", MType: openrtb2.MarkupBanner},
+			expectedBidType: openrtb_ext.BidTypeBanner,
+		},
+		{
+			description:     "Valid bid ext with mtype video",
+			inputBid:        openrtb2.Bid{ID: "bidId", ImpID: "impId", MType: openrtb2.MarkupVideo},
+			expectedBidType: openrtb_ext.BidTypeVideo,
+		},
+		{
+			description:     "Valid bid ext with mtype audio",
+			inputBid:        openrtb2.Bid{ID: "bidId", ImpID: "impId", MType: openrtb2.MarkupAudio},
+			expectedBidType: openrtb_ext.BidTypeAudio,
+		},
+		{
+			description:   "Valid bid ext with mtype unknown",
+			inputBid:      openrtb2.Bid{ID: "bidId", ImpID: "impId", MType: 8},
+			expectedError: "Failed to parse bid mType for impression \"impId\"",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.description, func(t *testing.T) {
+			bidType, err := getMediaTypeForBid(tt.inputBid)
+			if len(tt.expectedError) == 0 {
+				assert.Equal(t, tt.expectedBidType, bidType)
+			} else {
+				assert.Equal(t, tt.expectedError, err.Error())
+			}
+
+		})
+	}
+}

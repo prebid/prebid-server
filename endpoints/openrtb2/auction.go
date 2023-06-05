@@ -1584,29 +1584,50 @@ func validateTargeting(t *openrtb_ext.ExtRequestTargeting) error {
 	}
 
 	if t.PriceGranularity != nil {
-		pg := t.PriceGranularity
-
-		if pg.Precision == nil {
-			return errors.New("Price granularity error: precision is required")
-		} else if *pg.Precision < 0 {
-			return errors.New("Price granularity error: precision must be non-negative")
-		} else if *pg.Precision > openrtb_ext.MaxDecimalFigures {
-			return fmt.Errorf("Price granularity error: precision of more than %d significant figures is not supported", openrtb_ext.MaxDecimalFigures)
-		}
-
-		var prevMax float64 = 0
-		for _, gr := range pg.Ranges {
-			if gr.Max <= prevMax {
-				return errors.New(`Price granularity error: range list must be ordered with increasing "max"`)
-			}
-
-			if gr.Increment <= 0.0 {
-				return errors.New("Price granularity error: increment must be a nonzero positive number")
-			}
-			prevMax = gr.Max
+		if err := validatePriceGranularity(t.PriceGranularity); err != nil {
+			return err
 		}
 	}
 
+	if t.MediaTypePriceGranularity.Video != nil {
+		if err := validatePriceGranularity(t.MediaTypePriceGranularity.Video); err != nil {
+			return err
+		}
+	}
+	if t.MediaTypePriceGranularity.Banner != nil {
+		if err := validatePriceGranularity(t.MediaTypePriceGranularity.Banner); err != nil {
+			return err
+		}
+	}
+	if t.MediaTypePriceGranularity.Native != nil {
+		if err := validatePriceGranularity(t.MediaTypePriceGranularity.Native); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func validatePriceGranularity(pg *openrtb_ext.PriceGranularity) error {
+	if pg.Precision == nil {
+		return errors.New("Price granularity error: precision is required")
+	} else if *pg.Precision < 0 {
+		return errors.New("Price granularity error: precision must be non-negative")
+	} else if *pg.Precision > openrtb_ext.MaxDecimalFigures {
+		return fmt.Errorf("Price granularity error: precision of more than %d significant figures is not supported", openrtb_ext.MaxDecimalFigures)
+	}
+
+	var prevMax float64 = 0
+	for _, gr := range pg.Ranges {
+		if gr.Max <= prevMax {
+			return errors.New(`Price granularity error: range list must be ordered with increasing "max"`)
+		}
+
+		if gr.Increment <= 0.0 {
+			return errors.New("Price granularity error: increment must be a nonzero positive number")
+		}
+		prevMax = gr.Max
+	}
 	return nil
 }
 

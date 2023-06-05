@@ -15,6 +15,7 @@ import (
 	"github.com/prebid/openrtb/v19/openrtb2"
 
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/firstpartydata"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
@@ -804,13 +805,14 @@ func getExtCacheInstructions(requestExtPrebid *openrtb_ext.ExtRequestPrebid) ext
 func getExtTargetData(requestExtPrebid *openrtb_ext.ExtRequestPrebid, cacheInstructions extCacheInstructions) *targetData {
 	if requestExtPrebid != nil && requestExtPrebid.Targeting != nil {
 		return &targetData{
-			includeWinners:    *requestExtPrebid.Targeting.IncludeWinners,
-			includeBidderKeys: *requestExtPrebid.Targeting.IncludeBidderKeys,
-			includeCacheBids:  cacheInstructions.cacheBids,
-			includeCacheVast:  cacheInstructions.cacheVAST,
-			includeFormat:     requestExtPrebid.Targeting.IncludeFormat,
-			priceGranularity:  *requestExtPrebid.Targeting.PriceGranularity,
-			preferDeals:       requestExtPrebid.Targeting.PreferDeals,
+			includeWinners:            *requestExtPrebid.Targeting.IncludeWinners,
+			includeBidderKeys:         *requestExtPrebid.Targeting.IncludeBidderKeys,
+			includeCacheBids:          cacheInstructions.cacheBids,
+			includeCacheVast:          cacheInstructions.cacheVAST,
+			includeFormat:             requestExtPrebid.Targeting.IncludeFormat,
+			priceGranularity:          *requestExtPrebid.Targeting.PriceGranularity,
+			mediaTypePriceGranularity: requestExtPrebid.Targeting.MediaTypePriceGranularity,
+			preferDeals:               requestExtPrebid.Targeting.PreferDeals,
 		}
 	}
 
@@ -979,4 +981,54 @@ func WrapJSONInData(data []byte) []byte {
 	res = append(res, data...)
 	res = append(res, []byte(`}`)...)
 	return res
+}
+
+func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	mType := bid.MType
+	var bidType openrtb_ext.BidType
+	if mType > 0 {
+		switch mType {
+		case openrtb2.MarkupBanner:
+			bidType = openrtb_ext.BidTypeBanner
+		case openrtb2.MarkupVideo:
+			bidType = openrtb_ext.BidTypeVideo
+		case openrtb2.MarkupAudio:
+			bidType = openrtb_ext.BidTypeAudio
+		case openrtb2.MarkupNative:
+			bidType = openrtb_ext.BidTypeNative
+		default:
+			return bidType, fmt.Errorf("Failed to parse bid mType for impression \"%s\"", bid.ImpID)
+		}
+	} else {
+		var err error
+		bidType, err = getPrebidMediaTypeForBid(bid)
+		if err != nil {
+			return bidType, err
+		}
+	}
+	return bidType, nil
+}
+
+func getPrebidMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	var err error
+	var bidType openrtb_ext.BidType
+
+	if bid.Ext != nil {
+		var bidExt openrtb_ext.ExtBid
+		err = json.Unmarshal(bid.Ext, &bidExt)
+		if err == nil && bidExt.Prebid != nil {
+			if bidType, err = openrtb_ext.ParseBidType(string(bidExt.Prebid.Type)); err == nil {
+				return bidType, nil
+			}
+		}
+	}
+
+	errMsg := fmt.Sprintf("Failed to parse bid mediatype for impression \"%s\"", bid.ImpID)
+	if err != nil {
+		errMsg = fmt.Sprintf("%s, %s", errMsg, err.Error())
+	}
+
+	return bidType, &errortypes.BadServerResponse{
+		Message: errMsg,
+	}
 }

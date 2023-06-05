@@ -1720,7 +1720,7 @@ func TestBuildAmpObject(t *testing.T) {
 					},
 					AT:   1,
 					TMax: 500,
-					Ext:  json.RawMessage(`{"prebid":{"cache":{"bids":{}},"channel":{"name":"amp","version":""},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"includewinners":true,"includebidderkeys":true}}}`),
+					Ext:  json.RawMessage(`{"prebid":{"cache":{"bids":{}},"channel":{"name":"amp","version":""},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"mediatypepricegranularity":{},"includewinners":true,"includebidderkeys":true}}}`),
 				},
 				AuctionResponse: &openrtb2.BidResponse{
 					SeatBid: []openrtb2.SeatBid{{
@@ -1774,7 +1774,7 @@ func TestBuildAmpObject(t *testing.T) {
 					},
 					AT:   1,
 					TMax: 500,
-					Ext:  json.RawMessage(`{"prebid":{"cache":{"bids":{}},"channel":{"name":"amp","version":""},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"includewinners":true,"includebidderkeys":true}}}`),
+					Ext:  json.RawMessage(`{"prebid":{"cache":{"bids":{}},"channel":{"name":"amp","version":""},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"mediatypepricegranularity":{},"includewinners":true,"includebidderkeys":true}}}`),
 				},
 				AuctionResponse: &openrtb2.BidResponse{
 					SeatBid: []openrtb2.SeatBid{{

@@ -104,7 +104,8 @@
             ]
           },
           "includewinners": true,
-          "includebidderkeys": true
+          "includebidderkeys": true,
+          "mediatypepricegranularity": {}
         }
       }
     }

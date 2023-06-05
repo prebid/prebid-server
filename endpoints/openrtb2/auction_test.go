@@ -1863,34 +1863,6 @@ func TestValidateTargeting(t *testing.T) {
 			expectedError: nil,
 		},
 		{
-			name: "price granularity empty",
-			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners:   ptrutil.ToPtr(true),
-				PriceGranularity: &openrtb_ext.PriceGranularity{},
-			},
-			expectedError: errors.New("Price granularity error: precision is required"),
-		},
-		{
-			name: "price granularity negative",
-			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
-				PriceGranularity: &openrtb_ext.PriceGranularity{
-					Precision: ptrutil.ToPtr(-1),
-				},
-			},
-			expectedError: errors.New("Price granularity error: precision must be non-negative"),
-		},
-		{
-			name: "price granularity greater than max",
-			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
-				PriceGranularity: &openrtb_ext.PriceGranularity{
-					Precision: ptrutil.ToPtr(openrtb_ext.MaxDecimalFigures + 1),
-				},
-			},
-			expectedError: errors.New("Price granularity error: precision of more than 15 significant figures is not supported"),
-		},
-		{
 			name: "price granularity ranges out of order",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
 				IncludeWinners: ptrutil.ToPtr(true),
@@ -1905,23 +1877,237 @@ func TestValidateTargeting(t *testing.T) {
 			expectedError: errors.New(`Price granularity error: range list must be ordered with increasing "max"`),
 		},
 		{
-			name: "price granularity negative increment",
+			name: "media type price granularity video correct",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
 				IncludeWinners: ptrutil.ToPtr(true),
-				PriceGranularity: &openrtb_ext.PriceGranularity{
-					Precision: ptrutil.ToPtr(2),
-					Ranges: []openrtb_ext.GranularityRange{
-						{Min: 0.0, Max: 1.0, Increment: -0.1},
+				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
+					Video: &openrtb_ext.PriceGranularity{
+						Precision: ptrutil.ToPtr(2),
+						Ranges: []openrtb_ext.GranularityRange{
+							{Min: 0.0, Max: 10.0, Increment: 1},
+						},
+					},
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			name: "media type price granularity banner correct",
+			givenTargeting: &openrtb_ext.ExtRequestTargeting{
+				IncludeWinners: ptrutil.ToPtr(true),
+				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
+					Banner: &openrtb_ext.PriceGranularity{
+						Precision: ptrutil.ToPtr(2),
+						Ranges: []openrtb_ext.GranularityRange{
+							{Min: 0.0, Max: 10.0, Increment: 1},
+						},
+					},
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			name: "media type price granularity native correct",
+			givenTargeting: &openrtb_ext.ExtRequestTargeting{
+				IncludeWinners: ptrutil.ToPtr(true),
+				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
+					Native: &openrtb_ext.PriceGranularity{
+						Precision: ptrutil.ToPtr(2),
+						Ranges: []openrtb_ext.GranularityRange{
+							{Min: 0.0, Max: 20.0, Increment: 1},
+						},
+					},
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			name: "media type price granularity video and banner correct",
+			givenTargeting: &openrtb_ext.ExtRequestTargeting{
+				IncludeWinners: ptrutil.ToPtr(true),
+				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
+					Banner: &openrtb_ext.PriceGranularity{
+						Precision: ptrutil.ToPtr(2),
+						Ranges: []openrtb_ext.GranularityRange{
+							{Min: 0.0, Max: 10.0, Increment: 1},
+						},
+					},
+					Video: &openrtb_ext.PriceGranularity{
+						Precision: ptrutil.ToPtr(2),
+						Ranges: []openrtb_ext.GranularityRange{
+							{Min: 0.0, Max: 10.0, Increment: 1},
+						},
+					},
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			name: "media type price granularity video incorrect",
+			givenTargeting: &openrtb_ext.ExtRequestTargeting{
+				IncludeWinners: ptrutil.ToPtr(true),
+				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
+					Video: &openrtb_ext.PriceGranularity{
+						Precision: ptrutil.ToPtr(2),
+						Ranges: []openrtb_ext.GranularityRange{
+							{Min: 0.0, Max: 10.0, Increment: -1},
+						},
 					},
 				},
 			},
 			expectedError: errors.New("Price granularity error: increment must be a nonzero positive number"),
+		},
+		{
+			name: "media type price granularity banner incorrect",
+			givenTargeting: &openrtb_ext.ExtRequestTargeting{
+				IncludeWinners: ptrutil.ToPtr(true),
+				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
+					Banner: &openrtb_ext.PriceGranularity{
+						Precision: ptrutil.ToPtr(2),
+						Ranges: []openrtb_ext.GranularityRange{
+							{Min: 0.0, Max: 0.0, Increment: 1},
+						},
+					},
+				},
+			},
+			expectedError: errors.New("Price granularity error: range list must be ordered with increasing \"max\""),
+		},
+		{
+			name: "media type price granularity native incorrect",
+			givenTargeting: &openrtb_ext.ExtRequestTargeting{
+				IncludeWinners: ptrutil.ToPtr(true),
+				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
+					Native: &openrtb_ext.PriceGranularity{
+						Precision: ptrutil.ToPtr(2),
+						Ranges: []openrtb_ext.GranularityRange{
+							{Min: 0.0, Max: 0.0, Increment: 1},
+						},
+					},
+				},
+			},
+			expectedError: errors.New("Price granularity error: range list must be ordered with increasing \"max\""),
+		},
+		{
+			name: "media type price granularity video correct and banner incorrect",
+			givenTargeting: &openrtb_ext.ExtRequestTargeting{
+				IncludeWinners: ptrutil.ToPtr(true),
+				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
+					Banner: &openrtb_ext.PriceGranularity{
+						Precision: ptrutil.ToPtr(2),
+						Ranges: []openrtb_ext.GranularityRange{
+							{Min: 0.0, Max: 10.0, Increment: -1},
+						},
+					},
+					Video: &openrtb_ext.PriceGranularity{
+						Precision: ptrutil.ToPtr(2),
+						Ranges: []openrtb_ext.GranularityRange{
+							{Min: 0.0, Max: 0.0, Increment: 1},
+						},
+					},
+				},
+			},
+			expectedError: errors.New("Price granularity error: range list must be ordered with increasing \"max\""),
+		},
+		{
+			name: "media type price granularity native incorrect and banner correct",
+			givenTargeting: &openrtb_ext.ExtRequestTargeting{
+				IncludeWinners: ptrutil.ToPtr(true),
+				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
+					Native: &openrtb_ext.PriceGranularity{
+						Precision: ptrutil.ToPtr(2),
+						Ranges: []openrtb_ext.GranularityRange{
+							{Min: 0.0, Max: 10.0, Increment: -1},
+						},
+					},
+					Video: &openrtb_ext.PriceGranularity{
+						Precision: ptrutil.ToPtr(2),
+						Ranges: []openrtb_ext.GranularityRange{
+							{Min: 0.0, Max: 0.0, Increment: 1},
+						},
+					},
+				},
+			},
+			expectedError: errors.New("Price granularity error: range list must be ordered with increasing \"max\""),
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			assert.Equal(t, tc.expectedError, validateTargeting(tc.givenTargeting), "Targeting")
+		})
+	}
+}
+
+func TestValidatePriceGranularity(t *testing.T) {
+	testCases := []struct {
+		description           string
+		givenPriceGranularity *openrtb_ext.PriceGranularity
+		expectedError         error
+	}{
+		{
+			description: "Precision is nil",
+			givenPriceGranularity: &openrtb_ext.PriceGranularity{
+				Precision: nil,
+			},
+			expectedError: errors.New("Price granularity error: precision is required"),
+		},
+		{
+			description: "Precision is negative",
+			givenPriceGranularity: &openrtb_ext.PriceGranularity{
+				Precision: ptrutil.ToPtr(-1),
+			},
+			expectedError: errors.New("Price granularity error: precision must be non-negative"),
+		},
+		{
+			description: "Precision is too big",
+			givenPriceGranularity: &openrtb_ext.PriceGranularity{
+				Precision: ptrutil.ToPtr(20),
+			},
+			expectedError: errors.New("Price granularity error: precision of more than 15 significant figures is not supported"),
+		},
+		{
+			description: "price granularity ranges out of order",
+			givenPriceGranularity: &openrtb_ext.PriceGranularity{
+				Precision: ptrutil.ToPtr(2),
+				Ranges: []openrtb_ext.GranularityRange{
+					{Min: 1.0, Max: 2.0, Increment: 0.2},
+					{Min: 0.0, Max: 1.0, Increment: 0.5},
+				},
+			},
+			expectedError: errors.New(`Price granularity error: range list must be ordered with increasing "max"`),
+		},
+		{
+			description: "price granularity negative increment",
+			givenPriceGranularity: &openrtb_ext.PriceGranularity{
+				Precision: ptrutil.ToPtr(2),
+				Ranges: []openrtb_ext.GranularityRange{
+					{Min: 0.0, Max: 1.0, Increment: -0.1},
+				},
+			},
+			expectedError: errors.New("Price granularity error: increment must be a nonzero positive number"),
+		},
+		{
+			description: "price granularity correct",
+			givenPriceGranularity: &openrtb_ext.PriceGranularity{
+				Precision: ptrutil.ToPtr(2),
+				Ranges: []openrtb_ext.GranularityRange{
+					{Min: 0.0, Max: 10.0, Increment: 1},
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			description: "price granularity with correct precision and ranges not specified",
+			givenPriceGranularity: &openrtb_ext.PriceGranularity{
+				Precision: ptrutil.ToPtr(2),
+			},
+			expectedError: nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			assert.Equal(t, tc.expectedError, validatePriceGranularity(tc.givenPriceGranularity))
 		})
 	}
 }
