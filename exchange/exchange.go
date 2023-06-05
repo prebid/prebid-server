@@ -207,7 +207,7 @@ type AuctionRequest struct {
 	QueryParams           url.Values
 	// map of bidder to store duration needed for the MakeBids() calls and start time after MakeBids() calls
 	MakeBidsTimeInfo map[openrtb_ext.BidderName]adapters.MakeBidsTimeInfo
-	TmaxAdjustments  config.TmaxAdjustments
+	TmaxAdjustments  *config.TmaxAdjustments
 }
 
 // BidderRequest holds the bidder specific request and all other
@@ -335,7 +335,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	// PBS will need some time to prepare auction response.
 	// Additionally, if we need to cache bids, then it will take some time to call prebid cache.
 	// We should reduce the amount of time the bidders have, to compensate.
-	auctionCtx, cancel := e.makeAuctionContext(ctx, cacheInstructions.cacheBids, &r.TmaxAdjustments)
+	auctionCtx, cancel := e.makeAuctionContext(ctx, cacheInstructions.cacheBids, r.TmaxAdjustments)
 	defer cancel()
 
 	var (
