@@ -366,7 +366,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 			alternateBidderCodes = *r.Account.AlternateBidderCodes
 		}
 
-		adapterBids, adapterExtra, fledge, anyBidsReturned = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, alternateBidderCodes, requestExtLegacy.Prebid.Experiment, r.HookExecutor, r.StartTime, &r.TmaxAdjustments, bidAdjustmentRules)
+		adapterBids, adapterExtra, fledge, anyBidsReturned = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, alternateBidderCodes, requestExtLegacy.Prebid.Experiment, r.HookExecutor, r.StartTime, r.TmaxAdjustments, bidAdjustmentRules)
 		r.MakeBidsTimeInfo = buildMakeBidsTimeInfoMap(adapterExtra)
 	}
 
@@ -637,7 +637,7 @@ func (e *exchange) makeAuctionContext(ctx context.Context, needsCache bool, tmax
 			auctionCtx, cancel = context.WithDeadline(ctx, deadline.Add(-e.cacheTime))
 		}
 	}
-	if tmaxAdjustments != nil && tmaxAdjustments.Enabled && tmaxAdjustments.PBSResponsePreparationDuration > 0 {
+	if tmaxAdjustments != nil && tmaxAdjustments.Enabled && tmaxAdjustments.PBSResponsePreparationDuration > 0 && tmaxAdjustments.BidderResponseDurationMin != 0 {
 		if deadline, ok := ctx.Deadline(); ok {
 			enforcedTmax := deadline.Add(-time.Duration(int(tmaxAdjustments.PBSResponsePreparationDuration) * int(time.Millisecond)))
 			auctionCtx, cancel = context.WithDeadline(ctx, enforcedTmax)

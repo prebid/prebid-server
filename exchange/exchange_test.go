@@ -2259,8 +2259,9 @@ func TestTimeoutComputation(t *testing.T) {
 
 func TestMakeAuctionContextWithTmaxAdjustment(t *testing.T) {
 	pBSResponsePreparationDuration := uint(300) //in milliseconds
+	bidderResponseDurationMin := uint(1)
 	ex := exchange{}
-	deadline := time.Now()
+	deadline := time.Date(2023, 1, 1, 1, 1, 1, 1, time.UTC)
 
 	callAssertion := func(auctionCtx context.Context, deadline time.Time) {
 		if resultDeadline, ok := auctionCtx.Deadline(); ok {
@@ -2279,8 +2280,9 @@ func TestMakeAuctionContextWithTmaxAdjustment(t *testing.T) {
 		deadline       time.Time
 	}{
 		{description: "disabled", tmaxAdjustment: config.TmaxAdjustments{Enabled: false}, deadline: deadline},
-		{description: "enabled", tmaxAdjustment: config.TmaxAdjustments{Enabled: true, PBSResponsePreparationDuration: pBSResponsePreparationDuration}, deadline: deadline.Add(-time.Duration(int(pBSResponsePreparationDuration) * int(time.Millisecond)))},
-		{description: "enabled-dur-zero", tmaxAdjustment: config.TmaxAdjustments{Enabled: true, PBSResponsePreparationDuration: 0}, deadline: deadline},
+		{description: "enabled", tmaxAdjustment: config.TmaxAdjustments{Enabled: true, PBSResponsePreparationDuration: pBSResponsePreparationDuration, BidderResponseDurationMin: bidderResponseDurationMin}, deadline: deadline.Add(-time.Duration(int(pBSResponsePreparationDuration) * int(time.Millisecond)))},
+		{description: "enabled-dur-zero", tmaxAdjustment: config.TmaxAdjustments{Enabled: true, PBSResponsePreparationDuration: 0, BidderResponseDurationMin: bidderResponseDurationMin}, deadline: deadline},
+		{description: "enabled-bidder-response-dur-zero", tmaxAdjustment: config.TmaxAdjustments{Enabled: true, PBSResponsePreparationDuration: pBSResponsePreparationDuration, BidderResponseDurationMin: 0}, deadline: deadline},
 	}
 
 	for _, test := range testCases {

@@ -560,10 +560,15 @@ func TestBidderTimeout(t *testing.T) {
 		me:         &metricsConfig.NilMetricsEngine{},
 	}
 
+	reqInfo := &adapters.ExtraRequestInfo{
+		BidderRequestStartTime: time.Date(2023, 1, 1, 1, 1, 1, 1, time.UTC),
+		TmaxAdjustments:        &config.TmaxAdjustments{Enabled: false},
+	}
+
 	callInfo := bidder.doRequest(ctx, &adapters.RequestData{
 		Method: "POST",
 		Uri:    server.URL,
-	}, time.Now(), &config.TmaxAdjustments{Enabled: false})
+	}, reqInfo)
 	if callInfo.err == nil {
 		t.Errorf("The bidder should report an error if the context has expired already.")
 	}
@@ -579,10 +584,14 @@ func TestInvalidRequest(t *testing.T) {
 		Bidder: &mixedMultiBidder{},
 		Client: server.Client(),
 	}
+	reqInfo := &adapters.ExtraRequestInfo{
+		BidderRequestStartTime: time.Date(2023, 1, 1, 1, 1, 1, 1, time.UTC),
+		TmaxAdjustments:        &config.TmaxAdjustments{Enabled: false},
+	}
 
 	callInfo := bidder.doRequest(context.Background(), &adapters.RequestData{
 		Method: "\"", // force http.NewRequest() to fail
-	}, time.Now(), &config.TmaxAdjustments{Enabled: false})
+	}, reqInfo)
 	if callInfo.err == nil {
 		t.Errorf("bidderAdapter.doRequest should return an error if the request data is malformed.")
 	}
@@ -603,10 +612,15 @@ func TestConnectionClose(t *testing.T) {
 		me:         &metricsConfig.NilMetricsEngine{},
 	}
 
+	reqInfo := &adapters.ExtraRequestInfo{
+		BidderRequestStartTime: time.Date(2023, 1, 1, 1, 1, 1, 1, time.UTC),
+		TmaxAdjustments:        &config.TmaxAdjustments{Enabled: false},
+	}
+
 	callInfo := bidder.doRequest(context.Background(), &adapters.RequestData{
 		Method: "POST",
 		Uri:    server.URL,
-	}, time.Now(), &config.TmaxAdjustments{Enabled: false})
+	}, reqInfo)
 	if callInfo.err == nil {
 		t.Errorf("bidderAdapter.doRequest should return an error if the connection closes unexpectedly.")
 	}
@@ -2106,8 +2120,13 @@ func TestCallRecordDNSTime(t *testing.T) {
 		me:     metricsMock,
 	}
 
+	reqInfo := &adapters.ExtraRequestInfo{
+		BidderRequestStartTime: time.Date(2023, 1, 1, 1, 1, 1, 1, time.UTC),
+		TmaxAdjustments:        &config.TmaxAdjustments{Enabled: false},
+	}
+
 	// Run test
-	bidder.doRequest(context.Background(), &adapters.RequestData{Method: "POST", Uri: "http://www.example.com/"}, time.Now(), &config.TmaxAdjustments{Enabled: false})
+	bidder.doRequest(context.Background(), &adapters.RequestData{Method: "POST", Uri: "http://www.example.com/"}, reqInfo)
 
 	// Tried one or another, none seem to work without panicking
 	metricsMock.AssertExpectations(t)
@@ -2129,8 +2148,13 @@ func TestCallRecordTLSHandshakeTime(t *testing.T) {
 		me:     metricsMock,
 	}
 
+	reqInfo := &adapters.ExtraRequestInfo{
+		BidderRequestStartTime: time.Date(2023, 1, 1, 1, 1, 1, 1, time.UTC),
+		TmaxAdjustments:        &config.TmaxAdjustments{Enabled: false},
+	}
+
 	// Run test
-	bidder.doRequest(context.Background(), &adapters.RequestData{Method: "POST", Uri: "http://www.example.com/"}, time.Now(), &config.TmaxAdjustments{Enabled: false})
+	bidder.doRequest(context.Background(), &adapters.RequestData{Method: "POST", Uri: "http://www.example.com/"}, reqInfo)
 
 	// Tried one or another, none seem to work without panicking
 	metricsMock.AssertExpectations(t)
@@ -2218,7 +2242,12 @@ func TestTimeoutNotificationOn(t *testing.T) {
 		loggerBuffer.WriteString(fmt.Sprintf(fmt.Sprintln(msg), args...))
 	}
 
-	bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, time.Now(), &config.TmaxAdjustments{Enabled: false})
+	reqInfo := &adapters.ExtraRequestInfo{
+		BidderRequestStartTime: time.Date(2023, 1, 1, 1, 1, 1, 1, time.UTC),
+		TmaxAdjustments:        &config.TmaxAdjustments{Enabled: false},
+	}
+
+	bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, reqInfo)
 
 	// Wait a little longer than the 205ms mock server sleep.
 	time.Sleep(210 * time.Millisecond)
@@ -2243,24 +2272,29 @@ func TestTmaxInDoRequest(t *testing.T) {
 	}
 	logger := func(msg string, args ...interface{}) {}
 
+	reqInfo := &adapters.ExtraRequestInfo{
+		BidderRequestStartTime: time.Date(2023, 1, 1, 1, 1, 1, 1, time.UTC),
+		TmaxAdjustments:        &config.TmaxAdjustments{Enabled: true, BidderNetworkLatencyBuffer: 20000, BidderResponseDurationMin: 40000},
+	}
+
 	t.Run("reject-request", func(t *testing.T) {
-		httpCallInfo := bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, time.Now(), &config.TmaxAdjustments{Enabled: true, BidderNetworkLatencyBuffer: 20000, BidderResponseDurationMin: 40000})
+		httpCallInfo := bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, reqInfo)
 		assert.NotNil(t, httpCallInfo.err)
 		assert.Equal(t, errTmaxTimeout, httpCallInfo.err)
 	})
 
 	testCases := []struct {
-		description    string
-		tmaxAdjustment config.TmaxAdjustments
+		description string
+		reqInfo     *adapters.ExtraRequestInfo
 	}{
-		{description: "accept-request", tmaxAdjustment: config.TmaxAdjustments{Enabled: true, BidderNetworkLatencyBuffer: 20000, BidderResponseDurationMin: 10000}},
-		{description: "disabled", tmaxAdjustment: config.TmaxAdjustments{Enabled: false, BidderNetworkLatencyBuffer: 20000, BidderResponseDurationMin: 40000}},
-		{description: "dur-zero", tmaxAdjustment: config.TmaxAdjustments{Enabled: true, BidderNetworkLatencyBuffer: 20000, BidderResponseDurationMin: 0}},
+		{description: "accept-request", reqInfo: &adapters.ExtraRequestInfo{BidderRequestStartTime: time.Date(2023, 1, 1, 1, 1, 1, 1, time.UTC), TmaxAdjustments: &config.TmaxAdjustments{Enabled: true, BidderNetworkLatencyBuffer: 20000, BidderResponseDurationMin: 10000}}},
+		{description: "disabled", reqInfo: &adapters.ExtraRequestInfo{BidderRequestStartTime: time.Date(2023, 1, 1, 1, 1, 1, 1, time.UTC), TmaxAdjustments: &config.TmaxAdjustments{Enabled: false, BidderNetworkLatencyBuffer: 20000, BidderResponseDurationMin: 40000}}},
+		{description: "dur-zero", reqInfo: &adapters.ExtraRequestInfo{BidderRequestStartTime: time.Date(2023, 1, 1, 1, 1, 1, 1, time.UTC), TmaxAdjustments: &config.TmaxAdjustments{Enabled: true, BidderNetworkLatencyBuffer: 20000, BidderResponseDurationMin: 0}}},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.description, func(t *testing.T) {
-			httpCallInfo := bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, time.Now(), &testCase.tmaxAdjustment)
+			httpCallInfo := bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, testCase.reqInfo)
 			assert.NotEqual(t, errTmaxTimeout, httpCallInfo.err)
 		})
 	}

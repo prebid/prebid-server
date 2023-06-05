@@ -177,11 +177,11 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 		dataLen = len(reqData) + len(bidderRequest.BidderStoredResponses)
 		responseChannel = make(chan *httpCallInfo, dataLen)
 		if len(reqData) == 1 {
-			responseChannel <- bidder.doRequest(ctx, reqData[0], reqInfo.BidderRequestStartTime, reqInfo.TmaxAdjustments)
+			responseChannel <- bidder.doRequest(ctx, reqData[0], reqInfo)
 		} else {
 			for _, oneReqData := range reqData {
 				go func(data *adapters.RequestData) {
-					responseChannel <- bidder.doRequest(ctx, data, reqInfo.BidderRequestStartTime, reqInfo.TmaxAdjustments)
+					responseChannel <- bidder.doRequest(ctx, data, reqInfo)
 				}(oneReqData) // Method arg avoids a race condition on oneReqData
 			}
 		}
@@ -502,11 +502,11 @@ func makeExt(httpInfo *httpCallInfo) *openrtb_ext.ExtHttpCall {
 
 // doRequest makes a request, handles the response, and returns the data needed by the
 // Bidder interface.
-func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.RequestData, pbsRequestStartTime time.Time, tmaxAdjustments *config.TmaxAdjustments) *httpCallInfo {
-	return bidder.doRequestImpl(ctx, req, glog.Warningf, pbsRequestStartTime, tmaxAdjustments)
+func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.RequestData, reqInfo *adapters.ExtraRequestInfo) *httpCallInfo {
+	return bidder.doRequestImpl(ctx, req, glog.Warningf, reqInfo)
 }
 
-func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.RequestData, logger util.LogMsg, pbsRequestStartTime time.Time, tmaxAdjustments *config.TmaxAdjustments) *httpCallInfo {
+func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.RequestData, logger util.LogMsg, reqInfo *adapters.ExtraRequestInfo) *httpCallInfo {
 	var requestBody []byte
 
 	switch strings.ToUpper(bidder.config.EndpointCompression) {
@@ -530,21 +530,13 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 	if !bidder.config.DisableConnMetrics {
 		ctx = bidder.addClientTrace(ctx)
 	}
-	bidder.me.RecordOverheadTime(metrics.PreBidder, time.Since(pbsRequestStartTime))
-	httpCallStart := time.Now()
+	bidder.me.RecordOverheadTime(metrics.PreBidder, time.Since(reqInfo.BidderRequestStartTime))
 
-	if tmaxAdjustments != nil && tmaxAdjustments.Enabled && tmaxAdjustments.BidderResponseDurationMin > 0 {
-		if deadline, ok := ctx.Deadline(); ok {
-			bidderTmax := deadline.Add(-time.Duration(int(tmaxAdjustments.BidderNetworkLatencyBuffer) * int(time.Millisecond)))
-			if int(bidderTmax.Sub(time.Now())) < int(tmaxAdjustments.BidderResponseDurationMin)*int(time.Millisecond) {
-				return &httpCallInfo{
-					request: req,
-					err:     errTmaxTimeout,
-				}
-			}
-		}
-
+	if httpCallInfo := doTmaxAdjustment(ctx, req, reqInfo); httpCallInfo != nil {
+		return httpCallInfo
 	}
+
+	httpCallStart := time.Now()
 	httpResp, err := ctxhttp.Do(ctx, bidder.Client, httpReq)
 	if err != nil {
 		if err == context.DeadlineExceeded {
@@ -595,6 +587,22 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 		},
 		err: err,
 	}
+}
+
+func doTmaxAdjustment(ctx context.Context, req *adapters.RequestData, reqInfo *adapters.ExtraRequestInfo) *httpCallInfo {
+	if reqInfo.TmaxAdjustments != nil && reqInfo.TmaxAdjustments.Enabled && reqInfo.TmaxAdjustments.BidderResponseDurationMin > 0 {
+		if deadline, ok := ctx.Deadline(); ok {
+			bidderTmax := deadline.Add(-time.Duration(int(reqInfo.TmaxAdjustments.BidderNetworkLatencyBuffer) * int(time.Millisecond)))
+			if int(bidderTmax.Sub(time.Now())) < int(reqInfo.TmaxAdjustments.BidderResponseDurationMin)*int(time.Millisecond) {
+				return &httpCallInfo{
+					request: req,
+					err:     errTmaxTimeout,
+				}
+			}
+		}
+
+	}
+	return nil
 }
 
 func (bidder *bidderAdapter) doTimeoutNotification(timeoutBidder adapters.TimeoutBidder, req *adapters.RequestData, logger util.LogMsg) {
