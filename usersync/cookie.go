@@ -43,13 +43,13 @@ func NewCookie() *Cookie {
 	}
 }
 
-// ReadCookie will replace ParseCookieFromRequest
+// ReadCookie reads the cookie from the request
 func ReadCookie(r *http.Request, decoder Decoder, host *config.HostCookie) *Cookie {
-	cookieFromHost := ReadCookieFromHost(r, host)
-	if cookieFromHost != nil {
-		return cookieFromHost
+	if hostOptOutCookie := checkHostCookieOptOut(r, host); hostOptOutCookie != nil {
+		return hostOptOutCookie
 	}
 
+	// Read cookie from request
 	cookieFromRequest, err := r.Cookie(uidCookieName)
 	if err != nil {
 		return NewCookie()
@@ -59,7 +59,7 @@ func ReadCookie(r *http.Request, decoder Decoder, host *config.HostCookie) *Cook
 	return decodedCookie
 }
 
-// PrepareCookieForWrite
+// PrepareCookieForWrite ejects UIDs as long as the cookie is too full
 func (cookie *Cookie) PrepareCookieForWrite(cfg *config.HostCookie, ttl time.Duration, encoder Encoder) string {
 	encodedCookie := encoder.Encode(cookie)
 
@@ -75,7 +75,7 @@ func (cookie *Cookie) PrepareCookieForWrite(cfg *config.HostCookie, ttl time.Dur
 	return encodedCookie
 }
 
-// WriteCookie
+// WriteCookie sets the prepared cookie onto the header
 func WriteCookie(w http.ResponseWriter, encodedCookie string, cfg *config.HostCookie, setSiteCookie bool) {
 	ttl := cfg.TTLDuration()
 
@@ -101,11 +101,11 @@ func WriteCookie(w http.ResponseWriter, encodedCookie string, cfg *config.HostCo
 // Sync tries to set the UID for some syncer key. It returns an error if the set didn't happen.
 func (cookie *Cookie) Sync(key string, uid string) error {
 	if !cookie.AllowSyncs() {
-		return errors.New("The user has opted out of prebid server cookie syncs.")
+		return errors.New("the user has opted out of prebid server cookie syncs")
 	}
 
-	if key == string(openrtb_ext.BidderAudienceNetwork) && uid == "0" {
-		return errors.New("audienceNetwork uses a UID of 0 as \"not yet recognized\".")
+	if checkAudienceNetwork(key, uid) {
+		return errors.New("audienceNetwork uses a UID of 0 as \"not yet recognized\"")
 	}
 
 	// Sync
@@ -117,7 +117,8 @@ func (cookie *Cookie) Sync(key string, uid string) error {
 	return nil
 }
 
-// getOldestUID will be replaced with ejection framework in a future PR
+// getOldestUID grabs the oldest UID from the cookie, so that it can be ejected.
+// this will be replaced with more complex ejection framework in a future PR
 func getOldestUID(cookie *Cookie) string {
 	oldestElem := ""
 	var oldestDate int64 = math.MaxInt64
@@ -139,13 +140,13 @@ func SyncHostCookie(r *http.Request, requestCookie *Cookie, host *config.HostCoo
 	}
 }
 
-func ReadCookieFromHost(r *http.Request, host *config.HostCookie) *Cookie {
+func checkHostCookieOptOut(r *http.Request, host *config.HostCookie) *Cookie {
 	if host.OptOutCookie.Name != "" {
-		optOutCookie, err1 := r.Cookie(host.OptOutCookie.Name)
-		if err1 == nil && optOutCookie.Value == host.OptOutCookie.Value {
-			pc := NewCookie()
-			pc.SetOptOut(true)
-			return pc
+		optOutCookie, err := r.Cookie(host.OptOutCookie.Name)
+		if err == nil && optOutCookie.Value == host.OptOutCookie.Value {
+			hostOptOut := NewCookie()
+			hostOptOut.SetOptOut(true)
+			return hostOptOut
 		}
 	}
 	return nil
@@ -209,6 +210,22 @@ func (cookie *Cookie) HasAnyLiveSyncs() bool {
 		}
 	}
 	return false
+}
+
+func (cookie *Cookie) ToHTTPCookie() *http.Cookie {
+	encoder := EncoderV1{}
+	encodedCookie := encoder.Encode(cookie)
+
+	return &http.Cookie{
+		Name:    uidCookieName,
+		Value:   encodedCookie,
+		Expires: time.Now().Add((90 * 24 * time.Hour)),
+		Path:    "/",
+	}
+}
+
+func checkAudienceNetwork(key string, uid string) bool {
+	return key == string(openrtb_ext.BidderAudienceNetwork) && uid == "0"
 }
 
 // cookieJson defines the JSON contract for the cookie data's storage format.

@@ -1,8 +1,6 @@
 package usersync
 
 import (
-	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -84,7 +82,6 @@ func TestReadCookie(t *testing.T) {
 	}
 }
 
-// TODO: Use lowercase and no spaces in test name with t.Run() [Use dashes]
 func TestWriteCookie(t *testing.T) {
 	encoder := EncoderV1{}
 	decoder := DecodeV1{}
@@ -165,13 +162,13 @@ func TestSync(t *testing.T) {
 			},
 		},
 		{
-			name: "facebook",
+			name: "audienceNetwork",
 			givenCookie: &Cookie{
 				uids: map[string]UIDEntry{},
 			},
 			givenSyncerKey: string(openrtb_ext.BidderAudienceNetwork),
 			givenUID:       "0",
-			expectedError:  errors.New("audienceNetwork uses a UID of 0 as \"not yet recognized\"."),
+			expectedError:  errors.New("audienceNetwork uses a UID of 0 as \"not yet recognized\""),
 		},
 	}
 
@@ -300,6 +297,7 @@ func TestWriteCookieUserAgent(t *testing.T) {
 	}
 }
 
+// TODO: Fix it so it doesn't randomly fail
 func TestPrepareCookieForWrite(t *testing.T) {
 	encoder := EncoderV1{}
 	decoder := DecodeV1{}
@@ -545,18 +543,6 @@ func TestOptOutCookie(t *testing.T) {
 		birthday: timestamp(),
 	}
 	ensureConsistency(t, cookie)
-}
-
-func (cookie *Cookie) ToHTTPCookie() *http.Cookie {
-	j, _ := json.Marshal(cookie)
-	b64 := base64.URLEncoding.EncodeToString(j)
-
-	return &http.Cookie{
-		Name:    uidCookieName,
-		Value:   b64,
-		Expires: time.Now().Add((90 * 24 * time.Hour)),
-		Path:    "/",
-	}
 }
 
 func newTempId(uid string, offset int) UIDEntry {

@@ -10,7 +10,6 @@ import (
 	"strings"
 	"testing"
 	"testing/iotest"
-	"time"
 
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
@@ -269,7 +268,7 @@ func TestCookieSyncHandle(t *testing.T) {
 
 		request := httptest.NewRequest("POST", "/cookiesync", test.givenBody)
 		if test.givenCookie != nil {
-			request.AddCookie(test.givenCookie.ToHTTPCookie(24 * time.Hour))
+			request.AddCookie(test.givenCookie.ToHTTPCookie())
 		}
 
 		writer := httptest.NewRecorder()

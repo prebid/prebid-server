@@ -50,14 +50,14 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 
 		defer pbsanalytics.LogSetUIDObject(&so)
 
-		pc := usersync.ReadCookie(r, decoder, &cfg.HostCookie)
-		if !pc.AllowSyncs() {
+		cookie := usersync.ReadCookie(r, decoder, &cfg.HostCookie)
+		if !cookie.AllowSyncs() {
 			w.WriteHeader(http.StatusUnauthorized)
 			metricsEngine.RecordSetUid(metrics.SetUidOptOut)
 			so.Status = http.StatusUnauthorized
 			return
 		}
-		usersync.SyncHostCookie(r, pc, &cfg.HostCookie)
+		usersync.SyncHostCookie(r, cookie, &cfg.HostCookie)
 
 		query := r.URL.Query()
 
@@ -126,11 +126,11 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 		so.UID = uid
 
 		if uid == "" {
-			pc.Unsync(syncer.Key())
+			cookie.Unsync(syncer.Key())
 			metricsEngine.RecordSetUid(metrics.SetUidOK)
 			metricsEngine.RecordSyncerSet(syncer.Key(), metrics.SyncerSetUidCleared)
 			so.Success = true
-		} else if err = pc.Sync(syncer.Key(), uid); err == nil {
+		} else if err = cookie.Sync(syncer.Key(), uid); err == nil {
 			metricsEngine.RecordSetUid(metrics.SetUidOK)
 			metricsEngine.RecordSyncerSet(syncer.Key(), metrics.SyncerSetUidOK)
 			so.Success = true
@@ -138,7 +138,8 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 
 		setSiteCookie := siteCookieCheck(r.UserAgent())
 
-		encodedCookie := pc.PrepareCookieForWrite(&cfg.HostCookie, cookieTTL, encoder)
+		// Write Cookie
+		encodedCookie := cookie.PrepareCookieForWrite(&cfg.HostCookie, cookieTTL, encoder)
 		usersync.WriteCookie(w, encodedCookie, &cfg.HostCookie, setSiteCookie)
 
 		switch responseFormat {

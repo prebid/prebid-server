@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"regexp"
 	"testing"
-	"time"
 
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
@@ -749,10 +748,11 @@ func doRequest(req *http.Request, analytics analytics.PBSAnalyticsModule, metric
 }
 
 func addCookie(req *http.Request, cookie *usersync.Cookie) {
-	req.AddCookie(cookie.ToHTTPCookie(time.Duration(1) * time.Hour))
+	req.AddCookie(cookie.ToHTTPCookie())
 }
 
 func parseCookieString(t *testing.T, response *httptest.ResponseRecorder) *usersync.Cookie {
+	decoder := usersync.DecodeV1{}
 	cookieString := response.Header().Get("Set-Cookie")
 	parser := regexp.MustCompile("uids=(.*?);")
 	res := parser.FindStringSubmatch(cookieString)
@@ -761,7 +761,7 @@ func parseCookieString(t *testing.T, response *httptest.ResponseRecorder) *users
 		Name:  "uids",
 		Value: res[1],
 	}
-	return usersync.ParseCookie(&httpCookie)
+	return decoder.Decode(httpCookie.Value)
 }
 
 type fakePermissionsBuilder struct {

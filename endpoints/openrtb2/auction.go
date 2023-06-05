@@ -198,8 +198,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		defer cancel()
 	}
 
+	// Read Usersyncs/Cookie
 	decoder := usersync.DecodeV1{}
-
 	usersyncs := usersync.ReadCookie(r, decoder, &deps.cfg.HostCookie)
 	usersync.SyncHostCookie(r, usersyncs, &deps.cfg.HostCookie)
 

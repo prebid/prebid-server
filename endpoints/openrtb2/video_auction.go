@@ -275,8 +275,11 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		defer cancel()
 	}
 
+	// Read Usersyncs/Cookie
 	decoder := usersync.DecodeV1{}
 	usersyncs := usersync.ReadCookie(r, decoder, &deps.cfg.HostCookie)
+	usersync.SyncHostCookie(r, usersyncs, &deps.cfg.HostCookie)
+
 	if bidReqWrapper.App != nil {
 		labels.Source = metrics.DemandApp
 		labels.PubID = getAccountID(bidReqWrapper.App.Publisher)
