@@ -64,8 +64,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	var (
 		shouldGenerateAdPodId *bool
-		uniqueMemberIds       = make([]string, 0, len(request.Imp))
-		memberIds             = make(map[string]struct{}, len(request.Imp))
+		uniqueMemberID        string
 		errs                  = make([]error, 0, len(request.Imp))
 	)
 
@@ -84,9 +83,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 		memberId := appnexusExt.Member
 		if memberId != "" {
-			if _, ok := memberIds[memberId]; !ok {
-				memberIds[memberId] = struct{}{}
-				uniqueMemberIds = append(uniqueMemberIds, memberId)
+			if uniqueMemberID == "" {
+				uniqueMemberID = memberId
+			} else if uniqueMemberID != memberId {
+				errs = append(errs, fmt.Errorf("all request.imp[i].ext.prebid.bidder.appnexus.member params must match. Request contained member IDs %s and %s", uniqueMemberID, memberId))
+				return nil, errs
 			}
 		}
 
@@ -111,12 +112,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	// The Appnexus API requires a Member ID in the URL. This means the request may fail if
 	// different impressions have different member IDs.
 	// Check for this condition, and log an error if it's a problem.
-	if len(uniqueMemberIds) > 0 {
-		requestURI = appendMemberId(requestURI, uniqueMemberIds[0])
-		if len(uniqueMemberIds) > 1 {
-			errs = append(errs, fmt.Errorf("All request.imp[i].ext.prebid.bidder.appnexus.member params must match. Request contained: %v", uniqueMemberIds))
-			return nil, errs
-		}
+	if uniqueMemberID != "" {
+		requestURI = appendMemberId(requestURI, uniqueMemberID)
 	}
 
 	// Add Appnexus request level extension
