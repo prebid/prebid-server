@@ -12,6 +12,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/analytics"
+	analyticsConfig "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
@@ -28,7 +29,7 @@ const (
 	chromeiOSStrLen = len(chromeiOSStr)
 )
 
-func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, gdprPermsBuilder gdpr.PermissionsBuilder, tcf2CfgBuilder gdpr.TCF2ConfigBuilder, pbsanalytics analytics.PBSAnalyticsModule, accountsFetcher stored_requests.AccountFetcher, metricsEngine metrics.MetricsEngine) httprouter.Handle {
+func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, gdprPermsBuilder gdpr.PermissionsBuilder, tcf2CfgBuilder gdpr.TCF2ConfigBuilder, pbsAnalytics analyticsConfig.EnabledAnalytics, accountsFetcher stored_requests.AccountFetcher, metricsEngine metrics.MetricsEngine) httprouter.Handle {
 	cookieTTL := time.Duration(cfg.HostCookie.TTL) * 24 * time.Hour
 
 	// convert map of syncers by bidder to map of syncers by key
@@ -39,12 +40,13 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 	}
 
 	return httprouter.Handle(func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		analyticsLogger := analyticsConfig.NewEnabledModuleLogger(pbsAnalytics, context.Background())
 		so := analytics.SetUIDObject{
 			Status: http.StatusOK,
 			Errors: make([]error, 0),
 		}
 
-		defer pbsanalytics.LogSetUIDObject(&so)
+		defer analyticsLogger.LogSetUIDObject(&so)
 
 		pc := usersync.ParseCookieFromRequest(r, &cfg.HostCookie)
 		if !pc.AllowSyncs() {

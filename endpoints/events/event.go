@@ -13,6 +13,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/analytics"
+	analyticsConfig "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/metrics"
@@ -40,13 +41,13 @@ const integrationParamMaxLength = 64
 
 type eventEndpoint struct {
 	Accounts      stored_requests.AccountFetcher
-	Analytics     analytics.PBSAnalyticsModule
+	Analytics     analyticsConfig.EnabledAnalytics
 	Cfg           *config.Configuration
 	TrackingPixel *httputil.Pixel
 	MetricsEngine metrics.MetricsEngine
 }
 
-func NewEventEndpoint(cfg *config.Configuration, accounts stored_requests.AccountFetcher, analytics analytics.PBSAnalyticsModule, me metrics.MetricsEngine) httprouter.Handle {
+func NewEventEndpoint(cfg *config.Configuration, accounts stored_requests.AccountFetcher, analytics analyticsConfig.EnabledAnalytics, me metrics.MetricsEngine) httprouter.Handle {
 	ee := &eventEndpoint{
 		Accounts:      accounts,
 		Analytics:     analytics,
@@ -59,6 +60,8 @@ func NewEventEndpoint(cfg *config.Configuration, accounts stored_requests.Accoun
 }
 
 func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	analyticsLogger := analyticsConfig.NewEnabledModuleLogger(e.Analytics, context.Background())
+
 	// parse event request from http req
 	eventRequest, errs := ParseEventRequest(r)
 
@@ -115,7 +118,7 @@ func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprou
 	}
 
 	// handle notification event
-	e.Analytics.LogNotificationEventObject(&analytics.NotificationEvent{
+	analyticsLogger.LogNotificationEventObject(&analytics.NotificationEvent{
 		Request: eventRequest,
 		Account: account,
 	})

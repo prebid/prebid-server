@@ -14,6 +14,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/analytics"
+	analyticsConfig "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/gdpr"
@@ -46,7 +47,7 @@ func NewCookieSyncEndpoint(
 	gdprPermsBuilder gdpr.PermissionsBuilder,
 	tcf2CfgBuilder gdpr.TCF2ConfigBuilder,
 	metrics metrics.MetricsEngine,
-	pbsAnalytics analytics.PBSAnalyticsModule,
+	pbsAnalytics analyticsConfig.EnabledAnalytics,
 	accountsFetcher stored_requests.AccountFetcher,
 	bidders map[string]openrtb_ext.BidderName) HTTPRouterHandler {
 
@@ -54,6 +55,8 @@ func NewCookieSyncEndpoint(
 	for _, bidder := range bidders {
 		bidderHashSet[string(bidder)] = struct{}{}
 	}
+
+	analyticsLogger := analyticsConfig.NewEnabledModuleLogger(pbsAnalytics, context.Background())
 
 	return &cookieSyncEndpoint{
 		chooser: usersync.NewChooser(syncersByBidder),
@@ -66,6 +69,7 @@ func NewCookieSyncEndpoint(
 			bidderHashSet:          bidderHashSet,
 		},
 		metrics:         metrics,
+		analyticsLogger: analyticsLogger,
 		pbsAnalytics:    pbsAnalytics,
 		accountsFetcher: accountsFetcher,
 	}
@@ -76,7 +80,8 @@ type cookieSyncEndpoint struct {
 	config          *config.Configuration
 	privacyConfig   usersyncPrivacyConfig
 	metrics         metrics.MetricsEngine
-	pbsAnalytics    analytics.PBSAnalyticsModule
+	analyticsLogger analytics.AnalyticsLogger
+	pbsAnalytics    analyticsConfig.EnabledAnalytics
 	accountsFetcher stored_requests.AccountFetcher
 }
 
@@ -297,7 +302,7 @@ func parseBidderFilter(filter *cookieSyncRequestFilter) (usersync.BidderFilter, 
 
 func (c *cookieSyncEndpoint) handleError(w http.ResponseWriter, err error, httpStatus int) {
 	http.Error(w, err.Error(), httpStatus)
-	c.pbsAnalytics.LogCookieSyncObject(&analytics.CookieSyncObject{
+	c.analyticsLogger.LogCookieSyncObject(&analytics.CookieSyncObject{
 		Status:       httpStatus,
 		Errors:       []error{err},
 		BidderStatus: []*analytics.CookieSyncBidder{},
@@ -370,7 +375,7 @@ func (c *cookieSyncEndpoint) handleResponse(w http.ResponseWriter, tf usersync.S
 		})
 	}
 
-	c.pbsAnalytics.LogCookieSyncObject(&analytics.CookieSyncObject{
+	c.analyticsLogger.LogCookieSyncObject(&analytics.CookieSyncObject{
 		Status:       http.StatusOK,
 		BidderStatus: mapBidderStatusToAnalytics(response.BidderStatus),
 	})
