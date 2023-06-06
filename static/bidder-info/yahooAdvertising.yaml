@@ -1,16 +1,18 @@
-disabled: true
+endpoint: "https://s2shb.ssp.yahoo.com/admax/bid/partners/PBS"
 maintainer:
-  email: "dsp-supply-prebid@verizonmedia.com"
+  email: "hb-fe-tech@yahooinc.com"
 gvlVendorID: 25
 capabilities:
   app:
     mediaTypes:
       - banner
+      - video
   site:
     mediaTypes:
       - banner
+      - video
 userSync:
-  # verizonmedia supports user syncing, but requires configuration by the host. contact this
+  # yahooAdvertising supports user syncing, but requires configuration by the host. contact this
   # bidder directly at the email address in this file to ask about enabling user sync.
   supports:
     - redirect

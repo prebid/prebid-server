@@ -5,6 +5,7 @@
       {
         "id": "test-imp-id",
         "banner": {
+          "w": 300,
           "format": [{"w": 728, "h": 90}]
         },
         "tagid": "123",
@@ -20,8 +21,8 @@
       "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
       "ip": "127.0.0.1"
     },
-    "app": {
-      "id": "test-app-id"
+    "site": {
+      "id": "test-site-id"
     }
   },
 
@@ -66,7 +67,7 @@
               }
             }
           ],
-          "app": {
+          "site": {
             "id": "dcn1"
           }
         }
@@ -77,7 +78,7 @@
           "id": "test-request-id",
           "seatbid": [
             {
-              "seat": "yahoossp",
+              "seat": "yahooAdvertising",
               "bid": [{
                 "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
                 "impid": "test-imp-id",
