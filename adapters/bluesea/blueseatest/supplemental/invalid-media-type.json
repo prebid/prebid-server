@@ -91,10 +91,7 @@
                                         "adv.com"
                                     ],
                                     "crid":"test-crid",
-                                    "w":300,
-                                    "ext":{
-                                        "mediatype":"banner"
-                                    }
+                                    "w":300
                                 }
                             ],
                             "seat":"test-seat"
@@ -105,28 +102,11 @@
             }
         }
     ],
-    "expectedBidResponses":[
-        {
-            "bids":[
-                {
-                    "bid":{
-                        "price":0.01,
-                        "adm":"test-adm",
-                        "impid":"1",
-                        "id":"test-bid-id",
-                        "h":250,
-                        "adomain":[
-                            "adv.com"
-                        ],
-                        "crid":"test-crid",
-                        "w":300,
-                         "ext":{
-                             "mediatype":"banner"
-                         }
-                    },
-                    "type":"banner"
-                }
-            ]
-        }
+
+    "expectedMakeBidsErrors": [
+      {
+        "comparison": "literal",
+        "value": "Error in parsing bid.ext"
+      }
     ]
 }

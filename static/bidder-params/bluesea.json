@@ -7,7 +7,7 @@
   "properties": {
     "pubid": {
       "type": "string",
-      "description": "the unique partner account id ",
+      "description": "the unique partner account id",
       "pattern": "^[0-9]+$"
     },
     "token": {

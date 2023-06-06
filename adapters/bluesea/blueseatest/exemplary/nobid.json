@@ -75,58 +75,11 @@
                 }
             },
             "mockResponse":{
-                "status":200,
-                "body":{
-                    "id":"b655d86c-fdf6-4e68-a1e9-abc223f84a65",
-                    "seatbid":[
-                        {
-                            "bid":[
-                                {
-                                    "price":0.01,
-                                    "adm":"test-adm",
-                                    "impid":"1",
-                                    "id":"test-bid-id",
-                                    "h":250,
-                                    "adomain":[
-                                        "adv.com"
-                                    ],
-                                    "crid":"test-crid",
-                                    "w":300,
-                                    "ext":{
-                                        "mediatype":"banner"
-                                    }
-                                }
-                            ],
-                            "seat":"test-seat"
-                        }
-                    ],
-                    "cur":"USD"
-                }
+                "status": 204,
+                "body": {}
             }
         }
     ],
     "expectedBidResponses":[
-        {
-            "bids":[
-                {
-                    "bid":{
-                        "price":0.01,
-                        "adm":"test-adm",
-                        "impid":"1",
-                        "id":"test-bid-id",
-                        "h":250,
-                        "adomain":[
-                            "adv.com"
-                        ],
-                        "crid":"test-crid",
-                        "w":300,
-                         "ext":{
-                             "mediatype":"banner"
-                         }
-                    },
-                    "type":"banner"
-                }
-            ]
-        }
     ]
 }

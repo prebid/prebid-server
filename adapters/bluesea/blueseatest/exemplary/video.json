@@ -121,7 +121,10 @@
                                         "adv.com"
                                     ],
                                     "crid":"test-crid",
-                                    "w":320
+                                    "w":320,
+                                    "ext":{
+                                        "mediatype":"video"
+                                    }
                                 }
                             ],
                             "seat":"test-seat"
@@ -146,7 +149,10 @@
                             "adv.com"
                         ],
                         "crid":"test-crid",
-                        "w":320
+                        "w":320,
+                        "ext":{
+                            "mediatype":"video"
+                        }
                     },
                     "type":"video"
                 }

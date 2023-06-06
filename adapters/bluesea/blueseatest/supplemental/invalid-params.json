@@ -35,7 +35,7 @@
     },
     "expectedMakeRequestsErrors":[
         {
-            "value":"Error in parsing imp.ext.bidder, empty pubId or token",
+            "value":"Error in parsing imp.ext.bidder, empty pubid or token",
             "comparison":"literal"
         }
     ]

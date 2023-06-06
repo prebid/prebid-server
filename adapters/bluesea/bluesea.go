@@ -13,19 +13,23 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type adapater struct {
-	Endpoint string
+type adapter struct {
+	endpoint string
+}
+
+type blueseaBidExt struct {
+	MediaType string `json:"mediatype"`
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 
-	bidder := &adapater{
-		Endpoint: config.Endpoint,
+	bidder := &adapter{
+		endpoint: config.Endpoint,
 	}
 	return bidder, nil
 }
 
-func (a *adapater) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	impCount := len(request.Imp)
 
 	if impCount == 0 {
@@ -60,7 +64,7 @@ func (a *adapater) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapt
 		queryString := queryParams.Encode()
 		requestData := &adapters.RequestData{
 			Method:  "POST",
-			Uri:     fmt.Sprintf("%s?%s", a.Endpoint, queryString),
+			Uri:     fmt.Sprintf("%s?%s", a.endpoint, queryString),
 			Body:    reqJson,
 			Headers: headers,
 		}
@@ -88,61 +92,67 @@ func extraImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpBluesea, error) {
 	}
 	if len(blueseaImpExt.PubId) == 0 || len(blueseaImpExt.Token) == 0 {
 		return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("Error in parsing imp.ext.bidder, empty pubId or token"),
+			Message: fmt.Sprintf("Error in parsing imp.ext.bidder, empty pubid or token"),
 		}
 	}
 	return &blueseaImpExt, nil
 }
 
-func (a *adapater) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if responseData.StatusCode == http.StatusNoContent {
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+
+	if adapters.IsResponseStatusCodeNoContent(response) {
 		return nil, nil
 	}
 
-	if responseData.StatusCode == http.StatusBadRequest {
-		err := &errortypes.BadInput{
-			Message: "Unexpected status code: 400. Bad request from publisher. Run with request.debug = 1 for more info.",
-		}
+	if err := adapters.CheckResponseStatusCodeForErrors(response); err != nil {
 		return nil, []error{err}
 	}
 
-	if responseData.StatusCode != http.StatusOK {
-		err := &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info.", responseData.StatusCode),
-		}
-		return nil, []error{err}
+	var blueseaResponse openrtb2.BidResponse
+	if err := json.Unmarshal(response.Body, &blueseaResponse); err != nil {
+		return nil, []error{fmt.Errorf("Error in parsing bidresponse body")}
 	}
 
-	var response openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &response); err != nil {
-		return nil, []error{err}
-	}
-
+	var errs []error
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
-	bidResponse.Currency = response.Cur
-	for _, seatBid := range response.SeatBid {
+
+	if blueseaResponse.Cur != "" {
+		bidResponse.Currency = blueseaResponse.Cur
+	}
+	for _, seatBid := range blueseaResponse.SeatBid {
 		for i, bid := range seatBid.Bid {
+
+			bidType, err := getMediaTypeForBid(&bid)
+
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
 			b := &adapters.TypedBid{
 				Bid:     &seatBid.Bid[i],
-				BidType: getMediaTypeForBid(bid, internalRequest.Imp),
+				BidType: bidType,
 			}
 			bidResponse.Bids = append(bidResponse.Bids, b)
 		}
 	}
-	return bidResponse, nil
+	return bidResponse, errs
 }
 
-func getMediaTypeForBid(bid openrtb2.Bid, imps []openrtb2.Imp) openrtb_ext.BidType {
-	mediaType := openrtb_ext.BidTypeBanner
-	for _, imp := range imps {
-		if imp.ID == bid.ImpID {
-			if imp.Video != nil {
-				mediaType = openrtb_ext.BidTypeVideo
-			} else if imp.Native != nil {
-				mediaType = openrtb_ext.BidTypeNative
-			}
-			return mediaType
-		}
+func getMediaTypeForBid(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
+
+	var bidExt blueseaBidExt
+	if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
+		return "", fmt.Errorf("Error in parsing bid.ext")
 	}
-	return mediaType
+
+	switch bidExt.MediaType {
+	case "banner":
+		return openrtb_ext.BidTypeBanner, nil
+	case "native":
+		return openrtb_ext.BidTypeNative, nil
+	case "video":
+		return openrtb_ext.BidTypeVideo, nil
+	default:
+		return "", fmt.Errorf("Unknown bid type, %v", bidExt.MediaType)
+	}
 }

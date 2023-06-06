@@ -91,7 +91,10 @@
                                         "adv.com"
                                     ],
                                     "crid":"test-native-crid",
-                                    "w":300
+                                    "w":300,
+                                    "ext":{
+                                        "mediatype":"native"
+                                    }
                                 }
                             ],
                             "seat":"test-seat"
@@ -116,7 +119,10 @@
                             "adv.com"
                         ],
                         "crid":"test-native-crid",
-                        "w":300
+                        "w":300,
+                        "ext":{
+                            "mediatype":"native"
+                        }
                     },
                     "type":"native"
                 }
