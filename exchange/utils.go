@@ -27,7 +27,7 @@ import (
 	"github.com/prebid/prebid-server/util/ptrutil"
 )
 
-var channelTypeMap = map[metrics.RequestType]config.ChannelType{
+var ChannelTypeMap = map[metrics.RequestType]config.ChannelType{
 	metrics.ReqTypeAMP:      config.ChannelAMP,
 	metrics.ReqTypeORTB2App: config.ChannelApp,
 	metrics.ReqTypeVideo:    config.ChannelVideo,
@@ -92,18 +92,18 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		}
 	}
 
-	gdprSignal, err := getGDPR(req)
+	gdprSignal, err := GetGDPR(req)
 	if err != nil {
 		errs = append(errs, err)
 	}
 
-	consent, err := getConsent(req, gpp)
+	consent, err := GetConsent(req, gpp)
 	if err != nil {
 		errs = append(errs, err)
 	}
 	gdprApplies := gdprSignal == gdpr.SignalYes || (gdprSignal == gdpr.SignalAmbiguous && gdprDefaultValue == gdpr.SignalYes)
 
-	ccpaEnforcer, err := extractCCPA(req.BidRequest, rs.privacyConfig, &auctionReq.Account, aliases, channelTypeMap[auctionReq.LegacyLabels.RType], gpp)
+	ccpaEnforcer, err := extractCCPA(req.BidRequest, rs.privacyConfig, &auctionReq.Account, aliases, ChannelTypeMap[auctionReq.LegacyLabels.RType], gpp)
 	if err != nil {
 		errs = append(errs, err)
 	}
@@ -125,7 +125,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 	var gdprPerms gdpr.Permissions = &gdpr.AlwaysAllow{}
 
 	if gdprApplies {
-		gdprEnforced = auctionReq.TCF2Config.ChannelEnabled(channelTypeMap[auctionReq.LegacyLabels.RType])
+		gdprEnforced = auctionReq.TCF2Config.ChannelEnabled(ChannelTypeMap[auctionReq.LegacyLabels.RType])
 	}
 
 	if gdprEnforced {

@@ -7,8 +7,8 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-// getGDPR will pull the gdpr flag from an openrtb request
-func getGDPR(req *openrtb_ext.RequestWrapper) (gdpr.Signal, error) {
+// GetGDPR will pull the gdpr flag from an openrtb request
+func GetGDPR(req *openrtb_ext.RequestWrapper) (gdpr.Signal, error) {
 	if req.Regs != nil && len(req.Regs.GPPSID) > 0 {
 		for _, id := range req.Regs.GPPSID {
 			if id == int8(gppConstants.SectionTCFEU2) {
@@ -24,8 +24,8 @@ func getGDPR(req *openrtb_ext.RequestWrapper) (gdpr.Signal, error) {
 	return gdpr.Signal(*re.GetGDPR()), nil
 }
 
-// getConsent will pull the consent string from an openrtb request
-func getConsent(req *openrtb_ext.RequestWrapper, gpp gpplib.GppContainer) (consent string, err error) {
+// GetConsent will pull the consent string from an openrtb request
+func GetConsent(req *openrtb_ext.RequestWrapper, gpp gpplib.GppContainer) (consent string, err error) {
 	for i, id := range gpp.SectionTypes {
 		if id == gppConstants.SectionTCFEU2 {
 			consent = gpp.Sections[i].GetValue()
@@ -37,4 +37,14 @@ func getConsent(req *openrtb_ext.RequestWrapper, gpp gpplib.GppContainer) (conse
 		return
 	}
 	return *ue.GetConsent(), nil
+}
+
+func GDPRApplies(gdprSignal gdpr.Signal, defaultValue string) bool {
+	if gdprSignal == gdpr.SignalYes {
+		return true
+	}
+	if gdprSignal == gdpr.SignalAmbiguous && defaultValue == "1" {
+		return true
+	}
+	return false
 }
