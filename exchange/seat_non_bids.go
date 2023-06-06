@@ -9,6 +9,7 @@ type nonBids struct {
 	seatNonBidsMap map[string][]openrtb_ext.NonBid
 }
 
+// addBid is not thread safe as we are initializing and writing to map
 func (snb *nonBids) addBid(bid *entities.PbsOrtbBid, nonBidReason int, seat string) {
 	if bid == nil || bid.Bid == nil {
 		return
