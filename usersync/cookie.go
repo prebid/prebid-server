@@ -163,7 +163,9 @@ func (cookie *Cookie) SetCookieOnResponse(w http.ResponseWriter, setSiteCookie b
 		})
 
 		// Delete elements until we need no more space to free
-		for _, oldestKey := range uuidKeys {
+		var i int = 0
+		for currSize > cfg.MaxCookieSizeBytes && len(cookie.uids) > 0 {
+			oldestKey := uuidKeys[i]
 			delete(cookie.uids, oldestKey)
 
 			httpCookie = cookie.ToHTTPCookie(ttl)
@@ -172,10 +174,7 @@ func (cookie *Cookie) SetCookieOnResponse(w http.ResponseWriter, setSiteCookie b
 			}
 			currSize = len([]byte(httpCookie.String()))
 
-			// If we meet max size, stop
-			if currSize <= cfg.MaxCookieSizeBytes {
-				break
-			}
+			i++
 		}
 	}
 
