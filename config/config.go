@@ -371,13 +371,13 @@ func (t *TCF2) PurposeEnforcingVendors(purpose consentconstants.Purpose) (value 
 
 // PurposeVendorExceptions returns the vendor exception map for a given purpose if it exists, otherwise it returns
 // an empty map of vendor exceptions
-func (t *TCF2) PurposeVendorExceptions(purpose consentconstants.Purpose) (value map[openrtb_ext.BidderName]struct{}) {
+func (t *TCF2) PurposeVendorExceptions(purpose consentconstants.Purpose) (value map[string]struct{}) {
 	c, exists := t.PurposeConfigs[purpose]
 
 	if exists && c.VendorExceptionMap != nil {
 		return c.VendorExceptionMap
 	}
-	return make(map[openrtb_ext.BidderName]struct{}, 0)
+	return make(map[string]struct{}, 0)
 }
 
 // FeatureOneEnforced checks if special feature one is enforced. If it is enforced, PBS will determine whether geo
@@ -414,8 +414,8 @@ type TCF2Purpose struct {
 	EnforcePurpose bool `mapstructure:"enforce_purpose"`
 	EnforceVendors bool `mapstructure:"enforce_vendors"`
 	// Array of vendor exceptions that is used to create the hash table VendorExceptionMap so vendor names can be instantly accessed
-	VendorExceptions   []openrtb_ext.BidderName `mapstructure:"vendor_exceptions"`
-	VendorExceptionMap map[openrtb_ext.BidderName]struct{}
+	VendorExceptions   []string `mapstructure:"vendor_exceptions"`
+	VendorExceptionMap map[string]struct{}
 }
 
 type TCF2SpecialFeature struct {
@@ -735,13 +735,13 @@ func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName func(strin
 		}
 	}
 
-	// To look for a purpose's vendor exceptions in O(1) time, for each purpose we fill this hash table with bidders
-	// located in the VendorExceptions field of the GDPR.TCF2.PurposeX struct defined in this file
+	// To look for a purpose's vendor exceptions in O(1) time, for each purpose we fill this hash table with bidders/analytics
+	// adapters located in the VendorExceptions field of the GDPR.TCF2.PurposeX struct defined in this file
 	for _, pc := range c.GDPR.TCF2.PurposeConfigs {
-		pc.VendorExceptionMap = make(map[openrtb_ext.BidderName]struct{})
+		pc.VendorExceptionMap = make(map[string]struct{})
 		for v := 0; v < len(pc.VendorExceptions); v++ {
-			bidderName := pc.VendorExceptions[v]
-			pc.VendorExceptionMap[bidderName] = struct{}{}
+			adapterName := pc.VendorExceptions[v]
+			pc.VendorExceptionMap[adapterName] = struct{}{}
 		}
 	}
 
