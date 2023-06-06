@@ -14,24 +14,23 @@ var (
 	ErrBadFPD     = fmt.Errorf("invalid first party data ext")
 )
 
-// extMerger assists in tracking and merging changes to extension json after
-// unmarshalling override json on top of an existing OpenRTB object.
+// extMerger tracks a JSON `ext` field within an OpenRTB request. The value of the
+// `ext` field is expected to be modified when calling unmarshal on the same object
+// and will later be updated when invoking Merge.
 type extMerger struct {
-	// wow! It's really tricky to understand e.ext will change after unmarshal one level upper because it's a pointer.
-	// this is applicable for all sub-extensions, maybe add a comment about it?
-	ext      *json.RawMessage
-	snapshot json.RawMessage
+	ext      *json.RawMessage // Pointer to the JSON `ext` field.
+	snapshot json.RawMessage  // Copy of the original state of the JSON `ext` field.
 }
 
-// Track saves a copy of the extension json and stores a reference to the extension
+// Track saves a copy of the JSON `ext` field and stores a reference to the extension
 // object for comparison later in the Merge call.
 func (e *extMerger) Track(ext *json.RawMessage) {
 	e.ext = ext
 	e.snapshot = sliceutil.Clone(*ext)
 }
 
-// Merge applies a json merge of the stored extension snapshot on top of the current
-// json of the tracked extension object.
+// Merge applies a JSON merge of the stored extension snapshot on top of the current
+// JSON of the tracked extension object.
 func (e extMerger) Merge() error {
 	if e.ext == nil {
 		return nil

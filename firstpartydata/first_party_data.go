@@ -189,7 +189,6 @@ func resolveUser(fpdConfig *openrtb_ext.ORTB2, bidRequestUser *openrtb2.User, gl
 		newUser.Data = openRtbGlobalFPD[userDataKey]
 	}
 	if fpdConfigUser != nil {
-		//apply bidder specific fpd if present
 		if err := mergeUser(&newUser, fpdConfigUser); err != nil {
 			return nil, err
 		}
@@ -202,14 +201,8 @@ func mergeUser(v *openrtb2.User, overrideJSON json.RawMessage) error {
 	*v = *ortb.CloneUser(v)
 
 	// Track EXTs
-	//Question: should we track all exts in user? Here is a list of all exts:
-	//user.ext - tracked
-	//user.geo.ext - tracked
-	//user.data[].ext
-	//user.data[].segment[].ext
-	//user.aid[].ext
-	//user.aid[].uid[].ext
-
+	// It's not necessary to track `ext` fields in array items because the array
+	// items will be replaced entirely with the override JSON, so no merge is required.
 	var ext, extGeo extMerger
 	ext.Track(&v.Ext)
 	if v.Geo != nil {
@@ -273,10 +266,7 @@ func resolveSite(fpdConfig *openrtb_ext.ORTB2, bidRequestSite *openrtb2.Site, gl
 		}
 		newSite.Content.Data = openRtbGlobalFPD[siteContentDataKey]
 	}
-	if fpdConfigSite != nil { // TODO: Please confirm this if case is needed.
-		// It's similar to user. FPD config is optional
-
-		//apply bidder specific fpd if present
+	if fpdConfigSite != nil {
 		if err := mergeSite(&newSite, fpdConfigSite, bidderName); err != nil {
 			return nil, err
 		}
@@ -288,8 +278,8 @@ func mergeSite(v *openrtb2.Site, overrideJSON json.RawMessage, bidderName string
 	*v = *ortb.CloneSite(v)
 
 	// Track EXTs
-	// site.data[].ext
-	// site.data[].segment[].ext
+	// It's not necessary to track `ext` fields in array items because the array
+	// items will be replaced entirely with the override JSON, so no merge is required.
 	var ext, extPublisher, extContent, extContentProducer, extContentNetwork, extContentChannel extMerger
 	ext.Track(&v.Ext)
 	if v.Publisher != nil {
@@ -387,7 +377,7 @@ func resolveApp(fpdConfig *openrtb_ext.ORTB2, bidRequestApp *openrtb2.App, globa
 		newApp.Content.Data = openRtbGlobalFPD[appContentDataKey]
 	}
 
-	if fpdConfigApp != nil { //TODO: confirm this if case is needed, similar to site
+	if fpdConfigApp != nil {
 		if err := mergeApp(newApp, fpdConfigApp); err != nil {
 			return nil, err
 		}
@@ -400,8 +390,8 @@ func mergeApp(v *openrtb2.App, overrideJSON json.RawMessage) error {
 	*v = *ortb.CloneApp(v)
 
 	// Track EXTs
-	// app.data[].ext
-	// app.data[].segment[].ext
+	// It's not necessary to track `ext` fields in array items because the array
+	// items will be replaced entirely with the override JSON, so no merge is required.
 	var ext, extPublisher, extContent, extContentProducer, extContentNetwork, extContentChannel extMerger
 	ext.Track(&v.Ext)
 	if v.Publisher != nil {
