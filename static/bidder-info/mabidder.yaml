@@ -1,4 +1,4 @@
-endpoint: "https://prebid.ecdrsvc.com/bid"
+endpoint: "https://prebid.ecdrsvc.com/pbs"
 maintainer:
   email: lmprebidadapter@loblaw.ca
 endpointCompression: gzip
