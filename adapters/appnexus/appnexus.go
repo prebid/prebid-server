@@ -125,23 +125,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	}
 
 	var reqExt appnexusReqExt
-	if len(request.Ext) > 0 {
-		if err := json.Unmarshal(request.Ext, &reqExt); err != nil {
-			errs = append(errs, err)
-			return nil, errs
-		}
+	reqExt, err := a.addRequestLevelExt(request.Ext, isAMP, isVIDEO)
+	if err != nil {
+		return nil, append(errs, err)
 	}
-	if reqExt.Appnexus == nil {
-		reqExt.Appnexus = &appnexusReqExtAppnexus{}
-	}
-	includeBrandCategory := reqExt.Prebid.Targeting != nil && reqExt.Prebid.Targeting.IncludeBrandCategory != nil
-	if includeBrandCategory {
-		reqExt.Appnexus.BrandCategoryUniqueness = &includeBrandCategory
-		reqExt.Appnexus.IncludeBrandCategory = &includeBrandCategory
-	}
-	reqExt.Appnexus.IsAMP = isAMP
-	reqExt.Appnexus.HeaderBiddingSource = a.hbSource + isVIDEO
-
 	// For long form requests if adpodId feature enabled, adpod_id must be sent downstream.
 	// Adpod id is a unique identifier for pod
 	// All impressions in the same pod must have the same pod id in request extension
@@ -211,6 +198,27 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	return bidderResponse, errs
+}
+
+func (a *adapter) addRequestLevelExt(ext json.RawMessage, isAMP int, isVIDEO int) (appnexusReqExt, error) {
+	var reqExt appnexusReqExt
+	if len(ext) > 0 {
+		if err := json.Unmarshal(ext, &reqExt); err != nil {
+			return appnexusReqExt{}, err
+		}
+	}
+	if reqExt.Appnexus == nil {
+		reqExt.Appnexus = &appnexusReqExtAppnexus{}
+	}
+	includeBrandCategory := reqExt.Prebid.Targeting != nil && reqExt.Prebid.Targeting.IncludeBrandCategory != nil
+	if includeBrandCategory {
+		reqExt.Appnexus.BrandCategoryUniqueness = &includeBrandCategory
+		reqExt.Appnexus.IncludeBrandCategory = &includeBrandCategory
+	}
+	reqExt.Appnexus.IsAMP = isAMP
+	reqExt.Appnexus.HeaderBiddingSource = a.hbSource + isVIDEO
+
+	return reqExt, nil
 }
 
 func validateAndBuildAppNexusExt(imp *openrtb2.Imp) (openrtb_ext.ExtImpAppnexus, error) {
