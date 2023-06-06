@@ -92,7 +92,7 @@ jobs:
           fetch-depth: 0
       - name: Build image
         run: |
-          docker build --build-arg DEPLOY_VERSION=${{ needs.publish-tag.outputs.releaseTag }} -t docker.io/prebid/prebid-server:${{ needs.publish-tag.outputs.releaseTag }} .
+          docker build -t docker.io/prebid/prebid-server:${{ needs.publish-tag.outputs.releaseTag }} .
       - name: Login to docker Hub
         if: contains(inputs.debug, 'false')
         uses: docker/login-action@v2.1.0
