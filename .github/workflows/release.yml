@@ -40,7 +40,7 @@ jobs:
       contents: write
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout prebid cache
+      - name: Checkout Prebid Server
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
@@ -86,7 +86,7 @@ jobs:
     if: contains(inputs.debug, 'false')
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout prebid cache
+      - name: Checkout Prebid Server
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
@@ -111,7 +111,7 @@ jobs:
       contents: write
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout prebid cache
+      - name: Checkout Prebid Server
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
