@@ -373,7 +373,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 					errs = append(errs, err)
 				}
 			}
-			reqInfo.MakeBidsTimeInfo.Durations = append(reqInfo.MakeBidsTimeInfo.Durations, time.Since(startTime))
+			reqInfo.MakeBidsTimeInfo.TotalDurations += time.Since(startTime)
 		} else {
 			errs = append(errs, httpInfo.err)
 		}

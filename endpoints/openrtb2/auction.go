@@ -2370,10 +2370,6 @@ func generateStoredBidResponseValidationError(impID string) error {
 
 func recordResponsePreparationMetrics(mbti map[openrtb_ext.BidderName]adapters.MakeBidsTimeInfo, me metrics.MetricsEngine) {
 	for _, info := range mbti {
-		duration := time.Since(info.AfterMakeBidsStartTime)
-		for _, makeBidsDuration := range info.Durations {
-			duration += makeBidsDuration
-		}
-		me.RecordOverheadTime(metrics.MakeAuctionResponse, duration)
+		me.RecordOverheadTime(metrics.MakeAuctionResponse, time.Since(info.AfterMakeBidsStartTime)+info.TotalDurations)
 	}
 }

@@ -5561,7 +5561,7 @@ func (e mockStageExecutor) GetOutcomes() []hookexecution.StageOutcome {
 
 func TestRecordResponsePreparationMetrics(t *testing.T) {
 	mbi := map[openrtb_ext.BidderName]adapters.MakeBidsTimeInfo{
-		openrtb_ext.BidderAppnexus: {Durations: []time.Duration{10, 15}, AfterMakeBidsStartTime: time.Now()},
+		openrtb_ext.BidderAppnexus: {TotalDurations: 15, AfterMakeBidsStartTime: time.Now()},
 	}
 	mockMetricEngine := &metrics.MetricsEngineMock{}
 	mockMetricEngine.On("RecordOverheadTime", metrics.MakeAuctionResponse, mock.Anything)

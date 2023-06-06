@@ -154,7 +154,7 @@ type ExtraRequestInfo struct {
 
 type MakeBidsTimeInfo struct {
 	AfterMakeBidsStartTime time.Time
-	Durations              []time.Duration
+	TotalDurations         time.Duration
 }
 
 func NewExtraRequestInfo(c currency.Conversions) ExtraRequestInfo {
