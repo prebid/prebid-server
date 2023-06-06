@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Flipp Adapter Params",
+  "description": "A schema which validates params accepted by the Flipp adapter",
+  "type": "object",
+  "properties": {
+    "publisherNameIdentifier": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Publisher Name Identifier"
+    },
+    "creativeType": {
+      "type": "string",
+      "enum": ["NativeX", "DTX"]
+    },
+    "siteId": {
+      "type": "integer"
+    },
+    "zoneIds": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "userKey": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "ip": {
+      "type": "string"
+    },
+    "options": {
+      "type": "object",
+      "properties": {
+        "startCompact": {
+          "type": "boolean"
+        },
+        "dwellExpand": {
+          "type": "boolean"
+        },
+        "contentCode": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "required": [
+    "publisherNameIdentifier",
+    "siteId",
+    "creativeType"
+  ]
+}

@@ -16,6 +16,7 @@ import (
 
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adservertargeting"
+	"github.com/prebid/prebid-server/bidadjustment"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/errortypes"
@@ -25,6 +26,7 @@ import (
 	"github.com/prebid/prebid-server/floors"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
+	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
@@ -64,7 +66,6 @@ type exchange struct {
 	cache                    prebid_cache_client.Client
 	cacheTime                time.Duration
 	gdprPermsBuilder         gdpr.PermissionsBuilder
-	tcf2ConfigBuilder        gdpr.TCF2ConfigBuilder
 	currencyConverter        *currency.RateConverter
 	externalURL              string
 	gdprDefaultValue         gdpr.Signal
@@ -76,6 +77,7 @@ type exchange struct {
 	server                   config.Server
 	bidValidationEnforcement config.Validations
 	requestSplitter          requestSplitter
+	macroReplacer            macros.Replacer
 	floor                    config.PriceFloors
 }
 
@@ -125,7 +127,7 @@ func (randomDeduplicateBidBooleanGenerator) Generate() bool {
 	return rand.Intn(100) < 50
 }
 
-func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, gdprPermsBuilder gdpr.PermissionsBuilder, tcf2CfgBuilder gdpr.TCF2ConfigBuilder, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher, adsCertSigner adscert.Signer) Exchange {
+func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, gdprPermsBuilder gdpr.PermissionsBuilder, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher, adsCertSigner adscert.Signer, macroReplacer macros.Replacer) Exchange {
 	bidderToSyncerKey := map[string]string{}
 	for bidder, syncer := range syncersByBidder {
 		bidderToSyncerKey[bidder] = syncer.Key()
@@ -146,7 +148,6 @@ func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid
 		me:                metricsEngine,
 		privacyConfig:     privacyConfig,
 		gdprPermsBuilder:  gdprPermsBuilder,
-		tcf2ConfigBuilder: tcf2CfgBuilder,
 		hostSChainNode:    cfg.HostSChainNode,
 		bidderInfo:        infos,
 	}
@@ -161,7 +162,6 @@ func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid
 		currencyConverter:        currencyConverter,
 		externalURL:              cfg.ExternalURL,
 		gdprPermsBuilder:         gdprPermsBuilder,
-		tcf2ConfigBuilder:        tcf2CfgBuilder,
 		me:                       metricsEngine,
 		gdprDefaultValue:         gdprDefaultValue,
 		privacyConfig:            privacyConfig,
@@ -171,6 +171,7 @@ func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid
 		server:                   config.Server{ExternalUrl: cfg.ExternalURL, GvlID: cfg.GDPR.HostVendorID, DataCenter: cfg.DataCenter},
 		bidValidationEnforcement: cfg.Validations,
 		requestSplitter:          requestSplitter,
+		macroReplacer:            macroReplacer,
 		floor:                    cfg.PriceFloors,
 	}
 }
@@ -193,6 +194,7 @@ type AuctionRequest struct {
 	Warnings                   []error
 	GlobalPrivacyControlHeader string
 	ImpExtInfoMap              map[string]ImpExtInfo
+	TCF2Config                 gdpr.TCF2ConfigReader
 
 	// LegacyLabels is included here for temporary compatibility with cleanOpenRTBRequests
 	// in HoldAuction until we get to factoring it away. Do not use for anything new.
@@ -317,6 +319,15 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	bidderRequests, privacyLabels, errs := e.requestSplitter.cleanOpenRTBRequests(ctx, *r, requestExtLegacy, gdprDefaultValue)
 	errs = append(errs, floorErrs...)
 
+	mergedBidAdj, err := bidadjustment.Merge(r.BidRequestWrapper, r.Account.BidAdjustments)
+	if err != nil {
+		if errortypes.ContainsFatalError([]error{err}) {
+			return nil, err
+		}
+		errs = append(errs, err)
+	}
+	bidAdjustmentRules := bidadjustment.BuildRules(mergedBidAdj)
+
 	e.me.RecordRequestPrivacy(privacyLabels)
 
 	if len(r.StoredAuctionResponses) > 0 || len(r.StoredBidResponses) > 0 {
@@ -355,8 +366,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		} else if r.Account.AlternateBidderCodes != nil {
 			alternateBidderCodes = *r.Account.AlternateBidderCodes
 		}
-
-		adapterBids, adapterExtra, fledge, anyBidsReturned = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, alternateBidderCodes, requestExtLegacy.Prebid.Experiment, r.HookExecutor, r.StartTime)
+		adapterBids, adapterExtra, fledge, anyBidsReturned = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, alternateBidderCodes, requestExtLegacy.Prebid.Experiment, r.HookExecutor, r.StartTime, bidAdjustmentRules)
 		r.MakeBidsTimeInfo = buildMakeBidsTimeInfoMap(adapterExtra)
 	}
 
@@ -367,6 +377,19 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	)
 
 	if anyBidsReturned {
+		if e.floor.Enabled {
+			var rejectedBids []*entities.PbsOrtbSeatBid
+			var enforceErrs []error
+
+			adapterBids, enforceErrs, rejectedBids = floors.Enforce(r.BidRequestWrapper, adapterBids, r.Account, conversions)
+			errs = append(errs, enforceErrs...)
+			for _, rejectedBid := range rejectedBids {
+				errs = append(errs, &errortypes.Warning{
+					Message:     fmt.Sprintf("%s bid id %s rejected - bid price %.4f %s is less than bid floor %.4f %s for imp %s", rejectedBid.Seat, rejectedBid.Bids[0].Bid.ID, rejectedBid.Bids[0].Bid.Price, rejectedBid.Currency, rejectedBid.Bids[0].BidFloors.FloorValue, rejectedBid.Bids[0].BidFloors.FloorCurrency, rejectedBid.Bids[0].Bid.ImpID),
+					WarningCode: errortypes.FloorBidRejectionWarningCode})
+			}
+		}
+
 		var bidCategory map[string]string
 		//If includebrandcategory is present in ext then CE feature is on.
 		if requestExtPrebid.Targeting != nil && requestExtPrebid.Targeting.IncludeBrandCategory != nil {
@@ -402,7 +425,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 			// A non-nil auction is only needed if targeting is active. (It is used below this block to extract cache keys)
 			auc = newAuction(adapterBids, len(r.BidRequestWrapper.Imp), targData.preferDeals)
 			auc.validateAndUpdateMultiBid(adapterBids, targData.preferDeals, r.Account.DefaultBidLimit)
-			auc.setRoundedPrices(targData.priceGranularity)
+			auc.setRoundedPrices(*targData)
 
 			if requestExtPrebid.SupportDeals {
 				dealErrs := applyDealSupport(r.BidRequestWrapper.BidRequest, auc, bidCategory, multiBidMap)
@@ -629,7 +652,8 @@ func (e *exchange) getAllBids(
 	alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes,
 	experiment *openrtb_ext.Experiment,
 	hookExecutor hookexecution.StageExecutor,
-	pbsRequestStartTime time.Time) (
+	pbsRequestStartTime time.Time,
+	bidAdjustmentRules map[string][]openrtb_ext.Adjustment) (
 	map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid,
 	map[openrtb_ext.BidderName]*seatResponseExtra,
 	*openrtb_ext.Fledge,
@@ -670,7 +694,7 @@ func (e *exchange) getAllBids(
 				addCallSignHeader:   isAdsCertEnabled(experiment, e.bidderInfo[string(bidderRequest.BidderName)]),
 				bidAdjustments:      bidAdjustments,
 			}
-			seatBids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest, conversions, &reqInfo, e.adsCertSigner, bidReqOptions, alternateBidderCodes, hookExecutor)
+			seatBids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest, conversions, &reqInfo, e.adsCertSigner, bidReqOptions, alternateBidderCodes, hookExecutor, bidAdjustmentRules)
 
 			// Add in time reporting
 			elapsed := time.Since(start)
@@ -935,7 +959,7 @@ func applyCategoryMapping(ctx context.Context, targeting openrtb_ext.ExtRequestT
 			bidID := bid.Bid.ID
 			var duration int
 			var category string
-			var pb string
+			var priceBucket string
 
 			if bid.BidVideo != nil {
 				duration = bid.BidVideo.Duration
@@ -969,7 +993,7 @@ func applyCategoryMapping(ctx context.Context, targeting openrtb_ext.ExtRequestT
 
 			// TODO: consider should we remove bids with zero duration here?
 
-			pb = GetPriceBucket(bid.Bid.Price, targData.priceGranularity)
+			priceBucket = GetPriceBucket(*bid.Bid, *targData)
 
 			newDur := duration
 			if len(targeting.DurationRangeSec) > 0 {
@@ -994,10 +1018,10 @@ func applyCategoryMapping(ctx context.Context, targeting openrtb_ext.ExtRequestT
 			var categoryDuration string
 			var dupeKey string
 			if brandCatExt.WithCategory {
-				categoryDuration = fmt.Sprintf("%s_%s_%ds", pb, category, newDur)
+				categoryDuration = fmt.Sprintf("%s_%s_%ds", priceBucket, category, newDur)
 				dupeKey = category
 			} else {
-				categoryDuration = fmt.Sprintf("%s_%ds", pb, newDur)
+				categoryDuration = fmt.Sprintf("%s_%ds", priceBucket, newDur)
 				dupeKey = categoryDuration
 			}
 
@@ -1011,7 +1035,7 @@ func applyCategoryMapping(ctx context.Context, targeting openrtb_ext.ExtRequestT
 				if err != nil {
 					dupeBidPrice = 0
 				}
-				currBidPrice, err := strconv.ParseFloat(pb, 64)
+				currBidPrice, err := strconv.ParseFloat(priceBucket, 64)
 				if err != nil {
 					currBidPrice = 0
 				}
@@ -1052,7 +1076,7 @@ func applyCategoryMapping(ctx context.Context, targeting openrtb_ext.ExtRequestT
 				}
 			}
 			res[bidID] = categoryDuration
-			dedupe[dupeKey] = bidDedupe{bidderName: bidderName, bidIndex: bidInd, bidID: bidID, bidPrice: pb}
+			dedupe[dupeKey] = bidDedupe{bidderName: bidderName, bidIndex: bidInd, bidID: bidID, bidPrice: priceBucket}
 		}
 
 		if len(bidsToRemove) > 0 {
@@ -1208,6 +1232,7 @@ func (e *exchange) makeBid(bids []*entities.PbsOrtbBid, auc *auction, returnCrea
 			DealTierSatisfied: bid.DealTierSatisfied,
 			Events:            bid.BidEvents,
 			Targeting:         bid.BidTargets,
+			Floors:            bid.BidFloors,
 			Type:              bid.BidType,
 			Meta:              bid.BidMeta,
 			Video:             bid.BidVideo,
@@ -1376,20 +1401,6 @@ func listBiddersWithRequests(bidderRequests []BidderRequest) []openrtb_ext.Bidde
 	return liveAdapters
 }
 
-func getPrebidMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
-	if bid.Ext != nil {
-		var bidExt openrtb_ext.ExtBid
-		err := json.Unmarshal(bid.Ext, &bidExt)
-		if err == nil && bidExt.Prebid != nil {
-			return openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
-		}
-	}
-
-	return "", &errortypes.BadServerResponse{
-		Message: fmt.Sprintf("Failed to parse bid mediatype for impression \"%s\"", bid.ImpID),
-	}
-}
-
 func buildStoredAuctionResponse(storedAuctionResponses map[string]json.RawMessage) (
 	map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid,
 	*openrtb_ext.Fledge,
@@ -1410,29 +1421,9 @@ func buildStoredAuctionResponse(storedAuctionResponses map[string]json.RawMessag
 			//set imp id from request
 			for i := range seat.Bid {
 				seat.Bid[i].ImpID = impId
-				mType := seat.Bid[i].MType
-				var bidType openrtb_ext.BidType
-				if mType > 0 {
-					switch mType {
-					case openrtb2.MarkupBanner:
-						bidType = openrtb_ext.BidTypeBanner
-					case openrtb2.MarkupVideo:
-						bidType = openrtb_ext.BidTypeVideo
-					case openrtb2.MarkupAudio:
-						bidType = openrtb_ext.BidTypeAudio
-					case openrtb2.MarkupNative:
-						bidType = openrtb_ext.BidTypeNative
-					default:
-						return nil, nil, nil, &errortypes.BadServerResponse{
-							Message: fmt.Sprintf("Failed to parse bid mType for impression \"%s\"", seat.Bid[i].ImpID),
-						}
-					}
-				} else {
-					var err error
-					bidType, err = getPrebidMediaTypeForBid(seat.Bid[i])
-					if err != nil {
-						return nil, nil, nil, err
-					}
+				bidType, err := getMediaTypeForBid(seat.Bid[i])
+				if err != nil {
+					return nil, nil, nil, err
 				}
 				bidsToAdd = append(bidsToAdd, &entities.PbsOrtbBid{Bid: &seat.Bid[i], BidType: bidType})
 			}

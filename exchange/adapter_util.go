@@ -91,6 +91,7 @@ func GetDisabledBiddersErrorMessages(infos config.BidderInfos) map[string]string
 		"yssp":           `Bidder "yssp" is no longer available in Prebid Server. If you're looking to use the Yahoo SSP adapter, please rename it to "yahoossp" in your configuration.`,
 		"andbeyondmedia": `Bidder "andbeyondmedia" is no longer available in Prebid Server. If you're looking to use the AndBeyond.Media SSP adapter, please rename it to "beyondmedia" in your configuration.`,
 		"oftmedia":       `Bidder "oftmedia" is no longer available in Prebid Server. Please update your configuration.`,
+		"groupm":         `Bidder "groupm" is no longer available in Prebid Server. Please update your configuration.`,
 	}
 
 	for name, info := range infos {
