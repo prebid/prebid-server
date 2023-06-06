@@ -27,7 +27,6 @@ import (
 	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
@@ -5560,10 +5559,19 @@ func (e mockStageExecutor) GetOutcomes() []hookexecution.StageOutcome {
 }
 
 func TestRecordResponsePreparationMetrics(t *testing.T) {
+	ns1 := 30 * time.Millisecond
+	ns2 := 40 * time.Millisecond
+	ns3 := 10 * time.Millisecond
+	ns4 := 15 * time.Millisecond
+	makeBidsStartTime1 := time.Date(2023, 1, 1, 1, 0, 0, int(ns1), time.UTC)
+	makeBidsStartTime2 := time.Date(2023, 1, 1, 1, 0, 0, int(ns2), time.UTC)
 	mbi := map[openrtb_ext.BidderName]adapters.MakeBidsTimeInfo{
-		openrtb_ext.BidderAppnexus: {TotalDurations: 15, AfterMakeBidsStartTime: time.Now()},
+		openrtb_ext.BidderAppnexus: {TotalDurations: ns3, AfterMakeBidsStartTime: makeBidsStartTime1},
+		openrtb_ext.BidderAMX:      {TotalDurations: ns4, AfterMakeBidsStartTime: makeBidsStartTime2},
 	}
+	nowTime := time.Date(2023, 1, 1, 1, 0, 0, int(50*time.Millisecond), time.UTC)
+	sinceFn := func(t time.Time) time.Duration { return nowTime.Sub(t) }
 	mockMetricEngine := &metrics.MetricsEngineMock{}
-	mockMetricEngine.On("RecordOverheadTime", metrics.MakeAuctionResponse, mock.Anything)
-	recordResponsePreparationMetrics(mbi, mockMetricEngine)
+	mockMetricEngine.On("RecordOverheadTime", metrics.MakeAuctionResponse, 30*time.Millisecond)
+	recordResponsePreparationMetrics(mbi, mockMetricEngine, sinceFn)
 }
