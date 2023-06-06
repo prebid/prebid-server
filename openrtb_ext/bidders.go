@@ -173,7 +173,6 @@ const (
 	BidderGamoshi           BidderName = "gamoshi"
 	BidderGlobalsun         BidderName = "globalsun"
 	BidderGrid              BidderName = "grid"
-	BidderGroupm            BidderName = "groupm"
 	BidderGumGum            BidderName = "gumgum"
 	BidderHuaweiAds         BidderName = "huaweiads"
 	BidderIionads           BidderName = "iionads"
@@ -206,6 +205,7 @@ const (
 	BidderMgid              BidderName = "mgid"
 	BidderMobfoxpb          BidderName = "mobfoxpb"
 	BidderMobileFuse        BidderName = "mobilefuse"
+	BidderMotorik           BidderName = "motorik"
 	BidderNanoInteractive   BidderName = "nanointeractive"
 	BidderNextMillennium    BidderName = "nextmillennium"
 	BidderNinthDecimal      BidderName = "ninthdecimal"
@@ -365,7 +365,6 @@ func CoreBidderNames() []BidderName {
 		BidderGamoshi,
 		BidderGlobalsun,
 		BidderGrid,
-		BidderGroupm,
 		BidderGumGum,
 		BidderHuaweiAds,
 		BidderIionads,
@@ -398,6 +397,7 @@ func CoreBidderNames() []BidderName {
 		BidderMgid,
 		BidderMobfoxpb,
 		BidderMobileFuse,
+		BidderMotorik,
 		BidderNanoInteractive,
 		BidderNextMillennium,
 		BidderNinthDecimal,
