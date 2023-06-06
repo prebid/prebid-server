@@ -14,16 +14,16 @@ type ExtImpPreferred struct {
 
 // ExtImpFiltering - Impression Filtering Extension
 type ExtImpFiltering struct {
-	Category    []string                     `json:"category,omitempty"`
-	Brand       []string                     `json:"brand,omitempty"`
+	Category    []string                      `json:"category,omitempty"`
+	Brand       []string                      `json:"brand,omitempty"`
 	SubCategory []*ExtImpFilteringSubCategory `json:"subcategory,omitempty"`
 }
 
 // ExtImpTargeting - Impression Targeting Extension
 type ExtImpTargeting struct {
-	Name  string   `json:"name,omitempty"`
-	Value []string   `json:"value,omitempty"`
-	Type  int      `json:"type,omitempty"`
+	Name  string `json:"name,omitempty"`
+	Value []string `json:"value,omitempty"`
+	Type  int    `json:"type,omitempty"`
 }
 
 type ExtCustomConfig struct {
@@ -34,39 +34,39 @@ type ExtCustomConfig struct {
 
 // ImpExtensionCommerce - Impression Commerce Extension
 type CommerceParams struct {
-	SlotsRequested *int               `json:"slots_requested,omitempty"`
-	SearchTerm     string            `json:"search_term,omitempty"`
-	SearchType     string            `json:"search_type,omitempty"`
+	SlotsRequested int               `json:"slots_requested,omitempty"`
+	SearchTerm     string             `json:"search_term,omitempty"`
+	SearchType     string             `json:"search_type,omitempty"`
 	Preferred      []*ExtImpPreferred `json:"preferred,omitempty"`
 	Filtering      *ExtImpFiltering   `json:"filtering,omitempty"`
 	Targeting      []*ExtImpTargeting `json:"targeting,omitempty"`
- }
+}
 
 // ImpExtensionCommerce - Impression Commerce Extension
 type ExtImpCommerce struct {
-	ComParams   *CommerceParams        `json:"commerce,omitempty"`
+	ComParams *CommerceParams `json:"commerce,omitempty"`
 	Bidder *ExtBidderCommerce          `json:"bidder,omitempty"`
 }
 // UserExtensionCommerce - User Commerce Extension
 type ExtUserCommerce struct {
-	IsAuthenticated bool   `json:"is_authenticated,omitempty"`
-	Consent         *string `json:"consent,omitempty"`
+	IsAuthenticated bool    `json:"is_authenticated,omitempty"`
+	Consent         string `json:"consent,omitempty"`
 }
 
 // SiteExtensionCommerce - Site Commerce Extension
 type ExtSiteCommerce struct {
-	Page *string `json:"page_name,omitempty"`
+	Page string `json:"page_name,omitempty"`
 }
 
 // AppExtensionCommerce - App Commerce Extension
 type ExtAppCommerce struct {
-	Page *string `json:"page_name,omitempty"`
+	Page string `json:"page_name,omitempty"`
 }
 
 type ExtBidderCommerce struct {
-	PrebidBidderName  string            `json:"prebidname,omitempty"`
-	BidderCode        string            `json:"biddercode,omitempty"`
-	CustomConfig      []*ExtCustomConfig `json:"config,omitempty"`
+	PrebidBidderName string             `json:"prebidname,omitempty"`
+	BidderCode       string             `json:"biddercode,omitempty"`
+	CustomConfig     []*ExtCustomConfig `json:"config,omitempty"`
 }
 
 type ExtBidCommerce struct {

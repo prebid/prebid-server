@@ -32,7 +32,7 @@ func GetRequestSlotCount(internalRequest *openrtb2.BidRequest)int {
 	for _, eachImp := range impArray {
 		var commerceExt openrtb_ext.ExtImpCommerce
 		json.Unmarshal(eachImp.Ext, &commerceExt)
-		reqCount += *commerceExt.ComParams.SlotsRequested
+		reqCount += commerceExt.ComParams.SlotsRequested
 	}
 	return reqCount
 }
