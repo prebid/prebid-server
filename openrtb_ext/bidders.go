@@ -114,6 +114,7 @@ const (
 	BidderAdView            BidderName = "adview"
 	BidderAdxcg             BidderName = "adxcg"
 	BidderAdyoulike         BidderName = "adyoulike"
+	BidderAidem             BidderName = "aidem"
 	BidderAJA               BidderName = "aja"
 	BidderAlgorix           BidderName = "algorix"
 	BidderAMX               BidderName = "amx"
@@ -306,6 +307,7 @@ func CoreBidderNames() []BidderName {
 		BidderAdView,
 		BidderAdxcg,
 		BidderAdyoulike,
+		BidderAidem,
 		BidderAJA,
 		BidderAlgorix,
 		BidderAMX,
