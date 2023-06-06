@@ -20,7 +20,6 @@ import (
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/openrtb/v19/openrtb3"
 	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/analytics"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
@@ -1300,7 +1299,7 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 		planBuilder = hooks.EmptyPlanBuilder{}
 	}
 
-	var endpointBuilder func(uuidutil.UUIDGenerator, exchange.Exchange, openrtb_ext.BidderParamValidator, stored_requests.Fetcher, stored_requests.AccountFetcher, *config.Configuration, metrics.MetricsEngine, analytics.PBSAnalyticsModule, map[string]string, []byte, map[string]openrtb_ext.BidderName, stored_requests.Fetcher, hooks.ExecutionPlanBuilder) (httprouter.Handle, error)
+	var endpointBuilder func(uuidutil.UUIDGenerator, exchange.Exchange, openrtb_ext.BidderParamValidator, stored_requests.Fetcher, stored_requests.AccountFetcher, *config.Configuration, metrics.MetricsEngine, analyticsConf.EnabledAnalytics, gdpr.PrivacyPolicyBuilder, map[string]string, []byte, map[string]openrtb_ext.BidderName, stored_requests.Fetcher, hooks.ExecutionPlanBuilder) (httprouter.Handle, error)
 
 	switch test.endpointType {
 	case AMP_ENDPOINT:
@@ -1318,6 +1317,7 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 		cfg,
 		met,
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		fakeAnalyticsPolicyBuilder{privacyPolicy: &gdpr.AllowAllAnalytics{}}.Builder,
 		disabledBidders,
 		[]byte(test.Config.AliasJSON),
 		bidderMap,
@@ -1426,6 +1426,22 @@ func (p *fakePermissions) AuctionActivitiesAllowed(ctx context.Context, bidderCo
 	return gdpr.AuctionPermissions{
 		AllowBidRequest: true,
 	}, nil
+}
+
+type fakeAnalyticsPolicyBuilder struct {
+	privacyPolicy gdpr.PrivacyPolicy
+}
+
+func (fapb fakeAnalyticsPolicyBuilder) Builder(cfg gdpr.TCF2ConfigReader, signal gdpr.Signal, consent string) gdpr.PrivacyPolicy {
+	return fapb.privacyPolicy
+}
+
+type analyticsPolicyMock struct {
+	allow bool
+}
+
+func (p *analyticsPolicyMock) Allow(ctx context.Context, name string, gvlID uint16) (bool, error) {
+	return p.allow, nil
 }
 
 type mockPlanBuilder struct {

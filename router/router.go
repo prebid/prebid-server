@@ -199,6 +199,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	gvlVendorIDs := cfg.BidderInfos.ToGVLVendorIDMap()
 	vendorListFetcher := gdpr.NewVendorListFetcher(context.Background(), cfg.GDPR, generalHttpClient, gdpr.VendorListURLMaker)
 	gdprPermsBuilder := gdpr.NewPermissionsBuilder(cfg.GDPR, gvlVendorIDs, vendorListFetcher)
+	gdprAnalyticsPolicyBuilder := gdpr.NewAnalyticsPolicyBuilder(cfg.GDPR, vendorListFetcher)
 	tcf2CfgBuilder := gdpr.NewTCF2Config
 
 	cacheClient := pbc.NewClient(cacheHttpClient, &cfg.CacheURL, &cfg.ExtCacheURL, r.MetricsEngine)
@@ -216,17 +217,17 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	planBuilder := hooks.NewExecutionPlanBuilder(cfg.Hooks, repo)
 	theExchange := exchange.NewExchange(adapters, cacheClient, cfg, syncersByBidder, r.MetricsEngine, cfg.BidderInfos, gdprPermsBuilder, rateConvertor, categoriesFetcher, adsCertSigner)
 	var uuidGenerator uuidutil.UUIDRandomGenerator
-	openrtbEndpoint, err := openrtb2.NewEndpoint(uuidGenerator, theExchange, paramsValidator, fetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBidders, storedRespFetcher, planBuilder)
+	openrtbEndpoint, err := openrtb2.NewEndpoint(uuidGenerator, theExchange, paramsValidator, fetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, gdprAnalyticsPolicyBuilder, disabledBidders, defReqJSON, activeBidders, storedRespFetcher, planBuilder)
 	if err != nil {
 		glog.Fatalf("Failed to create the openrtb2 endpoint handler. %v", err)
 	}
 
-	ampEndpoint, err := openrtb2.NewAmpEndpoint(uuidGenerator, theExchange, paramsValidator, ampFetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBidders, storedRespFetcher, planBuilder)
+	ampEndpoint, err := openrtb2.NewAmpEndpoint(uuidGenerator, theExchange, paramsValidator, ampFetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, gdprAnalyticsPolicyBuilder, disabledBidders, defReqJSON, activeBidders, storedRespFetcher, planBuilder)
 	if err != nil {
 		glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
 	}
 
-	videoEndpoint, err := openrtb2.NewVideoEndpoint(uuidGenerator, theExchange, paramsValidator, fetcher, videoFetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBidders, cacheClient)
+	videoEndpoint, err := openrtb2.NewVideoEndpoint(uuidGenerator, theExchange, paramsValidator, fetcher, videoFetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, gdprAnalyticsPolicyBuilder, disabledBidders, defReqJSON, activeBidders, cacheClient)
 	if err != nil {
 		glog.Fatalf("Failed to create the video endpoint handler. %v", err)
 	}

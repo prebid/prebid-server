@@ -33,6 +33,7 @@ import (
 
 	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/analytics"
+	analyticsConfig "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/errortypes"
@@ -84,7 +85,8 @@ func NewEndpoint(
 	accounts stored_requests.AccountFetcher,
 	cfg *config.Configuration,
 	metricsEngine metrics.MetricsEngine,
-	pbsAnalytics analytics.PBSAnalyticsModule,
+	pbsAnalytics analyticsConfig.EnabledAnalytics,
+	gdprPrivacyPolicyBuilder gdpr.PrivacyPolicyBuilder,
 	disabledBidders map[string]string,
 	defReqJSON []byte,
 	bidderMap map[string]openrtb_ext.BidderName,
@@ -112,6 +114,7 @@ func NewEndpoint(
 		cfg,
 		metricsEngine,
 		pbsAnalytics,
+		gdprPrivacyPolicyBuilder,
 		disabledBidders,
 		defRequest,
 		defReqJSON,
@@ -132,7 +135,8 @@ type endpointDeps struct {
 	accounts                  stored_requests.AccountFetcher
 	cfg                       *config.Configuration
 	metricsEngine             metrics.MetricsEngine
-	analytics                 analytics.PBSAnalyticsModule
+	analytics                 analyticsConfig.EnabledAnalytics
+	gdprPrivacyPolicyBuilder  gdpr.PrivacyPolicyBuilder
 	disabledBidders           map[string]string
 	defaultRequest            bool
 	defReqJSON                []byte
@@ -155,6 +159,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
 
+	ctx := context.Background()
+	analyticsLogger := analyticsConfig.NewEnabledModuleLogger(deps.analytics, ctx)
 	ao := analytics.AuctionObject{
 		Status:    http.StatusOK,
 		Errors:    make([]error, 0),
@@ -171,7 +177,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
-		deps.analytics.LogAuctionObject(&ao)
+		analyticsLogger.LogAuctionObject(&ao)
 	}()
 
 	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
@@ -181,21 +187,44 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
-	if rejectErr := hookexecution.FindFirstRejectOrNil(errL); rejectErr != nil {
-		ao.Request = req.BidRequest
-		labels, ao = rejectAuctionRequest(*rejectErr, w, hookExecutor, req.BidRequest, account, labels, ao)
-		return
-	}
-
-	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
-
-	ctx := context.Background()
-
 	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(req.TMax) * time.Millisecond)
 	if timeout > 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithDeadline(ctx, start.Add(timeout))
+		analyticsLogger.SetContext(ctx)
 		defer cancel()
+	}
+
+	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
+
+	var err error
+	var errs []error
+	var gpp gpplib.GppContainer
+	if req.Regs != nil && len(req.Regs.GPP) > 0 {
+		gpp, err = gpplib.Parse(req.Regs.GPP)
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+	gdprSignal, err := exchange.GetGDPR(req)
+	if err != nil {
+		errs = append(errs, err)
+	}
+	consent, err := exchange.GetConsent(req, gpp)
+	if err != nil {
+		errs = append(errs, err)
+	}
+	gdprApplies := exchange.GDPRApplies(gdprSignal, deps.cfg.GDPR.DefaultValue)	//TODO: try to pass this down to exchange/utils
+	channelEnabled := tcf2Config.ChannelEnabled(exchange.ChannelTypeMap[labels.RType]) //TODO: try to pass this down to exchange/utils
+	if gdprApplies && channelEnabled {
+		policy := deps.gdprPrivacyPolicyBuilder(tcf2Config, gdprSignal, consent)
+		analyticsLogger.SetPrivacyPolicy(policy)
+	}
+	
+	if rejectErr := hookexecution.FindFirstRejectOrNil(errL); rejectErr != nil {
+		ao.Request = req.BidRequest
+		labels, ao = rejectAuctionRequest(*rejectErr, w, hookExecutor, req.BidRequest, account, labels, ao)
+		return
 	}
 
 	usersyncs := usersync.ParseCookieFromRequest(r, &(deps.cfg.HostCookie))
@@ -208,7 +237,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	// Set Integration Information
-	err := deps.setIntegrationType(req, account)
+	err = deps.setIntegrationType(req, account)
 	if err != nil {
 		errL = append(errL, err)
 		writeError(errL, w, &labels)

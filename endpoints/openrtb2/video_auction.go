@@ -17,6 +17,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
+	gpplib "github.com/prebid/go-gpp"
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
@@ -25,9 +26,11 @@ import (
 
 	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/analytics"
+	analyticsConfig "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
@@ -51,7 +54,8 @@ func NewVideoEndpoint(
 	accounts stored_requests.AccountFetcher,
 	cfg *config.Configuration,
 	met metrics.MetricsEngine,
-	pbsAnalytics analytics.PBSAnalyticsModule,
+	pbsAnalytics analyticsConfig.EnabledAnalytics,
+	gdprPrivacyPolicyBuilder gdpr.PrivacyPolicyBuilder,
 	disabledBidders map[string]string,
 	defReqJSON []byte,
 	bidderMap map[string]openrtb_ext.BidderName,
@@ -81,6 +85,7 @@ func NewVideoEndpoint(
 		cfg,
 		met,
 		pbsAnalytics,
+		gdprPrivacyPolicyBuilder,
 		disabledBidders,
 		defRequest,
 		defReqJSON,
@@ -118,6 +123,8 @@ func NewVideoEndpoint(
 func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	start := time.Now()
 
+	ctx := context.Background()
+	analyticsLogger := analyticsConfig.NewEnabledModuleLogger(deps.analytics, ctx)
 	vo := analytics.VideoObject{
 		Status:    http.StatusOK,
 		Errors:    make([]error, 0),
@@ -155,7 +162,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		}
 		deps.metricsEngine.RecordRequest(labels)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
-		deps.analytics.LogVideoObject(&vo)
+		analyticsLogger.LogVideoObject(&vo)
 	}()
 
 	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
@@ -267,11 +274,11 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	ctx := context.Background()
 	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(bidReqWrapper.TMax) * time.Millisecond)
 	if timeout > 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithDeadline(ctx, start.Add(timeout))
+		analyticsLogger.SetContext(ctx)
 		defer cancel()
 	}
 
@@ -294,6 +301,31 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	if len(acctIDErrs) > 0 {
 		handleError(&labels, w, acctIDErrs, &vo, &debugLog)
 		return
+	}
+
+	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
+
+	var errs []error
+	var gpp gpplib.GppContainer
+	if bidReqWrapper.Regs != nil && len(bidReqWrapper.Regs.GPP) > 0 {
+		gpp, err = gpplib.Parse(bidReqWrapper.Regs.GPP)
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+	gdprSignal, err := exchange.GetGDPR(bidReqWrapper)
+	if err != nil {
+		errs = append(errs, err)
+	}
+	consent, err := exchange.GetConsent(bidReqWrapper, gpp)
+	if err != nil {
+		errs = append(errs, err)
+	}
+	gdprApplies := exchange.GDPRApplies(gdprSignal, deps.cfg.GDPR.DefaultValue)	//TODO: try to pass this down to exchange/utils
+	channelEnabled := tcf2Config.ChannelEnabled(exchange.ChannelTypeMap[labels.RType]) //TODO: try to pass this down to exchange/utils
+	if gdprApplies && channelEnabled {
+		policy := deps.gdprPrivacyPolicyBuilder(tcf2Config, gdprSignal, consent)
+		analyticsLogger.SetPrivacyPolicy(policy)
 	}
 
 	secGPC := r.Header.Get("Sec-GPC")

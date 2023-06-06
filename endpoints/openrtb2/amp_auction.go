@@ -14,6 +14,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
+	gpplib "github.com/prebid/go-gpp"
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/openrtb/v19/openrtb3"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
@@ -24,6 +25,7 @@ import (
 	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/amp"
 	"github.com/prebid/prebid-server/analytics"
+	analyticsConfig "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
@@ -62,7 +64,8 @@ func NewAmpEndpoint(
 	accounts stored_requests.AccountFetcher,
 	cfg *config.Configuration,
 	metricsEngine metrics.MetricsEngine,
-	pbsAnalytics analytics.PBSAnalyticsModule,
+	pbsAnalytics analyticsConfig.EnabledAnalytics,
+	gdprPrivacyPolicyBuilder gdpr.PrivacyPolicyBuilder,
 	disabledBidders map[string]string,
 	defReqJSON []byte,
 	bidderMap map[string]openrtb_ext.BidderName,
@@ -91,6 +94,7 @@ func NewAmpEndpoint(
 		cfg,
 		metricsEngine,
 		pbsAnalytics,
+		gdprPrivacyPolicyBuilder,
 		disabledBidders,
 		defRequest,
 		defReqJSON,
@@ -114,13 +118,13 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 
 	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAmp, deps.metricsEngine)
 
+	ctx := context.Background()
+	analyticsLogger := analyticsConfig.NewEnabledModuleLogger(deps.analytics, ctx)
 	ao := analytics.AmpObject{
 		Status:    http.StatusOK,
 		Errors:    make([]error, 0),
 		StartTime: start,
 	}
-
-	// Set this as an AMP request in Metrics.
 
 	labels := metrics.Labels{
 		Source:        metrics.DemandWeb,
@@ -133,7 +137,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
-		deps.analytics.LogAmpObject(&ao)
+		analyticsLogger.LogAmpObject(&ao)
 	}()
 
 	// Add AMP headers
@@ -172,13 +176,13 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 
 	ao.Request = reqWrapper.BidRequest
 
-	ctx := context.Background()
 	var cancel context.CancelFunc
 	if reqWrapper.TMax > 0 {
 		ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(reqWrapper.TMax)*time.Millisecond))
 	} else {
 		ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(defaultAmpRequestTimeoutMillis)*time.Millisecond))
 	}
+	analyticsLogger.SetContext(ctx)
 	defer cancel()
 
 	usersyncs := usersync.ParseCookieFromRequest(r, &(deps.cfg.HostCookie))
@@ -221,6 +225,30 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	}
 
 	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
+
+	var err error
+	var errs []error
+	var gpp gpplib.GppContainer
+	if reqWrapper.Regs != nil && len(reqWrapper.Regs.GPP) > 0 {
+		gpp, err = gpplib.Parse(reqWrapper.Regs.GPP)
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+	gdprSignal, err := exchange.GetGDPR(reqWrapper)
+	if err != nil {
+		errs = append(errs, err)
+	}
+	consent, err := exchange.GetConsent(reqWrapper, gpp)
+	if err != nil {
+		errs = append(errs, err)
+	}
+	gdprApplies := exchange.GDPRApplies(gdprSignal, deps.cfg.GDPR.DefaultValue)	//TODO: try to pass this down to exchange/utils
+	channelEnabled := tcf2Config.ChannelEnabled(exchange.ChannelTypeMap[labels.RType]) //TODO: try to pass this down to exchange/utils
+	if gdprApplies && channelEnabled {
+		policy := deps.gdprPrivacyPolicyBuilder(tcf2Config, gdprSignal, consent)
+		analyticsLogger.SetPrivacyPolicy(policy)
+	}
 
 	secGPC := r.Header.Get("Sec-GPC")
 
