@@ -10,11 +10,16 @@ import (
 )
 
 // PBSAnalyticsModule must be implemented by analytics modules to extract the required information and logging
-// activities. Do not use marshal the parameter objects directly as they can change over time. Use a separate
+// activities. Do not marshal the parameter objects directly as they can change over time. Use a separate
 // model for each analytics module and transform as appropriate.
 type PBSAnalyticsModule interface {
 	GetName() string
 	GetVendorID() uint16
+	AnalyticsLogger
+}
+
+// AnalyticsLogger logs objects containing information about transactions occurring on various endpoints
+type AnalyticsLogger interface {
 	LogAuctionObject(*AuctionObject)
 	LogVideoObject(*VideoObject)
 	LogCookieSyncObject(*CookieSyncObject)
