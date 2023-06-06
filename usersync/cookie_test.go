@@ -318,14 +318,12 @@ func getTestCookie() *Cookie {
 }
 
 func TestTrimCookiesClosestExpirationDates(t *testing.T) {
-	type aTest struct {
+	testCases := []struct {
 		desc          string
 		maxCookieSize int
 		inputCookie   *Cookie
 		expectedUids  []string
-	}
-
-	testCases := []aTest{
+	}{
 		{
 			desc:          "maxCookieSize big enough to fit all uid entries in sample cookie. Don't trim, set",
 			maxCookieSize: 2000,
@@ -364,7 +362,7 @@ func TestTrimCookiesClosestExpirationDates(t *testing.T) {
 		},
 		{
 			desc:          "maxCookieSize big enough to only hold one element: the newest element. Discard the rest",
-			maxCookieSize: 230,
+			maxCookieSize: 260,
 			inputCookie:   getTestCookie(),
 			expectedUids:  []string{"1"},
 		},
