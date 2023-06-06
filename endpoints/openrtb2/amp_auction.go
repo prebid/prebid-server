@@ -825,7 +825,7 @@ func setTrace(req *openrtb2.BidRequest, value string) (err error) {
 	return nil
 }
 
-// setSeatNonBid populates bidresponse.ext.prebid.seatnonbid if  bidrequest.ext.prebid.returnallbidstatus is true
+// setSeatNonBid populates bidresponse.ext.prebid.seatnonbid if bidrequest.ext.prebid.returnallbidstatus is true
 func setSeatNonBid(finalExtBidResponse *openrtb_ext.ExtBidResponse, request *openrtb_ext.RequestWrapper, auctionResponse *exchange.AuctionResponse) bool {
 	if finalExtBidResponse == nil || auctionResponse == nil || request == nil {
 		return false

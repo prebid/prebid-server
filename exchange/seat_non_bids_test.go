@@ -56,7 +56,6 @@ func TestSeatNonBidsAdd(t *testing.T) {
 
 func TestSeatNonBidsGet(t *testing.T) {
 	type fields struct {
-		// seatNonBidsMap map[string][]openrtb_ext.NonBid
 		snb *nonBids
 	}
 	tests := []struct {

@@ -5640,3 +5640,39 @@ func TestNilAuctionRequest(t *testing.T) {
 	assert.Nil(t, response)
 	assert.Nil(t, err)
 }
+
+func TestSetSeatNonBid(t *testing.T) {
+	type args struct {
+		bidResponseExt *openrtb_ext.ExtBidResponse
+		seatNonBids    nonBids
+	}
+	tests := []struct {
+		name string
+		args args
+		want *openrtb_ext.ExtBidResponse
+	}{
+		{
+			name: "empty-seatNonBidsMap",
+			args: args{seatNonBids: nonBids{}, bidResponseExt: nil},
+			want: nil,
+		},
+		{
+			name: "nil-bidResponseExt",
+			args: args{seatNonBids: nonBids{seatNonBidsMap: map[string][]openrtb_ext.NonBid{"key": nil}}, bidResponseExt: nil},
+			want: &openrtb_ext.ExtBidResponse{
+				Prebid: &openrtb_ext.ExtResponsePrebid{
+					SeatNonBid: []openrtb_ext.SeatNonBid{{
+						Seat: "key",
+					}},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := setSeatNonBid(tt.args.bidResponseExt, tt.args.seatNonBids); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("setSeatNonBid() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
