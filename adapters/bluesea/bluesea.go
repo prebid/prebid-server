@@ -120,7 +120,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		bidResponse.Currency = blueseaResponse.Cur
 	}
 	for _, seatBid := range blueseaResponse.SeatBid {
-		for i, bid := range seatBid.Bid {
+		for _, bid := range seatBid.Bid {
 
 			bidType, err := getMediaTypeForBid(&bid)
 
@@ -129,7 +129,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 				continue
 			}
 			b := &adapters.TypedBid{
-				Bid:     &seatBid.Bid[i],
+				Bid:     &bid,
 				BidType: bidType,
 			}
 			bidResponse.Bids = append(bidResponse.Bids, b)
