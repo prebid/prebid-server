@@ -70,15 +70,7 @@
             "expectedRequest": {
                 "uri": "http://host/endpoint",
                 "body": {
-                  "ext": {
-                    "features": {
-                      "pbs_handle_multi_imp_on_single_req": {
-                        "activated": true
-                      }
-                    },
-                    "prebid": null
-                  },
-                  "id": "test-request-id",
+                    "id": "test-request-id",
                     "imp": [
                         {
                             "id": "test-imp-id-1",
@@ -124,22 +116,22 @@
                             }
                         },
                         {
-                            "id": "test-imp-id-3",
                             "banner": {
-                                "format": [
-                                    {
-                                        "w": 300,
-                                        "h": 600
-                                    }
-                                ],
-                                "w": 300,
-                                "h": 600
+                              "format": [
+                                {
+                                  "h": 600,
+                                  "w": 300
+                                }
+                              ],
+                              "h": 600,
+                              "w": 300
                             },
                             "ext": {
-                                "bidder": {
-                                    "siteId": "569749"
-                                }
-                            }
+                              "bidder": {
+                                "siteId": "569749"
+                              }
+                            },
+                            "id": "test-imp-id-3"
                         },
                         {
                             "id": "test-imp-id-1",
@@ -159,7 +151,15 @@
                                 }
                             }
                         }
-                    ]
+                    ],
+                    "ext": {
+                        "features": {
+                            "pbs_handle_multi_imp_on_single_req": {
+                                "activated": true
+                            }
+                        },
+                        "prebid": null
+                    }
                 }
             },
             "mockResponse": {
@@ -181,7 +181,7 @@
                                     ],
                                     "cid": "958",
                                     "crid": "29681110",
-                                    "h": 600,
+                                    "h": 250,
                                     "w": 300,
                                     "ext": {
                                         "ix": {}
@@ -213,7 +213,7 @@
                         "cid": "958",
                         "crid": "29681110",
                         "w": 300,
-                        "h": 600,
+                        "h": 250,
                         "ext": {
                             "ix": {}
                         }

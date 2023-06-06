@@ -4,17 +4,25 @@
         "imp": [
             {
                 "id": "test-imp-id-1",
-                "banner": {
-                    "format": [
-                        {
-                            "w": 300,
-                            "h": 250
-                        },
-                        {
-                            "w": 300,
-                            "h": 600
-                        }
-                    ]
+                "video": {
+                    "mimes": [
+                        "video/mp4"
+                    ],
+                    "minduration": 15,
+                    "maxduration": 30,
+                    "protocols": [
+                        2,
+                        3,
+                        5,
+                        6,
+                        7,
+                        8
+                    ],
+                    "w": 940,
+                    "h": 560,
+                    "podid": "1",
+                    "slotinpod": 1,
+                    "podseq": 1
                 },
                 "ext": {
                     "bidder": {
@@ -39,23 +47,10 @@
                         8
                     ],
                     "w": 940,
-                    "h": 560
-                },
-                "ext": {
-                    "bidder": {
-                        "siteId": "569749"
-                    }
-                }
-            },
-            {
-                "id": "test-imp-id-3",
-                "banner": {
-                    "format": [
-                        {
-                            "w": 300,
-                            "h": 600
-                        }
-                    ]
+                    "h": 560,
+                    "podid": "1",
+                    "slotinpod": -1,
+                    "podseq": 1
                 },
                 "ext": {
                     "bidder": {
@@ -82,15 +77,25 @@
                     "imp": [
                         {
                             "id": "test-imp-id-1",
-                            "banner": {
-                                "format": [
-                                    {
-                                        "w": 300,
-                                        "h": 250
-                                    }
+                            "video": {
+                                "mimes": [
+                                    "video/mp4"
                                 ],
-                                "w": 300,
-                                "h": 250
+                                "minduration": 15,
+                                "maxduration": 30,
+                                "protocols": [
+                                    2,
+                                    3,
+                                    5,
+                                    6,
+                                    7,
+                                    8
+                                ],
+                                "w": 940,
+                                "h": 560,
+                                "podid": "1",
+                                "slotinpod": 1,
+                                "podseq": 1
                             },
                             "ext": {
                                 "bidder": {
@@ -115,43 +120,10 @@
                                     8
                                 ],
                                 "w": 940,
-                                "h": 560
-                            },
-                            "ext": {
-                                "bidder": {
-                                    "siteId": "569749"
-                                }
-                            }
-                        },
-                        {
-                            "id": "test-imp-id-3",
-                            "banner": {
-                                "format": [
-                                    {
-                                        "w": 300,
-                                        "h": 600
-                                    }
-                                ],
-                                "w": 300,
-                                "h": 600
-                            },
-                            "ext": {
-                                "bidder": {
-                                    "siteId": "569749"
-                                }
-                            }
-                        },
-                        {
-                            "id": "test-imp-id-1",
-                            "banner": {
-                                "format": [
-                                    {
-                                        "w": 300,
-                                        "h": 600
-                                    }
-                                ],
-                                "w": 300,
-                                "h": 600
+                                "h": 560,
+                                "podid": "1",
+                                "slotinpod": -1,
+                                "podseq": 1
                             },
                             "ext": {
                                 "bidder": {
@@ -181,8 +153,32 @@
                                     ],
                                     "cid": "958",
                                     "crid": "29681110",
-                                    "h": 600,
-                                    "w": 300,
+                                    "h": 560,
+                                    "w": 940,
+                                    "dur": 30,
+                                    "ext": {
+                                        "ix": {}
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "seat": "958",
+                            "bid": [
+                                {
+                                    "id": "7706636740145184841",
+                                    "impid": "test-imp-id-2",
+                                    "price": 0.75,
+                                    "adid": "29681110",
+                                    "adm": "some-test-ad",
+                                    "adomain": [
+                                        "https://advertiser.example.com"
+                                    ],
+                                    "cid": "958",
+                                    "crid": "29681110",
+                                    "h": 560,
+                                    "w": 940,
+                                    "dur": 30,
                                     "ext": {
                                         "ix": {}
                                     }
@@ -212,15 +208,37 @@
                         ],
                         "cid": "958",
                         "crid": "29681110",
-                        "w": 300,
-                        "h": 600,
-                        "ext": {
-                            "ix": {}
-                        }
-                    },
-                    "type": "banner"
+                        "h": 560,
+                        "w": 940,
+                        "dur": 30,
+                    "ext": {
+                        "ix": {}
+                    }
+                },
+                "type": "video"
+            },
+            {
+                "bid": {
+                    "id": "7706636740145184841",
+                    "impid": "test-imp-id-2",
+                    "price": 0.75,
+                    "adm": "some-test-ad",
+                    "adid": "29681110",
+                    "adomain": [
+                        "https://advertiser.example.com"
+                    ],
+                    "cid": "958",
+                    "crid": "29681110",
+                    "h": 560,
+                    "w": 940,
+                    "dur": 30,
+                "ext": {
+                    "ix": {}
                 }
-            ]
-        }
+            },
+                "type": "video"
+            }
+        ]
+    }
     ]
 }

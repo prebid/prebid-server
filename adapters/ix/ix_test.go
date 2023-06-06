@@ -336,11 +336,6 @@ func TestSetFeatureToggles(t *testing.T) {
 			},
 		},
 		{
-			description: "input with one feature toggle, no activated key",
-			ext:         json.RawMessage(`{"features":{"ft_test_1":{"exists":true}}}`),
-			expected:    map[string]FeatureTimestamp{},
-		},
-		{
 			description: "features not formatted correctly",
 			ext:         json.RawMessage(`{"features":"helloworld"}`),
 			expected:    map[string]FeatureTimestamp{},

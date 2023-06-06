@@ -18,7 +18,8 @@
                 },
                 "ext": {
                     "bidder": {
-                        "siteId": "569749"
+                        "siteId": "569749",
+                        "sid": 12345
                     }
                 }
             },
@@ -81,24 +82,6 @@
                   "id": "test-request-id",
                     "imp": [
                         {
-                            "id": "test-imp-id-1",
-                            "banner": {
-                                "format": [
-                                    {
-                                        "w": 300,
-                                        "h": 250
-                                    }
-                                ],
-                                "w": 300,
-                                "h": 250
-                            },
-                            "ext": {
-                                "bidder": {
-                                    "siteId": "569749"
-                                }
-                            }
-                        },
-                        {
                             "id": "test-imp-id-2",
                             "video": {
                                 "mimes": [
@@ -125,24 +108,6 @@
                         },
                         {
                             "id": "test-imp-id-3",
-                            "banner": {
-                                "format": [
-                                    {
-                                        "w": 300,
-                                        "h": 600
-                                    }
-                                ],
-                                "w": 300,
-                                "h": 600
-                            },
-                            "ext": {
-                                "bidder": {
-                                    "siteId": "569749"
-                                }
-                            }
-                        },
-                        {
-                            "id": "test-imp-id-1",
                             "banner": {
                                 "format": [
                                     {
@@ -221,6 +186,12 @@
                     "type": "banner"
                 }
             ]
+        }
+    ],
+    "expectedMakeRequestsErrors": [
+        {
+            "value": "json: cannot unmarshal number into Go struct field ExtImpIx.sid of type string",
+            "comparison": "literal"
         }
     ]
 }
