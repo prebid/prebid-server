@@ -67,6 +67,7 @@ type bidRequestOptions struct {
 	headerDebugAllowed  bool
 	addCallSignHeader   bool
 	bidAdjustments      map[string]float64
+	tmaxAdjustments     *config.TmaxAdjustments
 }
 
 type extraBidderRespInfo struct {

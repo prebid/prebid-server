@@ -248,6 +248,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		QueryParams:                r.URL.Query(),
 		TCF2Config:                 tcf2Config,
 		Activities:                 activities,
+		TmaxAdjustments:            &deps.cfg.TmaxAdjustments,
 	}
 
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)

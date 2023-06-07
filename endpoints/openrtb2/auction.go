@@ -246,6 +246,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		HookExecutor:               hookExecutor,
 		TCF2Config:                 tcf2Config,
 		Activities:                 activities,
+		TmaxAdjustments:            &deps.cfg.TmaxAdjustments,
 	}
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
 	ao.RequestWrapper = req
