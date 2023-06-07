@@ -359,7 +359,7 @@ func (t *TCF2) PurposeEnforced(purpose consentconstants.Purpose) (enforce bool) 
 }
 
 // PurposeEnforcementAlgo returns the default enforcement algorithm for a given purpose
-func (t *TCF2) PurposeEnforcementAlgo(purpose consentconstants.Purpose) TCF2EnforcementAlgo {
+func (t *TCF2) PurposeEnforcementAlgo(purpose consentconstants.Purpose) (enforcement TCF2EnforcementAlgo) {
 	if c, exists := t.PurposeConfigs[purpose]; exists {
 		return c.EnforceAlgoID
 	}
