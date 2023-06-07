@@ -2,6 +2,7 @@ package openrtb2
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"errors"
@@ -3893,6 +3894,105 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 	assert.Nil(t, impExtInfoMap, "Impression info map should be nil due to incorrect imp")
 	assert.Len(t, errL, 1, "One error should be returned")
 	assert.Contains(t, errL[0].Error(), "echovideoattrs of type bool", "Incorrect error message")
+}
+
+func TestParseGzipedRequest(t *testing.T) {
+	testCases :=
+		[]struct {
+			desc           string
+			reqContentEnc  string
+			maxReqSize     int64
+			compressionCfg config.Compression
+			expectedErr    string
+		}{
+			{
+				desc:           "Gzip compression enabled, request size exceeds max request size",
+				reqContentEnc:  "gzip",
+				maxReqSize:     10,
+				compressionCfg: config.Compression{Request: config.CompressionInfo{GZIP: true}},
+				expectedErr:    "request size exceeded max size of 10 bytes.",
+			},
+			{
+				desc:           "Gzip compression enabled, request size is within max request size",
+				reqContentEnc:  "gzip",
+				maxReqSize:     2000,
+				compressionCfg: config.Compression{Request: config.CompressionInfo{GZIP: true}},
+				expectedErr:    "",
+			},
+			{
+				desc:           "Gzip compression enabled, request size is within max request size, content-encoding value not in lower case",
+				reqContentEnc:  "GZIP",
+				maxReqSize:     2000,
+				compressionCfg: config.Compression{Request: config.CompressionInfo{GZIP: true}},
+				expectedErr:    "",
+			},
+			{
+				desc:           "Request is Gzip compressed, but Gzip compression is disabled",
+				reqContentEnc:  "gzip",
+				compressionCfg: config.Compression{Request: config.CompressionInfo{GZIP: false}},
+				expectedErr:    "Content-Encoding of type gzip is not supported",
+			},
+			{
+				desc:           "Request is not Gzip compressed, but Gzip compression is enabled",
+				reqContentEnc:  "",
+				maxReqSize:     2000,
+				compressionCfg: config.Compression{Request: config.CompressionInfo{GZIP: true}},
+				expectedErr:    "",
+			},
+		}
+
+	reqBody := []byte(validRequest(t, "site.json"))
+	deps := &endpointDeps{
+		fakeUUIDGenerator{},
+		&warningsCheckExchange{},
+		mockBidderParamValidator{},
+		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: int64(50), Compression: config.Compression{Request: config.CompressionInfo{GZIP: false}}},
+		&metricsConfig.NilMetricsEngine{},
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		nil,
+		nil,
+		hardcodedResponseIPValidator{response: true},
+		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
+	}
+
+	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
+	for _, test := range testCases {
+		var req *http.Request
+		deps.cfg.MaxRequestSize = test.maxReqSize
+		deps.cfg.Compression = test.compressionCfg
+		if test.reqContentEnc == "gzip" {
+			var compressed bytes.Buffer
+			gw := gzip.NewWriter(&compressed)
+			_, err := gw.Write(reqBody)
+			assert.NoError(t, err, "Error writing gzip compressed request body", test.desc)
+			assert.NoError(t, gw.Close(), "Error closing gzip writer", test.desc)
+
+			req = httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(compressed.Bytes()))
+			req.Header.Set("Content-Encoding", "gzip")
+		} else {
+			req = httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(reqBody))
+		}
+		resReq, impExtInfoMap, _, _, _, _, errL := deps.parseRequest(req, &metrics.Labels{}, hookExecutor)
+
+		if test.expectedErr == "" {
+			assert.Nil(t, errL, "Error list should be nil", test.desc)
+			assert.NotNil(t, resReq, "Result request should not be nil", test.desc)
+			assert.NotNil(t, impExtInfoMap, "Impression info map should not be nil", test.desc)
+		} else {
+			assert.Nil(t, resReq, "Result request should be nil due to incorrect imp", test.desc)
+			assert.Nil(t, impExtInfoMap, "Impression info map should be nil due to incorrect imp", test.desc)
+			assert.Len(t, errL, 1, "One error should be returned", test.desc)
+			assert.Contains(t, errL[0].Error(), test.expectedErr, "Incorrect error message", test.desc)
+		}
+	}
 }
 
 func TestValidateNativeContextTypes(t *testing.T) {
