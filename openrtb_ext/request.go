@@ -79,8 +79,11 @@ type ExtRequestPrebid struct {
 	// any other value or an empty string disables trace output at all.
 	Trace string `json:"trace,omitempty"`
 
-	BidAdjustments    *ExtRequestPrebidBidAdjustments `json:"bidadjustments,omitempty"`
+	// Macros specifies list of custom macros along with the values. This is used while forming
+	// the tracker URLs, where PBS will replace the Custom Macro with its value with url-encoding
+	Macros            map[string]string               `json:"macros,omitempty"`
 	AdServerTargeting []AdServerTarget                `json:"adservertargeting,omitempty"`
+	BidAdjustments    *ExtRequestPrebidBidAdjustments `json:"bidadjustments,omitempty"`
 }
 
 type AdServerTarget struct {
@@ -181,14 +184,15 @@ type Adjustment struct {
 
 // ExtRequestTargeting defines the contract for bidrequest.ext.prebid.targeting
 type ExtRequestTargeting struct {
-	PriceGranularity     *PriceGranularity        `json:"pricegranularity,omitempty"`
-	IncludeWinners       *bool                    `json:"includewinners,omitempty"`
-	IncludeBidderKeys    *bool                    `json:"includebidderkeys,omitempty"`
-	IncludeBrandCategory *ExtIncludeBrandCategory `json:"includebrandcategory,omitempty"`
-	IncludeFormat        bool                     `json:"includeformat,omitempty"`
-	DurationRangeSec     []int                    `json:"durationrangesec,omitempty"`
-	PreferDeals          bool                     `json:"preferdeals,omitempty"`
-	AppendBidderNames    bool                     `json:"appendbiddernames,omitempty"`
+	PriceGranularity          *PriceGranularity         `json:"pricegranularity,omitempty"`
+	MediaTypePriceGranularity MediaTypePriceGranularity `json:"mediatypepricegranularity,omitempty"`
+	IncludeWinners            *bool                     `json:"includewinners,omitempty"`
+	IncludeBidderKeys         *bool                     `json:"includebidderkeys,omitempty"`
+	IncludeBrandCategory      *ExtIncludeBrandCategory  `json:"includebrandcategory,omitempty"`
+	IncludeFormat             bool                      `json:"includeformat,omitempty"`
+	DurationRangeSec          []int                     `json:"durationrangesec,omitempty"`
+	PreferDeals               bool                      `json:"preferdeals,omitempty"`
+	AppendBidderNames         bool                      `json:"appendbiddernames,omitempty"`
 }
 
 type ExtIncludeBrandCategory struct {
@@ -198,7 +202,15 @@ type ExtIncludeBrandCategory struct {
 	TranslateCategories *bool  `json:"translatecategories,omitempty"`
 }
 
+// MediaTypePriceGranularity specify price granularity configuration at the bid type level
+type MediaTypePriceGranularity struct {
+	Banner *PriceGranularity `json:"banner,omitempty"`
+	Video  *PriceGranularity `json:"video,omitempty"`
+	Native *PriceGranularity `json:"native,omitempty"`
+}
+
 // PriceGranularity defines the allowed values for bidrequest.ext.prebid.targeting.pricegranularity
+// or bidrequest.ext.prebid.targeting.mediatypepricegranularity.banner|video|native
 type PriceGranularity struct {
 	Precision *int               `json:"precision,omitempty"`
 	Ranges    []GranularityRange `json:"ranges,omitempty"`
