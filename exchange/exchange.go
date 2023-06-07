@@ -688,7 +688,7 @@ func (e *exchange) getAllBids(
 			reqInfo.GlobalPrivacyControlHeader = globalPrivacyControlHeader
 			reqInfo.BidderRequestStartTime = start
 
-			bidReqOptions := bidRequestOptions{
+			bidReqOptions := &bidRequestOptions{
 				accountDebugAllowed: accountDebugAllowed,
 				headerDebugAllowed:  headerDebugAllowed,
 				addCallSignHeader:   isAdsCertEnabled(experiment, e.bidderInfo[string(bidderRequest.BidderName)]),

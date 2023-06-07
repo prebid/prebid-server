@@ -59,7 +59,7 @@ func TestAllValidBids(t *testing.T) {
 		BidderName: openrtb_ext.BidderAppnexus,
 	}
 	bidAdjustments := map[string]float64{string(openrtb_ext.BidderAppnexus): 1.0}
-	bidReqOptions := bidRequestOptions{
+	bidReqOptions := &bidRequestOptions{
 		accountDebugAllowed: true,
 		headerDebugAllowed:  false,
 		addCallSignHeader:   false,
@@ -129,7 +129,7 @@ func TestAllBadBids(t *testing.T) {
 		BidderName: openrtb_ext.BidderAppnexus,
 	}
 	bidAdjustments := map[string]float64{string(openrtb_ext.BidderAppnexus): 1.0}
-	bidReqOptions := bidRequestOptions{
+	bidReqOptions := &bidRequestOptions{
 		accountDebugAllowed: true,
 		headerDebugAllowed:  false,
 		addCallSignHeader:   false,
@@ -210,7 +210,7 @@ func TestMixedBids(t *testing.T) {
 		BidderName: openrtb_ext.BidderAppnexus,
 	}
 	bidAdjustments := map[string]float64{string(openrtb_ext.BidderAppnexus): 1.0}
-	bidReqOptions := bidRequestOptions{
+	bidReqOptions := &bidRequestOptions{
 		accountDebugAllowed: true,
 		headerDebugAllowed:  false,
 		addCallSignHeader:   false,
@@ -339,7 +339,7 @@ func TestCurrencyBids(t *testing.T) {
 		bidderRequest := BidderRequest{BidRequest: request, BidderName: openrtb_ext.BidderAppnexus}
 
 		bidAdjustments := map[string]float64{string(openrtb_ext.BidderAppnexus): 1.0}
-		bidReqOptions := bidRequestOptions{
+		bidReqOptions := &bidRequestOptions{
 			accountDebugAllowed: true,
 			headerDebugAllowed:  false,
 			addCallSignHeader:   false,
@@ -357,6 +357,6 @@ type mockAdaptedBidder struct {
 	errorResponse []error
 }
 
-func (b *mockAdaptedBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestMetadata bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, executor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) ([]*entities.PbsOrtbSeatBid, []error) {
+func (b *mockAdaptedBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestMetadata *bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, executor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) ([]*entities.PbsOrtbSeatBid, []error) {
 	return b.bidResponse, b.errorResponse
 }
