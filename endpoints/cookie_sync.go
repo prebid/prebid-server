@@ -176,8 +176,8 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 	return rx, privacyPolicies, nil
 }
 
-// extractPrivacyPolicies looks for the GDPR consent string and GDPR signal in the GPP and GDPR fields. Values
-// found in the GPP fields take precedence over the legacy GDPR fields
+// extractPrivacyPolicies looks for the GDPR consent string and GDPR signal in the GPP and GDPR
+// fields. Values found in the GPP fields take precedence over the legacy GDPR fields
 func extractPrivacyPolicies(request cookieSyncRequest, usersyncDefaultGDPRValue string) (privacy.Policies, gdpr.Signal, error) {
 	// GDPR
 	gppSID, err := stringutil.StrToInt8Slice(request.GPPSid)
