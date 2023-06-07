@@ -577,6 +577,47 @@ func TestCleanOpenRTBRequestsWithFPD(t *testing.T) {
 	}
 }
 
+func TestExtractAdapterReqBidderParamsMap(t *testing.T) {
+	tests := []struct {
+		name            string
+		givenBidRequest *openrtb2.BidRequest
+		want            map[string]json.RawMessage
+		wantErr         error
+	}{
+		{
+			name:            "nil req",
+			givenBidRequest: nil,
+			want:            nil,
+			wantErr:         errors.New("error bidRequest should not be nil"),
+		},
+		{
+			name:            "nil req.ext",
+			givenBidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{}}`)},
+			want:            nil,
+			wantErr:         nil,
+		},
+		{
+			name:            "malformed req.ext",
+			givenBidRequest: &openrtb2.BidRequest{Ext: json.RawMessage("malformed")},
+			want:            nil,
+			wantErr:         errors.New("error decoding Request.ext : invalid character 'm' looking for beginning of value"),
+		},
+		{
+			name:            "extract bidder params from req.Ext for input request in adapter code",
+			givenBidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"bidderparams": {"profile": 1234, "version": 1}}}`)},
+			want:            map[string]json.RawMessage{"profile": json.RawMessage(`1234`), "version": json.RawMessage(`1`)},
+			wantErr:         nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ExtractReqExtBidderParamsMap(tt.givenBidRequest)
+			assert.Equal(t, tt.wantErr, err, "err")
+			assert.Equal(t, tt.want, got, "result")
+		})
+	}
+}
+
 func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 	bidRespId1 := json.RawMessage(`{"id": "resp_id1"}`)
 	bidRespId2 := json.RawMessage(`{"id": "resp_id2"}`)
@@ -3822,7 +3863,7 @@ func Test_isBidderInExtAlternateBidderCodes(t *testing.T) {
 			name: "adapter defined in alternatebiddercodes but currentMultiBidBidder not in AllowedBidders list",
 			args: args{
 				adapter:               string(openrtb_ext.BidderPubmatic),
-				currentMultiBidBidder: string(openrtb_ext.BidderGroupm),
+				currentMultiBidBidder: "groupm",
 				adapterABC: &openrtb_ext.ExtAlternateBidderCodes{
 					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
 						string(openrtb_ext.BidderPubmatic): {
@@ -3837,11 +3878,11 @@ func Test_isBidderInExtAlternateBidderCodes(t *testing.T) {
 			name: "adapter defined in alternatebiddercodes with currentMultiBidBidder mentioned in AllowedBidders list",
 			args: args{
 				adapter:               string(openrtb_ext.BidderPubmatic),
-				currentMultiBidBidder: string(openrtb_ext.BidderGroupm),
+				currentMultiBidBidder: "groupm",
 				adapterABC: &openrtb_ext.ExtAlternateBidderCodes{
 					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
 						string(openrtb_ext.BidderPubmatic): {
-							AllowedBidderCodes: []string{string(openrtb_ext.BidderGroupm)},
+							AllowedBidderCodes: []string{"groupm"},
 						},
 					},
 				},
@@ -3852,7 +3893,7 @@ func Test_isBidderInExtAlternateBidderCodes(t *testing.T) {
 			name: "adapter defined in alternatebiddercodes with AllowedBidders list as *",
 			args: args{
 				adapter:               string(openrtb_ext.BidderPubmatic),
-				currentMultiBidBidder: string(openrtb_ext.BidderGroupm),
+				currentMultiBidBidder: "groupm",
 				adapterABC: &openrtb_ext.ExtAlternateBidderCodes{
 					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
 						string(openrtb_ext.BidderPubmatic): {
@@ -3963,7 +4004,7 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 				adapter: string(openrtb_ext.BidderPubmatic),
 				reqMultiBid: []*openrtb_ext.ExtMultiBid{
 					{
-						Bidder:  string(openrtb_ext.BidderGroupm),
+						Bidder:  "groupm",
 						MaxBids: ptrutil.ToPtr(3),
 					},
 					{
@@ -3978,14 +4019,14 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 				adapterABC: &openrtb_ext.ExtAlternateBidderCodes{
 					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
 						string(openrtb_ext.BidderPubmatic): {
-							AllowedBidderCodes: []string{string(openrtb_ext.BidderGroupm)},
+							AllowedBidderCodes: []string{"groupm"},
 						},
 					},
 				},
 			},
 			want: []*openrtb_ext.ExtMultiBid{
 				{
-					Bidder:  string(openrtb_ext.BidderGroupm),
+					Bidder:  "groupm",
 					MaxBids: ptrutil.ToPtr(3),
 				},
 				{
@@ -4000,7 +4041,7 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 				adapter: string(openrtb_ext.BidderAppnexus),
 				reqMultiBid: []*openrtb_ext.ExtMultiBid{
 					{
-						Bidder:  string(openrtb_ext.BidderGroupm),
+						Bidder:  "groupm",
 						MaxBids: ptrutil.ToPtr(3),
 					},
 					{
@@ -4015,14 +4056,14 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 				adapterABC: &openrtb_ext.ExtAlternateBidderCodes{
 					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
 						string(openrtb_ext.BidderAppnexus): {
-							AllowedBidderCodes: []string{string(openrtb_ext.BidderGroupm)},
+							AllowedBidderCodes: []string{"groupm"},
 						},
 					},
 				},
 			},
 			want: []*openrtb_ext.ExtMultiBid{
 				{
-					Bidder:  string(openrtb_ext.BidderGroupm),
+					Bidder:  "groupm",
 					MaxBids: ptrutil.ToPtr(3),
 				},
 				{
@@ -4037,7 +4078,7 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 				adapter: string(openrtb_ext.BidderPubmatic),
 				reqMultiBid: []*openrtb_ext.ExtMultiBid{
 					{
-						Bidder:  string(openrtb_ext.BidderGroupm),
+						Bidder:  "groupm",
 						MaxBids: ptrutil.ToPtr(3),
 					},
 					{
@@ -4059,7 +4100,7 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 			},
 			want: []*openrtb_ext.ExtMultiBid{
 				{
-					Bidder:  string(openrtb_ext.BidderGroupm),
+					Bidder:  "groupm",
 					MaxBids: ptrutil.ToPtr(3),
 				},
 				{
@@ -4082,7 +4123,7 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 				adapter: string(openrtb_ext.BidderAppnexus),
 				reqMultiBid: []*openrtb_ext.ExtMultiBid{
 					{
-						Bidder:  string(openrtb_ext.BidderGroupm),
+						Bidder:  "groupm",
 						MaxBids: ptrutil.ToPtr(3),
 					},
 					{
@@ -4104,7 +4145,7 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 			},
 			want: []*openrtb_ext.ExtMultiBid{
 				{
-					Bidder:  string(openrtb_ext.BidderGroupm),
+					Bidder:  "groupm",
 					MaxBids: ptrutil.ToPtr(3),
 				},
 				{
@@ -4126,6 +4167,108 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := buildRequestExtMultiBid(tt.args.adapter, tt.args.reqMultiBid, tt.args.adapterABC)
 			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestGetPrebidMediaTypeForBid(t *testing.T) {
+	tests := []struct {
+		description     string
+		inputBid        openrtb2.Bid
+		expectedBidType openrtb_ext.BidType
+		expectedError   string
+	}{
+		{
+			description:     "Valid bid ext with bid type native",
+			inputBid:        openrtb2.Bid{ID: "bidId", ImpID: "impId", Ext: json.RawMessage(`{"prebid": {"type": "native"}}`)},
+			expectedBidType: openrtb_ext.BidTypeNative,
+		},
+		{
+			description:   "Valid bid ext with non-existing bid type",
+			inputBid:      openrtb2.Bid{ID: "bidId", ImpID: "impId", Ext: json.RawMessage(`{"prebid": {"type": "unknown"}}`)},
+			expectedError: "Failed to parse bid mediatype for impression \"impId\", invalid BidType: unknown",
+		},
+		{
+			description:   "Invalid bid ext",
+			inputBid:      openrtb2.Bid{ID: "bidId", ImpID: "impId", Ext: json.RawMessage(`[true`)},
+			expectedError: "Failed to parse bid mediatype for impression \"impId\", unexpected end of JSON input",
+		},
+		{
+			description:   "Bid ext is nil",
+			inputBid:      openrtb2.Bid{ID: "bidId", ImpID: "impId", Ext: nil},
+			expectedError: "Failed to parse bid mediatype for impression \"impId\"",
+		},
+		{
+			description:   "Empty bid ext",
+			inputBid:      openrtb2.Bid{ID: "bidId", ImpID: "impId", Ext: json.RawMessage(`{}`)},
+			expectedError: "Failed to parse bid mediatype for impression \"impId\"",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.description, func(t *testing.T) {
+			bidType, err := getPrebidMediaTypeForBid(tt.inputBid)
+			if len(tt.expectedError) == 0 {
+				assert.Equal(t, tt.expectedBidType, bidType)
+			} else {
+				assert.Equal(t, tt.expectedError, err.Error())
+			}
+
+		})
+	}
+}
+
+func TestGetMediaTypeForBid(t *testing.T) {
+	tests := []struct {
+		description     string
+		inputBid        openrtb2.Bid
+		expectedBidType openrtb_ext.BidType
+		expectedError   string
+	}{
+		{
+			description:     "Valid bid ext with bid type native",
+			inputBid:        openrtb2.Bid{ID: "bidId", ImpID: "impId", Ext: json.RawMessage(`{"prebid": {"type": "native"}}`)},
+			expectedBidType: openrtb_ext.BidTypeNative,
+		},
+		{
+			description:   "invalid bid ext",
+			inputBid:      openrtb2.Bid{ID: "bidId", ImpID: "impId", Ext: json.RawMessage(`{"prebid"`)},
+			expectedError: "Failed to parse bid mediatype for impression \"impId\", unexpected end of JSON input",
+		},
+		{
+			description:     "Valid bid ext with mtype native",
+			inputBid:        openrtb2.Bid{ID: "bidId", ImpID: "impId", MType: openrtb2.MarkupNative},
+			expectedBidType: openrtb_ext.BidTypeNative,
+		},
+		{
+			description:     "Valid bid ext with mtype banner",
+			inputBid:        openrtb2.Bid{ID: "bidId", ImpID: "impId", MType: openrtb2.MarkupBanner},
+			expectedBidType: openrtb_ext.BidTypeBanner,
+		},
+		{
+			description:     "Valid bid ext with mtype video",
+			inputBid:        openrtb2.Bid{ID: "bidId", ImpID: "impId", MType: openrtb2.MarkupVideo},
+			expectedBidType: openrtb_ext.BidTypeVideo,
+		},
+		{
+			description:     "Valid bid ext with mtype audio",
+			inputBid:        openrtb2.Bid{ID: "bidId", ImpID: "impId", MType: openrtb2.MarkupAudio},
+			expectedBidType: openrtb_ext.BidTypeAudio,
+		},
+		{
+			description:   "Valid bid ext with mtype unknown",
+			inputBid:      openrtb2.Bid{ID: "bidId", ImpID: "impId", MType: 8},
+			expectedError: "Failed to parse bid mType for impression \"impId\"",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.description, func(t *testing.T) {
+			bidType, err := getMediaTypeForBid(tt.inputBid)
+			if len(tt.expectedError) == 0 {
+				assert.Equal(t, tt.expectedBidType, bidType)
+			} else {
+				assert.Equal(t, tt.expectedError, err.Error())
+			}
+
 		})
 	}
 }
