@@ -2294,6 +2294,7 @@ func TestCleanOpenRTBRequestsWithOpenRTBDowngrade(t *testing.T) {
 	bidReq.Regs.GPPSID = []int8{6}
 	bidReq.User.ID = ""
 	bidReq.User.BuyerUID = ""
+	bidReq.User.Yob = 0
 
 	downgradedRegs := *bidReq.Regs
 	downgradedUser := *bidReq.User
