@@ -2725,7 +2725,7 @@ func TestExtraBidWithBidAdjustments(t *testing.T) {
 	}
 	bidAdjustments := map[string]float64{
 		string(openrtb_ext.BidderPubmatic): 2,
-		string(openrtb_ext.BidderGroupm):   3,
+		"groupm":                           3,
 	}
 
 	bidReqOptions := bidRequestOptions{
