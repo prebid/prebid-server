@@ -150,7 +150,7 @@ func handleMultiImpInSingleRequest(request *openrtb2.BidRequest, a *IxAdapter) (
 	additionalMultiSizeImps := make([]openrtb2.Imp, 0)
 	requestCopy := *request
 	for _, imp := range requestCopy.Imp {
-		if err := parseSiteId(&imp, siteIds); err != nil {
+		if err := parseSiteId(&imp, &siteIds); err != nil {
 			errs = append(errs, err)
 			continue
 		}
@@ -223,7 +223,7 @@ func handleMultiImpInSingleRequest(request *openrtb2.BidRequest, a *IxAdapter) (
 	return append(requests, multiSizeRequests...), errs
 }
 
-func parseSiteId(imp *openrtb2.Imp, siteIds []string) error {
+func parseSiteId(imp *openrtb2.Imp, siteIds *[]string) error {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return err
@@ -235,7 +235,7 @@ func parseSiteId(imp *openrtb2.Imp, siteIds []string) error {
 	}
 
 	if ixExt.SiteId != "" {
-		siteIds = append(siteIds, ixExt.SiteId)
+		*siteIds = append(*siteIds, ixExt.SiteId)
 	}
 	return nil
 }
