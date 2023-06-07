@@ -93,6 +93,7 @@ func (c *cookieSyncEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ ht
 	decoder := usersync.DecodeV1{}
 
 	cookie := usersync.ReadCookie(r, decoder, &c.config.HostCookie)
+	usersync.SyncHostCookie(r, cookie, &c.config.HostCookie)
 
 	result := c.chooser.Choose(request, cookie)
 	switch result.Status {
