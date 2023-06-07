@@ -3056,3 +3056,62 @@ func TestGetBidType(t *testing.T) {
 		})
 	}
 }
+
+type mockBidderTmaxCtx struct {
+	startTime, deadline time.Time
+	ok                  bool
+}
+
+func (m *mockBidderTmaxCtx) Deadline() (deadline time.Time, _ bool) {
+	return m.deadline, m.ok
+}
+func (m *mockBidderTmaxCtx) RemainingDurationMS(deadline time.Time) int64 {
+	return deadline.Sub(m.startTime).Milliseconds()
+}
+
+func TestGetBidderTmax(t *testing.T) {
+	var requestTmaxMS int64 = 700
+	requestTmaxNS := requestTmaxMS * int64(time.Millisecond)
+
+	startTime := time.Date(2023, 5, 30, 1, 0, 0, 0, time.UTC)
+	deadline := time.Date(2023, 5, 30, 1, 0, 0, int(requestTmaxNS), time.UTC)
+	ctx := &mockBidderTmaxCtx{startTime: startTime, deadline: deadline, ok: true}
+
+	tmaxAdjustments := config.TmaxAdjustments{Enabled: true, PBSResponsePreparationDuration: 50, BidderNetworkLatencyBuffer: 10}
+
+	tests := []struct {
+		description     string
+		ctx             bidderTmaxContext
+		requestTmax     int64
+		tmaxAdjustments config.TmaxAdjustments
+	}{
+		{
+			description:     "returns-remaining-duration-as-bidderTmax",
+			ctx:             ctx,
+			requestTmax:     requestTmaxMS,
+			tmaxAdjustments: tmaxAdjustments,
+		},
+		{
+			description:     "returns-requestTmax-when-context-deadline-is-not-set",
+			ctx:             &mockBidderTmaxCtx{ok: false},
+			requestTmax:     requestTmaxMS,
+			tmaxAdjustments: tmaxAdjustments,
+		},
+		{
+			description:     "returns-requestTmax-when-tmax-adjustment-is-disabled",
+			ctx:             ctx,
+			requestTmax:     requestTmaxMS,
+			tmaxAdjustments: tmaxAdjustments,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			if _, ok := test.ctx.Deadline(); ok {
+				bidderTmax := getBidderTmax(test.ctx, test.requestTmax, test.tmaxAdjustments)
+				assert.Equal(t, test.requestTmax-int64(test.tmaxAdjustments.BidderNetworkLatencyBuffer)-int64(test.tmaxAdjustments.PBSResponsePreparationDuration), bidderTmax)
+			} else {
+				assert.Equal(t, test.requestTmax, getBidderTmax(test.ctx, test.requestTmax, test.tmaxAdjustments))
+			}
+		})
+	}
+}

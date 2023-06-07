@@ -240,6 +240,11 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 
 		if httpInfo.err == nil {
 			startTime := time.Now()
+			// Reducing the amount of time bidders have to compensate for the processing time used by PBS to fetch a stored request (if needed), validate the OpenRTB request and split it into multiple requests sanitized for each bidder.
+			// As well as for the time needed by PBS to prepare the auction response
+			if bidRequestOptions.tmaxAdjustments != nil && bidRequestOptions.tmaxAdjustments.Enabled && bidRequestOptions.tmaxAdjustments.BidderResponseDurationMin > 0 {
+				bidderRequest.BidRequest.TMax = getBidderTmax(&bidderTmaxCtx{ctx}, bidderRequest.BidRequest.TMax, *bidRequestOptions.tmaxAdjustments)
+			}
 			bidResponse, moreErrs := bidder.Bidder.MakeBids(bidderRequest.BidRequest, httpInfo.request, httpInfo.response)
 			errs = append(errs, moreErrs...)
 
@@ -716,4 +721,25 @@ func getBidTypeForAdjustments(bidType openrtb_ext.BidType, impID string, imp []o
 		return "video-instream"
 	}
 	return string(bidType)
+}
+
+type bidderTmaxContext interface {
+	Deadline() (deadline time.Time, ok bool)
+	RemainingDurationMS(deadline time.Time) int64
+}
+type bidderTmaxCtx struct{ ctx context.Context }
+
+func (b *bidderTmaxCtx) RemainingDurationMS(deadline time.Time) int64 {
+	return time.Until(deadline).Milliseconds()
+}
+func (b *bidderTmaxCtx) Deadline() (deadline time.Time, ok bool) {
+	deadline, ok = b.ctx.Deadline()
+	return
+}
+
+func getBidderTmax(ctx bidderTmaxContext, requestTmaxMS int64, tmaxAdjustments config.TmaxAdjustments) int64 {
+	if deadline, ok := ctx.Deadline(); ok {
+		return ctx.RemainingDurationMS(deadline) - int64(tmaxAdjustments.BidderNetworkLatencyBuffer) - int64(tmaxAdjustments.PBSResponsePreparationDuration)
+	}
+	return requestTmaxMS
 }
