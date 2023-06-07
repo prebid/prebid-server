@@ -258,7 +258,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	labels, ao = sendAuctionResponse(w, hookExecutor, response, req.BidRequest, account, labels, ao)
 	if len(ao.Errors) == 0 {
-		recordResponsePreparationMetrics(auctionRequest.MakeBidsTimeInfo, deps.metricsEngine)
+		recordResponsePreparationMetrics(auctionRequest.MakeBidsTimeInfo, deps.metricsEngine, time.Since)
 	}
 }
 
@@ -2367,10 +2367,16 @@ func generateStoredBidResponseValidationError(impID string) error {
 	return fmt.Errorf("request validation failed. Stored bid responses are specified for imp %s. Bidders specified in imp.ext should match with bidders specified in imp.ext.prebid.storedbidresponse", impID)
 }
 
-func recordResponsePreparationMetrics(mbti map[openrtb_ext.BidderName]exchange.MakeBidsTimeInfo, me metrics.MetricsEngine) {
+type sinceFn func(time.Time) time.Duration
+
+func (fn sinceFn) Since(t time.Time) time.Duration {
+	return fn(t)
+}
+
+func recordResponsePreparationMetrics(mbti map[openrtb_ext.BidderName]exchange.MakeBidsTimeInfo, me metrics.MetricsEngine, fn sinceFn) {
 	var maxDuration time.Duration
 	for _, info := range mbti {
-		duration := time.Since(info.AfterMakeBidsStartTime) + info.TotalDuration
+		duration := fn.Since(info.AfterMakeBidsStartTime) + info.TotalDuration
 		if duration > time.Duration(maxDuration) {
 			maxDuration = duration
 		}
