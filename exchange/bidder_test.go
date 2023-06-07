@@ -3063,3 +3063,148 @@ func TestGetBidType(t *testing.T) {
 		})
 	}
 }
+
+type mockBidderTmaxCtx struct {
+	startTime, deadline time.Time
+	ok                  bool
+}
+
+func (m *mockBidderTmaxCtx) Deadline() (deadline time.Time, _ bool) {
+	return m.deadline, m.ok
+}
+func (m *mockBidderTmaxCtx) RemainingDurationMS(deadline time.Time) int64 {
+	return deadline.Sub(m.startTime).Milliseconds()
+}
+
+func TestGetBidderTmax(t *testing.T) {
+	var (
+		requestTmaxMS               int64 = 700
+		bidderNetworkLatencyBuffer  uint  = 50
+		responsePreparationDuration uint  = 60
+	)
+	requestTmaxNS := requestTmaxMS * int64(time.Millisecond)
+	startTime := time.Date(2023, 5, 30, 1, 0, 0, 0, time.UTC)
+	deadline := time.Date(2023, 5, 30, 1, 0, 0, int(requestTmaxNS), time.UTC)
+	ctx := &mockBidderTmaxCtx{startTime: startTime, deadline: deadline, ok: true}
+	tests := []struct {
+		description     string
+		ctx             bidderTmaxContext
+		requestTmax     int64
+		expectedTmax    int64
+		tmaxAdjustments config.TmaxAdjustments
+	}{
+		{
+			description:     "returns-requestTmax-when-tmax-adjustment-is-not-enabled",
+			ctx:             ctx,
+			requestTmax:     requestTmaxMS,
+			tmaxAdjustments: config.TmaxAdjustments{Enabled: false},
+			expectedTmax:    requestTmaxMS,
+		},
+		{
+			description:     "returns-requestTmax-when-BidderResponseDurationMin-is-not-set",
+			ctx:             ctx,
+			requestTmax:     requestTmaxMS,
+			tmaxAdjustments: config.TmaxAdjustments{Enabled: true, BidderResponseDurationMin: 0},
+			expectedTmax:    requestTmaxMS,
+		},
+		{
+			description:     "returns-requestTmax-when-BidderNetworkLatencyBuffer-and-PBSResponsePreparationDuration-is-not-set",
+			ctx:             ctx,
+			requestTmax:     requestTmaxMS,
+			tmaxAdjustments: config.TmaxAdjustments{Enabled: true, BidderResponseDurationMin: 100, BidderNetworkLatencyBuffer: 0, PBSResponsePreparationDuration: 0},
+			expectedTmax:    requestTmaxMS,
+		},
+		{
+			description:     "returns-requestTmax-when-context-deadline-is-not-set",
+			ctx:             &mockBidderTmaxCtx{ok: false},
+			requestTmax:     requestTmaxMS,
+			tmaxAdjustments: config.TmaxAdjustments{Enabled: true, BidderResponseDurationMin: 100, BidderNetworkLatencyBuffer: 50, PBSResponsePreparationDuration: 60},
+			expectedTmax:    requestTmaxMS,
+		},
+		{
+			description:     "returns-remaing-duration-by-subtracting-BidderNetworkLatencyBuffer-and-PBSResponsePreparationDuration",
+			ctx:             ctx,
+			requestTmax:     requestTmaxMS,
+			tmaxAdjustments: config.TmaxAdjustments{Enabled: true, BidderResponseDurationMin: 100, BidderNetworkLatencyBuffer: bidderNetworkLatencyBuffer, PBSResponsePreparationDuration: responsePreparationDuration},
+			expectedTmax:    ctx.RemainingDurationMS(deadline) - int64(bidderNetworkLatencyBuffer) - int64(responsePreparationDuration),
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			assert.Equal(t, test.expectedTmax, getBidderTmax(test.ctx, test.requestTmax, test.tmaxAdjustments))
+
+		})
+	}
+}
+
+func TestUpdateBidderTmax(t *testing.T) {
+	respStatus := 200
+	respBody := "{\"bid\":false}"
+	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
+	defer server.Close()
+
+	requestHeaders := http.Header{}
+	requestHeaders.Add("Content-Type", "application/json")
+
+	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	var requestTmax int64 = 700
+
+	bidderReq := BidderRequest{
+		BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "impId"}}, TMax: requestTmax},
+		BidderName: "test",
+	}
+	extraInfo := &adapters.ExtraRequestInfo{}
+
+	tests := []struct {
+		description     string
+		requestTmax     int64
+		tmaxAdjustments *config.TmaxAdjustments
+		assertFn        func(actualTmax int64) bool
+	}{
+		{
+			description:     "tmax-is-not-enabled",
+			requestTmax:     requestTmax,
+			tmaxAdjustments: &config.TmaxAdjustments{Enabled: false},
+			assertFn: func(actualTmax int64) bool {
+				return requestTmax == actualTmax
+			},
+		},
+		{
+			description:     "bidder-response-duration-not-set",
+			requestTmax:     700,
+			tmaxAdjustments: &config.TmaxAdjustments{Enabled: true, BidderResponseDurationMin: 0},
+			assertFn: func(actualTmax int64) bool {
+				return requestTmax == actualTmax
+			},
+		},
+		{
+			description:     "updates-bidder-tmax",
+			requestTmax:     requestTmax,
+			tmaxAdjustments: &config.TmaxAdjustments{Enabled: true, BidderResponseDurationMin: 100, BidderNetworkLatencyBuffer: 50, PBSResponsePreparationDuration: 50},
+			assertFn: func(actualTmax int64) bool {
+				return requestTmax > actualTmax
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			bidderImpl := &goodSingleBidder{
+				httpRequest: &adapters.RequestData{
+					Method:  "POST",
+					Uri:     server.URL,
+					Body:    []byte("{\"key\":\"val\"}"),
+					Headers: http.Header{},
+				},
+				bidResponse: &adapters.BidderResponse{},
+			}
+
+			ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(50*time.Millisecond))
+			defer cancel()
+			bidReqOptions := bidRequestOptions{tmaxAdjustments: test.tmaxAdjustments}
+			bidder := AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{Allow: false}, "")
+			_, _, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), extraInfo, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
+			assert.Empty(t, errs)
+			assert.True(t, test.assertFn(bidderImpl.bidRequest.TMax))
+		})
+	}
+}
