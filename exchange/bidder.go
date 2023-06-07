@@ -63,10 +63,17 @@ type AdaptedBidder interface {
 
 // bidRequestOptions holds additional options for bid request execution to maintain clean code and reasonable number of parameters
 type bidRequestOptions struct {
-	accountDebugAllowed bool
-	headerDebugAllowed  bool
-	addCallSignHeader   bool
-	bidAdjustments      map[string]float64
+	accountDebugAllowed    bool
+	headerDebugAllowed     bool
+	addCallSignHeader      bool
+	bidAdjustments         map[string]float64
+	makeBidsTimeInfo       MakeBidsTimeInfo
+	bidderRequestStartTime time.Time
+}
+
+type MakeBidsTimeInfo struct {
+	AfterMakeBidsStartTime time.Time
+	Durations              []time.Duration
 }
 
 const ImpIdReqBody = "Stored bid response for impression id: "
@@ -173,11 +180,11 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 		dataLen = len(reqData) + len(bidderRequest.BidderStoredResponses)
 		responseChannel = make(chan *httpCallInfo, dataLen)
 		if len(reqData) == 1 {
-			responseChannel <- bidder.doRequest(ctx, reqData[0], reqInfo.BidderRequestStartTime)
+			responseChannel <- bidder.doRequest(ctx, reqData[0], bidRequestOptions.bidderRequestStartTime)
 		} else {
 			for _, oneReqData := range reqData {
 				go func(data *adapters.RequestData) {
-					responseChannel <- bidder.doRequest(ctx, data, reqInfo.BidderRequestStartTime)
+					responseChannel <- bidder.doRequest(ctx, data, bidRequestOptions.bidderRequestStartTime)
 				}(oneReqData) // Method arg avoids a race condition on oneReqData
 			}
 		}
@@ -373,12 +380,12 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 					errs = append(errs, err)
 				}
 			}
-			reqInfo.MakeBidsTimeInfo.Durations = append(reqInfo.MakeBidsTimeInfo.Durations, time.Since(startTime))
+			bidRequestOptions.makeBidsTimeInfo.Durations = append(bidRequestOptions.makeBidsTimeInfo.Durations, time.Since(startTime))
 		} else {
 			errs = append(errs, httpInfo.err)
 		}
 	}
-	reqInfo.MakeBidsTimeInfo.AfterMakeBidsStartTime = time.Now()
+	bidRequestOptions.makeBidsTimeInfo.AfterMakeBidsStartTime = time.Now()
 	seatBids := make([]*entities.PbsOrtbSeatBid, 0, len(seatBidMap))
 	for _, seatBid := range seatBidMap {
 		seatBids = append(seatBids, seatBid)

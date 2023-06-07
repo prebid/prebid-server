@@ -89,7 +89,7 @@ type seatResponseExtra struct {
 	// httpCalls is the list of debugging info. It should only be populated if the request.test == 1.
 	// This will become response.ext.debug.httpcalls.{bidder} on the final Response.
 	HttpCalls        []*openrtb_ext.ExtHttpCall
-	MakeBidsTimeInfo adapters.MakeBidsTimeInfo
+	MakeBidsTimeInfo MakeBidsTimeInfo
 }
 
 type bidResponseWrapper struct {
@@ -209,7 +209,7 @@ type AuctionRequest struct {
 	HookExecutor          hookexecution.StageExecutor
 	QueryParams           url.Values
 	// map of bidder to store duration needed for the MakeBids() calls and start time after MakeBids() calls
-	MakeBidsTimeInfo map[openrtb_ext.BidderName]adapters.MakeBidsTimeInfo
+	MakeBidsTimeInfo map[openrtb_ext.BidderName]MakeBidsTimeInfo
 }
 
 // BidderRequest holds the bidder specific request and all other
@@ -491,8 +491,8 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	return bidResponse, err
 }
 
-func buildMakeBidsTimeInfoMap(adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra) map[openrtb_ext.BidderName]adapters.MakeBidsTimeInfo {
-	makeBidsInfoMap := make(map[openrtb_ext.BidderName]adapters.MakeBidsTimeInfo)
+func buildMakeBidsTimeInfoMap(adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra) map[openrtb_ext.BidderName]MakeBidsTimeInfo {
+	makeBidsInfoMap := make(map[openrtb_ext.BidderName]MakeBidsTimeInfo)
 	for bidderName, responseExtra := range adapterExtra {
 		makeBidsInfoMap[bidderName] = responseExtra.MakeBidsTimeInfo
 	}
@@ -686,13 +686,13 @@ func (e *exchange) getAllBids(
 			reqInfo := adapters.NewExtraRequestInfo(conversions)
 			reqInfo.PbsEntryPoint = bidderRequest.BidderLabels.RType
 			reqInfo.GlobalPrivacyControlHeader = globalPrivacyControlHeader
-			reqInfo.BidderRequestStartTime = start
 
 			bidReqOptions := &bidRequestOptions{
-				accountDebugAllowed: accountDebugAllowed,
-				headerDebugAllowed:  headerDebugAllowed,
-				addCallSignHeader:   isAdsCertEnabled(experiment, e.bidderInfo[string(bidderRequest.BidderName)]),
-				bidAdjustments:      bidAdjustments,
+				accountDebugAllowed:    accountDebugAllowed,
+				headerDebugAllowed:     headerDebugAllowed,
+				addCallSignHeader:      isAdsCertEnabled(experiment, e.bidderInfo[string(bidderRequest.BidderName)]),
+				bidAdjustments:         bidAdjustments,
+				bidderRequestStartTime: start,
 			}
 			seatBids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest, conversions, &reqInfo, e.adsCertSigner, bidReqOptions, alternateBidderCodes, hookExecutor, bidAdjustmentRules)
 
@@ -708,7 +708,7 @@ func (e *exchange) getAllBids(
 			// SeatBidsPreparationStartTime is needed to calculate duration for openrtb response preparation time metric
 			//  No metric needs to be logged for requests which error out
 			if err == nil {
-				ae.MakeBidsTimeInfo = reqInfo.MakeBidsTimeInfo
+				ae.MakeBidsTimeInfo = bidReqOptions.makeBidsTimeInfo
 			}
 			// Timing statistics
 			e.me.RecordAdapterTime(bidderRequest.BidderLabels, elapsed)

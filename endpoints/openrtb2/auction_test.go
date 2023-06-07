@@ -21,7 +21,6 @@ import (
 	"github.com/prebid/openrtb/v19/native1"
 	nativeRequests "github.com/prebid/openrtb/v19/native1/request"
 	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
@@ -5560,7 +5559,7 @@ func (e mockStageExecutor) GetOutcomes() []hookexecution.StageOutcome {
 }
 
 func TestRecordResponsePreparationMetrics(t *testing.T) {
-	mbi := map[openrtb_ext.BidderName]adapters.MakeBidsTimeInfo{
+	mbi := map[openrtb_ext.BidderName]exchange.MakeBidsTimeInfo{
 		openrtb_ext.BidderAppnexus: {Durations: []time.Duration{10, 15}, AfterMakeBidsStartTime: time.Now()},
 	}
 	mockMetricEngine := &metrics.MetricsEngineMock{}
