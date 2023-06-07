@@ -73,7 +73,7 @@ type bidRequestOptions struct {
 
 type MakeBidsTimeInfo struct {
 	AfterMakeBidsStartTime time.Time
-	Durations              []time.Duration
+	TotalDuration          time.Duration
 }
 
 const ImpIdReqBody = "Stored bid response for impression id: "
@@ -380,7 +380,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 					errs = append(errs, err)
 				}
 			}
-			bidRequestOptions.makeBidsTimeInfo.Durations = append(bidRequestOptions.makeBidsTimeInfo.Durations, time.Since(startTime))
+			bidRequestOptions.makeBidsTimeInfo.TotalDuration += time.Since(startTime)
 		} else {
 			errs = append(errs, httpInfo.err)
 		}
