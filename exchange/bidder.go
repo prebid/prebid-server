@@ -69,6 +69,7 @@ type bidRequestOptions struct {
 	bidAdjustments         map[string]float64
 	makeBidsTimeInfo       MakeBidsTimeInfo
 	bidderRequestStartTime time.Time
+	tmaxAdjustments        *config.TmaxAdjustments
 }
 
 type MakeBidsTimeInfo struct {
