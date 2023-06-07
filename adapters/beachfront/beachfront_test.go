@@ -22,6 +22,19 @@ func TestJsonSamples(t *testing.T) {
 	adapterstest.RunJSONBidderTest(t, "beachfronttest", bidder)
 }
 
+func TestSingleJson(t *testing.T) {
+	bidder, buildErr := Builder(openrtb_ext.BidderBeachfront, config.Adapter{
+		Endpoint:         `https://qa.beachrtb.com/prebid_display`,
+		ExtraAdapterInfo: `{"video_endpoint":"https://qa.beachrtb.com/bid.json?exchange_id"}`,
+	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	adapterstest.RunSingleJSONBidderTest(t, bidder, "beachfronttest/supplemental/two-four-combo.json", true)
+}
+
 func TestExtraInfoDefaultWhenEmpty(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderBeachfront, config.Adapter{
 		Endpoint:         `https://qa.beachrtb.com/prebid_display`,
