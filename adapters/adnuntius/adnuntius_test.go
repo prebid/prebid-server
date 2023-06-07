@@ -27,6 +27,18 @@ func TestJsonSamples(t *testing.T) {
 	adapterstest.RunJSONBidderTest(t, "adnuntiustest", bidder)
 }
 
+func TestSingleJsonFile(t *testing.T) {
+	bidder, buildErr := Builder(openrtb_ext.BidderAdnuntius, config.Adapter{Endpoint: "http://whatever.url", ExtraAdapterInfo: "http://gdpr.url"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+	assertTzo(t, bidder)
+	AssignDefaultValues(bidder)
+
+	adapterstest.RunSingleJSONBidderTest(t, bidder, "adnuntiustest/supplemental/check-order-multi-imp.json", true)
+}
+
 func assertTzo(t *testing.T, bidder adapters.Bidder) {
 	bidderAdnuntius, _ := bidder.(*adapter)
 	assert.NotNil(t, bidderAdnuntius.time)
