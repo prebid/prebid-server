@@ -3,8 +3,8 @@ package usersync
 import (
 	"encoding/json"
 	"errors"
-	"math"
 	"net/http"
+	"sort"
 	"time"
 
 	"github.com/prebid/prebid-server/config"
@@ -60,15 +60,17 @@ func ReadCookie(r *http.Request, decoder Decoder, host *config.HostCookie) *Cook
 // PrepareCookieForWrite ejects UIDs as long as the cookie is too full
 func (cookie *Cookie) PrepareCookieForWrite(cfg *config.HostCookie, ttl time.Duration, encoder Encoder) string {
 	encodedCookie := encoder.Encode(cookie)
-
 	isCookieTooBig := len(encodedCookie) > cfg.MaxCookieSizeBytes && cfg.MaxCookieSizeBytes > 0
+	uuidKeys := sortUIDs(cookie.uids, isCookieTooBig)
 
+	i := 0
 	for isCookieTooBig && len(cookie.uids) > 0 {
-		uidToDelete := getOldestUID(cookie)
+		uidToDelete := uuidKeys[i]
 		delete(cookie.uids, uidToDelete)
 
 		encodedCookie = encoder.Encode(cookie)
 		isCookieTooBig = len(encodedCookie) > cfg.MaxCookieSizeBytes && cfg.MaxCookieSizeBytes > 0
+		i++
 	}
 	return encodedCookie
 }
@@ -115,21 +117,24 @@ func (cookie *Cookie) Sync(key string, uid string) error {
 	return nil
 }
 
-// getOldestUID grabs the oldest UID from the cookie, so that it can be ejected.
-// this will be replaced with more complex ejection framework in a future PR
-func getOldestUID(cookie *Cookie) string {
-	oldestElem := ""
-	var oldestDate int64 = math.MaxInt64
-	for key, value := range cookie.uids {
-		timeUntilExpiration := time.Until(value.Expires)
-		if timeUntilExpiration < time.Duration(oldestDate) {
-			oldestElem = key
-			oldestDate = int64(timeUntilExpiration)
+// Sort UIDs is used to get a list of uids sorted from oldest to newest
+// This list is used to eject oldest uids from the cookie
+// This will be incorporated with a more complex ejection framework in a future PR
+func sortUIDs(uids map[string]UIDEntry, isCookieTooBig bool) []string {
+	if isCookieTooBig && len(uids) > 0 {
+		uuidKeys := make([]string, 0, len(uids))
+		for key := range uids {
+			uuidKeys = append(uuidKeys, key)
 		}
+		sort.SliceStable(uuidKeys, func(i, j int) bool {
+			return uids[uuidKeys[i]].Expires.Before(uids[uuidKeys[j]].Expires)
+		})
+		return uuidKeys
 	}
-	return oldestElem
+	return nil
 }
 
+// SyncHostCookie syncs the request cookie with the host cookie
 func SyncHostCookie(r *http.Request, requestCookie *Cookie, host *config.HostCookie) {
 	if uid, _, _ := requestCookie.GetUID(host.Family); uid == "" && host.CookieName != "" {
 		if hostCookie, err := r.Cookie(host.CookieName); err == nil {
@@ -260,7 +265,7 @@ func (cookie *Cookie) UnmarshalJSON(b []byte) error {
 		cookie.uids = make(map[string]UIDEntry)
 	}
 
-	// Audience Network / Facebook Handling
+	// Audience Network Handling
 	if id, ok := cookie.uids[string(openrtb_ext.BidderAudienceNetwork)]; ok && id.UID == "0" {
 		delete(cookie.uids, string(openrtb_ext.BidderAudienceNetwork))
 	}

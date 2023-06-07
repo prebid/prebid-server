@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDecoder(t *testing.T) {
+func TestEncoderDecoder(t *testing.T) {
 	encoder := EncoderV1{}
 	decoder := DecodeV1{}
 
@@ -21,7 +21,7 @@ func TestDecoder(t *testing.T) {
 		expectedCookie  *Cookie
 	}{
 		{
-			name: "Basic Decoder",
+			name: "simple-cookie",
 			givenCookie: &Cookie{
 				uids: map[string]UIDEntry{
 					"adnxs": {
@@ -37,6 +37,22 @@ func TestDecoder(t *testing.T) {
 						UID: "UID",
 					},
 				},
+				optOut: false,
+			},
+		},
+		{
+			name:        "empty-cookie",
+			givenCookie: &Cookie{},
+			expectedCookie: &Cookie{
+				uids:   map[string]UIDEntry{},
+				optOut: false,
+			},
+		},
+		{
+			name:        "nil-cookie",
+			givenCookie: nil,
+			expectedCookie: &Cookie{
+				uids:   map[string]UIDEntry{},
 				optOut: false,
 			},
 		},
