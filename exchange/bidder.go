@@ -68,6 +68,7 @@ type bidRequestOptions struct {
 	addCallSignHeader      bool
 	bidAdjustments         map[string]float64
 	bidderRequestStartTime time.Time
+	tmaxAdjustments        *config.TmaxAdjustments
 }
 
 const ImpIdReqBody = "Stored bid response for impression id: "
