@@ -214,6 +214,7 @@ func TestGetDisabledBiddersErrorMessages(t *testing.T) {
 				"andbeyondmedia": `Bidder "andbeyondmedia" is no longer available in Prebid Server. If you're looking to use the AndBeyond.Media SSP adapter, please rename it to "beyondmedia" in your configuration.`,
 				"oftmedia":       `Bidder "oftmedia" is no longer available in Prebid Server. Please update your configuration.`,
 				"groupm":         `Bidder "groupm" is no longer available in Prebid Server. Please update your configuration.`,
+				"verizonmedia":   `Bidder "verizonmedia" is no longer available in Prebid Server. Please update your configuration.`,
 			},
 		},
 		{
@@ -227,6 +228,7 @@ func TestGetDisabledBiddersErrorMessages(t *testing.T) {
 				"andbeyondmedia": `Bidder "andbeyondmedia" is no longer available in Prebid Server. If you're looking to use the AndBeyond.Media SSP adapter, please rename it to "beyondmedia" in your configuration.`,
 				"oftmedia":       `Bidder "oftmedia" is no longer available in Prebid Server. Please update your configuration.`,
 				"groupm":         `Bidder "groupm" is no longer available in Prebid Server. Please update your configuration.`,
+				"verizonmedia":   `Bidder "verizonmedia" is no longer available in Prebid Server. Please update your configuration.`,
 			},
 		},
 		{
@@ -241,6 +243,7 @@ func TestGetDisabledBiddersErrorMessages(t *testing.T) {
 				"andbeyondmedia": `Bidder "andbeyondmedia" is no longer available in Prebid Server. If you're looking to use the AndBeyond.Media SSP adapter, please rename it to "beyondmedia" in your configuration.`,
 				"oftmedia":       `Bidder "oftmedia" is no longer available in Prebid Server. Please update your configuration.`,
 				"groupm":         `Bidder "groupm" is no longer available in Prebid Server. Please update your configuration.`,
+				"verizonmedia":   `Bidder "verizonmedia" is no longer available in Prebid Server. Please update your configuration.`,
 			},
 		},
 		{
@@ -255,6 +258,7 @@ func TestGetDisabledBiddersErrorMessages(t *testing.T) {
 				"andbeyondmedia": `Bidder "andbeyondmedia" is no longer available in Prebid Server. If you're looking to use the AndBeyond.Media SSP adapter, please rename it to "beyondmedia" in your configuration.`,
 				"oftmedia":       `Bidder "oftmedia" is no longer available in Prebid Server. Please update your configuration.`,
 				"groupm":         `Bidder "groupm" is no longer available in Prebid Server. Please update your configuration.`,
+				"verizonmedia":   `Bidder "verizonmedia" is no longer available in Prebid Server. Please update your configuration.`,
 			},
 		},
 	}
