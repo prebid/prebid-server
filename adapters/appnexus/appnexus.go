@@ -125,7 +125,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		isVIDEO = 1
 	}
 
-	var reqExt appnexusReqExt
 	reqExt, err := a.addRequestLevelExt(request.Ext, isAMP, isVIDEO)
 	if err != nil {
 		return nil, append(errs, err)
