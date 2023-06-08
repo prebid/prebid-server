@@ -69,16 +69,8 @@ func (e Enforcement) getGeoScrubStrategy() ScrubStrategyGeo {
 }
 
 func (e Enforcement) getUserScrubStrategy() ScrubStrategyUser {
-	if e.COPPA {
+	if e.COPPA || e.CCPA || e.LMT || e.GDPRID {
 		return ScrubStrategyUserIDAndDemographic
-	}
-
-	if e.CCPA || e.LMT {
-		return ScrubStrategyUserID
-	}
-
-	if e.GDPRID {
-		return ScrubStrategyUserID
 	}
 
 	return ScrubStrategyUserNone

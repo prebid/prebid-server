@@ -1,4 +1,4 @@
-package yahoossp
+package yahooAdvertising
 
 import (
 	"testing"
@@ -10,8 +10,8 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-func TestYahooSSPBidderEndpointConfig(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderYahooSSP, config.Adapter{
+func TestYahooAdvertisingBidderEndpointConfig(t *testing.T) {
+	bidder, buildErr := Builder(openrtb_ext.BidderYahooAdvertising, config.Adapter{
 		Endpoint: "http://localhost/bid",
 	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
@@ -19,17 +19,17 @@ func TestYahooSSPBidderEndpointConfig(t *testing.T) {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	bidderYahooSSP := bidder.(*adapter)
+	bidderYahooAdvertising := bidder.(*adapter)
 
-	assert.Equal(t, "http://localhost/bid", bidderYahooSSP.URI)
+	assert.Equal(t, "http://localhost/bid", bidderYahooAdvertising.URI)
 }
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderYahooSSP, config.Adapter{}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+	bidder, buildErr := Builder(openrtb_ext.BidderYahooAdvertising, config.Adapter{}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	adapterstest.RunJSONBidderTest(t, "yahoossptest", bidder)
+	adapterstest.RunJSONBidderTest(t, "yahooAdvertisingtest", bidder)
 }

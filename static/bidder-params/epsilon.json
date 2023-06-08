@@ -1,35 +1,35 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "title": "Epsilon (formerly Conversant) Adapter Params",
-  "description": "A schema which validates params accepted by the Epsilon (Conversant) adapter.",
+  "title": "Epsilon Adapter Params",
+  "description": "A schema which validates params accepted by the Epsilon adapter.",
   "type": "object",
   "properties": {
     "site_id": {
       "type": "string",
-      "description": "An Epsilon (Conversant) specific ID which identifies the site."
+      "description": "An Epsilon specific ID which identifies the site."
     },
-   	"secure": {
-   	  "type": "integer",
-   	  "description": "Override http/https context on ad markup."
-   	},
+    "secure": {
+      "type": "integer",
+      "description": "Override http/https context on ad markup."
+    },
     "bidfloor" : {
       "type": "number",
       "description": "Minimum bid price that will be considered."
-   	},
-   	"tag_id": {
+    },
+    "tag_id": {
       "type": "string",
       "description": "Identifies specific ad placement."
     },
-   	"position": {
+    "position": {
       "type": "integer",
       "description": "Ad position on screen."
-   	},
-   	"mimes": {
-   	  "type": "array",
-   	  "description": "Array of content MIME types.  For videos only.",
-   	  "items": {
-   	     "type": "string"
-   	  }
+    },
+    "mimes": {
+      "type": "array",
+      "description": "Array of content MIME types.  For videos only.",
+      "items": {
+        "type": "string"
+      }
     },
     "maxduration": {
       "type": "integer",
