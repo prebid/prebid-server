@@ -70,24 +70,6 @@ func RunJSONBidderTest(t *testing.T, rootDir string, bidder adapters.Bidder) {
 			return err
 		}
 
-		//base := filepath.Base(filepath.Dir(path))
-		//if _, ok := supportedDirs[base]; !ok {
-		//	return nil
-		//}
-
-		//allowErrors := base != "exemplary" && base != "video"
-		//if !info.IsDir() && filepath.Ext(info.Name()) == jsonFileExtension {
-		//	specData, err := loadFile(path)
-		//	if err != nil {
-		//		t.Fatalf("Failed to load contents of file %s: %v", path, err)
-		//	}
-
-		//	if !allowErrors && specData.expectsErrors() {
-		//		t.Fatalf("Exemplary spec %s must not expect errors.", path)
-		//	}
-
-		//	runSpec(t, path, specData, bidder, base == "amp", base == "videosupplemental" || base == "video")
-		//}
 		isJsonFile := !info.IsDir() && filepath.Ext(info.Name()) == jsonFileExtension
 		RunSingleJSONBidderTest(t, bidder, path, isJsonFile)
 		return nil
