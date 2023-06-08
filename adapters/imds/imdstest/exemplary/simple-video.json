@@ -31,7 +31,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://prebid.technoratimedia.com/openrtb/bids/prebid",
+        "uri": "http://pbs.technoratimedia.com/openrtb/bids/prebid?src=pbs-go%2F1.0.0&adapter=imds",
         "body": {
           "id": "1",
           "site": {

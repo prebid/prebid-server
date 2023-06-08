@@ -270,57 +270,6 @@ func TestScrubUser(t *testing.T) {
 			scrubGeo:  ScrubStrategyGeoNone,
 		},
 		{
-			description: "User ID & Geo Full",
-			expected: &openrtb2.User{
-				ID:       "",
-				BuyerUID: "",
-				Yob:      42,
-				Gender:   "anyGender",
-				Ext:      json.RawMessage(`{}`),
-				Geo:      &openrtb2.Geo{},
-			},
-			scrubUser: ScrubStrategyUserID,
-			scrubGeo:  ScrubStrategyGeoFull,
-		},
-		{
-			description: "User ID & Geo Reduced",
-			expected: &openrtb2.User{
-				ID:       "",
-				BuyerUID: "",
-				Yob:      42,
-				Gender:   "anyGender",
-				Ext:      json.RawMessage(`{}`),
-				Geo: &openrtb2.Geo{
-					Lat:   123.46,
-					Lon:   678.89,
-					Metro: "some metro",
-					City:  "some city",
-					ZIP:   "some zip",
-				},
-			},
-			scrubUser: ScrubStrategyUserID,
-			scrubGeo:  ScrubStrategyGeoReducedPrecision,
-		},
-		{
-			description: "User ID & Geo None",
-			expected: &openrtb2.User{
-				ID:       "",
-				BuyerUID: "",
-				Yob:      42,
-				Gender:   "anyGender",
-				Ext:      json.RawMessage(`{}`),
-				Geo: &openrtb2.Geo{
-					Lat:   123.456,
-					Lon:   678.89,
-					Metro: "some metro",
-					City:  "some city",
-					ZIP:   "some zip",
-				},
-			},
-			scrubUser: ScrubStrategyUserID,
-			scrubGeo:  ScrubStrategyGeoNone,
-		},
-		{
 			description: "User None & Geo Full",
 			expected: &openrtb2.User{
 				ID:       "anyID",

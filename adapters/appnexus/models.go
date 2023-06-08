@@ -12,6 +12,8 @@ type appnexusImpExtAppnexus struct {
 	TrafficSourceCode string          `json:"traffic_source_code,omitempty"`
 	UsePmtRule        *bool           `json:"use_pmt_rule,omitempty"`
 	PrivateSizes      json.RawMessage `json:"private_sizes,omitempty"`
+	ExtInvCode        string          `json:"ext_inv_code,omitempty"`
+	ExternalImpId     string          `json:"external_imp_id,omitempty"`
 }
 
 type appnexusImpExt struct {
