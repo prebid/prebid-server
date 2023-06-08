@@ -111,6 +111,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/marsmedia"
 	"github.com/prebid/prebid-server/adapters/medianet"
 	"github.com/prebid/prebid-server/adapters/mgid"
+	"github.com/prebid/prebid-server/adapters/mgidX"
 	"github.com/prebid/prebid-server/adapters/mobfoxpb"
 	"github.com/prebid/prebid-server/adapters/mobilefuse"
 	"github.com/prebid/prebid-server/adapters/motorik"
@@ -299,6 +300,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderMediafuse:         appnexus.Builder,
 		openrtb_ext.BidderMedianet:          medianet.Builder,
 		openrtb_ext.BidderMgid:              mgid.Builder,
+		openrtb_ext.BidderMgidX:             mgidX.Builder,
 		openrtb_ext.BidderMobfoxpb:          mobfoxpb.Builder,
 		openrtb_ext.BidderMobileFuse:        mobilefuse.Builder,
 		openrtb_ext.BidderMotorik:           motorik.Builder,
