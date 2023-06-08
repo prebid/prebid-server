@@ -70,6 +70,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}
 		requestDatas = append(requestDatas, requestData)
 	}
+	// to safe double check in case the requestDatas is empty and no error is raised.
+	if len(requestDatas) == 0 && len(errs) == 0 {
+		errs = append(errs, fmt.Errorf("Empty RequestData"))
+	}
 	return requestDatas, errs
 }
 
@@ -120,8 +124,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		bidResponse.Currency = blueseaResponse.Cur
 	}
 	for _, seatBid := range blueseaResponse.SeatBid {
-		for _, bid := range seatBid.Bid {
-
+		for i, bid := range seatBid.Bid {
 			bidType, err := getMediaTypeForBid(&bid)
 
 			if err != nil {
@@ -129,7 +132,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 				continue
 			}
 			b := &adapters.TypedBid{
-				Bid:     &bid,
+				Bid:     &seatBid.Bid[i],
 				BidType: bidType,
 			}
 			bidResponse.Bids = append(bidResponse.Bids, b)
