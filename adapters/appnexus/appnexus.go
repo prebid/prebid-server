@@ -83,6 +83,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 		memberId := appnexusExt.Member
 		if memberId != "" {
+			// The Appnexus API requires a Member ID in the URL. This means the request may fail if
+			// different impressions have different member IDs.
+			// Check for this condition, and log an error if it's a problem.
 			if uniqueMemberID == "" {
 				uniqueMemberID = memberId
 			} else if uniqueMemberID != memberId {
@@ -109,9 +112,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	}
 
 	requestURI := a.uri
-	// The Appnexus API requires a Member ID in the URL. This means the request may fail if
-	// different impressions have different member IDs.
-	// Check for this condition, and log an error if it's a problem.
+
 	if uniqueMemberID != "" {
 		requestURI = appendMemberId(requestURI, uniqueMemberID)
 	}
