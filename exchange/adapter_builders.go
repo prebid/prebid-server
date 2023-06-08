@@ -258,6 +258,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderEngageBDR:         engagebdr.Builder,
 		openrtb_ext.BidderEPlanning:         eplanning.Builder,
 		openrtb_ext.BidderEpom:              epom.Builder,
+		openrtb_ext.BidderEpsilon:           conversant.Builder,
 		openrtb_ext.BidderEVolution:         evolution.Builder,
 		openrtb_ext.BidderEvtech:            limelightDigital.Builder,
 		openrtb_ext.BidderFlipp:             flipp.Builder,
