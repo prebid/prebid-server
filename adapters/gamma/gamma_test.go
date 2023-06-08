@@ -18,3 +18,14 @@ func TestJsonSamples(t *testing.T) {
 
 	adapterstest.RunJSONBidderTest(t, "gammatest", bidder)
 }
+
+func TestSingleJson(t *testing.T) {
+	bidder, buildErr := Builder(openrtb_ext.BidderGamma, config.Adapter{
+		Endpoint: "https://hb.gammaplatform.com/adx/request/"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	adapterstest.RunSingleJSONBidderTest(t, bidder, "gammatest/supplemental/ignore-imp.json", true)
+}
