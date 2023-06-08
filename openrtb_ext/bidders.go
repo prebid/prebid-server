@@ -258,7 +258,6 @@ const (
 	BidderUnicorn           BidderName = "unicorn"
 	BidderUnruly            BidderName = "unruly"
 	BidderValueImpression   BidderName = "valueimpression"
-	BidderVerizonMedia      BidderName = "verizonmedia"
 	BidderVideoByte         BidderName = "videobyte"
 	BidderVideoHeroes       BidderName = "videoheroes"
 	BidderVidoomy           BidderName = "vidoomy"
@@ -267,6 +266,7 @@ const (
 	BidderVisx              BidderName = "visx"
 	BidderVrtcal            BidderName = "vrtcal"
 	BidderXeworks           BidderName = "xeworks"
+	BidderYahooAdvertising  BidderName = "yahooAdvertising"
 	BidderYahooSSP          BidderName = "yahoossp"
 	BidderYeahmobi          BidderName = "yeahmobi"
 	BidderYieldlab          BidderName = "yieldlab"
@@ -451,7 +451,6 @@ func CoreBidderNames() []BidderName {
 		BidderUnicorn,
 		BidderUnruly,
 		BidderValueImpression,
-		BidderVerizonMedia,
 		BidderVideoByte,
 		BidderVideoHeroes,
 		BidderVidoomy,
@@ -460,6 +459,7 @@ func CoreBidderNames() []BidderName {
 		BidderVisx,
 		BidderVrtcal,
 		BidderXeworks,
+		BidderYahooAdvertising,
 		BidderYahooSSP,
 		BidderYeahmobi,
 		BidderYieldlab,

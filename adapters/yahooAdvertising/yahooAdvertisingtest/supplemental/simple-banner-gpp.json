@@ -22,6 +22,10 @@
     },
     "site": {
       "id": "test-site-id"
+    },
+    "regs": {
+      "gpp": "header~1YNN",
+      "gpp_sid": [6]
     }
   },
 
@@ -68,6 +72,12 @@
           ],
           "site": {
             "id": "dcn1"
+          },
+          "regs": {
+            "ext": {
+              "gpp": "header~1YNN",
+              "gpp_sid": [6]
+            }
           }
         }
       },
@@ -77,7 +87,7 @@
           "id": "test-request-id",
           "seatbid": [
             {
-              "seat": "yahoossp",
+              "seat": "yahooAdvertising",
               "bid": [{
                 "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
                 "impid": "test-imp-id",
