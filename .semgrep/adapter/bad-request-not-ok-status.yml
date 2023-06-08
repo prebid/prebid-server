@@ -1,0 +1,22 @@
+rules:
+  - id: bad-request-not-ok-status-check
+    languages: 
+      - go
+    message: >
+      `CheckResponseStatusCodeForErrors()` from the adapters package can be used to check for `http.StatusBadRequest` status code or to verify if the status code is not `http.StatusOk`
+      ```
+        if err := adapters.CheckResponseStatusCodeForErrors(response); err != nil {
+          return nil, []error{err}
+        }
+      ```
+    severity: WARNING
+    pattern-either:
+      - pattern: >
+          if $RESPONSE_STATUS_CODE == http.StatusBadRequest {
+            ...
+          }
+      - pattern: |
+          if $RESPONSE_STATUS_CODE != http.StatusOK {
+            ...
+          }
+
