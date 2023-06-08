@@ -125,7 +125,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		isVIDEO = 1
 	}
 
-	reqExt, err := a.addRequestLevelExt(request.Ext, isAMP, isVIDEO)
+	reqExt, err := a.getBidderRequestExt(request.Ext, isAMP, isVIDEO)
 	if err != nil {
 		return nil, append(errs, err)
 	}
@@ -200,7 +200,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	return bidderResponse, errs
 }
 
-func (a *adapter) addRequestLevelExt(ext json.RawMessage, isAMP int, isVIDEO int) (appnexusReqExt, error) {
+func (a *adapter) getBidderRequestExt(ext json.RawMessage, isAMP int, isVIDEO int) (appnexusReqExt, error) {
 	var reqExt appnexusReqExt
 	if len(ext) > 0 {
 		if err := json.Unmarshal(ext, &reqExt); err != nil {
