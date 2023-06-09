@@ -1,0 +1,25 @@
+{
+  "mockBidRequest": {
+    "id": "0000000000001",
+    "imp": [
+      {
+        "id": "malconfigured-adunit",
+        "banner": {
+          "format": [{"w": 300,"h": 250}]
+        },
+        "ext": {
+          "bidder": {
+            "pubId": "string instead of int"
+          }
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "json: cannot unmarshal string into Go struct field ExtImpAdkernelAdn.pubId of type int",
+      "comparison": "literal"
+    }
+  ]
+}

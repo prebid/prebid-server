@@ -11,6 +11,10 @@ jobs:
             uses: actions/checkout@v3
             with:
                 fetch-depth: 0
+
+        -   name: dump github
+            run: |
+                echo ${{ github }}
         
         -   name: Compute commit changes
             id: compute_commit_changes
@@ -166,7 +170,7 @@ jobs:
             run: |
                 unqouted_string=$(echo ${{ steps.export_commit_changes.outputs.files }} | tr -d '"')
                 # run semgrep and export result as string
-                outputs=$(semgrep --gitlab-sast --config=./semgrep/rules/adapter/* $unqouted_string  | jq '[.vulnerabilities[] | {"file": .location.file, "start": .location.start_line, "end": .location.end_line, "message": (.message | gsub("\\n"; "\n"))}]' | jq -c | jq -R)
+                outputs=$(semgrep --gitlab-sast --config=.semgrep/adapter $unqouted_string  | jq '[.vulnerabilities[] | {"file": .location.file, "start": .location.start_line, "end": .location.end_line, "message": (.message | gsub("\\n"; "\n"))}]' | jq -c | jq -R)
                 echo "semgrep_result=${outputs}" >> "$GITHUB_OUTPUT"
 
         -   name: Add pull request comment

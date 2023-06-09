@@ -1,0 +1,59 @@
+rules:
+  - id: type-bid-assignment-check
+    languages:
+      - go
+    message: >
+      Found incorrect assignment made to `$KEY` Recommended to either create
+      copy of `$BID` and then assign it as `Bid` 
+      ```
+        for _, seatBid := range response.SeatBid {
+          for _, bid := range seatBids.Bid {
+            ...
+            seatBid := bid
+            responseBid := &adapters.TypedBid{
+              Bid: &seatBid,
+              ...
+            }
+            ...
+          }
+        }
+      ```
+      Alternatively can make use of `seatBids.Bid` loop index as shown below 
+      ```
+        for _, seatBid := range response.SeatBid {
+          for i, _ := range seatBids.Bid {
+            ...
+            responseBid := &adapters.TypedBid{
+              Bid: &seatBids.Bid[i],
+              ...
+            }
+            ...
+            ...
+          }
+        }
+      ```
+    severity: ERROR
+    patterns:
+      - pattern-either:
+          - pattern: >
+              for _, $BID := range ... {
+                ...
+                ... := &adapters.TypedBid{
+                  $KEY: &$BID,
+                  ...
+                }
+                ...
+              }
+          - pattern: >
+              for _, $BID := range ... {
+                ...
+                ... = append(...,  &adapters.TypedBid{
+                  $KEY: &$BID,
+                  ...
+                })
+                ...
+              }
+      - focus-metavariable: $KEY
+      - metavariable-regex:
+          metavariable: $KEY
+          regex: Bid

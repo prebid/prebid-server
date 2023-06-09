@@ -1,0 +1,16 @@
+rules:
+  - id: no-content-status-check
+    languages: 
+      - go
+    message: >
+      `IsResponseStatusCodeNoContent()` from the adapters package can be used to check for `http.StatusNoContent` status code
+      ```
+        if err := adapters.IsResponseStatusCodeNoContent(response); err != nil {
+          return nil, nil
+        }
+      ```
+    severity: WARNING
+    pattern: >
+      if $RESPONSE_STATUS_CODE == http.StatusNoContent {
+        ...
+      }

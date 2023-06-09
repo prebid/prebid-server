@@ -1,0 +1,36 @@
+{
+  "mockBidRequest": {
+    "id": "0000000000001",
+    "imp": [
+      {
+        "id": "adunit-1",
+        "banner": {
+          "format": []
+        },
+        "ext": {
+          "bidder": {
+            "pubId": 101,
+            "host": "tag.test.com"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "http://example.com/test.html",
+      "publisher": {
+        "id": "1"
+      }
+    },
+    "user": {
+      "buyeruid": "A-38327932832"
+    }
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Expected at least one banner.format entry or explicit w/h",
+      "comparison": "literal"
+    }
+  ]
+  
+}

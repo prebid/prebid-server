@@ -1,0 +1,23 @@
+{
+  "mockBidRequest": {
+    "id": "0000000000001",
+    "imp": [
+      {
+        "id": "malconfigured-adunit",
+        "banner": {
+          "format": [{"w": 300,"h": 250}]
+        },
+        "ext": {
+          "bidder": {}
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Invalid pubId value. Ignoring imp id=malconfigured-adunit",
+      "comparison": "literal"
+    }
+  ]
+}
