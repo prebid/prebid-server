@@ -133,6 +133,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/revcontent"
 	"github.com/prebid/prebid-server/adapters/rhythmone"
 	"github.com/prebid/prebid-server/adapters/richaudience"
+	"github.com/prebid/prebid-server/adapters/rise"
 	"github.com/prebid/prebid-server/adapters/rtbhouse"
 	"github.com/prebid/prebid-server/adapters/rubicon"
 	salunamedia "github.com/prebid/prebid-server/adapters/sa_lunamedia"
@@ -324,6 +325,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderRevcontent:        revcontent.Builder,
 		openrtb_ext.BidderRhythmone:         rhythmone.Builder,
 		openrtb_ext.BidderRichaudience:      richaudience.Builder,
+		openrtb_ext.BidderRise:              rise.Builder,
 		openrtb_ext.BidderRTBHouse:          rtbhouse.Builder,
 		openrtb_ext.BidderRubicon:           rubicon.Builder,
 		openrtb_ext.BidderSeedingAlliance:   seedingAlliance.Builder,
