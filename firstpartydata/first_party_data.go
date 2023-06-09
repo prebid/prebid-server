@@ -10,6 +10,7 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/ortb"
+	"github.com/prebid/prebid-server/util/ptrutil"
 )
 
 const (
@@ -167,9 +168,11 @@ func resolveUser(fpdConfig *openrtb_ext.ORTB2, bidRequestUser *openrtb2.User, gl
 		return nil, nil
 	}
 
-	newUser := openrtb2.User{}
+	var newUser *openrtb2.User
 	if bidRequestUser != nil {
-		newUser = *bidRequestUser
+		newUser = ptrutil.Clone(bidRequestUser)
+	} else {
+		newUser = &openrtb2.User{}
 	}
 
 	//apply global fpd
@@ -189,12 +192,12 @@ func resolveUser(fpdConfig *openrtb_ext.ORTB2, bidRequestUser *openrtb2.User, gl
 		newUser.Data = openRtbGlobalFPD[userDataKey]
 	}
 	if fpdConfigUser != nil {
-		if err := mergeUser(&newUser, fpdConfigUser); err != nil {
+		if err := mergeUser(newUser, fpdConfigUser); err != nil {
 			return nil, err
 		}
 	}
 
-	return &newUser, nil
+	return newUser, nil
 }
 
 func mergeUser(v *openrtb2.User, overrideJSON json.RawMessage) error {
@@ -241,7 +244,12 @@ func resolveSite(fpdConfig *openrtb_ext.ORTB2, bidRequestSite *openrtb2.Site, gl
 		}
 	}
 
-	newSite := *bidRequestSite
+	var newSite *openrtb2.Site
+	if bidRequestSite != nil {
+		newSite = ptrutil.Clone(bidRequestSite)
+	} else {
+		newSite = &openrtb2.Site{}
+	}
 
 	//apply global fpd
 	if len(globalFPD[siteKey]) > 0 {
@@ -267,11 +275,11 @@ func resolveSite(fpdConfig *openrtb_ext.ORTB2, bidRequestSite *openrtb2.Site, gl
 		newSite.Content.Data = openRtbGlobalFPD[siteContentDataKey]
 	}
 	if fpdConfigSite != nil {
-		if err := mergeSite(&newSite, fpdConfigSite, bidderName); err != nil {
+		if err := mergeSite(newSite, fpdConfigSite, bidderName); err != nil {
 			return nil, err
 		}
 	}
-	return &newSite, nil
+	return newSite, nil
 }
 
 func mergeSite(v *openrtb2.Site, overrideJSON json.RawMessage, bidderName string) error {
@@ -350,7 +358,12 @@ func resolveApp(fpdConfig *openrtb_ext.ORTB2, bidRequestApp *openrtb2.App, globa
 		}
 	}
 
-	newApp := ortb.CloneApp(bidRequestApp)
+	var newApp *openrtb2.App
+	if bidRequestApp != nil {
+		newApp = ptrutil.Clone(bidRequestApp)
+	} else {
+		newApp = &openrtb2.App{}
+	}
 
 	//apply global fpd if exists
 	if len(globalFPD[appKey]) > 0 {
