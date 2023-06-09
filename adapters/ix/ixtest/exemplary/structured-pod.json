@@ -65,14 +65,6 @@
             "expectedRequest": {
                 "uri": "http://host/endpoint",
                 "body": {
-                  "ext": {
-                    "features": {
-                      "pbs_handle_multi_imp_on_single_req": {
-                        "activated": true
-                      }
-                    },
-                    "prebid": null
-                  },
                   "id": "test-request-id",
                     "imp": [
                         {

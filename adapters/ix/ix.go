@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"sort"
 	"strings"
-	"sync"
-	"time"
 
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
@@ -20,29 +18,15 @@ import (
 	"github.com/prebid/openrtb/v19/openrtb2"
 )
 
-const (
-	ftHandleMultiImpOnSingleRequest = "pbs_handle_multi_imp_on_single_req"
-)
-
-const expireFtTimeSeconds = 3600 //1 hour
-
 type IxAdapter struct {
-	URI                    string
-	maxRequests            int
-	clientFeatureStatusMap map[string]FeatureTimestamp
-	featuresToRequest      []string
-	mutex                  sync.Mutex
+	URI         string
+	maxRequests int
 }
 
 type ExtRequest struct {
-	Prebid   *openrtb_ext.ExtRequestPrebid `json:"prebid"`
-	SChain   *openrtb2.SupplyChain         `json:"schain,omitempty"`
-	IxDiag   *IxDiag                       `json:"ixdiag,omitempty"`
-	Features map[string]Activated          `json:"features,omitempty"`
-}
-
-type Activated struct {
-	Activated bool `json:"activated"`
+	Prebid *openrtb_ext.ExtRequestPrebid `json:"prebid"`
+	SChain *openrtb2.SupplyChain         `json:"schain,omitempty"`
+	IxDiag *IxDiag                       `json:"ixdiag,omitempty"`
 }
 
 type IxDiag struct {
@@ -50,83 +34,8 @@ type IxDiag struct {
 	PbjsV string `json:"pbjsv,omitempty"`
 }
 
-type FeatureTimestamp struct {
-	Timestamp int64
-	Activated bool
-}
-
 func (a *IxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	if isFeatureToggleActive(a, ftHandleMultiImpOnSingleRequest) == true {
-		return handleMultiImpInSingleRequest(request, a)
-	} else {
-		return handleMultiImpByFlattening(request, a)
-	}
-}
-
-func handleMultiImpByFlattening(request *openrtb2.BidRequest, a *IxAdapter) ([]*adapters.RequestData, []error) {
-	nImp := len(request.Imp)
-	if nImp > a.maxRequests {
-		request.Imp = request.Imp[:a.maxRequests]
-		nImp = a.maxRequests
-	}
-	// Multi-size banner imps are split into single-size requests.
-	// The first size imp requests are added to the first slice.
-	// Additional size requests are added to the second slice and are merged with the first at the end.
-	// Preallocate the max possible size to avoid reallocating arrays.
-	requests := make([]*adapters.RequestData, 0, a.maxRequests)
-	multiSizeRequests := make([]*adapters.RequestData, 0, a.maxRequests-nImp)
-	var errs []error
-
-	if err := BuildIxDiag(request); err != nil {
-		errs = append(errs, err)
-	}
-
-	headers := http.Header{
-		"Content-Type": {"application/json;charset=utf-8"},
-		"Accept":       {"application/json"}}
-	imps := request.Imp
-	for iImp := range imps {
-		request.Imp = imps[iImp : iImp+1]
-		if request.Site != nil {
-			if err := setSitePublisherId(request, iImp); err != nil {
-				errs = append(errs, err)
-				continue
-			}
-		}
-		if err := moveSid(&request.Imp[0]); err != nil {
-			errs = append(errs, err)
-		}
-		requestFeatureToggles(a, request)
-		if request.Imp[0].Banner != nil {
-			banner := *request.Imp[0].Banner
-			request.Imp[0].Banner = &banner
-			formats := getBannerFormats(&banner)
-			for iFmt := range formats {
-				banner.Format = formats[iFmt : iFmt+1]
-				banner.W = openrtb2.Int64Ptr(banner.Format[0].W)
-				banner.H = openrtb2.Int64Ptr(banner.Format[0].H)
-				if requestData, err := createRequestData(a, request, &headers); err == nil {
-					if iFmt == 0 {
-						requests = append(requests, requestData)
-					} else {
-						multiSizeRequests = append(multiSizeRequests, requestData)
-					}
-				} else {
-					errs = append(errs, err)
-				}
-				if len(multiSizeRequests) == cap(multiSizeRequests) {
-					break
-				}
-			}
-		} else if requestData, err := createRequestData(a, request, &headers); err == nil {
-			requests = append(requests, requestData)
-		} else {
-			errs = append(errs, err)
-		}
-	}
-	request.Imp = imps
-
-	return append(requests, multiSizeRequests...), errs
+	return handleMultiImpInSingleRequest(request, a)
 }
 
 func handleMultiImpInSingleRequest(request *openrtb2.BidRequest, a *IxAdapter) ([]*adapters.RequestData, []error) {
@@ -134,7 +43,6 @@ func handleMultiImpInSingleRequest(request *openrtb2.BidRequest, a *IxAdapter) (
 	// The first size imp requests are added to the first slice.
 	// Additional size requests are added to the second slice and are merged with the first at the end.
 	requests := make([]*adapters.RequestData, 0, a.maxRequests)
-	multiSizeRequests := make([]*adapters.RequestData, 0, a.maxRequests-1)
 	errs := make([]error, 0)
 
 	if err := BuildIxDiag(request); err != nil {
@@ -150,7 +58,8 @@ func handleMultiImpInSingleRequest(request *openrtb2.BidRequest, a *IxAdapter) (
 	additionalMultiSizeImps := make([]openrtb2.Imp, 0)
 	requestCopy := *request
 	for _, imp := range requestCopy.Imp {
-		if err := parseSiteId(&imp, &siteIds); err != nil {
+		var err error
+		if siteIds, err = parseSiteId(&imp, siteIds); err != nil {
 			errs = append(errs, err)
 			continue
 		}
@@ -197,6 +106,9 @@ func handleMultiImpInSingleRequest(request *openrtb2.BidRequest, a *IxAdapter) (
 		site := *requestCopy.Site
 		if site.Publisher == nil {
 			site.Publisher = &openrtb2.Publisher{}
+		} else {
+			publisher := *site.Publisher
+			site.Publisher = &publisher
 		}
 		if len(siteIds) == 1 {
 			site.Publisher.ID = siteIds[0]
@@ -205,8 +117,6 @@ func handleMultiImpInSingleRequest(request *openrtb2.BidRequest, a *IxAdapter) (
 	}
 
 	requestCopy.Imp = originalImps
-
-	requestFeatureToggles(a, &requestCopy)
 
 	if len(additionalMultiSizeImps) > 0 {
 		requestCopy.Imp = append(requestCopy.Imp, additionalMultiSizeImps...)
@@ -220,24 +130,24 @@ func handleMultiImpInSingleRequest(request *openrtb2.BidRequest, a *IxAdapter) (
 		}
 	}
 
-	return append(requests, multiSizeRequests...), errs
+	return requests, errs
 }
 
-func parseSiteId(imp *openrtb2.Imp, siteIds *[]string) error {
+func parseSiteId(imp *openrtb2.Imp, siteIds []string) ([]string, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return err
+		return nil, err
 	}
 
 	var ixExt openrtb_ext.ExtImpIx
 	if err := json.Unmarshal(bidderExt.Bidder, &ixExt); err != nil {
-		return err
+		return nil, err
 	}
 
 	if ixExt.SiteId != "" {
-		*siteIds = append(*siteIds, ixExt.SiteId)
+		siteIds = append(siteIds, ixExt.SiteId)
 	}
-	return nil
+	return siteIds, nil
 }
 
 func setSitePublisherId(request *openrtb2.BidRequest, iImp int) error {
@@ -301,8 +211,6 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 			Message: fmt.Sprintf("JSON parsing error: %v", err),
 		}}
 	}
-
-	setFeatureToggles(a, &bidResponse.Ext)
 
 	// Store media type per impression in a map for later use to set in bid.ext.prebid.type
 	// Won't work for multiple bid case with a multi-format ad unit. We expect to get type from exchange on such case.
@@ -415,10 +323,8 @@ func getMediaTypeForBid(bid openrtb2.Bid, impMediaTypeReq map[string]openrtb_ext
 // Builder builds a new instance of the Ix adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &IxAdapter{
-		URI:                    config.Endpoint,
-		maxRequests:            20,
-		clientFeatureStatusMap: make(map[string]FeatureTimestamp),
-		featuresToRequest:      []string{ftHandleMultiImpOnSingleRequest},
+		URI:         config.Endpoint,
+		maxRequests: 20,
 	}
 	return bidder, nil
 }
@@ -527,73 +433,5 @@ func moveSid(imp *openrtb2.Imp) error {
 		}
 		imp.Ext = ext
 	}
-	return nil
-}
-
-func setFeatureToggles(a *IxAdapter, ext *json.RawMessage) {
-	if ext == nil {
-		return
-	}
-
-	extRequest := &ExtRequest{}
-	err := json.Unmarshal(*ext, &extRequest)
-
-	if err != nil {
-		return
-	}
-
-	// Acquire a lock before accessing/modifying the map
-	a.mutex.Lock()
-	defer a.mutex.Unlock()
-
-	for k, v := range extRequest.Features {
-		a.clientFeatureStatusMap[k] = FeatureTimestamp{
-			Activated: v.Activated,
-			Timestamp: time.Now().Unix(),
-		}
-	}
-}
-
-func isFeatureToggleActive(a *IxAdapter, ft string) bool {
-	if value, ok := a.clientFeatureStatusMap[ft]; ok {
-		timeNow := time.Now().Unix()
-		if timeNow-value.Timestamp > expireFtTimeSeconds {
-			return false
-		}
-		return value.Activated
-	}
-	return false
-}
-
-func requestFeatureToggles(a *IxAdapter, request *openrtb2.BidRequest) error {
-	if len(a.featuresToRequest) == 0 {
-		return nil
-	}
-
-	extRequest := &ExtRequest{}
-	if request.Ext != nil {
-		if err := json.Unmarshal(request.Ext, &extRequest); err != nil {
-			return err
-		}
-	}
-
-	for _, ft := range a.featuresToRequest {
-		if extRequest.Features == nil {
-			extRequest.Features = make(map[string]Activated)
-		}
-
-		status := isFeatureToggleActive(a, ft)
-
-		extRequest.Features[ft] = Activated{
-			Activated: status,
-		}
-
-	}
-
-	extRequestJson, err := json.Marshal(extRequest)
-	if err != nil {
-		return err
-	}
-	request.Ext = extRequestJson
 	return nil
 }
