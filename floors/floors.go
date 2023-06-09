@@ -278,7 +278,7 @@ func mergeFloors(reqFloors *openrtb_ext.PriceFloorRules, fetchFloors *openrtb_ex
 	if mergedFloors.Enabled == nil {
 		mergedFloors.Enabled = new(bool)
 	}
-	*mergedFloors.Enabled = mergedFloors.GetEnabled() && reqFloors.GetEnabled()
+	*mergedFloors.Enabled = fetchFloors.GetEnabled() && reqFloors.GetEnabled()
 
 	if reqFloors == nil {
 		return mergedFloors

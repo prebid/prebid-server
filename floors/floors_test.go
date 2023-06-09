@@ -1497,6 +1497,73 @@ func TestMergeFloors(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Fetched Floors has no enable atrribute are present and request Floors has URL",
+			args: args{
+				reqFloors: &openrtb_ext.PriceFloorRules{
+					Enabled: getTrue(),
+					Enforcement: &openrtb_ext.PriceFloorEnforcement{
+						EnforceRate: 50,
+						EnforcePBS:  getFalse(),
+					},
+					FloorMin:    5,
+					FloorMinCur: "INR",
+					Location: &openrtb_ext.PriceFloorEndpoint{
+						URL: "https://test.com/floors",
+					},
+				},
+				fetchFloors: &openrtb_ext.PriceFloorRules{
+					Data: &openrtb_ext.PriceFloorData{
+						Currency: "INR",
+						SkipRate: 0,
+						ModelGroups: []openrtb_ext.PriceFloorModelGroup{
+							{
+								ModelVersion: "Version 1",
+								Currency:     "INR",
+								Values: map[string]float64{
+									"banner|300x600|www.website5.com": 20,
+									"*|*|*":                           50,
+								},
+								Schema: openrtb_ext.PriceFloorSchema{
+									Fields:    []string{"mediaType", "size", "domain"},
+									Delimiter: "|",
+								},
+							},
+						},
+					},
+				},
+			},
+			want: &openrtb_ext.PriceFloorRules{
+				Enabled: getTrue(),
+				Data: &openrtb_ext.PriceFloorData{
+					Currency: "INR",
+					SkipRate: 0,
+					ModelGroups: []openrtb_ext.PriceFloorModelGroup{
+						{
+							ModelVersion: "Version 1",
+							Currency:     "INR",
+							Values: map[string]float64{
+								"banner|300x600|www.website5.com": 20,
+								"*|*|*":                           50,
+							},
+							Schema: openrtb_ext.PriceFloorSchema{
+								Fields:    []string{"mediaType", "size", "domain"},
+								Delimiter: "|",
+							},
+						},
+					},
+				},
+				Enforcement: &openrtb_ext.PriceFloorEnforcement{
+					EnforceRate: 50,
+					EnforcePBS:  getFalse(),
+				},
+				FloorMin:    5,
+				FloorMinCur: "INR",
+				Location: &openrtb_ext.PriceFloorEndpoint{
+					URL: "https://test.com/floors",
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -829,6 +829,56 @@ func TestFetcherDataNotPresentInCache(t *testing.T) {
 	assert.Equal(t, "error", status, "Floor fetch should be error")
 }
 
+func TestFetcherEntryNotPresentInCache(t *testing.T) {
+
+	fetcherInstance := NewPriceFloorFetcher(2, 5, 5, 20)
+	defer fetcherInstance.Stop()
+
+	fetchConfig := config.AccountPriceFloors{
+		Enabled:        true,
+		UseDynamicData: true,
+		Fetch: config.AccountFloorFetch{
+			Enabled:     true,
+			URL:         "http://test.com/floor",
+			Timeout:     100,
+			MaxFileSize: 1000,
+			MaxRules:    100,
+			MaxAge:      20,
+			Period:      5,
+		},
+	}
+
+	val, status := fetcherInstance.Fetch(fetchConfig)
+
+	assert.Equal(t, (*openrtb_ext.PriceFloorRules)(nil), val, "Floor data should be nil")
+	assert.Equal(t, openrtb_ext.FetchInprogress, status, "Floor fetch should be error")
+}
+
+func TestFetcherDynamicFetchDisable(t *testing.T) {
+
+	fetcherInstance := NewPriceFloorFetcher(2, 5, 5, 20)
+	defer fetcherInstance.Stop()
+
+	fetchConfig := config.AccountPriceFloors{
+		Enabled:        true,
+		UseDynamicData: false,
+		Fetch: config.AccountFloorFetch{
+			Enabled:     true,
+			URL:         "http://test.com/floor",
+			Timeout:     100,
+			MaxFileSize: 1000,
+			MaxRules:    100,
+			MaxAge:      20,
+			Period:      5,
+		},
+	}
+
+	val, status := fetcherInstance.Fetch(fetchConfig)
+
+	assert.Equal(t, (*openrtb_ext.PriceFloorRules)(nil), val, "Floor data should be nil")
+	assert.Equal(t, openrtb_ext.FetchNone, status, "Floor fetch should be error")
+}
+
 func TestPriceFloorFetcherWorker(t *testing.T) {
 
 	var floorData openrtb_ext.PriceFloorData
