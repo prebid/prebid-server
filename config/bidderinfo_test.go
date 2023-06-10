@@ -74,6 +74,9 @@ func TestLoadBidderInfoFromDisk(t *testing.T) {
 				Site: &PlatformInfo{
 					MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative},
 				},
+				DOOH: &PlatformInfo{
+					MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo},
+				},
 			},
 			Syncer: &Syncer{
 				Key: "foo",
@@ -227,7 +230,7 @@ func TestBidderInfoValidationPositive(t *testing.T) {
 			Endpoint:   "http://bidderB.com/openrtb2",
 			PlatformID: "B",
 			Maintainer: &MaintainerInfo{
-				Email: "maintainer@bidderA.com",
+				Email: "maintainer@bidderB.com",
 			},
 			GVLVendorID: 2,
 			Capabilities: &CapabilitiesInfo{
@@ -244,6 +247,23 @@ func TestBidderInfoValidationPositive(t *testing.T) {
 				Redirect: &SyncerEndpoint{
 					URL:       "http://bidderB.com/usersync",
 					UserMacro: "UID",
+				},
+			},
+		},
+		"bidderC": BidderInfo{
+			Endpoint:   "http://bidderC.com/openrtb2",
+			PlatformID: "C",
+			Maintainer: &MaintainerInfo{
+				Email: "maintainer@bidderC.com",
+			},
+			GVLVendorID: 3,
+			Capabilities: &CapabilitiesInfo{
+				DOOH: &PlatformInfo{
+					MediaTypes: []openrtb_ext.BidType{
+						openrtb_ext.BidTypeVideo,
+						openrtb_ext.BidTypeNative,
+						openrtb_ext.BidTypeBanner,
+					},
 				},
 			},
 		},
@@ -407,7 +427,7 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 				},
 			},
 			[]error{
-				errors.New("at least one of capabilities.site or capabilities.app or capabilities.dooh must exist for adapter: bidderA"),
+				errors.New("at least one of capabilities.site, capabilities.app, or capabilities.dooh must exist for adapter: bidderA"),
 			},
 		},
 		{
@@ -429,6 +449,27 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 			},
 			[]error{
 				errors.New("capabilities.app failed validation: unrecognized media type at index 0: incorrect for adapter: bidderA"),
+			},
+		},
+		{
+			"One bidder incorrect capabilities for dooh",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						DOOH: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								"incorrect",
+							},
+						},
+					},
+				},
+			},
+			[]error{
+				errors.New("capabilities.dooh failed validation: unrecognized media type at index 0: incorrect for adapter: bidderA"),
 			},
 		},
 		{

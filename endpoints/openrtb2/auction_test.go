@@ -208,7 +208,7 @@ func runEndToEndTest(t *testing.T, auctionEndpointHandler httprouter.Handle, tes
 		err = json.Unmarshal(test.ExpectedBidResponse, &expectedBidResponse)
 		if assert.NoError(t, err, "Could not unmarshal expected bidResponse taken from test file.\n Test file: %s\n Error:%s\n", testFile, err) {
 			err = json.Unmarshal([]byte(actualJsonBidResponse), &actualBidResponse)
-			if assert.NoError(t, err, "Could not unmarshal actual bidResponse from auction.\n Test file: %s\n Error:%s\n", testFile, err) {
+			if assert.NoError(t, err, "Could not unmarshal actual bidResponse from auction.\n Test file: %s\n Error:%s\n actualJsonBidResponse: %s", testFile, err, actualJsonBidResponse) {
 				assertBidResponseEqual(t, testFile, expectedBidResponse, actualBidResponse)
 			}
 		}
@@ -1682,6 +1682,66 @@ func TestValidateRequest(t *testing.T) {
 			givenIsAmp:            false,
 			expectedErrorList:     []error{},
 			expectedChannelObject: &openrtb_ext.ExtRequestPrebidChannel{Name: appChannel, Version: ""},
+		},
+		{
+			description: "Minimum required site attributes missing",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID:   "Some-ID",
+					Site: &openrtb2.Site{},
+					Imp: []openrtb2.Imp{
+						{
+							ID: "Some-Imp-ID",
+							Banner: &openrtb2.Banner{
+								Format: []openrtb2.Format{
+									{
+										W: 600,
+										H: 500,
+									},
+									{
+										W: 300,
+										H: 600,
+									},
+								},
+							},
+							Ext: []byte(`{"appnexus":{"placementId": 12345678}}`),
+						},
+					},
+				},
+			},
+			expectedErrorList: []error{
+				errors.New("request.site should include at least one of request.site.id or request.site.page."),
+			},
+		},
+		{
+			description: "Minimum required DOOH attributes missing",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID:   "Some-ID",
+					DOOH: &openrtb2.DOOH{},
+					Imp: []openrtb2.Imp{
+						{
+							ID: "Some-Imp-ID",
+							Banner: &openrtb2.Banner{
+								Format: []openrtb2.Format{
+									{
+										W: 600,
+										H: 500,
+									},
+									{
+										W: 300,
+										H: 600,
+									},
+								},
+							},
+							Ext: []byte(`{"appnexus":{"placementId": 12345678}}`),
+						},
+					},
+				},
+			},
+			expectedErrorList: []error{
+				errors.New("request.dooh should include at least one of request.dooh.id or request.dooh.venuetype."),
+			},
 		},
 	}
 
@@ -3181,6 +3241,78 @@ func TestMapSChains(t *testing.T) {
 			assert.Equal(t, test.wantSourceExtSChain, sourceExtSChain, test.description)
 		}
 	}
+}
+
+func TestSearchAccountID(t *testing.T) {
+	// Correctness for lookup within Publisher object left to TestGetAccountID
+	// This however tests the expected lookup paths in outer site, app and dooh
+	testCases := []struct {
+		description       string
+		request           []byte
+		expectedAccID     string
+		expectedError     error
+		expectedIsAppReq  bool
+		expectedIsSiteReq bool
+		expectedIsDOOHReq bool
+	}{
+		{
+			description:       "No publisher available",
+			request:           []byte(`{}`),
+			expectedAccID:     "",
+			expectedError:     nil,
+			expectedIsAppReq:  false,
+			expectedIsDOOHReq: false,
+		},
+		{
+			description:       "Publisher.ID doesn't exist",
+			request:           []byte(`{"site":{"publisher":{}}}`),
+			expectedAccID:     "",
+			expectedError:     nil,
+			expectedIsAppReq:  false,
+			expectedIsDOOHReq: false,
+		},
+		{
+			description:       "Publisher.ID not a string",
+			request:           []byte(`{"site":{"publisher":{"id":42}}}`),
+			expectedAccID:     "",
+			expectedError:     errors.New("site.publisher.id must be a string"),
+			expectedIsAppReq:  false,
+			expectedIsDOOHReq: false,
+		},
+		{
+			description:       "Publisher available in request.site",
+			request:           []byte(`{"site":{"publisher":{"id":"42"}}}`),
+			expectedAccID:     "42",
+			expectedError:     nil,
+			expectedIsAppReq:  false,
+			expectedIsDOOHReq: false,
+		},
+		{
+			description:       "Publisher available in request.app",
+			request:           []byte(`{"app":{"publisher":{"id":"42"}}}`),
+			expectedAccID:     "42",
+			expectedError:     nil,
+			expectedIsAppReq:  true,
+			expectedIsDOOHReq: false,
+		},
+		{
+			description:       "Publisher available in request.dooh",
+			request:           []byte(`{"dooh":{"publisher":{"id":"42"}}}`),
+			expectedAccID:     "42",
+			expectedError:     nil,
+			expectedIsAppReq:  false,
+			expectedIsDOOHReq: true,
+		},
+	}
+
+	for _, test := range testCases {
+		accountId, isAppReq, isDOOHReq, err := searchAccountId(test.request)
+		assert.Equal(t, test.expectedAccID, accountId, "searchAccountID should return expected account ID for test case: %s", test.description)
+		assert.Equal(t, test.expectedIsAppReq, isAppReq, "searchAccountID should return expected isAppReq for test case: %s", test.description)
+		assert.Equal(t, test.expectedIsDOOHReq, isDOOHReq, "searchAccountID should return expected isDOOHReq for test case: %s", test.description)
+		assert.Equal(t, test.expectedError, err, "searchAccountID should return expected error for test case: %s", test.description)
+	}
+
 }
 
 func TestGetAccountID(t *testing.T) {

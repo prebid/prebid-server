@@ -10,6 +10,7 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestAppNotSupported(t *testing.T) {
@@ -70,9 +71,7 @@ func TestDOOHNotSupported(t *testing.T) {
 		Imp:  []openrtb2.Imp{{ID: "imp-1", Banner: &openrtb2.Banner{}}},
 		DOOH: &openrtb2.DOOH{},
 	}, &adapters.ExtraRequestInfo{})
-	if !assert.Len(t, errs, 1) {
-		return
-	}
+	require.Len(t, errs, 1)
 	assert.EqualError(t, errs[0], "this bidder does not support dooh requests")
 	assert.IsType(t, &errortypes.Warning{}, errs[0])
 	assert.Len(t, bids, 0)
@@ -87,6 +86,9 @@ func TestImpFiltering(t *testing.T) {
 			},
 			App: &config.PlatformInfo{
 				MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner},
+			},
+			DOOH: &config.PlatformInfo{
+				MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeNative},
 			},
 		},
 	}
@@ -175,10 +177,10 @@ func TestImpFiltering(t *testing.T) {
 			description: "All imps with correct media type, MakeRequest() call expected",
 			inBidRequest: &openrtb2.BidRequest{
 				Imp: []openrtb2.Imp{
-					{ID: "imp-1", Video: &openrtb2.Video{}},
-					{ID: "imp-2", Video: &openrtb2.Video{}},
+					{ID: "imp-1", Native: &openrtb2.Native{}},
+					{ID: "imp-2", Native: &openrtb2.Native{}},
 				},
-				Site: &openrtb2.Site{},
+				DOOH: &openrtb2.DOOH{},
 			},
 			expectedErrors: nil,
 			expectedImpLen: 2,

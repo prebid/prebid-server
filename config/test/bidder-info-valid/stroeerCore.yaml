@@ -11,6 +11,10 @@ capabilities:
       - banner
       - video
       - native
+  dooh:
+    mediaTypes:
+      - banner
+      - video
 userSync:
   key: "foo"
   default: "iframe"

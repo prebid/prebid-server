@@ -762,21 +762,8 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 		return []error{err}
 	}
 
-	// Prep for mutual exclusion check
-	invTypeNumMatches := 0
-	if req.Site != nil {
-		invTypeNumMatches++
-	}
-	if req.App != nil {
-		invTypeNumMatches++
-	}
-	if req.DOOH != nil {
-		invTypeNumMatches++
-	}
-	if invTypeNumMatches == 0 {
-		return append(errL, errors.New("One of request.site or request.app or request.dooh must be defined"))
-	} else if invTypeNumMatches >= 2 {
-		return append(errL, errors.New("No more than one of request.site or request.app or request.dooh can be defined"))
+	if err := validateExactlyOneInventoryType(req); err != nil {
+		return []error{err}
 	}
 
 	if errs := validateRequestExt(req); len(errs) != 0 {
@@ -1856,6 +1843,30 @@ func validateDevice(device *openrtb2.Device) error {
 	}
 
 	return nil
+}
+
+func validateExactlyOneInventoryType(reqWrapper *openrtb_ext.RequestWrapper) error {
+
+	// Prep for mutual exclusion check
+	invTypeNumMatches := 0
+	if reqWrapper.Site != nil {
+		invTypeNumMatches++
+	}
+	if reqWrapper.App != nil {
+		invTypeNumMatches++
+	}
+	if reqWrapper.DOOH != nil {
+		invTypeNumMatches++
+	}
+
+	if invTypeNumMatches == 0 {
+		return errors.New("One of request.site or request.app or request.dooh must be defined")
+	} else if invTypeNumMatches >= 2 {
+		return errors.New("No more than one of request.site or request.app or request.dooh can be defined")
+	} else {
+		return nil
+	}
+
 }
 
 func validateOrFillChannel(reqWrapper *openrtb_ext.RequestWrapper, isAmp bool) error {

@@ -347,7 +347,7 @@ func validateCapabilities(info *CapabilitiesInfo, bidderName string) error {
 	}
 
 	if info.App == nil && info.Site == nil && info.DOOH == nil {
-		return fmt.Errorf("at least one of capabilities.site or capabilities.app or capabilities.dooh must exist for adapter: %s", bidderName)
+		return fmt.Errorf("at least one of capabilities.site, capabilities.app, or capabilities.dooh must exist for adapter: %s", bidderName)
 	}
 
 	if info.App != nil {
@@ -358,13 +358,13 @@ func validateCapabilities(info *CapabilitiesInfo, bidderName string) error {
 
 	if info.Site != nil {
 		if err := validatePlatformInfo(info.Site); err != nil {
-			return fmt.Errorf("capabilities.site failed validation: %v, for adapter: %s", err, bidderName)
+			return fmt.Errorf("capabilities.site failed validation: %v for adapter: %s", err, bidderName)
 		}
 	}
 
 	if info.DOOH != nil {
 		if err := validatePlatformInfo(info.DOOH); err != nil {
-			return fmt.Errorf("capabilities.dooh failed validation: %v, for adapter: %s", err, bidderName)
+			return fmt.Errorf("capabilities.dooh failed validation: %v for adapter: %s", err, bidderName)
 		}
 	}
 
