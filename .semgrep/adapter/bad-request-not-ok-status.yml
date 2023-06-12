@@ -3,7 +3,8 @@ rules:
     languages: 
       - go
     message: >
-      `CheckResponseStatusCodeForErrors()` from the adapters package can be used to check for `http.StatusBadRequest` status code or to verify if the status code is not `http.StatusOk`
+      CheckResponseStatusCodeForErrors() from the adapters package can be used to check for http.StatusBadRequest status code or to verify if the status code is not http.StatusOk
+
       ```
         if err := adapters.CheckResponseStatusCodeForErrors(response); err != nil {
           return nil, []error{err}

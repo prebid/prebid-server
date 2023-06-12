@@ -3,7 +3,8 @@ rules:
     languages: 
       - go
     message: >
-      `IsResponseStatusCodeNoContent()` from the adapters package can be used to check for `http.StatusNoContent` status code
+      IsResponseStatusCodeNoContent() from the adapters package can be used to check for http.StatusNoContent status code
+      
       ```
         if err := adapters.IsResponseStatusCodeNoContent(response); err != nil {
           return nil, nil
