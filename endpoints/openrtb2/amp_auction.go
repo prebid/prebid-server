@@ -170,7 +170,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		return
 	}
 
-	ao.Request = reqWrapper.BidRequest
+	ao.RequestWrapper = reqWrapper
 
 	ctx := context.Background()
 	var cancel context.CancelFunc
@@ -241,7 +241,12 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		TCF2Config:                 tcf2Config,
 	}
 
-	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
+	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
+	var response *openrtb2.BidResponse
+	if auctionResponse != nil {
+		response = auctionResponse.BidResponse
+	}
+	ao.SeatNonBid = auctionResponse.GetSeatNonBid()
 	ao.AuctionResponse = response
 	rejectErr, isRejectErr := hookexecution.CastRejectErr(err)
 	if err != nil && !isRejectErr {
@@ -269,7 +274,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		return
 	}
 
-	labels, ao = sendAmpResponse(w, hookExecutor, response, reqWrapper, account, labels, ao, errL)
+	labels, ao = sendAmpResponse(w, hookExecutor, auctionResponse, reqWrapper, account, labels, ao, errL)
 	if len(ao.Errors) == 0 {
 		recordResponsePreparationMetrics(auctionRequest.MakeBidsTimeInfo, deps.metricsEngine)
 	}
@@ -289,19 +294,23 @@ func rejectAmpRequest(
 	ao.AuctionResponse = response
 	ao.Errors = append(ao.Errors, rejectErr)
 
-	return sendAmpResponse(w, hookExecutor, response, reqWrapper, account, labels, ao, errs)
+	return sendAmpResponse(w, hookExecutor, &exchange.AuctionResponse{BidResponse: response}, reqWrapper, account, labels, ao, errs)
 }
 
 func sendAmpResponse(
 	w http.ResponseWriter,
 	hookExecutor hookexecution.HookStageExecutor,
-	response *openrtb2.BidResponse,
+	auctionResponse *exchange.AuctionResponse,
 	reqWrapper *openrtb_ext.RequestWrapper,
 	account *config.Account,
 	labels metrics.Labels,
 	ao analytics.AmpObject,
 	errs []error,
 ) (metrics.Labels, analytics.AmpObject) {
+	var response *openrtb2.BidResponse
+	if auctionResponse != nil {
+		response = auctionResponse.BidResponse
+	}
 	hookExecutor.ExecuteAuctionResponseStage(response)
 	// Need to extract the targeting parameters from the response, as those are all that
 	// go in the AMP response
@@ -352,7 +361,7 @@ func sendAmpResponse(
 	}
 	// Now JSONify the targets for the AMP response.
 	ampResponse := AmpResponse{Targeting: targets}
-	ao, ampResponse.ORTB2.Ext = getExtBidResponse(hookExecutor, response, reqWrapper, account, ao, errs)
+	ao, ampResponse.ORTB2.Ext = getExtBidResponse(hookExecutor, auctionResponse, reqWrapper, account, ao, errs)
 
 	ao.AmpTargetingValues = targets
 
@@ -373,12 +382,16 @@ func sendAmpResponse(
 
 func getExtBidResponse(
 	hookExecutor hookexecution.HookStageExecutor,
-	response *openrtb2.BidResponse,
+	auctionResponse *exchange.AuctionResponse,
 	reqWrapper *openrtb_ext.RequestWrapper,
 	account *config.Account,
 	ao analytics.AmpObject,
 	errs []error,
 ) (analytics.AmpObject, openrtb_ext.ExtBidResponse) {
+	var response *openrtb2.BidResponse
+	if auctionResponse != nil {
+		response = auctionResponse.BidResponse
+	}
 	// Extract any errors
 	var extResponse openrtb_ext.ExtBidResponse
 	eRErr := json.Unmarshal(response.Ext, &extResponse)
@@ -429,6 +442,8 @@ func getExtBidResponse(
 			ao.Errors = append(ao.Errors, warns...)
 		}
 	}
+
+	setSeatNonBid(&extBidResponse, reqWrapper, auctionResponse)
 
 	return ao, extBidResponse
 }
@@ -808,4 +823,24 @@ func setTrace(req *openrtb2.BidRequest, value string) (err error) {
 	req.Ext = ext
 
 	return nil
+}
+
+// setSeatNonBid populates bidresponse.ext.prebid.seatnonbid if bidrequest.ext.prebid.returnallbidstatus is true
+func setSeatNonBid(finalExtBidResponse *openrtb_ext.ExtBidResponse, request *openrtb_ext.RequestWrapper, auctionResponse *exchange.AuctionResponse) bool {
+	if finalExtBidResponse == nil || auctionResponse == nil || request == nil {
+		return false
+	}
+	reqExt, err := request.GetRequestExt()
+	if err != nil {
+		return false
+	}
+	prebid := reqExt.GetPrebid()
+	if prebid == nil || !prebid.ReturnAllBidStatus {
+		return false
+	}
+	if finalExtBidResponse.Prebid == nil {
+		finalExtBidResponse.Prebid = &openrtb_ext.ExtResponsePrebid{}
+	}
+	finalExtBidResponse.Prebid.SeatNonBid = auctionResponse.GetSeatNonBid()
+	return true
 }
