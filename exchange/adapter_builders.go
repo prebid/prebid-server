@@ -51,6 +51,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/bizzclick"
 	"github.com/prebid/prebid-server/adapters/bliink"
 	"github.com/prebid/prebid-server/adapters/blue"
+	"github.com/prebid/prebid-server/adapters/bluesea"
 	"github.com/prebid/prebid-server/adapters/bmtm"
 	"github.com/prebid/prebid-server/adapters/boldwin"
 	"github.com/prebid/prebid-server/adapters/brave"
@@ -111,6 +112,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/marsmedia"
 	"github.com/prebid/prebid-server/adapters/medianet"
 	"github.com/prebid/prebid-server/adapters/mgid"
+	"github.com/prebid/prebid-server/adapters/mgidX"
 	"github.com/prebid/prebid-server/adapters/mobfoxpb"
 	"github.com/prebid/prebid-server/adapters/mobilefuse"
 	"github.com/prebid/prebid-server/adapters/motorik"
@@ -132,6 +134,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/revcontent"
 	"github.com/prebid/prebid-server/adapters/rhythmone"
 	"github.com/prebid/prebid-server/adapters/richaudience"
+	"github.com/prebid/prebid-server/adapters/rise"
 	"github.com/prebid/prebid-server/adapters/rtbhouse"
 	"github.com/prebid/prebid-server/adapters/rubicon"
 	salunamedia "github.com/prebid/prebid-server/adapters/sa_lunamedia"
@@ -166,7 +169,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/visx"
 	"github.com/prebid/prebid-server/adapters/vrtcal"
 	"github.com/prebid/prebid-server/adapters/xeworks"
-	"github.com/prebid/prebid-server/adapters/yahoossp"
+	"github.com/prebid/prebid-server/adapters/yahooAdvertising"
 	"github.com/prebid/prebid-server/adapters/yeahmobi"
 	"github.com/prebid/prebid-server/adapters/yieldlab"
 	"github.com/prebid/prebid-server/adapters/yieldmo"
@@ -232,6 +235,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderBizzclick:         bizzclick.Builder,
 		openrtb_ext.BidderBliink:            bliink.Builder,
 		openrtb_ext.BidderBlue:              blue.Builder,
+		openrtb_ext.BidderBluesea:           bluesea.Builder,
 		openrtb_ext.BidderBmtm:              bmtm.Builder,
 		openrtb_ext.BidderBoldwin:           boldwin.Builder,
 		openrtb_ext.BidderBrave:             brave.Builder,
@@ -258,6 +262,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderEngageBDR:         engagebdr.Builder,
 		openrtb_ext.BidderEPlanning:         eplanning.Builder,
 		openrtb_ext.BidderEpom:              epom.Builder,
+		openrtb_ext.BidderEpsilon:           conversant.Builder,
 		openrtb_ext.BidderEVolution:         evolution.Builder,
 		openrtb_ext.BidderEvtech:            limelightDigital.Builder,
 		openrtb_ext.BidderFlipp:             flipp.Builder,
@@ -298,6 +303,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderMediafuse:         appnexus.Builder,
 		openrtb_ext.BidderMedianet:          medianet.Builder,
 		openrtb_ext.BidderMgid:              mgid.Builder,
+		openrtb_ext.BidderMgidX:             mgidX.Builder,
 		openrtb_ext.BidderMobfoxpb:          mobfoxpb.Builder,
 		openrtb_ext.BidderMobileFuse:        mobilefuse.Builder,
 		openrtb_ext.BidderMotorik:           motorik.Builder,
@@ -321,6 +327,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderRevcontent:        revcontent.Builder,
 		openrtb_ext.BidderRhythmone:         rhythmone.Builder,
 		openrtb_ext.BidderRichaudience:      richaudience.Builder,
+		openrtb_ext.BidderRise:              rise.Builder,
 		openrtb_ext.BidderRTBHouse:          rtbhouse.Builder,
 		openrtb_ext.BidderRubicon:           rubicon.Builder,
 		openrtb_ext.BidderSeedingAlliance:   seedingAlliance.Builder,
@@ -352,7 +359,6 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderUnicorn:           unicorn.Builder,
 		openrtb_ext.BidderUnruly:            unruly.Builder,
 		openrtb_ext.BidderValueImpression:   apacdex.Builder,
-		openrtb_ext.BidderVerizonMedia:      yahoossp.Builder,
 		openrtb_ext.BidderVideoByte:         videobyte.Builder,
 		openrtb_ext.BidderVideoHeroes:       videoheroes.Builder,
 		openrtb_ext.BidderVidoomy:           vidoomy.Builder,
@@ -361,7 +367,8 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderVisx:              visx.Builder,
 		openrtb_ext.BidderVrtcal:            vrtcal.Builder,
 		openrtb_ext.BidderXeworks:           xeworks.Builder,
-		openrtb_ext.BidderYahooSSP:          yahoossp.Builder,
+		openrtb_ext.BidderYahooAdvertising:  yahooAdvertising.Builder,
+		openrtb_ext.BidderYahooSSP:          yahooAdvertising.Builder,
 		openrtb_ext.BidderYeahmobi:          yeahmobi.Builder,
 		openrtb_ext.BidderYieldlab:          yieldlab.Builder,
 		openrtb_ext.BidderYieldmo:           yieldmo.Builder,
