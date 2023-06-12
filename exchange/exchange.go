@@ -1089,29 +1089,29 @@ func applyCategoryMapping(ctx context.Context, targeting openrtb_ext.ExtRequestT
 	return res, seatBids, rejections, nil
 }
 
-// findDurationRange returns the element in the array 'a' that is both greater than 'dur' and closest
-// in value to 'dur' unless a value equal to 'dur' is found. Returns an error if all elements in 'a'
+// findDurationRange returns the element in the array 'durationRanges' that is both greater than 'dur' and closest
+// in value to 'dur' unless a value equal to 'dur' is found. Returns an error if all elements in 'durationRanges'
 // are less than 'dur'.
-func findDurationRange(dur int, a []int) (int, error) {
+func findDurationRange(dur int, durationRanges []int) (int, error) {
 	newDur := dur
 	madeSelection := false
 	var err error
 
-	for i := range a {
-		if dur > a[i] {
+	for i := range durationRanges {
+		if dur > durationRanges[i] {
 			continue
 		}
-		if dur == a[i] {
-			return a[i], nil
+		if dur == durationRanges[i] {
+			return durationRanges[i], nil
 		}
-		// dur < a[i]
-		if a[i] < newDur || !madeSelection {
-			newDur = a[i]
+		// dur < durationRanges[i]
+		if durationRanges[i] < newDur || !madeSelection {
+			newDur = durationRanges[i]
 			madeSelection = true
 		}
 	}
-	if !madeSelection && len(a) > 0 {
-		err = errors.New("Bid duration exceeds maximum allowed")
+	if !madeSelection && len(durationRanges) > 0 {
+		err = errors.New("bid duration exceeds maximum allowed")
 	}
 	return newDur, err
 }
