@@ -184,7 +184,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	if rejectErr := hookexecution.FindFirstRejectOrNil(errL); rejectErr != nil {
-		ao.Request = req.BidRequest
+		ao.RequestWrapper = req
 		labels, ao = rejectAuctionRequest(*rejectErr, w, hookExecutor, req.BidRequest, account, labels, ao)
 		return
 	}
@@ -237,10 +237,15 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		HookExecutor:               hookExecutor,
 		TCF2Config:                 tcf2Config,
 	}
-	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
-	ao.Request = req.BidRequest
-	ao.Response = response
+	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
+	ao.RequestWrapper = req
 	ao.Account = account
+	var response *openrtb2.BidResponse
+	if auctionResponse != nil {
+		response = auctionResponse.BidResponse
+	}
+	ao.Response = response
+	ao.SeatNonBid = auctionResponse.GetSeatNonBid()
 	rejectErr, isRejectErr := hookexecution.CastRejectErr(err)
 	if err != nil && !isRejectErr {
 		if errortypes.ReadCode(err) == errortypes.BadInputErrorCode {
@@ -259,10 +264,41 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
+	err = setSeatNonBidRaw(req, auctionResponse)
+	if err != nil {
+		glog.Errorf("Error setting seat non-bid: %v", err)
+	}
 	labels, ao = sendAuctionResponse(w, hookExecutor, response, req.BidRequest, account, labels, ao)
 	if len(ao.Errors) == 0 {
 		recordResponsePreparationMetrics(auctionRequest.MakeBidsTimeInfo, deps.metricsEngine)
 	}
+}
+
+// setSeatNonBidRaw is transitional function for setting SeatNonBid inside bidResponse.Ext
+// Because,
+// 1. today exchange.HoldAuction prepares and marshals some piece of response.Ext which is then used by auction.go, amp_auction.go and video_auction.go
+// 2. As per discussion with Prebid Team we are planning to move away from - HoldAuction building openrtb2.BidResponse. instead respective auction modules will build this object
+// 3. So, we will need this method to do first,  unmarshalling of response.Ext
+func setSeatNonBidRaw(request *openrtb_ext.RequestWrapper, auctionResponse *exchange.AuctionResponse) error {
+	if auctionResponse == nil || auctionResponse.BidResponse == nil {
+		return nil
+	}
+	// unmarshalling is required here, until we are moving away from bidResponse.Ext, which is populated
+	// by HoldAuction
+	response := auctionResponse.BidResponse
+	respExt := &openrtb_ext.ExtBidResponse{}
+	if err := json.Unmarshal(response.Ext, &respExt); err != nil {
+		return err
+	}
+	if setSeatNonBid(respExt, request, auctionResponse) {
+		if respExtJson, err := json.Marshal(respExt); err == nil {
+			response.Ext = respExtJson
+			return nil
+		} else {
+			return err
+		}
+	}
+	return nil
 }
 
 func rejectAuctionRequest(
