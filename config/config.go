@@ -129,6 +129,7 @@ type HTTPClient struct {
 	ResponseHeaderTimeout int `mapstructure:"response_header_timeout"`
 	DialTimeout           int `mapstructure:"dial_timeout"`
 	DialKeepAlive         int `mapstructure:"dial_keepalive"`
+	InsecureSkipVerify    bool `mapstructure:"insecure_skipverify"`
 }
 
 func (cfg *Configuration) validate(v *viper.Viper) []error {
@@ -1149,6 +1150,11 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.yieldone.endpoint", "https://y.one.impact-ad.jp/hbs_imp")
 	v.SetDefault("adapters.yssp.disabled", true)
 	v.SetDefault("adapters.zeroclickfraud.endpoint", "http://{{.Host}}/openrtb2?sid={{.SourceId}}")
+	v.SetDefault("adapters.koddi.endpoint","http://{{.Host}}:8001/TestCommerce")
+	v.SetDefault("adapters.koddi.commerceparams.impurl", "https://{{.Host}}.koddi.io/event-collection/beacon/?action=impression")
+	v.SetDefault("adapters.koddi.commerceparams.clickurl", "https://{{.Host}}.koddi.io/event-collection/beacon/?action=click")
+	v.SetDefault("adapters.koddi.commerceparams.conversionurl", "https://{{.Host}}.koddi.io/event-collection/beacon/conversion")
+	v.SetDefault("adapters.adbuttler.endpoint",  "https://servedbyadbutler.com/adserve/;ID={{.AccountID}};setID={{.ZoneID}};type=pdb_query")
 
 	v.SetDefault("max_request_size", 1024*256)
 	v.SetDefault("analytics.file.filename", "")
@@ -1243,8 +1249,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	/*  Link Local:    fe80::/10
 	/*  Multicast:     ff00::/8
 	*/
-	v.SetDefault("request_validation.ipv4_private_networks", []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "169.254.0.0/16", "127.0.0.0/8"})
-	v.SetDefault("request_validation.ipv6_private_networks", []string{"::1/128", "fc00::/7", "fe80::/10", "ff00::/8", "2001:db8::/32"})
+	//v.SetDefault("request_validation.ipv4_private_networks", []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "169.254.0.0/16", "127.0.0.0/8"})
+	//v.SetDefault("request_validation.ipv6_private_networks", []string{"::1/128", "fc00::/7", "fe80::/10", "ff00::/8", "2001:db8::/32"})
 
 	// Set environment variable support:
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))

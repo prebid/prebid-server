@@ -1,0 +1,10 @@
+maintainer:
+  email: koddi@pubmatic.com
+gvlVendorID: 998
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner
