@@ -33,16 +33,6 @@ const (
 	chromeiOSStrLen = len(chromeiOSStr)
 )
 
-const (
-	queryParamAccount     = "account"
-	queryParamUID         = "uid"
-	queryParamGDPRConsent = "gdpr_consent"
-	queryParamGDPR        = "gdpr"
-	queryParamGPP         = "gpp"
-	queryParamBidder      = "bidder"
-	queryParamGPPSID      = "gpp_sid"
-)
-
 func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, gdprPermsBuilder gdpr.PermissionsBuilder, tcf2CfgBuilder gdpr.TCF2ConfigBuilder, pbsanalytics analytics.PBSAnalyticsModule, accountsFetcher stored_requests.AccountFetcher, metricsEngine metrics.MetricsEngine) httprouter.Handle {
 	cookieTTL := time.Duration(cfg.HostCookie.TTL) * 24 * time.Hour
 
@@ -92,7 +82,7 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 			return
 		}
 
-		accountID := query.Get(queryParamAccount)
+		accountID := query.Get("account")
 		if accountID == "" {
 			accountID = metrics.PublisherUnknown
 		}
@@ -142,7 +132,7 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 			return
 		}
 
-		uid := query.Get(queryParamUID)
+		uid := query.Get("uid")
 		so.UID = uid
 
 		if uid == "" {
@@ -177,11 +167,11 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 // first and the 'gdpr' and 'gdpr_consent' query params second.
 func extractGDPRInfo(query url.Values) (gdpr.RequestInfo, error) {
 	// Defualt GDPR values
-	gdprConsent := query.Get(queryParamGDPRConsent)
+	gdprConsent := query.Get("gdpr_consent")
 	gdprSignal := gdpr.SignalAmbiguous
 
 	// Signal from gpp_sid list takes precedence
-	gppSID, err := stringutil.StrToInt8Slice(query.Get(queryParamGPPSID))
+	gppSID, err := stringutil.StrToInt8Slice(query.Get("gpp_sid"))
 	if err != nil {
 		return gdpr.RequestInfo{}, fmt.Errorf("Error parsing gpp_sid %s", err.Error())
 	}
@@ -193,7 +183,7 @@ func extractGDPRInfo(query url.Values) (gdpr.RequestInfo, error) {
 		}
 	} else {
 		// Signal from gdpr field, if any
-		gdprQuerySignal := query.Get(queryParamGDPR)
+		gdprQuerySignal := query.Get("gdpr")
 		if gdprQuerySignal != "" && gdprQuerySignal != "0" && gdprQuerySignal != "1" {
 			return gdpr.RequestInfo{}, errors.New("the gdpr query param must be either 0 or 1. You gave " + gdprQuerySignal)
 		}
@@ -204,7 +194,7 @@ func extractGDPRInfo(query url.Values) (gdpr.RequestInfo, error) {
 	}
 
 	// Consent from gpp string takes precedence, override gdprConsent in found in "gpp" field
-	if gppString := query.Get(queryParamGPP); len(gppString) > 0 {
+	if gppString := query.Get("gpp"); len(gppString) > 0 {
 		gpp, err := gpplib.Parse(gppString)
 		if err != nil {
 			return gdpr.RequestInfo{}, err
@@ -226,7 +216,7 @@ func extractGDPRInfo(query url.Values) (gdpr.RequestInfo, error) {
 }
 
 func getSyncer(query url.Values, syncersByKey map[string]usersync.Syncer) (usersync.Syncer, error) {
-	key := query.Get(queryParamBidder)
+	key := query.Get("bidder")
 
 	if key == "" {
 		return nil, errors.New(`"bidder" query param is required`)
