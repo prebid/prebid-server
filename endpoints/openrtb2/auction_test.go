@@ -22,7 +22,6 @@ import (
 	"github.com/prebid/openrtb/v19/native1"
 	nativeRequests "github.com/prebid/openrtb/v19/native1/request"
 	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/analytics"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
@@ -39,7 +38,6 @@ import (
 	"github.com/prebid/prebid-server/util/iputil"
 	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 const jsonFileExtension string = ".json"
@@ -5656,15 +5654,6 @@ type mockStageExecutor struct {
 
 func (e mockStageExecutor) GetOutcomes() []hookexecution.StageOutcome {
 	return e.outcomes
-}
-
-func TestRecordResponsePreparationMetrics(t *testing.T) {
-	mbi := map[openrtb_ext.BidderName]adapters.MakeBidsTimeInfo{
-		openrtb_ext.BidderAppnexus: {Durations: []time.Duration{10, 15}, AfterMakeBidsStartTime: time.Now()},
-	}
-	mockMetricEngine := &metrics.MetricsEngineMock{}
-	mockMetricEngine.On("RecordOverheadTime", metrics.MakeAuctionResponse, mock.Anything)
-	recordResponsePreparationMetrics(mbi, mockMetricEngine)
 }
 
 func TestSetSeatNonBidRaw(t *testing.T) {
