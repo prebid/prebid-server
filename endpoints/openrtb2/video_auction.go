@@ -363,10 +363,6 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if len(vo.Errors) == 0 {
-		recordResponsePreparationMetrics(auctionRequest.MakeBidsTimeInfo, deps.metricsEngine)
-	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(resp)
 

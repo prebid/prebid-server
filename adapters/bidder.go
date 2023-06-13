@@ -148,7 +148,6 @@ type ExtraRequestInfo struct {
 	PbsEntryPoint              metrics.RequestType
 	GlobalPrivacyControlHeader string
 	CurrencyConversions        currency.Conversions
-	MakeBidsTimeInfo           MakeBidsTimeInfo
 }
 
 type MakeBidsTimeInfo struct {

@@ -111,8 +111,6 @@ func TestSingleBidder(t *testing.T) {
 		}
 		extraInfo := &adapters.ExtraRequestInfo{}
 		seatBids, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), extraInfo, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
-		assert.NotEmpty(t, extraInfo.MakeBidsTimeInfo.Durations)
-		assert.False(t, extraInfo.MakeBidsTimeInfo.AfterMakeBidsStartTime.IsZero())
 
 		assert.Len(t, seatBids, 1)
 		seatBid := seatBids[0]
@@ -237,8 +235,6 @@ func TestSingleBidderGzip(t *testing.T) {
 		}
 		extraInfo := &adapters.ExtraRequestInfo{}
 		seatBids, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), extraInfo, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
-		assert.NotEmpty(t, extraInfo.MakeBidsTimeInfo.Durations)
-		assert.False(t, extraInfo.MakeBidsTimeInfo.AfterMakeBidsStartTime.IsZero())
 		assert.Len(t, seatBids, 1)
 		seatBid := seatBids[0]
 
@@ -352,8 +348,6 @@ func TestRequestBidRemovesSensitiveHeaders(t *testing.T) {
 
 	assert.Empty(t, errs)
 	assert.Len(t, seatBids, 1)
-	assert.NotEmpty(t, extraInfo.MakeBidsTimeInfo.Durations)
-	assert.False(t, extraInfo.MakeBidsTimeInfo.AfterMakeBidsStartTime.IsZero())
 	assert.ElementsMatch(t, seatBids[0].HttpCalls, expectedHttpCalls)
 }
 
@@ -407,8 +401,6 @@ func TestSetGPCHeader(t *testing.T) {
 
 	assert.Empty(t, errs)
 	assert.Len(t, seatBids, 1)
-	assert.NotEmpty(t, extraInfo.MakeBidsTimeInfo.Durations)
-	assert.False(t, extraInfo.MakeBidsTimeInfo.AfterMakeBidsStartTime.IsZero())
 	assert.ElementsMatch(t, seatBids[0].HttpCalls, expectedHttpCall)
 }
 
@@ -459,8 +451,6 @@ func TestSetGPCHeaderNil(t *testing.T) {
 	}
 
 	assert.Empty(t, errs)
-	assert.NotEmpty(t, extraInfo.MakeBidsTimeInfo.Durations)
-	assert.False(t, extraInfo.MakeBidsTimeInfo.AfterMakeBidsStartTime.IsZero())
 	assert.Len(t, seatBids, 1)
 	assert.ElementsMatch(t, seatBids[0].HttpCalls, expectedHttpCall)
 }
