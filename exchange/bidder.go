@@ -63,10 +63,11 @@ type AdaptedBidder interface {
 
 // bidRequestOptions holds additional options for bid request execution to maintain clean code and reasonable number of parameters
 type bidRequestOptions struct {
-	accountDebugAllowed bool
-	headerDebugAllowed  bool
-	addCallSignHeader   bool
-	bidAdjustments      map[string]float64
+	accountDebugAllowed    bool
+	headerDebugAllowed     bool
+	addCallSignHeader      bool
+	bidAdjustments         map[string]float64
+	bidderRequestStartTime time.Time
 }
 
 const ImpIdReqBody = "Stored bid response for impression id: "
@@ -173,11 +174,11 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 		dataLen = len(reqData) + len(bidderRequest.BidderStoredResponses)
 		responseChannel = make(chan *httpCallInfo, dataLen)
 		if len(reqData) == 1 {
-			responseChannel <- bidder.doRequest(ctx, reqData[0], reqInfo.BidderRequestStartTime)
+			responseChannel <- bidder.doRequest(ctx, reqData[0], bidRequestOptions.bidderRequestStartTime)
 		} else {
 			for _, oneReqData := range reqData {
 				go func(data *adapters.RequestData) {
-					responseChannel <- bidder.doRequest(ctx, data, reqInfo.BidderRequestStartTime)
+					responseChannel <- bidder.doRequest(ctx, data, bidRequestOptions.bidderRequestStartTime)
 				}(oneReqData) // Method arg avoids a race condition on oneReqData
 			}
 		}
