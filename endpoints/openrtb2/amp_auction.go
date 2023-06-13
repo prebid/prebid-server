@@ -275,6 +275,9 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	}
 
 	labels, ao = sendAmpResponse(w, hookExecutor, auctionResponse, reqWrapper, account, labels, ao, errL)
+	if len(ao.Errors) == 0 {
+		deps.metricsEngine.RecordOverheadTime(metrics.MakeAuctionResponse, time.Since(auctionRequest.BidderResponseStartTime))
+	}
 }
 
 func rejectAmpRequest(
