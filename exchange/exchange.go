@@ -12,6 +12,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/prebid/prebid-server/adapters"
@@ -194,6 +195,7 @@ type AuctionRequest struct {
 	GlobalPrivacyControlHeader string
 	ImpExtInfoMap              map[string]ImpExtInfo
 	TCF2Config                 gdpr.TCF2ConfigReader
+	BidderResponseStartTime    time.Time
 
 	// LegacyLabels is included here for temporary compatibility with cleanOpenRTBRequests
 	// in HoldAuction until we get to factoring it away. Do not use for anything new.
@@ -337,10 +339,11 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	defer cancel()
 
 	var (
-		adapterBids     map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid
-		adapterExtra    map[openrtb_ext.BidderName]*seatResponseExtra
-		fledge          *openrtb_ext.Fledge
-		anyBidsReturned bool
+		adapterBids            map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid
+		adapterExtra           map[openrtb_ext.BidderName]*seatResponseExtra
+		fledge                 *openrtb_ext.Fledge
+		anyBidsReturned        bool
+		bidderRequestStartTime time.Time
 		// List of bidders we have requests for.
 		liveAdapters []openrtb_ext.BidderName
 	)
@@ -363,7 +366,8 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		} else if r.Account.AlternateBidderCodes != nil {
 			alternateBidderCodes = *r.Account.AlternateBidderCodes
 		}
-		adapterBids, adapterExtra, fledge, anyBidsReturned = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, alternateBidderCodes, requestExtLegacy.Prebid.Experiment, r.HookExecutor, r.StartTime, bidAdjustmentRules)
+		adapterBids, adapterExtra, fledge, anyBidsReturned, bidderRequestStartTime = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, alternateBidderCodes, requestExtLegacy.Prebid.Experiment, r.HookExecutor, r.StartTime, bidAdjustmentRules)
+		r.BidderResponseStartTime = bidderRequestStartTime
 	}
 
 	var (
@@ -656,7 +660,8 @@ func (e *exchange) getAllBids(
 	map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid,
 	map[openrtb_ext.BidderName]*seatResponseExtra,
 	*openrtb_ext.Fledge,
-	bool) {
+	bool,
+	time.Time) {
 	// Set up pointers to the bid results
 	adapterBids := make(map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, len(bidderRequests))
 	adapterExtra := make(map[openrtb_ext.BidderName]*seatResponseExtra, len(bidderRequests))
@@ -664,6 +669,12 @@ func (e *exchange) getAllBids(
 	bidsFound := false
 
 	e.me.RecordOverheadTime(metrics.MakeBidderRequests, time.Since(pbsRequestStartTime))
+
+	var (
+		// bidderResponseStartTime is the time at which we receive the response for the most recently processed bidder request
+		bidderResponseStartTime time.Time
+		mutex                   sync.RWMutex
+	)
 
 	for _, bidder := range bidderRequests {
 		// Here we actually call the adapters and collect the bids.
@@ -693,8 +704,7 @@ func (e *exchange) getAllBids(
 				bidAdjustments:         bidAdjustments,
 				bidderRequestStartTime: start,
 			}
-			seatBids, _, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest, conversions, &reqInfo, e.adsCertSigner, bidReqOptions, alternateBidderCodes, hookExecutor, bidAdjustmentRules)
-
+			seatBids, bidderRespStartTime, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest, conversions, &reqInfo, e.adsCertSigner, bidReqOptions, alternateBidderCodes, hookExecutor, bidAdjustmentRules)
 			// Add in time reporting
 			elapsed := time.Since(start)
 			brw.adapterSeatBids = seatBids
@@ -703,6 +713,11 @@ func (e *exchange) getAllBids(
 			ae.ResponseTimeMillis = int(elapsed / time.Millisecond)
 			if len(seatBids) != 0 {
 				ae.HttpCalls = seatBids[0].HttpCalls
+			}
+			if err == nil {
+				mutex.Lock()
+				bidderResponseStartTime = bidderRespStartTime
+				mutex.Unlock()
 			}
 			// Timing statistics
 			e.me.RecordAdapterTime(bidderRequest.BidderLabels, elapsed)
@@ -753,8 +768,7 @@ func (e *exchange) getAllBids(
 			bidsFound = true
 		}
 	}
-
-	return adapterBids, adapterExtra, fledge, bidsFound
+	return adapterBids, adapterExtra, fledge, bidsFound, bidderResponseStartTime
 }
 
 func collectFledgeFromSeatBid(fledge *openrtb_ext.Fledge, bidderName openrtb_ext.BidderName, adapterName openrtb_ext.BidderName, seatBid *entities.PbsOrtbSeatBid) *openrtb_ext.Fledge {
