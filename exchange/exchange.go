@@ -693,7 +693,7 @@ func (e *exchange) getAllBids(
 				bidAdjustments:         bidAdjustments,
 				bidderRequestStartTime: start,
 			}
-			seatBids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest, conversions, &reqInfo, e.adsCertSigner, bidReqOptions, alternateBidderCodes, hookExecutor, bidAdjustmentRules)
+			seatBids, _, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest, conversions, &reqInfo, e.adsCertSigner, bidReqOptions, alternateBidderCodes, hookExecutor, bidAdjustmentRules)
 
 			// Add in time reporting
 			elapsed := time.Since(start)

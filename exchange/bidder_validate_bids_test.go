@@ -3,6 +3,7 @@ package exchange
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
@@ -15,6 +16,7 @@ import (
 )
 
 func TestAllValidBids(t *testing.T) {
+	bidderRespStartTime := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 	var bidder AdaptedBidder = addValidatedBidderMiddleware(&mockAdaptedBidder{
 		bidResponse: []*entities.PbsOrtbSeatBid{{
 			Bids: []*entities.PbsOrtbBid{
@@ -52,8 +54,9 @@ func TestAllValidBids(t *testing.T) {
 					},
 				},
 			},
-		},
-		}})
+		}},
+		bidderResponseStartTime: bidderRespStartTime,
+	})
 	bidderReq := BidderRequest{
 		BidRequest: &openrtb2.BidRequest{},
 		BidderName: openrtb_ext.BidderAppnexus,
@@ -65,10 +68,11 @@ func TestAllValidBids(t *testing.T) {
 		addCallSignHeader:   false,
 		bidAdjustments:      bidAdjustments,
 	}
-	seatBids, errs := bidder.requestBid(context.Background(), bidderReq, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
+	seatBids, bidderResponseStartTime, errs := bidder.requestBid(context.Background(), bidderReq, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
 	assert.Len(t, seatBids, 1)
 	assert.Len(t, seatBids[0].Bids, 4)
 	assert.Len(t, errs, 0)
+	assert.Equal(t, bidderRespStartTime, bidderResponseStartTime)
 }
 
 func TestAllBadBids(t *testing.T) {
@@ -135,13 +139,14 @@ func TestAllBadBids(t *testing.T) {
 		addCallSignHeader:   false,
 		bidAdjustments:      bidAdjustments,
 	}
-	seatBids, errs := bidder.requestBid(context.Background(), bidderReq, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
+	seatBids, _, errs := bidder.requestBid(context.Background(), bidderReq, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
 	assert.Len(t, seatBids, 1)
 	assert.Len(t, seatBids[0].Bids, 0)
 	assert.Len(t, errs, 7)
 }
 
 func TestMixedBids(t *testing.T) {
+	bidderRespStartTime := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 	bidder := addValidatedBidderMiddleware(&mockAdaptedBidder{
 		bidResponse: []*entities.PbsOrtbSeatBid{{
 			Bids: []*entities.PbsOrtbBid{
@@ -203,8 +208,9 @@ func TestMixedBids(t *testing.T) {
 				},
 				{},
 			},
-		},
-		}})
+		}},
+		bidderResponseStartTime: bidderRespStartTime,
+	})
 	bidderReq := BidderRequest{
 		BidRequest: &openrtb2.BidRequest{},
 		BidderName: openrtb_ext.BidderAppnexus,
@@ -216,10 +222,11 @@ func TestMixedBids(t *testing.T) {
 		addCallSignHeader:   false,
 		bidAdjustments:      bidAdjustments,
 	}
-	seatBids, errs := bidder.requestBid(context.Background(), bidderReq, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
+	seatBids, bidderResponseStartTime, errs := bidder.requestBid(context.Background(), bidderReq, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
 	assert.Len(t, seatBids, 1)
 	assert.Len(t, seatBids[0].Bids, 3)
 	assert.Len(t, errs, 5)
+	assert.Equal(t, bidderRespStartTime, bidderResponseStartTime)
 }
 
 func TestCurrencyBids(t *testing.T) {
@@ -297,6 +304,7 @@ func TestCurrencyBids(t *testing.T) {
 			expectedValidBid: false,
 		},
 	}
+	bidderRespStartTime := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 
 	for _, tc := range currencyTestCases {
 		bids := []*entities.PbsOrtbBid{
@@ -321,8 +329,9 @@ func TestCurrencyBids(t *testing.T) {
 			bidResponse: []*entities.PbsOrtbSeatBid{{
 				Currency: tc.brpCur,
 				Bids:     bids,
-			},
-			}})
+			}},
+			bidderResponseStartTime: bidderRespStartTime,
+		})
 
 		expectedValidBids := len(bids)
 		expectedErrs := 0
@@ -345,18 +354,20 @@ func TestCurrencyBids(t *testing.T) {
 			addCallSignHeader:   false,
 			bidAdjustments:      bidAdjustments,
 		}
-		seatBids, errs := bidder.requestBid(context.Background(), bidderRequest, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
+		seatBids, bidderResponseStartTime, errs := bidder.requestBid(context.Background(), bidderRequest, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
 		assert.Len(t, seatBids, 1)
 		assert.Len(t, seatBids[0].Bids, expectedValidBids)
 		assert.Len(t, errs, expectedErrs)
+		assert.Equal(t, bidderRespStartTime, bidderResponseStartTime)
 	}
 }
 
 type mockAdaptedBidder struct {
-	bidResponse   []*entities.PbsOrtbSeatBid
-	errorResponse []error
+	bidResponse             []*entities.PbsOrtbSeatBid
+	errorResponse           []error
+	bidderResponseStartTime time.Time
 }
 
-func (b *mockAdaptedBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestMetadata bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, executor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) ([]*entities.PbsOrtbSeatBid, []error) {
-	return b.bidResponse, b.errorResponse
+func (b *mockAdaptedBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestMetadata bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, executor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) ([]*entities.PbsOrtbSeatBid, time.Time, []error) {
+	return b.bidResponse, b.bidderResponseStartTime, b.errorResponse
 }

@@ -5266,11 +5266,12 @@ type validatingBidder struct {
 	bidderName string
 
 	// These are maps because they may contain aliases. They should _at least_ contain an entry for bidderName.
-	expectations  map[string]*bidderRequest
-	mockResponses map[string]bidderResponse
+	expectations            map[string]*bidderRequest
+	mockResponses           map[string]bidderResponse
+	bidderResponseStartTime time.Time
 }
 
-func (b *validatingBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, executor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) (seatBids []*entities.PbsOrtbSeatBid, errs []error) {
+func (b *validatingBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, executor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) (seatBids []*entities.PbsOrtbSeatBid, bidderResponseStartTime time.Time, errs []error) {
 	if expectedRequest, ok := b.expectations[string(bidderRequest.BidderName)]; ok {
 		if expectedRequest != nil {
 			if !reflect.DeepEqual(expectedRequest.BidAdjustments, bidRequestOptions.bidAdjustments) {
@@ -5322,16 +5323,18 @@ func (b *validatingBidder) requestBid(ctx context.Context, bidderRequest BidderR
 		b.t.Errorf("%s: Bidder %s got unexpected request for alias %s. No mock responses.", b.fileName, b.bidderName, bidderRequest.BidderName)
 	}
 
+	bidderResponseStartTime = b.bidderResponseStartTime
 	return
 }
 
 type capturingRequestBidder struct {
-	req *openrtb2.BidRequest
+	req                     *openrtb2.BidRequest
+	bidderResponseStartTime time.Time
 }
 
-func (b *capturingRequestBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, executor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) (seatBid []*entities.PbsOrtbSeatBid, errs []error) {
+func (b *capturingRequestBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, executor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) (seatBid []*entities.PbsOrtbSeatBid, bidderResponseStartTime time.Time, errs []error) {
 	b.req = bidderRequest.BidRequest
-	return []*entities.PbsOrtbSeatBid{{}}, nil
+	return []*entities.PbsOrtbSeatBid{{}}, b.bidderResponseStartTime, nil
 }
 
 func diffOrtbRequests(t *testing.T, description string, expected *openrtb2.BidRequest, actual *openrtb2.BidRequest) {
@@ -5436,7 +5439,7 @@ func (e *emptyUsersync) HasAnyLiveSyncs() bool {
 
 type panicingAdapter struct{}
 
-func (panicingAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestMetadata bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, executor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) (posb []*entities.PbsOrtbSeatBid, errs []error) {
+func (panicingAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestMetadata bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, executor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) (posb []*entities.PbsOrtbSeatBid, bidderResponseStartTime time.Time, errs []error) {
 	panic("Panic! Panic! The world is ending!")
 }
 
