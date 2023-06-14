@@ -14,7 +14,7 @@ const (
 	GENDER_FEMALE                 = "female"
 	GENDER_OTHER                  = "other"
 	USER_GENDER                   = "user_gender"
-	COUNTRY                       = "country"
+	COUNTRY                       = "user_country"
 	REGION                        = "Region"
 	CITY                          = "City"
 	CATEGORY                      = "Category"
