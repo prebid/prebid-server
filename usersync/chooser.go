@@ -150,6 +150,13 @@ func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}
 	if cookie.HasLiveSync(syncer.Key()) {
 		return nil, BidderEvaluation{Status: StatusAlreadySynced, Bidder: bidder, SyncerKey: syncer.Key()}
 	}
+	// integrate with syncUser activity here
+	// will need to provide a RequestWrapper. since this is one of the few activities without a natural request.
+	//!!! compose a fake one. you won't have geo, but can provide gppsid.
+	/*if !privacy.ActivityAllows(bidder) {
+		return nil, BidderEvaluation{Status: StatusBlockedByPrivacy, Bidder: bidder, SyncerKey: syncer.Key()}
+	}
+	*/
 
 	if !privacy.GDPRAllowsBidderSync(bidder) {
 		return nil, BidderEvaluation{Status: StatusBlockedByGDPR, Bidder: bidder, SyncerKey: syncer.Key()}

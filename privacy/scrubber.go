@@ -146,6 +146,11 @@ func (scrubber) ScrubUser(user *openrtb2.User, strategy ScrubStrategyUser, geo S
 	return &userCopy
 }
 
+/*
+func (scrubber) ScrubTransactionIDs(r reqes) {
+	//!!!remove source.tid and imp.ext.tid. This can be specific to certain bidders or global to all bidders.
+}*/
+
 func scrubIPV4Lowest8(ip string) string {
 	i := strings.LastIndex(ip, ".")
 	if i == -1 {

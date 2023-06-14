@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/prebid/prebid-server/privacy/activities"
 	"math/rand"
 
 	"github.com/buger/jsonparser"
@@ -184,6 +185,19 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 			setLegacyGDPRFromGPP(bidderRequest.BidRequest, gpp)
 			setLegacyUSPFromGPP(bidderRequest.BidRequest, gpp)
 		}
+
+		//!!! activity
+		transmitTIdsActivityAllowed := auctionReq.Activitities.Allow(privacy.ActivityTransmitTIds, *req,
+			privacy.ScopedName{Scope: privacy.ScopeTypeBidder, Name: bidderRequest.BidderName.String()})
+		if transmitTIdsActivityAllowed == privacy.EnforceDeny {
+			//!!! Effect if not Permitted
+			// remove source.tid and imp.ext.tid. This can be specific to certain bidders or global to all bidders.
+			activityErr := activities.RemoveTIds(bidderRequest.BidRequest)
+			if activityErr != nil {
+				errs = append(errs, activityErr)
+			}
+		}
+
 	}
 
 	return

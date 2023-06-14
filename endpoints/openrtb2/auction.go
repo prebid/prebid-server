@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/prebid/prebid-server/privacy"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -190,6 +191,12 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
+	activities, activitiesErr := privacy.NewActivityControl(deps.cfg.AccountDefaults.Privacy, account.Privacy)
+	if activitiesErr != nil {
+		errL = append(errL, activitiesErr)
+		writeError(errL, w, &labels)
+		return
+	}
 
 	ctx := context.Background()
 
@@ -236,6 +243,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		PubID:                      labels.PubID,
 		HookExecutor:               hookExecutor,
 		TCF2Config:                 tcf2Config,
+		Activitities:               activities,
 	}
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
 	ao.RequestWrapper = req
