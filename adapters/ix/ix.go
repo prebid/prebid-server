@@ -35,10 +35,6 @@ type IxDiag struct {
 }
 
 func (a *IxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	return handleMultiImpInSingleRequest(request, a)
-}
-
-func handleMultiImpInSingleRequest(request *openrtb2.BidRequest, a *IxAdapter) ([]*adapters.RequestData, []error) {
 	// Multi-size banner imps are split into single-size requests.
 	// The first size imp requests are added to the first slice.
 	// Additional size requests are added to the second slice and are merged with the first at the end.
@@ -82,7 +78,7 @@ func handleMultiImpInSingleRequest(request *openrtb2.BidRequest, a *IxAdapter) (
 
 			if len(bannerCopy.Format) > 1 {
 				formats := bannerCopy.Format
-				// Creating additional imp from multiple formats. First format is part of original imp. Rest format will be converted to individual single imp & later request.
+				// Creating additional imp from multiple formats. First format is part of original imp. Rest of multiformat will be sent as multiimp.
 				for iFmt := range formats {
 					additionalBannerCopy := *imp.Banner
 					additionalBannerCopy.Format = formats[iFmt : iFmt+1]
@@ -96,7 +92,6 @@ func handleMultiImpInSingleRequest(request *openrtb2.BidRequest, a *IxAdapter) (
 					}
 				}
 			}
-
 			imp.Banner = &bannerCopy
 		}
 		originalImps = append(originalImps, imp)
@@ -148,30 +143,6 @@ func parseSiteId(imp *openrtb2.Imp, siteIds []string) ([]string, error) {
 		siteIds = append(siteIds, ixExt.SiteId)
 	}
 	return siteIds, nil
-}
-
-func setSitePublisherId(request *openrtb2.BidRequest, iImp int) error {
-	if iImp == 0 {
-		// first impression - create a site and pub copy
-		site := *request.Site
-		if site.Publisher == nil {
-			site.Publisher = &openrtb2.Publisher{}
-		} else {
-			publisher := *site.Publisher
-			site.Publisher = &publisher
-		}
-		request.Site = &site
-	}
-	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil {
-		return err
-	}
-	var ixExt openrtb_ext.ExtImpIx
-	if err := json.Unmarshal(bidderExt.Bidder, &ixExt); err != nil {
-		return err
-	}
-	request.Site.Publisher.ID = ixExt.SiteId
-	return nil
 }
 
 func getBannerFormats(banner *openrtb2.Banner) []openrtb2.Format {
