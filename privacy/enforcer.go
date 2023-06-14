@@ -108,9 +108,9 @@ func activityDefaultToDefaultResult(activityDefault *bool) EnforceResult {
 	if activityDefault == nil {
 		return EnforceAbstain
 	} else if *activityDefault {
-		return EnforceAllow
+		return EnforceDeny
 	}
-	return EnforceDeny
+	return EnforceAllow
 }
 
 func (e ActivityControl) Allow(activity Activity, request openrtb_ext.RequestWrapper, target ScopedName) EnforceResult {
@@ -191,10 +191,14 @@ func (r ComponentEnforcementRule) Allow(request openrtb_ext.RequestWrapper, targ
 
 	matchFound := scopeFound || typeFound
 
-	if matchFound && r.allowed {
-		return EnforceAllow
+	if matchFound {
+		if r.allowed {
+			return EnforceDeny
+		} else {
+			return EnforceAllow
+		}
 	}
-	return EnforceDeny
+	return EnforceAbstain
 }
 
 // the default scope should be hardcoded as bidder

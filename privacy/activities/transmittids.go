@@ -8,12 +8,13 @@ import (
 func RemoveTIds(bidReq *openrtb2.BidRequest) error {
 
 	//!!!only for testing
-	bidReq.ID = "modified!!!"
+	bidReq.ID = ""
 
 	if bidReq.Source != nil {
 		bidReq.Source.TID = ""
 	}
 
+	//bidders don't receive imp.ext data except of bidder parameters
 	for i, imp := range bidReq.Imp {
 		if len(imp.Ext) > 0 {
 			var err error
