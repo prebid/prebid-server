@@ -303,8 +303,8 @@ func TestExtractGDPRInfo(t *testing.T) {
 		tests []testCase
 	}{
 		{
-			"no gdpr nor gpp values in query",
-			[]testCase{
+			sDesc: "no gdpr nor gpp values in query",
+			tests: []testCase{
 				{
 					desc:  "expect blank consent, signalNo and nil error",
 					inUri: "/setuid?bidder=pubmatic&uid=123",
@@ -319,8 +319,8 @@ func TestExtractGDPRInfo(t *testing.T) {
 			},
 		},
 		{
-			"missing gpp, gdpr only",
-			[]testCase{
+			sDesc: "missing gpp, gdpr only",
+			tests: []testCase{
 				{
 					desc:  "Invalid gdpr signal value in query, expect blank request info and error",
 					inUri: "/setuid?gdpr=2",
@@ -370,8 +370,8 @@ func TestExtractGDPRInfo(t *testing.T) {
 			},
 		},
 		{
-			"missing gdpr, gpp only",
-			[]testCase{
+			sDesc: "missing gdpr, gpp only",
+			tests: []testCase{
 				{
 					desc:  "Malformed GPP_SID string, expect blank request info and error",
 					inUri: "/setuid?gpp_sid=malformed",
@@ -462,8 +462,8 @@ func TestExtractGDPRInfo(t *testing.T) {
 			},
 		},
 		{
-			"GPP values take priority over GDPR",
-			[]testCase{
+			sDesc: "GPP values take priority over GDPR",
+			tests: []testCase{
 				{
 					desc:  "SignalNo in gdpr field but SignalYes in SID list, CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA consent in gpp but legacyConsent in gdpr_consent, expect GPP values to prevail",
 					inUri: "/setuid?gpp=DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA&gpp_sid=2,4&gdpr=0&gdpr_consent=legacyConsent",
