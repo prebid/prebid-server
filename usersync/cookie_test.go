@@ -90,7 +90,7 @@ func TestReadCookie(t *testing.T) {
 }
 
 func TestWriteCookie(t *testing.T) {
-	encoder := EncoderV1{}
+	encoder := Base64EncoderV1{}
 	decoder := DecodeV1{}
 
 	testCases := []struct {
@@ -307,7 +307,7 @@ func TestGetUIDs(t *testing.T) {
 }
 
 func TestWriteCookieUserAgent(t *testing.T) {
-	encoder := EncoderV1{}
+	encoder := Base64EncoderV1{}
 
 	testCases := []struct {
 		name                string
@@ -374,7 +374,7 @@ func TestWriteCookieUserAgent(t *testing.T) {
 }
 
 func TestPrepareCookieForWrite(t *testing.T) {
-	encoder := EncoderV1{}
+	encoder := Base64EncoderV1{}
 	decoder := DecodeV1{}
 	cookieToSend := &Cookie{
 		uids: map[string]UIDEntry{

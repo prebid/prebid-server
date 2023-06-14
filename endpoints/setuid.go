@@ -32,7 +32,7 @@ const uidCookieName = "uids"
 
 func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, gdprPermsBuilder gdpr.PermissionsBuilder, tcf2CfgBuilder gdpr.TCF2ConfigBuilder, pbsanalytics analytics.PBSAnalyticsModule, accountsFetcher stored_requests.AccountFetcher, metricsEngine metrics.MetricsEngine) httprouter.Handle {
 	cookieTTL := time.Duration(cfg.HostCookie.TTL) * 24 * time.Hour
-	encoder := usersync.EncoderV1{}
+	encoder := usersync.Base64EncoderV1{}
 	decoder := usersync.DecodeV1{}
 
 	// convert map of syncers by bidder to map of syncers by key

@@ -58,10 +58,15 @@ func ReadCookie(r *http.Request, decoder Decoder, host *config.HostCookie) *Cook
 }
 
 // PrepareCookieForWrite ejects UIDs as long as the cookie is too full
-func (cookie *Cookie) PrepareCookieForWrite(cfg *config.HostCookie, ttl time.Duration, encoder Encoder) string {
+func (cookie *Cookie) PrepareCookieForWrite(cfg *config.HostCookie, ttl time.Duration, encoder Base64Encoder) string {
 	encodedCookie := encoder.Encode(cookie)
+
 	isCookieTooBig := len(encodedCookie) > cfg.MaxCookieSizeBytes && cfg.MaxCookieSizeBytes > 0
-	uuidKeys := sortUIDs(cookie.uids, isCookieTooBig)
+	if !isCookieTooBig {
+		return encodedCookie
+	}
+
+	uuidKeys := sortUIDs(cookie.uids)
 
 	i := 0
 	for isCookieTooBig && len(cookie.uids) > 0 {
@@ -69,7 +74,8 @@ func (cookie *Cookie) PrepareCookieForWrite(cfg *config.HostCookie, ttl time.Dur
 		delete(cookie.uids, uidToDelete)
 
 		encodedCookie = encoder.Encode(cookie)
-		isCookieTooBig = len(encodedCookie) > cfg.MaxCookieSizeBytes && cfg.MaxCookieSizeBytes > 0
+		isCookieTooBig = len(encodedCookie) > cfg.MaxCookieSizeBytes
+
 		i++
 	}
 	return encodedCookie
@@ -120,8 +126,8 @@ func (cookie *Cookie) Sync(key string, uid string) error {
 // Sort UIDs is used to get a list of uids sorted from oldest to newest
 // This list is used to eject oldest uids from the cookie
 // This will be incorporated with a more complex ejection framework in a future PR
-func sortUIDs(uids map[string]UIDEntry, isCookieTooBig bool) []string {
-	if isCookieTooBig && len(uids) > 0 {
+func sortUIDs(uids map[string]UIDEntry) []string {
+	if len(uids) > 0 {
 		uuidKeys := make([]string, 0, len(uids))
 		for key := range uids {
 			uuidKeys = append(uuidKeys, key)
@@ -170,7 +176,7 @@ func (cookie *Cookie) SetOptOut(optOut bool) {
 }
 
 // GetUID Gets this user's ID for the given syncer key.
-func (cookie *Cookie) GetUID(key string) (string, bool, bool) {
+func (cookie *Cookie) GetUID(key string) (uid string, isUIDFound bool, isUIDActive bool) {
 	if cookie != nil {
 		if uid, ok := cookie.uids[key]; ok {
 			return uid.UID, true, time.Now().Before(uid.Expires)
@@ -216,7 +222,7 @@ func (cookie *Cookie) HasAnyLiveSyncs() bool {
 }
 
 func (cookie *Cookie) ToHTTPCookie() *http.Cookie {
-	encoder := EncoderV1{}
+	encoder := Base64EncoderV1{}
 	encodedCookie := encoder.Encode(cookie)
 
 	return &http.Cookie{

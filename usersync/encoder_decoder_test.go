@@ -9,7 +9,7 @@ import (
 )
 
 func TestEncoderDecoder(t *testing.T) {
-	encoder := EncoderV1{}
+	encoder := Base64EncoderV1{}
 	decoder := DecodeV1{}
 
 	testCases := []struct {

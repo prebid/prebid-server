@@ -6,7 +6,8 @@ import (
 )
 
 type Decoder interface {
-	Decode(v string) *Cookie // Takes an encoded string, and decodes it into a cookie
+	// Decode takes an encoded string and decodes it into a cookie
+	Decode(v string) *Cookie
 }
 
 type DecodeV1 struct{}
