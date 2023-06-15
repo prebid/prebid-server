@@ -804,7 +804,7 @@ func setEffectiveAmpPubID(req *openrtb2.BidRequest, account string) {
 	}
 }
 
-func setTrace(req *openrtb2.BidRequest, value string) (err error) {
+func setTrace(req *openrtb2.BidRequest, value string) error {
 	if value == "" {
 		return nil
 	}
