@@ -1,0 +1,11 @@
+endpoint: "https://bid.bluevoox.com/rtb/prebid"
+maintainer:
+  email: prebid@blueseasx.com
+endpointCompression: gzip
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - native
+      - video
