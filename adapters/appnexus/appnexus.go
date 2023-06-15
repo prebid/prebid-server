@@ -125,7 +125,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		isVIDEO = 1
 	}
 
-	reqExt, err := a.getBidderRequestExt(request.Ext, isAMP, isVIDEO)
+	reqExt, err := a.getRequestExt(request.Ext, isAMP, isVIDEO)
 	if err != nil {
 		return nil, append(errs, err)
 	}
@@ -164,7 +164,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		for i := range sb.Bid {
 			bid := sb.Bid[i]
 
-			var bidExt bidderExt
+			var bidExt bidExt
 			if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
 				errs = append(errs, err)
 				continue
@@ -200,15 +200,15 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	return bidderResponse, errs
 }
 
-func (a *adapter) getBidderRequestExt(ext json.RawMessage, isAMP int, isVIDEO int) (bidderReqExt, error) {
-	var reqExt bidderReqExt
+func (a *adapter) getRequestExt(ext json.RawMessage, isAMP int, isVIDEO int) (bidReqExt, error) {
+	var reqExt bidReqExt
 	if len(ext) > 0 {
 		if err := json.Unmarshal(ext, &reqExt); err != nil {
-			return bidderReqExt{}, err
+			return bidReqExt{}, err
 		}
 	}
 	if reqExt.Appnexus == nil {
-		reqExt.Appnexus = &bidderReqExtAppnexus{}
+		reqExt.Appnexus = &bidReqExtAppnexus{}
 	}
 	includeBrandCategory := reqExt.Prebid.Targeting != nil && reqExt.Prebid.Targeting.IncludeBrandCategory != nil
 	if includeBrandCategory {
@@ -266,7 +266,7 @@ func groupByPods(imps []openrtb2.Imp) map[string]([]openrtb2.Imp) {
 	return podImps
 }
 
-func splitRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExtension bidderReqExt, uri string) ([]*adapters.RequestData, []error) {
+func splitRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExtension bidReqExt, uri string) ([]*adapters.RequestData, []error) {
 	var errs []error
 	// Initial capacity for future array of requests, memory optimization.
 	// Let's say there are 35 impressions and limit impressions per request equals to 10.
@@ -351,7 +351,7 @@ func buildRequestImp(imp *openrtb2.Imp, appnexusExt *openrtb_ext.ExtImpAppnexus,
 		imp.DisplayManagerVer = displayManagerVer
 	}
 
-	impExt := bidderImpExt{Appnexus: bidderImpExtAppnexus{
+	impExt := impExt{Appnexus: impExtAppnexus{
 		PlacementID:       int(appnexusExt.PlacementId),
 		TrafficSourceCode: appnexusExt.TrafficSourceCode,
 		Keywords:          appnexusExt.Keywords.String(),
@@ -368,7 +368,7 @@ func buildRequestImp(imp *openrtb2.Imp, appnexusExt *openrtb_ext.ExtImpAppnexus,
 }
 
 // getMediaTypeForBid determines which type of bid.
-func getMediaTypeForBid(bid *bidderExt) (openrtb_ext.BidType, error) {
+func getMediaTypeForBid(bid *bidExt) (openrtb_ext.BidType, error) {
 	switch bid.Appnexus.BidType {
 	case 0:
 		return openrtb_ext.BidTypeBanner, nil
@@ -382,7 +382,7 @@ func getMediaTypeForBid(bid *bidderExt) (openrtb_ext.BidType, error) {
 }
 
 // getIabCategoryForBid maps an appnexus brand id to an IAB category.
-func (a *adapter) findIabCategoryForBid(bid *bidderExt) (string, bool) {
+func (a *adapter) findIabCategoryForBid(bid *bidExt) (string, bool) {
 	brandIDString := strconv.Itoa(bid.Appnexus.BrandCategory)
 	iabCategory, ok := iabCategoryMap[brandIDString]
 	return iabCategory, ok
@@ -413,7 +413,7 @@ func buildDisplayManageVer(req *openrtb2.BidRequest) string {
 	return fmt.Sprintf("%s-%s", source, version)
 }
 
-func (a *adapter) buildAdPodRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExtension bidderReqExt, uri string) ([]*adapters.RequestData, []error) {
+func (a *adapter) buildAdPodRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExtension bidReqExt, uri string) ([]*adapters.RequestData, []error) {
 	var errs []error
 	podImps := groupByPods(imps)
 	requests := make([]*adapters.RequestData, 0, len(podImps))
