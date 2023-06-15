@@ -1006,24 +1006,11 @@ func applyCategoryMapping(ctx context.Context, targeting openrtb_ext.ExtRequestT
 
 			priceBucket = GetPriceBucket(*bid.Bid, *targData)
 
-			newDur := duration
-			if len(targeting.DurationRangeSec) > 0 {
-				durationRange := make([]int, len(targeting.DurationRangeSec))
-				copy(durationRange, targeting.DurationRangeSec)
-				sort.Ints(durationRange)
-
-				//if the bid is above the range of the listed durations (and outside the buffer), reject the bid
-				if duration > durationRange[len(durationRange)-1] {
-					bidsToRemove = append(bidsToRemove, bidInd)
-					rejections = updateRejections(rejections, bidID, "Bid duration exceeds maximum allowed")
-					continue
-				}
-				for _, dur := range durationRange {
-					if duration <= dur {
-						newDur = dur
-						break
-					}
-				}
+			newDur, err := findDurationRange(duration, targeting.DurationRangeSec)
+			if err != nil {
+				bidsToRemove = append(bidsToRemove, bidInd)
+				rejections = updateRejections(rejections, bidID, err.Error())
+				continue
 			}
 
 			var categoryDuration string
@@ -1111,6 +1098,33 @@ func applyCategoryMapping(ctx context.Context, targeting openrtb_ext.ExtRequestT
 	}
 
 	return res, seatBids, rejections, nil
+}
+
+// findDurationRange returns the element in the array 'durationRanges' that is both greater than 'dur' and closest
+// in value to 'dur' unless a value equal to 'dur' is found. Returns an error if all elements in 'durationRanges'
+// are less than 'dur'.
+func findDurationRange(dur int, durationRanges []int) (int, error) {
+	newDur := dur
+	madeSelection := false
+	var err error
+
+	for i := range durationRanges {
+		if dur > durationRanges[i] {
+			continue
+		}
+		if dur == durationRanges[i] {
+			return durationRanges[i], nil
+		}
+		// dur < durationRanges[i]
+		if durationRanges[i] < newDur || !madeSelection {
+			newDur = durationRanges[i]
+			madeSelection = true
+		}
+	}
+	if !madeSelection && len(durationRanges) > 0 {
+		err = errors.New("bid duration exceeds maximum allowed")
+	}
+	return newDur, err
 }
 
 func removeBidById(seatBid *entities.PbsOrtbSeatBid, bidID string) {
