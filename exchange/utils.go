@@ -189,7 +189,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		//!!! activity
 		transmitTIdsActivityAllowed := auctionReq.Activitities.Allow(privacy.ActivityTransmitTIds, *req,
 			privacy.ScopedName{Scope: privacy.ScopeTypeBidder, Name: bidderRequest.BidderName.String()})
-		if transmitTIdsActivityAllowed == privacy.EnforceAllow {
+		if transmitTIdsActivityAllowed == privacy.ActivityDeny || transmitTIdsActivityAllowed == privacy.ActivityAbstain {
 			//!!! Effect if not Permitted
 			// remove source.tid and imp.ext.tid. This can be specific to certain bidders or global to all bidders.
 			activityErr := activities.RemoveTIds(bidderRequest.BidRequest)

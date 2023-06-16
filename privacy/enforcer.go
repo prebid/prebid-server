@@ -7,12 +7,12 @@ import (
 	"strings"
 )
 
-type EnforceResult int // or maybe ActivityResult?
+type ActivityResult int
 
 const (
-	EnforceAbstain EnforceResult = iota
-	EnforceAllow
-	EnforceDeny
+	ActivityAbstain ActivityResult = iota
+	ActivityAllow
+	ActivityDeny
 )
 
 type ActivityControl struct {
@@ -104,20 +104,22 @@ func conditionToRuleComponentName(conditions []string) ([]ScopedName, error) {
 	return sn, nil
 }
 
-func activityDefaultToDefaultResult(activityDefault *bool) EnforceResult {
+func activityDefaultToDefaultResult(activityDefault *bool) ActivityResult {
+
 	if activityDefault == nil {
-		return EnforceAbstain
+		// if default is unspecified, the hardcoded default-default is true.
+		return ActivityAllow
 	} else if *activityDefault {
-		return EnforceDeny
+		return ActivityAllow
 	}
-	return EnforceAllow
+	return ActivityDeny
 }
 
-func (e ActivityControl) Allow(activity Activity, request openrtb_ext.RequestWrapper, target ScopedName) EnforceResult {
+func (e ActivityControl) Allow(activity Activity, request openrtb_ext.RequestWrapper, target ScopedName) ActivityResult {
 	plan, planDefined := e.plans[activity]
 
 	if !planDefined {
-		return EnforceAbstain
+		return ActivityAbstain
 	}
 
 	return plan.Allow(request, target)
@@ -126,23 +128,29 @@ func (e ActivityControl) Allow(activity Activity, request openrtb_ext.RequestWra
 // allow this to be created from acitivty config, which veronika will get from the account config root object
 // maybe call this ActivityPlan?
 type EnforcementPlan struct {
-	defaultResult EnforceResult
+	defaultResult ActivityResult
 	rules         []EnforcementRule
 }
 
-func (p EnforcementPlan) Allow(request openrtb_ext.RequestWrapper, target ScopedName) EnforceResult {
+func (p EnforcementPlan) Allow(request openrtb_ext.RequestWrapper, target ScopedName) ActivityResult {
+	// "and" between the rules present
+	//  ??? result is abstain if the rule doesn't match
 	for _, rule := range p.rules {
-		result := rule.Allow(request, target) // exit on first non-abstain response
-		if result == EnforceAllow || result == EnforceDeny {
+		result := rule.Allow(request, target)
+		if result == ActivityDeny {
 			return result
 		}
+		if result == ActivityAbstain {
+			return p.defaultResult
+		}
 	}
-	return p.defaultResult
+
+	return ActivityAllow
 }
 
 // maybe call this ActivityRule?
 type EnforcementRule interface {
-	Allow(request openrtb_ext.RequestWrapper, target ScopedName) EnforceResult
+	Allow(request openrtb_ext.RequestWrapper, target ScopedName) ActivityResult
 }
 
 type ComponentEnforcementRule struct {
@@ -153,7 +161,7 @@ type ComponentEnforcementRule struct {
 	allowed bool // behavior if rule matches. can be either true=allow or false=deny. result is abstain if the rule doesn't match
 }
 
-func (r ComponentEnforcementRule) Allow(request openrtb_ext.RequestWrapper, target ScopedName) EnforceResult {
+func (r ComponentEnforcementRule) Allow(request openrtb_ext.RequestWrapper, target ScopedName) ActivityResult {
 	// all string comparisons in this section are case sensitive
 	// doc: https://docs.google.com/document/d/1dRxFUFmhh2jGanzGZvfkK_6jtHPpHXWD7Qsi6KEugeE/edit
 	// the doc details the boolean operations.
@@ -173,14 +181,15 @@ func (r ComponentEnforcementRule) Allow(request openrtb_ext.RequestWrapper, targ
 	// geo
 	// simple filter on the req.user section
 
-	scopeFound := false
+	//!!! what is the behavior when only one componentName or componentType is present?
+	componentNameFound := false
 	for _, scope := range r.componentName {
-		if strings.EqualFold(scope.Scope, target.Scope) && strings.EqualFold(scope.Name, target.Name) {
-			scopeFound = true
+		if strings.EqualFold(scope.Scope, target.Scope) &&
+			(strings.EqualFold(scope.Name, target.Name) || scope.Name == "*") {
+			componentNameFound = true
 			break
 		}
 	}
-
 	typeFound := false
 	for _, componentType := range r.componentType {
 		if strings.EqualFold(componentType, target.Scope) {
@@ -189,16 +198,19 @@ func (r ComponentEnforcementRule) Allow(request openrtb_ext.RequestWrapper, targ
 		}
 	}
 
-	matchFound := scopeFound || typeFound
+	matchFound := componentNameFound && typeFound
+
+	// behavior if rule matches: can be either true=allow or false=deny. result is abstain if the rule doesn't match
 
 	if matchFound {
 		if r.allowed {
-			return EnforceDeny
+			return ActivityAllow
 		} else {
-			return EnforceAllow
+			return ActivityDeny
 		}
 	}
-	return EnforceAbstain
+
+	return ActivityAbstain
 }
 
 // the default scope should be hardcoded as bidder
