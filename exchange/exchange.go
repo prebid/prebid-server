@@ -1181,7 +1181,7 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*en
 		if len(errList) > 0 {
 			bidResponseExt.Errors[openrtb_ext.PrebidExtKey] = errsToBidderErrors(errList)
 			if prebidWarn := errsToBidderWarnings(errList); len(prebidWarn) > 0 {
-				bidResponseExt.Warnings[openrtb_ext.PrebidExtKey] = errsToBidderWarnings(errList)
+				bidResponseExt.Warnings[openrtb_ext.PrebidExtKey] = prebidWarn
 			}
 		}
 		bidResponseExt.ResponseTimeMillis[bidderName] = responseExtra.ResponseTimeMillis
