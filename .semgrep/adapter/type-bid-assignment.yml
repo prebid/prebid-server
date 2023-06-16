@@ -9,9 +9,9 @@ rules:
         for _, seatBid := range response.SeatBid {
           for _, bid := range seatBid.Bid {
             ...
-            seatBid := bid
+            bidCopy := bid
             responseBid := &adapters.TypedBid{
-              Bid: &seatBid,
+              Bid: &bidCopy,
               ...
             }
             ...
