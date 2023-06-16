@@ -252,6 +252,7 @@ func (p *permissionsImpl) parseVendor(ctx context.Context, vendorID uint16, cons
 			Consent: consent,
 			Cause:   err,
 		}
+		return
 	}
 
 	vendorList, err := p.fetchVendorList(ctx, uint16(specVersion), parsedConsent.VendorListVersion())
