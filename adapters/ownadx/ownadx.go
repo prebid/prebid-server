@@ -13,14 +13,14 @@ import (
 	"text/template"
 )
 
-type ownAdxAdapter struct {
+type adapter struct {
 	endpoint *template.Template
 }
 type bidExt struct {
 	MediaType string `json:"mediaType"`
 }
 
-func (adapter *ownAdxAdapter) getRequestData(reqJSON []byte, url string) []*adapters.RequestData {
+func getRequestData(reqJSON []byte, url string) []*adapters.RequestData {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
@@ -34,7 +34,7 @@ func (adapter *ownAdxAdapter) getRequestData(reqJSON []byte, url string) []*adap
 	}}
 }
 
-func (adapter *ownAdxAdapter) buildEndpointURL(params *openrtb_ext.ExtImpOwnAdx) (string, error) {
+func (adapter *adapter) buildEndpointURL(params *openrtb_ext.ExtImpOwnAdx) (string, error) {
 	endpointParams := macros.EndpointTemplateParams{
 		Host:      params.Host,
 		AccountID: params.SeatId,
@@ -43,7 +43,7 @@ func (adapter *ownAdxAdapter) buildEndpointURL(params *openrtb_ext.ExtImpOwnAdx)
 	return macros.ResolveMacros(adapter.endpoint, endpointParams)
 }
 
-func (adapter *ownAdxAdapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpOwnAdx, error) {
+func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpOwnAdx, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
@@ -61,9 +61,9 @@ func (adapter *ownAdxAdapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.
 	return &ownAdxExt, nil
 }
 
-func (adapter *ownAdxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var ownAdxExt *openrtb_ext.ExtImpOwnAdx
-	ownAdxExt, err := adapter.getImpressionExt(&(request.Imp[0]))
+	ownAdxExt, err := getImpressionExt(&(request.Imp[0]))
 	if err != nil {
 		return nil, []error{
 			httpBadResponseError(fmt.Sprintf("Bidder extension not valid or can't be unmarshalled")),
@@ -80,7 +80,7 @@ func (adapter *ownAdxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo
 		return nil, []error{err}
 	}
 
-	return adapter.getRequestData(reqJSON, endPoint), nil
+	return getRequestData(reqJSON, endPoint), nil
 }
 func httpBadResponseError(message string) error {
 	return &errortypes.BadServerResponse{
@@ -92,7 +92,7 @@ func getBidType(ext bidExt) (openrtb_ext.BidType, error) {
 	return openrtb_ext.ParseBidType(ext.MediaType)
 }
 
-func (adapter *ownAdxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -157,7 +157,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
-	bidder := &ownAdxAdapter{
+	bidder := &adapter{
 		endpoint: template,
 	}
 
