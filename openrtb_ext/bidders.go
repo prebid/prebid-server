@@ -137,6 +137,7 @@ const (
 	BidderBizzclick         BidderName = "bizzclick"
 	BidderBliink            BidderName = "bliink"
 	BidderBlue              BidderName = "blue"
+	BidderBluesea           BidderName = "bluesea"
 	BidderBmtm              BidderName = "bmtm"
 	BidderBoldwin           BidderName = "boldwin"
 	BidderBrave             BidderName = "brave"
@@ -228,6 +229,7 @@ const (
 	BidderRevcontent        BidderName = "revcontent"
 	BidderRhythmone         BidderName = "rhythmone"
 	BidderRichaudience      BidderName = "richaudience"
+	BidderRise              BidderName = "rise"
 	BidderRTBHouse          BidderName = "rtbhouse"
 	BidderRubicon           BidderName = "rubicon"
 	BidderSeedingAlliance   BidderName = "seedingAlliance"
@@ -331,6 +333,7 @@ func CoreBidderNames() []BidderName {
 		BidderBizzclick,
 		BidderBliink,
 		BidderBlue,
+		BidderBluesea,
 		BidderBmtm,
 		BidderBoldwin,
 		BidderBrave,
@@ -422,6 +425,7 @@ func CoreBidderNames() []BidderName {
 		BidderRevcontent,
 		BidderRhythmone,
 		BidderRichaudience,
+		BidderRise,
 		BidderRTBHouse,
 		BidderRubicon,
 		BidderSeedingAlliance,

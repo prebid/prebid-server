@@ -84,6 +84,9 @@ type ExtRequestPrebid struct {
 	Macros            map[string]string               `json:"macros,omitempty"`
 	AdServerTargeting []AdServerTarget                `json:"adservertargeting,omitempty"`
 	BidAdjustments    *ExtRequestPrebidBidAdjustments `json:"bidadjustments,omitempty"`
+	// ReturnAllBidStatus if true populates bidresponse.ext.prebid.seatnonbid with all bids which was
+	// either rejected, nobid, input error
+	ReturnAllBidStatus bool `json:"returnallbidstatus,omitempty"`
 }
 
 type AdServerTarget struct {
