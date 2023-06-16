@@ -1,0 +1,57 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "tokenId": "126151698247",
+            "host": "abc.com",
+            "seatId": "2"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://abc.com/bidder/bid/2/000?token=126151698247",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "w": 300,
+                "h": 250
+              },
+              "ext": {
+                "bidder": {
+                  "tokenId": "126151698247",
+                  "host": "abc.com",
+                  "seatId": "2"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 400
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Bad request: 400",
+      "comparison": "literal"
+    }
+  ],
+  "expectedBidResponses": []
+}

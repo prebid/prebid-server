@@ -1,0 +1,14 @@
+#endpoint: "http://{{.Host}}-prebid.owadx.com/?seat={{.AccountID}}&token={{.SourceId}}"
+endpoint: "http://{{.Host}}/bidder/bid/{{.AccountID}}/000?token={{.SourceId}}"
+#endpoint: "http://beta-bidder.vrtzads.com/vzbidder/bid?exchangeId=705712f550cc479497fbdbf2edce5569&host={{.Host}}&seat={{.AccountID}}&token={{.SourceId}}"
+maintainer:
+  email: prebid-team@techbravo.com
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
