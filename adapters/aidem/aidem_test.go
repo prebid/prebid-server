@@ -12,7 +12,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAidem, config.Adapter{
-		Endpoint: "https://fakezero.aidemsrv.com/ortb/v2.5/bid/request",
+		Endpoint: "https://fakezero.aidemsrv.com/ortb/v2.6/bid/request",
 	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {

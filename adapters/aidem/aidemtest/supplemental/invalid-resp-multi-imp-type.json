@@ -57,7 +57,7 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "https://fakezero.aidemsrv.com/ortb/v2.5/bid/request",
+                "uri": "https://fakezero.aidemsrv.com/ortb/v2.6/bid/request",
                 "body": {
                     "id": "test-request-id",
                     "imp": [
@@ -144,7 +144,7 @@
     "expectedBidResponses": [],
     "expectedMakeBidsErrors": [
         {
-            "value": "unable to fetch mediaType in multi-format: test-imp-id",
+            "value": "Unable to fetch mediaType in multi-format: test-imp-id",
             "comparison": "literal"
         }
     ]

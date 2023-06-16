@@ -12,16 +12,22 @@
                         }
                     ]
                 },
-                "video": {
-                    "mimes": [
-                        "video/mp4"
-                    ],
-                    "protocols": [
-                        2,
-                        5
-                    ],
-                    "w": 320,
-                    "h": 480
+                "ext": {
+                    "bidder": {
+                        "siteId": "TCID",
+                        "publisherId": "1234"
+                    }
+                }
+            },
+            {
+                "id": "2",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 50
+                        }
+                    ]
                 },
                 "ext": {
                     "bidder": {
@@ -49,16 +55,22 @@
                                     }
                                 ]
                             },
-                            "video": {
-                                "mimes": [
-                                    "video/mp4"
-                                ],
-                                "protocols": [
-                                    2,
-                                    5
-                                ],
-                                "w": 320,
-                                "h": 480
+                            "ext": {
+                                "bidder": {
+                                    "siteId": "TCID",
+                                    "publisherId": "1234"
+                                }
+                            }
+                        },
+                        {
+                            "id": "2",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 300,
+                                        "h": 50
+                                    }
+                                ]
                             },
                             "ext": {
                                 "bidder": {

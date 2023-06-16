@@ -41,7 +41,7 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "https://fakezero.aidemsrv.com/ortb/v2.5/bid/request",
+                "uri": "https://fakezero.aidemsrv.com/ortb/v2.6/bid/request",
                 "body": {
                     "id": "test-request-id",
                     "imp": [
@@ -97,7 +97,18 @@
                                     "adm": "some-test-ad",
                                     "crid": "test-crid",
                                     "h": 50,
-                                    "w": 320
+                                    "w": 320,
+                                    "mtype": 1
+                                },
+                                {
+                                    "id": "test-bid-id-2",
+                                    "impid": "2",
+                                    "price": 1.10,
+                                    "adm": "some-test-ad-2",
+                                    "crid": "test-crid-2",
+                                    "h": 50,
+                                    "w": 300,
+                                    "mtype": 1
                                 }
                             ]
                         }
@@ -119,7 +130,21 @@
                         "adm": "some-test-ad",
                         "crid": "test-crid",
                         "w": 320,
-                        "h": 50
+                        "h": 50,
+                        "mtype": 1
+                    },
+                    "type": "banner"
+                },
+                {
+                    "bid": {
+                        "id": "test-bid-id-2",
+                        "impid": "2",
+                        "price": 1.10,
+                        "adm": "some-test-ad-2",
+                        "crid": "test-crid-2",
+                        "w": 300,
+                        "h": 50,
+                        "mtype": 1
                     },
                     "type": "banner"
                 }

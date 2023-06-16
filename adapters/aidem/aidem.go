@@ -16,10 +16,6 @@ type adapter struct {
 	endpoint string
 }
 
-type aidemResponseBidExt struct {
-	AdCodeType string `json:"adCodeType"`
-}
-
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 
@@ -43,33 +39,28 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var errs []error
 
-	if response.StatusCode == http.StatusNoContent {
+	if adapters.IsResponseStatusCodeNoContent(response) {
 		return nil, nil
 	}
 
-	if response.StatusCode == http.StatusBadRequest {
+	if err := adapters.CheckResponseStatusCodeForErrors(response); err != nil {
 		return nil, []error{&errortypes.BadInput{
 			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
 		}}
 	}
 
-	if response.StatusCode != http.StatusOK {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
-		}}
-	}
-
 	var bidResp openrtb2.BidResponse
-
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
-		return nil, []error{err}
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("JSON parsing error: %v", err),
+		}}
 	}
 
 	bidResponse := adapters.NewBidderResponse()
 
 	for _, seatBid := range bidResp.SeatBid {
 		for i := range seatBid.Bid {
-			bidType, err := getMediaTypeForImp(seatBid.Bid[i], internalRequest.Imp)
+			bidType, err := getMediaTypeForBid(seatBid.Bid[i])
 			if err != nil {
 				errs = append(errs, err)
 			} else {
@@ -91,40 +82,17 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	}, nil
 }
 
-func getMediaTypeForImp(bid openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
-	var bidExt aidemResponseBidExt
-	err := json.Unmarshal(bid.Ext, &bidExt)
-	if err == nil {
-		switch bidExt.AdCodeType {
-		case "banner":
-			return openrtb_ext.BidTypeBanner, nil
-		case "native":
-			return openrtb_ext.BidTypeNative, nil
-		case "video":
-			return openrtb_ext.BidTypeVideo, nil
-		}
+func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupAudio:
+		return openrtb_ext.BidTypeAudio, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
+	default:
+		return "", fmt.Errorf("Unable to fetch mediaType in multi-format: %s", bid.ImpID)
 	}
-
-	var mediaType openrtb_ext.BidType
-	var typeCnt = 0
-	for _, imp := range imps {
-		if imp.ID == bid.ImpID {
-			if imp.Banner != nil {
-				typeCnt += 1
-				mediaType = openrtb_ext.BidTypeBanner
-			}
-			if imp.Native != nil {
-				typeCnt += 1
-				mediaType = openrtb_ext.BidTypeNative
-			}
-			if imp.Video != nil {
-				typeCnt += 1
-				mediaType = openrtb_ext.BidTypeVideo
-			}
-		}
-	}
-	if typeCnt == 1 {
-		return mediaType, nil
-	}
-	return mediaType, fmt.Errorf("unable to fetch mediaType in multi-format: %s", bid.ImpID)
 }

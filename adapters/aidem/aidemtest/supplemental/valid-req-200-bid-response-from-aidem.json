@@ -44,7 +44,7 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "https://fakezero.aidemsrv.com/ortb/v2.5/bid/request",
+                "uri": "https://fakezero.aidemsrv.com/ortb/v2.6/bid/request",
                 "body": {
                     "id": "test-request-id",
                     "imp": [
@@ -105,7 +105,8 @@
                                     "cid": "987",
                                     "crid": "12345678",
                                     "h": 250,
-                                    "w": 300
+                                    "w": 300,
+                                    "mtype": 1
                                 }
                             ]
                         }
@@ -129,7 +130,8 @@
                         "cid": "987",
                         "crid": "12345678",
                         "h": 250,
-                        "w": 300
+                        "w": 300,
+                        "mtype": 1
                     },
                     "type": "banner"
                 }
