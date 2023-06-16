@@ -7,7 +7,7 @@ rules:
 
       ```
         for _, seatBid := range response.SeatBid {
-          for _, bid := range seatBids.Bid {
+          for _, bid := range seatBid.Bid {
             ...
             seatBid := bid
             responseBid := &adapters.TypedBid{
