@@ -8,7 +8,7 @@
     "zone": {
       "type": "string",
       "description": "Zone ID.",
-      "pattern": "^([a-fA-F\\d\\-]{36})$"
+      "pattern": "^([a-fA-F\\d\\-]{32,36})$"
     },
     "customFloor": {
       "type": "number",

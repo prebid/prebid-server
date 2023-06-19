@@ -11,7 +11,25 @@
     "adspaceId": {
       "type": "string",
       "description": "Identifier for specific ad placement is SOMA `adspaceId`"
+    },
+    "adbreakId": {
+      "type": "string",
+      "description": "Identifier for specific adpod placement is SOMA `adbreakId`"
     }
   },
-  "required": ["publisherId","adspaceId"]
+  "required": [
+    "publisherId"
+  ],
+  "anyOf": [
+    {
+      "required": [
+        "adspaceId"
+      ]
+    },
+    {
+      "required": [
+        "adbreakId"
+      ]
+    }
+  ]
 }

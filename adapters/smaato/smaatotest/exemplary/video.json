@@ -29,6 +29,8 @@
                         "rewarded": 0
                     }
                 },
+                "instl": 1,
+                "bidfloor": 0.00123,
                 "ext": {
                     "bidder": {
                         "publisherId": "1100042525",
@@ -52,6 +54,15 @@
         "user": {
             "ext": {
                 "data": {}
+            }
+        },
+        "regs": {
+            "coppa": 1,
+            "ext": {
+                "gdpr": 1,
+                "us_privacy": "uspConsentString",
+                "gpp": "gppString",
+                "gpp_sid": [7]
             }
         },
         "ext": {
@@ -82,6 +93,8 @@
                         {
                             "id": "postbid_iframe",
                             "tagid": "130563103",
+                            "bidfloor": 0.00123,
+                            "instl": 1,
                             "video": {
                                 "w": 1024,
                                 "h": 768,
@@ -113,6 +126,15 @@
                         "ext": {
                         }
                     },
+                    "regs": {
+                        "coppa": 1,
+                        "ext": {
+                            "gdpr": 1,
+                            "us_privacy": "uspConsentString",
+                            "gpp": "gppString",
+                            "gpp_sid": [7]
+                        }
+                    },
                     "device": {
                         "ua": "test-user-agent"
                     },
@@ -122,7 +144,7 @@
                         }
                     },
                     "ext": {
-                        "client": "prebid_server_0.2"
+                        "client": "prebid_server_0.6"
                     }
                 }
             },
@@ -177,7 +199,8 @@
                         "nurl": "https://nurl",
                         "price": 0.01,
                         "w": 1024,
-                        "h": 768
+                        "h": 768,
+                        "exp": 300
                     },
                     "type": "video"
                 }

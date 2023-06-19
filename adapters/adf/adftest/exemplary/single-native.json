@@ -65,7 +65,12 @@
             "price": 10,
             "adm": "{json response string}",
             "adomain": [],
-            "crid": "test-creative-id"
+            "crid": "test-creative-id",
+            "ext": {
+              "prebid": {
+                "type": "native"
+              }
+            }
           }]
         }],
         "cur": "USD"
@@ -81,7 +86,12 @@
           "impid": "test-imp-id",
           "price": 10,
           "adm": "{json response string}",
-          "crid": "test-creative-id"
+          "crid": "test-creative-id",
+          "ext": {
+            "prebid": {
+              "type": "native"
+            }
+          }
         },
         "type": "native"
       }

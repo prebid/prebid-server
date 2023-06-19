@@ -18,8 +18,8 @@
           "prebid": {
           },
           "bidder": {
-            "accountId": 199578,
-            "publisherId": 123456,
+            "accountId": 12345,
+            "publisherId": "123456",
             "mediaId": "test_media"
           }
         }

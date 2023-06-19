@@ -1,0 +1,73 @@
+{
+  "mockBidRequest": {
+    "id": "test-req-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "native": {
+          "request": "",
+          "ver": "1.2"
+        },
+        "ext": {
+          "bidder": {
+            "slotid": "u42ohmaufh",
+            "adtype": "native",
+            "publisherid": "123",
+            "signkey": "signkey",
+            "keyid": "41",
+            "isTestAuthorization": "true"
+          }
+        }
+      }
+    ],
+    "app": {
+      "bundle": "com.huawei.browser",
+      "name": "Huawei Browser",
+      "ver": "9.1.0.301"
+    },
+    "device": {
+      "ua": "useragent",
+      "h": 1920,
+      "language": "zh",
+      "geoCountry": "CH",
+      "model": "COL-TEST",
+      "os": "android",
+      "osv": "10.0.0",
+      "devicetype": 4,
+      "make": "huawei",
+      "w": 1080,
+      "ip": "152.193.6.74",
+      "pxratio": 23.01,
+      "geo": {
+        "country": ""
+      }
+    },
+    "user": {
+      "id": "db089de9-a62e-4861-a881-0ff15e052516",
+      "buyeruid": "v4_bidder_token",
+      "ext": {
+        "data": {
+          "gaid": [
+            "gaid"
+          ],
+          "oaid": [
+            "oaid"
+          ],
+          "clientTime": [
+            "2018-11-02 16:34:07.981+1300"
+          ]
+        }
+      }
+    },
+    "ext": {
+    }
+  },
+  "httpcalls": [
+  ],
+  "expectedBidResponses": [
+  ],
+  "expectedMakeRequestsErrors": [{
+    "value": "extract openrtb native failed: imp.Native.Request is empty",
+    "comparison": "literal"
+  }]
+}

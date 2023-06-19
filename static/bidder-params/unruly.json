@@ -1,17 +1,20 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "title": "Unruly Adapter Params",
-    "description": "A schema which validates params accepted by the Unruly adapter",
-    "type": "object",
-    "properties": {
-      "uuid": {
-        "type": "string",
-        "description": "uuid"
-      },
-      "siteid": {
-        "type": "string",
-        "description": "ID for publisher site"
-      }
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Unruly Adapter Params",
+  "description": "A schema which validates params accepted by the Unruly adapter",
+  "type": "object",
+  "properties": {
+    "siteid": {
+      "type": "integer",
+      "description": "ID for publisher site"
     },
-  "required": ["uuid", "siteid"]
+    "siteId": {
+      "type": "integer",
+      "description": "ID for publisher site,preferred"
+    }
+  },
+  "oneOf": [
+    { "required": ["siteId"] },
+    { "required": ["siteid"] }
+  ]
 }

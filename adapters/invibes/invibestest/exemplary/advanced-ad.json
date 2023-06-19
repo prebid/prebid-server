@@ -44,7 +44,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://adweb.invibesstage.com/bid/ServerBidAdContent",
+        "uri": "https://bid2.videostep.com/bid/ServerBidAdContent",
         "body": {
           "BidParamsJson": "{\"PlacementIds\":[\"2eb6bd58-865c-47ce-af7f-a918108c3fd2\"],\"BidVersion\":\"4\",\"Properties\":{\"2eb6bd58-865c-47ce-af7f-a918108c3fd2\":{\"Formats\":[{\"w\":300,\"h\":150}],\"ImpId\":\"test-imp-id\"}}}",
           "Bvid": "",

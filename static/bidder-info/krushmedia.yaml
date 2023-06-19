@@ -1,3 +1,4 @@
+endpoint: "http://ads4.krushmedia.com/?c=rtb&m=req&key={{.AccountID}}"
 maintainer:
   email: "adapter@krushmedia.com"
 capabilities:
@@ -11,3 +12,7 @@ capabilities:
       - banner
       - video
       - native
+userSync:
+  redirect:
+    url: "https://cs.krushmedia.com/4e4abdd5ecc661643458a730b1aa927d.gif?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir={{.RedirectURL}}"
+    userMacro: "[UID]"

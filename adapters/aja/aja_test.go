@@ -12,7 +12,7 @@ const testsBidderEndpoint = "https://localhost/bid/4"
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAJA, config.Adapter{
-		Endpoint: testsBidderEndpoint})
+		Endpoint: testsBidderEndpoint}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)

@@ -1,3 +1,4 @@
+endpoint: "https://adx.adform.net/adx/openrtb"
 maintainer:
   email: "scope.sspp@adform.com"
 gvlVendorID: 50
@@ -12,3 +13,7 @@ capabilities:
       - banner
       - native
       - video
+userSync:
+  redirect:
+    url: "https://cm.adform.net/cookie?redirect_url={{.RedirectURL}}"
+    userMacro: "$UID"

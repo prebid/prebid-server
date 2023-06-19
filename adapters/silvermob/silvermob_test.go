@@ -11,7 +11,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderSilverMob, config.Adapter{
-		Endpoint: "http://{{.Host}}.example.com/api/dsp/bid/{{.ZoneID}}"})
+		Endpoint: "http://{{.Host}}.example.com/api/dsp/bid/{{.ZoneID}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -23,7 +23,7 @@ func TestJsonSamples(t *testing.T) {
 
 func TestEndpointTemplateMalformed(t *testing.T) {
 	_, buildErr := Builder(openrtb_ext.BidderSilverMob, config.Adapter{
-		Endpoint: "{{Malformed}}"})
+		Endpoint: "{{Malformed}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	assert.Error(t, buildErr)
 }

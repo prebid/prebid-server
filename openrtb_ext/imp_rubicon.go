@@ -4,28 +4,31 @@ import (
 	"encoding/json"
 )
 
-// ExtImpRubicon defines the contract for bidrequest.imp[i].ext.rubicon
+// ExtImpRubicon defines the contract for bidrequest.imp[i].ext.prebid.bidder.rubicon
 type ExtImpRubicon struct {
-	AccountId int                `json:"accountId"`
-	SiteId    int                `json:"siteId"`
-	ZoneId    int                `json:"zoneId"`
-	Inventory json.RawMessage    `json:"inventory,omitempty"`
-	Visitor   json.RawMessage    `json:"visitor,omitempty"`
-	Video     rubiconVideoParams `json:"video"`
-	Debug     impExtRubiconDebug `json:"debug,omitempty"`
+	AccountId        json.Number        `json:"accountId"`
+	SiteId           json.Number        `json:"siteId"`
+	ZoneId           json.Number        `json:"zoneId"`
+	Inventory        json.RawMessage    `json:"inventory,omitempty"`
+	BidOnMultiformat bool               `json:"bidonmultiformat,omitempty"`
+	Keywords         []string           `json:"keywords,omitempty"`
+	Visitor          json.RawMessage    `json:"visitor,omitempty"`
+	Video            rubiconVideoParams `json:"video"`
+	Debug            impExtRubiconDebug `json:"debug,omitempty"`
+	PChain           string             `json:"pchain,omitempty"`
 }
 
-// rubiconVideoParams defines the contract for bidrequest.imp[i].ext.rubicon.video
+// rubiconVideoParams defines the contract for bidrequest.imp[i].ext.prebid.bidder.rubicon.video
 type rubiconVideoParams struct {
-	Language     string `json:"language,omitempty"`
-	PlayerHeight int    `json:"playerHeight,omitempty"`
-	PlayerWidth  int    `json:"playerWidth,omitempty"`
-	VideoSizeID  int    `json:"size_id,omitempty"`
-	Skip         int    `json:"skip,omitempty"`
-	SkipDelay    int    `json:"skipdelay,omitempty"`
+	Language     string      `json:"language,omitempty"`
+	PlayerHeight json.Number `json:"playerHeight,omitempty"`
+	PlayerWidth  json.Number `json:"playerWidth,omitempty"`
+	VideoSizeID  int         `json:"size_id,omitempty"`
+	Skip         int         `json:"skip,omitempty"`
+	SkipDelay    int         `json:"skipdelay,omitempty"`
 }
 
-// rubiconVideoParams defines the contract for bidrequest.imp[i].ext.rubicon.debug
+// rubiconVideoParams defines the contract for bidrequest.imp[i].ext.prebid.bidder.rubicon.debug
 type impExtRubiconDebug struct {
 	CpmOverride float64 `json:"cpmoverride,omitempty"`
 }

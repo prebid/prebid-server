@@ -1,0 +1,13 @@
+endpoint: "https://sonic.impactify.media/bidder"
+maintainer:
+  email: "contact@impactify.io"
+gvlVendorID: 606
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  iframe:
+    url: "https://sonic.impactify.media/static/cookie_sync.html?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect_url={{.RedirectURL}}"
+    userMacro: "{IMPACTIFY_UID}"

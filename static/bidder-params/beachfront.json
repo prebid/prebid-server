@@ -30,7 +30,7 @@
     },
     "bidfloor": {
       "type": "number",
-      "description": "The price floor for the bid. Will override the bidfloor set for the impression."
+      "description": "The price floor for the bid. Will override the bidfloor set for the impression. Always in USD, regardless of the value of the currency set for the impression."
     },
     "videoResponseType": {
       "type": "string",

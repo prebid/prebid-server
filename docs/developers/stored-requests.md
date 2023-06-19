@@ -194,13 +194,31 @@ with different [configuration options](configuration.md). For example:
 
 ```yaml
 stored_requests:
-  postgres:
-    host: localhost
-    port: 5432
-    user: db-username
-    dbname: database-name
-    query: SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in %REQUEST_ID_LIST% UNION ALL SELECT id, impData, 'imp' as type FROM stored_imps WHERE id in %IMP_ID_LIST%;
+  database:
+    connection:
+      driver: postgres
+      host: localhost
+      port: 5432
+      user: db-username
+      dbname: database-name
+    fetcher:
+      query: SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in $REQUEST_ID_LIST UNION ALL SELECT id, impData, 'imp' as type FROM stored_imps WHERE id in $IMP_ID_LIST;
 ```
+
+### Supported Databases
+- postgres
+- mysql
+
+### Query Syntax
+All database queries should be expressed using the native SQL syntax of your supported database of choice with one caveat.
+
+For all supported database drivers, wherever you need to specify a query parameter, you must not use the native syntax (e.g. `$1`, `%%`, `?`, etc.), but rather a PBS-specific syntax to represent the parameter which is of the format `$VARIABLE_NAME`. PBS currently supports just four query parameters, each of which pertains to particular config queries, and here is how they should be specified in your queries:
+- last updated at timestamp --> `$LAST_UPDATED`
+- stored request ID list --> `$REQUEST_ID_LIST`
+- stored imp ID list --> `$IMP_ID_LIST`
+- stored response ID list --> `$ID_LIST`
+
+See the query defined at `stored_requests.database.connection.fetcher.query` in the yaml config above as an example of how to mix these variables in with native SQL syntax.
 
 ```yaml
 stored_requests:
@@ -234,17 +252,20 @@ Any concrete Fetcher in the project will be composed with any Cache(s) to create
 EventProducer events are used to Save or Invalidate values from the Cache(s).
 Saves and invalidates will propagate to all Cache layers.
 
-Here is an example `pbs.yaml` file which looks for Stored Requests first from Postgres, and then from an HTTP endpoint.
+Here is an example `pbs.yaml` file which looks for Stored Requests first from Database (i.e. Postgres), and then from an HTTP endpoint.
 It will use an in-memory LRU cache to store data locally, and poll another HTTP endpoint to listen for updates.
 
 ```yaml
 stored_requests:
-  postgres:
-    host: localhost
-    port: 5432
-    user: db-username
-    dbname: database-name
-    query: SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in %REQUEST_ID_LIST% UNION ALL SELECT id, impData, 'imp' as type FROM stored_imps WHERE id in %IMP_ID_LIST%;
+  database:
+    connection:
+      driver: postgres
+      host: localhost
+      port: 5432
+      user: db-username
+      dbname: database-name
+    fetcher:
+      query: SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in $REQUEST_ID_LIST UNION ALL SELECT id, impData, 'imp' as type FROM stored_imps WHERE id in $IMP_ID_LIST;
   http:
     endpoint: http://stored-requests.prebid.com
     amp_endpoint: http://stored-requests.prebid.com?amp=true

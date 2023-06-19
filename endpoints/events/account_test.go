@@ -3,7 +3,7 @@ package events
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -11,15 +11,18 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestHandleAccountServiceErrors(t *testing.T) {
 	tests := map[string]struct {
-		fetcher *mockAccountsFetcher
-		cfg     *config.Configuration
-		want    struct {
+		fetcher   *mockAccountsFetcher
+		cfg       *config.Configuration
+		accountID string
+		want      struct {
 			code     int
 			response string
 		}
@@ -37,12 +40,33 @@ func TestHandleAccountServiceErrors(t *testing.T) {
 					TimeoutMS: int64(2000), AllowUnknownBidder: false,
 				},
 			},
+			accountID: "testacc",
 			want: struct {
 				code     int
 				response string
 			}{
 				code:     400,
 				response: "Invalid request: some error\nInvalid request: Prebid-server could not verify the Account ID. Please reach out to the prebid server host.\n",
+			},
+		},
+		"malformedAccountConfig": {
+			fetcher: &mockAccountsFetcher{
+				Fail:  true,
+				Error: &errortypes.MalformedAcct{},
+			},
+			cfg: &config.Configuration{
+				MaxRequestSize: maxSize,
+				VTrack: config.VTrack{
+					TimeoutMS: int64(2000), AllowUnknownBidder: false,
+				},
+			},
+			accountID: "malformed_acct",
+			want: struct {
+				code     int
+				response string
+			}{
+				code:     500,
+				response: "Invalid request: The prebid-server account config for account id \"malformed_acct\" is malformed. Please reach out to the prebid server host.\n",
 			},
 		},
 		"serviceUnavailable": {
@@ -56,6 +80,7 @@ func TestHandleAccountServiceErrors(t *testing.T) {
 					TimeoutMS: int64(2000), AllowUnknownBidder: false,
 				},
 			},
+			accountID: "testacc",
 			want: struct {
 				code     int
 				response string
@@ -81,6 +106,7 @@ func TestHandleAccountServiceErrors(t *testing.T) {
 					AllowUnknownBidder: false,
 				},
 			},
+			accountID: "testacc",
 			want: struct {
 				code     int
 				response string
@@ -98,8 +124,8 @@ func TestHandleAccountServiceErrors(t *testing.T) {
 			h    httprouter.Handle
 			r    *http.Request
 		}{
-			vast(t, test.cfg, test.fetcher),
-			event(test.cfg, test.fetcher),
+			vast(t, test.cfg, test.fetcher, test.accountID),
+			event(test.cfg, test.fetcher, test.accountID),
 		}
 
 		for _, handler := range handlers {
@@ -110,7 +136,7 @@ func TestHandleAccountServiceErrors(t *testing.T) {
 
 				// execute
 				handler.h(recorder, handler.r, nil)
-				d, err := ioutil.ReadAll(recorder.Result().Body)
+				d, err := io.ReadAll(recorder.Result().Body)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -123,7 +149,7 @@ func TestHandleAccountServiceErrors(t *testing.T) {
 	}
 }
 
-func event(cfg *config.Configuration, fetcher stored_requests.AccountFetcher) struct {
+func event(cfg *config.Configuration, fetcher stored_requests.AccountFetcher, accountID string) struct {
 	name string
 	h    httprouter.Handle
 	r    *http.Request
@@ -134,12 +160,12 @@ func event(cfg *config.Configuration, fetcher stored_requests.AccountFetcher) st
 		r    *http.Request
 	}{
 		name: "event",
-		h:    NewEventEndpoint(cfg, fetcher, nil),
-		r:    httptest.NewRequest("GET", "/event?t=win&b=test&ts=1234&f=b&x=1&a=testacc", strings.NewReader("")),
+		h:    NewEventEndpoint(cfg, fetcher, nil, &metrics.MetricsEngineMock{}),
+		r:    httptest.NewRequest("GET", "/event?t=win&b=test&ts=1234&f=b&x=1&a="+accountID, strings.NewReader("")),
 	}
 }
 
-func vast(t *testing.T, cfg *config.Configuration, fetcher stored_requests.AccountFetcher) struct {
+func vast(t *testing.T, cfg *config.Configuration, fetcher stored_requests.AccountFetcher, accountID string) struct {
 	name string
 	h    httprouter.Handle
 	r    *http.Request
@@ -155,7 +181,7 @@ func vast(t *testing.T, cfg *config.Configuration, fetcher stored_requests.Accou
 		r    *http.Request
 	}{
 		name: "vast",
-		h:    NewVTrackEndpoint(cfg, fetcher, &vtrackMockCacheClient{}, config.BidderInfos{}),
-		r:    httptest.NewRequest("POST", "/vtrack?a=testacc", strings.NewReader(vtrackBody)),
+		h:    NewVTrackEndpoint(cfg, fetcher, &vtrackMockCacheClient{}, config.BidderInfos{}, &metrics.MetricsEngineMock{}),
+		r:    httptest.NewRequest("POST", "/vtrack?a="+accountID, strings.NewReader(vtrackBody)),
 	}
 }
