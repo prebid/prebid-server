@@ -146,7 +146,7 @@
   "biddersFPDResolved": {
     "appnexus": {
       "site": {
-        "id": "reqSiteId",
+        "id": "apnFpdSiteId",
         "page": "http://www.foobar.com/4321.html",
         "name": "apnFpdSiteIdSiteName",
         "cat": [
@@ -170,18 +170,10 @@
               "name": "apnFpdSiteIdContentDataName2"
             }
           ]
-        },
-        "ext": {
-          "data": {
-            "id": "apnFpdSiteId",
-            "publisher": {
-              "id": "1"
-            }
-          }
         }
       },
       "user": {
-        "id": "reqUserId",
+        "id": "apnUserId",
         "gender": "F",
         "yob": 2000,
         "keywords": "apnFpdUserKeyword",
@@ -194,12 +186,7 @@
             "id": "apnFpdUserContentDataId2",
             "name": "apnFpdUserContentDataName2"
           }
-        ],
-        "ext": {
-          "data": {
-            "id": "apnUserId"
-          }
-        }
+        ]
       }
     }
   },

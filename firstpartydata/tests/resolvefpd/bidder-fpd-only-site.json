@@ -1,44 +1,30 @@
 {
-  "description": "Bidder FPD defined only for site",
-  "inputRequestData": {
-    "site": {
-      "id": "reqUserID"
-    }
-  },
-  "bidderConfigFPD": {
-    "appnexus": {
-      "site": {
-        "id": "apnSiteId",
-        "ext": {
-          "data": {
-            "morefpdData": "morefpddata",
-            "siteFpddata": "siteFpddata",
-            "moreFpd": {
-              "fpd": 123
-            }
-          }
+    "description": "Bidder FPD defined only for site",
+    "inputRequestData": {
+        "site": {
+            "id": "reqUserID"
         }
-      }
-    }
-  },
-  "outputRequestData": {
-    "site": {
-      "id": "reqUserID",
-      "ext": {
-        "data": {
-          "ext": {
-            "data": {
-              "morefpdData": "morefpddata",
-              "siteFpddata": "siteFpddata",
-              "moreFpd": {
-                "fpd": 123
-              }
+    },
+    "bidderConfigFPD": {
+        "appnexus": {
+            "site": {
+                "id": "apnSiteId",
+                "ext": {
+                    "data": {
+                        "other": "data"
+                    }
+                }
             }
-          },
-          "id": "apnSiteId"
         }
-      }
+    },
+    "outputRequestData": {
+        "site": {
+            "id": "apnSiteId",
+            "ext": {
+                "data": {
+                    "other": "data"
+                }
+            }
+        }
     }
-  }
 }
-
