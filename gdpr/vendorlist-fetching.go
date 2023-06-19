@@ -62,16 +62,24 @@ func makeVendorListNotFoundError(specVersion, listVersion uint16) error {
 
 // preloadCache saves all the known versions of the vendor list for future use.
 func preloadCache(ctx context.Context, client *http.Client, urlMaker func(uint16, uint16) string, saver saveVendors) {
-	specVersions := [2]uint16{2, 3}
+	versions := [2]struct {
+		specVersion      uint16
+		firstListVersion uint16
+	}{
+		{
+			specVersion:      2,
+			firstListVersion: 2, // The GVL for TCF2 has no vendors defined in its first version. It's very unlikely to be used, so don't preload it.
+		},
+		{
+			specVersion:      3,
+			firstListVersion: 1,
+		},
+	}
+	for _, v := range versions {
+		latestVersion := saveOne(ctx, client, urlMaker(v.specVersion, 0), saver)
 
-	for _, v := range specVersions {
-		latestVersion := saveOne(ctx, client, urlMaker(v, 0), saver)
-
-		// The GVL for TCF2 has no vendors defined in its first version. It's very unlikely to be used, so don't preload it.
-		firstVersionToLoad := uint16(2)
-
-		for i := firstVersionToLoad; i < latestVersion; i++ {
-			saveOne(ctx, client, urlMaker(v, i), saver)
+		for i := v.firstListVersion; i < latestVersion; i++ {
+			saveOne(ctx, client, urlMaker(v.specVersion, i), saver)
 		}
 	}
 }
