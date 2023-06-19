@@ -176,6 +176,15 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 			applyFPD(auctionReq.FirstPartyData[bidderRequest.BidderName], bidderRequest.BidRequest)
 		}
 
+		// fetchBids activity
+		fetchBidsActivityAllowed := auctionReq.Activitities.Allow(privacy.ActivityFetchBids, *req,
+			privacy.ScopedName{Scope: privacy.ScopeTypeBidder, Name: bidderRequest.BidderName.String()})
+		if fetchBidsActivityAllowed != privacy.ActivityAllow {
+			// skip the call to a bidder if fetchBids activity is not allowed
+			// do not add this bidder to allowedBidderRequests
+			continue
+		}
+
 		if bidRequestAllowed {
 			privacyEnforcement.Apply(bidderRequest.BidRequest)
 			allowedBidderRequests = append(allowedBidderRequests, bidderRequest)
@@ -186,7 +195,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 			setLegacyUSPFromGPP(bidderRequest.BidRequest, gpp)
 		}
 
-		//!!! activity
+		// transmitTid activity
 		transmitTIdsActivityAllowed := auctionReq.Activitities.Allow(privacy.ActivityTransmitTIds, *req,
 			privacy.ScopedName{Scope: privacy.ScopeTypeBidder, Name: bidderRequest.BidderName.String()})
 		if transmitTIdsActivityAllowed == privacy.ActivityDeny || transmitTIdsActivityAllowed == privacy.ActivityAbstain {
