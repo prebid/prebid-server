@@ -19,42 +19,41 @@ type ActivityControl struct {
 	plans map[Activity]EnforcementPlan
 }
 
-func NewActivityControl(hostConf config.AccountPrivacy, accConf config.AccountPrivacy) (ActivityControl, error) {
-	//!!how to merge host config with acc configs?
+func NewActivityControl(privacyConf config.AccountPrivacy) (ActivityControl, error) {
 	ac := ActivityControl{plans: nil}
 	var err error
 
 	plans := make(map[Activity]EnforcementPlan)
 
-	plans[ActivitySyncUser], err = buildEnforcementPlan(hostConf.AllowActivities.SyncUser)
+	plans[ActivitySyncUser], err = buildEnforcementPlan(privacyConf.AllowActivities.SyncUser)
 	if err != nil {
 		return ac, err
 	}
-	plans[ActivityFetchBids], err = buildEnforcementPlan(hostConf.AllowActivities.FetchBids)
+	plans[ActivityFetchBids], err = buildEnforcementPlan(privacyConf.AllowActivities.FetchBids)
 	if err != nil {
 		return ac, err
 	}
-	plans[ActivityEnrichUserFPD], err = buildEnforcementPlan(hostConf.AllowActivities.EnrichUserFPD)
+	plans[ActivityEnrichUserFPD], err = buildEnforcementPlan(privacyConf.AllowActivities.EnrichUserFPD)
 	if err != nil {
 		return ac, err
 	}
-	plans[ActivityReportAnalytics], err = buildEnforcementPlan(hostConf.AllowActivities.ReportAnalytics)
+	plans[ActivityReportAnalytics], err = buildEnforcementPlan(privacyConf.AllowActivities.ReportAnalytics)
 	if err != nil {
 		return ac, err
 	}
-	plans[ActivityTransmitUserFPD], err = buildEnforcementPlan(hostConf.AllowActivities.TransmitUserFPD)
+	plans[ActivityTransmitUserFPD], err = buildEnforcementPlan(privacyConf.AllowActivities.TransmitUserFPD)
 	if err != nil {
 		return ac, err
 	}
-	plans[ActivityTransmitPreciseGeo], err = buildEnforcementPlan(hostConf.AllowActivities.TransmitPreciseGeo)
+	plans[ActivityTransmitPreciseGeo], err = buildEnforcementPlan(privacyConf.AllowActivities.TransmitPreciseGeo)
 	if err != nil {
 		return ac, err
 	}
-	plans[ActivityTransmitUniqueRequestIds], err = buildEnforcementPlan(hostConf.AllowActivities.TransmitUniqueRequestIds)
+	plans[ActivityTransmitUniqueRequestIds], err = buildEnforcementPlan(privacyConf.AllowActivities.TransmitUniqueRequestIds)
 	if err != nil {
 		return ac, err
 	}
-	plans[ActivityTransmitTIds], err = buildEnforcementPlan(hostConf.AllowActivities.TransmitTIds)
+	plans[ActivityTransmitTIds], err = buildEnforcementPlan(privacyConf.AllowActivities.TransmitTIds)
 	if err != nil {
 		return ac, err
 	}
