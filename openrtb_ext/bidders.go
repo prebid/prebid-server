@@ -396,7 +396,6 @@ func CoreBidderNames() []BidderName {
 		BidderLogan,
 		BidderLogicad,
 		BidderLunaMedia,
-		BidderSaLunaMedia,
 		BidderMadvertise,
 		BidderMarsmedia,
 		BidderMediafuse,

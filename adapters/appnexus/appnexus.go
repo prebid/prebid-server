@@ -280,7 +280,6 @@ func splitRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExt
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
-	headers.Add("Connection", "keep-alive")
 
 	var err error
 	request.Ext, err = json.Marshal(requestExtension)
