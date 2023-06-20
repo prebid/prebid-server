@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/prebid/go-gdpr/api"
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/config"
 )
@@ -183,6 +184,86 @@ func TestVendorListURLMaker(t *testing.T) {
 		result := VendorListURLMaker(test.specVersion, test.listVersion)
 		assert.Equal(t, test.expectedURL, result)
 	}
+}
+
+type versionInfo struct {
+	specVersion uint16
+	listVersion uint16
+}
+type saver []versionInfo
+
+func (s *saver) saveVendorLists(specVersion uint16, listVersion uint16, gvl api.VendorList) {
+	vi := versionInfo{
+		specVersion: specVersion,
+		listVersion: listVersion,
+	}
+	*s = append(*s, vi)
+}
+
+func TestPreloadCache(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(mockServer(serverSettings{
+		vendorListLatestVersion: 3,
+		vendorLists: map[int]map[int]string{
+			1: {
+				1: MarshalVendorList(vendorList{
+					GVLSpecificationVersion: 1, VendorListVersion: 1,
+				}),
+				2: MarshalVendorList(vendorList{
+					GVLSpecificationVersion: 1, VendorListVersion: 2,
+				}),
+				3: MarshalVendorList(vendorList{
+					GVLSpecificationVersion: 1, VendorListVersion: 3,
+				}),
+			},
+			2: {
+				1: MarshalVendorList(vendorList{
+					GVLSpecificationVersion: 2, VendorListVersion: 1,
+				}),
+				2: MarshalVendorList(vendorList{
+					GVLSpecificationVersion: 2, VendorListVersion: 2,
+				}),
+				3: MarshalVendorList(vendorList{
+					GVLSpecificationVersion: 2, VendorListVersion: 3,
+				}),
+			},
+			3: {
+				1: MarshalVendorList(vendorList{
+					GVLSpecificationVersion: 3, VendorListVersion: 1,
+				}),
+				2: MarshalVendorList(vendorList{
+					GVLSpecificationVersion: 3, VendorListVersion: 2,
+				}),
+				3: MarshalVendorList(vendorList{
+					GVLSpecificationVersion: 3, VendorListVersion: 3,
+				}),
+			},
+			4: {
+				1: MarshalVendorList(vendorList{
+					GVLSpecificationVersion: 4, VendorListVersion: 1,
+				}),
+				2: MarshalVendorList(vendorList{
+					GVLSpecificationVersion: 4, VendorListVersion: 2,
+				}),
+				3: MarshalVendorList(vendorList{
+					GVLSpecificationVersion: 4, VendorListVersion: 3,
+				}),
+			},
+		},
+	})))
+	defer server.Close()
+
+	s := make(saver, 0, 5)
+	preloadCache(context.Background(), server.Client(), testURLMaker(server), s.saveVendorLists)
+
+	expectedLoadedVersions := []versionInfo{
+		{specVersion: 2, listVersion: 2},
+		{specVersion: 2, listVersion: 3},
+		{specVersion: 3, listVersion: 1},
+		{specVersion: 3, listVersion: 2},
+		{specVersion: 3, listVersion: 3},
+	}
+
+	assert.ElementsMatch(t, expectedLoadedVersions, s)
 }
 
 var vendorList1 = MarshalVendorList(vendorList{
