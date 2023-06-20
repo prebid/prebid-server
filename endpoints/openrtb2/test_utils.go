@@ -94,7 +94,7 @@ type testConfigValues struct {
 
 type brokenExchange struct{}
 
-func (e *brokenExchange) HoldAuction(ctx context.Context, r *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (e *brokenExchange) HoldAuction(ctx context.Context, r *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*exchange.AuctionResponse, error) {
 	return nil, errors.New("Critical, unrecoverable error.")
 }
 
@@ -848,15 +848,17 @@ type mockExchange struct {
 	lastRequest *openrtb2.BidRequest
 }
 
-func (m *mockExchange) HoldAuction(ctx context.Context, auctionRequest *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (m *mockExchange) HoldAuction(ctx context.Context, auctionRequest *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*exchange.AuctionResponse, error) {
 	r := auctionRequest.BidRequestWrapper
 	m.lastRequest = r.BidRequest
-	return &openrtb2.BidResponse{
-		SeatBid: []openrtb2.SeatBid{{
-			Bid: []openrtb2.Bid{{
-				AdM: "<script></script>",
+	return &exchange.AuctionResponse{
+		BidResponse: &openrtb2.BidResponse{
+			SeatBid: []openrtb2.SeatBid{{
+				Bid: []openrtb2.Bid{{
+					AdM: "<script></script>",
+				}},
 			}},
-		}},
+		},
 	}, nil
 }
 
@@ -885,7 +887,7 @@ type warningsCheckExchange struct {
 	auctionRequest exchange.AuctionRequest
 }
 
-func (e *warningsCheckExchange) HoldAuction(ctx context.Context, r *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (e *warningsCheckExchange) HoldAuction(ctx context.Context, r *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*exchange.AuctionResponse, error) {
 	e.auctionRequest = *r
 	return nil, nil
 }
@@ -896,13 +898,16 @@ type nobidExchange struct {
 	gotRequest *openrtb2.BidRequest
 }
 
-func (e *nobidExchange) HoldAuction(ctx context.Context, auctionRequest *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (e *nobidExchange) HoldAuction(ctx context.Context, auctionRequest *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*exchange.AuctionResponse, error) {
 	r := auctionRequest.BidRequestWrapper
 	e.gotRequest = r.BidRequest
-	return &openrtb2.BidResponse{
-		ID:    r.BidRequest.ID,
-		BidID: "test bid id",
-		NBR:   openrtb3.NoBidUnknownError.Ptr(),
+
+	return &exchange.AuctionResponse{
+		BidResponse: &openrtb2.BidResponse{
+			ID:    r.BidRequest.ID,
+			BidID: "test bid id",
+			NBR:   openrtb3.NoBidUnknownError.Ptr(),
+		},
 	}, nil
 }
 
@@ -1167,7 +1172,7 @@ type exchangeTestWrapper struct {
 	actualValidatedBidReq *openrtb2.BidRequest
 }
 
-func (te *exchangeTestWrapper) HoldAuction(ctx context.Context, r *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (te *exchangeTestWrapper) HoldAuction(ctx context.Context, r *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*exchange.AuctionResponse, error) {
 
 	// rebuild/resync the request in the request wrapper.
 	if err := r.BidRequestWrapper.RebuildRequest(); err != nil {

@@ -6,7 +6,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type appnexusImpExtAppnexus struct {
+type impExtAppnexus struct {
 	PlacementID       int             `json:"placement_id,omitempty"`
 	Keywords          string          `json:"keywords,omitempty"`
 	TrafficSourceCode string          `json:"traffic_source_code,omitempty"`
@@ -16,31 +16,31 @@ type appnexusImpExtAppnexus struct {
 	ExternalImpId     string          `json:"external_imp_id,omitempty"`
 }
 
-type appnexusImpExt struct {
-	Appnexus appnexusImpExtAppnexus `json:"appnexus"`
+type impExt struct {
+	Appnexus impExtAppnexus `json:"appnexus"`
 }
 
-type appnexusBidExtVideo struct {
+type bidExtVideo struct {
 	Duration int `json:"duration"`
 }
 
-type appnexusBidExtCreative struct {
-	Video appnexusBidExtVideo `json:"video"`
+type bidExtCreative struct {
+	Video bidExtVideo `json:"video"`
 }
 
-type appnexusBidExtAppnexus struct {
-	BidType       int                    `json:"bid_ad_type"`
-	BrandId       int                    `json:"brand_id"`
-	BrandCategory int                    `json:"brand_category_id"`
-	CreativeInfo  appnexusBidExtCreative `json:"creative_info"`
-	DealPriority  int                    `json:"deal_priority"`
+type bidExtAppnexus struct {
+	BidType       int            `json:"bid_ad_type"`
+	BrandId       int            `json:"brand_id"`
+	BrandCategory int            `json:"brand_category_id"`
+	CreativeInfo  bidExtCreative `json:"creative_info"`
+	DealPriority  int            `json:"deal_priority"`
 }
 
-type appnexusBidExt struct {
-	Appnexus appnexusBidExtAppnexus `json:"appnexus"`
+type bidExt struct {
+	Appnexus bidExtAppnexus `json:"appnexus"`
 }
 
-type appnexusReqExtAppnexus struct {
+type bidReqExtAppnexus struct {
 	IncludeBrandCategory    *bool  `json:"include_brand_category,omitempty"`
 	BrandCategoryUniqueness *bool  `json:"brand_category_uniqueness,omitempty"`
 	IsAMP                   int    `json:"is_amp,omitempty"`
@@ -49,7 +49,7 @@ type appnexusReqExtAppnexus struct {
 }
 
 // Full request extension including appnexus extension object
-type appnexusReqExt struct {
+type bidReqExt struct {
 	openrtb_ext.ExtRequest
-	Appnexus *appnexusReqExtAppnexus `json:"appnexus,omitempty"`
+	Appnexus *bidReqExtAppnexus `json:"appnexus,omitempty"`
 }
