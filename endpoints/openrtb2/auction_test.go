@@ -2,6 +2,7 @@ package openrtb2
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"errors"
@@ -23,16 +24,13 @@ import (
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/analytics"
-	"github.com/prebid/prebid-server/hooks"
-	"github.com/prebid/prebid-server/hooks/hookexecution"
-	"github.com/prebid/prebid-server/hooks/hookstage"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/hooks"
+	"github.com/prebid/prebid-server/hooks/hookexecution"
+	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/prebid/prebid-server/metrics"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -40,6 +38,8 @@ import (
 	"github.com/prebid/prebid-server/stored_responses"
 	"github.com/prebid/prebid-server/util/iputil"
 	"github.com/prebid/prebid-server/util/ptrutil"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 const jsonFileExtension string = ".json"
@@ -3895,6 +3895,105 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 	assert.Contains(t, errL[0].Error(), "echovideoattrs of type bool", "Incorrect error message")
 }
 
+func TestParseGzipedRequest(t *testing.T) {
+	testCases :=
+		[]struct {
+			desc           string
+			reqContentEnc  string
+			maxReqSize     int64
+			compressionCfg config.Compression
+			expectedErr    string
+		}{
+			{
+				desc:           "Gzip compression enabled, request size exceeds max request size",
+				reqContentEnc:  "gzip",
+				maxReqSize:     10,
+				compressionCfg: config.Compression{Request: config.CompressionInfo{GZIP: true}},
+				expectedErr:    "request size exceeded max size of 10 bytes.",
+			},
+			{
+				desc:           "Gzip compression enabled, request size is within max request size",
+				reqContentEnc:  "gzip",
+				maxReqSize:     2000,
+				compressionCfg: config.Compression{Request: config.CompressionInfo{GZIP: true}},
+				expectedErr:    "",
+			},
+			{
+				desc:           "Gzip compression enabled, request size is within max request size, content-encoding value not in lower case",
+				reqContentEnc:  "GZIP",
+				maxReqSize:     2000,
+				compressionCfg: config.Compression{Request: config.CompressionInfo{GZIP: true}},
+				expectedErr:    "",
+			},
+			{
+				desc:           "Request is Gzip compressed, but Gzip compression is disabled",
+				reqContentEnc:  "gzip",
+				compressionCfg: config.Compression{Request: config.CompressionInfo{GZIP: false}},
+				expectedErr:    "Content-Encoding of type gzip is not supported",
+			},
+			{
+				desc:           "Request is not Gzip compressed, but Gzip compression is enabled",
+				reqContentEnc:  "",
+				maxReqSize:     2000,
+				compressionCfg: config.Compression{Request: config.CompressionInfo{GZIP: true}},
+				expectedErr:    "",
+			},
+		}
+
+	reqBody := []byte(validRequest(t, "site.json"))
+	deps := &endpointDeps{
+		fakeUUIDGenerator{},
+		&warningsCheckExchange{},
+		mockBidderParamValidator{},
+		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: int64(50), Compression: config.Compression{Request: config.CompressionInfo{GZIP: false}}},
+		&metricsConfig.NilMetricsEngine{},
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		nil,
+		nil,
+		hardcodedResponseIPValidator{response: true},
+		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
+	}
+
+	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
+	for _, test := range testCases {
+		var req *http.Request
+		deps.cfg.MaxRequestSize = test.maxReqSize
+		deps.cfg.Compression = test.compressionCfg
+		if test.reqContentEnc == "gzip" {
+			var compressed bytes.Buffer
+			gw := gzip.NewWriter(&compressed)
+			_, err := gw.Write(reqBody)
+			assert.NoError(t, err, "Error writing gzip compressed request body", test.desc)
+			assert.NoError(t, gw.Close(), "Error closing gzip writer", test.desc)
+
+			req = httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(compressed.Bytes()))
+			req.Header.Set("Content-Encoding", "gzip")
+		} else {
+			req = httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(reqBody))
+		}
+		resReq, impExtInfoMap, _, _, _, _, errL := deps.parseRequest(req, &metrics.Labels{}, hookExecutor)
+
+		if test.expectedErr == "" {
+			assert.Nil(t, errL, "Error list should be nil", test.desc)
+			assert.NotNil(t, resReq, "Result request should not be nil", test.desc)
+			assert.NotNil(t, impExtInfoMap, "Impression info map should not be nil", test.desc)
+		} else {
+			assert.Nil(t, resReq, "Result request should be nil due to incorrect imp", test.desc)
+			assert.Nil(t, impExtInfoMap, "Impression info map should be nil due to incorrect imp", test.desc)
+			assert.Len(t, errL, 1, "One error should be returned", test.desc)
+			assert.Contains(t, errL[0].Error(), test.expectedErr, "Incorrect error message", test.desc)
+		}
+	}
+}
+
 func TestValidateNativeContextTypes(t *testing.T) {
 	impIndex := 4
 
@@ -5566,4 +5665,50 @@ func TestRecordResponsePreparationMetrics(t *testing.T) {
 	mockMetricEngine := &metrics.MetricsEngineMock{}
 	mockMetricEngine.On("RecordOverheadTime", metrics.MakeAuctionResponse, mock.Anything)
 	recordResponsePreparationMetrics(mbi, mockMetricEngine)
+}
+
+func TestSetSeatNonBidRaw(t *testing.T) {
+	type args struct {
+		request         *openrtb_ext.RequestWrapper
+		auctionResponse *exchange.AuctionResponse
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name:    "nil-auctionResponse",
+			args:    args{auctionResponse: nil},
+			wantErr: false,
+		},
+		{
+			name:    "nil-bidResponse",
+			args:    args{auctionResponse: &exchange.AuctionResponse{BidResponse: nil}},
+			wantErr: false,
+		},
+		{
+			name:    "invalid-response.Ext",
+			args:    args{auctionResponse: &exchange.AuctionResponse{BidResponse: &openrtb2.BidResponse{Ext: []byte(`invalid_json`)}}},
+			wantErr: true,
+		},
+		{
+			name: "update-seatnonbid-in-ext",
+			args: args{
+				request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid": { "returnallbidstatus" : true }}`)}},
+				auctionResponse: &exchange.AuctionResponse{
+					ExtBidResponse: &openrtb_ext.ExtBidResponse{Prebid: &openrtb_ext.ExtResponsePrebid{SeatNonBid: []openrtb_ext.SeatNonBid{}}},
+					BidResponse:    &openrtb2.BidResponse{Ext: []byte(`{}`)},
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := setSeatNonBidRaw(tt.args.request, tt.args.auctionResponse); (err != nil) != tt.wantErr {
+				t.Errorf("setSeatNonBidRaw() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
 }

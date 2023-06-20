@@ -43,7 +43,7 @@ func TestNewPermissions(t *testing.T) {
 			HostVendorID: tt.hostVendorID,
 		}
 		vendorIDs := map[openrtb_ext.BidderName]uint16{}
-		vendorListFetcher := func(ctx context.Context, id uint16) (vendorlist.VendorList, error) {
+		vendorListFetcher := func(ctx context.Context, specVersion, listVersion uint16) (vendorlist.VendorList, error) {
 			return nil, nil
 		}
 
