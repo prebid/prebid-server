@@ -58,12 +58,15 @@ func ReadCookie(r *http.Request, decoder Decoder, host *config.HostCookie) *Cook
 }
 
 // PrepareCookieForWrite ejects UIDs as long as the cookie is too full
-func (cookie *Cookie) PrepareCookieForWrite(cfg *config.HostCookie, ttl time.Duration, encoder Base64Encoder) string {
-	encodedCookie := encoder.Encode(cookie)
+func (cookie *Cookie) PrepareCookieForWrite(cfg *config.HostCookie, ttl time.Duration, encoder Base64Encoder) (string, error) {
+	encodedCookie, err := encoder.Encode(cookie)
+	if err != nil {
+		return "", err
+	}
 
 	isCookieTooBig := len(encodedCookie) > cfg.MaxCookieSizeBytes && cfg.MaxCookieSizeBytes > 0
 	if !isCookieTooBig {
-		return encodedCookie
+		return encodedCookie, nil
 	}
 
 	uuidKeys := sortUIDs(cookie.uids)
@@ -73,12 +76,15 @@ func (cookie *Cookie) PrepareCookieForWrite(cfg *config.HostCookie, ttl time.Dur
 		uidToDelete := uuidKeys[i]
 		delete(cookie.uids, uidToDelete)
 
-		encodedCookie = encoder.Encode(cookie)
+		encodedCookie, err = encoder.Encode(cookie)
+		if err != nil {
+			return "", err
+		}
 		isCookieTooBig = len(encodedCookie) > cfg.MaxCookieSizeBytes
 
 		i++
 	}
-	return encodedCookie
+	return encodedCookie, nil
 }
 
 // WriteCookie sets the prepared cookie onto the header
@@ -221,16 +227,19 @@ func (cookie *Cookie) HasAnyLiveSyncs() bool {
 	return false
 }
 
-func (cookie *Cookie) ToHTTPCookie() *http.Cookie {
+func (cookie *Cookie) ToHTTPCookie() (*http.Cookie, error) {
 	encoder := Base64EncoderV1{}
-	encodedCookie := encoder.Encode(cookie)
+	encodedCookie, err := encoder.Encode(cookie)
+	if err != nil {
+		return nil, nil
+	}
 
 	return &http.Cookie{
 		Name:    uidCookieName,
 		Value:   encodedCookie,
 		Expires: time.Now().Add((90 * 24 * time.Hour)),
 		Path:    "/",
-	}
+	}, nil
 }
 
 func checkAudienceNetwork(key string, uid string) bool {

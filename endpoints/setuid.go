@@ -139,7 +139,14 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 		setSiteCookie := siteCookieCheck(r.UserAgent())
 
 		// Write Cookie
-		encodedCookie := cookie.PrepareCookieForWrite(&cfg.HostCookie, cookieTTL, encoder)
+		encodedCookie, err := cookie.PrepareCookieForWrite(&cfg.HostCookie, cookieTTL, encoder)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			metricsEngine.RecordSetUid(metrics.SetUidBadRequest)
+			so.Errors = []error{err}
+			so.Status = http.StatusBadRequest
+			return
+		}
 		usersync.WriteCookie(w, encodedCookie, &cfg.HostCookie, setSiteCookie)
 
 		switch responseFormat {

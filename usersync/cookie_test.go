@@ -78,7 +78,9 @@ func TestReadCookie(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			if test.givenCookie != nil {
-				test.givenRequest.AddCookie(test.givenCookie.ToHTTPCookie())
+				httpCookie, err := test.givenCookie.ToHTTPCookie()
+				assert.NoError(t, err)
+				test.givenRequest.AddCookie(httpCookie)
 			} else if test.givenCookie == nil && test.givenHttpCookie != nil {
 				test.givenRequest.AddCookie(test.givenHttpCookie)
 			}
@@ -174,7 +176,8 @@ func TestWriteCookie(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			// Write Cookie
 			w := httptest.NewRecorder()
-			encodedCookie := encoder.Encode(test.givenCookie)
+			encodedCookie, err := encoder.Encode(test.givenCookie)
+			assert.NoError(t, err)
 			WriteCookie(w, encodedCookie, &config.HostCookie{}, test.givenSetSiteCookie)
 			writtenCookie := w.Header().Get("Set-Cookie")
 
@@ -360,7 +363,8 @@ func TestWriteCookieUserAgent(t *testing.T) {
 
 			// Write Cookie
 			w := httptest.NewRecorder()
-			encodedCookie := encoder.Encode(test.givenCookie)
+			encodedCookie, err := encoder.Encode(test.givenCookie)
+			assert.NoError(t, err)
 			WriteCookie(w, encodedCookie, &test.givenHostCookie, test.givenSetSiteCookie)
 			writtenCookie := w.Header().Get("Set-Cookie")
 
@@ -444,7 +448,8 @@ func TestPrepareCookieForWrite(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			freshCookie := cookieToSend
-			encodedCookie := freshCookie.PrepareCookieForWrite(&config.HostCookie{MaxCookieSizeBytes: test.givenMaxCookieSize}, 90*24*time.Hour, encoder)
+			encodedCookie, err := freshCookie.PrepareCookieForWrite(&config.HostCookie{MaxCookieSizeBytes: test.givenMaxCookieSize}, 90*24*time.Hour, encoder)
+			assert.NoError(t, err)
 			decodedCookie := decoder.Decode(encodedCookie)
 
 			for key := range decodedCookie.uids {
@@ -569,23 +574,25 @@ func TestReadCookieOptOut(t *testing.T) {
 	optOutCookieValue := "optOutCookieValue"
 	decoder := DecodeV1{}
 
-	existingCookie := *(&Cookie{
+	cookie := *(&Cookie{
 		uids: map[string]UIDEntry{
 			"foo": newTempId("fooID", 1),
 			"bar": newTempId("barID", 2),
 		},
 		optOut: false,
-	}).ToHTTPCookie()
+	})
+
+	existingCookie, _ := cookie.ToHTTPCookie()
 
 	testCases := []struct {
 		description          string
-		givenExistingCookies []http.Cookie
+		givenExistingCookies []*http.Cookie
 		expectedEmpty        bool
 		expectedSetOptOut    bool
 	}{
 		{
 			description: "Opt Out Cookie",
-			givenExistingCookies: []http.Cookie{
+			givenExistingCookies: []*http.Cookie{
 				existingCookie,
 				{Name: optOutCookieName, Value: optOutCookieValue}},
 			expectedEmpty:     true,
@@ -593,14 +600,14 @@ func TestReadCookieOptOut(t *testing.T) {
 		},
 		{
 			description: "No Opt Out Cookie",
-			givenExistingCookies: []http.Cookie{
+			givenExistingCookies: []*http.Cookie{
 				existingCookie},
 			expectedEmpty:     false,
 			expectedSetOptOut: false,
 		},
 		{
 			description: "Opt Out Cookie - Wrong Value",
-			givenExistingCookies: []http.Cookie{
+			givenExistingCookies: []*http.Cookie{
 				existingCookie,
 				{Name: optOutCookieName, Value: "wrong"}},
 			expectedEmpty:     false,
@@ -608,7 +615,7 @@ func TestReadCookieOptOut(t *testing.T) {
 		},
 		{
 			description: "Opt Out Cookie - Wrong Name",
-			givenExistingCookies: []http.Cookie{
+			givenExistingCookies: []*http.Cookie{
 				existingCookie,
 				{Name: "wrong", Value: optOutCookieValue}},
 			expectedEmpty:     false,
@@ -616,7 +623,7 @@ func TestReadCookieOptOut(t *testing.T) {
 		},
 		{
 			description: "Opt Out Cookie - No Host Cookies",
-			givenExistingCookies: []http.Cookie{
+			givenExistingCookies: []*http.Cookie{
 				{Name: optOutCookieName, Value: optOutCookieValue}},
 			expectedEmpty:     true,
 			expectedSetOptOut: true,
@@ -627,7 +634,7 @@ func TestReadCookieOptOut(t *testing.T) {
 		req := httptest.NewRequest("POST", "http://www.prebid.com", nil)
 
 		for _, c := range test.givenExistingCookies {
-			req.AddCookie(&c)
+			req.AddCookie(c)
 		}
 
 		parsed := ReadCookie(req, decoder, &config.HostCookie{
@@ -733,8 +740,9 @@ func ensureConsistency(t *testing.T, cookie *Cookie) {
 			t.Error("TrySync should fail if the user has opted out of PBSCookie syncs, but it succeeded.")
 		}
 	}
-
-	copiedCookie := decoder.Decode(cookie.ToHTTPCookie().Value)
+	httpCookie, err := cookie.ToHTTPCookie()
+	assert.NoError(t, err)
+	copiedCookie := decoder.Decode(httpCookie.Value)
 	if copiedCookie.AllowSyncs() != cookie.AllowSyncs() {
 		t.Error("The PBSCookie interface shouldn't let modifications happen if the user has opted out")
 	}

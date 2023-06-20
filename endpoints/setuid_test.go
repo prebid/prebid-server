@@ -748,7 +748,8 @@ func doRequest(req *http.Request, analytics analytics.PBSAnalyticsModule, metric
 }
 
 func addCookie(req *http.Request, cookie *usersync.Cookie) {
-	req.AddCookie(cookie.ToHTTPCookie())
+	httpCookie, _ := cookie.ToHTTPCookie()
+	req.AddCookie(httpCookie)
 }
 
 func parseCookieString(t *testing.T, response *httptest.ResponseRecorder) *usersync.Cookie {

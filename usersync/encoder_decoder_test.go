@@ -60,7 +60,8 @@ func TestEncoderDecoder(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			encodedCookie := encoder.Encode(test.givenCookie)
+			encodedCookie, err := encoder.Encode(test.givenCookie)
+			assert.NoError(t, err)
 			decodedCookie := decoder.Decode(encodedCookie)
 
 			assert.Equal(t, test.expectedCookie.uids, decodedCookie.uids)
