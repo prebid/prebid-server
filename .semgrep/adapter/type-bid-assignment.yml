@@ -3,23 +3,7 @@ rules:
     languages:
       - go
     message: >
-      Found incorrect assignment made to `Bid` Recommended to either create copy of `bid` and then assign it as `Bid`  
-
-      ```
-        for _, seatBid := range response.SeatBid {
-          for _, bid := range seatBid.Bid {
-            ...
-            bidCopy := bid
-            responseBid := &adapters.TypedBid{
-              Bid: &bidCopy,
-              ...
-            }
-            ...
-          }
-        }
-      ``` 
-
-      Alternatively can make use of `seatBids.Bid` loop index as shown below  
+      Found incorrect assignment made to `Bid` Consider using `seatBids.Bid` loop index as shown below  
 
       ```
         for _, seatBid := range response.SeatBid {
