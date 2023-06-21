@@ -39,7 +39,7 @@
                 },
                 "ext": {
                     "bidder": {
-                        "siteId": "569749"
+                        "siteId": "569750"
                     }
                 }
             },
@@ -55,43 +55,22 @@
                 },
                 "ext": {
                     "bidder": {
-                        "siteId": "569749"
-                    }
-                }
-            },
-            {
-                "id": "test-imp-id-4",
-                "banner": {
-                    "format": [
-                        {
-                            "w": 300,
-                            "h": 250
-                        }
-                    ]
-                },
-                "ext": {
-                    "bidder": {
-                        "siteId": "569749"
-                    }
-                }
-            },
-            {
-                "id": "test-imp-id-5",
-                "banner": {
-                    "format": [
-                        {
-                            "w": 300,
-                            "h": 250
-                        }
-                    ]
-                },
-                "ext": {
-                    "bidder": {
-                        "siteId": "569749"
+                        "siteId": "569751"
                     }
                 }
             }
-        ]
+        ],
+        "site": {
+            "page": "https://www.example.com/"
+        },
+        "ext": {
+            "prebid": {
+                "channel": {
+                    "name": "web",
+                    "version": "7.0.0"
+                }
+            }
+        }
     },
     "httpCalls": [
         {
@@ -139,7 +118,7 @@
                             },
                             "ext": {
                                 "bidder": {
-                                    "siteId": "569749"
+                                    "siteId": "569750"
                                 }
                             }
                         },
@@ -156,48 +135,29 @@
                             },
                             "ext": {
                               "bidder": {
-                                "siteId": "569749"
+                                "siteId": "569751"
                               }
                             },
                             "id": "test-imp-id-3"
-                        },
-                        {
-                            "id": "test-imp-id-4",
-                            "banner": {
-                                "format": [
-                                    {
-                                        "w": 300,
-                                        "h": 250
-                                    }
-                                ],
-                                "w": 300,
-                                "h": 250
-                            },
-                            "ext": {
-                                "bidder": {
-                                    "siteId": "569749"
-                                }
-                            }
-                        },
-                        {
-                            "id": "test-imp-id-5",
-                            "banner": {
-                                "format": [
-                                    {
-                                        "w": 300,
-                                        "h": 250
-                                    }
-                                ],
-                                "w": 300,
-                                "h": 250
-                            },
-                            "ext": {
-                                "bidder": {
-                                    "siteId": "569749"
-                                }
-                            }
                         }
-                    ]
+                    ],
+                    "site": {
+                        "page": "https://www.example.com/",
+                        "publisher": {
+                        }
+                    },
+                    "ext": {
+                        "ixdiag": {
+                          "multipleSiteIds": "569749, 569750, 569751",
+                          "pbjsv": "7.0.0"
+                        },
+                        "prebid": {
+                          "channel": {
+                            "name": "web",
+                            "version": "7.0.0"
+                          }
+                        }
+                    }
                 }
             },
             "mockResponse": {
