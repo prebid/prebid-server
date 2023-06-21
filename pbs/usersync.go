@@ -81,7 +81,7 @@ func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httpr
 	pc.SetOptOut(optout != "")
 
 	// Write Cookie
-	encodedCookie, err := pc.PrepareCookieForWrite(deps.HostCookieConfig, deps.HostCookieConfig.TTLDuration(), encoder)
+	encodedCookie, err := pc.PrepareCookieForWrite(deps.HostCookieConfig, encoder)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return

@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/julienschmidt/httprouter"
 	accountService "github.com/prebid/prebid-server/account"
@@ -31,7 +30,6 @@ const (
 const uidCookieName = "uids"
 
 func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, gdprPermsBuilder gdpr.PermissionsBuilder, tcf2CfgBuilder gdpr.TCF2ConfigBuilder, pbsanalytics analytics.PBSAnalyticsModule, accountsFetcher stored_requests.AccountFetcher, metricsEngine metrics.MetricsEngine) httprouter.Handle {
-	cookieTTL := time.Duration(cfg.HostCookie.TTL) * 24 * time.Hour
 	encoder := usersync.Base64EncoderV1{}
 	decoder := usersync.DecodeV1{}
 
@@ -139,7 +137,7 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 		setSiteCookie := siteCookieCheck(r.UserAgent())
 
 		// Write Cookie
-		encodedCookie, err := cookie.PrepareCookieForWrite(&cfg.HostCookie, cookieTTL, encoder)
+		encodedCookie, err := cookie.PrepareCookieForWrite(&cfg.HostCookie, encoder)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			metricsEngine.RecordSetUid(metrics.SetUidBadRequest)

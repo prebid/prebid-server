@@ -447,13 +447,12 @@ func TestPrepareCookieForWrite(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			freshCookie := cookieToSend
-			encodedCookie, err := freshCookie.PrepareCookieForWrite(&config.HostCookie{MaxCookieSizeBytes: test.givenMaxCookieSize}, 90*24*time.Hour, encoder)
+			encodedCookie, err := cookieToSend.PrepareCookieForWrite(&config.HostCookie{MaxCookieSizeBytes: test.givenMaxCookieSize}, encoder)
 			assert.NoError(t, err)
 			decodedCookie := decoder.Decode(encodedCookie)
 
-			for key := range decodedCookie.uids {
-				_, ok := test.expectedRemainingUidKeys[key]
+			for key := range test.expectedRemainingUidKeys {
+				_, ok := decodedCookie.uids[key]
 				assert.Equal(t, true, ok)
 			}
 			assert.Equal(t, len(decodedCookie.uids), len(test.expectedRemainingUidKeys))
