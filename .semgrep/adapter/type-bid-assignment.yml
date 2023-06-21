@@ -49,12 +49,28 @@ rules:
           - pattern: >
               for _, $BID := range ... {
                 ...
+                ... = adapters.TypedBid{
+                  $KEY: &$BID,
+                  ...
+                }
+                ...
+              } 
+          - pattern: >
+              for _, $BID := range ... {
+                ...
                 ... = append(...,  &adapters.TypedBid{
                   $KEY: &$BID,
                   ...
                 })
                 ...
               }
+          - pattern: >
+              for _, $BID := range ... {
+                var $TYPEBID_OBJ adapters.TypedBid
+                ...
+                $TYPEBID_OBJ. $KEY = &$BID
+                ...
+              }                              
       - focus-metavariable: $KEY
       - metavariable-regex:
           metavariable: $KEY

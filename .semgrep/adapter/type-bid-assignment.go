@@ -103,6 +103,47 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		return nil, []error{err}
 	}
 
+	var errors []error
+	for _, seatBid := range bidResp.SeatBid {
+		for _, bid := range seatBid.Bid {
+			var t adapters.TypedBid
+			// ruleid: type-bid-assignment-check
+			t.Bid = &bid
+			bidResponse.Bids = append(bidResponse.Bids, &t)
+		}
+	}
+	return bidResponse, errors
+}
+
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	var bidResp openrtb2.BidResponse
+
+	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+		return nil, []error{err}
+	}
+
+	var errors []error
+	for _, seatBid := range bidResp.SeatBid {
+		for _, bid := range seatBid.Bid {
+			var t adapters.TypedBid
+			t = adapters.TypedBid{
+				// ruleid: type-bid-assignment-check
+				Bid: &bid,
+			}
+
+			bidResponse.Bids = append(bidResponse.Bids, &t)
+		}
+	}
+	return bidResponse, errors
+}
+
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	var bidResp openrtb2.BidResponse
+
+	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+		return nil, []error{err}
+	}
+
 	for _, seatBid := range bidResp.SeatBid {
 		for idx, _ := range seatBid.Bid {
 			bidType, err := getMediaTypeForImp(seatBid.Bid[i], internalRequest.Imp)
