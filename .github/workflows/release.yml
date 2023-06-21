@@ -69,16 +69,19 @@ jobs:
             # increment patch version
             nextTag=$(echo "${currentTag}" | awk -F. '{OFS="."; $3+=1; print $0}')
           fi
+          nextDockerTag="${nextTag:1}"
 
           if [ ${{ inputs.debug }} == 'true' ]; then
-            echo "running workflow in debug mode, next ${releaseType} tag: ${nextTag}"
+            echo "running workflow in debug mode, next ${releaseType} tag: ${nextTag}, docker image tag: ${nextDockerTag}"
           else
             git tag $nextTag
             git push origin $nextTag
             echo "tag=${nextTag}" >> $GITHUB_OUTPUT
+            echo "dockerTag=${nextDockerTag}" >> $GITHUB_OUTPUT
           fi
     outputs:
       releaseTag: ${{ steps.release.outputs.tag }}
+      dockerTag: ${{ steps.release.outputs.dockerTag }}
 
   publish-docker-image:
     name: Publish docker image
@@ -92,7 +95,7 @@ jobs:
           fetch-depth: 0
       - name: Build image
         run: |
-          docker build -t docker.io/prebid/prebid-server:${{ needs.publish-tag.outputs.releaseTag }} .
+          docker build -t docker.io/prebid/prebid-server:${{ needs.publish-tag.outputs.dockerTag }} .
       - name: Login to docker Hub
         if: contains(inputs.debug, 'false')
         uses: docker/login-action@v2.1.0
@@ -101,7 +104,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
       - name: Publish to docker Hub
         run: |
-          docker push docker.io/prebid/prebid-server:${{ needs.publish-tag.outputs.releaseTag }}
+          docker push docker.io/prebid/prebid-server:${{ needs.publish-tag.outputs.dockerTag }}
 
   publish-release:
     name: Publish release
