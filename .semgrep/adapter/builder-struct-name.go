@@ -70,6 +70,26 @@ func Builder(_ openrtb_ext.BidderName, config config.Adapter, _ config.Server) (
 	return &foo{}, nil
 }
 
+func Builder(_ openrtb_ext.BidderName, config config.Adapter, _ config.Server) (adapters.Bidder, error) {
+	//ruleid: builder-struct-name-check
+	var obj Adapter
+	obj.Foo = "foo"
+	if obj.Bar == "" {
+		obj.Bar = "bar"
+	}
+	return &obj, nil
+}
+
+func Builder(_ openrtb_ext.BidderName, config config.Adapter, _ config.Server) (adapters.Bidder, error) {
+	//ruleid: builder-struct-name-check
+	var obj *FooAdapterBar
+	obj.Foo = "foo"
+	if obj.Bar == "" {
+		obj.Bar = "bar"
+	}
+	return obj, nil
+}
+
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	// ok: builder-struct-name-check
 	return &adapter{endpoint: "www.foo.com"}, nil
@@ -87,4 +107,18 @@ func Builder(_ openrtb_ext.BidderName, config config.Adapter, _ config.Server) (
 	builder.endpoint = "www.foo.com"
 	// ok: builder-struct-name-check
 	return &builder, nil
+}
+
+func Builder(_ openrtb_ext.BidderName, config config.Adapter, _ config.Server) (adapters.Bidder, error) {
+	var builder adapter
+	builder.endpoint = "www.foo.com"
+	// ok: builder-struct-name-check
+	return &builder, nil
+}
+
+func Builder(_ openrtb_ext.BidderName, config config.Adapter, _ config.Server) (adapters.Bidder, error) {
+	var builder *adapter
+	builder.endpoint = "www.foo.com"
+	// ok: builder-struct-name-check
+	return builder, nil
 }
