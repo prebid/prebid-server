@@ -36,8 +36,10 @@ const (
 
 	DATATYE_NUMBER                = 1
 	DATATYE_STRING                = 2
-	DATATYE_DATE                  = 3
-	DATATYE_TIME                  = 4
-	DATATYE_DATETIME              = 5
-	DATATYE_ARRAY                 = 6
+	DATATYE_ARRAY                 = 3
+	DATATYE_DATE                  = 4
+	DATATYE_TIME                  = 5
+	DATATYE_DATETIME              = 6
+
 )
+
