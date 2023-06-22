@@ -32,9 +32,11 @@ type Configuration struct {
 	AdminPort        int         `mapstructure:"admin_port"`
 	EnableGzip       bool        `mapstructure:"enable_gzip"`
 	Compression      Compression `mapstructure:"compression"`
+	GoRuntime        GoRuntime   `mapstructure:"go_runtime"`
 	// GarbageCollectorThreshold allocates virtual memory (in bytes) which is not used by PBS but
 	// serves as a hack to trigger the garbage collector only when the heap reaches at least this size.
 	// More info: https://github.com/golang/go/issues/48409
+	// Note that this field is now deprecated in favor of GoRuntime.SoftMemoryLimit and will be removed in a future release.
 	GarbageCollectorThreshold int `mapstructure:"garbage_collector_threshold"`
 	// StatusResponse is the string which will be returned by the /status endpoint when things are OK.
 	// If empty, it will return a 204 with no content.
@@ -106,6 +108,21 @@ type Configuration struct {
 	Hooks       Hooks       `mapstructure:"hooks"`
 	Validations Validations `mapstructure:"validations"`
 	PriceFloors PriceFloors `mapstructure:"price_floors"`
+}
+
+type GoRuntime struct {
+	// SoftMemoryLimit is the soft limit for memory usage in bytes. The garbage collector will run
+	// more often if the memory usage is above this limit and less often when memory usage is far
+	// below this limit. SoftMemoryLimit in conjunction with GarbageCollectorTriggerPercent can be
+	// used to tune Garbage Collector performance.
+	// Please read the Go GC Guide for more info: https://tip.golang.org/doc/gc-guide
+	SoftMemoryLimit int `mapstructure:"soft_memory_limit"`
+	// GarbageCollectorTriggerPercent is the percentage of heap growth that triggers the garbage collector.
+	// It represents the GOGC environment variable. The default value is 100.
+	// Setting this to a negative value will effectively turn off the garbage collector unless the soft
+	// memory limit is reached.
+	// Please read the Go GC Guide for more info: https://tip.golang.org/doc/gc-guide
+	GarbageCollectorTriggerPercent int `mapstructure:"gc_percent"`
 }
 
 type PriceFloors struct {
@@ -838,7 +855,6 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("unix_socket_enable", false)              // boolean which decide if the socket-server will be started.
 	v.SetDefault("unix_socket_name", "prebid-server.sock") // path of the socket's file which must be listened.
 	v.SetDefault("admin_port", 6060)
-	v.SetDefault("garbage_collector_threshold", 0)
 	v.SetDefault("status_response", "")
 	v.SetDefault("datacenter", "")
 	v.SetDefault("auction_timeouts_ms.default", 0)
@@ -1074,6 +1090,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	migrateConfigTCF2PurposeFlags(v)
 	migrateConfigDatabaseConnection(v)
 	migrateConfigCompression(v)
+	migrateConfigGoRuntime(v)
 
 	// These defaults must be set after the migrate functions because those functions look for the presence of these
 	// config fields and there isn't a way to detect presence of a config field using the viper package if a default
@@ -1116,6 +1133,10 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 
 	v.SetDefault("enable_gzip", false)
 
+	v.SetDefault("garbage_collector_threshold", 0)
+	v.SetDefault("go_runtime.soft_memory_limit", -1)
+	v.SetDefault("go_runtime.gc_percent", 100) // 100 is the default value for GOGC
+
 	// Defaults for account_defaults.events.default_url
 	v.SetDefault("account_defaults.events.default_url", "https://PBS_HOST/event?t=##PBS-EVENTTYPE##&vtype=##PBS-VASTEVENT##&b=##PBS-BIDID##&f=i&a=##PBS-ACCOUNTID##&ts=##PBS-TIMESTAMP##&bidder=##PBS-BIDDER##&int=##PBS-INTEGRATION##&mt=##PBS-MEDIATYPE##&ch=##PBS-CHANNEL##&aid=##PBS-AUCTIONID##&l=##PBS-LINEID##")
 
@@ -1144,6 +1165,19 @@ func migrateConfig(v *viper.Viper) {
 		m["enabled"] = v.GetBool("stored_requests.filesystem")
 		m["directorypath"] = v.GetString("stored_requests.directorypath")
 		v.Set("stored_requests.filesystem", m)
+	}
+}
+
+func migrateConfigGoRuntime(v *viper.Viper) {
+	oldField := "garbage_collector_threshold"
+	newField1 := "go_runtime.soft_memory_limit"
+	if v.IsSet(oldField) {
+		if v.IsSet(newField1) {
+			glog.Warningf("using %s and ignoring deprecated %s", newField1, oldField)
+			v.Set(oldField, 0)
+		} else {
+			glog.Warningf("%s is deprecated. Use %s in conjunction with `go_runtime.gc_percent` to tune garbage collection", oldField, newField1)
+		}
 	}
 }
 

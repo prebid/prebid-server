@@ -150,6 +150,9 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "admin_port", 6060, cfg.AdminPort)
 	cmpInts(t, "auction_timeouts_ms.max", 0, int(cfg.AuctionTimeouts.Max))
 	cmpInts(t, "max_request_size", 1024*256, int(cfg.MaxRequestSize))
+	cmpInts(t, "garbage_collector_threshold", 0, cfg.GarbageCollectorThreshold)
+	cmpInts(t, "go_runtime.soft_memory_limit", -1, cfg.GoRuntime.SoftMemoryLimit)
+	cmpInts(t, "go_runtime.gc_percent", 100, cfg.GoRuntime.GarbageCollectorTriggerPercent)
 	cmpInts(t, "host_cookie.ttl_days", 90, int(cfg.HostCookie.TTL))
 	cmpInts(t, "host_cookie.max_cookie_size_bytes", 0, cfg.HostCookie.MaxCookieSizeBytes)
 	cmpInts(t, "currency_converter.fetch_interval_seconds", 1800, cfg.CurrencyConverter.FetchIntervalSeconds)
@@ -389,7 +392,10 @@ compression:
         enable_gzip: true
     response:
         enable_gzip: false
-garbage_collector_threshold: 1
+garbage_collector_threshold: 2048
+go_runtime:
+  soft_memory_limit: 1024
+  gc_percent: 200
 datacenter: "1"
 auction_timeouts_ms:
   max: 123
@@ -538,7 +544,9 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "host", "prebid-server.prebid.org", cfg.Host)
 	cmpInts(t, "port", 1234, cfg.Port)
 	cmpInts(t, "admin_port", 5678, cfg.AdminPort)
-	cmpInts(t, "garbage_collector_threshold", 1, cfg.GarbageCollectorThreshold)
+	cmpInts(t, "garbage_collector_threshold", 2048, cfg.GarbageCollectorThreshold)
+	cmpInts(t, "go_runtime.soft_memory_limit", 1024, cfg.GoRuntime.SoftMemoryLimit)
+	cmpInts(t, "go_runtime.gc_percent", 200, cfg.GoRuntime.GarbageCollectorTriggerPercent)
 	cmpInts(t, "auction_timeouts_ms.default", 50, int(cfg.AuctionTimeouts.Default))
 	cmpInts(t, "auction_timeouts_ms.max", 123, int(cfg.AuctionTimeouts.Max))
 	cmpStrings(t, "cache.scheme", "http", cfg.CacheURL.Scheme)
@@ -967,6 +975,53 @@ func TestBidderInfoFromEnv(t *testing.T) {
 	assert.Equal(t, "username_override", cfg.BidderInfos["bidder1"].XAPI.Username)
 
 	assert.Equal(t, "2.6", cfg.BidderInfos["bidder1"].OpenRTB.Version)
+}
+
+func TestMigrateConfigGoRuntime(t *testing.T) {
+	testCases := []struct {
+		desc                          string
+		config                        []byte
+		wantGarbageCollectorThreshold int
+		wantSoftMemoryLimit           int
+	}{
+		{
+			desc: "Only garbage collector threshold set",
+			config: []byte(`
+              garbage_collector_threshold: 1024
+            `),
+			wantGarbageCollectorThreshold: 1024,
+			wantSoftMemoryLimit:           -1,
+		},
+		{
+			desc: "Only soft memory limit set",
+			config: []byte(`
+              go_runtime.soft_memory_limit: 2048
+            `),
+			wantGarbageCollectorThreshold: 0,
+			wantSoftMemoryLimit:           2048,
+		},
+		{
+			desc: "Both garbage collector threshold and soft memory limit set",
+			config: []byte(`
+              garbage_collector_threshold: 1024
+              go_runtime.soft_memory_limit: 2048
+            `),
+			wantGarbageCollectorThreshold: 0,
+			wantSoftMemoryLimit:           2048,
+		},
+	}
+
+	for _, test := range testCases {
+		v := viper.New()
+		v.SetConfigType("yaml")
+		err := v.ReadConfig(bytes.NewBuffer(test.config))
+		assert.NoError(t, err)
+
+		migrateConfigGoRuntime(v)
+
+		assert.Equal(t, test.wantGarbageCollectorThreshold, v.GetInt("garbage_collector_threshold"), test.desc)
+		assert.Equal(t, test.wantSoftMemoryLimit, v.GetInt("go_runtime.soft_memory_limit"), test.desc)
+	}
 }
 
 func TestMigrateConfigPurposeOneTreatment(t *testing.T) {
