@@ -170,7 +170,7 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 	
 
 	//Assign Search Term if present along with searchType
-	if commerceExt.ComParams.SearchTerm != "" {
+	if len(adButlerReq.Identifiers) <= 0 && commerceExt.ComParams.Filtering == nil && commerceExt.ComParams.SearchTerm != "" {
 		adButlerReq.SearchString = commerceExt.ComParams.SearchTerm
 		if commerceExt.ComParams.SearchType == SEARCHTYPE_EXACT ||
 		    commerceExt.ComParams.SearchType == SEARCHTYPE_BROAD {
@@ -228,3 +228,4 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 	}}, nil
 	
 }
+
