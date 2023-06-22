@@ -3,7 +3,6 @@ package privacy
 import (
 	"fmt"
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"strings"
 )
 
@@ -117,14 +116,14 @@ func activityDefaultToDefaultResult(activityDefault *bool) ActivityResult {
 	return ActivityDeny
 }
 
-func (e ActivityControl) Allow(activity Activity, request openrtb_ext.RequestWrapper, target ScopedName) ActivityResult {
+func (e ActivityControl) Allow(activity Activity, target ScopedName) ActivityResult {
 	plan, planDefined := e.plans[activity]
 
 	if !planDefined {
 		return ActivityAbstain
 	}
 
-	return plan.Allow(request, target)
+	return plan.Allow(target)
 }
 
 type ActivityPlan struct {
@@ -132,9 +131,9 @@ type ActivityPlan struct {
 	rules         []ActivityRule
 }
 
-func (p ActivityPlan) Allow(request openrtb_ext.RequestWrapper, target ScopedName) ActivityResult {
+func (p ActivityPlan) Allow(target ScopedName) ActivityResult {
 	for _, rule := range p.rules {
-		result := rule.Allow(request, target)
+		result := rule.Allow(target)
 		if result == ActivityDeny || result == ActivityAllow {
 			return result
 		}
@@ -143,7 +142,7 @@ func (p ActivityPlan) Allow(request openrtb_ext.RequestWrapper, target ScopedNam
 }
 
 type ActivityRule interface {
-	Allow(request openrtb_ext.RequestWrapper, target ScopedName) ActivityResult
+	Allow(target ScopedName) ActivityResult
 }
 
 type ComponentEnforcementRule struct {
@@ -154,7 +153,11 @@ type ComponentEnforcementRule struct {
 	allowed bool
 }
 
-func (r ComponentEnforcementRule) Allow(request openrtb_ext.RequestWrapper, target ScopedName) ActivityResult {
+func (r ComponentEnforcementRule) Allow(target ScopedName) ActivityResult {
+	if len(r.componentName) == 0 && len(r.componentType) == 0 {
+		return ActivityAbstain
+	}
+
 	componentNameFound := false
 	if len(r.componentName) == 0 {
 		componentNameFound = true
@@ -203,7 +206,9 @@ const (
 )
 
 func NewScopedName(condition string) (ScopedName, error) {
-
+	if condition == "" {
+		return ScopedName{}, fmt.Errorf("unable to parse empty condition")
+	}
 	var scope, name string
 	split := strings.Split(condition, ".")
 	if len(split) == 2 {
