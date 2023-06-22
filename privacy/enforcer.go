@@ -16,14 +16,18 @@ const (
 )
 
 type ActivityControl struct {
-	plans map[Activity]EnforcementPlan
+	plans map[Activity]ActivityPlan
 }
 
-func NewActivityControl(privacyConf config.AccountPrivacy) (ActivityControl, error) {
+func NewActivityControl(privacyConf *config.AccountPrivacy) (ActivityControl, error) {
 	ac := ActivityControl{plans: nil}
 	var err error
 
-	plans := make(map[Activity]EnforcementPlan)
+	if privacyConf == nil {
+		return ac, err
+	}
+
+	plans := make(map[Activity]ActivityPlan)
 
 	plans[ActivitySyncUser], err = buildEnforcementPlan(privacyConf.AllowActivities.SyncUser)
 	if err != nil {
@@ -63,8 +67,8 @@ func NewActivityControl(privacyConf config.AccountPrivacy) (ActivityControl, err
 	return ac, nil
 }
 
-func buildEnforcementPlan(activity config.Activity) (EnforcementPlan, error) {
-	ef := EnforcementPlan{}
+func buildEnforcementPlan(activity config.Activity) (ActivityPlan, error) {
+	ef := ActivityPlan{}
 	rules, err := activityRulesToEnforcementRules(activity.Rules)
 	if err != nil {
 		return ef, err
@@ -74,8 +78,8 @@ func buildEnforcementPlan(activity config.Activity) (EnforcementPlan, error) {
 	return ef, nil
 }
 
-func activityRulesToEnforcementRules(rules []config.ActivityRule) ([]EnforcementRule, error) {
-	enfRules := make([]EnforcementRule, 0)
+func activityRulesToEnforcementRules(rules []config.ActivityRule) ([]ActivityRule, error) {
+	enfRules := make([]ActivityRule, 0)
 	for _, r := range rules {
 		cmpName, err := conditionToRuleComponentName(r.Condition.ComponentName)
 		if err != nil {
@@ -104,7 +108,6 @@ func conditionToRuleComponentName(conditions []string) ([]ScopedName, error) {
 }
 
 func activityDefaultToDefaultResult(activityDefault *bool) ActivityResult {
-
 	if activityDefault == nil {
 		// if default is unspecified, the hardcoded default-default is true.
 		return ActivityAllow
@@ -124,31 +127,22 @@ func (e ActivityControl) Allow(activity Activity, request openrtb_ext.RequestWra
 	return plan.Allow(request, target)
 }
 
-// allow this to be created from acitivty config, which veronika will get from the account config root object
-// maybe call this ActivityPlan?
-type EnforcementPlan struct {
+type ActivityPlan struct {
 	defaultResult ActivityResult
-	rules         []EnforcementRule
+	rules         []ActivityRule
 }
 
-func (p EnforcementPlan) Allow(request openrtb_ext.RequestWrapper, target ScopedName) ActivityResult {
-	// "and" between the rules present
-	//  ??? result is abstain if the rule doesn't match
+func (p ActivityPlan) Allow(request openrtb_ext.RequestWrapper, target ScopedName) ActivityResult {
 	for _, rule := range p.rules {
 		result := rule.Allow(request, target)
-		if result == ActivityDeny {
+		if result == ActivityDeny || result == ActivityAllow {
 			return result
 		}
-		if result == ActivityAbstain {
-			return p.defaultResult
-		}
 	}
-
-	return ActivityAllow
+	return p.defaultResult
 }
 
-// maybe call this ActivityRule?
-type EnforcementRule interface {
+type ActivityRule interface {
 	Allow(request openrtb_ext.RequestWrapper, target ScopedName) ActivityResult
 }
 
@@ -157,31 +151,14 @@ type ComponentEnforcementRule struct {
 	componentType []string
 	// include gppSectionId from 3.5
 	// include geo from 3.5
-	allowed bool // behavior if rule matches. can be either true=allow or false=deny. result is abstain if the rule doesn't match
+	allowed bool
 }
 
 func (r ComponentEnforcementRule) Allow(request openrtb_ext.RequestWrapper, target ScopedName) ActivityResult {
-	// all string comparisons in this section are case sensitive
-	// doc: https://docs.google.com/document/d/1dRxFUFmhh2jGanzGZvfkK_6jtHPpHXWD7Qsi6KEugeE/edit
-	// the doc details the boolean operations.
-	//  - "or" within each field (componentName, componentType
-	//  - "and" between the rules present. empty fields are ignored (refer to doc for details)
-
-	// componentName
-	// check for matching scoped name. a wildcard is allowed for the name in which any target with the same scope is matched
-
-	// componentType
-	// can either act as a scope wildcard or meta targeting. can be scope "bidder", "analytics", maybe others.
-	// may also be "rtd" meta. you need to pass that through somehow, perhaps as targetMeta? targetMeta can be a slice. should be small enough that search speed isn't a concern.
-
-	// gppSectionId
-	// check if id is present in the gppsid slice. no parsing of gpp should happen here.
-
-	// geo
-	// simple filter on the req.user section
-
-	//!!! what is the behavior when only one componentName or componentType is present?
 	componentNameFound := false
+	if len(r.componentName) == 0 {
+		componentNameFound = true
+	}
 	for _, scope := range r.componentName {
 		if strings.EqualFold(scope.Scope, target.Scope) &&
 			(strings.EqualFold(scope.Name, target.Name) || scope.Name == "*") {
@@ -189,18 +166,19 @@ func (r ComponentEnforcementRule) Allow(request openrtb_ext.RequestWrapper, targ
 			break
 		}
 	}
+
 	typeFound := false
+	if len(r.componentType) == 0 {
+		typeFound = true
+	}
 	for _, componentType := range r.componentType {
 		if strings.EqualFold(componentType, target.Scope) {
 			typeFound = true
 			break
 		}
 	}
-
-	matchFound := componentNameFound && typeFound
-
 	// behavior if rule matches: can be either true=allow or false=deny. result is abstain if the rule doesn't match
-
+	matchFound := componentNameFound && typeFound
 	if matchFound {
 		if r.allowed {
 			return ActivityAllow
@@ -208,13 +186,9 @@ func (r ComponentEnforcementRule) Allow(request openrtb_ext.RequestWrapper, targ
 			return ActivityDeny
 		}
 	}
-
 	return ActivityAbstain
 }
 
-// the default scope should be hardcoded as bidder
-// ex: "bidder.appnexus", "bidder.*", "appnexus", "analytics.pubmatic"
-// TODO: add parsing helpers
 type ScopedName struct {
 	Scope string
 	Name  string
@@ -256,7 +230,6 @@ func NewScopedName(condition string) (ScopedName, error) {
 }
 
 // ex: "USA.VA", "USA". see all comments in https://github.com/prebid/prebid-server/issues/2622
-// TODO: add parsing helpers
 type Geo struct {
 	Country string
 	Region  string

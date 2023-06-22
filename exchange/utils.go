@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/privacy/activities"
 	"math/rand"
 
 	"github.com/buger/jsonparser"
@@ -151,6 +150,15 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 	for _, bidderRequest := range allBidderRequests {
 		bidRequestAllowed := true
 
+		// fetchBids activity
+		fetchBidsActivityAllowed := auctionReq.Activitities.Allow(privacy.ActivityFetchBids, *req,
+			privacy.ScopedName{Scope: privacy.ScopeTypeBidder, Name: bidderRequest.BidderName.String()})
+		if fetchBidsActivityAllowed == privacy.ActivityDeny {
+			// skip the call to a bidder if fetchBids activity is not allowed
+			// do not add this bidder to allowedBidderRequests
+			continue
+		}
+
 		// CCPA
 		privacyEnforcement.CCPA = ccpaEnforcer.ShouldEnforce(bidderRequest.BidderName.String())
 
@@ -176,15 +184,6 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 			applyFPD(auctionReq.FirstPartyData[bidderRequest.BidderName], bidderRequest.BidRequest)
 		}
 
-		// fetchBids activity
-		fetchBidsActivityAllowed := auctionReq.Activitities.Allow(privacy.ActivityFetchBids, *req,
-			privacy.ScopedName{Scope: privacy.ScopeTypeBidder, Name: bidderRequest.BidderName.String()})
-		if fetchBidsActivityAllowed != privacy.ActivityAllow {
-			// skip the call to a bidder if fetchBids activity is not allowed
-			// do not add this bidder to allowedBidderRequests
-			continue
-		}
-
 		if bidRequestAllowed {
 			privacyEnforcement.Apply(bidderRequest.BidRequest)
 			allowedBidderRequests = append(allowedBidderRequests, bidderRequest)
@@ -194,19 +193,6 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 			setLegacyGDPRFromGPP(bidderRequest.BidRequest, gpp)
 			setLegacyUSPFromGPP(bidderRequest.BidRequest, gpp)
 		}
-
-		// transmitTid activity
-		transmitTIdsActivityAllowed := auctionReq.Activitities.Allow(privacy.ActivityTransmitTIds, *req,
-			privacy.ScopedName{Scope: privacy.ScopeTypeBidder, Name: bidderRequest.BidderName.String()})
-		if transmitTIdsActivityAllowed == privacy.ActivityDeny || transmitTIdsActivityAllowed == privacy.ActivityAbstain {
-			//!!! Effect if not Permitted
-			// remove source.tid and imp.ext.tid. This can be specific to certain bidders or global to all bidders.
-			activityErr := activities.RemoveTIds(bidderRequest.BidRequest)
-			if activityErr != nil {
-				errs = append(errs, activityErr)
-			}
-		}
-
 	}
 
 	return
