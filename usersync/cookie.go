@@ -59,32 +59,28 @@ func ReadCookie(r *http.Request, decoder Decoder, host *config.HostCookie) *Cook
 
 // PrepareCookieForWrite ejects UIDs as long as the cookie is too full
 func (cookie *Cookie) PrepareCookieForWrite(cfg *config.HostCookie, encoder Base64Encoder) (string, error) {
-	encodedCookie, err := encoder.Encode(cookie)
-	if err != nil {
-		return "", err
-	}
-
-	isCookieTooBig := len(encodedCookie) > cfg.MaxCookieSizeBytes && cfg.MaxCookieSizeBytes > 0
-	if !isCookieTooBig {
-		return encodedCookie, nil
-	}
-
 	uuidKeys := sortUIDs(cookie.uids)
 
 	i := 0
+	isCookieTooBig := true
+
 	for isCookieTooBig && len(cookie.uids) > 0 {
+		encodedCookie, err := encoder.Encode(cookie)
+		if err != nil {
+			return encodedCookie, nil
+		}
+
+		isCookieTooBig = len(encodedCookie) > cfg.MaxCookieSizeBytes && cfg.MaxCookieSizeBytes > 0
+		if !isCookieTooBig {
+			return encodedCookie, nil
+		}
+
 		uidToDelete := uuidKeys[i]
 		delete(cookie.uids, uidToDelete)
 
-		encodedCookie, err = encoder.Encode(cookie)
-		if err != nil {
-			return "", err
-		}
-		isCookieTooBig = len(encodedCookie) > cfg.MaxCookieSizeBytes
-
 		i++
 	}
-	return encodedCookie, nil
+	return "", nil
 }
 
 // WriteCookie sets the prepared cookie onto the header
