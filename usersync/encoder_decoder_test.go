@@ -69,3 +69,81 @@ func TestEncoderDecoder(t *testing.T) {
 		})
 	}
 }
+
+func TestEncoder(t *testing.T) {
+	encoder := Base64EncoderV1{}
+
+	testCases := []struct {
+		name                  string
+		givenCookie           *Cookie
+		expectedEncodedCookie string
+	}{
+		{
+			name: "simple-cookie",
+			givenCookie: &Cookie{
+				uids: map[string]UIDEntry{
+					"adnxs": {
+						UID:     "UID",
+						Expires: time.Time{},
+					},
+				},
+				optOut: false,
+			},
+			expectedEncodedCookie: "eyJ0ZW1wVUlEcyI6eyJhZG54cyI6eyJ1aWQiOiJVSUQiLCJleHBpcmVzIjoiMDAwMS0wMS0wMVQwMDowMDowMFoifX19",
+		},
+		{
+			name:                  "empty-cookie",
+			givenCookie:           &Cookie{},
+			expectedEncodedCookie: "e30=",
+		},
+		{
+			name:                  "nil-cookie",
+			givenCookie:           nil,
+			expectedEncodedCookie: "bnVsbA==",
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			encodedCookie, err := encoder.Encode(test.givenCookie)
+			assert.NoError(t, err)
+
+			assert.Equal(t, test.expectedEncodedCookie, encodedCookie)
+		})
+	}
+}
+
+func TestDecoder(t *testing.T) {
+	decoder := DecodeV1{}
+
+	testCases := []struct {
+		name               string
+		givenEncodedCookie string
+		expectedCookie     *Cookie
+	}{
+		{
+			name:               "simple-encoded-cookie",
+			givenEncodedCookie: "eyJ0ZW1wVUlEcyI6eyJhZG54cyI6eyJ1aWQiOiJVSUQiLCJleHBpcmVzIjoiMDAwMS0wMS0wMVQwMDowMDowMFoifX19",
+			expectedCookie: &Cookie{
+				uids: map[string]UIDEntry{
+					"adnxs": {
+						UID: "UID",
+					},
+				},
+				optOut: false,
+			},
+		},
+		{
+			name:               "nil-encoded-cookie",
+			givenEncodedCookie: "",
+			expectedCookie:     NewCookie(),
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			decodedCookie := decoder.Decode(test.givenEncodedCookie)
+			assert.Equal(t, test.expectedCookie, decodedCookie)
+		})
+	}
+}
