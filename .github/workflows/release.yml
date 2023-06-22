@@ -69,19 +69,19 @@ jobs:
             # increment patch version
             nextTag=$(echo "${currentTag}" | awk -F. '{OFS="."; $3+=1; print $0}')
           fi
-          nextDockerTag="${nextTag:1}"
+          releaseVersion="${nextTag:1}"
 
           if [ ${{ inputs.debug }} == 'true' ]; then
-            echo "running workflow in debug mode, next ${releaseType} tag: ${nextTag}, docker image tag: ${nextDockerTag}"
+            echo "running workflow in debug mode, next ${releaseType} tag: ${nextTag}, docker image tag: ${releaseVersion}"
           else
             git tag $nextTag
             git push origin $nextTag
             echo "tag=${nextTag}" >> $GITHUB_OUTPUT
-            echo "dockerTag=${nextDockerTag}" >> $GITHUB_OUTPUT
+            echo "releaseVersion=${releaseVersion}" >> $GITHUB_OUTPUT
           fi
     outputs:
       releaseTag: ${{ steps.release.outputs.tag }}
-      dockerTag: ${{ steps.release.outputs.dockerTag }}
+      releaseVersion: ${{ steps.release.outputs.releaseVersion }}
 
   publish-docker-image:
     name: Publish docker image
@@ -95,7 +95,7 @@ jobs:
           fetch-depth: 0
       - name: Build image
         run: |
-          docker build -t docker.io/prebid/prebid-server:${{ needs.publish-tag.outputs.dockerTag }} .
+          docker build -t docker.io/prebid/prebid-server:${{ needs.publish-tag.outputs.releaseVersion }} .
       - name: Login to docker Hub
         if: contains(inputs.debug, 'false')
         uses: docker/login-action@v2.1.0
@@ -104,7 +104,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
       - name: Publish to docker Hub
         run: |
-          docker push docker.io/prebid/prebid-server:${{ needs.publish-tag.outputs.dockerTag }}
+          docker push docker.io/prebid/prebid-server:${{ needs.publish-tag.outputs.releaseVersion }}
 
   publish-release:
     name: Publish release
@@ -121,9 +121,9 @@ jobs:
       - name: Create & publish release
         uses: release-drafter/release-drafter@v5.22.0
         with:
-          name: ${{ needs.publish-tag.outputs.releaseTag }}
+          name: ${{ needs.publish-tag.outputs.releaseVersion }}
           tag: ${{ needs.publish-tag.outputs.releaseTag }}
-          version: ${{ needs.publish-tag.outputs.releaseTag }}
+          version: ${{ needs.publish-tag.outputs.releaseVersion }}
           publish: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
