@@ -38,7 +38,7 @@ func (l *monitorableConnection) Close() error {
 	return err
 }
 
-func (ln *monitorableListener) Accept() (c net.Conn, err error) {
+func (ln *monitorableListener) Accept() (net.Conn, error) {
 	tc, err := ln.Listener.Accept()
 	if err != nil {
 		glog.Errorf("Error accepting connection: %v", err)

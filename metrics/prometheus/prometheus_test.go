@@ -1475,6 +1475,39 @@ func TestRecordTLSHandshakeTime(t *testing.T) {
 	}
 }
 
+func TestRecordBidderServerResponseTime(t *testing.T) {
+	testCases := []struct {
+		description   string
+		timeInMs      float64
+		expectedCount uint64
+		expectedSum   float64
+	}{
+		{
+			description:   "record-bidder-server-response-time-1",
+			timeInMs:      500,
+			expectedCount: 1,
+			expectedSum:   0.5,
+		},
+		{
+			description:   "record-bidder-server-response-time-2",
+			timeInMs:      400,
+			expectedCount: 1,
+			expectedSum:   0.4,
+		},
+	}
+	for _, test := range testCases {
+		pm := createMetricsForTesting()
+		pm.RecordBidderServerResponseTime(time.Duration(test.timeInMs) * time.Millisecond)
+
+		m := dto.Metric{}
+		pm.bidderServerResponseTimer.Write(&m)
+		histogram := *m.GetHistogram()
+
+		assert.Equal(t, test.expectedCount, histogram.GetSampleCount())
+		assert.Equal(t, test.expectedSum, histogram.GetSampleSum())
+	}
+}
+
 func TestRecordAdapterConnections(t *testing.T) {
 
 	type testIn struct {

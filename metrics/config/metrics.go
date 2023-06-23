@@ -149,6 +149,12 @@ func (me *MultiMetricsEngine) RecordTLSHandshakeTime(tlsHandshakeTime time.Durat
 	}
 }
 
+func (me *MultiMetricsEngine) RecordBidderServerResponseTime(bidderServerResponseTime time.Duration) {
+	for _, thisME := range *me {
+		thisME.RecordBidderServerResponseTime(bidderServerResponseTime)
+	}
+}
+
 // RecordAdapterBidReceived across all engines
 func (me *MultiMetricsEngine) RecordAdapterBidReceived(labels metrics.AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
 	for _, thisME := range *me {
@@ -423,6 +429,10 @@ func (me *NilMetricsEngine) RecordDNSTime(dnsLookupTime time.Duration) {
 
 // RecordTLSHandshakeTime as a noop
 func (me *NilMetricsEngine) RecordTLSHandshakeTime(tlsHandshakeTime time.Duration) {
+}
+
+// RecordBidderServerResponseTime as a noop
+func (me *NilMetricsEngine) RecordBidderServerResponseTime(bidderServerResponseTime time.Duration) {
 }
 
 // RecordAdapterBidReceived as a noop

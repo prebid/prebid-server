@@ -9,6 +9,7 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/prebid/prebid-server/analytics"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -84,6 +85,26 @@ func TestNewModuleSuccess(t *testing.T) {
 			feature:     setUID,
 			logObject: func(module analytics.PBSAnalyticsModule) {
 				module.LogSetUIDObject(&analytics.SetUIDObject{Status: http.StatusOK})
+			},
+		},
+		{
+			description: "Ignore excluded fields from marshal",
+			feature:     auction,
+			logObject: func(module analytics.PBSAnalyticsModule) {
+				module.LogAuctionObject(&analytics.AuctionObject{
+					RequestWrapper: &openrtb_ext.RequestWrapper{},
+					SeatNonBid: []openrtb_ext.SeatNonBid{
+						{
+							NonBid: []openrtb_ext.NonBid{
+								{
+									ImpId:      "123",
+									StatusCode: 34,
+									Ext:        openrtb_ext.NonBidExt{Prebid: openrtb_ext.ExtResponseNonBidPrebid{Bid: openrtb_ext.NonBidObject{}}},
+								},
+							},
+						},
+					},
+				})
 			},
 		},
 	}
