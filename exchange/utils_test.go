@@ -17,6 +17,7 @@ import (
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -4271,5 +4272,72 @@ func TestGetMediaTypeForBid(t *testing.T) {
 			}
 
 		})
+	}
+}
+
+func TestCleanOpenRTBRequestsActivitiesFetchBids(t *testing.T) {
+	testCases := []struct {
+		description       string
+		req               *openrtb2.BidRequest
+		componentName     string
+		allow             bool
+		expectedReqNumber int
+	}{
+		{
+			description:       "request with one bidder allowed",
+			req:               newBidRequest(t),
+			componentName:     "appnexus",
+			allow:             true,
+			expectedReqNumber: 1,
+		},
+		{
+			description:       "request with one bidder not allowed",
+			req:               newBidRequest(t),
+			componentName:     "appnexus",
+			allow:             false,
+			expectedReqNumber: 0,
+		},
+	}
+
+	for _, test := range testCases {
+		privacyConfig := getDefaultActivityConfig(test.componentName, test.allow)
+		activities, err := privacy.NewActivityControl(privacyConfig)
+		assert.NoError(t, err, "")
+		auctionReq := AuctionRequest{
+			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: test.req},
+			UserSyncs:         &emptyUsersync{},
+			Activitities:      activities,
+		}
+
+		bidderToSyncerKey := map[string]string{}
+		reqSplitter := &requestSplitter{
+			bidderToSyncerKey: bidderToSyncerKey,
+			me:                &metrics.MetricsEngineMock{},
+			hostSChainNode:    nil,
+			bidderInfo:        config.BidderInfos{},
+		}
+
+		bidderRequests, _, errs := reqSplitter.cleanOpenRTBRequests(context.Background(), auctionReq, nil, gdpr.SignalNo)
+		assert.Empty(t, errs, "unexpected error returned")
+		assert.Len(t, bidderRequests, test.expectedReqNumber, "incorrect number of requests")
+	}
+}
+
+func getDefaultActivityConfig(componentName string, allow bool) *config.AccountPrivacy {
+	return &config.AccountPrivacy{
+		AllowActivities: config.AllowActivities{
+			FetchBids: config.Activity{
+				Default: ptrutil.ToPtr(true),
+				Rules: []config.ActivityRule{
+					{
+						Allow: allow,
+						Condition: config.ActivityCondition{
+							ComponentName: []string{componentName},
+							ComponentType: []string{"bidder"},
+						},
+					},
+				},
+			},
+		},
 	}
 }
