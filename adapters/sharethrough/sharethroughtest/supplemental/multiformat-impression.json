@@ -17,22 +17,18 @@
               "h": 250
             }
           ]
-        }
-      },
-      {
-        "id": "banner-imp-id-2",
-        "ext": {
-          "bidder": {
-            "pkey": "pkey2"
-          }
         },
-        "banner": {
-          "format": [
-            {
-              "w": 300,
-              "h": 600
-            }
-          ]
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "maxduration": 30,
+          "protocols": [
+            2,
+            3
+          ],
+          "w": 640,
+          "h": 480
         }
       }
     ],
@@ -53,8 +49,12 @@
       "expectedRequest": {
         "uri": "http://whatever.url",
         "headers": {
-          "Content-Type": ["application/json;charset=utf-8"],
-          "Accept": ["application/json"]
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
         },
         "body": {
           "id": "web-banner",
@@ -129,8 +129,12 @@
       "expectedRequest": {
         "uri": "http://whatever.url",
         "headers": {
-          "Content-Type": ["application/json;charset=utf-8"],
-          "Accept": ["application/json"]
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
         },
         "body": {
           "id": "web-banner",
