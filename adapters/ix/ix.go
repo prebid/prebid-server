@@ -66,6 +66,11 @@ func (a *IxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters
 				errs = append(errs, err)
 				continue
 			}
+		} else if request.App != nil {
+			if err := setAppPublisherId(request, iImp); err != nil {
+				errs = append(errs, err)
+				continue
+			}
 		}
 
 		if request.Imp[0].Banner != nil {
@@ -98,6 +103,33 @@ func (a *IxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters
 	request.Imp = imps
 
 	return append(requests, multiSizeRequests...), errs
+}
+
+func setAppPublisherId(request *openrtb2.BidRequest, iImp int) error {
+	if iImp == 0 {
+		// first impression - create a site and pub copy
+		app := *request.App
+		if app.Publisher == nil {
+			app.Publisher = &openrtb2.Publisher{}
+		} else {
+			publisher := *app.Publisher
+			app.Publisher = &publisher
+		}
+		request.App = &app
+	}
+
+	var bidderExt adapters.ExtImpBidder
+	if err := json.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil {
+		return err
+	}
+
+	var ixExt openrtb_ext.ExtImpIx
+	if err := json.Unmarshal(bidderExt.Bidder, &ixExt); err != nil {
+		return err
+	}
+
+	request.App.Publisher.ID = ixExt.SiteId
+	return nil
 }
 
 func setSitePublisherId(request *openrtb2.BidRequest, iImp int) error {
