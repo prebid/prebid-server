@@ -1,10 +1,10 @@
 {
   "mockBidRequest": {
-    "id": "web-banner",
+    "id": "parent-id",
     "tmax": 3000,
     "imp": [
       {
-        "id": "banner-imp-id-1",
+        "id": "impression-id",
         "ext": {
           "bidder": {
             "pkey": "pkey1"
@@ -19,16 +19,12 @@
           ]
         },
         "video": {
+          "w": 640,
+          "h": 480,
           "mimes": [
             "video/mp4"
           ],
-          "maxduration": 30,
-          "protocols": [
-            2,
-            3
-          ],
-          "w": 640,
-          "h": 480
+          "placement": 1
         }
       }
     ],
@@ -57,11 +53,11 @@
           ]
         },
         "body": {
-          "id": "web-banner",
+          "id": "parent-id",
           "tmax": 3000,
           "imp": [
             {
-              "id": "banner-imp-id-1",
+              "id": "impression-id",
               "tagid": "pkey1",
               "ext": {
                 "bidder": {
@@ -100,14 +96,14 @@
       "mockResponse": {
         "status": 200,
         "body": {
-          "id": "web-banner",
+          "id": "parent-id",
           "cur": "USD",
           "seatbid": [
             {
               "bid": [
                 {
-                  "id": "web-banner",
-                  "impid": "banner-imp-id-1",
+                  "id": "parent-id",
+                  "impid": "impression-id",
                   "crid": "some-creative-id",
                   "adm": "<div>Ad</div>",
                   "price": 20,
@@ -137,24 +133,24 @@
           ]
         },
         "body": {
-          "id": "web-banner",
+          "id": "parent-id",
           "tmax": 3000,
           "imp": [
             {
-              "id": "banner-imp-id-2",
-              "tagid": "pkey2",
+              "id": "impression-id",
+              "tagid": "pkey1",
               "ext": {
                 "bidder": {
-                  "pkey": "pkey2"
+                  "pkey": "pkey1"
                 }
               },
-              "banner": {
-                "format": [
-                  {
-                    "w": 300,
-                    "h": 600
-                  }
-                ]
+              "video": {
+                "w": 640,
+                "h": 480,
+                "mimes": [
+                  "video/mp4"
+                ],
+                "placement": 1
               }
             }
           ],
@@ -180,22 +176,22 @@
       "mockResponse": {
         "status": 200,
         "body": {
-          "id": "web-banner",
+          "id": "parent-id",
           "cur": "USD",
           "seatbid": [
             {
               "bid": [
                 {
-                  "id": "web-banner",
-                  "impid": "banner-imp-id-2",
+                  "id": "parent-id",
+                  "impid": "impression-id",
                   "crid": "some-creative-id",
-                  "adm": "<div>Ad</div>",
+                  "adm": "<VAST>TAG</VAST>",
                   "price": 20,
-                  "w": 300,
-                  "h": 600,
+                  "w": 640,
+                  "h": 480,
                   "ext": {
                     "prebid": {
-                      "type": "banner"
+                      "type": "video"
                     }
                   }
                 }
@@ -212,8 +208,8 @@
       "bids": [
         {
           "bid": {
-            "id": "web-banner",
-            "impid": "banner-imp-id-1",
+            "id": "parent-id",
+            "impid": "impression-id",
             "crid": "some-creative-id",
             "adm": "<div>Ad</div>",
             "price": 20,
@@ -234,20 +230,20 @@
       "bids": [
         {
           "bid": {
-            "id": "web-banner",
-            "impid": "banner-imp-id-2",
+            "id": "parent-id",
+            "impid": "impression-id",
             "crid": "some-creative-id",
-            "adm": "<div>Ad</div>",
+            "adm": "<VAST>TAG</VAST>",
             "price": 20,
-            "w": 300,
-            "h": 600,
+            "w": 640,
+            "h": 480,
             "ext": {
               "prebid": {
-                "type": "banner"
+                "type": "video"
               }
             }
           },
-          "type": "banner"
+          "type": "video"
         }
       ]
     }
