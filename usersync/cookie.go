@@ -58,16 +58,13 @@ func ReadCookie(r *http.Request, decoder Decoder, host *config.HostCookie) *Cook
 }
 
 // PrepareCookieForWrite ejects UIDs as long as the cookie is too full
-func (cookie *Cookie) PrepareCookieForWrite(cfg *config.HostCookie, encoder Base64Encoder) (string, error) {
-	uuidKeys := sortUIDs(cookie.uids)
-
-	i := 0
+func (cookie *Cookie) PrepareCookieForWrite(cfg *config.HostCookie, encoder Base64Encoder, ejector Ejector) (string, error) {
 	isCookieTooBig := true
 
 	for isCookieTooBig && len(cookie.uids) > 0 {
 		encodedCookie, err := encoder.Encode(cookie)
 		if err != nil {
-			return encodedCookie, nil
+			return encodedCookie, err
 		}
 
 		isCookieTooBig = len(encodedCookie) > cfg.MaxCookieSizeBytes && cfg.MaxCookieSizeBytes > 0
@@ -75,10 +72,11 @@ func (cookie *Cookie) PrepareCookieForWrite(cfg *config.HostCookie, encoder Base
 			return encodedCookie, nil
 		}
 
-		uidToDelete := uuidKeys[i]
+		uidToDelete, err := ejector.Choose(cookie.uids)
+		if err != nil {
+			return encodedCookie, err
+		}
 		delete(cookie.uids, uidToDelete)
-
-		i++
 	}
 	return "", nil
 }

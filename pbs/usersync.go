@@ -81,7 +81,7 @@ func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httpr
 	pc.SetOptOut(optout != "")
 
 	// Write Cookie
-	encodedCookie, err := pc.PrepareCookieForWrite(deps.HostCookieConfig, encoder)
+	encodedCookie, err := pc.PrepareCookieForWrite(deps.HostCookieConfig, encoder, &usersync.OldestEjector{}) //TODO: Getting Non Priority Keys Here?
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
