@@ -13,6 +13,7 @@ import (
 
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -285,6 +286,223 @@ func TestSetUIDEndpoint(t *testing.T) {
 			test.expectedHeaders = map[string]string{}
 		}
 		assert.Equal(t, test.expectedHeaders, responseHeaders, test.description+":headers")
+	}
+}
+
+func TestParseSignalFromGPPSID(t *testing.T) {
+	type testOutput struct {
+		signal gdpr.Signal
+		err    error
+	}
+	testCases := []struct {
+		desc     string
+		strSID   string
+		expected testOutput
+	}{
+		{
+			desc:   "Empty gpp_sid, expect gdpr.SignalAmbiguous",
+			strSID: "",
+			expected: testOutput{
+				signal: gdpr.SignalAmbiguous,
+				err:    nil,
+			},
+		},
+		{
+			desc:   "Malformed gpp_sid, expect gdpr.SignalAmbiguous",
+			strSID: "malformed",
+			expected: testOutput{
+				signal: gdpr.SignalAmbiguous,
+				err:    errors.New(`Error parsing gpp_sid strconv.ParseInt: parsing "malformed": invalid syntax`),
+			},
+		},
+		{
+			desc:   "Valid gpp_sid doesn't come with TCF2, expect gdpr.SignalNo",
+			strSID: "6",
+			expected: testOutput{
+				signal: gdpr.SignalNo,
+				err:    nil,
+			},
+		},
+		{
+			desc:   "Valid gpp_sid comes with TCF2, expect gdpr.SignalYes",
+			strSID: "2",
+			expected: testOutput{
+				signal: gdpr.SignalYes,
+				err:    nil,
+			},
+		},
+	}
+	for _, tc := range testCases {
+		outSignal, outErr := parseSignalFromGppSidStr(tc.strSID)
+
+		assert.Equal(t, tc.expected.signal, outSignal, tc.desc)
+		assert.Equal(t, tc.expected.err, outErr, tc.desc)
+	}
+}
+
+func TestParseConsentFromGppStr(t *testing.T) {
+	type testOutput struct {
+		gdprConsent string
+		err         error
+	}
+	testCases := []struct {
+		desc       string
+		inGppQuery string
+		expected   testOutput
+	}{
+		{
+			desc:       "Empty gpp field, expect empty GDPR consent",
+			inGppQuery: "",
+			expected: testOutput{
+				gdprConsent: "",
+				err:         nil,
+			},
+		},
+		{
+			desc:       "Malformed gpp field value, expect empty GDPR consent and error",
+			inGppQuery: "malformed",
+			expected: testOutput{
+				gdprConsent: "",
+				err:         errors.New(`error parsing GPP header, base64 decoding: illegal base64 data at input byte 8`),
+			},
+		},
+		{
+			desc:       "Valid gpp string comes with TCF2 in its gppConstants.SectionID's, expect non-empty GDPR consent",
+			inGppQuery: "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+			expected: testOutput{
+				gdprConsent: "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+				err:         nil,
+			},
+		},
+		{
+			desc:       "Valid gpp string doesn't come with TCF2 in its gppConstants.SectionID's, expect blank GDPR consent",
+			inGppQuery: "DBABjw~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
+			expected: testOutput{
+				gdprConsent: "",
+				err:         nil,
+			},
+		},
+	}
+	for _, tc := range testCases {
+		outConsent, outErr := parseConsentFromGppStr(tc.inGppQuery)
+
+		assert.Equal(t, tc.expected.gdprConsent, outConsent, tc.desc)
+		assert.Equal(t, tc.expected.err, outErr, tc.desc)
+	}
+}
+
+//func TestFunc(t *testing.T) {
+//	type testInput struct{
+//		field int
+//	}
+//	testCases := []struct {
+//		desc string
+//		in []testInput
+//		expected string
+//	}{
+//		{
+//		},
+//	}
+//	for _, tc := range testCases {
+//		// set test
+//		// run
+//parseLegacyGDPRFields(query url.Values, gppGDPRSignal gdpr.Signal, gppGDPRConsent string)
+//		// assertions
+//		assert.Equal(t, exp, out, tc.desc)
+//	}
+//}
+
+func TestGetGDPRSignal(t *testing.T) {
+	type testOutput struct {
+		signal gdpr.Signal
+		err    error
+	}
+	testCases := []struct {
+		desc     string
+		inUri    string
+		expected testOutput
+	}{
+		{
+			desc:  "No gpp_sid nor gdpr in URL, expect gdpr.SignalAmbiguous",
+			inUri: "/setuid?bidder=pubmatic&uid=123",
+			expected: testOutput{
+				signal: gdpr.SignalAmbiguous,
+				err:    nil,
+			},
+		},
+		{
+			desc:  "no gpp_sid, gdpr has an invalid value, expect gdpr.SignalNo",
+			inUri: "/setuid?gdpr=2",
+			expected: testOutput{
+				signal: gdpr.SignalAmbiguous,
+				err:    errors.New("the gdpr query param must be either 0 or 1. You gave 2"),
+			},
+		},
+		{
+			desc:  "no gpp_sid, gdpr flag enabled, expect gdpr.SignalYes",
+			inUri: "/setuid?gdpr=1",
+			expected: testOutput{
+				signal: gdpr.SignalYes,
+				err:    nil,
+			},
+		},
+		{
+			desc:  "no gpp_sid, gdpr flag disabled, expect gdpr.SignalNo",
+			inUri: "/setuid?gdpr=0",
+			expected: testOutput{
+				signal: gdpr.SignalNo,
+				err:    nil,
+			},
+		},
+		{
+			desc:  "gpp_sid only, but doesn't come with TCF2 value, expect gdpr.SignalNo",
+			inUri: "/setuid?gpp_sid=6",
+			expected: testOutput{
+				signal: gdpr.SignalNo,
+				err:    nil,
+			},
+		},
+		{
+			desc:  "gpp_sid only, but doesn't come with TCF2 value, expect gdpr.SignalNo",
+			inUri: "/setuid?gpp_sid=malformed",
+			expected: testOutput{
+				signal: gdpr.SignalAmbiguous,
+				err:    errors.New(`Error parsing gpp_sid strconv.ParseInt: parsing "malformed": invalid syntax`),
+			},
+		},
+		{
+			desc:  "gpp_sid only and it comes with TCF2 value, expect gdpr.SignalYes",
+			inUri: "/setuid?gpp_sid=2,6,8",
+			expected: testOutput{
+				signal: gdpr.SignalYes,
+				err:    nil,
+			},
+		},
+		{
+			desc:  "Both gdpr and gpp_sid in URL query, only and it comes with TCF2 value, expect gdpr.SignalYes",
+			inUri: "/setuid?gpp_sid=2,6,8&gdpr=1",
+			expected: testOutput{
+				signal: gdpr.SignalYes,
+				err: &errortypes.Warning{
+					Message:     "'gpp_sid' signal value will be used over the one found in the 'gdpr' field.",
+					WarningCode: errortypes.UnknownWarningCode,
+				},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		// set test
+		testURL, err := url.Parse(tc.inUri)
+		assert.NoError(t, err, tc.desc)
+
+		query := testURL.Query()
+
+		// run
+		signal, err := getGDPRSignal(query)
+
+		// assertions
+		assert.Equal(t, tc.expected.signal, signal, tc.desc)
+		assert.Equal(t, tc.expected.err, err, tc.desc)
 	}
 }
 

@@ -308,7 +308,7 @@ func TestCookieSyncHandle(t *testing.T) {
 func TestExtractGDPRSignal(t *testing.T) {
 	type testInput struct {
 		requestGDPR *int
-		gppSID      []int8
+		gppSidStr   string
 	}
 	type testOutput struct {
 		gdprSignal gdpr.Signal
@@ -324,7 +324,7 @@ func TestExtractGDPRSignal(t *testing.T) {
 			desc: "SectionTCFEU2 is listed in GPP_SID array, expect SignalYes and nil error",
 			in: testInput{
 				requestGDPR: nil,
-				gppSID:      []int8{2},
+				gppSidStr:   "2",
 			},
 			expected: testOutput{
 				gdprSignal: gdpr.SignalYes,
@@ -336,7 +336,7 @@ func TestExtractGDPRSignal(t *testing.T) {
 			desc: "SectionTCFEU2 is not listed in GPP_SID array, expect SignalNo and nil error",
 			in: testInput{
 				requestGDPR: nil,
-				gppSID:      []int8{6},
+				gppSidStr:   "6",
 			},
 			expected: testOutput{
 				gdprSignal: gdpr.SignalNo,
@@ -348,7 +348,7 @@ func TestExtractGDPRSignal(t *testing.T) {
 			desc: "Empty GPP_SID array and nil requestGDPR value, expect SignalAmbiguous and nil error",
 			in: testInput{
 				requestGDPR: nil,
-				gppSID:      []int8{},
+				gppSidStr:   "",
 			},
 			expected: testOutput{
 				gdprSignal: gdpr.SignalAmbiguous,
@@ -360,7 +360,7 @@ func TestExtractGDPRSignal(t *testing.T) {
 			desc: "Empty GPP_SID array and non-nil requestGDPR value that could not be successfully parsed, expect SignalAmbiguous and parse error",
 			in: testInput{
 				requestGDPR: ptrutil.ToPtr(2),
-				gppSID:      nil,
+				gppSidStr:   "",
 			},
 			expected: testOutput{
 				gdprSignal: gdpr.SignalAmbiguous,
@@ -372,7 +372,7 @@ func TestExtractGDPRSignal(t *testing.T) {
 			desc: "Empty GPP_SID array and non-nil requestGDPR value that could be successfully parsed, expect SignalYes and nil error",
 			in: testInput{
 				requestGDPR: ptrutil.ToPtr(1),
-				gppSID:      nil,
+				gppSidStr:   "",
 			},
 			expected: testOutput{
 				gdprSignal: gdpr.SignalYes,
@@ -383,7 +383,7 @@ func TestExtractGDPRSignal(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		// run
-		outSignal, outGdprStr, outErr := extractGDPRSignal(tc.in.requestGDPR, tc.in.gppSID)
+		outSignal, outGdprStr, outErr := extractGDPRSignal(tc.in.requestGDPR, tc.in.gppSidStr)
 		// assertions
 		assert.Equal(t, tc.expected.gdprSignal, outSignal, tc.desc)
 		assert.Equal(t, tc.expected.gdprString, outGdprStr, tc.desc)

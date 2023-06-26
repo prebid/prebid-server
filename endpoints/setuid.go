@@ -16,6 +16,7 @@ import (
 	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	gppPrivacy "github.com/prebid/prebid-server/privacy/gpp"
@@ -108,6 +109,7 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 
 		gdprRequestInfo, err := extractGDPRInfo(query)
 		if err != nil {
+			// Only exit if non-warning
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(err.Error()))
 			metricsEngine.RecordSetUid(metrics.SetUidBadRequest)
@@ -154,6 +156,7 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 			w.Header().Add("Content-Type", httputil.Pixel1x1PNG.ContentType)
 			w.Header().Add("Content-Length", strconv.Itoa(len(httputil.Pixel1x1PNG.Content)))
 			w.WriteHeader(http.StatusOK)
+			// signal, consent, error := parseGDPRFromGPP(query)
 			w.Write(httputil.Pixel1x1PNG.Content)
 		case "b":
 			w.Header().Add("Content-Type", "text/html")
@@ -164,40 +167,164 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 }
 
 // extractGDPRInfo looks for the GDPR consent string and GDPR signal in the GPP query params
-// first and the 'gdpr' and 'gdpr_consent' query params second.
+// first and the 'gdpr' and 'gdpr_consent' query params second. If found in both, throws a
+// warning
+//
+// WRONG! Write the following functions instead:
+// signal, consent, error := parseGDPRFromGPP(query)
+// legacySignal, legacyConsent, err := parseLegacyGDPRFields(query)
+//
+// if valid signal or valid consent is found in both, then warning
+//
+// We could probably make them pointers instead:
+// var legacySignal, legacyConsent, signal, consent *string
+// err := parseGDPRFromGPP(query, signal, consent)
+// err := parseLegacyGDPRFields(query, legacySignal, legacyConsent)
 func extractGDPRInfo(query url.Values) (gdpr.RequestInfo, error) {
-	// Defualt GDPR values
-	gdprConsent := query.Get("gdpr_consent")
-	gdprSignal := gdpr.SignalAmbiguous
 
-	// Signal from gpp_sid list takes precedence
-	gppSID, err := stringutil.StrToInt8Slice(query.Get("gpp_sid"))
+	reqInfo, err := parseGDPRFromGPP(query)
 	if err != nil {
-		return gdpr.RequestInfo{}, fmt.Errorf("Error parsing gpp_sid %s", err.Error())
+		return gdpr.RequestInfo{}, err
 	}
 
-	if len(gppSID) > 0 {
-		gdprSignal = gdpr.SignalNo
-		if gppPrivacy.IsSIDInList(gppSID, gppConstants.SectionTCFEU2) {
-			gdprSignal = gdpr.SignalYes
+	legacySignal, legacyConsent, err := parseLegacyGDPRFields(query, reqInfo.GDPRSignal, reqInfo.Consent)
+	if err != nil {
+		if !errortypes.IsWarning(err) {
+			return gdpr.RequestInfo{}, err
 		}
 	} else {
-		// Signal from gdpr field, if any
-		gdprQuerySignal := query.Get("gdpr")
-		if gdprQuerySignal != "" && gdprQuerySignal != "0" && gdprQuerySignal != "1" {
-			return gdpr.RequestInfo{}, errors.New("the gdpr query param must be either 0 or 1. You gave " + gdprQuerySignal)
-		}
-
-		if i, err := strconv.Atoi(gdprQuerySignal); err == nil {
-			gdprSignal = gdpr.Signal(i)
+		reqInfo = gdpr.RequestInfo{
+			Consent:    legacyConsent,
+			GDPRSignal: legacySignal,
 		}
 	}
 
-	// Consent from gpp string takes precedence, override gdprConsent in found in "gpp" field
-	if gppString := query.Get("gpp"); len(gppString) > 0 {
-		gpp, err := gpplib.Parse(gppString)
+	return reqInfo, nil
+}
+
+// signal, consent, error := parseGDPRFromGPP(query)
+func parseGDPRFromGPP(query url.Values) (gdpr.RequestInfo, error) {
+	var gdprSignal gdpr.Signal = gdpr.SignalAmbiguous
+	var gdprConsent string = ""
+	var err error
+
+	// Signal from gpp_sid list takes precedence
+	gdprSignal, err = parseSignalFromGppSidStr(query.Get("gpp_sid"))
+	if err != nil {
+		return gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous}, err
+	}
+
+	gdprConsent, err = parseConsentFromGppStr(query.Get("gpp"))
+	if err != nil {
+		return gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous}, err
+	}
+
+	if gdprConsent == "" && gdprSignal == gdpr.SignalYes {
+		return gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous}, errors.New("GDPR consent is required when gdpr signal equals 1")
+	}
+
+	return gdpr.RequestInfo{
+		Consent:    gdprConsent,
+		GDPRSignal: gdprSignal,
+	}, nil
+}
+
+func parseLegacyGDPRFields(query url.Values, gppGDPRSignal gdpr.Signal, gppGDPRConsent string) (gdpr.Signal, string, error) {
+	var gdprSignal gdpr.Signal
+	var gdprConsent string
+	var warning *errortypes.Warning
+
+	if gdprQuerySignal := query.Get("gdpr"); len(gdprQuerySignal) > 0 {
+		if gppGDPRSignal == gdpr.SignalAmbiguous {
+			if gdprQuerySignal != "" && gdprQuerySignal != "0" && gdprQuerySignal != "1" {
+				return gdpr.SignalAmbiguous, "", errors.New("the gdpr query param must be either 0 or 1. You gave " + gdprQuerySignal)
+			}
+
+			if i, err := strconv.Atoi(gdprQuerySignal); err == nil {
+				gdprSignal = gdpr.Signal(i)
+			}
+		} else {
+			warning = &errortypes.Warning{
+				Message:     "'gpp_sid' signal value will be used over the one found in the deprecated 'gdpr' field.",
+				WarningCode: errortypes.UnknownWarningCode,
+			}
+		}
+	}
+
+	gdprConsent = query.Get("gdpr_consent")
+	if len(gdprConsent) > 0 && len(gppGDPRConsent) > 0 {
+		warning = &errortypes.Warning{
+			Message:     "'gpp' signal value will be used over the one found in the deprecated 'gdpr_consent' field.",
+			WarningCode: errortypes.UnknownWarningCode,
+		}
+	}
+
+	return gdprSignal, gdprConsent, warning
+}
+
+// getGDPRSignal looks for a GDPR signal value in the "gpp_sid" and "gdpr" URL query
+// fields returns gdpr.SignalAmbiguous as default value. If values are found in both
+// "gpp_sid" and "gdpr" fields, the "gpp_sid" value will be returned along with a
+// warning
+func getGDPRSignal(query url.Values) (gdpr.Signal, error) {
+	var gdprSignal gdpr.Signal = gdpr.SignalAmbiguous
+	var err error
+
+	// Signal from gpp_sid list takes precedence
+	gdprSignal, err = parseSignalFromGppSidStr(query.Get("gpp_sid"))
+	if err != nil {
+		return gdpr.SignalAmbiguous, err
+	}
+
+	// Signal from gdpr field, if any
+	if gdprQuerySignal := query.Get("gdpr"); len(gdprQuerySignal) > 0 {
+		if gdprSignal == gdpr.SignalAmbiguous {
+			if gdprQuerySignal != "" && gdprQuerySignal != "0" && gdprQuerySignal != "1" {
+				return gdpr.SignalAmbiguous, errors.New("the gdpr query param must be either 0 or 1. You gave " + gdprQuerySignal)
+			}
+
+			if i, err := strconv.Atoi(gdprQuerySignal); err == nil {
+				gdprSignal = gdpr.Signal(i)
+			}
+		} else {
+			err = &errortypes.Warning{
+				Message:     "'gpp_sid' signal value will be used over the one found in the 'gdpr' field.",
+				WarningCode: errortypes.UnknownWarningCode,
+			}
+		}
+	}
+
+	return gdprSignal, err
+}
+
+// parseSignalFromGPPSID returns gdpr.SignalAmbiguous if strSID is empty or malformed
+func parseSignalFromGppSidStr(strSID string) (gdpr.Signal, error) {
+	gdprSignal := gdpr.SignalAmbiguous
+
+	if len(strSID) > 0 {
+		gppSID, err := stringutil.StrToInt8Slice(strSID)
 		if err != nil {
-			return gdpr.RequestInfo{}, err
+			return gdpr.SignalAmbiguous, fmt.Errorf("Error parsing gpp_sid %s", err.Error())
+		}
+
+		if len(gppSID) > 0 {
+			gdprSignal = gdpr.SignalNo
+			if gppPrivacy.IsSIDInList(gppSID, gppConstants.SectionTCFEU2) {
+				gdprSignal = gdpr.SignalYes
+			}
+		}
+	}
+
+	return gdprSignal, nil
+}
+
+func parseConsentFromGppStr(gppQueryValue string) (string, error) {
+	var gdprConsent string
+
+	if len(gppQueryValue) > 0 {
+		gpp, err := gpplib.Parse(gppQueryValue)
+		if err != nil {
+			return "", err
 		}
 
 		if i := gppPrivacy.IndexOfSID(gpp, gppConstants.SectionTCFEU2); i >= 0 {
@@ -205,14 +332,7 @@ func extractGDPRInfo(query url.Values) (gdpr.RequestInfo, error) {
 		}
 	}
 
-	if gdprConsent == "" && gdprSignal == gdpr.SignalYes {
-		return gdpr.RequestInfo{}, errors.New("gdpr_consent is required when gdpr=1")
-	}
-
-	return gdpr.RequestInfo{
-		Consent:    gdprConsent,
-		GDPRSignal: gdprSignal,
-	}, nil
+	return gdprConsent, nil
 }
 
 func getSyncer(query url.Values, syncersByKey map[string]usersync.Syncer) (usersync.Syncer, error) {

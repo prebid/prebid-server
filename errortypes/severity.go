@@ -20,7 +20,7 @@ func isFatal(err error) bool {
 	return !ok || s.Severity() == SeverityFatal
 }
 
-func isWarning(err error) bool {
+func IsWarning(err error) bool {
 	s, ok := err.(Coder)
 	return ok && s.Severity() == SeverityWarning
 }
@@ -54,7 +54,7 @@ func WarningOnly(errs []error) []error {
 	errsWarning := make([]error, 0, len(errs))
 
 	for _, err := range errs {
-		if isWarning(err) {
+		if IsWarning(err) {
 			errsWarning = append(errsWarning, err)
 		}
 	}
