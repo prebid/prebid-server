@@ -413,7 +413,6 @@ func TestParseConsentFromGppStr(t *testing.T) {
 	}
 }
 
-// TestParseGDPRFromGPP serves as an integration test
 func TestParseGDPRFromGPP(t *testing.T) {
 	type testOutput struct {
 		reqInfo gdpr.RequestInfo

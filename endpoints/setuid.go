@@ -108,10 +108,9 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 		}
 
 		gdprRequestInfo, err := extractGDPRInfo(query)
-
 		if err != nil {
+			// Only exit if non-warning
 			if !errortypes.IsWarning(err) {
-				// Only exit if non-warning
 				w.WriteHeader(http.StatusBadRequest)
 				w.Write([]byte(err.Error()))
 				metricsEngine.RecordSetUid(metrics.SetUidBadRequest)
@@ -160,7 +159,6 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 			w.Header().Add("Content-Type", httputil.Pixel1x1PNG.ContentType)
 			w.Header().Add("Content-Length", strconv.Itoa(len(httputil.Pixel1x1PNG.Content)))
 			w.WriteHeader(http.StatusOK)
-			// signal, consent, error := parseGDPRFromGPP(query)
 			w.Write(httputil.Pixel1x1PNG.Content)
 		case "b":
 			w.Header().Add("Content-Type", "text/html")
@@ -182,13 +180,13 @@ func extractGDPRInfo(query url.Values) (reqInfo gdpr.RequestInfo, err error) {
 
 	legacySignal, legacyConsent, err := parseLegacyGDPRFields(query, reqInfo.GDPRSignal, reqInfo.Consent)
 	isWarning := errortypes.IsWarning(err)
+
 	// If not warning, throw error
 	if err != nil && !isWarning {
 		return gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous}, err
 	}
 
-	// If warning, or there was no GDPR data in the GPP wrapper
-	//if (err != nil && isWarning) || (reqInfo.Consent == "" && reqInfo.GDPRSignal == gdpr.SignalAmbiguous) {
+	// If no GDPR data in the GPP fields, use legacy instead
 	if reqInfo.Consent == "" && reqInfo.GDPRSignal == gdpr.SignalAmbiguous {
 		reqInfo.GDPRSignal = legacySignal
 		reqInfo.Consent = legacyConsent
@@ -207,7 +205,6 @@ func parseGDPRFromGPP(query url.Values) (gdpr.RequestInfo, error) {
 	var gdprConsent string = ""
 	var err error
 
-	// Signal from gpp_sid list takes precedence
 	gdprSignal, err = parseSignalFromGppSidStr(query.Get("gpp_sid"))
 	if err != nil {
 		return gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous}, err
@@ -264,7 +261,6 @@ func parseLegacyGDPRFields(query url.Values, gppGDPRSignal gdpr.Signal, gppGDPRC
 	return gdprSignal, gdprConsent, warning
 }
 
-// parseSignalFromGPPSID returns gdpr.SignalAmbiguous if strSID is empty or malformed
 func parseSignalFromGppSidStr(strSID string) (gdpr.Signal, error) {
 	gdprSignal := gdpr.SignalAmbiguous
 

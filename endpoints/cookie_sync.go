@@ -176,8 +176,6 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 	return rx, privacyPolicies, nil
 }
 
-// extractPrivacyPolicies looks for the GDPR consent string and GDPR signal in the GPP and GDPR
-// fields. Values found in the GPP fields take precedence over the legacy GDPR fields
 func extractPrivacyPolicies(request cookieSyncRequest, usersyncDefaultGDPRValue string) (privacy.Policies, gdpr.Signal, error) {
 	// GDPR
 	gppSID, err := stringutil.StrToInt8Slice(request.GPPSid)
@@ -185,7 +183,7 @@ func extractPrivacyPolicies(request cookieSyncRequest, usersyncDefaultGDPRValue 
 		return privacy.Policies{}, gdpr.SignalNo, err
 	}
 
-	gdprSignal, gdprString, err := extractGDPRSignal(request.GDPR, request.GPPSid)
+	gdprSignal, gdprString, err := extractGDPRSignal(request.GDPR, gppSID)
 	if err != nil {
 		return privacy.Policies{}, gdpr.SignalNo, err
 	}
@@ -235,22 +233,19 @@ func extractPrivacyPolicies(request cookieSyncRequest, usersyncDefaultGDPRValue 
 	}, gdprSignal, nil
 }
 
-func extractGDPRSignal(requestGDPR *int, gppSidStr string) (gdpr.Signal, string, error) {
-
-	gdprSignal, err := parseSignalFromGppSidStr(gppSidStr)
-	if err != nil {
-		return gdpr.SignalAmbiguous, "", err
-	}
-
-	if gdprSignal != gdpr.SignalAmbiguous {
-		return gdprSignal, strconv.Itoa(int(gdprSignal)), nil
+func extractGDPRSignal(requestGDPR *int, gppSID []int8) (gdpr.Signal, string, error) {
+	if len(gppSID) > 0 {
+		if gppPrivacy.IsSIDInList(gppSID, gppConstants.SectionTCFEU2) {
+			return gdpr.SignalYes, strconv.Itoa(int(gdpr.SignalYes)), nil
+		}
+		return gdpr.SignalNo, strconv.Itoa(int(gdpr.SignalNo)), nil
 	}
 
 	if requestGDPR == nil {
 		return gdpr.SignalAmbiguous, "", nil
 	}
 
-	gdprSignal, err = gdpr.IntSignalParse(*requestGDPR)
+	gdprSignal, err := gdpr.IntSignalParse(*requestGDPR)
 	if err != nil {
 		return gdpr.SignalAmbiguous, strconv.Itoa(*requestGDPR), err
 	}

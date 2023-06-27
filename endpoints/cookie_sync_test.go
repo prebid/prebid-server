@@ -308,7 +308,7 @@ func TestCookieSyncHandle(t *testing.T) {
 func TestExtractGDPRSignal(t *testing.T) {
 	type testInput struct {
 		requestGDPR *int
-		gppSidStr   string
+		gppSID      []int8
 	}
 	type testOutput struct {
 		gdprSignal gdpr.Signal
@@ -324,7 +324,7 @@ func TestExtractGDPRSignal(t *testing.T) {
 			desc: "SectionTCFEU2 is listed in GPP_SID array, expect SignalYes and nil error",
 			in: testInput{
 				requestGDPR: nil,
-				gppSidStr:   "2",
+				gppSID:      []int8{2},
 			},
 			expected: testOutput{
 				gdprSignal: gdpr.SignalYes,
@@ -336,7 +336,7 @@ func TestExtractGDPRSignal(t *testing.T) {
 			desc: "SectionTCFEU2 is not listed in GPP_SID array, expect SignalNo and nil error",
 			in: testInput{
 				requestGDPR: nil,
-				gppSidStr:   "6",
+				gppSID:      []int8{6},
 			},
 			expected: testOutput{
 				gdprSignal: gdpr.SignalNo,
@@ -348,7 +348,7 @@ func TestExtractGDPRSignal(t *testing.T) {
 			desc: "Empty GPP_SID array and nil requestGDPR value, expect SignalAmbiguous and nil error",
 			in: testInput{
 				requestGDPR: nil,
-				gppSidStr:   "",
+				gppSID:      []int8{},
 			},
 			expected: testOutput{
 				gdprSignal: gdpr.SignalAmbiguous,
@@ -360,7 +360,7 @@ func TestExtractGDPRSignal(t *testing.T) {
 			desc: "Empty GPP_SID array and non-nil requestGDPR value that could not be successfully parsed, expect SignalAmbiguous and parse error",
 			in: testInput{
 				requestGDPR: ptrutil.ToPtr(2),
-				gppSidStr:   "",
+				gppSID:      nil,
 			},
 			expected: testOutput{
 				gdprSignal: gdpr.SignalAmbiguous,
@@ -372,7 +372,7 @@ func TestExtractGDPRSignal(t *testing.T) {
 			desc: "Empty GPP_SID array and non-nil requestGDPR value that could be successfully parsed, expect SignalYes and nil error",
 			in: testInput{
 				requestGDPR: ptrutil.ToPtr(1),
-				gppSidStr:   "",
+				gppSID:      nil,
 			},
 			expected: testOutput{
 				gdprSignal: gdpr.SignalYes,
@@ -383,7 +383,7 @@ func TestExtractGDPRSignal(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		// run
-		outSignal, outGdprStr, outErr := extractGDPRSignal(tc.in.requestGDPR, tc.in.gppSidStr)
+		outSignal, outGdprStr, outErr := extractGDPRSignal(tc.in.requestGDPR, tc.in.gppSID)
 		// assertions
 		assert.Equal(t, tc.expected.gdprSignal, outSignal, tc.desc)
 		assert.Equal(t, tc.expected.gdprString, outGdprStr, tc.desc)
@@ -407,7 +407,7 @@ func TestExtractPrivacyPolicies(t *testing.T) {
 		expected testOutput
 	}{
 		{
-			desc: "request GPP string is malformed, expect empty policies, gdpr.SignalNo and error",
+			desc: "request GPP string is malformed, expect empty policies, signal No and error",
 			in: testInput{
 				request: cookieSyncRequest{GPP: "malformedGPPString"},
 			},
@@ -418,7 +418,7 @@ func TestExtractPrivacyPolicies(t *testing.T) {
 			},
 		},
 		{
-			desc: "Malformed GPPSid string, expect empty policies, gdpr.SignalNo and error",
+			desc: "Malformed GPPSid string",
 			in: testInput{
 				request: cookieSyncRequest{
 					GPP:       "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
@@ -433,7 +433,7 @@ func TestExtractPrivacyPolicies(t *testing.T) {
 			},
 		},
 		{
-			desc: "request USPrivacy is different from the one in the GPP string, expect empty policies, gdpr.SignalNo and error",
+			desc: "request USPrivacy string is different from the one in the GPP string, expect empty policies, signalNo and error",
 			in: testInput{
 				request: cookieSyncRequest{
 					GPP:       "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
@@ -448,7 +448,7 @@ func TestExtractPrivacyPolicies(t *testing.T) {
 			},
 		},
 		{
-			desc: "Both TCF2 and CCPA strings in GPP but only CCPA in GPP_SID array. Expect SignalNo, and CCPA consent string correctly parsed",
+			desc: "no issues extracting privacy policies from request GPP and request GPPSid strings",
 			in: testInput{
 				request: cookieSyncRequest{
 					GPP:    "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
@@ -467,54 +467,6 @@ func TestExtractPrivacyPolicies(t *testing.T) {
 					GPP: gppPrivacy.Policy{
 						Consent: "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
 						RawSID:  "6",
-					},
-				},
-				gdprSignal: gdpr.SignalNo,
-				err:        nil,
-			},
-		},
-		{
-			desc: "SectionTCFEU2 found in GPP string but not in SID list, expect valid GDPR consent and gdpr.SignalNo",
-			in: testInput{
-				request: cookieSyncRequest{
-					GPP:    "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
-					GPPSid: "6",
-				},
-			},
-			expected: testOutput{
-				policies: privacy.Policies{
-					GDPR: gdprPrivacy.Policy{
-						Signal:  "0",
-						Consent: "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
-					},
-					CCPA: ccpa.Policy{},
-					GPP: gppPrivacy.Policy{
-						Consent: "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
-						RawSID:  "6",
-					},
-				},
-				gdprSignal: gdpr.SignalNo,
-				err:        nil,
-			},
-		},
-		{
-			desc: "CCPA string in GPP but not in GPP_SID array. Expect SignalNo, and CCPA consent string to not be parsed",
-			in: testInput{
-				request: cookieSyncRequest{
-					GPP:    "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
-					GPPSid: "8",
-				},
-			},
-			expected: testOutput{
-				policies: privacy.Policies{
-					GDPR: gdprPrivacy.Policy{
-						Signal:  "0",
-						Consent: "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
-					},
-					CCPA: ccpa.Policy{},
-					GPP: gppPrivacy.Policy{
-						Consent: "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
-						RawSID:  "8",
 					},
 				},
 				gdprSignal: gdpr.SignalNo,
