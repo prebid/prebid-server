@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/prebid/prebid-server/analytics"
@@ -20,7 +20,6 @@ func TestSampleModule(t *testing.T) {
 	am.LogAuctionObject(&analytics.AuctionObject{
 		Status:   http.StatusOK,
 		Errors:   nil,
-		Request:  &openrtb2.BidRequest{},
 		Response: &openrtb2.BidResponse{},
 	})
 	if count != 1 {

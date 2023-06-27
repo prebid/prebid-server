@@ -11,7 +11,7 @@ import (
 
 	"golang.org/x/text/currency"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -35,7 +35,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	return bidder, nil
 }
 
-// Builds endpoint url based on adapter-specific pub settings from imp.ext
+// makeEndpointURL builds endpoint url based on adapter-specific pub settings from imp.ext
 func (a *YieldlabAdapter) makeEndpointURL(req *openrtb2.BidRequest, params *openrtb_ext.ExtImpYieldlab) (string, error) {
 	uri, err := url.Parse(a.endpoint)
 	if err != nil {
@@ -85,6 +85,14 @@ func (a *YieldlabAdapter) makeEndpointURL(req *openrtb2.BidRequest, params *open
 	}
 	if consent != "" {
 		q.Set("consent", consent)
+	}
+
+	if req.Source != nil && req.Source.Ext != nil {
+		if openRtbSchain := unmarshalSupplyChain(req); openRtbSchain != nil {
+			if schainValue := makeSupplyChain(*openRtbSchain); schainValue != "" {
+				q.Set("schain", schainValue)
+			}
+		}
 	}
 
 	uri.RawQuery = q.Encode()
@@ -342,6 +350,72 @@ func (a *YieldlabAdapter) makeAdSourceURL(req *openrtb2.BidRequest, ext *openrtb
 
 func (a *YieldlabAdapter) makeCreativeID(req *openrtb_ext.ExtImpYieldlab, bid *bidResponse) string {
 	return fmt.Sprintf(creativeID, req.AdslotID, bid.Pid, a.getWeek())
+}
+
+// unmarshalSupplyChain makes the value for the schain URL parameter from the openRTB schain object.
+func unmarshalSupplyChain(req *openrtb2.BidRequest) *openrtb2.SupplyChain {
+	var extSChain openrtb_ext.ExtRequestPrebidSChain
+	err := json.Unmarshal(req.Source.Ext, &extSChain)
+	if err != nil {
+		// req.Source.Ext could be anything so don't handle any errors
+		return nil
+	}
+	return &extSChain.SChain
+}
+
+// makeNodeValue makes the value for the schain URL parameter from the openRTB schain object.
+func makeSupplyChain(openRtbSchain openrtb2.SupplyChain) string {
+	if len(openRtbSchain.Nodes) == 0 {
+		return ""
+	}
+
+	const schainPrefixFmt = "%s,%d"
+	const schainNodeFmt = "!%s,%s,%s,%s,%s,%s,%s"
+	schainPrefix := fmt.Sprintf(schainPrefixFmt, openRtbSchain.Ver, openRtbSchain.Complete)
+	var sb strings.Builder
+	sb.WriteString(schainPrefix)
+	for _, node := range openRtbSchain.Nodes {
+		// has to be in order: asi,sid,hp,rid,name,domain,ext
+		schainNode := fmt.Sprintf(
+			schainNodeFmt,
+			makeNodeValue(node.ASI),
+			makeNodeValue(node.SID),
+			makeNodeValue(node.HP),
+			makeNodeValue(node.RID),
+			makeNodeValue(node.Name),
+			makeNodeValue(node.Domain),
+			makeNodeValue(node.Ext),
+		)
+		sb.WriteString(schainNode)
+	}
+	return sb.String()
+}
+
+// makeNodeValue converts any known value type from a schain node to a string and does URL encoding if necessary.
+func makeNodeValue(nodeParam any) string {
+	switch nodeParam.(type) {
+	case string:
+		return url.QueryEscape(nodeParam.(string))
+	case *int8:
+		pointer := nodeParam.(*int8)
+		if pointer == nil {
+			return ""
+		}
+		return makeNodeValue(int(*pointer))
+	case int:
+		return strconv.Itoa(nodeParam.(int))
+	case json.RawMessage:
+		if freeFormData := nodeParam.(json.RawMessage); freeFormData != nil {
+			freeFormJson, err := json.Marshal(freeFormData)
+			if err != nil {
+				return ""
+			}
+			return makeNodeValue(string(freeFormJson))
+		}
+		return ""
+	default:
+		return ""
+	}
 }
 
 func splitSize(size string) (uint64, uint64, error) {

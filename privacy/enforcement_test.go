@@ -3,7 +3,7 @@ package privacy
 import (
 	"testing"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -95,7 +95,7 @@ func TestApply(t *testing.T) {
 			expectedDeviceIPv4: ScrubStrategyIPV4Lowest8,
 			expectedDeviceIPv6: ScrubStrategyIPV6Lowest16,
 			expectedDeviceGeo:  ScrubStrategyGeoReducedPrecision,
-			expectedUser:       ScrubStrategyUserID,
+			expectedUser:       ScrubStrategyUserIDAndDemographic,
 			expectedUserGeo:    ScrubStrategyGeoReducedPrecision,
 		},
 		{
@@ -127,7 +127,7 @@ func TestApply(t *testing.T) {
 			expectedDeviceIPv4: ScrubStrategyIPV4Lowest8,
 			expectedDeviceIPv6: ScrubStrategyIPV6Lowest16,
 			expectedDeviceGeo:  ScrubStrategyGeoReducedPrecision,
-			expectedUser:       ScrubStrategyUserID,
+			expectedUser:       ScrubStrategyUserIDAndDemographic,
 			expectedUserGeo:    ScrubStrategyGeoReducedPrecision,
 		},
 		{
@@ -143,7 +143,7 @@ func TestApply(t *testing.T) {
 			expectedDeviceIPv4: ScrubStrategyIPV4None,
 			expectedDeviceIPv6: ScrubStrategyIPV6None,
 			expectedDeviceGeo:  ScrubStrategyGeoNone,
-			expectedUser:       ScrubStrategyUserID,
+			expectedUser:       ScrubStrategyUserIDAndDemographic,
 			expectedUserGeo:    ScrubStrategyGeoNone,
 		},
 		{
@@ -175,7 +175,7 @@ func TestApply(t *testing.T) {
 			expectedDeviceIPv4: ScrubStrategyIPV4Lowest8,
 			expectedDeviceIPv6: ScrubStrategyIPV6Lowest16,
 			expectedDeviceGeo:  ScrubStrategyGeoReducedPrecision,
-			expectedUser:       ScrubStrategyUserID,
+			expectedUser:       ScrubStrategyUserIDAndDemographic,
 			expectedUserGeo:    ScrubStrategyGeoReducedPrecision,
 		},
 		{

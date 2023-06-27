@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/prebid/openrtb/v17/native1"
-	nativeResponse "github.com/prebid/openrtb/v17/native1/response"
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/native1"
+	nativeResponse "github.com/prebid/openrtb/v19/native1/response"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -155,12 +155,14 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType,
 				return openrtb_ext.BidTypeNative, nil
 			} else if imp.Banner != nil {
 				return openrtb_ext.BidTypeBanner, nil
+			} else if imp.Video != nil {
+				return openrtb_ext.BidTypeVideo, nil
 			}
 		}
 	}
 
 	return "", &errortypes.BadInput{
-		Message: fmt.Sprintf("Failed to find native/banner impression \"%s\" ", impID),
+		Message: fmt.Sprintf("Failed to find native/banner/video impression \"%s\" ", impID),
 	}
 }
 

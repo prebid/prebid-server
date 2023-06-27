@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/util/iosutil"
 	"github.com/stretchr/testify/assert"
 )
@@ -54,7 +54,7 @@ func TestModifyForIOS(t *testing.T) {
 				App:    &openrtb2.App{},
 				Device: &openrtb2.Device{Ext: json.RawMessage(`{"atts":0}`), OS: "iOS", OSV: "14.2", IFA: "", Lmt: nil},
 			},
-			expectedLMT: openrtb2.Int8Ptr(0),
+			expectedLMT: openrtb2.Int8Ptr(1),
 		},
 		{
 			description: "14.2",
@@ -272,7 +272,7 @@ func TestModifyForIOS142OrGreater(t *testing.T) {
 		{
 			description: "Not Determined",
 			givenDevice: openrtb2.Device{Ext: json.RawMessage(`{"atts":0}`), Lmt: nil},
-			expectedLMT: openrtb2.Int8Ptr(0),
+			expectedLMT: openrtb2.Int8Ptr(1),
 		},
 		{
 			description: "Restricted",

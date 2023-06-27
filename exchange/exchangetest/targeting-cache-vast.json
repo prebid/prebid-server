@@ -29,7 +29,20 @@
           "cache": {
             "vastxml": {}
           },
-          "targeting": {}
+          "targeting": {
+            "pricegranularity": {
+              "precision": 2,
+              "ranges": [
+                {
+                  "min": 0,
+                  "max": 20,
+                  "increment": 0.1
+                }
+              ]
+            },
+            "includebidderkeys": true,
+            "includewinners": true
+          }
         }
       }
     }

@@ -15,6 +15,7 @@ import (
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/util/httputil"
 )
@@ -42,14 +43,16 @@ type eventEndpoint struct {
 	Analytics     analytics.PBSAnalyticsModule
 	Cfg           *config.Configuration
 	TrackingPixel *httputil.Pixel
+	MetricsEngine metrics.MetricsEngine
 }
 
-func NewEventEndpoint(cfg *config.Configuration, accounts stored_requests.AccountFetcher, analytics analytics.PBSAnalyticsModule) httprouter.Handle {
+func NewEventEndpoint(cfg *config.Configuration, accounts stored_requests.AccountFetcher, analytics analytics.PBSAnalyticsModule, me metrics.MetricsEngine) httprouter.Handle {
 	ee := &eventEndpoint{
 		Accounts:      accounts,
 		Analytics:     analytics,
 		Cfg:           cfg,
 		TrackingPixel: &httputil.Pixel1x1PNG,
+		MetricsEngine: me,
 	}
 
 	return ee.Handle
@@ -93,7 +96,7 @@ func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprou
 	}
 
 	// get account details
-	account, errs := accountService.GetAccount(ctx, e.Cfg, e.Accounts, eventRequest.AccountID)
+	account, errs := accountService.GetAccount(ctx, e.Cfg, e.Accounts, eventRequest.AccountID, e.MetricsEngine)
 	if len(errs) > 0 {
 		status, messages := HandleAccountServiceErrors(errs)
 		w.WriteHeader(status)
@@ -104,8 +107,8 @@ func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprou
 		return
 	}
 
-	// account does not support events
-	if !account.EventsEnabled {
+	// Check if events are enabled for the account
+	if !account.Events.IsEnabled() {
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte(fmt.Sprintf("Account '%s' doesn't support events", eventRequest.AccountID)))
 		return
@@ -214,7 +217,7 @@ func HandleAccountServiceErrors(errs []error) (status int, messages []string) {
 		}
 	}
 
-	return status, messages
+	return
 }
 
 func optionalParameters(request *analytics.EventRequest) string {

@@ -59,7 +59,19 @@
   "expectedReqExt": {
     "prebid": {
       "targeting": {
-        "pricegranularity": "low"
+        "pricegranularity": {
+          "precision": 2,
+          "ranges": [
+            {
+              "min": 0,
+              "max": 5,
+              "increment": 0.5
+            }
+          ]
+        },
+        "mediatypepricegranularity": {},
+        "includewinners": true,
+        "includebidderkeys": true
       },
       "cache": {
         "bids": {}

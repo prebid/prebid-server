@@ -81,11 +81,14 @@ func TestAllowedSyncs(t *testing.T) {
 		vendorIDs: map[openrtb_ext.BidderName]uint16{
 			openrtb_ext.BidderAppnexus: 2,
 		},
-		fetchVendorList: listFetcher(map[uint16]vendorlist.VendorList{
-			1: parseVendorListDataV2(t, vendorListData),
+		fetchVendorList: listFetcher(map[uint16]map[uint16]vendorlist.VendorList{
+			2: {
+				1: parseVendorListDataV2(t, vendorListData),
+			},
 		}),
-		gdprSignal: SignalYes,
-		consent:    vendor2AndPurpose1Consent,
+		purposeEnforcerBuilder: NewPurposeEnforcerBuilder(&tcf2AggConfig),
+		gdprSignal:             SignalYes,
+		consent:                vendor2AndPurpose1Consent,
 	}
 
 	allowSync, err := perms.HostCookiesAllowed(context.Background())
@@ -126,11 +129,14 @@ func TestProhibitedPurposes(t *testing.T) {
 		vendorIDs: map[openrtb_ext.BidderName]uint16{
 			openrtb_ext.BidderAppnexus: 2,
 		},
-		fetchVendorList: listFetcher(map[uint16]vendorlist.VendorList{
-			1: parseVendorListDataV2(t, vendorListData),
+		fetchVendorList: listFetcher(map[uint16]map[uint16]vendorlist.VendorList{
+			2: {
+				1: parseVendorListDataV2(t, vendorListData),
+			},
 		}),
-		gdprSignal: SignalYes,
-		consent:    vendor2NoPurpose1Consent,
+		purposeEnforcerBuilder: NewPurposeEnforcerBuilder(&tcf2AggConfig),
+		gdprSignal:             SignalYes,
+		consent:                vendor2NoPurpose1Consent,
 	}
 
 	allowSync, err := perms.HostCookiesAllowed(context.Background())
@@ -172,11 +178,14 @@ func TestProhibitedVendors(t *testing.T) {
 		vendorIDs: map[openrtb_ext.BidderName]uint16{
 			openrtb_ext.BidderAppnexus: 2,
 		},
-		fetchVendorList: listFetcher(map[uint16]vendorlist.VendorList{
-			1: parseVendorListDataV2(t, vendorListData),
+		fetchVendorList: listFetcher(map[uint16]map[uint16]vendorlist.VendorList{
+			2: {
+				1: parseVendorListDataV2(t, vendorListData),
+			},
 		}),
-		gdprSignal: SignalYes,
-		consent:    purpose1NoVendorConsent,
+		purposeEnforcerBuilder: NewPurposeEnforcerBuilder(&tcf2AggConfig),
+		gdprSignal:             SignalYes,
+		consent:                purpose1NoVendorConsent,
 	}
 
 	allowSync, err := perms.HostCookiesAllowed(context.Background())
@@ -312,9 +321,12 @@ func TestAllowActivities(t *testing.T) {
 		vendorIDs: map[openrtb_ext.BidderName]uint16{
 			openrtb_ext.BidderAppnexus: 2,
 		},
-		fetchVendorList: listFetcher(map[uint16]vendorlist.VendorList{
-			1: parseVendorListDataV2(t, vendorListData),
+		fetchVendorList: listFetcher(map[uint16]map[uint16]vendorlist.VendorList{
+			2: {
+				1: parseVendorListDataV2(t, vendorListData),
+			},
 		}),
+		purposeEnforcerBuilder: NewPurposeEnforcerBuilder(&tcf2AggConfig),
 	}
 
 	for _, tt := range tests {
@@ -373,16 +385,16 @@ func allPurposesEnabledTCF2Config() (TCF2AggConfig tcf2Config) {
 	TCF2AggConfig = tcf2Config{
 		HostConfig: config.TCF2{
 			Enabled:         true,
-			Purpose1:        config.TCF2Purpose{EnforcePurpose: true, EnforceVendors: true},
-			Purpose2:        config.TCF2Purpose{EnforcePurpose: true, EnforceVendors: true},
-			Purpose3:        config.TCF2Purpose{EnforcePurpose: true, EnforceVendors: true},
-			Purpose4:        config.TCF2Purpose{EnforcePurpose: true, EnforceVendors: true},
-			Purpose5:        config.TCF2Purpose{EnforcePurpose: true, EnforceVendors: true},
-			Purpose6:        config.TCF2Purpose{EnforcePurpose: true, EnforceVendors: true},
-			Purpose7:        config.TCF2Purpose{EnforcePurpose: true, EnforceVendors: true},
-			Purpose8:        config.TCF2Purpose{EnforcePurpose: true, EnforceVendors: true},
-			Purpose9:        config.TCF2Purpose{EnforcePurpose: true, EnforceVendors: true},
-			Purpose10:       config.TCF2Purpose{EnforcePurpose: true, EnforceVendors: true},
+			Purpose1:        config.TCF2Purpose{EnforceAlgoID: config.TCF2FullEnforcement, EnforcePurpose: true, EnforceVendors: true},
+			Purpose2:        config.TCF2Purpose{EnforceAlgoID: config.TCF2FullEnforcement, EnforcePurpose: true, EnforceVendors: true},
+			Purpose3:        config.TCF2Purpose{EnforceAlgoID: config.TCF2FullEnforcement, EnforcePurpose: true, EnforceVendors: true},
+			Purpose4:        config.TCF2Purpose{EnforceAlgoID: config.TCF2FullEnforcement, EnforcePurpose: true, EnforceVendors: true},
+			Purpose5:        config.TCF2Purpose{EnforceAlgoID: config.TCF2FullEnforcement, EnforcePurpose: true, EnforceVendors: true},
+			Purpose6:        config.TCF2Purpose{EnforceAlgoID: config.TCF2FullEnforcement, EnforcePurpose: true, EnforceVendors: true},
+			Purpose7:        config.TCF2Purpose{EnforceAlgoID: config.TCF2FullEnforcement, EnforcePurpose: true, EnforceVendors: true},
+			Purpose8:        config.TCF2Purpose{EnforceAlgoID: config.TCF2FullEnforcement, EnforcePurpose: true, EnforceVendors: true},
+			Purpose9:        config.TCF2Purpose{EnforceAlgoID: config.TCF2FullEnforcement, EnforcePurpose: true, EnforceVendors: true},
+			Purpose10:       config.TCF2Purpose{EnforceAlgoID: config.TCF2FullEnforcement, EnforcePurpose: true, EnforceVendors: true},
 			SpecialFeature1: config.TCF2SpecialFeature{Enforce: true},
 		},
 		AccountConfig: config.AccountGDPR{
@@ -440,9 +452,11 @@ func TestAllowActivitiesGeoAndID(t *testing.T) {
 			openrtb_ext.BidderOpenx:           20,
 			openrtb_ext.BidderAudienceNetwork: 55,
 		},
-		fetchVendorList: listFetcher(map[uint16]vendorlist.VendorList{
-			34: parseVendorListDataV2(t, vendorListData),
-			74: parseVendorListDataV2(t, vendorListData),
+		fetchVendorList: listFetcher(map[uint16]map[uint16]vendorlist.VendorList{
+			2: {
+				34: parseVendorListDataV2(t, vendorListData),
+				74: parseVendorListDataV2(t, vendorListData),
+			},
 		}),
 		gdprSignal: SignalYes,
 	}
@@ -539,6 +553,7 @@ func TestAllowActivitiesGeoAndID(t *testing.T) {
 		perms.cfg = &tcf2AggConfig
 		perms.aliasGVLIDs = td.aliasGVLIDs
 		perms.consent = td.consent
+		perms.purposeEnforcerBuilder = NewPurposeEnforcerBuilder(&tcf2AggConfig)
 
 		permissions, err := perms.AuctionActivitiesAllowed(context.Background(), td.bidderCoreName, td.bidder)
 		assert.NoErrorf(t, err, "Error processing AuctionActivitiesAllowed for %s", td.description)
@@ -564,13 +579,16 @@ func TestAllowActivitiesWhitelist(t *testing.T) {
 			openrtb_ext.BidderPubmatic: 6,
 			openrtb_ext.BidderRubicon:  8,
 		},
-		fetchVendorList: listFetcher(map[uint16]vendorlist.VendorList{
-			34: parseVendorListDataV2(t, vendorListData),
+		fetchVendorList: listFetcher(map[uint16]map[uint16]vendorlist.VendorList{
+			2: {
+				34: parseVendorListDataV2(t, vendorListData),
+			},
 		}),
-		aliasGVLIDs: map[string]uint16{},
-		consent:     fullConsentToPurposesAndVendorsTwoSixEight,
-		gdprSignal:  SignalYes,
-		publisherID: "appNexusAppID",
+		purposeEnforcerBuilder: NewPurposeEnforcerBuilder(&tcf2AggConfig),
+		aliasGVLIDs:            map[string]uint16{},
+		consent:                fullConsentToPurposesAndVendorsTwoSixEight,
+		gdprSignal:             SignalYes,
+		publisherID:            "appNexusAppID",
 	}
 
 	// Assert that an item that otherwise would not be allowed PI access, gets approved because it is found in the GDPR.NonStandardPublishers array
@@ -592,10 +610,13 @@ func TestAllowActivitiesPubRestrict(t *testing.T) {
 			openrtb_ext.BidderPubmatic: 32,
 			openrtb_ext.BidderRubicon:  8,
 		},
-		fetchVendorList: listFetcher(map[uint16]vendorlist.VendorList{
-			15: parseVendorListDataV2(t, vendorListData),
+		fetchVendorList: listFetcher(map[uint16]map[uint16]vendorlist.VendorList{
+			2: {
+				15: parseVendorListDataV2(t, vendorListData),
+			},
 		}),
-		gdprSignal: SignalYes,
+		purposeEnforcerBuilder: NewPurposeEnforcerBuilder(&tcf2AggConfig),
+		gdprSignal:             SignalYes,
 	}
 
 	// COwAdDhOwAdDhN4ABAENAPCgAAQAAv___wAAAFP_AAp_4AI6ACACAA - vendors 1-10 legit interest only,
@@ -664,11 +685,14 @@ func TestAllowSync(t *testing.T) {
 			openrtb_ext.BidderPubmatic: 6,
 			openrtb_ext.BidderRubicon:  8,
 		},
-		fetchVendorList: listFetcher(map[uint16]vendorlist.VendorList{
-			34: parseVendorListDataV2(t, vendorListData),
+		fetchVendorList: listFetcher(map[uint16]map[uint16]vendorlist.VendorList{
+			2: {
+				34: parseVendorListDataV2(t, vendorListData),
+			},
 		}),
-		gdprSignal: SignalYes,
-		consent:    fullConsentToPurposesAndVendorsTwoSixEight,
+		purposeEnforcerBuilder: NewPurposeEnforcerBuilder(&tcf2AggConfig),
+		gdprSignal:             SignalYes,
+		consent:                fullConsentToPurposesAndVendorsTwoSixEight,
 	}
 
 	allowSync, err := perms.HostCookiesAllowed(context.Background())
@@ -697,11 +721,14 @@ func TestProhibitedPurposeSync(t *testing.T) {
 			openrtb_ext.BidderPubmatic: 6,
 			openrtb_ext.BidderRubicon:  8,
 		},
-		fetchVendorList: listFetcher(map[uint16]vendorlist.VendorList{
-			34: parseVendorListDataV2(t, vendorListData),
+		fetchVendorList: listFetcher(map[uint16]map[uint16]vendorlist.VendorList{
+			2: {
+				34: parseVendorListDataV2(t, vendorListData),
+			},
 		}),
-		gdprSignal: SignalYes,
-		consent:    fullConsentToPurposesAndVendorsTwoSixEight,
+		purposeEnforcerBuilder: NewPurposeEnforcerBuilder(&tcf2AggConfig),
+		gdprSignal:             SignalYes,
+		consent:                fullConsentToPurposesAndVendorsTwoSixEight,
 	}
 
 	allowSync, err := perms.HostCookiesAllowed(context.Background())
@@ -728,11 +755,14 @@ func TestProhibitedVendorSync(t *testing.T) {
 			openrtb_ext.BidderRubicon:  8,
 			openrtb_ext.BidderOpenx:    10,
 		},
-		fetchVendorList: listFetcher(map[uint16]vendorlist.VendorList{
-			34: parseVendorListDataV2(t, vendorListData),
+		fetchVendorList: listFetcher(map[uint16]map[uint16]vendorlist.VendorList{
+			2: {
+				34: parseVendorListDataV2(t, vendorListData),
+			},
 		}),
-		gdprSignal: SignalYes,
-		consent:    fullConsentToPurposesAndVendorsTwoSixEight,
+		purposeEnforcerBuilder: NewPurposeEnforcerBuilder(&tcf2AggConfig),
+		gdprSignal:             SignalYes,
+		consent:                fullConsentToPurposesAndVendorsTwoSixEight,
 	}
 
 	// COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA : full consents to purposes for vendors 2, 6, 8
@@ -755,18 +785,18 @@ func parseVendorListDataV2(t *testing.T, data string) vendorlist.VendorList {
 	return parsed
 }
 
-func listFetcher(lists map[uint16]vendorlist.VendorList) func(context.Context, uint16) (vendorlist.VendorList, error) {
-	return func(ctx context.Context, id uint16) (vendorlist.VendorList, error) {
-		data, ok := lists[id]
-		if ok {
-			return data, nil
-		} else {
-			return nil, fmt.Errorf("vendorlist id=%d not found", id)
+func listFetcher(specVersionLists map[uint16]map[uint16]vendorlist.VendorList) func(context.Context, uint16, uint16) (vendorlist.VendorList, error) {
+	return func(ctx context.Context, specVersion, listVersion uint16) (vendorlist.VendorList, error) {
+		if lists, ok := specVersionLists[specVersion]; ok {
+			if data, ok := lists[listVersion]; ok {
+				return data, nil
+			}
 		}
+		return nil, fmt.Errorf("spec version %d vendor list %d not found", specVersion, listVersion)
 	}
 }
 
-func failedListFetcher(ctx context.Context, id uint16) (vendorlist.VendorList, error) {
+func failedListFetcher(ctx context.Context, specVersion, listVersion uint16) (vendorlist.VendorList, error) {
 	return nil, errors.New("vendor list can't be fetched")
 }
 
@@ -857,18 +887,40 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 			consent:                purpose2ConsentWithoutVendorConsent,
 			allowBidRequest:        true,
 			passGeo:                false,
-			passID:                 true,
+			passID:                 false,
 		},
 		{
-			description:            "Bid allowed - p2 disabled, user consents to p2 but not vendor, vendor consents to p2",
+			description:            "Bid allowed - p2 disabled and enforcing vendors, user consents to p2 but not vendor, vendor consents to p2",
 			purpose2EnforcePurpose: false,
 			purpose2EnforceVendors: true,
+			bidder:                 openrtb_ext.BidderPubmatic,
+			bidderCoreName:         openrtb_ext.BidderPubmatic,
+			consent:                purpose2ConsentWithoutVendorConsent,
+			allowBidRequest:        false,
+			passGeo:                false,
+			passID:                 false,
+		},
+		{
+			description:            "Bid allowed - p2 disabled not enforcing vendors, user consents to p2 but not vendor, vendor consents to p2",
+			purpose2EnforcePurpose: false,
+			purpose2EnforceVendors: false,
 			bidder:                 openrtb_ext.BidderPubmatic,
 			bidderCoreName:         openrtb_ext.BidderPubmatic,
 			consent:                purpose2ConsentWithoutVendorConsent,
 			allowBidRequest:        true,
 			passGeo:                false,
 			passID:                 false,
+		},
+		{
+			description:            "Bid allowed - p2 disabled and enforcing vendors, user consents to p2 and vendor, vendor consents to p2",
+			purpose2EnforcePurpose: false,
+			purpose2EnforceVendors: true,
+			bidder:                 openrtb_ext.BidderPubmatic,
+			bidderCoreName:         openrtb_ext.BidderPubmatic,
+			consent:                purpose2AndVendorConsent,
+			allowBidRequest:        true,
+			passGeo:                false,
+			passID:                 true,
 		},
 		{
 			description:            "Bid allowed - p2 enabled, user consents to p2 and vendor, vendor consents to p2",
@@ -912,7 +964,7 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 			consent:                purpose2AndVendorLI,
 			allowBidRequest:        true,
 			passGeo:                false,
-			passID:                 true,
+			passID:                 false,
 		},
 	}
 
@@ -925,8 +977,10 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 				openrtb_ext.BidderPubmatic: 6,
 				openrtb_ext.BidderRubicon:  8,
 			},
-			fetchVendorList: listFetcher(map[uint16]vendorlist.VendorList{
-				34: parseVendorListDataV2(t, vendorListData),
+			fetchVendorList: listFetcher(map[uint16]map[uint16]vendorlist.VendorList{
+				2: {
+					34: parseVendorListDataV2(t, vendorListData),
+				},
 			}),
 			aliasGVLIDs: td.aliasGVLIDs,
 			consent:     td.consent,
@@ -942,6 +996,7 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 		tcf2AggConfig.HostConfig.PurposeConfigs[consentconstants.Purpose(2)] = p2Config
 		tcf2AggConfig.HostConfig.PurposeConfigs[consentconstants.Purpose(2)] = &tcf2AggConfig.HostConfig.Purpose2
 		perms.cfg = &tcf2AggConfig
+		perms.purposeEnforcerBuilder = NewPurposeEnforcerBuilder(&tcf2AggConfig)
 
 		permissions, err := perms.AuctionActivitiesAllowed(context.Background(), td.bidderCoreName, td.bidder)
 		assert.NoErrorf(t, err, "Error processing AuctionActivitiesAllowed for %s", td.description)
@@ -968,8 +1023,8 @@ func TestTCF1Consent(t *testing.T) {
 	permissions, err := perms.AuctionActivitiesAllowed(context.Background(), bidderAllowedByConsent, bidderAllowedByConsent)
 
 	assert.Nil(t, err, "TCF1 consent - no error returned")
-	assert.Equal(t, false, permissions.AllowBidRequest, "TCF1 consent - bid request not allowed")
-	assert.Equal(t, false, permissions.PassGeo, "TCF1 consent - passing geo not allowed")
+	assert.Equal(t, true, permissions.AllowBidRequest, "TCF1 consent - bid request not allowed")
+	assert.Equal(t, true, permissions.PassGeo, "TCF1 consent - passing geo not allowed")
 	assert.Equal(t, false, permissions.PassID, "TCF1 consent - passing id not allowed")
 }
 
@@ -1040,8 +1095,10 @@ func TestAllowActivitiesVendorException(t *testing.T) {
 			vendorIDs: map[openrtb_ext.BidderName]uint16{
 				openrtb_ext.BidderAppnexus: 32,
 			},
-			fetchVendorList: listFetcher(map[uint16]vendorlist.VendorList{
-				34: parseVendorListDataV2(t, vendorListData),
+			fetchVendorList: listFetcher(map[uint16]map[uint16]vendorlist.VendorList{
+				2: {
+					34: parseVendorListDataV2(t, vendorListData),
+				},
 			}),
 			aliasGVLIDs: map[string]uint16{},
 			consent:     td.consent,
@@ -1055,6 +1112,7 @@ func TestAllowActivitiesVendorException(t *testing.T) {
 		tcf2AggConfig.HostConfig.PurposeConfigs[consentconstants.Purpose(2)] = &tcf2AggConfig.HostConfig.Purpose2
 		tcf2AggConfig.HostConfig.PurposeConfigs[consentconstants.Purpose(3)] = &tcf2AggConfig.HostConfig.Purpose3
 		perms.cfg = &tcf2AggConfig
+		perms.purposeEnforcerBuilder = NewPurposeEnforcerBuilder(&tcf2AggConfig)
 
 		permissions, err := perms.AuctionActivitiesAllowed(context.Background(), td.bidderCoreName, td.bidder)
 		assert.NoErrorf(t, err, "Error processing AuctionActivitiesAllowed for %s", td.description)
@@ -1105,8 +1163,10 @@ func TestBidderSyncAllowedVendorException(t *testing.T) {
 			vendorIDs: map[openrtb_ext.BidderName]uint16{
 				openrtb_ext.BidderAppnexus: 32,
 			},
-			fetchVendorList: listFetcher(map[uint16]vendorlist.VendorList{
-				34: parseVendorListDataV2(t, vendorListData),
+			fetchVendorList: listFetcher(map[uint16]map[uint16]vendorlist.VendorList{
+				2: {
+					34: parseVendorListDataV2(t, vendorListData),
+				},
 			}),
 			consent:    td.consent,
 			gdprSignal: SignalYes,
@@ -1116,9 +1176,206 @@ func TestBidderSyncAllowedVendorException(t *testing.T) {
 		tcf2AggConfig.HostConfig.Purpose1.VendorExceptionMap = td.p1VendorExceptionMap
 		tcf2AggConfig.HostConfig.PurposeConfigs[consentconstants.Purpose(1)] = &tcf2AggConfig.HostConfig.Purpose1
 		perms.cfg = &tcf2AggConfig
+		perms.purposeEnforcerBuilder = NewPurposeEnforcerBuilder(&tcf2AggConfig)
 
 		allowSync, err := perms.BidderSyncAllowed(context.Background(), td.bidder)
 		assert.NoErrorf(t, err, "Error processing BidderSyncAllowed for %s", td.description)
 		assert.EqualValuesf(t, td.allowSync, allowSync, "AllowSync failure on %s", td.description)
+	}
+}
+
+func TestDefaultPermissions(t *testing.T) {
+	tests := []struct {
+		description      string
+		purpose2Enforced bool
+		feature1Enforced bool
+		wantPermissions  AuctionPermissions
+	}{
+		{
+			description: "Neither enforced",
+			wantPermissions: AuctionPermissions{
+				AllowBidRequest: true,
+				PassGeo:         true,
+				PassID:          false,
+			},
+		},
+		{
+			description:      "Purpose 2 enforced only",
+			purpose2Enforced: true,
+			wantPermissions: AuctionPermissions{
+				AllowBidRequest: false,
+				PassGeo:         true,
+				PassID:          false,
+			},
+		},
+		{
+			description:      "Feature 1 enforced only",
+			feature1Enforced: true,
+			wantPermissions: AuctionPermissions{
+				AllowBidRequest: true,
+				PassGeo:         false,
+				PassID:          false,
+			},
+		},
+		{
+			description:      "Both enforced",
+			purpose2Enforced: true,
+			feature1Enforced: true,
+			wantPermissions: AuctionPermissions{
+				AllowBidRequest: false,
+				PassGeo:         false,
+				PassID:          false,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		perms := permissionsImpl{}
+
+		tcf2AggConfig := allPurposesEnabledTCF2Config()
+		tcf2AggConfig.HostConfig.Purpose2.EnforcePurpose = tt.purpose2Enforced
+		tcf2AggConfig.HostConfig.SpecialFeature1.Enforce = tt.feature1Enforced
+		tcf2AggConfig.HostConfig.PurposeConfigs[consentconstants.Purpose(2)] = &tcf2AggConfig.HostConfig.Purpose2
+		perms.cfg = &tcf2AggConfig
+
+		result := perms.defaultPermissions()
+
+		assert.Equal(t, result, tt.wantPermissions, tt.description)
+	}
+}
+
+func TestGetSpecVersion(t *testing.T) {
+	tests := []struct {
+		name                string
+		policyVersion       uint8
+		expectedSpecVersion uint16
+		expectedError       bool
+	}{
+		{
+			name:                "policy_version_0_gives_spec_version_2",
+			policyVersion:       0,
+			expectedSpecVersion: 2,
+		},
+		{
+			name:                "policy_version_3_gives_spec_version_2",
+			policyVersion:       3,
+			expectedSpecVersion: 2,
+		},
+		{
+			name:                "policy_version_4_spec_version_3",
+			policyVersion:       4,
+			expectedSpecVersion: 3,
+		},
+		{
+			name:                "policy_version_5_error",
+			policyVersion:       5,
+			expectedSpecVersion: 0,
+			expectedError:       true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			specVersion, err := getSpecVersion(tt.policyVersion)
+			assert.Equal(t, tt.expectedSpecVersion, specVersion)
+			if tt.expectedError {
+				assert.Error(t, err)
+			} else {
+				assert.Nil(t, err)
+			}
+		})
+	}
+}
+
+func TestVendorListSelection(t *testing.T) {
+	policyVersion3WithVendor2AndPurpose1Consent := "CPGWbY_PGWbY_GYAAAENABDAAIAAAAAAAAAAACEAAAAA"
+	policyVersion4WithVendor2AndPurpose1Consent := "CPGWbY_PGWbY_GYAAAENABEAAIAAAAAAAAAAACEAAAAA"
+	policyVersion5WithVendor2AndPurpose1Consent := "CPGWbY_PGWbY_GYAAAENABFAAIAAAAAAAAAAACEAAAAA"
+
+	specVersion2vendorListData := MarshalVendorList(vendorList{
+		GVLSpecificationVersion: 2,
+		VendorListVersion:       2,
+		Vendors: map[string]*vendor{
+			"2": {
+				ID:       2,
+				Purposes: []int{},
+			},
+		},
+	})
+	specVersion3vendorListData := MarshalVendorList(vendorList{
+		GVLSpecificationVersion: 3,
+		VendorListVersion:       2,
+		Vendors: map[string]*vendor{
+			"2": {
+				ID:       2,
+				Purposes: []int{1},
+			},
+		},
+	})
+
+	tcf2AggConfig := tcf2Config{
+		HostConfig: config.TCF2{
+			Purpose1: config.TCF2Purpose{
+				EnforcePurpose: true,
+				EnforceVendors: true,
+			},
+		},
+	}
+	tcf2AggConfig.HostConfig.PurposeConfigs = map[consentconstants.Purpose]*config.TCF2Purpose{
+		consentconstants.Purpose(1): &tcf2AggConfig.HostConfig.Purpose1,
+	}
+
+	perms := permissionsImpl{
+		cfg:          &tcf2AggConfig,
+		hostVendorID: 2,
+		vendorIDs: map[openrtb_ext.BidderName]uint16{
+			openrtb_ext.BidderAppnexus: 2,
+		},
+		fetchVendorList: listFetcher(map[uint16]map[uint16]vendorlist.VendorList{
+			2: {
+				1: parseVendorListDataV2(t, specVersion2vendorListData),
+			},
+			3: {
+				1: parseVendorListDataV2(t, specVersion3vendorListData),
+			},
+		}),
+		purposeEnforcerBuilder: NewPurposeEnforcerBuilder(&tcf2AggConfig),
+		gdprSignal:             SignalYes,
+	}
+
+	tests := []struct {
+		name              string
+		consent           string
+		expectedAllowSync bool
+		expectedErr       bool
+	}{
+		{
+			name:              "consent_tcf_policy_version_3_uses_gvl_spec_version_2",
+			consent:           policyVersion3WithVendor2AndPurpose1Consent,
+			expectedAllowSync: false,
+		},
+		{
+			name:              "consent_tcf_policy_version_4_uses_gvl_spec_version_3",
+			consent:           policyVersion4WithVendor2AndPurpose1Consent,
+			expectedAllowSync: true,
+		},
+		{
+			name:        "consent_tcf_policy_version_5_causes_error",
+			consent:     policyVersion5WithVendor2AndPurpose1Consent,
+			expectedErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			perms.consent = tt.consent
+			allowSync, err := perms.HostCookiesAllowed(context.Background())
+			assert.Equal(t, tt.expectedAllowSync, allowSync)
+			if tt.expectedErr {
+				assert.Error(t, err)
+			} else {
+				assert.Nil(t, err)
+			}
+		})
 	}
 }

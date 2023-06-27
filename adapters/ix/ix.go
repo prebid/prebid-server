@@ -11,15 +11,27 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/version"
 
-	"github.com/prebid/openrtb/v17/native1"
-	native1response "github.com/prebid/openrtb/v17/native1/response"
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/native1"
+	native1response "github.com/prebid/openrtb/v19/native1/response"
+	"github.com/prebid/openrtb/v19/openrtb2"
 )
 
 type IxAdapter struct {
 	URI         string
 	maxRequests int
+}
+
+type ExtRequest struct {
+	Prebid *openrtb_ext.ExtRequestPrebid `json:"prebid"`
+	SChain *openrtb2.SupplyChain         `json:"schain,omitempty"`
+	IxDiag *IxDiag                       `json:"ixdiag,omitempty"`
+}
+
+type IxDiag struct {
+	PbsV  string `json:"pbsv,omitempty"`
+	PbjsV string `json:"pbjsv,omitempty"`
 }
 
 func (a *IxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -29,13 +41,18 @@ func (a *IxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters
 		nImp = a.maxRequests
 	}
 
+	errs := make([]error, 0)
+
+	if err := BuildIxDiag(request); err != nil {
+		errs = append(errs, err)
+	}
+
 	// Multi-size banner imps are split into single-size requests.
 	// The first size imp requests are added to the first slice.
 	// Additional size requests are added to the second slice and are merged with the first at the end.
 	// Preallocate the max possible size to avoid reallocating arrays.
 	requests := make([]*adapters.RequestData, 0, a.maxRequests)
 	multiSizeRequests := make([]*adapters.RequestData, 0, a.maxRequests-nImp)
-	errs := make([]error, 0, 1)
 
 	headers := http.Header{
 		"Content-Type": {"application/json;charset=utf-8"},
@@ -169,7 +186,8 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 	var errs []error
 
 	for _, seatBid := range bidResponse.SeatBid {
-		for _, bid := range seatBid.Bid {
+		for i := range seatBid.Bid {
+			bid := seatBid.Bid[i]
 
 			bidType, err := getMediaTypeForBid(bid, impMediaTypeReq)
 			if err != nil {
@@ -308,4 +326,36 @@ func marshalJsonWithoutUnicode(v interface{}) (string, error) {
 	// json.Encode also writes a newline, need to remove
 	// https://pkg.go.dev/encoding/json#Encoder.Encode
 	return strings.TrimSuffix(sb.String(), "\n"), nil
+}
+
+func BuildIxDiag(request *openrtb2.BidRequest) error {
+	extRequest := &ExtRequest{}
+	if request.Ext != nil {
+		if err := json.Unmarshal(request.Ext, &extRequest); err != nil {
+			return err
+		}
+	}
+	ixdiag := &IxDiag{}
+
+	if extRequest.Prebid != nil && extRequest.Prebid.Channel != nil {
+		ixdiag.PbjsV = extRequest.Prebid.Channel.Version
+	}
+
+	// Slice commit hash out of version
+	if strings.Contains(version.Ver, "-") {
+		ixdiag.PbsV = version.Ver[:strings.Index(version.Ver, "-")]
+	} else if version.Ver != "" {
+		ixdiag.PbsV = version.Ver
+	}
+
+	// Only set request.ext if ixDiag is not empty
+	if *ixdiag != (IxDiag{}) {
+		extRequest.IxDiag = ixdiag
+		extRequestJson, err := json.Marshal(extRequest)
+		if err != nil {
+			return err
+		}
+		request.Ext = extRequestJson
+	}
+	return nil
 }

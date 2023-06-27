@@ -2,7 +2,6 @@ package sspBC
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,7 +10,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -19,7 +18,7 @@ import (
 )
 
 const (
-	adapterVersion              = "5.7"
+	adapterVersion              = "5.8"
 	impFallbackSize             = "1x1"
 	requestTypeStandard         = 1
 	requestTypeOneCode          = 2
@@ -54,7 +53,7 @@ type templatePayload struct {
 	PubId   string `json:"pubid"`
 	Page    string `json:"page"`
 	Referer string `json:"referer"`
-	McAd    string `json:"mcad"`
+	McAd    mcAd   `json:"mcad"`
 	Inver   string `json:"inver"`
 }
 
@@ -84,7 +83,7 @@ func Builder(_ openrtb_ext.BidderName, config config.Adapter, server config.Serv
 		`width=device-width, initial-scale=1.0"><style> body { background-color: transparent; margin: 0;` +
 		` padding: 0; }</style><script> window.rekid = {{.SiteId}}; window.slot = {{.SlotId}}; window.ad` +
 		`label = '{{.AdLabel}}'; window.pubid = '{{.PubId}}'; window.wp_sn = 'sspbc_go'; window.page = '` +
-		`{{.Page}}'; window.ref = '{{.Referer}}'; window.mcad = JSON.parse(atob('{{.McAd}}')); window.in` +
+		`{{.Page}}'; window.ref = '{{.Referer}}'; window.mcad = {{.McAd}}; window.in` +
 		`ver = '{{.Inver}}'; </script></head><body><div id="c"></div><script async c` +
 		`rossorigin nomodule src="//std.wpcdn.pl/wpjslib/wpjslib-inline.js" id="wpjslib"></script><scrip` +
 		`t async crossorigin type="module" src="//std.wpcdn.pl/wpjslib6/wpjslib-inline.js" id="wpjslib6"` +
@@ -229,23 +228,18 @@ func getOriginalImpID(impID string, imps []openrtb2.Imp) (string, error) {
 }
 
 func (a *adapter) createBannerAd(bid openrtb2.Bid, ext responseExt, request *openrtb2.BidRequest, seat string) (string, error) {
-	var mcad mcAd
-
 	if strings.Contains(bid.AdM, "<!--preformatted-->") {
 		// Banner ad is already formatted
 		return bid.AdM, nil
 	}
 
 	// create McAd payload
-	mcad.Id = request.ID
-	mcad.Seat = seat
-	mcad.SeatBid = []openrtb2.SeatBid{
-		{Bid: []openrtb2.Bid{bid}},
-	}
-
-	mcMarshalled, err := json.Marshal(mcad)
-	if err != nil {
-		return "", err
+	var mcad = mcAd{
+		Id:   request.ID,
+		Seat: seat,
+		SeatBid: []openrtb2.SeatBid{
+			{Bid: []openrtb2.Bid{bid}},
+		},
 	}
 
 	bannerData := &templatePayload{
@@ -255,7 +249,7 @@ func (a *adapter) createBannerAd(bid openrtb2.Bid, ext responseExt, request *ope
 		PubId:   ext.PublisherId,
 		Page:    request.Site.Page,
 		Referer: request.Site.Ref,
-		McAd:    base64.URLEncoding.EncodeToString(mcMarshalled),
+		McAd:    mcad,
 		Inver:   prebidServerIntegrationType,
 	}
 

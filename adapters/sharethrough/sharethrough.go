@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -28,7 +28,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	return bidder, nil
 }
 
-func (a adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var requests []*adapters.RequestData
 	var errors []error
 
@@ -103,7 +103,7 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.Ex
 	return requests, errors
 }
 
-func (a adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -130,20 +130,37 @@ func (a adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.Re
 
 	bidderResponse := adapters.NewBidderResponse()
 	bidderResponse.Currency = "USD"
+	var errors []error
 
 	for _, seatBid := range bidResp.SeatBid {
 		for i := range seatBid.Bid {
-			bidType := openrtb_ext.BidTypeBanner
-			if bidReq.Imp[0].Video != nil {
-				bidType = openrtb_ext.BidTypeVideo
+			bid := &seatBid.Bid[i]
+			bidType, err := getMediaTypeForBid(*bid)
+			if err != nil {
+				errors = append(errors, err)
 			}
 
 			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
 				BidType: bidType,
-				Bid:     &seatBid.Bid[i],
+				Bid:     bid,
 			})
 		}
 	}
 
-	return bidderResponse, nil
+	return bidderResponse, errors
+}
+
+func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+
+	if bid.Ext != nil {
+		var bidExt openrtb_ext.ExtBid
+		err := json.Unmarshal(bid.Ext, &bidExt)
+		if err == nil && bidExt.Prebid != nil {
+			return openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
+		}
+	}
+
+	return "", &errortypes.BadServerResponse{
+		Message: fmt.Sprintf("Failed to parse bid mediatype for impression \"%s\"", bid.ImpID),
+	}
 }

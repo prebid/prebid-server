@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -118,9 +118,9 @@ func getMediaTypeForBid(ext json.RawMessage) (openrtb_ext.BidType, error) {
 	return openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
 }
 
-func curExists(cc []string, c string) bool {
-	for i := range cc {
-		if cc[i] == c {
+func curExists(allowedCurrencies []string, newCurrency string) bool {
+	for i := range allowedCurrencies {
+		if allowedCurrencies[i] == newCurrency {
 			return true
 		}
 	}

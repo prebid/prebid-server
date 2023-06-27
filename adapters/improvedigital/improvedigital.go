@@ -4,17 +4,43 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
+const (
+	buyingTypeRTB                    = "rtb"
+	isRewardedInventory              = "is_rewarded_inventory"
+	stateRewardedInventoryEnable     = "1"
+	consentProvidersSettingsInputKey = "ConsentedProvidersSettings"
+	consentProvidersSettingsOutKey   = "consented_providers_settings"
+	consentedProvidersKey            = "consented_providers"
+	publisherEndpointParam           = "{PublisherId}"
+)
+
 type ImprovedigitalAdapter struct {
 	endpoint string
+}
+
+// BidExt represents Improved Digital bid extension with line item ID and buying type values
+type BidExt struct {
+	Improvedigital struct {
+		LineItemID int    `json:"line_item_id"`
+		BuyingType string `json:"buying_type"`
+	}
+}
+
+// ImpExtBidder represents Improved Digital bid extension with Publisher ID
+type ImpExtBidder struct {
+	Bidder struct {
+		PublisherID int `json:"publisherId"`
+	}
 }
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids.
@@ -36,6 +62,15 @@ func (a *ImprovedigitalAdapter) MakeRequests(request *openrtb2.BidRequest, reqIn
 }
 
 func (a *ImprovedigitalAdapter) makeRequest(request openrtb2.BidRequest, imp openrtb2.Imp) (*adapters.RequestData, error) {
+	// Handle Rewarded Inventory
+	impExt, err := getImpExtWithRewardedInventory(imp)
+	if err != nil {
+		return nil, err
+	}
+	if impExt != nil {
+		imp.Ext = impExt
+	}
+
 	request.Imp = []openrtb2.Imp{imp}
 
 	userExtAddtlConsent, err := a.getAdditionalConsentProvidersUserExt(request)
@@ -59,7 +94,7 @@ func (a *ImprovedigitalAdapter) makeRequest(request openrtb2.BidRequest, imp ope
 
 	return &adapters.RequestData{
 		Method:  "POST",
-		Uri:     a.endpoint,
+		Uri:     a.buildEndpointURL(imp),
 		Body:    reqJSON,
 		Headers: headers,
 	}, nil
@@ -114,6 +149,19 @@ func (a *ImprovedigitalAdapter) MakeBids(internalRequest *openrtb2.BidRequest, e
 			return nil, []error{err}
 		}
 
+		if bid.Ext != nil {
+			var bidExt BidExt
+			err = json.Unmarshal(bid.Ext, &bidExt)
+			if err != nil {
+				return nil, []error{err}
+			}
+
+			bidExtImprovedigital := bidExt.Improvedigital
+			if bidExtImprovedigital.LineItemID != 0 && bidExtImprovedigital.BuyingType != "" && bidExtImprovedigital.BuyingType != buyingTypeRTB {
+				bid.DealID = strconv.Itoa(bidExtImprovedigital.LineItemID)
+			}
+		}
+
 		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 			Bid:     &bid,
 			BidType: bidType,
@@ -160,12 +208,6 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType,
 
 // This method responsible to clone request and convert additional consent providers string to array when additional consent provider found
 func (a *ImprovedigitalAdapter) getAdditionalConsentProvidersUserExt(request openrtb2.BidRequest) ([]byte, error) {
-	const (
-		consentProvidersSettingsInputKey = "ConsentedProvidersSettings"
-		consentProvidersSettingsOutKey   = "consented_providers_settings"
-		consentedProvidersKey            = "consented_providers"
-	)
-
 	var cpStr string
 
 	// If user/user.ext not defined, no need to parse additional consent
@@ -221,4 +263,45 @@ func (a *ImprovedigitalAdapter) getAdditionalConsentProvidersUserExt(request ope
 	}
 
 	return extJson, nil
+}
+
+func getImpExtWithRewardedInventory(imp openrtb2.Imp) ([]byte, error) {
+	var ext = make(map[string]json.RawMessage)
+	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
+		return nil, err
+	}
+
+	prebidJSONValue, prebidJSONFound := ext["prebid"]
+	if !prebidJSONFound {
+		return nil, nil
+	}
+
+	var prebidMap = make(map[string]json.RawMessage)
+	if err := json.Unmarshal(prebidJSONValue, &prebidMap); err != nil {
+		return nil, err
+	}
+
+	if rewardedInventory, foundRewardedInventory := prebidMap[isRewardedInventory]; foundRewardedInventory && string(rewardedInventory) == stateRewardedInventoryEnable {
+		ext[isRewardedInventory] = json.RawMessage(`true`)
+		impExt, err := json.Marshal(ext)
+		if err != nil {
+			return nil, err
+		}
+
+		return impExt, nil
+	}
+
+	return nil, nil
+}
+
+func (a *ImprovedigitalAdapter) buildEndpointURL(imp openrtb2.Imp) string {
+	publisherEndpoint := ""
+	var impBidder ImpExtBidder
+
+	err := json.Unmarshal(imp.Ext, &impBidder)
+	if err == nil && impBidder.Bidder.PublisherID != 0 {
+		publisherEndpoint = strconv.Itoa(impBidder.Bidder.PublisherID) + "/"
+	}
+
+	return strings.Replace(a.endpoint, publisherEndpointParam, publisherEndpoint, -1)
 }

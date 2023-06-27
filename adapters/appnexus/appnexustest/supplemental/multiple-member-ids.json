@@ -1,0 +1,68 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "ext": {
+      "prebid": {
+        "targeting": {"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"includebidderkeys":true,"includewinners":true,"includebrandcategory":{"primaryadserver":1,"publisher":"","withcategory":true}}
+      }
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "member": "103",
+            "inv_code": "abc",
+            "reserve": 20,
+            "position": "below",
+            "use_payment_rule": true
+          }
+        }
+      },
+      {
+        "id": "test-imp-id-2",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "member": "104",
+            "inv_code": "abc",
+            "reserve": 20,
+            "position": "below",
+            "use_pmt_rule": true,
+            "use_payment_rule": false
+          }
+        }
+      }
+    ]
+  },
+  "expectedBidResponses": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "all request.imp[i].ext.prebid.bidder.appnexus.member params must match. Request contained member IDs 103 and 104",
+      "comparison": "literal"
+    }
+  ]
+}

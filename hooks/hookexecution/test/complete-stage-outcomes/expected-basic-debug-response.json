@@ -1,0 +1,176 @@
+{
+  "prebid": {
+    "foo": "bar",
+    "modules": {
+      "errors": {
+        "foobar": {
+          "foo": [
+            "error 1"
+          ],
+          "bar": [
+            "error 2",
+            "error 4"
+          ]
+        },
+        "foobaz": {
+          "baz": [
+            "error 3"
+          ]
+        }
+      },
+      "warnings": {
+        "foobaz": {
+          "baz": [
+            "warning 1"
+          ]
+        }
+      },
+      "trace": {
+        "execution_time_millis": 600,
+        "stages": [
+          {
+            "stage": "entrypoint",
+            "execution_time_millis": 300,
+            "outcomes": [
+              {
+                "entity": "http-request",
+                "execution_time_millis": 300,
+                "groups": [
+                  {
+                    "execution_time_millis": 200,
+                    "invocation_results": [
+                      {
+                        "hook_id": {
+                          "module_code": "foobar",
+                          "hook_impl_code": "foo"
+                        },
+                        "status": "success",
+                        "action": "update",
+                        "execution_time_millis": 200,
+                        "analytics_tags": {
+                          "activities": [
+                            {
+                              "name": "device-id",
+                              "status": "success",
+                              "results": [
+                                {
+                                  "status": "success-allow",
+                                  "values": {
+                                    "foo": "bar"
+                                  },
+                                  "appliedto": {
+                                    "impids": [
+                                      "impId1"
+                                    ],
+                                    "request": true
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "name": "define-blocks",
+                              "status": "error"
+                            }
+                          ]
+                        },
+                        "message": ""
+                      },
+                      {
+                        "hook_id": {
+                          "module_code": "foobar",
+                          "hook_impl_code": "bar"
+                        },
+                        "status": "success",
+                        "action": "update",
+                        "execution_time_millis": 50,
+                        "analytics_tags": {},
+                        "message": ""
+                      }
+                    ]
+                  },
+                  {
+                    "execution_time_millis": 100,
+                    "invocation_results": [
+                      {
+                        "hook_id": {
+                          "module_code": "foobaz",
+                          "hook_impl_code": "baz"
+                        },
+                        "status": "success",
+                        "action": "update",
+                        "execution_time_millis": 100,
+                        "analytics_tags": {},
+                        "message": ""
+                      },
+                      {
+                        "hook_id": {
+                          "module_code": "foobar",
+                          "hook_impl_code": "bar"
+                        },
+                        "status": "success",
+                        "action": "update",
+                        "execution_time_millis": 10,
+                        "analytics_tags": {},
+                        "message": ""
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "stage": "bidder_request",
+            "execution_time_millis": 300,
+            "outcomes": [
+              {
+                "entity": "adf",
+                "execution_time_millis": 200,
+                "groups": [
+                  {
+                    "execution_time_millis": 200,
+                    "invocation_results": [
+                      {
+                        "hook_id": {
+                          "module_code": "foobar",
+                          "hook_impl_code": "foo"
+                        },
+                        "status": "success",
+                        "action": "update",
+                        "execution_time_millis": 200,
+                        "analytics_tags": {},
+                        "message": ""
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "entity": "adot",
+                "execution_time_millis": 300,
+                "groups": [
+                  {
+                    "execution_time_millis": 200,
+                    "invocation_results": [
+                      {
+                        "hook_id": {
+                          "module_code": "foobar",
+                          "hook_impl_code": "bar"
+                        },
+                        "status": "success",
+                        "action": "no_action",
+                        "execution_time_millis": 200,
+                        "analytics_tags": {},
+                        "message": ""
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

@@ -9,7 +9,7 @@ import (
 
 	tcf2 "github.com/prebid/go-gdpr/vendorconsent/tcf2"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/privacy/ccpa"
@@ -31,6 +31,7 @@ type Params struct {
 	StoredRequestID   string
 	Targeting         string
 	Timeout           *uint64
+	Trace             string
 }
 
 // Size defines size information of an AMP request.
@@ -172,6 +173,7 @@ func ParseParams(httpRequest *http.Request) (Params, error) {
 		Slot:            query.Get("slot"),
 		StoredRequestID: tagID,
 		Targeting:       query.Get("targeting"),
+		Trace:           query.Get("trace"),
 	}
 	var err error
 	urlQueryGdprApplies := query.Get("gdpr_applies")

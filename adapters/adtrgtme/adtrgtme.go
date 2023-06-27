@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
@@ -36,17 +36,17 @@ func (v *adapter) MakeRequests(
 	var errors []error
 
 	requestCopy := *openRTBRequest
-
 	for _, imp := range openRTBRequest.Imp {
-		requestCopy.Imp = []openrtb2.Imp{imp}
-
-		requestJSON, err := json.Marshal(openRTBRequest)
+		siteID, err := getSiteIDFromImp(&imp)
 		if err != nil {
 			errors = append(errors, err)
 			continue
 		}
 
-		requestURI, err := v.buildRequestURI(&requestCopy)
+		imp.Ext = nil
+		requestCopy.Imp = []openrtb2.Imp{imp}
+
+		requestBody, err := json.Marshal(requestCopy)
 		if err != nil {
 			errors = append(errors, err)
 			continue
@@ -54,36 +54,34 @@ func (v *adapter) MakeRequests(
 
 		requestData := &adapters.RequestData{
 			Method:  http.MethodPost,
-			Uri:     requestURI,
-			Body:    requestJSON,
-			Headers: makeRequestHeaders(&requestCopy),
+			Uri:     v.buildRequestURI(siteID),
+			Body:    requestBody,
+			Headers: makeRequestHeaders(openRTBRequest),
 		}
 
 		requests = append(requests, requestData)
 	}
-
 	return requests, errors
 }
 
-func (v *adapter) buildRequestURI(openRTBRequest *openrtb2.BidRequest) (string, error) {
-	if openRTBRequest.Site != nil {
-		if openRTBRequest.Site.ID != "" {
-			return fmt.Sprintf("%s?s=%s&prebid", v.endpoint, openRTBRequest.Site.ID), nil
-		}
-		return "", &errortypes.BadInput{
-			Message: "request.Site.ID is not provided",
-		}
-	} else if openRTBRequest.App != nil {
-		if openRTBRequest.App.ID != "" {
-			return fmt.Sprintf("%s?s=%s&prebid", v.endpoint, openRTBRequest.App.ID), nil
-		}
-		return "", &errortypes.BadInput{
-			Message: "request.App.ID is not provided",
+func getSiteIDFromImp(imp *openrtb2.Imp) (uint64, error) {
+	var bidderExt adapters.ExtImpBidder
+	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		return 0, &errortypes.BadInput{
+			Message: "ext.bidder not provided",
 		}
 	}
-	return "", &errortypes.BadInput{
-		Message: "request.Site or request.App are not provided",
+	var ext openrtb_ext.ExtImpAdtrgtme
+	if err := json.Unmarshal(bidderExt.Bidder, &ext); err != nil {
+		return 0, &errortypes.BadInput{
+			Message: "ext.bidder not provided",
+		}
 	}
+	return ext.SiteID, nil
+}
+
+func (v *adapter) buildRequestURI(siteID uint64) string {
+	return fmt.Sprintf("%s?s=%d&prebid", v.endpoint, siteID)
 }
 
 func makeRequestHeaders(openRTBRequest *openrtb2.BidRequest) http.Header {

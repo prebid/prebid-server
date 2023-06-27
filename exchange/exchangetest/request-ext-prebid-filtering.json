@@ -92,11 +92,6 @@
                         "other": "test-other",
                         "prebid": {
                             "integration": "test-integration",
-                            "server": {
-                                "datacenter": "Datacenter",
-                                "externalurl": "http://hosturl.com",
-                                "gvlid": 1
-                            },
                             "channel": {
                                 "name": "test-name",
                                 "version": "test-version"

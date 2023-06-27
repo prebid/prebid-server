@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -19,7 +19,7 @@ type TelariaAdapter struct {
 	URI string
 }
 
-// This will be part of Imp[i].Ext when this adapter calls out the Telaria Ad Server
+// This will be part of imp[i].ext when this adapter calls out the Telaria Ad Server
 type ImpressionExtOut struct {
 	OriginalTagID       string `json:"originalTagid"`
 	OriginalPublisherID string `json:"originalPublisherid"`
@@ -186,7 +186,7 @@ func (a *TelariaAdapter) MakeRequests(requestIn *openrtb2.BidRequest, reqInfo *a
 	var err error
 
 	var imp = request.Imp[0]
-	// fetch adCode & seatCode from Imp[i].Ext
+	// fetch adCode & seatCode from imp[i].ext
 	telariaImpExt, err = a.FetchTelariaExtImpParams(&imp)
 	if err != nil {
 		return nil, []error{err}
@@ -194,7 +194,7 @@ func (a *TelariaAdapter) MakeRequests(requestIn *openrtb2.BidRequest, reqInfo *a
 
 	seatCode = telariaImpExt.SeatCode
 
-	// move the original tagId and the original publisher.id into the Imp[i].Ext object
+	// move the original tagId and the original publisher.id into the imp[i].ext object
 	imp.Ext, err = json.Marshal(&ImpressionExtOut{imp.TagID, originalPublisherID})
 	if err != nil {
 		return nil, []error{err}

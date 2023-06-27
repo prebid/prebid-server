@@ -2,7 +2,6 @@ package usersync
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -15,27 +14,24 @@ import (
 
 func TestOptOutCookie(t *testing.T) {
 	cookie := &Cookie{
-		uids:     make(map[string]uidWithExpiry),
-		optOut:   true,
-		birthday: timestamp(),
+		uids:   map[string]uidWithExpiry{"appnexus": {UID: "test"}},
+		optOut: true,
 	}
 	ensureConsistency(t, cookie)
 }
 
 func TestEmptyOptOutCookie(t *testing.T) {
 	cookie := &Cookie{
-		uids:     make(map[string]uidWithExpiry),
-		optOut:   true,
-		birthday: timestamp(),
+		uids:   make(map[string]uidWithExpiry),
+		optOut: true,
 	}
 	ensureConsistency(t, cookie)
 }
 
 func TestEmptyCookie(t *testing.T) {
 	cookie := &Cookie{
-		uids:     make(map[string]uidWithExpiry),
-		optOut:   false,
-		birthday: timestamp(),
+		uids:   make(map[string]uidWithExpiry),
+		optOut: false,
 	}
 	ensureConsistency(t, cookie)
 }
@@ -69,8 +65,7 @@ func TestRejectAudienceNetworkCookie(t *testing.T) {
 		uids: map[string]uidWithExpiry{
 			"audienceNetwork": newTempId("0", 10),
 		},
-		optOut:   false,
-		birthday: timestamp(),
+		optOut: false,
 	}
 	parsed := ParseCookie(raw.ToHTTPCookie(90 * 24 * time.Hour))
 	if parsed.HasLiveSync("audienceNetwork") {
@@ -98,9 +93,8 @@ func TestOptOutReset(t *testing.T) {
 
 func TestOptIn(t *testing.T) {
 	cookie := &Cookie{
-		uids:     make(map[string]uidWithExpiry),
-		optOut:   true,
-		birthday: timestamp(),
+		uids:   make(map[string]uidWithExpiry),
+		optOut: true,
 	}
 
 	cookie.SetOptOut(false)
@@ -130,11 +124,9 @@ func TestParseCorruptedCookieJSON(t *testing.T) {
 }
 
 func TestParseNilSyncMap(t *testing.T) {
-	cookieJSON := "{\"bday\":123,\"optout\":true}"
-	cookieData := base64.URLEncoding.EncodeToString([]byte(cookieJSON))
 	raw := http.Cookie{
 		Name:  uidCookieName,
-		Value: cookieData,
+		Value: "",
 	}
 	parsed := ParseCookie(&raw)
 	ensureEmptyMap(t, parsed)
@@ -168,8 +160,7 @@ func TestParseCookieFromRequestOptOut(t *testing.T) {
 			"foo": newTempId("fooID", 1),
 			"bar": newTempId("barID", 2),
 		},
-		optOut:   false,
-		birthday: timestamp(),
+		optOut: false,
 	}).ToHTTPCookie(24 * time.Hour)
 
 	testCases := []struct {
@@ -260,32 +251,6 @@ func TestCookieReadWrite(t *testing.T) {
 	assert.Len(t, received.uids, 2, "Sync Count")
 }
 
-func TestPopulatedLegacyCookieRead(t *testing.T) {
-	legacyJson := `{"uids":{"adnxs":"123","audienceNetwork":"456"},"bday":"2017-08-03T21:04:52.629198911Z"}`
-	var cookie Cookie
-	json.Unmarshal([]byte(legacyJson), &cookie)
-
-	if cookie.HasAnyLiveSyncs() {
-		t.Error("Expected 0 user syncs. Found at least 1.")
-	}
-	if cookie.HasLiveSync("adnxs") {
-		t.Errorf("Received cookie should act like it has no ID for adnxs.")
-	}
-	if cookie.HasLiveSync("audienceNetwork") {
-		t.Errorf("Received cookie should act like it has no ID for audienceNetwork.")
-	}
-}
-
-func TestEmptyLegacyCookieRead(t *testing.T) {
-	legacyJson := `{"bday":"2017-08-29T18:54:18.393925772Z"}`
-	var cookie Cookie
-	json.Unmarshal([]byte(legacyJson), &cookie)
-
-	if cookie.HasAnyLiveSyncs() {
-		t.Error("Expected 0 user syncs. Found at least 1.")
-	}
-}
-
 func TestNilCookie(t *testing.T) {
 	var nilCookie *Cookie
 
@@ -348,8 +313,7 @@ func TestTrimCookiesClosestExpirationDates(t *testing.T) {
 			"k6": newTempId("12345678901234567890123456789012345678901234567890", 3),
 			"k7": newTempId("abcdefghijklmnopqrstuvwxyz", 2),
 		},
-		optOut:   false,
-		birthday: timestamp(),
+		optOut: false,
 	}
 
 	type aTest struct {
@@ -359,8 +323,8 @@ func TestTrimCookiesClosestExpirationDates(t *testing.T) {
 	testCases := []aTest{
 		{maxCookieSize: 2000, expKeys: []string{"k1", "k2", "k3", "k4", "k5", "k6", "k7"}}, //1 don't trim, set
 		{maxCookieSize: 0, expKeys: []string{"k1", "k2", "k3", "k4", "k5", "k6", "k7"}},    //2 unlimited size: don't trim, set
-		{maxCookieSize: 800, expKeys: []string{"k1", "k5", "k4", "k3"}},                    //3 trim to size and set
-		{maxCookieSize: 500, expKeys: []string{"k1", "k3"}},                                //4 trim to size and set
+		{maxCookieSize: 800, expKeys: []string{"k1", "k5", "k4", "k3", "k6"}},              //3 trim to size and set
+		{maxCookieSize: 500, expKeys: []string{"k1", "k4", "k3"}},                          //4 trim to size and set
 		{maxCookieSize: 200, expKeys: []string{}},                                          //5 insufficient size, trim to zero length and set
 		{maxCookieSize: -100, expKeys: []string{}},                                         //6 invalid size, trim to zero length and set
 	}
@@ -427,7 +391,11 @@ func ensureConsistency(t *testing.T, cookie *Cookie) {
 		t.Error("The PBSCookie interface shouldn't let modifications happen if the user has opted out")
 	}
 
-	assert.Equal(t, len(cookie.uids), len(copiedCookie.uids), "Incorrect sync count on reparsed cookie.")
+	if cookie.optOut {
+		assert.Equal(t, 0, len(copiedCookie.uids), "Incorrect sync count on reparsed cookie.")
+	} else {
+		assert.Equal(t, len(cookie.uids), len(copiedCookie.uids), "Incorrect sync count on reparsed cookie.")
+	}
 
 	for family, uid := range copiedCookie.uids {
 		if !cookie.HasLiveSync(family) {
@@ -459,8 +427,7 @@ func newSampleCookie() *Cookie {
 			"adnxs":   newTempId("123", 10),
 			"rubicon": newTempId("456", 10),
 		},
-		optOut:   false,
-		birthday: timestamp(),
+		optOut: false,
 	}
 }
 

@@ -48,11 +48,7 @@
         },
         "ext": {
           "data": {
-            "morefpdData": "morefpddata",
-            "siteFpddata": "siteFpddata",
-            "moreFpd": {
-              "fpd": 123
-            }
+            "other": "data"
           }
         }
       }
@@ -65,7 +61,7 @@
   },
   "outputRequestData": {
     "site": {
-      "id": "reqSiteId",
+      "id": "apnSiteId",
       "name": "apnSiteName",
       "domain": "apnSiteDomain",
       "page": "http://www.foobar.com/1234.html",
@@ -92,13 +88,8 @@
       },
       "ext": {
         "data": {
-          "id": "apnSiteId",
-          "morefpdData": "morefpddata",
-          "siteFpddata": "siteFpddata",
-          "testSiteFpd":"testSite",
-          "moreFpd": {
-            "fpd": 123
-          }
+          "other": "data",
+          "testSiteFpd": "testSite"
         }
       }
     },
@@ -110,4 +101,3 @@
     }
   }
 }
-

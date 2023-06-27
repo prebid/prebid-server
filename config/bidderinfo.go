@@ -3,17 +3,18 @@ package config
 import (
 	"errors"
 	"fmt"
-	validator "github.com/asaskevich/govalidator"
-	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/util/sliceutil"
-	"io/ioutil"
 	"log"
+	"os"
 	"path/filepath"
 	"strings"
 	"text/template"
 
+	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/sliceutil"
+
+	validator "github.com/asaskevich/govalidator"
 	"gopkg.in/yaml.v3"
 )
 
@@ -46,7 +47,8 @@ type BidderInfo struct {
 	PlatformID string `yaml:"platform_id" mapstructure:"platform_id"`
 	AppSecret  string `yaml:"app_secret" mapstructure:"app_secret"`
 	// EndpointCompression determines, if set, the type of compression the bid request will undergo before being sent to the corresponding bid server
-	EndpointCompression string `yaml:"endpointCompression" mapstructure:"endpointCompression"`
+	EndpointCompression string       `yaml:"endpointCompression" mapstructure:"endpointCompression"`
+	OpenRTB             *OpenRTBInfo `yaml:"openrtb" mapstructure:"openrtb"`
 }
 
 // BidderInfoExperiment specifies non-production ready feature config for a bidder
@@ -86,6 +88,14 @@ type AdapterXAPI struct {
 	Tracker  string `yaml:"tracker" mapstructure:"tracker"`
 }
 
+// OpenRTBInfo specifies the versions/aspects of openRTB that a bidder supports
+// Version is not yet actively supported
+// GPPSupported is not yet actively supported
+type OpenRTBInfo struct {
+	Version      string `yaml:"version" mapstructure:"version"`
+	GPPSupported bool   `yaml:"gpp-supported" mapstructure:"gpp-supported"`
+}
+
 // Syncer specifies the user sync settings for a bidder. This struct is shared by the account config,
 // so it needs to have both yaml and mapstructure mappings.
 type Syncer struct {
@@ -123,7 +133,7 @@ type Syncer struct {
 // In most cases, bidders will specify a URL with a `{{.RedirectURL}}` macro for the call back to
 // Prebid Server and a UserMacro which the bidder server will replace with the user's id. Example:
 //
-//	url: "https://sync.bidderserver.com/usersync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+//	url: "https://sync.bidderserver.com/usersync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}"
 //	userMacro: "$UID"
 //
 // Prebid Server is configured with a default RedirectURL template matching the /setuid call. This
@@ -142,6 +152,8 @@ type SyncerEndpoint struct {
 	//  {{.GDPR}}        - This will be replaced with the "gdpr" property sent to /cookie_sync.
 	//  {{.Consent}}     - This will be replaced with the "consent" property sent to /cookie_sync.
 	//  {{.USPrivacy}}   - This will be replaced with the "us_privacy" property sent to /cookie_sync.
+	//  {{.GPP}}		 - This will be replaced with the "gpp" property sent to /cookie_sync.
+	//  {{.GPPSID}}		 - This will be replaced with the "gpp_sid" property sent to /cookie_sync.
 	URL string `yaml:"url" mapstructure:"url"`
 
 	// RedirectURL is an endpoint on the host server the user will be redirected to when a user sync
@@ -155,7 +167,7 @@ type SyncerEndpoint struct {
 	//  {{.UserMacro}}   - This will be replaced with the bidder server's user id macro.
 	//
 	// The endpoint on the host server is usually Prebid Server's /setuid endpoint. The default value is:
-	// `{{.ExternalURL}}/setuid?bidder={{.SyncerKey}}&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&f={{.SyncType}}&uid={{.UserMacro}}`
+	// `{{.ExternalURL}}/setuid?bidder={{.SyncerKey}}&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&f={{.SyncType}}&uid={{.UserMacro}}`
 	RedirectURL string `yaml:"redirectUrl" mapstructure:"redirect_url"`
 
 	// ExternalURL is available as a macro to the RedirectURL template. If not specified, either the syncer configuration
@@ -180,7 +192,7 @@ type InfoReaderFromDisk struct {
 }
 
 func (r InfoReaderFromDisk) Read() (map[string][]byte, error) {
-	bidderConfigs, err := ioutil.ReadDir(r.Path)
+	bidderConfigs, err := os.ReadDir(r.Path)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -192,7 +204,7 @@ func (r InfoReaderFromDisk) Read() (map[string][]byte, error) {
 		}
 		fileName := bidderConfig.Name()
 		filePath := filepath.Join(r.Path, fileName)
-		data, err := ioutil.ReadFile(filePath)
+		data, err := os.ReadFile(filePath)
 		if err != nil {
 			return nil, err
 		}
@@ -275,6 +287,7 @@ var testEndpointTemplateParams = macros.EndpointTemplateParams{
 	ZoneID:      "anyZoneID",
 	SourceId:    "anySourceID",
 	AdUnit:      "anyAdUnit",
+	MediaType:   "MediaType",
 }
 
 // validateAdapterEndpoint makes sure that an adapter has a valid endpoint
