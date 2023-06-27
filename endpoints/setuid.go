@@ -109,15 +109,17 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 
 		gdprRequestInfo, err := extractGDPRInfo(query)
 
-		if !errortypes.IsWarning(err) && err != nil {
-			//if err != nil {
-			// Only exit if non-warning
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
-			metricsEngine.RecordSetUid(metrics.SetUidBadRequest)
-			so.Errors = []error{err}
-			so.Status = http.StatusBadRequest
-			return
+		if err != nil {
+			if !errortypes.IsWarning(err) {
+				// Only exit if non-warning
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte(err.Error()))
+				metricsEngine.RecordSetUid(metrics.SetUidBadRequest)
+				so.Errors = []error{err}
+				so.Status = http.StatusBadRequest
+				return
+			}
+			w.Write([]byte("Warning: " + err.Error()))
 		}
 
 		tcf2Cfg := tcf2CfgBuilder(cfg.GDPR.TCF2, account.GDPR)
