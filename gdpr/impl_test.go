@@ -342,6 +342,109 @@ func TestAllowActivities(t *testing.T) {
 	}
 }
 
+func TestAllowActivitiesBidderWithoutGVLID(t *testing.T) {
+	bidderWithoutGVLID := openrtb_ext.BidderPangle
+	purpose2Consent := "CPuDXznPuDXznMOAAAENCZCAAEAAAAAAAAAAAAAAAAAA"
+	noPurposeConsent := "CPuDXznPuDXznMOAAAENCZCAAAAAAAAAAAAAAAAAAAAA"
+
+	tests := []struct{
+		name                    string
+		enforceAlgoID           config.TCF2EnforcementAlgo
+		vendorExceptions        map[openrtb_ext.BidderName]struct{}
+		basicEnforcementVendors map[string]struct{}
+		consent                 string
+		allowBidRequest         bool
+		passID                  bool
+	}{
+		{
+			name: "full_enforcement_no_exceptions_user_consents_to_purpose_2",
+			enforceAlgoID: config.TCF2FullEnforcement,
+			consent: purpose2Consent,
+		},
+		{
+			name: "full_enforcement_vendor_exception_user_consents_to_purpose_2",
+			enforceAlgoID: config.TCF2FullEnforcement,
+			vendorExceptions: map[openrtb_ext.BidderName]struct{}{bidderWithoutGVLID:{}},
+			consent: purpose2Consent,
+			allowBidRequest: true,
+			passID: true,
+		},
+		{
+			name: "basic_enforcement_no_exceptions_user_consents_to_purpose_2",
+			consent: purpose2Consent,
+		},
+		{
+			name: "basic_enforcement_vendor_exception_user_consents_to_purpose_2",
+			vendorExceptions: map[openrtb_ext.BidderName]struct{}{bidderWithoutGVLID:{}},
+			consent: purpose2Consent,
+			allowBidRequest: true,
+			passID: true,
+		},
+		{
+			name: "full_enforcement_soft_vendor_exception_user_consents_to_purpose_2",// allow bid request and pass ID
+			enforceAlgoID: config.TCF2FullEnforcement,
+			basicEnforcementVendors: map[string]struct{}{string(bidderWithoutGVLID):{}},
+			consent: purpose2Consent,
+			allowBidRequest: true,
+			passID: true,
+		},
+		{
+			name: "basic_enforcement_soft_vendor_exception_user_consents_to_purpose_2", // allow bid request and pass ID
+			enforceAlgoID: config.TCF2BasicEnforcement,
+			basicEnforcementVendors: map[string]struct{}{string(bidderWithoutGVLID):{}},
+			consent: purpose2Consent,
+			allowBidRequest: true,
+			passID: true,
+		},
+		{
+			name: "full_enforcement_soft_vendor_exception_user_consents_to_purpose_4",
+			enforceAlgoID: config.TCF2FullEnforcement,
+			basicEnforcementVendors: map[string]struct{}{string(bidderWithoutGVLID):{}},
+			consent: noPurposeConsent,
+			allowBidRequest: false,
+			passID: false,
+		},
+		{
+			name: "basic_enforcement_soft_vendor_exception_user_consents_to_purpose_4",
+			enforceAlgoID: config.TCF2BasicEnforcement,
+			basicEnforcementVendors: map[string]struct{}{string(bidderWithoutGVLID):{}},
+			consent: noPurposeConsent,
+			allowBidRequest: false,
+			passID: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T){
+			tcf2AggConfig := allPurposesEnabledTCF2Config()
+			tcf2AggConfig.AccountConfig.BasicEnforcementVendorsMap = tt.basicEnforcementVendors
+			tcf2AggConfig.HostConfig.Purpose2.VendorExceptionMap = tt.vendorExceptions
+			tcf2AggConfig.HostConfig.Purpose2.EnforceAlgoID = tt.enforceAlgoID
+			tcf2AggConfig.HostConfig.PurposeConfigs[consentconstants.Purpose(2)] = &tcf2AggConfig.HostConfig.Purpose2
+
+			perms := permissionsImpl{
+				cfg:                    &tcf2AggConfig,
+				consent:                tt.consent,
+				gdprSignal:             SignalYes,
+				hostVendorID:           2,
+				nonStandardPublishers:  map[string]struct{}{},
+				vendorIDs:              map[openrtb_ext.BidderName]uint16{},
+				fetchVendorList:        listFetcher(map[uint16]map[uint16]vendorlist.VendorList{
+					2: {
+						153: parseVendorListDataV2(t, MarshalVendorList(vendorList{GVLSpecificationVersion: 2, VendorListVersion: 153, Vendors: map[string]*vendor{}})),
+					},
+				}),
+				purposeEnforcerBuilder: NewPurposeEnforcerBuilder(&tcf2AggConfig),
+			}
+
+			permissions, err := perms.AuctionActivitiesAllowed(context.Background(), bidderWithoutGVLID, bidderWithoutGVLID)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.allowBidRequest, permissions.AllowBidRequest)
+			assert.Equal(t, tt.passID, permissions.PassID)
+		})
+	}
+}
+
 func buildVendorList34() vendorList {
 	return vendorList{
 		VendorListVersion: 2,
@@ -1249,7 +1352,6 @@ func TestGetSpecVersion(t *testing.T) {
 		name                string
 		policyVersion       uint8
 		expectedSpecVersion uint16
-		expectedError       bool
 	}{
 		{
 			name:                "policy_version_0_gives_spec_version_2",
@@ -1270,19 +1372,13 @@ func TestGetSpecVersion(t *testing.T) {
 			name:                "policy_version_5_error",
 			policyVersion:       5,
 			expectedSpecVersion: 0,
-			expectedError:       true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			specVersion, err := getSpecVersion(tt.policyVersion)
+			specVersion := getSpecVersion(tt.policyVersion)
 			assert.Equal(t, tt.expectedSpecVersion, specVersion)
-			if tt.expectedError {
-				assert.Error(t, err)
-			} else {
-				assert.Nil(t, err)
-			}
 		})
 	}
 }
