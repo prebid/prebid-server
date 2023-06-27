@@ -186,18 +186,14 @@ func extractGDPRInfo(query url.Values) (reqInfo gdpr.RequestInfo, err error) {
 	}
 
 	// If warning, or there was no GDPR data in the GPP wrapper
-	if (err != nil && isWarning) || (reqInfo.Consent == "" && reqInfo.GDPRSignal == gdpr.SignalAmbiguous) {
+	//if (err != nil && isWarning) || (reqInfo.Consent == "" && reqInfo.GDPRSignal == gdpr.SignalAmbiguous) {
+	if reqInfo.Consent == "" && reqInfo.GDPRSignal == gdpr.SignalAmbiguous {
 		reqInfo.GDPRSignal = legacySignal
 		reqInfo.Consent = legacyConsent
 	}
 
 	if reqInfo.Consent == "" && reqInfo.GDPRSignal == gdpr.SignalYes {
 		return gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous}, errors.New("GDPR consent is required when gdpr signal equals 1")
-	}
-
-	reqInfo = gdpr.RequestInfo{
-		Consent:    legacyConsent,
-		GDPRSignal: legacySignal,
 	}
 
 	return reqInfo, err
@@ -264,41 +260,6 @@ func parseLegacyGDPRFields(query url.Values, gppGDPRSignal gdpr.Signal, gppGDPRC
 		}
 	}
 	return gdprSignal, gdprConsent, warning
-}
-
-// getGDPRSignal looks for a GDPR signal value in the "gpp_sid" and "gdpr" URL query
-// fields returns gdpr.SignalAmbiguous as default value. If values are found in both
-// "gpp_sid" and "gdpr" fields, the "gpp_sid" value will be returned along with a
-// warning
-func getGDPRSignal(query url.Values) (gdpr.Signal, error) {
-	var gdprSignal gdpr.Signal = gdpr.SignalAmbiguous
-	var err error
-
-	// Signal from gpp_sid list takes precedence
-	gdprSignal, err = parseSignalFromGppSidStr(query.Get("gpp_sid"))
-	if err != nil {
-		return gdpr.SignalAmbiguous, err
-	}
-
-	// Signal from gdpr field, if any
-	if gdprQuerySignal := query.Get("gdpr"); len(gdprQuerySignal) > 0 {
-		if gdprSignal == gdpr.SignalAmbiguous {
-			if gdprQuerySignal != "" && gdprQuerySignal != "0" && gdprQuerySignal != "1" {
-				return gdpr.SignalAmbiguous, errors.New("the gdpr query param must be either 0 or 1. You gave " + gdprQuerySignal)
-			}
-
-			if i, err := strconv.Atoi(gdprQuerySignal); err == nil {
-				gdprSignal = gdpr.Signal(i)
-			}
-		} else {
-			err = &errortypes.Warning{
-				Message:     "'gpp_sid' signal value will be used over the one found in the 'gdpr' field.",
-				WarningCode: errortypes.UnknownWarningCode,
-			}
-		}
-	}
-
-	return gdprSignal, err
 }
 
 // parseSignalFromGPPSID returns gdpr.SignalAmbiguous if strSID is empty or malformed

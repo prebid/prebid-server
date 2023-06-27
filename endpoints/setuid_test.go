@@ -158,7 +158,7 @@ func TestSetUIDEndpoint(t *testing.T) {
 			expectedSyncs:          nil,
 			gdprAllowsHostCookies:  true,
 			expectedStatusCode:     http.StatusBadRequest,
-			expectedBody:           "gdpr_consent is required when gdpr=1",
+			expectedBody:           "GDPR consent is required when gdpr signal equals 1",
 			description:            "Return an error if GDPR is set to 1 but GDPR consent string is missing",
 		},
 		{
@@ -519,8 +519,6 @@ func TestParseGDPRFromGPP(t *testing.T) {
 }
 
 func TestParseLegacyGDPRFields(t *testing.T) {
-	var nilWarning *errortypes.Warning
-
 	type testInput struct {
 		uri            string
 		gppGDPRSignal  gdpr.Signal
@@ -544,7 +542,7 @@ func TestParseLegacyGDPRFields(t *testing.T) {
 			expected: testOutput{
 				signal:  gdpr.SignalAmbiguous,
 				consent: "",
-				err:     nilWarning,
+				err:     nil,
 			},
 		},
 		{
@@ -607,100 +605,6 @@ func TestParseLegacyGDPRFields(t *testing.T) {
 	}
 }
 
-func TestGetGDPRSignal(t *testing.T) {
-	type testOutput struct {
-		signal gdpr.Signal
-		err    error
-	}
-	testCases := []struct {
-		desc     string
-		inUri    string
-		expected testOutput
-	}{
-		{
-			desc:  "No gpp_sid nor gdpr in URL, expect gdpr.SignalAmbiguous",
-			inUri: "/setuid?bidder=pubmatic&uid=123",
-			expected: testOutput{
-				signal: gdpr.SignalAmbiguous,
-				err:    nil,
-			},
-		},
-		{
-			desc:  "no gpp_sid, gdpr has an invalid value, expect gdpr.SignalNo",
-			inUri: "/setuid?gdpr=2",
-			expected: testOutput{
-				signal: gdpr.SignalAmbiguous,
-				err:    errors.New("the gdpr query param must be either 0 or 1. You gave 2"),
-			},
-		},
-		{
-			desc:  "no gpp_sid, gdpr flag enabled, expect gdpr.SignalYes",
-			inUri: "/setuid?gdpr=1",
-			expected: testOutput{
-				signal: gdpr.SignalYes,
-				err:    nil,
-			},
-		},
-		{
-			desc:  "no gpp_sid, gdpr flag disabled, expect gdpr.SignalNo",
-			inUri: "/setuid?gdpr=0",
-			expected: testOutput{
-				signal: gdpr.SignalNo,
-				err:    nil,
-			},
-		},
-		{
-			desc:  "gpp_sid only, but doesn't come with TCF2 value, expect gdpr.SignalNo",
-			inUri: "/setuid?gpp_sid=6",
-			expected: testOutput{
-				signal: gdpr.SignalNo,
-				err:    nil,
-			},
-		},
-		{
-			desc:  "gpp_sid only, but doesn't come with TCF2 value, expect gdpr.SignalNo",
-			inUri: "/setuid?gpp_sid=malformed",
-			expected: testOutput{
-				signal: gdpr.SignalAmbiguous,
-				err:    errors.New(`Error parsing gpp_sid strconv.ParseInt: parsing "malformed": invalid syntax`),
-			},
-		},
-		{
-			desc:  "gpp_sid only and it comes with TCF2 value, expect gdpr.SignalYes",
-			inUri: "/setuid?gpp_sid=2,6,8",
-			expected: testOutput{
-				signal: gdpr.SignalYes,
-				err:    nil,
-			},
-		},
-		{
-			desc:  "Both gdpr and gpp_sid in URL query, only and it comes with TCF2 value, expect gdpr.SignalYes",
-			inUri: "/setuid?gpp_sid=2,6,8&gdpr=1",
-			expected: testOutput{
-				signal: gdpr.SignalYes,
-				err: &errortypes.Warning{
-					Message:     "'gpp_sid' signal value will be used over the one found in the 'gdpr' field.",
-					WarningCode: errortypes.UnknownWarningCode,
-				},
-			},
-		},
-	}
-	for _, tc := range testCases {
-		// set test
-		testURL, err := url.Parse(tc.inUri)
-		assert.NoError(t, err, tc.desc)
-
-		query := testURL.Query()
-
-		// run
-		signal, err := getGDPRSignal(query)
-
-		// assertions
-		assert.Equal(t, tc.expected.signal, signal, tc.desc)
-		assert.Equal(t, tc.expected.err, err, tc.desc)
-	}
-}
-
 func TestExtractGDPRInfo(t *testing.T) {
 	type testOutput struct {
 		requestInfo gdpr.RequestInfo
@@ -715,152 +619,152 @@ func TestExtractGDPRInfo(t *testing.T) {
 		sDesc string
 		tests []testCase
 	}{
-		//{
-		//	sDesc: "no gdpr nor gpp values in query",
-		//	tests: []testCase{
-		//		{
-		//			desc:  "expect blank consent, signalNo and nil error",
-		//			inUri: "/setuid?bidder=pubmatic&uid=123",
-		//			expected: testOutput{
-		//				requestInfo: gdpr.RequestInfo{
-		//					Consent:    "",
-		//					GDPRSignal: gdpr.SignalAmbiguous,
-		//				},
-		//				err: nil,
-		//			},
-		//		},
-		//	},
-		//},
-		//{
-		//	sDesc: "missing gpp, gdpr only",
-		//	tests: []testCase{
-		//		{
-		//			desc:  "Invalid gdpr signal value in query, expect blank request info and error",
-		//			inUri: "/setuid?gdpr=2",
-		//			expected: testOutput{
-		//				requestInfo: gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous},
-		//				err:         errors.New("the gdpr query param must be either 0 or 1. You gave 2"),
-		//			},
-		//		},
-		//		{
-		//			desc:  "GDPR equals 0, blank consent, expect blank consent, signalNo and nil error",
-		//			inUri: "/setuid?gdpr=0",
-		//			expected: testOutput{
-		//				requestInfo: gdpr.RequestInfo{GDPRSignal: gdpr.SignalNo},
-		//				err:         nil,
-		//			},
-		//		},
-		//		{
-		//			desc:  "GDPR equals 1, blank consent, expect blank request info and error",
-		//			inUri: "/setuid?gdpr=1",
-		//			expected: testOutput{
-		//				requestInfo: gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous},
-		//				err:         errors.New("GDPR consent is required when gdpr signal equals 1"),
-		//			},
-		//		},
-		//		{
-		//			desc:  "GDPR equals 0, non-blank consent, expect non-blank request info and nil error",
-		//			inUri: "/setuid?gdpr=0&gdpr_consent=someConsent",
-		//			expected: testOutput{
-		//				requestInfo: gdpr.RequestInfo{
-		//					Consent:    "someConsent",
-		//					GDPRSignal: gdpr.SignalNo,
-		//				},
-		//				err: nil,
-		//			},
-		//		},
-		//		{
-		//			desc:  "GDPR equals 1, non-blank consent, expect non-blank request info and nil error",
-		//			inUri: "/setuid?gdpr=1&gdpr_consent=someConsent",
-		//			expected: testOutput{
-		//				requestInfo: gdpr.RequestInfo{
-		//					Consent:    "someConsent",
-		//					GDPRSignal: gdpr.SignalYes,
-		//				},
-		//				err: nil,
-		//			},
-		//		},
-		//	},
-		//},
+		{
+			sDesc: "no gdpr nor gpp values in query",
+			tests: []testCase{
+				{
+					desc:  "expect blank consent, signalNo and nil error",
+					inUri: "/setuid?bidder=pubmatic&uid=123",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{
+							Consent:    "",
+							GDPRSignal: gdpr.SignalAmbiguous,
+						},
+						err: nil,
+					},
+				},
+			},
+		},
+		{
+			sDesc: "missing gpp, gdpr only",
+			tests: []testCase{
+				{
+					desc:  "Invalid gdpr signal value in query, expect blank request info and error",
+					inUri: "/setuid?gdpr=2",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous},
+						err:         errors.New("the gdpr query param must be either 0 or 1. You gave 2"),
+					},
+				},
+				{
+					desc:  "GDPR equals 0, blank consent, expect blank consent, signalNo and nil error",
+					inUri: "/setuid?gdpr=0",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{GDPRSignal: gdpr.SignalNo},
+						err:         nil,
+					},
+				},
+				{
+					desc:  "GDPR equals 1, blank consent, expect blank request info and error",
+					inUri: "/setuid?gdpr=1",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous},
+						err:         errors.New("GDPR consent is required when gdpr signal equals 1"),
+					},
+				},
+				{
+					desc:  "GDPR equals 0, non-blank consent, expect non-blank request info and nil error",
+					inUri: "/setuid?gdpr=0&gdpr_consent=someConsent",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{
+							Consent:    "someConsent",
+							GDPRSignal: gdpr.SignalNo,
+						},
+						err: nil,
+					},
+				},
+				{
+					desc:  "GDPR equals 1, non-blank consent, expect non-blank request info and nil error",
+					inUri: "/setuid?gdpr=1&gdpr_consent=someConsent",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{
+							Consent:    "someConsent",
+							GDPRSignal: gdpr.SignalYes,
+						},
+						err: nil,
+					},
+				},
+			},
+		},
 		{
 			sDesc: "missing gdpr, gpp only",
 			tests: []testCase{
-				//{
-				//	desc:  "Malformed GPP_SID string, expect blank request info and error",
-				//	inUri: "/setuid?gpp_sid=malformed",
-				//	expected: testOutput{
-				//		requestInfo: gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous},
-				//		err:         errors.New("Error parsing gpp_sid strconv.ParseInt: parsing \"malformed\": invalid syntax"),
-				//	},
-				//},
-				//{
-				//	desc:  "Valid GPP_SID string but invalid GPP string in query, expect blank request info and error",
-				//	inUri: "/setuid?gpp=malformed&gpp_sid=2",
-				//	expected: testOutput{
-				//		requestInfo: gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous},
-				//		err:         errors.New("error parsing GPP header, base64 decoding: illegal base64 data at input byte 8"),
-				//	},
-				//},
-				//{
-				//	desc:  "SectionTCFEU2 not found in GPP string, expect blank consent and signalAmbiguous",
-				//	inUri: "/setuid?gpp=DBABBgA~xlgWEYCZAA",
-				//	expected: testOutput{
-				//		requestInfo: gdpr.RequestInfo{
-				//			Consent:    "",
-				//			GDPRSignal: gdpr.SignalAmbiguous,
-				//		},
-				//		err: nil,
-				//	},
-				//},
-				//{
-				//	desc:  "No GPP string, nor SectionTCFEU2 found in SID list in query, expect blank consent and signalAmbiguous",
-				//	inUri: "/setuid?gpp_sid=3,6",
-				//	expected: testOutput{
-				//		requestInfo: gdpr.RequestInfo{
-				//			Consent:    "",
-				//			GDPRSignal: gdpr.SignalAmbiguous,
-				//		},
-				//		err: nil,
-				//	},
-				//},
-				//{
-				//	desc:  "No GPP string, SectionTCFEU2 found in SID list in query, expect blank request info and error",
-				//	inUri: "/setuid?gpp_sid=2",
-				//	expected: testOutput{
-				//		requestInfo: gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous},
-				//		err:         errors.New("GDPR consent is required when gdpr signal equals 1"),
-				//	},
-				//},
-				//{
-				//	desc:  "SectionTCFEU2 only found in SID list, expect blank request info and error",
-				//	inUri: "/setuid?gpp=DBABBgA~xlgWEYCZAA&gpp_sid=2",
-				//	expected: testOutput{
-				//		requestInfo: gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous},
-				//		err:         errors.New("GDPR consent is required when gdpr signal equals 1"),
-				//	},
-				//},
-				//{
-				//	desc:  "SectionTCFEU2 found in GPP string but SID list is nil, expect valid consent and SignalAmbiguous",
-				//	inUri: "/setuid?gpp=DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
-				//	expected: testOutput{
-				//		requestInfo: gdpr.RequestInfo{
-				//			Consent:    "",
-				//			GDPRSignal: gdpr.SignalAmbiguous,
-				//		},
-				//		err: nil,
-				//	},
-				//},
-				//{
-				//	desc:  "SectionTCFEU2 found in GPP string but not in the non-nil SID list, expect valid consent and signalNo",
-				//	inUri: "/setuid?gpp=DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA&gpp_sid=6",
-				//	expected: testOutput{
-				//		requestInfo: gdpr.RequestInfo{
-				//			Consent:    "",
-				//			GDPRSignal: gdpr.SignalAmbiguous,
-				//		},
-				//		err: nil,
-				//	},
-				//},
+				{
+					desc:  "Malformed GPP_SID string, expect blank request info and error",
+					inUri: "/setuid?gpp_sid=malformed",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous},
+						err:         errors.New("Error parsing gpp_sid strconv.ParseInt: parsing \"malformed\": invalid syntax"),
+					},
+				},
+				{
+					desc:  "Valid GPP_SID string but invalid GPP string in query, expect blank request info and error",
+					inUri: "/setuid?gpp=malformed&gpp_sid=2",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous},
+						err:         errors.New("error parsing GPP header, base64 decoding: illegal base64 data at input byte 8"),
+					},
+				},
+				{
+					desc:  "SectionTCFEU2 not found in GPP string, expect blank consent and signalAmbiguous",
+					inUri: "/setuid?gpp=DBABBgA~xlgWEYCZAA",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{
+							Consent:    "",
+							GDPRSignal: gdpr.SignalAmbiguous,
+						},
+						err: nil,
+					},
+				},
+				{
+					desc:  "No GPP string, nor SectionTCFEU2 found in SID list in query, expect blank consent and signalAmbiguous",
+					inUri: "/setuid?gpp_sid=3,6",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{
+							Consent:    "",
+							GDPRSignal: gdpr.SignalNo,
+						},
+						err: nil,
+					},
+				},
+				{
+					desc:  "No GPP string, SectionTCFEU2 found in SID list in query, expect blank request info and error",
+					inUri: "/setuid?gpp_sid=2",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous},
+						err:         errors.New("GDPR consent is required when gdpr signal equals 1"),
+					},
+				},
+				{
+					desc:  "SectionTCFEU2 only found in SID list, expect blank request info and error",
+					inUri: "/setuid?gpp=DBABBgA~xlgWEYCZAA&gpp_sid=2",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous},
+						err:         errors.New("GDPR consent is required when gdpr signal equals 1"),
+					},
+				},
+				{
+					desc:  "SectionTCFEU2 found in GPP string but SID list is nil, expect valid consent and SignalAmbiguous",
+					inUri: "/setuid?gpp=DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{
+							Consent:    "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+							GDPRSignal: gdpr.SignalAmbiguous,
+						},
+						err: nil,
+					},
+				},
+				{
+					desc:  "SectionTCFEU2 found in GPP string but not in the non-nil SID list, expect valid consent and signalNo",
+					inUri: "/setuid?gpp=DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA&gpp_sid=6",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{
+							Consent:    "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+							GDPRSignal: gdpr.SignalNo,
+						},
+						err: nil,
+					},
+				},
 				{
 					desc:  "SectionTCFEU2 found both in GPP string and SID list, expect valid consent and signalYes",
 					inUri: "/setuid?gpp=DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA&gpp_sid=2,4",
@@ -874,77 +778,89 @@ func TestExtractGDPRInfo(t *testing.T) {
 				},
 			},
 		},
-		//{
-		//	sDesc: "GPP values take priority over GDPR",
-		//	tests: []testCase{
-		//		{
-		//			desc:  "SignalNo in gdpr field but SignalYes in SID list, CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA consent in gpp but legacyConsent in gdpr_consent, expect GPP values to prevail",
-		//			inUri: "/setuid?gpp=DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA&gpp_sid=2,4&gdpr=0&gdpr_consent=legacyConsent",
-		//			expected: testOutput{
-		//				requestInfo: gdpr.RequestInfo{
-		//					Consent:    "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
-		//					GDPRSignal: gdpr.SignalYes,
-		//				},
-		//				err: nil,
-		//			},
-		//		},
-		//		{
-		//			desc:  "SignalNo in gdpr field but SignalYes in SID list because SectionTCFEU2 is listed, expect GPP to prevail",
-		//			inUri: "/setuid?gpp=DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA&gpp_sid=2,4&gdpr=0",
-		//			expected: testOutput{
-		//				requestInfo: gdpr.RequestInfo{
-		//					Consent:    "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
-		//					GDPRSignal: gdpr.SignalYes,
-		//				},
-		//				err: nil,
-		//			},
-		//		},
-		//		{
-		//			desc:  "No gpp string in URL query, use gdpr_consent and SignalYes found in SID list because SectionTCFEU2 is listed",
-		//			inUri: "/setuid?gpp_sid=2,4&gdpr_consent=legacyConsent",
-		//			expected: testOutput{
-		//				requestInfo: gdpr.RequestInfo{
-		//					Consent:    "legacyConsent",
-		//					GDPRSignal: gdpr.SignalYes,
-		//				},
-		//				err: nil,
-		//			},
-		//		},
-		//		{
-		//			desc:  "SectionTCFEU2 not found in GPP string but found in SID list, choose the GDPR_CONSENT and GPP_SID signal",
-		//			inUri: "/setuid?gpp=DBABBgA~xlgWEYCZAA&gpp_sid=2&gdpr=0&gdpr_consent=legacyConsent",
-		//			expected: testOutput{
-		//				requestInfo: gdpr.RequestInfo{
-		//					Consent:    "legacyConsent",
-		//					GDPRSignal: gdpr.SignalYes,
-		//				},
-		//				err: nil,
-		//			},
-		//		},
-		//		{
-		//			desc:  "SectionTCFEU2 found in GPP string but not in SID list, choose GDPR signal GPP consent value",
-		//			inUri: "/setuid?gpp=DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA&gpp_sid=6&gdpr=1&gdpr_consent=legacyConsent",
-		//			expected: testOutput{
-		//				requestInfo: gdpr.RequestInfo{
-		//					Consent:    "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
-		//					GDPRSignal: gdpr.SignalNo,
-		//				},
-		//				err: nil,
-		//			},
-		//		},
-		//		{
-		//			desc:  "SectionTCFEU2 not found in GPP, use GDPR_CONSENT value. SignalYes found in gdpr field, but not in the valid SID list, expect SignalNo",
-		//			inUri: "/setuid?gpp=DBABBgA~xlgWEYCZAA&gpp_sid=6&gdpr=1&gdpr_consent=legacyConsent",
-		//			expected: testOutput{
-		//				requestInfo: gdpr.RequestInfo{
-		//					Consent:    "legacyConsent",
-		//					GDPRSignal: gdpr.SignalNo,
-		//				},
-		//				err: nil,
-		//			},
-		//		},
-		//	},
-		//},
+		{
+			sDesc: "GPP values take priority over GDPR",
+			tests: []testCase{
+				{
+					desc:  "SignalNo in gdpr field but SignalYes in SID list, CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA consent in gpp but legacyConsent in gdpr_consent, expect GPP values to prevail",
+					inUri: "/setuid?gpp=DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA&gpp_sid=2,4&gdpr=0&gdpr_consent=legacyConsent",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{
+							Consent:    "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+							GDPRSignal: gdpr.SignalYes,
+						},
+						err: &errortypes.Warning{
+							Message:     "'gpp' value will be used over the one found in the deprecated 'gdpr_consent' field.",
+							WarningCode: errortypes.UnknownWarningCode,
+						},
+					},
+				},
+				{
+					desc:  "SignalNo in gdpr field but SignalYes in SID list because SectionTCFEU2 is listed, expect GPP to prevail",
+					inUri: "/setuid?gpp=DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA&gpp_sid=2,4&gdpr=0",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{
+							Consent:    "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+							GDPRSignal: gdpr.SignalYes,
+						},
+						err: &errortypes.Warning{
+							Message:     "'gpp_sid' signal value will be used over the one found in the deprecated 'gdpr' field.",
+							WarningCode: errortypes.UnknownWarningCode,
+						},
+					},
+				},
+				{
+					desc:  "No gpp string in URL query, use gdpr_consent and SignalYes found in SID list because SectionTCFEU2 is listed",
+					inUri: "/setuid?gpp_sid=2,4&gdpr_consent=legacyConsent",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{
+							Consent:    "",
+							GDPRSignal: gdpr.SignalAmbiguous,
+						},
+						err: errors.New("GDPR consent is required when gdpr signal equals 1"),
+					},
+				},
+				{
+					desc:  "SectionTCFEU2 not found in GPP string but found in SID list, choose the GDPR_CONSENT and GPP_SID signal",
+					inUri: "/setuid?gpp=DBABBgA~xlgWEYCZAA&gpp_sid=2&gdpr=0&gdpr_consent=legacyConsent",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{
+							Consent:    "",
+							GDPRSignal: gdpr.SignalAmbiguous,
+						},
+						err: errors.New("GDPR consent is required when gdpr signal equals 1"),
+					},
+				},
+				{
+					desc:  "SectionTCFEU2 found in GPP string but not in SID list, choose GDPR signal GPP consent value",
+					inUri: "/setuid?gpp=DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA&gpp_sid=6&gdpr=1&gdpr_consent=legacyConsent",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{
+							Consent:    "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+							GDPRSignal: gdpr.SignalNo,
+						},
+						err: &errortypes.Warning{
+							Message:     "'gpp' value will be used over the one found in the deprecated 'gdpr_consent' field.",
+							WarningCode: errortypes.UnknownWarningCode,
+						},
+					},
+				},
+				{
+					desc:  "SectionTCFEU2 not found in GPP, use GDPR_CONSENT value. SignalYes found in gdpr field, but not in the valid SID list, expect SignalNo",
+					inUri: "/setuid?gpp=DBABBgA~xlgWEYCZAA&gpp_sid=6&gdpr=1&gdpr_consent=legacyConsent",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{
+							Consent:    "",
+							GDPRSignal: gdpr.SignalNo,
+						},
+						err: &errortypes.Warning{
+							Message:     "'gpp_sid' signal value will be used over the one found in the deprecated 'gdpr' field.",
+							WarningCode: errortypes.UnknownWarningCode,
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, ts := range testSuite {
@@ -1102,7 +1018,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 					Status:  400,
 					Bidder:  "pubmatic",
 					UID:     "",
-					Errors:  []error{errors.New("gdpr_consent is required when gdpr=1")},
+					Errors:  []error{errors.New("GDPR consent is required when gdpr signal equals 1")},
 					Success: false,
 				}
 				a.On("LogSetUIDObject", &expected).Once()
