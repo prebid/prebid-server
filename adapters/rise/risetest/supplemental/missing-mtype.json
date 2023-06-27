@@ -113,5 +113,6 @@
       "value": "unsupported MType 3",
       "comparison": "literal"
     }
-  ]
+  ],
+  "expectedBidResponses": [{"currency":"USD","bids":[]}]
 }

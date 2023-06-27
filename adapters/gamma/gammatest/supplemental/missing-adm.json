@@ -54,7 +54,7 @@
             }
         }
     ],
-    "expectedBids": [
+    "expectedBidResponses": [
         {
             "bid": {
                 "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
