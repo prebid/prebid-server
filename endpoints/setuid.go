@@ -108,7 +108,9 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 		}
 
 		gdprRequestInfo, err := extractGDPRInfo(query)
-		if err != nil {
+
+		if !errortypes.IsWarning(err) && err != nil {
+			//if err != nil {
 			// Only exit if non-warning
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(err.Error()))
@@ -168,41 +170,40 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 
 // extractGDPRInfo looks for the GDPR consent string and GDPR signal in the GPP query params
 // first and the 'gdpr' and 'gdpr_consent' query params second. If found in both, throws a
-// warning
-//
-// WRONG! Write the following functions instead:
-// signal, consent, error := parseGDPRFromGPP(query)
-// legacySignal, legacyConsent, err := parseLegacyGDPRFields(query)
-//
-// if valid signal or valid consent is found in both, then warning
-//
-// We could probably make them pointers instead:
-// var legacySignal, legacyConsent, signal, consent *string
-// err := parseGDPRFromGPP(query, signal, consent)
-// err := parseLegacyGDPRFields(query, legacySignal, legacyConsent)
-func extractGDPRInfo(query url.Values) (gdpr.RequestInfo, error) {
+// warning. Can also throw a parsing or validation error
+func extractGDPRInfo(query url.Values) (reqInfo gdpr.RequestInfo, err error) {
 
-	reqInfo, err := parseGDPRFromGPP(query)
+	reqInfo, err = parseGDPRFromGPP(query)
 	if err != nil {
-		return gdpr.RequestInfo{}, err
+		return gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous}, err
 	}
 
 	legacySignal, legacyConsent, err := parseLegacyGDPRFields(query, reqInfo.GDPRSignal, reqInfo.Consent)
-	if err != nil {
-		if !errortypes.IsWarning(err) {
-			return gdpr.RequestInfo{}, err
-		}
-	} else {
-		reqInfo = gdpr.RequestInfo{
-			Consent:    legacyConsent,
-			GDPRSignal: legacySignal,
-		}
+	isWarning := errortypes.IsWarning(err)
+	// If not warning, throw error
+	if err != nil && !isWarning {
+		return gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous}, err
 	}
 
-	return reqInfo, nil
+	// If warning, or there was no GDPR data in the GPP wrapper
+	if (err != nil && isWarning) || (reqInfo.Consent == "" && reqInfo.GDPRSignal == gdpr.SignalAmbiguous) {
+		reqInfo.GDPRSignal = legacySignal
+		reqInfo.Consent = legacyConsent
+	}
+
+	if reqInfo.Consent == "" && reqInfo.GDPRSignal == gdpr.SignalYes {
+		return gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous}, errors.New("GDPR consent is required when gdpr signal equals 1")
+	}
+
+	reqInfo = gdpr.RequestInfo{
+		Consent:    legacyConsent,
+		GDPRSignal: legacySignal,
+	}
+
+	return reqInfo, err
 }
 
-// signal, consent, error := parseGDPRFromGPP(query)
+// parseGDPRFromGPP parses and validates the "gpp_sid" and "gpp" query fields.
 func parseGDPRFromGPP(query url.Values) (gdpr.RequestInfo, error) {
 	var gdprSignal gdpr.Signal = gdpr.SignalAmbiguous
 	var gdprConsent string = ""
@@ -219,20 +220,21 @@ func parseGDPRFromGPP(query url.Values) (gdpr.RequestInfo, error) {
 		return gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous}, err
 	}
 
-	if gdprConsent == "" && gdprSignal == gdpr.SignalYes {
-		return gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous}, errors.New("GDPR consent is required when gdpr signal equals 1")
-	}
-
 	return gdpr.RequestInfo{
 		Consent:    gdprConsent,
 		GDPRSignal: gdprSignal,
 	}, nil
 }
 
+// parseLegacyGDPRFields parses and validates the "gdpr" and "gdpr_consent" query fields which
+// are considered deprecated in favor of the "gpp" and "gpp_sid". The parsed and validated GDPR
+// values contained in "gpp" and "gpp_sid" are passed in the parameters gppGDPRSignal and
+// gppGDPRConsent. If the GPP parameters come with non-default values, this function discards
+// "gdpr" and "gdpr_consent" and returns a warning.
 func parseLegacyGDPRFields(query url.Values, gppGDPRSignal gdpr.Signal, gppGDPRConsent string) (gdpr.Signal, string, error) {
-	var gdprSignal gdpr.Signal
+	var gdprSignal gdpr.Signal = gdpr.SignalAmbiguous
 	var gdprConsent string
-	var warning *errortypes.Warning
+	var warning error
 
 	if gdprQuerySignal := query.Get("gdpr"); len(gdprQuerySignal) > 0 {
 		if gppGDPRSignal == gdpr.SignalAmbiguous {
@@ -251,14 +253,16 @@ func parseLegacyGDPRFields(query url.Values, gppGDPRSignal gdpr.Signal, gppGDPRC
 		}
 	}
 
-	gdprConsent = query.Get("gdpr_consent")
-	if len(gdprConsent) > 0 && len(gppGDPRConsent) > 0 {
-		warning = &errortypes.Warning{
-			Message:     "'gpp' signal value will be used over the one found in the deprecated 'gdpr_consent' field.",
-			WarningCode: errortypes.UnknownWarningCode,
+	if gdprLegacyConsent := query.Get("gdpr_consent"); len(gdprLegacyConsent) > 0 {
+		if len(gppGDPRConsent) > 0 {
+			warning = &errortypes.Warning{
+				Message:     "'gpp' value will be used over the one found in the deprecated 'gdpr_consent' field.",
+				WarningCode: errortypes.UnknownWarningCode,
+			}
+		} else {
+			gdprConsent = gdprLegacyConsent
 		}
 	}
-
 	return gdprSignal, gdprConsent, warning
 }
 
