@@ -319,7 +319,7 @@
               "huaweiads"
             ],
             "crid": "58022259",
-            "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":100,\"title\":{\"text\":\"/test/\",\"len\":6}},{\"id\":101,\"img\":{\"type\":3,\"url\":\"http://image1.jpg\",\"w\":400,\"h\":350}},{\"id\":102,\"img\":{\"type\":3,\"url\":\"http://image2.jpg\",\"w\":400,\"h\":300}},{\"id\":103,\"img\":{\"type\":3,\"url\":\"http://image3.jpg\",\"w\":400,\"h\":300}},{\"id\":105,\"data\":{\"label\":\"desc\",\"value\":\"this is a test ad\"}}],\"link\":{\"url\":\"https://ads.huawei.com/usermgtportal/home/index.html#/\",\"clicktrackers\":[\"http://test/click\"]},\"imptrackers\":[\"http://test/imp\"]}",
+            "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":100,\"title\":{\"text\":\"/test/\",\"len\":6}},{\"id\":101,\"img\":{\"type\":3,\"url\":\"http://image1.jpg\",\"w\":400,\"h\":350}},{\"id\":102,\"img\":{\"type\":3,\"url\":\"http://image2.jpg\",\"w\":400,\"h\":300}},{\"id\":103,\"img\":{\"type\":3,\"url\":\"http://image3.jpg\",\"w\":400,\"h\":300}},{\"id\":105,\"data\":{\"label\":\"desc\",\"value\":\"this is a test ad\"}}],\"link\":{\"url\":\"https://ads.huawei.com/usermgtportal/home/index.html#/\",\"clicktrackers\":[\"http://test/click\"]},\"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"http://test/imp\"}]}",
             "id": "test-imp-id",
             "impid": "test-imp-id",
             "price": 2.8,
