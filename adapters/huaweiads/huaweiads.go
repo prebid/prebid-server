@@ -1188,11 +1188,11 @@ func (a *adapter) extractAdmNative(adType int32, content *content, bidType openr
 				linkObject.ClickTrackers = append(linkObject.ClickTrackers, monitor.Url...)
 			}
 			if monitor.EventType == "imp" {
-				for idx, url := range monitor.Url {
+				for i := range monitor.Url {
 					var eventTracker nativeResponse.EventTracker
 					eventTracker.Event = native1.EventTypeImpression
 					eventTracker.Method = native1.EventTrackingMethodImage
-					eventTracker.URL = monitor.Url[idx]
+					eventTracker.URL = monitor.Url[i]
 					eventTrackers = append(eventTrackers, eventTracker)
 				}
 			}
