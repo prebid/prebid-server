@@ -164,7 +164,7 @@ func (r ComponentEnforcementRule) Allow(target ScopedName) ActivityResult {
 	}
 	for _, scope := range r.componentName {
 		if strings.EqualFold(scope.Scope, target.Scope) &&
-			(strings.EqualFold(scope.Name, target.Name) || scope.Name == "*") {
+			(scope.Name == "*" || strings.EqualFold(scope.Name, target.Name)) {
 			componentNameFound = true
 			break
 		}
