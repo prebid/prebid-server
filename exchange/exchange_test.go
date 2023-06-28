@@ -3592,7 +3592,7 @@ func TestApplyDealSupport(t *testing.T) {
 		{
 			description:  "hb_pb_cat_dur should be modified",
 			dealPriority: 5,
-			impExt:       json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}`),
+			impExt:       json.RawMessage(`{"prebid": {"bidder": {"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}}}`),
 			targ: map[string]string{
 				"hb_pb_cat_dur": "12.00_movies_30s",
 			},
@@ -3603,7 +3603,7 @@ func TestApplyDealSupport(t *testing.T) {
 		{
 			description:  "hb_pb_cat_dur should not be modified due to priority not exceeding min",
 			dealPriority: 9,
-			impExt:       json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 10, "prefix": "tier"}, "placementId": 10433394}}`),
+			impExt:       json.RawMessage(`{"prebid": {"bidder": {"appnexus": {"dealTier": {"minDealTier": 10, "prefix": "tier"}, "placementId": 10433394}}}}`),
 			targ: map[string]string{
 				"hb_pb_cat_dur": "12.00_medicine_30s",
 			},
@@ -3614,7 +3614,7 @@ func TestApplyDealSupport(t *testing.T) {
 		{
 			description:  "hb_pb_cat_dur should not be modified due to invalid config",
 			dealPriority: 5,
-			impExt:       json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": ""}, "placementId": 10433394}}`),
+			impExt:       json.RawMessage(`{"prebid": {"bidder": {"appnexus": {"dealTier": {"minDealTier": 5, "prefix": ""}, "placementId": 10433394}}}}`),
 			targ: map[string]string{
 				"hb_pb_cat_dur": "12.00_games_30s",
 			},
@@ -3625,7 +3625,7 @@ func TestApplyDealSupport(t *testing.T) {
 		{
 			description:  "hb_pb_cat_dur should not be modified due to deal priority of 0",
 			dealPriority: 0,
-			impExt:       json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}`),
+			impExt:       json.RawMessage(`{"prebid": {"bidder": {"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}}}`),
 			targ: map[string]string{
 				"hb_pb_cat_dur": "12.00_auto_30s",
 			},
@@ -3695,11 +3695,11 @@ func TestApplyDealSupportMultiBid(t *testing.T) {
 					Imp: []openrtb2.Imp{
 						{
 							ID:  "imp_id1",
-							Ext: json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}`),
+							Ext: json.RawMessage(`{"prebid": {"bidder": {"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}}}`),
 						},
 						{
 							ID:  "imp_id1",
-							Ext: json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}`),
+							Ext: json.RawMessage(`{"prebid": {"bidder": {"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}}}`),
 						},
 					},
 				},
@@ -3741,11 +3741,11 @@ func TestApplyDealSupportMultiBid(t *testing.T) {
 					Imp: []openrtb2.Imp{
 						{
 							ID:  "imp_id1",
-							Ext: json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}`),
+							Ext: json.RawMessage(`{"prebid": {"bidder": {"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}}}`),
 						},
 						{
 							ID:  "imp_id1",
-							Ext: json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}`),
+							Ext: json.RawMessage(`{"prebid": {"bidder": {"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}}}`),
 						},
 					},
 				},
@@ -3792,11 +3792,11 @@ func TestApplyDealSupportMultiBid(t *testing.T) {
 					Imp: []openrtb2.Imp{
 						{
 							ID:  "imp_id1",
-							Ext: json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}`),
+							Ext: json.RawMessage(`{"prebid": {"bidder": {"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}}}`),
 						},
 						{
 							ID:  "imp_id1",
-							Ext: json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}`),
+							Ext: json.RawMessage(`{"prebid": {"bidder": {"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}}}`),
 						},
 					},
 				},
@@ -3869,7 +3869,7 @@ func TestGetDealTiers(t *testing.T) {
 			description: "One",
 			request: openrtb2.BidRequest{
 				Imp: []openrtb2.Imp{
-					{ID: "imp1", Ext: json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier"}}}`)},
+					{ID: "imp1", Ext: json.RawMessage(`{"prebid": {"bidder": {"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier"}}}}}`)},
 				},
 			},
 			expected: map[string]openrtb_ext.DealTierBidderMap{
@@ -3880,8 +3880,8 @@ func TestGetDealTiers(t *testing.T) {
 			description: "Many",
 			request: openrtb2.BidRequest{
 				Imp: []openrtb2.Imp{
-					{ID: "imp1", Ext: json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier1"}}}`)},
-					{ID: "imp2", Ext: json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 8, "prefix": "tier2"}}}`)},
+					{ID: "imp1", Ext: json.RawMessage(`{"prebid": {"bidder": {"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier1"}}}}}`)},
+					{ID: "imp2", Ext: json.RawMessage(`{"prebid": {"bidder": {"appnexus": {"dealTier": {"minDealTier": 8, "prefix": "tier2"}}}}}`)},
 				},
 			},
 			expected: map[string]openrtb_ext.DealTierBidderMap{
@@ -3893,8 +3893,8 @@ func TestGetDealTiers(t *testing.T) {
 			description: "Many - Skips Malformed",
 			request: openrtb2.BidRequest{
 				Imp: []openrtb2.Imp{
-					{ID: "imp1", Ext: json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier1"}}}`)},
-					{ID: "imp2", Ext: json.RawMessage(`{"appnexus": {"dealTier": "wrong type"}}`)},
+					{ID: "imp1", Ext: json.RawMessage(`{"prebid": {"bidder": {"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier1"}}}}}`)},
+					{ID: "imp2", Ext: json.RawMessage(`{"prebid": {"bidder": {"appnexus": {"dealTier": "wrong type"}}}}`)},
 				},
 			},
 			expected: map[string]openrtb_ext.DealTierBidderMap{
