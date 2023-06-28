@@ -4277,21 +4277,21 @@ func TestGetMediaTypeForBid(t *testing.T) {
 
 func TestCleanOpenRTBRequestsActivitiesFetchBids(t *testing.T) {
 	testCases := []struct {
-		description       string
+		name              string
 		req               *openrtb2.BidRequest
 		componentName     string
 		allow             bool
 		expectedReqNumber int
 	}{
 		{
-			description:       "request with one bidder allowed",
+			name:              "request_with_one_bidder_allowed",
 			req:               newBidRequest(t),
 			componentName:     "appnexus",
 			allow:             true,
 			expectedReqNumber: 1,
 		},
 		{
-			description:       "request with one bidder not allowed",
+			name:              "request_with_one_bidder_not_allowed",
 			req:               newBidRequest(t),
 			componentName:     "appnexus",
 			allow:             false,
@@ -4306,7 +4306,7 @@ func TestCleanOpenRTBRequestsActivitiesFetchBids(t *testing.T) {
 		auctionReq := AuctionRequest{
 			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: test.req},
 			UserSyncs:         &emptyUsersync{},
-			Activitities:      activities,
+			Activities:        activities,
 		}
 
 		bidderToSyncerKey := map[string]string{}
@@ -4317,9 +4317,11 @@ func TestCleanOpenRTBRequestsActivitiesFetchBids(t *testing.T) {
 			bidderInfo:        config.BidderInfos{},
 		}
 
-		bidderRequests, _, errs := reqSplitter.cleanOpenRTBRequests(context.Background(), auctionReq, nil, gdpr.SignalNo)
-		assert.Empty(t, errs, "unexpected error returned")
-		assert.Len(t, bidderRequests, test.expectedReqNumber, "incorrect number of requests")
+		t.Run(test.name, func(t *testing.T) {
+			bidderRequests, _, errs := reqSplitter.cleanOpenRTBRequests(context.Background(), auctionReq, nil, gdpr.SignalNo)
+			assert.Empty(t, errs)
+			assert.Len(t, bidderRequests, test.expectedReqNumber)
+		})
 	}
 }
 

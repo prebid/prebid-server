@@ -11,7 +11,7 @@ const (
 	ActivityTransmitUserFPD
 	ActivityTransmitPreciseGeo
 	ActivityTransmitUniqueRequestIds
-	ActivityTransmitTIds
+	ActivityTransmitTids
 )
 
 func (a Activity) String() string {
@@ -30,7 +30,7 @@ func (a Activity) String() string {
 		return "transmitPreciseGeo"
 	case ActivityTransmitUniqueRequestIds:
 		return "transmitUniqueRequestIds"
-	case ActivityTransmitTIds:
+	case ActivityTransmitTids:
 		return "transmitTid"
 	}
 

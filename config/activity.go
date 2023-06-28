@@ -8,7 +8,7 @@ type AllowActivities struct {
 	TransmitUserFPD          Activity `mapstructure:"transmitUfpd" json:"transmitUfpd"`
 	TransmitPreciseGeo       Activity `mapstructure:"transmitPreciseGeo" json:"transmitPreciseGeo"`
 	TransmitUniqueRequestIds Activity `mapstructure:"transmitUniqueRequestIds" json:"transmitUniqueRequestIds"`
-	TransmitTIds             Activity `mapstructure:"transmitTid" json:"transmitTid"`
+	TransmitTids             Activity `mapstructure:"transmitTid" json:"transmitTid"`
 }
 
 type Activity struct {

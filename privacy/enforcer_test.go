@@ -17,13 +17,13 @@ func TestNewActivityControl(t *testing.T) {
 		err             error
 	}{
 		{
-			name:            "privacy config is nil",
+			name:            "privacy_config_is_nil",
 			privacyConf:     nil,
 			activityControl: ActivityControl{plans: nil},
 			err:             nil,
 		},
 		{
-			name: "privacy config is specified and correct",
+			name: "privacy_config_is_specified_and_correct",
 			privacyConf: &config.AccountPrivacy{
 				AllowActivities: config.AllowActivities{
 					SyncUser:                 getDefaultActivityConfig(),
@@ -33,7 +33,7 @@ func TestNewActivityControl(t *testing.T) {
 					TransmitUserFPD:          getDefaultActivityConfig(),
 					TransmitPreciseGeo:       getDefaultActivityConfig(),
 					TransmitUniqueRequestIds: getDefaultActivityConfig(),
-					TransmitTIds:             getDefaultActivityConfig(),
+					TransmitTids:             getDefaultActivityConfig(),
 				},
 			},
 			activityControl: ActivityControl{plans: map[Activity]ActivityPlan{
@@ -44,12 +44,12 @@ func TestNewActivityControl(t *testing.T) {
 				ActivityTransmitUserFPD:          getDefaultActivityPlan(),
 				ActivityTransmitPreciseGeo:       getDefaultActivityPlan(),
 				ActivityTransmitUniqueRequestIds: getDefaultActivityPlan(),
-				ActivityTransmitTIds:             getDefaultActivityPlan(),
+				ActivityTransmitTids:             getDefaultActivityPlan(),
 			}},
 			err: nil,
 		},
 		{
-			name: "privacy config is specified and SyncUser is incorrect",
+			name: "privacy_config_is_specified_and_SyncUser_is_incorrect",
 			privacyConf: &config.AccountPrivacy{
 				AllowActivities: config.AllowActivities{
 					SyncUser: getIncorrectActivityConfig(),
@@ -59,7 +59,7 @@ func TestNewActivityControl(t *testing.T) {
 			err:             errors.New("unable to parse condition: bidder.bidderA.bidderB"),
 		},
 		{
-			name: "privacy config is specified and FetchBids is incorrect",
+			name: "privacy_config_is_specified_and_FetchBids_is_incorrect",
 			privacyConf: &config.AccountPrivacy{
 				AllowActivities: config.AllowActivities{
 					FetchBids: getIncorrectActivityConfig(),
@@ -69,7 +69,7 @@ func TestNewActivityControl(t *testing.T) {
 			err:             errors.New("unable to parse condition: bidder.bidderA.bidderB"),
 		},
 		{
-			name: "privacy config is specified and EnrichUserFPD is incorrect",
+			name: "privacy_config_is_specified_and_EnrichUserFPD_is_incorrect",
 			privacyConf: &config.AccountPrivacy{
 				AllowActivities: config.AllowActivities{
 					EnrichUserFPD: getIncorrectActivityConfig(),
@@ -79,7 +79,7 @@ func TestNewActivityControl(t *testing.T) {
 			err:             errors.New("unable to parse condition: bidder.bidderA.bidderB"),
 		},
 		{
-			name: "privacy config is specified and ReportAnalytics is incorrect",
+			name: "privacy_config_is_specified_and_ReportAnalytics_is_incorrect",
 			privacyConf: &config.AccountPrivacy{
 				AllowActivities: config.AllowActivities{
 					ReportAnalytics: getIncorrectActivityConfig(),
@@ -89,7 +89,7 @@ func TestNewActivityControl(t *testing.T) {
 			err:             errors.New("unable to parse condition: bidder.bidderA.bidderB"),
 		},
 		{
-			name: "privacy config is specified and TransmitUserFPD is incorrect",
+			name: "privacy_config_is_specified_and_TransmitUserFPD_is_incorrect",
 			privacyConf: &config.AccountPrivacy{
 				AllowActivities: config.AllowActivities{
 					TransmitUserFPD: getIncorrectActivityConfig(),
@@ -99,7 +99,7 @@ func TestNewActivityControl(t *testing.T) {
 			err:             errors.New("unable to parse condition: bidder.bidderA.bidderB"),
 		},
 		{
-			name: "privacy config is specified and TransmitPreciseGeo is incorrect",
+			name: "privacy_config_is_specified_and_TransmitPreciseGeo_is_incorrect",
 			privacyConf: &config.AccountPrivacy{
 				AllowActivities: config.AllowActivities{
 					TransmitPreciseGeo: getIncorrectActivityConfig(),
@@ -109,7 +109,7 @@ func TestNewActivityControl(t *testing.T) {
 			err:             errors.New("unable to parse condition: bidder.bidderA.bidderB"),
 		},
 		{
-			name: "privacy config is specified and TransmitUniqueRequestIds is incorrect",
+			name: "privacy_config_is_specified_and_TransmitUniqueRequestIds_is_incorrect",
 			privacyConf: &config.AccountPrivacy{
 				AllowActivities: config.AllowActivities{
 					TransmitUniqueRequestIds: getIncorrectActivityConfig(),
@@ -119,10 +119,10 @@ func TestNewActivityControl(t *testing.T) {
 			err:             errors.New("unable to parse condition: bidder.bidderA.bidderB"),
 		},
 		{
-			name: "privacy config is specified and TransmitTIds is incorrect",
+			name: "privacy_config_is_specified_and_TransmitTids_is_incorrect",
 			privacyConf: &config.AccountPrivacy{
 				AllowActivities: config.AllowActivities{
-					TransmitTIds: getIncorrectActivityConfig(),
+					TransmitTids: getIncorrectActivityConfig(),
 				},
 			},
 			activityControl: ActivityControl{plans: nil},
@@ -134,10 +134,10 @@ func TestNewActivityControl(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			actualAC, actualErr := NewActivityControl(test.privacyConf)
 			if test.err == nil {
-				assert.Equal(t, test.activityControl, actualAC, "incorrect activity control")
-				assert.NoError(t, actualErr, "error should be nil")
+				assert.Equal(t, test.activityControl, actualAC)
+				assert.NoError(t, actualErr)
 			} else {
-				assert.EqualError(t, actualErr, test.err.Error(), "error is incorrect")
+				assert.EqualError(t, actualErr, test.err.Error())
 			}
 		})
 	}
@@ -151,17 +151,17 @@ func TestActivityDefaultToDefaultResult(t *testing.T) {
 		expectedResult  ActivityResult
 	}{
 		{
-			name:            "activityDefault is nil",
+			name:            "activityDefault_is_nil",
 			activityDefault: nil,
 			expectedResult:  ActivityAllow,
 		},
 		{
-			name:            "activityDefault is nil",
+			name:            "activityDefault_is_true",
 			activityDefault: ptrutil.ToPtr(true),
 			expectedResult:  ActivityAllow,
 		},
 		{
-			name:            "activityDefault is nil",
+			name:            "activityDefault_is_false",
 			activityDefault: ptrutil.ToPtr(false),
 			expectedResult:  ActivityDeny,
 		},
@@ -170,8 +170,7 @@ func TestActivityDefaultToDefaultResult(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			actualResult := activityDefaultToDefaultResult(test.activityDefault)
-			assert.Equal(t, actualResult, test.expectedResult, "result is incorrect")
-
+			assert.Equal(t, test.expectedResult, actualResult)
 		})
 	}
 }
@@ -186,14 +185,14 @@ func TestAllowActivityControl(t *testing.T) {
 		activityResult  ActivityResult
 	}{
 		{
-			name:            "plans is nil",
+			name:            "plans_is_nil",
 			activityControl: ActivityControl{plans: nil},
 			activity:        ActivityFetchBids,
 			target:          ScopedName{Scope: "bidder", Name: "bidderA"},
 			activityResult:  ActivityAbstain,
 		},
 		{
-			name: "activity not defined",
+			name: "activity_not_defined",
 			activityControl: ActivityControl{plans: map[Activity]ActivityPlan{
 				ActivitySyncUser: getDefaultActivityPlan()}},
 			activity:       ActivityFetchBids,
@@ -201,7 +200,7 @@ func TestAllowActivityControl(t *testing.T) {
 			activityResult: ActivityAbstain,
 		},
 		{
-			name: "activity defined but not allowed",
+			name: "activity_defined_but_not_found_default_returned",
 			activityControl: ActivityControl{plans: map[Activity]ActivityPlan{
 				ActivityFetchBids: getDefaultActivityPlan()}},
 			activity:       ActivityFetchBids,
@@ -209,7 +208,7 @@ func TestAllowActivityControl(t *testing.T) {
 			activityResult: ActivityAllow,
 		},
 		{
-			name: "activity defined and allowed",
+			name: "activity_defined_and_allowed",
 			activityControl: ActivityControl{plans: map[Activity]ActivityPlan{
 				ActivityFetchBids: getDefaultActivityPlan()}},
 			activity:       ActivityFetchBids,
@@ -221,7 +220,7 @@ func TestAllowActivityControl(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			actualResult := test.activityControl.Allow(test.activity, test.target)
-			assert.Equal(t, test.activityResult, actualResult, "incorrect allow activity result")
+			assert.Equal(t, test.activityResult, actualResult)
 
 		})
 	}
@@ -236,7 +235,7 @@ func TestAllowComponentEnforcementRule(t *testing.T) {
 		activityResult ActivityResult
 	}{
 		{
-			name: "activity is allowed",
+			name: "activity_is_allowed",
 			componentRule: ComponentEnforcementRule{
 				allowed: true,
 				componentName: []ScopedName{
@@ -248,7 +247,7 @@ func TestAllowComponentEnforcementRule(t *testing.T) {
 			activityResult: ActivityAllow,
 		},
 		{
-			name: "activity is not allowed",
+			name: "activity_is_not_allowed",
 			componentRule: ComponentEnforcementRule{
 				allowed: false,
 				componentName: []ScopedName{
@@ -260,7 +259,7 @@ func TestAllowComponentEnforcementRule(t *testing.T) {
 			activityResult: ActivityDeny,
 		},
 		{
-			name: "activity is not found",
+			name: "abstain_both_clauses_do_not_match",
 			componentRule: ComponentEnforcementRule{
 				allowed: true,
 				componentName: []ScopedName{
@@ -272,7 +271,7 @@ func TestAllowComponentEnforcementRule(t *testing.T) {
 			activityResult: ActivityAbstain,
 		},
 		{
-			name: "activity is not allowed, componentName only",
+			name: "activity_is_not_allowed_componentName_only",
 			componentRule: ComponentEnforcementRule{
 				allowed: true,
 				componentName: []ScopedName{
@@ -283,7 +282,7 @@ func TestAllowComponentEnforcementRule(t *testing.T) {
 			activityResult: ActivityAllow,
 		},
 		{
-			name: "activity is allowed, componentType only",
+			name: "activity_is_allowed_componentType_only",
 			componentRule: ComponentEnforcementRule{
 				allowed:       true,
 				componentType: []string{"bidder"},
@@ -292,7 +291,7 @@ func TestAllowComponentEnforcementRule(t *testing.T) {
 			activityResult: ActivityAllow,
 		},
 		{
-			name: "activity is allowed, no componentType and no componentName",
+			name: "abstain_activity_no_componentType_and_no_componentName",
 			componentRule: ComponentEnforcementRule{
 				allowed: true,
 			},
@@ -304,7 +303,7 @@ func TestAllowComponentEnforcementRule(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			actualResult := test.componentRule.Allow(test.target)
-			assert.Equal(t, test.activityResult, actualResult, "incorrect allow activity result")
+			assert.Equal(t, test.activityResult, actualResult)
 
 		})
 	}
@@ -319,37 +318,49 @@ func TestNewScopedName(t *testing.T) {
 		err               error
 	}{
 		{
-			name:              "condition is empty",
+			name:              "condition_is_empty",
 			condition:         "",
 			expectedScopeName: ScopedName{},
 			err:               errors.New("unable to parse empty condition"),
 		},
 		{
-			name:              "condition is incorrect",
+			name:              "condition_is_incorrect",
 			condition:         "bidder.bidderA.bidderB",
 			expectedScopeName: ScopedName{},
 			err:               errors.New("unable to parse condition: bidder.bidderA.bidderB"),
 		},
 		{
-			name:              "condition is correct with separator",
+			name:              "condition_is_scoped_to_bidder",
 			condition:         "bidder.bidderA",
 			expectedScopeName: ScopedName{Scope: "bidder", Name: "bidderA"},
 			err:               nil,
 		},
 		{
-			name:              "condition is bidder name",
+			name:              "condition_is_scoped_to_analytics",
+			condition:         "analytics.bidderA",
+			expectedScopeName: ScopedName{Scope: "analytics", Name: "bidderA"},
+			err:               nil,
+		},
+		{
+			name:              "condition_is_scoped_to_userid",
+			condition:         "userid.bidderA",
+			expectedScopeName: ScopedName{Scope: "userid", Name: "bidderA"},
+			err:               nil,
+		},
+		{
+			name:              "condition_is_bidder_name",
 			condition:         "bidderA",
 			expectedScopeName: ScopedName{Scope: "bidder", Name: "bidderA"},
 			err:               nil,
 		},
 		{
-			name:              "condition is bidder name",
+			name:              "condition_is_module_tag_rtd",
 			condition:         "rtd.test",
 			expectedScopeName: ScopedName{Scope: "rtd", Name: "test"},
 			err:               nil,
 		},
 		{
-			name:              "condition is bidder name",
+			name:              "condition_scope_defaults_to_genera",
 			condition:         "test.test",
 			expectedScopeName: ScopedName{Scope: "general", Name: "test"},
 			err:               nil,
@@ -360,10 +371,10 @@ func TestNewScopedName(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			actualSN, actualErr := NewScopedName(test.condition)
 			if test.err == nil {
-				assert.Equal(t, test.expectedScopeName, actualSN, "incorrect activity control")
-				assert.NoError(t, actualErr, "error should be nil")
+				assert.Equal(t, test.expectedScopeName, actualSN)
+				assert.NoError(t, actualErr)
 			} else {
-				assert.EqualError(t, actualErr, test.err.Error(), "error is incorrect")
+				assert.EqualError(t, actualErr, test.err.Error())
 			}
 		})
 	}

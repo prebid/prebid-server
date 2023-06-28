@@ -151,7 +151,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		bidRequestAllowed := true
 
 		// fetchBids activity
-		fetchBidsActivityAllowed := auctionReq.Activitities.Allow(privacy.ActivityFetchBids,
+		fetchBidsActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityFetchBids,
 			privacy.ScopedName{Scope: privacy.ScopeTypeBidder, Name: bidderRequest.BidderName.String()})
 		if fetchBidsActivityAllowed == privacy.ActivityDeny {
 			// skip the call to a bidder if fetchBids activity is not allowed

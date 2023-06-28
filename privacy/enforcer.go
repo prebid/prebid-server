@@ -14,6 +14,14 @@ const (
 	ActivityDeny
 )
 
+const (
+	ScopeTypeBidder    = "bidder"
+	ScopeTypeAnalytics = "analytics"
+	ScopeTypeRTD       = "rtd" // real time data
+	ScopeTypeUserID    = "userid"
+	ScopeTypeGeneral   = "general"
+)
+
 type ActivityControl struct {
 	plans map[Activity]ActivityPlan
 }
@@ -56,7 +64,7 @@ func NewActivityControl(privacyConf *config.AccountPrivacy) (ActivityControl, er
 	if err != nil {
 		return ac, err
 	}
-	plans[ActivityTransmitTIds], err = buildEnforcementPlan(privacyConf.AllowActivities.TransmitTIds)
+	plans[ActivityTransmitTids], err = buildEnforcementPlan(privacyConf.AllowActivities.TransmitTids)
 	if err != nil {
 		return ac, err
 	}
@@ -158,26 +166,24 @@ func (r ComponentEnforcementRule) Allow(target ScopedName) ActivityResult {
 		return ActivityAbstain
 	}
 
-	componentNameFound := false
-	if len(r.componentName) == 0 {
-		componentNameFound = true
-	}
+	componentNameFound := true
 	for _, scope := range r.componentName {
 		if strings.EqualFold(scope.Scope, target.Scope) &&
 			(scope.Name == "*" || strings.EqualFold(scope.Name, target.Name)) {
 			componentNameFound = true
 			break
+		} else {
+			componentNameFound = false
 		}
 	}
 
-	typeFound := false
-	if len(r.componentType) == 0 {
-		typeFound = true
-	}
+	typeFound := true
 	for _, componentType := range r.componentType {
 		if strings.EqualFold(componentType, target.Scope) {
 			typeFound = true
 			break
+		} else {
+			typeFound = false
 		}
 	}
 	// behavior if rule matches: can be either true=allow or false=deny. result is abstain if the rule doesn't match
@@ -197,14 +203,6 @@ type ScopedName struct {
 	Name  string
 }
 
-const (
-	ScopeTypeBidder    = "bidder"
-	ScopeTypeAnalytics = "analytics"
-	ScopeTypeRTD       = "rtd" // real time data
-	ScopeTypeUserId    = "userid"
-	ScopeTypeGeneral   = "general"
-)
-
 func NewScopedName(condition string) (ScopedName, error) {
 	if condition == "" {
 		return ScopedName{}, fmt.Errorf("unable to parse empty condition")
@@ -213,7 +211,7 @@ func NewScopedName(condition string) (ScopedName, error) {
 	split := strings.Split(condition, ".")
 	if len(split) == 2 {
 		s := strings.ToLower(split[0])
-		if s == ScopeTypeBidder || s == ScopeTypeAnalytics || s == ScopeTypeUserId {
+		if s == ScopeTypeBidder || s == ScopeTypeAnalytics || s == ScopeTypeUserID {
 			scope = s
 		} else if strings.Contains(s, ScopeTypeRTD) {
 			scope = ScopeTypeRTD
@@ -232,10 +230,4 @@ func NewScopedName(condition string) (ScopedName, error) {
 		Scope: scope,
 		Name:  name,
 	}, nil
-}
-
-// ex: "USA.VA", "USA". see all comments in https://github.com/prebid/prebid-server/issues/2622
-type Geo struct {
-	Country string
-	Region  string
 }
