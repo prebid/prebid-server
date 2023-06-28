@@ -3,9 +3,22 @@ rules:
     languages:
       - go
     message: >
-      Scope of `$BUILDER` is limited to this adapter package. Therefore `$BUILDER` can be renamed to `adapter`. Refer to the following example.
+      Using the adapter name for the struct makes it redundant with the package name. 
+      In following example, since the struct name is the same as the package name (`Foo` and `foo` respectively). Importing it results in a redundant package reference: `foo.Foo`. 
+      
+      ```
+        package foo
+
+        type Foo struct{
+         endpoint string
+        }
+      ```
+
+      To avoid this redundancy and for better clarity, it is recommended to rename `$BUILDER` to `adapter`.
 
       ```
+        package foo
+
         type adapter struct {
           endpoint string
         }
