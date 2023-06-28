@@ -52,7 +52,7 @@ rules:
               for _, $BID := range ... {
                 var $TYPEBID_OBJ adapters.TypedBid
                 ...
-                $TYPEBID_OBJ. $KEY = &$BID
+                $TYPEBID_OBJ.$KEY = &$BID
                 ...
               }                              
       - focus-metavariable: $KEY
