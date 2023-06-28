@@ -90,5 +90,6 @@
 		  "body": {}
 		}
 	  }
-	]
+	],
+    "expectedBidResponses": [{"currency":"USD","bids":[]}]
   }

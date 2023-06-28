@@ -431,7 +431,6 @@ func TestEnforce(t *testing.T) {
 					Currency: "USD",
 				},
 			},
-			expErrs:         []error{errors.New("Floors feature is disabled at account or in the request")},
 			expRejectedBids: []*entities.PbsOrtbSeatBid{},
 		},
 		{
@@ -470,7 +469,6 @@ func TestEnforce(t *testing.T) {
 					Currency: "USD",
 				},
 			},
-			expErrs:         []error{errors.New("Floors feature is disabled at account or in the request")},
 			expRejectedBids: []*entities.PbsOrtbSeatBid{},
 		},
 		{

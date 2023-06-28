@@ -22,15 +22,16 @@ import (
 
 // Configuration specifies the static application config.
 type Configuration struct {
-	ExternalURL      string     `mapstructure:"external_url"`
-	Host             string     `mapstructure:"host"`
-	Port             int        `mapstructure:"port"`
-	UnixSocketEnable bool       `mapstructure:"unix_socket_enable"`
-	UnixSocketName   string     `mapstructure:"unix_socket_name"`
-	Client           HTTPClient `mapstructure:"http_client"`
-	CacheClient      HTTPClient `mapstructure:"http_client_cache"`
-	AdminPort        int        `mapstructure:"admin_port"`
-	EnableGzip       bool       `mapstructure:"enable_gzip"`
+	ExternalURL      string      `mapstructure:"external_url"`
+	Host             string      `mapstructure:"host"`
+	Port             int         `mapstructure:"port"`
+	UnixSocketEnable bool        `mapstructure:"unix_socket_enable"`
+	UnixSocketName   string      `mapstructure:"unix_socket_name"`
+	Client           HTTPClient  `mapstructure:"http_client"`
+	CacheClient      HTTPClient  `mapstructure:"http_client_cache"`
+	AdminPort        int         `mapstructure:"admin_port"`
+	EnableGzip       bool        `mapstructure:"enable_gzip"`
+	Compression      Compression `mapstructure:"compression"`
 	// GarbageCollectorThreshold allocates virtual memory (in bytes) which is not used by PBS but
 	// serves as a hack to trigger the garbage collector only when the heap reaches at least this size.
 	// More info: https://github.com/golang/go/issues/48409
@@ -351,7 +352,7 @@ func (t *TCF2) IsEnabled() bool {
 
 // PurposeEnforced checks if full enforcement is turned on for a given purpose. With full enforcement enabled, the
 // GDPR full enforcement algorithm will execute for that purpose determining legal basis; otherwise it's skipped.
-func (t *TCF2) PurposeEnforced(purpose consentconstants.Purpose) (value bool) {
+func (t *TCF2) PurposeEnforced(purpose consentconstants.Purpose) (enforce bool) {
 	if t.PurposeConfigs[purpose] == nil {
 		return false
 	}
@@ -359,7 +360,7 @@ func (t *TCF2) PurposeEnforced(purpose consentconstants.Purpose) (value bool) {
 }
 
 // PurposeEnforcementAlgo returns the default enforcement algorithm for a given purpose
-func (t *TCF2) PurposeEnforcementAlgo(purpose consentconstants.Purpose) (value TCF2EnforcementAlgo) {
+func (t *TCF2) PurposeEnforcementAlgo(purpose consentconstants.Purpose) (enforcement TCF2EnforcementAlgo) {
 	if c, exists := t.PurposeConfigs[purpose]; exists {
 		return c.EnforceAlgoID
 	}
@@ -368,7 +369,7 @@ func (t *TCF2) PurposeEnforcementAlgo(purpose consentconstants.Purpose) (value T
 
 // PurposeEnforcingVendors checks if enforcing vendors is turned on for a given purpose. With enforcing vendors
 // enabled, the GDPR full enforcement algorithm considers the GVL when determining legal basis; otherwise it's skipped.
-func (t *TCF2) PurposeEnforcingVendors(purpose consentconstants.Purpose) (value bool) {
+func (t *TCF2) PurposeEnforcingVendors(purpose consentconstants.Purpose) (enforce bool) {
 	if t.PurposeConfigs[purpose] == nil {
 		return false
 	}
@@ -377,7 +378,7 @@ func (t *TCF2) PurposeEnforcingVendors(purpose consentconstants.Purpose) (value 
 
 // PurposeVendorExceptions returns the vendor exception map for a given purpose if it exists, otherwise it returns
 // an empty map of vendor exceptions
-func (t *TCF2) PurposeVendorExceptions(purpose consentconstants.Purpose) (value map[openrtb_ext.BidderName]struct{}) {
+func (t *TCF2) PurposeVendorExceptions(purpose consentconstants.Purpose) (vendorExceptions map[openrtb_ext.BidderName]struct{}) {
 	c, exists := t.PurposeConfigs[purpose]
 
 	if exists && c.VendorExceptionMap != nil {
@@ -388,13 +389,13 @@ func (t *TCF2) PurposeVendorExceptions(purpose consentconstants.Purpose) (value 
 
 // FeatureOneEnforced checks if special feature one is enforced. If it is enforced, PBS will determine whether geo
 // information may be passed through in the bid request.
-func (t *TCF2) FeatureOneEnforced() (value bool) {
+func (t *TCF2) FeatureOneEnforced() bool {
 	return t.SpecialFeature1.Enforce
 }
 
 // FeatureOneVendorException checks if the specified bidder is considered a vendor exception for special feature one.
 // If a bidder is a vendor exception, PBS will bypass the pass geo calculation passing the geo information in the bid request.
-func (t *TCF2) FeatureOneVendorException(bidder openrtb_ext.BidderName) (value bool) {
+func (t *TCF2) FeatureOneVendorException(bidder openrtb_ext.BidderName) bool {
 	if _, ok := t.SpecialFeature1.VendorExceptionMap[bidder]; ok {
 		return true
 	}
@@ -402,12 +403,12 @@ func (t *TCF2) FeatureOneVendorException(bidder openrtb_ext.BidderName) (value b
 }
 
 // PurposeOneTreatmentEnabled checks if purpose one treatment is enabled.
-func (t *TCF2) PurposeOneTreatmentEnabled() (value bool) {
+func (t *TCF2) PurposeOneTreatmentEnabled() bool {
 	return t.PurposeOneTreatment.Enabled
 }
 
 // PurposeOneTreatmentAccessAllowed checks if purpose one treatment access is allowed.
-func (t *TCF2) PurposeOneTreatmentAccessAllowed() (value bool) {
+func (t *TCF2) PurposeOneTreatmentAccessAllowed() bool {
 	return t.PurposeOneTreatment.AccessAllowed
 }
 
@@ -837,7 +838,6 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("unix_socket_enable", false)              // boolean which decide if the socket-server will be started.
 	v.SetDefault("unix_socket_name", "prebid-server.sock") // path of the socket's file which must be listened.
 	v.SetDefault("admin_port", 6060)
-	v.SetDefault("enable_gzip", false)
 	v.SetDefault("garbage_collector_threshold", 0)
 	v.SetDefault("status_response", "")
 	v.SetDefault("datacenter", "")
@@ -1022,6 +1022,9 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("account_defaults.price_floors.max_schema_dims", 3)
 	v.SetDefault("account_defaults.events_enabled", false)
 
+	v.SetDefault("compression.response.enable_gzip", false)
+	v.SetDefault("compression.request.enable_gzip", false)
+
 	v.SetDefault("certificates_file", "")
 	v.SetDefault("auto_gen_source_tid", true)
 	v.SetDefault("generate_bid_id", false)
@@ -1070,6 +1073,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	migrateConfigSpecialFeature1(v)
 	migrateConfigTCF2PurposeFlags(v)
 	migrateConfigDatabaseConnection(v)
+	migrateConfigCompression(v)
 
 	// These defaults must be set after the migrate functions because those functions look for the presence of these
 	// config fields and there isn't a way to detect presence of a config field using the viper package if a default
@@ -1110,6 +1114,8 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("gdpr.tcf2.special_feature1.vendor_exceptions", []openrtb_ext.BidderName{})
 	v.SetDefault("price_floors.enabled", false)
 
+	v.SetDefault("enable_gzip", false)
+
 	// Defaults for account_defaults.events.default_url
 	v.SetDefault("account_defaults.events.default_url", "https://PBS_HOST/event?t=##PBS-EVENTTYPE##&vtype=##PBS-VASTEVENT##&b=##PBS-BIDID##&f=i&a=##PBS-ACCOUNTID##&ts=##PBS-TIMESTAMP##&bidder=##PBS-BIDDER##&int=##PBS-INTEGRATION##&mt=##PBS-MEDIATYPE##&ch=##PBS-CHANNEL##&aid=##PBS-AUCTIONID##&l=##PBS-LINEID##")
 
@@ -1138,6 +1144,20 @@ func migrateConfig(v *viper.Viper) {
 		m["enabled"] = v.GetBool("stored_requests.filesystem")
 		m["directorypath"] = v.GetString("stored_requests.directorypath")
 		v.Set("stored_requests.filesystem", m)
+	}
+}
+
+func migrateConfigCompression(v *viper.Viper) {
+	oldField := "enable_gzip"
+	newField := "compression.response.enable_gzip"
+	if v.IsSet(oldField) {
+		oldConfig := v.GetBool(oldField)
+		if v.IsSet(newField) {
+			glog.Warningf("using %s and ignoring deprecated %s", newField, oldField)
+		} else {
+			glog.Warningf("%s is deprecated and should be changed to %s", oldField, newField)
+			v.Set(newField, oldConfig)
+		}
 	}
 }
 

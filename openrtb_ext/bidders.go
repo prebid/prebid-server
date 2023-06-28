@@ -138,6 +138,7 @@ const (
 	BidderBizzclick         BidderName = "bizzclick"
 	BidderBliink            BidderName = "bliink"
 	BidderBlue              BidderName = "blue"
+	BidderBluesea           BidderName = "bluesea"
 	BidderBmtm              BidderName = "bmtm"
 	BidderBoldwin           BidderName = "boldwin"
 	BidderBrave             BidderName = "brave"
@@ -163,6 +164,7 @@ const (
 	BidderEmxDigital        BidderName = "emx_digital"
 	BidderEngageBDR         BidderName = "engagebdr"
 	BidderEPlanning         BidderName = "eplanning"
+	BidderEpsilon           BidderName = "epsilon"
 	BidderEpom              BidderName = "epom"
 	BidderEVolution         BidderName = "e_volution"
 	BidderEvtech            BidderName = "evtech"
@@ -204,6 +206,7 @@ const (
 	BidderMediafuse         BidderName = "mediafuse"
 	BidderMedianet          BidderName = "medianet"
 	BidderMgid              BidderName = "mgid"
+	BidderMgidX             BidderName = "mgidX"
 	BidderMobfoxpb          BidderName = "mobfoxpb"
 	BidderMobileFuse        BidderName = "mobilefuse"
 	BidderMotorik           BidderName = "motorik"
@@ -227,6 +230,7 @@ const (
 	BidderRevcontent        BidderName = "revcontent"
 	BidderRhythmone         BidderName = "rhythmone"
 	BidderRichaudience      BidderName = "richaudience"
+	BidderRise              BidderName = "rise"
 	BidderRTBHouse          BidderName = "rtbhouse"
 	BidderRubicon           BidderName = "rubicon"
 	BidderSeedingAlliance   BidderName = "seedingAlliance"
@@ -258,7 +262,6 @@ const (
 	BidderUnicorn           BidderName = "unicorn"
 	BidderUnruly            BidderName = "unruly"
 	BidderValueImpression   BidderName = "valueimpression"
-	BidderVerizonMedia      BidderName = "verizonmedia"
 	BidderVideoByte         BidderName = "videobyte"
 	BidderVideoHeroes       BidderName = "videoheroes"
 	BidderVidoomy           BidderName = "vidoomy"
@@ -267,6 +270,7 @@ const (
 	BidderVisx              BidderName = "visx"
 	BidderVrtcal            BidderName = "vrtcal"
 	BidderXeworks           BidderName = "xeworks"
+	BidderYahooAdvertising  BidderName = "yahooAdvertising"
 	BidderYahooSSP          BidderName = "yahoossp"
 	BidderYeahmobi          BidderName = "yeahmobi"
 	BidderYieldlab          BidderName = "yieldlab"
@@ -331,6 +335,7 @@ func CoreBidderNames() []BidderName {
 		BidderBizzclick,
 		BidderBliink,
 		BidderBlue,
+		BidderBluesea,
 		BidderBmtm,
 		BidderBoldwin,
 		BidderBrave,
@@ -357,6 +362,7 @@ func CoreBidderNames() []BidderName {
 		BidderEngageBDR,
 		BidderEPlanning,
 		BidderEpom,
+		BidderEpsilon,
 		BidderEVolution,
 		BidderEvtech,
 		BidderFlipp,
@@ -397,6 +403,7 @@ func CoreBidderNames() []BidderName {
 		BidderMediafuse,
 		BidderMedianet,
 		BidderMgid,
+		BidderMgidX,
 		BidderMobfoxpb,
 		BidderMobileFuse,
 		BidderMotorik,
@@ -420,6 +427,7 @@ func CoreBidderNames() []BidderName {
 		BidderRevcontent,
 		BidderRhythmone,
 		BidderRichaudience,
+		BidderRise,
 		BidderRTBHouse,
 		BidderRubicon,
 		BidderSeedingAlliance,
@@ -451,7 +459,6 @@ func CoreBidderNames() []BidderName {
 		BidderUnicorn,
 		BidderUnruly,
 		BidderValueImpression,
-		BidderVerizonMedia,
 		BidderVideoByte,
 		BidderVideoHeroes,
 		BidderVidoomy,
@@ -460,6 +467,7 @@ func CoreBidderNames() []BidderName {
 		BidderVisx,
 		BidderVrtcal,
 		BidderXeworks,
+		BidderYahooAdvertising,
 		BidderYahooSSP,
 		BidderYeahmobi,
 		BidderYieldlab,

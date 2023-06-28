@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Bluesea Adapter Params",
+  "description": "A schema which validates params accepted by the Bluesea adapter",
+
+  "type": "object",
+  "properties": {
+    "pubid": {
+      "type": "string",
+      "description": "the unique partner account id",
+      "pattern": "^[0-9]+$"
+    },
+    "token": {
+      "type": "string",
+      "description": "token",
+      "pattern": "[0-9|a-z|A-Z]{16}"
+    }
+  },
+  "required": [
+    "pubid",
+    "token"
+  ]
+}

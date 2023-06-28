@@ -122,7 +122,7 @@
   "biddersFPDResolved": {
     "appnexus": {
       "site": {
-        "id": "reqSiteId",
+        "id": "apnFpdSiteId",
         "page": "http://www.foobar.com/4321.html",
         "name": "apnFpdSiteIdSiteName",
         "cat": [
@@ -146,24 +146,11 @@
               "name": "apnFpdSiteIdContentDataName2"
             }
           ]
-        },
-        "ext": {
-          "data": {
-            "id": "apnFpdSiteId",
-            "publisher": {
-              "id": "1"
-            }
-          }
         }
       },
       "user": {
-        "id": "reqUserId",
-        "keywords": "apnFpdUserKeyword",
-        "ext": {
-          "data": {
-            "id":"apnUserId"
-          }
-        }
+        "id": "apnUserId",
+        "keywords": "apnFpdUserKeyword"
       }
     }
   },

@@ -39,8 +39,8 @@ func (p *permissionsMock) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 	return true, nil
 }
 
-func (p *permissionsMock) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (permissions gdpr.AuctionPermissions, err error) {
-	permissions = gdpr.AuctionPermissions{
+func (p *permissionsMock) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (gdpr.AuctionPermissions, error) {
+	permissions := gdpr.AuctionPermissions{
 		PassGeo: p.passGeo,
 		PassID:  p.passID,
 	}
@@ -2294,6 +2294,7 @@ func TestCleanOpenRTBRequestsWithOpenRTBDowngrade(t *testing.T) {
 	bidReq.Regs.GPPSID = []int8{6}
 	bidReq.User.ID = ""
 	bidReq.User.BuyerUID = ""
+	bidReq.User.Yob = 0
 
 	downgradedRegs := *bidReq.Regs
 	downgradedUser := *bidReq.User

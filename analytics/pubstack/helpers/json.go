@@ -4,16 +4,21 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/analytics"
 )
 
 func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]byte, error) {
 	var logEntry *logAuction
 	if ao != nil {
+		var request *openrtb2.BidRequest
+		if ao.RequestWrapper != nil {
+			request = ao.RequestWrapper.BidRequest
+		}
 		logEntry = &logAuction{
 			Status:               ao.Status,
 			Errors:               ao.Errors,
-			Request:              ao.Request,
+			Request:              request,
 			Response:             ao.Response,
 			Account:              ao.Account,
 			StartTime:            ao.StartTime,
@@ -39,10 +44,14 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]byte, er
 func JsonifyVideoObject(vo *analytics.VideoObject, scope string) ([]byte, error) {
 	var logEntry *logVideo
 	if vo != nil {
+		var request *openrtb2.BidRequest
+		if vo.RequestWrapper != nil {
+			request = vo.RequestWrapper.BidRequest
+		}
 		logEntry = &logVideo{
 			Status:        vo.Status,
 			Errors:        vo.Errors,
-			Request:       vo.Request,
+			Request:       request,
 			Response:      vo.Response,
 			VideoRequest:  vo.VideoRequest,
 			VideoResponse: vo.VideoResponse,
@@ -120,10 +129,14 @@ func JsonifySetUIDObject(so *analytics.SetUIDObject, scope string) ([]byte, erro
 func JsonifyAmpObject(ao *analytics.AmpObject, scope string) ([]byte, error) {
 	var logEntry *logAMP
 	if ao != nil {
+		var request *openrtb2.BidRequest
+		if ao.RequestWrapper != nil {
+			request = ao.RequestWrapper.BidRequest
+		}
 		logEntry = &logAMP{
 			Status:               ao.Status,
 			Errors:               ao.Errors,
-			Request:              ao.Request,
+			Request:              request,
 			AuctionResponse:      ao.AuctionResponse,
 			AmpTargetingValues:   ao.AmpTargetingValues,
 			Origin:               ao.Origin,
