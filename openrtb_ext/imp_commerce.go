@@ -34,7 +34,8 @@ type ExtCustomConfig struct {
 
 // ImpExtensionCommerce - Impression Commerce Extension
 type CommerceParams struct {
-	SlotsRequested int               `json:"slots_requested,omitempty"`
+	SlotsRequested int                `json:"slots_requested,omitempty"`
+	TestRequest    bool               `json:"test_request,omitempty"`
 	SearchTerm     string             `json:"search_term,omitempty"`
 	SearchType     string             `json:"search_type,omitempty"`
 	Preferred      []*ExtImpPreferred `json:"preferred,omitempty"`
@@ -76,3 +77,4 @@ type ExtBidCommerce struct {
 	ClickPrice       float64              `json:"clickprice,omitempty"`
 	Rate             float64              `json:"rate,omitempty"`
 }
+
