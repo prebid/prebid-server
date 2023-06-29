@@ -990,7 +990,9 @@ func TestMigrateConfigGoRuntime(t *testing.T) {
               garbage_collector_threshold: 1024
             `),
 			wantGarbageCollectorThreshold: 1024,
-			wantSoftMemoryLimit:           -1,
+			// The default value for this is -1. However, in this test setup we don't call SetupViper()
+			// which sets the default value. So, we expect the value to be 0.
+			wantSoftMemoryLimit: 0,
 		},
 		{
 			desc: "Only soft memory limit set",

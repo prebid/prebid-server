@@ -41,7 +41,22 @@ func main() {
 		glog.Exitf("Configuration could not be loaded or did not pass validation: %v", err)
 	}
 
-	setGarbageCollectionConfig(cfg)
+	// Create a soft memory limit on the total amount of memory that PBS uses to tune the behavior
+	// of the Go garbage collector. In summary, `cfg.GarbageCollectorThreshold` serves as a fixed cost
+	// of memory that is going to be held garbage before a garbage collection cycle is triggered.
+	// This amount of virtual memory won’t translate into physical memory allocation unless we attempt
+	// to read or write to the slice below, which PBS will not do.
+	//
+	// Note that since Go 1.19, the GOMEMLIMIT environment variable can be used to achieve the same, when
+	// used in conjunction with GOGC.
+	// PBS supports that with the `go_runtime.soft_memory_limit` and `go_runtime.gc_percent` configuration
+	// options and this code will be removed once the deprecated `garbage_collector_threshold` field is removed.
+	if cfg.GarbageCollectorThreshold > 0 {
+		garbageCollectionThreshold := make([]byte, cfg.GarbageCollectorThreshold)
+		defer runtime.KeepAlive(garbageCollectionThreshold)
+	}
+
+	setGoRuntimeConfig(&cfg.GoRuntime)
 
 	err = serve(cfg)
 	if err != nil {
@@ -58,28 +73,13 @@ func loadConfig(bidderInfos config.BidderInfos) (*config.Configuration, error) {
 	return config.New(v, bidderInfos, openrtb_ext.NormalizeBidderName)
 }
 
-func setGarbageCollectionConfig(cfg *config.Configuration) {
-	// Create a soft memory limit on the total amount of memory that PBS uses to tune the behavior
-	// of the Go garbage collector. In summary, `cfg.GarbageCollectorThreshold` serves as a fixed cost
-	// of memory that is going to be held garbage before a garbage collection cycle is triggered.
-	// This amount of virtual memory won’t translate into physical memory allocation unless we attempt
-	// to read or write to the slice below, which PBS will not do.
-	//
-	// Note that since Go 1.19, the GOMEMLIMIT environment variable can be used to achieve the same, when
-	// used in conjunction with GOGC.
-	// PBS supports that with the `go_runtime.soft_memory_limit` and `go_runtime.gc_percent` configuration
-	// options and this code will be removed once the deprecated `garbage_collector_threshold` field is removed.
-	if cfg.GarbageCollectorThreshold > 0 {
-		garbageCollectionThreshold := make([]byte, cfg.GarbageCollectorThreshold)
-		defer runtime.KeepAlive(garbageCollectionThreshold)
-	}
-
+func setGoRuntimeConfig(cfg *config.GoRuntime) {
 	// Note that setting the memory limit to a value equal to 0 or less than what's needed by the Go
 	// runtime may cause the garbage collector to run continuously.
-	if cfg.GoRuntime.SoftMemoryLimit >= 0 {
-		debug.SetMemoryLimit(int64(cfg.GoRuntime.SoftMemoryLimit))
+	if cfg.SoftMemoryLimit >= 0 {
+		debug.SetMemoryLimit(int64(cfg.SoftMemoryLimit))
 	}
-	debug.SetGCPercent(cfg.GoRuntime.GarbageCollectorTriggerPercent)
+	debug.SetGCPercent(cfg.GarbageCollectorTriggerPercent)
 }
 
 func serve(cfg *config.Configuration) error {
