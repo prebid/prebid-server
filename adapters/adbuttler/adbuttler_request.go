@@ -26,7 +26,7 @@ type AdButlerRequest struct {
 	UserAgent         string                  `json:"ua,omitempty"`
 	Referrer          string                  `json:"referrer,omitempty"`
 	FloorCPC          float64                 `json:"bid_floor_cpc,omitempty"`
-	IsTestRequest     string                  `json:"test_request,omitempty"`
+	IsTestRequest     bool                    `json:"test_request,omitempty"`
 	
 }
 
@@ -208,8 +208,8 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 	}
 
 	//Test Request
-	if request.Test == 1 {
-		adButlerReq.IsTestRequest = "true"
+	if commerceExt.ComParams.TestRequest {
+		adButlerReq.IsTestRequest = true
 	}
 	adButlerReq.UserID = request.User.ID
 	adButlerReq.UserAgent = request.Device.UA
@@ -235,5 +235,6 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 	}}, nil
 	
 }
+
 
 
