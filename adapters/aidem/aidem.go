@@ -17,12 +17,10 @@ type adapter struct {
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var errs []error
 
 	reqJson, err := json.Marshal(request)
 	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
+		return nil, []error{err}
 	}
 
 	headers := http.Header{}
@@ -33,7 +31,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		Uri:     a.endpoint,
 		Body:    reqJson,
 		Headers: headers,
-	}}, errs
+	}}, nil
 }
 
 func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -56,7 +54,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		}}
 	}
 
-	bidResponse := adapters.NewBidderResponse()
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
 
 	for _, seatBid := range bidResp.SeatBid {
 		for i := range seatBid.Bid {
