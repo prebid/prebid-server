@@ -76,7 +76,7 @@ func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context, bidderCo
 	}
 
 	vendorID, _ := p.resolveVendorID(bidderCoreName, bidder)
-	vendor, err := p.getVendor(ctx, vendorID, pc)
+	vendor, err := p.getVendor(ctx, vendorID, *pc)
 	if err != nil {
 		return p.defaultPermissions(), err
 	}
@@ -128,7 +128,7 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, bidder
 	if err != nil {
 		return false, err
 	}
-	vendor, err := p.getVendor(ctx, vendorID, pc)
+	vendor, err := p.getVendor(ctx, vendorID, *pc)
 	if err != nil {
 		return false, nil
 	}
