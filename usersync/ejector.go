@@ -59,6 +59,14 @@ func isSyncerPriority(syncer string, priorityGroups [][]string) bool {
 
 func getNonPriorityKeys(uids map[string]UIDEntry, priorityGroups [][]string) []string {
 	nonPriorityKeys := []string{}
+
+	if len(priorityGroups) == 0 {
+		for key := range uids {
+			nonPriorityKeys = append(nonPriorityKeys, key)
+		}
+		return nonPriorityKeys
+	}
+
 	for key := range uids {
 		for _, group := range priorityGroups {
 			isPriority := false
