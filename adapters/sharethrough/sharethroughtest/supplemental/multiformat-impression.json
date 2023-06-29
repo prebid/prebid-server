@@ -29,6 +29,15 @@
         "native": {
           "ver": "1.2",
           "request": "placeholder request"
+        },
+        "audio": {
+          "mimes": [
+            "audio/mp4"
+          ],
+          "protocols": [
+            1,
+            2
+          ]
         }
       }
     ],

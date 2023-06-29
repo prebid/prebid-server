@@ -163,6 +163,10 @@ func splitImpressionsByMediaType(impression *openrtb2.Imp) ([]openrtb2.Imp, erro
 		return nil, &errortypes.BadInput{Message: "Invalid MediaType. Sharethrough only supports Banner, Video and Native."}
 	}
 
+	if impression.Audio != nil {
+		impression.Audio = nil
+	}
+
 	impressions := make([]openrtb2.Imp, 0, 3)
 
 	if impression.Banner != nil {
