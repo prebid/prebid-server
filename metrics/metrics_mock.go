@@ -22,6 +22,11 @@ func (me *MetricsEngineMock) RecordConnectionAccept(success bool) {
 	me.Called(success)
 }
 
+// RecordTMaxTimeout mock
+func (me *MetricsEngineMock) RecordTMaxTimeout() {
+	me.Called()
+}
+
 // RecordConnectionClose mock
 func (me *MetricsEngineMock) RecordConnectionClose(success bool) {
 	me.Called(success)
