@@ -6,7 +6,7 @@ rules:
       Found incorrect assignment made to $KEY. $BID variable receives a new value in each iteration of range loop. Assigning the address of $BID `(&$BID)` to $KEY will result in a pointer that always points to the same memory address with the value of the last iteration. 
       This can lead to unexpected behavior or incorrect results. Refer https://go.dev/play/p/9ZS1f-5h4qS
 
-      Consider using `seatBids.Bid` loop index as shown below  
+      Consider using an index variable in the seatBids.Bid loop as shown below
 
       ```
         for _, seatBid := range response.SeatBid {
