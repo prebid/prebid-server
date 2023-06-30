@@ -9,14 +9,14 @@ const (
 	SEARCHTYPE_BROAD              = "broad"
 	SEARCHTYPE                    = "search_type"
 	PAGE_SOURCE                   = "pageSource"
-	USER_AGE                      = "user_age"
+	USER_AGE                      = "Age"
 	GENDER_MALE                   = "Male"
 	GENDER_FEMALE                 = "Female"
 	GENDER_OTHER                  = "Other"
-	USER_GENDER                   = "user_gender"
-	COUNTRY                       = "user_country"
-	REGION                        = "user_region"
-	CITY                          = "user_city"
+	USER_GENDER                   = "Gender"
+	COUNTRY                       = "Country"
+	REGION                        = "Region"
+	CITY                          = "City"
 	CATEGORY                      = "Category"
 	BRAND                         = "Brand Name"
 	RESPONSE_SUCCESS              = "success"
@@ -42,4 +42,5 @@ const (
 	DATATYE_DATETIME              = 6
 
 )
+
 
