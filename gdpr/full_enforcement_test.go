@@ -900,7 +900,7 @@ func TestLegalBasisWithPubRestrictionRequireLI(t *testing.T) {
 
 func TestLegalBasisWithoutVendor(t *testing.T) {
 	P1P2P3PurposeConsent := "CPfCRQAPfCRQAAAAAAENCgCAAOAAAAAAAAAAAAAAAAAA"
-	tests := []struct{
+	tests := []struct {
 		name       string
 		config     purposeConfig
 		wantResult bool
@@ -946,7 +946,7 @@ func TestLegalBasisWithoutVendor(t *testing.T) {
 
 			vendorInfo := VendorInfo{
 				vendorID: 32,
-				vendor: nil,
+				vendor:   nil,
 			}
 
 			enforcer := FullEnforcement{cfg: tt.config}
