@@ -195,8 +195,10 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	activities, activitiesErr := privacy.NewActivityControl(account.Privacy)
 	if activitiesErr != nil {
 		errL = append(errL, activitiesErr)
-		writeError(errL, w, &labels)
-		return
+		if errortypes.ContainsFatalError(errL) {
+			writeError(errL, w, &labels)
+			return
+		}
 	}
 
 	ctx := context.Background()

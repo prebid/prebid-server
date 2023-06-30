@@ -1,9 +1,9 @@
 package privacy
 
 import (
-	"errors"
 	"fmt"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
 	"strings"
 )
 
@@ -28,14 +28,14 @@ type ActivityControl struct {
 }
 
 func NewActivityControl(privacyConf *config.AccountPrivacy) (ActivityControl, error) {
-	ac := ActivityControl{plans: nil}
+	ac := ActivityControl{}
 	var err error
 
 	if privacyConf == nil {
 		return ac, err
 	} else {
 		//temporarily disable Activities if they are specified at the account level
-		return ac, errors.New("account.Privacy has no effect as the feature is under development.")
+		return ac, &errortypes.Warning{Message: "account.Privacy has no effect as the feature is under development."}
 	}
 
 	plans := make(map[Activity]ActivityPlan)
@@ -170,28 +170,27 @@ func (r ComponentEnforcementRule) Allow(target ScopedName) ActivityResult {
 		return ActivityAbstain
 	}
 
-	componentNameFound := true
+	nameClauseExists := len(r.componentName) > 0
+	typeClauseExists := len(r.componentType) > 0
+
+	componentNameFound := false
 	for _, scope := range r.componentName {
 		if strings.EqualFold(scope.Scope, target.Scope) &&
 			(scope.Name == "*" || strings.EqualFold(scope.Name, target.Name)) {
 			componentNameFound = true
 			break
-		} else {
-			componentNameFound = false
 		}
 	}
 
-	typeFound := true
+	componentTypeFound := false
 	for _, componentType := range r.componentType {
 		if strings.EqualFold(componentType, target.Scope) {
-			typeFound = true
+			componentTypeFound = true
 			break
-		} else {
-			typeFound = false
 		}
 	}
 	// behavior if rule matches: can be either true=allow or false=deny. result is abstain if the rule doesn't match
-	matchFound := componentNameFound && typeFound
+	matchFound := (componentNameFound || !nameClauseExists) && (componentTypeFound || !typeClauseExists)
 	if matchFound {
 		if r.allowed {
 			return ActivityAllow

@@ -156,7 +156,7 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 	}
 
 	if cfg.AccountDefaults.Privacy != nil {
-		errs = append(errs, errors.New("account_defaults.Privacy has no effect as the feature is under development."))
+		glog.Warning("account_defaults.Privacy has no effect as the feature is under development.")
 	}
 
 	errs = cfg.Experiment.validate(errs)
