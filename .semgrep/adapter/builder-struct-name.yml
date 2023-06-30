@@ -11,6 +11,7 @@ rules:
         type adapter struct {
           endpoint string
         }
+        
         func  Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
           return &adapter{endpoint: "https://www.foo.com"}, nil
         }
