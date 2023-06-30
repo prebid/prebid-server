@@ -163,7 +163,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		privacyEnforcement.CCPA = ccpaEnforcer.ShouldEnforce(bidderRequest.BidderName.String())
 
 		// GDPR
-		if (fetchBidsActivityAllowed == privacy.ActivityAbstain) && gdprEnforced {
+		if gdprEnforced {
 			auctionPermissions, err := gdprPerms.AuctionActivitiesAllowed(ctx, bidderRequest.BidderCoreName, bidderRequest.BidderName)
 			bidRequestAllowed = auctionPermissions.AllowBidRequest
 
