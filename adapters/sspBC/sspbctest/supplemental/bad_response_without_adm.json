@@ -120,6 +120,7 @@
             }
         }
     ],
+    "expectedBidResponses": [{"currency":"USD","bids":[]}],
     "expectedMakeBidsErrors": [
         {
             "value": "bid format is not supported",

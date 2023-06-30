@@ -90,9 +90,6 @@
       }
     }
   ],
-  "expectedBidResponses": [
-    null
-  ],
   "expectedMakeBidsErrors": [
     {
       "value": "unexpected status code: 500.",
