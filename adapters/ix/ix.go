@@ -51,12 +51,19 @@ func (a *IxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters
 
 	for _, imp := range requestCopy.Imp {
 		var err error
-		if err = parseSiteId(&imp, uniqueSiteIDs); err != nil {
+		ixExt, err := unmarshalToIxExt(&imp)
+
+		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		if err := moveSid(&imp); err != nil {
+		if err = parseSiteId(ixExt, uniqueSiteIDs); err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		if err := moveSid(&imp, ixExt); err != nil {
 			errs = append(errs, err)
 		}
 
@@ -123,17 +130,24 @@ func setSitePublisherId(requestCopy *openrtb2.BidRequest, uniqueSiteIDs map[stri
 	}
 }
 
-func parseSiteId(imp *openrtb2.Imp, uniqueSiteIDs map[string]struct{}) error {
+func unmarshalToIxExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpIx, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return err
+		return nil, err
 	}
 
 	var ixExt openrtb_ext.ExtImpIx
 	if err := json.Unmarshal(bidderExt.Bidder, &ixExt); err != nil {
-		return err
+		return nil, err
 	}
 
+	return &ixExt, nil
+}
+
+func parseSiteId(ixExt *openrtb_ext.ExtImpIx, uniqueSiteIDs map[string]struct{}) error {
+	if ixExt == nil {
+		return fmt.Errorf("Nil Ix Ext")
+	}
 	if ixExt.SiteId != "" {
 		uniqueSiteIDs[ixExt.SiteId] = struct{}{}
 	}
@@ -371,19 +385,9 @@ func setIxDiagIntoExtRequest(request *openrtb2.BidRequest, ixDiag *IxDiag) error
 }
 
 // moves sid from imp[].ext.bidder.sid to imp[].ext.sid
-func moveSid(imp *openrtb2.Imp) error {
-	if len(imp.Ext) == 0 {
-		return nil
-	}
-
-	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return err
-	}
-
-	var ixExt openrtb_ext.ExtImpIx
-	if err := json.Unmarshal(bidderExt.Bidder, &ixExt); err != nil {
-		return err
+func moveSid(imp *openrtb2.Imp, ixExt *openrtb_ext.ExtImpIx) error {
+	if ixExt == nil {
+		return fmt.Errorf("Nil Ix Ext")
 	}
 
 	if ixExt.Sid != "" {
