@@ -1,4 +1,4 @@
-endpoint: "https://zero.aidemsrv.com/ortb/v2.6/bid/request?billing_id=cljh1hbmc039h08mm7y63h0q6"
+endpoint: "https://zero.aidemsrv.com/ortb/v2.6/bid/request"
 maintainer:
   email: prebid@aidem.com
 modifyingVastXmlAllowed: true
