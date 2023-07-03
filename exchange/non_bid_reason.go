@@ -9,7 +9,7 @@ type NonBidReason int
 
 const (
 	NoBidUnknownError                      NonBidReason = 0   // No Bid - General
-	ErrorBidderUnreachable                 NonBidReason = 103 // Error - Bidder Unreachable
+	ErrorTimeout                           NonBidReason = 101 // Error - Timeout
 	ResponseRejectedCategoryMappingInvalid NonBidReason = 303 // Response Rejected - Category Mapping Invalid
 )
 
@@ -29,7 +29,7 @@ func (n *NonBidReason) Val() NonBidReason {
 func ErrorToNonBidReason(errorCode int) NonBidReason {
 	switch errorCode {
 	case errortypes.TimeoutErrorCode:
-		return ErrorBidderUnreachable
+		return ErrorTimeout
 	}
 	return 0
 }
