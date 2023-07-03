@@ -58,7 +58,7 @@ type AdaptedBidder interface {
 	//
 	// Any errors will be user-facing in the API.
 	// Error messages should help publishers understand what might account for "bad" bids.
-	requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, hookExecutor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) ([]*entities.PbsOrtbSeatBid, []error)
+	requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, hookExecutor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) ([]*entities.PbsOrtbSeatBid, []error, *openrtb_ext.SeatNonBid)
 }
 
 // bidRequestOptions holds additional options for bid request execution to maintain clean code and reasonable number of parameters
@@ -117,10 +117,11 @@ type bidderAdapterConfig struct {
 	EndpointCompression string
 }
 
-func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, hookExecutor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) ([]*entities.PbsOrtbSeatBid, []error) {
+func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, hookExecutor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) ([]*entities.PbsOrtbSeatBid, []error, *openrtb_ext.SeatNonBid) {
 	reject := hookExecutor.ExecuteBidderRequestStage(bidderRequest.BidRequest, string(bidderRequest.BidderName))
+	var seatNonBids *openrtb_ext.SeatNonBid
 	if reject != nil {
-		return nil, []error{reject}
+		return nil, []error{reject}, seatNonBids
 	}
 
 	var (
@@ -139,7 +140,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 			if len(errs) == 0 {
 				errs = append(errs, &errortypes.FailedToRequestBids{Message: "The adapter failed to generate any bid requests, but also failed to generate an error explaining why"})
 			}
-			return nil, errs
+			return nil, errs, seatNonBids
 		}
 		xPrebidHeader := version.BuildXPrebidHeaderForRequest(bidderRequest.BidRequest, version.Ver)
 
@@ -376,6 +377,18 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 			reqInfo.MakeBidsTimeInfo.Durations = append(reqInfo.MakeBidsTimeInfo.Durations, time.Since(startTime))
 		} else {
 			errs = append(errs, httpInfo.err)
+			errorCode := errortypes.ReadCode(httpInfo.err)
+			nonBidReason := ErrorToNonBidReason(errorCode)
+			seatNonBids = &openrtb_ext.SeatNonBid{
+				Seat:   string(bidderRequest.BidderName),
+				NonBid: make([]openrtb_ext.NonBid, len(bidderRequest.BidRequest.Imp)),
+			}
+			for i, imp := range bidderRequest.BidRequest.Imp {
+				// assuming same non bid reason across multiple impressions
+				nonBid := newProxyNonBid(imp.ID, int(nonBidReason))
+				nonBid.Error = httpInfo.err.Error()
+				seatNonBids.NonBid[i] = nonBid
+			}
 		}
 	}
 	reqInfo.MakeBidsTimeInfo.AfterMakeBidsStartTime = time.Now()
@@ -383,8 +396,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 	for _, seatBid := range seatBidMap {
 		seatBids = append(seatBids, seatBid)
 	}
-
-	return seatBids, errs
+	return seatBids, errs, seatNonBids
 }
 
 func addNativeTypes(bid *openrtb2.Bid, request *openrtb2.BidRequest) (*nativeResponse.Response, []error) {
