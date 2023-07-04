@@ -200,7 +200,7 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 
 	metrics.tmaxTimeout = newCounterWithoutLabels(cfg, reg,
 		"tmax_timeout",
-		"Count of requests rejected due to timeout exceed.")
+		"Count of requests rejected due to Tmax timeout exceed.")
 
 	metrics.cookieSync = newCounter(cfg, reg,
 		"cookie_sync_requests",
