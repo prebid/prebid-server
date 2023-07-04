@@ -1,5 +1,9 @@
 package usersync
 
+import (
+	privacyActivity "github.com/prebid/prebid-server/privacy"
+)
+
 // Chooser determines which syncers are eligible for a given request.
 type Chooser interface {
 	// Choose considers bidders to sync, filters the bidders, and returns the result of the
@@ -23,11 +27,12 @@ func NewChooser(bidderSyncerLookup map[string]Syncer) Chooser {
 
 // Request specifies a user sync request.
 type Request struct {
-	Bidders        []string
-	Cooperative    Cooperative
-	Limit          int
-	Privacy        Privacy
-	SyncTypeFilter SyncTypeFilter
+	Bidders         []string
+	Cooperative     Cooperative
+	Limit           int
+	Privacy         Privacy
+	SyncTypeFilter  SyncTypeFilter
+	ActivityControl privacyActivity.ActivityControl
 }
 
 // Cooperative specifies the settings for cooperative syncing for a given request, where bidders
@@ -85,6 +90,9 @@ const (
 
 	// StatusDuplicate specifies the bidder is a duplicate or shared a syncer key with another bidder choice.
 	StatusDuplicate
+
+	// StatusBlockedByPrivacy specifies a bidder sync url is not allowed by privacy activities
+	StatusBlockedByPrivacy
 )
 
 // Privacy determines which privacy policies will be enforced for a user sync request.
@@ -120,7 +128,7 @@ func (c standardChooser) Choose(request Request, cookie *Cookie) Result {
 
 	bidders := c.bidderChooser.choose(request.Bidders, c.biddersAvailable, request.Cooperative)
 	for i := 0; i < len(bidders) && (limitDisabled || len(syncersChosen) < request.Limit); i++ {
-		syncer, evaluation := c.evaluate(bidders[i], syncersSeen, request.SyncTypeFilter, request.Privacy, cookie)
+		syncer, evaluation := c.evaluate(bidders[i], syncersSeen, request.SyncTypeFilter, request.Privacy, cookie, request.ActivityControl)
 
 		biddersEvaluated = append(biddersEvaluated, evaluation)
 		if evaluation.Status == StatusOK {
@@ -131,7 +139,7 @@ func (c standardChooser) Choose(request Request, cookie *Cookie) Result {
 	return Result{Status: StatusOK, BiddersEvaluated: biddersEvaluated, SyncersChosen: syncersChosen}
 }
 
-func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}, syncTypeFilter SyncTypeFilter, privacy Privacy, cookie *Cookie) (Syncer, BidderEvaluation) {
+func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}, syncTypeFilter SyncTypeFilter, privacy Privacy, cookie *Cookie, activityControl privacyActivity.ActivityControl) (Syncer, BidderEvaluation) {
 	syncer, exists := c.bidderSyncerLookup[bidder]
 	if !exists {
 		return nil, BidderEvaluation{Status: StatusUnknownBidder, Bidder: bidder}
@@ -149,6 +157,13 @@ func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}
 
 	if cookie.HasLiveSync(syncer.Key()) {
 		return nil, BidderEvaluation{Status: StatusAlreadySynced, Bidder: bidder, SyncerKey: syncer.Key()}
+	}
+
+	userSyncActivityAllowed := activityControl.Allow(privacyActivity.ActivitySyncUser,
+		privacyActivity.ScopedName{Scope: privacyActivity.ScopeTypeBidder, Name: bidder})
+	if userSyncActivityAllowed == privacyActivity.ActivityDeny {
+		return nil, BidderEvaluation{Status: StatusBlockedByPrivacy, Bidder: bidder, SyncerKey: syncer.Key()}
+		// from requirements: Debug message can be general "Bidder sync blocked for privacy reasons" - not done
 	}
 
 	if !privacy.GDPRAllowsBidderSync(bidder) {

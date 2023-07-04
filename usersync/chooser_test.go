@@ -1,12 +1,13 @@
 package usersync
 
 import (
-	"testing"
-	"time"
-
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/privacy"
+	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"testing"
+	"time"
 )
 
 func TestNewChooser(t *testing.T) {
@@ -241,14 +242,31 @@ func TestChooserEvaluate(t *testing.T) {
 	cookieAlreadyHasSyncForA := Cookie{uids: map[string]uidWithExpiry{"keyA": {Expires: time.Now().Add(time.Duration(24) * time.Hour)}}}
 	cookieAlreadyHasSyncForB := Cookie{uids: map[string]uidWithExpiry{"keyB": {Expires: time.Now().Add(time.Duration(24) * time.Hour)}}}
 
+	activityControl, activitiesErr := privacy.NewActivityControl(&config.AccountPrivacy{
+		AllowActivities: config.AllowActivities{
+			SyncUser: config.Activity{
+				Default: ptrutil.ToPtr(true),
+				Rules: []config.ActivityRule{
+					{
+						Allow: false,
+						Condition: config.ActivityCondition{
+							ComponentName: []string{"bidder.a"},
+						},
+					},
+				},
+			}},
+	})
+	assert.NoError(t, activitiesErr)
+
 	testCases := []struct {
-		description        string
-		givenBidder        string
-		givenSyncersSeen   map[string]struct{}
-		givenPrivacy       Privacy
-		givenCookie        Cookie
-		expectedSyncer     Syncer
-		expectedEvaluation BidderEvaluation
+		description          string
+		givenBidder          string
+		givenSyncersSeen     map[string]struct{}
+		givenPrivacy         Privacy
+		givenCookie          Cookie
+		givenActivityControl privacy.ActivityControl
+		expectedSyncer       Syncer
+		expectedEvaluation   BidderEvaluation
 	}{
 		{
 			description:        "Valid",
@@ -322,11 +340,21 @@ func TestChooserEvaluate(t *testing.T) {
 			expectedSyncer:     nil,
 			expectedEvaluation: BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByCCPA},
 		},
+		{
+			description:          "Blocked By activity control",
+			givenBidder:          "a",
+			givenSyncersSeen:     map[string]struct{}{},
+			givenPrivacy:         fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true},
+			givenCookie:          cookieNeedsSync,
+			givenActivityControl: activityControl,
+			expectedSyncer:       nil,
+			expectedEvaluation:   BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByPrivacy},
+		},
 	}
 
 	for _, test := range testCases {
 		chooser, _ := NewChooser(bidderSyncerLookup).(standardChooser)
-		sync, evaluation := chooser.evaluate(test.givenBidder, test.givenSyncersSeen, syncTypeFilter, test.givenPrivacy, &test.givenCookie)
+		sync, evaluation := chooser.evaluate(test.givenBidder, test.givenSyncersSeen, syncTypeFilter, test.givenPrivacy, &test.givenCookie, test.givenActivityControl)
 
 		assert.Equal(t, test.expectedSyncer, sync, test.description+":syncer")
 		assert.Equal(t, test.expectedEvaluation, evaluation, test.description+":evaluation")

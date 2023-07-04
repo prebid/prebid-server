@@ -147,6 +147,13 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 		}
 	}
 
+	activityControl, activitiesErr := privacy.NewActivityControl(account.Privacy)
+	if activitiesErr != nil {
+		if errortypes.ContainsFatalError([]error{activitiesErr}) {
+			return usersync.Request{}, privacy.Policies{}, err
+		}
+	}
+
 	syncTypeFilter, err := parseTypeFilter(request.FilterSettings)
 	if err != nil {
 		return usersync.Request{}, privacy.Policies{}, err
@@ -171,7 +178,8 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 			gdprPermissions:  gdprPerms,
 			ccpaParsedPolicy: ccpaParsedPolicy,
 		},
-		SyncTypeFilter: syncTypeFilter,
+		SyncTypeFilter:  syncTypeFilter,
+		ActivityControl: activityControl,
 	}
 	return rx, privacyPolicies, nil
 }

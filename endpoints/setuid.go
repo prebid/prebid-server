@@ -3,6 +3,8 @@ package endpoints
 import (
 	"context"
 	"errors"
+	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/privacy"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -56,7 +58,7 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 
 		query := r.URL.Query()
 
-		syncer, err := getSyncer(query, syncersByKey)
+		syncer, bidderName, err := getSyncer(query, syncersByKey)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(err.Error()))
@@ -98,6 +100,21 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 			}
 			so.Errors = []error{err}
 			so.Status = http.StatusBadRequest
+			return
+		}
+
+		activities, activitiesErr := privacy.NewActivityControl(account.Privacy)
+		if activitiesErr != nil {
+			if errortypes.ContainsFatalError([]error{activitiesErr}) {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+		}
+
+		userSyncActivityAllowed := activities.Allow(privacy.ActivitySyncUser,
+			privacy.ScopedName{Scope: privacy.ScopeTypeBidder, Name: bidderName})
+		if userSyncActivityAllowed == privacy.ActivityDeny {
+			w.WriteHeader(http.StatusUnavailableForLegalReasons)
 			return
 		}
 
@@ -148,19 +165,19 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 	})
 }
 
-func getSyncer(query url.Values, syncersByKey map[string]usersync.Syncer) (usersync.Syncer, error) {
-	key := query.Get("bidder")
+func getSyncer(query url.Values, syncersByKey map[string]usersync.Syncer) (usersync.Syncer, string, error) {
+	bidderName := query.Get("bidder")
 
-	if key == "" {
-		return nil, errors.New(`"bidder" query param is required`)
+	if bidderName == "" {
+		return nil, "", errors.New(`"bidder" query param is required`)
 	}
 
-	syncer, syncerExists := syncersByKey[key]
+	syncer, syncerExists := syncersByKey[bidderName]
 	if !syncerExists {
-		return nil, errors.New("The bidder name provided is not supported by Prebid Server")
+		return nil, "", errors.New("The bidder name provided is not supported by Prebid Server")
 	}
 
-	return syncer, nil
+	return syncer, bidderName, nil
 }
 
 // getResponseFormat reads the format query parameter or falls back to the syncer's default.
