@@ -3,7 +3,7 @@ package openrtb_ext
 import (
 	"encoding/json"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 )
 
 // DealTier defines the configuration of a deal tier.
@@ -27,20 +27,6 @@ func ReadDealTiersFromImp(imp openrtb2.Imp) (DealTierBidderMap, error) {
 		return dealTiers, nil
 	}
 
-	// imp.ext.{bidder}
-	var impExt map[string]struct {
-		DealTier *DealTier `json:"dealTier"`
-	}
-	if err := json.Unmarshal(imp.Ext, &impExt); err != nil {
-		return nil, err
-	}
-	for bidder, param := range impExt {
-		if param.DealTier != nil {
-			dealTiers[BidderName(bidder)] = *param.DealTier
-		}
-	}
-
-	// imp.ext.prebid.{bidder}
 	var impPrebidExt struct {
 		Prebid struct {
 			Bidders map[string]struct {

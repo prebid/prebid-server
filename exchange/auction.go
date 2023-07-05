@@ -12,7 +12,7 @@ import (
 	"time"
 
 	uuid "github.com/gofrs/uuid"
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange/entities"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -185,12 +185,12 @@ func (a *auction) validateAndUpdateMultiBid(adapterBids map[openrtb_ext.BidderNa
 	}
 }
 
-func (a *auction) setRoundedPrices(priceGranularity openrtb_ext.PriceGranularity) {
+func (a *auction) setRoundedPrices(targetingData targetData) {
 	roundedPrices := make(map[*entities.PbsOrtbBid]string, 5*len(a.winningBids))
 	for _, topBidsPerImp := range a.winningBidsByBidder {
 		for _, topBidsPerBidder := range topBidsPerImp {
 			for _, topBid := range topBidsPerBidder {
-				roundedPrices[topBid] = GetPriceBucket(topBid.Bid.Price, priceGranularity)
+				roundedPrices[topBid] = GetPriceBucket(*topBid.Bid, targetingData)
 			}
 		}
 	}

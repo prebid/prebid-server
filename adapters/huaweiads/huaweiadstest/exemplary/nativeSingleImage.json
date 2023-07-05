@@ -300,7 +300,7 @@
               "huaweiads"
             ],
             "crid": "58022259",
-            "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":100,\"title\":{\"text\":\"/test/\",\"len\":6}},{\"id\":103,\"img\":{\"type\":3,\"url\":\"http://image.jpg\",\"w\":720,\"h\":1280}},{\"id\":105,\"data\":{\"label\":\"desc\",\"value\":\"\"}}],\"link\":{\"url\":\"https://ads.huawei.com/usermgtportal/home/index.html#/\",\"clicktrackers\":[\"http://test/click\"]},\"imptrackers\":[\"http://test/imp\"]}",
+            "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":100,\"title\":{\"text\":\"/test/\",\"len\":6}},{\"id\":103,\"img\":{\"type\":3,\"url\":\"http://image.jpg\",\"w\":720,\"h\":1280}},{\"id\":105,\"data\":{\"label\":\"desc\",\"value\":\"\"}}],\"link\":{\"url\":\"https://ads.huawei.com/usermgtportal/home/index.html#/\",\"clicktrackers\":[\"http://test/click\"]},\"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"http://test/imp\"}]}",
             "id": "test-imp-id",
             "impid": "test-imp-id",
             "price": 2.8,

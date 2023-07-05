@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -18,13 +18,14 @@ const MaxKeyLength = 20
 // All functions on this struct are all nil-safe.
 // If the value is nil, then no targeting data will be tracked.
 type targetData struct {
-	priceGranularity  openrtb_ext.PriceGranularity
-	includeWinners    bool
-	includeBidderKeys bool
-	includeCacheBids  bool
-	includeCacheVast  bool
-	includeFormat     bool
-	preferDeals       bool
+	priceGranularity          openrtb_ext.PriceGranularity
+	mediaTypePriceGranularity openrtb_ext.MediaTypePriceGranularity
+	includeWinners            bool
+	includeBidderKeys         bool
+	includeCacheBids          bool
+	includeCacheVast          bool
+	includeFormat             bool
+	preferDeals               bool
 	// cacheHost and cachePath exist to supply cache host and path as targeting parameters
 	cacheHost string
 	cachePath string

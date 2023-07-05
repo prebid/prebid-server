@@ -80,7 +80,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://native.whatever.com/hosturl.com/publisher-id",
+        "uri": "http://native.whatever.com/12/publisher-id",
         "body": {
           "id": "request-id",
           "imp": [
@@ -150,7 +150,7 @@
     },
     {
       "expectedRequest": {
-        "uri": "http://display.whatever.com/hosturl.com/publisher-id",
+        "uri": "http://display.whatever.com/12/publisher-id",
         "body": {
           "id": "request-id",
           "imp": [

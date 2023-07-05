@@ -14,6 +14,16 @@ var (
 	xRealIP       = http.CanonicalHeaderKey("X-Real-IP")
 )
 
+type ContentEncoding string
+
+const (
+	ContentEncodingGZIP ContentEncoding = "gzip"
+)
+
+func (k ContentEncoding) Normalize() ContentEncoding {
+	return ContentEncoding(strings.ToLower(string(k)))
+}
+
 // FindIP returns the first ip address found in the http request matching the predicate v.
 func FindIP(r *http.Request, v iputil.IPValidator) (net.IP, iputil.IPVersion) {
 	if ip, ver := findTrueClientIP(r, v); ip != nil {

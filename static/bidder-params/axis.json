@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Axis Adapter Params",
+  "description": "A schema which validates params accepted by the Axis adapter",
+  "type": "object",
+  "properties": {
+    "integration": {
+      "type": "string",
+      "description": "Integration",
+      "minLength": 6,
+      "maxLength": 6
+    },
+    "token": {
+      "type": "string",
+      "description": "Token",
+      "minLength": 6,
+      "maxLength": 6
+    }
+  },
+  "required": [
+    "integration",
+    "token"
+  ]
+}

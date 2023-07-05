@@ -20,11 +20,20 @@ type ExtBidPrebid struct {
 	Meta              *ExtBidPrebidMeta   `json:"meta,omitempty"`
 	Targeting         map[string]string   `json:"targeting,omitempty"`
 	TargetBidderCode  string              `json:"targetbiddercode,omitempty"`
-	Type              BidType             `json:"type"`
+	Type              BidType             `json:"type,omitempty"`
 	Video             *ExtBidPrebidVideo  `json:"video,omitempty"`
 	Events            *ExtBidPrebidEvents `json:"events,omitempty"`
 	BidId             string              `json:"bidid,omitempty"`
 	Passthrough       json.RawMessage     `json:"passthrough,omitempty"`
+	Floors            *ExtBidPrebidFloors `json:"floors,omitempty"`
+}
+
+// ExtBidPrebidFloors defines the contract for bidresponse.seatbid.bid[i].ext.prebid.floors
+type ExtBidPrebidFloors struct {
+	FloorRule      string  `json:"floorRule,omitempty"`
+	FloorRuleValue float64 `json:"floorRuleValue,omitempty"`
+	FloorValue     float64 `json:"floorValue,omitempty"`
+	FloorCurrency  string  `json:"floorCurrency,omitempty"`
 }
 
 // ExtBidPrebidCache defines the contract for  bidresponse.seatbid.bid[i].ext.prebid.cache

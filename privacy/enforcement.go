@@ -1,6 +1,6 @@
 package privacy
 
-import "github.com/prebid/openrtb/v17/openrtb2"
+import "github.com/prebid/openrtb/v19/openrtb2"
 
 // Enforcement represents the privacy policies to enforce for an OpenRTB bid request.
 type Enforcement struct {
@@ -69,16 +69,8 @@ func (e Enforcement) getGeoScrubStrategy() ScrubStrategyGeo {
 }
 
 func (e Enforcement) getUserScrubStrategy() ScrubStrategyUser {
-	if e.COPPA {
+	if e.COPPA || e.CCPA || e.LMT || e.GDPRID {
 		return ScrubStrategyUserIDAndDemographic
-	}
-
-	if e.CCPA || e.LMT {
-		return ScrubStrategyUserID
-	}
-
-	if e.GDPRID {
-		return ScrubStrategyUserID
 	}
 
 	return ScrubStrategyUserNone

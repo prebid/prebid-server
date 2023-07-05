@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 )
 
 // ScrubStrategyIPV4 defines the approach to scrub PII from an IPV4 address.
@@ -55,9 +55,6 @@ const (
 
 	// ScrubStrategyUserIDAndDemographic removes the user's buyer id, exchange id year of birth, and gender.
 	ScrubStrategyUserIDAndDemographic
-
-	// ScrubStrategyUserID removes the user's buyer id.
-	ScrubStrategyUserID
 )
 
 // ScrubStrategyDeviceID defines the approach to remove hardware id and device id data.
@@ -131,17 +128,12 @@ func (scrubber) ScrubUser(user *openrtb2.User, strategy ScrubStrategyUser, geo S
 
 	userCopy := *user
 
-	switch strategy {
-	case ScrubStrategyUserIDAndDemographic:
+	if strategy == ScrubStrategyUserIDAndDemographic {
 		userCopy.BuyerUID = ""
 		userCopy.ID = ""
 		userCopy.Ext = scrubUserExtIDs(userCopy.Ext)
 		userCopy.Yob = 0
 		userCopy.Gender = ""
-	case ScrubStrategyUserID:
-		userCopy.BuyerUID = ""
-		userCopy.ID = ""
-		userCopy.Ext = scrubUserExtIDs(userCopy.Ext)
 	}
 
 	switch geo {
