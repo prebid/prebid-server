@@ -2085,7 +2085,7 @@ func getTestBuildRequest(t *testing.T) *openrtb2.BidRequest {
 					H: 600,
 				}},
 			},
-			Ext: json.RawMessage(`{"ext_field":"value}"}`),
+			Ext: json.RawMessage(`{"prebid":{"bidder":{"appnexus": {"placementId": 1}}}}`),
 		}, {
 			Video: &openrtb2.Video{
 				MIMEs:       []string{"video/mp4"},
@@ -2094,7 +2094,7 @@ func getTestBuildRequest(t *testing.T) *openrtb2.BidRequest {
 				W:           300,
 				H:           600,
 			},
-			Ext: json.RawMessage(`{"ext_field":"value}"}`),
+			Ext: json.RawMessage(`{"prebid":{"bidder":{"appnexus": {"placementId": 1}}}}`),
 		}},
 	}
 }

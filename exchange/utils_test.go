@@ -505,7 +505,7 @@ func TestCleanOpenRTBRequestsWithFPD(t *testing.T) {
 		App:  &openrtb2.App{Name: "fpdApnApp"},
 		User: &openrtb2.User{Keywords: "fpdApnUser"},
 	}
-	fpd[openrtb_ext.BidderName("appnexus")] = &apnFpd
+	fpd[openrtb_ext.BidderName("rubicon")] = &apnFpd
 
 	brightrollFpd := firstpartydata.ResolvedFirstPartyData{
 		Site: &openrtb2.Site{Name: "fpdBrightrollSite"},
