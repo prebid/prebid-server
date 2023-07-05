@@ -27,14 +27,14 @@ type adnAdunit struct {
 	AuId       string    `json:"auId"`
 	TargetId   string    `json:"targetId"`
 	Dimensions [][]int64 `json:"dimensions,omitempty"`
-	MaxDeals int `json:"maxDeals,omitempty"`
+	MaxDeals   int       `json:"maxDeals,omitempty"`
 }
 
 type extDeviceAdnuntius struct {
 	NoCookies bool `json:"noCookies,omitempty"`
 }
 
-type Ad struct{
+type Ad struct {
 	Bid struct {
 		Amount   float64
 		Currency string
@@ -407,21 +407,19 @@ func generateBidResponse(adnResponse *AdnResponse, request *openrtb2.BidRequest)
 			})
 
 			fmt.Println(adunit.Deals)
-			for _,deal := range adunit.Deals {
+			for _, deal := range adunit.Deals {
 				dealBid, err := generateAdResponse(deal, request.Imp[i].ID, deal.Html, request)
 				if err != nil {
 					return nil, []error{&errortypes.BadInput{
 						Message: fmt.Sprintf("Error at ad generation"),
 					}}
 				}
-			
 
 				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 					Bid:     dealBid,
 					BidType: "banner",
 				})
 			}
-			
 
 		}
 
