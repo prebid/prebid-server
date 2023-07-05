@@ -58,7 +58,7 @@ func ReadCookie(r *http.Request, decoder Decoder, host *config.HostCookie) *Cook
 }
 
 // PrepareCookieForWrite ejects UIDs as long as the cookie is too full
-func (cookie *Cookie) PrepareCookieForWrite(cfg *config.HostCookie, encoder Base64Encoder) (string, error) {
+func (cookie *Cookie) PrepareCookieForWrite(cfg *config.HostCookie, encoder Encoder) (string, error) {
 	uuidKeys := sortUIDs(cookie.uids)
 
 	i := 0
@@ -224,7 +224,7 @@ func (cookie *Cookie) HasAnyLiveSyncs() bool {
 }
 
 func (cookie *Cookie) ToHTTPCookie() (*http.Cookie, error) {
-	encoder := Base64EncoderV1{}
+	encoder := Base64Encoder{}
 	encodedCookie, err := encoder.Encode(cookie)
 	if err != nil {
 		return nil, nil

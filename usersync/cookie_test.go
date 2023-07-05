@@ -84,7 +84,7 @@ func TestReadCookie(t *testing.T) {
 			} else if test.givenCookie == nil && test.givenHttpCookie != nil {
 				test.givenRequest.AddCookie(test.givenHttpCookie)
 			}
-			actualCookie := ReadCookie(test.givenRequest, DecodeV1{}, &config.HostCookie{})
+			actualCookie := ReadCookie(test.givenRequest, Base64Decoder{}, &config.HostCookie{})
 			assert.Equal(t, test.expectedCookie.uids, actualCookie.uids)
 			assert.Equal(t, test.expectedCookie.optOut, actualCookie.optOut)
 		})
@@ -92,8 +92,8 @@ func TestReadCookie(t *testing.T) {
 }
 
 func TestWriteCookie(t *testing.T) {
-	encoder := Base64EncoderV1{}
-	decoder := DecodeV1{}
+	encoder := Base64Encoder{}
+	decoder := Base64Decoder{}
 
 	testCases := []struct {
 		name               string
@@ -310,7 +310,7 @@ func TestGetUIDs(t *testing.T) {
 }
 
 func TestWriteCookieUserAgent(t *testing.T) {
-	encoder := Base64EncoderV1{}
+	encoder := Base64Encoder{}
 
 	testCases := []struct {
 		name                string
@@ -378,8 +378,8 @@ func TestWriteCookieUserAgent(t *testing.T) {
 }
 
 func TestPrepareCookieForWrite(t *testing.T) {
-	encoder := Base64EncoderV1{}
-	decoder := DecodeV1{}
+	encoder := Base64Encoder{}
+	decoder := Base64Decoder{}
 	cookieToSend := &Cookie{
 		uids: map[string]UIDEntry{
 			"1": newTempId("1234567890123456789012345678901234567890123456", 7),
@@ -571,7 +571,7 @@ func TestBidderNameGets(t *testing.T) {
 func TestReadCookieOptOut(t *testing.T) {
 	optOutCookieName := "optOutCookieName"
 	optOutCookieValue := "optOutCookieValue"
-	decoder := DecodeV1{}
+	decoder := Base64Decoder{}
 
 	cookie := *(&Cookie{
 		uids: map[string]UIDEntry{
@@ -702,7 +702,7 @@ func newSampleCookie() *Cookie {
 }
 
 func ensureConsistency(t *testing.T, cookie *Cookie) {
-	decoder := DecodeV1{}
+	decoder := Base64Decoder{}
 
 	if cookie.AllowSyncs() {
 		err := cookie.Sync("pulsepoint", "1")

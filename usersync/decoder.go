@@ -10,9 +10,9 @@ type Decoder interface {
 	Decode(v string) *Cookie
 }
 
-type DecodeV1 struct{}
+type Base64Decoder struct{}
 
-func (d DecodeV1) Decode(encodedValue string) *Cookie {
+func (d Base64Decoder) Decode(encodedValue string) *Cookie {
 	jsonValue, err := base64.URLEncoding.DecodeString(encodedValue)
 	if err != nil {
 		return NewCookie()

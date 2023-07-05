@@ -753,7 +753,7 @@ func addCookie(req *http.Request, cookie *usersync.Cookie) {
 }
 
 func parseCookieString(t *testing.T, response *httptest.ResponseRecorder) *usersync.Cookie {
-	decoder := usersync.DecodeV1{}
+	decoder := usersync.Base64Decoder{}
 	cookieString := response.Header().Get("Set-Cookie")
 	parser := regexp.MustCompile("uids=(.*?);")
 	res := parser.FindStringSubmatch(cookieString)
