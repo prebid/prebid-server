@@ -40,9 +40,14 @@ type pubmaticBidExtVideo struct {
 	Duration *int `json:"duration,omitempty"`
 }
 
+type pubmaticContext struct {
+	Data json.RawMessage `json:"data"`
+}
+
 type ExtImpBidderPubmatic struct {
 	adapters.ExtImpBidder
-	Data json.RawMessage `json:"data,omitempty"`
+	Data    json.RawMessage `json:"data,omitempty"`
+	Context pubmaticContext `json:"context"`
 }
 
 type ExtAdServer struct {
@@ -303,6 +308,10 @@ func parseImpressionObject(imp *openrtb2.Imp, extractWrapperExtFromImp, extractP
 
 	if len(bidderExt.Data) > 0 {
 		populateFirstPartyDataImpAttributes(bidderExt.Data, extMap)
+	}
+
+	if len(bidderExt.Context.Data) > 0 {
+		populateFirstPartyDataImpAttributes(bidderExt.Context.Data, extMap)
 	}
 
 	imp.Ext = nil
