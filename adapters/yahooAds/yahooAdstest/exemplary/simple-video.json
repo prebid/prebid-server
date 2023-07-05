@@ -4,10 +4,15 @@
     "imp": [
       {
         "id": "test-imp-id",
-        "banner": {
-          "format": [{"w": 728, "h": 90}]
+        "video": {
+          "w": 728, 
+          "h": 90,
+          "protocols": [2],
+          "placement": 1,
+          "startdelay": -2,
+          "playbackmethod": [2],
+          "mimes": ["foo", "bar"]
         },
-        "tagid": "123",
         "ext": {
           "bidder": {
             "dcn": "dcn1",
@@ -20,8 +25,11 @@
       "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
       "ip": "127.0.0.1"
     },
-    "app": {
-      "id": "test-app-id"
+    "site": {
+      "id": "test-site-id",
+      "publisher": {
+        "id": "1"
+      }
     }
   },
 
@@ -51,12 +59,16 @@
           "id": "test-request-id",
           "imp": [
             {
-              "id": "test-imp-id",
+              "id":"test-imp-id",
               "tagid": "pos2",
-              "banner": {
-                "format": [{"w": 728, "h": 90}],
-                "w": 728,
-                "h": 90
+              "video": {
+                "w": 728, 
+                "h": 90,
+                "protocols": [2],
+                "placement": 1,
+                "startdelay": -2,
+                "playbackmethod": [2],
+                "mimes": ["foo", "bar"]
               },
               "ext": {
                 "bidder": {
@@ -66,8 +78,11 @@
               }
             }
           ],
-          "app": {
-            "id": "dcn1"
+          "site": {
+            "id": "dcn1",
+            "publisher": {
+              "id": "1"
+            }
           }
         }
       },
@@ -77,12 +92,12 @@
           "id": "test-request-id",
           "seatbid": [
             {
-              "seat": "yahooAdvertising",
+              "seat": "yahooAds",
               "bid": [{
                 "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
                 "impid": "test-imp-id",
                 "price": 0.500000,
-                "adm": "some-test-ad",
+                "adm": "some-test-vast-ad",
                 "crid": "crid_10",
                 "h": 90,
                 "w": 728
@@ -104,12 +119,12 @@
             "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
             "impid": "test-imp-id",
             "price": 0.5,
-            "adm": "some-test-ad",
+            "adm": "some-test-vast-ad",
             "crid": "crid_10",
             "w": 728,
             "h": 90
           },
-          "type": "banner"
+          "type": "video"
         }
       ]
     }
