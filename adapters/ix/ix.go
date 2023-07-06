@@ -7,7 +7,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -123,7 +122,6 @@ func setSitePublisherId(requestCopy *openrtb2.BidRequest, uniqueSiteIDs map[stri
 			// Sorting siteIDs for predictable output as Go maps don't guarantee order
 			sort.Strings(siteIDs)
 			multipleSiteIDs := strings.Join(siteIDs, ", ")
-			glog.Warningf("Multiple SiteIDs found. %s", multipleSiteIDs)
 			ixDiag.MultipleSiteIds = multipleSiteIDs
 		}
 		requestCopy.Site = &site
