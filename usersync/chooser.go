@@ -163,7 +163,6 @@ func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}
 		privacyActivity.ScopedName{Scope: privacyActivity.ScopeTypeBidder, Name: bidder})
 	if userSyncActivityAllowed == privacyActivity.ActivityDeny {
 		return nil, BidderEvaluation{Status: StatusBlockedByPrivacy, Bidder: bidder, SyncerKey: syncer.Key()}
-		// from requirements: Debug message can be general "Bidder sync blocked for privacy reasons" - not done
 	}
 
 	if !privacy.GDPRAllowsBidderSync(bidder) {
