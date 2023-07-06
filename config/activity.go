@@ -8,16 +8,17 @@ type AllowActivities struct {
 	TransmitUserFPD          Activity `mapstructure:"transmitUfpd" json:"transmitUfpd"`
 	TransmitPreciseGeo       Activity `mapstructure:"transmitPreciseGeo" json:"transmitPreciseGeo"`
 	TransmitUniqueRequestIds Activity `mapstructure:"transmitUniqueRequestIds" json:"transmitUniqueRequestIds"`
+	TransmitTids             Activity `mapstructure:"transmitTid" json:"transmitTid"`
 }
 
 type Activity struct {
 	Default *bool          `mapstructure:"default" json:"default"`
 	Rules   []ActivityRule `mapstructure:"rules" json:"rules"`
-	Allow   bool           `mapstructure:"allow" json:"allow"`
 }
 
 type ActivityRule struct {
 	Condition ActivityCondition `mapstructure:"condition" json:"condition"`
+	Allow     bool              `mapstructure:"allow" json:"allow"`
 }
 
 type ActivityCondition struct {
