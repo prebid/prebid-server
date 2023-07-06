@@ -62,15 +62,13 @@ func (cookie *Cookie) PrepareCookieForWrite(cfg *config.HostCookie, encoder Enco
 	uuidKeys := sortUIDs(cookie.uids)
 
 	i := 0
-	isCookieTooBig := true
-
-	for isCookieTooBig && len(cookie.uids) > 0 {
+	for len(cookie.uids) > 0 {
 		encodedCookie, err := encoder.Encode(cookie)
 		if err != nil {
 			return encodedCookie, nil
 		}
 
-		isCookieTooBig = len(encodedCookie) > cfg.MaxCookieSizeBytes && cfg.MaxCookieSizeBytes > 0
+		isCookieTooBig := len(encodedCookie) > cfg.MaxCookieSizeBytes && cfg.MaxCookieSizeBytes > 0
 		if !isCookieTooBig {
 			return encodedCookie, nil
 		}
@@ -125,7 +123,7 @@ func (cookie *Cookie) Sync(key string, uid string) error {
 	return nil
 }
 
-// Sort UIDs is used to get a list of uids sorted from oldest to newest
+// sortUIDs is used to get a list of uids sorted from oldest to newest
 // This list is used to eject oldest uids from the cookie
 // This will be incorporated with a more complex ejection framework in a future PR
 func sortUIDs(uids map[string]UIDEntry) []string {

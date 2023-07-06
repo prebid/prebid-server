@@ -396,52 +396,52 @@ func TestPrepareCookieForWrite(t *testing.T) {
 	testCases := []struct {
 		name                     string
 		givenMaxCookieSize       int
-		expectedRemainingUidKeys map[string]bool
+		expectedRemainingUidKeys []string
 	}{
 		{
 			name:               "no-uids-ejected",
 			givenMaxCookieSize: 2000,
-			expectedRemainingUidKeys: map[string]bool{
-				"1": true, "2": true, "3": true, "4": true, "5": true, "6": true, "7": true,
+			expectedRemainingUidKeys: []string{
+				"1", "2", "3", "4", "5", "6", "7",
 			},
 		},
 		{
 			name:               "no-uids-ejected-2",
 			givenMaxCookieSize: 0,
-			expectedRemainingUidKeys: map[string]bool{
-				"1": true, "2": true, "3": true, "4": true, "5": true, "6": true, "7": true,
+			expectedRemainingUidKeys: []string{
+				"1", "2", "3", "4", "5", "6", "7",
 			},
 		},
 		{
 			name:               "one-uid-ejected",
 			givenMaxCookieSize: 800,
-			expectedRemainingUidKeys: map[string]bool{
-				"1": true, "2": true, "3": true, "4": true, "5": true, "6": true,
+			expectedRemainingUidKeys: []string{
+				"1", "2", "3", "4", "5", "6",
 			},
 		},
 		{
 			name:               "four-uids-ejected",
 			givenMaxCookieSize: 500,
-			expectedRemainingUidKeys: map[string]bool{
-				"1": true, "2": true, "3": true,
+			expectedRemainingUidKeys: []string{
+				"1", "2", "3",
 			},
 		},
 		{
 			name:               "all-but-one-uids-ejected",
 			givenMaxCookieSize: 200,
-			expectedRemainingUidKeys: map[string]bool{
-				"1": true,
+			expectedRemainingUidKeys: []string{
+				"1",
 			},
 		},
 		{
 			name:                     "all-uids-ejected",
 			givenMaxCookieSize:       100,
-			expectedRemainingUidKeys: map[string]bool{},
+			expectedRemainingUidKeys: []string{},
 		},
 		{
 			name:                     "invalid-max-size",
 			givenMaxCookieSize:       -100,
-			expectedRemainingUidKeys: map[string]bool{},
+			expectedRemainingUidKeys: []string{},
 		},
 	}
 
@@ -451,7 +451,7 @@ func TestPrepareCookieForWrite(t *testing.T) {
 			assert.NoError(t, err)
 			decodedCookie := decoder.Decode(encodedCookie)
 
-			for key := range test.expectedRemainingUidKeys {
+			for _, key := range test.expectedRemainingUidKeys {
 				_, ok := decodedCookie.uids[key]
 				assert.Equal(t, true, ok)
 			}
