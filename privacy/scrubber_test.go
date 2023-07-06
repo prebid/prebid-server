@@ -572,7 +572,7 @@ func TestScrubUserExtIDs(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		result := scrubUserExtIDs(test.userExt)
+		result := scrubUserExtIDs(test.userExt, "eids")
 		assert.Equal(t, test.expected, result, test.description)
 	}
 }

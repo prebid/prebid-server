@@ -205,6 +205,7 @@ func TestApply(t *testing.T) {
 		replacedUser := &openrtb2.User{}
 
 		m := &mockScrubber{}
+		m.On("ScrubRequest", req, false, false).Return(req).Once()
 		m.On("ScrubDevice", req.Device, test.expectedDeviceID, test.expectedDeviceIPv4, test.expectedDeviceIPv6, test.expectedDeviceGeo).Return(replacedDevice).Once()
 		m.On("ScrubUser", req.User, test.expectedUser, test.expectedUserGeo).Return(replacedUser).Once()
 
@@ -246,6 +247,11 @@ func TestApplyNil(t *testing.T) {
 
 type mockScrubber struct {
 	mock.Mock
+}
+
+func (m *mockScrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, ufpd bool, preciseGeo bool) *openrtb2.BidRequest {
+	args := m.Called(bidRequest, ufpd, preciseGeo)
+	return args.Get(0).(*openrtb2.BidRequest)
 }
 
 func (m *mockScrubber) ScrubDevice(device *openrtb2.Device, id ScrubStrategyDeviceID, ipv4 ScrubStrategyIPV4, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb2.Device {
