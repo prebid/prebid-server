@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TemporarilyDisabledTestNewActivityControl(t *testing.T) {
+func TestNewActivityControl(t *testing.T) {
 
 	testCases := []struct {
 		name            string
