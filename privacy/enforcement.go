@@ -12,12 +12,14 @@ type Enforcement struct {
 
 	// activities
 	UFPD       bool
+	Eids       bool
 	PreciseGeo bool
+	TID        bool
 }
 
 // Any returns true if at least one privacy policy requires enforcement.
 func (e Enforcement) Any() bool {
-	return e.CCPA || e.COPPA || e.GDPRGeo || e.GDPRID || e.LMT || e.UFPD || e.PreciseGeo
+	return e.CCPA || e.COPPA || e.GDPRGeo || e.GDPRID || e.LMT || e.UFPD || e.PreciseGeo || e.Eids || e.TID
 }
 
 // Apply cleans personally identifiable information from an OpenRTB bid request.
@@ -27,7 +29,7 @@ func (e Enforcement) Apply(bidRequest *openrtb2.BidRequest) {
 
 func (e Enforcement) apply(bidRequest *openrtb2.BidRequest, scrubber Scrubber) {
 	if bidRequest != nil && e.Any() {
-		bidRequest = scrubber.ScrubRequest(bidRequest, e.UFPD, e.PreciseGeo)
+		bidRequest = scrubber.ScrubRequest(bidRequest, e)
 		bidRequest.Device = scrubber.ScrubDevice(bidRequest.Device, e.getDeviceIDScrubStrategy(), e.getIPv4ScrubStrategy(), e.getIPv6ScrubStrategy(), e.getGeoScrubStrategy())
 		bidRequest.User = scrubber.ScrubUser(bidRequest.User, e.getUserScrubStrategy(), e.getGeoScrubStrategy())
 	}

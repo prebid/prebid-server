@@ -70,7 +70,7 @@ const (
 
 // Scrubber removes PII from parts of an OpenRTB request.
 type Scrubber interface {
-	ScrubRequest(bidRequest *openrtb2.BidRequest, UFPD bool, PreciseGeo bool) *openrtb2.BidRequest
+	ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enforcement) *openrtb2.BidRequest
 	ScrubDevice(device *openrtb2.Device, id ScrubStrategyDeviceID, ipv4 ScrubStrategyIPV4, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb2.Device
 	ScrubUser(user *openrtb2.User, strategy ScrubStrategyUser, geo ScrubStrategyGeo) *openrtb2.User
 }
@@ -82,11 +82,10 @@ func NewScrubber() Scrubber {
 	return scrubber{}
 }
 
-func (scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, ufpd bool, preciseGeo bool) *openrtb2.BidRequest {
-
-	if ufpd {
-		//remove user.eids, user.ext.data.*, user.data.*, user.{id, buyeruid, yob, gender}
-		//and device-specific IDs
+func (scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enforcement) *openrtb2.BidRequest {
+	if enforcement.UFPD {
+		// transmitUfpd covers user.ext.data, user.data, user.id, user.buyeruid, user.yob, user.gender, user.keywords, user.kwarray
+		// and device.{ifa, macsha1, macmd5, dpidsha1, dpidmd5, didsha1, didmd5}
 		if bidRequest.Device != nil {
 			bidRequest.Device.DIDMD5 = ""
 			bidRequest.Device.DIDSHA1 = ""
@@ -97,17 +96,36 @@ func (scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, ufpd bool, precise
 			bidRequest.Device.MACSHA1 = ""
 		}
 		if bidRequest.User != nil {
-			bidRequest.User.EIDs = nil
 			bidRequest.User.Data = nil
+			bidRequest.User.Ext = scrubExtIDs(bidRequest.User.Ext, "data")
 			bidRequest.User.ID = ""
 			bidRequest.User.BuyerUID = ""
-			bidRequest.User.Ext = scrubUserExtIDs(bidRequest.User.Ext, "data")
 			bidRequest.User.Yob = 0
 			bidRequest.User.Gender = ""
+			bidRequest.User.Keywords = ""
+			bidRequest.User.KwArray = nil
+		}
+	}
+	if enforcement.Eids {
+		//transmitEids covers user.eids and user.ext.eids
+		if bidRequest.User != nil {
+			bidRequest.User.EIDs = nil
+			bidRequest.User.Ext = scrubExtIDs(bidRequest.User.Ext, "eids")
 		}
 	}
 
-	if preciseGeo {
+	if enforcement.TID {
+		//remove source.tid and imp.ext.tid
+		if bidRequest.Source != nil {
+			bidRequest.Source.TID = ""
+		}
+		for ind, imp := range bidRequest.Imp {
+			impExt := scrubExtIDs(imp.Ext, "tid")
+			bidRequest.Imp[ind].Ext = impExt
+		}
+	}
+
+	if enforcement.PreciseGeo {
 		//round user's geographic location by rounding off IP address and lat/lng data.
 		//this applies to both device.geo and user.geo
 		if bidRequest.User != nil && bidRequest.User.Geo != nil {
@@ -171,7 +189,7 @@ func (scrubber) ScrubUser(user *openrtb2.User, strategy ScrubStrategyUser, geo S
 	if strategy == ScrubStrategyUserIDAndDemographic {
 		userCopy.BuyerUID = ""
 		userCopy.ID = ""
-		userCopy.Ext = scrubUserExtIDs(userCopy.Ext, "eids")
+		userCopy.Ext = scrubExtIDs(userCopy.Ext, "eids")
 		userCopy.Yob = 0
 		userCopy.Gender = ""
 	}
@@ -245,7 +263,7 @@ func scrubGeoPrecision(geo *openrtb2.Geo) *openrtb2.Geo {
 	return &geoCopy
 }
 
-func scrubUserExtIDs(userExt json.RawMessage, fieldName string) json.RawMessage {
+func scrubExtIDs(userExt json.RawMessage, fieldName string) json.RawMessage {
 	if len(userExt) == 0 {
 		return userExt
 	}
