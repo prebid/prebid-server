@@ -232,12 +232,15 @@ func parseLegacyGDPRFields(query url.Values, gppGDPRSignal gdpr.Signal, gppGDPRC
 
 	if gdprQuerySignal := query.Get("gdpr"); len(gdprQuerySignal) > 0 {
 		if gppGDPRSignal == gdpr.SignalAmbiguous {
-			if gdprQuerySignal != "" && gdprQuerySignal != "0" && gdprQuerySignal != "1" {
+			switch gdprQuerySignal {
+			case "0":
+				fallthrough
+			case "1":
+				if zeroOrOne, err := strconv.Atoi(gdprQuerySignal); err == nil {
+					gdprSignal = gdpr.Signal(zeroOrOne)
+				}
+			default:
 				return gdpr.SignalAmbiguous, "", errors.New("the gdpr query param must be either 0 or 1. You gave " + gdprQuerySignal)
-			}
-
-			if i, err := strconv.Atoi(gdprQuerySignal); err == nil {
-				gdprSignal = gdpr.Signal(i)
 			}
 		} else {
 			warning = &errortypes.Warning{

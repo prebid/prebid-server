@@ -20,6 +20,9 @@ func isFatal(err error) bool {
 	return !ok || s.Severity() == SeverityFatal
 }
 
+// IsWarning returns true if an error is labeled with a Severity of SeverityWarning
+// Throughout the codebase, errors with SeverityWarning are of the type Warning
+// defined in this package
 func IsWarning(err error) bool {
 	s, ok := err.(Coder)
 	return ok && s.Severity() == SeverityWarning
