@@ -27,12 +27,11 @@ func NewChooser(bidderSyncerLookup map[string]Syncer) Chooser {
 
 // Request specifies a user sync request.
 type Request struct {
-	Bidders         []string
-	Cooperative     Cooperative
-	Limit           int
-	Privacy         Privacy
-	SyncTypeFilter  SyncTypeFilter
-	ActivityControl privacyActivity.ActivityControl
+	Bidders        []string
+	Cooperative    Cooperative
+	Limit          int
+	Privacy        Privacy
+	SyncTypeFilter SyncTypeFilter
 }
 
 // Cooperative specifies the settings for cooperative syncing for a given request, where bidders
@@ -100,6 +99,7 @@ type Privacy interface {
 	GDPRAllowsHostCookie() bool
 	GDPRAllowsBidderSync(bidder string) bool
 	CCPAAllowsBidderSync(bidder string) bool
+	ActivityAllowsUserSync(bidder string) privacyActivity.ActivityResult
 }
 
 // standardChooser implements the user syncer algorithm per official Prebid specification.
@@ -128,7 +128,7 @@ func (c standardChooser) Choose(request Request, cookie *Cookie) Result {
 
 	bidders := c.bidderChooser.choose(request.Bidders, c.biddersAvailable, request.Cooperative)
 	for i := 0; i < len(bidders) && (limitDisabled || len(syncersChosen) < request.Limit); i++ {
-		syncer, evaluation := c.evaluate(bidders[i], syncersSeen, request.SyncTypeFilter, request.Privacy, cookie, request.ActivityControl)
+		syncer, evaluation := c.evaluate(bidders[i], syncersSeen, request.SyncTypeFilter, request.Privacy, cookie)
 
 		biddersEvaluated = append(biddersEvaluated, evaluation)
 		if evaluation.Status == StatusOK {
@@ -139,7 +139,7 @@ func (c standardChooser) Choose(request Request, cookie *Cookie) Result {
 	return Result{Status: StatusOK, BiddersEvaluated: biddersEvaluated, SyncersChosen: syncersChosen}
 }
 
-func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}, syncTypeFilter SyncTypeFilter, privacy Privacy, cookie *Cookie, activityControl privacyActivity.ActivityControl) (Syncer, BidderEvaluation) {
+func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}, syncTypeFilter SyncTypeFilter, privacy Privacy, cookie *Cookie) (Syncer, BidderEvaluation) {
 	syncer, exists := c.bidderSyncerLookup[bidder]
 	if !exists {
 		return nil, BidderEvaluation{Status: StatusUnknownBidder, Bidder: bidder}
@@ -159,8 +159,7 @@ func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}
 		return nil, BidderEvaluation{Status: StatusAlreadySynced, Bidder: bidder, SyncerKey: syncer.Key()}
 	}
 
-	userSyncActivityAllowed := activityControl.Allow(privacyActivity.ActivitySyncUser,
-		privacyActivity.ScopedName{Scope: privacyActivity.ScopeTypeBidder, Name: bidder})
+	userSyncActivityAllowed := privacy.ActivityAllowsUserSync(bidder)
 	if userSyncActivityAllowed == privacyActivity.ActivityDeny {
 		return nil, BidderEvaluation{Status: StatusBlockedByPrivacy, Bidder: bidder, SyncerKey: syncer.Key()}
 	}
