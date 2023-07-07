@@ -95,13 +95,13 @@ func (a *AdOceanAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 		}
 	}
 
-	var errors []error
+	var reqCreationErrors []error
 	var err error
 	requestsData := make([]*requestData, 0, len(request.Imp))
 	for _, auction := range request.Imp {
 		requestsData, err = a.addNewBid(requestsData, &auction, request, consentString)
 		if err != nil {
-			errors = append(errors, err)
+			reqCreationErrors = append(reqCreationErrors, err)
 		}
 	}
 
@@ -114,7 +114,7 @@ func (a *AdOceanAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 		})
 	}
 
-	return httpRequests, errors
+	return httpRequests, reqCreationErrors
 }
 
 func (a *AdOceanAdapter) addNewBid(
@@ -196,7 +196,7 @@ func (a *AdOceanAdapter) makeURL(
 	slaveSizes map[string]string,
 	consentString string,
 ) (*url.URL, error) {
-	endpointParams := macros.EndpointTemplateParams{Host: params.EmitterDomain}
+	endpointParams := macros.EndpointTemplateParams{Host: params.EmitterPrefix}
 	host, err := macros.ResolveMacros(a.endpointTemplate, endpointParams)
 	if err != nil {
 		return nil, &errortypes.BadInput{
@@ -344,7 +344,7 @@ func (a *AdOceanAdapter) MakeBids(
 	}
 
 	var parsedResponses = adapters.NewBidderResponseWithBidsCapacity(len(auctionIDs))
-	var errors []error
+	var parsingErrors []error
 	var slaveToAuctionIDMap = make(map[string]string, len(auctionIDs))
 
 	for _, auctionFullID := range auctionIDs {
@@ -363,7 +363,7 @@ func (a *AdOceanAdapter) MakeBids(
 			height, _ := strconv.ParseInt(bid.Height, 10, 64)
 			adCode, err := a.prepareAdCodeForBid(bid)
 			if err != nil {
-				errors = append(errors, err)
+				parsingErrors = append(parsingErrors, err)
 				continue
 			}
 
@@ -383,7 +383,7 @@ func (a *AdOceanAdapter) MakeBids(
 		}
 	}
 
-	return parsedResponses, errors
+	return parsedResponses, parsingErrors
 }
 
 func (a *AdOceanAdapter) prepareAdCodeForBid(bid ResponseAdUnit) (string, error) {

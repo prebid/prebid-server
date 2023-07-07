@@ -4,10 +4,10 @@
   "description": "A schema which validates params accepted by the AdOcean adapter",
   "type": "object",
   "properties": {
-    "emiter": {
+    "emitterPrefix": {
       "type": "string",
-      "description": "AdOcean emiter",
-      "pattern": ".+"
+      "description": "AdOcean emitter prefix",
+      "pattern": "^[\\w\\-]+$"
     },
     "masterId": {
       "type": "string",
@@ -20,5 +20,5 @@
       "pattern": "^adocean[\\w.]+$"
     }
   },
-  "required": ["emiter", "masterId", "slaveId"]
+  "required": ["emitterPrefix", "masterId", "slaveId"]
 }

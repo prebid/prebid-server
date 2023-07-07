@@ -9,7 +9,7 @@
       "id": "ao-test",
       "ext": {
         "bidder": {
-          "emiter": "myao.adocean.pl",
+          "emitterPrefix": "myao",
           "masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7",
           "slaveId": "adoceanmyaozpniqismex"
         }
@@ -24,7 +24,7 @@
       "id": "ao-test-two",
       "ext": {
         "bidder": {
-          "emiter": "myao.adocean.pl",
+          "emitterPrefix": "myao",
           "masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7",
           "slaveId": "adoceanmyaowafpdwlrks"
         }
@@ -39,7 +39,7 @@
       "id": "ao-test-three",
       "ext": {
         "bidder": {
-          "emiter": "myao.adocean.pl",
+          "emitterPrefix": "myao",
           "masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7",
           "slaveId": "adoceanmyaowafpdwlrks"
         }
