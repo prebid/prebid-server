@@ -5,9 +5,9 @@
   "type": "object",
 
   "properties": {
-    "host": {
+    "sspId": {
       "type": "string",
-      "description": "Host"
+      "description": "Ssp ID"
     },
     "seatId": {
       "type": "string",
@@ -20,7 +20,7 @@
   },
 
   "oneOf": [
-    { "required": ["host"] },
+    { "required": ["sspId"] },
     { "required": ["feedId"] },
     { "required": ["token"] }
   ]

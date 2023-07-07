@@ -1,7 +1,7 @@
 package openrtb_ext
 
 type ExtImpOwnAdx struct {
-	Host    string `json:"host"`
+	SspId   string `json:"sspId"`
 	SeatId  string `json:"seatId"`
 	TokenId string `json:"tokenId"`
 }

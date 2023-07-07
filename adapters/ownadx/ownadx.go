@@ -36,7 +36,7 @@ func getRequestData(reqJSON []byte, url string) []*adapters.RequestData {
 
 func (adapter *adapter) buildEndpointURL(params *openrtb_ext.ExtImpOwnAdx) (string, error) {
 	endpointParams := macros.EndpointTemplateParams{
-		Host:      params.Host,
+		ZoneID:    params.SspId,
 		AccountID: params.SeatId,
 		SourceId:  params.TokenId,
 	}
