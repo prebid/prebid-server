@@ -2,9 +2,9 @@ name: Validate
 
 on:
   push:
-    branches: [master]
+    branches: [master, msp]
   pull_request:
-    branches: [master]
+    branches: [master, msp]
 
 jobs:
   validate:
