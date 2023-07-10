@@ -116,7 +116,8 @@
                     "prebid": {
                       "type": "video"
                     }
-                  }
+                  },
+                  "mtype": 2
                 }
               ],
               "seat": "gothamads"
@@ -146,7 +147,8 @@
               "prebid": {
                 "type": "video"
               }
-            }
+            },
+            "mtype": 2
           },
           "type": "video"
         }

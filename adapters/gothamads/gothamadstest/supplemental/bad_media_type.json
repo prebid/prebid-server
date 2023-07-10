@@ -116,7 +116,7 @@
                   "h": 50
                 }
               ],
-              "type": "banner",
+              "mtype": 0,
               "seat": "gothamads"
             }
           ],
@@ -127,7 +127,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "Failed to find impression \"test-imp-id\"",
+      "value": "unsupported MType 0",
       "comparison": "literal"
     }
   ]

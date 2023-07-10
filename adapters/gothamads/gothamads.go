@@ -140,7 +140,7 @@ func (a *adapter) MakeBids(openRTBRequest *openrtb2.BidRequest, requestToBidder 
 
 	for _, sb := range bidResp.SeatBid {
 		for idx, bid := range sb.Bid {
-			bidType, err := getMediaTypeForImp(bid.ImpID, openRTBRequest.Imp)
+			bidType, err := getMediaTypeForImp(bid)
 			if err != nil {
 				return nil, []error{err}
 			}
@@ -156,20 +156,15 @@ func (a *adapter) MakeBids(openRTBRequest *openrtb2.BidRequest, requestToBidder 
 	return bidResponse, nil
 }
 
-func getMediaTypeForImp(impId string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
-	for _, imp := range imps {
-		if imp.ID == impId {
-			if imp.Banner != nil {
-				return openrtb_ext.BidTypeBanner, nil
-			} else if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo, nil
-			} else if imp.Native != nil {
-				return openrtb_ext.BidTypeNative, nil
-			}
-			break
-		}
-	}
-	return "", &errortypes.BadInput{
-		Message: fmt.Sprintf("Failed to find impression \"%s\"", impId),
+func getMediaTypeForImp(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
+	default:
+		return "", fmt.Errorf("unsupported MType %d", bid.MType)
 	}
 }

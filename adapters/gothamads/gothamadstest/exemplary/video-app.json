@@ -123,7 +123,8 @@
                   ],
                   "crid": "20",
                   "w": 1280,
-                  "h": 720
+                  "h": 720,
+                  "mtype": 2
                 }
               ],
               "seat": "gothamads"
@@ -148,7 +149,8 @@
               "awesome.com"
             ],
             "w": 1280,
-            "h": 720
+            "h": 720,
+            "mtype": 2
           },
           "type": "video"
         }
