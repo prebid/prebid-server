@@ -414,7 +414,7 @@ func TestPrepareCookieForWrite(t *testing.T) {
 		},
 		{
 			name:               "one-uid-ejected",
-			givenMaxCookieSize: 800,
+			givenMaxCookieSize: 900,
 			expectedRemainingUidKeys: []string{
 				"1", "2", "3", "4", "5", "6",
 			},
@@ -428,7 +428,7 @@ func TestPrepareCookieForWrite(t *testing.T) {
 		},
 		{
 			name:               "all-but-one-uids-ejected",
-			givenMaxCookieSize: 200,
+			givenMaxCookieSize: 300,
 			expectedRemainingUidKeys: []string{
 				"1",
 			},

@@ -68,7 +68,16 @@ func (cookie *Cookie) PrepareCookieForWrite(cfg *config.HostCookie, encoder Enco
 			return encodedCookie, nil
 		}
 
-		isCookieTooBig := len(encodedCookie) > cfg.MaxCookieSizeBytes && cfg.MaxCookieSizeBytes > 0
+		// Convert to HTTP Cookie to Get Size
+		httpCookie := &http.Cookie{
+			Name:    uidCookieName,
+			Value:   encodedCookie,
+			Expires: time.Now().Add(cfg.TTLDuration()),
+			Path:    "/",
+		}
+		cookieSize := len([]byte(httpCookie.String()))
+
+		isCookieTooBig := cookieSize > cfg.MaxCookieSizeBytes && cfg.MaxCookieSizeBytes > 0
 		if !isCookieTooBig {
 			return encodedCookie, nil
 		}
