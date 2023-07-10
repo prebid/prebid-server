@@ -24,16 +24,13 @@ import (
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/analytics"
-	"github.com/prebid/prebid-server/hooks"
-	"github.com/prebid/prebid-server/hooks/hookexecution"
-	"github.com/prebid/prebid-server/hooks/hookstage"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/hooks"
+	"github.com/prebid/prebid-server/hooks/hookexecution"
+	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/prebid/prebid-server/metrics"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -41,6 +38,8 @@ import (
 	"github.com/prebid/prebid-server/stored_responses"
 	"github.com/prebid/prebid-server/util/iputil"
 	"github.com/prebid/prebid-server/util/ptrutil"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 const jsonFileExtension string = ".json"
@@ -5666,4 +5665,50 @@ func TestRecordResponsePreparationMetrics(t *testing.T) {
 	mockMetricEngine := &metrics.MetricsEngineMock{}
 	mockMetricEngine.On("RecordOverheadTime", metrics.MakeAuctionResponse, mock.Anything)
 	recordResponsePreparationMetrics(mbi, mockMetricEngine)
+}
+
+func TestSetSeatNonBidRaw(t *testing.T) {
+	type args struct {
+		request         *openrtb_ext.RequestWrapper
+		auctionResponse *exchange.AuctionResponse
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name:    "nil-auctionResponse",
+			args:    args{auctionResponse: nil},
+			wantErr: false,
+		},
+		{
+			name:    "nil-bidResponse",
+			args:    args{auctionResponse: &exchange.AuctionResponse{BidResponse: nil}},
+			wantErr: false,
+		},
+		{
+			name:    "invalid-response.Ext",
+			args:    args{auctionResponse: &exchange.AuctionResponse{BidResponse: &openrtb2.BidResponse{Ext: []byte(`invalid_json`)}}},
+			wantErr: true,
+		},
+		{
+			name: "update-seatnonbid-in-ext",
+			args: args{
+				request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid": { "returnallbidstatus" : true }}`)}},
+				auctionResponse: &exchange.AuctionResponse{
+					ExtBidResponse: &openrtb_ext.ExtBidResponse{Prebid: &openrtb_ext.ExtResponsePrebid{SeatNonBid: []openrtb_ext.SeatNonBid{}}},
+					BidResponse:    &openrtb2.BidResponse{Ext: []byte(`{}`)},
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := setSeatNonBidRaw(tt.args.request, tt.args.auctionResponse); (err != nil) != tt.wantErr {
+				t.Errorf("setSeatNonBidRaw() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
 }

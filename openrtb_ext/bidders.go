@@ -114,6 +114,7 @@ const (
 	BidderAdView            BidderName = "adview"
 	BidderAdxcg             BidderName = "adxcg"
 	BidderAdyoulike         BidderName = "adyoulike"
+	BidderAidem             BidderName = "aidem"
 	BidderAJA               BidderName = "aja"
 	BidderAlgorix           BidderName = "algorix"
 	BidderAMX               BidderName = "amx"
@@ -137,6 +138,7 @@ const (
 	BidderBizzclick         BidderName = "bizzclick"
 	BidderBliink            BidderName = "bliink"
 	BidderBlue              BidderName = "blue"
+	BidderBluesea           BidderName = "bluesea"
 	BidderBmtm              BidderName = "bmtm"
 	BidderBoldwin           BidderName = "boldwin"
 	BidderBrave             BidderName = "brave"
@@ -228,6 +230,7 @@ const (
 	BidderRevcontent        BidderName = "revcontent"
 	BidderRhythmone         BidderName = "rhythmone"
 	BidderRichaudience      BidderName = "richaudience"
+	BidderRise              BidderName = "rise"
 	BidderRTBHouse          BidderName = "rtbhouse"
 	BidderRubicon           BidderName = "rubicon"
 	BidderSeedingAlliance   BidderName = "seedingAlliance"
@@ -267,6 +270,7 @@ const (
 	BidderVisx              BidderName = "visx"
 	BidderVrtcal            BidderName = "vrtcal"
 	BidderXeworks           BidderName = "xeworks"
+	BidderYahooAds          BidderName = "yahooAds"
 	BidderYahooAdvertising  BidderName = "yahooAdvertising"
 	BidderYahooSSP          BidderName = "yahoossp"
 	BidderYeahmobi          BidderName = "yeahmobi"
@@ -308,6 +312,7 @@ func CoreBidderNames() []BidderName {
 		BidderAdView,
 		BidderAdxcg,
 		BidderAdyoulike,
+		BidderAidem,
 		BidderAJA,
 		BidderAlgorix,
 		BidderAMX,
@@ -331,6 +336,7 @@ func CoreBidderNames() []BidderName {
 		BidderBizzclick,
 		BidderBliink,
 		BidderBlue,
+		BidderBluesea,
 		BidderBmtm,
 		BidderBoldwin,
 		BidderBrave,
@@ -422,6 +428,7 @@ func CoreBidderNames() []BidderName {
 		BidderRevcontent,
 		BidderRhythmone,
 		BidderRichaudience,
+		BidderRise,
 		BidderRTBHouse,
 		BidderRubicon,
 		BidderSeedingAlliance,
@@ -461,6 +468,7 @@ func CoreBidderNames() []BidderName {
 		BidderVisx,
 		BidderVrtcal,
 		BidderXeworks,
+		BidderYahooAds,
 		BidderYahooAdvertising,
 		BidderYahooSSP,
 		BidderYeahmobi,

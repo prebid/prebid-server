@@ -121,7 +121,7 @@
   "biddersFPDResolved": {
     "appnexus": {
       "app": {
-        "id": "reqAppId",
+        "id": "apnFpdAppId",
         "name": "apnFpdAppIdAppName",
         "cat": [
           "books",
@@ -144,24 +144,11 @@
               "name": "apnFpdAppIdContentDataName2"
             }
           ]
-        },
-        "ext": {
-          "data": {
-            "id": "apnFpdAppId",
-            "publisher": {
-              "id": "1"
-            }
-          }
         }
       },
       "user": {
-        "id": "reqUserId",
-        "keywords": "apnFpdUserKeyword",
-        "ext": {
-          "data": {
-            "id":"apnUserId"
-          }
-        }
+        "id": "apnUserId",
+        "keywords": "apnFpdUserKeyword"
       }
     }
   },

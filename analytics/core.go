@@ -25,34 +25,37 @@ type PBSAnalyticsModule interface {
 type AuctionObject struct {
 	Status               int
 	Errors               []error
-	Request              *openrtb2.BidRequest
 	Response             *openrtb2.BidResponse
 	Account              *config.Account
 	StartTime            time.Time
 	HookExecutionOutcome []hookexecution.StageOutcome
+	SeatNonBid           []openrtb_ext.SeatNonBid
+	RequestWrapper       *openrtb_ext.RequestWrapper
 }
 
 // Loggable object of a transaction at /openrtb2/amp endpoint
 type AmpObject struct {
 	Status               int
 	Errors               []error
-	Request              *openrtb2.BidRequest
 	AuctionResponse      *openrtb2.BidResponse
 	AmpTargetingValues   map[string]string
 	Origin               string
 	StartTime            time.Time
 	HookExecutionOutcome []hookexecution.StageOutcome
+	SeatNonBid           []openrtb_ext.SeatNonBid
+	RequestWrapper       *openrtb_ext.RequestWrapper
 }
 
 // Loggable object of a transaction at /openrtb2/video endpoint
 type VideoObject struct {
-	Status        int
-	Errors        []error
-	Request       *openrtb2.BidRequest
-	Response      *openrtb2.BidResponse
-	VideoRequest  *openrtb_ext.BidRequestVideo
-	VideoResponse *openrtb_ext.BidResponseVideo
-	StartTime     time.Time
+	Status         int
+	Errors         []error
+	Response       *openrtb2.BidResponse
+	VideoRequest   *openrtb_ext.BidRequestVideo
+	VideoResponse  *openrtb_ext.BidResponseVideo
+	StartTime      time.Time
+	SeatNonBid     []openrtb_ext.SeatNonBid
+	RequestWrapper *openrtb_ext.RequestWrapper
 }
 
 // Loggable object of a transaction at /setuid

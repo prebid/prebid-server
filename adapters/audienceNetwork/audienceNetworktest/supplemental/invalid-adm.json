@@ -96,6 +96,7 @@
             }
         }
     }],
+    "expectedBidResponses": [{"currency":"USD","bids":[]}],
     "expectedMakeBidsErrors": [{
         "value": "invalid character 'm' looking for beginning of value",
         "comparison": "literal"
