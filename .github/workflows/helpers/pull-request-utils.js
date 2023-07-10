@@ -138,50 +138,10 @@ class diffHelper {
 
     const pullRequestDiff = await this.#getDiffForFiles(data)
 
-    let nonScannedCommitsDiff = {}
-
-    // The "synchronize" event implies that new commit are pushed after the pull request was opened
-    if (
-      Object.keys(pullRequestDiff).length != 0 &&
-      this.pullRequestEvent === synchronizeEvent
-    ) {
-      // Retrieves list of commits that have not been scanned by the PR check
-      const nonScannedCommits = await this.#getNonScannedCommits()
-      for (const commit of nonScannedCommits) {
-        const { data } = await this.github.rest.repos.getCommit({
-          owner: this.owner,
-          repo: this.repo,
-          ref: commit,
-        })
-
-        const commitDiff = await this.#getDiffForFiles(data.files)
-        const files = Object.keys(commitDiff)
-        for (const file of files) {
-          // Consider scenario where the changes made to a file in the initial commit are completely undone by subsequent commits
-          // In such cases, the modifications from the initial commit should not be taken into account
-          // If the changes were entirely removed, there should be no entry for the file in the pullRequestStats
-          const filePRDiff = pullRequestDiff[file]
-          if (!filePRDiff) {
-            continue
-          }
-
-          // Consider scenario where changes made in the commit were partially removed or modified by subsequent commits
-          // In such cases, include only those commit changes that are part of the pullRequestStats object
-          // This ensures that only the changes that are reflected in the pull request are considered
-          const changes = await this.#filterCommitDiff(commitDiff[file], filePRDiff)
-
-          if (changes.length !== 0) {
-            // Check if nonScannedCommitsDiff[file] exists, if not assign an empty array to it
-            nonScannedCommitsDiff[file] = nonScannedCommitsDiff[file] || []
-            // Combine the existing nonScannedCommitsDiff[file] array with the commit changes
-            // Remove any duplicate elements using the Set data structure
-            nonScannedCommitsDiff[file] = [
-              ...new Set([...nonScannedCommitsDiff[file], ...changes]),
-            ]
-          }
-        }
-      }
-    }
+    const nonScannedCommitsDiff =
+      Object.keys(pullRequestDiff).length != 0 && this.pullRequestEvent === synchronizeEvent // The "synchronize" event implies that new commit are pushed after the pull request was opened
+        ? await this.getNonScannedCommitDiff(pullRequestDiff)
+        : {}
 
     const prDiffFiles = Object.keys(pullRequestDiff)
     const pullRequest = {
@@ -191,6 +151,52 @@ class diffHelper {
     }
     const uncheckedCommits = { diff: nonScannedCommitsDiff }
     return JSON.stringify({ pullRequest, uncheckedCommits })
+  }
+
+  /*
+    Retrieves the diff for non-scanned commits by comparing their changes with the pull request diff
+    @param {Object} pullRequestDiff - The diff of files in the pull request
+    @returns {Object} - The diff of files in the non-scanned commits that are part of the pull request diff
+   */
+  async getNonScannedCommitDiff(pullRequestDiff) {
+    let nonScannedCommitsDiff = {}
+    // Retrieves list of commits that have not been scanned by the PR check
+    const nonScannedCommits = await this.#getNonScannedCommits()
+    for (const commit of nonScannedCommits) {
+      const { data } = await this.github.rest.repos.getCommit({
+        owner: this.owner,
+        repo: this.repo,
+        ref: commit,
+      })
+
+      const commitDiff = await this.#getDiffForFiles(data.files)
+      const files = Object.keys(commitDiff)
+      for (const file of files) {
+        // Consider scenario where the changes made to a file in the initial commit are completely undone by subsequent commits
+        // In such cases, the modifications from the initial commit should not be taken into account
+        // If the changes were entirely removed, there should be no entry for the file in the pullRequestStats
+        const filePRDiff = pullRequestDiff[file]
+        if (!filePRDiff) {
+          continue
+        }
+
+        // Consider scenario where changes made in the commit were partially removed or modified by subsequent commits
+        // In such cases, include only those commit changes that are part of the pullRequestStats object
+        // This ensures that only the changes that are reflected in the pull request are considered
+        const changes = await this.#filterCommitDiff(commitDiff[file], filePRDiff)
+
+        if (changes.length !== 0) {
+          // Check if nonScannedCommitsDiff[file] exists, if not assign an empty array to it
+          nonScannedCommitsDiff[file] = nonScannedCommitsDiff[file] || []
+          // Combine the existing nonScannedCommitsDiff[file] array with the commit changes
+          // Remove any duplicate elements using the Set data structure
+          nonScannedCommitsDiff[file] = [
+            ...new Set([...nonScannedCommitsDiff[file], ...changes]),
+          ]
+        }
+      }
+    }
+    return nonScannedCommitsDiff
   }
 }
 
