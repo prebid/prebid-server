@@ -258,7 +258,6 @@ func resolveFloorMin(reqFloors *openrtb_ext.PriceFloorRules, fetchFloors *openrt
 		}
 	}
 
-	// Question :: What should be the behaviour if request floorMin present and currency is not defined?
 	if len(providerFloorMinCur) > 0 {
 		if providerFloorMin > 0 {
 			return Price{FloorMin: providerFloorMin, FloorMinCur: providerFloorMinCur}
@@ -268,7 +267,7 @@ func resolveFloorMin(reqFloors *openrtb_ext.PriceFloorRules, fetchFloors *openrt
 		}
 	}
 
-	return Price{FloorMin: 0, FloorMinCur: ""}
+	return Price{FloorMin: requestFloorMin, FloorMinCur: requestFloorMinCur}
 
 }
 
@@ -284,21 +283,8 @@ func mergeFloors(reqFloors *openrtb_ext.PriceFloorRules, fetchFloors *openrtb_ex
 		return mergedFloors
 	}
 
-	var enforceRate int
 	if reqFloors.Enforcement != nil {
-		enforceRate = reqFloors.Enforcement.EnforceRate
-	}
-
-	// Question :: Should we copy entire Enforcement Object from request?
-	if enforceRate > 0 {
-		if mergedFloors.Enforcement == nil {
-			mergedFloors.Enforcement = new(openrtb_ext.PriceFloorEnforcement)
-		}
-		mergedFloors.Enforcement.EnforceRate = enforceRate
-
-		if reqFloors != nil && reqFloors.Enforcement != nil && reqFloors.Enforcement.EnforcePBS != nil {
-			mergedFloors.Enforcement.EnforcePBS = ptrutil.Clone(reqFloors.Enforcement.EnforcePBS)
-		}
+		mergedFloors.Enforcement = reqFloors.Enforcement.DeepCopy()
 	}
 
 	floorMinPrice := resolveFloorMin(reqFloors, fetchFloors, conversions)
