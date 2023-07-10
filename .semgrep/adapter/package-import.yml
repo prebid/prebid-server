@@ -1,6 +1,6 @@
 rules:
   - id: package-import-check
-    message: Importing "$PKG" package is not recommended in adapter code
+    message: Usage of "$PKG" package is prohibited in adapter code
     languages:
       - go
     severity: ERROR
