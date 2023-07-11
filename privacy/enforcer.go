@@ -3,7 +3,6 @@ package privacy
 import (
 	"fmt"
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
 	"strings"
 )
 
@@ -33,9 +32,6 @@ func NewActivityControl(privacyConf *config.AccountPrivacy) (ActivityControl, er
 
 	if privacyConf == nil {
 		return ac, err
-	} else {
-		//temporarily disable Activities if they are specified at the account level
-		return ac, &errortypes.Warning{Message: "account.Privacy has no effect as the feature is under development."}
 	}
 
 	plans := make(map[Activity]ActivityPlan)
