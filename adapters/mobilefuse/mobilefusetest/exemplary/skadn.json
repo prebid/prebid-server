@@ -13,8 +13,11 @@
                     ]
                 },
                 "ext": {
-                	   "skadn": {
-                        "versions": ["2.0", "2.1"],
+                    "skadn": {
+                        "versions": [
+                            "2.0",
+                            "2.1"
+                        ],
                         "sourceapp": "11111",
                         "skadnetids": [
                             "424m5254lk.skadnetwork",
@@ -30,7 +33,6 @@
             }
         ]
     },
-
     "httpCalls": [
         {
             "expectedRequest": {
@@ -49,16 +51,19 @@
                                 ]
                             },
                             "tagid": "999999",
-                            "ext" : {
-	                            "skadn": {
-		                            "versions": ["2.0", "2.1"],
-		                            "sourceapp": "11111",
-								   "skadnetids": [
-			                            "424m5254lk.skadnetwork",
-			                            "4fzdc2evr5.skadnetwork"
-			                        ]
-		                    	   }
-						   }
+                            "ext": {
+                                "skadn": {
+                                    "versions": [
+                                        "2.0",
+                                        "2.1"
+                                    ],
+                                    "sourceapp": "11111",
+                                    "skadnetids": [
+                                        "424m5254lk.skadnetwork",
+                                        "4fzdc2evr5.skadnetwork"
+                                    ]
+                                }
+                            }
                         }
                     ]
                 }
@@ -69,6 +74,5 @@
             }
         }
     ],
-
     "expectedBidResponses": []
 }
