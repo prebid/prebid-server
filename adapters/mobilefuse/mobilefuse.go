@@ -27,6 +27,10 @@ type BidExt struct {
 	Mf ExtMf `json:"mf"`
 }
 
+type ExtSkadn struct {
+	Skadn json.RawMessage `json:"skadn"`
+}
+
 // Builder builds a new instance of the MobileFuse adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
@@ -107,10 +111,9 @@ func (adapter *MobileFuseAdapter) makeRequest(bidRequest *openrtb2.BidRequest) (
 		return nil, append(errs, err)
 	}
 
-	validImps := adapter.getValidImps(bidRequest, mobileFuseExtension)
+	validImps, err := adapter.getValidImps(bidRequest, mobileFuseExtension)
 
-	if len(validImps) == 0 {
-		err := fmt.Errorf("No valid imps")
+	if err != nil {
 		errs = append(errs, err)
 		return nil, errs
 	}
@@ -178,20 +181,41 @@ func (adapter *MobileFuseAdapter) getEndpoint(ext *openrtb_ext.ExtImpMobileFuse)
 	return url, nil
 }
 
-func (adapter *MobileFuseAdapter) getValidImps(bidRequest *openrtb2.BidRequest, ext *openrtb_ext.ExtImpMobileFuse) []openrtb2.Imp {
+func (adapter *MobileFuseAdapter) getValidImps(bidRequest *openrtb2.BidRequest, ext *openrtb_ext.ExtImpMobileFuse) ([]openrtb2.Imp, error) {
 	var validImps []openrtb2.Imp
 
 	for _, imp := range bidRequest.Imp {
 		if imp.Banner != nil || imp.Video != nil || imp.Native != nil {
 			imp.TagID = strconv.Itoa(ext.PlacementId)
-			imp.Ext = nil
+
+			var extSkadn ExtSkadn
+			err := json.Unmarshal(imp.Ext, &extSkadn)
+
+			if err != nil {
+				return nil, err
+			}
+
+			if extSkadn.Skadn != nil {
+				imp.Ext, err = json.Marshal(map[string]json.RawMessage{"skadn": extSkadn.Skadn})
+
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				imp.Ext = nil
+			}
+
 			validImps = append(validImps, imp)
 
 			break
 		}
 	}
 
-	return validImps
+	if len(validImps) == 0 {
+		return nil, fmt.Errorf("No valid imps")
+	}
+
+	return validImps, nil
 }
 
 func (adapter *MobileFuseAdapter) getBidType(bid openrtb2.Bid) openrtb_ext.BidType {
