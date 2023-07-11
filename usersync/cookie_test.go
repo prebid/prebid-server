@@ -78,7 +78,7 @@ func TestReadCookie(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			if test.givenCookie != nil {
-				httpCookie, err := test.givenCookie.ToHTTPCookie()
+				httpCookie, err := ToHTTPCookie(test.givenCookie)
 				assert.NoError(t, err)
 				test.givenRequest.AddCookie(httpCookie)
 			} else if test.givenCookie == nil && test.givenHttpCookie != nil {
@@ -581,7 +581,7 @@ func TestReadCookieOptOut(t *testing.T) {
 		optOut: false,
 	})
 
-	existingCookie, _ := cookie.ToHTTPCookie()
+	existingCookie, _ := ToHTTPCookie(&cookie)
 
 	testCases := []struct {
 		description          string
@@ -739,7 +739,7 @@ func ensureConsistency(t *testing.T, cookie *Cookie) {
 			t.Error("TrySync should fail if the user has opted out of PBSCookie syncs, but it succeeded.")
 		}
 	}
-	httpCookie, err := cookie.ToHTTPCookie()
+	httpCookie, err := ToHTTPCookie(cookie)
 	assert.NoError(t, err)
 	copiedCookie := decoder.Decode(httpCookie.Value)
 	if copiedCookie.AllowSyncs() != cookie.AllowSyncs() {
@@ -767,4 +767,19 @@ func ensureConsistency(t *testing.T, cookie *Cookie) {
 			t.Errorf("Wrong UID saved for family %s. Expected %s, got %s", family, uid, savedUID)
 		}
 	}
+}
+
+func ToHTTPCookie(cookie *Cookie) (*http.Cookie, error) {
+	encoder := Base64Encoder{}
+	encodedCookie, err := encoder.Encode(cookie)
+	if err != nil {
+		return nil, nil
+	}
+
+	return &http.Cookie{
+		Name:    uidCookieName,
+		Value:   encodedCookie,
+		Expires: time.Now().Add((90 * 24 * time.Hour)),
+		Path:    "/",
+	}, nil
 }

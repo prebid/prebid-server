@@ -230,21 +230,6 @@ func (cookie *Cookie) HasAnyLiveSyncs() bool {
 	return false
 }
 
-func (cookie *Cookie) ToHTTPCookie() (*http.Cookie, error) {
-	encoder := Base64Encoder{}
-	encodedCookie, err := encoder.Encode(cookie)
-	if err != nil {
-		return nil, nil
-	}
-
-	return &http.Cookie{
-		Name:    uidCookieName,
-		Value:   encodedCookie,
-		Expires: time.Now().Add((90 * 24 * time.Hour)),
-		Path:    "/",
-	}, nil
-}
-
 func checkAudienceNetwork(key string, uid string) bool {
 	return key == string(openrtb_ext.BidderAudienceNetwork) && uid == "0"
 }
