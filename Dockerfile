@@ -1,4 +1,4 @@
-FROM ubuntu:20.04 AS build
+FROM --platform=linux/amd64 ubuntu:20.04 AS build
 RUN apt-get update && \
     apt-get -y upgrade && \
     apt-get install -y wget
@@ -22,7 +22,7 @@ ARG TEST="true"
 RUN if [ "$TEST" != "false" ]; then ./validate.sh ; fi
 RUN go build -mod=vendor -ldflags "-X github.com/prebid/prebid-server/version.Ver=`git describe --tags | sed 's/^v//'` -X github.com/prebid/prebid-server/version.Rev=`git rev-parse HEAD`" .
 
-FROM ubuntu:20.04 AS release
+FROM --platform=linux/amd64 ubuntu:20.04 AS release
 LABEL maintainer="hans.hjort@xandr.com" 
 WORKDIR /usr/local/bin/
 COPY --from=build /app/prebid-server .

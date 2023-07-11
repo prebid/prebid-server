@@ -1,0 +1,16 @@
+version: "3.9"
+services:
+  prebid-server:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+      args:
+        - TEST=false
+    container_name: prebid-server
+    environment:
+      - GCP_PROJECT_ID=marble-light-local
+    privileged: true
+    volumes:
+      - ./pbs.yml:/etc/config/pbs.yml
+    ports:
+      - "8000:8000"

@@ -74,6 +74,7 @@ var accountIdSearchPath = [...]struct {
 }{
 	{true, []string{"app", "publisher", "ext", openrtb_ext.PrebidExtKey, "parentAccount"}},
 	{true, []string{"app", "publisher", "id"}},
+
 	{false, []string{"site", "publisher", "ext", openrtb_ext.PrebidExtKey, "parentAccount"}},
 	{false, []string{"site", "publisher", "id"}},
 }
