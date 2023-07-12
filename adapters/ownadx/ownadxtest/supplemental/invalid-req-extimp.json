@@ -1,7 +1,7 @@
 {
   "expectedMakeRequestsErrors": [
     {
-      "value": "Bidder extension not valid or can't be unmarshalled",
+      "value": "Error while unmarshaling bidder extension",
       "comparison": "literal"
     }
   ],

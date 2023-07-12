@@ -11,7 +11,7 @@
         "ext": {
           "bidder": {
             "tokenId": "126151698247",
-            "host": "abc.com",
+            "sspId": "11",
             "seatId": "2"
           }
         }
@@ -21,7 +21,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://abc.com/bidder/bid/2/000?token=126151698247",
+        "uri": "https://pbs.prebid-ownadx.com/bidder/bid/2/11?token=126151698247",
         "body": {
           "id": "test-request-id",
           "imp": [
@@ -34,7 +34,7 @@
               "ext": {
                 "bidder": {
                   "tokenId": "126151698247",
-                  "host": "abc.com",
+                  "sspId": "11",
                   "seatId": "2"
                 }
               }

@@ -10,7 +10,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderOwnAdx, config.Adapter{
-		Endpoint: "http://{{.Host}}/bidder/bid/{{.AccountID}}/000?token={{.SourceId}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+		Endpoint: "https://pbs.prebid-ownadx.com/bidder/bid/{{.AccountID}}/{{.ZoneID}}?token={{.SourceId}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	assert.NoError(t, buildErr)
 	adapterstest.RunJSONBidderTest(t, "ownadxtest", bidder)

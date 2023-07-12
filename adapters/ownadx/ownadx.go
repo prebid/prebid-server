@@ -20,20 +20,47 @@ type bidExt struct {
 	MediaType string `json:"mediaType"`
 }
 
-func getRequestData(reqJSON []byte, url string) []*adapters.RequestData {
+func (adapter *adapter) getRequestData(bidRequest *openrtb2.BidRequest, impExt *openrtb_ext.ExtImpOwnAdx, imps []openrtb2.Imp) (*adapters.RequestData, error) {
+	pbidRequest := createBidRequest(bidRequest, imps)
+	reqJSON, err := json.Marshal(pbidRequest)
+	if err != nil {
+		return nil, err
+	}
+	adapter.buildEndpointURL(impExt)
+	url, err := adapter.buildEndpointURL(impExt)
+	if err != nil {
+		return nil, err
+	}
+
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 	headers.Add("x-openrtb-version", "2.5")
 
-	return []*adapters.RequestData{{
-		Method:  http.MethodPost,
-		Body:    reqJSON,
+	return &adapters.RequestData{
+		Method:  "POST",
 		Uri:     url,
-		Headers: headers,
-	}}
-}
+		Body:    reqJSON,
+		Headers: headers}, nil
 
+}
+func createBidRequest(rtbBidRequest *openrtb2.BidRequest, imps []openrtb2.Imp) *openrtb2.BidRequest {
+	bidRequest := *rtbBidRequest
+	bidRequest.Imp = imps
+	return &bidRequest
+}
+func getExtImps(imps []openrtb2.Imp, impsExt []openrtb_ext.ExtImpOwnAdx) map[openrtb_ext.ExtImpOwnAdx][]openrtb2.Imp {
+	respExt := make(map[openrtb_ext.ExtImpOwnAdx][]openrtb2.Imp)
+	for idx := range imps {
+		imp := imps[idx]
+		impExt := impsExt[idx]
+		if respExt[impExt] == nil {
+			respExt[impExt] = make([]openrtb2.Imp, 0)
+		}
+		respExt[impExt] = append(respExt[impExt], imp)
+	}
+	return respExt
+}
 func (adapter *adapter) buildEndpointURL(params *openrtb_ext.ExtImpOwnAdx) (string, error) {
 	endpointParams := macros.EndpointTemplateParams{
 		ZoneID:    params.SspId,
@@ -62,30 +89,55 @@ func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpOwnAdx, error) {
 }
 
 func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var ownAdxExt *openrtb_ext.ExtImpOwnAdx
-	ownAdxExt, err := getImpressionExt(&(request.Imp[0]))
-	if err != nil {
-		return nil, []error{
-			httpBadResponseError(fmt.Sprintf("Bidder extension not valid or can't be unmarshalled")),
+
+	errs := make([]error, 0, len(request.Imp))
+	if len(request.Imp) == 0 {
+		errs = append(errs, &errortypes.BadInput{
+			Message: "No impression in the bid request"},
+		)
+		return nil, errs
+	}
+
+	imps, impExts, err := getImpressionsAndImpExt(request.Imp)
+	if len(imps) == 0 {
+		return nil, err
+	}
+	errs = append(errs, err...)
+	if len(imps) == 0 {
+		return nil, err
+	}
+
+	extImps := getExtImps(imps, impExts)
+
+	reqDetail := make([]*adapters.RequestData, 0, len(extImps))
+	for k, imps := range extImps {
+		bidRequest, err := adapter.getRequestData(request, &k, imps)
+		if err != nil {
+			errs = append(errs, err)
+		} else {
+			reqDetail = append(reqDetail, bidRequest)
 		}
 	}
-
-	endPoint, err := adapter.buildEndpointURL(ownAdxExt)
-	if err != nil {
-		return nil, []error{err}
-	}
-
-	reqJSON, err := json.Marshal(request)
-	if err != nil {
-		return nil, []error{err}
-	}
-
-	return getRequestData(reqJSON, endPoint), nil
+	return reqDetail, errs
 }
-func httpBadResponseError(message string) error {
-	return &errortypes.BadServerResponse{
-		Message: message,
+
+func getImpressionsAndImpExt(imps []openrtb2.Imp) ([]openrtb2.Imp, []openrtb_ext.ExtImpOwnAdx, []error) {
+	impLen := len(imps)
+	errors := make([]error, 0, impLen)
+	rsImpExts := make([]openrtb_ext.ExtImpOwnAdx, 0, impLen)
+	rsImps := make([]openrtb2.Imp, 0, impLen)
+
+	for _, imp := range imps {
+		ownAdxExt, err := getImpressionExt(&(imp))
+		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
+
+		rsImps = append(rsImps, imp)
+		rsImpExts = append(rsImpExts, *ownAdxExt)
 	}
+	return rsImps, rsImpExts, errors
 }
 
 func getBidType(ext bidExt) (openrtb_ext.BidType, error) {
@@ -98,55 +150,66 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 	}
 	if response.StatusCode == http.StatusBadRequest {
 		return nil, []error{
-			httpBadResponseError(fmt.Sprintf("Bad request: %d", response.StatusCode)),
+			&errortypes.BadServerResponse{
+				Message: fmt.Sprintf("Bad request: %d", response.StatusCode),
+			},
 		}
 	}
 	if response.StatusCode != http.StatusOK {
 		return nil, []error{
-			httpBadResponseError(fmt.Sprintf("Unexpected http status code: %d", response.StatusCode)),
+			&errortypes.BadServerResponse{
+				Message: fmt.Sprintf("Unexpected status code: %d. Run with request.test = 1 for more info.", response.StatusCode),
+			},
 		}
 	}
 	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{
-			httpBadResponseError(fmt.Sprintf("Bad server response ")),
+			&errortypes.BadServerResponse{
+				Message: fmt.Sprintf("Bad server response "),
+			},
 		}
 	}
 	if len(bidResp.SeatBid) == 0 {
 		return nil, []error{
-			httpBadResponseError(fmt.Sprintf("Array SeatBid cannot be empty ")),
+			&errortypes.BadServerResponse{
+				Message: fmt.Sprintf("Array SeatBid cannot be empty "),
+			},
 		}
 	}
 
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
-
-	if len(bidResp.SeatBid[0].Bid) == 0 {
+	seatBid := bidResp.SeatBid[0]
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
+	if len(seatBid.Bid) == 0 {
 		return nil, []error{
-			httpBadResponseError(fmt.Sprintf("Bid cannot be empty ")),
+			&errortypes.BadServerResponse{
+				Message: fmt.Sprintf("Bid cannot be empty "),
+			},
 		}
 	}
+	for i := 0; i < len(seatBid.Bid); i++ {
+		var bidExt bidExt
+		var bidType openrtb_ext.BidType
+		bid := seatBid.Bid[i]
+		if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
+			return nil, []error{&errortypes.BadServerResponse{
+				Message: "BidExt is required",
+			}}
+		}
 
-	bid := bidResp.SeatBid[0].Bid[0]
-	var bidExt bidExt
-	var bidType openrtb_ext.BidType
+		bidType, err := getBidType(bidExt)
 
-	if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: "BidExt is required",
-		}}
+		if err != nil {
+			return nil, []error{&errortypes.BadServerResponse{
+				Message: "Bid type is invalid",
+			}}
+		}
+		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+			Bid:     &bid,
+			BidType: bidType,
+		})
 	}
 
-	bidType, err := getBidType(bidExt)
-
-	if err != nil {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: "Bid type is invalid",
-		}}
-	}
-	bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-		Bid:     &bid,
-		BidType: bidType,
-	})
 	return bidResponse, nil
 }
 
