@@ -73,6 +73,12 @@ type extraBidderRespInfo struct {
 	respProcessingStartTime time.Time
 }
 
+type extraAuctionResponseInfo struct {
+	fledge                  *openrtb_ext.Fledge
+	bidsFound               bool
+	bidderResponseStartTime time.Time
+}
+
 const ImpIdReqBody = "Stored bid response for impression id: "
 
 // Possible values of compression types Prebid Server can support for bidder compression
