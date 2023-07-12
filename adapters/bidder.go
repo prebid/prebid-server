@@ -151,11 +151,6 @@ type ExtraRequestInfo struct {
 	CurrencyConversions        currency.Conversions
 }
 
-type MakeBidsTimeInfo struct {
-	AfterMakeBidsStartTime time.Time
-	Durations              []time.Duration
-}
-
 func NewExtraRequestInfo(c currency.Conversions) ExtraRequestInfo {
 	return ExtraRequestInfo{
 		CurrencyConversions: c,
