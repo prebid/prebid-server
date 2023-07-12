@@ -710,7 +710,7 @@ func (e *exchange) getAllBids(
 				addCallSignHeader:   isAdsCertEnabled(experiment, e.bidderInfo[string(bidderRequest.BidderName)]),
 				bidAdjustments:      bidAdjustments,
 			}
-			seatBids, err, seatNonBids := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest, conversions, &reqInfo, e.adsCertSigner, bidReqOptions, alternateBidderCodes, hookExecutor, bidAdjustmentRules)
+			seatBids, seatNonBids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest, conversions, &reqInfo, e.adsCertSigner, bidReqOptions, alternateBidderCodes, hookExecutor, bidAdjustmentRules)
 
 			// Add in time reporting
 			elapsed := time.Since(start)

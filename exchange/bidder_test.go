@@ -110,7 +110,7 @@ func TestSingleBidder(t *testing.T) {
 			bidAdjustments:      bidAdjustments,
 		}
 		extraInfo := &adapters.ExtraRequestInfo{}
-		seatBids, errs, _ := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), extraInfo, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
+		seatBids, _, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), extraInfo, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
 		assert.NotEmpty(t, extraInfo.MakeBidsTimeInfo.Durations)
 		assert.False(t, extraInfo.MakeBidsTimeInfo.AfterMakeBidsStartTime.IsZero())
 
@@ -236,7 +236,7 @@ func TestSingleBidderGzip(t *testing.T) {
 			bidAdjustments:      bidAdjustments,
 		}
 		extraInfo := &adapters.ExtraRequestInfo{}
-		seatBids, errs, _ := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), extraInfo, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
+		seatBids, _, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), extraInfo, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
 		assert.NotEmpty(t, extraInfo.MakeBidsTimeInfo.Durations)
 		assert.False(t, extraInfo.MakeBidsTimeInfo.AfterMakeBidsStartTime.IsZero())
 		assert.Len(t, seatBids, 1)
@@ -518,7 +518,7 @@ func TestMultiBidder(t *testing.T) {
 		addCallSignHeader:   false,
 		bidAdjustments:      bidAdjustments,
 	}
-	seatBids, errs, _ := bidder.requestBid(context.Background(), bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
+	seatBids, _, errs := bidder.requestBid(context.Background(), bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
 
 	if len(seatBids) != 1 {
 		t.Fatalf("SeatBid should exist, because bids exist.")
@@ -1815,7 +1815,7 @@ func TestErrorReporting(t *testing.T) {
 		addCallSignHeader:   false,
 		bidAdjustments:      bidAdjustments,
 	}
-	bids, errs, _ := bidder.requestBid(context.Background(), bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
+	bids, _, errs := bidder.requestBid(context.Background(), bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
 	if bids != nil {
 		t.Errorf("There should be no seatbid if no http requests are returned.")
 	}
@@ -2049,7 +2049,7 @@ func TestCallRecordAdapterConnections(t *testing.T) {
 		addCallSignHeader:   false,
 		bidAdjustments:      bidAdjustments,
 	}
-	_, errs, _ := bidder.requestBid(context.Background(), bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{PbsEntryPoint: metrics.ReqTypeORTB2Web}, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
+	_, _, errs := bidder.requestBid(context.Background(), bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{PbsEntryPoint: metrics.ReqTypeORTB2Web}, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
 
 	// Assert no errors
 	assert.Equal(t, 0, len(errs), "bidder.requestBid returned errors %v \n", errs)
@@ -3056,3 +3056,139 @@ func TestGetBidType(t *testing.T) {
 		})
 	}
 }
+
+func TestSeatNonBid(t *testing.T) {
+	type args struct {
+		BidRequest     *openrtb2.BidRequest
+		Seat           string
+		BidderResponse func() (*http.Response, error)
+	}
+	type expect struct {
+		// seatBids    []*entities.PbsOrtbSeatBid
+		seatNonBids *openrtb_ext.SeatNonBid
+		// errors      []error
+	}
+	testCases := []struct {
+		name   string
+		args   args
+		expect expect
+	}{
+		{
+			name: "101_timeout",
+			args: args{
+				Seat: "someseat",
+				BidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{{ID: "1234"}},
+				},
+				BidderResponse: func() (*http.Response, error) { return nil, context.DeadlineExceeded },
+			},
+			expect: expect{
+				seatNonBids: &openrtb_ext.SeatNonBid{
+					Seat: "someseat",
+					NonBid: []openrtb_ext.NonBid{{
+						ImpId:      "1234",
+						StatusCode: int(ErrorTimeout),
+						Error:      context.DeadlineExceeded.Error(),
+						Ext:        openrtb_ext.NonBidExt{Prebid: openrtb_ext.ExtResponseNonBidPrebid{Bid: openrtb_ext.NonBidObject{Price: 0}}},
+					}}},
+				// errors:   []error{&errortypes.Timeout{Message: context.DeadlineExceeded.Error()}},
+				// seatBids: []*entities.PbsOrtbSeatBid{{Bids: []*entities.PbsOrtbBid{}, Currency: "USD", Seat: "someseat", HttpCalls: []*openrtb_ext.ExtHttpCall{}}},
+			},
+		}, /* {
+			name: "103_bidder_unreachable",
+			args: args{
+				Seat: "someseat",
+				BidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{{ID: "1234"}},
+				},
+				BidderResponse: func() (*http.Response, error) {
+					return &http.Response{
+						StatusCode: 503,
+					}, nil
+				},
+			},
+			expect: expect{
+				seatNonBids: &openrtb_ext.SeatNonBid{
+					Seat: "someseat",
+					NonBid: []openrtb_ext.NonBid{{
+						ImpId:      "1234",
+						StatusCode: int(ErrorBidderUnreachable),
+						Error:      "Bidder Unreachable",
+					}},
+				},
+			},
+		}, */
+	}
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			mockBidder := &mockBidder{}
+			requests := []*adapters.RequestData(nil)
+			requests = append(requests, &adapters.RequestData{
+				Uri: "http://localhost",
+			})
+
+			mockBidder.On("MakeRequests", mock.Anything, mock.Anything).Return(requests, []error(nil))
+			// mockBidder.On("doRequest", mock.Anything, mock.Anything, mock.Anything).Return(&httpCallInfo{})
+			mockMetricsEngine := &metrics.MetricsEngineMock{}
+			mockMetricsEngine.On("RecordOverheadTime", mock.Anything, mock.Anything).Return(nil)
+			mockMetricsEngine.On("RecordBidderServerResponseTime", mock.Anything).Return(nil)
+
+			roundTrip := &mockRoundTripper{}
+			roundTrip.On("RoundTrip", mock.Anything).Return(test.args.BidderResponse())
+
+			// bidder := AdaptBidder(mockBidder, &http.Client{Transport: roundTrip}, &config.Configuration{}, mockMetricsEngine, openrtb_ext.BidderAppnexus, &config.DebugInfo{}, test.args.Seat)
+			bidder := AdaptBidder(mockBidder, &http.Client{
+				Transport: roundTrip,
+				Timeout:   time.Second,
+			}, &config.Configuration{}, mockMetricsEngine, openrtb_ext.BidderAppnexus, &config.DebugInfo{}, test.args.Seat)
+
+			// ctxTimeout, cancel := context.WithTimeout(context.Background(), time.Millisecond)
+			ctxTimeout, cancel := context.WithTimeout(context.Background(), 0)
+			defer cancel()
+			// seatBids, seatNonBids, errors := bidder.requestBid(ctxTimeout, BidderRequest{
+			_, seatNonBids, _ := bidder.requestBid(ctxTimeout, BidderRequest{
+				BidRequest: test.args.BidRequest,
+				BidderName: openrtb_ext.BidderName(test.args.Seat),
+			}, nil, &adapters.ExtraRequestInfo{}, &MockSigner{}, bidRequestOptions{}, openrtb_ext.ExtAlternateBidderCodes{}, hookexecution.EmptyHookExecutor{}, nil)
+			// assert.Equal(t, test.expect.seatBids, seatBids)
+			// assert.True(t, reflect.DeepEqual(test.expect.seatBids, seatBids))
+			assert.Equal(t, test.expect.seatNonBids, seatNonBids)
+			// assert.Equal(t, test.expect.errors, errors)
+		})
+	}
+}
+
+type mockRoundTripper struct {
+	mock.Mock
+}
+
+func (rt *mockRoundTripper) RoundTrip(request *http.Request) (*http.Response, error) {
+	args := rt.Called(request)
+	var response *http.Response
+	if args.Get(0) != nil {
+		response = args.Get(0).(*http.Response)
+	}
+	var err error
+	if args.Get(1) != nil {
+		err = args.Get(1).(error)
+	}
+
+	return response, err
+}
+
+// type mockContext struct {
+// 	context.Context
+// 	mock.Mock
+// }
+
+// func (c *mockContext) Deadline() (deadline time.Time, ok bool) {
+// 	return time.Time{}, false
+// }
+
+// func (c *mockContext) Done() <-chan struct{} {
+// 	return make(<-chan struct{})
+// }
+
+// func (c *mockContext) Value(key any) any {
+// 	return key
+// }
