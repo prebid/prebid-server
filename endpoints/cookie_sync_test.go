@@ -1903,7 +1903,6 @@ func TestUsersyncPrivacyCCPAAllowsBidderSync(t *testing.T) {
 }
 
 func TestActivityDefaultToDefaultResult(t *testing.T) {
-
 	testCases := []struct {
 		name           string
 		bidderName     string

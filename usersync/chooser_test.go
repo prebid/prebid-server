@@ -325,7 +325,7 @@ func TestChooserEvaluate(t *testing.T) {
 			description:        "Blocked By activity control",
 			givenBidder:        "a",
 			givenSyncersSeen:   map[string]struct{}{},
-			givenPrivacy:       fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowIUserSync: privacy.ActivityDeny},
+			givenPrivacy:       fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: privacy.ActivityDeny},
 			givenCookie:        cookieNeedsSync,
 			expectedSyncer:     nil,
 			expectedEvaluation: BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByPrivacy},
@@ -381,10 +381,10 @@ func (fakeSyncer) GetSync(syncTypes []SyncType, privacyPolicies privacy.Policies
 }
 
 type fakePrivacy struct {
-	gdprAllowsHostCookie   bool
-	gdprAllowsBidderSync   bool
-	ccpaAllowsBidderSync   bool
-	activityAllowIUserSync privacy.ActivityResult
+	gdprAllowsHostCookie  bool
+	gdprAllowsBidderSync  bool
+	ccpaAllowsBidderSync  bool
+	activityAllowUserSync privacy.ActivityResult
 }
 
 func (p fakePrivacy) GDPRAllowsHostCookie() bool {
@@ -400,5 +400,5 @@ func (p fakePrivacy) CCPAAllowsBidderSync(bidder string) bool {
 }
 
 func (p fakePrivacy) ActivityAllowsUserSync(bidder string) privacy.ActivityResult {
-	return p.activityAllowIUserSync
+	return p.activityAllowUserSync
 }
