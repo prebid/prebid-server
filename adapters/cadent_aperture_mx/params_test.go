@@ -1,4 +1,4 @@
-package emx_digital
+package cadent_aperture_mx
 
 import (
 	"encoding/json"
@@ -14,8 +14,8 @@ func TestValidParams(t *testing.T) {
 	}
 
 	for _, validParam := range validParams {
-		if err := validator.Validate(openrtb_ext.BidderEmxDigital, json.RawMessage(validParam)); err != nil {
-			t.Errorf("Schema rejected emx_digital params: %s", validParam)
+		if err := validator.Validate(openrtb_ext.BidderCadentApertureMX, json.RawMessage(validParam)); err != nil {
+			t.Errorf("Schema rejected cadent_aperture_mx params: %s", validParam)
 		}
 	}
 }
@@ -27,7 +27,7 @@ func TestInvalidParams(t *testing.T) {
 	}
 
 	for _, invalidParam := range invalidParams {
-		if err := validator.Validate(openrtb_ext.BidderEmxDigital, json.RawMessage(invalidParam)); err == nil {
+		if err := validator.Validate(openrtb_ext.BidderCadentApertureMX, json.RawMessage(invalidParam)); err == nil {
 			t.Errorf("Schema allowed unexpected params: %s", invalidParam)
 		}
 	}

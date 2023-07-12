@@ -1,4 +1,4 @@
-package emx_digital
+package cadent_aperture_mx
 
 import (
 	"testing"
@@ -10,7 +10,7 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderEmxDigital, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderCadentApertureMX, config.Adapter{
 		Endpoint: "https://hb.emxdgt.com"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
@@ -18,10 +18,10 @@ func TestJsonSamples(t *testing.T) {
 	}
 
 	setTesting(bidder)
-	adapterstest.RunJSONBidderTest(t, "emx_digitaltest", bidder)
+	adapterstest.RunJSONBidderTest(t, "cadent_aperture_mxtest", bidder)
 }
 
 func setTesting(bidder adapters.Bidder) {
-	bidderEmxDigital, _ := bidder.(*EmxDigitalAdapter)
-	bidderEmxDigital.testing = true
+	bidderCadentApertureMX, _ := bidder.(*CadentApertureMXAdapter)
+	bidderCadentApertureMX.testing = true
 }
