@@ -65,7 +65,7 @@ func TestAllValidBids(t *testing.T) {
 		addCallSignHeader:   false,
 		bidAdjustments:      bidAdjustments,
 	}
-	seatBids, errs, _ := bidder.requestBid(context.Background(), bidderReq, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
+	seatBids, _, errs := bidder.requestBid(context.Background(), bidderReq, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
 	assert.Len(t, seatBids, 1)
 	assert.Len(t, seatBids[0].Bids, 4)
 	assert.Len(t, errs, 0)
@@ -135,7 +135,7 @@ func TestAllBadBids(t *testing.T) {
 		addCallSignHeader:   false,
 		bidAdjustments:      bidAdjustments,
 	}
-	seatBids, errs, _ := bidder.requestBid(context.Background(), bidderReq, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
+	seatBids, _, errs := bidder.requestBid(context.Background(), bidderReq, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
 	assert.Len(t, seatBids, 1)
 	assert.Len(t, seatBids[0].Bids, 0)
 	assert.Len(t, errs, 7)
