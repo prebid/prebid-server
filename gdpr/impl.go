@@ -70,11 +70,6 @@ func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context, bidderCo
 	if err != nil {
 		return p.defaultPermissions(), err
 	}
-	// TCF1 strings are not treated as an error
-	if pc.encodingVersion == 1 {
-		return p.defaultPermissions(), nil
-	}
-
 	vendorID, _ := p.resolveVendorID(bidderCoreName, bidder)
 	vendor, err := p.getVendor(ctx, vendorID, *pc)
 	if err != nil {
