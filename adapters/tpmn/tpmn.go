@@ -15,12 +15,12 @@ import (
 )
 
 // TpmnAdapter struct
-type TpmnAdapter struct {
+type adapter struct {
 	URI string
 }
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids from TpmnBidder.
-func (rcv *TpmnAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (rcv *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	validImps, errs := getValidImpressions(request, reqInfo)
 	if len(validImps) == 0 {
 		return nil, errs
@@ -97,7 +97,7 @@ func preprocessBidFloorCurrency(imp *openrtb2.Imp, reqInfo *adapters.ExtraReques
 	return nil
 }
 
-func (a *TpmnAdapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	switch responseData.StatusCode {
 	case http.StatusNoContent:
 		return nil, nil
@@ -152,7 +152,7 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType,
 
 // Builder builds a new instance of the TpmnBidder adapter for the given bidder with the given config.
 func Builder(_ openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	bidder := &TpmnAdapter{
+	bidder := &adapter{
 		URI: config.Endpoint,
 	}
 	return bidder, nil
