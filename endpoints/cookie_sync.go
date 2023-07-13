@@ -90,7 +90,7 @@ func (c *cookieSyncEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ ht
 		c.handleError(w, err, http.StatusBadRequest)
 		return
 	}
-	decoder := usersync.DecodeV1{}
+	decoder := usersync.Base64Decoder{}
 
 	cookie := usersync.ReadCookie(r, decoder, &c.config.HostCookie)
 	usersync.SyncHostCookie(r, cookie, &c.config.HostCookie)

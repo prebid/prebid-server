@@ -58,16 +58,23 @@ func ReadCookie(r *http.Request, decoder Decoder, host *config.HostCookie) *Cook
 }
 
 // PrepareCookieForWrite ejects UIDs as long as the cookie is too full
-func (cookie *Cookie) PrepareCookieForWrite(cfg *config.HostCookie, encoder Base64Encoder, ejector Ejector) (string, error) {
-	isCookieTooBig := true
-
-	for isCookieTooBig && len(cookie.uids) > 0 {
+func (cookie *Cookie) PrepareCookieForWrite(cfg *config.HostCookie, encoder Encoder, ejector Ejector) (string, error) {
+	for len(cookie.uids) > 0 {
 		encodedCookie, err := encoder.Encode(cookie)
 		if err != nil {
 			return encodedCookie, err
 		}
 
-		isCookieTooBig = len(encodedCookie) > cfg.MaxCookieSizeBytes && cfg.MaxCookieSizeBytes > 0
+		// Convert to HTTP Cookie to Get Size
+		httpCookie := &http.Cookie{
+			Name:    uidCookieName,
+			Value:   encodedCookie,
+			Expires: time.Now().Add(cfg.TTLDuration()),
+			Path:    "/",
+		}
+		cookieSize := len([]byte(httpCookie.String()))
+
+		isCookieTooBig := cookieSize > cfg.MaxCookieSizeBytes && cfg.MaxCookieSizeBytes > 0
 		if !isCookieTooBig {
 			return encodedCookie, nil
 		}
@@ -123,7 +130,7 @@ func (cookie *Cookie) Sync(key string, uid string) error {
 	return nil
 }
 
-// Sort UIDs is used to get a list of uids sorted from oldest to newest
+// sortUIDs is used to get a list of uids sorted from oldest to newest
 // This list is used to eject oldest uids from the cookie
 // This will be incorporated with a more complex ejection framework in a future PR
 func sortUIDs(uids map[string]UIDEntry) []string {
@@ -219,21 +226,6 @@ func (cookie *Cookie) HasAnyLiveSyncs() bool {
 		}
 	}
 	return false
-}
-
-func (cookie *Cookie) ToHTTPCookie() (*http.Cookie, error) {
-	encoder := Base64EncoderV1{}
-	encodedCookie, err := encoder.Encode(cookie)
-	if err != nil {
-		return nil, nil
-	}
-
-	return &http.Cookie{
-		Name:    uidCookieName,
-		Value:   encodedCookie,
-		Expires: time.Now().Add((90 * 24 * time.Hour)),
-		Path:    "/",
-	}, nil
 }
 
 func checkAudienceNetwork(key string, uid string) bool {

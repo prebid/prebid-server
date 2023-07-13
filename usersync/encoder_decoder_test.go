@@ -9,8 +9,8 @@ import (
 )
 
 func TestEncoderDecoder(t *testing.T) {
-	encoder := Base64EncoderV1{}
-	decoder := DecodeV1{}
+	encoder := Base64Encoder{}
+	decoder := Base64Decoder{}
 
 	testCases := []struct {
 		name            string
@@ -71,7 +71,7 @@ func TestEncoderDecoder(t *testing.T) {
 }
 
 func TestEncoder(t *testing.T) {
-	encoder := Base64EncoderV1{}
+	encoder := Base64Encoder{}
 
 	testCases := []struct {
 		name                  string
@@ -114,7 +114,7 @@ func TestEncoder(t *testing.T) {
 }
 
 func TestDecoder(t *testing.T) {
-	decoder := DecodeV1{}
+	decoder := Base64Decoder{}
 
 	testCases := []struct {
 		name               string

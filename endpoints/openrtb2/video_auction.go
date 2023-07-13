@@ -276,7 +276,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 
 	// Read Usersyncs/Cookie
-	decoder := usersync.DecodeV1{}
+	decoder := usersync.Base64Decoder{}
 	usersyncs := usersync.ReadCookie(r, decoder, &deps.cfg.HostCookie)
 	usersync.SyncHostCookie(r, usersyncs, &deps.cfg.HostCookie)
 

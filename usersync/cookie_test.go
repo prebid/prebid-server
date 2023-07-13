@@ -78,13 +78,13 @@ func TestReadCookie(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			if test.givenCookie != nil {
-				httpCookie, err := test.givenCookie.ToHTTPCookie()
+				httpCookie, err := ToHTTPCookie(test.givenCookie)
 				assert.NoError(t, err)
 				test.givenRequest.AddCookie(httpCookie)
 			} else if test.givenCookie == nil && test.givenHttpCookie != nil {
 				test.givenRequest.AddCookie(test.givenHttpCookie)
 			}
-			actualCookie := ReadCookie(test.givenRequest, DecodeV1{}, &config.HostCookie{})
+			actualCookie := ReadCookie(test.givenRequest, Base64Decoder{}, &config.HostCookie{})
 			assert.Equal(t, test.expectedCookie.uids, actualCookie.uids)
 			assert.Equal(t, test.expectedCookie.optOut, actualCookie.optOut)
 		})
@@ -92,8 +92,8 @@ func TestReadCookie(t *testing.T) {
 }
 
 func TestWriteCookie(t *testing.T) {
-	encoder := Base64EncoderV1{}
-	decoder := DecodeV1{}
+	encoder := Base64Encoder{}
+	decoder := Base64Decoder{}
 
 	testCases := []struct {
 		name               string
@@ -310,7 +310,7 @@ func TestGetUIDs(t *testing.T) {
 }
 
 func TestWriteCookieUserAgent(t *testing.T) {
-	encoder := Base64EncoderV1{}
+	encoder := Base64Encoder{}
 
 	testCases := []struct {
 		name                string
@@ -378,8 +378,8 @@ func TestWriteCookieUserAgent(t *testing.T) {
 }
 
 func TestPrepareCookieForWrite(t *testing.T) {
-	encoder := Base64EncoderV1{}
-	decoder := DecodeV1{}
+	encoder := Base64Encoder{}
+	decoder := Base64Decoder{}
 	cookieToSend := &Cookie{
 		uids: map[string]UIDEntry{
 			"1": newTempId("1234567890123456789012345678901234567890123456", 7),
@@ -409,52 +409,52 @@ func TestPrepareCookieForWrite(t *testing.T) {
 	testCases := []struct {
 		name                     string
 		givenMaxCookieSize       int
-		expectedRemainingUidKeys map[string]bool
+		expectedRemainingUidKeys []string
 	}{
 		{
 			name:               "no-uids-ejected",
 			givenMaxCookieSize: 2000,
-			expectedRemainingUidKeys: map[string]bool{
-				"1": true, "2": true, "3": true, "4": true, "5": true, "6": true, "7": true,
+			expectedRemainingUidKeys: []string{
+				"1", "2", "3", "4", "5", "6", "7",
 			},
 		},
 		{
 			name:               "no-uids-ejected-2",
 			givenMaxCookieSize: 0,
-			expectedRemainingUidKeys: map[string]bool{
-				"1": true, "2": true, "3": true, "4": true, "5": true, "6": true, "7": true,
+			expectedRemainingUidKeys: []string{
+				"1", "2", "3", "4", "5", "6", "7",
 			},
 		},
 		{
 			name:               "one-uid-ejected",
-			givenMaxCookieSize: 800,
-			expectedRemainingUidKeys: map[string]bool{
-				"1": true, "2": true, "3": true, "4": true, "5": true, "6": true,
+			givenMaxCookieSize: 900,
+			expectedRemainingUidKeys: []string{
+				"1", "2", "3", "4", "5", "6",
 			},
 		},
 		{
 			name:               "four-uids-ejected",
 			givenMaxCookieSize: 500,
-			expectedRemainingUidKeys: map[string]bool{
-				"1": true, "2": true, "3": true,
+			expectedRemainingUidKeys: []string{
+				"1", "2", "3",
 			},
 		},
 		{
 			name:               "all-but-one-uids-ejected",
-			givenMaxCookieSize: 200,
-			expectedRemainingUidKeys: map[string]bool{
-				"1": true,
+			givenMaxCookieSize: 300,
+			expectedRemainingUidKeys: []string{
+				"1",
 			},
 		},
 		{
 			name:                     "all-uids-ejected",
 			givenMaxCookieSize:       100,
-			expectedRemainingUidKeys: map[string]bool{},
+			expectedRemainingUidKeys: []string{},
 		},
 		{
 			name:                     "invalid-max-size",
 			givenMaxCookieSize:       -100,
-			expectedRemainingUidKeys: map[string]bool{},
+			expectedRemainingUidKeys: []string{},
 		},
 	}
 
@@ -464,7 +464,7 @@ func TestPrepareCookieForWrite(t *testing.T) {
 			assert.NoError(t, err)
 			decodedCookie := decoder.Decode(encodedCookie)
 
-			for key := range test.expectedRemainingUidKeys {
+			for _, key := range test.expectedRemainingUidKeys {
 				_, ok := decodedCookie.uids[key]
 				assert.Equal(t, true, ok)
 			}
@@ -584,7 +584,7 @@ func TestBidderNameGets(t *testing.T) {
 func TestReadCookieOptOut(t *testing.T) {
 	optOutCookieName := "optOutCookieName"
 	optOutCookieValue := "optOutCookieValue"
-	decoder := DecodeV1{}
+	decoder := Base64Decoder{}
 
 	cookie := *(&Cookie{
 		uids: map[string]UIDEntry{
@@ -594,7 +594,7 @@ func TestReadCookieOptOut(t *testing.T) {
 		optOut: false,
 	})
 
-	existingCookie, _ := cookie.ToHTTPCookie()
+	existingCookie, _ := ToHTTPCookie(&cookie)
 
 	testCases := []struct {
 		description          string
@@ -715,7 +715,7 @@ func newSampleCookie() *Cookie {
 }
 
 func ensureConsistency(t *testing.T, cookie *Cookie) {
-	decoder := DecodeV1{}
+	decoder := Base64Decoder{}
 
 	if cookie.AllowSyncs() {
 		err := cookie.Sync("pulsepoint", "1")
@@ -752,7 +752,7 @@ func ensureConsistency(t *testing.T, cookie *Cookie) {
 			t.Error("TrySync should fail if the user has opted out of PBSCookie syncs, but it succeeded.")
 		}
 	}
-	httpCookie, err := cookie.ToHTTPCookie()
+	httpCookie, err := ToHTTPCookie(cookie)
 	assert.NoError(t, err)
 	copiedCookie := decoder.Decode(httpCookie.Value)
 	if copiedCookie.AllowSyncs() != cookie.AllowSyncs() {
@@ -780,4 +780,19 @@ func ensureConsistency(t *testing.T, cookie *Cookie) {
 			t.Errorf("Wrong UID saved for family %s. Expected %s, got %s", family, uid, savedUID)
 		}
 	}
+}
+
+func ToHTTPCookie(cookie *Cookie) (*http.Cookie, error) {
+	encoder := Base64Encoder{}
+	encodedCookie, err := encoder.Encode(cookie)
+	if err != nil {
+		return nil, nil
+	}
+
+	return &http.Cookie{
+		Name:    uidCookieName,
+		Value:   encodedCookie,
+		Expires: time.Now().Add((90 * 24 * time.Hour)),
+		Path:    "/",
+	}, nil
 }

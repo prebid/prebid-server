@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
@@ -748,12 +749,12 @@ func doRequest(req *http.Request, analytics analytics.PBSAnalyticsModule, metric
 }
 
 func addCookie(req *http.Request, cookie *usersync.Cookie) {
-	httpCookie, _ := cookie.ToHTTPCookie()
+	httpCookie, _ := ToHTTPCookie(cookie)
 	req.AddCookie(httpCookie)
 }
 
 func parseCookieString(t *testing.T, response *httptest.ResponseRecorder) *usersync.Cookie {
-	decoder := usersync.DecodeV1{}
+	decoder := usersync.Base64Decoder{}
 	cookieString := response.Header().Get("Set-Cookie")
 	parser := regexp.MustCompile("uids=(.*?);")
 	res := parser.FindStringSubmatch(cookieString)
@@ -830,4 +831,19 @@ func (s fakeSyncer) SupportsType(syncTypes []usersync.SyncType) bool {
 
 func (s fakeSyncer) GetSync(syncTypes []usersync.SyncType, privacyPolicies privacy.Policies) (usersync.Sync, error) {
 	return usersync.Sync{}, nil
+}
+
+func ToHTTPCookie(cookie *usersync.Cookie) (*http.Cookie, error) {
+	encoder := usersync.Base64Encoder{}
+	encodedCookie, err := encoder.Encode(cookie)
+	if err != nil {
+		return nil, nil
+	}
+
+	return &http.Cookie{
+		Name:    uidCookieName,
+		Value:   encodedCookie,
+		Expires: time.Now().Add((90 * 24 * time.Hour)),
+		Path:    "/",
+	}, nil
 }

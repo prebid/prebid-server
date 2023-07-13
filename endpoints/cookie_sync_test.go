@@ -270,7 +270,7 @@ func TestCookieSyncHandle(t *testing.T) {
 
 		request := httptest.NewRequest("POST", "/cookiesync", test.givenBody)
 		if test.givenCookie != nil {
-			httpCookie, err := test.givenCookie.ToHTTPCookie()
+			httpCookie, err := ToHTTPCookie(test.givenCookie)
 			assert.NoError(t, err)
 			request.AddCookie(httpCookie)
 		}

@@ -30,8 +30,8 @@ const (
 const uidCookieName = "uids"
 
 func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, gdprPermsBuilder gdpr.PermissionsBuilder, tcf2CfgBuilder gdpr.TCF2ConfigBuilder, pbsanalytics analytics.PBSAnalyticsModule, accountsFetcher stored_requests.AccountFetcher, metricsEngine metrics.MetricsEngine) httprouter.Handle {
-	encoder := usersync.Base64EncoderV1{}
-	decoder := usersync.DecodeV1{}
+	encoder := usersync.Base64Encoder{}
+	decoder := usersync.Base64Decoder{}
 
 	// convert map of syncers by bidder to map of syncers by key
 	// - its safe to assume that if multiple bidders map to the same key, the syncers are interchangeable.
