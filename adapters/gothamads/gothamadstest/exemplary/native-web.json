@@ -53,7 +53,7 @@
             "2607:fb90:f27:4512:d800:cb23:a603:e245"
           ]
         },
-        "uri": "http://us.example.com/?pass=accountId",
+        "uri": "http://us-e-node1.gothamads.com/?pass=accountId",
         "body": {
           "id": "some-request-id",
           "device": {

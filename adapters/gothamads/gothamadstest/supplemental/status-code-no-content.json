@@ -35,7 +35,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://us.example.com/?pass=accountId",
+        "uri": "http://us-e-node1.gothamads.com/?pass=accountId",
         "body": {
           "id": "some-request-id",
           "imp": [
