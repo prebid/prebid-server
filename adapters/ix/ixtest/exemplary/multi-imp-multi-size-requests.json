@@ -3,7 +3,7 @@
         "id": "test-request-id",
         "imp": [
             {
-                "id": "test-imp-id",
+                "id": "test-imp-id-1",
                 "banner": {
                     "format": [
                         {
@@ -13,10 +13,47 @@
                         {
                             "w": 300,
                             "h": 600
-                        },
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "siteId": "569749"
+                    }
+                }
+            },
+            {
+                "id": "test-imp-id-2",
+                "video": {
+                    "mimes": [
+                        "video/mp4"
+                    ],
+                    "minduration": 15,
+                    "maxduration": 30,
+                    "protocols": [
+                        2,
+                        3,
+                        5,
+                        6,
+                        7,
+                        8
+                    ],
+                    "w": 940,
+                    "h": 560
+                },
+                "ext": {
+                    "bidder": {
+                        "siteId": "569749"
+                    }
+                }
+            },
+            {
+                "id": "test-imp-id-3",
+                "banner": {
+                    "format": [
                         {
-                            "w": 600,
-                            "h": 800
+                            "w": 300,
+                            "h": 600
                         }
                     ]
                 },
@@ -39,7 +76,7 @@
                     "id": "test-request-id",
                     "imp": [
                         {
-                            "id": "test-imp-id",
+                            "id": "test-imp-id-1",
                             "banner": {
                                 "format": [
                                     {
@@ -49,12 +86,51 @@
                                     {
                                         "w": 300,
                                         "h": 600
-                                    },
-                                    {
-                                        "w": 600,
-                                        "h": 800
                                     }
                                 ]
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "siteId": "569749"
+                                }
+                            }
+                        },
+                        {
+                            "id": "test-imp-id-2",
+                            "video": {
+                                "mimes": [
+                                    "video/mp4"
+                                ],
+                                "minduration": 15,
+                                "maxduration": 30,
+                                "protocols": [
+                                    2,
+                                    3,
+                                    5,
+                                    6,
+                                    7,
+                                    8
+                                ],
+                                "w": 940,
+                                "h": 560
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "siteId": "569749"
+                                }
+                            }
+                        },
+                        {
+                            "id": "test-imp-id-3",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 300,
+                                        "h": 600
+                                    }
+                                ],
+                                "w": 300,
+                                "h": 600
                             },
                             "ext": {
                                 "bidder": {
@@ -81,7 +157,7 @@
                             "bid": [
                                 {
                                     "id": "7706636740145184841",
-                                    "impid": "test-imp-id",
+                                    "impid": "test-imp-id-1",
                                     "price": 0.5,
                                     "adid": "29681110",
                                     "adm": "some-test-ad",
@@ -90,7 +166,7 @@
                                     ],
                                     "cid": "958",
                                     "crid": "29681110",
-                                    "h": 250,
+                                    "h": 600,
                                     "w": 300,
                                     "ext": {
                                         "ix": {}
@@ -112,7 +188,7 @@
                 {
                     "bid": {
                         "id": "7706636740145184841",
-                        "impid": "test-imp-id",
+                        "impid": "test-imp-id-1",
                         "price": 0.5,
                         "adm": "some-test-ad",
                         "adid": "29681110",
@@ -122,7 +198,7 @@
                         "cid": "958",
                         "crid": "29681110",
                         "w": 300,
-                        "h": 250,
+                        "h": 600,
                         "ext": {
                             "ix": {}
                         }
