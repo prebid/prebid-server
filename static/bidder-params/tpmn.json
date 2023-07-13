@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "TPMN Adapter Params",
+  "description": "A schema which validates params accepted by the TPMN adapter",
+  "type": "object",
+  "properties": {
+    "inventoryId": {
+      "description": "Inventory ID",
+      "type": "string",
+      "minLength": 1
+    },
+    "inventoryId": {
+      "description": "Publisher ID",
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "inventoryId",
+    "publisherId"
+  ]
+}

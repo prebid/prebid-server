@@ -253,6 +253,7 @@ const (
 	BidderTaboola           BidderName = "taboola"
 	BidderTappx             BidderName = "tappx"
 	BidderTelaria           BidderName = "telaria"
+	BidderTpmn              BidderName = "tpmn"
 	BidderTrafficGate       BidderName = "trafficgate"
 	BidderTriplelift        BidderName = "triplelift"
 	BidderTripleliftNative  BidderName = "triplelift_native"
@@ -451,6 +452,7 @@ func CoreBidderNames() []BidderName {
 		BidderTaboola,
 		BidderTappx,
 		BidderTelaria,
+		BidderTpmn,
 		BidderTrafficGate,
 		BidderTriplelift,
 		BidderTripleliftNative,
