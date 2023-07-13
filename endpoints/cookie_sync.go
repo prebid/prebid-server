@@ -150,7 +150,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 	activityControl, activitiesErr := privacy.NewActivityControl(account.Privacy)
 	if activitiesErr != nil {
 		if errortypes.ContainsFatalError([]error{activitiesErr}) {
-			return usersync.Request{}, privacy.Policies{}, err
+			activityControl = privacy.ActivityControl{}
 		}
 	}
 
@@ -525,8 +525,8 @@ func (p usersyncPrivacy) CCPAAllowsBidderSync(bidder string) bool {
 	return !enforce
 }
 
-func (p usersyncPrivacy) ActivityAllowsUserSync(bidder string) privacy.ActivityResult {
+func (p usersyncPrivacy) ActivityAllowsUserSync(bidder string) bool {
 	activityResult := p.activityControl.Allow(privacy.ActivitySyncUser,
 		privacy.ScopedName{Scope: privacy.ScopeTypeBidder, Name: bidder})
-	return activityResult
+	return activityResult == privacy.ActivityAllow
 }

@@ -975,7 +975,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 		},
 
 		{
-			description: "Account Defaults - Invalid activities Activities",
+			description: "Account Defaults - Invalid Activities",
 			givenBody: strings.NewReader(`{` +
 				`"bidders":["a", "b"],` +
 				`"account":"ValidAccountInvalidActivities"` +
@@ -990,16 +990,18 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			},
 			expectedPrivacy: privacy.Policies{},
 			expectedRequest: usersync.Request{
-				Bidders: []string(nil),
+				Bidders: []string{"a", "b"},
 				Cooperative: usersync.Cooperative{
 					Enabled:        false,
-					PriorityGroups: [][]string(nil),
+					PriorityGroups: [][]string{{"a", "b", "c"}},
 				},
-				Limit:   0,
-				Privacy: nil,
+				Limit: 0,
+				Privacy: usersyncPrivacy{
+					gdprPermissions: &fakePermissions{},
+				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
-					IFrame:   nil,
-					Redirect: nil,
+					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+					Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
 				},
 			},
 		},
@@ -1902,24 +1904,24 @@ func TestUsersyncPrivacyCCPAAllowsBidderSync(t *testing.T) {
 	}
 }
 
-func TestActivityDefaultToDefaultResult(t *testing.T) {
+func TestCookieSyncActivityControlIntegration(t *testing.T) {
 	testCases := []struct {
 		name           string
 		bidderName     string
 		allow          bool
-		expectedResult privacy.ActivityResult
+		expectedResult bool
 	}{
 		{
 			name:           "activity_is_allowed",
 			bidderName:     "bidderA",
 			allow:          true,
-			expectedResult: privacy.ActivityAllow,
+			expectedResult: true,
 		},
 		{
 			name:           "activity_is_denied",
 			bidderName:     "bidderA",
 			allow:          false,
-			expectedResult: privacy.ActivityDeny,
+			expectedResult: false,
 		},
 	}
 

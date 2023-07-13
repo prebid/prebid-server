@@ -278,8 +278,9 @@ func TestSetUIDEndpoint(t *testing.T) {
 			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
 			existingSyncs:          nil,
 			gdprAllowsHostCookies:  true,
-			expectedSyncs:          nil,
-			expectedStatusCode:     http.StatusBadRequest,
+			expectedSyncs:          map[string]string{"pubmatic": "123"},
+			expectedStatusCode:     http.StatusOK,
+			expectedHeaders:        map[string]string{"Content-Type": "text/html", "Content-Length": "0"},
 			description:            "Set uid for valid bidder with valid account provided with invalid user sync activity",
 		},
 	}

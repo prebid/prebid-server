@@ -65,7 +65,7 @@ func TestChooserChoose(t *testing.T) {
 		{
 			description: "Cookie Opt Out",
 			givenRequest: Request{
-				Privacy: fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true},
+				Privacy: fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
 				Limit:   0,
 			},
 			givenChosenBidders: []string{"a"},
@@ -79,7 +79,7 @@ func TestChooserChoose(t *testing.T) {
 		{
 			description: "GDPR Host Cookie Not Allowed",
 			givenRequest: Request{
-				Privacy: fakePrivacy{gdprAllowsHostCookie: false, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true},
+				Privacy: fakePrivacy{gdprAllowsHostCookie: false, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
 				Limit:   0,
 			},
 			givenChosenBidders: []string{"a"},
@@ -93,7 +93,7 @@ func TestChooserChoose(t *testing.T) {
 		{
 			description: "No Bidders",
 			givenRequest: Request{
-				Privacy: fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true},
+				Privacy: fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
 				Limit:   0,
 			},
 			givenChosenBidders: []string{},
@@ -107,7 +107,7 @@ func TestChooserChoose(t *testing.T) {
 		{
 			description: "One Bidder - Sync",
 			givenRequest: Request{
-				Privacy: fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true},
+				Privacy: fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
 				Limit:   0,
 			},
 			givenChosenBidders: []string{"a"},
@@ -121,7 +121,7 @@ func TestChooserChoose(t *testing.T) {
 		{
 			description: "One Bidder - No Sync",
 			givenRequest: Request{
-				Privacy: fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true},
+				Privacy: fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
 				Limit:   0,
 			},
 			givenChosenBidders: []string{"c"},
@@ -135,7 +135,7 @@ func TestChooserChoose(t *testing.T) {
 		{
 			description: "Many Bidders - All Sync - Limit Disabled With 0",
 			givenRequest: Request{
-				Privacy: fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true},
+				Privacy: fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
 				Limit:   0,
 			},
 			givenChosenBidders: []string{"a", "b"},
@@ -149,7 +149,7 @@ func TestChooserChoose(t *testing.T) {
 		{
 			description: "Many Bidders - All Sync - Limit Disabled With Negative Value",
 			givenRequest: Request{
-				Privacy: fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true},
+				Privacy: fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
 				Limit:   -1,
 			},
 			givenChosenBidders: []string{"a", "b"},
@@ -163,7 +163,7 @@ func TestChooserChoose(t *testing.T) {
 		{
 			description: "Many Bidders - Limited Sync",
 			givenRequest: Request{
-				Privacy: fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true},
+				Privacy: fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
 				Limit:   1,
 			},
 			givenChosenBidders: []string{"a", "b"},
@@ -177,7 +177,7 @@ func TestChooserChoose(t *testing.T) {
 		{
 			description: "Many Bidders - Limited Sync - Disqualified Syncers Don't Count Towards Limit",
 			givenRequest: Request{
-				Privacy: fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true},
+				Privacy: fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
 				Limit:   1,
 			},
 			givenChosenBidders: []string{"c", "a", "b"},
@@ -191,7 +191,7 @@ func TestChooserChoose(t *testing.T) {
 		{
 			description: "Many Bidders - Some Sync, Some Don't",
 			givenRequest: Request{
-				Privacy: fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true},
+				Privacy: fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
 				Limit:   0,
 			},
 			givenChosenBidders: []string{"a", "c"},
@@ -253,7 +253,7 @@ func TestChooserEvaluate(t *testing.T) {
 			description:        "Valid",
 			givenBidder:        "a",
 			givenSyncersSeen:   map[string]struct{}{},
-			givenPrivacy:       fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true},
+			givenPrivacy:       fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
 			givenCookie:        cookieNeedsSync,
 			expectedSyncer:     fakeSyncerA,
 			expectedEvaluation: BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusOK},
@@ -262,7 +262,7 @@ func TestChooserEvaluate(t *testing.T) {
 			description:        "Unknown Bidder",
 			givenBidder:        "unknown",
 			givenSyncersSeen:   map[string]struct{}{},
-			givenPrivacy:       fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true},
+			givenPrivacy:       fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
 			givenCookie:        cookieNeedsSync,
 			expectedSyncer:     nil,
 			expectedEvaluation: BidderEvaluation{Bidder: "unknown", Status: StatusUnknownBidder},
@@ -271,7 +271,7 @@ func TestChooserEvaluate(t *testing.T) {
 			description:        "Duplicate Syncer",
 			givenBidder:        "a",
 			givenSyncersSeen:   map[string]struct{}{"keyA": {}},
-			givenPrivacy:       fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true},
+			givenPrivacy:       fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
 			givenCookie:        cookieNeedsSync,
 			expectedSyncer:     nil,
 			expectedEvaluation: BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusDuplicate},
@@ -280,7 +280,7 @@ func TestChooserEvaluate(t *testing.T) {
 			description:        "Incompatible Kind",
 			givenBidder:        "b",
 			givenSyncersSeen:   map[string]struct{}{},
-			givenPrivacy:       fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true},
+			givenPrivacy:       fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
 			givenCookie:        cookieNeedsSync,
 			expectedSyncer:     nil,
 			expectedEvaluation: BidderEvaluation{Bidder: "b", SyncerKey: "keyB", Status: StatusTypeNotSupported},
@@ -289,7 +289,7 @@ func TestChooserEvaluate(t *testing.T) {
 			description:        "Already Synced",
 			givenBidder:        "a",
 			givenSyncersSeen:   map[string]struct{}{},
-			givenPrivacy:       fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true},
+			givenPrivacy:       fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
 			givenCookie:        cookieAlreadyHasSyncForA,
 			expectedSyncer:     nil,
 			expectedEvaluation: BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusAlreadySynced},
@@ -298,7 +298,7 @@ func TestChooserEvaluate(t *testing.T) {
 			description:        "Different Bidder Already Synced",
 			givenBidder:        "a",
 			givenSyncersSeen:   map[string]struct{}{},
-			givenPrivacy:       fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true},
+			givenPrivacy:       fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
 			givenCookie:        cookieAlreadyHasSyncForB,
 			expectedSyncer:     fakeSyncerA,
 			expectedEvaluation: BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusOK},
@@ -307,7 +307,7 @@ func TestChooserEvaluate(t *testing.T) {
 			description:        "Blocked By GDPR",
 			givenBidder:        "a",
 			givenSyncersSeen:   map[string]struct{}{},
-			givenPrivacy:       fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: false, ccpaAllowsBidderSync: true},
+			givenPrivacy:       fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: false, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
 			givenCookie:        cookieNeedsSync,
 			expectedSyncer:     nil,
 			expectedEvaluation: BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByGDPR},
@@ -316,7 +316,7 @@ func TestChooserEvaluate(t *testing.T) {
 			description:        "Blocked By CCPA",
 			givenBidder:        "a",
 			givenSyncersSeen:   map[string]struct{}{},
-			givenPrivacy:       fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: false},
+			givenPrivacy:       fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: false, activityAllowUserSync: true},
 			givenCookie:        cookieNeedsSync,
 			expectedSyncer:     nil,
 			expectedEvaluation: BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByCCPA},
@@ -325,7 +325,7 @@ func TestChooserEvaluate(t *testing.T) {
 			description:        "Blocked By activity control",
 			givenBidder:        "a",
 			givenSyncersSeen:   map[string]struct{}{},
-			givenPrivacy:       fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: privacy.ActivityDeny},
+			givenPrivacy:       fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: false},
 			givenCookie:        cookieNeedsSync,
 			expectedSyncer:     nil,
 			expectedEvaluation: BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByPrivacy},
@@ -384,7 +384,7 @@ type fakePrivacy struct {
 	gdprAllowsHostCookie  bool
 	gdprAllowsBidderSync  bool
 	ccpaAllowsBidderSync  bool
-	activityAllowUserSync privacy.ActivityResult
+	activityAllowUserSync bool
 }
 
 func (p fakePrivacy) GDPRAllowsHostCookie() bool {
@@ -399,6 +399,6 @@ func (p fakePrivacy) CCPAAllowsBidderSync(bidder string) bool {
 	return p.ccpaAllowsBidderSync
 }
 
-func (p fakePrivacy) ActivityAllowsUserSync(bidder string) privacy.ActivityResult {
+func (p fakePrivacy) ActivityAllowsUserSync(bidder string) bool {
 	return p.activityAllowUserSync
 }

@@ -1,9 +1,5 @@
 package usersync
 
-import (
-	privacyActivity "github.com/prebid/prebid-server/privacy"
-)
-
 // Chooser determines which syncers are eligible for a given request.
 type Chooser interface {
 	// Choose considers bidders to sync, filters the bidders, and returns the result of the
@@ -99,7 +95,7 @@ type Privacy interface {
 	GDPRAllowsHostCookie() bool
 	GDPRAllowsBidderSync(bidder string) bool
 	CCPAAllowsBidderSync(bidder string) bool
-	ActivityAllowsUserSync(bidder string) privacyActivity.ActivityResult
+	ActivityAllowsUserSync(bidder string) bool
 }
 
 // standardChooser implements the user syncer algorithm per official Prebid specification.
@@ -160,7 +156,7 @@ func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}
 	}
 
 	userSyncActivityAllowed := privacy.ActivityAllowsUserSync(bidder)
-	if userSyncActivityAllowed == privacyActivity.ActivityDeny {
+	if !userSyncActivityAllowed {
 		return nil, BidderEvaluation{Status: StatusBlockedByPrivacy, Bidder: bidder, SyncerKey: syncer.Key()}
 	}
 
