@@ -873,9 +873,8 @@ func errorsToMetric(errs []error) map[metrics.AdapterError]struct{} {
 func errsToBidderErrors(errs []error) []openrtb_ext.ExtBidderMessage {
 	sErr := make([]openrtb_ext.ExtBidderMessage, 0)
 	for _, err := range errortypes.FatalOnly(errs) {
-		errorCode := errortypes.ReadCode(err)
 		newErr := openrtb_ext.ExtBidderMessage{
-			Code:    errorCode,
+			Code:    errortypes.ReadCode(err),
 			Message: err.Error(),
 		}
 		sErr = append(sErr, newErr)
