@@ -11,8 +11,8 @@ import (
 )
 
 func TestParseConsent(t *testing.T) {
-	consentValid := "CPuKGCPPuKGCPNEAAAENCZCAAAAAAAAAAAAAAAAAAAAA"
-	consentWithInvalidPolicyVersion := "CPuKGCPPuKGCPNEAAAENCZFAAAAAAAAAAAAAAAAAAAAA"
+	validTCF1Consent := "BONV8oqONXwgmADACHENAO7pqzAAppY"
+	validTCF2Consent := "CPuKGCPPuKGCPNEAAAENCZCAAAAAAAAAAAAAAAAAAAAA"
 
 	tests := []struct {
 		name                    string
@@ -25,7 +25,7 @@ func TestParseConsent(t *testing.T) {
 
 		{
 			name:                    "valid_consent_with_encoding_version_2",
-			consent:                 consentValid,
+			consent:                 validTCF2Consent,
 			expectedEncodingVersion: 2,
 			expectedListVersion:     153,
 			expectedSpecVersion:     2,
@@ -40,10 +40,10 @@ func TestParseConsent(t *testing.T) {
 		},
 		{
 			name:    "invalid_consent_version_validation_error",
-			consent: consentWithInvalidPolicyVersion,
+			consent: validTCF1Consent,
 			expectedError: &ErrorMalformedConsent{
-				Consent: consentWithInvalidPolicyVersion,
-				Cause:   errors.New("invalid TCF policy version: 5"),
+				Consent: validTCF1Consent,
+				Cause:   errors.New("invalid encoding format version: 1"),
 			},
 		},
 	}
@@ -70,41 +70,30 @@ func TestParseConsent(t *testing.T) {
 
 func TestValidateVersions(t *testing.T) {
 	tests := []struct {
-		name           string
-		consentVersion uint8
-		policyVersion  uint8
-		expectedError  error
+		name          string
+		version       uint8
+		expectedError error
 	}{
 		{
-			name:           "valid_versions_consent=2_and_policy<=4",
-			consentVersion: 2,
-			policyVersion:  4,
+			name:    "valid_consent_version=2",
+			version: 2,
 		},
 		{
-			name:           "invalid_versions_consent<>2_and_policy<=4",
-			consentVersion: 3,
-			policyVersion:  4,
-			expectedError:  errors.New("invalid encoding format version: 3"),
+			name:          "invalid_consent_version<2",
+			version:       1,
+			expectedError: errors.New("invalid encoding format version: 1"),
 		},
 		{
-			name:           "invalid_versions_consent=2_and_policy>4",
-			consentVersion: 2,
-			policyVersion:  5,
-			expectedError:  errors.New("invalid TCF policy version: 5"),
-		},
-		{
-			name:           "invalid_versions_consent<>2_and_policy>4",
-			consentVersion: 3,
-			policyVersion:  5,
-			expectedError:  errors.New("invalid encoding format version: 3"),
+			name:          "invalid_consent_version>2",
+			version:       3,
+			expectedError: errors.New("invalid encoding format version: 3"),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mcs := mockConsentString{
-				version:       tt.consentVersion,
-				policyVersion: tt.policyVersion,
+				version: tt.version,
 			}
 			err := validateVersions(&mcs)
 			if tt.expectedError != nil {
@@ -133,14 +122,14 @@ func TestGetSpecVersion(t *testing.T) {
 			expectedSpecVersion: 2,
 		},
 		{
-			name:                "policy_version_4_spec_version_3",
+			name:                "policy_version_4_gives_spec_version_3",
 			policyVersion:       4,
 			expectedSpecVersion: 3,
 		},
 		{
-			name:                "policy_version_5_error",
+			name:                "policy_version_5_gives_spec_version_3",
 			policyVersion:       5,
-			expectedSpecVersion: 0,
+			expectedSpecVersion: 3,
 		},
 	}
 

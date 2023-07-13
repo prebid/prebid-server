@@ -53,10 +53,6 @@ func validateVersions(pc api.VendorConsents) (err error) {
 	if version != 2 {
 		return fmt.Errorf("invalid encoding format version: %d", version)
 	}
-	policyVersion := pc.TCFPolicyVersion()
-	if policyVersion > 4 {
-		return fmt.Errorf("invalid TCF policy version: %d", policyVersion)
-	}
 	return
 }
 
@@ -64,11 +60,8 @@ func validateVersions(pc api.VendorConsents) (err error) {
 // version that should be used to calculate legal basis. A zero value is returned if the policy version
 // is invalid
 func getSpecVersion(policyVersion uint8) uint16 {
-	if policyVersion == 4 {
+	if policyVersion >= 4 {
 		return 3
 	}
-	if policyVersion < 4 {
-		return 2
-	}
-	return 0
+	return 2
 }

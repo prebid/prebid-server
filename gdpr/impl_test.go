@@ -1328,7 +1328,6 @@ func TestDefaultPermissions(t *testing.T) {
 func TestVendorListSelection(t *testing.T) {
 	policyVersion3WithVendor2AndPurpose1Consent := "CPGWbY_PGWbY_GYAAAENABDAAIAAAAAAAAAAACEAAAAA"
 	policyVersion4WithVendor2AndPurpose1Consent := "CPGWbY_PGWbY_GYAAAENABEAAIAAAAAAAAAAACEAAAAA"
-	policyVersion5WithVendor2AndPurpose1Consent := "CPGWbY_PGWbY_GYAAAENABFAAIAAAAAAAAAAACEAAAAA"
 
 	specVersion2vendorListData := MarshalVendorList(vendorList{
 		GVLSpecificationVersion: 2,
@@ -1396,11 +1395,6 @@ func TestVendorListSelection(t *testing.T) {
 			name:              "consent_tcf_policy_version_4_uses_gvl_spec_version_3",
 			consent:           policyVersion4WithVendor2AndPurpose1Consent,
 			expectedAllowSync: true,
-		},
-		{
-			name:        "consent_tcf_policy_version_5_causes_error",
-			consent:     policyVersion5WithVendor2AndPurpose1Consent,
-			expectedErr: true,
 		},
 	}
 
