@@ -78,41 +78,39 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 	if responseData.StatusCode == http.StatusBadRequest {
 		err := &errortypes.BadInput{
-			Message: "Unexpected status code: 400. Bad request from publisher. Run with request.debug = 1 for more info.",
+			Message: "Unexpected status code: 400. Bad request from publisher.",
 		}
 		return nil, []error{err}
 	}
 
 	if responseData.StatusCode != http.StatusOK {
 		err := &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info.", responseData.StatusCode),
+			Message: fmt.Sprintf("Unexpected status code: %d.", responseData.StatusCode),
 		}
 		return nil, []error{err}
 	}
 
 	var response maServerResponse
-	//var response openrtb2.BidResponse
-
 	if err := json.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
-	//bidResponse.Currency = response.Currency
+	bidResponse.Currency = response.Responses[0].Currency
 	for _, maBidResp := range response.Responses {
 		b := &adapters.TypedBid{
 			Bid: &openrtb2.Bid{
-				ID:     maBidResp.RequestID,
-				ImpID:  maBidResp.RequestID,
-				Price:  float64(maBidResp.CPM),
-				AdM:    maBidResp.AdTag,
-				W:      int64(maBidResp.Width),
-				H:      int64(maBidResp.Height),
-				CrID:   maBidResp.PlacementId,
-				DealID: maBidResp.Deal,
+				ID:      maBidResp.RequestID,
+				ImpID:   maBidResp.RequestID,
+				Price:   float64(maBidResp.CPM),
+				AdM:     maBidResp.AdTag,
+				W:       int64(maBidResp.Width),
+				H:       int64(maBidResp.Height),
+				CrID:    maBidResp.PlacementId,
+				DealID:  maBidResp.Deal,
+				ADomain: maBidResp.Meta.AdDomain,
 			},
-			//BidType: getMediaTypeForBid(bid),
-			BidType: openrtb_ext.BidTypeBanner,
+			BidType: openrtb_ext.BidType(maBidResp.MediaType),
 		}
 		bidResponse.Bids = append(bidResponse.Bids, b)
 	}
