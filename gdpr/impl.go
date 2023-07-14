@@ -194,7 +194,7 @@ func (p *permissionsImpl) allowID(bidder openrtb_ext.BidderName, consentMeta tcf
 	return false
 }
 
-// getVendor...
+// getVendor retrieves the GVL vendor information for a particular bidder
 func (p *permissionsImpl) getVendor(ctx context.Context, vendorID uint16, pc parsedConsent) (api.Vendor, error) {
 	vendorList, err := p.fetchVendorList(ctx, pc.specVersion, pc.listVersion)
 	if err != nil {
