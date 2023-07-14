@@ -90,9 +90,6 @@
       }
     }
   ],
-  "expectedBidResponses": [
-    null
-  ],
   "expectedMakeBidsErrors": [
     {
       "value": "Unexpected status code: 400.",

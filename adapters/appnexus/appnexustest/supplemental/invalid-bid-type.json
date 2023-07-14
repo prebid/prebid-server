@@ -121,7 +121,7 @@
       }
     }
   ],
-
+  "expectedBidResponses": [{"currency":"USD","bids":[]}],
   "expectedMakeBidsErrors": [
     {
       "value": "Unrecognized bid_ad_type in response from appnexus: 2",

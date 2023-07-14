@@ -1,4 +1,4 @@
-package yahooAdvertising
+package yahooAds
 
 import (
 	"encoding/json"
@@ -7,11 +7,11 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-// This file actually intends to test static/bidder-params/yahooAdvertising.json
+// This file actually intends to test static/bidder-params/yahooAds.json
 //
-// These also validate the format of the external API: request.imp[i].ext.yahooAdvertising
+// These also validate the format of the external API: request.imp[i].ext.yahooAds
 
-// TestValidParams makes sure that the yahooAdvertising schema accepts all imp.ext fields which we intend to support.
+// TestValidParams makes sure that the yahooAds schema accepts all imp.ext fields which we intend to support.
 func TestValidParams(t *testing.T) {
 	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 	if err != nil {
@@ -19,13 +19,13 @@ func TestValidParams(t *testing.T) {
 	}
 
 	for _, validParam := range validParams {
-		if err := validator.Validate(openrtb_ext.BidderYahooAdvertising, json.RawMessage(validParam)); err != nil {
-			t.Errorf("Schema rejected yahooAdvertising params: %s", validParam)
+		if err := validator.Validate(openrtb_ext.BidderYahooAds, json.RawMessage(validParam)); err != nil {
+			t.Errorf("Schema rejected yahooAds params: %s", validParam)
 		}
 	}
 }
 
-// TestInvalidParams makes sure that the yahooAdvertising schema rejects all the imp.ext fields we don't support.
+// TestInvalidParams makes sure that the yahooAds schema rejects all the imp.ext fields we don't support.
 func TestInvalidParams(t *testing.T) {
 	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 	if err != nil {
@@ -33,7 +33,7 @@ func TestInvalidParams(t *testing.T) {
 	}
 
 	for _, invalidParam := range invalidParams {
-		if err := validator.Validate(openrtb_ext.BidderYahooAdvertising, json.RawMessage(invalidParam)); err == nil {
+		if err := validator.Validate(openrtb_ext.BidderYahooAds, json.RawMessage(invalidParam)); err == nil {
 			t.Errorf("Schema allowed unexpected params: %s", invalidParam)
 		}
 	}

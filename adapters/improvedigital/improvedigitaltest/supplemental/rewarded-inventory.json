@@ -170,8 +170,5 @@
         "body": {}
       }
     }
-  ],
-  "expectedBidResponses": [
-    {},{},{}
   ]
 }

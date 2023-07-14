@@ -1178,6 +1178,7 @@ func (a *adapter) extractAdmNative(adType int32, content *content, bidType openr
 	}
 
 	// dsp imp click tracking + imp click tracking
+	var eventTrackers []nativeResponse.EventTracker
 	if content.Monitor != nil {
 		for _, monitor := range content.Monitor {
 			if len(monitor.Url) == 0 {
@@ -1187,10 +1188,17 @@ func (a *adapter) extractAdmNative(adType int32, content *content, bidType openr
 				linkObject.ClickTrackers = append(linkObject.ClickTrackers, monitor.Url...)
 			}
 			if monitor.EventType == "imp" {
-				nativeResult.ImpTrackers = append(nativeResult.ImpTrackers, monitor.Url...)
+				for i := range monitor.Url {
+					var eventTracker nativeResponse.EventTracker
+					eventTracker.Event = native1.EventTypeImpression
+					eventTracker.Method = native1.EventTrackingMethodImage
+					eventTracker.URL = monitor.Url[i]
+					eventTrackers = append(eventTrackers, eventTracker)
+				}
 			}
 		}
 	}
+	nativeResult.EventTrackers = eventTrackers
 	nativeResult.Link = linkObject
 	nativeResult.Ver = "1.1"
 	if nativePayload.Ver != "" {

@@ -75,7 +75,7 @@
 					"adUnits": [
             {
 							"auId": "0000000000000456",
-							"targetId": "456-test-imp-id2",
+							"targetId": "456-test-imp-id-2",
 							"html": "<ADCODE>",
 							"responseId": "adn-rsp-900646517",
 							"ads": [
@@ -122,7 +122,7 @@
 			}
 		}
 	],
-	"expectedBidResponse": 
+	"expectedBidResponses": [
 		{
 			"bids": [
 				{
@@ -159,4 +159,5 @@
 			"currency": "NOK"
 		}
 	
+    ]
 }
