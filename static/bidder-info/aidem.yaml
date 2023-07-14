@@ -1,0 +1,19 @@
+endpoint: "https://zero.aidemsrv.com/ortb/v2.6/bid/request"
+maintainer:
+  email: prebid@aidem.com
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  redirect:
+    url: https://gum.aidemsrv.com/prebid_sync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
+    userMacro: "$UID"

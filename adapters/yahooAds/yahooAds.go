@@ -1,4 +1,4 @@
-package yahooAdvertising
+package yahooAds
 
 import (
 	"encoding/json"
@@ -41,8 +41,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			continue
 		}
 
-		var yahooAdvertisingExt openrtb_ext.ExtImpYahooAdvertising
-		err = json.Unmarshal(bidderExt.Bidder, &yahooAdvertisingExt)
+		var yahooAdsExt openrtb_ext.ExtImpYahooAds
+		err = json.Unmarshal(bidderExt.Bidder, &yahooAdsExt)
 		if err != nil {
 			err = &errortypes.BadInput{
 				Message: fmt.Sprintf("imp #%d: %s", idx, err.Error()),
@@ -64,7 +64,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			reqCopy.App = &appCopy
 		}
 
-		if err := changeRequestForBidService(&reqCopy, &yahooAdvertisingExt); err != nil {
+		if err := changeRequestForBidService(&reqCopy, &yahooAdsExt); err != nil {
 			errors = append(errors, err)
 			continue
 		}
@@ -150,7 +150,7 @@ func getImpInfo(impId string, imps []openrtb2.Imp) (bool, openrtb_ext.BidType) {
 	return exists, mediaType
 }
 
-func changeRequestForBidService(request *openrtb2.BidRequest, extension *openrtb_ext.ExtImpYahooAdvertising) error {
+func changeRequestForBidService(request *openrtb2.BidRequest, extension *openrtb_ext.ExtImpYahooAds) error {
 	/* Always override the tag ID and (site ID or app ID) of the request */
 	request.Imp[0].TagID = extension.Pos
 	if request.Site != nil {
@@ -218,7 +218,7 @@ func validateBanner(banner *openrtb2.Banner) error {
 	return nil
 }
 
-// Builder builds a new instance of the YahooAdvertising adapter for the given bidder with the given config.
+// Builder builds a new instance of the YahooAds adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		URI: config.Endpoint,

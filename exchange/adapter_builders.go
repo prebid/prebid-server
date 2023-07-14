@@ -28,6 +28,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/adview"
 	"github.com/prebid/prebid-server/adapters/adxcg"
 	"github.com/prebid/prebid-server/adapters/adyoulike"
+	"github.com/prebid/prebid-server/adapters/aidem"
 	"github.com/prebid/prebid-server/adapters/aja"
 	"github.com/prebid/prebid-server/adapters/algorix"
 	"github.com/prebid/prebid-server/adapters/amx"
@@ -169,7 +170,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/visx"
 	"github.com/prebid/prebid-server/adapters/vrtcal"
 	"github.com/prebid/prebid-server/adapters/xeworks"
-	"github.com/prebid/prebid-server/adapters/yahooAdvertising"
+	"github.com/prebid/prebid-server/adapters/yahooAds"
 	"github.com/prebid/prebid-server/adapters/yeahmobi"
 	"github.com/prebid/prebid-server/adapters/yieldlab"
 	"github.com/prebid/prebid-server/adapters/yieldmo"
@@ -212,6 +213,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAdView:            adview.Builder,
 		openrtb_ext.BidderAdxcg:             adxcg.Builder,
 		openrtb_ext.BidderAdyoulike:         adyoulike.Builder,
+		openrtb_ext.BidderAidem:             aidem.Builder,
 		openrtb_ext.BidderAJA:               aja.Builder,
 		openrtb_ext.BidderAlgorix:           algorix.Builder,
 		openrtb_ext.BidderAMX:               amx.Builder,
@@ -367,8 +369,9 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderVisx:              visx.Builder,
 		openrtb_ext.BidderVrtcal:            vrtcal.Builder,
 		openrtb_ext.BidderXeworks:           xeworks.Builder,
-		openrtb_ext.BidderYahooAdvertising:  yahooAdvertising.Builder,
-		openrtb_ext.BidderYahooSSP:          yahooAdvertising.Builder,
+		openrtb_ext.BidderYahooAds:          yahooAds.Builder,
+		openrtb_ext.BidderYahooAdvertising:  yahooAds.Builder,
+		openrtb_ext.BidderYahooSSP:          yahooAds.Builder,
 		openrtb_ext.BidderYeahmobi:          yeahmobi.Builder,
 		openrtb_ext.BidderYieldlab:          yieldlab.Builder,
 		openrtb_ext.BidderYieldmo:           yieldmo.Builder,

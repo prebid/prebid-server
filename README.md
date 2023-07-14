@@ -5,17 +5,17 @@
 # Prebid Server
 
 Prebid Server is an open source implementation of Server-Side Header Bidding.
-It is managed by [Prebid.org](http://prebid.org/overview/what-is-prebid-org.html),
-and upholds the principles from the [Prebid Code of Conduct](http://prebid.org/wrapper_code_of_conduct.html).
+It is managed by [Prebid.org](https://prebid.org/about/),
+and upholds the principles from the [Prebid Code of Conduct](https://prebid.org/code-of-conduct/).
 
 This project does not support the same set of Bidders as Prebid.js, although there is overlap.
 The current set can be found in the [adapters](./adapters) package. If you don't see the one you want, feel free to [contribute it](https://docs.prebid.org/prebid-server/developers/add-new-bidder-go.html).
 
 For more information, see:
 
-- [What is Prebid?](https://prebid.org/overview/intro.html)
+- [What is Prebid?](https://docs.prebid.org/overview/intro.html)
 - [Prebid Server Overview](https://docs.prebid.org/prebid-server/overview/prebid-server-overview.html)
-- [Current Bidders](http://prebid.org/dev-docs/pbs-bidders.html)
+- [Current Bidders](https://docs.prebid.org/dev-docs/pbs-bidders.html)
 
 Please consider [registering your Prebid Server](https://docs.prebid.org/prebid-server/hosting/pbs-hosting.html#optional-registration) to get on the mailing list for updates, etc.
 

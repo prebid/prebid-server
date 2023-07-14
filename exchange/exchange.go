@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/prebid/prebid-server/privacy"
 	"math/rand"
 	"net/url"
 	"runtime/debug"
@@ -195,6 +196,7 @@ type AuctionRequest struct {
 	GlobalPrivacyControlHeader string
 	ImpExtInfoMap              map[string]ImpExtInfo
 	TCF2Config                 gdpr.TCF2ConfigReader
+	Activities                 privacy.ActivityControl
 
 	// LegacyLabels is included here for temporary compatibility with cleanOpenRTBRequests
 	// in HoldAuction until we get to factoring it away. Do not use for anything new.
