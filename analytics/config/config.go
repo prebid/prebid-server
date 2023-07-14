@@ -37,6 +37,12 @@ func NewPBSAnalytics(analytics *config.Analytics) analytics.PBSAnalyticsModule {
 			glog.Errorf("Could not initialize PubstackModule: %v", err)
 		}
 	}
+
+	customAdapters := mspLoadAnalyticsAdapterPlugins(analytics.Custom)
+	for _, adapter := range customAdapters {
+		modules = append(modules, adapter)
+	}
+
 	return modules
 }
 
