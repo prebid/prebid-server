@@ -83,7 +83,7 @@ func (adapter *MobileFuseAdapter) MakeBids(incomingRequest *openrtb2.BidRequest,
 
 	for _, seatbid := range incomingBidResponse.SeatBid {
 		for i := range seatbid.Bid {
-			bidType := adapter.getBidType(seatbid.Bid[i])
+			bidType := getBidType(seatbid.Bid[i])
 			seatbid.Bid[i].Ext = nil
 
 			outgoingBidResponse.Bids = append(outgoingBidResponse.Bids, &adapters.TypedBid{
@@ -99,7 +99,7 @@ func (adapter *MobileFuseAdapter) MakeBids(incomingRequest *openrtb2.BidRequest,
 func (adapter *MobileFuseAdapter) makeRequest(bidRequest *openrtb2.BidRequest) (*adapters.RequestData, []error) {
 	var errs []error
 
-	mobileFuseExtension, errs := adapter.getFirstMobileFuseExtension(bidRequest)
+	mobileFuseExtension, errs := getFirstMobileFuseExtension(bidRequest)
 
 	if errs != nil {
 		return nil, errs
@@ -111,7 +111,7 @@ func (adapter *MobileFuseAdapter) makeRequest(bidRequest *openrtb2.BidRequest) (
 		return nil, append(errs, err)
 	}
 
-	validImps, err := adapter.getValidImps(bidRequest, mobileFuseExtension)
+	validImps, err := getValidImps(bidRequest, mobileFuseExtension)
 
 	if err != nil {
 		errs = append(errs, err)
@@ -138,7 +138,7 @@ func (adapter *MobileFuseAdapter) makeRequest(bidRequest *openrtb2.BidRequest) (
 	}, errs
 }
 
-func (adapter *MobileFuseAdapter) getFirstMobileFuseExtension(request *openrtb2.BidRequest) (*openrtb_ext.ExtImpMobileFuse, []error) {
+func getFirstMobileFuseExtension(request *openrtb2.BidRequest) (*openrtb_ext.ExtImpMobileFuse, []error) {
 	var mobileFuseImpExtension openrtb_ext.ExtImpMobileFuse
 	var errs []error
 
@@ -181,7 +181,7 @@ func (adapter *MobileFuseAdapter) getEndpoint(ext *openrtb_ext.ExtImpMobileFuse)
 	return url, nil
 }
 
-func (adapter *MobileFuseAdapter) getValidImps(bidRequest *openrtb2.BidRequest, ext *openrtb_ext.ExtImpMobileFuse) ([]openrtb2.Imp, error) {
+func getValidImps(bidRequest *openrtb2.BidRequest, ext *openrtb_ext.ExtImpMobileFuse) ([]openrtb2.Imp, error) {
 	var validImps []openrtb2.Imp
 
 	for _, imp := range bidRequest.Imp {
@@ -190,14 +190,12 @@ func (adapter *MobileFuseAdapter) getValidImps(bidRequest *openrtb2.BidRequest, 
 
 			var extSkadn ExtSkadn
 			err := json.Unmarshal(imp.Ext, &extSkadn)
-
 			if err != nil {
 				return nil, err
 			}
 
 			if extSkadn.Skadn != nil {
 				imp.Ext, err = json.Marshal(map[string]json.RawMessage{"skadn": extSkadn.Skadn})
-
 				if err != nil {
 					return nil, err
 				}
@@ -218,7 +216,7 @@ func (adapter *MobileFuseAdapter) getValidImps(bidRequest *openrtb2.BidRequest, 
 	return validImps, nil
 }
 
-func (adapter *MobileFuseAdapter) getBidType(bid openrtb2.Bid) openrtb_ext.BidType {
+func getBidType(bid openrtb2.Bid) openrtb_ext.BidType {
 	if bid.Ext != nil {
 		var bidExt BidExt
 		err := json.Unmarshal(bid.Ext, &bidExt)
