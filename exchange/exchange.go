@@ -697,9 +697,8 @@ func (e *exchange) getAllBids(
 				bidAdjustments:      bidAdjustments,
 			}
 			seatBids, extraBidderRespInfo, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest, conversions, &reqInfo, e.adsCertSigner, bidReqOptions, alternateBidderCodes, hookExecutor, bidAdjustmentRules)
-			if !extraBidderRespInfo.respProcessingStartTime.IsZero() {
-				brw.bidderResponseStartTime = extraBidderRespInfo.respProcessingStartTime
-			}
+			brw.bidderResponseStartTime = extraBidderRespInfo.respProcessingStartTime
+
 			// Add in time reporting
 			elapsed := time.Since(start)
 			brw.adapterSeatBids = seatBids
