@@ -3,8 +3,10 @@ package adapterstest
 import (
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"os"
+	"path/filepath"
 	"regexp"
 	"testing"
 
@@ -17,6 +19,16 @@ import (
 	"github.com/yudai/gojsondiff"
 	"github.com/yudai/gojsondiff/formatter"
 )
+
+const jsonFileExtension string = ".json"
+
+var supportedDirs = map[string]struct{}{
+	"exemplary":         {},
+	"supplemental":      {},
+	"amp":               {},
+	"video":             {},
+	"videosupplemental": {},
+}
 
 // RunJSONBidderTest is a helper method intended to unit test Bidders' adapters.
 // It requires that:
@@ -53,29 +65,36 @@ import (
 //	  adapterstest.RunJSONBidderTest(t, "{bidder}test", instanceOfYourBidder)
 //	}
 func RunJSONBidderTest(t *testing.T, rootDir string, bidder adapters.Bidder) {
-	runTests(t, fmt.Sprintf("%s/exemplary", rootDir), bidder, false, false, false)
-	runTests(t, fmt.Sprintf("%s/supplemental", rootDir), bidder, true, false, false)
-	runTests(t, fmt.Sprintf("%s/amp", rootDir), bidder, true, true, false)
-	runTests(t, fmt.Sprintf("%s/video", rootDir), bidder, false, false, true)
-	runTests(t, fmt.Sprintf("%s/videosupplemental", rootDir), bidder, true, false, true)
+	err := filepath.WalkDir(rootDir, func(path string, info fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		isJsonFile := !info.IsDir() && filepath.Ext(info.Name()) == jsonFileExtension
+		RunSingleJSONBidderTest(t, bidder, path, isJsonFile)
+		return nil
+	})
+	assert.NoError(t, err, "Error reading files from directory %s \n", rootDir)
 }
 
-// runTests runs all the *.json files in a directory. If allowErrors is false, and one of the test files
-// expects errors from the bidder, then the test will fail.
-func runTests(t *testing.T, directory string, bidder adapters.Bidder, allowErrors, isAmpTest, isVideoTest bool) {
-	if specFiles, err := os.ReadDir(directory); err == nil {
-		for _, specFile := range specFiles {
-			fileName := fmt.Sprintf("%s/%s", directory, specFile.Name())
-			specData, err := loadFile(fileName)
-			if err != nil {
-				t.Fatalf("Failed to load contents of file %s: %v", fileName, err)
-			}
+func RunSingleJSONBidderTest(t *testing.T, bidder adapters.Bidder, path string, isJsonFile bool) {
+	base := filepath.Base(filepath.Dir(path))
+	if _, ok := supportedDirs[base]; !ok {
+		return
+	}
 
-			if !allowErrors && specData.expectsErrors() {
-				t.Fatalf("Exemplary spec %s must not expect errors.", fileName)
-			}
-			runSpec(t, fileName, specData, bidder, isAmpTest, isVideoTest)
+	allowErrors := base != "exemplary" && base != "video"
+	if isJsonFile {
+		specData, err := loadFile(path)
+		if err != nil {
+			t.Fatalf("Failed to load contents of file %s: %v", path, err)
 		}
+
+		if !allowErrors && specData.expectsErrors() {
+			t.Fatalf("Exemplary spec %s must not expect errors.", path)
+		}
+
+		runSpec(t, path, specData, bidder, base == "amp", base == "videosupplemental" || base == "video")
 	}
 }
 
@@ -258,22 +277,8 @@ func assertErrorList(t *testing.T, description string, actual []error, expected 
 
 func assertMakeBidsOutput(t *testing.T, filename string, bidderResponse *adapters.BidderResponse, expected expectedBidResponse) {
 	t.Helper()
-
-	if (bidderResponse == nil || len(bidderResponse.Bids) == 0) != (len(expected.Bids) == 0) {
-		if len(expected.Bids) == 0 {
-			t.Fatalf("%s: expectedBidResponses indicated a nil response, but mockResponses supplied a non-nil response", filename)
-		}
-
-		t.Fatalf("%s: mockResponses included unexpected nil or empty response", filename)
-	}
-
-	// Expected nil response - give diffBids something to work with.
-	if bidderResponse == nil {
-		bidderResponse = new(adapters.BidderResponse)
-	}
-
-	if len(bidderResponse.Bids) != len(expected.Bids) {
-		t.Fatalf("%s: MakeBids returned wrong bid count. Expected %d, got %d", filename, len(expected.Bids), len(bidderResponse.Bids))
+	if !assert.Len(t, bidderResponse.Bids, len(expected.Bids), "%s: Wrong MakeBids bidderResponse.Bids count. len(bidderResponse.Bids) = %d vs len(spec.BidResponses.Bids) = %d", filename, len(bidderResponse.Bids), len(expected.Bids)) {
+		return
 	}
 	for i := 0; i < len(bidderResponse.Bids); i++ {
 		diffBids(t, fmt.Sprintf("%s:  typedBid[%d]", filename, i), bidderResponse.Bids[i], &(expected.Bids[i]))
@@ -435,15 +440,21 @@ func testMakeBidsImpl(t *testing.T, filename string, spec *testSpec, bidder adap
 		// output inside testMakeRequestsImpl
 		thisBidResponse, theseErrs := bidder.MakeBids(&spec.BidRequest, spec.HttpCalls[i].Request.ToRequestData(t), spec.HttpCalls[i].Response.ToResponseData(t))
 
-		bidsErrs = append(bidsErrs, theseErrs...)
-		bidResponses = append(bidResponses, thisBidResponse)
+		if theseErrs != nil {
+			bidsErrs = append(bidsErrs, theseErrs...)
+		}
+		if thisBidResponse != nil {
+			bidResponses = append(bidResponses, thisBidResponse)
+		}
 	}
 
 	// Assert actual errors thrown by MakeBids implementation versus expected JSON-defined spec.MakeBidsErrors
 	assertErrorList(t, fmt.Sprintf("%s: MakeBids", filename), bidsErrs, spec.MakeBidsErrors)
 
 	// Assert MakeBids implementation BidResponses with expected JSON-defined spec.BidResponses[i].Bids
-	for i := 0; i < len(spec.BidResponses); i++ {
-		assertMakeBidsOutput(t, filename, bidResponses[i], spec.BidResponses[i])
+	if assert.Len(t, bidResponses, len(spec.BidResponses), "%s: MakeBids len(bidResponses) = %d vs len(spec.BidResponses) = %d", filename, len(bidResponses), len(spec.BidResponses)) {
+		for i := 0; i < len(spec.BidResponses); i++ {
+			assertMakeBidsOutput(t, filename, bidResponses[i], spec.BidResponses[i])
+		}
 	}
 }

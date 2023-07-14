@@ -24,7 +24,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://api.lunamedia.io/xp/get?pubid=19f1b372c7548ec1fe734d2c9f8dc688",
+        "uri": "http://rtb.lunamedia.live/?pid=19f1b372c7548ec1fe734d2c9f8dc688",
         "body":{
           "id": "testid",
           "imp": [{

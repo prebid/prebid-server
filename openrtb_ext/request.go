@@ -79,8 +79,14 @@ type ExtRequestPrebid struct {
 	// any other value or an empty string disables trace output at all.
 	Trace string `json:"trace,omitempty"`
 
-	BidAdjustments    *ExtRequestPrebidBidAdjustments `json:"bidadjustments,omitempty"`
+	// Macros specifies list of custom macros along with the values. This is used while forming
+	// the tracker URLs, where PBS will replace the Custom Macro with its value with url-encoding
+	Macros            map[string]string               `json:"macros,omitempty"`
 	AdServerTargeting []AdServerTarget                `json:"adservertargeting,omitempty"`
+	BidAdjustments    *ExtRequestPrebidBidAdjustments `json:"bidadjustments,omitempty"`
+	// ReturnAllBidStatus if true populates bidresponse.ext.prebid.seatnonbid with all bids which was
+	// either rejected, nobid, input error
+	ReturnAllBidStatus bool `json:"returnallbidstatus,omitempty"`
 }
 
 type AdServerTarget struct {
@@ -109,9 +115,9 @@ type Config struct {
 }
 
 type ORTB2 struct { //First party data
-	Site map[string]json.RawMessage `json:"site,omitempty"`
-	App  map[string]json.RawMessage `json:"app,omitempty"`
-	User map[string]json.RawMessage `json:"user,omitempty"`
+	Site json.RawMessage `json:"site,omitempty"`
+	App  json.RawMessage `json:"app,omitempty"`
+	User json.RawMessage `json:"user,omitempty"`
 }
 
 type ExtRequestCurrency struct {
@@ -181,14 +187,15 @@ type Adjustment struct {
 
 // ExtRequestTargeting defines the contract for bidrequest.ext.prebid.targeting
 type ExtRequestTargeting struct {
-	PriceGranularity     *PriceGranularity        `json:"pricegranularity,omitempty"`
-	IncludeWinners       *bool                    `json:"includewinners,omitempty"`
-	IncludeBidderKeys    *bool                    `json:"includebidderkeys,omitempty"`
-	IncludeBrandCategory *ExtIncludeBrandCategory `json:"includebrandcategory,omitempty"`
-	IncludeFormat        bool                     `json:"includeformat,omitempty"`
-	DurationRangeSec     []int                    `json:"durationrangesec,omitempty"`
-	PreferDeals          bool                     `json:"preferdeals,omitempty"`
-	AppendBidderNames    bool                     `json:"appendbiddernames,omitempty"`
+	PriceGranularity          *PriceGranularity         `json:"pricegranularity,omitempty"`
+	MediaTypePriceGranularity MediaTypePriceGranularity `json:"mediatypepricegranularity,omitempty"`
+	IncludeWinners            *bool                     `json:"includewinners,omitempty"`
+	IncludeBidderKeys         *bool                     `json:"includebidderkeys,omitempty"`
+	IncludeBrandCategory      *ExtIncludeBrandCategory  `json:"includebrandcategory,omitempty"`
+	IncludeFormat             bool                      `json:"includeformat,omitempty"`
+	DurationRangeSec          []int                     `json:"durationrangesec,omitempty"`
+	PreferDeals               bool                      `json:"preferdeals,omitempty"`
+	AppendBidderNames         bool                      `json:"appendbiddernames,omitempty"`
 }
 
 type ExtIncludeBrandCategory struct {
@@ -198,7 +205,15 @@ type ExtIncludeBrandCategory struct {
 	TranslateCategories *bool  `json:"translatecategories,omitempty"`
 }
 
+// MediaTypePriceGranularity specify price granularity configuration at the bid type level
+type MediaTypePriceGranularity struct {
+	Banner *PriceGranularity `json:"banner,omitempty"`
+	Video  *PriceGranularity `json:"video,omitempty"`
+	Native *PriceGranularity `json:"native,omitempty"`
+}
+
 // PriceGranularity defines the allowed values for bidrequest.ext.prebid.targeting.pricegranularity
+// or bidrequest.ext.prebid.targeting.mediatypepricegranularity.banner|video|native
 type PriceGranularity struct {
 	Precision *int               `json:"precision,omitempty"`
 	Ranges    []GranularityRange `json:"ranges,omitempty"`
@@ -360,14 +375,7 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 		for i, bc := range erp.BidderConfigs {
 			clonedBidderConfig := BidderConfig{Bidders: sliceutil.Clone(bc.Bidders)}
 			if bc.Config != nil {
-				config := &Config{}
-				if bc.Config.ORTB2 != nil {
-					config.ORTB2 = &ORTB2{
-						Site: maputil.Clone(bc.Config.ORTB2.Site),
-						App:  maputil.Clone(bc.Config.ORTB2.App),
-						User: maputil.Clone(bc.Config.ORTB2.User),
-					}
-				}
+				config := &Config{ORTB2: ptrutil.Clone(bc.Config.ORTB2)}
 				clonedBidderConfig.Config = config
 			}
 			clone.BidderConfigs[i] = clonedBidderConfig

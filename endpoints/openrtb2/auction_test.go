@@ -2,10 +2,12 @@ package openrtb2
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"errors"
 	"io"
+	"io/fs"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -22,16 +24,13 @@ import (
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/analytics"
-	"github.com/prebid/prebid-server/hooks"
-	"github.com/prebid/prebid-server/hooks/hookexecution"
-	"github.com/prebid/prebid-server/hooks/hookstage"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/hooks"
+	"github.com/prebid/prebid-server/hooks/hookexecution"
+	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/prebid/prebid-server/metrics"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -39,7 +38,11 @@ import (
 	"github.com/prebid/prebid-server/stored_responses"
 	"github.com/prebid/prebid-server/util/iputil"
 	"github.com/prebid/prebid-server/util/ptrutil"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
+
+const jsonFileExtension string = ".json"
 
 func TestJsonSampleRequests(t *testing.T) {
 	testSuites := []struct {
@@ -121,46 +124,64 @@ func TestJsonSampleRequests(t *testing.T) {
 	}
 
 	for _, tc := range testSuites {
-		testCaseFiles, err := getTestFiles(filepath.Join("sample-requests", tc.sampleRequestsSubDir))
-		if assert.NoError(t, err, "Test case %s. Error reading files from directory %s \n", tc.description, tc.sampleRequestsSubDir) {
-			for _, testFile := range testCaseFiles {
-				fileData, err := os.ReadFile(testFile)
-				if assert.NoError(t, err, "Test case %s. Error reading file %s \n", tc.description, testFile) {
-					// Retrieve test case input and expected output from JSON file
-					test, err := parseTestFile(fileData, testFile)
-					if !assert.NoError(t, err) {
-						continue
-					}
-
-					// Build endpoint for testing. If no error, run test case
-					cfg := &config.Configuration{MaxRequestSize: maxSize}
-					if test.Config != nil {
-						cfg.BlacklistedApps = test.Config.BlacklistedApps
-						cfg.BlacklistedAppMap = test.Config.getBlacklistedAppMap()
-						cfg.BlacklistedAccts = test.Config.BlacklistedAccounts
-						cfg.BlacklistedAcctMap = test.Config.getBlackListedAccountMap()
-						cfg.AccountRequired = test.Config.AccountRequired
-					}
-					cfg.MarshalAccountDefaults()
-					test.endpointType = OPENRTB_ENDPOINT
-
-					auctionEndpointHandler, _, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
-					if assert.NoError(t, err) {
-						assert.NotPanics(t, func() { runTestCase(t, auctionEndpointHandler, test, fileData, testFile) }, testFile)
-					}
-
-					// Close servers regardless if the test case was run or not
-					for _, mockBidServer := range mockBidServers {
-						mockBidServer.Close()
-					}
-					mockCurrencyRatesServer.Close()
-				}
+		err := filepath.WalkDir(filepath.Join("sample-requests", tc.sampleRequestsSubDir), func(path string, info fs.DirEntry, err error) error {
+			// According to documentation, needed to avoid panics
+			if err != nil {
+				return err
 			}
-		}
+
+			// Test suite will traverse the directory tree recursively and will only consider files with `json` extension
+			if !info.IsDir() && filepath.Ext(info.Name()) == jsonFileExtension {
+				t.Run(tc.description, func(t *testing.T) {
+					runJsonBasedTest(t, path, tc.description)
+				})
+			}
+
+			return nil
+		})
+		assert.NoError(t, err, "Test case %s. Error reading files from directory %s \n", tc.description, tc.sampleRequestsSubDir)
 	}
 }
 
-func runTestCase(t *testing.T, auctionEndpointHandler httprouter.Handle, test testCase, fileData []byte, testFile string) {
+func runJsonBasedTest(t *testing.T, filename, desc string) {
+	t.Helper()
+
+	fileData, err := os.ReadFile(filename)
+	if !assert.NoError(t, err, "Test case %s. Error reading file %s \n", desc, filename) {
+		return
+	}
+
+	// Retrieve test case input and expected output from JSON file
+	test, err := parseTestData(fileData, filename)
+	if !assert.NoError(t, err) {
+		return
+	}
+
+	// Build endpoint for testing. If no error, run test case
+	cfg := &config.Configuration{MaxRequestSize: maxSize}
+	if test.Config != nil {
+		cfg.BlacklistedApps = test.Config.BlacklistedApps
+		cfg.BlacklistedAppMap = test.Config.getBlacklistedAppMap()
+		cfg.BlacklistedAccts = test.Config.BlacklistedAccounts
+		cfg.BlacklistedAcctMap = test.Config.getBlackListedAccountMap()
+		cfg.AccountRequired = test.Config.AccountRequired
+	}
+	cfg.MarshalAccountDefaults()
+	test.endpointType = OPENRTB_ENDPOINT
+
+	auctionEndpointHandler, _, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
+	if assert.NoError(t, err) {
+		assert.NotPanics(t, func() { runEndToEndTest(t, auctionEndpointHandler, test, fileData, filename) }, filename)
+	}
+
+	// Close servers regardless if the test case was run or not
+	for _, mockBidServer := range mockBidServers {
+		mockBidServer.Close()
+	}
+	mockCurrencyRatesServer.Close()
+}
+
+func runEndToEndTest(t *testing.T, auctionEndpointHandler httprouter.Handle, test testCase, fileData []byte, testFile string) {
 	t.Helper()
 
 	// Hit the auction endpoint with the test case configuration and mockBidRequest
@@ -1842,34 +1863,6 @@ func TestValidateTargeting(t *testing.T) {
 			expectedError: nil,
 		},
 		{
-			name: "price granularity empty",
-			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners:   ptrutil.ToPtr(true),
-				PriceGranularity: &openrtb_ext.PriceGranularity{},
-			},
-			expectedError: errors.New("Price granularity error: precision is required"),
-		},
-		{
-			name: "price granularity negative",
-			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
-				PriceGranularity: &openrtb_ext.PriceGranularity{
-					Precision: ptrutil.ToPtr(-1),
-				},
-			},
-			expectedError: errors.New("Price granularity error: precision must be non-negative"),
-		},
-		{
-			name: "price granularity greater than max",
-			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
-				PriceGranularity: &openrtb_ext.PriceGranularity{
-					Precision: ptrutil.ToPtr(openrtb_ext.MaxDecimalFigures + 1),
-				},
-			},
-			expectedError: errors.New("Price granularity error: precision of more than 15 significant figures is not supported"),
-		},
-		{
 			name: "price granularity ranges out of order",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
 				IncludeWinners: ptrutil.ToPtr(true),
@@ -1884,23 +1877,237 @@ func TestValidateTargeting(t *testing.T) {
 			expectedError: errors.New(`Price granularity error: range list must be ordered with increasing "max"`),
 		},
 		{
-			name: "price granularity negative increment",
+			name: "media type price granularity video correct",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
 				IncludeWinners: ptrutil.ToPtr(true),
-				PriceGranularity: &openrtb_ext.PriceGranularity{
-					Precision: ptrutil.ToPtr(2),
-					Ranges: []openrtb_ext.GranularityRange{
-						{Min: 0.0, Max: 1.0, Increment: -0.1},
+				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
+					Video: &openrtb_ext.PriceGranularity{
+						Precision: ptrutil.ToPtr(2),
+						Ranges: []openrtb_ext.GranularityRange{
+							{Min: 0.0, Max: 10.0, Increment: 1},
+						},
+					},
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			name: "media type price granularity banner correct",
+			givenTargeting: &openrtb_ext.ExtRequestTargeting{
+				IncludeWinners: ptrutil.ToPtr(true),
+				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
+					Banner: &openrtb_ext.PriceGranularity{
+						Precision: ptrutil.ToPtr(2),
+						Ranges: []openrtb_ext.GranularityRange{
+							{Min: 0.0, Max: 10.0, Increment: 1},
+						},
+					},
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			name: "media type price granularity native correct",
+			givenTargeting: &openrtb_ext.ExtRequestTargeting{
+				IncludeWinners: ptrutil.ToPtr(true),
+				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
+					Native: &openrtb_ext.PriceGranularity{
+						Precision: ptrutil.ToPtr(2),
+						Ranges: []openrtb_ext.GranularityRange{
+							{Min: 0.0, Max: 20.0, Increment: 1},
+						},
+					},
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			name: "media type price granularity video and banner correct",
+			givenTargeting: &openrtb_ext.ExtRequestTargeting{
+				IncludeWinners: ptrutil.ToPtr(true),
+				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
+					Banner: &openrtb_ext.PriceGranularity{
+						Precision: ptrutil.ToPtr(2),
+						Ranges: []openrtb_ext.GranularityRange{
+							{Min: 0.0, Max: 10.0, Increment: 1},
+						},
+					},
+					Video: &openrtb_ext.PriceGranularity{
+						Precision: ptrutil.ToPtr(2),
+						Ranges: []openrtb_ext.GranularityRange{
+							{Min: 0.0, Max: 10.0, Increment: 1},
+						},
+					},
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			name: "media type price granularity video incorrect",
+			givenTargeting: &openrtb_ext.ExtRequestTargeting{
+				IncludeWinners: ptrutil.ToPtr(true),
+				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
+					Video: &openrtb_ext.PriceGranularity{
+						Precision: ptrutil.ToPtr(2),
+						Ranges: []openrtb_ext.GranularityRange{
+							{Min: 0.0, Max: 10.0, Increment: -1},
+						},
 					},
 				},
 			},
 			expectedError: errors.New("Price granularity error: increment must be a nonzero positive number"),
+		},
+		{
+			name: "media type price granularity banner incorrect",
+			givenTargeting: &openrtb_ext.ExtRequestTargeting{
+				IncludeWinners: ptrutil.ToPtr(true),
+				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
+					Banner: &openrtb_ext.PriceGranularity{
+						Precision: ptrutil.ToPtr(2),
+						Ranges: []openrtb_ext.GranularityRange{
+							{Min: 0.0, Max: 0.0, Increment: 1},
+						},
+					},
+				},
+			},
+			expectedError: errors.New("Price granularity error: range list must be ordered with increasing \"max\""),
+		},
+		{
+			name: "media type price granularity native incorrect",
+			givenTargeting: &openrtb_ext.ExtRequestTargeting{
+				IncludeWinners: ptrutil.ToPtr(true),
+				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
+					Native: &openrtb_ext.PriceGranularity{
+						Precision: ptrutil.ToPtr(2),
+						Ranges: []openrtb_ext.GranularityRange{
+							{Min: 0.0, Max: 0.0, Increment: 1},
+						},
+					},
+				},
+			},
+			expectedError: errors.New("Price granularity error: range list must be ordered with increasing \"max\""),
+		},
+		{
+			name: "media type price granularity video correct and banner incorrect",
+			givenTargeting: &openrtb_ext.ExtRequestTargeting{
+				IncludeWinners: ptrutil.ToPtr(true),
+				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
+					Banner: &openrtb_ext.PriceGranularity{
+						Precision: ptrutil.ToPtr(2),
+						Ranges: []openrtb_ext.GranularityRange{
+							{Min: 0.0, Max: 10.0, Increment: -1},
+						},
+					},
+					Video: &openrtb_ext.PriceGranularity{
+						Precision: ptrutil.ToPtr(2),
+						Ranges: []openrtb_ext.GranularityRange{
+							{Min: 0.0, Max: 0.0, Increment: 1},
+						},
+					},
+				},
+			},
+			expectedError: errors.New("Price granularity error: range list must be ordered with increasing \"max\""),
+		},
+		{
+			name: "media type price granularity native incorrect and banner correct",
+			givenTargeting: &openrtb_ext.ExtRequestTargeting{
+				IncludeWinners: ptrutil.ToPtr(true),
+				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
+					Native: &openrtb_ext.PriceGranularity{
+						Precision: ptrutil.ToPtr(2),
+						Ranges: []openrtb_ext.GranularityRange{
+							{Min: 0.0, Max: 10.0, Increment: -1},
+						},
+					},
+					Video: &openrtb_ext.PriceGranularity{
+						Precision: ptrutil.ToPtr(2),
+						Ranges: []openrtb_ext.GranularityRange{
+							{Min: 0.0, Max: 0.0, Increment: 1},
+						},
+					},
+				},
+			},
+			expectedError: errors.New("Price granularity error: range list must be ordered with increasing \"max\""),
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			assert.Equal(t, tc.expectedError, validateTargeting(tc.givenTargeting), "Targeting")
+		})
+	}
+}
+
+func TestValidatePriceGranularity(t *testing.T) {
+	testCases := []struct {
+		description           string
+		givenPriceGranularity *openrtb_ext.PriceGranularity
+		expectedError         error
+	}{
+		{
+			description: "Precision is nil",
+			givenPriceGranularity: &openrtb_ext.PriceGranularity{
+				Precision: nil,
+			},
+			expectedError: errors.New("Price granularity error: precision is required"),
+		},
+		{
+			description: "Precision is negative",
+			givenPriceGranularity: &openrtb_ext.PriceGranularity{
+				Precision: ptrutil.ToPtr(-1),
+			},
+			expectedError: errors.New("Price granularity error: precision must be non-negative"),
+		},
+		{
+			description: "Precision is too big",
+			givenPriceGranularity: &openrtb_ext.PriceGranularity{
+				Precision: ptrutil.ToPtr(20),
+			},
+			expectedError: errors.New("Price granularity error: precision of more than 15 significant figures is not supported"),
+		},
+		{
+			description: "price granularity ranges out of order",
+			givenPriceGranularity: &openrtb_ext.PriceGranularity{
+				Precision: ptrutil.ToPtr(2),
+				Ranges: []openrtb_ext.GranularityRange{
+					{Min: 1.0, Max: 2.0, Increment: 0.2},
+					{Min: 0.0, Max: 1.0, Increment: 0.5},
+				},
+			},
+			expectedError: errors.New(`Price granularity error: range list must be ordered with increasing "max"`),
+		},
+		{
+			description: "price granularity negative increment",
+			givenPriceGranularity: &openrtb_ext.PriceGranularity{
+				Precision: ptrutil.ToPtr(2),
+				Ranges: []openrtb_ext.GranularityRange{
+					{Min: 0.0, Max: 1.0, Increment: -0.1},
+				},
+			},
+			expectedError: errors.New("Price granularity error: increment must be a nonzero positive number"),
+		},
+		{
+			description: "price granularity correct",
+			givenPriceGranularity: &openrtb_ext.PriceGranularity{
+				Precision: ptrutil.ToPtr(2),
+				Ranges: []openrtb_ext.GranularityRange{
+					{Min: 0.0, Max: 10.0, Increment: 1},
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			description: "price granularity with correct precision and ranges not specified",
+			givenPriceGranularity: &openrtb_ext.PriceGranularity{
+				Precision: ptrutil.ToPtr(2),
+			},
+			expectedError: nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			assert.Equal(t, tc.expectedError, validatePriceGranularity(tc.givenPriceGranularity))
 		})
 	}
 }
@@ -3688,6 +3895,105 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 	assert.Contains(t, errL[0].Error(), "echovideoattrs of type bool", "Incorrect error message")
 }
 
+func TestParseGzipedRequest(t *testing.T) {
+	testCases :=
+		[]struct {
+			desc           string
+			reqContentEnc  string
+			maxReqSize     int64
+			compressionCfg config.Compression
+			expectedErr    string
+		}{
+			{
+				desc:           "Gzip compression enabled, request size exceeds max request size",
+				reqContentEnc:  "gzip",
+				maxReqSize:     10,
+				compressionCfg: config.Compression{Request: config.CompressionInfo{GZIP: true}},
+				expectedErr:    "request size exceeded max size of 10 bytes.",
+			},
+			{
+				desc:           "Gzip compression enabled, request size is within max request size",
+				reqContentEnc:  "gzip",
+				maxReqSize:     2000,
+				compressionCfg: config.Compression{Request: config.CompressionInfo{GZIP: true}},
+				expectedErr:    "",
+			},
+			{
+				desc:           "Gzip compression enabled, request size is within max request size, content-encoding value not in lower case",
+				reqContentEnc:  "GZIP",
+				maxReqSize:     2000,
+				compressionCfg: config.Compression{Request: config.CompressionInfo{GZIP: true}},
+				expectedErr:    "",
+			},
+			{
+				desc:           "Request is Gzip compressed, but Gzip compression is disabled",
+				reqContentEnc:  "gzip",
+				compressionCfg: config.Compression{Request: config.CompressionInfo{GZIP: false}},
+				expectedErr:    "Content-Encoding of type gzip is not supported",
+			},
+			{
+				desc:           "Request is not Gzip compressed, but Gzip compression is enabled",
+				reqContentEnc:  "",
+				maxReqSize:     2000,
+				compressionCfg: config.Compression{Request: config.CompressionInfo{GZIP: true}},
+				expectedErr:    "",
+			},
+		}
+
+	reqBody := []byte(validRequest(t, "site.json"))
+	deps := &endpointDeps{
+		fakeUUIDGenerator{},
+		&warningsCheckExchange{},
+		mockBidderParamValidator{},
+		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: int64(50), Compression: config.Compression{Request: config.CompressionInfo{GZIP: false}}},
+		&metricsConfig.NilMetricsEngine{},
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		nil,
+		nil,
+		hardcodedResponseIPValidator{response: true},
+		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
+	}
+
+	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
+	for _, test := range testCases {
+		var req *http.Request
+		deps.cfg.MaxRequestSize = test.maxReqSize
+		deps.cfg.Compression = test.compressionCfg
+		if test.reqContentEnc == "gzip" {
+			var compressed bytes.Buffer
+			gw := gzip.NewWriter(&compressed)
+			_, err := gw.Write(reqBody)
+			assert.NoError(t, err, "Error writing gzip compressed request body", test.desc)
+			assert.NoError(t, gw.Close(), "Error closing gzip writer", test.desc)
+
+			req = httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(compressed.Bytes()))
+			req.Header.Set("Content-Encoding", "gzip")
+		} else {
+			req = httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(reqBody))
+		}
+		resReq, impExtInfoMap, _, _, _, _, errL := deps.parseRequest(req, &metrics.Labels{}, hookExecutor)
+
+		if test.expectedErr == "" {
+			assert.Nil(t, errL, "Error list should be nil", test.desc)
+			assert.NotNil(t, resReq, "Result request should not be nil", test.desc)
+			assert.NotNil(t, impExtInfoMap, "Impression info map should not be nil", test.desc)
+		} else {
+			assert.Nil(t, resReq, "Result request should be nil due to incorrect imp", test.desc)
+			assert.Nil(t, impExtInfoMap, "Impression info map should be nil due to incorrect imp", test.desc)
+			assert.Len(t, errL, 1, "One error should be returned", test.desc)
+			assert.Contains(t, errL[0].Error(), test.expectedErr, "Incorrect error message", test.desc)
+		}
+	}
+}
+
 func TestValidateNativeContextTypes(t *testing.T) {
 	impIndex := 4
 
@@ -5063,28 +5369,33 @@ func TestValidResponseAfterExecutingStages(t *testing.T) {
 		{
 			description: "Assert correct BidResponse when request rejected at entrypoint stage",
 			file:        "sample-requests/hooks/auction_entrypoint_reject.json",
-			planBuilder: mockPlanBuilder{entrypointPlan: makePlan[hookstage.Entrypoint](mockRejectionHook{nbr})},
+			planBuilder: mockPlanBuilder{entrypointPlan: makePlan[hookstage.Entrypoint](mockRejectionHook{nbr, nil})},
 		},
 		{
 			description: "Assert correct BidResponse when request rejected at raw-auction stage",
 			file:        "sample-requests/hooks/auction_raw_auction_request_reject.json",
-			planBuilder: mockPlanBuilder{rawAuctionPlan: makePlan[hookstage.RawAuctionRequest](mockRejectionHook{nbr})},
+			planBuilder: mockPlanBuilder{rawAuctionPlan: makePlan[hookstage.RawAuctionRequest](mockRejectionHook{nbr, nil})},
 		},
 		{
 			description: "Assert correct BidResponse when request rejected at processed-auction stage",
 			file:        "sample-requests/hooks/auction_processed_auction_request_reject.json",
-			planBuilder: mockPlanBuilder{processedAuctionPlan: makePlan[hookstage.ProcessedAuctionRequest](mockRejectionHook{nbr})},
+			planBuilder: mockPlanBuilder{processedAuctionPlan: makePlan[hookstage.ProcessedAuctionRequest](mockRejectionHook{nbr, nil})},
 		},
 		{
 			// bidder-request stage doesn't reject whole request, so we do not expect NBR code in response
 			description: "Assert correct BidResponse when request rejected at bidder-request stage",
 			file:        "sample-requests/hooks/auction_bidder_reject.json",
-			planBuilder: mockPlanBuilder{bidderRequestPlan: makePlan[hookstage.BidderRequest](mockRejectionHook{nbr})},
+			planBuilder: mockPlanBuilder{bidderRequestPlan: makePlan[hookstage.BidderRequest](mockRejectionHook{nbr, nil})},
 		},
 		{
 			description: "Assert correct BidResponse when request rejected at raw-bidder-response stage",
 			file:        "sample-requests/hooks/auction_bidder_response_reject.json",
-			planBuilder: mockPlanBuilder{rawBidderResponsePlan: makePlan[hookstage.RawBidderResponse](mockRejectionHook{nbr})},
+			planBuilder: mockPlanBuilder{rawBidderResponsePlan: makePlan[hookstage.RawBidderResponse](mockRejectionHook{nbr, nil})},
+		},
+		{
+			description: "Assert correct BidResponse when request rejected with error from hook",
+			file:        "sample-requests/hooks/auction_reject_with_error.json",
+			planBuilder: mockPlanBuilder{entrypointPlan: makePlan[hookstage.Entrypoint](mockRejectionHook{nbr, errors.New("dummy")})},
 		},
 		{
 			description: "Assert correct BidResponse with debug information from modules added to ext.prebid.modules",
@@ -5098,7 +5409,7 @@ func TestValidResponseAfterExecutingStages(t *testing.T) {
 			fileData, err := os.ReadFile(tc.file)
 			assert.NoError(t, err, "Failed to read test file.")
 
-			test, err := parseTestFile(fileData, tc.file)
+			test, err := parseTestData(fileData, tc.file)
 			assert.NoError(t, err, "Failed to parse test file.")
 			test.planBuilder = tc.planBuilder
 			test.endpointType = OPENRTB_ENDPOINT
@@ -5354,4 +5665,50 @@ func TestRecordResponsePreparationMetrics(t *testing.T) {
 	mockMetricEngine := &metrics.MetricsEngineMock{}
 	mockMetricEngine.On("RecordOverheadTime", metrics.MakeAuctionResponse, mock.Anything)
 	recordResponsePreparationMetrics(mbi, mockMetricEngine)
+}
+
+func TestSetSeatNonBidRaw(t *testing.T) {
+	type args struct {
+		request         *openrtb_ext.RequestWrapper
+		auctionResponse *exchange.AuctionResponse
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name:    "nil-auctionResponse",
+			args:    args{auctionResponse: nil},
+			wantErr: false,
+		},
+		{
+			name:    "nil-bidResponse",
+			args:    args{auctionResponse: &exchange.AuctionResponse{BidResponse: nil}},
+			wantErr: false,
+		},
+		{
+			name:    "invalid-response.Ext",
+			args:    args{auctionResponse: &exchange.AuctionResponse{BidResponse: &openrtb2.BidResponse{Ext: []byte(`invalid_json`)}}},
+			wantErr: true,
+		},
+		{
+			name: "update-seatnonbid-in-ext",
+			args: args{
+				request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid": { "returnallbidstatus" : true }}`)}},
+				auctionResponse: &exchange.AuctionResponse{
+					ExtBidResponse: &openrtb_ext.ExtBidResponse{Prebid: &openrtb_ext.ExtResponsePrebid{SeatNonBid: []openrtb_ext.SeatNonBid{}}},
+					BidResponse:    &openrtb2.BidResponse{Ext: []byte(`{}`)},
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := setSeatNonBidRaw(tt.args.request, tt.args.auctionResponse); (err != nil) != tt.wantErr {
+				t.Errorf("setSeatNonBidRaw() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
 }

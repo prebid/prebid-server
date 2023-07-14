@@ -245,13 +245,37 @@ func (p *permissionsImpl) parseVendor(ctx context.Context, vendorID uint16, cons
 		return
 	}
 
-	vendorList, err := p.fetchVendorList(ctx, parsedConsent.VendorListVersion())
+	policyVersion := parsedConsent.TCFPolicyVersion()
+	specVersion, err := getSpecVersion(policyVersion)
+	if err != nil {
+		err = &ErrorMalformedConsent{
+			Consent: consent,
+			Cause:   err,
+		}
+		return
+	}
+
+	vendorList, err := p.fetchVendorList(ctx, uint16(specVersion), parsedConsent.VendorListVersion())
 	if err != nil {
 		return
 	}
 
 	vendor = vendorList.Vendor(vendorID)
 	return
+}
+
+// getSpecVersion looks at the TCF policy version and determines the corresponding GVL specification
+// version that should be used to calculate legal basis
+func getSpecVersion(policyVersion uint8) (uint16, error) {
+	var specVersion uint16 = 3
+
+	if policyVersion > 4 {
+		return 0, fmt.Errorf("invalid TCF policy version %d", policyVersion)
+	}
+	if policyVersion < 4 {
+		specVersion = 2
+	}
+	return specVersion, nil
 }
 
 // AllowHostCookies represents a GDPR permissions policy with host cookie syncing always allowed

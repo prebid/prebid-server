@@ -1,20 +1,34 @@
 package exchange
 
 import (
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"math"
 	"strconv"
-
-	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 // GetPriceBucket is the externally facing function for computing CPM buckets
-func GetPriceBucket(cpm float64, config openrtb_ext.PriceGranularity) string {
+func GetPriceBucket(bid openrtb2.Bid, targetingData targetData) string {
 	cpmStr := ""
 	bucketMax := 0.0
 	bucketMin := 0.0
 	increment := 0.0
+
+	config := targetingData.priceGranularity //assign default price granularity
+
+	if bidType, err := getMediaTypeForBid(bid); err == nil {
+		if bidType == openrtb_ext.BidTypeBanner && targetingData.mediaTypePriceGranularity.Banner != nil {
+			config = *targetingData.mediaTypePriceGranularity.Banner
+		} else if bidType == openrtb_ext.BidTypeVideo && targetingData.mediaTypePriceGranularity.Video != nil {
+			config = *targetingData.mediaTypePriceGranularity.Video
+		} else if bidType == openrtb_ext.BidTypeNative && targetingData.mediaTypePriceGranularity.Native != nil {
+			config = *targetingData.mediaTypePriceGranularity.Native
+		}
+	}
+
 	precision := *config.Precision
 
+	cpm := bid.Price
 	for i := 0; i < len(config.Ranges); i++ {
 		if config.Ranges[i].Max > bucketMax {
 			bucketMax = config.Ranges[i].Max

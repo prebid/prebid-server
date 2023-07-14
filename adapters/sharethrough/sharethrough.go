@@ -83,21 +83,29 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		requestCopy.BCat = append(requestCopy.BCat, strImpParams.BCat...)
 		requestCopy.BAdv = append(requestCopy.BAdv, strImpParams.BAdv...)
 
-		requestCopy.Imp = []openrtb2.Imp{imp}
-
-		requestJSON, err := json.Marshal(requestCopy)
+		impressionsByMediaType, err := splitImpressionsByMediaType(&imp)
 		if err != nil {
 			errors = append(errors, err)
 			continue
 		}
 
-		requestData := &adapters.RequestData{
-			Method:  "POST",
-			Uri:     a.endpoint,
-			Body:    requestJSON,
-			Headers: headers,
+		for _, impression := range impressionsByMediaType {
+			requestCopy.Imp = []openrtb2.Imp{impression}
+
+			requestJSON, err := json.Marshal(requestCopy)
+			if err != nil {
+				errors = append(errors, err)
+				continue
+			}
+
+			requestData := &adapters.RequestData{
+				Method:  "POST",
+				Uri:     a.endpoint,
+				Body:    requestJSON,
+				Headers: headers,
+			}
+			requests = append(requests, requestData)
 		}
-		requests = append(requests, requestData)
 	}
 
 	return requests, errors
@@ -130,20 +138,71 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 	bidderResponse := adapters.NewBidderResponse()
 	bidderResponse.Currency = "USD"
+	var errors []error
 
 	for _, seatBid := range bidResp.SeatBid {
 		for i := range seatBid.Bid {
-			bidType := openrtb_ext.BidTypeBanner
-			if bidReq.Imp[0].Video != nil {
-				bidType = openrtb_ext.BidTypeVideo
+			bid := &seatBid.Bid[i]
+			bidType, err := getMediaTypeForBid(*bid)
+			if err != nil {
+				errors = append(errors, err)
 			}
 
 			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
 				BidType: bidType,
-				Bid:     &seatBid.Bid[i],
+				Bid:     bid,
 			})
 		}
 	}
 
-	return bidderResponse, nil
+	return bidderResponse, errors
+}
+
+func splitImpressionsByMediaType(impression *openrtb2.Imp) ([]openrtb2.Imp, error) {
+	if impression.Banner == nil && impression.Video == nil && impression.Native == nil {
+		return nil, &errortypes.BadInput{Message: "Invalid MediaType. Sharethrough only supports Banner, Video and Native."}
+	}
+
+	if impression.Audio != nil {
+		impression.Audio = nil
+	}
+
+	impressions := make([]openrtb2.Imp, 0, 3)
+
+	if impression.Banner != nil {
+		impCopy := *impression
+		impCopy.Video = nil
+		impCopy.Native = nil
+		impressions = append(impressions, impCopy)
+	}
+
+	if impression.Video != nil {
+		impCopy := *impression
+		impCopy.Banner = nil
+		impCopy.Native = nil
+		impressions = append(impressions, impCopy)
+	}
+
+	if impression.Native != nil {
+		impression.Banner = nil
+		impression.Video = nil
+		impressions = append(impressions, *impression)
+	}
+
+	return impressions, nil
+}
+
+func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+
+	if bid.Ext != nil {
+		var bidExt openrtb_ext.ExtBid
+		err := json.Unmarshal(bid.Ext, &bidExt)
+		if err == nil && bidExt.Prebid != nil {
+			return openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
+		}
+	}
+
+	return "", &errortypes.BadServerResponse{
+		Message: fmt.Sprintf("Failed to parse bid mediatype for impression \"%s\"", bid.ImpID),
+	}
 }

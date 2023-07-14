@@ -11,10 +11,8 @@
       }
     ]
   },
-  "outputRequestData": {
-  },
+  "outputRequestData": {},
   "bidderConfigFPD": {
     "appnexus": {}
   }
 }
-

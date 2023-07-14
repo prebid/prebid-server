@@ -179,6 +179,11 @@ func TestDefaults(t *testing.T) {
 	//Assert the price floor default values
 	cmpBools(t, "price_floors.enabled", false, cfg.PriceFloors.Enabled)
 
+	// Assert compression related defaults
+	cmpBools(t, "enable_gzip", false, cfg.EnableGzip)
+	cmpBools(t, "compression.request.enable_gzip", false, cfg.Compression.Request.GZIP)
+	cmpBools(t, "compression.response.enable_gzip", false, cfg.Compression.Response.GZIP)
+
 	cmpBools(t, "account_defaults.price_floors.enabled", false, cfg.AccountDefaults.PriceFloors.Enabled)
 	cmpInts(t, "account_defaults.price_floors.enforce_floors_rate", 100, cfg.AccountDefaults.PriceFloors.EnforceFloorsRate)
 	cmpBools(t, "account_defaults.price_floors.adjust_for_bid_adjustment", true, cfg.AccountDefaults.PriceFloors.AdjustForBidAdjustment)
@@ -195,6 +200,11 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "validations.max_creative_width", 0, int(cfg.Validations.MaxCreativeWidth))
 	cmpInts(t, "validations.max_creative_height", 0, int(cfg.Validations.MaxCreativeHeight))
 	cmpBools(t, "account_modules_metrics", false, cfg.Metrics.Disabled.AccountModulesMetrics)
+
+	cmpBools(t, "tmax_adjustments.enabled", false, cfg.TmaxAdjustments.Enabled)
+	cmpUnsignedInts(t, "tmax_adjustments.bidder_response_duration_min_ms", 0, cfg.TmaxAdjustments.BidderResponseDurationMin)
+	cmpUnsignedInts(t, "tmax_adjustments.bidder_network_latency_buffer_ms", 0, cfg.TmaxAdjustments.BidderNetworkLatencyBuffer)
+	cmpUnsignedInts(t, "tmax_adjustments.pbs_response_preparation_duration_ms", 0, cfg.TmaxAdjustments.PBSResponsePreparationDuration)
 
 	//Assert purpose VendorExceptionMap hash tables were built correctly
 	expectedTCF2 := TCF2{
@@ -373,6 +383,12 @@ external_url: http://prebid-server.prebid.org/
 host: prebid-server.prebid.org
 port: 1234
 admin_port: 5678
+enable_gzip: false
+compression:
+    request:
+        enable_gzip: true
+    response:
+        enable_gzip: false
 garbage_collector_threshold: 1
 datacenter: "1"
 auction_timeouts_ms:
@@ -461,6 +477,11 @@ account_defaults:
         use_dynamic_data: true
         max_rules: 120
         max_schema_dims: 5
+tmax_adjustments:
+  enabled: true
+  bidder_response_duration_min_ms: 700
+  bidder_network_latency_buffer_ms: 100
+  pbs_response_preparation_duration_ms: 100
 `)
 
 var oldStoredRequestsConfig = []byte(`
@@ -475,6 +496,11 @@ func cmpStrings(t *testing.T, key, expected, actual string) {
 }
 
 func cmpInts(t *testing.T, key string, expected, actual int) {
+	t.Helper()
+	assert.Equal(t, expected, actual, "%s: %d != %d", key, expected, actual)
+}
+
+func cmpUnsignedInts(t *testing.T, key string, expected, actual uint) {
 	t.Helper()
 	assert.Equal(t, expected, actual, "%s: %d != %d", key, expected, actual)
 }
@@ -540,6 +566,10 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "validations.secure_markup", "skip", cfg.Validations.SecureMarkup)
 	cmpInts(t, "validations.max_creative_width", 0, int(cfg.Validations.MaxCreativeWidth))
 	cmpInts(t, "validations.max_creative_height", 0, int(cfg.Validations.MaxCreativeHeight))
+	cmpBools(t, "tmax_adjustments.enabled", false, cfg.TmaxAdjustments.Enabled) // Tmax adjustment feature is still under development. Therefore enabled flag is set to false
+	cmpUnsignedInts(t, "tmax_adjustments.bidder_response_duration_min_ms", 700, cfg.TmaxAdjustments.BidderResponseDurationMin)
+	cmpUnsignedInts(t, "tmax_adjustments.bidder_network_latency_buffer_ms", 100, cfg.TmaxAdjustments.BidderNetworkLatencyBuffer)
+	cmpUnsignedInts(t, "tmax_adjustments.pbs_response_preparation_duration_ms", 100, cfg.TmaxAdjustments.PBSResponsePreparationDuration)
 
 	//Assert the price floor values
 	cmpBools(t, "price_floors.enabled", true, cfg.PriceFloors.Enabled)
@@ -552,6 +582,11 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "account_defaults.price_floors.max_schema_dims", 5, cfg.AccountDefaults.PriceFloors.MaxSchemaDims)
 	cmpBools(t, "account_defaults.events_enabled", *cfg.AccountDefaults.EventsEnabled, true)
 	cmpNils(t, "account_defaults.events.enabled", cfg.AccountDefaults.Events.Enabled)
+
+	// Assert compression related defaults
+	cmpBools(t, "enable_gzip", false, cfg.EnableGzip)
+	cmpBools(t, "compression.request.enable_gzip", true, cfg.Compression.Request.GZIP)
+	cmpBools(t, "compression.response.enable_gzip", false, cfg.Compression.Response.GZIP)
 
 	//Assert the NonStandardPublishers was correctly unmarshalled
 	assert.Equal(t, []string{"pub1", "pub2"}, cfg.GDPR.NonStandardPublishers, "gdpr.non_standard_publishers")
@@ -2528,7 +2563,8 @@ func TestMigrateConfigDatabaseQueryParams(t *testing.T) {
 
 	v := viper.New()
 	v.SetConfigType("yaml")
-	v.ReadConfig(bytes.NewBuffer(config))
+	err := v.ReadConfig(bytes.NewBuffer(config))
+	assert.NoError(t, err)
 
 	migrateConfigDatabaseConnection(v)
 
@@ -2549,6 +2585,74 @@ func TestMigrateConfigDatabaseQueryParams(t *testing.T) {
 	assert.Equal(t, want_queries.fetcher_amp_query, v.GetString("stored_responses.database.fetcher.amp_query"))
 	assert.Equal(t, want_queries.poll_for_updates_query, v.GetString("stored_responses.database.poll_for_updates.query"))
 	assert.Equal(t, want_queries.poll_for_updates_amp_query, v.GetString("stored_responses.database.poll_for_updates.amp_query"))
+}
+
+func TestMigrateConfigCompression(t *testing.T) {
+	testCases := []struct {
+		desc                string
+		config              []byte
+		wantEnableGZIP      bool
+		wantReqGZIPEnabled  bool
+		wantRespGZIPEnabled bool
+	}{
+
+		{
+			desc:                "New config and old config not set",
+			config:              []byte{},
+			wantEnableGZIP:      false,
+			wantReqGZIPEnabled:  false,
+			wantRespGZIPEnabled: false,
+		},
+		{
+			desc: "Old config set, new config not set",
+			config: []byte(`
+                    enable_gzip: true
+                    `),
+			wantEnableGZIP:      true,
+			wantRespGZIPEnabled: true,
+			wantReqGZIPEnabled:  false,
+		},
+		{
+			desc: "Old config not set, new config set",
+			config: []byte(`
+                    compression:
+                        response:
+                            enable_gzip: true
+                        request:
+                            enable_gzip: false
+                    `),
+			wantEnableGZIP:      false,
+			wantRespGZIPEnabled: true,
+			wantReqGZIPEnabled:  false,
+		},
+		{
+			desc: "Old config set and new config set",
+			config: []byte(`
+                    enable_gzip: true
+                    compression:
+                        response:
+                            enable_gzip: false
+                        request:
+                            enable_gzip: true
+                    `),
+			wantEnableGZIP:      true,
+			wantRespGZIPEnabled: false,
+			wantReqGZIPEnabled:  true,
+		},
+	}
+
+	for _, test := range testCases {
+		v := viper.New()
+		v.SetConfigType("yaml")
+		err := v.ReadConfig(bytes.NewBuffer(test.config))
+		assert.NoError(t, err)
+
+		migrateConfigCompression(v)
+
+		assert.Equal(t, test.wantEnableGZIP, v.GetBool("enable_gzip"), test.desc)
+		assert.Equal(t, test.wantReqGZIPEnabled, v.GetBool("compression.request.enable_gzip"), test.desc)
+		assert.Equal(t, test.wantRespGZIPEnabled, v.GetBool("compression.response.enable_gzip"), test.desc)
+	}
 }
 
 func TestIsConfigInfoPresent(t *testing.T) {
