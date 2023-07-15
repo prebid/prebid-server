@@ -407,8 +407,8 @@ func TestScrubRequest(t *testing.T) {
 					DPIDMD5:  "anyDPIDMD5",
 					MACSHA1:  "anyMACSHA1",
 					MACMD5:   "anyMACMD5",
-					IP:       "1.2.3.4",
-					IPv6:     "2001:0db8:0000:0000:0000:ff00:0042:8329",
+					IP:       "1.2.3.0",
+					IPv6:     "2001:0db8:0000:0000:0000:ff00:0:0",
 					Geo: &openrtb2.Geo{
 						Lat: 123.46, Lon: 678.89,
 						Metro: "some metro",

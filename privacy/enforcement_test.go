@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestAny(t *testing.T) {
+func TestAnyLegacy(t *testing.T) {
 	testCases := []struct {
 		enforcement Enforcement
 		expected    bool
@@ -50,12 +50,12 @@ func TestAny(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		result := test.enforcement.Any()
+		result := test.enforcement.AnyLegacy()
 		assert.Equal(t, test.expected, result, test.description)
 	}
 }
 
-func TestApply(t *testing.T) {
+func TestApplyGDPR(t *testing.T) {
 	testCases := []struct {
 		description        string
 		enforcement        Enforcement
@@ -205,7 +205,6 @@ func TestApply(t *testing.T) {
 		replacedUser := &openrtb2.User{}
 
 		m := &mockScrubber{}
-		m.On("ScrubRequest", req, test.enforcement).Return(req).Once()
 		m.On("ScrubDevice", req.Device, test.expectedDeviceID, test.expectedDeviceIPv4, test.expectedDeviceIPv6, test.expectedDeviceGeo).Return(replacedDevice).Once()
 		m.On("ScrubUser", req.User, test.expectedUser, test.expectedUserGeo).Return(replacedUser).Once()
 
@@ -214,6 +213,130 @@ func TestApply(t *testing.T) {
 		m.AssertExpectations(t)
 		assert.Same(t, replacedDevice, req.Device, "Device")
 		assert.Same(t, replacedUser, req.User, "User")
+	}
+}
+
+func TestApplyToggle(t *testing.T) {
+	testCases := []struct {
+		description                  string
+		enforcement                  Enforcement
+		expectedScrubRequestExecuted bool
+		expectedScrubUserExecuted    bool
+		expectedScrubDeviceExecuted  bool
+	}{
+		{
+			description: "All enforced - only ScrubRequest execution expected",
+			enforcement: Enforcement{
+				CCPA:       true,
+				COPPA:      true,
+				GDPRGeo:    true,
+				GDPRID:     true,
+				LMT:        true,
+				UFPD:       true,
+				Eids:       true,
+				PreciseGeo: true,
+				TID:        true,
+			},
+			expectedScrubRequestExecuted: true,
+			expectedScrubUserExecuted:    false,
+			expectedScrubDeviceExecuted:  false,
+		},
+		{
+			description: "All Legacy and no activities - ScrubUser and ScrubDevice execution expected",
+			enforcement: Enforcement{
+				CCPA:       true,
+				COPPA:      true,
+				GDPRGeo:    true,
+				GDPRID:     true,
+				LMT:        true,
+				UFPD:       false,
+				Eids:       false,
+				PreciseGeo: false,
+				TID:        false,
+			},
+			expectedScrubRequestExecuted: false,
+			expectedScrubUserExecuted:    true,
+			expectedScrubDeviceExecuted:  true,
+		},
+		{
+			description: "Some Legacy and some activities - ScrubRequest, ScrubUser and ScrubDevice execution expected",
+			enforcement: Enforcement{
+				CCPA:       true,
+				COPPA:      true,
+				GDPRGeo:    true,
+				GDPRID:     true,
+				LMT:        true,
+				UFPD:       true,
+				Eids:       false,
+				PreciseGeo: false,
+				TID:        false,
+			},
+			expectedScrubRequestExecuted: true,
+			expectedScrubUserExecuted:    true,
+			expectedScrubDeviceExecuted:  true,
+		},
+		{
+			description: "Some Legacy and some activities - ScrubRequest execution expected",
+			enforcement: Enforcement{
+				CCPA:       true,
+				COPPA:      true,
+				GDPRGeo:    true,
+				GDPRID:     true,
+				LMT:        true,
+				UFPD:       true,
+				Eids:       true,
+				PreciseGeo: true,
+				TID:        false,
+			},
+			expectedScrubRequestExecuted: true,
+			expectedScrubUserExecuted:    false,
+			expectedScrubDeviceExecuted:  false,
+		},
+		{
+			description: "Some Legacy and some activities overlap - ScrubRequest and ScrubUser execution expected",
+			enforcement: Enforcement{
+				CCPA:       true,
+				COPPA:      true,
+				GDPRGeo:    true,
+				GDPRID:     true,
+				LMT:        true,
+				UFPD:       true,
+				Eids:       false,
+				PreciseGeo: true,
+				TID:        false,
+			},
+			expectedScrubRequestExecuted: true,
+			expectedScrubUserExecuted:    true,
+			expectedScrubDeviceExecuted:  false,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			req := &openrtb2.BidRequest{
+				Device: &openrtb2.Device{},
+				User:   &openrtb2.User{},
+			}
+			replacedDevice := &openrtb2.Device{}
+			replacedUser := &openrtb2.User{}
+
+			m := &mockScrubber{}
+
+			if test.expectedScrubRequestExecuted {
+				m.On("ScrubRequest", req, test.enforcement).Return(req).Once()
+			}
+			if test.expectedScrubUserExecuted {
+				m.On("ScrubUser", req.User, ScrubStrategyUserIDAndDemographic, ScrubStrategyGeoFull).Return(replacedUser).Once()
+			}
+			if test.expectedScrubDeviceExecuted {
+				m.On("ScrubDevice", req.Device, ScrubStrategyDeviceIDAll, ScrubStrategyIPV4Lowest8, ScrubStrategyIPV6Lowest32, ScrubStrategyGeoFull).Return(replacedDevice).Once()
+			}
+
+			test.enforcement.apply(req, m)
+
+			m.AssertExpectations(t)
+
+		})
 	}
 }
 
