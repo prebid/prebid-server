@@ -131,12 +131,14 @@ func (scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enforc
 		if bidRequest.User != nil && bidRequest.User.Geo != nil {
 			bidRequest.User.Geo = scrubGeoPrecision(bidRequest.User.Geo)
 		}
-		if bidRequest.Device != nil && bidRequest.Device.Geo != nil {
-			bidRequest.Device.Geo = scrubGeoPrecision(bidRequest.Device.Geo)
-		}
 
-		bidRequest.Device.IP = scrubIPV4Lowest8(bidRequest.Device.IP)
-		bidRequest.Device.IPv6 = scrubIPV6Lowest32Bits(bidRequest.Device.IPv6)
+		if bidRequest.Device != nil {
+			if bidRequest.Device.Geo != nil {
+				bidRequest.Device.Geo = scrubGeoPrecision(bidRequest.Device.Geo)
+			}
+			bidRequest.Device.IP = scrubIPV4Lowest8(bidRequest.Device.IP)
+			bidRequest.Device.IPv6 = scrubIPV6Lowest32Bits(bidRequest.Device.IPv6)
+		}
 	}
 
 	return bidRequest
