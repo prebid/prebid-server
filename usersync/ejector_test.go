@@ -89,7 +89,7 @@ func TestGetOldestElement(t *testing.T) {
 		expected          string
 	}{
 		{
-			name: "simple",
+			name: "basic-oldest-element",
 			givenUids: map[string]UIDEntry{
 				"newestElement": {
 					UID:     "123",
@@ -136,7 +136,7 @@ func TestGetNonPriorityKeys(t *testing.T) {
 		expected            []string
 	}{
 		{
-			name: "simple",
+			name: "one-priority-group",
 			givenUids: map[string]UIDEntry{
 				"syncerKey1": {
 					UID: "123",
