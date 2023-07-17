@@ -1,5 +1,7 @@
 package openrtb_ext
 
+import "encoding/json"
+
 type ImpExtFreewheelSSP struct {
-	ZoneId int `json:"zoneId"`
+	ZoneId json.Number `json:"zoneId"`
 }
