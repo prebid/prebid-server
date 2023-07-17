@@ -15,7 +15,7 @@ type voxAdapter struct {
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	bidder := &voxAdapter {
+	bidder := &voxAdapter{
 		endpoint: config.Endpoint,
 	}
 	return bidder, nil
@@ -29,8 +29,8 @@ func (a *voxAdapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *ada
 
 	requestData := &adapters.RequestData{
 		Method: "POST",
-		Uri: a.endpoint,
-		Body: requestJSON,
+		Uri:    a.endpoint,
+		Body:   requestJSON,
 	}
 
 	return []*adapters.RequestData{requestData}, nil
