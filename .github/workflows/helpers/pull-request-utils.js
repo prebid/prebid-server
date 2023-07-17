@@ -228,7 +228,12 @@ class semgrepHelper {
     @returns {number|null} - line number that matches the range within the diff, or null if no match is found
   */
   async #getMatchingLineFromDiff({ file, start, end }, diff) {
+    console.log("diff" + JSON.stringify(diff))
+    console.log("file" + JSON.stringify({ file, start, end }))
+
     const fileDiff = diff[file]
+    console.log("fileDiff" + fileDiff)
+    console.log("fileDiff" + JSON.stringify(fileDiff))
     if (!fileDiff) {
       return null
     }
