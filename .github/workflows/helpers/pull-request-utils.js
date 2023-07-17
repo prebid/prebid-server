@@ -299,6 +299,7 @@ class semgrepHelper {
       console.log("Semgrep did not find any errors in the current pull request changes")
     } else {
       for (const { message, file, line } of errors.current) {
+        console.log(" { message, file, line } " + JSON.stringify({ message, file, line }))
         await this.github.rest.pulls.createReviewComment({
           owner: this.owner,
           repo: this.repo,
