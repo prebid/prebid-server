@@ -11,7 +11,6 @@ import (
 	"strings"
 	"testing"
 	"testing/iotest"
-	"time"
 
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
@@ -106,7 +105,7 @@ func TestCookieSyncHandle(t *testing.T) {
 	syncer.On("GetSync", syncTypeExpected, privacy.Policies{}).Return(sync, nil).Maybe()
 
 	cookieWithSyncs := usersync.NewCookie()
-	cookieWithSyncs.TrySync("foo", "anyID")
+	cookieWithSyncs.Sync("foo", "anyID")
 
 	testCases := []struct {
 		description              string
@@ -271,7 +270,9 @@ func TestCookieSyncHandle(t *testing.T) {
 
 		request := httptest.NewRequest("POST", "/cookiesync", test.givenBody)
 		if test.givenCookie != nil {
-			request.AddCookie(test.givenCookie.ToHTTPCookie(24 * time.Hour))
+			httpCookie, err := ToHTTPCookie(test.givenCookie)
+			assert.NoError(t, err)
+			request.AddCookie(httpCookie)
 		}
 
 		writer := httptest.NewRecorder()
@@ -1663,7 +1664,7 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 
 		cookie := usersync.NewCookie()
 		if test.givenCookieHasSyncs {
-			if err := cookie.TrySync("foo", "anyID"); err != nil {
+			if err := cookie.Sync("foo", "anyID"); err != nil {
 				assert.FailNow(t, test.description+":set_cookie")
 			}
 		}

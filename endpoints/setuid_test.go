@@ -1311,7 +1311,7 @@ func makeRequest(uri string, existingSyncs map[string]string) *http.Request {
 	if len(existingSyncs) > 0 {
 		pbsCookie := usersync.NewCookie()
 		for key, value := range existingSyncs {
-			pbsCookie.TrySync(key, value)
+			pbsCookie.Sync(key, value)
 		}
 		addCookie(request, pbsCookie)
 	}
@@ -1363,10 +1363,12 @@ func doRequest(req *http.Request, analytics analytics.PBSAnalyticsModule, metric
 }
 
 func addCookie(req *http.Request, cookie *usersync.Cookie) {
-	req.AddCookie(cookie.ToHTTPCookie(time.Duration(1) * time.Hour))
+	httpCookie, _ := ToHTTPCookie(cookie)
+	req.AddCookie(httpCookie)
 }
 
 func parseCookieString(t *testing.T, response *httptest.ResponseRecorder) *usersync.Cookie {
+	decoder := usersync.Base64Decoder{}
 	cookieString := response.Header().Get("Set-Cookie")
 	parser := regexp.MustCompile("uids=(.*?);")
 	res := parser.FindStringSubmatch(cookieString)
@@ -1375,7 +1377,7 @@ func parseCookieString(t *testing.T, response *httptest.ResponseRecorder) *users
 		Name:  "uids",
 		Value: res[1],
 	}
-	return usersync.ParseCookie(&httpCookie)
+	return decoder.Decode(httpCookie.Value)
 }
 
 type fakePermissionsBuilder struct {
@@ -1443,4 +1445,19 @@ func (s fakeSyncer) SupportsType(syncTypes []usersync.SyncType) bool {
 
 func (s fakeSyncer) GetSync(syncTypes []usersync.SyncType, privacyPolicies privacy.Policies) (usersync.Sync, error) {
 	return usersync.Sync{}, nil
+}
+
+func ToHTTPCookie(cookie *usersync.Cookie) (*http.Cookie, error) {
+	encoder := usersync.Base64Encoder{}
+	encodedCookie, err := encoder.Encode(cookie)
+	if err != nil {
+		return nil, nil
+	}
+
+	return &http.Cookie{
+		Name:    uidCookieName,
+		Value:   encodedCookie,
+		Expires: time.Now().Add((90 * 24 * time.Hour)),
+		Path:    "/",
+	}, nil
 }

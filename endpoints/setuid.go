@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/julienschmidt/httprouter"
 	gpplib "github.com/prebid/go-gpp"
@@ -34,8 +33,11 @@ const (
 	chromeiOSStrLen = len(chromeiOSStr)
 )
 
+const uidCookieName = "uids"
+
 func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, gdprPermsBuilder gdpr.PermissionsBuilder, tcf2CfgBuilder gdpr.TCF2ConfigBuilder, pbsanalytics analytics.PBSAnalyticsModule, accountsFetcher stored_requests.AccountFetcher, metricsEngine metrics.MetricsEngine) httprouter.Handle {
-	cookieTTL := time.Duration(cfg.HostCookie.TTL) * 24 * time.Hour
+	encoder := usersync.Base64Encoder{}
+	decoder := usersync.Base64Decoder{}
 
 	// convert map of syncers by bidder to map of syncers by key
 	// - its safe to assume that if multiple bidders map to the same key, the syncers are interchangeable.
@@ -52,13 +54,14 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 
 		defer pbsanalytics.LogSetUIDObject(&so)
 
-		pc := usersync.ParseCookieFromRequest(r, &cfg.HostCookie)
-		if !pc.AllowSyncs() {
+		cookie := usersync.ReadCookie(r, decoder, &cfg.HostCookie)
+		if !cookie.AllowSyncs() {
 			w.WriteHeader(http.StatusUnauthorized)
 			metricsEngine.RecordSetUid(metrics.SetUidOptOut)
 			so.Status = http.StatusUnauthorized
 			return
 		}
+		usersync.SyncHostCookie(r, cookie, &cfg.HostCookie)
 
 		query := r.URL.Query()
 
@@ -141,18 +144,28 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 		so.UID = uid
 
 		if uid == "" {
-			pc.Unsync(syncer.Key())
+			cookie.Unsync(syncer.Key())
 			metricsEngine.RecordSetUid(metrics.SetUidOK)
 			metricsEngine.RecordSyncerSet(syncer.Key(), metrics.SyncerSetUidCleared)
 			so.Success = true
-		} else if err = pc.TrySync(syncer.Key(), uid); err == nil {
+		} else if err = cookie.Sync(syncer.Key(), uid); err == nil {
 			metricsEngine.RecordSetUid(metrics.SetUidOK)
 			metricsEngine.RecordSyncerSet(syncer.Key(), metrics.SyncerSetUidOK)
 			so.Success = true
 		}
 
 		setSiteCookie := siteCookieCheck(r.UserAgent())
-		pc.SetCookieOnResponse(w, setSiteCookie, &cfg.HostCookie, cookieTTL)
+
+		// Write Cookie
+		encodedCookie, err := cookie.PrepareCookieForWrite(&cfg.HostCookie, encoder)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			metricsEngine.RecordSetUid(metrics.SetUidBadRequest)
+			so.Errors = []error{err}
+			so.Status = http.StatusBadRequest
+			return
+		}
+		usersync.WriteCookie(w, encodedCookie, &cfg.HostCookie, setSiteCookie)
 
 		switch responseFormat {
 		case "i":
