@@ -254,7 +254,9 @@ class semgrepHelper {
     }
 
     for (const se of semgrepResults) {
+      console.log("se" + JSON.stringify(se))
       const prDiffLine = await this.#getMatchingLineFromDiff(se, this.pullRequestDiff)
+      console.log("prDiffLine" + prDiffLine)
       if (!prDiffLine) {
         result.nonDiff.push({ ...se })
         continue
@@ -269,6 +271,7 @@ class semgrepHelper {
           const commitDiffLine = await this.#getMatchingLineFromDiff(se, this.newCommitsDiff)
           // Check if error or warning is part of current commit diff
           // If not then error or warning was reported in previous scans
+          console.log("commitDiffLine" + commitDiffLine)
           commitDiffLine != null
             ? result.current.push({ ...se, line: commitDiffLine })
             : result.previous.push({
@@ -294,9 +297,10 @@ class semgrepHelper {
       return result
     }
 
+    console.log("semgrep errors:" + JSON.stringify(this.semgrepErrors))
     const errors = await this.#splitSemgrepResultsByScan(this.semgrepErrors)
     if (errors.previous.length == 0 && errors.current.length == 0) {
-      console.log("Semgrep did not find any errors in the current pull request changes")
+      console.log("Semgrep checks did not find any errors in the current pull request changes")
     } else {
       for (const { message, file, line } of errors.current) {
         await this.github.rest.pulls.createReviewComment({
