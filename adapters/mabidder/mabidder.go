@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
@@ -50,12 +49,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	validImps, errs := getValidImpressions(request, requestInfo)
-	if len(validImps) == 0 {
-		return nil, errs
-	}
-	request.Imp = validImps
-
+	var errs []error
 	requestJSON, err := json.Marshal(request)
 	if err != nil {
 		errs = append(errs, err)
@@ -115,53 +109,4 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		bidResponse.Bids = append(bidResponse.Bids, b)
 	}
 	return bidResponse, nil
-}
-
-// validate imps and check for bid floor currency. Convert to USD if necessary
-func getValidImpressions(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]openrtb2.Imp, []error) {
-	var errs []error
-	var validImps []openrtb2.Imp
-
-	for _, imp := range request.Imp {
-		if err := convertBidFloorCurrency(&imp, reqInfo); err != nil {
-			errs = append(errs, err)
-			continue
-		}
-
-		if err := processExtensions(&imp); err != nil {
-			errs = append(errs, err)
-			continue
-		}
-		validImps = append(validImps, imp)
-	}
-	return validImps, errs
-}
-
-// convert to USD
-func convertBidFloorCurrency(imp *openrtb2.Imp, reqInfo *adapters.ExtraRequestInfo) error {
-	if imp.BidFloor > 0 && strings.ToUpper(imp.BidFloorCur) != "USD" && imp.BidFloorCur != "" {
-		if convertedValue, err := reqInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, "USD"); err != nil {
-			return err
-		} else {
-			imp.BidFloor = convertedValue
-		}
-	}
-	imp.BidFloorCur = "USD"
-	return nil
-}
-
-func processExtensions(imp *openrtb2.Imp) error {
-	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return &errortypes.BadInput{
-			Message: err.Error(),
-		}
-	}
-	var mabidderExt openrtb_ext.ImpExtMabidder
-	if err := json.Unmarshal(bidderExt.Bidder, &mabidderExt); err != nil {
-		return &errortypes.BadInput{
-			Message: "Wrong mabidder bidder ext: " + err.Error(),
-		}
-	}
-	return nil
 }
