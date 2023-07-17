@@ -15,7 +15,10 @@ jobs:
           ref: ${{github.event.pull_request.head.ref}}
 
       - name: branch
-        run: git branch
+        run: |
+          git branch
+          ls ./adapters/aatestadapter
+          cat ./adapters/aatestadapter/aax.go
         
       - name: Calculate diff
         id: calculate_diff
@@ -23,8 +26,6 @@ jobs:
         with:
           result-encoding: string
           script: |
-            git branch
-            echo "^^^^"
             const utils = require('./.github/workflows/helpers/pull-request-utils.js')
             // consider only non-test Go files that are part of the adapter code
             function fileNameFilter(filename) {
