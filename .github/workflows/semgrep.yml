@@ -12,13 +12,19 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+          ref: ${{github.event.pull_request.head.ref}}
 
+      - name: branch
+        run: git branch
+        
       - name: Calculate diff
         id: calculate_diff
         uses: actions/github-script@v6
         with:
           result-encoding: string
           script: |
+            git branch
+            echo "^^^^"
             const utils = require('./.github/workflows/helpers/pull-request-utils.js')
             // consider only non-test Go files that are part of the adapter code
             function fileNameFilter(filename) {
