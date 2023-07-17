@@ -117,6 +117,8 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 // Builder builds a new instance of the Aax adapter for the given bidder with the given config.
+// Builder builds a new instance of the Aax adapter for the given bidder with the given config.
+// Builder builds a new instance of the Aax adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	url := buildEndpoint(config.Endpoint, config.ExtraAdapterInfo)
 	return &aatadapter{
