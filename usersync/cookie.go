@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"sort"
 	"time"
 
 	"github.com/prebid/prebid-server/config"
@@ -58,10 +57,7 @@ func ReadCookie(r *http.Request, decoder Decoder, host *config.HostCookie) *Cook
 }
 
 // PrepareCookieForWrite ejects UIDs as long as the cookie is too full
-func (cookie *Cookie) PrepareCookieForWrite(cfg *config.HostCookie, encoder Encoder) (string, error) {
-	uuidKeys := sortUIDs(cookie.uids)
-
-	i := 0
+func (cookie *Cookie) PrepareCookieForWrite(cfg *config.HostCookie, encoder Encoder, ejector Ejector) (string, error) {
 	for len(cookie.uids) > 0 {
 		encodedCookie, err := encoder.Encode(cookie)
 		if err != nil {
@@ -82,10 +78,11 @@ func (cookie *Cookie) PrepareCookieForWrite(cfg *config.HostCookie, encoder Enco
 			return encodedCookie, nil
 		}
 
-		uidToDelete := uuidKeys[i]
+		uidToDelete, err := ejector.Choose(cookie.uids)
+		if err != nil {
+			return encodedCookie, err
+		}
 		delete(cookie.uids, uidToDelete)
-
-		i++
 	}
 	return "", nil
 }
@@ -129,23 +126,6 @@ func (cookie *Cookie) Sync(key string, uid string) error {
 		Expires: time.Now().Add(uidTTL),
 	}
 
-	return nil
-}
-
-// sortUIDs is used to get a list of uids sorted from oldest to newest
-// This list is used to eject oldest uids from the cookie
-// This will be incorporated with a more complex ejection framework in a future PR
-func sortUIDs(uids map[string]UIDEntry) []string {
-	if len(uids) > 0 {
-		uuidKeys := make([]string, 0, len(uids))
-		for key := range uids {
-			uuidKeys = append(uuidKeys, key)
-		}
-		sort.SliceStable(uuidKeys, func(i, j int) bool {
-			return uids[uuidKeys[i]].Expires.Before(uids[uuidKeys[j]].Expires)
-		})
-		return uuidKeys
-	}
 	return nil
 }
 

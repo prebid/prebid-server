@@ -393,6 +393,19 @@ func TestPrepareCookieForWrite(t *testing.T) {
 		optOut: false,
 	}
 
+	ejector := &PriorityBidderEjector{
+		PriorityGroups: [][]string{
+			{"1"},
+			{"2", "3"},
+			{"4", "5", "6"},
+			{"7"},
+		},
+		SyncerKey: "1",
+		OldestEjector: OldestEjector{
+			nonPriorityKeys: []string{},
+		},
+	}
+
 	testCases := []struct {
 		name                     string
 		givenMaxCookieSize       int
@@ -447,7 +460,7 @@ func TestPrepareCookieForWrite(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			encodedCookie, err := cookieToSend.PrepareCookieForWrite(&config.HostCookie{MaxCookieSizeBytes: test.givenMaxCookieSize}, encoder)
+			encodedCookie, err := cookieToSend.PrepareCookieForWrite(&config.HostCookie{MaxCookieSizeBytes: test.givenMaxCookieSize}, encoder, ejector)
 			assert.NoError(t, err)
 			decodedCookie := decoder.Decode(encodedCookie)
 
