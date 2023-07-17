@@ -124,14 +124,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	}, nil
 }
 
-// Builder builds a new instance of the Aax adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	url := buildEndpoint(config.Endpoint, config.ExtraAdapterInfo)
-	return &aatadapter{
-		endpoint: url,
-	}, nil
-}
-
 func getMediaTypeForImp(bid openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
 	var bidExt aaxResponseBidExt
 	err := json.Unmarshal(bid.Ext, &bidExt)
