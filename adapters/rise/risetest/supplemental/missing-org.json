@@ -24,14 +24,14 @@
         },
         "ext": {
           "bidder": {
-            "publisher_id": ""
+            "org": ""
           }}
       }
     ]
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "extractPublisherID: no publisherID supplied",
+      "value": "extractOrg: no org supplied",
       "comparison": "literal"
     }
   ]
