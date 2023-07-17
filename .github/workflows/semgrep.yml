@@ -1,6 +1,6 @@
 name: Adapter semgrep checks
 on:
-  pull_request:
+  pull_request_target:
     paths: ["adapters/*/*.go"]
 permissions: 
     pull-requests: write
