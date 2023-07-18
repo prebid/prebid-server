@@ -8,15 +8,9 @@
       "description": "Inventory ID",
       "type": "string",
       "minLength": 1
-    },
-    "inventoryId": {
-      "description": "Publisher ID",
-      "type": "string",
-      "minLength": 1
     }
   },
   "required": [
-    "inventoryId",
-    "publisherId"
+    "inventoryId"
   ]
 }

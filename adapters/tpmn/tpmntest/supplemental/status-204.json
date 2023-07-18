@@ -18,8 +18,7 @@
         },
         "ext": {
           "bidder": {
-            "inventoryId": "00000001",
-            "publisherId": "publisherId"
+            "inventoryId": "00000001"
           }
         }
       }
@@ -57,8 +56,7 @@
               "bidfloorcur": "USD",
               "ext": {
                 "bidder": {
-                  "inventoryId": "00000001",
-                  "publisherId": "publisherId"
+                  "inventoryId": "00000001"
                 }
               }
             }
