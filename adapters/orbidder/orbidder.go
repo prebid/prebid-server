@@ -125,36 +125,66 @@ func (rcv OrbidderAdapter) MakeBids(internalRequest *openrtb2.BidRequest, _ *ada
 		return nil, []error{err}
 	}
 
+	var bidErrs []error
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
 	for _, seatBid := range bidResp.SeatBid {
-		for _, bid := range seatBid.Bid {
+		for i := range seatBid.Bid {
+			// later we have to add the bid as a pointer,
+			// because of this we need a variable that only exists at this loop iteration.
+			// otherwise there will be issues with multibid and pointer behavior.
+			bid := seatBid.Bid[i]
+			bidType, err := getBidType(bid, internalRequest.Imp)
+			if err != nil {
+				// could not determinate media type, append an error and continue with the next bid.
+				bidErrs = append(bidErrs, err)
+				continue
+			}
+
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &bid,
-				BidType: getMediaTypeForImp(bid.ImpID, internalRequest.Imp),
+				BidType: bidType,
 			})
 		}
 	}
 	if bidResp.Cur != "" {
 		bidResponse.Currency = bidResp.Cur
 	}
-	return bidResponse, nil
+
+	return bidResponse, bidErrs
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
+func getBidType(bid openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
+
+	// determinate media type by bid response field mtype
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupAudio:
+		return openrtb_ext.BidTypeAudio, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
+	}
+
+	// fallback if mtype is not set at the bid response
 	for _, imp := range imps {
-		if imp.ID == impID {
+		if imp.ID == bid.ImpID {
 			if imp.Banner != nil {
-				return openrtb_ext.BidTypeBanner
+				return openrtb_ext.BidTypeBanner, nil
 			} else if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo
+				return openrtb_ext.BidTypeVideo, nil
 			} else if imp.Native != nil {
-				return openrtb_ext.BidTypeNative
+				return openrtb_ext.BidTypeNative, nil
 			} else if imp.Audio != nil {
-				return openrtb_ext.BidTypeAudio
+				return openrtb_ext.BidTypeAudio, nil
 			}
 		}
 	}
-	return openrtb_ext.BidTypeBanner
+
+	return "", &errortypes.BadInput{
+		Message: fmt.Sprintf("Could not define media type for impression: %s", bid.ImpID),
+	}
 }
 
 // Builder builds a new instance of the Orbidder adapter for the given bidder with the given config.
