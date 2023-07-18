@@ -6,7 +6,7 @@
   "properties": {
     "inventoryId": {
       "description": "Inventory ID",
-      "type": "string",
+      "type": "integer",
       "minLength": 1
     }
   },

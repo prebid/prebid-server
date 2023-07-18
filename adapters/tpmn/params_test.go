@@ -36,10 +36,10 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"inventoryId": "00000001"}`,
+	`{"inventoryId": 10000001}`,
 }
 
 var invalidParams = []string{
 	`{"inventoryId": "00000001"}`,
-	`{"inventoryid": 123}`,
+	`{"inventoryid": 100000000}`,
 }
