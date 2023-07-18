@@ -542,8 +542,9 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		analyticsEngine := &MockAnalytics{}
-		test.expectedAnalytics(analyticsEngine)
+		analyticsModule := &MockAnalytics{}
+		test.expectedAnalytics(analyticsModule)
+		enabledAnalytics := analyticsConf.EnabledAnalytics{analyticsModule}
 
 		metricsEngine := &metrics.MetricsEngineMock{}
 		test.expectedMetrics(metricsEngine)
@@ -552,10 +553,10 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 		for _, v := range test.cookies {
 			addCookie(req, v)
 		}
-		response := doRequest(req, analyticsEngine, metricsEngine, test.syncersBidderNameToKey, test.gdprAllowsHostCookies, false, false, test.cfgAccountRequired)
+		response := doRequest(req, enabledAnalytics, metricsEngine, test.syncersBidderNameToKey, test.gdprAllowsHostCookies, false, false, test.cfgAccountRequired)
 
 		assert.Equal(t, test.expectedResponseCode, response.Code, test.description)
-		analyticsEngine.AssertExpectations(t)
+		analyticsModule.AssertExpectations(t)
 		metricsEngine.AssertExpectations(t)
 	}
 }
@@ -704,7 +705,7 @@ func makeRequest(uri string, existingSyncs map[string]string) *http.Request {
 	return request
 }
 
-func doRequest(req *http.Request, analytics analytics.PBSAnalyticsModule, metrics metrics.MetricsEngine, syncersBidderNameToKey map[string]string, gdprAllowsHostCookies, gdprReturnsError, gdprReturnsMalformedError, cfgAccountRequired bool) *httptest.ResponseRecorder {
+func doRequest(req *http.Request, analytics analyticsConf.EnabledAnalytics, metrics metrics.MetricsEngine, syncersBidderNameToKey map[string]string, gdprAllowsHostCookies, gdprReturnsError, gdprReturnsMalformedError, cfgAccountRequired bool) *httptest.ResponseRecorder {
 	cfg := config.Configuration{
 		AccountRequired: cfgAccountRequired,
 		BlacklistedAcctMap: map[string]bool{

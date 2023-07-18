@@ -189,6 +189,11 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels) {
 		return
 	}
+	if rejectErr := hookexecution.FindFirstRejectOrNil(errL); rejectErr != nil {
+		ao.RequestWrapper = req
+		labels, ao = rejectAuctionRequest(*rejectErr, w, hookExecutor, req.BidRequest, account, labels, ao)
+		return
+	}
 
 	activities, activitiesErr := privacy.NewActivityControl(account.Privacy)
 	if activitiesErr != nil {
@@ -231,12 +236,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	if gdprApplies && channelEnabled {
 		policy := deps.gdprPrivacyPolicyBuilder(tcf2Config, gdprSignal, consent)
 		analyticsLogger.SetPrivacyPolicy(policy)
-	}
-
-	if rejectErr := hookexecution.FindFirstRejectOrNil(errL); rejectErr != nil {
-		ao.RequestWrapper = req
-		labels, ao = rejectAuctionRequest(*rejectErr, w, hookExecutor, req.BidRequest, account, labels, ao)
-		return
 	}
 
 	usersyncs := usersync.ParseCookieFromRequest(r, &(deps.cfg.HostCookie))

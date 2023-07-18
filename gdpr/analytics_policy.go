@@ -5,10 +5,10 @@ import (
 	"fmt"
 
 	"github.com/prebid/go-gdpr/api"
-	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/go-gdpr/vendorconsent"
 	tcf2 "github.com/prebid/go-gdpr/vendorconsent/tcf2"
+	"github.com/prebid/prebid-server/config"
 )
 
 // PrivacyPolicy indicates whether an analytics adapter is allowed to perform some activity
@@ -52,9 +52,9 @@ type analyticsPolicy struct {
 	fetchVendorList        VendorListFetcher
 	purposeEnforcerBuilder PurposeEnforcerBuilder
 	// request-specific
-	cfg         TCF2ConfigReader
-	consent     string
-	gdprSignal  Signal
+	cfg        TCF2ConfigReader
+	consent    string
+	gdprSignal Signal
 }
 
 // Allow determines whether analytics are permitted for a given analytics module
@@ -96,7 +96,7 @@ func (ap *analyticsPolicy) Allow(ctx context.Context, name string, vendorID uint
 	}
 
 	enforcer := ap.purposeEnforcerBuilder(consentconstants.Purpose(7), name)
-	
+
 	vendorInfo := VendorInfo{vendorID: vendorID, vendor: vendor}
 	return enforcer.LegalBasis(vendorInfo, name, consentMeta, Overrides{}), nil
 }
@@ -127,7 +127,17 @@ func (ap *analyticsPolicy) parseVendor(ctx context.Context, vendorID uint16, con
 		return
 	}
 
-	vendorList, err := ap.fetchVendorList(ctx, parsedConsent.VendorListVersion())
+	policyVersion := parsedConsent.TCFPolicyVersion()
+	specVersion, err := getSpecVersion(policyVersion)
+	if err != nil {
+		err = &ErrorMalformedConsent{
+			Consent: consent,
+			Cause:   err,
+		}
+		return
+	}
+
+	vendorList, err := ap.fetchVendorList(ctx, uint16(specVersion), parsedConsent.VendorListVersion())
 	if err != nil {
 		return
 	}
@@ -141,6 +151,6 @@ func (ap *analyticsPolicy) parseVendor(ctx context.Context, vendorID uint16, con
 type AllowAllAnalytics struct{}
 
 // Allow satisfies the PrivacyPolicy interface always returning true
-func (aaa *AllowAllAnalytics) Allow(ctx context.Context, name string, gvlID uint16) (bool, error) {
+func (aaa *AllowAllAnalytics) Allow(ctx context.Context, name string, vendorID uint16) (bool, error) {
 	return true, nil
 }

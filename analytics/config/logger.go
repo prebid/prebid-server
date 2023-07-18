@@ -40,7 +40,7 @@ func (eml *EnabledModuleLogger) LogAuctionObject(ao *analytics.AuctionObject) {
 		allow, err := eml.privacyPolicy.Allow(eml.ctx, module.GetName(), module.GetVendorID())
 		if allow && err == nil {
 			module.LogAuctionObject(ao)
-		}	
+		}
 	}
 }
 
@@ -51,7 +51,7 @@ func (eml *EnabledModuleLogger) LogVideoObject(vo *analytics.VideoObject) {
 		allow, err := eml.privacyPolicy.Allow(eml.ctx, module.GetName(), module.GetVendorID())
 		if allow && err == nil {
 			module.LogVideoObject(vo)
-		}	
+		}
 	}
 }
 
@@ -62,7 +62,7 @@ func (eml *EnabledModuleLogger) LogCookieSyncObject(cso *analytics.CookieSyncObj
 		allow, err := eml.privacyPolicy.Allow(eml.ctx, module.GetName(), module.GetVendorID())
 		if allow && err == nil {
 			module.LogCookieSyncObject(cso)
-		}	
+		}
 	}
 }
 
@@ -73,7 +73,7 @@ func (eml *EnabledModuleLogger) LogSetUIDObject(so *analytics.SetUIDObject) {
 		allow, err := eml.privacyPolicy.Allow(eml.ctx, module.GetName(), module.GetVendorID())
 		if allow && err == nil {
 			module.LogSetUIDObject(so)
-		}	
+		}
 	}
 }
 
@@ -84,7 +84,7 @@ func (eml *EnabledModuleLogger) LogAmpObject(ao *analytics.AmpObject) {
 		allow, err := eml.privacyPolicy.Allow(eml.ctx, module.GetName(), module.GetVendorID())
 		if allow && err == nil {
 			module.LogAmpObject(ao)
-		}	
+		}
 	}
 }
 
@@ -96,6 +96,6 @@ func (eml *EnabledModuleLogger) LogNotificationEventObject(ne *analytics.Notific
 		allow, err := eml.privacyPolicy.Allow(eml.ctx, module.GetName(), module.GetVendorID())
 		if allow && err == nil {
 			module.LogNotificationEventObject(ne)
-		}	
+		}
 	}
 }

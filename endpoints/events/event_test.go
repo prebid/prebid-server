@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/analytics"
+	analyticsConfig "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/metrics"
@@ -119,11 +120,6 @@ func TestShouldReturnBadRequestWhenTypeIsMissing(t *testing.T) {
 	// mock AccountsFetcher
 	mockAccountsFetcher := &mockAccountsFetcher{}
 
-	// mock PBS Analytics Module
-	mockAnalyticsModule := &eventsMockAnalyticsModule{
-		Fail: false,
-	}
-
 	// mock config
 	cfg := &config.Configuration{
 		AccountDefaults: config.Account{},
@@ -135,7 +131,7 @@ func TestShouldReturnBadRequestWhenTypeIsMissing(t *testing.T) {
 	req := httptest.NewRequest("GET", "/event?b=test", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
-	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule, &metrics.MetricsEngineMock{})
+	e := NewEventEndpoint(cfg, mockAccountsFetcher, analyticsConfig.EnabledAnalytics{}, &metrics.MetricsEngineMock{})
 
 	// execute
 	e(recorder, req, nil)
@@ -155,11 +151,6 @@ func TestShouldReturnBadRequestWhenTypeIsInvalid(t *testing.T) {
 	// mock AccountsFetcher
 	mockAccounts := &mockAccountsFetcher{}
 
-	// mock PBS Analytics Module
-	mockAnalyticsModule := &eventsMockAnalyticsModule{
-		Fail: false,
-	}
-
 	// mock config
 	cfg := &config.Configuration{
 		AccountDefaults: config.Account{},
@@ -171,7 +162,7 @@ func TestShouldReturnBadRequestWhenTypeIsInvalid(t *testing.T) {
 	req := httptest.NewRequest("GET", "/event?t=test&b=t", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
-	e := NewEventEndpoint(cfg, mockAccounts, mockAnalyticsModule, &metrics.MetricsEngineMock{})
+	e := NewEventEndpoint(cfg, mockAccounts, analyticsConfig.EnabledAnalytics{}, &metrics.MetricsEngineMock{})
 
 	// execute
 	e(recorder, req, nil)
@@ -191,11 +182,6 @@ func TestShouldReturnBadRequestWhenBidIdIsMissing(t *testing.T) {
 	// mock AccountsFetcher
 	mockAccountsFetcher := &mockAccountsFetcher{}
 
-	// mock PBS Analytics Module
-	mockAnalyticsModule := &eventsMockAnalyticsModule{
-		Fail: false,
-	}
-
 	// mock config
 	cfg := &config.Configuration{
 		AccountDefaults: config.Account{},
@@ -207,7 +193,7 @@ func TestShouldReturnBadRequestWhenBidIdIsMissing(t *testing.T) {
 	req := httptest.NewRequest("GET", "/event?t=win", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
-	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule, &metrics.MetricsEngineMock{})
+	e := NewEventEndpoint(cfg, mockAccountsFetcher, analyticsConfig.EnabledAnalytics{}, &metrics.MetricsEngineMock{})
 
 	// execute
 	e(recorder, req, nil)
@@ -227,11 +213,6 @@ func TestShouldReturnBadRequestWhenTimestampIsInvalid(t *testing.T) {
 	// mock AccountsFetcher
 	mockAccountsFetcher := &mockAccountsFetcher{}
 
-	// mock PBS Analytics Module
-	mockAnalyticsModule := &eventsMockAnalyticsModule{
-		Fail: false,
-	}
-
 	// mock config
 	cfg := &config.Configuration{
 		AccountDefaults: config.Account{},
@@ -243,7 +224,7 @@ func TestShouldReturnBadRequestWhenTimestampIsInvalid(t *testing.T) {
 	req := httptest.NewRequest("GET", "/event?t=win&b=test&ts=q", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
-	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule, &metrics.MetricsEngineMock{})
+	e := NewEventEndpoint(cfg, mockAccountsFetcher, analyticsConfig.EnabledAnalytics{}, &metrics.MetricsEngineMock{})
 
 	// execute
 	e(recorder, req, nil)
@@ -263,11 +244,6 @@ func TestShouldReturnUnauthorizedWhenAccountIsMissing(t *testing.T) {
 	// mock AccountsFetcher
 	mockAccountsFetcher := &mockAccountsFetcher{}
 
-	// mock PBS Analytics Module
-	mockAnalyticsModule := &eventsMockAnalyticsModule{
-		Fail: false,
-	}
-
 	// mock config
 	cfg := &config.Configuration{
 		AccountDefaults: config.Account{},
@@ -279,7 +255,7 @@ func TestShouldReturnUnauthorizedWhenAccountIsMissing(t *testing.T) {
 	req := httptest.NewRequest("GET", "/event?t=win&b=test&ts=1234", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
-	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule, &metrics.MetricsEngineMock{})
+	e := NewEventEndpoint(cfg, mockAccountsFetcher, analyticsConfig.EnabledAnalytics{}, &metrics.MetricsEngineMock{})
 
 	// execute
 	e(recorder, req, nil)
@@ -299,11 +275,6 @@ func TestShouldReturnBadRequestWhenFormatValueIsInvalid(t *testing.T) {
 	// mock AccountsFetcher
 	mockAccountsFetcher := &mockAccountsFetcher{}
 
-	// mock PBS Analytics Module
-	mockAnalyticsModule := &eventsMockAnalyticsModule{
-		Fail: false,
-	}
-
 	// mock config
 	cfg := &config.Configuration{
 		AccountDefaults: config.Account{},
@@ -315,7 +286,7 @@ func TestShouldReturnBadRequestWhenFormatValueIsInvalid(t *testing.T) {
 	req := httptest.NewRequest("GET", "/event?t=win&b=test&ts=1234&f=q", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
-	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule, &metrics.MetricsEngineMock{})
+	e := NewEventEndpoint(cfg, mockAccountsFetcher, analyticsConfig.EnabledAnalytics{}, &metrics.MetricsEngineMock{})
 
 	// execute
 	e(recorder, req, nil)
@@ -335,11 +306,6 @@ func TestShouldReturnBadRequestWhenAnalyticsValueIsInvalid(t *testing.T) {
 	// mock AccountsFetcher
 	mockAccountsFetcher := &mockAccountsFetcher{}
 
-	// mock PBS Analytics Module
-	mockAnalyticsModule := &eventsMockAnalyticsModule{
-		Fail: false,
-	}
-
 	// mock config
 	cfg := &config.Configuration{
 		AccountDefaults: config.Account{},
@@ -351,7 +317,7 @@ func TestShouldReturnBadRequestWhenAnalyticsValueIsInvalid(t *testing.T) {
 	req := httptest.NewRequest("GET", "/event?t=win&b=test&ts=1234&f=b&x=4", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
-	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule, &metrics.MetricsEngineMock{})
+	e := NewEventEndpoint(cfg, mockAccountsFetcher, analyticsConfig.EnabledAnalytics{}, &metrics.MetricsEngineMock{})
 
 	// execute
 	e(recorder, req, nil)
@@ -374,11 +340,6 @@ func TestShouldNotPassEventToAnalyticsReporterWhenAccountNotFoundAndDefaultIsFal
 		Error: stored_requests.NotFoundError{ID: "testacc"},
 	}
 
-	// mock PBS Analytics Module
-	mockAnalyticsModule := &eventsMockAnalyticsModule{
-		Fail: false,
-	}
-
 	// mock config
 	cfg := &config.Configuration{
 		AccountDefaults: config.Account{},
@@ -390,7 +351,7 @@ func TestShouldNotPassEventToAnalyticsReporterWhenAccountNotFoundAndDefaultIsFal
 	req := httptest.NewRequest("GET", "/event?t=win&b=test&ts=1234&f=b&x=1&a=testacc", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
-	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule, &metrics.MetricsEngineMock{})
+	e := NewEventEndpoint(cfg, mockAccountsFetcher, analyticsConfig.EnabledAnalytics{}, &metrics.MetricsEngineMock{})
 
 	// execute
 	e(recorder, req, nil)
@@ -408,11 +369,6 @@ func TestShouldReturnBadRequestWhenIntegrationValueIsInvalid(t *testing.T) {
 	// mock AccountsFetcher
 	mockAccountsFetcher := &mockAccountsFetcher{}
 
-	// mock PBS Analytics Module
-	mockAnalyticsModule := &eventsMockAnalyticsModule{
-		Fail: false,
-	}
-
 	// mock config
 	cfg := &config.Configuration{
 		AccountDefaults: config.Account{},
@@ -424,7 +380,7 @@ func TestShouldReturnBadRequestWhenIntegrationValueIsInvalid(t *testing.T) {
 	req := httptest.NewRequest("GET", "/event?t=win&b=bidId&f=b&ts=1000&x=1&a=accountId&bidder=bidder&int=Te$tIntegrationType", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
-	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule, &metrics.MetricsEngineMock{})
+	e := NewEventEndpoint(cfg, mockAccountsFetcher, analyticsConfig.EnabledAnalytics{}, &metrics.MetricsEngineMock{})
 
 	// execute
 	e(recorder, req, nil)
@@ -446,11 +402,6 @@ func TestShouldNotPassEventToAnalyticsReporterWhenAccountEventNotEnabled(t *test
 		Fail: false,
 	}
 
-	// mock PBS Analytics Module
-	mockAnalyticsModule := &eventsMockAnalyticsModule{
-		Fail: false,
-	}
-
 	// mock config
 	cfg := &config.Configuration{
 		AccountDefaults: config.Account{},
@@ -463,7 +414,7 @@ func TestShouldNotPassEventToAnalyticsReporterWhenAccountEventNotEnabled(t *test
 	req := httptest.NewRequest("GET", "/event?t=win&b=test&ts=1234&f=b&x=1&a=events_disabled", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
-	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule, &metrics.MetricsEngineMock{})
+	e := NewEventEndpoint(cfg, mockAccountsFetcher, analyticsConfig.EnabledAnalytics{}, &metrics.MetricsEngineMock{})
 
 	// execute
 	e(recorder, req, nil)
@@ -501,7 +452,7 @@ func TestShouldPassEventToAnalyticsReporterWhenAccountEventEnabled(t *testing.T)
 	req := httptest.NewRequest("GET", "/event?t=win&b=test&ts=1234&f=b&x=1&a=events_enabled", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
-	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule, &metrics.MetricsEngineMock{})
+	e := NewEventEndpoint(cfg, mockAccountsFetcher, analyticsConfig.EnabledAnalytics{mockAnalyticsModule}, &metrics.MetricsEngineMock{})
 
 	// execute
 	e(recorder, req, nil)
@@ -535,7 +486,7 @@ func TestShouldNotPassEventToAnalyticsReporterWhenAnalyticsValueIsZero(t *testin
 	req := httptest.NewRequest("GET", "/event?t=win&b=test&ts=1234&f=b&x=0&a=events_enabled", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
-	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule, &metrics.MetricsEngineMock{})
+	e := NewEventEndpoint(cfg, mockAccountsFetcher, analyticsConfig.EnabledAnalytics{mockAnalyticsModule}, &metrics.MetricsEngineMock{})
 
 	// execute
 	e(recorder, req, nil)
@@ -569,7 +520,7 @@ func TestShouldRespondWithPixelAndContentTypeWhenRequestFormatIsImage(t *testing
 	req := httptest.NewRequest("GET", "/event?t=win&b=test&ts=1234&f=i&x=1&a=events_enabled", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
-	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule, &metrics.MetricsEngineMock{})
+	e := NewEventEndpoint(cfg, mockAccountsFetcher, analyticsConfig.EnabledAnalytics{mockAnalyticsModule}, &metrics.MetricsEngineMock{})
 
 	// execute
 	e(recorder, req, nil)
@@ -610,7 +561,7 @@ func TestShouldRespondWithNoContentWhenRequestFormatIsNotDefined(t *testing.T) {
 	req := httptest.NewRequest("GET", "/event?t=imp&b=test&ts=1234&x=1&a=events_enabled", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
-	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule, &metrics.MetricsEngineMock{})
+	e := NewEventEndpoint(cfg, mockAccountsFetcher, analyticsConfig.EnabledAnalytics{mockAnalyticsModule}, &metrics.MetricsEngineMock{})
 
 	// execute
 	e(recorder, req, nil)
@@ -804,17 +755,13 @@ func TestShouldReturnBadRequestWhenVTypeIsInvalid(t *testing.T) {
 	for _, test := range tests {
 		mockAccountsFetcher := &mockAccountsFetcher{}
 
-		mockAnalyticsModule := &eventsMockAnalyticsModule{
-			Fail: false,
-		}
-
 		cfg := &config.Configuration{
 			AccountDefaults: config.Account{},
 		}
 
 		recorder := httptest.NewRecorder()
 
-		e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule, &metrics.MetricsEngineMock{})
+		e := NewEventEndpoint(cfg, mockAccountsFetcher, analyticsConfig.EnabledAnalytics{}, &metrics.MetricsEngineMock{})
 		e(recorder, test.req, nil)
 
 		d, err := io.ReadAll(recorder.Result().Body)

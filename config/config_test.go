@@ -215,8 +215,8 @@ func TestDefaults(t *testing.T) {
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
-			VendorExceptions:   []openrtb_ext.BidderName{},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			VendorExceptions:   []string{},
+			VendorExceptionMap: map[string]struct{}{},
 		},
 		Purpose2: TCF2Purpose{
 			Enabled:            true,
@@ -224,8 +224,8 @@ func TestDefaults(t *testing.T) {
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
-			VendorExceptions:   []openrtb_ext.BidderName{},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			VendorExceptions:   []string{},
+			VendorExceptionMap: map[string]struct{}{},
 		},
 		Purpose3: TCF2Purpose{
 			Enabled:            true,
@@ -233,8 +233,8 @@ func TestDefaults(t *testing.T) {
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
-			VendorExceptions:   []openrtb_ext.BidderName{},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			VendorExceptions:   []string{},
+			VendorExceptionMap: map[string]struct{}{},
 		},
 		Purpose4: TCF2Purpose{
 			Enabled:            true,
@@ -242,8 +242,8 @@ func TestDefaults(t *testing.T) {
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
-			VendorExceptions:   []openrtb_ext.BidderName{},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			VendorExceptions:   []string{},
+			VendorExceptionMap: map[string]struct{}{},
 		},
 		Purpose5: TCF2Purpose{
 			Enabled:            true,
@@ -251,8 +251,8 @@ func TestDefaults(t *testing.T) {
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
-			VendorExceptions:   []openrtb_ext.BidderName{},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			VendorExceptions:   []string{},
+			VendorExceptionMap: map[string]struct{}{},
 		},
 		Purpose6: TCF2Purpose{
 			Enabled:            true,
@@ -260,8 +260,8 @@ func TestDefaults(t *testing.T) {
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
-			VendorExceptions:   []openrtb_ext.BidderName{},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			VendorExceptions:   []string{},
+			VendorExceptionMap: map[string]struct{}{},
 		},
 		Purpose7: TCF2Purpose{
 			Enabled:            true,
@@ -269,8 +269,8 @@ func TestDefaults(t *testing.T) {
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
-			VendorExceptions:   []openrtb_ext.BidderName{},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			VendorExceptions:   []string{},
+			VendorExceptionMap: map[string]struct{}{},
 		},
 		Purpose8: TCF2Purpose{
 			Enabled:            true,
@@ -278,8 +278,8 @@ func TestDefaults(t *testing.T) {
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
-			VendorExceptions:   []openrtb_ext.BidderName{},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			VendorExceptions:   []string{},
+			VendorExceptionMap: map[string]struct{}{},
 		},
 		Purpose9: TCF2Purpose{
 			Enabled:            true,
@@ -287,8 +287,8 @@ func TestDefaults(t *testing.T) {
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
-			VendorExceptions:   []openrtb_ext.BidderName{},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			VendorExceptions:   []string{},
+			VendorExceptionMap: map[string]struct{}{},
 		},
 		Purpose10: TCF2Purpose{
 			Enabled:            true,
@@ -296,8 +296,8 @@ func TestDefaults(t *testing.T) {
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
-			VendorExceptions:   []openrtb_ext.BidderName{},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			VendorExceptions:   []string{},
+			VendorExceptionMap: map[string]struct{}{},
 		},
 		SpecialFeature1: TCF2SpecialFeature{
 			Enforce:            true,
@@ -617,8 +617,8 @@ func TestFullConfig(t *testing.T) {
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
-			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo1a"), openrtb_ext.BidderName("foo1b")},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo1a"): {}, openrtb_ext.BidderName("foo1b"): {}},
+			VendorExceptions:   []string{"foo1a", "foo1b"},
+			VendorExceptionMap: map[string]struct{}{"foo1a": {}, "foo1b": {}},
 		},
 		Purpose2: TCF2Purpose{
 			Enabled:            false,
@@ -626,8 +626,8 @@ func TestFullConfig(t *testing.T) {
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     false,
 			EnforceVendors:     false,
-			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo2")},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo2"): {}},
+			VendorExceptions:   []string{"foo2"},
+			VendorExceptionMap: map[string]struct{}{"foo2": {}},
 		},
 		Purpose3: TCF2Purpose{
 			Enabled:            true, // true by default
@@ -635,8 +635,8 @@ func TestFullConfig(t *testing.T) {
 			EnforceAlgoID:      TCF2BasicEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
-			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo3")},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo3"): {}},
+			VendorExceptions:   []string{"foo3"},
+			VendorExceptionMap: map[string]struct{}{"foo3": {}},
 		},
 		Purpose4: TCF2Purpose{
 			Enabled:            true, // true by default
@@ -644,8 +644,8 @@ func TestFullConfig(t *testing.T) {
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
-			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo4")},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo4"): {}},
+			VendorExceptions:   []string{"foo4"},
+			VendorExceptionMap: map[string]struct{}{"foo4": {}},
 		},
 		Purpose5: TCF2Purpose{
 			Enabled:            true, // true by default
@@ -653,8 +653,8 @@ func TestFullConfig(t *testing.T) {
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
-			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo5")},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo5"): {}},
+			VendorExceptions:   []string{"foo5"},
+			VendorExceptionMap: map[string]struct{}{"foo5": {}},
 		},
 		Purpose6: TCF2Purpose{
 			Enabled:            true, // true by default
@@ -662,8 +662,8 @@ func TestFullConfig(t *testing.T) {
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
-			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo6")},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo6"): {}},
+			VendorExceptions:   []string{"foo6"},
+			VendorExceptionMap: map[string]struct{}{"foo6": {}},
 		},
 		Purpose7: TCF2Purpose{
 			Enabled:            true, // true by default
@@ -671,8 +671,8 @@ func TestFullConfig(t *testing.T) {
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
-			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo7")},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo7"): {}},
+			VendorExceptions:   []string{"foo7"},
+			VendorExceptionMap: map[string]struct{}{"foo7": {}},
 		},
 		Purpose8: TCF2Purpose{
 			Enabled:            true, // true by default
@@ -680,8 +680,8 @@ func TestFullConfig(t *testing.T) {
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
-			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo8")},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo8"): {}},
+			VendorExceptions:   []string{"foo8"},
+			VendorExceptionMap: map[string]struct{}{"foo8": {}},
 		},
 		Purpose9: TCF2Purpose{
 			Enabled:            true, // true by default
@@ -689,8 +689,8 @@ func TestFullConfig(t *testing.T) {
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
-			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo9")},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo9"): {}},
+			VendorExceptions:   []string{"foo9"},
+			VendorExceptionMap: map[string]struct{}{"foo9": {}},
 		},
 		Purpose10: TCF2Purpose{
 			Enabled:            true, // true by default
@@ -698,8 +698,8 @@ func TestFullConfig(t *testing.T) {
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
-			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo10")},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo10"): {}},
+			VendorExceptions:   []string{"foo10"},
+			VendorExceptionMap: map[string]struct{}{"foo10": {}},
 		},
 		SpecialFeature1: TCF2SpecialFeature{
 			Enforce:            true, // true by default
@@ -3197,40 +3197,40 @@ func TestTCF2PurposeVendorExceptions(t *testing.T) {
 	tests := []struct {
 		description              string
 		givePurposeConfigNil     bool
-		givePurpose1ExceptionMap map[openrtb_ext.BidderName]struct{}
-		givePurpose2ExceptionMap map[openrtb_ext.BidderName]struct{}
+		givePurpose1ExceptionMap map[string]struct{}
+		givePurpose2ExceptionMap map[string]struct{}
 		givePurpose              consentconstants.Purpose
-		wantExceptionMap         map[openrtb_ext.BidderName]struct{}
+		wantExceptionMap         map[string]struct{}
 	}{
 		{
 			description:          "Purpose config is nil",
 			givePurposeConfigNil: true,
 			givePurpose:          1,
-			wantExceptionMap:     map[openrtb_ext.BidderName]struct{}{},
+			wantExceptionMap:     map[string]struct{}{},
 		},
 		{
 			description:      "Nil - exception map not defined for purpose",
 			givePurpose:      1,
-			wantExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			wantExceptionMap: map[string]struct{}{},
 		},
 		{
 			description:              "Empty - exception map empty for purpose",
 			givePurpose:              1,
-			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{},
-			wantExceptionMap:         map[openrtb_ext.BidderName]struct{}{},
+			givePurpose1ExceptionMap: map[string]struct{}{},
+			wantExceptionMap:         map[string]struct{}{},
 		},
 		{
 			description:              "Nonempty - exception map with multiple entries for purpose",
 			givePurpose:              1,
-			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
-			wantExceptionMap:         map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
+			givePurpose1ExceptionMap: map[string]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
+			wantExceptionMap:         map[string]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
 		},
 		{
 			description:              "Nonempty - exception map with multiple entries for different purpose",
 			givePurpose:              2,
-			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
-			givePurpose2ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "openx": {}},
-			wantExceptionMap:         map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "openx": {}},
+			givePurpose1ExceptionMap: map[string]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
+			givePurpose2ExceptionMap: map[string]struct{}{"rubicon": {}, "appnexus": {}, "openx": {}},
+			wantExceptionMap:         map[string]struct{}{"rubicon": {}, "appnexus": {}, "openx": {}},
 		},
 	}
 

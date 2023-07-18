@@ -321,7 +321,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		errs = append(errs, err)
 	}
-	gdprApplies := exchange.GDPRApplies(gdprSignal, deps.cfg.GDPR.DefaultValue)	//TODO: try to pass this down to exchange/utils
+	gdprApplies := exchange.GDPRApplies(gdprSignal, deps.cfg.GDPR.DefaultValue)        //TODO: try to pass this down to exchange/utils
 	channelEnabled := tcf2Config.ChannelEnabled(exchange.ChannelTypeMap[labels.RType]) //TODO: try to pass this down to exchange/utils
 	if gdprApplies && channelEnabled {
 		policy := deps.gdprPrivacyPolicyBuilder(tcf2Config, gdprSignal, consent)

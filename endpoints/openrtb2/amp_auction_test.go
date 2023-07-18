@@ -24,6 +24,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/hooks/hookstage"
@@ -210,7 +211,8 @@ func TestAMPPageInfo(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsConf.EnabledAnalytics{},
+		fakeAnalyticsPolicyBuilder{privacyPolicy: &gdpr.AllowAllAnalytics{}}.Builder,
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -313,7 +315,8 @@ func TestGDPRConsent(t *testing.T) {
 				GDPR:           config.GDPR{Enabled: true},
 			},
 			&metricsConfig.NilMetricsEngine{},
-			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+			analyticsConf.EnabledAnalytics{},
+			fakeAnalyticsPolicyBuilder{privacyPolicy: &gdpr.AllowAllAnalytics{}}.Builder,
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
@@ -657,7 +660,7 @@ func TestCCPAConsent(t *testing.T) {
 	consent := "1NYN"
 	existingConsent := "1NNN"
 
-	var gdpr int8 = 1
+	var gdprSignal int8 = 1
 
 	testCases := []struct {
 		description    string
@@ -697,11 +700,11 @@ func TestCCPAConsent(t *testing.T) {
 			consent:     consent,
 			regsExt: &openrtb_ext.ExtRegs{
 				USPrivacy: existingConsent,
-				GDPR:      &gdpr,
+				GDPR:      &gdprSignal,
 			},
 			expectedRegExt: openrtb_ext.ExtRegs{
 				USPrivacy: consent,
-				GDPR:      &gdpr,
+				GDPR:      &gdprSignal,
 			},
 		},
 		{
@@ -736,7 +739,8 @@ func TestCCPAConsent(t *testing.T) {
 			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{MaxRequestSize: maxSize},
 			&metricsConfig.NilMetricsEngine{},
-			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+			analyticsConf.EnabledAnalytics{},
+			fakeAnalyticsPolicyBuilder{privacyPolicy: &gdpr.AllowAllAnalytics{}}.Builder,
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
@@ -849,7 +853,8 @@ func TestConsentWarnings(t *testing.T) {
 			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{MaxRequestSize: maxSize},
 			&metricsConfig.NilMetricsEngine{},
-			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+			analyticsConf.EnabledAnalytics{},
+			fakeAnalyticsPolicyBuilder{privacyPolicy: &gdpr.AllowAllAnalytics{}}.Builder,
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
@@ -947,7 +952,8 @@ func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 				GDPR:           config.GDPR{Enabled: true},
 			},
 			&metricsConfig.NilMetricsEngine{},
-			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+			analyticsConf.EnabledAnalytics{},
+			fakeAnalyticsPolicyBuilder{privacyPolicy: &gdpr.AllowAllAnalytics{}}.Builder,
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
@@ -1001,7 +1007,8 @@ func TestAMPSiteExt(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsConf.EnabledAnalytics{},
+		fakeAnalyticsPolicyBuilder{privacyPolicy: &gdpr.AllowAllAnalytics{}}.Builder,
 		nil,
 		nil,
 		openrtb_ext.BuildBidderMap(),
@@ -1043,7 +1050,8 @@ func TestAmpBadRequests(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsConf.EnabledAnalytics{},
+		fakeAnalyticsPolicyBuilder{privacyPolicy: &gdpr.AllowAllAnalytics{}}.Builder,
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -1076,7 +1084,8 @@ func TestAmpDebug(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsConf.EnabledAnalytics{},
+		fakeAnalyticsPolicyBuilder{privacyPolicy: &gdpr.AllowAllAnalytics{}}.Builder,
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -1211,7 +1220,8 @@ func TestQueryParamOverrides(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsConf.EnabledAnalytics{},
+		fakeAnalyticsPolicyBuilder{privacyPolicy: &gdpr.AllowAllAnalytics{}}.Builder,
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -1368,7 +1378,8 @@ func (s formatOverrideSpec) execute(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsConf.EnabledAnalytics{},
+		fakeAnalyticsPolicyBuilder{privacyPolicy: &gdpr.AllowAllAnalytics{}}.Builder,
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -1913,7 +1924,8 @@ func ampObjectTestSetup(t *testing.T, inTagId string, inStoredRequest json.RawMe
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize, GenerateRequestID: generateRequestID},
 		&metricsConfig.NilMetricsEngine{},
-		logger,
+		analyticsConf.EnabledAnalytics{logger},
+		fakeAnalyticsPolicyBuilder{privacyPolicy: &gdpr.AllowAllAnalytics{}}.Builder,
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -1965,7 +1977,8 @@ func TestAmpAuctionResponseHeaders(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsConf.EnabledAnalytics{},
+		fakeAnalyticsPolicyBuilder{privacyPolicy: &gdpr.AllowAllAnalytics{}}.Builder,
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -2000,7 +2013,8 @@ func TestRequestWithTargeting(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsConf.EnabledAnalytics{},
+		fakeAnalyticsPolicyBuilder{privacyPolicy: &gdpr.AllowAllAnalytics{}}.Builder,
 		nil,
 		nil,
 		openrtb_ext.BuildBidderMap(),

@@ -60,6 +60,6 @@ type fakePurposeEnforcerBuilder struct {
 	purposeEnforcer PurposeEnforcer
 }
 
-func (fpeb fakePurposeEnforcerBuilder) Builder(consentconstants.Purpose, openrtb_ext.BidderName) PurposeEnforcer {
+func (fpeb fakePurposeEnforcerBuilder) Builder(consentconstants.Purpose, string) PurposeEnforcer {
 	return fpeb.purposeEnforcer
 }

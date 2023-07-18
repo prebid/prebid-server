@@ -15,6 +15,7 @@ import (
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/experiment/adscert"
+	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/macros"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
@@ -105,7 +106,8 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		nilMetrics,
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsConf.EnabledAnalytics{},
+		fakeAnalyticsPolicyBuilder{privacyPolicy: &gdpr.AllowAllAnalytics{}}.Builder,
 		map[string]string{},
 		[]byte{},
 		nil,

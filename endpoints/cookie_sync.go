@@ -59,7 +59,7 @@ func NewCookieSyncEndpoint(
 		bidderHashSet[string(bidder)] = struct{}{}
 	}
 
-	analyticsLogger := analyticsConfig.NewEnabledModuleLogger(pbsAnalytics, context.Background())
+	analyticsLogger := analyticsConfig.NewEnabledModuleLogger(pbsAnalytics, context.Background()) //TODO: needs to be instantiated in the handler instead
 
 	return &cookieSyncEndpoint{
 		chooser: usersync.NewChooser(syncersByBidder),
@@ -73,7 +73,6 @@ func NewCookieSyncEndpoint(
 		},
 		metrics:         metrics,
 		analyticsLogger: analyticsLogger,
-		pbsAnalytics:    pbsAnalytics,
 		accountsFetcher: accountsFetcher,
 	}
 }
@@ -84,7 +83,6 @@ type cookieSyncEndpoint struct {
 	privacyConfig   usersyncPrivacyConfig
 	metrics         metrics.MetricsEngine
 	analyticsLogger analytics.AnalyticsLogger
-	pbsAnalytics    analyticsConfig.EnabledAnalytics
 	accountsFetcher stored_requests.AccountFetcher
 }
 

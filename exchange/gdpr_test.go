@@ -84,7 +84,7 @@ func TestGetGDPR(t *testing.T) {
 					Regs: tt.giveRegs,
 				},
 			}
-			result, err := getGDPR(&req)
+			result, err := GetGDPR(&req)
 			assert.Equal(t, tt.wantGDPR, result)
 
 			if tt.wantError {
@@ -158,7 +158,7 @@ func TestGetConsent(t *testing.T) {
 				},
 			}
 
-			result, err := getConsent(&req, tt.giveGPP)
+			result, err := GetConsent(&req, tt.giveGPP)
 			assert.Equal(t, tt.wantConsent, result, tt.description)
 
 			if tt.wantError {

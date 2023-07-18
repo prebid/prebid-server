@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/analytics"
+	analyticsConfig "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/gdpr"
@@ -44,7 +45,8 @@ func TestNewCookieSyncEndpoint(t *testing.T) {
 		configGDPR        = config.GDPR{HostVendorID: 42}
 		configCCPAEnforce = true
 		metrics           = metrics.MetricsEngineMock{}
-		analytics         = MockAnalytics{}
+		enabledAnalytics  = analyticsConfig.EnabledAnalytics{&MockAnalytics{}}
+		analyticsLogger   = analyticsConfig.NewEnabledModuleLogger(enabledAnalytics, context.Background())
 		fetcher           = FakeAccountsFetcher{}
 		bidders           = map[string]openrtb_ext.BidderName{"bidderA": openrtb_ext.BidderName("bidderA"), "bidderB": openrtb_ext.BidderName("bidderB")}
 	)
@@ -60,7 +62,7 @@ func TestNewCookieSyncEndpoint(t *testing.T) {
 		gdprPermsBuilder,
 		tcf2ConfigBuilder,
 		&metrics,
-		&analytics,
+		enabledAnalytics,
 		&fetcher,
 		bidders,
 	)
@@ -82,7 +84,7 @@ func TestNewCookieSyncEndpoint(t *testing.T) {
 			bidderHashSet:          map[string]struct{}{"bidderA": {}, "bidderB": {}},
 		},
 		metrics:         &metrics,
-		pbsAnalytics:    &analytics,
+		analyticsLogger: analyticsLogger,
 		accountsFetcher: &fetcher,
 	}
 
@@ -91,7 +93,7 @@ func TestNewCookieSyncEndpoint(t *testing.T) {
 	assert.Equal(t, expected.config, result.config)
 	assert.Equal(t, expected.chooser, result.chooser)
 	assert.Equal(t, expected.metrics, result.metrics)
-	assert.Equal(t, expected.pbsAnalytics, result.pbsAnalytics)
+	assert.Equal(t, expected.analyticsLogger, result.analyticsLogger)
 	assert.Equal(t, expected.accountsFetcher, result.accountsFetcher)
 
 	assert.Equal(t, expected.privacyConfig.gdprConfig, result.privacyConfig.gdprConfig)
@@ -291,7 +293,7 @@ func TestCookieSyncHandle(t *testing.T) {
 				ccpaEnforce:            true,
 			},
 			metrics:         &mockMetrics,
-			pbsAnalytics:    &mockAnalytics,
+			analyticsLogger: &mockAnalytics,
 			accountsFetcher: &fakeAccountFetcher,
 		}
 		assert.NoError(t, endpoint.config.MarshalAccountDefaults())
@@ -1246,7 +1248,7 @@ func TestWriteParseRequestErrorMetrics(t *testing.T) {
 	mockAnalytics.On("LogCookieSyncObject", mock.Anything)
 	writer := httptest.NewRecorder()
 
-	endpoint := cookieSyncEndpoint{pbsAnalytics: &mockAnalytics}
+	endpoint := cookieSyncEndpoint{analyticsLogger: &mockAnalytics}
 	endpoint.handleError(writer, err, 418)
 
 	assert.Equal(t, writer.Code, 418)
@@ -1469,7 +1471,7 @@ func TestCookieSyncHandleError(t *testing.T) {
 	mockAnalytics.On("LogCookieSyncObject", mock.Anything)
 	writer := httptest.NewRecorder()
 
-	endpoint := cookieSyncEndpoint{pbsAnalytics: &mockAnalytics}
+	endpoint := cookieSyncEndpoint{analyticsLogger: &mockAnalytics}
 	endpoint.handleError(writer, err, 418)
 
 	assert.Equal(t, writer.Code, 418)
@@ -1669,7 +1671,7 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 		}
 
 		writer := httptest.NewRecorder()
-		endpoint := cookieSyncEndpoint{pbsAnalytics: &mockAnalytics}
+		endpoint := cookieSyncEndpoint{analyticsLogger: &mockAnalytics}
 		endpoint.handleResponse(writer, syncTypeFilter, cookie, privacyPolicies, test.givenSyncersChosen)
 
 		if assert.Equal(t, writer.Code, http.StatusOK, test.description+":http_status") {
