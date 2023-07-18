@@ -37,11 +37,12 @@ func TestBuildSyncers(t *testing.T) {
 	// in these tests. Look carefully at the end of the expected iframe urls to see the syncer key.
 
 	testCases := []struct {
-		description         string
-		givenConfig         config.Configuration
-		givenBidderInfos    config.BidderInfos
-		expectedIFramesURLs map[string]string
-		expectedErrors      []string
+		description                   string
+		givenConfig                   config.Configuration
+		givenBidderInfos              config.BidderInfos
+		expectedIFramesURLs           map[string]string
+		expectedBidderNameBySyncerKey map[string][]string
+		expectedErrors                []string
 	}{
 		{
 			description:      "One",
@@ -50,6 +51,9 @@ func TestBuildSyncers(t *testing.T) {
 			expectedIFramesURLs: map[string]string{
 				"bidder1": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhost.com%2Fa%2Fhost",
 			},
+			expectedBidderNameBySyncerKey: map[string][]string{
+				"a": {"bidder1"},
+			},
 		},
 		{
 			description:      "One - Missing Key - Defaults To Bidder Name",
@@ -57,6 +61,9 @@ func TestBuildSyncers(t *testing.T) {
 			givenBidderInfos: map[string]config.BidderInfo{"bidder1": infoKeyMissingPopulated},
 			expectedIFramesURLs: map[string]string{
 				"bidder1": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhost.com%2Fbidder1%2Fhost",
+			},
+			expectedBidderNameBySyncerKey: map[string][]string{
+				"bidder1": {"bidder1"},
 			},
 		},
 		{
@@ -75,6 +82,9 @@ func TestBuildSyncers(t *testing.T) {
 				"bidder1": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhost.com%2Fa%2Fhost",
 				"bidder2": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhost.com%2Fb%2Fhost",
 			},
+			expectedBidderNameBySyncerKey: map[string][]string{
+				"a": {"bidder1"}, "b": {"bidder2"},
+			},
 		},
 		{
 			description:      "Many - Same Syncers - One Primary",
@@ -83,6 +93,9 @@ func TestBuildSyncers(t *testing.T) {
 			expectedIFramesURLs: map[string]string{
 				"bidder1": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhost.com%2Fa%2Fhost",
 				"bidder2": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhost.com%2Fa%2Fhost",
+			},
+			expectedBidderNameBySyncerKey: map[string][]string{
+				"a": {"bidder1", "bidder2"},
 			},
 		},
 		{
@@ -116,6 +129,9 @@ func TestBuildSyncers(t *testing.T) {
 			expectedIFramesURLs: map[string]string{
 				"bidder2": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhost.com%2Fb%2Fhost",
 			},
+			expectedBidderNameBySyncerKey: map[string][]string{
+				"b": {"bidder2"},
+			},
 		},
 		{
 			description:      "Many - Disabled Syncers Ignored",
@@ -124,6 +140,9 @@ func TestBuildSyncers(t *testing.T) {
 			expectedIFramesURLs: map[string]string{
 				"bidder2": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhost.com%2Fb%2Fhost",
 			},
+			expectedBidderNameBySyncerKey: map[string][]string{
+				"b": {"bidder2"},
+			},
 		},
 		{
 			description:      "Many - Supports Only Syncers Ignored",
@@ -131,6 +150,9 @@ func TestBuildSyncers(t *testing.T) {
 			givenBidderInfos: map[string]config.BidderInfo{"bidder1": infoKeyASupportsOnly, "bidder2": infoKeyBPopulated},
 			expectedIFramesURLs: map[string]string{
 				"bidder2": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhost.com%2Fb%2Fhost",
+			},
+			expectedBidderNameBySyncerKey: map[string][]string{
+				"b": {"bidder2"},
 			},
 		},
 		{
@@ -149,11 +171,14 @@ func TestBuildSyncers(t *testing.T) {
 			expectedIFramesURLs: map[string]string{
 				"bidder1": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhostoverride.com%2Fa%2Fhost",
 			},
+			expectedBidderNameBySyncerKey: map[string][]string{
+				"a": {"bidder1"},
+			},
 		},
 	}
 
 	for _, test := range testCases {
-		result, errs := BuildSyncers(&test.givenConfig, test.givenBidderInfos)
+		result, actualBidderNameBySyncerKey, errs := BuildSyncers(&test.givenConfig, test.givenBidderInfos)
 
 		if len(test.expectedErrors) == 0 {
 			assert.Empty(t, errs, test.description+":err")
@@ -165,6 +190,12 @@ func TestBuildSyncers(t *testing.T) {
 				}
 			}
 			assert.Equal(t, test.expectedIFramesURLs, resultRenderedIFrameURLS, test.description+":result")
+			// for more than one bidder in array assertion may fail on bidders order
+			assert.Equal(t, len(test.expectedBidderNameBySyncerKey), len(actualBidderNameBySyncerKey), test.description+":result")
+			for syncKey, bidderNames := range test.expectedBidderNameBySyncerKey {
+				assert.NotNil(t, actualBidderNameBySyncerKey[syncKey])
+				assert.ElementsMatch(t, bidderNames, actualBidderNameBySyncerKey[syncKey])
+			}
 		} else {
 			errMessages := make([]string, 0, len(errs))
 			for _, e := range errs {

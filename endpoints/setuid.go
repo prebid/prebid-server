@@ -35,7 +35,7 @@ const (
 
 const uidCookieName = "uids"
 
-func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, gdprPermsBuilder gdpr.PermissionsBuilder, tcf2CfgBuilder gdpr.TCF2ConfigBuilder, pbsanalytics analytics.PBSAnalyticsModule, accountsFetcher stored_requests.AccountFetcher, metricsEngine metrics.MetricsEngine) httprouter.Handle {
+func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, gdprPermsBuilder gdpr.PermissionsBuilder, tcf2CfgBuilder gdpr.TCF2ConfigBuilder, pbsanalytics analytics.PBSAnalyticsModule, accountsFetcher stored_requests.AccountFetcher, metricsEngine metrics.MetricsEngine, bidderNameBySyncerKey map[string][]string) httprouter.Handle {
 	encoder := usersync.Base64Encoder{}
 	decoder := usersync.Base64Decoder{}
 
@@ -109,6 +109,10 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 			so.Status = http.StatusBadRequest
 			return
 		}
+
+		// bidderNameBySyncerKey will be used here for activities integration.
+		// usage:
+		// bidderName := bidderNameBySyncerKey[syncer.Key()]
 
 		gdprRequestInfo, err := extractGDPRInfo(query)
 		if err != nil {

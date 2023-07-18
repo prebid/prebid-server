@@ -156,7 +156,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		return nil, err
 	}
 
-	syncersByBidder, errs := usersync.BuildSyncers(cfg, cfg.BidderInfos)
+	syncersByBidder, bidderNameBySyncerKey, errs := usersync.BuildSyncers(cfg, cfg.BidderInfos)
 	if len(errs) > 0 {
 		return nil, errortypes.NewAggregateError("user sync", errs)
 	}
@@ -266,7 +266,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		RecaptchaSecret:  cfg.RecaptchaSecret,
 	}
 
-	r.GET("/setuid", endpoints.NewSetUIDEndpoint(cfg, syncersByBidder, gdprPermsBuilder, tcf2CfgBuilder, pbsAnalytics, accounts, r.MetricsEngine))
+	r.GET("/setuid", endpoints.NewSetUIDEndpoint(cfg, syncersByBidder, gdprPermsBuilder, tcf2CfgBuilder, pbsAnalytics, accounts, r.MetricsEngine, bidderNameBySyncerKey))
 	r.GET("/getuids", endpoints.NewGetUIDsEndpoint(cfg.HostCookie))
 	r.POST("/optout", userSyncDeps.OptOut)
 	r.GET("/optout", userSyncDeps.OptOut)

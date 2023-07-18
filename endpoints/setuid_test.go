@@ -1356,7 +1356,7 @@ func doRequest(req *http.Request, analytics analytics.PBSAnalyticsModule, metric
 		"invalid_json_acct": json.RawMessage(`{"}`),
 	}}
 
-	endpoint := NewSetUIDEndpoint(&cfg, syncersByBidder, gdprPermsBuilder, tcf2ConfigBuilder, analytics, fakeAccountsFetcher, metrics)
+	endpoint := NewSetUIDEndpoint(&cfg, syncersByBidder, gdprPermsBuilder, tcf2ConfigBuilder, analytics, fakeAccountsFetcher, metrics, nil)
 	response := httptest.NewRecorder()
 	endpoint(response, req, nil)
 	return response

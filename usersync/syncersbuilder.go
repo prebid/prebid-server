@@ -25,7 +25,7 @@ func (e SyncerBuildError) Error() string {
 	return fmt.Sprintf("cannot create syncer for bidder %s with key %s: %v", e.Bidder, e.SyncerKey, e.Err)
 }
 
-func BuildSyncers(hostConfig *config.Configuration, bidderInfos config.BidderInfos) (map[string]Syncer, []error) {
+func BuildSyncers(hostConfig *config.Configuration, bidderInfos config.BidderInfos) (map[string]Syncer, map[string][]string, []error) {
 	// map syncer config by bidder
 	cfgByBidder := make(map[string]config.Syncer, len(bidderInfos))
 	for bidder, cfg := range bidderInfos {
@@ -33,6 +33,8 @@ func BuildSyncers(hostConfig *config.Configuration, bidderInfos config.BidderInf
 			cfgByBidder[bidder] = *cfg.Syncer
 		}
 	}
+	// map syncerKey by bidder
+	bidderNameBySyncerKey := make(map[string][]string, len(bidderInfos))
 
 	// map syncer config by key
 	cfgBySyncerKey := make(map[string][]namedSyncerConfig, len(bidderInfos))
@@ -41,6 +43,7 @@ func BuildSyncers(hostConfig *config.Configuration, bidderInfos config.BidderInf
 			cfg.Key = bidder
 		}
 		cfgBySyncerKey[cfg.Key] = append(cfgBySyncerKey[cfg.Key], namedSyncerConfig{bidder, cfg})
+		bidderNameBySyncerKey[cfg.Key] = append(bidderNameBySyncerKey[cfg.Key], bidder)
 	}
 
 	// resolve host endpoint
@@ -75,9 +78,9 @@ func BuildSyncers(hostConfig *config.Configuration, bidderInfos config.BidderInf
 	}
 
 	if len(errs) > 0 {
-		return nil, errs
+		return nil, nil, errs
 	}
-	return syncers, nil
+	return syncers, bidderNameBySyncerKey, nil
 }
 
 func shouldCreateSyncer(cfg config.BidderInfo) bool {
