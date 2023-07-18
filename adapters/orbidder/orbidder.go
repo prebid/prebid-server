@@ -97,7 +97,7 @@ func preprocessBidFloorCurrency(imp *openrtb2.Imp, reqInfo *adapters.ExtraReques
 }
 
 // MakeBids unpacks server response into Bids.
-func (rcv OrbidderAdapter) MakeBids(_ *openrtb2.BidRequest, _ *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (rcv OrbidderAdapter) MakeBids(internalRequest *openrtb2.BidRequest, _ *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -130,7 +130,7 @@ func (rcv OrbidderAdapter) MakeBids(_ *openrtb2.BidRequest, _ *adapters.RequestD
 		for _, bid := range seatBid.Bid {
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &bid,
-				BidType: openrtb_ext.BidTypeBanner,
+				BidType: getMediaTypeForImp(bid.ImpID, internalRequest.Imp),
 			})
 		}
 	}
@@ -138,6 +138,23 @@ func (rcv OrbidderAdapter) MakeBids(_ *openrtb2.BidRequest, _ *adapters.RequestD
 		bidResponse.Currency = bidResp.Cur
 	}
 	return bidResponse, nil
+}
+
+func getMediaTypeForImp(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
+	for _, imp := range imps {
+		if imp.ID == impID {
+			if imp.Banner != nil {
+				return openrtb_ext.BidTypeBanner
+			} else if imp.Video != nil {
+				return openrtb_ext.BidTypeVideo
+			} else if imp.Native != nil {
+				return openrtb_ext.BidTypeNative
+			} else if imp.Audio != nil {
+				return openrtb_ext.BidTypeAudio
+			}
+		}
+	}
+	return openrtb_ext.BidTypeBanner
 }
 
 // Builder builds a new instance of the Orbidder adapter for the given bidder with the given config.
