@@ -8,14 +8,27 @@ jobs:
   semgrep-check:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout prebid repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: master
+          repository: prebid-server
+          path: ./prebid-repo
+
+      - name: pwd
+        run: echo $pwd
+
       - name: Checkout repo
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
           ref: ${{github.event.pull_request.head.ref}}
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          repository: ${{github.event.pull_request.head.repo.full_name}}
 
-
+      - name: pwd
+        run: echo $pwd
+        
       - name: Calculate diff
         id: calculate_diff
         uses: actions/github-script@v6
