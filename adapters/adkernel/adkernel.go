@@ -286,3 +286,16 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	}
 	return bidder, nil
 }
+
+// Builder builds a new instance of the Adkernel adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	urlTemplate, err := template.New("endpointTemplate").Parse(config.Endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
+	}
+
+	bidder := &adkernelAdapter{
+		EndpointTemplate: urlTemplate,
+	}
+	return bidder, nil
+}
