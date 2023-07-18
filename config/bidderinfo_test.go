@@ -244,6 +244,29 @@ func TestBidderInfoValidationPositive(t *testing.T) {
 				},
 			},
 		},
+		"bidderC": BidderInfo{
+			Endpoint: "http://bidderB.com/openrtb2",
+			Maintainer: &MaintainerInfo{
+				Email: "maintainer@bidderA.com",
+			},
+			Capabilities: &CapabilitiesInfo{
+				Site: &PlatformInfo{
+					MediaTypes: []openrtb_ext.BidType{
+						openrtb_ext.BidTypeVideo,
+						openrtb_ext.BidTypeNative,
+						openrtb_ext.BidTypeBanner,
+					},
+				},
+			},
+			Syncer: &Syncer{
+				Key: "bidderBkey",
+				Redirect: &SyncerEndpoint{
+					URL:       "http://bidderB.com/usersync",
+					UserMacro: "UID",
+				},
+			},
+			AliasOf: "bidderB",
+		},
 	}
 	errs := bidderInfos.validate(make([]error, 0))
 	assert.Len(t, errs, 0, "All bidder infos should be correct")
@@ -465,6 +488,43 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 			},
 			[]error{
 				errors.New("syncer could not be created, invalid supported endpoint: incorrect"),
+			},
+		},
+		{
+			"Invalid aliases",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						Site: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+					AliasOf: "bidderB",
+				},
+				"bidderB": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						Site: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+					AliasOf: "bidderC",
+				},
+			},
+			[]error{
+				errors.New("Parent bidder: bidderB of an alias cannot be an alias: bidderA"),
+				errors.New("Parent bidder: bidderC not found for an alias: bidderB"),
 			},
 		},
 		{

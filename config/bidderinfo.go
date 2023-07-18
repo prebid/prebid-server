@@ -276,9 +276,27 @@ func (infos BidderInfos) validate(errs []error) []error {
 			if validateSyncerErr != nil {
 				errs = append(errs, validateSyncerErr)
 			}
+
+			validateAliasesErr := validateAliases(bidder, infos, bidderName)
+			if validateAliasesErr != nil {
+				errs = append(errs, validateAliasesErr)
+			}
 		}
 	}
 	return errs
+}
+
+func validateAliases(bidder BidderInfo, infos BidderInfos, bidderName string) error {
+	if len(bidder.AliasOf) > 0 {
+		if parentBidder, ok := infos[bidder.AliasOf]; ok {
+			if len(parentBidder.AliasOf) > 0 {
+				return fmt.Errorf("Parent bidder: %s of an alias cannot be an alias: %s", bidder.AliasOf, bidderName)
+			}
+		} else {
+			return fmt.Errorf("Parent bidder: %s not found for an alias: %s", bidder.AliasOf, bidderName)
+		}
+	}
+	return nil
 }
 
 var testEndpointTemplateParams = macros.EndpointTemplateParams{
