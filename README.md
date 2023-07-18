@@ -47,6 +47,11 @@ go build .
 ./prebid-server
 ```
 
+Run format:
+```bash
+./scripts/format.sh
+```
+
 Load the landing page in your browser at `http://localhost:8000/`.
 For the full API reference, see [the endpoint documentation](https://docs.prebid.org/prebid-server/endpoints/pbs-endpoint-overview.html)
 
