@@ -24,12 +24,15 @@ func (adapter *adapter) getRequestData(bidRequest *openrtb2.BidRequest, impExt *
 	pbidRequest := createBidRequest(bidRequest, imps)
 	reqJSON, err := json.Marshal(pbidRequest)
 	if err != nil {
-		return nil, err
+		return nil, &errortypes.BadInput{
+			Message: "Prebid bidder request not valid or can't be marshalled",
+		}
 	}
-	adapter.buildEndpointURL(impExt)
 	url, err := adapter.buildEndpointURL(impExt)
 	if err != nil {
-		return nil, err
+		return nil, &errortypes.BadInput{
+			Message: "Error while creating endpoint",
+		}
 	}
 
 	headers := http.Header{}
@@ -48,18 +51,6 @@ func createBidRequest(rtbBidRequest *openrtb2.BidRequest, imps []openrtb2.Imp) *
 	bidRequest := *rtbBidRequest
 	bidRequest.Imp = imps
 	return &bidRequest
-}
-func getExtImps(imps []openrtb2.Imp, impsExt []openrtb_ext.ExtImpOwnAdx) map[openrtb_ext.ExtImpOwnAdx][]openrtb2.Imp {
-	respExt := make(map[openrtb_ext.ExtImpOwnAdx][]openrtb2.Imp)
-	for idx := range imps {
-		imp := imps[idx]
-		impExt := impsExt[idx]
-		if respExt[impExt] == nil {
-			respExt[impExt] = make([]openrtb2.Imp, 0)
-		}
-		respExt[impExt] = append(respExt[impExt], imp)
-	}
-	return respExt
 }
 func (adapter *adapter) buildEndpointURL(params *openrtb_ext.ExtImpOwnAdx) (string, error) {
 	endpointParams := macros.EndpointTemplateParams{
@@ -97,18 +88,13 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adap
 		)
 		return nil, errs
 	}
-
-	imps, impExts, err := getImpressionsAndImpExt(request.Imp)
-	if len(imps) == 0 {
-		return nil, err
+	extImps, errors := groupImpsByExt(request.Imp)
+	if len(errors) != 0 {
+		errs = append(errs, errors...)
 	}
-	errs = append(errs, err...)
-	if len(imps) == 0 {
-		return nil, err
+	if len(extImps) == 0 {
+		return nil, errs
 	}
-
-	extImps := getExtImps(imps, impExts)
-
 	reqDetail := make([]*adapters.RequestData, 0, len(extImps))
 	for k, imps := range extImps {
 		bidRequest, err := adapter.getRequestData(request, &k, imps)
@@ -120,13 +106,9 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adap
 	}
 	return reqDetail, errs
 }
-
-func getImpressionsAndImpExt(imps []openrtb2.Imp) ([]openrtb2.Imp, []openrtb_ext.ExtImpOwnAdx, []error) {
-	impLen := len(imps)
-	errors := make([]error, 0, impLen)
-	rsImpExts := make([]openrtb_ext.ExtImpOwnAdx, 0, impLen)
-	rsImps := make([]openrtb2.Imp, 0, impLen)
-
+func groupImpsByExt(imps []openrtb2.Imp) (map[openrtb_ext.ExtImpOwnAdx][]openrtb2.Imp, []error) {
+	respExt := make(map[openrtb_ext.ExtImpOwnAdx][]openrtb2.Imp)
+	errors := make([]error, 0, len(imps))
 	for _, imp := range imps {
 		ownAdxExt, err := getImpressionExt(&(imp))
 		if err != nil {
@@ -134,10 +116,9 @@ func getImpressionsAndImpExt(imps []openrtb2.Imp) ([]openrtb2.Imp, []openrtb_ext
 			continue
 		}
 
-		rsImps = append(rsImps, imp)
-		rsImpExts = append(rsImpExts, *ownAdxExt)
+		respExt[*ownAdxExt] = append(respExt[*ownAdxExt], imp)
 	}
-	return rsImps, rsImpExts, errors
+	return respExt, errors
 }
 
 func getBidType(ext bidExt) (openrtb_ext.BidType, error) {
