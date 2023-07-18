@@ -23,6 +23,7 @@ type BidderInfos map[string]BidderInfo
 
 // BidderInfo specifies all configuration for a bidder except for enabled status, endpoint, and extra information.
 type BidderInfo struct {
+	AliasOf          string `yaml:"aliasOf" mapstructure:"aliasOf"`
 	Disabled         bool   `yaml:"disabled" mapstructure:"disabled"`
 	Endpoint         string `yaml:"endpoint" mapstructure:"endpoint"`
 	ExtraAdapterInfo string `yaml:"extra_info" mapstructure:"extra_info"`
