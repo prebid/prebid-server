@@ -150,6 +150,15 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 	for _, bidderRequest := range allBidderRequests {
 		bidRequestAllowed := true
 
+		// fetchBids activity
+		fetchBidsActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityFetchBids,
+			privacy.ScopedName{Scope: privacy.ScopeTypeBidder, Name: bidderRequest.BidderName.String()})
+		if fetchBidsActivityAllowed == privacy.ActivityDeny {
+			// skip the call to a bidder if fetchBids activity is not allowed
+			// do not add this bidder to allowedBidderRequests
+			continue
+		}
+
 		// CCPA
 		privacyEnforcement.CCPA = ccpaEnforcer.ShouldEnforce(bidderRequest.BidderName.String())
 

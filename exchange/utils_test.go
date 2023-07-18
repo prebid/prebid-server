@@ -17,6 +17,7 @@ import (
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -505,7 +506,7 @@ func TestCleanOpenRTBRequestsWithFPD(t *testing.T) {
 		App:  &openrtb2.App{Name: "fpdApnApp"},
 		User: &openrtb2.User{Keywords: "fpdApnUser"},
 	}
-	fpd[openrtb_ext.BidderName("appnexus")] = &apnFpd
+	fpd[openrtb_ext.BidderName("rubicon")] = &apnFpd
 
 	brightrollFpd := firstpartydata.ResolvedFirstPartyData{
 		Site: &openrtb2.Site{Name: "fpdBrightrollSite"},
@@ -4271,5 +4272,74 @@ func TestGetMediaTypeForBid(t *testing.T) {
 			}
 
 		})
+	}
+}
+
+func TemporarilyDisabledTestCleanOpenRTBRequestsActivitiesFetchBids(t *testing.T) {
+	testCases := []struct {
+		name              string
+		req               *openrtb2.BidRequest
+		componentName     string
+		allow             bool
+		expectedReqNumber int
+	}{
+		{
+			name:              "request_with_one_bidder_allowed",
+			req:               newBidRequest(t),
+			componentName:     "appnexus",
+			allow:             true,
+			expectedReqNumber: 1,
+		},
+		{
+			name:              "request_with_one_bidder_not_allowed",
+			req:               newBidRequest(t),
+			componentName:     "appnexus",
+			allow:             false,
+			expectedReqNumber: 0,
+		},
+	}
+
+	for _, test := range testCases {
+		privacyConfig := getDefaultActivityConfig(test.componentName, test.allow)
+		activities, err := privacy.NewActivityControl(privacyConfig)
+		assert.NoError(t, err, "")
+		auctionReq := AuctionRequest{
+			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: test.req},
+			UserSyncs:         &emptyUsersync{},
+			Activities:        activities,
+		}
+
+		bidderToSyncerKey := map[string]string{}
+		reqSplitter := &requestSplitter{
+			bidderToSyncerKey: bidderToSyncerKey,
+			me:                &metrics.MetricsEngineMock{},
+			hostSChainNode:    nil,
+			bidderInfo:        config.BidderInfos{},
+		}
+
+		t.Run(test.name, func(t *testing.T) {
+			bidderRequests, _, errs := reqSplitter.cleanOpenRTBRequests(context.Background(), auctionReq, nil, gdpr.SignalNo)
+			assert.Empty(t, errs)
+			assert.Len(t, bidderRequests, test.expectedReqNumber)
+		})
+	}
+}
+
+func getDefaultActivityConfig(componentName string, allow bool) *config.AccountPrivacy {
+	return &config.AccountPrivacy{
+		AllowActivities: config.AllowActivities{
+			FetchBids: config.Activity{
+				Default: ptrutil.ToPtr(true),
+				Rules: []config.ActivityRule{
+					{
+						Allow: allow,
+						Condition: config.ActivityCondition{
+							ComponentName: []string{componentName},
+							ComponentType: []string{"bidder"},
+						},
+					},
+				},
+			},
+		},
 	}
 }
