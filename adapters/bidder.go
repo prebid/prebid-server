@@ -149,12 +149,6 @@ type ExtraRequestInfo struct {
 	BidderRequestStartTime     time.Time
 	GlobalPrivacyControlHeader string
 	CurrencyConversions        currency.Conversions
-	MakeBidsTimeInfo           MakeBidsTimeInfo
-}
-
-type MakeBidsTimeInfo struct {
-	AfterMakeBidsStartTime time.Time
-	Durations              []time.Duration
 }
 
 func NewExtraRequestInfo(c currency.Conversions) ExtraRequestInfo {

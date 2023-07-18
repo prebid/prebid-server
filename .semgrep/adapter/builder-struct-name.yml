@@ -16,7 +16,7 @@ rules:
           return &adapter{endpoint: "https://www.foo.com"}, nil
         }
       ```
-    severity: WARNING
+    severity: ERROR
     patterns:
       - pattern-either:
           - pattern-inside: >
