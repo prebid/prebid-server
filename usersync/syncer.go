@@ -63,7 +63,7 @@ var ErrSyncerKeyRequired = errors.New("key is required")
 
 // NewSyncer creates a new Syncer from the provided configuration, or return an error if macro substition
 // fails or an endpoint url is invalid.
-func NewSyncer(hostConfig config.UserSync, syncerConfig config.Syncer) (Syncer, error) {
+func NewSyncer(hostConfig config.UserSync, syncerConfig config.Syncer, bidder string) (Syncer, error) {
 	if syncerConfig.Key == "" {
 		return nil, ErrSyncerKeyRequired
 	}
@@ -80,7 +80,7 @@ func NewSyncer(hostConfig config.UserSync, syncerConfig config.Syncer) (Syncer, 
 
 	if syncerConfig.IFrame != nil {
 		var err error
-		syncer.iframe, err = buildTemplate(syncerConfig.Key, setuidSyncTypeIFrame, hostConfig, syncerConfig.ExternalURL, *syncerConfig.IFrame)
+		syncer.iframe, err = buildTemplate(bidder, setuidSyncTypeIFrame, hostConfig, syncerConfig.ExternalURL, *syncerConfig.IFrame)
 		if err != nil {
 			return nil, fmt.Errorf("iframe %v", err)
 		}
@@ -91,7 +91,7 @@ func NewSyncer(hostConfig config.UserSync, syncerConfig config.Syncer) (Syncer, 
 
 	if syncerConfig.Redirect != nil {
 		var err error
-		syncer.redirect, err = buildTemplate(syncerConfig.Key, setuidSyncTypeRedirect, hostConfig, syncerConfig.ExternalURL, *syncerConfig.Redirect)
+		syncer.redirect, err = buildTemplate(bidder, setuidSyncTypeRedirect, hostConfig, syncerConfig.ExternalURL, *syncerConfig.Redirect)
 		if err != nil {
 			return nil, fmt.Errorf("redirect %v", err)
 		}
