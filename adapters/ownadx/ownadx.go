@@ -25,13 +25,13 @@ func (adapter *adapter) getRequestData(bidRequest *openrtb2.BidRequest, impExt *
 	reqJSON, err := json.Marshal(pbidRequest)
 	if err != nil {
 		return nil, &errortypes.BadInput{
-			Message: "Prebid bidder request not valid or can't be marshalled",
+			Message: "Prebid bidder request not valid or can't be marshalled. Err: " + err.Error(),
 		}
 	}
 	url, err := adapter.buildEndpointURL(impExt)
 	if err != nil {
 		return nil, &errortypes.BadInput{
-			Message: "Error while creating endpoint",
+			Message: "Error while creating endpoint. Err: " + err.Error(),
 		}
 	}
 
