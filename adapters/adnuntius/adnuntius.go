@@ -406,7 +406,6 @@ func generateBidResponse(adnResponse *AdnResponse, request *openrtb2.BidRequest)
 				BidType: "banner",
 			})
 
-			fmt.Println(adunit.Deals)
 			for _, deal := range adunit.Deals {
 				dealBid, err := generateAdResponse(deal, request.Imp[i].ID, deal.Html, request)
 				if err != nil {
