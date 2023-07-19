@@ -523,8 +523,8 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 				},
 			},
 			[]error{
-				errors.New("Parent bidder: bidderB of an alias cannot be an alias: bidderA"),
-				errors.New("Parent bidder: bidderC not found for an alias: bidderB"),
+				errors.New("bidder: bidderB cannot be an alias of an alias: bidderA"),
+				errors.New("bidder: bidderC not found for an alias: bidderB"),
 			},
 		},
 		{
