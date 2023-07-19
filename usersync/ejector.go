@@ -3,6 +3,7 @@ package usersync
 import (
 	"errors"
 	"math"
+	"math/rand"
 	"time"
 )
 
@@ -12,35 +13,40 @@ type Ejector interface {
 
 type OldestEjector struct {
 	nonPriorityKeys []string
+	FallbackEjector FallbackEjector
 }
 
 func (o *OldestEjector) Choose(uids map[string]UIDEntry) (string, error) {
 	oldestElement := getOldestElement(o.nonPriorityKeys, uids)
+	if oldestElement == "" {
+		return o.FallbackEjector.Choose(uids)
+	}
 
 	return oldestElement, nil
 }
 
 type PriorityBidderEjector struct {
-	PriorityGroups [][]string
-	SyncerKey      string
-	OldestEjector  OldestEjector
+	PriorityGroups  [][]string
+	SyncerKey       string
+	OldestEjector   OldestEjector
+	FallbackEjector FallbackEjector
 }
 
 func (p *PriorityBidderEjector) Choose(uids map[string]UIDEntry) (string, error) {
 	p.OldestEjector.nonPriorityKeys = getNonPriorityKeys(uids, p.PriorityGroups)
-
-	// There are non priority keys present, eject one of those
 	if len(p.OldestEjector.nonPriorityKeys) > 0 {
 		return p.OldestEjector.Choose(uids)
 	}
 
-	// There are only priority keys left, check if the syncer is apart of the priority groups
 	if isSyncerPriority(p.SyncerKey, p.PriorityGroups) {
 		// Eject Oldest Element from Lowest Priority Group and Update Priority Group
 		lowestPriorityGroup := p.PriorityGroups[len(p.PriorityGroups)-1]
 		oldestElement := getOldestElement(lowestPriorityGroup, uids)
-		updatedPriorityGroup := removeElementFromPriorityGroup(lowestPriorityGroup, oldestElement)
+		if oldestElement == "" {
+			return p.FallbackEjector.Choose(uids)
+		}
 
+		updatedPriorityGroup := removeElementFromPriorityGroup(lowestPriorityGroup, oldestElement)
 		if updatedPriorityGroup == nil {
 			p.PriorityGroups = p.PriorityGroups[:len(p.PriorityGroups)-1]
 		} else {
@@ -121,4 +127,20 @@ func getOldestElement(list []string, uids map[string]UIDEntry) string {
 		}
 	}
 	return oldestElem
+}
+
+type FallbackEjector struct{}
+
+// Choose implemention for Fallback Ejector, selects a random uid to eject when the other two ejectors can't come up with a uid
+func (f *FallbackEjector) Choose(uids map[string]UIDEntry) (string, error) {
+	keys := make([]string, len(uids))
+
+	i := 0
+	for key := range uids {
+		keys[i] = key
+		i++
+	}
+
+	rand.Seed(time.Now().UnixNano())
+	return keys[rand.Intn(len(keys))], nil
 }

@@ -62,6 +62,7 @@ func TestChooseElementToEject(t *testing.T) {
 			},
 			givenEjector: &OldestEjector{
 				[]string{"newestElement", "oldestElement"},
+				FallbackEjector{},
 			},
 			expected: "oldestElement",
 		},
