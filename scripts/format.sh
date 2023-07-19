@@ -4,6 +4,8 @@
 for DIRECTORY in */ ; do
   GOGLOB="$GOGLOB ${DIRECTORY%/}"
 done
+GOGLOB="${GOGLOB/ docs/}"
+GOGLOB="${GOGLOB/ vendor/}"
 
 GOFMT_LINES=`gofmt -s -l $GOGLOB | tr '\\\\' '/' | wc -l | xargs`
 
