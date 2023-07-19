@@ -258,13 +258,6 @@ func TestBidderInfoValidationPositive(t *testing.T) {
 					},
 				},
 			},
-			Syncer: &Syncer{
-				Key: "bidderBkey",
-				Redirect: &SyncerEndpoint{
-					URL:       "http://bidderB.com/usersync",
-					UserMacro: "UID",
-				},
-			},
 			AliasOf: "bidderB",
 		},
 	}
