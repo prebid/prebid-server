@@ -31,7 +31,7 @@ func TestChooseElementToEject(t *testing.T) {
 			givenEjector: &PriorityBidderEjector{
 				PriorityGroups: [][]string{
 					{"adnxs"},
-					{"oldestElement", "newerElement"},
+					{"oldestElement", "newestElement"},
 				},
 				SyncerKey: "adnxs",
 			},
@@ -64,6 +64,26 @@ func TestChooseElementToEject(t *testing.T) {
 				[]string{"newestElement", "oldestElement"},
 			},
 			expected: "oldestElement",
+		},
+		{
+			name: "priority-oldest-ejector-fallback",
+			givenUids: map[string]UIDEntry{
+				"nonPriorityElement": {
+					UID:     "123",
+					Expires: time.Now().Add((90 * 24 * time.Hour)),
+				},
+				"priorityElement": {
+					UID:     "456",
+					Expires: time.Now(),
+				},
+			},
+			givenEjector: &PriorityBidderEjector{
+				PriorityGroups: [][]string{
+					{"priorityElement"},
+				},
+				OldestEjector: OldestEjector{},
+			},
+			expected: "nonPriorityElement",
 		},
 	}
 
