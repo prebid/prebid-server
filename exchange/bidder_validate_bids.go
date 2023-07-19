@@ -31,14 +31,14 @@ type validatedBidder struct {
 	bidder AdaptedBidder
 }
 
-func (v *validatedBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, hookExecutor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) ([]*entities.PbsOrtbSeatBid, []error) {
-	seatBids, errs := v.bidder.requestBid(ctx, bidderRequest, conversions, reqInfo, adsCertSigner, bidRequestOptions, alternateBidderCodes, hookExecutor, ruleToAdjustments)
+func (v *validatedBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, hookExecutor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) ([]*entities.PbsOrtbSeatBid, extraBidderRespInfo, []error) {
+	seatBids, extraBidderRespInfo, errs := v.bidder.requestBid(ctx, bidderRequest, conversions, reqInfo, adsCertSigner, bidRequestOptions, alternateBidderCodes, hookExecutor, ruleToAdjustments)
 	for _, seatBid := range seatBids {
 		if validationErrors := removeInvalidBids(bidderRequest.BidRequest, seatBid); len(validationErrors) > 0 {
 			errs = append(errs, validationErrors...)
 		}
 	}
-	return seatBids, errs
+	return seatBids, extraBidderRespInfo, errs
 }
 
 // validateBids will run some validation checks on the returned bids and excise any invalid bids
