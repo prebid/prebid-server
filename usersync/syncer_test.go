@@ -26,6 +26,7 @@ func TestNewSyncer(t *testing.T) {
 	testCases := []struct {
 		description         string
 		givenKey            string
+		givenBidderName     string
 		givenIFrameConfig   *config.SyncerEndpoint
 		givenRedirectConfig *config.SyncerEndpoint
 		givenExternalURL    string
@@ -37,6 +38,7 @@ func TestNewSyncer(t *testing.T) {
 		{
 			description:         "Missing Key",
 			givenKey:            "",
+			givenBidderName:     "",
 			givenIFrameConfig:   iframeConfig,
 			givenRedirectConfig: nil,
 			expectedError:       "key is required",
@@ -44,6 +46,7 @@ func TestNewSyncer(t *testing.T) {
 		{
 			description:         "Missing Endpoints",
 			givenKey:            "a",
+			givenBidderName:     "bidderA",
 			givenIFrameConfig:   nil,
 			givenRedirectConfig: nil,
 			expectedError:       "at least one endpoint (iframe and/or redirect) is required",
@@ -51,6 +54,7 @@ func TestNewSyncer(t *testing.T) {
 		{
 			description:         "IFrame & Redirect Endpoints",
 			givenKey:            "a",
+			givenBidderName:     "bidderA",
 			givenIFrameConfig:   iframeConfig,
 			givenRedirectConfig: redirectConfig,
 			expectedDefault:     SyncTypeIFrame,
@@ -60,13 +64,15 @@ func TestNewSyncer(t *testing.T) {
 		{
 			description:         "IFrame - Parse Error",
 			givenKey:            "a",
+			givenBidderName:     "bidderA",
 			givenIFrameConfig:   errParseConfig,
 			givenRedirectConfig: nil,
-			expectedError:       "iframe template: a_usersync_url:1: function \"malformed\" not defined",
+			expectedError:       "iframe template: biddera_usersync_url:1: function \"malformed\" not defined",
 		},
 		{
 			description:         "IFrame - Validation Error",
 			givenKey:            "a",
+			givenBidderName:     "bidderA",
 			givenIFrameConfig:   errInvalidConfig,
 			givenRedirectConfig: nil,
 			expectedError:       "iframe composed url: \"notAURL:http%3A%2F%2Fhost.com%2Fhost\" is invalid",
@@ -74,13 +80,15 @@ func TestNewSyncer(t *testing.T) {
 		{
 			description:         "Redirect - Parse Error",
 			givenKey:            "a",
+			givenBidderName:     "bidderA",
 			givenIFrameConfig:   nil,
 			givenRedirectConfig: errParseConfig,
-			expectedError:       "redirect template: a_usersync_url:1: function \"malformed\" not defined",
+			expectedError:       "redirect template: biddera_usersync_url:1: function \"malformed\" not defined",
 		},
 		{
 			description:         "Redirect - Validation Error",
 			givenKey:            "a",
+			givenBidderName:     "bidderA",
 			givenIFrameConfig:   nil,
 			givenRedirectConfig: errInvalidConfig,
 			expectedError:       "redirect composed url: \"notAURL:http%3A%2F%2Fhost.com%2Fhost\" is invalid",
@@ -88,6 +96,7 @@ func TestNewSyncer(t *testing.T) {
 		{
 			description:         "Syncer Level External URL",
 			givenKey:            "a",
+			givenBidderName:     "bidderA",
 			givenExternalURL:    "http://syncer.com",
 			givenIFrameConfig:   iframeConfig,
 			givenRedirectConfig: redirectConfig,
@@ -106,7 +115,7 @@ func TestNewSyncer(t *testing.T) {
 			ExternalURL: test.givenExternalURL,
 		}
 
-		result, err := NewSyncer(hostConfig, syncerConfig)
+		result, err := NewSyncer(hostConfig, syncerConfig, test.givenBidderName)
 
 		if test.expectedError == "" {
 			assert.NoError(t, err, test.description+":err")
