@@ -16,7 +16,7 @@ import (
 
 // TpmnAdapter struct
 type adapter struct {
-	URI string
+	uri string
 }
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids from TpmnBidder.
@@ -40,7 +40,7 @@ func (rcv *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters
 
 	return []*adapters.RequestData{{
 		Method:  http.MethodPost,
-		Uri:     rcv.URI,
+		Uri:     rcv.uri,
 		Body:    requestBodyJSON,
 		Headers: headers,
 	}}, errs
@@ -148,7 +148,7 @@ func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 // Builder builds a new instance of the TpmnBidder adapter for the given bidder with the given config.
 func Builder(_ openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
-		URI: config.Endpoint,
+		uri: config.Endpoint,
 	}
 	return bidder, nil
 }
