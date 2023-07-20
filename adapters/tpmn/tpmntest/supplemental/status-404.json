@@ -79,7 +79,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "unexpected response status code: 404",
+      "value": "Invalid Status Returned: 404. Run with request.debug = 1 for more info",
       "comparison": "literal"
     }
   ]
