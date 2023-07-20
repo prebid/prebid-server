@@ -47,12 +47,12 @@ type PriceFloorFetcher struct {
 }
 
 func (f *PriceFloorFetcher) Fetch(config config.AccountPriceFloors) (*openrtb_ext.PriceFloorRules, string) {
-	if !config.UseDynamicData || len(config.Fetch.URL) == 0 || !validator.IsURL(config.Fetch.URL) {
+	if !config.UseDynamicData || len(config.Fetcher.URL) == 0 || !validator.IsURL(config.Fetcher.URL) {
 		return nil, openrtb_ext.FetchNone
 	}
 
 	// Check for floors JSON in cache
-	result, found := f.Get(config.Fetch.URL)
+	result, found := f.Get(config.Fetcher.URL)
 	if found {
 		fetcherResult, ok := result.(*openrtb_ext.PriceFloorRules)
 		if !ok || fetcherResult.Data == nil {
@@ -62,8 +62,8 @@ func (f *PriceFloorFetcher) Fetch(config config.AccountPriceFloors) (*openrtb_ex
 	}
 
 	//miss: push to channel to fetch and return empty response
-	if config.Enabled && config.Fetch.Enabled && config.Fetch.Timeout > 0 {
-		fetchInfo := FetchInfo{AccountFloorFetch: config.Fetch, FetchTime: time.Now().Unix(), RefetchRequest: false}
+	if config.Enabled && config.Fetcher.Enabled && config.Fetcher.Timeout > 0 {
+		fetchInfo := FetchInfo{AccountFloorFetch: config.Fetcher, FetchTime: time.Now().Unix(), RefetchRequest: false}
 		f.configReceiver <- fetchInfo
 	}
 

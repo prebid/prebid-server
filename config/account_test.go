@@ -871,7 +871,7 @@ func TestAccountPriceFloorsValidate(t *testing.T) {
 				EnforceFloorsRate: 100,
 				MaxRule:           200,
 				MaxSchemaDims:     10,
-				Fetch: AccountFloorFetch{
+				Fetcher: AccountFloorFetch{
 					Period:  300,
 					MaxAge:  600,
 					Timeout: 12,
@@ -882,7 +882,7 @@ func TestAccountPriceFloorsValidate(t *testing.T) {
 			description: "Invalid configuration: EnforceFloorRate:110",
 			pf: &AccountPriceFloors{
 				EnforceFloorsRate: 110,
-				Fetch: AccountFloorFetch{
+				Fetcher: AccountFloorFetch{
 					Period:  300,
 					MaxAge:  600,
 					Timeout: 12,
@@ -894,7 +894,7 @@ func TestAccountPriceFloorsValidate(t *testing.T) {
 			description: "Invalid configuration: EnforceFloorRate:-10",
 			pf: &AccountPriceFloors{
 				EnforceFloorsRate: -10,
-				Fetch: AccountFloorFetch{
+				Fetcher: AccountFloorFetch{
 					Period:  300,
 					MaxAge:  600,
 					Timeout: 12,
@@ -906,7 +906,7 @@ func TestAccountPriceFloorsValidate(t *testing.T) {
 			description: "Invalid configuration: MaxRule:-20",
 			pf: &AccountPriceFloors{
 				MaxRule: -20,
-				Fetch: AccountFloorFetch{
+				Fetcher: AccountFloorFetch{
 					Period:  300,
 					MaxAge:  600,
 					Timeout: 12,
@@ -918,7 +918,7 @@ func TestAccountPriceFloorsValidate(t *testing.T) {
 			description: "Invalid configuration: MaxSchemaDims:100",
 			pf: &AccountPriceFloors{
 				MaxSchemaDims: 100,
-				Fetch: AccountFloorFetch{
+				Fetcher: AccountFloorFetch{
 					Period:  300,
 					MaxAge:  600,
 					Timeout: 12,
@@ -932,7 +932,7 @@ func TestAccountPriceFloorsValidate(t *testing.T) {
 				EnforceFloorsRate: 100,
 				MaxRule:           200,
 				MaxSchemaDims:     10,
-				Fetch: AccountFloorFetch{
+				Fetcher: AccountFloorFetch{
 					Period:  100,
 					MaxAge:  600,
 					Timeout: 12,
@@ -946,7 +946,7 @@ func TestAccountPriceFloorsValidate(t *testing.T) {
 				EnforceFloorsRate: 100,
 				MaxRule:           200,
 				MaxSchemaDims:     10,
-				Fetch: AccountFloorFetch{
+				Fetcher: AccountFloorFetch{
 					Period:  300,
 					MaxAge:  500,
 					Timeout: 12,
@@ -960,7 +960,7 @@ func TestAccountPriceFloorsValidate(t *testing.T) {
 				EnforceFloorsRate: 100,
 				MaxRule:           200,
 				MaxSchemaDims:     10,
-				Fetch: AccountFloorFetch{
+				Fetcher: AccountFloorFetch{
 					Period:  700,
 					MaxAge:  600,
 					Timeout: 12,
@@ -974,13 +974,13 @@ func TestAccountPriceFloorsValidate(t *testing.T) {
 				EnforceFloorsRate: 100,
 				MaxRule:           200,
 				MaxSchemaDims:     10,
-				Fetch: AccountFloorFetch{
+				Fetcher: AccountFloorFetch{
 					Period:  300,
 					MaxAge:  600,
 					Timeout: 4,
 				},
 			},
-			want: []error{errors.New("account_defaults.price_floors.fetch.timeout_ms should be between 10 to 10,000 mili seconds")},
+			want: []error{errors.New("account_defaults.price_floors.fetch.timeout_ms should be between 10 to 10,000 miliseconds")},
 		},
 		{
 			description: "Invalid Max Rules",
@@ -988,7 +988,7 @@ func TestAccountPriceFloorsValidate(t *testing.T) {
 				EnforceFloorsRate: 100,
 				MaxRule:           200,
 				MaxSchemaDims:     10,
-				Fetch: AccountFloorFetch{
+				Fetcher: AccountFloorFetch{
 					Period:   300,
 					MaxAge:   600,
 					Timeout:  12,
@@ -1003,7 +1003,7 @@ func TestAccountPriceFloorsValidate(t *testing.T) {
 				EnforceFloorsRate: 100,
 				MaxRule:           200,
 				MaxSchemaDims:     10,
-				Fetch: AccountFloorFetch{
+				Fetcher: AccountFloorFetch{
 					Period:      300,
 					MaxAge:      600,
 					Timeout:     12,

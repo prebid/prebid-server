@@ -1031,9 +1031,13 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("account_defaults.price_floors.max_rules", 100)
 	v.SetDefault("account_defaults.price_floors.max_schema_dims", 3)
 	v.SetDefault("account_defaults.price_floors.fetch.enabled", false)
-	v.SetDefault("account_defaults.price_floors.fetch.timeout_ms", 100)
-	v.SetDefault("account_defaults.price_floors.fetch.period_sec", 300)
-	v.SetDefault("account_defaults.price_floors.fetch.max_age_sec", 600)
+	v.SetDefault("account_defaults.price_floors.fetch.url", "")
+	v.SetDefault("account_defaults.price_floors.fetch.timeout_ms", 3000)
+	v.SetDefault("account_defaults.price_floors.fetch.max_file_size_kb", 100)
+	v.SetDefault("account_defaults.price_floors.fetch.max_rules", 1000)
+	v.SetDefault("account_defaults.price_floors.fetch.max_age_sec", 86400)
+	v.SetDefault("account_defaults.price_floors.fetch.period_sec", 3600)
+	v.SetDefault("account_defaults.price_floors.fetch.max_schema_dims", 0)
 
 	//Defaults for Price floor fetcher
 	v.SetDefault("price_floor.fetcher.worker", 20)

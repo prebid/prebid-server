@@ -755,7 +755,7 @@ func TestFetcherWhenRequestGetSameURLInrequest(t *testing.T) {
 	fetchConfig := config.AccountPriceFloors{
 		Enabled:        true,
 		UseDynamicData: true,
-		Fetch: config.AccountFloorFetch{
+		Fetcher: config.AccountFloorFetch{
 			Enabled:     true,
 			URL:         mockHttpServer.URL,
 			Timeout:     100,
@@ -783,7 +783,7 @@ func TestFetcherDataPresentInCache(t *testing.T) {
 	fetchConfig := config.AccountPriceFloors{
 		Enabled:        true,
 		UseDynamicData: true,
-		Fetch: config.AccountFloorFetch{
+		Fetcher: config.AccountFloorFetch{
 			Enabled:     true,
 			URL:         "http://test.com/floor",
 			Timeout:     100,
@@ -811,7 +811,7 @@ func TestFetcherDataNotPresentInCache(t *testing.T) {
 	fetchConfig := config.AccountPriceFloors{
 		Enabled:        true,
 		UseDynamicData: true,
-		Fetch: config.AccountFloorFetch{
+		Fetcher: config.AccountFloorFetch{
 			Enabled:     true,
 			URL:         "http://test.com/floor",
 			Timeout:     100,
@@ -837,7 +837,7 @@ func TestFetcherEntryNotPresentInCache(t *testing.T) {
 	fetchConfig := config.AccountPriceFloors{
 		Enabled:        true,
 		UseDynamicData: true,
-		Fetch: config.AccountFloorFetch{
+		Fetcher: config.AccountFloorFetch{
 			Enabled:     true,
 			URL:         "http://test.com/floor",
 			Timeout:     100,
@@ -862,7 +862,7 @@ func TestFetcherDynamicFetchDisable(t *testing.T) {
 	fetchConfig := config.AccountPriceFloors{
 		Enabled:        true,
 		UseDynamicData: false,
-		Fetch: config.AccountFloorFetch{
+		Fetcher: config.AccountFloorFetch{
 			Enabled:     true,
 			URL:         "http://test.com/floor",
 			Timeout:     100,
@@ -1092,7 +1092,7 @@ func TestFetcherWhenRequestGetDifferentURLInrequest(t *testing.T) {
 	fetchConfig := config.AccountPriceFloors{
 		Enabled:        true,
 		UseDynamicData: true,
-		Fetch: config.AccountFloorFetch{
+		Fetcher: config.AccountFloorFetch{
 			Enabled:     true,
 			URL:         mockHttpServer.URL,
 			Timeout:     100,
@@ -1104,7 +1104,7 @@ func TestFetcherWhenRequestGetDifferentURLInrequest(t *testing.T) {
 	}
 
 	for i := 0; i < 50; i++ {
-		fetchConfig.Fetch.URL = fmt.Sprintf("%s?id=%d", mockHttpServer.URL, getRandomNumber())
+		fetchConfig.Fetcher.URL = fmt.Sprintf("%s?id=%d", mockHttpServer.URL, getRandomNumber())
 		fetcherInstance.Fetch(fetchConfig)
 	}
 

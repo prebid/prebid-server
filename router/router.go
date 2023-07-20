@@ -216,7 +216,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	}
 
 	priceFloorFetcher := floors.NewPriceFloorFetcher(cfg.PriceFloors.Fetcher.Worker, cfg.PriceFloors.Fetcher.Capacity,
-		cfg.AccountDefaults.PriceFloors.Fetch.Period, cfg.AccountDefaults.PriceFloors.Fetch.MaxAge)
+		cfg.AccountDefaults.PriceFloors.Fetcher.Period, cfg.AccountDefaults.PriceFloors.Fetcher.MaxAge)
 
 	planBuilder := hooks.NewExecutionPlanBuilder(cfg.Hooks, repo)
 	macroReplacer := macros.NewStringIndexBasedReplacer()

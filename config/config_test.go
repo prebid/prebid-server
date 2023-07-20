@@ -191,10 +191,14 @@ func TestDefaults(t *testing.T) {
 	cmpBools(t, "account_defaults.price_floors.use_dynamic_data", false, cfg.AccountDefaults.PriceFloors.UseDynamicData)
 	cmpInts(t, "account_defaults.price_floors.max_rules", 100, cfg.AccountDefaults.PriceFloors.MaxRule)
 	cmpInts(t, "account_defaults.price_floors.max_schema_dims", 3, cfg.AccountDefaults.PriceFloors.MaxSchemaDims)
-	cmpBools(t, "account_defaults.price_floors.fetch.enabled", false, cfg.AccountDefaults.PriceFloors.Fetch.Enabled)
-	cmpInts(t, "account_defaults.price_floors.fetch.timeout_ms", 100, cfg.AccountDefaults.PriceFloors.Fetch.Timeout)
-	cmpInts(t, "account_defaults.price_floors.fetch.period_sec", 300, cfg.AccountDefaults.PriceFloors.Fetch.Period)
-	cmpInts(t, "account_defaults.price_floors.fetch.max_age_sec", 600, cfg.AccountDefaults.PriceFloors.Fetch.MaxAge)
+	cmpBools(t, "account_defaults.price_floors.fetch.enabled", false, cfg.AccountDefaults.PriceFloors.Fetcher.Enabled)
+	cmpStrings(t, "account_defaults.price_floors.fetch.url", "", cfg.AccountDefaults.PriceFloors.Fetcher.URL)
+	cmpInts(t, "account_defaults.price_floors.fetch.timeout_ms", 3000, cfg.AccountDefaults.PriceFloors.Fetcher.Timeout)
+	cmpInts(t, "account_defaults.price_floors.fetch.max_file_size_kb", 100, cfg.AccountDefaults.PriceFloors.Fetcher.MaxFileSize)
+	cmpInts(t, "account_defaults.price_floors.fetch.max_rules", 1000, cfg.AccountDefaults.PriceFloors.Fetcher.MaxRules)
+	cmpInts(t, "account_defaults.price_floors.fetch.period_sec", 3600, cfg.AccountDefaults.PriceFloors.Fetcher.Period)
+	cmpInts(t, "account_defaults.price_floors.fetch.max_age_sec", 86400, cfg.AccountDefaults.PriceFloors.Fetcher.MaxAge)
+	cmpInts(t, "account_defaults.price_floors.fetch.max_schema_dims", 0, cfg.AccountDefaults.PriceFloors.Fetcher.MaxSchemaDims)
 	cmpBools(t, "account_defaults.events_enabled", *cfg.AccountDefaults.EventsEnabled, false)
 	cmpNils(t, "account_defaults.events.enabled", cfg.AccountDefaults.Events.Enabled)
 
@@ -486,9 +490,13 @@ account_defaults:
         max_schema_dims: 5
         fetch:
           enabled: true
-          timeout_ms: 100
-          period_sec: 300
-          max_age_sec: 600
+          url: http://test.com/floors
+          timeout_ms: 500
+          max_file_size_kb: 200
+          max_rules: 500
+          period_sec: 2000
+          max_age_sec: 6000
+          max_schema_dims: 10
 tmax_adjustments:
   enabled: true
   bidder_response_duration_min_ms: 700
@@ -592,10 +600,14 @@ func TestFullConfig(t *testing.T) {
 	cmpBools(t, "account_defaults.price_floors.use_dynamic_data", true, cfg.AccountDefaults.PriceFloors.UseDynamicData)
 	cmpInts(t, "account_defaults.price_floors.max_rules", 120, cfg.AccountDefaults.PriceFloors.MaxRule)
 	cmpInts(t, "account_defaults.price_floors.max_schema_dims", 5, cfg.AccountDefaults.PriceFloors.MaxSchemaDims)
-	cmpBools(t, "account_defaults.price_floors.fetch.enabled", true, cfg.AccountDefaults.PriceFloors.Fetch.Enabled)
-	cmpInts(t, "account_defaults.price_floors.fetch.timeout_ms", 100, cfg.AccountDefaults.PriceFloors.Fetch.Timeout)
-	cmpInts(t, "account_defaults.price_floors.fetch.period_sec", 300, cfg.AccountDefaults.PriceFloors.Fetch.Period)
-	cmpInts(t, "account_defaults.price_floors.fetch.max_age_sec", 600, cfg.AccountDefaults.PriceFloors.Fetch.MaxAge)
+	cmpBools(t, "account_defaults.price_floors.fetch.enabled", true, cfg.AccountDefaults.PriceFloors.Fetcher.Enabled)
+	cmpStrings(t, "account_defaults.price_floors.fetch.url", "http://test.com/floors", cfg.AccountDefaults.PriceFloors.Fetcher.URL)
+	cmpInts(t, "account_defaults.price_floors.fetch.timeout_ms", 500, cfg.AccountDefaults.PriceFloors.Fetcher.Timeout)
+	cmpInts(t, "account_defaults.price_floors.fetch.max_file_size_kb", 200, cfg.AccountDefaults.PriceFloors.Fetcher.MaxFileSize)
+	cmpInts(t, "account_defaults.price_floors.fetch.max_rules", 500, cfg.AccountDefaults.PriceFloors.Fetcher.MaxRules)
+	cmpInts(t, "account_defaults.price_floors.fetch.period_sec", 2000, cfg.AccountDefaults.PriceFloors.Fetcher.Period)
+	cmpInts(t, "account_defaults.price_floors.fetch.max_age_sec", 6000, cfg.AccountDefaults.PriceFloors.Fetcher.MaxAge)
+	cmpInts(t, "account_defaults.price_floors.fetch.max_schema_dims", 10, cfg.AccountDefaults.PriceFloors.Fetcher.MaxSchemaDims)
 
 	cmpBools(t, "account_defaults.events_enabled", *cfg.AccountDefaults.EventsEnabled, true)
 	cmpNils(t, "account_defaults.events.enabled", cfg.AccountDefaults.Events.Enabled)
@@ -816,7 +828,7 @@ func TestValidateConfig(t *testing.T) {
 		},
 		AccountDefaults: Account{
 			PriceFloors: AccountPriceFloors{
-				Fetch: AccountFloorFetch{
+				Fetcher: AccountFloorFetch{
 					Timeout: 100,
 					Period:  300,
 					MaxAge:  600,
