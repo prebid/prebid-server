@@ -2,7 +2,6 @@ package tpmn
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -98,15 +97,15 @@ func preprocessBidFloorCurrency(imp *openrtb2.Imp, reqInfo *adapters.ExtraReques
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	switch responseData.StatusCode {
-	case http.StatusNoContent:
+	if responseData.StatusCode == http.StatusNoContent {
+		// no bid response
 		return nil, nil
-	case http.StatusBadRequest:
-		return nil, []error{errors.New("bad request from publisher")}
-	case http.StatusOK:
-		break
-	default:
-		return nil, []error{fmt.Errorf("unexpected response status code: %v", responseData.StatusCode)}
+	}
+
+	if responseData.StatusCode != http.StatusOK {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Invalid Status Returned: %d. Run with request.debug = 1 for more info", responseData.StatusCode),
+		}}
 	}
 
 	var response openrtb2.BidResponse
