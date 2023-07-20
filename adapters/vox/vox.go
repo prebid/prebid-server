@@ -2,6 +2,7 @@ package vox
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
@@ -53,12 +54,33 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 	for _, seatBid := range response.SeatBid {
 		for _, bid := range seatBid.Bid {
+			typ, err := getMediaTypeForBid(bid)
+			if err != nil {
+				return nil, []error{err}
+			}
+
 			b := &adapters.TypedBid{
-				Bid: &bid,
+				Bid:     &bid,
+				BidType: typ,
 			}
 			bidResponse.Bids = append(bidResponse.Bids, b)
 		}
 	}
 
 	return bidResponse, nil
+}
+
+func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupAudio:
+		return openrtb_ext.BidTypeAudio, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
+	default:
+		return "", fmt.Errorf("Unable to fetch mediaType in multi-format: %s", bid.ImpID)
+	}
 }
