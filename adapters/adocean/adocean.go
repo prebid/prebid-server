@@ -137,6 +137,12 @@ func (a *AdOceanAdapter) addNewBid(
 		}
 	}
 
+	if adOceanExt.EmitterPrefix == "" {
+		return requestsData, &errortypes.BadInput{
+			Message: "No emitterPrefix param",
+		}
+	}
+
 	addedToExistingRequest := addToExistingRequest(requestsData, &adOceanExt, imp, (request.Test == 1))
 	if addedToExistingRequest {
 		return requestsData, nil

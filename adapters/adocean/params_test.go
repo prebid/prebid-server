@@ -39,7 +39,6 @@ var validParams = []string{
 
 var invalidParams = []string{
 	`{}`,
-	`{"masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7", "slaveId": "adoceanmyaozpniqismex"}`,
 	`{"emitterPrefix": "myao", "slaveId": "adoceanmyaozpniqismex"}`,
 	`{"emitterPrefix": "myao", "masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7"}`,
 	`{"emitterPrefix": "", "masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7", "slaveId": "adoceanmyaozpniqismex"}`,
