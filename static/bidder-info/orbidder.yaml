@@ -10,7 +10,3 @@ capabilities:
     mediaTypes:
       - banner
       - native
-userSync:
-  redirect:
-    url: "https://orbidder.otto.de/pbs-usersync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
-    userMacro: "[ODN_ID]"
