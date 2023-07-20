@@ -17,4 +17,4 @@ capabilities:
 userSync:
   redirect:
     url: "https://gat.tpmn.io/sync/redirect?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir={{.RedirectURL}}"
-    support-cors: false
+    userMacro: "$UID"
