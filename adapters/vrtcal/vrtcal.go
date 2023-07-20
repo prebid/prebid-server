@@ -101,9 +101,16 @@ func getReturnTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType
 				return openrtb_ext.BidTypeBanner, nil
 			}
 
+
 			if imp.Video != nil {
 				return openrtb_ext.BidTypeVideo, nil
 			}
+
+
+			if imp.Native != nil {
+				return openrtb_ext.BidTypeNative, nil
+			}
+
 
 			return "", &errortypes.BadServerResponse{
 				Message: fmt.Sprintf("Unsupported return type for ID: \"%s\"", impID),
