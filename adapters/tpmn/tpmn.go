@@ -118,10 +118,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 	bidResponse.Currency = response.Cur
 	for _, seatBid := range response.SeatBid {
 		for i := range seatBid.Bid {
-			bidType, err := getMediaTypeForImp(seatBid.Bid[i].ImpID, request.Imp)
-			if err != nil {
-				return nil, []error{err}
-			}
+			bidType := getMediaTypeForImp(seatBid.Bid[i].ImpID, request.Imp)
 			b := &adapters.TypedBid{
 				Bid:     &seatBid.Bid[i],
 				BidType: bidType,
@@ -132,22 +129,20 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 	return bidResponse, nil
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
+func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
+	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
-		if imp.ID == impID {
-			if imp.Banner != nil {
-				return openrtb_ext.BidTypeBanner, nil
-			} else if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo, nil
-			} else if imp.Native != nil {
-				return openrtb_ext.BidTypeNative, nil
+		if imp.ID == impId {
+			if imp.Video != nil {
+				mediaType = openrtb_ext.BidTypeVideo
 			}
+			if imp.Native != nil {
+				mediaType = openrtb_ext.BidTypeNative
+			}
+			break
 		}
 	}
-
-	return "", &errortypes.BadInput{
-		Message: fmt.Sprintf("Failed to find a supported media type impression \"%s\"", impID),
-	}
+	return mediaType
 }
 
 // Builder builds a new instance of the TpmnBidder adapter for the given bidder with the given config.
