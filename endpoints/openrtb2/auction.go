@@ -248,6 +248,11 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		Activities:                 activities,
 	}
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
+	defer func() {
+		if !auctionRequest.BidderResponseStartTime.IsZero() {
+			deps.metricsEngine.RecordOverheadTime(metrics.MakeAuctionResponse, time.Since(auctionRequest.BidderResponseStartTime))
+		}
+	}()
 	ao.RequestWrapper = req
 	ao.Account = account
 	var response *openrtb2.BidResponse
@@ -279,9 +284,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		glog.Errorf("Error setting seat non-bid: %v", err)
 	}
 	labels, ao = sendAuctionResponse(w, hookExecutor, response, req.BidRequest, account, labels, ao)
-	if len(ao.Errors) == 0 && !auctionRequest.BidderResponseStartTime.IsZero() {
-		deps.metricsEngine.RecordOverheadTime(metrics.MakeAuctionResponse, time.Since(auctionRequest.BidderResponseStartTime))
-	}
 }
 
 // setSeatNonBidRaw is transitional function for setting SeatNonBid inside bidResponse.Ext

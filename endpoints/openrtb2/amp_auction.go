@@ -251,6 +251,11 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	}
 
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
+	defer func() {
+		if !auctionRequest.BidderResponseStartTime.IsZero() {
+			deps.metricsEngine.RecordOverheadTime(metrics.MakeAuctionResponse, time.Since(auctionRequest.BidderResponseStartTime))
+		}
+	}()
 	var response *openrtb2.BidResponse
 	if auctionResponse != nil {
 		response = auctionResponse.BidResponse
@@ -284,9 +289,6 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	}
 
 	labels, ao = sendAmpResponse(w, hookExecutor, auctionResponse, reqWrapper, account, labels, ao, errL)
-	if len(ao.Errors) == 0 && !auctionRequest.BidderResponseStartTime.IsZero() {
-		deps.metricsEngine.RecordOverheadTime(metrics.MakeAuctionResponse, time.Since(auctionRequest.BidderResponseStartTime))
-	}
 }
 
 func rejectAmpRequest(

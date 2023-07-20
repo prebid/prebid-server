@@ -310,6 +310,11 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog)
+	defer func() {
+		if !auctionRequest.BidderResponseStartTime.IsZero() {
+			deps.metricsEngine.RecordOverheadTime(metrics.MakeAuctionResponse, time.Since(auctionRequest.BidderResponseStartTime))
+		}
+	}()
 	vo.RequestWrapper = bidReqWrapper
 	var response *openrtb2.BidResponse
 	if auctionResponse != nil {
@@ -361,10 +366,6 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		errL := []error{err}
 		handleError(&labels, w, errL, &vo, &debugLog)
 		return
-	}
-
-	if len(vo.Errors) == 0 && !auctionRequest.BidderResponseStartTime.IsZero() {
-		deps.metricsEngine.RecordOverheadTime(metrics.MakeAuctionResponse, time.Since(auctionRequest.BidderResponseStartTime))
 	}
 
 	w.Header().Set("Content-Type", "application/json")
