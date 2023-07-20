@@ -90,7 +90,6 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
-	bidResponse.Currency = response.Responses[0].Currency
 	for _, maBidResp := range response.Responses {
 		b := &adapters.TypedBid{
 			Bid: &openrtb2.Bid{
@@ -107,6 +106,9 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 			BidType: openrtb_ext.BidType(maBidResp.MediaType),
 		}
 		bidResponse.Bids = append(bidResponse.Bids, b)
+		if bidResponse.Currency == "" {
+			bidResponse.Currency = maBidResp.Currency
+		}
 	}
 	return bidResponse, nil
 }
