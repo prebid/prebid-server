@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	BIDDER_CURRENCY string = "USD"
+	BidderCurrency string = "USD"
 )
 
 // RTBHouseAdapter implements the Bidder interface.
@@ -43,32 +43,33 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 	reqCopy.Imp = []openrtb2.Imp{}
 	for _, imp := range openRTBRequest.Imp {
 
-		rtbhouseExt, err := getImpressionExt(imp)
-		if err != nil {
-			return nil, []error{err}
-		}
-
 		var bidFloorCur = imp.BidFloorCur
 		var bidFloor = imp.BidFloor
 
-		if bidFloorCur == "" && bidFloor == 0 && rtbhouseExt.BidFloor > 0 && len(reqCopy.Cur) > 0 {
-			bidFloorCur = reqCopy.Cur[0]
-			bidFloor = rtbhouseExt.BidFloor
+		if bidFloorCur == "" && bidFloor == 0 {
+			rtbhouseExt, err := getImpressionExt(imp)
+			if err != nil {
+				return nil, []error{err}
+			}
+			if rtbhouseExt.BidFloor > 0 && len(reqCopy.Cur) > 0 {
+				bidFloorCur = reqCopy.Cur[0]
+				bidFloor = rtbhouseExt.BidFloor
+			}
 		}
 
 		// Check if imp comes with bid floor amount defined in a foreign currency
-		if bidFloor > 0 && bidFloorCur != "" && strings.ToUpper(bidFloorCur) != BIDDER_CURRENCY {
+		if bidFloor > 0 && bidFloorCur != "" && strings.ToUpper(bidFloorCur) != BidderCurrency {
 			// Convert to US dollars
-			convertedValue, err := reqInfo.ConvertCurrency(bidFloor, bidFloorCur, BIDDER_CURRENCY)
+			convertedValue, err := reqInfo.ConvertCurrency(bidFloor, bidFloorCur, BidderCurrency)
 			if err != nil {
 				return nil, []error{err}
 			}
 
-			bidFloorCur = BIDDER_CURRENCY
+			bidFloorCur = BidderCurrency
 			bidFloor = convertedValue
 		}
 
-		if bidFloor > 0 && bidFloorCur == BIDDER_CURRENCY {
+		if bidFloor > 0 && bidFloorCur == BidderCurrency {
 			// Update after conversion. All imp elements inside request.Imp are shallow copies
 			// therefore, their non-pointer values are not shared memory and are safe to modify.
 			imp.BidFloorCur = bidFloorCur
@@ -76,7 +77,7 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 		}
 
 		// Set the CUR of bid to BIDDER_CURRENCY after converting all floors
-		reqCopy.Cur = []string{BIDDER_CURRENCY}
+		reqCopy.Cur = []string{BidderCurrency}
 
 		reqCopy.Imp = append(reqCopy.Imp, imp)
 
@@ -164,7 +165,7 @@ func (adapter *RTBHouseAdapter) MakeBids(
 		}
 	}
 
-	bidderResponse.Currency = BIDDER_CURRENCY
+	bidderResponse.Currency = BidderCurrency
 
 	return bidderResponse, nil
 
