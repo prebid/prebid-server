@@ -307,13 +307,13 @@ func parseConsentFromGppStr(gppQueryValue string) (string, error) {
 }
 
 func getSyncer(query url.Values, syncersByBidder map[string]usersync.Syncer) (usersync.Syncer, error) {
-	key := query.Get("bidder")
+	bidder := query.Get("bidder")
 
-	if key == "" {
+	if bidder == "" {
 		return nil, errors.New(`"bidder" query param is required`)
 	}
 
-	syncer, syncerExists := syncersByBidder[key]
+	syncer, syncerExists := syncersByBidder[bidder]
 	if !syncerExists {
 		return nil, errors.New("The bidder name provided is not supported by Prebid Server")
 	}
