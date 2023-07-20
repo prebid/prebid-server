@@ -238,6 +238,7 @@ const (
 	BidderSaLunaMedia       BidderName = "sa_lunamedia"
 	BidderSharethrough      BidderName = "sharethrough"
 	BidderSilverMob         BidderName = "silvermob"
+	BidderSilverPush        BidderName = "silverpush"
 	BidderSmaato            BidderName = "smaato"
 	BidderSmartAdserver     BidderName = "smartadserver"
 	BidderSmartHub          BidderName = "smarthub"
@@ -437,6 +438,7 @@ func CoreBidderNames() []BidderName {
 		BidderSaLunaMedia,
 		BidderSharethrough,
 		BidderSilverMob,
+		BidderSilverPush,
 		BidderSmaato,
 		BidderSmartAdserver,
 		BidderSmartHub,

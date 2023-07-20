@@ -1,0 +1,22 @@
+{
+    "mockBidRequest": {
+      "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+      "imp": [
+        {
+          "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+          "ext": {
+            "bidder": {
+              "publisherId": "1100042525",
+              "bidfloor": 0.05
+            }
+          }
+        }
+      ]
+    },
+    "expectedMakeRequestsErrors": [
+      {
+        "value": "Invalid MediaType. SilverPush only supports Banner, Video",
+        "comparison": "literal"
+      }
+    ]
+  }
