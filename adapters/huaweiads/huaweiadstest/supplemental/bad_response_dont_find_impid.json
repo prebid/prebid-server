@@ -319,6 +319,26 @@
     }
   ],
   "expectedBidResponses": [
+      {
+          "currency":"USD",
+          "bids":[
+              {
+          "bid": {
+            "adm": "<style> html, body  { margin: 0; padding: 0; width: 100%; height: 100%; vertical-align: middle; }  html  { display: table; }  body { display: table-cell; vertical-align: middle; text-align: center; -webkit-text-size-adjust: none; }  </style> <span class=\"title-link advertiser_label\"></span> <a href='https://task/clickurl' style=\"text-decoration:none\" onclick=sendGetReq()> <img src='https://test/1.png' width='250' height='300'/> </a> <img height=\"1\" width=\"1\" src='http://test/imp' >  <script type=\"text/javascript\">var dspClickTrackings = [\"http://test/click\"];function sendGetReq() {sendSomeGetReq(dspClickTrackings)}function sendOneGetReq(url) {var req = new XMLHttpRequest();req.open('GET', url, true);req.send(null);}function sendSomeGetReq(urls) {for (var i = 0; i < urls.length; i++) {sendOneGetReq(urls[i]);}}</script>",
+            "adomain": [
+              "huaweiads"
+            ],
+            "crid": "58025103",
+            "id": "test-imp-id",
+            "impid": "test-imp-id",
+            "price": 2.8,
+            "h": 300,
+            "w": 250
+          },
+          "type": "banner"
+              }
+          ]
+      }
   ],
   "expectedMakeRequestsErrors": [],
   "expectedMakeBidsErrors": []

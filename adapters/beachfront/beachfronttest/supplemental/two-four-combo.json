@@ -203,7 +203,7 @@
                   "w":300,
                   "h":400,
                   "ext":{
-                    "duration":15
+                    "duration":30
                   }
                 }
               ],
@@ -269,5 +269,62 @@
         }
       }
     }
+  ],
+  "expectedBidResponses": [
+      {"currency":"USD","bids":[
+        {"bid": {
+            "adm": "<div id=\"44861168\"><script>!function(){console.log\"Hello, ad.\";}();</script></div>",
+            "crid": "crid_1",
+            "h": 250,
+            "id": "div-gpt-ad-1460505748561-0Banner",
+            "impid": "div-gpt-ad-1460505748561-0",
+            "price": 2.942808,
+            "w": 300
+        }, "type": "banner"},
+        {"bid": {
+            "adm": "<div id=\"44861168\"><script>!function(){console.log\"Hello, ad.\";}();</script></div>",
+            "crid": "crid_1",
+            "h": 250,
+            "id": "div-gpt-ad-1460505748561-0Banner",
+            "impid": "div-gpt-ad-1460505748561-0",
+            "price": 2.942808,
+            "w": 300
+        }, "type": "banner"}
+      ]},
+      {"currency":"USD","bids":[
+        {
+          "bid": {
+            "adid": "22873",
+            "adomain": ["nintendo.com"],
+            "id": "ComboADMVideoWithBannerImp1AdmVideo",
+            "impid": "ComboADMVideoWithBannerImp1",
+            "price": 2.5500002,
+            "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
+            "cat":["IAB9-30"],
+            "cid": "6095",
+            "crid": "0",
+            "w": 300,
+            "h": 400,
+            "ext": {
+              "duration": 30
+            }
+          },
+          "type": "video"
+        }
+      ]},
+      {"currency":"USD","bids":[
+        {
+          "bid": {
+              "crid": "747f49a2-7a15-40bd-a43f-b8576eaa0368",
+            "id": "ComboNurlVideoWithBannerImp2NurlVideo",
+            "impid": "ComboNurlVideoWithBannerImp2",
+            "nurl": "https://useast.bfmio.com/getmu?aid=bid:747f49a2-7a15-40bd-a43f-b8576eaa0368:2096a4df-d32c-4b7b-b46c-f4b5d717327a:2.5500002:2.5500002&v=1&dsp=5fe7a6ab3f06cc571bf5c897,1.01&i_type=pre",
+            "price": 2.4700302,
+            "w": 100,
+            "h": 150
+          },
+          "type": "video"
+        }
+      ]}
   ]
 }

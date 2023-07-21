@@ -40,6 +40,8 @@ type bidRequest struct {
 	Coppa              bool                 `json:"coppa,omitempty"`
 	SChain             openrtb2.SupplyChain `json:"schain"`
 	Content            *openrtb2.Content    `json:"content,omitempty"`
+	GPP                string               `json:"gpp,omitempty"`
+	GPPSID             []int8               `json:"gpp_sid,omitempty"`
 }
 
 type placement struct {
@@ -191,6 +193,14 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 	}
 
 	body.Coppa = request.Regs != nil && request.Regs.COPPA > 0
+
+	if request.Regs != nil && request.Regs.GPP != "" {
+		body.GPP = request.Regs.GPP
+	}
+
+	if request.Regs != nil && request.Regs.GPPSID != nil {
+		body.GPPSID = request.Regs.GPPSID
+	}
 
 	if request.Site != nil && request.Site.Content != nil {
 		body.Content = request.Site.Content

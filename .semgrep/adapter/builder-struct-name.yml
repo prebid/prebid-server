@@ -1,0 +1,58 @@
+rules:
+  - id: builder-struct-name-check
+    languages:
+      - go
+    message: | 
+      You can call this simply "adapter", the `$BUILDER` identification is already supplied by the package name. As you have it, referencing your adapter from outside the package would be `$BUILDER.$BUILDER` which looks a little redundant. See example below:
+      
+      ```
+        package foo
+
+        type adapter struct {
+          endpoint string
+        }
+        
+        func  Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+          return &adapter{endpoint: "https://www.foo.com"}, nil
+        }
+      ```
+    severity: ERROR
+    patterns:
+      - pattern-either:
+          - pattern-inside: >
+              func Builder($BIDDER_NAME openrtb_ext.BidderName, $CONFIG config.Adapter, $SERVER config.Server) (adapters.Bidder, error) {
+                ...
+                $BUILDER_OBJ := &$BUILDER{...}
+                ...
+                return $BUILDER_OBJ, nil
+              }
+          - pattern-inside: >
+              func Builder($BIDDER_NAME openrtb_ext.BidderName, $CONFIG config.Adapter, $SERVER config.Server) (adapters.Bidder, error) {
+                ...
+                $BUILDER_OBJ := $BUILDER{...}
+                ...
+                return &$BUILDER_OBJ, nil
+              }
+          - pattern-inside: >
+              func Builder($BIDDER_NAME openrtb_ext.BidderName, $CONFIG config.Adapter, $SERVER config.Server) (adapters.Bidder, error) {
+                ...
+                return &$BUILDER{...}, ...
+              }
+          - pattern-inside: >
+              func Builder($BIDDER_NAME openrtb_ext.BidderName, $CONFIG config.Adapter, $SERVER config.Server) (adapters.Bidder, error) {
+                ...
+                var $BUILDER_OBJ $BUILDER
+                ...
+                return &$BUILDER_OBJ, ...
+              }            
+          - pattern-inside: >
+              func Builder($BIDDER_NAME openrtb_ext.BidderName, $CONFIG config.Adapter, $SERVER config.Server) (adapters.Bidder, error) {
+                ...
+                var $BUILDER_OBJ *$BUILDER
+                ...
+                return $BUILDER_OBJ, ...
+              }        
+      - focus-metavariable: $BUILDER
+      - metavariable-regex:
+          metavariable: $BUILDER
+          regex: (?!adapter$)

@@ -58,11 +58,5 @@
         }
       }
     }
-  ],
-
-  "expectedBidResponses": [
-    {
-      "bids": []
-    }
   ]
 }

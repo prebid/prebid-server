@@ -38,6 +38,7 @@ var validParams = []string{
 	`{"siteID":"12345"}`,
 	`{"siteId":"123456"}`,
 	`{"siteid":"1234567", "size": [640,480]}`,
+	`{"siteId":"123456", "sid":"12345"}`,
 }
 
 var invalidParams = []string{

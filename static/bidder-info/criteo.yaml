@@ -14,9 +14,9 @@ capabilities:
 userSync:
   # criteo supports user syncing, but requires configuration by the host. contact this
   # bidder directly at the email address in this file to ask about enabling user sync.
-  supports:
-    - redirect
-
   redirect:
     url: "https://ssp-sync.criteo.com/user-sync/redirect?gdprapplies={{.GDPR}}&gdpr={{.GDPRConsent}}&ccpa={{.USPrivacy}}&redir={{.RedirectURL}}&profile=230"
+    userMacro: "${CRITEO_USER_ID}"
+  iframe:
+    url: "https://ssp-sync.criteo.com/user-sync/iframe?gdprapplies={{.GDPR}}&gdpr={{.GDPRConsent}}&ccpa={{.USPrivacy}}&redir={{.RedirectURL}}&profile=230"
     userMacro: "${CRITEO_USER_ID}"

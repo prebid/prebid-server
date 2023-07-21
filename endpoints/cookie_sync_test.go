@@ -7,10 +7,10 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 	"testing/iotest"
-	"time"
 
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
@@ -23,6 +23,7 @@ import (
 	gdprPrivacy "github.com/prebid/prebid-server/privacy/gdpr"
 	gppPrivacy "github.com/prebid/prebid-server/privacy/gpp"
 	"github.com/prebid/prebid-server/usersync"
+	"github.com/prebid/prebid-server/util/ptrutil"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -104,7 +105,7 @@ func TestCookieSyncHandle(t *testing.T) {
 	syncer.On("GetSync", syncTypeExpected, privacy.Policies{}).Return(sync, nil).Maybe()
 
 	cookieWithSyncs := usersync.NewCookie()
-	cookieWithSyncs.TrySync("foo", "anyID")
+	cookieWithSyncs.Sync("foo", "anyID")
 
 	testCases := []struct {
 		description              string
@@ -269,7 +270,9 @@ func TestCookieSyncHandle(t *testing.T) {
 
 		request := httptest.NewRequest("POST", "/cookiesync", test.givenBody)
 		if test.givenCookie != nil {
-			request.AddCookie(test.givenCookie.ToHTTPCookie(24 * time.Hour))
+			httpCookie, err := ToHTTPCookie(test.givenCookie)
+			assert.NoError(t, err)
+			request.AddCookie(httpCookie)
 		}
 
 		writer := httptest.NewRecorder()
@@ -303,6 +306,185 @@ func TestCookieSyncHandle(t *testing.T) {
 	}
 }
 
+func TestExtractGDPRSignal(t *testing.T) {
+	type testInput struct {
+		requestGDPR *int
+		gppSID      []int8
+	}
+	type testOutput struct {
+		gdprSignal gdpr.Signal
+		gdprString string
+		err        error
+	}
+	testCases := []struct {
+		desc     string
+		in       testInput
+		expected testOutput
+	}{
+		{
+			desc: "SectionTCFEU2 is listed in GPP_SID array, expect SignalYes and nil error",
+			in: testInput{
+				requestGDPR: nil,
+				gppSID:      []int8{2},
+			},
+			expected: testOutput{
+				gdprSignal: gdpr.SignalYes,
+				gdprString: strconv.Itoa(int(gdpr.SignalYes)),
+				err:        nil,
+			},
+		},
+		{
+			desc: "SectionTCFEU2 is not listed in GPP_SID array, expect SignalNo and nil error",
+			in: testInput{
+				requestGDPR: nil,
+				gppSID:      []int8{6},
+			},
+			expected: testOutput{
+				gdprSignal: gdpr.SignalNo,
+				gdprString: strconv.Itoa(int(gdpr.SignalNo)),
+				err:        nil,
+			},
+		},
+		{
+			desc: "Empty GPP_SID array and nil requestGDPR value, expect SignalAmbiguous and nil error",
+			in: testInput{
+				requestGDPR: nil,
+				gppSID:      []int8{},
+			},
+			expected: testOutput{
+				gdprSignal: gdpr.SignalAmbiguous,
+				gdprString: "",
+				err:        nil,
+			},
+		},
+		{
+			desc: "Empty GPP_SID array and non-nil requestGDPR value that could not be successfully parsed, expect SignalAmbiguous and parse error",
+			in: testInput{
+				requestGDPR: ptrutil.ToPtr(2),
+				gppSID:      nil,
+			},
+			expected: testOutput{
+				gdprSignal: gdpr.SignalAmbiguous,
+				gdprString: "2",
+				err:        &errortypes.BadInput{"GDPR signal should be integer 0 or 1"},
+			},
+		},
+		{
+			desc: "Empty GPP_SID array and non-nil requestGDPR value that could be successfully parsed, expect SignalYes and nil error",
+			in: testInput{
+				requestGDPR: ptrutil.ToPtr(1),
+				gppSID:      nil,
+			},
+			expected: testOutput{
+				gdprSignal: gdpr.SignalYes,
+				gdprString: "1",
+				err:        nil,
+			},
+		},
+	}
+	for _, tc := range testCases {
+		// run
+		outSignal, outGdprStr, outErr := extractGDPRSignal(tc.in.requestGDPR, tc.in.gppSID)
+		// assertions
+		assert.Equal(t, tc.expected.gdprSignal, outSignal, tc.desc)
+		assert.Equal(t, tc.expected.gdprString, outGdprStr, tc.desc)
+		assert.Equal(t, tc.expected.err, outErr, tc.desc)
+	}
+}
+
+func TestExtractPrivacyPolicies(t *testing.T) {
+	type testInput struct {
+		request                  cookieSyncRequest
+		usersyncDefaultGDPRValue string
+	}
+	type testOutput struct {
+		policies   privacy.Policies
+		gdprSignal gdpr.Signal
+		err        error
+	}
+	testCases := []struct {
+		desc     string
+		in       testInput
+		expected testOutput
+	}{
+		{
+			desc: "request GPP string is malformed, expect empty policies, signal No and error",
+			in: testInput{
+				request: cookieSyncRequest{GPP: "malformedGPPString"},
+			},
+			expected: testOutput{
+				policies:   privacy.Policies{},
+				gdprSignal: gdpr.SignalNo,
+				err:        errors.New("error parsing GPP header, header must have type=3"),
+			},
+		},
+		{
+			desc: "Malformed GPPSid string",
+			in: testInput{
+				request: cookieSyncRequest{
+					GPP:       "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
+					GPPSid:    "malformed",
+					USPrivacy: "1YYY",
+				},
+			},
+			expected: testOutput{
+				policies:   privacy.Policies{},
+				gdprSignal: gdpr.SignalNo,
+				err:        &strconv.NumError{"ParseInt", "malformed", strconv.ErrSyntax},
+			},
+		},
+		{
+			desc: "request USPrivacy string is different from the one in the GPP string, expect empty policies, signalNo and error",
+			in: testInput{
+				request: cookieSyncRequest{
+					GPP:       "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
+					GPPSid:    "6",
+					USPrivacy: "1YYY",
+				},
+			},
+			expected: testOutput{
+				policies:   privacy.Policies{},
+				gdprSignal: gdpr.SignalNo,
+				err:        errors.New("request.us_privacy consent does not match uspv1"),
+			},
+		},
+		{
+			desc: "no issues extracting privacy policies from request GPP and request GPPSid strings",
+			in: testInput{
+				request: cookieSyncRequest{
+					GPP:    "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
+					GPPSid: "6",
+				},
+			},
+			expected: testOutput{
+				policies: privacy.Policies{
+					GDPR: gdprPrivacy.Policy{
+						Signal:  "0",
+						Consent: "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+					},
+					CCPA: ccpa.Policy{
+						Consent: "1YNN",
+					},
+					GPP: gppPrivacy.Policy{
+						Consent: "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
+						RawSID:  "6",
+					},
+				},
+				gdprSignal: gdpr.SignalNo,
+				err:        nil,
+			},
+		},
+	}
+	for _, tc := range testCases {
+		// run
+		outPolicies, outSignal, outErr := extractPrivacyPolicies(tc.in.request, tc.in.usersyncDefaultGDPRValue)
+		// assertions
+		assert.Equal(t, tc.expected.policies, outPolicies, tc.desc)
+		assert.Equal(t, tc.expected.gdprSignal, outSignal, tc.desc)
+		assert.Equal(t, tc.expected.err, outErr, tc.desc)
+	}
+}
+
 func TestCookieSyncParseRequest(t *testing.T) {
 	expectedCCPAParsedPolicy, _ := ccpa.Policy{Consent: "1NYN"}.Parse(map[string]struct{}{})
 
@@ -318,13 +500,13 @@ func TestCookieSyncParseRequest(t *testing.T) {
 		expectedRequest      usersync.Request
 	}{
 		{
-			description: "Complete Request",
+			description: "Complete Request - includes GPP string with EU TCF V2",
 			givenBody: strings.NewReader(`{` +
 				`"bidders":["a", "b"],` +
 				`"gdpr":1,` +
 				`"gdpr_consent":"anyGDPRConsent",` +
 				`"us_privacy":"1NYN",` +
-				`"gpp":"anyGPPString",` +
+				`"gpp":"DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",` +
 				`"gpp_sid":"2",` +
 				`"limit":42,` +
 				`"coopSync":true,` +
@@ -341,13 +523,13 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			expectedPrivacy: privacy.Policies{
 				GDPR: gdprPrivacy.Policy{
 					Signal:  "1",
-					Consent: "anyGDPRConsent",
+					Consent: "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
 				},
 				CCPA: ccpa.Policy{
 					Consent: "1NYN",
 				},
 				GPP: gppPrivacy.Policy{
-					Consent: "anyGPPString",
+					Consent: "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
 					RawSID:  "2",
 				},
 			},
@@ -1482,7 +1664,7 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 
 		cookie := usersync.NewCookie()
 		if test.givenCookieHasSyncs {
-			if err := cookie.TrySync("foo", "anyID"); err != nil {
+			if err := cookie.Sync("foo", "anyID"); err != nil {
 				assert.FailNow(t, test.description+":set_cookie")
 			}
 		}

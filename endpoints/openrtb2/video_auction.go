@@ -275,7 +275,11 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		defer cancel()
 	}
 
-	usersyncs := usersync.ParseCookieFromRequest(r, &(deps.cfg.HostCookie))
+	// Read Usersyncs/Cookie
+	decoder := usersync.Base64Decoder{}
+	usersyncs := usersync.ReadCookie(r, decoder, &deps.cfg.HostCookie)
+	usersync.SyncHostCookie(r, usersyncs, &deps.cfg.HostCookie)
+
 	if bidReqWrapper.App != nil {
 		labels.Source = metrics.DemandApp
 		labels.PubID = getAccountID(bidReqWrapper.App.Publisher)
@@ -309,9 +313,14 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		HookExecutor:               hookexecution.EmptyHookExecutor{},
 	}
 
-	response, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog)
-	vo.Request = bidReqWrapper.BidRequest
+	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog)
+	vo.RequestWrapper = bidReqWrapper
+	var response *openrtb2.BidResponse
+	if auctionResponse != nil {
+		response = auctionResponse.BidResponse
+	}
 	vo.Response = response
+	vo.SeatNonBid = auctionResponse.GetSeatNonBid()
 	if err != nil {
 		errL := []error{err}
 		handleError(&labels, w, errL, &vo, &debugLog)
@@ -326,6 +335,10 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 	if bidReq.Test == 1 {
+		err = setSeatNonBidRaw(bidReqWrapper, auctionResponse)
+		if err != nil {
+			glog.Errorf("Error setting seat non-bid: %v", err)
+		}
 		bidResp.Ext = response.Ext
 	}
 
@@ -352,10 +365,6 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		errL := []error{err}
 		handleError(&labels, w, errL, &vo, &debugLog)
 		return
-	}
-
-	if len(vo.Errors) == 0 {
-		recordResponsePreparationMetrics(auctionRequest.MakeBidsTimeInfo, deps.metricsEngine)
 	}
 
 	w.Header().Set("Content-Type", "application/json")

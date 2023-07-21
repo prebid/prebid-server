@@ -56,7 +56,7 @@ func modifyForIOS142OrGreater(req *openrtb2.BidRequest) {
 
 	switch *atts {
 	case openrtb_ext.IOSAppTrackingStatusNotDetermined:
-		req.Device.Lmt = &int8Zero
+		req.Device.Lmt = &int8One
 	case openrtb_ext.IOSAppTrackingStatusRestricted:
 		req.Device.Lmt = &int8One
 	case openrtb_ext.IOSAppTrackingStatusDenied:

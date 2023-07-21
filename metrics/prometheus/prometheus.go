@@ -55,6 +55,7 @@ type Metrics struct {
 	storedResponsesErrors        *prometheus.CounterVec
 	adsCertRequests              *prometheus.CounterVec
 	adsCertSignTimer             prometheus.Histogram
+	bidderServerResponseTimer    prometheus.Histogram
 
 	// Adapter Metrics
 	adapterBids                           *prometheus.CounterVec
@@ -438,6 +439,11 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"adapter_request_time_seconds",
 		"Seconds to resolve each successful request labeled by adapter.",
 		[]string{adapterLabel},
+		standardTimeBuckets)
+
+	metrics.bidderServerResponseTimer = newHistogram(cfg, reg,
+		"bidder_server_response_time_seconds",
+		"Duration needed to send HTTP request and receive response back from bidder server.",
 		standardTimeBuckets)
 
 	metrics.syncerRequests = newCounter(cfg, reg,
@@ -891,6 +897,10 @@ func (m *Metrics) RecordDNSTime(dnsLookupTime time.Duration) {
 
 func (m *Metrics) RecordTLSHandshakeTime(tlsHandshakeTime time.Duration) {
 	m.tlsHandhakeTimer.Observe(tlsHandshakeTime.Seconds())
+}
+
+func (m *Metrics) RecordBidderServerResponseTime(bidderServerResponseTime time.Duration) {
+	m.bidderServerResponseTimer.Observe(bidderServerResponseTime.Seconds())
 }
 
 func (m *Metrics) RecordAdapterPanic(labels metrics.AdapterLabels) {

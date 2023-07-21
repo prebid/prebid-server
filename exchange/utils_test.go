@@ -17,6 +17,7 @@ import (
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -39,8 +40,8 @@ func (p *permissionsMock) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 	return true, nil
 }
 
-func (p *permissionsMock) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (permissions gdpr.AuctionPermissions, err error) {
-	permissions = gdpr.AuctionPermissions{
+func (p *permissionsMock) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (gdpr.AuctionPermissions, error) {
+	permissions := gdpr.AuctionPermissions{
 		PassGeo: p.passGeo,
 		PassID:  p.passID,
 	}
@@ -65,14 +66,6 @@ type fakePermissionsBuilder struct {
 
 func (fpb fakePermissionsBuilder) Builder(gdpr.TCF2ConfigReader, gdpr.RequestInfo) gdpr.Permissions {
 	return fpb.permissions
-}
-
-type fakeTCF2ConfigBuilder struct {
-	cfg gdpr.TCF2ConfigReader
-}
-
-func (fcr fakeTCF2ConfigBuilder) Builder(hostConfig config.TCF2, accountConfig config.AccountGDPR) gdpr.TCF2ConfigReader {
-	return fcr.cfg
 }
 
 func assertReq(t *testing.T, bidderRequests []BidderRequest,
@@ -444,6 +437,8 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 }
 
 func TestCleanOpenRTBRequests(t *testing.T) {
+	emptyTCF2Config := gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{})
+
 	testCases := []struct {
 		req              AuctionRequest
 		bidReqAssertions func(t *testing.T, bidderRequests []BidderRequest,
@@ -453,14 +448,14 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 		consentedVendors map[string]bool
 	}{
 		{
-			req:              AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: getTestBuildRequest(t)}, UserSyncs: &emptyUsersync{}},
+			req:              AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: getTestBuildRequest(t)}, UserSyncs: &emptyUsersync{}, TCF2Config: emptyTCF2Config},
 			bidReqAssertions: assertReq,
 			hasError:         false,
 			applyCOPPA:       true,
 			consentedVendors: map[string]bool{"appnexus": true},
 		},
 		{
-			req:              AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: newAdapterAliasBidRequest(t)}, UserSyncs: &emptyUsersync{}},
+			req:              AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: newAdapterAliasBidRequest(t)}, UserSyncs: &emptyUsersync{}, TCF2Config: emptyTCF2Config},
 			bidReqAssertions: assertReq,
 			hasError:         false,
 			applyCOPPA:       false,
@@ -484,16 +479,12 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 				allowAllBidders: true,
 			},
 		}.Builder
-		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-		}.Builder
 
 		reqSplitter := &requestSplitter{
 			bidderToSyncerKey: map[string]string{},
 			me:                &metrics.MetricsEngineMock{},
 			privacyConfig:     privacyConfig,
 			gdprPermsBuilder:  gdprPermsBuilder,
-			tcf2ConfigBuilder: tcf2ConfigBuilder,
 			hostSChainNode:    nil,
 			bidderInfo:        config.BidderInfos{},
 		}
@@ -515,7 +506,7 @@ func TestCleanOpenRTBRequestsWithFPD(t *testing.T) {
 		App:  &openrtb2.App{Name: "fpdApnApp"},
 		User: &openrtb2.User{Keywords: "fpdApnUser"},
 	}
-	fpd[openrtb_ext.BidderName("appnexus")] = &apnFpd
+	fpd[openrtb_ext.BidderName("rubicon")] = &apnFpd
 
 	brightrollFpd := firstpartydata.ResolvedFirstPartyData{
 		Site: &openrtb2.Site{Name: "fpdBrightrollSite"},
@@ -524,6 +515,8 @@ func TestCleanOpenRTBRequestsWithFPD(t *testing.T) {
 	}
 	fpd[openrtb_ext.BidderName("brightroll")] = &brightrollFpd
 
+	emptyTCF2Config := gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{})
+
 	testCases := []struct {
 		description string
 		req         AuctionRequest
@@ -531,22 +524,22 @@ func TestCleanOpenRTBRequestsWithFPD(t *testing.T) {
 	}{
 		{
 			description: "Pass valid FPD data for bidder not found in the request",
-			req:         AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: getTestBuildRequest(t)}, UserSyncs: &emptyUsersync{}, FirstPartyData: fpd},
+			req:         AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: getTestBuildRequest(t)}, UserSyncs: &emptyUsersync{}, FirstPartyData: fpd, TCF2Config: emptyTCF2Config},
 			fpdExpected: false,
 		},
 		{
 			description: "Pass valid FPD data for bidders specified in request",
-			req:         AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: newAdapterAliasBidRequest(t)}, UserSyncs: &emptyUsersync{}, FirstPartyData: fpd},
+			req:         AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: newAdapterAliasBidRequest(t)}, UserSyncs: &emptyUsersync{}, FirstPartyData: fpd, TCF2Config: emptyTCF2Config},
 			fpdExpected: true,
 		},
 		{
 			description: "Bidders specified in request but there is no fpd data for this bidder",
-			req:         AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: newAdapterAliasBidRequest(t)}, UserSyncs: &emptyUsersync{}, FirstPartyData: make(map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData)},
+			req:         AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: newAdapterAliasBidRequest(t)}, UserSyncs: &emptyUsersync{}, FirstPartyData: make(map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData), TCF2Config: emptyTCF2Config},
 			fpdExpected: false,
 		},
 		{
 			description: "No FPD data passed",
-			req:         AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: newAdapterAliasBidRequest(t)}, UserSyncs: &emptyUsersync{}, FirstPartyData: nil},
+			req:         AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: newAdapterAliasBidRequest(t)}, UserSyncs: &emptyUsersync{}, FirstPartyData: nil, TCF2Config: emptyTCF2Config},
 			fpdExpected: false,
 		},
 	}
@@ -558,16 +551,12 @@ func TestCleanOpenRTBRequestsWithFPD(t *testing.T) {
 				allowAllBidders: true,
 			},
 		}.Builder
-		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-		}.Builder
 
 		reqSplitter := &requestSplitter{
 			bidderToSyncerKey: map[string]string{},
 			me:                &metrics.MetricsEngineMock{},
 			privacyConfig:     config.Privacy{},
 			gdprPermsBuilder:  gdprPermissionsBuilder,
-			tcf2ConfigBuilder: tcf2ConfigBuilder,
 			hostSChainNode:    nil,
 			bidderInfo:        config.BidderInfos{},
 		}
@@ -586,6 +575,47 @@ func TestCleanOpenRTBRequestsWithFPD(t *testing.T) {
 				assert.Equal(t, "", bidderRequest.BidRequest.User.Keywords, "Incorrect FPD user keywords")
 			}
 		}
+	}
+}
+
+func TestExtractAdapterReqBidderParamsMap(t *testing.T) {
+	tests := []struct {
+		name            string
+		givenBidRequest *openrtb2.BidRequest
+		want            map[string]json.RawMessage
+		wantErr         error
+	}{
+		{
+			name:            "nil req",
+			givenBidRequest: nil,
+			want:            nil,
+			wantErr:         errors.New("error bidRequest should not be nil"),
+		},
+		{
+			name:            "nil req.ext",
+			givenBidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{}}`)},
+			want:            nil,
+			wantErr:         nil,
+		},
+		{
+			name:            "malformed req.ext",
+			givenBidRequest: &openrtb2.BidRequest{Ext: json.RawMessage("malformed")},
+			want:            nil,
+			wantErr:         errors.New("error decoding Request.ext : invalid character 'm' looking for beginning of value"),
+		},
+		{
+			name:            "extract bidder params from req.Ext for input request in adapter code",
+			givenBidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"bidderparams": {"profile": 1234, "version": 1}}}`)},
+			want:            map[string]json.RawMessage{"profile": json.RawMessage(`1234`), "version": json.RawMessage(`1`)},
+			wantErr:         nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ExtractReqExtBidderParamsMap(tt.givenBidRequest)
+			assert.Equal(t, tt.wantErr, err, "err")
+			assert.Equal(t, tt.want, got, "result")
+		})
 	}
 }
 
@@ -829,14 +859,12 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 				allowAllBidders: true,
 			},
 		}.Builder
-		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-		}.Builder
 
 		auctionReq := AuctionRequest{
 			BidRequestWrapper:  &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Imp: test.imps}},
 			UserSyncs:          &emptyUsersync{},
 			StoredBidResponses: test.storedBidResponses,
+			TCF2Config:         gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}
 
 		reqSplitter := &requestSplitter{
@@ -844,7 +872,6 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 			me:                &metrics.MetricsEngineMock{},
 			privacyConfig:     config.Privacy{},
 			gdprPermsBuilder:  gdprPermissionsBuilder,
-			tcf2ConfigBuilder: tcf2ConfigBuilder,
 			hostSChainNode:    nil,
 			bidderInfo:        config.BidderInfos{},
 		}
@@ -999,15 +1026,13 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
 			UserSyncs:         &emptyUsersync{},
 			Account:           accountConfig,
+			TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, accountConfig.GDPR),
 		}
 
 		gdprPermissionsBuilder := fakePermissionsBuilder{
 			permissions: &permissionsMock{
 				allowAllBidders: true,
 			},
-		}.Builder
-		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-			cfg: gdpr.NewTCF2Config(config.TCF2{}, accountConfig.GDPR),
 		}.Builder
 
 		bidderToSyncerKey := map[string]string{}
@@ -1016,7 +1041,6 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 			me:                &metrics.MetricsEngineMock{},
 			privacyConfig:     privacyConfig,
 			gdprPermsBuilder:  gdprPermissionsBuilder,
-			tcf2ConfigBuilder: tcf2ConfigBuilder,
 			hostSChainNode:    nil,
 			bidderInfo:        config.BidderInfos{},
 		}
@@ -1072,15 +1096,13 @@ func TestCleanOpenRTBRequestsCCPAErrors(t *testing.T) {
 		auctionReq := AuctionRequest{
 			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
 			UserSyncs:         &emptyUsersync{},
+			TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}
 
 		gdprPermissionsBuilder := fakePermissionsBuilder{
 			permissions: &permissionsMock{
 				allowAllBidders: true,
 			},
-		}.Builder
-		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}.Builder
 
 		privacyConfig := config.Privacy{
@@ -1096,7 +1118,6 @@ func TestCleanOpenRTBRequestsCCPAErrors(t *testing.T) {
 			me:                &metrics,
 			privacyConfig:     privacyConfig,
 			gdprPermsBuilder:  gdprPermissionsBuilder,
-			tcf2ConfigBuilder: tcf2ConfigBuilder,
 			hostSChainNode:    nil,
 			bidderInfo:        config.BidderInfos{},
 		}
@@ -1139,15 +1160,13 @@ func TestCleanOpenRTBRequestsCOPPA(t *testing.T) {
 		auctionReq := AuctionRequest{
 			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
 			UserSyncs:         &emptyUsersync{},
+			TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}
 
 		gdprPermissionsBuilder := fakePermissionsBuilder{
 			permissions: &permissionsMock{
 				allowAllBidders: true,
 			},
-		}.Builder
-		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}.Builder
 
 		bidderToSyncerKey := map[string]string{}
@@ -1158,7 +1177,6 @@ func TestCleanOpenRTBRequestsCOPPA(t *testing.T) {
 			me:                &metrics,
 			privacyConfig:     config.Privacy{},
 			gdprPermsBuilder:  gdprPermissionsBuilder,
-			tcf2ConfigBuilder: tcf2ConfigBuilder,
 			hostSChainNode:    nil,
 			bidderInfo:        config.BidderInfos{},
 		}
@@ -1238,6 +1256,7 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 		auctionReq := AuctionRequest{
 			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
 			UserSyncs:         &emptyUsersync{},
+			TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}
 
 		gdprPermissionsBuilder := fakePermissionsBuilder{
@@ -1245,16 +1264,12 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 				allowAllBidders: true,
 			},
 		}.Builder
-		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-		}.Builder
 
 		reqSplitter := &requestSplitter{
 			bidderToSyncerKey: map[string]string{},
 			me:                &metrics.MetricsEngineMock{},
 			privacyConfig:     config.Privacy{},
 			gdprPermsBuilder:  gdprPermissionsBuilder,
-			tcf2ConfigBuilder: tcf2ConfigBuilder,
 			hostSChainNode:    nil,
 			bidderInfo:        config.BidderInfos{},
 		}
@@ -1312,6 +1327,7 @@ func TestCleanOpenRTBRequestsBidderParams(t *testing.T) {
 		auctionReq := AuctionRequest{
 			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
 			UserSyncs:         &emptyUsersync{},
+			TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}
 
 		gdprPermissionsBuilder := fakePermissionsBuilder{
@@ -1319,16 +1335,12 @@ func TestCleanOpenRTBRequestsBidderParams(t *testing.T) {
 				allowAllBidders: true,
 			},
 		}.Builder
-		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-		}.Builder
 
 		reqSplitter := &requestSplitter{
 			bidderToSyncerKey: map[string]string{},
 			me:                &metrics.MetricsEngineMock{},
 			privacyConfig:     config.Privacy{},
 			gdprPermsBuilder:  gdprPermissionsBuilder,
-			tcf2ConfigBuilder: tcf2ConfigBuilder,
 			hostSChainNode:    nil,
 			bidderInfo:        config.BidderInfos{},
 		}
@@ -1896,15 +1908,13 @@ func TestCleanOpenRTBRequestsLMT(t *testing.T) {
 		auctionReq := AuctionRequest{
 			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
 			UserSyncs:         &emptyUsersync{},
+			TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}
 
 		gdprPermissionsBuilder := fakePermissionsBuilder{
 			permissions: &permissionsMock{
 				allowAllBidders: true,
 			},
-		}.Builder
-		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}.Builder
 
 		privacyConfig := config.Privacy{
@@ -1918,7 +1928,6 @@ func TestCleanOpenRTBRequestsLMT(t *testing.T) {
 			me:                &metrics.MetricsEngineMock{},
 			privacyConfig:     privacyConfig,
 			gdprPermsBuilder:  gdprPermissionsBuilder,
-			tcf2ConfigBuilder: tcf2ConfigBuilder,
 			hostSChainNode:    nil,
 			bidderInfo:        config.BidderInfos{},
 		}
@@ -2127,6 +2136,10 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
 			UserSyncs:         &emptyUsersync{},
 			Account:           accountConfig,
+			TCF2Config: gdpr.NewTCF2Config(
+				privacyConfig.GDPR.TCF2,
+				accountConfig.GDPR,
+			),
 		}
 
 		gdprPermissionsBuilder := fakePermissionsBuilder{
@@ -2136,12 +2149,6 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 				passID:          !test.gdprScrub,
 				activitiesError: test.permissionsError,
 			},
-		}.Builder
-		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-			cfg: gdpr.NewTCF2Config(
-				privacyConfig.GDPR.TCF2,
-				accountConfig.GDPR,
-			),
 		}.Builder
 
 		gdprDefaultValue := gdpr.SignalYes
@@ -2154,7 +2161,6 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			me:                &metrics.MetricsEngineMock{},
 			privacyConfig:     privacyConfig,
 			gdprPermsBuilder:  gdprPermissionsBuilder,
-			tcf2ConfigBuilder: tcf2ConfigBuilder,
 			hostSChainNode:    nil,
 			bidderInfo:        config.BidderInfos{},
 		}
@@ -2236,6 +2242,7 @@ func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
 			UserSyncs:         &emptyUsersync{},
 			Account:           accountConfig,
+			TCF2Config:        gdpr.NewTCF2Config(privacyConfig.GDPR.TCF2, accountConfig.GDPR),
 		}
 
 		gdprPermissionsBuilder := fakePermissionsBuilder{
@@ -2246,9 +2253,6 @@ func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 				activitiesError: nil,
 			},
 		}.Builder
-		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-			cfg: gdpr.NewTCF2Config(privacyConfig.GDPR.TCF2, accountConfig.GDPR),
-		}.Builder
 
 		metricsMock := metrics.MetricsEngineMock{}
 		metricsMock.Mock.On("RecordAdapterGDPRRequestBlocked", mock.Anything).Return()
@@ -2258,7 +2262,6 @@ func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 			me:                &metricsMock,
 			privacyConfig:     privacyConfig,
 			gdprPermsBuilder:  gdprPermissionsBuilder,
-			tcf2ConfigBuilder: tcf2ConfigBuilder,
 			hostSChainNode:    nil,
 			bidderInfo:        config.BidderInfos{},
 		}
@@ -2284,12 +2287,15 @@ func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 }
 
 func TestCleanOpenRTBRequestsWithOpenRTBDowngrade(t *testing.T) {
+	emptyTCF2Config := gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{})
+
 	bidReq := newBidRequest(t)
 	bidReq.Regs = &openrtb2.Regs{}
 	bidReq.Regs.GPP = "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1NYN"
 	bidReq.Regs.GPPSID = []int8{6}
 	bidReq.User.ID = ""
 	bidReq.User.BuyerUID = ""
+	bidReq.User.Yob = 0
 
 	downgradedRegs := *bidReq.Regs
 	downgradedUser := *bidReq.User
@@ -2306,14 +2312,14 @@ func TestCleanOpenRTBRequestsWithOpenRTBDowngrade(t *testing.T) {
 	}{
 		{
 			name:        "NotSupported",
-			req:         AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: bidReq}, UserSyncs: &emptyUsersync{}},
+			req:         AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: bidReq}, UserSyncs: &emptyUsersync{}, TCF2Config: emptyTCF2Config},
 			expectRegs:  &downgradedRegs,
 			expectUser:  &downgradedUser,
 			bidderInfos: config.BidderInfos{"appnexus": config.BidderInfo{OpenRTB: &config.OpenRTBInfo{GPPSupported: false}}},
 		},
 		{
 			name:        "Supported",
-			req:         AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: bidReq}, UserSyncs: &emptyUsersync{}},
+			req:         AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: bidReq}, UserSyncs: &emptyUsersync{}, TCF2Config: emptyTCF2Config},
 			expectRegs:  bidReq.Regs,
 			expectUser:  bidReq.User,
 			bidderInfos: config.BidderInfos{"appnexus": config.BidderInfo{OpenRTB: &config.OpenRTBInfo{GPPSupported: true}}},
@@ -2337,16 +2343,12 @@ func TestCleanOpenRTBRequestsWithOpenRTBDowngrade(t *testing.T) {
 					allowAllBidders: true,
 				},
 			}.Builder
-			tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-				cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-			}.Builder
 
 			reqSplitter := &requestSplitter{
 				bidderToSyncerKey: map[string]string{},
 				me:                &metrics.MetricsEngineMock{},
 				privacyConfig:     privacyConfig,
 				gdprPermsBuilder:  gdprPermsBuilder,
-				tcf2ConfigBuilder: tcf2ConfigBuilder,
 				hostSChainNode:    nil,
 				bidderInfo:        test.bidderInfos,
 			}
@@ -3085,6 +3087,7 @@ func TestCleanOpenRTBRequestsSChainMultipleBidders(t *testing.T) {
 	auctionReq := AuctionRequest{
 		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
 		UserSyncs:         &emptyUsersync{},
+		TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 	}
 
 	gdprPermissionsBuilder := fakePermissionsBuilder{
@@ -3095,16 +3098,12 @@ func TestCleanOpenRTBRequestsSChainMultipleBidders(t *testing.T) {
 			activitiesError: nil,
 		},
 	}.Builder
-	tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-	}.Builder
 
 	reqSplitter := &requestSplitter{
 		bidderToSyncerKey: map[string]string{},
 		me:                &metrics.MetricsEngineMock{},
 		privacyConfig:     config.Privacy{},
 		gdprPermsBuilder:  gdprPermissionsBuilder,
-		tcf2ConfigBuilder: tcf2ConfigBuilder,
 		hostSChainNode:    nil,
 		bidderInfo:        config.BidderInfos{},
 	}
@@ -3441,14 +3440,12 @@ func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
 			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
 			UserSyncs:         &emptyUsersync{},
 			Account:           config.Account{AlternateBidderCodes: test.inCfgABC},
+			TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}
 		gdprPermissionsBuilder := fakePermissionsBuilder{
 			permissions: &permissionsMock{
 				allowAllBidders: true,
 			},
-		}.Builder
-		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}.Builder
 
 		reqSplitter := &requestSplitter{
@@ -3456,7 +3453,6 @@ func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
 			me:                &metrics.MetricsEngineMock{},
 			privacyConfig:     config.Privacy{},
 			gdprPermsBuilder:  gdprPermissionsBuilder,
-			tcf2ConfigBuilder: tcf2ConfigBuilder,
 			hostSChainNode:    nil,
 			bidderInfo:        config.BidderInfos{},
 		}
@@ -3869,7 +3865,7 @@ func Test_isBidderInExtAlternateBidderCodes(t *testing.T) {
 			name: "adapter defined in alternatebiddercodes but currentMultiBidBidder not in AllowedBidders list",
 			args: args{
 				adapter:               string(openrtb_ext.BidderPubmatic),
-				currentMultiBidBidder: string(openrtb_ext.BidderGroupm),
+				currentMultiBidBidder: "groupm",
 				adapterABC: &openrtb_ext.ExtAlternateBidderCodes{
 					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
 						string(openrtb_ext.BidderPubmatic): {
@@ -3884,11 +3880,11 @@ func Test_isBidderInExtAlternateBidderCodes(t *testing.T) {
 			name: "adapter defined in alternatebiddercodes with currentMultiBidBidder mentioned in AllowedBidders list",
 			args: args{
 				adapter:               string(openrtb_ext.BidderPubmatic),
-				currentMultiBidBidder: string(openrtb_ext.BidderGroupm),
+				currentMultiBidBidder: "groupm",
 				adapterABC: &openrtb_ext.ExtAlternateBidderCodes{
 					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
 						string(openrtb_ext.BidderPubmatic): {
-							AllowedBidderCodes: []string{string(openrtb_ext.BidderGroupm)},
+							AllowedBidderCodes: []string{"groupm"},
 						},
 					},
 				},
@@ -3899,7 +3895,7 @@ func Test_isBidderInExtAlternateBidderCodes(t *testing.T) {
 			name: "adapter defined in alternatebiddercodes with AllowedBidders list as *",
 			args: args{
 				adapter:               string(openrtb_ext.BidderPubmatic),
-				currentMultiBidBidder: string(openrtb_ext.BidderGroupm),
+				currentMultiBidBidder: "groupm",
 				adapterABC: &openrtb_ext.ExtAlternateBidderCodes{
 					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
 						string(openrtb_ext.BidderPubmatic): {
@@ -4010,7 +4006,7 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 				adapter: string(openrtb_ext.BidderPubmatic),
 				reqMultiBid: []*openrtb_ext.ExtMultiBid{
 					{
-						Bidder:  string(openrtb_ext.BidderGroupm),
+						Bidder:  "groupm",
 						MaxBids: ptrutil.ToPtr(3),
 					},
 					{
@@ -4025,14 +4021,14 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 				adapterABC: &openrtb_ext.ExtAlternateBidderCodes{
 					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
 						string(openrtb_ext.BidderPubmatic): {
-							AllowedBidderCodes: []string{string(openrtb_ext.BidderGroupm)},
+							AllowedBidderCodes: []string{"groupm"},
 						},
 					},
 				},
 			},
 			want: []*openrtb_ext.ExtMultiBid{
 				{
-					Bidder:  string(openrtb_ext.BidderGroupm),
+					Bidder:  "groupm",
 					MaxBids: ptrutil.ToPtr(3),
 				},
 				{
@@ -4047,7 +4043,7 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 				adapter: string(openrtb_ext.BidderAppnexus),
 				reqMultiBid: []*openrtb_ext.ExtMultiBid{
 					{
-						Bidder:  string(openrtb_ext.BidderGroupm),
+						Bidder:  "groupm",
 						MaxBids: ptrutil.ToPtr(3),
 					},
 					{
@@ -4062,14 +4058,14 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 				adapterABC: &openrtb_ext.ExtAlternateBidderCodes{
 					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
 						string(openrtb_ext.BidderAppnexus): {
-							AllowedBidderCodes: []string{string(openrtb_ext.BidderGroupm)},
+							AllowedBidderCodes: []string{"groupm"},
 						},
 					},
 				},
 			},
 			want: []*openrtb_ext.ExtMultiBid{
 				{
-					Bidder:  string(openrtb_ext.BidderGroupm),
+					Bidder:  "groupm",
 					MaxBids: ptrutil.ToPtr(3),
 				},
 				{
@@ -4084,7 +4080,7 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 				adapter: string(openrtb_ext.BidderPubmatic),
 				reqMultiBid: []*openrtb_ext.ExtMultiBid{
 					{
-						Bidder:  string(openrtb_ext.BidderGroupm),
+						Bidder:  "groupm",
 						MaxBids: ptrutil.ToPtr(3),
 					},
 					{
@@ -4106,7 +4102,7 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 			},
 			want: []*openrtb_ext.ExtMultiBid{
 				{
-					Bidder:  string(openrtb_ext.BidderGroupm),
+					Bidder:  "groupm",
 					MaxBids: ptrutil.ToPtr(3),
 				},
 				{
@@ -4129,7 +4125,7 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 				adapter: string(openrtb_ext.BidderAppnexus),
 				reqMultiBid: []*openrtb_ext.ExtMultiBid{
 					{
-						Bidder:  string(openrtb_ext.BidderGroupm),
+						Bidder:  "groupm",
 						MaxBids: ptrutil.ToPtr(3),
 					},
 					{
@@ -4151,7 +4147,7 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 			},
 			want: []*openrtb_ext.ExtMultiBid{
 				{
-					Bidder:  string(openrtb_ext.BidderGroupm),
+					Bidder:  "groupm",
 					MaxBids: ptrutil.ToPtr(3),
 				},
 				{
@@ -4174,5 +4170,176 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 			got := buildRequestExtMultiBid(tt.args.adapter, tt.args.reqMultiBid, tt.args.adapterABC)
 			assert.Equal(t, tt.want, got)
 		})
+	}
+}
+
+func TestGetPrebidMediaTypeForBid(t *testing.T) {
+	tests := []struct {
+		description     string
+		inputBid        openrtb2.Bid
+		expectedBidType openrtb_ext.BidType
+		expectedError   string
+	}{
+		{
+			description:     "Valid bid ext with bid type native",
+			inputBid:        openrtb2.Bid{ID: "bidId", ImpID: "impId", Ext: json.RawMessage(`{"prebid": {"type": "native"}}`)},
+			expectedBidType: openrtb_ext.BidTypeNative,
+		},
+		{
+			description:   "Valid bid ext with non-existing bid type",
+			inputBid:      openrtb2.Bid{ID: "bidId", ImpID: "impId", Ext: json.RawMessage(`{"prebid": {"type": "unknown"}}`)},
+			expectedError: "Failed to parse bid mediatype for impression \"impId\", invalid BidType: unknown",
+		},
+		{
+			description:   "Invalid bid ext",
+			inputBid:      openrtb2.Bid{ID: "bidId", ImpID: "impId", Ext: json.RawMessage(`[true`)},
+			expectedError: "Failed to parse bid mediatype for impression \"impId\", unexpected end of JSON input",
+		},
+		{
+			description:   "Bid ext is nil",
+			inputBid:      openrtb2.Bid{ID: "bidId", ImpID: "impId", Ext: nil},
+			expectedError: "Failed to parse bid mediatype for impression \"impId\"",
+		},
+		{
+			description:   "Empty bid ext",
+			inputBid:      openrtb2.Bid{ID: "bidId", ImpID: "impId", Ext: json.RawMessage(`{}`)},
+			expectedError: "Failed to parse bid mediatype for impression \"impId\"",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.description, func(t *testing.T) {
+			bidType, err := getPrebidMediaTypeForBid(tt.inputBid)
+			if len(tt.expectedError) == 0 {
+				assert.Equal(t, tt.expectedBidType, bidType)
+			} else {
+				assert.Equal(t, tt.expectedError, err.Error())
+			}
+
+		})
+	}
+}
+
+func TestGetMediaTypeForBid(t *testing.T) {
+	tests := []struct {
+		description     string
+		inputBid        openrtb2.Bid
+		expectedBidType openrtb_ext.BidType
+		expectedError   string
+	}{
+		{
+			description:     "Valid bid ext with bid type native",
+			inputBid:        openrtb2.Bid{ID: "bidId", ImpID: "impId", Ext: json.RawMessage(`{"prebid": {"type": "native"}}`)},
+			expectedBidType: openrtb_ext.BidTypeNative,
+		},
+		{
+			description:   "invalid bid ext",
+			inputBid:      openrtb2.Bid{ID: "bidId", ImpID: "impId", Ext: json.RawMessage(`{"prebid"`)},
+			expectedError: "Failed to parse bid mediatype for impression \"impId\", unexpected end of JSON input",
+		},
+		{
+			description:     "Valid bid ext with mtype native",
+			inputBid:        openrtb2.Bid{ID: "bidId", ImpID: "impId", MType: openrtb2.MarkupNative},
+			expectedBidType: openrtb_ext.BidTypeNative,
+		},
+		{
+			description:     "Valid bid ext with mtype banner",
+			inputBid:        openrtb2.Bid{ID: "bidId", ImpID: "impId", MType: openrtb2.MarkupBanner},
+			expectedBidType: openrtb_ext.BidTypeBanner,
+		},
+		{
+			description:     "Valid bid ext with mtype video",
+			inputBid:        openrtb2.Bid{ID: "bidId", ImpID: "impId", MType: openrtb2.MarkupVideo},
+			expectedBidType: openrtb_ext.BidTypeVideo,
+		},
+		{
+			description:     "Valid bid ext with mtype audio",
+			inputBid:        openrtb2.Bid{ID: "bidId", ImpID: "impId", MType: openrtb2.MarkupAudio},
+			expectedBidType: openrtb_ext.BidTypeAudio,
+		},
+		{
+			description:   "Valid bid ext with mtype unknown",
+			inputBid:      openrtb2.Bid{ID: "bidId", ImpID: "impId", MType: 8},
+			expectedError: "Failed to parse bid mType for impression \"impId\"",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.description, func(t *testing.T) {
+			bidType, err := getMediaTypeForBid(tt.inputBid)
+			if len(tt.expectedError) == 0 {
+				assert.Equal(t, tt.expectedBidType, bidType)
+			} else {
+				assert.Equal(t, tt.expectedError, err.Error())
+			}
+
+		})
+	}
+}
+
+func TemporarilyDisabledTestCleanOpenRTBRequestsActivitiesFetchBids(t *testing.T) {
+	testCases := []struct {
+		name              string
+		req               *openrtb2.BidRequest
+		componentName     string
+		allow             bool
+		expectedReqNumber int
+	}{
+		{
+			name:              "request_with_one_bidder_allowed",
+			req:               newBidRequest(t),
+			componentName:     "appnexus",
+			allow:             true,
+			expectedReqNumber: 1,
+		},
+		{
+			name:              "request_with_one_bidder_not_allowed",
+			req:               newBidRequest(t),
+			componentName:     "appnexus",
+			allow:             false,
+			expectedReqNumber: 0,
+		},
+	}
+
+	for _, test := range testCases {
+		privacyConfig := getDefaultActivityConfig(test.componentName, test.allow)
+		activities, err := privacy.NewActivityControl(privacyConfig)
+		assert.NoError(t, err, "")
+		auctionReq := AuctionRequest{
+			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: test.req},
+			UserSyncs:         &emptyUsersync{},
+			Activities:        activities,
+		}
+
+		bidderToSyncerKey := map[string]string{}
+		reqSplitter := &requestSplitter{
+			bidderToSyncerKey: bidderToSyncerKey,
+			me:                &metrics.MetricsEngineMock{},
+			hostSChainNode:    nil,
+			bidderInfo:        config.BidderInfos{},
+		}
+
+		t.Run(test.name, func(t *testing.T) {
+			bidderRequests, _, errs := reqSplitter.cleanOpenRTBRequests(context.Background(), auctionReq, nil, gdpr.SignalNo)
+			assert.Empty(t, errs)
+			assert.Len(t, bidderRequests, test.expectedReqNumber)
+		})
+	}
+}
+
+func getDefaultActivityConfig(componentName string, allow bool) *config.AccountPrivacy {
+	return &config.AccountPrivacy{
+		AllowActivities: config.AllowActivities{
+			FetchBids: config.Activity{
+				Default: ptrutil.ToPtr(true),
+				Rules: []config.ActivityRule{
+					{
+						Allow: allow,
+						Condition: config.ActivityCondition{
+							ComponentName: []string{componentName},
+							ComponentType: []string{"bidder"},
+						},
+					},
+				},
+			},
+		},
 	}
 }

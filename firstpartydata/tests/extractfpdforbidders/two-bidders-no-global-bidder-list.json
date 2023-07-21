@@ -67,24 +67,17 @@
   "biddersFPDResolved": {
     "appnexus": {
       "site": {
-        "id": "reqSiteId",
+        "id": "apnSiteId",
         "page": "http://www.foobar.com/1234.html",
         "publisher": {
           "id": "1"
         },
         "ext": {
-          "data":{
-            "id":"apnSiteId"
-          }
+          "data": "fpdGlobalSiteData"
         }
       },
       "user": {
-        "id": "reqUserId",
-        "ext": {
-          "data":{
-            "id":"apnUserId"
-          }
-        }
+        "id": "apnUserId"
       }
     },
     "telaria": {
