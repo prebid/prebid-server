@@ -72,7 +72,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 	if responseData.StatusCode == http.StatusBadRequest {
 		err := &errortypes.BadInput{
-			Message: "Unexpected status code: 400. Bad request from publisher.",
+			Message: fmt.Sprintf("Unexpected status code: %d. Bad request from publisher.", responseData.StatusCode),
 		}
 		return nil, []error{err}
 	}
