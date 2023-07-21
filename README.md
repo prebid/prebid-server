@@ -48,6 +48,10 @@ go build .
 ```
 
 Run format:
+```
+make format
+```
+or
 ```bash
 ./scripts/format.sh
 ```
