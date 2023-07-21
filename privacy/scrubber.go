@@ -83,6 +83,15 @@ func NewScrubber() Scrubber {
 }
 
 func (scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enforcement) *openrtb2.BidRequest {
+	var userExtParsed map[string]json.RawMessage
+	userExtModified := false
+
+	if enforcement.UFPD || enforcement.Eids {
+		if len(bidRequest.User.Ext) != 0 {
+			json.Unmarshal(bidRequest.User.Ext, &userExtParsed)
+		}
+	}
+
 	if enforcement.UFPD {
 		// transmitUfpd covers user.ext.data, user.data, user.id, user.buyeruid, user.yob, user.gender, user.keywords, user.kwarray
 		// and device.{ifa, macsha1, macmd5, dpidsha1, dpidmd5, didsha1, didmd5}
@@ -97,21 +106,35 @@ func (scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enforc
 		}
 		if bidRequest.User != nil {
 			bidRequest.User.Data = nil
-			bidRequest.User.Ext = scrubExtIDs(bidRequest.User.Ext, "data")
 			bidRequest.User.ID = ""
 			bidRequest.User.BuyerUID = ""
 			bidRequest.User.Yob = 0
 			bidRequest.User.Gender = ""
 			bidRequest.User.Keywords = ""
 			bidRequest.User.KwArray = nil
+
+			_, hasField := userExtParsed["data"]
+			if hasField {
+				delete(userExtParsed, "data")
+				userExtModified = true
+			}
 		}
 	}
 	if enforcement.Eids {
 		//transmitEids covers user.eids and user.ext.eids
 		if bidRequest.User != nil {
 			bidRequest.User.EIDs = nil
-			bidRequest.User.Ext = scrubExtIDs(bidRequest.User.Ext, "eids")
+			_, hasField := userExtParsed["eids"]
+			if hasField {
+				delete(userExtParsed, "eids")
+				userExtModified = true
+			}
 		}
+	}
+
+	if userExtModified {
+		userExt, _ := json.Marshal(userExtParsed)
+		bidRequest.User.Ext = userExt
 	}
 
 	if enforcement.TID {
@@ -268,15 +291,15 @@ func scrubGeoPrecision(geo *openrtb2.Geo) *openrtb2.Geo {
 	return &geoCopy
 }
 
-func scrubExtIDs(userExt json.RawMessage, fieldName string) json.RawMessage {
-	if len(userExt) == 0 {
-		return userExt
+func scrubExtIDs(ext json.RawMessage, fieldName string) json.RawMessage {
+	if len(ext) == 0 {
+		return ext
 	}
 
 	var userExtParsed map[string]json.RawMessage
-	err := json.Unmarshal(userExt, &userExtParsed)
+	err := json.Unmarshal(ext, &userExtParsed)
 	if err != nil {
-		return userExt
+		return ext
 	}
 
 	_, hasField := userExtParsed[fieldName]
@@ -288,5 +311,5 @@ func scrubExtIDs(userExt json.RawMessage, fieldName string) json.RawMessage {
 		}
 	}
 
-	return userExt
+	return ext
 }

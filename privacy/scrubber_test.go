@@ -317,13 +317,15 @@ func TestScrubRequest(t *testing.T) {
 	user.EIDs = []openrtb2.EID{{Source: "test"}}
 
 	testCases := []struct {
-		description string
-		enforcement Enforcement
-		expected    *openrtb2.BidRequest
+		description    string
+		enforcement    Enforcement
+		userExtPresent bool
+		expected       *openrtb2.BidRequest
 	}{
 		{
-			description: "enforce transmitUFPD",
-			enforcement: Enforcement{UFPD: true},
+			description:    "enforce transmitUFPD with user.ext",
+			enforcement:    Enforcement{UFPD: true},
+			userExtPresent: true,
 			expected: &openrtb2.BidRequest{
 				Imp:    imps,
 				Source: source,
@@ -340,8 +342,27 @@ func TestScrubRequest(t *testing.T) {
 			},
 		},
 		{
-			description: "enforce transmitEids",
-			enforcement: Enforcement{Eids: true},
+			description:    "enforce transmitUFPD without user.ext",
+			enforcement:    Enforcement{UFPD: true},
+			userExtPresent: false,
+			expected: &openrtb2.BidRequest{
+				Imp:    imps,
+				Source: source,
+				User: &openrtb2.User{
+					EIDs: []openrtb2.EID{{Source: "test"}},
+					Geo:  user.Geo,
+				},
+				Device: &openrtb2.Device{
+					IP:   "1.2.3.4",
+					IPv6: "2001:0db8:0000:0000:0000:ff00:0042:8329",
+					Geo:  device.Geo,
+				},
+			},
+		},
+		{
+			description:    "enforce transmitEids",
+			enforcement:    Enforcement{Eids: true},
+			userExtPresent: true,
 			expected: &openrtb2.BidRequest{
 				Imp:    imps,
 				Source: source,
@@ -358,8 +379,9 @@ func TestScrubRequest(t *testing.T) {
 			},
 		},
 		{
-			description: "enforce transmitTid",
-			enforcement: Enforcement{TID: true},
+			description:    "enforce transmitTid",
+			enforcement:    Enforcement{TID: true},
+			userExtPresent: true,
 			expected: &openrtb2.BidRequest{
 				Imp: []openrtb2.Imp{
 					{ID: "testId", Ext: json.RawMessage(`{"test":1}`)},
@@ -380,8 +402,9 @@ func TestScrubRequest(t *testing.T) {
 			},
 		},
 		{
-			description: "enforce precise Geo",
-			enforcement: Enforcement{PreciseGeo: true},
+			description:    "enforce precise Geo",
+			enforcement:    Enforcement{PreciseGeo: true},
+			userExtPresent: true,
 			expected: &openrtb2.BidRequest{
 				Imp:    imps,
 				Source: source,
@@ -432,7 +455,11 @@ func TestScrubRequest(t *testing.T) {
 				User:   getTestUser(),
 				Device: getTestDevice(),
 			}
-			bidRequest.User.Ext = json.RawMessage(`{"data": 1, "eids": 2}`)
+			if test.userExtPresent {
+				bidRequest.User.Ext = json.RawMessage(`{"data": 1, "eids": 2}`)
+			} else {
+				bidRequest.User.Ext = nil
+			}
 			bidRequest.User.EIDs = []openrtb2.EID{{Source: "test"}}
 
 			result := NewScrubber().ScrubRequest(bidRequest, test.enforcement)
