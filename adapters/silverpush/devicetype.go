@@ -26,3 +26,19 @@ func IsValidEids(eids []openrtb2.EID) bool {
 	}
 	return false
 }
+
+func getOS(ua string) string {
+	if strings.Contains(ua, "Windows") {
+		return "Windows"
+	} else if regexp.MustCompile(`(iPhone|iPod|iPad)`).MatchString(ua) {
+		return "iOS"
+	} else if strings.Contains(ua, "Mac OS X") {
+		return "macOS"
+	} else if strings.Contains(ua, "Android") {
+		return "Android"
+	} else if strings.Contains(ua, "Linux") {
+		return "Linux"
+	} else {
+		return "Unknown"
+	}
+}

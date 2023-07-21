@@ -26,7 +26,6 @@ func TestResponseWithCurrencies(t *testing.T) {
 
 	currency := "USD"
 	assertCurrencyInBidResponse(t, "USD", &currency)
-
 	currency = "EUR"
 	assertCurrencyInBidResponse(t, "EUR", &currency)
 }

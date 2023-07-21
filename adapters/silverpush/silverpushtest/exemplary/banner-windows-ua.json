@@ -51,7 +51,7 @@
             
         },
         "device": {
-            "devicetype": 3,
+            "devicetype": 1,
             "dnt": 0,
             "h": 2340,
             "ifa": "9e13d2bf-e968-4065-b4db-852123b627a9",
@@ -62,7 +62,7 @@
             "os": "Android",
             "osv": "11",
             "pxratio": 3,
-            "ua": "Mozilla/5.0 (X11; smarttv Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36",
+            "ua": "Mozilla/5.0 (Windows Phone 10.0; Android 6.0.1; Microsoft; RM-1152) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Mobile Safari/537.36 Edge/15.15254",
             "w": 1080
         },
         "user": {
@@ -135,7 +135,7 @@
                     }
                 },
                 "device": {
-                    "devicetype": 3,
+                    "devicetype": 1,
                     "dnt": 0,
                     "h": 2340,
                     "ifa": "9e13d2bf-e968-4065-b4db-852123b627a9",
@@ -143,10 +143,10 @@
                     "js": 1,
                     "make": "OPPO",
                     "model": "CPH2209",
-                    "os": "Linux",
+                    "os": "Windows",
                     "osv": "11",
                     "pxratio": 3,
-                    "ua": "Mozilla/5.0 (X11; smarttv Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36",
+                    "ua": "Mozilla/5.0 (Windows Phone 10.0; Android 6.0.1; Microsoft; RM-1152) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Mobile Safari/537.36 Edge/15.15254",
                     "w": 1080
                 },
                 "site": {

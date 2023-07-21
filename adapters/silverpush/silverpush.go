@@ -110,6 +110,7 @@ func setDevice(req *openrtb2.BidRequest) {
 	if req.Device != nil {
 		deviceCopy := *req.Device
 		if len(deviceCopy.UA) > 0 {
+			deviceCopy.OS = getOS(deviceCopy.UA)
 			if isMobile(deviceCopy.UA) {
 				deviceCopy.DeviceType = 1
 			} else if isCTV(deviceCopy.UA) {
@@ -151,14 +152,12 @@ func setImpForAdExchange(imp *openrtb2.Imp, impExt *openrtb_ext.ImpExtSilverpush
 	if imp.BidFloor == 0 && impExt.BidFloor > 0 {
 		imp.BidFloor = impExt.BidFloor
 	}
-
 	if imp.Banner != nil {
 		bannerCopy, err := setBannerDimension(imp.Banner)
 		if err != nil {
 			return err
 		}
 		imp.Banner = bannerCopy
-		return nil
 	}
 
 	if imp.Video != nil {
@@ -167,7 +166,6 @@ func setImpForAdExchange(imp *openrtb2.Imp, impExt *openrtb_ext.ImpExtSilverpush
 			return err
 		}
 		imp.Video = videoCopy
-		return nil
 	}
 
 	return nil
@@ -227,7 +225,7 @@ func setPublisherId(req *openrtb2.BidRequest, imp *openrtb2.Imp, impExt *openrtb
 			siteCopy.Publisher = &publisher
 		}
 		req.Site = &siteCopy
-		return nil
+
 	} else if req.App != nil {
 		appCopy := *req.App
 		if appCopy.Publisher == nil {
@@ -239,7 +237,7 @@ func setPublisherId(req *openrtb2.BidRequest, imp *openrtb2.Imp, impExt *openrtb
 		}
 		appCopy.Publisher = &openrtb2.Publisher{ID: impExt.PublisherId}
 		req.App = &appCopy
-		return nil
+
 	}
 
 	return nil
@@ -305,18 +303,19 @@ func (a *SilverPushAdapter) MakeBids(internalRequest *openrtb2.BidRequest, exter
 // getMediaTypeForImp figures out which media type this bid is for.
 // SilverPush doesn't support multi-type impressions.
 // If both banner and video exist, take banner as we do not want in-banner video.
-func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
+func getMediaTypeForImp(impId string, imps []openrtb2.Imp) (mediaType openrtb_ext.BidType) {
 
+	mediaType = openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impId {
 			if imp.Banner != nil {
-				return openrtb_ext.BidTypeBanner
+				mediaType = openrtb_ext.BidTypeBanner
 			} else if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo
+				mediaType = openrtb_ext.BidTypeVideo
 			}
 		}
 	}
-	return openrtb_ext.BidTypeBanner
+	return
 }
 
 // Builder builds a new instance of the silverpush adapter for the given bidder with the given config.
