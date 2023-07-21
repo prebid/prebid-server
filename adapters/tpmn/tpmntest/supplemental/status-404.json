@@ -18,7 +18,7 @@
         },
         "ext": {
           "bidder": {
-            "inventoryid": "100000000"
+            "inventoryId": 10000001
           }
         }
       }
@@ -35,7 +35,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://example.com/pserver",
+        "uri": "https://gat.tpmn.io/ortb/pbs_bidder",
         "body": {
           "id": "test-request-id",
           "imp": [
@@ -56,7 +56,7 @@
               "bidfloorcur": "USD",
               "ext": {
                 "bidder": {
-                  "inventoryid": "100000000"
+                  "inventoryId": 10000001
                 }
               }
             }
@@ -79,7 +79,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "unexpected response status code: 404",
+      "value": "Invalid Status Returned: 404. Run with request.debug = 1 for more info",
       "comparison": "literal"
     }
   ]

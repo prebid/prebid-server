@@ -2,7 +2,6 @@ package tpmn
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -16,7 +15,7 @@ import (
 
 // TpmnAdapter struct
 type adapter struct {
-	URI string
+	uri string
 }
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids from TpmnBidder.
@@ -40,7 +39,7 @@ func (rcv *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters
 
 	return []*adapters.RequestData{{
 		Method:  http.MethodPost,
-		Uri:     rcv.URI,
+		Uri:     rcv.uri,
 		Body:    requestBodyJSON,
 		Headers: headers,
 	}}, errs
@@ -98,15 +97,15 @@ func preprocessBidFloorCurrency(imp *openrtb2.Imp, reqInfo *adapters.ExtraReques
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	switch responseData.StatusCode {
-	case http.StatusNoContent:
+	if responseData.StatusCode == http.StatusNoContent {
+		// no bid response
 		return nil, nil
-	case http.StatusBadRequest:
-		return nil, []error{errors.New("bad request from publisher")}
-	case http.StatusOK:
-		break
-	default:
-		return nil, []error{fmt.Errorf("unexpected response status code: %v", responseData.StatusCode)}
+	}
+
+	if responseData.StatusCode != http.StatusOK {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Invalid Status Returned: %d. Run with request.debug = 1 for more info", responseData.StatusCode),
+		}}
 	}
 
 	var response openrtb2.BidResponse
@@ -118,10 +117,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 	bidResponse.Currency = response.Cur
 	for _, seatBid := range response.SeatBid {
 		for i := range seatBid.Bid {
-			bidType, err := getMediaTypeForImp(seatBid.Bid[i].ImpID, request.Imp)
-			if err != nil {
-				return nil, []error{err}
-			}
+			bidType := getMediaTypeForImp(seatBid.Bid[i].ImpID, request.Imp)
 			b := &adapters.TypedBid{
 				Bid:     &seatBid.Bid[i],
 				BidType: bidType,
@@ -132,28 +128,26 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 	return bidResponse, nil
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
+func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
+	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
-		if imp.ID == impID {
-			if imp.Banner != nil {
-				return openrtb_ext.BidTypeBanner, nil
-			} else if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo, nil
-			} else if imp.Native != nil {
-				return openrtb_ext.BidTypeNative, nil
+		if imp.ID == impId {
+			if imp.Video != nil {
+				mediaType = openrtb_ext.BidTypeVideo
 			}
+			if imp.Native != nil {
+				mediaType = openrtb_ext.BidTypeNative
+			}
+			break
 		}
 	}
-
-	return "", &errortypes.BadInput{
-		Message: fmt.Sprintf("Failed to find a supported media type impression \"%s\"", impID),
-	}
+	return mediaType
 }
 
 // Builder builds a new instance of the TpmnBidder adapter for the given bidder with the given config.
 func Builder(_ openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
-		URI: config.Endpoint,
+		uri: config.Endpoint,
 	}
 	return bidder, nil
 }
