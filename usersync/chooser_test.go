@@ -238,8 +238,8 @@ func TestChooserEvaluate(t *testing.T) {
 		Redirect: NewUniformBidderFilter(BidderFilterModeExclude)}
 
 	cookieNeedsSync := Cookie{}
-	cookieAlreadyHasSyncForA := Cookie{uids: map[string]uidWithExpiry{"keyA": {Expires: time.Now().Add(time.Duration(24) * time.Hour)}}}
-	cookieAlreadyHasSyncForB := Cookie{uids: map[string]uidWithExpiry{"keyB": {Expires: time.Now().Add(time.Duration(24) * time.Hour)}}}
+	cookieAlreadyHasSyncForA := Cookie{uids: map[string]UIDEntry{"keyA": {Expires: time.Now().Add(time.Duration(24) * time.Hour)}}}
+	cookieAlreadyHasSyncForB := Cookie{uids: map[string]UIDEntry{"keyB": {Expires: time.Now().Add(time.Duration(24) * time.Hour)}}}
 
 	testCases := []struct {
 		description        string

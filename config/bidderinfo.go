@@ -23,6 +23,7 @@ type BidderInfos map[string]BidderInfo
 
 // BidderInfo specifies all configuration for a bidder except for enabled status, endpoint, and extra information.
 type BidderInfo struct {
+	AliasOf          string `yaml:"aliasOf" mapstructure:"aliasOf"`
 	Disabled         bool   `yaml:"disabled" mapstructure:"disabled"`
 	Endpoint         string `yaml:"endpoint" mapstructure:"endpoint"`
 	ExtraAdapterInfo string `yaml:"extra_info" mapstructure:"extra_info"`
@@ -266,18 +267,33 @@ func (infos BidderInfos) validate(errs []error) []error {
 		if bidder.IsEnabled() {
 			errs = validateAdapterEndpoint(bidder.Endpoint, bidderName, errs)
 
-			validateInfoErr := validateInfo(bidder, bidderName)
-			if validateInfoErr != nil {
-				errs = append(errs, validateInfoErr)
+			if err := validateInfo(bidder, bidderName); err != nil {
+				errs = append(errs, err)
 			}
 
-			validateSyncerErr := validateSyncer(bidder)
-			if validateSyncerErr != nil {
-				errs = append(errs, validateSyncerErr)
+			if err := validateSyncer(bidder); err != nil {
+				errs = append(errs, err)
+			}
+
+			if err := validateAliases(bidder, infos, bidderName); err != nil {
+				errs = append(errs, err)
 			}
 		}
 	}
 	return errs
+}
+
+func validateAliases(bidder BidderInfo, infos BidderInfos, bidderName string) error {
+	if len(bidder.AliasOf) > 0 {
+		if parentBidder, ok := infos[bidder.AliasOf]; ok {
+			if len(parentBidder.AliasOf) > 0 {
+				return fmt.Errorf("bidder: %s cannot be an alias of an alias: %s", bidder.AliasOf, bidderName)
+			}
+		} else {
+			return fmt.Errorf("bidder: %s not found for an alias: %s", bidder.AliasOf, bidderName)
+		}
+	}
+	return nil
 }
 
 var testEndpointTemplateParams = macros.EndpointTemplateParams{

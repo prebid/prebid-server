@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/privacy"
 	"math/rand"
 	"net/url"
 	"runtime/debug"
@@ -14,6 +13,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/prebid/prebid-server/privacy"
 
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adservertargeting"
