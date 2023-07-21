@@ -1,0 +1,120 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {
+      "bundle": "com.prebid"
+    },
+    "device": {
+      "ifa":"87857b31-8942-4646-ae80-ab9c95bf3fab"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "ppid": "ppidtest"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://mabidder-test",
+        "body": {
+          "id": "test-request-id",
+          "app": {
+            "bundle": "com.prebid"
+          },
+          "device": {
+            "ifa":"87857b31-8942-4646-ae80-ab9c95bf3fab"
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "ppid": "ppidtest"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "some-impression-id",
+                  "impid": "some-impression-id",
+                  "price": 2.705488209292398,
+                  "adm": "<script type='text/javascript' src='https://adsvr.ecdrsvc.com/js?6002677'></script>",
+                  "adomain": [
+                    "https://www.loblaws.ca/"
+                  ],
+                  "crid": "6002677",
+                  "dealid": "testdeal",
+                  "w": 300,
+                  "h": 250,
+                  "ext": {
+                    "origbidcpm": 3.5764000415802,
+                    "origbidcur": "CAD",
+                    "prebid": {
+                      "meta": {
+                        "adaptercode": "mabidder"
+                      },
+                      "type": "banner"
+                    }
+                  }
+                }
+              ],
+              "seat": "mabidder"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "requestId": "1",
+      "currency": "CAD",
+      "width": 300,
+      "height": 250,
+      "creativeId": "6002677",
+      "dealId": "testdeal",
+      "netRevenue": false,
+      "ttl": 5,
+      "ad": "<script type='text/javascript' src='https://adsvr.ecdrsvc.com/js?6002677'></script>",
+      "mediaType": "banner",
+      "meta": {
+        "advertiserDomains": [
+          "https://www.loblaws.ca/"
+        ]
+      },
+      "cpm": 3.5764
+    }
+  ]
+}
