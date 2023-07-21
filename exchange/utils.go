@@ -188,10 +188,6 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 			}
 			// potentially block passing IDs based on CCPA
 			privacyEnforcement.CCPA = ccpaEnforcer.ShouldEnforce(bidderRequest.BidderName.String())
-			// potentially block passing IDs based on COPPA
-			if req.BidRequest.Regs != nil && req.BidRequest.Regs.COPPA == 1 {
-				privacyEnforcement.COPPA = true
-			}
 		}
 
 		passGeoActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitPreciseGeo, scopedName)
@@ -207,15 +203,9 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 					privacyEnforcement.GDPRGeo = true
 				}
 			}
-
 			// potentially block passing geo based on CCPA
 			privacyEnforcement.CCPA = ccpaEnforcer.ShouldEnforce(bidderRequest.BidderName.String())
-			// potentially block passing geo based on COPPA
-			if req.BidRequest.Regs != nil && req.BidRequest.Regs.COPPA == 1 {
-				privacyEnforcement.COPPA = true
-			}
-			// potentially block passing geo based on LMT
-			privacyEnforcement.LMT = lmtEnforcer.ShouldEnforce(unknownBidder)
+
 		}
 
 		if auctionReq.FirstPartyData != nil && auctionReq.FirstPartyData[bidderRequest.BidderName] != nil {
