@@ -1,7 +1,9 @@
 package openrtb_ext
 
-import "encoding/json"
+import (
+	"github.com/prebid/prebid-server/util/jsonutil"
+)
 
 type ImpExtFreewheelSSP struct {
-	ZoneId json.Number `json:"zoneId"`
+	ZoneId jsonutil.StringInt `json:"zoneId"`
 }
