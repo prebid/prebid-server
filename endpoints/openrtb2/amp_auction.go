@@ -69,6 +69,7 @@ func NewAmpEndpoint(
 	bidderMap map[string]openrtb_ext.BidderName,
 	storedRespFetcher stored_requests.Fetcher,
 	hookExecutionPlanBuilder hooks.ExecutionPlanBuilder,
+	tmaxAdjustments *exchange.TmaxAdjustmentsPreprocessed,
 ) (httprouter.Handle, error) {
 
 	if ex == nil || validator == nil || requestsById == nil || accounts == nil || cfg == nil || metricsEngine == nil {
@@ -100,7 +101,9 @@ func NewAmpEndpoint(
 		nil,
 		ipValidator,
 		storedRespFetcher,
-		hookExecutionPlanBuilder}).AmpAuction), nil
+		hookExecutionPlanBuilder,
+		tmaxAdjustments,
+	}).AmpAuction), nil
 
 }
 
@@ -251,7 +254,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		QueryParams:                r.URL.Query(),
 		TCF2Config:                 tcf2Config,
 		Activities:                 activities,
-		TmaxAdjustments:            &deps.cfg.TmaxAdjustments,
+		TmaxAdjustments:            deps.tmaxAdjustments,
 	}
 
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)

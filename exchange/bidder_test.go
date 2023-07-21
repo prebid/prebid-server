@@ -3076,67 +3076,6 @@ func (m *mockBidderTmaxCtx) RemainingDurationMS(deadline time.Time) int64 {
 	return deadline.Sub(m.startTime).Milliseconds()
 }
 
-func TestGetBidderTmax(t *testing.T) {
-	var (
-		requestTmaxMS               int64 = 700
-		bidderNetworkLatencyBuffer  uint  = 50
-		responsePreparationDuration uint  = 60
-	)
-	requestTmaxNS := requestTmaxMS * int64(time.Millisecond)
-	startTime := time.Date(2023, 5, 30, 1, 0, 0, 0, time.UTC)
-	deadline := time.Date(2023, 5, 30, 1, 0, 0, int(requestTmaxNS), time.UTC)
-	ctx := &mockBidderTmaxCtx{startTime: startTime, deadline: deadline, ok: true}
-	tests := []struct {
-		description     string
-		ctx             bidderTmaxContext
-		requestTmax     int64
-		expectedTmax    int64
-		tmaxAdjustments config.TmaxAdjustments
-	}{
-		{
-			description:     "returns-requestTmax-when-tmax-adjustment-is-not-enabled",
-			ctx:             ctx,
-			requestTmax:     requestTmaxMS,
-			tmaxAdjustments: config.TmaxAdjustments{Enabled: false},
-			expectedTmax:    requestTmaxMS,
-		},
-		{
-			description:     "returns-requestTmax-when-BidderResponseDurationMin-is-not-set",
-			ctx:             ctx,
-			requestTmax:     requestTmaxMS,
-			tmaxAdjustments: config.TmaxAdjustments{Enabled: true, BidderResponseDurationMin: 0},
-			expectedTmax:    requestTmaxMS,
-		},
-		{
-			description:     "returns-requestTmax-when-BidderNetworkLatencyBuffer-and-PBSResponsePreparationDuration-is-not-set",
-			ctx:             ctx,
-			requestTmax:     requestTmaxMS,
-			tmaxAdjustments: config.TmaxAdjustments{Enabled: true, BidderResponseDurationMin: 100, BidderNetworkLatencyBuffer: 0, PBSResponsePreparationDuration: 0},
-			expectedTmax:    requestTmaxMS,
-		},
-		{
-			description:     "returns-requestTmax-when-context-deadline-is-not-set",
-			ctx:             &mockBidderTmaxCtx{ok: false},
-			requestTmax:     requestTmaxMS,
-			tmaxAdjustments: config.TmaxAdjustments{Enabled: true, BidderResponseDurationMin: 100, BidderNetworkLatencyBuffer: 50, PBSResponsePreparationDuration: 60},
-			expectedTmax:    requestTmaxMS,
-		},
-		{
-			description:     "returns-remaing-duration-by-subtracting-BidderNetworkLatencyBuffer-and-PBSResponsePreparationDuration",
-			ctx:             ctx,
-			requestTmax:     requestTmaxMS,
-			tmaxAdjustments: config.TmaxAdjustments{Enabled: true, BidderResponseDurationMin: 100, BidderNetworkLatencyBuffer: bidderNetworkLatencyBuffer, PBSResponsePreparationDuration: responsePreparationDuration},
-			expectedTmax:    ctx.RemainingDurationMS(deadline) - int64(bidderNetworkLatencyBuffer) - int64(responsePreparationDuration),
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			assert.Equal(t, test.expectedTmax, getBidderTmax(test.ctx, test.requestTmax, test.tmaxAdjustments))
-
-		})
-	}
-}
-
 func TestUpdateBidderTmax(t *testing.T) {
 	respStatus := 200
 	respBody := "{\"bid\":false}"
@@ -3158,21 +3097,13 @@ func TestUpdateBidderTmax(t *testing.T) {
 	tests := []struct {
 		description     string
 		requestTmax     int64
-		tmaxAdjustments *config.TmaxAdjustments
+		tmaxAdjustments *TmaxAdjustmentsPreprocessed
 		assertFn        func(actualTmax int64) bool
 	}{
 		{
 			description:     "tmax-is-not-enabled",
 			requestTmax:     requestTmax,
-			tmaxAdjustments: &config.TmaxAdjustments{Enabled: false},
-			assertFn: func(actualTmax int64) bool {
-				return requestTmax == actualTmax
-			},
-		},
-		{
-			description:     "bidder-response-duration-not-set",
-			requestTmax:     700,
-			tmaxAdjustments: &config.TmaxAdjustments{Enabled: true, BidderResponseDurationMin: 0},
+			tmaxAdjustments: &TmaxAdjustmentsPreprocessed{IsEnforced: false},
 			assertFn: func(actualTmax int64) bool {
 				return requestTmax == actualTmax
 			},
@@ -3180,7 +3111,7 @@ func TestUpdateBidderTmax(t *testing.T) {
 		{
 			description:     "updates-bidder-tmax",
 			requestTmax:     requestTmax,
-			tmaxAdjustments: &config.TmaxAdjustments{Enabled: true, BidderResponseDurationMin: 100, BidderNetworkLatencyBuffer: 50, PBSResponsePreparationDuration: 50},
+			tmaxAdjustments: &TmaxAdjustmentsPreprocessed{IsEnforced: true, BidderResponseDurationMin: 100, BidderNetworkLatencyBuffer: 50, PBSResponsePreparationDuration: 50},
 			assertFn: func(actualTmax int64) bool {
 				return requestTmax > actualTmax
 			},

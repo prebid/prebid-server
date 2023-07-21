@@ -212,7 +212,7 @@ type AuctionRequest struct {
 	HookExecutor            hookexecution.StageExecutor
 	QueryParams             url.Values
 	BidderResponseStartTime time.Time
-	TmaxAdjustments         *config.TmaxAdjustments
+	TmaxAdjustments         *TmaxAdjustmentsPreprocessed
 }
 
 // BidderRequest holds the bidder specific request and all other
@@ -663,7 +663,7 @@ func (e *exchange) getAllBids(
 	hookExecutor hookexecution.StageExecutor,
 	pbsRequestStartTime time.Time,
 	bidAdjustmentRules map[string][]openrtb_ext.Adjustment,
-	tmaxAdjustments *config.TmaxAdjustments) (
+	tmaxAdjustments *TmaxAdjustmentsPreprocessed) (
 	map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid,
 	map[openrtb_ext.BidderName]*seatResponseExtra,
 	extraAuctionResponseInfo) {
