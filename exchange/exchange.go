@@ -205,11 +205,12 @@ type AuctionRequest struct {
 	// map of imp id to stored response
 	StoredAuctionResponses stored_responses.ImpsWithBidResponses
 	// map of imp id to bidder to stored response
-	StoredBidResponses    stored_responses.ImpBidderStoredResp
-	BidderImpReplaceImpID stored_responses.BidderImpReplaceImpID
-	PubID                 string
-	HookExecutor          hookexecution.StageExecutor
-	QueryParams           url.Values
+	StoredBidResponses      stored_responses.ImpBidderStoredResp
+	BidderImpReplaceImpID   stored_responses.BidderImpReplaceImpID
+	PubID                   string
+	HookExecutor            hookexecution.StageExecutor
+	QueryParams             url.Values
+	BidderResponseStartTime time.Time
 }
 
 // BidderRequest holds the bidder specific request and all other
@@ -370,6 +371,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		adapterBids, adapterExtra, extraRespInfo = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, alternateBidderCodes, requestExtLegacy.Prebid.Experiment, r.HookExecutor, r.StartTime, bidAdjustmentRules)
 		fledge = extraRespInfo.fledge
 		anyBidsReturned = extraRespInfo.bidsFound
+		r.BidderResponseStartTime = extraRespInfo.bidderResponseStartTime
 	}
 
 	var (
