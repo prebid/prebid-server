@@ -42,10 +42,8 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 	reqCopy := *openRTBRequest
 	reqCopy.Imp = []openrtb2.Imp{}
 	for _, imp := range openRTBRequest.Imp {
-
 		var bidFloorCur = imp.BidFloorCur
 		var bidFloor = imp.BidFloor
-
 		if bidFloorCur == "" && bidFloor == 0 {
 			rtbhouseExt, err := getImpressionExt(imp)
 			if err != nil {
@@ -78,9 +76,7 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 
 		// Set the CUR of bid to BIDDER_CURRENCY after converting all floors
 		reqCopy.Cur = []string{BidderCurrency}
-
 		reqCopy.Imp = append(reqCopy.Imp, imp)
-
 	}
 
 	openRTBRequestJSON, err := json.Marshal(reqCopy)
