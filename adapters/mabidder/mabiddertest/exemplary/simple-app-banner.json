@@ -61,60 +61,50 @@
       "mockResponse": {
         "status": 200,
         "body": {
-          "id": "test-request-id",
-          "seatbid": [
+          "Responses": [
             {
-              "bid": [
-                {
-                  "id": "some-impression-id",
-                  "impid": "some-impression-id",
-                  "price": 2.705488209292398,
-                  "adm": "<script type='text/javascript' src='https://adsvr.ecdrsvc.com/js?6002677'></script>",
-                  "adomain": [
-                    "https://www.loblaws.ca/"
-                  ],
-                  "crid": "6002677",
-                  "dealid": "testdeal",
-                  "w": 300,
-                  "h": 250,
-                  "ext": {
-                    "origbidcpm": 3.5764000415802,
-                    "origbidcur": "CAD",
-                    "prebid": {
-                      "meta": {
-                        "adaptercode": "mabidder"
-                      },
-                      "type": "banner"
-                    }
-                  }
-                }
-              ],
-              "seat": "mabidder"
+              "requestId": "1",
+              "currency": "CAD",
+              "width": 300,
+              "height": 250,
+              "creativeId": "6002677",
+              "dealId": "testdeal",
+              "netRevenue": false,
+              "ttl": 5,
+              "ad": "<script type='text/javascript' src='https://adsvr.ecdrsvc.com/js?6002677'></script>",
+              "meta": {
+                "advertiserDomains": [
+                  "https://www.loblaws.ca/"
+                ]
+              },
+              "cpm": 3.5764000415802
             }
-          ],
-          "cur": "USD"
+          ]
         }
       }
     }
   ],
   "expectedBidResponses": [
     {
-      "requestId": "1",
-      "currency": "CAD",
-      "width": 300,
-      "height": 250,
-      "creativeId": "6002677",
-      "dealId": "testdeal",
-      "netRevenue": false,
-      "ttl": 5,
-      "ad": "<script type='text/javascript' src='https://adsvr.ecdrsvc.com/js?6002677'></script>",
-      "mediaType": "banner",
-      "meta": {
-        "advertiserDomains": [
-          "https://www.loblaws.ca/"
-        ]
-      },
-      "cpm": 3.5764
+      "id": "test-request-id",
+      "bids": [
+        {
+          "bid": {
+            "id": "1",
+            "impid": "1",
+            "price":3.5764000415802, 
+            "adm": "<script type='text/javascript' src='https://adsvr.ecdrsvc.com/js?6002677'></script>",
+            "adomain": [
+              "https://www.loblaws.ca/"
+            ],
+            "crid": "6002677",
+            "dealid": "testdeal",
+            "w": 300,
+            "h": 250
+          }
+        }
+      ],
+      "cur": "USD"
     }
   ]
 }
