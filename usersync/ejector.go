@@ -13,10 +13,15 @@ type Ejector interface {
 
 type OldestEjector struct {
 	nonPriorityKeys []string
+	PriorityGroups  [][]string
 	FallbackEjector FallbackEjector
 }
 
 func (o *OldestEjector) Choose(uids map[string]UIDEntry) (string, error) {
+	if len(o.nonPriorityKeys) == 0 {
+		o.nonPriorityKeys = getNonPriorityKeys(uids, o.PriorityGroups)
+	}
+
 	oldestElement := getOldestElement(o.nonPriorityKeys, uids)
 	if oldestElement == "" {
 		return o.FallbackEjector.Choose(uids)

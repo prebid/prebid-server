@@ -62,6 +62,7 @@ func TestChooseElementToEject(t *testing.T) {
 			},
 			givenEjector: &OldestEjector{
 				[]string{"newestElement", "oldestElement"},
+				[][]string{},
 				FallbackEjector{},
 			},
 			expected: "oldestElement",
@@ -100,6 +101,13 @@ func TestChooseElementToEject(t *testing.T) {
 		})
 	}
 }
+
+// TODO:
+func TestOldestEjector(t *testing.T) {}
+
+func TestPriorityEjector(t *testing.T) {}
+
+func TestFallbackEjector(t *testing.T) {}
 
 func TestGetOldestElement(t *testing.T) {
 	testCases := []struct {
