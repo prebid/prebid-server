@@ -208,7 +208,7 @@ func TestBuildTemplate(t *testing.T) {
 			description: "All Composed Macros",
 			givenSyncerEndpoint: config.SyncerEndpoint{
 				URL:         "https://bidder.com/sync?redirect={{.RedirectURL}}",
-				RedirectURL: "{{.ExternalURL}}/setuid?bidder={{.BidderName}}&f={{.SyncType}}&gdpr={{.GDPR}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&uid={{.UserMacro}}",
+				RedirectURL: "{{.ExternalURL}}/setuid?bidder={{.SyncerKey}}&f={{.SyncType}}&gdpr={{.GDPR}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&uid={{.UserMacro}}",
 				ExternalURL: "http://syncer.com",
 				UserMacro:   "$UID$",
 			},
@@ -265,7 +265,7 @@ func TestBuildTemplate(t *testing.T) {
 			description: "User Macro Is Go Template Macro-Like",
 			givenSyncerEndpoint: config.SyncerEndpoint{
 				URL:         "https://bidder.com/sync?redirect={{.RedirectURL}}",
-				RedirectURL: "{{.ExternalURL}}/setuid?bidder={{.BidderName}}&f={{.SyncType}}&gdpr={{.GDPR}}&uid={{.UserMacro}}",
+				RedirectURL: "{{.ExternalURL}}/setuid?bidder={{.SyncerKey}}&f={{.SyncType}}&gdpr={{.GDPR}}&uid={{.UserMacro}}",
 				UserMacro:   "{{UID}}",
 			},
 			expectedRendered: "https://bidder.com/sync?redirect=http%3A%2F%2Fhost.com%2Fsetuid%3Fbidder%3DanyKey%26f%3Dx%26gdpr%3DA%26uid%3D%7B%7BUID%7D%7D",

@@ -113,7 +113,7 @@ func resolveDefaultSyncType(syncerConfig config.Syncer) SyncType {
 // macro substitution regex
 var (
 	macroRegexExternalHost = regexp.MustCompile(`{{\s*\.ExternalURL\s*}}`)
-	macroRegexBidderName   = regexp.MustCompile(`{{\s*\.BidderName\s*}}`)
+	macroRegexSyncerKey    = regexp.MustCompile(`{{\s*\.SyncerKey\s*}}`)
 	macroRegexSyncType     = regexp.MustCompile(`{{\s*\.SyncType\s*}}`)
 	macroRegexUserMacro    = regexp.MustCompile(`{{\s*\.UserMacro\s*}}`)
 	macroRegexRedirect     = regexp.MustCompile(`{{\s*\.RedirectURL\s*}}`)
@@ -128,7 +128,7 @@ func buildTemplate(bidderName, syncTypeValue string, hostConfig config.UserSync,
 
 	externalURL := chooseExternalURL(syncerEndpoint.ExternalURL, syncerExternalURL, hostConfig.ExternalURL)
 
-	redirectURL := macroRegexBidderName.ReplaceAllLiteralString(redirectTemplate, bidderName)
+	redirectURL := macroRegexSyncerKey.ReplaceAllLiteralString(redirectTemplate, bidderName)
 	redirectURL = macroRegexSyncType.ReplaceAllLiteralString(redirectURL, syncTypeValue)
 	redirectURL = macroRegexUserMacro.ReplaceAllLiteralString(redirectURL, syncerEndpoint.UserMacro)
 	redirectURL = macroRegexExternalHost.ReplaceAllLiteralString(redirectURL, externalURL)

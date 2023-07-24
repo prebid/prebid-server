@@ -20,7 +20,7 @@ func TestSyncerBuildError(t *testing.T) {
 
 func TestBuildSyncers(t *testing.T) {
 	var (
-		hostConfig              = config.Configuration{ExternalURL: "http://host.com", UserSync: config.UserSync{RedirectURL: "{{.ExternalURL}}/{{.BidderName}}/host"}}
+		hostConfig              = config.Configuration{ExternalURL: "http://host.com", UserSync: config.UserSync{RedirectURL: "{{.ExternalURL}}/{{.SyncerKey}}/host"}}
 		iframeConfig            = &config.SyncerEndpoint{URL: "https://bidder.com/iframe?redirect={{.RedirectURL}}"}
 		iframeConfigError       = &config.SyncerEndpoint{URL: "https://bidder.com/iframe?redirect={{xRedirectURL}}"} // Error caused by invalid macro
 		infoKeyAPopulated       = config.BidderInfo{Disabled: false, Syncer: &config.Syncer{Key: "a", IFrame: iframeConfig}}
@@ -145,7 +145,7 @@ func TestBuildSyncers(t *testing.T) {
 		},
 		{
 			description:      "ExternalURL Host User Sync Override",
-			givenConfig:      config.Configuration{ExternalURL: "http://host.com", UserSync: config.UserSync{ExternalURL: "http://hostoverride.com", RedirectURL: "{{.ExternalURL}}/{{.BidderName}}/host"}},
+			givenConfig:      config.Configuration{ExternalURL: "http://host.com", UserSync: config.UserSync{ExternalURL: "http://hostoverride.com", RedirectURL: "{{.ExternalURL}}/{{.SyncerKey}}/host"}},
 			givenBidderInfos: map[string]config.BidderInfo{"bidder1": infoKeyAPopulated},
 			expectedIFramesURLs: map[string]string{
 				"bidder1": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhostoverride.com%2Fbidder1%2Fhost",

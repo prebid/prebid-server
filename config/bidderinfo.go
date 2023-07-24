@@ -161,13 +161,13 @@ type SyncerEndpoint struct {
 	// startup:
 	//
 	//  {{.ExternalURL}} - This will be replaced with the host server's externally reachable http path.
-	//  {{.BidderName}}   - This will be replaced with the bidder name.
+	//  {{.SyncerKey}}   - This will be replaced with the syncer key.
 	//  {{.SyncType}}    - This will be replaced with the sync type, either 'b' for iframe syncs or 'i'
 	//                     for redirect/image syncs.
 	//  {{.UserMacro}}   - This will be replaced with the bidder server's user id macro.
 	//
 	// The endpoint on the host server is usually Prebid Server's /setuid endpoint. The default value is:
-	// `{{.ExternalURL}}/setuid?bidder={{.BidderName}}&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&f={{.SyncType}}&uid={{.UserMacro}}`
+	// `{{.ExternalURL}}/setuid?bidder={{.SyncerKey}}&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&f={{.SyncType}}&uid={{.UserMacro}}`
 	RedirectURL string `yaml:"redirectUrl" mapstructure:"redirect_url"`
 
 	// ExternalURL is available as a macro to the RedirectURL template. If not specified, either the syncer configuration
