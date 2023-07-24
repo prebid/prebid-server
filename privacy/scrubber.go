@@ -2,6 +2,7 @@ package privacy
 
 import (
 	"encoding/json"
+	"github.com/prebid/prebid-server/util/ptrutil"
 	"strings"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
@@ -86,32 +87,42 @@ func (scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enforc
 	var userExtParsed map[string]json.RawMessage
 	userExtModified := false
 
-	if enforcement.UFPD || enforcement.Eids {
-		if len(bidRequest.User.Ext) != 0 {
-			json.Unmarshal(bidRequest.User.Ext, &userExtParsed)
+	var userCopy *openrtb2.User
+	if bidRequest.User != nil {
+		userCopy = ptrutil.Clone(bidRequest.User)
+	}
+
+	var deviceCopy *openrtb2.Device
+	if bidRequest.Device != nil {
+		deviceCopy = ptrutil.Clone(bidRequest.Device)
+	}
+
+	if userCopy != nil && (enforcement.UFPD || enforcement.Eids) {
+		if len(userCopy.Ext) != 0 {
+			json.Unmarshal(userCopy.Ext, &userExtParsed)
 		}
 	}
 
 	if enforcement.UFPD {
 		// transmitUfpd covers user.ext.data, user.data, user.id, user.buyeruid, user.yob, user.gender, user.keywords, user.kwarray
 		// and device.{ifa, macsha1, macmd5, dpidsha1, dpidmd5, didsha1, didmd5}
-		if bidRequest.Device != nil {
-			bidRequest.Device.DIDMD5 = ""
-			bidRequest.Device.DIDSHA1 = ""
-			bidRequest.Device.DPIDMD5 = ""
-			bidRequest.Device.DPIDSHA1 = ""
-			bidRequest.Device.IFA = ""
-			bidRequest.Device.MACMD5 = ""
-			bidRequest.Device.MACSHA1 = ""
+		if deviceCopy != nil {
+			deviceCopy.DIDMD5 = ""
+			deviceCopy.DIDSHA1 = ""
+			deviceCopy.DPIDMD5 = ""
+			deviceCopy.DPIDSHA1 = ""
+			deviceCopy.IFA = ""
+			deviceCopy.MACMD5 = ""
+			deviceCopy.MACSHA1 = ""
 		}
-		if bidRequest.User != nil {
-			bidRequest.User.Data = nil
-			bidRequest.User.ID = ""
-			bidRequest.User.BuyerUID = ""
-			bidRequest.User.Yob = 0
-			bidRequest.User.Gender = ""
-			bidRequest.User.Keywords = ""
-			bidRequest.User.KwArray = nil
+		if userCopy != nil {
+			userCopy.Data = nil
+			userCopy.ID = ""
+			userCopy.BuyerUID = ""
+			userCopy.Yob = 0
+			userCopy.Gender = ""
+			userCopy.Keywords = ""
+			userCopy.KwArray = nil
 
 			_, hasField := userExtParsed["data"]
 			if hasField {
@@ -122,8 +133,8 @@ func (scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enforc
 	}
 	if enforcement.Eids {
 		//transmitEids covers user.eids and user.ext.eids
-		if bidRequest.User != nil {
-			bidRequest.User.EIDs = nil
+		if userCopy != nil {
+			userCopy.EIDs = nil
 			_, hasField := userExtParsed["eids"]
 			if hasField {
 				delete(userExtParsed, "eids")
@@ -134,7 +145,7 @@ func (scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enforc
 
 	if userExtModified {
 		userExt, _ := json.Marshal(userExtParsed)
-		bidRequest.User.Ext = userExt
+		userCopy.Ext = userExt
 	}
 
 	if enforcement.TID {
@@ -151,19 +162,21 @@ func (scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enforc
 	if enforcement.PreciseGeo {
 		//round user's geographic location by rounding off IP address and lat/lng data.
 		//this applies to both device.geo and user.geo
-		if bidRequest.User != nil && bidRequest.User.Geo != nil {
-			bidRequest.User.Geo = scrubGeoPrecision(bidRequest.User.Geo)
+		if userCopy != nil && userCopy.Geo != nil {
+			userCopy.Geo = scrubGeoPrecision(userCopy.Geo)
 		}
 
-		if bidRequest.Device != nil {
-			if bidRequest.Device.Geo != nil {
-				bidRequest.Device.Geo = scrubGeoPrecision(bidRequest.Device.Geo)
+		if deviceCopy != nil {
+			if deviceCopy.Geo != nil {
+				deviceCopy.Geo = scrubGeoPrecision(deviceCopy.Geo)
 			}
-			bidRequest.Device.IP = scrubIPV4Lowest8(bidRequest.Device.IP)
-			bidRequest.Device.IPv6 = scrubIPV6Lowest32Bits(bidRequest.Device.IPv6)
+			deviceCopy.IP = scrubIPV4Lowest8(deviceCopy.IP)
+			deviceCopy.IPv6 = scrubIPV6Lowest32Bits(deviceCopy.IPv6)
 		}
 	}
 
+	bidRequest.Device = deviceCopy
+	bidRequest.User = userCopy
 	return bidRequest
 }
 
