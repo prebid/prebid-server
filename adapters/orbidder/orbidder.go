@@ -97,7 +97,7 @@ func preprocessBidFloorCurrency(imp *openrtb2.Imp, reqInfo *adapters.ExtraReques
 }
 
 // MakeBids unpacks server response into Bids.
-func (rcv OrbidderAdapter) MakeBids(internalRequest *openrtb2.BidRequest, _ *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (rcv OrbidderAdapter) MakeBids(_ *openrtb2.BidRequest, _ *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -133,7 +133,7 @@ func (rcv OrbidderAdapter) MakeBids(internalRequest *openrtb2.BidRequest, _ *ada
 			// because of this we need a variable that only exists at this loop iteration.
 			// otherwise there will be issues with multibid and pointer behavior.
 			bid := seatBid.Bid[i]
-			bidType, err := getBidType(bid, internalRequest.Imp)
+			bidType, err := getBidType(bid)
 			if err != nil {
 				// could not determinate media type, append an error and continue with the next bid.
 				bidErrs = append(bidErrs, err)
@@ -153,7 +153,7 @@ func (rcv OrbidderAdapter) MakeBids(internalRequest *openrtb2.BidRequest, _ *ada
 	return bidResponse, bidErrs
 }
 
-func getBidType(bid openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
+func getBidType(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 
 	// determinate media type by bid response field mtype
 	switch bid.MType {
@@ -165,21 +165,6 @@ func getBidType(bid openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, err
 		return openrtb_ext.BidTypeAudio, nil
 	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative, nil
-	}
-
-	// fallback if mtype is not set at the bid response
-	for _, imp := range imps {
-		if imp.ID == bid.ImpID {
-			if imp.Banner != nil {
-				return openrtb_ext.BidTypeBanner, nil
-			} else if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo, nil
-			} else if imp.Native != nil {
-				return openrtb_ext.BidTypeNative, nil
-			} else if imp.Audio != nil {
-				return openrtb_ext.BidTypeAudio, nil
-			}
-		}
 	}
 
 	return "", &errortypes.BadInput{

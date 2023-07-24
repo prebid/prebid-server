@@ -69,7 +69,8 @@
                   "adid": "11110126",
                   "price": 0.500000,
                   "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":0,\"required\":1,\"title\":{\"text\":\"Orbidder rocks\"}},{\"id\":1,\"required\":1,\"img\":{\"url\":\"https://prd.orbidder.de/common/logo.png\"}}],\"link\":{\"url\":\"https://www.otto.de/\",\"clicktrackers\":[\"https://prd.orbidder.de/click\"]},\"imptrackers\":[\"https://prd.orbidder.de/imp\"]}",
-                  "crid": "test-crid"
+                  "crid": "test-crid",
+                  "mtype": 4
                 }
               ]
             }
@@ -90,7 +91,8 @@
             "adid": "11110126",
             "price": 0.5,
             "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":0,\"required\":1,\"title\":{\"text\":\"Orbidder rocks\"}},{\"id\":1,\"required\":1,\"img\":{\"url\":\"https://prd.orbidder.de/common/logo.png\"}}],\"link\":{\"url\":\"https://www.otto.de/\",\"clicktrackers\":[\"https://prd.orbidder.de/click\"]},\"imptrackers\":[\"https://prd.orbidder.de/imp\"]}",
-            "crid": "test-crid"
+            "crid": "test-crid",
+            "mtype": 4
           },
           "type": "native"
         }
