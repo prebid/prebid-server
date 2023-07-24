@@ -73,13 +73,6 @@ func preprocessExtensions(imp *openrtb2.Imp) error {
 		}
 	}
 
-	var tpmnBidderExt openrtb_ext.ExtImpTpmn
-	if err := json.Unmarshal(bidderExt.Bidder, &tpmnBidderExt); err != nil {
-		return &errortypes.BadInput{
-			Message: "Wrong TPMN bidder ext: " + err.Error(),
-		}
-	}
-
 	return nil
 }
 
