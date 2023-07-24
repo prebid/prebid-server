@@ -88,7 +88,7 @@ func TestGoodAmpRequests(t *testing.T) {
 				continue
 			}
 
-			test.storedRequest = map[string]json.RawMessage{tagID: test.BidRequest}
+			test.StoredRequest = map[string]json.RawMessage{tagID: test.BidRequest}
 			test.endpointType = AMP_ENDPOINT
 
 			cfg := &config.Configuration{
@@ -165,7 +165,7 @@ func TestAccountErrors(t *testing.T) {
 		if !assert.NoError(t, json.Unmarshal(fileJsonData, &test), "Failed to unmarshal data from file: %s. Error: %v", tt.filename, err) {
 			continue
 		}
-		test.storedRequest = map[string]json.RawMessage{tt.storedReqID: test.BidRequest}
+		test.StoredRequest = map[string]json.RawMessage{tt.storedReqID: test.BidRequest}
 		test.endpointType = AMP_ENDPOINT
 
 		cfg := &config.Configuration{
@@ -2190,7 +2190,7 @@ func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
 			query := request.URL.Query()
 			tagID := query.Get("tag_id")
 
-			test.storedRequest = map[string]json.RawMessage{tagID: test.BidRequest}
+			test.StoredRequest = map[string]json.RawMessage{tagID: test.BidRequest}
 			test.planBuilder = tc.planBuilder
 			test.endpointType = AMP_ENDPOINT
 

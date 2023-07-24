@@ -1,0 +1,14 @@
+endpoint: "http://us-e-node1.gothamads.com/?pass={{.AccountID}}"
+maintainer:
+  email: "support@gothamads.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native

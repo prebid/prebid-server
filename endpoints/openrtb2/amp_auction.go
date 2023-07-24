@@ -182,12 +182,15 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	}
 	defer cancel()
 
-	usersyncs := usersync.ParseCookieFromRequest(r, &(deps.cfg.HostCookie))
+	// Read UserSyncs/Cookie from Request
+	usersyncs := usersync.ReadCookie(r, usersync.Base64Decoder{}, &deps.cfg.HostCookie)
+	usersync.SyncHostCookie(r, usersyncs, &deps.cfg.HostCookie)
 	if usersyncs.HasAnyLiveSyncs() {
 		labels.CookieFlag = metrics.CookieFlagYes
 	} else {
 		labels.CookieFlag = metrics.CookieFlagNo
 	}
+
 	labels.PubID = getAccountID(reqWrapper.Site.Publisher)
 	// Look up account now that we have resolved the pubID value
 	account, acctIDErrs := accountService.GetAccount(ctx, deps.cfg, deps.accounts, labels.PubID, deps.metricsEngine)
@@ -251,6 +254,11 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	}
 
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
+	defer func() {
+		if !auctionRequest.BidderResponseStartTime.IsZero() {
+			deps.metricsEngine.RecordOverheadTime(metrics.MakeAuctionResponse, time.Since(auctionRequest.BidderResponseStartTime))
+		}
+	}()
 	var response *openrtb2.BidResponse
 	if auctionResponse != nil {
 		response = auctionResponse.BidResponse
@@ -284,9 +292,6 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	}
 
 	labels, ao = sendAmpResponse(w, hookExecutor, auctionResponse, reqWrapper, account, labels, ao, errL)
-	if len(ao.Errors) == 0 {
-		recordResponsePreparationMetrics(auctionRequest.MakeBidsTimeInfo, deps.metricsEngine)
-	}
 }
 
 func rejectAmpRequest(
