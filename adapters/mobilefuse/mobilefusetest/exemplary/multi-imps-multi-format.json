@@ -12,6 +12,17 @@
                         }
                     ]
                 },
+                "video": {
+                    "mimes": [
+                        "video/mp4"
+                    ],
+                    "protocols": [
+                        2,
+                        5
+                    ],
+                    "w": 320,
+                    "h": 480
+                },
                 "ext": {
                     "bidder": {
                         "placement_id": 123456,
@@ -29,6 +40,10 @@
                         }
                     ]
                 },
+                "native": {
+                    "ver": "1.2",
+                    "request": "{\"native\":{\"assets\":[{\"id\":0,\"required\":1,\"img\":{\"url\":\"...\"}},{\"id\":1,\"required\":1,\"title\":{\"text\":\"custom title\"}}]}}"
+                },
                 "ext": {
                     "bidder": {
                         "placement_id": 234567,
@@ -38,7 +53,6 @@
             }
         ]
     },
-
     "httpCalls": [
         {
             "expectedRequest": {
@@ -56,6 +70,17 @@
                                     }
                                 ]
                             },
+                            "video": {
+                                "mimes": [
+                                    "video/mp4"
+                                ],
+                                "protocols": [
+                                    2,
+                                    5
+                                ],
+                                "w": 320,
+                                "h": 480
+                            },
                             "tagid": "123456"
                         },
                         {
@@ -68,12 +93,15 @@
                                     }
                                 ]
                             },
+                            "native": {
+                                "ver": "1.2",
+                                "request": "{\"native\":{\"assets\":[{\"id\":0,\"required\":1,\"img\":{\"url\":\"...\"}},{\"id\":1,\"required\":1,\"title\":{\"text\":\"custom title\"}}]}}"
+                            },
                             "tagid": "234567"
                         }
                     ]
                 }
             },
-
             "mockResponse": {
                 "status": 200,
                 "body": {
@@ -104,7 +132,6 @@
             }
         }
     ],
-
     "expectedBidResponses": [
         {
             "currency": "USD",
