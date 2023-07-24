@@ -246,6 +246,35 @@ func processBidderInfos(reader InfoReader, normalizeBidderName func(string) (ope
 			infos[string(normalizedBidderName)] = info
 		}
 	}
+	return processAliasBidderInfo(infos)
+}
+
+func processAliasBidderInfo(infos BidderInfos) (BidderInfos, error) {
+	for bidderName, bidderInfo := range infos {
+		if len(infos[bidderName].AliasOf) > 0 {
+			if err := validateAliases(bidderInfo, infos, bidderName); err != nil {
+				return nil, err
+			}
+			parentBidderInfo := infos[bidderInfo.AliasOf]
+			bidderInfo.AppSecret = parentBidderInfo.AppSecret
+			bidderInfo.Capabilities = parentBidderInfo.Capabilities
+			bidderInfo.Debug = parentBidderInfo.Debug
+			bidderInfo.Disabled = parentBidderInfo.Disabled
+			bidderInfo.Endpoint = parentBidderInfo.Endpoint
+			bidderInfo.EndpointCompression = parentBidderInfo.EndpointCompression
+			bidderInfo.Experiment = parentBidderInfo.Experiment
+			bidderInfo.ExtraAdapterInfo = parentBidderInfo.ExtraAdapterInfo
+			bidderInfo.GVLVendorID = parentBidderInfo.GVLVendorID
+			bidderInfo.Maintainer = parentBidderInfo.Maintainer
+			bidderInfo.ModifyingVastXmlAllowed = parentBidderInfo.ModifyingVastXmlAllowed
+			bidderInfo.OpenRTB = parentBidderInfo.OpenRTB
+			bidderInfo.PlatformID = parentBidderInfo.PlatformID
+			bidderInfo.Syncer = parentBidderInfo.Syncer
+			bidderInfo.UserSyncURL = parentBidderInfo.UserSyncURL
+			bidderInfo.XAPI = parentBidderInfo.XAPI
+			infos[bidderName] = bidderInfo
+		}
+	}
 	return infos, nil
 }
 
@@ -272,10 +301,6 @@ func (infos BidderInfos) validate(errs []error) []error {
 			}
 
 			if err := validateSyncer(bidder); err != nil {
-				errs = append(errs, err)
-			}
-
-			if err := validateAliases(bidder, infos, bidderName); err != nil {
 				errs = append(errs, err)
 			}
 		}
