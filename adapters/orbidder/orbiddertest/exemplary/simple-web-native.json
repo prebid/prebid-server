@@ -1,22 +1,18 @@
 {
   "mockBidRequest": {
     "id": "test-request-id",
-    "app": {
-      "bundle": "com.prebid"
+    "site": {
+      "page": "test.orbidder.de"
     },
-    "device": {
-      "ifa":"87857b31-8942-4646-ae80-ab9c95bf3fab"
+    "user": {
+      "buyeruid": "test-user"
     },
     "imp": [
       {
         "id": "test-imp-id",
-        "banner": {
-          "format": [
-            {
-              "w": 300,
-              "h": 250
-            }
-          ]
+        "native": {
+          "ver":"1.2",
+          "request":"\"assets\":[{\"id\":0,\"required\":1,\"title\":{\"len\":140},{\"id\":1,\"img\":{\"h\":250,\"hmin\":0,\"type\":3,\"w\":300,\"wmin\":0}}]"
         },
         "ext": {
           "bidder": {
@@ -24,12 +20,6 @@
             "placementId": "test-placement",
             "bidfloor": 0.1
           }
-        }
-      },
-      {
-        "id": "test-imp-id-INVALID",
-        "banner": {
-          "format": [{}]
         }
       }
     ]
@@ -40,22 +30,18 @@
         "uri": "https://orbidder-test",
         "body": {
           "id": "test-request-id",
-          "app": {
-            "bundle": "com.prebid"
+          "site": {
+            "page": "test.orbidder.de"
           },
-          "device": {
-            "ifa":"87857b31-8942-4646-ae80-ab9c95bf3fab"
+          "user": {
+            "buyeruid": "test-user"
           },
           "imp": [
             {
               "id": "test-imp-id",
-              "banner": {
-                "format": [
-                  {
-                    "w": 300,
-                    "h": 250
-                  }
-                ]
+              "native": {
+                "ver":"1.2",
+                "request":"\"assets\":[{\"id\":0,\"required\":1,\"title\":{\"len\":140},{\"id\":1,\"img\":{\"h\":250,\"hmin\":0,\"type\":3,\"w\":300,\"wmin\":0}}]"
               },
               "bidfloorcur": "EUR",
               "ext": {
@@ -82,11 +68,9 @@
                   "impid": "test-imp-id",
                   "adid": "11110126",
                   "price": 0.500000,
-                  "adm": "some-test-ad",
+                  "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":0,\"required\":1,\"title\":{\"text\":\"Orbidder rocks\"}},{\"id\":1,\"required\":1,\"img\":{\"url\":\"https://prd.orbidder.de/common/logo.png\"}}],\"link\":{\"url\":\"https://www.otto.de/\",\"clicktrackers\":[\"https://prd.orbidder.de/click\"]},\"imptrackers\":[\"https://prd.orbidder.de/imp\"]}",
                   "crid": "test-crid",
-                  "h": 250,
-                  "w": 300,
-                  "mtype": 1
+                  "mtype": 4
                 }
               ]
             }
@@ -106,21 +90,13 @@
             "impid": "test-imp-id",
             "adid": "11110126",
             "price": 0.5,
-            "adm": "some-test-ad",
+            "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":0,\"required\":1,\"title\":{\"text\":\"Orbidder rocks\"}},{\"id\":1,\"required\":1,\"img\":{\"url\":\"https://prd.orbidder.de/common/logo.png\"}}],\"link\":{\"url\":\"https://www.otto.de/\",\"clicktrackers\":[\"https://prd.orbidder.de/click\"]},\"imptrackers\":[\"https://prd.orbidder.de/imp\"]}",
             "crid": "test-crid",
-            "w": 300,
-            "h": 250,
-            "mtype": 1
+            "mtype": 4
           },
-          "type": "banner"
+          "type": "native"
         }
       ]
-    }
-  ],
-  "expectedMakeRequestsErrors": [
-    {
-      "value": "unexpected end of JSON input",
-      "comparison": "literal"
     }
   ]
 }

@@ -1,15 +1,15 @@
 {
   "mockBidRequest": {
     "id": "test-request-id",
-    "app": {
-      "bundle": "com.prebid"
+    "site": {
+      "page": "https://test.orbidder.de"
     },
-    "device": {
-      "ifa":"87857b31-8942-4646-ae80-ab9c95bf3fab"
+    "user": {
+      "buyeruid": "XX672XXX-5XXd-4XX2-8XX6-6XXXXc9cXXXX.v1"
     },
     "imp": [
       {
-        "id": "test-imp-id",
+        "id": "web-test-imp-id",
         "banner": {
           "format": [
             {
@@ -21,15 +21,9 @@
         "ext": {
           "bidder": {
             "accountId": "orbidder-test",
-            "placementId": "test-placement",
+            "placementId": "web-test-placement",
             "bidfloor": 0.1
           }
-        }
-      },
-      {
-        "id": "test-imp-id-INVALID",
-        "banner": {
-          "format": [{}]
         }
       }
     ]
@@ -40,15 +34,15 @@
         "uri": "https://orbidder-test",
         "body": {
           "id": "test-request-id",
-          "app": {
-            "bundle": "com.prebid"
+          "site": {
+            "page": "https://test.orbidder.de"
           },
-          "device": {
-            "ifa":"87857b31-8942-4646-ae80-ab9c95bf3fab"
+          "user": {
+            "buyeruid": "XX672XXX-5XXd-4XX2-8XX6-6XXXXc9cXXXX.v1"
           },
           "imp": [
             {
-              "id": "test-imp-id",
+              "id": "web-test-imp-id",
               "banner": {
                 "format": [
                   {
@@ -61,7 +55,7 @@
               "ext": {
                 "bidder": {
                   "accountId": "orbidder-test",
-                  "placementId": "test-placement",
+                  "placementId": "web-test-placement",
                   "bidfloor": 0.1
                 }
               }
@@ -72,18 +66,18 @@
       "mockResponse": {
         "status": 200,
         "body": {
-          "id": "test-request-id",
+          "id": "web-test-request-id",
           "seatbid": [
             {
-              "seat": "seat-id",
+              "seat": "web-seat-id",
               "bid": [
                 {
                   "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
-                  "impid": "test-imp-id",
+                  "impid": "web-test-imp-id",
                   "adid": "11110126",
-                  "price": 0.500000,
-                  "adm": "some-test-ad",
-                  "crid": "test-crid",
+                  "price": 0.600000,
+                  "adm": "web-some-test-ad",
+                  "crid": "web-test-crid",
                   "h": 250,
                   "w": 300,
                   "mtype": 1
@@ -103,11 +97,11 @@
         {
           "bid": {
             "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
-            "impid": "test-imp-id",
+            "impid": "web-test-imp-id",
             "adid": "11110126",
-            "price": 0.5,
-            "adm": "some-test-ad",
-            "crid": "test-crid",
+            "price": 0.6,
+            "adm": "web-some-test-ad",
+            "crid": "web-test-crid",
             "w": 300,
             "h": 250,
             "mtype": 1
@@ -115,12 +109,6 @@
           "type": "banner"
         }
       ]
-    }
-  ],
-  "expectedMakeRequestsErrors": [
-    {
-      "value": "unexpected end of JSON input",
-      "comparison": "literal"
     }
   ]
 }
