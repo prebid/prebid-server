@@ -49,11 +49,9 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var errs []error
 	requestJSON, err := json.Marshal(request)
 	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
+		return nil, []error{err}
 	}
 
 	requestData := &adapters.RequestData{
