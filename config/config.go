@@ -155,6 +155,10 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 		cfg.TmaxAdjustments.Enabled = false
 	}
 
+	if cfg.AccountDefaults.Privacy != nil {
+		glog.Warning("account_defaults.Privacy has no effect as the feature is under development.")
+	}
+
 	errs = cfg.Experiment.validate(errs)
 	errs = cfg.BidderInfos.validate(errs)
 	return errs

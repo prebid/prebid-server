@@ -58,7 +58,7 @@ type AdaptedBidder interface {
 	//
 	// Any errors will be user-facing in the API.
 	// Error messages should help publishers understand what might account for "bad" bids.
-	requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, hookExecutor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) ([]*entities.PbsOrtbSeatBid, []error)
+	requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, hookExecutor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) ([]*entities.PbsOrtbSeatBid, extraBidderRespInfo, []error)
 }
 
 // bidRequestOptions holds additional options for bid request execution to maintain clean code and reasonable number of parameters
@@ -67,6 +67,16 @@ type bidRequestOptions struct {
 	headerDebugAllowed  bool
 	addCallSignHeader   bool
 	bidAdjustments      map[string]float64
+}
+
+type extraBidderRespInfo struct {
+	respProcessingStartTime time.Time
+}
+
+type extraAuctionResponseInfo struct {
+	fledge                  *openrtb_ext.Fledge
+	bidsFound               bool
+	bidderResponseStartTime time.Time
 }
 
 const ImpIdReqBody = "Stored bid response for impression id: "
@@ -117,16 +127,17 @@ type bidderAdapterConfig struct {
 	EndpointCompression string
 }
 
-func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, hookExecutor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) ([]*entities.PbsOrtbSeatBid, []error) {
+func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, hookExecutor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) ([]*entities.PbsOrtbSeatBid, extraBidderRespInfo, []error) {
 	reject := hookExecutor.ExecuteBidderRequestStage(bidderRequest.BidRequest, string(bidderRequest.BidderName))
 	if reject != nil {
-		return nil, []error{reject}
+		return nil, extraBidderRespInfo{}, []error{reject}
 	}
 
 	var (
 		reqData         []*adapters.RequestData
 		errs            []error
 		responseChannel chan *httpCallInfo
+		extraRespInfo   extraBidderRespInfo
 	)
 
 	//check if real request exists for this bidder or it only has stored responses
@@ -139,7 +150,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 			if len(errs) == 0 {
 				errs = append(errs, &errortypes.FailedToRequestBids{Message: "The adapter failed to generate any bid requests, but also failed to generate an error explaining why"})
 			}
-			return nil, errs
+			return nil, extraBidderRespInfo{}, errs
 		}
 		xPrebidHeader := version.BuildXPrebidHeaderForRequest(bidderRequest.BidRequest, version.Ver)
 
@@ -231,7 +242,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 		}
 
 		if httpInfo.err == nil {
-			startTime := time.Now()
+			extraRespInfo.respProcessingStartTime = time.Now()
 			bidResponse, moreErrs := bidder.Bidder.MakeBids(bidderRequest.BidRequest, httpInfo.request, httpInfo.response)
 			errs = append(errs, moreErrs...)
 
@@ -373,18 +384,16 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 					errs = append(errs, err)
 				}
 			}
-			reqInfo.MakeBidsTimeInfo.Durations = append(reqInfo.MakeBidsTimeInfo.Durations, time.Since(startTime))
 		} else {
 			errs = append(errs, httpInfo.err)
 		}
 	}
-	reqInfo.MakeBidsTimeInfo.AfterMakeBidsStartTime = time.Now()
 	seatBids := make([]*entities.PbsOrtbSeatBid, 0, len(seatBidMap))
 	for _, seatBid := range seatBidMap {
 		seatBids = append(seatBids, seatBid)
 	}
 
-	return seatBids, errs
+	return seatBids, extraRespInfo, errs
 }
 
 func addNativeTypes(bid *openrtb2.Bid, request *openrtb2.BidRequest) (*nativeResponse.Response, []error) {

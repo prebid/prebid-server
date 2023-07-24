@@ -76,7 +76,7 @@ type testCase struct {
 	ExpectedBidResponse json.RawMessage `json:"expectedBidResponse"`
 
 	// "/openrtb2/amp" endpoint JSON test info
-	storedRequest       map[string]json.RawMessage `json:"mockAmpStoredRequest"`
+	StoredRequest       map[string]json.RawMessage `json:"mockAmpStoredRequest"`
 	StoredResponse      map[string]json.RawMessage `json:"mockAmpStoredResponse"`
 	ExpectedAmpResponse json.RawMessage            `json:"expectedAmpResponse"`
 }
@@ -1265,8 +1265,8 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 	testExchange, mockBidServersArray := buildTestExchange(test.Config, adapterMap, mockBidServersArray, mockCurrencyRatesServer, bidderInfos, cfg, met, mockFetcher)
 
 	var storedRequestFetcher stored_requests.Fetcher
-	if len(test.storedRequest) > 0 {
-		storedRequestFetcher = &mockAmpStoredReqFetcher{test.storedRequest}
+	if len(test.StoredRequest) > 0 {
+		storedRequestFetcher = &mockAmpStoredReqFetcher{test.StoredRequest}
 	} else {
 		storedRequestFetcher = &mockStoredReqFetcher{}
 	}
