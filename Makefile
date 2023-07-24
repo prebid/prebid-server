@@ -32,4 +32,4 @@ image:
 
 # format runs format
 format:
-	./scripts/format.sh
+	./scripts/format.sh -f true

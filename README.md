@@ -53,7 +53,7 @@ make format
 ```
 or
 ```bash
-./scripts/format.sh
+./scripts/format.sh -f true
 ```
 
 Load the landing page in your browser at `http://localhost:8000/`.

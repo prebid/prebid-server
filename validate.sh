@@ -17,9 +17,7 @@ while true; do
   esac
 done
 
-die() { echo -e "$@" 1>&2 ; exit 1;  }
-
-./scripts/format.sh
+./scripts/format.sh -f $AUTOFMT
 
 # Run the actual tests. Make sure there's enough coverage too, if the flags call for it.
 if $COVERAGE; then

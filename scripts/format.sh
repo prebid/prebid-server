@@ -1,4 +1,16 @@
 #!/bin/bash
+
+die() { echo -e "$@" 1>&2 ; exit 1;  }
+
+AUTOFMT=true
+while getopts 'f:' OPTION; do
+  case "$OPTION" in
+    f)
+      AUTOFMT="$OPTARG"
+      ;;
+  esac
+done
+
 # Build a list of all the top-level directories in the project.
 for DIRECTORY in */ ; do
   GOGLOB="$GOGLOB ${DIRECTORY%/}"
