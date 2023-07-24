@@ -72,7 +72,8 @@
                 "impid": "test-imp-id",
                 "price": 0.500000,
                 "adm": "some-test-adm",
-                "crid": "test-crid"
+                "crid": "test-crid",
+                "mtype": 4
               }]
             }
           ],
@@ -92,7 +93,8 @@
             "impid": "test-imp-id",
             "price": 0.5,
             "adm": "some-test-adm",
-            "crid": "test-crid"
+            "crid": "test-crid",
+            "mtype": 4
           },
           "type": "native"
         }

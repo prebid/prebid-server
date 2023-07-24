@@ -94,7 +94,8 @@
                   "adm": "some-test-adm",
                   "crid": "test-crid",
                   "w": 1024,
-                  "h": 576
+                  "h": 576,
+                  "mtype": 2
                 }
               ]
             }
@@ -116,7 +117,8 @@
             "adm": "some-test-adm",
             "crid": "test-crid",
             "w": 1024,
-            "h": 576
+            "h": 576,
+            "mtype": 2
           },
           "type": "video"
         }
