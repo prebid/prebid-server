@@ -597,6 +597,57 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 	}
 }
 
+func TestValidateAliases(t *testing.T) {
+	testCase := struct {
+		description  string
+		bidderInfos  BidderInfos
+		expectErrors []error
+	}{
+		description: "invalid aliases",
+		bidderInfos: BidderInfos{
+			"bidderA": BidderInfo{
+				Endpoint: "http://bidderA.com/openrtb2",
+				Maintainer: &MaintainerInfo{
+					Email: "maintainer@bidderA.com",
+				},
+				Capabilities: &CapabilitiesInfo{
+					Site: &PlatformInfo{
+						MediaTypes: []openrtb_ext.BidType{
+							openrtb_ext.BidTypeVideo,
+						},
+					},
+				},
+				AliasOf: "bidderB",
+			},
+			"bidderB": BidderInfo{
+				Endpoint: "http://bidderA.com/openrtb2",
+				Maintainer: &MaintainerInfo{
+					Email: "maintainer@bidderA.com",
+				},
+				Capabilities: &CapabilitiesInfo{
+					Site: &PlatformInfo{
+						MediaTypes: []openrtb_ext.BidType{
+							openrtb_ext.BidTypeVideo,
+						},
+					},
+				},
+				AliasOf: "bidderC",
+			},
+		},
+		expectErrors: []error{
+			errors.New("bidder: bidderB cannot be an alias of an alias: bidderA"),
+			errors.New("bidder: bidderC not found for an alias: bidderB"),
+		},
+	}
+
+	var errs []error
+	for bidderName, bidderInfo := range testCase.bidderInfos {
+		errs = append(errs, validateAliases(bidderInfo, testCase.bidderInfos, bidderName))
+	}
+
+	assert.ElementsMatch(t, errs, testCase.expectErrors)
+}
+
 func TestSyncerOverride(t *testing.T) {
 	var (
 		trueValue  = true
