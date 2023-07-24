@@ -1,0 +1,8 @@
+rules:
+  - id: parse-bid-type-check
+    message: Prebid server expects media type set in adapter response. we recommend implementing a pattern where adapter server sets the [MType](https://github.com/prebid/openrtb/blob/53ac1b9ca7ddf860988ff69bf5018b32ced1fbc5/openrtb2/bid.go#L334) field in the response to accurately determine the media type for the impression.
+    languages:
+      - go
+    severity: WARNING
+    patterns:
+      - pattern: openrtb_ext.ParseBidType(...)
