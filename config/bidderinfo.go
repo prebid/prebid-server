@@ -251,7 +251,7 @@ func processBidderInfos(reader InfoReader, normalizeBidderName func(string) (ope
 
 func processAliasBidderInfo(infos BidderInfos) (BidderInfos, error) {
 	for bidderName, bidderInfo := range infos {
-		if len(infos[bidderName].AliasOf) > 0 {
+		if len(bidderInfo.AliasOf) > 0 {
 			if err := validateAliases(bidderInfo, infos, bidderName); err != nil {
 				return nil, err
 			}
