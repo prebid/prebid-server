@@ -38,6 +38,7 @@ type PriorityBidderEjector struct {
 }
 
 func (p *PriorityBidderEjector) Choose(uids map[string]UIDEntry) (string, error) {
+	// If there are non priority keys left in the cookie.uids, we should eject one of those using the OldestEjector
 	p.OldestEjector.nonPriorityKeys = getNonPriorityKeys(uids, p.PriorityGroups)
 	if len(p.OldestEjector.nonPriorityKeys) > 0 {
 		return p.OldestEjector.Choose(uids)
@@ -46,17 +47,13 @@ func (p *PriorityBidderEjector) Choose(uids map[string]UIDEntry) (string, error)
 	if isSyncerPriority(p.SyncerKey, p.PriorityGroups) {
 		// Eject Oldest Element from Lowest Priority Group and Update Priority Group
 		lowestPriorityGroup := p.PriorityGroups[len(p.PriorityGroups)-1]
+
 		oldestElement := getOldestElement(lowestPriorityGroup, uids)
 		if oldestElement == "" {
 			return p.FallbackEjector.Choose(uids)
 		}
 
-		updatedPriorityGroup := removeElementFromPriorityGroup(lowestPriorityGroup, oldestElement)
-		if updatedPriorityGroup == nil {
-			p.PriorityGroups = p.PriorityGroups[:len(p.PriorityGroups)-1]
-		} else {
-			p.PriorityGroups[len(p.PriorityGroups)-1] = updatedPriorityGroup
-		}
+		p.PriorityGroups = removeElementFromPriorityGroup(p.PriorityGroups, oldestElement)
 
 		return oldestElement, nil
 	}
@@ -64,19 +61,21 @@ func (p *PriorityBidderEjector) Choose(uids map[string]UIDEntry) (string, error)
 }
 
 // updatePriorityGroup will remove the selected element from the given priority group list
-func removeElementFromPriorityGroup(lowestGroup []string, oldestElement string) []string {
-	if len(lowestGroup) <= 1 {
-		return nil
+func removeElementFromPriorityGroup(priorityGroups [][]string, oldestElement string) [][]string {
+	lowestPriorityGroup := priorityGroups[len(priorityGroups)-1]
+	if len(lowestPriorityGroup) <= 1 {
+		priorityGroups = priorityGroups[:len(priorityGroups)-1] // Remove entire priority group since it will be empty
+		return priorityGroups
 	}
-	var updatedPriorityGroup []string
 
-	for index, elem := range lowestGroup {
+	for index, elem := range lowestPriorityGroup {
 		if elem == oldestElement {
-			updatedPriorityGroup := append(lowestGroup[:index], lowestGroup[index+1:]...)
-			return updatedPriorityGroup
+			updatedPriorityGroup := append(lowestPriorityGroup[:index], lowestPriorityGroup[index+1:]...) // Delete only that element from the group
+			priorityGroups[len(priorityGroups)-1] = updatedPriorityGroup
+			return priorityGroups
 		}
 	}
-	return updatedPriorityGroup
+	return priorityGroups
 }
 
 func isSyncerPriority(syncer string, priorityGroups [][]string) bool {
