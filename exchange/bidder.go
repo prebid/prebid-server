@@ -63,11 +63,12 @@ type AdaptedBidder interface {
 
 // bidRequestOptions holds additional options for bid request execution to maintain clean code and reasonable number of parameters
 type bidRequestOptions struct {
-	accountDebugAllowed bool
-	headerDebugAllowed  bool
-	addCallSignHeader   bool
-	bidAdjustments      map[string]float64
-	tmaxAdjustments     *TmaxAdjustmentsPreprocessed
+	accountDebugAllowed    bool
+	headerDebugAllowed     bool
+	addCallSignHeader      bool
+	bidAdjustments         map[string]float64
+	tmaxAdjustments        *TmaxAdjustmentsPreprocessed
+	bidderRequestStartTime time.Time
 }
 
 type extraBidderRespInfo struct {
@@ -192,11 +193,11 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 		dataLen = len(reqData) + len(bidderRequest.BidderStoredResponses)
 		responseChannel = make(chan *httpCallInfo, dataLen)
 		if len(reqData) == 1 {
-			responseChannel <- bidder.doRequest(ctx, reqData[0], reqInfo.BidderRequestStartTime, bidRequestOptions.tmaxAdjustments)
+			responseChannel <- bidder.doRequest(ctx, reqData[0], bidRequestOptions.bidderRequestStartTime, bidRequestOptions.tmaxAdjustments)
 		} else {
 			for _, oneReqData := range reqData {
 				go func(data *adapters.RequestData) {
-					responseChannel <- bidder.doRequest(ctx, data, reqInfo.BidderRequestStartTime, bidRequestOptions.tmaxAdjustments)
+					responseChannel <- bidder.doRequest(ctx, data, bidRequestOptions.bidderRequestStartTime, bidRequestOptions.tmaxAdjustments)
 				}(oneReqData) // Method arg avoids a race condition on oneReqData
 			}
 		}

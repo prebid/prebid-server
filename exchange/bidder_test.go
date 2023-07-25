@@ -3135,9 +3135,10 @@ func TestUpdateBidderTmax(t *testing.T) {
 				bidResponse: &adapters.BidderResponse{},
 			}
 
-			ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(50*time.Millisecond))
+			now := time.Now()
+			ctx, cancel := context.WithDeadline(context.Background(), now.Add(500*time.Millisecond))
 			defer cancel()
-			bidReqOptions := bidRequestOptions{tmaxAdjustments: test.tmaxAdjustments}
+			bidReqOptions := bidRequestOptions{bidderRequestStartTime: now, tmaxAdjustments: test.tmaxAdjustments}
 			bidder := AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{Allow: false}, "")
 			_, _, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), extraInfo, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
 			assert.Empty(t, errs)
