@@ -87,6 +87,8 @@ const (
 	Gzip string = "GZIP"
 )
 
+var errTmaxTimeout = errors.New("exceeded tmax duration")
+
 // AdaptBidder converts an adapters.Bidder into an exchange.AdaptedBidder.
 //
 // The name refers to the "Adapter" architecture pattern, and should not be confused with a Prebid "Adapter"
@@ -542,6 +544,16 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 		ctx = bidder.addClientTrace(ctx)
 	}
 	bidder.me.RecordOverheadTime(metrics.PreBidder, time.Since(bidderRequestStartTime))
+
+	if tmaxAdjustments != nil && tmaxAdjustments.IsEnforced {
+		if hasShorterDurationThanTmax(&bidderTmaxCtx{ctx}, *tmaxAdjustments) {
+			return &httpCallInfo{
+				request: req,
+				err:     errTmaxTimeout,
+			}
+		}
+	}
+
 	httpCallStart := time.Now()
 	httpResp, err := ctxhttp.Do(ctx, bidder.Client, httpReq)
 	if err != nil {
@@ -723,4 +735,17 @@ func getBidTypeForAdjustments(bidType openrtb_ext.BidType, impID string, imp []o
 		return "video-instream"
 	}
 	return string(bidType)
+}
+
+func hasShorterDurationThanTmax(ctx bidderTmaxContext, tmaxAdjustments TmaxAdjustmentsPreprocessed) bool {
+	if tmaxAdjustments.IsEnforced {
+		if deadline, ok := ctx.Deadline(); ok {
+			overheadNS := time.Duration(tmaxAdjustments.BidderNetworkLatencyBuffer+tmaxAdjustments.PBSResponsePreparationDuration) * time.Millisecond
+			bidderTmax := deadline.Add(-overheadNS)
+
+			remainingDuration := ctx.Until(bidderTmax).Milliseconds()
+			return remainingDuration < int64(tmaxAdjustments.BidderResponseDurationMin)
+		}
+	}
+	return false
 }
