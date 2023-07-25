@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Liftoff Adapter Params",
+  "description": "A schema which validates params accepted by the Liftoff adapter",
+  "type": "object",
+  "properties": {
+    "bid_token": {
+      "type": "string",
+      "description": "Super Token"
+    },
+    "app_store_id": {
+      "type": "string",
+      "description": "Pub App Store ID"
+    },
+    "placement_reference_id": {
+      "type": "string",
+      "description": "Placement ID"
+    }
+  },
+  "required": [
+    "bid_token",
+    "app_store_id",
+    "placement_reference_id"
+  ]
+}
