@@ -513,11 +513,11 @@ func makeExt(httpInfo *httpCallInfo) *openrtb_ext.ExtHttpCall {
 
 // doRequest makes a request, handles the response, and returns the data needed by the
 // Bidder interface.
-func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.RequestData, pbsRequestStartTime time.Time) *httpCallInfo {
-	return bidder.doRequestImpl(ctx, req, glog.Warningf, pbsRequestStartTime)
+func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.RequestData, bidderRequestStartTime time.Time) *httpCallInfo {
+	return bidder.doRequestImpl(ctx, req, glog.Warningf, bidderRequestStartTime)
 }
 
-func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.RequestData, logger util.LogMsg, pbsRequestStartTime time.Time) *httpCallInfo {
+func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.RequestData, logger util.LogMsg, bidderRequestStartTime time.Time) *httpCallInfo {
 	var requestBody []byte
 
 	switch strings.ToUpper(bidder.config.EndpointCompression) {
@@ -541,7 +541,7 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 	if !bidder.config.DisableConnMetrics {
 		ctx = bidder.addClientTrace(ctx)
 	}
-	bidder.me.RecordOverheadTime(metrics.PreBidder, time.Since(pbsRequestStartTime))
+	bidder.me.RecordOverheadTime(metrics.PreBidder, time.Since(bidderRequestStartTime))
 	httpCallStart := time.Now()
 	httpResp, err := ctxhttp.Do(ctx, bidder.Client, httpReq)
 	if err != nil {
