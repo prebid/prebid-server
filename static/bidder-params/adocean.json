@@ -6,7 +6,7 @@
   "properties": {
     "emiter": {
       "type": "string",
-      "description": "AdOcean emiter",
+      "description": "(in removal, use emitterPrefix instead) AdOcean emiter",
       "pattern": ".+"
     },
     "emitterPrefix": {
@@ -25,5 +25,8 @@
       "pattern": "^adocean[\\w.]+$"
     }
   },
-  "required": ["masterId", "slaveId"]
+  "oneOf": [
+    { "required": ["emiter", "masterId", "slaveId"] },
+    { "required": ["emitterPrefix", "masterId", "slaveId"] }
+  ]
 }

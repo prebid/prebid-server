@@ -35,6 +35,7 @@ func TestInvalidParams(t *testing.T) {
 
 var validParams = []string{
 	`{"emitterPrefix": "myao", "masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7", "slaveId": "adoceanmyaozpniqismex"}`,
+	`{"emiter": "myao.adocean.pl", "masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7", "slaveId": "adoceanmyaozpniqismex"}`,
 }
 
 var invalidParams = []string{
@@ -47,4 +48,6 @@ var invalidParams = []string{
 	`{"emitterPrefix": "myao", "masterId": "tmYF.DMl7Z utQTJfTpxCOmtNPZoQUDcL.G7", "slaveId": "adoceanmyaozpniqismex"}`,
 	`{"emitterPrefix": "myao", "masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7", "slaveId": "adoceanmy iqismex"}`,
 	`{"emitterPrefix": "myao.adocean.pl", "masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7", "slaveId": "adoceanmyaozpniqismex"}`,
+	`{"emiter": "myao.adocean.pl", "slaveId": "adoceanmyaozpniqismex"}`,
+	`{"emiter": "", "masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7", "slaveId": "adoceanmyaozpniqismex"}`,
 }
