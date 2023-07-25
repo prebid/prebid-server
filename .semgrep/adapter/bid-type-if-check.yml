@@ -14,8 +14,7 @@ rules:
           metavariable: $ORTBTYPE
           patterns:
             - pattern-either:
-                - pattern: openrtb_ext.$W
-                - pattern: imp.$W
+                - pattern: openrtb_ext.$BIDTYPE
             - metavariable-regex:
-                metavariable: $W
+                metavariable: $BIDTYPE
                 regex: BidType*
