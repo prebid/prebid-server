@@ -88,14 +88,10 @@ func (scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enforc
 	userExtModified := false
 
 	var userCopy *openrtb2.User
-	if bidRequest.User != nil {
-		userCopy = ptrutil.Clone(bidRequest.User)
-	}
+	userCopy = ptrutil.Clone(bidRequest.User)
 
 	var deviceCopy *openrtb2.Device
-	if bidRequest.Device != nil {
-		deviceCopy = ptrutil.Clone(bidRequest.Device)
-	}
+	deviceCopy = ptrutil.Clone(bidRequest.Device)
 
 	if userCopy != nil && (enforcement.UFPD || enforcement.Eids) {
 		if len(userCopy.Ext) != 0 {
