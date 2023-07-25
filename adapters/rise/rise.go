@@ -104,9 +104,12 @@ func extractOrg(openRTBRequest *openrtb2.BidRequest) (string, error) {
 		if impExt.Org != "" {
 			return strings.TrimSpace(impExt.Org), nil
 		}
+		if impExt.PublisherID != "" {
+			return strings.TrimSpace(impExt.PublisherID), nil
+		}
 	}
 
-	return "", errors.New("no org supplied")
+	return "", errors.New("no org or publisher_id supplied")
 }
 
 func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {

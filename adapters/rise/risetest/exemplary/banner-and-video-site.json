@@ -18,7 +18,7 @@
         },
         "ext": {
           "bidder": {
-            "org": "72721",
+            "publisher_id": "72721",
             "path": "mvo",
             "zone": "1r"
           }
@@ -41,7 +41,7 @@
         },
         "ext": {
           "bidder": {
-            "org": "72721",
+            "publisher_id": "72721",
             "path": "mvo",
             "zone": "1r"
           }
@@ -88,7 +88,7 @@
               },
               "ext": {
                 "bidder": {
-                  "org": "72721",
+                  "publisher_id": "72721",
                   "zone": "1r",
                   "path": "mvo"
                 }
@@ -111,7 +111,7 @@
               },
               "ext": {
                 "bidder": {
-                  "org": "72721",
+                  "publisher_id": "72721",
                   "zone": "1r",
                   "path": "mvo"
                 }
