@@ -96,6 +96,7 @@
       }
     }
   ],
+  "expectedBidResponses": [{"currency":"USD","bids":[]}],
   "expectedMakeBidsErrors": [
     {
       "value": "unable to read bid.ext.prebid.type: Key path not found",

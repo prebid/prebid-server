@@ -115,9 +115,9 @@ type Config struct {
 }
 
 type ORTB2 struct { //First party data
-	Site map[string]json.RawMessage `json:"site,omitempty"`
-	App  map[string]json.RawMessage `json:"app,omitempty"`
-	User map[string]json.RawMessage `json:"user,omitempty"`
+	Site json.RawMessage `json:"site,omitempty"`
+	App  json.RawMessage `json:"app,omitempty"`
+	User json.RawMessage `json:"user,omitempty"`
 }
 
 type ExtRequestCurrency struct {
@@ -375,14 +375,7 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 		for i, bc := range erp.BidderConfigs {
 			clonedBidderConfig := BidderConfig{Bidders: sliceutil.Clone(bc.Bidders)}
 			if bc.Config != nil {
-				config := &Config{}
-				if bc.Config.ORTB2 != nil {
-					config.ORTB2 = &ORTB2{
-						Site: maputil.Clone(bc.Config.ORTB2.Site),
-						App:  maputil.Clone(bc.Config.ORTB2.App),
-						User: maputil.Clone(bc.Config.ORTB2.User),
-					}
-				}
+				config := &Config{ORTB2: ptrutil.Clone(bc.Config.ORTB2)}
 				clonedBidderConfig.Config = config
 			}
 			clone.BidderConfigs[i] = clonedBidderConfig

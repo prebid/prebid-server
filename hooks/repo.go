@@ -2,6 +2,7 @@ package hooks
 
 import (
 	"fmt"
+
 	"github.com/prebid/prebid-server/hooks/hookstage"
 )
 
@@ -50,7 +51,7 @@ type hookRepository struct {
 	auctionResponseHooks         map[string]hookstage.AuctionResponse
 }
 
-func (r *hookRepository) GetEntrypointHook(id string) (h hookstage.Entrypoint, ok bool) {
+func (r *hookRepository) GetEntrypointHook(id string) (hookstage.Entrypoint, bool) {
 	return getHook(r.entrypointHooks, id)
 }
 

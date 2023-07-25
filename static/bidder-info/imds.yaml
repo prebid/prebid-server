@@ -13,8 +13,10 @@ capabilities:
 userSync:
   supportCors: true
   iframe:
-    url: "https://ad-cdn.technoratimedia.com/html/usersync.html?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&cb={{.RedirectURL}}"
+    url: "https://ad-cdn.technoratimedia.com/html/usersync.html?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gppsid={{.GPPSID}}&cb={{.RedirectURL}}"
     userMacro: "[USER_ID]"
   redirect:
-    url: "https://sync.technoratimedia.com/services?srv=cs&gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&cb={{.RedirectURL}}"
+    url: "https://sync.technoratimedia.com/services?srv=cs&gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gppsid={{.GPPSID}}&cb={{.RedirectURL}}"
     userMacro: "[USER_ID]"
+openrtb:
+  gpp-supported: true

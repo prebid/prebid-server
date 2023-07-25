@@ -55,7 +55,7 @@
   "biddersFPDResolved": {
     "appnexus": {
       "app": {
-        "id": "reqAppId",
+        "id": "apnAppId",
         "name": "fpdAppName",
         "bundle": "fpdAppBundle",
         "domain": "fpdAppDomain",
@@ -67,11 +67,6 @@
         "ver": "1.2",
         "publisher": {
           "id": "1"
-        },
-        "ext": {
-          "data": {
-            "id": "apnAppId"
-          }
         }
       }
     }
