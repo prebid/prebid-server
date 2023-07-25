@@ -332,7 +332,7 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 					},
 				},
 				"bidderB": BidderInfo{
-					AliasOf:   "bidderA",
+					AliasOf: "bidderA",
 				},
 			},
 			expectedBidderInfos: BidderInfos{
@@ -439,7 +439,7 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 			description: "invalid alias",
 			bidderInfos: BidderInfos{
 				"bidderB": BidderInfo{
-					AliasOf:   "bidderA",
+					AliasOf: "bidderA",
 				},
 			},
 			expectError: "bidderA not found for an alias: bidderB",
