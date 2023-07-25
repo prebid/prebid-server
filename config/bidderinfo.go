@@ -161,8 +161,7 @@ type SyncerEndpoint struct {
 	// startup:
 	//
 	//  {{.ExternalURL}} - This will be replaced with the host server's externally reachable http path.
-	//  {{.SyncerKey}}   - This will be replaced with the bidder name.
-	//  {{.BidderName}}  - If this is provided instead of {{.SyncerKey}} it will be replaced with the bidder name.
+	//  {{.BidderName}}  - This will be replaced with the bidder name.
 	//  {{.SyncType}}    - This will be replaced with the sync type, either 'b' for iframe syncs or 'i'
 	//                     for redirect/image syncs.
 	//  {{.UserMacro}}   - This will be replaced with the bidder server's user id macro.
