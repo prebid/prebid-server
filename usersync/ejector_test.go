@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestChooseElementToEject(t *testing.T) {
+func TestPriorityEjector(t *testing.T) {
 	testCases := []struct {
 		name          string
 		givenUids     map[string]UIDEntry
@@ -19,11 +19,11 @@ func TestChooseElementToEject(t *testing.T) {
 		{
 			name: "priority-ejector",
 			givenUids: map[string]UIDEntry{
-				"newestElement": {
+				"newestLowestPriorityElement": {
 					UID:     "123",
 					Expires: time.Now().Add((90 * 24 * time.Hour)),
 				},
-				"oldestElement": {
+				"oldestLowestPriorityElement": {
 					UID:     "456",
 					Expires: time.Now(),
 				},
@@ -31,11 +31,11 @@ func TestChooseElementToEject(t *testing.T) {
 			givenEjector: &PriorityBidderEjector{
 				PriorityGroups: [][]string{
 					{"adnxs"},
-					{"oldestElement", "newestElement"},
+					{"oldestLowestPriorityElement", "newestLowestPriorityElement"},
 				},
 				SyncerKey: "adnxs",
 			},
-			expected: "oldestElement",
+			expected: "oldestLowestPriorityElement",
 		},
 		{
 			name:      "priority-ejector-syncer-not-priority",
@@ -49,26 +49,7 @@ func TestChooseElementToEject(t *testing.T) {
 			expectedError: errors.New("syncer key adnxs is not in priority groups"),
 		},
 		{
-			name: "oldest-ejector",
-			givenUids: map[string]UIDEntry{
-				"newestElement": {
-					UID:     "123",
-					Expires: time.Now().Add((90 * 24 * time.Hour)),
-				},
-				"oldestElement": {
-					UID:     "456",
-					Expires: time.Now(),
-				},
-			},
-			givenEjector: &OldestEjector{
-				[]string{"newestElement", "oldestElement"},
-				[][]string{},
-				FallbackEjector{},
-			},
-			expected: "oldestElement",
-		},
-		{
-			name: "priority-oldest-ejector-fallback",
+			name: "priority-calls-oldest-ejector",
 			givenUids: map[string]UIDEntry{
 				"nonPriorityElement": {
 					UID:     "123",
@@ -102,12 +83,83 @@ func TestChooseElementToEject(t *testing.T) {
 	}
 }
 
-// TODO:
-func TestOldestEjector(t *testing.T) {}
+func TestOldestEjector(t *testing.T) {
+	testCases := []struct {
+		name          string
+		givenUids     map[string]UIDEntry
+		givenEjector  Ejector
+		expected      string
+		expectedError error
+	}{
+		{
+			name: "oldest-ejector",
+			givenUids: map[string]UIDEntry{
+				"newestElement": {
+					UID:     "123",
+					Expires: time.Now().Add((90 * 24 * time.Hour)),
+				},
+				"oldestElement": {
+					UID:     "456",
+					Expires: time.Now(),
+				},
+			},
+			givenEjector: &OldestEjector{
+				[]string{"newestElement", "oldestElement"},
+				[][]string{},
+				FallbackEjector{},
+			},
+			expected: "oldestElement",
+		},
+		{
+			name: "non-priority-keys-empty",
+			givenUids: map[string]UIDEntry{
+				"newestElement": {
+					UID:     "123",
+					Expires: time.Now().Add((90 * 24 * time.Hour)),
+				},
+				"oldestElement": {
+					UID:     "456",
+					Expires: time.Now(),
+				},
+			},
+			givenEjector: &OldestEjector{
+				[]string{},
+				[][]string{},
+				FallbackEjector{},
+			},
+			expected: "oldestElement",
+		},
+	}
 
-func TestPriorityEjector(t *testing.T) {}
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			uidToDelete, err := test.givenEjector.Choose(test.givenUids)
+			if test.expectedError != nil {
+				assert.Equal(t, test.expectedError, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, test.expected, uidToDelete)
+			}
+		})
+	}
+}
 
-func TestFallbackEjector(t *testing.T) {}
+func TestFallbackEjector(t *testing.T) {
+	fallbackEjector := FallbackEjector{}
+
+	uids := map[string]UIDEntry{
+		"element1": {},
+		"element2": {},
+		"element3": {},
+	}
+
+	randomUIDChosen, err := fallbackEjector.Choose(uids)
+	assert.NoError(t, err)
+
+	if _, ok := uids[randomUIDChosen]; !ok {
+		t.Errorf("Returned element not in original list")
+	}
+}
 
 func TestGetOldestElement(t *testing.T) {
 	testCases := []struct {

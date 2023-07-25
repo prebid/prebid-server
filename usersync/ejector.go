@@ -17,6 +17,16 @@ type OldestEjector struct {
 	FallbackEjector FallbackEjector
 }
 
+type PriorityBidderEjector struct {
+	PriorityGroups  [][]string
+	SyncerKey       string
+	OldestEjector   OldestEjector
+	FallbackEjector FallbackEjector
+}
+
+type FallbackEjector struct{}
+
+// Choose method for oldest ejector will return the oldest non priority uid
 func (o *OldestEjector) Choose(uids map[string]UIDEntry) (string, error) {
 	if len(o.nonPriorityKeys) == 0 {
 		o.nonPriorityKeys = getNonPriorityKeys(uids, o.PriorityGroups)
@@ -30,22 +40,14 @@ func (o *OldestEjector) Choose(uids map[string]UIDEntry) (string, error) {
 	return oldestElement, nil
 }
 
-type PriorityBidderEjector struct {
-	PriorityGroups  [][]string
-	SyncerKey       string
-	OldestEjector   OldestEjector
-	FallbackEjector FallbackEjector
-}
-
+// Choose method for priority ejector will return the oldest priority uid, otherwise it will call a different ejector method
 func (p *PriorityBidderEjector) Choose(uids map[string]UIDEntry) (string, error) {
-	// If there are non priority keys left in the cookie.uids, we should eject one of those using the OldestEjector
 	p.OldestEjector.nonPriorityKeys = getNonPriorityKeys(uids, p.PriorityGroups)
 	if len(p.OldestEjector.nonPriorityKeys) > 0 {
 		return p.OldestEjector.Choose(uids)
 	}
 
 	if isSyncerPriority(p.SyncerKey, p.PriorityGroups) {
-		// Eject Oldest Element from Lowest Priority Group and Update Priority Group
 		lowestPriorityGroup := p.PriorityGroups[len(p.PriorityGroups)-1]
 
 		oldestElement := getOldestElement(lowestPriorityGroup, uids)
@@ -60,17 +62,31 @@ func (p *PriorityBidderEjector) Choose(uids map[string]UIDEntry) (string, error)
 	return "", errors.New("syncer key " + p.SyncerKey + " is not in priority groups")
 }
 
-// updatePriorityGroup will remove the selected element from the given priority group list
+// Choose method for Fallback Ejector, selects a random uid to eject when the other two ejectors can't come up with a uid
+func (f *FallbackEjector) Choose(uids map[string]UIDEntry) (string, error) {
+	keys := make([]string, len(uids))
+
+	i := 0
+	for key := range uids {
+		keys[i] = key
+		i++
+	}
+
+	rand.Seed(time.Now().UnixNano())
+	return keys[rand.Intn(len(keys))], nil
+}
+
+// updatePriorityGroup will remove the selected element from the priority groups, and will remove the entire priority group if it's empty
 func removeElementFromPriorityGroup(priorityGroups [][]string, oldestElement string) [][]string {
 	lowestPriorityGroup := priorityGroups[len(priorityGroups)-1]
 	if len(lowestPriorityGroup) <= 1 {
-		priorityGroups = priorityGroups[:len(priorityGroups)-1] // Remove entire priority group since it will be empty
+		priorityGroups = priorityGroups[:len(priorityGroups)-1]
 		return priorityGroups
 	}
 
 	for index, elem := range lowestPriorityGroup {
 		if elem == oldestElement {
-			updatedPriorityGroup := append(lowestPriorityGroup[:index], lowestPriorityGroup[index+1:]...) // Delete only that element from the group
+			updatedPriorityGroup := append(lowestPriorityGroup[:index], lowestPriorityGroup[index+1:]...)
 			priorityGroups[len(priorityGroups)-1] = updatedPriorityGroup
 			return priorityGroups
 		}
@@ -131,20 +147,4 @@ func getOldestElement(list []string, uids map[string]UIDEntry) string {
 		}
 	}
 	return oldestElem
-}
-
-type FallbackEjector struct{}
-
-// Choose implemention for Fallback Ejector, selects a random uid to eject when the other two ejectors can't come up with a uid
-func (f *FallbackEjector) Choose(uids map[string]UIDEntry) (string, error) {
-	keys := make([]string, len(uids))
-
-	i := 0
-	for key := range uids {
-		keys[i] = key
-		i++
-	}
-
-	rand.Seed(time.Now().UnixNano())
-	return keys[rand.Intn(len(keys))], nil
 }
