@@ -1,0 +1,22 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Screencore Adapter Params",
+    "description": "A schema which validates params accepted by the Screencore adapter",
+    "type": "object",
+    "properties": {
+        "accountId": {
+            "type": "string",
+            "description": "Account id",
+            "minLength": 1
+        },
+        "placementId": {
+            "type": "string",
+            "description": "Placement id",
+            "minLength": 1
+        }
+    },
+    "required": [
+        "accountId",
+        "placementId"
+    ]
+}
