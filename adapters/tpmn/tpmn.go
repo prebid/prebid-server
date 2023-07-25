@@ -95,10 +95,12 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 		return nil, nil
 	}
 
-	if responseData.StatusCode != http.StatusOK {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Invalid Status Returned: %d. Run with request.debug = 1 for more info", responseData.StatusCode),
-		}}
+	if adapters.IsResponseStatusCodeNoContent(responseData) {
+		return nil, nil
+	}
+
+	if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil {
+		return nil, []error{err}
 	}
 
 	var response openrtb2.BidResponse
