@@ -7,9 +7,8 @@ rules:
     patterns:
       - pattern-inside: |
           if $CONDITION != nil {
-            return $ORTBTYPE, nil
+            return $ORTBTYPE
           }
-      - focus-metavariable: $CONDITION
       - metavariable-pattern:
           metavariable: $ORTBTYPE
           patterns:
