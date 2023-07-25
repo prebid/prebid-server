@@ -24,3 +24,13 @@ case string(openrtb_ext.BidTypeVideo):
 case string(openrtb_ext.BidTypeNative):
 	return openrtb_ext.BidTypeNative, nil
 }
+
+// ok: bid-type-switch-check
+switch bid.MType {
+case "banner":
+	return openrtb_ext.BidTypeBanner, nil
+case "native":
+	return openrtb_ext.BidTypeNative, nil
+case "video":
+	return openrtb_ext.BidTypeVideo, nil
+}
