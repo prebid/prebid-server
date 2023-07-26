@@ -59,7 +59,7 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 
 		query := r.URL.Query()
 
-		syncer, err := getSyncer(query, syncersByBidder)
+		syncer, bidderName, err := getSyncer(query, syncersByBidder)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(err.Error()))
@@ -321,19 +321,19 @@ func parseConsentFromGppStr(gppQueryValue string) (string, error) {
 	return gdprConsent, nil
 }
 
-func getSyncer(query url.Values, syncersByBidder map[string]usersync.Syncer) (usersync.Syncer, error) {
+func getSyncer(query url.Values, syncersByBidder map[string]usersync.Syncer) (usersync.Syncer, string, error) {
 	bidder := query.Get("bidder")
 
 	if bidder == "" {
-		return nil, errors.New(`"bidder" query param is required`)
+		return nil, "", errors.New(`"bidder" query param is required`)
 	}
 
 	syncer, syncerExists := syncersByBidder[bidder]
 	if !syncerExists {
-		return nil, errors.New("The bidder name provided is not supported by Prebid Server")
+		return nil, "", errors.New("The bidder name provided is not supported by Prebid Server")
 	}
 
-	return syncer, nil
+	return syncer, bidder, nil
 }
 
 // getResponseFormat reads the format query parameter or falls back to the syncer's default.
