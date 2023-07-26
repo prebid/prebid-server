@@ -56,6 +56,7 @@ func NewVideoEndpoint(
 	defReqJSON []byte,
 	bidderMap map[string]openrtb_ext.BidderName,
 	cache prebid_cache_client.Client,
+	tmaxAdjustments *exchange.TmaxAdjustmentsPreprocessed,
 ) (httprouter.Handle, error) {
 
 	if ex == nil || validator == nil || requestsById == nil || accounts == nil || cfg == nil || met == nil {
@@ -89,7 +90,8 @@ func NewVideoEndpoint(
 		videoEndpointRegexp,
 		ipValidator,
 		empty_fetcher.EmptyFetcher{},
-		hooks.EmptyPlanBuilder{}}).VideoAuctionEndpoint), nil
+		hooks.EmptyPlanBuilder{},
+		tmaxAdjustments}).VideoAuctionEndpoint), nil
 }
 
 /*
@@ -275,7 +277,11 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		defer cancel()
 	}
 
-	usersyncs := usersync.ParseCookieFromRequest(r, &(deps.cfg.HostCookie))
+	// Read Usersyncs/Cookie
+	decoder := usersync.Base64Decoder{}
+	usersyncs := usersync.ReadCookie(r, decoder, &deps.cfg.HostCookie)
+	usersync.SyncHostCookie(r, usersyncs, &deps.cfg.HostCookie)
+
 	if bidReqWrapper.App != nil {
 		labels.Source = metrics.DemandApp
 		labels.PubID = getAccountID(bidReqWrapper.App.Publisher)
@@ -307,9 +313,15 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		GlobalPrivacyControlHeader: secGPC,
 		PubID:                      labels.PubID,
 		HookExecutor:               hookexecution.EmptyHookExecutor{},
+		TmaxAdjustments:            deps.tmaxAdjustments,
 	}
 
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog)
+	defer func() {
+		if !auctionRequest.BidderResponseStartTime.IsZero() {
+			deps.metricsEngine.RecordOverheadTime(metrics.MakeAuctionResponse, time.Since(auctionRequest.BidderResponseStartTime))
+		}
+	}()
 	vo.RequestWrapper = bidReqWrapper
 	var response *openrtb2.BidResponse
 	if auctionResponse != nil {
@@ -363,8 +375,8 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if len(vo.Errors) == 0 {
-		recordResponsePreparationMetrics(auctionRequest.MakeBidsTimeInfo, deps.metricsEngine)
+	if len(vo.Errors) == 0 && !auctionRequest.BidderResponseStartTime.IsZero() {
+		deps.metricsEngine.RecordOverheadTime(metrics.MakeAuctionResponse, time.Since(auctionRequest.BidderResponseStartTime))
 	}
 
 	w.Header().Set("Content-Type", "application/json")
