@@ -90,11 +90,6 @@ func preprocessBidFloorCurrency(imp *openrtb2.Imp, reqInfo *adapters.ExtraReques
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if responseData.StatusCode == http.StatusNoContent {
-		// no bid response
-		return nil, nil
-	}
-
 	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
 	}
