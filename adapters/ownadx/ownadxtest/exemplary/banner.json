@@ -101,6 +101,7 @@
             {
               "bid": [
                 {
+                  "mtype": 1,
                   "id": "id",
                   "impid": "id",
                   "price": 0.1,
@@ -136,6 +137,7 @@
       "bids": [
         {
           "bid": {
+            "mtype": 1,
             "id": "id",
             "impid": "id",
             "price": 0.1,

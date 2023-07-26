@@ -155,9 +155,7 @@
                   ],
                   "cid": "cid",
                   "crid": "crid",
-                  "ext": {
-                    "mediaType": "video"
-                  }
+                  "mtype": 2
                 }
               ],
               "seat": "seat"
@@ -188,9 +186,7 @@
             ],
             "cid": "cid",
             "crid": "crid",
-            "ext": {
-              "mediaType": "video"
-            }
+            "mtype": 2
           },
           "type": "video"
         }

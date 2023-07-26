@@ -121,10 +121,6 @@ func groupImpsByExt(imps []openrtb2.Imp) (map[openrtb_ext.ExtImpOwnAdx][]openrtb
 	return respExt, errors
 }
 
-func getBidType(ext bidExt) (openrtb_ext.BidType, error) {
-	return openrtb_ext.ParseBidType(ext.MediaType)
-}
-
 func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -169,17 +165,10 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 		}
 	}
 	for i := 0; i < len(seatBid.Bid); i++ {
-		var bidExt bidExt
 		var bidType openrtb_ext.BidType
 		bid := seatBid.Bid[i]
-		if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
-			return nil, []error{&errortypes.BadServerResponse{
-				Message: "BidExt is required",
-			}}
-		}
 
-		bidType, err := getBidType(bidExt)
-
+		bidType, err := getMediaType(bid)
 		if err != nil {
 			return nil, []error{&errortypes.BadServerResponse{
 				Message: "Bid type is invalid",
@@ -206,4 +195,19 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	}
 
 	return bidder, nil
+}
+
+func getMediaType(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupAudio:
+		return openrtb_ext.BidTypeAudio, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
+	default:
+		return "", fmt.Errorf("invalid BidType: %d", bid.MType)
+	}
 }
