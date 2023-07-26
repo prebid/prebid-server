@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Vox Adapter Params",
+  "description": "A schema which validates params accepted by the Vox adapter",
+  "type": "object",
+
+  "properties": {
+    "placementId": {
+      "type": "string",
+      "description": "Placement ID"
+    },
+    "imageUrl": {
+      "type": "string",
+      "description": "An URL of image on which banner should be put(InImage Ad format)."
+    },
+    "displaySizes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "description": "<Width>x<Height>(Example: 123x90, 720x100)"
+      },
+      "description": "Display banner sizes which could be shown on top of image."
+    }
+  },
+
+  "required": ["placementId"]
+}

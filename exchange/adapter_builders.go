@@ -169,6 +169,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/vidoomy"
 	"github.com/prebid/prebid-server/adapters/visiblemeasures"
 	"github.com/prebid/prebid-server/adapters/visx"
+	"github.com/prebid/prebid-server/adapters/vox"
 	"github.com/prebid/prebid-server/adapters/vrtcal"
 	"github.com/prebid/prebid-server/adapters/xeworks"
 	"github.com/prebid/prebid-server/adapters/yahooAds"
@@ -369,6 +370,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderViewdeos:          adtelligent.Builder,
 		openrtb_ext.BidderVisibleMeasures:   visiblemeasures.Builder,
 		openrtb_ext.BidderVisx:              visx.Builder,
+		openrtb_ext.BidderVox:               vox.Builder,
 		openrtb_ext.BidderVrtcal:            vrtcal.Builder,
 		openrtb_ext.BidderXeworks:           xeworks.Builder,
 		openrtb_ext.BidderYahooAds:          yahooAds.Builder,
