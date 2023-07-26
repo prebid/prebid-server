@@ -2,10 +2,18 @@ package tpmn
 
 import (
 	"encoding/json"
-	"testing"
-
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"testing"
 )
+
+var validParams = []string{
+	`{"inventoryId": 10000001}`,
+}
+
+var invalidParams = []string{
+	`{"inventoryId": "00000001"}`,
+	`{"inventoryid": 100000000}`,
+}
 
 // TestValidParams makes sure that the tpmn schema accepts all imp.ext fields which we intend to support.
 func TestValidParams(t *testing.T) {
@@ -33,13 +41,4 @@ func TestInvalidParams(t *testing.T) {
 			t.Errorf("Schema allowed unexpected params: %s", invalidParam)
 		}
 	}
-}
-
-var validParams = []string{
-	`{"inventoryId": 10000001}`,
-}
-
-var invalidParams = []string{
-	`{"inventoryId": "00000001"}`,
-	`{"inventoryid": 100000000}`,
 }
