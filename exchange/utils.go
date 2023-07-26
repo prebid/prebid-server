@@ -359,7 +359,7 @@ func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, request
 	// Per: https://docs.prebid.org/prebid-server/endpoints/openrtb2/pbs-endpoint-auction.html#prebid-server-ortb2-extension-summary
 	prebid := openrtb_ext.ExtRequestPrebid{
 		BidderParams:         bidderParams,
-		AlternateBidderCodes: alternateBidderCodes
+		AlternateBidderCodes: alternateBidderCodes,
 	}
 
 	if requestExtParsed != nil {
