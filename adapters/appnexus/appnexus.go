@@ -22,8 +22,8 @@ import (
 )
 
 const (
-	defaultPlatformID int = 5
-	maxImpsPerReq         = 10
+	defaultPlatformID = 5
+	maxImpsPerReq     = 10
 )
 
 type adapter struct {
@@ -112,7 +112,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	}
 
 	requestURI := a.uri
-
 	if uniqueMemberID != "" {
 		requestURI = appendMemberId(requestURI, uniqueMemberID)
 	}
@@ -129,6 +128,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	if err != nil {
 		return nil, append(errs, err)
 	}
+
 	// For long form requests if adpodId feature enabled, adpod_id must be sent downstream.
 	// Adpod id is a unique identifier for pod
 	// All impressions in the same pod must have the same pod id in request extension
@@ -288,7 +288,6 @@ func splitRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExt
 	}
 
 	for impsLeft {
-
 		endInd := startInd + maxImpsPerReq
 		if endInd >= len(imps) {
 			endInd = len(imps)
@@ -327,9 +326,11 @@ func buildRequestImp(imp *openrtb2.Imp, appnexusExt *openrtb_ext.ExtImpAppnexus,
 	if appnexusExt.InvCode != "" {
 		imp.TagID = appnexusExt.InvCode
 	}
+
 	if imp.BidFloor <= 0 && appnexusExt.Reserve > 0 {
 		imp.BidFloor = appnexusExt.Reserve // This will be broken for non-USD currency.
 	}
+
 	if imp.Banner != nil {
 		bannerCopy := *imp.Banner
 		if appnexusExt.Position == "above" {
