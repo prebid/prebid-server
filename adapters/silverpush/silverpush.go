@@ -17,7 +17,7 @@ const (
 	bidderVersion = "1.0.0"
 )
 
-type SilverPushAdapter struct {
+type adapter struct {
 	bidderName string
 	endpoint   string
 }
@@ -29,7 +29,7 @@ type SilverPushReqExt struct {
 	BidFloor    float64 `json:"bidfloor"`
 }
 
-func (a *SilverPushAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
 	if len(request.Imp) == 0 {
 		return nil, []error{&errortypes.BadInput{Message: "No impressions in bid request."}}
@@ -39,7 +39,7 @@ func (a *SilverPushAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 }
 
 // Validate and Process the request return []*adapters.RequestData and []error
-func (a *SilverPushAdapter) ValidateAndProcessRequest(request *openrtb2.BidRequest) ([]*adapters.RequestData, []error) {
+func (a *adapter) ValidateAndProcessRequest(request *openrtb2.BidRequest) ([]*adapters.RequestData, []error) {
 	imps := request.Imp
 	requests := make([]*adapters.RequestData, 0, len(imps))
 	errors := make([]error, 0, len(imps))
@@ -73,7 +73,7 @@ func (a *SilverPushAdapter) ValidateAndProcessRequest(request *openrtb2.BidReque
 
 }
 
-func (a *SilverPushAdapter) makeRequest(req *openrtb2.BidRequest) (*adapters.RequestData, error) {
+func (a *adapter) makeRequest(req *openrtb2.BidRequest) (*adapters.RequestData, error) {
 	reqJSON, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
@@ -145,8 +145,8 @@ func setExtToRequest(req *openrtb2.BidRequest, publisherID string) {
 	}
 	reqExt, _ := json.Marshal(record)
 	req.Ext = reqExt
-
 }
+
 func setImpForAdExchange(imp *openrtb2.Imp, impExt *openrtb_ext.ImpExtSilverpush) error {
 
 	if imp.BidFloor == 0 && impExt.BidFloor > 0 {
@@ -199,6 +199,7 @@ func setBannerDimension(banner *openrtb2.Banner) (*openrtb2.Banner, error) {
 
 	return &bannerCopy, nil
 }
+
 func setPublisherId(req *openrtb2.BidRequest, imp *openrtb2.Imp, impExt *openrtb_ext.ImpExtSilverpush) error {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
@@ -263,9 +264,8 @@ func impressionByMediaType(imp *openrtb2.Imp) ([]openrtb2.Imp, error) {
 	return imps, nil
 }
 
-func (a *SilverPushAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
-		fmt.Println(response.StatusCode)
 		return nil, nil
 	}
 	if response.StatusCode == http.StatusBadRequest {
@@ -290,7 +290,7 @@ func (a *SilverPushAdapter) MakeBids(internalRequest *openrtb2.BidRequest, exter
 	}
 
 	for _, sb := range bidResp.SeatBid {
-		for i := range sb.Bid {
+		for i := 0; i < len(sb.Bid); i++ {
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &sb.Bid[i],
 				BidType: getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp),
@@ -304,7 +304,6 @@ func (a *SilverPushAdapter) MakeBids(internalRequest *openrtb2.BidRequest, exter
 // SilverPush doesn't support multi-type impressions.
 // If both banner and video exist, take banner as we do not want in-banner video.
 func getMediaTypeForImp(impId string, imps []openrtb2.Imp) (mediaType openrtb_ext.BidType) {
-
 	mediaType = openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impId {
@@ -320,7 +319,7 @@ func getMediaTypeForImp(impId string, imps []openrtb2.Imp) (mediaType openrtb_ex
 
 // Builder builds a new instance of the silverpush adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	bidder := &SilverPushAdapter{
+	bidder := &adapter{
 		endpoint:   config.Endpoint,
 		bidderName: string(bidderName),
 	}
