@@ -379,7 +379,7 @@ func TestDebugBehaviour(t *testing.T) {
 		// Assert no HoldAuction error
 		assert.NoErrorf(t, err, "%s. ex.HoldAuction returned an error: %v \n", test.desc, err)
 		assert.NotNilf(t, outBidResponse.Ext, "%s. outBidResponse.Ext should not be nil \n", test.desc)
-
+		assert.False(t, auctionRequest.BidderResponseStartTime.IsZero())
 		actualExt := &openrtb_ext.ExtBidResponse{}
 		err = json.Unmarshal(outBidResponse.Ext, actualExt)
 		assert.NoErrorf(t, err, "%s. \"ext\" JSON field could not be unmarshaled. err: \"%v\" \n outBidResponse.Ext: \"%s\" \n", test.desc, err, outBidResponse.Ext)
@@ -540,6 +540,7 @@ func TestTwoBiddersDebugDisabledAndEnabled(t *testing.T) {
 		// Assert no HoldAuction err
 		assert.NoErrorf(t, err, "ex.HoldAuction returned an err")
 		assert.NotNilf(t, outBidResponse.Ext, "outBidResponse.Ext should not be nil")
+		assert.False(t, auctionRequest.BidderResponseStartTime.IsZero())
 
 		actualExt := &openrtb_ext.ExtBidResponse{}
 		err = json.Unmarshal(outBidResponse.Ext, actualExt)
@@ -715,6 +716,7 @@ func TestOverrideWithCustomCurrency(t *testing.T) {
 
 		// Assertions
 		assert.NoErrorf(t, err, "%s. HoldAuction error: %v \n", test.desc, err)
+		assert.False(t, auctionRequest.BidderResponseStartTime.IsZero())
 
 		if test.expected.numBids > 0 {
 			// Assert out currency
@@ -1362,6 +1364,7 @@ func TestReturnCreativeEndToEnd(t *testing.T) {
 				continue
 			} else {
 				assert.NoErrorf(t, err, "%s: %s. HoldAuction error: %v \n", testGroup.groupDesc, test.desc, err)
+				assert.False(t, auctionRequest.BidderResponseStartTime.IsZero())
 			}
 
 			// Assert returned bid
@@ -5143,6 +5146,7 @@ func TestOverrideConfigAlternateBidderCodesWithRequestValues(t *testing.T) {
 		// Assertions
 		assert.NoErrorf(t, err, "%s. HoldAuction error: %v \n", test.desc, err)
 		assert.NotNil(t, outBidResponse)
+		assert.False(t, auctionRequest.BidderResponseStartTime.IsZero())
 
 		// So 2 seatBids are expected as,
 		// the default "" and "pubmatic" bids will be in one seat and the extra-bids "groupm"/"appnexus"/"ix" in another seat.
@@ -5569,6 +5573,7 @@ func TestModulesCanBeExecutedForMultipleBiddersSimultaneously(t *testing.T) {
 	_, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{})
 	// Assert no HoldAuction err
 	assert.NoErrorf(t, err, "ex.HoldAuction returned an err")
+	assert.False(t, auctionRequest.BidderResponseStartTime.IsZero())
 
 	// check stage outcomes
 	assert.Equal(t, len(exec.GetOutcomes()), len(e.adapterMap), "stage outcomes append operation failed")

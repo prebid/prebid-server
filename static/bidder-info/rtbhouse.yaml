@@ -1,6 +1,7 @@
 endpoint: "http://prebidserver-s2s-ams.creativecdn.com/bidder/prebidserver/bids"
 maintainer:
   email: "prebid@rtbhouse.com"
+endpointCompression: gzip
 gvlVendorID: 16
 capabilities:
   site:

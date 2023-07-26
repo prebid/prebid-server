@@ -67,6 +67,13 @@ func TestBuildAdapters(t *testing.T) {
 				errors.New("unknown: unknown bidder"),
 			},
 		},
+		{
+			description: "Alias feature disabled",
+			bidderInfos: map[string]config.BidderInfo{"appNexus": {AliasOf: "rubicon"}},
+			expectedErrors: []error{
+				errors.New("This feature is currently under development"),
+			},
+		},
 	}
 
 	cfg := &config.Configuration{}
@@ -215,6 +222,7 @@ func TestGetDisabledBiddersErrorMessages(t *testing.T) {
 				"oftmedia":       `Bidder "oftmedia" is no longer available in Prebid Server. Please update your configuration.`,
 				"groupm":         `Bidder "groupm" is no longer available in Prebid Server. Please update your configuration.`,
 				"verizonmedia":   `Bidder "verizonmedia" is no longer available in Prebid Server. Please update your configuration.`,
+				"brightroll":     `Bidder "brightroll" is no longer available in Prebid Server. Please update your configuration.`,
 			},
 		},
 		{
@@ -229,6 +237,7 @@ func TestGetDisabledBiddersErrorMessages(t *testing.T) {
 				"oftmedia":       `Bidder "oftmedia" is no longer available in Prebid Server. Please update your configuration.`,
 				"groupm":         `Bidder "groupm" is no longer available in Prebid Server. Please update your configuration.`,
 				"verizonmedia":   `Bidder "verizonmedia" is no longer available in Prebid Server. Please update your configuration.`,
+				"brightroll":     `Bidder "brightroll" is no longer available in Prebid Server. Please update your configuration.`,
 			},
 		},
 		{
@@ -244,6 +253,7 @@ func TestGetDisabledBiddersErrorMessages(t *testing.T) {
 				"oftmedia":       `Bidder "oftmedia" is no longer available in Prebid Server. Please update your configuration.`,
 				"groupm":         `Bidder "groupm" is no longer available in Prebid Server. Please update your configuration.`,
 				"verizonmedia":   `Bidder "verizonmedia" is no longer available in Prebid Server. Please update your configuration.`,
+				"brightroll":     `Bidder "brightroll" is no longer available in Prebid Server. Please update your configuration.`,
 			},
 		},
 		{
@@ -259,6 +269,7 @@ func TestGetDisabledBiddersErrorMessages(t *testing.T) {
 				"oftmedia":       `Bidder "oftmedia" is no longer available in Prebid Server. Please update your configuration.`,
 				"groupm":         `Bidder "groupm" is no longer available in Prebid Server. Please update your configuration.`,
 				"verizonmedia":   `Bidder "verizonmedia" is no longer available in Prebid Server. Please update your configuration.`,
+				"brightroll":     `Bidder "brightroll" is no longer available in Prebid Server. Please update your configuration.`,
 			},
 		},
 	}

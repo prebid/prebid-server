@@ -50,7 +50,7 @@ func TestSetUIDEndpoint(t *testing.T) {
 			description:            "Set uid for valid bidder",
 		},
 		{
-			uri:                    "/setuid?bidder=adnxs&uid=123",
+			uri:                    "/setuid?bidder=appnexus&uid=123",
 			syncersBidderNameToKey: map[string]string{"appnexus": "adnxs"},
 			existingSyncs:          nil,
 			gdprAllowsHostCookies:  true,

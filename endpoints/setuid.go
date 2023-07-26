@@ -40,13 +40,6 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 	encoder := usersync.Base64Encoder{}
 	decoder := usersync.Base64Decoder{}
 
-	// convert map of syncers by bidder to map of syncers by key
-	// - its safe to assume that if multiple bidders map to the same key, the syncers are interchangeable.
-	syncersByKey := make(map[string]usersync.Syncer, len(syncersByBidder))
-	for _, v := range syncersByBidder {
-		syncersByKey[v.Key()] = v
-	}
-
 	return httprouter.Handle(func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		so := analytics.SetUIDObject{
 			Status: http.StatusOK,
@@ -66,7 +59,7 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 
 		query := r.URL.Query()
 
-		syncer, bidderName, err := getSyncer(query, syncersByKey)
+		syncer, err := getSyncer(query, syncersByBidder)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(err.Error()))
@@ -328,19 +321,19 @@ func parseConsentFromGppStr(gppQueryValue string) (string, error) {
 	return gdprConsent, nil
 }
 
-func getSyncer(query url.Values, syncersByKey map[string]usersync.Syncer) (usersync.Syncer, string, error) {
-	bidderName := query.Get("bidder")
+func getSyncer(query url.Values, syncersByBidder map[string]usersync.Syncer) (usersync.Syncer, error) {
+	bidder := query.Get("bidder")
 
-	if bidderName == "" {
-		return nil, "", errors.New(`"bidder" query param is required`)
+	if bidder == "" {
+		return nil, errors.New(`"bidder" query param is required`)
 	}
 
-	syncer, syncerExists := syncersByKey[bidderName]
+	syncer, syncerExists := syncersByBidder[bidder]
 	if !syncerExists {
-		return nil, "", errors.New("The bidder name provided is not supported by Prebid Server")
+		return nil, errors.New("The bidder name provided is not supported by Prebid Server")
 	}
 
-	return syncer, bidderName, nil
+	return syncer, nil
 }
 
 // getResponseFormat reads the format query parameter or falls back to the syncer's default.
