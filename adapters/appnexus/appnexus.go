@@ -65,7 +65,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	var (
 		shouldGenerateAdPodId *bool
 		uniqueMemberID        string
-		errs                  = make([]error, 0, len(request.Imp))
+		errs                  []error
 	)
 
 	validImps := []openrtb2.Imp{}
