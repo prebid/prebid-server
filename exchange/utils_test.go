@@ -2287,6 +2287,7 @@ func TestCleanOpenRTBRequestsWithOpenRTBDowngrade(t *testing.T) {
 	bidReq.User.ID = ""
 	bidReq.User.BuyerUID = ""
 	bidReq.User.Yob = 0
+	bidReq.User.Geo = &openrtb2.Geo{Lat: 123.46}
 
 	downgradedRegs := *bidReq.Regs
 	downgradedUser := *bidReq.User
@@ -2601,6 +2602,7 @@ func newBidRequest(t *testing.T) *openrtb2.BidRequest {
 			BuyerUID: "their-id",
 			Yob:      1982,
 			Ext:      json.RawMessage(`{}`),
+			Geo:      &openrtb2.Geo{Lat: 123.456},
 		},
 		Imp: []openrtb2.Imp{{
 			ID: "some-imp-id",
@@ -4266,33 +4268,76 @@ func TestGetMediaTypeForBid(t *testing.T) {
 	}
 }
 
-func TemporarilyDisabledTestCleanOpenRTBRequestsActivitiesFetchBids(t *testing.T) {
+func TestCleanOpenRTBRequestsActivitiesFetchBids(t *testing.T) {
 	testCases := []struct {
-		name              string
-		req               *openrtb2.BidRequest
-		componentName     string
-		allow             bool
-		expectedReqNumber int
+		name                 string
+		req                  *openrtb2.BidRequest
+		privacyConfig        *config.AccountPrivacy
+		componentName        string
+		allow                bool
+		expectedReqNumber    int
+		expectedUserYOB      int64
+		expectedUserLat      float64
+		expectedDeviceDIDMD5 string
 	}{
 		{
-			name:              "request_with_one_bidder_allowed",
-			req:               newBidRequest(t),
-			componentName:     "appnexus",
-			allow:             true,
-			expectedReqNumber: 1,
+			name:                 "fetch_bids_request_with_one_bidder_allowed",
+			req:                  newBidRequest(t),
+			privacyConfig:        getFetchBidsActivityConfig("appnexus", true),
+			expectedReqNumber:    1,
+			expectedUserYOB:      1982,
+			expectedUserLat:      123.456,
+			expectedDeviceDIDMD5: "some device ID hash",
 		},
 		{
-			name:              "request_with_one_bidder_not_allowed",
-			req:               newBidRequest(t),
-			componentName:     "appnexus",
-			allow:             false,
-			expectedReqNumber: 0,
+			name:                 "fetch_bids_request_with_one_bidder_not_allowed",
+			req:                  newBidRequest(t),
+			privacyConfig:        getFetchBidsActivityConfig("appnexus", false),
+			expectedReqNumber:    0,
+			expectedUserYOB:      1982,
+			expectedUserLat:      123.456,
+			expectedDeviceDIDMD5: "some device ID hash",
+		},
+		{
+			name:                 "transmit_ufpd_allowed",
+			req:                  newBidRequest(t),
+			privacyConfig:        getTransmitUFPDActivityConfig("appnexus", true),
+			expectedReqNumber:    1,
+			expectedUserYOB:      1982,
+			expectedUserLat:      123.456,
+			expectedDeviceDIDMD5: "some device ID hash",
+		},
+		{
+			name:                 "transmit_ufpd_deny",
+			req:                  newBidRequest(t),
+			privacyConfig:        getTransmitUFPDActivityConfig("appnexus", false),
+			expectedReqNumber:    1,
+			expectedUserYOB:      0,
+			expectedUserLat:      123.456,
+			expectedDeviceDIDMD5: "",
+		},
+		{
+			name:                 "transmit_precise_geo_allowed",
+			req:                  newBidRequest(t),
+			privacyConfig:        getTransmitPreciseGeoActivityConfig("appnexus", true),
+			expectedReqNumber:    1,
+			expectedUserYOB:      1982,
+			expectedUserLat:      123.456,
+			expectedDeviceDIDMD5: "some device ID hash",
+		},
+		{
+			name:                 "transmit_precise_geo_deny",
+			req:                  newBidRequest(t),
+			privacyConfig:        getTransmitPreciseGeoActivityConfig("appnexus", false),
+			expectedReqNumber:    1,
+			expectedUserYOB:      1982,
+			expectedUserLat:      123.46,
+			expectedDeviceDIDMD5: "some device ID hash",
 		},
 	}
 
 	for _, test := range testCases {
-		privacyConfig := getDefaultActivityConfig(test.componentName, test.allow)
-		activities, err := privacy.NewActivityControl(privacyConfig)
+		activities, err := privacy.NewActivityControl(test.privacyConfig)
 		assert.NoError(t, err, "")
 		auctionReq := AuctionRequest{
 			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: test.req},
@@ -4312,25 +4357,51 @@ func TemporarilyDisabledTestCleanOpenRTBRequestsActivitiesFetchBids(t *testing.T
 			bidderRequests, _, errs := reqSplitter.cleanOpenRTBRequests(context.Background(), auctionReq, nil, gdpr.SignalNo)
 			assert.Empty(t, errs)
 			assert.Len(t, bidderRequests, test.expectedReqNumber)
+
+			if test.expectedReqNumber == 1 {
+				assert.Equal(t, test.expectedUserYOB, bidderRequests[0].BidRequest.User.Yob)
+				assert.Equal(t, test.expectedUserLat, bidderRequests[0].BidRequest.User.Geo.Lat)
+				assert.Equal(t, test.expectedDeviceDIDMD5, bidderRequests[0].BidRequest.Device.DIDMD5)
+			}
 		})
 	}
 }
 
-func getDefaultActivityConfig(componentName string, allow bool) *config.AccountPrivacy {
-	return &config.AccountPrivacy{
-		AllowActivities: config.AllowActivities{
-			FetchBids: config.Activity{
-				Default: ptrutil.ToPtr(true),
-				Rules: []config.ActivityRule{
-					{
-						Allow: allow,
-						Condition: config.ActivityCondition{
-							ComponentName: []string{componentName},
-							ComponentType: []string{"bidder"},
-						},
-					},
+func buildDefaultActivityConfig(componentName string, allow bool) config.Activity {
+	return config.Activity{
+		Default: ptrutil.ToPtr(true),
+		Rules: []config.ActivityRule{
+			{
+				Allow: allow,
+				Condition: config.ActivityCondition{
+					ComponentName: []string{componentName},
+					ComponentType: []string{"bidder"},
 				},
 			},
+		},
+	}
+}
+
+func getFetchBidsActivityConfig(componentName string, allow bool) *config.AccountPrivacy {
+	return &config.AccountPrivacy{
+		AllowActivities: config.AllowActivities{
+			FetchBids: buildDefaultActivityConfig(componentName, allow),
+		},
+	}
+}
+
+func getTransmitUFPDActivityConfig(componentName string, allow bool) *config.AccountPrivacy {
+	return &config.AccountPrivacy{
+		AllowActivities: config.AllowActivities{
+			TransmitUserFPD: buildDefaultActivityConfig(componentName, allow),
+		},
+	}
+}
+
+func getTransmitPreciseGeoActivityConfig(componentName string, allow bool) *config.AccountPrivacy {
+	return &config.AccountPrivacy{
+		AllowActivities: config.AllowActivities{
+			TransmitPreciseGeo: buildDefaultActivityConfig(componentName, allow),
 		},
 	}
 }
