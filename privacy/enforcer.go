@@ -33,49 +33,50 @@ func NewActivityControl(privacyConf *config.AccountPrivacy) (ActivityControl, er
 
 	if privacyConf == nil {
 		return ac, err
-	} else {
-		//temporarily disable Activities if they are specified at the account level
-		return ac, &errortypes.Warning{Message: "account.Privacy has no effect as the feature is under development."}
 	}
 
-	plans := make(map[Activity]ActivityPlan)
+	//temporarily disable Activities if they are specified at the account level
+	err = &errortypes.Warning{Message: "account.Privacy has no effect as the feature is under development."}
+	if err.Error() == "" {
+		plans := make(map[Activity]ActivityPlan)
 
-	plans[ActivitySyncUser], err = buildEnforcementPlan(privacyConf.AllowActivities.SyncUser)
-	if err != nil {
-		return ac, err
-	}
-	plans[ActivityFetchBids], err = buildEnforcementPlan(privacyConf.AllowActivities.FetchBids)
-	if err != nil {
-		return ac, err
-	}
-	plans[ActivityEnrichUserFPD], err = buildEnforcementPlan(privacyConf.AllowActivities.EnrichUserFPD)
-	if err != nil {
-		return ac, err
-	}
-	plans[ActivityReportAnalytics], err = buildEnforcementPlan(privacyConf.AllowActivities.ReportAnalytics)
-	if err != nil {
-		return ac, err
-	}
-	plans[ActivityTransmitUserFPD], err = buildEnforcementPlan(privacyConf.AllowActivities.TransmitUserFPD)
-	if err != nil {
-		return ac, err
-	}
-	plans[ActivityTransmitPreciseGeo], err = buildEnforcementPlan(privacyConf.AllowActivities.TransmitPreciseGeo)
-	if err != nil {
-		return ac, err
-	}
-	plans[ActivityTransmitUniqueRequestIds], err = buildEnforcementPlan(privacyConf.AllowActivities.TransmitUniqueRequestIds)
-	if err != nil {
-		return ac, err
-	}
-	plans[ActivityTransmitTids], err = buildEnforcementPlan(privacyConf.AllowActivities.TransmitTids)
-	if err != nil {
-		return ac, err
+		plans[ActivitySyncUser], err = buildEnforcementPlan(privacyConf.AllowActivities.SyncUser)
+		if err != nil {
+			return ac, err
+		}
+		plans[ActivityFetchBids], err = buildEnforcementPlan(privacyConf.AllowActivities.FetchBids)
+		if err != nil {
+			return ac, err
+		}
+		plans[ActivityEnrichUserFPD], err = buildEnforcementPlan(privacyConf.AllowActivities.EnrichUserFPD)
+		if err != nil {
+			return ac, err
+		}
+		plans[ActivityReportAnalytics], err = buildEnforcementPlan(privacyConf.AllowActivities.ReportAnalytics)
+		if err != nil {
+			return ac, err
+		}
+		plans[ActivityTransmitUserFPD], err = buildEnforcementPlan(privacyConf.AllowActivities.TransmitUserFPD)
+		if err != nil {
+			return ac, err
+		}
+		plans[ActivityTransmitPreciseGeo], err = buildEnforcementPlan(privacyConf.AllowActivities.TransmitPreciseGeo)
+		if err != nil {
+			return ac, err
+		}
+		plans[ActivityTransmitUniqueRequestIds], err = buildEnforcementPlan(privacyConf.AllowActivities.TransmitUniqueRequestIds)
+		if err != nil {
+			return ac, err
+		}
+		plans[ActivityTransmitTids], err = buildEnforcementPlan(privacyConf.AllowActivities.TransmitTids)
+		if err != nil {
+			return ac, err
+		}
+
+		ac.plans = plans
 	}
 
-	ac.plans = plans
-
-	return ac, nil
+	return ac, err
 }
 
 func buildEnforcementPlan(activity config.Activity) (ActivityPlan, error) {
