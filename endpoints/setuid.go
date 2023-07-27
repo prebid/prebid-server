@@ -193,7 +193,6 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 // first and the 'gdpr' and 'gdpr_consent' query params second. If found in both, throws a
 // warning. Can also throw a parsing or validation error
 func extractGDPRInfo(query url.Values) (reqInfo gdpr.RequestInfo, err error) {
-
 	reqInfo, err = parseGDPRFromGPP(query)
 	if err != nil {
 		return gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous}, err
