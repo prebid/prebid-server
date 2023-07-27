@@ -65,7 +65,6 @@
                         "appnexus": {
                             "hb_source": 5
                         },
-                        "prebid": {},
                         "schain": {
                             "complete": 0,
                             "nodes": [

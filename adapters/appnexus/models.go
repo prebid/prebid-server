@@ -2,8 +2,6 @@ package appnexus
 
 import (
 	"encoding/json"
-
-	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 type impExtAppnexus struct {
@@ -13,7 +11,7 @@ type impExtAppnexus struct {
 	UsePmtRule        *bool           `json:"use_pmt_rule,omitempty"`
 	PrivateSizes      json.RawMessage `json:"private_sizes,omitempty"`
 	ExtInvCode        string          `json:"ext_inv_code,omitempty"`
-	ExternalImpId     string          `json:"external_imp_id,omitempty"`
+	ExternalImpID     string          `json:"external_imp_id,omitempty"`
 }
 
 type impExt struct {
@@ -45,11 +43,5 @@ type bidReqExtAppnexus struct {
 	BrandCategoryUniqueness *bool  `json:"brand_category_uniqueness,omitempty"`
 	IsAMP                   int    `json:"is_amp,omitempty"`
 	HeaderBiddingSource     int    `json:"hb_source,omitempty"`
-	AdPodId                 string `json:"adpod_id,omitempty"`
-}
-
-// Full request extension including appnexus extension object
-type bidReqExt struct {
-	openrtb_ext.ExtRequest
-	Appnexus *bidReqExtAppnexus `json:"appnexus,omitempty"`
+	AdPodID                 string `json:"adpod_id,omitempty"`
 }

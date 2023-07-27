@@ -13,6 +13,8 @@ import (
 	"github.com/prebid/openrtb/v19/adcom1"
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/util/maputil"
+	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/prebid/prebid-server/util/randomutil"
 
 	"github.com/prebid/prebid-server/adapters"
@@ -124,14 +126,21 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		isVIDEO = 1
 	}
 
-	reqExt, err := a.getRequestExt(request.Ext, isAMP, isVIDEO)
+	reqExt, err := getRequestExt(request.Ext)
 	if err != nil {
 		return nil, append(errs, err)
 	}
 
-	if err := moveSupplyChain(request, &reqExt); err != nil {
+	reqExtAppnexus, err := a.getAppnexusExt(reqExt, isAMP, isVIDEO)
+	if err != nil {
 		return nil, append(errs, err)
 	}
+
+	if err := moveSupplyChain(request, reqExt); err != nil {
+		return nil, append(errs, err)
+	}
+
+	// need to compose with extmap and appnexus
 
 	// For long form requests if adpodId feature enabled, adpod_id must be sent downstream.
 	// Adpod id is a unique identifier for pod
@@ -140,11 +149,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	// If impressions number per pod is more than maxImpsPerReq - divide those imps to several requests but keep pod id the same
 	// If  adpodId feature disabled and impressions number per pod is more than maxImpsPerReq  - divide those imps to several requests but do not include ad pod id
 	if isVIDEO == 1 && *shouldGenerateAdPodId {
-		requests, errors := a.buildAdPodRequests(request.Imp, request, reqExt, requestURI.String())
+		requests, errors := a.buildAdPodRequests(request.Imp, request, reqExt, reqExtAppnexus, requestURI.String())
 		return requests, append(errs, errors...)
 	}
 
-	requests, errors := splitRequests(request.Imp, request, reqExt, requestURI.String())
+	requests, errors := splitRequests(request.Imp, request, reqExt, reqExtAppnexus, requestURI.String())
 	return requests, append(errs, errors...)
 }
 
@@ -204,25 +213,43 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	return bidderResponse, errs
 }
 
-func (a *adapter) getRequestExt(ext json.RawMessage, isAMP int, isVIDEO int) (bidReqExt, error) {
-	var reqExt bidReqExt
+func getRequestExt(ext json.RawMessage) (map[string]json.RawMessage, error) {
+	extMap := make(map[string]json.RawMessage)
+
 	if len(ext) > 0 {
-		if err := json.Unmarshal(ext, &reqExt); err != nil {
-			return bidReqExt{}, err
+		if err := json.Unmarshal(ext, &extMap); err != nil {
+			return nil, err
 		}
 	}
-	if reqExt.Appnexus == nil {
-		reqExt.Appnexus = &bidReqExtAppnexus{}
-	}
-	includeBrandCategory := reqExt.Prebid.Targeting != nil && reqExt.Prebid.Targeting.IncludeBrandCategory != nil
-	if includeBrandCategory {
-		reqExt.Appnexus.BrandCategoryUniqueness = &includeBrandCategory
-		reqExt.Appnexus.IncludeBrandCategory = &includeBrandCategory
-	}
-	reqExt.Appnexus.IsAMP = isAMP
-	reqExt.Appnexus.HeaderBiddingSource = a.hbSource + isVIDEO
 
-	return reqExt, nil
+	return extMap, nil
+}
+
+func (a *adapter) getAppnexusExt(extMap map[string]json.RawMessage, isAMP int, isVIDEO int) (bidReqExtAppnexus, error) {
+	var appnexusExt bidReqExtAppnexus
+
+	if appnexusExtJson, exists := extMap["appnexus"]; exists && len(appnexusExtJson) > 0 {
+		if err := json.Unmarshal(appnexusExtJson, &appnexusExt); err != nil {
+			return appnexusExt, err
+		}
+	}
+
+	if prebidJson, exists := extMap["prebid"]; exists {
+		includeBrandCategory, err := jsonparser.GetBoolean(prebidJson, "prebid", "targeting", "includebrandcategory")
+		if err != nil && !errors.Is(err, jsonparser.KeyPathNotFoundError) {
+			return appnexusExt, err
+		}
+
+		if includeBrandCategory {
+			appnexusExt.BrandCategoryUniqueness = &includeBrandCategory
+			appnexusExt.IncludeBrandCategory = &includeBrandCategory
+		}
+	}
+
+	appnexusExt.IsAMP = isAMP
+	appnexusExt.HeaderBiddingSource = a.hbSource + isVIDEO
+
+	return appnexusExt, nil
 }
 
 func validateAndBuildAppNexusExt(imp *openrtb2.Imp) (openrtb_ext.ExtImpAppnexus, error) {
@@ -270,7 +297,7 @@ func groupByPods(imps []openrtb2.Imp) map[string]([]openrtb2.Imp) {
 	return podImps
 }
 
-func splitRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExtension bidReqExt, uri string) ([]*adapters.RequestData, []error) {
+func splitRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExt map[string]json.RawMessage, requestExtAppnexus bidReqExtAppnexus, uri string) ([]*adapters.RequestData, []error) {
 	var errs []error
 	// Initial capacity for future array of requests, memory optimization.
 	// Let's say there are 35 impressions and limit impressions per request equals to 10.
@@ -285,8 +312,15 @@ func splitRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExt
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 
-	var err error
-	request.Ext, err = json.Marshal(requestExtension)
+	appnexusExtJson, err := json.Marshal(requestExtAppnexus)
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	requestExtClone := maputil.Clone(requestExt)
+	requestExtClone["appnexus"] = appnexusExtJson
+
+	request.Ext, err = json.Marshal(requestExtClone)
 	if err != nil {
 		errs = append(errs, err)
 	}
@@ -363,7 +397,7 @@ func buildRequestImp(imp *openrtb2.Imp, appnexusExt *openrtb_ext.ExtImpAppnexus,
 		UsePmtRule:        appnexusExt.UsePaymentRule,
 		PrivateSizes:      appnexusExt.PrivateSizes,
 		ExtInvCode:        appnexusExt.ExtInvCode,
-		ExternalImpId:     appnexusExt.ExternalImpId,
+		ExternalImpID:     appnexusExt.ExternalImpId,
 	}}
 
 	var err error
@@ -419,30 +453,27 @@ func buildDisplayManageVer(req *openrtb2.BidRequest) string {
 }
 
 // moveSupplyChain moves the supply chain object from source.ext.schain to ext.schain.
-func moveSupplyChain(request *openrtb2.BidRequest, requestExtension *bidReqExt) error {
+func moveSupplyChain(request *openrtb2.BidRequest, extMap map[string]json.RawMessage) error {
 	if request == nil || request.Source == nil || len(request.Source.Ext) == 0 {
 		return nil
 	}
 
-	extMap := make(map[string]json.RawMessage)
-	if err := json.Unmarshal(request.Source.Ext, &extMap); err != nil {
+	sourceExtMap := make(map[string]json.RawMessage)
+	if err := json.Unmarshal(request.Source.Ext, &sourceExtMap); err != nil {
 		return err
 	}
 
-	schainJson, exists := extMap["schain"]
+	schainJson, exists := sourceExtMap["schain"]
 	if !exists {
 		return nil
 	}
 
-	schain := &openrtb2.SupplyChain{}
-	if err := json.Unmarshal(schainJson, schain); err != nil {
-		return err
-	}
+	delete(sourceExtMap, "schain")
 
-	delete(extMap, "schain")
+	request.Source = ptrutil.Clone(request.Source)
 
-	if len(extMap) > 0 {
-		ext, err := json.Marshal(extMap)
+	if len(sourceExtMap) > 0 {
+		ext, err := json.Marshal(sourceExtMap)
 		if err != nil {
 			return err
 		}
@@ -451,19 +482,19 @@ func moveSupplyChain(request *openrtb2.BidRequest, requestExtension *bidReqExt) 
 		request.Source.Ext = nil
 	}
 
-	requestExtension.SChain = schain
+	extMap["schain"] = schainJson
 
 	return nil
 }
 
-func (a *adapter) buildAdPodRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExtension bidReqExt, uri string) ([]*adapters.RequestData, []error) {
+func (a *adapter) buildAdPodRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExt map[string]json.RawMessage, requestExtAppnexus bidReqExtAppnexus, uri string) ([]*adapters.RequestData, []error) {
 	var errs []error
 	podImps := groupByPods(imps)
 	requests := make([]*adapters.RequestData, 0, len(podImps))
 	for _, podImps := range podImps {
-		requestExtension.Appnexus.AdPodId = fmt.Sprint(a.randomGenerator.GenerateInt63())
+		requestExtAppnexus.AdPodID = fmt.Sprint(a.randomGenerator.GenerateInt63())
 
-		reqs, errors := splitRequests(podImps, request, requestExtension, uri)
+		reqs, errors := splitRequests(podImps, request, requestExt, requestExtAppnexus, uri)
 		requests = append(requests, reqs...)
 		errs = append(errs, errors...)
 	}
