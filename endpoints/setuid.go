@@ -18,6 +18,7 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
+	"github.com/prebid/prebid-server/privacy"
 	gppPrivacy "github.com/prebid/prebid-server/privacy/gpp"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/usersync"
@@ -58,7 +59,7 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 
 		query := r.URL.Query()
 
-		syncer, err := getSyncer(query, syncersByBidder)
+		syncer, bidderName, err := getSyncer(query, syncersByBidder)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(err.Error()))
@@ -100,6 +101,20 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 			}
 			so.Errors = []error{err}
 			so.Status = http.StatusBadRequest
+			return
+		}
+
+		activities, activitiesErr := privacy.NewActivityControl(account.Privacy)
+		if activitiesErr != nil {
+			if errortypes.ContainsFatalError([]error{activitiesErr}) {
+				activities = privacy.ActivityControl{}
+			}
+		}
+
+		userSyncActivityAllowed := activities.Allow(privacy.ActivitySyncUser,
+			privacy.ScopedName{Scope: privacy.ScopeTypeBidder, Name: bidderName})
+		if userSyncActivityAllowed == privacy.ActivityDeny {
+			w.WriteHeader(http.StatusUnavailableForLegalReasons)
 			return
 		}
 
@@ -178,7 +193,6 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 // first and the 'gdpr' and 'gdpr_consent' query params second. If found in both, throws a
 // warning. Can also throw a parsing or validation error
 func extractGDPRInfo(query url.Values) (reqInfo gdpr.RequestInfo, err error) {
-
 	reqInfo, err = parseGDPRFromGPP(query)
 	if err != nil {
 		return gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous}, err
@@ -306,19 +320,19 @@ func parseConsentFromGppStr(gppQueryValue string) (string, error) {
 	return gdprConsent, nil
 }
 
-func getSyncer(query url.Values, syncersByBidder map[string]usersync.Syncer) (usersync.Syncer, error) {
+func getSyncer(query url.Values, syncersByBidder map[string]usersync.Syncer) (usersync.Syncer, string, error) {
 	bidder := query.Get("bidder")
 
 	if bidder == "" {
-		return nil, errors.New(`"bidder" query param is required`)
+		return nil, "", errors.New(`"bidder" query param is required`)
 	}
 
 	syncer, syncerExists := syncersByBidder[bidder]
 	if !syncerExists {
-		return nil, errors.New("The bidder name provided is not supported by Prebid Server")
+		return nil, "", errors.New("The bidder name provided is not supported by Prebid Server")
 	}
 
-	return syncer, nil
+	return syncer, bidder, nil
 }
 
 // getResponseFormat reads the format query parameter or falls back to the syncer's default.

@@ -277,6 +277,35 @@ func TestSetUIDEndpoint(t *testing.T) {
 			expectedBody:           "account is disabled, please reach out to the prebid server host",
 			description:            "Set uid for valid bidder with valid disabled account provided",
 		},
+		{
+			uri:                    "/setuid?bidder=pubmatic&uid=123&account=valid_acct_with_valid_activities_usersync_enabled",
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			existingSyncs:          nil,
+			gdprAllowsHostCookies:  true,
+			expectedSyncs:          map[string]string{"pubmatic": "123"},
+			expectedStatusCode:     http.StatusOK,
+			expectedHeaders:        map[string]string{"Content-Type": "text/html", "Content-Length": "0"},
+			description:            "Set uid for valid bidder with valid account provided with user sync allowed activity",
+		},
+		{
+			uri:                    "/setuid?bidder=pubmatic&uid=123&account=valid_acct_with_valid_activities_usersync_disabled",
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			existingSyncs:          nil,
+			gdprAllowsHostCookies:  true,
+			expectedSyncs:          nil,
+			expectedStatusCode:     http.StatusUnavailableForLegalReasons,
+			description:            "Set uid for valid bidder with valid account provided with user sync disallowed activity",
+		},
+		{
+			uri:                    "/setuid?bidder=pubmatic&uid=123&account=valid_acct_with_invalid_activities",
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			existingSyncs:          nil,
+			gdprAllowsHostCookies:  true,
+			expectedSyncs:          map[string]string{"pubmatic": "123"},
+			expectedStatusCode:     http.StatusOK,
+			expectedHeaders:        map[string]string{"Content-Type": "text/html", "Content-Length": "0"},
+			description:            "Set uid for valid bidder with valid account provided with invalid user sync activity",
+		},
 	}
 
 	analytics := analyticsConf.NewPBSAnalytics(&config.Analytics{})
@@ -1354,6 +1383,10 @@ func doRequest(req *http.Request, analytics analytics.PBSAnalyticsModule, metric
 		"disabled_acct":     json.RawMessage(`{"disabled":true}`),
 		"malformed_acct":    json.RawMessage(`{"disabled":"malformed"}`),
 		"invalid_json_acct": json.RawMessage(`{"}`),
+
+		"valid_acct_with_valid_activities_usersync_enabled":  json.RawMessage(`{"privacy":{"allowactivities":{"syncUser":{"default": true}}}}`),
+		"valid_acct_with_valid_activities_usersync_disabled": json.RawMessage(`{"privacy":{"allowactivities":{"syncUser":{"default": false}}}}`),
+		"valid_acct_with_invalid_activities":                 json.RawMessage(`{"privacy":{"allowactivities":{"syncUser":{"rules":[{"condition":{"componentName": ["bidderA.bidderB.bidderC"]}}]}}}}`),
 	}}
 
 	endpoint := NewSetUIDEndpoint(&cfg, syncersByBidder, gdprPermsBuilder, tcf2ConfigBuilder, analytics, fakeAccountsFetcher, metrics)
