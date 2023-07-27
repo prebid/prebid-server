@@ -363,12 +363,13 @@ func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, request
 	}
 
 	if requestExtParsed != nil {
-		prebid.CurrencyConversions = requestExtParsed.Prebid.CurrencyConversions
-		prebid.Integration = requestExtParsed.Prebid.Integration
 		prebid.Channel = requestExtParsed.Prebid.Channel
+		prebid.CurrencyConversions = requestExtParsed.Prebid.CurrencyConversions
 		prebid.Debug = requestExtParsed.Prebid.Debug
-		prebid.Server = requestExtParsed.Prebid.Server
+		prebid.Integration = requestExtParsed.Prebid.Integration
 		prebid.MultiBid = buildRequestExtMultiBid(bidder, requestExtParsed.Prebid.MultiBid, alternateBidderCodes)
+		prebid.Sdk = requestExtParsed.Prebid.Sdk
+		prebid.Server = requestExtParsed.Prebid.Server
 	}
 
 	// Marshal New Prebid Object
