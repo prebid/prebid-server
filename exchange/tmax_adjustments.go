@@ -48,7 +48,7 @@ func (b *bidderTmaxCtx) Deadline() (deadline time.Time, ok bool) {
 	return
 }
 
-// returns the remaining duration until the specified time
+// Until returns the remaining duration until the specified time
 func (b *bidderTmaxCtx) Until(t time.Time) time.Duration {
 	return time.Until(t)
 }
