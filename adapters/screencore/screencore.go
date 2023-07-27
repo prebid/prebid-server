@@ -54,6 +54,12 @@ func getHeaders(request *openrtb2.BidRequest) http.Header {
 }
 
 func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) (requestsToBidder []*adapters.RequestData, errs []error) {
+	if len(openRTBRequest.Imp) == 0 {
+		return nil, []error{&errortypes.BadInput{
+			Message: "Empty Imp array in BidRequest",
+		}}
+	}
+
 	screencoreExt, err := getImpressionExt(&openRTBRequest.Imp[0])
 	if err != nil {
 		return nil, []error{err}
