@@ -109,7 +109,7 @@
                             ]
                         },
                         "tagid": "2612792908",
-                        "bidfloor": 0.01,
+                        "bidfloor": 0.05,
                         "bidfloorcur": "USD",
                         "secure": 1,
                         "ext": {

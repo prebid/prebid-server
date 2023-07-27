@@ -1,6 +1,7 @@
 package openrtb_ext
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -50,7 +51,7 @@ func TestBidderUniquenessGatekeeping(t *testing.T) {
 	// - Exclude duplicates of adapters for the same bidder, as it's unlikely a publisher will use both.
 	var bidders []string
 	for _, bidder := range CoreBidderNames() {
-		if bidder != BidderTripleliftNative && bidder != BidderAdkernelAdn && bidder != BidderFreewheelSSPOld && bidder != BidderYahooAdvertising {
+		if bidder != BidderSilverPush && bidder != BidderTripleliftNative && bidder != BidderAdkernelAdn && bidder != BidderFreewheelSSPOld && bidder != BidderYahooAdvertising {
 			bidders = append(bidders, string(bidder))
 		}
 	}
@@ -83,6 +84,9 @@ func uniqueForPrefixLength(b []string, prefixLength int) bool {
 
 	for i, n := range b {
 		ns := string(n)
+		if ns == "silverpush" {
+			fmt.Println("Aa gya")
+		}
 
 		if len(ns) > prefixLength {
 			ns = ns[0:prefixLength]

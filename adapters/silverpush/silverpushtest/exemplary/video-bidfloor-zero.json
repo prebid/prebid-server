@@ -22,20 +22,18 @@
                     ],
                     "linearity": 1,
                     "placement": 1,
-                    "minduration": 10,
-                    "maxduration": 5,
+                    "minduration": 1,
+                    "maxduration": 0,
                     "startdelay": 0,
                     "w": 320,
                     "h": 250
                 },
                 "tagid": "2612792908",
-                "bidfloor": 0.01,
                 "bidfloorcur": "USD",
                 "secure": 1,
                 "ext": {
                     "bidder": {
-                            "publisherId": "publisher123",
-                            "bidfloor": 0.05
+                            "publisherId": "publisher123"
                      }
                 }
             }
@@ -108,20 +106,19 @@
                             ],
                             "linearity": 1,
                             "placement": 1,
-                            
-                            "maxduration": 10,
+                            "minduration": 1,
+                            "maxduration": 120,
                             "startdelay": 0,
                             "w": 320,
                             "h": 250
                         },
                         "tagid": "2612792908",
-                        "bidfloor": 0.05,
+                        "bidfloor": 0.1,
                         "bidfloorcur": "USD",
                         "secure": 1,
                         "ext": {
                             "bidder": {
-                                    "publisherId": "publisher123",
-                                    "bidfloor": 0.05
+                                    "publisherId": "publisher123"
                              }
                         }
                     }

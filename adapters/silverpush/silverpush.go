@@ -125,13 +125,25 @@ func setDevice(req *openrtb2.BidRequest) {
 
 func setUser(req *openrtb2.BidRequest) error {
 	var extUser openrtb_ext.ExtUser
+	var userExtRaw map[string]json.RawMessage
+
 	if req.User != nil && req.User.Ext != nil {
-		var userCopy = *req.User
-		if err := json.Unmarshal(req.User.Ext, &extUser); err != nil {
+		if err := json.Unmarshal(req.User.Ext, &userExtRaw); err != nil {
 			return &errortypes.BadInput{Message: "Invalid user.ext."}
 		}
-		if IsValidEids(extUser.Eids) {
-			req.User = &userCopy
+		if userExtDataRaw, ok := userExtRaw["data"]; ok {
+			if err := json.Unmarshal(userExtDataRaw, &extUser); err != nil {
+				return &errortypes.BadInput{Message: "Invalid user.ext.data."}
+			}
+			var userCopy = *req.User
+			if IsValidEids(extUser.Eids) {
+				userExt, _ := json.Marshal(
+					&openrtb2.User{
+						EIDs: extUser.Eids,
+					})
+				userCopy.Ext = userExt
+				req.User = &userCopy
+			}
 		}
 	}
 	return nil
@@ -149,9 +161,16 @@ func setExtToRequest(req *openrtb2.BidRequest, publisherID string) {
 
 func setImpForAdExchange(imp *openrtb2.Imp, impExt *openrtb_ext.ImpExtSilverpush) error {
 
-	if imp.BidFloor == 0 && impExt.BidFloor > 0 {
+	if impExt.BidFloor == 0 {
+		if imp.Banner != nil {
+			imp.BidFloor = 0.05
+		} else if imp.Video != nil {
+			imp.BidFloor = 0.1
+		}
+	} else {
 		imp.BidFloor = impExt.BidFloor
 	}
+
 	if imp.Banner != nil {
 		bannerCopy, err := setBannerDimension(imp.Banner)
 		if err != nil {
