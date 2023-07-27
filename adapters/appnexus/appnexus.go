@@ -235,14 +235,14 @@ func (a *adapter) getAppnexusExt(extMap map[string]json.RawMessage, isAMP int, i
 	}
 
 	if prebidJson, exists := extMap["prebid"]; exists {
-		includeBrandCategory, err := jsonparser.GetBoolean(prebidJson, "prebid", "targeting", "includebrandcategory")
+		_, valueType, _, err := jsonparser.Get(prebidJson, "targeting", "includebrandcategory")
 		if err != nil && !errors.Is(err, jsonparser.KeyPathNotFoundError) {
 			return appnexusExt, err
 		}
 
-		if includeBrandCategory {
-			appnexusExt.BrandCategoryUniqueness = &includeBrandCategory
-			appnexusExt.IncludeBrandCategory = &includeBrandCategory
+		if valueType == jsonparser.Object {
+			appnexusExt.BrandCategoryUniqueness = ptrutil.ToPtr(true)
+			appnexusExt.IncludeBrandCategory = ptrutil.ToPtr(true)
 		}
 	}
 
