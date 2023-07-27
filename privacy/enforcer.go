@@ -31,7 +31,7 @@ func NewActivityControl(privacyConf *config.AccountPrivacy) (ActivityControl, er
 	var err error
 
 	if privacyConf == nil {
-		return ac, nil
+		return ac, err
 	}
 
 	plans := make(map[Activity]ActivityPlan)
