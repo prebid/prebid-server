@@ -3063,3 +3063,79 @@ func TestGetBidType(t *testing.T) {
 		})
 	}
 }
+
+type mockBidderTmaxCtx struct {
+	startTime, deadline time.Time
+	ok                  bool
+}
+
+func (m *mockBidderTmaxCtx) Deadline() (deadline time.Time, _ bool) {
+	return m.deadline, m.ok
+}
+func (m *mockBidderTmaxCtx) RemainingDurationMS(deadline time.Time) int64 {
+	return deadline.Sub(m.startTime).Milliseconds()
+}
+
+func TestUpdateBidderTmax(t *testing.T) {
+	respStatus := 200
+	respBody := "{\"bid\":false}"
+	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
+	defer server.Close()
+
+	requestHeaders := http.Header{}
+	requestHeaders.Add("Content-Type", "application/json")
+
+	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	var requestTmax int64 = 700
+
+	bidderReq := BidderRequest{
+		BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "impId"}}, TMax: requestTmax},
+		BidderName: "test",
+	}
+	extraInfo := &adapters.ExtraRequestInfo{}
+
+	tests := []struct {
+		description     string
+		requestTmax     int64
+		tmaxAdjustments *TmaxAdjustmentsPreprocessed
+		assertFn        func(actualTmax int64) bool
+	}{
+		{
+			description:     "tmax-is-not-enabled",
+			requestTmax:     requestTmax,
+			tmaxAdjustments: &TmaxAdjustmentsPreprocessed{IsEnforced: false},
+			assertFn: func(actualTmax int64) bool {
+				return requestTmax == actualTmax
+			},
+		},
+		{
+			description:     "updates-bidder-tmax",
+			requestTmax:     requestTmax,
+			tmaxAdjustments: &TmaxAdjustmentsPreprocessed{IsEnforced: true, BidderResponseDurationMin: 100, BidderNetworkLatencyBuffer: 50, PBSResponsePreparationDuration: 50},
+			assertFn: func(actualTmax int64) bool {
+				return requestTmax > actualTmax
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			bidderImpl := &goodSingleBidder{
+				httpRequest: &adapters.RequestData{
+					Method:  "POST",
+					Uri:     server.URL,
+					Body:    []byte("{\"key\":\"val\"}"),
+					Headers: http.Header{},
+				},
+				bidResponse: &adapters.BidderResponse{},
+			}
+
+			ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(50*time.Millisecond))
+			defer cancel()
+			bidReqOptions := bidRequestOptions{tmaxAdjustments: test.tmaxAdjustments}
+			bidder := AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{Allow: false}, "")
+			_, _, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), extraInfo, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
+			assert.Empty(t, errs)
+			assert.True(t, test.assertFn(bidderImpl.bidRequest.TMax))
+		})
+	}
+}

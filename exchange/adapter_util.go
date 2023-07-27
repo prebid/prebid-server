@@ -97,6 +97,7 @@ func GetDisabledBiddersErrorMessages(infos config.BidderInfos) map[string]string
 		"oftmedia":       `Bidder "oftmedia" is no longer available in Prebid Server. Please update your configuration.`,
 		"groupm":         `Bidder "groupm" is no longer available in Prebid Server. Please update your configuration.`,
 		"verizonmedia":   `Bidder "verizonmedia" is no longer available in Prebid Server. Please update your configuration.`,
+		"brightroll":     `Bidder "brightroll" is no longer available in Prebid Server. Please update your configuration.`,
 	}
 
 	for name, info := range infos {

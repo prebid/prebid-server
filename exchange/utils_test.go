@@ -74,8 +74,6 @@ func assertReq(t *testing.T, bidderRequests []BidderRequest,
 	assert.NotEqual(t, bidderRequests, 0, "cleanOpenRTBRequest should split request into individual bidder requests")
 
 	// assert for PI data
-	// Both appnexus and brightroll should be allowed since brightroll
-	// is used as an alias for appnexus in the test request
 	for _, req := range bidderRequests {
 		if !applyCOPPA && consentedVendors[req.BidderName.String()] {
 			assert.NotEqual(t, req.BidRequest.User.BuyerUID, "", "cleanOpenRTBRequest shouldn't clean PI data as per COPPA or for a consented vendor as per GDPR or per CCPA")
@@ -459,7 +457,7 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 			bidReqAssertions: assertReq,
 			hasError:         false,
 			applyCOPPA:       false,
-			consentedVendors: map[string]bool{"appnexus": true, "brightroll": true},
+			consentedVendors: map[string]bool{"appnexus": true},
 		},
 	}
 
@@ -507,13 +505,6 @@ func TestCleanOpenRTBRequestsWithFPD(t *testing.T) {
 		User: &openrtb2.User{Keywords: "fpdApnUser"},
 	}
 	fpd[openrtb_ext.BidderName("rubicon")] = &apnFpd
-
-	brightrollFpd := firstpartydata.ResolvedFirstPartyData{
-		Site: &openrtb2.Site{Name: "fpdBrightrollSite"},
-		App:  &openrtb2.App{Name: "fpdBrightrollApp"},
-		User: &openrtb2.User{Keywords: "fpdBrightrollUser"},
-	}
-	fpd[openrtb_ext.BidderName("brightroll")] = &brightrollFpd
 
 	emptyTCF2Config := gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{})
 
@@ -2580,9 +2571,9 @@ func newAdapterAliasBidRequest(t *testing.T) *openrtb2.BidRequest {
 					H: 600,
 				}},
 			},
-			Ext: json.RawMessage(`{"appnexus": {"placementId": 1},"brightroll": {"placementId": 105}}`),
+			Ext: json.RawMessage(`{"appnexus": {"placementId": 1},"somealias": {"placementId": 105}}`),
 		}},
-		Ext: json.RawMessage(`{"prebid":{"aliases":{"brightroll":"appnexus"}}}`),
+		Ext: json.RawMessage(`{"prebid":{"aliases":{"somealias":"appnexus"}}}`),
 	}
 }
 
@@ -3196,17 +3187,17 @@ func Test_parseAliasesGVLIDs(t *testing.T) {
 			"AliasGVLID Parsed Correctly",
 			args{
 				orig: &openrtb2.BidRequest{
-					Ext: json.RawMessage(`{"prebid":{"aliases":{"brightroll":"appnexus"}, "aliasgvlids":{"brightroll":1}}}`),
+					Ext: json.RawMessage(`{"prebid":{"aliases":{"somealiascode":"appnexus"}, "aliasgvlids":{"somealiascode":1}}}`),
 				},
 			},
-			map[string]uint16{"brightroll": 1},
+			map[string]uint16{"somealiascode": 1},
 			false,
 		},
 		{
 			"AliasGVLID parsing error",
 			args{
 				orig: &openrtb2.BidRequest{
-					Ext: json.RawMessage(`{"prebid":{"aliases":{"brightroll":"appnexus"}, "aliasgvlids": {"brightroll":"abc"}`),
+					Ext: json.RawMessage(`{"prebid":{"aliases":{"somealiascode":"appnexus"}, "aliasgvlids": {"somealiascode":"abc"}`),
 				},
 			},
 			nil,
@@ -3216,7 +3207,7 @@ func Test_parseAliasesGVLIDs(t *testing.T) {
 			"Invalid AliasGVLID",
 			args{
 				orig: &openrtb2.BidRequest{
-					Ext: json.RawMessage(`{"prebid":{"aliases":{"brightroll":"appnexus"}, "aliasgvlids":"abc"}`),
+					Ext: json.RawMessage(`{"prebid":{"aliases":{"somealiascode":"appnexus"}, "aliasgvlids":"abc"}`),
 				},
 			},
 			nil,
@@ -3226,7 +3217,7 @@ func Test_parseAliasesGVLIDs(t *testing.T) {
 			"Missing AliasGVLID",
 			args{
 				orig: &openrtb2.BidRequest{
-					Ext: json.RawMessage(`{"prebid":{"aliases":{"brightroll":"appnexus"}}`),
+					Ext: json.RawMessage(`{"prebid":{"aliases":{"somealiascode":"appnexus"}}`),
 				},
 			},
 			nil,

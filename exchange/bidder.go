@@ -67,6 +67,7 @@ type bidRequestOptions struct {
 	headerDebugAllowed  bool
 	addCallSignHeader   bool
 	bidAdjustments      map[string]float64
+	tmaxAdjustments     *TmaxAdjustmentsPreprocessed
 }
 
 type extraBidderRespInfo struct {
@@ -143,6 +144,11 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 	//check if real request exists for this bidder or it only has stored responses
 	dataLen := 0
 	if len(bidderRequest.BidRequest.Imp) > 0 {
+		// Reducing the amount of time bidders have to compensate for the processing time used by PBS to fetch a stored request (if needed), validate the OpenRTB request and split it into multiple requests sanitized for each bidder
+		// As well as for the time needed by PBS to prepare the auction response
+		if bidRequestOptions.tmaxAdjustments != nil && bidRequestOptions.tmaxAdjustments.IsEnforced {
+			bidderRequest.BidRequest.TMax = getBidderTmax(&bidderTmaxCtx{ctx}, bidderRequest.BidRequest.TMax, *bidRequestOptions.tmaxAdjustments)
+		}
 		reqData, errs = bidder.Bidder.MakeRequests(bidderRequest.BidRequest, reqInfo)
 
 		if len(reqData) == 0 {
