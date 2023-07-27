@@ -6,7 +6,7 @@
   "properties": {
     "emiter": {
       "type": "string",
-      "description": "(Deprecated, use emitterPrefix instead) AdOcean emiter",
+      "description": "Deprecated, use emitterPrefix instead. AdOcean emiter",
       "pattern": ".+"
     },
     "emitterPrefix": {
