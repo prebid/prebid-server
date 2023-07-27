@@ -129,6 +129,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		return nil, append(errs, err)
 	}
 
+	if err := moveSupplyChain(request, &reqExt); err != nil {
+		return nil, append(errs, err)
+	}
+
 	// For long form requests if adpodId feature enabled, adpod_id must be sent downstream.
 	// Adpod id is a unique identifier for pod
 	// All impressions in the same pod must have the same pod id in request extension
@@ -412,6 +416,44 @@ func buildDisplayManageVer(req *openrtb2.BidRequest) string {
 	}
 
 	return fmt.Sprintf("%s-%s", source, version)
+}
+
+// moveSupplyChain moves the supply chain object from source.ext.schain to ext.schain.
+func moveSupplyChain(request *openrtb2.BidRequest, requestExtension *bidReqExt) error {
+	if request == nil || request.Source == nil || len(request.Source.Ext) == 0 {
+		return nil
+	}
+
+	extMap := make(map[string]json.RawMessage)
+	if err := json.Unmarshal(request.Source.Ext, &extMap); err != nil {
+		return err
+	}
+
+	schainJson, exists := extMap["schain"]
+	if !exists {
+		return nil
+	}
+
+	schain := &openrtb2.SupplyChain{}
+	if err := json.Unmarshal(schainJson, schain); err != nil {
+		return err
+	}
+
+	delete(extMap, "schain")
+
+	if len(extMap) > 0 {
+		ext, err := json.Marshal(extMap)
+		if err != nil {
+			return err
+		}
+		request.Source.Ext = ext
+	} else {
+		request.Source.Ext = nil
+	}
+
+	requestExtension.SChain = schain
+
+	return nil
 }
 
 func (a *adapter) buildAdPodRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExtension bidReqExt, uri string) ([]*adapters.RequestData, []error) {
