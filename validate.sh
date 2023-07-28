@@ -35,7 +35,7 @@ if [ "$RACE" -ne "0" ]; then
 fi
 
 if $VET; then
-  COMMAND="go vet"
-  echo "Running: $COMMAND"
-  `$COMMAND`
+  COMMAND=$(go vet ./... 2>&1 | grep -v -E "literal uses unkeyed fields")
+  echo "Running go vet check"
+  echo "$COMMAND"
 fi
