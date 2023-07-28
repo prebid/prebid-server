@@ -6,11 +6,15 @@
   "properties": {
     "org": {
       "type": "string",
-      "description": "The organization ID"
+      "description": "The organization ID."
+    },
+    "publisher_id": {
+      "type": "string",
+      "description": "Deprecated, use org instead."
     }
   },
   "oneOf": [
+    { "required": ["org"] },
     { "required": ["publisher_id"] },
-    { "required": ["org"] }
   ]
 }
