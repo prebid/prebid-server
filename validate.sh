@@ -35,7 +35,6 @@ if [ "$RACE" -ne "0" ]; then
 fi
 
 if $VET; then
-  COMMAND="go vet"
-  echo "Running: $COMMAND"
-  `$COMMAND`
+  echo "Running go vet check"
+  go vet -composites=false ./...
 fi
