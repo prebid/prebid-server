@@ -9,7 +9,6 @@ import (
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -55,25 +54,9 @@ func getValidImpressions(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRe
 			errs = append(errs, err)
 			continue
 		}
-
-		if err := preprocessExtensions(&imp); err != nil {
-			errs = append(errs, err)
-			continue
-		}
 		validImps = append(validImps, imp)
 	}
 	return validImps, errs
-}
-
-func preprocessExtensions(imp *openrtb2.Imp) error {
-	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return &errortypes.BadInput{
-			Message: err.Error(),
-		}
-	}
-
-	return nil
 }
 
 func preprocessBidFloorCurrency(imp *openrtb2.Imp, reqInfo *adapters.ExtraRequestInfo) error {
