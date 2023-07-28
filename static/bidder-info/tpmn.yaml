@@ -1,0 +1,20 @@
+endpoint: "https://gat.tpmn.io/ortb/pbs_bidder"
+maintainer:
+  email: "prebid@tpmn.io"
+modifyingVastXmlAllowed: true
+endpointCompression: GZIP
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  redirect:
+    url: "https://gat.tpmn.io/sync/redirect?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir={{.RedirectURL}}"
+    userMacro: "$UID"
