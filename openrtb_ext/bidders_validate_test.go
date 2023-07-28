@@ -1,7 +1,6 @@
 package openrtb_ext
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
@@ -84,9 +83,6 @@ func uniqueForPrefixLength(b []string, prefixLength int) bool {
 
 	for i, n := range b {
 		ns := string(n)
-		if ns == "silverpush" {
-			fmt.Println("Aa gya")
-		}
 
 		if len(ns) > prefixLength {
 			ns = ns[0:prefixLength]
