@@ -431,7 +431,7 @@ func TestScrubRequest(t *testing.T) {
 					MACSHA1:  "anyMACSHA1",
 					MACMD5:   "anyMACMD5",
 					IP:       "1.2.3.0",
-					IPv6:     "2001:0db8:0000:0000:0000:ff00:0:0",
+					IPv6:     "2001:db8::",
 					Geo: &openrtb2.Geo{
 						Lat: 123.46, Lon: 678.89,
 						Metro: "some metro",
@@ -583,6 +583,37 @@ func TestScrubIPV6Lowest32Bits(t *testing.T) {
 	for _, test := range testCases {
 		result := scrubIPV6Lowest32Bits(test.IP)
 		assert.Equal(t, test.cleanedIP, result, test.description)
+	}
+}
+
+func TestAnonymizeIpv6(t *testing.T) {
+	testCases := []struct {
+		IP          string
+		cleanedIP   string
+		description string
+	}{
+		{
+			IP:        "0:0:0:0:0:0:0:0",
+			cleanedIP: "::",
+		},
+		{
+			IP:        "1111:2222:3333:4444:5555:6666:7777:8888",
+			cleanedIP: "1111:2222:3333:4400::",
+		},
+		{
+			IP:        "1111:0:3333:4444:5555:6666:7777:8888",
+			cleanedIP: "1111:0:3333:4400::",
+		},
+		{
+			IP:        "1111::6666:7777:8888",
+			cleanedIP: "1111::",
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			result := anonymizeIpv6(test.IP)
+			assert.Equal(t, test.cleanedIP, result)
+		})
 	}
 }
 
