@@ -18,44 +18,8 @@
         },
         "ext": {
           "bidder": {
-            "path": "mvo",
-            "zone": "1r"
-          }
-        }
-      },
-      {
-        "id": "test-imp-video-id",
-        "video": {
-          "mimes": [
-            "video/mp4"
-          ],
-          "minduration": 1,
-          "maxduration": 2,
-          "protocols": [
-            1,
-            2,
-            5
-          ],
-          "w": 1020,
-          "h": 780,
-          "startdelay": 1,
-          "placement": 1,
-          "playbackmethod": [
-            2
-          ],
-          "delivery": [
-            1
-          ],
-          "api": [
-            1,
-            2,
-            3,
-            4
-          ]
-        },
-        "ext": {
-          "bidder": {
-            "org": "72721",
+            "org": "72720",
+            "publisher_id": "72721",
             "path": "mvo",
             "zone": "1r"
           }
@@ -66,7 +30,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://localhost/prebid_server?publisher_id=72721",
+        "uri": "http://localhost/prebid_server?publisher_id=72720",
         "body": {
           "id": "test-request-id",
           "imp": [
@@ -86,44 +50,8 @@
               },
               "ext": {
                 "bidder": {
-                  "zone": "1r",
-                  "path": "mvo"
-                }
-              }
-            },
-            {
-              "id": "test-imp-video-id",
-              "video": {
-                "mimes": [
-                  "video/mp4"
-                ],
-                "minduration": 1,
-                "maxduration": 2,
-                "protocols": [
-                  1,
-                  2,
-                  5
-                ],
-                "w": 1020,
-                "h": 780,
-                "startdelay": 1,
-                "placement": 1,
-                "playbackmethod": [
-                  2
-                ],
-                "delivery": [
-                  1
-                ],
-                "api": [
-                  1,
-                  2,
-                  3,
-                  4
-                ]
-              },
-              "ext": {
-                "bidder": {
-                  "org": "72721",
+                  "org": "72720",
+                  "publisher_id": "72721",
                   "zone": "1r",
                   "path": "mvo"
                 }
@@ -138,11 +66,11 @@
           "id": "test-request-id",
           "seatbid": [
             {
-              "seat": "958",
+              "seat": "Rhythmone",
               "bid": [
                 {
                   "id": "7706636740145184841",
-                  "impid": "test-imp-video-id",
+                  "impid": "test-imp-id",
                   "price": 0.500000,
                   "adid": "29681110",
                   "adm": "some-test-ad",
@@ -151,8 +79,8 @@
                   ],
                   "cid": "958",
                   "crid": "29681110",
-                  "h": 576,
-                  "w": 1024,
+                  "h": 250,
+                  "w": 300,
                   "mtype": 1
                 }
               ]
@@ -169,7 +97,7 @@
       "bids": [{
         "bid": {
           "id": "7706636740145184841",
-          "impid": "test-imp-video-id",
+          "impid": "test-imp-id",
           "price": 0.5,
           "adm": "some-test-ad",
           "adid": "29681110",
@@ -178,8 +106,8 @@
           ],
           "cid": "958",
           "crid": "29681110",
-          "w": 1024,
-          "h": 576,
+          "w": 300,
+          "h": 250,
           "mtype": 1
         },
         "type": "banner"
