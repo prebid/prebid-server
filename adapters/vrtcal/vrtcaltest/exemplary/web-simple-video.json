@@ -66,7 +66,8 @@
                   "adm": "some-test-video-ad",
                   "crid": "crid_10",
                   "h": 250,
-                  "w": 300
+                  "w": 300,
+		  "mtype":2
                 }
               ]
             }
@@ -88,7 +89,8 @@
             "adm": "some-test-video-ad",
             "crid": "crid_10",
             "w": 300,
-            "h": 250
+            "h": 250,
+	    "mtype":2
           },
           "type": "video"
         }
