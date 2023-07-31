@@ -253,8 +253,7 @@ func makeRequestExt(pageType string) (json.RawMessage, error) {
 
 	requestExtJson, err := json.Marshal(requestExt)
 	if err != nil {
-		fmt.Errorf("could not marshal %s", requestExt)
-		return nil, err
+		return nil, fmt.Errorf("could not marshal %s, err: %s", requestExt, err)
 	}
 	return requestExtJson, nil
 

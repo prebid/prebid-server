@@ -216,6 +216,7 @@ func TestAMPPageInfo(t *testing.T) {
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
+		nil,
 	)
 	request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&curl=%s", url.QueryEscape(page)), nil)
 	recorder := httptest.NewRecorder()
@@ -319,6 +320,7 @@ func TestGDPRConsent(t *testing.T) {
 			openrtb_ext.BuildBidderMap(),
 			empty_fetcher.EmptyFetcher{},
 			hooks.EmptyPlanBuilder{},
+			nil,
 		)
 
 		// Invoke Endpoint
@@ -742,6 +744,7 @@ func TestCCPAConsent(t *testing.T) {
 			openrtb_ext.BuildBidderMap(),
 			empty_fetcher.EmptyFetcher{},
 			hooks.EmptyPlanBuilder{},
+			nil,
 		)
 
 		// Invoke Endpoint
@@ -855,6 +858,7 @@ func TestConsentWarnings(t *testing.T) {
 			openrtb_ext.BuildBidderMap(),
 			empty_fetcher.EmptyFetcher{},
 			hooks.EmptyPlanBuilder{},
+			nil,
 		)
 
 		// Invoke Endpoint
@@ -953,6 +957,7 @@ func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 			openrtb_ext.BuildBidderMap(),
 			empty_fetcher.EmptyFetcher{},
 			hooks.EmptyPlanBuilder{},
+			nil,
 		)
 
 		// Invoke Endpoint
@@ -1007,6 +1012,7 @@ func TestAMPSiteExt(t *testing.T) {
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
+		nil,
 	)
 	request, err := http.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1", nil)
 	if !assert.NoError(t, err) {
@@ -1049,6 +1055,7 @@ func TestAmpBadRequests(t *testing.T) {
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
+		nil,
 	)
 	for requestID := range badRequests {
 		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s", requestID), nil)
@@ -1082,6 +1089,7 @@ func TestAmpDebug(t *testing.T) {
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
+		nil,
 	)
 
 	for requestID := range requests {
@@ -1217,6 +1225,7 @@ func TestQueryParamOverrides(t *testing.T) {
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
+		nil,
 	)
 
 	requestID := "1"
@@ -1374,6 +1383,7 @@ func (s formatOverrideSpec) execute(t *testing.T) {
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
+		nil,
 	)
 
 	url := fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&debug=1&w=%d&h=%d&ow=%d&oh=%d&ms=%s&account=%s", s.width, s.height, s.overrideWidth, s.overrideHeight, s.multisize, s.account)
@@ -1914,6 +1924,7 @@ func ampObjectTestSetup(t *testing.T, inTagId string, inStoredRequest json.RawMe
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
+		nil,
 	)
 	return &actualAmpObject, endpoint
 }
@@ -1966,6 +1977,7 @@ func TestAmpAuctionResponseHeaders(t *testing.T) {
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
+		nil,
 	)
 
 	for _, test := range testCases {
@@ -2001,6 +2013,7 @@ func TestRequestWithTargeting(t *testing.T) {
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
+		nil,
 	)
 	url, err := url.Parse("/openrtb2/auction/amp")
 	assert.NoError(t, err, "unexpected error received while parsing url")

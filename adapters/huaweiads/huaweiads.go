@@ -902,7 +902,6 @@ func getReqConsentInfo(request *huaweiAdsRequest, openRTBRequest *openrtb2.BidRe
 	if openRTBRequest.User != nil && openRTBRequest.User.Ext != nil {
 		var extUser openrtb_ext.ExtUser
 		if err := json.Unmarshal(openRTBRequest.User.Ext, &extUser); err != nil {
-			fmt.Errorf("failed to parse ExtUser in HuaweiAds GDPR check: %v", err)
 			return
 		}
 		request.Consent = extUser.Consent

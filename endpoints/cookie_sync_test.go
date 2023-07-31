@@ -499,6 +499,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 		expectedPrivacy      privacy.Policies
 		expectedRequest      usersync.Request
 	}{
+
 		{
 			description: "Complete Request - includes GPP string with EU TCF V2",
 			givenBody: strings.NewReader(`{` +
@@ -973,6 +974,38 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			expectedError:        errCookieSyncAccountBlocked.Error(),
 			givenAccountRequired: true,
 		},
+
+		{
+			description: "Account Defaults - Invalid Activities",
+			givenBody: strings.NewReader(`{` +
+				`"bidders":["a", "b"],` +
+				`"account":"ValidAccountInvalidActivities"` +
+				`}`),
+			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
+			givenCCPAEnabled: true,
+			givenConfig: config.UserSync{
+				Cooperative: config.UserSyncCooperative{
+					EnabledByDefault: false,
+					PriorityGroups:   [][]string{{"a", "b", "c"}},
+				},
+			},
+			expectedPrivacy: privacy.Policies{},
+			expectedRequest: usersync.Request{
+				Bidders: []string{"a", "b"},
+				Cooperative: usersync.Cooperative{
+					Enabled:        false,
+					PriorityGroups: [][]string{{"a", "b", "c"}},
+				},
+				Limit: 0,
+				Privacy: usersyncPrivacy{
+					gdprPermissions: &fakePermissions{},
+				},
+				SyncTypeFilter: usersync.SyncTypeFilter{
+					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+					Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+				},
+			},
+		},
 	}
 
 	for _, test := range testCases {
@@ -997,8 +1030,9 @@ func TestCookieSyncParseRequest(t *testing.T) {
 				ccpaEnforce:            test.givenCCPAEnabled,
 			},
 			accountsFetcher: FakeAccountsFetcher{AccountData: map[string]json.RawMessage{
-				"TestAccount":     json.RawMessage(`{"cookie_sync": {"default_limit": 20, "max_limit": 30, "default_coop_sync": true}}`),
-				"DisabledAccount": json.RawMessage(`{"disabled":true}`),
+				"TestAccount":                   json.RawMessage(`{"cookie_sync": {"default_limit": 20, "max_limit": 30, "default_coop_sync": true}}`),
+				"DisabledAccount":               json.RawMessage(`{"disabled":true}`),
+				"ValidAccountInvalidActivities": json.RawMessage(`{"privacy":{"allowactivities":{"syncUser":{"rules":[{"condition":{"componentName": ["bidderA.bidderB.bidderC"]}}]}}}}`),
 			}},
 		}
 		assert.NoError(t, endpoint.config.MarshalAccountDefaults())
@@ -1871,6 +1905,41 @@ func TestUsersyncPrivacyCCPAAllowsBidderSync(t *testing.T) {
 	}
 }
 
+func TestCookieSyncActivityControlIntegration(t *testing.T) {
+	testCases := []struct {
+		name           string
+		bidderName     string
+		allow          bool
+		expectedResult bool
+	}{
+		{
+			name:           "activity_is_allowed",
+			bidderName:     "bidderA",
+			allow:          true,
+			expectedResult: true,
+		},
+		{
+			name:           "activity_is_denied",
+			bidderName:     "bidderA",
+			allow:          false,
+			expectedResult: false,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			privacyConfig := getDefaultActivityConfig(test.bidderName, test.allow)
+			activities, err := privacy.NewActivityControl(privacyConfig)
+			assert.NoError(t, err)
+			up := usersyncPrivacy{
+				activityControl: activities,
+			}
+			actualResult := up.ActivityAllowsUserSync(test.bidderName)
+			assert.Equal(t, test.expectedResult, actualResult)
+		})
+	}
+}
+
 func TestCombineErrors(t *testing.T) {
 	testCases := []struct {
 		description    string
@@ -2030,4 +2099,23 @@ func (p *fakePermissions) AuctionActivitiesAllowed(ctx context.Context, bidderCo
 	return gdpr.AuctionPermissions{
 		AllowBidRequest: true,
 	}, nil
+}
+
+func getDefaultActivityConfig(componentName string, allow bool) *config.AccountPrivacy {
+	return &config.AccountPrivacy{
+		AllowActivities: config.AllowActivities{
+			SyncUser: config.Activity{
+				Default: ptrutil.ToPtr(true),
+				Rules: []config.ActivityRule{
+					{
+						Allow: allow,
+						Condition: config.ActivityCondition{
+							ComponentName: []string{componentName},
+							ComponentType: []string{"bidder"},
+						},
+					},
+				},
+			},
+		},
+	}
 }

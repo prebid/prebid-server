@@ -100,19 +100,16 @@ func (adapter *MobileFuseAdapter) makeRequest(bidRequest *openrtb2.BidRequest) (
 	var errs []error
 
 	mobileFuseExtension, errs := getFirstMobileFuseExtension(bidRequest)
-
 	if errs != nil {
 		return nil, errs
 	}
 
 	endpoint, err := adapter.getEndpoint(mobileFuseExtension)
-
 	if err != nil {
 		return nil, append(errs, err)
 	}
 
 	validImps, err := getValidImps(bidRequest, mobileFuseExtension)
-
 	if err != nil {
 		errs = append(errs, err)
 		return nil, errs
@@ -121,7 +118,6 @@ func (adapter *MobileFuseAdapter) makeRequest(bidRequest *openrtb2.BidRequest) (
 	mobileFuseBidRequest := *bidRequest
 	mobileFuseBidRequest.Imp = validImps
 	body, err := json.Marshal(mobileFuseBidRequest)
-
 	if err != nil {
 		return nil, append(errs, err)
 	}
@@ -165,13 +161,23 @@ func getFirstMobileFuseExtension(request *openrtb2.BidRequest) (*openrtb_ext.Ext
 	return &mobileFuseImpExtension, errs
 }
 
+func getMobileFuseExtensionForImp(imp *openrtb2.Imp, mobileFuseImpExtension *openrtb_ext.ExtImpMobileFuse) error {
+	var bidder_imp_extension adapters.ExtImpBidder
+
+	err := json.Unmarshal(imp.Ext, &bidder_imp_extension)
+	if err != nil {
+		return err
+	}
+
+	return json.Unmarshal(bidder_imp_extension.Bidder, &mobileFuseImpExtension)
+}
+
 func (adapter *MobileFuseAdapter) getEndpoint(ext *openrtb_ext.ExtImpMobileFuse) (string, error) {
 	publisher_id := strconv.Itoa(ext.PublisherId)
 
-	url, errs := macros.ResolveMacros(adapter.EndpointTemplate, macros.EndpointTemplateParams{PublisherID: publisher_id})
-
-	if errs != nil {
-		return "", errs
+	url, err := macros.ResolveMacros(adapter.EndpointTemplate, macros.EndpointTemplateParams{PublisherID: publisher_id})
+	if err != nil {
+		return "", err
 	}
 
 	if ext.TagidSrc == "ext" {
@@ -186,10 +192,15 @@ func getValidImps(bidRequest *openrtb2.BidRequest, ext *openrtb_ext.ExtImpMobile
 
 	for _, imp := range bidRequest.Imp {
 		if imp.Banner != nil || imp.Video != nil || imp.Native != nil {
+			err := getMobileFuseExtensionForImp(&imp, ext)
+			if err != nil {
+				return nil, err
+			}
+
 			imp.TagID = strconv.Itoa(ext.PlacementId)
 
 			var extSkadn ExtSkadn
-			err := json.Unmarshal(imp.Ext, &extSkadn)
+			err = json.Unmarshal(imp.Ext, &extSkadn)
 			if err != nil {
 				return nil, err
 			}
@@ -204,8 +215,6 @@ func getValidImps(bidRequest *openrtb2.BidRequest, ext *openrtb_ext.ExtImpMobile
 			}
 
 			validImps = append(validImps, imp)
-
-			break
 		}
 	}
 
