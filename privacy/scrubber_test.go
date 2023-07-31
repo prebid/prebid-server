@@ -38,7 +38,7 @@ func TestScrubDevice(t *testing.T) {
 				MACMD5:   "",
 				IFA:      "",
 				IP:       "1.2.3.0",
-				IPv6:     "2001:0db8:0000:0000:0000:ff00:0:0",
+				IPv6:     "2001:db8::ff00:0:0",
 				Geo:      &openrtb2.Geo{},
 			},
 			id:   ScrubStrategyDeviceIDAll,
@@ -95,7 +95,7 @@ func TestScrubDevice(t *testing.T) {
 				MACMD5:   "anyMACMD5",
 				IFA:      "anyIFA",
 				IP:       "1.2.3.4",
-				IPv6:     "2001:0db8:0000:0000:0000:ff00:0042:0",
+				IPv6:     "2001:db8::ff00:42:0",
 				Geo:      device.Geo,
 			},
 			id:   ScrubStrategyDeviceIDNone,
@@ -114,7 +114,7 @@ func TestScrubDevice(t *testing.T) {
 				MACMD5:   "anyMACMD5",
 				IFA:      "anyIFA",
 				IP:       "1.2.3.4",
-				IPv6:     "2001:0db8:0000:0000:0000:ff00:0:0",
+				IPv6:     "2001:db8::ff00:0:0",
 				Geo:      device.Geo,
 			},
 			id:   ScrubStrategyDeviceIDNone,
@@ -468,149 +468,102 @@ func TestScrubRequest(t *testing.T) {
 	}
 }
 
-func TestScrubIPV4(t *testing.T) {
-	testCases := []struct {
-		IP          string
-		cleanedIP   string
-		description string
-	}{
-		{
-			IP:          "0.0.0.0",
-			cleanedIP:   "0.0.0.0",
-			description: "Shouldn't do anything for a 0.0.0.0 IP address",
-		},
-		{
-			IP:          "192.127.111.134",
-			cleanedIP:   "192.127.111.0",
-			description: "Should remove the lowest 8 bits",
-		},
-		{
-			IP:          "192.127.111.0",
-			cleanedIP:   "192.127.111.0",
-			description: "Shouldn't change anything if the lowest 8 bits are already 0",
-		},
-		{
-			IP:          "not an ip",
-			cleanedIP:   "",
-			description: "Should return an empty string for a bad IP",
-		},
-		{
-			IP:          "",
-			cleanedIP:   "",
-			description: "Should return an empty string for a bad IP",
-		},
-	}
-
-	for _, test := range testCases {
-		result := scrubIPV4Lowest8(test.IP)
-		assert.Equal(t, test.cleanedIP, result, test.description)
-	}
-}
-
-func TestScrubIPV6Lowest16Bits(t *testing.T) {
-	testCases := []struct {
-		IP          string
-		cleanedIP   string
-		description string
-	}{
-		{
-			IP:          "0:0:0:0",
-			cleanedIP:   "0:0:0:0",
-			description: "Shouldn't do anything for a 0:0:0:0 IP address",
-		},
-		{
-			IP:          "2001:0db8:0000:0000:0000:ff00:0042:8329",
-			cleanedIP:   "2001:0db8:0000:0000:0000:ff00:0042:0",
-			description: "Should remove lowest 16 bits",
-		},
-		{
-			IP:          "2001:0db8:0000:0000:0000:ff00:0042:0",
-			cleanedIP:   "2001:0db8:0000:0000:0000:ff00:0042:0",
-			description: "Shouldn't do anything if the lowest 16 bits are already 0",
-		},
-		{
-			IP:          "not an ip",
-			cleanedIP:   "",
-			description: "Should return an empty string for a bad IP",
-		},
-		{
-			IP:          "",
-			cleanedIP:   "",
-			description: "Should return an empty string for a bad IP",
-		},
-	}
-
-	for _, test := range testCases {
-		result := scrubIPV6Lowest16Bits(test.IP)
-		assert.Equal(t, test.cleanedIP, result, test.description)
-	}
-}
-
-func TestScrubIPV6Lowest32Bits(t *testing.T) {
-	testCases := []struct {
-		IP          string
-		cleanedIP   string
-		description string
-	}{
-		{
-			IP:          "0:0:0:0",
-			cleanedIP:   "0:0:0:0",
-			description: "Shouldn't do anything for a 0:0:0:0 IP address",
-		},
-		{
-			IP:          "2001:0db8:0000:0000:0000:ff00:0042:8329",
-			cleanedIP:   "2001:0db8:0000:0000:0000:ff00:0:0",
-			description: "Should remove lowest 32 bits",
-		},
-		{
-			IP:          "2001:0db8:0000:0000:0000:ff00:0:0",
-			cleanedIP:   "2001:0db8:0000:0000:0000:ff00:0:0",
-			description: "Shouldn't do anything if the lowest 32 bits are already 0",
-		},
-
-		{
-			IP:          "not an ip",
-			cleanedIP:   "",
-			description: "Should return an empty string for a bad IP",
-		},
-		{
-			IP:          "",
-			cleanedIP:   "",
-			description: "Should return an empty string for a bad IP",
-		},
-	}
-
-	for _, test := range testCases {
-		result := scrubIPV6Lowest32Bits(test.IP)
-		assert.Equal(t, test.cleanedIP, result, test.description)
-	}
-}
-
-func TestScrubIpv6(t *testing.T) {
+func TestScrubIp(t *testing.T) {
 	testCases := []struct {
 		IP        string
 		cleanedIP string
+		bits      int
+		maskBits  int
 	}{
 		{
 			IP:        "0:0:0:0:0:0:0:0",
 			cleanedIP: "::",
+			bits:      128,
+			maskBits:  56,
+		},
+		{
+			IP:        "",
+			cleanedIP: "",
+			bits:      128,
+			maskBits:  56,
 		},
 		{
 			IP:        "1111:2222:3333:4444:5555:6666:7777:8888",
 			cleanedIP: "1111:2222:3333:4400::",
+			bits:      128,
+			maskBits:  56,
+		},
+		{
+			IP:        "1111:2222:3333:4444:5555:6666:7777:8888",
+			cleanedIP: "1111:2222::",
+			bits:      128,
+			maskBits:  34,
 		},
 		{
 			IP:        "1111:0:3333:4444:5555:6666:7777:8888",
 			cleanedIP: "1111:0:3333:4400::",
+			bits:      128,
+			maskBits:  56,
 		},
 		{
 			IP:        "1111::6666:7777:8888",
 			cleanedIP: "1111::",
+			bits:      128,
+			maskBits:  56,
+		},
+		{
+			IP:        "2001:0db8:0000:0000:0000:ff00:0042:8329",
+			cleanedIP: "2001:db8::ff00:0:0",
+			bits:      128,
+			maskBits:  96,
+		},
+		{
+			IP:        "2001:0db8:0000:0000:0000:ff00:0:0",
+			cleanedIP: "2001:db8::ff00:0:0",
+			bits:      128,
+			maskBits:  96,
+		},
+		{
+			IP:        "2001:0db8:0000:0000:0000:ff00:0042:8329",
+			cleanedIP: "2001:db8::ff00:42:0",
+			bits:      128,
+			maskBits:  112,
+		},
+		{
+			IP:        "2001:0db8:0000:0000:0000:ff00:0042:0",
+			cleanedIP: "2001:db8::ff00:42:0",
+			bits:      128,
+			maskBits:  112,
+		},
+		{
+			IP:        "127.0.0.1",
+			cleanedIP: "127.0.0.0",
+			bits:      32,
+			maskBits:  24,
+		},
+		{
+			IP:        "0.0.0.0",
+			cleanedIP: "0.0.0.0",
+			bits:      32,
+			maskBits:  24,
+		},
+		{
+			IP:        "192.127.111.134",
+			cleanedIP: "192.127.111.0",
+			bits:      32,
+			maskBits:  24,
+		},
+		{
+			IP:        "192.127.111.0",
+			cleanedIP: "192.127.111.0",
+			bits:      32,
+			maskBits:  24,
 		},
 	}
 	for _, test := range testCases {
 		t.Run(test.IP, func(t *testing.T) {
-			result := scrubIPV6(test.IP)
+			// bits: ipv6 - 128, ipv4 - 32
+			result := scrubIp(test.IP, test.maskBits, test.bits)
 			assert.Equal(t, test.cleanedIP, result)
 		})
 	}

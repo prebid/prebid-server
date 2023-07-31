@@ -2,10 +2,8 @@ package privacy
 
 import (
 	"encoding/json"
-	"net"
-	"strings"
-
 	"github.com/prebid/prebid-server/util/ptrutil"
+	"net"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
 )
@@ -168,8 +166,8 @@ func (scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enforc
 			if deviceCopy.Geo != nil {
 				deviceCopy.Geo = scrubGeoPrecision(deviceCopy.Geo)
 			}
-			deviceCopy.IP = scrubIPV4Lowest8(deviceCopy.IP)
-			deviceCopy.IPv6 = scrubIPV6(deviceCopy.IPv6)
+			deviceCopy.IP = scrubIp(deviceCopy.IP, 24, 32)
+			deviceCopy.IPv6 = scrubIp(deviceCopy.IPv6, 56, 128)
 		}
 	}
 
@@ -198,14 +196,14 @@ func (scrubber) ScrubDevice(device *openrtb2.Device, id ScrubStrategyDeviceID, i
 
 	switch ipv4 {
 	case ScrubStrategyIPV4Lowest8:
-		deviceCopy.IP = scrubIPV4Lowest8(device.IP)
+		deviceCopy.IP = scrubIp(device.IP, 24, 32)
 	}
 
 	switch ipv6 {
 	case ScrubStrategyIPV6Lowest16:
-		deviceCopy.IPv6 = scrubIPV6Lowest16Bits(device.IPv6)
+		deviceCopy.IPv6 = scrubIp(device.IPv6, 112, 128)
 	case ScrubStrategyIPV6Lowest32:
-		deviceCopy.IPv6 = scrubIPV6Lowest32Bits(device.IPv6)
+		deviceCopy.IPv6 = scrubIp(device.IPv6, 96, 128)
 	}
 
 	switch geo {
@@ -243,50 +241,13 @@ func (scrubber) ScrubUser(user *openrtb2.User, strategy ScrubStrategyUser, geo S
 	return &userCopy
 }
 
-func scrubIPV4Lowest8(ip string) string {
-	i := strings.LastIndex(ip, ".")
-	if i == -1 {
+func scrubIp(ip string, ones, bits int) string {
+	if ip == "" {
 		return ""
 	}
-
-	return ip[0:i] + ".0"
-}
-
-func scrubIPV6Lowest16Bits(ip string) string {
-	ip = removeLowestIPV6Segment(ip)
-
-	if ip != "" {
-		ip += ":0"
-	}
-
-	return ip
-}
-
-func scrubIPV6(ip string) string {
-	ipv6Mask := net.CIDRMask(56, 128)
+	ipv6Mask := net.CIDRMask(ones, bits)
 	ipMasked := net.ParseIP(ip).Mask(ipv6Mask)
 	return ipMasked.String()
-}
-
-func scrubIPV6Lowest32Bits(ip string) string {
-	ip = removeLowestIPV6Segment(ip)
-	ip = removeLowestIPV6Segment(ip)
-
-	if ip != "" {
-		ip += ":0:0"
-	}
-
-	return ip
-}
-
-func removeLowestIPV6Segment(ip string) string {
-	i := strings.LastIndex(ip, ":")
-
-	if i == -1 {
-		return ""
-	}
-
-	return ip[0:i]
 }
 
 func scrubGeoFull(geo *openrtb2.Geo) *openrtb2.Geo {
