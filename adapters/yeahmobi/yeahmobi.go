@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"text/template"
 
-	"github.com/golang/glog"
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
@@ -50,7 +49,6 @@ func (adapter *YeahmobiAdapter) makeRequest(request *openrtb2.BidRequest) (*adap
 	yeahmobiExt, errs := getYeahmobiExt(request)
 
 	if yeahmobiExt == nil {
-		glog.Fatal("Invalid ExtImpYeahmobi value")
 		return nil, errs
 	}
 	endPoint, err := adapter.getEndpoint(yeahmobiExt)
