@@ -169,7 +169,7 @@ func (scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enforc
 				deviceCopy.Geo = scrubGeoPrecision(deviceCopy.Geo)
 			}
 			deviceCopy.IP = scrubIPV4Lowest8(deviceCopy.IP)
-			deviceCopy.IPv6 = anonymizeIpv6(deviceCopy.IPv6)
+			deviceCopy.IPv6 = scrubIPV6(deviceCopy.IPv6)
 		}
 	}
 
@@ -262,7 +262,7 @@ func scrubIPV6Lowest16Bits(ip string) string {
 	return ip
 }
 
-func anonymizeIpv6(ip string) string {
+func scrubIPV6(ip string) string {
 	ipv6Mask := net.CIDRMask(56, 128)
 	ipMasked := net.ParseIP(ip).Mask(ipv6Mask)
 	return ipMasked.String()

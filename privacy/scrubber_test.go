@@ -586,11 +586,10 @@ func TestScrubIPV6Lowest32Bits(t *testing.T) {
 	}
 }
 
-func TestAnonymizeIpv6(t *testing.T) {
+func TestScrubIpv6(t *testing.T) {
 	testCases := []struct {
-		IP          string
-		cleanedIP   string
-		description string
+		IP        string
+		cleanedIP string
 	}{
 		{
 			IP:        "0:0:0:0:0:0:0:0",
@@ -610,8 +609,8 @@ func TestAnonymizeIpv6(t *testing.T) {
 		},
 	}
 	for _, test := range testCases {
-		t.Run(test.description, func(t *testing.T) {
-			result := anonymizeIpv6(test.IP)
+		t.Run(test.IP, func(t *testing.T) {
+			result := scrubIPV6(test.IP)
 			assert.Equal(t, test.cleanedIP, result)
 		})
 	}
