@@ -134,14 +134,14 @@ func activityDefaultToDefaultResult(activityDefault *bool) ActivityResult {
 	return ActivityDeny
 }
 
-func (e ActivityControl) Allow(activity Activity, target ScopedName) ActivityResult {
+func (e ActivityControl) Evaluate(activity Activity, target ScopedName) ActivityResult {
 	plan, planDefined := e.plans[activity]
 
 	if !planDefined {
 		return ActivityAbstain
 	}
 
-	return plan.Allow(target)
+	return plan.Evaluate(target)
 }
 
 type ActivityPlan struct {
@@ -149,7 +149,7 @@ type ActivityPlan struct {
 	rules         []ActivityRule
 }
 
-func (p ActivityPlan) Allow(target ScopedName) ActivityResult {
+func (p ActivityPlan) Evaluate(target ScopedName) ActivityResult {
 	for _, rule := range p.rules {
 		result := rule.Evaluate(target)
 		if result == ActivityDeny || result == ActivityAllow {
