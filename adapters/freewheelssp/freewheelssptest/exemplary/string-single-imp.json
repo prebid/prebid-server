@@ -17,19 +17,6 @@
             "zoneId": "12345"
           }
         }
-      },
-      {
-        "id": "imp-2",
-        "video": {
-          "mimes": ["video/mp4"],
-          "w": 300,
-          "h": 250
-        },
-        "ext": {
-          "bidder": {
-            "zoneId": 12346
-          }
-        }
       }
     ]
   },
@@ -43,30 +30,17 @@
           "site": {
             "page": "prebid.org"
           },
-          "imp": [
-            {
-              "id": "imp-1",
-              "video": {
-                "mimes": ["video/mp4"],
-                "w": 300,
-                "h": 250
-              },
-              "ext": {
-                "zoneId": 12345
-              }
+          "imp": [{
+            "id": "imp-1",
+            "video": {
+              "mimes": ["video/mp4"],
+              "w": 300,
+              "h": 250
             },
-            {
-              "id": "imp-2",
-              "video": {
-                "mimes": ["video/mp4"],
-                "w": 300,
-                "h": 250
-              },
-              "ext": {
-                "zoneId": 12346
-              }
+            "ext": {
+              "zoneId": 12345
             }
-          ]
+          }]
         },
         "headers": {
           "Componentid": [
@@ -89,15 +63,6 @@
                   "adm": "<?xml version='1.0' encoding='UTF-8'?><VAST version='2.0'></VAST>",
                   "cid": "4001",
                   "crid": "7857"
-                },
-                {
-                  "id": "12346_freewheelssp-test_2",
-                  "impid": "imp-2",
-                  "price": 1.0,
-                  "adid": "7933",
-                  "adm": "<?xml version='1.0' encoding='UTF-8'?><VAST version='2.0'></VAST>",
-                  "cid": "3476",
-                  "crid": "7933"
                 }
               ],
               "seat": "freewheelsspTv"
@@ -123,18 +88,6 @@
             "adm": "<?xml version='1.0' encoding='UTF-8'?><VAST version='2.0'></VAST>",
             "cid": "4001",
             "crid": "7857"
-          },
-          "type": "video"
-        },
-        {
-          "bid":  {
-            "id": "12346_freewheelssp-test_2",
-            "impid": "imp-2",
-            "price": 1.0,
-            "adid": "7933",
-            "adm": "<?xml version='1.0' encoding='UTF-8'?><VAST version='2.0'></VAST>",
-            "cid": "3476",
-            "crid": "7933"
           },
           "type": "video"
         }
