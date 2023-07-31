@@ -695,14 +695,14 @@ func (e *exchange) getAllBids(
 			reqInfo := adapters.NewExtraRequestInfo(conversions)
 			reqInfo.PbsEntryPoint = bidderRequest.BidderLabels.RType
 			reqInfo.GlobalPrivacyControlHeader = globalPrivacyControlHeader
-			reqInfo.BidderRequestStartTime = start
 
 			bidReqOptions := bidRequestOptions{
-				accountDebugAllowed: accountDebugAllowed,
-				headerDebugAllowed:  headerDebugAllowed,
-				addCallSignHeader:   isAdsCertEnabled(experiment, e.bidderInfo[string(bidderRequest.BidderName)]),
-				bidAdjustments:      bidAdjustments,
-				tmaxAdjustments:     tmaxAdjustments,
+				accountDebugAllowed:    accountDebugAllowed,
+				headerDebugAllowed:     headerDebugAllowed,
+				addCallSignHeader:      isAdsCertEnabled(experiment, e.bidderInfo[string(bidderRequest.BidderName)]),
+				bidAdjustments:         bidAdjustments,
+				tmaxAdjustments:        tmaxAdjustments,
+				bidderRequestStartTime: start,
 			}
 			seatBids, extraBidderRespInfo, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest, conversions, &reqInfo, e.adsCertSigner, bidReqOptions, alternateBidderCodes, hookExecutor, bidAdjustmentRules)
 			brw.bidderResponseStartTime = extraBidderRespInfo.respProcessingStartTime
