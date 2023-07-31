@@ -8,6 +8,11 @@ import (
 	"github.com/prebid/openrtb/v19/openrtb2"
 )
 
+const (
+	ipv4Bits = 32
+	ipv6Bits = 128
+)
+
 // ScrubStrategyIPV4 defines the approach to scrub PII from an IPV4 address.
 type ScrubStrategyIPV4 int
 
@@ -166,8 +171,8 @@ func (scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enforc
 			if deviceCopy.Geo != nil {
 				deviceCopy.Geo = scrubGeoPrecision(deviceCopy.Geo)
 			}
-			deviceCopy.IP = scrubIp(deviceCopy.IP, 24, 32)
-			deviceCopy.IPv6 = scrubIp(deviceCopy.IPv6, 56, 128)
+			deviceCopy.IP = scrubIp(deviceCopy.IP, 24, ipv4Bits)
+			deviceCopy.IPv6 = scrubIp(deviceCopy.IPv6, 56, ipv6Bits)
 		}
 	}
 
@@ -196,14 +201,14 @@ func (scrubber) ScrubDevice(device *openrtb2.Device, id ScrubStrategyDeviceID, i
 
 	switch ipv4 {
 	case ScrubStrategyIPV4Lowest8:
-		deviceCopy.IP = scrubIp(device.IP, 24, 32)
+		deviceCopy.IP = scrubIp(device.IP, 24, ipv4Bits)
 	}
 
 	switch ipv6 {
 	case ScrubStrategyIPV6Lowest16:
-		deviceCopy.IPv6 = scrubIp(device.IPv6, 112, 128)
+		deviceCopy.IPv6 = scrubIp(device.IPv6, 112, ipv6Bits)
 	case ScrubStrategyIPV6Lowest32:
-		deviceCopy.IPv6 = scrubIp(device.IPv6, 96, 128)
+		deviceCopy.IPv6 = scrubIp(device.IPv6, 96, ipv6Bits)
 	}
 
 	switch geo {
