@@ -205,17 +205,28 @@ func TestGetActiveBidders(t *testing.T) {
 	}
 }
 
-func TestNewDisabledBidders(t *testing.T) {
-	disabledBidders := NewDisabledBidders()
+func TestGetDisabledBidderWarningMessages(t *testing.T) {
+	t.Run("removed", func(t *testing.T) {
+		result := GetDisabledBidderWarningMessages(nil)
 
-	result := disabledBidders.GetWarningMessages(nil)
+		// test proper construction by verifying one expected bidder is in the list
+		require.Contains(t, result, "groupm")
+		assert.Equal(t, result["groupm"], `Bidder "groupm" is no longer available in Prebid Server. Please update your configuration.`)
+	})
 
-	// test proper construction by verifying one expected bidder is in the list
-	require.Contains(t, result, "groupm")
-	assert.Equal(t, result["groupm"], `Bidder "groupm" is no longer available in Prebid Server. Please update your configuration.`)
+	t.Run("removed-and-disabled", func(t *testing.T) {
+		result := GetDisabledBidderWarningMessages(map[string]config.BidderInfo{"bidderA": infoDisabled})
+
+		// test proper construction by verifying one expected bidder is in the list with the disabled bidder
+		require.Contains(t, result, "groupm")
+		assert.Equal(t, result["groupm"], `Bidder "groupm" is no longer available in Prebid Server. Please update your configuration.`)
+
+		require.Contains(t, result, "bidderA")
+		assert.Equal(t, result["bidderA"], `Bidder "bidderA" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`)
+	})
 }
 
-func TestStandardDisabledBiddersGetWarningMessages(t *testing.T) {
+func TestMergeRemovedAndDisabledBidderWarningMessages(t *testing.T) {
 	testCases := []struct {
 		name             string
 		givenRemoved     map[string]string
@@ -256,11 +267,7 @@ func TestStandardDisabledBiddersGetWarningMessages(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			disabledBidders := standardDisabledBidders{
-				removedBidders: test.givenRemoved,
-			}
-
-			result := disabledBidders.GetWarningMessages(test.givenBidderInfos)
+			result := mergeRemovedAndDisabledBidderWarningMessages(test.givenRemoved, test.givenBidderInfos)
 			assert.Equal(t, test.expected, result, test.name)
 		})
 	}
