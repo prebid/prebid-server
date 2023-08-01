@@ -33,6 +33,7 @@ require (
 	github.com/yudai/gojsondiff v1.0.0
 	golang.org/x/net v0.7.0
 	golang.org/x/text v0.7.0
+	google.golang.org/appengine v1.6.7
 	google.golang.org/grpc v1.53.0
 	gopkg.in/evanphx/json-patch.v4 v4.12.0
 	gopkg.in/yaml.v3 v3.0.1

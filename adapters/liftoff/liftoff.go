@@ -13,8 +13,18 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
+const SupportedCurrency = "USD"
+
 type adapter struct {
 	Endpoint string
+}
+
+type prebid struct {
+	Debug bool `json:"debug"`
+}
+
+type prebidExt struct {
+	Prebid prebid `json:"prebid"`
 }
 
 type liftoffImpressionExt struct {
@@ -23,22 +33,10 @@ type liftoffImpressionExt struct {
 	Ext openrtb_ext.ImpExtLiftoff `json:"vungle"`
 }
 
-type liftoffBidExt struct {
-	Liftoff *bidExt `json:"liftoff,omitempty"`
-}
-
-type bidExt struct {
-	AdType *int `json:"adtype,omitempty"`
-}
-
 /* Builder */
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	bidder := &adapter{
-		Endpoint: config.Endpoint,
-	}
-
-	return bidder, nil
+	return &adapter{Endpoint: config.Endpoint}, nil
 }
 
 /* MakeRequests */
@@ -55,16 +53,17 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}
 
 		// Check if imp comes with bid floor amount defined in a foreign currency
-		if imp.BidFloor > 0 && imp.BidFloorCur != "" && strings.ToUpper(imp.BidFloorCur) != "USD" {
+		if imp.BidFloor > 0 && imp.BidFloorCur != "" && strings.ToUpper(imp.BidFloorCur) != SupportedCurrency {
 			// Convert to US dollars
-			convertedValue, err := requestInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, "USD")
+			convertedValue, err := requestInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, SupportedCurrency)
 			if err != nil {
-				return nil, []error{err}
+				errs = append(errs, fmt.Errorf("failed to convert currency (err)%s", err.Error()))
+				continue
 			}
 
 			// Update after conversion. All imp elements inside request.Imp are shallow copies
 			// therefore, their non-pointer values are not shared memory and are safe to modify.
-			imp.BidFloorCur = "USD"
+			imp.BidFloorCur = SupportedCurrency
 			imp.BidFloor = convertedValue
 		}
 
@@ -81,7 +80,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			continue
 		}
 
-		if len(bidderImpExt.PubAppStoreID) > 0 && len(bidderImpExt.PlacementRefID) > 0 && len(bidderImpExt.BidToken) > 0 {
+		if bidderImpExt.PubAppStoreID != "" && bidderImpExt.PlacementRefID != "" && bidderImpExt.BidToken != "" {
 			impExt.Ext = bidderImpExt
 			if newImpExt, err := json.Marshal(impExt); err == nil {
 				imp.Ext = newImpExt
@@ -112,8 +111,20 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			Uri:    a.Endpoint,
 			Body:   requestJSON,
 			Headers: http.Header{
-				"Content-Type": []string{"application/json"},
+				"Content-Type":      []string{"application/json"},
+				"Accept":            []string{"application/json"},
+				"X-OpenRTB-Version": []string{"2.5"},
 			},
+		}
+
+		var requestExt prebidExt
+		if err := json.Unmarshal(request.Ext, &requestExt); err != nil {
+			errs = append(errs, fmt.Errorf("failed unmarshalling request ext (err)%s", err.Error()))
+			continue
+		}
+
+		if requestExt.Prebid.Debug {
+			requestData.Headers.Add("Vungle-explain", "jaeger")
 		}
 
 		requests = append(requests, requestData)
