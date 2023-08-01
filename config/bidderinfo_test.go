@@ -518,6 +518,7 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 			[]error{
 				errors.New("bidder: bidderB cannot be an alias of an alias: bidderA"),
 				errors.New("bidder: bidderC not found for an alias: bidderB"),
+				errors.New("bidder: bidderC not found for an alias: bidderB"),
 			},
 		},
 		{
@@ -587,6 +588,142 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 			[]error{
 				errors.New("The endpoint: incorrect for bidderA is not a valid URL"),
 				errors.New("The endpoint: incorrect for bidderB is not a valid URL"),
+			},
+		},
+		{
+			"Invalid alias Site capabilities",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						Site: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+				},
+				"bidderB": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+					AliasOf: "bidderA",
+				},
+			},
+			[]error{
+				errors.New("alias capabilities should be a subset of parent bidder capabilities"),
+			},
+		},
+		{
+			"Invalid alias App capabilities",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+				},
+				"bidderB": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						Site: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+					AliasOf: "bidderA",
+				},
+			},
+			[]error{
+				errors.New("alias capabilities should be a subset of parent bidder capabilities"),
+			},
+		},
+		{
+			"Invalid alias capabilities",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{},
+				},
+				"bidderB": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+					AliasOf: "bidderA",
+				},
+			},
+			[]error{
+				errors.New("at least one of capabilities.site or capabilities.app must exist for adapter: bidderA"),
+				errors.New("alias capabilities should be a subset of parent bidder capabilities"),
+			},
+		},
+		{
+			"Invalid alias MediaTypes",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						Site: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+				},
+				"bidderB": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						Site: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeBanner,
+								openrtb_ext.BidTypeNative,
+							},
+						},
+					},
+					AliasOf: "bidderA",
+				},
+			},
+			[]error{
+				errors.New("alias MediaTypes should be a subset of parent bidder MediaTypes"),
 			},
 		},
 	}
