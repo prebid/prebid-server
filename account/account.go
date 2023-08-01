@@ -103,7 +103,7 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 		return nil, errs
 	}
 
-	errs = account.Privacy.IpMasking.Validate(errs)
+	errs = account.Privacy.IPMasking.Validate(errs)
 	if len(errs) > 0 {
 		return nil, errs
 	}

@@ -161,7 +161,7 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 
 	errs = cfg.Experiment.validate(errs)
 	errs = cfg.BidderInfos.validate(errs)
-	errs = cfg.AccountDefaults.Privacy.IpMasking.Validate(errs)
+	errs = cfg.AccountDefaults.Privacy.IPMasking.Validate(errs)
 
 	return errs
 }

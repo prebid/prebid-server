@@ -78,13 +78,15 @@ type Scrubber interface {
 }
 
 type scrubber struct {
-	ipMasking config.IpMasking
+	ipV6 config.IPMasks
+	ipV4 config.IPMasks
 }
 
 // NewScrubber returns an OpenRTB scrubber.
-func NewScrubber(ipMasking config.IpMasking) Scrubber {
+func NewScrubber(ipMasking config.IPMasking) Scrubber {
 	return scrubber{
-		ipMasking: ipMasking,
+		ipV6: ipMasking.IpV6,
+		ipV4: ipMasking.IpV4,
 	}
 }
 
@@ -171,8 +173,8 @@ func (s scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enfo
 			if deviceCopy.Geo != nil {
 				deviceCopy.Geo = scrubGeoPrecision(deviceCopy.Geo)
 			}
-			deviceCopy.IP = scrubIp(deviceCopy.IP, s.ipMasking.IpV4.GdprLeftMaskBitsLowest, config.Ipv4Bits)
-			deviceCopy.IPv6 = scrubIp(deviceCopy.IPv6, s.ipMasking.IpV6.ActivityLeftMaskBits, config.Ipv6Bits)
+			deviceCopy.IP = scrubIP(deviceCopy.IP, s.ipV4.GdprLeftMaskBitsLowest, config.IPv4)
+			deviceCopy.IPv6 = scrubIP(deviceCopy.IPv6, s.ipV6.ActivityLeftMaskBits, config.IPv6)
 		}
 	}
 
@@ -201,14 +203,14 @@ func (s scrubber) ScrubDevice(device *openrtb2.Device, id ScrubStrategyDeviceID,
 
 	switch ipv4 {
 	case ScrubStrategyIPV4Lowest8:
-		deviceCopy.IP = scrubIp(device.IP, s.ipMasking.IpV4.GdprLeftMaskBitsLowest, config.Ipv4Bits)
+		deviceCopy.IP = scrubIP(device.IP, s.ipV4.GdprLeftMaskBitsLowest, config.IPv4)
 	}
 
 	switch ipv6 {
 	case ScrubStrategyIPV6Lowest16:
-		deviceCopy.IPv6 = scrubIp(device.IPv6, s.ipMasking.IpV6.GdprLeftMaskBitsLowest, config.Ipv6Bits)
+		deviceCopy.IPv6 = scrubIP(device.IPv6, s.ipV6.GdprLeftMaskBitsLowest, config.IPv6)
 	case ScrubStrategyIPV6Lowest32:
-		deviceCopy.IPv6 = scrubIp(device.IPv6, s.ipMasking.IpV6.GdprLeftMaskBitsHighest, config.Ipv6Bits)
+		deviceCopy.IPv6 = scrubIP(device.IPv6, s.ipV6.GdprLeftMaskBitsHighest, config.IPv6)
 	}
 
 	switch geo {
@@ -246,12 +248,12 @@ func (scrubber) ScrubUser(user *openrtb2.User, strategy ScrubStrategyUser, geo S
 	return &userCopy
 }
 
-func scrubIp(ip string, ones, bits int) string {
+func scrubIP(ip string, ones, bits int) string {
 	if ip == "" {
 		return ""
 	}
-	ipv6Mask := net.CIDRMask(ones, bits)
-	ipMasked := net.ParseIP(ip).Mask(ipv6Mask)
+	ipMask := net.CIDRMask(ones, bits)
+	ipMasked := net.ParseIP(ip).Mask(ipMask)
 	return ipMasked.String()
 }
 

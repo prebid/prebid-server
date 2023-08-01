@@ -22,8 +22,8 @@ const (
 )
 
 const (
-	Ipv4Bits = 32
-	Ipv6Bits = 128
+	IPv4 = 32
+	IPv6 = 128
 )
 
 // Account represents a publisher account configuration
@@ -301,35 +301,44 @@ func (a *AccountChannel) IsSet() bool {
 
 type AccountPrivacy struct {
 	AllowActivities *AllowActivities `mapstructure:"allowactivities" json:"allowactivities"`
-	IpMasking       IpMasking        `mapstructure:"ip_masking" json:"ip_masking"`
+	IPMasking       IPMasking        `mapstructure:"ip_masking" json:"ip_masking"`
 }
 
-type IpMasking struct {
-	IpV6 IpMasks `mapstructure:"ipv6" json:"ipv6"`
-	IpV4 IpMasks `mapstructure:"ipv4" json:"ipv4"`
+type IPMasking struct {
+	IpV6 IPMasks `mapstructure:"ipv6" json:"ipv6"`
+	IpV4 IPMasks `mapstructure:"ipv4" json:"ipv4"`
 }
 
-type IpMasks struct {
+type IPMasks struct {
 	ActivityLeftMaskBits    int `mapstructure:"activity_left_mask_bits" json:"activity_left_mask_bits"`
 	GdprLeftMaskBitsLowest  int `mapstructure:"gdpr_left_mask_bits_lowest" json:"gdpr_left_mask_bits_lowest"`
 	GdprLeftMaskBitsHighest int `mapstructure:"gdpr_left_mask_bits_highest" json:"gdpr_left_mask_bits_highest"`
 }
 
-func (ipMasking *IpMasking) Validate(errs []error) []error {
-	errs = ipMasking.IpV6.validate(errs, Ipv6Bits, "ipv6")
-	errs = ipMasking.IpV4.validate(errs, Ipv4Bits, "ipv4")
+func (ipMasking *IPMasking) Validate(errs []error) []error {
+
+	if e := ipMasking.IpV6.validate(IPv6, "ipv6"); e != nil {
+		errs = append(errs, e...)
+	}
+	if e := ipMasking.IpV4.validate(IPv4, "ipv4"); e != nil {
+		errs = append(errs, e...)
+	}
 	return errs
 }
 
-func (ipMasks *IpMasks) validate(errs []error, maxBits int, ipVersion string) []error {
+func (ipMasks *IPMasks) validate(maxBits int, ipVersion string) []error {
+	var errs []error
+
 	if ipMasks.ActivityLeftMaskBits > maxBits || ipMasks.ActivityLeftMaskBits < 0 {
 		err := fmt.Errorf("activity left mask bits cannot exceed %d in %s address, or be less than 0", maxBits, ipVersion)
 		errs = append(errs, err)
 	}
+
 	if ipMasks.GdprLeftMaskBitsLowest > maxBits || ipMasks.GdprLeftMaskBitsLowest < 0 {
 		err := fmt.Errorf("gdpr left mask bits lowest cannot exceed %d in %s address, or be less than 0", maxBits, ipVersion)
 		errs = append(errs, err)
 	}
+
 	if ipMasks.GdprLeftMaskBitsHighest > maxBits || ipMasks.GdprLeftMaskBitsHighest < 0 {
 		err := fmt.Errorf("gdpr left mask bits highest cannot exceed %d in %s address, or be less than 0", maxBits, ipVersion)
 		errs = append(errs, err)
