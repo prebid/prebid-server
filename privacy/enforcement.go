@@ -1,6 +1,9 @@
 package privacy
 
-import "github.com/prebid/openrtb/v19/openrtb2"
+import (
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/config"
+)
 
 // Enforcement represents the privacy policies to enforce for an OpenRTB bid request.
 type Enforcement struct {
@@ -27,8 +30,8 @@ func (e Enforcement) AnyActivities() bool {
 }
 
 // Apply cleans personally identifiable information from an OpenRTB bid request.
-func (e Enforcement) Apply(bidRequest *openrtb2.BidRequest) {
-	e.apply(bidRequest, NewScrubber())
+func (e Enforcement) Apply(bidRequest *openrtb2.BidRequest, ipMasking *config.IpMasking) {
+	e.apply(bidRequest, NewScrubber(ipMasking))
 }
 
 func (e Enforcement) apply(bidRequest *openrtb2.BidRequest, scrubber Scrubber) {

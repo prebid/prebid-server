@@ -2,15 +2,11 @@ package privacy
 
 import (
 	"encoding/json"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/util/ptrutil"
 	"net"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
-)
-
-const (
-	ipv4Bits = 32
-	ipv6Bits = 128
 )
 
 // ScrubStrategyIPV4 defines the approach to scrub PII from an IPV4 address.
@@ -81,14 +77,18 @@ type Scrubber interface {
 	ScrubUser(user *openrtb2.User, strategy ScrubStrategyUser, geo ScrubStrategyGeo) *openrtb2.User
 }
 
-type scrubber struct{}
-
-// NewScrubber returns an OpenRTB scrubber.
-func NewScrubber() Scrubber {
-	return scrubber{}
+type scrubber struct {
+	ipMasking *config.IpMasking
 }
 
-func (scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enforcement) *openrtb2.BidRequest {
+// NewScrubber returns an OpenRTB scrubber.
+func NewScrubber(ipMasking *config.IpMasking) Scrubber {
+	return &scrubber{
+		ipMasking: ipMasking,
+	}
+}
+
+func (s *scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enforcement) *openrtb2.BidRequest {
 	var userExtParsed map[string]json.RawMessage
 	userExtModified := false
 
@@ -171,8 +171,8 @@ func (scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enforc
 			if deviceCopy.Geo != nil {
 				deviceCopy.Geo = scrubGeoPrecision(deviceCopy.Geo)
 			}
-			deviceCopy.IP = scrubIp(deviceCopy.IP, 24, ipv4Bits)
-			deviceCopy.IPv6 = scrubIp(deviceCopy.IPv6, 56, ipv6Bits)
+			deviceCopy.IP = scrubIp(deviceCopy.IP, s.ipMasking.IpV4.GdprLeftMaskBitsLowest, config.Ipv4Bits)
+			deviceCopy.IPv6 = scrubIp(deviceCopy.IPv6, s.ipMasking.IpV6.ActivityLeftMaskBits, config.Ipv6Bits)
 		}
 	}
 
@@ -181,7 +181,7 @@ func (scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enforc
 	return bidRequest
 }
 
-func (scrubber) ScrubDevice(device *openrtb2.Device, id ScrubStrategyDeviceID, ipv4 ScrubStrategyIPV4, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb2.Device {
+func (s *scrubber) ScrubDevice(device *openrtb2.Device, id ScrubStrategyDeviceID, ipv4 ScrubStrategyIPV4, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb2.Device {
 	if device == nil {
 		return nil
 	}
@@ -201,14 +201,14 @@ func (scrubber) ScrubDevice(device *openrtb2.Device, id ScrubStrategyDeviceID, i
 
 	switch ipv4 {
 	case ScrubStrategyIPV4Lowest8:
-		deviceCopy.IP = scrubIp(device.IP, 24, ipv4Bits)
+		deviceCopy.IP = scrubIp(device.IP, s.ipMasking.IpV4.GdprLeftMaskBitsLowest, config.Ipv4Bits)
 	}
 
 	switch ipv6 {
 	case ScrubStrategyIPV6Lowest16:
-		deviceCopy.IPv6 = scrubIp(device.IPv6, 112, ipv6Bits)
+		deviceCopy.IPv6 = scrubIp(device.IPv6, s.ipMasking.IpV6.GdprLeftMaskBitsLowest, config.Ipv6Bits)
 	case ScrubStrategyIPV6Lowest32:
-		deviceCopy.IPv6 = scrubIp(device.IPv6, 96, ipv6Bits)
+		deviceCopy.IPv6 = scrubIp(device.IPv6, s.ipMasking.IpV6.GdprLeftMaskBitsHighest, config.Ipv6Bits)
 	}
 
 	switch geo {

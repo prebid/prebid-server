@@ -161,6 +161,8 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 
 	errs = cfg.Experiment.validate(errs)
 	errs = cfg.BidderInfos.validate(errs)
+	errs = cfg.AccountDefaults.IpMasking.Validate(errs)
+
 	return errs
 }
 
@@ -1061,6 +1063,11 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	*/
 	v.SetDefault("request_validation.ipv4_private_networks", []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "169.254.0.0/16", "127.0.0.0/8"})
 	v.SetDefault("request_validation.ipv6_private_networks", []string{"::1/128", "fc00::/7", "fe80::/10", "ff00::/8", "2001:db8::/32"})
+
+	v.SetDefault("ip_masking.ipv6.activity_left_mask_bits", 56)
+	v.SetDefault("ip_masking.ipv6.gdpr_left_mask_bits_lowest", 112)
+	v.SetDefault("ip_masking.ipv6.gdpr_left_mask_bits_highest", 96)
+	v.SetDefault("ip_masking.ipv4.left_mask_bits", 24)
 
 	bindDatabaseEnvVars(v)
 

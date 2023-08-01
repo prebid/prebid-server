@@ -103,6 +103,11 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 		return nil, errs
 	}
 
+	errs = account.IpMasking.Validate(errs)
+	if len(errs) > 0 {
+		return nil, errs
+	}
+
 	// set the value of events.enabled field based on deprecated events_enabled field and ensure backward compatibility
 	deprecateEventsEnabledField(account)
 

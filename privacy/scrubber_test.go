@@ -2,6 +2,7 @@ package privacy
 
 import (
 	"encoding/json"
+	"github.com/prebid/prebid-server/config"
 	"testing"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
@@ -167,15 +168,16 @@ func TestScrubDevice(t *testing.T) {
 			geo:  ScrubStrategyGeoFull,
 		},
 	}
-
+	testIpMasking := getTestIpMasking()
 	for _, test := range testCases {
-		result := NewScrubber().ScrubDevice(device, test.id, test.ipv4, test.ipv6, test.geo)
+		result := NewScrubber(testIpMasking).ScrubDevice(device, test.id, test.ipv4, test.ipv6, test.geo)
 		assert.Equal(t, test.expected, result, test.description)
 	}
 }
 
 func TestScrubDeviceNil(t *testing.T) {
-	result := NewScrubber().ScrubDevice(nil, ScrubStrategyDeviceIDNone, ScrubStrategyIPV4None, ScrubStrategyIPV6None, ScrubStrategyGeoNone)
+	testIpMasking := getTestIpMasking()
+	result := NewScrubber(testIpMasking).ScrubDevice(nil, ScrubStrategyDeviceIDNone, ScrubStrategyIPV4None, ScrubStrategyIPV6None, ScrubStrategyGeoNone)
 	assert.Nil(t, result)
 }
 
@@ -292,14 +294,16 @@ func TestScrubUser(t *testing.T) {
 		},
 	}
 
+	testIpMasking := getTestIpMasking()
 	for _, test := range testCases {
-		result := NewScrubber().ScrubUser(user, test.scrubUser, test.scrubGeo)
+		result := NewScrubber(testIpMasking).ScrubUser(user, test.scrubUser, test.scrubGeo)
 		assert.Equal(t, test.expected, result, test.description)
 	}
 }
 
 func TestScrubUserNil(t *testing.T) {
-	result := NewScrubber().ScrubUser(nil, ScrubStrategyUserNone, ScrubStrategyGeoNone)
+	testIpMasking := getTestIpMasking()
+	result := NewScrubber(testIpMasking).ScrubUser(nil, ScrubStrategyUserNone, ScrubStrategyGeoNone)
 	assert.Nil(t, result)
 }
 
@@ -443,6 +447,7 @@ func TestScrubRequest(t *testing.T) {
 		},
 	}
 
+	testIpMasking := getTestIpMasking()
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
 			bidRequest := &openrtb2.BidRequest{
@@ -462,7 +467,7 @@ func TestScrubRequest(t *testing.T) {
 			}
 			bidRequest.User.EIDs = []openrtb2.EID{{Source: "test"}}
 
-			result := NewScrubber().ScrubRequest(bidRequest, test.enforcement)
+			result := NewScrubber(testIpMasking).ScrubRequest(bidRequest, test.enforcement)
 			assert.Equal(t, test.expected, result, test.description)
 		})
 	}
@@ -731,5 +736,17 @@ func getTestDevice() *openrtb2.Device {
 			ZIP:   "some zip",
 		},
 	}
+}
 
+func getTestIpMasking() *config.IpMasking {
+	return &config.IpMasking{
+		IpV6: config.IpMasks{
+			ActivityLeftMaskBits:    54,
+			GdprLeftMaskBitsLowest:  112,
+			GdprLeftMaskBitsHighest: 96,
+		},
+		IpV4: config.IpMasks{
+			GdprLeftMaskBitsLowest: 24,
+		},
+	}
 }
