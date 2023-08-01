@@ -194,13 +194,13 @@ func TestValidatePriceFloorRules(t *testing.T) {
 			name: "Price floor data is empty",
 			args: args{
 				configs: config.AccountFloorFetch{
-					Enabled:     true,
-					URL:         testURL,
-					Timeout:     5,
-					MaxFileSize: 20,
-					MaxRules:    5,
-					MaxAge:      20,
-					Period:      10,
+					Enabled:       true,
+					URL:           testURL,
+					Timeout:       5,
+					MaxFileSizeKB: 20,
+					MaxRules:      5,
+					MaxAge:        20,
+					Period:        10,
 				},
 				priceFloors: &openrtb_ext.PriceFloorRules{},
 			},
@@ -210,13 +210,13 @@ func TestValidatePriceFloorRules(t *testing.T) {
 			name: "Model group array is empty",
 			args: args{
 				configs: config.AccountFloorFetch{
-					Enabled:     true,
-					URL:         testURL,
-					Timeout:     5,
-					MaxFileSize: 20,
-					MaxRules:    5,
-					MaxAge:      20,
-					Period:      10,
+					Enabled:       true,
+					URL:           testURL,
+					Timeout:       5,
+					MaxFileSizeKB: 20,
+					MaxRules:      5,
+					MaxAge:        20,
+					Period:        10,
 				},
 				priceFloors: &openrtb_ext.PriceFloorRules{
 					Data: &openrtb_ext.PriceFloorData{},
@@ -228,13 +228,13 @@ func TestValidatePriceFloorRules(t *testing.T) {
 			name: "floor rules is empty",
 			args: args{
 				configs: config.AccountFloorFetch{
-					Enabled:     true,
-					URL:         testURL,
-					Timeout:     5,
-					MaxFileSize: 20,
-					MaxRules:    5,
-					MaxAge:      20,
-					Period:      10,
+					Enabled:       true,
+					URL:           testURL,
+					Timeout:       5,
+					MaxFileSizeKB: 20,
+					MaxRules:      5,
+					MaxAge:        20,
+					Period:        10,
 				},
 				priceFloors: &openrtb_ext.PriceFloorRules{
 					Data: &openrtb_ext.PriceFloorData{
@@ -250,13 +250,13 @@ func TestValidatePriceFloorRules(t *testing.T) {
 			name: "floor rules is grater than max floor rules",
 			args: args{
 				configs: config.AccountFloorFetch{
-					Enabled:     true,
-					URL:         testURL,
-					Timeout:     5,
-					MaxFileSize: 20,
-					MaxRules:    0,
-					MaxAge:      20,
-					Period:      10,
+					Enabled:       true,
+					URL:           testURL,
+					Timeout:       5,
+					MaxFileSizeKB: 20,
+					MaxRules:      0,
+					MaxAge:        20,
+					Period:        10,
 				},
 				priceFloors: &openrtb_ext.PriceFloorRules{
 					Data: &openrtb_ext.PriceFloorData{
@@ -274,13 +274,13 @@ func TestValidatePriceFloorRules(t *testing.T) {
 			name: "Modelweight is zero",
 			args: args{
 				configs: config.AccountFloorFetch{
-					Enabled:     true,
-					URL:         testURL,
-					Timeout:     5,
-					MaxFileSize: 20,
-					MaxRules:    1,
-					MaxAge:      20,
-					Period:      10,
+					Enabled:       true,
+					URL:           testURL,
+					Timeout:       5,
+					MaxFileSizeKB: 20,
+					MaxRules:      1,
+					MaxAge:        20,
+					Period:        10,
 				},
 				priceFloors: &openrtb_ext.PriceFloorRules{
 					Data: &openrtb_ext.PriceFloorData{
@@ -299,13 +299,13 @@ func TestValidatePriceFloorRules(t *testing.T) {
 			name: "Modelweight is 101",
 			args: args{
 				configs: config.AccountFloorFetch{
-					Enabled:     true,
-					URL:         testURL,
-					Timeout:     5,
-					MaxFileSize: 20,
-					MaxRules:    1,
-					MaxAge:      20,
-					Period:      10,
+					Enabled:       true,
+					URL:           testURL,
+					Timeout:       5,
+					MaxFileSizeKB: 20,
+					MaxRules:      1,
+					MaxAge:        20,
+					Period:        10,
 				},
 				priceFloors: &openrtb_ext.PriceFloorRules{
 					Data: &openrtb_ext.PriceFloorData{
@@ -324,13 +324,13 @@ func TestValidatePriceFloorRules(t *testing.T) {
 			name: "skiprate is 101",
 			args: args{
 				configs: config.AccountFloorFetch{
-					Enabled:     true,
-					URL:         testURL,
-					Timeout:     5,
-					MaxFileSize: 20,
-					MaxRules:    1,
-					MaxAge:      20,
-					Period:      10,
+					Enabled:       true,
+					URL:           testURL,
+					Timeout:       5,
+					MaxFileSizeKB: 20,
+					MaxRules:      1,
+					MaxAge:        20,
+					Period:        10,
 				},
 				priceFloors: &openrtb_ext.PriceFloorRules{
 					Data: &openrtb_ext.PriceFloorData{
@@ -349,13 +349,13 @@ func TestValidatePriceFloorRules(t *testing.T) {
 			name: "Default is -1",
 			args: args{
 				configs: config.AccountFloorFetch{
-					Enabled:     true,
-					URL:         testURL,
-					Timeout:     5,
-					MaxFileSize: 20,
-					MaxRules:    1,
-					MaxAge:      20,
-					Period:      10,
+					Enabled:       true,
+					URL:           testURL,
+					Timeout:       5,
+					MaxFileSizeKB: 20,
+					MaxRules:      1,
+					MaxAge:        20,
+					Period:        10,
 				},
 				priceFloors: &openrtb_ext.PriceFloorRules{
 					Data: &openrtb_ext.PriceFloorData{
@@ -374,13 +374,13 @@ func TestValidatePriceFloorRules(t *testing.T) {
 			name: "Invalid skip rate in data",
 			args: args{
 				configs: config.AccountFloorFetch{
-					Enabled:     true,
-					URL:         testURL,
-					Timeout:     5,
-					MaxFileSize: 20,
-					MaxRules:    1,
-					MaxAge:      20,
-					Period:      10,
+					Enabled:       true,
+					URL:           testURL,
+					Timeout:       5,
+					MaxFileSizeKB: 20,
+					MaxRules:      1,
+					MaxAge:        20,
+					Period:        10,
 				},
 				priceFloors: &openrtb_ext.PriceFloorRules{
 					Data: &openrtb_ext.PriceFloorData{
@@ -623,12 +623,12 @@ func TestFetchAndValidate(t *testing.T) {
 			name: "Recieved valid price floor rules response",
 			args: args{
 				configs: config.AccountFloorFetch{
-					Enabled:     true,
-					Timeout:     30,
-					MaxFileSize: 700,
-					MaxRules:    30,
-					MaxAge:      60,
-					Period:      40,
+					Enabled:       true,
+					Timeout:       30,
+					MaxFileSizeKB: 700,
+					MaxRules:      30,
+					MaxAge:        60,
+					Period:        40,
 				},
 			},
 			response: func() []byte {
@@ -648,12 +648,12 @@ func TestFetchAndValidate(t *testing.T) {
 			name: "No response from server",
 			args: args{
 				configs: config.AccountFloorFetch{
-					Enabled:     true,
-					Timeout:     30,
-					MaxFileSize: 700,
-					MaxRules:    30,
-					MaxAge:      60,
-					Period:      40,
+					Enabled:       true,
+					Timeout:       30,
+					MaxFileSizeKB: 700,
+					MaxRules:      30,
+					MaxAge:        60,
+					Period:        40,
 				},
 			},
 			response:       []byte{},
@@ -665,12 +665,12 @@ func TestFetchAndValidate(t *testing.T) {
 			name: "File is greater than MaxFileSize",
 			args: args{
 				configs: config.AccountFloorFetch{
-					Enabled:     true,
-					Timeout:     30,
-					MaxFileSize: 1,
-					MaxRules:    30,
-					MaxAge:      60,
-					Period:      40,
+					Enabled:       true,
+					Timeout:       30,
+					MaxFileSizeKB: 1,
+					MaxRules:      30,
+					MaxAge:        60,
+					Period:        40,
 				},
 			},
 			response: func() []byte {
@@ -685,12 +685,12 @@ func TestFetchAndValidate(t *testing.T) {
 			name: "Malformed response : json unmarshalling failed",
 			args: args{
 				configs: config.AccountFloorFetch{
-					Enabled:     true,
-					Timeout:     30,
-					MaxFileSize: 800,
-					MaxRules:    30,
-					MaxAge:      60,
-					Period:      40,
+					Enabled:       true,
+					Timeout:       30,
+					MaxFileSizeKB: 800,
+					MaxRules:      30,
+					MaxAge:        60,
+					Period:        40,
 				},
 			},
 			response: func() []byte {
@@ -705,12 +705,12 @@ func TestFetchAndValidate(t *testing.T) {
 			name: "Validations failed for price floor rules response",
 			args: args{
 				configs: config.AccountFloorFetch{
-					Enabled:     true,
-					Timeout:     30,
-					MaxFileSize: 700,
-					MaxRules:    30,
-					MaxAge:      60,
-					Period:      40,
+					Enabled:       true,
+					Timeout:       30,
+					MaxFileSizeKB: 700,
+					MaxRules:      30,
+					MaxAge:        60,
+					Period:        40,
 				},
 			},
 			response: func() []byte {
@@ -761,13 +761,13 @@ func TestFetcherWhenRequestGetSameURLInrequest(t *testing.T) {
 		Enabled:        true,
 		UseDynamicData: true,
 		Fetcher: config.AccountFloorFetch{
-			Enabled:     true,
-			URL:         mockHttpServer.URL,
-			Timeout:     100,
-			MaxFileSize: 1000,
-			MaxRules:    100,
-			MaxAge:      20,
-			Period:      1,
+			Enabled:       true,
+			URL:           mockHttpServer.URL,
+			Timeout:       100,
+			MaxFileSizeKB: 1000,
+			MaxRules:      100,
+			MaxAge:        20,
+			Period:        1,
 		},
 	}
 
@@ -788,13 +788,13 @@ func TestFetcherDataPresentInCache(t *testing.T) {
 		Enabled:        true,
 		UseDynamicData: true,
 		Fetcher: config.AccountFloorFetch{
-			Enabled:     true,
-			URL:         "http://test.com/floor",
-			Timeout:     100,
-			MaxFileSize: 1000,
-			MaxRules:    100,
-			MaxAge:      20,
-			Period:      5,
+			Enabled:       true,
+			URL:           "http://test.com/floor",
+			Timeout:       100,
+			MaxFileSizeKB: 1000,
+			MaxRules:      100,
+			MaxAge:        20,
+			Period:        5,
 		},
 	}
 	var res *openrtb_ext.PriceFloorRules
@@ -815,13 +815,13 @@ func TestFetcherDataNotPresentInCache(t *testing.T) {
 		Enabled:        true,
 		UseDynamicData: true,
 		Fetcher: config.AccountFloorFetch{
-			Enabled:     true,
-			URL:         "http://test.com/floor",
-			Timeout:     100,
-			MaxFileSize: 1000,
-			MaxRules:    100,
-			MaxAge:      20,
-			Period:      5,
+			Enabled:       true,
+			URL:           "http://test.com/floor",
+			Timeout:       100,
+			MaxFileSizeKB: 1000,
+			MaxRules:      100,
+			MaxAge:        20,
+			Period:        5,
 		},
 	}
 	fetcherInstance.SetWithExpiry("http://test.com/floor", nil, fetchConfig.Fetcher.MaxAge)
@@ -840,13 +840,13 @@ func TestFetcherEntryNotPresentInCache(t *testing.T) {
 		Enabled:        true,
 		UseDynamicData: true,
 		Fetcher: config.AccountFloorFetch{
-			Enabled:     true,
-			URL:         "http://test.com/floor",
-			Timeout:     100,
-			MaxFileSize: 1000,
-			MaxRules:    100,
-			MaxAge:      20,
-			Period:      5,
+			Enabled:       true,
+			URL:           "http://test.com/floor",
+			Timeout:       100,
+			MaxFileSizeKB: 1000,
+			MaxRules:      100,
+			MaxAge:        20,
+			Period:        5,
 		},
 	}
 
@@ -864,13 +864,13 @@ func TestFetcherDynamicFetchDisable(t *testing.T) {
 		Enabled:        true,
 		UseDynamicData: false,
 		Fetcher: config.AccountFloorFetch{
-			Enabled:     true,
-			URL:         "http://test.com/floor",
-			Timeout:     100,
-			MaxFileSize: 1000,
-			MaxRules:    100,
-			MaxAge:      20,
-			Period:      5,
+			Enabled:       true,
+			URL:           "http://test.com/floor",
+			Timeout:       100,
+			MaxFileSizeKB: 1000,
+			MaxRules:      100,
+			MaxAge:        20,
+			Period:        5,
 		},
 	}
 
@@ -913,13 +913,13 @@ func TestPriceFloorFetcherWorker(t *testing.T) {
 	defer close(fetcherInstance.configReceiver)
 
 	fetchConfig := config.AccountFloorFetch{
-		Enabled:     true,
-		URL:         mockHttpServer.URL,
-		Timeout:     100,
-		MaxFileSize: 1000,
-		MaxRules:    100,
-		MaxAge:      20,
-		Period:      1,
+		Enabled:       true,
+		URL:           mockHttpServer.URL,
+		Timeout:       100,
+		MaxFileSizeKB: 1000,
+		MaxRules:      100,
+		MaxAge:        20,
+		Period:        1,
 	}
 
 	fetcherInstance.worker(fetchConfig)
@@ -965,13 +965,13 @@ func TestPriceFloorFetcherWorkerDefaultCacheExpiry(t *testing.T) {
 	}
 
 	fetchConfig := config.AccountFloorFetch{
-		Enabled:     true,
-		URL:         mockHttpServer.URL,
-		Timeout:     100,
-		MaxFileSize: 1000,
-		MaxRules:    100,
-		MaxAge:      20,
-		Period:      1,
+		Enabled:       true,
+		URL:           mockHttpServer.URL,
+		Timeout:       100,
+		MaxFileSizeKB: 1000,
+		MaxRules:      100,
+		MaxAge:        20,
+		Period:        1,
 	}
 
 	fetcherInstance.worker(fetchConfig)
@@ -1016,13 +1016,13 @@ func TestPriceFloorFetcherSubmit(t *testing.T) {
 		RefetchRequest: false,
 		FetchTime:      time.Now().Unix(),
 		AccountFloorFetch: config.AccountFloorFetch{
-			Enabled:     true,
-			URL:         mockHttpServer.URL,
-			Timeout:     100,
-			MaxFileSize: 1000,
-			MaxRules:    100,
-			MaxAge:      2,
-			Period:      1,
+			Enabled:       true,
+			URL:           mockHttpServer.URL,
+			Timeout:       100,
+			MaxFileSizeKB: 1000,
+			MaxRules:      100,
+			MaxAge:        2,
+			Period:        1,
 		},
 	}
 
@@ -1057,13 +1057,13 @@ func TestPriceFloorFetcherSubmitFailed(t *testing.T) {
 		RefetchRequest: false,
 		FetchTime:      time.Now().Unix(),
 		AccountFloorFetch: config.AccountFloorFetch{
-			Enabled:     true,
-			URL:         "http://test.com",
-			Timeout:     100,
-			MaxFileSize: 1000,
-			MaxRules:    100,
-			MaxAge:      2,
-			Period:      1,
+			Enabled:       true,
+			URL:           "http://test.com",
+			Timeout:       100,
+			MaxFileSizeKB: 1000,
+			MaxRules:      100,
+			MaxAge:        2,
+			Period:        1,
 		},
 	}
 
@@ -1098,13 +1098,13 @@ func TestFetcherWhenRequestGetDifferentURLInrequest(t *testing.T) {
 		Enabled:        true,
 		UseDynamicData: true,
 		Fetcher: config.AccountFloorFetch{
-			Enabled:     true,
-			URL:         mockHttpServer.URL,
-			Timeout:     100,
-			MaxFileSize: 1000,
-			MaxRules:    100,
-			MaxAge:      5,
-			Period:      1,
+			Enabled:       true,
+			URL:           mockHttpServer.URL,
+			Timeout:       100,
+			MaxFileSizeKB: 1000,
+			MaxRules:      100,
+			MaxAge:        5,
+			Period:        1,
 		},
 	}
 

@@ -219,7 +219,7 @@ func (f *PriceFloorFetcher) fetchAndValidate(config config.AccountFloorFetch) (*
 		return nil, 0
 	}
 
-	if len(floorResp) > (config.MaxFileSize * 1024) {
+	if len(floorResp) > (config.MaxFileSizeKB * 1024) {
 		glog.Errorf("Recieved invalid floor data from URL: %s, reason : floor file size is greater than MaxFileSize", config.URL)
 		return nil, 0
 	}
@@ -261,8 +261,11 @@ func (f *PriceFloorFetcher) fetchFloorRulesFromURL(configs config.AccountFloorFe
 
 	var maxAge int
 	if maxAgeStr := httpResp.Header.Get("max-age"); maxAgeStr != "" {
-		maxAge, _ = strconv.Atoi(maxAgeStr)
-		if maxAge <= configs.Period || maxAge > math.MaxInt32 {
+		maxAge, err = strconv.Atoi(maxAgeStr)
+		if err != nil {
+			glog.Errorf("max-age in header is malformed for url %s", configs.URL)
+		}
+		if maxAge <= configs.Period {
 			glog.Errorf("Invalid max-age = %s provided, value should be valid integer and should be within (%v, %v)", maxAgeStr, configs.Period, math.MaxInt32)
 		}
 	}

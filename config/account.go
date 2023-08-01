@@ -73,7 +73,7 @@ type AccountFloorFetch struct {
 	Enabled       bool   `mapstructure:"enabled" json:"enabled"`
 	URL           string `mapstructure:"url" json:"url"`
 	Timeout       int    `mapstructure:"timeout_ms" json:"timeout_ms"`
-	MaxFileSize   int    `mapstructure:"max_file_size_kb" json:"max_file_size_kb"`
+	MaxFileSizeKB int    `mapstructure:"max_file_size_kb" json:"max_file_size_kb"`
 	MaxRules      int    `mapstructure:"max_rules" json:"max_rules"`
 	MaxAge        int    `mapstructure:"max_age_sec" json:"max_age_sec"`
 	Period        int    `mapstructure:"period_sec" json:"period_sec"`
@@ -102,7 +102,7 @@ func (pf *AccountPriceFloors) validate(errs []error) []error {
 		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.fetch.period_sec should not be less than 300 seconds`))
 	}
 
-	if !(pf.Fetcher.MaxAge >= 600 && pf.Fetcher.MaxAge < math.MaxInt32) {
+	if pf.Fetcher.MaxAge < 600 {
 		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.fetch.max_age_sec should not be less than 600 seconds and greater than maximum integer value`))
 	}
 
@@ -110,12 +110,12 @@ func (pf *AccountPriceFloors) validate(errs []error) []error {
 		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.fetch.timeout_ms should be between 10 to 10,000 miliseconds`))
 	}
 
-	if !(pf.Fetcher.MaxRules >= 0 && pf.Fetcher.MaxRules < math.MaxInt32) {
-		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.fetch.max_rules should not be less than 0 seconds and greater than maximum integer value`))
+	if pf.Fetcher.MaxRules < 0 {
+		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.fetch.max_rules should be greater than or equal to 0`))
 	}
 
-	if !(pf.Fetcher.MaxFileSize >= 0 && pf.Fetcher.MaxFileSize < math.MaxInt32) {
-		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.fetch.max_file_size_kb should not be less than 0 seconds and greater than maximum integer value`))
+	if pf.Fetcher.MaxFileSizeKB < 0 {
+		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.fetch.max_file_size_kb should be greater than or equal to 0`))
 	}
 
 	if !(pf.Fetcher.MaxSchemaDims >= 0 && pf.Fetcher.MaxSchemaDims < 20) {

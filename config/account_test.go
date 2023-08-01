@@ -859,7 +859,6 @@ func TestAccountChannelIsSet(t *testing.T) {
 }
 
 func TestAccountPriceFloorsValidate(t *testing.T) {
-
 	tests := []struct {
 		description string
 		pf          *AccountPriceFloors
@@ -995,7 +994,7 @@ func TestAccountPriceFloorsValidate(t *testing.T) {
 					MaxRules: -2,
 				},
 			},
-			want: []error{errors.New("account_defaults.price_floors.fetch.max_rules should not be less than 0 seconds and greater than maximum integer value")},
+			want: []error{errors.New("account_defaults.price_floors.fetch.max_rules should be greater than or equal to 0")},
 		},
 		{
 			description: "Invalid Max File size",
@@ -1004,13 +1003,13 @@ func TestAccountPriceFloorsValidate(t *testing.T) {
 				MaxRule:           200,
 				MaxSchemaDims:     10,
 				Fetcher: AccountFloorFetch{
-					Period:      300,
-					MaxAge:      600,
-					Timeout:     12,
-					MaxFileSize: -1,
+					Period:        300,
+					MaxAge:        600,
+					Timeout:       12,
+					MaxFileSizeKB: -1,
 				},
 			},
-			want: []error{errors.New("account_defaults.price_floors.fetch.max_file_size_kb should not be less than 0 seconds and greater than maximum integer value")},
+			want: []error{errors.New("account_defaults.price_floors.fetch.max_file_size_kb should be greater than or equal to 0")},
 		},
 	}
 	for _, tt := range tests {
