@@ -94,15 +94,15 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	return bidder, nil
 }
 
-func getReturnTypeForImp(MType openrtb2.MarkupType, impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
+func getReturnTypeForImp(mType openrtb2.MarkupType, impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
 	for _, imp := range imps {
 		if imp.ID == impID {
-			if MType != 0 {
-				if MType == openrtb2.MarkupBanner {
+			if mType != 0 {
+				if mType == openrtb2.MarkupBanner {
 					return openrtb_ext.BidTypeBanner, nil
-				} else if MType == openrtb2.MarkupVideo {
+				} else if mType == openrtb2.MarkupVideo {
 					return openrtb_ext.BidTypeVideo, nil
-				} else if MType == openrtb2.MarkupNative {
+				} else if mType == openrtb2.MarkupNative {
 					return openrtb_ext.BidTypeNative, nil
 				} else {
 					return "", &errortypes.BadServerResponse{
