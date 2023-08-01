@@ -153,6 +153,16 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		},
 	}
 
+	floorFechterHttpClient := &http.Client{
+		Transport: &http.Transport{
+			Proxy:               http.ProxyFromEnvironment,
+			MaxConnsPerHost:     cfg.PriceFloors.Fetcher.Client.MaxConnsPerHost,
+			MaxIdleConns:        cfg.PriceFloors.Fetcher.Client.MaxIdleConns,
+			MaxIdleConnsPerHost: cfg.PriceFloors.Fetcher.Client.MaxIdleConnsPerHost,
+			IdleConnTimeout:     time.Duration(cfg.PriceFloors.Fetcher.Client.IdleConnTimeout) * time.Second,
+		},
+	}
+
 	if err := checkSupportedUserSyncEndpoints(cfg.BidderInfos); err != nil {
 		return nil, err
 	}
@@ -216,7 +226,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	}
 
 	priceFloorFetcher := floors.NewPriceFloorFetcher(cfg.PriceFloors.Fetcher.Worker, cfg.PriceFloors.Fetcher.Capacity,
-		cfg.AccountDefaults.PriceFloors.Fetcher.Period, cfg.AccountDefaults.PriceFloors.Fetcher.MaxAge)
+		cfg.PriceFloors.Fetcher.CacheSize, floorFechterHttpClient, r.MetricsEngine)
 
 	planBuilder := hooks.NewExecutionPlanBuilder(cfg.Hooks, repo)
 	macroReplacer := macros.NewStringIndexBasedReplacer()

@@ -13,10 +13,12 @@ import (
 
 	"github.com/alitto/pond"
 	validator "github.com/asaskevich/govalidator"
+	"github.com/coocood/freecache"
 	"github.com/golang/glog"
-	"github.com/patrickmn/go-cache"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/timeutil"
 )
 
 var refetchCheckInterval = 300
@@ -37,37 +39,15 @@ type FloorFetcher interface {
 }
 
 type PriceFloorFetcher struct {
-	pool            WorkerPool      // Goroutines worker pool
-	fetchQueue      FetchQueue      // Priority Queue to fetch floor data
-	fetchInProgress map[string]bool // Map of URL with fetch status
-	configReceiver  chan FetchInfo  // Channel which recieves URLs to be fetched
-	done            chan struct{}   // Channel to close fetcher
-	cache           *cache.Cache    // cache
-	cacheExpiry     time.Duration   // cache expiry time
-}
-
-func (f *PriceFloorFetcher) Fetch(config config.AccountPriceFloors) (*openrtb_ext.PriceFloorRules, string) {
-	if !config.UseDynamicData || len(config.Fetcher.URL) == 0 || !validator.IsURL(config.Fetcher.URL) {
-		return nil, openrtb_ext.FetchNone
-	}
-
-	// Check for floors JSON in cache
-	result, found := f.Get(config.Fetcher.URL)
-	if found {
-		fetcherResult, ok := result.(*openrtb_ext.PriceFloorRules)
-		if !ok || fetcherResult.Data == nil {
-			return nil, openrtb_ext.FetchError
-		}
-		return fetcherResult, openrtb_ext.FetchSuccess
-	}
-
-	//miss: push to channel to fetch and return empty response
-	if config.Enabled && config.Fetcher.Enabled && config.Fetcher.Timeout > 0 {
-		fetchInfo := FetchInfo{AccountFloorFetch: config.Fetcher, FetchTime: time.Now().Unix(), RefetchRequest: false}
-		f.configReceiver <- fetchInfo
-	}
-
-	return nil, openrtb_ext.FetchInprogress
+	pool            WorkerPool            // Goroutines worker pool
+	fetchQueue      FetchQueue            // Priority Queue to fetch floor data
+	fetchInProgress map[string]bool       // Map of URL with fetch status
+	configReceiver  chan FetchInfo        // Channel which recieves URLs to be fetched
+	done            chan struct{}         // Channel to close fetcher
+	cache           *freecache.Cache      // cache
+	httpClient      *http.Client          // http client to fetch data from url
+	time            timeutil.Time         // time interface to record request timings
+	metricEngine    metrics.MetricsEngine // Records malfunctions in dynamic fetch
 }
 
 type FetchQueue []*FetchInfo
@@ -110,15 +90,17 @@ func workerPanicHandler(p interface{}) {
 	glog.Errorf("floor fetcher worker panicked: %v", p)
 }
 
-func NewPriceFloorFetcher(maxWorkers, maxCapacity, cacheCleanUpInt, cacheExpiry int) *PriceFloorFetcher {
+func NewPriceFloorFetcher(maxWorkers, maxCapacity, cacheSize int, httpClient *http.Client, metricEngine metrics.MetricsEngine) *PriceFloorFetcher {
 	floorFetcher := PriceFloorFetcher{
 		pool:            pond.New(maxWorkers, maxCapacity, pond.PanicHandler(workerPanicHandler)),
 		fetchQueue:      make(FetchQueue, 0, 100),
 		fetchInProgress: make(map[string]bool),
 		configReceiver:  make(chan FetchInfo, maxCapacity),
 		done:            make(chan struct{}),
-		cacheExpiry:     time.Duration(cacheExpiry) * time.Second,
-		cache:           cache.New(time.Duration(cacheExpiry)*time.Second, time.Duration(cacheCleanUpInt)*time.Second),
+		cache:           freecache.NewCache(cacheSize * 1024 * 1024),
+		httpClient:      httpClient,
+		time:            &timeutil.RealTime{},
+		metricEngine:    metricEngine,
 	}
 
 	go floorFetcher.Fetcher()
@@ -126,28 +108,63 @@ func NewPriceFloorFetcher(maxWorkers, maxCapacity, cacheCleanUpInt, cacheExpiry 
 	return &floorFetcher
 }
 
-func (f *PriceFloorFetcher) SetWithExpiry(key string, value interface{}, cacheExpiry time.Duration) {
-	f.cache.Set(key, value, cacheExpiry)
+func (f *PriceFloorFetcher) SetWithExpiry(key string, value json.RawMessage, cacheExpiry int) {
+	f.cache.Set([]byte(key), value, cacheExpiry)
 }
 
-func (f *PriceFloorFetcher) Get(key string) (interface{}, bool) {
-	return f.cache.Get(key)
+func (f *PriceFloorFetcher) Get(key string) (json.RawMessage, bool) {
+	data, err := f.cache.Get([]byte(key))
+	if err != nil {
+		return nil, false
+	}
+
+	return data, true
+}
+
+func (f *PriceFloorFetcher) Fetch(config config.AccountPriceFloors) (*openrtb_ext.PriceFloorRules, string) {
+	if !config.UseDynamicData || len(config.Fetcher.URL) == 0 || !validator.IsURL(config.Fetcher.URL) {
+		return nil, openrtb_ext.FetchNone
+	}
+
+	// Check for floors JSON in cache
+	result, found := f.Get(config.Fetcher.URL)
+	if found {
+		var fetchedFloorData openrtb_ext.PriceFloorRules
+		err := json.Unmarshal(result, &fetchedFloorData)
+		if err != nil || fetchedFloorData.Data == nil {
+			return nil, openrtb_ext.FetchError
+		}
+		return &fetchedFloorData, openrtb_ext.FetchSuccess
+	}
+
+	//miss: push to channel to fetch and return empty response
+	if config.Enabled && config.Fetcher.Enabled && config.Fetcher.Timeout > 0 {
+		fetchInfo := FetchInfo{AccountFloorFetch: config.Fetcher, FetchTime: f.time.Now().Unix(), RefetchRequest: false}
+		f.configReceiver <- fetchInfo
+	}
+
+	return nil, openrtb_ext.FetchInprogress
 }
 
 func (f *PriceFloorFetcher) worker(configs config.AccountFloorFetch) {
-	floorData, fetchedMaxAge := fetchAndValidate(configs)
+	floorData, fetchedMaxAge := f.fetchAndValidate(configs)
 	if floorData != nil {
 		// Update cache with new floor rules
 		glog.Infof("Updating Value in cache for URL %s", configs.URL)
-		cacheExpiry := f.cacheExpiry
+		cacheExpiry := configs.MaxAge
 		if fetchedMaxAge != 0 && fetchedMaxAge > configs.Period && fetchedMaxAge < math.MaxInt32 {
-			cacheExpiry = time.Duration(fetchedMaxAge) * time.Second
+			cacheExpiry = fetchedMaxAge
 		}
-		f.SetWithExpiry(configs.URL, floorData, cacheExpiry)
+		floorData, err := json.Marshal(floorData)
+		if err != nil {
+			glog.Errorf("Error while marshaling fetched floor data for url %s", configs.URL)
+		} else {
+			f.SetWithExpiry(configs.URL, floorData, cacheExpiry)
+		}
 	}
 
 	// Send to refetch channel
-	f.configReceiver <- FetchInfo{AccountFloorFetch: configs, FetchTime: time.Now().Add(time.Duration(configs.Period) * time.Second).Unix(), RefetchRequest: true}
+	f.configReceiver <- FetchInfo{AccountFloorFetch: configs, FetchTime: f.time.Now().Add(time.Duration(configs.Period) * time.Second).Unix(), RefetchRequest: true}
 
 }
 
@@ -183,7 +200,7 @@ func (f *PriceFloorFetcher) Fetcher() {
 				}
 			}
 		case <-ticker.C:
-			currentTime := time.Now().Unix()
+			currentTime := f.time.Now().Unix()
 			for top := f.fetchQueue.Top(); top != nil && top.FetchTime <= currentTime; top = f.fetchQueue.Top() {
 				nextFetch := heap.Pop(&f.fetchQueue)
 				f.submit(nextFetch.(*FetchInfo))
@@ -195,8 +212,8 @@ func (f *PriceFloorFetcher) Fetcher() {
 	}
 }
 
-func fetchAndValidate(config config.AccountFloorFetch) (*openrtb_ext.PriceFloorRules, int) {
-	floorResp, maxAge, err := fetchFloorRulesFromURL(config)
+func (f *PriceFloorFetcher) fetchAndValidate(config config.AccountFloorFetch) (*openrtb_ext.PriceFloorRules, int) {
+	floorResp, maxAge, err := f.fetchFloorRulesFromURL(config)
 	if err != nil {
 		glog.Errorf("Error while fetching floor data from URL: %s, reason : %s", config.URL, err.Error())
 		return nil, 0
@@ -224,7 +241,7 @@ func fetchAndValidate(config config.AccountFloorFetch) (*openrtb_ext.PriceFloorR
 
 // fetchFloorRulesFromURL returns a price floor JSON and time for which this JSON is valid
 // from provided URL with timeout constraints
-func fetchFloorRulesFromURL(configs config.AccountFloorFetch) ([]byte, int, error) {
+func (f *PriceFloorFetcher) fetchFloorRulesFromURL(configs config.AccountFloorFetch) ([]byte, int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(configs.Timeout)*time.Millisecond)
 	defer cancel()
 
@@ -233,7 +250,7 @@ func fetchFloorRulesFromURL(configs config.AccountFloorFetch) ([]byte, int, erro
 		return nil, 0, errors.New("error while forming http fetch request : " + err.Error())
 	}
 
-	httpResp, err := http.DefaultClient.Do(httpReq)
+	httpResp, err := f.httpClient.Do(httpReq)
 	if err != nil {
 		return nil, 0, errors.New("error while getting response from url : " + err.Error())
 	}

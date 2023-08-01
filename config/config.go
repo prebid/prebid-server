@@ -114,8 +114,10 @@ type PriceFloors struct {
 }
 
 type PriceFloorFetcher struct {
-	Worker   int `mapstructure:"worker"`
-	Capacity int `mapstructure:"capacity"`
+	Client    HTTPClient `mapstructure:"client"`
+	CacheSize int        `mapstructure:"cache_size_mb"`
+	Worker    int        `mapstructure:"worker"`
+	Capacity  int        `mapstructure:"capacity"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -1040,8 +1042,13 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("account_defaults.price_floors.fetch.max_schema_dims", 0)
 
 	//Defaults for Price floor fetcher
-	v.SetDefault("price_floor.fetcher.worker", 20)
-	v.SetDefault("price_floor.fetcher.capacity", 20000)
+	v.SetDefault("price_floors.fetcher.worker", 20)
+	v.SetDefault("price_floors.fetcher.capacity", 20000)
+	v.SetDefault("price_floors.fetcher.cache_size_mb", 64)
+	v.SetDefault("price_floors.fetcher.client.max_connections_per_host", 0) // unlimited
+	v.SetDefault("price_floors.fetcher.client.max_idle_connections", 40)
+	v.SetDefault("price_floors.fetcher.client.max_idle_connections_per_host", 2)
+	v.SetDefault("price_floors.fetcher.client.idle_connection_timeout_seconds", 60)
 
 	v.SetDefault("account_defaults.events_enabled", false)
 	v.SetDefault("compression.response.enable_gzip", false)

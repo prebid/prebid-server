@@ -11,9 +11,11 @@ import (
 	"time"
 
 	"github.com/alitto/pond"
-	"github.com/patrickmn/go-cache"
+	"github.com/coocood/freecache"
 	"github.com/prebid/prebid-server/config"
+	metricsConf "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/timeutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -176,7 +178,6 @@ func TestFetchQueueTop(t *testing.T) {
 }
 
 func TestValidatePriceFloorRules(t *testing.T) {
-
 	var zero = 0
 	var one_o_one = 101
 	var testURL = "abc.com"
@@ -405,7 +406,6 @@ func TestValidatePriceFloorRules(t *testing.T) {
 }
 
 func TestFetchFloorRulesFromURL(t *testing.T) {
-
 	mockHandler := func(mockResponse []byte, mockStatus int) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.Header().Add("Content-Length", "645")
@@ -510,7 +510,10 @@ func TestFetchFloorRulesFromURL(t *testing.T) {
 			if tt.args.configs.URL == "" {
 				tt.args.configs.URL = mockHttpServer.URL
 			}
-			got, got1, err := fetchFloorRulesFromURL(tt.args.configs)
+			pff := PriceFloorFetcher{
+				httpClient: mockHttpServer.Client(),
+			}
+			got, got1, err := pff.fetchFloorRulesFromURL(tt.args.configs)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("fetchFloorRulesFromURL() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -526,7 +529,6 @@ func TestFetchFloorRulesFromURL(t *testing.T) {
 }
 
 func TestFetchFloorRulesFromURLInvalidMaxAge(t *testing.T) {
-
 	mockHandler := func(mockResponse []byte, mockStatus int) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.Header().Add("Content-Length", "645")
@@ -579,7 +581,10 @@ func TestFetchFloorRulesFromURLInvalidMaxAge(t *testing.T) {
 				tt.args.configs.URL = mockHttpServer.URL
 			}
 
-			got, got1, err := fetchFloorRulesFromURL(tt.args.configs)
+			ppf := PriceFloorFetcher{
+				httpClient: mockHttpServer.Client(),
+			}
+			got, got1, err := ppf.fetchFloorRulesFromURL(tt.args.configs)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("fetchFloorRulesFromURL() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -595,7 +600,6 @@ func TestFetchFloorRulesFromURLInvalidMaxAge(t *testing.T) {
 }
 
 func TestFetchAndValidate(t *testing.T) {
-
 	mockHandler := func(mockResponse []byte, mockStatus int) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.Header().Add(MaxAge, "30")
@@ -722,9 +726,11 @@ func TestFetchAndValidate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockHttpServer := httptest.NewServer(mockHandler(tt.response, tt.responseStatus))
 			defer mockHttpServer.Close()
-
+			ppf := PriceFloorFetcher{
+				httpClient: mockHttpServer.Client(),
+			}
 			tt.args.configs.URL = mockHttpServer.URL
-			got, got1 := fetchAndValidate(tt.args.configs)
+			got, got1 := ppf.fetchAndValidate(tt.args.configs)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("fetchAndValidate() got = %v, want %v", got, tt.want)
 			}
@@ -736,7 +742,6 @@ func TestFetchAndValidate(t *testing.T) {
 }
 
 func TestFetcherWhenRequestGetSameURLInrequest(t *testing.T) {
-
 	refetchCheckInterval = 1
 	response := []byte(`{"currency":"USD","modelgroups":[{"modelweight":40,"modelversion":"version1","default":5,"values":{"banner|300x600|www.website.com":3,"banner|728x90|www.website.com":5,"banner|300x600|*":4,"banner|300x250|*":2,"*|*|*":16,"*|300x250|*":10,"*|300x600|*":12,"*|300x600|www.website.com":11,"banner|*|*":8,"banner|300x250|www.website.com":1,"*|728x90|www.website.com":13,"*|300x250|www.website.com":9,"*|728x90|*":14,"banner|728x90|*":6,"banner|*|www.website.com":7,"*|*|www.website.com":15},"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"}}]}`)
 	mockHandler := func(mockResponse []byte, mockStatus int) http.Handler {
@@ -749,7 +754,7 @@ func TestFetcherWhenRequestGetSameURLInrequest(t *testing.T) {
 	mockHttpServer := httptest.NewServer(mockHandler(response, 200))
 	defer mockHttpServer.Close()
 
-	fetcherInstance := NewPriceFloorFetcher(5, 10, 1, 20)
+	fetcherInstance := NewPriceFloorFetcher(5, 10, 1, mockHttpServer.Client(), &metricsConf.NilMetricsEngine{})
 	defer fetcherInstance.Stop()
 
 	fetchConfig := config.AccountPriceFloors{
@@ -776,8 +781,7 @@ func TestFetcherWhenRequestGetSameURLInrequest(t *testing.T) {
 }
 
 func TestFetcherDataPresentInCache(t *testing.T) {
-
-	fetcherInstance := NewPriceFloorFetcher(2, 5, 5, 20)
+	fetcherInstance := NewPriceFloorFetcher(2, 5, 1, http.DefaultClient, &metricsConf.NilMetricsEngine{})
 	defer fetcherInstance.Stop()
 
 	fetchConfig := config.AccountPriceFloors{
@@ -796,7 +800,7 @@ func TestFetcherDataPresentInCache(t *testing.T) {
 	var res *openrtb_ext.PriceFloorRules
 	data := `{"data":{"currency":"USD","modelgroups":[{"modelweight":40,"modelversion":"version1","default":5,"values":{"banner|300x600|www.website.com":3,"banner|728x90|www.website.com":5,"banner|300x600|*":4,"banner|300x250|*":2,"*|*|*":16,"*|300x250|*":10,"*|300x600|*":12,"*|300x600|www.website.com":11,"banner|*|*":8,"banner|300x250|www.website.com":1,"*|728x90|www.website.com":13,"*|300x250|www.website.com":9,"*|728x90|*":14,"banner|728x90|*":6,"banner|*|www.website.com":7,"*|*|www.website.com":15},"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"}}]},"enabled":true,"floormin":1,"enforcement":{"enforcepbs":false,"floordeals":true}}`
 	_ = json.Unmarshal([]byte(data), &res)
-	fetcherInstance.SetWithExpiry("http://test.com/floor", res, fetcherInstance.cacheExpiry)
+	fetcherInstance.SetWithExpiry("http://test.com/floor", []byte(data), fetchConfig.Fetcher.MaxAge)
 
 	val, status := fetcherInstance.Fetch(fetchConfig)
 	assert.Equal(t, res, val, "Invalid value in cache or cache is empty")
@@ -804,8 +808,7 @@ func TestFetcherDataPresentInCache(t *testing.T) {
 }
 
 func TestFetcherDataNotPresentInCache(t *testing.T) {
-
-	fetcherInstance := NewPriceFloorFetcher(2, 5, 5, 20)
+	fetcherInstance := NewPriceFloorFetcher(2, 5, 1, http.DefaultClient, &metricsConf.NilMetricsEngine{})
 	defer fetcherInstance.Stop()
 
 	fetchConfig := config.AccountPriceFloors{
@@ -821,7 +824,7 @@ func TestFetcherDataNotPresentInCache(t *testing.T) {
 			Period:      5,
 		},
 	}
-	fetcherInstance.SetWithExpiry("http://test.com/floor", nil, fetcherInstance.cacheExpiry)
+	fetcherInstance.SetWithExpiry("http://test.com/floor", nil, fetchConfig.Fetcher.MaxAge)
 
 	val, status := fetcherInstance.Fetch(fetchConfig)
 
@@ -830,8 +833,7 @@ func TestFetcherDataNotPresentInCache(t *testing.T) {
 }
 
 func TestFetcherEntryNotPresentInCache(t *testing.T) {
-
-	fetcherInstance := NewPriceFloorFetcher(2, 5, 5, 20)
+	fetcherInstance := NewPriceFloorFetcher(2, 5, 1, http.DefaultClient, &metricsConf.NilMetricsEngine{})
 	defer fetcherInstance.Stop()
 
 	fetchConfig := config.AccountPriceFloors{
@@ -855,8 +857,7 @@ func TestFetcherEntryNotPresentInCache(t *testing.T) {
 }
 
 func TestFetcherDynamicFetchDisable(t *testing.T) {
-
-	fetcherInstance := NewPriceFloorFetcher(2, 5, 5, 20)
+	fetcherInstance := NewPriceFloorFetcher(2, 5, 1, http.DefaultClient, &metricsConf.NilMetricsEngine{})
 	defer fetcherInstance.Stop()
 
 	fetchConfig := config.AccountPriceFloors{
@@ -880,7 +881,6 @@ func TestFetcherDynamicFetchDisable(t *testing.T) {
 }
 
 func TestPriceFloorFetcherWorker(t *testing.T) {
-
 	var floorData openrtb_ext.PriceFloorData
 	response := []byte(`{"currency":"USD","modelgroups":[{"modelweight":40,"modelversion":"version1","default":5,"values":{"banner|300x600|www.website.com":3,"banner|728x90|www.website.com":5,"banner|300x600|*":4,"banner|300x250|*":2,"*|*|*":16,"*|300x250|*":10,"*|300x600|*":12,"*|300x600|www.website.com":11,"banner|*|*":8,"banner|300x250|www.website.com":1,"*|728x90|www.website.com":13,"*|300x250|www.website.com":9,"*|728x90|*":14,"banner|728x90|*":6,"banner|*|www.website.com":7,"*|*|www.website.com":15},"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"}}]}`)
 	_ = json.Unmarshal(response, &floorData)
@@ -905,8 +905,10 @@ func TestPriceFloorFetcherWorker(t *testing.T) {
 		fetchInProgress: nil,
 		configReceiver:  make(chan FetchInfo, 1),
 		done:            nil,
-		cache:           cache.New(time.Duration(5)*time.Second, time.Duration(2)*time.Second),
-		cacheExpiry:     10,
+		cache:           freecache.NewCache(1 * 1024 * 1024),
+		httpClient:      mockHttpServer.Client(),
+		time:            &timeutil.RealTime{},
+		metricEngine:    &metricsConf.NilMetricsEngine{},
 	}
 	defer close(fetcherInstance.configReceiver)
 
@@ -922,7 +924,9 @@ func TestPriceFloorFetcherWorker(t *testing.T) {
 
 	fetcherInstance.worker(fetchConfig)
 	dataInCache, _ := fetcherInstance.Get(mockHttpServer.URL)
-	assert.Equal(t, floorResp, dataInCache, "Data should be stored in cache")
+	var gotFloorData *openrtb_ext.PriceFloorRules
+	json.Unmarshal(dataInCache, &gotFloorData)
+	assert.Equal(t, floorResp, gotFloorData, "Data should be stored in cache")
 
 	info := <-fetcherInstance.configReceiver
 	assert.Equal(t, true, info.RefetchRequest, "Recieved request is not refetch request")
@@ -931,7 +935,6 @@ func TestPriceFloorFetcherWorker(t *testing.T) {
 }
 
 func TestPriceFloorFetcherWorkerDefaultCacheExpiry(t *testing.T) {
-
 	var floorData openrtb_ext.PriceFloorData
 	response := []byte(`{"currency":"USD","modelgroups":[{"modelweight":40,"modelversion":"version1","default":5,"values":{"banner|300x600|www.website.com":3,"banner|728x90|www.website.com":5,"banner|300x600|*":4,"banner|300x250|*":2,"*|*|*":16,"*|300x250|*":10,"*|300x600|*":12,"*|300x600|www.website.com":11,"banner|*|*":8,"banner|300x250|www.website.com":1,"*|728x90|www.website.com":13,"*|300x250|www.website.com":9,"*|728x90|*":14,"banner|728x90|*":6,"banner|*|www.website.com":7,"*|*|www.website.com":15},"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"}}]}`)
 	_ = json.Unmarshal(response, &floorData)
@@ -955,8 +958,10 @@ func TestPriceFloorFetcherWorkerDefaultCacheExpiry(t *testing.T) {
 		fetchInProgress: nil,
 		configReceiver:  make(chan FetchInfo, 1),
 		done:            nil,
-		cache:           cache.New(time.Duration(5)*time.Second, time.Duration(2)*time.Second),
-		cacheExpiry:     time.Duration(10) * time.Second,
+		cache:           freecache.NewCache(1 * 1024 * 1024),
+		httpClient:      mockHttpServer.Client(),
+		time:            &timeutil.RealTime{},
+		metricEngine:    &metricsConf.NilMetricsEngine{},
 	}
 
 	fetchConfig := config.AccountFloorFetch{
@@ -971,7 +976,9 @@ func TestPriceFloorFetcherWorkerDefaultCacheExpiry(t *testing.T) {
 
 	fetcherInstance.worker(fetchConfig)
 	dataInCache, _ := fetcherInstance.Get(mockHttpServer.URL)
-	assert.Equal(t, floorResp, dataInCache, "Data should be stored in cache")
+	var gotFloorData *openrtb_ext.PriceFloorRules
+	json.Unmarshal(dataInCache, &gotFloorData)
+	assert.Equal(t, floorResp, gotFloorData, "Data should be stored in cache")
 
 	info := <-fetcherInstance.configReceiver
 	defer close(fetcherInstance.configReceiver)
@@ -981,7 +988,6 @@ func TestPriceFloorFetcherWorkerDefaultCacheExpiry(t *testing.T) {
 }
 
 func TestPriceFloorFetcherSubmit(t *testing.T) {
-
 	response := []byte(`{"currency":"USD","modelgroups":[{"modelweight":40,"modelversion":"version1","default":5,"values":{"banner|300x600|www.website.com":3,"banner|728x90|www.website.com":5,"banner|300x600|*":4,"banner|300x250|*":2,"*|*|*":16,"*|300x250|*":10,"*|300x600|*":12,"*|300x600|www.website.com":11,"banner|*|*":8,"banner|300x250|www.website.com":1,"*|728x90|www.website.com":13,"*|300x250|www.website.com":9,"*|728x90|*":14,"banner|728x90|*":6,"banner|*|www.website.com":7,"*|*|www.website.com":15},"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"}}]}`)
 	mockHandler := func(mockResponse []byte, mockStatus int) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -999,8 +1005,10 @@ func TestPriceFloorFetcherSubmit(t *testing.T) {
 		fetchInProgress: nil,
 		configReceiver:  make(chan FetchInfo, 1),
 		done:            make(chan struct{}),
-		cache:           cache.New(time.Duration(2)*time.Second, time.Duration(1)*time.Second),
-		cacheExpiry:     2,
+		cache:           freecache.NewCache(1 * 1024 * 1024),
+		httpClient:      mockHttpServer.Client(),
+		time:            &timeutil.RealTime{},
+		metricEngine:    &metricsConf.NilMetricsEngine{},
 	}
 	defer fetcherInstance.Stop()
 
@@ -1035,7 +1043,6 @@ func (t *testPool) TrySubmit(task func()) bool {
 func (t *testPool) Stop() {}
 
 func TestPriceFloorFetcherSubmitFailed(t *testing.T) {
-
 	fetcherInstance := &PriceFloorFetcher{
 		pool:            &testPool{},
 		fetchQueue:      make(FetchQueue, 0),
@@ -1043,7 +1050,6 @@ func TestPriceFloorFetcherSubmitFailed(t *testing.T) {
 		configReceiver:  nil,
 		done:            nil,
 		cache:           nil,
-		cacheExpiry:     2,
 	}
 	defer fetcherInstance.pool.Stop()
 
@@ -1073,7 +1079,6 @@ func getRandomNumber() int {
 }
 
 func TestFetcherWhenRequestGetDifferentURLInrequest(t *testing.T) {
-
 	refetchCheckInterval = 1
 	response := []byte(`{"currency":"USD","modelgroups":[{"modelweight":40,"modelversion":"version1","default":5,"values":{"banner|300x600|www.website.com":3,"banner|728x90|www.website.com":5,"banner|300x600|*":4,"banner|300x250|*":2,"*|*|*":16,"*|300x250|*":10,"*|300x600|*":12,"*|300x600|www.website.com":11,"banner|*|*":8,"banner|300x250|www.website.com":1,"*|728x90|www.website.com":13,"*|300x250|www.website.com":9,"*|728x90|*":14,"banner|728x90|*":6,"banner|*|www.website.com":7,"*|*|www.website.com":15},"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"}}]}`)
 	mockHandler := func(mockResponse []byte, mockStatus int) http.Handler {
@@ -1086,7 +1091,7 @@ func TestFetcherWhenRequestGetDifferentURLInrequest(t *testing.T) {
 	mockHttpServer := httptest.NewServer(mockHandler(response, 200))
 	defer mockHttpServer.Close()
 
-	fetcherInstance := NewPriceFloorFetcher(5, 10, 1, 20)
+	fetcherInstance := NewPriceFloorFetcher(5, 10, 1, mockHttpServer.Client(), &metricsConf.NilMetricsEngine{})
 	defer fetcherInstance.Stop()
 
 	fetchConfig := config.AccountPriceFloors{
