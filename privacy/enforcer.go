@@ -26,11 +26,11 @@ type ActivityControl struct {
 	plans map[Activity]ActivityPlan
 }
 
-func NewActivityControl(privacyConf *config.AccountPrivacy) (ActivityControl, error) {
+func NewActivityControl(privacyConf config.AccountPrivacy) (ActivityControl, error) {
 	ac := ActivityControl{}
 	var err error
 
-	if privacyConf == nil {
+	if privacyConf.AllowActivities == nil {
 		return ac, nil
 	}
 

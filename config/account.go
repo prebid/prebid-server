@@ -45,8 +45,7 @@ type Account struct {
 	Validations             Validations                                 `mapstructure:"validations" json:"validations"`
 	DefaultBidLimit         int                                         `mapstructure:"default_bid_limit" json:"default_bid_limit"`
 	BidAdjustments          *openrtb_ext.ExtRequestPrebidBidAdjustments `mapstructure:"bidadjustments" json:"bidadjustments"`
-	Privacy                 *AccountPrivacy                             `mapstructure:"privacy" json:"privacy"`
-	IpMasking               IpMasking                                   `mapstructure:"ip_masking" json:"ip_masking"`
+	Privacy                 AccountPrivacy                              `mapstructure:"privacy" json:"privacy"`
 }
 
 // CookieSync represents the account-level defaults for the cookie sync endpoint.
@@ -301,7 +300,8 @@ func (a *AccountChannel) IsSet() bool {
 }
 
 type AccountPrivacy struct {
-	AllowActivities AllowActivities `mapstructure:"allowactivities" json:"allowactivities"`
+	AllowActivities *AllowActivities `mapstructure:"allowactivities" json:"allowactivities"`
+	IpMasking       IpMasking        `mapstructure:"ip_masking" json:"ip_masking"`
 }
 
 type IpMasking struct {

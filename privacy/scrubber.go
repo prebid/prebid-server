@@ -78,17 +78,17 @@ type Scrubber interface {
 }
 
 type scrubber struct {
-	ipMasking *config.IpMasking
+	ipMasking config.IpMasking
 }
 
 // NewScrubber returns an OpenRTB scrubber.
-func NewScrubber(ipMasking *config.IpMasking) Scrubber {
-	return &scrubber{
+func NewScrubber(ipMasking config.IpMasking) Scrubber {
+	return scrubber{
 		ipMasking: ipMasking,
 	}
 }
 
-func (s *scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enforcement) *openrtb2.BidRequest {
+func (s scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enforcement) *openrtb2.BidRequest {
 	var userExtParsed map[string]json.RawMessage
 	userExtModified := false
 
@@ -181,7 +181,7 @@ func (s *scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enf
 	return bidRequest
 }
 
-func (s *scrubber) ScrubDevice(device *openrtb2.Device, id ScrubStrategyDeviceID, ipv4 ScrubStrategyIPV4, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb2.Device {
+func (s scrubber) ScrubDevice(device *openrtb2.Device, id ScrubStrategyDeviceID, ipv4 ScrubStrategyIPV4, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb2.Device {
 	if device == nil {
 		return nil
 	}

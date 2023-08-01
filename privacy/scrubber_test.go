@@ -738,8 +738,8 @@ func getTestDevice() *openrtb2.Device {
 	}
 }
 
-func getTestIpMasking() *config.IpMasking {
-	return &config.IpMasking{
+func getTestIpMasking() config.IpMasking {
+	return config.IpMasking{
 		IpV6: config.IpMasks{
 			ActivityLeftMaskBits:    54,
 			GdprLeftMaskBitsLowest:  112,
