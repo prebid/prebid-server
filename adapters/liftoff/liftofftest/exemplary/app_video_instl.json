@@ -33,16 +33,22 @@
           }
         }
       }
-    ]
+    ],
+    "ext": {
+      "prebid": {
+        "debug": true
+      }
+    }
   },
   "httpCalls": [
     {
       "expectedRequest": {
         "uri": "https://liftoff.io/bit/t",
         "headers": {
-          "Content-Type": [
-            "application/json"
-          ]
+          "Content-Type": ["application/json"],
+          "Accept": ["application/json"],
+          "X-OpenRTB-Version": ["2.5"],
+          "Vungle-Explain": ["jaeger"]
         },
         "body": {
           "id": "test-request-id",
@@ -86,7 +92,12 @@
                 }
               }
             }
-          ]
+          ],
+          "ext": {
+            "prebid": {
+              "debug": true
+            }
+          }
         }
       },
       "mockResponse": {

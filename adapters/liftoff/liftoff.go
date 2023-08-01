@@ -117,14 +117,16 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			},
 		}
 
-		var requestExt prebidExt
-		if err := json.Unmarshal(request.Ext, &requestExt); err != nil {
-			errs = append(errs, fmt.Errorf("failed unmarshalling request ext (err)%s", err.Error()))
-			continue
-		}
+		if request.Ext != nil {
+			var requestExt prebidExt
+			if err := json.Unmarshal(request.Ext, &requestExt); err != nil {
+				errs = append(errs, fmt.Errorf("failed unmarshalling request ext (err)%s", err.Error()))
+				continue
+			}
 
-		if requestExt.Prebid.Debug {
-			requestData.Headers.Add("Vungle-explain", "jaeger")
+			if requestExt.Prebid.Debug {
+				requestData.Headers.Add("Vungle-explain", "jaeger")
+			}
 		}
 
 		requests = append(requests, requestData)

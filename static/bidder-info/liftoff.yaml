@@ -1,4 +1,4 @@
-endpoint: "http://localhost:7100/bid/t/c770f32"
+endpoint: "https://rtb.ads.vungle.com/bid/t/c770f32"
 maintainer:
   email: platform-ssp@liftoff.io
 endpointCompression: gzip
