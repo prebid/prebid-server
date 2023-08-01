@@ -21,7 +21,7 @@ Please consider [registering your Prebid Server](https://docs.prebid.org/prebid-
 
 ## Installation
 
-First install [Go](https://golang.org/doc/install) version 1.18 or newer.
+First install [Go](https://golang.org/doc/install) version 1.19 or newer.
 
 Note that prebid-server is using [Go modules](https://blog.golang.org/using-go-modules).
 We officially support the most recent two major versions of the Go runtime. However, if you'd like to use a version <1.13 and are inside GOPATH `GO111MODULE` needs to be set to `GO111MODULE=on`.
@@ -45,6 +45,15 @@ Or just run the server locally:
 ```bash
 go build .
 ./prebid-server
+```
+
+Run format:
+```
+make format
+```
+or
+```bash
+./scripts/format.sh -f true
 ```
 
 Load the landing page in your browser at `http://localhost:8000/`.

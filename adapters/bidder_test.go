@@ -52,12 +52,12 @@ type mockConversions struct {
 	mock.Mock
 }
 
-func (m mockConversions) GetRate(from string, to string) (float64, error) {
+func (m *mockConversions) GetRate(from string, to string) (float64, error) {
 	args := m.Called(from, to)
 	return args.Get(0).(float64), args.Error(1)
 }
 
-func (m mockConversions) GetRates() *map[string]map[string]float64 {
+func (m *mockConversions) GetRates() *map[string]map[string]float64 {
 	args := m.Called()
 	return args.Get(0).(*map[string]map[string]float64)
 }

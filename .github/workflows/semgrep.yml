@@ -1,8 +1,9 @@
 name: Adapter semgrep checks
 on:
-  pull_request:
+  pull_request_target:
     paths: ["adapters/*/*.go"]
-permissions: write-all
+permissions: 
+    pull-requests: write
 jobs:
   semgrep-check:
     runs-on: ubuntu-latest
@@ -11,6 +12,8 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+          ref: ${{github.event.pull_request.head.ref}}
+          repository: ${{github.event.pull_request.head.repo.full_name}}
 
       - name: Calculate diff
         id: calculate_diff
