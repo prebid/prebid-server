@@ -5747,7 +5747,7 @@ func TestSetSeatNonBid(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := setSeatNonBid(tt.args.bidResponseExt, tt.args.seatNonBids); !reflect.DeepEqual(got, tt.want) {
+			if got := setSeatNonBid(tt.args.bidResponseExt, tt.args.seatNonBids, nil); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("setSeatNonBid() = %v, want %v", got, tt.want)
 			}
 		})

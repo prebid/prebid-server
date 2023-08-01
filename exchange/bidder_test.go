@@ -3066,6 +3066,94 @@ func TestGetBidType(t *testing.T) {
 	}
 }
 
+func TestSeatNonBid(t *testing.T) {
+	type args struct {
+		BidRequest     *openrtb2.BidRequest
+		Seat           string
+		BidderResponse func() (*http.Response, error)
+	}
+	type expect struct {
+		seatBids    []*entities.PbsOrtbSeatBid
+		seatNonBids *openrtb_ext.SeatNonBid
+		errors      []error
+	}
+	testCases := []struct {
+		name   string
+		args   args
+		expect expect
+	}{
+		{
+			name: "101_timeout",
+			args: args{
+				Seat: "someseat",
+				BidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{{ID: "1234"}},
+				},
+				BidderResponse: func() (*http.Response, error) { return nil, context.DeadlineExceeded },
+			},
+			expect: expect{
+				seatNonBids: &openrtb_ext.SeatNonBid{
+					Seat: "someseat",
+					NonBid: []openrtb_ext.NonBid{{
+						ImpId:      "1234",
+						StatusCode: int(ErrorTimeout),
+						Error:      context.DeadlineExceeded.Error(),
+						Ext:        openrtb_ext.NonBidExt{Prebid: openrtb_ext.ExtResponseNonBidPrebid{Bid: openrtb_ext.NonBidObject{Price: 0}}},
+					}}},
+				errors:   []error{&errortypes.Timeout{Message: context.DeadlineExceeded.Error()}},
+				seatBids: []*entities.PbsOrtbSeatBid{{Bids: []*entities.PbsOrtbBid{}, Currency: "USD", Seat: "someseat", HttpCalls: []*openrtb_ext.ExtHttpCall{}}},
+			},
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			mockBidder := &mockBidder{}
+			requests := []*adapters.RequestData(nil)
+			requests = append(requests, &adapters.RequestData{
+				Uri: "http://localhost",
+			})
+			mockBidder.On("MakeRequests", mock.Anything, mock.Anything).Return(requests, []error(nil))
+			mockMetricsEngine := &metrics.MetricsEngineMock{}
+			mockMetricsEngine.On("RecordOverheadTime", mock.Anything, mock.Anything).Return(nil)
+			mockMetricsEngine.On("RecordBidderServerResponseTime", mock.Anything).Return(nil)
+			roundTrip := &mockRoundTripper{}
+			roundTrip.On("RoundTrip", mock.Anything).Return(test.args.BidderResponse())
+			bidder := AdaptBidder(mockBidder, &http.Client{
+				Transport: roundTrip,
+				Timeout:   time.Second,
+			}, &config.Configuration{}, mockMetricsEngine, openrtb_ext.BidderAppnexus, &config.DebugInfo{}, test.args.Seat)
+
+			ctxTimeout, cancel := context.WithTimeout(context.Background(), 0)
+			defer cancel()
+			seatBids, responseExtra, errors := bidder.requestBid(ctxTimeout, BidderRequest{
+				BidRequest: test.args.BidRequest,
+				BidderName: openrtb_ext.BidderName(test.args.Seat),
+			}, nil, &adapters.ExtraRequestInfo{}, &MockSigner{}, bidRequestOptions{}, openrtb_ext.ExtAlternateBidderCodes{}, hookexecution.EmptyHookExecutor{}, nil)
+			assert.Equal(t, test.expect.seatBids, seatBids)
+			assert.Equal(t, test.expect.seatNonBids, responseExtra.adapterNonBids)
+			assert.Equal(t, test.expect.errors, errors)
+		})
+	}
+}
+
+type mockRoundTripper struct {
+	mock.Mock
+}
+
+func (rt *mockRoundTripper) RoundTrip(request *http.Request) (*http.Response, error) {
+	args := rt.Called(request)
+	var response *http.Response
+	if args.Get(0) != nil {
+		response = args.Get(0).(*http.Response)
+	}
+	var err error
+	if args.Get(1) != nil {
+		err = args.Get(1).(error)
+	}
+
+	return response, err
+}
+
 type mockBidderTmaxCtx struct {
 	startTime, deadline, now time.Time
 	ok                       bool

@@ -53,3 +53,10 @@ func (snb *nonBids) get() []openrtb_ext.SeatNonBid {
 	}
 	return seatNonBid
 }
+
+func newProxyNonBid(impId string, nonBidReason int) openrtb_ext.NonBid {
+	return openrtb_ext.NonBid{
+		ImpId:      impId,
+		StatusCode: nonBidReason,
+	}
+}

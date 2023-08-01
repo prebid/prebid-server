@@ -133,6 +133,7 @@ type NonBidExt struct {
 type NonBid struct {
 	ImpId      string    `json:"impid"`
 	StatusCode int       `json:"statuscode"`
+	Error      string    `json:"error"`
 	Ext        NonBidExt `json:"ext"`
 }
 

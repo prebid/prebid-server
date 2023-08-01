@@ -73,12 +73,14 @@ type bidRequestOptions struct {
 
 type extraBidderRespInfo struct {
 	respProcessingStartTime time.Time
+	adapterNonBids          *openrtb_ext.SeatNonBid
 }
 
 type extraAuctionResponseInfo struct {
 	fledge                  *openrtb_ext.Fledge
 	bidsFound               bool
 	bidderResponseStartTime time.Time
+	seatNonBid              []openrtb_ext.SeatNonBid
 }
 
 const ImpIdReqBody = "Stored bid response for impression id: "
@@ -133,6 +135,7 @@ type bidderAdapterConfig struct {
 
 func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, hookExecutor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) ([]*entities.PbsOrtbSeatBid, extraBidderRespInfo, []error) {
 	reject := hookExecutor.ExecuteBidderRequestStage(bidderRequest.BidRequest, string(bidderRequest.BidderName))
+	var seatNonBids *openrtb_ext.SeatNonBid
 	if reject != nil {
 		return nil, extraBidderRespInfo{}, []error{reject}
 	}
@@ -395,6 +398,18 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 			}
 		} else {
 			errs = append(errs, httpInfo.err)
+			errorCode := errortypes.ReadCode(httpInfo.err)
+			nonBidReason := ErrorToNonBidReason(errorCode)
+			seatNonBids = &openrtb_ext.SeatNonBid{
+				Seat:   string(bidderRequest.BidderName),
+				NonBid: make([]openrtb_ext.NonBid, len(bidderRequest.BidRequest.Imp)),
+			}
+			for i, imp := range bidderRequest.BidRequest.Imp {
+				// assuming same non bid reason across multiple impressions
+				nonBid := newProxyNonBid(imp.ID, int(nonBidReason))
+				nonBid.Error = httpInfo.err.Error()
+				seatNonBids.NonBid[i] = nonBid
+			}
 		}
 	}
 	seatBids := make([]*entities.PbsOrtbSeatBid, 0, len(seatBidMap))
@@ -402,6 +417,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 		seatBids = append(seatBids, seatBid)
 	}
 
+	extraRespInfo.adapterNonBids = seatNonBids
 	return seatBids, extraRespInfo, errs
 }
 
