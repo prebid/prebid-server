@@ -146,25 +146,25 @@ func (f *PriceFloorFetcher) Fetch(config config.AccountPriceFloors) (*openrtb_ex
 	return nil, openrtb_ext.FetchInprogress
 }
 
-func (f *PriceFloorFetcher) worker(configs config.AccountFloorFetch) {
-	floorData, fetchedMaxAge := f.fetchAndValidate(configs)
+func (f *PriceFloorFetcher) worker(config config.AccountFloorFetch) {
+	floorData, fetchedMaxAge := f.fetchAndValidate(config)
 	if floorData != nil {
 		// Update cache with new floor rules
-		glog.Infof("Updating Value in cache for URL %s", configs.URL)
-		cacheExpiry := configs.MaxAge
-		if fetchedMaxAge != 0 && fetchedMaxAge > configs.Period && fetchedMaxAge < math.MaxInt32 {
+		glog.Infof("Updating Value in cache for URL %s", config.URL)
+		cacheExpiry := config.MaxAge
+		if fetchedMaxAge != 0 && fetchedMaxAge > config.Period && fetchedMaxAge < math.MaxInt32 {
 			cacheExpiry = fetchedMaxAge
 		}
 		floorData, err := json.Marshal(floorData)
 		if err != nil {
-			glog.Errorf("Error while marshaling fetched floor data for url %s", configs.URL)
+			glog.Errorf("Error while marshaling fetched floor data for url %s", config.URL)
 		} else {
-			f.SetWithExpiry(configs.URL, floorData, cacheExpiry)
+			f.SetWithExpiry(config.URL, floorData, cacheExpiry)
 		}
 	}
 
 	// Send to refetch channel
-	f.configReceiver <- FetchInfo{AccountFloorFetch: configs, FetchTime: f.time.Now().Add(time.Duration(configs.Period) * time.Second).Unix(), RefetchRequest: true}
+	f.configReceiver <- FetchInfo{AccountFloorFetch: config, FetchTime: f.time.Now().Add(time.Duration(config.Period) * time.Second).Unix(), RefetchRequest: true}
 
 }
 
@@ -241,11 +241,11 @@ func (f *PriceFloorFetcher) fetchAndValidate(config config.AccountFloorFetch) (*
 
 // fetchFloorRulesFromURL returns a price floor JSON and time for which this JSON is valid
 // from provided URL with timeout constraints
-func (f *PriceFloorFetcher) fetchFloorRulesFromURL(configs config.AccountFloorFetch) ([]byte, int, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(configs.Timeout)*time.Millisecond)
+func (f *PriceFloorFetcher) fetchFloorRulesFromURL(config config.AccountFloorFetch) ([]byte, int, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.Timeout)*time.Millisecond)
 	defer cancel()
 
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, configs.URL, nil)
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, config.URL, nil)
 	if err != nil {
 		return nil, 0, errors.New("error while forming http fetch request : " + err.Error())
 	}
@@ -263,10 +263,10 @@ func (f *PriceFloorFetcher) fetchFloorRulesFromURL(configs config.AccountFloorFe
 	if maxAgeStr := httpResp.Header.Get("max-age"); maxAgeStr != "" {
 		maxAge, err = strconv.Atoi(maxAgeStr)
 		if err != nil {
-			glog.Errorf("max-age in header is malformed for url %s", configs.URL)
+			glog.Errorf("max-age in header is malformed for url %s", config.URL)
 		}
-		if maxAge <= configs.Period {
-			glog.Errorf("Invalid max-age = %s provided, value should be valid integer and should be within (%v, %v)", maxAgeStr, configs.Period, math.MaxInt32)
+		if maxAge <= config.Period {
+			glog.Errorf("Invalid max-age = %s provided, value should be valid integer and should be within (%v, %v)", maxAgeStr, config.Period, math.MaxInt32)
 		}
 	}
 
@@ -279,7 +279,7 @@ func (f *PriceFloorFetcher) fetchFloorRulesFromURL(configs config.AccountFloorFe
 	return respBody, maxAge, nil
 }
 
-func validateRules(configs config.AccountFloorFetch, priceFloors *openrtb_ext.PriceFloorRules) error {
+func validateRules(config config.AccountFloorFetch, priceFloors *openrtb_ext.PriceFloorRules) error {
 	if priceFloors.Data == nil {
 		return errors.New("empty data in floor JSON")
 	}
@@ -293,7 +293,7 @@ func validateRules(configs config.AccountFloorFetch, priceFloors *openrtb_ext.Pr
 	}
 
 	for _, modelGroup := range priceFloors.Data.ModelGroups {
-		if len(modelGroup.Values) == 0 || len(modelGroup.Values) > configs.MaxRules {
+		if len(modelGroup.Values) == 0 || len(modelGroup.Values) > config.MaxRules {
 			return errors.New("invalid number of floor rules, floor rules should be greater than zero and less than MaxRules specified in account config")
 		}
 
