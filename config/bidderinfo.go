@@ -371,12 +371,14 @@ func validateAliasCapabilities(bidder BidderInfo, infos BidderInfos, bidderName 
 	}
 	if (parentBidder.Capabilities.Site == nil && bidder.Capabilities.Site != nil) || (parentBidder.Capabilities.Site != nil && bidder.Capabilities.Site == nil) {
 		return fmt.Errorf("capabilities for alias: %s should be a subset of capabilities for parent bidder: %s", bidderName, bidder.AliasOf)
-	} else if bidder.Capabilities.Site != nil {
+	}
+	if bidder.Capabilities.Site != nil {
 		return validateAliasPlatformInfo(parentBidder.Capabilities.Site, bidder.Capabilities.Site, bidderName, bidder.AliasOf)
 	}
 	if (parentBidder.Capabilities.App == nil && bidder.Capabilities.App != nil) || (parentBidder.Capabilities.App != nil && bidder.Capabilities.App == nil) {
 		return fmt.Errorf("capabilities for alias: %s should be a subset of capabilities for parent bidder: %s", bidderName, bidder.AliasOf)
-	} else if bidder.Capabilities.App != nil {
+	}
+	if bidder.Capabilities.App != nil {
 		return validateAliasPlatformInfo(parentBidder.Capabilities.App, bidder.Capabilities.App, bidderName, bidder.AliasOf)
 	}
 	return nil
