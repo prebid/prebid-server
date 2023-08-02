@@ -910,3 +910,78 @@ func TestAccountPriceFloorsValidate(t *testing.T) {
 		})
 	}
 }
+
+func TestIPMaskingValidate(t *testing.T) {
+
+	tests := []struct {
+		name    string
+		masking *IPMasking
+		want    []error
+	}{
+		{
+			name: "valid configuration",
+			masking: &IPMasking{
+				IpV4: IPMasks{
+					ActivityLeftMaskBits:    1,
+					GdprLeftMaskBitsLowest:  2,
+					GdprLeftMaskBitsHighest: 0,
+				},
+				IpV6: IPMasks{
+					ActivityLeftMaskBits:    0,
+					GdprLeftMaskBitsLowest:  2,
+					GdprLeftMaskBitsHighest: 3,
+				},
+			},
+		},
+		{
+			name: "invalid configuration",
+			masking: &IPMasking{
+				IpV4: IPMasks{
+					ActivityLeftMaskBits:    100,
+					GdprLeftMaskBitsLowest:  -200,
+					GdprLeftMaskBitsHighest: 300,
+				},
+				IpV6: IPMasks{
+					ActivityLeftMaskBits:    -100,
+					GdprLeftMaskBitsLowest:  200,
+					GdprLeftMaskBitsHighest: -300,
+				},
+			},
+			want: []error{
+				errors.New("activity left mask bits cannot exceed 32 in ipv4 address, or be less than 0"),
+				errors.New("gdpr left mask bits lowest cannot exceed 32 in ipv4 address, or be less than 0"),
+				errors.New("gdpr left mask bits highest cannot exceed 32 in ipv4 address, or be less than 0"),
+				errors.New("activity left mask bits cannot exceed 128 in ipv6 address, or be less than 0"),
+				errors.New("gdpr left mask bits lowest cannot exceed 128 in ipv6 address, or be less than 0"),
+				errors.New("gdpr left mask bits highest cannot exceed 128 in ipv6 address, or be less than 0"),
+			},
+		},
+		{
+			name: "mixed valid and invalid configuration",
+			masking: &IPMasking{
+				IpV4: IPMasks{
+					ActivityLeftMaskBits:    10,
+					GdprLeftMaskBitsLowest:  -20,
+					GdprLeftMaskBitsHighest: 30,
+				},
+				IpV6: IPMasks{
+					ActivityLeftMaskBits:    10,
+					GdprLeftMaskBitsLowest:  20,
+					GdprLeftMaskBitsHighest: -30,
+				},
+			},
+			want: []error{
+				errors.New("gdpr left mask bits lowest cannot exceed 32 in ipv4 address, or be less than 0"),
+				errors.New("gdpr left mask bits highest cannot exceed 128 in ipv6 address, or be less than 0"),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var errs []error
+			got := tt.masking.Validate(errs)
+			assert.ElementsMatch(t, got, tt.want)
+		})
+	}
+}

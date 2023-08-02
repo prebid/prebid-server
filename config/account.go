@@ -316,7 +316,6 @@ type IPMasks struct {
 }
 
 func (ipMasking *IPMasking) Validate(errs []error) []error {
-
 	if e := ipMasking.IpV6.validate(IPv6, "ipv6"); e != nil {
 		errs = append(errs, e...)
 	}
