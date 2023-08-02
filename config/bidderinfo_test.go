@@ -622,7 +622,7 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 				},
 			},
 			[]error{
-				errors.New("alias capabilities should be a subset of parent bidder capabilities"),
+				errors.New("capabilities for alias: bidderB should be a subset of capabilities for parent bidder: bidderA"),
 			},
 		},
 		{
@@ -657,7 +657,7 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 				},
 			},
 			[]error{
-				errors.New("alias capabilities should be a subset of parent bidder capabilities"),
+				errors.New("capabilities for alias: bidderB should be a subset of capabilities for parent bidder: bidderA"),
 			},
 		},
 		{
@@ -687,7 +687,7 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 			},
 			[]error{
 				errors.New("at least one of capabilities.site or capabilities.app must exist for adapter: bidderA"),
-				errors.New("alias capabilities should be a subset of parent bidder capabilities"),
+				errors.New("capabilities for alias: bidderB should be a subset of capabilities for parent bidder: bidderA"),
 			},
 		},
 		{
@@ -723,7 +723,7 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 				},
 			},
 			[]error{
-				errors.New("alias MediaTypes should be a subset of parent bidder MediaTypes"),
+				errors.New("mediaTypes for alias: bidderB should be a subset of MediaTypes for parent bidder: bidderA"),
 			},
 		},
 	}

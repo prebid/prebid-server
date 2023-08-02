@@ -362,17 +362,17 @@ func validateAliasCapabilities(bidder BidderInfo, infos BidderInfos, bidderName 
 	if len(bidder.AliasOf) > 0 {
 		if parentBidder, ok := infos[bidder.AliasOf]; ok {
 			if parentBidder.Capabilities == nil && bidder.Capabilities != nil {
-				return fmt.Errorf("alias capabilities should be a subset of parent bidder capabilities")
+				return fmt.Errorf("capabilities for alias: %s should be a subset of capabilities for parent bidder: %s", bidderName, bidder.AliasOf)
 			}
 			if (parentBidder.Capabilities.Site == nil && bidder.Capabilities.Site != nil) || (parentBidder.Capabilities.Site != nil && bidder.Capabilities.Site == nil) {
-				return fmt.Errorf("alias capabilities should be a subset of parent bidder capabilities")
+				return fmt.Errorf("capabilities for alias: %s should be a subset of capabilities for parent bidder: %s", bidderName, bidder.AliasOf)
 			} else if bidder.Capabilities.Site != nil {
-				return validateAliasPlatformInfo(parentBidder.Capabilities.Site, bidder.Capabilities.Site)
+				return validateAliasPlatformInfo(parentBidder.Capabilities.Site, bidder.Capabilities.Site, bidderName, bidder.AliasOf)
 			}
 			if (parentBidder.Capabilities.App == nil && bidder.Capabilities.App != nil) || (parentBidder.Capabilities.App != nil && bidder.Capabilities.App == nil) {
-				return fmt.Errorf("alias capabilities should be a subset of parent bidder capabilities")
+				return fmt.Errorf("capabilities for alias: %s should be a subset of capabilities for parent bidder: %s", bidderName, bidder.AliasOf)
 			} else if bidder.Capabilities.App != nil {
-				return validateAliasPlatformInfo(parentBidder.Capabilities.App, bidder.Capabilities.App)
+				return validateAliasPlatformInfo(parentBidder.Capabilities.App, bidder.Capabilities.App, bidderName, bidder.AliasOf)
 			}
 		} else {
 			return fmt.Errorf("bidder: %s not found for an alias: %s", bidder.AliasOf, bidderName)
@@ -381,7 +381,7 @@ func validateAliasCapabilities(bidder BidderInfo, infos BidderInfos, bidderName 
 	return nil
 }
 
-func validateAliasPlatformInfo(parentInfo *PlatformInfo, aliasInfo *PlatformInfo) error {
+func validateAliasPlatformInfo(parentInfo *PlatformInfo, aliasInfo *PlatformInfo, bidderName string, parentBidderName string) error {
 	parentInfoMap := make(map[openrtb_ext.BidType]struct{})
 	for _, info := range parentInfo.MediaTypes {
 		parentInfoMap[info] = struct{}{}
@@ -389,7 +389,7 @@ func validateAliasPlatformInfo(parentInfo *PlatformInfo, aliasInfo *PlatformInfo
 
 	for _, info := range aliasInfo.MediaTypes {
 		if _, found := parentInfoMap[info]; !found {
-			return fmt.Errorf("alias MediaTypes should be a subset of parent bidder MediaTypes")
+			return fmt.Errorf("mediaTypes for alias: %s should be a subset of MediaTypes for parent bidder: %s", bidderName, parentBidderName)
 		}
 	}
 
