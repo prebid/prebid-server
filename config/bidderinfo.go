@@ -385,13 +385,13 @@ func validateAliasCapabilities(bidder BidderInfo, infos BidderInfos, bidderName 
 }
 
 func validateAliasPlatformInfo(parentInfo *PlatformInfo, aliasInfo *PlatformInfo, bidderName string, parentBidderName string) error {
-	parentInfoMap := make(map[openrtb_ext.BidType]struct{})
+	parentMediaTypes := make(map[openrtb_ext.BidType]struct{})
 	for _, info := range parentInfo.MediaTypes {
-		parentInfoMap[info] = struct{}{}
+		parentMediaTypes[info] = struct{}{}
 	}
 
 	for _, info := range aliasInfo.MediaTypes {
-		if _, found := parentInfoMap[info]; !found {
+		if _, found := parentMediaTypes[info]; !found {
 			return fmt.Errorf("mediaTypes for alias: %s should be a subset of MediaTypes for parent bidder: %s", bidderName, parentBidderName)
 		}
 	}
