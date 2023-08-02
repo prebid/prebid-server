@@ -373,18 +373,18 @@ func validateAliasCapabilities(bidder BidderInfo, infos BidderInfos, bidderName 
 		return fmt.Errorf("capabilities for alias: %s should be a subset of capabilities for parent bidder: %s", bidderName, bidder.AliasOf)
 	}
 	if bidder.Capabilities.Site != nil {
-		return validateAliasPlatformInfo(parentBidder.Capabilities.Site, bidder.Capabilities.Site, bidderName, bidder.AliasOf)
+		return validateAliasPlatformInfo(*parentBidder.Capabilities.Site, *bidder.Capabilities.Site, bidderName, bidder.AliasOf)
 	}
 	if (parentBidder.Capabilities.App == nil && bidder.Capabilities.App != nil) || (parentBidder.Capabilities.App != nil && bidder.Capabilities.App == nil) {
 		return fmt.Errorf("capabilities for alias: %s should be a subset of capabilities for parent bidder: %s", bidderName, bidder.AliasOf)
 	}
 	if bidder.Capabilities.App != nil {
-		return validateAliasPlatformInfo(parentBidder.Capabilities.App, bidder.Capabilities.App, bidderName, bidder.AliasOf)
+		return validateAliasPlatformInfo(*parentBidder.Capabilities.App, *bidder.Capabilities.App, bidderName, bidder.AliasOf)
 	}
 	return nil
 }
 
-func validateAliasPlatformInfo(parentInfo *PlatformInfo, aliasInfo *PlatformInfo, bidderName string, parentBidderName string) error {
+func validateAliasPlatformInfo(parentInfo PlatformInfo, aliasInfo PlatformInfo, bidderName string, parentBidderName string) error {
 	parentMediaTypes := make(map[openrtb_ext.BidType]struct{})
 	for _, info := range parentInfo.MediaTypes {
 		parentMediaTypes[info] = struct{}{}
