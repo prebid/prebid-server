@@ -51,8 +51,7 @@
           "ext": {
             "appnexus": {
               "hb_source": 5
-            },
-            "prebid": {}
+            }
           },
           "imp": [
             {
@@ -121,7 +120,7 @@
       }
     }
   ],
-
+  "expectedBidResponses": [{"currency":"USD","bids":[]}],
   "expectedMakeBidsErrors": [
     {
       "value": "Unrecognized bid_ad_type in response from appnexus: 2",

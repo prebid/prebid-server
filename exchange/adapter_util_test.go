@@ -67,6 +67,13 @@ func TestBuildAdapters(t *testing.T) {
 				errors.New("unknown: unknown bidder"),
 			},
 		},
+		{
+			description: "Alias feature disabled",
+			bidderInfos: map[string]config.BidderInfo{"appNexus": {AliasOf: "rubicon"}},
+			expectedErrors: []error{
+				errors.New("This feature is currently under development"),
+			},
+		},
 	}
 
 	cfg := &config.Configuration{}
@@ -210,11 +217,12 @@ func TestGetDisabledBiddersErrorMessages(t *testing.T) {
 				"lifestreet":     `Bidder "lifestreet" is no longer available in Prebid Server. Please update your configuration.`,
 				"adagio":         `Bidder "adagio" is no longer available in Prebid Server. Please update your configuration.`,
 				"somoaudience":   `Bidder "somoaudience" is no longer available in Prebid Server. Please update your configuration.`,
-				"yssp":           `Bidder "yssp" is no longer available in Prebid Server. If you're looking to use the Yahoo SSP adapter, please rename it to "yahooAdvertising" in your configuration.`,
+				"yssp":           `Bidder "yssp" is no longer available in Prebid Server. If you're looking to use the Yahoo SSP adapter, please rename it to "yahooAds" in your configuration.`,
 				"andbeyondmedia": `Bidder "andbeyondmedia" is no longer available in Prebid Server. If you're looking to use the AndBeyond.Media SSP adapter, please rename it to "beyondmedia" in your configuration.`,
 				"oftmedia":       `Bidder "oftmedia" is no longer available in Prebid Server. Please update your configuration.`,
 				"groupm":         `Bidder "groupm" is no longer available in Prebid Server. Please update your configuration.`,
 				"verizonmedia":   `Bidder "verizonmedia" is no longer available in Prebid Server. Please update your configuration.`,
+				"brightroll":     `Bidder "brightroll" is no longer available in Prebid Server. Please update your configuration.`,
 			},
 		},
 		{
@@ -224,11 +232,12 @@ func TestGetDisabledBiddersErrorMessages(t *testing.T) {
 				"lifestreet":     `Bidder "lifestreet" is no longer available in Prebid Server. Please update your configuration.`,
 				"adagio":         `Bidder "adagio" is no longer available in Prebid Server. Please update your configuration.`,
 				"somoaudience":   `Bidder "somoaudience" is no longer available in Prebid Server. Please update your configuration.`,
-				"yssp":           `Bidder "yssp" is no longer available in Prebid Server. If you're looking to use the Yahoo SSP adapter, please rename it to "yahooAdvertising" in your configuration.`,
+				"yssp":           `Bidder "yssp" is no longer available in Prebid Server. If you're looking to use the Yahoo SSP adapter, please rename it to "yahooAds" in your configuration.`,
 				"andbeyondmedia": `Bidder "andbeyondmedia" is no longer available in Prebid Server. If you're looking to use the AndBeyond.Media SSP adapter, please rename it to "beyondmedia" in your configuration.`,
 				"oftmedia":       `Bidder "oftmedia" is no longer available in Prebid Server. Please update your configuration.`,
 				"groupm":         `Bidder "groupm" is no longer available in Prebid Server. Please update your configuration.`,
 				"verizonmedia":   `Bidder "verizonmedia" is no longer available in Prebid Server. Please update your configuration.`,
+				"brightroll":     `Bidder "brightroll" is no longer available in Prebid Server. Please update your configuration.`,
 			},
 		},
 		{
@@ -238,12 +247,13 @@ func TestGetDisabledBiddersErrorMessages(t *testing.T) {
 				"lifestreet":     `Bidder "lifestreet" is no longer available in Prebid Server. Please update your configuration.`,
 				"adagio":         `Bidder "adagio" is no longer available in Prebid Server. Please update your configuration.`,
 				"somoaudience":   `Bidder "somoaudience" is no longer available in Prebid Server. Please update your configuration.`,
-				"yssp":           `Bidder "yssp" is no longer available in Prebid Server. If you're looking to use the Yahoo SSP adapter, please rename it to "yahooAdvertising" in your configuration.`,
+				"yssp":           `Bidder "yssp" is no longer available in Prebid Server. If you're looking to use the Yahoo SSP adapter, please rename it to "yahooAds" in your configuration.`,
 				"appnexus":       `Bidder "appnexus" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`,
 				"andbeyondmedia": `Bidder "andbeyondmedia" is no longer available in Prebid Server. If you're looking to use the AndBeyond.Media SSP adapter, please rename it to "beyondmedia" in your configuration.`,
 				"oftmedia":       `Bidder "oftmedia" is no longer available in Prebid Server. Please update your configuration.`,
 				"groupm":         `Bidder "groupm" is no longer available in Prebid Server. Please update your configuration.`,
 				"verizonmedia":   `Bidder "verizonmedia" is no longer available in Prebid Server. Please update your configuration.`,
+				"brightroll":     `Bidder "brightroll" is no longer available in Prebid Server. Please update your configuration.`,
 			},
 		},
 		{
@@ -253,12 +263,13 @@ func TestGetDisabledBiddersErrorMessages(t *testing.T) {
 				"lifestreet":     `Bidder "lifestreet" is no longer available in Prebid Server. Please update your configuration.`,
 				"adagio":         `Bidder "adagio" is no longer available in Prebid Server. Please update your configuration.`,
 				"somoaudience":   `Bidder "somoaudience" is no longer available in Prebid Server. Please update your configuration.`,
-				"yssp":           `Bidder "yssp" is no longer available in Prebid Server. If you're looking to use the Yahoo SSP adapter, please rename it to "yahooAdvertising" in your configuration.`,
+				"yssp":           `Bidder "yssp" is no longer available in Prebid Server. If you're looking to use the Yahoo SSP adapter, please rename it to "yahooAds" in your configuration.`,
 				"appnexus":       `Bidder "appnexus" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`,
 				"andbeyondmedia": `Bidder "andbeyondmedia" is no longer available in Prebid Server. If you're looking to use the AndBeyond.Media SSP adapter, please rename it to "beyondmedia" in your configuration.`,
 				"oftmedia":       `Bidder "oftmedia" is no longer available in Prebid Server. Please update your configuration.`,
 				"groupm":         `Bidder "groupm" is no longer available in Prebid Server. Please update your configuration.`,
 				"verizonmedia":   `Bidder "verizonmedia" is no longer available in Prebid Server. Please update your configuration.`,
+				"brightroll":     `Bidder "brightroll" is no longer available in Prebid Server. Please update your configuration.`,
 			},
 		},
 	}

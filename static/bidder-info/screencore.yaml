@@ -1,0 +1,14 @@
+endpoint: 'http://h1.screencore.io/?kp={{.AccountID}}&kn={{.SourceId}}'
+maintainer:
+  email: 'connect@screencore.io'
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native

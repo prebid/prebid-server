@@ -148,7 +148,6 @@
   ],
 
   "expectedBidResponses": [
-    {"bids":[]},
     {
       "bids": [
         {

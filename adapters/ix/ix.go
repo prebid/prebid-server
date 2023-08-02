@@ -19,8 +19,7 @@ import (
 )
 
 type IxAdapter struct {
-	URI         string
-	maxRequests int
+	URI string
 }
 
 type ExtRequest struct {
@@ -30,108 +29,127 @@ type ExtRequest struct {
 }
 
 type IxDiag struct {
-	PbsV  string `json:"pbsv,omitempty"`
-	PbjsV string `json:"pbjsv,omitempty"`
+	PbsV            string `json:"pbsv,omitempty"`
+	PbjsV           string `json:"pbjsv,omitempty"`
+	MultipleSiteIds string `json:"multipleSiteIds,omitempty"`
 }
 
 func (a *IxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	nImp := len(request.Imp)
-	if nImp > a.maxRequests {
-		request.Imp = request.Imp[:a.maxRequests]
-		nImp = a.maxRequests
-	}
-
+	requests := make([]*adapters.RequestData, 0, len(request.Imp))
 	errs := make([]error, 0)
-
-	if err := BuildIxDiag(request); err != nil {
-		errs = append(errs, err)
-	}
-
-	// Multi-size banner imps are split into single-size requests.
-	// The first size imp requests are added to the first slice.
-	// Additional size requests are added to the second slice and are merged with the first at the end.
-	// Preallocate the max possible size to avoid reallocating arrays.
-	requests := make([]*adapters.RequestData, 0, a.maxRequests)
-	multiSizeRequests := make([]*adapters.RequestData, 0, a.maxRequests-nImp)
 
 	headers := http.Header{
 		"Content-Type": {"application/json;charset=utf-8"},
 		"Accept":       {"application/json"}}
 
-	imps := request.Imp
-	for iImp := range imps {
-		request.Imp = imps[iImp : iImp+1]
-		if request.Site != nil {
-			if err := setSitePublisherId(request, iImp); err != nil {
-				errs = append(errs, err)
-				continue
-			}
+	uniqueSiteIDs := make(map[string]struct{})
+	filteredImps := make([]openrtb2.Imp, 0, len(request.Imp))
+	requestCopy := *request
+
+	ixDiag := &IxDiag{}
+
+	for _, imp := range requestCopy.Imp {
+		var err error
+		ixExt, err := unmarshalToIxExt(&imp)
+
+		if err != nil {
+			errs = append(errs, err)
+			continue
 		}
 
-		if request.Imp[0].Banner != nil {
-			banner := *request.Imp[0].Banner
-			request.Imp[0].Banner = &banner
-			formats := getBannerFormats(&banner)
-			for iFmt := range formats {
-				banner.Format = formats[iFmt : iFmt+1]
-				banner.W = openrtb2.Int64Ptr(banner.Format[0].W)
-				banner.H = openrtb2.Int64Ptr(banner.Format[0].H)
-				if requestData, err := createRequestData(a, request, &headers); err == nil {
-					if iFmt == 0 {
-						requests = append(requests, requestData)
-					} else {
-						multiSizeRequests = append(multiSizeRequests, requestData)
-					}
-				} else {
-					errs = append(errs, err)
-				}
-				if len(multiSizeRequests) == cap(multiSizeRequests) {
-					break
-				}
+		if err = parseSiteId(ixExt, uniqueSiteIDs); err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		if err := moveSid(&imp, ixExt); err != nil {
+			errs = append(errs, err)
+		}
+
+		if imp.Banner != nil {
+			bannerCopy := *imp.Banner
+
+			if len(bannerCopy.Format) == 0 && bannerCopy.W != nil && bannerCopy.H != nil {
+				bannerCopy.Format = []openrtb2.Format{{W: *bannerCopy.W, H: *bannerCopy.H}}
 			}
-		} else if requestData, err := createRequestData(a, request, &headers); err == nil {
+
+			if len(bannerCopy.Format) == 1 {
+				bannerCopy.W = openrtb2.Int64Ptr(bannerCopy.Format[0].W)
+				bannerCopy.H = openrtb2.Int64Ptr(bannerCopy.Format[0].H)
+			}
+			imp.Banner = &bannerCopy
+		}
+		filteredImps = append(filteredImps, imp)
+	}
+	requestCopy.Imp = filteredImps
+
+	setSitePublisherId(&requestCopy, uniqueSiteIDs, ixDiag)
+
+	err := setIxDiagIntoExtRequest(&requestCopy, ixDiag)
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	if len(requestCopy.Imp) != 0 {
+		if requestData, err := createRequestData(a, &requestCopy, &headers); err == nil {
 			requests = append(requests, requestData)
 		} else {
 			errs = append(errs, err)
 		}
 	}
-	request.Imp = imps
 
-	return append(requests, multiSizeRequests...), errs
+	return requests, errs
 }
 
-func setSitePublisherId(request *openrtb2.BidRequest, iImp int) error {
-	if iImp == 0 {
-		// first impression - create a site and pub copy
-		site := *request.Site
+func setSitePublisherId(requestCopy *openrtb2.BidRequest, uniqueSiteIDs map[string]struct{}, ixDiag *IxDiag) {
+	if requestCopy.Site != nil {
+		site := *requestCopy.Site
 		if site.Publisher == nil {
 			site.Publisher = &openrtb2.Publisher{}
 		} else {
 			publisher := *site.Publisher
 			site.Publisher = &publisher
 		}
-		request.Site = &site
-	}
 
+		siteIDs := make([]string, 0, len(uniqueSiteIDs))
+		for key := range uniqueSiteIDs {
+			siteIDs = append(siteIDs, key)
+		}
+		if len(siteIDs) == 1 {
+			site.Publisher.ID = siteIDs[0]
+		}
+		if len(siteIDs) > 1 {
+			// Sorting siteIDs for predictable output as Go maps don't guarantee order
+			sort.Strings(siteIDs)
+			multipleSiteIDs := strings.Join(siteIDs, ", ")
+			ixDiag.MultipleSiteIds = multipleSiteIDs
+		}
+		requestCopy.Site = &site
+	}
+}
+
+func unmarshalToIxExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpIx, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil {
-		return err
+	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		return nil, err
 	}
 
 	var ixExt openrtb_ext.ExtImpIx
 	if err := json.Unmarshal(bidderExt.Bidder, &ixExt); err != nil {
-		return err
+		return nil, err
 	}
 
-	request.Site.Publisher.ID = ixExt.SiteId
-	return nil
+	return &ixExt, nil
 }
 
-func getBannerFormats(banner *openrtb2.Banner) []openrtb2.Format {
-	if len(banner.Format) == 0 && banner.W != nil && banner.H != nil {
-		banner.Format = []openrtb2.Format{{W: *banner.W, H: *banner.H}}
+func parseSiteId(ixExt *openrtb_ext.ExtImpIx, uniqueSiteIDs map[string]struct{}) error {
+	if ixExt == nil {
+		return fmt.Errorf("Nil Ix Ext")
 	}
-	return banner.Format
+	if ixExt.SiteId != "" {
+		uniqueSiteIDs[ixExt.SiteId] = struct{}{}
+	}
+	return nil
 }
 
 func createRequestData(a *IxAdapter, request *openrtb2.BidRequest, headers *http.Header) (*adapters.RequestData, error) {
@@ -180,7 +198,8 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 		}
 	}
 
-	bidderResponse := adapters.NewBidderResponseWithBidsCapacity(5)
+	// capacity 0 will make channel unbuffered
+	bidderResponse := adapters.NewBidderResponseWithBidsCapacity(0)
 	bidderResponse.Currency = bidResponse.Cur
 
 	var errs []error
@@ -275,8 +294,7 @@ func getMediaTypeForBid(bid openrtb2.Bid, impMediaTypeReq map[string]openrtb_ext
 // Builder builds a new instance of the Ix adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &IxAdapter{
-		URI:         config.Endpoint,
-		maxRequests: 20,
+		URI: config.Endpoint,
 	}
 	return bidder, nil
 }
@@ -328,34 +346,59 @@ func marshalJsonWithoutUnicode(v interface{}) (string, error) {
 	return strings.TrimSuffix(sb.String(), "\n"), nil
 }
 
-func BuildIxDiag(request *openrtb2.BidRequest) error {
+func setIxDiagIntoExtRequest(request *openrtb2.BidRequest, ixDiag *IxDiag) error {
 	extRequest := &ExtRequest{}
 	if request.Ext != nil {
 		if err := json.Unmarshal(request.Ext, &extRequest); err != nil {
 			return err
 		}
 	}
-	ixdiag := &IxDiag{}
 
 	if extRequest.Prebid != nil && extRequest.Prebid.Channel != nil {
-		ixdiag.PbjsV = extRequest.Prebid.Channel.Version
+		ixDiag.PbjsV = extRequest.Prebid.Channel.Version
 	}
-
 	// Slice commit hash out of version
 	if strings.Contains(version.Ver, "-") {
-		ixdiag.PbsV = version.Ver[:strings.Index(version.Ver, "-")]
+		ixDiag.PbsV = version.Ver[:strings.Index(version.Ver, "-")]
 	} else if version.Ver != "" {
-		ixdiag.PbsV = version.Ver
+		ixDiag.PbsV = version.Ver
 	}
 
 	// Only set request.ext if ixDiag is not empty
-	if *ixdiag != (IxDiag{}) {
-		extRequest.IxDiag = ixdiag
+	if *ixDiag != (IxDiag{}) {
+		extRequest := &ExtRequest{}
+		if request.Ext != nil {
+			if err := json.Unmarshal(request.Ext, &extRequest); err != nil {
+				return err
+			}
+		}
+		extRequest.IxDiag = ixDiag
 		extRequestJson, err := json.Marshal(extRequest)
 		if err != nil {
 			return err
 		}
 		request.Ext = extRequestJson
+	}
+	return nil
+}
+
+// moves sid from imp[].ext.bidder.sid to imp[].ext.sid
+func moveSid(imp *openrtb2.Imp, ixExt *openrtb_ext.ExtImpIx) error {
+	if ixExt == nil {
+		return fmt.Errorf("Nil Ix Ext")
+	}
+
+	if ixExt.Sid != "" {
+		var m map[string]interface{}
+		if err := json.Unmarshal(imp.Ext, &m); err != nil {
+			return err
+		}
+		m["sid"] = ixExt.Sid
+		ext, err := json.Marshal(m)
+		if err != nil {
+			return err
+		}
+		imp.Ext = ext
 	}
 	return nil
 }

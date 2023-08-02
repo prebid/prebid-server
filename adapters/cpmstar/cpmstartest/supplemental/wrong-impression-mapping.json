@@ -68,6 +68,7 @@
       }
     }
   ],
+  "expectedBidResponses": [{"currency":"USD","bids":[]}],
   "expectedMakeBidsErrors": [
     {
       "value": "bid id='test-bid-id' could not find valid impid='BOGUS-IMPID'",

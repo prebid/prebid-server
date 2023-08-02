@@ -1,49 +1,35 @@
 {
-  "description": "Bidder FPD defined only for user",
-  "inputRequestData": {
-    "user": {
-      "id": "reqUserID",
-      "yob": 1982,
-      "gender": "M"
-    }
-  },
-  "bidderConfigFPD": {
-    "appnexus": {
-      "user": {
-        "id": "apnUserId",
-        "yob": 1982,
-        "ext": {
-          "data": {
-            "morefpdData": "morefpddata",
-            "userFpddata": "userFpddata",
-            "moreFpd": {
-              "fpd": 123
-            }
-          }
+    "description": "Bidder FPD defined only for user",
+    "inputRequestData": {
+        "user": {
+            "id": "reqUserID",
+            "yob": 1982,
+            "gender": "M"
         }
-      }
-    }
-  },
-  "outputRequestData": {
-    "user": {
-      "id": "reqUserID",
-      "yob": 1982,
-      "gender": "M",
-      "ext": {
-        "data": {
-          "ext": {
-            "data": {
-              "morefpdData": "morefpddata",
-              "userFpddata": "userFpddata",
-              "moreFpd": {
-                "fpd": 123
-              }
+    },
+    "bidderConfigFPD": {
+        "appnexus": {
+            "user": {
+                "id": "apnUserId",
+                "yob": 1982,
+                "ext": {
+                    "data": {
+                        "other": "data"
+                    }
+                }
             }
-          },
-          "id": "apnUserId"
         }
-      }
+    },
+    "outputRequestData": {
+        "user": {
+            "id": "apnUserId",
+            "yob": 1982,
+            "gender": "M",
+            "ext": {
+                "data": {
+                    "other": "data"
+                }
+            }
+        }
     }
-  }
 }
-

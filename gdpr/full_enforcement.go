@@ -67,6 +67,9 @@ func (fe *FullEnforcement) applyEnforceOverrides(overrides Overrides) (enforcePu
 // must declare the purpose as either consent or flex and the user must consent in accordance with
 // the purpose configs.
 func (fe *FullEnforcement) consentEstablished(consent tcf2.ConsentMetadata, vi VendorInfo, enforcePurpose bool, enforceVendors bool) bool {
+	if vi.vendor == nil {
+		return false
+	}
 	if !vi.vendor.Purpose(fe.cfg.PurposeID) {
 		return false
 	}
@@ -84,6 +87,9 @@ func (fe *FullEnforcement) consentEstablished(consent tcf2.ConsentMetadata, vi V
 // established, the vendor must declare the purpose as either legit interest or flex and the user
 // must have been provided notice for the legit interest basis in accordance with the purpose configs.
 func (fe *FullEnforcement) legitInterestEstablished(consent tcf2.ConsentMetadata, vi VendorInfo, enforcePurpose bool, enforceVendors bool) bool {
+	if vi.vendor == nil {
+		return false
+	}
 	if !vi.vendor.LegitimateInterest(fe.cfg.PurposeID) {
 		return false
 	}

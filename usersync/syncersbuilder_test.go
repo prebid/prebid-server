@@ -48,7 +48,7 @@ func TestBuildSyncers(t *testing.T) {
 			givenConfig:      hostConfig,
 			givenBidderInfos: map[string]config.BidderInfo{"bidder1": infoKeyAPopulated},
 			expectedIFramesURLs: map[string]string{
-				"bidder1": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhost.com%2Fa%2Fhost",
+				"bidder1": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhost.com%2Fbidder1%2Fhost",
 			},
 		},
 		{
@@ -64,7 +64,7 @@ func TestBuildSyncers(t *testing.T) {
 			givenConfig:      hostConfig,
 			givenBidderInfos: map[string]config.BidderInfo{"bidder1": infoKeyAError},
 			expectedErrors: []string{
-				"cannot create syncer for bidder bidder1 with key a: iframe template: a_usersync_url:1: function \"xRedirectURL\" not defined",
+				"cannot create syncer for bidder bidder1 with key a: iframe template: bidder1_usersync_url:1: function \"xRedirectURL\" not defined",
 			},
 		},
 		{
@@ -72,8 +72,8 @@ func TestBuildSyncers(t *testing.T) {
 			givenConfig:      hostConfig,
 			givenBidderInfos: map[string]config.BidderInfo{"bidder1": infoKeyAPopulated, "bidder2": infoKeyBPopulated},
 			expectedIFramesURLs: map[string]string{
-				"bidder1": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhost.com%2Fa%2Fhost",
-				"bidder2": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhost.com%2Fb%2Fhost",
+				"bidder1": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhost.com%2Fbidder1%2Fhost",
+				"bidder2": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhost.com%2Fbidder2%2Fhost",
 			},
 		},
 		{
@@ -81,8 +81,8 @@ func TestBuildSyncers(t *testing.T) {
 			givenConfig:      hostConfig,
 			givenBidderInfos: map[string]config.BidderInfo{"bidder1": infoKeyAPopulated, "bidder2": infoKeyAEmpty},
 			expectedIFramesURLs: map[string]string{
-				"bidder1": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhost.com%2Fa%2Fhost",
-				"bidder2": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhost.com%2Fa%2Fhost",
+				"bidder1": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhost.com%2Fbidder1%2Fhost",
+				"bidder2": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhost.com%2Fbidder2%2Fhost",
 			},
 		},
 		{
@@ -106,7 +106,8 @@ func TestBuildSyncers(t *testing.T) {
 			givenConfig:      hostConfig,
 			givenBidderInfos: map[string]config.BidderInfo{"bidder1": infoKeyAEmpty, "bidder2": infoKeyAError},
 			expectedErrors: []string{
-				"cannot create syncer for bidder bidder2 with key a: iframe template: a_usersync_url:1: function \"xRedirectURL\" not defined",
+				"cannot create syncer for bidder bidder2 with key a: iframe template: bidder1_usersync_url:1: function \"xRedirectURL\" not defined",
+				"cannot create syncer for bidder bidder2 with key a: iframe template: bidder2_usersync_url:1: function \"xRedirectURL\" not defined",
 			},
 		},
 		{
@@ -114,7 +115,7 @@ func TestBuildSyncers(t *testing.T) {
 			givenConfig:      hostConfig,
 			givenBidderInfos: map[string]config.BidderInfo{"bidder1": {}, "bidder2": infoKeyBPopulated},
 			expectedIFramesURLs: map[string]string{
-				"bidder2": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhost.com%2Fb%2Fhost",
+				"bidder2": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhost.com%2Fbidder2%2Fhost",
 			},
 		},
 		{
@@ -122,7 +123,7 @@ func TestBuildSyncers(t *testing.T) {
 			givenConfig:      hostConfig,
 			givenBidderInfos: map[string]config.BidderInfo{"bidder1": infoKeyADisabled, "bidder2": infoKeyBPopulated},
 			expectedIFramesURLs: map[string]string{
-				"bidder2": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhost.com%2Fb%2Fhost",
+				"bidder2": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhost.com%2Fbidder2%2Fhost",
 			},
 		},
 		{
@@ -130,7 +131,7 @@ func TestBuildSyncers(t *testing.T) {
 			givenConfig:      hostConfig,
 			givenBidderInfos: map[string]config.BidderInfo{"bidder1": infoKeyASupportsOnly, "bidder2": infoKeyBPopulated},
 			expectedIFramesURLs: map[string]string{
-				"bidder2": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhost.com%2Fb%2Fhost",
+				"bidder2": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhost.com%2Fbidder2%2Fhost",
 			},
 		},
 		{
@@ -138,7 +139,7 @@ func TestBuildSyncers(t *testing.T) {
 			givenConfig:      hostConfig,
 			givenBidderInfos: map[string]config.BidderInfo{"bidder1": infoKeyAError, "bidder2": infoKeyBEmpty},
 			expectedErrors: []string{
-				"cannot create syncer for bidder bidder1 with key a: iframe template: a_usersync_url:1: function \"xRedirectURL\" not defined",
+				"cannot create syncer for bidder bidder1 with key a: iframe template: bidder1_usersync_url:1: function \"xRedirectURL\" not defined",
 				"cannot create syncer for bidder bidder2 with key b: at least one endpoint (iframe and/or redirect) is required",
 			},
 		},
@@ -147,7 +148,7 @@ func TestBuildSyncers(t *testing.T) {
 			givenConfig:      config.Configuration{ExternalURL: "http://host.com", UserSync: config.UserSync{ExternalURL: "http://hostoverride.com", RedirectURL: "{{.ExternalURL}}/{{.SyncerKey}}/host"}},
 			givenBidderInfos: map[string]config.BidderInfo{"bidder1": infoKeyAPopulated},
 			expectedIFramesURLs: map[string]string{
-				"bidder1": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhostoverride.com%2Fa%2Fhost",
+				"bidder1": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhostoverride.com%2Fbidder1%2Fhost",
 			},
 		},
 	}
