@@ -17,13 +17,34 @@ func TestPriorityEjector(t *testing.T) {
 		expectedError error
 	}{
 		{
-			name: "priority-ejector",
+			name: "one-lowest-priority-element",
 			givenUids: map[string]UIDEntry{
-				"newestLowestPriorityElement": {
+				"higherPriority": {
 					UID:     "123",
 					Expires: time.Now().Add((90 * 24 * time.Hour)),
 				},
-				"oldestLowestPriorityElement": {
+				"lowestPriority": {
+					UID:     "456",
+					Expires: time.Now(),
+				},
+			},
+			givenEjector: &PriorityBidderEjector{
+				PriorityGroups: [][]string{
+					{"adnxs", "higherPriority"},
+					{"lowestPriority"},
+				},
+				SyncerKey: "adnxs",
+			},
+			expected: "lowestPriority",
+		},
+		{
+			name: "multiple-uids-same-priority",
+			givenUids: map[string]UIDEntry{
+				"newerButSamePriority": {
+					UID:     "123",
+					Expires: time.Now().Add((90 * 24 * time.Hour)),
+				},
+				"olderButSamePriority": {
 					UID:     "456",
 					Expires: time.Now(),
 				},
@@ -31,11 +52,41 @@ func TestPriorityEjector(t *testing.T) {
 			givenEjector: &PriorityBidderEjector{
 				PriorityGroups: [][]string{
 					{"adnxs"},
-					{"oldestLowestPriorityElement", "newestLowestPriorityElement"},
+					{"newerButSamePriority", "olderButSamePriority"},
+				},
+				SyncerKey:     "adnxs",
+				OldestEjector: OldestEjector{},
+			},
+			expected: "olderButSamePriority",
+		},
+		{
+			name: "non-priority-uids-present",
+			givenUids: map[string]UIDEntry{
+				"higherPriority": {
+					UID:     "123",
+					Expires: time.Now().Add((90 * 24 * time.Hour)),
+				},
+				"lowestPriority": {
+					UID:     "456",
+					Expires: time.Now(),
+				},
+				"oldestNonPriority": {
+					UID:     "456",
+					Expires: time.Now(),
+				},
+				"newestNonPriority": {
+					UID:     "123",
+					Expires: time.Now().Add((90 * 24 * time.Hour)),
+				},
+			},
+			givenEjector: &PriorityBidderEjector{
+				PriorityGroups: [][]string{
+					{"adnxs", "higherPriority"},
+					{"lowestPriority"},
 				},
 				SyncerKey: "adnxs",
 			},
-			expected: "oldestLowestPriorityElement",
+			expected: "oldestNonPriority",
 		},
 		{
 			name:      "priority-ejector-syncer-not-priority",
@@ -47,26 +98,6 @@ func TestPriorityEjector(t *testing.T) {
 				SyncerKey: "adnxs",
 			},
 			expectedError: errors.New("syncer key adnxs is not in priority groups"),
-		},
-		{
-			name: "priority-calls-oldest-ejector",
-			givenUids: map[string]UIDEntry{
-				"nonPriorityElement": {
-					UID:     "123",
-					Expires: time.Now().Add((90 * 24 * time.Hour)),
-				},
-				"priorityElement": {
-					UID:     "456",
-					Expires: time.Now(),
-				},
-			},
-			givenEjector: &PriorityBidderEjector{
-				PriorityGroups: [][]string{
-					{"priorityElement"},
-				},
-				OldestEjector: OldestEjector{},
-			},
-			expected: "nonPriorityElement",
 		},
 	}
 
@@ -92,7 +123,7 @@ func TestOldestEjector(t *testing.T) {
 		expectedError error
 	}{
 		{
-			name: "oldest-ejector",
+			name: "non-priority-keys-present",
 			givenUids: map[string]UIDEntry{
 				"newestElement": {
 					UID:     "123",
@@ -106,12 +137,12 @@ func TestOldestEjector(t *testing.T) {
 			givenEjector: &OldestEjector{
 				[]string{"newestElement", "oldestElement"},
 				[][]string{},
-				FallbackEjector{},
+				false,
 			},
 			expected: "oldestElement",
 		},
 		{
-			name: "non-priority-keys-empty",
+			name: "eject-priority-true",
 			givenUids: map[string]UIDEntry{
 				"newestElement": {
 					UID:     "123",
@@ -124,10 +155,33 @@ func TestOldestEjector(t *testing.T) {
 			},
 			givenEjector: &OldestEjector{
 				[]string{},
-				[][]string{},
-				FallbackEjector{},
+				[][]string{{"newestElement", "oldestElement"}},
+				true,
 			},
 			expected: "oldestElement",
+		},
+		{
+			name: "non-priority-keys-initially-empty",
+			givenUids: map[string]UIDEntry{
+				"priorityElement": {
+					UID:     "123",
+					Expires: time.Now().Add((90 * 24 * time.Hour)),
+				},
+				"newestNonPriority": {
+					UID:     "123",
+					Expires: time.Now().Add((90 * 24 * time.Hour)),
+				},
+				"oldestNonPriority": {
+					UID:     "456",
+					Expires: time.Now(),
+				},
+			},
+			givenEjector: &OldestEjector{
+				[]string{},
+				[][]string{{"newestElement"}},
+				false,
+			},
+			expected: "oldestNonPriority",
 		},
 	}
 
@@ -141,23 +195,6 @@ func TestOldestEjector(t *testing.T) {
 				assert.Equal(t, test.expected, uidToDelete)
 			}
 		})
-	}
-}
-
-func TestFallbackEjector(t *testing.T) {
-	fallbackEjector := FallbackEjector{}
-
-	uids := map[string]UIDEntry{
-		"element1": {},
-		"element2": {},
-		"element3": {},
-	}
-
-	randomUIDChosen, err := fallbackEjector.Choose(uids)
-	assert.NoError(t, err)
-
-	if _, ok := uids[randomUIDChosen]; !ok {
-		t.Errorf("Returned element not in original list")
 	}
 }
 
