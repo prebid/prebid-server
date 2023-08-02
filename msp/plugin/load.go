@@ -40,3 +40,24 @@ func LoadBuilder[T any](name string, cfgData interface{}) (T, json.RawMessage, b
 
 	return builder, cfgJson, false, nil
 }
+
+func LoadBuilderFromPath[T any](name string, soPath string) (T, error) {
+	var builder T
+
+	p, err := plugin.Open(soPath)
+	if err != nil {
+		return builder, errors.New(fmt.Sprintf("Failed to open shared object of plugin %s, err: %+v.\n", name, err))
+	}
+
+	s, err := p.Lookup("Builder")
+	if err != nil {
+		return builder, errors.New(fmt.Sprintf("Failed to find Builder from plugin %s, err: %+v.\n", name, err))
+	}
+
+	builder, ok := s.(T)
+	if !ok {
+		return builder, errors.New(fmt.Sprintf("Failed to convert Builder from plugin %s, err: %+v.\n", name, err))
+	}
+
+	return builder, nil
+}

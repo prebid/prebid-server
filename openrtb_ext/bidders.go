@@ -279,6 +279,9 @@ const (
 	BidderYieldone          BidderName = "yieldone"
 	BidderZeroClickFraud    BidderName = "zeroclickfraud"
 	BidderZetaGlobalSsp     BidderName = "zeta_global_ssp"
+
+	// For MSP extension only
+	BidderMspGoogle BidderName = "msp_google"
 )
 
 // CoreBidderNames returns a slice of all core bidders.
@@ -487,6 +490,11 @@ func BuildBidderMap() map[string]BidderName {
 	for _, name := range CoreBidderNames() {
 		lookup[string(name)] = name
 	}
+
+	// Add MSP Bidders
+	for _, name := range mspBidderNames() {
+		lookup[string(name)] = name
+	}
 	return lookup
 }
 
@@ -497,12 +505,22 @@ func BuildBidderStringSlice() []string {
 	for i, name := range CoreBidderNames() {
 		slice[i] = string(name)
 	}
+
+	// Add MSP Bidders
+	for i, name := range mspBidderNames() {
+		slice[i] = string(name)
+	}
 	return slice
 }
 
 func BuildBidderNameHashSet() map[string]struct{} {
 	hashSet := make(map[string]struct{})
 	for _, name := range CoreBidderNames() {
+		hashSet[string(name)] = struct{}{}
+	}
+
+	// Add MSP Bidders
+	for _, name := range mspBidderNames() {
 		hashSet[string(name)] = struct{}{}
 	}
 	return hashSet
@@ -512,6 +530,12 @@ func BuildBidderNameHashSet() map[string]struct{} {
 var bidderNameLookup = func() map[string]BidderName {
 	lookup := make(map[string]BidderName)
 	for _, name := range CoreBidderNames() {
+		bidderNameLower := strings.ToLower(string(name))
+		lookup[bidderNameLower] = name
+	}
+
+	// Add MSP Bidders
+	for _, name := range mspBidderNames() {
 		bidderNameLower := strings.ToLower(string(name))
 		lookup[bidderNameLower] = name
 	}

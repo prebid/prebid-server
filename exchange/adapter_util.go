@@ -12,7 +12,8 @@ import (
 
 func BuildAdapters(client *http.Client, cfg *config.Configuration, infos config.BidderInfos, me metrics.MetricsEngine) (map[openrtb_ext.BidderName]AdaptedBidder, []error) {
 	server := config.Server{ExternalUrl: cfg.ExternalURL, GvlID: cfg.GDPR.HostVendorID, DataCenter: cfg.DataCenter}
-	bidders, errs := buildBidders(infos, newAdapterBuilders(), server)
+	adapterBuilders := mspAddAdaptersFromPlugins(newAdapterBuilders(), infos)
+	bidders, errs := buildBidders(infos, adapterBuilders, server)
 
 	if len(errs) > 0 {
 		return nil, errs
