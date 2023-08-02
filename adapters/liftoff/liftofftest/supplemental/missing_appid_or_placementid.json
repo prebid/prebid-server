@@ -36,12 +36,65 @@
       }
     ]
   },
-  "httpCalls": [],
-  "expectedBidResponses": [],
-  "expectedMakeRequestsErrors": [
+  "httpCalls": [
     {
-      "value": "app_store_id and placement_reference_ID and bid token should all be provided",
-      "comparison": "literal"
+      "expectedRequest": {
+        "uri": "https://liftoff.io/bit/t",
+        "headers": {
+          "Content-Type": ["application/json"],
+          "Accept": ["application/json"],
+          "X-OpenRTB-Version": ["2.5"]
+        },
+        "body": {
+          "id": "test-request-id",
+          "app": {
+            "bundle": "com.prebid"
+          },
+          "device": {
+            "ifa": "87857b31-8942-4646-ae80-ab9c95bf3fab"
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "tagid": "78910",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "protocols": [
+                  2,
+                  5
+                ],
+                "w": 1024,
+                "h": 576,
+                "ext": {
+                  "foo": "bar"
+                }
+              },
+              "ext": {
+                "prebid": {
+                  "is_rewarded_inventory": 1
+                },
+                "bidder": {
+                  "bid_token": "123",
+                  "placement_reference_id": "78910"
+                },
+                "vungle": {
+                  "bid_token": "123",
+                  "placement_reference_id": "78910"
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 0*",
+      "comparison": "regex"
     }
   ]
 }

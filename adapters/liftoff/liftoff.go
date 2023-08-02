@@ -2,6 +2,7 @@ package liftoff
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -33,25 +34,17 @@ type liftoffImpressionExt struct {
 	Ext openrtb_ext.ImpExtLiftoff `json:"vungle"`
 }
 
-/* Builder */
-
+// Builder builds a new instance of the Liftoff adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	return &adapter{Endpoint: config.Endpoint}, nil
 }
 
-/* MakeRequests */
-
+// MakeRequests split impressions into bid requests and change them into the form that liftoff can handle.
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var requests []*adapters.RequestData
 	var errs []error
 	requestCopy := *request
 	for _, imp := range request.Imp {
-		// check if video ad
-		if imp.Video == nil {
-			errs = append(errs, fmt.Errorf("liftoff adapter handles video ads only"))
-			continue
-		}
-
 		// Check if imp comes with bid floor amount defined in a foreign currency
 		if imp.BidFloor > 0 && imp.BidFloorCur != "" && strings.ToUpper(imp.BidFloorCur) != SupportedCurrency {
 			// Convert to US dollars
@@ -80,25 +73,20 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			continue
 		}
 
-		if bidderImpExt.PubAppStoreID != "" && bidderImpExt.PlacementRefID != "" && bidderImpExt.BidToken != "" {
-			impExt.Ext = bidderImpExt
-			if newImpExt, err := json.Marshal(impExt); err == nil {
-				imp.Ext = newImpExt
-			} else {
-				errs = append(errs, fmt.Errorf("failed re-marshalling imp ext"))
-				continue
-			}
-
-			imp.TagID = bidderImpExt.PlacementRefID
-			requestCopy.Imp = []openrtb2.Imp{imp}
-			// must make a shallow copy for pointers.
-			requestAppCopy := *request.App
-			requestAppCopy.ID = bidderImpExt.PubAppStoreID
-			requestCopy.App = &requestAppCopy
+		impExt.Ext = bidderImpExt
+		if newImpExt, err := json.Marshal(impExt); err == nil {
+			imp.Ext = newImpExt
 		} else {
-			errs = append(errs, &errortypes.BadInput{Message: "app_store_id and placement_reference_ID and bid token should all be provided"})
+			errs = append(errs, errors.New("failed re-marshalling imp ext"))
 			continue
 		}
+
+		imp.TagID = bidderImpExt.PlacementRefID
+		requestCopy.Imp = []openrtb2.Imp{imp}
+		// must make a shallow copy for pointers.
+		requestAppCopy := *request.App
+		requestAppCopy.ID = bidderImpExt.PubAppStoreID
+		requestCopy.App = &requestAppCopy
 
 		requestJSON, err := json.Marshal(requestCopy)
 		if err != nil {
@@ -135,8 +123,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	return requests, errs
 }
 
-/* MakeBids */
-
+// MakeBids collect bid response from liftoff and change them into the form that Prebid Server can handle.
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if responseData.StatusCode == http.StatusNoContent {
 		return nil, nil

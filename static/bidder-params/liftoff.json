@@ -6,14 +6,17 @@
   "properties": {
     "bid_token": {
       "type": "string",
+      "minLength": 1,
       "description": "Super Token"
     },
     "app_store_id": {
       "type": "string",
+      "minLength": 1,
       "description": "Pub App Store ID"
     },
     "placement_reference_id": {
       "type": "string",
+      "minLength": 1,
       "description": "Placement ID"
     }
   },
