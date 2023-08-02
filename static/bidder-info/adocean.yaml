@@ -1,4 +1,4 @@
-endpoint: "https://{{.Host}}"
+endpoint: "https://{{.Host}}.adocean.pl"
 maintainer:
   email: "aoteam@gemius.com"
 gvlVendorID: 328
