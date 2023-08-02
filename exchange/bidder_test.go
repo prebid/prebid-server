@@ -3289,13 +3289,13 @@ func TestDoRequestImplWithTmaxTimeout(t *testing.T) {
 	tests := []struct {
 		ctxDeadline     time.Time
 		description     string
-		tmaxAdjustments *config.TmaxAdjustments
+		tmaxAdjustments *TmaxAdjustmentsPreprocessed
 		assertFn        func(err error)
 	}{
 		{
 			ctxDeadline:     time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
 			description:     "returns-tmax-timeout-error",
-			tmaxAdjustments: &config.TmaxAdjustments{Enabled: true, PBSResponsePreparationDuration: 100, BidderNetworkLatencyBuffer: 10, BidderResponseDurationMin: 5000},
+			tmaxAdjustments: &TmaxAdjustmentsPreprocessed{IsEnforced: true, PBSResponsePreparationDuration: 100, BidderNetworkLatencyBuffer: 10, BidderResponseDurationMin: 5000},
 			assertFn:        func(err error) { assert.Equal(t, errTmaxTimeout, err) },
 		},
 	}
