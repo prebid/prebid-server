@@ -274,6 +274,7 @@ const (
 	BidderVox               BidderName = "vox"
 	BidderVrtcal            BidderName = "vrtcal"
 	BidderXeworks           BidderName = "xeworks"
+	BidderXtrmqb            BidderName = "xtrmqb"
 	BidderYahooAds          BidderName = "yahooAds"
 	BidderYahooAdvertising  BidderName = "yahooAdvertising"
 	BidderYahooSSP          BidderName = "yahoossp"
@@ -476,6 +477,7 @@ func CoreBidderNames() []BidderName {
 		BidderVox,
 		BidderVrtcal,
 		BidderXeworks,
+		BidderXtrmqb,
 		BidderYahooAds,
 		BidderYahooAdvertising,
 		BidderYahooSSP,
