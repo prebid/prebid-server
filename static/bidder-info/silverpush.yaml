@@ -1,7 +1,6 @@
 endpoint: "https://prebid.chocolateplatform.co/bidder/?identifier=prebidchoc" 
 maintainer:
   email: "prebid@silverpush.co"
-gvlVendorID: 42
 capabilities:
   app:
     mediaTypes:

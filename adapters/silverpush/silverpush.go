@@ -31,18 +31,9 @@ type SilverPushReqExt struct {
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
-	if len(request.Imp) == 0 {
-		return nil, []error{&errortypes.BadInput{Message: "No impressions in bid request."}}
-	}
-
-	return a.ValidateAndProcessRequest(request)
-}
-
-// Validate and Process the request return []*adapters.RequestData and []error
-func (a *adapter) ValidateAndProcessRequest(request *openrtb2.BidRequest) ([]*adapters.RequestData, []error) {
 	imps := request.Imp
+	var errors []error
 	requests := make([]*adapters.RequestData, 0, len(imps))
-	errors := make([]error, 0, len(imps))
 
 	for _, imp := range imps {
 		impsByMediaType, err := impressionByMediaType(&imp)
@@ -64,13 +55,9 @@ func (a *adapter) ValidateAndProcessRequest(request *openrtb2.BidRequest) ([]*ad
 			}
 
 			requests = append(requests, requestData)
-
 		}
-
 	}
-
 	return requests, errors
-
 }
 
 func (a *adapter) makeRequest(req *openrtb2.BidRequest) (*adapters.RequestData, error) {
@@ -78,7 +65,6 @@ func (a *adapter) makeRequest(req *openrtb2.BidRequest) (*adapters.RequestData, 
 	if err != nil {
 		return nil, err
 	}
-
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
@@ -102,7 +88,11 @@ func validateRequest(req *openrtb2.BidRequest) error {
 		return err
 	}
 	setDevice(req)
-	setExtToRequest(req, silverPushExt.PublisherId)
+
+	err = setExtToRequest(req, silverPushExt.PublisherId)
+	if err != nil {
+		return err
+	}
 	return setImpForAdExchange(imp, &silverPushExt)
 }
 
@@ -136,11 +126,15 @@ func setUser(req *openrtb2.BidRequest) error {
 				return &errortypes.BadInput{Message: "Invalid user.ext.data."}
 			}
 			var userCopy = *req.User
-			if IsValidEids(extUser.Eids) {
-				userExt, _ := json.Marshal(
+			if isValidEids(extUser.Eids) {
+				userExt, err := json.Marshal(
 					&openrtb2.User{
 						EIDs: extUser.Eids,
 					})
+				if err != nil {
+					return &errortypes.BadInput{Message: "Error in marshaling user.eids."}
+				}
+
 				userCopy.Ext = userExt
 				req.User = &userCopy
 			}
@@ -149,14 +143,18 @@ func setUser(req *openrtb2.BidRequest) error {
 	return nil
 }
 
-func setExtToRequest(req *openrtb2.BidRequest, publisherID string) {
+func setExtToRequest(req *openrtb2.BidRequest, publisherID string) error {
 
 	record := map[string]string{
 		"bc":          bidderConfig + "_" + bidderVersion,
 		"publisherId": publisherID,
 	}
-	reqExt, _ := json.Marshal(record)
+	reqExt, err := json.Marshal(record)
+	if err != nil {
+		return err
+	}
 	req.Ext = reqExt
+	return nil
 }
 
 func setImpForAdExchange(imp *openrtb2.Imp, impExt *openrtb_ext.ImpExtSilverpush) error {
