@@ -691,7 +691,7 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 			},
 		},
 		{
-			"Invalid alias MediaTypes",
+			"Invalid alias MediaTypes for site",
 			BidderInfos{
 				"bidderA": BidderInfo{
 					Endpoint: "http://bidderA.com/openrtb2",
@@ -713,6 +713,42 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 					},
 					Capabilities: &CapabilitiesInfo{
 						Site: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeBanner,
+								openrtb_ext.BidTypeNative,
+							},
+						},
+					},
+					AliasOf: "bidderA",
+				},
+			},
+			[]error{
+				errors.New("mediaTypes for alias: bidderB should be a subset of MediaTypes for parent bidder: bidderA"),
+			},
+		},
+		{
+			"Invalid alias MediaTypes for app",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+				},
+				"bidderB": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
 							MediaTypes: []openrtb_ext.BidType{
 								openrtb_ext.BidTypeBanner,
 								openrtb_ext.BidTypeNative,
