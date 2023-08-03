@@ -274,23 +274,19 @@ func (infos BidderInfos) validate(errs []error) []error {
 			if err := validateSyncer(bidder); err != nil {
 				errs = append(errs, err)
 			}
-
-			if err := validateAliases(bidder, infos, bidderName); err != nil {
-				errs = append(errs, err)
-			}
 		}
 	}
 	return errs
 }
 
-func validateAliases(bidder BidderInfo, infos BidderInfos, bidderName string) error {
-	if len(bidder.AliasOf) > 0 {
-		if parentBidder, ok := infos[bidder.AliasOf]; ok {
+func validateAliases(aliasBidderInfo BidderInfo, infos BidderInfos, bidderName string) error {
+	if len(aliasBidderInfo.AliasOf) > 0 {
+		if parentBidder, ok := infos[aliasBidderInfo.AliasOf]; ok {
 			if len(parentBidder.AliasOf) > 0 {
-				return fmt.Errorf("bidder: %s cannot be an alias of an alias: %s", bidder.AliasOf, bidderName)
+				return fmt.Errorf("bidder: %s cannot be an alias of an alias: %s", aliasBidderInfo.AliasOf, bidderName)
 			}
 		} else {
-			return fmt.Errorf("bidder: %s not found for an alias: %s", bidder.AliasOf, bidderName)
+			return fmt.Errorf("bidder: %s not found for an alias: %s", aliasBidderInfo.AliasOf, bidderName)
 		}
 	}
 	return nil
