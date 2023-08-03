@@ -71,7 +71,7 @@ func (a *VrtcalAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 	var errs []error
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
-			bidType, err := getReturnTypeForImp(sb.Bid[i].MType, sb.Bid[i].ImpID, internalRequest.Imp)
+			bidType, err := getReturnTypeForImp(sb.Bid[i].MType)
 			if err == nil {
 				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 					Bid:     &sb.Bid[i],
@@ -94,37 +94,15 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	return bidder, nil
 }
 
-func getReturnTypeForImp(mType openrtb2.MarkupType, impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
-	for _, imp := range imps {
-		if imp.ID == impID {
-			if mType != 0 {
-				if mType == openrtb2.MarkupBanner {
-					return openrtb_ext.BidTypeBanner, nil
-				} else if mType == openrtb2.MarkupVideo {
-					return openrtb_ext.BidTypeVideo, nil
-				} else if mType == openrtb2.MarkupNative {
-					return openrtb_ext.BidTypeNative, nil
-				} else {
-					return "", &errortypes.BadServerResponse{
-						Message: fmt.Sprintf("Unsupported return type for ID (mtype present): \"%s\"", impID)}
-				}
-			} else { //Pre-2.6 support when mtype is not passed
-				if imp.Banner != nil {
-					return openrtb_ext.BidTypeBanner, nil
-				}
-				if imp.Video != nil {
-					return openrtb_ext.BidTypeVideo, nil
-				}
-				if imp.Native != nil {
-					return openrtb_ext.BidTypeNative, nil
-				} else {
-					return "", &errortypes.BadServerResponse{
-						Message: fmt.Sprintf("Unsupported return type for ID: (mtype not present)\"%s\"", impID)}
-				}
-			}
-		}
+func getReturnTypeForImp(mType openrtb2.MarkupType) (openrtb_ext.BidType, error) {
+	if mType == openrtb2.MarkupBanner {
+		return openrtb_ext.BidTypeBanner, nil
+	} else if mType == openrtb2.MarkupVideo {
+		return openrtb_ext.BidTypeVideo, nil
+	} else if mType == openrtb2.MarkupNative {
+		return openrtb_ext.BidTypeNative, nil
+	} else {
+		return "", &errortypes.BadServerResponse{
+			Message: "Unsupported return type"}
 	}
-
-	return "", &errortypes.BadServerResponse{
-		Message: fmt.Sprintf("Failed to find impression for ID: \"%s\"", impID)}
 }
