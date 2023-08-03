@@ -236,6 +236,7 @@ const (
 	BidderRubicon           BidderName = "rubicon"
 	BidderSeedingAlliance   BidderName = "seedingAlliance"
 	BidderSaLunaMedia       BidderName = "sa_lunamedia"
+	BidderScreencore        BidderName = "screencore"
 	BidderSharethrough      BidderName = "sharethrough"
 	BidderSilverMob         BidderName = "silvermob"
 	BidderSmaato            BidderName = "smaato"
@@ -273,6 +274,7 @@ const (
 	BidderVox               BidderName = "vox"
 	BidderVrtcal            BidderName = "vrtcal"
 	BidderXeworks           BidderName = "xeworks"
+	BidderXtrmqb            BidderName = "xtrmqb"
 	BidderYahooAds          BidderName = "yahooAds"
 	BidderYahooAdvertising  BidderName = "yahooAdvertising"
 	BidderYahooSSP          BidderName = "yahoossp"
@@ -437,6 +439,7 @@ func CoreBidderNames() []BidderName {
 		BidderRubicon,
 		BidderSeedingAlliance,
 		BidderSaLunaMedia,
+		BidderScreencore,
 		BidderSharethrough,
 		BidderSilverMob,
 		BidderSmaato,
@@ -474,6 +477,7 @@ func CoreBidderNames() []BidderName {
 		BidderVox,
 		BidderVrtcal,
 		BidderXeworks,
+		BidderXtrmqb,
 		BidderYahooAds,
 		BidderYahooAdvertising,
 		BidderYahooSSP,

@@ -555,11 +555,11 @@ func TestBidderTimeout(t *testing.T) {
 		Client:     server.Client(),
 		me:         &metricsConfig.NilMetricsEngine{},
 	}
-
+	tmaxAdjustments := &TmaxAdjustmentsPreprocessed{}
 	callInfo := bidder.doRequest(ctx, &adapters.RequestData{
 		Method: "POST",
 		Uri:    server.URL,
-	}, time.Now())
+	}, time.Now(), tmaxAdjustments)
 	if callInfo.err == nil {
 		t.Errorf("The bidder should report an error if the context has expired already.")
 	}
@@ -575,10 +575,10 @@ func TestInvalidRequest(t *testing.T) {
 		Bidder: &mixedMultiBidder{},
 		Client: server.Client(),
 	}
-
+	tmaxAdjustments := &TmaxAdjustmentsPreprocessed{}
 	callInfo := bidder.doRequest(context.Background(), &adapters.RequestData{
 		Method: "\"", // force http.NewRequest() to fail
-	}, time.Now())
+	}, time.Now(), tmaxAdjustments)
 	if callInfo.err == nil {
 		t.Errorf("bidderAdapter.doRequest should return an error if the request data is malformed.")
 	}
@@ -598,11 +598,11 @@ func TestConnectionClose(t *testing.T) {
 		BidderName: openrtb_ext.BidderAppnexus,
 		me:         &metricsConfig.NilMetricsEngine{},
 	}
-
+	tmaxAdjustments := &TmaxAdjustmentsPreprocessed{}
 	callInfo := bidder.doRequest(context.Background(), &adapters.RequestData{
 		Method: "POST",
 		Uri:    server.URL,
-	}, time.Now())
+	}, time.Now(), tmaxAdjustments)
 	if callInfo.err == nil {
 		t.Errorf("bidderAdapter.doRequest should return an error if the connection closes unexpectedly.")
 	}
@@ -2107,9 +2107,10 @@ func TestCallRecordDNSTime(t *testing.T) {
 		Client: &http.Client{Transport: DNSDoneTripper{}},
 		me:     metricsMock,
 	}
+	tmaxAdjustments := &TmaxAdjustmentsPreprocessed{}
 
 	// Run test
-	bidder.doRequest(context.Background(), &adapters.RequestData{Method: "POST", Uri: "http://www.example.com/"}, time.Now())
+	bidder.doRequest(context.Background(), &adapters.RequestData{Method: "POST", Uri: "http://www.example.com/"}, time.Now(), tmaxAdjustments)
 
 	// Tried one or another, none seem to work without panicking
 	metricsMock.AssertExpectations(t)
@@ -2130,9 +2131,10 @@ func TestCallRecordTLSHandshakeTime(t *testing.T) {
 		Client: &http.Client{Transport: TLSHandshakeTripper{}},
 		me:     metricsMock,
 	}
+	tmaxAdjustments := &TmaxAdjustmentsPreprocessed{}
 
 	// Run test
-	bidder.doRequest(context.Background(), &adapters.RequestData{Method: "POST", Uri: "http://www.example.com/"}, time.Now())
+	bidder.doRequest(context.Background(), &adapters.RequestData{Method: "POST", Uri: "http://www.example.com/"}, time.Now(), tmaxAdjustments)
 
 	// Tried one or another, none seem to work without panicking
 	metricsMock.AssertExpectations(t)
@@ -2219,8 +2221,8 @@ func TestTimeoutNotificationOn(t *testing.T) {
 	logger := func(msg string, args ...interface{}) {
 		loggerBuffer.WriteString(fmt.Sprintf(fmt.Sprintln(msg), args...))
 	}
-
-	bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, time.Now())
+	tmaxAdjustments := &TmaxAdjustmentsPreprocessed{}
+	bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, time.Now(), tmaxAdjustments)
 
 	// Wait a little longer than the 205ms mock server sleep.
 	time.Sleep(210 * time.Millisecond)
@@ -3065,8 +3067,8 @@ func TestGetBidType(t *testing.T) {
 }
 
 type mockBidderTmaxCtx struct {
-	startTime, deadline time.Time
-	ok                  bool
+	startTime, deadline, now time.Time
+	ok                       bool
 }
 
 func (m *mockBidderTmaxCtx) Deadline() (deadline time.Time, _ bool) {
@@ -3074,6 +3076,10 @@ func (m *mockBidderTmaxCtx) Deadline() (deadline time.Time, _ bool) {
 }
 func (m *mockBidderTmaxCtx) RemainingDurationMS(deadline time.Time) int64 {
 	return deadline.Sub(m.startTime).Milliseconds()
+}
+
+func (m *mockBidderTmaxCtx) Until(t time.Time) time.Duration {
+	return t.Sub(m.now)
 }
 
 func TestUpdateBidderTmax(t *testing.T) {
@@ -3129,13 +3135,184 @@ func TestUpdateBidderTmax(t *testing.T) {
 				bidResponse: &adapters.BidderResponse{},
 			}
 
-			ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(50*time.Millisecond))
+			now := time.Now()
+			ctx, cancel := context.WithDeadline(context.Background(), now.Add(500*time.Millisecond))
 			defer cancel()
-			bidReqOptions := bidRequestOptions{tmaxAdjustments: test.tmaxAdjustments}
+			bidReqOptions := bidRequestOptions{bidderRequestStartTime: now, tmaxAdjustments: test.tmaxAdjustments}
 			bidder := AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{Allow: false}, "")
 			_, _, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), extraInfo, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
 			assert.Empty(t, errs)
 			assert.True(t, test.assertFn(bidderImpl.bidRequest.TMax))
 		})
+	}
+}
+
+func TestHasShorterDurationThanTmax(t *testing.T) {
+	var requestTmaxMS int64 = 700
+	requestTmaxNS := requestTmaxMS * int64(time.Millisecond)
+	startTime := time.Date(2023, 5, 30, 1, 0, 0, 0, time.UTC)
+	now := time.Date(2023, 5, 30, 1, 0, 0, int(200*time.Millisecond), time.UTC)
+	deadline := time.Date(2023, 5, 30, 1, 0, 0, int(requestTmaxNS), time.UTC)
+	ctx := &mockBidderTmaxCtx{startTime: startTime, deadline: deadline, now: now, ok: true}
+
+	tests := []struct {
+		description     string
+		ctx             bidderTmaxContext
+		requestTmax     int64
+		tmaxAdjustments TmaxAdjustmentsPreprocessed
+		expected        bool
+	}{
+		{
+			description:     "tmax-disabled",
+			ctx:             ctx,
+			requestTmax:     requestTmaxMS,
+			tmaxAdjustments: TmaxAdjustmentsPreprocessed{IsEnforced: false},
+			expected:        false,
+		},
+		{
+			description:     "remaing-duration-greater-than-bidder-response-min",
+			ctx:             ctx,
+			requestTmax:     requestTmaxMS,
+			tmaxAdjustments: TmaxAdjustmentsPreprocessed{IsEnforced: true, PBSResponsePreparationDuration: 50, BidderNetworkLatencyBuffer: 10, BidderResponseDurationMin: 40},
+			expected:        false,
+		},
+		{
+			description:     "remaing-duration-less-than-bidder-response-min",
+			ctx:             ctx,
+			requestTmax:     requestTmaxMS,
+			tmaxAdjustments: TmaxAdjustmentsPreprocessed{IsEnforced: true, PBSResponsePreparationDuration: 100, BidderNetworkLatencyBuffer: 10, BidderResponseDurationMin: 500},
+			expected:        true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			assert.Equal(t, test.expected, hasShorterDurationThanTmax(test.ctx, test.tmaxAdjustments))
+		})
+	}
+}
+
+func TestDoRequestImplWithTmax(t *testing.T) {
+	respStatus := 200
+	respBody := "{\"bid\":false}"
+	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
+	defer server.Close()
+	requestStartTime := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	bidRequest := adapters.RequestData{
+		Method: "POST",
+		Uri:    server.URL,
+		Body:   []byte(`{"id":"this-id","app":{"publisher":{"id":"pub-id"}}}`),
+	}
+
+	bidderAdapter := bidderAdapter{
+		me:     &metricsConfig.NilMetricsEngine{},
+		Client: server.Client(),
+	}
+	logger := func(msg string, args ...interface{}) {}
+
+	tests := []struct {
+		ctxDeadline     time.Time
+		description     string
+		tmaxAdjustments *TmaxAdjustmentsPreprocessed
+		assertFn        func(err error)
+	}{
+		{
+			ctxDeadline:     time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+			description:     "returns-tmax-timeout-error",
+			tmaxAdjustments: &TmaxAdjustmentsPreprocessed{IsEnforced: true, PBSResponsePreparationDuration: 100, BidderNetworkLatencyBuffer: 10, BidderResponseDurationMin: 5000},
+			assertFn:        func(err error) { assert.Equal(t, errTmaxTimeout, err) },
+		},
+		{
+			ctxDeadline:     time.Now().Add(5 * time.Second),
+			description:     "remaining-duration-greater-than-tmax-min",
+			tmaxAdjustments: &TmaxAdjustmentsPreprocessed{IsEnforced: true, PBSResponsePreparationDuration: 100, BidderNetworkLatencyBuffer: 10, BidderResponseDurationMin: 100},
+			assertFn:        func(err error) { assert.Nil(t, err) },
+		},
+		{
+			description:     "tmax-disabled",
+			tmaxAdjustments: &TmaxAdjustmentsPreprocessed{IsEnforced: false},
+			assertFn:        func(err error) { assert.Nil(t, err) },
+		},
+		{
+			description:     "tmax-BidderResponseDurationMin-not-set",
+			tmaxAdjustments: &TmaxAdjustmentsPreprocessed{IsEnforced: true, BidderResponseDurationMin: 0},
+			assertFn:        func(err error) { assert.Nil(t, err) },
+		},
+		{
+			description:     "tmax-is-nil",
+			tmaxAdjustments: nil,
+			assertFn:        func(err error) { assert.Nil(t, err) },
+		},
+	}
+	for _, test := range tests {
+		var (
+			ctx      context.Context
+			cancelFn context.CancelFunc
+		)
+
+		if test.ctxDeadline.IsZero() {
+			ctx = context.Background()
+		} else {
+			ctx, cancelFn = context.WithDeadline(context.Background(), test.ctxDeadline)
+			defer cancelFn()
+		}
+
+		httpCallInfo := bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, requestStartTime, test.tmaxAdjustments)
+		test.assertFn(httpCallInfo.err)
+	}
+}
+
+func TestDoRequestImplWithTmaxTimeout(t *testing.T) {
+	respStatus := 200
+	respBody := "{\"bid\":false}"
+	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
+	defer server.Close()
+	requestStartTime := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	bidRequest := adapters.RequestData{
+		Method: "POST",
+		Uri:    server.URL,
+		Body:   []byte(`{"id":"this-id","app":{"publisher":{"id":"pub-id"}}}`),
+	}
+
+	metricsMock := &metrics.MetricsEngineMock{}
+	metricsMock.On("RecordOverheadTime", metrics.PreBidder, mock.Anything).Once()
+	metricsMock.On("RecordTMaxTimeout").Once()
+
+	bidderAdapter := bidderAdapter{
+		me:     metricsMock,
+		Client: server.Client(),
+	}
+	logger := func(msg string, args ...interface{}) {}
+
+	tests := []struct {
+		ctxDeadline     time.Time
+		description     string
+		tmaxAdjustments *TmaxAdjustmentsPreprocessed
+		assertFn        func(err error)
+	}{
+		{
+			ctxDeadline:     time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+			description:     "returns-tmax-timeout-error",
+			tmaxAdjustments: &TmaxAdjustmentsPreprocessed{IsEnforced: true, PBSResponsePreparationDuration: 100, BidderNetworkLatencyBuffer: 10, BidderResponseDurationMin: 5000},
+			assertFn:        func(err error) { assert.Equal(t, errTmaxTimeout, err) },
+		},
+	}
+	for _, test := range tests {
+		var (
+			ctx      context.Context
+			cancelFn context.CancelFunc
+		)
+
+		if test.ctxDeadline.IsZero() {
+			ctx = context.Background()
+		} else {
+			ctx, cancelFn = context.WithDeadline(context.Background(), test.ctxDeadline)
+			defer cancelFn()
+		}
+
+		httpCallInfo := bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, requestStartTime, test.tmaxAdjustments)
+		test.assertFn(httpCallInfo.err)
 	}
 }

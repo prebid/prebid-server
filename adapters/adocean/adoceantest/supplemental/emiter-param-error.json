@@ -1,0 +1,55 @@
+{
+  "mockBidRequest": {
+    "id": "9ed903f4-383d-406b-8011-4f06526cb02c",
+    "source": {
+      "tid": "9ed903f4-383d-406b-8011-4f06526cb02c"
+    },
+    "tmax": 1000,
+    "imp": [
+      {
+        "id": "ao-test",
+        "ext": {
+          "bidder": {
+            "emiter": "myao.adocean.pl",
+            "masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7",
+            "slaveId": "adoceanmyaozpniqismex"
+          }
+        },
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        }
+      }
+    ],
+    "test": 1,
+    "ext": {
+      "prebid": {
+        "targeting": {
+          "includewinners": true,
+          "includebidderkeys": false
+        }
+      }
+    },
+    "site": {
+      "publisher": {
+        "id": "1"
+      },
+      "page": "http://example.com/test.html"
+    },
+    "device": {
+      "w": 1280,
+      "h": 720,
+      "ip": "192.168.1.1"
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "No emitterPrefix param",
+      "comparison": "literal"
+    }
+  ]
+}
