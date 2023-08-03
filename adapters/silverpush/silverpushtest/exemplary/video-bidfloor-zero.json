@@ -184,6 +184,7 @@
                                 "crid": "485459443",
                                 "w": 360,
                                 "h": 727,
+                                "mtype":2,
                                 "ext": {
                                     "origbidcpm": 0.04,
                                     "origbidcur": "USD",
@@ -223,6 +224,7 @@
                             "crid": "485459443",
                             "w": 360,
                             "h": 727,
+                            "mtype":2,
                             "ext": {
                                 "origbidcpm": 0.04,
                                 "origbidcur": "USD",

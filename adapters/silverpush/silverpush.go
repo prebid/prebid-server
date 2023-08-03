@@ -36,26 +36,23 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	requests := make([]*adapters.RequestData, 0, len(imps))
 
 	for _, imp := range imps {
-		impsByMediaType, err := impressionByMediaType(&imp)
+		impsByMediaType := impressionByMediaType(&imp)
+
+		request.Imp = []openrtb2.Imp{impsByMediaType}
+
+		if err := validateRequest(request); err != nil {
+			errors = append(errors, err)
+			continue
+		}
+
+		requestData, err := a.makeRequest(request)
 		if err != nil {
 			errors = append(errors, err)
+			continue
 		}
 
-		for _, impByMediaType := range impsByMediaType {
-			request.Imp = []openrtb2.Imp{impByMediaType}
+		requests = append(requests, requestData)
 
-			if err := validateRequest(request); err != nil {
-				errors = append(errors, err)
-				continue
-			}
-			requestData, err := a.makeRequest(request)
-			if err != nil {
-				errors = append(errors, err)
-				continue
-			}
-
-			requests = append(requests, requestData)
-		}
 	}
 	return requests, errors
 }
@@ -80,37 +77,40 @@ func (a *adapter) makeRequest(req *openrtb2.BidRequest) (*adapters.RequestData, 
 func validateRequest(req *openrtb2.BidRequest) error {
 	imp := &req.Imp[0]
 	var silverPushExt openrtb_ext.ImpExtSilverpush
-	err := setPublisherId(req, imp, &silverPushExt)
-	if err != nil {
+	if err := setPublisherId(req, imp, &silverPushExt); err != nil {
 		return err
 	}
 	if err := setUser(req); err != nil {
 		return err
 	}
+
 	setDevice(req)
 
-	err = setExtToRequest(req, silverPushExt.PublisherId)
-	if err != nil {
+	if err := setExtToRequest(req, silverPushExt.PublisherId); err != nil {
 		return err
 	}
 	return setImpForAdExchange(imp, &silverPushExt)
 }
 
 func setDevice(req *openrtb2.BidRequest) {
-	if req.Device != nil {
-		deviceCopy := *req.Device
-		if len(deviceCopy.UA) > 0 {
-			deviceCopy.OS = getOS(deviceCopy.UA)
-			if isMobile(deviceCopy.UA) {
-				deviceCopy.DeviceType = 1
-			} else if isCTV(deviceCopy.UA) {
-				deviceCopy.DeviceType = 3
-			} else {
-				deviceCopy.DeviceType = 2
-			}
-		}
-		req.Device = &deviceCopy
+
+	if req.Device == nil {
+		return
 	}
+	deviceCopy := *req.Device
+	if len(deviceCopy.UA) == 0 {
+		return
+	}
+	deviceCopy.OS = getOS(deviceCopy.UA)
+	if isMobile(deviceCopy.UA) {
+		deviceCopy.DeviceType = 1
+	} else if isCTV(deviceCopy.UA) {
+		deviceCopy.DeviceType = 3
+	} else {
+		deviceCopy.DeviceType = 2
+	}
+
+	req.Device = &deviceCopy
 }
 
 func setUser(req *openrtb2.BidRequest) error {
@@ -261,36 +261,27 @@ func setPublisherId(req *openrtb2.BidRequest, imp *openrtb2.Imp, impExt *openrtb
 	return nil
 }
 
-func impressionByMediaType(imp *openrtb2.Imp) ([]openrtb2.Imp, error) {
+func impressionByMediaType(imp *openrtb2.Imp) openrtb2.Imp {
 
-	if imp.Banner == nil && imp.Video == nil {
-		return nil, &errortypes.BadInput{Message: "Invalid MediaType. SilverPush only supports Banner, Video"}
-	}
-	imps := make([]openrtb2.Imp, 0, 2)
-
+	impCopy := *imp
 	if imp.Banner != nil {
-		impCopy := *imp
 		impCopy.Video = nil
-		imps = append(imps, impCopy)
 	}
 	if imp.Video != nil {
-		impCopy := *imp
 		impCopy.Banner = nil
-		imps = append(imps, impCopy)
+
 	}
-	return imps, nil
+	return impCopy
 }
 
 func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
-	if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{&errortypes.BadInput{Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}}
-	}
-
-	if response.StatusCode != http.StatusOK {
-		return nil, []error{&errortypes.BadServerResponse{Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}}
+	if err := adapters.CheckResponseStatusCodeForErrors(response); err != nil {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}}
 	}
 
 	var bidResp openrtb2.BidResponse
@@ -310,7 +301,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		for i := 0; i < len(sb.Bid); i++ {
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &sb.Bid[i],
-				BidType: getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp),
+				BidType: getMediaTypeForImp(sb.Bid[i]),
 			})
 		}
 	}
@@ -320,18 +311,16 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 // getMediaTypeForImp figures out which media type this bid is for.
 // SilverPush doesn't support multi-type impressions.
 // If both banner and video exist, take banner as we do not want in-banner video.
-func getMediaTypeForImp(impId string, imps []openrtb2.Imp) (mediaType openrtb_ext.BidType) {
-	mediaType = openrtb_ext.BidTypeBanner
-	for _, imp := range imps {
-		if imp.ID == impId {
-			if imp.Banner != nil {
-				mediaType = openrtb_ext.BidTypeBanner
-			} else if imp.Video != nil {
-				mediaType = openrtb_ext.BidTypeVideo
-			}
-		}
+func getMediaTypeForImp(bid openrtb2.Bid) openrtb_ext.BidType {
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo
+
+	default:
+		return ""
 	}
-	return
 }
 
 // Builder builds a new instance of the silverpush adapter for the given bidder with the given config.

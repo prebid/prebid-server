@@ -225,6 +225,7 @@
                                 "crid": "cr39487593745jefoijdf",
                                 "w": 360,
                                 "h": 640,
+                                "mtype":1,
                                 "ext": {
                                     "origbidcpm": 0.03,
                                     "origbidcur": "USD",
@@ -262,6 +263,7 @@
                             "crid": "cr39487593745jefoijdf",
                             "w": 360,
                             "h": 640,
+                            "mtype":1,
                             "ext": {
                                 "origbidcpm": 0.03,
                                 "origbidcur": "USD",
