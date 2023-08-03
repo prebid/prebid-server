@@ -321,6 +321,55 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 			Tracker:  "tracker",
 		},
 	}
+	aliasBidderInfo := BidderInfo{
+		AppSecret: "alias-app-secret",
+		Capabilities: &CapabilitiesInfo{
+			App: &PlatformInfo{
+				MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner},
+			},
+			Site: &PlatformInfo{
+				MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner},
+			},
+		},
+		Debug: &DebugInfo{
+			Allow: false,
+		},
+		Disabled:            true,
+		Endpoint:            "https://alias-endpoint.com",
+		EndpointCompression: "DEFAULT",
+		Experiment: BidderInfoExperiment{
+			AdsCert: BidderAdsCert{
+				Enabled: false,
+			},
+		},
+		ExtraAdapterInfo: "alias-extra-info",
+		GVLVendorID:      43,
+		Maintainer: &MaintainerInfo{
+			Email: "alias-email@domain.com",
+		},
+		ModifyingVastXmlAllowed: false,
+		OpenRTB: &OpenRTBInfo{
+			GPPSupported: false,
+			Version:      "2.5",
+		},
+		PlatformID: "456",
+		Syncer: &Syncer{
+			Key: "alias",
+			IFrame: &SyncerEndpoint{
+				URL:         "https://alias.com/sync?mode=iframe&r={{.RedirectURL}}",
+				RedirectURL: "https://alias-redirect/setuid/iframe",
+				ExternalURL: "https://alias-iframe.host",
+				UserMacro:   "alias-UID",
+			},
+		},
+		UserSyncURL: "alias-user-url",
+		XAPI: AdapterXAPI{
+			Username: "alias-uname",
+			Password: "alias-pwd",
+			Tracker:  "alias-tracker",
+		},
+	}
+
 	testCases := []struct {
 		description string
 		aliasInfos  aliasInfos
@@ -349,6 +398,25 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 				bidderB := parentBidderInfo
 				bidderB.AliasOf = "bidderA"
 				assert.Equal(t, BidderInfos{"bidderA": parentBidderInfo, "bidderB": bidderB}, bidderInfos)
+			},
+		},
+		{
+			description: "all bidder info specified for alias, do not inherit from parent bidder",
+			aliasInfos: aliasInfos{
+				"bidderB": bidderInfoNullableFields{
+					Disabled:                &aliasBidderInfo.Disabled,
+					ModifyingVastXmlAllowed: &aliasBidderInfo.ModifyingVastXmlAllowed,
+					Experiment:              &aliasBidderInfo.Experiment,
+					XAPI:                    &aliasBidderInfo.XAPI,
+				},
+			},
+			bidderInfos: BidderInfos{
+				"bidderA": parentBidderInfo,
+				"bidderB": aliasBidderInfo,
+			},
+			assertFunc: func(bidderInfos BidderInfos, err error) {
+				assert.NoError(t, err)
+				assert.Equal(t, BidderInfos{"bidderA": parentBidderInfo, "bidderB": aliasBidderInfo}, bidderInfos)
 			},
 		},
 		{
