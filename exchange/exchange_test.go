@@ -167,12 +167,9 @@ func TestCharacterEscape(t *testing.T) {
 	var errList []error
 
 	// 	4) Build bid response
-	bidResp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, adapterExtra, nil, nil, true, nil, "", errList)
+	bidResp := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, adapterExtra, nil, nil, true, nil, "", errList)
 
 	// 	5) Assert we have no errors and one '&' character as we are supposed to
-	if err != nil {
-		t.Errorf("exchange.buildBidResponse returned unexpected error: %v", err)
-	}
 	if len(errList) > 0 {
 		t.Errorf("exchange.buildBidResponse returned %d errors", len(errList))
 	}
@@ -379,7 +376,7 @@ func TestDebugBehaviour(t *testing.T) {
 		// Assert no HoldAuction error
 		assert.NoErrorf(t, err, "%s. ex.HoldAuction returned an error: %v \n", test.desc, err)
 		assert.NotNilf(t, outBidResponse.Ext, "%s. outBidResponse.Ext should not be nil \n", test.desc)
-
+		assert.False(t, auctionRequest.BidderResponseStartTime.IsZero())
 		actualExt := &openrtb_ext.ExtBidResponse{}
 		err = json.Unmarshal(outBidResponse.Ext, actualExt)
 		assert.NoErrorf(t, err, "%s. \"ext\" JSON field could not be unmarshaled. err: \"%v\" \n outBidResponse.Ext: \"%s\" \n", test.desc, err, outBidResponse.Ext)
@@ -540,6 +537,7 @@ func TestTwoBiddersDebugDisabledAndEnabled(t *testing.T) {
 		// Assert no HoldAuction err
 		assert.NoErrorf(t, err, "ex.HoldAuction returned an err")
 		assert.NotNilf(t, outBidResponse.Ext, "outBidResponse.Ext should not be nil")
+		assert.False(t, auctionRequest.BidderResponseStartTime.IsZero())
 
 		actualExt := &openrtb_ext.ExtBidResponse{}
 		err = json.Unmarshal(outBidResponse.Ext, actualExt)
@@ -715,6 +713,7 @@ func TestOverrideWithCustomCurrency(t *testing.T) {
 
 		// Assertions
 		assert.NoErrorf(t, err, "%s. HoldAuction error: %v \n", test.desc, err)
+		assert.False(t, auctionRequest.BidderResponseStartTime.IsZero())
 
 		if test.expected.numBids > 0 {
 			// Assert out currency
@@ -1362,6 +1361,7 @@ func TestReturnCreativeEndToEnd(t *testing.T) {
 				continue
 			} else {
 				assert.NoErrorf(t, err, "%s: %s. HoldAuction error: %v \n", testGroup.groupDesc, test.desc, err)
+				assert.False(t, auctionRequest.BidderResponseStartTime.IsZero())
 			}
 
 			// Assert returned bid
@@ -1530,10 +1530,7 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 	var errList []error
 
 	// 	4) Build bid response
-	bid_resp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, adapterExtra, auc, nil, true, nil, "", errList)
-
-	// 	5) Assert we have no errors and the bid response we expected
-	assert.NoError(t, err, "[TestGetBidCacheInfo] buildBidResponse() threw an error")
+	bid_resp := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, adapterExtra, auc, nil, true, nil, "", errList)
 
 	expectedBidResponse := &openrtb2.BidResponse{
 		SeatBid: []openrtb2.SeatBid{
@@ -1906,8 +1903,7 @@ func TestBidResponseCurrency(t *testing.T) {
 	}
 	// Run tests
 	for i := range testCases {
-		actualBidResp, err := e.buildBidResponse(context.Background(), liveAdapters, testCases[i].adapterBids, bidRequest, adapterExtra, nil, bidResponseExt, true, nil, "", errList)
-		assert.NoError(t, err, fmt.Sprintf("[TEST_FAILED] e.buildBidResponse resturns error in test: %s Error message: %s \n", testCases[i].description, err))
+		actualBidResp := e.buildBidResponse(context.Background(), liveAdapters, testCases[i].adapterBids, bidRequest, adapterExtra, nil, bidResponseExt, true, nil, "", errList)
 		assert.Equalf(t, testCases[i].expectedBidResponse, actualBidResp, fmt.Sprintf("[TEST_FAILED] Objects must be equal for test: %s \n Expected: >>%s<< \n Actual: >>%s<< ", testCases[i].description, testCases[i].expectedBidResponse.Ext, actualBidResp.Ext))
 	}
 }
@@ -1973,8 +1969,7 @@ func TestBidResponseImpExtInfo(t *testing.T) {
 
 	expectedBidResponseExt := `{"origbidcpm":0,"prebid":{"type":"video","passthrough":{"imp_passthrough_val":1}},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]}}`
 
-	actualBidResp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, nil, nil, nil, true, impExtInfo, "", errList)
-	assert.NoError(t, err, fmt.Sprintf("imp ext info was not passed through correctly: %s", err))
+	actualBidResp := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, nil, nil, nil, true, impExtInfo, "", errList)
 
 	resBidExt := string(actualBidResp.SeatBid[0].Bid[0].Ext)
 	assert.Equalf(t, expectedBidResponseExt, resBidExt, "Expected bid response extension is incorrect")
@@ -5143,6 +5138,7 @@ func TestOverrideConfigAlternateBidderCodesWithRequestValues(t *testing.T) {
 		// Assertions
 		assert.NoErrorf(t, err, "%s. HoldAuction error: %v \n", test.desc, err)
 		assert.NotNil(t, outBidResponse)
+		assert.False(t, auctionRequest.BidderResponseStartTime.IsZero())
 
 		// So 2 seatBids are expected as,
 		// the default "" and "pubmatic" bids will be in one seat and the extra-bids "groupm"/"appnexus"/"ix" in another seat.
@@ -5569,6 +5565,7 @@ func TestModulesCanBeExecutedForMultipleBiddersSimultaneously(t *testing.T) {
 	_, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{})
 	// Assert no HoldAuction err
 	assert.NoErrorf(t, err, "ex.HoldAuction returned an err")
+	assert.False(t, auctionRequest.BidderResponseStartTime.IsZero())
 
 	// check stage outcomes
 	assert.Equal(t, len(exec.GetOutcomes()), len(e.adapterMap), "stage outcomes append operation failed")

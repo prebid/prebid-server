@@ -33,6 +33,10 @@ func buildBidders(infos config.BidderInfos, builders map[openrtb_ext.BidderName]
 	var errs []error
 
 	for bidder, info := range infos {
+		if len(info.AliasOf) > 0 {
+			errs = append(errs, fmt.Errorf("This feature is currently under development"))
+			continue
+		}
 		bidderName, bidderNameFound := openrtb_ext.NormalizeBidderName(bidder)
 		if !bidderNameFound {
 			errs = append(errs, fmt.Errorf("%v: unknown bidder", bidder))
@@ -93,6 +97,7 @@ func GetDisabledBiddersErrorMessages(infos config.BidderInfos) map[string]string
 		"oftmedia":       `Bidder "oftmedia" is no longer available in Prebid Server. Please update your configuration.`,
 		"groupm":         `Bidder "groupm" is no longer available in Prebid Server. Please update your configuration.`,
 		"verizonmedia":   `Bidder "verizonmedia" is no longer available in Prebid Server. Please update your configuration.`,
+		"brightroll":     `Bidder "brightroll" is no longer available in Prebid Server. Please update your configuration.`,
 	}
 
 	for name, info := range infos {

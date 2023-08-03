@@ -1,0 +1,29 @@
+{
+  "mockBidRequest": {
+    "id": "freewheelssp-test",
+    "site": {
+      "page": "prebid.org"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "video": {
+          "mimes": ["video/mp4"],
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "zoneId": "abc123"
+          }
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": ".*Invalid imp.ext for impression index 0.*",
+      "comparison": "regex"
+    }
+  ]
+}
