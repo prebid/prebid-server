@@ -164,8 +164,12 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 
 		setSiteCookie := siteCookieCheck(r.UserAgent())
 
+		// Priority Ejector Set Up
+		priorityEjector := &usersync.PriorityBidderEjector{PriorityGroups: cfg.UserSync.PriorityGroups, SyncerKey: syncer.Key()}
+		priorityEjector.IsSyncerPriority = isSyncerPriority(syncer.Key(), cfg.UserSync.PriorityGroups, syncersByBidder)
+
 		// Write Cookie
-		encodedCookie, err := cookie.PrepareCookieForWrite(&cfg.HostCookie, encoder, &usersync.PriorityBidderEjector{PriorityGroups: cfg.UserSync.PriorityGroups, SyncerKey: syncer.Key()})
+		encodedCookie, err := cookie.PrepareCookieForWrite(&cfg.HostCookie, encoder, priorityEjector)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			metricsEngine.RecordSetUid(metrics.SetUidBadRequest)
@@ -333,6 +337,19 @@ func getSyncer(query url.Values, syncersByBidder map[string]usersync.Syncer) (us
 	}
 
 	return syncer, bidder, nil
+}
+
+func isSyncerPriority(syncer string, priorityGroups [][]string, syncersByBidder map[string]usersync.Syncer) bool {
+	for _, group := range priorityGroups {
+		for _, bidder := range group {
+			if bidderSyncer, ok := syncersByBidder[bidder]; ok {
+				if syncer == bidderSyncer.Key() {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 // getResponseFormat reads the format query parameter or falls back to the syncer's default.

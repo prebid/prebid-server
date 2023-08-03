@@ -17,9 +17,10 @@ type OldestEjector struct {
 }
 
 type PriorityBidderEjector struct {
-	PriorityGroups [][]string
-	SyncerKey      string
-	OldestEjector  OldestEjector
+	PriorityGroups   [][]string
+	SyncerKey        string
+	OldestEjector    OldestEjector
+	IsSyncerPriority bool
 }
 
 // Choose method for oldest ejector will return the oldest uid after determing which set of elements to be choosing from
@@ -43,28 +44,29 @@ func (o *OldestEjector) Choose(uids map[string]UIDEntry) (string, error) {
 // Choose method for priority ejector will return the oldest lowest priority element
 func (p *PriorityBidderEjector) Choose(uids map[string]UIDEntry) (string, error) {
 	p.OldestEjector.nonPriorityKeys = getNonPriorityKeys(uids, p.PriorityGroups)
+
 	if len(p.OldestEjector.nonPriorityKeys) > 0 {
 		p.OldestEjector.EjectPriority = false
 		return p.OldestEjector.Choose(uids)
 	}
 
-	if isSyncerPriority(p.SyncerKey, p.PriorityGroups) {
+	if p.IsSyncerPriority {
 		lowestPriorityGroup := p.PriorityGroups[len(p.PriorityGroups)-1]
 
 		if len(lowestPriorityGroup) == 1 {
 			uidToDelete := lowestPriorityGroup[0]
 			p.PriorityGroups = removeElementFromPriorityGroup(p.PriorityGroups, uidToDelete)
 			return uidToDelete, nil
-		} else {
-			p.OldestEjector.EjectPriority = true
-			p.OldestEjector.PriorityGroups = p.PriorityGroups
-			uidToDelete, err := p.OldestEjector.Choose(uids)
-			if err != nil {
-				return "", err
-			}
-			p.PriorityGroups = removeElementFromPriorityGroup(p.PriorityGroups, uidToDelete)
-			return uidToDelete, nil
 		}
+
+		p.OldestEjector.EjectPriority = true
+		p.OldestEjector.PriorityGroups = p.PriorityGroups
+		uidToDelete, err := p.OldestEjector.Choose(uids)
+		if err != nil {
+			return "", err
+		}
+		p.PriorityGroups = removeElementFromPriorityGroup(p.PriorityGroups, uidToDelete)
+		return uidToDelete, nil
 	}
 	return "", errors.New("syncer key " + p.SyncerKey + " is not in priority groups")
 }
@@ -85,17 +87,6 @@ func removeElementFromPriorityGroup(priorityGroups [][]string, oldestElement str
 		}
 	}
 	return priorityGroups
-}
-
-func isSyncerPriority(syncer string, priorityGroups [][]string) bool {
-	for _, group := range priorityGroups {
-		for _, bidder := range group {
-			if syncer == bidder {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 func getNonPriorityKeys(uids map[string]UIDEntry, priorityGroups [][]string) []string {

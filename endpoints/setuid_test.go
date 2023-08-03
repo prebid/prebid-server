@@ -1322,6 +1322,99 @@ func TestGetResponseFormat(t *testing.T) {
 	}
 }
 
+func TestIsSyncerPriority(t *testing.T) {
+	testCases := []struct {
+		name                 string
+		givenSyncerKey       string
+		givenPriorityGroups  [][]string
+		givenSyncersByBidder map[string]usersync.Syncer
+		expected             bool
+	}{
+		{
+			name:           "syncer-is-priority-one-to-one",
+			givenSyncerKey: "prioritySyncer",
+			givenPriorityGroups: [][]string{
+				{"prioritySyncer"},
+				{"2", "3"},
+			},
+			givenSyncersByBidder: map[string]usersync.Syncer{
+				"prioritySyncer": fakeSyncer{
+					key: "prioritySyncer",
+				},
+			},
+			expected: true,
+		},
+		{
+			name:           "syncer-is-priority-not-one-to-one",
+			givenSyncerKey: "adnxs",
+			givenPriorityGroups: [][]string{
+				{"appnexus"},
+				{"2", "3"},
+			},
+			givenSyncersByBidder: map[string]usersync.Syncer{
+				"appnexus": fakeSyncer{
+					key: "adnxs",
+				},
+			},
+			expected: true,
+		},
+		{
+			name:           "syncer-is-not-priority",
+			givenSyncerKey: "notPrioritySyncer",
+			givenPriorityGroups: [][]string{
+				{"1"},
+				{"2", "3"},
+			},
+			givenSyncersByBidder: map[string]usersync.Syncer{
+				"1": fakeSyncer{
+					key: "1",
+				},
+				"2": fakeSyncer{
+					key: "2",
+				},
+				"3": fakeSyncer{
+					key: "3",
+				},
+			},
+			expected: false,
+		},
+		{
+			name:           "no-syncer-given",
+			givenSyncerKey: "",
+			givenPriorityGroups: [][]string{
+				{"1"},
+				{"2", "3"},
+			},
+			givenSyncersByBidder: map[string]usersync.Syncer{
+				"1": fakeSyncer{
+					key: "1",
+				},
+				"2": fakeSyncer{
+					key: "2",
+				},
+				"3": fakeSyncer{
+					key: "3",
+				},
+			},
+			expected: false,
+		},
+		{
+			name:                 "no-priority-groups-given",
+			givenSyncerKey:       "adnxs",
+			givenPriorityGroups:  [][]string{},
+			givenSyncersByBidder: map[string]usersync.Syncer{},
+			expected:             false,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			isPriority := isSyncerPriority(test.givenSyncerKey, test.givenPriorityGroups, test.givenSyncersByBidder)
+			assert.Equal(t, test.expected, isPriority)
+		})
+	}
+}
+
 func assertHasSyncs(t *testing.T, testCase string, resp *httptest.ResponseRecorder, syncs map[string]string) {
 	t.Helper()
 	cookie := parseCookieString(t, resp)

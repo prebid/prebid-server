@@ -404,6 +404,7 @@ func TestPrepareCookieForWrite(t *testing.T) {
 		OldestEjector: OldestEjector{
 			nonPriorityKeys: []string{},
 		},
+		IsSyncerPriority: true,
 	}
 
 	testCases := []struct {

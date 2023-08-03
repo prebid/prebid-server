@@ -33,7 +33,8 @@ func TestPriorityEjector(t *testing.T) {
 					{"adnxs", "higherPriority"},
 					{"lowestPriority"},
 				},
-				SyncerKey: "adnxs",
+				SyncerKey:        "adnxs",
+				IsSyncerPriority: true,
 			},
 			expected: "lowestPriority",
 		},
@@ -54,8 +55,9 @@ func TestPriorityEjector(t *testing.T) {
 					{"adnxs"},
 					{"newerButSamePriority", "olderButSamePriority"},
 				},
-				SyncerKey:     "adnxs",
-				OldestEjector: OldestEjector{},
+				SyncerKey:        "adnxs",
+				IsSyncerPriority: true,
+				OldestEjector:    OldestEjector{},
 			},
 			expected: "olderButSamePriority",
 		},
@@ -84,7 +86,8 @@ func TestPriorityEjector(t *testing.T) {
 					{"adnxs", "higherPriority"},
 					{"lowestPriority"},
 				},
-				SyncerKey: "adnxs",
+				SyncerKey:        "adnxs",
+				IsSyncerPriority: true,
 			},
 			expected: "oldestNonPriority",
 		},
@@ -95,7 +98,8 @@ func TestPriorityEjector(t *testing.T) {
 				PriorityGroups: [][]string{
 					{"syncerKey1"},
 				},
-				SyncerKey: "adnxs",
+				SyncerKey:        "adnxs",
+				IsSyncerPriority: false,
 			},
 			expectedError: errors.New("syncer key adnxs is not in priority groups"),
 		},
@@ -300,56 +304,6 @@ func TestGetNonPriorityKeys(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			keys := getNonPriorityKeys(test.givenUids, test.givenPriorityGroups)
 			assert.Equal(t, true, assert.ElementsMatch(t, test.expected, keys))
-		})
-	}
-}
-
-func TestIsSyncerPriority(t *testing.T) {
-	testCases := []struct {
-		name                string
-		givenSyncerKey      string
-		givenPriorityGroups [][]string
-		expected            bool
-	}{
-		{
-			name:           "syncer-is-priority",
-			givenSyncerKey: "adnxs",
-			givenPriorityGroups: [][]string{
-				{"adnxs"},
-				{"2", "3"},
-			},
-			expected: true,
-		},
-		{
-			name:           "syncer-is-not-priority",
-			givenSyncerKey: "adnxs",
-			givenPriorityGroups: [][]string{
-				{"1"},
-				{"2", "3"},
-			},
-			expected: false,
-		},
-		{
-			name:           "no-syncer-given",
-			givenSyncerKey: "",
-			givenPriorityGroups: [][]string{
-				{"1"},
-				{"2", "3"},
-			},
-			expected: false,
-		},
-		{
-			name:                "no-priority-groups-given",
-			givenSyncerKey:      "adnxs",
-			givenPriorityGroups: [][]string{},
-			expected:            false,
-		},
-	}
-
-	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
-			isPriority := isSyncerPriority(test.givenSyncerKey, test.givenPriorityGroups)
-			assert.Equal(t, test.expected, isPriority)
 		})
 	}
 }
