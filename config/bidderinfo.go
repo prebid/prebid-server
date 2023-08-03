@@ -52,6 +52,15 @@ type BidderInfo struct {
 	OpenRTB             *OpenRTBInfo `yaml:"openrtb" mapstructure:"openrtb"`
 }
 
+type bidderInfoNullableFields struct {
+	Disabled                *bool                 `yaml:"disabled" mapstructure:"disabled"`
+	ModifyingVastXmlAllowed *bool                 `yaml:"modifyingVastXmlAllowed" mapstructure:"modifyingVastXmlAllowed"`
+	Experiment              *BidderInfoExperiment `yaml:"experiment" mapstructure:"experiment"`
+	XAPI                    *AdapterXAPI          `yaml:"xapi" mapstructure:"xapi"`
+}
+
+type aliasInfos map[string]bidderInfoNullableFields
+
 // BidderInfoExperiment specifies non-production ready feature config for a bidder
 type BidderInfoExperiment struct {
 	AdsCert BidderAdsCert `yaml:"adsCert" mapstructure:"adsCert"`
@@ -229,8 +238,8 @@ func processBidderInfos(reader InfoReader, normalizeBidderName func(string) (ope
 		return nil, fmt.Errorf("error loading bidders data")
 	}
 
-	infos := BidderInfos{}
-
+	bidderInfos := BidderInfos{}
+	aliasInfos := aliasInfos{} //maintains map of bidderName to nullable fields in BidderInfo struct
 	for fileName, data := range bidderConfigs {
 		bidderName := strings.Split(fileName, ".")
 		if len(bidderName) == 2 && bidderName[1] == "yaml" {
@@ -243,10 +252,49 @@ func processBidderInfos(reader InfoReader, normalizeBidderName func(string) (ope
 				return nil, fmt.Errorf("error parsing config for bidder %s: %v", fileName, err)
 			}
 
-			infos[string(normalizedBidderName)] = info
+			bidderInfos[string(normalizedBidderName)] = info
+
+			//need to maintain nullable fields from BidderInfo struct into bidderInfoNullableFields
+			//to handle the default values in aliases yaml
+			if len(info.AliasOf) > 0 {
+				aliasInfo := bidderInfoNullableFields{}
+				if err := yaml.Unmarshal(data, &aliasInfo); err != nil {
+					return nil, fmt.Errorf("error parsing config for aliased bidder %s: %v", fileName, err)
+				}
+
+				aliasInfos[string(normalizedBidderName)] = aliasInfo
+			}
 		}
 	}
-	return infos, nil
+	return processBidderAliases(aliasInfos, bidderInfos)
+}
+
+func processBidderAliases(aliasInfos aliasInfos, bidderInfos BidderInfos) (BidderInfos, error) {
+	for bidderName := range aliasInfos {
+		if err := validateAliases(bidderInfos[bidderName], bidderInfos, bidderName); err != nil {
+			return nil, err
+		}
+		aliasBidderInfo := bidderInfos[bidderName]
+		parentBidderInfo := bidderInfos[aliasBidderInfo.AliasOf]
+		aliasBidderInfo.AppSecret = parentBidderInfo.AppSecret
+		aliasBidderInfo.Capabilities = parentBidderInfo.Capabilities
+		aliasBidderInfo.Debug = parentBidderInfo.Debug
+		aliasBidderInfo.Disabled = parentBidderInfo.Disabled
+		aliasBidderInfo.Endpoint = parentBidderInfo.Endpoint
+		aliasBidderInfo.EndpointCompression = parentBidderInfo.EndpointCompression
+		aliasBidderInfo.Experiment = parentBidderInfo.Experiment
+		aliasBidderInfo.ExtraAdapterInfo = parentBidderInfo.ExtraAdapterInfo
+		aliasBidderInfo.GVLVendorID = parentBidderInfo.GVLVendorID
+		aliasBidderInfo.Maintainer = parentBidderInfo.Maintainer
+		aliasBidderInfo.ModifyingVastXmlAllowed = parentBidderInfo.ModifyingVastXmlAllowed
+		aliasBidderInfo.OpenRTB = parentBidderInfo.OpenRTB
+		aliasBidderInfo.PlatformID = parentBidderInfo.PlatformID
+		aliasBidderInfo.Syncer = parentBidderInfo.Syncer
+		aliasBidderInfo.UserSyncURL = parentBidderInfo.UserSyncURL
+		aliasBidderInfo.XAPI = parentBidderInfo.XAPI
+		bidderInfos[bidderName] = aliasBidderInfo
+	}
+	return bidderInfos, nil
 }
 
 // ToGVLVendorIDMap transforms a BidderInfos object to a map of bidder names to GVL id.
