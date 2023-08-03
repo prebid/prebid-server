@@ -740,12 +740,12 @@ func getTestDevice() *openrtb2.Device {
 
 func getTestIPMasking() config.IPMasking {
 	return config.IPMasking{
-		IpV6: config.IPMasks{
+		IPv6: config.IPMasks{
 			ActivityLeftMaskBits:    54,
 			GdprLeftMaskBitsLowest:  112,
 			GdprLeftMaskBitsHighest: 96,
 		},
-		IpV4: config.IPMasks{
+		IPv4: config.IPMasks{
 			GdprLeftMaskBitsLowest: 24,
 		},
 	}

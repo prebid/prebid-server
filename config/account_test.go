@@ -921,12 +921,12 @@ func TestIPMaskingValidate(t *testing.T) {
 		{
 			name: "valid configuration",
 			masking: &IPMasking{
-				IpV4: IPMasks{
+				IPv4: IPMasks{
 					ActivityLeftMaskBits:    1,
 					GdprLeftMaskBitsLowest:  2,
 					GdprLeftMaskBitsHighest: 0,
 				},
-				IpV6: IPMasks{
+				IPv6: IPMasks{
 					ActivityLeftMaskBits:    0,
 					GdprLeftMaskBitsLowest:  2,
 					GdprLeftMaskBitsHighest: 3,
@@ -936,12 +936,12 @@ func TestIPMaskingValidate(t *testing.T) {
 		{
 			name: "invalid configuration",
 			masking: &IPMasking{
-				IpV4: IPMasks{
+				IPv4: IPMasks{
 					ActivityLeftMaskBits:    100,
 					GdprLeftMaskBitsLowest:  -200,
 					GdprLeftMaskBitsHighest: 300,
 				},
-				IpV6: IPMasks{
+				IPv6: IPMasks{
 					ActivityLeftMaskBits:    -100,
 					GdprLeftMaskBitsLowest:  200,
 					GdprLeftMaskBitsHighest: -300,
@@ -959,12 +959,12 @@ func TestIPMaskingValidate(t *testing.T) {
 		{
 			name: "mixed valid and invalid configuration",
 			masking: &IPMasking{
-				IpV4: IPMasks{
+				IPv4: IPMasks{
 					ActivityLeftMaskBits:    10,
 					GdprLeftMaskBitsLowest:  -20,
 					GdprLeftMaskBitsHighest: 30,
 				},
-				IpV6: IPMasks{
+				IPv6: IPMasks{
 					ActivityLeftMaskBits:    10,
 					GdprLeftMaskBitsLowest:  20,
 					GdprLeftMaskBitsHighest: -30,

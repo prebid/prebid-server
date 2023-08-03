@@ -206,10 +206,10 @@ func TestDefaults(t *testing.T) {
 	cmpUnsignedInts(t, "tmax_adjustments.bidder_network_latency_buffer_ms", 0, cfg.TmaxAdjustments.BidderNetworkLatencyBuffer)
 	cmpUnsignedInts(t, "tmax_adjustments.pbs_response_preparation_duration_ms", 0, cfg.TmaxAdjustments.PBSResponsePreparationDuration)
 
-	cmpInts(t, "account_defaults.privacy.ip_masking.ipv6.activity_left_mask_bits", 56, cfg.AccountDefaults.Privacy.IPMasking.IpV6.ActivityLeftMaskBits)
-	cmpInts(t, "account_defaults.privacy.ip_masking.ipv6.gdpr_left_mask_bits_lowest", 112, cfg.AccountDefaults.Privacy.IPMasking.IpV6.GdprLeftMaskBitsLowest)
-	cmpInts(t, "account_defaults.privacy.ip_masking.ipv6.gdpr_left_mask_bits_highest", 96, cfg.AccountDefaults.Privacy.IPMasking.IpV6.GdprLeftMaskBitsHighest)
-	cmpInts(t, "account_defaults.privacy.ip_masking.ipv4.gdpr_left_mask_bits_lowest", 24, cfg.AccountDefaults.Privacy.IPMasking.IpV4.GdprLeftMaskBitsLowest)
+	cmpInts(t, "account_defaults.privacy.ip_masking.ipv6.activity_left_mask_bits", 56, cfg.AccountDefaults.Privacy.IPMasking.IPv6.ActivityLeftMaskBits)
+	cmpInts(t, "account_defaults.privacy.ip_masking.ipv6.gdpr_left_mask_bits_lowest", 112, cfg.AccountDefaults.Privacy.IPMasking.IPv6.GdprLeftMaskBitsLowest)
+	cmpInts(t, "account_defaults.privacy.ip_masking.ipv6.gdpr_left_mask_bits_highest", 96, cfg.AccountDefaults.Privacy.IPMasking.IPv6.GdprLeftMaskBitsHighest)
+	cmpInts(t, "account_defaults.privacy.ip_masking.ipv4.gdpr_left_mask_bits_lowest", 24, cfg.AccountDefaults.Privacy.IPMasking.IPv4.GdprLeftMaskBitsLowest)
 
 	//Assert purpose VendorExceptionMap hash tables were built correctly
 	expectedTCF2 := TCF2{
@@ -596,10 +596,10 @@ func TestFullConfig(t *testing.T) {
 	cmpBools(t, "account_defaults.events_enabled", *cfg.AccountDefaults.EventsEnabled, true)
 	cmpNils(t, "account_defaults.events.enabled", cfg.AccountDefaults.Events.Enabled)
 
-	cmpInts(t, "account_defaults.privacy.ip_masking.ipv6.activity_left_mask_bits", 50, cfg.AccountDefaults.Privacy.IPMasking.IpV6.ActivityLeftMaskBits)
-	cmpInts(t, "account_defaults.privacy.ip_masking.ipv6.gdpr_left_mask_bits_lowest", 110, cfg.AccountDefaults.Privacy.IPMasking.IpV6.GdprLeftMaskBitsLowest)
-	cmpInts(t, "account_defaults.privacy.ip_masking.ipv6.gdpr_left_mask_bits_highest", 90, cfg.AccountDefaults.Privacy.IPMasking.IpV6.GdprLeftMaskBitsHighest)
-	cmpInts(t, "account_defaults.privacy.ip_masking.ipv4.gdpr_left_mask_bits_lowest", 20, cfg.AccountDefaults.Privacy.IPMasking.IpV4.GdprLeftMaskBitsLowest)
+	cmpInts(t, "account_defaults.privacy.ip_masking.ipv6.activity_left_mask_bits", 50, cfg.AccountDefaults.Privacy.IPMasking.IPv6.ActivityLeftMaskBits)
+	cmpInts(t, "account_defaults.privacy.ip_masking.ipv6.gdpr_left_mask_bits_lowest", 110, cfg.AccountDefaults.Privacy.IPMasking.IPv6.GdprLeftMaskBitsLowest)
+	cmpInts(t, "account_defaults.privacy.ip_masking.ipv6.gdpr_left_mask_bits_highest", 90, cfg.AccountDefaults.Privacy.IPMasking.IPv6.GdprLeftMaskBitsHighest)
+	cmpInts(t, "account_defaults.privacy.ip_masking.ipv4.gdpr_left_mask_bits_lowest", 20, cfg.AccountDefaults.Privacy.IPMasking.IPv4.GdprLeftMaskBitsLowest)
 
 	// Assert compression related defaults
 	cmpBools(t, "enable_gzip", false, cfg.EnableGzip)

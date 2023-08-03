@@ -22,8 +22,8 @@ const (
 )
 
 const (
-	IPv4 = 32
-	IPv6 = 128
+	IPv4BitSize = 32
+	IPv6BitSize = 128
 )
 
 // Account represents a publisher account configuration
@@ -305,8 +305,8 @@ type AccountPrivacy struct {
 }
 
 type IPMasking struct {
-	IpV6 IPMasks `mapstructure:"ipv6" json:"ipv6"`
-	IpV4 IPMasks `mapstructure:"ipv4" json:"ipv4"`
+	IPv6 IPMasks `mapstructure:"ipv6" json:"ipv6"`
+	IPv4 IPMasks `mapstructure:"ipv4" json:"ipv4"`
 }
 
 type IPMasks struct {
@@ -316,10 +316,10 @@ type IPMasks struct {
 }
 
 func (ipMasking *IPMasking) Validate(errs []error) []error {
-	if e := ipMasking.IpV6.validate(IPv6, "ipv6"); e != nil {
+	if e := ipMasking.IPv6.validate(IPv6BitSize, "ipv6"); e != nil {
 		errs = append(errs, e...)
 	}
-	if e := ipMasking.IpV4.validate(IPv4, "ipv4"); e != nil {
+	if e := ipMasking.IPv4.validate(IPv4BitSize, "ipv4"); e != nil {
 		errs = append(errs, e...)
 	}
 	return errs
