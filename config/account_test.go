@@ -922,14 +922,10 @@ func TestIPMaskingValidate(t *testing.T) {
 			name: "valid configuration",
 			masking: &IPMasking{
 				IPv4: IPMasks{
-					ActivityLeftMaskBits:    1,
-					GdprLeftMaskBitsLowest:  2,
-					GdprLeftMaskBitsHighest: 0,
+					LeftMaskBits: 1,
 				},
 				IPv6: IPMasks{
-					ActivityLeftMaskBits:    0,
-					GdprLeftMaskBitsLowest:  2,
-					GdprLeftMaskBitsHighest: 3,
+					LeftMaskBits: 0,
 				},
 			},
 		},
@@ -937,42 +933,29 @@ func TestIPMaskingValidate(t *testing.T) {
 			name: "invalid configuration",
 			masking: &IPMasking{
 				IPv4: IPMasks{
-					ActivityLeftMaskBits:    100,
-					GdprLeftMaskBitsLowest:  -200,
-					GdprLeftMaskBitsHighest: 300,
+					LeftMaskBits: -100,
 				},
 				IPv6: IPMasks{
-					ActivityLeftMaskBits:    -100,
-					GdprLeftMaskBitsLowest:  200,
-					GdprLeftMaskBitsHighest: -300,
+					LeftMaskBits: -200,
 				},
 			},
 			want: []error{
-				errors.New("activity left mask bits cannot exceed 32 in ipv4 address, or be less than 0"),
-				errors.New("gdpr left mask bits lowest cannot exceed 32 in ipv4 address, or be less than 0"),
-				errors.New("gdpr left mask bits highest cannot exceed 32 in ipv4 address, or be less than 0"),
-				errors.New("activity left mask bits cannot exceed 128 in ipv6 address, or be less than 0"),
-				errors.New("gdpr left mask bits lowest cannot exceed 128 in ipv6 address, or be less than 0"),
-				errors.New("gdpr left mask bits highest cannot exceed 128 in ipv6 address, or be less than 0"),
+				errors.New("left mask bits cannot exceed 32 in ipv4 address, or be less than 0"),
+				errors.New("left mask bits cannot exceed 128 in ipv6 address, or be less than 0"),
 			},
 		},
 		{
 			name: "mixed valid and invalid configuration",
 			masking: &IPMasking{
 				IPv4: IPMasks{
-					ActivityLeftMaskBits:    10,
-					GdprLeftMaskBitsLowest:  -20,
-					GdprLeftMaskBitsHighest: 30,
+					LeftMaskBits: 10,
 				},
 				IPv6: IPMasks{
-					ActivityLeftMaskBits:    10,
-					GdprLeftMaskBitsLowest:  20,
-					GdprLeftMaskBitsHighest: -30,
+					LeftMaskBits: -10,
 				},
 			},
 			want: []error{
-				errors.New("gdpr left mask bits lowest cannot exceed 32 in ipv4 address, or be less than 0"),
-				errors.New("gdpr left mask bits highest cannot exceed 128 in ipv6 address, or be less than 0"),
+				errors.New("left mask bits cannot exceed 128 in ipv6 address, or be less than 0"),
 			},
 		},
 	}

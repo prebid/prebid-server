@@ -1027,10 +1027,8 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("account_defaults.price_floors.max_rules", 100)
 	v.SetDefault("account_defaults.price_floors.max_schema_dims", 3)
 	v.SetDefault("account_defaults.events_enabled", false)
-	v.SetDefault("account_defaults.privacy.ip_masking.ipv6.activity_left_mask_bits", 56)
-	v.SetDefault("account_defaults.privacy.ip_masking.ipv6.gdpr_left_mask_bits_lowest", 112)
-	v.SetDefault("account_defaults.privacy.ip_masking.ipv6.gdpr_left_mask_bits_highest", 96)
-	v.SetDefault("account_defaults.privacy.ip_masking.ipv4.gdpr_left_mask_bits_lowest", 24)
+	v.SetDefault("account_defaults.privacy.ip_masking.ipv6.left_mask_bits", 56)
+	v.SetDefault("account_defaults.privacy.ip_masking.ipv4.left_mask_bits", 24)
 
 	v.SetDefault("compression.response.enable_gzip", false)
 	v.SetDefault("compression.request.enable_gzip", false)

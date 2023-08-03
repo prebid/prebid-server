@@ -310,9 +310,7 @@ type IPMasking struct {
 }
 
 type IPMasks struct {
-	ActivityLeftMaskBits    int `mapstructure:"activity_left_mask_bits" json:"activity_left_mask_bits"`
-	GdprLeftMaskBitsLowest  int `mapstructure:"gdpr_left_mask_bits_lowest" json:"gdpr_left_mask_bits_lowest"`
-	GdprLeftMaskBitsHighest int `mapstructure:"gdpr_left_mask_bits_highest" json:"gdpr_left_mask_bits_highest"`
+	LeftMaskBits int `mapstructure:"left_mask_bits" json:"left_mask_bits"`
 }
 
 func (ipMasking *IPMasking) Validate(errs []error) []error {
@@ -328,19 +326,10 @@ func (ipMasking *IPMasking) Validate(errs []error) []error {
 func (ipMasks *IPMasks) validate(maxBits int, ipVersion string) []error {
 	var errs []error
 
-	if ipMasks.ActivityLeftMaskBits > maxBits || ipMasks.ActivityLeftMaskBits < 0 {
-		err := fmt.Errorf("activity left mask bits cannot exceed %d in %s address, or be less than 0", maxBits, ipVersion)
+	if ipMasks.LeftMaskBits > maxBits || ipMasks.LeftMaskBits < 0 {
+		err := fmt.Errorf("left mask bits cannot exceed %d in %s address, or be less than 0", maxBits, ipVersion)
 		errs = append(errs, err)
 	}
 
-	if ipMasks.GdprLeftMaskBitsLowest > maxBits || ipMasks.GdprLeftMaskBitsLowest < 0 {
-		err := fmt.Errorf("gdpr left mask bits lowest cannot exceed %d in %s address, or be less than 0", maxBits, ipVersion)
-		errs = append(errs, err)
-	}
-
-	if ipMasks.GdprLeftMaskBitsHighest > maxBits || ipMasks.GdprLeftMaskBitsHighest < 0 {
-		err := fmt.Errorf("gdpr left mask bits highest cannot exceed %d in %s address, or be less than 0", maxBits, ipVersion)
-		errs = append(errs, err)
-	}
 	return errs
 }

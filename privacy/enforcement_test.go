@@ -77,7 +77,7 @@ func TestApplyGDPR(t *testing.T) {
 			},
 			expectedDeviceID:   ScrubStrategyDeviceIDAll,
 			expectedDeviceIPv4: ScrubStrategyIPV4Lowest8,
-			expectedDeviceIPv6: ScrubStrategyIPV6Lowest32,
+			expectedDeviceIPv6: ScrubStrategyIPV6Subnet,
 			expectedDeviceGeo:  ScrubStrategyGeoFull,
 			expectedUser:       ScrubStrategyUserIDAndDemographic,
 			expectedUserGeo:    ScrubStrategyGeoFull,
@@ -93,7 +93,7 @@ func TestApplyGDPR(t *testing.T) {
 			},
 			expectedDeviceID:   ScrubStrategyDeviceIDAll,
 			expectedDeviceIPv4: ScrubStrategyIPV4Lowest8,
-			expectedDeviceIPv6: ScrubStrategyIPV6Lowest16,
+			expectedDeviceIPv6: ScrubStrategyIPV6Subnet,
 			expectedDeviceGeo:  ScrubStrategyGeoReducedPrecision,
 			expectedUser:       ScrubStrategyUserIDAndDemographic,
 			expectedUserGeo:    ScrubStrategyGeoReducedPrecision,
@@ -109,7 +109,7 @@ func TestApplyGDPR(t *testing.T) {
 			},
 			expectedDeviceID:   ScrubStrategyDeviceIDAll,
 			expectedDeviceIPv4: ScrubStrategyIPV4Lowest8,
-			expectedDeviceIPv6: ScrubStrategyIPV6Lowest32,
+			expectedDeviceIPv6: ScrubStrategyIPV6Subnet,
 			expectedDeviceGeo:  ScrubStrategyGeoFull,
 			expectedUser:       ScrubStrategyUserIDAndDemographic,
 			expectedUserGeo:    ScrubStrategyGeoFull,
@@ -125,7 +125,7 @@ func TestApplyGDPR(t *testing.T) {
 			},
 			expectedDeviceID:   ScrubStrategyDeviceIDAll,
 			expectedDeviceIPv4: ScrubStrategyIPV4Lowest8,
-			expectedDeviceIPv6: ScrubStrategyIPV6Lowest16,
+			expectedDeviceIPv6: ScrubStrategyIPV6Subnet,
 			expectedDeviceGeo:  ScrubStrategyGeoReducedPrecision,
 			expectedUser:       ScrubStrategyUserIDAndDemographic,
 			expectedUserGeo:    ScrubStrategyGeoReducedPrecision,
@@ -157,7 +157,7 @@ func TestApplyGDPR(t *testing.T) {
 			},
 			expectedDeviceID:   ScrubStrategyDeviceIDNone,
 			expectedDeviceIPv4: ScrubStrategyIPV4Lowest8,
-			expectedDeviceIPv6: ScrubStrategyIPV6Lowest16,
+			expectedDeviceIPv6: ScrubStrategyIPV6Subnet,
 			expectedDeviceGeo:  ScrubStrategyGeoReducedPrecision,
 			expectedUser:       ScrubStrategyUserNone,
 			expectedUserGeo:    ScrubStrategyGeoReducedPrecision,
@@ -173,7 +173,7 @@ func TestApplyGDPR(t *testing.T) {
 			},
 			expectedDeviceID:   ScrubStrategyDeviceIDAll,
 			expectedDeviceIPv4: ScrubStrategyIPV4Lowest8,
-			expectedDeviceIPv6: ScrubStrategyIPV6Lowest16,
+			expectedDeviceIPv6: ScrubStrategyIPV6Subnet,
 			expectedDeviceGeo:  ScrubStrategyGeoReducedPrecision,
 			expectedUser:       ScrubStrategyUserIDAndDemographic,
 			expectedUserGeo:    ScrubStrategyGeoReducedPrecision,
@@ -189,7 +189,7 @@ func TestApplyGDPR(t *testing.T) {
 			},
 			expectedDeviceID:   ScrubStrategyDeviceIDAll,
 			expectedDeviceIPv4: ScrubStrategyIPV4Lowest8,
-			expectedDeviceIPv6: ScrubStrategyIPV6Lowest32,
+			expectedDeviceIPv6: ScrubStrategyIPV6Subnet,
 			expectedDeviceGeo:  ScrubStrategyGeoFull,
 			expectedUser:       ScrubStrategyUserIDAndDemographic,
 			expectedUserGeo:    ScrubStrategyGeoFull,
@@ -329,7 +329,7 @@ func TestApplyToggle(t *testing.T) {
 				m.On("ScrubUser", req.User, ScrubStrategyUserIDAndDemographic, ScrubStrategyGeoFull).Return(replacedUser).Once()
 			}
 			if test.expectedScrubDeviceExecuted {
-				m.On("ScrubDevice", req.Device, ScrubStrategyDeviceIDAll, ScrubStrategyIPV4Lowest8, ScrubStrategyIPV6Lowest32, ScrubStrategyGeoFull).Return(replacedDevice).Once()
+				m.On("ScrubDevice", req.Device, ScrubStrategyDeviceIDAll, ScrubStrategyIPV4Lowest8, ScrubStrategyIPV6Subnet, ScrubStrategyGeoFull).Return(replacedDevice).Once()
 			}
 
 			test.enforcement.apply(req, m)

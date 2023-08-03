@@ -65,14 +65,9 @@ func (e Enforcement) getIPv4ScrubStrategy() ScrubStrategyIPV4 {
 }
 
 func (e Enforcement) getIPv6ScrubStrategy() ScrubStrategyIPV6 {
-	if e.COPPA {
-		return ScrubStrategyIPV6Lowest32
+	if e.GDPRGeo || e.CCPA || e.LMT || e.COPPA {
+		return ScrubStrategyIPV6Subnet
 	}
-
-	if e.GDPRGeo || e.CCPA || e.LMT {
-		return ScrubStrategyIPV6Lowest16
-	}
-
 	return ScrubStrategyIPV6None
 }
 

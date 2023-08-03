@@ -39,12 +39,12 @@ func TestScrubDevice(t *testing.T) {
 				MACMD5:   "",
 				IFA:      "",
 				IP:       "1.2.3.0",
-				IPv6:     "2001:db8::ff00:0:0",
+				IPv6:     "2001:db8:2233:4400::",
 				Geo:      &openrtb2.Geo{},
 			},
 			id:   ScrubStrategyDeviceIDAll,
 			ipv4: ScrubStrategyIPV4Lowest8,
-			ipv6: ScrubStrategyIPV6Lowest32,
+			ipv6: ScrubStrategyIPV6Subnet,
 			geo:  ScrubStrategyGeoFull,
 		},
 		{
@@ -58,7 +58,7 @@ func TestScrubDevice(t *testing.T) {
 				MACMD5:   "",
 				IFA:      "",
 				IP:       "1.2.3.4",
-				IPv6:     "2001:0db8:0000:0000:0000:ff00:0042:8329",
+				IPv6:     "2001:0db8:2233:4455:6677:ff00:0042:8329",
 				Geo:      device.Geo,
 			},
 			id:   ScrubStrategyDeviceIDAll,
@@ -77,7 +77,7 @@ func TestScrubDevice(t *testing.T) {
 				MACMD5:   "anyMACMD5",
 				IFA:      "anyIFA",
 				IP:       "1.2.3.0",
-				IPv6:     "2001:0db8:0000:0000:0000:ff00:0042:8329",
+				IPv6:     "2001:0db8:2233:4455:6677:ff00:0042:8329",
 				Geo:      device.Geo,
 			},
 			id:   ScrubStrategyDeviceIDNone,
@@ -86,7 +86,7 @@ func TestScrubDevice(t *testing.T) {
 			geo:  ScrubStrategyGeoNone,
 		},
 		{
-			description: "Isolated - IPv6 - Lowest 16",
+			description: "Isolated - IPv6",
 			expected: &openrtb2.Device{
 				DIDMD5:   "anyDIDMD5",
 				DIDSHA1:  "anyDIDSHA1",
@@ -96,31 +96,12 @@ func TestScrubDevice(t *testing.T) {
 				MACMD5:   "anyMACMD5",
 				IFA:      "anyIFA",
 				IP:       "1.2.3.4",
-				IPv6:     "2001:db8::ff00:42:0",
+				IPv6:     "2001:db8:2233:4400::",
 				Geo:      device.Geo,
 			},
 			id:   ScrubStrategyDeviceIDNone,
 			ipv4: ScrubStrategyIPV4None,
-			ipv6: ScrubStrategyIPV6Lowest16,
-			geo:  ScrubStrategyGeoNone,
-		},
-		{
-			description: "Isolated - IPv6 - Lowest 32",
-			expected: &openrtb2.Device{
-				DIDMD5:   "anyDIDMD5",
-				DIDSHA1:  "anyDIDSHA1",
-				DPIDMD5:  "anyDPIDMD5",
-				DPIDSHA1: "anyDPIDSHA1",
-				MACSHA1:  "anyMACSHA1",
-				MACMD5:   "anyMACMD5",
-				IFA:      "anyIFA",
-				IP:       "1.2.3.4",
-				IPv6:     "2001:db8::ff00:0:0",
-				Geo:      device.Geo,
-			},
-			id:   ScrubStrategyDeviceIDNone,
-			ipv4: ScrubStrategyIPV4None,
-			ipv6: ScrubStrategyIPV6Lowest32,
+			ipv6: ScrubStrategyIPV6Subnet,
 			geo:  ScrubStrategyGeoNone,
 		},
 		{
@@ -134,7 +115,7 @@ func TestScrubDevice(t *testing.T) {
 				MACMD5:   "anyMACMD5",
 				IFA:      "anyIFA",
 				IP:       "1.2.3.4",
-				IPv6:     "2001:0db8:0000:0000:0000:ff00:0042:8329",
+				IPv6:     "2001:0db8:2233:4455:6677:ff00:0042:8329",
 				Geo: &openrtb2.Geo{
 					Lat:   123.46,
 					Lon:   678.89,
@@ -159,7 +140,7 @@ func TestScrubDevice(t *testing.T) {
 				MACMD5:   "anyMACMD5",
 				IFA:      "anyIFA",
 				IP:       "1.2.3.4",
-				IPv6:     "2001:0db8:0000:0000:0000:ff00:0042:8329",
+				IPv6:     "2001:0db8:2233:4455:6677:ff00:0042:8329",
 				Geo:      &openrtb2.Geo{},
 			},
 			id:   ScrubStrategyDeviceIDNone,
@@ -340,7 +321,7 @@ func TestScrubRequest(t *testing.T) {
 				},
 				Device: &openrtb2.Device{
 					IP:   "1.2.3.4",
-					IPv6: "2001:0db8:0000:0000:0000:ff00:0042:8329",
+					IPv6: "2001:0db8:2233:4455:6677:ff00:0042:8329",
 					Geo:  device.Geo,
 				},
 			},
@@ -358,7 +339,7 @@ func TestScrubRequest(t *testing.T) {
 				},
 				Device: &openrtb2.Device{
 					IP:   "1.2.3.4",
-					IPv6: "2001:0db8:0000:0000:0000:ff00:0042:8329",
+					IPv6: "2001:0db8:2233:4455:6677:ff00:0042:8329",
 					Geo:  device.Geo,
 				},
 			},
@@ -435,7 +416,7 @@ func TestScrubRequest(t *testing.T) {
 					MACSHA1:  "anyMACSHA1",
 					MACMD5:   "anyMACMD5",
 					IP:       "1.2.3.0",
-					IPv6:     "2001:db8::",
+					IPv6:     "2001:db8:2233:4400::",
 					Geo: &openrtb2.Geo{
 						Lat: 123.46, Lon: 678.89,
 						Metro: "some metro",
@@ -727,7 +708,7 @@ func getTestDevice() *openrtb2.Device {
 		MACMD5:   "anyMACMD5",
 		IFA:      "anyIFA",
 		IP:       "1.2.3.4",
-		IPv6:     "2001:0db8:0000:0000:0000:ff00:0042:8329",
+		IPv6:     "2001:0db8:2233:4455:6677:ff00:0042:8329",
 		Geo: &openrtb2.Geo{
 			Lat:   123.456,
 			Lon:   678.89,
@@ -741,12 +722,10 @@ func getTestDevice() *openrtb2.Device {
 func getTestIPMasking() config.IPMasking {
 	return config.IPMasking{
 		IPv6: config.IPMasks{
-			ActivityLeftMaskBits:    54,
-			GdprLeftMaskBitsLowest:  112,
-			GdprLeftMaskBitsHighest: 96,
+			LeftMaskBits: 54,
 		},
 		IPv4: config.IPMasks{
-			GdprLeftMaskBitsLowest: 24,
+			LeftMaskBits: 24,
 		},
 	}
 }

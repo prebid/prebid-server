@@ -27,11 +27,8 @@ const (
 	// ScrubStrategyIPV6None does not remove any part of an IPV6 address.
 	ScrubStrategyIPV6None ScrubStrategyIPV6 = iota
 
-	// ScrubStrategyIPV6Lowest16 zeroes out the last 16 bits of an IPV6 address.
-	ScrubStrategyIPV6Lowest16
-
-	// ScrubStrategyIPV6Lowest32 zeroes out the last 32 bits of an IPV6 address.
-	ScrubStrategyIPV6Lowest32
+	// ScrubStrategyIPV6Subnet zeroes out the last 16 bits of an IPV6 sub net address.
+	ScrubStrategyIPV6Subnet
 )
 
 // ScrubStrategyGeo defines the approach to scrub PII from geographical data.
@@ -173,8 +170,8 @@ func (s scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enfo
 			if deviceCopy.Geo != nil {
 				deviceCopy.Geo = scrubGeoPrecision(deviceCopy.Geo)
 			}
-			deviceCopy.IP = scrubIP(deviceCopy.IP, s.ipV4.GdprLeftMaskBitsLowest, config.IPv4BitSize)
-			deviceCopy.IPv6 = scrubIP(deviceCopy.IPv6, s.ipV6.ActivityLeftMaskBits, config.IPv6BitSize)
+			deviceCopy.IP = scrubIP(deviceCopy.IP, s.ipV4.LeftMaskBits, config.IPv4BitSize)
+			deviceCopy.IPv6 = scrubIP(deviceCopy.IPv6, s.ipV6.LeftMaskBits, config.IPv6BitSize)
 		}
 	}
 
@@ -203,14 +200,12 @@ func (s scrubber) ScrubDevice(device *openrtb2.Device, id ScrubStrategyDeviceID,
 
 	switch ipv4 {
 	case ScrubStrategyIPV4Lowest8:
-		deviceCopy.IP = scrubIP(device.IP, s.ipV4.GdprLeftMaskBitsLowest, config.IPv4BitSize)
+		deviceCopy.IP = scrubIP(device.IP, s.ipV4.LeftMaskBits, config.IPv4BitSize)
 	}
 
 	switch ipv6 {
-	case ScrubStrategyIPV6Lowest16:
-		deviceCopy.IPv6 = scrubIP(device.IPv6, s.ipV6.GdprLeftMaskBitsLowest, config.IPv6BitSize)
-	case ScrubStrategyIPV6Lowest32:
-		deviceCopy.IPv6 = scrubIP(device.IPv6, s.ipV6.GdprLeftMaskBitsHighest, config.IPv6BitSize)
+	case ScrubStrategyIPV6Subnet:
+		deviceCopy.IPv6 = scrubIP(device.IPv6, s.ipV6.LeftMaskBits, config.IPv6BitSize)
 	}
 
 	switch geo {
