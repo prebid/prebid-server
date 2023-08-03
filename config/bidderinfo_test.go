@@ -273,6 +273,54 @@ func TestProcessBidderInfo(t *testing.T) {
 }
 
 func TestProcessAliasBidderInfo(t *testing.T) {
+	parentBidderInfo := BidderInfo{
+		AppSecret: "app-secret",
+		Capabilities: &CapabilitiesInfo{
+			App: &PlatformInfo{
+				MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative},
+			},
+			Site: &PlatformInfo{
+				MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative},
+			},
+		},
+		Debug: &DebugInfo{
+			Allow: true,
+		},
+		Disabled:            false,
+		Endpoint:            "https://endpoint.com",
+		EndpointCompression: "GZIP",
+		Experiment: BidderInfoExperiment{
+			AdsCert: BidderAdsCert{
+				Enabled: true,
+			},
+		},
+		ExtraAdapterInfo: "extra-info",
+		GVLVendorID:      42,
+		Maintainer: &MaintainerInfo{
+			Email: "some-email@domain.com",
+		},
+		ModifyingVastXmlAllowed: true,
+		OpenRTB: &OpenRTBInfo{
+			GPPSupported: true,
+			Version:      "2.6",
+		},
+		PlatformID: "123",
+		Syncer: &Syncer{
+			Key: "foo",
+			IFrame: &SyncerEndpoint{
+				URL:         "https://foo.com/sync?mode=iframe&r={{.RedirectURL}}",
+				RedirectURL: "https://redirect/setuid/iframe",
+				ExternalURL: "https://iframe.host",
+				UserMacro:   "UID",
+			},
+		},
+		UserSyncURL: "user-url",
+		XAPI: AdapterXAPI{
+			Username: "uname",
+			Password: "pwd",
+			Tracker:  "tracker",
+		},
+	}
 	testCases := []struct {
 		description         string
 		aliasInfos          aliasInfos
@@ -286,107 +334,13 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 				"bidderB": bidderInfoNullableFields{},
 			},
 			bidderInfos: BidderInfos{
-				"bidderA": BidderInfo{
-					AppSecret: "app-secret",
-					Capabilities: &CapabilitiesInfo{
-						App: &PlatformInfo{
-							MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative},
-						},
-						Site: &PlatformInfo{
-							MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative},
-						},
-					},
-					Debug: &DebugInfo{
-						Allow: true,
-					},
-					Disabled:            false,
-					Endpoint:            "https://endpoint.com",
-					EndpointCompression: "GZIP",
-					Experiment: BidderInfoExperiment{
-						AdsCert: BidderAdsCert{
-							Enabled: true,
-						},
-					},
-					ExtraAdapterInfo: "extra-info",
-					GVLVendorID:      42,
-					Maintainer: &MaintainerInfo{
-						Email: "some-email@domain.com",
-					},
-					ModifyingVastXmlAllowed: true,
-					OpenRTB: &OpenRTBInfo{
-						GPPSupported: true,
-						Version:      "2.6",
-					},
-					PlatformID: "123",
-					Syncer: &Syncer{
-						Key: "foo",
-						IFrame: &SyncerEndpoint{
-							URL:         "https://foo.com/sync?mode=iframe&r={{.RedirectURL}}",
-							RedirectURL: "https://redirect/setuid/iframe",
-							ExternalURL: "https://iframe.host",
-							UserMacro:   "UID",
-						},
-					},
-					UserSyncURL: "user-url",
-					XAPI: AdapterXAPI{
-						Username: "uname",
-						Password: "pwd",
-						Tracker:  "tracker",
-					},
-				},
+				"bidderA": parentBidderInfo,
 				"bidderB": BidderInfo{
 					AliasOf: "bidderA",
 				},
 			},
 			expectedBidderInfos: BidderInfos{
-				"bidderA": BidderInfo{
-					AppSecret: "app-secret",
-					Capabilities: &CapabilitiesInfo{
-						App: &PlatformInfo{
-							MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative},
-						},
-						Site: &PlatformInfo{
-							MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative},
-						},
-					},
-					Debug: &DebugInfo{
-						Allow: true,
-					},
-					Disabled:            false,
-					Endpoint:            "https://endpoint.com",
-					EndpointCompression: "GZIP",
-					Experiment: BidderInfoExperiment{
-						AdsCert: BidderAdsCert{
-							Enabled: true,
-						},
-					},
-					ExtraAdapterInfo: "extra-info",
-					GVLVendorID:      42,
-					Maintainer: &MaintainerInfo{
-						Email: "some-email@domain.com",
-					},
-					ModifyingVastXmlAllowed: true,
-					OpenRTB: &OpenRTBInfo{
-						GPPSupported: true,
-						Version:      "2.6",
-					},
-					PlatformID: "123",
-					Syncer: &Syncer{
-						Key: "foo",
-						IFrame: &SyncerEndpoint{
-							URL:         "https://foo.com/sync?mode=iframe&r={{.RedirectURL}}",
-							RedirectURL: "https://redirect/setuid/iframe",
-							ExternalURL: "https://iframe.host",
-							UserMacro:   "UID",
-						},
-					},
-					UserSyncURL: "user-url",
-					XAPI: AdapterXAPI{
-						Username: "uname",
-						Password: "pwd",
-						Tracker:  "tracker",
-					},
-				},
+				"bidderA": parentBidderInfo,
 				"bidderB": BidderInfo{
 					AliasOf:   "bidderA",
 					AppSecret: "app-secret",
