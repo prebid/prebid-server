@@ -127,7 +127,7 @@ func getNonPriorityKeys(uids map[string]UIDEntry, priorityGroups [][]string) []s
 }
 
 func getOldestElement(elements []string, uids map[string]UIDEntry) string {
-	var oldestElem string = ""
+	var oldestElem string
 	var oldestDate int64 = math.MaxInt64
 
 	for _, key := range elements {
@@ -137,8 +137,6 @@ func getOldestElement(elements []string, uids map[string]UIDEntry) string {
 				oldestElem = key
 				oldestDate = int64(timeUntilExpiration)
 			}
-		} else {
-			continue
 		}
 	}
 	return oldestElem

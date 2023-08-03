@@ -299,7 +299,7 @@ func TestGetNonPriorityKeys(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			keys := getNonPriorityKeys(test.givenUids, test.givenPriorityGroups)
-			assert.Equal(t, true, containsSameElements(test.expected, keys))
+			assert.Equal(t, true, assert.ElementsMatch(t, test.expected, keys))
 		})
 	}
 }
@@ -352,26 +352,4 @@ func TestIsSyncerPriority(t *testing.T) {
 			assert.Equal(t, test.expected, isPriority)
 		})
 	}
-}
-
-func containsSameElements(x, y []string) bool {
-	if len(x) != len(y) {
-		return false
-	}
-
-	countOfElements := make(map[string]int)
-
-	for _, key := range x {
-		countOfElements[key]++
-	}
-	for _, key := range y {
-		countOfElements[key]--
-	}
-
-	for _, count := range countOfElements {
-		if count != 0 {
-			return false
-		}
-	}
-	return true
 }
