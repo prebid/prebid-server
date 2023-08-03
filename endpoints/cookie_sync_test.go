@@ -983,9 +983,9 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
 			givenConfig: config.UserSync{
+				PriorityGroups: [][]string{{"a", "b", "c"}},
 				Cooperative: config.UserSyncCooperative{
 					EnabledByDefault: false,
-					PriorityGroups:   [][]string{{"a", "b", "c"}},
 				},
 			},
 			expectedPrivacy: privacy.Policies{},
