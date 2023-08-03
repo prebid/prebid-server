@@ -548,6 +548,7 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 
 	if tmaxAdjustments != nil && tmaxAdjustments.IsEnforced {
 		if hasShorterDurationThanTmax(&bidderTmaxCtx{ctx}, *tmaxAdjustments) {
+			bidder.me.RecordTMaxTimeout()
 			return &httpCallInfo{
 				request: req,
 				err:     errTmaxTimeout,
