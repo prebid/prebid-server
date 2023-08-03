@@ -338,14 +338,14 @@ func validateAdapterEndpoint(endpoint string, bidderName string, errs []error) [
 	return errs
 }
 
-func validateInfo(info BidderInfo, infos BidderInfos, bidderName string) error {
-	if err := validateMaintainer(info.Maintainer, bidderName); err != nil {
+func validateInfo(bidder BidderInfo, infos BidderInfos, bidderName string) error {
+	if err := validateMaintainer(bidder.Maintainer, bidderName); err != nil {
 		return err
 	}
-	if err := validateCapabilities(info.Capabilities, bidderName); err != nil {
+	if err := validateCapabilities(bidder.Capabilities, bidderName); err != nil {
 		return err
 	}
-	if err := validateAliasCapabilities(info, infos, bidderName); err != nil {
+	if err := validateAliasCapabilities(bidder, infos, bidderName); err != nil {
 		return err
 	}
 	return nil
