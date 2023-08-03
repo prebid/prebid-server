@@ -322,11 +322,10 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 		},
 	}
 	testCases := []struct {
-		description         string
-		aliasInfos          aliasInfos
-		bidderInfos         BidderInfos
-		expectedBidderInfos BidderInfos
-		expectError         string
+		description string
+		aliasInfos  aliasInfos
+		bidderInfos BidderInfos
+		assertFunc  func(BidderInfos, error)
 	}{
 		{
 			description: "inherit all parent info in alias bidder",
@@ -345,27 +344,11 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 					// all other fields should be inherited from parent bidder
 				},
 			},
-			expectedBidderInfos: BidderInfos{
-				"bidderA": parentBidderInfo,
-				"bidderB": BidderInfo{
-					AliasOf:                 "bidderA",
-					AppSecret:               parentBidderInfo.AppSecret,
-					Capabilities:            parentBidderInfo.Capabilities,
-					Debug:                   parentBidderInfo.Debug,
-					Disabled:                parentBidderInfo.Disabled,
-					Endpoint:                parentBidderInfo.Endpoint,
-					EndpointCompression:     parentBidderInfo.EndpointCompression,
-					Experiment:              parentBidderInfo.Experiment,
-					ExtraAdapterInfo:        parentBidderInfo.ExtraAdapterInfo,
-					GVLVendorID:             parentBidderInfo.GVLVendorID,
-					Maintainer:              parentBidderInfo.Maintainer,
-					ModifyingVastXmlAllowed: parentBidderInfo.ModifyingVastXmlAllowed,
-					OpenRTB:                 parentBidderInfo.OpenRTB,
-					PlatformID:              parentBidderInfo.PlatformID,
-					Syncer:                  parentBidderInfo.Syncer,
-					UserSyncURL:             parentBidderInfo.UserSyncURL,
-					XAPI:                    parentBidderInfo.XAPI,
-				},
+			assertFunc: func(bidderInfos BidderInfos, err error) {
+				assert.NoError(t, err)
+				bidderB := parentBidderInfo
+				bidderB.AliasOf = "bidderA"
+				assert.Equal(t, BidderInfos{"bidderA": parentBidderInfo, "bidderB": bidderB}, bidderInfos)
 			},
 		},
 		{
@@ -378,18 +361,16 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 					AliasOf: "bidderA",
 				},
 			},
-			expectError: "bidderA not found for an alias: bidderB",
+			assertFunc: func(bidderInfos BidderInfos, err error) {
+				assert.Nil(t, bidderInfos)
+				assert.Equal(t, "bidder: bidderA not found for an alias: bidderB", err.Error())
+			},
 		},
 	}
 
 	for _, test := range testCases {
 		bidderInfos, err := processBidderAliases(test.aliasInfos, test.bidderInfos)
-		if test.expectError != "" {
-			assert.ErrorContains(t, err, test.expectError)
-		} else {
-			assert.Equal(t, test.expectedBidderInfos, bidderInfos)
-		}
-
+		test.assertFunc(bidderInfos, err)
 	}
 }
 
