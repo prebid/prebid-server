@@ -3,6 +3,7 @@ package account
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -19,6 +20,7 @@ import (
 
 var mockAccountData = map[string]json.RawMessage{
 	"valid_acct":                json.RawMessage(`{"disabled":false}`),
+	"invalid_acct":              json.RawMessage(`{"disabled":false, "privacy": {"ip_masking": {"ipv6": {"left_mask_bits": -32}}}}`),
 	"disabled_acct":             json.RawMessage(`{"disabled":true}`),
 	"malformed_acct":            json.RawMessage(`{"disabled":"invalid type"}`),
 	"gdpr_channel_enabled_acct": json.RawMessage(`{"disabled":false,"gdpr":{"channel_enabled":{"amp":true}}}`),
@@ -77,6 +79,8 @@ func TestGetAccount(t *testing.T) {
 		{accountID: "valid_acct", required: true, disabled: false, err: nil},
 		{accountID: "valid_acct", required: false, disabled: true, err: nil},
 		{accountID: "valid_acct", required: true, disabled: true, err: nil},
+
+		{accountID: "invalid_acct", required: true, disabled: false, err: errors.New("left mask bits cannot exceed 128 in ipv6 address, or be less than 0")},
 
 		// pubID given and matches a host account explicitly disabled (Disabled: true on account json)
 		{accountID: "disabled_acct", required: false, disabled: false, err: &errortypes.BlacklistedAcct{}},

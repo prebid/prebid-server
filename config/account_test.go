@@ -912,7 +912,6 @@ func TestAccountPriceFloorsValidate(t *testing.T) {
 }
 
 func TestIPMaskingValidate(t *testing.T) {
-
 	tests := []struct {
 		name    string
 		masking *IPMasking
