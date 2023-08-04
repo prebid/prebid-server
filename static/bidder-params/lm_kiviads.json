@@ -11,7 +11,7 @@
     },
     "pid": {
       "type": "string",
-      "description": "Uniq placement ID",
+      "description": "Unique placement ID",
       "minLength": 1
     }
   },
