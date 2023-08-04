@@ -47,8 +47,7 @@
         "headers": {
           "Content-Type": ["application/json"],
           "Accept": ["application/json"],
-          "X-OpenRTB-Version": ["2.5"],
-          "Vungle-Explain": ["jaeger"]
+          "X-OpenRTB-Version": ["2.5"]
         },
         "body": {
           "id": "test-request-id",

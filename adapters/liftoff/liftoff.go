@@ -24,10 +24,6 @@ type prebid struct {
 	Debug bool `json:"debug"`
 }
 
-type prebidExt struct {
-	Prebid prebid `json:"prebid"`
-}
-
 type liftoffImpressionExt struct {
 	*adapters.ExtImpBidder
 	// Ext represents the vungle extension.
@@ -103,18 +99,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 				"Accept":            []string{"application/json"},
 				"X-OpenRTB-Version": []string{"2.5"},
 			},
-		}
-
-		if request.Ext != nil {
-			var requestExt prebidExt
-			if err := json.Unmarshal(request.Ext, &requestExt); err != nil {
-				errs = append(errs, fmt.Errorf("failed unmarshalling request ext (err)%s", err.Error()))
-				continue
-			}
-
-			if requestExt.Prebid.Debug {
-				requestData.Headers.Add("Vungle-explain", "jaeger")
-			}
 		}
 
 		requests = append(requests, requestData)
