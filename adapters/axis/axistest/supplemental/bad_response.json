@@ -35,7 +35,7 @@
     },
 	"httpCalls": [{
 		"expectedRequest": {
-			"uri": "http://prebid.axis-marketplace.com/000000?token=000000",
+			"uri": "http://prebid.axis-marketplace.com/pbserver",
 			"body": {
                 "id": "test-request-id",
                 "imp": [

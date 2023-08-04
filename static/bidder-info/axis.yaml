@@ -1,4 +1,4 @@
-endpoint: "http://prebid.axis-marketplace.com/{{.AccountID}}?token={{.SourceId}}"
+endpoint: "http://prebid.axis-marketplace.com/pbserver"
 maintainer:
   email: "help@axis-marketplace.com"
 capabilities:
