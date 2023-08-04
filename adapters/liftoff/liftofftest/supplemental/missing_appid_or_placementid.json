@@ -80,6 +80,7 @@
                   "placement_reference_id": "78910"
                 },
                 "vungle": {
+                  "app_store_id": "",
                   "bid_token": "123",
                   "placement_reference_id": "78910"
                 }
