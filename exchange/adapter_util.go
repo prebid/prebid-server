@@ -86,9 +86,8 @@ func GetActiveBidders(infos config.BidderInfos) map[string]openrtb_ext.BidderNam
 	return activeBidders
 }
 
-// GetDisabledBiddersErrorMessages returns a map of error messages for disabled bidders.
-func GetDisabledBiddersErrorMessages(infos config.BidderInfos) map[string]string {
-	disabledBidders := map[string]string{
+func GetDisabledBidderWarningMessages(infos config.BidderInfos) map[string]string {
+	removed := map[string]string{
 		"lifestreet":     `Bidder "lifestreet" is no longer available in Prebid Server. Please update your configuration.`,
 		"adagio":         `Bidder "adagio" is no longer available in Prebid Server. Please update your configuration.`,
 		"somoaudience":   `Bidder "somoaudience" is no longer available in Prebid Server. Please update your configuration.`,
@@ -97,7 +96,14 @@ func GetDisabledBiddersErrorMessages(infos config.BidderInfos) map[string]string
 		"oftmedia":       `Bidder "oftmedia" is no longer available in Prebid Server. Please update your configuration.`,
 		"groupm":         `Bidder "groupm" is no longer available in Prebid Server. Please update your configuration.`,
 		"verizonmedia":   `Bidder "verizonmedia" is no longer available in Prebid Server. Please update your configuration.`,
+		"brightroll":     `Bidder "brightroll" is no longer available in Prebid Server. Please update your configuration.`,
 	}
+
+	return mergeRemovedAndDisabledBidderWarningMessages(removed, infos)
+}
+
+func mergeRemovedAndDisabledBidderWarningMessages(removed map[string]string, infos config.BidderInfos) map[string]string {
+	disabledBidders := removed
 
 	for name, info := range infos {
 		if info.Disabled {

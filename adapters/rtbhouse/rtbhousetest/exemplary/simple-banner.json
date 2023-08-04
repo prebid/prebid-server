@@ -23,6 +23,7 @@
             "uri": "http://localhost/prebid_server",
             "body": {
                 "id": "test-request-id",
+                "cur": ["USD"],
                 "site": {
                     "page": "https://good.site/url"
                 },

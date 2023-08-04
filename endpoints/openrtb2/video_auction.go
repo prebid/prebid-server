@@ -56,6 +56,7 @@ func NewVideoEndpoint(
 	defReqJSON []byte,
 	bidderMap map[string]openrtb_ext.BidderName,
 	cache prebid_cache_client.Client,
+	tmaxAdjustments *exchange.TmaxAdjustmentsPreprocessed,
 ) (httprouter.Handle, error) {
 
 	if ex == nil || validator == nil || requestsById == nil || accounts == nil || cfg == nil || met == nil {
@@ -89,7 +90,8 @@ func NewVideoEndpoint(
 		videoEndpointRegexp,
 		ipValidator,
 		empty_fetcher.EmptyFetcher{},
-		hooks.EmptyPlanBuilder{}}).VideoAuctionEndpoint), nil
+		hooks.EmptyPlanBuilder{},
+		tmaxAdjustments}).VideoAuctionEndpoint), nil
 }
 
 /*
@@ -311,9 +313,15 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		GlobalPrivacyControlHeader: secGPC,
 		PubID:                      labels.PubID,
 		HookExecutor:               hookexecution.EmptyHookExecutor{},
+		TmaxAdjustments:            deps.tmaxAdjustments,
 	}
 
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog)
+	defer func() {
+		if !auctionRequest.BidderResponseStartTime.IsZero() {
+			deps.metricsEngine.RecordOverheadTime(metrics.MakeAuctionResponse, time.Since(auctionRequest.BidderResponseStartTime))
+		}
+	}()
 	vo.RequestWrapper = bidReqWrapper
 	var response *openrtb2.BidResponse
 	if auctionResponse != nil {

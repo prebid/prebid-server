@@ -4,10 +4,17 @@
   "description": "A schema which validates params accepted by the Rise adapter",
   "type": "object",
   "properties": {
+    "org": {
+      "type": "string",
+      "description": "The organization ID."
+    },
     "publisher_id": {
       "type": "string",
-      "description": "The publisher ID"
+      "description": "Deprecated, use org instead."
     }
   },
-  "required": ["publisher_id"]
+  "oneOf": [
+    { "required": ["org"] },
+    { "required": ["publisher_id"] }
+  ]
 }

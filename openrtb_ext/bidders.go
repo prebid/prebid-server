@@ -142,7 +142,6 @@ const (
 	BidderBmtm              BidderName = "bmtm"
 	BidderBoldwin           BidderName = "boldwin"
 	BidderBrave             BidderName = "brave"
-	BidderBrightroll        BidderName = "brightroll"
 	BidderCcx               BidderName = "ccx"
 	BidderCoinzilla         BidderName = "coinzilla"
 	BidderColossus          BidderName = "colossus"
@@ -221,6 +220,7 @@ const (
 	BidderOperaads          BidderName = "operaads"
 	BidderOrbidder          BidderName = "orbidder"
 	BidderOutbrain          BidderName = "outbrain"
+	BidderOwnAdx            BidderName = "ownadx"
 	BidderPangle            BidderName = "pangle"
 	BidderPGAM              BidderName = "pgam"
 	BidderPubmatic          BidderName = "pubmatic"
@@ -236,6 +236,7 @@ const (
 	BidderRubicon           BidderName = "rubicon"
 	BidderSeedingAlliance   BidderName = "seedingAlliance"
 	BidderSaLunaMedia       BidderName = "sa_lunamedia"
+	BidderScreencore        BidderName = "screencore"
 	BidderSharethrough      BidderName = "sharethrough"
 	BidderSilverMob         BidderName = "silvermob"
 	BidderSmaato            BidderName = "smaato"
@@ -254,6 +255,7 @@ const (
 	BidderTaboola           BidderName = "taboola"
 	BidderTappx             BidderName = "tappx"
 	BidderTelaria           BidderName = "telaria"
+	BidderTpmn              BidderName = "tpmn"
 	BidderTrafficGate       BidderName = "trafficgate"
 	BidderTriplelift        BidderName = "triplelift"
 	BidderTripleliftNative  BidderName = "triplelift_native"
@@ -269,8 +271,10 @@ const (
 	BidderViewdeos          BidderName = "viewdeos"
 	BidderVisibleMeasures   BidderName = "visiblemeasures"
 	BidderVisx              BidderName = "visx"
+	BidderVox               BidderName = "vox"
 	BidderVrtcal            BidderName = "vrtcal"
 	BidderXeworks           BidderName = "xeworks"
+	BidderXtrmqb            BidderName = "xtrmqb"
 	BidderYahooAds          BidderName = "yahooAds"
 	BidderYahooAdvertising  BidderName = "yahooAdvertising"
 	BidderYahooSSP          BidderName = "yahoossp"
@@ -341,7 +345,6 @@ func CoreBidderNames() []BidderName {
 		BidderBmtm,
 		BidderBoldwin,
 		BidderBrave,
-		BidderBrightroll,
 		BidderCcx,
 		BidderCoinzilla,
 		BidderColossus,
@@ -420,6 +423,7 @@ func CoreBidderNames() []BidderName {
 		BidderOperaads,
 		BidderOrbidder,
 		BidderOutbrain,
+		BidderOwnAdx,
 		BidderPangle,
 		BidderPGAM,
 		BidderPubmatic,
@@ -435,6 +439,7 @@ func CoreBidderNames() []BidderName {
 		BidderRubicon,
 		BidderSeedingAlliance,
 		BidderSaLunaMedia,
+		BidderScreencore,
 		BidderSharethrough,
 		BidderSilverMob,
 		BidderSmaato,
@@ -453,6 +458,7 @@ func CoreBidderNames() []BidderName {
 		BidderTaboola,
 		BidderTappx,
 		BidderTelaria,
+		BidderTpmn,
 		BidderTrafficGate,
 		BidderTriplelift,
 		BidderTripleliftNative,
@@ -468,8 +474,10 @@ func CoreBidderNames() []BidderName {
 		BidderViewdeos,
 		BidderVisibleMeasures,
 		BidderVisx,
+		BidderVox,
 		BidderVrtcal,
 		BidderXeworks,
+		BidderXtrmqb,
 		BidderYahooAds,
 		BidderYahooAdvertising,
 		BidderYahooSSP,
