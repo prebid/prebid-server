@@ -1047,8 +1047,11 @@ func resolveNativeObject(native *openrtb2.Native, target map[string]interface{})
 		return nil, fmt.Errorf("Eventtrackers are not present or not of array type")
 	}
 
-	if _, ok := target["context"].(float64); !ok {
-		return nil, fmt.Errorf("Context is not present or not of int type")
+	context := target["context"]
+	if context != nil {
+		if _, ok := context.(float64); !ok {
+			return nil, fmt.Errorf("Context is not of int type")
+		}
 	}
 
 	if _, ok := target["plcmttype"].(float64); !ok {
