@@ -56,6 +56,8 @@ func (mpf *mockPriceFloorFetcher) Fetch(configs config.AccountPriceFloors) (*ope
 	return nil, openrtb_ext.FetchNone
 }
 
+func (mpf *mockPriceFloorFetcher) Stop() {}
+
 func TestEnrichWithPriceFloors(t *testing.T) {
 	rates := map[string]map[string]float64{
 		"USD": {
@@ -407,6 +409,8 @@ func getFalse() *bool {
 type MockFetch struct {
 	FakeFetch func(configs config.AccountPriceFloors) (*openrtb_ext.PriceFloorRules, string)
 }
+
+func (m *MockFetch) Stop() {}
 
 func (m *MockFetch) Fetch(configs config.AccountPriceFloors) (*openrtb_ext.PriceFloorRules, string) {
 

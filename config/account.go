@@ -119,7 +119,7 @@ func (pf *AccountPriceFloors) validate(errs []error) []error {
 	}
 
 	if !(pf.Fetcher.MaxSchemaDims >= 0 && pf.Fetcher.MaxSchemaDims < 20) {
-		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.fetch.max_schema_dims should not be less than 0 seconds and greater than 20`))
+		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.fetch.max_schema_dims should not be less than 0 and greater than 20`))
 	}
 
 	return errs

@@ -156,10 +156,10 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	floorFechterHttpClient := &http.Client{
 		Transport: &http.Transport{
 			Proxy:               http.ProxyFromEnvironment,
-			MaxConnsPerHost:     cfg.PriceFloors.Fetcher.Client.MaxConnsPerHost,
-			MaxIdleConns:        cfg.PriceFloors.Fetcher.Client.MaxIdleConns,
-			MaxIdleConnsPerHost: cfg.PriceFloors.Fetcher.Client.MaxIdleConnsPerHost,
-			IdleConnTimeout:     time.Duration(cfg.PriceFloors.Fetcher.Client.IdleConnTimeout) * time.Second,
+			MaxConnsPerHost:     cfg.PriceFloors.Fetcher.HttpClient.MaxConnsPerHost,
+			MaxIdleConns:        cfg.PriceFloors.Fetcher.HttpClient.MaxIdleConns,
+			MaxIdleConnsPerHost: cfg.PriceFloors.Fetcher.HttpClient.MaxIdleConnsPerHost,
+			IdleConnTimeout:     time.Duration(cfg.PriceFloors.Fetcher.HttpClient.IdleConnTimeout) * time.Second,
 		},
 	}
 
@@ -225,8 +225,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		glog.Fatalf("Failed to create ads cert signer: %v", err)
 	}
 
-	priceFloorFetcher := floors.NewPriceFloorFetcher(cfg.PriceFloors.Fetcher.Worker, cfg.PriceFloors.Fetcher.Capacity,
-		cfg.PriceFloors.Fetcher.CacheSize, floorFechterHttpClient, r.MetricsEngine)
+	priceFloorFetcher := floors.NewPriceFloorFetcher(cfg.PriceFloors, floorFechterHttpClient, r.MetricsEngine)
 
 	tmaxAdjustments := exchange.ProcessTMaxAdjustments(cfg.TmaxAdjustments)
 	planBuilder := hooks.NewExecutionPlanBuilder(cfg.Hooks, repo)

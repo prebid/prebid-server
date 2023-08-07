@@ -181,10 +181,10 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "price_floors.fetcher.worker", 20, cfg.PriceFloors.Fetcher.Worker)
 	cmpInts(t, "price_floors.fetcher.capacity", 20000, cfg.PriceFloors.Fetcher.Capacity)
 	cmpInts(t, "price_floors.fetcher.cache_size_mb", 64, cfg.PriceFloors.Fetcher.CacheSize)
-	cmpInts(t, "price_floors.fetcher.client.max_connections_per_host", 0, cfg.PriceFloors.Fetcher.Client.MaxConnsPerHost)
-	cmpInts(t, "price_floors.fetcher.client.max_idle_connections", 40, cfg.PriceFloors.Fetcher.Client.MaxIdleConns)
-	cmpInts(t, "price_floors.fetcher.client.max_idle_connections_per_host", 2, cfg.PriceFloors.Fetcher.Client.MaxIdleConnsPerHost)
-	cmpInts(t, "price_floors.fetcher.client.idle_connection_timeout_seconds", 60, cfg.PriceFloors.Fetcher.Client.IdleConnTimeout)
+	cmpInts(t, "price_floors.fetcher.http_client.max_connections_per_host", 0, cfg.PriceFloors.Fetcher.HttpClient.MaxConnsPerHost)
+	cmpInts(t, "price_floors.fetcher.http_client.max_idle_connections", 40, cfg.PriceFloors.Fetcher.HttpClient.MaxIdleConns)
+	cmpInts(t, "price_floors.fetcher.http_client.max_idle_connections_per_host", 2, cfg.PriceFloors.Fetcher.HttpClient.MaxIdleConnsPerHost)
+	cmpInts(t, "price_floors.fetcher.http_client.idle_connection_timeout_seconds", 60, cfg.PriceFloors.Fetcher.HttpClient.IdleConnTimeout)
 
 	// Assert compression related defaults
 	cmpBools(t, "enable_gzip", false, cfg.EnableGzip)
@@ -484,7 +484,7 @@ price_floors:
       worker: 20
       capacity: 20000
       cache_size_mb: 8
-      client:
+      http_client:
         max_connections_per_host: 5
         max_idle_connections: 1
         max_idle_connections_per_host: 2
@@ -609,10 +609,10 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "price_floors.fetcher.worker", 20, cfg.PriceFloors.Fetcher.Worker)
 	cmpInts(t, "price_floors.fetcher.capacity", 20000, cfg.PriceFloors.Fetcher.Capacity)
 	cmpInts(t, "price_floors.fetcher.cache_size_mb", 8, cfg.PriceFloors.Fetcher.CacheSize)
-	cmpInts(t, "price_floors.fetcher.client.max_connections_per_host", 5, cfg.PriceFloors.Fetcher.Client.MaxConnsPerHost)
-	cmpInts(t, "price_floors.fetcher.client.max_idle_connections", 1, cfg.PriceFloors.Fetcher.Client.MaxIdleConns)
-	cmpInts(t, "price_floors.fetcher.client.max_idle_connections_per_host", 2, cfg.PriceFloors.Fetcher.Client.MaxIdleConnsPerHost)
-	cmpInts(t, "price_floors.fetcher.client.idle_connection_timeout_seconds", 10, cfg.PriceFloors.Fetcher.Client.IdleConnTimeout)
+	cmpInts(t, "price_floors.fetcher.http_client.max_connections_per_host", 5, cfg.PriceFloors.Fetcher.HttpClient.MaxConnsPerHost)
+	cmpInts(t, "price_floors.fetcher.http_client.max_idle_connections", 1, cfg.PriceFloors.Fetcher.HttpClient.MaxIdleConns)
+	cmpInts(t, "price_floors.fetcher.http_client.max_idle_connections_per_host", 2, cfg.PriceFloors.Fetcher.HttpClient.MaxIdleConnsPerHost)
+	cmpInts(t, "price_floors.fetcher.http_client.idle_connection_timeout_seconds", 10, cfg.PriceFloors.Fetcher.HttpClient.IdleConnTimeout)
 	cmpBools(t, "account_defaults.price_floors.enabled", true, cfg.AccountDefaults.PriceFloors.Enabled)
 	cmpInts(t, "account_defaults.price_floors.enforce_floors_rate", 50, cfg.AccountDefaults.PriceFloors.EnforceFloorsRate)
 	cmpBools(t, "account_defaults.price_floors.adjust_for_bid_adjustment", false, cfg.AccountDefaults.PriceFloors.AdjustForBidAdjustment)

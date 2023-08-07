@@ -823,6 +823,8 @@ func (mpf *mockPriceFloorFetcher) Fetch(configs config.AccountPriceFloors) (*ope
 	return nil, openrtb_ext.FetchNone
 }
 
+func (mpf *mockPriceFloorFetcher) Stop() {}
+
 func TestFloorsSignalling(t *testing.T) {
 
 	fakeCurrencyClient := &fakeCurrencyRatesHttpClient{
@@ -847,7 +849,7 @@ func TestFloorsSignalling(t *testing.T) {
 		currencyConverter: currencyConverter,
 		categoriesFetcher: nilCategoryFetcher{},
 		bidIDGenerator:    &mockBidIDGenerator{false, false},
-		floor:             config.PriceFloors{Enabled: true},
+		priceFloorEnabled: true,
 		priceFloorFetcher: &mockPriceFloorFetcher{},
 	}
 	e.requestSplitter = requestSplitter{
@@ -2639,7 +2641,7 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		server:                   config.Server{ExternalUrl: server.ExternalUrl, GvlID: server.GvlID, DataCenter: server.DataCenter},
 		bidValidationEnforcement: hostBidValidation,
 		requestSplitter:          requestSplitter,
-		floor:                    config.PriceFloors{Enabled: floorsFlag},
+		priceFloorEnabled:        floorsFlag,
 		priceFloorFetcher:        &mockPriceFloorFetcher{},
 	}
 }

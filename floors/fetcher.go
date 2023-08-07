@@ -36,6 +36,7 @@ type WorkerPool interface {
 
 type FloorFetcher interface {
 	Fetch(configs config.AccountPriceFloors) (*openrtb_ext.PriceFloorRules, string)
+	Stop()
 }
 
 type PriceFloorFetcher struct {
@@ -90,14 +91,18 @@ func workerPanicHandler(p interface{}) {
 	glog.Errorf("floor fetcher worker panicked: %v", p)
 }
 
-func NewPriceFloorFetcher(maxWorkers, maxCapacity, cacheSize int, httpClient *http.Client, metricEngine metrics.MetricsEngine) *PriceFloorFetcher {
+func NewPriceFloorFetcher(config config.PriceFloors, httpClient *http.Client, metricEngine metrics.MetricsEngine) *PriceFloorFetcher {
+	if !config.Enabled {
+		return nil
+	}
+
 	floorFetcher := PriceFloorFetcher{
-		pool:            pond.New(maxWorkers, maxCapacity, pond.PanicHandler(workerPanicHandler)),
+		pool:            pond.New(config.Fetcher.Worker, config.Fetcher.Capacity, pond.PanicHandler(workerPanicHandler)),
 		fetchQueue:      make(FetchQueue, 0, 100),
 		fetchInProgress: make(map[string]bool),
-		configReceiver:  make(chan FetchInfo, maxCapacity),
+		configReceiver:  make(chan FetchInfo, config.Fetcher.Capacity),
 		done:            make(chan struct{}),
-		cache:           freecache.NewCache(cacheSize * 1024 * 1024),
+		cache:           freecache.NewCache(config.Fetcher.CacheSize * 1024 * 1024),
 		httpClient:      httpClient,
 		time:            &timeutil.RealTime{},
 		metricEngine:    metricEngine,
@@ -122,7 +127,7 @@ func (f *PriceFloorFetcher) Get(key string) (json.RawMessage, bool) {
 }
 
 func (f *PriceFloorFetcher) Fetch(config config.AccountPriceFloors) (*openrtb_ext.PriceFloorRules, string) {
-	if !config.UseDynamicData || len(config.Fetcher.URL) == 0 || !validator.IsURL(config.Fetcher.URL) {
+	if f == nil || !config.UseDynamicData || len(config.Fetcher.URL) == 0 || !validator.IsURL(config.Fetcher.URL) {
 		return nil, openrtb_ext.FetchNone
 	}
 
@@ -170,6 +175,10 @@ func (f *PriceFloorFetcher) worker(config config.AccountFloorFetch) {
 
 // Stop terminates fetcher service can closes all the channels and destroys worker pool
 func (f *PriceFloorFetcher) Stop() {
+	if f == nil {
+		return
+	}
+
 	close(f.done)
 	f.pool.Stop()
 	close(f.configReceiver)

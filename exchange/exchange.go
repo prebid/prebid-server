@@ -80,7 +80,7 @@ type exchange struct {
 	bidValidationEnforcement config.Validations
 	requestSplitter          requestSplitter
 	macroReplacer            macros.Replacer
-	floor                    config.PriceFloors
+	priceFloorEnabled        bool
 	priceFloorFetcher        floors.FloorFetcher
 }
 
@@ -175,7 +175,7 @@ func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid
 		bidValidationEnforcement: cfg.Validations,
 		requestSplitter:          requestSplitter,
 		macroReplacer:            macroReplacer,
-		floor:                    cfg.PriceFloors,
+		priceFloorEnabled:        cfg.PriceFloors.Enabled,
 		priceFloorFetcher:        priceFloorFetcher,
 	}
 }
@@ -233,7 +233,6 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		return nil, nil
 	}
 
-	var floorErrs []error
 	err := r.HookExecutor.ExecuteProcessedAuctionStage(r.BidRequestWrapper)
 	if err != nil {
 		return nil, err
@@ -268,7 +267,8 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	// Get currency rates conversions for the auction
 	conversions := e.getAuctionCurrencyRates(requestExtPrebid.CurrencyConversions)
 
-	if e.floor.Enabled {
+	var floorErrs []error
+	if e.priceFloorEnabled {
 		floorErrs = floors.EnrichWithPriceFloors(r.BidRequestWrapper, r.Account, conversions, e.priceFloorFetcher)
 	}
 
@@ -386,7 +386,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	)
 
 	if anyBidsReturned {
-		if e.floor.Enabled {
+		if e.priceFloorEnabled {
 			var rejectedBids []*entities.PbsOrtbSeatBid
 			var enforceErrs []error
 

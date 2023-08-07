@@ -114,10 +114,10 @@ type PriceFloors struct {
 }
 
 type PriceFloorFetcher struct {
-	Client    HTTPClient `mapstructure:"client"`
-	CacheSize int        `mapstructure:"cache_size_mb"`
-	Worker    int        `mapstructure:"worker"`
-	Capacity  int        `mapstructure:"capacity"`
+	HttpClient HTTPClient `mapstructure:"http_client"`
+	CacheSize  int        `mapstructure:"cache_size_mb"`
+	Worker     int        `mapstructure:"worker"`
+	Capacity   int        `mapstructure:"capacity"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -148,10 +148,6 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 	errs = cfg.AccountDefaults.PriceFloors.validate(errs)
 	if cfg.AccountDefaults.Disabled {
 		glog.Warning(`With account_defaults.disabled=true, host-defined accounts must exist and have "disabled":false. All other requests will be rejected.`)
-	}
-
-	if cfg.PriceFloors.Enabled {
-		glog.Warning(`cfg.PriceFloors.Enabled will currently not do anything as price floors feature is still under development.`)
 	}
 
 	if len(cfg.AccountDefaults.Events.VASTEvents) > 0 {
@@ -1045,10 +1041,10 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("price_floors.fetcher.worker", 20)
 	v.SetDefault("price_floors.fetcher.capacity", 20000)
 	v.SetDefault("price_floors.fetcher.cache_size_mb", 64)
-	v.SetDefault("price_floors.fetcher.client.max_connections_per_host", 0) // unlimited
-	v.SetDefault("price_floors.fetcher.client.max_idle_connections", 40)
-	v.SetDefault("price_floors.fetcher.client.max_idle_connections_per_host", 2)
-	v.SetDefault("price_floors.fetcher.client.idle_connection_timeout_seconds", 60)
+	v.SetDefault("price_floors.fetcher.http_client.max_connections_per_host", 0) // unlimited
+	v.SetDefault("price_floors.fetcher.http_client.max_idle_connections", 40)
+	v.SetDefault("price_floors.fetcher.http_client.max_idle_connections_per_host", 2)
+	v.SetDefault("price_floors.fetcher.http_client.idle_connection_timeout_seconds", 60)
 
 	v.SetDefault("account_defaults.events_enabled", false)
 	v.SetDefault("compression.response.enable_gzip", false)

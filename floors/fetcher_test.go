@@ -13,6 +13,7 @@ import (
 	"github.com/alitto/pond"
 	"github.com/coocood/freecache"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/metrics"
 	metricsConf "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/util/timeutil"
@@ -741,6 +742,28 @@ func TestFetchAndValidate(t *testing.T) {
 	}
 }
 
+func mockFetcherInstance(config config.PriceFloors, httpClient *http.Client, metricEngine metrics.MetricsEngine) *PriceFloorFetcher {
+	if !config.Enabled {
+		return nil
+	}
+
+	floorFetcher := PriceFloorFetcher{
+		pool:            pond.New(config.Fetcher.Worker, config.Fetcher.Capacity, pond.PanicHandler(workerPanicHandler)),
+		fetchQueue:      make(FetchQueue, 0, 100),
+		fetchInProgress: make(map[string]bool),
+		configReceiver:  make(chan FetchInfo, config.Fetcher.Capacity),
+		done:            make(chan struct{}),
+		cache:           freecache.NewCache(config.Fetcher.CacheSize * 1024 * 1024),
+		httpClient:      httpClient,
+		time:            &timeutil.RealTime{},
+		metricEngine:    metricEngine,
+	}
+
+	go floorFetcher.Fetcher()
+
+	return &floorFetcher
+}
+
 func TestFetcherWhenRequestGetSameURLInrequest(t *testing.T) {
 	refetchCheckInterval = 1
 	response := []byte(`{"currency":"USD","modelgroups":[{"modelweight":40,"modelversion":"version1","default":5,"values":{"banner|300x600|www.website.com":3,"banner|728x90|www.website.com":5,"banner|300x600|*":4,"banner|300x250|*":2,"*|*|*":16,"*|300x250|*":10,"*|300x600|*":12,"*|300x600|www.website.com":11,"banner|*|*":8,"banner|300x250|www.website.com":1,"*|728x90|www.website.com":13,"*|300x250|www.website.com":9,"*|728x90|*":14,"banner|728x90|*":6,"banner|*|www.website.com":7,"*|*|www.website.com":15},"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"}}]}`)
@@ -754,7 +777,15 @@ func TestFetcherWhenRequestGetSameURLInrequest(t *testing.T) {
 	mockHttpServer := httptest.NewServer(mockHandler(response, 200))
 	defer mockHttpServer.Close()
 
-	fetcherInstance := NewPriceFloorFetcher(5, 10, 1, mockHttpServer.Client(), &metricsConf.NilMetricsEngine{})
+	floorConfig := config.PriceFloors{
+		Enabled: true,
+		Fetcher: config.PriceFloorFetcher{
+			CacheSize: 1,
+			Worker:    5,
+			Capacity:  10,
+		},
+	}
+	fetcherInstance := mockFetcherInstance(floorConfig, mockHttpServer.Client(), &metricsConf.NilMetricsEngine{})
 	defer fetcherInstance.Stop()
 
 	fetchConfig := config.AccountPriceFloors{
@@ -781,7 +812,16 @@ func TestFetcherWhenRequestGetSameURLInrequest(t *testing.T) {
 }
 
 func TestFetcherDataPresentInCache(t *testing.T) {
-	fetcherInstance := NewPriceFloorFetcher(2, 5, 1, http.DefaultClient, &metricsConf.NilMetricsEngine{})
+	floorConfig := config.PriceFloors{
+		Enabled: true,
+		Fetcher: config.PriceFloorFetcher{
+			CacheSize: 1,
+			Worker:    2,
+			Capacity:  5,
+		},
+	}
+
+	fetcherInstance := mockFetcherInstance(floorConfig, http.DefaultClient, &metricsConf.NilMetricsEngine{})
 	defer fetcherInstance.Stop()
 
 	fetchConfig := config.AccountPriceFloors{
@@ -808,7 +848,16 @@ func TestFetcherDataPresentInCache(t *testing.T) {
 }
 
 func TestFetcherDataNotPresentInCache(t *testing.T) {
-	fetcherInstance := NewPriceFloorFetcher(2, 5, 1, http.DefaultClient, &metricsConf.NilMetricsEngine{})
+	floorConfig := config.PriceFloors{
+		Enabled: true,
+		Fetcher: config.PriceFloorFetcher{
+			CacheSize: 1,
+			Worker:    2,
+			Capacity:  5,
+		},
+	}
+
+	fetcherInstance := mockFetcherInstance(floorConfig, http.DefaultClient, &metricsConf.NilMetricsEngine{})
 	defer fetcherInstance.Stop()
 
 	fetchConfig := config.AccountPriceFloors{
@@ -833,7 +882,16 @@ func TestFetcherDataNotPresentInCache(t *testing.T) {
 }
 
 func TestFetcherEntryNotPresentInCache(t *testing.T) {
-	fetcherInstance := NewPriceFloorFetcher(2, 5, 1, http.DefaultClient, &metricsConf.NilMetricsEngine{})
+	floorConfig := config.PriceFloors{
+		Enabled: true,
+		Fetcher: config.PriceFloorFetcher{
+			CacheSize: 1,
+			Worker:    2,
+			Capacity:  5,
+		},
+	}
+
+	fetcherInstance := NewPriceFloorFetcher(floorConfig, http.DefaultClient, &metricsConf.NilMetricsEngine{})
 	defer fetcherInstance.Stop()
 
 	fetchConfig := config.AccountPriceFloors{
@@ -857,7 +915,16 @@ func TestFetcherEntryNotPresentInCache(t *testing.T) {
 }
 
 func TestFetcherDynamicFetchDisable(t *testing.T) {
-	fetcherInstance := NewPriceFloorFetcher(2, 5, 1, http.DefaultClient, &metricsConf.NilMetricsEngine{})
+	floorConfig := config.PriceFloors{
+		Enabled: true,
+		Fetcher: config.PriceFloorFetcher{
+			CacheSize: 1,
+			Worker:    2,
+			Capacity:  5,
+		},
+	}
+
+	fetcherInstance := NewPriceFloorFetcher(floorConfig, http.DefaultClient, &metricsConf.NilMetricsEngine{})
 	defer fetcherInstance.Stop()
 
 	fetchConfig := config.AccountPriceFloors{
@@ -1091,7 +1158,15 @@ func TestFetcherWhenRequestGetDifferentURLInrequest(t *testing.T) {
 	mockHttpServer := httptest.NewServer(mockHandler(response, 200))
 	defer mockHttpServer.Close()
 
-	fetcherInstance := NewPriceFloorFetcher(5, 10, 1, mockHttpServer.Client(), &metricsConf.NilMetricsEngine{})
+	floorConfig := config.PriceFloors{
+		Enabled: true,
+		Fetcher: config.PriceFloorFetcher{
+			CacheSize: 1,
+			Worker:    5,
+			Capacity:  10,
+		},
+	}
+	fetcherInstance := mockFetcherInstance(floorConfig, mockHttpServer.Client(), &metricsConf.NilMetricsEngine{})
 	defer fetcherInstance.Stop()
 
 	fetchConfig := config.AccountPriceFloors{
@@ -1115,4 +1190,36 @@ func TestFetcherWhenRequestGetDifferentURLInrequest(t *testing.T) {
 
 	assert.Never(t, func() bool { return len(fetcherInstance.fetchQueue) > 10 }, time.Duration(2*time.Second), 100*time.Millisecond, "Queue Got more than one entry")
 	assert.Never(t, func() bool { return len(fetcherInstance.fetchInProgress) > 10 }, time.Duration(2*time.Second), 100*time.Millisecond, "Map Got more than one entry")
+}
+
+func TestFetchWhenPriceFloorsDisabled(t *testing.T) {
+	floorConfig := config.PriceFloors{
+		Enabled: false,
+		Fetcher: config.PriceFloorFetcher{
+			CacheSize: 1,
+			Worker:    5,
+			Capacity:  10,
+		},
+	}
+	fetcherInstance := NewPriceFloorFetcher(floorConfig, http.DefaultClient, &metricsConf.NilMetricsEngine{})
+	defer fetcherInstance.Stop()
+
+	fetchConfig := config.AccountPriceFloors{
+		Enabled:        true,
+		UseDynamicData: true,
+		Fetcher: config.AccountFloorFetch{
+			Enabled:       true,
+			URL:           "http://test.com/floors",
+			Timeout:       100,
+			MaxFileSizeKB: 1000,
+			MaxRules:      100,
+			MaxAge:        5,
+			Period:        1,
+		},
+	}
+
+	data, status := fetcherInstance.Fetch(fetchConfig)
+
+	assert.Equal(t, (*openrtb_ext.PriceFloorRules)(nil), data, "floor data should be nil as fetcher instance does not created")
+	assert.Equal(t, openrtb_ext.FetchNone, status, "floor status should be none as fetcher instance does not created")
 }

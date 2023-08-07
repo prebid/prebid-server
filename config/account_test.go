@@ -1011,6 +1011,22 @@ func TestAccountPriceFloorsValidate(t *testing.T) {
 			},
 			want: []error{errors.New("account_defaults.price_floors.fetch.max_file_size_kb should be greater than or equal to 0")},
 		},
+		{
+			description: "Invalid max_schema_dims",
+			pf: &AccountPriceFloors{
+				EnforceFloorsRate: 100,
+				MaxRule:           200,
+				MaxSchemaDims:     10,
+				Fetcher: AccountFloorFetch{
+					Period:        300,
+					MaxAge:        600,
+					Timeout:       12,
+					MaxFileSizeKB: 10,
+					MaxSchemaDims: 40,
+				},
+			},
+			want: []error{errors.New("account_defaults.price_floors.fetch.max_schema_dims should not be less than 0 and greater than 20")},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.description, func(t *testing.T) {
