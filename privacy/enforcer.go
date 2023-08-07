@@ -133,7 +133,7 @@ func activityDefaultToDefaultResult(activityDefault *bool) bool {
 	}
 }
 
-func (e ActivityControl) Evaluate(activity Activity, target ScopedName) bool {
+func (e ActivityControl) Allow(activity Activity, target ScopedName) bool {
 	plan, planDefined := e.plans[activity]
 
 	if !planDefined {

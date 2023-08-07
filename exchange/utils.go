@@ -153,7 +153,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 
 		// fetchBids activity
 		scopedName := privacy.ScopedName{Scope: privacy.ScopeTypeBidder, Name: bidderRequest.BidderName.String()}
-		fetchBidsActivityAllowed := auctionReq.Activities.Evaluate(privacy.ActivityFetchBids, scopedName)
+		fetchBidsActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityFetchBids, scopedName)
 		if !fetchBidsActivityAllowed {
 			// skip the call to a bidder if fetchBids activity is not allowed
 			// do not add this bidder to allowedBidderRequests
@@ -173,7 +173,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 			}
 		}
 
-		passIDActivityAllowed := auctionReq.Activities.Evaluate(privacy.ActivityTransmitUserFPD, scopedName)
+		passIDActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitUserFPD, scopedName)
 		if !passIDActivityAllowed {
 			privacyEnforcement.UFPD = true
 		} else {
@@ -190,7 +190,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 			privacyEnforcement.CCPA = ccpaEnforcer.ShouldEnforce(bidderRequest.BidderName.String())
 		}
 
-		passGeoActivityAllowed := auctionReq.Activities.Evaluate(privacy.ActivityTransmitPreciseGeo, scopedName)
+		passGeoActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitPreciseGeo, scopedName)
 		if !passGeoActivityAllowed {
 			privacyEnforcement.PreciseGeo = true
 		} else {

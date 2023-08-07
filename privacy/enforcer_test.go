@@ -219,7 +219,7 @@ func TestAllowActivityControl(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			actualResult := test.activityControl.Evaluate(test.activity, test.target)
+			actualResult := test.activityControl.Allow(test.activity, test.target)
 			assert.Equal(t, test.activityResult, actualResult)
 
 		})
