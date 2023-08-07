@@ -30,7 +30,6 @@ type SilverPushReqExt struct {
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-
 	imps := request.Imp
 	var errors []error
 	requests := make([]*adapters.RequestData, 0, len(imps))
