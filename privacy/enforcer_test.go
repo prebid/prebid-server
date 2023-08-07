@@ -148,22 +148,22 @@ func TestActivityDefaultToDefaultResult(t *testing.T) {
 	testCases := []struct {
 		name            string
 		activityDefault *bool
-		expectedResult  ActivityResult
+		expectedResult  bool
 	}{
 		{
 			name:            "nil",
 			activityDefault: nil,
-			expectedResult:  ActivityAllow,
+			expectedResult:  true,
 		},
 		{
 			name:            "true",
 			activityDefault: ptrutil.ToPtr(true),
-			expectedResult:  ActivityAllow,
+			expectedResult:  true,
 		},
 		{
 			name:            "false",
 			activityDefault: ptrutil.ToPtr(false),
-			expectedResult:  ActivityDeny,
+			expectedResult:  false,
 		},
 	}
 
@@ -182,14 +182,14 @@ func TestAllowActivityControl(t *testing.T) {
 		activityControl ActivityControl
 		activity        Activity
 		target          ScopedName
-		activityResult  ActivityResult
+		activityResult  bool
 	}{
 		{
 			name:            "plans_is_nil",
 			activityControl: ActivityControl{plans: nil},
 			activity:        ActivityFetchBids,
 			target:          ScopedName{Scope: "bidder", Name: "bidderA"},
-			activityResult:  ActivityAbstain,
+			activityResult:  true,
 		},
 		{
 			name: "activity_not_defined",
@@ -197,7 +197,7 @@ func TestAllowActivityControl(t *testing.T) {
 				ActivitySyncUser: getDefaultActivityPlan()}},
 			activity:       ActivityFetchBids,
 			target:         ScopedName{Scope: "bidder", Name: "bidderA"},
-			activityResult: ActivityAbstain,
+			activityResult: true,
 		},
 		{
 			name: "activity_defined_but_not_found_default_returned",
@@ -205,7 +205,7 @@ func TestAllowActivityControl(t *testing.T) {
 				ActivityFetchBids: getDefaultActivityPlan()}},
 			activity:       ActivityFetchBids,
 			target:         ScopedName{Scope: "bidder", Name: "bidderB"},
-			activityResult: ActivityAllow,
+			activityResult: true,
 		},
 		{
 			name: "activity_defined_and_allowed",
@@ -213,7 +213,7 @@ func TestAllowActivityControl(t *testing.T) {
 				ActivityFetchBids: getDefaultActivityPlan()}},
 			activity:       ActivityFetchBids,
 			target:         ScopedName{Scope: "bidder", Name: "bidderA"},
-			activityResult: ActivityAllow,
+			activityResult: true,
 		},
 	}
 
@@ -404,7 +404,7 @@ func getDefaultActivityConfig() config.Activity {
 
 func getDefaultActivityPlan() ActivityPlan {
 	return ActivityPlan{
-		defaultResult: ActivityAllow,
+		defaultResult: true,
 		rules: []ActivityRule{
 			ComponentEnforcementRule{
 				result: ActivityAllow,

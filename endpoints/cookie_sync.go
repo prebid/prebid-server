@@ -528,7 +528,6 @@ func (p usersyncPrivacy) CCPAAllowsBidderSync(bidder string) bool {
 }
 
 func (p usersyncPrivacy) ActivityAllowsUserSync(bidder string) bool {
-	activityResult := p.activityControl.Evaluate(privacy.ActivitySyncUser,
+	return p.activityControl.Evaluate(privacy.ActivitySyncUser,
 		privacy.ScopedName{Scope: privacy.ScopeTypeBidder, Name: bidder})
-	return activityResult != privacy.ActivityDeny
 }
