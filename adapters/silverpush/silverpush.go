@@ -93,7 +93,6 @@ func validateRequest(req *openrtb2.BidRequest) error {
 }
 
 func setDevice(req *openrtb2.BidRequest) {
-
 	if req.Device == nil {
 		return
 	}
@@ -144,7 +143,6 @@ func setUser(req *openrtb2.BidRequest) error {
 }
 
 func setExtToRequest(req *openrtb2.BidRequest, publisherID string) error {
-
 	record := map[string]string{
 		"bc":          bidderConfig + "_" + bidderVersion,
 		"publisherId": publisherID,
@@ -158,7 +156,6 @@ func setExtToRequest(req *openrtb2.BidRequest, publisherID string) error {
 }
 
 func setImpForAdExchange(imp *openrtb2.Imp, impExt *openrtb_ext.ImpExtSilverpush) error {
-
 	if impExt.BidFloor == 0 {
 		if imp.Banner != nil {
 			imp.BidFloor = 0.05
@@ -262,7 +259,6 @@ func setPublisherId(req *openrtb2.BidRequest, imp *openrtb2.Imp, impExt *openrtb
 }
 
 func impressionByMediaType(imp *openrtb2.Imp) openrtb2.Imp {
-
 	impCopy := *imp
 	if imp.Banner != nil {
 		impCopy.Video = nil
@@ -275,7 +271,7 @@ func impressionByMediaType(imp *openrtb2.Imp) openrtb2.Imp {
 }
 
 func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if response.StatusCode == http.StatusNoContent {
+	if adapters.IsResponseStatusCodeNoContent(response) {
 		return nil, nil
 	}
 	if err := adapters.CheckResponseStatusCodeForErrors(response); err != nil {
@@ -317,7 +313,6 @@ func getMediaTypeForImp(bid openrtb2.Bid) openrtb_ext.BidType {
 		return openrtb_ext.BidTypeBanner
 	case openrtb2.MarkupVideo:
 		return openrtb_ext.BidTypeVideo
-
 	default:
 		return ""
 	}
