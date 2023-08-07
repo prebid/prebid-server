@@ -1,12 +1,28 @@
 {
   "mockBidRequest": {
-    "id": "test-request-native-id",
+    "id": "test-request-video-id",
     "imp": [
       {
-        "id": "test-imp-native-id",
-        "native": {
-          "request": "test-native",
-          "ver": "1.2"
+        "id": "test-imp-video-id",
+        "video": {
+          "w": 300,
+          "h": 250,
+          "maxduration": 60,
+          "minduration": 1,
+          "api": [
+            1,
+            2,
+            5,
+            6,
+            7
+          ],
+          "mimes": [
+            "video\/mp4"
+          ],
+          "placement": 4,
+          "protocols": [
+            2
+          ]
         }
       }
     ]
@@ -16,13 +32,29 @@
       "expectedRequest": {
         "uri": "http://localhost/prebid_server",
         "body": {
-          "id": "test-request-native-id",
+          "id": "test-request-video-id",
           "imp": [
             {
-              "id": "test-imp-native-id",
-              "native": {
-                "request": "test-native",
-                "ver": "1.2"
+              "id": "test-imp-video-id",
+              "video": {
+                "w": 300,
+                "h": 250,
+                "maxduration": 60,
+                "minduration": 1,
+                "api": [
+                  1,
+                  2,
+                  5,
+                  6,
+                  7
+                ],
+                "mimes": [
+                  "video\/mp4"
+                ],
+                "placement": 4,
+                "protocols": [
+                  2
+                ]
               }
             }
           ]
@@ -37,13 +69,13 @@
               "seat": "adxcg",
               "bid": [
                 {
-                  "id": "test-request-native-id",
-                  "impid": "test-imp-native-id",
+                  "id": "test-request-video-id",
+                  "impid": "test-imp-video-id",
                   "price": 1.16,
-                  "adm": "native-ad",
-                  "w": 1,
-                  "h": 1,
-                  "mtype":4
+                  "adm": "some-test-ad",
+                  "w": 300,
+                  "h": 250,
+                  "mtype":2
                 }
               ]
             }
@@ -59,15 +91,15 @@
       "bids": [
         {
           "bid": {
-            "id": "test-request-native-id",
-            "impid": "test-imp-native-id",
+            "id": "test-request-video-id",
+            "impid": "test-imp-video-id",
             "price": 1.16,
-            "adm": "native-ad",
-            "w": 1,
-            "h": 1,
-            "mtype":4
+            "adm": "some-test-ad",
+            "w": 300,
+            "h": 250,
+            "mtype":2
           },
-          "type": "native"
+          "type": "video"
         }
       ]
     }
