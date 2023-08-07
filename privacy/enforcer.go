@@ -23,6 +23,8 @@ const (
 	ScopeTypeGeneral   = "general"
 )
 
+const defaultActivityResult = true
+
 type ActivityControl struct {
 	plans map[Activity]ActivityPlan
 }
@@ -127,17 +129,16 @@ func conditionToRuleComponentNames(conditions []string) ([]ScopedName, error) {
 func activityDefaultToDefaultResult(activityDefault *bool) bool {
 	if activityDefault == nil {
 		// if default is unspecified, the hardcoded default-default is true.
-		return true
-	} else {
-		return *activityDefault
+		return defaultActivityResult
 	}
+	return *activityDefault
 }
 
 func (e ActivityControl) Allow(activity Activity, target ScopedName) bool {
 	plan, planDefined := e.plans[activity]
 
 	if !planDefined {
-		return true
+		return defaultActivityResult
 	}
 
 	return plan.Evaluate(target)

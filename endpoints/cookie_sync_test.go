@@ -1909,32 +1909,32 @@ func TestCookieSyncActivityControlIntegration(t *testing.T) {
 	testCases := []struct {
 		name           string
 		bidderName     string
-		accPrivacy     *config.AccountPrivacy
+		accountPrivacy *config.AccountPrivacy
 		expectedResult bool
 	}{
 		{
 			name:           "activity_is_allowed",
 			bidderName:     "bidderA",
-			accPrivacy:     getDefaultActivityConfig("bidderA", true),
+			accountPrivacy: getDefaultActivityConfig("bidderA", true),
 			expectedResult: true,
 		},
 		{
 			name:           "activity_is_denied",
 			bidderName:     "bidderA",
-			accPrivacy:     getDefaultActivityConfig("bidderA", false),
+			accountPrivacy: getDefaultActivityConfig("bidderA", false),
 			expectedResult: false,
 		},
 		{
 			name:           "activity_is_abstain",
 			bidderName:     "bidderA",
-			accPrivacy:     nil,
+			accountPrivacy: nil,
 			expectedResult: true,
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			activities, err := privacy.NewActivityControl(test.accPrivacy)
+			activities, err := privacy.NewActivityControl(test.accountPrivacy)
 			assert.NoError(t, err)
 			up := usersyncPrivacy{
 				activityControl: activities,
