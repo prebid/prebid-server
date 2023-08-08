@@ -369,12 +369,14 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 			Tracker:  "alias-tracker",
 		},
 	}
-
+	bidderB := parentBidderInfo
+	bidderB.AliasOf = "bidderA"
 	testCases := []struct {
-		description string
-		aliasInfos  map[string]aliasNillableFields
-		bidderInfos BidderInfos
-		assertFunc  func(BidderInfos, error)
+		description         string
+		aliasInfos          map[string]aliasNillableFields
+		bidderInfos         BidderInfos
+		expectedBidderInfos BidderInfos
+		expectedErr         error
 	}{
 		{
 			description: "inherit all parent info in alias bidder",
@@ -393,12 +395,8 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 					// all other fields should be inherited from parent bidder
 				},
 			},
-			assertFunc: func(bidderInfos BidderInfos, err error) {
-				assert.NoError(t, err)
-				bidderB := parentBidderInfo
-				bidderB.AliasOf = "bidderA"
-				assert.Equal(t, BidderInfos{"bidderA": parentBidderInfo, "bidderB": bidderB}, bidderInfos)
-			},
+			expectedErr:         nil,
+			expectedBidderInfos: BidderInfos{"bidderA": parentBidderInfo, "bidderB": bidderB},
 		},
 		{
 			description: "all bidder info specified for alias, do not inherit from parent bidder",
@@ -414,10 +412,8 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 				"bidderA": parentBidderInfo,
 				"bidderB": aliasBidderInfo,
 			},
-			assertFunc: func(bidderInfos BidderInfos, err error) {
-				assert.NoError(t, err)
-				assert.Equal(t, BidderInfos{"bidderA": parentBidderInfo, "bidderB": aliasBidderInfo}, bidderInfos)
-			},
+			expectedErr:         nil,
+			expectedBidderInfos: BidderInfos{"bidderA": parentBidderInfo, "bidderB": aliasBidderInfo},
 		},
 		{
 			description: "invalid alias",
@@ -429,26 +425,24 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 					AliasOf: "bidderA",
 				},
 			},
-			assertFunc: func(bidderInfos BidderInfos, err error) {
-				assert.Nil(t, bidderInfos)
-				assert.Equal(t, "bidder: bidderA not found for an alias: bidderB", err.Error())
-			},
+			expectedErr: errors.New("bidder: bidderA not found for an alias: bidderB"),
 		},
 		{
 			description: "bidder info not found for an alias",
 			aliasInfos: map[string]aliasNillableFields{
 				"bidderB": {},
 			},
-			assertFunc: func(bidderInfos BidderInfos, err error) {
-				assert.Nil(t, bidderInfos)
-				assert.Equal(t, "bidder info not found for an alias: bidderB", err.Error())
-			},
+			expectedErr: errors.New("bidder info not found for an alias: bidderB"),
 		},
 	}
 
 	for _, test := range testCases {
 		bidderInfos, err := processBidderAliases(test.aliasInfos, test.bidderInfos)
-		test.assertFunc(bidderInfos, err)
+		if test.expectedErr != nil {
+			assert.Equal(t, test.expectedErr, err)
+		} else {
+			assert.Equal(t, test.expectedBidderInfos, bidderInfos)
+		}
 	}
 }
 
