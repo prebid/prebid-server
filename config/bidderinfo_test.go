@@ -275,7 +275,7 @@ func TestProcessBidderInfo(t *testing.T) {
 func TestProcessAliasBidderInfo(t *testing.T) {
 	testCases := []struct {
 		description         string
-		aliasFields          map[string]aliasNillableFields
+		aliasFields         map[string]aliasNillableFields
 		bidderInfos         BidderInfos
 		expectedBidderInfos BidderInfos
 		expectError         string
@@ -449,6 +449,13 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 				},
 			},
 			expectError: "bidderA not found for an alias: bidderB",
+		},
+		{
+			description: "bidder info not found for an alias",
+			aliasFields: map[string]aliasNillableFields{
+				"bidderB": {},
+			},
+			expectError: "bidder info not found for an alias: bidderB",
 		},
 	}
 

@@ -269,7 +269,10 @@ func processBidderInfos(reader InfoReader, normalizeBidderName func(string) (ope
 
 func processBidderAliases(aliasNillableFieldsByBidder map[string]aliasNillableFields, bidderInfos BidderInfos) (BidderInfos, error) {
 	for bidderName := range aliasNillableFieldsByBidder {
-		aliasBidderInfo := bidderInfos[bidderName]
+		aliasBidderInfo, ok := bidderInfos[bidderName]
+		if !ok {
+			return nil, fmt.Errorf("bidder info not found for an alias: %s", bidderName)
+		}
 		if err := validateAliases(aliasBidderInfo, bidderInfos, bidderName); err != nil {
 			return nil, err
 		}
