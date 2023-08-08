@@ -454,7 +454,7 @@ func TestScrubRequest(t *testing.T) {
 	}
 }
 
-func TestScrubIp(t *testing.T) {
+func TestScrubIP(t *testing.T) {
 	testCases := []struct {
 		IP        string
 		cleanedIP string
