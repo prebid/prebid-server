@@ -372,14 +372,14 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 
 	testCases := []struct {
 		description string
-		aliasInfos  aliasInfos
+		aliasInfos  map[string]aliasNillableFields
 		bidderInfos BidderInfos
 		assertFunc  func(BidderInfos, error)
 	}{
 		{
 			description: "inherit all parent info in alias bidder",
-			aliasInfos: aliasInfos{
-				"bidderB": bidderInfoNullableFields{
+			aliasInfos: map[string]aliasNillableFields{
+				"bidderB": {
 					Disabled:                nil,
 					ModifyingVastXmlAllowed: nil,
 					Experiment:              nil,
@@ -402,8 +402,8 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 		},
 		{
 			description: "all bidder info specified for alias, do not inherit from parent bidder",
-			aliasInfos: aliasInfos{
-				"bidderB": bidderInfoNullableFields{
+			aliasInfos: map[string]aliasNillableFields{
+				"bidderB": {
 					Disabled:                &aliasBidderInfo.Disabled,
 					ModifyingVastXmlAllowed: &aliasBidderInfo.ModifyingVastXmlAllowed,
 					Experiment:              &aliasBidderInfo.Experiment,
@@ -421,8 +421,8 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 		},
 		{
 			description: "invalid alias",
-			aliasInfos: aliasInfos{
-				"bidderB": bidderInfoNullableFields{},
+			aliasInfos: map[string]aliasNillableFields{
+				"bidderB": aliasNillableFields{},
 			},
 			bidderInfos: BidderInfos{
 				"bidderB": BidderInfo{
@@ -432,6 +432,16 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 			assertFunc: func(bidderInfos BidderInfos, err error) {
 				assert.Nil(t, bidderInfos)
 				assert.Equal(t, "bidder: bidderA not found for an alias: bidderB", err.Error())
+			},
+		},
+		{
+			description: "bidder info not found for an alias",
+			aliasInfos: map[string]aliasNillableFields{
+				"bidderB": aliasNillableFields{},
+			},
+			assertFunc: func(bidderInfos BidderInfos, err error) {
+				assert.Nil(t, bidderInfos)
+				assert.Equal(t, "bidder info not found for an alias: bidderB", err.Error())
 			},
 		},
 	}
