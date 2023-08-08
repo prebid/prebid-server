@@ -23,6 +23,8 @@ const (
 	ScopeTypeGeneral   = "general"
 )
 
+const defaultActivityResult = true
+
 type ActivityControl struct {
 	plans map[Activity]ActivityPlan
 }
@@ -124,36 +126,34 @@ func conditionToRuleComponentNames(conditions []string) ([]ScopedName, error) {
 	return sn, nil
 }
 
-func activityDefaultToDefaultResult(activityDefault *bool) ActivityResult {
+func activityDefaultToDefaultResult(activityDefault *bool) bool {
 	if activityDefault == nil {
 		// if default is unspecified, the hardcoded default-default is true.
-		return ActivityAllow
-	} else if *activityDefault {
-		return ActivityAllow
+		return defaultActivityResult
 	}
-	return ActivityDeny
+	return *activityDefault
 }
 
-func (e ActivityControl) Evaluate(activity Activity, target ScopedName) ActivityResult {
+func (e ActivityControl) Allow(activity Activity, target ScopedName) bool {
 	plan, planDefined := e.plans[activity]
 
 	if !planDefined {
-		return ActivityAbstain
+		return defaultActivityResult
 	}
 
 	return plan.Evaluate(target)
 }
 
 type ActivityPlan struct {
-	defaultResult ActivityResult
+	defaultResult bool
 	rules         []ActivityRule
 }
 
-func (p ActivityPlan) Evaluate(target ScopedName) ActivityResult {
+func (p ActivityPlan) Evaluate(target ScopedName) bool {
 	for _, rule := range p.rules {
 		result := rule.Evaluate(target)
 		if result == ActivityDeny || result == ActivityAllow {
-			return result
+			return result == ActivityAllow
 		}
 	}
 	return p.defaultResult
