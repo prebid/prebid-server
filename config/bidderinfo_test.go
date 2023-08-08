@@ -422,7 +422,7 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 		{
 			description: "invalid alias",
 			aliasInfos: map[string]aliasNillableFields{
-				"bidderB": aliasNillableFields{},
+				"bidderB": {},
 			},
 			bidderInfos: BidderInfos{
 				"bidderB": BidderInfo{
@@ -437,7 +437,7 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 		{
 			description: "bidder info not found for an alias",
 			aliasInfos: map[string]aliasNillableFields{
-				"bidderB": aliasNillableFields{},
+				"bidderB": {},
 			},
 			assertFunc: func(bidderInfos BidderInfos, err error) {
 				assert.Nil(t, bidderInfos)
