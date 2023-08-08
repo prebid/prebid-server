@@ -106,16 +106,16 @@ func (adapter *adapter) MakeBids(
 }
 
 func getReturnTypeFromMtypeForImp(mType openrtb2.MarkupType) (openrtb_ext.BidType, error) {
-	if mType == openrtb2.MarkupBanner {
+	switch mType {
+	case openrtb2.MarkupBanner:
 		return openrtb_ext.BidTypeBanner, nil
-	} else if mType == openrtb2.MarkupVideo {
+	case openrtb2.MarkupVideo:
 		return openrtb_ext.BidTypeVideo, nil
-	} else if mType == openrtb2.MarkupNative {
+	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative, nil
-	} else if mType == openrtb2.MarkupAudio {
+	case openrtb2.MarkupAudio:
 		return openrtb_ext.BidTypeAudio, nil
-	} else {
-		return "", &errortypes.BadServerResponse{
-			Message: "Unsupported return type"}
+	default:
+		return "", &errortypes.BadServerResponse{Message: "Unsupported return type"}
 	}
 }
