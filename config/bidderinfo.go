@@ -52,14 +52,12 @@ type BidderInfo struct {
 	OpenRTB             *OpenRTBInfo `yaml:"openrtb" mapstructure:"openrtb"`
 }
 
-type bidderInfoNullableFields struct {
+type aliasNillableFields struct {
 	Disabled                *bool                 `yaml:"disabled" mapstructure:"disabled"`
 	ModifyingVastXmlAllowed *bool                 `yaml:"modifyingVastXmlAllowed" mapstructure:"modifyingVastXmlAllowed"`
 	Experiment              *BidderInfoExperiment `yaml:"experiment" mapstructure:"experiment"`
 	XAPI                    *AdapterXAPI          `yaml:"xapi" mapstructure:"xapi"`
 }
-
-type aliasInfos map[string]bidderInfoNullableFields
 
 // BidderInfoExperiment specifies non-production ready feature config for a bidder
 type BidderInfoExperiment struct {
@@ -239,7 +237,7 @@ func processBidderInfos(reader InfoReader, normalizeBidderName func(string) (ope
 	}
 
 	bidderInfos := BidderInfos{}
-	aliasInfos := aliasInfos{} //maintains map of bidderName to nullable fields in BidderInfo struct
+	aliasNillableFieldsByBidder := map[string]aliasNillableFields{}
 	for fileName, data := range bidderConfigs {
 		bidderName := strings.Split(fileName, ".")
 		if len(bidderName) == 2 && bidderName[1] == "yaml" {
@@ -257,24 +255,24 @@ func processBidderInfos(reader InfoReader, normalizeBidderName func(string) (ope
 			//need to maintain nullable fields from BidderInfo struct into bidderInfoNullableFields
 			//to handle the default values in aliases yaml
 			if len(info.AliasOf) > 0 {
-				aliasInfo := bidderInfoNullableFields{}
-				if err := yaml.Unmarshal(data, &aliasInfo); err != nil {
+				aliasFields := aliasNillableFields{}
+				if err := yaml.Unmarshal(data, &aliasFields); err != nil {
 					return nil, fmt.Errorf("error parsing config for aliased bidder %s: %v", fileName, err)
 				}
 
-				aliasInfos[string(normalizedBidderName)] = aliasInfo
+				aliasNillableFieldsByBidder[string(normalizedBidderName)] = aliasFields
 			}
 		}
 	}
-	return processBidderAliases(aliasInfos, bidderInfos)
+	return processBidderAliases(aliasNillableFieldsByBidder, bidderInfos)
 }
 
-func processBidderAliases(aliasInfos aliasInfos, bidderInfos BidderInfos) (BidderInfos, error) {
-	for bidderName := range aliasInfos {
-		if err := validateAliases(bidderInfos[bidderName], bidderInfos, bidderName); err != nil {
+func processBidderAliases(aliasNillableFieldsByBidder map[string]aliasNillableFields, bidderInfos BidderInfos) (BidderInfos, error) {
+	for bidderName := range aliasNillableFieldsByBidder {
+		aliasBidderInfo := bidderInfos[bidderName]
+		if err := validateAliases(aliasBidderInfo, bidderInfos, bidderName); err != nil {
 			return nil, err
 		}
-		aliasBidderInfo := bidderInfos[bidderName]
 		parentBidderInfo := bidderInfos[aliasBidderInfo.AliasOf]
 		aliasBidderInfo.AppSecret = parentBidderInfo.AppSecret
 		aliasBidderInfo.Capabilities = parentBidderInfo.Capabilities

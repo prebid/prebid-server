@@ -275,15 +275,15 @@ func TestProcessBidderInfo(t *testing.T) {
 func TestProcessAliasBidderInfo(t *testing.T) {
 	testCases := []struct {
 		description         string
-		aliasInfos          aliasInfos
+		aliasFields          map[string]aliasNillableFields
 		bidderInfos         BidderInfos
 		expectedBidderInfos BidderInfos
 		expectError         string
 	}{
 		{
 			description: "valid alias - replace alias with parent info",
-			aliasInfos: aliasInfos{
-				"bidderB": bidderInfoNullableFields{},
+			aliasFields: map[string]aliasNillableFields{
+				"bidderB": {},
 			},
 			bidderInfos: BidderInfos{
 				"bidderA": BidderInfo{
@@ -440,8 +440,8 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 		},
 		{
 			description: "invalid alias",
-			aliasInfos: aliasInfos{
-				"bidderB": bidderInfoNullableFields{},
+			aliasFields: map[string]aliasNillableFields{
+				"bidderB": {},
 			},
 			bidderInfos: BidderInfos{
 				"bidderB": BidderInfo{
@@ -453,7 +453,7 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		bidderInfos, err := processBidderAliases(test.aliasInfos, test.bidderInfos)
+		bidderInfos, err := processBidderAliases(test.aliasFields, test.bidderInfos)
 		if test.expectError != "" {
 			assert.ErrorContains(t, err, test.expectError)
 		} else {
