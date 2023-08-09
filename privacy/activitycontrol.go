@@ -1,9 +1,6 @@
 package privacy
 
 import (
-	"fmt"
-	"strings"
-
 	"github.com/prebid/prebid-server/config"
 )
 
@@ -13,14 +10,6 @@ const (
 	ActivityAbstain ActivityResult = iota
 	ActivityAllow
 	ActivityDeny
-)
-
-const (
-	ScopeTypeBidder    = "bidder"
-	ScopeTypeAnalytics = "analytics"
-	ScopeTypeRTD       = "rtd" // real time data
-	ScopeTypeUserID    = "userid"
-	ScopeTypeGeneral   = "general"
 )
 
 const defaultActivityResult = true
@@ -88,8 +77,8 @@ func buildEnforcementPlan(activity config.Activity) (ActivityPlan, error) {
 	return ef, nil
 }
 
-func activityRulesToEnforcementRules(rules []config.ActivityRule) ([]ActivityRule, error) {
-	var enfRules []ActivityRule
+func activityRulesToEnforcementRules(rules []config.ActivityRule) ([]Rule, error) {
+	var enfRules []Rule
 
 	for _, r := range rules {
 		var result ActivityResult
@@ -114,12 +103,12 @@ func activityRulesToEnforcementRules(rules []config.ActivityRule) ([]ActivityRul
 	return enfRules, nil
 }
 
-func conditionToRuleComponentNames(conditions []string) ([]ScopedName, error) {
-	sn := make([]ScopedName, 0)
+func conditionToRuleComponentNames(conditions []string) ([]Component, error) {
+	sn := make([]Component, 0)
 	for _, condition := range conditions {
-		scope, err := NewScopedName(condition)
+		scope, err := ParseComponent(condition)
 		if err != nil {
-			return sn, err
+			return nil, err
 		}
 		sn = append(sn, scope)
 	}
@@ -128,13 +117,12 @@ func conditionToRuleComponentNames(conditions []string) ([]ScopedName, error) {
 
 func activityDefaultToDefaultResult(activityDefault *bool) bool {
 	if activityDefault == nil {
-		// if default is unspecified, the hardcoded default-default is true.
 		return defaultActivityResult
 	}
 	return *activityDefault
 }
 
-func (e ActivityControl) Allow(activity Activity, target ScopedName) bool {
+func (e ActivityControl) Allow(activity Activity, target Component) bool {
 	plan, planDefined := e.plans[activity]
 
 	if !planDefined {
@@ -146,10 +134,10 @@ func (e ActivityControl) Allow(activity Activity, target ScopedName) bool {
 
 type ActivityPlan struct {
 	defaultResult bool
-	rules         []ActivityRule
+	rules         []Rule
 }
 
-func (p ActivityPlan) Evaluate(target ScopedName) bool {
+func (p ActivityPlan) Evaluate(target Component) bool {
 	for _, rule := range p.rules {
 		result := rule.Evaluate(target)
 		if result == ActivityDeny || result == ActivityAllow {
@@ -157,92 +145,4 @@ func (p ActivityPlan) Evaluate(target ScopedName) bool {
 		}
 	}
 	return p.defaultResult
-}
-
-type ActivityRule interface {
-	Evaluate(target ScopedName) ActivityResult
-}
-
-type ComponentEnforcementRule struct {
-	result        ActivityResult
-	componentName []ScopedName
-	componentType []string
-}
-
-func (r ComponentEnforcementRule) Evaluate(target ScopedName) ActivityResult {
-	if matched := evaluateComponentName(target, r.componentName); !matched {
-		return ActivityAbstain
-	}
-
-	if matched := evaluateComponentType(target, r.componentType); !matched {
-		return ActivityAbstain
-	}
-
-	return r.result
-}
-
-func evaluateComponentName(target ScopedName, componentNames []ScopedName) bool {
-	// no clauses are considered a match
-	if len(componentNames) == 0 {
-		return true
-	}
-
-	// if there are clauses, at least one needs to match
-	for _, n := range componentNames {
-		if strings.EqualFold(n.Scope, target.Scope) && (n.Name == "*" || strings.EqualFold(n.Name, target.Name)) {
-			return true
-		}
-	}
-
-	return false
-}
-
-func evaluateComponentType(target ScopedName, componentTypes []string) bool {
-	// no clauses are considered a match
-	if len(componentTypes) == 0 {
-		return true
-	}
-
-	// if there are clauses, at least one needs to match
-	for _, s := range componentTypes {
-		if strings.EqualFold(s, target.Scope) {
-			return true
-		}
-	}
-
-	return false
-}
-
-type ScopedName struct {
-	Scope string
-	Name  string
-}
-
-func NewScopedName(condition string) (ScopedName, error) {
-	if condition == "" {
-		return ScopedName{}, fmt.Errorf("unable to parse empty condition")
-	}
-	var scope, name string
-	split := strings.Split(condition, ".")
-	if len(split) == 2 {
-		s := strings.ToLower(split[0])
-		if s == ScopeTypeBidder || s == ScopeTypeAnalytics || s == ScopeTypeUserID {
-			scope = s
-		} else if strings.Contains(s, ScopeTypeRTD) {
-			scope = ScopeTypeRTD
-		} else {
-			scope = ScopeTypeGeneral
-		}
-		name = split[1]
-	} else if len(split) == 1 {
-		scope = ScopeTypeBidder
-		name = split[0]
-	} else {
-		return ScopedName{}, fmt.Errorf("unable to parse condition: %s", condition)
-	}
-
-	return ScopedName{
-		Scope: scope,
-		Name:  name,
-	}, nil
 }
