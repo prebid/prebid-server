@@ -190,7 +190,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	}
 
 	activeBidders := exchange.GetActiveBidders(cfg.BidderInfos)
-	disabledBidders := exchange.GetDisabledBiddersErrorMessages(cfg.BidderInfos)
+	disabledBidders := exchange.GetDisabledBidderWarningMessages(cfg.BidderInfos)
 
 	defaultAliases, defReqJSON := readDefaultRequest(cfg.DefReqConfig)
 	if err := validateDefaultAliases(defaultAliases); err != nil {

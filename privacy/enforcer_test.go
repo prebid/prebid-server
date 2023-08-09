@@ -2,10 +2,11 @@ package privacy
 
 import (
 	"errors"
+	"testing"
+
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestNewActivityControl(t *testing.T) {
@@ -144,26 +145,25 @@ func TestNewActivityControl(t *testing.T) {
 }
 
 func TestActivityDefaultToDefaultResult(t *testing.T) {
-
 	testCases := []struct {
 		name            string
 		activityDefault *bool
-		expectedResult  ActivityResult
+		expectedResult  bool
 	}{
 		{
-			name:            "activityDefault_is_nil",
+			name:            "nil",
 			activityDefault: nil,
-			expectedResult:  ActivityAllow,
+			expectedResult:  true,
 		},
 		{
-			name:            "activityDefault_is_true",
+			name:            "true",
 			activityDefault: ptrutil.ToPtr(true),
-			expectedResult:  ActivityAllow,
+			expectedResult:  true,
 		},
 		{
-			name:            "activityDefault_is_false",
+			name:            "false",
 			activityDefault: ptrutil.ToPtr(false),
-			expectedResult:  ActivityDeny,
+			expectedResult:  false,
 		},
 	}
 
@@ -182,14 +182,14 @@ func TestAllowActivityControl(t *testing.T) {
 		activityControl ActivityControl
 		activity        Activity
 		target          ScopedName
-		activityResult  ActivityResult
+		activityResult  bool
 	}{
 		{
 			name:            "plans_is_nil",
 			activityControl: ActivityControl{plans: nil},
 			activity:        ActivityFetchBids,
 			target:          ScopedName{Scope: "bidder", Name: "bidderA"},
-			activityResult:  ActivityAbstain,
+			activityResult:  true,
 		},
 		{
 			name: "activity_not_defined",
@@ -197,7 +197,7 @@ func TestAllowActivityControl(t *testing.T) {
 				ActivitySyncUser: getDefaultActivityPlan()}},
 			activity:       ActivityFetchBids,
 			target:         ScopedName{Scope: "bidder", Name: "bidderA"},
-			activityResult: ActivityAbstain,
+			activityResult: true,
 		},
 		{
 			name: "activity_defined_but_not_found_default_returned",
@@ -205,7 +205,7 @@ func TestAllowActivityControl(t *testing.T) {
 				ActivityFetchBids: getDefaultActivityPlan()}},
 			activity:       ActivityFetchBids,
 			target:         ScopedName{Scope: "bidder", Name: "bidderB"},
-			activityResult: ActivityAllow,
+			activityResult: true,
 		},
 		{
 			name: "activity_defined_and_allowed",
@@ -213,7 +213,7 @@ func TestAllowActivityControl(t *testing.T) {
 				ActivityFetchBids: getDefaultActivityPlan()}},
 			activity:       ActivityFetchBids,
 			target:         ScopedName{Scope: "bidder", Name: "bidderA"},
-			activityResult: ActivityAllow,
+			activityResult: true,
 		},
 	}
 
@@ -226,8 +226,7 @@ func TestAllowActivityControl(t *testing.T) {
 	}
 }
 
-func TestAllowComponentEnforcementRule(t *testing.T) {
-
+func TestComponentEnforcementRuleEvaluate(t *testing.T) {
 	testCases := []struct {
 		name           string
 		componentRule  ComponentEnforcementRule
@@ -237,7 +236,7 @@ func TestAllowComponentEnforcementRule(t *testing.T) {
 		{
 			name: "activity_is_allowed",
 			componentRule: ComponentEnforcementRule{
-				allowed: true,
+				result: ActivityAllow,
 				componentName: []ScopedName{
 					{Scope: "bidder", Name: "bidderA"},
 				},
@@ -249,7 +248,7 @@ func TestAllowComponentEnforcementRule(t *testing.T) {
 		{
 			name: "activity_is_not_allowed",
 			componentRule: ComponentEnforcementRule{
-				allowed: false,
+				result: ActivityDeny,
 				componentName: []ScopedName{
 					{Scope: "bidder", Name: "bidderA"},
 				},
@@ -261,7 +260,7 @@ func TestAllowComponentEnforcementRule(t *testing.T) {
 		{
 			name: "abstain_both_clauses_do_not_match",
 			componentRule: ComponentEnforcementRule{
-				allowed: true,
+				result: ActivityAllow,
 				componentName: []ScopedName{
 					{Scope: "bidder", Name: "bidderA"},
 				},
@@ -273,7 +272,7 @@ func TestAllowComponentEnforcementRule(t *testing.T) {
 		{
 			name: "activity_is_not_allowed_componentName_only",
 			componentRule: ComponentEnforcementRule{
-				allowed: true,
+				result: ActivityAllow,
 				componentName: []ScopedName{
 					{Scope: "bidder", Name: "bidderA"},
 				},
@@ -284,25 +283,33 @@ func TestAllowComponentEnforcementRule(t *testing.T) {
 		{
 			name: "activity_is_allowed_componentType_only",
 			componentRule: ComponentEnforcementRule{
-				allowed:       true,
+				result:        ActivityAllow,
 				componentType: []string{"bidder"},
 			},
 			target:         ScopedName{Scope: "bidder", Name: "bidderB"},
 			activityResult: ActivityAllow,
 		},
 		{
-			name: "abstain_activity_no_componentType_and_no_componentName",
+			name: "no-conditions-allow",
 			componentRule: ComponentEnforcementRule{
-				allowed: true,
+				result: ActivityAllow,
 			},
-			target:         ScopedName{Scope: "bidder", Name: "bidderB"},
-			activityResult: ActivityAbstain,
+			target:         ScopedName{Scope: "bidder", Name: "bidderA"},
+			activityResult: ActivityAllow,
+		},
+		{
+			name: "no-conditions-deny",
+			componentRule: ComponentEnforcementRule{
+				result: ActivityDeny,
+			},
+			target:         ScopedName{Scope: "bidder", Name: "bidderA"},
+			activityResult: ActivityDeny,
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			actualResult := test.componentRule.Allow(test.target)
+			actualResult := test.componentRule.Evaluate(test.target)
 			assert.Equal(t, test.activityResult, actualResult)
 
 		})
@@ -310,7 +317,6 @@ func TestAllowComponentEnforcementRule(t *testing.T) {
 }
 
 func TestNewScopedName(t *testing.T) {
-
 	testCases := []struct {
 		name              string
 		condition         string
@@ -318,49 +324,49 @@ func TestNewScopedName(t *testing.T) {
 		err               error
 	}{
 		{
-			name:              "condition_is_empty",
+			name:              "empty",
 			condition:         "",
 			expectedScopeName: ScopedName{},
 			err:               errors.New("unable to parse empty condition"),
 		},
 		{
-			name:              "condition_is_incorrect",
+			name:              "incorrect",
 			condition:         "bidder.bidderA.bidderB",
 			expectedScopeName: ScopedName{},
 			err:               errors.New("unable to parse condition: bidder.bidderA.bidderB"),
 		},
 		{
-			name:              "condition_is_scoped_to_bidder",
+			name:              "scope-bidder",
 			condition:         "bidder.bidderA",
 			expectedScopeName: ScopedName{Scope: "bidder", Name: "bidderA"},
 			err:               nil,
 		},
 		{
-			name:              "condition_is_scoped_to_analytics",
+			name:              "scope-analytics",
 			condition:         "analytics.bidderA",
 			expectedScopeName: ScopedName{Scope: "analytics", Name: "bidderA"},
 			err:               nil,
 		},
 		{
-			name:              "condition_is_scoped_to_userid",
+			name:              "scope-userid",
 			condition:         "userid.bidderA",
 			expectedScopeName: ScopedName{Scope: "userid", Name: "bidderA"},
 			err:               nil,
 		},
 		{
-			name:              "condition_is_bidder_name",
+			name:              "scope-default",
 			condition:         "bidderA",
 			expectedScopeName: ScopedName{Scope: "bidder", Name: "bidderA"},
 			err:               nil,
 		},
 		{
-			name:              "condition_is_module_tag_rtd",
+			name:              "scope-rtf",
 			condition:         "rtd.test",
 			expectedScopeName: ScopedName{Scope: "rtd", Name: "test"},
 			err:               nil,
 		},
 		{
-			name:              "condition_scope_defaults_to_genera",
+			name:              "scope-general",
 			condition:         "test.test",
 			expectedScopeName: ScopedName{Scope: "general", Name: "test"},
 			err:               nil,
@@ -398,10 +404,10 @@ func getDefaultActivityConfig() config.Activity {
 
 func getDefaultActivityPlan() ActivityPlan {
 	return ActivityPlan{
-		defaultResult: ActivityAllow,
+		defaultResult: true,
 		rules: []ActivityRule{
 			ComponentEnforcementRule{
-				allowed: true,
+				result: ActivityAllow,
 				componentName: []ScopedName{
 					{Scope: "bidder", Name: "bidderA"},
 				},

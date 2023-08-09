@@ -83,7 +83,7 @@ func (a *IxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters
 	}
 	requestCopy.Imp = filteredImps
 
-	setSitePublisherId(&requestCopy, uniqueSiteIDs, ixDiag)
+	setPublisherId(&requestCopy, uniqueSiteIDs, ixDiag)
 
 	err := setIxDiagIntoExtRequest(&requestCopy, ixDiag)
 	if err != nil {
@@ -101,7 +101,11 @@ func (a *IxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters
 	return requests, errs
 }
 
-func setSitePublisherId(requestCopy *openrtb2.BidRequest, uniqueSiteIDs map[string]struct{}, ixDiag *IxDiag) {
+func setPublisherId(requestCopy *openrtb2.BidRequest, uniqueSiteIDs map[string]struct{}, ixDiag *IxDiag) {
+	siteIDs := make([]string, 0, len(uniqueSiteIDs))
+	for key := range uniqueSiteIDs {
+		siteIDs = append(siteIDs, key)
+	}
 	if requestCopy.Site != nil {
 		site := *requestCopy.Site
 		if site.Publisher == nil {
@@ -110,21 +114,32 @@ func setSitePublisherId(requestCopy *openrtb2.BidRequest, uniqueSiteIDs map[stri
 			publisher := *site.Publisher
 			site.Publisher = &publisher
 		}
-
-		siteIDs := make([]string, 0, len(uniqueSiteIDs))
-		for key := range uniqueSiteIDs {
-			siteIDs = append(siteIDs, key)
-		}
 		if len(siteIDs) == 1 {
 			site.Publisher.ID = siteIDs[0]
 		}
-		if len(siteIDs) > 1 {
-			// Sorting siteIDs for predictable output as Go maps don't guarantee order
-			sort.Strings(siteIDs)
-			multipleSiteIDs := strings.Join(siteIDs, ", ")
-			ixDiag.MultipleSiteIds = multipleSiteIDs
-		}
 		requestCopy.Site = &site
+	}
+
+	if requestCopy.App != nil {
+		app := *requestCopy.App
+
+		if app.Publisher == nil {
+			app.Publisher = &openrtb2.Publisher{}
+		} else {
+			publisher := *app.Publisher
+			app.Publisher = &publisher
+		}
+		if len(siteIDs) == 1 {
+			app.Publisher.ID = siteIDs[0]
+		}
+		requestCopy.App = &app
+	}
+
+	if len(siteIDs) > 1 {
+		// Sorting siteIDs for predictable output as Go maps don't guarantee order
+		sort.Strings(siteIDs)
+		multipleSiteIDs := strings.Join(siteIDs, ", ")
+		ixDiag.MultipleSiteIds = multipleSiteIDs
 	}
 }
 
