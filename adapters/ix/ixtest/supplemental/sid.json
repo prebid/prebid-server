@@ -61,6 +61,12 @@
       "expectedRequest": {
         "uri": "http://host/endpoint",
         "body": {
+          "ext": {
+            "ixdiag": {
+              "multipleSiteIds": "569749, 569750"
+            },
+            "prebid": null
+          },
           "id": "test-request-id",
           "imp": [
             {

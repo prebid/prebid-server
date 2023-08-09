@@ -2,8 +2,9 @@ package privacy
 
 import (
 	"fmt"
-	"github.com/prebid/prebid-server/config"
 	"strings"
+
+	"github.com/prebid/prebid-server/config"
 )
 
 type ActivityResult int
@@ -21,6 +22,8 @@ const (
 	ScopeTypeUserID    = "userid"
 	ScopeTypeGeneral   = "general"
 )
+
+const defaultActivityResult = true
 
 type ActivityControl struct {
 	plans map[Activity]ActivityPlan
@@ -86,15 +89,24 @@ func buildEnforcementPlan(activity config.Activity) (ActivityPlan, error) {
 }
 
 func activityRulesToEnforcementRules(rules []config.ActivityRule) ([]ActivityRule, error) {
-	enfRules := make([]ActivityRule, 0)
+	var enfRules []ActivityRule
+
 	for _, r := range rules {
-		cmpName, err := conditionToRuleComponentName(r.Condition.ComponentName)
+		var result ActivityResult
+		if r.Allow {
+			result = ActivityAllow
+		} else {
+			result = ActivityDeny
+		}
+
+		componentName, err := conditionToRuleComponentNames(r.Condition.ComponentName)
 		if err != nil {
 			return nil, err
 		}
+
 		er := ComponentEnforcementRule{
-			allowed:       r.Allow,
-			componentName: cmpName,
+			result:        result,
+			componentName: componentName,
 			componentType: r.Condition.ComponentType,
 		}
 		enfRules = append(enfRules, er)
@@ -102,7 +114,7 @@ func activityRulesToEnforcementRules(rules []config.ActivityRule) ([]ActivityRul
 	return enfRules, nil
 }
 
-func conditionToRuleComponentName(conditions []string) ([]ScopedName, error) {
+func conditionToRuleComponentNames(conditions []string) ([]ScopedName, error) {
 	sn := make([]ScopedName, 0)
 	for _, condition := range conditions {
 		scope, err := NewScopedName(condition)
@@ -114,87 +126,91 @@ func conditionToRuleComponentName(conditions []string) ([]ScopedName, error) {
 	return sn, nil
 }
 
-func activityDefaultToDefaultResult(activityDefault *bool) ActivityResult {
+func activityDefaultToDefaultResult(activityDefault *bool) bool {
 	if activityDefault == nil {
 		// if default is unspecified, the hardcoded default-default is true.
-		return ActivityAllow
-	} else if *activityDefault {
-		return ActivityAllow
+		return defaultActivityResult
 	}
-	return ActivityDeny
+	return *activityDefault
 }
 
-func (e ActivityControl) Allow(activity Activity, target ScopedName) ActivityResult {
+func (e ActivityControl) Allow(activity Activity, target ScopedName) bool {
 	plan, planDefined := e.plans[activity]
 
 	if !planDefined {
-		return ActivityAbstain
+		return defaultActivityResult
 	}
 
-	return plan.Allow(target)
+	return plan.Evaluate(target)
 }
 
 type ActivityPlan struct {
-	defaultResult ActivityResult
+	defaultResult bool
 	rules         []ActivityRule
 }
 
-func (p ActivityPlan) Allow(target ScopedName) ActivityResult {
+func (p ActivityPlan) Evaluate(target ScopedName) bool {
 	for _, rule := range p.rules {
-		result := rule.Allow(target)
+		result := rule.Evaluate(target)
 		if result == ActivityDeny || result == ActivityAllow {
-			return result
+			return result == ActivityAllow
 		}
 	}
 	return p.defaultResult
 }
 
 type ActivityRule interface {
-	Allow(target ScopedName) ActivityResult
+	Evaluate(target ScopedName) ActivityResult
 }
 
 type ComponentEnforcementRule struct {
+	result        ActivityResult
 	componentName []ScopedName
 	componentType []string
-	// include gppSectionId from 3.5
-	// include geo from 3.5
-	allowed bool
 }
 
-func (r ComponentEnforcementRule) Allow(target ScopedName) ActivityResult {
-	if len(r.componentName) == 0 && len(r.componentType) == 0 {
+func (r ComponentEnforcementRule) Evaluate(target ScopedName) ActivityResult {
+	if matched := evaluateComponentName(target, r.componentName); !matched {
 		return ActivityAbstain
 	}
 
-	nameClauseExists := len(r.componentName) > 0
-	typeClauseExists := len(r.componentType) > 0
-
-	componentNameFound := false
-	for _, scope := range r.componentName {
-		if strings.EqualFold(scope.Scope, target.Scope) &&
-			(scope.Name == "*" || strings.EqualFold(scope.Name, target.Name)) {
-			componentNameFound = true
-			break
-		}
+	if matched := evaluateComponentType(target, r.componentType); !matched {
+		return ActivityAbstain
 	}
 
-	componentTypeFound := false
-	for _, componentType := range r.componentType {
-		if strings.EqualFold(componentType, target.Scope) {
-			componentTypeFound = true
-			break
+	return r.result
+}
+
+func evaluateComponentName(target ScopedName, componentNames []ScopedName) bool {
+	// no clauses are considered a match
+	if len(componentNames) == 0 {
+		return true
+	}
+
+	// if there are clauses, at least one needs to match
+	for _, n := range componentNames {
+		if strings.EqualFold(n.Scope, target.Scope) && (n.Name == "*" || strings.EqualFold(n.Name, target.Name)) {
+			return true
 		}
 	}
-	// behavior if rule matches: can be either true=allow or false=deny. result is abstain if the rule doesn't match
-	matchFound := (componentNameFound || !nameClauseExists) && (componentTypeFound || !typeClauseExists)
-	if matchFound {
-		if r.allowed {
-			return ActivityAllow
-		} else {
-			return ActivityDeny
+
+	return false
+}
+
+func evaluateComponentType(target ScopedName, componentTypes []string) bool {
+	// no clauses are considered a match
+	if len(componentTypes) == 0 {
+		return true
+	}
+
+	// if there are clauses, at least one needs to match
+	for _, s := range componentTypes {
+		if strings.EqualFold(s, target.Scope) {
+			return true
 		}
 	}
-	return ActivityAbstain
+
+	return false
 }
 
 type ScopedName struct {

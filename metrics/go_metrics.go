@@ -14,6 +14,7 @@ import (
 type Metrics struct {
 	MetricsRegistry                metrics.Registry
 	ConnectionCounter              metrics.Counter
+	TMaxTimeoutCounter             metrics.Counter
 	ConnectionAcceptErrorMeter     metrics.Meter
 	ConnectionCloseErrorMeter      metrics.Meter
 	ImpMeter                       metrics.Meter
@@ -288,6 +289,7 @@ func getModuleNames(moduleStageNames map[string][]string) []string {
 func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, disableAccountMetrics config.DisabledMetrics, syncerKeys []string, moduleStageNames map[string][]string) *Metrics {
 	newMetrics := NewBlankMetrics(registry, exchanges, disableAccountMetrics, moduleStageNames)
 	newMetrics.ConnectionCounter = metrics.GetOrRegisterCounter("active_connections", registry)
+	newMetrics.TMaxTimeoutCounter = metrics.GetOrRegisterCounter("tmax_timeout", registry)
 	newMetrics.ConnectionAcceptErrorMeter = metrics.GetOrRegisterMeter("connection_accept_errors", registry)
 	newMetrics.ConnectionCloseErrorMeter = metrics.GetOrRegisterMeter("connection_close_errors", registry)
 	newMetrics.ImpMeter = metrics.GetOrRegisterMeter("imps_requested", registry)
@@ -711,6 +713,10 @@ func (me *Metrics) RecordConnectionAccept(success bool) {
 	} else {
 		me.ConnectionAcceptErrorMeter.Mark(1)
 	}
+}
+
+func (m *Metrics) RecordTMaxTimeout() {
+	m.TMaxTimeoutCounter.Inc(1)
 }
 
 func (me *Metrics) RecordConnectionClose(success bool) {

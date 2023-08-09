@@ -142,6 +142,7 @@ const (
 	BidderBmtm              BidderName = "bmtm"
 	BidderBoldwin           BidderName = "boldwin"
 	BidderBrave             BidderName = "brave"
+	BidderCadentApertureMX  BidderName = "cadent_aperture_mx"
 	BidderCcx               BidderName = "ccx"
 	BidderCoinzilla         BidderName = "coinzilla"
 	BidderColossus          BidderName = "colossus"
@@ -194,6 +195,7 @@ const (
 	BidderKayzen            BidderName = "kayzen"
 	BidderKidoz             BidderName = "kidoz"
 	BidderKiviads           BidderName = "kiviads"
+	BidderLmKiviads         BidderName = "lm_kiviads"
 	BidderKrushmedia        BidderName = "krushmedia"
 	BidderKubient           BidderName = "kubient"
 	BidderLimelightDigital  BidderName = "limelightDigital"
@@ -274,6 +276,7 @@ const (
 	BidderVox               BidderName = "vox"
 	BidderVrtcal            BidderName = "vrtcal"
 	BidderXeworks           BidderName = "xeworks"
+	BidderXtrmqb            BidderName = "xtrmqb"
 	BidderYahooAds          BidderName = "yahooAds"
 	BidderYahooAdvertising  BidderName = "yahooAdvertising"
 	BidderYahooSSP          BidderName = "yahoossp"
@@ -344,6 +347,7 @@ func CoreBidderNames() []BidderName {
 		BidderBmtm,
 		BidderBoldwin,
 		BidderBrave,
+		BidderCadentApertureMX,
 		BidderCcx,
 		BidderCoinzilla,
 		BidderColossus,
@@ -396,6 +400,7 @@ func CoreBidderNames() []BidderName {
 		BidderKayzen,
 		BidderKidoz,
 		BidderKiviads,
+		BidderLmKiviads,
 		BidderKrushmedia,
 		BidderKubient,
 		BidderLimelightDigital,
@@ -476,6 +481,7 @@ func CoreBidderNames() []BidderName {
 		BidderVox,
 		BidderVrtcal,
 		BidderXeworks,
+		BidderXtrmqb,
 		BidderYahooAds,
 		BidderYahooAdvertising,
 		BidderYahooSSP,
