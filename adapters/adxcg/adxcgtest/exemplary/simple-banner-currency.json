@@ -1,6 +1,7 @@
 {
     "mockBidRequest": {
         "id": "test-request-id",
+        "cur": ["EUR"],
         "site": {
             "page": "https://good.site/url"
         },
@@ -26,6 +27,7 @@
                 "site": {
                     "page": "https://good.site/url"
                 },
+                "cur": ["EUR"],
                 "imp": [{
                     "id": "test-imp-id",
                     "banner": {
@@ -59,13 +61,13 @@
                         "mtype":1
                     }]
                 }],
-                "cur": "USD"
+                "cur": "EUR"
             }
         }
     }],
 
     "expectedBidResponses": [{
-        "currency": "USD",
+        "currency": "EUR",
         "bids": [{
             "bid": {
                 "id": "randomid",
@@ -77,7 +79,7 @@
                 "crid": "12345678",
                 "w": 300,
                 "h": 250,
-                "mtype":1
+                "mtype": 1
             },
             "type": "banner"
         }]
