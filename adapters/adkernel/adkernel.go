@@ -220,6 +220,7 @@ func (adapter *adkernelAdapter) MakeBids(internalRequest *openrtb2.BidRequest, e
 			newBadServerResponseError(fmt.Sprintf("Bad server response: %d", err)),
 		}
 	}
+
 	if len(bidResp.SeatBid) != 1 {
 		return nil, []error{
 			newBadServerResponseError(fmt.Sprintf("Invalid SeatBids count: %d", len(bidResp.SeatBid))),
@@ -228,7 +229,7 @@ func (adapter *adkernelAdapter) MakeBids(internalRequest *openrtb2.BidRequest, e
 
 	seatBid := bidResp.SeatBid[0]
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
-
+	bidResponse.Currency = bidResp.Cur
 	for i := 0; i < len(seatBid.Bid); i++ {
 		bid := seatBid.Bid[i]
 		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
