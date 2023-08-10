@@ -419,11 +419,11 @@ func validateAliasCapabilities(aliasBidderInfo BidderInfo, infos BidderInfos, bi
 		}
 
 		if aliasBidderInfo.Capabilities.Site != nil && parentBidder.Capabilities.Site != nil {
-			return validateAliasPlatformInfo(*parentBidder.Capabilities.Site, *aliasBidderInfo.Capabilities.Site, bidderName, aliasBidderInfo.AliasOf)
+			return isAliasPlatformInfoSubsetOfParent(*parentBidder.Capabilities.Site, *aliasBidderInfo.Capabilities.Site, bidderName, aliasBidderInfo.AliasOf)
 		}
 
 		if aliasBidderInfo.Capabilities.App != nil && parentBidder.Capabilities.App != nil {
-			return validateAliasPlatformInfo(*parentBidder.Capabilities.App, *aliasBidderInfo.Capabilities.App, bidderName, aliasBidderInfo.AliasOf)
+			return isAliasPlatformInfoSubsetOfParent(*parentBidder.Capabilities.App, *aliasBidderInfo.Capabilities.App, bidderName, aliasBidderInfo.AliasOf)
 		}
 
 		return fmt.Errorf("capabilities for alias: %s should be a subset of capabilities for parent bidder: %s", bidderName, aliasBidderInfo.AliasOf)
@@ -432,7 +432,7 @@ func validateAliasCapabilities(aliasBidderInfo BidderInfo, infos BidderInfos, bi
 	return nil
 }
 
-func validateAliasPlatformInfo(parentInfo PlatformInfo, aliasInfo PlatformInfo, bidderName string, parentBidderName string) error {
+func isAliasPlatformInfoSubsetOfParent(parentInfo PlatformInfo, aliasInfo PlatformInfo, bidderName string, parentBidderName string) error {
 	parentMediaTypes := make(map[openrtb_ext.BidType]struct{})
 	for _, info := range parentInfo.MediaTypes {
 		parentMediaTypes[info] = struct{}{}
