@@ -403,30 +403,30 @@ func validateMaintainer(info *MaintainerInfo, bidderName string) error {
 	return nil
 }
 
-func validateAliasCapabilities(bidder BidderInfo, infos BidderInfos, bidderName string) error {
-	if len(bidder.AliasOf) == 0 {
+func validateAliasCapabilities(aliasBidderInfo BidderInfo, infos BidderInfos, bidderName string) error {
+	if len(aliasBidderInfo.AliasOf) == 0 {
 		return nil
 	}
 
-	parentBidder, parentFound := infos[bidder.AliasOf]
+	parentBidder, parentFound := infos[aliasBidderInfo.AliasOf]
 	if !parentFound {
-		return fmt.Errorf("bidder: %s not found for an alias: %s", bidder.AliasOf, bidderName)
+		return fmt.Errorf("bidder: %s not found for an alias: %s", aliasBidderInfo.AliasOf, bidderName)
 	}
 
-	if bidder.Capabilities != nil {
+	if aliasBidderInfo.Capabilities != nil {
 		if parentBidder.Capabilities == nil {
-			return fmt.Errorf("capabilities for alias: %s should be a subset of capabilities for parent bidder: %s", bidderName, bidder.AliasOf)
+			return fmt.Errorf("capabilities for alias: %s should be a subset of capabilities for parent bidder: %s", bidderName, aliasBidderInfo.AliasOf)
 		}
 
-		if bidder.Capabilities.Site != nil && parentBidder.Capabilities.Site != nil {
-			return validateAliasPlatformInfo(*parentBidder.Capabilities.Site, *bidder.Capabilities.Site, bidderName, bidder.AliasOf)
+		if aliasBidderInfo.Capabilities.Site != nil && parentBidder.Capabilities.Site != nil {
+			return validateAliasPlatformInfo(*parentBidder.Capabilities.Site, *aliasBidderInfo.Capabilities.Site, bidderName, aliasBidderInfo.AliasOf)
 		}
 
-		if bidder.Capabilities.App != nil && parentBidder.Capabilities.App != nil {
-			return validateAliasPlatformInfo(*parentBidder.Capabilities.App, *bidder.Capabilities.App, bidderName, bidder.AliasOf)
+		if aliasBidderInfo.Capabilities.App != nil && parentBidder.Capabilities.App != nil {
+			return validateAliasPlatformInfo(*parentBidder.Capabilities.App, *aliasBidderInfo.Capabilities.App, bidderName, aliasBidderInfo.AliasOf)
 		}
 
-		return fmt.Errorf("capabilities for alias: %s should be a subset of capabilities for parent bidder: %s", bidderName, bidder.AliasOf)
+		return fmt.Errorf("capabilities for alias: %s should be a subset of capabilities for parent bidder: %s", bidderName, aliasBidderInfo.AliasOf)
 	}
 
 	return nil
