@@ -27,13 +27,15 @@
         "instl": 1,
         "ext": {
           "bidder": {
-            "bid_token": "123",
             "app_store_id": "123",
             "placement_reference_id": "123"
           }
         }
       }
     ],
+    "user": {
+      "buyeruid": "123"
+    },
     "ext": {
       "prebid": {
         "debug": true
@@ -80,7 +82,6 @@
               "ext": {
                 "prebid": null,
                 "bidder": {
-                  "bid_token": "123",
                   "app_store_id": "123",
                   "placement_reference_id": "123"
                 },
@@ -92,6 +93,9 @@
               }
             }
           ],
+          "user": {
+            "buyeruid": "123"
+          },
           "ext": {
             "prebid": {
               "debug": true

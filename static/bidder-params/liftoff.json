@@ -4,11 +4,6 @@
   "description": "A schema which validates params accepted by the Liftoff adapter",
   "type": "object",
   "properties": {
-    "bid_token": {
-      "type": "string",
-      "minLength": 1,
-      "description": "Super Token"
-    },
     "app_store_id": {
       "type": "string",
       "minLength": 1,
@@ -21,7 +16,6 @@
     }
   },
   "required": [
-    "bid_token",
     "app_store_id",
     "placement_reference_id"
   ]

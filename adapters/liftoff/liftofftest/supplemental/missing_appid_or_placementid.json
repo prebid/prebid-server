@@ -29,12 +29,14 @@
             "is_rewarded_inventory": 1
           },
           "bidder": {
-            "bid_token": "123",
             "placement_reference_id": "78910"
           }
         }
       }
-    ]
+    ],
+    "user": {
+      "buyeruid": "123"
+    }
   },
   "httpCalls": [
     {
@@ -76,7 +78,6 @@
                   "is_rewarded_inventory": 1
                 },
                 "bidder": {
-                  "bid_token": "123",
                   "placement_reference_id": "78910"
                 },
                 "vungle": {
@@ -86,7 +87,10 @@
                 }
               }
             }
-          ]
+          ],
+          "user": {
+            "buyeruid": "123"
+          }
         }
       }
     }

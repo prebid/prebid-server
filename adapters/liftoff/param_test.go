@@ -8,20 +8,15 @@ import (
 )
 
 var validParams = []string{
-	`{"bid_token": "SomeAccessToken", "app_store_id": "12345", "placement_reference_id": "12345"}`,
+	`{"app_store_id": "12345", "placement_reference_id": "12345"}`,
 }
 
 var invalidParams = []string{
-	`{"bid_token": ""}`,
-	`{"bid_token": 42}`,
-	`{"bid_token": null}`,
 	`{}`,
-	// app_store_id & placement_reference_id
-	`{"app_store_id": "12345", "placement_reference_id": "12345"}`,
-	`{"bid_token": "SomeAccessToken", "app_store_id": "12345"}`,
-	`{"bid_token": "SomeAccessToken", "placement_reference_id": "12345"}`,
-	`{"bid_token": "SomeAccessToken", "app_store_id": 12345, "placement_reference_id": 12345}`,
-	`{"bid_token": "SomeAccessToken", "app_store_id": null, "placement_reference_id": null}`,
+	// placement_reference_id
+	`{"placement_reference_id": "12345"}`,
+	`{"app_store_id": "12345"}`,
+	`{"app_store_id": null, "placement_reference_id": null}`,
 }
 
 func TestValidParams(t *testing.T) {

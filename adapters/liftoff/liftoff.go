@@ -20,10 +20,6 @@ type adapter struct {
 	Endpoint string
 }
 
-type prebid struct {
-	Debug bool `json:"debug"`
-}
-
 type liftoffImpressionExt struct {
 	*adapters.ExtImpBidder
 	// Ext represents the vungle extension.
@@ -62,13 +58,14 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			continue
 		}
 
-		// get bid token & IDs
+		// get placement_reference_id & pub_app_store_id
 		var bidderImpExt openrtb_ext.ImpExtLiftoff
 		if err := json.Unmarshal(impExt.Bidder, &bidderImpExt); err != nil {
 			errs = append(errs, fmt.Errorf("failed unmarshalling bidder imp ext (err)%s", err.Error()))
 			continue
 		}
 
+		bidderImpExt.BidToken = requestCopy.User.BuyerUID
 		impExt.Ext = bidderImpExt
 		if newImpExt, err := json.Marshal(impExt); err == nil {
 			imp.Ext = newImpExt
