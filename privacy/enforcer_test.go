@@ -354,13 +354,13 @@ func TestNewScopedName(t *testing.T) {
 			err:               nil,
 		},
 		{
-			name:              "scope-default",
+			name:              "scope-no-type",
 			condition:         "bidderA",
-			expectedScopeName: ScopedName{Scope: "bidder", Name: "bidderA"},
+			expectedScopeName: ScopedName{Scope: "", Name: "bidderA"},
 			err:               nil,
 		},
 		{
-			name:              "scope-rtf",
+			name:              "scope-rtd",
 			condition:         "rtd.test",
 			expectedScopeName: ScopedName{Scope: "rtd", Name: "test"},
 			err:               nil,
@@ -378,6 +378,110 @@ func TestNewScopedName(t *testing.T) {
 			actualSN, actualErr := NewScopedName(test.condition)
 			if test.err == nil {
 				assert.Equal(t, test.expectedScopeName, actualSN)
+				assert.NoError(t, actualErr)
+			} else {
+				assert.EqualError(t, actualErr, test.err.Error())
+			}
+		})
+	}
+}
+
+func TestConditionToRuleComponentNames(t *testing.T) {
+	testCases := []struct {
+		name               string
+		condition          config.ActivityCondition
+		expectedScopeNames []ScopedName
+		err                error
+	}{
+		{
+			name:               "empty",
+			condition:          config.ActivityCondition{},
+			expectedScopeNames: []ScopedName{},
+			err:                nil,
+		},
+		{
+			name:               "incorrect",
+			condition:          config.ActivityCondition{ComponentName: []string{"bidder.bidderA.bidderB"}},
+			expectedScopeNames: []ScopedName{},
+			err:                errors.New("unable to parse condition: bidder.bidderA.bidderB"),
+		},
+		{
+			name:               "scope-bidder",
+			condition:          config.ActivityCondition{ComponentName: []string{"bidder.bidderA"}},
+			expectedScopeNames: []ScopedName{{Scope: "bidder", Name: "bidderA"}},
+			err:                nil,
+		},
+		{
+			name:               "scope-bidder-default",
+			condition:          config.ActivityCondition{ComponentName: []string{"bidderA"}},
+			expectedScopeNames: []ScopedName{{Scope: "bidder", Name: "bidderA"}},
+			err:                nil,
+		},
+		{
+			name:               "scope-and-type-single",
+			condition:          config.ActivityCondition{ComponentName: []string{"analyticsA"}, ComponentType: []string{"analytics"}},
+			expectedScopeNames: []ScopedName{{Scope: "analytics", Name: "analyticsA"}},
+			err:                nil,
+		},
+		{
+			name:      "single-name-andtyped-name-and-multiple-types",
+			condition: config.ActivityCondition{ComponentName: []string{"componentA", "rtd.componentB"}, ComponentType: []string{"analytics", "bidder"}},
+			expectedScopeNames: []ScopedName{
+				{Scope: "analytics", Name: "componentA"},
+				{Scope: "bidder", Name: "componentA"},
+				{Scope: "rtd", Name: "componentB"},
+			},
+			err: nil,
+		},
+		{
+			name:      "single-scope-and-multiple-types",
+			condition: config.ActivityCondition{ComponentName: []string{"componentA"}, ComponentType: []string{"analytics", "bidder"}},
+			expectedScopeNames: []ScopedName{
+				{Scope: "analytics", Name: "componentA"},
+				{Scope: "bidder", Name: "componentA"},
+			},
+			err: nil,
+		},
+		{
+			name:      "multiple-scope-and-multiple-types",
+			condition: config.ActivityCondition{ComponentName: []string{"componentA", "componentB"}, ComponentType: []string{"analytics", "bidder"}},
+			expectedScopeNames: []ScopedName{
+				{Scope: "analytics", Name: "componentA"},
+				{Scope: "bidder", Name: "componentA"},
+				{Scope: "analytics", Name: "componentB"},
+				{Scope: "bidder", Name: "componentB"},
+			},
+			err: nil,
+		},
+		{
+			name:      "mixed-scope-and-type",
+			condition: config.ActivityCondition{ComponentName: []string{"componentA", "componentB", "rtd.componentC"}, ComponentType: []string{"analytics", "bidder"}},
+			expectedScopeNames: []ScopedName{
+				{Scope: "analytics", Name: "componentA"},
+				{Scope: "bidder", Name: "componentA"},
+				{Scope: "analytics", Name: "componentB"},
+				{Scope: "bidder", Name: "componentB"},
+				{Scope: "rtd", Name: "componentC"},
+			},
+			err: nil,
+		},
+		{
+			name:      "default-and-no-default-scope",
+			condition: config.ActivityCondition{ComponentName: []string{"componentA", "componentB", "rtd.componentC"}},
+			expectedScopeNames: []ScopedName{
+				{Scope: "bidder", Name: "componentA"},
+				{Scope: "bidder", Name: "componentB"},
+				{Scope: "rtd", Name: "componentC"},
+			},
+			err: nil,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			actualSN, actualErr := conditionToRuleComponentNames(test.condition)
+			if test.err == nil {
+				assert.EqualValues(t, test.expectedScopeNames, actualSN)
 				assert.NoError(t, actualErr)
 			} else {
 				assert.EqualError(t, actualErr, test.err.Error())

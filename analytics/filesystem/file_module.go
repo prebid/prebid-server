@@ -26,6 +26,11 @@ type FileLogger struct {
 	Logger *glog.Logger
 }
 
+// Returns the name of the analytics module
+func (f *FileLogger) GetName() string {
+	return "filelogger"
+}
+
 // Writes AuctionObject to file
 func (f *FileLogger) LogAuctionObject(ao *analytics.AuctionObject) {
 	var b bytes.Buffer

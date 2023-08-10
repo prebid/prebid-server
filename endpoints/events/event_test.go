@@ -27,6 +27,11 @@ type eventsMockAnalyticsModule struct {
 	Invoked bool
 }
 
+// Returns the name of the analytics module
+func (e *eventsMockAnalyticsModule) GetName() string {
+	return "eventsMockAnalyticsModule"
+}
+
 func (e *eventsMockAnalyticsModule) LogAuctionObject(ao *analytics.AuctionObject) {
 	if e.Fail {
 		panic(e.Error)

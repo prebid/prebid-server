@@ -43,6 +43,11 @@ func NewPBSAnalytics(analytics *config.Analytics) analytics.PBSAnalyticsModule {
 // Collection of all the correctly configured analytics modules - implements the PBSAnalyticsModule interface
 type enabledAnalytics []analytics.PBSAnalyticsModule
 
+// Returns the name of the analytics module
+func (ea enabledAnalytics) GetName() string {
+	return "enabledAnalytics"
+}
+
 func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject) {
 	for _, module := range ea {
 		module.LogAuctionObject(ao)

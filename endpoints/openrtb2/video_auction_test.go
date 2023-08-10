@@ -1235,6 +1235,11 @@ type mockAnalyticsModule struct {
 	videoObjects   []*analytics.VideoObject
 }
 
+// Returns the name of the analytics module
+func (m *mockAnalyticsModule) GetName() string {
+	return "mockAnalyticsModule"
+}
+
 func (m *mockAnalyticsModule) LogAuctionObject(ao *analytics.AuctionObject) {
 	m.auctionObjects = append(m.auctionObjects, ao)
 }

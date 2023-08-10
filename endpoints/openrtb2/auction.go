@@ -173,11 +173,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		CookieFlag:    metrics.CookieFlagUnknown,
 		RequestStatus: metrics.RequestStatusOK,
 	}
-	defer func() {
-		deps.metricsEngine.RecordRequest(labels)
-		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
-		deps.analytics.LogAuctionObject(&ao)
-	}()
 
 	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
 
@@ -202,6 +197,17 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 			return
 		}
 	}
+
+	defer func() {
+		deps.metricsEngine.RecordRequest(labels)
+		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
+
+		scopedName := privacy.ScopedName{Scope: privacy.ScopeTypeAnalytics, Name: deps.analytics.GetName()}
+		reportAnalyticsActivityAllowed := activities.Allow(privacy.ActivityReportAnalytics, scopedName)
+		if reportAnalyticsActivityAllowed {
+			deps.analytics.LogAuctionObject(&ao)
+		}
+	}()
 
 	ctx := context.Background()
 

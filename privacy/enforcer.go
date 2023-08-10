@@ -99,7 +99,7 @@ func activityRulesToEnforcementRules(rules []config.ActivityRule) ([]ActivityRul
 			result = ActivityDeny
 		}
 
-		componentName, err := conditionToRuleComponentNames(r.Condition.ComponentName)
+		componentName, err := conditionToRuleComponentNames(r.Condition)
 		if err != nil {
 			return nil, err
 		}
@@ -114,14 +114,40 @@ func activityRulesToEnforcementRules(rules []config.ActivityRule) ([]ActivityRul
 	return enfRules, nil
 }
 
-func conditionToRuleComponentNames(conditions []string) ([]ScopedName, error) {
+func conditionToRuleComponentNames(conditions config.ActivityCondition) ([]ScopedName, error) {
+	// condition can contain more than one component type and component name may have more than one names
+	// in this case scopes should have all combinations of names and types
+	// for instance for the config like this
+	//     "condition": {
+	//          "componentName": ["enabledAnalytics", "filelogger", "bidder.appnexus"],
+	//           "componentType":["analytics", "rtd"]
+	//     }
+	// result scopes should be:
+	// analytics.enabledAnalytics
+	// analytics.filelogger
+	// rtd.enabledAnalytics
+	// rtd.filelogger
+	// bidder.appnexus
+
 	sn := make([]ScopedName, 0)
-	for _, condition := range conditions {
-		scope, err := NewScopedName(condition)
+	for _, conditionName := range conditions.ComponentName {
+		scope, err := NewScopedName(conditionName)
 		if err != nil {
 			return sn, err
 		}
-		sn = append(sn, scope)
+		if scope.Scope != "" {
+			sn = append(sn, scope)
+		} else if scope.Scope == "" && len(conditions.ComponentType) == 0 {
+			scope.Scope = ScopeTypeBidder
+			sn = append(sn, scope)
+		} else {
+			for _, conditionType := range conditions.ComponentType {
+				if conditionType != scope.Scope {
+					newSN := ScopedName{Scope: conditionType, Name: scope.Name}
+					sn = append(sn, newSN)
+				}
+			}
+		}
 	}
 	return sn, nil
 }
@@ -235,7 +261,6 @@ func NewScopedName(condition string) (ScopedName, error) {
 		}
 		name = split[1]
 	} else if len(split) == 1 {
-		scope = ScopeTypeBidder
 		name = split[0]
 	} else {
 		return ScopedName{}, fmt.Errorf("unable to parse condition: %s", condition)
