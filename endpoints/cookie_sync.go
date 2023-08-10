@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httputil"
 	"strconv"
 	"strings"
 
@@ -114,6 +115,12 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 	defer r.Body.Close()
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
+		dumpData, errDump := httputil.DumpRequest(r, false)
+		if errDump != nil {
+			fmt.Println("Unable to get request dump data")
+		} else {
+			fmt.Printf("%s", dumpData)
+		}
 		return usersync.Request{}, privacy.Policies{}, errCookieSyncBody
 	}
 
