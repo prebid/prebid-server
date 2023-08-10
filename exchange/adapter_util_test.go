@@ -171,6 +171,55 @@ func TestBuildBidders(t *testing.T) {
 	}
 }
 
+func TestSetAliasBuilder(t *testing.T) {
+	rubiconBidder := fakeBidder{"b"}
+	ixBidder := fakeBidder{"ix"}
+	rubiconBuilder := fakeBuilder{rubiconBidder, nil}.Builder
+	ixBuilder := fakeBuilder{ixBidder, nil}.Builder
+
+	testCases := []struct {
+		description      string
+		bidderInfo       config.BidderInfo
+		builders         map[openrtb_ext.BidderName]adapters.Builder
+		bidderName       openrtb_ext.BidderName
+		expectedBuilders map[openrtb_ext.BidderName]adapters.Builder
+		expectedError    error
+	}{
+		{
+			description:      "Success - Alias builder",
+			bidderInfo:       config.BidderInfo{Disabled: false, AliasOf: "rubicon"},
+			bidderName:       openrtb_ext.BidderName("appnexus"),
+			builders:         map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderRubicon: rubiconBuilder},
+			expectedBuilders: map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderRubicon: rubiconBuilder, openrtb_ext.BidderAppnexus: rubiconBuilder},
+		},
+		{
+			description:   "Failure - Invalid parent bidder builder",
+			bidderInfo:    config.BidderInfo{Disabled: false, AliasOf: "rubicon"},
+			bidderName:    openrtb_ext.BidderName("appnexus"),
+			builders:      map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderIx: ixBuilder},
+			expectedError: errors.New("rubicon: parent builder not registered"),
+		},
+		{
+			description:   "Failure - Invalid parent for alias",
+			bidderInfo:    config.BidderInfo{Disabled: false, AliasOf: "unknown"},
+			bidderName:    openrtb_ext.BidderName("appnexus"),
+			builders:      map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderIx: ixBuilder},
+			expectedError: errors.New("unknown parent bidder: unknown for alias: appnexus"),
+		},
+	}
+
+	for _, test := range testCases {
+		err := SetAliasBuilder(test.bidderInfo, test.builders, test.bidderName)
+
+		if test.expectedBuilders != nil {
+			assert.ObjectsAreEqual(test.builders, test.expectedBuilders)
+		}
+		if test.expectedError != nil {
+			assert.EqualError(t, test.expectedError, err.Error(), test.description+":errors")
+		}
+	}
+}
+
 func TestGetActiveBidders(t *testing.T) {
 	testCases := []struct {
 		description string
