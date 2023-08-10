@@ -390,8 +390,10 @@ func validateInfo(bidder BidderInfo, infos BidderInfos, bidderName string) error
 	if err := validateCapabilities(bidder.Capabilities, bidderName); err != nil {
 		return err
 	}
-	if err := validateAliasCapabilities(bidder, infos, bidderName); err != nil {
-		return err
+	if len(bidder.AliasOf) > 0 {
+		if err := validateAliasCapabilities(bidder, infos, bidderName); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -404,14 +406,7 @@ func validateMaintainer(info *MaintainerInfo, bidderName string) error {
 }
 
 func validateAliasCapabilities(aliasBidderInfo BidderInfo, infos BidderInfos, bidderName string) error {
-	if len(aliasBidderInfo.AliasOf) == 0 {
-		return nil
-	}
-
-	parentBidder, parentFound := infos[aliasBidderInfo.AliasOf]
-	if !parentFound {
-		return fmt.Errorf("bidder: %s not found for an alias: %s", aliasBidderInfo.AliasOf, bidderName)
-	}
+	parentBidder, _ := infos[aliasBidderInfo.AliasOf]
 
 	if aliasBidderInfo.Capabilities != nil {
 		if parentBidder.Capabilities == nil {
