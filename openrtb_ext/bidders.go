@@ -15,6 +15,20 @@ import (
 // BidderName refers to a core bidder id or an alias id.
 type BidderName string
 
+var aliasBidderNames []BidderName
+
+func SetAliasBidderName(name BidderName) {
+	aliasBidderNames = append(aliasBidderNames, name)
+}
+
+func GetAliasBidderNamesSet() map[BidderName]bool {
+	set := map[BidderName]bool{}
+	for _, name := range aliasBidderNames {
+		set[name] = true
+	}
+	return set
+}
+
 func (name BidderName) MarshalJSON() ([]byte, error) {
 	return []byte(name), nil
 }
@@ -292,7 +306,7 @@ const (
 
 // CoreBidderNames returns a slice of all core bidders.
 func CoreBidderNames() []BidderName {
-	return []BidderName{
+	return append([]BidderName{
 		Bidder33Across,
 		BidderAax,
 		BidderAceex,
@@ -495,7 +509,7 @@ func CoreBidderNames() []BidderName {
 		BidderYieldone,
 		BidderZeroClickFraud,
 		BidderZetaGlobalSsp,
-	}
+	}, aliasBidderNames...)
 }
 
 // BuildBidderMap builds a map of string to BidderName, to remain compatbile with the
