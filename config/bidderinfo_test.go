@@ -465,6 +465,7 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 			assert.ErrorContains(t, err, test.expectError)
 		} else {
 			assert.Equal(t, test.expectedBidderInfos, bidderInfos)
+			assert.Contains(t, openrtb_ext.CoreBidderNames(), openrtb_ext.BidderName("bidderB"))
 		}
 
 	}
