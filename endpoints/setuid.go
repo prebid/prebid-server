@@ -165,8 +165,15 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 		setSiteCookie := siteCookieCheck(r.UserAgent())
 
 		// Priority Ejector Set Up
-		priorityEjector := &usersync.PriorityBidderEjector{PriorityGroups: cfg.UserSync.PriorityGroups, SyncerKey: syncer.Key()}
-		priorityEjector.IsSyncerPriority = isSyncerPriority(syncer.Key(), cfg.UserSync.PriorityGroups, syncersByBidder)
+		if !isSyncerPriority(syncer.Key(), cfg.UserSync.PriorityGroups, syncersByBidder) {
+			err = errors.New("syncer key " + syncer.Key() + " is not in priority groups")
+			w.WriteHeader(http.StatusBadRequest)
+			metricsEngine.RecordSetUid(metrics.SetUidBadRequest)
+			so.Errors = []error{err}
+			so.Status = http.StatusBadRequest
+			return
+		}
+		priorityEjector := &usersync.PriorityBidderEjector{PriorityGroups: cfg.UserSync.PriorityGroups}
 
 		// Write Cookie
 		encodedCookie, err := cookie.PrepareCookieForWrite(&cfg.HostCookie, encoder, priorityEjector)

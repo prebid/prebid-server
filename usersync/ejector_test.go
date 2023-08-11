@@ -1,7 +1,6 @@
 package usersync
 
 import (
-	"errors"
 	"testing"
 	"time"
 
@@ -19,7 +18,7 @@ func TestPriorityEjector(t *testing.T) {
 		{
 			name: "one-lowest-priority-element",
 			givenUids: map[string]UIDEntry{
-				"higherPriority": {
+				"highestPrioritySyncer": {
 					UID:     "123",
 					Expires: time.Now().Add((90 * 24 * time.Hour)),
 				},
@@ -30,11 +29,17 @@ func TestPriorityEjector(t *testing.T) {
 			},
 			givenEjector: &PriorityBidderEjector{
 				PriorityGroups: [][]string{
-					{"adnxs", "higherPriority"},
+					{"highestPriorityBidder"},
 					{"lowestPriority"},
 				},
-				SyncerKey:        "adnxs",
-				IsSyncerPriority: true,
+				syncersByBidder: map[string]Syncer{
+					"highestPriorityBidder": fakeSyncer{
+						key: "highestPrioritySyncer",
+					},
+					"lowestPriority": fakeSyncer{
+						key: "lowestPriority",
+					},
+				},
 			},
 			expected: "lowestPriority",
 		},
@@ -52,12 +57,17 @@ func TestPriorityEjector(t *testing.T) {
 			},
 			givenEjector: &PriorityBidderEjector{
 				PriorityGroups: [][]string{
-					{"adnxs"},
 					{"newerButSamePriority", "olderButSamePriority"},
 				},
-				SyncerKey:        "adnxs",
-				IsSyncerPriority: true,
-				OldestEjector:    OldestEjector{},
+				syncersByBidder: map[string]Syncer{
+					"newerButSamePriority": fakeSyncer{
+						key: "newerButSamePriority",
+					},
+					"olderButSamePriority": fakeSyncer{
+						key: "olderButSamePriority",
+					},
+				},
+				OldestEjector: OldestEjector{},
 			},
 			expected: "olderButSamePriority",
 		},
@@ -83,25 +93,45 @@ func TestPriorityEjector(t *testing.T) {
 			},
 			givenEjector: &PriorityBidderEjector{
 				PriorityGroups: [][]string{
-					{"adnxs", "higherPriority"},
+					{"higherPriority"},
 					{"lowestPriority"},
 				},
-				SyncerKey:        "adnxs",
-				IsSyncerPriority: true,
+				syncersByBidder: map[string]Syncer{
+					"higherPriority": fakeSyncer{
+						key: "higherPriority",
+					},
+					"lowestPriority": fakeSyncer{
+						key: "lowestPriority",
+					},
+					"oldestNonPriority": fakeSyncer{
+						key: "oldestNonPriority",
+					},
+					"newestNonPriority": fakeSyncer{
+						key: "newestNonPriority",
+					},
+				},
 			},
 			expected: "oldestNonPriority",
 		},
 		{
-			name:      "priority-ejector-syncer-not-priority",
-			givenUids: map[string]UIDEntry{},
+			name: "one-priority-element",
+			givenUids: map[string]UIDEntry{
+				"onlyPriorityElement": {
+					UID:     "123",
+					Expires: time.Now().Add((90 * 24 * time.Hour)),
+				},
+			},
 			givenEjector: &PriorityBidderEjector{
 				PriorityGroups: [][]string{
-					{"syncerKey1"},
+					{"onlyPriorityElement"},
 				},
-				SyncerKey:        "adnxs",
-				IsSyncerPriority: false,
+				syncersByBidder: map[string]Syncer{
+					"onlyPriorityElement": fakeSyncer{
+						key: "onlyPriorityElement",
+					},
+				},
 			},
-			expectedError: errors.New("syncer key adnxs is not in priority groups"),
+			expected: "onlyPriorityElement",
 		},
 	}
 
@@ -120,14 +150,12 @@ func TestPriorityEjector(t *testing.T) {
 
 func TestOldestEjector(t *testing.T) {
 	testCases := []struct {
-		name          string
-		givenUids     map[string]UIDEntry
-		givenEjector  Ejector
-		expected      string
-		expectedError error
+		name      string
+		givenUids map[string]UIDEntry
+		expected  string
 	}{
 		{
-			name: "non-priority-keys-present",
+			name: "multiple-elements",
 			givenUids: map[string]UIDEntry{
 				"newestElement": {
 					UID:     "123",
@@ -138,123 +166,53 @@ func TestOldestEjector(t *testing.T) {
 					Expires: time.Now(),
 				},
 			},
-			givenEjector: &OldestEjector{
-				[]string{"newestElement", "oldestElement"},
-				[][]string{},
-				false,
-			},
 			expected: "oldestElement",
 		},
 		{
-			name: "eject-priority-true",
+			name: "one-element",
 			givenUids: map[string]UIDEntry{
-				"newestElement": {
+				"onlyElement": {
 					UID:     "123",
 					Expires: time.Now().Add((90 * 24 * time.Hour)),
 				},
-				"oldestElement": {
-					UID:     "456",
-					Expires: time.Now(),
-				},
 			},
-			givenEjector: &OldestEjector{
-				[]string{},
-				[][]string{{"newestElement", "oldestElement"}},
-				true,
-			},
-			expected: "oldestElement",
+			expected: "onlyElement",
 		},
 		{
-			name: "non-priority-keys-initially-empty",
-			givenUids: map[string]UIDEntry{
-				"priorityElement": {
-					UID:     "123",
-					Expires: time.Now().Add((90 * 24 * time.Hour)),
-				},
-				"newestNonPriority": {
-					UID:     "123",
-					Expires: time.Now().Add((90 * 24 * time.Hour)),
-				},
-				"oldestNonPriority": {
-					UID:     "456",
-					Expires: time.Now(),
-				},
-			},
-			givenEjector: &OldestEjector{
-				[]string{},
-				[][]string{{"newestElement"}},
-				false,
-			},
-			expected: "oldestNonPriority",
+			name:      "no-elements",
+			givenUids: map[string]UIDEntry{},
+			expected:  "",
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			uidToDelete, err := test.givenEjector.Choose(test.givenUids)
-			if test.expectedError != nil {
-				assert.Equal(t, test.expectedError, err)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, test.expected, uidToDelete)
-			}
-		})
-	}
-}
-
-func TestGetOldestElement(t *testing.T) {
-	testCases := []struct {
-		name              string
-		givenUids         map[string]UIDEntry
-		givenFilteredKeys []string
-		expected          string
-	}{
-		{
-			name: "basic-oldest-element",
-			givenUids: map[string]UIDEntry{
-				"newestElement": {
-					UID:     "123",
-					Expires: time.Now().Add((90 * 24 * time.Hour)),
-				},
-				"oldestElement": {
-					UID:     "456",
-					Expires: time.Now(),
-				},
-			},
-			givenFilteredKeys: []string{"newestElement", "oldestElement"},
-			expected:          "oldestElement",
-		},
-		{
-			name: "no-filtered-keys",
-			givenUids: map[string]UIDEntry{
-				"newestElement": {
-					UID:     "123",
-					Expires: time.Now().Add((90 * 24 * time.Hour)),
-				},
-				"oldestElement": {
-					UID:     "456",
-					Expires: time.Now(),
-				},
-			},
-			givenFilteredKeys: []string{},
-			expected:          "",
-		},
-	}
-
-	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
-			oldestElement := getOldestElement(test.givenFilteredKeys, test.givenUids)
+			ejector := OldestEjector{}
+			oldestElement, err := ejector.Choose(test.givenUids)
+			assert.NoError(t, err)
 			assert.Equal(t, test.expected, oldestElement)
 		})
 	}
 }
 
-func TestGetNonPriorityKeys(t *testing.T) {
+func TestGetNonPriorityUids(t *testing.T) {
+	syncersByBidder := map[string]Syncer{
+		"syncerKey1": fakeSyncer{
+			key: "syncerKey1",
+		},
+		"syncerKey2": fakeSyncer{
+			key: "syncerKey2",
+		},
+		"syncerKey3": fakeSyncer{
+			key: "syncerKey3",
+		},
+	}
+
 	testCases := []struct {
 		name                string
 		givenUids           map[string]UIDEntry
 		givenPriorityGroups [][]string
-		expected            []string
+		expected            map[string]UIDEntry
 	}{
 		{
 			name: "one-priority-group",
@@ -272,7 +230,37 @@ func TestGetNonPriorityKeys(t *testing.T) {
 			givenPriorityGroups: [][]string{
 				{"syncerKey1"},
 			},
-			expected: []string{"syncerKey2", "syncerKey3"},
+			expected: map[string]UIDEntry{
+				"syncerKey2": {
+					UID: "456",
+				},
+				"syncerKey3": {
+					UID: "789",
+				},
+			},
+		},
+		{
+			name: "multiple-priority-groups",
+			givenUids: map[string]UIDEntry{
+				"syncerKey1": {
+					UID: "123",
+				},
+				"syncerKey2": {
+					UID: "456",
+				},
+				"syncerKey3": {
+					UID: "789",
+				},
+			},
+			givenPriorityGroups: [][]string{
+				{"syncerKey1"},
+				{"syncerKey2"},
+			},
+			expected: map[string]UIDEntry{
+				"syncerKey3": {
+					UID: "789",
+				},
+			},
 		},
 		{
 			name: "no-priority-groups",
@@ -287,23 +275,126 @@ func TestGetNonPriorityKeys(t *testing.T) {
 					UID: "789",
 				},
 			},
-			givenPriorityGroups: [][]string{},
-			expected:            []string{"syncerKey1", "syncerKey2", "syncerKey3"},
-		},
-		{
-			name:      "no-given-uids",
-			givenUids: map[string]UIDEntry{},
-			givenPriorityGroups: [][]string{
-				{"syncerKey1"},
+			expected: map[string]UIDEntry{
+				"syncerKey1": {
+					UID: "123",
+				},
+				"syncerKey2": {
+					UID: "456",
+				},
+				"syncerKey3": {
+					UID: "789",
+				},
 			},
-			expected: []string{},
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			keys := getNonPriorityKeys(test.givenUids, test.givenPriorityGroups)
-			assert.Equal(t, true, assert.ElementsMatch(t, test.expected, keys))
+			uids := getNonPriorityUids(test.givenUids, test.givenPriorityGroups, syncersByBidder)
+			assert.Equal(t, true, mapsEqual(test.expected, uids))
 		})
 	}
+}
+
+func TestGetPriorityUids(t *testing.T) {
+	syncersByBidder := map[string]Syncer{
+		"syncerKey1": fakeSyncer{
+			key: "syncerKey1",
+		},
+		"syncerKey2": fakeSyncer{
+			key: "syncerKey2",
+		},
+		"syncerKey3": fakeSyncer{
+			key: "syncerKey3",
+		},
+	}
+
+	testCases := []struct {
+		name                     string
+		givenUids                map[string]UIDEntry
+		givenLowestPriorityGroup []string
+		expected                 map[string]UIDEntry
+	}{
+		{
+			name: "one-priority-element",
+			givenUids: map[string]UIDEntry{
+				"syncerKey1": {
+					UID: "123",
+				},
+				"syncerKey2": {
+					UID: "456",
+				},
+				"syncerKey3": {
+					UID: "789",
+				},
+			},
+			givenLowestPriorityGroup: []string{"syncerKey1"},
+			expected: map[string]UIDEntry{
+				"syncerKey1": {
+					UID: "123",
+				},
+			},
+		},
+		{
+			name: "multiple-priority-elements",
+			givenUids: map[string]UIDEntry{
+				"syncerKey1": {
+					UID: "123",
+				},
+				"syncerKey2": {
+					UID: "456",
+				},
+				"syncerKey3": {
+					UID: "789",
+				},
+			},
+			givenLowestPriorityGroup: []string{"syncerKey1", "syncerKey2"},
+			expected: map[string]UIDEntry{
+				"syncerKey1": {
+					UID: "123",
+				},
+				"syncerKey2": {
+					UID: "456",
+				},
+			},
+		},
+		{
+			name: "no-priority-elements",
+			givenUids: map[string]UIDEntry{
+				"syncerKey1": {
+					UID: "123",
+				},
+				"syncerKey2": {
+					UID: "456",
+				},
+				"syncerKey3": {
+					UID: "789",
+				},
+			},
+			givenLowestPriorityGroup: []string{},
+			expected:                 map[string]UIDEntry{},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			uids := getPriorityUids(test.givenLowestPriorityGroup, test.givenUids, syncersByBidder)
+			assert.Equal(t, true, mapsEqual(test.expected, uids))
+		})
+	}
+}
+
+func mapsEqual(map1, map2 map[string]UIDEntry) bool {
+	if len(map1) != len(map2) {
+		return false
+	}
+
+	for key, value1 := range map1 {
+		if value2, exists := map2[key]; !exists || value1 != value2 {
+			return false
+		}
+	}
+
+	return true
 }

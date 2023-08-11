@@ -306,6 +306,15 @@ func TestSetUIDEndpoint(t *testing.T) {
 			expectedHeaders:        map[string]string{"Content-Type": "text/html", "Content-Length": "0"},
 			description:            "Set uid for valid bidder with valid account provided with invalid user sync activity",
 		},
+		{
+			uri:                    "/setuid?bidder=nonPriorityBidder&uid=123",
+			syncersBidderNameToKey: map[string]string{"nonPriorityBidder": "nonPrioritySyncer"},
+			existingSyncs:          nil,
+			gdprAllowsHostCookies:  true,
+			expectedSyncs:          nil,
+			expectedStatusCode:     http.StatusBadRequest,
+			description:            "Syncer is not a priority",
+		},
 	}
 
 	analytics := analyticsConf.NewPBSAnalytics(&config.Analytics{})
@@ -1447,6 +1456,11 @@ func doRequest(req *http.Request, analytics analytics.PBSAnalyticsModule, metric
 			"blocked_acct": true,
 		},
 		AccountDefaults: config.Account{},
+		UserSync: config.UserSync{
+			PriorityGroups: [][]string{
+				{},
+			},
+		},
 	}
 	cfg.MarshalAccountDefaults()
 
@@ -1469,6 +1483,9 @@ func doRequest(req *http.Request, analytics analytics.PBSAnalyticsModule, metric
 	syncersByBidder := make(map[string]usersync.Syncer)
 	for bidderName, syncerKey := range syncersBidderNameToKey {
 		syncersByBidder[bidderName] = fakeSyncer{key: syncerKey, defaultSyncType: usersync.SyncTypeIFrame}
+		if bidderName != "nonPriorityBidder" {
+			cfg.UserSync.PriorityGroups[0] = append(cfg.UserSync.PriorityGroups[0], bidderName)
+		}
 	}
 
 	fakeAccountsFetcher := FakeAccountsFetcher{AccountData: map[string]json.RawMessage{

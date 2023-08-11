@@ -400,11 +400,29 @@ func TestPrepareCookieForWrite(t *testing.T) {
 			{"4", "5", "6"},
 			{"7"},
 		},
-		SyncerKey: "1",
-		OldestEjector: OldestEjector{
-			nonPriorityKeys: []string{},
+		syncersByBidder: map[string]Syncer{
+			"1": fakeSyncer{
+				key: "1",
+			},
+			"2": fakeSyncer{
+				key: "2",
+			},
+			"3": fakeSyncer{
+				key: "3",
+			},
+			"4": fakeSyncer{
+				key: "4",
+			},
+			"5": fakeSyncer{
+				key: "5",
+			},
+			"6": fakeSyncer{
+				key: "6",
+			},
+			"mistmatchedBidder": fakeSyncer{
+				key: "7",
+			},
 		},
-		IsSyncerPriority: true,
 	}
 
 	testCases := []struct {

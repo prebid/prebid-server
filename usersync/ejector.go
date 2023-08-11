@@ -1,7 +1,6 @@
 package usersync
 
 import (
-	"errors"
 	"math"
 	"time"
 )
@@ -10,65 +9,51 @@ type Ejector interface {
 	Choose(uids map[string]UIDEntry) (string, error)
 }
 
-type OldestEjector struct {
-	nonPriorityKeys []string
-	PriorityGroups  [][]string
-	EjectPriority   bool
-}
+type OldestEjector struct{}
 
 type PriorityBidderEjector struct {
-	PriorityGroups   [][]string
-	SyncerKey        string
-	OldestEjector    OldestEjector
-	IsSyncerPriority bool
+	PriorityGroups  [][]string
+	syncersByBidder map[string]Syncer
+	OldestEjector   OldestEjector
 }
 
-// Choose method for oldest ejector will return the oldest uid after determing which set of elements to be choosing from
+// Choose method for oldest ejector will return the oldest uid
 func (o *OldestEjector) Choose(uids map[string]UIDEntry) (string, error) {
-	var elements []string
+	var oldestElement string
+	var oldestDate time.Duration = math.MaxInt64
 
-	// Set which elements the ejector will be choosing from
-	if len(o.nonPriorityKeys) > 0 {
-		elements = o.nonPriorityKeys
-	} else if o.EjectPriority {
-		elements = o.PriorityGroups[len(o.PriorityGroups)-1]
-	} else {
-		elements = getNonPriorityKeys(uids, o.PriorityGroups)
+	for key, value := range uids {
+		timeUntilExpiration := time.Until(value.Expires)
+		if timeUntilExpiration < time.Duration(oldestDate) {
+			oldestElement = key
+			oldestDate = timeUntilExpiration
+		}
 	}
-
-	uidToDelete := getOldestElement(elements, uids)
-
-	return uidToDelete, nil
+	return oldestElement, nil
 }
 
 // Choose method for priority ejector will return the oldest lowest priority element
 func (p *PriorityBidderEjector) Choose(uids map[string]UIDEntry) (string, error) {
-	p.OldestEjector.nonPriorityKeys = getNonPriorityKeys(uids, p.PriorityGroups)
-
-	if len(p.OldestEjector.nonPriorityKeys) > 0 {
-		p.OldestEjector.EjectPriority = false
-		return p.OldestEjector.Choose(uids)
+	nonPriortyUids := getNonPriorityUids(uids, p.PriorityGroups, p.syncersByBidder)
+	if len(nonPriortyUids) > 0 {
+		return p.OldestEjector.Choose(nonPriortyUids)
 	}
 
-	if p.IsSyncerPriority {
-		lowestPriorityGroup := p.PriorityGroups[len(p.PriorityGroups)-1]
+	lowestPriorityGroup := p.PriorityGroups[len(p.PriorityGroups)-1]
 
-		if len(lowestPriorityGroup) == 1 {
-			uidToDelete := lowestPriorityGroup[0]
-			p.PriorityGroups = removeElementFromPriorityGroup(p.PriorityGroups, uidToDelete)
-			return uidToDelete, nil
-		}
-
-		p.OldestEjector.EjectPriority = true
-		p.OldestEjector.PriorityGroups = p.PriorityGroups
-		uidToDelete, err := p.OldestEjector.Choose(uids)
-		if err != nil {
-			return "", err
-		}
+	if len(lowestPriorityGroup) == 1 {
+		uidToDelete := lowestPriorityGroup[0]
 		p.PriorityGroups = removeElementFromPriorityGroup(p.PriorityGroups, uidToDelete)
 		return uidToDelete, nil
 	}
-	return "", errors.New("syncer key " + p.SyncerKey + " is not in priority groups")
+
+	lowestPriorityUids := getPriorityUids(lowestPriorityGroup, uids, p.syncersByBidder)
+	uidToDelete, err := p.OldestEjector.Choose(lowestPriorityUids)
+	if err != nil {
+		return "", err
+	}
+	p.PriorityGroups = removeElementFromPriorityGroup(p.PriorityGroups, uidToDelete)
+	return uidToDelete, nil
 }
 
 // updatePriorityGroup will remove the selected element from the priority groups, and will remove the entire priority group if it's empty
@@ -89,46 +74,45 @@ func removeElementFromPriorityGroup(priorityGroups [][]string, oldestElement str
 	return priorityGroups
 }
 
-func getNonPriorityKeys(uids map[string]UIDEntry, priorityGroups [][]string) []string {
+func getNonPriorityUids(uids map[string]UIDEntry, priorityGroups [][]string, syncersByBidder map[string]Syncer) map[string]UIDEntry {
 	// If no priority groups, then all keys in uids are non-priority
-	nonPriorityKeys := []string{}
 	if len(priorityGroups) == 0 {
-		for key := range uids {
-			nonPriorityKeys = append(nonPriorityKeys, key)
-		}
-		return nonPriorityKeys
+		return uids
 	}
 
 	// Create map of keys that are a priority
 	isPriority := make(map[string]bool)
 	for _, group := range priorityGroups {
 		for _, bidder := range group {
-			isPriority[bidder] = true
-		}
-	}
-
-	// Loop over uids and compare the keys in this map to the keys in the isPriority map to find the non piority keys
-	for key := range uids {
-		if !isPriority[key] {
-			nonPriorityKeys = append(nonPriorityKeys, key)
-		}
-	}
-
-	return nonPriorityKeys
-}
-
-func getOldestElement(elements []string, uids map[string]UIDEntry) string {
-	var oldestElem string
-	var oldestDate int64 = math.MaxInt64
-
-	for _, key := range elements {
-		if value, ok := uids[key]; ok {
-			timeUntilExpiration := time.Until(value.Expires)
-			if timeUntilExpiration < time.Duration(oldestDate) {
-				oldestElem = key
-				oldestDate = int64(timeUntilExpiration)
+			if bidderSyncer, ok := syncersByBidder[bidder]; ok {
+				isPriority[bidderSyncer.Key()] = true
 			}
 		}
 	}
-	return oldestElem
+
+	// Create a map for non-priority uids
+	nonPriorityUIDs := make(map[string]UIDEntry)
+
+	// Loop over uids and populate the nonPriorityUIDs map with non-priority keys
+	for key, value := range uids {
+		if _, found := isPriority[key]; !found {
+			nonPriorityUIDs[key] = value
+		}
+	}
+
+	return nonPriorityUIDs
+}
+
+func getPriorityUids(lowestPriorityGroup []string, uids map[string]UIDEntry, syncersByBidder map[string]Syncer) map[string]UIDEntry {
+	lowestPriorityUIDs := make(map[string]UIDEntry)
+
+	// Loop over lowestPriorityGroup and populate the lowestPriorityUIDs map
+	for _, bidder := range lowestPriorityGroup {
+		if bidderSyncer, ok := syncersByBidder[bidder]; ok {
+			if uidEntry, exists := uids[bidderSyncer.Key()]; exists {
+				lowestPriorityUIDs[bidderSyncer.Key()] = uidEntry
+			}
+		}
+	}
+	return lowestPriorityUIDs
 }
