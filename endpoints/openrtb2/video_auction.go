@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/privacy"
 	"io"
 	"net/http"
 	"net/url"
@@ -22,6 +21,7 @@ import (
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/ortb"
+	"github.com/prebid/prebid-server/privacy"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
 	accountService "github.com/prebid/prebid-server/account"

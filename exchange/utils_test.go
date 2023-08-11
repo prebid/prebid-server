@@ -2551,7 +2551,7 @@ func newAdapterAliasBidRequest(t *testing.T) *openrtb2.BidRequest {
 			Language: "EN",
 		},
 		Source: &openrtb2.Source{
-			TID: "61018dc9-fa61-4c41-b7dc-f90b9ae80e87",
+			TID: "testTID",
 		},
 		User: &openrtb2.User{
 			ID:       "our-id",
@@ -2595,7 +2595,7 @@ func newBidRequest(t *testing.T) *openrtb2.BidRequest {
 			Language: "EN",
 		},
 		Source: &openrtb2.Source{
-			TID: "61018dc9-fa61-4c41-b7dc-f90b9ae80e87",
+			TID: "testTID",
 		},
 		User: &openrtb2.User{
 			ID:       "our-id",
@@ -2637,7 +2637,7 @@ func newBidRequestWithBidderParams(t *testing.T) *openrtb2.BidRequest {
 			Language: "EN",
 		},
 		Source: &openrtb2.Source{
-			TID: "61018dc9-fa61-4c41-b7dc-f90b9ae80e87",
+			TID: "testTID",
 		},
 		User: &openrtb2.User{
 			ID:       "our-id",
@@ -3065,7 +3065,7 @@ func TestCleanOpenRTBRequestsSChainMultipleBidders(t *testing.T) {
 	req := &openrtb2.BidRequest{
 		Site: &openrtb2.Site{},
 		Source: &openrtb2.Source{
-			TID: "61018dc9-fa61-4c41-b7dc-f90b9ae80e87",
+			TID: "testTID",
 		},
 		Imp: []openrtb2.Imp{{
 			Ext: json.RawMessage(`{"prebid":{"bidder":{"appnexus": {"placementId": 1}, "axonix": { "supplyId": "123"}}}}`),
@@ -4289,7 +4289,7 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 			expectedUserYOB:      1982,
 			expectedUserLat:      123.456,
 			expectedDeviceDIDMD5: "some device ID hash",
-			expectedSourceTID:    "61018dc9-fa61-4c41-b7dc-f90b9ae80e87",
+			expectedSourceTID:    "testTID",
 		},
 		{
 			name:                 "fetch_bids_request_with_one_bidder_not_allowed",
@@ -4299,7 +4299,7 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 			expectedUserYOB:      1982,
 			expectedUserLat:      123.456,
 			expectedDeviceDIDMD5: "some device ID hash",
-			expectedSourceTID:    "61018dc9-fa61-4c41-b7dc-f90b9ae80e87",
+			expectedSourceTID:    "testTID",
 		},
 		{
 			name:                 "transmit_ufpd_allowed",
@@ -4309,7 +4309,7 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 			expectedUserYOB:      1982,
 			expectedUserLat:      123.456,
 			expectedDeviceDIDMD5: "some device ID hash",
-			expectedSourceTID:    "61018dc9-fa61-4c41-b7dc-f90b9ae80e87",
+			expectedSourceTID:    "testTID",
 		},
 		{
 			name:                 "transmit_ufpd_deny",
@@ -4319,7 +4319,7 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 			expectedUserYOB:      0,
 			expectedUserLat:      123.456,
 			expectedDeviceDIDMD5: "",
-			expectedSourceTID:    "61018dc9-fa61-4c41-b7dc-f90b9ae80e87",
+			expectedSourceTID:    "testTID",
 		},
 		{
 			name:                 "transmit_precise_geo_allowed",
@@ -4329,7 +4329,7 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 			expectedUserYOB:      1982,
 			expectedUserLat:      123.456,
 			expectedDeviceDIDMD5: "some device ID hash",
-			expectedSourceTID:    "61018dc9-fa61-4c41-b7dc-f90b9ae80e87",
+			expectedSourceTID:    "testTID",
 		},
 		{
 			name:                 "transmit_precise_geo_deny",
@@ -4339,7 +4339,7 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 			expectedUserYOB:      1982,
 			expectedUserLat:      123.46,
 			expectedDeviceDIDMD5: "some device ID hash",
-			expectedSourceTID:    "61018dc9-fa61-4c41-b7dc-f90b9ae80e87",
+			expectedSourceTID:    "testTID",
 		},
 		{
 			name:                 "transmit_tid_allowed",
@@ -4349,7 +4349,7 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 			expectedUserYOB:      1982,
 			expectedUserLat:      123.456,
 			expectedDeviceDIDMD5: "some device ID hash",
-			expectedSourceTID:    "61018dc9-fa61-4c41-b7dc-f90b9ae80e87",
+			expectedSourceTID:    "testTID",
 		},
 		{
 			name:                 "transmit_tid_deny",

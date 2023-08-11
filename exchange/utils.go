@@ -212,10 +212,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 			applyFPD(auctionReq.FirstPartyData[bidderRequest.BidderName], bidderRequest.BidRequest)
 		}
 
-		passTIDActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitTids, scopedName)
-		if !passTIDActivityAllowed {
-			privacyEnforcement.TID = true
-		}
+		privacyEnforcement.TID = !auctionReq.Activities.Allow(privacy.ActivityTransmitTids, scopedName)
 
 		privacyEnforcement.Apply(bidderRequest.BidRequest)
 		allowedBidderRequests = append(allowedBidderRequests, bidderRequest)
