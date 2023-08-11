@@ -1,6 +1,7 @@
 package analytics
 
 import (
+	"github.com/prebid/prebid-server/privacy"
 	"time"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
@@ -32,6 +33,7 @@ type AuctionObject struct {
 	HookExecutionOutcome []hookexecution.StageOutcome
 	SeatNonBid           []openrtb_ext.SeatNonBid
 	RequestWrapper       *openrtb_ext.RequestWrapper
+	ActivityControl      privacy.ActivityControl
 }
 
 // Loggable object of a transaction at /openrtb2/amp endpoint

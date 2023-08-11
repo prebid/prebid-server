@@ -174,6 +174,12 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		RequestStatus: metrics.RequestStatusOK,
 	}
 
+	defer func() {
+		deps.metricsEngine.RecordRequest(labels)
+		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
+		deps.analytics.LogAuctionObject(&ao)
+	}()
+
 	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
 
 	req, impExtInfoMap, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, account, errL := deps.parseRequest(r, &labels, hookExecutor)
@@ -197,17 +203,9 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 			return
 		}
 	}
-
-	defer func() {
-		deps.metricsEngine.RecordRequest(labels)
-		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
-
-		scopedName := privacy.ScopedName{Scope: privacy.ScopeTypeAnalytics, Name: deps.analytics.GetName()}
-		reportAnalyticsActivityAllowed := activities.Allow(privacy.ActivityReportAnalytics, scopedName)
-		if reportAnalyticsActivityAllowed {
-			deps.analytics.LogAuctionObject(&ao)
-		}
-	}()
+	// pass activities to analytics object here, after activities are evaluated
+	// request may have an additional account id that can change activity control
+	ao.ActivityControl = activities
 
 	ctx := context.Background()
 

@@ -8,6 +8,7 @@ import (
 	"github.com/prebid/prebid-server/analytics/filesystem"
 	"github.com/prebid/prebid-server/analytics/pubstack"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/privacy"
 )
 
 // Modules that need to be logged to need to be initialized here
@@ -50,7 +51,11 @@ func (ea enabledAnalytics) GetName() string {
 
 func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject) {
 	for _, module := range ea {
-		module.LogAuctionObject(ao)
+		scopedName := privacy.ScopedName{Scope: privacy.ScopeTypeAnalytics, Name: module.GetName()}
+		reportAnalyticsActivityAllowed := ao.ActivityControl.Allow(privacy.ActivityReportAnalytics, scopedName)
+		if reportAnalyticsActivityAllowed {
+			module.LogAuctionObject(ao)
+		}
 	}
 }
 
