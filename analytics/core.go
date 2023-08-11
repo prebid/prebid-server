@@ -47,18 +47,20 @@ type AmpObject struct {
 	HookExecutionOutcome []hookexecution.StageOutcome
 	SeatNonBid           []openrtb_ext.SeatNonBid
 	RequestWrapper       *openrtb_ext.RequestWrapper
+	ActivityControl      privacy.ActivityControl
 }
 
 // Loggable object of a transaction at /openrtb2/video endpoint
 type VideoObject struct {
-	Status         int
-	Errors         []error
-	Response       *openrtb2.BidResponse
-	VideoRequest   *openrtb_ext.BidRequestVideo
-	VideoResponse  *openrtb_ext.BidResponseVideo
-	StartTime      time.Time
-	SeatNonBid     []openrtb_ext.SeatNonBid
-	RequestWrapper *openrtb_ext.RequestWrapper
+	Status          int
+	Errors          []error
+	Response        *openrtb2.BidResponse
+	VideoRequest    *openrtb_ext.BidRequestVideo
+	VideoResponse   *openrtb_ext.BidResponseVideo
+	StartTime       time.Time
+	SeatNonBid      []openrtb_ext.SeatNonBid
+	RequestWrapper  *openrtb_ext.RequestWrapper
+	ActivityControl privacy.ActivityControl
 }
 
 // Loggable object of a transaction at /setuid
@@ -91,6 +93,7 @@ type UsersyncInfo struct {
 
 // NotificationEvent object of a transaction at /event
 type NotificationEvent struct {
-	Request *EventRequest   `json:"request"`
-	Account *config.Account `json:"account"`
+	Request         *EventRequest   `json:"request"`
+	Account         *config.Account `json:"account"`
+	ActivityControl privacy.ActivityControl
 }

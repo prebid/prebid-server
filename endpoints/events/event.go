@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/prebid/prebid-server/privacy"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -114,10 +115,18 @@ func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprou
 		return
 	}
 
+	activities, activitiesErr := privacy.NewActivityControl(account.Privacy)
+	if activitiesErr != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(fmt.Sprintf("Activity evaluation failed: '%s' ", activitiesErr)))
+		return
+	}
+
 	// handle notification event
 	e.Analytics.LogNotificationEventObject(&analytics.NotificationEvent{
-		Request: eventRequest,
-		Account: account,
+		Request:         eventRequest,
+		Account:         account,
+		ActivityControl: activities,
 	})
 
 	// Add tracking pixel if format == image

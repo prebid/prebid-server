@@ -61,7 +61,11 @@ func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject) {
 
 func (ea enabledAnalytics) LogVideoObject(vo *analytics.VideoObject) {
 	for _, module := range ea {
-		module.LogVideoObject(vo)
+		scopedName := privacy.ScopedName{Scope: privacy.ScopeTypeAnalytics, Name: module.GetName()}
+		reportAnalyticsActivityAllowed := vo.ActivityControl.Allow(privacy.ActivityReportAnalytics, scopedName)
+		if reportAnalyticsActivityAllowed {
+			module.LogVideoObject(vo)
+		}
 	}
 }
 
@@ -79,12 +83,20 @@ func (ea enabledAnalytics) LogSetUIDObject(so *analytics.SetUIDObject) {
 
 func (ea enabledAnalytics) LogAmpObject(ao *analytics.AmpObject) {
 	for _, module := range ea {
-		module.LogAmpObject(ao)
+		scopedName := privacy.ScopedName{Scope: privacy.ScopeTypeAnalytics, Name: module.GetName()}
+		reportAnalyticsActivityAllowed := ao.ActivityControl.Allow(privacy.ActivityReportAnalytics, scopedName)
+		if reportAnalyticsActivityAllowed {
+			module.LogAmpObject(ao)
+		}
 	}
 }
 
 func (ea enabledAnalytics) LogNotificationEventObject(ne *analytics.NotificationEvent) {
 	for _, module := range ea {
-		module.LogNotificationEventObject(ne)
+		scopedName := privacy.ScopedName{Scope: privacy.ScopeTypeAnalytics, Name: module.GetName()}
+		reportAnalyticsActivityAllowed := ne.ActivityControl.Allow(privacy.ActivityReportAnalytics, scopedName)
+		if reportAnalyticsActivityAllowed {
+			module.LogNotificationEventObject(ne)
+		}
 	}
 }

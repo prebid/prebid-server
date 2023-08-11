@@ -235,6 +235,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		writeError(errL, w, &labels)
 		return
 	}
+	ao.ActivityControl = activities
 
 	secGPC := r.Header.Get("Sec-GPC")
 
