@@ -17,7 +17,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type CadentApertureMXAdapter struct {
+type Adapter struct {
 	endpoint string
 	testing  bool
 }
@@ -33,7 +33,7 @@ func buildEndpoint(endpoint string, testing bool, timeout int64) string {
 	return endpoint + "?t=" + strconv.FormatInt(timeout, 10) + "&ts=" + strconv.FormatInt(time.Now().Unix(), 10) + "&src=pbserver"
 }
 
-func (a *CadentApertureMXAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *Adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 
 	if len(request.Imp) == 0 {
@@ -253,7 +253,7 @@ func preprocess(request *openrtb2.BidRequest) []error {
 }
 
 // MakeBids make the bids for the bid response.
-func (a *CadentApertureMXAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *Adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if response.StatusCode == http.StatusNoContent {
 		// no bid response
@@ -311,7 +311,7 @@ func ContainsAny(raw string, keys []string) bool {
 
 // Builder builds a new instance of the Cadent Aperture MX adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	bidder := &CadentApertureMXAdapter{
+	bidder := &Adapter{
 		endpoint: config.Endpoint,
 		testing:  false,
 	}
