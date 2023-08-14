@@ -1,0 +1,81 @@
+{
+    "mockBidRequest":{
+        "id": "X4lwEgAAyXAKlqvGCwa9kg",
+        "imp": [
+            {
+                "id": "1",
+                "video": {
+                    "api": [
+                        1,
+                        2,
+                        4,
+                        6
+                    ],
+                    
+                    "protocols": [
+                        4,
+                        5,
+                        6,
+                        7
+                    ],
+                    "linearity": 1,
+                    "placement": 1,
+                    "minduration": 0,
+                    "maxduration": 60,
+                    "startdelay": 0,
+                    "w": 320,
+                    "h": 250
+                },
+                "tagid": "2612792908",
+                "bidfloor": 0.01,
+                "bidfloorcur": "USD",
+                "secure": 1,
+                "ext": {
+                    "bidder": {
+                            "publisherId": "publisher123",
+                            "bidfloor": 0.05
+                     }
+                }
+            }
+        ],
+        "app": {
+            "publisher": {
+                "id": "publisher123"
+            }
+        },
+        "device": {
+            "devicetype": 3,
+            "dnt": 0,
+            "h": 2340,
+            "ifa": "9e13d2bf-e968-4065-b4db-852123b627a9",
+            "ip": "110.33.122.75",
+            "js": 1,
+            "make": "OPPO",
+            "model": "CPH2209",
+            "os": "Android",
+            "osv": "11",
+            "pxratio": 3,
+            "ua": "Mozilla/5.0 (Linux; Android 11; CPH2209 Build/RP1A.200720.011; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/100.0.4896.127 Mobile Safari/537.36",
+            "w": 1080
+        },
+        "user": {
+            "id": "Uyb8g9qJmfcma4ABC"
+        },
+        "at": 1,
+        "tmax": 1300,
+        "cur": [
+            "USD"
+        ],
+        "ext": {
+            "bc": "sp_pb_ortb_1.0.0",
+            "publisherId": "publisher123"
+        }
+      },
+      "expectedMakeRequestsErrors": [
+        {
+          "value": "Invalid or missing video field(s)",
+          "comparison": "literal"
+        }
+      ]
+   
+  }
