@@ -410,7 +410,7 @@ func validateAliasCapabilities(aliasBidderInfo BidderInfo, infos BidderInfos, bi
 	if !parentFound {
 		return fmt.Errorf("bidder: %s not found for an alias: %s", aliasBidderInfo.AliasOf, bidderName)
 	}
-	
+
 	if aliasBidderInfo.Capabilities != nil {
 		if parentBidder.Capabilities == nil {
 			return fmt.Errorf("capabilities for alias: %s should be a subset of capabilities for parent bidder: %s", bidderName, aliasBidderInfo.AliasOf)
