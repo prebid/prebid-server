@@ -32,9 +32,24 @@ jobs:
     outputs:
       hasWritePermission: ${{ steps.check.outputs.require-result }}
 
+  build-master:
+    name: Build master
+    needs: check-permission
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@master
+        with:
+          fetch-depth: 0
+      - name: Build
+        uses: actions/checkout@master
+        uses: skx/github-action-build@master
+        with:
+          builder: make
+
   publish-tag:
     name: Publish tag
-    needs: check-permission
+    needs: build-master
     if: contains(needs.check-permission.outputs.hasWritePermission, 'true')
     permissions:
       contents: write
