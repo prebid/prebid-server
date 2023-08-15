@@ -268,7 +268,7 @@ func processBidderInfos(reader InfoReader, normalizeBidderName func(string) (ope
 }
 
 func processBidderAliases(aliasNillableFieldsByBidder map[string]aliasNillableFields, bidderInfos BidderInfos) (BidderInfos, error) {
-	for bidderName := range aliasNillableFieldsByBidder {
+	for bidderName, alias := range aliasNillableFieldsByBidder {
 		aliasBidderInfo, ok := bidderInfos[bidderName]
 		if !ok {
 			return nil, fmt.Errorf("bidder info not found for an alias: %s", bidderName)
@@ -277,22 +277,54 @@ func processBidderAliases(aliasNillableFieldsByBidder map[string]aliasNillableFi
 			return nil, err
 		}
 		parentBidderInfo := bidderInfos[aliasBidderInfo.AliasOf]
-		aliasBidderInfo.AppSecret = parentBidderInfo.AppSecret
-		aliasBidderInfo.Capabilities = parentBidderInfo.Capabilities
-		aliasBidderInfo.Debug = parentBidderInfo.Debug
-		aliasBidderInfo.Disabled = parentBidderInfo.Disabled
-		aliasBidderInfo.Endpoint = parentBidderInfo.Endpoint
-		aliasBidderInfo.EndpointCompression = parentBidderInfo.EndpointCompression
-		aliasBidderInfo.Experiment = parentBidderInfo.Experiment
-		aliasBidderInfo.ExtraAdapterInfo = parentBidderInfo.ExtraAdapterInfo
-		aliasBidderInfo.GVLVendorID = parentBidderInfo.GVLVendorID
-		aliasBidderInfo.Maintainer = parentBidderInfo.Maintainer
-		aliasBidderInfo.ModifyingVastXmlAllowed = parentBidderInfo.ModifyingVastXmlAllowed
-		aliasBidderInfo.OpenRTB = parentBidderInfo.OpenRTB
-		aliasBidderInfo.PlatformID = parentBidderInfo.PlatformID
-		aliasBidderInfo.Syncer = parentBidderInfo.Syncer
-		aliasBidderInfo.UserSyncURL = parentBidderInfo.UserSyncURL
-		aliasBidderInfo.XAPI = parentBidderInfo.XAPI
+		if aliasBidderInfo.AppSecret == "" {
+			aliasBidderInfo.AppSecret = parentBidderInfo.AppSecret
+		}
+		if aliasBidderInfo.Capabilities == nil {
+			aliasBidderInfo.Capabilities = parentBidderInfo.Capabilities
+		}
+		if aliasBidderInfo.Debug == nil {
+			aliasBidderInfo.Debug = parentBidderInfo.Debug
+		}
+		if aliasBidderInfo.Endpoint == "" {
+			aliasBidderInfo.Endpoint = parentBidderInfo.Endpoint
+		}
+		if aliasBidderInfo.EndpointCompression == "" {
+			aliasBidderInfo.EndpointCompression = parentBidderInfo.EndpointCompression
+		}
+		if aliasBidderInfo.ExtraAdapterInfo == "" {
+			aliasBidderInfo.ExtraAdapterInfo = parentBidderInfo.ExtraAdapterInfo
+		}
+		if aliasBidderInfo.GVLVendorID == 0 {
+			aliasBidderInfo.GVLVendorID = parentBidderInfo.GVLVendorID
+		}
+		if aliasBidderInfo.Maintainer == nil {
+			aliasBidderInfo.Maintainer = parentBidderInfo.Maintainer
+		}
+		if aliasBidderInfo.OpenRTB == nil {
+			aliasBidderInfo.OpenRTB = parentBidderInfo.OpenRTB
+		}
+		if aliasBidderInfo.PlatformID == "" {
+			aliasBidderInfo.PlatformID = parentBidderInfo.PlatformID
+		}
+		if aliasBidderInfo.Syncer == nil {
+			aliasBidderInfo.Syncer = parentBidderInfo.Syncer
+		}
+		if aliasBidderInfo.UserSyncURL == "" {
+			aliasBidderInfo.UserSyncURL = parentBidderInfo.UserSyncURL
+		}
+		if alias.Disabled == nil {
+			aliasBidderInfo.Disabled = parentBidderInfo.Disabled
+		}
+		if alias.Experiment == nil {
+			aliasBidderInfo.Experiment = parentBidderInfo.Experiment
+		}
+		if alias.ModifyingVastXmlAllowed == nil {
+			aliasBidderInfo.ModifyingVastXmlAllowed = parentBidderInfo.ModifyingVastXmlAllowed
+		}
+		if alias.XAPI == nil {
+			aliasBidderInfo.XAPI = parentBidderInfo.XAPI
+		}
 		bidderInfos[bidderName] = aliasBidderInfo
 	}
 	return bidderInfos, nil
