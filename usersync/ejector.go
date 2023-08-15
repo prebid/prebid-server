@@ -1,7 +1,6 @@
 package usersync
 
 import (
-	"math"
 	"time"
 )
 
@@ -20,13 +19,12 @@ type PriorityBidderEjector struct {
 // Choose method for oldest ejector will return the oldest uid
 func (o *OldestEjector) Choose(uids map[string]UIDEntry) (string, error) {
 	var oldestElement string
-	var oldestDate time.Duration = math.MaxInt64
+	var oldestDate time.Time = time.Unix(1<<63-62135596801, 999999999) // Max value for time
 
 	for key, value := range uids {
-		timeUntilExpiration := time.Until(value.Expires)
-		if timeUntilExpiration < time.Duration(oldestDate) {
+		if value.Expires.Before(oldestDate) {
 			oldestElement = key
-			oldestDate = timeUntilExpiration
+			oldestDate = value.Expires
 		}
 	}
 	return oldestElement, nil

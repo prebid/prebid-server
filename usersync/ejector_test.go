@@ -1,6 +1,7 @@
 package usersync
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
@@ -293,7 +294,7 @@ func TestGetNonPriorityUids(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			uids := getNonPriorityUids(test.givenUids, test.givenPriorityGroups, syncersByBidder)
-			assert.Equal(t, true, mapsEqual(test.expected, uids))
+			assert.Equal(t, true, reflect.DeepEqual(test.expected, uids))
 		})
 	}
 }
@@ -381,21 +382,7 @@ func TestGetPriorityUids(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			uids := getPriorityUids(test.givenLowestPriorityGroup, test.givenUids, syncersByBidder)
-			assert.Equal(t, true, mapsEqual(test.expected, uids))
+			assert.Equal(t, true, reflect.DeepEqual(test.expected, uids))
 		})
 	}
-}
-
-func mapsEqual(map1, map2 map[string]UIDEntry) bool {
-	if len(map1) != len(map2) {
-		return false
-	}
-
-	for key, value1 := range map1 {
-		if value2, exists := map2[key]; !exists || value1 != value2 {
-			return false
-		}
-	}
-
-	return true
 }
