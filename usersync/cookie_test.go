@@ -423,6 +423,7 @@ func TestPrepareCookieForWrite(t *testing.T) {
 				key: "7",
 			},
 		},
+		TieEjector: &OldestEjector{},
 	}
 
 	testCases := []struct {
