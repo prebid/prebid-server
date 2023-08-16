@@ -22,6 +22,6 @@ func TestJsonSamples(t *testing.T) {
 }
 
 func setTesting(bidder adapters.Bidder) {
-	bidderCadentApertureMX, _ := bidder.(*Adapter)
+	bidderCadentApertureMX, _ := bidder.(*adapter)
 	bidderCadentApertureMX.testing = true
 }
