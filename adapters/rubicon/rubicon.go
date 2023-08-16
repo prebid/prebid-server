@@ -946,9 +946,7 @@ func extractUserBuyerUID(eids []openrtb2.EID) string {
 				continue
 			}
 
-			if uidExt.Stype == "ppuid" || uidExt.Stype == "other" {
-				return uid.ID
-			}
+			return uid.ID
 		}
 	}
 
