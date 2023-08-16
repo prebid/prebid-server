@@ -25,7 +25,7 @@ type adapter struct {
 }
 
 // Builder builds a new instance of the Adquery adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+func Builder(_ openrtb_ext.BidderName, config config.Adapter, _ config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
@@ -54,7 +54,7 @@ func (a *adapter) buildRequest(bidReq *openrtb2.BidRequest, imp *openrtb2.Imp, e
 	}
 }
 
-func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	if len(request.Imp) == 0 {
 		return nil, nil
 	}
@@ -75,7 +75,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 		requestJSON, err := json.Marshal(a.buildRequest(request, &imp, ext))
 		if err != nil {
-			return nil, []error{err}
+			return nil, append(errs, err)
 		}
 
 		data := &adapters.RequestData{
@@ -90,27 +90,18 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	return result, errs
 }
 
-func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if responseData.StatusCode == http.StatusNoContent {
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
 	}
 
-	if responseData.StatusCode == http.StatusBadRequest {
-		err := &errortypes.BadInput{
-			Message: "Unexpected status code: 400. Bad request from publisher. Run with request.debug = 1 for more info.",
-		}
-		return nil, []error{err}
-	}
-
-	if responseData.StatusCode != http.StatusOK {
-		err := &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info.", responseData.StatusCode),
-		}
+	err := adapters.CheckResponseStatusCodeForErrors(responseData)
+	if err != nil {
 		return nil, []error{err}
 	}
 
 	respData, price, width, height, errs := parseResponseJson(responseData.Body)
-	if errs != nil && len(errs) > 0 {
+	if len(errs) > 0 {
 		return nil, errs
 	}
 
@@ -181,6 +172,10 @@ func parseResponseJson(respBody []byte) (*ResponseData, float64, int64, int64, [
 	height, err := strconv.ParseInt(response.Data.MediaType.Height, 10, 64)
 	if err != nil {
 		errs = append(errs, err)
+	}
+
+	if response.Data.MediaType.Name != openrtb_ext.BidTypeBanner {
+		return nil, 0, 0, 0, []error{fmt.Errorf("unsupported MediaType: %s", response.Data.MediaType.Name)}
 	}
 
 	if len(errs) > 0 {
