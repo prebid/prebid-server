@@ -199,6 +199,7 @@ const (
 	BidderLmKiviads         BidderName = "lm_kiviads"
 	BidderKrushmedia        BidderName = "krushmedia"
 	BidderKubient           BidderName = "kubient"
+	BidderLiftoff           BidderName = "liftoff"
 	BidderLimelightDigital  BidderName = "limelightDigital"
 	BidderLockerDome        BidderName = "lockerdome"
 	BidderLogan             BidderName = "logan"
@@ -242,6 +243,7 @@ const (
 	BidderScreencore        BidderName = "screencore"
 	BidderSharethrough      BidderName = "sharethrough"
 	BidderSilverMob         BidderName = "silvermob"
+	BidderSilverPush        BidderName = "silverpush"
 	BidderSmaato            BidderName = "smaato"
 	BidderSmartAdserver     BidderName = "smartadserver"
 	BidderSmartHub          BidderName = "smarthub"
@@ -405,6 +407,7 @@ func CoreBidderNames() []BidderName {
 		BidderLmKiviads,
 		BidderKrushmedia,
 		BidderKubient,
+		BidderLiftoff,
 		BidderLimelightDigital,
 		BidderLockerDome,
 		BidderLogan,
@@ -448,6 +451,7 @@ func CoreBidderNames() []BidderName {
 		BidderScreencore,
 		BidderSharethrough,
 		BidderSilverMob,
+		BidderSilverPush,
 		BidderSmaato,
 		BidderSmartAdserver,
 		BidderSmartHub,

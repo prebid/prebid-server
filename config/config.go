@@ -11,13 +11,12 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/spf13/viper"
-
 	"github.com/prebid/go-gdpr/consentconstants"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/util/ptrutil"
+	"github.com/spf13/viper"
 )
 
 // Configuration specifies the static application config.
