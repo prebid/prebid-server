@@ -79,7 +79,6 @@
             "domain": "https://bidder.adquery.io",
             "urlAdq": "https://adquery.io",
             "creationId": 7211,
-            "currency": "EUR",
             "adDomains": [
               "https://s1.adquery.io"
             ],
@@ -103,7 +102,7 @@
   ],
   "expectedBidResponses": [
     {
-      "currency": "EUR",
+      "currency": "PLN",
       "bids": [
         {
           "bid": {

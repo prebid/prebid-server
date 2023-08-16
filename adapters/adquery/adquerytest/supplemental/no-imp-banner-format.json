@@ -10,22 +10,14 @@
         "tagid": "test-banner-imp-id",
         "bidder": "adquery",
         "banner": {
-          "format": [
-            {
-              "w": 320,
-              "h": 100
-            },
-            {
-              "w": 300,
-              "h": 250
-            }
-          ]
+          "w": 320,
+          "h": 100
         },
         "ext": {
-            "bidder": {
-                "placementId": "6d93f2a0e5f0fe2cc3a6e9e3ade964b43b07f897",
-                "type": "banner"
-            }
+          "bidder": {
+            "placementId": "6d93f2a0e5f0fe2cc3a6e9e3ade964b43b07f897",
+            "type": "banner"
+          }
         }
       }
     ],
@@ -50,7 +42,7 @@
           "bidRequestsCount":  1,
           "bidderRequestsCount": 1,
           "placementCode": "6d93f2a0e5f0fe2cc3a6e9e3ade964b43b07f897",
-          "sizes": "320x100,300x250",
+          "sizes": "320x100",
           "type": "banner",
           "v": "server"
         }
@@ -79,7 +71,7 @@
             "domain": "https://bidder.adquery.io",
             "urlAdq": "https://adquery.io",
             "creationId": 7211,
-            "currency": "EUR",
+            "currency": "PLN",
             "adDomains": [
               "https://s1.adquery.io"
             ],
@@ -103,7 +95,6 @@
   ],
   "expectedBidResponses": [
     {
-      "currency": "EUR",
       "bids": [
         {
           "bid": {
