@@ -60,8 +60,8 @@
         "headers": {},
         "body": {
           "data": {
-            "requestId": "22e26bd9a702bc",
-            "emission_id": "22e26bd9a702bc",
+            "requestId": "22e26bd9a702bc1",
+            "emission_id": "22e26bd9a702bc1",
             "eventTracker": "https://bidder.adquery.io/prebid/ev/d30f79cf7fef47bd7a5611719f936539bec0d2e9/22e26bd9a702bc?ad=1",
             "externalEmissionCodes": "",
             "impressionTracker": "https://bidder.adquery.io/prebid/im/d30f79cf7fef47bd7a5611719f936539bec0d2e9/22e26bd9a702bc?ad=1",
@@ -106,7 +106,7 @@
       "bids": [
         {
           "bid": {
-            "id": "22e26bd9a702bc",
+            "id": "22e26bd9a702bc1",
             "impid": "1",
             "price": 4.14,
             "adm": "<script src=\"https://api.adquery.io/js/adquery-0.1.js?time=10\"></script><ad-adquery-prebid data-qid=\"fc08aacb07eac44421ed\" data-type=\"banner320x50\" data-width=\"320\" date-height=\"50\" data-placement=\"d30f79cf7fef47bd7a5611719f936539bec0d2e9\" data-eventTracker=\"https://bidder.adquery.io/prebid/ev/d30f79cf7fef47bd7a5611719f936539bec0d2e9/22e26bd9a702bc?ad=1\" data-externalEmissionCodes=\"\" data-impressionTracker=\"https://bidder.adquery.io/prebid/im/d30f79cf7fef47bd7a5611719f936539bec0d2e9/22e26bd9a702bc?ad=1\" data-viewabilityTracker=\"https://bidder.adquery.io/prebid/vi/d30f79cf7fef47bd7a5611719f936539bec0d2e9/22e26bd9a702bc?ad=1\" data-clickTracker=\"https://bidder.adquery.io/prebid/cl/d30f79cf7fef47bd7a5611719f936539bec0d2e9/22e26bd9a702bc?url=https%3A%2F%2Fbrodacid.pl%2F%3Futm_source%3Dmobile_open%26utm_medium%3Dcpc%26utm_campaign%3Dhi2023\" data-link=\"https://brodacid.pl/?utm_source=mobile_open&utm_medium=cpc&utm_campaign=hi2023\" data-src=\"banner/2023-06-05/17591\" data-ext=\"zip\" data-media-type=\"3\" data-isExpand=\"\" data-domain=\"https://bidder.adquery.io\"  data-isVideoFloating=\"\" data-content=\"\" data-creationType=\"16\"> </ad-adquery>",

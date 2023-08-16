@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -115,11 +116,15 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 	} else {
 		bidResponse.Currency = defaultCurrency
 	}
+
+	var bidReqIdRegex = regexp.MustCompile(`^` + request.ID)
+	impId := bidReqIdRegex.ReplaceAllLiteralString(respData.ReqID, "")
+
 	bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 		Bid: &openrtb2.Bid{
 			// There's much more possible fields to be added here, see OpenRTB docs for reference (type: Bid)
 			ID:      respData.ReqID,
-			ImpID:   request.Imp[0].ID,
+			ImpID:   impId,
 			Price:   price,
 			AdM:     fmt.Sprintf("<script src=\"%s\"></script>%s", respData.AdQLib, respData.Tag),
 			ADomain: respData.ADomains,
