@@ -21,10 +21,10 @@ func SetAliasBidderName(name BidderName) {
 	aliasBidderNames = append(aliasBidderNames, name)
 }
 
-func GetAliasBidderNamesSet() map[BidderName]bool {
-	set := map[BidderName]bool{}
+func GetAliasBidderNamesSet() map[BidderName]struct{} {
+	set := map[BidderName]struct{}{}
 	for _, name := range aliasBidderNames {
-		set[name] = true
+		set[name] = struct{}{}
 	}
 	return set
 }
