@@ -35,17 +35,19 @@ jobs:
   build-master:
     name: Build master
     needs: check-permission
+    if: contains(needs.check-permission.outputs.hasWritePermission, 'true')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@master
         with:
           fetch-depth: 0
-      - name: Build
-        uses: actions/checkout@master
-        uses: skx/github-action-build@master
-        with:
-          builder: make
+          repository: ${{ github.repository }}
+          ref: master
+      - name: Build and validate
+        run: |
+          make
+          ./validate.sh
 
   publish-tag:
     name: Publish tag
