@@ -1,13 +1,13 @@
 package analytics
 
 import (
-	"github.com/prebid/prebid-server/privacy"
 	"time"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/privacy"
 )
 
 // PBSAnalyticsModule must be implemented by analytics modules to extract the required information and logging

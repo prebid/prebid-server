@@ -6,10 +6,11 @@ import (
 	"testing"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/stretchr/testify/assert"
-
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/privacy"
+	"github.com/prebid/prebid-server/util/ptrutil"
+	"github.com/stretchr/testify/assert"
 )
 
 const TEST_DIR string = "testFiles"
@@ -141,4 +142,93 @@ func TestNewPBSAnalytics_Pubstack(t *testing.T) {
 	})
 	instanceWithError := pbsAnalyticsWithError.(enabledAnalytics)
 	assert.Equal(t, len(instanceWithError), 0)
+}
+
+func TestSampleModuleActivitiesAllowed(t *testing.T) {
+	var count int
+	am := initAnalytics(&count)
+
+	acAllowed, err := privacy.NewActivityControl(getDefaultActivityConfig("sampleModule", true))
+	assert.NoError(t, err, "unexpected error returned")
+
+	ao := &analytics.AuctionObject{
+		Status:          http.StatusOK,
+		Errors:          nil,
+		Response:        &openrtb2.BidResponse{},
+		ActivityControl: acAllowed,
+	}
+
+	am.LogAuctionObject(ao)
+	if count != 1 {
+		t.Errorf("PBSAnalyticsModule failed at LogAuctionObject")
+	}
+
+	am.LogAmpObject(&analytics.AmpObject{ActivityControl: acAllowed})
+	if count != 2 {
+		t.Errorf("PBSAnalyticsModule failed at LogAmpObject")
+	}
+
+	am.LogVideoObject(&analytics.VideoObject{ActivityControl: acAllowed})
+	if count != 3 {
+		t.Errorf("PBSAnalyticsModule failed at LogVideoObject")
+	}
+
+	am.LogNotificationEventObject(&analytics.NotificationEvent{ActivityControl: acAllowed})
+	if count != 4 {
+		t.Errorf("PBSAnalyticsModule failed at LogNotificationEventObject")
+	}
+}
+
+func TestSampleModuleActivitiesDenied(t *testing.T) {
+	var count int
+	am := initAnalytics(&count)
+
+	acDenied, err := privacy.NewActivityControl(getDefaultActivityConfig("sampleModule", false))
+	assert.NoError(t, err, "unexpected error returned")
+
+	ao := &analytics.AuctionObject{
+		Status:          http.StatusOK,
+		Errors:          nil,
+		Response:        &openrtb2.BidResponse{},
+		ActivityControl: acDenied,
+	}
+
+	am.LogAuctionObject(ao)
+	if count != 0 {
+		t.Errorf("PBSAnalyticsModule failed at LogAuctionObject")
+	}
+
+	am.LogAmpObject(&analytics.AmpObject{ActivityControl: acDenied})
+	if count != 0 {
+		t.Errorf("PBSAnalyticsModule failed at LogAmpObject")
+	}
+
+	am.LogVideoObject(&analytics.VideoObject{ActivityControl: acDenied})
+	if count != 0 {
+		t.Errorf("PBSAnalyticsModule failed at LogVideoObject")
+	}
+
+	am.LogNotificationEventObject(&analytics.NotificationEvent{ActivityControl: acDenied})
+	if count != 0 {
+		t.Errorf("PBSAnalyticsModule failed at LogNotificationEventObject")
+	}
+}
+
+func getDefaultActivityConfig(componentName string, allow bool) *config.AccountPrivacy {
+	return &config.AccountPrivacy{
+		AllowActivities: config.AllowActivities{
+			ReportAnalytics: config.Activity{
+				Default: ptrutil.ToPtr(true),
+				Rules: []config.ActivityRule{
+					{
+						Allow: allow,
+						Condition: config.ActivityCondition{
+							ComponentName: []string{componentName},
+							ComponentType: []string{"analytics"},
+						},
+					},
+				},
+			},
+		},
+	}
 }

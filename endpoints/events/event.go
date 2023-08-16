@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/privacy"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -17,6 +16,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/metrics"
+	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/util/httputil"
 )
