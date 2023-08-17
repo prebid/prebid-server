@@ -1,0 +1,422 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>cadent_aperture_mx: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/adapters/cadent_aperture_mx/cadentaperturemx.go (94.7%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package cadentaperturemx
+
+import (
+        "encoding/json"
+        "fmt"
+        "net/http"
+        "net/url"
+        "strconv"
+        "strings"
+        "time"
+
+        "github.com/prebid/openrtb/v19/adcom1"
+        "github.com/prebid/openrtb/v19/openrtb2"
+        "github.com/prebid/prebid-server/adapters"
+        "github.com/prebid/prebid-server/config"
+        "github.com/prebid/prebid-server/errortypes"
+        "github.com/prebid/prebid-server/openrtb_ext"
+)
+
+type adapter struct {
+        endpoint string
+        testing  bool
+}
+
+func buildEndpoint(endpoint string, testing bool, timeout int64) string <span class="cov8" title="1">{
+        if timeout == 0 </span><span class="cov8" title="1">{
+                timeout = 1000
+        }</span>
+        <span class="cov8" title="1">if testing </span><span class="cov8" title="1">{
+                // for passing validation tests
+                return endpoint + "?t=1000&amp;ts=2060541160"
+        }</span>
+        <span class="cov0" title="0">return endpoint + "?t=" + strconv.FormatInt(timeout, 10) + "&amp;ts=" + strconv.FormatInt(time.Now().Unix(), 10) + "&amp;src=pbserver"</span>
+}
+
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        var errs []error
+
+        if len(request.Imp) == 0 </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("No Imps in Bid Request"),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">if errs := preprocess(request); errs != nil &amp;&amp; len(errs) &gt; 0 </span><span class="cov8" title="1">{
+                return nil, append(errs, &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("Error in preprocess of Imp, err: %s", errs),
+                })
+        }</span>
+
+        <span class="cov8" title="1">data, err := json.Marshal(request)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, []error{&amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("Error in packaging request to JSON"),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">headers := http.Header{}
+        headers.Add("Content-Type", "application/json;charset=utf-8")
+        headers.Add("Accept", "application/json")
+
+        if request.Device != nil </span><span class="cov8" title="1">{
+                addHeaderIfNonEmpty(headers, "User-Agent", request.Device.UA)
+                addHeaderIfNonEmpty(headers, "X-Forwarded-For", request.Device.IP)
+                addHeaderIfNonEmpty(headers, "Accept-Language", request.Device.Language)
+                if request.Device.DNT != nil </span><span class="cov8" title="1">{
+                        addHeaderIfNonEmpty(headers, "DNT", strconv.Itoa(int(*request.Device.DNT)))
+                }</span>
+        }
+        <span class="cov8" title="1">if request.Site != nil </span><span class="cov8" title="1">{
+                addHeaderIfNonEmpty(headers, "Referer", request.Site.Page)
+        }</span>
+
+        <span class="cov8" title="1">url := buildEndpoint(a.endpoint, a.testing, request.TMax)
+
+        return []*adapters.RequestData{{
+                Method:  "POST",
+                Uri:     url,
+                Body:    data,
+                Headers: headers,
+        }}, errs</span>
+}
+
+func unpackImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpCadentApertureMX, error) <span class="cov8" title="1">{
+        var bidderExt adapters.ExtImpBidder
+        if err := json.Unmarshal(imp.Ext, &amp;bidderExt); err != nil </span><span class="cov0" title="0">{
+                return nil, &amp;errortypes.BadInput{
+                        Message: err.Error(),
+                }
+        }</span>
+
+        <span class="cov8" title="1">var cadentExt openrtb_ext.ExtImpCadentApertureMX
+        if err := json.Unmarshal(bidderExt.Bidder, &amp;cadentExt); err != nil </span><span class="cov0" title="0">{
+                return nil, &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("ignoring imp id=%s, invalid ImpExt", imp.ID),
+                }
+        }</span>
+
+        <span class="cov8" title="1">tagIDValidation, err := strconv.ParseInt(cadentExt.TagID, 10, 64)
+        if err != nil || tagIDValidation == 0 </span><span class="cov8" title="1">{
+                return nil, &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("ignoring imp id=%s, invalid tagid must be a String of numbers", imp.ID),
+                }
+        }</span>
+
+        <span class="cov8" title="1">if cadentExt.TagID == "" </span><span class="cov0" title="0">{
+                return nil, &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("Ignoring imp id=%s, no tagid present", imp.ID),
+                }
+        }</span>
+
+        <span class="cov8" title="1">return &amp;cadentExt, nil</span>
+}
+
+func buildImpBanner(imp *openrtb2.Imp) error <span class="cov8" title="1">{
+
+        if imp.Banner == nil </span><span class="cov8" title="1">{
+                return &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("Request needs to include a Banner object"),
+                }
+        }</span>
+
+        <span class="cov8" title="1">bannerCopy := *imp.Banner
+        banner := &amp;bannerCopy
+
+        if banner.W == nil &amp;&amp; banner.H == nil </span><span class="cov8" title="1">{
+                if len(banner.Format) == 0 </span><span class="cov8" title="1">{
+                        return &amp;errortypes.BadInput{
+                                Message: fmt.Sprintf("Need at least one size to build request"),
+                        }
+                }</span>
+                <span class="cov8" title="1">format := banner.Format[0]
+                banner.Format = banner.Format[1:]
+                banner.W = &amp;format.W
+                banner.H = &amp;format.H
+                imp.Banner = banner</span>
+        }
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+func buildImpVideo(imp *openrtb2.Imp) error <span class="cov8" title="1">{
+
+        if len(imp.Video.MIMEs) == 0 </span><span class="cov8" title="1">{
+                return &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("Video: missing required field mimes"),
+                }
+        }</span>
+
+        <span class="cov8" title="1">if imp.Video.H == 0 &amp;&amp; imp.Video.W == 0 </span><span class="cov8" title="1">{
+                return &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("Video: Need at least one size to build request"),
+                }
+        }</span>
+
+        <span class="cov8" title="1">if len(imp.Video.Protocols) &gt; 0 </span><span class="cov8" title="1">{
+                videoCopy := *imp.Video
+                videoCopy.Protocols = cleanProtocol(imp.Video.Protocols)
+                imp.Video = &amp;videoCopy
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+// not supporting VAST protocol 7 (VAST 4.0);
+func cleanProtocol(protocols []adcom1.MediaCreativeSubtype) []adcom1.MediaCreativeSubtype <span class="cov8" title="1">{
+        newitems := make([]adcom1.MediaCreativeSubtype, 0, len(protocols))
+
+        for _, i := range protocols </span><span class="cov8" title="1">{
+                if i != adcom1.CreativeVAST40 </span><span class="cov8" title="1">{
+                        newitems = append(newitems, i)
+                }</span>
+        }
+
+        <span class="cov8" title="1">return newitems</span>
+}
+
+// Add Cadent required properties to Imp object
+func addImpProps(imp *openrtb2.Imp, secure *int8, cadentExt *openrtb_ext.ExtImpCadentApertureMX) <span class="cov8" title="1">{
+        imp.TagID = cadentExt.TagID
+        imp.Secure = secure
+
+        if cadentExt.BidFloor != "" </span><span class="cov8" title="1">{
+                bidFloor, err := strconv.ParseFloat(cadentExt.BidFloor, 64)
+                if err != nil </span><span class="cov0" title="0">{
+                        bidFloor = 0
+                }</span>
+
+                <span class="cov8" title="1">if bidFloor &gt; 0 </span><span class="cov8" title="1">{
+                        imp.BidFloor = bidFloor
+                        imp.BidFloorCur = "USD"
+                }</span>
+        }
+
+        <span class="cov8" title="1">return</span>
+}
+
+// Adding header fields to request header
+func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue string) <span class="cov8" title="1">{
+        if len(headerValue) &gt; 0 </span><span class="cov8" title="1">{
+                headers.Add(headerName, headerValue)
+        }</span>
+}
+
+// Handle request errors and formatting to be sent to Cadent
+func preprocess(request *openrtb2.BidRequest) []error <span class="cov8" title="1">{
+        impsCount := len(request.Imp)
+        errors := make([]error, 0, impsCount)
+        resImps := make([]openrtb2.Imp, 0, impsCount)
+        secure := int8(0)
+        domain := ""
+        if request.Site != nil &amp;&amp; request.Site.Page != "" </span><span class="cov8" title="1">{
+                domain = request.Site.Page
+        }</span> else<span class="cov8" title="1"> if request.App != nil </span><span class="cov8" title="1">{
+                if request.App.Domain != "" </span><span class="cov8" title="1">{
+                        domain = request.App.Domain
+                }</span> else<span class="cov8" title="1"> if request.App.StoreURL != "" </span><span class="cov8" title="1">{
+                        domain = request.App.StoreURL
+                }</span>
+        }
+
+        <span class="cov8" title="1">pageURL, err := url.Parse(domain)
+        if err == nil &amp;&amp; pageURL.Scheme == "https" </span><span class="cov0" title="0">{
+                secure = int8(1)
+        }</span>
+
+        <span class="cov8" title="1">for _, imp := range request.Imp </span><span class="cov8" title="1">{
+                cadentExt, err := unpackImpExt(&amp;imp)
+                if err != nil </span><span class="cov8" title="1">{
+                        errors = append(errors, err)
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">addImpProps(&amp;imp, &amp;secure, cadentExt)
+
+                if imp.Video != nil </span><span class="cov8" title="1">{
+                        if err := buildImpVideo(&amp;imp); err != nil </span><span class="cov8" title="1">{
+                                errors = append(errors, err)
+                                continue</span>
+                        }
+                } else<span class="cov8" title="1"> if err := buildImpBanner(&amp;imp); err != nil </span><span class="cov8" title="1">{
+                        errors = append(errors, err)
+                        continue</span>
+
+                }
+
+                <span class="cov8" title="1">resImps = append(resImps, imp)</span>
+        }
+
+        <span class="cov8" title="1">request.Imp = resImps
+
+        return errors</span>
+}
+
+// MakeBids make the bids for the bid response.
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+
+        if response.StatusCode == http.StatusNoContent </span><span class="cov8" title="1">{
+                // no bid response
+                return nil, nil
+        }</span>
+
+        <span class="cov8" title="1">if response.StatusCode != http.StatusOK </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadServerResponse{
+                        Message: fmt.Sprintf("Invalid Status Returned: %d. Run with request.debug = 1 for more info", response.StatusCode),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">var bidResp openrtb2.BidResponse
+
+        if err := json.Unmarshal(response.Body, &amp;bidResp); err != nil </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadServerResponse{
+                        Message: fmt.Sprintf("Unable to unpackage bid response. Error: %s", err.Error()),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
+
+        for _, sb := range bidResp.SeatBid </span><span class="cov8" title="1">{
+                for i := range sb.Bid </span><span class="cov8" title="1">{
+                        sb.Bid[i].ImpID = sb.Bid[i].ID
+
+                        bidResponse.Bids = append(bidResponse.Bids, &amp;adapters.TypedBid{
+                                Bid:     &amp;sb.Bid[i],
+                                BidType: getBidType(sb.Bid[i].AdM),
+                        })
+                }</span>
+        }
+
+        <span class="cov8" title="1">return bidResponse, nil</span>
+
+}
+
+func getBidType(bidAdm string) openrtb_ext.BidType <span class="cov8" title="1">{
+        if bidAdm != "" &amp;&amp; ContainsAny(bidAdm, []string{"&lt;?xml", "&lt;vast"}) </span><span class="cov8" title="1">{
+                return openrtb_ext.BidTypeVideo
+        }</span>
+        <span class="cov8" title="1">return openrtb_ext.BidTypeBanner</span>
+}
+
+func ContainsAny(raw string, keys []string) bool <span class="cov8" title="1">{
+        lowerCased := strings.ToLower(raw)
+        for i := 0; i &lt; len(keys); i++ </span><span class="cov8" title="1">{
+                if strings.Contains(lowerCased, keys[i]) </span><span class="cov8" title="1">{
+                        return true
+                }</span>
+        }
+        <span class="cov8" title="1">return false</span>
+
+}
+
+// Builder builds a new instance of the Cadent Aperture MX adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        bidder := &amp;adapter{
+                endpoint: config.Endpoint,
+                testing:  false,
+        }
+        return bidder, nil
+}</span>
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
