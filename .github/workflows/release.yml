@@ -46,7 +46,7 @@ jobs:
           ref: master
       - name: Build and validate
         run: |
-          make
+          go build .
           ./validate.sh
 
   publish-tag:
