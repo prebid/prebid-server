@@ -209,7 +209,7 @@ func TestSetAliasBuilder(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		err := SetAliasBuilder(test.bidderInfo, test.builders, test.bidderName)
+		err := setAliasBuilder(test.bidderInfo, test.builders, test.bidderName)
 
 		if test.expectedBuilders != nil {
 			assert.ObjectsAreEqual(test.builders, test.expectedBuilders)
