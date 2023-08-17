@@ -1,4 +1,4 @@
-package cadent_aperture_mx
+package cadentaperturemx
 
 import (
 	"encoding/json"
