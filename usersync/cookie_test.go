@@ -452,6 +452,13 @@ func TestPrepareCookieForWrite(t *testing.T) {
 			},
 		},
 		{
+			name:                  "syncer-is-not-priority",
+			givenMaxCookieSize:    100,
+			givenCookieToSend:     errorCookie,
+			givenIsSyncerPriority: false,
+			expectedError:         errors.New("syncer key is not a priority, and there are only priority elements left"),
+		},
+		{
 			name:                  "no-uids-ejected-2",
 			givenMaxCookieSize:    0,
 			givenCookieToSend:     mainCookie,
@@ -500,13 +507,6 @@ func TestPrepareCookieForWrite(t *testing.T) {
 			givenCookieToSend:        mainCookie,
 			givenIsSyncerPriority:    true,
 			expectedRemainingUidKeys: []string{},
-		},
-		{
-			name:                  "syncer-is-not-priority",
-			givenMaxCookieSize:    100,
-			givenCookieToSend:     errorCookie,
-			givenIsSyncerPriority: false,
-			expectedError:         errors.New("syncer key is not a priority, and there are only priority elements left"),
 		},
 	}
 

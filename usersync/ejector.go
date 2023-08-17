@@ -35,7 +35,7 @@ func (o *OldestEjector) Choose(uids map[string]UIDEntry) (string, error) {
 // Choose method for priority ejector will return the oldest lowest priority element
 func (p *PriorityBidderEjector) Choose(uids map[string]UIDEntry) (string, error) {
 	nonPriortyUids := getNonPriorityUids(uids, p.PriorityGroups, p.syncersByBidder)
-	if len(nonPriortyUids) == 1 && !p.IsSyncerPriority {
+	if len(nonPriortyUids) == 1 && !p.IsSyncerPriority && len(p.PriorityGroups) > 0 {
 		return "", errors.New("syncer key is not a priority, and there are only priority elements left")
 	}
 
