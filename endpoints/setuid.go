@@ -165,15 +165,8 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 		setSiteCookie := siteCookieCheck(r.UserAgent())
 
 		// Priority Ejector Set Up
-		if !isSyncerPriority(syncer.Key(), cfg.UserSync.PriorityGroups, syncersByBidder) {
-			err = errors.New("syncer key " + syncer.Key() + " is not in priority groups")
-			w.WriteHeader(http.StatusBadRequest)
-			metricsEngine.RecordSetUid(metrics.SetUidBadRequest)
-			so.Errors = []error{err}
-			so.Status = http.StatusBadRequest
-			return
-		}
 		priorityEjector := &usersync.PriorityBidderEjector{PriorityGroups: cfg.UserSync.PriorityGroups, TieEjector: &usersync.OldestEjector{}}
+		priorityEjector.IsSyncerPriority = isSyncerPriority(bidderName, cfg.UserSync.PriorityGroups)
 
 		// Write Cookie
 		encodedCookie, err := cookie.PrepareCookieForWrite(&cfg.HostCookie, encoder, priorityEjector)
@@ -346,13 +339,11 @@ func getSyncer(query url.Values, syncersByBidder map[string]usersync.Syncer) (us
 	return syncer, bidder, nil
 }
 
-func isSyncerPriority(syncer string, priorityGroups [][]string, syncersByBidder map[string]usersync.Syncer) bool {
+func isSyncerPriority(bidderNameFromSyncerQuery string, priorityGroups [][]string) bool {
 	for _, group := range priorityGroups {
 		for _, bidder := range group {
-			if bidderSyncer, ok := syncersByBidder[bidder]; ok {
-				if syncer == bidderSyncer.Key() {
-					return true
-				}
+			if bidderNameFromSyncerQuery == bidder {
+				return true
 			}
 		}
 	}

@@ -1,6 +1,7 @@
 package usersync
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 	"time"
@@ -41,6 +42,7 @@ func TestPriorityEjector(t *testing.T) {
 						key: "lowestPriority",
 					},
 				},
+				IsSyncerPriority: true,
 			},
 			expected: "lowestPriority",
 		},
@@ -68,7 +70,8 @@ func TestPriorityEjector(t *testing.T) {
 						key: "olderButSamePriority",
 					},
 				},
-				TieEjector: &OldestEjector{},
+				IsSyncerPriority: true,
+				TieEjector:       &OldestEjector{},
 			},
 			expected: "olderButSamePriority",
 		},
@@ -111,7 +114,8 @@ func TestPriorityEjector(t *testing.T) {
 						key: "newestNonPriority",
 					},
 				},
-				TieEjector: &OldestEjector{},
+				IsSyncerPriority: true,
+				TieEjector:       &OldestEjector{},
 			},
 			expected: "oldestNonPriority",
 		},
@@ -132,8 +136,34 @@ func TestPriorityEjector(t *testing.T) {
 						key: "onlyPriorityElement",
 					},
 				},
+				IsSyncerPriority: true,
 			},
 			expected: "onlyPriorityElement",
+		},
+		{
+			name: "syncer-is-not-priority",
+			givenUids: map[string]UIDEntry{
+				"onlyPriorityElement": {
+					UID:     "123",
+					Expires: time.Now().Add((90 * 24 * time.Hour)),
+				},
+				"syncer": {
+					UID:     "456",
+					Expires: time.Now().Add((90 * 24 * time.Hour)),
+				},
+			},
+			givenEjector: &PriorityBidderEjector{
+				PriorityGroups: [][]string{
+					{"onlyPriorityElement"},
+				},
+				syncersByBidder: map[string]Syncer{
+					"onlyPriorityElement": fakeSyncer{
+						key: "onlyPriorityElement",
+					},
+				},
+				IsSyncerPriority: false,
+			},
+			expectedError: errors.New("syncer key is not a priority, and there are only priority elements left"),
 		},
 	}
 

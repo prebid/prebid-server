@@ -1,6 +1,7 @@
 package usersync
 
 import (
+	"errors"
 	"time"
 )
 
@@ -11,9 +12,10 @@ type Ejector interface {
 type OldestEjector struct{}
 
 type PriorityBidderEjector struct {
-	PriorityGroups  [][]string
-	syncersByBidder map[string]Syncer
-	TieEjector      Ejector
+	PriorityGroups   [][]string
+	syncersByBidder  map[string]Syncer
+	IsSyncerPriority bool
+	TieEjector       Ejector
 }
 
 // Choose method for oldest ejector will return the oldest uid
@@ -33,6 +35,10 @@ func (o *OldestEjector) Choose(uids map[string]UIDEntry) (string, error) {
 // Choose method for priority ejector will return the oldest lowest priority element
 func (p *PriorityBidderEjector) Choose(uids map[string]UIDEntry) (string, error) {
 	nonPriortyUids := getNonPriorityUids(uids, p.PriorityGroups, p.syncersByBidder)
+	if len(nonPriortyUids) == 1 && !p.IsSyncerPriority {
+		return "", errors.New("syncer key is not a priority, and there are only priority elements left")
+	}
+
 	if len(nonPriortyUids) > 0 {
 		return p.TieEjector.Choose(nonPriortyUids)
 	}

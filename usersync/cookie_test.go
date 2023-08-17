@@ -380,15 +380,23 @@ func TestWriteCookieUserAgent(t *testing.T) {
 func TestPrepareCookieForWrite(t *testing.T) {
 	encoder := Base64Encoder{}
 	decoder := Base64Decoder{}
-	cookieToSend := &Cookie{
+
+	mainCookie := &Cookie{
 		uids: map[string]UIDEntry{
 			"1": newTempId("1234567890123456789012345678901234567890123456", 7),
-			"7": newTempId("abcdefghijklmnopqrstuvwxy", 1),
 			"2": newTempId("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 6),
 			"3": newTempId("123456789012345678901234567896123456789012345678", 5),
 			"4": newTempId("aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ", 4),
 			"5": newTempId("12345678901234567890123456789012345678901234567890", 3),
 			"6": newTempId("abcdefghij", 2),
+			"7": newTempId("abcdefghijklmnopqrstuvwxy", 1),
+		},
+		optOut: false,
+	}
+
+	errorCookie := &Cookie{
+		uids: map[string]UIDEntry{
+			"syncerNotPriority": newTempId("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 7),
 		},
 		optOut: false,
 	}
@@ -429,39 +437,52 @@ func TestPrepareCookieForWrite(t *testing.T) {
 	testCases := []struct {
 		name                     string
 		givenMaxCookieSize       int
+		givenCookieToSend        *Cookie
+		givenIsSyncerPriority    bool
 		expectedRemainingUidKeys []string
+		expectedError            error
 	}{
 		{
-			name:               "no-uids-ejected",
-			givenMaxCookieSize: 2000,
+			name:                  "no-uids-ejected",
+			givenMaxCookieSize:    2000,
+			givenCookieToSend:     mainCookie,
+			givenIsSyncerPriority: true,
 			expectedRemainingUidKeys: []string{
 				"1", "2", "3", "4", "5", "6", "7",
 			},
 		},
 		{
-			name:               "no-uids-ejected-2",
-			givenMaxCookieSize: 0,
+			name:                  "no-uids-ejected-2",
+			givenMaxCookieSize:    0,
+			givenCookieToSend:     mainCookie,
+			givenIsSyncerPriority: true,
 			expectedRemainingUidKeys: []string{
 				"1", "2", "3", "4", "5", "6", "7",
 			},
 		},
 		{
-			name:               "one-uid-ejected",
-			givenMaxCookieSize: 900,
+			name:                  "one-uid-ejected",
+			givenMaxCookieSize:    900,
+			givenCookieToSend:     mainCookie,
+			givenIsSyncerPriority: true,
 			expectedRemainingUidKeys: []string{
 				"1", "2", "3", "4", "5", "6",
 			},
 		},
 		{
-			name:               "four-uids-ejected",
-			givenMaxCookieSize: 500,
+			name:                  "four-uids-ejected",
+			givenMaxCookieSize:    500,
+			givenCookieToSend:     mainCookie,
+			givenIsSyncerPriority: true,
 			expectedRemainingUidKeys: []string{
 				"1", "2", "3",
 			},
 		},
 		{
-			name:               "all-but-one-uids-ejected",
-			givenMaxCookieSize: 300,
+			name:                  "all-but-one-uids-ejected",
+			givenMaxCookieSize:    300,
+			givenCookieToSend:     mainCookie,
+			givenIsSyncerPriority: true,
 			expectedRemainingUidKeys: []string{
 				"1",
 			},
@@ -469,26 +490,43 @@ func TestPrepareCookieForWrite(t *testing.T) {
 		{
 			name:                     "all-uids-ejected",
 			givenMaxCookieSize:       100,
+			givenCookieToSend:        mainCookie,
+			givenIsSyncerPriority:    true,
 			expectedRemainingUidKeys: []string{},
 		},
 		{
 			name:                     "invalid-max-size",
 			givenMaxCookieSize:       -100,
+			givenCookieToSend:        mainCookie,
+			givenIsSyncerPriority:    true,
 			expectedRemainingUidKeys: []string{},
+		},
+		{
+			name:                  "syncer-is-not-priority",
+			givenMaxCookieSize:    100,
+			givenCookieToSend:     errorCookie,
+			givenIsSyncerPriority: false,
+			expectedError:         errors.New("syncer key is not a priority, and there are only priority elements left"),
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			encodedCookie, err := cookieToSend.PrepareCookieForWrite(&config.HostCookie{MaxCookieSizeBytes: test.givenMaxCookieSize}, encoder, ejector)
-			assert.NoError(t, err)
-			decodedCookie := decoder.Decode(encodedCookie)
+			ejector.IsSyncerPriority = test.givenIsSyncerPriority
+			encodedCookie, err := test.givenCookieToSend.PrepareCookieForWrite(&config.HostCookie{MaxCookieSizeBytes: test.givenMaxCookieSize}, encoder, ejector)
 
-			for _, key := range test.expectedRemainingUidKeys {
-				_, ok := decodedCookie.uids[key]
-				assert.Equal(t, true, ok)
+			if test.expectedError != nil {
+				assert.Equal(t, test.expectedError, err)
+			} else {
+				assert.NoError(t, err)
+				decodedCookie := decoder.Decode(encodedCookie)
+
+				for _, key := range test.expectedRemainingUidKeys {
+					_, ok := decodedCookie.uids[key]
+					assert.Equal(t, true, ok)
+				}
+				assert.Equal(t, len(decodedCookie.uids), len(test.expectedRemainingUidKeys))
 			}
-			assert.Equal(t, len(decodedCookie.uids), len(test.expectedRemainingUidKeys))
 		})
 	}
 }

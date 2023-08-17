@@ -1333,92 +1333,49 @@ func TestGetResponseFormat(t *testing.T) {
 
 func TestIsSyncerPriority(t *testing.T) {
 	testCases := []struct {
-		name                 string
-		givenSyncerKey       string
-		givenPriorityGroups  [][]string
-		givenSyncersByBidder map[string]usersync.Syncer
-		expected             bool
+		name                           string
+		givenBidderNameFromSyncerQuery string
+		givenPriorityGroups            [][]string
+		expected                       bool
 	}{
 		{
-			name:           "syncer-is-priority-one-to-one",
-			givenSyncerKey: "prioritySyncer",
+			name:                           "bidder-name-is-priority",
+			givenBidderNameFromSyncerQuery: "priorityBidder",
 			givenPriorityGroups: [][]string{
-				{"prioritySyncer"},
+				{"priorityBidder"},
 				{"2", "3"},
-			},
-			givenSyncersByBidder: map[string]usersync.Syncer{
-				"prioritySyncer": fakeSyncer{
-					key: "prioritySyncer",
-				},
 			},
 			expected: true,
 		},
 		{
-			name:           "syncer-is-priority-not-one-to-one",
-			givenSyncerKey: "adnxs",
-			givenPriorityGroups: [][]string{
-				{"appnexus"},
-				{"2", "3"},
-			},
-			givenSyncersByBidder: map[string]usersync.Syncer{
-				"appnexus": fakeSyncer{
-					key: "adnxs",
-				},
-			},
-			expected: true,
-		},
-		{
-			name:           "syncer-is-not-priority",
-			givenSyncerKey: "notPrioritySyncer",
+			name:                           "bidder-name-is-not-priority",
+			givenBidderNameFromSyncerQuery: "notPriorityBidderName",
 			givenPriorityGroups: [][]string{
 				{"1"},
 				{"2", "3"},
 			},
-			givenSyncersByBidder: map[string]usersync.Syncer{
-				"1": fakeSyncer{
-					key: "1",
-				},
-				"2": fakeSyncer{
-					key: "2",
-				},
-				"3": fakeSyncer{
-					key: "3",
-				},
-			},
 			expected: false,
 		},
 		{
-			name:           "no-syncer-given",
-			givenSyncerKey: "",
+			name:                           "no-bidder-name-given",
+			givenBidderNameFromSyncerQuery: "",
 			givenPriorityGroups: [][]string{
 				{"1"},
 				{"2", "3"},
 			},
-			givenSyncersByBidder: map[string]usersync.Syncer{
-				"1": fakeSyncer{
-					key: "1",
-				},
-				"2": fakeSyncer{
-					key: "2",
-				},
-				"3": fakeSyncer{
-					key: "3",
-				},
-			},
 			expected: false,
 		},
 		{
-			name:                 "no-priority-groups-given",
-			givenSyncerKey:       "adnxs",
-			givenPriorityGroups:  [][]string{},
-			givenSyncersByBidder: map[string]usersync.Syncer{},
-			expected:             false,
+			name:                           "no-priority-groups-given",
+			givenBidderNameFromSyncerQuery: "bidderName",
+			givenPriorityGroups:            [][]string{},
+			expected:                       false,
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			isPriority := isSyncerPriority(test.givenSyncerKey, test.givenPriorityGroups, test.givenSyncersByBidder)
+			isPriority := isSyncerPriority(test.givenBidderNameFromSyncerQuery, test.givenPriorityGroups)
 			assert.Equal(t, test.expected, isPriority)
 		})
 	}
@@ -1485,6 +1442,8 @@ func doRequest(req *http.Request, analytics analytics.PBSAnalyticsModule, metric
 		syncersByBidder[bidderName] = fakeSyncer{key: syncerKey, defaultSyncType: usersync.SyncTypeIFrame}
 		if bidderName != "nonPriorityBidder" {
 			cfg.UserSync.PriorityGroups[0] = append(cfg.UserSync.PriorityGroups[0], bidderName)
+		} else {
+			cfg.HostCookie.MaxCookieSizeBytes = 100
 		}
 	}
 
