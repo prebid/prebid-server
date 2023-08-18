@@ -452,6 +452,14 @@ func TestPrepareCookieForWrite(t *testing.T) {
 			},
 		},
 		{
+			name:               "invalid-max-size",
+			givenMaxCookieSize: -100,
+			givenCookieToSend:  mainCookie,
+			expectedRemainingUidKeys: []string{
+				"1", "2", "3", "4", "5", "6", "7",
+			},
+		},
+		{
 			name:                  "syncer-is-not-priority",
 			givenMaxCookieSize:    100,
 			givenCookieToSend:     errorCookie,
@@ -498,14 +506,6 @@ func TestPrepareCookieForWrite(t *testing.T) {
 			name:                     "all-uids-ejected",
 			givenMaxCookieSize:       100,
 			givenCookieToSend:        mainCookie,
-			givenIsSyncerPriority:    true,
-			expectedRemainingUidKeys: []string{},
-		},
-		{
-			name:                     "invalid-max-size",
-			givenMaxCookieSize:       -100,
-			givenCookieToSend:        mainCookie,
-			givenIsSyncerPriority:    true,
 			expectedRemainingUidKeys: []string{},
 		},
 	}

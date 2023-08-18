@@ -120,6 +120,32 @@ func TestPriorityEjector(t *testing.T) {
 			expected: "oldestNonPriority",
 		},
 		{
+			name: "empty-priority-groups",
+			givenUids: map[string]UIDEntry{
+				"oldestNonPriority": {
+					UID:     "456",
+					Expires: time.Now(),
+				},
+				"newestNonPriority": {
+					UID:     "123",
+					Expires: time.Now().Add((90 * 24 * time.Hour)),
+				},
+			},
+			givenEjector: &PriorityBidderEjector{
+				syncersByBidder: map[string]Syncer{
+					"oldestNonPriority": fakeSyncer{
+						key: "oldestNonPriority",
+					},
+					"newestNonPriority": fakeSyncer{
+						key: "newestNonPriority",
+					},
+				},
+				IsSyncerPriority: false,
+				TieEjector:       &OldestEjector{},
+			},
+			expected: "oldestNonPriority",
+		},
+		{
 			name: "one-priority-element",
 			givenUids: map[string]UIDEntry{
 				"onlyPriorityElement": {
