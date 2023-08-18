@@ -226,6 +226,7 @@ const (
 	BidderOwnAdx            BidderName = "ownadx"
 	BidderPangle            BidderName = "pangle"
 	BidderPGAM              BidderName = "pgam"
+	BidderPGAMSsp           BidderName = "pgamssp"
 	BidderPubmatic          BidderName = "pubmatic"
 	BidderPubnative         BidderName = "pubnative"
 	BidderPulsepoint        BidderName = "pulsepoint"
@@ -433,6 +434,7 @@ func CoreBidderNames() []BidderName {
 		BidderOwnAdx,
 		BidderPangle,
 		BidderPGAM,
+		BidderPGAMSsp,
 		BidderPubmatic,
 		BidderPubnative,
 		BidderPulsepoint,
