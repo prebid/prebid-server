@@ -416,15 +416,21 @@ func validateAliasCapabilities(aliasBidderInfo BidderInfo, infos BidderInfos, bi
 			return fmt.Errorf("capabilities for alias: %s should be a subset of capabilities for parent bidder: %s", bidderName, aliasBidderInfo.AliasOf)
 		}
 
+		if (aliasBidderInfo.Capabilities.App != nil && parentBidder.Capabilities.App == nil) || (aliasBidderInfo.Capabilities.Site != nil && parentBidder.Capabilities.Site == nil) {
+			return fmt.Errorf("capabilities for alias: %s should be a subset of capabilities for parent bidder: %s", bidderName, aliasBidderInfo.AliasOf)
+		}
+
 		if aliasBidderInfo.Capabilities.Site != nil && parentBidder.Capabilities.Site != nil {
-			return isAliasPlatformInfoSubsetOfParent(*parentBidder.Capabilities.Site, *aliasBidderInfo.Capabilities.Site, bidderName, aliasBidderInfo.AliasOf)
+			if err := isAliasPlatformInfoSubsetOfParent(*parentBidder.Capabilities.Site, *aliasBidderInfo.Capabilities.Site, bidderName, aliasBidderInfo.AliasOf); err != nil {
+				return err
+			}
 		}
 
 		if aliasBidderInfo.Capabilities.App != nil && parentBidder.Capabilities.App != nil {
-			return isAliasPlatformInfoSubsetOfParent(*parentBidder.Capabilities.App, *aliasBidderInfo.Capabilities.App, bidderName, aliasBidderInfo.AliasOf)
+			if err := isAliasPlatformInfoSubsetOfParent(*parentBidder.Capabilities.App, *aliasBidderInfo.Capabilities.App, bidderName, aliasBidderInfo.AliasOf); err != nil {
+				return err
+			}
 		}
-
-		return fmt.Errorf("capabilities for alias: %s should be a subset of capabilities for parent bidder: %s", bidderName, aliasBidderInfo.AliasOf)
 	}
 
 	return nil
