@@ -128,7 +128,6 @@ func TestIsBidderNameReserved(t *testing.T) {
 
 func TestCoreBidderNames(t *testing.T) {
 	bidderA := "BidderA"
-	aliasBidderNames = []BidderName{BidderName(bidderA)}
-
+	SetAliasBidderName(BidderName(bidderA))
 	assert.Contains(t, CoreBidderNames(), BidderName(bidderA))
 }
