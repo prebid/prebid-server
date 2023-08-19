@@ -129,6 +129,7 @@ const (
 	BidderAxonix            BidderName = "axonix"
 	BidderBeachfront        BidderName = "beachfront"
 	BidderBeintoo           BidderName = "beintoo"
+	BidderBematterfull      BidderName = "bematterfull"
 	BidderBetween           BidderName = "between"
 	BidderBeyondMedia       BidderName = "beyondmedia"
 	BidderBidmachine        BidderName = "bidmachine"
@@ -336,6 +337,7 @@ func CoreBidderNames() []BidderName {
 		BidderAxonix,
 		BidderBeachfront,
 		BidderBeintoo,
+		BidderBematterfull,
 		BidderBetween,
 		BidderBeyondMedia,
 		BidderBidmachine,
