@@ -132,8 +132,7 @@ func (f *PriceFloorFetcher) Fetch(config config.AccountPriceFloors) (*openrtb_ex
 	}
 
 	// Check for floors JSON in cache
-	result, found := f.Get(config.Fetcher.URL)
-	if found {
+	if result, found := f.Get(config.Fetcher.URL); found {
 		var fetchedFloorData openrtb_ext.PriceFloorRules
 		err := json.Unmarshal(result, &fetchedFloorData)
 		if err != nil || fetchedFloorData.Data == nil {
@@ -173,7 +172,7 @@ func (f *PriceFloorFetcher) worker(config config.AccountFloorFetch) {
 
 }
 
-// Stop terminates fetcher service can closes all the channels and destroys worker pool
+// Stop terminates price floor fetcher
 func (f *PriceFloorFetcher) Stop() {
 	if f == nil {
 		return
@@ -215,6 +214,7 @@ func (f *PriceFloorFetcher) Fetcher() {
 				f.submit(nextFetch.(*FetchInfo))
 			}
 		case <-f.done:
+			ticker.Stop()
 			glog.Info("Price Floor fetcher terminated")
 			return
 		}
@@ -264,7 +264,7 @@ func (f *PriceFloorFetcher) fetchFloorRulesFromURL(config config.AccountFloorFet
 		return nil, 0, errors.New("error while getting response from url : " + err.Error())
 	}
 
-	if httpResp.StatusCode != 200 {
+	if httpResp.StatusCode != http.StatusOK {
 		return nil, 0, errors.New("no response from server")
 	}
 
