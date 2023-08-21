@@ -1,0 +1,5 @@
+// BenchmarkXMLParser-12    	   10081	114797 ns/op    38260 B/op	  333 allocs/op
+// BenchmarkXMLEncoding-12    	   10802	109733 ns/op    38601 B/op	  286 allocs/op
+// BenchmarkStructUnmarshal-12     4402	    239360 ns/op    72024 B/op	  829 allocs/op
+// BenchmarkStringParser-12    	   34964	31871  ns/op    28325 B/op	  30 allocs/op
+// BenchmarkETree-12    	       5698	    180206 ns/op    61769 B/op	  792 allocs/op

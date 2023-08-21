@@ -65,7 +65,7 @@ func constructTemplate(url string) urlMetaTemplate {
 // If input string is not found in cache then template metadata will be created.
 // Iterates over start and end indexes of the template arrays and extracts macro name from the input string.
 // Gets the value of the extracted macro from the macroProvider. Replaces macro with corresponding value.
-func (s *stringIndexBasedReplacer) Replace(url string, macroProvider *macroProvider) (string, error) {
+func (s *stringIndexBasedReplacer) Replace(url string, macroProvider *MacroProvider) (string, error) {
 	tmplt := s.getTemplate(url)
 
 	var result strings.Builder
@@ -101,4 +101,22 @@ func (s *stringIndexBasedReplacer) getTemplate(url string) urlMetaTemplate {
 		s.Unlock()
 	}
 	return template
+}
+
+func (s *stringIndexBasedReplacer) ReplaceBytes(result *strings.Builder, url string, macroProvider *MacroProvider) {
+	tmplt := s.getTemplate(url)
+	currentIndex := 0
+	delimLen := len(delimiter)
+	for i, index := range tmplt.startingIndices {
+		macro := url[index : tmplt.endingIndices[i]+1]
+		// copy prev part
+		result.WriteString(url[currentIndex : index-delimLen])
+		value := macroProvider.GetMacro(macro)
+		if value != "" {
+			result.WriteString(value)
+		}
+		currentIndex = index + len(macro) + delimLen
+	}
+	result.WriteString(url[currentIndex:])
+
 }
