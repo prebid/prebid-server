@@ -75,7 +75,7 @@ func TestVideoEndpointInvalidPrivacyConfig(t *testing.T) {
 	deps.VideoAuctionEndpoint(recorder, req, nil)
 
 	respBytes := recorder.Body.Bytes()
-	expectedErrorMessage := "Critical error while running the video endpoint:  unable to parse condition: bidderA.BidderB.bidderC"
+	expectedErrorMessage := "Critical error while running the video endpoint:  unable to parse component: bidderA.BidderB.bidderC"
 	assert.Equal(t, expectedErrorMessage, string(respBytes), "error message is incorrect")
 }
 
