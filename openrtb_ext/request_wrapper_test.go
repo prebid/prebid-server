@@ -1908,3 +1908,87 @@ func TestCloneImpExt(t *testing.T) {
 		})
 	}
 }
+
+func TestRequestWrapperReset(t *testing.T) {
+	type wrapper struct {
+		BidRequest          *openrtb2.BidRequest
+		impWrappers         []*ImpWrapper
+		impWrappersAccessed bool
+		userExt             *UserExt
+		deviceExt           *DeviceExt
+		requestExt          *RequestExt
+		appExt              *AppExt
+		regExt              *RegExt
+		siteExt             *SiteExt
+		sourceExt           *SourceExt
+	}
+	testCases := []struct {
+		name    string
+		wrapper wrapper
+	}{
+		{
+			name: "Reset all the extensions",
+			wrapper: wrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID: "123",
+					Imp: []openrtb2.Imp{
+						{
+							ID:  "imp-1",
+							Ext: json.RawMessage(`{"ext":{"test":"abc"}}`),
+						},
+					},
+					Test: 1,
+				},
+				impWrappers: []*ImpWrapper{
+					{
+						Imp: &openrtb2.Imp{
+							ID:  "imp-1",
+							Ext: json.RawMessage(`{"ext":"test"}`),
+						},
+						impExt: &ImpExt{
+							ext: map[string]json.RawMessage{
+								"test": json.RawMessage(`abc`),
+							},
+						},
+					},
+				},
+				userExt: &UserExt{
+					ext: map[string]json.RawMessage{
+						"test": json.RawMessage(`abc`),
+					},
+				},
+				deviceExt: &DeviceExt{
+					ext: map[string]json.RawMessage{
+						"device": json.RawMessage(`phone`),
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			rw := &RequestWrapper{
+				BidRequest:          tt.wrapper.BidRequest,
+				impWrappers:         tt.wrapper.impWrappers,
+				impWrappersAccessed: tt.wrapper.impWrappersAccessed,
+				userExt:             tt.wrapper.userExt,
+				deviceExt:           tt.wrapper.deviceExt,
+				requestExt:          tt.wrapper.requestExt,
+				appExt:              tt.wrapper.appExt,
+				regExt:              tt.wrapper.regExt,
+				siteExt:             tt.wrapper.siteExt,
+				sourceExt:           tt.wrapper.sourceExt,
+			}
+			rw.Reset()
+			assert.Equal(t, tt.wrapper.BidRequest, rw.BidRequest, "Bidrequest should not be altered")
+			assert.Equal(t, ([]*ImpWrapper)(nil), rw.impWrappers, "impwrapper should be nil")
+			assert.Equal(t, (*UserExt)(nil), rw.userExt, "userExt should be nil")
+			assert.Equal(t, (*DeviceExt)(nil), rw.deviceExt, "deviceExt should be nil")
+			assert.Equal(t, (*RequestExt)(nil), rw.requestExt, "requestExt should be nil")
+			assert.Equal(t, (*AppExt)(nil), rw.appExt, "appExt should be nil")
+			assert.Equal(t, (*RegExt)(nil), rw.regExt, "regExt should be nil")
+			assert.Equal(t, (*SiteExt)(nil), rw.siteExt, "siteExt should be nil")
+			assert.Equal(t, (*SourceExt)(nil), rw.sourceExt, "sourceExt should be nil")
+		})
+	}
+}

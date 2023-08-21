@@ -375,6 +375,18 @@ func (rw *RequestWrapper) Clone() *RequestWrapper {
 	return &clone
 }
 
+func (rw *RequestWrapper) Reset() {
+	rw.impWrappersAccessed = false
+	rw.impWrappers = nil
+	rw.userExt = nil
+	rw.deviceExt = nil
+	rw.requestExt = nil
+	rw.appExt = nil
+	rw.regExt = nil
+	rw.siteExt = nil
+	rw.sourceExt = nil
+}
+
 // ---------------------------------------------------------------
 // UserExt provides an interface for request.user.ext
 // ---------------------------------------------------------------
