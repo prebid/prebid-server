@@ -21,6 +21,7 @@ import (
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/ortb"
+	"github.com/prebid/prebid-server/privacy"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
 	accountService "github.com/prebid/prebid-server/account"
@@ -302,6 +303,15 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	activities, activitiesErr := privacy.NewActivityControl(account.Privacy)
+	if activitiesErr != nil {
+		errL = append(errL, activitiesErr)
+		if errortypes.ContainsFatalError(errL) {
+			handleError(&labels, w, errL, &vo, &debugLog)
+			return
+		}
+	}
+
 	secGPC := r.Header.Get("Sec-GPC")
 	auctionRequest := &exchange.AuctionRequest{
 		BidRequestWrapper:          bidReqWrapper,
@@ -314,6 +324,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		PubID:                      labels.PubID,
 		HookExecutor:               hookexecution.EmptyHookExecutor{},
 		TmaxAdjustments:            deps.tmaxAdjustments,
+		Activities:                 activities,
 	}
 
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog)
