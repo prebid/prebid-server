@@ -84,10 +84,11 @@ type cookieSyncEndpoint struct {
 }
 
 func (c *cookieSyncEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	var errorsForResponse []error
 	request, privacyPolicies, err := c.parseRequest(r)
 	if err != nil {
 		c.writeParseRequestErrorMetrics(err)
-		c.handleError(w, err, http.StatusBadRequest)
+		c.handleError(w, err, http.StatusBadRequest, true)
 		return
 	}
 	decoder := usersync.Base64Decoder{}
@@ -99,14 +100,14 @@ func (c *cookieSyncEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ ht
 	switch result.Status {
 	case usersync.StatusBlockedByUserOptOut:
 		c.metrics.RecordCookieSync(metrics.CookieSyncOptOut)
-		c.handleError(w, errCookieSyncOptOut, http.StatusUnauthorized)
+		c.handleError(w, errCookieSyncOptOut, http.StatusUnauthorized, request.Debug)
 	case usersync.StatusBlockedByGDPR:
 		c.metrics.RecordCookieSync(metrics.CookieSyncGDPRHostCookieBlocked)
-		c.handleResponse(w, request.SyncTypeFilter, cookie, privacyPolicies, nil)
+		c.handleResponse(w, request.SyncTypeFilter, cookie, privacyPolicies, nil, request.Debug, errorsForResponse)
 	case usersync.StatusOK:
 		c.metrics.RecordCookieSync(metrics.CookieSyncOK)
 		c.writeSyncerMetrics(result.BiddersEvaluated)
-		c.handleResponse(w, request.SyncTypeFilter, cookie, privacyPolicies, result.SyncersChosen)
+		c.handleResponse(w, request.SyncTypeFilter, cookie, privacyPolicies, result.SyncersChosen, request.Debug, errorsForResponse)
 	}
 }
 
@@ -182,6 +183,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 			activityControl:  activityControl,
 		},
 		SyncTypeFilter: syncTypeFilter,
+		Debug:          request.Debug,
 	}
 	return rx, privacyPolicies, nil
 }
@@ -356,8 +358,10 @@ func parseBidderFilter(filter *cookieSyncRequestFilter) (usersync.BidderFilter, 
 	}
 }
 
-func (c *cookieSyncEndpoint) handleError(w http.ResponseWriter, err error, httpStatus int) {
-	http.Error(w, err.Error(), httpStatus)
+func (c *cookieSyncEndpoint) handleError(w http.ResponseWriter, err error, httpStatus int, debug bool) {
+	if debug {
+		http.Error(w, err.Error(), httpStatus)
+	}
 	c.pbsAnalytics.LogCookieSyncObject(&analytics.CookieSyncObject{
 		Status:       httpStatus,
 		Errors:       []error{err},
@@ -401,7 +405,7 @@ func (c *cookieSyncEndpoint) writeSyncerMetrics(biddersEvaluated []usersync.Bidd
 	}
 }
 
-func (c *cookieSyncEndpoint) handleResponse(w http.ResponseWriter, tf usersync.SyncTypeFilter, co *usersync.Cookie, p privacy.Policies, s []usersync.SyncerChoice) {
+func (c *cookieSyncEndpoint) handleResponse(w http.ResponseWriter, tf usersync.SyncTypeFilter, co *usersync.Cookie, p privacy.Policies, s []usersync.SyncerChoice, debug bool, errors []error) {
 	status := "no_cookie"
 	if co.HasAnyLiveSyncs() {
 		status = "ok"
@@ -417,6 +421,7 @@ func (c *cookieSyncEndpoint) handleResponse(w http.ResponseWriter, tf usersync.S
 		sync, err := syncerChoice.Syncer.GetSync(syncTypes, p)
 		if err != nil {
 			glog.Errorf("Failed to get usersync info for %s: %v", syncerChoice.Bidder, err)
+			errors = append(errors, err)
 			continue
 		}
 
@@ -429,6 +434,10 @@ func (c *cookieSyncEndpoint) handleResponse(w http.ResponseWriter, tf usersync.S
 				SupportCORS: sync.SupportCORS,
 			},
 		})
+	}
+
+	if debug {
+		response.Debug = errors
 	}
 
 	c.pbsAnalytics.LogCookieSyncObject(&analytics.CookieSyncObject{
@@ -469,6 +478,7 @@ type cookieSyncRequest struct {
 	CooperativeSync *bool                            `json:"coopSync"`
 	FilterSettings  *cookieSyncRequestFilterSettings `json:"filterSettings"`
 	Account         string                           `json:"account"`
+	Debug           bool                             `json:"debug"`
 }
 
 type cookieSyncRequestFilterSettings struct {
@@ -484,6 +494,7 @@ type cookieSyncRequestFilter struct {
 type cookieSyncResponse struct {
 	Status       string                     `json:"status"`
 	BidderStatus []cookieSyncResponseBidder `json:"bidder_status"`
+	Debug        []error                    `json:"debug"`
 }
 
 type cookieSyncResponseBidder struct {
