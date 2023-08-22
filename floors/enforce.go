@@ -3,6 +3,7 @@ package floors
 import (
 	"errors"
 	"fmt"
+	"math"
 	"math/rand"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
@@ -137,7 +138,7 @@ func enforceFloorToBids(bidRequestWrapper *openrtb_ext.RequestWrapper, seatBids 
 				}
 
 				bidPrice := rate * bid.Bid.Price
-				if reqImp.BidFloor > bidPrice {
+				if isBidPriceLowerThanBidfloor(reqImp.BidFloor, bidPrice) {
 					rejectedBid := &entities.PbsOrtbSeatBid{
 						Currency: seatBid.Currency,
 						Seat:     seatBid.Seat,
@@ -152,6 +153,14 @@ func enforceFloorToBids(bidRequestWrapper *openrtb_ext.RequestWrapper, seatBids 
 		seatBids[bidderName].Bids = eligibleBids
 	}
 	return seatBids, errs, rejectedBids
+}
+
+// isBidPriceLowerThanBidfloor checks for bid price with bid floor with given precision
+func isBidPriceLowerThanBidfloor(bidFloor float64, bidPrice float64) bool {
+	if bidPrice < bidFloor && math.Abs(bidFloor-bidPrice) > floorPrecision {
+		return true
+	}
+	return false
 }
 
 // isEnforcementEnabled check for floors enforcement enabled in request
