@@ -1,4 +1,4 @@
-package emx_digital
+package cadentaperturemx
 
 import (
 	"encoding/json"
@@ -17,7 +17,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type EmxDigitalAdapter struct {
+type adapter struct {
 	endpoint string
 	testing  bool
 }
@@ -33,7 +33,7 @@ func buildEndpoint(endpoint string, testing bool, timeout int64) string {
 	return endpoint + "?t=" + strconv.FormatInt(timeout, 10) + "&ts=" + strconv.FormatInt(time.Now().Unix(), 10) + "&src=pbserver"
 }
 
-func (a *EmxDigitalAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 
 	if len(request.Imp) == 0 {
@@ -81,7 +81,7 @@ func (a *EmxDigitalAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 	}}, errs
 }
 
-func unpackImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpEmxDigital, error) {
+func unpackImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpCadentApertureMX, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
@@ -89,27 +89,27 @@ func unpackImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpEmxDigital, error) {
 		}
 	}
 
-	var emxExt openrtb_ext.ExtImpEmxDigital
-	if err := json.Unmarshal(bidderExt.Bidder, &emxExt); err != nil {
+	var cadentExt openrtb_ext.ExtImpCadentApertureMX
+	if err := json.Unmarshal(bidderExt.Bidder, &cadentExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("ignoring imp id=%s, invalid ImpExt", imp.ID),
 		}
 	}
 
-	tagIDValidation, err := strconv.ParseInt(emxExt.TagID, 10, 64)
+	tagIDValidation, err := strconv.ParseInt(cadentExt.TagID, 10, 64)
 	if err != nil || tagIDValidation == 0 {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("ignoring imp id=%s, invalid tagid must be a String of numbers", imp.ID),
 		}
 	}
 
-	if emxExt.TagID == "" {
+	if cadentExt.TagID == "" {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("Ignoring imp id=%s, no tagid present", imp.ID),
 		}
 	}
 
-	return &emxExt, nil
+	return &cadentExt, nil
 }
 
 func buildImpBanner(imp *openrtb2.Imp) error {
@@ -175,13 +175,13 @@ func cleanProtocol(protocols []adcom1.MediaCreativeSubtype) []adcom1.MediaCreati
 	return newitems
 }
 
-// Add EMX required properties to Imp object
-func addImpProps(imp *openrtb2.Imp, secure *int8, emxExt *openrtb_ext.ExtImpEmxDigital) {
-	imp.TagID = emxExt.TagID
+// Add Cadent required properties to Imp object
+func addImpProps(imp *openrtb2.Imp, secure *int8, cadentExt *openrtb_ext.ExtImpCadentApertureMX) {
+	imp.TagID = cadentExt.TagID
 	imp.Secure = secure
 
-	if emxExt.BidFloor != "" {
-		bidFloor, err := strconv.ParseFloat(emxExt.BidFloor, 64)
+	if cadentExt.BidFloor != "" {
+		bidFloor, err := strconv.ParseFloat(cadentExt.BidFloor, 64)
 		if err != nil {
 			bidFloor = 0
 		}
@@ -202,7 +202,7 @@ func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue str
 	}
 }
 
-// Handle request errors and formatting to be sent to EMX
+// Handle request errors and formatting to be sent to Cadent
 func preprocess(request *openrtb2.BidRequest) []error {
 	impsCount := len(request.Imp)
 	errors := make([]error, 0, impsCount)
@@ -225,13 +225,13 @@ func preprocess(request *openrtb2.BidRequest) []error {
 	}
 
 	for _, imp := range request.Imp {
-		emxExt, err := unpackImpExt(&imp)
+		cadentExt, err := unpackImpExt(&imp)
 		if err != nil {
 			errors = append(errors, err)
 			continue
 		}
 
-		addImpProps(&imp, &secure, emxExt)
+		addImpProps(&imp, &secure, cadentExt)
 
 		if imp.Video != nil {
 			if err := buildImpVideo(&imp); err != nil {
@@ -253,7 +253,7 @@ func preprocess(request *openrtb2.BidRequest) []error {
 }
 
 // MakeBids make the bids for the bid response.
-func (a *EmxDigitalAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if response.StatusCode == http.StatusNoContent {
 		// no bid response
@@ -309,9 +309,9 @@ func ContainsAny(raw string, keys []string) bool {
 
 }
 
-// Builder builds a new instance of the EmxDigital adapter for the given bidder with the given config.
+// Builder builds a new instance of the Cadent Aperture MX adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	bidder := &EmxDigitalAdapter{
+	bidder := &adapter{
 		endpoint: config.Endpoint,
 		testing:  false,
 	}
