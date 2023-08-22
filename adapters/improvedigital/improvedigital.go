@@ -3,19 +3,18 @@ package improvedigital
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"strconv"
-	"strings"
-
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"net/http"
+	"regexp"
+	"strconv"
+	"strings"
 )
 
 const (
-	buyingTypeRTB                    = "rtb"
 	isRewardedInventory              = "is_rewarded_inventory"
 	stateRewardedInventoryEnable     = "1"
 	consentProvidersSettingsInputKey = "ConsentedProvidersSettings"
@@ -42,6 +41,8 @@ type ImpExtBidder struct {
 		PublisherID int `json:"publisherId"`
 	}
 }
+
+var dealDetectionRegEx, _ = regexp.Compile("(classic|deal)")
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids.
 func (a *ImprovedigitalAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -134,7 +135,6 @@ func (a *ImprovedigitalAdapter) MakeBids(internalRequest *openrtb2.BidRequest, e
 	}
 
 	seatBid := bidResp.SeatBid[0]
-
 	if len(seatBid.Bid) == 0 {
 		return nil, nil
 	}
@@ -145,7 +145,7 @@ func (a *ImprovedigitalAdapter) MakeBids(internalRequest *openrtb2.BidRequest, e
 	for i := range seatBid.Bid {
 		bid := seatBid.Bid[i]
 
-		bidType, err := getMediaTypeForImp(bid.ImpID, internalRequest.Imp)
+		bidType, err := getBidType(bid, internalRequest.Imp)
 		if err != nil {
 			return nil, []error{err}
 		}
@@ -158,7 +158,7 @@ func (a *ImprovedigitalAdapter) MakeBids(internalRequest *openrtb2.BidRequest, e
 			}
 
 			bidExtImprovedigital := bidExt.Improvedigital
-			if bidExtImprovedigital.LineItemID != 0 && bidExtImprovedigital.BuyingType != "" && bidExtImprovedigital.BuyingType != buyingTypeRTB {
+			if bidExtImprovedigital.LineItemID != 0 && dealDetectionRegEx.MatchString(bidExtImprovedigital.BuyingType) {
 				bid.DealID = strconv.Itoa(bidExtImprovedigital.LineItemID)
 			}
 		}
@@ -169,7 +169,6 @@ func (a *ImprovedigitalAdapter) MakeBids(internalRequest *openrtb2.BidRequest, e
 		})
 	}
 	return bidResponse, nil
-
 }
 
 // Builder builds a new instance of the Improvedigital adapter for the given bidder with the given config.
@@ -180,31 +179,82 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	return bidder, nil
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
-	for _, imp := range imps {
-		if imp.ID == impID {
+func getBidType(bid openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
+	// there must be a matching imp against bid.ImpID
+	imp, err := findImpByID(bid.ImpID, imps)
+	if err != nil {
+		return "", err
+	}
+
+	// if MType is not set in server response, try to determine it
+	if bid.MType == 0 {
+		if !isMultiFormatImp(imp) {
+			// Not a bid for multi format impression. So, determine MType from impression
 			if imp.Banner != nil {
-				return openrtb_ext.BidTypeBanner, nil
+				bid.MType = openrtb2.MarkupBanner
+			} else if imp.Video != nil {
+				bid.MType = openrtb2.MarkupVideo
+			} else if imp.Audio != nil {
+				bid.MType = openrtb2.MarkupAudio
+			} else if imp.Native != nil {
+				bid.MType = openrtb2.MarkupNative
+			} else { // This should not happen.
+				// Let's handle it just in case by returning an error.
+				return "", &errortypes.BadServerResponse{
+					Message: fmt.Sprintf("Could not determine MType from impression with ID: \"%s\"", bid.ImpID),
+				}
 			}
-
-			if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo, nil
-			}
-
-			if imp.Native != nil {
-				return openrtb_ext.BidTypeNative, nil
-			}
-
+		} else {
 			return "", &errortypes.BadServerResponse{
-				Message: fmt.Sprintf("Unknown impression type for ID: \"%s\"", impID),
+				Message: fmt.Sprintf("Bid must have non-zero MType for multi format impression with ID: \"%s\"", bid.ImpID),
 			}
 		}
 	}
 
-	// This shouldnt happen. Lets handle it just incase by returning an error.
-	return "", &errortypes.BadServerResponse{
+	// map MType to BidType
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupAudio:
+		return openrtb_ext.BidTypeAudio, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
+	default:
+		// This shouldn't happen. Let's handle it just in case by returning an error.
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Unsupported MType %d for impression with ID: \"%s\"", bid.MType, bid.ImpID),
+		}
+	}
+}
+
+func findImpByID(impID string, imps []openrtb2.Imp) (openrtb2.Imp, error) {
+	for _, imp := range imps {
+		if imp.ID == impID {
+			return imp, nil
+		}
+	}
+	return openrtb2.Imp{}, &errortypes.BadServerResponse{
 		Message: fmt.Sprintf("Failed to find impression for ID: \"%s\"", impID),
 	}
+}
+
+func isMultiFormatImp(imp openrtb2.Imp) bool {
+	formatCount := 0
+	if imp.Banner != nil {
+		formatCount++
+	}
+	if imp.Video != nil {
+		formatCount++
+	}
+	if imp.Audio != nil {
+		formatCount++
+	}
+	if imp.Native != nil {
+		formatCount++
+	}
+	return formatCount > 1
 }
 
 // This method responsible to clone request and convert additional consent providers string to array when additional consent provider found
