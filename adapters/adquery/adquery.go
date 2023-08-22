@@ -33,33 +33,7 @@ func Builder(_ openrtb_ext.BidderName, config config.Adapter, _ config.Server) (
 	return bidder, nil
 }
 
-func (a *adapter) buildRequest(bidReq *openrtb2.BidRequest, imp *openrtb2.Imp, ext *openrtb_ext.ImpExtAdQuery) *BidderRequest {
-	userId := ""
-	if bidReq.User != nil {
-		userId = bidReq.User.ID
-	}
-
-	return &BidderRequest{
-		V:                   prebidVersion,
-		PlacementCode:       ext.PlacementID,
-		AuctionId:           "",
-		BidType:             ext.Type,
-		AdUnitCode:          imp.TagID,
-		BidQid:              userId,
-		BidId:               fmt.Sprintf("%s%s", bidReq.ID, imp.ID),
-		Bidder:              bidderName,
-		BidderRequestId:     bidReq.ID,
-		BidRequestsCount:    1,
-		BidderRequestsCount: 1,
-		Sizes:               getImpSizes(imp),
-	}
-}
-
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	if len(request.Imp) == 0 {
-		return nil, nil
-	}
-
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
@@ -74,7 +48,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 			continue
 		}
 
-		requestJSON, err := json.Marshal(a.buildRequest(request, &imp, ext))
+		requestJSON, err := json.Marshal(buildRequest(request, &imp, ext))
 		if err != nil {
 			return nil, append(errs, err)
 		}
@@ -136,6 +110,28 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 	})
 
 	return bidResponse, nil
+}
+
+func buildRequest(bidReq *openrtb2.BidRequest, imp *openrtb2.Imp, ext *openrtb_ext.ImpExtAdQuery) *BidderRequest {
+	userId := ""
+	if bidReq.User != nil {
+		userId = bidReq.User.ID
+	}
+
+	return &BidderRequest{
+		V:                   prebidVersion,
+		PlacementCode:       ext.PlacementID,
+		AuctionId:           "",
+		BidType:             ext.Type,
+		AdUnitCode:          imp.TagID,
+		BidQid:              userId,
+		BidId:               fmt.Sprintf("%s%s", bidReq.ID, imp.ID),
+		Bidder:              bidderName,
+		BidderRequestId:     bidReq.ID,
+		BidRequestsCount:    1,
+		BidderRequestsCount: 1,
+		Sizes:               getImpSizes(imp),
+	}
 }
 
 func parseExt(ext json.RawMessage) (*openrtb_ext.ImpExtAdQuery, error) {
