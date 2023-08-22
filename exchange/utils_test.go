@@ -2551,7 +2551,7 @@ func newAdapterAliasBidRequest(t *testing.T) *openrtb2.BidRequest {
 			Language: "EN",
 		},
 		Source: &openrtb2.Source{
-			TID: "61018dc9-fa61-4c41-b7dc-f90b9ae80e87",
+			TID: "testTID",
 		},
 		User: &openrtb2.User{
 			ID:       "our-id",
@@ -2595,7 +2595,7 @@ func newBidRequest(t *testing.T) *openrtb2.BidRequest {
 			Language: "EN",
 		},
 		Source: &openrtb2.Source{
-			TID: "61018dc9-fa61-4c41-b7dc-f90b9ae80e87",
+			TID: "testTID",
 		},
 		User: &openrtb2.User{
 			ID:       "our-id",
@@ -2615,7 +2615,7 @@ func newBidRequest(t *testing.T) *openrtb2.BidRequest {
 					H: 600,
 				}},
 			},
-			Ext: json.RawMessage(`{"prebid":{"bidder":{"appnexus": {"placementId": 1}}}}`),
+			Ext: json.RawMessage(`{"prebid":{"tid":"1234567", "bidder":{"appnexus": {"placementId": 1}}}}`),
 		}},
 	}
 }
@@ -2637,7 +2637,7 @@ func newBidRequestWithBidderParams(t *testing.T) *openrtb2.BidRequest {
 			Language: "EN",
 		},
 		Source: &openrtb2.Source{
-			TID: "61018dc9-fa61-4c41-b7dc-f90b9ae80e87",
+			TID: "testTID",
 		},
 		User: &openrtb2.User{
 			ID:       "our-id",
@@ -3065,7 +3065,7 @@ func TestCleanOpenRTBRequestsSChainMultipleBidders(t *testing.T) {
 	req := &openrtb2.BidRequest{
 		Site: &openrtb2.Site{},
 		Source: &openrtb2.Source{
-			TID: "61018dc9-fa61-4c41-b7dc-f90b9ae80e87",
+			TID: "testTID",
 		},
 		Imp: []openrtb2.Imp{{
 			Ext: json.RawMessage(`{"prebid":{"bidder":{"appnexus": {"placementId": 1}, "axonix": { "supplyId": "123"}}}}`),
@@ -4268,7 +4268,7 @@ func TestGetMediaTypeForBid(t *testing.T) {
 	}
 }
 
-func TestCleanOpenRTBRequestsActivitiesFetchBids(t *testing.T) {
+func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 	testCases := []struct {
 		name                 string
 		req                  *openrtb2.BidRequest
@@ -4279,6 +4279,7 @@ func TestCleanOpenRTBRequestsActivitiesFetchBids(t *testing.T) {
 		expectedUserYOB      int64
 		expectedUserLat      float64
 		expectedDeviceDIDMD5 string
+		expectedSourceTID    string
 	}{
 		{
 			name:                 "fetch_bids_request_with_one_bidder_allowed",
@@ -4288,6 +4289,7 @@ func TestCleanOpenRTBRequestsActivitiesFetchBids(t *testing.T) {
 			expectedUserYOB:      1982,
 			expectedUserLat:      123.456,
 			expectedDeviceDIDMD5: "some device ID hash",
+			expectedSourceTID:    "testTID",
 		},
 		{
 			name:                 "fetch_bids_request_with_one_bidder_not_allowed",
@@ -4297,6 +4299,7 @@ func TestCleanOpenRTBRequestsActivitiesFetchBids(t *testing.T) {
 			expectedUserYOB:      1982,
 			expectedUserLat:      123.456,
 			expectedDeviceDIDMD5: "some device ID hash",
+			expectedSourceTID:    "testTID",
 		},
 		{
 			name:                 "transmit_ufpd_allowed",
@@ -4306,6 +4309,7 @@ func TestCleanOpenRTBRequestsActivitiesFetchBids(t *testing.T) {
 			expectedUserYOB:      1982,
 			expectedUserLat:      123.456,
 			expectedDeviceDIDMD5: "some device ID hash",
+			expectedSourceTID:    "testTID",
 		},
 		{
 			name:                 "transmit_ufpd_deny",
@@ -4315,6 +4319,7 @@ func TestCleanOpenRTBRequestsActivitiesFetchBids(t *testing.T) {
 			expectedUserYOB:      0,
 			expectedUserLat:      123.456,
 			expectedDeviceDIDMD5: "",
+			expectedSourceTID:    "testTID",
 		},
 		{
 			name:                 "transmit_precise_geo_allowed",
@@ -4324,6 +4329,7 @@ func TestCleanOpenRTBRequestsActivitiesFetchBids(t *testing.T) {
 			expectedUserYOB:      1982,
 			expectedUserLat:      123.456,
 			expectedDeviceDIDMD5: "some device ID hash",
+			expectedSourceTID:    "testTID",
 		},
 		{
 			name:                 "transmit_precise_geo_deny",
@@ -4333,6 +4339,27 @@ func TestCleanOpenRTBRequestsActivitiesFetchBids(t *testing.T) {
 			expectedUserYOB:      1982,
 			expectedUserLat:      123.46,
 			expectedDeviceDIDMD5: "some device ID hash",
+			expectedSourceTID:    "testTID",
+		},
+		{
+			name:                 "transmit_tid_allowed",
+			req:                  newBidRequest(t),
+			privacyConfig:        getTransmitTIDActivityConfig("appnexus", true),
+			expectedReqNumber:    1,
+			expectedUserYOB:      1982,
+			expectedUserLat:      123.456,
+			expectedDeviceDIDMD5: "some device ID hash",
+			expectedSourceTID:    "testTID",
+		},
+		{
+			name:                 "transmit_tid_deny",
+			req:                  newBidRequest(t),
+			privacyConfig:        getTransmitTIDActivityConfig("appnexus", false),
+			expectedReqNumber:    1,
+			expectedUserYOB:      1982,
+			expectedUserLat:      123.456,
+			expectedDeviceDIDMD5: "some device ID hash",
+			expectedSourceTID:    "",
 		},
 	}
 
@@ -4362,6 +4389,7 @@ func TestCleanOpenRTBRequestsActivitiesFetchBids(t *testing.T) {
 				assert.Equal(t, test.expectedUserYOB, bidderRequests[0].BidRequest.User.Yob)
 				assert.Equal(t, test.expectedUserLat, bidderRequests[0].BidRequest.User.Geo.Lat)
 				assert.Equal(t, test.expectedDeviceDIDMD5, bidderRequests[0].BidRequest.Device.DIDMD5)
+				assert.Equal(t, test.expectedSourceTID, bidderRequests[0].BidRequest.Source.TID)
 			}
 		})
 	}
@@ -4402,6 +4430,14 @@ func getTransmitPreciseGeoActivityConfig(componentName string, allow bool) confi
 	return config.AccountPrivacy{
 		AllowActivities: &config.AllowActivities{
 			TransmitPreciseGeo: buildDefaultActivityConfig(componentName, allow),
+		},
+	}
+}
+
+func getTransmitTIDActivityConfig(componentName string, allow bool) *config.AccountPrivacy {
+	return &config.AccountPrivacy{
+		AllowActivities: config.AllowActivities{
+			TransmitTids: buildDefaultActivityConfig(componentName, allow),
 		},
 	}
 }

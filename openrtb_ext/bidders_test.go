@@ -125,3 +125,9 @@ func TestIsBidderNameReserved(t *testing.T) {
 		assert.Equal(t, test.expected, result, test.bidder)
 	}
 }
+
+func TestCoreBidderNames(t *testing.T) {
+	bidderA := "BidderA"
+	SetAliasBidderName(BidderName(bidderA))
+	assert.Contains(t, CoreBidderNames(), BidderName(bidderA))
+}
