@@ -2,14 +2,14 @@ package privacy
 
 import (
 	"errors"
+	"testing"
+
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestNewActivityControl(t *testing.T) {
-
 	testCases := []struct {
 		name            string
 		privacyConf     *config.AccountPrivacy
@@ -56,7 +56,7 @@ func TestNewActivityControl(t *testing.T) {
 				},
 			},
 			activityControl: ActivityControl{plans: nil},
-			err:             errors.New("unable to parse condition: bidder.bidderA.bidderB"),
+			err:             errors.New("unable to parse component: bidder.bidderA.bidderB"),
 		},
 		{
 			name: "privacy_config_is_specified_and_FetchBids_is_incorrect",
@@ -66,7 +66,7 @@ func TestNewActivityControl(t *testing.T) {
 				},
 			},
 			activityControl: ActivityControl{plans: nil},
-			err:             errors.New("unable to parse condition: bidder.bidderA.bidderB"),
+			err:             errors.New("unable to parse component: bidder.bidderA.bidderB"),
 		},
 		{
 			name: "privacy_config_is_specified_and_EnrichUserFPD_is_incorrect",
@@ -76,7 +76,7 @@ func TestNewActivityControl(t *testing.T) {
 				},
 			},
 			activityControl: ActivityControl{plans: nil},
-			err:             errors.New("unable to parse condition: bidder.bidderA.bidderB"),
+			err:             errors.New("unable to parse component: bidder.bidderA.bidderB"),
 		},
 		{
 			name: "privacy_config_is_specified_and_ReportAnalytics_is_incorrect",
@@ -86,7 +86,7 @@ func TestNewActivityControl(t *testing.T) {
 				},
 			},
 			activityControl: ActivityControl{plans: nil},
-			err:             errors.New("unable to parse condition: bidder.bidderA.bidderB"),
+			err:             errors.New("unable to parse component: bidder.bidderA.bidderB"),
 		},
 		{
 			name: "privacy_config_is_specified_and_TransmitUserFPD_is_incorrect",
@@ -96,7 +96,7 @@ func TestNewActivityControl(t *testing.T) {
 				},
 			},
 			activityControl: ActivityControl{plans: nil},
-			err:             errors.New("unable to parse condition: bidder.bidderA.bidderB"),
+			err:             errors.New("unable to parse component: bidder.bidderA.bidderB"),
 		},
 		{
 			name: "privacy_config_is_specified_and_TransmitPreciseGeo_is_incorrect",
@@ -106,7 +106,7 @@ func TestNewActivityControl(t *testing.T) {
 				},
 			},
 			activityControl: ActivityControl{plans: nil},
-			err:             errors.New("unable to parse condition: bidder.bidderA.bidderB"),
+			err:             errors.New("unable to parse component: bidder.bidderA.bidderB"),
 		},
 		{
 			name: "privacy_config_is_specified_and_TransmitUniqueRequestIds_is_incorrect",
@@ -116,7 +116,7 @@ func TestNewActivityControl(t *testing.T) {
 				},
 			},
 			activityControl: ActivityControl{plans: nil},
-			err:             errors.New("unable to parse condition: bidder.bidderA.bidderB"),
+			err:             errors.New("unable to parse component: bidder.bidderA.bidderB"),
 		},
 		{
 			name: "privacy_config_is_specified_and_TransmitTids_is_incorrect",
@@ -126,7 +126,7 @@ func TestNewActivityControl(t *testing.T) {
 				},
 			},
 			activityControl: ActivityControl{plans: nil},
-			err:             errors.New("unable to parse condition: bidder.bidderA.bidderB"),
+			err:             errors.New("unable to parse component: bidder.bidderA.bidderB"),
 		},
 	}
 
@@ -144,26 +144,25 @@ func TestNewActivityControl(t *testing.T) {
 }
 
 func TestActivityDefaultToDefaultResult(t *testing.T) {
-
 	testCases := []struct {
 		name            string
 		activityDefault *bool
-		expectedResult  ActivityResult
+		expectedResult  bool
 	}{
 		{
-			name:            "activityDefault_is_nil",
+			name:            "nil",
 			activityDefault: nil,
-			expectedResult:  ActivityAllow,
+			expectedResult:  true,
 		},
 		{
-			name:            "activityDefault_is_true",
+			name:            "true",
 			activityDefault: ptrutil.ToPtr(true),
-			expectedResult:  ActivityAllow,
+			expectedResult:  true,
 		},
 		{
-			name:            "activityDefault_is_false",
+			name:            "false",
 			activityDefault: ptrutil.ToPtr(false),
-			expectedResult:  ActivityDeny,
+			expectedResult:  false,
 		},
 	}
 
@@ -181,39 +180,39 @@ func TestAllowActivityControl(t *testing.T) {
 		name            string
 		activityControl ActivityControl
 		activity        Activity
-		target          ScopedName
-		activityResult  ActivityResult
+		target          Component
+		activityResult  bool
 	}{
 		{
 			name:            "plans_is_nil",
 			activityControl: ActivityControl{plans: nil},
 			activity:        ActivityFetchBids,
-			target:          ScopedName{Scope: "bidder", Name: "bidderA"},
-			activityResult:  ActivityAbstain,
+			target:          Component{Type: "bidder", Name: "bidderA"},
+			activityResult:  true,
 		},
 		{
 			name: "activity_not_defined",
 			activityControl: ActivityControl{plans: map[Activity]ActivityPlan{
 				ActivitySyncUser: getDefaultActivityPlan()}},
 			activity:       ActivityFetchBids,
-			target:         ScopedName{Scope: "bidder", Name: "bidderA"},
-			activityResult: ActivityAbstain,
+			target:         Component{Type: "bidder", Name: "bidderA"},
+			activityResult: true,
 		},
 		{
 			name: "activity_defined_but_not_found_default_returned",
 			activityControl: ActivityControl{plans: map[Activity]ActivityPlan{
 				ActivityFetchBids: getDefaultActivityPlan()}},
 			activity:       ActivityFetchBids,
-			target:         ScopedName{Scope: "bidder", Name: "bidderB"},
-			activityResult: ActivityAllow,
+			target:         Component{Type: "bidder", Name: "bidderB"},
+			activityResult: true,
 		},
 		{
 			name: "activity_defined_and_allowed",
 			activityControl: ActivityControl{plans: map[Activity]ActivityPlan{
 				ActivityFetchBids: getDefaultActivityPlan()}},
 			activity:       ActivityFetchBids,
-			target:         ScopedName{Scope: "bidder", Name: "bidderA"},
-			activityResult: ActivityAllow,
+			target:         Component{Type: "bidder", Name: "bidderA"},
+			activityResult: true,
 		},
 	}
 
@@ -222,160 +221,6 @@ func TestAllowActivityControl(t *testing.T) {
 			actualResult := test.activityControl.Allow(test.activity, test.target)
 			assert.Equal(t, test.activityResult, actualResult)
 
-		})
-	}
-}
-
-func TestAllowComponentEnforcementRule(t *testing.T) {
-
-	testCases := []struct {
-		name           string
-		componentRule  ComponentEnforcementRule
-		target         ScopedName
-		activityResult ActivityResult
-	}{
-		{
-			name: "activity_is_allowed",
-			componentRule: ComponentEnforcementRule{
-				allowed: true,
-				componentName: []ScopedName{
-					{Scope: "bidder", Name: "bidderA"},
-				},
-				componentType: []string{"bidder"},
-			},
-			target:         ScopedName{Scope: "bidder", Name: "bidderA"},
-			activityResult: ActivityAllow,
-		},
-		{
-			name: "activity_is_not_allowed",
-			componentRule: ComponentEnforcementRule{
-				allowed: false,
-				componentName: []ScopedName{
-					{Scope: "bidder", Name: "bidderA"},
-				},
-				componentType: []string{"bidder"},
-			},
-			target:         ScopedName{Scope: "bidder", Name: "bidderA"},
-			activityResult: ActivityDeny,
-		},
-		{
-			name: "abstain_both_clauses_do_not_match",
-			componentRule: ComponentEnforcementRule{
-				allowed: true,
-				componentName: []ScopedName{
-					{Scope: "bidder", Name: "bidderA"},
-				},
-				componentType: []string{"bidder"},
-			},
-			target:         ScopedName{Scope: "bidder", Name: "bidderB"},
-			activityResult: ActivityAbstain,
-		},
-		{
-			name: "activity_is_not_allowed_componentName_only",
-			componentRule: ComponentEnforcementRule{
-				allowed: true,
-				componentName: []ScopedName{
-					{Scope: "bidder", Name: "bidderA"},
-				},
-			},
-			target:         ScopedName{Scope: "bidder", Name: "bidderA"},
-			activityResult: ActivityAllow,
-		},
-		{
-			name: "activity_is_allowed_componentType_only",
-			componentRule: ComponentEnforcementRule{
-				allowed:       true,
-				componentType: []string{"bidder"},
-			},
-			target:         ScopedName{Scope: "bidder", Name: "bidderB"},
-			activityResult: ActivityAllow,
-		},
-		{
-			name: "abstain_activity_no_componentType_and_no_componentName",
-			componentRule: ComponentEnforcementRule{
-				allowed: true,
-			},
-			target:         ScopedName{Scope: "bidder", Name: "bidderB"},
-			activityResult: ActivityAbstain,
-		},
-	}
-
-	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
-			actualResult := test.componentRule.Allow(test.target)
-			assert.Equal(t, test.activityResult, actualResult)
-
-		})
-	}
-}
-
-func TestNewScopedName(t *testing.T) {
-
-	testCases := []struct {
-		name              string
-		condition         string
-		expectedScopeName ScopedName
-		err               error
-	}{
-		{
-			name:              "condition_is_empty",
-			condition:         "",
-			expectedScopeName: ScopedName{},
-			err:               errors.New("unable to parse empty condition"),
-		},
-		{
-			name:              "condition_is_incorrect",
-			condition:         "bidder.bidderA.bidderB",
-			expectedScopeName: ScopedName{},
-			err:               errors.New("unable to parse condition: bidder.bidderA.bidderB"),
-		},
-		{
-			name:              "condition_is_scoped_to_bidder",
-			condition:         "bidder.bidderA",
-			expectedScopeName: ScopedName{Scope: "bidder", Name: "bidderA"},
-			err:               nil,
-		},
-		{
-			name:              "condition_is_scoped_to_analytics",
-			condition:         "analytics.bidderA",
-			expectedScopeName: ScopedName{Scope: "analytics", Name: "bidderA"},
-			err:               nil,
-		},
-		{
-			name:              "condition_is_scoped_to_userid",
-			condition:         "userid.bidderA",
-			expectedScopeName: ScopedName{Scope: "userid", Name: "bidderA"},
-			err:               nil,
-		},
-		{
-			name:              "condition_is_bidder_name",
-			condition:         "bidderA",
-			expectedScopeName: ScopedName{Scope: "bidder", Name: "bidderA"},
-			err:               nil,
-		},
-		{
-			name:              "condition_is_module_tag_rtd",
-			condition:         "rtd.test",
-			expectedScopeName: ScopedName{Scope: "rtd", Name: "test"},
-			err:               nil,
-		},
-		{
-			name:              "condition_scope_defaults_to_genera",
-			condition:         "test.test",
-			expectedScopeName: ScopedName{Scope: "general", Name: "test"},
-			err:               nil,
-		},
-	}
-
-	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
-			actualSN, actualErr := NewScopedName(test.condition)
-			if test.err == nil {
-				assert.Equal(t, test.expectedScopeName, actualSN)
-				assert.NoError(t, actualErr)
-			} else {
-				assert.EqualError(t, actualErr, test.err.Error())
-			}
 		})
 	}
 }
@@ -398,12 +243,12 @@ func getDefaultActivityConfig() config.Activity {
 
 func getDefaultActivityPlan() ActivityPlan {
 	return ActivityPlan{
-		defaultResult: ActivityAllow,
-		rules: []ActivityRule{
+		defaultResult: true,
+		rules: []Rule{
 			ComponentEnforcementRule{
-				allowed: true,
-				componentName: []ScopedName{
-					{Scope: "bidder", Name: "bidderA"},
+				result: ActivityAllow,
+				componentName: []Component{
+					{Type: "bidder", Name: "bidderA"},
 				},
 				componentType: []string{"bidder"},
 			},

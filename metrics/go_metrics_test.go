@@ -84,6 +84,7 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "request_over_head_time.make-auction-response", m.OverheadTimer[MakeAuctionResponse])
 	ensureContains(t, registry, "request_over_head_time.make-bidder-requests", m.OverheadTimer[MakeBidderRequests])
 	ensureContains(t, registry, "bidder_server_response_time_seconds", m.BidderServerResponseTimer)
+	ensureContains(t, registry, "tmax_timeout", m.TMaxTimeoutCounter)
 
 	for module, stages := range moduleStageNames {
 		for _, stage := range stages {
