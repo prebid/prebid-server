@@ -1202,6 +1202,35 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 				errors.New("mediaTypes for alias: bidderB should be a subset of MediaTypes for parent bidder: bidderA"),
 			},
 		},
+		{
+			"Invalid parent bidder for alias",
+			BidderInfos{
+				"bidderB": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeBanner,
+								openrtb_ext.BidTypeNative,
+							},
+						},
+						Site: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeBanner,
+								openrtb_ext.BidTypeNative,
+							},
+						},
+					},
+					AliasOf: "bidderC",
+				},
+			},
+			[]error{
+				errors.New("parent bidder: bidderC not found for an alias: bidderB"),
+			},
+		},
 	}
 
 	for _, test := range testCases {
