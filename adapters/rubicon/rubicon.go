@@ -176,12 +176,6 @@ type rubiconUserExtEidExt struct {
 	Segments []string `json:"segments,omitempty"`
 }
 
-// defines the contract for bidrequest.user.ext.eids[i].uids[j].ext
-type rubiconUserExtEidUidExt struct {
-	RtiPartner string `json:"rtiPartner,omitempty"`
-	Stype      string `json:"stype"`
-}
-
 type mappedRubiconUidsParam struct {
 	segments    []string
 	liverampIdl string
@@ -940,15 +934,7 @@ func extractUserBuyerUID(eids []openrtb2.EID) string {
 		}
 
 		for _, uid := range eid.UIDs {
-			var uidExt rubiconUserExtEidUidExt
-			err := json.Unmarshal(uid.Ext, &uidExt)
-			if err != nil {
-				continue
-			}
-
-			if uidExt.Stype == "ppuid" || uidExt.Stype == "other" {
-				return uid.ID
-			}
+			return uid.ID
 		}
 	}
 
