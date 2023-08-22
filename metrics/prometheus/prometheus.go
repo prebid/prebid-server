@@ -18,6 +18,7 @@ type Metrics struct {
 	Gatherer   *prometheus.Registry
 
 	// General Metrics
+	tmaxTimeout                  prometheus.Counter
 	connectionsClosed            prometheus.Counter
 	connectionsError             *prometheus.CounterVec
 	connectionsOpened            prometheus.Counter
@@ -178,7 +179,7 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 	cacheWriteTimeBuckets := []float64{0.001, 0.002, 0.005, 0.01, 0.025, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 1}
 	priceBuckets := []float64{250, 500, 750, 1000, 1500, 2000, 2500, 3000, 3500, 4000}
 	queuedRequestTimeBuckets := []float64{0, 1, 5, 30, 60, 120, 180, 240, 300}
-	overheadTimeBuckets := []float64{0.00005, 0.0001, 0.0005, 0.001, 0.002, 0.005, 0.01, 0.05}
+	overheadTimeBuckets := []float64{0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1}
 
 	metrics := Metrics{}
 	reg := prometheus.NewRegistry()
@@ -196,6 +197,10 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 	metrics.connectionsOpened = newCounterWithoutLabels(cfg, reg,
 		"connections_opened",
 		"Count of successful connections opened to Prebid Server.")
+
+	metrics.tmaxTimeout = newCounterWithoutLabels(cfg, reg,
+		"tmax_timeout",
+		"Count of requests rejected due to Tmax timeout exceed.")
 
 	metrics.cookieSync = newCounter(cfg, reg,
 		"cookie_sync_requests",
@@ -683,6 +688,10 @@ func (m *Metrics) RecordConnectionAccept(success bool) {
 			connectionErrorLabel: connectionAcceptError,
 		}).Inc()
 	}
+}
+
+func (m *Metrics) RecordTMaxTimeout() {
+	m.tmaxTimeout.Inc()
 }
 
 func (m *Metrics) RecordConnectionClose(success bool) {

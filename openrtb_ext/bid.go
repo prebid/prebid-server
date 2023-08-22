@@ -50,6 +50,7 @@ type ExtBidPrebidCacheBids struct {
 
 // ExtBidPrebidMeta defines the contract for bidresponse.seatbid.bid[i].ext.prebid.meta
 type ExtBidPrebidMeta struct {
+	AdapterCode          string          `json:"adaptercode,omitempty"`
 	AdvertiserDomains    []string        `json:"advertiserDomains,omitempty"`
 	AdvertiserID         int             `json:"advertiserId,omitempty"`
 	AdvertiserName       string          `json:"advertiserName,omitempty"`
@@ -57,14 +58,15 @@ type ExtBidPrebidMeta struct {
 	AgencyName           string          `json:"agencyName,omitempty"`
 	BrandID              int             `json:"brandId,omitempty"`
 	BrandName            string          `json:"brandName,omitempty"`
-	DemandSource         string          `json:"demandSource,omitempty"`
 	DChain               json.RawMessage `json:"dchain,omitempty"`
+	DemandSource         string          `json:"demandSource,omitempty"`
 	MediaType            string          `json:"mediaType,omitempty"`
 	NetworkID            int             `json:"networkId,omitempty"`
 	NetworkName          string          `json:"networkName,omitempty"`
 	PrimaryCategoryID    string          `json:"primaryCatId,omitempty"`
+	RendererName         string          `json:"rendererName,omitempty"`
+	RendererVersion      string          `json:"rendererVersion,omitempty"`
 	SecondaryCategoryIDs []string        `json:"secondaryCatIds,omitempty"`
-	AdapterCode          string          `json:"adaptercode,omitempty"`
 }
 
 // ExtBidPrebidVideo defines the contract for bidresponse.seatbid.bid[i].ext.prebid.video

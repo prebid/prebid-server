@@ -156,5 +156,33 @@
       "comparison": "literal"
     }
   ],
-  "expectedBidResponses": []
+  "expectedBidResponses": [
+    {
+      "currency":"USD",
+      "bids":[
+        {
+          "bid": {
+            "id": "id",
+            "impid": "1",
+            "price": 0.1,
+            "nurl": "http://test.com/nurl",
+            "burl": "http://test.com/burl",
+            "adm": "<span>Test1</span>",
+            "adomain": ["test.com"],
+            "cat": ["IAB1"],
+            "cid": "cid",
+            "crid": "crid",
+            "w": 300,
+            "h": 250,
+            "ext": {
+              "prebid": {
+                "type": "banner"
+              }
+            }
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
 }

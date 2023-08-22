@@ -112,15 +112,13 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 	lmtEnforcer := extractLMT(req.BidRequest, rs.privacyConfig)
 
 	// request level privacy policies
-	privacyEnforcement := privacy.Enforcement{
-		COPPA: req.BidRequest.Regs != nil && req.BidRequest.Regs.COPPA == 1,
-		LMT:   lmtEnforcer.ShouldEnforce(unknownBidder),
-	}
+	coppa := req.BidRequest.Regs != nil && req.BidRequest.Regs.COPPA == 1
+	lmt := lmtEnforcer.ShouldEnforce(unknownBidder)
 
 	privacyLabels.CCPAProvided = ccpaEnforcer.CanEnforce()
 	privacyLabels.CCPAEnforced = ccpaEnforcer.ShouldEnforce(unknownBidder)
-	privacyLabels.COPPAEnforced = privacyEnforcement.COPPA
-	privacyLabels.LMTEnforced = lmtEnforcer.ShouldEnforce(unknownBidder)
+	privacyLabels.COPPAEnforced = coppa
+	privacyLabels.LMTEnforced = lmt
 
 	var gdprEnforced bool
 	var gdprPerms gdpr.Permissions = &gdpr.AlwaysAllow{}
@@ -148,37 +146,77 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 
 	// bidder level privacy policies
 	for _, bidderRequest := range allBidderRequests {
-		bidRequestAllowed := true
+		privacyEnforcement := privacy.Enforcement{
+			COPPA: coppa,
+			LMT:   lmt,
+		}
 
-		// CCPA
-		privacyEnforcement.CCPA = ccpaEnforcer.ShouldEnforce(bidderRequest.BidderName.String())
+		// fetchBids activity
+		scopedName := privacy.Component{Type: privacy.ComponentTypeBidder, Name: bidderRequest.BidderName.String()}
+		fetchBidsActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityFetchBids, scopedName)
+		if !fetchBidsActivityAllowed {
+			// skip the call to a bidder if fetchBids activity is not allowed
+			// do not add this bidder to allowedBidderRequests
+			continue
+		}
 
-		// GDPR
+		var auctionPermissions gdpr.AuctionPermissions
+		var gdprErr error
+
 		if gdprEnforced {
-			auctionPermissions, err := gdprPerms.AuctionActivitiesAllowed(ctx, bidderRequest.BidderCoreName, bidderRequest.BidderName)
-			bidRequestAllowed = auctionPermissions.AllowBidRequest
-
-			if err == nil {
-				privacyEnforcement.GDPRGeo = !auctionPermissions.PassGeo
-				privacyEnforcement.GDPRID = !auctionPermissions.PassID
-			} else {
-				privacyEnforcement.GDPRGeo = true
-				privacyEnforcement.GDPRID = true
-			}
-
-			if !bidRequestAllowed {
+			auctionPermissions, gdprErr = gdprPerms.AuctionActivitiesAllowed(ctx, bidderRequest.BidderCoreName, bidderRequest.BidderName)
+			if !auctionPermissions.AllowBidRequest {
+				// auction request is not permitted by GDPR
+				// do not add this bidder to allowedBidderRequests
 				rs.me.RecordAdapterGDPRRequestBlocked(bidderRequest.BidderCoreName)
+				continue
 			}
+		}
+
+		passIDActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitUserFPD, scopedName)
+		if !passIDActivityAllowed {
+			privacyEnforcement.UFPD = true
+		} else {
+			// run existing policies (GDPR, CCPA, COPPA, LMT)
+			// potentially block passing IDs based on GDPR
+			if gdprEnforced {
+				if gdprErr == nil {
+					privacyEnforcement.GDPRID = !auctionPermissions.PassID
+				} else {
+					privacyEnforcement.GDPRID = true
+				}
+			}
+			// potentially block passing IDs based on CCPA
+			privacyEnforcement.CCPA = ccpaEnforcer.ShouldEnforce(bidderRequest.BidderName.String())
+		}
+
+		passGeoActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitPreciseGeo, scopedName)
+		if !passGeoActivityAllowed {
+			privacyEnforcement.PreciseGeo = true
+		} else {
+			// run existing policies (GDPR, CCPA, COPPA, LMT)
+			// potentially block passing geo based on GDPR
+			if gdprEnforced {
+				if gdprErr == nil {
+					privacyEnforcement.GDPRGeo = !auctionPermissions.PassGeo
+				} else {
+					privacyEnforcement.GDPRGeo = true
+				}
+			}
+			// potentially block passing geo based on CCPA
+			privacyEnforcement.CCPA = ccpaEnforcer.ShouldEnforce(bidderRequest.BidderName.String())
+
 		}
 
 		if auctionReq.FirstPartyData != nil && auctionReq.FirstPartyData[bidderRequest.BidderName] != nil {
 			applyFPD(auctionReq.FirstPartyData[bidderRequest.BidderName], bidderRequest.BidRequest)
 		}
 
-		if bidRequestAllowed {
-			privacyEnforcement.Apply(bidderRequest.BidRequest)
-			allowedBidderRequests = append(allowedBidderRequests, bidderRequest)
-		}
+		privacyEnforcement.TID = !auctionReq.Activities.Allow(privacy.ActivityTransmitTids, scopedName)
+
+		privacyEnforcement.Apply(bidderRequest.BidRequest)
+		allowedBidderRequests = append(allowedBidderRequests, bidderRequest)
+
 		// GPP downgrade: always downgrade unless we can confirm GPP is supported
 		if shouldSetLegacyPrivacy(rs.bidderInfo, string(bidderRequest.BidderCoreName)) {
 			setLegacyGDPRFromGPP(bidderRequest.BidRequest, gpp)
@@ -354,12 +392,13 @@ func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, request
 	}
 
 	if requestExtParsed != nil {
-		prebid.CurrencyConversions = requestExtParsed.Prebid.CurrencyConversions
-		prebid.Integration = requestExtParsed.Prebid.Integration
 		prebid.Channel = requestExtParsed.Prebid.Channel
+		prebid.CurrencyConversions = requestExtParsed.Prebid.CurrencyConversions
 		prebid.Debug = requestExtParsed.Prebid.Debug
-		prebid.Server = requestExtParsed.Prebid.Server
+		prebid.Integration = requestExtParsed.Prebid.Integration
 		prebid.MultiBid = buildRequestExtMultiBid(bidder, requestExtParsed.Prebid.MultiBid, alternateBidderCodes)
+		prebid.Sdk = requestExtParsed.Prebid.Sdk
+		prebid.Server = requestExtParsed.Prebid.Server
 	}
 
 	// Marshal New Prebid Object

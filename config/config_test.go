@@ -885,7 +885,6 @@ func TestUserSyncFromEnv(t *testing.T) {
 	assert.Nil(t, cfg.BidderInfos["bidder2"].Syncer.Redirect)
 	assert.Nil(t, cfg.BidderInfos["bidder2"].Syncer.SupportCORS)
 
-	assert.Nil(t, cfg.BidderInfos["brightroll"].Syncer)
 }
 
 func TestBidderInfoFromEnv(t *testing.T) {

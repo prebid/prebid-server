@@ -17,6 +17,7 @@ import (
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -39,8 +40,8 @@ func (p *permissionsMock) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 	return true, nil
 }
 
-func (p *permissionsMock) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (permissions gdpr.AuctionPermissions, err error) {
-	permissions = gdpr.AuctionPermissions{
+func (p *permissionsMock) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (gdpr.AuctionPermissions, error) {
+	permissions := gdpr.AuctionPermissions{
 		PassGeo: p.passGeo,
 		PassID:  p.passID,
 	}
@@ -73,8 +74,6 @@ func assertReq(t *testing.T, bidderRequests []BidderRequest,
 	assert.NotEqual(t, bidderRequests, 0, "cleanOpenRTBRequest should split request into individual bidder requests")
 
 	// assert for PI data
-	// Both appnexus and brightroll should be allowed since brightroll
-	// is used as an alias for appnexus in the test request
 	for _, req := range bidderRequests {
 		if !applyCOPPA && consentedVendors[req.BidderName.String()] {
 			assert.NotEqual(t, req.BidRequest.User.BuyerUID, "", "cleanOpenRTBRequest shouldn't clean PI data as per COPPA or for a consented vendor as per GDPR or per CCPA")
@@ -458,7 +457,7 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 			bidReqAssertions: assertReq,
 			hasError:         false,
 			applyCOPPA:       false,
-			consentedVendors: map[string]bool{"appnexus": true, "brightroll": true},
+			consentedVendors: map[string]bool{"appnexus": true},
 		},
 	}
 
@@ -505,14 +504,7 @@ func TestCleanOpenRTBRequestsWithFPD(t *testing.T) {
 		App:  &openrtb2.App{Name: "fpdApnApp"},
 		User: &openrtb2.User{Keywords: "fpdApnUser"},
 	}
-	fpd[openrtb_ext.BidderName("appnexus")] = &apnFpd
-
-	brightrollFpd := firstpartydata.ResolvedFirstPartyData{
-		Site: &openrtb2.Site{Name: "fpdBrightrollSite"},
-		App:  &openrtb2.App{Name: "fpdBrightrollApp"},
-		User: &openrtb2.User{Keywords: "fpdBrightrollUser"},
-	}
-	fpd[openrtb_ext.BidderName("brightroll")] = &brightrollFpd
+	fpd[openrtb_ext.BidderName("rubicon")] = &apnFpd
 
 	emptyTCF2Config := gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{})
 
@@ -2295,6 +2287,7 @@ func TestCleanOpenRTBRequestsWithOpenRTBDowngrade(t *testing.T) {
 	bidReq.User.ID = ""
 	bidReq.User.BuyerUID = ""
 	bidReq.User.Yob = 0
+	bidReq.User.Geo = &openrtb2.Geo{Lat: 123.46}
 
 	downgradedRegs := *bidReq.Regs
 	downgradedUser := *bidReq.User
@@ -2391,14 +2384,14 @@ func TestBuildRequestExtForBidder(t *testing.T) {
 		{
 			description:  "Prebid - Allowed Fields Only",
 			bidderParams: nil,
-			requestExt:   json.RawMessage(`{"prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true}, "server": {"externalurl": "url", "gvlid": 1, "datacenter": "2"}}}`),
-			expectedJson: json.RawMessage(`{"prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true}, "server": {"externalurl": "url", "gvlid": 1, "datacenter": "2"}}}`),
+			requestExt:   json.RawMessage(`{"prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true}, "server": {"externalurl": "url", "gvlid": 1, "datacenter": "2"}, "sdk": {"renderers": [{"name": "r1"}]}}}`),
+			expectedJson: json.RawMessage(`{"prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true}, "server": {"externalurl": "url", "gvlid": 1, "datacenter": "2"}, "sdk": {"renderers": [{"name": "r1"}]}}}`),
 		},
 		{
 			description:  "Prebid - Allowed Fields + Bidder Params",
 			bidderParams: map[string]json.RawMessage{bidder: bidderParams},
-			requestExt:   json.RawMessage(`{"prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true}, "server": {"externalurl": "url", "gvlid": 1, "datacenter": "2"}}}`),
-			expectedJson: json.RawMessage(`{"prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true}, "server": {"externalurl": "url", "gvlid": 1, "datacenter": "2"}, "bidderparams":"bar"}}`),
+			requestExt:   json.RawMessage(`{"prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true}, "server": {"externalurl": "url", "gvlid": 1, "datacenter": "2"}, "sdk": {"renderers": [{"name": "r1"}]}}}`),
+			expectedJson: json.RawMessage(`{"prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true}, "server": {"externalurl": "url", "gvlid": 1, "datacenter": "2"}, "sdk": {"renderers": [{"name": "r1"}]}, "bidderparams":"bar"}}`),
 		},
 		{
 			description:  "Other",
@@ -2409,8 +2402,8 @@ func TestBuildRequestExtForBidder(t *testing.T) {
 		{
 			description:  "Prebid + Other + Bider Params",
 			bidderParams: map[string]json.RawMessage{bidder: bidderParams},
-			requestExt:   json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true}, "server": {"externalurl": "url", "gvlid": 1, "datacenter": "2"}}}`),
-			expectedJson: json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true}, "server": {"externalurl": "url", "gvlid": 1, "datacenter": "2"}, "bidderparams":"bar"}}`),
+			requestExt:   json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true}, "server": {"externalurl": "url", "gvlid": 1, "datacenter": "2"}, "sdk": {"renderers": [{"name": "r1"}]}}}`),
+			expectedJson: json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true}, "server": {"externalurl": "url", "gvlid": 1, "datacenter": "2"}, "sdk": {"renderers": [{"name": "r1"}]}, "bidderparams":"bar"}}`),
 		},
 		{
 			description:          "Prebid + AlternateBidderCodes in pbs config but current bidder not in AlternateBidderCodes config",
@@ -2558,7 +2551,7 @@ func newAdapterAliasBidRequest(t *testing.T) *openrtb2.BidRequest {
 			Language: "EN",
 		},
 		Source: &openrtb2.Source{
-			TID: "61018dc9-fa61-4c41-b7dc-f90b9ae80e87",
+			TID: "testTID",
 		},
 		User: &openrtb2.User{
 			ID:       "our-id",
@@ -2579,9 +2572,9 @@ func newAdapterAliasBidRequest(t *testing.T) *openrtb2.BidRequest {
 					H: 600,
 				}},
 			},
-			Ext: json.RawMessage(`{"appnexus": {"placementId": 1},"brightroll": {"placementId": 105}}`),
+			Ext: json.RawMessage(`{"appnexus": {"placementId": 1},"somealias": {"placementId": 105}}`),
 		}},
-		Ext: json.RawMessage(`{"prebid":{"aliases":{"brightroll":"appnexus"}}}`),
+		Ext: json.RawMessage(`{"prebid":{"aliases":{"somealias":"appnexus"}}}`),
 	}
 }
 
@@ -2602,13 +2595,14 @@ func newBidRequest(t *testing.T) *openrtb2.BidRequest {
 			Language: "EN",
 		},
 		Source: &openrtb2.Source{
-			TID: "61018dc9-fa61-4c41-b7dc-f90b9ae80e87",
+			TID: "testTID",
 		},
 		User: &openrtb2.User{
 			ID:       "our-id",
 			BuyerUID: "their-id",
 			Yob:      1982,
 			Ext:      json.RawMessage(`{}`),
+			Geo:      &openrtb2.Geo{Lat: 123.456},
 		},
 		Imp: []openrtb2.Imp{{
 			ID: "some-imp-id",
@@ -2621,7 +2615,7 @@ func newBidRequest(t *testing.T) *openrtb2.BidRequest {
 					H: 600,
 				}},
 			},
-			Ext: json.RawMessage(`{"prebid":{"bidder":{"appnexus": {"placementId": 1}}}}`),
+			Ext: json.RawMessage(`{"prebid":{"tid":"1234567", "bidder":{"appnexus": {"placementId": 1}}}}`),
 		}},
 	}
 }
@@ -2643,7 +2637,7 @@ func newBidRequestWithBidderParams(t *testing.T) *openrtb2.BidRequest {
 			Language: "EN",
 		},
 		Source: &openrtb2.Source{
-			TID: "61018dc9-fa61-4c41-b7dc-f90b9ae80e87",
+			TID: "testTID",
 		},
 		User: &openrtb2.User{
 			ID:       "our-id",
@@ -3071,7 +3065,7 @@ func TestCleanOpenRTBRequestsSChainMultipleBidders(t *testing.T) {
 	req := &openrtb2.BidRequest{
 		Site: &openrtb2.Site{},
 		Source: &openrtb2.Source{
-			TID: "61018dc9-fa61-4c41-b7dc-f90b9ae80e87",
+			TID: "testTID",
 		},
 		Imp: []openrtb2.Imp{{
 			Ext: json.RawMessage(`{"prebid":{"bidder":{"appnexus": {"placementId": 1}, "axonix": { "supplyId": "123"}}}}`),
@@ -3195,17 +3189,17 @@ func Test_parseAliasesGVLIDs(t *testing.T) {
 			"AliasGVLID Parsed Correctly",
 			args{
 				orig: &openrtb2.BidRequest{
-					Ext: json.RawMessage(`{"prebid":{"aliases":{"brightroll":"appnexus"}, "aliasgvlids":{"brightroll":1}}}`),
+					Ext: json.RawMessage(`{"prebid":{"aliases":{"somealiascode":"appnexus"}, "aliasgvlids":{"somealiascode":1}}}`),
 				},
 			},
-			map[string]uint16{"brightroll": 1},
+			map[string]uint16{"somealiascode": 1},
 			false,
 		},
 		{
 			"AliasGVLID parsing error",
 			args{
 				orig: &openrtb2.BidRequest{
-					Ext: json.RawMessage(`{"prebid":{"aliases":{"brightroll":"appnexus"}, "aliasgvlids": {"brightroll":"abc"}`),
+					Ext: json.RawMessage(`{"prebid":{"aliases":{"somealiascode":"appnexus"}, "aliasgvlids": {"somealiascode":"abc"}`),
 				},
 			},
 			nil,
@@ -3215,7 +3209,7 @@ func Test_parseAliasesGVLIDs(t *testing.T) {
 			"Invalid AliasGVLID",
 			args{
 				orig: &openrtb2.BidRequest{
-					Ext: json.RawMessage(`{"prebid":{"aliases":{"brightroll":"appnexus"}, "aliasgvlids":"abc"}`),
+					Ext: json.RawMessage(`{"prebid":{"aliases":{"somealiascode":"appnexus"}, "aliasgvlids":"abc"}`),
 				},
 			},
 			nil,
@@ -3225,7 +3219,7 @@ func Test_parseAliasesGVLIDs(t *testing.T) {
 			"Missing AliasGVLID",
 			args{
 				orig: &openrtb2.BidRequest{
-					Ext: json.RawMessage(`{"prebid":{"aliases":{"brightroll":"appnexus"}}`),
+					Ext: json.RawMessage(`{"prebid":{"aliases":{"somealiascode":"appnexus"}}`),
 				},
 			},
 			nil,
@@ -4271,5 +4265,179 @@ func TestGetMediaTypeForBid(t *testing.T) {
 			}
 
 		})
+	}
+}
+
+func TestCleanOpenRTBRequestsActivities(t *testing.T) {
+	testCases := []struct {
+		name                 string
+		req                  *openrtb2.BidRequest
+		privacyConfig        *config.AccountPrivacy
+		componentName        string
+		allow                bool
+		expectedReqNumber    int
+		expectedUserYOB      int64
+		expectedUserLat      float64
+		expectedDeviceDIDMD5 string
+		expectedSourceTID    string
+	}{
+		{
+			name:                 "fetch_bids_request_with_one_bidder_allowed",
+			req:                  newBidRequest(t),
+			privacyConfig:        getFetchBidsActivityConfig("appnexus", true),
+			expectedReqNumber:    1,
+			expectedUserYOB:      1982,
+			expectedUserLat:      123.456,
+			expectedDeviceDIDMD5: "some device ID hash",
+			expectedSourceTID:    "testTID",
+		},
+		{
+			name:                 "fetch_bids_request_with_one_bidder_not_allowed",
+			req:                  newBidRequest(t),
+			privacyConfig:        getFetchBidsActivityConfig("appnexus", false),
+			expectedReqNumber:    0,
+			expectedUserYOB:      1982,
+			expectedUserLat:      123.456,
+			expectedDeviceDIDMD5: "some device ID hash",
+			expectedSourceTID:    "testTID",
+		},
+		{
+			name:                 "transmit_ufpd_allowed",
+			req:                  newBidRequest(t),
+			privacyConfig:        getTransmitUFPDActivityConfig("appnexus", true),
+			expectedReqNumber:    1,
+			expectedUserYOB:      1982,
+			expectedUserLat:      123.456,
+			expectedDeviceDIDMD5: "some device ID hash",
+			expectedSourceTID:    "testTID",
+		},
+		{
+			name:                 "transmit_ufpd_deny",
+			req:                  newBidRequest(t),
+			privacyConfig:        getTransmitUFPDActivityConfig("appnexus", false),
+			expectedReqNumber:    1,
+			expectedUserYOB:      0,
+			expectedUserLat:      123.456,
+			expectedDeviceDIDMD5: "",
+			expectedSourceTID:    "testTID",
+		},
+		{
+			name:                 "transmit_precise_geo_allowed",
+			req:                  newBidRequest(t),
+			privacyConfig:        getTransmitPreciseGeoActivityConfig("appnexus", true),
+			expectedReqNumber:    1,
+			expectedUserYOB:      1982,
+			expectedUserLat:      123.456,
+			expectedDeviceDIDMD5: "some device ID hash",
+			expectedSourceTID:    "testTID",
+		},
+		{
+			name:                 "transmit_precise_geo_deny",
+			req:                  newBidRequest(t),
+			privacyConfig:        getTransmitPreciseGeoActivityConfig("appnexus", false),
+			expectedReqNumber:    1,
+			expectedUserYOB:      1982,
+			expectedUserLat:      123.46,
+			expectedDeviceDIDMD5: "some device ID hash",
+			expectedSourceTID:    "testTID",
+		},
+		{
+			name:                 "transmit_tid_allowed",
+			req:                  newBidRequest(t),
+			privacyConfig:        getTransmitTIDActivityConfig("appnexus", true),
+			expectedReqNumber:    1,
+			expectedUserYOB:      1982,
+			expectedUserLat:      123.456,
+			expectedDeviceDIDMD5: "some device ID hash",
+			expectedSourceTID:    "testTID",
+		},
+		{
+			name:                 "transmit_tid_deny",
+			req:                  newBidRequest(t),
+			privacyConfig:        getTransmitTIDActivityConfig("appnexus", false),
+			expectedReqNumber:    1,
+			expectedUserYOB:      1982,
+			expectedUserLat:      123.456,
+			expectedDeviceDIDMD5: "some device ID hash",
+			expectedSourceTID:    "",
+		},
+	}
+
+	for _, test := range testCases {
+		activities, err := privacy.NewActivityControl(test.privacyConfig)
+		assert.NoError(t, err, "")
+		auctionReq := AuctionRequest{
+			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: test.req},
+			UserSyncs:         &emptyUsersync{},
+			Activities:        activities,
+		}
+
+		bidderToSyncerKey := map[string]string{}
+		reqSplitter := &requestSplitter{
+			bidderToSyncerKey: bidderToSyncerKey,
+			me:                &metrics.MetricsEngineMock{},
+			hostSChainNode:    nil,
+			bidderInfo:        config.BidderInfos{},
+		}
+
+		t.Run(test.name, func(t *testing.T) {
+			bidderRequests, _, errs := reqSplitter.cleanOpenRTBRequests(context.Background(), auctionReq, nil, gdpr.SignalNo)
+			assert.Empty(t, errs)
+			assert.Len(t, bidderRequests, test.expectedReqNumber)
+
+			if test.expectedReqNumber == 1 {
+				assert.Equal(t, test.expectedUserYOB, bidderRequests[0].BidRequest.User.Yob)
+				assert.Equal(t, test.expectedUserLat, bidderRequests[0].BidRequest.User.Geo.Lat)
+				assert.Equal(t, test.expectedDeviceDIDMD5, bidderRequests[0].BidRequest.Device.DIDMD5)
+				assert.Equal(t, test.expectedSourceTID, bidderRequests[0].BidRequest.Source.TID)
+			}
+		})
+	}
+}
+
+func buildDefaultActivityConfig(componentName string, allow bool) config.Activity {
+	return config.Activity{
+		Default: ptrutil.ToPtr(true),
+		Rules: []config.ActivityRule{
+			{
+				Allow: allow,
+				Condition: config.ActivityCondition{
+					ComponentName: []string{componentName},
+					ComponentType: []string{"bidder"},
+				},
+			},
+		},
+	}
+}
+
+func getFetchBidsActivityConfig(componentName string, allow bool) *config.AccountPrivacy {
+	return &config.AccountPrivacy{
+		AllowActivities: config.AllowActivities{
+			FetchBids: buildDefaultActivityConfig(componentName, allow),
+		},
+	}
+}
+
+func getTransmitUFPDActivityConfig(componentName string, allow bool) *config.AccountPrivacy {
+	return &config.AccountPrivacy{
+		AllowActivities: config.AllowActivities{
+			TransmitUserFPD: buildDefaultActivityConfig(componentName, allow),
+		},
+	}
+}
+
+func getTransmitPreciseGeoActivityConfig(componentName string, allow bool) *config.AccountPrivacy {
+	return &config.AccountPrivacy{
+		AllowActivities: config.AllowActivities{
+			TransmitPreciseGeo: buildDefaultActivityConfig(componentName, allow),
+		},
+	}
+}
+
+func getTransmitTIDActivityConfig(componentName string, allow bool) *config.AccountPrivacy {
+	return &config.AccountPrivacy{
+		AllowActivities: config.AllowActivities{
+			TransmitTids: buildDefaultActivityConfig(componentName, allow),
+		},
 	}
 }

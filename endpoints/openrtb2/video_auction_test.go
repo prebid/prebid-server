@@ -65,6 +65,20 @@ func TestVideoEndpointImpressionsNumber(t *testing.T) {
 	assert.Equal(t, resp.AdPods[0].Targeting[0].HbDeal, "ABC_123", "If DealID exists in bid response, hb_deal targeting needs to be added to resp")
 }
 
+func TestVideoEndpointInvalidPrivacyConfig(t *testing.T) {
+	ex := &mockExchangeVideo{}
+	reqBody := readVideoTestFile(t, "sample-requests/video/video_valid_sample.json")
+	req := httptest.NewRequest("POST", "/openrtb2/video", strings.NewReader(reqBody))
+	recorder := httptest.NewRecorder()
+
+	deps := mockDepsInvalidPrivacy(t, ex)
+	deps.VideoAuctionEndpoint(recorder, req, nil)
+
+	respBytes := recorder.Body.Bytes()
+	expectedErrorMessage := "Critical error while running the video endpoint:  unable to parse component: bidderA.BidderB.bidderC"
+	assert.Equal(t, expectedErrorMessage, string(respBytes), "error message is incorrect")
+}
+
 func TestVideoEndpointImpressionsDuration(t *testing.T) {
 	ex := &mockExchangeVideo{}
 	reqBody := readVideoTestFile(t, "sample-requests/video/video_valid_sample_different_durations.json")
@@ -1225,6 +1239,7 @@ func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *m
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
+		nil,
 	}
 	return deps, metrics, mockModule
 }
@@ -1270,6 +1285,41 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
+		nil,
+	}
+}
+
+func mockDepsInvalidPrivacy(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
+	return &endpointDeps{
+		fakeUUIDGenerator{},
+		ex,
+		mockBidderParamValidator{},
+		&mockVideoStoredReqFetcher{},
+		&mockVideoStoredReqFetcher{},
+		&mockAccountFetcher{data: mockVideoAccountData},
+		&config.Configuration{MaxRequestSize: maxSize,
+			AccountDefaults: config.Account{
+				Privacy: &config.AccountPrivacy{
+					AllowActivities: config.AllowActivities{
+						TransmitPreciseGeo: config.Activity{Rules: []config.ActivityRule{
+							{Condition: config.ActivityCondition{ComponentName: []string{"bidderA.BidderB.bidderC"}}},
+						}},
+					},
+				},
+			},
+		},
+		&metricsConfig.NilMetricsEngine{},
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		ex.cache,
+		regexp.MustCompile(`[<>]`),
+		hardcodedResponseIPValidator{response: true},
+		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
+		nil,
 	}
 }
 
@@ -1293,6 +1343,7 @@ func mockDepsAppendBidderNames(t *testing.T, ex *mockExchangeAppendBidderNames) 
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
+		nil,
 	}
 
 	return deps
@@ -1318,6 +1369,7 @@ func mockDepsNoBids(t *testing.T, ex *mockExchangeVideoNoBids) *endpointDeps {
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
+		nil,
 	}
 
 	return edep
@@ -1354,7 +1406,7 @@ type mockExchangeVideo struct {
 	cache       *mockCacheClient
 }
 
-func (m *mockExchangeVideo) HoldAuction(ctx context.Context, r *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (m *mockExchangeVideo) HoldAuction(ctx context.Context, r *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*exchange.AuctionResponse, error) {
 	if err := r.BidRequestWrapper.RebuildRequest(); err != nil {
 		return nil, err
 	}
@@ -1364,7 +1416,7 @@ func (m *mockExchangeVideo) HoldAuction(ctx context.Context, r *exchange.Auction
 		m.cache.called = true
 	}
 	ext := []byte(`{"prebid":{"targeting":{"hb_bidder_appnexus":"appnexus","hb_pb_appnexus":"20.00","hb_pb_cat_dur_appnex":"20.00_395_30s","hb_size":"1x1", "hb_uuid_appnexus":"837ea3b7-5598-4958-8c45-8e9ef2bf7cc1", "hb_deal_appnexus": "ABC_123"},"type":"video","dealpriority":0,"dealtiersatisfied":false},"bidder":{"appnexus":{"brand_id":1,"auction_id":7840037870526938650,"bidder_id":2,"bid_ad_type":1,"creative_info":{"video":{"duration":30,"mimes":["video\/mp4"]}}}}}`)
-	return &openrtb2.BidResponse{
+	return &exchange.AuctionResponse{BidResponse: &openrtb2.BidResponse{
 		SeatBid: []openrtb2.SeatBid{{
 			Seat: "appnexus",
 			Bid: []openrtb2.Bid{
@@ -1386,7 +1438,7 @@ func (m *mockExchangeVideo) HoldAuction(ctx context.Context, r *exchange.Auction
 				{ID: "16", ImpID: "5_2", Ext: ext},
 			},
 		}},
-	}, nil
+	}}, nil
 }
 
 type mockExchangeAppendBidderNames struct {
@@ -1394,13 +1446,13 @@ type mockExchangeAppendBidderNames struct {
 	cache       *mockCacheClient
 }
 
-func (m *mockExchangeAppendBidderNames) HoldAuction(ctx context.Context, r *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (m *mockExchangeAppendBidderNames) HoldAuction(ctx context.Context, r *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*exchange.AuctionResponse, error) {
 	m.lastRequest = r.BidRequestWrapper.BidRequest
 	if debugLog != nil && debugLog.Enabled {
 		m.cache.called = true
 	}
 	ext := []byte(`{"prebid":{"targeting":{"hb_bidder_appnexus":"appnexus","hb_pb_appnexus":"20.00","hb_pb_cat_dur_appnex":"20.00_395_30s_appnexus","hb_size":"1x1", "hb_uuid_appnexus":"837ea3b7-5598-4958-8c45-8e9ef2bf7cc1"},"type":"video"},"bidder":{"appnexus":{"brand_id":1,"auction_id":7840037870526938650,"bidder_id":2,"bid_ad_type":1,"creative_info":{"video":{"duration":30,"mimes":["video\/mp4"]}}}}}`)
-	return &openrtb2.BidResponse{
+	return &exchange.AuctionResponse{BidResponse: &openrtb2.BidResponse{
 		SeatBid: []openrtb2.SeatBid{{
 			Seat: "appnexus",
 			Bid: []openrtb2.Bid{
@@ -1421,7 +1473,7 @@ func (m *mockExchangeAppendBidderNames) HoldAuction(ctx context.Context, r *exch
 				{ID: "15", ImpID: "5_1", Ext: ext},
 				{ID: "16", ImpID: "5_2", Ext: ext},
 			},
-		}},
+		}}},
 	}, nil
 }
 
@@ -1430,11 +1482,11 @@ type mockExchangeVideoNoBids struct {
 	cache       *mockCacheClient
 }
 
-func (m *mockExchangeVideoNoBids) HoldAuction(ctx context.Context, r *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (m *mockExchangeVideoNoBids) HoldAuction(ctx context.Context, r *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*exchange.AuctionResponse, error) {
 	m.lastRequest = r.BidRequestWrapper.BidRequest
-	return &openrtb2.BidResponse{
+	return &exchange.AuctionResponse{BidResponse: &openrtb2.BidResponse{
 		SeatBid: []openrtb2.SeatBid{{}},
-	}, nil
+	}}, nil
 }
 
 var mockVideoAccountData = map[string]json.RawMessage{

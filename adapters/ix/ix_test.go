@@ -19,8 +19,6 @@ const endpoint string = "http://host/endpoint"
 
 func TestJsonSamples(t *testing.T) {
 	if bidder, err := Builder(openrtb_ext.BidderIx, config.Adapter{Endpoint: endpoint}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"}); err == nil {
-		ixBidder := bidder.(*IxAdapter)
-		ixBidder.maxRequests = 2
 		adapterstest.RunJSONBidderTest(t, "ixtest", bidder)
 	} else {
 		t.Fatalf("Builder returned unexpected error %v", err)
@@ -44,7 +42,7 @@ func TestIxMakeBidsWithCategoryDuration(t *testing.T) {
 				`{
 					"prebid": {},
 					"bidder": {
-						"siteID": 123456
+						"siteID": "123456"
 					}
 				}`,
 			)},
@@ -106,7 +104,6 @@ func TestIxMakeBidsWithCategoryDuration(t *testing.T) {
 
 func TestIxMakeRequestWithGppString(t *testing.T) {
 	bidder := &IxAdapter{}
-	bidder.maxRequests = 2
 
 	testGppString := "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN"
 
@@ -124,7 +121,7 @@ func TestIxMakeRequestWithGppString(t *testing.T) {
 				`{
 					"prebid": {},
 					"bidder": {
-						"siteID": 123456
+						"siteId": "123456"
 					}
 				}`,
 			)},
@@ -256,7 +253,8 @@ func TestBuildIxDiag(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
 			version.Ver = test.pbsVersion
-			err := BuildIxDiag(test.request)
+			ixDiag := &IxDiag{}
+			err := setIxDiagIntoExtRequest(test.request, ixDiag)
 			if test.expectError {
 				assert.NotNil(t, err)
 			} else {

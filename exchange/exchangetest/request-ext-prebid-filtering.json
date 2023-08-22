@@ -60,6 +60,14 @@
                         "rubicon": {
                             "not": "permitted-for-appnexus"
                         }
+                    },
+                    "sdk": {
+                        "renderers": [
+                            {
+                                "name": "test-name",
+                                "version": "test-version"
+                            }
+                        ]
                     }
                 }
             }
@@ -108,6 +116,14 @@
                             "bidderparams": {
                                 "param1": 1,
                                 "paramA": "A"
+                            },
+                            "sdk": {
+                                "renderers": [
+                                    {
+                                        "name": "test-name",
+                                        "version": "test-version"
+                                    }
+                                ]
                             }
                         }
                     }

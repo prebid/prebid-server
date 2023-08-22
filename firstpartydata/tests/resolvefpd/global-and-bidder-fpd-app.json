@@ -45,7 +45,7 @@
   },
   "outputRequestData": {
     "app": {
-      "id": "reqAppId",
+      "id": "apnAppId",
       "page": "http://www.foobar.com/1234.html",
       "publisher": {
         "id": "1"
@@ -59,7 +59,6 @@
       },
       "ext": {
         "data": {
-          "id": "apnAppId",
           "moreFpd": {
             "fpd": 123
           },

@@ -72,6 +72,7 @@
       }
     }
   ],
+  "expectedBidResponses": [{"currency":"USD","bids":[]}],
   "expectedMakeBidsErrors": [
     {
       "value": "unable to deserialize imp random-imp bid.ext",

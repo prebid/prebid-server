@@ -3,8 +3,8 @@ RUN apt-get update && \
     apt-get -y upgrade && \
     apt-get install -y wget
 WORKDIR /tmp
-RUN wget https://dl.google.com/go/go1.19.2.linux-amd64.tar.gz && \
-    tar -xf go1.19.2.linux-amd64.tar.gz && \
+RUN wget https://dl.google.com/go/go1.20.5.linux-amd64.tar.gz && \
+    tar -xf go1.20.5.linux-amd64.tar.gz && \
     mv go /usr/local
 RUN mkdir -p /app/prebid-server/
 WORKDIR /app/prebid-server/

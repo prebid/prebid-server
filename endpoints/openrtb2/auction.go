@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/prebid/prebid-server/privacy"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -26,7 +26,6 @@ import (
 	nativeRequests "github.com/prebid/openrtb/v19/native1/request"
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/openrtb/v19/openrtb3"
-	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/bidadjustment"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/ortb"
@@ -95,6 +94,7 @@ func NewEndpoint(
 	bidderMap map[string]openrtb_ext.BidderName,
 	storedRespFetcher stored_requests.Fetcher,
 	hookExecutionPlanBuilder hooks.ExecutionPlanBuilder,
+	tmaxAdjustments *exchange.TmaxAdjustmentsPreprocessed,
 ) (httprouter.Handle, error) {
 	if ex == nil || validator == nil || requestsById == nil || accounts == nil || cfg == nil || metricsEngine == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
@@ -125,7 +125,8 @@ func NewEndpoint(
 		nil,
 		ipValidator,
 		storedRespFetcher,
-		hookExecutionPlanBuilder}).Auction), nil
+		hookExecutionPlanBuilder,
+		tmaxAdjustments}).Auction), nil
 }
 
 type endpointDeps struct {
@@ -147,6 +148,7 @@ type endpointDeps struct {
 	privateNetworkIPValidator iputil.IPValidator
 	storedRespFetcher         stored_requests.Fetcher
 	hookExecutionPlanBuilder  hooks.ExecutionPlanBuilder
+	tmaxAdjustments           *exchange.TmaxAdjustmentsPreprocessed
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -187,12 +189,21 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	if rejectErr := hookexecution.FindFirstRejectOrNil(errL); rejectErr != nil {
-		ao.Request = req.BidRequest
+		ao.RequestWrapper = req
 		labels, ao = rejectAuctionRequest(*rejectErr, w, hookExecutor, req.BidRequest, account, labels, ao)
 		return
 	}
 
 	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
+
+	activities, activitiesErr := privacy.NewActivityControl(account.Privacy)
+	if activitiesErr != nil {
+		errL = append(errL, activitiesErr)
+		if errortypes.ContainsFatalError(errL) {
+			writeError(errL, w, &labels)
+			return
+		}
+	}
 
 	ctx := context.Background()
 
@@ -203,7 +214,11 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		defer cancel()
 	}
 
-	usersyncs := usersync.ParseCookieFromRequest(r, &(deps.cfg.HostCookie))
+	// Read Usersyncs/Cookie
+	decoder := usersync.Base64Decoder{}
+	usersyncs := usersync.ReadCookie(r, decoder, &deps.cfg.HostCookie)
+	usersync.SyncHostCookie(r, usersyncs, &deps.cfg.HostCookie)
+
 	if req.Site != nil {
 		if usersyncs.HasAnyLiveSyncs() {
 			labels.CookieFlag = metrics.CookieFlagYes
@@ -239,11 +254,23 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		PubID:                      labels.PubID,
 		HookExecutor:               hookExecutor,
 		TCF2Config:                 tcf2Config,
+		Activities:                 activities,
+		TmaxAdjustments:            deps.tmaxAdjustments,
 	}
-	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
-	ao.Request = req.BidRequest
-	ao.Response = response
+	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
+	defer func() {
+		if !auctionRequest.BidderResponseStartTime.IsZero() {
+			deps.metricsEngine.RecordOverheadTime(metrics.MakeAuctionResponse, time.Since(auctionRequest.BidderResponseStartTime))
+		}
+	}()
+	ao.RequestWrapper = req
 	ao.Account = account
+	var response *openrtb2.BidResponse
+	if auctionResponse != nil {
+		response = auctionResponse.BidResponse
+	}
+	ao.Response = response
+	ao.SeatNonBid = auctionResponse.GetSeatNonBid()
 	rejectErr, isRejectErr := hookexecution.CastRejectErr(err)
 	if err != nil && !isRejectErr {
 		if errortypes.ReadCode(err) == errortypes.BadInputErrorCode {
@@ -262,10 +289,38 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
-	labels, ao = sendAuctionResponse(w, hookExecutor, response, req.BidRequest, account, labels, ao)
-	if len(ao.Errors) == 0 {
-		recordResponsePreparationMetrics(auctionRequest.MakeBidsTimeInfo, deps.metricsEngine)
+	err = setSeatNonBidRaw(req, auctionResponse)
+	if err != nil {
+		glog.Errorf("Error setting seat non-bid: %v", err)
 	}
+	labels, ao = sendAuctionResponse(w, hookExecutor, response, req.BidRequest, account, labels, ao)
+}
+
+// setSeatNonBidRaw is transitional function for setting SeatNonBid inside bidResponse.Ext
+// Because,
+// 1. today exchange.HoldAuction prepares and marshals some piece of response.Ext which is then used by auction.go, amp_auction.go and video_auction.go
+// 2. As per discussion with Prebid Team we are planning to move away from - HoldAuction building openrtb2.BidResponse. instead respective auction modules will build this object
+// 3. So, we will need this method to do first,  unmarshalling of response.Ext
+func setSeatNonBidRaw(request *openrtb_ext.RequestWrapper, auctionResponse *exchange.AuctionResponse) error {
+	if auctionResponse == nil || auctionResponse.BidResponse == nil {
+		return nil
+	}
+	// unmarshalling is required here, until we are moving away from bidResponse.Ext, which is populated
+	// by HoldAuction
+	response := auctionResponse.BidResponse
+	respExt := &openrtb_ext.ExtBidResponse{}
+	if err := json.Unmarshal(response.Ext, &respExt); err != nil {
+		return err
+	}
+	if setSeatNonBid(respExt, request, auctionResponse) {
+		if respExtJson, err := json.Marshal(respExt); err == nil {
+			response.Ext = respExtJson
+			return nil
+		} else {
+			return err
+		}
+	}
+	return nil
 }
 
 func rejectAuctionRequest(
@@ -367,7 +422,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		N: deps.cfg.MaxRequestSize,
 	}
 
-	requestJson, err := ioutil.ReadAll(limitedReqReader)
+	requestJson, err := io.ReadAll(limitedReqReader)
 	if err != nil {
 		errs = []error{err}
 		return
@@ -2444,14 +2499,4 @@ func validateStoredBidRespAndImpExtBidders(bidderExts map[string]json.RawMessage
 
 func generateStoredBidResponseValidationError(impID string) error {
 	return fmt.Errorf("request validation failed. Stored bid responses are specified for imp %s. Bidders specified in imp.ext should match with bidders specified in imp.ext.prebid.storedbidresponse", impID)
-}
-
-func recordResponsePreparationMetrics(mbti map[openrtb_ext.BidderName]adapters.MakeBidsTimeInfo, me metrics.MetricsEngine) {
-	for _, info := range mbti {
-		duration := time.Since(info.AfterMakeBidsStartTime)
-		for _, makeBidsDuration := range info.Durations {
-			duration += makeBidsDuration
-		}
-		me.RecordOverheadTime(metrics.MakeAuctionResponse, duration)
-	}
 }
