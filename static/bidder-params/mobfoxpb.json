@@ -15,7 +15,7 @@
             "description": "An ID which identifies the mobfox adexchange partner"
         }
     },
-    "oneOf": [
+    "anyOf": [
         {
             "required": [
                 "TagID"
@@ -25,6 +25,11 @@
             "required": [
                 "key"
             ]
+        },
+        {
+            "not": {
+                "required": ["TagID", "key"]
+            }
         }
     ]
 }
