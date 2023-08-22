@@ -301,35 +301,32 @@ func (a *AccountChannel) IsSet() bool {
 
 type AccountPrivacy struct {
 	AllowActivities *AllowActivities `mapstructure:"allowactivities" json:"allowactivities"`
-	IPMasking       IPMasking        `mapstructure:"ip_masking" json:"ip_masking"`
+	IPv6Config      IPv6             `mapstructure:"ipv6" json:"ipv6"`
+	IPv4Config      IPv4             `mapstructure:"ipv4" json:"ipv4"`
 }
 
-type IPMasking struct {
-	IPv6 IPMasks `mapstructure:"ipv6" json:"ipv6"`
-	IPv4 IPMasks `mapstructure:"ipv4" json:"ipv4"`
+type IPv6 struct {
+	AnonKeepBits int `mapstructure:"anon-keep-bits" json:"anon-keep-bits"`
+	// For the follow up PR, always keep first 64 bits
+	// AlwaysKeepBits int `mapstructure:"always-keep-bits" json:"always-keep-bits"`
 }
 
-type IPMasks struct {
-	LeftMaskBits int `mapstructure:"left_mask_bits" json:"left_mask_bits"`
+type IPv4 struct {
+	AnonKeepBits int `mapstructure:"anon-keep-bits" json:"anon-keep-bits"`
 }
 
-func (ipMasking *IPMasking) Validate(errs []error) []error {
-	if e := ipMasking.IPv6.validate(IPv6BitSize, "ipv6"); e != nil {
-		errs = append(errs, e...)
-	}
-	if e := ipMasking.IPv4.validate(IPv4BitSize, "ipv4"); e != nil {
-		errs = append(errs, e...)
+func (IPv6Config *IPv6) Validate(errs []error) []error {
+	if IPv6Config.AnonKeepBits > IPv6BitSize || IPv6Config.AnonKeepBits < 0 {
+		err := fmt.Errorf("left mask bits cannot exceed %d in ipv6 address, or be less than 0", IPv6BitSize)
+		errs = append(errs, err)
 	}
 	return errs
 }
 
-func (ipMasks *IPMasks) validate(maxBits int, ipVersion string) []error {
-	var errs []error
-
-	if ipMasks.LeftMaskBits > maxBits || ipMasks.LeftMaskBits < 0 {
-		err := fmt.Errorf("left mask bits cannot exceed %d in %s address, or be less than 0", maxBits, ipVersion)
+func (IPv4Config *IPv4) Validate(errs []error) []error {
+	if IPv4Config.AnonKeepBits > IPv4BitSize || IPv4Config.AnonKeepBits < 0 {
+		err := fmt.Errorf("left mask bits cannot exceed %d in ipv4 address, or be less than 0", IPv4BitSize)
 		errs = append(errs, err)
 	}
-
 	return errs
 }

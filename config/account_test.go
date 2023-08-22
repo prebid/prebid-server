@@ -914,29 +914,21 @@ func TestAccountPriceFloorsValidate(t *testing.T) {
 func TestIPMaskingValidate(t *testing.T) {
 	tests := []struct {
 		name    string
-		masking *IPMasking
+		privacy AccountPrivacy
 		want    []error
 	}{
 		{
 			name: "valid configuration",
-			masking: &IPMasking{
-				IPv4: IPMasks{
-					LeftMaskBits: 1,
-				},
-				IPv6: IPMasks{
-					LeftMaskBits: 0,
-				},
+			privacy: AccountPrivacy{
+				IPv4Config: IPv4{AnonKeepBits: 1},
+				IPv6Config: IPv6{AnonKeepBits: 0},
 			},
 		},
 		{
 			name: "invalid configuration",
-			masking: &IPMasking{
-				IPv4: IPMasks{
-					LeftMaskBits: -100,
-				},
-				IPv6: IPMasks{
-					LeftMaskBits: -200,
-				},
+			privacy: AccountPrivacy{
+				IPv4Config: IPv4{AnonKeepBits: -100},
+				IPv6Config: IPv6{AnonKeepBits: -200},
 			},
 			want: []error{
 				errors.New("left mask bits cannot exceed 32 in ipv4 address, or be less than 0"),
@@ -945,13 +937,9 @@ func TestIPMaskingValidate(t *testing.T) {
 		},
 		{
 			name: "mixed valid and invalid configuration",
-			masking: &IPMasking{
-				IPv4: IPMasks{
-					LeftMaskBits: 10,
-				},
-				IPv6: IPMasks{
-					LeftMaskBits: -10,
-				},
+			privacy: AccountPrivacy{
+				IPv4Config: IPv4{AnonKeepBits: 10},
+				IPv6Config: IPv6{AnonKeepBits: -10},
 			},
 			want: []error{
 				errors.New("left mask bits cannot exceed 128 in ipv6 address, or be less than 0"),
@@ -962,8 +950,9 @@ func TestIPMaskingValidate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var errs []error
-			got := tt.masking.Validate(errs)
-			assert.ElementsMatch(t, got, tt.want)
+			errs = tt.privacy.IPv4Config.Validate(errs)
+			errs = tt.privacy.IPv6Config.Validate(errs)
+			assert.ElementsMatch(t, errs, tt.want)
 		})
 	}
 }

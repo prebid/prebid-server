@@ -151,14 +151,14 @@ func TestScrubDevice(t *testing.T) {
 	}
 	testIPMasking := getTestIPMasking()
 	for _, test := range testCases {
-		result := NewScrubber(testIPMasking).ScrubDevice(device, test.id, test.ipv4, test.ipv6, test.geo)
+		result := NewScrubber(testIPMasking.IPv6Config, testIPMasking.IPv4Config).ScrubDevice(device, test.id, test.ipv4, test.ipv6, test.geo)
 		assert.Equal(t, test.expected, result, test.description)
 	}
 }
 
 func TestScrubDeviceNil(t *testing.T) {
 	testIPMasking := getTestIPMasking()
-	result := NewScrubber(testIPMasking).ScrubDevice(nil, ScrubStrategyDeviceIDNone, ScrubStrategyIPV4None, ScrubStrategyIPV6None, ScrubStrategyGeoNone)
+	result := NewScrubber(testIPMasking.IPv6Config, testIPMasking.IPv4Config).ScrubDevice(nil, ScrubStrategyDeviceIDNone, ScrubStrategyIPV4None, ScrubStrategyIPV6None, ScrubStrategyGeoNone)
 	assert.Nil(t, result)
 }
 
@@ -277,14 +277,14 @@ func TestScrubUser(t *testing.T) {
 
 	testIPMasking := getTestIPMasking()
 	for _, test := range testCases {
-		result := NewScrubber(testIPMasking).ScrubUser(user, test.scrubUser, test.scrubGeo)
+		result := NewScrubber(testIPMasking.IPv6Config, testIPMasking.IPv4Config).ScrubUser(user, test.scrubUser, test.scrubGeo)
 		assert.Equal(t, test.expected, result, test.description)
 	}
 }
 
 func TestScrubUserNil(t *testing.T) {
 	testIPMasking := getTestIPMasking()
-	result := NewScrubber(testIPMasking).ScrubUser(nil, ScrubStrategyUserNone, ScrubStrategyGeoNone)
+	result := NewScrubber(testIPMasking.IPv6Config, testIPMasking.IPv4Config).ScrubUser(nil, ScrubStrategyUserNone, ScrubStrategyGeoNone)
 	assert.Nil(t, result)
 }
 
@@ -448,7 +448,7 @@ func TestScrubRequest(t *testing.T) {
 			}
 			bidRequest.User.EIDs = []openrtb2.EID{{Source: "test"}}
 
-			result := NewScrubber(testIPMasking).ScrubRequest(bidRequest, test.enforcement)
+			result := NewScrubber(testIPMasking.IPv6Config, testIPMasking.IPv4Config).ScrubRequest(bidRequest, test.enforcement)
 			assert.Equal(t, test.expected, result, test.description)
 		})
 	}
@@ -719,13 +719,13 @@ func getTestDevice() *openrtb2.Device {
 	}
 }
 
-func getTestIPMasking() config.IPMasking {
-	return config.IPMasking{
-		IPv6: config.IPMasks{
-			LeftMaskBits: 54,
+func getTestIPMasking() config.AccountPrivacy {
+	return config.AccountPrivacy{
+		IPv6Config: config.IPv6{
+			54,
 		},
-		IPv4: config.IPMasks{
-			LeftMaskBits: 24,
+		IPv4Config: config.IPv4{
+			24,
 		},
 	}
 }

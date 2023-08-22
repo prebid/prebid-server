@@ -75,15 +75,15 @@ type Scrubber interface {
 }
 
 type scrubber struct {
-	ipV6 config.IPMasks
-	ipV4 config.IPMasks
+	ipV6 config.IPv6
+	ipV4 config.IPv4
 }
 
 // NewScrubber returns an OpenRTB scrubber.
-func NewScrubber(ipMasking config.IPMasking) Scrubber {
+func NewScrubber(ipV6 config.IPv6, ipV4 config.IPv4) Scrubber {
 	return scrubber{
-		ipV6: ipMasking.IPv6,
-		ipV4: ipMasking.IPv4,
+		ipV6: ipV6,
+		ipV4: ipV4,
 	}
 }
 
@@ -170,8 +170,8 @@ func (s scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enfo
 			if deviceCopy.Geo != nil {
 				deviceCopy.Geo = scrubGeoPrecision(deviceCopy.Geo)
 			}
-			deviceCopy.IP = scrubIP(deviceCopy.IP, s.ipV4.LeftMaskBits, config.IPv4BitSize)
-			deviceCopy.IPv6 = scrubIP(deviceCopy.IPv6, s.ipV6.LeftMaskBits, config.IPv6BitSize)
+			deviceCopy.IP = scrubIP(deviceCopy.IP, s.ipV4.AnonKeepBits, config.IPv4BitSize)
+			deviceCopy.IPv6 = scrubIP(deviceCopy.IPv6, s.ipV6.AnonKeepBits, config.IPv6BitSize)
 		}
 	}
 
@@ -200,12 +200,12 @@ func (s scrubber) ScrubDevice(device *openrtb2.Device, id ScrubStrategyDeviceID,
 
 	switch ipv4 {
 	case ScrubStrategyIPV4Lowest8:
-		deviceCopy.IP = scrubIP(device.IP, s.ipV4.LeftMaskBits, config.IPv4BitSize)
+		deviceCopy.IP = scrubIP(device.IP, s.ipV4.AnonKeepBits, config.IPv4BitSize)
 	}
 
 	switch ipv6 {
 	case ScrubStrategyIPV6Subnet:
-		deviceCopy.IPv6 = scrubIP(device.IPv6, s.ipV6.LeftMaskBits, config.IPv6BitSize)
+		deviceCopy.IPv6 = scrubIP(device.IPv6, s.ipV6.AnonKeepBits, config.IPv6BitSize)
 	}
 
 	switch geo {

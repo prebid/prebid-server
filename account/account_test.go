@@ -20,7 +20,7 @@ import (
 
 var mockAccountData = map[string]json.RawMessage{
 	"valid_acct":                json.RawMessage(`{"disabled":false}`),
-	"invalid_acct":              json.RawMessage(`{"disabled":false, "privacy": {"ip_masking": {"ipv6": {"left_mask_bits": -32}}}}`),
+	"invalid_acct":              json.RawMessage(`{"disabled":false, "privacy": {"ipv6": {"anon-keep-bits": -32}}}`),
 	"disabled_acct":             json.RawMessage(`{"disabled":true}`),
 	"malformed_acct":            json.RawMessage(`{"disabled":"invalid type"}`),
 	"gdpr_channel_enabled_acct": json.RawMessage(`{"disabled":false,"gdpr":{"channel_enabled":{"amp":true}}}`),

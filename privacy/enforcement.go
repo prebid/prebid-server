@@ -30,8 +30,8 @@ func (e Enforcement) AnyActivities() bool {
 }
 
 // Apply cleans personally identifiable information from an OpenRTB bid request.
-func (e Enforcement) Apply(bidRequest *openrtb2.BidRequest, ipMasking config.IPMasking) {
-	e.apply(bidRequest, NewScrubber(ipMasking))
+func (e Enforcement) Apply(bidRequest *openrtb2.BidRequest, privacy config.AccountPrivacy) {
+	e.apply(bidRequest, NewScrubber(privacy.IPv6Config, privacy.IPv4Config))
 }
 
 func (e Enforcement) apply(bidRequest *openrtb2.BidRequest, scrubber Scrubber) {
