@@ -132,7 +132,7 @@ func TestNewActivityControl(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			actualAC, actualErr := NewActivityControl(test.privacyConf)
+			actualAC, actualErr := NewActivityControl(&test.privacyConf)
 			if test.err == nil {
 				assert.Equal(t, test.activityControl, actualAC)
 				assert.NoError(t, actualErr)

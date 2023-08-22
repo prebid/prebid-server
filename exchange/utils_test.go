@@ -4364,7 +4364,7 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		activities, err := privacy.NewActivityControl(test.privacyConfig)
+		activities, err := privacy.NewActivityControl(&test.privacyConfig)
 		assert.NoError(t, err, "")
 		auctionReq := AuctionRequest{
 			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: test.req},
@@ -4434,9 +4434,9 @@ func getTransmitPreciseGeoActivityConfig(componentName string, allow bool) confi
 	}
 }
 
-func getTransmitTIDActivityConfig(componentName string, allow bool) *config.AccountPrivacy {
-	return &config.AccountPrivacy{
-		AllowActivities: config.AllowActivities{
+func getTransmitTIDActivityConfig(componentName string, allow bool) config.AccountPrivacy {
+	return config.AccountPrivacy{
+		AllowActivities: &config.AllowActivities{
 			TransmitTids: buildDefaultActivityConfig(componentName, allow),
 		},
 	}

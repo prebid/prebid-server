@@ -164,7 +164,6 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 	errs = cfg.AccountDefaults.Privacy.IPv4Config.Validate(errs)
 
 	return errs
-	return errs
 }
 
 type AuctionTimeouts struct {
