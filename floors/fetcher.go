@@ -134,8 +134,7 @@ func (f *PriceFloorFetcher) Fetch(config config.AccountPriceFloors) (*openrtb_ex
 	// Check for floors JSON in cache
 	if result, found := f.Get(config.Fetcher.URL); found {
 		var fetchedFloorData openrtb_ext.PriceFloorRules
-		err := json.Unmarshal(result, &fetchedFloorData)
-		if err != nil || fetchedFloorData.Data == nil {
+		if err := json.Unmarshal(result, &fetchedFloorData); err != nil || fetchedFloorData.Data == nil {
 			return nil, openrtb_ext.FetchError
 		}
 		return &fetchedFloorData, openrtb_ext.FetchSuccess
@@ -237,12 +236,11 @@ func (f *PriceFloorFetcher) fetchAndValidate(config config.AccountFloorFetch) (*
 	if err = json.Unmarshal(floorResp, &priceFloors.Data); err != nil {
 		glog.Errorf("Recieved invalid price floor json from URL: %s", config.URL)
 		return nil, 0
-	} else {
-		err := validateRules(config, &priceFloors)
-		if err != nil {
-			glog.Errorf("Validation failed for floor JSON from URL: %s, reason: %s", config.URL, err.Error())
-			return nil, 0
-		}
+	}
+
+	if err := validateRules(config, &priceFloors); err != nil {
+		glog.Errorf("Validation failed for floor JSON from URL: %s, reason: %s", config.URL, err.Error())
+		return nil, 0
 	}
 
 	return &priceFloors, maxAge
