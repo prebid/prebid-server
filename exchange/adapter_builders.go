@@ -104,6 +104,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/kiviads"
 	"github.com/prebid/prebid-server/adapters/krushmedia"
 	"github.com/prebid/prebid-server/adapters/kubient"
+	"github.com/prebid/prebid-server/adapters/liftoff"
 	"github.com/prebid/prebid-server/adapters/limelightDigital"
 	lmkiviads "github.com/prebid/prebid-server/adapters/lm_kiviads"
 	"github.com/prebid/prebid-server/adapters/lockerdome"
@@ -145,6 +146,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/seedingAlliance"
 	"github.com/prebid/prebid-server/adapters/sharethrough"
 	"github.com/prebid/prebid-server/adapters/silvermob"
+	"github.com/prebid/prebid-server/adapters/silverpush"
 	"github.com/prebid/prebid-server/adapters/smaato"
 	"github.com/prebid/prebid-server/adapters/smartadserver"
 	"github.com/prebid/prebid-server/adapters/smarthub"
@@ -302,6 +304,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderLmKiviads:         lmkiviads.Builder,
 		openrtb_ext.BidderKrushmedia:        krushmedia.Builder,
 		openrtb_ext.BidderKubient:           kubient.Builder,
+		openrtb_ext.BidderLiftoff:           liftoff.Builder,
 		openrtb_ext.BidderLimelightDigital:  limelightDigital.Builder,
 		openrtb_ext.BidderLockerDome:        lockerdome.Builder,
 		openrtb_ext.BidderLogan:             logan.Builder,
@@ -345,6 +348,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderScreencore:        screencore.Builder,
 		openrtb_ext.BidderSharethrough:      sharethrough.Builder,
 		openrtb_ext.BidderSilverMob:         silvermob.Builder,
+		openrtb_ext.BidderSilverPush:        silverpush.Builder,
 		openrtb_ext.BidderSmaato:            smaato.Builder,
 		openrtb_ext.BidderSmartAdserver:     smartadserver.Builder,
 		openrtb_ext.BidderSmartHub:          smarthub.Builder,

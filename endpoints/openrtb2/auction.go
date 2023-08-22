@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"github.com/prebid/prebid-server/privacy"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -424,7 +423,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		N: deps.cfg.MaxRequestSize,
 	}
 
-	requestJson, err := ioutil.ReadAll(limitedReqReader)
+	requestJson, err := io.ReadAll(limitedReqReader)
 	if err != nil {
 		errs = []error{err}
 		return
