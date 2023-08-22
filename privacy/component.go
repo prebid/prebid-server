@@ -43,7 +43,6 @@ func ParseComponent(v string) (Component, error) {
 
 	if len(split) == 1 {
 		return Component{
-			Type: ComponentTypeBidder,
 			Name: split[0],
 		}, nil
 	}

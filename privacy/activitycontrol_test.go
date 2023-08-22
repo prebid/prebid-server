@@ -225,6 +225,110 @@ func TestAllowActivityControl(t *testing.T) {
 	}
 }
 
+func TestConditionToRuleComponentNames(t *testing.T) {
+	testCases := []struct {
+		name              string
+		condition         config.ActivityCondition
+		expectedComponent []Component
+		err               error
+	}{
+		{
+			name:              "empty",
+			condition:         config.ActivityCondition{},
+			expectedComponent: []Component{},
+			err:               nil,
+		},
+		{
+			name:              "incorrect",
+			condition:         config.ActivityCondition{ComponentName: []string{"bidder.bidderA.bidderB"}},
+			expectedComponent: []Component{},
+			err:               errors.New("unable to parse component: bidder.bidderA.bidderB"),
+		},
+		{
+			name:              "scope-bidder",
+			condition:         config.ActivityCondition{ComponentName: []string{"bidder.bidderA"}},
+			expectedComponent: []Component{{Type: "bidder", Name: "bidderA"}},
+			err:               nil,
+		},
+		{
+			name:              "scope-bidder-default",
+			condition:         config.ActivityCondition{ComponentName: []string{"bidderA"}},
+			expectedComponent: []Component{{Type: "bidder", Name: "bidderA"}},
+			err:               nil,
+		},
+		{
+			name:              "scope-and-type-single",
+			condition:         config.ActivityCondition{ComponentName: []string{"analyticsA"}, ComponentType: []string{"analytics"}},
+			expectedComponent: []Component{{Type: "analytics", Name: "analyticsA"}},
+			err:               nil,
+		},
+		{
+			name:      "single-name-andtyped-name-and-multiple-types",
+			condition: config.ActivityCondition{ComponentName: []string{"componentA", "rtd.componentB"}, ComponentType: []string{"analytics", "bidder"}},
+			expectedComponent: []Component{
+				{Type: "analytics", Name: "componentA"},
+				{Type: "bidder", Name: "componentA"},
+				{Type: "rtd", Name: "componentB"},
+			},
+			err: nil,
+		},
+		{
+			name:      "single-scope-and-multiple-types",
+			condition: config.ActivityCondition{ComponentName: []string{"componentA"}, ComponentType: []string{"analytics", "bidder"}},
+			expectedComponent: []Component{
+				{Type: "analytics", Name: "componentA"},
+				{Type: "bidder", Name: "componentA"},
+			},
+			err: nil,
+		},
+		{
+			name:      "multiple-scope-and-multiple-types",
+			condition: config.ActivityCondition{ComponentName: []string{"componentA", "componentB"}, ComponentType: []string{"analytics", "bidder"}},
+			expectedComponent: []Component{
+				{Type: "analytics", Name: "componentA"},
+				{Type: "bidder", Name: "componentA"},
+				{Type: "analytics", Name: "componentB"},
+				{Type: "bidder", Name: "componentB"},
+			},
+			err: nil,
+		},
+		{
+			name:      "mixed-scope-and-type",
+			condition: config.ActivityCondition{ComponentName: []string{"componentA", "componentB", "rtd.componentC"}, ComponentType: []string{"analytics", "bidder"}},
+			expectedComponent: []Component{
+				{Type: "analytics", Name: "componentA"},
+				{Type: "bidder", Name: "componentA"},
+				{Type: "analytics", Name: "componentB"},
+				{Type: "bidder", Name: "componentB"},
+				{Type: "rtd", Name: "componentC"},
+			},
+			err: nil,
+		},
+		{
+			name:      "default-and-no-default-scope",
+			condition: config.ActivityCondition{ComponentName: []string{"componentA", "componentB", "rtd.componentC"}},
+			expectedComponent: []Component{
+				{Type: "bidder", Name: "componentA"},
+				{Type: "bidder", Name: "componentB"},
+				{Type: "rtd", Name: "componentC"},
+			},
+			err: nil,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			actualSN, actualErr := conditionToRuleComponentNames(test.condition)
+			if test.err == nil {
+				assert.EqualValues(t, test.expectedComponent, actualSN)
+				assert.NoError(t, actualErr)
+			} else {
+				assert.EqualError(t, actualErr, test.err.Error())
+			}
+		})
+	}
+}
+
 // constants
 func getDefaultActivityConfig() config.Activity {
 	return config.Activity{

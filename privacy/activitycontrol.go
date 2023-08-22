@@ -88,7 +88,7 @@ func activityRulesToEnforcementRules(rules []config.ActivityRule) ([]Rule, error
 			result = ActivityDeny
 		}
 
-		componentName, err := conditionToRuleComponentNames(r.Condition.ComponentName)
+		componentName, err := conditionToRuleComponentNames(r.Condition)
 		if err != nil {
 			return nil, err
 		}
@@ -103,16 +103,42 @@ func activityRulesToEnforcementRules(rules []config.ActivityRule) ([]Rule, error
 	return enfRules, nil
 }
 
-func conditionToRuleComponentNames(conditions []string) ([]Component, error) {
-	sn := make([]Component, 0)
-	for _, condition := range conditions {
-		scope, err := ParseComponent(condition)
+func conditionToRuleComponentNames(conditions config.ActivityCondition) ([]Component, error) {
+	// condition can contain more than one component type and component name may have more than one names
+	// in this case scopes should have all combinations of names and types
+	// for instance for the config like this
+	//     "condition": {
+	//          "componentName": ["enabledAnalytics", "filelogger", "bidder.appnexus"],
+	//           "componentType":["analytics", "rtd"]
+	//     }
+	// result scopes should be:
+	// analytics.enabledAnalytics
+	// analytics.filelogger
+	// rtd.enabledAnalytics
+	// rtd.filelogger
+	// bidder.appnexus
+
+	components := make([]Component, 0)
+	for _, conditionName := range conditions.ComponentName {
+		component, err := ParseComponent(conditionName)
 		if err != nil {
-			return nil, err
+			return components, err
 		}
-		sn = append(sn, scope)
+		if component.Type != "" {
+			components = append(components, component)
+		} else if component.Type == "" && len(conditions.ComponentType) == 0 {
+			component.Type = ComponentTypeBidder
+			components = append(components, component)
+		} else {
+			for _, conditionType := range conditions.ComponentType {
+				if conditionType != component.Type {
+					newSN := Component{Type: conditionType, Name: component.Name}
+					components = append(components, newSN)
+				}
+			}
+		}
 	}
-	return sn, nil
+	return components, nil
 }
 
 func activityDefaultToDefaultResult(activityDefault *bool) bool {

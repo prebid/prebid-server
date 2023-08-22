@@ -85,9 +85,9 @@ func TestParseComponent(t *testing.T) {
 			expectedError: nil,
 		},
 		{
-			name:          "type-default",
+			name:          "type-no-type",
 			component:     "bidderA",
-			expected:      Component{Type: "bidder", Name: "bidderA"},
+			expected:      Component{Type: "", Name: "bidderA"},
 			expectedError: nil,
 		},
 		{

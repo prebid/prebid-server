@@ -51,7 +51,7 @@ func (ea enabledAnalytics) GetName() string {
 
 func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject) {
 	for _, module := range ea {
-		scopedName := privacy.ScopedName{Scope: privacy.ScopeTypeAnalytics, Name: module.GetName()}
+		scopedName := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: module.GetName()}
 		reportAnalyticsActivityAllowed := ao.ActivityControl.Allow(privacy.ActivityReportAnalytics, scopedName)
 		if reportAnalyticsActivityAllowed {
 			module.LogAuctionObject(ao)
@@ -61,7 +61,7 @@ func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject) {
 
 func (ea enabledAnalytics) LogVideoObject(vo *analytics.VideoObject) {
 	for _, module := range ea {
-		scopedName := privacy.ScopedName{Scope: privacy.ScopeTypeAnalytics, Name: module.GetName()}
+		scopedName := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: module.GetName()}
 		reportAnalyticsActivityAllowed := vo.ActivityControl.Allow(privacy.ActivityReportAnalytics, scopedName)
 		if reportAnalyticsActivityAllowed {
 			module.LogVideoObject(vo)
@@ -83,7 +83,7 @@ func (ea enabledAnalytics) LogSetUIDObject(so *analytics.SetUIDObject) {
 
 func (ea enabledAnalytics) LogAmpObject(ao *analytics.AmpObject) {
 	for _, module := range ea {
-		scopedName := privacy.ScopedName{Scope: privacy.ScopeTypeAnalytics, Name: module.GetName()}
+		scopedName := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: module.GetName()}
 		reportAnalyticsActivityAllowed := ao.ActivityControl.Allow(privacy.ActivityReportAnalytics, scopedName)
 		if reportAnalyticsActivityAllowed {
 			module.LogAmpObject(ao)
@@ -93,7 +93,7 @@ func (ea enabledAnalytics) LogAmpObject(ao *analytics.AmpObject) {
 
 func (ea enabledAnalytics) LogNotificationEventObject(ne *analytics.NotificationEvent) {
 	for _, module := range ea {
-		scopedName := privacy.ScopedName{Scope: privacy.ScopeTypeAnalytics, Name: module.GetName()}
+		scopedName := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: module.GetName()}
 		reportAnalyticsActivityAllowed := ne.ActivityControl.Allow(privacy.ActivityReportAnalytics, scopedName)
 		if reportAnalyticsActivityAllowed {
 			module.LogNotificationEventObject(ne)
