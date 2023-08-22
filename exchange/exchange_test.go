@@ -37,6 +37,7 @@ import (
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
+	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
 	"github.com/prebid/prebid-server/usersync"
@@ -2351,6 +2352,11 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		impExtInfoMap[impID] = ImpExtInfo{}
 	}
 
+	activityControl, err := privacy.NewActivityControl(spec.AccountPrivacy)
+	if err != nil {
+		t.Errorf("%s: Exchange returned an unexpected error. Got %s", filename, err.Error())
+	}
+
 	auctionRequest := &AuctionRequest{
 		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &spec.IncomingRequest.OrtbRequest},
 		Account: config.Account{
@@ -2366,6 +2372,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		ImpExtInfoMap: impExtInfoMap,
 		HookExecutor:  &hookexecution.EmptyHookExecutor{},
 		TCF2Config:    gdpr.NewTCF2Config(privacyConfig.GDPR.TCF2, config.AccountGDPR{}),
+		Activities:    activityControl,
 	}
 
 	if spec.MultiBid != nil {
@@ -5187,6 +5194,7 @@ type exchangeSpec struct {
 	FledgeEnabled              bool                   `json:"fledge_enabled,omitempty"`
 	MultiBid                   *multiBidSpec          `json:"multiBid,omitempty"`
 	Server                     exchangeServer         `json:"server,omitempty"`
+	AccountPrivacy             *config.AccountPrivacy `json:"accountPrivacy,omitempty"`
 }
 
 type multiBidSpec struct {

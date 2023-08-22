@@ -147,7 +147,10 @@ func (scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enforc
 	if enforcement.TID {
 		//remove source.tid and imp.ext.tid
 		if bidRequest.Source != nil {
-			bidRequest.Source.TID = ""
+			var sourceCopy *openrtb2.Source
+			sourceCopy = ptrutil.Clone(bidRequest.Source)
+			sourceCopy.TID = ""
+			bidRequest.Source = sourceCopy
 		}
 		for ind, imp := range bidRequest.Imp {
 			impExt := scrubExtIDs(imp.Ext, "tid")
