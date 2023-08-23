@@ -50,9 +50,7 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 
 		cookie := usersync.ReadCookie(r, decoder, &cfg.HostCookie)
 		if !cookie.AllowSyncs() {
-			w.WriteHeader(http.StatusUnauthorized)
-			metricsEngine.RecordSetUid(metrics.SetUidOptOut)
-			so.Status = http.StatusUnauthorized
+			handleBadStatus(w, http.StatusUnauthorized, metrics.SetUidOptOut, nil, metricsEngine, &so)
 			return
 		}
 		usersync.SyncHostCookie(r, cookie, &cfg.HostCookie)
@@ -61,22 +59,14 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 
 		syncer, bidderName, err := getSyncer(query, syncersByBidder)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
-			metricsEngine.RecordSetUid(metrics.SetUidSyncerUnknown)
-			so.Errors = []error{err}
-			so.Status = http.StatusBadRequest
+			handleBadStatus(w, http.StatusBadRequest, metrics.SetUidSyncerUnknown, err, metricsEngine, &so)
 			return
 		}
 		so.Bidder = syncer.Key()
 
 		responseFormat, err := getResponseFormat(query, syncer)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
-			metricsEngine.RecordSetUid(metrics.SetUidBadRequest)
-			so.Errors = []error{err}
-			so.Status = http.StatusBadRequest
+			handleBadStatus(w, http.StatusBadRequest, metrics.SetUidBadRequest, err, metricsEngine, &so)
 			return
 		}
 
@@ -86,21 +76,19 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 		}
 		account, fetchErrs := accountService.GetAccount(context.Background(), cfg, accountsFetcher, accountID, metricsEngine)
 		if len(fetchErrs) > 0 {
-			w.WriteHeader(http.StatusBadRequest)
+			var metricValue metrics.SetUidStatus
 			err := combineErrors(fetchErrs)
-			w.Write([]byte(err.Error()))
 			switch err {
 			case errCookieSyncAccountBlocked:
-				metricsEngine.RecordSetUid(metrics.SetUidAccountBlocked)
+				metricValue = metrics.SetUidAccountBlocked
 			case errCookieSyncAccountConfigMalformed:
-				metricsEngine.RecordSetUid(metrics.SetUidAccountConfigMalformed)
+				metricValue = metrics.SetUidAccountConfigMalformed
 			case errCookieSyncAccountInvalid:
-				metricsEngine.RecordSetUid(metrics.SetUidAccountInvalid)
+				metricValue = metrics.SetUidAccountInvalid
 			default:
-				metricsEngine.RecordSetUid(metrics.SetUidBadRequest)
+				metricValue = metrics.SetUidBadRequest
 			}
-			so.Errors = []error{err}
-			so.Status = http.StatusBadRequest
+			handleBadStatus(w, http.StatusBadRequest, metricValue, err, metricsEngine, &so)
 			return
 		}
 
@@ -122,11 +110,7 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 		if err != nil {
 			// Only exit if non-warning
 			if !errortypes.IsWarning(err) {
-				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte(err.Error()))
-				metricsEngine.RecordSetUid(metrics.SetUidBadRequest)
-				so.Errors = []error{err}
-				so.Status = http.StatusBadRequest
+				handleBadStatus(w, http.StatusBadRequest, metrics.SetUidBadRequest, err, metricsEngine, &so)
 				return
 			}
 			w.Write([]byte("Warning: " + err.Error()))
@@ -135,16 +119,14 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 		tcf2Cfg := tcf2CfgBuilder(cfg.GDPR.TCF2, account.GDPR)
 
 		if shouldReturn, status, body := preventSyncsGDPR(gdprRequestInfo, gdprPermsBuilder, tcf2Cfg); shouldReturn {
-			w.WriteHeader(status)
-			w.Write([]byte(body))
+			var metricValue metrics.SetUidStatus
 			switch status {
 			case http.StatusBadRequest:
-				metricsEngine.RecordSetUid(metrics.SetUidBadRequest)
+				metricValue = metrics.SetUidBadRequest
 			case http.StatusUnavailableForLegalReasons:
-				metricsEngine.RecordSetUid(metrics.SetUidGDPRHostCookieBlocked)
+				metricValue = metrics.SetUidGDPRHostCookieBlocked
 			}
-			so.Errors = []error{errors.New(body)}
-			so.Status = status
+			handleBadStatus(w, status, metricValue, errors.New(body), metricsEngine, &so)
 			return
 		}
 
@@ -167,10 +149,7 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 		// Write Cookie
 		encodedCookie, err := cookie.PrepareCookieForWrite(&cfg.HostCookie, encoder)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			metricsEngine.RecordSetUid(metrics.SetUidBadRequest)
-			so.Errors = []error{err}
-			so.Status = http.StatusBadRequest
+			handleBadStatus(w, http.StatusBadRequest, metrics.SetUidBadRequest, err, metricsEngine, &so)
 			return
 		}
 		usersync.WriteCookie(w, encodedCookie, &cfg.HostCookie, setSiteCookie)
@@ -409,4 +388,15 @@ func preventSyncsGDPR(gdprRequestInfo gdpr.RequestInfo, permsBuilder gdpr.Permis
 	}
 
 	return true, http.StatusUnavailableForLegalReasons, "The gdpr_consent string prevents cookies from being saved"
+}
+
+func handleBadStatus(w http.ResponseWriter, status int, metricValue metrics.SetUidStatus, err error, me metrics.MetricsEngine, so *analytics.SetUIDObject) {
+	w.WriteHeader(status)
+	me.RecordSetUid(metricValue)
+	so.Status = status
+
+	if err != nil {
+		so.Errors = []error{err}
+		w.Write([]byte(err.Error()))
+	}
 }
