@@ -84,8 +84,7 @@ type cookieSyncEndpoint struct {
 }
 
 func (c *cookieSyncEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	var errorsForResponse []error
-	request, privacyPolicies, err := c.parseRequest(r)
+	request, privacyPolicies, err, nonFatalErrs := c.parseRequest(r)
 	if err != nil {
 		c.writeParseRequestErrorMetrics(err)
 		c.handleError(w, err, http.StatusBadRequest, true)
@@ -97,30 +96,33 @@ func (c *cookieSyncEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ ht
 	usersync.SyncHostCookie(r, cookie, &c.config.HostCookie)
 
 	result := c.chooser.Choose(request, cookie)
+
 	switch result.Status {
 	case usersync.StatusBlockedByUserOptOut:
 		c.metrics.RecordCookieSync(metrics.CookieSyncOptOut)
 		c.handleError(w, errCookieSyncOptOut, http.StatusUnauthorized, request.Debug)
 	case usersync.StatusBlockedByGDPR:
 		c.metrics.RecordCookieSync(metrics.CookieSyncGDPRHostCookieBlocked)
-		c.handleResponse(w, request.SyncTypeFilter, cookie, privacyPolicies, nil, request.Debug, errorsForResponse)
+		c.handleResponse(w, request.SyncTypeFilter, cookie, privacyPolicies, nil, request.Debug, nonFatalErrs)
 	case usersync.StatusOK:
 		c.metrics.RecordCookieSync(metrics.CookieSyncOK)
 		c.writeSyncerMetrics(result.BiddersEvaluated)
-		c.handleResponse(w, request.SyncTypeFilter, cookie, privacyPolicies, result.SyncersChosen, request.Debug, errorsForResponse)
+		c.handleResponse(w, request.SyncTypeFilter, cookie, privacyPolicies, result.SyncersChosen, request.Debug, nonFatalErrs)
 	}
 }
 
-func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, privacy.Policies, error) {
+func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, privacy.Policies, error, []error) {
+	var errors []error
+
 	defer r.Body.Close()
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		return usersync.Request{}, privacy.Policies{}, errCookieSyncBody
+		return usersync.Request{}, privacy.Policies{}, errCookieSyncBody, nil
 	}
 
 	request := cookieSyncRequest{}
 	if err := json.Unmarshal(body, &request); err != nil {
-		return usersync.Request{}, privacy.Policies{}, fmt.Errorf("JSON parsing failed: %s", err.Error())
+		return usersync.Request{}, privacy.Policies{}, fmt.Errorf("JSON parsing failed: %s", err.Error()), nil
 	}
 
 	if request.Account == "" {
@@ -128,7 +130,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 	}
 	account, fetchErrs := accountService.GetAccount(context.Background(), c.config, c.accountsFetcher, request.Account, c.metrics)
 	if len(fetchErrs) > 0 {
-		return usersync.Request{}, privacy.Policies{}, combineErrors(fetchErrs)
+		return usersync.Request{}, privacy.Policies{}, combineErrors(fetchErrs), nil
 	}
 
 	request = c.setLimit(request, account.CookieSync)
@@ -136,7 +138,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 
 	privacyPolicies, gdprSignal, err := extractPrivacyPolicies(request, c.privacyConfig.gdprConfig.DefaultValue)
 	if err != nil {
-		return usersync.Request{}, privacy.Policies{}, err
+		return usersync.Request{}, privacy.Policies{}, err, nil
 	}
 
 	ccpaParsedPolicy := ccpa.ParsedPolicy{}
@@ -144,6 +146,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 		parsedPolicy, err := privacyPolicies.CCPA.Parse(c.privacyConfig.bidderHashSet)
 		if err != nil {
 			privacyPolicies.CCPA.Consent = ""
+			errors = append(errors, err)
 		}
 		if c.privacyConfig.ccpaEnforce {
 			ccpaParsedPolicy = parsedPolicy
@@ -155,11 +158,12 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 		if errortypes.ContainsFatalError([]error{activitiesErr}) {
 			activityControl = privacy.ActivityControl{}
 		}
+		errors = append(errors, activitiesErr)
 	}
 
 	syncTypeFilter, err := parseTypeFilter(request.FilterSettings)
 	if err != nil {
-		return usersync.Request{}, privacy.Policies{}, err
+		return usersync.Request{}, privacy.Policies{}, err, nil
 	}
 
 	gdprRequestInfo := gdpr.RequestInfo{
@@ -185,7 +189,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 		SyncTypeFilter: syncTypeFilter,
 		Debug:          request.Debug,
 	}
-	return rx, privacyPolicies, nil
+	return rx, privacyPolicies, nil, errors
 }
 
 func extractPrivacyPolicies(request cookieSyncRequest, usersyncDefaultGDPRValue string) (privacy.Policies, gdpr.Signal, error) {
