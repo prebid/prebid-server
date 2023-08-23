@@ -145,9 +145,14 @@ func resolveFloors(account config.Account, bidRequestWrapper *openrtb_ext.Reques
 		account.PriceFloors.Fetcher.URL = reqFloor.Location.URL
 	}
 	account.PriceFloors.Fetcher.AccountID = account.ID
-	fetchResult, fetchStatus := priceFloorFetcher.Fetch(account.PriceFloors)
 
-	if account.PriceFloors.UseDynamicData && fetchResult != nil && fetchStatus == openrtb_ext.FetchSuccess {
+	var fetchResult *openrtb_ext.PriceFloorRules
+	var fetchStatus string
+	if account.PriceFloors.UseDynamicData {
+		fetchResult, fetchStatus = priceFloorFetcher.Fetch(account.PriceFloors)
+	}
+
+	if fetchResult != nil && fetchStatus == openrtb_ext.FetchSuccess {
 		mergedFloor := mergeFloors(reqFloor, fetchResult, conversions)
 		floorRules, errList = createFloorsFrom(mergedFloor, account, fetchStatus, openrtb_ext.FetchLocation)
 	} else if reqFloor != nil {
