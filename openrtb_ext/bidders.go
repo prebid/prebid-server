@@ -564,10 +564,42 @@ type BidderParamValidator interface {
 	Schema(name BidderName) string
 }
 
+type paramsValidatorHelper interface {
+	readDir(name string) ([]os.DirEntry, error)
+	readFile(name string) ([]byte, error)
+	newReferenceLoader(source string) gojsonschema.JSONLoader
+	newSchema(l gojsonschema.JSONLoader) (*gojsonschema.Schema, error)
+	abs(path string) (string, error)
+}
+
+type paramsHelper struct{}
+
+func (paramsHelper) readDir(name string) ([]os.DirEntry, error) {
+	return os.ReadDir(name)
+}
+
+func (paramsHelper) readFile(name string) ([]byte, error) {
+	return os.ReadFile(name)
+}
+
+func (paramsHelper) newReferenceLoader(source string) gojsonschema.JSONLoader {
+	return gojsonschema.NewReferenceLoader(source)
+}
+
+func (paramsHelper) newSchema(l gojsonschema.JSONLoader) (*gojsonschema.Schema, error) {
+	return gojsonschema.NewSchema(l)
+}
+
+func (paramsHelper) abs(path string) (string, error) {
+	return filepath.Abs(path)
+}
+
+var paramsValidator paramsValidatorHelper = paramsHelper{}
+
 // NewBidderParamsValidator makes a BidderParamValidator, assuming all the necessary files exist in the filesystem.
 // This will error if, for example, a Bidder gets added but no JSON schema is written for them.
 func NewBidderParamsValidator(schemaDirectory string) (BidderParamValidator, error) {
-	fileInfos, err := os.ReadDir(schemaDirectory)
+	fileInfos, err := paramsValidator.readDir(schemaDirectory)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to read JSON schemas from directory %s. %v", schemaDirectory, err)
 	}
@@ -581,17 +613,17 @@ func NewBidderParamsValidator(schemaDirectory string) (BidderParamValidator, err
 		if _, ok := bidderMap[bidderName]; !ok {
 			return nil, fmt.Errorf("File %s/%s does not match a valid BidderName.", schemaDirectory, fileInfo.Name())
 		}
-		toOpen, err := filepath.Abs(filepath.Join(schemaDirectory, fileInfo.Name()))
+		toOpen, err := paramsValidator.abs(filepath.Join(schemaDirectory, fileInfo.Name()))
 		if err != nil {
 			return nil, fmt.Errorf("Failed to get an absolute representation of the path: %s, %v", toOpen, err)
 		}
-		schemaLoader := gojsonschema.NewReferenceLoader("file:///" + filepath.ToSlash(toOpen))
-		loadedSchema, err := gojsonschema.NewSchema(schemaLoader)
+		schemaLoader := paramsValidator.newReferenceLoader("file:///" + filepath.ToSlash(toOpen))
+		loadedSchema, err := paramsValidator.newSchema(schemaLoader)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to load json schema at %s: %v", toOpen, err)
 		}
 
-		fileBytes, err := os.ReadFile(fmt.Sprintf("%s/%s", schemaDirectory, fileInfo.Name()))
+		fileBytes, err := paramsValidator.readFile(fmt.Sprintf("%s/%s", schemaDirectory, fileInfo.Name()))
 		if err != nil {
 			return nil, fmt.Errorf("Failed to read file %s/%s: %v", schemaDirectory, fileInfo.Name(), err)
 		}
