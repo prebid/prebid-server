@@ -632,6 +632,15 @@ func NewBidderParamsValidator(schemaDirectory string) (BidderParamValidator, err
 		schemaContents[BidderName(bidderName)] = string(fileBytes)
 	}
 
+	//set alias bidder params schema to its parent
+	for alias, parent := range aliasBidderToParentBidder {
+		parentSchema := schemas[parent]
+		parentSchemaContents := schemaContents[parent]
+
+		schemas[alias] = parentSchema
+		schemaContents[alias] = parentSchemaContents
+	}
+
 	return &bidderParamValidator{
 		schemaContents: schemaContents,
 		parsedSchemas:  schemas,

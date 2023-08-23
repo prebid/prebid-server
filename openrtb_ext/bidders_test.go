@@ -266,11 +266,13 @@ func TestNewBidderParamsValidator(t *testing.T) {
 	}
 
 	for _, test := range testCases {
+		aliasBidderToParentBidder = map[BidderName]BidderName{"rubicon": "appnexus"}
 		paramsValidator = test.paramsValidator
 		bidderValidator, err := NewBidderParamsValidator(test.dir)
 		if test.expectedErr == nil {
 			assert.NoError(t, err)
 			assert.Contains(t, bidderValidator.Schema("appnexus"), "{}")
+			assert.Contains(t, bidderValidator.Schema("rubicon"), "{}")
 		} else {
 			assert.Equal(t, err, test.expectedErr)
 		}
