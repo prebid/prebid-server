@@ -15,7 +15,7 @@ import (
 // BidderName refers to a core bidder id or an alias id.
 type BidderName string
 
-var aliasBidderNames []BidderName
+var aliasBidderToParentBidder map[BidderName]BidderName = map[BidderName]BidderName{}
 
 var coreBidderNames []BidderName = []BidderName{
 	Bidder33Across,
@@ -222,17 +222,13 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderZetaGlobalSsp,
 }
 
-func SetAliasBidderName(name BidderName) {
-	aliasBidderNames = append(aliasBidderNames, name)
-	coreBidderNames = append(coreBidderNames, name)
-}
-
-func GetAliasBidderNamesSet() map[BidderName]struct{} {
-	set := map[BidderName]struct{}{}
-	for _, name := range aliasBidderNames {
-		set[name] = struct{}{}
+func SetAliasBidderName(aliasBidderName BidderName, parentBidderName BidderName) error {
+	if IsBidderNameReserved(string(aliasBidderName)) {
+		return fmt.Errorf("alias %s is a reserved bidder name and cannot be used", aliasBidderName)
 	}
-	return set
+	coreBidderNames = append(coreBidderNames, aliasBidderName)
+	aliasBidderToParentBidder[aliasBidderName] = parentBidderName
+	return nil
 }
 
 func (name BidderName) MarshalJSON() ([]byte, error) {

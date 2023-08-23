@@ -126,8 +126,31 @@ func TestIsBidderNameReserved(t *testing.T) {
 	}
 }
 
-func TestCoreBidderNames(t *testing.T) {
-	bidderA := "BidderA"
-	SetAliasBidderName(BidderName(bidderA))
-	assert.Contains(t, CoreBidderNames(), BidderName(bidderA))
+func TestSetAliasBidderName(t *testing.T) {
+	parentBidder := BidderName("pBidder")
+	existingCoreBidderNames := coreBidderNames
+
+	testCases := []struct {
+		aliasBidderName BidderName
+		err             error
+	}{
+		{"aBidder", nil},
+		{"all", errors.New("alias all is a reserved bidder name and cannot be used")},
+	}
+
+	for _, test := range testCases {
+		err := SetAliasBidderName(test.aliasBidderName, parentBidder)
+		if err != nil {
+			assert.Equal(t, test.err, err)
+		} else {
+			assert.Contains(t, CoreBidderNames(), test.aliasBidderName)
+			assert.Contains(t, aliasBidderToParentBidder, test.aliasBidderName)
+		}
+	}
+
+	//reset package variables to not interfere with other test cases. Example - TestBidderParamSchemas
+	coreBidderNames = existingCoreBidderNames
+	aliasBidderToParentBidder = map[BidderName]BidderName{}
+}
+
 }
