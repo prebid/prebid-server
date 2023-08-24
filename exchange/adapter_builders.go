@@ -19,6 +19,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/adot"
 	"github.com/prebid/prebid-server/adapters/adpone"
 	"github.com/prebid/prebid-server/adapters/adprime"
+	"github.com/prebid/prebid-server/adapters/adquery"
 	"github.com/prebid/prebid-server/adapters/adrino"
 	"github.com/prebid/prebid-server/adapters/adsinteractive"
 	"github.com/prebid/prebid-server/adapters/adtarget"
@@ -57,6 +58,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/bmtm"
 	"github.com/prebid/prebid-server/adapters/boldwin"
 	"github.com/prebid/prebid-server/adapters/brave"
+	cadentaperturemx "github.com/prebid/prebid-server/adapters/cadent_aperture_mx"
 	"github.com/prebid/prebid-server/adapters/ccx"
 	"github.com/prebid/prebid-server/adapters/coinzilla"
 	"github.com/prebid/prebid-server/adapters/colossus"
@@ -75,7 +77,6 @@ import (
 	"github.com/prebid/prebid-server/adapters/dmx"
 	evolution "github.com/prebid/prebid-server/adapters/e_volution"
 	"github.com/prebid/prebid-server/adapters/emtv"
-	"github.com/prebid/prebid-server/adapters/emx_digital"
 	"github.com/prebid/prebid-server/adapters/engagebdr"
 	"github.com/prebid/prebid-server/adapters/eplanning"
 	"github.com/prebid/prebid-server/adapters/epom"
@@ -211,6 +212,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAdot:              adot.Builder,
 		openrtb_ext.BidderAdpone:            adpone.Builder,
 		openrtb_ext.BidderAdprime:           adprime.Builder,
+		openrtb_ext.BidderAdquery:           adquery.Builder,
 		openrtb_ext.BidderAdrino:            adrino.Builder,
 		openrtb_ext.BidderAdsinteractive:    adsinteractive.Builder,
 		openrtb_ext.BidderAdsyield:          limelightDigital.Builder,
@@ -250,7 +252,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderBmtm:              bmtm.Builder,
 		openrtb_ext.BidderBoldwin:           boldwin.Builder,
 		openrtb_ext.BidderBrave:             brave.Builder,
-		openrtb_ext.BidderCadentApertureMX:  emx_digital.Builder,
+		openrtb_ext.BidderCadentApertureMX:  cadentaperturemx.Builder,
 		openrtb_ext.BidderCcx:               ccx.Builder,
 		openrtb_ext.BidderCoinzilla:         coinzilla.Builder,
 		openrtb_ext.BidderColossus:          colossus.Builder,
@@ -269,7 +271,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderDianomi:           dianomi.Builder,
 		openrtb_ext.BidderDmx:               dmx.Builder,
 		openrtb_ext.BidderEmtv:              emtv.Builder,
-		openrtb_ext.BidderEmxDigital:        emx_digital.Builder,
+		openrtb_ext.BidderEmxDigital:        cadentaperturemx.Builder,
 		openrtb_ext.BidderEngageBDR:         engagebdr.Builder,
 		openrtb_ext.BidderEPlanning:         eplanning.Builder,
 		openrtb_ext.BidderEpom:              epom.Builder,

@@ -65,6 +65,20 @@ func TestVideoEndpointImpressionsNumber(t *testing.T) {
 	assert.Equal(t, resp.AdPods[0].Targeting[0].HbDeal, "ABC_123", "If DealID exists in bid response, hb_deal targeting needs to be added to resp")
 }
 
+func TestVideoEndpointInvalidPrivacyConfig(t *testing.T) {
+	ex := &mockExchangeVideo{}
+	reqBody := readVideoTestFile(t, "sample-requests/video/video_valid_sample.json")
+	req := httptest.NewRequest("POST", "/openrtb2/video", strings.NewReader(reqBody))
+	recorder := httptest.NewRecorder()
+
+	deps := mockDepsInvalidPrivacy(t, ex)
+	deps.VideoAuctionEndpoint(recorder, req, nil)
+
+	respBytes := recorder.Body.Bytes()
+	expectedErrorMessage := "Critical error while running the video endpoint:  unable to parse component: bidderA.BidderB.bidderC"
+	assert.Equal(t, expectedErrorMessage, string(respBytes), "error message is incorrect")
+}
+
 func TestVideoEndpointImpressionsDuration(t *testing.T) {
 	ex := &mockExchangeVideo{}
 	reqBody := readVideoTestFile(t, "sample-requests/video/video_valid_sample_different_durations.json")
@@ -1260,6 +1274,40 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		&mockVideoStoredReqFetcher{},
 		&mockAccountFetcher{data: mockVideoAccountData},
 		&config.Configuration{MaxRequestSize: maxSize},
+		&metricsConfig.NilMetricsEngine{},
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		ex.cache,
+		regexp.MustCompile(`[<>]`),
+		hardcodedResponseIPValidator{response: true},
+		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
+		nil,
+	}
+}
+
+func mockDepsInvalidPrivacy(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
+	return &endpointDeps{
+		fakeUUIDGenerator{},
+		ex,
+		mockBidderParamValidator{},
+		&mockVideoStoredReqFetcher{},
+		&mockVideoStoredReqFetcher{},
+		&mockAccountFetcher{data: mockVideoAccountData},
+		&config.Configuration{MaxRequestSize: maxSize,
+			AccountDefaults: config.Account{
+				Privacy: &config.AccountPrivacy{
+					AllowActivities: config.AllowActivities{
+						TransmitPreciseGeo: config.Activity{Rules: []config.ActivityRule{
+							{Condition: config.ActivityCondition{ComponentName: []string{"bidderA.BidderB.bidderC"}}},
+						}},
+					},
+				},
+			},
+		},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},

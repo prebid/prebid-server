@@ -1,0 +1,12 @@
+{
+  "mockBidRequest": {
+    "id": "22e26bd9a702bc",
+    "user": {
+      "id": "xyz"
+    },
+    "imp": [],
+    "bidder": "adquery"
+  },
+  "httpCalls": [],
+  "expectedBidResponses": []
+}
