@@ -383,13 +383,13 @@ func TestPrepareCookieForWrite(t *testing.T) {
 
 	mainCookie := &Cookie{
 		uids: map[string]UIDEntry{
-			"1": newTempId("1234567890123456789012345678901234567890123456", 7),
-			"2": newTempId("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 6),
-			"3": newTempId("123456789012345678901234567896123456789012345678", 5),
-			"4": newTempId("aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ", 4),
-			"5": newTempId("12345678901234567890123456789012345678901234567890", 3),
-			"6": newTempId("abcdefghij", 2),
-			"7": newTempId("abcdefghijklmnopqrstuvwxy", 1),
+			"mainUID": newTempId("1234567890123456789012345678901234567890123456", 7),
+			"2":       newTempId("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 6),
+			"3":       newTempId("123456789012345678901234567896123456789012345678", 5),
+			"4":       newTempId("aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ", 4),
+			"5":       newTempId("12345678901234567890123456789012345678901234567890", 3),
+			"6":       newTempId("abcdefghij", 2),
+			"7":       newTempId("abcdefghijklmnopqrstuvwxy", 1),
 		},
 		optOut: false,
 	}
@@ -397,20 +397,21 @@ func TestPrepareCookieForWrite(t *testing.T) {
 	errorCookie := &Cookie{
 		uids: map[string]UIDEntry{
 			"syncerNotPriority": newTempId("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 7),
+			"2":                 newTempId("1234567890123456789012345678901234567890123456", 7), // Priority Element
 		},
 		optOut: false,
 	}
 
 	ejector := &PriorityBidderEjector{
 		PriorityGroups: [][]string{
-			{"1"},
+			{"mainUID"},
 			{"2", "3"},
 			{"4", "5", "6"},
 			{"7"},
 		},
 		syncersByBidder: map[string]Syncer{
-			"1": fakeSyncer{
-				key: "1",
+			"mainUID": fakeSyncer{
+				key: "mainUID",
 			},
 			"2": fakeSyncer{
 				key: "2",
@@ -448,7 +449,7 @@ func TestPrepareCookieForWrite(t *testing.T) {
 			givenCookieToSend:     mainCookie,
 			givenIsSyncerPriority: true,
 			expectedRemainingUidKeys: []string{
-				"1", "2", "3", "4", "5", "6", "7",
+				"mainUID", "2", "3", "4", "5", "6", "7",
 			},
 		},
 		{
@@ -456,7 +457,7 @@ func TestPrepareCookieForWrite(t *testing.T) {
 			givenMaxCookieSize: -100,
 			givenCookieToSend:  mainCookie,
 			expectedRemainingUidKeys: []string{
-				"1", "2", "3", "4", "5", "6", "7",
+				"mainUID", "2", "3", "4", "5", "6", "7",
 			},
 		},
 		{
@@ -472,7 +473,7 @@ func TestPrepareCookieForWrite(t *testing.T) {
 			givenCookieToSend:     mainCookie,
 			givenIsSyncerPriority: true,
 			expectedRemainingUidKeys: []string{
-				"1", "2", "3", "4", "5", "6", "7",
+				"mainUID", "2", "3", "4", "5", "6", "7",
 			},
 		},
 		{
@@ -481,7 +482,7 @@ func TestPrepareCookieForWrite(t *testing.T) {
 			givenCookieToSend:     mainCookie,
 			givenIsSyncerPriority: true,
 			expectedRemainingUidKeys: []string{
-				"1", "2", "3", "4", "5", "6",
+				"mainUID", "2", "3", "4", "5", "6",
 			},
 		},
 		{
@@ -490,7 +491,7 @@ func TestPrepareCookieForWrite(t *testing.T) {
 			givenCookieToSend:     mainCookie,
 			givenIsSyncerPriority: true,
 			expectedRemainingUidKeys: []string{
-				"1", "2", "3",
+				"mainUID", "2", "3",
 			},
 		},
 		{
@@ -499,13 +500,14 @@ func TestPrepareCookieForWrite(t *testing.T) {
 			givenCookieToSend:     mainCookie,
 			givenIsSyncerPriority: true,
 			expectedRemainingUidKeys: []string{
-				"1",
+				"mainUID",
 			},
 		},
 		{
-			name:                     "all-uids-ejected",
+			name:                     "only-main-uid-left",
 			givenMaxCookieSize:       100,
 			givenCookieToSend:        mainCookie,
+			expectedError:            errors.New("uid that's trying to be synced is bigger than MaxCookieSize"),
 			expectedRemainingUidKeys: []string{},
 		},
 	}

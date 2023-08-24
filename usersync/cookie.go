@@ -76,6 +76,8 @@ func (cookie *Cookie) PrepareCookieForWrite(cfg *config.HostCookie, encoder Enco
 		isCookieTooBig := cookieSize > cfg.MaxCookieSizeBytes && cfg.MaxCookieSizeBytes > 0
 		if !isCookieTooBig {
 			return encodedCookie, nil
+		} else if len(cookie.uids) == 1 {
+			return "", errors.New("uid that's trying to be synced is bigger than MaxCookieSize")
 		}
 
 		uidToDelete, err := ejector.Choose(cookie.uids)
