@@ -62,6 +62,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderAxonix,
 	BidderBeachfront,
 	BidderBeintoo,
+	BidderBematterfull,
 	BidderBetween,
 	BidderBeyondMedia,
 	BidderBidmachine,
