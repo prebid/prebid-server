@@ -70,11 +70,12 @@ func executeGroup[H any, P any](
 
 	for _, hook := range group.Hooks {
 		mCtx := executionCtx.getModuleContext(hook.Module)
-		handleModuleActivities(hook, executionCtx.activityControl, payload)
+
+		pd, _ := handleModuleActivities(hook, executionCtx.activityControl, payload)
 		wg.Add(1)
 		go func(hw hooks.HookWrapper[H], moduleCtx hookstage.ModuleInvocationContext) {
 			defer wg.Done()
-			executeHook(moduleCtx, hw, payload, hookHandler, group.Timeout, resp, rejected)
+			executeHook(moduleCtx, hw, pd, hookHandler, group.Timeout, resp, rejected)
 		}(hook, mCtx)
 	}
 
@@ -320,7 +321,12 @@ func handleHookMutations[P any](
 func handleModuleActivities[T any, P any](hook hooks.HookWrapper[T], activityControl privacy.ActivityControl, payload P) (P, error) {
 	// only 2 stages receive bidder request: hookstage.ProcessedAuctionRequestPayload and hookstage.BidderRequestPayload
 	// they both implement PayloadBidderRequest interface in order to execute mutations on bid request
-	changeSet := hookstage.ChangeSet[hookstage.PayloadBidderRequest]{}
+	if _, ok := any(payload).(hookstage.PayloadBidderRequest); !ok {
+		// payload doesn't have a bid request
+		return payload, nil
+	}
+
+	changeSet := hookstage.ChangeSet[P]{}
 
 	// parse hook.Module to split it to type and mame?
 	// hook.Module example: "mytest.mymodule". Can it be "rtd.mymodule" or "general.mymodule"?
@@ -328,38 +334,34 @@ func handleModuleActivities[T any, P any](hook hooks.HookWrapper[T], activityCon
 	transmitUserFPDActivityAllowed := activityControl.Allow(privacy.ActivityTransmitUserFPD, scopeGeneral)
 	if !transmitUserFPDActivityAllowed {
 		//remove user.eids, user.ext.data.*, user.data.*, user.{id, buyeruid, yob, gender} and device-specific IDs
-		changeSet.AddMutation(transmitUFPDMutationUser, hookstage.MutationDelete, "bidderRequest", "user")
+		changeSet.AddMutation(transmitUFPDMutationUser[P], hookstage.MutationDelete, "bidderRequest", "user")
 		//changeSet.AddMutation(transmitUFPDMutationDevice, hookstage.MutationDelete, "bidderRequest", "device")
 	}
 
-	// changes should be applied to bid request before the module execution
-	if payloadData, ok := any(payload).(hookstage.PayloadBidderRequest); ok {
-		for _, m := range changeSet.Mutations() {
-			payloadData, _ = m.Apply(payloadData)
-			fmt.Println()
-		}
+	payloadData := payload
+	for _, m := range changeSet.Mutations() {
+		payloadData, _ = m.Apply(payload)
 	}
+	return payloadData, nil
 
-	return payload, nil
 }
 
-func transmitUFPDMutationUser(payload hookstage.PayloadBidderRequest) (hookstage.PayloadBidderRequest, error) {
-	if payload.GetBidderRequestPayload().User == nil {
+func transmitUFPDMutationUser[P any](payload P) (P, error) {
+	payloadData := any(payload).(hookstage.BidderRequestPayload)
+	payloadData.GetBidderRequestPayload()
+
+	if payloadData.GetBidderRequestPayload().User == nil {
 		return payload, nil
 	}
-
-	var br *openrtb2.BidRequest
-	br = ptrutil.Clone(payload.GetBidderRequestPayload())
-
 	var userCopy *openrtb2.User
-	userCopy = ptrutil.Clone(payload.GetBidderRequestPayload().User)
+	userCopy = ptrutil.Clone(payloadData.GetBidderRequestPayload().User)
 
-	userCopy.ID = ""
-	userCopy.BuyerUID = ""
-	userCopy.Yob = 0
-	userCopy.Gender = ""
-	userCopy.Data = nil
-	userCopy.EIDs = nil
+	payloadData.GetBidderRequestPayload().User.ID = ""
+	payloadData.GetBidderRequestPayload().User.BuyerUID = ""
+	payloadData.GetBidderRequestPayload().User.Yob = 0
+	payloadData.GetBidderRequestPayload().User.Gender = ""
+	payloadData.GetBidderRequestPayload().User.Data = nil
+	payloadData.GetBidderRequestPayload().User.EIDs = nil
 
 	//user.ext.data.*
 	var userExtParsed map[string]json.RawMessage
@@ -368,15 +370,8 @@ func transmitUFPDMutationUser(payload hookstage.PayloadBidderRequest) (hookstage
 	if hasField {
 		delete(userExtParsed, "data")
 		userExt, _ := json.Marshal(userExtParsed)
-		userCopy.Ext = userExt
+		payloadData.GetBidderRequestPayload().User.Ext = userExt
 	}
-
-	br.User = userCopy
-	payload.GetBidderRequestPayload().User = userCopy
-	//payload.SetBidderRequestPayload(br)
-
-	//payloadCopy := payload
-	//payloadCopy.SetBidderRequestPayload(br)
 	return payload, nil
 }
 
