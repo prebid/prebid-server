@@ -231,6 +231,10 @@ func SetAliasBidderName(aliasBidderName BidderName, parentBidderName BidderName)
 	return nil
 }
 
+func GetAliasBidderNames() map[BidderName]BidderName {
+	return aliasBidderToParentBidder
+}
+
 func (name BidderName) MarshalJSON() ([]byte, error) {
 	return []byte(name), nil
 }

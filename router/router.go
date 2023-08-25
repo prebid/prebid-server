@@ -44,6 +44,18 @@ import (
 	"github.com/rs/cors"
 )
 
+type aliasBidderNameHelper struct{}
+
+type getAliasBidderNames interface {
+	getAliasBidderNames() map[openrtb_ext.BidderName]openrtb_ext.BidderName
+}
+
+func (a aliasBidderNameHelper) getAliasBidderNames() map[openrtb_ext.BidderName]openrtb_ext.BidderName {
+	return openrtb_ext.GetAliasBidderNames()
+}
+
+var getAliasBidders getAliasBidderNames = aliasBidderNameHelper{}
+
 // NewJsonDirectoryServer is used to serve .json files from a directory as a single blob. For example,
 // given a directory containing the files "a.json" and "b.json", this returns a Handle which serves JSON like:
 //
@@ -71,6 +83,11 @@ func NewJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.Bidder
 			glog.Fatalf("Schema exists for an unknown bidder: %s", bidder)
 		}
 		data[bidder] = json.RawMessage(validator.Schema(bidderName))
+	}
+
+	//Add in any aliases
+	for aliasName, parentBidder := range getAliasBidders.getAliasBidderNames() {
+		data[string(aliasName)] = json.RawMessage(validator.Schema(parentBidder))
 	}
 
 	// Add in any default aliases
