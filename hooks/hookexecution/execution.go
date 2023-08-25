@@ -338,16 +338,14 @@ func handleModuleActivities[T any, P any](hook hooks.HookWrapper[T], activityCon
 		//changeSet.AddMutation(transmitUFPDMutationDevice, hookstage.MutationDelete, "bidderRequest", "device")
 	}
 
-	payloadData := payload
 	for _, m := range changeSet.Mutations() {
-		payloadData, _ = m.Apply(payload)
+		payload, _ = m.Apply(payload)
 	}
-	return payloadData, nil
-
+	return payload, nil
 }
 
 func transmitUFPDMutationUser[P any](payload P) (P, error) {
-	payloadData := any(payload).(hookstage.BidderRequestPayload)
+	payloadData := any(payload).(hookstage.PayloadBidderRequest)
 	payloadData.GetBidderRequestPayload()
 
 	if payloadData.GetBidderRequestPayload().User == nil {
