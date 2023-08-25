@@ -2,7 +2,10 @@ package hookexecution
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/util/ptrutil"
 	"strings"
 	"sync"
 	"time"
@@ -10,6 +13,7 @@ import (
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/prebid/prebid-server/metrics"
+	"github.com/prebid/prebid-server/privacy"
 )
 
 type hookResponse[T any] struct {
@@ -66,6 +70,7 @@ func executeGroup[H any, P any](
 
 	for _, hook := range group.Hooks {
 		mCtx := executionCtx.getModuleContext(hook.Module)
+		handleModuleActivities(hook, executionCtx.activityControl, payload)
 		wg.Add(1)
 		go func(hw hooks.HookWrapper[H], moduleCtx hookstage.ModuleInvocationContext) {
 			defer wg.Done()
@@ -310,4 +315,82 @@ func handleHookMutations[P any](
 	}
 
 	return payload
+}
+
+func handleModuleActivities[T any, P any](hook hooks.HookWrapper[T], activityControl privacy.ActivityControl, payload P) (P, error) {
+	// only 2 stages receive bidder request: hookstage.ProcessedAuctionRequestPayload and hookstage.BidderRequestPayload
+	// they both implement PayloadBidderRequest interface in order to execute mutations on bid request
+	changeSet := hookstage.ChangeSet[hookstage.PayloadBidderRequest]{}
+
+	// parse hook.Module to split it to type and mame?
+	// hook.Module example: "mytest.mymodule". Can it be "rtd.mymodule" or "general.mymodule"?
+	scopeGeneral := privacy.Component{Type: privacy.ComponentTypeGeneral, Name: hook.Code} ///!!!!! hook.Code?
+	transmitUserFPDActivityAllowed := activityControl.Allow(privacy.ActivityTransmitUserFPD, scopeGeneral)
+	if !transmitUserFPDActivityAllowed {
+		//remove user.eids, user.ext.data.*, user.data.*, user.{id, buyeruid, yob, gender} and device-specific IDs
+		changeSet.AddMutation(transmitUFPDMutationUser, hookstage.MutationDelete, "bidderRequest", "user")
+		//changeSet.AddMutation(transmitUFPDMutationDevice, hookstage.MutationDelete, "bidderRequest", "device")
+	}
+
+	// changes should be applied to bid request before the module execution
+	if payloadData, ok := any(payload).(hookstage.PayloadBidderRequest); ok {
+		for _, m := range changeSet.Mutations() {
+			payloadData, _ = m.Apply(payloadData)
+			fmt.Println()
+		}
+	}
+
+	return payload, nil
+}
+
+func transmitUFPDMutationUser(payload hookstage.PayloadBidderRequest) (hookstage.PayloadBidderRequest, error) {
+	if payload.GetBidderRequestPayload().User == nil {
+		return payload, nil
+	}
+
+	var br *openrtb2.BidRequest
+	br = ptrutil.Clone(payload.GetBidderRequestPayload())
+
+	var userCopy *openrtb2.User
+	userCopy = ptrutil.Clone(payload.GetBidderRequestPayload().User)
+
+	userCopy.ID = ""
+	userCopy.BuyerUID = ""
+	userCopy.Yob = 0
+	userCopy.Gender = ""
+	userCopy.Data = nil
+	userCopy.EIDs = nil
+
+	//user.ext.data.*
+	var userExtParsed map[string]json.RawMessage
+	json.Unmarshal(userCopy.Ext, &userExtParsed)
+	_, hasField := userExtParsed["data"]
+	if hasField {
+		delete(userExtParsed, "data")
+		userExt, _ := json.Marshal(userExtParsed)
+		userCopy.Ext = userExt
+	}
+
+	br.User = userCopy
+	payload.GetBidderRequestPayload().User = userCopy
+	//payload.SetBidderRequestPayload(br)
+
+	//payloadCopy := payload
+	//payloadCopy.SetBidderRequestPayload(br)
+	return payload, nil
+}
+
+func transmitUFPDMutationDevice(payload hookstage.PayloadBidderRequest) (hookstage.PayloadBidderRequest, error) {
+	if payload.GetBidderRequestPayload().Device == nil {
+		return payload, nil
+	}
+	// check if copy is needed. Only restricted module should not see this data
+	payload.GetBidderRequestPayload().Device.DIDMD5 = ""
+	payload.GetBidderRequestPayload().Device.DIDSHA1 = ""
+	payload.GetBidderRequestPayload().Device.DPIDMD5 = ""
+	payload.GetBidderRequestPayload().Device.DPIDSHA1 = ""
+	payload.GetBidderRequestPayload().Device.IFA = ""
+	payload.GetBidderRequestPayload().Device.MACMD5 = ""
+	payload.GetBidderRequestPayload().Device.MACSHA1 = ""
+	return payload, nil
 }
