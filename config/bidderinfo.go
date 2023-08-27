@@ -451,7 +451,9 @@ func validateAliasCapabilities(aliasBidderInfo BidderInfo, infos BidderInfos, bi
 			return fmt.Errorf("capabilities for alias: %s should be a subset of capabilities for parent bidder: %s", bidderName, aliasBidderInfo.AliasOf)
 		}
 
-		if (aliasBidderInfo.Capabilities.App != nil && parentBidder.Capabilities.App == nil) || (aliasBidderInfo.Capabilities.Site != nil && parentBidder.Capabilities.Site == nil) {
+		if (aliasBidderInfo.Capabilities.App != nil && parentBidder.Capabilities.App == nil) ||
+			(aliasBidderInfo.Capabilities.Site != nil && parentBidder.Capabilities.Site == nil) ||
+			(aliasBidderInfo.Capabilities.DOOH != nil && parentBidder.Capabilities.DOOH == nil) {
 			return fmt.Errorf("capabilities for alias: %s should be a subset of capabilities for parent bidder: %s", bidderName, aliasBidderInfo.AliasOf)
 		}
 
@@ -463,6 +465,12 @@ func validateAliasCapabilities(aliasBidderInfo BidderInfo, infos BidderInfos, bi
 
 		if aliasBidderInfo.Capabilities.App != nil && parentBidder.Capabilities.App != nil {
 			if err := isAliasPlatformInfoSubsetOfParent(*parentBidder.Capabilities.App, *aliasBidderInfo.Capabilities.App, bidderName, aliasBidderInfo.AliasOf); err != nil {
+				return err
+			}
+		}
+
+		if aliasBidderInfo.Capabilities.DOOH != nil && parentBidder.Capabilities.DOOH != nil {
+			if err := isAliasPlatformInfoSubsetOfParent(*parentBidder.Capabilities.DOOH, *aliasBidderInfo.Capabilities.DOOH, bidderName, aliasBidderInfo.AliasOf); err != nil {
 				return err
 			}
 		}

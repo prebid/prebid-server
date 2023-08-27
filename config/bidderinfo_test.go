@@ -1051,7 +1051,7 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 				},
 			},
 			[]error{
-				errors.New("at least one of capabilities.site or capabilities.app must exist for adapter: bidderA"),
+				errors.New("at least one of capabilities.site, capabilities.app, or capabilities.dooh must exist for adapter: bidderA"),
 				errors.New("capabilities for alias: bidderB should be a subset of capabilities for parent bidder: bidderA"),
 			},
 		},
