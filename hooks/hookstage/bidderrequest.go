@@ -29,11 +29,11 @@ type BidderRequestPayload struct {
 	Bidder     string
 }
 
-func (brp BidderRequestPayload) GetBidderRequestPayload() *openrtb2.BidRequest {
+func (brp *BidderRequestPayload) GetBidderRequestPayload() *openrtb2.BidRequest {
 	return brp.BidRequest
 }
 
-func (brp BidderRequestPayload) SetBidderRequestPayload(br *openrtb2.BidRequest) {
+func (brp *BidderRequestPayload) SetBidderRequestPayload(br *openrtb2.BidRequest) {
 	brp.BidRequest = br
 }
 

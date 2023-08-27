@@ -29,10 +29,10 @@ type ProcessedAuctionRequestPayload struct {
 	BidRequest *openrtb2.BidRequest
 }
 
-func (parp ProcessedAuctionRequestPayload) GetBidderRequestPayload() *openrtb2.BidRequest {
+func (parp *ProcessedAuctionRequestPayload) GetBidderRequestPayload() *openrtb2.BidRequest {
 	return parp.BidRequest
 }
 
-func (parp ProcessedAuctionRequestPayload) SetBidderRequestPayload(br *openrtb2.BidRequest) {
+func (parp *ProcessedAuctionRequestPayload) SetBidderRequestPayload(br *openrtb2.BidRequest) {
 	parp.BidRequest = br
 }
