@@ -149,12 +149,7 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 		errs = append(errs, errors.New("account_defaults.Events.VASTEvents has no effect as the feature is under development."))
 	}
 
-	if cfg.TmaxAdjustments.Enabled {
-		glog.Warning(`cfg.TmaxAdjustments.Enabled will currently not do anything as tmax adjustment feature is still under development.`)
-		cfg.TmaxAdjustments.Enabled = false
-	}
-
-	if cfg.AccountDefaults.Privacy.AllowActivities != nil {
+	if cfg.AccountDefaults.Privacy != nil {
 		glog.Warning("account_defaults.Privacy has no effect as the feature is under development.")
 	}
 
