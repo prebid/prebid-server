@@ -278,7 +278,7 @@ func processBidderAliases(aliasNillableFieldsByBidder map[string]aliasNillableFi
 		}
 
 		//required for CoreBidderNames function to also return aliasBiddernames
-		if err := openrtb_ext.SetAliasBidderName(openrtb_ext.BidderName(string(bidderName)), openrtb_ext.BidderName(aliasBidderInfo.AliasOf)); err != nil {
+		if err := openrtb_ext.SetAliasBidderName(bidderName, openrtb_ext.BidderName(aliasBidderInfo.AliasOf)); err != nil {
 			return nil, err
 		}
 		parentBidderInfo := bidderInfos[aliasBidderInfo.AliasOf]

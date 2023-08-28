@@ -222,12 +222,13 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderZetaGlobalSsp,
 }
 
-func SetAliasBidderName(aliasBidderName BidderName, parentBidderName BidderName) error {
-	if IsBidderNameReserved(string(aliasBidderName)) {
+func SetAliasBidderName(aliasBidderName string, parentBidderName BidderName) error {
+	if IsBidderNameReserved(aliasBidderName) {
 		return fmt.Errorf("alias %s is a reserved bidder name and cannot be used", aliasBidderName)
 	}
-	coreBidderNames = append(coreBidderNames, aliasBidderName)
-	aliasBidderToParentBidder[aliasBidderName] = parentBidderName
+	aliasBidder := BidderName(aliasBidderName)
+	coreBidderNames = append(coreBidderNames, aliasBidder)
+	aliasBidderToParentBidder[aliasBidder] = parentBidderName
 	return nil
 }
 

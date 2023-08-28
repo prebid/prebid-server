@@ -134,7 +134,7 @@ func TestSetAliasBidderName(t *testing.T) {
 	existingCoreBidderNames := coreBidderNames
 
 	testCases := []struct {
-		aliasBidderName BidderName
+		aliasBidderName string
 		err             error
 	}{
 		{"aBidder", nil},
@@ -146,8 +146,8 @@ func TestSetAliasBidderName(t *testing.T) {
 		if err != nil {
 			assert.Equal(t, test.err, err)
 		} else {
-			assert.Contains(t, CoreBidderNames(), test.aliasBidderName)
-			assert.Contains(t, aliasBidderToParentBidder, test.aliasBidderName)
+			assert.Contains(t, CoreBidderNames(), BidderName(test.aliasBidderName))
+			assert.Contains(t, aliasBidderToParentBidder, BidderName(test.aliasBidderName))
 		}
 	}
 
