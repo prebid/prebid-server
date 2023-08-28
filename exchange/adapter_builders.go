@@ -44,6 +44,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/axonix"
 	"github.com/prebid/prebid-server/adapters/beachfront"
 	"github.com/prebid/prebid-server/adapters/beintoo"
+	"github.com/prebid/prebid-server/adapters/bematterfull"
 	"github.com/prebid/prebid-server/adapters/between"
 	"github.com/prebid/prebid-server/adapters/beyondmedia"
 	"github.com/prebid/prebid-server/adapters/bidmachine"
@@ -237,6 +238,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAxonix:            axonix.Builder,
 		openrtb_ext.BidderBeachfront:        beachfront.Builder,
 		openrtb_ext.BidderBeintoo:           beintoo.Builder,
+		openrtb_ext.BidderBematterfull:      bematterfull.Builder,
 		openrtb_ext.BidderBetween:           between.Builder,
 		openrtb_ext.BidderBeyondMedia:       beyondmedia.Builder,
 		openrtb_ext.BidderBidmachine:        bidmachine.Builder,
