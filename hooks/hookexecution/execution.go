@@ -70,11 +70,11 @@ func executeGroup[H any, P any](
 
 	for _, hook := range group.Hooks {
 		mCtx := executionCtx.getModuleContext(hook.Module)
-		pd, _ := handleModuleActivities(hook, executionCtx.activityControl, payload)
+		newPayload, _ := handleModuleActivities(hook, executionCtx.activityControl, payload)
 		wg.Add(1)
 		go func(hw hooks.HookWrapper[H], moduleCtx hookstage.ModuleInvocationContext) {
 			defer wg.Done()
-			executeHook(moduleCtx, hw, pd, hookHandler, group.Timeout, resp, rejected)
+			executeHook(moduleCtx, hw, newPayload, hookHandler, group.Timeout, resp, rejected)
 		}(hook, mCtx)
 	}
 
@@ -320,7 +320,9 @@ func handleHookMutations[P any](
 func handleModuleActivities[T any, P any](hook hooks.HookWrapper[T], activityControl privacy.ActivityControl, payload P) (P, error) {
 	// only 2 stages receive bidder request: hookstage.ProcessedAuctionRequestPayload and hookstage.BidderRequestPayload
 	// they both implement PayloadBidderRequest interface in order to execute mutations on bid request
-	if _, ok := any(&payload).(hookstage.PayloadBidderRequest); !ok {
+	var payloadData hookstage.PayloadBidderRequest
+	ok := true
+	if payloadData, ok = any(&payload).(hookstage.PayloadBidderRequest); !ok {
 		// payload doesn't have a bid request
 		return payload, nil
 	}
@@ -337,8 +339,21 @@ func handleModuleActivities[T any, P any](hook hooks.HookWrapper[T], activityCon
 		changeSet.AddMutation(transmitUFPDMutationDevice[P], hookstage.MutationDelete, "bidderRequest", "device")
 	}
 
-	for _, m := range changeSet.Mutations() {
-		payload, _ = m.Apply(payload)
+	if len(changeSet.Mutations()) > 0 {
+
+		// changes needs to be applied to new payload and leave original payload unchanged
+		bidderReq := payloadData.GetBidderRequestPayload()
+		var bidderReqCopy *openrtb2.BidRequest
+		bidderReqCopy = ptrutil.Clone(bidderReq)
+
+		var newPayload = payload
+		var np = any(&newPayload).(hookstage.PayloadBidderRequest)
+		np.SetBidderRequestPayload(bidderReqCopy)
+
+		for _, m := range changeSet.Mutations() {
+			newPayload, _ = m.Apply(newPayload)
+		}
+		return newPayload, nil
 	}
 	return payload, nil
 }
@@ -348,9 +363,7 @@ func transmitUFPDMutationUser[P any](payload P) (P, error) {
 	if payloadData.GetBidderRequestPayload().User == nil {
 		return payload, nil
 	}
-	bidderReq := payloadData.GetBidderRequestPayload()
-	var bidderReqCopy *openrtb2.BidRequest
-	bidderReqCopy = ptrutil.Clone(bidderReq)
+	bidderReqCopy := payloadData.GetBidderRequestPayload()
 
 	var userCopy *openrtb2.User
 	userCopy = ptrutil.Clone(bidderReqCopy.User)
@@ -372,10 +385,7 @@ func transmitUFPDMutationUser[P any](payload P) (P, error) {
 		userExt, _ := json.Marshal(userExtParsed)
 		bidderReqCopy.User.Ext = userExt
 	}
-	var newPayload = payload
-	var np = any(&newPayload).(hookstage.PayloadBidderRequest)
-	np.SetBidderRequestPayload(bidderReqCopy)
-	return newPayload, nil
+	return payload, nil
 }
 
 func transmitUFPDMutationDevice[P any](payload P) (P, error) {
@@ -384,23 +394,18 @@ func transmitUFPDMutationDevice[P any](payload P) (P, error) {
 		return payload, nil
 	}
 	bidderReq := payloadData.GetBidderRequestPayload()
-	var bidderReqCopy *openrtb2.BidRequest
-	bidderReqCopy = ptrutil.Clone(bidderReq)
 
 	var deviceCopy *openrtb2.Device
-	deviceCopy = ptrutil.Clone(bidderReqCopy.Device)
+	deviceCopy = ptrutil.Clone(bidderReq.Device)
 
-	bidderReqCopy.Device = deviceCopy
-	bidderReqCopy.Device.DIDMD5 = ""
-	bidderReqCopy.Device.DIDSHA1 = ""
-	bidderReqCopy.Device.DPIDMD5 = ""
-	bidderReqCopy.Device.DPIDSHA1 = ""
-	bidderReqCopy.Device.IFA = ""
-	bidderReqCopy.Device.MACMD5 = ""
-	bidderReqCopy.Device.MACSHA1 = ""
+	bidderReq.Device = deviceCopy
+	bidderReq.Device.DIDMD5 = ""
+	bidderReq.Device.DIDSHA1 = ""
+	bidderReq.Device.DPIDMD5 = ""
+	bidderReq.Device.DPIDSHA1 = ""
+	bidderReq.Device.IFA = ""
+	bidderReq.Device.MACMD5 = ""
+	bidderReq.Device.MACSHA1 = ""
 
-	var newPayload = payload
-	var np = any(&newPayload).(hookstage.PayloadBidderRequest)
-	np.SetBidderRequestPayload(bidderReqCopy)
-	return newPayload, nil
+	return payload, nil
 }
