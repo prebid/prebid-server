@@ -1,6 +1,7 @@
 package privacy
 
-// Activity defines privileges which can be controlled directly by the publisher or via privacy policies.
+// Activity defines Prebid Server actions which can be controlled directly
+// by the publisher or via privacy policies.
 type Activity int
 
 const (
