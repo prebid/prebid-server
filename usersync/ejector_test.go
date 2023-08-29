@@ -34,7 +34,7 @@ func TestPriorityEjector(t *testing.T) {
 					{"highestPriorityBidder"},
 					{"lowestPriority"},
 				},
-				syncersByBidder: map[string]Syncer{
+				SyncersByBidder: map[string]Syncer{
 					"highestPriorityBidder": fakeSyncer{
 						key: "highestPrioritySyncer",
 					},
@@ -62,7 +62,7 @@ func TestPriorityEjector(t *testing.T) {
 				PriorityGroups: [][]string{
 					{"newerButSamePriority", "olderButSamePriority"},
 				},
-				syncersByBidder: map[string]Syncer{
+				SyncersByBidder: map[string]Syncer{
 					"newerButSamePriority": fakeSyncer{
 						key: "newerButSamePriority",
 					},
@@ -100,7 +100,7 @@ func TestPriorityEjector(t *testing.T) {
 					{"higherPriority"},
 					{"lowestPriority"},
 				},
-				syncersByBidder: map[string]Syncer{
+				SyncersByBidder: map[string]Syncer{
 					"higherPriority": fakeSyncer{
 						key: "higherPriority",
 					},
@@ -132,7 +132,7 @@ func TestPriorityEjector(t *testing.T) {
 				},
 			},
 			givenEjector: &PriorityBidderEjector{
-				syncersByBidder: map[string]Syncer{
+				SyncersByBidder: map[string]Syncer{
 					"oldestNonPriority": fakeSyncer{
 						key: "oldestNonPriority",
 					},
@@ -157,7 +157,7 @@ func TestPriorityEjector(t *testing.T) {
 				PriorityGroups: [][]string{
 					{"onlyPriorityElement"},
 				},
-				syncersByBidder: map[string]Syncer{
+				SyncersByBidder: map[string]Syncer{
 					"onlyPriorityElement": fakeSyncer{
 						key: "onlyPriorityElement",
 					},
@@ -182,7 +182,7 @@ func TestPriorityEjector(t *testing.T) {
 				PriorityGroups: [][]string{
 					{"onlyPriorityElement"},
 				},
-				syncersByBidder: map[string]Syncer{
+				SyncersByBidder: map[string]Syncer{
 					"onlyPriorityElement": fakeSyncer{
 						key: "onlyPriorityElement",
 					},

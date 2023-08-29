@@ -409,7 +409,7 @@ func TestPrepareCookieForWrite(t *testing.T) {
 			{"4", "5", "6"},
 			{"7"},
 		},
-		syncersByBidder: map[string]Syncer{
+		SyncersByBidder: map[string]Syncer{
 			"mainUID": fakeSyncer{
 				key: "mainUID",
 			},

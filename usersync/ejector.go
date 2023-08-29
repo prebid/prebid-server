@@ -13,7 +13,7 @@ type OldestEjector struct{}
 
 type PriorityBidderEjector struct {
 	PriorityGroups   [][]string
-	syncersByBidder  map[string]Syncer
+	SyncersByBidder  map[string]Syncer
 	IsSyncerPriority bool
 	TieEjector       Ejector
 }
@@ -34,7 +34,7 @@ func (o *OldestEjector) Choose(uids map[string]UIDEntry) (string, error) {
 
 // Choose method for priority ejector will return the oldest lowest priority element
 func (p *PriorityBidderEjector) Choose(uids map[string]UIDEntry) (string, error) {
-	nonPriorityUids := getNonPriorityUids(uids, p.PriorityGroups, p.syncersByBidder)
+	nonPriorityUids := getNonPriorityUids(uids, p.PriorityGroups, p.SyncersByBidder)
 	if err := p.checkSyncerPriority(nonPriorityUids); err != nil {
 		return "", err
 	}
@@ -50,7 +50,7 @@ func (p *PriorityBidderEjector) Choose(uids map[string]UIDEntry) (string, error)
 		return uidToDelete, nil
 	}
 
-	lowestPriorityUids := getPriorityUids(lowestPriorityGroup, uids, p.syncersByBidder)
+	lowestPriorityUids := getPriorityUids(lowestPriorityGroup, uids, p.SyncersByBidder)
 	uidToDelete, err := p.TieEjector.Choose(lowestPriorityUids)
 	if err != nil {
 		return "", err
