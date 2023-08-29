@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-
 	"github.com/buger/jsonparser"
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/config"
@@ -12,6 +11,7 @@ import (
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/util/iputil"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 )
 
@@ -103,14 +103,18 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 		return nil, errs
 	}
 
-	errs = account.Privacy.IPv6Config.Validate(errs)
-	if len(errs) > 0 {
-		return nil, errs
+	var ipv6Errs []error
+	ipv6Errs = account.Privacy.IPv6Config.Validate(ipv6Errs)
+	if len(ipv6Errs) > 0 {
+		account.Privacy.IPv6Config.AnonKeepBits = iputil.IPv6BitSize
+		// record invalid ipv6 metric
 	}
 
-	errs = account.Privacy.IPv4Config.Validate(errs)
-	if len(errs) > 0 {
-		return nil, errs
+	var ipv4Errs []error
+	ipv4Errs = account.Privacy.IPv4Config.Validate(ipv4Errs)
+	if len(ipv4Errs) > 0 {
+		account.Privacy.IPv4Config.AnonKeepBits = iputil.IPv4BitSize
+		// record invalid ipv4 metric
 	}
 
 	// set the value of events.enabled field based on deprecated events_enabled field and ensure backward compatibility

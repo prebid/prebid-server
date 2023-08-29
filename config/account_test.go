@@ -918,31 +918,31 @@ func TestIPMaskingValidate(t *testing.T) {
 		want    []error
 	}{
 		{
-			name: "valid configuration",
+			name: "valid",
 			privacy: AccountPrivacy{
 				IPv4Config: IPv4{AnonKeepBits: 1},
 				IPv6Config: IPv6{AnonKeepBits: 0},
 			},
 		},
 		{
-			name: "invalid configuration",
+			name: "invalid",
 			privacy: AccountPrivacy{
 				IPv4Config: IPv4{AnonKeepBits: -100},
 				IPv6Config: IPv6{AnonKeepBits: -200},
 			},
 			want: []error{
-				errors.New("left mask bits cannot exceed 32 in ipv4 address, or be less than 0"),
-				errors.New("left mask bits cannot exceed 128 in ipv6 address, or be less than 0"),
+				errors.New("bits cannot exceed 32 in ipv4 address, or be less than 0"),
+				errors.New("bits cannot exceed 128 in ipv6 address, or be less than 0"),
 			},
 		},
 		{
-			name: "mixed valid and invalid configuration",
+			name: "mixed",
 			privacy: AccountPrivacy{
 				IPv4Config: IPv4{AnonKeepBits: 10},
 				IPv6Config: IPv6{AnonKeepBits: -10},
 			},
 			want: []error{
-				errors.New("left mask bits cannot exceed 128 in ipv6 address, or be less than 0"),
+				errors.New("bits cannot exceed 128 in ipv6 address, or be less than 0"),
 			},
 		},
 	}

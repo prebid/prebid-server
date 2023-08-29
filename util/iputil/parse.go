@@ -15,6 +15,11 @@ const (
 	IPv6       IPVersion = 6
 )
 
+const (
+	IPv4BitSize = 32
+	IPv6BitSize = 128
+)
+
 // ParseIP parses v as an ip address returning the result and version, or nil and unknown if invalid.
 func ParseIP(v string) (net.IP, IPVersion) {
 	if ip := net.ParseIP(v); ip != nil {

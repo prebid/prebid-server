@@ -149,10 +149,6 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 		errs = append(errs, errors.New("account_defaults.Events.VASTEvents has no effect as the feature is under development."))
 	}
 
-	if cfg.AccountDefaults.Privacy != nil {
-		glog.Warning("account_defaults.Privacy has no effect as the feature is under development.")
-	}
-
 	errs = cfg.Experiment.validate(errs)
 	errs = cfg.BidderInfos.validate(errs)
 	errs = cfg.AccountDefaults.Privacy.IPv6Config.Validate(errs)

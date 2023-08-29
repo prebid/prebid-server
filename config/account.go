@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/prebid/prebid-server/util/iputil"
 	"math"
 	"strings"
 
@@ -19,11 +20,6 @@ const (
 	ChannelApp   ChannelType = "app"
 	ChannelVideo ChannelType = "video"
 	ChannelWeb   ChannelType = "web"
-)
-
-const (
-	IPv4BitSize = 32
-	IPv6BitSize = 128
 )
 
 // Account represents a publisher account configuration
@@ -307,25 +303,23 @@ type AccountPrivacy struct {
 
 type IPv6 struct {
 	AnonKeepBits int `mapstructure:"anon-keep-bits" json:"anon-keep-bits"`
-	// For the follow up PR, always keep first 64 bits
-	// AlwaysKeepBits int `mapstructure:"always-keep-bits" json:"always-keep-bits"`
 }
 
 type IPv4 struct {
 	AnonKeepBits int `mapstructure:"anon-keep-bits" json:"anon-keep-bits"`
 }
 
-func (IPv6Config *IPv6) Validate(errs []error) []error {
-	if IPv6Config.AnonKeepBits > IPv6BitSize || IPv6Config.AnonKeepBits < 0 {
-		err := fmt.Errorf("left mask bits cannot exceed %d in ipv6 address, or be less than 0", IPv6BitSize)
+func (ip *IPv6) Validate(errs []error) []error {
+	if ip.AnonKeepBits > iputil.IPv6BitSize || ip.AnonKeepBits < 0 {
+		err := fmt.Errorf("bits cannot exceed %d in ipv6 address, or be less than 0", iputil.IPv6BitSize)
 		errs = append(errs, err)
 	}
 	return errs
 }
 
-func (IPv4Config *IPv4) Validate(errs []error) []error {
-	if IPv4Config.AnonKeepBits > IPv4BitSize || IPv4Config.AnonKeepBits < 0 {
-		err := fmt.Errorf("left mask bits cannot exceed %d in ipv4 address, or be less than 0", IPv4BitSize)
+func (ip *IPv4) Validate(errs []error) []error {
+	if ip.AnonKeepBits > iputil.IPv4BitSize || ip.AnonKeepBits < 0 {
+		err := fmt.Errorf("bits cannot exceed %d in ipv4 address, or be less than 0", iputil.IPv4BitSize)
 		errs = append(errs, err)
 	}
 	return errs

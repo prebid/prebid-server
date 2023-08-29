@@ -3,6 +3,7 @@ package privacy
 import (
 	"encoding/json"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/util/iputil"
 	"github.com/prebid/prebid-server/util/ptrutil"
 	"net"
 
@@ -173,8 +174,8 @@ func (s scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enfo
 			if deviceCopy.Geo != nil {
 				deviceCopy.Geo = scrubGeoPrecision(deviceCopy.Geo)
 			}
-			deviceCopy.IP = scrubIP(deviceCopy.IP, s.ipV4.AnonKeepBits, config.IPv4BitSize)
-			deviceCopy.IPv6 = scrubIP(deviceCopy.IPv6, s.ipV6.AnonKeepBits, config.IPv6BitSize)
+			deviceCopy.IP = scrubIP(deviceCopy.IP, s.ipV4.AnonKeepBits, iputil.IPv4BitSize)
+			deviceCopy.IPv6 = scrubIP(deviceCopy.IPv6, s.ipV6.AnonKeepBits, iputil.IPv6BitSize)
 		}
 	}
 
@@ -203,12 +204,12 @@ func (s scrubber) ScrubDevice(device *openrtb2.Device, id ScrubStrategyDeviceID,
 
 	switch ipv4 {
 	case ScrubStrategyIPV4Lowest8:
-		deviceCopy.IP = scrubIP(device.IP, s.ipV4.AnonKeepBits, config.IPv4BitSize)
+		deviceCopy.IP = scrubIP(device.IP, s.ipV4.AnonKeepBits, iputil.IPv4BitSize)
 	}
 
 	switch ipv6 {
 	case ScrubStrategyIPV6Subnet:
-		deviceCopy.IPv6 = scrubIP(device.IPv6, s.ipV6.AnonKeepBits, config.IPv6BitSize)
+		deviceCopy.IPv6 = scrubIP(device.IPv6, s.ipV6.AnonKeepBits, iputil.IPv6BitSize)
 	}
 
 	switch geo {
