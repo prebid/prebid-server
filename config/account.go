@@ -3,12 +3,12 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/util/iputil"
 	"math"
 	"strings"
 
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/iputil"
 )
 
 // ChannelType enumerates the values of integrations Prebid Server can configure for an account
