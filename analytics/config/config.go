@@ -11,12 +11,21 @@ import (
 	"github.com/prebid/prebid-server/privacy"
 )
 
+type AnalyticsRunner interface {
+	LogAuctionObject(*analytics.AuctionObject, privacy.ActivityControl)
+	LogVideoObject(*analytics.VideoObject, privacy.ActivityControl)
+	LogCookieSyncObject(*analytics.CookieSyncObject)
+	LogSetUIDObject(*analytics.SetUIDObject)
+	LogAmpObject(*analytics.AmpObject, privacy.ActivityControl)
+	LogNotificationEventObject(*analytics.NotificationEvent, privacy.ActivityControl)
+}
+
 // Modules that need to be logged to need to be initialized here
-func NewPBSAnalytics(analytics *config.Analytics) analytics.PBSAnalyticsModule {
+func NewPBSAnalytics(analytics *config.Analytics) AnalyticsRunner {
 	modules := make(enabledAnalytics, 0)
 	if len(analytics.File.Filename) > 0 {
 		if mod, err := filesystem.NewFileLogger(analytics.File.Filename); err == nil {
-			modules = append(modules, mod)
+			modules["filelogger"] = mod
 		} else {
 			glog.Fatalf("Could not initialize FileLogger for file %v :%v", analytics.File.Filename, err)
 		}
@@ -33,7 +42,7 @@ func NewPBSAnalytics(analytics *config.Analytics) analytics.PBSAnalyticsModule {
 			analytics.Pubstack.Buffers.Timeout,
 			clock.New())
 		if err == nil {
-			modules = append(modules, pubstackModule)
+			modules["pubstack"] = pubstackModule
 		} else {
 			glog.Errorf("Could not initialize PubstackModule: %v", err)
 		}
@@ -42,27 +51,22 @@ func NewPBSAnalytics(analytics *config.Analytics) analytics.PBSAnalyticsModule {
 }
 
 // Collection of all the correctly configured analytics modules - implements the PBSAnalyticsModule interface
-type enabledAnalytics []analytics.PBSAnalyticsModule
+type enabledAnalytics map[string]analytics.Module
 
-// Returns the name of the analytics module
-func (ea enabledAnalytics) GetName() string {
-	return "enabledAnalytics"
-}
-
-func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject) {
-	for _, module := range ea {
-		scopedName := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: module.GetName()}
-		reportAnalyticsActivityAllowed := ao.ActivityControl.Allow(privacy.ActivityReportAnalytics, scopedName)
+func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac privacy.ActivityControl) {
+	for name, module := range ea {
+		scopedName := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: name}
+		reportAnalyticsActivityAllowed := ac.Allow(privacy.ActivityReportAnalytics, scopedName)
 		if reportAnalyticsActivityAllowed {
 			module.LogAuctionObject(ao)
 		}
 	}
 }
 
-func (ea enabledAnalytics) LogVideoObject(vo *analytics.VideoObject) {
-	for _, module := range ea {
-		scopedName := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: module.GetName()}
-		reportAnalyticsActivityAllowed := vo.ActivityControl.Allow(privacy.ActivityReportAnalytics, scopedName)
+func (ea enabledAnalytics) LogVideoObject(vo *analytics.VideoObject, ac privacy.ActivityControl) {
+	for name, module := range ea {
+		scopedName := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: name}
+		reportAnalyticsActivityAllowed := ac.Allow(privacy.ActivityReportAnalytics, scopedName)
 		if reportAnalyticsActivityAllowed {
 			module.LogVideoObject(vo)
 		}
@@ -81,20 +85,20 @@ func (ea enabledAnalytics) LogSetUIDObject(so *analytics.SetUIDObject) {
 	}
 }
 
-func (ea enabledAnalytics) LogAmpObject(ao *analytics.AmpObject) {
-	for _, module := range ea {
-		scopedName := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: module.GetName()}
-		reportAnalyticsActivityAllowed := ao.ActivityControl.Allow(privacy.ActivityReportAnalytics, scopedName)
+func (ea enabledAnalytics) LogAmpObject(ao *analytics.AmpObject, ac privacy.ActivityControl) {
+	for name, module := range ea {
+		scopedName := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: name}
+		reportAnalyticsActivityAllowed := ac.Allow(privacy.ActivityReportAnalytics, scopedName)
 		if reportAnalyticsActivityAllowed {
 			module.LogAmpObject(ao)
 		}
 	}
 }
 
-func (ea enabledAnalytics) LogNotificationEventObject(ne *analytics.NotificationEvent) {
-	for _, module := range ea {
-		scopedName := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: module.GetName()}
-		reportAnalyticsActivityAllowed := ne.ActivityControl.Allow(privacy.ActivityReportAnalytics, scopedName)
+func (ea enabledAnalytics) LogNotificationEventObject(ne *analytics.NotificationEvent, ac privacy.ActivityControl) {
+	for name, module := range ea {
+		scopedName := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: name}
+		reportAnalyticsActivityAllowed := ac.Allow(privacy.ActivityReportAnalytics, scopedName)
 		if reportAnalyticsActivityAllowed {
 			module.LogNotificationEventObject(ne)
 		}

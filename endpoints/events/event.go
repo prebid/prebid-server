@@ -13,6 +13,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/analytics"
+	config2 "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/metrics"
@@ -41,13 +42,13 @@ const integrationParamMaxLength = 64
 
 type eventEndpoint struct {
 	Accounts      stored_requests.AccountFetcher
-	Analytics     analytics.PBSAnalyticsModule
+	Analytics     config2.AnalyticsRunner
 	Cfg           *config.Configuration
 	TrackingPixel *httputil.Pixel
 	MetricsEngine metrics.MetricsEngine
 }
 
-func NewEventEndpoint(cfg *config.Configuration, accounts stored_requests.AccountFetcher, analytics analytics.PBSAnalyticsModule, me metrics.MetricsEngine) httprouter.Handle {
+func NewEventEndpoint(cfg *config.Configuration, accounts stored_requests.AccountFetcher, analytics config2.AnalyticsRunner, me metrics.MetricsEngine) httprouter.Handle {
 	ee := &eventEndpoint{
 		Accounts:      accounts,
 		Analytics:     analytics,
@@ -124,10 +125,9 @@ func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprou
 
 	// handle notification event
 	e.Analytics.LogNotificationEventObject(&analytics.NotificationEvent{
-		Request:         eventRequest,
-		Account:         account,
-		ActivityControl: activities,
-	})
+		Request: eventRequest,
+		Account: account,
+	}, activities)
 
 	// Add tracking pixel if format == image
 	if eventRequest.Format == analytics.Image {

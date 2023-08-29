@@ -16,6 +16,7 @@ import (
 	gppConstants "github.com/prebid/go-gpp/constants"
 	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/analytics"
+	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/gdpr"
@@ -49,7 +50,7 @@ func NewCookieSyncEndpoint(
 	gdprPermsBuilder gdpr.PermissionsBuilder,
 	tcf2CfgBuilder gdpr.TCF2ConfigBuilder,
 	metrics metrics.MetricsEngine,
-	pbsAnalytics analytics.PBSAnalyticsModule,
+	analyticsRunner analyticsConf.AnalyticsRunner,
 	accountsFetcher stored_requests.AccountFetcher,
 	bidders map[string]openrtb_ext.BidderName) HTTPRouterHandler {
 
@@ -69,7 +70,7 @@ func NewCookieSyncEndpoint(
 			bidderHashSet:          bidderHashSet,
 		},
 		metrics:         metrics,
-		pbsAnalytics:    pbsAnalytics,
+		pbsAnalytics:    analyticsRunner,
 		accountsFetcher: accountsFetcher,
 	}
 }
@@ -79,7 +80,7 @@ type cookieSyncEndpoint struct {
 	config          *config.Configuration
 	privacyConfig   usersyncPrivacyConfig
 	metrics         metrics.MetricsEngine
-	pbsAnalytics    analytics.PBSAnalyticsModule
+	pbsAnalytics    analyticsConf.AnalyticsRunner
 	accountsFetcher stored_requests.AccountFetcher
 }
 

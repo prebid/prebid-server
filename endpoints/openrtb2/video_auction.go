@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"io"
 	"net/http"
 	"net/url"
@@ -52,7 +53,7 @@ func NewVideoEndpoint(
 	accounts stored_requests.AccountFetcher,
 	cfg *config.Configuration,
 	met metrics.MetricsEngine,
-	pbsAnalytics analytics.PBSAnalyticsModule,
+	analyticsRunner analyticsConf.AnalyticsRunner,
 	disabledBidders map[string]string,
 	defReqJSON []byte,
 	bidderMap map[string]openrtb_ext.BidderName,
@@ -82,7 +83,7 @@ func NewVideoEndpoint(
 		accounts,
 		cfg,
 		met,
-		pbsAnalytics,
+		analyticsRunner,
 		disabledBidders,
 		defRequest,
 		defReqJSON,
@@ -148,18 +149,6 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		DebugOverride: exchange.IsDebugOverrideEnabled(r.Header.Get(exchange.DebugOverrideHeader), deps.cfg.Debug.OverrideToken),
 	}
 	debugLog.DebugEnabledOrOverridden = debugLog.Enabled || debugLog.DebugOverride
-
-	defer func() {
-		if len(debugLog.CacheKey) > 0 && vo.VideoResponse == nil {
-			err := debugLog.PutDebugLogError(deps.cache, deps.cfg.CacheURL.ExpectedTimeMillis, vo.Errors)
-			if err != nil {
-				vo.Errors = append(vo.Errors, err)
-			}
-		}
-		deps.metricsEngine.RecordRequest(labels)
-		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
-		deps.analytics.LogVideoObject(&vo)
-	}()
 
 	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
 
@@ -311,7 +300,18 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 			return
 		}
 	}
-	vo.ActivityControl = activities
+
+	defer func() {
+		if len(debugLog.CacheKey) > 0 && vo.VideoResponse == nil {
+			err := debugLog.PutDebugLogError(deps.cache, deps.cfg.CacheURL.ExpectedTimeMillis, vo.Errors)
+			if err != nil {
+				vo.Errors = append(vo.Errors, err)
+			}
+		}
+		deps.metricsEngine.RecordRequest(labels)
+		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
+		deps.analytics.LogVideoObject(&vo, activities)
+	}()
 
 	secGPC := r.Header.Get("Sec-GPC")
 	auctionRequest := &exchange.AuctionRequest{

@@ -17,6 +17,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/openrtb/v19/openrtb3"
+	config2 "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/ortb"
 	"github.com/prebid/prebid-server/util/uuidutil"
@@ -63,7 +64,7 @@ func NewAmpEndpoint(
 	accounts stored_requests.AccountFetcher,
 	cfg *config.Configuration,
 	metricsEngine metrics.MetricsEngine,
-	pbsAnalytics analytics.PBSAnalyticsModule,
+	analyticsRunner config2.AnalyticsRunner,
 	disabledBidders map[string]string,
 	defReqJSON []byte,
 	bidderMap map[string]openrtb_ext.BidderName,
@@ -92,7 +93,7 @@ func NewAmpEndpoint(
 		accounts,
 		cfg,
 		metricsEngine,
-		pbsAnalytics,
+		analyticsRunner,
 		disabledBidders,
 		defRequest,
 		defReqJSON,
@@ -133,12 +134,6 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		CookieFlag:    metrics.CookieFlagUnknown,
 		RequestStatus: metrics.RequestStatusOK,
 	}
-
-	defer func() {
-		deps.metricsEngine.RecordRequest(labels)
-		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
-		deps.analytics.LogAmpObject(&ao)
-	}()
 
 	// Add AMP headers
 	origin := r.FormValue("__amp_source_origin")
@@ -235,7 +230,12 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		writeError(errL, w, &labels)
 		return
 	}
-	ao.ActivityControl = activities
+
+	defer func() {
+		deps.metricsEngine.RecordRequest(labels)
+		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
+		deps.analytics.LogAmpObject(&ao, activities)
+	}()
 
 	secGPC := r.Header.Get("Sec-GPC")
 

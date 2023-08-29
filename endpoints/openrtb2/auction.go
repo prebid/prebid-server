@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/privacy"
 	"io"
 	"net/http"
 	"net/url"
@@ -26,9 +25,11 @@ import (
 	nativeRequests "github.com/prebid/openrtb/v19/native1/request"
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/openrtb/v19/openrtb3"
+	config2 "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/bidadjustment"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/ortb"
+	"github.com/prebid/prebid-server/privacy"
 	"golang.org/x/net/publicsuffix"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
@@ -85,7 +86,7 @@ func NewEndpoint(
 	accounts stored_requests.AccountFetcher,
 	cfg *config.Configuration,
 	metricsEngine metrics.MetricsEngine,
-	pbsAnalytics analytics.PBSAnalyticsModule,
+	analyticsRunner config2.AnalyticsRunner,
 	disabledBidders map[string]string,
 	defReqJSON []byte,
 	bidderMap map[string]openrtb_ext.BidderName,
@@ -113,7 +114,7 @@ func NewEndpoint(
 		accounts,
 		cfg,
 		metricsEngine,
-		pbsAnalytics,
+		analyticsRunner,
 		disabledBidders,
 		defRequest,
 		defReqJSON,
@@ -135,7 +136,7 @@ type endpointDeps struct {
 	accounts                  stored_requests.AccountFetcher
 	cfg                       *config.Configuration
 	metricsEngine             metrics.MetricsEngine
-	analytics                 analytics.PBSAnalyticsModule
+	analytics                 config2.AnalyticsRunner
 	disabledBidders           map[string]string
 	defaultRequest            bool
 	defReqJSON                []byte
@@ -173,12 +174,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		RequestStatus: metrics.RequestStatusOK,
 	}
 
-	defer func() {
-		deps.metricsEngine.RecordRequest(labels)
-		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
-		deps.analytics.LogAuctionObject(&ao)
-	}()
-
 	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
 
 	req, impExtInfoMap, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, account, errL := deps.parseRequest(r, &labels, hookExecutor)
@@ -204,7 +199,11 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 	// pass activities to analytics object here, after activities are evaluated
 	// request may have an additional account id that can change activity control
-	ao.ActivityControl = activities
+	defer func() {
+		deps.metricsEngine.RecordRequest(labels)
+		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
+		deps.analytics.LogAuctionObject(&ao, activities)
+	}()
 
 	ctx := context.Background()
 

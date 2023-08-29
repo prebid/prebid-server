@@ -2030,11 +2030,6 @@ type MockAnalytics struct {
 	mock.Mock
 }
 
-// Returns the name of the analytics module
-func (m *MockAnalytics) GetName() string {
-	return "mockAnalytics"
-}
-
 func (m *MockAnalytics) LogAuctionObject(obj *analytics.AuctionObject) {
 	m.Called(obj)
 }

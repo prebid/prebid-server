@@ -63,11 +63,6 @@ type sampleModule struct {
 	count *int
 }
 
-// Returns the name of the analytics module
-func (m *sampleModule) GetName() string {
-	return "sampleModule"
-}
-
 func (m *sampleModule) LogAuctionObject(ao *analytics.AuctionObject) { *m.count++ }
 
 func (m *sampleModule) LogVideoObject(vo *analytics.VideoObject) { *m.count++ }

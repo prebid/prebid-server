@@ -1647,11 +1647,6 @@ func newMockLogger(ao *analytics.AmpObject, aucObj *analytics.AuctionObject) ana
 	}
 }
 
-// Returns the name of the analytics module
-func (logger mockLogger) GetName() string {
-	return "mockLogger"
-}
-
 func (logger mockLogger) LogAuctionObject(ao *analytics.AuctionObject) {
 	*logger.auctionObject = *ao
 }
