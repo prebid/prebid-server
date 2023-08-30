@@ -111,9 +111,25 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 			}
 		}
 
+		gppSID, err := stringutil.StrToInt8Slice(query.Get("gpp_sid"))
+		if err != nil {
+			err := fmt.Errorf("invalid gpp_sid encoding, must be a csv list of integers")
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(err.Error()))
+			metricsEngine.RecordSetUid(metrics.SetUidBadRequest)
+			so.Errors = []error{err}
+			so.Status = http.StatusBadRequest
+			return
+		}
+
+		policies := privacy.Policies{
+			GPPSID: gppSID,
+		}
+
 		userSyncActivityAllowed := activities.Allow(privacy.ActivitySyncUser,
 			privacy.Component{Type: privacy.ComponentTypeBidder, Name: bidderName},
-			privacy.ActivityRequest{})
+			privacy.NewRequestFromPolicies(policies))
+
 		if !userSyncActivityAllowed {
 			w.WriteHeader(http.StatusUnavailableForLegalReasons)
 			return

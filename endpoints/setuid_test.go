@@ -217,8 +217,7 @@ func TestSetUIDEndpoint(t *testing.T) {
 			description:            "Sets uid for a bidder allowed by GDPR in GPP, throws warning because GDPR legacy values weren't used",
 		},
 		{
-			uri: "/setuid?bidder=pubmatic&uid=123&gdpr=1&gdpr_consent=" +
-				"malformed",
+			uri:                    "/setuid?bidder=pubmatic&uid=123&gdpr=1&gdpr_consent=malformed",
 			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
 			gdprAllowsHostCookies:  true,
 			gdprMalformed:          true,
@@ -305,6 +304,26 @@ func TestSetUIDEndpoint(t *testing.T) {
 			expectedStatusCode:     http.StatusOK,
 			expectedHeaders:        map[string]string{"Content-Type": "text/html", "Content-Length": "0"},
 			description:            "Set uid for valid bidder with valid account provided with invalid user sync activity",
+		},
+		{
+			description:            "sids-valid",
+			uri:                    "/setuid?bidder=pubmatic&uid=123&gpp_sid=100,101", // fake sids to avoid GDPR logic in this test
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			existingSyncs:          nil,
+			gdprAllowsHostCookies:  true,
+			expectedSyncs:          map[string]string{"pubmatic": "123"},
+			expectedStatusCode:     http.StatusOK,
+			expectedHeaders:        map[string]string{"Content-Type": "text/html", "Content-Length": "0"},
+		},
+		{
+			description:            "sids-malformed",
+			uri:                    "/setuid?bidder=pubmatic&uid=123&gpp_sid=malformed",
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			existingSyncs:          nil,
+			gdprAllowsHostCookies:  true,
+			expectedSyncs:          nil,
+			expectedStatusCode:     http.StatusBadRequest,
+			expectedBody:           "invalid gpp_sid encoding, must be a csv list of integers",
 		},
 	}
 

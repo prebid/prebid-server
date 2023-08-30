@@ -189,7 +189,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, ma
 
 func extractPrivacyPolicies(request cookieSyncRequest, usersyncDefaultGDPRValue string) (macros.UserSyncPrivacy, gdpr.Signal, privacy.Policies, error) {
 	// GDPR
-	gppSID, err := stringutil.StrToInt8Slice(request.GPPSid)
+	gppSID, err := stringutil.StrToInt8Slice(request.GPPSID)
 	if err != nil {
 		return macros.UserSyncPrivacy{}, gdpr.SignalNo, privacy.Policies{}, err
 	}
@@ -234,7 +234,7 @@ func extractPrivacyPolicies(request cookieSyncRequest, usersyncDefaultGDPRValue 
 		GDPRConsent: gdprConsent,
 		USPrivacy:   ccpaString,
 		GPP:         request.GPP,
-		GPPSID:      request.GPPSid,
+		GPPSID:      request.GPPSID,
 	}
 
 	privacyPolicies := privacy.Policies{
@@ -466,7 +466,7 @@ type cookieSyncRequest struct {
 	USPrivacy       string                           `json:"us_privacy"`
 	Limit           int                              `json:"limit"`
 	GPP             string                           `json:"gpp"`
-	GPPSid          string                           `json:"gpp_sid"`
+	GPPSID          string                           `json:"gpp_sid"`
 	CooperativeSync *bool                            `json:"coopSync"`
 	FilterSettings  *cookieSyncRequestFilterSettings `json:"filterSettings"`
 	Account         string                           `json:"account"`

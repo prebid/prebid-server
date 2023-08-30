@@ -424,7 +424,7 @@ func TestExtractPrivacyPolicies(t *testing.T) {
 			in: testInput{
 				request: cookieSyncRequest{
 					GPP:       "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
-					GPPSid:    "malformed",
+					GPPSID:    "malformed",
 					USPrivacy: "1YYY",
 				},
 			},
@@ -440,7 +440,7 @@ func TestExtractPrivacyPolicies(t *testing.T) {
 			in: testInput{
 				request: cookieSyncRequest{
 					GPP:       "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
-					GPPSid:    "6",
+					GPPSID:    "6",
 					USPrivacy: "1YYY",
 				},
 			},
@@ -456,7 +456,7 @@ func TestExtractPrivacyPolicies(t *testing.T) {
 			in: testInput{
 				request: cookieSyncRequest{
 					GPP:    "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
-					GPPSid: "6",
+					GPPSID: "6",
 				},
 			},
 			expected: testOutput{
