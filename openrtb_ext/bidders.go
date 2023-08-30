@@ -637,7 +637,7 @@ func NewBidderParamsValidator(schemaDirectory string) (BidderParamValidator, err
 	for alias, parent := range aliasBidderToParent {
 		parentSchema := schemas[parent]
 		schemas[alias] = parentSchema
-		
+
 		parentSchemaContents := schemaContents[parent]
 		schemaContents[alias] = parentSchemaContents
 	}
