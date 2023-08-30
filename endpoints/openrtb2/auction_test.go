@@ -1512,6 +1512,81 @@ func TestMergeBidderParamsImpExtPrebid(t *testing.T) {
 	}
 }
 
+func TestValidateExactlyOneInventoryType(t *testing.T) {
+
+	testCases := []struct {
+		description         string
+		givenRequestWrapper *openrtb_ext.RequestWrapper
+		expectedError       error
+	}{
+		{
+			description:         "None provided - invalid",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
+			expectedError:       errors.New("One of request.site or request.app or request.dooh must be defined"),
+		},
+		{
+			description: "Only site provided",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				Site: &openrtb2.Site{},
+			}},
+			expectedError: nil,
+		},
+		{
+			description: "Only app provided",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				App: &openrtb2.App{},
+			}},
+			expectedError: nil,
+		},
+		{
+			description: "Only dooh provided",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				DOOH: &openrtb2.DOOH{},
+			}},
+			expectedError: nil,
+		},
+		{
+			description: "Two provided (site+app) - invalid",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				Site: &openrtb2.Site{},
+				App:  &openrtb2.App{},
+			}},
+			expectedError: errors.New("No more than one of request.site or request.app or request.dooh can be defined"),
+		},
+		{
+			description: "Two provided (site+dooh) - invalid",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				Site: &openrtb2.Site{},
+				DOOH: &openrtb2.DOOH{},
+			}},
+			expectedError: errors.New("No more than one of request.site or request.app or request.dooh can be defined"),
+		},
+		{
+			description: "Two provided (app+dooh) - invalid",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				App:  &openrtb2.App{},
+				DOOH: &openrtb2.DOOH{},
+			}},
+			expectedError: errors.New("No more than one of request.site or request.app or request.dooh can be defined"),
+		},
+		{
+			description: "Three provided - invalid",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				Site: &openrtb2.Site{},
+				App:  &openrtb2.App{},
+				DOOH: &openrtb2.DOOH{},
+			}},
+			expectedError: errors.New("No more than one of request.site or request.app or request.dooh can be defined"),
+		},
+	}
+
+	for _, test := range testCases {
+		error := validateExactlyOneInventoryType(test.givenRequestWrapper)
+		assert.Equalf(t, test.expectedError, error, "Error doesn't match: %s\n", test.description)
+	}
+
+}
+
 func TestValidateRequest(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
