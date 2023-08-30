@@ -9,7 +9,7 @@ import (
 
 	tcf2 "github.com/prebid/go-gdpr/vendorconsent/tcf2"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/privacy/ccpa"

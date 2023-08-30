@@ -13,7 +13,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderTaboola, config.Adapter{
-		Endpoint: "http://{{.MediaType}}.whatever.com/{{.Host}}/{{.PublisherID}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+		Endpoint: "http://{{.MediaType}}.whatever.com/{{.GvlID}}/{{.PublisherID}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 12, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -32,5 +32,5 @@ func TestEmptyExternalUrl(t *testing.T) {
 
 	bidderTaboola := bidder.(*adapter)
 
-	assert.Equal(t, "", bidderTaboola.hostName)
+	assert.Equal(t, "", bidderTaboola.gvlID)
 }

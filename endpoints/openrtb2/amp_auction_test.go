@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -22,6 +22,7 @@ import (
 	"github.com/prebid/prebid-server/analytics"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
@@ -87,7 +88,7 @@ func TestGoodAmpRequests(t *testing.T) {
 				continue
 			}
 
-			test.storedRequest = map[string]json.RawMessage{tagID: test.BidRequest}
+			test.StoredRequest = map[string]json.RawMessage{tagID: test.BidRequest}
 			test.endpointType = AMP_ENDPOINT
 
 			cfg := &config.Configuration{
@@ -164,7 +165,7 @@ func TestAccountErrors(t *testing.T) {
 		if !assert.NoError(t, json.Unmarshal(fileJsonData, &test), "Failed to unmarshal data from file: %s. Error: %v", tt.filename, err) {
 			continue
 		}
-		test.storedRequest = map[string]json.RawMessage{tt.storedReqID: test.BidRequest}
+		test.StoredRequest = map[string]json.RawMessage{tt.storedReqID: test.BidRequest}
 		test.endpointType = AMP_ENDPOINT
 
 		cfg := &config.Configuration{
@@ -215,6 +216,7 @@ func TestAMPPageInfo(t *testing.T) {
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
+		nil,
 	)
 	request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&curl=%s", url.QueryEscape(page)), nil)
 	recorder := httptest.NewRecorder()
@@ -318,6 +320,7 @@ func TestGDPRConsent(t *testing.T) {
 			openrtb_ext.BuildBidderMap(),
 			empty_fetcher.EmptyFetcher{},
 			hooks.EmptyPlanBuilder{},
+			nil,
 		)
 
 		// Invoke Endpoint
@@ -398,8 +401,9 @@ func TestOverrideWithParams(t *testing.T) {
 		bidRequest *openrtb2.BidRequest
 	}
 	type testOutput struct {
-		bidRequest *openrtb2.BidRequest
-		errorMsgs  []string
+		bidRequest        *openrtb2.BidRequest
+		errorMsgs         []string
+		expectFatalErrors bool
 	}
 	testCases := []struct {
 		desc     string
@@ -520,7 +524,8 @@ func TestOverrideWithParams(t *testing.T) {
 					Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)},
 					User: &openrtb2.User{Ext: json.RawMessage(`malformed`)},
 				},
-				errorMsgs: []string{"invalid character 'm' looking for beginning of value"},
+				errorMsgs:         []string{"invalid character 'm' looking for beginning of value"},
+				expectFatalErrors: true,
 			},
 		},
 		{
@@ -567,7 +572,8 @@ func TestOverrideWithParams(t *testing.T) {
 					User: &openrtb2.User{Ext: json.RawMessage(`{"prebid":{malformed}}`)},
 					Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)},
 				},
-				errorMsgs: []string{"invalid character 'm' looking for beginning of object key string"},
+				errorMsgs:         []string{"invalid character 'm' looking for beginning of object key string"},
+				expectFatalErrors: true,
 			},
 		},
 	}
@@ -579,6 +585,7 @@ func TestOverrideWithParams(t *testing.T) {
 		assert.Len(t, errs, len(test.expected.errorMsgs), test.desc)
 		if len(test.expected.errorMsgs) > 0 {
 			assert.Equal(t, test.expected.errorMsgs[0], errs[0].Error(), test.desc)
+			assert.Equal(t, test.expected.expectFatalErrors, errortypes.ContainsFatalError(errs), test.desc)
 		}
 	}
 }
@@ -737,6 +744,7 @@ func TestCCPAConsent(t *testing.T) {
 			openrtb_ext.BuildBidderMap(),
 			empty_fetcher.EmptyFetcher{},
 			hooks.EmptyPlanBuilder{},
+			nil,
 		)
 
 		// Invoke Endpoint
@@ -850,6 +858,7 @@ func TestConsentWarnings(t *testing.T) {
 			openrtb_ext.BuildBidderMap(),
 			empty_fetcher.EmptyFetcher{},
 			hooks.EmptyPlanBuilder{},
+			nil,
 		)
 
 		// Invoke Endpoint
@@ -948,6 +957,7 @@ func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 			openrtb_ext.BuildBidderMap(),
 			empty_fetcher.EmptyFetcher{},
 			hooks.EmptyPlanBuilder{},
+			nil,
 		)
 
 		// Invoke Endpoint
@@ -1002,6 +1012,7 @@ func TestAMPSiteExt(t *testing.T) {
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
+		nil,
 	)
 	request, err := http.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1", nil)
 	if !assert.NoError(t, err) {
@@ -1044,6 +1055,7 @@ func TestAmpBadRequests(t *testing.T) {
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
+		nil,
 	)
 	for requestID := range badRequests {
 		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s", requestID), nil)
@@ -1077,6 +1089,7 @@ func TestAmpDebug(t *testing.T) {
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
+		nil,
 	)
 
 	for requestID := range requests {
@@ -1212,6 +1225,7 @@ func TestQueryParamOverrides(t *testing.T) {
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
+		nil,
 	)
 
 	requestID := "1"
@@ -1369,6 +1383,7 @@ func (s formatOverrideSpec) execute(t *testing.T) {
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
+		nil,
 	)
 
 	url := fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&debug=1&w=%d&h=%d&ow=%d&oh=%d&ms=%s&account=%s", s.width, s.height, s.overrideWidth, s.overrideHeight, s.multisize, s.account)
@@ -1415,7 +1430,7 @@ var expectedErrorsFromHoldAuction map[openrtb_ext.BidderName][]openrtb_ext.ExtBi
 	},
 }
 
-func (m *mockAmpExchange) HoldAuction(ctx context.Context, auctionRequest exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (m *mockAmpExchange) HoldAuction(ctx context.Context, auctionRequest *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*exchange.AuctionResponse, error) {
 	r := auctionRequest.BidRequestWrapper
 	m.lastRequest = r.BidRequest
 
@@ -1449,12 +1464,12 @@ func (m *mockAmpExchange) HoldAuction(ctx context.Context, auctionRequest exchan
 		response.Ext = json.RawMessage(fmt.Sprintf(`{"debug": {"httpcalls": {}, "resolvedrequest": %s}}`, resolvedRequest))
 	}
 
-	return response, nil
+	return &exchange.AuctionResponse{BidResponse: response}, nil
 }
 
 type mockAmpExchangeWarnings struct{}
 
-func (m *mockAmpExchangeWarnings) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (m *mockAmpExchangeWarnings) HoldAuction(ctx context.Context, r *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*exchange.AuctionResponse, error) {
 	response := &openrtb2.BidResponse{
 		SeatBid: []openrtb2.SeatBid{{
 			Bid: []openrtb2.Bid{{
@@ -1464,7 +1479,7 @@ func (m *mockAmpExchangeWarnings) HoldAuction(ctx context.Context, r exchange.Au
 		}},
 		Ext: json.RawMessage(`{ "warnings": {"appnexus": [{"code": 10003, "message": "debug turned off for bidder"}] }}`),
 	}
-	return response, nil
+	return &exchange.AuctionResponse{BidResponse: response}, nil
 }
 
 func getTestBidRequest(nilUser bool, userExt *openrtb_ext.ExtUser, nilRegs bool, regsExt *openrtb_ext.ExtRegs) ([]byte, error) {
@@ -1689,33 +1704,35 @@ func TestBuildAmpObject(t *testing.T) {
 			expectedAmpObject: &analytics.AmpObject{
 				Status: http.StatusOK,
 				Errors: nil,
-				Request: &openrtb2.BidRequest{
-					ID: "some-request-id",
-					Device: &openrtb2.Device{
-						IP: "192.0.2.1",
-					},
-					Site: &openrtb2.Site{
-						Page: "prebid.org",
-						Ext:  json.RawMessage(`{"amp":1}`),
-					},
-					Imp: []openrtb2.Imp{
-						{
-							ID: "some-impression-id",
-							Banner: &openrtb2.Banner{
-								Format: []openrtb2.Format{
-									{
-										W: 300,
-										H: 250,
+				RequestWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						ID: "some-request-id",
+						Device: &openrtb2.Device{
+							IP: "192.0.2.1",
+						},
+						Site: &openrtb2.Site{
+							Page: "prebid.org",
+							Ext:  json.RawMessage(`{"amp":1}`),
+						},
+						Imp: []openrtb2.Imp{
+							{
+								ID: "some-impression-id",
+								Banner: &openrtb2.Banner{
+									Format: []openrtb2.Format{
+										{
+											W: 300,
+											H: 250,
+										},
 									},
 								},
+								Secure: func(val int8) *int8 { return &val }(1), //(*int8)(1),
+								Ext:    json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placementId":12883451}}}}`),
 							},
-							Secure: func(val int8) *int8 { return &val }(1), //(*int8)(1),
-							Ext:    json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placementId":12883451}}}}`),
 						},
+						AT:   1,
+						TMax: 500,
+						Ext:  json.RawMessage(`{"prebid":{"cache":{"bids":{}},"channel":{"name":"amp","version":""},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"mediatypepricegranularity":{},"includewinners":true,"includebidderkeys":true}}}`),
 					},
-					AT:   1,
-					TMax: 500,
-					Ext:  json.RawMessage(`{"prebid":{"cache":{"bids":{}},"channel":{"name":"amp","version":""},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"includewinners":true,"includebidderkeys":true}}}`),
 				},
 				AuctionResponse: &openrtb2.BidResponse{
 					SeatBid: []openrtb2.SeatBid{{
@@ -1743,33 +1760,35 @@ func TestBuildAmpObject(t *testing.T) {
 			expectedAmpObject: &analytics.AmpObject{
 				Status: http.StatusOK,
 				Errors: nil,
-				Request: &openrtb2.BidRequest{
-					ID: "some-request-id",
-					Device: &openrtb2.Device{
-						IP: "192.0.2.1",
-					},
-					Site: &openrtb2.Site{
-						Page: "prebid.org",
-						Ext:  json.RawMessage(`{"amp":1}`),
-					},
-					Imp: []openrtb2.Imp{
-						{
-							ID: "some-impression-id",
-							Banner: &openrtb2.Banner{
-								Format: []openrtb2.Format{
-									{
-										W: 300,
-										H: 250,
+				RequestWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						ID: "some-request-id",
+						Device: &openrtb2.Device{
+							IP: "192.0.2.1",
+						},
+						Site: &openrtb2.Site{
+							Page: "prebid.org",
+							Ext:  json.RawMessage(`{"amp":1}`),
+						},
+						Imp: []openrtb2.Imp{
+							{
+								ID: "some-impression-id",
+								Banner: &openrtb2.Banner{
+									Format: []openrtb2.Format{
+										{
+											W: 300,
+											H: 250,
+										},
 									},
 								},
+								Secure: func(val int8) *int8 { return &val }(1), //(*int8)(1),
+								Ext:    json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placementId":12883451}}}}`),
 							},
-							Secure: func(val int8) *int8 { return &val }(1), //(*int8)(1),
-							Ext:    json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placementId":12883451}}}}`),
 						},
+						AT:   1,
+						TMax: 500,
+						Ext:  json.RawMessage(`{"prebid":{"cache":{"bids":{}},"channel":{"name":"amp","version":""},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"mediatypepricegranularity":{},"includewinners":true,"includebidderkeys":true}}}`),
 					},
-					AT:   1,
-					TMax: 500,
-					Ext:  json.RawMessage(`{"prebid":{"cache":{"bids":{}},"channel":{"name":"amp","version":""},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"includewinners":true,"includebidderkeys":true}}}`),
 				},
 				AuctionResponse: &openrtb2.BidResponse{
 					SeatBid: []openrtb2.SeatBid{{
@@ -1808,7 +1827,15 @@ func TestBuildAmpObject(t *testing.T) {
 		// assert AmpObject
 		assert.Equalf(t, test.expectedAmpObject.Status, actualAmpObject.Status, "Amp Object Status field doesn't match expected: %s\n", test.description)
 		assert.Lenf(t, actualAmpObject.Errors, len(test.expectedAmpObject.Errors), "Amp Object Errors array doesn't match expected: %s\n", test.description)
-		assert.Equalf(t, test.expectedAmpObject.Request, actualAmpObject.Request, "Amp Object BidRequest doesn't match expected: %s\n", test.description)
+		var expectedRequest *openrtb2.BidRequest
+		var actualRequest *openrtb2.BidRequest
+		if test.expectedAmpObject.RequestWrapper != nil {
+			expectedRequest = test.expectedAmpObject.RequestWrapper.BidRequest
+		}
+		if actualAmpObject.RequestWrapper != nil {
+			actualRequest = test.expectedAmpObject.RequestWrapper.BidRequest
+		}
+		assert.Equalf(t, expectedRequest, actualRequest, "Amp Object BidRequest doesn't match expected: %s\n", test.description)
 		assert.Equalf(t, test.expectedAmpObject.AuctionResponse, actualAmpObject.AuctionResponse, "Amp Object BidResponse doesn't match expected: %s\n", test.description)
 		assert.Equalf(t, test.expectedAmpObject.AmpTargetingValues, actualAmpObject.AmpTargetingValues, "Amp Object AmpTargetingValues doesn't match expected: %s\n", test.description)
 		assert.Equalf(t, test.expectedAmpObject.Origin, actualAmpObject.Origin, "Amp Object Origin field doesn't match expected: %s\n", test.description)
@@ -1869,7 +1896,7 @@ func TestIdGeneration(t *testing.T) {
 		// Set up and run test
 		actualAmpObject, endpoint := ampObjectTestSetup(t, "test", test.givenInStoredRequest, test.givenGenerateRequestID, &mockAmpExchange{})
 		endpoint(recorder, request, nil)
-		assert.Equalf(t, test.expectedID, actualAmpObject.Request.ID, "Bid Request ID is incorrect: %s\n", test.description)
+		assert.Equalf(t, test.expectedID, actualAmpObject.RequestWrapper.ID, "Bid Request ID is incorrect: %s\n", test.description)
 	}
 }
 
@@ -1897,6 +1924,7 @@ func ampObjectTestSetup(t *testing.T, inTagId string, inStoredRequest json.RawMe
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
+		nil,
 	)
 	return &actualAmpObject, endpoint
 }
@@ -1949,6 +1977,7 @@ func TestAmpAuctionResponseHeaders(t *testing.T) {
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
+		nil,
 	)
 
 	for _, test := range testCases {
@@ -1984,6 +2013,7 @@ func TestRequestWithTargeting(t *testing.T) {
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
+		nil,
 	)
 	url, err := url.Parse("/openrtb2/auction/amp")
 	assert.NoError(t, err, "unexpected error received while parsing url")
@@ -2103,30 +2133,30 @@ func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
 		{
 			description: "Assert correct AmpResponse when request rejected at entrypoint stage",
 			file:        "sample-requests/hooks/amp_entrypoint_reject.json",
-			planBuilder: mockPlanBuilder{entrypointPlan: makePlan[hookstage.Entrypoint](mockRejectionHook{nbr})},
+			planBuilder: mockPlanBuilder{entrypointPlan: makePlan[hookstage.Entrypoint](mockRejectionHook{nbr, nil})},
 		},
 		{
 			// raw_auction stage not executed for AMP endpoint, so we expect full response
 			description: "Assert correct AmpResponse when request rejected at raw_auction stage",
 			file:        "sample-requests/amp/valid-supplementary/aliased-buyeruids.json",
-			planBuilder: mockPlanBuilder{rawAuctionPlan: makePlan[hookstage.RawAuctionRequest](mockRejectionHook{nbr})},
+			planBuilder: mockPlanBuilder{rawAuctionPlan: makePlan[hookstage.RawAuctionRequest](mockRejectionHook{nbr, nil})},
 		},
 		{
 			description: "Assert correct AmpResponse when request rejected at processed_auction stage",
 			file:        "sample-requests/hooks/amp_processed_auction_request_reject.json",
-			planBuilder: mockPlanBuilder{processedAuctionPlan: makePlan[hookstage.ProcessedAuctionRequest](mockRejectionHook{nbr})},
+			planBuilder: mockPlanBuilder{processedAuctionPlan: makePlan[hookstage.ProcessedAuctionRequest](mockRejectionHook{nbr, nil})},
 		},
 		{
 			// bidder_request stage rejects only bidder, so we expect bidder rejection warning added
 			description: "Assert correct AmpResponse when request rejected at bidder-request stage",
 			file:        "sample-requests/hooks/amp_bidder_reject.json",
-			planBuilder: mockPlanBuilder{bidderRequestPlan: makePlan[hookstage.BidderRequest](mockRejectionHook{nbr})},
+			planBuilder: mockPlanBuilder{bidderRequestPlan: makePlan[hookstage.BidderRequest](mockRejectionHook{nbr, nil})},
 		},
 		{
 			// raw_bidder_response stage rejects only bidder, so we expect bidder rejection warning added
 			description: "Assert correct AmpResponse when request rejected at raw_bidder_response stage",
 			file:        "sample-requests/hooks/amp_bidder_response_reject.json",
-			planBuilder: mockPlanBuilder{rawBidderResponsePlan: makePlan[hookstage.RawBidderResponse](mockRejectionHook{nbr})},
+			planBuilder: mockPlanBuilder{rawBidderResponsePlan: makePlan[hookstage.RawBidderResponse](mockRejectionHook{nbr, nil})},
 		},
 		{
 			// no debug information should be added for raw_auction stage because it's not executed for amp endpoint
@@ -2173,7 +2203,7 @@ func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
 			query := request.URL.Query()
 			tagID := query.Get("tag_id")
 
-			test.storedRequest = map[string]json.RawMessage{tagID: test.BidRequest}
+			test.StoredRequest = map[string]json.RawMessage{tagID: test.BidRequest}
 			test.planBuilder = tc.planBuilder
 			test.endpointType = AMP_ENDPOINT
 
@@ -2298,7 +2328,7 @@ func TestSendAmpResponse_LogsErrors(t *testing.T) {
 			account := &config.Account{DebugAllow: true}
 			reqWrapper := openrtb_ext.RequestWrapper{BidRequest: test.request}
 
-			labels, ao = sendAmpResponse(test.writer, test.hookExecutor, test.response, &reqWrapper, account, labels, ao, nil)
+			labels, ao = sendAmpResponse(test.writer, test.hookExecutor, &exchange.AuctionResponse{BidResponse: test.response}, &reqWrapper, account, labels, ao, nil)
 
 			assert.Equal(t, ao.Errors, test.expectedErrors, "Invalid errors.")
 			assert.Equal(t, test.expectedStatus, ao.Status, "Invalid HTTP response status.")
@@ -2317,3 +2347,64 @@ func (e errorResponseWriter) Write(bytes []byte) (int, error) {
 }
 
 func (e errorResponseWriter) WriteHeader(statusCode int) {}
+
+func TestSetSeatNonBid(t *testing.T) {
+	type args struct {
+		finalExtBidResponse *openrtb_ext.ExtBidResponse
+		request             *openrtb_ext.RequestWrapper
+		auctionResponse     *exchange.AuctionResponse
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "nil-auctionResponse",
+			args: args{auctionResponse: nil},
+			want: false,
+		},
+		{
+			name: "nil-request",
+			args: args{auctionResponse: &exchange.AuctionResponse{}, request: nil},
+			want: false,
+		},
+		{
+			name: "invalid-req-ext",
+			args: args{auctionResponse: &exchange.AuctionResponse{}, request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: []byte(`invalid json`)}}},
+			want: false,
+		},
+		{
+			name: "nil-prebid",
+			args: args{auctionResponse: &exchange.AuctionResponse{}, request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: nil}}},
+			want: false,
+		},
+		{
+			name: "returnallbidstatus-is-false",
+			args: args{auctionResponse: &exchange.AuctionResponse{}, request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid" : {"returnallbidstatus" : false}}`)}}},
+			want: false,
+		},
+		{
+			name: "finalExtBidResponse-is-nil",
+			args: args{finalExtBidResponse: nil},
+			want: false,
+		},
+		{
+			name: "returnallbidstatus-is-true-and-responseExt.Prebid-is-nil",
+			args: args{finalExtBidResponse: &openrtb_ext.ExtBidResponse{Prebid: nil}, auctionResponse: &exchange.AuctionResponse{}, request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid" : {"returnallbidstatus" : true}}`)}}},
+			want: true,
+		},
+		{
+			name: "returnallbidstatus-is-true-and-responseExt.Prebid-is-not-nil",
+			args: args{finalExtBidResponse: &openrtb_ext.ExtBidResponse{Prebid: nil}, auctionResponse: &exchange.AuctionResponse{}, request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid" : {"returnallbidstatus" : true}}`)}}},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := setSeatNonBid(tt.args.finalExtBidResponse, tt.args.request, tt.args.auctionResponse); got != tt.want {
+				t.Errorf("setSeatNonBid() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

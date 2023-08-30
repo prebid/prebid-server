@@ -40,7 +40,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://display.whatever.com/hosturl.com/publisher-id",
+        "uri": "http://display.whatever.com/12/publisher-id",
         "body": {
           "id": "request-id",
           "imp": [

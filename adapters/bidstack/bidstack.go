@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
@@ -37,7 +37,7 @@ func Builder(_ openrtb_ext.BidderName, config config.Adapter, _ config.Server) (
 	return bidder, nil
 }
 
-func (a adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	headers, err := prepareHeaders(request)
 	if err != nil {
 		return nil, []error{fmt.Errorf("headers prepare: %v", err)}

@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/stretchr/testify/assert"
 )

@@ -59,15 +59,6 @@
                         "page": "test.somepage.com"
                     },
                     "user": {},
-                    "ext": {
-                        "prebid": {
-                            "server": {
-                                "datacenter": "Datacenter",
-                                "externalurl": "http://hosturl.com",
-                                "gvlid": 1
-                            }
-                        }
-                    },
                     "imp": [
                         {
                             "id": "my-imp-id",

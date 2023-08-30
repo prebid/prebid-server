@@ -52,8 +52,7 @@
       }
     ]
   },
-  "outputRequestData": {
-  },
+  "outputRequestData": {},
   "bidderConfigFPD": {
     "appnexus": {
       "site": {

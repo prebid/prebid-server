@@ -3,21 +3,24 @@ package taboola
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/openrtb/v17/adcom1"
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"net/http"
+	"strconv"
+	"strings"
+	"text/template"
+
+	"github.com/prebid/openrtb/v19/adcom1"
+	"github.com/prebid/openrtb/v19/openrtb2"
+
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"net/http"
-	"net/url"
-	"text/template"
 )
 
 type adapter struct {
 	endpoint *template.Template
-	hostName string
+	gvlID    string
 }
 
 // Builder builds a new instance of Taboola adapter for the given bidder with the given config.
@@ -27,20 +30,14 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
-	hostName := ""
-	if server.ExternalUrl != "" {
-		parsedUrl, err := url.Parse(server.ExternalUrl)
-		if err == nil && parsedUrl != nil {
-			hostName = parsedUrl.Host
-		}
+	gvlID := ""
+	if server.GvlID > 0 {
+		gvlID = strconv.Itoa(server.GvlID)
 	}
 
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
-	}
 	bidder := &adapter{
 		endpoint: endpointTemplate,
-		hostName: hostName,
+		gvlID:    gvlID,
 	}
 	return bidder, nil
 }
@@ -98,6 +95,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	for _, seatBid := range response.SeatBid {
 		for i := range seatBid.Bid {
 			bidType, err := getMediaType(seatBid.Bid[i].ImpID, request.Imp)
+			resolveMacros(&seatBid.Bid[i])
 			if err != nil {
 				errs = append(errs, err)
 				continue
@@ -149,7 +147,7 @@ func (a *adapter) buildRequest(request *openrtb2.BidRequest) (*adapters.RequestD
 
 // Builds endpoint url based on adapter-specific pub settings from imp.ext
 func (a *adapter) buildEndpointURL(publisherId string, mediaType string) (string, error) {
-	endpointParams := macros.EndpointTemplateParams{PublisherID: publisherId, MediaType: mediaType, Host: a.hostName}
+	endpointParams := macros.EndpointTemplateParams{PublisherID: publisherId, MediaType: mediaType, GvlID: a.gvlID}
 	resolvedUrl, err := macros.ResolveMacros(a.endpoint, endpointParams)
 	if err != nil {
 		return "", err
@@ -176,10 +174,15 @@ func createTaboolaRequests(request *openrtb2.BidRequest) (taboolaRequests []*ope
 			errs = append(errs, err)
 			continue
 		}
-		if taboolaExt.TagId != "" {
-			imp.TagID = taboolaExt.TagId
-			modifiedRequest.Imp[i] = imp
+
+		tagId := taboolaExt.TagID
+		if len(taboolaExt.TagID) < 1 {
+			tagId = taboolaExt.TagId
 		}
+
+		imp.TagID = tagId
+		modifiedRequest.Imp[i] = imp
+
 		if taboolaExt.BidFloor != 0 {
 			imp.BidFloor = taboolaExt.BidFloor
 			modifiedRequest.Imp[i] = imp
@@ -250,8 +253,7 @@ func makeRequestExt(pageType string) (json.RawMessage, error) {
 
 	requestExtJson, err := json.Marshal(requestExt)
 	if err != nil {
-		fmt.Errorf("could not marshal %s", requestExt)
-		return nil, err
+		return nil, fmt.Errorf("could not marshal %s, err: %s", requestExt, err)
 	}
 	return requestExtJson, nil
 
@@ -287,4 +289,12 @@ func overrideBidRequestImp(originBidRequest *openrtb2.BidRequest, imp []openrtb2
 	bidRequestResult := *originBidRequest
 	bidRequestResult.Imp = imp
 	return &bidRequestResult
+}
+
+func resolveMacros(bid *openrtb2.Bid) {
+	if bid != nil {
+		price := strconv.FormatFloat(bid.Price, 'f', -1, 64)
+		bid.NURL = strings.Replace(bid.NURL, "${AUCTION_PRICE}", price, -1)
+		bid.AdM = strings.Replace(bid.AdM, "${AUCTION_PRICE}", price, -1)
+	}
 }

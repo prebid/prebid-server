@@ -1,4 +1,4 @@
-endpoint: "http://{{.Host}}.ortb.net/openrtb/{{.PublisherID}}"
+endpoint: "http://ads-pbs.ortb.net/openrtb/{{.PublisherID}}?host={{.Host}}"
 maintainer:
   email: "engineering@project-limelight.com"
 capabilities:

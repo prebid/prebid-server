@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -140,6 +140,7 @@ func (a *ImprovedigitalAdapter) MakeBids(internalRequest *openrtb2.BidRequest, e
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(seatBid.Bid))
+	bidResponse.Currency = bidResp.Cur
 
 	for i := range seatBid.Bid {
 		bid := seatBid.Bid[i]

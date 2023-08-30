@@ -4,15 +4,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/macros"
 	"net/http"
 	"strings"
 	"text/template"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
+
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -155,12 +156,8 @@ func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ImpExtLimelightDigital, e
 }
 
 func (a *adapter) buildEndpointURL(params *openrtb_ext.ImpExtLimelightDigital) (string, error) {
-	firstDotIndex := strings.IndexByte(params.Host, '.')
-	if firstDotIndex < 1 || firstDotIndex == (len(params.Host)-1) {
-		return "", fmt.Errorf("hostname is invalid: %s", params.Host)
-	}
 	endpointParams := macros.EndpointTemplateParams{
-		Host:        params.Host[:firstDotIndex],
+		Host:        params.Host,
 		PublisherID: params.PublisherID.String(),
 	}
 	return macros.ResolveMacros(a.endpointTemplate, endpointParams)

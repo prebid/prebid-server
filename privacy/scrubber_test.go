@@ -4,29 +4,12 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestScrubDevice(t *testing.T) {
-	device := &openrtb2.Device{
-		DIDMD5:   "anyDIDMD5",
-		DIDSHA1:  "anyDIDSHA1",
-		DPIDMD5:  "anyDPIDMD5",
-		DPIDSHA1: "anyDPIDSHA1",
-		MACSHA1:  "anyMACSHA1",
-		MACMD5:   "anyMACMD5",
-		IFA:      "anyIFA",
-		IP:       "1.2.3.4",
-		IPv6:     "2001:0db8:0000:0000:0000:ff00:0042:8329",
-		Geo: &openrtb2.Geo{
-			Lat:   123.456,
-			Lon:   678.89,
-			Metro: "some metro",
-			City:  "some city",
-			ZIP:   "some zip",
-		},
-	}
+	device := getTestDevice()
 
 	testCases := []struct {
 		description string
@@ -197,20 +180,7 @@ func TestScrubDeviceNil(t *testing.T) {
 }
 
 func TestScrubUser(t *testing.T) {
-	user := &openrtb2.User{
-		ID:       "anyID",
-		BuyerUID: "anyBuyerUID",
-		Yob:      42,
-		Gender:   "anyGender",
-		Ext:      json.RawMessage(`{}`),
-		Geo: &openrtb2.Geo{
-			Lat:   123.456,
-			Lon:   678.89,
-			Metro: "some metro",
-			City:  "some city",
-			ZIP:   "some zip",
-		},
-	}
+	user := getTestUser()
 
 	testCases := []struct {
 		description string
@@ -267,57 +237,6 @@ func TestScrubUser(t *testing.T) {
 				},
 			},
 			scrubUser: ScrubStrategyUserIDAndDemographic,
-			scrubGeo:  ScrubStrategyGeoNone,
-		},
-		{
-			description: "User ID & Geo Full",
-			expected: &openrtb2.User{
-				ID:       "",
-				BuyerUID: "",
-				Yob:      42,
-				Gender:   "anyGender",
-				Ext:      json.RawMessage(`{}`),
-				Geo:      &openrtb2.Geo{},
-			},
-			scrubUser: ScrubStrategyUserID,
-			scrubGeo:  ScrubStrategyGeoFull,
-		},
-		{
-			description: "User ID & Geo Reduced",
-			expected: &openrtb2.User{
-				ID:       "",
-				BuyerUID: "",
-				Yob:      42,
-				Gender:   "anyGender",
-				Ext:      json.RawMessage(`{}`),
-				Geo: &openrtb2.Geo{
-					Lat:   123.46,
-					Lon:   678.89,
-					Metro: "some metro",
-					City:  "some city",
-					ZIP:   "some zip",
-				},
-			},
-			scrubUser: ScrubStrategyUserID,
-			scrubGeo:  ScrubStrategyGeoReducedPrecision,
-		},
-		{
-			description: "User ID & Geo None",
-			expected: &openrtb2.User{
-				ID:       "",
-				BuyerUID: "",
-				Yob:      42,
-				Gender:   "anyGender",
-				Ext:      json.RawMessage(`{}`),
-				Geo: &openrtb2.Geo{
-					Lat:   123.456,
-					Lon:   678.89,
-					Metro: "some metro",
-					City:  "some city",
-					ZIP:   "some zip",
-				},
-			},
-			scrubUser: ScrubStrategyUserID,
 			scrubGeo:  ScrubStrategyGeoNone,
 		},
 		{
@@ -382,6 +301,171 @@ func TestScrubUser(t *testing.T) {
 func TestScrubUserNil(t *testing.T) {
 	result := NewScrubber().ScrubUser(nil, ScrubStrategyUserNone, ScrubStrategyGeoNone)
 	assert.Nil(t, result)
+}
+
+func TestScrubRequest(t *testing.T) {
+
+	imps := []openrtb2.Imp{
+		{ID: "testId", Ext: json.RawMessage(`{"test": 1, "tid": 2}`)},
+	}
+	source := &openrtb2.Source{
+		TID: "testTid",
+	}
+	device := getTestDevice()
+	user := getTestUser()
+	user.Ext = json.RawMessage(`{"data": 1, "eids": 2}`)
+	user.EIDs = []openrtb2.EID{{Source: "test"}}
+
+	testCases := []struct {
+		description    string
+		enforcement    Enforcement
+		userExtPresent bool
+		expected       *openrtb2.BidRequest
+	}{
+		{
+			description:    "enforce transmitUFPD with user.ext",
+			enforcement:    Enforcement{UFPD: true},
+			userExtPresent: true,
+			expected: &openrtb2.BidRequest{
+				Imp:    imps,
+				Source: source,
+				User: &openrtb2.User{
+					EIDs: []openrtb2.EID{{Source: "test"}},
+					Geo:  user.Geo,
+					Ext:  json.RawMessage(`{"eids":2}`),
+				},
+				Device: &openrtb2.Device{
+					IP:   "1.2.3.4",
+					IPv6: "2001:0db8:0000:0000:0000:ff00:0042:8329",
+					Geo:  device.Geo,
+				},
+			},
+		},
+		{
+			description:    "enforce transmitUFPD without user.ext",
+			enforcement:    Enforcement{UFPD: true},
+			userExtPresent: false,
+			expected: &openrtb2.BidRequest{
+				Imp:    imps,
+				Source: source,
+				User: &openrtb2.User{
+					EIDs: []openrtb2.EID{{Source: "test"}},
+					Geo:  user.Geo,
+				},
+				Device: &openrtb2.Device{
+					IP:   "1.2.3.4",
+					IPv6: "2001:0db8:0000:0000:0000:ff00:0042:8329",
+					Geo:  device.Geo,
+				},
+			},
+		},
+		{
+			description:    "enforce transmitEids",
+			enforcement:    Enforcement{Eids: true},
+			userExtPresent: true,
+			expected: &openrtb2.BidRequest{
+				Imp:    imps,
+				Source: source,
+				Device: device,
+				User: &openrtb2.User{
+					ID:       "anyID",
+					BuyerUID: "anyBuyerUID",
+					Yob:      42,
+					Gender:   "anyGender",
+					Geo:      user.Geo,
+					EIDs:     nil,
+					Ext:      json.RawMessage(`{"data":1}`),
+				},
+			},
+		},
+		{
+			description:    "enforce transmitTid",
+			enforcement:    Enforcement{TID: true},
+			userExtPresent: true,
+			expected: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "testId", Ext: json.RawMessage(`{"test":1}`)},
+				},
+				Source: &openrtb2.Source{
+					TID: "",
+				},
+				Device: device,
+				User: &openrtb2.User{
+					ID:       "anyID",
+					BuyerUID: "anyBuyerUID",
+					Yob:      42,
+					Gender:   "anyGender",
+					Geo:      user.Geo,
+					EIDs:     []openrtb2.EID{{Source: "test"}},
+					Ext:      json.RawMessage(`{"data": 1, "eids": 2}`),
+				},
+			},
+		},
+		{
+			description:    "enforce precise Geo",
+			enforcement:    Enforcement{PreciseGeo: true},
+			userExtPresent: true,
+			expected: &openrtb2.BidRequest{
+				Imp:    imps,
+				Source: source,
+				User: &openrtb2.User{
+					ID:       "anyID",
+					BuyerUID: "anyBuyerUID",
+					Yob:      42,
+					Gender:   "anyGender",
+					Geo: &openrtb2.Geo{
+						Lat: 123.46, Lon: 678.89,
+						Metro: "some metro",
+						City:  "some city",
+						ZIP:   "some zip",
+					},
+					EIDs: []openrtb2.EID{{Source: "test"}},
+					Ext:  json.RawMessage(`{"data": 1, "eids": 2}`),
+				},
+				Device: &openrtb2.Device{
+					IFA:      "anyIFA",
+					DIDSHA1:  "anyDIDSHA1",
+					DIDMD5:   "anyDIDMD5",
+					DPIDSHA1: "anyDPIDSHA1",
+					DPIDMD5:  "anyDPIDMD5",
+					MACSHA1:  "anyMACSHA1",
+					MACMD5:   "anyMACMD5",
+					IP:       "1.2.3.0",
+					IPv6:     "2001:0db8:0000:0000:0000:ff00:0:0",
+					Geo: &openrtb2.Geo{
+						Lat: 123.46, Lon: 678.89,
+						Metro: "some metro",
+						City:  "some city",
+						ZIP:   "some zip",
+					},
+				},
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			bidRequest := &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "testId", Ext: json.RawMessage(`{"test": 1, "tid": 2}`)},
+				},
+				Source: &openrtb2.Source{
+					TID: "testTid",
+				},
+				User:   getTestUser(),
+				Device: getTestDevice(),
+			}
+			if test.userExtPresent {
+				bidRequest.User.Ext = json.RawMessage(`{"data": 1, "eids": 2}`)
+			} else {
+				bidRequest.User.Ext = nil
+			}
+			bidRequest.User.EIDs = []openrtb2.EID{{Source: "test"}}
+
+			result := NewScrubber().ScrubRequest(bidRequest, test.enforcement)
+			assert.Equal(t, test.expected, result, test.description)
+		})
+	}
 }
 
 func TestScrubIPV4(t *testing.T) {
@@ -623,7 +707,46 @@ func TestScrubUserExtIDs(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		result := scrubUserExtIDs(test.userExt)
+		result := scrubExtIDs(test.userExt, "eids")
 		assert.Equal(t, test.expected, result, test.description)
 	}
+}
+
+func getTestUser() *openrtb2.User {
+	return &openrtb2.User{
+		ID:       "anyID",
+		BuyerUID: "anyBuyerUID",
+		Yob:      42,
+		Gender:   "anyGender",
+		Ext:      json.RawMessage(`{}`),
+		Geo: &openrtb2.Geo{
+			Lat:   123.456,
+			Lon:   678.89,
+			Metro: "some metro",
+			City:  "some city",
+			ZIP:   "some zip",
+		},
+	}
+}
+
+func getTestDevice() *openrtb2.Device {
+	return &openrtb2.Device{
+		DIDMD5:   "anyDIDMD5",
+		DIDSHA1:  "anyDIDSHA1",
+		DPIDMD5:  "anyDPIDMD5",
+		DPIDSHA1: "anyDPIDSHA1",
+		MACSHA1:  "anyMACSHA1",
+		MACMD5:   "anyMACMD5",
+		IFA:      "anyIFA",
+		IP:       "1.2.3.4",
+		IPv6:     "2001:0db8:0000:0000:0000:ff00:0042:8329",
+		Geo: &openrtb2.Geo{
+			Lat:   123.456,
+			Lon:   678.89,
+			Metro: "some metro",
+			City:  "some city",
+			ZIP:   "some zip",
+		},
+	}
+
 }

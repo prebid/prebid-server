@@ -2,6 +2,8 @@ endpoint: "https://bid.adview.com/agent/thirdAdxService/{{.AccountID}}"
 maintainer:
   email: "partner@adview.com"
 gvlVendorID: 1022
+endpointCompression: gzip
+modifyingVastXmlAllowed: true
 capabilities:
   app:
     mediaTypes:

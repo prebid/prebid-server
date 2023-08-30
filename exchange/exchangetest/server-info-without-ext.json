@@ -1,0 +1,68 @@
+{
+    "server": {
+        "externalURL": "http://anydomain.com/prebid",
+        "gvlID": 42,
+        "dataCenter": "us-east"
+    },
+    "incomingRequest": {
+        "ortbRequest": {
+            "id": "some-request-id",
+            "site": {
+                "page": "test.somepage.com"
+            },
+            "imp": [
+                {
+                    "id": "my-imp-id",
+                    "banner": {
+                        "w": 300,
+                        "h": 250
+                    },
+                    "ext": {
+                        "prebid": {
+                            "bidder": {
+                                "appnexus": {
+                                    "placementId": 1
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    "outgoingRequests": {
+        "appnexus": {
+            "expectRequest": {
+                "ortbRequest": {
+                    "id": "some-request-id",
+                    "site": {
+                        "page": "test.somepage.com"
+                    },
+                    "imp": [
+                        {
+                            "id": "my-imp-id",
+                            "banner": {
+                                "w": 300,
+                                "h": 250
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "placementId": 1
+                                }
+                            }
+                        }
+                    ],
+                    "ext": {
+                        "prebid": {
+                            "server": {
+                                "externalurl": "http://anydomain.com/prebid",
+                                "gvlid": 42,
+                                "datacenter": "us-east"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

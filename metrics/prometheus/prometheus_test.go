@@ -55,7 +55,6 @@ func TestMetricCountGatekeeping(t *testing.T) {
 	// Calculate Per-Adapter Cardinality
 	adapterCount := len(openrtb_ext.CoreBidderNames())
 	perAdapterCardinalityCount := adapterCardinalityCount / adapterCount
-
 	// Verify General Cardinality
 	// - This assertion provides a warning for newly added high-cardinality non-adapter specific metrics. The hardcoded limit
 	//   is an arbitrary soft ceiling. Thought should be given as to the value of the new metrics if you find yourself
@@ -517,6 +516,52 @@ func TestRequestTimeMetric(t *testing.T) {
 
 		result := getHistogramFromHistogramVec(m.requestsTimer, requestTypeLabel, string(requestType))
 		assertHistogram(t, test.description, result, test.expectedCount, test.expectedSum)
+	}
+}
+
+func TestRecordOverheadTimeMetric(t *testing.T) {
+	testCases := []struct {
+		description   string
+		overheadType  metrics.OverheadType
+		timeInMs      float64
+		expectedCount uint64
+		expectedSum   float64
+	}{
+		{
+			description:   "record-pre-bidder-overhead-time-1",
+			overheadType:  metrics.PreBidder,
+			timeInMs:      500,
+			expectedCount: 1,
+			expectedSum:   0.5,
+		},
+		{
+			description:   "record-pre-bidder-overhead-time-2",
+			overheadType:  metrics.PreBidder,
+			timeInMs:      400,
+			expectedCount: 2,
+			expectedSum:   0.9,
+		},
+		{
+			description:   "record-auction-response-overhead-time",
+			overheadType:  metrics.MakeAuctionResponse,
+			timeInMs:      500,
+			expectedCount: 1,
+			expectedSum:   0.5,
+		},
+		{
+			description:   "record-make-bidder-requests-overhead-time",
+			overheadType:  metrics.MakeBidderRequests,
+			timeInMs:      500,
+			expectedCount: 1,
+			expectedSum:   0.5,
+		},
+	}
+
+	metric := createMetricsForTesting()
+	for _, test := range testCases {
+		metric.RecordOverheadTime(test.overheadType, time.Duration(test.timeInMs)*time.Millisecond)
+		resultingHistogram := getHistogramFromHistogramVec(metric.overheadTimer, overheadTypeLabel, test.overheadType.String())
+		assertHistogram(t, test.description, resultingHistogram, test.expectedCount, test.expectedSum)
 	}
 }
 
@@ -1427,6 +1472,39 @@ func TestRecordTLSHandshakeTime(t *testing.T) {
 
 		assert.Equal(t, test.expectedCount, histogram.GetSampleCount(), "[%d] Incorrect number of histogram entries. Desc: %s\n", i, test.description)
 		assert.Equal(t, test.expectedDuration, histogram.GetSampleSum(), "[%d] Incorrect number of histogram cumulative values. Desc: %s\n", i, test.description)
+	}
+}
+
+func TestRecordBidderServerResponseTime(t *testing.T) {
+	testCases := []struct {
+		description   string
+		timeInMs      float64
+		expectedCount uint64
+		expectedSum   float64
+	}{
+		{
+			description:   "record-bidder-server-response-time-1",
+			timeInMs:      500,
+			expectedCount: 1,
+			expectedSum:   0.5,
+		},
+		{
+			description:   "record-bidder-server-response-time-2",
+			timeInMs:      400,
+			expectedCount: 1,
+			expectedSum:   0.4,
+		},
+	}
+	for _, test := range testCases {
+		pm := createMetricsForTesting()
+		pm.RecordBidderServerResponseTime(time.Duration(test.timeInMs) * time.Millisecond)
+
+		m := dto.Metric{}
+		pm.bidderServerResponseTimer.Write(&m)
+		histogram := *m.GetHistogram()
+
+		assert.Equal(t, test.expectedCount, histogram.GetSampleCount())
+		assert.Equal(t, test.expectedSum, histogram.GetSampleSum())
 	}
 }
 

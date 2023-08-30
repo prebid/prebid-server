@@ -110,7 +110,7 @@
   "biddersFPDResolved": {
     "appnexus": {
       "site": {
-        "id": "reqSiteId",
+        "id": "apnFpdAppId",
         "name": "apnFpdAppIdAppName",
         "page": "http://www.foobar.com/1234.html",
         "cat": [
@@ -134,24 +134,11 @@
               "name": "apnFpdAppIdContentDataName2"
             }
           ]
-        },
-        "ext": {
-          "data": {
-            "id": "apnFpdAppId",
-            "publisher": {
-              "id": "1"
-            }
-          }
         }
       },
       "user": {
-        "id": "reqUserId",
-        "keywords": "apnFpdUserKeyword",
-        "ext": {
-          "data": {
-            "id":"apnUserId"
-          }
-        }
+        "id": "apnUserId",
+        "keywords": "apnFpdUserKeyword"
       }
     },
     "telaria": {

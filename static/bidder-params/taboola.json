@@ -12,7 +12,12 @@
       "type": "string"
     },
     "tagid": {
-      "type": "string"
+      "type": "string",
+      "description": "Deprecated, use tagId instead."
+    },
+    "tagId": {
+      "type": "string",
+      "description": "preferred, will get precedence if both tagId and tagid are defined"
     },
     "bidfloor": {
       "type": "number"
@@ -36,5 +41,12 @@
       "type": "integer"
     }
   },
-  "required": ["tagid","publisherId"]
+  "oneOf": [
+    {
+      "required": [ "tagid", "publisherId" ]
+    },
+    {
+      "required": [ "tagId", "publisherId" ]
+    }
+  ]
 }

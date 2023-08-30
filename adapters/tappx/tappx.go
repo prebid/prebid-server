@@ -10,7 +10,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -134,9 +134,9 @@ func (a *TappxAdapter) buildEndpointURL(params *openrtb_ext.ExtImpTappx, test in
 	tappxHost := "tappx.com"
 	isNewEndpoint, err := regexp.Match(`^(zz|vz)[0-9]{3,}([a-z]{2,3}|test)$`, []byte(params.Endpoint))
 	if isNewEndpoint {
-		tappxHost = params.Endpoint + ".pub." + tappxHost + "/rtb/"
+		tappxHost = params.Endpoint + ".pub.tappx.com/rtb/"
 	} else {
-		tappxHost = "ssp.api." + tappxHost + "/rtb/v2/"
+		tappxHost = "ssp.api.tappx.com/rtb/v2/"
 	}
 
 	endpointParams := macros.EndpointTemplateParams{Host: tappxHost}

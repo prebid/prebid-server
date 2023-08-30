@@ -20,11 +20,20 @@ type ExtBidPrebid struct {
 	Meta              *ExtBidPrebidMeta   `json:"meta,omitempty"`
 	Targeting         map[string]string   `json:"targeting,omitempty"`
 	TargetBidderCode  string              `json:"targetbiddercode,omitempty"`
-	Type              BidType             `json:"type"`
+	Type              BidType             `json:"type,omitempty"`
 	Video             *ExtBidPrebidVideo  `json:"video,omitempty"`
 	Events            *ExtBidPrebidEvents `json:"events,omitempty"`
 	BidId             string              `json:"bidid,omitempty"`
 	Passthrough       json.RawMessage     `json:"passthrough,omitempty"`
+	Floors            *ExtBidPrebidFloors `json:"floors,omitempty"`
+}
+
+// ExtBidPrebidFloors defines the contract for bidresponse.seatbid.bid[i].ext.prebid.floors
+type ExtBidPrebidFloors struct {
+	FloorRule      string  `json:"floorRule,omitempty"`
+	FloorRuleValue float64 `json:"floorRuleValue,omitempty"`
+	FloorValue     float64 `json:"floorValue,omitempty"`
+	FloorCurrency  string  `json:"floorCurrency,omitempty"`
 }
 
 // ExtBidPrebidCache defines the contract for  bidresponse.seatbid.bid[i].ext.prebid.cache
@@ -41,6 +50,7 @@ type ExtBidPrebidCacheBids struct {
 
 // ExtBidPrebidMeta defines the contract for bidresponse.seatbid.bid[i].ext.prebid.meta
 type ExtBidPrebidMeta struct {
+	AdapterCode          string          `json:"adaptercode,omitempty"`
 	AdvertiserDomains    []string        `json:"advertiserDomains,omitempty"`
 	AdvertiserID         int             `json:"advertiserId,omitempty"`
 	AdvertiserName       string          `json:"advertiserName,omitempty"`
@@ -48,14 +58,15 @@ type ExtBidPrebidMeta struct {
 	AgencyName           string          `json:"agencyName,omitempty"`
 	BrandID              int             `json:"brandId,omitempty"`
 	BrandName            string          `json:"brandName,omitempty"`
-	DemandSource         string          `json:"demandSource,omitempty"`
 	DChain               json.RawMessage `json:"dchain,omitempty"`
+	DemandSource         string          `json:"demandSource,omitempty"`
 	MediaType            string          `json:"mediaType,omitempty"`
 	NetworkID            int             `json:"networkId,omitempty"`
 	NetworkName          string          `json:"networkName,omitempty"`
 	PrimaryCategoryID    string          `json:"primaryCatId,omitempty"`
+	RendererName         string          `json:"rendererName,omitempty"`
+	RendererVersion      string          `json:"rendererVersion,omitempty"`
 	SecondaryCategoryIDs []string        `json:"secondaryCatIds,omitempty"`
-	AdapterCode          string          `json:"adaptercode,omitempty"`
 }
 
 // ExtBidPrebidVideo defines the contract for bidresponse.seatbid.bid[i].ext.prebid.video

@@ -1,6 +1,6 @@
 package privacy
 
-import "github.com/prebid/openrtb/v17/openrtb2"
+import "github.com/prebid/openrtb/v19/openrtb2"
 
 // Enforcement represents the privacy policies to enforce for an OpenRTB bid request.
 type Enforcement struct {
@@ -9,11 +9,21 @@ type Enforcement struct {
 	GDPRGeo bool
 	GDPRID  bool
 	LMT     bool
+
+	// activities
+	UFPD       bool
+	Eids       bool
+	PreciseGeo bool
+	TID        bool
 }
 
 // Any returns true if at least one privacy policy requires enforcement.
-func (e Enforcement) Any() bool {
+func (e Enforcement) AnyLegacy() bool {
 	return e.CCPA || e.COPPA || e.GDPRGeo || e.GDPRID || e.LMT
+}
+
+func (e Enforcement) AnyActivities() bool {
+	return e.UFPD || e.PreciseGeo || e.Eids || e.TID
 }
 
 // Apply cleans personally identifiable information from an OpenRTB bid request.
@@ -22,9 +32,16 @@ func (e Enforcement) Apply(bidRequest *openrtb2.BidRequest) {
 }
 
 func (e Enforcement) apply(bidRequest *openrtb2.BidRequest, scrubber Scrubber) {
-	if bidRequest != nil && e.Any() {
-		bidRequest.Device = scrubber.ScrubDevice(bidRequest.Device, e.getDeviceIDScrubStrategy(), e.getIPv4ScrubStrategy(), e.getIPv6ScrubStrategy(), e.getGeoScrubStrategy())
-		bidRequest.User = scrubber.ScrubUser(bidRequest.User, e.getUserScrubStrategy(), e.getGeoScrubStrategy())
+	if bidRequest != nil {
+		if e.AnyActivities() {
+			bidRequest = scrubber.ScrubRequest(bidRequest, e)
+		}
+		if e.AnyLegacy() && !(e.UFPD && e.PreciseGeo && e.Eids) {
+			bidRequest.User = scrubber.ScrubUser(bidRequest.User, e.getUserScrubStrategy(), e.getGeoScrubStrategy())
+		}
+		if e.AnyLegacy() && !(e.UFPD && e.PreciseGeo) {
+			bidRequest.Device = scrubber.ScrubDevice(bidRequest.Device, e.getDeviceIDScrubStrategy(), e.getIPv4ScrubStrategy(), e.getIPv6ScrubStrategy(), e.getGeoScrubStrategy())
+		}
 	}
 }
 
@@ -69,16 +86,8 @@ func (e Enforcement) getGeoScrubStrategy() ScrubStrategyGeo {
 }
 
 func (e Enforcement) getUserScrubStrategy() ScrubStrategyUser {
-	if e.COPPA {
+	if e.COPPA || e.CCPA || e.LMT || e.GDPRID {
 		return ScrubStrategyUserIDAndDemographic
-	}
-
-	if e.CCPA || e.LMT {
-		return ScrubStrategyUserID
-	}
-
-	if e.GDPRID {
-		return ScrubStrategyUserID
 	}
 
 	return ScrubStrategyUserNone

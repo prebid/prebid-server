@@ -70,15 +70,6 @@
                             "us_privacy": "1-Y-"
                         }
                     },
-                    "ext": {
-                        "prebid": {
-                            "server": {
-                                "datacenter": "Datacenter",
-                                "externalurl": "http://hosturl.com",
-                                "gvlid": 1
-                            }
-                        }
-                    },
                     "user": {
                         "buyeruid": "some-buyer-id"
                     }

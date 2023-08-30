@@ -9,7 +9,6 @@ import (
 
 var validParams = []string{
 	`{ "key": "2", "type": "network"}`,
-	`{ "key": "1"}`,
 	`{ "key": "33232", "type": "publisher"}`,
 }
 
@@ -36,6 +35,7 @@ var invalidParams = []string{
 	`{ "anyparam": "anyvalue" }`,
 	`{ "type": "network" }`,
 	`{ "key": "asddsfd", "type": "any"}`,
+	`{ "key": "1"}`,
 }
 
 func TestInvalidParams(t *testing.T) {

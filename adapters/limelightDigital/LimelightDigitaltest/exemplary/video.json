@@ -21,7 +21,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://video.ortb.net/openrtb/123456",
+        "uri": "http://test.ortb.net/openrtb/123456?host=video.ortb.net",
         "body": {
           "id": "test-request-id-test-video-id",
           "imp": [

@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange/entities"
@@ -36,7 +36,7 @@ func TestEmptyHookExecutor(t *testing.T) {
 
 	entrypointBody, entrypointRejectErr := executor.ExecuteEntrypointStage(req, body)
 	rawAuctionBody, rawAuctionRejectErr := executor.ExecuteRawAuctionStage(body)
-	processedAuctionRejectErr := executor.ExecuteProcessedAuctionStage(&openrtb2.BidRequest{})
+	processedAuctionRejectErr := executor.ExecuteProcessedAuctionStage(&openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}})
 	bidderRequestRejectErr := executor.ExecuteBidderRequestStage(bidderRequest, "bidder-name")
 	executor.ExecuteAuctionResponseStage(&openrtb2.BidResponse{})
 
@@ -702,9 +702,9 @@ func TestExecuteProcessedAuctionStage(t *testing.T) {
 		description            string
 		givenPlanBuilder       hooks.ExecutionPlanBuilder
 		givenAccount           *config.Account
-		givenRequest           openrtb2.BidRequest
+		givenRequest           openrtb_ext.RequestWrapper
 		expectedRequest        openrtb2.BidRequest
-		expectedReject         *RejectError
+		expectedErr            error
 		expectedModuleContexts *moduleContexts
 		expectedStageOutcomes  []StageOutcome
 	}{
@@ -712,9 +712,9 @@ func TestExecuteProcessedAuctionStage(t *testing.T) {
 			description:            "Request not changed if hook execution plan empty",
 			givenPlanBuilder:       hooks.EmptyPlanBuilder{},
 			givenAccount:           account,
-			givenRequest:           req,
+			givenRequest:           openrtb_ext.RequestWrapper{BidRequest: &req},
 			expectedRequest:        req,
-			expectedReject:         nil,
+			expectedErr:            nil,
 			expectedModuleContexts: &moduleContexts{ctxs: map[string]hookstage.ModuleContext{}},
 			expectedStageOutcomes:  []StageOutcome{},
 		},
@@ -722,9 +722,9 @@ func TestExecuteProcessedAuctionStage(t *testing.T) {
 			description:            "Request changed if hooks return mutations",
 			givenPlanBuilder:       TestApplyHookMutationsBuilder{},
 			givenAccount:           account,
-			givenRequest:           req,
+			givenRequest:           openrtb_ext.RequestWrapper{BidRequest: &req},
 			expectedRequest:        reqUpdated,
-			expectedReject:         nil,
+			expectedErr:            nil,
 			expectedModuleContexts: foobarModuleCtx,
 			expectedStageOutcomes: []StageOutcome{
 				{
@@ -756,9 +756,9 @@ func TestExecuteProcessedAuctionStage(t *testing.T) {
 			description:            "Stage execution can be rejected - and later hooks rejected",
 			givenPlanBuilder:       TestRejectPlanBuilder{},
 			givenAccount:           nil,
-			givenRequest:           req,
+			givenRequest:           openrtb_ext.RequestWrapper{BidRequest: &req},
 			expectedRequest:        req,
-			expectedReject:         &RejectError{0, HookID{ModuleCode: "foobar", HookImplCode: "foo"}, hooks.StageProcessedAuctionRequest.String()},
+			expectedErr:            &RejectError{0, HookID{ModuleCode: "foobar", HookImplCode: "foo"}, hooks.StageProcessedAuctionRequest.String()},
 			expectedModuleContexts: foobarModuleCtx,
 			expectedStageOutcomes: []StageOutcome{
 				{
@@ -789,9 +789,9 @@ func TestExecuteProcessedAuctionStage(t *testing.T) {
 			description:            "Request can be changed when a hook times out",
 			givenPlanBuilder:       TestWithTimeoutPlanBuilder{},
 			givenAccount:           account,
-			givenRequest:           req,
+			givenRequest:           openrtb_ext.RequestWrapper{BidRequest: &req},
 			expectedRequest:        reqUpdated,
-			expectedReject:         nil,
+			expectedErr:            nil,
 			expectedModuleContexts: foobarModuleCtx,
 			expectedStageOutcomes: []StageOutcome{
 				{
@@ -837,9 +837,9 @@ func TestExecuteProcessedAuctionStage(t *testing.T) {
 			description:      "Modules contexts are preserved and correct",
 			givenPlanBuilder: TestWithModuleContextsPlanBuilder{},
 			givenAccount:     account,
-			givenRequest:     req,
+			givenRequest:     openrtb_ext.RequestWrapper{BidRequest: &req},
 			expectedRequest:  req,
-			expectedReject:   nil,
+			expectedErr:      nil,
 			expectedModuleContexts: &moduleContexts{ctxs: map[string]hookstage.ModuleContext{
 				"module-1": {"processed-auction-ctx-1": "some-ctx-1", "processed-auction-ctx-3": "some-ctx-3"},
 				"module-2": {"processed-auction-ctx-2": "some-ctx-2"},
@@ -898,10 +898,10 @@ func TestExecuteProcessedAuctionStage(t *testing.T) {
 			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{})
 			exec.SetAccount(test.givenAccount)
 
-			reject := exec.ExecuteProcessedAuctionStage(&test.givenRequest)
+			err := exec.ExecuteProcessedAuctionStage(&test.givenRequest)
 
-			assert.Equal(ti, test.expectedReject, reject, "Unexpected stage reject.")
-			assert.Equal(ti, test.expectedRequest, test.givenRequest, "Incorrect request update.")
+			assert.Equal(ti, test.expectedErr, err, "Unexpected stage reject.")
+			assert.Equal(ti, test.expectedRequest, *test.givenRequest.BidRequest, "Incorrect request update.")
 			assert.Equal(ti, test.expectedModuleContexts, exec.moduleContexts, "Incorrect module contexts")
 
 			stageOutcomes := exec.GetOutcomes()
@@ -1975,8 +1975,8 @@ func TestInterStageContextCommunication(t *testing.T) {
 	}}, exec.moduleContexts, "Wrong module contexts after executing raw-auction hook.")
 
 	// test that context added at the processed-auction stage merged with existing module contexts
-	reject = exec.ExecuteProcessedAuctionStage(&openrtb2.BidRequest{})
-	assert.Nil(t, reject, "Unexpected reject from processed-auction stage.")
+	err = exec.ExecuteProcessedAuctionStage(&openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}})
+	assert.Nil(t, err, "Unexpected reject from processed-auction stage.")
 	assert.Equal(t, &moduleContexts{ctxs: map[string]hookstage.ModuleContext{
 		"module-1": {
 			"entrypoint-ctx-1":        "some-ctx-1",

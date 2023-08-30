@@ -4,7 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/util/maputil"
+	"github.com/prebid/prebid-server/util/ptrutil"
+	"github.com/prebid/prebid-server/util/sliceutil"
 )
 
 // RequestWrapper wraps the OpenRTB request to provide a storage location for unmarshalled ext fields, so they
@@ -51,6 +54,7 @@ const (
 	eidsKey                             = "eids"
 	gdprKey                             = "gdpr"
 	prebidKey                           = "prebid"
+	dataKey                             = "data"
 	schainKey                           = "schain"
 	us_privacyKey                       = "us_privacy"
 )
@@ -350,6 +354,27 @@ func (rw *RequestWrapper) rebuildSourceExt() error {
 	return nil
 }
 
+func (rw *RequestWrapper) Clone() *RequestWrapper {
+	if rw == nil {
+		return nil
+	}
+	clone := *rw
+	newImpWrappers := make([]*ImpWrapper, len(rw.impWrappers))
+	for i, iw := range rw.impWrappers {
+		newImpWrappers[i] = iw.Clone()
+	}
+	clone.impWrappers = newImpWrappers
+	clone.userExt = rw.userExt.Clone()
+	clone.deviceExt = rw.deviceExt.Clone()
+	clone.requestExt = rw.requestExt.Clone()
+	clone.appExt = rw.appExt.Clone()
+	clone.regExt = rw.regExt.Clone()
+	clone.siteExt = rw.siteExt.Clone()
+	clone.sourceExt = rw.sourceExt.Clone()
+
+	return &clone
+}
+
 // ---------------------------------------------------------------
 // UserExt provides an interface for request.user.ext
 // ---------------------------------------------------------------
@@ -605,6 +630,43 @@ func (ue *UserExt) SetEid(eid *[]openrtb2.EID) {
 	ue.eidsDirty = true
 }
 
+func (ue *UserExt) Clone() *UserExt {
+	if ue == nil {
+		return nil
+	}
+	clone := *ue
+	clone.ext = maputil.Clone(ue.ext)
+
+	if ue.consent != nil {
+		clonedConsent := *ue.consent
+		clone.consent = &clonedConsent
+	}
+
+	if ue.prebid != nil {
+		clone.prebid = &ExtUserPrebid{}
+		clone.prebid.BuyerUIDs = maputil.Clone(ue.prebid.BuyerUIDs)
+	}
+
+	if ue.eids != nil {
+		clonedEids := make([]openrtb2.EID, len(*ue.eids))
+		for i, eid := range *ue.eids {
+			newEid := eid
+			newEid.UIDs = sliceutil.Clone(eid.UIDs)
+			clonedEids[i] = newEid
+		}
+		clone.eids = &clonedEids
+	}
+
+	if ue.consentedProvidersSettingsIn != nil {
+		clone.consentedProvidersSettingsIn = &ConsentedProvidersSettingsIn{ConsentedProvidersString: ue.consentedProvidersSettingsIn.ConsentedProvidersString}
+	}
+	if ue.consentedProvidersSettingsOut != nil {
+		clone.consentedProvidersSettingsOut = &ConsentedProvidersSettingsOut{ConsentedProvidersList: sliceutil.Clone(ue.consentedProvidersSettingsOut.ConsentedProvidersList)}
+	}
+
+	return &clone
+}
+
 // ---------------------------------------------------------------
 // RequestExt provides an interface for request.ext
 // ---------------------------------------------------------------
@@ -740,6 +802,23 @@ func (re *RequestExt) SetSChain(schain *openrtb2.SupplyChain) {
 	re.schainDirty = true
 }
 
+func (re *RequestExt) Clone() *RequestExt {
+	if re == nil {
+		return nil
+	}
+
+	clone := *re
+	clone.ext = maputil.Clone(re.ext)
+
+	if re.prebid != nil {
+		clone.prebid = re.prebid.Clone()
+	}
+
+	clone.schain = cloneSupplyChain(re.schain)
+
+	return &clone
+}
+
 // ---------------------------------------------------------------
 // DeviceExt provides an interface for request.device.ext
 // ---------------------------------------------------------------
@@ -836,6 +915,26 @@ func (de *DeviceExt) SetPrebid(prebid *ExtDevicePrebid) {
 	de.prebidDirty = true
 }
 
+func (de *DeviceExt) Clone() *DeviceExt {
+	if de == nil {
+		return nil
+	}
+
+	clone := *de
+	clone.ext = maputil.Clone(de.ext)
+
+	if de.prebid != nil {
+		clonedPrebid := *de.prebid
+		if clonedPrebid.Interstitial != nil {
+			clonedInterstitial := *de.prebid.Interstitial
+			clonedPrebid.Interstitial = &clonedInterstitial
+		}
+		clone.prebid = &clonedPrebid
+	}
+
+	return &clone
+}
+
 // ---------------------------------------------------------------
 // AppExt provides an interface for request.app.ext
 // ---------------------------------------------------------------
@@ -926,6 +1025,19 @@ func (ae *AppExt) GetPrebid() *ExtAppPrebid {
 func (ae *AppExt) SetPrebid(prebid *ExtAppPrebid) {
 	ae.prebid = prebid
 	ae.prebidDirty = true
+}
+
+func (ae *AppExt) Clone() *AppExt {
+	if ae == nil {
+		return nil
+	}
+
+	clone := *ae
+	clone.ext = maputil.Clone(ae.ext)
+
+	clone.prebid = ptrutil.Clone(ae.prebid)
+
+	return &clone
 }
 
 // ---------------------------------------------------------------
@@ -1044,6 +1156,19 @@ func (re *RegExt) SetUSPrivacy(usPrivacy string) {
 	re.usPrivacyDirty = true
 }
 
+func (re *RegExt) Clone() *RegExt {
+	if re == nil {
+		return nil
+	}
+
+	clone := *re
+	clone.ext = maputil.Clone(re.ext)
+
+	clone.gdpr = ptrutil.Clone(re.gdpr)
+
+	return &clone
+}
+
 // ---------------------------------------------------------------
 // SiteExt provides an interface for request.site.ext
 // ---------------------------------------------------------------
@@ -1125,6 +1250,18 @@ func (se *SiteExt) GetAmp() *int8 {
 func (se *SiteExt) SetAmp(amp *int8) {
 	se.amp = amp
 	se.ampDirty = true
+}
+
+func (se *SiteExt) Clone() *SiteExt {
+	if se == nil {
+		return nil
+	}
+
+	clone := *se
+	clone.ext = maputil.Clone(se.ext)
+	clone.amp = ptrutil.Clone(se.amp)
+
+	return &clone
 }
 
 // ---------------------------------------------------------------
@@ -1218,6 +1355,19 @@ func (se *SourceExt) SetSChain(schain *openrtb2.SupplyChain) {
 	se.schainDirty = true
 }
 
+func (se *SourceExt) Clone() *SourceExt {
+	if se == nil {
+		return nil
+	}
+
+	clone := *se
+	clone.ext = maputil.Clone(se.ext)
+
+	clone.schain = cloneSupplyChain(se.schain)
+
+	return &clone
+}
+
 // ImpWrapper wraps an OpenRTB impression object to provide storage for unmarshalled ext fields, so they
 // will not need to be unmarshalled multiple times. It is intended to use the ImpWrapper via the RequestWrapper
 // and follow the same usage conventions.
@@ -1264,6 +1414,17 @@ func (w *ImpWrapper) rebuildImpExt() error {
 	return nil
 }
 
+func (w *ImpWrapper) Clone() *ImpWrapper {
+	if w == nil {
+		return nil
+	}
+
+	clone := *w
+	clone.impExt = w.impExt.Clone()
+
+	return &clone
+}
+
 // ---------------------------------------------------------------
 // ImpExt provides an interface for imp.ext
 // ---------------------------------------------------------------
@@ -1272,8 +1433,10 @@ type ImpExt struct {
 	ext         map[string]json.RawMessage
 	extDirty    bool
 	prebid      *ExtImpPrebid
+	data        *ExtImpData
 	prebidDirty bool
 	tid         string
+	gpId        string
 	tidDirty    bool
 }
 
@@ -1300,9 +1463,24 @@ func (e *ImpExt) unmarshal(extJson json.RawMessage) error {
 		}
 	}
 
+	dataJson, hasData := e.ext[dataKey]
+	if hasData {
+		e.data = &ExtImpData{}
+		if err := json.Unmarshal(dataJson, e.data); err != nil {
+			return err
+		}
+	}
+
 	tidJson, hasTid := e.ext["tid"]
 	if hasTid {
 		if err := json.Unmarshal(tidJson, &e.tid); err != nil {
+			return err
+		}
+	}
+
+	gpIdJson, hasGpId := e.ext["gpid"]
+	if hasGpId {
+		if err := json.Unmarshal(gpIdJson, &e.gpId); err != nil {
 			return err
 		}
 	}
@@ -1385,6 +1563,14 @@ func (e *ImpExt) SetPrebid(prebid *ExtImpPrebid) {
 	e.prebidDirty = true
 }
 
+func (e *ImpExt) GetData() *ExtImpData {
+	if e.data == nil {
+		return nil
+	}
+	data := *e.data
+	return &data
+}
+
 func (e *ImpExt) GetTid() string {
 	tid := e.tid
 	return tid
@@ -1395,6 +1581,40 @@ func (e *ImpExt) SetTid(tid string) {
 	e.tidDirty = true
 }
 
+func (e *ImpExt) GetGpId() string {
+	gpId := e.gpId
+	return gpId
+}
+
 func CreateImpExtForTesting(ext map[string]json.RawMessage, prebid *ExtImpPrebid) ImpExt {
 	return ImpExt{ext: ext, prebid: prebid}
+}
+
+func (e *ImpExt) Clone() *ImpExt {
+	if e == nil {
+		return nil
+	}
+
+	clone := *e
+	clone.ext = maputil.Clone(e.ext)
+
+	if e.prebid != nil {
+		clonedPrebid := *e.prebid
+		clonedPrebid.StoredRequest = ptrutil.Clone(e.prebid.StoredRequest)
+		clonedPrebid.StoredAuctionResponse = ptrutil.Clone(e.prebid.StoredAuctionResponse)
+		if e.prebid.StoredBidResponse != nil {
+			clonedPrebid.StoredBidResponse = make([]ExtStoredBidResponse, len(e.prebid.StoredBidResponse))
+			for i, sbr := range e.prebid.StoredBidResponse {
+				clonedPrebid.StoredBidResponse[i] = sbr
+				clonedPrebid.StoredBidResponse[i].ReplaceImpId = ptrutil.Clone(sbr.ReplaceImpId)
+			}
+		}
+		clonedPrebid.IsRewardedInventory = ptrutil.Clone(e.prebid.IsRewardedInventory)
+		clonedPrebid.Bidder = maputil.Clone(e.prebid.Bidder)
+		clonedPrebid.Options = ptrutil.Clone(e.prebid.Options)
+		clonedPrebid.Floors = ptrutil.Clone(e.prebid.Floors)
+		clone.prebid = &clonedPrebid
+	}
+
+	return &clone
 }

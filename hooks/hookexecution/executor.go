@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange/entities"
@@ -33,7 +33,7 @@ const (
 type StageExecutor interface {
 	ExecuteEntrypointStage(req *http.Request, body []byte) ([]byte, *RejectError)
 	ExecuteRawAuctionStage(body []byte) ([]byte, *RejectError)
-	ExecuteProcessedAuctionStage(req *openrtb2.BidRequest) *RejectError
+	ExecuteProcessedAuctionStage(req *openrtb_ext.RequestWrapper) error
 	ExecuteBidderRequestStage(req *openrtb2.BidRequest, bidder string) *RejectError
 	ExecuteRawBidderResponseStage(response *adapters.BidderResponse, bidder string) *RejectError
 	ExecuteAllProcessedBidResponsesStage(adapterBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid)
@@ -139,10 +139,14 @@ func (e *hookExecutor) ExecuteRawAuctionStage(requestBody []byte) ([]byte, *Reje
 	return payload, reject
 }
 
-func (e *hookExecutor) ExecuteProcessedAuctionStage(request *openrtb2.BidRequest) *RejectError {
+func (e *hookExecutor) ExecuteProcessedAuctionStage(request *openrtb_ext.RequestWrapper) error {
 	plan := e.planBuilder.PlanForProcessedAuctionStage(e.endpoint, e.account)
 	if len(plan) == 0 {
 		return nil
+	}
+
+	if err := request.RebuildRequest(); err != nil {
+		return err
 	}
 
 	handler := func(
@@ -156,7 +160,7 @@ func (e *hookExecutor) ExecuteProcessedAuctionStage(request *openrtb2.BidRequest
 
 	stageName := hooks.StageProcessedAuctionRequest.String()
 	executionCtx := e.newContext(stageName)
-	payload := hookstage.ProcessedAuctionRequestPayload{BidRequest: request}
+	payload := hookstage.ProcessedAuctionRequestPayload{BidRequest: request.BidRequest}
 
 	outcome, _, contexts, reject := executeStage(executionCtx, plan, payload, handler, e.metricEngine)
 	outcome.Entity = entityAuctionRequest
@@ -164,6 +168,11 @@ func (e *hookExecutor) ExecuteProcessedAuctionStage(request *openrtb2.BidRequest
 
 	e.saveModuleContexts(contexts)
 	e.pushStageOutcome(outcome)
+
+	// remove type information if there is no rejection
+	if reject == nil {
+		return nil
+	}
 
 	return reject
 }
@@ -305,33 +314,33 @@ func (e *hookExecutor) pushStageOutcome(outcome StageOutcome) {
 
 type EmptyHookExecutor struct{}
 
-func (executor *EmptyHookExecutor) SetAccount(_ *config.Account) {}
+func (executor EmptyHookExecutor) SetAccount(_ *config.Account) {}
 
-func (executor *EmptyHookExecutor) GetOutcomes() []StageOutcome {
+func (executor EmptyHookExecutor) GetOutcomes() []StageOutcome {
 	return []StageOutcome{}
 }
 
-func (executor *EmptyHookExecutor) ExecuteEntrypointStage(_ *http.Request, body []byte) ([]byte, *RejectError) {
+func (executor EmptyHookExecutor) ExecuteEntrypointStage(_ *http.Request, body []byte) ([]byte, *RejectError) {
 	return body, nil
 }
 
-func (executor *EmptyHookExecutor) ExecuteRawAuctionStage(body []byte) ([]byte, *RejectError) {
+func (executor EmptyHookExecutor) ExecuteRawAuctionStage(body []byte) ([]byte, *RejectError) {
 	return body, nil
 }
 
-func (executor *EmptyHookExecutor) ExecuteProcessedAuctionStage(_ *openrtb2.BidRequest) *RejectError {
+func (executor EmptyHookExecutor) ExecuteProcessedAuctionStage(_ *openrtb_ext.RequestWrapper) error {
 	return nil
 }
 
-func (executor *EmptyHookExecutor) ExecuteBidderRequestStage(_ *openrtb2.BidRequest, bidder string) *RejectError {
+func (executor EmptyHookExecutor) ExecuteBidderRequestStage(_ *openrtb2.BidRequest, bidder string) *RejectError {
 	return nil
 }
 
-func (executor *EmptyHookExecutor) ExecuteRawBidderResponseStage(_ *adapters.BidderResponse, _ string) *RejectError {
+func (executor EmptyHookExecutor) ExecuteRawBidderResponseStage(_ *adapters.BidderResponse, _ string) *RejectError {
 	return nil
 }
 
-func (executor *EmptyHookExecutor) ExecuteAllProcessedBidResponsesStage(_ map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid) {
+func (executor EmptyHookExecutor) ExecuteAllProcessedBidResponsesStage(_ map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid) {
 }
 
-func (executor *EmptyHookExecutor) ExecuteAuctionResponseStage(_ *openrtb2.BidResponse) {}
+func (executor EmptyHookExecutor) ExecuteAuctionResponseStage(_ *openrtb2.BidResponse) {}
