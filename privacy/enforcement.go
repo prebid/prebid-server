@@ -58,7 +58,7 @@ func (e Enforcement) getDeviceIDScrubStrategy() ScrubStrategyDeviceID {
 
 func (e Enforcement) getIPv4ScrubStrategy() ScrubStrategyIPV4 {
 	if e.COPPA || e.GDPRGeo || e.CCPA || e.LMT {
-		return ScrubStrategyIPV4Lowest8
+		return ScrubStrategyIPV4Subnet
 	}
 
 	return ScrubStrategyIPV4None

@@ -107,14 +107,12 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 	ipv6Errs = account.Privacy.IPv6Config.Validate(ipv6Errs)
 	if len(ipv6Errs) > 0 {
 		account.Privacy.IPv6Config.AnonKeepBits = iputil.IPv6BitSize
-		// record invalid ipv6 metric
 	}
 
 	var ipv4Errs []error
 	ipv4Errs = account.Privacy.IPv4Config.Validate(ipv4Errs)
 	if len(ipv4Errs) > 0 {
 		account.Privacy.IPv4Config.AnonKeepBits = iputil.IPv4BitSize
-		// record invalid ipv4 metric
 	}
 
 	// set the value of events.enabled field based on deprecated events_enabled field and ensure backward compatibility

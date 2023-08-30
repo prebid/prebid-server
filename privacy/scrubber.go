@@ -17,8 +17,8 @@ const (
 	// ScrubStrategyIPV4None does not remove any part of an IPV4 address.
 	ScrubStrategyIPV4None ScrubStrategyIPV4 = iota
 
-	// ScrubStrategyIPV4Lowest8 zeroes out the last 8 bits of an IPV4 address.
-	ScrubStrategyIPV4Lowest8
+	// ScrubStrategyIPV4Subnet zeroes out the last 8 bits of an IPV4 address.
+	ScrubStrategyIPV4Subnet
 )
 
 // ScrubStrategyIPV6 defines the approach to scrub PII from an IPV6 address.
@@ -203,7 +203,7 @@ func (s scrubber) ScrubDevice(device *openrtb2.Device, id ScrubStrategyDeviceID,
 	}
 
 	switch ipv4 {
-	case ScrubStrategyIPV4Lowest8:
+	case ScrubStrategyIPV4Subnet:
 		deviceCopy.IP = scrubIP(device.IP, s.ipV4.AnonKeepBits, iputil.IPv4BitSize)
 	}
 
