@@ -448,7 +448,7 @@ func TestValidateTemplate(t *testing.T) {
 		{
 			description:   "Contains Unrecognized Macro",
 			given:         template.Must(template.New("test").Parse("invalid:{{.DoesNotExist}}")),
-			expectedError: "template: test:1:10: executing \"test\" at <.DoesNotExist>: can't evaluate field DoesNotExist in type macros.UserSync",
+			expectedError: "template: test:1:10: executing \"test\" at <.DoesNotExist>: can't evaluate field DoesNotExist in type macros.UserSyncPrivacy",
 		},
 		{
 			description:   "Not A Url",
@@ -666,7 +666,7 @@ func TestSyncerGetSync(t *testing.T) {
 			givenSyncer:    standardSyncer{iframe: malformedTemplate},
 			givenSyncTypes: []SyncType{SyncTypeIFrame},
 			givenMacros:    macros.UserSyncPrivacy{GDPR: "A", GDPRConsent: "B", USPrivacy: "C"},
-			expectedError:  "template: test:1:20: executing \"test\" at <.DoesNotExist>: can't evaluate field DoesNotExist in type macros.UserSync",
+			expectedError:  "template: test:1:20: executing \"test\" at <.DoesNotExist>: can't evaluate field DoesNotExist in type macros.UserSyncPrivacy",
 		},
 	}
 

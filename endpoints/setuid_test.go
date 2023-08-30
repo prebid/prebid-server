@@ -306,19 +306,19 @@ func TestSetUIDEndpoint(t *testing.T) {
 			description:            "Set uid for valid bidder with valid account provided with invalid user sync activity",
 		},
 		{
-			description:            "sids-valid",
-			uri:                    "/setuid?bidder=pubmatic&uid=123&gpp_sid=100,101", // fake sids to avoid GDPR logic in this test
-			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			description:            "gppsid-valid",
+			uri:                    "/setuid?bidder=appnexus&uid=123&gpp_sid=100,101", // fake sids to avoid GDPR logic in this test
+			syncersBidderNameToKey: map[string]string{"appnexus": "appnexus"},
 			existingSyncs:          nil,
 			gdprAllowsHostCookies:  true,
-			expectedSyncs:          map[string]string{"pubmatic": "123"},
+			expectedSyncs:          map[string]string{"appnexus": "123"},
 			expectedStatusCode:     http.StatusOK,
 			expectedHeaders:        map[string]string{"Content-Type": "text/html", "Content-Length": "0"},
 		},
 		{
-			description:            "sids-malformed",
-			uri:                    "/setuid?bidder=pubmatic&uid=123&gpp_sid=malformed",
-			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			description:            "gppsid-malformed",
+			uri:                    "/setuid?bidder=appnexus&uid=123&gpp_sid=malformed",
+			syncersBidderNameToKey: map[string]string{"appnexus": "appnexus"},
 			existingSyncs:          nil,
 			gdprAllowsHostCookies:  true,
 			expectedSyncs:          nil,
