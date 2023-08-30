@@ -402,7 +402,7 @@ func (c *cookieSyncEndpoint) writeSyncerMetrics(biddersEvaluated []usersync.Bidd
 	}
 }
 
-func (c *cookieSyncEndpoint) handleResponse(w http.ResponseWriter, tf usersync.SyncTypeFilter, co *usersync.Cookie, p macros.UserSyncPrivacy, s []usersync.SyncerChoice) {
+func (c *cookieSyncEndpoint) handleResponse(w http.ResponseWriter, tf usersync.SyncTypeFilter, co *usersync.Cookie, m macros.UserSyncPrivacy, s []usersync.SyncerChoice) {
 	status := "no_cookie"
 	if co.HasAnyLiveSyncs() {
 		status = "ok"
@@ -415,7 +415,7 @@ func (c *cookieSyncEndpoint) handleResponse(w http.ResponseWriter, tf usersync.S
 
 	for _, syncerChoice := range s {
 		syncTypes := tf.ForBidder(syncerChoice.Bidder)
-		sync, err := syncerChoice.Syncer.GetSync(syncTypes, p)
+		sync, err := syncerChoice.Syncer.GetSync(syncTypes, m)
 		if err != nil {
 			glog.Errorf("Failed to get usersync info for %s: %v", syncerChoice.Bidder, err)
 			continue
