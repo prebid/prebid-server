@@ -22,7 +22,7 @@ func TestSampleModule(t *testing.T) {
 		Status:   http.StatusOK,
 		Errors:   nil,
 		Response: &openrtb2.BidResponse{},
-	})
+	}, privacy.ActivityControl{})
 	if count != 1 {
 		t.Errorf("PBSAnalyticsModule failed at LogAuctionObject")
 	}
@@ -43,17 +43,17 @@ func TestSampleModule(t *testing.T) {
 		t.Errorf("PBSAnalyticsModule failed at LogCookieSyncObject")
 	}
 
-	am.LogAmpObject(&analytics.AmpObject{})
+	am.LogAmpObject(&analytics.AmpObject{}, privacy.ActivityControl{})
 	if count != 4 {
 		t.Errorf("PBSAnalyticsModule failed at LogAmpObject")
 	}
 
-	am.LogVideoObject(&analytics.VideoObject{})
+	am.LogVideoObject(&analytics.VideoObject{}, privacy.ActivityControl{})
 	if count != 5 {
 		t.Errorf("PBSAnalyticsModule failed at LogVideoObject")
 	}
 
-	am.LogNotificationEventObject(&analytics.NotificationEvent{})
+	am.LogNotificationEventObject(&analytics.NotificationEvent{}, privacy.ActivityControl{})
 	if count != 6 {
 		t.Errorf("PBSAnalyticsModule failed at LogNotificationEventObject")
 	}
@@ -75,14 +75,14 @@ func (m *sampleModule) LogAmpObject(ao *analytics.AmpObject) { *m.count++ }
 
 func (m *sampleModule) LogNotificationEventObject(ne *analytics.NotificationEvent) { *m.count++ }
 
-func initAnalytics(count *int) analytics.PBSAnalyticsModule {
+func initAnalytics(count *int) Runner {
 	modules := make(enabledAnalytics, 0)
-	modules = append(modules, &sampleModule{count})
+	modules["sampleModule"] = &sampleModule{count}
 	return &modules
 }
 
 func TestNewPBSAnalytics(t *testing.T) {
-	pbsAnalytics := NewPBSAnalytics(&config.Analytics{})
+	pbsAnalytics := New(&config.Analytics{})
 	instance := pbsAnalytics.(enabledAnalytics)
 
 	assert.Equal(t, len(instance), 0)
@@ -95,7 +95,7 @@ func TestNewPBSAnalytics_FileLogger(t *testing.T) {
 		}
 	}
 	defer os.RemoveAll(TEST_DIR)
-	mod := NewPBSAnalytics(&config.Analytics{File: config.FileLogs{Filename: TEST_DIR + "/test"}})
+	mod := New(&config.Analytics{File: config.FileLogs{Filename: TEST_DIR + "/test"}})
 	switch modType := mod.(type) {
 	case enabledAnalytics:
 		if len(enabledAnalytics(modType)) != 1 {
@@ -105,7 +105,7 @@ func TestNewPBSAnalytics_FileLogger(t *testing.T) {
 		t.Fatalf("Failed to initialize analytics module")
 	}
 
-	pbsAnalytics := NewPBSAnalytics(&config.Analytics{File: config.FileLogs{Filename: TEST_DIR + "/test"}})
+	pbsAnalytics := New(&config.Analytics{File: config.FileLogs{Filename: TEST_DIR + "/test"}})
 	instance := pbsAnalytics.(enabledAnalytics)
 
 	assert.Equal(t, len(instance), 1)
@@ -113,7 +113,7 @@ func TestNewPBSAnalytics_FileLogger(t *testing.T) {
 
 func TestNewPBSAnalytics_Pubstack(t *testing.T) {
 
-	pbsAnalyticsWithoutError := NewPBSAnalytics(&config.Analytics{
+	pbsAnalyticsWithoutError := New(&config.Analytics{
 		Pubstack: config.Pubstack{
 			Enabled:   true,
 			ScopeId:   "scopeId",
@@ -130,7 +130,7 @@ func TestNewPBSAnalytics_Pubstack(t *testing.T) {
 
 	assert.Equal(t, len(instanceWithoutError), 1)
 
-	pbsAnalyticsWithError := NewPBSAnalytics(&config.Analytics{
+	pbsAnalyticsWithError := New(&config.Analytics{
 		Pubstack: config.Pubstack{
 			Enabled: true,
 		},
@@ -147,28 +147,27 @@ func TestSampleModuleActivitiesAllowed(t *testing.T) {
 	assert.NoError(t, err, "unexpected error returned")
 
 	ao := &analytics.AuctionObject{
-		Status:          http.StatusOK,
-		Errors:          nil,
-		Response:        &openrtb2.BidResponse{},
-		ActivityControl: acAllowed,
+		Status:   http.StatusOK,
+		Errors:   nil,
+		Response: &openrtb2.BidResponse{},
 	}
 
-	am.LogAuctionObject(ao)
+	am.LogAuctionObject(ao, acAllowed)
 	if count != 1 {
 		t.Errorf("PBSAnalyticsModule failed at LogAuctionObject")
 	}
 
-	am.LogAmpObject(&analytics.AmpObject{ActivityControl: acAllowed})
+	am.LogAmpObject(&analytics.AmpObject{}, acAllowed)
 	if count != 2 {
 		t.Errorf("PBSAnalyticsModule failed at LogAmpObject")
 	}
 
-	am.LogVideoObject(&analytics.VideoObject{ActivityControl: acAllowed})
+	am.LogVideoObject(&analytics.VideoObject{}, acAllowed)
 	if count != 3 {
 		t.Errorf("PBSAnalyticsModule failed at LogVideoObject")
 	}
 
-	am.LogNotificationEventObject(&analytics.NotificationEvent{ActivityControl: acAllowed})
+	am.LogNotificationEventObject(&analytics.NotificationEvent{}, acAllowed)
 	if count != 4 {
 		t.Errorf("PBSAnalyticsModule failed at LogNotificationEventObject")
 	}
@@ -182,28 +181,27 @@ func TestSampleModuleActivitiesDenied(t *testing.T) {
 	assert.NoError(t, err, "unexpected error returned")
 
 	ao := &analytics.AuctionObject{
-		Status:          http.StatusOK,
-		Errors:          nil,
-		Response:        &openrtb2.BidResponse{},
-		ActivityControl: acDenied,
+		Status:   http.StatusOK,
+		Errors:   nil,
+		Response: &openrtb2.BidResponse{},
 	}
 
-	am.LogAuctionObject(ao)
+	am.LogAuctionObject(ao, acDenied)
 	if count != 0 {
 		t.Errorf("PBSAnalyticsModule failed at LogAuctionObject")
 	}
 
-	am.LogAmpObject(&analytics.AmpObject{ActivityControl: acDenied})
+	am.LogAmpObject(&analytics.AmpObject{}, acDenied)
 	if count != 0 {
 		t.Errorf("PBSAnalyticsModule failed at LogAmpObject")
 	}
 
-	am.LogVideoObject(&analytics.VideoObject{ActivityControl: acDenied})
+	am.LogVideoObject(&analytics.VideoObject{}, acDenied)
 	if count != 0 {
 		t.Errorf("PBSAnalyticsModule failed at LogVideoObject")
 	}
 
-	am.LogNotificationEventObject(&analytics.NotificationEvent{ActivityControl: acDenied})
+	am.LogNotificationEventObject(&analytics.NotificationEvent{}, acDenied)
 	if count != 0 {
 		t.Errorf("PBSAnalyticsModule failed at LogNotificationEventObject")
 	}

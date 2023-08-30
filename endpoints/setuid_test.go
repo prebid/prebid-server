@@ -21,7 +21,7 @@ import (
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/stretchr/testify/assert"
 
-	analyticsConf "github.com/prebid/prebid-server/analytics/config"
+	analyticsConfig "github.com/prebid/prebid-server/analytics/config"
 	metricsConf "github.com/prebid/prebid-server/metrics/config"
 )
 
@@ -308,7 +308,7 @@ func TestSetUIDEndpoint(t *testing.T) {
 		},
 	}
 
-	analytics := analyticsConf.NewPBSAnalytics(&config.Analytics{})
+	analytics := analyticsConfig.New(&config.Analytics{})
 	metrics := &metricsConf.NilMetricsEngine{}
 
 	for _, test := range testCases {
@@ -944,7 +944,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 		cfgAccountRequired     bool
 		expectedResponseCode   int
 		expectedMetrics        func(*metrics.MetricsEngineMock)
-		expectedAnalytics      func(*MockAnalytics)
+		expectedAnalytics      func(*MockAnalyticsRunner)
 	}{
 		{
 			description:            "Success - Sync",
@@ -957,7 +957,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 				m.On("RecordSetUid", metrics.SetUidOK).Once()
 				m.On("RecordSyncerSet", "pubmatic", metrics.SyncerSetUidOK).Once()
 			},
-			expectedAnalytics: func(a *MockAnalytics) {
+			expectedAnalytics: func(a *MockAnalyticsRunner) {
 				expected := analytics.SetUIDObject{
 					Status:  200,
 					Bidder:  "pubmatic",
@@ -979,7 +979,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 				m.On("RecordSetUid", metrics.SetUidOK).Once()
 				m.On("RecordSyncerSet", "pubmatic", metrics.SyncerSetUidCleared).Once()
 			},
-			expectedAnalytics: func(a *MockAnalytics) {
+			expectedAnalytics: func(a *MockAnalyticsRunner) {
 				expected := analytics.SetUIDObject{
 					Status:  200,
 					Bidder:  "pubmatic",
@@ -1000,7 +1000,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 			expectedMetrics: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordSetUid", metrics.SetUidOptOut).Once()
 			},
-			expectedAnalytics: func(a *MockAnalytics) {
+			expectedAnalytics: func(a *MockAnalyticsRunner) {
 				expected := analytics.SetUIDObject{
 					Status:  401,
 					Bidder:  "",
@@ -1021,7 +1021,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 			expectedMetrics: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordSetUid", metrics.SetUidSyncerUnknown).Once()
 			},
-			expectedAnalytics: func(a *MockAnalytics) {
+			expectedAnalytics: func(a *MockAnalyticsRunner) {
 				expected := analytics.SetUIDObject{
 					Status:  400,
 					Bidder:  "",
@@ -1042,7 +1042,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 			expectedMetrics: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordSetUid", metrics.SetUidBadRequest).Once()
 			},
-			expectedAnalytics: func(a *MockAnalytics) {
+			expectedAnalytics: func(a *MockAnalyticsRunner) {
 				expected := analytics.SetUIDObject{
 					Status:  400,
 					Bidder:  "pubmatic",
@@ -1063,7 +1063,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 			expectedMetrics: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordSetUid", metrics.SetUidBadRequest).Once()
 			},
-			expectedAnalytics: func(a *MockAnalytics) {
+			expectedAnalytics: func(a *MockAnalyticsRunner) {
 				expected := analytics.SetUIDObject{
 					Status:  400,
 					Bidder:  "pubmatic",
@@ -1084,7 +1084,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 			expectedMetrics: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordSetUid", metrics.SetUidGDPRHostCookieBlocked).Once()
 			},
-			expectedAnalytics: func(a *MockAnalytics) {
+			expectedAnalytics: func(a *MockAnalyticsRunner) {
 				expected := analytics.SetUIDObject{
 					Status:  451,
 					Bidder:  "pubmatic",
@@ -1105,7 +1105,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 			expectedMetrics: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordSetUid", metrics.SetUidAccountBlocked).Once()
 			},
-			expectedAnalytics: func(a *MockAnalytics) {
+			expectedAnalytics: func(a *MockAnalyticsRunner) {
 				expected := analytics.SetUIDObject{
 					Status:  400,
 					Bidder:  "pubmatic",
@@ -1127,7 +1127,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 			expectedMetrics: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordSetUid", metrics.SetUidAccountInvalid).Once()
 			},
-			expectedAnalytics: func(a *MockAnalytics) {
+			expectedAnalytics: func(a *MockAnalyticsRunner) {
 				expected := analytics.SetUIDObject{
 					Status:  400,
 					Bidder:  "pubmatic",
@@ -1149,7 +1149,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 			expectedMetrics: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordSetUid", metrics.SetUidAccountConfigMalformed).Once()
 			},
-			expectedAnalytics: func(a *MockAnalytics) {
+			expectedAnalytics: func(a *MockAnalyticsRunner) {
 				expected := analytics.SetUIDObject{
 					Status:  400,
 					Bidder:  "pubmatic",
@@ -1171,7 +1171,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 			expectedMetrics: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordSetUid", metrics.SetUidBadRequest).Once()
 			},
-			expectedAnalytics: func(a *MockAnalytics) {
+			expectedAnalytics: func(a *MockAnalyticsRunner) {
 				expected := analytics.SetUIDObject{
 					Status:  400,
 					Bidder:  "pubmatic",
@@ -1185,7 +1185,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		analyticsEngine := &MockAnalytics{}
+		analyticsEngine := &MockAnalyticsRunner{}
 		test.expectedAnalytics(analyticsEngine)
 
 		metricsEngine := &metrics.MetricsEngineMock{}
@@ -1209,7 +1209,7 @@ func TestOptedOut(t *testing.T) {
 	cookie.SetOptOut(true)
 	addCookie(request, cookie)
 	syncersBidderNameToKey := map[string]string{"pubmatic": "pubmatic"}
-	analytics := analyticsConf.NewPBSAnalytics(&config.Analytics{})
+	analytics := analyticsConfig.New(&config.Analytics{})
 	metrics := &metricsConf.NilMetricsEngine{}
 	response := doRequest(request, analytics, metrics, syncersBidderNameToKey, true, false, false, false)
 
@@ -1347,7 +1347,7 @@ func makeRequest(uri string, existingSyncs map[string]string) *http.Request {
 	return request
 }
 
-func doRequest(req *http.Request, analytics analytics.PBSAnalyticsModule, metrics metrics.MetricsEngine, syncersBidderNameToKey map[string]string, gdprAllowsHostCookies, gdprReturnsError, gdprReturnsMalformedError, cfgAccountRequired bool) *httptest.ResponseRecorder {
+func doRequest(req *http.Request, analytics analyticsConfig.Runner, metrics metrics.MetricsEngine, syncersBidderNameToKey map[string]string, gdprAllowsHostCookies, gdprReturnsError, gdprReturnsMalformedError, cfgAccountRequired bool) *httptest.ResponseRecorder {
 	cfg := config.Configuration{
 		AccountRequired: cfgAccountRequired,
 		BlacklistedAcctMap: map[string]bool{

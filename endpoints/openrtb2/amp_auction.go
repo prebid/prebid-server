@@ -64,7 +64,7 @@ func NewAmpEndpoint(
 	accounts stored_requests.AccountFetcher,
 	cfg *config.Configuration,
 	metricsEngine metrics.MetricsEngine,
-	analyticsRunner config2.AnalyticsRunner,
+	analyticsRunner config2.Runner,
 	disabledBidders map[string]string,
 	defReqJSON []byte,
 	bidderMap map[string]openrtb_ext.BidderName,
@@ -134,6 +134,13 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		CookieFlag:    metrics.CookieFlagUnknown,
 		RequestStatus: metrics.RequestStatusOK,
 	}
+	activityControl := privacy.ActivityControl{}
+
+	defer func() {
+		deps.metricsEngine.RecordRequest(labels)
+		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
+		deps.analytics.LogAmpObject(&ao, activityControl)
+	}()
 
 	// Add AMP headers
 	origin := r.FormValue("__amp_source_origin")
@@ -224,18 +231,12 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 
 	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
 
-	activities, activitiesErr := privacy.NewActivityControl(account.Privacy)
+	activityControl, activitiesErr := privacy.NewActivityControl(account.Privacy)
 	if activitiesErr != nil {
 		errL = append(errL, activitiesErr)
 		writeError(errL, w, &labels)
 		return
 	}
-
-	defer func() {
-		deps.metricsEngine.RecordRequest(labels)
-		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
-		deps.analytics.LogAmpObject(&ao, activities)
-	}()
 
 	secGPC := r.Header.Get("Sec-GPC")
 
@@ -254,7 +255,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		HookExecutor:               hookExecutor,
 		QueryParams:                r.URL.Query(),
 		TCF2Config:                 tcf2Config,
-		Activities:                 activities,
+		Activities:                 activityControl,
 		TmaxAdjustments:            deps.tmaxAdjustments,
 	}
 

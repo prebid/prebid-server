@@ -105,7 +105,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		nilMetrics,
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsConf.New(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
 		nil,

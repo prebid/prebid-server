@@ -86,7 +86,7 @@ func NewEndpoint(
 	accounts stored_requests.AccountFetcher,
 	cfg *config.Configuration,
 	metricsEngine metrics.MetricsEngine,
-	analyticsRunner config2.AnalyticsRunner,
+	analyticsRunner config2.Runner,
 	disabledBidders map[string]string,
 	defReqJSON []byte,
 	bidderMap map[string]openrtb_ext.BidderName,
@@ -136,7 +136,7 @@ type endpointDeps struct {
 	accounts                  stored_requests.AccountFetcher
 	cfg                       *config.Configuration
 	metricsEngine             metrics.MetricsEngine
-	analytics                 config2.AnalyticsRunner
+	analytics                 config2.Runner
 	disabledBidders           map[string]string
 	defaultRequest            bool
 	defReqJSON                []byte
@@ -174,6 +174,13 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		RequestStatus: metrics.RequestStatusOK,
 	}
 
+	activityControl := privacy.ActivityControl{}
+	defer func() {
+		deps.metricsEngine.RecordRequest(labels)
+		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
+		deps.analytics.LogAuctionObject(&ao, activityControl)
+	}()
+
 	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
 
 	req, impExtInfoMap, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, account, errL := deps.parseRequest(r, &labels, hookExecutor)
@@ -189,7 +196,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
 
-	activities, activitiesErr := privacy.NewActivityControl(account.Privacy)
+	activityControl, activitiesErr := privacy.NewActivityControl(account.Privacy)
 	if activitiesErr != nil {
 		errL = append(errL, activitiesErr)
 		if errortypes.ContainsFatalError(errL) {
@@ -197,13 +204,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 			return
 		}
 	}
-	// pass activities to analytics object here, after activities are evaluated
-	// request may have an additional account id that can change activity control
-	defer func() {
-		deps.metricsEngine.RecordRequest(labels)
-		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
-		deps.analytics.LogAuctionObject(&ao, activities)
-	}()
 
 	ctx := context.Background()
 
@@ -254,7 +254,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		PubID:                      labels.PubID,
 		HookExecutor:               hookExecutor,
 		TCF2Config:                 tcf2Config,
-		Activities:                 activities,
+		Activities:                 activityControl,
 		TmaxAdjustments:            deps.tmaxAdjustments,
 	}
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)

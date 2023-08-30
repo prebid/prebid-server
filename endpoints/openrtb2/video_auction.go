@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"io"
 	"net/http"
 	"net/url"
@@ -27,6 +26,7 @@ import (
 
 	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/analytics"
+	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
@@ -53,7 +53,7 @@ func NewVideoEndpoint(
 	accounts stored_requests.AccountFetcher,
 	cfg *config.Configuration,
 	met metrics.MetricsEngine,
-	analyticsRunner analyticsConf.AnalyticsRunner,
+	analyticsRunner analyticsConf.Runner,
 	disabledBidders map[string]string,
 	defReqJSON []byte,
 	bidderMap map[string]openrtb_ext.BidderName,
@@ -149,6 +149,20 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		DebugOverride: exchange.IsDebugOverrideEnabled(r.Header.Get(exchange.DebugOverrideHeader), deps.cfg.Debug.OverrideToken),
 	}
 	debugLog.DebugEnabledOrOverridden = debugLog.Enabled || debugLog.DebugOverride
+
+	activityControl := privacy.ActivityControl{}
+
+	defer func() {
+		if len(debugLog.CacheKey) > 0 && vo.VideoResponse == nil {
+			err := debugLog.PutDebugLogError(deps.cache, deps.cfg.CacheURL.ExpectedTimeMillis, vo.Errors)
+			if err != nil {
+				vo.Errors = append(vo.Errors, err)
+			}
+		}
+		deps.metricsEngine.RecordRequest(labels)
+		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
+		deps.analytics.LogVideoObject(&vo, activityControl)
+	}()
 
 	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
 
@@ -292,7 +306,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	activities, activitiesErr := privacy.NewActivityControl(account.Privacy)
+	activityControl, activitiesErr := privacy.NewActivityControl(account.Privacy)
 	if activitiesErr != nil {
 		errL = append(errL, activitiesErr)
 		if errortypes.ContainsFatalError(errL) {
@@ -300,18 +314,6 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 			return
 		}
 	}
-
-	defer func() {
-		if len(debugLog.CacheKey) > 0 && vo.VideoResponse == nil {
-			err := debugLog.PutDebugLogError(deps.cache, deps.cfg.CacheURL.ExpectedTimeMillis, vo.Errors)
-			if err != nil {
-				vo.Errors = append(vo.Errors, err)
-			}
-		}
-		deps.metricsEngine.RecordRequest(labels)
-		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
-		deps.analytics.LogVideoObject(&vo, activities)
-	}()
 
 	secGPC := r.Header.Get("Sec-GPC")
 	auctionRequest := &exchange.AuctionRequest{
@@ -325,7 +327,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		PubID:                      labels.PubID,
 		HookExecutor:               hookexecution.EmptyHookExecutor{},
 		TmaxAdjustments:            deps.tmaxAdjustments,
-		Activities:                 activities,
+		Activities:                 activityControl,
 	}
 
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog)

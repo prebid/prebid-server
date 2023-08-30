@@ -30,6 +30,7 @@ import (
 	"github.com/prebid/prebid-server/metrics"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 )
 
@@ -210,7 +211,7 @@ func TestAMPPageInfo(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsConf.New(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -314,7 +315,7 @@ func TestGDPRConsent(t *testing.T) {
 				GDPR:           config.GDPR{Enabled: true},
 			},
 			&metricsConfig.NilMetricsEngine{},
-			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+			analyticsConf.New(&config.Analytics{}),
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
@@ -738,7 +739,7 @@ func TestCCPAConsent(t *testing.T) {
 			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{MaxRequestSize: maxSize},
 			&metricsConfig.NilMetricsEngine{},
-			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+			analyticsConf.New(&config.Analytics{}),
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
@@ -852,7 +853,7 @@ func TestConsentWarnings(t *testing.T) {
 			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{MaxRequestSize: maxSize},
 			&metricsConfig.NilMetricsEngine{},
-			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+			analyticsConf.New(&config.Analytics{}),
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
@@ -951,7 +952,7 @@ func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 				GDPR:           config.GDPR{Enabled: true},
 			},
 			&metricsConfig.NilMetricsEngine{},
-			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+			analyticsConf.New(&config.Analytics{}),
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
@@ -1006,7 +1007,7 @@ func TestAMPSiteExt(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsConf.New(&config.Analytics{}),
 		nil,
 		nil,
 		openrtb_ext.BuildBidderMap(),
@@ -1049,7 +1050,7 @@ func TestAmpBadRequests(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsConf.New(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -1083,7 +1084,7 @@ func TestAmpDebug(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsConf.New(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -1219,7 +1220,7 @@ func TestQueryParamOverrides(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsConf.New(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -1377,7 +1378,7 @@ func (s formatOverrideSpec) execute(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsConf.New(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -1640,25 +1641,25 @@ type mockLogger struct {
 	auctionObject *analytics.AuctionObject
 }
 
-func newMockLogger(ao *analytics.AmpObject, aucObj *analytics.AuctionObject) analytics.PBSAnalyticsModule {
+func newMockLogger(ao *analytics.AmpObject, aucObj *analytics.AuctionObject) analyticsConf.Runner {
 	return &mockLogger{
 		ampObject:     ao,
 		auctionObject: aucObj,
 	}
 }
 
-func (logger mockLogger) LogAuctionObject(ao *analytics.AuctionObject) {
+func (logger mockLogger) LogAuctionObject(ao *analytics.AuctionObject, _ privacy.ActivityControl) {
 	*logger.auctionObject = *ao
 }
-func (logger mockLogger) LogVideoObject(vo *analytics.VideoObject) {
+func (logger mockLogger) LogVideoObject(vo *analytics.VideoObject, _ privacy.ActivityControl) {
 }
 func (logger mockLogger) LogCookieSyncObject(cookieObject *analytics.CookieSyncObject) {
 }
 func (logger mockLogger) LogSetUIDObject(uuidObj *analytics.SetUIDObject) {
 }
-func (logger mockLogger) LogNotificationEventObject(uuidObj *analytics.NotificationEvent) {
+func (logger mockLogger) LogNotificationEventObject(uuidObj *analytics.NotificationEvent, _ privacy.ActivityControl) {
 }
-func (logger mockLogger) LogAmpObject(ao *analytics.AmpObject) {
+func (logger mockLogger) LogAmpObject(ao *analytics.AmpObject, _ privacy.ActivityControl) {
 	*logger.ampObject = *ao
 }
 
@@ -1971,7 +1972,7 @@ func TestAmpAuctionResponseHeaders(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsConf.New(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -2007,7 +2008,7 @@ func TestRequestWithTargeting(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsConf.New(&config.Analytics{}),
 		nil,
 		nil,
 		openrtb_ext.BuildBidderMap(),

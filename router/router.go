@@ -182,7 +182,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	// todo(zachbadgett): better shutdown
 	r.Shutdown = shutdown
 
-	analyticsRunner := analyticsConf.NewPBSAnalytics(&cfg.Analytics)
+	analyticsRunner := analyticsConf.New(&cfg.Analytics)
 
 	paramsValidator, err := openrtb_ext.NewBidderParamsValidator(schemaDirectory)
 	if err != nil {

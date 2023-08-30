@@ -50,7 +50,7 @@ func NewCookieSyncEndpoint(
 	gdprPermsBuilder gdpr.PermissionsBuilder,
 	tcf2CfgBuilder gdpr.TCF2ConfigBuilder,
 	metrics metrics.MetricsEngine,
-	analyticsRunner analyticsConf.AnalyticsRunner,
+	analyticsRunner analyticsConf.Runner,
 	accountsFetcher stored_requests.AccountFetcher,
 	bidders map[string]openrtb_ext.BidderName) HTTPRouterHandler {
 
@@ -80,7 +80,7 @@ type cookieSyncEndpoint struct {
 	config          *config.Configuration
 	privacyConfig   usersyncPrivacyConfig
 	metrics         metrics.MetricsEngine
-	pbsAnalytics    analyticsConf.AnalyticsRunner
+	pbsAnalytics    analyticsConf.Runner
 	accountsFetcher stored_requests.AccountFetcher
 }
 

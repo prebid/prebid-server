@@ -42,13 +42,13 @@ const integrationParamMaxLength = 64
 
 type eventEndpoint struct {
 	Accounts      stored_requests.AccountFetcher
-	Analytics     config2.AnalyticsRunner
+	Analytics     config2.Runner
 	Cfg           *config.Configuration
 	TrackingPixel *httputil.Pixel
 	MetricsEngine metrics.MetricsEngine
 }
 
-func NewEventEndpoint(cfg *config.Configuration, accounts stored_requests.AccountFetcher, analytics config2.AnalyticsRunner, me metrics.MetricsEngine) httprouter.Handle {
+func NewEventEndpoint(cfg *config.Configuration, accounts stored_requests.AccountFetcher, analytics config2.Runner, me metrics.MetricsEngine) httprouter.Handle {
 	ee := &eventEndpoint{
 		Accounts:      accounts,
 		Analytics:     analytics,

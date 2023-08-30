@@ -21,6 +21,7 @@ import (
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
+	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/util/ptrutil"
 
@@ -1249,11 +1250,11 @@ type mockAnalyticsModule struct {
 	videoObjects   []*analytics.VideoObject
 }
 
-func (m *mockAnalyticsModule) LogAuctionObject(ao *analytics.AuctionObject) {
+func (m *mockAnalyticsModule) LogAuctionObject(ao *analytics.AuctionObject, _ privacy.ActivityControl) {
 	m.auctionObjects = append(m.auctionObjects, ao)
 }
 
-func (m *mockAnalyticsModule) LogVideoObject(vo *analytics.VideoObject) {
+func (m *mockAnalyticsModule) LogVideoObject(vo *analytics.VideoObject, _ privacy.ActivityControl) {
 	m.videoObjects = append(m.videoObjects, vo)
 }
 
@@ -1261,9 +1262,10 @@ func (m *mockAnalyticsModule) LogCookieSyncObject(cso *analytics.CookieSyncObjec
 
 func (m *mockAnalyticsModule) LogSetUIDObject(so *analytics.SetUIDObject) {}
 
-func (m *mockAnalyticsModule) LogAmpObject(ao *analytics.AmpObject) {}
+func (m *mockAnalyticsModule) LogAmpObject(ao *analytics.AmpObject, _ privacy.ActivityControl) {}
 
-func (m *mockAnalyticsModule) LogNotificationEventObject(ne *analytics.NotificationEvent) {}
+func (m *mockAnalyticsModule) LogNotificationEventObject(ne *analytics.NotificationEvent, _ privacy.ActivityControl) {
+}
 
 func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 	return &endpointDeps{
@@ -1275,7 +1277,7 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		&mockAccountFetcher{data: mockVideoAccountData},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsConf.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -1309,7 +1311,7 @@ func mockDepsInvalidPrivacy(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 			},
 		},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsConf.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -1333,7 +1335,7 @@ func mockDepsAppendBidderNames(t *testing.T, ex *mockExchangeAppendBidderNames) 
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsConf.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -1359,7 +1361,7 @@ func mockDepsNoBids(t *testing.T, ex *mockExchangeVideoNoBids) *endpointDeps {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsConf.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},

@@ -1289,7 +1289,7 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 		planBuilder = hooks.EmptyPlanBuilder{}
 	}
 
-	var endpointBuilder func(uuidutil.UUIDGenerator, exchange.Exchange, openrtb_ext.BidderParamValidator, stored_requests.Fetcher, stored_requests.AccountFetcher, *config.Configuration, metrics.MetricsEngine, analyticsConf.AnalyticsRunner, map[string]string, []byte, map[string]openrtb_ext.BidderName, stored_requests.Fetcher, hooks.ExecutionPlanBuilder, *exchange.TmaxAdjustmentsPreprocessed) (httprouter.Handle, error)
+	var endpointBuilder func(uuidutil.UUIDGenerator, exchange.Exchange, openrtb_ext.BidderParamValidator, stored_requests.Fetcher, stored_requests.AccountFetcher, *config.Configuration, metrics.MetricsEngine, analyticsConf.Runner, map[string]string, []byte, map[string]openrtb_ext.BidderName, stored_requests.Fetcher, hooks.ExecutionPlanBuilder, *exchange.TmaxAdjustmentsPreprocessed) (httprouter.Handle, error)
 
 	switch test.endpointType {
 	case AMP_ENDPOINT:
@@ -1306,7 +1306,7 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 		accountFetcher,
 		cfg,
 		met,
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsConf.New(&config.Analytics{}),
 		disabledBidders,
 		[]byte(test.Config.AliasJSON),
 		bidderMap,
