@@ -2,7 +2,6 @@ package hookexecution
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/util/ptrutil"
@@ -327,85 +326,29 @@ func handleModuleActivities[T any, P any](hook hooks.HookWrapper[T], activityCon
 		return payload, nil
 	}
 
-	changeSet := hookstage.ChangeSet[P]{}
+	privacyEnforcement := privacy.Enforcement{}
 
 	// parse hook.Module to split it to type and mame?
 	// hook.Module example: "mytest.mymodule". Can it be "rtd.mymodule" or "general.mymodule"?
 	scopeGeneral := privacy.Component{Type: privacy.ComponentTypeGeneral, Name: hook.Code} ///!!!!! hook.Code?
 	transmitUserFPDActivityAllowed := activityControl.Allow(privacy.ActivityTransmitUserFPD, scopeGeneral)
 	if !transmitUserFPDActivityAllowed {
-		//remove user.eids, user.ext.data.*, user.data.*, user.{id, buyeruid, yob, gender} and device-specific IDs
-		changeSet.AddMutation(transmitUFPDMutationUser[P], hookstage.MutationDelete, "bidderRequest", "user")
-		changeSet.AddMutation(transmitUFPDMutationDevice[P], hookstage.MutationDelete, "bidderRequest", "device")
+		privacyEnforcement.UFPD = true
 	}
 
-	if len(changeSet.Mutations()) > 0 {
+	if privacyEnforcement.AnyActivities() {
 
-		// changes needs to be applied to new payload and leave original payload unchanged
+		// changes need to be applied to new payload and leave original payload unchanged
 		bidderReq := payloadData.GetBidderRequestPayload()
 		var bidderReqCopy *openrtb2.BidRequest
 		bidderReqCopy = ptrutil.Clone(bidderReq)
 
+		privacyEnforcement.Apply(bidderReqCopy)
+
 		var newPayload = payload
 		var np = any(&newPayload).(hookstage.PayloadBidderRequest)
 		np.SetBidderRequestPayload(bidderReqCopy)
-
-		for _, m := range changeSet.Mutations() {
-			newPayload, _ = m.Apply(newPayload)
-		}
 		return newPayload, nil
 	}
-	return payload, nil
-}
-
-func transmitUFPDMutationUser[P any](payload P) (P, error) {
-	payloadData := any(&payload).(hookstage.PayloadBidderRequest)
-	if payloadData.GetBidderRequestPayload().User == nil {
-		return payload, nil
-	}
-	bidderReqCopy := payloadData.GetBidderRequestPayload()
-
-	var userCopy *openrtb2.User
-	userCopy = ptrutil.Clone(bidderReqCopy.User)
-
-	bidderReqCopy.User = userCopy
-	bidderReqCopy.User.ID = ""
-	bidderReqCopy.User.BuyerUID = ""
-	bidderReqCopy.User.Yob = 0
-	bidderReqCopy.User.Gender = ""
-	bidderReqCopy.User.Data = nil
-	bidderReqCopy.User.EIDs = nil
-
-	//user.ext.data.*
-	var userExtParsed map[string]json.RawMessage
-	json.Unmarshal(userCopy.Ext, &userExtParsed)
-	_, hasField := userExtParsed["data"]
-	if hasField {
-		delete(userExtParsed, "data")
-		userExt, _ := json.Marshal(userExtParsed)
-		bidderReqCopy.User.Ext = userExt
-	}
-	return payload, nil
-}
-
-func transmitUFPDMutationDevice[P any](payload P) (P, error) {
-	payloadData := any(&payload).(hookstage.PayloadBidderRequest)
-	if payloadData.GetBidderRequestPayload().User == nil {
-		return payload, nil
-	}
-	bidderReq := payloadData.GetBidderRequestPayload()
-
-	var deviceCopy *openrtb2.Device
-	deviceCopy = ptrutil.Clone(bidderReq.Device)
-
-	bidderReq.Device = deviceCopy
-	bidderReq.Device.DIDMD5 = ""
-	bidderReq.Device.DIDSHA1 = ""
-	bidderReq.Device.DPIDMD5 = ""
-	bidderReq.Device.DPIDSHA1 = ""
-	bidderReq.Device.IFA = ""
-	bidderReq.Device.MACMD5 = ""
-	bidderReq.Device.MACSHA1 = ""
-
 	return payload, nil
 }
