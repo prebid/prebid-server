@@ -2,7 +2,7 @@
 
 all: deps test build-modules build
 
-.PHONY: deps test build-modules build image
+.PHONY: deps test build-modules build image format
 
 # deps will clean out the vendor directory and use go mod for a fresh install
 deps:
@@ -29,3 +29,7 @@ build: test
 # image will build a docker image
 image:
 	docker build -t prebid-server .
+
+# format runs format
+format:
+	./scripts/format.sh -f true

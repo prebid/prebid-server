@@ -80,6 +80,12 @@ func (me *MultiMetricsEngine) RecordConnectionAccept(success bool) {
 	}
 }
 
+func (me *MultiMetricsEngine) RecordTMaxTimeout() {
+	for _, thisME := range *me {
+		thisME.RecordTMaxTimeout()
+	}
+}
+
 func (me *MultiMetricsEngine) RecordConnectionClose(success bool) {
 	for _, thisME := range *me {
 		thisME.RecordConnectionClose(success)
@@ -389,6 +395,10 @@ func (me *NilMetricsEngine) RecordRequest(labels metrics.Labels) {
 
 // RecordConnectionAccept as a noop
 func (me *NilMetricsEngine) RecordConnectionAccept(success bool) {
+}
+
+// RecordTMaxTimeout as a noop
+func (me *NilMetricsEngine) RecordTMaxTimeout() {
 }
 
 // RecordConnectionClose as a noop

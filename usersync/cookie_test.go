@@ -1,44 +1,552 @@
 package usersync
 
 import (
-	"encoding/base64"
+	"errors"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestOptOutCookie(t *testing.T) {
-	cookie := &Cookie{
-		uids:   map[string]uidWithExpiry{"appnexus": {UID: "test"}},
-		optOut: true,
+func TestReadCookie(t *testing.T) {
+	testCases := []struct {
+		name            string
+		givenRequest    *http.Request
+		givenHttpCookie *http.Cookie
+		givenCookie     *Cookie
+		givenDecoder    Decoder
+		expectedCookie  *Cookie
+	}{
+		{
+			name:         "simple-cookie",
+			givenRequest: httptest.NewRequest("POST", "http://www.prebid.com", nil),
+			givenCookie: &Cookie{
+				uids: map[string]UIDEntry{
+					"adnxs": {
+						UID:     "UID",
+						Expires: time.Time{},
+					},
+				},
+				optOut: false,
+			},
+			expectedCookie: &Cookie{
+				uids: map[string]UIDEntry{
+					"adnxs": {
+						UID: "UID",
+					},
+				},
+				optOut: false,
+			},
+		},
+		{
+			name:         "empty-cookie",
+			givenRequest: httptest.NewRequest("POST", "http://www.prebid.com", nil),
+			givenCookie:  &Cookie{},
+			expectedCookie: &Cookie{
+				uids:   map[string]UIDEntry{},
+				optOut: false,
+			},
+		},
+		{
+			name:         "nil-cookie",
+			givenRequest: httptest.NewRequest("POST", "http://www.prebid.com", nil),
+			givenCookie:  nil,
+			expectedCookie: &Cookie{
+				uids:   map[string]UIDEntry{},
+				optOut: false,
+			},
+		},
+		{
+			name:         "corruptted-http-cookie",
+			givenRequest: httptest.NewRequest("POST", "http://www.prebid.com", nil),
+			givenHttpCookie: &http.Cookie{
+				Name:  "uids",
+				Value: "bad base64 encoding",
+			},
+			givenCookie: nil,
+			expectedCookie: &Cookie{
+				uids:   map[string]UIDEntry{},
+				optOut: false,
+			},
+		},
 	}
-	ensureConsistency(t, cookie)
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			if test.givenCookie != nil {
+				httpCookie, err := ToHTTPCookie(test.givenCookie)
+				assert.NoError(t, err)
+				test.givenRequest.AddCookie(httpCookie)
+			} else if test.givenCookie == nil && test.givenHttpCookie != nil {
+				test.givenRequest.AddCookie(test.givenHttpCookie)
+			}
+			actualCookie := ReadCookie(test.givenRequest, Base64Decoder{}, &config.HostCookie{})
+			assert.Equal(t, test.expectedCookie.uids, actualCookie.uids)
+			assert.Equal(t, test.expectedCookie.optOut, actualCookie.optOut)
+		})
+	}
 }
 
-func TestEmptyOptOutCookie(t *testing.T) {
-	cookie := &Cookie{
-		uids:   make(map[string]uidWithExpiry),
-		optOut: true,
+func TestWriteCookie(t *testing.T) {
+	encoder := Base64Encoder{}
+	decoder := Base64Decoder{}
+
+	testCases := []struct {
+		name               string
+		givenCookie        *Cookie
+		givenSetSiteCookie bool
+		expectedCookie     *Cookie
+	}{
+		{
+			name: "simple-cookie",
+			givenCookie: &Cookie{
+				uids: map[string]UIDEntry{
+					"adnxs": {
+						UID:     "UID",
+						Expires: time.Time{},
+					},
+				},
+				optOut: false,
+			},
+			givenSetSiteCookie: false,
+			expectedCookie: &Cookie{
+				uids: map[string]UIDEntry{
+					"adnxs": {
+						UID:     "UID",
+						Expires: time.Time{},
+					},
+				},
+				optOut: false,
+			},
+		},
+		{
+			name: "simple-cookie-opt-out",
+			givenCookie: &Cookie{
+				uids: map[string]UIDEntry{
+					"adnxs": {
+						UID:     "UID",
+						Expires: time.Time{},
+					},
+				},
+				optOut: true,
+			},
+			givenSetSiteCookie: true,
+			expectedCookie: &Cookie{
+				uids:   map[string]UIDEntry{},
+				optOut: true,
+			},
+		},
+		{
+			name: "cookie-multiple-uids",
+			givenCookie: &Cookie{
+				uids: map[string]UIDEntry{
+					"adnxs": {
+						UID:     "UID",
+						Expires: time.Time{},
+					},
+					"rubicon": {
+						UID:     "UID2",
+						Expires: time.Time{},
+					},
+				},
+				optOut: false,
+			},
+			givenSetSiteCookie: true,
+			expectedCookie: &Cookie{
+				uids: map[string]UIDEntry{
+					"adnxs": {
+						UID:     "UID",
+						Expires: time.Time{},
+					},
+					"rubicon": {
+						UID:     "UID2",
+						Expires: time.Time{},
+					},
+				},
+				optOut: false,
+			},
+		},
 	}
-	ensureConsistency(t, cookie)
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			// Write Cookie
+			w := httptest.NewRecorder()
+			encodedCookie, err := encoder.Encode(test.givenCookie)
+			assert.NoError(t, err)
+			WriteCookie(w, encodedCookie, &config.HostCookie{}, test.givenSetSiteCookie)
+			writtenCookie := w.Header().Get("Set-Cookie")
+
+			// Read Cookie
+			header := http.Header{}
+			header.Add("Cookie", writtenCookie)
+			r := &http.Request{Header: header}
+			actualCookie := ReadCookie(r, decoder, &config.HostCookie{})
+
+			assert.Equal(t, test.expectedCookie, actualCookie)
+		})
+	}
 }
 
-func TestEmptyCookie(t *testing.T) {
-	cookie := &Cookie{
-		uids:   make(map[string]uidWithExpiry),
+func TestSync(t *testing.T) {
+	testCases := []struct {
+		name           string
+		givenCookie    *Cookie
+		givenSyncerKey string
+		givenUID       string
+		expectedCookie *Cookie
+		expectedError  error
+	}{
+		{
+			name: "simple-sync",
+			givenCookie: &Cookie{
+				uids: map[string]UIDEntry{},
+			},
+			givenSyncerKey: "adnxs",
+			givenUID:       "123",
+			expectedCookie: &Cookie{
+				uids: map[string]UIDEntry{
+					"adnxs": {
+						UID: "123",
+					},
+				},
+			},
+		},
+		{
+			name: "dont-allow-syncs",
+			givenCookie: &Cookie{
+				uids:   map[string]UIDEntry{},
+				optOut: true,
+			},
+			givenSyncerKey: "adnxs",
+			givenUID:       "123",
+			expectedCookie: &Cookie{
+				uids: map[string]UIDEntry{},
+			},
+			expectedError: errors.New("the user has opted out of prebid server cookie syncs"),
+		},
+		{
+			name: "audienceNetwork",
+			givenCookie: &Cookie{
+				uids: map[string]UIDEntry{},
+			},
+			givenSyncerKey: string(openrtb_ext.BidderAudienceNetwork),
+			givenUID:       "0",
+			expectedError:  errors.New("audienceNetwork uses a UID of 0 as \"not yet recognized\""),
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			err := test.givenCookie.Sync(test.givenSyncerKey, test.givenUID)
+			if test.expectedError != nil {
+				assert.Equal(t, test.expectedError, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, test.expectedCookie.uids[test.givenSyncerKey].UID, test.givenCookie.uids[test.givenSyncerKey].UID)
+			}
+		})
+	}
+}
+
+func TestGetUIDs(t *testing.T) {
+	testCases := []struct {
+		name           string
+		givenCookie    *Cookie
+		expectedCookie *Cookie
+		expectedLen    int
+	}{
+		{
+			name: "two-uids",
+			givenCookie: &Cookie{
+				uids: map[string]UIDEntry{
+					"adnxs": {
+						UID: "123",
+					},
+					"rubicon": {
+						UID: "456",
+					},
+				},
+			},
+			expectedLen: 2,
+		},
+		{
+			name: "one-uid",
+			givenCookie: &Cookie{
+				uids: map[string]UIDEntry{
+					"adnxs": {
+						UID: "123",
+					},
+				},
+			},
+			expectedLen: 1,
+		},
+		{
+			name:        "empty",
+			givenCookie: &Cookie{},
+			expectedLen: 0,
+		},
+		{
+			name:        "nil",
+			givenCookie: nil,
+			expectedLen: 0,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			uids := test.givenCookie.GetUIDs()
+			assert.Len(t, uids, test.expectedLen)
+			for key, value := range uids {
+				assert.Equal(t, test.givenCookie.uids[key].UID, value)
+			}
+
+		})
+	}
+}
+
+func TestWriteCookieUserAgent(t *testing.T) {
+	encoder := Base64Encoder{}
+
+	testCases := []struct {
+		name                string
+		givenUserAgent      string
+		givenCookie         *Cookie
+		givenHostCookie     config.HostCookie
+		givenSetSiteCookie  bool
+		expectedContains    string
+		expectedNotContains string
+	}{
+		{
+			name:           "same-site-none",
+			givenUserAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36",
+			givenCookie: &Cookie{
+				uids: map[string]UIDEntry{
+					"adnxs": {
+						UID:     "UID",
+						Expires: time.Time{},
+					},
+				},
+				optOut: false,
+			},
+			givenHostCookie:    config.HostCookie{},
+			givenSetSiteCookie: true,
+			expectedContains:   "; Secure;",
+		},
+		{
+			name:           "older-chrome-version",
+			givenUserAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3770.142 Safari/537.36",
+			givenCookie: &Cookie{
+				uids: map[string]UIDEntry{
+					"adnxs": {
+						UID:     "UID",
+						Expires: time.Time{},
+					},
+				},
+				optOut: false,
+			},
+			givenHostCookie:     config.HostCookie{},
+			givenSetSiteCookie:  true,
+			expectedNotContains: "SameSite=none",
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			// Set Up
+			req := httptest.NewRequest("GET", "http://www.prebid.com", nil)
+			req.Header.Set("User-Agent", test.givenUserAgent)
+
+			// Write Cookie
+			w := httptest.NewRecorder()
+			encodedCookie, err := encoder.Encode(test.givenCookie)
+			assert.NoError(t, err)
+			WriteCookie(w, encodedCookie, &test.givenHostCookie, test.givenSetSiteCookie)
+			writtenCookie := w.Header().Get("Set-Cookie")
+
+			if test.expectedContains == "" {
+				assert.NotContains(t, writtenCookie, test.expectedNotContains)
+			} else {
+				assert.Contains(t, writtenCookie, test.expectedContains)
+			}
+		})
+	}
+}
+
+func TestPrepareCookieForWrite(t *testing.T) {
+	encoder := Base64Encoder{}
+	decoder := Base64Decoder{}
+	cookieToSend := &Cookie{
+		uids: map[string]UIDEntry{
+			"1": newTempId("1234567890123456789012345678901234567890123456", 7),
+			"7": newTempId("abcdefghijklmnopqrstuvwxy", 1),
+			"2": newTempId("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 6),
+			"3": newTempId("123456789012345678901234567896123456789012345678", 5),
+			"4": newTempId("aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ", 4),
+			"5": newTempId("12345678901234567890123456789012345678901234567890", 3),
+			"6": newTempId("abcdefghij", 2),
+		},
 		optOut: false,
 	}
-	ensureConsistency(t, cookie)
+
+	testCases := []struct {
+		name                     string
+		givenMaxCookieSize       int
+		expectedRemainingUidKeys []string
+	}{
+		{
+			name:               "no-uids-ejected",
+			givenMaxCookieSize: 2000,
+			expectedRemainingUidKeys: []string{
+				"1", "2", "3", "4", "5", "6", "7",
+			},
+		},
+		{
+			name:               "no-uids-ejected-2",
+			givenMaxCookieSize: 0,
+			expectedRemainingUidKeys: []string{
+				"1", "2", "3", "4", "5", "6", "7",
+			},
+		},
+		{
+			name:               "one-uid-ejected",
+			givenMaxCookieSize: 900,
+			expectedRemainingUidKeys: []string{
+				"1", "2", "3", "4", "5", "6",
+			},
+		},
+		{
+			name:               "four-uids-ejected",
+			givenMaxCookieSize: 500,
+			expectedRemainingUidKeys: []string{
+				"1", "2", "3",
+			},
+		},
+		{
+			name:               "all-but-one-uids-ejected",
+			givenMaxCookieSize: 300,
+			expectedRemainingUidKeys: []string{
+				"1",
+			},
+		},
+		{
+			name:                     "all-uids-ejected",
+			givenMaxCookieSize:       100,
+			expectedRemainingUidKeys: []string{},
+		},
+		{
+			name:                     "invalid-max-size",
+			givenMaxCookieSize:       -100,
+			expectedRemainingUidKeys: []string{},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			encodedCookie, err := cookieToSend.PrepareCookieForWrite(&config.HostCookie{MaxCookieSizeBytes: test.givenMaxCookieSize}, encoder)
+			assert.NoError(t, err)
+			decodedCookie := decoder.Decode(encodedCookie)
+
+			for _, key := range test.expectedRemainingUidKeys {
+				_, ok := decodedCookie.uids[key]
+				assert.Equal(t, true, ok)
+			}
+			assert.Equal(t, len(decodedCookie.uids), len(test.expectedRemainingUidKeys))
+		})
+	}
 }
 
-func TestCookieWithData(t *testing.T) {
-	cookie := newSampleCookie()
-	ensureConsistency(t, cookie)
+func TestSyncHostCookie(t *testing.T) {
+	testCases := []struct {
+		name            string
+		givenCookie     *Cookie
+		givenUID        string
+		givenHostCookie *config.HostCookie
+		expectedCookie  *Cookie
+		expectedError   error
+	}{
+		{
+			name: "simple-sync",
+			givenCookie: &Cookie{
+				uids: map[string]UIDEntry{},
+			},
+			givenHostCookie: &config.HostCookie{
+				Family:     "syncer",
+				CookieName: "adnxs",
+			},
+			expectedCookie: &Cookie{
+				uids: map[string]UIDEntry{
+					"syncer": {
+						UID: "some-user-id",
+					},
+				},
+			},
+		},
+		{
+			name: "uids-already-present",
+			givenCookie: &Cookie{
+				uids: map[string]UIDEntry{
+					"some-syncer": {
+						UID: "some-other-user-id",
+					},
+				},
+			},
+			givenHostCookie: &config.HostCookie{
+				Family:     "syncer",
+				CookieName: "adnxs",
+			},
+			expectedCookie: &Cookie{
+				uids: map[string]UIDEntry{
+					"syncer": {
+						UID: "some-user-id",
+					},
+					"some-syncer": {
+						UID: "some-other-user-id",
+					},
+				},
+			},
+		},
+		{
+			name: "host-already-synced",
+			givenCookie: &Cookie{
+				uids: map[string]UIDEntry{
+					"syncer": {
+						UID: "some-user-id",
+					},
+				},
+			},
+			givenHostCookie: &config.HostCookie{
+				Family:     "syncer",
+				CookieName: "adnxs",
+			},
+			expectedCookie: &Cookie{
+				uids: map[string]UIDEntry{
+					"syncer": {
+						UID: "some-user-id",
+					},
+				},
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			r := httptest.NewRequest("POST", "http://www.prebid.com", nil)
+			r.AddCookie(&http.Cookie{
+				Name:  test.givenHostCookie.CookieName,
+				Value: "some-user-id",
+			})
+
+			SyncHostCookie(r, test.givenCookie, test.givenHostCookie)
+			for key, value := range test.expectedCookie.uids {
+				assert.Equal(t, value.UID, test.givenCookie.uids[key].UID)
+			}
+		})
+	}
 }
 
 func TestBidderNameGets(t *testing.T) {
@@ -60,118 +568,30 @@ func TestBidderNameGets(t *testing.T) {
 	}
 }
 
-func TestRejectAudienceNetworkCookie(t *testing.T) {
-	raw := &Cookie{
-		uids: map[string]uidWithExpiry{
-			"audienceNetwork": newTempId("0", 10),
-		},
-		optOut: false,
-	}
-	parsed := ParseCookie(raw.ToHTTPCookie(90 * 24 * time.Hour))
-	if parsed.HasLiveSync("audienceNetwork") {
-		t.Errorf("Cookie serializing and deserializing should delete audienceNetwork values of 0")
-	}
-
-	err := parsed.TrySync("audienceNetwork", "0")
-	if err == nil {
-		t.Errorf("Cookie should reject audienceNetwork values of 0.")
-	}
-	if parsed.HasLiveSync("audienceNetwork") {
-		t.Errorf("Cookie The cookie should have rejected the audienceNetwork sync.")
-	}
-}
-
-func TestOptOutReset(t *testing.T) {
-	cookie := newSampleCookie()
-
-	cookie.SetOptOut(true)
-	if cookie.AllowSyncs() {
-		t.Error("After SetOptOut(true), a cookie should not allow more user syncs.")
-	}
-	ensureConsistency(t, cookie)
-}
-
-func TestOptIn(t *testing.T) {
-	cookie := &Cookie{
-		uids:   make(map[string]uidWithExpiry),
-		optOut: true,
-	}
-
-	cookie.SetOptOut(false)
-	if !cookie.AllowSyncs() {
-		t.Error("After SetOptOut(false), a cookie should allow more user syncs.")
-	}
-	ensureConsistency(t, cookie)
-}
-
-func TestParseCorruptedCookie(t *testing.T) {
-	raw := http.Cookie{
-		Name:  "uids",
-		Value: "bad base64 encoding",
-	}
-	parsed := ParseCookie(&raw)
-	ensureEmptyMap(t, parsed)
-}
-
-func TestParseCorruptedCookieJSON(t *testing.T) {
-	cookieData := base64.URLEncoding.EncodeToString([]byte("bad json"))
-	raw := http.Cookie{
-		Name:  "uids",
-		Value: cookieData,
-	}
-	parsed := ParseCookie(&raw)
-	ensureEmptyMap(t, parsed)
-}
-
-func TestParseNilSyncMap(t *testing.T) {
-	raw := http.Cookie{
-		Name:  uidCookieName,
-		Value: "",
-	}
-	parsed := ParseCookie(&raw)
-	ensureEmptyMap(t, parsed)
-	ensureConsistency(t, parsed)
-}
-
-func TestParseOtherCookie(t *testing.T) {
-	req := httptest.NewRequest("POST", "http://www.prebid.com", nil)
-	otherCookieName := "other"
-	id := "some-user-id"
-	req.AddCookie(&http.Cookie{
-		Name:  otherCookieName,
-		Value: id,
-	})
-	parsed := ParseCookieFromRequest(req, &config.HostCookie{
-		Family:     "adnxs",
-		CookieName: otherCookieName,
-	})
-	val, _, _ := parsed.GetUID("adnxs")
-	if val != id {
-		t.Errorf("Bad cookie value. Expected %s, got %s", id, val)
-	}
-}
-
-func TestParseCookieFromRequestOptOut(t *testing.T) {
+func TestReadCookieOptOut(t *testing.T) {
 	optOutCookieName := "optOutCookieName"
 	optOutCookieValue := "optOutCookieValue"
+	decoder := Base64Decoder{}
 
-	existingCookie := *(&Cookie{
-		uids: map[string]uidWithExpiry{
+	cookie := *(&Cookie{
+		uids: map[string]UIDEntry{
 			"foo": newTempId("fooID", 1),
 			"bar": newTempId("barID", 2),
 		},
 		optOut: false,
-	}).ToHTTPCookie(24 * time.Hour)
+	})
+
+	existingCookie, _ := ToHTTPCookie(&cookie)
 
 	testCases := []struct {
 		description          string
-		givenExistingCookies []http.Cookie
+		givenExistingCookies []*http.Cookie
 		expectedEmpty        bool
 		expectedSetOptOut    bool
 	}{
 		{
 			description: "Opt Out Cookie",
-			givenExistingCookies: []http.Cookie{
+			givenExistingCookies: []*http.Cookie{
 				existingCookie,
 				{Name: optOutCookieName, Value: optOutCookieValue}},
 			expectedEmpty:     true,
@@ -179,14 +599,14 @@ func TestParseCookieFromRequestOptOut(t *testing.T) {
 		},
 		{
 			description: "No Opt Out Cookie",
-			givenExistingCookies: []http.Cookie{
+			givenExistingCookies: []*http.Cookie{
 				existingCookie},
 			expectedEmpty:     false,
 			expectedSetOptOut: false,
 		},
 		{
 			description: "Opt Out Cookie - Wrong Value",
-			givenExistingCookies: []http.Cookie{
+			givenExistingCookies: []*http.Cookie{
 				existingCookie,
 				{Name: optOutCookieName, Value: "wrong"}},
 			expectedEmpty:     false,
@@ -194,7 +614,7 @@ func TestParseCookieFromRequestOptOut(t *testing.T) {
 		},
 		{
 			description: "Opt Out Cookie - Wrong Name",
-			givenExistingCookies: []http.Cookie{
+			givenExistingCookies: []*http.Cookie{
 				existingCookie,
 				{Name: "wrong", Value: optOutCookieValue}},
 			expectedEmpty:     false,
@@ -202,7 +622,7 @@ func TestParseCookieFromRequestOptOut(t *testing.T) {
 		},
 		{
 			description: "Opt Out Cookie - No Host Cookies",
-			givenExistingCookies: []http.Cookie{
+			givenExistingCookies: []*http.Cookie{
 				{Name: optOutCookieName, Value: optOutCookieValue}},
 			expectedEmpty:     true,
 			expectedSetOptOut: true,
@@ -213,10 +633,10 @@ func TestParseCookieFromRequestOptOut(t *testing.T) {
 		req := httptest.NewRequest("POST", "http://www.prebid.com", nil)
 
 		for _, c := range test.givenExistingCookies {
-			req.AddCookie(&c)
+			req.AddCookie(c)
 		}
 
-		parsed := ParseCookieFromRequest(req, &config.HostCookie{
+		parsed := ReadCookie(req, decoder, &config.HostCookie{
 			Family: "foo",
 			OptOutCookie: config.Cookie{
 				Name:  optOutCookieName,
@@ -233,125 +653,59 @@ func TestParseCookieFromRequestOptOut(t *testing.T) {
 	}
 }
 
-func TestCookieReadWrite(t *testing.T) {
+func TestOptIn(t *testing.T) {
+	cookie := &Cookie{
+		uids:   make(map[string]UIDEntry),
+		optOut: true,
+	}
+
+	cookie.SetOptOut(false)
+	if !cookie.AllowSyncs() {
+		t.Error("After SetOptOut(false), a cookie should allow more user syncs.")
+	}
+	ensureConsistency(t, cookie)
+}
+
+func TestOptOutReset(t *testing.T) {
 	cookie := newSampleCookie()
 
-	received := writeThenRead(cookie, 0)
-	uid, exists, isLive := received.GetUID("adnxs")
-	if !exists || !isLive || uid != "123" {
-		t.Errorf("Received cookie should have the adnxs ID=123. Got %s", uid)
+	cookie.SetOptOut(true)
+	if cookie.AllowSyncs() {
+		t.Error("After SetOptOut(true), a cookie should not allow more user syncs.")
 	}
-
-	uid, exists, isLive = received.GetUID("rubicon")
-	if !exists || !isLive || uid != "456" {
-		t.Errorf("Received cookie should have the rubicon ID=456. Got %s", uid)
-	}
-
-	assert.True(t, received.HasAnyLiveSyncs(), "Has Live Syncs")
-	assert.Len(t, received.uids, 2, "Sync Count")
+	ensureConsistency(t, cookie)
 }
 
-func TestNilCookie(t *testing.T) {
-	var nilCookie *Cookie
-
-	if nilCookie.HasLiveSync("anything") {
-		t.Error("nil cookies should respond with false when asked if they have a sync")
+func TestOptOutCookie(t *testing.T) {
+	cookie := &Cookie{
+		uids:   make(map[string]UIDEntry),
+		optOut: true,
 	}
+	ensureConsistency(t, cookie)
+}
 
-	if nilCookie.HasAnyLiveSyncs() {
-		t.Error("nil cookies shouldn't have any syncs.")
-	}
-
-	if nilCookie.AllowSyncs() {
-		t.Error("nil cookies shouldn't allow syncs to take place.")
-	}
-
-	uid, hadUID, isLive := nilCookie.GetUID("anything")
-
-	if uid != "" {
-		t.Error("nil cookies should return empty strings for the UID.")
-	}
-	if hadUID {
-		t.Error("nil cookies shouldn't claim to have a UID mapping.")
-	}
-	if isLive {
-		t.Error("nil cookies shouldn't report live UID mappings.")
+func newTempId(uid string, offset int) UIDEntry {
+	return UIDEntry{
+		UID:     uid,
+		Expires: time.Now().Add(time.Duration(offset) * time.Minute).UTC(),
 	}
 }
 
-func TestGetUIDs(t *testing.T) {
-	cookie := newSampleCookie()
-	uids := cookie.GetUIDs()
-
-	assert.Len(t, uids, 2, "GetUIDs should return user IDs for all bidders")
-	assert.Equal(t, "123", uids["adnxs"], "GetUIDs should return the correct user ID for each bidder")
-	assert.Equal(t, "456", uids["rubicon"], "GetUIDs should return the correct user ID for each bidder")
-}
-
-func TestGetUIDsWithEmptyCookie(t *testing.T) {
-	cookie := &Cookie{}
-	uids := cookie.GetUIDs()
-
-	assert.Len(t, uids, 0, "GetUIDs shouldn't return any user syncs for an empty cookie")
-}
-
-func TestGetUIDsWithNilCookie(t *testing.T) {
-	var cookie *Cookie
-	uids := cookie.GetUIDs()
-
-	assert.Len(t, uids, 0, "GetUIDs shouldn't return any user syncs for a nil cookie")
-}
-
-func TestTrimCookiesClosestExpirationDates(t *testing.T) {
-	cookieToSend := &Cookie{
-		uids: map[string]uidWithExpiry{
-			"k1": newTempId("12345678901234567890123456789012345678901234567890", 7),
-			"k2": newTempId("abcdefghijklmnopqrstuvwxyz", 1),
-			"k3": newTempId("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 6),
-			"k4": newTempId("12345678901234567890123456789612345678901234567890", 5),
-			"k5": newTempId("aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ", 4),
-			"k6": newTempId("12345678901234567890123456789012345678901234567890", 3),
-			"k7": newTempId("abcdefghijklmnopqrstuvwxyz", 2),
+func newSampleCookie() *Cookie {
+	return &Cookie{
+		uids: map[string]UIDEntry{
+			"adnxs":   newTempId("123", 10),
+			"rubicon": newTempId("456", 10),
 		},
 		optOut: false,
-	}
-
-	type aTest struct {
-		maxCookieSize int
-		expKeys       []string
-	}
-	testCases := []aTest{
-		{maxCookieSize: 2000, expKeys: []string{"k1", "k2", "k3", "k4", "k5", "k6", "k7"}}, //1 don't trim, set
-		{maxCookieSize: 0, expKeys: []string{"k1", "k2", "k3", "k4", "k5", "k6", "k7"}},    //2 unlimited size: don't trim, set
-		{maxCookieSize: 800, expKeys: []string{"k1", "k5", "k4", "k3", "k6"}},              //3 trim to size and set
-		{maxCookieSize: 500, expKeys: []string{"k1", "k4", "k3"}},                          //4 trim to size and set
-		{maxCookieSize: 200, expKeys: []string{}},                                          //5 insufficient size, trim to zero length and set
-		{maxCookieSize: -100, expKeys: []string{}},                                         //6 invalid size, trim to zero length and set
-	}
-	for i := range testCases {
-		processedCookie := writeThenRead(cookieToSend, testCases[i].maxCookieSize)
-
-		actualKeys := make([]string, 0, 7)
-		for key := range processedCookie.uids {
-			actualKeys = append(actualKeys, key)
-		}
-
-		assert.ElementsMatch(t, testCases[i].expKeys, actualKeys, "[Test %d]", i+1)
-	}
-}
-
-func ensureEmptyMap(t *testing.T, cookie *Cookie) {
-	if !cookie.AllowSyncs() {
-		t.Error("Empty cookies should allow user syncs.")
-	}
-	if cookie.HasAnyLiveSyncs() {
-		t.Error("Empty cookies shouldn't have any user syncs. Found at least 1.")
 	}
 }
 
 func ensureConsistency(t *testing.T, cookie *Cookie) {
+	decoder := Base64Decoder{}
+
 	if cookie.AllowSyncs() {
-		err := cookie.TrySync("pulsepoint", "1")
+		err := cookie.Sync("pulsepoint", "1")
 		if err != nil {
 			t.Errorf("Cookie sync should succeed if the user has opted in.")
 		}
@@ -380,13 +734,14 @@ func ensureConsistency(t *testing.T, cookie *Cookie) {
 			t.Error("If the user opted out, the PBSCookie should have no user syncs.")
 		}
 
-		err := cookie.TrySync("adnxs", "123")
+		err := cookie.Sync("adnxs", "123")
 		if err == nil {
 			t.Error("TrySync should fail if the user has opted out of PBSCookie syncs, but it succeeded.")
 		}
 	}
-
-	copiedCookie := ParseCookie(cookie.ToHTTPCookie(90 * 24 * time.Hour))
+	httpCookie, err := ToHTTPCookie(cookie)
+	assert.NoError(t, err)
+	copiedCookie := decoder.Decode(httpCookie.Value)
 	if copiedCookie.AllowSyncs() != cookie.AllowSyncs() {
 		t.Error("The PBSCookie interface shouldn't let modifications happen if the user has opted out")
 	}
@@ -414,61 +769,17 @@ func ensureConsistency(t *testing.T, cookie *Cookie) {
 	}
 }
 
-func newTempId(uid string, offset int) uidWithExpiry {
-	return uidWithExpiry{
-		UID:     uid,
-		Expires: time.Now().Add(time.Duration(offset) * time.Minute).UTC(),
+func ToHTTPCookie(cookie *Cookie) (*http.Cookie, error) {
+	encoder := Base64Encoder{}
+	encodedCookie, err := encoder.Encode(cookie)
+	if err != nil {
+		return nil, nil
 	}
-}
 
-func newSampleCookie() *Cookie {
-	return &Cookie{
-		uids: map[string]uidWithExpiry{
-			"adnxs":   newTempId("123", 10),
-			"rubicon": newTempId("456", 10),
-		},
-		optOut: false,
-	}
-}
-
-func writeThenRead(cookie *Cookie, maxCookieSize int) *Cookie {
-	w := httptest.NewRecorder()
-	hostCookie := &config.HostCookie{Domain: "mock-domain", MaxCookieSizeBytes: maxCookieSize}
-	cookie.SetCookieOnResponse(w, false, hostCookie, 90*24*time.Hour)
-	writtenCookie := w.HeaderMap.Get("Set-Cookie")
-
-	header := http.Header{}
-	header.Add("Cookie", writtenCookie)
-	request := http.Request{Header: header}
-	return ParseCookieFromRequest(&request, hostCookie)
-}
-
-func TestSetCookieOnResponseForSameSiteNone(t *testing.T) {
-	cookie := newSampleCookie()
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "http://www.prebid.com", nil)
-	ua := "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36"
-	req.Header.Set("User-Agent", ua)
-	hostCookie := &config.HostCookie{Domain: "mock-domain", MaxCookieSizeBytes: 0}
-	cookie.SetCookieOnResponse(w, true, hostCookie, 90*24*time.Hour)
-	writtenCookie := w.HeaderMap.Get("Set-Cookie")
-	t.Log("Set-Cookie is: ", writtenCookie)
-	if !strings.Contains(writtenCookie, "; Secure;") {
-		t.Error("Set-Cookie should contain Secure")
-	}
-}
-
-func TestSetCookieOnResponseForOlderChromeVersion(t *testing.T) {
-	cookie := newSampleCookie()
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "http://www.prebid.com", nil)
-	ua := "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3770.142 Safari/537.36"
-	req.Header.Set("User-Agent", ua)
-	hostCookie := &config.HostCookie{Domain: "mock-domain", MaxCookieSizeBytes: 0}
-	cookie.SetCookieOnResponse(w, false, hostCookie, 90*24*time.Hour)
-	writtenCookie := w.HeaderMap.Get("Set-Cookie")
-	t.Log("Set-Cookie is: ", writtenCookie)
-	if strings.Contains(writtenCookie, "SameSite=none") {
-		t.Error("Set-Cookie should not contain SameSite=none")
-	}
+	return &http.Cookie{
+		Name:    uidCookieName,
+		Value:   encodedCookie,
+		Expires: time.Now().Add((90 * 24 * time.Hour)),
+		Path:    "/",
+	}, nil
 }

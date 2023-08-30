@@ -46,8 +46,7 @@
 			"ext": {
 				"appnexus": {
 				  "hb_source": 6
-				},
-				"prebid": {}
+				}
 			},
 			"imp": [
 			  {
@@ -90,5 +89,6 @@
 		  "body": {}
 		}
 	  }
-	]
+	],
+    "expectedBidResponses": [{"currency":"USD","bids":[]}]
   }

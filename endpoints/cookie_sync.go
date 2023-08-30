@@ -90,8 +90,10 @@ func (c *cookieSyncEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ ht
 		c.handleError(w, err, http.StatusBadRequest)
 		return
 	}
+	decoder := usersync.Base64Decoder{}
 
-	cookie := usersync.ParseCookieFromRequest(r, &c.config.HostCookie)
+	cookie := usersync.ReadCookie(r, decoder, &c.config.HostCookie)
+	usersync.SyncHostCookie(r, cookie, &c.config.HostCookie)
 
 	result := c.chooser.Choose(request, cookie)
 	switch result.Status {
@@ -147,6 +149,13 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 		}
 	}
 
+	activityControl, activitiesErr := privacy.NewActivityControl(account.Privacy)
+	if activitiesErr != nil {
+		if errortypes.ContainsFatalError([]error{activitiesErr}) {
+			activityControl = privacy.ActivityControl{}
+		}
+	}
+
 	syncTypeFilter, err := parseTypeFilter(request.FilterSettings)
 	if err != nil {
 		return usersync.Request{}, privacy.Policies{}, err
@@ -170,6 +179,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 		Privacy: usersyncPrivacy{
 			gdprPermissions:  gdprPerms,
 			ccpaParsedPolicy: ccpaParsedPolicy,
+			activityControl:  activityControl,
 		},
 		SyncTypeFilter: syncTypeFilter,
 	}
@@ -499,6 +509,7 @@ type usersyncPrivacyConfig struct {
 type usersyncPrivacy struct {
 	gdprPermissions  gdpr.Permissions
 	ccpaParsedPolicy ccpa.ParsedPolicy
+	activityControl  privacy.ActivityControl
 }
 
 func (p usersyncPrivacy) GDPRAllowsHostCookie() bool {
@@ -514,4 +525,9 @@ func (p usersyncPrivacy) GDPRAllowsBidderSync(bidder string) bool {
 func (p usersyncPrivacy) CCPAAllowsBidderSync(bidder string) bool {
 	enforce := p.ccpaParsedPolicy.CanEnforce() && p.ccpaParsedPolicy.ShouldEnforce(bidder)
 	return !enforce
+}
+
+func (p usersyncPrivacy) ActivityAllowsUserSync(bidder string) bool {
+	return p.activityControl.Allow(privacy.ActivitySyncUser,
+		privacy.Component{Type: privacy.ComponentTypeBidder, Name: bidder})
 }

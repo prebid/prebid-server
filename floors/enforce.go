@@ -24,7 +24,7 @@ func Enforce(bidRequestWrapper *openrtb_ext.RequestWrapper, seatBids map[openrtb
 	}
 
 	if !isPriceFloorsEnabled(account, bidRequestWrapper) {
-		return seatBids, []error{errors.New("Floors feature is disabled at account or in the request")}, rejectedBids
+		return seatBids, nil, rejectedBids
 	}
 
 	if isSignalingSkipped(requestExt) || !isValidImpBidFloorPresent(bidRequestWrapper.BidRequest.Imp) {

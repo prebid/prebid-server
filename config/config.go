@@ -11,13 +11,12 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/spf13/viper"
-
 	"github.com/prebid/go-gdpr/consentconstants"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/util/ptrutil"
+	"github.com/spf13/viper"
 )
 
 // Configuration specifies the static application config.
@@ -150,9 +149,8 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 		errs = append(errs, errors.New("account_defaults.Events.VASTEvents has no effect as the feature is under development."))
 	}
 
-	if cfg.TmaxAdjustments.Enabled {
-		glog.Warning(`cfg.TmaxAdjustments.Enabled will currently not do anything as tmax adjustment feature is still under development.`)
-		cfg.TmaxAdjustments.Enabled = false
+	if cfg.AccountDefaults.Privacy != nil {
+		glog.Warning("account_defaults.Privacy has no effect as the feature is under development.")
 	}
 
 	errs = cfg.Experiment.validate(errs)
@@ -352,7 +350,7 @@ func (t *TCF2) IsEnabled() bool {
 
 // PurposeEnforced checks if full enforcement is turned on for a given purpose. With full enforcement enabled, the
 // GDPR full enforcement algorithm will execute for that purpose determining legal basis; otherwise it's skipped.
-func (t *TCF2) PurposeEnforced(purpose consentconstants.Purpose) (value bool) {
+func (t *TCF2) PurposeEnforced(purpose consentconstants.Purpose) (enforce bool) {
 	if t.PurposeConfigs[purpose] == nil {
 		return false
 	}
@@ -360,7 +358,7 @@ func (t *TCF2) PurposeEnforced(purpose consentconstants.Purpose) (value bool) {
 }
 
 // PurposeEnforcementAlgo returns the default enforcement algorithm for a given purpose
-func (t *TCF2) PurposeEnforcementAlgo(purpose consentconstants.Purpose) (value TCF2EnforcementAlgo) {
+func (t *TCF2) PurposeEnforcementAlgo(purpose consentconstants.Purpose) (enforcement TCF2EnforcementAlgo) {
 	if c, exists := t.PurposeConfigs[purpose]; exists {
 		return c.EnforceAlgoID
 	}
@@ -369,7 +367,7 @@ func (t *TCF2) PurposeEnforcementAlgo(purpose consentconstants.Purpose) (value T
 
 // PurposeEnforcingVendors checks if enforcing vendors is turned on for a given purpose. With enforcing vendors
 // enabled, the GDPR full enforcement algorithm considers the GVL when determining legal basis; otherwise it's skipped.
-func (t *TCF2) PurposeEnforcingVendors(purpose consentconstants.Purpose) (value bool) {
+func (t *TCF2) PurposeEnforcingVendors(purpose consentconstants.Purpose) (enforce bool) {
 	if t.PurposeConfigs[purpose] == nil {
 		return false
 	}
@@ -378,7 +376,7 @@ func (t *TCF2) PurposeEnforcingVendors(purpose consentconstants.Purpose) (value 
 
 // PurposeVendorExceptions returns the vendor exception map for a given purpose if it exists, otherwise it returns
 // an empty map of vendor exceptions
-func (t *TCF2) PurposeVendorExceptions(purpose consentconstants.Purpose) (value map[openrtb_ext.BidderName]struct{}) {
+func (t *TCF2) PurposeVendorExceptions(purpose consentconstants.Purpose) (vendorExceptions map[openrtb_ext.BidderName]struct{}) {
 	c, exists := t.PurposeConfigs[purpose]
 
 	if exists && c.VendorExceptionMap != nil {
@@ -389,13 +387,13 @@ func (t *TCF2) PurposeVendorExceptions(purpose consentconstants.Purpose) (value 
 
 // FeatureOneEnforced checks if special feature one is enforced. If it is enforced, PBS will determine whether geo
 // information may be passed through in the bid request.
-func (t *TCF2) FeatureOneEnforced() (value bool) {
+func (t *TCF2) FeatureOneEnforced() bool {
 	return t.SpecialFeature1.Enforce
 }
 
 // FeatureOneVendorException checks if the specified bidder is considered a vendor exception for special feature one.
 // If a bidder is a vendor exception, PBS will bypass the pass geo calculation passing the geo information in the bid request.
-func (t *TCF2) FeatureOneVendorException(bidder openrtb_ext.BidderName) (value bool) {
+func (t *TCF2) FeatureOneVendorException(bidder openrtb_ext.BidderName) bool {
 	if _, ok := t.SpecialFeature1.VendorExceptionMap[bidder]; ok {
 		return true
 	}
@@ -403,12 +401,12 @@ func (t *TCF2) FeatureOneVendorException(bidder openrtb_ext.BidderName) (value b
 }
 
 // PurposeOneTreatmentEnabled checks if purpose one treatment is enabled.
-func (t *TCF2) PurposeOneTreatmentEnabled() (value bool) {
+func (t *TCF2) PurposeOneTreatmentEnabled() bool {
 	return t.PurposeOneTreatment.Enabled
 }
 
 // PurposeOneTreatmentAccessAllowed checks if purpose one treatment access is allowed.
-func (t *TCF2) PurposeOneTreatmentAccessAllowed() (value bool) {
+func (t *TCF2) PurposeOneTreatmentAccessAllowed() bool {
 	return t.PurposeOneTreatment.AccessAllowed
 }
 

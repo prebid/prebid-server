@@ -83,21 +83,29 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		requestCopy.BCat = append(requestCopy.BCat, strImpParams.BCat...)
 		requestCopy.BAdv = append(requestCopy.BAdv, strImpParams.BAdv...)
 
-		requestCopy.Imp = []openrtb2.Imp{imp}
-
-		requestJSON, err := json.Marshal(requestCopy)
+		impressionsByMediaType, err := splitImpressionsByMediaType(&imp)
 		if err != nil {
 			errors = append(errors, err)
 			continue
 		}
 
-		requestData := &adapters.RequestData{
-			Method:  "POST",
-			Uri:     a.endpoint,
-			Body:    requestJSON,
-			Headers: headers,
+		for _, impression := range impressionsByMediaType {
+			requestCopy.Imp = []openrtb2.Imp{impression}
+
+			requestJSON, err := json.Marshal(requestCopy)
+			if err != nil {
+				errors = append(errors, err)
+				continue
+			}
+
+			requestData := &adapters.RequestData{
+				Method:  "POST",
+				Uri:     a.endpoint,
+				Body:    requestJSON,
+				Headers: headers,
+			}
+			requests = append(requests, requestData)
 		}
-		requests = append(requests, requestData)
 	}
 
 	return requests, errors
@@ -148,6 +156,40 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	return bidderResponse, errors
+}
+
+func splitImpressionsByMediaType(impression *openrtb2.Imp) ([]openrtb2.Imp, error) {
+	if impression.Banner == nil && impression.Video == nil && impression.Native == nil {
+		return nil, &errortypes.BadInput{Message: "Invalid MediaType. Sharethrough only supports Banner, Video and Native."}
+	}
+
+	if impression.Audio != nil {
+		impression.Audio = nil
+	}
+
+	impressions := make([]openrtb2.Imp, 0, 3)
+
+	if impression.Banner != nil {
+		impCopy := *impression
+		impCopy.Video = nil
+		impCopy.Native = nil
+		impressions = append(impressions, impCopy)
+	}
+
+	if impression.Video != nil {
+		impCopy := *impression
+		impCopy.Banner = nil
+		impCopy.Native = nil
+		impressions = append(impressions, impCopy)
+	}
+
+	if impression.Native != nil {
+		impression.Banner = nil
+		impression.Video = nil
+		impressions = append(impressions, *impression)
+	}
+
+	return impressions, nil
 }
 
 func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {

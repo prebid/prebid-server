@@ -115,7 +115,7 @@
       }
     }
   ],
-  "expectedBidResponses": [],
+  "expectedBidResponses": [{"currency":"USD","bids":[]}],
   "expectedMakeBidsErrors": [
     {
       "value": "invalid BidType: invalid",

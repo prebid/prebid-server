@@ -1,0 +1,16 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Gothamads Adapter Params",
+    "description": "A schema which validates params accepted by the Gothamads adapter",
+    "type": "object",
+    "properties": {
+        "accountId": {
+            "type": "string",
+            "description": "Account id",
+            "minLength": 1
+        }
+    },
+    "required": [
+        "accountId"
+    ]
+}
