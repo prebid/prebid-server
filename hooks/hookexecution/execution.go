@@ -69,7 +69,7 @@ func executeGroup[H any, P any](
 
 	for _, hook := range group.Hooks {
 		mCtx := executionCtx.getModuleContext(hook.Module)
-		newPayload, _ := handleModuleActivities(hook, executionCtx.activityControl, payload)
+		newPayload := handleModuleActivities(hook, executionCtx.activityControl, payload)
 		wg.Add(1)
 		go func(hw hooks.HookWrapper[H], moduleCtx hookstage.ModuleInvocationContext) {
 			defer wg.Done()
@@ -316,14 +316,14 @@ func handleHookMutations[P any](
 	return payload
 }
 
-func handleModuleActivities[T any, P any](hook hooks.HookWrapper[T], activityControl privacy.ActivityControl, payload P) (P, error) {
+func handleModuleActivities[T any, P any](hook hooks.HookWrapper[T], activityControl privacy.ActivityControl, payload P) P {
 	// only 2 stages receive bidder request: hookstage.ProcessedAuctionRequestPayload and hookstage.BidderRequestPayload
 	// they both implement PayloadBidderRequest interface in order to execute mutations on bid request
 	var payloadData hookstage.PayloadBidderRequest
 	ok := true
 	if payloadData, ok = any(&payload).(hookstage.PayloadBidderRequest); !ok {
 		// payload doesn't have a bid request
-		return payload, nil
+		return payload
 	}
 
 	privacyEnforcement := privacy.Enforcement{}
@@ -337,7 +337,6 @@ func handleModuleActivities[T any, P any](hook hooks.HookWrapper[T], activityCon
 	}
 
 	if privacyEnforcement.AnyActivities() {
-
 		// changes need to be applied to new payload and leave original payload unchanged
 		bidderReq := payloadData.GetBidderRequestPayload()
 		var bidderReqCopy *openrtb2.BidRequest
@@ -348,7 +347,8 @@ func handleModuleActivities[T any, P any](hook hooks.HookWrapper[T], activityCon
 		var newPayload = payload
 		var np = any(&newPayload).(hookstage.PayloadBidderRequest)
 		np.SetBidderRequestPayload(bidderReqCopy)
-		return newPayload, nil
+		return newPayload
 	}
-	return payload, nil
+
+	return payload
 }
