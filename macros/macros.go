@@ -17,7 +17,7 @@ type EndpointTemplateParams struct {
 	GvlID       string
 }
 
-// UserSyncPrivacy specifies privacy policy macros for user sync urls.
+// UserSyncPrivacy specifies privacy policy macros, represented as strings, for user sync urls.
 type UserSyncPrivacy struct {
 	GDPR        string
 	GDPRConsent string

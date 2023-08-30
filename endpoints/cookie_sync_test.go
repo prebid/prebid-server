@@ -399,7 +399,7 @@ func TestExtractPrivacyPolicies(t *testing.T) {
 	type testOutput struct {
 		macros     macros.UserSyncPrivacy
 		gdprSignal gdpr.Signal
-		gppSID     []int8
+		policies   privacy.Policies
 		err        error
 	}
 	testCases := []struct {
@@ -415,7 +415,7 @@ func TestExtractPrivacyPolicies(t *testing.T) {
 			expected: testOutput{
 				macros:     macros.UserSyncPrivacy{},
 				gdprSignal: gdpr.SignalNo,
-				gppSID:     nil,
+				policies:   privacy.Policies{},
 				err:        errors.New("error parsing GPP header, header must have type=3"),
 			},
 		},
@@ -431,7 +431,7 @@ func TestExtractPrivacyPolicies(t *testing.T) {
 			expected: testOutput{
 				macros:     macros.UserSyncPrivacy{},
 				gdprSignal: gdpr.SignalNo,
-				gppSID:     nil,
+				policies:   privacy.Policies{},
 				err:        &strconv.NumError{Func: "ParseInt", Num: "malformed", Err: strconv.ErrSyntax},
 			},
 		},
@@ -447,7 +447,7 @@ func TestExtractPrivacyPolicies(t *testing.T) {
 			expected: testOutput{
 				macros:     macros.UserSyncPrivacy{},
 				gdprSignal: gdpr.SignalNo,
-				gppSID:     nil,
+				policies:   privacy.Policies{},
 				err:        errors.New("request.us_privacy consent does not match uspv1"),
 			},
 		},
@@ -468,18 +468,17 @@ func TestExtractPrivacyPolicies(t *testing.T) {
 					GPPSID:      "6",
 				},
 				gdprSignal: gdpr.SignalNo,
-				gppSID:     []int8{6},
+				policies:   privacy.Policies{GPPSID: []int8{6}},
 				err:        nil,
 			},
 		},
 	}
 	for _, tc := range testCases {
-		// run
-		outPolicies, outSignal, outSID, outErr := extractPrivacyPolicies(tc.in.request, tc.in.usersyncDefaultGDPRValue)
-		// assertions
-		assert.Equal(t, tc.expected.macros, outPolicies, tc.desc)
+		outMacros, outSignal, outPolicies, outErr := extractPrivacyPolicies(tc.in.request, tc.in.usersyncDefaultGDPRValue)
+
+		assert.Equal(t, tc.expected.macros, outMacros, tc.desc)
 		assert.Equal(t, tc.expected.gdprSignal, outSignal, tc.desc)
-		assert.Equal(t, tc.expected.gppSID, outSID, tc.desc)
+		assert.Equal(t, tc.expected.policies, outPolicies, tc.desc)
 		assert.Equal(t, tc.expected.err, outErr, tc.desc)
 	}
 }
