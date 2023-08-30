@@ -19,7 +19,7 @@ func NewRequestFromPolicies(p Policies) ActivityRequest {
 	return ActivityRequest{policies: &p}
 }
 
-func NewRequestFromOpenRTB(r openrtb_ext.RequestWrapper) ActivityRequest {
+func NewRequestFromBidRequest(r openrtb_ext.RequestWrapper) ActivityRequest {
 	return ActivityRequest{bidRequest: &r}
 }
 

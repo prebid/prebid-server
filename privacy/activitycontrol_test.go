@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
@@ -222,6 +223,26 @@ func TestAllowActivityControl(t *testing.T) {
 
 		})
 	}
+}
+
+func TestActivityRequest(t *testing.T) {
+	t.Run("empty", func(t *testing.T) {
+		r := ActivityRequest{}
+		assert.False(t, r.IsPolicies())
+		assert.False(t, r.IsBidRequest())
+	})
+
+	t.Run("policies", func(t *testing.T) {
+		r := NewRequestFromPolicies(Policies{})
+		assert.True(t, r.IsPolicies())
+		assert.False(t, r.IsBidRequest())
+	})
+
+	t.Run("request", func(t *testing.T) {
+		r := NewRequestFromBidRequest(openrtb_ext.RequestWrapper{})
+		assert.False(t, r.IsPolicies())
+		assert.True(t, r.IsBidRequest())
+	})
 }
 
 // constants
