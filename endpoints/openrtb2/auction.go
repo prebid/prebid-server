@@ -1967,15 +1967,16 @@ func setAuctionTypeImplicitly(r *openrtb_ext.RequestWrapper) {
 }
 
 func setSiteImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
+	if r.Site == nil {
+		r.Site = &openrtb2.Site{}
+	}
+
 	referrerCandidate := httpReq.Referer()
-	if referrerCandidate == "" && r.Site != nil && r.Site.Page != "" {
+	if referrerCandidate == "" && r.Site.Page != "" {
 		referrerCandidate = r.Site.Page // If http referer is disabled and thus has empty value - use site.page instead
 	}
 
 	if referrerCandidate != "" {
-		if r.Site == nil {
-			r.Site = &openrtb2.Site{}
-		}
 		setSitePageIfEmpty(r.Site, referrerCandidate)
 		if parsedUrl, err := url.Parse(referrerCandidate); err == nil {
 			setSiteDomainIfEmpty(r.Site, parsedUrl.Host)
@@ -1985,11 +1986,10 @@ func setSiteImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
 		}
 	}
 
-	if r.Site != nil {
-		if siteExt, err := r.GetSiteExt(); err == nil && siteExt.GetAmp() == nil {
-			siteExt.SetAmp(&notAmp)
-		}
+	if siteExt, err := r.GetSiteExt(); err == nil && siteExt.GetAmp() == nil {
+		siteExt.SetAmp(&notAmp)
 	}
+
 }
 
 func setSitePageIfEmpty(site *openrtb2.Site, sitePage string) {
