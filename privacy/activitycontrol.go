@@ -2,6 +2,7 @@ package privacy
 
 import (
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 type ActivityResult int
@@ -13,6 +14,27 @@ const (
 )
 
 const defaultActivityResult = true
+
+func NewRequestFromPolicies(p Policies) ActivityRequest {
+	return ActivityRequest{policies: &p}
+}
+
+func NewRequestFromOpenRTB(r openrtb_ext.RequestWrapper) ActivityRequest {
+	return ActivityRequest{bidRequest: &r}
+}
+
+type ActivityRequest struct {
+	policies   *Policies
+	bidRequest *openrtb_ext.RequestWrapper
+}
+
+func (r ActivityRequest) IsPolicies() bool {
+	return r.policies != nil
+}
+
+func (r ActivityRequest) IsBidRequest() bool {
+	return r.bidRequest != nil
+}
 
 type ActivityControl struct {
 	plans map[Activity]ActivityPlan
@@ -52,11 +74,11 @@ func NewActivityControl(privacyConf *config.AccountPrivacy) (ActivityControl, er
 	if err != nil {
 		return ac, err
 	}
-	plans[ActivityTransmitUniqueRequestIds], err = buildEnforcementPlan(privacyConf.AllowActivities.TransmitUniqueRequestIds)
+	plans[ActivityTransmitUniqueRequestIDs], err = buildEnforcementPlan(privacyConf.AllowActivities.TransmitUniqueRequestIds)
 	if err != nil {
 		return ac, err
 	}
-	plans[ActivityTransmitTids], err = buildEnforcementPlan(privacyConf.AllowActivities.TransmitTids)
+	plans[ActivityTransmitTIDs], err = buildEnforcementPlan(privacyConf.AllowActivities.TransmitTids)
 	if err != nil {
 		return ac, err
 	}
@@ -81,11 +103,9 @@ func activityRulesToEnforcementRules(rules []config.ActivityRule) ([]Rule, error
 	var enfRules []Rule
 
 	for _, r := range rules {
-		var result ActivityResult
+		result := ActivityDeny
 		if r.Allow {
 			result = ActivityAllow
-		} else {
-			result = ActivityDeny
 		}
 
 		componentName, err := conditionToRuleComponentNames(r.Condition.ComponentName)
@@ -104,7 +124,7 @@ func activityRulesToEnforcementRules(rules []config.ActivityRule) ([]Rule, error
 }
 
 func conditionToRuleComponentNames(conditions []string) ([]Component, error) {
-	sn := make([]Component, 0)
+	sn := make([]Component, 0, len(conditions))
 	for _, condition := range conditions {
 		scope, err := ParseComponent(condition)
 		if err != nil {
@@ -122,14 +142,14 @@ func activityDefaultToDefaultResult(activityDefault *bool) bool {
 	return *activityDefault
 }
 
-func (e ActivityControl) Allow(activity Activity, target Component) bool {
+func (e ActivityControl) Allow(activity Activity, target Component, request ActivityRequest) bool {
 	plan, planDefined := e.plans[activity]
 
 	if !planDefined {
 		return defaultActivityResult
 	}
 
-	return plan.Evaluate(target)
+	return plan.Evaluate(target, request)
 }
 
 type ActivityPlan struct {
@@ -137,9 +157,9 @@ type ActivityPlan struct {
 	rules         []Rule
 }
 
-func (p ActivityPlan) Evaluate(target Component) bool {
+func (p ActivityPlan) Evaluate(target Component, request ActivityRequest) bool {
 	for _, rule := range p.rules {
-		result := rule.Evaluate(target)
+		result := rule.Evaluate(target, request)
 		if result == ActivityDeny || result == ActivityAllow {
 			return result == ActivityAllow
 		}

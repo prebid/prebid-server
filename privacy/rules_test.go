@@ -89,7 +89,7 @@ func TestComponentEnforcementRuleEvaluate(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			actualResult := test.componentRule.Evaluate(test.target)
+			actualResult := test.componentRule.Evaluate(test.target, ActivityRequest{})
 			assert.Equal(t, test.activityResult, actualResult)
 
 		})

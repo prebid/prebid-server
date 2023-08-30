@@ -56,7 +56,6 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 	requestExt *openrtb_ext.ExtRequest,
 	gdprDefaultValue gdpr.Signal,
 ) (allowedBidderRequests []BidderRequest, privacyLabels metrics.PrivacyLabels, errs []error) {
-
 	req := auctionReq.BidRequestWrapper
 	aliases, errs := parseAliases(req.BidRequest)
 	if len(errs) > 0 {
@@ -153,7 +152,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 
 		// fetchBids activity
 		scopedName := privacy.Component{Type: privacy.ComponentTypeBidder, Name: bidderRequest.BidderName.String()}
-		fetchBidsActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityFetchBids, scopedName)
+		fetchBidsActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityFetchBids, scopedName, privacy.NewRequestFromOpenRTB(*req))
 		if !fetchBidsActivityAllowed {
 			// skip the call to a bidder if fetchBids activity is not allowed
 			// do not add this bidder to allowedBidderRequests
@@ -173,7 +172,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 			}
 		}
 
-		passIDActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitUserFPD, scopedName)
+		passIDActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitUserFPD, scopedName, privacy.NewRequestFromOpenRTB(*req))
 		if !passIDActivityAllowed {
 			privacyEnforcement.UFPD = true
 		} else {
@@ -190,7 +189,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 			privacyEnforcement.CCPA = ccpaEnforcer.ShouldEnforce(bidderRequest.BidderName.String())
 		}
 
-		passGeoActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitPreciseGeo, scopedName)
+		passGeoActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitPreciseGeo, scopedName, privacy.NewRequestFromOpenRTB(*req))
 		if !passGeoActivityAllowed {
 			privacyEnforcement.PreciseGeo = true
 		} else {
@@ -212,7 +211,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 			applyFPD(auctionReq.FirstPartyData[bidderRequest.BidderName], bidderRequest.BidRequest)
 		}
 
-		privacyEnforcement.TID = !auctionReq.Activities.Allow(privacy.ActivityTransmitTids, scopedName)
+		privacyEnforcement.TID = !auctionReq.Activities.Allow(privacy.ActivityTransmitTIDs, scopedName, privacy.NewRequestFromOpenRTB(*req))
 
 		privacyEnforcement.Apply(bidderRequest.BidRequest)
 		allowedBidderRequests = append(allowedBidderRequests, bidderRequest)

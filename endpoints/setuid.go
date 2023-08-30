@@ -112,7 +112,8 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 		}
 
 		userSyncActivityAllowed := activities.Allow(privacy.ActivitySyncUser,
-			privacy.Component{Type: privacy.ComponentTypeBidder, Name: bidderName})
+			privacy.Component{Type: privacy.ComponentTypeBidder, Name: bidderName},
+			privacy.ActivityRequest{})
 		if !userSyncActivityAllowed {
 			w.WriteHeader(http.StatusUnavailableForLegalReasons)
 			return

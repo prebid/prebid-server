@@ -2,8 +2,9 @@ package privacy
 
 import (
 	"encoding/json"
-	"github.com/prebid/prebid-server/util/ptrutil"
 	"strings"
+
+	"github.com/prebid/prebid-server/util/ptrutil"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
 )
@@ -87,11 +88,8 @@ func (scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enforc
 	var userExtParsed map[string]json.RawMessage
 	userExtModified := false
 
-	var userCopy *openrtb2.User
-	userCopy = ptrutil.Clone(bidRequest.User)
-
-	var deviceCopy *openrtb2.Device
-	deviceCopy = ptrutil.Clone(bidRequest.Device)
+	userCopy := ptrutil.Clone(bidRequest.User)
+	deviceCopy := ptrutil.Clone(bidRequest.Device)
 
 	if userCopy != nil && (enforcement.UFPD || enforcement.Eids) {
 		if len(userCopy.Ext) != 0 {
@@ -147,8 +145,7 @@ func (scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enforc
 	if enforcement.TID {
 		//remove source.tid and imp.ext.tid
 		if bidRequest.Source != nil {
-			var sourceCopy *openrtb2.Source
-			sourceCopy = ptrutil.Clone(bidRequest.Source)
+			sourceCopy := ptrutil.Clone(bidRequest.Source)
 			sourceCopy.TID = ""
 			bidRequest.Source = sourceCopy
 		}

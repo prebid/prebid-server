@@ -19,11 +19,11 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/gdpr"
+	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/privacy/ccpa"
-	gdprPrivacy "github.com/prebid/prebid-server/privacy/gdpr"
 	gppPrivacy "github.com/prebid/prebid-server/privacy/gpp"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/usersync"
@@ -84,7 +84,7 @@ type cookieSyncEndpoint struct {
 }
 
 func (c *cookieSyncEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	request, privacyPolicies, err := c.parseRequest(r)
+	request, privacyMacros, err := c.parseRequest(r)
 	if err != nil {
 		c.writeParseRequestErrorMetrics(err)
 		c.handleError(w, err, http.StatusBadRequest)
@@ -102,24 +102,24 @@ func (c *cookieSyncEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ ht
 		c.handleError(w, errCookieSyncOptOut, http.StatusUnauthorized)
 	case usersync.StatusBlockedByGDPR:
 		c.metrics.RecordCookieSync(metrics.CookieSyncGDPRHostCookieBlocked)
-		c.handleResponse(w, request.SyncTypeFilter, cookie, privacyPolicies, nil)
+		c.handleResponse(w, request.SyncTypeFilter, cookie, privacyMacros, nil)
 	case usersync.StatusOK:
 		c.metrics.RecordCookieSync(metrics.CookieSyncOK)
 		c.writeSyncerMetrics(result.BiddersEvaluated)
-		c.handleResponse(w, request.SyncTypeFilter, cookie, privacyPolicies, result.SyncersChosen)
+		c.handleResponse(w, request.SyncTypeFilter, cookie, privacyMacros, result.SyncersChosen)
 	}
 }
 
-func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, privacy.Policies, error) {
+func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, macros.UserSyncPrivacy, error) {
 	defer r.Body.Close()
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		return usersync.Request{}, privacy.Policies{}, errCookieSyncBody
+		return usersync.Request{}, macros.UserSyncPrivacy{}, errCookieSyncBody
 	}
 
 	request := cookieSyncRequest{}
 	if err := json.Unmarshal(body, &request); err != nil {
-		return usersync.Request{}, privacy.Policies{}, fmt.Errorf("JSON parsing failed: %s", err.Error())
+		return usersync.Request{}, macros.UserSyncPrivacy{}, fmt.Errorf("JSON parsing failed: %s", err.Error())
 	}
 
 	if request.Account == "" {
@@ -127,22 +127,22 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 	}
 	account, fetchErrs := accountService.GetAccount(context.Background(), c.config, c.accountsFetcher, request.Account, c.metrics)
 	if len(fetchErrs) > 0 {
-		return usersync.Request{}, privacy.Policies{}, combineErrors(fetchErrs)
+		return usersync.Request{}, macros.UserSyncPrivacy{}, combineErrors(fetchErrs)
 	}
 
 	request = c.setLimit(request, account.CookieSync)
 	request = c.setCooperativeSync(request, account.CookieSync)
 
-	privacyPolicies, gdprSignal, err := extractPrivacyPolicies(request, c.privacyConfig.gdprConfig.DefaultValue)
+	privacyMacros, gdprSignal, gppSID, err := extractPrivacyPolicies(request, c.privacyConfig.gdprConfig.DefaultValue)
 	if err != nil {
-		return usersync.Request{}, privacy.Policies{}, err
+		return usersync.Request{}, macros.UserSyncPrivacy{}, err
 	}
 
 	ccpaParsedPolicy := ccpa.ParsedPolicy{}
 	if request.USPrivacy != "" {
-		parsedPolicy, err := privacyPolicies.CCPA.Parse(c.privacyConfig.bidderHashSet)
+		parsedPolicy, err := ccpa.Policy{Consent: request.USPrivacy}.Parse(c.privacyConfig.bidderHashSet)
 		if err != nil {
-			privacyPolicies.CCPA.Consent = ""
+			privacyMacros.USPrivacy = ""
 		}
 		if c.privacyConfig.ccpaEnforce {
 			ccpaParsedPolicy = parsedPolicy
@@ -158,16 +158,20 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 
 	syncTypeFilter, err := parseTypeFilter(request.FilterSettings)
 	if err != nil {
-		return usersync.Request{}, privacy.Policies{}, err
+		return usersync.Request{}, macros.UserSyncPrivacy{}, err
 	}
 
 	gdprRequestInfo := gdpr.RequestInfo{
-		Consent:    privacyPolicies.GDPR.Consent,
+		Consent:    privacyMacros.GDPRConsent,
 		GDPRSignal: gdprSignal,
 	}
 
 	tcf2Cfg := c.privacyConfig.tcf2ConfigBuilder(c.privacyConfig.gdprConfig.TCF2, account.GDPR)
 	gdprPerms := c.privacyConfig.gdprPermissionsBuilder(tcf2Cfg, gdprRequestInfo)
+
+	policies := privacy.Policies{
+		GPPSID: gppSID,
+	}
 
 	rx := usersync.Request{
 		Bidders: request.Bidders,
@@ -180,22 +184,23 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 			gdprPermissions:  gdprPerms,
 			ccpaParsedPolicy: ccpaParsedPolicy,
 			activityControl:  activityControl,
+			activityRequest:  privacy.NewRequestFromPolicies(policies),
 		},
 		SyncTypeFilter: syncTypeFilter,
 	}
-	return rx, privacyPolicies, nil
+	return rx, privacyMacros, nil
 }
 
-func extractPrivacyPolicies(request cookieSyncRequest, usersyncDefaultGDPRValue string) (privacy.Policies, gdpr.Signal, error) {
+func extractPrivacyPolicies(request cookieSyncRequest, usersyncDefaultGDPRValue string) (macros.UserSyncPrivacy, gdpr.Signal, []int8, error) {
 	// GDPR
 	gppSID, err := stringutil.StrToInt8Slice(request.GPPSid)
 	if err != nil {
-		return privacy.Policies{}, gdpr.SignalNo, err
+		return macros.UserSyncPrivacy{}, gdpr.SignalNo, nil, err
 	}
 
 	gdprSignal, gdprString, err := extractGDPRSignal(request.GDPR, gppSID)
 	if err != nil {
-		return privacy.Policies{}, gdpr.SignalNo, err
+		return macros.UserSyncPrivacy{}, gdpr.SignalNo, nil, err
 	}
 
 	var gpp gpplib.GppContainer
@@ -203,7 +208,7 @@ func extractPrivacyPolicies(request cookieSyncRequest, usersyncDefaultGDPRValue 
 		var err error
 		gpp, err = gpplib.Parse(request.GPP)
 		if err != nil {
-			return privacy.Policies{}, gdpr.SignalNo, err
+			return macros.UserSyncPrivacy{}, gdpr.SignalNo, nil, err
 		}
 	}
 
@@ -214,33 +219,27 @@ func extractPrivacyPolicies(request cookieSyncRequest, usersyncDefaultGDPRValue 
 
 	if gdprConsent == "" {
 		if gdprSignal == gdpr.SignalYes {
-			return privacy.Policies{}, gdpr.SignalNo, errCookieSyncGDPRConsentMissing
+			return macros.UserSyncPrivacy{}, gdpr.SignalNo, nil, errCookieSyncGDPRConsentMissing
 		}
 
 		if gdprSignal == gdpr.SignalAmbiguous && gdpr.SignalNormalize(gdprSignal, usersyncDefaultGDPRValue) == gdpr.SignalYes {
-			return privacy.Policies{}, gdpr.SignalNo, errCookieSyncGDPRConsentMissingSignalAmbiguous
+			return macros.UserSyncPrivacy{}, gdpr.SignalNo, nil, errCookieSyncGDPRConsentMissingSignalAmbiguous
 		}
 	}
 
 	// CCPA
 	ccpaString, err := ccpa.SelectCCPAConsent(request.USPrivacy, gpp, gppSID)
 	if err != nil {
-		return privacy.Policies{}, gdpr.SignalNo, err
+		return macros.UserSyncPrivacy{}, gdpr.SignalNo, nil, err
 	}
 
-	return privacy.Policies{
-		GDPR: gdprPrivacy.Policy{
-			Signal:  gdprString,
-			Consent: gdprConsent,
-		},
-		CCPA: ccpa.Policy{
-			Consent: ccpaString,
-		},
-		GPP: gppPrivacy.Policy{
-			Consent: request.GPP,
-			RawSID:  request.GPPSid,
-		},
-	}, gdprSignal, nil
+	return macros.UserSyncPrivacy{
+		GDPR:        gdprString,
+		GDPRConsent: gdprConsent,
+		USPrivacy:   ccpaString,
+		GPP:         request.GPP,
+		GPPSID:      request.GPPSid,
+	}, gdprSignal, gppSID, nil
 }
 
 func extractGDPRSignal(requestGDPR *int, gppSID []int8) (gdpr.Signal, string, error) {
@@ -401,7 +400,7 @@ func (c *cookieSyncEndpoint) writeSyncerMetrics(biddersEvaluated []usersync.Bidd
 	}
 }
 
-func (c *cookieSyncEndpoint) handleResponse(w http.ResponseWriter, tf usersync.SyncTypeFilter, co *usersync.Cookie, p privacy.Policies, s []usersync.SyncerChoice) {
+func (c *cookieSyncEndpoint) handleResponse(w http.ResponseWriter, tf usersync.SyncTypeFilter, co *usersync.Cookie, p macros.UserSyncPrivacy, s []usersync.SyncerChoice) {
 	status := "no_cookie"
 	if co.HasAnyLiveSyncs() {
 		status = "ok"
@@ -510,6 +509,7 @@ type usersyncPrivacy struct {
 	gdprPermissions  gdpr.Permissions
 	ccpaParsedPolicy ccpa.ParsedPolicy
 	activityControl  privacy.ActivityControl
+	activityRequest  privacy.ActivityRequest
 }
 
 func (p usersyncPrivacy) GDPRAllowsHostCookie() bool {
@@ -528,6 +528,8 @@ func (p usersyncPrivacy) CCPAAllowsBidderSync(bidder string) bool {
 }
 
 func (p usersyncPrivacy) ActivityAllowsUserSync(bidder string) bool {
-	return p.activityControl.Allow(privacy.ActivitySyncUser,
-		privacy.Component{Type: privacy.ComponentTypeBidder, Name: bidder})
+	return p.activityControl.Allow(
+		privacy.ActivitySyncUser,
+		privacy.Component{Type: privacy.ComponentTypeBidder, Name: bidder},
+		p.activityRequest)
 }

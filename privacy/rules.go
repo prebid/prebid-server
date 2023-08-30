@@ -5,16 +5,20 @@ import (
 )
 
 type Rule interface {
-	Evaluate(target Component) ActivityResult
+	Evaluate(target Component, request ActivityRequest) ActivityResult
 }
 
 type ComponentEnforcementRule struct {
 	result        ActivityResult
 	componentName []Component
 	componentType []string
+	gppSID        []int8
 }
 
-func (r ComponentEnforcementRule) Evaluate(target Component) ActivityResult {
+// noClausesDefinedResult represents the default return when there is no matching criteria specified.
+const noClausesDefinedResult = true
+
+func (r ComponentEnforcementRule) Evaluate(target Component, request ActivityRequest) ActivityResult {
 	if matched := evaluateComponentName(target, r.componentName); !matched {
 		return ActivityAbstain
 	}
@@ -23,16 +27,18 @@ func (r ComponentEnforcementRule) Evaluate(target Component) ActivityResult {
 		return ActivityAbstain
 	}
 
+	if matched := evaluateGPPSID(r.gppSID, request); !matched {
+		return ActivityAbstain
+	}
+
 	return r.result
 }
 
 func evaluateComponentName(target Component, componentNames []Component) bool {
-	// no clauses are considered a match
 	if len(componentNames) == 0 {
-		return true
+		return noClausesDefinedResult
 	}
 
-	// if there are clauses, at least one needs to match
 	for _, n := range componentNames {
 		if n.Matches(target) {
 			return true
@@ -43,12 +49,10 @@ func evaluateComponentName(target Component, componentNames []Component) bool {
 }
 
 func evaluateComponentType(target Component, componentTypes []string) bool {
-	// no clauses are considered a match
 	if len(componentTypes) == 0 {
-		return true
+		return noClausesDefinedResult
 	}
 
-	// if there are clauses, at least one needs to match
 	for _, s := range componentTypes {
 		if strings.EqualFold(s, target.Type) {
 			return true
@@ -56,4 +60,31 @@ func evaluateComponentType(target Component, componentTypes []string) bool {
 	}
 
 	return false
+}
+
+func evaluateGPPSID(sid []int8, request ActivityRequest) bool {
+	if len(sid) == 0 {
+		return noClausesDefinedResult
+	}
+
+	for _, x := range getGPPSID(request) {
+		for _, y := range sid {
+			if x == y {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func getGPPSID(request ActivityRequest) []int8 {
+	if request.IsPolicies() {
+		return request.policies.GPPSID
+	}
+
+	if request.IsBidRequest() && request.bidRequest.Regs != nil {
+		return request.bidRequest.Regs.GPPSID
+	}
+
+	return nil
 }

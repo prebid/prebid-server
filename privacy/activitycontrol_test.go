@@ -43,8 +43,8 @@ func TestNewActivityControl(t *testing.T) {
 				ActivityReportAnalytics:          getDefaultActivityPlan(),
 				ActivityTransmitUserFPD:          getDefaultActivityPlan(),
 				ActivityTransmitPreciseGeo:       getDefaultActivityPlan(),
-				ActivityTransmitUniqueRequestIds: getDefaultActivityPlan(),
-				ActivityTransmitTids:             getDefaultActivityPlan(),
+				ActivityTransmitUniqueRequestIDs: getDefaultActivityPlan(),
+				ActivityTransmitTIDs:             getDefaultActivityPlan(),
 			}},
 			err: nil,
 		},
@@ -175,7 +175,6 @@ func TestActivityDefaultToDefaultResult(t *testing.T) {
 }
 
 func TestAllowActivityControl(t *testing.T) {
-
 	testCases := []struct {
 		name            string
 		activityControl ActivityControl
@@ -218,7 +217,7 @@ func TestAllowActivityControl(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			actualResult := test.activityControl.Allow(test.activity, test.target)
+			actualResult := test.activityControl.Allow(test.activity, test.target, ActivityRequest{})
 			assert.Equal(t, test.activityResult, actualResult)
 
 		})
