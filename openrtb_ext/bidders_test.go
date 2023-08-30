@@ -147,13 +147,13 @@ func TestSetAliasBidderName(t *testing.T) {
 			assert.Equal(t, test.err, err)
 		} else {
 			assert.Contains(t, CoreBidderNames(), BidderName(test.aliasBidderName))
-			assert.Contains(t, aliasBidderToParentBidder, BidderName(test.aliasBidderName))
+			assert.Contains(t, aliasBidderToParent, BidderName(test.aliasBidderName))
 		}
 	}
 
 	//reset package variables to not interfere with other test cases. Example - TestBidderParamSchemas
 	coreBidderNames = existingCoreBidderNames
-	aliasBidderToParentBidder = map[BidderName]BidderName{}
+	aliasBidderToParent = map[BidderName]BidderName{}
 }
 
 type mockParamsHelper struct {
@@ -266,15 +266,17 @@ func TestNewBidderParamsValidator(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		aliasBidderToParentBidder = map[BidderName]BidderName{"rubicon": "appnexus"}
-		paramsValidator = &test.paramsValidator
-		bidderValidator, err := NewBidderParamsValidator(test.dir)
-		if test.expectedErr == nil {
-			assert.NoError(t, err)
-			assert.Contains(t, bidderValidator.Schema("appnexus"), "{}")
-			assert.Contains(t, bidderValidator.Schema("rubicon"), "{}")
-		} else {
-			assert.Equal(t, err, test.expectedErr)
-		}
+		t.Run(test.description, func(t *testing.T) {
+			aliasBidderToParent = map[BidderName]BidderName{"rubicon": "appnexus"}
+			paramsValidator = &test.paramsValidator
+			bidderValidator, err := NewBidderParamsValidator(test.dir)
+			if test.expectedErr == nil {
+				assert.NoError(t, err)
+				assert.Contains(t, bidderValidator.Schema("appnexus"), "{}")
+				assert.Contains(t, bidderValidator.Schema("rubicon"), "{}")
+			} else {
+				assert.Equal(t, err, test.expectedErr)
+			}
+		})
 	}
 }
