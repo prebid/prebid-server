@@ -28,7 +28,7 @@ func TestComponentEnforcementRuleEvaluate(t *testing.T) {
 			activityResult: ActivityAllow,
 		},
 		{
-			name: "activity_not_allowed",
+			name: "activity-not-allowed",
 			componentRule: ComponentEnforcementRule{
 				result: ActivityDeny,
 				componentName: []Component{
@@ -40,7 +40,7 @@ func TestComponentEnforcementRuleEvaluate(t *testing.T) {
 			activityResult: ActivityDeny,
 		},
 		{
-			name: "abstain_both_clauses_do_not_match",
+			name: "abstain-both-clauses-do-not-match",
 			componentRule: ComponentEnforcementRule{
 				result: ActivityAllow,
 				componentName: []Component{
@@ -52,7 +52,7 @@ func TestComponentEnforcementRuleEvaluate(t *testing.T) {
 			activityResult: ActivityAbstain,
 		},
 		{
-			name: "activity_not_allowed_componentName_only",
+			name: "activity-not-allowed-componentName-only",
 			componentRule: ComponentEnforcementRule{
 				result: ActivityAllow,
 				componentName: []Component{
@@ -63,7 +63,7 @@ func TestComponentEnforcementRuleEvaluate(t *testing.T) {
 			activityResult: ActivityAllow,
 		},
 		{
-			name: "activity_allowed_componentType_only",
+			name: "activity-allowed-componentType-only",
 			componentRule: ComponentEnforcementRule{
 				result:        ActivityAllow,
 				componentType: []string{"bidder"},
