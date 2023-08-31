@@ -160,6 +160,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderOwnAdx,
 	BidderPangle,
 	BidderPGAM,
+	BidderPGAMSsp,
 	BidderPubmatic,
 	BidderPubnative,
 	BidderPulsepoint,
