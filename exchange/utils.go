@@ -93,7 +93,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		}
 	}
 
-	if auctionReq.Account.PriceFloors.AdjustForBidAdjustment {
+	if auctionReq.Account.PriceFloors.IsAdjustForBidAdjustmentEnabled() {
 		//Apply BidAdjustmentFactor to imp.BidFloor
 		applyBidAdjustmentToFloor(allBidderRequests, bidAdjustmentFactors)
 	}

@@ -84,6 +84,10 @@ func (pf *AccountPriceFloors) validate(errs []error) []error {
 	return errs
 }
 
+func (pf *AccountPriceFloors) IsAdjustForBidAdjustmentEnabled() bool {
+	return pf.AdjustForBidAdjustment
+}
+
 // EnabledForChannelType indicates whether CCPA is turned on at the account level for the specified channel type
 // by using the channel type setting if defined or the general CCPA setting if defined; otherwise it returns nil
 func (a *AccountCCPA) EnabledForChannelType(channelType ChannelType) *bool {
