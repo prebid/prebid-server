@@ -63,17 +63,20 @@ func (builder *TrackerInjector) Build(vastXML string, NURL string) string {
 				injectTracker = true
 			case "VideoClicks":
 				injectVideoClicks = false
-				encoder.Flush()
+				//encoder.Flush()
 				encoder.EncodeToken(tt)
-				encoder.Flush()
+				//encoder.Flush()
 				builder.provider.PopulateEventMacros("creativeId", "", "")
 
 				for _, url := range builder.events.VideoClicks {
-					builder.replacer.ReplaceBytes(&outputXML, url, builder.provider)
+					// builder.replacer.ReplaceBytes(&outputXML, url, builder.provider)
 
-					outputXML.WriteString("<ClickTracking><![CDATA[")
-					outputXML.WriteString(url)
-					outputXML.WriteString("]]></ClickTracking>")
+					// outputXML.WriteString("<ClickTracking><![CDATA[")
+					// outputXML.WriteString(url)
+					// outputXML.WriteString("]]></ClickTracking>")
+					url, _ := builder.replacer.Replace(url, builder.provider)
+					encoder.EncodeElement(xml.CharData("<![CDATA["+url+"]]>"), xml.StartElement{Name: xml.Name{Local: "ClickTracking"}})
+
 				}
 
 				continue
@@ -81,17 +84,20 @@ func (builder *TrackerInjector) Build(vastXML string, NURL string) string {
 				injectTracker = true
 			case "TrackingEvents":
 				injectTracker = false
-				encoder.Flush()
+				// encoder.Flush()
 				encoder.EncodeToken(tt)
-				encoder.Flush()
+				// encoder.Flush()
 				for typ, urls := range builder.events.LinearTrackingEvents {
 					builder.provider.PopulateEventMacros("creativeId", "tracking", typ)
 					for _, url := range urls {
-						outputXML.WriteString("<Tracking event=\"")
-						outputXML.WriteString(string(typ))
-						outputXML.WriteString("\"><![CDATA[")
-						builder.replacer.ReplaceBytes(&outputXML, url, builder.provider)
-						outputXML.WriteString("]]></Tracking>")
+						// outputXML.WriteString("<Tracking event=\"")
+						// outputXML.WriteString(string(typ))
+						// outputXML.WriteString("\"><![CDATA[")
+						// builder.replacer.ReplaceBytes(&outputXML, url, builder.provider)
+						// outputXML.WriteString("]]></Tracking>")
+						url, _ := builder.replacer.Replace(url, builder.provider)
+						encoder.EncodeElement(xml.CharData("<![CDATA["+url+"]]>"), xml.StartElement{Name: xml.Name{Local: "Tracking"}, Attr: []xml.Attr{{Name: xml.Name{Local: "event"}, Value: typ}}})
+
 					}
 				}
 				continue
@@ -102,51 +108,64 @@ func (builder *TrackerInjector) Build(vastXML string, NURL string) string {
 			case "NonLinearAds":
 				if injectTracker {
 					injectTracker = false
-					encoder.Flush()
-					outputXML.WriteString("<TrackingEvents>")
+					//	encoder.Flush()
+					encoder.EncodeToken(xml.StartElement{Name: xml.Name{Local: "TrackingEvents"}})
+					// outputXML.WriteString("<TrackingEvents>")
 					for typ, urls := range builder.events.LinearTrackingEvents {
 						builder.provider.PopulateEventMacros("creativeId", "", typ)
 						for _, url := range urls {
 
-							outputXML.WriteString("<Tracking event=\"")
-							outputXML.WriteString(typ)
-							outputXML.WriteString("\"><![CDATA[")
-							builder.replacer.ReplaceBytes(&outputXML, url, builder.provider)
-							outputXML.WriteString("]]></Tracking>")
+							// outputXML.WriteString("<Tracking event=\"")
+							// outputXML.WriteString(typ)
+							// outputXML.WriteString("\"><![CDATA[")
+							// builder.replacer.ReplaceBytes(&outputXML, url, builder.provider)
+							// outputXML.WriteString("]]></Tracking>")
+
+							url, _ := builder.replacer.Replace(url, builder.provider)
+							encoder.EncodeElement(xml.CharData("<![CDATA["+url+"]]>"), xml.StartElement{Name: xml.Name{Local: "Tracking"}, Attr: []xml.Attr{{Name: xml.Name{Local: "event"}, Value: typ}}})
+
 						}
 					}
-					outputXML.WriteString("</TrackingEvents>")
+					encoder.EncodeToken(xml.EndElement{Name: xml.Name{Local: "TrackingEvents"}})
+					// outputXML.WriteString("</TrackingEvents>")
 					encoder.EncodeToken(tt)
 				}
 			case "Linear":
 				if injectVideoClicks {
 					injectVideoClicks = false
-					encoder.Flush()
-					outputXML.WriteString("<VideoClicks>")
+					//encoder.Flush()
+					// outputXML.WriteString("<VideoClicks>")
+					encoder.EncodeToken(xml.StartElement{Name: xml.Name{Local: "VideoClicks"}})
 					builder.provider.PopulateEventMacros("creativeId", "", "")
 
 					for _, url := range builder.events.VideoClicks {
 
-						outputXML.WriteString("<ClickTracking><![CDATA[")
-						builder.replacer.ReplaceBytes(&outputXML, url, builder.provider)
-						outputXML.WriteString("]]></ClickTracking>")
-					}
+						// outputXML.WriteString("<ClickTracking><![CDATA[")
+						// builder.replacer.ReplaceBytes(&outputXML, url, builder.provider)
+						// outputXML.WriteString("]]></ClickTracking>")
+						url, _ := builder.replacer.Replace(url, builder.provider)
+						encoder.EncodeElement(xml.CharData("<![CDATA["+url+"]]>"), xml.StartElement{Name: xml.Name{Local: "ClickTracking"}})
 
-					outputXML.WriteString("</VideoClicks>")
+					}
+					encoder.EncodeToken(xml.StartElement{Name: xml.Name{Local: "VideoClicks"}})
+					// outputXML.WriteString("</VideoClicks>")
 					encoder.EncodeToken(tt)
 				}
 				if injectTracker {
 					injectTracker = false
-					encoder.Flush()
+					//encoder.Flush()
 					outputXML.WriteString("<TrackingEvents>")
 					for typ, urls := range builder.events.LinearTrackingEvents {
 						builder.provider.PopulateEventMacros("creativeId", "", typ)
 						for _, url := range urls {
-							outputXML.WriteString("<Tracking event=\"")
-							outputXML.WriteString(typ)
-							outputXML.WriteString("\"><![CDATA[")
-							builder.replacer.ReplaceBytes(&outputXML, url, builder.provider)
-							outputXML.WriteString("]]></Tracking>")
+							// outputXML.WriteString("<Tracking event=\"")
+							// outputXML.WriteString(typ)
+							// outputXML.WriteString("\"><![CDATA[")
+							// builder.replacer.ReplaceBytes(&outputXML, url, builder.provider)
+							// outputXML.WriteString("]]></Tracking>")
+
+							url, _ := builder.replacer.Replace(url, builder.provider)
+							encoder.EncodeElement(xml.CharData("<![CDATA["+url+"]]>"), xml.StartElement{Name: xml.Name{Local: "Tracking"}, Attr: []xml.Attr{{Name: xml.Name{Local: "event"}, Value: typ}}})
 						}
 					}
 					outputXML.WriteString("</TrackingEvents>")
@@ -154,52 +173,65 @@ func (builder *TrackerInjector) Build(vastXML string, NURL string) string {
 				}
 
 			case "InLine", "Wrapper":
-				encoder.Flush()
+				//encoder.Flush()
 				for _, url := range builder.events.Impressions {
-					outputXML.WriteString("<Impression><![CDATA[")
-					builder.replacer.ReplaceBytes(&outputXML, url, builder.provider)
-					outputXML.WriteString("]]></Impression>")
+
+					// outputXML.WriteString("<Impression><![CDATA[")
+					// builder.replacer.ReplaceBytes(&outputXML, url, builder.provider)
+					// outputXML.WriteString("]]></Impression>")
+					url, _ := builder.replacer.Replace(url, builder.provider)
+					encoder.EncodeElement(xml.CharData("<![CDATA["+url+"]]>"), xml.StartElement{Name: xml.Name{Local: "Impression"}})
+
 				}
 
 				for _, url := range builder.events.Errors {
-					outputXML.WriteString("<Error><![CDATA[")
-					builder.replacer.ReplaceBytes(&outputXML, url, builder.provider)
-					outputXML.WriteString("]]></Error>")
-
+					// outputXML.WriteString("<Error><![CDATA[")
+					// builder.replacer.ReplaceBytes(&outputXML, url, builder.provider)
+					// outputXML.WriteString("]]></Error>")
+					url, _ := builder.replacer.Replace(url, builder.provider)
+					encoder.EncodeElement(xml.CharData("<![CDATA["+url+"]]>"), xml.StartElement{Name: xml.Name{Local: "Error"}})
 				}
 				encoder.EncodeToken(tt)
 			case "NonLinear":
-				encoder.Flush()
+				//encoder.Flush()
 
 				builder.provider.PopulateEventMacros("creativeId", "", "")
 				for _, url := range builder.events.NonLinearClickTracking {
-					outputXML.WriteString("<NonLinearClickTracking><![CDATA[")
-					builder.replacer.ReplaceBytes(&outputXML, url, builder.provider)
-					outputXML.WriteString("]]></NonLinearClickTracking>")
+					// outputXML.WriteString("<NonLinearClickTracking><![CDATA[")
+					// builder.replacer.ReplaceBytes(&outputXML, url, builder.provider)
+					// outputXML.WriteString("]]></NonLinearClickTracking>")
+					url, _ := builder.replacer.Replace(url, builder.provider)
+					encoder.EncodeElement(xml.CharData("<![CDATA["+url+"]]>"), xml.StartElement{Name: xml.Name{Local: "NonLinearClickTracking"}})
+
 				}
 
 				encoder.EncodeToken(tt)
 			case "Companion":
-				encoder.Flush()
+				//encoder.Flush()
 				builder.provider.PopulateEventMacros("creativeId", "", "")
 				for _, url := range builder.events.CompanionClickThrough {
-					outputXML.WriteString("<CompanionClickThrough><![CDATA[")
-					builder.replacer.ReplaceBytes(&outputXML, url, builder.provider)
-					outputXML.WriteString("]]></CompanionClickThrough>")
+					// outputXML.WriteString("<CompanionClickThrough><![CDATA[")
+					// builder.replacer.ReplaceBytes(&outputXML, url, builder.provider)
+					// outputXML.WriteString("]]></CompanionClickThrough>")
+					url, _ := builder.replacer.Replace(url, builder.provider)
+					encoder.EncodeElement(xml.CharData("<![CDATA["+url+"]]>"), xml.StartElement{Name: xml.Name{Local: "CompanionClickThrough"}})
 
 				}
 				encoder.EncodeToken(tt)
 			}
 
 		case xml.CharData:
-			tt2 := strings.Trim(string(tt), trimRunes)
-			if len(tt2) != 0 {
-				encoder.Flush()
-				outputXML.WriteString("<![CDATA[")
-				outputXML.WriteString(tt2)
-				outputXML.WriteString("]]>")
-				continue
-			}
+			// tt2 := strings.Trim(string(tt), trimRunes)
+			// if len(tt2) != 0 {
+			// 	// encoder.Flush()
+			// outputXML.WriteString("<![CDATA[")
+			// outputXML.WriteString(tt2)
+			// outputXML.WriteString("]]>")
+			// 	continue
+			// }
+
+			encoder.EncodeToken(xml.CharData("<![CDATA[" + string(tt) + "]]>"))
+			continue
 		}
 
 		encoder.EncodeToken(t)

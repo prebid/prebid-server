@@ -77,6 +77,8 @@ func init() {
 	pro = macros.NewProvider(req)
 }
 
+// Benchmark with outputting xml directly to the output buffer,
+
 // goos: darwin
 // goarch: amd64
 // pkg: github.com/prebid/prebid-server/exchange/injector/xml_encoder
@@ -84,6 +86,16 @@ func init() {
 // BenchmarkXMLEncoding-12    	   10802	    109733 ns/op	   38601 B/op	     286 allocs/op
 // PASS
 // ok  	github.com/prebid/prebid-server/exchange/injector/xml_encoder	2.585s
+
+// Benchmark with encoding tags,
+
+// goos: darwin
+// goarch: amd64
+// pkg: github.com/prebid/prebid-server/exchange/injector/xml_encoder
+// cpu: Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz
+// BenchmarkXMLEncoding-12    	    6666	    158149 ns/op	   53132 B/op	     398 allocs/op
+// PASS
+// ok  	github.com/prebid/prebid-server/exchange/injector/xml_encoder	1.395s
 
 func BenchmarkXMLEncoding(b *testing.B) {
 	//	pro.PopulateBidMacros(nil, "seat")
