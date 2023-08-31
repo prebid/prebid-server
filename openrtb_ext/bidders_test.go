@@ -134,7 +134,7 @@ func TestSetAliasBidderName(t *testing.T) {
 	existingCoreBidderNames := coreBidderNames
 
 	testCases := []struct {
-		aliasBidderName BidderName
+		aliasBidderName string
 		err             error
 	}{
 		{"aBidder", nil},
@@ -146,14 +146,14 @@ func TestSetAliasBidderName(t *testing.T) {
 		if err != nil {
 			assert.Equal(t, test.err, err)
 		} else {
-			assert.Contains(t, CoreBidderNames(), test.aliasBidderName)
-			assert.Contains(t, aliasBidderToParentBidder, test.aliasBidderName)
+			assert.Contains(t, CoreBidderNames(), BidderName(test.aliasBidderName))
+			assert.Contains(t, aliasBidderToParent, BidderName(test.aliasBidderName))
 		}
 	}
 
 	//reset package variables to not interfere with other test cases. Example - TestBidderParamSchemas
 	coreBidderNames = existingCoreBidderNames
-	aliasBidderToParentBidder = map[BidderName]BidderName{}
+	aliasBidderToParent = map[BidderName]BidderName{}
 }
 
 type mockParamsHelper struct {
@@ -164,26 +164,26 @@ type mockParamsHelper struct {
 	readFileErr     error
 }
 
-func (m mockParamsHelper) readDir(name string) ([]os.DirEntry, error) {
+func (m *mockParamsHelper) readDir(name string) ([]os.DirEntry, error) {
 	return m.fs.ReadDir(name)
 }
 
-func (m mockParamsHelper) readFile(name string) ([]byte, error) {
+func (m *mockParamsHelper) readFile(name string) ([]byte, error) {
 	if m.readFileErr != nil {
 		return nil, m.readFileErr
 	}
 	return m.fs.ReadFile(name)
 }
 
-func (m mockParamsHelper) newReferenceLoader(source string) gojsonschema.JSONLoader {
+func (m *mockParamsHelper) newReferenceLoader(source string) gojsonschema.JSONLoader {
 	return nil
 }
 
-func (m mockParamsHelper) newSchema(l gojsonschema.JSONLoader) (*gojsonschema.Schema, error) {
+func (m *mockParamsHelper) newSchema(l gojsonschema.JSONLoader) (*gojsonschema.Schema, error) {
 	return nil, m.schemaLoaderErr
 }
 
-func (m mockParamsHelper) abs(path string) (string, error) {
+func (m *mockParamsHelper) abs(path string) (string, error) {
 	return m.absFilePath, m.absPathErr
 }
 
@@ -266,15 +266,17 @@ func TestNewBidderParamsValidator(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		aliasBidderToParentBidder = map[BidderName]BidderName{"rubicon": "appnexus"}
-		paramsValidator = test.paramsValidator
-		bidderValidator, err := NewBidderParamsValidator(test.dir)
-		if test.expectedErr == nil {
-			assert.NoError(t, err)
-			assert.Contains(t, bidderValidator.Schema("appnexus"), "{}")
-			assert.Contains(t, bidderValidator.Schema("rubicon"), "{}")
-		} else {
-			assert.Equal(t, err, test.expectedErr)
-		}
+		t.Run(test.description, func(t *testing.T) {
+			aliasBidderToParent = map[BidderName]BidderName{"rubicon": "appnexus"}
+			paramsValidator = &test.paramsValidator
+			bidderValidator, err := NewBidderParamsValidator(test.dir)
+			if test.expectedErr == nil {
+				assert.NoError(t, err)
+				assert.Contains(t, bidderValidator.Schema("appnexus"), "{}")
+				assert.Contains(t, bidderValidator.Schema("rubicon"), "{}")
+			} else {
+				assert.Equal(t, err, test.expectedErr)
+			}
+		})
 	}
 }

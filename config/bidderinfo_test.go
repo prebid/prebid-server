@@ -912,6 +912,332 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 				errors.New("The endpoint: incorrect for bidderB is not a valid URL"),
 			},
 		},
+		{
+			"Invalid alias Site capabilities",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						Site: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+				},
+				"bidderB": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+					AliasOf: "bidderA",
+				},
+			},
+			[]error{
+				errors.New("capabilities for alias: bidderB should be a subset of capabilities for parent bidder: bidderA"),
+			},
+		},
+		{
+			"Invalid alias App capabilities",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+				},
+				"bidderB": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						Site: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+					AliasOf: "bidderA",
+				},
+			},
+			[]error{
+				errors.New("capabilities for alias: bidderB should be a subset of capabilities for parent bidder: bidderA"),
+			},
+		},
+		{
+			"Invalid alias capabilities",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{},
+				},
+				"bidderB": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+					AliasOf: "bidderA",
+				},
+			},
+			[]error{
+				errors.New("at least one of capabilities.site or capabilities.app must exist for adapter: bidderA"),
+				errors.New("capabilities for alias: bidderB should be a subset of capabilities for parent bidder: bidderA"),
+			},
+		},
+		{
+			"Invalid alias MediaTypes for site",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						Site: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+				},
+				"bidderB": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						Site: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeBanner,
+								openrtb_ext.BidTypeNative,
+							},
+						},
+					},
+					AliasOf: "bidderA",
+				},
+			},
+			[]error{
+				errors.New("mediaTypes for alias: bidderB should be a subset of MediaTypes for parent bidder: bidderA"),
+			},
+		},
+		{
+			"Invalid alias MediaTypes for app",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+				},
+				"bidderB": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeBanner,
+								openrtb_ext.BidTypeNative,
+							},
+						},
+					},
+					AliasOf: "bidderA",
+				},
+			},
+			[]error{
+				errors.New("mediaTypes for alias: bidderB should be a subset of MediaTypes for parent bidder: bidderA"),
+			},
+		},
+		{
+			"Invalid parent bidder capabilities",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+				},
+				"bidderB": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeBanner,
+							},
+						},
+					},
+					AliasOf: "bidderA",
+				},
+			},
+			[]error{
+				errors.New("missing required field: capabilities for adapter: bidderA"),
+				errors.New("capabilities for alias: bidderB should be a subset of capabilities for parent bidder: bidderA"),
+			},
+		},
+		{
+			"Invalid site alias capabilities with both site and app",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeBanner,
+								openrtb_ext.BidTypeNative,
+							},
+						},
+						Site: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeNative,
+							},
+						},
+					},
+				},
+				"bidderB": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeBanner,
+								openrtb_ext.BidTypeNative,
+							},
+						},
+						Site: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeBanner,
+								openrtb_ext.BidTypeNative,
+							},
+						},
+					},
+					AliasOf: "bidderA",
+				},
+			},
+			[]error{
+				errors.New("mediaTypes for alias: bidderB should be a subset of MediaTypes for parent bidder: bidderA"),
+			},
+		},
+		{
+			"Invalid app alias capabilities with both site and app",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeBanner,
+								openrtb_ext.BidTypeNative,
+							},
+						},
+						Site: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeNative,
+							},
+						},
+					},
+				},
+				"bidderB": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeBanner,
+								openrtb_ext.BidTypeNative,
+							},
+						},
+						Site: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeBanner,
+								openrtb_ext.BidTypeNative,
+							},
+						},
+					},
+					AliasOf: "bidderA",
+				},
+			},
+			[]error{
+				errors.New("mediaTypes for alias: bidderB should be a subset of MediaTypes for parent bidder: bidderA"),
+			},
+		},
+		{
+			"Invalid parent bidder for alias",
+			BidderInfos{
+				"bidderB": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeBanner,
+								openrtb_ext.BidTypeNative,
+							},
+						},
+						Site: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeBanner,
+								openrtb_ext.BidTypeNative,
+							},
+						},
+					},
+					AliasOf: "bidderC",
+				},
+			},
+			[]error{
+				errors.New("parent bidder: bidderC not found for an alias: bidderB"),
+			},
+		},
 	}
 
 	for _, test := range testCases {

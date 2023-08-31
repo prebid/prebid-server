@@ -38,16 +38,15 @@
             "tagid": "25251"
           }
         }
-      }
-    ],
+      }],
       "device": {
         "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.91 Safari/537.36",
         "ip": "123.123.123.123",
         "dnt": 1
       },
-      "site": {
+      "app": {
         "domain": "www.publisher.com",
-        "page": "http://www.publisher.com/awesome/site?with=some&parameters=here"
+        "storeurl": "http://www.publisher.com/awesome/site?with=some&parameters=here"
       }
     },
   
@@ -63,9 +62,6 @@
           ],
           "X-Forwarded-For": [
             "123.123.123.123"
-          ],
-          "Referer": [
-            "http://www.publisher.com/awesome/site?with=some&parameters=here"
           ],
           "Dnt": [
             "1"
@@ -86,11 +82,11 @@
               "w": 300,
               "h": 250
             },
-            "ext": {
-              "bidder": {
-                "tagid": "25251"
-              }
-            },
+          "ext": {
+            "bidder": {
+              "tagid": "25251"
+            }
+          },
             "tagid": "25251",
             "secure": 0
           },
@@ -110,17 +106,17 @@
                 "w":640,
                 "h":480
             },
-            "ext": {
-              "bidder": {
-                "tagid": "25251"
-              }
-            },
+          "ext": {
+            "bidder": {
+              "tagid": "25251"
+            }
+          },
             "tagid": "25251",
             "secure": 0
           }],
-          "site": {
+          "app": {
             "domain": "www.publisher.com",
-            "page": "http://www.publisher.com/awesome/site?with=some&parameters=here"
+            "storeurl": "http://www.publisher.com/awesome/site?with=some&parameters=here"
           },
           "device": {
             "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.91 Safari/537.36",
@@ -133,10 +129,11 @@
         "status": 200,
         "body": {
           "id": "some_test_auction",
-          "seatbid": [{
+          "seatbid": [
+            {
               "seat": "12356",
               "bid": [{
-                "adm": "<div id=\"emximp\"><script>var adm='\\<script\\ src\\=\\'https\\:\\/\\/presentation\\-atl1\\.turn\\.com\\/server\\/ads\\.js\\?code\\=180858515\\&aid\\=49508660\\&tuid\\=3697246472959142409\\&duid\\=3592248512493872937\\&dt\\=a\\&uimpd\\=1OB0KmixN8sHuJc8RPFjxbSZrYW2YZcBuHKg\\-pD5EUJnlrGZTGPpxpl3uYcBYQ7GO937FCfn8dB72mF1jiGRToh8X_UEdA5MP\\-U6ORPQsQ8hmQV0VpZDR7yCaVRZu\\-I8GC4aswLJKm1ehJk2JLqoR8fNGOTt5N02R4_bafcFcCDQehYt_oMETehbgQUsGUuJOUrv\\-rRl46jWaNxtTjLFx01U8qDhPdLKvi2iEiNPYp2pLFfly7qg\\-pjrs0yN8zASsoG5g0qWiuyTjJKZ62irD5SLwF4jQYBxaXIFyF\\-pGADUX2GD6JPzOK9mLaWdX\\-N_fB9gUj8TnVS0WHJ5XJWnCMijjO4qguAQo7LiUftTOQZ66OhXUiNcdI55yMwK0uS_fo2FyHMj2JXiOVpZaJHnWE\\-9QOR3F1E4D9qv9EpOMFAwH1kJqoY\\-G3CBJWC_zUjizw2diGrctqk_tJ9b0jujUs_LmoarsIJcKdWBQoF4xfCjfO7DyaM4l0SBbwLA07GYz0tdDtMd7hbstccVk0PPPVNTOv\\-Pan6yUSHX\\-r\\-U7yDLcFLWxwEaapCh_mKwrATp9oJuOXuK0oIioxIIX9n4raGZPHkl27AX1stb2eIpawf5FkEnwY5YrYIiycI38zuqVAE2ZoI\\-Rn0l8Uckhf1zurAgg6_4AjqZp8oi26jsIHbIc5IsI\\-9UoAoJR_nv_gTojvepaSsA97RYysgopxAW_YzeixMr0LJTvo53DFh4WzrcgaMMPXPf79kdetKmcjPBTPC3bhu9BgI4zAdSobLNCH5BYV1aUcv80K3a1WD7cDZtUXckjWnHt\\-JdzFutuwFnNn66YqhPRxbuWKrW\\-grBHm4T2xv0NxEQIEJxnExroXYCEsPmcki2QTLHbo1fSPgqMF5U4fnfq3\\-3MwNKhtpT4\\-iZN1mzvqeTZPD7TdBWee7k1JXOO_PRyRtwQXaDPQy3HPPvGlRnin_bp26aHCP13HKhn63gh4unBlH7R1xgw0KeaYeBt6C_J9EnIgJQrbpHpwZK0LpM1GSqZ20CbfV891w\\&acp\\=\\$\\{EMX_MACRO\\}\\'\\>\\<\\/script\\><script src=\"https://imp.emxdgt.com/imp/?cp=0.36666&ts=1603222211&adom=www.avis.com&seat=1085&w=320&h=50&pb=0.293328&sid=13835&tid=114507&pid=1764&uid=91441603222210784060e1&wid=15&dom=358899126&tp=${EMX_MACRO}&mt=1&dt=1&st=3&os=&ip=108.17.145.117&sz=&country=US&region=VA&city=Chesapeake&zip=&dma=&agency_id=0&cluster=staging&rf=${RF_MACRO}&cat=1-4&crid=1607428720\"><\\/script>'; window.vc= 'https://imp.emxdgt.com/view/?cp=0.36666&ts=1603222211&adom=www.avis.com&seat=1085&w=320&h=50&pb=0.293328&sid=13835&tid=114507&pid=1764&uid=91441603222210784060e1&wid=15&dom=358899126&tp=${EMX_MACRO}&mt=1&dt=1&st=3&os=&ip=108.17.145.117&sz=&country=US&region=VA&city=Chesapeake&zip=&dma=&agency_id=0&cluster=staging&rf=${RF_MACRO}&cat=1-4&crid=1607428720';  var ap=\"${AUCTION_PRICE}\";var rf=document.domain; window.cp=\"0.36666\";  if(ap == \"test=1\" || ap == \"AUDIT\" || rf == \"s3.amazonaws.com\"){var  finaladm=adm.replace(/\\${EMX_MACRO}/g,\"AUDIT\"); window.audit =  true;}else{var  finaladm=finaladm=adm.replace(/\\${EMX_MACRO}/g,window.cp);}finaladm=finaladm.replace(/\\${RF_MACRO}/g,rf);try{document.write(decodeURI(finaladm));}catch(e){document.write(unescape(finaladm));};</script><script   src=\"https://js.brealtime.com/openvv.js\"></script></div>",
+                "adm": "<div id=\"cadentimp\"><script>var adm='\\<script\\ src\\=\\'https\\:\\/\\/presentation\\-atl1\\.turn\\.com\\/server\\/ads\\.js\\?code\\=180858515\\&aid\\=49508660\\&tuid\\=3697246472959142409\\&duid\\=3592248512493872937\\&dt\\=a\\&uimpd\\=1OB0KmixN8sHuJc8RPFjxbSZrYW2YZcBuHKg\\-pD5EUJnlrGZTGPpxpl3uYcBYQ7GO937FCfn8dB72mF1jiGRToh8X_UEdA5MP\\-U6ORPQsQ8hmQV0VpZDR7yCaVRZu\\-I8GC4aswLJKm1ehJk2JLqoR8fNGOTt5N02R4_bafcFcCDQehYt_oMETehbgQUsGUuJOUrv\\-rRl46jWaNxtTjLFx01U8qDhPdLKvi2iEiNPYp2pLFfly7qg\\-pjrs0yN8zASsoG5g0qWiuyTjJKZ62irD5SLwF4jQYBxaXIFyF\\-pGADUX2GD6JPzOK9mLaWdX\\-N_fB9gUj8TnVS0WHJ5XJWnCMijjO4qguAQo7LiUftTOQZ66OhXUiNcdI55yMwK0uS_fo2FyHMj2JXiOVpZaJHnWE\\-9QOR3F1E4D9qv9EpOMFAwH1kJqoY\\-G3CBJWC_zUjizw2diGrctqk_tJ9b0jujUs_LmoarsIJcKdWBQoF4xfCjfO7DyaM4l0SBbwLA07GYz0tdDtMd7hbstccVk0PPPVNTOv\\-Pan6yUSHX\\-r\\-U7yDLcFLWxwEaapCh_mKwrATp9oJuOXuK0oIioxIIX9n4raGZPHkl27AX1stb2eIpawf5FkEnwY5YrYIiycI38zuqVAE2ZoI\\-Rn0l8Uckhf1zurAgg6_4AjqZp8oi26jsIHbIc5IsI\\-9UoAoJR_nv_gTojvepaSsA97RYysgopxAW_YzeixMr0LJTvo53DFh4WzrcgaMMPXPf79kdetKmcjPBTPC3bhu9BgI4zAdSobLNCH5BYV1aUcv80K3a1WD7cDZtUXckjWnHt\\-JdzFutuwFnNn66YqhPRxbuWKrW\\-grBHm4T2xv0NxEQIEJxnExroXYCEsPmcki2QTLHbo1fSPgqMF5U4fnfq3\\-3MwNKhtpT4\\-iZN1mzvqeTZPD7TdBWee7k1JXOO_PRyRtwQXaDPQy3HPPvGlRnin_bp26aHCP13HKhn63gh4unBlH7R1xgw0KeaYeBt6C_J9EnIgJQrbpHpwZK0LpM1GSqZ20CbfV891w\\&acp\\=\\$\\{EMX_MACRO\\}\\'\\>\\<\\/script\\><script src=\"https://imp.emxdgt.com/imp/?cp=0.36666&ts=1603222211&adom=www.avis.com&seat=1085&w=320&h=50&pb=0.293328&sid=13835&tid=114507&pid=1764&uid=91441603222210784060e1&wid=15&dom=358899126&tp=${EMX_MACRO}&mt=1&dt=1&st=3&os=&ip=108.17.145.117&sz=&country=US&region=VA&city=Chesapeake&zip=&dma=&agency_id=0&cluster=staging&rf=${RF_MACRO}&cat=1-4&crid=1607428720\"><\\/script>'; window.vc= 'https://imp.emxdgt.com/view/?cp=0.36666&ts=1603222211&adom=www.avis.com&seat=1085&w=320&h=50&pb=0.293328&sid=13835&tid=114507&pid=1764&uid=91441603222210784060e1&wid=15&dom=358899126&tp=${EMX_MACRO}&mt=1&dt=1&st=3&os=&ip=108.17.145.117&sz=&country=US&region=VA&city=Chesapeake&zip=&dma=&agency_id=0&cluster=staging&rf=${RF_MACRO}&cat=1-4&crid=1607428720';  var ap=\"${AUCTION_PRICE}\";var rf=document.domain; window.cp=\"0.36666\";  if(ap == \"test=1\" || ap == \"AUDIT\" || rf == \"s3.amazonaws.com\"){var  finaladm=adm.replace(/\\${EMX_MACRO}/g,\"AUDIT\"); window.audit =  true;}else{var  finaladm=finaladm=adm.replace(/\\${EMX_MACRO}/g,window.cp);}finaladm=finaladm.replace(/\\${RF_MACRO}/g,rf);try{document.write(decodeURI(finaladm));}catch(e){document.write(unescape(finaladm));};</script><script   src=\"https://js.brealtime.com/openvv.js\"></script></div>",
                 "id": "some_test_ad_id_1",
                 "impid": "some_test_ad_id_1",
                 "ttl": 300,
@@ -167,10 +164,11 @@
       }
     }],
   
-    "expectedBidResponses": [{
+    "expectedBidResponses": [
+    {
       "bids": [{
         "bid": {
-          "adm": "<div id=\"emximp\"><script>var adm='\\<script\\ src\\=\\'https\\:\\/\\/presentation\\-atl1\\.turn\\.com\\/server\\/ads\\.js\\?code\\=180858515\\&aid\\=49508660\\&tuid\\=3697246472959142409\\&duid\\=3592248512493872937\\&dt\\=a\\&uimpd\\=1OB0KmixN8sHuJc8RPFjxbSZrYW2YZcBuHKg\\-pD5EUJnlrGZTGPpxpl3uYcBYQ7GO937FCfn8dB72mF1jiGRToh8X_UEdA5MP\\-U6ORPQsQ8hmQV0VpZDR7yCaVRZu\\-I8GC4aswLJKm1ehJk2JLqoR8fNGOTt5N02R4_bafcFcCDQehYt_oMETehbgQUsGUuJOUrv\\-rRl46jWaNxtTjLFx01U8qDhPdLKvi2iEiNPYp2pLFfly7qg\\-pjrs0yN8zASsoG5g0qWiuyTjJKZ62irD5SLwF4jQYBxaXIFyF\\-pGADUX2GD6JPzOK9mLaWdX\\-N_fB9gUj8TnVS0WHJ5XJWnCMijjO4qguAQo7LiUftTOQZ66OhXUiNcdI55yMwK0uS_fo2FyHMj2JXiOVpZaJHnWE\\-9QOR3F1E4D9qv9EpOMFAwH1kJqoY\\-G3CBJWC_zUjizw2diGrctqk_tJ9b0jujUs_LmoarsIJcKdWBQoF4xfCjfO7DyaM4l0SBbwLA07GYz0tdDtMd7hbstccVk0PPPVNTOv\\-Pan6yUSHX\\-r\\-U7yDLcFLWxwEaapCh_mKwrATp9oJuOXuK0oIioxIIX9n4raGZPHkl27AX1stb2eIpawf5FkEnwY5YrYIiycI38zuqVAE2ZoI\\-Rn0l8Uckhf1zurAgg6_4AjqZp8oi26jsIHbIc5IsI\\-9UoAoJR_nv_gTojvepaSsA97RYysgopxAW_YzeixMr0LJTvo53DFh4WzrcgaMMPXPf79kdetKmcjPBTPC3bhu9BgI4zAdSobLNCH5BYV1aUcv80K3a1WD7cDZtUXckjWnHt\\-JdzFutuwFnNn66YqhPRxbuWKrW\\-grBHm4T2xv0NxEQIEJxnExroXYCEsPmcki2QTLHbo1fSPgqMF5U4fnfq3\\-3MwNKhtpT4\\-iZN1mzvqeTZPD7TdBWee7k1JXOO_PRyRtwQXaDPQy3HPPvGlRnin_bp26aHCP13HKhn63gh4unBlH7R1xgw0KeaYeBt6C_J9EnIgJQrbpHpwZK0LpM1GSqZ20CbfV891w\\&acp\\=\\$\\{EMX_MACRO\\}\\'\\>\\<\\/script\\><script src=\"https://imp.emxdgt.com/imp/?cp=0.36666&ts=1603222211&adom=www.avis.com&seat=1085&w=320&h=50&pb=0.293328&sid=13835&tid=114507&pid=1764&uid=91441603222210784060e1&wid=15&dom=358899126&tp=${EMX_MACRO}&mt=1&dt=1&st=3&os=&ip=108.17.145.117&sz=&country=US&region=VA&city=Chesapeake&zip=&dma=&agency_id=0&cluster=staging&rf=${RF_MACRO}&cat=1-4&crid=1607428720\"><\\/script>'; window.vc= 'https://imp.emxdgt.com/view/?cp=0.36666&ts=1603222211&adom=www.avis.com&seat=1085&w=320&h=50&pb=0.293328&sid=13835&tid=114507&pid=1764&uid=91441603222210784060e1&wid=15&dom=358899126&tp=${EMX_MACRO}&mt=1&dt=1&st=3&os=&ip=108.17.145.117&sz=&country=US&region=VA&city=Chesapeake&zip=&dma=&agency_id=0&cluster=staging&rf=${RF_MACRO}&cat=1-4&crid=1607428720';  var ap=\"${AUCTION_PRICE}\";var rf=document.domain; window.cp=\"0.36666\";  if(ap == \"test=1\" || ap == \"AUDIT\" || rf == \"s3.amazonaws.com\"){var  finaladm=adm.replace(/\\${EMX_MACRO}/g,\"AUDIT\"); window.audit =  true;}else{var  finaladm=finaladm=adm.replace(/\\${EMX_MACRO}/g,window.cp);}finaladm=finaladm.replace(/\\${RF_MACRO}/g,rf);try{document.write(decodeURI(finaladm));}catch(e){document.write(unescape(finaladm));};</script><script   src=\"https://js.brealtime.com/openvv.js\"></script></div>",
+          "adm": "<div id=\"cadentimp\"><script>var adm='\\<script\\ src\\=\\'https\\:\\/\\/presentation\\-atl1\\.turn\\.com\\/server\\/ads\\.js\\?code\\=180858515\\&aid\\=49508660\\&tuid\\=3697246472959142409\\&duid\\=3592248512493872937\\&dt\\=a\\&uimpd\\=1OB0KmixN8sHuJc8RPFjxbSZrYW2YZcBuHKg\\-pD5EUJnlrGZTGPpxpl3uYcBYQ7GO937FCfn8dB72mF1jiGRToh8X_UEdA5MP\\-U6ORPQsQ8hmQV0VpZDR7yCaVRZu\\-I8GC4aswLJKm1ehJk2JLqoR8fNGOTt5N02R4_bafcFcCDQehYt_oMETehbgQUsGUuJOUrv\\-rRl46jWaNxtTjLFx01U8qDhPdLKvi2iEiNPYp2pLFfly7qg\\-pjrs0yN8zASsoG5g0qWiuyTjJKZ62irD5SLwF4jQYBxaXIFyF\\-pGADUX2GD6JPzOK9mLaWdX\\-N_fB9gUj8TnVS0WHJ5XJWnCMijjO4qguAQo7LiUftTOQZ66OhXUiNcdI55yMwK0uS_fo2FyHMj2JXiOVpZaJHnWE\\-9QOR3F1E4D9qv9EpOMFAwH1kJqoY\\-G3CBJWC_zUjizw2diGrctqk_tJ9b0jujUs_LmoarsIJcKdWBQoF4xfCjfO7DyaM4l0SBbwLA07GYz0tdDtMd7hbstccVk0PPPVNTOv\\-Pan6yUSHX\\-r\\-U7yDLcFLWxwEaapCh_mKwrATp9oJuOXuK0oIioxIIX9n4raGZPHkl27AX1stb2eIpawf5FkEnwY5YrYIiycI38zuqVAE2ZoI\\-Rn0l8Uckhf1zurAgg6_4AjqZp8oi26jsIHbIc5IsI\\-9UoAoJR_nv_gTojvepaSsA97RYysgopxAW_YzeixMr0LJTvo53DFh4WzrcgaMMPXPf79kdetKmcjPBTPC3bhu9BgI4zAdSobLNCH5BYV1aUcv80K3a1WD7cDZtUXckjWnHt\\-JdzFutuwFnNn66YqhPRxbuWKrW\\-grBHm4T2xv0NxEQIEJxnExroXYCEsPmcki2QTLHbo1fSPgqMF5U4fnfq3\\-3MwNKhtpT4\\-iZN1mzvqeTZPD7TdBWee7k1JXOO_PRyRtwQXaDPQy3HPPvGlRnin_bp26aHCP13HKhn63gh4unBlH7R1xgw0KeaYeBt6C_J9EnIgJQrbpHpwZK0LpM1GSqZ20CbfV891w\\&acp\\=\\$\\{EMX_MACRO\\}\\'\\>\\<\\/script\\><script src=\"https://imp.emxdgt.com/imp/?cp=0.36666&ts=1603222211&adom=www.avis.com&seat=1085&w=320&h=50&pb=0.293328&sid=13835&tid=114507&pid=1764&uid=91441603222210784060e1&wid=15&dom=358899126&tp=${EMX_MACRO}&mt=1&dt=1&st=3&os=&ip=108.17.145.117&sz=&country=US&region=VA&city=Chesapeake&zip=&dma=&agency_id=0&cluster=staging&rf=${RF_MACRO}&cat=1-4&crid=1607428720\"><\\/script>'; window.vc= 'https://imp.emxdgt.com/view/?cp=0.36666&ts=1603222211&adom=www.avis.com&seat=1085&w=320&h=50&pb=0.293328&sid=13835&tid=114507&pid=1764&uid=91441603222210784060e1&wid=15&dom=358899126&tp=${EMX_MACRO}&mt=1&dt=1&st=3&os=&ip=108.17.145.117&sz=&country=US&region=VA&city=Chesapeake&zip=&dma=&agency_id=0&cluster=staging&rf=${RF_MACRO}&cat=1-4&crid=1607428720';  var ap=\"${AUCTION_PRICE}\";var rf=document.domain; window.cp=\"0.36666\";  if(ap == \"test=1\" || ap == \"AUDIT\" || rf == \"s3.amazonaws.com\"){var  finaladm=adm.replace(/\\${EMX_MACRO}/g,\"AUDIT\"); window.audit =  true;}else{var  finaladm=finaladm=adm.replace(/\\${EMX_MACRO}/g,window.cp);}finaladm=finaladm.replace(/\\${RF_MACRO}/g,rf);try{document.write(decodeURI(finaladm));}catch(e){document.write(unescape(finaladm));};</script><script   src=\"https://js.brealtime.com/openvv.js\"></script></div>",
           "id": "some_test_ad_id_1",
           "impid": "some_test_ad_id_1",
           "crid": "94395500",
@@ -192,7 +190,7 @@
           "adid": "9999999",
           "h": 1000
         },
-        "type": "video"   
+        "type": "video"
       }]
     }
   ]

@@ -1,4 +1,4 @@
-package emx_digital
+package bematterfull
 
 import (
 	"encoding/json"
@@ -7,6 +7,10 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
+var validParams = []string{
+	`{"env":"mtflll-stage", "pid":"123456"}`,
+}
+
 func TestValidParams(t *testing.T) {
 	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 	if err != nil {
@@ -14,10 +18,25 @@ func TestValidParams(t *testing.T) {
 	}
 
 	for _, validParam := range validParams {
-		if err := validator.Validate(openrtb_ext.BidderEmxDigital, json.RawMessage(validParam)); err != nil {
-			t.Errorf("Schema rejected emx_digital params: %s", validParam)
+		if err := validator.Validate(openrtb_ext.BidderBematterfull, json.RawMessage(validParam)); err != nil {
+			t.Errorf("Schema rejected bematterfull params: %s", validParam)
 		}
 	}
+}
+
+var invalidParams = []string{
+	``,
+	`null`,
+	`true`,
+	`5`,
+	`[]`,
+	`{}`,
+	`{"some": "param"}`,
+	`{"env":"mtflll-stage"}`,
+	`{"pid":"1234"}`,
+	`{"othervalue":"Lorem ipsum"}`,
+	`{"env":"mtflll-stage", pid:""}`,
+	`{"env":"", pid:"1234"}`,
 }
 
 func TestInvalidParams(t *testing.T) {
@@ -27,27 +46,8 @@ func TestInvalidParams(t *testing.T) {
 	}
 
 	for _, invalidParam := range invalidParams {
-		if err := validator.Validate(openrtb_ext.BidderEmxDigital, json.RawMessage(invalidParam)); err == nil {
+		if err := validator.Validate(openrtb_ext.BidderBematterfull, json.RawMessage(invalidParam)); err == nil {
 			t.Errorf("Schema allowed unexpected params: %s", invalidParam)
 		}
 	}
-}
-
-var validParams = []string{
-	`{"tagid": "25251", "bidfloor": "0.01"}`,
-}
-
-var invalidParams = []string{
-	`null`,
-	`nil`,
-	``,
-	`[]`,
-	`true`,
-	`{}`,
-	`{"tagid":12345678}`,
-	`{"tagId":"12345678"}`,
-	`{"tagid":"25251", "bidfloor": 0.01}`,
-	`{"tagId": 12345678}`,
-	`{"placementId": "1"}`,
-	`{"placementId": 1}`,
 }

@@ -15,7 +15,7 @@ import (
 // BidderName refers to a core bidder id or an alias id.
 type BidderName string
 
-var aliasBidderToParentBidder map[BidderName]BidderName = map[BidderName]BidderName{}
+var aliasBidderToParent map[BidderName]BidderName = map[BidderName]BidderName{}
 
 var coreBidderNames []BidderName = []BidderName{
 	Bidder33Across,
@@ -36,6 +36,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderAdot,
 	BidderAdpone,
 	BidderAdprime,
+	BidderAdquery,
 	BidderAdrino,
 	BidderAdsinteractive,
 	BidderAdsyield,
@@ -61,6 +62,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderAxonix,
 	BidderBeachfront,
 	BidderBeintoo,
+	BidderBematterfull,
 	BidderBetween,
 	BidderBeyondMedia,
 	BidderBidmachine,
@@ -222,17 +224,18 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderZetaGlobalSsp,
 }
 
-func SetAliasBidderName(aliasBidderName BidderName, parentBidderName BidderName) error {
-	if IsBidderNameReserved(string(aliasBidderName)) {
-		return fmt.Errorf("alias %s is a reserved bidder name and cannot be used", aliasBidderName)
-	}
-	coreBidderNames = append(coreBidderNames, aliasBidderName)
-	aliasBidderToParentBidder[aliasBidderName] = parentBidderName
-	return nil
+func GetAliasBidderNames() map[BidderName]BidderName {
+	return aliasBidderToParent
 }
 
-func GetAliasBidderNames() map[BidderName]BidderName {
-	return aliasBidderToParentBidder
+func SetAliasBidderName(aliasBidderName string, parentBidderName BidderName) error {
+	if IsBidderNameReserved(aliasBidderName) {
+		return fmt.Errorf("alias %s is a reserved bidder name and cannot be used", aliasBidderName)
+	}
+	aliasBidder := BidderName(aliasBidderName)
+	coreBidderNames = append(coreBidderNames, aliasBidder)
+	aliasBidderToParent[aliasBidder] = parentBidderName
+	return nil
 }
 
 func (name BidderName) MarshalJSON() ([]byte, error) {
@@ -324,6 +327,7 @@ const (
 	BidderAdot              BidderName = "adot"
 	BidderAdpone            BidderName = "adpone"
 	BidderAdprime           BidderName = "adprime"
+	BidderAdquery           BidderName = "adquery"
 	BidderAdrino            BidderName = "adrino"
 	BidderAdsinteractive    BidderName = "adsinteractive"
 	BidderAdsyield          BidderName = "adsyield"
@@ -349,6 +353,7 @@ const (
 	BidderAxonix            BidderName = "axonix"
 	BidderBeachfront        BidderName = "beachfront"
 	BidderBeintoo           BidderName = "beintoo"
+	BidderBematterfull      BidderName = "bematterfull"
 	BidderBetween           BidderName = "between"
 	BidderBeyondMedia       BidderName = "beyondmedia"
 	BidderBidmachine        BidderName = "bidmachine"
@@ -568,7 +573,7 @@ type BidderParamValidator interface {
 	Schema(name BidderName) string
 }
 
-type paramsValidatorHelper interface {
+type bidderParamsFileSystem interface {
 	readDir(name string) ([]os.DirEntry, error)
 	readFile(name string) ([]byte, error)
 	newReferenceLoader(source string) gojsonschema.JSONLoader
@@ -576,29 +581,29 @@ type paramsValidatorHelper interface {
 	abs(path string) (string, error)
 }
 
-type paramsHelper struct{}
+type standardBidderParamsFileSystem struct{}
 
-func (paramsHelper) readDir(name string) ([]os.DirEntry, error) {
+func (standardBidderParamsFileSystem) readDir(name string) ([]os.DirEntry, error) {
 	return os.ReadDir(name)
 }
 
-func (paramsHelper) readFile(name string) ([]byte, error) {
+func (standardBidderParamsFileSystem) readFile(name string) ([]byte, error) {
 	return os.ReadFile(name)
 }
 
-func (paramsHelper) newReferenceLoader(source string) gojsonschema.JSONLoader {
+func (standardBidderParamsFileSystem) newReferenceLoader(source string) gojsonschema.JSONLoader {
 	return gojsonschema.NewReferenceLoader(source)
 }
 
-func (paramsHelper) newSchema(l gojsonschema.JSONLoader) (*gojsonschema.Schema, error) {
+func (standardBidderParamsFileSystem) newSchema(l gojsonschema.JSONLoader) (*gojsonschema.Schema, error) {
 	return gojsonschema.NewSchema(l)
 }
 
-func (paramsHelper) abs(path string) (string, error) {
+func (standardBidderParamsFileSystem) abs(path string) (string, error) {
 	return filepath.Abs(path)
 }
 
-var paramsValidator paramsValidatorHelper = paramsHelper{}
+var paramsValidator bidderParamsFileSystem = standardBidderParamsFileSystem{}
 
 // NewBidderParamsValidator makes a BidderParamValidator, assuming all the necessary files exist in the filesystem.
 // This will error if, for example, a Bidder gets added but no JSON schema is written for them.
@@ -637,11 +642,11 @@ func NewBidderParamsValidator(schemaDirectory string) (BidderParamValidator, err
 	}
 
 	//set alias bidder params schema to its parent
-	for alias, parent := range aliasBidderToParentBidder {
+	for alias, parent := range aliasBidderToParent {
 		parentSchema := schemas[parent]
-		parentSchemaContents := schemaContents[parent]
-
 		schemas[alias] = parentSchema
+
+		parentSchemaContents := schemaContents[parent]
 		schemaContents[alias] = parentSchemaContents
 	}
 

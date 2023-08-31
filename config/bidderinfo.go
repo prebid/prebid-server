@@ -255,7 +255,7 @@ func processBidderInfos(reader InfoReader, normalizeBidderName func(string) (ope
 				}
 
 				//required for CoreBidderNames function to also return aliasBiddernames
-				if err := openrtb_ext.SetAliasBidderName(openrtb_ext.BidderName(string(bidderName[0])), openrtb_ext.BidderName(info.AliasOf)); err != nil {
+				if err := openrtb_ext.SetAliasBidderName(bidderName[0], openrtb_ext.BidderName(info.AliasOf)); err != nil {
 					return nil, err
 				}
 
@@ -361,7 +361,7 @@ func (infos BidderInfos) validate(errs []error) []error {
 		if bidder.IsEnabled() {
 			errs = validateAdapterEndpoint(bidder.Endpoint, bidderName, errs)
 
-			if err := validateInfo(bidder, bidderName); err != nil {
+			if err := validateInfo(bidder, infos, bidderName); err != nil {
 				errs = append(errs, err)
 			}
 
@@ -428,14 +428,18 @@ func validateAdapterEndpoint(endpoint string, bidderName string, errs []error) [
 	return errs
 }
 
-func validateInfo(info BidderInfo, bidderName string) error {
-	if err := validateMaintainer(info.Maintainer, bidderName); err != nil {
+func validateInfo(bidder BidderInfo, infos BidderInfos, bidderName string) error {
+	if err := validateMaintainer(bidder.Maintainer, bidderName); err != nil {
 		return err
 	}
-	if err := validateCapabilities(info.Capabilities, bidderName); err != nil {
+	if err := validateCapabilities(bidder.Capabilities, bidderName); err != nil {
 		return err
 	}
-
+	if len(bidder.AliasOf) > 0 {
+		if err := validateAliasCapabilities(bidder, infos, bidderName); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -443,6 +447,52 @@ func validateMaintainer(info *MaintainerInfo, bidderName string) error {
 	if info == nil || info.Email == "" {
 		return fmt.Errorf("missing required field: maintainer.email for adapter: %s", bidderName)
 	}
+	return nil
+}
+
+func validateAliasCapabilities(aliasBidderInfo BidderInfo, infos BidderInfos, bidderName string) error {
+	parentBidder, parentFound := infos[aliasBidderInfo.AliasOf]
+	if !parentFound {
+		return fmt.Errorf("parent bidder: %s not found for an alias: %s", aliasBidderInfo.AliasOf, bidderName)
+	}
+
+	if aliasBidderInfo.Capabilities != nil {
+		if parentBidder.Capabilities == nil {
+			return fmt.Errorf("capabilities for alias: %s should be a subset of capabilities for parent bidder: %s", bidderName, aliasBidderInfo.AliasOf)
+		}
+
+		if (aliasBidderInfo.Capabilities.App != nil && parentBidder.Capabilities.App == nil) || (aliasBidderInfo.Capabilities.Site != nil && parentBidder.Capabilities.Site == nil) {
+			return fmt.Errorf("capabilities for alias: %s should be a subset of capabilities for parent bidder: %s", bidderName, aliasBidderInfo.AliasOf)
+		}
+
+		if aliasBidderInfo.Capabilities.Site != nil && parentBidder.Capabilities.Site != nil {
+			if err := isAliasPlatformInfoSubsetOfParent(*parentBidder.Capabilities.Site, *aliasBidderInfo.Capabilities.Site, bidderName, aliasBidderInfo.AliasOf); err != nil {
+				return err
+			}
+		}
+
+		if aliasBidderInfo.Capabilities.App != nil && parentBidder.Capabilities.App != nil {
+			if err := isAliasPlatformInfoSubsetOfParent(*parentBidder.Capabilities.App, *aliasBidderInfo.Capabilities.App, bidderName, aliasBidderInfo.AliasOf); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func isAliasPlatformInfoSubsetOfParent(parentInfo PlatformInfo, aliasInfo PlatformInfo, bidderName string, parentBidderName string) error {
+	parentMediaTypes := make(map[openrtb_ext.BidType]struct{})
+	for _, info := range parentInfo.MediaTypes {
+		parentMediaTypes[info] = struct{}{}
+	}
+
+	for _, info := range aliasInfo.MediaTypes {
+		if _, found := parentMediaTypes[info]; !found {
+			return fmt.Errorf("mediaTypes for alias: %s should be a subset of MediaTypes for parent bidder: %s", bidderName, parentBidderName)
+		}
+	}
+
 	return nil
 }
 
