@@ -206,8 +206,8 @@ func TestDefaults(t *testing.T) {
 	cmpUnsignedInts(t, "tmax_adjustments.bidder_network_latency_buffer_ms", 0, cfg.TmaxAdjustments.BidderNetworkLatencyBuffer)
 	cmpUnsignedInts(t, "tmax_adjustments.pbs_response_preparation_duration_ms", 0, cfg.TmaxAdjustments.PBSResponsePreparationDuration)
 
-	cmpInts(t, "account_defaults.privacy.ipv6.anon-keep-bits", 56, cfg.AccountDefaults.Privacy.IPv6Config.AnonKeepBits)
-	cmpInts(t, "account_defaults.privacy.ipv4.anon-keep-bits", 24, cfg.AccountDefaults.Privacy.IPv4Config.AnonKeepBits)
+	cmpInts(t, "account_defaults.privacy.ipv6.anon_keep_bits", 56, cfg.AccountDefaults.Privacy.IPv6Config.AnonKeepBits)
+	cmpInts(t, "account_defaults.privacy.ipv4.anon_keep_bits", 24, cfg.AccountDefaults.Privacy.IPv4Config.AnonKeepBits)
 
 	//Assert purpose VendorExceptionMap hash tables were built correctly
 	expectedTCF2 := TCF2{
@@ -482,9 +482,9 @@ account_defaults:
         max_schema_dims: 5
     privacy:
         ipv6:
-            anon-keep-bits: 50
+            anon_keep_bits: 50
         ipv4:
-            anon-keep-bits: 20
+            anon_keep_bits: 20
 tmax_adjustments:
   enabled: true
   bidder_response_duration_min_ms: 700
@@ -591,8 +591,8 @@ func TestFullConfig(t *testing.T) {
 	cmpBools(t, "account_defaults.events_enabled", *cfg.AccountDefaults.EventsEnabled, true)
 	cmpNils(t, "account_defaults.events.enabled", cfg.AccountDefaults.Events.Enabled)
 
-	cmpInts(t, "account_defaults.privacy.ipv6.anon-keep-bits", 50, cfg.AccountDefaults.Privacy.IPv6Config.AnonKeepBits)
-	cmpInts(t, "account_defaults.privacy.ipv4.anon-keep-bits", 20, cfg.AccountDefaults.Privacy.IPv4Config.AnonKeepBits)
+	cmpInts(t, "account_defaults.privacy.ipv6.anon_keep_bits", 50, cfg.AccountDefaults.Privacy.IPv6Config.AnonKeepBits)
+	cmpInts(t, "account_defaults.privacy.ipv4.anon_keep_bits", 20, cfg.AccountDefaults.Privacy.IPv4Config.AnonKeepBits)
 
 	// Assert compression related defaults
 	cmpBools(t, "enable_gzip", false, cfg.EnableGzip)

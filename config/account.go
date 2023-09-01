@@ -302,11 +302,11 @@ type AccountPrivacy struct {
 }
 
 type IPv6 struct {
-	AnonKeepBits int `mapstructure:"anon-keep-bits" json:"anon-keep-bits"`
+	AnonKeepBits int `mapstructure:"anon_keep_bits" json:"anon_keep_bits"`
 }
 
 type IPv4 struct {
-	AnonKeepBits int `mapstructure:"anon-keep-bits" json:"anon-keep-bits"`
+	AnonKeepBits int `mapstructure:"anon_keep_bits" json:"anon_keep_bits"`
 }
 
 func (ip *IPv6) Validate(errs []error) []error {

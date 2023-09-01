@@ -12,6 +12,7 @@ import (
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/util/iputil"
 	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -19,8 +20,7 @@ import (
 
 var mockAccountData = map[string]json.RawMessage{
 	"valid_acct":                                   json.RawMessage(`{"disabled":false}`),
-	"invalid_acct_ipv6":                            json.RawMessage(`{"disabled":false, "privacy": {"ipv6": {"anon-keep-bits": -32}, "ipv4": {"anon-keep-bits": 16}}}`),
-	"invalid_acct_ipv4":                            json.RawMessage(`{"disabled":false, "privacy": {"ipv4": {"anon-keep-bits": -32}, "ipv6": {"anon-keep-bits": 32}}}`),
+	"invalid_acct_ipv6_ipv4":                       json.RawMessage(`{"disabled":false, "privacy": {"ipv6": {"anon_keep_bits": -32}, "ipv4": {"anon_keep_bits": -16}}}`),
 	"disabled_acct":                                json.RawMessage(`{"disabled":true}`),
 	"malformed_acct":                               json.RawMessage(`{"disabled":"invalid type"}`),
 	"gdpr_channel_enabled_acct":                    json.RawMessage(`{"disabled":false,"gdpr":{"channel_enabled":{"amp":true}}}`),
@@ -56,6 +56,8 @@ func TestGetAccount(t *testing.T) {
 		required bool
 		// account_defaults.disabled
 		disabled bool
+		// checkDefaultIP indicates IPv6 and IPv6 should be set to default values
+		checkDefaultIP bool
 		// expected error, or nil if account should be found
 		err error
 	}{
@@ -80,8 +82,7 @@ func TestGetAccount(t *testing.T) {
 		{accountID: "valid_acct", required: false, disabled: true, err: nil},
 		{accountID: "valid_acct", required: true, disabled: true, err: nil},
 
-		{accountID: "invalid_acct_ipv6", required: true, disabled: false, err: nil},
-		{accountID: "invalid_acct_ipv4", required: true, disabled: false, err: nil},
+		{accountID: "invalid_acct_ipv6_ipv4", required: true, disabled: false, err: nil, checkDefaultIP: true},
 
 		// pubID given and matches a host account explicitly disabled (Disabled: true on account json)
 		{accountID: "disabled_acct", required: false, disabled: false, err: &errortypes.BlacklistedAcct{}},
@@ -133,6 +134,10 @@ func TestGetAccount(t *testing.T) {
 				assert.NotEmpty(t, errors, "expected errors but got success")
 				assert.Nil(t, account, "return account must be nil on error")
 				assert.IsType(t, test.err, errors[0], "error is of unexpected type")
+			}
+			if test.checkDefaultIP {
+				assert.Equal(t, account.Privacy.IPv6Config.AnonKeepBits, iputil.IPv6DefaultMaskingBitSize, "ipv6 should be set to default value")
+				assert.Equal(t, account.Privacy.IPv4Config.AnonKeepBits, iputil.IPv4DefaultMaskingBitSize, "ipv4 should be set to default value")
 			}
 		})
 	}

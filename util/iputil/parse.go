@@ -18,6 +18,9 @@ const (
 const (
 	IPv4BitSize = 32
 	IPv6BitSize = 128
+
+	IPv4DefaultMaskingBitSize = 24
+	IPv6DefaultMaskingBitSize = 56
 )
 
 // ParseIP parses v as an ip address returning the result and version, or nil and unknown if invalid.

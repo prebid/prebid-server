@@ -103,16 +103,12 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 		return nil, errs
 	}
 
-	var ipv6Errs []error
-	ipv6Errs = account.Privacy.IPv6Config.Validate(ipv6Errs)
-	if len(ipv6Errs) > 0 {
-		account.Privacy.IPv6Config.AnonKeepBits = iputil.IPv6BitSize
+	if ipV6Err := account.Privacy.IPv6Config.Validate(nil); len(ipV6Err) > 0 {
+		account.Privacy.IPv6Config.AnonKeepBits = iputil.IPv6DefaultMaskingBitSize
 	}
 
-	var ipv4Errs []error
-	ipv4Errs = account.Privacy.IPv4Config.Validate(ipv4Errs)
-	if len(ipv4Errs) > 0 {
-		account.Privacy.IPv4Config.AnonKeepBits = iputil.IPv4BitSize
+	if ipV4Err := account.Privacy.IPv4Config.Validate(nil); len(ipV4Err) > 0 {
+		account.Privacy.IPv4Config.AnonKeepBits = iputil.IPv4DefaultMaskingBitSize
 	}
 
 	// set the value of events.enabled field based on deprecated events_enabled field and ensure backward compatibility
