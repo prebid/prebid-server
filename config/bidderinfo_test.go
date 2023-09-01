@@ -434,6 +434,17 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 			},
 			expectedErr: errors.New("bidder info not found for an alias: bidderB"),
 		},
+		{
+			description: "unable to set an alias",
+			aliasInfos: map[string]aliasNillableFields{
+				"all": {},
+			},
+			bidderInfos: BidderInfos{
+				"bidderA": parentBidderInfo,
+				"all":     aliasBidderInfo,
+			},
+			expectedErr: errors.New("alias all is a reserved bidder name and cannot be used"),
+		},
 	}
 
 	for _, test := range testCases {
