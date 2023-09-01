@@ -18,5 +18,4 @@ userSync:
     userMacro: "$UID"
   iframe:
     url: "https://ap.lijit.com/beacon/prebid-server/?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&url={{.RedirectURL}}"
-    redirectUrl: "{{.ExternalURL}}/setuid?bidder={{.SyncerKey}}&f={{.SyncType}}&uid={{.UserMacro}}"
     userMacro: "$UID"
