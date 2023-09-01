@@ -1,7 +1,7 @@
 endpoint: "https://acd.op.hicloud.com/ppsadx/getResult"
 disabled: true
 maintainer:
-  email: hwads@huawei.com
+  email: ahmet.faruk.karakus@huawei.com
 gvlVendorID: 856
 modifyingVastXmlAllowed: true
 capabilities:
