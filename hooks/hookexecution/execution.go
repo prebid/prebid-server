@@ -3,16 +3,16 @@ package hookexecution
 import (
 	"context"
 	"fmt"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/util/ptrutil"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/privacy"
+	"github.com/prebid/prebid-server/util/ptrutil"
 )
 
 type hookResponse[T any] struct {
