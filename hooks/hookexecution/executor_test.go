@@ -18,6 +18,8 @@ import (
 	"github.com/prebid/prebid-server/metrics"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/privacy"
+	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -429,6 +431,7 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 		expectedReject         *RejectError
 		expectedModuleContexts *moduleContexts
 		expectedStageOutcomes  []StageOutcome
+		privacyConfig          *config.AccountPrivacy
 	}{
 		{
 			description:            "Payload not changed if hook execution plan empty",
@@ -669,12 +672,76 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 				},
 			},
 		},
+		{
+			description:      "Group payload not changes with transmitUFPD activity restriction",
+			givenBody:        body,
+			givenUrl:         urlString,
+			givenPlanBuilder: TestWithModuleContextsPlanBuilder{},
+			givenAccount:     account,
+			expectedBody:     body,
+			expectedReject:   nil,
+			expectedModuleContexts: &moduleContexts{ctxs: map[string]hookstage.ModuleContext{
+				"module-1": {"raw-auction-ctx-1": "some-ctx-1", "raw-auction-ctx-3": "some-ctx-3"},
+				"module-2": {"raw-auction-ctx-2": "some-ctx-2"},
+			}},
+			privacyConfig: getTransmitUFPDActivityConfig("foo", false),
+			expectedStageOutcomes: []StageOutcome{
+				{
+					Entity: entityAuctionRequest,
+					Stage:  hooks.StageRawAuctionRequest.String(),
+					Groups: []GroupOutcome{
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{},
+									HookID:        HookID{ModuleCode: "module-1", HookImplCode: "foo"},
+									Status:        StatusSuccess,
+									Action:        ActionNone,
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+								{
+									AnalyticsTags: hookanalytics.Analytics{},
+									HookID:        HookID{ModuleCode: "module-2", HookImplCode: "baz"},
+									Status:        StatusSuccess,
+									Action:        ActionNone,
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{},
+									HookID:        HookID{ModuleCode: "module-1", HookImplCode: "bar"},
+									Status:        StatusSuccess,
+									Action:        ActionNone,
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
 			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{})
 			exec.SetAccount(test.givenAccount)
+
+			ac, err := privacy.NewActivityControl(test.privacyConfig)
+			assert.NoError(t, err, "Unexpected error creating activity control")
+			exec.SetActivityControl(ac)
 
 			newBody, reject := exec.ExecuteRawAuctionStage([]byte(test.givenBody))
 
@@ -938,6 +1005,7 @@ func TestExecuteBidderRequestStage(t *testing.T) {
 		expectedReject         *RejectError
 		expectedModuleContexts *moduleContexts
 		expectedStageOutcomes  []StageOutcome
+		privacyConfig          *config.AccountPrivacy
 	}{
 		{
 			description:            "Payload not changed if hook execution plan empty",
@@ -1164,12 +1232,69 @@ func TestExecuteBidderRequestStage(t *testing.T) {
 				},
 			},
 		},
+		{
+			description:           "Group payload not changes with transmitUFPD activity restriction",
+			givenBidderRequest:    &openrtb2.BidRequest{ID: "some-id", User: &openrtb2.User{ID: "user-id"}},
+			givenPlanBuilder:      TestWithModuleContextsPlanBuilder{},
+			givenAccount:          account,
+			expectedBidderRequest: expectedBidderRequest,
+			expectedReject:        nil,
+			expectedModuleContexts: &moduleContexts{ctxs: map[string]hookstage.ModuleContext{
+				"module-1": {"bidder-request-ctx-1": "some-ctx-1"},
+				"module-2": {"bidder-request-ctx-2": "some-ctx-2"},
+			}},
+			privacyConfig: getTransmitUFPDActivityConfig("foo", false),
+			expectedStageOutcomes: []StageOutcome{
+				{
+					ExecutionTime: ExecutionTime{},
+					Entity:        entity(bidderName),
+					Stage:         hooks.StageBidderRequest.String(),
+					Groups: []GroupOutcome{
+						{
+							ExecutionTime: ExecutionTime{},
+							InvocationResults: []HookOutcome{
+								{
+									ExecutionTime: ExecutionTime{},
+									AnalyticsTags: hookanalytics.Analytics{},
+									HookID:        HookID{ModuleCode: "module-1", HookImplCode: "foo"},
+									Status:        StatusSuccess,
+									Action:        ActionNone,
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+						{
+							ExecutionTime: ExecutionTime{},
+							InvocationResults: []HookOutcome{
+								{
+									ExecutionTime: ExecutionTime{},
+									AnalyticsTags: hookanalytics.Analytics{},
+									HookID:        HookID{ModuleCode: "module-2", HookImplCode: "bar"},
+									Status:        StatusSuccess,
+									Action:        ActionNone,
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
 			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{})
 			exec.SetAccount(test.givenAccount)
+			ac, err := privacy.NewActivityControl(test.privacyConfig)
+			assert.NoError(t, err, "Unexpected error creating activity control")
+			exec.SetActivityControl(ac)
 
 			reject := exec.ExecuteBidderRequestStage(test.givenBidderRequest, bidderName)
 
@@ -1184,6 +1309,28 @@ func TestExecuteBidderRequestStage(t *testing.T) {
 				assertEqualStageOutcomes(t, test.expectedStageOutcomes[0], stageOutcomes[0])
 			}
 		})
+	}
+}
+
+func getTransmitUFPDActivityConfig(componentName string, allow bool) *config.AccountPrivacy {
+	return &config.AccountPrivacy{
+		AllowActivities: config.AllowActivities{
+			TransmitUserFPD: buildDefaultActivityConfig(componentName, allow),
+		},
+	}
+}
+
+func buildDefaultActivityConfig(componentName string, allow bool) config.Activity {
+	return config.Activity{
+		Default: ptrutil.ToPtr(true),
+		Rules: []config.ActivityRule{
+			{
+				Allow: allow,
+				Condition: config.ActivityCondition{
+					ComponentName: []string{"general." + componentName},
+				},
+			},
+		},
 	}
 }
 
