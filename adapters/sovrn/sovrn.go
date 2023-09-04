@@ -20,7 +20,7 @@ type SovrnAdapter struct {
 	URI string
 }
 
-type SovrnImpExt struct {
+type sovrnImpExt struct {
 	Bidder     openrtb_ext.ExtImpSovrn `json:"bidder"`
 	AdUnitCode string                  `json:"adunitcode,omitempty"`
 }
@@ -80,7 +80,7 @@ func (s *SovrnAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 		}
 
 		var impExtBuffer []byte
-		impExtBuffer, err = json.Marshal(&SovrnImpExt{
+		impExtBuffer, err = json.Marshal(&sovrnImpExt{
 			Bidder:     sovrnExt,
 			AdUnitCode: sovrnExt.AdUnitCode,
 		})
