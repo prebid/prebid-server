@@ -28,12 +28,12 @@ func (e SyncerBuildError) Error() string {
 func BuildSyncers(hostConfig *config.Configuration, bidderInfos config.BidderInfos) (map[string]Syncer, []error) {
 	// map syncer config by key
 	cfgBySyncerKey := make(map[string][]namedSyncerConfig)
-	for bidder, cfg := range bidderInfos {
-		if shouldCreateSyncer(cfg) {
-			syncerCopy := *cfg.Syncer
+	for bidder, bidderInfo := range bidderInfos {
+		if shouldCreateSyncer(bidderInfo) {
+			syncerCopy := *bidderInfo.Syncer
 			if syncerCopy.Key == "" {
 				var err error
-				syncerCopy.Key, err = getSyncerKey(bidderInfos, bidder, cfg, syncerCopy)
+				syncerCopy.Key, err = getSyncerKey(bidderInfos, bidder, bidderInfo, syncerCopy)
 				if err != nil {
 					return nil, []error{err}
 				}
