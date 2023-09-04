@@ -32,7 +32,11 @@ func BuildSyncers(hostConfig *config.Configuration, bidderInfos config.BidderInf
 		if shouldCreateSyncer(cfg) {
 			syncerCopy := *cfg.Syncer
 			if syncerCopy.Key == "" {
-				syncerCopy.Key = bidder
+				var err error
+				syncerCopy.Key, err = getSyncerKey(bidderInfos, bidder, cfg, syncerCopy)
+				if err != nil {
+					return nil, []error{err}
+				}
 			}
 			cfgBySyncerKey[syncerCopy.Key] = append(cfgBySyncerKey[syncerCopy.Key], namedSyncerConfig{bidder, syncerCopy})
 		}
@@ -117,4 +121,30 @@ func chooseSyncerConfig(biddersSyncerConfig []namedSyncerConfig) (namedSyncerCon
 	}
 
 	return syncerConfig, nil
+}
+
+func getSyncerKey(bidderInfos config.BidderInfos, bidderName string, bidderInfo config.BidderInfo, bidderSyncerCfg config.Syncer) (string, error) {
+	// use key from syncer config if,
+	// 1. an alias or non-alias bidder has defined key in their syncer config
+	// 2. parent has defined key in their alias config and alias has inherited parent syncer info
+	if bidderSyncerCfg.Key != "" {
+		return bidderSyncerCfg.Key, nil
+	}
+
+	if len(bidderInfo.AliasOf) > 0 {
+		parentBidderInfo, ok := bidderInfos[bidderInfo.AliasOf]
+		if !ok {
+			return "", fmt.Errorf("parent bidder %s not found", bidderInfo.AliasOf)
+		}
+
+		// alias bidder has inherited syncer info from parent therefore use parent bidder name as syncer key
+		if parentBidderInfo.Syncer == bidderInfo.Syncer {
+			return bidderInfo.AliasOf, nil
+		}
+	}
+
+	// use bidder name as syncer key if,
+	// 1. bidder is not an alias and bidder has no key defined in syncer config
+	// 2. bidder is an alias but syncer config is different from parent
+	return bidderName, nil
 }

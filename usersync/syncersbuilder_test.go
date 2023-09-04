@@ -330,3 +330,91 @@ func TestChooseSyncerConfig(t *testing.T) {
 		}
 	}
 }
+
+func TestGetSyncerKey(t *testing.T) {
+	redirectCfg := config.SyncerEndpoint{
+		URL:       "redirect-url",
+		UserMacro: "$UID",
+	}
+	syncerWithKey := config.Syncer{
+		Key:      "syncer1",
+		Redirect: &redirectCfg,
+	}
+	syncer1 := config.Syncer{
+		Redirect: &redirectCfg,
+	}
+	syncer2 := syncer1
+
+	bidderInfos := config.BidderInfos{
+		"parent-1": config.BidderInfo{Syncer: &syncerWithKey},
+		"alias-1":  config.BidderInfo{AliasOf: "parent-1", Syncer: &syncerWithKey},
+		"parent-2": config.BidderInfo{Syncer: &syncer1},
+		"alias-2":  config.BidderInfo{AliasOf: "parent-2", Syncer: &syncer2},
+		"alias-3":  config.BidderInfo{AliasOf: "parent-2", Syncer: &syncer1},
+		"alias-4":  config.BidderInfo{AliasOf: "parent-3", Syncer: &syncer1},
+	}
+	tests := []struct {
+		name              string
+		bidderInfos       config.BidderInfos
+		bidderName        string
+		bidderInfo        config.BidderInfo
+		expectedSyncerKey string
+		expectedError     error
+	}{
+		{
+			name:              "use-defined-key-when-non-alias-bidder-defines-syncer-key-in-cfg",
+			bidderInfos:       bidderInfos,
+			bidderInfo:        bidderInfos["parent-1"],
+			bidderName:        "parent-1",
+			expectedSyncerKey: "syncer1",
+		},
+		{
+			name:              "use-defined-key-when-alias-bidder-defines-syncer-key-in-cfg",
+			bidderInfos:       bidderInfos,
+			bidderInfo:        bidderInfos["alias-1"],
+			bidderName:        "alias-1",
+			expectedSyncerKey: "syncer1",
+		},
+		{
+			name:              "use-bidder-name-when-non-alias-bidder-defines-no-syncer-key-in-cfg",
+			bidderInfos:       bidderInfos,
+			bidderInfo:        bidderInfos["parent-2"],
+			bidderName:        "parent-2",
+			expectedSyncerKey: "parent-2",
+		},
+		{
+			name:              "use-bidder-name-when-alias-bidder-defines-no-syncer-key-in-cfg",
+			bidderInfos:       bidderInfos,
+			bidderInfo:        bidderInfos["alias-2"],
+			bidderName:        "alias-2",
+			expectedSyncerKey: "alias-2",
+		},
+		{
+			name:              "use-parent-bidder-name-when-alias-bidder-inherits-cfg-from-parent",
+			bidderInfos:       bidderInfos,
+			bidderInfo:        bidderInfos["alias-3"],
+			bidderName:        "alias-3",
+			expectedSyncerKey: "parent-2",
+		},
+		{
+			name:          "parent-bidder-info-not-found",
+			bidderInfos:   config.BidderInfos{},
+			bidderInfo:    bidderInfos["alias-4"],
+			bidderName:    "alias-4",
+			expectedError: errors.New("parent bidder parent-3 not found"),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			bidderSyncerCfg := *bidderInfos[test.bidderName].Syncer
+			syncerKey, err := getSyncerKey(bidderInfos, test.bidderName, test.bidderInfo, bidderSyncerCfg)
+			if test.expectedError == nil {
+				assert.NoError(t, err)
+				assert.Equal(t, test.expectedSyncerKey, syncerKey)
+			} else {
+				assert.Equal(t, test.expectedError, err)
+			}
+		})
+	}
+}
