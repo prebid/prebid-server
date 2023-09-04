@@ -36,16 +36,10 @@ func ensureHasKey(t *testing.T, data map[string]json.RawMessage, key string) {
 	}
 }
 
-type mockGetAliasBidderNames struct{}
-
-func (m mockGetAliasBidderNames) getAliasBidderNames() map[openrtb_ext.BidderName]openrtb_ext.BidderName {
-	return map[openrtb_ext.BidderName]openrtb_ext.BidderName{openrtb_ext.BidderName("alias"): openrtb_ext.BidderName("parentAlias")}
-}
-
 func TestNewJsonDirectoryServer(t *testing.T) {
-	getAliasBidders = mockGetAliasBidderNames{}
 	defaultAlias := map[string]string{"aliastest": "appnexus"}
-	handler := NewJsonDirectoryServer("../static/bidder-params", &testValidator{}, defaultAlias)
+	yamlAlias := map[openrtb_ext.BidderName]openrtb_ext.BidderName{openrtb_ext.BidderName("alias"): openrtb_ext.BidderName("parentAlias")}
+	handler := newJsonDirectoryServer("../static/bidder-params", &testValidator{}, defaultAlias, yamlAlias)
 	recorder := httptest.NewRecorder()
 	request, _ := http.NewRequest("GET", "/whatever", nil)
 	handler(recorder, request, nil)

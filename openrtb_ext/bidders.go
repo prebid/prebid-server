@@ -224,7 +224,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderZetaGlobalSsp,
 }
 
-func GetAliasBidderNames() map[BidderName]BidderName {
+func GetAliasBidderToParent() map[BidderName]BidderName {
 	return aliasBidderToParent
 }
 

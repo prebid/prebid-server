@@ -44,18 +44,6 @@ import (
 	"github.com/rs/cors"
 )
 
-type aliasBidderNameHelper struct{}
-
-type getAliasBidderNames interface {
-	getAliasBidderNames() map[openrtb_ext.BidderName]openrtb_ext.BidderName
-}
-
-func (a aliasBidderNameHelper) getAliasBidderNames() map[openrtb_ext.BidderName]openrtb_ext.BidderName {
-	return openrtb_ext.GetAliasBidderNames()
-}
-
-var getAliasBidders getAliasBidderNames = aliasBidderNameHelper{}
-
 // NewJsonDirectoryServer is used to serve .json files from a directory as a single blob. For example,
 // given a directory containing the files "a.json" and "b.json", this returns a Handle which serves JSON like:
 //
@@ -67,6 +55,10 @@ var getAliasBidders getAliasBidderNames = aliasBidderNameHelper{}
 // This function stores the file contents in memory, and should not be used on large directories.
 // If the root directory, or any of the files in it, cannot be read, then the program will exit.
 func NewJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.BidderParamValidator, aliases map[string]string) httprouter.Handle {
+	return newJsonDirectoryServer(schemaDirectory, validator, aliases, openrtb_ext.GetAliasBidderToParent())
+}
+
+func newJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.BidderParamValidator, aliases map[string]string, yamlAliases map[openrtb_ext.BidderName]openrtb_ext.BidderName) httprouter.Handle {
 	// Slurp the files into memory first, since they're small and it minimizes request latency.
 	files, err := os.ReadDir(schemaDirectory)
 	if err != nil {
@@ -85,8 +77,8 @@ func NewJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.Bidder
 		data[bidder] = json.RawMessage(validator.Schema(bidderName))
 	}
 
-	//Add in any aliases
-	for aliasName, parentBidder := range getAliasBidders.getAliasBidderNames() {
+	// Add in any aliases
+	for aliasName, parentBidder := range yamlAliases {
 		data[string(aliasName)] = json.RawMessage(validator.Schema(parentBidder))
 	}
 
