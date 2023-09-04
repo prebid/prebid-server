@@ -75,7 +75,7 @@ func (m *sampleModule) LogAmpObject(ao *analytics.AmpObject) { *m.count++ }
 
 func (m *sampleModule) LogNotificationEventObject(ne *analytics.NotificationEvent) { *m.count++ }
 
-func initAnalytics(count *int) Runner {
+func initAnalytics(count *int) analytics.Runner {
 	modules := make(enabledAnalytics, 0)
 	modules["sampleModule"] = &sampleModule{count}
 	return &modules

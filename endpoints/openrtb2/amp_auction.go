@@ -17,7 +17,6 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/openrtb/v19/openrtb3"
-	config2 "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/ortb"
 	"github.com/prebid/prebid-server/util/uuidutil"
@@ -64,7 +63,7 @@ func NewAmpEndpoint(
 	accounts stored_requests.AccountFetcher,
 	cfg *config.Configuration,
 	metricsEngine metrics.MetricsEngine,
-	analyticsRunner config2.Runner,
+	analyticsRunner analytics.Runner,
 	disabledBidders map[string]string,
 	defReqJSON []byte,
 	bidderMap map[string]openrtb_ext.BidderName,

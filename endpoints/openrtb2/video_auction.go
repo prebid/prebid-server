@@ -26,7 +26,6 @@ import (
 
 	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/analytics"
-	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
@@ -53,7 +52,7 @@ func NewVideoEndpoint(
 	accounts stored_requests.AccountFetcher,
 	cfg *config.Configuration,
 	met metrics.MetricsEngine,
-	analyticsRunner analyticsConf.Runner,
+	analyticsRunner analytics.Runner,
 	disabledBidders map[string]string,
 	defReqJSON []byte,
 	bidderMap map[string]openrtb_ext.BidderName,

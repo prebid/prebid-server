@@ -1641,7 +1641,7 @@ type mockLogger struct {
 	auctionObject *analytics.AuctionObject
 }
 
-func newMockLogger(ao *analytics.AmpObject, aucObj *analytics.AuctionObject) analyticsConf.Runner {
+func newMockLogger(ao *analytics.AmpObject, aucObj *analytics.AuctionObject) analytics.Runner {
 	return &mockLogger{
 		ampObject:     ao,
 		auctionObject: aucObj,

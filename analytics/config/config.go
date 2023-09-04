@@ -11,17 +11,8 @@ import (
 	"github.com/prebid/prebid-server/privacy"
 )
 
-type Runner interface {
-	LogAuctionObject(*analytics.AuctionObject, privacy.ActivityControl)
-	LogVideoObject(*analytics.VideoObject, privacy.ActivityControl)
-	LogCookieSyncObject(*analytics.CookieSyncObject)
-	LogSetUIDObject(*analytics.SetUIDObject)
-	LogAmpObject(*analytics.AmpObject, privacy.ActivityControl)
-	LogNotificationEventObject(*analytics.NotificationEvent, privacy.ActivityControl)
-}
-
 // Modules that need to be logged to need to be initialized here
-func New(analytics *config.Analytics) Runner {
+func New(analytics *config.Analytics) analytics.Runner {
 	modules := make(enabledAnalytics, 0)
 	if len(analytics.File.Filename) > 0 {
 		if mod, err := filesystem.NewFileLogger(analytics.File.Filename); err == nil {

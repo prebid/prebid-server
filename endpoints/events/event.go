@@ -13,7 +13,6 @@ import (
 	"github.com/julienschmidt/httprouter"
 	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/analytics"
-	config2 "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/metrics"
@@ -42,13 +41,13 @@ const integrationParamMaxLength = 64
 
 type eventEndpoint struct {
 	Accounts      stored_requests.AccountFetcher
-	Analytics     config2.Runner
+	Analytics     analytics.Runner
 	Cfg           *config.Configuration
 	TrackingPixel *httputil.Pixel
 	MetricsEngine metrics.MetricsEngine
 }
 
-func NewEventEndpoint(cfg *config.Configuration, accounts stored_requests.AccountFetcher, analytics config2.Runner, me metrics.MetricsEngine) httprouter.Handle {
+func NewEventEndpoint(cfg *config.Configuration, accounts stored_requests.AccountFetcher, analytics analytics.Runner, me metrics.MetricsEngine) httprouter.Handle {
 	ee := &eventEndpoint{
 		Accounts:      accounts,
 		Analytics:     analytics,

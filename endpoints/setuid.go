@@ -14,7 +14,6 @@ import (
 	gppConstants "github.com/prebid/go-gpp/constants"
 	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/analytics"
-	config2 "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/gdpr"
@@ -37,7 +36,7 @@ const (
 
 const uidCookieName = "uids"
 
-func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, gdprPermsBuilder gdpr.PermissionsBuilder, tcf2CfgBuilder gdpr.TCF2ConfigBuilder, analyticsRunner config2.Runner, accountsFetcher stored_requests.AccountFetcher, metricsEngine metrics.MetricsEngine) httprouter.Handle {
+func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, gdprPermsBuilder gdpr.PermissionsBuilder, tcf2CfgBuilder gdpr.TCF2ConfigBuilder, analyticsRunner analytics.Runner, accountsFetcher stored_requests.AccountFetcher, metricsEngine metrics.MetricsEngine) httprouter.Handle {
 	encoder := usersync.Base64Encoder{}
 	decoder := usersync.Base64Decoder{}
 

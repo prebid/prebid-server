@@ -1347,7 +1347,7 @@ func makeRequest(uri string, existingSyncs map[string]string) *http.Request {
 	return request
 }
 
-func doRequest(req *http.Request, analytics analyticsConfig.Runner, metrics metrics.MetricsEngine, syncersBidderNameToKey map[string]string, gdprAllowsHostCookies, gdprReturnsError, gdprReturnsMalformedError, cfgAccountRequired bool) *httptest.ResponseRecorder {
+func doRequest(req *http.Request, analytics analytics.Runner, metrics metrics.MetricsEngine, syncersBidderNameToKey map[string]string, gdprAllowsHostCookies, gdprReturnsError, gdprReturnsMalformedError, cfgAccountRequired bool) *httptest.ResponseRecorder {
 	cfg := config.Configuration{
 		AccountRequired: cfgAccountRequired,
 		BlacklistedAcctMap: map[string]bool{
