@@ -97,9 +97,11 @@ func chooseSyncerConfig(biddersSyncerConfig []namedSyncerConfig) (namedSyncerCon
 		return biddersSyncerConfig[0], nil
 	}
 
-	var bidderNames []string
-	var bidderNamesWithEndpoints []string
-	var syncerConfig namedSyncerConfig
+	var (
+		bidderNames, bidderNamesWithEndpoints []string
+		syncerConfig                          namedSyncerConfig
+	)
+
 	for _, bidder := range biddersSyncerConfig {
 		bidderNames = append(bidderNames, bidder.name)
 		if bidder.cfg.IFrame != nil || bidder.cfg.Redirect != nil {
