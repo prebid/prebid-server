@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/prebid/prebid-server/metrics"
@@ -317,12 +316,8 @@ func handleHookMutations[P any](
 }
 
 func handleModuleActivities[T any, P any](hook hooks.HookWrapper[T], activityControl privacy.ActivityControl, payload P) P {
-	// only 2 stages receive bidder request: hookstage.ProcessedAuctionRequestPayload and hookstage.BidderRequestPayload
-	// they both implement PayloadBidderRequest interface in order to execute mutations on bid request
-	var payloadData hookstage.PayloadBidderRequest
-	ok := true
-	if payloadData, ok = any(&payload).(hookstage.PayloadBidderRequest); !ok {
-		// payload doesn't have a bid request
+	payloadData, ok := any(&payload).(hookstage.PayloadBidderRequest)
+	if !ok {
 		return payload
 	}
 
@@ -339,8 +334,7 @@ func handleModuleActivities[T any, P any](hook hooks.HookWrapper[T], activityCon
 	if privacyEnforcement.AnyActivities() {
 		// changes need to be applied to new payload and leave original payload unchanged
 		bidderReq := payloadData.GetBidderRequestPayload()
-		var bidderReqCopy *openrtb2.BidRequest
-		bidderReqCopy = ptrutil.Clone(bidderReq)
+		bidderReqCopy := ptrutil.Clone(bidderReq)
 
 		privacyEnforcement.Apply(bidderReqCopy)
 
