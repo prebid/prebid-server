@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/privacy"
 	"io"
 	"net/http"
 	"net/url"
@@ -14,6 +13,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/prebid/prebid-server/privacy"
 
 	"github.com/buger/jsonparser"
 	"github.com/gofrs/uuid"
@@ -193,7 +194,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
 
-	activities, activitiesErr := privacy.NewActivityControl(account.Privacy)
+	activities, activitiesErr := privacy.NewActivityControl(&account.Privacy)
 	if activitiesErr != nil {
 		errL = append(errL, activitiesErr)
 		if errortypes.ContainsFatalError(errL) {
@@ -1968,8 +1969,12 @@ func setAuctionTypeImplicitly(r *openrtb_ext.RequestWrapper) {
 }
 
 func setSiteImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
+	if r.Site == nil {
+		r.Site = &openrtb2.Site{}
+	}
+
 	referrerCandidate := httpReq.Referer()
-	if referrerCandidate == "" && r.Site != nil && r.Site.Page != "" {
+	if referrerCandidate == "" && r.Site.Page != "" {
 		referrerCandidate = r.Site.Page // If http referer is disabled and thus has empty value - use site.page instead
 	}
 
@@ -1983,17 +1988,13 @@ func setSiteImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
 		}
 	}
 
-	if r.Site != nil {
-		if siteExt, err := r.GetSiteExt(); err == nil && siteExt.GetAmp() == nil {
-			siteExt.SetAmp(&notAmp)
-		}
+	if siteExt, err := r.GetSiteExt(); err == nil && siteExt.GetAmp() == nil {
+		siteExt.SetAmp(&notAmp)
 	}
+
 }
 
 func setSitePageIfEmpty(site *openrtb2.Site, sitePage string) {
-	if site == nil {
-		site = &openrtb2.Site{}
-	}
 	if site.Page == "" {
 		site.Page = sitePage
 	}

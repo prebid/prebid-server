@@ -149,17 +149,11 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 		errs = append(errs, errors.New("account_defaults.Events.VASTEvents has no effect as the feature is under development."))
 	}
 
-	if cfg.TmaxAdjustments.Enabled {
-		glog.Warning(`cfg.TmaxAdjustments.Enabled will currently not do anything as tmax adjustment feature is still under development.`)
-		cfg.TmaxAdjustments.Enabled = false
-	}
-
-	if cfg.AccountDefaults.Privacy != nil {
-		glog.Warning("account_defaults.Privacy has no effect as the feature is under development.")
-	}
-
 	errs = cfg.Experiment.validate(errs)
 	errs = cfg.BidderInfos.validate(errs)
+	errs = cfg.AccountDefaults.Privacy.IPv6Config.Validate(errs)
+	errs = cfg.AccountDefaults.Privacy.IPv4Config.Validate(errs)
+
 	return errs
 }
 
@@ -1024,6 +1018,8 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("account_defaults.price_floors.max_rules", 100)
 	v.SetDefault("account_defaults.price_floors.max_schema_dims", 3)
 	v.SetDefault("account_defaults.events_enabled", false)
+	v.SetDefault("account_defaults.privacy.ipv6.anon_keep_bits", 56)
+	v.SetDefault("account_defaults.privacy.ipv4.anon_keep_bits", 24)
 
 	v.SetDefault("compression.response.enable_gzip", false)
 	v.SetDefault("compression.request.enable_gzip", false)

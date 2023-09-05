@@ -2108,7 +2108,7 @@ func (p *fakePermissions) AuctionActivitiesAllowed(ctx context.Context, bidderCo
 
 func getDefaultActivityConfig(componentName string, allow bool) *config.AccountPrivacy {
 	return &config.AccountPrivacy{
-		AllowActivities: config.AllowActivities{
+		AllowActivities: &config.AllowActivities{
 			SyncUser: config.Activity{
 				Default: ptrutil.ToPtr(true),
 				Rules: []config.ActivityRule{

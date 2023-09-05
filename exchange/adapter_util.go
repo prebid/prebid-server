@@ -43,6 +43,13 @@ func buildBidders(infos config.BidderInfos, builders map[openrtb_ext.BidderName]
 			continue
 		}
 
+		if len(info.AliasOf) > 0 {
+			if err := setAliasBuilder(info, builders, bidderName); err != nil {
+				errs = append(errs, fmt.Errorf("%v: failed to set alias builder: %v", bidder, err))
+				continue
+			}
+		}
+
 		builder, builderFound := builders[bidderName]
 		if !builderFound {
 			errs = append(errs, fmt.Errorf("%v: builder not registered", bidder))
@@ -61,6 +68,20 @@ func buildBidders(infos config.BidderInfos, builders map[openrtb_ext.BidderName]
 		}
 	}
 	return bidders, errs
+}
+
+func setAliasBuilder(info config.BidderInfo, builders map[openrtb_ext.BidderName]adapters.Builder, bidderName openrtb_ext.BidderName) error {
+	parentBidderName, parentBidderFound := openrtb_ext.NormalizeBidderName(info.AliasOf)
+	if !parentBidderFound {
+		return fmt.Errorf("unknown parent bidder: %v for alias: %v", info.AliasOf, bidderName)
+	}
+
+	builder, builderFound := builders[parentBidderName]
+	if !builderFound {
+		return fmt.Errorf("%v: parent builder not registered", parentBidderName)
+	}
+	builders[bidderName] = builder
+	return nil
 }
 
 func buildAdapterInfo(bidderInfo config.BidderInfo) config.Adapter {
