@@ -104,7 +104,7 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 			return
 		}
 
-		activities, activitiesErr := privacy.NewActivityControl(account.Privacy)
+		activities, activitiesErr := privacy.NewActivityControl(&account.Privacy)
 		if activitiesErr != nil {
 			if errortypes.ContainsFatalError([]error{activitiesErr}) {
 				activities = privacy.ActivityControl{}

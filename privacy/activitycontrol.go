@@ -44,7 +44,7 @@ func NewActivityControl(privacyConf *config.AccountPrivacy) (ActivityControl, er
 	ac := ActivityControl{}
 	var err error
 
-	if privacyConf == nil {
+	if privacyConf == nil || privacyConf.AllowActivities == nil {
 		return ac, nil
 	}
 

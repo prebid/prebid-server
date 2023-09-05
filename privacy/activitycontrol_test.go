@@ -13,20 +13,20 @@ import (
 func TestNewActivityControl(t *testing.T) {
 	testCases := []struct {
 		name            string
-		privacyConf     *config.AccountPrivacy
+		privacyConf     config.AccountPrivacy
 		activityControl ActivityControl
 		err             error
 	}{
 		{
-			name:            "privacy_config_is_nil",
-			privacyConf:     nil,
+			name:            "privacy_config_is_empty",
+			privacyConf:     config.AccountPrivacy{},
 			activityControl: ActivityControl{plans: nil},
 			err:             nil,
 		},
 		{
 			name: "privacy_config_is_specified_and_correct",
-			privacyConf: &config.AccountPrivacy{
-				AllowActivities: config.AllowActivities{
+			privacyConf: config.AccountPrivacy{
+				AllowActivities: &config.AllowActivities{
 					SyncUser:                 getDefaultActivityConfig(),
 					FetchBids:                getDefaultActivityConfig(),
 					EnrichUserFPD:            getDefaultActivityConfig(),
@@ -51,8 +51,8 @@ func TestNewActivityControl(t *testing.T) {
 		},
 		{
 			name: "privacy_config_is_specified_and_SyncUser_is_incorrect",
-			privacyConf: &config.AccountPrivacy{
-				AllowActivities: config.AllowActivities{
+			privacyConf: config.AccountPrivacy{
+				AllowActivities: &config.AllowActivities{
 					SyncUser: getIncorrectActivityConfig(),
 				},
 			},
@@ -61,8 +61,8 @@ func TestNewActivityControl(t *testing.T) {
 		},
 		{
 			name: "privacy_config_is_specified_and_FetchBids_is_incorrect",
-			privacyConf: &config.AccountPrivacy{
-				AllowActivities: config.AllowActivities{
+			privacyConf: config.AccountPrivacy{
+				AllowActivities: &config.AllowActivities{
 					FetchBids: getIncorrectActivityConfig(),
 				},
 			},
@@ -71,8 +71,8 @@ func TestNewActivityControl(t *testing.T) {
 		},
 		{
 			name: "privacy_config_is_specified_and_EnrichUserFPD_is_incorrect",
-			privacyConf: &config.AccountPrivacy{
-				AllowActivities: config.AllowActivities{
+			privacyConf: config.AccountPrivacy{
+				AllowActivities: &config.AllowActivities{
 					EnrichUserFPD: getIncorrectActivityConfig(),
 				},
 			},
@@ -81,8 +81,8 @@ func TestNewActivityControl(t *testing.T) {
 		},
 		{
 			name: "privacy_config_is_specified_and_ReportAnalytics_is_incorrect",
-			privacyConf: &config.AccountPrivacy{
-				AllowActivities: config.AllowActivities{
+			privacyConf: config.AccountPrivacy{
+				AllowActivities: &config.AllowActivities{
 					ReportAnalytics: getIncorrectActivityConfig(),
 				},
 			},
@@ -91,8 +91,8 @@ func TestNewActivityControl(t *testing.T) {
 		},
 		{
 			name: "privacy_config_is_specified_and_TransmitUserFPD_is_incorrect",
-			privacyConf: &config.AccountPrivacy{
-				AllowActivities: config.AllowActivities{
+			privacyConf: config.AccountPrivacy{
+				AllowActivities: &config.AllowActivities{
 					TransmitUserFPD: getIncorrectActivityConfig(),
 				},
 			},
@@ -101,8 +101,8 @@ func TestNewActivityControl(t *testing.T) {
 		},
 		{
 			name: "privacy_config_is_specified_and_TransmitPreciseGeo_is_incorrect",
-			privacyConf: &config.AccountPrivacy{
-				AllowActivities: config.AllowActivities{
+			privacyConf: config.AccountPrivacy{
+				AllowActivities: &config.AllowActivities{
 					TransmitPreciseGeo: getIncorrectActivityConfig(),
 				},
 			},
@@ -111,8 +111,8 @@ func TestNewActivityControl(t *testing.T) {
 		},
 		{
 			name: "privacy_config_is_specified_and_TransmitUniqueRequestIds_is_incorrect",
-			privacyConf: &config.AccountPrivacy{
-				AllowActivities: config.AllowActivities{
+			privacyConf: config.AccountPrivacy{
+				AllowActivities: &config.AllowActivities{
 					TransmitUniqueRequestIds: getIncorrectActivityConfig(),
 				},
 			},
@@ -121,8 +121,8 @@ func TestNewActivityControl(t *testing.T) {
 		},
 		{
 			name: "privacy_config_is_specified_and_TransmitTids_is_incorrect",
-			privacyConf: &config.AccountPrivacy{
-				AllowActivities: config.AllowActivities{
+			privacyConf: config.AccountPrivacy{
+				AllowActivities: &config.AllowActivities{
 					TransmitTids: getIncorrectActivityConfig(),
 				},
 			},
@@ -133,7 +133,7 @@ func TestNewActivityControl(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			actualAC, actualErr := NewActivityControl(test.privacyConf)
+			actualAC, actualErr := NewActivityControl(&test.privacyConf)
 			if test.err == nil {
 				assert.Equal(t, test.activityControl, actualAC)
 				assert.NoError(t, actualErr)
