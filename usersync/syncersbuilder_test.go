@@ -283,6 +283,21 @@ func TestChooseSyncerConfig(t *testing.T) {
 		bidderAEmpty     = namedSyncerConfig{name: "bidderA", cfg: config.Syncer{}}
 		bidderBPopulated = namedSyncerConfig{name: "bidderB", cfg: config.Syncer{Key: "a", IFrame: &config.SyncerEndpoint{URL: "anyURL"}}}
 		bidderBEmpty     = namedSyncerConfig{name: "bidderB", cfg: config.Syncer{}}
+
+		syncerCfg = config.Syncer{
+			Key:      "key",
+			Redirect: &config.SyncerEndpoint{RedirectURL: "redirect-url"},
+		}
+		parent = namedSyncerConfig{
+			name:       "parent",
+			cfg:        syncerCfg,
+			bidderInfo: config.BidderInfo{AliasOf: ""},
+		}
+		alias = namedSyncerConfig{
+			name:       "alias",
+			cfg:        syncerCfg,
+			bidderInfo: config.BidderInfo{AliasOf: "parent"},
+		}
 	)
 
 	testCases := []struct {
@@ -315,6 +330,11 @@ func TestChooseSyncerConfig(t *testing.T) {
 			description:    "Many - Same Key - Unique Configs",
 			given:          []namedSyncerConfig{bidderAEmpty, bidderBPopulated},
 			expectedConfig: bidderBPopulated,
+		},
+		{
+			description:    "alias-can-have-same-key-as-parent",
+			given:          []namedSyncerConfig{parent, alias},
+			expectedConfig: alias,
 		},
 	}
 

@@ -9,8 +9,9 @@ import (
 )
 
 type namedSyncerConfig struct {
-	name string
-	cfg  config.Syncer
+	name       string
+	cfg        config.Syncer
+	bidderInfo config.BidderInfo
 }
 
 // SyncerBuildError represents an error with building a syncer.
@@ -38,7 +39,7 @@ func BuildSyncers(hostConfig *config.Configuration, bidderInfos config.BidderInf
 					return nil, []error{err}
 				}
 			}
-			cfgBySyncerKey[syncerCopy.Key] = append(cfgBySyncerKey[syncerCopy.Key], namedSyncerConfig{bidder, syncerCopy})
+			cfgBySyncerKey[syncerCopy.Key] = append(cfgBySyncerKey[syncerCopy.Key], namedSyncerConfig{bidder, syncerCopy, bidderInfo})
 		}
 	}
 
@@ -98,8 +99,8 @@ func chooseSyncerConfig(biddersSyncerConfig []namedSyncerConfig) (namedSyncerCon
 	}
 
 	var (
-		bidderNames, bidderNamesWithEndpoints []string
-		syncerConfig                          namedSyncerConfig
+		bidderNames, bidderNamesWithEndpoints, nonAliasBidders []string
+		syncerConfig                                           namedSyncerConfig
 	)
 
 	for _, bidder := range biddersSyncerConfig {
@@ -107,6 +108,10 @@ func chooseSyncerConfig(biddersSyncerConfig []namedSyncerConfig) (namedSyncerCon
 		if bidder.cfg.IFrame != nil || bidder.cfg.Redirect != nil {
 			bidderNamesWithEndpoints = append(bidderNamesWithEndpoints, bidder.name)
 			syncerConfig = bidder
+
+			if len(bidder.bidderInfo.AliasOf) == 0 {
+				nonAliasBidders = append(nonAliasBidders, bidder.name)
+			}
 		}
 	}
 
@@ -116,9 +121,9 @@ func chooseSyncerConfig(biddersSyncerConfig []namedSyncerConfig) (namedSyncerCon
 		return namedSyncerConfig{}, fmt.Errorf("bidders %s share the same syncer key, but none define endpoints (iframe and/or redirect)", bidders)
 	}
 
-	if len(bidderNamesWithEndpoints) > 1 {
-		sort.Strings(bidderNamesWithEndpoints)
-		bidders := strings.Join(bidderNamesWithEndpoints, ", ")
+	if len(nonAliasBidders) > 1 {
+		sort.Strings(nonAliasBidders)
+		bidders := strings.Join(nonAliasBidders, ", ")
 		return namedSyncerConfig{}, fmt.Errorf("bidders %s define endpoints (iframe and/or redirect) for the same syncer key, but only one bidder is permitted to define endpoints", bidders)
 	}
 
