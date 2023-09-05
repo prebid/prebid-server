@@ -193,7 +193,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
 
-	activities, activitiesErr := privacy.NewActivityControl(account.Privacy)
+	activities, activitiesErr := privacy.NewActivityControl(&account.Privacy)
 	if activitiesErr != nil {
 		errL = append(errL, activitiesErr)
 		if errortypes.ContainsFatalError(errL) {
