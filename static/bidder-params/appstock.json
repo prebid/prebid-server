@@ -5,12 +5,6 @@
   "type": "object",
 
   "properties": {
-    "host": {
-      "type": "string",
-      "description": "Ad network's RTB host",
-      "format": "hostname",
-      "pattern": "^.+\\..+$"
-    },
     "publisherId": {
       "type": ["integer", "string"],
       "description": "Publisher ID",
@@ -19,5 +13,5 @@
     }
   },
 
-  "required": ["host", "publisherId"]
+  "required": ["publisherId"]
 }
