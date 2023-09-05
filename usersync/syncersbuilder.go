@@ -99,8 +99,10 @@ func chooseSyncerConfig(biddersSyncerConfig []namedSyncerConfig) (namedSyncerCon
 	}
 
 	var (
-		bidderNames, bidderNamesWithEndpoints, nonAliasBidders []string
-		syncerConfig                                           namedSyncerConfig
+		bidderNames, bidderNamesWithEndpoints  []string
+		nonAliasBidderNames, parentBidderNames []string
+		nonAliasBidderNameMap                  = make(map[string]struct{}) // needed for O(1) lookup
+		syncerConfig                           namedSyncerConfig
 	)
 
 	for _, bidder := range biddersSyncerConfig {
@@ -110,7 +112,10 @@ func chooseSyncerConfig(biddersSyncerConfig []namedSyncerConfig) (namedSyncerCon
 			syncerConfig = bidder
 
 			if len(bidder.bidderInfo.AliasOf) == 0 {
-				nonAliasBidders = append(nonAliasBidders, bidder.name)
+				nonAliasBidderNames = append(nonAliasBidderNames, bidder.name)
+				nonAliasBidderNameMap[bidder.name] = struct{}{}
+			} else {
+				parentBidderNames = append(parentBidderNames, bidder.bidderInfo.AliasOf)
 			}
 		}
 	}
@@ -121,10 +126,22 @@ func chooseSyncerConfig(biddersSyncerConfig []namedSyncerConfig) (namedSyncerCon
 		return namedSyncerConfig{}, fmt.Errorf("bidders %s share the same syncer key, but none define endpoints (iframe and/or redirect)", bidders)
 	}
 
-	if len(nonAliasBidders) > 1 {
-		sort.Strings(nonAliasBidders)
-		bidders := strings.Join(nonAliasBidders, ", ")
+	if len(nonAliasBidderNames) > 1 {
+		sort.Strings(nonAliasBidderNames)
+		bidders := strings.Join(nonAliasBidderNames, ", ")
 		return namedSyncerConfig{}, fmt.Errorf("bidders %s define endpoints (iframe and/or redirect) for the same syncer key, but only one bidder is permitted to define endpoints", bidders)
+	}
+
+	// invalidAliases - stores alias whose syncer key conflicts with bidder other than their parent
+	invalidAliases := []string{}
+	for _, bidderName := range parentBidderNames {
+		if _, ok := nonAliasBidderNameMap[bidderName]; !ok {
+			invalidAliases = append(invalidAliases, bidderName)
+		}
+	}
+	if len(invalidAliases) > 0 {
+		sort.Strings(invalidAliases)
+		return namedSyncerConfig{}, fmt.Errorf("found aliases whose syncer key conflicts with a bidder other than their parent, aliases: %s", strings.Join(invalidAliases, ", "))
 	}
 
 	return syncerConfig, nil

@@ -293,10 +293,15 @@ func TestChooseSyncerConfig(t *testing.T) {
 			cfg:        syncerCfg,
 			bidderInfo: config.BidderInfo{AliasOf: ""},
 		}
-		alias = namedSyncerConfig{
-			name:       "alias",
+		alias1 = namedSyncerConfig{
+			name:       "alias-1",
 			cfg:        syncerCfg,
 			bidderInfo: config.BidderInfo{AliasOf: "parent"},
+		}
+		alias2 = namedSyncerConfig{
+			name:       "alias-2",
+			cfg:        syncerCfg,
+			bidderInfo: config.BidderInfo{AliasOf: "foo"},
 		}
 	)
 
@@ -333,8 +338,13 @@ func TestChooseSyncerConfig(t *testing.T) {
 		},
 		{
 			description:    "alias-can-have-same-key-as-parent",
-			given:          []namedSyncerConfig{parent, alias},
-			expectedConfig: alias,
+			given:          []namedSyncerConfig{parent, alias1},
+			expectedConfig: alias1,
+		},
+		{
+			description:   "aliases-syncer-key-conflicts-with-non-parent-bidder",
+			given:         []namedSyncerConfig{parent, alias1, alias2},
+			expectedError: "found aliases whose syncer key conflicts with a bidder other than their parent, aliases: foo",
 		},
 	}
 
