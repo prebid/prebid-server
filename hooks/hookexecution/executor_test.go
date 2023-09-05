@@ -1314,7 +1314,7 @@ func TestExecuteBidderRequestStage(t *testing.T) {
 
 func getTransmitUFPDActivityConfig(componentName string, allow bool) *config.AccountPrivacy {
 	return &config.AccountPrivacy{
-		AllowActivities: config.AllowActivities{
+		AllowActivities: &config.AllowActivities{
 			TransmitUserFPD: buildDefaultActivityConfig(componentName, allow),
 		},
 	}

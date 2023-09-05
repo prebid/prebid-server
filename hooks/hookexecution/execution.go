@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/prebid/prebid-server/metrics"
@@ -336,7 +337,7 @@ func handleModuleActivities[T any, P any](hook hooks.HookWrapper[T], activityCon
 		bidderReq := payloadData.GetBidderRequestPayload()
 		bidderReqCopy := ptrutil.Clone(bidderReq)
 
-		privacyEnforcement.Apply(bidderReqCopy)
+		privacyEnforcement.Apply(bidderReqCopy, config.AccountPrivacy{})
 
 		var newPayload = payload
 		var np = any(&newPayload).(hookstage.PayloadBidderRequest)
