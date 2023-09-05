@@ -224,6 +224,10 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderZetaGlobalSsp,
 }
 
+func GetAliasBidderToParent() map[BidderName]BidderName {
+	return aliasBidderToParent
+}
+
 func SetAliasBidderName(aliasBidderName string, parentBidderName BidderName) error {
 	if IsBidderNameReserved(aliasBidderName) {
 		return fmt.Errorf("alias %s is a reserved bidder name and cannot be used", aliasBidderName)
@@ -552,11 +556,11 @@ var bidderNameLookup = func() map[string]BidderName {
 		lookup[bidderNameLower] = name
 	}
 	return lookup
-}()
+}
 
 func NormalizeBidderName(name string) (BidderName, bool) {
 	nameLower := strings.ToLower(name)
-	bidderName, exists := bidderNameLookup[nameLower]
+	bidderName, exists := bidderNameLookup()[nameLower]
 	return bidderName, exists
 }
 
