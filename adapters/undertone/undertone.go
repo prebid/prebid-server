@@ -26,6 +26,11 @@ type undertoneParams struct {
 	Version string `json:"version"`
 }
 
+type impExt struct {
+	Bidder *openrtb_ext.ExtImpUndertone `json:"bidder,omitempty"`
+	Gpid   string                       `json:"gpid,omitempty"`
+}
+
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
@@ -158,34 +163,22 @@ func getImpsAndPublisherId(bidRequest *openrtb2.BidRequest) ([]openrtb2.Imp, int
 	var validImps []openrtb2.Imp
 
 	for _, imp := range bidRequest.Imp {
-		var extImpBidder adapters.ExtImpBidder
-		if err := json.Unmarshal(imp.Ext, &extImpBidder); err != nil {
-			errs = append(errs, getInvalidImpErr(imp.ID, err))
-			continue
-		}
-
-		var extImpUndertone openrtb_ext.ExtImpUndertone
-		if err := json.Unmarshal(extImpBidder.Bidder, &extImpUndertone); err != nil {
+		var ext impExt
+		if err := json.Unmarshal(imp.Ext, &ext); err != nil {
 			errs = append(errs, getInvalidImpErr(imp.ID, err))
 			continue
 		}
 
 		if publisherId == 0 {
-			publisherId = extImpUndertone.PublisherID
+			publisherId = ext.Bidder.PublisherID
 		}
 
-		imp.TagID = strconv.Itoa(extImpUndertone.PlacementID)
-
-		var undertoneImpExt openrtb_ext.UndertoneImpExt
-		if err := json.Unmarshal(imp.Ext, &undertoneImpExt); err != nil {
-			errs = append(errs, getInvalidImpErr(imp.ID, err))
-			continue
-		}
-
+		imp.TagID = strconv.Itoa(ext.Bidder.PlacementID)
 		imp.Ext = nil
 
-		if undertoneImpExt.Gpid != "" {
-			impExtJson, err := json.Marshal(&undertoneImpExt)
+		if ext.Gpid != "" {
+			ext.Bidder = nil
+			impExtJson, err := json.Marshal(&ext)
 			if err != nil {
 				errs = append(errs, getInvalidImpErr(imp.ID, err))
 				continue
