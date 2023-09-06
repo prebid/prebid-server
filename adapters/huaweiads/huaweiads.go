@@ -1160,7 +1160,9 @@ func (a *adapter) extractAdmNative(adType int32, content *content, bidType openr
 				dataObject.Label = "desc"
 				dataObject.Value = getDecodeValue(content.MetaData.Description)
 			}
+
 			if asset.Data.Type == native1.DataAssetTypeCTAText {
+				dataObject.Type = native1.DataAssetTypeCTAText
 				dataObject.Value = getDecodeValue(content.MetaData.Cta)
 			}
 			responseAsset.Data = &dataObject
