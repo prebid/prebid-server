@@ -175,7 +175,24 @@ func getImpsAndPublisherId(bidRequest *openrtb2.BidRequest) ([]openrtb2.Imp, int
 		}
 
 		imp.TagID = strconv.Itoa(extImpUndertone.PlacementID)
+
+		var undertoneImpExt openrtb_ext.UndertoneImpExt
+		if err := json.Unmarshal(imp.Ext, &undertoneImpExt); err != nil {
+			errs = append(errs, getInvalidImpErr(imp.ID, err))
+			continue
+		}
+
 		imp.Ext = nil
+
+		if undertoneImpExt.Gpid != "" {
+			impExtJson, err := json.Marshal(&undertoneImpExt)
+			if err != nil {
+				errs = append(errs, getInvalidImpErr(imp.ID, err))
+				continue
+			}
+			imp.Ext = impExtJson
+		}
+
 		validImps = append(validImps, imp)
 	}
 
