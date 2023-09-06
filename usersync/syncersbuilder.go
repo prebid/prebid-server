@@ -9,8 +9,9 @@ import (
 )
 
 type namedSyncerConfig struct {
-	name string
-	cfg  config.Syncer
+	name       string
+	cfg        config.Syncer
+	bidderInfo config.BidderInfo
 }
 
 // SyncerBuildError represents an error with building a syncer.
@@ -42,7 +43,7 @@ func BuildSyncers(hostConfig *config.Configuration, bidderInfos config.BidderInf
 		if err != nil {
 			return nil, []error{err}
 		}
-		cfgBySyncerKey[syncerCopy.Key] = append(cfgBySyncerKey[syncerCopy.Key], namedSyncerConfig{bidder, syncerCopy})
+		cfgBySyncerKey[syncerCopy.Key] = append(cfgBySyncerKey[syncerCopy.Key], namedSyncerConfig{bidder, syncerCopy, bidderInfo})
 	}
 
 	// resolve host endpoint
@@ -100,27 +101,53 @@ func chooseSyncerConfig(biddersSyncerConfig []namedSyncerConfig) (namedSyncerCon
 		return biddersSyncerConfig[0], nil
 	}
 
-	var bidderNames []string
-	var bidderNamesWithEndpoints []string
-	var syncerConfig namedSyncerConfig
+	var (
+		bidderNames         []string
+		nonAliasBidderNames []string
+		aliasBidderNames    []string
+		syncerConfig        namedSyncerConfig
+		parentBidderNameMap = make(map[string]struct{})
+	)
+
 	for _, bidder := range biddersSyncerConfig {
 		bidderNames = append(bidderNames, bidder.name)
 		if bidder.cfg.IFrame != nil || bidder.cfg.Redirect != nil {
-			bidderNamesWithEndpoints = append(bidderNamesWithEndpoints, bidder.name)
+			if len(bidder.bidderInfo.AliasOf) > 0 {
+				aliasBidderNames = append(aliasBidderNames, bidder.name)
+				parentBidderNameMap[bidder.bidderInfo.AliasOf] = struct{}{}
+			} else {
+				nonAliasBidderNames = append(nonAliasBidderNames, bidder.name)
+			}
 			syncerConfig = bidder
 		}
 	}
 
-	if len(bidderNamesWithEndpoints) == 0 {
+	// check if bidders have same syncer key but no endpoints
+	if len(nonAliasBidderNames)+len(aliasBidderNames) == 0 {
 		sort.Strings(bidderNames)
 		bidders := strings.Join(bidderNames, ", ")
 		return namedSyncerConfig{}, fmt.Errorf("bidders %s share the same syncer key, but none define endpoints (iframe and/or redirect)", bidders)
 	}
 
-	if len(bidderNamesWithEndpoints) > 1 {
-		sort.Strings(bidderNamesWithEndpoints)
-		bidders := strings.Join(bidderNamesWithEndpoints, ", ")
+	// check if non-alias bidders have same syncer key
+	if len(nonAliasBidderNames) > 1 {
+		sort.Strings(nonAliasBidderNames)
+		bidders := strings.Join(nonAliasBidderNames, ", ")
 		return namedSyncerConfig{}, fmt.Errorf("bidders %s define endpoints (iframe and/or redirect) for the same syncer key, but only one bidder is permitted to define endpoints", bidders)
+	}
+
+	// check if alias bidders of different parent have same syncer key
+	if len(parentBidderNameMap) > 1 {
+		sort.Strings(aliasBidderNames)
+		return namedSyncerConfig{}, fmt.Errorf("alias bidders %s of different parents defines endpoints (iframe and/or redirect) for the same syncer key, but only one bidder is permitted to define endpoints", strings.Join(aliasBidderNames, ", "))
+	}
+
+	// check if aliases of same parent and non-alias bidder have same syncer key
+	if len(parentBidderNameMap) != 0 {
+		if _, ok := parentBidderNameMap[nonAliasBidderNames[0]]; !ok {
+			sort.Strings(aliasBidderNames)
+			return namedSyncerConfig{}, fmt.Errorf("alias bidders %s and non-alias bidder %s defines endpoints (iframe and/or redirect) for the same syncer key, but only one bidder is permitted to define endpoints", strings.Join(aliasBidderNames, ", "), nonAliasBidderNames[0])
+		}
 	}
 
 	return syncerConfig, nil
