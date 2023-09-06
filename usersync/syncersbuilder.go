@@ -37,8 +37,10 @@ func BuildSyncers(hostConfig *config.Configuration, bidderInfos config.BidderInf
 	cfgBySyncerKey := make(map[string][]namedSyncerConfig, len(bidderInfos))
 	for bidder, bidderInfo := range biddersWithSyncerCfg {
 		syncerCopy := *bidderInfo.Syncer
-		if syncerCopy.Key == "" {
-			syncerCopy.Key = bidder
+		var err error
+		syncerCopy.Key, err = getSyncerKey(biddersWithSyncerCfg, bidder, bidderInfo)
+		if err != nil {
+			return nil, []error{err}
 		}
 		cfgBySyncerKey[syncerCopy.Key] = append(cfgBySyncerKey[syncerCopy.Key], namedSyncerConfig{bidder, syncerCopy})
 	}
@@ -122,4 +124,38 @@ func chooseSyncerConfig(biddersSyncerConfig []namedSyncerConfig) (namedSyncerCon
 	}
 
 	return syncerConfig, nil
+}
+
+func getSyncerKey(biddersWithSyncerCfg map[string]config.BidderInfo, bidderName string, bidderInfo config.BidderInfo) (string, error) {
+	if bidderInfo.Syncer == nil {
+		return "", fmt.Errorf("found no syncer config for alias bidder %s", bidderName)
+	}
+
+	var (
+		bidderSyncerCfg       = bidderInfo.Syncer
+		isAlias               = len(bidderInfo.AliasOf) > 0
+		hasInheritedSyncerCfg = false
+		parentBidderInfo      config.BidderInfo
+		parentBidderName      string
+	)
+
+	if isAlias {
+		parentBidderName = bidderInfo.AliasOf
+		var parentHasSyncerCfg bool
+		parentBidderInfo, parentHasSyncerCfg = biddersWithSyncerCfg[parentBidderName]
+		hasInheritedSyncerCfg = parentHasSyncerCfg && parentBidderInfo.Syncer == bidderSyncerCfg
+	}
+
+	if bidderSyncerCfg.Key == "" {
+		if hasInheritedSyncerCfg {
+			return parentBidderName, nil
+		}
+		return bidderName, nil
+	}
+
+	if isAlias && !hasInheritedSyncerCfg && bidderSyncerCfg.Key == parentBidderInfo.Syncer.Key {
+		return "", fmt.Errorf("syncer key of alias bidder %s is same as the syncer key for its parent bidder %s", bidderName, parentBidderName)
+	}
+
+	return bidderSyncerCfg.Key, nil
 }

@@ -330,3 +330,88 @@ func TestChooseSyncerConfig(t *testing.T) {
 		}
 	}
 }
+
+func TestGetSyncerKey(t *testing.T) {
+	redirectCfg := config.SyncerEndpoint{URL: "redirect-url", UserMacro: "$UID"}
+	syncer1 := config.Syncer{Key: "", Redirect: &redirectCfg}
+	syncer2 := syncer1
+	syncer3 := config.Syncer{Key: "key-1", Redirect: &redirectCfg}
+	syncer4 := config.Syncer{Key: "key-1"}
+
+	biddersWithSyncerCfg := config.BidderInfos{
+		"parent-1": config.BidderInfo{Syncer: &syncer1},
+		"alias-1":  config.BidderInfo{AliasOf: "parent-1", Syncer: &syncer1},
+		"alias-2":  config.BidderInfo{AliasOf: "parent-1", Syncer: &syncer2},
+		"parent-2": config.BidderInfo{Syncer: &syncer3},
+		"alias-3":  config.BidderInfo{AliasOf: "parent-1", Syncer: &syncer3},
+		"alias-4":  config.BidderInfo{AliasOf: "parent-2", Syncer: &syncer4},
+	}
+
+	tests := []struct {
+		name                 string
+		biddersWithSyncerCfg map[string]config.BidderInfo
+		bidderName           string
+		bidderInfo           config.BidderInfo
+		expectedErr          string
+		expectedSyncerKey    string
+	}{
+		{
+			name:        "alias_bidder_has_no_syncer_config",
+			bidderName:  "alias-1",
+			bidderInfo:  config.BidderInfo{Syncer: nil},
+			expectedErr: "found no syncer config for alias bidder alias-1",
+		},
+		{
+			name:                 "use_parent_name_as_syncer_key_when_syncer_key_is_empty_and_alias_inherits_parent_syncer_config",
+			biddersWithSyncerCfg: biddersWithSyncerCfg,
+			bidderName:           "alias-1",
+			bidderInfo:           biddersWithSyncerCfg["alias-1"],
+			expectedSyncerKey:    "parent-1",
+		},
+		{
+			name:                 "use_alias_name_as_syncer_key_when_syncer_key_is_empty_and_alias_does_not_inherit_parent_syncer_config",
+			biddersWithSyncerCfg: biddersWithSyncerCfg,
+			bidderName:           "alias-2",
+			bidderInfo:           biddersWithSyncerCfg["alias-2"],
+			expectedSyncerKey:    "alias-2",
+		},
+		{
+			name:                 "use_syncer_key_when_parent_and_alias_have_different_syncer_config",
+			biddersWithSyncerCfg: biddersWithSyncerCfg,
+			bidderName:           "alias-3",
+			bidderInfo:           biddersWithSyncerCfg["alias-3"],
+			expectedSyncerKey:    biddersWithSyncerCfg["alias-3"].Syncer.Key,
+		},
+		{
+			name:                 "use_syncer_key_when_parent_and_alias_have_different_syncer_config",
+			biddersWithSyncerCfg: biddersWithSyncerCfg,
+			bidderName:           "alias-4",
+			bidderInfo:           biddersWithSyncerCfg["alias-4"],
+			expectedErr:          "syncer key of alias bidder alias-4 is same as the syncer key for its parent bidder parent-2",
+		},
+		{
+			name:              "use_bidder_name_when_non-alias_bidder_has_no_syncer_key",
+			bidderName:        "parent-1",
+			bidderInfo:        biddersWithSyncerCfg["parent-1"],
+			expectedSyncerKey: "parent-1",
+		},
+		{
+			name:              "use_syncer_key_when_non-alias_bidder_has_defined_syncer_key",
+			bidderName:        "parent-2",
+			bidderInfo:        biddersWithSyncerCfg["parent-2"],
+			expectedSyncerKey: biddersWithSyncerCfg["parent-2"].Syncer.Key,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			syncerKey, err := getSyncerKey(test.biddersWithSyncerCfg, test.bidderName, test.bidderInfo)
+			if test.expectedErr != "" {
+				assert.Equal(t, test.expectedErr, err.Error())
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, test.expectedSyncerKey, syncerKey)
+			}
+		})
+	}
+}
