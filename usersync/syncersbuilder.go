@@ -26,21 +26,21 @@ func (e SyncerBuildError) Error() string {
 }
 
 func BuildSyncers(hostConfig *config.Configuration, bidderInfos config.BidderInfos) (map[string]Syncer, []error) {
-	// map syncer config by bidder
-	cfgByBidder := make(map[string]config.Syncer, len(bidderInfos))
+	biddersWithSyncerCfg := make(map[string]config.BidderInfo, len(bidderInfos))
 	for bidder, bidderInfo := range bidderInfos {
 		if shouldCreateSyncer(bidderInfo) {
-			cfgByBidder[bidder] = *bidderInfo.Syncer
+			biddersWithSyncerCfg[bidder] = bidderInfo
 		}
 	}
 
 	// map syncer config by key
 	cfgBySyncerKey := make(map[string][]namedSyncerConfig, len(bidderInfos))
-	for bidder, cfg := range cfgByBidder {
-		if cfg.Key == "" {
-			cfg.Key = bidder
+	for bidder, bidderInfo := range biddersWithSyncerCfg {
+		syncerCopy := *bidderInfo.Syncer
+		if syncerCopy.Key == "" {
+			syncerCopy.Key = bidder
 		}
-		cfgBySyncerKey[cfg.Key] = append(cfgBySyncerKey[cfg.Key], namedSyncerConfig{bidder, cfg})
+		cfgBySyncerKey[syncerCopy.Key] = append(cfgBySyncerKey[syncerCopy.Key], namedSyncerConfig{bidder, syncerCopy})
 	}
 
 	// resolve host endpoint
