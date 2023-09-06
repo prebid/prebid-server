@@ -93,8 +93,13 @@ func (s scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enfo
 	var userExtParsed map[string]json.RawMessage
 	userExtModified := false
 
-	userCopy := ptrutil.Clone(bidRequest.User)
-	deviceCopy := ptrutil.Clone(bidRequest.Device)
+	// expressed in two lines because IntelliJ cannot infer the generic type
+	var userCopy *openrtb2.User
+	userCopy = ptrutil.Clone(bidRequest.User)
+
+	// expressed in two lines because IntelliJ cannot infer the generic type
+	var deviceCopy *openrtb2.Device
+	deviceCopy = ptrutil.Clone(bidRequest.Device)
 
 	if userCopy != nil && (enforcement.UFPD || enforcement.Eids) {
 		if len(userCopy.Ext) != 0 {
