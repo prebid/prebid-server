@@ -39,6 +39,14 @@ type Ad struct {
 		Amount   float64
 		Currency string
 	}
+	NetBid struct {
+		Amount   float64
+		Currency string
+	}
+	GrossBid struct {
+		Amount   float64
+		Currency string
+	}
 	DealID          string `json:"dealId,omitempty"`
 	AdId            string
 	CreativeWidth   string
@@ -328,7 +336,7 @@ func getGDPR(request *openrtb2.BidRequest) (string, string, error) {
 	return gdpr, consent, nil
 }
 
-func generateAdResponse(ad Ad, impId string, html string, request *openrtb2.BidRequest) (*openrtb2.Bid, []error) {
+func generateAdResponse(ad Ad, imp openrtb2.Imp, html string, request *openrtb2.BidRequest) (*openrtb2.Bid, []error) {
 
 	creativeWidth, widthErr := strconv.ParseInt(ad.CreativeWidth, 10, 64)
 	if widthErr != nil {
@@ -344,6 +352,18 @@ func generateAdResponse(ad Ad, impId string, html string, request *openrtb2.BidR
 		}}
 	}
 
+	price := ad.Bid.Amount
+	priceType, _, _, _ := jsonparser.Get(imp.Ext, "bidder", "priceType")
+
+	if string(priceType) != "" {
+		if strings.ToLower(string(priceType)) == "net" {
+			price = ad.NetBid.Amount
+		}
+		if strings.ToLower(string(priceType)) == "gross" {
+			price = ad.GrossBid.Amount
+		}
+	}
+
 	adDomain := []string{}
 	for _, url := range ad.DestinationUrls {
 		domainArray := strings.Split(url, "/")
@@ -351,16 +371,18 @@ func generateAdResponse(ad Ad, impId string, html string, request *openrtb2.BidR
 		adDomain = append(adDomain, domain)
 	}
 
+	// strings.ToLower(str)
+
 	bid := openrtb2.Bid{
 		ID:      ad.AdId,
-		ImpID:   impId,
+		ImpID:   imp.ID,
 		W:       creativeWidth,
 		H:       creativeHeight,
 		AdID:    ad.AdId,
 		DealID:  ad.DealID,
 		CID:     ad.LineItemId,
 		CrID:    ad.CreativeId,
-		Price:   ad.Bid.Amount * 1000,
+		Price:   price * 1000,
 		AdM:     html,
 		ADomain: adDomain,
 	}
@@ -377,7 +399,7 @@ func generateBidResponse(adnResponse *AdnResponse, request *openrtb2.BidRequest)
 		adunitMap[adnRespAdunit.TargetId] = adnRespAdunit
 	}
 
-	for i, imp := range request.Imp {
+	for _, imp := range request.Imp {
 
 		auId, _, _, err := jsonparser.Get(imp.Ext, "bidder", "auId")
 		if err != nil {
@@ -394,7 +416,7 @@ func generateBidResponse(adnResponse *AdnResponse, request *openrtb2.BidRequest)
 			ad := adunit.Ads[0]
 			currency = ad.Bid.Currency
 
-			adBid, err := generateAdResponse(ad, request.Imp[i].ID, adunit.Html, request)
+			adBid, err := generateAdResponse(ad, imp, adunit.Html, request)
 			if err != nil {
 				return nil, []error{&errortypes.BadInput{
 					Message: fmt.Sprintf("Error at ad generation"),
@@ -407,7 +429,7 @@ func generateBidResponse(adnResponse *AdnResponse, request *openrtb2.BidRequest)
 			})
 
 			for _, deal := range adunit.Deals {
-				dealBid, err := generateAdResponse(deal, request.Imp[i].ID, deal.Html, request)
+				dealBid, err := generateAdResponse(deal, imp, deal.Html, request)
 				if err != nil {
 					return nil, []error{&errortypes.BadInput{
 						Message: fmt.Sprintf("Error at ad generation"),
