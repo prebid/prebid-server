@@ -42,7 +42,7 @@ type ImpExtBidder struct {
 	}
 }
 
-var dealDetectionRegEx, _ = regexp.Compile("(classic|deal)")
+var dealDetectionRegEx = regexp.MustCompile("(classic|deal)")
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids.
 func (a *ImprovedigitalAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
