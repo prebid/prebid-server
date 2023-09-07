@@ -19,5 +19,5 @@
     ]
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request: One of request.site or request.app or request.dooh must be defined\n"
+  "expectedErrorMessage": "Invalid request: request.site should include at least one of request.site.id or request.site.page.\n"
 }

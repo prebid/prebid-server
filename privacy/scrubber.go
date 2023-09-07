@@ -2,8 +2,10 @@ package privacy
 
 import (
 	"encoding/json"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/util/iputil"
 	"github.com/prebid/prebid-server/util/ptrutil"
-	"strings"
+	"net"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
 )
@@ -15,8 +17,8 @@ const (
 	// ScrubStrategyIPV4None does not remove any part of an IPV4 address.
 	ScrubStrategyIPV4None ScrubStrategyIPV4 = iota
 
-	// ScrubStrategyIPV4Lowest8 zeroes out the last 8 bits of an IPV4 address.
-	ScrubStrategyIPV4Lowest8
+	// ScrubStrategyIPV4Subnet zeroes out the last 8 bits of an IPV4 address.
+	ScrubStrategyIPV4Subnet
 )
 
 // ScrubStrategyIPV6 defines the approach to scrub PII from an IPV6 address.
@@ -26,11 +28,8 @@ const (
 	// ScrubStrategyIPV6None does not remove any part of an IPV6 address.
 	ScrubStrategyIPV6None ScrubStrategyIPV6 = iota
 
-	// ScrubStrategyIPV6Lowest16 zeroes out the last 16 bits of an IPV6 address.
-	ScrubStrategyIPV6Lowest16
-
-	// ScrubStrategyIPV6Lowest32 zeroes out the last 32 bits of an IPV6 address.
-	ScrubStrategyIPV6Lowest32
+	// ScrubStrategyIPV6Subnet zeroes out the last 16 bits of an IPV6 sub net address.
+	ScrubStrategyIPV6Subnet
 )
 
 // ScrubStrategyGeo defines the approach to scrub PII from geographical data.
@@ -76,14 +75,20 @@ type Scrubber interface {
 	ScrubUser(user *openrtb2.User, strategy ScrubStrategyUser, geo ScrubStrategyGeo) *openrtb2.User
 }
 
-type scrubber struct{}
-
-// NewScrubber returns an OpenRTB scrubber.
-func NewScrubber() Scrubber {
-	return scrubber{}
+type scrubber struct {
+	ipV6 config.IPv6
+	ipV4 config.IPv4
 }
 
-func (scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enforcement) *openrtb2.BidRequest {
+// NewScrubber returns an OpenRTB scrubber.
+func NewScrubber(ipV6 config.IPv6, ipV4 config.IPv4) Scrubber {
+	return scrubber{
+		ipV6: ipV6,
+		ipV4: ipV4,
+	}
+}
+
+func (s scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enforcement) *openrtb2.BidRequest {
 	var userExtParsed map[string]json.RawMessage
 	userExtModified := false
 
@@ -169,8 +174,8 @@ func (scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enforc
 			if deviceCopy.Geo != nil {
 				deviceCopy.Geo = scrubGeoPrecision(deviceCopy.Geo)
 			}
-			deviceCopy.IP = scrubIPV4Lowest8(deviceCopy.IP)
-			deviceCopy.IPv6 = scrubIPV6Lowest32Bits(deviceCopy.IPv6)
+			deviceCopy.IP = scrubIP(deviceCopy.IP, s.ipV4.AnonKeepBits, iputil.IPv4BitSize)
+			deviceCopy.IPv6 = scrubIP(deviceCopy.IPv6, s.ipV6.AnonKeepBits, iputil.IPv6BitSize)
 		}
 	}
 
@@ -179,7 +184,7 @@ func (scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enforc
 	return bidRequest
 }
 
-func (scrubber) ScrubDevice(device *openrtb2.Device, id ScrubStrategyDeviceID, ipv4 ScrubStrategyIPV4, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb2.Device {
+func (s scrubber) ScrubDevice(device *openrtb2.Device, id ScrubStrategyDeviceID, ipv4 ScrubStrategyIPV4, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb2.Device {
 	if device == nil {
 		return nil
 	}
@@ -198,15 +203,13 @@ func (scrubber) ScrubDevice(device *openrtb2.Device, id ScrubStrategyDeviceID, i
 	}
 
 	switch ipv4 {
-	case ScrubStrategyIPV4Lowest8:
-		deviceCopy.IP = scrubIPV4Lowest8(device.IP)
+	case ScrubStrategyIPV4Subnet:
+		deviceCopy.IP = scrubIP(device.IP, s.ipV4.AnonKeepBits, iputil.IPv4BitSize)
 	}
 
 	switch ipv6 {
-	case ScrubStrategyIPV6Lowest16:
-		deviceCopy.IPv6 = scrubIPV6Lowest16Bits(device.IPv6)
-	case ScrubStrategyIPV6Lowest32:
-		deviceCopy.IPv6 = scrubIPV6Lowest32Bits(device.IPv6)
+	case ScrubStrategyIPV6Subnet:
+		deviceCopy.IPv6 = scrubIP(device.IPv6, s.ipV6.AnonKeepBits, iputil.IPv6BitSize)
 	}
 
 	switch geo {
@@ -244,44 +247,13 @@ func (scrubber) ScrubUser(user *openrtb2.User, strategy ScrubStrategyUser, geo S
 	return &userCopy
 }
 
-func scrubIPV4Lowest8(ip string) string {
-	i := strings.LastIndex(ip, ".")
-	if i == -1 {
+func scrubIP(ip string, ones, bits int) string {
+	if ip == "" {
 		return ""
 	}
-
-	return ip[0:i] + ".0"
-}
-
-func scrubIPV6Lowest16Bits(ip string) string {
-	ip = removeLowestIPV6Segment(ip)
-
-	if ip != "" {
-		ip += ":0"
-	}
-
-	return ip
-}
-
-func scrubIPV6Lowest32Bits(ip string) string {
-	ip = removeLowestIPV6Segment(ip)
-	ip = removeLowestIPV6Segment(ip)
-
-	if ip != "" {
-		ip += ":0:0"
-	}
-
-	return ip
-}
-
-func removeLowestIPV6Segment(ip string) string {
-	i := strings.LastIndex(ip, ":")
-
-	if i == -1 {
-		return ""
-	}
-
-	return ip[0:i]
+	ipMask := net.CIDRMask(ones, bits)
+	ipMasked := net.ParseIP(ip).Mask(ipMask)
+	return ipMasked.String()
 }
 
 func scrubGeoFull(geo *openrtb2.Geo) *openrtb2.Geo {

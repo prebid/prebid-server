@@ -159,6 +159,14 @@ func TestProcessBidderInfo(t *testing.T) {
 			expectError:         "error parsing config for bidder bidderA.yaml",
 		},
 		{
+			description: "Invalid alias name",
+			bidderInfos: map[string][]byte{
+				"all.yaml": []byte(testSimpleAliasYAML),
+			},
+			expectedBidderInfos: nil,
+			expectError:         "alias all is a reserved bidder name and cannot be used",
+		},
+		{
 			description: "Valid aliases",
 			bidderInfos: map[string][]byte{
 				"bidderA.yaml": []byte(fullBidderYAMLConfig),
@@ -454,7 +462,6 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 			assert.Equal(t, test.expectedErr, err)
 		} else {
 			assert.Equal(t, test.expectedBidderInfos, bidderInfos)
-			assert.Contains(t, openrtb_ext.CoreBidderNames(), openrtb_ext.BidderName("bidderB"))
 		}
 	}
 }

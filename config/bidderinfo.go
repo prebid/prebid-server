@@ -242,16 +242,10 @@ func processBidderInfos(reader InfoReader, normalizeBidderName func(string) (ope
 	for fileName, data := range bidderConfigs {
 		bidderName := strings.Split(fileName, ".")
 		if len(bidderName) == 2 && bidderName[1] == "yaml" {
-			normalizedBidderName, bidderNameExists := normalizeBidderName(bidderName[0])
-			if !bidderNameExists {
-				return nil, fmt.Errorf("error parsing config for bidder %s: unknown bidder", fileName)
-			}
 			info := BidderInfo{}
 			if err := yaml.Unmarshal(data, &info); err != nil {
 				return nil, fmt.Errorf("error parsing config for bidder %s: %v", fileName, err)
 			}
-
-			bidderInfos[string(normalizedBidderName)] = info
 
 			//need to maintain nullable fields from BidderInfo struct into bidderInfoNullableFields
 			//to handle the default values in aliases yaml
@@ -261,7 +255,25 @@ func processBidderInfos(reader InfoReader, normalizeBidderName func(string) (ope
 					return nil, fmt.Errorf("error parsing config for aliased bidder %s: %v", fileName, err)
 				}
 
+				//required for CoreBidderNames function to also return aliasBiddernames
+				if err := openrtb_ext.SetAliasBidderName(bidderName[0], openrtb_ext.BidderName(info.AliasOf)); err != nil {
+					return nil, err
+				}
+
+				normalizedBidderName, bidderNameExists := normalizeBidderName(bidderName[0])
+				if !bidderNameExists {
+					return nil, fmt.Errorf("error parsing config for an alias %s: unknown bidder", fileName)
+				}
+
 				aliasNillableFieldsByBidder[string(normalizedBidderName)] = aliasFields
+				bidderInfos[string(normalizedBidderName)] = info
+			} else {
+				normalizedBidderName, bidderNameExists := normalizeBidderName(bidderName[0])
+				if !bidderNameExists {
+					return nil, fmt.Errorf("error parsing config for bidder %s: unknown bidder", fileName)
+				}
+
+				bidderInfos[string(normalizedBidderName)] = info
 			}
 		}
 	}
@@ -277,8 +289,7 @@ func processBidderAliases(aliasNillableFieldsByBidder map[string]aliasNillableFi
 		if err := validateAliases(aliasBidderInfo, bidderInfos, bidderName); err != nil {
 			return nil, err
 		}
-		//required for CoreBidderNames function to also return aliasBiddernames
-		openrtb_ext.SetAliasBidderName(openrtb_ext.BidderName(string(bidderName)))
+
 		parentBidderInfo := bidderInfos[aliasBidderInfo.AliasOf]
 		if aliasBidderInfo.AppSecret == "" {
 			aliasBidderInfo.AppSecret = parentBidderInfo.AppSecret

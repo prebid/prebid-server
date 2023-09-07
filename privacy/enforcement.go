@@ -1,6 +1,9 @@
 package privacy
 
-import "github.com/prebid/openrtb/v19/openrtb2"
+import (
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/config"
+)
 
 // Enforcement represents the privacy policies to enforce for an OpenRTB bid request.
 type Enforcement struct {
@@ -27,8 +30,8 @@ func (e Enforcement) AnyActivities() bool {
 }
 
 // Apply cleans personally identifiable information from an OpenRTB bid request.
-func (e Enforcement) Apply(bidRequest *openrtb2.BidRequest) {
-	e.apply(bidRequest, NewScrubber())
+func (e Enforcement) Apply(bidRequest *openrtb2.BidRequest, privacy config.AccountPrivacy) {
+	e.apply(bidRequest, NewScrubber(privacy.IPv6Config, privacy.IPv4Config))
 }
 
 func (e Enforcement) apply(bidRequest *openrtb2.BidRequest, scrubber Scrubber) {
@@ -55,21 +58,16 @@ func (e Enforcement) getDeviceIDScrubStrategy() ScrubStrategyDeviceID {
 
 func (e Enforcement) getIPv4ScrubStrategy() ScrubStrategyIPV4 {
 	if e.COPPA || e.GDPRGeo || e.CCPA || e.LMT {
-		return ScrubStrategyIPV4Lowest8
+		return ScrubStrategyIPV4Subnet
 	}
 
 	return ScrubStrategyIPV4None
 }
 
 func (e Enforcement) getIPv6ScrubStrategy() ScrubStrategyIPV6 {
-	if e.COPPA {
-		return ScrubStrategyIPV6Lowest32
+	if e.GDPRGeo || e.CCPA || e.LMT || e.COPPA {
+		return ScrubStrategyIPV6Subnet
 	}
-
-	if e.GDPRGeo || e.CCPA || e.LMT {
-		return ScrubStrategyIPV6Lowest16
-	}
-
 	return ScrubStrategyIPV6None
 }
 
