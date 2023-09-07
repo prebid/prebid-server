@@ -1,11 +1,14 @@
 package appnexus
 
 import (
+	"net/url"
 	"testing"
 
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestJsonSamples(t *testing.T) {
@@ -22,15 +25,24 @@ func TestJsonSamples(t *testing.T) {
 	adapterstest.RunJSONBidderTest(t, "appnexustest", bidder)
 }
 
-func TestMemberQueryParam(t *testing.T) {
-	uriWithMember := appendMemberId("http://ib.adnxs.com/openrtb2?query_param=true", "102")
-	expected := "http://ib.adnxs.com/openrtb2?query_param=true&member_id=102"
-	if uriWithMember != expected {
-		t.Errorf("appendMemberId() failed on URI with query string. Expected %s, got %s", expected, uriWithMember)
-	}
+func TestAppendMemberID(t *testing.T) {
+	uri, err := url.Parse("http://ib.adnxs.com/openrtb2?query_param=true")
+	require.NoError(t, err, "Failed to parse URI with query string")
+
+	uriWithMember := appendMemberId(*uri, "102")
+	expected := "http://ib.adnxs.com/openrtb2?member_id=102&query_param=true"
+	assert.Equal(t, expected, uriWithMember.String(), "Failed to append member id to URI with query string")
 }
 
-// fakerandomNumberGenerator
+func TestBuilderWithPlatformID(t *testing.T) {
+	bidder, buildErr := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
+		Endpoint: "http://ib.adnxs.com/openrtb2", PlatformID: "3"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+
+	assert.NoError(t, buildErr)
+	require.NotNil(t, bidder)
+	assert.Equal(t, 3, (*bidder.(*adapter)).hbSource)
+}
+
 type FakeRandomNumberGenerator struct {
 	Number int64
 }

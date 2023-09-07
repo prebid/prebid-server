@@ -18,7 +18,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://bid.pubwise.io/prebid",
+        "uri": "https://bidder.east2.pubwise.io/bid/pubwisedirect",
         "body": {
           "id": "test-request-id-native",
           "imp": [

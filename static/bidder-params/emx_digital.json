@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "title": "EMX Digital Adapter Params",
-    "description": "A schema which validates params accepted by the EMX Digital adapter",
+    "description": "A schema which validates params accepted by the Cadent Aperture MX adapter",
     "type": "object",
     "properties": {
       "tagid" : {

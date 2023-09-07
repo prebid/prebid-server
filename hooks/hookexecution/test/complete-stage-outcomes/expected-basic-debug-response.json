@@ -47,7 +47,32 @@
                         "status": "success",
                         "action": "update",
                         "execution_time_millis": 200,
-                        "analytics_tags": {},
+                        "analytics_tags": {
+                          "activities": [
+                            {
+                              "name": "device-id",
+                              "status": "success",
+                              "results": [
+                                {
+                                  "status": "success-allow",
+                                  "values": {
+                                    "foo": "bar"
+                                  },
+                                  "appliedto": {
+                                    "impids": [
+                                      "impId1"
+                                    ],
+                                    "request": true
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "name": "define-blocks",
+                              "status": "error"
+                            }
+                          ]
+                        },
                         "message": ""
                       },
                       {

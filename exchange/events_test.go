@@ -121,7 +121,7 @@ func Test_eventsData_modifyBidJSON(t *testing.T) {
 		},
 		{
 			name:      "banner: broken json expected to fail patching",
-			args:      args{enabledForAccount: true, enabledForRequest: true, bidType: openrtb_ext.BidTypeBanner, generatedBidId: ""},
+			args:      args{enabledForAccount: false, enabledForRequest: true, bidType: openrtb_ext.BidTypeBanner, generatedBidId: ""},
 			jsonBytes: []byte(`broken json`),
 			want:      nil,
 		},
@@ -150,6 +150,45 @@ func Test_eventsData_modifyBidJSON(t *testing.T) {
 				assert.Error(t, err)
 				assert.Equal(t, string(tt.jsonBytes), string(modifiedJSON), "Expected original json on failure to modify")
 			}
+		})
+	}
+}
+
+func Test_isEventAllowed(t *testing.T) {
+	type args struct {
+		enabledForAccount bool
+		enabledForRequest bool
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "enabled for account",
+			args: args{enabledForAccount: true, enabledForRequest: false},
+			want: true,
+		},
+		{
+			name: "enabled for request",
+			args: args{enabledForAccount: false, enabledForRequest: true},
+			want: true,
+		},
+		{
+			name: "disabled for account and request",
+			args: args{enabledForAccount: false, enabledForRequest: false},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			evData := &eventTracking{
+				enabledForAccount: tt.args.enabledForAccount,
+				enabledForRequest: tt.args.enabledForRequest,
+			}
+			isEventAllowed := evData.isEventAllowed()
+			assert.Equal(t, tt.want, isEventAllowed)
 		})
 	}
 }

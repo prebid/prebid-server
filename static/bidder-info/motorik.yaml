@@ -1,0 +1,14 @@
+endpoint: "http://lb-east.motorik.io/?k={{.AccountID}}&name={{.SourceId}}"
+maintainer:
+  email: "support@motorik.io"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native

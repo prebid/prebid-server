@@ -80,6 +80,12 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "ads_cert_requests.ok", m.AdsCertRequestsSuccess)
 	ensureContains(t, registry, "ads_cert_requests.failed", m.AdsCertRequestsFailure)
 
+	ensureContains(t, registry, "request_over_head_time.pre-bidder", m.OverheadTimer[PreBidder])
+	ensureContains(t, registry, "request_over_head_time.make-auction-response", m.OverheadTimer[MakeAuctionResponse])
+	ensureContains(t, registry, "request_over_head_time.make-bidder-requests", m.OverheadTimer[MakeBidderRequests])
+	ensureContains(t, registry, "bidder_server_response_time_seconds", m.BidderServerResponseTimer)
+	ensureContains(t, registry, "tmax_timeout", m.TMaxTimeoutCounter)
+
 	for module, stages := range moduleStageNames {
 		for _, stage := range stages {
 			ensureContainsModuleMetrics(t, registry, fmt.Sprintf("modules.module.%s.stage.%s", module, stage), m.ModuleMetrics[module][stage])
@@ -413,6 +419,36 @@ func TestRecordTLSHandshakeTime(t *testing.T) {
 		m.RecordTLSHandshakeTime(test.tLSHandshakeDuration)
 
 		assert.Equal(t, test.expectedDuration.Nanoseconds(), m.TLSHandshakeTimer.Sum(), test.description)
+	}
+}
+
+func TestRecordBidderServerResponseTime(t *testing.T) {
+	testCases := []struct {
+		name          string
+		time          time.Duration
+		expectedCount int64
+		expectedSum   int64
+	}{
+		{
+			name:          "record-bidder-server-response-time-1",
+			time:          time.Duration(500),
+			expectedCount: 1,
+			expectedSum:   500,
+		},
+		{
+			name:          "record-bidder-server-response-time-2",
+			time:          time.Duration(500),
+			expectedCount: 2,
+			expectedSum:   1000,
+		},
+	}
+	for _, test := range testCases {
+		registry := metrics.NewRegistry()
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: true}, nil, nil)
+
+		m.RecordBidderServerResponseTime(test.time)
+
+		assert.Equal(t, test.time.Nanoseconds(), m.BidderServerResponseTimer.Sum(), test.name)
 	}
 }
 
@@ -1189,6 +1225,55 @@ func TestRecordAccountUpgradeStatusMetrics(t *testing.T) {
 			am := m.getAccountMetrics(test.givenPubID)
 
 			assert.Equal(t, test.expectedMetricCount, am.accountDeprecationSummaryMeter.Count())
+		})
+	}
+}
+
+func TestRecordOverheadTime(t *testing.T) {
+	testCases := []struct {
+		name          string
+		time          time.Duration
+		overheadType  OverheadType
+		expectedCount int64
+		expectedSum   int64
+	}{
+		{
+			name:          "record-pre-bidder-overhead-time-1",
+			time:          time.Duration(500),
+			overheadType:  PreBidder,
+			expectedCount: 1,
+			expectedSum:   500,
+		},
+		{
+			name:          "record-pre-bidder-overhead-time-2",
+			time:          time.Duration(500),
+			overheadType:  PreBidder,
+			expectedCount: 2,
+			expectedSum:   1000,
+		},
+		{
+			name:          "record-auction-response-overhead-time",
+			time:          time.Duration(500),
+			overheadType:  MakeAuctionResponse,
+			expectedCount: 1,
+			expectedSum:   500,
+		},
+		{
+			name:          "record-make-bidder-requests-overhead-time",
+			time:          time.Duration(500),
+			overheadType:  MakeBidderRequests,
+			expectedCount: 1,
+			expectedSum:   500,
+		},
+	}
+	registry := metrics.NewRegistry()
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			m := NewMetrics(registry, []openrtb_ext.BidderName{}, config.DisabledMetrics{}, nil, nil)
+			m.RecordOverheadTime(test.overheadType, test.time)
+			overheadMetrics := m.OverheadTimer[test.overheadType]
+			assert.Equal(t, test.expectedCount, overheadMetrics.Count())
+			assert.Equal(t, test.expectedSum, overheadMetrics.Sum())
 		})
 	}
 }

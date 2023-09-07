@@ -80,6 +80,12 @@ func (me *MultiMetricsEngine) RecordConnectionAccept(success bool) {
 	}
 }
 
+func (me *MultiMetricsEngine) RecordTMaxTimeout() {
+	for _, thisME := range *me {
+		thisME.RecordTMaxTimeout()
+	}
+}
+
 func (me *MultiMetricsEngine) RecordConnectionClose(success bool) {
 	for _, thisME := range *me {
 		thisME.RecordConnectionClose(success)
@@ -149,6 +155,12 @@ func (me *MultiMetricsEngine) RecordTLSHandshakeTime(tlsHandshakeTime time.Durat
 	}
 }
 
+func (me *MultiMetricsEngine) RecordBidderServerResponseTime(bidderServerResponseTime time.Duration) {
+	for _, thisME := range *me {
+		thisME.RecordBidderServerResponseTime(bidderServerResponseTime)
+	}
+}
+
 // RecordAdapterBidReceived across all engines
 func (me *MultiMetricsEngine) RecordAdapterBidReceived(labels metrics.AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
 	for _, thisME := range *me {
@@ -167,6 +179,13 @@ func (me *MultiMetricsEngine) RecordAdapterPrice(labels metrics.AdapterLabels, c
 func (me *MultiMetricsEngine) RecordAdapterTime(labels metrics.AdapterLabels, length time.Duration) {
 	for _, thisME := range *me {
 		thisME.RecordAdapterTime(labels, length)
+	}
+}
+
+// RecordOverheadTime across all engines
+func (me *MultiMetricsEngine) RecordOverheadTime(overhead metrics.OverheadType, length time.Duration) {
+	for _, thisME := range *me {
+		thisME.RecordOverheadTime(overhead, length)
 	}
 }
 
@@ -378,6 +397,10 @@ func (me *NilMetricsEngine) RecordRequest(labels metrics.Labels) {
 func (me *NilMetricsEngine) RecordConnectionAccept(success bool) {
 }
 
+// RecordTMaxTimeout as a noop
+func (me *NilMetricsEngine) RecordTMaxTimeout() {
+}
+
 // RecordConnectionClose as a noop
 func (me *NilMetricsEngine) RecordConnectionClose(success bool) {
 }
@@ -418,6 +441,10 @@ func (me *NilMetricsEngine) RecordDNSTime(dnsLookupTime time.Duration) {
 func (me *NilMetricsEngine) RecordTLSHandshakeTime(tlsHandshakeTime time.Duration) {
 }
 
+// RecordBidderServerResponseTime as a noop
+func (me *NilMetricsEngine) RecordBidderServerResponseTime(bidderServerResponseTime time.Duration) {
+}
+
 // RecordAdapterBidReceived as a noop
 func (me *NilMetricsEngine) RecordAdapterBidReceived(labels metrics.AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
 }
@@ -428,6 +455,10 @@ func (me *NilMetricsEngine) RecordAdapterPrice(labels metrics.AdapterLabels, cpm
 
 // RecordAdapterTime as a noop
 func (me *NilMetricsEngine) RecordAdapterTime(labels metrics.AdapterLabels, length time.Duration) {
+}
+
+// RecordOverheadTime as a noop
+func (me *NilMetricsEngine) RecordOverheadTime(overhead metrics.OverheadType, length time.Duration) {
 }
 
 // RecordCookieSync as a noop

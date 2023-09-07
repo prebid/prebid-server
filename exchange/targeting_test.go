@@ -91,9 +91,6 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 			allowAllBidders: true,
 		},
 	}.Builder
-	tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-	}.Builder
 
 	ex := &exchange{
 		adapterMap:        buildAdapterMap(mockBids, server.URL, server.Client()),
@@ -101,16 +98,14 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 		cache:             &wellBehavedCache{},
 		cacheTime:         time.Duration(0),
 		gdprPermsBuilder:  gdprPermsBuilder,
-		tcf2ConfigBuilder: tcf2ConfigBuilder,
 		currencyConverter: currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
 		gdprDefaultValue:  gdpr.SignalYes,
 		categoriesFetcher: categoriesFetcher,
 		bidIDGenerator:    &mockBidIDGenerator{false, false},
 	}
 	ex.requestSplitter = requestSplitter{
-		me:                ex.me,
-		gdprPermsBuilder:  ex.gdprPermsBuilder,
-		tcf2ConfigBuilder: ex.tcf2ConfigBuilder,
+		me:               ex.me,
+		gdprPermsBuilder: ex.gdprPermsBuilder,
 	}
 
 	imps := buildImps(t, mockBids)
@@ -125,11 +120,12 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 		req.Site = &openrtb2.Site{}
 	}
 
-	auctionRequest := AuctionRequest{
+	auctionRequest := &AuctionRequest{
 		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
 		Account:           config.Account{},
 		UserSyncs:         &emptyUsersync{},
 		HookExecutor:      &hookexecution.EmptyHookExecutor{},
+		TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 	}
 
 	debugLog := DebugLog{}
@@ -918,7 +914,7 @@ func TestSetTargeting(t *testing.T) {
 	for _, test := range TargetingTests {
 		auc := &test.Auction
 		// Set rounded prices from the auction data
-		auc.setRoundedPrices(test.TargetData.priceGranularity)
+		auc.setRoundedPrices(test.TargetData)
 		winningBids := make(map[string]*entities.PbsOrtbBid)
 		// Set winning bids from the auction data
 		for imp, bidsByBidder := range auc.winningBidsByBidder {

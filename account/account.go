@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-
 	"github.com/buger/jsonparser"
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/config"
@@ -12,6 +11,7 @@ import (
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/util/iputil"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 )
 
@@ -102,6 +102,18 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 		})
 		return nil, errs
 	}
+
+	if ipV6Err := account.Privacy.IPv6Config.Validate(nil); len(ipV6Err) > 0 {
+		account.Privacy.IPv6Config.AnonKeepBits = iputil.IPv6DefaultMaskingBitSize
+	}
+
+	if ipV4Err := account.Privacy.IPv4Config.Validate(nil); len(ipV4Err) > 0 {
+		account.Privacy.IPv4Config.AnonKeepBits = iputil.IPv4DefaultMaskingBitSize
+	}
+
+	// set the value of events.enabled field based on deprecated events_enabled field and ensure backward compatibility
+	deprecateEventsEnabledField(account)
+
 	return account, nil
 }
 
@@ -251,4 +263,17 @@ func useGDPRChannelEnabled(account *config.Account) bool {
 
 func useCCPAChannelEnabled(account *config.Account) bool {
 	return account.CCPA.ChannelEnabled.IsSet() && !account.CCPA.IntegrationEnabled.IsSet()
+}
+
+// deprecateEventsEnabledField is responsible for ensuring backwards compatibility of "events_enabled" field.
+// This function favors "events.enabled" field over deprecated "events_enabled" field, if values for both are set.
+// If only deprecated "events_enabled" field is set then it sets the same value to "events.enabled" field.
+func deprecateEventsEnabledField(account *config.Account) {
+	if account != nil {
+		if account.Events.Enabled == nil {
+			account.Events.Enabled = account.EventsEnabled
+		}
+		// assign the old value to the new value so old and new are always the same even though the new value is what is used in the application code.
+		account.EventsEnabled = account.Events.Enabled
+	}
 }

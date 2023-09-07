@@ -16,14 +16,16 @@ type Price struct {
 }
 
 const (
-	defaultDelimiter string = "|"
-	catchAll         string = "*"
-	skipRateMin      int    = 0
-	skipRateMax      int    = 100
-	modelWeightMax   int    = 100
-	modelWeightMin   int    = 1
-	enforceRateMin   int    = 0
-	enforceRateMax   int    = 100
+	defaultCurrency  string  = "USD"
+	defaultDelimiter string  = "|"
+	catchAll         string  = "*"
+	skipRateMin      int     = 0
+	skipRateMax      int     = 100
+	modelWeightMax   int     = 100
+	modelWeightMin   int     = 1
+	enforceRateMin   int     = 0
+	enforceRateMax   int     = 100
+	floorPrecision   float64 = 0.01
 )
 
 // EnrichWithPriceFloors checks for floors enabled in account and request and selects floors data from dynamic fetched if present
@@ -34,7 +36,7 @@ func EnrichWithPriceFloors(bidRequestWrapper *openrtb_ext.RequestWrapper, accoun
 		return []error{errors.New("Empty bidrequest")}
 	}
 
-	if isPriceFloorsDisabled(account, bidRequestWrapper) {
+	if !isPriceFloorsEnabled(account, bidRequestWrapper) {
 		return []error{errors.New("Floors feature is disabled at account or in the request")}
 	}
 
@@ -112,25 +114,25 @@ func roundToFourDecimals(in float64) float64 {
 	return math.Round(in*10000) / 10000
 }
 
-// isPriceFloorsDisabled check for floors are disabled at account or request level
-func isPriceFloorsDisabled(account config.Account, bidRequestWrapper *openrtb_ext.RequestWrapper) bool {
-	return isPriceFloorsDisabledForAccount(account) || isPriceFloorsDisabledForRequest(bidRequestWrapper)
+// isPriceFloorsEnabled check for floors are enabled at account and request level
+func isPriceFloorsEnabled(account config.Account, bidRequestWrapper *openrtb_ext.RequestWrapper) bool {
+	return isPriceFloorsEnabledForAccount(account) && isPriceFloorsEnabledForRequest(bidRequestWrapper)
 }
 
-// isPriceFloorsDisabledForAccount check for floors are disabled at account
-func isPriceFloorsDisabledForAccount(account config.Account) bool {
-	return !account.PriceFloors.Enabled
+// isPriceFloorsEnabledForAccount check for floors enabled flag in account config
+func isPriceFloorsEnabledForAccount(account config.Account) bool {
+	return account.PriceFloors.Enabled
 }
 
-// isPriceFloorsDisabledForRequest check for floors are disabled at request
-func isPriceFloorsDisabledForRequest(bidRequestWrapper *openrtb_ext.RequestWrapper) bool {
+// isPriceFloorsEnabledForRequest check for floors are enabled flag in request
+func isPriceFloorsEnabledForRequest(bidRequestWrapper *openrtb_ext.RequestWrapper) bool {
 	requestExt, err := bidRequestWrapper.GetRequestExt()
 	if err == nil {
-		if prebidExt := requestExt.GetPrebid(); prebidExt != nil && prebidExt.Floors != nil && !prebidExt.Floors.GetEnabled() {
-			return true
+		if prebidExt := requestExt.GetPrebid(); prebidExt != nil && prebidExt.Floors != nil {
+			return prebidExt.Floors.GetEnabled()
 		}
 	}
-	return false
+	return true
 }
 
 // resolveFloors does selection of floors fields from request data and dynamic fetched data if dynamic fetch is enabled
@@ -200,10 +202,11 @@ func updateFloorsInRequest(bidRequestWrapper *openrtb_ext.RequestWrapper, priceF
 	requestExt, err := bidRequestWrapper.GetRequestExt()
 	if err == nil {
 		prebidExt := requestExt.GetPrebid()
-		if prebidExt != nil {
-			prebidExt.Floors = priceFloors
-			requestExt.SetPrebid(prebidExt)
-			bidRequestWrapper.RebuildRequest()
+		if prebidExt == nil {
+			prebidExt = &openrtb_ext.ExtRequestPrebid{}
 		}
+		prebidExt.Floors = priceFloors
+		requestExt.SetPrebid(prebidExt)
+		bidRequestWrapper.RebuildRequest()
 	}
 }

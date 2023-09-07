@@ -51,7 +51,7 @@ func getFloorCurrency(floorExt *openrtb_ext.PriceFloorRules) string {
 	}
 
 	if len(floorCur) == 0 {
-		floorCur = "USD"
+		floorCur = defaultCurrency
 	}
 
 	return floorCur

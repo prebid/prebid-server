@@ -74,7 +74,8 @@
                   "price": 1.16,
                   "adm": "some-test-ad",
                   "w": 300,
-                  "h": 250
+                  "h": 250,
+                  "mtype":2
                 }
               ]
             }
@@ -95,7 +96,8 @@
             "price": 1.16,
             "adm": "some-test-ad",
             "w": 300,
-            "h": 250
+            "h": 250,
+            "mtype":2
           },
           "type": "video"
         }

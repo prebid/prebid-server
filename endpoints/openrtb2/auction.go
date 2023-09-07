@@ -1,6 +1,7 @@
 package openrtb2
 
 import (
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"errors"
@@ -13,6 +14,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/prebid/prebid-server/privacy"
+
 	"github.com/buger/jsonparser"
 	"github.com/gofrs/uuid"
 	"github.com/golang/glog"
@@ -24,6 +27,7 @@ import (
 	nativeRequests "github.com/prebid/openrtb/v19/native1/request"
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/openrtb/v19/openrtb3"
+	"github.com/prebid/prebid-server/bidadjustment"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/ortb"
 	"golang.org/x/net/publicsuffix"
@@ -35,6 +39,7 @@ import (
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -87,6 +92,7 @@ func NewEndpoint(
 	bidderMap map[string]openrtb_ext.BidderName,
 	storedRespFetcher stored_requests.Fetcher,
 	hookExecutionPlanBuilder hooks.ExecutionPlanBuilder,
+	tmaxAdjustments *exchange.TmaxAdjustmentsPreprocessed,
 ) (httprouter.Handle, error) {
 	if ex == nil || validator == nil || requestsById == nil || accounts == nil || cfg == nil || metricsEngine == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
@@ -117,7 +123,8 @@ func NewEndpoint(
 		nil,
 		ipValidator,
 		storedRespFetcher,
-		hookExecutionPlanBuilder}).Auction), nil
+		hookExecutionPlanBuilder,
+		tmaxAdjustments}).Auction), nil
 }
 
 type endpointDeps struct {
@@ -139,6 +146,7 @@ type endpointDeps struct {
 	privateNetworkIPValidator iputil.IPValidator
 	storedRespFetcher         stored_requests.Fetcher
 	hookExecutionPlanBuilder  hooks.ExecutionPlanBuilder
+	tmaxAdjustments           *exchange.TmaxAdjustmentsPreprocessed
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -179,9 +187,20 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	if rejectErr := hookexecution.FindFirstRejectOrNil(errL); rejectErr != nil {
-		ao.Request = req.BidRequest
+		ao.RequestWrapper = req
 		labels, ao = rejectAuctionRequest(*rejectErr, w, hookExecutor, req.BidRequest, account, labels, ao)
 		return
+	}
+
+	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
+
+	activities, activitiesErr := privacy.NewActivityControl(&account.Privacy)
+	if activitiesErr != nil {
+		errL = append(errL, activitiesErr)
+		if errortypes.ContainsFatalError(errL) {
+			writeError(errL, w, &labels)
+			return
+		}
 	}
 
 	ctx := context.Background()
@@ -193,7 +212,11 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		defer cancel()
 	}
 
-	usersyncs := usersync.ParseCookieFromRequest(r, &(deps.cfg.HostCookie))
+	// Read Usersyncs/Cookie
+	decoder := usersync.Base64Decoder{}
+	usersyncs := usersync.ReadCookie(r, decoder, &deps.cfg.HostCookie)
+	usersync.SyncHostCookie(r, usersyncs, &deps.cfg.HostCookie)
+
 	if req.Site != nil {
 		if usersyncs.HasAnyLiveSyncs() {
 			labels.CookieFlag = metrics.CookieFlagYes
@@ -213,7 +236,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	warnings := errortypes.WarningOnly(errL)
 
-	auctionRequest := exchange.AuctionRequest{
+	auctionRequest := &exchange.AuctionRequest{
 		BidRequestWrapper:          req,
 		Account:                    *account,
 		UserSyncs:                  usersyncs,
@@ -228,11 +251,24 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		BidderImpReplaceImpID:      bidderImpReplaceImp,
 		PubID:                      labels.PubID,
 		HookExecutor:               hookExecutor,
+		TCF2Config:                 tcf2Config,
+		Activities:                 activities,
+		TmaxAdjustments:            deps.tmaxAdjustments,
 	}
-	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
-	ao.Request = req.BidRequest
-	ao.Response = response
+	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
+	defer func() {
+		if !auctionRequest.BidderResponseStartTime.IsZero() {
+			deps.metricsEngine.RecordOverheadTime(metrics.MakeAuctionResponse, time.Since(auctionRequest.BidderResponseStartTime))
+		}
+	}()
+	ao.RequestWrapper = req
 	ao.Account = account
+	var response *openrtb2.BidResponse
+	if auctionResponse != nil {
+		response = auctionResponse.BidResponse
+	}
+	ao.Response = response
+	ao.SeatNonBid = auctionResponse.GetSeatNonBid()
 	rejectErr, isRejectErr := hookexecution.CastRejectErr(err)
 	if err != nil && !isRejectErr {
 		if errortypes.ReadCode(err) == errortypes.BadInputErrorCode {
@@ -251,7 +287,38 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
+	err = setSeatNonBidRaw(req, auctionResponse)
+	if err != nil {
+		glog.Errorf("Error setting seat non-bid: %v", err)
+	}
 	labels, ao = sendAuctionResponse(w, hookExecutor, response, req.BidRequest, account, labels, ao)
+}
+
+// setSeatNonBidRaw is transitional function for setting SeatNonBid inside bidResponse.Ext
+// Because,
+// 1. today exchange.HoldAuction prepares and marshals some piece of response.Ext which is then used by auction.go, amp_auction.go and video_auction.go
+// 2. As per discussion with Prebid Team we are planning to move away from - HoldAuction building openrtb2.BidResponse. instead respective auction modules will build this object
+// 3. So, we will need this method to do first,  unmarshalling of response.Ext
+func setSeatNonBidRaw(request *openrtb_ext.RequestWrapper, auctionResponse *exchange.AuctionResponse) error {
+	if auctionResponse == nil || auctionResponse.BidResponse == nil {
+		return nil
+	}
+	// unmarshalling is required here, until we are moving away from bidResponse.Ext, which is populated
+	// by HoldAuction
+	response := auctionResponse.BidResponse
+	respExt := &openrtb_ext.ExtBidResponse{}
+	if err := json.Unmarshal(response.Ext, &respExt); err != nil {
+		return err
+	}
+	if setSeatNonBid(respExt, request, auctionResponse) {
+		if respExtJson, err := json.Marshal(respExt); err == nil {
+			response.Ext = respExtJson
+			return nil
+		} else {
+			return err
+		}
+	}
+	return nil
 }
 
 func rejectAuctionRequest(
@@ -331,27 +398,48 @@ func sendAuctionResponse(
 //
 // If the errors list has at least one element, then no guarantees are made about the returned request.
 func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metrics.Labels, hookExecutor hookexecution.HookStageExecutor) (req *openrtb_ext.RequestWrapper, impExtInfoMap map[string]exchange.ImpExtInfo, storedAuctionResponses stored_responses.ImpsWithBidResponses, storedBidResponses stored_responses.ImpBidderStoredResp, bidderImpReplaceImpId stored_responses.BidderImpReplaceImpID, account *config.Account, errs []error) {
-	req = &openrtb_ext.RequestWrapper{}
-	req.BidRequest = &openrtb2.BidRequest{}
 	errs = nil
-
-	// Pull the request body into a buffer, so we have it for later usage.
-	lr := &io.LimitedReader{
-		R: httpRequest.Body,
+	var err error
+	var r io.ReadCloser = httpRequest.Body
+	reqContentEncoding := httputil.ContentEncoding(httpRequest.Header.Get("Content-Encoding"))
+	if reqContentEncoding != "" {
+		if !deps.cfg.Compression.Request.IsSupported(reqContentEncoding) {
+			errs = []error{fmt.Errorf("Content-Encoding of type %s is not supported", reqContentEncoding)}
+			return
+		} else {
+			r, err = getCompressionEnabledReader(httpRequest.Body, reqContentEncoding)
+			if err != nil {
+				errs = []error{err}
+				return
+			}
+		}
+	}
+	defer r.Close()
+	limitedReqReader := &io.LimitedReader{
+		R: r,
 		N: deps.cfg.MaxRequestSize,
 	}
-	requestJson, err := io.ReadAll(lr)
+
+	requestJson, err := io.ReadAll(limitedReqReader)
 	if err != nil {
 		errs = []error{err}
 		return
 	}
-	// If the request size was too large, read through the rest of the request body so that the connection can be reused.
-	if lr.N <= 0 {
-		if written, err := io.Copy(io.Discard, httpRequest.Body); written > 0 || err != nil {
-			errs = []error{fmt.Errorf("Request size exceeded max size of %d bytes.", deps.cfg.MaxRequestSize)}
+
+	if limitedReqReader.N <= 0 {
+		// Limited Reader returns 0 if the request was exactly at the max size or over the limit.
+		// This is because it only reads up to N bytes. To check if the request was too large,
+		//  we need to look at the next byte of its underlying reader, limitedReader.R.
+		if _, err := limitedReqReader.R.Read(make([]byte, 1)); err != io.EOF {
+			// Discard the rest of the request body so that the connection can be reused.
+			io.Copy(io.Discard, httpRequest.Body)
+			errs = []error{fmt.Errorf("request size exceeded max size of %d bytes.", deps.cfg.MaxRequestSize)}
 			return
 		}
 	}
+
+	req = &openrtb_ext.RequestWrapper{}
+	req.BidRequest = &openrtb2.BidRequest{}
 
 	requestJson, rejectErr := hookExecutor.ExecuteEntrypointStage(httpRequest, requestJson)
 	if rejectErr != nil {
@@ -461,6 +549,15 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	}
 
 	return
+}
+
+func getCompressionEnabledReader(body io.ReadCloser, contentEncoding httputil.ContentEncoding) (io.ReadCloser, error) {
+	switch contentEncoding {
+	case httputil.ContentEncodingGZIP:
+		return gzip.NewReader(body)
+	default:
+		return nil, fmt.Errorf("unsupported compression type '%s'", contentEncoding)
+	}
 }
 
 // hasPayloadUpdatesAt checks if there are any successful payload updates at given stage
@@ -719,7 +816,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 	}
 
 	if errs := validateRequestExt(req); len(errs) != 0 {
-		return append(errL, errs...)
+		if errortypes.ContainsFatalError(errs) {
+			return append(errL, errs...)
+		}
+		errL = append(errL, errs...)
 	}
 
 	if err := deps.validateSite(req); err != nil {
@@ -1550,6 +1650,15 @@ func validateRequestExt(req *openrtb_ext.RequestWrapper) []error {
 		reqExt.SetPrebid(prebid)
 	}
 
+	if !bidadjustment.Validate(prebid.BidAdjustments) {
+		prebid.BidAdjustments = nil
+		reqExt.SetPrebid(prebid)
+		errs = append(errs, &errortypes.Warning{
+			WarningCode: errortypes.BidAdjustmentWarningCode,
+			Message:     "bid adjustment from request was invalid",
+		})
+	}
+
 	return errs
 }
 
@@ -1563,29 +1672,50 @@ func validateTargeting(t *openrtb_ext.ExtRequestTargeting) error {
 	}
 
 	if t.PriceGranularity != nil {
-		pg := t.PriceGranularity
-
-		if pg.Precision == nil {
-			return errors.New("Price granularity error: precision is required")
-		} else if *pg.Precision < 0 {
-			return errors.New("Price granularity error: precision must be non-negative")
-		} else if *pg.Precision > openrtb_ext.MaxDecimalFigures {
-			return fmt.Errorf("Price granularity error: precision of more than %d significant figures is not supported", openrtb_ext.MaxDecimalFigures)
-		}
-
-		var prevMax float64 = 0
-		for _, gr := range pg.Ranges {
-			if gr.Max <= prevMax {
-				return errors.New(`Price granularity error: range list must be ordered with increasing "max"`)
-			}
-
-			if gr.Increment <= 0.0 {
-				return errors.New("Price granularity error: increment must be a nonzero positive number")
-			}
-			prevMax = gr.Max
+		if err := validatePriceGranularity(t.PriceGranularity); err != nil {
+			return err
 		}
 	}
 
+	if t.MediaTypePriceGranularity.Video != nil {
+		if err := validatePriceGranularity(t.MediaTypePriceGranularity.Video); err != nil {
+			return err
+		}
+	}
+	if t.MediaTypePriceGranularity.Banner != nil {
+		if err := validatePriceGranularity(t.MediaTypePriceGranularity.Banner); err != nil {
+			return err
+		}
+	}
+	if t.MediaTypePriceGranularity.Native != nil {
+		if err := validatePriceGranularity(t.MediaTypePriceGranularity.Native); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func validatePriceGranularity(pg *openrtb_ext.PriceGranularity) error {
+	if pg.Precision == nil {
+		return errors.New("Price granularity error: precision is required")
+	} else if *pg.Precision < 0 {
+		return errors.New("Price granularity error: precision must be non-negative")
+	} else if *pg.Precision > openrtb_ext.MaxDecimalFigures {
+		return fmt.Errorf("Price granularity error: precision of more than %d significant figures is not supported", openrtb_ext.MaxDecimalFigures)
+	}
+
+	var prevMax float64 = 0
+	for _, gr := range pg.Ranges {
+		if gr.Max <= prevMax {
+			return errors.New(`Price granularity error: range list must be ordered with increasing "max"`)
+		}
+
+		if gr.Increment <= 0.0 {
+			return errors.New("Price granularity error: increment must be a nonzero positive number")
+		}
+		prevMax = gr.Max
+	}
 	return nil
 }
 
@@ -1666,11 +1796,9 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 	// Check Universal User ID
 	eids := userExt.GetEid()
 	if eids != nil {
-		if len(*eids) == 0 {
-			return append(errL, errors.New("request.user.ext.eids must contain at least one element or be undefined"))
-		}
-		uniqueSources := make(map[string]struct{}, len(*eids))
-		for eidIndex, eid := range *eids {
+		eidsValue := *eids
+		uniqueSources := make(map[string]struct{}, len(eidsValue))
+		for eidIndex, eid := range eidsValue {
 			if eid.Source == "" {
 				return append(errL, fmt.Errorf("request.user.ext.eids[%d] missing required field: \"source\"", eidIndex))
 			}
@@ -1706,6 +1834,7 @@ func validateRegs(req *openrtb_ext.RequestWrapper, gpp gpplib.GppContainer) []er
 		for _, id := range req.BidRequest.Regs.GPPSID {
 			if id == int8(constants.SectionTCFEU2) {
 				gdpr = 1
+				break
 			}
 		}
 		if gdpr != *req.BidRequest.Regs.GDPR {
@@ -1838,8 +1967,12 @@ func setAuctionTypeImplicitly(r *openrtb_ext.RequestWrapper) {
 }
 
 func setSiteImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
+	if r.Site == nil {
+		r.Site = &openrtb2.Site{}
+	}
+
 	referrerCandidate := httpReq.Referer()
-	if referrerCandidate == "" && r.Site != nil && r.Site.Page != "" {
+	if referrerCandidate == "" && r.Site.Page != "" {
 		referrerCandidate = r.Site.Page // If http referer is disabled and thus has empty value - use site.page instead
 	}
 
@@ -1853,17 +1986,13 @@ func setSiteImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
 		}
 	}
 
-	if r.Site != nil {
-		if siteExt, err := r.GetSiteExt(); err == nil && siteExt.GetAmp() == nil {
-			siteExt.SetAmp(&notAmp)
-		}
+	if siteExt, err := r.GetSiteExt(); err == nil && siteExt.GetAmp() == nil {
+		siteExt.SetAmp(&notAmp)
 	}
+
 }
 
 func setSitePageIfEmpty(site *openrtb2.Site, sitePage string) {
-	if site == nil {
-		site = &openrtb2.Site{}
-	}
 	if site.Page == "" {
 		site.Page = sitePage
 	}

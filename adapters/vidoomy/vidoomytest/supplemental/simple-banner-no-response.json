@@ -77,9 +77,5 @@
         "body": {}
       }
     }
-  ],
-
-  "expectedBidResponses": [
-    {}
   ]
 }

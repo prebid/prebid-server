@@ -1,6 +1,7 @@
 package ccpa
 
 import (
+	"errors"
 	"fmt"
 
 	gpplib "github.com/prebid/go-gpp"
@@ -8,6 +9,7 @@ import (
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	gppPolicy "github.com/prebid/prebid-server/privacy/gpp"
 )
 
 // Policy represents the CCPA regulatory information from an OpenRTB bid request.
@@ -18,33 +20,25 @@ type Policy struct {
 
 // ReadFromRequestWrapper extracts the CCPA regulatory information from an OpenRTB bid request.
 func ReadFromRequestWrapper(req *openrtb_ext.RequestWrapper, gpp gpplib.GppContainer) (Policy, error) {
-	var consent string
 	var noSaleBidders []string
-	var warn error = nil
+	var gppSIDs []int8
+	var requestUSPrivacy string
+	var warn error
 
 	if req == nil || req.BidRequest == nil {
 		return Policy{}, nil
 	}
 
 	if req.BidRequest.Regs != nil {
-		for _, s := range req.BidRequest.Regs.GPPSID {
-			if s == int8(gppConstants.SectionUSPV1) {
-				for i, id := range gpp.SectionTypes {
-					if id == gppConstants.SectionUSPV1 {
-						consent = gpp.Sections[i].GetValue()
-					}
-				}
-			}
-		}
-		if req.BidRequest.Regs.USPrivacy != "" {
-			if consent == "" {
-				consent = req.BidRequest.Regs.USPrivacy
-			} else if consent != req.BidRequest.Regs.USPrivacy {
-				warn = &errortypes.Warning{
-					Message:     "regs.us_privacy consent does not match uspv1 in GPP, using regs.gpp",
-					WarningCode: errortypes.InvalidPrivacyConsentWarningCode}
-			}
-		}
+		requestUSPrivacy = req.BidRequest.Regs.USPrivacy
+		gppSIDs = req.BidRequest.Regs.GPPSID
+	}
+
+	consent, err := SelectCCPAConsent(requestUSPrivacy, gpp, gppSIDs)
+	if err != nil {
+		warn = &errortypes.Warning{
+			Message:     "regs.us_privacy consent does not match uspv1 in GPP, using regs.gpp",
+			WarningCode: errortypes.InvalidPrivacyConsentWarningCode}
 	}
 
 	if consent == "" {
@@ -98,6 +92,29 @@ func (p Policy) Write(req *openrtb_ext.RequestWrapper) error {
 	regsExt.SetUSPrivacy(p.Consent)
 	setPrebidNoSale(p.NoSaleBidders, reqExt)
 	return nil
+}
+
+func SelectCCPAConsent(requestUSPrivacy string, gpp gpplib.GppContainer, gppSIDs []int8) (string, error) {
+	var consent string
+	var err error
+
+	if len(gpp.SectionTypes) > 0 {
+		if gppPolicy.IsSIDInList(gppSIDs, gppConstants.SectionUSPV1) {
+			if i := gppPolicy.IndexOfSID(gpp, gppConstants.SectionUSPV1); i >= 0 {
+				consent = gpp.Sections[i].GetValue()
+			}
+		}
+	}
+
+	if requestUSPrivacy != "" {
+		if consent == "" {
+			consent = requestUSPrivacy
+		} else if consent != requestUSPrivacy {
+			err = errors.New("request.us_privacy consent does not match uspv1")
+		}
+	}
+
+	return consent, err
 }
 
 func setPrebidNoSale(noSaleBidders []string, ext *openrtb_ext.RequestExt) {

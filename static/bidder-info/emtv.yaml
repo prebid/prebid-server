@@ -1,0 +1,19 @@
+endpoint: "https://us-east-ep.engagemedia.tv/pserver"
+maintainer:
+  email: "support@engagemedia.tv"
+capabilities:
+  site:
+    mediaTypes:
+    - banner
+    - video
+    - native
+    
+  app:
+    mediaTypes:
+    - banner
+    - video
+    - native
+userSync:
+  redirect:
+    url: "https://cs.engagemedia.tv/pbserver?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&redir={{.RedirectURL}}"
+    userMacro: "[UID]"

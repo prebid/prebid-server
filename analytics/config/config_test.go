@@ -20,7 +20,6 @@ func TestSampleModule(t *testing.T) {
 	am.LogAuctionObject(&analytics.AuctionObject{
 		Status:   http.StatusOK,
 		Errors:   nil,
-		Request:  &openrtb2.BidRequest{},
 		Response: &openrtb2.BidResponse{},
 	})
 	if count != 1 {

@@ -107,8 +107,8 @@ func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprou
 		return
 	}
 
-	// account does not support events
-	if !account.EventsEnabled {
+	// Check if events are enabled for the account
+	if !account.Events.IsEnabled() {
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte(fmt.Sprintf("Account '%s' doesn't support events", eventRequest.AccountID)))
 		return
@@ -217,7 +217,7 @@ func HandleAccountServiceErrors(errs []error) (status int, messages []string) {
 		}
 	}
 
-	return status, messages
+	return
 }
 
 func optionalParameters(request *analytics.EventRequest) string {

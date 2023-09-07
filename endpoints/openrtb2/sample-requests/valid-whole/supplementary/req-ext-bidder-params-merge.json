@@ -76,6 +76,7 @@
             }
           ]
         },
+        "mediatypepricegranularity": {},
         "includewinners": true,
         "includebidderkeys": true
       },

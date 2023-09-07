@@ -21,7 +21,7 @@
             {
                 "bidder":
                 {
-                    "host": "search.nutella.datablocks.net",
+                    "host": "pbserver.dblks.net",
                     "sourceId": 906295
                 }
             }
@@ -41,7 +41,7 @@
     {
         "expectedRequest":
         {
-            "uri": "http://search.nutella.datablocks.net/openrtb2?sid=906295",
+            "uri": "http://pbserver.dblks.net/openrtb2?sid=906295",
             "body":
             {
                 "id": "some-request-id",
@@ -64,7 +64,7 @@
                     {
                         "bidder":
                         {
-                            "host": "search.nutella.datablocks.net",
+                            "host": "pbserver.dblks.net",
                             "sourceId": 906295
                         }
                     }

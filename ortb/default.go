@@ -46,11 +46,32 @@ func setDefaultsTargeting(targeting *openrtb_ext.ExtRequestTargeting) bool {
 
 	modified := false
 
-	if targeting.PriceGranularity == nil || len(targeting.PriceGranularity.Ranges) == 0 {
-		targeting.PriceGranularity = ptrutil.ToPtr(openrtb_ext.NewPriceGranularityDefault())
+	if newPG, updated := setDefaultsPriceGranularity(targeting.PriceGranularity); updated {
 		modified = true
-	} else if setDefaultsPriceGranularity(targeting.PriceGranularity) {
-		modified = true
+		targeting.PriceGranularity = newPG
+	}
+
+	// If price granularity is not specified in request then default one should be set.
+	// Default price granularity can be overwritten for video, banner or native bid type
+	// only in case targeting.MediaTypePriceGranularity.Video|Banner|Native != nil.
+
+	if targeting.MediaTypePriceGranularity.Video != nil {
+		if newVideoPG, updated := setDefaultsPriceGranularity(targeting.MediaTypePriceGranularity.Video); updated {
+			modified = true
+			targeting.MediaTypePriceGranularity.Video = newVideoPG
+		}
+	}
+	if targeting.MediaTypePriceGranularity.Banner != nil {
+		if newBannerPG, updated := setDefaultsPriceGranularity(targeting.MediaTypePriceGranularity.Banner); updated {
+			modified = true
+			targeting.MediaTypePriceGranularity.Banner = newBannerPG
+		}
+	}
+	if targeting.MediaTypePriceGranularity.Native != nil {
+		if newNativePG, updated := setDefaultsPriceGranularity(targeting.MediaTypePriceGranularity.Native); updated {
+			modified = true
+			targeting.MediaTypePriceGranularity.Native = newNativePG
+		}
 	}
 
 	if targeting.IncludeWinners == nil {
@@ -66,7 +87,12 @@ func setDefaultsTargeting(targeting *openrtb_ext.ExtRequestTargeting) bool {
 	return modified
 }
 
-func setDefaultsPriceGranularity(pg *openrtb_ext.PriceGranularity) bool {
+func setDefaultsPriceGranularity(pg *openrtb_ext.PriceGranularity) (*openrtb_ext.PriceGranularity, bool) {
+	if pg == nil || len(pg.Ranges) == 0 {
+		pg = ptrutil.ToPtr(openrtb_ext.NewPriceGranularityDefault())
+		return pg, true
+	}
+
 	modified := false
 
 	if pg.Precision == nil {
@@ -78,7 +104,7 @@ func setDefaultsPriceGranularity(pg *openrtb_ext.PriceGranularity) bool {
 		modified = true
 	}
 
-	return modified
+	return pg, modified
 }
 
 func setDefaultsPriceGranularityRange(ranges []openrtb_ext.GranularityRange) bool {

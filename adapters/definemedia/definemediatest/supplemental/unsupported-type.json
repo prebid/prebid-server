@@ -240,7 +240,7 @@
       }
     }
   ],
-  "expectedBidResponses": [],
+  "expectedBidResponses": [{"currency":"USD","bids":[]}],
   "expectedMakeBidsErrors": [
       {
         "value": "Invalid mediatype in the impression",

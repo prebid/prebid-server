@@ -73,9 +73,9 @@ func (e *eventsMockAnalyticsModule) LogNotificationEventObject(ne *analytics.Not
 
 // Mock Account fetcher
 var mockAccountData = map[string]json.RawMessage{
-	"events_enabled":  json.RawMessage(`{"events_enabled":true}`),
-	"events_disabled": json.RawMessage(`{"events_enabled":false}`),
-	"malformed_acct":  json.RawMessage(`{"events_enabled":"invalid type"}`),
+	"events_enabled":  json.RawMessage(`{"events": {"enabled":true}}`),
+	"events_disabled": json.RawMessage(`{"events": {"enabled":false}}`),
+	"malformed_acct":  json.RawMessage(`{"events": {"enabled":"invalid type"}}`),
 }
 
 type mockAccountsFetcher struct {
@@ -359,7 +359,7 @@ func TestShouldReturnBadRequestWhenAnalyticsValueIsInvalid(t *testing.T) {
 	assert.Equal(t, "invalid request: unknown analytics: '4'\n", string(d))
 }
 
-func TestShouldNotPassEventToAnalyticsReporterWhenAccountNotFound(t *testing.T) {
+func TestShouldNotPassEventToAnalyticsReporterWhenAccountNotFoundAndDefaultIsFalse(t *testing.T) {
 
 	// mock AccountsFetcher
 	mockAccountsFetcher := &mockAccountsFetcher{
