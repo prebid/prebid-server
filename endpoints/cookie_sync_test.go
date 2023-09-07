@@ -974,38 +974,6 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			expectedError:        errCookieSyncAccountBlocked.Error(),
 			givenAccountRequired: true,
 		},
-
-		{
-			description: "Account Defaults - Invalid Activities",
-			givenBody: strings.NewReader(`{` +
-				`"bidders":["a", "b"],` +
-				`"account":"ValidAccountInvalidActivities"` +
-				`}`),
-			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
-			givenCCPAEnabled: true,
-			givenConfig: config.UserSync{
-				Cooperative: config.UserSyncCooperative{
-					EnabledByDefault: false,
-					PriorityGroups:   [][]string{{"a", "b", "c"}},
-				},
-			},
-			expectedPrivacy: privacy.Policies{},
-			expectedRequest: usersync.Request{
-				Bidders: []string{"a", "b"},
-				Cooperative: usersync.Cooperative{
-					Enabled:        false,
-					PriorityGroups: [][]string{{"a", "b", "c"}},
-				},
-				Limit: 0,
-				Privacy: usersyncPrivacy{
-					gdprPermissions: &fakePermissions{},
-				},
-				SyncTypeFilter: usersync.SyncTypeFilter{
-					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
-					Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
-				},
-			},
-		},
 	}
 
 	for _, test := range testCases {
@@ -1934,8 +1902,7 @@ func TestCookieSyncActivityControlIntegration(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			activities, err := privacy.NewActivityControl(test.accountPrivacy)
-			assert.NoError(t, err)
+			activities := privacy.NewActivityControl(test.accountPrivacy)
 			up := usersyncPrivacy{
 				activityControl: activities,
 			}

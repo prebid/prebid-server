@@ -194,14 +194,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
 
-	activities, activitiesErr := privacy.NewActivityControl(&account.Privacy)
-	if activitiesErr != nil {
-		errL = append(errL, activitiesErr)
-		if errortypes.ContainsFatalError(errL) {
-			writeError(errL, w, &labels)
-			return
-		}
-	}
+	activitiesControl := privacy.NewActivityControl(&account.Privacy)
 
 	ctx := context.Background()
 
@@ -252,7 +245,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		PubID:                      labels.PubID,
 		HookExecutor:               hookExecutor,
 		TCF2Config:                 tcf2Config,
-		Activities:                 activities,
+		Activities:                 activitiesControl,
 		TmaxAdjustments:            deps.tmaxAdjustments,
 	}
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
