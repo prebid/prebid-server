@@ -1,9 +1,5 @@
 package privacy
 
-import (
-	"strings"
-)
-
 type ConditionRule struct {
 	result        ActivityResult
 	componentName []string
@@ -45,8 +41,8 @@ func evaluateComponentType(target Component, componentTypes []string) bool {
 	}
 
 	// if there are clauses, at least one needs to match
-	for _, s := range componentTypes {
-		if strings.EqualFold(s, target.Type) {
+	for _, t := range componentTypes {
+		if target.MatchesType(t) {
 			return true
 		}
 	}
