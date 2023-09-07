@@ -47,7 +47,6 @@ jobs:
       - name: Build and validate
         run: |
           ./validate.sh
-          go build .
 
   publish-tag:
     name: Publish tag
