@@ -126,7 +126,9 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 			case http.StatusUnavailableForLegalReasons:
 				metricValue = metrics.SetUidGDPRHostCookieBlocked
 			}
-			handleBadStatus(w, status, metricValue, errors.New(body), metricsEngine, &so)
+			handleBadStatus(w, status, metricValue, nil, metricsEngine, &so)
+			so.Errors = []error{errors.New(body)}
+			w.Write([]byte(body))
 			return
 		}
 
