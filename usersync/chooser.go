@@ -10,14 +10,18 @@ type Chooser interface {
 // NewChooser returns a new instance of the standard chooser implementation.
 func NewChooser(bidderSyncerLookup map[string]Syncer) Chooser {
 	bidders := make([]string, 0, len(bidderSyncerLookup))
+	biddersKnown := make(map[string]struct{})
+
 	for k := range bidderSyncerLookup {
 		bidders = append(bidders, k)
+		biddersKnown[k] = struct{}{}
 	}
 
 	return standardChooser{
 		bidderSyncerLookup: bidderSyncerLookup,
 		biddersAvailable:   bidders,
 		bidderChooser:      standardBidderChooser{shuffler: randomShuffler{}},
+		biddersKnown:       biddersKnown,
 	}
 }
 
@@ -68,13 +72,6 @@ const (
 	// StatusBlockedByUserOptOut specifies a user's cookie explicitly signals an opt-out.
 	StatusBlockedByUserOptOut
 
-	// StatusBlockedByGDPR specifies a user's GDPR TCF consent explicitly forbids host cookies
-	// or specific bidder syncing.
-	StatusBlockedByGDPR
-
-	// StatusBlockedByCCPA specifies a user's CCPA consent explicitly forbids bidder syncing.
-	StatusBlockedByCCPA
-
 	// StatusAlreadySynced specifies a user's cookie has an existing non-expired sync for a specific bidder.
 	StatusAlreadySynced
 
@@ -89,6 +86,9 @@ const (
 
 	// StatusBlockedByPrivacy specifies a bidder sync url is not allowed by privacy activities
 	StatusBlockedByPrivacy
+
+	// TODO: Add desciription
+	StatusUnconfiguredBidder
 )
 
 // Privacy determines which privacy policies will be enforced for a user sync request.
@@ -104,6 +104,7 @@ type standardChooser struct {
 	bidderSyncerLookup map[string]Syncer
 	biddersAvailable   []string
 	bidderChooser      bidderChooser
+	biddersKnown       map[string]struct{}
 }
 
 // Choose randomly selects user syncers which are permitted by the user's privacy settings and
@@ -114,7 +115,7 @@ func (c standardChooser) Choose(request Request, cookie *Cookie) Result {
 	}
 
 	if !request.Privacy.GDPRAllowsHostCookie() {
-		return Result{Status: StatusBlockedByGDPR}
+		return Result{Status: StatusBlockedByPrivacy}
 	}
 
 	syncersSeen := make(map[string]struct{})
@@ -137,9 +138,16 @@ func (c standardChooser) Choose(request Request, cookie *Cookie) Result {
 }
 
 func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}, syncTypeFilter SyncTypeFilter, privacy Privacy, cookie *Cookie) (Syncer, BidderEvaluation) {
+	// TODO: NoSyncAvailable
+	// TODO: Synced as FAMILY (syncersSeen dependent)
+
 	syncer, exists := c.bidderSyncerLookup[bidder]
 	if !exists {
-		return nil, BidderEvaluation{Status: StatusUnknownBidder, Bidder: bidder}
+		if _, ok := c.biddersKnown[bidder]; !ok {
+			return nil, BidderEvaluation{Status: StatusUnknownBidder, Bidder: bidder}
+		} else {
+			return nil, BidderEvaluation{Status: StatusUnconfiguredBidder, Bidder: bidder}
+		}
 	}
 
 	_, seen := syncersSeen[syncer.Key()]
@@ -162,11 +170,7 @@ func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}
 	}
 
 	if !privacy.GDPRAllowsBidderSync(bidder) {
-		return nil, BidderEvaluation{Status: StatusBlockedByGDPR, Bidder: bidder, SyncerKey: syncer.Key()}
-	}
-
-	if !privacy.CCPAAllowsBidderSync(bidder) {
-		return nil, BidderEvaluation{Status: StatusBlockedByCCPA, Bidder: bidder, SyncerKey: syncer.Key()}
+		return nil, BidderEvaluation{Status: StatusBlockedByPrivacy, Bidder: bidder, SyncerKey: syncer.Key()}
 	}
 
 	return syncer, BidderEvaluation{Status: StatusOK, Bidder: bidder, SyncerKey: syncer.Key()}

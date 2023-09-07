@@ -1,11 +1,12 @@
 package usersync
 
 import (
+	"testing"
+	"time"
+
 	"github.com/prebid/prebid-server/privacy"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"testing"
-	"time"
 )
 
 func TestNewChooser(t *testing.T) {
@@ -85,7 +86,7 @@ func TestChooserChoose(t *testing.T) {
 			givenChosenBidders: []string{"a"},
 			givenCookie:        Cookie{},
 			expected: Result{
-				Status:           StatusBlockedByGDPR,
+				Status:           StatusBlockedByPrivacy,
 				BiddersEvaluated: nil,
 				SyncersChosen:    nil,
 			},
@@ -310,7 +311,7 @@ func TestChooserEvaluate(t *testing.T) {
 			givenPrivacy:       fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: false, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
 			givenCookie:        cookieNeedsSync,
 			expectedSyncer:     nil,
-			expectedEvaluation: BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByGDPR},
+			expectedEvaluation: BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByPrivacy},
 		},
 		{
 			description:        "Blocked By CCPA",
@@ -319,7 +320,7 @@ func TestChooserEvaluate(t *testing.T) {
 			givenPrivacy:       fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: false, activityAllowUserSync: true},
 			givenCookie:        cookieNeedsSync,
 			expectedSyncer:     nil,
-			expectedEvaluation: BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByCCPA},
+			expectedEvaluation: BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByPrivacy},
 		},
 		{
 			description:        "Blocked By activity control",

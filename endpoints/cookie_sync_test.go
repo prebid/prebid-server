@@ -129,7 +129,7 @@ func TestCookieSyncHandle(t *testing.T) {
 			expectedStatusCode: 200,
 			expectedBody: `{"status":"ok","bidder_status":[` +
 				`{"bidder":"a","no_cookie":true,"usersync":{"url":"aURL","type":"redirect","supportCORS":true}}` +
-				`]}` + "\n",
+				`],"debug":null}` + "\n",
 			setMetricsExpectations: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordCookieSync", metrics.CookieSyncOK).Once()
 				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerCookieSyncOK).Once()
@@ -161,7 +161,7 @@ func TestCookieSyncHandle(t *testing.T) {
 			expectedStatusCode: 200,
 			expectedBody: `{"status":"no_cookie","bidder_status":[` +
 				`{"bidder":"a","no_cookie":true,"usersync":{"url":"aURL","type":"redirect","supportCORS":true}}` +
-				`]}` + "\n",
+				`],"debug":null}` + "\n",
 			setMetricsExpectations: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordCookieSync", metrics.CookieSyncOK).Once()
 				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerCookieSyncOK).Once()
@@ -232,12 +232,12 @@ func TestCookieSyncHandle(t *testing.T) {
 			givenCookie: cookieWithSyncs,
 			givenBody:   strings.NewReader(`{}`),
 			givenChooserResult: usersync.Result{
-				Status:           usersync.StatusBlockedByGDPR,
+				Status:           usersync.StatusBlockedByPrivacy,
 				BiddersEvaluated: []usersync.BidderEvaluation{{Bidder: "a", SyncerKey: "aSyncer", Status: usersync.StatusOK}},
 				SyncersChosen:    []usersync.SyncerChoice{{Bidder: "a", Syncer: &syncer}},
 			},
 			expectedStatusCode: 200,
-			expectedBody:       `{"status":"ok","bidder_status":[]}` + "\n",
+			expectedBody:       `{"status":"ok","bidder_status":[],"debug":null}` + "\n",
 			setMetricsExpectations: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordCookieSync", metrics.CookieSyncGDPRHostCookieBlocked).Once()
 			},
@@ -1282,7 +1282,7 @@ func TestWriteParseRequestErrorMetrics(t *testing.T) {
 	writer := httptest.NewRecorder()
 
 	endpoint := cookieSyncEndpoint{pbsAnalytics: &mockAnalytics}
-	endpoint.handleError(writer, err, 418, true)
+	endpoint.handleError(writer, err, 418)
 
 	assert.Equal(t, writer.Code, 418)
 	assert.Equal(t, writer.Body.String(), "anyError\n")
@@ -1505,7 +1505,7 @@ func TestCookieSyncHandleError(t *testing.T) {
 	writer := httptest.NewRecorder()
 
 	endpoint := cookieSyncEndpoint{pbsAnalytics: &mockAnalytics}
-	endpoint.handleError(writer, err, 418, true)
+	endpoint.handleError(writer, err, 418)
 
 	assert.Equal(t, writer.Code, 418)
 	assert.Equal(t, writer.Body.String(), "anyError\n")
@@ -1537,14 +1537,14 @@ func TestCookieSyncWriteBidderMetrics(t *testing.T) {
 		},
 		{
 			description: "One - Blocked By GDPR",
-			given:       []usersync.BidderEvaluation{{Bidder: "a", SyncerKey: "aSyncer", Status: usersync.StatusBlockedByGDPR}},
+			given:       []usersync.BidderEvaluation{{Bidder: "a", SyncerKey: "aSyncer", Status: usersync.StatusBlockedByPrivacy}},
 			setExpectations: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerCookieSyncPrivacyBlocked).Once()
 			},
 		},
 		{
 			description: "One - Blocked By CCPA",
-			given:       []usersync.BidderEvaluation{{Bidder: "a", SyncerKey: "aSyncer", Status: usersync.StatusBlockedByCCPA}},
+			given:       []usersync.BidderEvaluation{{Bidder: "a", SyncerKey: "aSyncer", Status: usersync.StatusBlockedByPrivacy}},
 			setExpectations: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerCookieSyncPrivacyBlocked).Once()
 			},
@@ -1705,7 +1705,7 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 
 		writer := httptest.NewRecorder()
 		endpoint := cookieSyncEndpoint{pbsAnalytics: &mockAnalytics}
-		endpoint.handleResponse(writer, syncTypeFilter, cookie, privacyPolicies, test.givenSyncersChosen, false, []error{})
+		endpoint.handleResponse(writer, syncTypeFilter, cookie, privacyPolicies, test.givenSyncersChosen, []usersync.BidderEvaluation{}, false)
 
 		if assert.Equal(t, writer.Code, http.StatusOK, test.description+":http_status") {
 			assert.Equal(t, writer.Header().Get("Content-Type"), "application/json; charset=utf-8", test.description+":http_header")
