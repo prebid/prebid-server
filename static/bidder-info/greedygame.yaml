@@ -1,4 +1,4 @@
-endpoint: "http://ads-pbs.rtb-greedygame.com/openrtb/{{.PublisherID}}"
+endpoint: "http://ads-pbs.rtb-greedygame.com/openrtb/{{.PublisherID}}?host={{.Host}}"
 maintainer:
   email: "engineering@project-limelight.com"
 capabilities:
