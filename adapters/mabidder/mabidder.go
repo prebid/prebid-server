@@ -9,12 +9,12 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type maServerResponse struct {
-	Responses       []maBidResponse
+type serverResponse struct {
+	Responses       []bidResponse
 	PrivateIdStatus string `json:"-"`
 }
 
-type maBidResponse struct {
+type bidResponse struct {
 	RequestID         string  `json:"requestId"`
 	Currency          string  `json:"currency"`
 	Width             int32   `json:"width"`
@@ -25,11 +25,11 @@ type maBidResponse struct {
 	TimeToLiveSeconds int32   `json:"ttl"`
 	AdTag             string  `json:"ad"`
 	MediaType         string  `json:"mediaType"`
-	Meta              maMeta  `json:"meta"`
+	Meta              meta    `json:"meta"`
 	CPM               float32 `json:"cpm"`
 }
 
-type maMeta struct {
+type meta struct {
 	AdDomain []string `json:"advertiserDomains"`
 }
 
@@ -69,7 +69,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		return nil, []error{err}
 	}
 
-	var response maServerResponse
+	var response serverResponse
 	if err := json.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
