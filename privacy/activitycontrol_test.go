@@ -23,25 +23,25 @@ func TestNewActivityControl(t *testing.T) {
 			name: "specified_and_correct",
 			privacyConf: config.AccountPrivacy{
 				AllowActivities: &config.AllowActivities{
-					SyncUser:                 getTestActivityConfig(),
-					FetchBids:                getTestActivityConfig(),
-					EnrichUserFPD:            getTestActivityConfig(),
-					ReportAnalytics:          getTestActivityConfig(),
-					TransmitUserFPD:          getTestActivityConfig(),
-					TransmitPreciseGeo:       getTestActivityConfig(),
-					TransmitUniqueRequestIds: getTestActivityConfig(),
-					TransmitTids:             getTestActivityConfig(),
+					SyncUser:                 getTestActivityConfig(true),
+					FetchBids:                getTestActivityConfig(true),
+					EnrichUserFPD:            getTestActivityConfig(true),
+					ReportAnalytics:          getTestActivityConfig(true),
+					TransmitUserFPD:          getTestActivityConfig(true),
+					TransmitPreciseGeo:       getTestActivityConfig(false),
+					TransmitUniqueRequestIds: getTestActivityConfig(true),
+					TransmitTids:             getTestActivityConfig(true),
 				},
 			},
 			activityControl: ActivityControl{plans: map[Activity]ActivityPlan{
-				ActivitySyncUser:                 getTestActivityPlan(),
-				ActivityFetchBids:                getTestActivityPlan(),
-				ActivityEnrichUserFPD:            getTestActivityPlan(),
-				ActivityReportAnalytics:          getTestActivityPlan(),
-				ActivityTransmitUserFPD:          getTestActivityPlan(),
-				ActivityTransmitPreciseGeo:       getTestActivityPlan(),
-				ActivityTransmitUniqueRequestIds: getTestActivityPlan(),
-				ActivityTransmitTids:             getTestActivityPlan(),
+				ActivitySyncUser:                 getTestActivityPlan(ActivityAllow),
+				ActivityFetchBids:                getTestActivityPlan(ActivityAllow),
+				ActivityEnrichUserFPD:            getTestActivityPlan(ActivityAllow),
+				ActivityReportAnalytics:          getTestActivityPlan(ActivityAllow),
+				ActivityTransmitUserFPD:          getTestActivityPlan(ActivityAllow),
+				ActivityTransmitPreciseGeo:       getTestActivityPlan(ActivityDeny),
+				ActivityTransmitUniqueRequestIds: getTestActivityPlan(ActivityAllow),
+				ActivityTransmitTids:             getTestActivityPlan(ActivityAllow),
 			}},
 		},
 	}
@@ -103,7 +103,7 @@ func TestActivityControlAllow(t *testing.T) {
 		{
 			name: "activity_not_defined",
 			activityControl: ActivityControl{plans: map[Activity]ActivityPlan{
-				ActivitySyncUser: getTestActivityPlan()}},
+				ActivitySyncUser: getTestActivityPlan(ActivityAllow)}},
 			activity:       ActivityFetchBids,
 			target:         Component{Type: "bidder", Name: "bidderA"},
 			activityResult: true,
@@ -111,7 +111,7 @@ func TestActivityControlAllow(t *testing.T) {
 		{
 			name: "activity_defined_but_not_found_default_returned",
 			activityControl: ActivityControl{plans: map[Activity]ActivityPlan{
-				ActivityFetchBids: getTestActivityPlan()}},
+				ActivityFetchBids: getTestActivityPlan(ActivityAllow)}},
 			activity:       ActivityFetchBids,
 			target:         Component{Type: "bidder", Name: "bidderB"},
 			activityResult: true,
@@ -119,7 +119,7 @@ func TestActivityControlAllow(t *testing.T) {
 		{
 			name: "activity_defined_and_allowed",
 			activityControl: ActivityControl{plans: map[Activity]ActivityPlan{
-				ActivityFetchBids: getTestActivityPlan()}},
+				ActivityFetchBids: getTestActivityPlan(ActivityAllow)}},
 			activity:       ActivityFetchBids,
 			target:         Component{Type: "bidder", Name: "bidderA"},
 			activityResult: true,
@@ -135,12 +135,12 @@ func TestActivityControlAllow(t *testing.T) {
 	}
 }
 
-func getTestActivityConfig() config.Activity {
+func getTestActivityConfig(allow bool) config.Activity {
 	return config.Activity{
 		Default: ptrutil.ToPtr(true),
 		Rules: []config.ActivityRule{
 			{
-				Allow: true,
+				Allow: allow,
 				Condition: config.ActivityCondition{
 					ComponentName: []string{"bidderA"},
 					ComponentType: []string{"bidder"},
@@ -150,12 +150,12 @@ func getTestActivityConfig() config.Activity {
 	}
 }
 
-func getTestActivityPlan() ActivityPlan {
+func getTestActivityPlan(result ActivityResult) ActivityPlan {
 	return ActivityPlan{
 		defaultResult: true,
 		rules: []Rule{
 			ConditionRule{
-				result:        ActivityAllow,
+				result:        result,
 				componentName: []string{"bidderA"},
 				componentType: []string{"bidder"},
 			},
