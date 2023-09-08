@@ -136,14 +136,14 @@ func chooseSyncerConfig(biddersSyncerConfig []namedSyncerConfig) (namedSyncerCon
 		return namedSyncerConfig{}, fmt.Errorf("bidders %s define endpoints (iframe and/or redirect) for the same syncer key, but only one bidder is permitted to define endpoints", bidders)
 	}
 
-	// check if alias bidders of different parent have same syncer key
-	if len(parentBidderNameMap) > 1 {
-		sort.Strings(aliasBidderNames)
-		return namedSyncerConfig{}, fmt.Errorf("alias bidders %s of different parents defines endpoints (iframe and/or redirect) for the same syncer key, but only one bidder is permitted to define endpoints", strings.Join(aliasBidderNames, ", "))
-	}
-
-	// check if aliases of same parent and non-alias bidder have same syncer key
 	if len(parentBidderNameMap) != 0 {
+		// check if alias bidders of different parent have same syncer key
+		if len(parentBidderNameMap) > 1 {
+			sort.Strings(aliasBidderNames)
+			return namedSyncerConfig{}, fmt.Errorf("alias bidders %s of different parents defines endpoints (iframe and/or redirect) for the same syncer key, but only one bidder is permitted to define endpoints", strings.Join(aliasBidderNames, ", "))
+		}
+
+		// check if aliases of same parent and non-alias bidder have same syncer key
 		if _, ok := parentBidderNameMap[nonAliasBidderNames[0]]; !ok {
 			sort.Strings(aliasBidderNames)
 			return namedSyncerConfig{}, fmt.Errorf("alias bidders %s and non-alias bidder %s defines endpoints (iframe and/or redirect) for the same syncer key, but only one bidder is permitted to define endpoints", strings.Join(aliasBidderNames, ", "), nonAliasBidderNames[0])
