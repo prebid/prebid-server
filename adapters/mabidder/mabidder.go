@@ -91,7 +91,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 			BidType: openrtb_ext.BidType(maBidResp.MediaType),
 		}
 		bidResponse.Bids = append(bidResponse.Bids, b)
-		if bidResponse.Currency == "" {
+		if maBidResp.Currency != "" {
 			bidResponse.Currency = maBidResp.Currency
 		}
 	}
