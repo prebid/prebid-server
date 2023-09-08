@@ -2,13 +2,10 @@ package mabidder
 
 import (
 	"encoding/json"
-	"fmt"
-	"net/http"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -64,21 +61,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if responseData.StatusCode == http.StatusNoContent {
+	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
 	}
 
-	if responseData.StatusCode == http.StatusBadRequest {
-		err := &errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code: %d. Bad request from publisher.", responseData.StatusCode),
-		}
-		return nil, []error{err}
-	}
-
-	if responseData.StatusCode != http.StatusOK {
-		err := &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d.", responseData.StatusCode),
-		}
+	if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil {
 		return nil, []error{err}
 	}
 
