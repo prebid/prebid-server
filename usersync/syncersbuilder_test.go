@@ -384,7 +384,7 @@ func TestGetSyncerKey(t *testing.T) {
 			name:        "alias_bidder_has_no_syncer_config",
 			bidderName:  "alias-1",
 			bidderInfo:  config.BidderInfo{Syncer: nil},
-			expectedErr: "found no syncer config for alias bidder alias-1",
+			expectedErr: "found no syncer config for bidder alias-1",
 		},
 		{
 			name:                 "use_parent_name_as_syncer_key_when_syncer_key_is_empty_and_alias_inherits_parent_syncer_config",
