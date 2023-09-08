@@ -1,0 +1,47 @@
+{
+  "mockBidRequest": {
+    "id": "test-missing-bidder-in-response-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ]
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://localhost/prebid_server",
+        "body": {
+          "id": "test-missing-bidder-in-response-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "body": {
+          "seatbid": []
+        },
+        "status": 200
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "no bidders found in JSON response",
+      "comparison": "literal"
+    }
+  ]
+}
