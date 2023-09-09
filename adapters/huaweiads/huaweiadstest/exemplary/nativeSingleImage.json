@@ -5,7 +5,7 @@
       {
         "id": "test-imp-id",
         "native": {
-          "request": "{\"context\":2,\"contextsubtype\":20,\"plcmttype\":1,\"plcmtcnt\":1,\"seq\":0,\"aurlsupport\":0,\"durlsupport\":0,\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}],\"privacy\":0,\"assets\":[{\"id\":100,\"title\":{\"len\":90},\"required\":1},{\"id\":103,\"img\":{\"type\":3,\"wmin\":200,\"hmin\":200},\"required\":1},{\"id\":105,\"data\":{\"type\":2,\"len\":90},\"required\":1}],\"ver\":\"1.2\"}",
+          "request": "{\"context\":2,\"contextsubtype\":20,\"plcmttype\":1,\"plcmtcnt\":1,\"seq\":0,\"aurlsupport\":0,\"durlsupport\":0,\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}],\"privacy\":0,\"assets\":[{\"id\":101,\"title\":{\"len\":90},\"required\":1},{\"id\":102,\"img\":{\"type\":3,\"wmin\":200,\"hmin\":200},\"required\":1},{\"id\":103,\"data\":{\"type\":2,\"len\":90},\"required\":1},{\"id\":105,\"data\":{\"type\":12,\"len\":90}}],\"ver\":\"1.2\"}",
           "ver": "1.2"
         },
         "ext": {
@@ -93,9 +93,7 @@
               "detailedCreativeTypeList": [
                 "901"
               ],
-              "h": 200,
-              "test": 1,
-              "w": 200
+              "test": 1
             }
           ],
           "device": {
@@ -166,6 +164,7 @@
                     "appId": "101219405",
                     "appPromotionChannel": "401721412",
                     "clickUrl": "https://ads.huawei.com/usermgtportal/home/index.html#/",
+                    "cta": "install",
                     "duration": 6038,
                     "description": "",
                     "icon": [
@@ -300,7 +299,7 @@
               "huaweiads"
             ],
             "crid": "58022259",
-            "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":100,\"title\":{\"text\":\"/test/\",\"len\":6}},{\"id\":103,\"img\":{\"type\":3,\"url\":\"http://image.jpg\",\"w\":720,\"h\":1280}},{\"id\":105,\"data\":{\"label\":\"desc\",\"value\":\"\"}}],\"link\":{\"url\":\"https://ads.huawei.com/usermgtportal/home/index.html#/\",\"clicktrackers\":[\"http://test/click\"]},\"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"http://test/imp\"}]}",
+            "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":101,\"title\":{\"text\":\"/test/\",\"len\":6}},{\"id\":102,\"img\":{\"type\":3,\"url\":\"http://image.jpg\",\"w\":720,\"h\":1280}},{\"id\":103,\"data\":{\"label\":\"desc\",\"value\":\"\"}},{\"id\":105,\"data\":{\"type\":12,\"value\":\"install\"}}],\"link\":{\"url\":\"https://ads.huawei.com/usermgtportal/home/index.html#/\",\"clicktrackers\":[\"http://test/click\"]},\"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"http://test/imp\"}]}",
             "id": "test-imp-id",
             "impid": "test-imp-id",
             "price": 2.8,

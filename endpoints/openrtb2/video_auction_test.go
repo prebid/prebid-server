@@ -1299,8 +1299,8 @@ func mockDepsInvalidPrivacy(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		&mockAccountFetcher{data: mockVideoAccountData},
 		&config.Configuration{MaxRequestSize: maxSize,
 			AccountDefaults: config.Account{
-				Privacy: &config.AccountPrivacy{
-					AllowActivities: config.AllowActivities{
+				Privacy: config.AccountPrivacy{
+					AllowActivities: &config.AllowActivities{
 						TransmitPreciseGeo: config.Activity{Rules: []config.ActivityRule{
 							{Condition: config.ActivityCondition{ComponentName: []string{"bidderA.BidderB.bidderC"}}},
 						}},

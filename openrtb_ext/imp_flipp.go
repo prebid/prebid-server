@@ -6,7 +6,6 @@ type ImpExtFlipp struct {
 	SiteID                  int64              `json:"siteId"`
 	ZoneIds                 []int64            `json:"zoneIds,omitempty"`
 	UserKey                 string             `json:"userKey,omitempty"`
-	IP                      string             `json:"ip,omitempty"`
 	Options                 ImpExtFlippOptions `json:"options,omitempty"`
 }
 

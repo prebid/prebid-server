@@ -8,6 +8,7 @@ import (
 
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/iputil"
 )
 
 // ChannelType enumerates the values of integrations Prebid Server can configure for an account
@@ -40,7 +41,7 @@ type Account struct {
 	Validations             Validations                                 `mapstructure:"validations" json:"validations"`
 	DefaultBidLimit         int                                         `mapstructure:"default_bid_limit" json:"default_bid_limit"`
 	BidAdjustments          *openrtb_ext.ExtRequestPrebidBidAdjustments `mapstructure:"bidadjustments" json:"bidadjustments"`
-	Privacy                 *AccountPrivacy                             `mapstructure:"privacy" json:"privacy"`
+	Privacy                 AccountPrivacy                              `mapstructure:"privacy" json:"privacy"`
 }
 
 // CookieSync represents the account-level defaults for the cookie sync endpoint.
@@ -336,5 +337,31 @@ func (a *AccountChannel) IsSet() bool {
 }
 
 type AccountPrivacy struct {
-	AllowActivities AllowActivities `mapstructure:"allowactivities" json:"allowactivities"`
+	AllowActivities *AllowActivities `mapstructure:"allowactivities" json:"allowactivities"`
+	IPv6Config      IPv6             `mapstructure:"ipv6" json:"ipv6"`
+	IPv4Config      IPv4             `mapstructure:"ipv4" json:"ipv4"`
+}
+
+type IPv6 struct {
+	AnonKeepBits int `mapstructure:"anon_keep_bits" json:"anon_keep_bits"`
+}
+
+type IPv4 struct {
+	AnonKeepBits int `mapstructure:"anon_keep_bits" json:"anon_keep_bits"`
+}
+
+func (ip *IPv6) Validate(errs []error) []error {
+	if ip.AnonKeepBits > iputil.IPv6BitSize || ip.AnonKeepBits < 0 {
+		err := fmt.Errorf("bits cannot exceed %d in ipv6 address, or be less than 0", iputil.IPv6BitSize)
+		errs = append(errs, err)
+	}
+	return errs
+}
+
+func (ip *IPv4) Validate(errs []error) []error {
+	if ip.AnonKeepBits > iputil.IPv4BitSize || ip.AnonKeepBits < 0 {
+		err := fmt.Errorf("bits cannot exceed %d in ipv4 address, or be less than 0", iputil.IPv4BitSize)
+		errs = append(errs, err)
+	}
+	return errs
 }

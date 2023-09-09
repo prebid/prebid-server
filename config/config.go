@@ -153,17 +153,11 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 		errs = append(errs, errors.New("account_defaults.Events.VASTEvents has no effect as the feature is under development."))
 	}
 
-	if cfg.TmaxAdjustments.Enabled {
-		glog.Warning(`cfg.TmaxAdjustments.Enabled will currently not do anything as tmax adjustment feature is still under development.`)
-		cfg.TmaxAdjustments.Enabled = false
-	}
-
-	if cfg.AccountDefaults.Privacy != nil {
-		glog.Warning("account_defaults.Privacy has no effect as the feature is under development.")
-	}
-
 	errs = cfg.Experiment.validate(errs)
 	errs = cfg.BidderInfos.validate(errs)
+	errs = cfg.AccountDefaults.Privacy.IPv6Config.Validate(errs)
+	errs = cfg.AccountDefaults.Privacy.IPv4Config.Validate(errs)
+
 	return errs
 }
 
@@ -1035,6 +1029,10 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("account_defaults.price_floors.fetch.max_age_sec", 86400)
 	v.SetDefault("account_defaults.price_floors.fetch.period_sec", 3600)
 	v.SetDefault("account_defaults.price_floors.fetch.max_schema_dims", 0)
+
+	v.SetDefault("account_defaults.events_enabled", false)
+	v.SetDefault("account_defaults.privacy.ipv6.anon_keep_bits", 56)
+	v.SetDefault("account_defaults.privacy.ipv4.anon_keep_bits", 24)
 
 	//Defaults for Price floor fetcher
 	v.SetDefault("price_floors.fetcher.worker", 20)

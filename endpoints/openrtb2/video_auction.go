@@ -303,7 +303,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	activities, activitiesErr := privacy.NewActivityControl(account.Privacy)
+	activities, activitiesErr := privacy.NewActivityControl(&account.Privacy)
 	if activitiesErr != nil {
 		errL = append(errL, activitiesErr)
 		if errortypes.ContainsFatalError(errL) {
