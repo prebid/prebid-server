@@ -148,7 +148,7 @@ func resolveFloors(account config.Account, bidRequestWrapper *openrtb_ext.Reques
 
 	var fetchResult *openrtb_ext.PriceFloorRules
 	var fetchStatus string
-	if account.PriceFloors.UseDynamicData {
+	if priceFloorFetcher != nil && account.PriceFloors.UseDynamicData {
 		fetchResult, fetchStatus = priceFloorFetcher.Fetch(account.PriceFloors)
 	}
 

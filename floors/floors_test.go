@@ -460,6 +460,7 @@ func TestResolveFloors(t *testing.T) {
 		bidRequestWrapper *openrtb_ext.RequestWrapper
 		account           config.Account
 		conversions       currency.Conversions
+		fetcher           FloorFetcher
 		expErr            []error
 		expFloors         *openrtb_ext.PriceFloorRules
 	}{
@@ -480,6 +481,7 @@ func TestResolveFloors(t *testing.T) {
 					UseDynamicData: false,
 				},
 			},
+			fetcher: &MockFetch{},
 			expFloors: &openrtb_ext.PriceFloorRules{
 				Enabled:            getTrue(),
 				FetchStatus:        openrtb_ext.FetchNone,
@@ -524,6 +526,7 @@ func TestResolveFloors(t *testing.T) {
 					UseDynamicData: true,
 				},
 			},
+			fetcher: &MockFetch{},
 			expFloors: &openrtb_ext.PriceFloorRules{
 				Enabled:            getTrue(),
 				FetchStatus:        openrtb_ext.FetchSuccess,
@@ -569,6 +572,7 @@ func TestResolveFloors(t *testing.T) {
 					UseDynamicData: true,
 				},
 			},
+			fetcher: &MockFetch{},
 			expFloors: &openrtb_ext.PriceFloorRules{
 				Enabled:            getTrue(),
 				FloorMin:           10.11,
@@ -616,6 +620,7 @@ func TestResolveFloors(t *testing.T) {
 					UseDynamicData: false,
 				},
 			},
+			fetcher: &MockFetch{},
 			expFloors: &openrtb_ext.PriceFloorRules{
 				Enforcement: &openrtb_ext.PriceFloorEnforcement{
 					EnforcePBS:  getTrue(),
@@ -643,6 +648,7 @@ func TestResolveFloors(t *testing.T) {
 					UseDynamicData: true,
 				},
 			},
+			fetcher: &MockFetch{},
 			expFloors: &openrtb_ext.PriceFloorRules{
 				Enabled:            getTrue(),
 				FetchStatus:        openrtb_ext.FetchSuccess,
@@ -674,11 +680,80 @@ func TestResolveFloors(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Dynamic Fetch Enabled but price floor fetcher is nil, floors from request is selected",
+			bidRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Site: &openrtb2.Site{
+						Publisher: &openrtb2.Publisher{Domain: "www.website.com"},
+					},
+					Imp: []openrtb2.Imp{{ID: "1234", Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}}}},
+					Ext: json.RawMessage(`{"prebid":{"floors":{"data":{"currency":"USD","modelgroups":[{"modelversion":"model 1 from req","currency":"USD","values":{"banner|300x600|www.website5.com":5,"*|*|*":7},"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"}}]},"enabled":true,"enforcement":{"enforcepbs":true,"floordeals":true,"enforcerate":100}}}}`),
+				},
+			},
+			account: config.Account{
+				PriceFloors: config.AccountPriceFloors{
+					Enabled:        true,
+					UseDynamicData: true,
+				},
+			},
+			fetcher: nil,
+			expFloors: &openrtb_ext.PriceFloorRules{
+				Enabled:            getTrue(),
+				FetchStatus:        openrtb_ext.FetchNone,
+				PriceFloorLocation: openrtb_ext.RequestLocation,
+				Enforcement: &openrtb_ext.PriceFloorEnforcement{
+					EnforcePBS:  getTrue(),
+					EnforceRate: 100,
+					FloorDeals:  getTrue(),
+				},
+				Data: &openrtb_ext.PriceFloorData{
+					Currency: "USD",
+					ModelGroups: []openrtb_ext.PriceFloorModelGroup{
+						{
+							ModelVersion: "model 1 from req",
+							Currency:     "USD",
+							Values: map[string]float64{
+								"banner|300x600|www.website5.com": 5,
+								"*|*|*":                           7,
+							},
+							Schema: openrtb_ext.PriceFloorSchema{
+								Fields:    []string{"mediaType", "size", "domain"},
+								Delimiter: "|",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Dynamic Fetch Enabled but price floor fetcher is nil and request has no floors",
+			bidRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Site: &openrtb2.Site{
+						Publisher: &openrtb2.Publisher{Domain: "www.website.com"},
+					},
+					Imp: []openrtb2.Imp{{ID: "1234", Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}}}},
+					Ext: json.RawMessage(`{"prebid":{}}`),
+				},
+			},
+			account: config.Account{
+				PriceFloors: config.AccountPriceFloors{
+					Enabled:        true,
+					UseDynamicData: true,
+				},
+			},
+			fetcher: nil,
+			expFloors: &openrtb_ext.PriceFloorRules{
+				FetchStatus:        openrtb_ext.FetchNone,
+				PriceFloorLocation: openrtb_ext.NoDataLocation,
+			},
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			resolvedFloors, _ := resolveFloors(tc.account, tc.bidRequestWrapper, getCurrencyRates(rates), &MockFetch{})
+			resolvedFloors, _ := resolveFloors(tc.account, tc.bidRequestWrapper, getCurrencyRates(rates), tc.fetcher)
 			assert.Equal(t, resolvedFloors, tc.expFloors, tc.name)
 		})
 	}
