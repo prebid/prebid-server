@@ -1587,6 +1587,7 @@ func TestCookieSyncWriteBidderMetrics(t *testing.T) {
 	}
 }
 
+// TODO: Finish updating this test
 func TestCookieSyncHandleResponse(t *testing.T) {
 	syncTypeFilter := usersync.SyncTypeFilter{
 		IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeExclude),
@@ -1613,6 +1614,7 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 		description         string
 		givenCookieHasSyncs bool
 		givenSyncersChosen  []usersync.SyncerChoice
+		givenDebug          bool
 		expectedJSON        string
 		expectedAnalytics   analytics.CookieSyncObject
 	}{
@@ -1620,7 +1622,7 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 			description:         "None",
 			givenCookieHasSyncs: true,
 			givenSyncersChosen:  []usersync.SyncerChoice{},
-			expectedJSON:        `{"status":"ok","bidder_status":[]}` + "\n",
+			expectedJSON:        `{"status":"ok","bidder_status":[],"debug":null}` + "\n",
 			expectedAnalytics:   analytics.CookieSyncObject{Status: 200, BidderStatus: []*analytics.CookieSyncBidder{}},
 		},
 		{
@@ -1629,7 +1631,7 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 			givenSyncersChosen:  []usersync.SyncerChoice{{Bidder: "foo", Syncer: &syncerA}},
 			expectedJSON: `{"status":"ok","bidder_status":[` +
 				`{"bidder":"foo","no_cookie":true,"usersync":{"url":"https://syncA.com/sync?a=1&b=2","type":"redirect","supportCORS":true}}` +
-				`]}` + "\n",
+				`],"debug":null}` + "\n",
 			expectedAnalytics: analytics.CookieSyncObject{
 				Status: 200,
 				BidderStatus: []*analytics.CookieSyncBidder{
@@ -1648,7 +1650,7 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 			expectedJSON: `{"status":"ok","bidder_status":[` +
 				`{"bidder":"foo","no_cookie":true,"usersync":{"url":"https://syncA.com/sync?a=1&b=2","type":"redirect","supportCORS":true}},` +
 				`{"bidder":"bar","no_cookie":true,"usersync":{"url":"https://syncB.com/sync?a=1&b=2","type":"redirect"}}` +
-				`]}` + "\n",
+				`],"debug":null}` + "\n",
 			expectedAnalytics: analytics.CookieSyncObject{
 				Status: 200,
 				BidderStatus: []*analytics.CookieSyncBidder{
@@ -1668,10 +1670,11 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 		{
 			description:         "Many With One GetSync Error",
 			givenCookieHasSyncs: true,
+			givenDebug:          true,
 			givenSyncersChosen:  []usersync.SyncerChoice{{Bidder: "foo", Syncer: &syncerWithError}, {Bidder: "bar", Syncer: &syncerB}},
 			expectedJSON: `{"status":"ok","bidder_status":[` +
 				`{"bidder":"bar","no_cookie":true,"usersync":{"url":"https://syncB.com/sync?a=1&b=2","type":"redirect"}}` +
-				`]}` + "\n",
+				`],"debug":null}` + "\n",
 			expectedAnalytics: analytics.CookieSyncObject{
 				Status: 200,
 				BidderStatus: []*analytics.CookieSyncBidder{
@@ -1687,7 +1690,7 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 			description:         "No Existing Syncs",
 			givenCookieHasSyncs: false,
 			givenSyncersChosen:  []usersync.SyncerChoice{},
-			expectedJSON:        `{"status":"no_cookie","bidder_status":[]}` + "\n",
+			expectedJSON:        `{"status":"no_cookie","bidder_status":[],"debug":null}` + "\n",
 			expectedAnalytics:   analytics.CookieSyncObject{Status: 200, BidderStatus: []*analytics.CookieSyncBidder{}},
 		},
 	}
@@ -1705,7 +1708,12 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 
 		writer := httptest.NewRecorder()
 		endpoint := cookieSyncEndpoint{pbsAnalytics: &mockAnalytics}
-		endpoint.handleResponse(writer, syncTypeFilter, cookie, privacyPolicies, test.givenSyncersChosen, []usersync.BidderEvaluation{}, false)
+
+		bidderEval := []usersync.BidderEvaluation{}
+		if test.givenDebug {
+			bidderEval = append(bidderEval, usersync.BidderEvaluation{Status: usersync.StatusAlreadySynced})
+		}
+		endpoint.handleResponse(writer, syncTypeFilter, cookie, privacyPolicies, test.givenSyncersChosen, bidderEval, test.givenDebug)
 
 		if assert.Equal(t, writer.Code, http.StatusOK, test.description+":http_status") {
 			assert.Equal(t, writer.Header().Get("Content-Type"), "application/json; charset=utf-8", test.description+":http_header")

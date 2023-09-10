@@ -432,9 +432,15 @@ func (c *cookieSyncEndpoint) handleResponse(w http.ResponseWriter, tf usersync.S
 	}
 
 	if debug {
-		var statusArray []usersync.Status
+		biddersSeen := make(map[string]bool)
+		var statusArray []string
 		for _, bidderEval := range biddersEvaluted {
-			statusArray = append(statusArray, bidderEval.Status)
+			biddersSeen[bidderEval.Bidder] = true
+			if bidderEval.Status == usersync.StatusDuplicate && biddersSeen[bidderEval.Bidder] {
+				statusArray = append(statusArray, getStatusMessage(bidderEval.Status))
+			} else if bidderEval.Status != usersync.StatusDuplicate {
+				statusArray = append(statusArray, getStatusMessage(bidderEval.Status))
+			}
 		}
 		response.Debug = statusArray
 	}
@@ -466,6 +472,25 @@ func mapBidderStatusToAnalytics(from []cookieSyncResponseBidder) []*analytics.Co
 	return to
 }
 
+// TODO: Improve messages
+func getStatusMessage(status usersync.Status) string {
+	switch status {
+	case usersync.StatusAlreadySynced:
+		return "Already Synced"
+	case usersync.StatusBlockedByPrivacy:
+		return "Status blocked by privacy"
+	case usersync.StatusBlockedByUserOptOut:
+		return "Status blocked by user opt out"
+	case usersync.StatusDuplicate:
+		return "Status duplicate"
+	case usersync.StatusUnknownBidder:
+		return "Unknown bidder"
+	case usersync.StatusUnconfiguredBidder:
+		return "Unconfigured Bidder"
+	}
+	return ""
+}
+
 type cookieSyncRequest struct {
 	Bidders         []string                         `json:"bidders"`
 	GDPR            *int                             `json:"gdpr"`
@@ -493,7 +518,7 @@ type cookieSyncRequestFilter struct {
 type cookieSyncResponse struct {
 	Status       string                     `json:"status"`
 	BidderStatus []cookieSyncResponseBidder `json:"bidder_status"`
-	Debug        []usersync.Status          `json:"debug"`
+	Debug        []string                   `json:"debug"`
 }
 
 type cookieSyncResponseBidder struct {
