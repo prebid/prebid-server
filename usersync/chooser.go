@@ -8,13 +8,11 @@ type Chooser interface {
 }
 
 // NewChooser returns a new instance of the standard chooser implementation.
-func NewChooser(bidderSyncerLookup map[string]Syncer) Chooser {
+func NewChooser(bidderSyncerLookup map[string]Syncer, biddersKnown map[string]struct{}) Chooser {
 	bidders := make([]string, 0, len(bidderSyncerLookup))
-	biddersKnown := make(map[string]struct{})
 
 	for k := range bidderSyncerLookup {
 		bidders = append(bidders, k)
-		biddersKnown[k] = struct{}{}
 	}
 
 	return standardChooser{
@@ -139,7 +137,6 @@ func (c standardChooser) Choose(request Request, cookie *Cookie) Result {
 
 func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}, syncTypeFilter SyncTypeFilter, privacy Privacy, cookie *Cookie) (Syncer, BidderEvaluation) {
 	// TODO: NoSyncAvailable
-	// TODO: Synced as FAMILY (syncersSeen dependent)
 
 	syncer, exists := c.bidderSyncerLookup[bidder]
 	if !exists {

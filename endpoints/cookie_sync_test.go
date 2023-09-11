@@ -46,6 +46,7 @@ func TestNewCookieSyncEndpoint(t *testing.T) {
 		analytics         = MockAnalytics{}
 		fetcher           = FakeAccountsFetcher{}
 		bidders           = map[string]openrtb_ext.BidderName{"bidderA": openrtb_ext.BidderName("bidderA"), "bidderB": openrtb_ext.BidderName("bidderB")}
+		biddersKnown      = map[string]struct{}{"bidderA": {}, "bidderB": {}}
 	)
 
 	endpoint := NewCookieSyncEndpoint(
@@ -66,7 +67,7 @@ func TestNewCookieSyncEndpoint(t *testing.T) {
 	result := endpoint.(*cookieSyncEndpoint)
 
 	expected := &cookieSyncEndpoint{
-		chooser: usersync.NewChooser(syncersByBidder),
+		chooser: usersync.NewChooser(syncersByBidder, biddersKnown),
 		config: &config.Configuration{
 			UserSync:   configUserSync,
 			HostCookie: configHostCookie,
@@ -246,6 +247,38 @@ func TestCookieSyncHandle(t *testing.T) {
 					Status:       200,
 					Errors:       nil,
 					BidderStatus: []*analytics.CookieSyncBidder{},
+				}
+				a.On("LogCookieSyncObject", &expected).Once()
+			},
+		},
+		{
+			description: "Debug Check",
+			givenCookie: cookieWithSyncs,
+			givenBody:   strings.NewReader(`{"debug": true}`),
+			givenChooserResult: usersync.Result{
+				Status:           usersync.StatusOK,
+				BiddersEvaluated: []usersync.BidderEvaluation{{Bidder: "a", SyncerKey: "aSyncer", Status: usersync.StatusAlreadySynced}},
+				SyncersChosen:    []usersync.SyncerChoice{{Bidder: "a", Syncer: &syncer}},
+			},
+			expectedStatusCode: 200,
+			expectedBody: `{"status":"ok","bidder_status":[` +
+				`{"bidder":"a","no_cookie":true,"usersync":{"url":"aURL","type":"redirect","supportCORS":true}}` +
+				`],"debug":["Already Synced"]}` + "\n",
+			setMetricsExpectations: func(m *metrics.MetricsEngineMock) {
+				m.On("RecordCookieSync", metrics.CookieSyncOK).Once()
+				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerCookieSyncAlreadySynced).Once()
+			},
+			setAnalyticsExpectations: func(a *MockAnalytics) {
+				expected := analytics.CookieSyncObject{
+					Status: 200,
+					Errors: nil,
+					BidderStatus: []*analytics.CookieSyncBidder{
+						{
+							BidderCode:   "a",
+							NoCookie:     true,
+							UsersyncInfo: &analytics.UsersyncInfo{URL: "aURL", Type: "redirect", SupportCORS: true},
+						},
+					},
 				}
 				a.On("LogCookieSyncObject", &expected).Once()
 			},
@@ -1610,6 +1643,15 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 	syncerWithError := MockSyncer{}
 	syncerWithError.On("GetSync", syncTypeExpected, privacyPolicies).Return(syncWithError, errors.New("anyError")).Maybe()
 
+	bidderEvalForDebug := []usersync.BidderEvaluation{
+		{Bidder: "Bidder1", Status: usersync.StatusAlreadySynced},
+		{Bidder: "Bidder2", Status: usersync.StatusUnknownBidder},
+		{Bidder: "Bidder3", Status: usersync.StatusUnconfiguredBidder},
+		{Bidder: "Bidder4", Status: usersync.StatusDuplicate},
+		{Bidder: "Bidder5", Status: usersync.StatusBlockedByPrivacy},
+		{Bidder: "Bidder6", Status: usersync.StatusTypeNotSupported},
+	}
+
 	testCases := []struct {
 		description         string
 		givenCookieHasSyncs bool
@@ -1670,7 +1712,6 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 		{
 			description:         "Many With One GetSync Error",
 			givenCookieHasSyncs: true,
-			givenDebug:          true,
 			givenSyncersChosen:  []usersync.SyncerChoice{{Bidder: "foo", Syncer: &syncerWithError}, {Bidder: "bar", Syncer: &syncerB}},
 			expectedJSON: `{"status":"ok","bidder_status":[` +
 				`{"bidder":"bar","no_cookie":true,"usersync":{"url":"https://syncB.com/sync?a=1&b=2","type":"redirect"}}` +
@@ -1693,6 +1734,14 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 			expectedJSON:        `{"status":"no_cookie","bidder_status":[],"debug":null}` + "\n",
 			expectedAnalytics:   analytics.CookieSyncObject{Status: 200, BidderStatus: []*analytics.CookieSyncBidder{}},
 		},
+		{
+			description:         "None - Debug",
+			givenCookieHasSyncs: true,
+			givenDebug:          true,
+			givenSyncersChosen:  []usersync.SyncerChoice{},
+			expectedJSON:        `{"status":"ok","bidder_status":[],"debug":["Already Synced","Unknown bidder","Unconfigured Bidder","Status duplicate","Status blocked by privacy","Type not supported"]}` + "\n",
+			expectedAnalytics:   analytics.CookieSyncObject{Status: 200, BidderStatus: []*analytics.CookieSyncBidder{}},
+		},
 	}
 
 	for _, test := range testCases {
@@ -1709,9 +1758,11 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 		writer := httptest.NewRecorder()
 		endpoint := cookieSyncEndpoint{pbsAnalytics: &mockAnalytics}
 
-		bidderEval := []usersync.BidderEvaluation{}
+		var bidderEval []usersync.BidderEvaluation
 		if test.givenDebug {
-			bidderEval = append(bidderEval, usersync.BidderEvaluation{Status: usersync.StatusAlreadySynced})
+			bidderEval = bidderEvalForDebug
+		} else {
+			bidderEval = []usersync.BidderEvaluation{}
 		}
 		endpoint.handleResponse(writer, syncTypeFilter, cookie, privacyPolicies, test.givenSyncersChosen, bidderEval, test.givenDebug)
 

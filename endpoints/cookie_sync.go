@@ -59,7 +59,7 @@ func NewCookieSyncEndpoint(
 	}
 
 	return &cookieSyncEndpoint{
-		chooser: usersync.NewChooser(syncersByBidder),
+		chooser: usersync.NewChooser(syncersByBidder, bidderHashSet),
 		config:  config,
 		privacyConfig: usersyncPrivacyConfig{
 			gdprConfig:             config.GDPR,
@@ -431,6 +431,7 @@ func (c *cookieSyncEndpoint) handleResponse(w http.ResponseWriter, tf usersync.S
 		})
 	}
 
+	// Debug Flag Response Handling
 	if debug {
 		biddersSeen := make(map[string]bool)
 		var statusArray []string
@@ -487,6 +488,8 @@ func getStatusMessage(status usersync.Status) string {
 		return "Unknown bidder"
 	case usersync.StatusUnconfiguredBidder:
 		return "Unconfigured Bidder"
+	case usersync.StatusTypeNotSupported:
+		return "Type not supported"
 	}
 	return ""
 }

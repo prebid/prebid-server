@@ -38,7 +38,7 @@ func TestNewChooser(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		chooser, _ := NewChooser(test.bidderSyncerLookup).(standardChooser)
+		chooser, _ := NewChooser(test.bidderSyncerLookup, make(map[string]struct{})).(standardChooser)
 		assert.ElementsMatch(t, test.expectedBiddersAvailable, chooser.biddersAvailable, test.description)
 	}
 }
@@ -233,6 +233,7 @@ func TestChooserEvaluate(t *testing.T) {
 	fakeSyncerA := fakeSyncer{key: "keyA", supportsIFrame: true}
 	fakeSyncerB := fakeSyncer{key: "keyB", supportsIFrame: false}
 	bidderSyncerLookup := map[string]Syncer{"a": fakeSyncerA, "b": fakeSyncerB}
+	biddersKnown := map[string]struct{}{"a": {}, "b": {}, "unconfigured": {}}
 	syncTypeFilter := SyncTypeFilter{
 		IFrame:   NewUniformBidderFilter(BidderFilterModeInclude),
 		Redirect: NewUniformBidderFilter(BidderFilterModeExclude)}
@@ -314,15 +315,6 @@ func TestChooserEvaluate(t *testing.T) {
 			expectedEvaluation: BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByPrivacy},
 		},
 		{
-			description:        "Blocked By CCPA",
-			givenBidder:        "a",
-			givenSyncersSeen:   map[string]struct{}{},
-			givenPrivacy:       fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: false, activityAllowUserSync: true},
-			givenCookie:        cookieNeedsSync,
-			expectedSyncer:     nil,
-			expectedEvaluation: BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByPrivacy},
-		},
-		{
 			description:        "Blocked By activity control",
 			givenBidder:        "a",
 			givenSyncersSeen:   map[string]struct{}{},
@@ -331,10 +323,19 @@ func TestChooserEvaluate(t *testing.T) {
 			expectedSyncer:     nil,
 			expectedEvaluation: BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByPrivacy},
 		},
+		{
+			description:        "Unconfigured Bidder",
+			givenBidder:        "unconfigured",
+			givenSyncersSeen:   map[string]struct{}{},
+			givenPrivacy:       fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
+			givenCookie:        cookieNeedsSync,
+			expectedSyncer:     nil,
+			expectedEvaluation: BidderEvaluation{Bidder: "unconfigured", Status: StatusUnconfiguredBidder},
+		},
 	}
 
 	for _, test := range testCases {
-		chooser, _ := NewChooser(bidderSyncerLookup).(standardChooser)
+		chooser, _ := NewChooser(bidderSyncerLookup, biddersKnown).(standardChooser)
 		sync, evaluation := chooser.evaluate(test.givenBidder, test.givenSyncersSeen, syncTypeFilter, test.givenPrivacy, &test.givenCookie)
 
 		assert.Equal(t, test.expectedSyncer, sync, test.description+":syncer")
