@@ -40,12 +40,10 @@ type Ad struct {
 		Currency string
 	}
 	NetBid struct {
-		Amount   float64
-		Currency string
+		Amount float64
 	}
 	GrossBid struct {
-		Amount   float64
-		Currency string
+		Amount float64
 	}
 	DealID          string `json:"dealId,omitempty"`
 	AdId            string
