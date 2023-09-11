@@ -8,7 +8,6 @@ import (
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -115,7 +114,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	bidResponse.Currency = response.Cur
 	for _, seatBid := range response.SeatBid {
 		for i := range seatBid.Bid {
-			bidType, err := getMediaTypeForImp(seatBid.Bid[i].ImpID, request.Imp)
+			bidType, err := getBidMediaType(&seatBid.Bid[i])
 			if err != nil {
 				return nil, []error{err}
 			}
@@ -130,22 +129,16 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return bidResponse, nil
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
-	for _, imp := range imps {
-		if imp.ID == impID {
-			if imp.Banner != nil {
-				return openrtb_ext.BidTypeBanner, nil
-			}
-			if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo, nil
-			}
-			if imp.Native != nil {
-				return openrtb_ext.BidTypeNative, nil
-			}
-		}
+func getBidMediaType(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
+	var extBid openrtb_ext.ExtBid
+	err := json.Unmarshal(bid.Ext, &extBid)
+	if err != nil {
+		return "", fmt.Errorf("unable to deserialize imp %v bid.ext", bid.ImpID)
 	}
 
-	return "", &errortypes.BadInput{
-		Message: fmt.Sprintf("Failed to find impression \"%s\"", impID),
+	if extBid.Prebid == nil {
+		return "", fmt.Errorf("imp %v with unknown media type", bid.ImpID)
 	}
+
+	return extBid.Prebid.Type, nil
 }

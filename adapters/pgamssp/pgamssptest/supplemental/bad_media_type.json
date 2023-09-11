@@ -63,11 +63,7 @@
                                 "dealid": "test_dealid",
                                 "w": 300,
                                 "h": 250,
-                                "ext": {
-                                    "prebid": {
-                                        "type": "banner"
-                                    }
-                                }
+                                "ext": {}
                             }
                         ],
                         "seat": "pgamssp"
@@ -79,7 +75,7 @@
     }],
     "expectedMakeBidsErrors": [
         {
-          "value": "Failed to find impression \"test-imp-id\"",
+          "value": "imp test-imp-id with unknown media type",
           "comparison": "literal"
         }
     ]
