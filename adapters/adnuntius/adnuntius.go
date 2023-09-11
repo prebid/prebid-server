@@ -371,8 +371,6 @@ func generateAdResponse(ad Ad, imp openrtb2.Imp, html string, request *openrtb2.
 		adDomain = append(adDomain, domain)
 	}
 
-	// strings.ToLower(str)
-
 	bid := openrtb2.Bid{
 		ID:      ad.AdId,
 		ImpID:   imp.ID,
