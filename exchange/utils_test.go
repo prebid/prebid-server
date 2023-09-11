@@ -4272,7 +4272,7 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 	testCases := []struct {
 		name                 string
 		req                  *openrtb2.BidRequest
-		privacyConfig        *config.AccountPrivacy
+		privacyConfig        config.AccountPrivacy
 		componentName        string
 		allow                bool
 		expectedReqNumber    int
@@ -4364,7 +4364,7 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		activities, err := privacy.NewActivityControl(test.privacyConfig)
+		activities, err := privacy.NewActivityControl(&test.privacyConfig)
 		assert.NoError(t, err, "")
 		auctionReq := AuctionRequest{
 			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: test.req},
@@ -4410,33 +4410,33 @@ func buildDefaultActivityConfig(componentName string, allow bool) config.Activit
 	}
 }
 
-func getFetchBidsActivityConfig(componentName string, allow bool) *config.AccountPrivacy {
-	return &config.AccountPrivacy{
-		AllowActivities: config.AllowActivities{
+func getFetchBidsActivityConfig(componentName string, allow bool) config.AccountPrivacy {
+	return config.AccountPrivacy{
+		AllowActivities: &config.AllowActivities{
 			FetchBids: buildDefaultActivityConfig(componentName, allow),
 		},
 	}
 }
 
-func getTransmitUFPDActivityConfig(componentName string, allow bool) *config.AccountPrivacy {
-	return &config.AccountPrivacy{
-		AllowActivities: config.AllowActivities{
+func getTransmitUFPDActivityConfig(componentName string, allow bool) config.AccountPrivacy {
+	return config.AccountPrivacy{
+		AllowActivities: &config.AllowActivities{
 			TransmitUserFPD: buildDefaultActivityConfig(componentName, allow),
 		},
 	}
 }
 
-func getTransmitPreciseGeoActivityConfig(componentName string, allow bool) *config.AccountPrivacy {
-	return &config.AccountPrivacy{
-		AllowActivities: config.AllowActivities{
+func getTransmitPreciseGeoActivityConfig(componentName string, allow bool) config.AccountPrivacy {
+	return config.AccountPrivacy{
+		AllowActivities: &config.AllowActivities{
 			TransmitPreciseGeo: buildDefaultActivityConfig(componentName, allow),
 		},
 	}
 }
 
-func getTransmitTIDActivityConfig(componentName string, allow bool) *config.AccountPrivacy {
-	return &config.AccountPrivacy{
-		AllowActivities: config.AllowActivities{
+func getTransmitTIDActivityConfig(componentName string, allow bool) config.AccountPrivacy {
+	return config.AccountPrivacy{
+		AllowActivities: &config.AllowActivities{
 			TransmitTids: buildDefaultActivityConfig(componentName, allow),
 		},
 	}

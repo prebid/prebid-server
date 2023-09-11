@@ -15,7 +15,7 @@ import (
 // BidderName refers to a core bidder id or an alias id.
 type BidderName string
 
-var aliasBidderNames []BidderName
+var aliasBidderToParent map[BidderName]BidderName = map[BidderName]BidderName{}
 
 var coreBidderNames []BidderName = []BidderName{
 	Bidder33Across,
@@ -54,6 +54,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderApacdex,
 	BidderApplogy,
 	BidderAppnexus,
+	BidderAppstock,
 	BidderAppush,
 	BidderAudienceNetwork,
 	BidderAutomatad,
@@ -225,17 +226,18 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderZetaGlobalSsp,
 }
 
-func SetAliasBidderName(name BidderName) {
-	aliasBidderNames = append(aliasBidderNames, name)
-	coreBidderNames = append(coreBidderNames, name)
+func GetAliasBidderToParent() map[BidderName]BidderName {
+	return aliasBidderToParent
 }
 
-func GetAliasBidderNamesSet() map[BidderName]struct{} {
-	set := map[BidderName]struct{}{}
-	for _, name := range aliasBidderNames {
-		set[name] = struct{}{}
+func SetAliasBidderName(aliasBidderName string, parentBidderName BidderName) error {
+	if IsBidderNameReserved(aliasBidderName) {
+		return fmt.Errorf("alias %s is a reserved bidder name and cannot be used", aliasBidderName)
 	}
-	return set
+	aliasBidder := BidderName(aliasBidderName)
+	coreBidderNames = append(coreBidderNames, aliasBidder)
+	aliasBidderToParent[aliasBidder] = parentBidderName
+	return nil
 }
 
 func (name BidderName) MarshalJSON() ([]byte, error) {
@@ -345,6 +347,7 @@ const (
 	BidderApacdex           BidderName = "apacdex"
 	BidderApplogy           BidderName = "applogy"
 	BidderAppnexus          BidderName = "appnexus"
+	BidderAppstock          BidderName = "appstock"
 	BidderAppush            BidderName = "appush"
 	BidderAudienceNetwork   BidderName = "audienceNetwork"
 	BidderAutomatad         BidderName = "automatad"
@@ -557,11 +560,11 @@ var bidderNameLookup = func() map[string]BidderName {
 		lookup[bidderNameLower] = name
 	}
 	return lookup
-}()
+}
 
 func NormalizeBidderName(name string) (BidderName, bool) {
 	nameLower := strings.ToLower(name)
-	bidderName, exists := bidderNameLookup[nameLower]
+	bidderName, exists := bidderNameLookup()[nameLower]
 	return bidderName, exists
 }
 
@@ -574,10 +577,42 @@ type BidderParamValidator interface {
 	Schema(name BidderName) string
 }
 
+type bidderParamsFileSystem interface {
+	readDir(name string) ([]os.DirEntry, error)
+	readFile(name string) ([]byte, error)
+	newReferenceLoader(source string) gojsonschema.JSONLoader
+	newSchema(l gojsonschema.JSONLoader) (*gojsonschema.Schema, error)
+	abs(path string) (string, error)
+}
+
+type standardBidderParamsFileSystem struct{}
+
+func (standardBidderParamsFileSystem) readDir(name string) ([]os.DirEntry, error) {
+	return os.ReadDir(name)
+}
+
+func (standardBidderParamsFileSystem) readFile(name string) ([]byte, error) {
+	return os.ReadFile(name)
+}
+
+func (standardBidderParamsFileSystem) newReferenceLoader(source string) gojsonschema.JSONLoader {
+	return gojsonschema.NewReferenceLoader(source)
+}
+
+func (standardBidderParamsFileSystem) newSchema(l gojsonschema.JSONLoader) (*gojsonschema.Schema, error) {
+	return gojsonschema.NewSchema(l)
+}
+
+func (standardBidderParamsFileSystem) abs(path string) (string, error) {
+	return filepath.Abs(path)
+}
+
+var paramsValidator bidderParamsFileSystem = standardBidderParamsFileSystem{}
+
 // NewBidderParamsValidator makes a BidderParamValidator, assuming all the necessary files exist in the filesystem.
 // This will error if, for example, a Bidder gets added but no JSON schema is written for them.
 func NewBidderParamsValidator(schemaDirectory string) (BidderParamValidator, error) {
-	fileInfos, err := os.ReadDir(schemaDirectory)
+	fileInfos, err := paramsValidator.readDir(schemaDirectory)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to read JSON schemas from directory %s. %v", schemaDirectory, err)
 	}
@@ -591,23 +626,32 @@ func NewBidderParamsValidator(schemaDirectory string) (BidderParamValidator, err
 		if _, ok := bidderMap[bidderName]; !ok {
 			return nil, fmt.Errorf("File %s/%s does not match a valid BidderName.", schemaDirectory, fileInfo.Name())
 		}
-		toOpen, err := filepath.Abs(filepath.Join(schemaDirectory, fileInfo.Name()))
+		toOpen, err := paramsValidator.abs(filepath.Join(schemaDirectory, fileInfo.Name()))
 		if err != nil {
 			return nil, fmt.Errorf("Failed to get an absolute representation of the path: %s, %v", toOpen, err)
 		}
-		schemaLoader := gojsonschema.NewReferenceLoader("file:///" + filepath.ToSlash(toOpen))
-		loadedSchema, err := gojsonschema.NewSchema(schemaLoader)
+		schemaLoader := paramsValidator.newReferenceLoader("file:///" + filepath.ToSlash(toOpen))
+		loadedSchema, err := paramsValidator.newSchema(schemaLoader)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to load json schema at %s: %v", toOpen, err)
 		}
 
-		fileBytes, err := os.ReadFile(fmt.Sprintf("%s/%s", schemaDirectory, fileInfo.Name()))
+		fileBytes, err := paramsValidator.readFile(fmt.Sprintf("%s/%s", schemaDirectory, fileInfo.Name()))
 		if err != nil {
 			return nil, fmt.Errorf("Failed to read file %s/%s: %v", schemaDirectory, fileInfo.Name(), err)
 		}
 
 		schemas[BidderName(bidderName)] = loadedSchema
 		schemaContents[BidderName(bidderName)] = string(fileBytes)
+	}
+
+	//set alias bidder params schema to its parent
+	for alias, parent := range aliasBidderToParent {
+		parentSchema := schemas[parent]
+		schemas[alias] = parentSchema
+
+		parentSchemaContents := schemaContents[parent]
+		schemaContents[alias] = parentSchemaContents
 	}
 
 	return &bidderParamValidator{

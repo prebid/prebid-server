@@ -24,9 +24,6 @@ var validator BidderParamValidator
 // returns valid JSON for all known CoreBidderNames.
 func TestBidderParamSchemas(t *testing.T) {
 	for _, bidderName := range CoreBidderNames() {
-		if _, ok := GetAliasBidderNamesSet()[bidderName]; ok {
-			continue
-		}
 		schema := validator.Schema(bidderName)
 		if schema == "" {
 			t.Errorf("No schema exists for bidder %s. Does static/bidder-params/%s.json exist?", bidderName, bidderName)

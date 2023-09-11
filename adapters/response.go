@@ -15,7 +15,9 @@ func CheckResponseStatusCodeForErrors(response *ResponseData) error {
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return fmt.Errorf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)
+		return &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}
 	}
 
 	return nil

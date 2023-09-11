@@ -352,8 +352,9 @@ type ExtRequestSdk struct {
 }
 
 type ExtRequestSdkRenderer struct {
-	Name    string `json:"name,omitempty"`
-	Version string `json:"version,omitempty"`
+	Name    string          `json:"name,omitempty"`
+	Version string          `json:"version,omitempty"`
+	Data    json.RawMessage `json:"data,omitempty"`
 }
 
 type ExtMultiBid struct {

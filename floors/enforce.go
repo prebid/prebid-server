@@ -137,7 +137,7 @@ func enforceFloorToBids(bidRequestWrapper *openrtb_ext.RequestWrapper, seatBids 
 				}
 
 				bidPrice := rate * bid.Bid.Price
-				if reqImp.BidFloor > bidPrice {
+				if (bidPrice + floorPrecision) < reqImp.BidFloor {
 					rejectedBid := &entities.PbsOrtbSeatBid{
 						Currency: seatBid.Currency,
 						Seat:     seatBid.Seat,
