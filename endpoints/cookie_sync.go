@@ -149,12 +149,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 		}
 	}
 
-	activityControl, activitiesErr := privacy.NewActivityControl(&account.Privacy)
-	if activitiesErr != nil {
-		if errortypes.ContainsFatalError([]error{activitiesErr}) {
-			activityControl = privacy.ActivityControl{}
-		}
-	}
+	activityControl := privacy.NewActivityControl(&account.Privacy)
 
 	syncTypeFilter, err := parseTypeFilter(request.FilterSettings)
 	if err != nil {
