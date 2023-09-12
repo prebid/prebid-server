@@ -143,8 +143,7 @@ func TestSampleModuleActivitiesAllowed(t *testing.T) {
 	var count int
 	am := initAnalytics(&count)
 
-	acAllowed, err := privacy.NewActivityControl(getDefaultActivityConfig("sampleModule", true))
-	assert.NoError(t, err, "unexpected error returned")
+	acAllowed := privacy.NewActivityControl(getDefaultActivityConfig("sampleModule", true))
 
 	ao := &analytics.AuctionObject{
 		Status:   http.StatusOK,
@@ -177,8 +176,7 @@ func TestSampleModuleActivitiesDenied(t *testing.T) {
 	var count int
 	am := initAnalytics(&count)
 
-	acDenied, err := privacy.NewActivityControl(getDefaultActivityConfig("sampleModule", false))
-	assert.NoError(t, err, "unexpected error returned")
+	acDenied := privacy.NewActivityControl(getDefaultActivityConfig("sampleModule", false))
 
 	ao := &analytics.AuctionObject{
 		Status:   http.StatusOK,
@@ -209,7 +207,7 @@ func TestSampleModuleActivitiesDenied(t *testing.T) {
 
 func getDefaultActivityConfig(componentName string, allow bool) *config.AccountPrivacy {
 	return &config.AccountPrivacy{
-		AllowActivities: config.AllowActivities{
+		AllowActivities: &config.AllowActivities{
 			ReportAnalytics: config.Activity{
 				Default: ptrutil.ToPtr(true),
 				Rules: []config.ActivityRule{

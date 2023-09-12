@@ -115,12 +115,7 @@ func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprou
 		return
 	}
 
-	activities, activitiesErr := privacy.NewActivityControl(account.Privacy)
-	if activitiesErr != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf("Activity evaluation failed: '%s' ", activitiesErr)))
-		return
-	}
+	activities := privacy.NewActivityControl(&account.Privacy)
 
 	// handle notification event
 	e.Analytics.LogNotificationEventObject(&analytics.NotificationEvent{

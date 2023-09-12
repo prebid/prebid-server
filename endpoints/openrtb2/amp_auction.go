@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-
 	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
