@@ -973,38 +973,6 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			expectedError:        errCookieSyncAccountBlocked.Error(),
 			givenAccountRequired: true,
 		},
-
-		{
-			description: "Account Defaults - Invalid Activities",
-			givenBody: strings.NewReader(`{` +
-				`"bidders":["a", "b"],` +
-				`"account":"ValidAccountInvalidActivities"` +
-				`}`),
-			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
-			givenCCPAEnabled: true,
-			givenConfig: config.UserSync{
-				PriorityGroups: [][]string{{"a", "b", "c"}},
-				Cooperative: config.UserSyncCooperative{
-					EnabledByDefault: false,
-				},
-			},
-			expectedPrivacy: privacy.Policies{},
-			expectedRequest: usersync.Request{
-				Bidders: []string{"a", "b"},
-				Cooperative: usersync.Cooperative{
-					Enabled:        false,
-					PriorityGroups: [][]string{{"a", "b", "c"}},
-				},
-				Limit: 0,
-				Privacy: usersyncPrivacy{
-					gdprPermissions: &fakePermissions{},
-				},
-				SyncTypeFilter: usersync.SyncTypeFilter{
-					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
-					Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
-				},
-			},
-		},
 	}
 
 	for _, test := range testCases {
@@ -1908,28 +1876,32 @@ func TestCookieSyncActivityControlIntegration(t *testing.T) {
 	testCases := []struct {
 		name           string
 		bidderName     string
-		allow          bool
+		accountPrivacy *config.AccountPrivacy
 		expectedResult bool
 	}{
 		{
 			name:           "activity_is_allowed",
 			bidderName:     "bidderA",
-			allow:          true,
+			accountPrivacy: getDefaultActivityConfig("bidderA", true),
 			expectedResult: true,
 		},
 		{
 			name:           "activity_is_denied",
 			bidderName:     "bidderA",
-			allow:          false,
+			accountPrivacy: getDefaultActivityConfig("bidderA", false),
 			expectedResult: false,
+		},
+		{
+			name:           "activity_is_abstain",
+			bidderName:     "bidderA",
+			accountPrivacy: nil,
+			expectedResult: true,
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			privacyConfig := getDefaultActivityConfig(test.bidderName, test.allow)
-			activities, err := privacy.NewActivityControl(privacyConfig)
-			assert.NoError(t, err)
+			activities := privacy.NewActivityControl(test.accountPrivacy)
 			up := usersyncPrivacy{
 				activityControl: activities,
 			}
@@ -2102,7 +2074,7 @@ func (p *fakePermissions) AuctionActivitiesAllowed(ctx context.Context, bidderCo
 
 func getDefaultActivityConfig(componentName string, allow bool) *config.AccountPrivacy {
 	return &config.AccountPrivacy{
-		AllowActivities: config.AllowActivities{
+		AllowActivities: &config.AllowActivities{
 			SyncUser: config.Activity{
 				Default: ptrutil.ToPtr(true),
 				Rules: []config.ActivityRule{

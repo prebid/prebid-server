@@ -54,7 +54,7 @@ type requestSplitter struct {
 func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 	auctionReq AuctionRequest,
 	requestExt *openrtb_ext.ExtRequest,
-	gdprDefaultValue gdpr.Signal,
+	gdprDefaultValue gdpr.Signal, bidAdjustmentFactors map[string]float64,
 ) (allowedBidderRequests []BidderRequest, privacyLabels metrics.PrivacyLabels, errs []error) {
 
 	req := auctionReq.BidRequestWrapper
@@ -91,6 +91,11 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		if err != nil {
 			errs = append(errs, err)
 		}
+	}
+
+	if auctionReq.Account.PriceFloors.IsAdjustForBidAdjustmentEnabled() {
+		//Apply BidAdjustmentFactor to imp.BidFloor
+		applyBidAdjustmentToFloor(allBidderRequests, bidAdjustmentFactors)
 	}
 
 	gdprSignal, err := getGDPR(req)
@@ -152,9 +157,9 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		}
 
 		// fetchBids activity
-		scopedName := privacy.ScopedName{Scope: privacy.ScopeTypeBidder, Name: bidderRequest.BidderName.String()}
+		scopedName := privacy.Component{Type: privacy.ComponentTypeBidder, Name: bidderRequest.BidderName.String()}
 		fetchBidsActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityFetchBids, scopedName)
-		if fetchBidsActivityAllowed == privacy.ActivityDeny {
+		if !fetchBidsActivityAllowed {
 			// skip the call to a bidder if fetchBids activity is not allowed
 			// do not add this bidder to allowedBidderRequests
 			continue
@@ -174,7 +179,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		}
 
 		passIDActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitUserFPD, scopedName)
-		if passIDActivityAllowed == privacy.ActivityDeny {
+		if !passIDActivityAllowed {
 			privacyEnforcement.UFPD = true
 		} else {
 			// run existing policies (GDPR, CCPA, COPPA, LMT)
@@ -191,7 +196,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		}
 
 		passGeoActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitPreciseGeo, scopedName)
-		if passGeoActivityAllowed == privacy.ActivityDeny {
+		if !passGeoActivityAllowed {
 			privacyEnforcement.PreciseGeo = true
 		} else {
 			// run existing policies (GDPR, CCPA, COPPA, LMT)
@@ -212,7 +217,9 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 			applyFPD(auctionReq.FirstPartyData[bidderRequest.BidderName], bidderRequest.BidRequest)
 		}
 
-		privacyEnforcement.Apply(bidderRequest.BidRequest)
+		privacyEnforcement.TID = !auctionReq.Activities.Allow(privacy.ActivityTransmitTids, scopedName)
+
+		privacyEnforcement.Apply(bidderRequest.BidRequest, auctionReq.Account.Privacy)
 		allowedBidderRequests = append(allowedBidderRequests, bidderRequest)
 
 		// GPP downgrade: always downgrade unless we can confirm GPP is supported
@@ -1067,5 +1074,27 @@ func getPrebidMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 
 	return bidType, &errortypes.BadServerResponse{
 		Message: errMsg,
+	}
+}
+
+func applyBidAdjustmentToFloor(allBidderRequests []BidderRequest, bidAdjustmentFactors map[string]float64) {
+
+	if len(bidAdjustmentFactors) == 0 {
+		return
+	}
+
+	for _, bidderRequest := range allBidderRequests {
+		bidAdjustment := 1.0
+
+		if bidAdjustemntValue, ok := bidAdjustmentFactors[string(bidderRequest.BidderName)]; ok {
+			bidAdjustment = bidAdjustemntValue
+		}
+
+		if bidAdjustment != 1.0 {
+			for index, imp := range bidderRequest.BidRequest.Imp {
+				imp.BidFloor = imp.BidFloor / bidAdjustment
+				bidderRequest.BidRequest.Imp[index] = imp
+			}
+		}
 	}
 }

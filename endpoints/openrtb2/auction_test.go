@@ -495,7 +495,7 @@ func doBadAliasRequest(t *testing.T, filename string, expectMsg string) {
 	bidderInfos := getBidderInfos(nil, openrtb_ext.CoreBidderNames())
 
 	bidderMap := exchange.GetActiveBidders(bidderInfos)
-	disabledBidders := exchange.GetDisabledBiddersErrorMessages(bidderInfos)
+	disabledBidders := exchange.GetDisabledBidderWarningMessages(bidderInfos)
 
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
@@ -965,19 +965,22 @@ func TestImplicitDNTEndToEnd(t *testing.T) {
 func TestReferer(t *testing.T) {
 	testCases := []struct {
 		description             string
-		givenSitePage           string
-		givenSiteDomain         string
-		givenPublisherDomain    string
 		givenReferer            string
 		expectedDomain          string
 		expectedPage            string
 		expectedPublisherDomain string
+		bidReq                  *openrtb_ext.RequestWrapper
 	}{
 		{
 			description:             "site.page/domain are unchanged when site.page/domain and http referer are not set",
 			expectedDomain:          "",
 			expectedPage:            "",
 			expectedPublisherDomain: "",
+			bidReq: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				Site: &openrtb2.Site{
+					Publisher: &openrtb2.Publisher{},
+				},
+			}},
 		},
 		{
 			description:             "site.page/domain are derived from referer when neither is set and http referer is set",
@@ -985,39 +988,73 @@ func TestReferer(t *testing.T) {
 			expectedDomain:          "test.somepage.com",
 			expectedPublisherDomain: "somepage.com",
 			expectedPage:            "https://test.somepage.com",
+			bidReq: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				Site: &openrtb2.Site{
+					Publisher: &openrtb2.Publisher{},
+				},
+			}},
 		},
 		{
 			description:             "site.domain is derived from site.page when site.page is set and http referer is not set",
-			givenSitePage:           "https://test.somepage.com",
 			expectedDomain:          "test.somepage.com",
 			expectedPublisherDomain: "somepage.com",
 			expectedPage:            "https://test.somepage.com",
+			bidReq: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				Site: &openrtb2.Site{
+					Page:      "https://test.somepage.com",
+					Publisher: &openrtb2.Publisher{},
+				},
+			}},
 		},
 		{
 			description:             "site.domain is derived from http referer when site.page and http referer are set",
-			givenSitePage:           "https://test.somepage.com",
 			givenReferer:            "http://test.com",
 			expectedDomain:          "test.com",
 			expectedPublisherDomain: "test.com",
 			expectedPage:            "https://test.somepage.com",
+			bidReq: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				Site: &openrtb2.Site{
+					Page:      "https://test.somepage.com",
+					Publisher: &openrtb2.Publisher{},
+				},
+			}},
 		},
 		{
 			description:             "site.page/domain are unchanged when site.page/domain and http referer are set",
-			givenSitePage:           "https://test.somepage.com",
-			givenSiteDomain:         "some.domain.com",
 			givenReferer:            "http://test.com",
 			expectedDomain:          "some.domain.com",
 			expectedPublisherDomain: "test.com",
 			expectedPage:            "https://test.somepage.com",
+			bidReq: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				Site: &openrtb2.Site{
+					Domain:    "some.domain.com",
+					Page:      "https://test.somepage.com",
+					Publisher: &openrtb2.Publisher{},
+				},
+			}},
 		},
 		{
 			description:             "Publisher domain shouldn't be overrwriten if already set",
-			givenSitePage:           "https://test.somepage.com",
-			givenSiteDomain:         "",
-			givenPublisherDomain:    "differentpage.com",
 			expectedDomain:          "test.somepage.com",
 			expectedPublisherDomain: "differentpage.com",
 			expectedPage:            "https://test.somepage.com",
+			bidReq: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				Site: &openrtb2.Site{
+					Domain: "",
+					Page:   "https://test.somepage.com",
+					Publisher: &openrtb2.Publisher{
+						Domain: "differentpage.com",
+					},
+				},
+			}},
+		},
+		{
+			description:             "request.site is nil",
+			givenReferer:            "http://test.com",
+			expectedDomain:          "test.com",
+			expectedPublisherDomain: "test.com",
+			expectedPage:            "http://test.com",
+			bidReq:                  &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
 		},
 	}
 
@@ -1025,20 +1062,12 @@ func TestReferer(t *testing.T) {
 		httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 		httpReq.Header.Set("Referer", test.givenReferer)
 
-		bidReq := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
-			Site: &openrtb2.Site{
-				Domain:    test.givenSiteDomain,
-				Page:      test.givenSitePage,
-				Publisher: &openrtb2.Publisher{Domain: test.givenPublisherDomain},
-			},
-		}}
+		setSiteImplicitly(httpReq, test.bidReq)
 
-		setSiteImplicitly(httpReq, bidReq)
-
-		assert.NotNil(t, bidReq.Site, test.description)
-		assert.Equal(t, test.expectedDomain, bidReq.Site.Domain, test.description)
-		assert.Equal(t, test.expectedPage, bidReq.Site.Page, test.description)
-		assert.Equal(t, test.expectedPublisherDomain, bidReq.Site.Publisher.Domain, test.description)
+		assert.NotNil(t, test.bidReq.Site, test.description)
+		assert.Equal(t, test.expectedDomain, test.bidReq.Site.Domain, test.description)
+		assert.Equal(t, test.expectedPage, test.bidReq.Site.Page, test.description)
+		assert.Equal(t, test.expectedPublisherDomain, test.bidReq.Site.Publisher.Domain, test.description)
 	}
 }
 

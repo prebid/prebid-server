@@ -8,17 +8,33 @@ import (
 )
 
 func TestCheckResponseStatusCodeForErrors(t *testing.T) {
-	t.Run("bad_input", func(t *testing.T) {
-		err := CheckResponseStatusCodeForErrors(&ResponseData{StatusCode: 400})
-		expectedErr := &errortypes.BadInput{Message: "Unexpected status code: 400. Run with request.debug = 1 for more info"}
-		assert.Equal(t, expectedErr.Error(), err.Error())
-	})
+	testCases := []struct {
+		name           string
+		responseStatus int
+		expectedErr    error
+	}{
+		{
+			name:           "bad_input",
+			responseStatus: 400,
+			expectedErr: &errortypes.BadInput{
+				Message: "Unexpected status code: 400. Run with request.debug = 1 for more info",
+			},
+		},
+		{
+			name:           "internal_server_error",
+			responseStatus: 500,
+			expectedErr: &errortypes.BadServerResponse{
+				Message: "Unexpected status code: 500. Run with request.debug = 1 for more info",
+			},
+		},
+	}
 
-	t.Run("internal_server_error", func(t *testing.T) {
-		err := CheckResponseStatusCodeForErrors(&ResponseData{StatusCode: 500})
-		expectedErrMessage := "Unexpected status code: 500. Run with request.debug = 1 for more info"
-		assert.Equal(t, expectedErrMessage, err.Error())
-	})
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := CheckResponseStatusCodeForErrors(&ResponseData{StatusCode: tc.responseStatus})
+			assert.Equal(t, tc.expectedErr, err)
+		})
+	}
 }
 
 func TestIsResponseStatusCodeNoContent(t *testing.T) {

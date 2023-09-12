@@ -123,7 +123,12 @@ func TestResolveNativeObject(t *testing.T) {
 		{
 			nativeObject:  openrtb2.Native{Ver: "1", Request: "{\"eventtrackers\": [], \"context\": \"someWrongValue\"}"},
 			target:        map[string]interface{}{},
-			expectedError: fmt.Errorf("Context is not present or not of int type"),
+			expectedError: fmt.Errorf("Context is not of int type"),
+		},
+		{
+			nativeObject:  openrtb2.Native{Ver: "1", Request: "{\"eventtrackers\": [], \"plcmttype\": 2}"},
+			target:        map[string]interface{}{},
+			expectedError: nil,
 		},
 		{
 			nativeObject:  openrtb2.Native{Ver: "1", Request: "{\"eventtrackers\": [], \"context\": 1}"},

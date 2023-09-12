@@ -104,16 +104,11 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 			return
 		}
 
-		activities, activitiesErr := privacy.NewActivityControl(account.Privacy)
-		if activitiesErr != nil {
-			if errortypes.ContainsFatalError([]error{activitiesErr}) {
-				activities = privacy.ActivityControl{}
-			}
-		}
+		activityControl := privacy.NewActivityControl(&account.Privacy)
 
-		userSyncActivityAllowed := activities.Allow(privacy.ActivitySyncUser,
-			privacy.ScopedName{Scope: privacy.ScopeTypeBidder, Name: bidderName})
-		if userSyncActivityAllowed == privacy.ActivityDeny {
+		userSyncActivityAllowed := activityControl.Allow(privacy.ActivitySyncUser,
+			privacy.Component{Type: privacy.ComponentTypeBidder, Name: bidderName})
+		if !userSyncActivityAllowed {
 			w.WriteHeader(http.StatusUnavailableForLegalReasons)
 			return
 		}
