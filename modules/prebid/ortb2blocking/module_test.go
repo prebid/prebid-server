@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"testing"
 
 	"github.com/prebid/openrtb/v19/adcom1"
@@ -566,7 +567,8 @@ func TestHandleBidderRequestHook(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
-			payload := hookstage.BidderRequestPayload{Bidder: test.bidder, BidRequest: test.bidRequest}
+			brw := openrtb_ext.RequestWrapper{BidRequest: test.bidRequest}
+			payload := hookstage.BidderRequestPayload{Bidder: test.bidder, RequestWrapper: &brw}
 
 			result, err := Builder(nil, moduledeps.ModuleDeps{})
 			assert.NoError(t, err, "Failed to build module.")
@@ -590,7 +592,8 @@ func TestHandleBidderRequestHook(t *testing.T) {
 				_, err := mut.Apply(payload)
 				assert.NoError(t, err)
 			}
-			assert.Equal(t, test.expectedBidRequest, payload.BidRequest, "Invalid BidRequest after executing BidderRequestHook.")
+
+			assert.Equal(t, test.expectedBidRequest, payload.RequestWrapper.BidRequest, "Invalid BidRequest after executing BidderRequestHook.")
 
 			// reset ChangeSet not to break hookResult assertion, we validated ChangeSet separately
 			hookResult.ChangeSet = hookstage.ChangeSet[hookstage.BidderRequestPayload]{}

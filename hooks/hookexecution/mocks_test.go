@@ -142,7 +142,7 @@ func (e mockTimeoutHook) HandleBidderRequestHook(_ context.Context, _ hookstage.
 	time.Sleep(20 * time.Millisecond)
 	c := hookstage.ChangeSet[hookstage.BidderRequestPayload]{}
 	c.AddMutation(func(payload hookstage.BidderRequestPayload) (hookstage.BidderRequestPayload, error) {
-		payload.BidRequest.User.CustomData = "some-custom-data"
+		payload.RequestWrapper.User.CustomData = "some-custom-data"
 		return payload, nil
 	}, hookstage.MutationUpdate, "bidRequest", "user.customData")
 
@@ -330,12 +330,12 @@ func (e mockUpdateBidRequestHook) HandleBidderRequestHook(_ context.Context, _ h
 	c := hookstage.ChangeSet[hookstage.BidderRequestPayload]{}
 	c.AddMutation(
 		func(payload hookstage.BidderRequestPayload) (hookstage.BidderRequestPayload, error) {
-			payload.BidRequest.User.Yob = 2000
+			payload.RequestWrapper.User.Yob = 2000
 			return payload, nil
 		}, hookstage.MutationUpdate, "bidRequest", "user.yob",
 	).AddMutation(
 		func(payload hookstage.BidderRequestPayload) (hookstage.BidderRequestPayload, error) {
-			payload.BidRequest.User.Consent = "true"
+			payload.RequestWrapper.User.Consent = "true"
 			return payload, nil
 		}, hookstage.MutationUpdate, "bidRequest", "user.consent",
 	)
