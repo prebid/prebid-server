@@ -200,6 +200,7 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 				Message: fmt.Sprintf("ignoring imp id=%s, Adnuntius supports only Banner", imp.ID),
 			}}
 		}
+
 		var bidderExt adapters.ExtImpBidder
 		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			return nil, []error{&errortypes.BadInput{
@@ -210,7 +211,7 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 		var adnuntiusExt openrtb_ext.ImpExtAdnunitus
 		if err := json.Unmarshal(bidderExt.Bidder, &adnuntiusExt); err != nil {
 			return nil, []error{&errortypes.BadInput{
-				Message: fmt.Sprintf("Error unmarshalling ExtImpBmtm: %s", err.Error()),
+				Message: fmt.Sprintf("Error unmarshalling ExtImpValues: %s", err.Error()),
 			}}
 		}
 
@@ -351,13 +352,26 @@ func generateAdResponse(ad Ad, imp openrtb2.Imp, html string, request *openrtb2.
 	}
 
 	price := ad.Bid.Amount
-	priceType, _, _, _ := jsonparser.Get(imp.Ext, "bidder", "priceType")
 
-	if string(priceType) != "" {
-		if strings.ToLower(string(priceType)) == "net" {
+	var bidderExt adapters.ExtImpBidder
+	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("Error unmarshalling ExtImpBidder: %s", err.Error()),
+		}}
+	}
+
+	var adnuntiusExt openrtb_ext.ImpExtAdnunitus
+	if err := json.Unmarshal(bidderExt.Bidder, &adnuntiusExt); err != nil {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("Error unmarshalling ExtImpValues: %s", err.Error()),
+		}}
+	}
+
+	if adnuntiusExt.PriceType != "" {
+		if strings.EqualFold(string(adnuntiusExt.PriceType), "net") {
 			price = ad.NetBid.Amount
 		}
-		if strings.ToLower(string(priceType)) == "gross" {
+		if strings.EqualFold(string(adnuntiusExt.PriceType), "gross") {
 			price = ad.GrossBid.Amount
 		}
 	}
