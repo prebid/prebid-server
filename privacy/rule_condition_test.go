@@ -46,6 +46,15 @@ func TestComponentEnforcementRuleEvaluate(t *testing.T) {
 			activityResult: ActivityAbstain,
 		},
 		{
+			name: "abstain_gppsid",
+			componentRule: ConditionRule{
+				result: ActivityAllow,
+				gppSID: []int8{1},
+			},
+			target:         Component{Type: "bidder", Name: "bidderB"},
+			activityResult: ActivityAbstain,
+		},
+		{
 			name: "activity_is_not_allowed_componentName_only",
 			componentRule: ConditionRule{
 				result:        ActivityAllow,
