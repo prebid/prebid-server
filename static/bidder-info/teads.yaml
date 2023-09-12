@@ -1,0 +1,9 @@
+endpoint: "https://a.teads.tv/prebid-server/bid-request"
+maintainer:
+  email: "support@teads.com"
+gvlVendorID: 132
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
