@@ -74,11 +74,7 @@
                                     "dealid": "test_dealid",
                                     "w": 300,
                                     "h": 250,
-                                    "ext": {
-                                        "prebid": {
-                                            "type": "native"
-                                        }
-                                    }
+                                    "mtype": 4
                                 }
                             ],
                             "seat": "pgamssp"
@@ -103,11 +99,7 @@
                         "dealid": "test_dealid",
                         "w": 300,
                         "h": 250,
-                        "ext": {
-                            "prebid": {
-                                "type": "native"
-                            }
-                        }
+                        "mtype": 4
                     },
                     "type": "native"
                 }

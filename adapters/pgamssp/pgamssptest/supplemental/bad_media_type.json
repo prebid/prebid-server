@@ -75,7 +75,7 @@
     }],
     "expectedMakeBidsErrors": [
         {
-          "value": "imp test-imp-id with unknown media type",
+          "value": "Unable to fetch mediaType in multi-format: test-imp-id",
           "comparison": "literal"
         }
     ]

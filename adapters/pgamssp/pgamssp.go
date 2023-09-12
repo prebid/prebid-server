@@ -130,15 +130,16 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 }
 
 func getBidMediaType(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
-	var extBid openrtb_ext.ExtBid
-	err := json.Unmarshal(bid.Ext, &extBid)
-	if err != nil {
-		return "", fmt.Errorf("unable to deserialize imp %v bid.ext", bid.ImpID)
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupAudio:
+		return openrtb_ext.BidTypeAudio, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
+	default:
+		return "", fmt.Errorf("Unable to fetch mediaType in multi-format: %s", bid.ImpID)
 	}
-
-	if extBid.Prebid == nil {
-		return "", fmt.Errorf("imp %v with unknown media type", bid.ImpID)
-	}
-
-	return extBid.Prebid.Type, nil
 }

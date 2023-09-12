@@ -86,11 +86,7 @@
                                     "cid": "test_cid",
                                     "crid": "test_crid",
                                     "dealid": "test_dealid",
-                                    "ext": {
-                                        "prebid": {
-                                            "type": "video"
-                                        }
-                                    }
+                                    "mtype": 2
                                 }
                             ],
                             "seat": "pgamssp"
@@ -114,11 +110,7 @@
                         "cid": "test_cid",
                         "crid": "test_crid",
                         "dealid": "test_dealid",
-                        "ext": {
-                            "prebid": {
-                                "type": "video"
-                            }
-                        }
+                        "mtype": 2
                     },
                     "type": "video"
                 }

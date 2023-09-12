@@ -90,11 +90,7 @@
                                     "dealid": "test_dealid",
                                     "w": 468,
                                     "h": 60,
-                                    "ext": {
-                                        "prebid": {
-                                            "type": "banner"
-                                        }
-                                    }
+                                    "mtype": 1
                                 }
                             ],
                             "seat": "pgamssp"
@@ -119,11 +115,7 @@
                         "dealid": "test_dealid",
                         "w": 468,
                         "h": 60,
-                        "ext": {
-                            "prebid": {
-                                "type": "banner"
-                            }
-                        }
+                        "mtype": 1
                     },
                     "type": "banner"
                 }
