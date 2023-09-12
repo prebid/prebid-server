@@ -46,9 +46,8 @@ type enabledAnalytics map[string]analytics.Module
 
 func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac privacy.ActivityControl) {
 	for name, module := range ea {
-		scopedName := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: name}
-		reportAnalyticsActivityAllowed := ac.Allow(privacy.ActivityReportAnalytics, scopedName)
-		if reportAnalyticsActivityAllowed {
+		component := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: name}
+		if ac.Allow(privacy.ActivityReportAnalytics, component) {
 			module.LogAuctionObject(ao)
 		}
 	}
@@ -56,9 +55,8 @@ func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac priv
 
 func (ea enabledAnalytics) LogVideoObject(vo *analytics.VideoObject, ac privacy.ActivityControl) {
 	for name, module := range ea {
-		scopedName := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: name}
-		reportAnalyticsActivityAllowed := ac.Allow(privacy.ActivityReportAnalytics, scopedName)
-		if reportAnalyticsActivityAllowed {
+		component := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: name}
+		if ac.Allow(privacy.ActivityReportAnalytics, component) {
 			module.LogVideoObject(vo)
 		}
 	}
@@ -78,9 +76,8 @@ func (ea enabledAnalytics) LogSetUIDObject(so *analytics.SetUIDObject) {
 
 func (ea enabledAnalytics) LogAmpObject(ao *analytics.AmpObject, ac privacy.ActivityControl) {
 	for name, module := range ea {
-		scopedName := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: name}
-		reportAnalyticsActivityAllowed := ac.Allow(privacy.ActivityReportAnalytics, scopedName)
-		if reportAnalyticsActivityAllowed {
+		component := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: name}
+		if ac.Allow(privacy.ActivityReportAnalytics, component) {
 			module.LogAmpObject(ao)
 		}
 	}
@@ -88,9 +85,8 @@ func (ea enabledAnalytics) LogAmpObject(ao *analytics.AmpObject, ac privacy.Acti
 
 func (ea enabledAnalytics) LogNotificationEventObject(ne *analytics.NotificationEvent, ac privacy.ActivityControl) {
 	for name, module := range ea {
-		scopedName := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: name}
-		reportAnalyticsActivityAllowed := ac.Allow(privacy.ActivityReportAnalytics, scopedName)
-		if reportAnalyticsActivityAllowed {
+		component := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: name}
+		if ac.Allow(privacy.ActivityReportAnalytics, component) {
 			module.LogNotificationEventObject(ne)
 		}
 	}

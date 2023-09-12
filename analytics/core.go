@@ -7,7 +7,6 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/privacy"
 )
 
 // Module must be implemented by analytics modules to extract the required information and logging
@@ -89,7 +88,6 @@ type UsersyncInfo struct {
 
 // NotificationEvent object of a transaction at /event
 type NotificationEvent struct {
-	Request         *EventRequest   `json:"request"`
-	Account         *config.Account `json:"account"`
-	ActivityControl privacy.ActivityControl
+	Request *EventRequest   `json:"request"`
+	Account *config.Account `json:"account"`
 }
