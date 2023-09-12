@@ -1,4 +1,4 @@
-package config
+package build
 
 import (
 	"github.com/benbjohnson/clock"

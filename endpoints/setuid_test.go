@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/analytics"
+	analyticsBuild "github.com/prebid/prebid-server/analytics/build"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/gdpr"
@@ -21,7 +22,6 @@ import (
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/stretchr/testify/assert"
 
-	analyticsConfig "github.com/prebid/prebid-server/analytics/config"
 	metricsConf "github.com/prebid/prebid-server/metrics/config"
 )
 
@@ -308,7 +308,7 @@ func TestSetUIDEndpoint(t *testing.T) {
 		},
 	}
 
-	analytics := analyticsConfig.New(&config.Analytics{})
+	analytics := analyticsBuild.New(&config.Analytics{})
 	metrics := &metricsConf.NilMetricsEngine{}
 
 	for _, test := range testCases {
@@ -1209,7 +1209,7 @@ func TestOptedOut(t *testing.T) {
 	cookie.SetOptOut(true)
 	addCookie(request, cookie)
 	syncersBidderNameToKey := map[string]string{"pubmatic": "pubmatic"}
-	analytics := analyticsConfig.New(&config.Analytics{})
+	analytics := analyticsBuild.New(&config.Analytics{})
 	metrics := &metricsConf.NilMetricsEngine{}
 	response := doRequest(request, analytics, metrics, syncersBidderNameToKey, true, false, false, false)
 

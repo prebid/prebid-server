@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/analytics"
-	analyticsConf "github.com/prebid/prebid-server/analytics/config"
+	analyticsBuild "github.com/prebid/prebid-server/analytics/build"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
@@ -1263,7 +1263,7 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		&mockAccountFetcher{data: mockVideoAccountData},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.New(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -1297,7 +1297,7 @@ func mockDepsInvalidPrivacy(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 			},
 		},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.New(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -1321,7 +1321,7 @@ func mockDepsAppendBidderNames(t *testing.T, ex *mockExchangeAppendBidderNames) 
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.New(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -1347,7 +1347,7 @@ func mockDepsNoBids(t *testing.T, ex *mockExchangeVideoNoBids) *endpointDeps {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.New(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	analyticsConf "github.com/prebid/prebid-server/analytics/config"
+	analyticsBuild "github.com/prebid/prebid-server/analytics/build"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/endpoints"
@@ -191,7 +191,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	// todo(zachbadgett): better shutdown
 	r.Shutdown = shutdown
 
-	analyticsRunner := analyticsConf.New(&cfg.Analytics)
+	analyticsRunner := analyticsBuild.New(&cfg.Analytics)
 
 	paramsValidator, err := openrtb_ext.NewBidderParamsValidator(schemaDirectory)
 	if err != nil {

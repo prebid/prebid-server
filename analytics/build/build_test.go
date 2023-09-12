@@ -1,12 +1,12 @@
-package config
+package build
 
 import (
+	"github.com/prebid/prebid-server/analytics"
 	"net/http"
 	"os"
 	"testing"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/util/ptrutil"
