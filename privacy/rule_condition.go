@@ -1,20 +1,12 @@
 package privacy
 
-import (
-	"strings"
-)
-
-type Rule interface {
-	Evaluate(target Component) ActivityResult
-}
-
-type ComponentEnforcementRule struct {
+type ConditionRule struct {
 	result        ActivityResult
-	componentName []Component
+	componentName []string
 	componentType []string
 }
 
-func (r ComponentEnforcementRule) Evaluate(target Component) ActivityResult {
+func (r ConditionRule) Evaluate(target Component) ActivityResult {
 	if matched := evaluateComponentName(target, r.componentName); !matched {
 		return ActivityAbstain
 	}
@@ -26,7 +18,7 @@ func (r ComponentEnforcementRule) Evaluate(target Component) ActivityResult {
 	return r.result
 }
 
-func evaluateComponentName(target Component, componentNames []Component) bool {
+func evaluateComponentName(target Component, componentNames []string) bool {
 	// no clauses are considered a match
 	if len(componentNames) == 0 {
 		return true
@@ -34,7 +26,7 @@ func evaluateComponentName(target Component, componentNames []Component) bool {
 
 	// if there are clauses, at least one needs to match
 	for _, n := range componentNames {
-		if n.Matches(target) {
+		if target.MatchesName(n) {
 			return true
 		}
 	}
@@ -49,8 +41,8 @@ func evaluateComponentType(target Component, componentTypes []string) bool {
 	}
 
 	// if there are clauses, at least one needs to match
-	for _, s := range componentTypes {
-		if strings.EqualFold(s, target.Type) {
+	for _, t := range componentTypes {
+		if target.MatchesType(t) {
 			return true
 		}
 	}

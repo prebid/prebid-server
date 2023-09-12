@@ -17,40 +17,20 @@
           ]
         },
         "ext": {
+          "AdUnitCode": "sovrn_auc",
           "bidder": {
-            "tagid": "123456",
-            "anotherid": "654321"
+            "tagid": "123456"
           }
         }
       }
     ],
-    "device": {
-      "ua": "test-user-agent",
-      "ip": "123.123.123.123",
-      "language": "en",
-      "dnt": 0
-    },
+    "device": { },
     "site": {
       "domain": "www.publisher.com",
-      "page": "http://www.publisher.com/awesome/site",
-      "keywords": "word1",
-      "search": "search",
-      "ext": {
-        "data": {
-          "example-site-ext-data-key": "example-site-ext-data-value"
-        }
-      }
+      "page": "http://www.publisher.com/awesome/site"
     },
     "user": {
-      "buyeruid": "test_reader_id",
-      "keywords": "word2",
-      "gender": "female",
-      "yob": 1992,
-      "ext": {
-        "data": {
-          "example-user-ext-data-key": "example-site-ext-data-value"
-        }
-      }
+      "buyeruid": "test_reader_id"
     }
   },
 
@@ -59,10 +39,6 @@
       "expectedRequest": {
         "headers": {
           "Content-Type": ["application/json"],
-          "User-Agent": ["test-user-agent"],
-          "X-Forwarded-For": ["123.123.123.123"],
-          "Accept-Language": ["en"],
-          "Dnt": ["0"],
           "Cookie": ["ljt_reader=test_reader_id"]
         },
         "uri": "http://sovrn.com/test/endpoint",
@@ -93,32 +69,12 @@
           ],
           "site": {
             "domain": "www.publisher.com",
-            "page": "http://www.publisher.com/awesome/site",
-            "keywords": "word1",
-            "search": "search",
-            "ext": {
-              "data": {
-                "example-site-ext-data-key": "example-site-ext-data-value"
-              }
-            }
+            "page": "http://www.publisher.com/awesome/site"
           },
           "user": {
-            "buyeruid": "test_reader_id",
-            "keywords": "word2",
-            "gender": "female",
-            "yob": 1992,
-            "ext": {
-              "data": {
-                "example-user-ext-data-key": "example-site-ext-data-value"
-              }
-            }
+            "buyeruid": "test_reader_id"
           },
-          "device": {
-            "ua": "test-user-agent",
-            "ip": "123.123.123.123",
-            "dnt": 0,
-            "language": "en"
-          }
+          "device": { }
         }
       },
       "mockResponse": {

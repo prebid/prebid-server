@@ -3,7 +3,7 @@ package hookstage
 import (
 	"context"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 // ProcessedAuctionRequest hooks are invoked after the request is parsed
@@ -23,10 +23,10 @@ type ProcessedAuctionRequest interface {
 	) (HookResult[ProcessedAuctionRequestPayload], error)
 }
 
-// ProcessedAuctionRequestPayload consists of the openrtb2.BidRequest object.
-// Hooks are allowed to modify openrtb2.BidRequest using mutations.
+// ProcessedAuctionRequestPayload consists of the openrtb_ext.RequestWrapper object.
+// Hooks are allowed to modify openrtb_ext.RequestWrapper using mutations.
 type ProcessedAuctionRequestPayload struct {
-	BidRequest *openrtb2.BidRequest
+	RequestWrapper *openrtb_ext.RequestWrapper
 }
 
 func (parp *ProcessedAuctionRequestPayload) GetBidderRequestPayload() *openrtb2.BidRequest {

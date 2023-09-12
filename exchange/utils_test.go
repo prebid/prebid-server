@@ -4364,8 +4364,7 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		activities, err := privacy.NewActivityControl(&test.privacyConfig)
-		assert.NoError(t, err, "")
+		activities := privacy.NewActivityControl(&test.privacyConfig)
 		auctionReq := AuctionRequest{
 			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: test.req},
 			UserSyncs:         &emptyUsersync{},

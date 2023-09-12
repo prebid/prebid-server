@@ -18,66 +18,35 @@ type ActivityControl struct {
 	plans map[Activity]ActivityPlan
 }
 
-func NewActivityControl(privacyConf *config.AccountPrivacy) (ActivityControl, error) {
+func NewActivityControl(cfg *config.AccountPrivacy) ActivityControl {
 	ac := ActivityControl{}
-	var err error
 
-	if privacyConf == nil || privacyConf.AllowActivities == nil {
-		return ac, nil
-	}
-
-	plans := make(map[Activity]ActivityPlan)
-
-	plans[ActivitySyncUser], err = buildEnforcementPlan(privacyConf.AllowActivities.SyncUser)
-	if err != nil {
-		return ac, err
-	}
-	plans[ActivityFetchBids], err = buildEnforcementPlan(privacyConf.AllowActivities.FetchBids)
-	if err != nil {
-		return ac, err
-	}
-	plans[ActivityEnrichUserFPD], err = buildEnforcementPlan(privacyConf.AllowActivities.EnrichUserFPD)
-	if err != nil {
-		return ac, err
-	}
-	plans[ActivityReportAnalytics], err = buildEnforcementPlan(privacyConf.AllowActivities.ReportAnalytics)
-	if err != nil {
-		return ac, err
-	}
-	plans[ActivityTransmitUserFPD], err = buildEnforcementPlan(privacyConf.AllowActivities.TransmitUserFPD)
-	if err != nil {
-		return ac, err
-	}
-	plans[ActivityTransmitPreciseGeo], err = buildEnforcementPlan(privacyConf.AllowActivities.TransmitPreciseGeo)
-	if err != nil {
-		return ac, err
-	}
-	plans[ActivityTransmitUniqueRequestIds], err = buildEnforcementPlan(privacyConf.AllowActivities.TransmitUniqueRequestIds)
-	if err != nil {
-		return ac, err
-	}
-	plans[ActivityTransmitTids], err = buildEnforcementPlan(privacyConf.AllowActivities.TransmitTids)
-	if err != nil {
-		return ac, err
+	if cfg == nil || cfg.AllowActivities == nil {
+		return ac
 	}
 
+	plans := make(map[Activity]ActivityPlan, 8)
+	plans[ActivitySyncUser] = buildPlan(cfg.AllowActivities.SyncUser)
+	plans[ActivityFetchBids] = buildPlan(cfg.AllowActivities.FetchBids)
+	plans[ActivityEnrichUserFPD] = buildPlan(cfg.AllowActivities.EnrichUserFPD)
+	plans[ActivityReportAnalytics] = buildPlan(cfg.AllowActivities.ReportAnalytics)
+	plans[ActivityTransmitUserFPD] = buildPlan(cfg.AllowActivities.TransmitUserFPD)
+	plans[ActivityTransmitPreciseGeo] = buildPlan(cfg.AllowActivities.TransmitPreciseGeo)
+	plans[ActivityTransmitUniqueRequestIds] = buildPlan(cfg.AllowActivities.TransmitUniqueRequestIds)
+	plans[ActivityTransmitTids] = buildPlan(cfg.AllowActivities.TransmitTids)
 	ac.plans = plans
 
-	return ac, nil
+	return ac
 }
 
-func buildEnforcementPlan(activity config.Activity) (ActivityPlan, error) {
-	ef := ActivityPlan{}
-	rules, err := activityRulesToEnforcementRules(activity.Rules)
-	if err != nil {
-		return ef, err
+func buildPlan(activity config.Activity) ActivityPlan {
+	return ActivityPlan{
+		rules:         cfgToRules(activity.Rules),
+		defaultResult: cfgToDefaultResult(activity.Default),
 	}
-	ef.defaultResult = activityDefaultToDefaultResult(activity.Default)
-	ef.rules = rules
-	return ef, nil
 }
 
-func activityRulesToEnforcementRules(rules []config.ActivityRule) ([]Rule, error) {
+func cfgToRules(rules []config.ActivityRule) []Rule {
 	var enfRules []Rule
 
 	for _, r := range rules {
@@ -88,34 +57,17 @@ func activityRulesToEnforcementRules(rules []config.ActivityRule) ([]Rule, error
 			result = ActivityDeny
 		}
 
-		componentName, err := conditionToRuleComponentNames(r.Condition.ComponentName)
-		if err != nil {
-			return nil, err
-		}
-
-		er := ComponentEnforcementRule{
+		er := ConditionRule{
 			result:        result,
-			componentName: componentName,
+			componentName: r.Condition.ComponentName,
 			componentType: r.Condition.ComponentType,
 		}
 		enfRules = append(enfRules, er)
 	}
-	return enfRules, nil
+	return enfRules
 }
 
-func conditionToRuleComponentNames(conditions []string) ([]Component, error) {
-	sn := make([]Component, 0)
-	for _, condition := range conditions {
-		scope, err := ParseComponent(condition)
-		if err != nil {
-			return nil, err
-		}
-		sn = append(sn, scope)
-	}
-	return sn, nil
-}
-
-func activityDefaultToDefaultResult(activityDefault *bool) bool {
+func cfgToDefaultResult(activityDefault *bool) bool {
 	if activityDefault == nil {
 		return defaultActivityResult
 	}

@@ -167,7 +167,7 @@ func (e *hookExecutor) ExecuteProcessedAuctionStage(request *openrtb_ext.Request
 
 	stageName := hooks.StageProcessedAuctionRequest.String()
 	executionCtx := e.newContext(stageName)
-	payload := hookstage.ProcessedAuctionRequestPayload{BidRequest: request.BidRequest}
+	payload := hookstage.ProcessedAuctionRequestPayload{RequestWrapper: request}
 
 	outcome, _, contexts, reject := executeStage(executionCtx, plan, payload, handler, e.metricEngine)
 	outcome.Entity = entityAuctionRequest
