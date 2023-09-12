@@ -104,12 +104,7 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 			return
 		}
 
-		activities, activitiesErr := privacy.NewActivityControl(&account.Privacy)
-		if activitiesErr != nil {
-			if errortypes.ContainsFatalError([]error{activitiesErr}) {
-				activities = privacy.ActivityControl{}
-			}
-		}
+		activityControl := privacy.NewActivityControl(&account.Privacy)
 
 		gppSID, err := stringutil.StrToInt8Slice(query.Get("gpp_sid"))
 		if err != nil {
@@ -126,7 +121,7 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 			GPPSID: gppSID,
 		}
 
-		userSyncActivityAllowed := activities.Allow(privacy.ActivitySyncUser,
+		userSyncActivityAllowed := activityControl.Allow(privacy.ActivitySyncUser,
 			privacy.Component{Type: privacy.ComponentTypeBidder, Name: bidderName},
 			privacy.NewRequestFromPolicies(policies))
 

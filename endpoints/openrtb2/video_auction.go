@@ -303,14 +303,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	activities, activitiesErr := privacy.NewActivityControl(&account.Privacy)
-	if activitiesErr != nil {
-		errL = append(errL, activitiesErr)
-		if errortypes.ContainsFatalError(errL) {
-			handleError(&labels, w, errL, &vo, &debugLog)
-			return
-		}
-	}
+	activityControl := privacy.NewActivityControl(&account.Privacy)
 
 	secGPC := r.Header.Get("Sec-GPC")
 	auctionRequest := &exchange.AuctionRequest{
@@ -324,7 +317,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		PubID:                      labels.PubID,
 		HookExecutor:               hookexecution.EmptyHookExecutor{},
 		TmaxAdjustments:            deps.tmaxAdjustments,
-		Activities:                 activities,
+		Activities:                 activityControl,
 	}
 
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog)

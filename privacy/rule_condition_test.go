@@ -11,60 +11,52 @@ import (
 func TestComponentEnforcementRuleEvaluate(t *testing.T) {
 	testCases := []struct {
 		name           string
-		componentRule  ComponentEnforcementRule
+		componentRule  ConditionRule
 		target         Component
 		activityResult ActivityResult
 	}{
 		{
-			name: "activity-allowed",
-			componentRule: ComponentEnforcementRule{
-				result: ActivityAllow,
-				componentName: []Component{
-					{Type: "bidder", Name: "bidderA"},
-				},
+			name: "activity_is_allowed",
+			componentRule: ConditionRule{
+				result:        ActivityAllow,
+				componentName: []string{"bidderA"},
 				componentType: []string{"bidder"},
 			},
 			target:         Component{Type: "bidder", Name: "bidderA"},
 			activityResult: ActivityAllow,
 		},
 		{
-			name: "activity-not-allowed",
-			componentRule: ComponentEnforcementRule{
-				result: ActivityDeny,
-				componentName: []Component{
-					{Type: "bidder", Name: "bidderA"},
-				},
+			name: "activity_is_not_allowed",
+			componentRule: ConditionRule{
+				result:        ActivityDeny,
+				componentName: []string{"bidderA"},
 				componentType: []string{"bidder"},
 			},
 			target:         Component{Type: "bidder", Name: "bidderA"},
 			activityResult: ActivityDeny,
 		},
 		{
-			name: "abstain-both-clauses-do-not-match",
-			componentRule: ComponentEnforcementRule{
-				result: ActivityAllow,
-				componentName: []Component{
-					{Type: "bidder", Name: "bidderA"},
-				},
+			name: "abstain_both_clauses_do_not_match",
+			componentRule: ConditionRule{
+				result:        ActivityAllow,
+				componentName: []string{"bidderA"},
 				componentType: []string{"bidder"},
 			},
 			target:         Component{Type: "bidder", Name: "bidderB"},
 			activityResult: ActivityAbstain,
 		},
 		{
-			name: "activity-not-allowed-componentName-only",
-			componentRule: ComponentEnforcementRule{
-				result: ActivityAllow,
-				componentName: []Component{
-					{Type: "bidder", Name: "bidderA"},
-				},
+			name: "activity_is_not_allowed_componentName_only",
+			componentRule: ConditionRule{
+				result:        ActivityAllow,
+				componentName: []string{"bidderA"},
 			},
 			target:         Component{Type: "bidder", Name: "bidderA"},
 			activityResult: ActivityAllow,
 		},
 		{
-			name: "activity-allowed-componentType-only",
-			componentRule: ComponentEnforcementRule{
+			name: "activity_is_allowed_componentType_only",
+			componentRule: ConditionRule{
 				result:        ActivityAllow,
 				componentType: []string{"bidder"},
 			},
@@ -73,7 +65,7 @@ func TestComponentEnforcementRuleEvaluate(t *testing.T) {
 		},
 		{
 			name: "no-conditions-allow",
-			componentRule: ComponentEnforcementRule{
+			componentRule: ConditionRule{
 				result: ActivityAllow,
 			},
 			target:         Component{Type: "bidder", Name: "bidderA"},
@@ -81,7 +73,7 @@ func TestComponentEnforcementRuleEvaluate(t *testing.T) {
 		},
 		{
 			name: "no-conditions-deny",
-			componentRule: ComponentEnforcementRule{
+			componentRule: ConditionRule{
 				result: ActivityDeny,
 			},
 			target:         Component{Type: "bidder", Name: "bidderA"},
