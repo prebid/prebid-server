@@ -145,6 +145,10 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 		extraRespInfo   extraBidderRespInfo
 	)
 
+	// rebuild request after modules execution
+	brw.RebuildRequest()
+	bidderRequest.BidRequest = brw.BidRequest
+
 	//check if real request exists for this bidder or it only has stored responses
 	dataLen := 0
 	if len(bidderRequest.BidRequest.Imp) > 0 {
