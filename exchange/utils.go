@@ -214,7 +214,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 
 		privacyEnforcement.TID = !auctionReq.Activities.Allow(privacy.ActivityTransmitTids, scopedName)
 
-		privacyEnforcement.Apply(bidderRequest.BidRequest)
+		privacyEnforcement.Apply(bidderRequest.BidRequest, auctionReq.Account.Privacy)
 		allowedBidderRequests = append(allowedBidderRequests, bidderRequest)
 
 		// GPP downgrade: always downgrade unless we can confirm GPP is supported

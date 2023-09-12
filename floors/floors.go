@@ -16,15 +16,16 @@ type Price struct {
 }
 
 const (
-	defaultCurrency  string = "USD"
-	defaultDelimiter string = "|"
-	catchAll         string = "*"
-	skipRateMin      int    = 0
-	skipRateMax      int    = 100
-	modelWeightMax   int    = 100
-	modelWeightMin   int    = 1
-	enforceRateMin   int    = 0
-	enforceRateMax   int    = 100
+	defaultCurrency  string  = "USD"
+	defaultDelimiter string  = "|"
+	catchAll         string  = "*"
+	skipRateMin      int     = 0
+	skipRateMax      int     = 100
+	modelWeightMax   int     = 100
+	modelWeightMin   int     = 1
+	enforceRateMin   int     = 0
+	enforceRateMax   int     = 100
+	floorPrecision   float64 = 0.01
 )
 
 // EnrichWithPriceFloors checks for floors enabled in account and request and selects floors data from dynamic fetched if present

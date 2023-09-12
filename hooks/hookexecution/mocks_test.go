@@ -131,7 +131,7 @@ func (e mockTimeoutHook) HandleProcessedAuctionHook(_ context.Context, _ hooksta
 	time.Sleep(20 * time.Millisecond)
 	c := hookstage.ChangeSet[hookstage.ProcessedAuctionRequestPayload]{}
 	c.AddMutation(func(payload hookstage.ProcessedAuctionRequestPayload) (hookstage.ProcessedAuctionRequestPayload, error) {
-		payload.BidRequest.User.CustomData = "some-custom-data"
+		payload.RequestWrapper.User.CustomData = "some-custom-data"
 		return payload, nil
 	}, hookstage.MutationUpdate, "bidRequest", "user.customData")
 
@@ -305,12 +305,20 @@ func (e mockUpdateBidRequestHook) HandleProcessedAuctionHook(_ context.Context, 
 	c := hookstage.ChangeSet[hookstage.ProcessedAuctionRequestPayload]{}
 	c.AddMutation(
 		func(payload hookstage.ProcessedAuctionRequestPayload) (hookstage.ProcessedAuctionRequestPayload, error) {
-			payload.BidRequest.User.Yob = 2000
+			payload.RequestWrapper.User.Yob = 2000
+			userExt, err := payload.RequestWrapper.GetUserExt()
+			if err != nil {
+				return payload, err
+			}
+			newPrebidExt := &openrtb_ext.ExtUserPrebid{
+				BuyerUIDs: map[string]string{"some": "id"},
+			}
+			userExt.SetPrebid(newPrebidExt)
 			return payload, nil
 		}, hookstage.MutationUpdate, "bidRequest", "user.yob",
 	).AddMutation(
 		func(payload hookstage.ProcessedAuctionRequestPayload) (hookstage.ProcessedAuctionRequestPayload, error) {
-			payload.BidRequest.User.Consent = "true"
+			payload.RequestWrapper.User.Consent = "true"
 			return payload, nil
 		}, hookstage.MutationUpdate, "bidRequest", "user.consent",
 	)

@@ -1,6 +1,6 @@
 package openrtb_ext
 
-type ExtImpEmxDigital struct {
+type ExtImpCadentApertureMX struct {
 	TagID    string `json:"tagid"`
 	BidFloor string `json:"bidfloor,omitempty"`
 }

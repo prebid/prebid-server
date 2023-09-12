@@ -27,7 +27,7 @@ func (a *DatablocksAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 		"Accept":       {"application/json"},
 	}
 
-	// Pull the host and source ID info from the bidder params.
+	// Pull the source ID info from the bidder params.
 	reqImps, err := splitImpressions(request.Imp)
 
 	if err != nil {
@@ -45,7 +45,7 @@ func (a *DatablocksAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 			continue
 		}
 
-		urlParams := macros.EndpointTemplateParams{Host: reqExt.Host, SourceId: strconv.Itoa(reqExt.SourceId)}
+		urlParams := macros.EndpointTemplateParams{SourceId: strconv.Itoa(reqExt.SourceId)}
 		url, err := macros.ResolveMacros(a.EndpointTemplate, urlParams)
 
 		if err != nil {
@@ -137,19 +137,13 @@ func getBidderParams(imp *openrtb2.Imp) (*openrtb_ext.ExtImpDatablocks, error) {
 	var datablocksExt openrtb_ext.ExtImpDatablocks
 	if err := json.Unmarshal(bidderExt.Bidder, &datablocksExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("Cannot Resolve host or sourceId: %s", err.Error()),
+			Message: fmt.Sprintf("Cannot Resolve sourceId: %s", err.Error()),
 		}
 	}
 
 	if datablocksExt.SourceId < 1 {
 		return nil, &errortypes.BadInput{
 			Message: "Invalid/Missing SourceId",
-		}
-	}
-
-	if len(datablocksExt.Host) < 1 {
-		return nil, &errortypes.BadInput{
-			Message: "Invalid/Missing Host",
 		}
 	}
 
