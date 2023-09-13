@@ -3221,7 +3221,7 @@ func TestDoRequestImplWithTmax(t *testing.T) {
 			ctxDeadline:     time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
 			description:     "returns-tmax-timeout-error",
 			tmaxAdjustments: &TmaxAdjustmentsPreprocessed{IsEnforced: true, PBSResponsePreparationDuration: 100, BidderNetworkLatencyBuffer: 10, BidderResponseDurationMin: 5000},
-			assertFn:        func(err error) { assert.Equal(t, errTmaxTimeout, err) },
+			assertFn:        func(err error) { assert.Equal(t, &errortypes.TmaxTimeout{Message: "exceeded tmax duration"}, err) },
 		},
 		{
 			ctxDeadline:     time.Now().Add(5 * time.Second),
@@ -3296,7 +3296,7 @@ func TestDoRequestImplWithTmaxTimeout(t *testing.T) {
 			ctxDeadline:     time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
 			description:     "returns-tmax-timeout-error",
 			tmaxAdjustments: &TmaxAdjustmentsPreprocessed{IsEnforced: true, PBSResponsePreparationDuration: 100, BidderNetworkLatencyBuffer: 10, BidderResponseDurationMin: 5000},
-			assertFn:        func(err error) { assert.Equal(t, errTmaxTimeout, err) },
+			assertFn:        func(err error) { assert.Equal(t, &errortypes.TmaxTimeout{Message: "exceeded tmax duration"}, err) },
 		},
 	}
 	for _, test := range tests {
