@@ -47,7 +47,7 @@ type enabledAnalytics map[string]analytics.Module
 func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac privacy.ActivityControl) {
 	for name, module := range ea {
 		component := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: name}
-		if ac.Allow(privacy.ActivityReportAnalytics, component) {
+		if ac.Allow(privacy.ActivityReportAnalytics, component, privacy.ActivityRequest{}) {
 			module.LogAuctionObject(ao)
 		}
 	}
@@ -56,7 +56,7 @@ func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac priv
 func (ea enabledAnalytics) LogVideoObject(vo *analytics.VideoObject, ac privacy.ActivityControl) {
 	for name, module := range ea {
 		component := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: name}
-		if ac.Allow(privacy.ActivityReportAnalytics, component) {
+		if ac.Allow(privacy.ActivityReportAnalytics, component, privacy.ActivityRequest{}) {
 			module.LogVideoObject(vo)
 		}
 	}
@@ -77,7 +77,7 @@ func (ea enabledAnalytics) LogSetUIDObject(so *analytics.SetUIDObject) {
 func (ea enabledAnalytics) LogAmpObject(ao *analytics.AmpObject, ac privacy.ActivityControl) {
 	for name, module := range ea {
 		component := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: name}
-		if ac.Allow(privacy.ActivityReportAnalytics, component) {
+		if ac.Allow(privacy.ActivityReportAnalytics, component, privacy.ActivityRequest{}) {
 			module.LogAmpObject(ao)
 		}
 	}
@@ -86,7 +86,7 @@ func (ea enabledAnalytics) LogAmpObject(ao *analytics.AmpObject, ac privacy.Acti
 func (ea enabledAnalytics) LogNotificationEventObject(ne *analytics.NotificationEvent, ac privacy.ActivityControl) {
 	for name, module := range ea {
 		component := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: name}
-		if ac.Allow(privacy.ActivityReportAnalytics, component) {
+		if ac.Allow(privacy.ActivityReportAnalytics, component, privacy.ActivityRequest{}) {
 			module.LogNotificationEventObject(ne)
 		}
 	}
