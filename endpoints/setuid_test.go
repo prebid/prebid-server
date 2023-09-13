@@ -355,66 +355,73 @@ func TestSetUIDPriorityEjection(t *testing.T) {
 	}
 
 	testCases := []struct {
-		description                    string
-		uri                            string
-		givenExistingSyncs             []string
-		givenPriorityGroups            [][]string
-		givenMaxCookieSize             int
-		expectedStatusCode             int
-		expectedSyncer                 string
-		expectedUID                    string
-		expectedNumOfRemainingElements int
+		description           string
+		uri                   string
+		givenExistingSyncs    []string
+		givenPriorityGroups   [][]string
+		givenMaxCookieSize    int
+		expectedStatusCode    int
+		expectedSyncer        string
+		expectedUID           string
+		expectedNumOfElements int
 	}{
 		{
-			description:                    "Cookie empty, expect bidder to be synced, no ejection",
-			uri:                            "/setuid?bidder=pubmatic&uid=123",
-			givenPriorityGroups:            [][]string{},
-			givenMaxCookieSize:             500,
-			expectedSyncer:                 "pubmatic",
-			expectedUID:                    "123",
-			expectedNumOfRemainingElements: 1,
-			expectedStatusCode:             http.StatusOK,
+			description:           "Cookie empty, expect bidder to be synced, no ejection",
+			uri:                   "/setuid?bidder=pubmatic&uid=123",
+			givenPriorityGroups:   [][]string{},
+			givenMaxCookieSize:    500,
+			expectedSyncer:        "pubmatic",
+			expectedUID:           "123",
+			expectedNumOfElements: 1,
+			expectedStatusCode:    http.StatusOK,
 		},
 		{
-			description:                    "Cookie full, no priority groups, one ejection",
-			uri:                            "/setuid?bidder=pubmatic&uid=123",
-			givenExistingSyncs:             []string{"syncer1", "syncer2", "syncer3", "syncer4"},
-			givenPriorityGroups:            [][]string{},
-			givenMaxCookieSize:             500,
-			expectedUID:                    "123",
-			expectedSyncer:                 "pubmatic",
-			expectedNumOfRemainingElements: 4,
-			expectedStatusCode:             http.StatusOK,
+			description:           "Cookie full, no priority groups, one ejection",
+			uri:                   "/setuid?bidder=pubmatic&uid=123",
+			givenExistingSyncs:    []string{"syncer1", "syncer2", "syncer3", "syncer4"},
+			givenPriorityGroups:   [][]string{},
+			givenMaxCookieSize:    500,
+			expectedUID:           "123",
+			expectedSyncer:        "pubmatic",
+			expectedNumOfElements: 4,
+			expectedStatusCode:    http.StatusOK,
 		},
 		{
-			description:                    "Cookie full, eject lowest priority element",
-			uri:                            "/setuid?bidder=pubmatic&uid=123",
-			givenExistingSyncs:             []string{"syncer2", "syncer3", "syncer4", "syncerToEject"},
-			givenPriorityGroups:            [][]string{{"pubmatic", "syncer2", "syncer3", "syncer4"}, {"syncerToEject"}},
-			givenMaxCookieSize:             500,
-			expectedUID:                    "123",
-			expectedSyncer:                 "pubmatic",
-			expectedNumOfRemainingElements: 4,
-			expectedStatusCode:             http.StatusOK,
+			description:           "Cookie full, eject lowest priority element",
+			uri:                   "/setuid?bidder=pubmatic&uid=123",
+			givenExistingSyncs:    []string{"syncer2", "syncer3", "syncer4", "syncerToEject"},
+			givenPriorityGroups:   [][]string{{"pubmatic", "syncer2", "syncer3", "syncer4"}, {"syncerToEject"}},
+			givenMaxCookieSize:    500,
+			expectedUID:           "123",
+			expectedSyncer:        "pubmatic",
+			expectedNumOfElements: 4,
+			expectedStatusCode:    http.StatusOK,
 		},
 		{
-			description:                    "Cookie full, all elements same priority, one ejection",
-			uri:                            "/setuid?bidder=pubmatic&uid=123",
-			givenExistingSyncs:             []string{"syncer1", "syncer2", "syncer3", "syncer5"},
-			givenPriorityGroups:            [][]string{{"pubmatic", "syncer1", "syncer2", "syncer3", "mismatchedBidderName"}},
-			givenMaxCookieSize:             500,
-			expectedUID:                    "123",
-			expectedSyncer:                 "pubmatic",
-			expectedNumOfRemainingElements: 4,
-			expectedStatusCode:             http.StatusOK,
+			description:           "Cookie full, all elements same priority, one ejection",
+			uri:                   "/setuid?bidder=pubmatic&uid=123",
+			givenExistingSyncs:    []string{"syncer1", "syncer2", "syncer3", "syncer5"},
+			givenPriorityGroups:   [][]string{{"pubmatic", "syncer1", "syncer2", "syncer3", "mismatchedBidderName"}},
+			givenMaxCookieSize:    500,
+			expectedUID:           "123",
+			expectedSyncer:        "pubmatic",
+			expectedNumOfElements: 4,
+			expectedStatusCode:    http.StatusOK,
 		},
 		{
-			description:         "There are only priority elements left, but the bidder being synced isn't one",
-			uri:                 "/setuid?bidder=pubmatic&uid=123",
-			givenExistingSyncs:  []string{"syncer1", "syncer2", "syncer3", "syncer4"},
-			givenPriorityGroups: [][]string{{"syncer1", "syncer2", "syncer3", "syncer4"}},
-			givenMaxCookieSize:  500,
-			expectedStatusCode:  http.StatusBadRequest,
+			description:           "There are only priority elements left, but the bidder being synced isn't one",
+			uri:                   "/setuid?bidder=pubmatic&uid=123",
+			givenExistingSyncs:    []string{"syncer1", "syncer2", "syncer3", "syncer4"},
+			givenPriorityGroups:   [][]string{{"syncer1", "syncer2", "syncer3", "syncer4"}},
+			givenMaxCookieSize:    500,
+			expectedNumOfElements: 4,
+			expectedStatusCode:    http.StatusOK,
+		},
+		{
+			description:        "Uid that's trying to be synced is bigger than MaxCookieSize",
+			uri:                "/setuid?bidder=pubmatic&uid=123",
+			givenMaxCookieSize: 1,
+			expectedStatusCode: http.StatusBadRequest,
 		},
 	}
 	for _, test := range testCases {
@@ -444,19 +451,26 @@ func TestSetUIDPriorityEjection(t *testing.T) {
 		// Check That Bidder On Request was Synced, it's UID matches, and that the right number of elements are present after ejection
 		decodedCookie := decoder.Decode(encodedCookieValue)
 		decodedCookieUIDs := decodedCookie.GetUIDs()
-		if test.expectedStatusCode == http.StatusOK {
-			uid, ok := decodedCookieUIDs[test.expectedSyncer]
-			assert.Equal(t, true, ok, test.description)
-			assert.Equal(t, test.expectedUID, uid, test.description)
-			assert.Equal(t, test.expectedNumOfRemainingElements, len(decodedCookieUIDs), test.description)
+
+		if test.expectedSyncer != "" {
+			assert.Equal(t, test.expectedUID, decodedCookieUIDs[test.expectedSyncer], test.description)
+			assert.Equal(t, test.expectedNumOfElements, len(decodedCookieUIDs), test.description)
 
 			// Specific test case handling where we eject the lowest priority element
 			if len(test.givenPriorityGroups) == 2 {
 				syncer := test.givenPriorityGroups[len(test.givenPriorityGroups)-1][0]
-				_, ok := decodedCookieUIDs[syncer]
-				assert.Equal(t, false, ok, test.description)
+				_, syncerExists := decodedCookieUIDs[syncer]
+				assert.False(t, syncerExists, test.description)
 			}
+		} else if len(test.givenExistingSyncs) > 0 {
+			// Check that the unaltered cookie was returned
+			for _, sync := range test.givenExistingSyncs {
+				_, syncExists := decodedCookieUIDs[sync]
+				assert.True(t, syncExists, test.description)
+			}
+			assert.Equal(t, test.expectedNumOfElements, len(decodedCookieUIDs), test.description)
 		}
+
 		assert.Equal(t, test.expectedStatusCode, response.Result().StatusCode, test.description)
 	}
 }
