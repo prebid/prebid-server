@@ -20,6 +20,25 @@ func (err *Timeout) Severity() Severity {
 	return SeverityFatal
 }
 
+// TmaxTimeout should be used to flag that remaining tmax duration is not enough to get response from bidder
+//
+// TmaxTimeout will not be written to the app log, since it's not an actionable item for the Prebid Server hosts.
+type TmaxTimeout struct {
+	Message string
+}
+
+func (err *TmaxTimeout) Error() string {
+	return err.Message
+}
+
+func (err *TmaxTimeout) Code() int {
+	return TmaxTimeoutErrorCode
+}
+
+func (err *TmaxTimeout) Severity() Severity {
+	return SeverityFatal
+}
+
 // BadInput should be used when returning errors which are caused by bad input.
 // It should _not_ be used if the error is a server-side issue (e.g. failed to send the external request).
 //

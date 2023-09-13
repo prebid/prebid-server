@@ -267,6 +267,7 @@ const (
 	AdapterErrorTimeout             AdapterError = "timeout"
 	AdapterErrorFailedToRequestBids AdapterError = "failedtorequestbid"
 	AdapterErrorValidation          AdapterError = "validation"
+	AdapterErrorTmaxTimeout         AdapterError = "tmaxtimeout"
 	AdapterErrorUnknown             AdapterError = "unknown_error"
 )
 
