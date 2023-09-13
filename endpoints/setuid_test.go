@@ -16,9 +16,9 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/gdpr"
+	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/stretchr/testify/assert"
 
@@ -217,8 +217,7 @@ func TestSetUIDEndpoint(t *testing.T) {
 			description:            "Sets uid for a bidder allowed by GDPR in GPP, throws warning because GDPR legacy values weren't used",
 		},
 		{
-			uri: "/setuid?bidder=pubmatic&uid=123&gdpr=1&gdpr_consent=" +
-				"malformed",
+			uri:                    "/setuid?bidder=pubmatic&uid=123&gdpr=1&gdpr_consent=malformed",
 			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
 			gdprAllowsHostCookies:  true,
 			gdprMalformed:          true,
@@ -305,6 +304,26 @@ func TestSetUIDEndpoint(t *testing.T) {
 			expectedStatusCode:     http.StatusOK,
 			expectedHeaders:        map[string]string{"Content-Type": "text/html", "Content-Length": "0"},
 			description:            "Set uid for valid bidder with valid account provided with invalid user sync activity",
+		},
+		{
+			description:            "gppsid-valid",
+			uri:                    "/setuid?bidder=appnexus&uid=123&gpp_sid=100,101", // fake sids to avoid GDPR logic in this test
+			syncersBidderNameToKey: map[string]string{"appnexus": "appnexus"},
+			existingSyncs:          nil,
+			gdprAllowsHostCookies:  true,
+			expectedSyncs:          map[string]string{"appnexus": "123"},
+			expectedStatusCode:     http.StatusOK,
+			expectedHeaders:        map[string]string{"Content-Type": "text/html", "Content-Length": "0"},
+		},
+		{
+			description:            "gppsid-malformed",
+			uri:                    "/setuid?bidder=appnexus&uid=123&gpp_sid=malformed",
+			syncersBidderNameToKey: map[string]string{"appnexus": "appnexus"},
+			existingSyncs:          nil,
+			gdprAllowsHostCookies:  true,
+			expectedSyncs:          nil,
+			expectedStatusCode:     http.StatusBadRequest,
+			expectedBody:           "invalid gpp_sid encoding, must be a csv list of integers",
 		},
 	}
 
@@ -1476,7 +1495,7 @@ func (s fakeSyncer) SupportsType(syncTypes []usersync.SyncType) bool {
 	return true
 }
 
-func (s fakeSyncer) GetSync(syncTypes []usersync.SyncType, privacyPolicies privacy.Policies) (usersync.Sync, error) {
+func (s fakeSyncer) GetSync(syncTypes []usersync.SyncType, privacyMacros macros.UserSyncPrivacy) (usersync.Sync, error) {
 	return usersync.Sync{}, nil
 }
 

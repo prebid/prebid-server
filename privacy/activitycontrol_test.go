@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
@@ -40,8 +41,8 @@ func TestNewActivityControl(t *testing.T) {
 				ActivityReportAnalytics:          getTestActivityPlan(ActivityAllow),
 				ActivityTransmitUserFPD:          getTestActivityPlan(ActivityAllow),
 				ActivityTransmitPreciseGeo:       getTestActivityPlan(ActivityDeny),
-				ActivityTransmitUniqueRequestIds: getTestActivityPlan(ActivityAllow),
-				ActivityTransmitTids:             getTestActivityPlan(ActivityAllow),
+				ActivityTransmitUniqueRequestIDs: getTestActivityPlan(ActivityAllow),
+				ActivityTransmitTIDs:             getTestActivityPlan(ActivityAllow),
 			}},
 		},
 	}
@@ -128,11 +129,31 @@ func TestActivityControlAllow(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			actualResult := test.activityControl.Allow(test.activity, test.target)
+			actualResult := test.activityControl.Allow(test.activity, test.target, ActivityRequest{})
 			assert.Equal(t, test.activityResult, actualResult)
 
 		})
 	}
+}
+
+func TestActivityRequest(t *testing.T) {
+	t.Run("empty", func(t *testing.T) {
+		r := ActivityRequest{}
+		assert.False(t, r.IsPolicies())
+		assert.False(t, r.IsBidRequest())
+	})
+
+	t.Run("policies", func(t *testing.T) {
+		r := NewRequestFromPolicies(Policies{})
+		assert.True(t, r.IsPolicies())
+		assert.False(t, r.IsBidRequest())
+	})
+
+	t.Run("request", func(t *testing.T) {
+		r := NewRequestFromBidRequest(openrtb_ext.RequestWrapper{})
+		assert.False(t, r.IsPolicies())
+		assert.True(t, r.IsBidRequest())
+	})
 }
 
 func getTestActivityConfig(allow bool) config.Activity {

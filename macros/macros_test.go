@@ -26,7 +26,7 @@ func TestResolveMacros(t *testing.T) {
 		},
 		{
 			givenTemplate:  endpointTemplate,
-			givenParams:    UserSyncTemplateParams{GDPR: "SomeGDPR", GDPRConsent: "SomeGDPRConsent"},
+			givenParams:    UserSyncPrivacy{GDPR: "SomeGDPR", GDPRConsent: "SomeGDPRConsent"},
 			expectedResult: "",
 			expectedError:  true,
 		},
