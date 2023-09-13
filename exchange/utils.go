@@ -150,11 +150,6 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 
 	// bidder level privacy policies
 	for _, bidderRequest := range allBidderRequests {
-		privacyEnforcement := privacy.Enforcement{
-			COPPA: coppa,
-			LMT:   lmt,
-		}
-
 		// fetchBids activity
 		scopedName := privacy.Component{Type: privacy.ComponentTypeBidder, Name: bidderRequest.BidderName.String()}
 		fetchBidsActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityFetchBids, scopedName, privacy.NewRequestFromBidRequest(*req))
@@ -177,9 +172,19 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 			}
 		}
 
+		privacyEnforcement := privacy.Enforcement{
+			COPPA: coppa,
+			LMT:   lmt,
+		}
+
+		reqWrapper := cloneBidderReq(bidderRequest.BidRequest)
+
 		passIDActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitUserFPD, scopedName, privacy.NewRequestFromBidRequest(*req))
 		if !passIDActivityAllowed {
-			privacyEnforcement.UFPD = true
+			//UFPD
+			privacy.ScrubDeviceIDs(reqWrapper)
+			privacy.ScrubUserIDs(reqWrapper)
+			privacy.ScrubUserExt(reqWrapper, "data")
 		} else {
 			// run existing policies (GDPR, CCPA, COPPA, LMT)
 			// potentially block passing IDs based on GDPR
@@ -196,7 +201,8 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 
 		passGeoActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitPreciseGeo, scopedName, privacy.NewRequestFromBidRequest(*req))
 		if !passGeoActivityAllowed {
-			privacyEnforcement.PreciseGeo = true
+			ipConf := privacy.IPConf{auctionReq.Account.Privacy.IPv6Config, auctionReq.Account.Privacy.IPv4Config}
+			privacy.ScrubGEO(reqWrapper, ipConf)
 		} else {
 			// run existing policies (GDPR, CCPA, COPPA, LMT)
 			// potentially block passing geo based on GDPR
@@ -213,12 +219,19 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		}
 
 		if auctionReq.FirstPartyData != nil && auctionReq.FirstPartyData[bidderRequest.BidderName] != nil {
-			applyFPD(auctionReq.FirstPartyData[bidderRequest.BidderName], bidderRequest.BidRequest)
+			applyFPD(auctionReq.FirstPartyData[bidderRequest.BidderName], reqWrapper)
 		}
 
-		privacyEnforcement.TID = !auctionReq.Activities.Allow(privacy.ActivityTransmitTIDs, scopedName, privacy.NewRequestFromBidRequest(*req))
+		passTIDAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitTIDs, scopedName, privacy.NewRequestFromBidRequest(*req))
+		if !passTIDAllowed {
+			privacy.ScrubTID(reqWrapper)
+		}
 
-		privacyEnforcement.Apply(bidderRequest.BidRequest, auctionReq.Account.Privacy)
+		reqWrapper.RebuildRequest()
+		bidderRequest.BidRequest = reqWrapper.BidRequest
+
+		//privacyEnforcement.Apply(bidderRequest.BidRequest, auctionReq.Account.Privacy)
+
 		allowedBidderRequests = append(allowedBidderRequests, bidderRequest)
 
 		// GPP downgrade: always downgrade unless we can confirm GPP is supported
@@ -229,6 +242,32 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 	}
 
 	return
+}
+
+// cloneBidderReq - clones bidder request and replaces req.User and req.Device with new copies
+func cloneBidderReq(req *openrtb2.BidRequest) *openrtb_ext.RequestWrapper {
+
+	// bidder request may be modified differently per bidder based on privacy configs
+	// new request should be created for each bidder request
+	// pointer fields like User and Device should be cloned and set back to the request copy
+	var newReq *openrtb2.BidRequest
+	newReq = ptrutil.Clone(req)
+
+	var userCopy *openrtb2.User
+	userCopy = ptrutil.Clone(req.User)
+
+	var deviceCopy *openrtb2.Device
+	deviceCopy = ptrutil.Clone(req.Device)
+
+	var sourceCopy *openrtb2.Source
+	sourceCopy = ptrutil.Clone(req.Source)
+
+	newReq.Device = deviceCopy
+	newReq.User = userCopy
+	newReq.Source = sourceCopy
+
+	reqWrapper := &openrtb_ext.RequestWrapper{BidRequest: newReq}
+	return reqWrapper
 }
 
 func shouldSetLegacyPrivacy(bidderInfo config.BidderInfos, bidder string) bool {
@@ -896,7 +935,7 @@ func getExtBidAdjustmentFactors(requestExtPrebid *openrtb_ext.ExtRequestPrebid) 
 	return nil
 }
 
-func applyFPD(fpd *firstpartydata.ResolvedFirstPartyData, bidReq *openrtb2.BidRequest) {
+func applyFPD(fpd *firstpartydata.ResolvedFirstPartyData, bidReq *openrtb_ext.RequestWrapper) {
 	if fpd.Site != nil {
 		bidReq.Site = fpd.Site
 	}

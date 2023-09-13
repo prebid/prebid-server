@@ -2,13 +2,12 @@ package privacy
 
 import (
 	"encoding/json"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"net"
 
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/util/iputil"
-	"github.com/prebid/prebid-server/util/ptrutil"
-
-	"github.com/prebid/openrtb/v19/openrtb2"
 )
 
 // ScrubStrategyIPV4 defines the approach to scrub PII from an IPV4 address.
@@ -81,6 +80,11 @@ type scrubber struct {
 	ipV4 config.IPv4
 }
 
+type IPConf struct {
+	IPV6 config.IPv6
+	IPV4 config.IPv4
+}
+
 // NewScrubber returns an OpenRTB scrubber.
 func NewScrubber(ipV6 config.IPv6, ipV4 config.IPv4) Scrubber {
 	return scrubber{
@@ -89,101 +93,81 @@ func NewScrubber(ipV6 config.IPv6, ipV4 config.IPv4) Scrubber {
 	}
 }
 
-func (s scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enforcement) *openrtb2.BidRequest {
-	var userExtParsed map[string]json.RawMessage
-	userExtModified := false
+func ScrubDeviceIDs(reqWrapper *openrtb_ext.RequestWrapper) {
+	if reqWrapper.Device != nil {
+		reqWrapper.Device.DIDMD5 = ""
+		reqWrapper.Device.DIDSHA1 = ""
+		reqWrapper.Device.DPIDMD5 = ""
+		reqWrapper.Device.DPIDSHA1 = ""
+		reqWrapper.Device.IFA = ""
+		reqWrapper.Device.MACMD5 = ""
+		reqWrapper.Device.MACSHA1 = ""
+	}
+}
 
-	// expressed in two lines because IntelliJ cannot infer the generic type
-	var userCopy *openrtb2.User
-	userCopy = ptrutil.Clone(bidRequest.User)
+func ScrubUserIDs(reqWrapper *openrtb_ext.RequestWrapper) {
+	if reqWrapper.User != nil {
+		reqWrapper.User.Data = nil
+		reqWrapper.User.ID = ""
+		reqWrapper.User.BuyerUID = ""
+		reqWrapper.User.Yob = 0
+		reqWrapper.User.Gender = ""
+		reqWrapper.User.Keywords = ""
+		reqWrapper.User.KwArray = nil
+	}
+}
 
-	// expressed in two lines because IntelliJ cannot infer the generic type
-	var deviceCopy *openrtb2.Device
-	deviceCopy = ptrutil.Clone(bidRequest.Device)
-
-	if userCopy != nil && (enforcement.UFPD || enforcement.Eids) {
-		if len(userCopy.Ext) != 0 {
-			json.Unmarshal(userCopy.Ext, &userExtParsed)
+func ScrubUserExt(reqWrapper *openrtb_ext.RequestWrapper, fieldName string) error {
+	if reqWrapper.User != nil {
+		userExt, err := reqWrapper.GetUserExt()
+		if err != nil {
+			return err
+		}
+		ext := userExt.GetExt()
+		_, hasField := ext[fieldName]
+		if hasField {
+			delete(ext, fieldName)
+			userExt.SetExt(ext)
 		}
 	}
+	return nil
+}
 
-	if enforcement.UFPD {
-		// transmitUfpd covers user.ext.data, user.data, user.id, user.buyeruid, user.yob, user.gender, user.keywords, user.kwarray
-		// and device.{ifa, macsha1, macmd5, dpidsha1, dpidmd5, didsha1, didmd5}
-		if deviceCopy != nil {
-			deviceCopy.DIDMD5 = ""
-			deviceCopy.DIDSHA1 = ""
-			deviceCopy.DPIDMD5 = ""
-			deviceCopy.DPIDSHA1 = ""
-			deviceCopy.IFA = ""
-			deviceCopy.MACMD5 = ""
-			deviceCopy.MACSHA1 = ""
-		}
-		if userCopy != nil {
-			userCopy.Data = nil
-			userCopy.ID = ""
-			userCopy.BuyerUID = ""
-			userCopy.Yob = 0
-			userCopy.Gender = ""
-			userCopy.Keywords = ""
-			userCopy.KwArray = nil
-
-			_, hasField := userExtParsed["data"]
-			if hasField {
-				delete(userExtParsed, "data")
-				userExtModified = true
-			}
-		}
+func ScrubEids(reqWrapper *openrtb_ext.RequestWrapper) error {
+	//transmitEids covers user.eids and user.ext.eids
+	if reqWrapper.User != nil {
+		reqWrapper.User.EIDs = nil
 	}
-	if enforcement.Eids {
-		//transmitEids covers user.eids and user.ext.eids
-		if userCopy != nil {
-			userCopy.EIDs = nil
-			_, hasField := userExtParsed["eids"]
-			if hasField {
-				delete(userExtParsed, "eids")
-				userExtModified = true
-			}
-		}
+	return ScrubUserExt(reqWrapper, "eids")
+}
+
+func ScrubTID(reqWrapper *openrtb_ext.RequestWrapper) {
+	if reqWrapper.Source != nil {
+		reqWrapper.Source.TID = ""
+	}
+	impWrapper := reqWrapper.GetImp()
+	//do we need to copy imps?
+	for ind, imp := range impWrapper {
+		impExt := scrubExtIDs(imp.Ext, "tid")
+		impWrapper[ind].Ext = impExt
+	}
+	reqWrapper.SetImp(impWrapper)
+}
+
+func ScrubGEO(reqWrapper *openrtb_ext.RequestWrapper, ipConf IPConf) {
+	//round user's geographic location by rounding off IP address and lat/lng data.
+	//this applies to both device.geo and user.geo
+	if reqWrapper.User != nil && reqWrapper.User.Geo != nil {
+		reqWrapper.User.Geo = scrubGeoPrecision(reqWrapper.User.Geo)
 	}
 
-	if userExtModified {
-		userExt, _ := json.Marshal(userExtParsed)
-		userCopy.Ext = userExt
+	if reqWrapper.Device != nil {
+		if reqWrapper.Device.Geo != nil {
+			reqWrapper.Device.Geo = scrubGeoPrecision(reqWrapper.Device.Geo)
+		}
+		reqWrapper.Device.IP = scrubIP(reqWrapper.Device.IP, ipConf.IPV4.AnonKeepBits, iputil.IPv4BitSize)
+		reqWrapper.Device.IPv6 = scrubIP(reqWrapper.Device.IPv6, ipConf.IPV6.AnonKeepBits, iputil.IPv6BitSize)
 	}
-
-	if enforcement.TID {
-		//remove source.tid and imp.ext.tid
-		if bidRequest.Source != nil {
-			sourceCopy := ptrutil.Clone(bidRequest.Source)
-			sourceCopy.TID = ""
-			bidRequest.Source = sourceCopy
-		}
-		for ind, imp := range bidRequest.Imp {
-			impExt := scrubExtIDs(imp.Ext, "tid")
-			bidRequest.Imp[ind].Ext = impExt
-		}
-	}
-
-	if enforcement.PreciseGeo {
-		//round user's geographic location by rounding off IP address and lat/lng data.
-		//this applies to both device.geo and user.geo
-		if userCopy != nil && userCopy.Geo != nil {
-			userCopy.Geo = scrubGeoPrecision(userCopy.Geo)
-		}
-
-		if deviceCopy != nil {
-			if deviceCopy.Geo != nil {
-				deviceCopy.Geo = scrubGeoPrecision(deviceCopy.Geo)
-			}
-			deviceCopy.IP = scrubIP(deviceCopy.IP, s.ipV4.AnonKeepBits, iputil.IPv4BitSize)
-			deviceCopy.IPv6 = scrubIP(deviceCopy.IPv6, s.ipV6.AnonKeepBits, iputil.IPv6BitSize)
-		}
-	}
-
-	bidRequest.Device = deviceCopy
-	bidRequest.User = userCopy
-	return bidRequest
 }
 
 func (s scrubber) ScrubDevice(device *openrtb2.Device, id ScrubStrategyDeviceID, ipv4 ScrubStrategyIPV4, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb2.Device {

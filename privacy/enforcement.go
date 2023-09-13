@@ -12,21 +12,11 @@ type Enforcement struct {
 	GDPRGeo bool
 	GDPRID  bool
 	LMT     bool
-
-	// activities
-	UFPD       bool
-	Eids       bool
-	PreciseGeo bool
-	TID        bool
 }
 
 // Any returns true if at least one privacy policy requires enforcement.
 func (e Enforcement) AnyLegacy() bool {
 	return e.CCPA || e.COPPA || e.GDPRGeo || e.GDPRID || e.LMT
-}
-
-func (e Enforcement) AnyActivities() bool {
-	return e.UFPD || e.PreciseGeo || e.Eids || e.TID
 }
 
 // Apply cleans personally identifiable information from an OpenRTB bid request.
@@ -36,13 +26,16 @@ func (e Enforcement) Apply(bidRequest *openrtb2.BidRequest, privacy config.Accou
 
 func (e Enforcement) apply(bidRequest *openrtb2.BidRequest, scrubber Scrubber) {
 	if bidRequest != nil {
+		// replace to scrub tid, scrub user
+		// delete ScrubRequest, ScrubUser, ScrubDevice
+		// call scrub from utils.go
 		if e.AnyActivities() {
 			bidRequest = scrubber.ScrubRequest(bidRequest, e)
 		}
-		if e.AnyLegacy() && !(e.UFPD && e.PreciseGeo && e.Eids) {
+		if e.AnyLegacy() {
 			bidRequest.User = scrubber.ScrubUser(bidRequest.User, e.getUserScrubStrategy(), e.getGeoScrubStrategy())
 		}
-		if e.AnyLegacy() && !(e.UFPD && e.PreciseGeo) {
+		if e.AnyLegacy() {
 			bidRequest.Device = scrubber.ScrubDevice(bidRequest.Device, e.getDeviceIDScrubStrategy(), e.getIPv4ScrubStrategy(), e.getIPv6ScrubStrategy(), e.getGeoScrubStrategy())
 		}
 	}
