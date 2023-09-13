@@ -2,10 +2,11 @@ package privacy
 
 import (
 	"encoding/json"
+	"net"
+
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/util/iputil"
 	"github.com/prebid/prebid-server/util/ptrutil"
-	"net"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
 )
@@ -92,9 +93,11 @@ func (s scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enfo
 	var userExtParsed map[string]json.RawMessage
 	userExtModified := false
 
+	// expressed in two lines because IntelliJ cannot infer the generic type
 	var userCopy *openrtb2.User
 	userCopy = ptrutil.Clone(bidRequest.User)
 
+	// expressed in two lines because IntelliJ cannot infer the generic type
 	var deviceCopy *openrtb2.Device
 	deviceCopy = ptrutil.Clone(bidRequest.Device)
 
@@ -152,8 +155,7 @@ func (s scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enfo
 	if enforcement.TID {
 		//remove source.tid and imp.ext.tid
 		if bidRequest.Source != nil {
-			var sourceCopy *openrtb2.Source
-			sourceCopy = ptrutil.Clone(bidRequest.Source)
+			sourceCopy := ptrutil.Clone(bidRequest.Source)
 			sourceCopy.TID = ""
 			bidRequest.Source = sourceCopy
 		}

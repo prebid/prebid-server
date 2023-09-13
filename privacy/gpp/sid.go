@@ -5,13 +5,6 @@ import (
 	gppConstants "github.com/prebid/go-gpp/constants"
 )
 
-// Policy represents the GPP privacy string container.
-// Currently just a placeholder until more expansive support is made.
-type Policy struct {
-	Consent string
-	RawSID  string // This is the CSV format ("2,6") that the IAB recommends for passing the SID(s) on a query string.
-}
-
 // IsSIDInList returns true if the 'sid' value is found in the gppSIDs array. Its logic is used in more than
 // one place in our codebase, therefore it was decided to make it its own function.
 func IsSIDInList(gppSIDs []int8, sid gppConstants.SectionID) bool {
