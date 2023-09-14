@@ -57,16 +57,6 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 		}
 		usersync.SyncHostCookie(r, cookie, &cfg.HostCookie)
 
-		unalteredCookie, err := encoder.Encode(cookie)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
-			metricsEngine.RecordSetUid(metrics.SetUidBadRequest)
-			so.Errors = []error{err}
-			so.Status = http.StatusBadRequest
-			return
-		}
-
 		query := r.URL.Query()
 
 		syncer, bidderName, err := getSyncer(query, syncersByBidder)
@@ -177,7 +167,10 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 		encodedCookie, err := cookie.PrepareCookieForWrite(&cfg.HostCookie, encoder, priorityEjector)
 		if err != nil {
 			if err.Error() == errSyncerIsNotPriority.Error() {
-				encodedCookie = unalteredCookie
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte("Warning: " + err.Error() + ", cookie not updated"))
+				so.Status = http.StatusOK
+				return
 			} else {
 				w.WriteHeader(http.StatusBadRequest)
 				metricsEngine.RecordSetUid(metrics.SetUidBadRequest)
@@ -198,10 +191,6 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 			w.Header().Add("Content-Type", "text/html")
 			w.Header().Add("Content-Length", "0")
 			w.WriteHeader(http.StatusOK)
-		}
-		// Add Warning to Response If Present
-		if err != nil && err.Error() == errSyncerIsNotPriority.Error() {
-			w.Write([]byte("Warning: " + err.Error() + " returning unaltered cookie"))
 		}
 	})
 }

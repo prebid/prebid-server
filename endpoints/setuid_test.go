@@ -364,6 +364,7 @@ func TestSetUIDPriorityEjection(t *testing.T) {
 		expectedSyncer        string
 		expectedUID           string
 		expectedNumOfElements int
+		expectedWarning       string
 	}{
 		{
 			description:           "Cookie empty, expect bidder to be synced, no ejection",
@@ -409,13 +410,13 @@ func TestSetUIDPriorityEjection(t *testing.T) {
 			expectedStatusCode:    http.StatusOK,
 		},
 		{
-			description:           "There are only priority elements left, but the bidder being synced isn't one",
-			uri:                   "/setuid?bidder=pubmatic&uid=123",
-			givenExistingSyncs:    []string{"syncer1", "syncer2", "syncer3", "syncer4"},
-			givenPriorityGroups:   [][]string{{"syncer1", "syncer2", "syncer3", "syncer4"}},
-			givenMaxCookieSize:    500,
-			expectedNumOfElements: 4,
-			expectedStatusCode:    http.StatusOK,
+			description:         "There are only priority elements left, but the bidder being synced isn't one",
+			uri:                 "/setuid?bidder=pubmatic&uid=123",
+			givenExistingSyncs:  []string{"syncer1", "syncer2", "syncer3", "syncer4"},
+			givenPriorityGroups: [][]string{{"syncer1", "syncer2", "syncer3", "syncer4"}},
+			givenMaxCookieSize:  500,
+			expectedStatusCode:  http.StatusOK,
+			expectedWarning:     "Warning: syncer key is not a priority, and there are only priority elements left, cookie not updated",
 		},
 		{
 			description:        "Uid that's trying to be synced is bigger than MaxCookieSize",
@@ -439,20 +440,22 @@ func TestSetUIDPriorityEjection(t *testing.T) {
 		// Make Request to /setuid
 		response := doRequest(request, analytics, &metricsConf.NilMetricsEngine{}, syncersByBidder, true, false, false, false, test.givenMaxCookieSize, test.givenPriorityGroups)
 
-		// Get Cookie From Header
-		var cookieHeader string
-		for k, v := range response.Result().Header {
-			if k == "Set-Cookie" {
-				cookieHeader = v[0]
+		if test.expectedWarning != "" {
+			assert.Equal(t, test.expectedWarning, response.Body.String(), test.description)
+		} else if test.expectedSyncer != "" {
+			// Get Cookie From Header
+			var cookieHeader string
+			for k, v := range response.Result().Header {
+				if k == "Set-Cookie" {
+					cookieHeader = v[0]
+				}
 			}
-		}
-		encodedCookieValue := getUIDFromHeader(cookieHeader)
+			encodedCookieValue := getUIDFromHeader(cookieHeader)
 
-		// Check That Bidder On Request was Synced, it's UID matches, and that the right number of elements are present after ejection
-		decodedCookie := decoder.Decode(encodedCookieValue)
-		decodedCookieUIDs := decodedCookie.GetUIDs()
+			// Check That Bidder On Request was Synced, it's UID matches, and that the right number of elements are present after ejection
+			decodedCookie := decoder.Decode(encodedCookieValue)
+			decodedCookieUIDs := decodedCookie.GetUIDs()
 
-		if test.expectedSyncer != "" {
 			assert.Equal(t, test.expectedUID, decodedCookieUIDs[test.expectedSyncer], test.description)
 			assert.Equal(t, test.expectedNumOfElements, len(decodedCookieUIDs), test.description)
 
@@ -462,15 +465,7 @@ func TestSetUIDPriorityEjection(t *testing.T) {
 				_, syncerExists := decodedCookieUIDs[syncer]
 				assert.False(t, syncerExists, test.description)
 			}
-		} else if len(test.givenExistingSyncs) > 0 {
-			// Check that the unaltered cookie was returned
-			for _, sync := range test.givenExistingSyncs {
-				_, syncExists := decodedCookieUIDs[sync]
-				assert.True(t, syncExists, test.description)
-			}
-			assert.Equal(t, test.expectedNumOfElements, len(decodedCookieUIDs), test.description)
 		}
-
 		assert.Equal(t, test.expectedStatusCode, response.Result().StatusCode, test.description)
 	}
 }
