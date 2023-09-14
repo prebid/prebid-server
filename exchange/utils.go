@@ -205,11 +205,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 			}
 			// potentially block passing IDs based on CCPA
 			if ccpaEnforcer.ShouldEnforce(bidderRequest.BidderName.String()) {
-				privacy.ScrubDeviceIDs(reqWrapper)
-				privacy.ScrubDeviceIP(reqWrapper, ipConf)
-				privacy.ScrubGEO(reqWrapper)
-				privacy.ScrubUserDemographics(reqWrapper)
-				privacy.ScrubUserExt(reqWrapper, "eids")
+				privacy.ScrubDeviceIDsIPsUserDemoExt(reqWrapper, ipConf, "eids", false)
 			}
 		}
 
@@ -233,30 +229,12 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 			}
 			// potentially block passing geo based on CCPA
 			if ccpaEnforcer.ShouldEnforce(bidderRequest.BidderName.String()) {
-				privacy.ScrubDeviceIDs(reqWrapper)
-				privacy.ScrubDeviceIP(reqWrapper, ipConf)
-				privacy.ScrubGEO(reqWrapper)
-				privacy.ScrubUserDemographics(reqWrapper)
-				privacy.ScrubUserExt(reqWrapper, "eids")
+				privacy.ScrubDeviceIDsIPsUserDemoExt(reqWrapper, ipConf, "eids", false)
 			}
-
 		}
 
-		if lmt {
-			privacy.ScrubDeviceIDs(reqWrapper)
-			privacy.ScrubDeviceIP(reqWrapper, ipConf)
-			privacy.ScrubGEO(reqWrapper)
-			privacy.ScrubUserDemographics(reqWrapper)
-			privacy.ScrubUserExt(reqWrapper, "eids")
-		}
-
-		if coppa {
-			privacy.ScrubDeviceIDs(reqWrapper)
-			privacy.ScrubDeviceIP(reqWrapper, ipConf)
-			privacy.ScrubGeoFull(reqWrapper)
-			privacy.ScrubUserDemographics(reqWrapper)
-			privacy.ScrubUserExt(reqWrapper, "eids")
-
+		if lmt || coppa {
+			privacy.ScrubDeviceIDsIPsUserDemoExt(reqWrapper, ipConf, "eids", coppa)
 		}
 
 		passTIDAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitTIDs, scopedName, privacy.NewRequestFromBidRequest(*req))

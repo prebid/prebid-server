@@ -116,6 +116,19 @@ func ScrubDeviceIP(reqWrapper *openrtb_ext.RequestWrapper, ipConf IPConf) {
 	}
 }
 
+func ScrubDeviceIDsIPsUserDemoExt(reqWrapper *openrtb_ext.RequestWrapper, ipConf IPConf, fieldName string, scrubFullGeo bool) {
+	ScrubDeviceIDs(reqWrapper)
+	ScrubDeviceIP(reqWrapper, ipConf)
+	ScrubUserDemographics(reqWrapper)
+	ScrubUserExt(reqWrapper, fieldName)
+
+	if scrubFullGeo {
+		ScrubGeoFull(reqWrapper)
+	} else {
+		ScrubGEO(reqWrapper)
+	}
+}
+
 func scrubIP(ip string, ones, bits int) string {
 	if ip == "" {
 		return ""
