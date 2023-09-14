@@ -172,12 +172,14 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 			}
 		}
 
-		privacyEnforcement := privacy.Enforcement{
-			COPPA: coppa,
-			LMT:   lmt,
-		}
+		ipConf := privacy.IPConf{IPV6: auctionReq.Account.Privacy.IPv6Config, IPV4: auctionReq.Account.Privacy.IPv4Config}
 
 		reqWrapper := cloneBidderReq(bidderRequest.BidRequest)
+
+		// FPD should be applied before policies, otherwise it overrides policies and activities restricted data
+		if auctionReq.FirstPartyData != nil && auctionReq.FirstPartyData[bidderRequest.BidderName] != nil {
+			applyFPD(auctionReq.FirstPartyData[bidderRequest.BidderName], reqWrapper)
+		}
 
 		passIDActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitUserFPD, scopedName, privacy.NewRequestFromBidRequest(*req))
 		if !passIDActivityAllowed {
@@ -190,36 +192,71 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 			// potentially block passing IDs based on GDPR
 			if gdprEnforced {
 				if gdprErr == nil {
-					privacyEnforcement.GDPRID = !auctionPermissions.PassID
+					if !auctionPermissions.PassID {
+						privacy.ScrubDeviceIDs(reqWrapper)
+						privacy.ScrubUserDemographics(reqWrapper)
+						privacy.ScrubUserExt(reqWrapper, "eids")
+					}
 				} else {
-					privacyEnforcement.GDPRID = true
+					privacy.ScrubDeviceIDs(reqWrapper)
+					privacy.ScrubUserDemographics(reqWrapper)
+					privacy.ScrubUserExt(reqWrapper, "eids")
 				}
 			}
 			// potentially block passing IDs based on CCPA
-			privacyEnforcement.CCPA = ccpaEnforcer.ShouldEnforce(bidderRequest.BidderName.String())
+			if ccpaEnforcer.ShouldEnforce(bidderRequest.BidderName.String()) {
+				privacy.ScrubDeviceIDs(reqWrapper)
+				privacy.ScrubDeviceIP(reqWrapper, ipConf)
+				privacy.ScrubGEO(reqWrapper)
+				privacy.ScrubUserDemographics(reqWrapper)
+				privacy.ScrubUserExt(reqWrapper, "eids")
+			}
 		}
 
 		passGeoActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitPreciseGeo, scopedName, privacy.NewRequestFromBidRequest(*req))
 		if !passGeoActivityAllowed {
-			ipConf := privacy.IPConf{auctionReq.Account.Privacy.IPv6Config, auctionReq.Account.Privacy.IPv4Config}
-			privacy.ScrubGEO(reqWrapper, ipConf)
+			privacy.ScrubGEO(reqWrapper)
+			privacy.ScrubDeviceIP(reqWrapper, ipConf)
 		} else {
 			// run existing policies (GDPR, CCPA, COPPA, LMT)
 			// potentially block passing geo based on GDPR
 			if gdprEnforced {
 				if gdprErr == nil {
-					privacyEnforcement.GDPRGeo = !auctionPermissions.PassGeo
+					if !auctionPermissions.PassGeo {
+						privacy.ScrubDeviceIP(reqWrapper, ipConf)
+						privacy.ScrubGEO(reqWrapper)
+					}
 				} else {
-					privacyEnforcement.GDPRGeo = true
+					privacy.ScrubDeviceIP(reqWrapper, ipConf)
+					privacy.ScrubGEO(reqWrapper)
 				}
 			}
 			// potentially block passing geo based on CCPA
-			privacyEnforcement.CCPA = ccpaEnforcer.ShouldEnforce(bidderRequest.BidderName.String())
+			if ccpaEnforcer.ShouldEnforce(bidderRequest.BidderName.String()) {
+				privacy.ScrubDeviceIDs(reqWrapper)
+				privacy.ScrubDeviceIP(reqWrapper, ipConf)
+				privacy.ScrubGEO(reqWrapper)
+				privacy.ScrubUserDemographics(reqWrapper)
+				privacy.ScrubUserExt(reqWrapper, "eids")
+			}
 
 		}
 
-		if auctionReq.FirstPartyData != nil && auctionReq.FirstPartyData[bidderRequest.BidderName] != nil {
-			applyFPD(auctionReq.FirstPartyData[bidderRequest.BidderName], reqWrapper)
+		if lmt {
+			privacy.ScrubDeviceIDs(reqWrapper)
+			privacy.ScrubDeviceIP(reqWrapper, ipConf)
+			privacy.ScrubGEO(reqWrapper)
+			privacy.ScrubUserDemographics(reqWrapper)
+			privacy.ScrubUserExt(reqWrapper, "eids")
+		}
+
+		if coppa {
+			privacy.ScrubDeviceIDs(reqWrapper)
+			privacy.ScrubDeviceIP(reqWrapper, ipConf)
+			privacy.ScrubGeoFull(reqWrapper)
+			privacy.ScrubUserDemographics(reqWrapper)
+			privacy.ScrubUserExt(reqWrapper, "eids")
+
 		}
 
 		passTIDAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitTIDs, scopedName, privacy.NewRequestFromBidRequest(*req))
@@ -229,8 +266,6 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 
 		reqWrapper.RebuildRequest()
 		bidderRequest.BidRequest = reqWrapper.BidRequest
-
-		//privacyEnforcement.Apply(bidderRequest.BidRequest, auctionReq.Account.Privacy)
 
 		allowedBidderRequests = append(allowedBidderRequests, bidderRequest)
 
@@ -253,18 +288,35 @@ func cloneBidderReq(req *openrtb2.BidRequest) *openrtb_ext.RequestWrapper {
 	var newReq *openrtb2.BidRequest
 	newReq = ptrutil.Clone(req)
 
-	var userCopy *openrtb2.User
-	userCopy = ptrutil.Clone(req.User)
+	if req.User != nil {
+		var userCopy *openrtb2.User
+		userCopy = ptrutil.Clone(req.User)
+		newReq.User = userCopy
 
-	var deviceCopy *openrtb2.Device
-	deviceCopy = ptrutil.Clone(req.Device)
+		if req.User.Geo != nil {
+			var userGeoCopy *openrtb2.Geo
+			userGeoCopy = ptrutil.Clone(req.User.Geo)
+			newReq.User.Geo = userGeoCopy
+		}
+	}
 
-	var sourceCopy *openrtb2.Source
-	sourceCopy = ptrutil.Clone(req.Source)
+	if req.Device != nil {
+		var deviceCopy *openrtb2.Device
+		deviceCopy = ptrutil.Clone(req.Device)
+		newReq.Device = deviceCopy
 
-	newReq.Device = deviceCopy
-	newReq.User = userCopy
-	newReq.Source = sourceCopy
+		if req.Device.Geo != nil {
+			var deviceGeo *openrtb2.Geo
+			deviceGeo = ptrutil.Clone(req.Device.Geo)
+			newReq.Device.Geo = deviceGeo
+		}
+	}
+
+	if req.Source != nil {
+		var sourceCopy *openrtb2.Source
+		sourceCopy = ptrutil.Clone(req.Source)
+		newReq.Source = sourceCopy
+	}
 
 	reqWrapper := &openrtb_ext.RequestWrapper{BidRequest: newReq}
 	return reqWrapper

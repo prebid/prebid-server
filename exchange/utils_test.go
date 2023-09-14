@@ -3282,7 +3282,8 @@ func TestApplyFPD(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		applyFPD(&testCase.inputFpd, &testCase.inputRequest)
+		brw := &openrtb_ext.RequestWrapper{BidRequest: &testCase.inputRequest}
+		applyFPD(&testCase.inputFpd, brw)
 		assert.Equal(t, testCase.expectedRequest, testCase.inputRequest, fmt.Sprintf("incorrect request after applying fpd, testcase %s", testCase.description))
 	}
 }
