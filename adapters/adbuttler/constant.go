@@ -1,30 +1,33 @@
 package adbuttler
 
 const (
-	FLOOR_PRICE                   = "floor_price"
-	ZONE_ID                       = "BD_catalogZone"
-	ACCOUNT_ID                    = "BD_accountID"
+	BIDDERDETAILS_PREFIX          = "BD_"
+	AUCTIONDETAILS_PREFIX         = "AD_"
+	PRODUCTTEMPLATE_PREFIX        = "PT_"
+	AD_FLOOR_PRICE                = "floor_price"
+	BD_ZONE_ID                    = "catalogZone"
+	BD_ACCOUNT_ID                 = "accountID"
 	SEARCHTYPE_DEFAULT            = "exact"
 	SEARCHTYPE_EXACT              = "exact"
 	SEARCHTYPE_BROAD              = "broad"
 	SEARCHTYPE                    = "search_type"
-	PAGE_SOURCE                   = "pageSource"
-	USER_AGE                      = "Age"
+	PAGE_SOURCE                   = "page_source"
+	USER_AGE                      = "user_age"
 	GENDER_MALE                   = "Male"
 	GENDER_FEMALE                 = "Female"
 	GENDER_OTHER                  = "Other"
-	USER_GENDER                   = "Gender"
-	COUNTRY                       = "Country"
+	USER_GENDER                   = "user_gender"
+	COUNTRY                       = "user_country"
 	REGION                        = "Region"
 	CITY                          = "City"
-	CATEGORY                      = "Category"
-	BRAND                         = "Brand Name"
+	DEFAULT_CATEGORY              = "Category"
+	DEFAULT_BRAND                 = "Brand Name"
+	DEFAULT_PRODUCTID             = "Product Id"
 	RESPONSE_SUCCESS              = "success"
 	RESPONSE_NOADS                = "NO_ADS"
 	SEAT_ADBUTLER                 = "adbuttler"
 	BEACONTYPE_IMP                = "impression"
 	BEACONTYPE_CLICK              = "click"
-	RESPONSE_PRODUCTID            = "Product Id"
 	IMP_KEY                       = "tps_impurl="
 	CLICK_KEY                     = "tps_clkurl="
 	CONV_HOSTNAME                 = "conv_host"
@@ -33,7 +36,9 @@ const (
 	CONV_ADBUID                   = "conv_adbUID"
 	CONV_IDENTIFIER               = "conv_Identifier"
 	CONVERSION_URL                = `tps_ID=conv_adbutlerID&tps_setID=conv_zoneID&tps_adb_uid=conv_adbUID&tps_identifier=conv_Identifier`
-
+	PD_TEMPLATE_BRAND             = "brandName"
+	PD_TEMPLATE_CATEGORY          = "categories"
+	PD_TEMPLATE_PRODUCTID         = "productId"
 	DATATYE_NUMBER                = 1
 	DATATYE_STRING                = 2
 	DATATYE_ARRAY                 = 3
@@ -42,5 +47,6 @@ const (
 	DATATYE_DATETIME              = 6
 
 )
+
 
 

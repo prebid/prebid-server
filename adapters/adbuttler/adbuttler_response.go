@@ -114,20 +114,20 @@ func (a *AdButtlerAdapter) GetBidderResponse(request *openrtb2.BidRequest, adBut
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(adButlerResp.Bids))
 	var commerceExt *openrtb_ext.ExtImpCommerce
     var adbutlerID, zoneID, adbUID string
-	
+	var configValueMap = make(map[string]string)
+
 	if len(request.Imp) > 0 {
 		commerceExt, _ = a.getImpressionExt(&(request.Imp[0]))	
-		var configValueMap = make(map[string]string)
 		for _,obj := range commerceExt.Bidder.CustomConfig {
 			configValueMap[obj.Key] = obj.Value
 		}	
 	
-		val, ok := configValueMap[ACCOUNT_ID]
+		val, ok := configValueMap[BIDDERDETAILS_PREFIX + BD_ACCOUNT_ID]
 		if ok {
 			adbutlerID = val
 		}
 	
-		val, ok = configValueMap[ZONE_ID]
+		val, ok = configValueMap[BIDDERDETAILS_PREFIX + BD_ZONE_ID]
 		if ok {
 			zoneID = val
 		} 
@@ -141,11 +141,19 @@ func (a *AdButtlerAdapter) GetBidderResponse(request *openrtb2.BidRequest, adBut
 		impID := requestImpID + "_" + strconv.Itoa(index+1)
 		bidPrice := adButlerBid.CPCBid
 		campaignID := strconv.FormatInt(adButlerBid.CampaignID, 10)
-		productid := adButlerBid.ProductData[RESPONSE_PRODUCTID]
 		clickPrice := adButlerBid.CPCSpend
 
-		var impressionUrl, clickUrl, conversionUrl string
+		var productid string
+		//Retailer Specific ProductID is present from Product Feed Template
+		val, ok := configValueMap[PRODUCTTEMPLATE_PREFIX + PD_TEMPLATE_PRODUCTID]
+		if ok {
+			productid = adButlerBid.ProductData[val]
+		} else {
+			productid = adButlerBid.ProductData[DEFAULT_PRODUCTID]
+		}
 
+
+		var impressionUrl, clickUrl, conversionUrl string
 		for _, beacon := range adButlerBid.Beacons {
 			switch beacon.Type {
 			case BEACONTYPE_IMP:
@@ -204,3 +212,5 @@ func GenerateConversionUrl(adbutlerID, zoneID,adbUID, productID string) string {
 	return conversionUrl
 
 }
+
+

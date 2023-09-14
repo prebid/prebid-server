@@ -20,7 +20,7 @@ type AdButlerRequest struct {
 	Identifiers       []string                `json:"identifiers,omitempty"`
 	Target            map[string]interface{}  `json:"_abdk_json,omitempty"`
 	Limit             int                     `json:"limit,omitempty"`
-	Source            int64                   `json:"source,omitempty"`
+	Source            string                  `json:"source,omitempty"`
 	UserID            string                  `json:"adb_uid,omitempty"`
 	IP                string                  `json:"ip,omitempty"`
 	UserAgent         string                  `json:"ua,omitempty"`
@@ -42,12 +42,29 @@ func (a *AdButtlerAdapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.Ext
 
 }
 
+
+func (a *AdButtlerAdapter) getSiteExt(request *openrtb2.BidRequest) (*openrtb_ext.ExtSiteCommerce, error) {
+	var siteExt openrtb_ext.ExtSiteCommerce
+
+	if request.Site.Ext != nil {
+		if err := json.Unmarshal(request.Site.Ext, &siteExt); err != nil {
+			return nil, &errortypes.BadInput{
+				Message: "Impression extension not provided or can't be unmarshalled",
+			}
+		}
+	}
+
+	return &siteExt, nil
+
+}
+
 func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var commerceExt *openrtb_ext.ExtImpCommerce
+	var siteExt *openrtb_ext.ExtSiteCommerce
+	var err error
 	var errors []error
 
 	if len(request.Imp) > 0 {
-		var err error
 		commerceExt, err = a.getImpressionExt(&(request.Imp[0]))
 		if err != nil {
 			errors = append(errors, err)
@@ -56,6 +73,11 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 		errors = append(errors, &errortypes.BadInput{
 			Message: "Missing Imp Object",
 		})
+	}
+
+	siteExt, err = a.getSiteExt(request)
+	if err != nil {
+		errors = append(errors, err)
 	}
 
 	if len(errors) > 0 {
@@ -71,21 +93,18 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 	}
 
 	//Assign Page Source if Present
-	val, ok := configValueMap[PAGE_SOURCE]
-	if ok {
-		if pageSource, err := strconv.ParseInt(val,10, 64); err == nil {
-			adButlerReq.Source = pageSource
-		}
+	if siteExt != nil {
+		adButlerReq.Source = siteExt.Page
 	}
 
     //Retrieve AccountID and ZoneID from Request and Build endpoint Url
 	var accountID, zoneID string
-	val, ok = configValueMap[ACCOUNT_ID]
+	val, ok := configValueMap[BIDDERDETAILS_PREFIX + BD_ACCOUNT_ID]
 	if ok {
 		accountID = val
 	}
 	
-	val, ok = configValueMap[ZONE_ID]
+	val, ok = configValueMap[BIDDERDETAILS_PREFIX + BD_ZONE_ID]
 	if ok {
 		zoneID = val
 	} 
@@ -128,6 +147,12 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 		}
 	}
 
+
+	//Add Page Source Targeting
+	if adButlerReq.Source != ""  {
+		adButlerReq.Target[PAGE_SOURCE] = adButlerReq.Source
+	}
+
 	//Add Dynamic Targeting from AdRequest
 	for _,targetObj := range commerceExt.ComParams.Targeting {
 		key := targetObj.Name
@@ -154,11 +179,23 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 	if len(adButlerReq.Identifiers) <= 0 && commerceExt.ComParams.Filtering != nil {
 		adButlerReq.Params = make(map[string][]string)
 		if commerceExt.ComParams.Filtering.Category != nil && len(commerceExt.ComParams.Filtering.Category) > 0 {
-			adButlerReq.Params[CATEGORY] = commerceExt.ComParams.Filtering.Category
+			//Retailer Specific Category  Name is present from Product Feed Template
+			val, ok = configValueMap[PRODUCTTEMPLATE_PREFIX + PD_TEMPLATE_CATEGORY]
+			if ok {
+				adButlerReq.Params[val] = commerceExt.ComParams.Filtering.Category
+			} else {
+				adButlerReq.Params[DEFAULT_CATEGORY] = commerceExt.ComParams.Filtering.Category
+			}
 		}
 
 		if commerceExt.ComParams.Filtering.Brand != nil && len(commerceExt.ComParams.Filtering.Brand) > 0 {
-			adButlerReq.Params[BRAND] = commerceExt.ComParams.Filtering.Brand
+		    //Retailer Specific Brand Name is present from Product Feed Template
+			val, ok = configValueMap[PRODUCTTEMPLATE_PREFIX + PD_TEMPLATE_BRAND]
+			if ok {
+				adButlerReq.Params[val] = commerceExt.ComParams.Filtering.Brand
+			} else {
+				adButlerReq.Params[DEFAULT_BRAND] = commerceExt.ComParams.Filtering.Brand
+			}
 		}
 
 		if commerceExt.ComParams.Filtering.SubCategory != nil {
@@ -199,7 +236,7 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 	if request.Imp[0].BidFloor > 0 {
 		adButlerReq.FloorCPC = request.Imp[0].BidFloor
 	} else {
-		val, ok := configValueMap[FLOOR_PRICE]
+		val, ok := configValueMap[AUCTIONDETAILS_PREFIX + AD_FLOOR_PRICE]
 		if ok {
 			if floorPrice, err := strconv.ParseFloat(val, 64); err == nil {
 				adButlerReq.FloorCPC = floorPrice
@@ -235,6 +272,7 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 	}}, nil
 	
 }
+
 
 
 
