@@ -232,25 +232,22 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 
 	activityControl := privacy.NewActivityControl(&account.Privacy)
 
-	secGPC := r.Header.Get("Sec-GPC")
-
 	auctionRequest := &exchange.AuctionRequest{
-		BidRequestWrapper:          reqWrapper,
-		Account:                    *account,
-		UserSyncs:                  usersyncs,
-		RequestType:                labels.RType,
-		StartTime:                  start,
-		LegacyLabels:               labels,
-		GlobalPrivacyControlHeader: secGPC,
-		StoredAuctionResponses:     storedAuctionResponses,
-		StoredBidResponses:         storedBidResponses,
-		BidderImpReplaceImpID:      bidderImpReplaceImp,
-		PubID:                      labels.PubID,
-		HookExecutor:               hookExecutor,
-		QueryParams:                r.URL.Query(),
-		TCF2Config:                 tcf2Config,
-		Activities:                 activityControl,
-		TmaxAdjustments:            deps.tmaxAdjustments,
+		BidRequestWrapper:      reqWrapper,
+		Account:                *account,
+		UserSyncs:              usersyncs,
+		RequestType:            labels.RType,
+		StartTime:              start,
+		LegacyLabels:           labels,
+		StoredAuctionResponses: storedAuctionResponses,
+		StoredBidResponses:     storedBidResponses,
+		BidderImpReplaceImpID:  bidderImpReplaceImp,
+		PubID:                  labels.PubID,
+		HookExecutor:           hookExecutor,
+		QueryParams:            r.URL.Query(),
+		TCF2Config:             tcf2Config,
+		Activities:             activityControl,
+		TmaxAdjustments:        deps.tmaxAdjustments,
 	}
 
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
@@ -479,7 +476,11 @@ func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openr
 	req = &openrtb_ext.RequestWrapper{BidRequest: reqNormal}
 
 	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
-	deps.setFieldsImplicitly(httpRequest, req)
+	if err := deps.setFieldsImplicitly(httpRequest, req); err != nil {
+		if errs = append(errs, err); errortypes.ContainsFatalError(errs) {
+			return
+		}
+	}
 
 	// Need to ensure cache and targeting are turned on
 	e = initAmpTargetingAndCache(req)

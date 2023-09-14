@@ -187,17 +187,16 @@ type ImpExtInfo struct {
 // AuctionRequest holds the bid request for the auction
 // and all other information needed to process that request
 type AuctionRequest struct {
-	BidRequestWrapper          *openrtb_ext.RequestWrapper
-	ResolvedBidRequest         json.RawMessage
-	Account                    config.Account
-	UserSyncs                  IdFetcher
-	RequestType                metrics.RequestType
-	StartTime                  time.Time
-	Warnings                   []error
-	GlobalPrivacyControlHeader string
-	ImpExtInfoMap              map[string]ImpExtInfo
-	TCF2Config                 gdpr.TCF2ConfigReader
-	Activities                 privacy.ActivityControl
+	BidRequestWrapper  *openrtb_ext.RequestWrapper
+	ResolvedBidRequest json.RawMessage
+	Account            config.Account
+	UserSyncs          IdFetcher
+	RequestType        metrics.RequestType
+	StartTime          time.Time
+	Warnings           []error
+	ImpExtInfoMap      map[string]ImpExtInfo
+	TCF2Config         gdpr.TCF2ConfigReader
+	Activities         privacy.ActivityControl
 
 	// LegacyLabels is included here for temporary compatibility with cleanOpenRTBRequests
 	// in HoldAuction until we get to factoring it away. Do not use for anything new.
@@ -370,7 +369,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 			alternateBidderCodes = *r.Account.AlternateBidderCodes
 		}
 		var extraRespInfo extraAuctionResponseInfo
-		adapterBids, adapterExtra, extraRespInfo = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, alternateBidderCodes, requestExtLegacy.Prebid.Experiment, r.HookExecutor, r.StartTime, bidAdjustmentRules, r.TmaxAdjustments)
+		adapterBids, adapterExtra, extraRespInfo = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, debugLog.DebugOverride, alternateBidderCodes, requestExtLegacy.Prebid.Experiment, r.HookExecutor, r.StartTime, bidAdjustmentRules, r.TmaxAdjustments)
 		fledge = extraRespInfo.fledge
 		anyBidsReturned = extraRespInfo.bidsFound
 		r.BidderResponseStartTime = extraRespInfo.bidderResponseStartTime
@@ -653,7 +652,6 @@ func (e *exchange) getAllBids(
 	bidAdjustments map[string]float64,
 	conversions currency.Conversions,
 	accountDebugAllowed bool,
-	globalPrivacyControlHeader string,
 	headerDebugAllowed bool,
 	alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes,
 	experiment *openrtb_ext.Experiment,
@@ -691,7 +689,6 @@ func (e *exchange) getAllBids(
 
 			reqInfo := adapters.NewExtraRequestInfo(conversions)
 			reqInfo.PbsEntryPoint = bidderRequest.BidderLabels.RType
-			reqInfo.GlobalPrivacyControlHeader = globalPrivacyControlHeader
 
 			bidReqOptions := bidRequestOptions{
 				accountDebugAllowed:    accountDebugAllowed,

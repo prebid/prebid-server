@@ -38,6 +38,7 @@ import (
 	"github.com/prebid/prebid-server/util/iputil"
 	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const jsonFileExtension string = ".json"
@@ -670,6 +671,88 @@ func TestAuctionTypeDefault(t *testing.T) {
 
 	if bidReq.AT != 1 {
 		t.Errorf("Expected request.at to be 1. Got %d", bidReq.AT)
+	}
+}
+
+func TestSetRegsImplicitly(t *testing.T) {
+	testCases := []struct {
+		name          string
+		gpcHeader     string
+		regs          *openrtb2.Regs
+		expectedRegs  *openrtb2.Regs
+		expectedError string
+	}{
+		{
+			name:          "nil",
+			gpcHeader:     "",
+			regs:          nil,
+			expectedRegs:  nil,
+			expectedError: "",
+		},
+		{
+			name:          "nil-gpc",
+			gpcHeader:     "1",
+			regs:          nil,
+			expectedRegs:  &openrtb2.Regs{Ext: json.RawMessage(`{"gpc":"1"}`)},
+			expectedError: "",
+		},
+		{
+			name:          "empty",
+			gpcHeader:     "",
+			regs:          &openrtb2.Regs{},
+			expectedRegs:  &openrtb2.Regs{},
+			expectedError: "",
+		},
+		{
+			name:          "empty-gpc",
+			gpcHeader:     "1",
+			regs:          &openrtb2.Regs{},
+			expectedRegs:  &openrtb2.Regs{Ext: json.RawMessage(`{"gpc":"1"}`)},
+			expectedError: "",
+		},
+		{
+			name:          "existing",
+			gpcHeader:     "",
+			regs:          &openrtb2.Regs{Ext: json.RawMessage(`{"gpc":"0"}`)},
+			expectedRegs:  &openrtb2.Regs{Ext: json.RawMessage(`{"gpc":"0"}`)},
+			expectedError: "",
+		},
+		{
+			name:          "empty-gpc",
+			gpcHeader:     "1",
+			regs:          &openrtb2.Regs{Ext: json.RawMessage(`{"gpc":"0"}`)},
+			expectedRegs:  &openrtb2.Regs{Ext: json.RawMessage(`{"gpc":"0"}`)},
+			expectedError: "",
+		},
+		{
+			name:          "malformed",
+			gpcHeader:     "1",
+			regs:          &openrtb2.Regs{Ext: json.RawMessage(`malformed`)},
+			expectedRegs:  &openrtb2.Regs{Ext: json.RawMessage(`malformed`)},
+			expectedError: "request.regs.ext is invalid: invalid character 'm' looking for beginning of value",
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			httpRequest := httptest.NewRequest("POST", "/openrtb2/auction", nil)
+			httpRequest.Header.Set("Sec-GPC", test.gpcHeader)
+
+			requestWrapper := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				Regs: test.regs,
+			}}
+
+			err := setRegsImplicitly(httpRequest, requestWrapper)
+			require.NoError(t, requestWrapper.RebuildRequest())
+
+			if len(test.expectedError) == 0 {
+				assert.NoError(t, err)
+			} else {
+				assert.EqualError(t, err, test.expectedError)
+			}
+
+			assert.Equal(t, test.expectedRegs, requestWrapper.Regs)
+		})
 	}
 }
 

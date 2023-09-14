@@ -355,7 +355,7 @@ func TestRequestBidRemovesSensitiveHeaders(t *testing.T) {
 }
 
 func TestSetGPCHeader(t *testing.T) {
-	server := httptest.NewServer(mockHandler(200, "getBody", "responseJson"))
+	server := httptest.NewServer(mockHandler(200, "requestJson", "responseJson"))
 	defer server.Close()
 
 	requestHeaders := http.Header{}
@@ -379,7 +379,7 @@ func TestSetGPCHeader(t *testing.T) {
 	bidder := AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, debugInfo, "")
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	bidderReq := BidderRequest{
-		BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "impId"}}},
+		BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "impId"}}, Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"gpc":"1"}`)}},
 		BidderName: "test",
 	}
 	bidAdjustments := map[string]float64{"test": 1}
@@ -389,7 +389,7 @@ func TestSetGPCHeader(t *testing.T) {
 		addCallSignHeader:   false,
 		bidAdjustments:      bidAdjustments,
 	}
-	extraInfo := &adapters.ExtraRequestInfo{GlobalPrivacyControlHeader: "1"}
+	extraInfo := &adapters.ExtraRequestInfo{}
 	seatBids, extraBidderRespInfo, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), extraInfo, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
 
 	expectedHttpCall := []*openrtb_ext.ExtHttpCall{
@@ -431,7 +431,7 @@ func TestSetGPCHeaderNil(t *testing.T) {
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 
 	bidderReq := BidderRequest{
-		BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "impId"}}},
+		BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "impId"}}, Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"gpc":"1"}`)}},
 		BidderName: "test",
 	}
 	bidAdjustments := map[string]float64{"test": 1}
@@ -441,7 +441,7 @@ func TestSetGPCHeaderNil(t *testing.T) {
 		addCallSignHeader:   false,
 		bidAdjustments:      bidAdjustments,
 	}
-	extraInfo := &adapters.ExtraRequestInfo{GlobalPrivacyControlHeader: "1"}
+	extraInfo := &adapters.ExtraRequestInfo{}
 	seatBids, extraBidderRespInfo, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), extraInfo, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
 
 	expectedHttpCall := []*openrtb_ext.ExtHttpCall{

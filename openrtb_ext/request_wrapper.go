@@ -53,6 +53,7 @@ const (
 	ampKey                              = "amp"
 	eidsKey                             = "eids"
 	gdprKey                             = "gdpr"
+	gpcKey                              = "gpc"
 	prebidKey                           = "prebid"
 	dataKey                             = "data"
 	schainKey                           = "schain"
@@ -1049,6 +1050,8 @@ type RegExt struct {
 	extDirty       bool
 	gdpr           *int8
 	gdprDirty      bool
+	gpc            string
+	gpcDirty       bool
 	usPrivacy      string
 	usPrivacyDirty bool
 }
@@ -1072,6 +1075,13 @@ func (re *RegExt) unmarshal(extJson json.RawMessage) error {
 	if hasGDPR {
 		if err := json.Unmarshal(gdprJson, &re.gdpr); err != nil {
 			return errors.New("gdpr must be an integer")
+		}
+	}
+
+	gpcJson, hasGPC := re.ext[gpcKey]
+	if hasGPC {
+		if err := json.Unmarshal(gpcJson, &re.gpc); err != nil {
+			return errors.New("gpc must be a string")
 		}
 	}
 
@@ -1099,6 +1109,19 @@ func (re *RegExt) marshal() (json.RawMessage, error) {
 		re.gdprDirty = false
 	}
 
+	if re.gpcDirty {
+		if len(re.gpc) > 0 {
+			rawjson, err := json.Marshal(re.gpc)
+			if err != nil {
+				return nil, err
+			}
+			re.ext[gpcKey] = rawjson
+		} else {
+			delete(re.ext, gpcKey)
+		}
+		re.gpcDirty = false
+	}
+
 	if re.usPrivacyDirty {
 		if len(re.usPrivacy) > 0 {
 			rawjson, err := json.Marshal(re.usPrivacy)
@@ -1120,7 +1143,7 @@ func (re *RegExt) marshal() (json.RawMessage, error) {
 }
 
 func (re *RegExt) Dirty() bool {
-	return re.extDirty || re.gdprDirty || re.usPrivacyDirty
+	return re.extDirty || re.gdprDirty || re.gpcDirty || re.usPrivacyDirty
 }
 
 func (re *RegExt) GetExt() map[string]json.RawMessage {
@@ -1146,6 +1169,16 @@ func (re *RegExt) SetGDPR(gdpr *int8) {
 	re.gdprDirty = true
 }
 
+func (re *RegExt) GetGPC() string {
+	gpc := re.gpc
+	return gpc
+}
+
+func (re *RegExt) SetGPC(gpc string) {
+	re.gpc = gpc
+	re.gpcDirty = true
+}
+
 func (re *RegExt) GetUSPrivacy() string {
 	uSPrivacy := re.usPrivacy
 	return uSPrivacy
@@ -1163,7 +1196,6 @@ func (re *RegExt) Clone() *RegExt {
 
 	clone := *re
 	clone.ext = maputil.Clone(re.ext)
-
 	clone.gdpr = ptrutil.Clone(re.gdpr)
 
 	return &clone

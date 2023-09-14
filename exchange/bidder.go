@@ -15,24 +15,25 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/bidadjustment"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/config/util"
 	"github.com/prebid/prebid-server/currency"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange/entities"
 	"github.com/prebid/prebid-server/experiment/adscert"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
+	"github.com/prebid/prebid-server/metrics"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/version"
 
+	"github.com/buger/jsonparser"
+	"github.com/golang/glog"
 	"github.com/prebid/openrtb/v19/adcom1"
 	nativeRequests "github.com/prebid/openrtb/v19/native1/request"
 	nativeResponse "github.com/prebid/openrtb/v19/native1/response"
 	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"golang.org/x/net/context/ctxhttp"
 )
 
@@ -170,9 +171,14 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 				reqData[i].Headers = http.Header{}
 			}
 			reqData[i].Headers.Add("X-Prebid", xPrebidHeader)
-			if reqInfo.GlobalPrivacyControlHeader == "1" {
-				reqData[i].Headers.Add("Sec-GPC", reqInfo.GlobalPrivacyControlHeader)
+
+			if bidderRequest.BidRequest.Regs != nil && len(bidderRequest.BidRequest.Regs.Ext) > 0 {
+				gpc, err := jsonparser.GetString(bidderRequest.BidRequest.Regs.Ext, "gpc")
+				if err == nil && gpc == "1" {
+					reqData[i].Headers.Add("Sec-GPC", gpc)
+				}
 			}
+
 			if bidRequestOptions.addCallSignHeader {
 				startSignRequestTime := time.Now()
 				signatureMessage, err := adsCertSigner.Sign(reqData[i].Uri, reqData[i].Body)
