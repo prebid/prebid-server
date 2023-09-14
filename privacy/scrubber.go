@@ -77,7 +77,6 @@ func ScrubTID(reqWrapper *openrtb_ext.RequestWrapper) {
 		reqWrapper.Source.TID = ""
 	}
 	impWrapper := reqWrapper.GetImp()
-	//do we need to copy imps?
 	for ind, imp := range impWrapper {
 		impExt := scrubExtIDs(imp.Ext, "tid")
 		impWrapper[ind].Ext = impExt
