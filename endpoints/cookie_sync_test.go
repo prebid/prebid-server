@@ -1647,9 +1647,10 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 		{Bidder: "Bidder1", Status: usersync.StatusAlreadySynced},
 		{Bidder: "Bidder2", Status: usersync.StatusUnknownBidder},
 		{Bidder: "Bidder3", Status: usersync.StatusUnconfiguredBidder},
-		{Bidder: "Bidder4", Status: usersync.StatusDuplicate},
-		{Bidder: "Bidder5", Status: usersync.StatusBlockedByPrivacy},
-		{Bidder: "Bidder6", Status: usersync.StatusTypeNotSupported},
+		{Bidder: "Bidder4", Status: usersync.StatusBlockedByPrivacy},
+		{Bidder: "Bidder5", Status: usersync.StatusTypeNotSupported},
+		{Bidder: "DuplicateBidder", Status: usersync.StatusDuplicate, SyncerKey: "syncer"},
+		{Bidder: "DuplicateBidder", Status: usersync.StatusDuplicate, SyncerKey: "syncer"},
 	}
 
 	testCases := []struct {
@@ -1739,7 +1740,7 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 			givenCookieHasSyncs: true,
 			givenDebug:          true,
 			givenSyncersChosen:  []usersync.SyncerChoice{},
-			expectedJSON:        `{"status":"ok","bidder_status":[],"debug":["Already Synced","Unknown bidder","Unconfigured Bidder","Status duplicate","Status blocked by privacy","Type not supported"]}` + "\n",
+			expectedJSON:        `{"status":"ok","bidder_status":[],"debug":["Already Synced","Unknown bidder","Unconfigured Bidder","Status blocked by privacy","Type not supported","Status duplicate synced as syncer"]}` + "\n",
 			expectedAnalytics:   analytics.CookieSyncObject{Status: 200, BidderStatus: []*analytics.CookieSyncBidder{}},
 		},
 	}

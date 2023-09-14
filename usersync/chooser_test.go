@@ -48,6 +48,7 @@ func TestChooserChoose(t *testing.T) {
 	fakeSyncerB := fakeSyncer{key: "keyB", supportsIFrame: true}
 	fakeSyncerC := fakeSyncer{key: "keyC", supportsIFrame: false}
 	bidderSyncerLookup := map[string]Syncer{"a": fakeSyncerA, "b": fakeSyncerB, "c": fakeSyncerC}
+	biddersKnown := map[string]struct{}{"a": {}, "b": {}, "c": {}}
 	syncerChoiceA := SyncerChoice{Bidder: "a", Syncer: fakeSyncerA}
 	syncerChoiceB := SyncerChoice{Bidder: "b", Syncer: fakeSyncerB}
 	syncTypeFilter := SyncTypeFilter{
@@ -130,6 +131,20 @@ func TestChooserChoose(t *testing.T) {
 			expected: Result{
 				Status:           StatusOK,
 				BiddersEvaluated: []BidderEvaluation{{Bidder: "c", SyncerKey: "keyC", Status: StatusTypeNotSupported}},
+				SyncersChosen:    []SyncerChoice{},
+			},
+		},
+		{
+			description: "One Bidder - No Sync - Unknown",
+			givenRequest: Request{
+				Privacy: fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
+				Limit:   0,
+			},
+			givenChosenBidders: []string{"unknown"},
+			givenCookie:        Cookie{},
+			expected: Result{
+				Status:           StatusOK,
+				BiddersEvaluated: []BidderEvaluation{{Bidder: "unknown", Status: StatusUnknownBidder}},
 				SyncersChosen:    []SyncerChoice{},
 			},
 		},
@@ -222,6 +237,7 @@ func TestChooserChoose(t *testing.T) {
 			bidderSyncerLookup: bidderSyncerLookup,
 			biddersAvailable:   biddersAvailable,
 			bidderChooser:      mockBidderChooser,
+			biddersKnown:       biddersKnown,
 		}
 
 		result := chooser.Choose(test.givenRequest, &test.givenCookie)

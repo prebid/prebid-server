@@ -436,12 +436,12 @@ func (c *cookieSyncEndpoint) handleResponse(w http.ResponseWriter, tf usersync.S
 		biddersSeen := make(map[string]bool)
 		var statusArray []string
 		for _, bidderEval := range biddersEvaluted {
-			biddersSeen[bidderEval.Bidder] = true
 			if bidderEval.Status == usersync.StatusDuplicate && biddersSeen[bidderEval.Bidder] {
-				statusArray = append(statusArray, getStatusMessage(bidderEval.Status))
+				statusArray = append(statusArray, getStatusMessage(bidderEval.Status)+" synced as "+bidderEval.SyncerKey)
 			} else if bidderEval.Status != usersync.StatusDuplicate {
 				statusArray = append(statusArray, getStatusMessage(bidderEval.Status))
 			}
+			biddersSeen[bidderEval.Bidder] = true
 		}
 		response.Debug = statusArray
 	}
