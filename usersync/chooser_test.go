@@ -1,12 +1,13 @@
 package usersync
 
 import (
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"testing"
 	"time"
 
 	"github.com/prebid/prebid-server/macros"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 func TestNewChooser(t *testing.T) {
@@ -48,6 +49,9 @@ func TestChooserChoose(t *testing.T) {
 	fakeSyncerB := fakeSyncer{key: "keyB", supportsIFrame: true}
 	fakeSyncerC := fakeSyncer{key: "keyC", supportsIFrame: false}
 	bidderSyncerLookup := map[string]Syncer{"a": fakeSyncerA, "b": fakeSyncerB, "c": fakeSyncerC}
+	normalizedBidderNamesLookup := func(name string) (openrtb_ext.BidderName, bool) {
+		return openrtb_ext.BidderName(name), true
+	}
 	syncerChoiceA := SyncerChoice{Bidder: "a", Syncer: fakeSyncerA}
 	syncerChoiceB := SyncerChoice{Bidder: "b", Syncer: fakeSyncerB}
 	syncTypeFilter := SyncTypeFilter{
@@ -61,6 +65,7 @@ func TestChooserChoose(t *testing.T) {
 		givenRequest       Request
 		givenChosenBidders []string
 		givenCookie        Cookie
+		bidderNamesLookup  func(name string) (openrtb_ext.BidderName, bool)
 		expected           Result
 	}{
 		{
@@ -71,6 +76,7 @@ func TestChooserChoose(t *testing.T) {
 			},
 			givenChosenBidders: []string{"a"},
 			givenCookie:        Cookie{optOut: true},
+			bidderNamesLookup:  normalizedBidderNamesLookup,
 			expected: Result{
 				Status:           StatusBlockedByUserOptOut,
 				BiddersEvaluated: nil,
@@ -85,6 +91,7 @@ func TestChooserChoose(t *testing.T) {
 			},
 			givenChosenBidders: []string{"a"},
 			givenCookie:        Cookie{},
+			bidderNamesLookup:  normalizedBidderNamesLookup,
 			expected: Result{
 				Status:           StatusBlockedByGDPR,
 				BiddersEvaluated: nil,
@@ -99,6 +106,7 @@ func TestChooserChoose(t *testing.T) {
 			},
 			givenChosenBidders: []string{},
 			givenCookie:        Cookie{},
+			bidderNamesLookup:  normalizedBidderNamesLookup,
 			expected: Result{
 				Status:           StatusOK,
 				BiddersEvaluated: []BidderEvaluation{},
@@ -113,6 +121,7 @@ func TestChooserChoose(t *testing.T) {
 			},
 			givenChosenBidders: []string{"a"},
 			givenCookie:        Cookie{},
+			bidderNamesLookup:  normalizedBidderNamesLookup,
 			expected: Result{
 				Status:           StatusOK,
 				BiddersEvaluated: []BidderEvaluation{{Bidder: "a", SyncerKey: "keyA", Status: StatusOK}},
@@ -127,6 +136,7 @@ func TestChooserChoose(t *testing.T) {
 			},
 			givenChosenBidders: []string{"c"},
 			givenCookie:        Cookie{},
+			bidderNamesLookup:  normalizedBidderNamesLookup,
 			expected: Result{
 				Status:           StatusOK,
 				BiddersEvaluated: []BidderEvaluation{{Bidder: "c", SyncerKey: "keyC", Status: StatusTypeNotSupported}},
@@ -141,6 +151,7 @@ func TestChooserChoose(t *testing.T) {
 			},
 			givenChosenBidders: []string{"a", "b"},
 			givenCookie:        Cookie{},
+			bidderNamesLookup:  normalizedBidderNamesLookup,
 			expected: Result{
 				Status:           StatusOK,
 				BiddersEvaluated: []BidderEvaluation{{Bidder: "a", SyncerKey: "keyA", Status: StatusOK}, {Bidder: "b", SyncerKey: "keyB", Status: StatusOK}},
@@ -155,6 +166,7 @@ func TestChooserChoose(t *testing.T) {
 			},
 			givenChosenBidders: []string{"a", "b"},
 			givenCookie:        Cookie{},
+			bidderNamesLookup:  normalizedBidderNamesLookup,
 			expected: Result{
 				Status:           StatusOK,
 				BiddersEvaluated: []BidderEvaluation{{Bidder: "a", SyncerKey: "keyA", Status: StatusOK}, {Bidder: "b", SyncerKey: "keyB", Status: StatusOK}},
@@ -169,6 +181,7 @@ func TestChooserChoose(t *testing.T) {
 			},
 			givenChosenBidders: []string{"a", "b"},
 			givenCookie:        Cookie{},
+			bidderNamesLookup:  normalizedBidderNamesLookup,
 			expected: Result{
 				Status:           StatusOK,
 				BiddersEvaluated: []BidderEvaluation{{Bidder: "a", SyncerKey: "keyA", Status: StatusOK}},
@@ -183,6 +196,7 @@ func TestChooserChoose(t *testing.T) {
 			},
 			givenChosenBidders: []string{"c", "a", "b"},
 			givenCookie:        Cookie{},
+			bidderNamesLookup:  normalizedBidderNamesLookup,
 			expected: Result{
 				Status:           StatusOK,
 				BiddersEvaluated: []BidderEvaluation{{Bidder: "c", SyncerKey: "keyC", Status: StatusTypeNotSupported}, {Bidder: "a", SyncerKey: "keyA", Status: StatusOK}},
@@ -197,10 +211,28 @@ func TestChooserChoose(t *testing.T) {
 			},
 			givenChosenBidders: []string{"a", "c"},
 			givenCookie:        Cookie{},
+			bidderNamesLookup:  normalizedBidderNamesLookup,
 			expected: Result{
 				Status:           StatusOK,
 				BiddersEvaluated: []BidderEvaluation{{Bidder: "a", SyncerKey: "keyA", Status: StatusOK}, {Bidder: "c", SyncerKey: "keyC", Status: StatusTypeNotSupported}},
 				SyncersChosen:    []SyncerChoice{syncerChoiceA},
+			},
+		},
+		{
+			description: "Unknown Bidder",
+			givenRequest: Request{
+				Privacy: fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
+				Limit:   0,
+			},
+			givenChosenBidders: []string{"a"},
+			givenCookie:        Cookie{},
+			bidderNamesLookup: func(name string) (openrtb_ext.BidderName, bool) {
+				return openrtb_ext.BidderName(name), false
+			},
+			expected: Result{
+				Status:           StatusOK,
+				BiddersEvaluated: []BidderEvaluation{{Bidder: "a", Status: StatusUnknownBidder}},
+				SyncersChosen:    []SyncerChoice{},
 			},
 		},
 	}
@@ -219,9 +251,10 @@ func TestChooserChoose(t *testing.T) {
 			Return(test.givenChosenBidders)
 
 		chooser := standardChooser{
-			bidderSyncerLookup: bidderSyncerLookup,
-			biddersAvailable:   biddersAvailable,
-			bidderChooser:      mockBidderChooser,
+			bidderSyncerLookup:          bidderSyncerLookup,
+			biddersAvailable:            biddersAvailable,
+			bidderChooser:               mockBidderChooser,
+			normalizedBidderNamesLookup: test.bidderNamesLookup,
 		}
 
 		result := chooser.Choose(test.givenRequest, &test.givenCookie)
@@ -236,105 +269,130 @@ func TestChooserEvaluate(t *testing.T) {
 	syncTypeFilter := SyncTypeFilter{
 		IFrame:   NewUniformBidderFilter(BidderFilterModeInclude),
 		Redirect: NewUniformBidderFilter(BidderFilterModeExclude)}
-
+	normalizedBidderNamesLookup := func(name string) (openrtb_ext.BidderName, bool) {
+		return openrtb_ext.BidderName(name), true
+	}
 	cookieNeedsSync := Cookie{}
 	cookieAlreadyHasSyncForA := Cookie{uids: map[string]UIDEntry{"keyA": {Expires: time.Now().Add(time.Duration(24) * time.Hour)}}}
 	cookieAlreadyHasSyncForB := Cookie{uids: map[string]UIDEntry{"keyB": {Expires: time.Now().Add(time.Duration(24) * time.Hour)}}}
 
 	testCases := []struct {
-		description        string
-		givenBidder        string
-		givenSyncersSeen   map[string]struct{}
-		givenPrivacy       Privacy
-		givenCookie        Cookie
-		expectedSyncer     Syncer
-		expectedEvaluation BidderEvaluation
+		description                 string
+		givenBidder                 string
+		givenSyncersSeen            map[string]struct{}
+		givenPrivacy                Privacy
+		givenCookie                 Cookie
+		normalizedBidderNamesLookup func(name string) (openrtb_ext.BidderName, bool)
+		expectedSyncer              Syncer
+		expectedEvaluation          BidderEvaluation
 	}{
 		{
-			description:        "Valid",
-			givenBidder:        "a",
-			givenSyncersSeen:   map[string]struct{}{},
-			givenPrivacy:       fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
-			givenCookie:        cookieNeedsSync,
-			expectedSyncer:     fakeSyncerA,
-			expectedEvaluation: BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusOK},
+			description:                 "Valid",
+			givenBidder:                 "a",
+			givenSyncersSeen:            map[string]struct{}{},
+			givenPrivacy:                fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
+			givenCookie:                 cookieNeedsSync,
+			normalizedBidderNamesLookup: normalizedBidderNamesLookup,
+			expectedSyncer:              fakeSyncerA,
+			expectedEvaluation:          BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusOK},
 		},
 		{
-			description:        "Unknown Bidder",
-			givenBidder:        "unknown",
-			givenSyncersSeen:   map[string]struct{}{},
-			givenPrivacy:       fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
-			givenCookie:        cookieNeedsSync,
+			description:                 "Unknown Bidder",
+			givenBidder:                 "unknown",
+			givenSyncersSeen:            map[string]struct{}{},
+			givenPrivacy:                fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
+			givenCookie:                 cookieNeedsSync,
+			normalizedBidderNamesLookup: normalizedBidderNamesLookup,
+			expectedSyncer:              nil,
+			expectedEvaluation:          BidderEvaluation{Bidder: "unknown", Status: StatusUnknownBidder},
+		},
+		{
+			description:                 "Duplicate Syncer",
+			givenBidder:                 "a",
+			givenSyncersSeen:            map[string]struct{}{"keyA": {}},
+			givenPrivacy:                fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
+			givenCookie:                 cookieNeedsSync,
+			normalizedBidderNamesLookup: normalizedBidderNamesLookup,
+			expectedSyncer:              nil,
+			expectedEvaluation:          BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusDuplicate},
+		},
+		{
+			description:                 "Incompatible Kind",
+			givenBidder:                 "b",
+			givenSyncersSeen:            map[string]struct{}{},
+			givenPrivacy:                fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
+			givenCookie:                 cookieNeedsSync,
+			normalizedBidderNamesLookup: normalizedBidderNamesLookup,
+			expectedSyncer:              nil,
+			expectedEvaluation:          BidderEvaluation{Bidder: "b", SyncerKey: "keyB", Status: StatusTypeNotSupported},
+		},
+		{
+			description:                 "Already Synced",
+			givenBidder:                 "a",
+			givenSyncersSeen:            map[string]struct{}{},
+			givenPrivacy:                fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
+			givenCookie:                 cookieAlreadyHasSyncForA,
+			normalizedBidderNamesLookup: normalizedBidderNamesLookup,
+			expectedSyncer:              nil,
+			expectedEvaluation:          BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusAlreadySynced},
+		},
+		{
+			description:                 "Different Bidder Already Synced",
+			givenBidder:                 "a",
+			givenSyncersSeen:            map[string]struct{}{},
+			givenPrivacy:                fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
+			givenCookie:                 cookieAlreadyHasSyncForB,
+			normalizedBidderNamesLookup: normalizedBidderNamesLookup,
+			expectedSyncer:              fakeSyncerA,
+			expectedEvaluation:          BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusOK},
+		},
+		{
+			description:                 "Blocked By GDPR",
+			givenBidder:                 "a",
+			givenSyncersSeen:            map[string]struct{}{},
+			givenPrivacy:                fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: false, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
+			givenCookie:                 cookieNeedsSync,
+			normalizedBidderNamesLookup: normalizedBidderNamesLookup,
+			expectedSyncer:              nil,
+			expectedEvaluation:          BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByGDPR},
+		},
+		{
+			description:                 "Blocked By CCPA",
+			givenBidder:                 "a",
+			givenSyncersSeen:            map[string]struct{}{},
+			givenPrivacy:                fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: false, activityAllowUserSync: true},
+			givenCookie:                 cookieNeedsSync,
+			normalizedBidderNamesLookup: normalizedBidderNamesLookup,
+			expectedSyncer:              nil,
+			expectedEvaluation:          BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByCCPA},
+		},
+		{
+			description:                 "Blocked By activity control",
+			givenBidder:                 "a",
+			givenSyncersSeen:            map[string]struct{}{},
+			givenPrivacy:                fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: false},
+			givenCookie:                 cookieNeedsSync,
+			normalizedBidderNamesLookup: normalizedBidderNamesLookup,
+			expectedSyncer:              nil,
+			expectedEvaluation:          BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByPrivacy},
+		},
+		{
+			description:      "Unknown bidder",
+			givenBidder:      "a",
+			givenSyncersSeen: map[string]struct{}{},
+			givenPrivacy:     fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
+			givenCookie:      cookieNeedsSync,
+			normalizedBidderNamesLookup: func(name string) (openrtb_ext.BidderName, bool) {
+				return openrtb_ext.BidderName(name), false
+			},
 			expectedSyncer:     nil,
-			expectedEvaluation: BidderEvaluation{Bidder: "unknown", Status: StatusUnknownBidder},
-		},
-		{
-			description:        "Duplicate Syncer",
-			givenBidder:        "a",
-			givenSyncersSeen:   map[string]struct{}{"keyA": {}},
-			givenPrivacy:       fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
-			givenCookie:        cookieNeedsSync,
-			expectedSyncer:     nil,
-			expectedEvaluation: BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusDuplicate},
-		},
-		{
-			description:        "Incompatible Kind",
-			givenBidder:        "b",
-			givenSyncersSeen:   map[string]struct{}{},
-			givenPrivacy:       fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
-			givenCookie:        cookieNeedsSync,
-			expectedSyncer:     nil,
-			expectedEvaluation: BidderEvaluation{Bidder: "b", SyncerKey: "keyB", Status: StatusTypeNotSupported},
-		},
-		{
-			description:        "Already Synced",
-			givenBidder:        "a",
-			givenSyncersSeen:   map[string]struct{}{},
-			givenPrivacy:       fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
-			givenCookie:        cookieAlreadyHasSyncForA,
-			expectedSyncer:     nil,
-			expectedEvaluation: BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusAlreadySynced},
-		},
-		{
-			description:        "Different Bidder Already Synced",
-			givenBidder:        "a",
-			givenSyncersSeen:   map[string]struct{}{},
-			givenPrivacy:       fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
-			givenCookie:        cookieAlreadyHasSyncForB,
-			expectedSyncer:     fakeSyncerA,
-			expectedEvaluation: BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusOK},
-		},
-		{
-			description:        "Blocked By GDPR",
-			givenBidder:        "a",
-			givenSyncersSeen:   map[string]struct{}{},
-			givenPrivacy:       fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: false, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
-			givenCookie:        cookieNeedsSync,
-			expectedSyncer:     nil,
-			expectedEvaluation: BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByGDPR},
-		},
-		{
-			description:        "Blocked By CCPA",
-			givenBidder:        "a",
-			givenSyncersSeen:   map[string]struct{}{},
-			givenPrivacy:       fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: false, activityAllowUserSync: true},
-			givenCookie:        cookieNeedsSync,
-			expectedSyncer:     nil,
-			expectedEvaluation: BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByCCPA},
-		},
-		{
-			description:        "Blocked By activity control",
-			givenBidder:        "a",
-			givenSyncersSeen:   map[string]struct{}{},
-			givenPrivacy:       fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: false},
-			givenCookie:        cookieNeedsSync,
-			expectedSyncer:     nil,
-			expectedEvaluation: BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByPrivacy},
+			expectedEvaluation: BidderEvaluation{Bidder: "a", Status: StatusUnknownBidder},
 		},
 	}
 
 	for _, test := range testCases {
 		chooser, _ := NewChooser(bidderSyncerLookup).(standardChooser)
+		chooser.normalizedBidderNamesLookup = test.normalizedBidderNamesLookup
 		sync, evaluation := chooser.evaluate(test.givenBidder, test.givenSyncersSeen, syncTypeFilter, test.givenPrivacy, &test.givenCookie)
 
 		assert.Equal(t, test.expectedSyncer, sync, test.description+":syncer")

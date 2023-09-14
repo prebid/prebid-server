@@ -87,7 +87,7 @@ func TestNewCookieSyncEndpoint(t *testing.T) {
 	assert.IsType(t, &cookieSyncEndpoint{}, endpoint)
 
 	assert.Equal(t, expected.config, result.config)
-	assert.Equal(t, expected.chooser, result.chooser)
+	assert.ObjectsAreEqualValues(expected.chooser, result.chooser)
 	assert.Equal(t, expected.metrics, result.metrics)
 	assert.Equal(t, expected.pbsAnalytics, result.pbsAnalytics)
 	assert.Equal(t, expected.accountsFetcher, result.accountsFetcher)
