@@ -36,6 +36,7 @@ func ProcessTMaxAdjustments(adjustmentsConfig config.TmaxAdjustments) *TmaxAdjus
 type bidderTmaxContext interface {
 	Deadline() (deadline time.Time, ok bool)
 	RemainingDurationMS(deadline time.Time) int64
+	Until(t time.Time) time.Duration
 }
 type bidderTmaxCtx struct{ ctx context.Context }
 
@@ -45,6 +46,11 @@ func (b *bidderTmaxCtx) RemainingDurationMS(deadline time.Time) int64 {
 func (b *bidderTmaxCtx) Deadline() (deadline time.Time, ok bool) {
 	deadline, ok = b.ctx.Deadline()
 	return
+}
+
+// Until returns the remaining duration until the specified time
+func (b *bidderTmaxCtx) Until(t time.Time) time.Duration {
+	return time.Until(t)
 }
 
 func getBidderTmax(ctx bidderTmaxContext, requestTmaxMS int64, tmaxAdjustments TmaxAdjustmentsPreprocessed) int64 {

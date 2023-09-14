@@ -319,7 +319,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		Prebid: *requestExtPrebid,
 		SChain: requestExt.GetSChain(),
 	}
-	bidderRequests, privacyLabels, errs := e.requestSplitter.cleanOpenRTBRequests(ctx, *r, requestExtLegacy, gdprDefaultValue)
+	bidderRequests, privacyLabels, errs := e.requestSplitter.cleanOpenRTBRequests(ctx, *r, requestExtLegacy, gdprDefaultValue, bidAdjustmentFactors)
 	errs = append(errs, floorErrs...)
 
 	mergedBidAdj, err := bidadjustment.Merge(r.BidRequestWrapper, r.Account.BidAdjustments)
@@ -490,17 +490,14 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	e.bidValidationEnforcement.SetBannerCreativeMaxSize(r.Account.Validations)
 
 	// Build the response
-	bidResponse, err := e.buildBidResponse(ctx, liveAdapters, adapterBids, r.BidRequestWrapper.BidRequest, adapterExtra, auc, bidResponseExt, cacheInstructions.returnCreative, r.ImpExtInfoMap, r.PubID, errs)
-
+	bidResponse := e.buildBidResponse(ctx, liveAdapters, adapterBids, r.BidRequestWrapper.BidRequest, adapterExtra, auc, bidResponseExt, cacheInstructions.returnCreative, r.ImpExtInfoMap, r.PubID, errs)
 	bidResponse = adservertargeting.Apply(r.BidRequestWrapper, r.ResolvedBidRequest, bidResponse, r.QueryParams, bidResponseExt, r.Account.TruncateTargetAttribute)
 
 	bidResponse.Ext, err = encodeBidResponseExt(bidResponseExt)
-
-	bidResponseExt = setSeatNonBid(bidResponseExt, seatNonBids)
-
 	if err != nil {
 		return nil, err
 	}
+	bidResponseExt = setSeatNonBid(bidResponseExt, seatNonBids)
 
 	return &AuctionResponse{
 		BidResponse:    bidResponse,
@@ -695,14 +692,14 @@ func (e *exchange) getAllBids(
 			reqInfo := adapters.NewExtraRequestInfo(conversions)
 			reqInfo.PbsEntryPoint = bidderRequest.BidderLabels.RType
 			reqInfo.GlobalPrivacyControlHeader = globalPrivacyControlHeader
-			reqInfo.BidderRequestStartTime = start
 
 			bidReqOptions := bidRequestOptions{
-				accountDebugAllowed: accountDebugAllowed,
-				headerDebugAllowed:  headerDebugAllowed,
-				addCallSignHeader:   isAdsCertEnabled(experiment, e.bidderInfo[string(bidderRequest.BidderName)]),
-				bidAdjustments:      bidAdjustments,
-				tmaxAdjustments:     tmaxAdjustments,
+				accountDebugAllowed:    accountDebugAllowed,
+				headerDebugAllowed:     headerDebugAllowed,
+				addCallSignHeader:      isAdsCertEnabled(experiment, e.bidderInfo[string(bidderRequest.BidderName)]),
+				bidAdjustments:         bidAdjustments,
+				tmaxAdjustments:        tmaxAdjustments,
+				bidderRequestStartTime: start,
 			}
 			seatBids, extraBidderRespInfo, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest, conversions, &reqInfo, e.adsCertSigner, bidReqOptions, alternateBidderCodes, hookExecutor, bidAdjustmentRules)
 			brw.bidderResponseStartTime = extraBidderRespInfo.respProcessingStartTime
@@ -880,9 +877,8 @@ func errsToBidderWarnings(errs []error) []openrtb_ext.ExtBidderMessage {
 }
 
 // This piece takes all the bids supplied by the adapters and crafts an openRTB response to send back to the requester
-func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_ext.BidderName, adapterSeatBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, bidRequest *openrtb2.BidRequest, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, auc *auction, bidResponseExt *openrtb_ext.ExtBidResponse, returnCreative bool, impExtInfoMap map[string]ImpExtInfo, pubID string, errList []error) (*openrtb2.BidResponse, error) {
+func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_ext.BidderName, adapterSeatBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, bidRequest *openrtb2.BidRequest, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, auc *auction, bidResponseExt *openrtb_ext.ExtBidResponse, returnCreative bool, impExtInfoMap map[string]ImpExtInfo, pubID string, errList []error) *openrtb2.BidResponse {
 	bidResponse := new(openrtb2.BidResponse)
-	var err error
 
 	bidResponse.ID = bidRequest.ID
 	if len(liveAdapters) == 0 {
@@ -903,7 +899,7 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 	}
 	bidResponse.SeatBid = seatBids
 
-	return bidResponse, err
+	return bidResponse
 }
 
 func encodeBidResponseExt(bidResponseExt *openrtb_ext.ExtBidResponse) ([]byte, error) {

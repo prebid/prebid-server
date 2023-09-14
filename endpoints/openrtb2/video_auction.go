@@ -21,6 +21,7 @@ import (
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/ortb"
+	"github.com/prebid/prebid-server/privacy"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
 	accountService "github.com/prebid/prebid-server/account"
@@ -302,6 +303,8 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	activityControl := privacy.NewActivityControl(&account.Privacy)
+
 	secGPC := r.Header.Get("Sec-GPC")
 	auctionRequest := &exchange.AuctionRequest{
 		BidRequestWrapper:          bidReqWrapper,
@@ -314,6 +317,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		PubID:                      labels.PubID,
 		HookExecutor:               hookexecution.EmptyHookExecutor{},
 		TmaxAdjustments:            deps.tmaxAdjustments,
+		Activities:                 activityControl,
 	}
 
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog)
@@ -373,10 +377,6 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		errL := []error{err}
 		handleError(&labels, w, errL, &vo, &debugLog)
 		return
-	}
-
-	if len(vo.Errors) == 0 && !auctionRequest.BidderResponseStartTime.IsZero() {
-		deps.metricsEngine.RecordOverheadTime(metrics.MakeAuctionResponse, time.Since(auctionRequest.BidderResponseStartTime))
 	}
 
 	w.Header().Set("Content-Type", "application/json")

@@ -37,6 +37,7 @@ import (
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
+	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
 	"github.com/prebid/prebid-server/usersync"
@@ -167,12 +168,9 @@ func TestCharacterEscape(t *testing.T) {
 	var errList []error
 
 	// 	4) Build bid response
-	bidResp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, adapterExtra, nil, nil, true, nil, "", errList)
+	bidResp := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, adapterExtra, nil, nil, true, nil, "", errList)
 
 	// 	5) Assert we have no errors and one '&' character as we are supposed to
-	if err != nil {
-		t.Errorf("exchange.buildBidResponse returned unexpected error: %v", err)
-	}
 	if len(errList) > 0 {
 		t.Errorf("exchange.buildBidResponse returned %d errors", len(errList))
 	}
@@ -1533,10 +1531,7 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 	var errList []error
 
 	// 	4) Build bid response
-	bid_resp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, adapterExtra, auc, nil, true, nil, "", errList)
-
-	// 	5) Assert we have no errors and the bid response we expected
-	assert.NoError(t, err, "[TestGetBidCacheInfo] buildBidResponse() threw an error")
+	bid_resp := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, adapterExtra, auc, nil, true, nil, "", errList)
 
 	expectedBidResponse := &openrtb2.BidResponse{
 		SeatBid: []openrtb2.SeatBid{
@@ -1909,8 +1904,7 @@ func TestBidResponseCurrency(t *testing.T) {
 	}
 	// Run tests
 	for i := range testCases {
-		actualBidResp, err := e.buildBidResponse(context.Background(), liveAdapters, testCases[i].adapterBids, bidRequest, adapterExtra, nil, bidResponseExt, true, nil, "", errList)
-		assert.NoError(t, err, fmt.Sprintf("[TEST_FAILED] e.buildBidResponse resturns error in test: %s Error message: %s \n", testCases[i].description, err))
+		actualBidResp := e.buildBidResponse(context.Background(), liveAdapters, testCases[i].adapterBids, bidRequest, adapterExtra, nil, bidResponseExt, true, nil, "", errList)
 		assert.Equalf(t, testCases[i].expectedBidResponse, actualBidResp, fmt.Sprintf("[TEST_FAILED] Objects must be equal for test: %s \n Expected: >>%s<< \n Actual: >>%s<< ", testCases[i].description, testCases[i].expectedBidResponse.Ext, actualBidResp.Ext))
 	}
 }
@@ -1976,8 +1970,7 @@ func TestBidResponseImpExtInfo(t *testing.T) {
 
 	expectedBidResponseExt := `{"origbidcpm":0,"prebid":{"type":"video","passthrough":{"imp_passthrough_val":1}},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]}}`
 
-	actualBidResp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, nil, nil, nil, true, impExtInfo, "", errList)
-	assert.NoError(t, err, fmt.Sprintf("imp ext info was not passed through correctly: %s", err))
+	actualBidResp := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, nil, nil, nil, true, impExtInfo, "", errList)
 
 	resBidExt := string(actualBidResp.SeatBid[0].Bid[0].Ext)
 	assert.Equalf(t, expectedBidResponseExt, resBidExt, "Expected bid response extension is incorrect")
@@ -2359,6 +2352,8 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		impExtInfoMap[impID] = ImpExtInfo{}
 	}
 
+	activityControl := privacy.NewActivityControl(spec.AccountPrivacy)
+
 	auctionRequest := &AuctionRequest{
 		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &spec.IncomingRequest.OrtbRequest},
 		Account: config.Account{
@@ -2374,6 +2369,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		ImpExtInfoMap: impExtInfoMap,
 		HookExecutor:  &hookexecution.EmptyHookExecutor{},
 		TCF2Config:    gdpr.NewTCF2Config(privacyConfig.GDPR.TCF2, config.AccountGDPR{}),
+		Activities:    activityControl,
 	}
 
 	if spec.MultiBid != nil {
@@ -5195,6 +5191,7 @@ type exchangeSpec struct {
 	FledgeEnabled              bool                   `json:"fledge_enabled,omitempty"`
 	MultiBid                   *multiBidSpec          `json:"multiBid,omitempty"`
 	Server                     exchangeServer         `json:"server,omitempty"`
+	AccountPrivacy             *config.AccountPrivacy `json:"accountPrivacy,omitempty"`
 }
 
 type multiBidSpec struct {

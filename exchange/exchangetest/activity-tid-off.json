@@ -1,0 +1,85 @@
+{
+    "accountPrivacy": {
+        "allowactivities": {
+            "transmitTid": {
+                "default": true,
+                "rules": [
+                    {
+                        "allow": true,
+                        "condition": {
+                            "componentName": ["appnexus"],
+                            "componentType":["bidder"]
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    "incomingRequest": {
+        "ortbRequest": {
+            "id": "some-request-id",
+            "site": {
+                "page": "test.somepage.com"
+            },
+            "imp": [
+                {
+                    "id": "my-imp-id",
+                    "video": {
+                        "mimes": [
+                            "video/mp4"
+                        ]
+                    },
+                    "ext": {
+                        "tid": "extTestTID",
+                        "prebid": {
+                            "bidder": {
+                                "appnexus": {
+                                    "placementId": 1
+                                }
+                            }
+                        }
+                    }
+                }
+            ],
+            "source": {
+                "tid": "sourceTestTID"
+            }
+        }
+    },
+    "outgoingRequests": {
+        "appnexus": {
+            "expectRequest": {
+                "ortbRequest": {
+                    "id": "some-request-id",
+                    "site": {
+                        "page": "test.somepage.com"
+                    },
+                    "imp": [
+                        {
+                            "id": "my-imp-id",
+                            "video": {
+                                "mimes": [
+                                    "video/mp4"
+                                ]
+                            },
+                            "ext": {
+                                "tid": "extTestTID",
+                                "bidder": {
+                                    "placementId": 1
+                                }
+                            }
+                        }
+                    ],
+                    "source": {
+                        "tid": "sourceTestTID"
+                    }
+                }
+            },
+            "mockResponse": {
+                "errors": [
+                    "appnexus-error"
+                ]
+            }
+        }
+    }
+}

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/privacy"
+	"github.com/prebid/prebid-server/macros"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -394,7 +394,7 @@ func (s fakeSyncer) SupportsType(syncTypes []SyncType) bool {
 	return false
 }
 
-func (fakeSyncer) GetSync(syncTypes []SyncType, privacyPolicies privacy.Policies) (Sync, error) {
+func (fakeSyncer) GetSync([]SyncType, macros.UserSyncPrivacy) (Sync, error) {
 	return Sync{}, nil
 }
 

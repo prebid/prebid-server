@@ -6,15 +6,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/privacy"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/prebid/prebid-server/privacy"
 
 	"github.com/buger/jsonparser"
 	"github.com/gofrs/uuid"
@@ -194,14 +194,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
 
-	activities, activitiesErr := privacy.NewActivityControl(account.Privacy)
-	if activitiesErr != nil {
-		errL = append(errL, activitiesErr)
-		if errortypes.ContainsFatalError(errL) {
-			writeError(errL, w, &labels)
-			return
-		}
-	}
+	activityControl := privacy.NewActivityControl(&account.Privacy)
 
 	ctx := context.Background()
 
@@ -252,7 +245,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		PubID:                      labels.PubID,
 		HookExecutor:               hookExecutor,
 		TCF2Config:                 tcf2Config,
-		Activities:                 activities,
+		Activities:                 activityControl,
 		TmaxAdjustments:            deps.tmaxAdjustments,
 	}
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
@@ -292,9 +285,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		glog.Errorf("Error setting seat non-bid: %v", err)
 	}
 	labels, ao = sendAuctionResponse(w, hookExecutor, response, req.BidRequest, account, labels, ao)
-	if len(ao.Errors) == 0 && !auctionRequest.BidderResponseStartTime.IsZero() {
-		deps.metricsEngine.RecordOverheadTime(metrics.MakeAuctionResponse, time.Since(auctionRequest.BidderResponseStartTime))
-	}
 }
 
 // setSeatNonBidRaw is transitional function for setting SeatNonBid inside bidResponse.Ext
@@ -423,7 +413,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		N: deps.cfg.MaxRequestSize,
 	}
 
-	requestJson, err := ioutil.ReadAll(limitedReqReader)
+	requestJson, err := io.ReadAll(limitedReqReader)
 	if err != nil {
 		errs = []error{err}
 		return
@@ -1970,8 +1960,12 @@ func setAuctionTypeImplicitly(r *openrtb_ext.RequestWrapper) {
 }
 
 func setSiteImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
+	if r.Site == nil {
+		r.Site = &openrtb2.Site{}
+	}
+
 	referrerCandidate := httpReq.Referer()
-	if referrerCandidate == "" && r.Site != nil && r.Site.Page != "" {
+	if referrerCandidate == "" && r.Site.Page != "" {
 		referrerCandidate = r.Site.Page // If http referer is disabled and thus has empty value - use site.page instead
 	}
 
@@ -1985,17 +1979,13 @@ func setSiteImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
 		}
 	}
 
-	if r.Site != nil {
-		if siteExt, err := r.GetSiteExt(); err == nil && siteExt.GetAmp() == nil {
-			siteExt.SetAmp(&notAmp)
-		}
+	if siteExt, err := r.GetSiteExt(); err == nil && siteExt.GetAmp() == nil {
+		siteExt.SetAmp(&notAmp)
 	}
+
 }
 
 func setSitePageIfEmpty(site *openrtb2.Site, sitePage string) {
-	if site == nil {
-		site = &openrtb2.Site{}
-	}
 	if site.Page == "" {
 		site.Page = sitePage
 	}

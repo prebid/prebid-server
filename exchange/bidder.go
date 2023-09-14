@@ -63,11 +63,12 @@ type AdaptedBidder interface {
 
 // bidRequestOptions holds additional options for bid request execution to maintain clean code and reasonable number of parameters
 type bidRequestOptions struct {
-	accountDebugAllowed bool
-	headerDebugAllowed  bool
-	addCallSignHeader   bool
-	bidAdjustments      map[string]float64
-	tmaxAdjustments     *TmaxAdjustmentsPreprocessed
+	accountDebugAllowed    bool
+	headerDebugAllowed     bool
+	addCallSignHeader      bool
+	bidAdjustments         map[string]float64
+	tmaxAdjustments        *TmaxAdjustmentsPreprocessed
+	bidderRequestStartTime time.Time
 }
 
 type extraBidderRespInfo struct {
@@ -86,6 +87,8 @@ const ImpIdReqBody = "Stored bid response for impression id: "
 const (
 	Gzip string = "GZIP"
 )
+
+var errTmaxTimeout = errors.New("exceeded tmax duration")
 
 // AdaptBidder converts an adapters.Bidder into an exchange.AdaptedBidder.
 //
@@ -190,11 +193,11 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 		dataLen = len(reqData) + len(bidderRequest.BidderStoredResponses)
 		responseChannel = make(chan *httpCallInfo, dataLen)
 		if len(reqData) == 1 {
-			responseChannel <- bidder.doRequest(ctx, reqData[0], reqInfo.BidderRequestStartTime)
+			responseChannel <- bidder.doRequest(ctx, reqData[0], bidRequestOptions.bidderRequestStartTime, bidRequestOptions.tmaxAdjustments)
 		} else {
 			for _, oneReqData := range reqData {
 				go func(data *adapters.RequestData) {
-					responseChannel <- bidder.doRequest(ctx, data, reqInfo.BidderRequestStartTime)
+					responseChannel <- bidder.doRequest(ctx, data, bidRequestOptions.bidderRequestStartTime, bidRequestOptions.tmaxAdjustments)
 				}(oneReqData) // Method arg avoids a race condition on oneReqData
 			}
 		}
@@ -513,11 +516,11 @@ func makeExt(httpInfo *httpCallInfo) *openrtb_ext.ExtHttpCall {
 
 // doRequest makes a request, handles the response, and returns the data needed by the
 // Bidder interface.
-func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.RequestData, pbsRequestStartTime time.Time) *httpCallInfo {
-	return bidder.doRequestImpl(ctx, req, glog.Warningf, pbsRequestStartTime)
+func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.RequestData, bidderRequestStartTime time.Time, tmaxAdjustments *TmaxAdjustmentsPreprocessed) *httpCallInfo {
+	return bidder.doRequestImpl(ctx, req, glog.Warningf, bidderRequestStartTime, tmaxAdjustments)
 }
 
-func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.RequestData, logger util.LogMsg, pbsRequestStartTime time.Time) *httpCallInfo {
+func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.RequestData, logger util.LogMsg, bidderRequestStartTime time.Time, tmaxAdjustments *TmaxAdjustmentsPreprocessed) *httpCallInfo {
 	var requestBody []byte
 
 	switch strings.ToUpper(bidder.config.EndpointCompression) {
@@ -541,7 +544,18 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 	if !bidder.config.DisableConnMetrics {
 		ctx = bidder.addClientTrace(ctx)
 	}
-	bidder.me.RecordOverheadTime(metrics.PreBidder, time.Since(pbsRequestStartTime))
+	bidder.me.RecordOverheadTime(metrics.PreBidder, time.Since(bidderRequestStartTime))
+
+	if tmaxAdjustments != nil && tmaxAdjustments.IsEnforced {
+		if hasShorterDurationThanTmax(&bidderTmaxCtx{ctx}, *tmaxAdjustments) {
+			bidder.me.RecordTMaxTimeout()
+			return &httpCallInfo{
+				request: req,
+				err:     errTmaxTimeout,
+			}
+		}
+	}
+
 	httpCallStart := time.Now()
 	httpResp, err := ctxhttp.Do(ctx, bidder.Client, httpReq)
 	if err != nil {
@@ -723,4 +737,17 @@ func getBidTypeForAdjustments(bidType openrtb_ext.BidType, impID string, imp []o
 		return "video-instream"
 	}
 	return string(bidType)
+}
+
+func hasShorterDurationThanTmax(ctx bidderTmaxContext, tmaxAdjustments TmaxAdjustmentsPreprocessed) bool {
+	if tmaxAdjustments.IsEnforced {
+		if deadline, ok := ctx.Deadline(); ok {
+			overheadNS := time.Duration(tmaxAdjustments.BidderNetworkLatencyBuffer+tmaxAdjustments.PBSResponsePreparationDuration) * time.Millisecond
+			bidderTmax := deadline.Add(-overheadNS)
+
+			remainingDuration := ctx.Until(bidderTmax).Milliseconds()
+			return remainingDuration < int64(tmaxAdjustments.BidderResponseDurationMin)
+		}
+	}
+	return false
 }
