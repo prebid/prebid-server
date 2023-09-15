@@ -155,7 +155,7 @@ func (f *PriceFloorFetcher) worker(config config.AccountFloorFetch) {
 		// Update cache with new floor rules
 		glog.Infof("Updating Value in cache for URL %s", config.URL)
 		cacheExpiry := config.MaxAge
-		if fetchedMaxAge != 0 && fetchedMaxAge > config.Period && fetchedMaxAge < math.MaxInt32 {
+		if fetchedMaxAge != 0 {
 			cacheExpiry = fetchedMaxAge
 		}
 		floorData, err := json.Marshal(floorData)
@@ -272,7 +272,7 @@ func (f *PriceFloorFetcher) fetchFloorRulesFromURL(config config.AccountFloorFet
 		if err != nil {
 			glog.Errorf("max-age in header is malformed for url %s", config.URL)
 		}
-		if maxAge <= config.Period {
+		if maxAge <= config.Period || maxAge > math.MaxInt32 {
 			glog.Errorf("Invalid max-age = %s provided, value should be valid integer and should be within (%v, %v)", maxAgeStr, config.Period, math.MaxInt32)
 		}
 	}
