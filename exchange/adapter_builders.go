@@ -113,6 +113,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/logan"
 	"github.com/prebid/prebid-server/adapters/logicad"
 	"github.com/prebid/prebid-server/adapters/lunamedia"
+	mabidder "github.com/prebid/prebid-server/adapters/mabidder"
 	"github.com/prebid/prebid-server/adapters/madvertise"
 	"github.com/prebid/prebid-server/adapters/marsmedia"
 	"github.com/prebid/prebid-server/adapters/medianet"
@@ -317,6 +318,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderLogan:             logan.Builder,
 		openrtb_ext.BidderLogicad:           logicad.Builder,
 		openrtb_ext.BidderLunaMedia:         lunamedia.Builder,
+		openrtb_ext.BidderMabidder:          mabidder.Builder,
 		openrtb_ext.BidderMadvertise:        madvertise.Builder,
 		openrtb_ext.BidderMarsmedia:         marsmedia.Builder,
 		openrtb_ext.BidderMediafuse:         appnexus.Builder,
