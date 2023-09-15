@@ -19,7 +19,7 @@ func TestValidParams(t *testing.T) {
 	}
 
 	for _, validParam := range validParams {
-		if err := validator.Validate(openrtb_ext.BidderSmartX, json.RawMessage(validParam)); err != nil {
+		if err := validator.Validate(openrtb_ext.BidderSmartx, json.RawMessage(validParam)); err != nil {
 			t.Errorf("Schema rejected smartx params: %s", validParam)
 		}
 	}

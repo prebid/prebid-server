@@ -33,5 +33,5 @@
     { "required": ["siteId"] },
     { "required": ["appId"] }
   ],
-  "required": ["tagId", "publisherId", "at", "cur"]
+  "required": ["tagId", "publisherId"]
 }
