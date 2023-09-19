@@ -140,6 +140,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderLogan,
 	BidderLogicad,
 	BidderLunaMedia,
+	BidderMabidder,
 	BidderMadvertise,
 	BidderMarsmedia,
 	BidderMediafuse,
@@ -162,6 +163,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderOwnAdx,
 	BidderPangle,
 	BidderPGAM,
+	BidderPGAMSsp,
 	BidderPubmatic,
 	BidderPubnative,
 	BidderPulsepoint,
@@ -433,6 +435,7 @@ const (
 	BidderLogan             BidderName = "logan"
 	BidderLogicad           BidderName = "logicad"
 	BidderLunaMedia         BidderName = "lunamedia"
+	BidderMabidder          BidderName = "mabidder"
 	BidderMadvertise        BidderName = "madvertise"
 	BidderMarsmedia         BidderName = "marsmedia"
 	BidderMediafuse         BidderName = "mediafuse"
@@ -455,6 +458,7 @@ const (
 	BidderOwnAdx            BidderName = "ownadx"
 	BidderPangle            BidderName = "pangle"
 	BidderPGAM              BidderName = "pgam"
+	BidderPGAMSsp           BidderName = "pgamssp"
 	BidderPubmatic          BidderName = "pubmatic"
 	BidderPubnative         BidderName = "pubnative"
 	BidderPulsepoint        BidderName = "pulsepoint"
