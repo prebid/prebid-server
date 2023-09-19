@@ -274,6 +274,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		HostCookieConfig: &(cfg.HostCookie),
 		ExternalUrl:      cfg.ExternalURL,
 		RecaptchaSecret:  cfg.RecaptchaSecret,
+		PriorityGroups:   cfg.UserSync.PriorityGroups,
 	}
 
 	r.GET("/setuid", endpoints.NewSetUIDEndpoint(cfg, syncersByBidder, gdprPermsBuilder, tcf2CfgBuilder, pbsAnalytics, accounts, r.MetricsEngine))
