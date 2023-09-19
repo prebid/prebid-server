@@ -282,6 +282,7 @@ const (
 
 	// For MSP extension only
 	BidderMspGoogle BidderName = "msp_google"
+	BidderMspNova   BidderName = "msp_nova"
 )
 
 // CoreBidderNames returns a slice of all core bidders.

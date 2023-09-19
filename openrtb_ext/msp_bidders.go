@@ -3,6 +3,7 @@ package openrtb_ext
 func mspBidderNames() []BidderName {
 	return []BidderName{
 		BidderMspGoogle,
+		BidderMspNova,
 	}
 }
 
