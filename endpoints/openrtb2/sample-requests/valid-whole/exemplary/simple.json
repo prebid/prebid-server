@@ -30,7 +30,7 @@
           ]
         },
         "ext": {
-          "Appnexus": {
+          "appnexus": {
             "placementId": 12883451
           }
         }
@@ -50,7 +50,7 @@
             "price": 0
           }
         ],
-        "seat": "Appnexus"
+        "seat": "appnexus"
       }
     ],
     "bidid": "test bid id",
