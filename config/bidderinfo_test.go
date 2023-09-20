@@ -31,6 +31,9 @@ capabilities:
       - banner
       - video
       - native
+  dooh:
+    mediaTypes:
+      - banner
 modifyingVastXmlAllowed: true
 debug:
   allow: true
@@ -91,6 +94,9 @@ func TestLoadBidderInfoFromDisk(t *testing.T) {
 				},
 				Site: &PlatformInfo{
 					MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative},
+				},
+				DOOH: &PlatformInfo{
+					MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo},
 				},
 			},
 			Syncer: &Syncer{
@@ -176,6 +182,9 @@ func TestProcessBidderInfo(t *testing.T) {
 						Site: &PlatformInfo{
 							MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative},
 						},
+						DOOH: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner},
+						},
 					},
 					Debug: &DebugInfo{
 						Allow: true,
@@ -224,6 +233,9 @@ func TestProcessBidderInfo(t *testing.T) {
 						},
 						Site: &PlatformInfo{
 							MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative},
+						},
+						DOOH: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner},
 						},
 					},
 					Debug: &DebugInfo{
@@ -533,7 +545,7 @@ func TestBidderInfoValidationPositive(t *testing.T) {
 			Endpoint:   "http://bidderB.com/openrtb2",
 			PlatformID: "B",
 			Maintainer: &MaintainerInfo{
-				Email: "maintainer@bidderA.com",
+				Email: "maintainer@bidderB.com",
 			},
 			GVLVendorID: 2,
 			Capabilities: &CapabilitiesInfo{
@@ -568,6 +580,23 @@ func TestBidderInfoValidationPositive(t *testing.T) {
 				},
 			},
 			AliasOf: "bidderB",
+		},
+		"bidderD": BidderInfo{
+			Endpoint:   "http://bidderD.com/openrtb2",
+			PlatformID: "D",
+			Maintainer: &MaintainerInfo{
+				Email: "maintainer@bidderD.com",
+			},
+			GVLVendorID: 3,
+			Capabilities: &CapabilitiesInfo{
+				DOOH: &PlatformInfo{
+					MediaTypes: []openrtb_ext.BidType{
+						openrtb_ext.BidTypeVideo,
+						openrtb_ext.BidTypeNative,
+						openrtb_ext.BidTypeBanner,
+					},
+				},
+			},
 		},
 	}
 	errs := bidderInfos.validate(make([]error, 0))
@@ -769,7 +798,7 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 			},
 		},
 		{
-			"One bidder missing capabilities site and app",
+			"One bidder missing capabilities site and app and dooh",
 			BidderInfos{
 				"bidderA": BidderInfo{
 					Endpoint: "http://bidderA.com/openrtb2",
@@ -780,7 +809,7 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 				},
 			},
 			[]error{
-				errors.New("at least one of capabilities.site or capabilities.app must exist for adapter: bidderA"),
+				errors.New("at least one of capabilities.site, capabilities.app, or capabilities.dooh must exist for adapter: bidderA"),
 			},
 		},
 		{
@@ -802,6 +831,27 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 			},
 			[]error{
 				errors.New("capabilities.app failed validation: unrecognized media type at index 0: incorrect for adapter: bidderA"),
+			},
+		},
+		{
+			"One bidder incorrect capabilities for dooh",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						DOOH: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								"incorrect",
+							},
+						},
+					},
+				},
+			},
+			[]error{
+				errors.New("capabilities.dooh failed validation: unrecognized media type at index 0: incorrect for adapter: bidderA"),
 			},
 		},
 		{
@@ -1008,7 +1058,7 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 				},
 			},
 			[]error{
-				errors.New("at least one of capabilities.site or capabilities.app must exist for adapter: bidderA"),
+				errors.New("at least one of capabilities.site, capabilities.app, or capabilities.dooh must exist for adapter: bidderA"),
 				errors.New("capabilities for alias: bidderB should be a subset of capabilities for parent bidder: bidderA"),
 			},
 		},
@@ -1686,6 +1736,9 @@ func TestReadFullYamlBidderConfig(t *testing.T) {
 				},
 				Site: &PlatformInfo{
 					MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative},
+				},
+				DOOH: &PlatformInfo{
+					MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner},
 				},
 			},
 			ModifyingVastXmlAllowed: true,

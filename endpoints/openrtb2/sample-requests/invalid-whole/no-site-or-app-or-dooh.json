@@ -1,5 +1,5 @@
 {
-  "description": "Request does not come with site field nor app field",
+  "description": "Request does not come with site nor app nor dooh field",
   "mockBidRequest": {
     "id": "req-id",
     "imp": [
