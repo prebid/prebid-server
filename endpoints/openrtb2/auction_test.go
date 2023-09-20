@@ -2833,19 +2833,21 @@ func TestValidateImpExt(t *testing.T) {
 
 	for _, group := range testGroups {
 		for _, test := range group.testCases {
-			imp := &openrtb2.Imp{Ext: test.impExt}
-			impWrapper := &openrtb_ext.ImpWrapper{Imp: imp}
+			t.Run(test.description, func(t *testing.T) {
+				imp := &openrtb2.Imp{Ext: test.impExt}
+				impWrapper := &openrtb_ext.ImpWrapper{Imp: imp}
 
-			errs := deps.validateImpExt(impWrapper, nil, 0, false, nil)
+				errs := deps.validateImpExt(impWrapper, nil, 0, false, nil)
 
-			assert.NoError(t, impWrapper.RebuildImp(), test.description+":rebuild_imp")
+				assert.NoError(t, impWrapper.RebuildImp(), test.description+":rebuild_imp")
 
-			if len(test.expectedImpExt) > 0 {
-				assert.JSONEq(t, test.expectedImpExt, string(imp.Ext), "imp.ext JSON does not match expected. Test: %s. %s\n", group.description, test.description)
-			} else {
-				assert.Empty(t, imp.Ext, "imp.ext expected to be empty but was: %s. Test: %s. %s\n", string(imp.Ext), group.description, test.description)
-			}
-			assert.Equal(t, test.expectedErrs, errs, "errs slice does not match expected. Test: %s. %s\n", group.description, test.description)
+				if len(test.expectedImpExt) > 0 {
+					assert.JSONEq(t, test.expectedImpExt, string(imp.Ext), "imp.ext JSON does not match expected. Test: %s. %s\n", group.description, test.description)
+				} else {
+					assert.Empty(t, imp.Ext, "imp.ext expected to be empty but was: %s. Test: %s. %s\n", string(imp.Ext), group.description, test.description)
+				}
+				assert.Equal(t, test.expectedErrs, errs, "errs slice does not match expected. Test: %s. %s\n", group.description, test.description)
+			})
 		}
 	}
 }

@@ -761,10 +761,11 @@ func setUserExtWithCopy(request *openrtb2.BidRequest, userExtJSON json.RawMessag
 
 // resolveBidder returns the known BidderName associated with bidder, if bidder is an alias. If it's not an alias, the bidder is returned.
 func resolveBidder(bidder string, aliases map[string]string) openrtb_ext.BidderName {
+	normalisedBidderName, _ := openrtb_ext.NormalizeBidderName(bidder)
 	if coreBidder, ok := aliases[bidder]; ok {
 		return openrtb_ext.BidderName(coreBidder)
 	}
-	return openrtb_ext.BidderName(bidder)
+	return normalisedBidderName
 }
 
 // parseAliases parses the aliases from the BidRequest

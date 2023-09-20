@@ -1510,12 +1510,12 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb_ext.ImpWrapper, aliases ma
 	errL := []error{}
 
 	for bidder, ext := range prebid.Bidder {
-		coreBidder := bidder
+		coreBidder, _ := openrtb_ext.NormalizeBidderName(bidder)
 		if tmp, isAlias := aliases[bidder]; isAlias {
-			coreBidder = tmp
+			coreBidder = openrtb_ext.BidderName(tmp)
 		}
 
-		if coreBidderNormalized, isValid := deps.bidderMap[coreBidder]; isValid {
+		if coreBidderNormalized, isValid := deps.bidderMap[coreBidder.String()]; isValid {
 			if err := deps.paramsValidator.Validate(coreBidderNormalized, ext); err != nil {
 				return []error{fmt.Errorf("request.imp[%d].ext.prebid.bidder.%s failed validation.\n%v", impIndex, bidder, err)}
 			}
