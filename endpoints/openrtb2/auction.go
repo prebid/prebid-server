@@ -1575,18 +1575,21 @@ func (deps *endpointDeps) parseBidExt(req *openrtb_ext.RequestWrapper) error {
 }
 
 func (deps *endpointDeps) validateAliases(aliases map[string]string) error {
-	for alias, coreBidder := range aliases {
-		if _, isCoreBidderDisabled := deps.disabledBidders[coreBidder]; isCoreBidderDisabled {
-			return fmt.Errorf("request.ext.prebid.aliases.%s refers to disabled bidder: %s", alias, coreBidder)
+	for alias, bidderName := range aliases {
+		normalisedBidderName, _ := openrtb_ext.NormalizeBidderName(bidderName)
+		coreBidderName := normalisedBidderName.String()
+		if _, isCoreBidderDisabled := deps.disabledBidders[coreBidderName]; isCoreBidderDisabled {
+			return fmt.Errorf("request.ext.prebid.aliases.%s refers to disabled bidder: %s", alias, bidderName)
 		}
 
-		if _, isCoreBidder := deps.bidderMap[coreBidder]; !isCoreBidder {
-			return fmt.Errorf("request.ext.prebid.aliases.%s refers to unknown bidder: %s", alias, coreBidder)
+		if _, isCoreBidder := deps.bidderMap[coreBidderName]; !isCoreBidder {
+			return fmt.Errorf("request.ext.prebid.aliases.%s refers to unknown bidder: %s", alias, bidderName)
 		}
 
-		if alias == coreBidder {
+		if alias == coreBidderName {
 			return fmt.Errorf("request.ext.prebid.aliases.%s defines a no-op alias. Choose a different alias, or remove this entry.", alias)
 		}
+		aliases[alias] = coreBidderName
 	}
 	return nil
 }
