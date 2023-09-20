@@ -19,15 +19,7 @@ type SilverMobAdapter struct {
 }
 
 func isValidHost(host string) bool {
-	validHosts := map[string]bool{
-		"eu":   true,
-		"us":   true,
-		"apac": true,
-	}
-
-	_, ok := validHosts[host]
-
-	return ok
+	return host == "eu" || host == "us" || host == "apac"
 }
 
 // Builder builds a new instance of the SilverMob adapter for the given bidder with the given config.
