@@ -47,10 +47,15 @@ func TestChooserChoose(t *testing.T) {
 	fakeSyncerA := fakeSyncer{key: "keyA", supportsIFrame: true}
 	fakeSyncerB := fakeSyncer{key: "keyB", supportsIFrame: true}
 	fakeSyncerC := fakeSyncer{key: "keyC", supportsIFrame: false}
-	bidderSyncerLookup := map[string]Syncer{"a": fakeSyncerA, "b": fakeSyncerB, "c": fakeSyncerC}
+
+	duplicateSyncer := fakeSyncer{key: "syncerForDuplicateTest", supportsIFrame: true}
+
+	bidderSyncerLookup := map[string]Syncer{"a": fakeSyncerA, "b": fakeSyncerB, "c": fakeSyncerC, "d": duplicateSyncer, "e": duplicateSyncer}
+
 	biddersKnown := map[string]struct{}{"a": {}, "b": {}, "c": {}}
 	syncerChoiceA := SyncerChoice{Bidder: "a", Syncer: fakeSyncerA}
 	syncerChoiceB := SyncerChoice{Bidder: "b", Syncer: fakeSyncerB}
+
 	syncTypeFilter := SyncTypeFilter{
 		IFrame:   NewUniformBidderFilter(BidderFilterModeInclude),
 		Redirect: NewUniformBidderFilter(BidderFilterModeExclude)}
@@ -216,6 +221,56 @@ func TestChooserChoose(t *testing.T) {
 				Status:           StatusOK,
 				BiddersEvaluated: []BidderEvaluation{{Bidder: "a", SyncerKey: "keyA", Status: StatusOK}, {Bidder: "c", SyncerKey: "keyC", Status: StatusTypeNotSupported}},
 				SyncersChosen:    []SyncerChoice{syncerChoiceA},
+			},
+		},
+		{
+			description: "Chosen bidders have duplicate syncer keys, the one that comes first should be labled OK",
+			givenRequest: Request{
+				Privacy: fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
+				Limit:   0,
+			},
+			givenChosenBidders: []string{"d", "e"},
+			givenCookie:        Cookie{},
+			expected: Result{
+				Status: StatusOK,
+				BiddersEvaluated: []BidderEvaluation{
+					{Bidder: "d", SyncerKey: "syncerForDuplicateTest", Status: StatusOK},
+					{Bidder: "e", SyncerKey: "syncerForDuplicateTest", Status: StatusDuplicate},
+				},
+				SyncersChosen: []SyncerChoice{{Bidder: "d", Syncer: duplicateSyncer}},
+			},
+		},
+		{
+			description: "Chosen bidders have duplicate syncer keys, the one that comes first should be labled OK (reverse)",
+			givenRequest: Request{
+				Privacy: fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
+				Limit:   0,
+			},
+			givenChosenBidders: []string{"e", "d"},
+			givenCookie:        Cookie{},
+			expected: Result{
+				Status: StatusOK,
+				BiddersEvaluated: []BidderEvaluation{
+					{Bidder: "e", SyncerKey: "syncerForDuplicateTest", Status: StatusOK},
+					{Bidder: "d", SyncerKey: "syncerForDuplicateTest", Status: StatusDuplicate},
+				},
+				SyncersChosen: []SyncerChoice{{Bidder: "e", Syncer: duplicateSyncer}},
+			},
+		},
+		{
+			description: "Same bidder name, no duplicate warning",
+			givenRequest: Request{
+				Privacy: fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
+				Limit:   0,
+			},
+			givenChosenBidders: []string{"a", "a"},
+			givenCookie:        Cookie{},
+			expected: Result{
+				Status: StatusOK,
+				BiddersEvaluated: []BidderEvaluation{
+					{Bidder: "a", SyncerKey: fakeSyncerA.key, Status: StatusOK},
+				},
+				SyncersChosen: []SyncerChoice{{Bidder: "a", Syncer: fakeSyncerA}},
 			},
 		},
 	}

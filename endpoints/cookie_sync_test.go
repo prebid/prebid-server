@@ -1592,7 +1592,6 @@ func TestCookieSyncWriteBidderMetrics(t *testing.T) {
 	}
 }
 
-// TODO: Finish updating this test
 func TestCookieSyncHandleResponse(t *testing.T) {
 	syncTypeFilter := usersync.SyncTypeFilter{
 		IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeExclude),
@@ -1621,8 +1620,7 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 		{Bidder: "Bidder3", Status: usersync.StatusUnconfiguredBidder},
 		{Bidder: "Bidder4", Status: usersync.StatusBlockedByPrivacy},
 		{Bidder: "Bidder5", Status: usersync.StatusTypeNotSupported},
-		{Bidder: "DuplicateBidder", Status: usersync.StatusDuplicate, SyncerKey: "syncer"},
-		{Bidder: "DuplicateBidder", Status: usersync.StatusDuplicate, SyncerKey: "syncer"},
+		{Bidder: "BidderA", Status: usersync.StatusDuplicate, SyncerKey: "syncerB"},
 	}
 
 	testCases := []struct {
@@ -1708,11 +1706,11 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 			expectedAnalytics:   analytics.CookieSyncObject{Status: 200, BidderStatus: []*analytics.CookieSyncBidder{}},
 		},
 		{
-			description:         "None - Debug",
+			description:         "Debug is true, should see all rejected bidder eval statuses in response",
 			givenCookieHasSyncs: true,
 			givenDebug:          true,
 			givenSyncersChosen:  []usersync.SyncerChoice{},
-			expectedJSON:        `{"status":"ok","bidder_status":[],"debug":["Already in sync","Unsupported bidder","No sync config","Rejected by privacy","Type not supported","Duplicate bidder synced as syncer","Duplicate bidder synced as syncer"]}` + "\n",
+			expectedJSON:        `{"status":"ok","bidder_status":[],"debug":["Already in sync","Unsupported bidder","No sync config","Rejected by privacy","Type not supported","Duplicate bidder synced as syncerB"]}` + "\n",
 			expectedAnalytics:   analytics.CookieSyncObject{Status: 200, BidderStatus: []*analytics.CookieSyncBidder{}},
 		},
 	}

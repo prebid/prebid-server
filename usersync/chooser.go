@@ -117,6 +117,7 @@ func (c standardChooser) Choose(request Request, cookie *Cookie) Result {
 	}
 
 	syncersSeen := make(map[string]struct{})
+	biddersSeen := make(map[string]struct{})
 	limitDisabled := request.Limit <= 0
 
 	biddersEvaluated := make([]BidderEvaluation, 0)
@@ -124,12 +125,16 @@ func (c standardChooser) Choose(request Request, cookie *Cookie) Result {
 
 	bidders := c.bidderChooser.choose(request.Bidders, c.biddersAvailable, request.Cooperative)
 	for i := 0; i < len(bidders) && (limitDisabled || len(syncersChosen) < request.Limit); i++ {
+		if _, ok := biddersSeen[bidders[i]]; ok {
+			continue
+		}
 		syncer, evaluation := c.evaluate(bidders[i], syncersSeen, request.SyncTypeFilter, request.Privacy, cookie)
 
 		biddersEvaluated = append(biddersEvaluated, evaluation)
 		if evaluation.Status == StatusOK {
 			syncersChosen = append(syncersChosen, SyncerChoice{Bidder: bidders[i], Syncer: syncer})
 		}
+		biddersSeen[bidders[i]] = struct{}{}
 	}
 
 	return Result{Status: StatusOK, BiddersEvaluated: biddersEvaluated, SyncersChosen: syncersChosen}
