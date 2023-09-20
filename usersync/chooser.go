@@ -136,7 +136,6 @@ func (c standardChooser) Choose(request Request, cookie *Cookie) Result {
 }
 
 func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}, syncTypeFilter SyncTypeFilter, privacy Privacy, cookie *Cookie) (Syncer, BidderEvaluation) {
-
 	syncer, exists := c.bidderSyncerLookup[bidder]
 	if !exists {
 		if _, ok := c.biddersKnown[bidder]; !ok {

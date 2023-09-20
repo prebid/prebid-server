@@ -171,6 +171,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, ma
 			Enabled:        (request.CooperativeSync != nil && *request.CooperativeSync) || (request.CooperativeSync == nil && c.config.UserSync.Cooperative.EnabledByDefault),
 			PriorityGroups: c.config.UserSync.Cooperative.PriorityGroups,
 		},
+		Debug: request.Debug,
 		Limit: request.Limit,
 		Privacy: usersyncPrivacy{
 			gdprPermissions:  gdprPerms,
@@ -179,7 +180,6 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, ma
 			activityRequest:  privacy.NewRequestFromPolicies(privacyPolicies),
 		},
 		SyncTypeFilter: syncTypeFilter,
-		Debug:          request.Debug,
 	}
 	return rx, privacyMacros, nil
 }
@@ -427,19 +427,18 @@ func (c *cookieSyncEndpoint) handleResponse(w http.ResponseWriter, tf usersync.S
 		})
 	}
 
-	// Debug Flag Response Handling
 	if debug {
-		biddersSeen := make(map[string]bool)
-		var statusArray []string
+		biddersSeen := make(map[string]struct{})
+		var debugMessages []string
 		for _, bidderEval := range biddersEvaluted {
-			if bidderEval.Status == usersync.StatusDuplicate && biddersSeen[bidderEval.Bidder] {
-				statusArray = append(statusArray, getStatusMessage(bidderEval.Status)+" synced as "+bidderEval.SyncerKey)
+			if bidderEval.Status == usersync.StatusDuplicate && biddersSeen[bidderEval.Bidder] == struct{}{} {
+				debugMessages = append(debugMessages, getDebugMessage(bidderEval.Status)+" synced as "+bidderEval.SyncerKey)
 			} else if bidderEval.Status != usersync.StatusDuplicate {
-				statusArray = append(statusArray, getStatusMessage(bidderEval.Status))
+				debugMessages = append(debugMessages, getDebugMessage(bidderEval.Status))
 			}
-			biddersSeen[bidderEval.Bidder] = true
+			biddersSeen[bidderEval.Bidder] = struct{}{}
 		}
-		response.Debug = statusArray
+		response.Debug = debugMessages
 	}
 
 	c.pbsAnalytics.LogCookieSyncObject(&analytics.CookieSyncObject{
@@ -469,21 +468,20 @@ func mapBidderStatusToAnalytics(from []cookieSyncResponseBidder) []*analytics.Co
 	return to
 }
 
-// TODO: Improve messages
-func getStatusMessage(status usersync.Status) string {
+func getDebugMessage(status usersync.Status) string {
 	switch status {
 	case usersync.StatusAlreadySynced:
-		return "Already Synced"
+		return "Already in sync"
 	case usersync.StatusBlockedByPrivacy:
-		return "Status blocked by privacy"
+		return "Rejected by privacy"
 	case usersync.StatusBlockedByUserOptOut:
 		return "Status blocked by user opt out"
 	case usersync.StatusDuplicate:
-		return "Status duplicate"
+		return "Duplicate bidder"
 	case usersync.StatusUnknownBidder:
-		return "Unknown bidder"
+		return "Unsupported bidder"
 	case usersync.StatusUnconfiguredBidder:
-		return "Unconfigured Bidder"
+		return "No sync config"
 	case usersync.StatusTypeNotSupported:
 		return "Type not supported"
 	}
