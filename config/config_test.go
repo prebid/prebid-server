@@ -213,7 +213,6 @@ func TestDefaults(t *testing.T) {
 	expectedTCF2 := TCF2{
 		Enabled: true,
 		Purpose1: TCF2Purpose{
-			Enabled:            true,
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
@@ -222,7 +221,6 @@ func TestDefaults(t *testing.T) {
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 		},
 		Purpose2: TCF2Purpose{
-			Enabled:            true,
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
@@ -231,7 +229,6 @@ func TestDefaults(t *testing.T) {
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 		},
 		Purpose3: TCF2Purpose{
-			Enabled:            true,
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
@@ -240,7 +237,6 @@ func TestDefaults(t *testing.T) {
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 		},
 		Purpose4: TCF2Purpose{
-			Enabled:            true,
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
@@ -249,7 +245,6 @@ func TestDefaults(t *testing.T) {
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 		},
 		Purpose5: TCF2Purpose{
-			Enabled:            true,
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
@@ -258,7 +253,6 @@ func TestDefaults(t *testing.T) {
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 		},
 		Purpose6: TCF2Purpose{
-			Enabled:            true,
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
@@ -267,7 +261,6 @@ func TestDefaults(t *testing.T) {
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 		},
 		Purpose7: TCF2Purpose{
-			Enabled:            true,
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
@@ -276,7 +269,6 @@ func TestDefaults(t *testing.T) {
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 		},
 		Purpose8: TCF2Purpose{
-			Enabled:            true,
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
@@ -285,7 +277,6 @@ func TestDefaults(t *testing.T) {
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 		},
 		Purpose9: TCF2Purpose{
-			Enabled:            true,
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
@@ -294,7 +285,6 @@ func TestDefaults(t *testing.T) {
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 		},
 		Purpose10: TCF2Purpose{
-			Enabled:            true,
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
@@ -339,7 +329,6 @@ gdpr:
       enforce_vendors: false
       vendor_exceptions: ["foo1a", "foo1b"]
     purpose2:
-      enabled: false
       enforce_algo: "full"
       enforce_purpose: false
       enforce_vendors: false
@@ -623,7 +612,6 @@ func TestFullConfig(t *testing.T) {
 	expectedTCF2 := TCF2{
 		Enabled: true,
 		Purpose1: TCF2Purpose{
-			Enabled:            true, // true by default
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
@@ -632,7 +620,6 @@ func TestFullConfig(t *testing.T) {
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo1a"): {}, openrtb_ext.BidderName("foo1b"): {}},
 		},
 		Purpose2: TCF2Purpose{
-			Enabled:            false,
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     false,
@@ -641,7 +628,6 @@ func TestFullConfig(t *testing.T) {
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo2"): {}},
 		},
 		Purpose3: TCF2Purpose{
-			Enabled:            true, // true by default
 			EnforceAlgo:        TCF2EnforceAlgoBasic,
 			EnforceAlgoID:      TCF2BasicEnforcement,
 			EnforcePurpose:     true,
@@ -650,7 +636,6 @@ func TestFullConfig(t *testing.T) {
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo3"): {}},
 		},
 		Purpose4: TCF2Purpose{
-			Enabled:            true, // true by default
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
@@ -659,7 +644,6 @@ func TestFullConfig(t *testing.T) {
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo4"): {}},
 		},
 		Purpose5: TCF2Purpose{
-			Enabled:            true, // true by default
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
@@ -668,7 +652,6 @@ func TestFullConfig(t *testing.T) {
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo5"): {}},
 		},
 		Purpose6: TCF2Purpose{
-			Enabled:            true, // true by default
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
@@ -677,7 +660,6 @@ func TestFullConfig(t *testing.T) {
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo6"): {}},
 		},
 		Purpose7: TCF2Purpose{
-			Enabled:            true, // true by default
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
@@ -686,7 +668,6 @@ func TestFullConfig(t *testing.T) {
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo7"): {}},
 		},
 		Purpose8: TCF2Purpose{
-			Enabled:            true, // true by default
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
@@ -695,7 +676,6 @@ func TestFullConfig(t *testing.T) {
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo8"): {}},
 		},
 		Purpose9: TCF2Purpose{
-			Enabled:            true, // true by default
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
@@ -704,7 +684,6 @@ func TestFullConfig(t *testing.T) {
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo9"): {}},
 		},
 		Purpose10: TCF2Purpose{
-			Enabled:            true, // true by default
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
@@ -977,751 +956,6 @@ func TestBidderInfoFromEnv(t *testing.T) {
 	assert.Equal(t, "username_override", cfg.BidderInfos["bidder1"].XAPI.Username)
 
 	assert.Equal(t, "2.6", cfg.BidderInfos["bidder1"].OpenRTB.Version)
-}
-
-func TestMigrateConfigPurposeOneTreatment(t *testing.T) {
-	oldPurposeOneTreatmentConfig := []byte(`
-      gdpr:
-        tcf2:
-          purpose_one_treatement:
-            enabled: true
-            access_allowed: true
-    `)
-	newPurposeOneTreatmentConfig := []byte(`
-      gdpr:
-        tcf2:
-          purpose_one_treatment:
-            enabled: true
-            access_allowed: true
-    `)
-	oldAndNewPurposeOneTreatmentConfig := []byte(`
-      gdpr:
-        tcf2:
-          purpose_one_treatement:
-            enabled: false
-            access_allowed: true
-          purpose_one_treatment:
-            enabled: true
-            access_allowed: false
-    `)
-
-	tests := []struct {
-		description                        string
-		config                             []byte
-		wantPurpose1TreatmentEnabled       bool
-		wantPurpose1TreatmentAccessAllowed bool
-	}{
-		{
-			description: "New config and old config not set",
-			config:      []byte{},
-		},
-		{
-			description:                        "New config not set, old config set",
-			config:                             oldPurposeOneTreatmentConfig,
-			wantPurpose1TreatmentEnabled:       true,
-			wantPurpose1TreatmentAccessAllowed: true,
-		},
-		{
-			description:                        "New config set, old config not set",
-			config:                             newPurposeOneTreatmentConfig,
-			wantPurpose1TreatmentEnabled:       true,
-			wantPurpose1TreatmentAccessAllowed: true,
-		},
-		{
-			description:                        "New config and old config set",
-			config:                             oldAndNewPurposeOneTreatmentConfig,
-			wantPurpose1TreatmentEnabled:       true,
-			wantPurpose1TreatmentAccessAllowed: false,
-		},
-	}
-
-	for _, tt := range tests {
-		v := viper.New()
-		v.SetConfigType("yaml")
-		v.ReadConfig(bytes.NewBuffer(tt.config))
-
-		migrateConfigPurposeOneTreatment(v)
-
-		if len(tt.config) > 0 {
-			assert.Equal(t, tt.wantPurpose1TreatmentEnabled, v.Get("gdpr.tcf2.purpose_one_treatment.enabled").(bool), tt.description)
-			assert.Equal(t, tt.wantPurpose1TreatmentAccessAllowed, v.Get("gdpr.tcf2.purpose_one_treatment.access_allowed").(bool), tt.description)
-		} else {
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose_one_treatment.enabled"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose_one_treatment.access_allowed"), tt.description)
-		}
-	}
-}
-
-func TestMigrateConfigSpecialFeature1(t *testing.T) {
-	oldSpecialFeature1Config := []byte(`
-      gdpr:
-        tcf2:
-          special_purpose1:
-            enabled: true
-            vendor_exceptions: ["appnexus"]
-    `)
-	newSpecialFeature1Config := []byte(`
-      gdpr:
-        tcf2:
-          special_feature1:
-            enforce: true
-            vendor_exceptions: ["appnexus"]
-    `)
-	oldAndNewSpecialFeature1Config := []byte(`
-      gdpr:
-        tcf2:
-          special_purpose1:
-            enabled: false
-            vendor_exceptions: ["appnexus"]
-          special_feature1:
-            enforce: true
-            vendor_exceptions: ["rubicon"]
-    `)
-
-	tests := []struct {
-		description                         string
-		config                              []byte
-		wantSpecialFeature1Enforce          bool
-		wantSpecialFeature1VendorExceptions []string
-	}{
-		{
-			description: "New config and old config not set",
-			config:      []byte{},
-		},
-		{
-			description:                         "New config not set, old config set",
-			config:                              oldSpecialFeature1Config,
-			wantSpecialFeature1Enforce:          true,
-			wantSpecialFeature1VendorExceptions: []string{"appnexus"},
-		},
-		{
-			description:                         "New config set, old config not set",
-			config:                              newSpecialFeature1Config,
-			wantSpecialFeature1Enforce:          true,
-			wantSpecialFeature1VendorExceptions: []string{"appnexus"},
-		},
-		{
-			description:                         "New config and old config set",
-			config:                              oldAndNewSpecialFeature1Config,
-			wantSpecialFeature1Enforce:          true,
-			wantSpecialFeature1VendorExceptions: []string{"rubicon"},
-		},
-	}
-
-	for _, tt := range tests {
-		v := viper.New()
-		v.SetConfigType("yaml")
-		v.ReadConfig(bytes.NewBuffer(tt.config))
-
-		migrateConfigSpecialFeature1(v)
-
-		if len(tt.config) > 0 {
-			assert.Equal(t, tt.wantSpecialFeature1Enforce, v.Get("gdpr.tcf2.special_feature1.enforce").(bool), tt.description)
-			assert.Equal(t, tt.wantSpecialFeature1VendorExceptions, v.GetStringSlice("gdpr.tcf2.special_feature1.vendor_exceptions"), tt.description)
-		} else {
-			assert.Nil(t, v.Get("gdpr.tcf2.special_feature1.enforce"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.special_feature1.vendor_exceptions"), tt.description)
-		}
-
-		var c Configuration
-		err := v.Unmarshal(&c)
-		assert.NoError(t, err, tt.description)
-		assert.Equal(t, tt.wantSpecialFeature1Enforce, c.GDPR.TCF2.SpecialFeature1.Enforce, tt.description)
-
-		// convert expected vendor exceptions to type BidderName
-		expectedVendorExceptions := make([]openrtb_ext.BidderName, 0, 0)
-		for _, ve := range tt.wantSpecialFeature1VendorExceptions {
-			expectedVendorExceptions = append(expectedVendorExceptions, openrtb_ext.BidderName(ve))
-		}
-		assert.ElementsMatch(t, expectedVendorExceptions, c.GDPR.TCF2.SpecialFeature1.VendorExceptions, tt.description)
-	}
-}
-
-func TestMigrateConfigTCF2PurposeEnabledFlags(t *testing.T) {
-	trueStr := "true"
-	falseStr := "false"
-
-	tests := []struct {
-		description                 string
-		config                      []byte
-		wantPurpose1EnforcePurpose  string
-		wantPurpose2EnforcePurpose  string
-		wantPurpose3EnforcePurpose  string
-		wantPurpose4EnforcePurpose  string
-		wantPurpose5EnforcePurpose  string
-		wantPurpose6EnforcePurpose  string
-		wantPurpose7EnforcePurpose  string
-		wantPurpose8EnforcePurpose  string
-		wantPurpose9EnforcePurpose  string
-		wantPurpose10EnforcePurpose string
-		wantPurpose1Enabled         string
-		wantPurpose2Enabled         string
-		wantPurpose3Enabled         string
-		wantPurpose4Enabled         string
-		wantPurpose5Enabled         string
-		wantPurpose6Enabled         string
-		wantPurpose7Enabled         string
-		wantPurpose8Enabled         string
-		wantPurpose9Enabled         string
-		wantPurpose10Enabled        string
-	}{
-		{
-			description: "New config and old config flags not set",
-			config:      []byte{},
-		},
-		{
-			description: "New config not set, old config set - use old flags",
-			config: []byte(`
-              gdpr:
-                tcf2:
-                  purpose1:
-                    enabled: false
-                  purpose2:
-                    enabled: true
-                  purpose3:
-                    enabled: false
-                  purpose4:
-                    enabled: true
-                  purpose5:
-                    enabled: false
-                  purpose6:
-                    enabled: true
-                  purpose7:
-                    enabled: false
-                  purpose8:
-                    enabled: true
-                  purpose9:
-                    enabled: false
-                  purpose10:
-                    enabled: true
-            `),
-			wantPurpose1EnforcePurpose:  falseStr,
-			wantPurpose2EnforcePurpose:  trueStr,
-			wantPurpose3EnforcePurpose:  falseStr,
-			wantPurpose4EnforcePurpose:  trueStr,
-			wantPurpose5EnforcePurpose:  falseStr,
-			wantPurpose6EnforcePurpose:  trueStr,
-			wantPurpose7EnforcePurpose:  falseStr,
-			wantPurpose8EnforcePurpose:  trueStr,
-			wantPurpose9EnforcePurpose:  falseStr,
-			wantPurpose10EnforcePurpose: trueStr,
-			wantPurpose1Enabled:         falseStr,
-			wantPurpose2Enabled:         trueStr,
-			wantPurpose3Enabled:         falseStr,
-			wantPurpose4Enabled:         trueStr,
-			wantPurpose5Enabled:         falseStr,
-			wantPurpose6Enabled:         trueStr,
-			wantPurpose7Enabled:         falseStr,
-			wantPurpose8Enabled:         trueStr,
-			wantPurpose9Enabled:         falseStr,
-			wantPurpose10Enabled:        trueStr,
-		},
-		{
-			description: "New config flags set, old config flags not set - use new flags",
-			config: []byte(`
-              gdpr:
-                tcf2:
-                  purpose1:
-                    enforce_purpose: true
-                  purpose2:
-                    enforce_purpose: false
-                  purpose3:
-                    enforce_purpose: true
-                  purpose4:
-                    enforce_purpose: false
-                  purpose5:
-                    enforce_purpose: true
-                  purpose6:
-                    enforce_purpose: false
-                  purpose7:
-                    enforce_purpose: true
-                  purpose8:
-                    enforce_purpose: false
-                  purpose9:
-                    enforce_purpose: true
-                  purpose10:
-                    enforce_purpose: false
-            `),
-			wantPurpose1EnforcePurpose:  trueStr,
-			wantPurpose2EnforcePurpose:  falseStr,
-			wantPurpose3EnforcePurpose:  trueStr,
-			wantPurpose4EnforcePurpose:  falseStr,
-			wantPurpose5EnforcePurpose:  trueStr,
-			wantPurpose6EnforcePurpose:  falseStr,
-			wantPurpose7EnforcePurpose:  trueStr,
-			wantPurpose8EnforcePurpose:  falseStr,
-			wantPurpose9EnforcePurpose:  trueStr,
-			wantPurpose10EnforcePurpose: falseStr,
-			wantPurpose1Enabled:         trueStr,
-			wantPurpose2Enabled:         falseStr,
-			wantPurpose3Enabled:         trueStr,
-			wantPurpose4Enabled:         falseStr,
-			wantPurpose5Enabled:         trueStr,
-			wantPurpose6Enabled:         falseStr,
-			wantPurpose7Enabled:         trueStr,
-			wantPurpose8Enabled:         falseStr,
-			wantPurpose9Enabled:         trueStr,
-			wantPurpose10Enabled:        falseStr,
-		},
-		{
-			description: "New config flags and old config flags set - use new flags",
-			config: []byte(`
-              gdpr:
-                tcf2:
-                  purpose1:
-                    enabled: false
-                    enforce_purpose: true
-                  purpose2:
-                    enabled: false
-                    enforce_purpose: true
-                  purpose3:
-                    enabled: false
-                    enforce_purpose: true
-                  purpose4:
-                    enabled: false
-                    enforce_purpose: true
-                  purpose5:
-                    enabled: false
-                    enforce_purpose: true
-                  purpose6:
-                    enabled: false
-                    enforce_purpose: true
-                  purpose7:
-                    enabled: false
-                    enforce_purpose: true
-                  purpose8:
-                    enabled: false
-                    enforce_purpose: true
-                  purpose9:
-                    enabled: false
-                    enforce_purpose: true
-                  purpose10:
-                    enabled: false
-                    enforce_purpose: true
-              `),
-			wantPurpose1EnforcePurpose:  trueStr,
-			wantPurpose2EnforcePurpose:  trueStr,
-			wantPurpose3EnforcePurpose:  trueStr,
-			wantPurpose4EnforcePurpose:  trueStr,
-			wantPurpose5EnforcePurpose:  trueStr,
-			wantPurpose6EnforcePurpose:  trueStr,
-			wantPurpose7EnforcePurpose:  trueStr,
-			wantPurpose8EnforcePurpose:  trueStr,
-			wantPurpose9EnforcePurpose:  trueStr,
-			wantPurpose10EnforcePurpose: trueStr,
-			wantPurpose1Enabled:         trueStr,
-			wantPurpose2Enabled:         trueStr,
-			wantPurpose3Enabled:         trueStr,
-			wantPurpose4Enabled:         trueStr,
-			wantPurpose5Enabled:         trueStr,
-			wantPurpose6Enabled:         trueStr,
-			wantPurpose7Enabled:         trueStr,
-			wantPurpose8Enabled:         trueStr,
-			wantPurpose9Enabled:         trueStr,
-			wantPurpose10Enabled:        trueStr,
-		},
-	}
-
-	for _, tt := range tests {
-		v := viper.New()
-		v.SetConfigType("yaml")
-		v.ReadConfig(bytes.NewBuffer(tt.config))
-
-		migrateConfigTCF2PurposeEnabledFlags(v)
-
-		if len(tt.config) > 0 {
-			assert.Equal(t, tt.wantPurpose1EnforcePurpose, v.GetString("gdpr.tcf2.purpose1.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose2EnforcePurpose, v.GetString("gdpr.tcf2.purpose2.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose3EnforcePurpose, v.GetString("gdpr.tcf2.purpose3.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose4EnforcePurpose, v.GetString("gdpr.tcf2.purpose4.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose5EnforcePurpose, v.GetString("gdpr.tcf2.purpose5.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose6EnforcePurpose, v.GetString("gdpr.tcf2.purpose6.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose7EnforcePurpose, v.GetString("gdpr.tcf2.purpose7.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose8EnforcePurpose, v.GetString("gdpr.tcf2.purpose8.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose9EnforcePurpose, v.GetString("gdpr.tcf2.purpose9.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose10EnforcePurpose, v.GetString("gdpr.tcf2.purpose10.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose1Enabled, v.GetString("gdpr.tcf2.purpose1.enabled"), tt.description)
-			assert.Equal(t, tt.wantPurpose2Enabled, v.GetString("gdpr.tcf2.purpose2.enabled"), tt.description)
-			assert.Equal(t, tt.wantPurpose3Enabled, v.GetString("gdpr.tcf2.purpose3.enabled"), tt.description)
-			assert.Equal(t, tt.wantPurpose4Enabled, v.GetString("gdpr.tcf2.purpose4.enabled"), tt.description)
-			assert.Equal(t, tt.wantPurpose5Enabled, v.GetString("gdpr.tcf2.purpose5.enabled"), tt.description)
-			assert.Equal(t, tt.wantPurpose6Enabled, v.GetString("gdpr.tcf2.purpose6.enabled"), tt.description)
-			assert.Equal(t, tt.wantPurpose7Enabled, v.GetString("gdpr.tcf2.purpose7.enabled"), tt.description)
-			assert.Equal(t, tt.wantPurpose8Enabled, v.GetString("gdpr.tcf2.purpose8.enabled"), tt.description)
-			assert.Equal(t, tt.wantPurpose9Enabled, v.GetString("gdpr.tcf2.purpose9.enabled"), tt.description)
-			assert.Equal(t, tt.wantPurpose10Enabled, v.GetString("gdpr.tcf2.purpose10.enabled"), tt.description)
-		} else {
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose1.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose2.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose3.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose4.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose5.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose6.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose7.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose8.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose9.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose10.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose1.enabled"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose2.enabled"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose3.enabled"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose4.enabled"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose5.enabled"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose6.enabled"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose7.enabled"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose8.enabled"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose9.enabled"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose10.enabled"), tt.description)
-		}
-	}
-}
-
-func TestMigrateConfigTCF2PurposeFlags(t *testing.T) {
-	tests := []struct {
-		description                string
-		config                     []byte
-		wantPurpose1EnforceAlgo    string
-		wantPurpose1EnforcePurpose bool
-		wantPurpose1Enabled        bool
-	}{
-		{
-			description: "enforce_purpose does not set enforce_algo but sets enabled",
-			config: []byte(`
-              gdpr:
-                tcf2:
-                  purpose1:
-                    enforce_algo: "off"
-                    enforce_purpose: "full"
-                    enabled: false
-                  purpose2:
-                    enforce_purpose: "full"
-                    enabled: false
-                  purpose3:
-                    enabled: false
-            `),
-			wantPurpose1EnforceAlgo:    "off",
-			wantPurpose1EnforcePurpose: true,
-			wantPurpose1Enabled:        true,
-		},
-		{
-			description: "enforce_purpose sets enforce_algo and enabled",
-			config: []byte(`
-              gdpr:
-                tcf2:
-                  purpose1:
-                    enforce_purpose: "full"
-                    enabled: false
-            `),
-			wantPurpose1EnforceAlgo:    "full",
-			wantPurpose1EnforcePurpose: true,
-			wantPurpose1Enabled:        true,
-		},
-		{
-			description: "enforce_purpose does not set enforce_algo or enabled",
-			config: []byte(`
-              gdpr:
-                tcf2:
-                  purpose1:
-                    enabled: false
-            `),
-			wantPurpose1EnforceAlgo:    "",
-			wantPurpose1EnforcePurpose: false,
-			wantPurpose1Enabled:        false,
-		},
-	}
-
-	for _, tt := range tests {
-		v := viper.New()
-		v.SetConfigType("yaml")
-		v.ReadConfig(bytes.NewBuffer(tt.config))
-
-		migrateConfigTCF2PurposeFlags(v)
-
-		assert.Equal(t, tt.wantPurpose1EnforceAlgo, v.GetString("gdpr.tcf2.purpose1.enforce_algo"), tt.description)
-		assert.Equal(t, tt.wantPurpose1EnforcePurpose, v.GetBool("gdpr.tcf2.purpose1.enforce_purpose"), tt.description)
-		assert.Equal(t, tt.wantPurpose1Enabled, v.GetBool("gdpr.tcf2.purpose1.enabled"), tt.description)
-	}
-
-}
-
-func TestMigrateConfigTCF2EnforcePurposeFlags(t *testing.T) {
-	trueStr := "true"
-	falseStr := "false"
-
-	tests := []struct {
-		description                 string
-		config                      []byte
-		wantEnforceAlgosSet         bool
-		wantPurpose1EnforceAlgo     string
-		wantPurpose2EnforceAlgo     string
-		wantPurpose3EnforceAlgo     string
-		wantPurpose4EnforceAlgo     string
-		wantPurpose5EnforceAlgo     string
-		wantPurpose6EnforceAlgo     string
-		wantPurpose7EnforceAlgo     string
-		wantPurpose8EnforceAlgo     string
-		wantPurpose9EnforceAlgo     string
-		wantPurpose10EnforceAlgo    string
-		wantEnforcePurposesSet      bool
-		wantPurpose1EnforcePurpose  string
-		wantPurpose2EnforcePurpose  string
-		wantPurpose3EnforcePurpose  string
-		wantPurpose4EnforcePurpose  string
-		wantPurpose5EnforcePurpose  string
-		wantPurpose6EnforcePurpose  string
-		wantPurpose7EnforcePurpose  string
-		wantPurpose8EnforcePurpose  string
-		wantPurpose9EnforcePurpose  string
-		wantPurpose10EnforcePurpose string
-	}{
-		{
-			description:            "enforce_algo and enforce_purpose are not set",
-			config:                 []byte{},
-			wantEnforceAlgosSet:    false,
-			wantEnforcePurposesSet: false,
-		},
-		{
-			description: "enforce_algo not set; set it based on enforce_purpose string value",
-			config: []byte(`
-              gdpr:
-                tcf2:
-                  purpose1:
-                    enforce_purpose: "full"
-                  purpose2:
-                    enforce_purpose: "no"
-                  purpose3:
-                    enforce_purpose: "full"
-                  purpose4:
-                    enforce_purpose: "no"
-                  purpose5:
-                    enforce_purpose: "full"
-                  purpose6:
-                    enforce_purpose: "no"
-                  purpose7:
-                    enforce_purpose: "full"
-                  purpose8:
-                    enforce_purpose: "no"
-                  purpose9:
-                    enforce_purpose: "full"
-                  purpose10:
-                    enforce_purpose: "no"
-            `),
-			wantEnforceAlgosSet:         true,
-			wantPurpose1EnforceAlgo:     TCF2EnforceAlgoFull,
-			wantPurpose2EnforceAlgo:     TCF2EnforceAlgoFull,
-			wantPurpose3EnforceAlgo:     TCF2EnforceAlgoFull,
-			wantPurpose4EnforceAlgo:     TCF2EnforceAlgoFull,
-			wantPurpose5EnforceAlgo:     TCF2EnforceAlgoFull,
-			wantPurpose6EnforceAlgo:     TCF2EnforceAlgoFull,
-			wantPurpose7EnforceAlgo:     TCF2EnforceAlgoFull,
-			wantPurpose8EnforceAlgo:     TCF2EnforceAlgoFull,
-			wantPurpose9EnforceAlgo:     TCF2EnforceAlgoFull,
-			wantPurpose10EnforceAlgo:    TCF2EnforceAlgoFull,
-			wantEnforcePurposesSet:      true,
-			wantPurpose1EnforcePurpose:  trueStr,
-			wantPurpose2EnforcePurpose:  falseStr,
-			wantPurpose3EnforcePurpose:  trueStr,
-			wantPurpose4EnforcePurpose:  falseStr,
-			wantPurpose5EnforcePurpose:  trueStr,
-			wantPurpose6EnforcePurpose:  falseStr,
-			wantPurpose7EnforcePurpose:  trueStr,
-			wantPurpose8EnforcePurpose:  falseStr,
-			wantPurpose9EnforcePurpose:  trueStr,
-			wantPurpose10EnforcePurpose: falseStr,
-		},
-		{
-			description: "enforce_algo not set; don't set it based on enforce_purpose bool value",
-			config: []byte(`
-              gdpr:
-                tcf2:
-                  purpose1:
-                    enforce_purpose: true
-                  purpose2:
-                    enforce_purpose: false
-                  purpose3:
-                    enforce_purpose: true
-                  purpose4:
-                    enforce_purpose: false
-                  purpose5:
-                    enforce_purpose: true
-                  purpose6:
-                    enforce_purpose: false
-                  purpose7:
-                    enforce_purpose: true
-                  purpose8:
-                    enforce_purpose: false
-                  purpose9:
-                    enforce_purpose: true
-                  purpose10:
-                    enforce_purpose: false
-            `),
-			wantEnforceAlgosSet:         false,
-			wantEnforcePurposesSet:      true,
-			wantPurpose1EnforcePurpose:  trueStr,
-			wantPurpose2EnforcePurpose:  falseStr,
-			wantPurpose3EnforcePurpose:  trueStr,
-			wantPurpose4EnforcePurpose:  falseStr,
-			wantPurpose5EnforcePurpose:  trueStr,
-			wantPurpose6EnforcePurpose:  falseStr,
-			wantPurpose7EnforcePurpose:  trueStr,
-			wantPurpose8EnforcePurpose:  falseStr,
-			wantPurpose9EnforcePurpose:  trueStr,
-			wantPurpose10EnforcePurpose: falseStr,
-		},
-		{
-			description: "enforce_algo is set and enforce_purpose is not; enforce_algo is unchanged",
-			config: []byte(`
-              gdpr:
-                tcf2:
-                  purpose1:
-                    enforce_algo: "full"
-                  purpose2:
-                    enforce_algo: "full"
-                  purpose3:
-                    enforce_algo: "full"
-                  purpose4:
-                    enforce_algo: "full"
-                  purpose5:
-                    enforce_algo: "full"
-                  purpose6:
-                    enforce_algo: "full"
-                  purpose7:
-                    enforce_algo: "full"
-                  purpose8:
-                    enforce_algo: "full"
-                  purpose9:
-                    enforce_algo: "full"
-                  purpose10:
-                    enforce_algo: "full"
-            `),
-			wantEnforceAlgosSet:      true,
-			wantPurpose1EnforceAlgo:  TCF2EnforceAlgoFull,
-			wantPurpose2EnforceAlgo:  TCF2EnforceAlgoFull,
-			wantPurpose3EnforceAlgo:  TCF2EnforceAlgoFull,
-			wantPurpose4EnforceAlgo:  TCF2EnforceAlgoFull,
-			wantPurpose5EnforceAlgo:  TCF2EnforceAlgoFull,
-			wantPurpose6EnforceAlgo:  TCF2EnforceAlgoFull,
-			wantPurpose7EnforceAlgo:  TCF2EnforceAlgoFull,
-			wantPurpose8EnforceAlgo:  TCF2EnforceAlgoFull,
-			wantPurpose9EnforceAlgo:  TCF2EnforceAlgoFull,
-			wantPurpose10EnforceAlgo: TCF2EnforceAlgoFull,
-			wantEnforcePurposesSet:   false,
-		},
-		{
-			description: "enforce_algo and enforce_purpose are set; enforce_algo is unchanged",
-			config: []byte(`
-              gdpr:
-                tcf2:
-                  purpose1:
-                    enforce_algo: "full"
-                    enforce_purpose: "no"
-                  purpose2:
-                    enforce_algo: "full"
-                    enforce_purpose: "no"
-                  purpose3:
-                    enforce_algo: "full"
-                    enforce_purpose: "no"
-                  purpose4:
-                    enforce_algo: "full"
-                    enforce_purpose: "no"
-                  purpose5:
-                    enforce_algo: "full"
-                    enforce_purpose: "no"
-                  purpose6:
-                    enforce_algo: "full"
-                    enforce_purpose: "no"
-                  purpose7:
-                    enforce_algo: "full"
-                    enforce_purpose: "no"
-                  purpose8:
-                    enforce_algo: "full"
-                    enforce_purpose: "no"
-                  purpose9:
-                    enforce_algo: "full"
-                    enforce_purpose: "no"
-                  purpose10:
-                    enforce_algo: "full"
-                    enforce_purpose: "no"
-            `),
-			wantEnforceAlgosSet:         true,
-			wantPurpose1EnforceAlgo:     TCF2EnforceAlgoFull,
-			wantPurpose2EnforceAlgo:     TCF2EnforceAlgoFull,
-			wantPurpose3EnforceAlgo:     TCF2EnforceAlgoFull,
-			wantPurpose4EnforceAlgo:     TCF2EnforceAlgoFull,
-			wantPurpose5EnforceAlgo:     TCF2EnforceAlgoFull,
-			wantPurpose6EnforceAlgo:     TCF2EnforceAlgoFull,
-			wantPurpose7EnforceAlgo:     TCF2EnforceAlgoFull,
-			wantPurpose8EnforceAlgo:     TCF2EnforceAlgoFull,
-			wantPurpose9EnforceAlgo:     TCF2EnforceAlgoFull,
-			wantPurpose10EnforceAlgo:    TCF2EnforceAlgoFull,
-			wantEnforcePurposesSet:      true,
-			wantPurpose1EnforcePurpose:  falseStr,
-			wantPurpose2EnforcePurpose:  falseStr,
-			wantPurpose3EnforcePurpose:  falseStr,
-			wantPurpose4EnforcePurpose:  falseStr,
-			wantPurpose5EnforcePurpose:  falseStr,
-			wantPurpose6EnforcePurpose:  falseStr,
-			wantPurpose7EnforcePurpose:  falseStr,
-			wantPurpose8EnforcePurpose:  falseStr,
-			wantPurpose9EnforcePurpose:  falseStr,
-			wantPurpose10EnforcePurpose: falseStr,
-		},
-	}
-
-	for _, tt := range tests {
-		v := viper.New()
-		v.SetConfigType("yaml")
-		v.ReadConfig(bytes.NewBuffer(tt.config))
-
-		migrateConfigTCF2EnforcePurposeFlags(v)
-
-		if tt.wantEnforceAlgosSet {
-			assert.Equal(t, tt.wantPurpose1EnforceAlgo, v.GetString("gdpr.tcf2.purpose1.enforce_algo"), tt.description)
-			assert.Equal(t, tt.wantPurpose2EnforceAlgo, v.GetString("gdpr.tcf2.purpose2.enforce_algo"), tt.description)
-			assert.Equal(t, tt.wantPurpose3EnforceAlgo, v.GetString("gdpr.tcf2.purpose3.enforce_algo"), tt.description)
-			assert.Equal(t, tt.wantPurpose4EnforceAlgo, v.GetString("gdpr.tcf2.purpose4.enforce_algo"), tt.description)
-			assert.Equal(t, tt.wantPurpose5EnforceAlgo, v.GetString("gdpr.tcf2.purpose5.enforce_algo"), tt.description)
-			assert.Equal(t, tt.wantPurpose6EnforceAlgo, v.GetString("gdpr.tcf2.purpose6.enforce_algo"), tt.description)
-			assert.Equal(t, tt.wantPurpose7EnforceAlgo, v.GetString("gdpr.tcf2.purpose7.enforce_algo"), tt.description)
-			assert.Equal(t, tt.wantPurpose8EnforceAlgo, v.GetString("gdpr.tcf2.purpose8.enforce_algo"), tt.description)
-			assert.Equal(t, tt.wantPurpose9EnforceAlgo, v.GetString("gdpr.tcf2.purpose9.enforce_algo"), tt.description)
-			assert.Equal(t, tt.wantPurpose10EnforceAlgo, v.GetString("gdpr.tcf2.purpose10.enforce_algo"), tt.description)
-		} else {
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose1.enforce_algo"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose2.enforce_algo"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose3.enforce_algo"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose4.enforce_algo"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose5.enforce_algo"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose6.enforce_algo"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose7.enforce_algo"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose8.enforce_algo"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose9.enforce_algo"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose10.enforce_algo"), tt.description)
-		}
-
-		if tt.wantEnforcePurposesSet {
-			assert.Equal(t, tt.wantPurpose1EnforcePurpose, v.GetString("gdpr.tcf2.purpose1.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose2EnforcePurpose, v.GetString("gdpr.tcf2.purpose2.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose3EnforcePurpose, v.GetString("gdpr.tcf2.purpose3.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose4EnforcePurpose, v.GetString("gdpr.tcf2.purpose4.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose5EnforcePurpose, v.GetString("gdpr.tcf2.purpose5.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose6EnforcePurpose, v.GetString("gdpr.tcf2.purpose6.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose7EnforcePurpose, v.GetString("gdpr.tcf2.purpose7.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose8EnforcePurpose, v.GetString("gdpr.tcf2.purpose8.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose9EnforcePurpose, v.GetString("gdpr.tcf2.purpose9.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose10EnforcePurpose, v.GetString("gdpr.tcf2.purpose10.enforce_purpose"), tt.description)
-		} else {
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose1.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose2.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose3.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose4.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose5.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose6.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose7.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose8.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose9.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose10.enforce_purpose"), tt.description)
-		}
-	}
 }
 
 func TestMigrateConfigDatabaseConnection(t *testing.T) {
