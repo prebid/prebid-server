@@ -8,6 +8,7 @@ type ConditionRule struct {
 	componentName []string
 	componentType []string
 	gppSID        []int8
+	gpc           string
 }
 
 func (r ConditionRule) Evaluate(target Component, request ActivityRequest) ActivityResult {
@@ -20,6 +21,10 @@ func (r ConditionRule) Evaluate(target Component, request ActivityRequest) Activ
 	}
 
 	if matched := evaluateGPPSID(r.gppSID, request); !matched {
+		return ActivityAbstain
+	}
+
+	if matched := evaluateGPC(r.gpc, request); !matched {
 		return ActivityAbstain
 	}
 
@@ -81,4 +86,25 @@ func getGPPSID(request ActivityRequest) []int8 {
 	}
 
 	return nil
+}
+
+func evaluateGPC(gpc string, request ActivityRequest) bool {
+	if len(gpc) == 0 {
+		return noClausesDefinedResult
+	}
+
+	return gpc == getGPC(request)
+}
+
+func getGPC(request ActivityRequest) string {
+	if request.IsPolicies() {
+		return request.policies.GPC
+	}
+
+	if request.IsBidRequest() && request.bidRequest.Regs != nil {
+		regExt, _ := request.bidRequest.GetRegExt()
+		return regExt.GetGPC()
+	}
+
+	return ""
 }

@@ -133,7 +133,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, ma
 	request = c.setLimit(request, account.CookieSync)
 	request = c.setCooperativeSync(request, account.CookieSync)
 
-	privacyMacros, gdprSignal, privacyPolicies, err := extractPrivacyPolicies(request, c.privacyConfig.gdprConfig.DefaultValue)
+	privacyMacros, gdprSignal, privacyPolicies, err := extractPrivacyPolicies(request, r.Header, c.privacyConfig.gdprConfig.DefaultValue)
 	if err != nil {
 		return usersync.Request{}, macros.UserSyncPrivacy{}, err
 	}
@@ -182,7 +182,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, ma
 	return rx, privacyMacros, nil
 }
 
-func extractPrivacyPolicies(request cookieSyncRequest, usersyncDefaultGDPRValue string) (macros.UserSyncPrivacy, gdpr.Signal, privacy.Policies, error) {
+func extractPrivacyPolicies(request cookieSyncRequest, header http.Header, usersyncDefaultGDPRValue string) (macros.UserSyncPrivacy, gdpr.Signal, privacy.Policies, error) {
 	// GDPR
 	gppSID, err := stringutil.StrToInt8Slice(request.GPPSID)
 	if err != nil {
@@ -234,6 +234,7 @@ func extractPrivacyPolicies(request cookieSyncRequest, usersyncDefaultGDPRValue 
 
 	privacyPolicies := privacy.Policies{
 		GPPSID: gppSID,
+		GPC:    header.Get("Sec-GPC"),
 	}
 
 	return privacyMacros, gdprSignal, privacyPolicies, nil

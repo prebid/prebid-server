@@ -394,6 +394,7 @@ func TestExtractGDPRSignal(t *testing.T) {
 func TestExtractPrivacyPolicies(t *testing.T) {
 	type testInput struct {
 		request                  cookieSyncRequest
+		header                   map[string]string
 		usersyncDefaultGDPRValue string
 	}
 	type testOutput struct {
@@ -474,7 +475,12 @@ func TestExtractPrivacyPolicies(t *testing.T) {
 		},
 	}
 	for _, tc := range testCases {
-		outMacros, outSignal, outPolicies, outErr := extractPrivacyPolicies(tc.in.request, tc.in.usersyncDefaultGDPRValue)
+		header := http.Header{}
+		for k, v := range tc.in.header {
+			header.Add(k, v)
+		}
+
+		outMacros, outSignal, outPolicies, outErr := extractPrivacyPolicies(tc.in.request, header, tc.in.usersyncDefaultGDPRValue)
 
 		assert.Equal(t, tc.expected.macros, outMacros, tc.desc)
 		assert.Equal(t, tc.expected.gdprSignal, outSignal, tc.desc)

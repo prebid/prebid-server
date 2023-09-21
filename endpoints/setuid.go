@@ -119,6 +119,7 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 
 		policies := privacy.Policies{
 			GPPSID: gppSID,
+			GPC:    r.Header.Get("Sec-GPC"),
 		}
 
 		userSyncActivityAllowed := activityControl.Allow(privacy.ActivitySyncUser,

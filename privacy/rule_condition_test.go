@@ -1,6 +1,7 @@
 package privacy
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
@@ -9,91 +10,186 @@ import (
 )
 
 func TestComponentEnforcementRuleEvaluate(t *testing.T) {
+	var (
+		target  = Component{Type: "bidder", Name: "bidderA"}
+		request = NewRequestFromPolicies(Policies{GPPSID: []int8{1}, GPC: "1"})
+	)
+
 	testCases := []struct {
 		name           string
-		componentRule  ConditionRule
-		target         Component
+		rule           ConditionRule
 		activityResult ActivityResult
 	}{
 		{
-			name: "activity_is_allowed",
-			componentRule: ConditionRule{
+			name: "all-match-allow",
+			rule: ConditionRule{
 				result:        ActivityAllow,
 				componentName: []string{"bidderA"},
 				componentType: []string{"bidder"},
+				gppSID:        []int8{1},
+				gpc:           "1",
 			},
-			target:         Component{Type: "bidder", Name: "bidderA"},
 			activityResult: ActivityAllow,
 		},
 		{
-			name: "activity_is_not_allowed",
-			componentRule: ConditionRule{
+			name: "all-match-deny",
+			rule: ConditionRule{
 				result:        ActivityDeny,
 				componentName: []string{"bidderA"},
 				componentType: []string{"bidder"},
+				gppSID:        []int8{1},
+				gpc:           "1",
 			},
-			target:         Component{Type: "bidder", Name: "bidderA"},
 			activityResult: ActivityDeny,
 		},
 		{
-			name: "abstain_both_clauses_do_not_match",
-			componentRule: ConditionRule{
-				result:        ActivityAllow,
-				componentName: []string{"bidderA"},
-				componentType: []string{"bidder"},
-			},
-			target:         Component{Type: "bidder", Name: "bidderB"},
-			activityResult: ActivityAbstain,
-		},
-		{
-			name: "abstain_gppsid",
-			componentRule: ConditionRule{
-				result: ActivityAllow,
-				gppSID: []int8{1},
-			},
-			target:         Component{Type: "bidder", Name: "bidderB"},
-			activityResult: ActivityAbstain,
-		},
-		{
-			name: "activity_is_not_allowed_componentName_only",
-			componentRule: ConditionRule{
-				result:        ActivityAllow,
-				componentName: []string{"bidderA"},
-			},
-			target:         Component{Type: "bidder", Name: "bidderA"},
-			activityResult: ActivityAllow,
-		},
-		{
-			name: "activity_is_allowed_componentType_only",
-			componentRule: ConditionRule{
-				result:        ActivityAllow,
-				componentType: []string{"bidder"},
-			},
-			target:         Component{Type: "bidder", Name: "bidderB"},
-			activityResult: ActivityAllow,
-		},
-		{
 			name: "no-conditions-allow",
-			componentRule: ConditionRule{
+			rule: ConditionRule{
 				result: ActivityAllow,
 			},
-			target:         Component{Type: "bidder", Name: "bidderA"},
 			activityResult: ActivityAllow,
 		},
 		{
 			name: "no-conditions-deny",
-			componentRule: ConditionRule{
+			rule: ConditionRule{
 				result: ActivityDeny,
 			},
-			target:         Component{Type: "bidder", Name: "bidderA"},
 			activityResult: ActivityDeny,
+		},
+		{
+			name: "mismatch-componentname",
+			rule: ConditionRule{
+				result:        ActivityAllow,
+				componentName: []string{"mismatch"},
+			},
+			activityResult: ActivityAbstain,
+		},
+		{
+			name: "mismatch-componenttype",
+			rule: ConditionRule{
+				result:        ActivityAllow,
+				componentType: []string{"mismatch"},
+			},
+			activityResult: ActivityAbstain,
+		},
+		{
+			name: "mismatch-gppsid",
+			rule: ConditionRule{
+				result: ActivityAllow,
+				gppSID: []int8{2},
+			},
+			activityResult: ActivityAbstain,
+		},
+		{
+			name: "mismatch-gpc",
+			rule: ConditionRule{
+				result: ActivityAllow,
+				gpc:    "mismatch",
+			},
+			activityResult: ActivityAbstain,
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			actualResult := test.componentRule.Evaluate(test.target, ActivityRequest{})
+			actualResult := test.rule.Evaluate(target, request)
 			assert.Equal(t, test.activityResult, actualResult)
+		})
+	}
+}
+
+func TestEvaluateComponentName(t *testing.T) {
+	target := Component{Type: "bidder", Name: "bidderA"}
+
+	testCases := []struct {
+		name           string
+		componentNames []string
+		expected       bool
+	}{
+		{
+			name:           "nil",
+			componentNames: nil,
+			expected:       true,
+		},
+		{
+			name:           "none",
+			componentNames: []string{},
+			expected:       true,
+		},
+		{
+			name:           "one-match-same-case",
+			componentNames: []string{"bidderA"},
+			expected:       true,
+		},
+		{
+			name:           "one-different-case",
+			componentNames: []string{"BIDDERA"},
+			expected:       true,
+		},
+		{
+			name:           "one-no-match",
+			componentNames: []string{"nomatch"},
+			expected:       false,
+		},
+		{
+			name:           "many",
+			componentNames: []string{"nomatch1", "bidderA", "nomatch2"},
+			expected:       true,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			actualResult := evaluateComponentName(target, test.componentNames)
+			assert.Equal(t, test.expected, actualResult)
+		})
+	}
+}
+
+func TestEvaluateComponentType(t *testing.T) {
+	target := Component{Type: "bidder", Name: "bidderA"}
+
+	testCases := []struct {
+		name           string
+		componentTypes []string
+		expected       bool
+	}{
+		{
+			name:           "nil",
+			componentTypes: nil,
+			expected:       true,
+		},
+		{
+			name:           "none",
+			componentTypes: []string{},
+			expected:       true,
+		},
+		{
+			name:           "one-match-same-case",
+			componentTypes: []string{"bidder"},
+			expected:       true,
+		},
+		{
+			name:           "one-different-case",
+			componentTypes: []string{"BIDDER"},
+			expected:       true,
+		},
+		{
+			name:           "one-no-match",
+			componentTypes: []string{"nomatch"},
+			expected:       false,
+		},
+		{
+			name:           "many",
+			componentTypes: []string{"nomatch1", "bidder", "nomatch2"},
+			expected:       true,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			actualResult := evaluateComponentType(target, test.componentTypes)
+			assert.Equal(t, test.expected, actualResult)
 		})
 	}
 }
@@ -272,6 +368,89 @@ func TestGetGPPSID(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			actualResult := getGPPSID(test.request)
+			assert.Equal(t, test.expected, actualResult)
+		})
+	}
+}
+
+func TestEvaluateGPC(t *testing.T) {
+	testCases := []struct {
+		name      string
+		condition string
+		request   string
+		expected  bool
+	}{
+		{
+			name:      "empty",
+			condition: "",
+			request:   "",
+			expected:  true,
+		},
+		{
+			name:      "condition-empty",
+			condition: "",
+			request:   "1",
+			expected:  true,
+		},
+		{
+			name:      "request-empty",
+			condition: "1",
+			request:   "",
+			expected:  false,
+		},
+		{
+			name:      "match",
+			condition: "1",
+			request:   "1",
+			expected:  true,
+		},
+		{
+			name:      "no-match",
+			condition: "1",
+			request:   "2",
+			expected:  false,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			actualResult := evaluateGPC(test.condition, NewRequestFromPolicies(Policies{GPC: test.request}))
+			assert.Equal(t, test.expected, actualResult)
+		})
+	}
+}
+
+func TestGetGPC(t *testing.T) {
+	testCases := []struct {
+		name     string
+		request  ActivityRequest
+		expected string
+	}{
+		{
+			name:     "empty",
+			request:  ActivityRequest{},
+			expected: "",
+		},
+		{
+			name:     "policies",
+			request:  ActivityRequest{policies: &Policies{GPC: "1"}},
+			expected: "1",
+		},
+		{
+			name:     "request-regs",
+			request:  ActivityRequest{bidRequest: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"gpc":"1"}`)}}}},
+			expected: "1",
+		},
+		{
+			name:     "request-regs-nil",
+			request:  ActivityRequest{bidRequest: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Regs: nil}}},
+			expected: "",
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			actualResult := getGPC(test.request)
 			assert.Equal(t, test.expected, actualResult)
 		})
 	}
