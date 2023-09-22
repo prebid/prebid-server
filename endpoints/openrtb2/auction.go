@@ -1816,7 +1816,9 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 			return append(errL, errors.New(`request.user.ext.prebid requires a "buyeruids" property with at least one ID defined. If none exist, then request.user.ext.prebid should not be defined.`))
 		}
 		for bidderName := range prebid.BuyerUIDs {
-			if _, ok := deps.bidderMap[bidderName]; !ok {
+			normalizedCoreBidder, _ := openrtb_ext.NormalizeBidderName(bidderName)
+			coreBidder := normalizedCoreBidder.String()
+			if _, ok := deps.bidderMap[coreBidder]; !ok {
 				if _, ok := aliases[bidderName]; !ok {
 					return append(errL, fmt.Errorf("request.user.ext.%s is neither a known bidder name nor an alias in request.ext.prebid.aliases", bidderName))
 				}
