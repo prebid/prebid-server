@@ -47,6 +47,3 @@ const (
 	DATATYE_DATETIME              = 6
 
 )
-
-
-
