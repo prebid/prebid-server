@@ -4,9 +4,22 @@
     "imp": [
       {
         "id": "b6321d41-3840-4cb3-baad-b6fc5b0c8553",
-        "banner": {
-          "w": 300,
-          "h": 250
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "minduration": 15,
+          "maxduration": 30,
+          "protocols": [
+            2,
+            3,
+            5,
+            6,
+            7,
+            8
+          ],
+          "w": 940,
+          "h": 560
         },
         "ext": {
           "bidder": {
@@ -42,9 +55,22 @@
             {
               "id": "b6321d41-3840-4cb3-baad-b6fc5b0c8553",
               "tagid": "125",
-              "banner": {
-                "w": 300,
-                "h": 250
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "minduration": 15,
+                "maxduration": 30,
+                "protocols": [
+                  2,
+                  3,
+                  5,
+                  6,
+                  7,
+                  8
+                ],
+                "w": 940,
+                "h": 560
               },
               "ext": {
                 "kv": {
@@ -75,6 +101,7 @@
         "status": 200,
         "body": {
           "id": "39312703-e970-4914-ae56-8e7d7d1fd16b",
+          "cur": "EUR",
           "tagid": "125",
           "seatbid": [
             {
@@ -118,7 +145,7 @@
   ],
   "expectedBidResponses": [
     {
-      "currency": "USD",
+      "currency": "EUR",
       "bids": [
         {
           "bid": {
@@ -150,7 +177,7 @@
               }
             }
           },
-          "type": "banner"
+          "type": "video"
         }
       ]
     }

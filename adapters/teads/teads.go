@@ -75,15 +75,20 @@ func updateImpObject(imps []openrtb2.Imp) error {
 			}
 		}
 
-		var defaultImpExt DefaultBidderImpExtension
+		var defaultImpExt defaultBidderImpExtension
 		if err := json.Unmarshal(imp.Ext, &defaultImpExt); err != nil {
 			return &errortypes.BadInput{
 				Message: "Error parsing Imp.Ext object",
 			}
 		}
+		if defaultImpExt.Bidder.PlacementId == 0 {
+			return &errortypes.BadInput{
+				Message: "placementId should not be 0.",
+			}
+		}
 		imp.TagID = strconv.Itoa(defaultImpExt.Bidder.PlacementId)
-		teadsImpExt := &TeadsImpExtension{
-			KV: TeadsKV{
+		teadsImpExt := &teadsImpExtension{
+			KV: teadsKV{
 				PlacementId: defaultImpExt.Bidder.PlacementId,
 			},
 		}
@@ -120,16 +125,13 @@ func (a *adapter) buildEndpointURL() (string, error) {
 }
 
 func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, _ *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if response.StatusCode == http.StatusNoContent {
+	if adapters.IsResponseStatusCodeNoContent(response) {
 		return nil, nil
 	}
-	if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
-		}}
-	}
-	if response.StatusCode != http.StatusOK {
-		return nil, []error{fmt.Errorf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
+
+	err := adapters.CheckResponseStatusCodeForErrors(response)
+	if err != nil {
+		return nil, []error{err}
 	}
 
 	var bidResp openrtb2.BidResponse
@@ -137,17 +139,17 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, _ *adapters.Req
 		return nil, []error{err}
 	}
 
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid))
+	bidderResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid))
 
 	for _, sb := range bidResp.SeatBid {
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
 
-			var bidExtTeads TeadsBidExt
-			if err := json.Unmarshal(bid.Ext, &bidExtTeads); err != nil {
-				return nil, []error{err}
+			bidExtTeads, err := getTeadsRendererFromBidExt(bid.Ext)
+			if err != nil {
+				return nil, err
 			}
-			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
 				Bid: &bid,
 				BidMeta: &openrtb_ext.ExtBidPrebidMeta{
 					RendererName:    bidExtTeads.Prebid.Meta.RendererName,
@@ -158,9 +160,27 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, _ *adapters.Req
 		}
 	}
 	if bidResp.Cur != "" {
-		bidResponse.Currency = bidResp.Cur
+		bidderResponse.Currency = bidResp.Cur
 	}
-	return bidResponse, []error{}
+	return bidderResponse, nil
+}
+
+func getTeadsRendererFromBidExt(ext json.RawMessage) (*teadsBidExt, []error) {
+	var bidExtTeads teadsBidExt
+	if err := json.Unmarshal(ext, &bidExtTeads); err != nil {
+		return nil, []error{err}
+	}
+	if bidExtTeads.Prebid.Meta.RendererName == "" {
+		return nil, []error{&errortypes.BadInput{
+			Message: "RendererName should not be empty if present",
+		}}
+	}
+	if bidExtTeads.Prebid.Meta.RendererVersion == "" {
+		return nil, []error{&errortypes.BadInput{
+			Message: "RendererVersion should not be empty if present",
+		}}
+	}
+	return &bidExtTeads, nil
 }
 
 func getMediaTypeForImp(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
@@ -168,8 +188,6 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
 		if imp.ID == impID {
 			if imp.Video != nil {
 				return openrtb_ext.BidTypeVideo
-			} else if imp.Native != nil {
-				return openrtb_ext.BidTypeNative
 			}
 			return openrtb_ext.BidTypeBanner
 		}

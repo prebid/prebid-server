@@ -1,6 +1,6 @@
 endpoint: "https://a.teads.tv/prebid-server/bid-request"
 maintainer:
-  email: "support@teads.com"
+  email: "support-sdk@teads.com"
 gvlVendorID: 132
 capabilities:
   app:

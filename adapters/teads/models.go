@@ -9,31 +9,31 @@ type adapter struct {
 	endpointTemplate *template.Template
 }
 
-type DefaultBidderImpExtension struct {
-	Bidder Bidder `json:"bidder"`
+type defaultBidderImpExtension struct {
+	Bidder bidder `json:"bidder"`
 }
 
-type Bidder struct {
+type bidder struct {
 	PlacementId int `json:"placementId"`
 }
 
-type TeadsImpExtension struct {
-	KV TeadsKV `json:"kv"`
+type teadsImpExtension struct {
+	KV teadsKV `json:"kv"`
 }
 
-type TeadsKV struct {
+type teadsKV struct {
 	PlacementId int `json:"placementId"`
 }
 
-type TeadsBidExt struct {
-	Prebid TeadsPrebidExt `json:"prebid"`
+type teadsBidExt struct {
+	Prebid teadsPrebidExt `json:"prebid"`
 }
 
-type TeadsPrebidExt struct {
-	Meta TeadsPrebidMeta `json:"meta"`
+type teadsPrebidExt struct {
+	Meta teadsPrebidMeta `json:"meta"`
 }
 
-type TeadsPrebidMeta struct {
+type teadsPrebidMeta struct {
 	RendererName    string          `json:"rendererName"`
 	RendererVersion string          `json:"rendererVersion"`
 	RendererData    json.RawMessage `json:"rendererData"`
