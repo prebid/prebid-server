@@ -2062,50 +2062,6 @@ func TestRecordAccountGDPRPurposeWarningMetrics(t *testing.T) {
 	}
 }
 
-func TestRecordAccountGDPRChannelEnabledWarningMetrics(t *testing.T) {
-	testCases := []struct {
-		name                string
-		givenPubID          string
-		expectedMetricCount float64
-	}{
-		{
-			name:                "GdprChannelMetricIncremented",
-			givenPubID:          "acct-id",
-			expectedMetricCount: 1,
-		},
-	}
-	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
-			m := createMetricsForTesting()
-			m.RecordAccountGDPRChannelEnabledWarning(test.givenPubID)
-
-			assertCounterValue(t, "", "GDPR Channel Enabled Deprecation Warnings", m.channelEnabledGDPR, test.expectedMetricCount)
-		})
-	}
-}
-
-func TestRecordAccountCCPAChannelEnabledWarningMetrics(t *testing.T) {
-	testCases := []struct {
-		name                string
-		givenPubID          string
-		expectedMetricCount float64
-	}{
-		{
-			name:                "CcpaChannelMetricIncremented",
-			givenPubID:          "acct-id",
-			expectedMetricCount: 1,
-		},
-	}
-	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
-			m := createMetricsForTesting()
-			m.RecordAccountCCPAChannelEnabledWarning(test.givenPubID)
-
-			assertCounterValue(t, "", "CCPA Channel Enabled Deprecation Warnings", m.channelEnabledCCPA, test.expectedMetricCount)
-		})
-	}
-}
-
 func TestRecordAccountUpgradeStatusMetrics(t *testing.T) {
 	testCases := []struct {
 		name                string

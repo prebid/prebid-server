@@ -327,16 +327,7 @@ func (me *MultiMetricsEngine) RecordAccountGDPRPurposeWarning(account string, pu
 		thisME.RecordAccountGDPRPurposeWarning(account, purposeName)
 	}
 }
-func (me *MultiMetricsEngine) RecordAccountGDPRChannelEnabledWarning(account string) {
-	for _, thisME := range *me {
-		thisME.RecordAccountGDPRChannelEnabledWarning(account)
-	}
-}
-func (me *MultiMetricsEngine) RecordAccountCCPAChannelEnabledWarning(account string) {
-	for _, thisME := range *me {
-		thisME.RecordAccountCCPAChannelEnabledWarning(account)
-	}
-}
+
 func (me *MultiMetricsEngine) RecordAccountUpgradeStatus(account string) {
 	for _, thisME := range *me {
 		thisME.RecordAccountUpgradeStatus(account)
@@ -537,12 +528,6 @@ func (me *NilMetricsEngine) RecordBidValidationSecureMarkupWarn(adapter openrtb_
 }
 
 func (me *NilMetricsEngine) RecordAccountGDPRPurposeWarning(account string, purposeName string) {
-}
-
-func (me *NilMetricsEngine) RecordAccountGDPRChannelEnabledWarning(account string) {
-}
-
-func (me *NilMetricsEngine) RecordAccountCCPAChannelEnabledWarning(account string) {
 }
 
 func (me *NilMetricsEngine) RecordAccountUpgradeStatus(account string) {

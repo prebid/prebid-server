@@ -226,14 +226,6 @@ func (me *MetricsEngineMock) RecordAccountGDPRPurposeWarning(account string, pur
 	me.Called(account, purposeName)
 }
 
-func (me *MetricsEngineMock) RecordAccountGDPRChannelEnabledWarning(account string) {
-	me.Called(account)
-}
-
-func (me *MetricsEngineMock) RecordAccountCCPAChannelEnabledWarning(account string) {
-	me.Called(account)
-}
-
 func (me *MetricsEngineMock) RecordAccountUpgradeStatus(account string) {
 	me.Called(account)
 }

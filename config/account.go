@@ -54,9 +54,8 @@ type CookieSync struct {
 
 // AccountCCPA represents account-specific CCPA configuration
 type AccountCCPA struct {
-	Enabled            *bool          `mapstructure:"enabled" json:"enabled,omitempty"`
-	IntegrationEnabled AccountChannel `mapstructure:"integration_enabled" json:"integration_enabled"`
-	ChannelEnabled     AccountChannel `mapstructure:"channel_enabled" json:"channel_enabled"`
+	Enabled        *bool          `mapstructure:"enabled" json:"enabled,omitempty"`
+	ChannelEnabled AccountChannel `mapstructure:"channel_enabled" json:"channel_enabled"`
 }
 
 type AccountPriceFloors struct {
@@ -95,17 +94,14 @@ func (pf *AccountPriceFloors) IsAdjustForBidAdjustmentEnabled() bool {
 func (a *AccountCCPA) EnabledForChannelType(channelType ChannelType) *bool {
 	if channelEnabled := a.ChannelEnabled.GetByChannelType(channelType); channelEnabled != nil {
 		return channelEnabled
-	} else if integrationEnabled := a.IntegrationEnabled.GetByChannelType(channelType); integrationEnabled != nil {
-		return integrationEnabled
 	}
 	return a.Enabled
 }
 
 // AccountGDPR represents account-specific GDPR configuration
 type AccountGDPR struct {
-	Enabled            *bool          `mapstructure:"enabled" json:"enabled,omitempty"`
-	IntegrationEnabled AccountChannel `mapstructure:"integration_enabled" json:"integration_enabled"`
-	ChannelEnabled     AccountChannel `mapstructure:"channel_enabled" json:"channel_enabled"`
+	Enabled        *bool          `mapstructure:"enabled" json:"enabled,omitempty"`
+	ChannelEnabled AccountChannel `mapstructure:"channel_enabled" json:"channel_enabled"`
 	// Array of basic enforcement vendors that is used to create the hash table so vendor names can be instantly accessed
 	BasicEnforcementVendors    []string `mapstructure:"basic_enforcement_vendors" json:"basic_enforcement_vendors"`
 	BasicEnforcementVendorsMap map[string]struct{}
@@ -130,8 +126,6 @@ type AccountGDPR struct {
 func (a *AccountGDPR) EnabledForChannelType(channelType ChannelType) *bool {
 	if channelEnabled := a.ChannelEnabled.GetByChannelType(channelType); channelEnabled != nil {
 		return channelEnabled
-	} else if integrationEnabled := a.IntegrationEnabled.GetByChannelType(channelType); integrationEnabled != nil {
-		return integrationEnabled
 	}
 	return a.Enabled
 }
@@ -297,10 +291,6 @@ func (m AccountModules) ModuleConfig(id string) (json.RawMessage, error) {
 	vendor := ns[0]
 	module := ns[1]
 	return m[vendor][module], nil
-}
-
-func (a *AccountChannel) IsSet() bool {
-	return a.AMP != nil || a.App != nil || a.Video != nil || a.Web != nil || a.DOOH != nil
 }
 
 type AccountPrivacy struct {

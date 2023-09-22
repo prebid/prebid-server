@@ -99,8 +99,6 @@ type Metrics struct {
 	accountDeprecationWarningsPurpose8  prometheus.Counter
 	accountDeprecationWarningsPurpose9  prometheus.Counter
 	accountDeprecationWarningsPurpose10 prometheus.Counter
-	channelEnabledGDPR                  prometheus.Counter
-	channelEnabledCCPA                  prometheus.Counter
 	accountDeprecationSummary           prometheus.Counter
 
 	// Module Metrics as a map where the key is the module name
@@ -542,14 +540,6 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 	metrics.accountDeprecationWarningsPurpose10 = newCounterWithoutLabels(cfg, reg,
 		"account_config_gdpr_tcf2_purpose10_warn",
 		"Count of requests referencing an account whose config specifies a deprecated gdpr.tcf2.purpose10 field")
-
-	metrics.channelEnabledCCPA = newCounterWithoutLabels(cfg, reg,
-		"account_config_ccpa_channel_enabled_warn",
-		"Count of requests referencing an account whose config specifies a depreceated ccpa.channel_enabled field")
-	metrics.channelEnabledGDPR = newCounterWithoutLabels(cfg, reg,
-		"account_config_gdpr_channel_enabled_warn",
-		"Count of requests referencing an account whose config specifies a depreceated gdpr.channel_enabled field")
-
 	metrics.accountDeprecationSummary = newCounterWithoutLabels(cfg, reg,
 		"account_config_summary",
 		"Count of deprecated account config fields encountered across all accounts")
@@ -758,18 +748,6 @@ func (m *Metrics) RecordAccountGDPRPurposeWarning(account string, purposeName st
 		case "purpose10":
 			m.accountDeprecationWarningsPurpose10.Inc()
 		}
-	}
-}
-
-func (m *Metrics) RecordAccountGDPRChannelEnabledWarning(account string) {
-	if account != metrics.PublisherUnknown {
-		m.channelEnabledGDPR.Inc()
-	}
-}
-
-func (m *Metrics) RecordAccountCCPAChannelEnabledWarning(account string) {
-	if account != metrics.PublisherUnknown {
-		m.channelEnabledCCPA.Inc()
 	}
 }
 

@@ -68,19 +68,11 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 				}}
 			}
 		}
-		usingGDPRChannelEnabled := useGDPRChannelEnabled(account)
-		usingCCPAChannelEnabled := useCCPAChannelEnabled(account)
 
-		if usingGDPRChannelEnabled {
-			me.RecordAccountGDPRChannelEnabledWarning(accountID)
-		}
-		if usingCCPAChannelEnabled {
-			me.RecordAccountCCPAChannelEnabledWarning(accountID)
-		}
 		for _, purposeName := range deprecatedPurposeFields {
 			me.RecordAccountGDPRPurposeWarning(accountID, purposeName)
 		}
-		if len(deprecatedPurposeFields) > 0 || usingGDPRChannelEnabled || usingCCPAChannelEnabled {
+		if len(deprecatedPurposeFields) > 0 {
 			me.RecordAccountUpgradeStatus(accountID)
 		}
 
@@ -255,14 +247,6 @@ func ConvertGDPREnforcePurposeFields(config []byte) (newConfig []byte, err error
 	}
 
 	return newConfig, nil, deprecatedPurposeFields
-}
-
-func useGDPRChannelEnabled(account *config.Account) bool {
-	return account.GDPR.ChannelEnabled.IsSet() && !account.GDPR.IntegrationEnabled.IsSet()
-}
-
-func useCCPAChannelEnabled(account *config.Account) bool {
-	return account.CCPA.ChannelEnabled.IsSet() && !account.CCPA.IntegrationEnabled.IsSet()
 }
 
 // deprecateEventsEnabledField is responsible for ensuring backwards compatibility of "events_enabled" field.

@@ -137,8 +137,6 @@ type accountMetrics struct {
 	accountDeprecationWarningsPurpose8Meter  metrics.Meter
 	accountDeprecationWarningsPurpose9Meter  metrics.Meter
 	accountDeprecationWarningsPurpose10Meter metrics.Meter
-	channelEnabledGDPRMeter                  metrics.Meter
-	channelEnabledCCPAMeter                  metrics.Meter
 	accountDeprecationSummaryMeter           metrics.Meter
 }
 
@@ -586,8 +584,6 @@ func (me *Metrics) getAccountMetrics(id string) *accountMetrics {
 	am.accountDeprecationWarningsPurpose8Meter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.config.gdpr.purpose8.warn", id), me.MetricsRegistry)
 	am.accountDeprecationWarningsPurpose9Meter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.config.gdpr.purpose9.warn", id), me.MetricsRegistry)
 	am.accountDeprecationWarningsPurpose10Meter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.config.gdpr.purpose10.warn", id), me.MetricsRegistry)
-	am.channelEnabledCCPAMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.config.ccpa.channel_enabled.warn", id), me.MetricsRegistry)
-	am.channelEnabledGDPRMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.config.gdpr.channel_enabled.warn", id), me.MetricsRegistry)
 	am.accountDeprecationSummaryMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.config.summary", id), me.MetricsRegistry)
 
 	if !me.MetricsDisabled.AccountModulesMetrics {
@@ -660,20 +656,6 @@ func (me *Metrics) RecordAccountGDPRPurposeWarning(account string, purposeName s
 		case "purpose10":
 			am.accountDeprecationWarningsPurpose10Meter.Mark(1)
 		}
-	}
-}
-
-func (me *Metrics) RecordAccountGDPRChannelEnabledWarning(account string) {
-	if account != PublisherUnknown {
-		am := me.getAccountMetrics(account)
-		am.channelEnabledGDPRMeter.Mark(1)
-	}
-}
-
-func (me *Metrics) RecordAccountCCPAChannelEnabledWarning(account string) {
-	if account != PublisherUnknown {
-		am := me.getAccountMetrics(account)
-		am.channelEnabledCCPAMeter.Mark(1)
 	}
 }
 

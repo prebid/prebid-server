@@ -393,56 +393,6 @@ func TestConvertGDPREnforcePurposeFields(t *testing.T) {
 	}
 }
 
-func TestGdprCcpaChannelEnabledMetrics(t *testing.T) {
-	cfg := &config.Configuration{}
-	fetcher := &mockAccountFetcher{}
-	assert.NoError(t, cfg.MarshalAccountDefaults())
-
-	testCases := []struct {
-		name                string
-		givenAccountID      string
-		givenMetric         string
-		expectedMetricCount int
-	}{
-		{
-			name:                "ChannelEnabledGDPR",
-			givenAccountID:      "gdpr_channel_enabled_acct",
-			givenMetric:         "RecordAccountGDPRChannelEnabledWarning",
-			expectedMetricCount: 1,
-		},
-		{
-			name:                "ChannelEnabledCCPA",
-			givenAccountID:      "ccpa_channel_enabled_acct",
-			givenMetric:         "RecordAccountCCPAChannelEnabledWarning",
-			expectedMetricCount: 1,
-		},
-		{
-			name:                "NotChannelEnabledCCPA",
-			givenAccountID:      "valid_acct",
-			givenMetric:         "RecordAccountCCPAChannelEnabledWarning",
-			expectedMetricCount: 0,
-		},
-		{
-			name:                "NotChannelEnabledGDPR",
-			givenAccountID:      "valid_acct",
-			givenMetric:         "RecordAccountGDPRChannelEnabledWarning",
-			expectedMetricCount: 0,
-		},
-	}
-
-	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
-			metrics := &metrics.MetricsEngineMock{}
-			metrics.Mock.On(test.givenMetric, mock.Anything, mock.Anything).Return()
-			metrics.Mock.On("RecordAccountUpgradeStatus", mock.Anything, mock.Anything).Return()
-
-			_, _ = GetAccount(context.Background(), cfg, fetcher, test.givenAccountID, metrics)
-
-			metrics.AssertNumberOfCalls(t, test.givenMetric, test.expectedMetricCount)
-		})
-	}
-}
-
 func TestGdprPurposeWarningMetrics(t *testing.T) {
 	cfg := &config.Configuration{}
 	fetcher := &mockAccountFetcher{}
@@ -538,12 +488,6 @@ func TestAccountUpgradeStatusGetAccount(t *testing.T) {
 		expectedMetricCount int
 	}{
 		{
-			name:                "MultipleDeprecatedConfigs",
-			givenAccountIDs:     []string{"gdpr_channel_enabled_deprecated_purpose_acct"},
-			givenMetrics:        []string{"RecordAccountGDPRChannelEnabledWarning", "RecordAccountGDPRPurposeWarning"},
-			expectedMetricCount: 1,
-		},
-		{
 			name:                "ZeroDeprecatedConfigs",
 			givenAccountIDs:     []string{"valid_acct"},
 			givenMetrics:        []string{},
@@ -554,24 +498,6 @@ func TestAccountUpgradeStatusGetAccount(t *testing.T) {
 			givenAccountIDs:     []string{"gdpr_deprecated_purpose1"},
 			givenMetrics:        []string{"RecordAccountGDPRPurposeWarning"},
 			expectedMetricCount: 1,
-		},
-		{
-			name:                "OneDeprecatedConfigGDPRChannelEnabled",
-			givenAccountIDs:     []string{"gdpr_channel_enabled_acct"},
-			givenMetrics:        []string{"RecordAccountGDPRChannelEnabledWarning"},
-			expectedMetricCount: 1,
-		},
-		{
-			name:                "OneDeprecatedConfigCCPAChannelEnabled",
-			givenAccountIDs:     []string{"ccpa_channel_enabled_acct"},
-			givenMetrics:        []string{"RecordAccountCCPAChannelEnabledWarning"},
-			expectedMetricCount: 1,
-		},
-		{
-			name:                "MultipleAccountsWithDeprecatedConfigs",
-			givenAccountIDs:     []string{"gdpr_channel_enabled_acct", "gdpr_deprecated_purpose1"},
-			givenMetrics:        []string{"RecordAccountGDPRChannelEnabledWarning", "RecordAccountGDPRPurposeWarning"},
-			expectedMetricCount: 2,
 		},
 	}
 
