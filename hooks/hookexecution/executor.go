@@ -160,7 +160,7 @@ func (e *hookExecutor) ExecuteProcessedAuctionStage(request *openrtb_ext.Request
 
 	stageName := hooks.StageProcessedAuctionRequest.String()
 	executionCtx := e.newContext(stageName)
-	payload := hookstage.ProcessedAuctionRequestPayload{RequestWrapper: request}
+	payload := hookstage.ProcessedAuctionRequestPayload{BidRequest: request}
 
 	outcome, _, contexts, reject := executeStage(executionCtx, plan, payload, handler, e.metricEngine)
 	outcome.Entity = entityAuctionRequest
@@ -194,7 +194,7 @@ func (e *hookExecutor) ExecuteBidderRequestStage(req *openrtb_ext.RequestWrapper
 
 	stageName := hooks.StageBidderRequest.String()
 	executionCtx := e.newContext(stageName)
-	payload := hookstage.BidderRequestPayload{RequestWrapper: req, Bidder: bidder}
+	payload := hookstage.BidderRequestPayload{BidRequest: req, Bidder: bidder}
 	outcome, payload, contexts, reject := executeStage(executionCtx, plan, payload, handler, e.metricEngine)
 	outcome.Entity = entity(bidder)
 	outcome.Stage = stageName

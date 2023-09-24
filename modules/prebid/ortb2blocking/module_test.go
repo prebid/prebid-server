@@ -498,7 +498,7 @@ func TestHandleBidderRequestHook(t *testing.T) {
 			bidRequest:         nil,
 			expectedBidRequest: nil,
 			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{},
-			expectedError:      hookexecution.NewFailure("empty BidRequest provided"),
+			expectedError:      hookexecution.NewFailure("empty input provided"),
 		},
 		{
 			description:        "Expect baadv error if bidders and media_types not defined in config conditions",
@@ -568,7 +568,7 @@ func TestHandleBidderRequestHook(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
 			brw := openrtb_ext.RequestWrapper{BidRequest: test.bidRequest}
-			payload := hookstage.BidderRequestPayload{Bidder: test.bidder, RequestWrapper: &brw}
+			payload := hookstage.BidderRequestPayload{Bidder: test.bidder, BidRequest: &brw}
 
 			result, err := Builder(nil, moduledeps.ModuleDeps{})
 			assert.NoError(t, err, "Failed to build module.")
@@ -593,7 +593,7 @@ func TestHandleBidderRequestHook(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			assert.Equal(t, test.expectedBidRequest, payload.RequestWrapper.BidRequest, "Invalid BidRequest after executing BidderRequestHook.")
+			assert.Equal(t, test.expectedBidRequest, payload.BidRequest.BidRequest, "Invalid BidRequest after executing BidderRequestHook.")
 
 			// reset ChangeSet not to break hookResult assertion, we validated ChangeSet separately
 			hookResult.ChangeSet = hookstage.ChangeSet[hookstage.BidderRequestPayload]{}

@@ -16,11 +16,11 @@ func handleBidderRequestHook(
 	cfg config,
 	payload hookstage.BidderRequestPayload,
 ) (result hookstage.HookResult[hookstage.BidderRequestPayload], err error) {
-	if payload.RequestWrapper == nil || payload.RequestWrapper.BidRequest == nil {
-		return result, hookexecution.NewFailure("empty BidRequest provided")
+	if payload.BidRequest == nil || payload.BidRequest.BidRequest == nil {
+		return result, hookexecution.NewFailure("empty input provided")
 	}
 
-	mediaTypes := mediaTypesFrom(payload.RequestWrapper.BidRequest)
+	mediaTypes := mediaTypesFrom(payload.BidRequest.BidRequest)
 	changeSet := hookstage.ChangeSet[hookstage.BidderRequestPayload]{}
 	blockingAttributes := blockingAttributes{}
 
@@ -60,7 +60,7 @@ func updateBAdv(
 	result *hookstage.HookResult[hookstage.BidderRequestPayload],
 	changeSet *hookstage.ChangeSet[hookstage.BidderRequestPayload],
 ) (err error) {
-	if len(payload.RequestWrapper.BAdv) > 0 {
+	if len(payload.BidRequest.BAdv) > 0 {
 		return nil
 	}
 
@@ -87,7 +87,7 @@ func updateBApp(
 	result *hookstage.HookResult[hookstage.BidderRequestPayload],
 	changeSet *hookstage.ChangeSet[hookstage.BidderRequestPayload],
 ) (err error) {
-	if len(payload.RequestWrapper.BApp) > 0 {
+	if len(payload.BidRequest.BApp) > 0 {
 		return nil
 	}
 
@@ -114,7 +114,7 @@ func updateBCat(
 	result *hookstage.HookResult[hookstage.BidderRequestPayload],
 	changeSet *hookstage.ChangeSet[hookstage.BidderRequestPayload],
 ) (err error) {
-	if len(payload.RequestWrapper.BCat) > 0 {
+	if len(payload.BidRequest.BCat) > 0 {
 		return nil
 	}
 
@@ -191,7 +191,7 @@ func updateCatTax(
 	attributes *blockingAttributes,
 	changeSet *hookstage.ChangeSet[hookstage.BidderRequestPayload],
 ) {
-	if payload.RequestWrapper.CatTax > 0 {
+	if payload.BidRequest.CatTax > 0 {
 		return
 	}
 
@@ -226,7 +226,7 @@ func mutationForImp(
 	impUpdater impUpdateFunc,
 ) hookstage.MutationFunc[hookstage.BidderRequestPayload] {
 	return func(payload hookstage.BidderRequestPayload) (hookstage.BidderRequestPayload, error) {
-		for i, imp := range payload.RequestWrapper.Imp {
+		for i, imp := range payload.BidRequest.Imp {
 			if values, ok := valuesByImp[imp.ID]; ok {
 				if len(values) == 0 {
 					continue
@@ -236,7 +236,7 @@ func mutationForImp(
 					imp.Banner = &openrtb2.Banner{}
 				}
 
-				payload.RequestWrapper.Imp[i] = impUpdater(imp, values)
+				payload.BidRequest.Imp[i] = impUpdater(imp, values)
 			}
 		}
 		return payload, nil
@@ -310,7 +310,7 @@ func findImpressionOverrides(
 	overrides := map[string][]int{}
 	messages := []string{}
 
-	for _, imp := range payload.RequestWrapper.Imp {
+	for _, imp := range payload.BidRequest.Imp {
 		// do not add override for attribute if it already exists in request
 		if isAttrPresent(imp) {
 			continue
