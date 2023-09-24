@@ -362,7 +362,7 @@ func TestSetUIDEndpoint(t *testing.T) {
 
 func TestSetUIDPriorityEjection(t *testing.T) {
 	decoder := usersync.Base64Decoder{}
-	analytics := analyticsConf.NewPBSAnalytics(&config.Analytics{})
+	analytics := analyticsBuild.New(&config.Analytics{})
 	syncersByBidder := map[string]string{
 		"pubmatic":             "pubmatic",
 		"syncer1":              "syncer1",
@@ -1546,7 +1546,7 @@ func makeRequest(uri string, existingSyncs map[string]string) *http.Request {
 	return request
 }
 
-func doRequest(req *http.Request, analytics analytics.PBSAnalyticsModule, metrics metrics.MetricsEngine, syncersBidderNameToKey map[string]string, gdprAllowsHostCookies, gdprReturnsError, gdprReturnsMalformedError, cfgAccountRequired bool, maxCookieSize int, priorityGroups [][]string) *httptest.ResponseRecorder {
+func doRequest(req *http.Request, analytics analytics.Runner, metrics metrics.MetricsEngine, syncersBidderNameToKey map[string]string, gdprAllowsHostCookies, gdprReturnsError, gdprReturnsMalformedError, cfgAccountRequired bool, maxCookieSize int, priorityGroups [][]string) *httptest.ResponseRecorder {
 	cfg := config.Configuration{
 		AccountRequired: cfgAccountRequired,
 		BlacklistedAcctMap: map[string]bool{
