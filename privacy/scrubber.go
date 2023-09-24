@@ -128,6 +128,24 @@ func ScrubDeviceIDsIPsUserDemoExt(reqWrapper *openrtb_ext.RequestWrapper, ipConf
 	}
 }
 
+func ScrubUserFPD(reqWrapper *openrtb_ext.RequestWrapper) {
+	ScrubDeviceIDs(reqWrapper)
+	ScrubUserIDs(reqWrapper)
+	ScrubUserExt(reqWrapper, "data")
+	reqWrapper.User.EIDs = nil
+}
+
+func ScrubGdprID(reqWrapper *openrtb_ext.RequestWrapper) {
+	ScrubDeviceIDs(reqWrapper)
+	ScrubUserDemographics(reqWrapper)
+	ScrubUserExt(reqWrapper, "eids")
+}
+
+func ScrubGeoAndDeviceIP(reqWrapper *openrtb_ext.RequestWrapper, ipConf IPConf) {
+	ScrubDeviceIP(reqWrapper, ipConf)
+	ScrubGEO(reqWrapper)
+}
+
 func scrubIP(ip string, ones, bits int) string {
 	if ip == "" {
 		return ""

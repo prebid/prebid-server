@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/prebid/prebid-server/ortb"
 	"math/rand"
 
 	"github.com/buger/jsonparser"
@@ -184,23 +185,17 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		passIDActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitUserFPD, scopedName, privacy.NewRequestFromBidRequest(*req))
 		if !passIDActivityAllowed {
 			//UFPD
-			privacy.ScrubDeviceIDs(reqWrapper)
-			privacy.ScrubUserIDs(reqWrapper)
-			privacy.ScrubUserExt(reqWrapper, "data")
+			privacy.ScrubUserFPD(reqWrapper)
 		} else {
 			// run existing policies (GDPR, CCPA, COPPA, LMT)
 			// potentially block passing IDs based on GDPR
 			if gdprEnforced {
 				if gdprErr == nil {
 					if !auctionPermissions.PassID {
-						privacy.ScrubDeviceIDs(reqWrapper)
-						privacy.ScrubUserDemographics(reqWrapper)
-						privacy.ScrubUserExt(reqWrapper, "eids")
+						privacy.ScrubGdprID(reqWrapper)
 					}
 				} else {
-					privacy.ScrubDeviceIDs(reqWrapper)
-					privacy.ScrubUserDemographics(reqWrapper)
-					privacy.ScrubUserExt(reqWrapper, "eids")
+					privacy.ScrubGdprID(reqWrapper)
 				}
 			}
 			// potentially block passing IDs based on CCPA
@@ -211,20 +206,17 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 
 		passGeoActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitPreciseGeo, scopedName, privacy.NewRequestFromBidRequest(*req))
 		if !passGeoActivityAllowed {
-			privacy.ScrubGEO(reqWrapper)
-			privacy.ScrubDeviceIP(reqWrapper, ipConf)
+			privacy.ScrubGeoAndDeviceIP(reqWrapper, ipConf)
 		} else {
 			// run existing policies (GDPR, CCPA, COPPA, LMT)
 			// potentially block passing geo based on GDPR
 			if gdprEnforced {
 				if gdprErr == nil {
 					if !auctionPermissions.PassGeo {
-						privacy.ScrubDeviceIP(reqWrapper, ipConf)
-						privacy.ScrubGEO(reqWrapper)
+						privacy.ScrubGeoAndDeviceIP(reqWrapper, ipConf)
 					}
 				} else {
-					privacy.ScrubDeviceIP(reqWrapper, ipConf)
-					privacy.ScrubGEO(reqWrapper)
+					privacy.ScrubGeoAndDeviceIP(reqWrapper, ipConf)
 				}
 			}
 			// potentially block passing geo based on CCPA
@@ -267,15 +259,8 @@ func cloneBidderReq(req *openrtb2.BidRequest) *openrtb_ext.RequestWrapper {
 	newReq = ptrutil.Clone(req)
 
 	if req.User != nil {
-		var userCopy *openrtb2.User
-		userCopy = ptrutil.Clone(req.User)
+		userCopy := ortb.CloneUser(req.User)
 		newReq.User = userCopy
-
-		if req.User.Geo != nil {
-			var userGeoCopy *openrtb2.Geo
-			userGeoCopy = ptrutil.Clone(req.User.Geo)
-			newReq.User.Geo = userGeoCopy
-		}
 	}
 
 	if req.Device != nil {
