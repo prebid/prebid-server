@@ -39,6 +39,7 @@ var (
 	errCookieSyncAccountBlocked                    = errors.New("account is disabled, please reach out to the prebid server host")
 	errCookieSyncAccountConfigMalformed            = errors.New("account config is malformed and could not be read")
 	errCookieSyncAccountInvalid                    = errors.New("account must be valid if provided, please reach out to the prebid server host")
+	errSyncerIsNotPriority                         = errors.New("syncer key is not a priority, and there are only priority elements left")
 )
 
 var cookieSyncBidderFilterAllowAll = usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude)
@@ -168,7 +169,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, ma
 		Bidders: request.Bidders,
 		Cooperative: usersync.Cooperative{
 			Enabled:        (request.CooperativeSync != nil && *request.CooperativeSync) || (request.CooperativeSync == nil && c.config.UserSync.Cooperative.EnabledByDefault),
-			PriorityGroups: c.config.UserSync.Cooperative.PriorityGroups,
+			PriorityGroups: c.config.UserSync.PriorityGroups,
 		},
 		Limit: request.Limit,
 		Privacy: usersyncPrivacy{

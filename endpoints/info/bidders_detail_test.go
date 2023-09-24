@@ -225,6 +225,7 @@ func TestMapDetailFromConfig(t *testing.T) {
 				Capabilities: &config.CapabilitiesInfo{
 					App:  &config.PlatformInfo{MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner}},
 					Site: &config.PlatformInfo{MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeVideo}},
+					DOOH: &config.PlatformInfo{MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeNative}},
 				},
 			},
 			expected: bidderDetail{
@@ -236,6 +237,7 @@ func TestMapDetailFromConfig(t *testing.T) {
 				Capabilities: &capabilities{
 					App:  &platform{MediaTypes: []string{"banner"}},
 					Site: &platform{MediaTypes: []string{"video"}},
+					DOOH: &platform{MediaTypes: []string{"native"}},
 				},
 				AliasOf: "",
 			},

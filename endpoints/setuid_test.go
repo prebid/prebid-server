@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -332,7 +333,7 @@ func TestSetUIDEndpoint(t *testing.T) {
 
 	for _, test := range testCases {
 		response := doRequest(makeRequest(test.uri, test.existingSyncs), analytics, metrics,
-			test.syncersBidderNameToKey, test.gdprAllowsHostCookies, test.gdprReturnsError, test.gdprMalformed, false)
+			test.syncersBidderNameToKey, test.gdprAllowsHostCookies, test.gdprReturnsError, test.gdprMalformed, false, 0, nil)
 		assert.Equal(t, test.expectedStatusCode, response.Code, "Test Case: %s. /setuid returned unexpected error code", test.description)
 
 		if test.expectedSyncs != nil {
@@ -356,6 +357,135 @@ func TestSetUIDEndpoint(t *testing.T) {
 			test.expectedHeaders = map[string]string{}
 		}
 		assert.Equal(t, test.expectedHeaders, responseHeaders, test.description+":headers")
+	}
+}
+
+func TestSetUIDPriorityEjection(t *testing.T) {
+	decoder := usersync.Base64Decoder{}
+	analytics := analyticsConf.NewPBSAnalytics(&config.Analytics{})
+	syncersByBidder := map[string]string{
+		"pubmatic":             "pubmatic",
+		"syncer1":              "syncer1",
+		"syncer2":              "syncer2",
+		"syncer3":              "syncer3",
+		"syncer4":              "syncer4",
+		"mismatchedBidderName": "syncer5",
+		"syncerToEject":        "syncerToEject",
+	}
+
+	testCases := []struct {
+		description           string
+		uri                   string
+		givenExistingSyncs    []string
+		givenPriorityGroups   [][]string
+		givenMaxCookieSize    int
+		expectedStatusCode    int
+		expectedSyncer        string
+		expectedUID           string
+		expectedNumOfElements int
+		expectedWarning       string
+	}{
+		{
+			description:           "Cookie empty, expect bidder to be synced, no ejection",
+			uri:                   "/setuid?bidder=pubmatic&uid=123",
+			givenPriorityGroups:   [][]string{},
+			givenMaxCookieSize:    500,
+			expectedSyncer:        "pubmatic",
+			expectedUID:           "123",
+			expectedNumOfElements: 1,
+			expectedStatusCode:    http.StatusOK,
+		},
+		{
+			description:           "Cookie full, no priority groups, one ejection",
+			uri:                   "/setuid?bidder=pubmatic&uid=123",
+			givenExistingSyncs:    []string{"syncer1", "syncer2", "syncer3", "syncer4"},
+			givenPriorityGroups:   [][]string{},
+			givenMaxCookieSize:    500,
+			expectedUID:           "123",
+			expectedSyncer:        "pubmatic",
+			expectedNumOfElements: 4,
+			expectedStatusCode:    http.StatusOK,
+		},
+		{
+			description:           "Cookie full, eject lowest priority element",
+			uri:                   "/setuid?bidder=pubmatic&uid=123",
+			givenExistingSyncs:    []string{"syncer2", "syncer3", "syncer4", "syncerToEject"},
+			givenPriorityGroups:   [][]string{{"pubmatic", "syncer2", "syncer3", "syncer4"}, {"syncerToEject"}},
+			givenMaxCookieSize:    500,
+			expectedUID:           "123",
+			expectedSyncer:        "pubmatic",
+			expectedNumOfElements: 4,
+			expectedStatusCode:    http.StatusOK,
+		},
+		{
+			description:           "Cookie full, all elements same priority, one ejection",
+			uri:                   "/setuid?bidder=pubmatic&uid=123",
+			givenExistingSyncs:    []string{"syncer1", "syncer2", "syncer3", "syncer5"},
+			givenPriorityGroups:   [][]string{{"pubmatic", "syncer1", "syncer2", "syncer3", "mismatchedBidderName"}},
+			givenMaxCookieSize:    500,
+			expectedUID:           "123",
+			expectedSyncer:        "pubmatic",
+			expectedNumOfElements: 4,
+			expectedStatusCode:    http.StatusOK,
+		},
+		{
+			description:         "There are only priority elements left, but the bidder being synced isn't one",
+			uri:                 "/setuid?bidder=pubmatic&uid=123",
+			givenExistingSyncs:  []string{"syncer1", "syncer2", "syncer3", "syncer4"},
+			givenPriorityGroups: [][]string{{"syncer1", "syncer2", "syncer3", "syncer4"}},
+			givenMaxCookieSize:  500,
+			expectedStatusCode:  http.StatusOK,
+			expectedWarning:     "Warning: syncer key is not a priority, and there are only priority elements left, cookie not updated",
+		},
+		{
+			description:        "Uid that's trying to be synced is bigger than MaxCookieSize",
+			uri:                "/setuid?bidder=pubmatic&uid=123",
+			givenMaxCookieSize: 1,
+			expectedStatusCode: http.StatusBadRequest,
+		},
+	}
+	for _, test := range testCases {
+		request := httptest.NewRequest("GET", test.uri, nil)
+
+		// Cookie Set Up
+		cookie := usersync.NewCookie()
+		for _, key := range test.givenExistingSyncs {
+			cookie.Sync(key, "111")
+		}
+		httpCookie, err := ToHTTPCookie(cookie)
+		assert.NoError(t, err)
+		request.AddCookie(httpCookie)
+
+		// Make Request to /setuid
+		response := doRequest(request, analytics, &metricsConf.NilMetricsEngine{}, syncersByBidder, true, false, false, false, test.givenMaxCookieSize, test.givenPriorityGroups)
+
+		if test.expectedWarning != "" {
+			assert.Equal(t, test.expectedWarning, response.Body.String(), test.description)
+		} else if test.expectedSyncer != "" {
+			// Get Cookie From Header
+			var cookieHeader string
+			for k, v := range response.Result().Header {
+				if k == "Set-Cookie" {
+					cookieHeader = v[0]
+				}
+			}
+			encodedCookieValue := getUIDFromHeader(cookieHeader)
+
+			// Check That Bidder On Request was Synced, it's UID matches, and that the right number of elements are present after ejection
+			decodedCookie := decoder.Decode(encodedCookieValue)
+			decodedCookieUIDs := decodedCookie.GetUIDs()
+
+			assert.Equal(t, test.expectedUID, decodedCookieUIDs[test.expectedSyncer], test.description)
+			assert.Equal(t, test.expectedNumOfElements, len(decodedCookieUIDs), test.description)
+
+			// Specific test case handling where we eject the lowest priority element
+			if len(test.givenPriorityGroups) == 2 {
+				syncer := test.givenPriorityGroups[len(test.givenPriorityGroups)-1][0]
+				_, syncerExists := decodedCookieUIDs[syncer]
+				assert.False(t, syncerExists, test.description)
+			}
+		}
+		assert.Equal(t, test.expectedStatusCode, response.Result().StatusCode, test.description)
 	}
 }
 
@@ -1214,7 +1344,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 		for _, v := range test.cookies {
 			addCookie(req, v)
 		}
-		response := doRequest(req, analyticsEngine, metricsEngine, test.syncersBidderNameToKey, test.gdprAllowsHostCookies, false, false, test.cfgAccountRequired)
+		response := doRequest(req, analyticsEngine, metricsEngine, test.syncersBidderNameToKey, test.gdprAllowsHostCookies, false, false, test.cfgAccountRequired, 0, nil)
 
 		assert.Equal(t, test.expectedResponseCode, response.Code, test.description)
 		analyticsEngine.AssertExpectations(t)
@@ -1230,7 +1360,7 @@ func TestOptedOut(t *testing.T) {
 	syncersBidderNameToKey := map[string]string{"pubmatic": "pubmatic"}
 	analytics := analyticsConf.NewPBSAnalytics(&config.Analytics{})
 	metrics := &metricsConf.NilMetricsEngine{}
-	response := doRequest(request, analytics, metrics, syncersBidderNameToKey, true, false, false, false)
+	response := doRequest(request, analytics, metrics, syncersBidderNameToKey, true, false, false, false, 0, nil)
 
 	assert.Equal(t, http.StatusUnauthorized, response.Code)
 }
@@ -1341,6 +1471,56 @@ func TestGetResponseFormat(t *testing.T) {
 	}
 }
 
+func TestIsSyncerPriority(t *testing.T) {
+	testCases := []struct {
+		name                           string
+		givenBidderNameFromSyncerQuery string
+		givenPriorityGroups            [][]string
+		expected                       bool
+	}{
+		{
+			name:                           "bidder-name-is-priority",
+			givenBidderNameFromSyncerQuery: "priorityBidder",
+			givenPriorityGroups: [][]string{
+				{"priorityBidder"},
+				{"2", "3"},
+			},
+			expected: true,
+		},
+		{
+			name:                           "bidder-name-is-not-priority",
+			givenBidderNameFromSyncerQuery: "notPriorityBidderName",
+			givenPriorityGroups: [][]string{
+				{"1"},
+				{"2", "3"},
+			},
+			expected: false,
+		},
+		{
+			name:                           "no-bidder-name-given",
+			givenBidderNameFromSyncerQuery: "",
+			givenPriorityGroups: [][]string{
+				{"1"},
+				{"2", "3"},
+			},
+			expected: false,
+		},
+		{
+			name:                           "no-priority-groups-given",
+			givenBidderNameFromSyncerQuery: "bidderName",
+			givenPriorityGroups:            [][]string{},
+			expected:                       false,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			isPriority := isSyncerPriority(test.givenBidderNameFromSyncerQuery, test.givenPriorityGroups)
+			assert.Equal(t, test.expected, isPriority)
+		})
+	}
+}
+
 func assertHasSyncs(t *testing.T, testCase string, resp *httptest.ResponseRecorder, syncs map[string]string) {
 	t.Helper()
 	cookie := parseCookieString(t, resp)
@@ -1366,13 +1546,19 @@ func makeRequest(uri string, existingSyncs map[string]string) *http.Request {
 	return request
 }
 
-func doRequest(req *http.Request, analytics analytics.PBSAnalyticsModule, metrics metrics.MetricsEngine, syncersBidderNameToKey map[string]string, gdprAllowsHostCookies, gdprReturnsError, gdprReturnsMalformedError, cfgAccountRequired bool) *httptest.ResponseRecorder {
+func doRequest(req *http.Request, analytics analytics.PBSAnalyticsModule, metrics metrics.MetricsEngine, syncersBidderNameToKey map[string]string, gdprAllowsHostCookies, gdprReturnsError, gdprReturnsMalformedError, cfgAccountRequired bool, maxCookieSize int, priorityGroups [][]string) *httptest.ResponseRecorder {
 	cfg := config.Configuration{
 		AccountRequired: cfgAccountRequired,
 		BlacklistedAcctMap: map[string]bool{
 			"blocked_acct": true,
 		},
 		AccountDefaults: config.Account{},
+		UserSync: config.UserSync{
+			PriorityGroups: priorityGroups,
+		},
+		HostCookie: config.HostCookie{
+			MaxCookieSizeBytes: maxCookieSize,
+		},
 	}
 	cfg.MarshalAccountDefaults()
 
@@ -1395,6 +1581,10 @@ func doRequest(req *http.Request, analytics analytics.PBSAnalyticsModule, metric
 	syncersByBidder := make(map[string]usersync.Syncer)
 	for bidderName, syncerKey := range syncersBidderNameToKey {
 		syncersByBidder[bidderName] = fakeSyncer{key: syncerKey, defaultSyncType: usersync.SyncTypeIFrame}
+		if priorityGroups == nil {
+			cfg.UserSync.PriorityGroups = [][]string{{}}
+			cfg.UserSync.PriorityGroups[0] = append(cfg.UserSync.PriorityGroups[0], bidderName)
+		}
 	}
 
 	fakeAccountsFetcher := FakeAccountsFetcher{AccountData: map[string]json.RawMessage{
@@ -1512,4 +1702,18 @@ func ToHTTPCookie(cookie *usersync.Cookie) (*http.Cookie, error) {
 		Expires: time.Now().Add((90 * 24 * time.Hour)),
 		Path:    "/",
 	}, nil
+}
+
+func getUIDFromHeader(setCookieHeader string) string {
+	cookies := strings.Split(setCookieHeader, ";")
+	for _, cookie := range cookies {
+		trimmedCookie := strings.TrimSpace(cookie)
+		if strings.HasPrefix(trimmedCookie, "uids=") {
+			parts := strings.SplitN(trimmedCookie, "=", 2)
+			if len(parts) == 2 {
+				return parts[1]
+			}
+		}
+	}
+	return ""
 }
