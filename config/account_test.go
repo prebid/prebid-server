@@ -205,6 +205,7 @@ func TestAccountChannelGetByChannelType(t *testing.T) {
 		giveAppEnabled   *bool
 		giveVideoEnabled *bool
 		giveWebEnabled   *bool
+		giveDOOHEnabled  *bool
 		giveChannelType  ChannelType
 		wantEnabled      *bool
 	}{
@@ -276,6 +277,23 @@ func TestAccountChannelGetByChannelType(t *testing.T) {
 			giveChannelType: ChannelWeb,
 			wantEnabled:     &trueValue,
 		},
+		{
+			description:     "DOOH channel setting unspecified, returns nil",
+			giveChannelType: ChannelDOOH,
+			wantEnabled:     nil,
+		},
+		{
+			description:     "DOOH channel disabled, returns false",
+			giveDOOHEnabled: &falseValue,
+			giveChannelType: ChannelDOOH,
+			wantEnabled:     &falseValue,
+		},
+		{
+			description:     "DOOH channel enabled, returns true",
+			giveDOOHEnabled: &trueValue,
+			giveChannelType: ChannelDOOH,
+			wantEnabled:     &trueValue,
+		},
 	}
 
 	for _, tt := range tests {
@@ -284,6 +302,7 @@ func TestAccountChannelGetByChannelType(t *testing.T) {
 			App:   tt.giveAppEnabled,
 			Video: tt.giveVideoEnabled,
 			Web:   tt.giveWebEnabled,
+			DOOH:  tt.giveDOOHEnabled,
 		}
 
 		result := accountChannel.GetByChannelType(tt.giveChannelType)
@@ -836,7 +855,7 @@ func TestAccountChannelIsSet(t *testing.T) {
 	}{
 		{
 			name:                "AccountChannelSetAllFields",
-			givenAccountChannel: &AccountChannel{AMP: &trueBool, App: &falseBool, Video: &falseBool, Web: &falseBool},
+			givenAccountChannel: &AccountChannel{AMP: &trueBool, App: &falseBool, Video: &falseBool, Web: &falseBool, DOOH: &falseBool},
 			expected:            true,
 		},
 		{

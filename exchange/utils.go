@@ -29,10 +29,11 @@ import (
 )
 
 var channelTypeMap = map[metrics.RequestType]config.ChannelType{
-	metrics.ReqTypeAMP:      config.ChannelAMP,
-	metrics.ReqTypeORTB2App: config.ChannelApp,
-	metrics.ReqTypeVideo:    config.ChannelVideo,
-	metrics.ReqTypeORTB2Web: config.ChannelWeb,
+	metrics.ReqTypeAMP:       config.ChannelAMP,
+	metrics.ReqTypeORTB2App:  config.ChannelApp,
+	metrics.ReqTypeVideo:     config.ChannelVideo,
+	metrics.ReqTypeORTB2Web:  config.ChannelWeb,
+	metrics.ReqTypeORTB2DOOH: config.ChannelDOOH,
 }
 
 const unknownBidder string = ""
