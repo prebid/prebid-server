@@ -1,5 +1,5 @@
 package privacy
 
 type Rule interface {
-	Evaluate(target Component) ActivityResult
+	Evaluate(target Component, request ActivityRequest) ActivityResult
 }
