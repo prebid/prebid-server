@@ -97,7 +97,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderDmx,
 	BidderEmtv,
 	BidderEmxDigital,
-	BidderEngageBDR,
 	BidderEPlanning,
 	BidderEpom,
 	BidderEpsilon,
@@ -392,7 +391,6 @@ const (
 	BidderDmx               BidderName = "dmx"
 	BidderEmtv              BidderName = "emtv"
 	BidderEmxDigital        BidderName = "emx_digital"
-	BidderEngageBDR         BidderName = "engagebdr"
 	BidderEPlanning         BidderName = "eplanning"
 	BidderEpsilon           BidderName = "epsilon"
 	BidderEpom              BidderName = "epom"
