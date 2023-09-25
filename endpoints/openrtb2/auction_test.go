@@ -5773,3 +5773,59 @@ func TestSetSeatNonBidRaw(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateAliases(t *testing.T) {
+	deps := &endpointDeps{
+		disabledBidders: map[string]string{"rubicon": "rubicon"},
+		bidderMap:       map[string]openrtb_ext.BidderName{"appnexus": openrtb_ext.BidderName("appnexus")},
+	}
+
+	testCases := []struct {
+		description     string
+		aliases         map[string]string
+		expectedAliases map[string]string
+		expectedError   error
+	}{
+		{
+			description:     "valid case",
+			aliases:         map[string]string{"test": "appnexus"},
+			expectedAliases: map[string]string{"test": "appnexus"},
+			expectedError:   nil,
+		},
+		{
+			description:     "valid case - case insensitive",
+			aliases:         map[string]string{"test": "Appnexus"},
+			expectedAliases: map[string]string{"test": "appnexus"},
+			expectedError:   nil,
+		},
+		{
+			description:     "disabled bidder",
+			aliases:         map[string]string{"test": "rubicon"},
+			expectedAliases: nil,
+			expectedError:   errors.New("request.ext.prebid.aliases.test refers to disabled bidder: rubicon"),
+		},
+		{
+			description:     "coreBidderName not found",
+			aliases:         map[string]string{"test": "anyBidder"},
+			expectedAliases: nil,
+			expectedError:   errors.New("request.ext.prebid.aliases.test refers to unknown bidder: anyBidder"),
+		},
+		{
+			description:     "alias name is coreBidder name",
+			aliases:         map[string]string{"appnexus": "appnexus"},
+			expectedAliases: nil,
+			expectedError:   errors.New("request.ext.prebid.aliases.appnexus defines a no-op alias. Choose a different alias, or remove this entry."),
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.description, func(t *testing.T) {
+			err := deps.validateAliases(testCase.aliases)
+			if err != nil {
+				assert.Equal(t, testCase.expectedError, err)
+			} else {
+				assert.ObjectsAreEqualValues(testCase.expectedAliases, map[string]string{"test": "appnexus"})
+			}
+		})
+	}
+}
