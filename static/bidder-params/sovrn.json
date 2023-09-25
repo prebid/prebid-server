@@ -16,6 +16,10 @@
     "bidfloor": {
       "type": "number",
       "description": "The minimium acceptable bid, in CPM, using US Dollars"
+    },
+    "adunitcode": {
+      "type": "string",
+      "description": "The string which identifies Ad Unit"
     }
   },
   "oneOf": [

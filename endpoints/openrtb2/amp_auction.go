@@ -6,11 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/privacy"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/prebid/prebid-server/privacy"
 
 	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
@@ -229,12 +230,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 
 	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
 
-	activities, activitiesErr := privacy.NewActivityControl(&account.Privacy)
-	if activitiesErr != nil {
-		errL = append(errL, activitiesErr)
-		writeError(errL, w, &labels)
-		return
-	}
+	activityControl := privacy.NewActivityControl(&account.Privacy)
 
 	secGPC := r.Header.Get("Sec-GPC")
 
@@ -253,7 +249,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		HookExecutor:               hookExecutor,
 		QueryParams:                r.URL.Query(),
 		TCF2Config:                 tcf2Config,
-		Activities:                 activities,
+		Activities:                 activityControl,
 		TmaxAdjustments:            deps.tmaxAdjustments,
 	}
 

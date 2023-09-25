@@ -22,6 +22,7 @@ type UserSyncDeps struct {
 	ExternalUrl      string
 	RecaptchaSecret  string
 	HostCookieConfig *config.HostCookie
+	PriorityGroups   [][]string
 }
 
 // Struct for parsing json in google's response
@@ -81,7 +82,7 @@ func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httpr
 	pc.SetOptOut(optout != "")
 
 	// Write Cookie
-	encodedCookie, err := pc.PrepareCookieForWrite(deps.HostCookieConfig, encoder)
+	encodedCookie, err := encoder.Encode(pc)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return

@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/privacy"
+	"github.com/prebid/prebid-server/macros"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -160,7 +160,7 @@ func TestBuildSyncers(t *testing.T) {
 			assert.Empty(t, errs, test.description+":err")
 			resultRenderedIFrameURLS := map[string]string{}
 			for k, v := range result {
-				iframeRendered, err := v.GetSync([]SyncType{SyncTypeIFrame}, privacy.Policies{})
+				iframeRendered, err := v.GetSync([]SyncType{SyncTypeIFrame}, macros.UserSyncPrivacy{})
 				if assert.NoError(t, err, test.description+"key:%s,:iframe_render", k) {
 					resultRenderedIFrameURLS[k] = iframeRendered.URL
 				}

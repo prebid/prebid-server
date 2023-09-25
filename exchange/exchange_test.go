@@ -2352,10 +2352,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		impExtInfoMap[impID] = ImpExtInfo{}
 	}
 
-	activityControl, err := privacy.NewActivityControl(spec.AccountPrivacy)
-	if err != nil {
-		t.Errorf("%s: Exchange returned an unexpected error. Got %s", filename, err.Error())
-	}
+	activityControl := privacy.NewActivityControl(spec.AccountPrivacy)
 
 	auctionRequest := &AuctionRequest{
 		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &spec.IncomingRequest.OrtbRequest},
