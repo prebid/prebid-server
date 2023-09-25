@@ -120,6 +120,7 @@ func (a *ImprovedigitalAdapter) MakeBids(internalRequest *openrtb2.BidRequest, e
 	}
 
 	var bidResp openrtb2.BidResponse
+	var impMap = make(map[string]openrtb2.Imp)
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
@@ -142,10 +143,14 @@ func (a *ImprovedigitalAdapter) MakeBids(internalRequest *openrtb2.BidRequest, e
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(seatBid.Bid))
 	bidResponse.Currency = bidResp.Cur
 
+	for i := range internalRequest.Imp {
+		impMap[internalRequest.Imp[i].ID] = internalRequest.Imp[i]
+	}
+
 	for i := range seatBid.Bid {
 		bid := seatBid.Bid[i]
 
-		bidType, err := getBidType(bid, internalRequest.Imp)
+		bidType, err := getBidType(bid, impMap)
 		if err != nil {
 			return nil, []error{err}
 		}
@@ -179,11 +184,13 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	return bidder, nil
 }
 
-func getBidType(bid openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
+func getBidType(bid openrtb2.Bid, impMap map[string]openrtb2.Imp) (openrtb_ext.BidType, error) {
 	// there must be a matching imp against bid.ImpID
-	imp, err := findImpByID(bid.ImpID, imps)
-	if err != nil {
-		return "", err
+	imp, found := impMap[bid.ImpID]
+	if !found {
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Failed to find impression for ID: \"%s\"", bid.ImpID),
+		}
 	}
 
 	// if MType is not set in server response, try to determine it
@@ -226,17 +233,6 @@ func getBidType(bid openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, err
 		return "", &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Unsupported MType %d for impression with ID: \"%s\"", bid.MType, bid.ImpID),
 		}
-	}
-}
-
-func findImpByID(impID string, imps []openrtb2.Imp) (openrtb2.Imp, error) {
-	for _, imp := range imps {
-		if imp.ID == impID {
-			return imp, nil
-		}
-	}
-	return openrtb2.Imp{}, &errortypes.BadServerResponse{
-		Message: fmt.Sprintf("Failed to find impression for ID: \"%s\"", impID),
 	}
 }
 
