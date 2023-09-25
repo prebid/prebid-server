@@ -28,9 +28,9 @@ jobs:
           result-encoding: string
           script: |
             const utils = require('./.github/workflows/helpers/pull-request-utils.js')            
-            function directoryExtractor(filepath) {
-              // extract directory name from filepath of the form adapters/<adapter-name>/*.go
-              if (filepath.startsWith("adapters/") && filepath.split("/").length > 2) {
+            function directoryExtractor(filepath, status) {
+              // extract directory name only if file is not removed and file is in adapters directory
+              if (status != "removed" && filepath.startsWith("adapters/") && filepath.split("/").length > 2) {
                 return filepath.split("/")[1]
               }
               return ""
