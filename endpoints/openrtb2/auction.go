@@ -954,7 +954,14 @@ func (deps *endpointDeps) validateBidAdjustmentFactors(adjustmentFactors map[str
 		if adjustmentFactor <= 0 {
 			return fmt.Errorf("request.ext.prebid.bidadjustmentfactors.%s must be a positive number. Got %f", bidderToAdjust, adjustmentFactor)
 		}
-		if _, isBidder := deps.bidderMap[bidderToAdjust]; !isBidder {
+
+		bidderName := bidderToAdjust
+		normalizedCoreBidder, ok := openrtb_ext.NormalizeBidderName(bidderToAdjust)
+		if ok {
+			bidderName = normalizedCoreBidder.String()
+		}
+
+		if _, isBidder := deps.bidderMap[bidderName]; !isBidder {
 			if _, isAlias := aliases[bidderToAdjust]; !isAlias {
 				return fmt.Errorf("request.ext.prebid.bidadjustmentfactors.%s is not a known bidder or alias", bidderToAdjust)
 			}
