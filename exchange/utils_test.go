@@ -23,6 +23,8 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+const deviceUA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.87 Safari/537.36"
+
 // permissionsMock mocks the Permissions interface for tests
 type permissionsMock struct {
 	allowAllBidders bool
@@ -2287,6 +2289,7 @@ func TestCleanOpenRTBRequestsWithOpenRTBDowngrade(t *testing.T) {
 	bidReq.User.ID = ""
 	bidReq.User.BuyerUID = ""
 	bidReq.User.Yob = 0
+	bidReq.User.Gender = ""
 	bidReq.User.Geo = &openrtb2.Geo{Lat: 123.46}
 
 	downgradedRegs := *bidReq.Regs
@@ -2544,7 +2547,7 @@ func newAdapterAliasBidRequest(t *testing.T) *openrtb2.BidRequest {
 		},
 		Device: &openrtb2.Device{
 			DIDMD5:   "some device ID hash",
-			UA:       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.87 Safari/537.36",
+			UA:       deviceUA,
 			IFA:      "ifa",
 			IP:       "132.173.230.74",
 			DNT:      &dnt,
@@ -2588,11 +2591,17 @@ func newBidRequest(t *testing.T) *openrtb2.BidRequest {
 			},
 		},
 		Device: &openrtb2.Device{
-			DIDMD5:   "some device ID hash",
-			UA:       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.87 Safari/537.36",
-			IFA:      "ifa",
+			UA:       deviceUA,
 			IP:       "132.173.230.74",
 			Language: "EN",
+			DIDMD5:   "DIDMD5",
+			IFA:      "IFA",
+			DIDSHA1:  "DIDSHA1",
+			DPIDMD5:  "DPIDMD5",
+			DPIDSHA1: "DPIDSHA1",
+			MACMD5:   "MACMD5",
+			MACSHA1:  "MACSHA1",
+			Geo:      &openrtb2.Geo{Lat: 123.456, Lon: 11.278},
 		},
 		Source: &openrtb2.Source{
 			TID: "testTID",
@@ -2601,8 +2610,13 @@ func newBidRequest(t *testing.T) *openrtb2.BidRequest {
 			ID:       "our-id",
 			BuyerUID: "their-id",
 			Yob:      1982,
-			Ext:      json.RawMessage(`{}`),
-			Geo:      &openrtb2.Geo{Lat: 123.456},
+			Gender:   "test",
+			Ext:      json.RawMessage(`{"data": 1, "test": 2}`),
+			Geo:      &openrtb2.Geo{Lat: 123.456, Lon: 11.278},
+			EIDs: []openrtb2.EID{
+				{Source: "eids-source"},
+			},
+			Data: []openrtb2.Data{{ID: "data-id"}},
 		},
 		Imp: []openrtb2.Imp{{
 			BidFloor: 100,
@@ -2632,7 +2646,7 @@ func newBidRequestWithBidderParams(t *testing.T) *openrtb2.BidRequest {
 		},
 		Device: &openrtb2.Device{
 			DIDMD5:   "some device ID hash",
-			UA:       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.87 Safari/537.36",
+			UA:       deviceUA,
 			IFA:      "ifa",
 			IP:       "132.173.230.74",
 			Language: "EN",
@@ -4382,126 +4396,210 @@ func TestGetMediaTypeForBid(t *testing.T) {
 }
 
 func TestCleanOpenRTBRequestsActivities(t *testing.T) {
+	expectedUserDefault := openrtb2.User{
+		ID:       "our-id",
+		BuyerUID: "their-id",
+		Yob:      1982,
+		Gender:   "test",
+		Ext:      json.RawMessage(`{"data": 1, "test": 2}`),
+		Geo:      &openrtb2.Geo{Lat: 123.456, Lon: 11.278},
+		EIDs: []openrtb2.EID{
+			{Source: "eids-source"},
+		},
+		Data: []openrtb2.Data{{ID: "data-id"}},
+	}
+	expectedDeviceDefault := openrtb2.Device{
+		UA:       deviceUA,
+		IP:       "132.173.230.74",
+		Language: "EN",
+		DIDMD5:   "DIDMD5",
+		IFA:      "IFA",
+		DIDSHA1:  "DIDSHA1",
+		DPIDMD5:  "DPIDMD5",
+		DPIDSHA1: "DPIDSHA1",
+		MACMD5:   "MACMD5",
+		MACSHA1:  "MACSHA1",
+		Geo:      &openrtb2.Geo{Lat: 123.456, Lon: 11.278},
+	}
+
+	expectedSourceDefault := openrtb2.Source{
+		TID: "testTID",
+	}
+
 	testCases := []struct {
-		name                 string
-		req                  *openrtb2.BidRequest
-		privacyConfig        config.AccountPrivacy
-		componentName        string
-		allow                bool
-		expectedReqNumber    int
-		expectedUserYOB      int64
-		expectedUserLat      float64
-		expectedDeviceDIDMD5 string
-		expectedSourceTID    string
+		name              string
+		req               *openrtb2.BidRequest
+		privacyConfig     config.AccountPrivacy
+		componentName     string
+		allow             bool
+		expectedReqNumber int
+		expectedUser      openrtb2.User
+		expectedDevice    openrtb2.Device
+		expectedSource    openrtb2.Source
+		expectedImpExt    json.RawMessage
 	}{
 		{
-			name:                 "fetch_bids_request_with_one_bidder_allowed",
-			req:                  newBidRequest(t),
-			privacyConfig:        getFetchBidsActivityConfig("appnexus", true),
-			expectedReqNumber:    1,
-			expectedUserYOB:      1982,
-			expectedUserLat:      123.456,
-			expectedDeviceDIDMD5: "some device ID hash",
-			expectedSourceTID:    "testTID",
+			name:              "fetch_bids_request_with_one_bidder_allowed",
+			req:               newBidRequest(t),
+			privacyConfig:     getFetchBidsActivityConfig("appnexus", true),
+			expectedReqNumber: 1,
+			expectedUser:      expectedUserDefault,
+			expectedDevice:    expectedDeviceDefault,
+			expectedSource:    expectedSourceDefault,
 		},
 		{
-			name:                 "fetch_bids_request_with_one_bidder_not_allowed",
-			req:                  newBidRequest(t),
-			privacyConfig:        getFetchBidsActivityConfig("appnexus", false),
-			expectedReqNumber:    0,
-			expectedUserYOB:      1982,
-			expectedUserLat:      123.456,
-			expectedDeviceDIDMD5: "some device ID hash",
-			expectedSourceTID:    "testTID",
+			name:              "fetch_bids_request_with_one_bidder_not_allowed",
+			req:               newBidRequest(t),
+			privacyConfig:     getFetchBidsActivityConfig("appnexus", false),
+			expectedReqNumber: 0,
+			expectedUser:      expectedUserDefault,
+			expectedDevice:    expectedDeviceDefault,
+			expectedSource:    expectedSourceDefault,
 		},
 		{
-			name:                 "transmit_ufpd_allowed",
-			req:                  newBidRequest(t),
-			privacyConfig:        getTransmitUFPDActivityConfig("appnexus", true),
-			expectedReqNumber:    1,
-			expectedUserYOB:      1982,
-			expectedUserLat:      123.456,
-			expectedDeviceDIDMD5: "some device ID hash",
-			expectedSourceTID:    "testTID",
+			name:              "transmit_ufpd_allowed",
+			req:               newBidRequest(t),
+			privacyConfig:     getTransmitUFPDActivityConfig("appnexus", true),
+			expectedReqNumber: 1,
+			expectedUser:      expectedUserDefault,
+			expectedDevice:    expectedDeviceDefault,
+			expectedSource:    expectedSourceDefault,
 		},
 		{
-			name:                 "transmit_ufpd_deny",
-			req:                  newBidRequest(t),
-			privacyConfig:        getTransmitUFPDActivityConfig("appnexus", false),
-			expectedReqNumber:    1,
-			expectedUserYOB:      0,
-			expectedUserLat:      123.456,
-			expectedDeviceDIDMD5: "",
-			expectedSourceTID:    "testTID",
+			//remove user.eids, user.ext.data.*, user.data.*, user.{id, buyeruid, yob, gender}
+			//and device-specific IDs
+			name:              "transmit_ufpd_deny",
+			req:               newBidRequest(t),
+			privacyConfig:     getTransmitUFPDActivityConfig("appnexus", false),
+			expectedReqNumber: 1,
+			expectedUser: openrtb2.User{
+				ID:       "",
+				BuyerUID: "",
+				Yob:      0,
+				Geo:      &openrtb2.Geo{Lat: 123.456, Lon: 11.278},
+				EIDs:     nil,
+				Ext:      json.RawMessage(`{"test":2}`),
+				Data:     nil,
+			},
+			expectedDevice: openrtb2.Device{
+				UA:       deviceUA,
+				Language: "EN",
+				IP:       "132.173.230.74",
+				DIDMD5:   "",
+				IFA:      "",
+				DIDSHA1:  "",
+				DPIDMD5:  "",
+				DPIDSHA1: "",
+				MACMD5:   "",
+				MACSHA1:  "",
+				Geo:      &openrtb2.Geo{Lat: 123.456, Lon: 11.278},
+			},
+			expectedSource: expectedSourceDefault,
 		},
 		{
-			name:                 "transmit_precise_geo_allowed",
-			req:                  newBidRequest(t),
-			privacyConfig:        getTransmitPreciseGeoActivityConfig("appnexus", true),
-			expectedReqNumber:    1,
-			expectedUserYOB:      1982,
-			expectedUserLat:      123.456,
-			expectedDeviceDIDMD5: "some device ID hash",
-			expectedSourceTID:    "testTID",
+			name:              "transmit_precise_geo_allowed",
+			req:               newBidRequest(t),
+			privacyConfig:     getTransmitPreciseGeoActivityConfig("appnexus", true),
+			expectedReqNumber: 1,
+			expectedUser:      expectedUserDefault,
+			expectedDevice:    expectedDeviceDefault,
+			expectedSource:    expectedSourceDefault,
 		},
 		{
-			name:                 "transmit_precise_geo_deny",
-			req:                  newBidRequest(t),
-			privacyConfig:        getTransmitPreciseGeoActivityConfig("appnexus", false),
-			expectedReqNumber:    1,
-			expectedUserYOB:      1982,
-			expectedUserLat:      123.46,
-			expectedDeviceDIDMD5: "some device ID hash",
-			expectedSourceTID:    "testTID",
+			//round user's geographic location by rounding off IP address and lat/lng data.
+			//this applies to both device.geo and user.geo
+			name:              "transmit_precise_geo_deny",
+			req:               newBidRequest(t),
+			privacyConfig:     getTransmitPreciseGeoActivityConfig("appnexus", false),
+			expectedReqNumber: 1,
+			expectedUser: openrtb2.User{
+				ID:       "our-id",
+				BuyerUID: "their-id",
+				Yob:      1982,
+				Geo:      &openrtb2.Geo{Lat: 123.46, Lon: 11.28},
+				Gender:   "test",
+				Ext:      json.RawMessage(`{"data": 1, "test": 2}`),
+				EIDs: []openrtb2.EID{
+					{Source: "eids-source"},
+				},
+				Data: []openrtb2.Data{{ID: "data-id"}},
+			},
+			expectedDevice: openrtb2.Device{
+				UA:       deviceUA,
+				IP:       "132.173.0.0",
+				Language: "EN",
+				DIDMD5:   "DIDMD5",
+				IFA:      "IFA",
+				DIDSHA1:  "DIDSHA1",
+				DPIDMD5:  "DPIDMD5",
+				DPIDSHA1: "DPIDSHA1",
+				MACMD5:   "MACMD5",
+				MACSHA1:  "MACSHA1",
+				Geo:      &openrtb2.Geo{Lat: 123.46, Lon: 11.28},
+			},
+			expectedSource: expectedSourceDefault,
 		},
 		{
-			name:                 "transmit_tid_allowed",
-			req:                  newBidRequest(t),
-			privacyConfig:        getTransmitTIDActivityConfig("appnexus", true),
-			expectedReqNumber:    1,
-			expectedUserYOB:      1982,
-			expectedUserLat:      123.456,
-			expectedDeviceDIDMD5: "some device ID hash",
-			expectedSourceTID:    "testTID",
+			name:              "transmit_tid_allowed",
+			req:               newBidRequest(t),
+			privacyConfig:     getTransmitTIDActivityConfig("appnexus", true),
+			expectedReqNumber: 1,
+			expectedUser:      expectedUserDefault,
+			expectedDevice:    expectedDeviceDefault,
+			expectedSource:    expectedSourceDefault,
 		},
 		{
-			name:                 "transmit_tid_deny",
-			req:                  newBidRequest(t),
-			privacyConfig:        getTransmitTIDActivityConfig("appnexus", false),
-			expectedReqNumber:    1,
-			expectedUserYOB:      1982,
-			expectedUserLat:      123.456,
-			expectedDeviceDIDMD5: "some device ID hash",
-			expectedSourceTID:    "",
+			//remove source.tid and imp.ext.tid
+			name:              "transmit_tid_deny",
+			req:               newBidRequest(t),
+			privacyConfig:     getTransmitTIDActivityConfig("appnexus", false),
+			expectedReqNumber: 1,
+			expectedUser:      expectedUserDefault,
+			expectedDevice:    expectedDeviceDefault,
+			expectedSource: openrtb2.Source{
+				TID: "",
+			},
+			expectedImpExt: json.RawMessage(`{"bidder": {"placementId": 1}}`),
 		},
 	}
 
 	for _, test := range testCases {
-		activities := privacy.NewActivityControl(&test.privacyConfig)
-		auctionReq := AuctionRequest{
-			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: test.req},
-			UserSyncs:         &emptyUsersync{},
-			Activities:        activities,
-		}
-
-		bidderToSyncerKey := map[string]string{}
-		reqSplitter := &requestSplitter{
-			bidderToSyncerKey: bidderToSyncerKey,
-			me:                &metrics.MetricsEngineMock{},
-			hostSChainNode:    nil,
-			bidderInfo:        config.BidderInfos{},
-		}
-
 		t.Run(test.name, func(t *testing.T) {
+			activities := privacy.NewActivityControl(&test.privacyConfig)
+			auctionReq := AuctionRequest{
+				BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: test.req},
+				UserSyncs:         &emptyUsersync{},
+				Activities:        activities,
+				Account: config.Account{Privacy: config.AccountPrivacy{
+					IPv6Config: config.IPv6{
+						AnonKeepBits: 32,
+					},
+					IPv4Config: config.IPv4{
+						AnonKeepBits: 16,
+					},
+				}},
+			}
+
+			bidderToSyncerKey := map[string]string{}
+			reqSplitter := &requestSplitter{
+				bidderToSyncerKey: bidderToSyncerKey,
+				me:                &metrics.MetricsEngineMock{},
+				hostSChainNode:    nil,
+				bidderInfo:        config.BidderInfos{},
+			}
+
 			bidderRequests, _, errs := reqSplitter.cleanOpenRTBRequests(context.Background(), auctionReq, nil, gdpr.SignalNo, map[string]float64{})
 			assert.Empty(t, errs)
 			assert.Len(t, bidderRequests, test.expectedReqNumber)
 
 			if test.expectedReqNumber == 1 {
-				assert.Equal(t, test.expectedUserYOB, bidderRequests[0].BidRequest.User.Yob)
-				assert.Equal(t, test.expectedUserLat, bidderRequests[0].BidRequest.User.Geo.Lat)
-				assert.Equal(t, test.expectedDeviceDIDMD5, bidderRequests[0].BidRequest.Device.DIDMD5)
-				assert.Equal(t, test.expectedSourceTID, bidderRequests[0].BidRequest.Source.TID)
+				assert.Equal(t, &test.expectedUser, bidderRequests[0].BidRequest.User)
+				assert.Equal(t, &test.expectedDevice, bidderRequests[0].BidRequest.Device)
+				assert.Equal(t, &test.expectedSource, bidderRequests[0].BidRequest.Source)
+
+				if len(test.expectedImpExt) > 0 {
+					assert.JSONEq(t, string(test.expectedImpExt), string(bidderRequests[0].BidRequest.Imp[0].Ext))
+				}
 			}
 		})
 	}
