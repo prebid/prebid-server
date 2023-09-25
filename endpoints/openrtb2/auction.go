@@ -1013,7 +1013,12 @@ func validateBidders(bidders []string, knownBidders map[string]openrtb_ext.Bidde
 				return errors.New(`bidder wildcard "*" mixed with specific bidders`)
 			}
 		} else {
-			_, isCoreBidder := knownBidders[bidder]
+			bidderName := bidder
+			normalizedCoreBidder, ok := openrtb_ext.NormalizeBidderName(bidderName)
+			if ok {
+				bidderName = normalizedCoreBidder.String()
+			}
+			_, isCoreBidder := knownBidders[bidderName]
 			_, isAlias := knownAliases[bidder]
 			if !isCoreBidder && !isAlias {
 				return fmt.Errorf(`unrecognized bidder "%v"`, bidder)
