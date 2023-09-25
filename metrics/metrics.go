@@ -164,6 +164,7 @@ const PublisherUnknown = "unknown"
 const (
 	DemandWeb     DemandSource = "web"
 	DemandApp     DemandSource = "app"
+	DemandDOOH    DemandSource = "dooh"
 	DemandUnknown DemandSource = "unknown"
 )
 
@@ -171,22 +172,25 @@ func DemandTypes() []DemandSource {
 	return []DemandSource{
 		DemandWeb,
 		DemandApp,
+		DemandDOOH,
 		DemandUnknown,
 	}
 }
 
 // The request types (endpoints)
 const (
-	ReqTypeORTB2Web RequestType = "openrtb2-web"
-	ReqTypeORTB2App RequestType = "openrtb2-app"
-	ReqTypeAMP      RequestType = "amp"
-	ReqTypeVideo    RequestType = "video"
+	ReqTypeORTB2Web  RequestType = "openrtb2-web"
+	ReqTypeORTB2App  RequestType = "openrtb2-app"
+	ReqTypeORTB2DOOH RequestType = "openrtb2-dooh"
+	ReqTypeAMP       RequestType = "amp"
+	ReqTypeVideo     RequestType = "video"
 )
 
 func RequestTypes() []RequestType {
 	return []RequestType{
 		ReqTypeORTB2Web,
 		ReqTypeORTB2App,
+		ReqTypeORTB2DOOH,
 		ReqTypeAMP,
 		ReqTypeVideo,
 	}
@@ -267,6 +271,7 @@ const (
 	AdapterErrorTimeout             AdapterError = "timeout"
 	AdapterErrorFailedToRequestBids AdapterError = "failedtorequestbid"
 	AdapterErrorValidation          AdapterError = "validation"
+	AdapterErrorTmaxTimeout         AdapterError = "tmaxtimeout"
 	AdapterErrorUnknown             AdapterError = "unknown_error"
 )
 
