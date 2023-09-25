@@ -4954,9 +4954,11 @@ func TestParseRequestStoredResponses(t *testing.T) {
 func TestParseRequestStoredBidResponses(t *testing.T) {
 	bidRespId1 := json.RawMessage(`{"id": "resp_id1", "seatbid": [{"bid": [{"id": "bid_id1"}], "seat": "testBidder1"}], "bidid": "123", "cur": "USD"}`)
 	bidRespId2 := json.RawMessage(`{"id": "resp_id2", "seatbid": [{"bid": [{"id": "bid_id2"}], "seat": "testBidder2"}], "bidid": "124", "cur": "USD"}`)
+	bidRespId3 := json.RawMessage(`{"id": "resp_id3", "seatbid": [{"bid": [{"id": "bid_id3"}], "seat": "APPNEXUS"}], "bidid": "125", "cur": "USD"}`)
 	mockStoredBidResponses := map[string]json.RawMessage{
 		"bidResponseId1": bidRespId1,
 		"bidResponseId2": bidRespId2,
+		"bidResponseId3": bidRespId3,
 	}
 
 	tests := []struct {
@@ -4971,6 +4973,14 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 			givenRequestBody: validRequest(t, "imp-with-stored-bid-resp.json"),
 			expectedStoredBidResponses: map[string]map[string]json.RawMessage{
 				"imp-id1": {"testBidder1": bidRespId1},
+			},
+			expectedErrorCount: 0,
+		},
+		{
+			name:             "req imp has valid stored bid response with case insensitive bidder name",
+			givenRequestBody: validRequest(t, "imp-with-stored-bid-resp-insensitive-bidder-name.json"),
+			expectedStoredBidResponses: map[string]map[string]json.RawMessage{
+				"imp-id3": {"APPNEXUS": bidRespId3},
 			},
 			expectedErrorCount: 0,
 		},
@@ -5014,7 +5024,7 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 				map[string]string{},
 				false,
 				[]byte{},
-				map[string]openrtb_ext.BidderName{"testBidder1": "testBidder1", "testBidder2": "testBidder2"},
+				map[string]openrtb_ext.BidderName{"testBidder1": "testBidder1", "testBidder2": "testBidder2", "appnexus": "appnexus"},
 				nil,
 				nil,
 				hardcodedResponseIPValidator{response: true},
@@ -5027,7 +5037,6 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
 			_, _, _, storedBidResponses, _, _, errL := deps.parseRequest(req, &metrics.Labels{}, hookExecutor)
-
 			if test.expectedErrorCount == 0 {
 				assert.Equal(t, test.expectedStoredBidResponses, storedBidResponses, "stored responses should match")
 			} else {
