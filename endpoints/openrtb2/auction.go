@@ -69,13 +69,16 @@ var (
 )
 
 var accountIdSearchPath = [...]struct {
-	isApp bool
-	key   []string
+	isApp  bool
+	isDOOH bool
+	key    []string
 }{
-	{true, []string{"app", "publisher", "ext", openrtb_ext.PrebidExtKey, "parentAccount"}},
-	{true, []string{"app", "publisher", "id"}},
-	{false, []string{"site", "publisher", "ext", openrtb_ext.PrebidExtKey, "parentAccount"}},
-	{false, []string{"site", "publisher", "id"}},
+	{true, false, []string{"app", "publisher", "ext", openrtb_ext.PrebidExtKey, "parentAccount"}},
+	{true, false, []string{"app", "publisher", "id"}},
+	{false, false, []string{"site", "publisher", "ext", openrtb_ext.PrebidExtKey, "parentAccount"}},
+	{false, false, []string{"site", "publisher", "id"}},
+	{false, true, []string{"dooh", "publisher", "ext", openrtb_ext.PrebidExtKey, "parentAccount"}},
+	{false, true, []string{"dooh", "publisher", "id"}},
 }
 
 func NewEndpoint(
@@ -457,11 +460,15 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		return
 	}
 
-	accountId, isAppReq, errs := getAccountIdFromRawRequest(hasStoredBidRequest, storedRequests[storedBidRequestId], requestJson)
+	accountId, isAppReq, isDOOHReq, errs := getAccountIdFromRawRequest(hasStoredBidRequest, storedRequests[storedBidRequestId], requestJson)
 	// fill labels here in order to pass correct metrics in case of errors
 	if isAppReq {
 		labels.Source = metrics.DemandApp
 		labels.RType = metrics.ReqTypeORTB2App
+		labels.PubID = accountId
+	} else if isDOOHReq {
+		labels.Source = metrics.DemandDOOH
+		labels.RType = metrics.ReqTypeORTB2DOOH
 		labels.PubID = accountId
 	} else { // is Site request
 		labels.Source = metrics.DemandWeb
@@ -804,8 +811,8 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 		return []error{err}
 	}
 
-	if (req.Site == nil && req.App == nil) || (req.Site != nil && req.App != nil) {
-		return append(errL, errors.New("request.site or request.app must be defined, but not both."))
+	if err := validateExactlyOneInventoryType(req); err != nil {
+		return []error{err}
 	}
 
 	if errs := validateRequestExt(req); len(errs) != 0 {
@@ -823,6 +830,9 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 		return append(errL, err)
 	}
 
+	if err := deps.validateDOOH(req); err != nil {
+		return append(errL, err)
+	}
 	var gpp gpplib.GppContainer
 	if req.BidRequest.Regs != nil && len(req.BidRequest.Regs.GPP) > 0 {
 		gpp, err = gpplib.Parse(req.BidRequest.Regs.GPP)
@@ -1755,6 +1765,18 @@ func (deps *endpointDeps) validateApp(req *openrtb_ext.RequestWrapper) error {
 	return err
 }
 
+func (deps *endpointDeps) validateDOOH(req *openrtb_ext.RequestWrapper) error {
+	if req.DOOH == nil {
+		return nil
+	}
+
+	if req.DOOH.ID == "" && len(req.DOOH.VenueType) == 0 {
+		return errors.New("request.dooh should include at least one of request.dooh.id or request.dooh.venuetype.")
+	}
+
+	return nil
+}
+
 func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases map[string]string, gpp gpplib.GppContainer) []error {
 	var errL []error
 
@@ -1880,6 +1902,30 @@ func validateDevice(device *openrtb2.Device) error {
 	return nil
 }
 
+func validateExactlyOneInventoryType(reqWrapper *openrtb_ext.RequestWrapper) error {
+
+	// Prep for mutual exclusion check
+	invTypeNumMatches := 0
+	if reqWrapper.Site != nil {
+		invTypeNumMatches++
+	}
+	if reqWrapper.App != nil {
+		invTypeNumMatches++
+	}
+	if reqWrapper.DOOH != nil {
+		invTypeNumMatches++
+	}
+
+	if invTypeNumMatches == 0 {
+		return errors.New("One of request.site or request.app or request.dooh must be defined")
+	} else if invTypeNumMatches >= 2 {
+		return errors.New("No more than one of request.site or request.app or request.dooh can be defined")
+	} else {
+		return nil
+	}
+
+}
+
 func validateOrFillChannel(reqWrapper *openrtb_ext.RequestWrapper, isAmp bool) error {
 	requestExt, err := reqWrapper.GetRequestExt()
 	if err != nil {
@@ -1942,9 +1988,9 @@ func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, r *openrtb_
 
 	setDeviceImplicitly(httpReq, r, deps.privateNetworkIPValidator)
 
-	// Per the OpenRTB spec: A bid request must not contain both a Site and an App object. If neither are
-	// present, we'll assume it's a site request.
-	if r.App == nil {
+	// Per the OpenRTB spec: A bid request must not contain more than one of Site|App|DOOH
+	// Assume it's a site request if it's not declared as one of the other values
+	if r.App == nil && r.DOOH == nil {
 		setSiteImplicitly(httpReq, r)
 	}
 
@@ -2333,43 +2379,43 @@ func getAccountID(pub *openrtb2.Publisher) string {
 	return metrics.PublisherUnknown
 }
 
-func getAccountIdFromRawRequest(hasStoredRequest bool, storedRequest json.RawMessage, originalRequest []byte) (string, bool, []error) {
+func getAccountIdFromRawRequest(hasStoredRequest bool, storedRequest json.RawMessage, originalRequest []byte) (string, bool, bool, []error) {
 	request := originalRequest
 	if hasStoredRequest {
 		request = storedRequest
 	}
 
-	accountId, isAppReq, err := searchAccountId(request)
+	accountId, isAppReq, isDOOHReq, err := searchAccountId(request)
 	if err != nil {
-		return "", isAppReq, []error{err}
+		return "", isAppReq, isDOOHReq, []error{err}
 	}
 
 	// In case the stored request did not have account data we specifically search it in the original request
 	if accountId == "" && hasStoredRequest {
-		accountId, _, err = searchAccountId(originalRequest)
+		accountId, _, _, err = searchAccountId(originalRequest)
 		if err != nil {
-			return "", isAppReq, []error{err}
+			return "", isAppReq, isDOOHReq, []error{err}
 		}
 	}
 
 	if accountId == "" {
-		return metrics.PublisherUnknown, isAppReq, nil
+		return metrics.PublisherUnknown, isAppReq, isDOOHReq, nil
 	}
 
-	return accountId, isAppReq, nil
+	return accountId, isAppReq, isDOOHReq, nil
 }
 
-func searchAccountId(request []byte) (string, bool, error) {
+func searchAccountId(request []byte) (string, bool, bool, error) {
 	for _, path := range accountIdSearchPath {
 		accountId, exists, err := getStringValueFromRequest(request, path.key)
 		if err != nil {
-			return "", path.isApp, err
+			return "", path.isApp, path.isDOOH, err
 		}
 		if exists {
-			return accountId, path.isApp, nil
+			return accountId, path.isApp, path.isDOOH, nil
 		}
 	}
-	return "", false, nil
+	return "", false, false, nil
 }
 
 func getStringValueFromRequest(request []byte, key []string) (string, bool, error) {

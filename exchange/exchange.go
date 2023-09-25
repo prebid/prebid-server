@@ -844,6 +844,8 @@ func errorsToMetric(errs []error) map[metrics.AdapterError]struct{} {
 			ret[metrics.AdapterErrorFailedToRequestBids] = s
 		case errortypes.AlternateBidderCodeWarningCode:
 			ret[metrics.AdapterErrorValidation] = s
+		case errortypes.TmaxTimeoutErrorCode:
+			ret[metrics.AdapterErrorTmaxTimeout] = s
 		default:
 			ret[metrics.AdapterErrorUnknown] = s
 		}

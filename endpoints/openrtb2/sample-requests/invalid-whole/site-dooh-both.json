@@ -1,11 +1,11 @@
 {
-  "description": "Bid request comes with both site and app fields, it should only come with one",
+  "description": "Bid request comes with both site and dooh fields, it should only come with one",
   "mockBidRequest": {
     "id": "req-id",
     "site": {
       "page": "test.mysite.com"
     },
-    "app": {},
+    "dooh": {},
     "imp": [
       {
         "id": "imp-id",
