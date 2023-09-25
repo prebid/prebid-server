@@ -239,6 +239,7 @@ func SetAliasBidderName(aliasBidderName string, parentBidderName BidderName) err
 	aliasBidder := BidderName(aliasBidderName)
 	coreBidderNames = append(coreBidderNames, aliasBidder)
 	aliasBidderToParent[aliasBidder] = parentBidderName
+	bidderNameLookup[strings.ToLower(aliasBidderName)] = aliasBidder
 	return nil
 }
 
@@ -564,11 +565,11 @@ var bidderNameLookup = func() map[string]BidderName {
 		lookup[bidderNameLower] = name
 	}
 	return lookup
-}
+}()
 
 func NormalizeBidderName(name string) (BidderName, bool) {
 	nameLower := strings.ToLower(name)
-	bidderName, exists := bidderNameLookup()[nameLower]
+	bidderName, exists := bidderNameLookup[nameLower]
 	return bidderName, exists
 }
 
