@@ -769,7 +769,7 @@ func TestAdapterCurrency(t *testing.T) {
 		categoriesFetcher: nilCategoryFetcher{},
 		bidIDGenerator:    &mockBidIDGenerator{false, false},
 		adapterMap: map[openrtb_ext.BidderName]AdaptedBidder{
-			openrtb_ext.BidderName("foo"): AdaptBidder(mockBidder, nil, &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderName("foo"), nil, ""),
+			openrtb_ext.BidderName("appnexus"): AdaptBidder(mockBidder, nil, &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderName("appnexus"), nil, ""),
 		},
 	}
 	e.requestSplitter = requestSplitter{
@@ -783,7 +783,7 @@ func TestAdapterCurrency(t *testing.T) {
 		Imp: []openrtb2.Imp{{
 			ID:     "some-impression-id",
 			Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}, {W: 300, H: 600}}},
-			Ext:    json.RawMessage(`{"prebid":{"bidder":{"foo":{"placementId":1}}}}`),
+			Ext:    json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placementId":1}}}}`),
 		}},
 		Site: &openrtb2.Site{
 			Page: "prebid.org",
@@ -805,7 +805,7 @@ func TestAdapterCurrency(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "some-request-id", response.ID, "Response ID")
 	assert.Empty(t, response.SeatBid, "Response Bids")
-	assert.Contains(t, string(response.Ext), `"errors":{"foo":[{"code":5,"message":"The adapter failed to generate any bid requests, but also failed to generate an error explaining why"}]}`, "Response Ext")
+	assert.Contains(t, string(response.Ext), `"errors":{"appnexus":[{"code":5,"message":"The adapter failed to generate any bid requests, but also failed to generate an error explaining why"}]}`, "Response Ext")
 
 	// Test Currency Converter Properly Passed To Adapter
 	if assert.NotNil(t, mockBidder.lastExtraRequestInfo, "Currency Conversion Argument") {
