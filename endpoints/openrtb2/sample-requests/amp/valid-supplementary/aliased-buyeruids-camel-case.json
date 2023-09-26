@@ -29,7 +29,7 @@
         "ext": {
           "prebid": {
             "bidder": {
-              "yahooAds": {
+              "YahooAds": {
                 "placementId": 12883451
               }
             }
@@ -41,7 +41,7 @@
       "ext": {
         "prebid": {
           "buyeruids": {
-            "yahooAds": "123"
+            "YahooAds": "123"
           }
         }
       }
@@ -49,8 +49,8 @@
   },
   "expectedAmpResponse": {
     "targeting": {
-      "hb_bidder": "yahooAds",
-      "hb_bidder_yahooAds": "yahooAds",
+      "hb_bidder": "YahooAds",
+      "hb_bidder_yahooAds": "YahooAds",
       "hb_cache_host": "www.pbcserver.com",
       "hb_cache_host_yahooA": "www.pbcserver.com",
       "hb_cache_id": "0",
