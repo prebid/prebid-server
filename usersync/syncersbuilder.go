@@ -28,9 +28,9 @@ func (e SyncerBuildError) Error() string {
 func BuildSyncers(hostConfig *config.Configuration, bidderInfos config.BidderInfos) (map[string]Syncer, []error) {
 	// map syncer config by bidder
 	cfgByBidder := make(map[string]config.Syncer, len(bidderInfos))
-	for bidder, bidderInfo := range bidderInfos {
-		if shouldCreateSyncer(bidderInfo) {
-			cfgByBidder[bidder] = *bidderInfo.Syncer
+	for bidder, cfg := range bidderInfos {
+		if shouldCreateSyncer(cfg) {
+			cfgByBidder[bidder] = *cfg.Syncer
 		}
 	}
 
