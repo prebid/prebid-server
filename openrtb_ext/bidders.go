@@ -95,7 +95,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderDmx,
 	BidderEmtv,
 	BidderEmxDigital,
-	BidderEngageBDR,
 	BidderEPlanning,
 	BidderEpom,
 	BidderEpsilon,
@@ -148,7 +147,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderMobileFuse,
 	BidderMotorik,
 	BidderNextMillennium,
-	BidderNinthDecimal,
 	BidderNoBid,
 	BidderOneTag,
 	BidderOpenWeb,
@@ -215,7 +213,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderYahooAds,
 	BidderYahooAdvertising,
 	BidderYahooSSP,
-	BidderYeahmobi,
 	BidderYieldlab,
 	BidderYieldmo,
 	BidderYieldone,
@@ -386,7 +383,6 @@ const (
 	BidderDmx               BidderName = "dmx"
 	BidderEmtv              BidderName = "emtv"
 	BidderEmxDigital        BidderName = "emx_digital"
-	BidderEngageBDR         BidderName = "engagebdr"
 	BidderEPlanning         BidderName = "eplanning"
 	BidderEpsilon           BidderName = "epsilon"
 	BidderEpom              BidderName = "epom"
@@ -439,7 +435,6 @@ const (
 	BidderMobileFuse        BidderName = "mobilefuse"
 	BidderMotorik           BidderName = "motorik"
 	BidderNextMillennium    BidderName = "nextmillennium"
-	BidderNinthDecimal      BidderName = "ninthdecimal"
 	BidderNoBid             BidderName = "nobid"
 	BidderOneTag            BidderName = "onetag"
 	BidderOpenWeb           BidderName = "openweb"
@@ -506,7 +501,6 @@ const (
 	BidderYahooAds          BidderName = "yahooAds"
 	BidderYahooAdvertising  BidderName = "yahooAdvertising"
 	BidderYahooSSP          BidderName = "yahoossp"
-	BidderYeahmobi          BidderName = "yeahmobi"
 	BidderYieldlab          BidderName = "yieldlab"
 	BidderYieldmo           BidderName = "yieldmo"
 	BidderYieldone          BidderName = "yieldone"

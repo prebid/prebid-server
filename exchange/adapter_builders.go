@@ -75,7 +75,6 @@ import (
 	"github.com/prebid/prebid-server/adapters/dmx"
 	evolution "github.com/prebid/prebid-server/adapters/e_volution"
 	"github.com/prebid/prebid-server/adapters/emtv"
-	"github.com/prebid/prebid-server/adapters/engagebdr"
 	"github.com/prebid/prebid-server/adapters/eplanning"
 	"github.com/prebid/prebid-server/adapters/epom"
 	"github.com/prebid/prebid-server/adapters/flipp"
@@ -120,7 +119,6 @@ import (
 	"github.com/prebid/prebid-server/adapters/mobilefuse"
 	"github.com/prebid/prebid-server/adapters/motorik"
 	"github.com/prebid/prebid-server/adapters/nextmillennium"
-	"github.com/prebid/prebid-server/adapters/ninthdecimal"
 	"github.com/prebid/prebid-server/adapters/nobid"
 	"github.com/prebid/prebid-server/adapters/onetag"
 	"github.com/prebid/prebid-server/adapters/openweb"
@@ -177,7 +175,6 @@ import (
 	"github.com/prebid/prebid-server/adapters/vrtcal"
 	"github.com/prebid/prebid-server/adapters/xeworks"
 	"github.com/prebid/prebid-server/adapters/yahooAds"
-	"github.com/prebid/prebid-server/adapters/yeahmobi"
 	"github.com/prebid/prebid-server/adapters/yieldlab"
 	"github.com/prebid/prebid-server/adapters/yieldmo"
 	"github.com/prebid/prebid-server/adapters/yieldone"
@@ -268,7 +265,6 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderDmx:               dmx.Builder,
 		openrtb_ext.BidderEmtv:              emtv.Builder,
 		openrtb_ext.BidderEmxDigital:        cadentaperturemx.Builder,
-		openrtb_ext.BidderEngageBDR:         engagebdr.Builder,
 		openrtb_ext.BidderEPlanning:         eplanning.Builder,
 		openrtb_ext.BidderEpom:              epom.Builder,
 		openrtb_ext.BidderEpsilon:           conversant.Builder,
@@ -321,7 +317,6 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderMobileFuse:        mobilefuse.Builder,
 		openrtb_ext.BidderMotorik:           motorik.Builder,
 		openrtb_ext.BidderNextMillennium:    nextmillennium.Builder,
-		openrtb_ext.BidderNinthDecimal:      ninthdecimal.Builder,
 		openrtb_ext.BidderNoBid:             nobid.Builder,
 		openrtb_ext.BidderOneTag:            onetag.Builder,
 		openrtb_ext.BidderOpenWeb:           openweb.Builder,
@@ -388,7 +383,6 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderYahooAds:          yahooAds.Builder,
 		openrtb_ext.BidderYahooAdvertising:  yahooAds.Builder,
 		openrtb_ext.BidderYahooSSP:          yahooAds.Builder,
-		openrtb_ext.BidderYeahmobi:          yeahmobi.Builder,
 		openrtb_ext.BidderYieldlab:          yieldlab.Builder,
 		openrtb_ext.BidderYieldmo:           yieldmo.Builder,
 		openrtb_ext.BidderYieldone:          yieldone.Builder,
