@@ -339,7 +339,7 @@ func TestChooseSyncerConfig(t *testing.T) {
 		{
 			description:   "alias-of-differnt-parent-cannot-have-same-key",
 			given:         []namedSyncerConfig{alias1, alias2},
-			expectedError: "either alias bidders alias-1, alias-2 defines endpoints (iframe and/or redirect) for the same syncer key used by multiple bidders, but only one bidder is permitted to define endpoints",
+			expectedError: "alias bidders alias-1, alias-2 of different parents defines endpoints (iframe and/or redirect) for the same syncer key, but only one bidder is permitted to define endpoints",
 		},
 		{
 			description:   "non-alias-bidders-cannot-have-same-key",
@@ -349,7 +349,7 @@ func TestChooseSyncerConfig(t *testing.T) {
 		{
 			description:   "non-alias-and-aliases-of-same-parent-cannot-have-same-key",
 			given:         []namedSyncerConfig{parent1, alias2, alias3},
-			expectedError: "either alias bidders alias-2, alias-3 defines endpoints (iframe and/or redirect) for the same syncer key used by other bidder, but only one bidder is permitted to define endpoints",
+			expectedError: "alias bidders alias-2, alias-3 and non-alias bidder parent-1 defines endpoints (iframe and/or redirect) for the same syncer key, but only one bidder is permitted to define endpoints",
 		},
 	}
 
