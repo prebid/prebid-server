@@ -119,6 +119,7 @@ func GetDisabledBidderWarningMessages(infos config.BidderInfos) map[string]strin
 		"verizonmedia":   `Bidder "verizonmedia" is no longer available in Prebid Server. Please update your configuration.`,
 		"brightroll":     `Bidder "brightroll" is no longer available in Prebid Server. Please update your configuration.`,
 		"applogy":        `Bidder "applogy" is no longer available in Prebid Server. Please update your configuration.`,
+		"rhythmone":      `Bidder "rhythmone" is no longer available in Prebid Server. Please update your configuration.`,
 	}
 
 	return mergeRemovedAndDisabledBidderWarningMessages(removed, infos)
