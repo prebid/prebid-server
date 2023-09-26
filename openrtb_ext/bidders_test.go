@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"strings"
 	"testing"
 	"testing/fstest"
 
@@ -148,6 +149,7 @@ func TestSetAliasBidderName(t *testing.T) {
 		} else {
 			assert.Contains(t, CoreBidderNames(), BidderName(test.aliasBidderName))
 			assert.Contains(t, aliasBidderToParent, BidderName(test.aliasBidderName))
+			assert.Contains(t, bidderNameLookup, strings.ToLower(test.aliasBidderName))
 		}
 	}
 

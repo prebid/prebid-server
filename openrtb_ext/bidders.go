@@ -52,7 +52,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderAlgorix,
 	BidderAMX,
 	BidderApacdex,
-	BidderApplogy,
 	BidderAppnexus,
 	BidderAppstock,
 	BidderAppush,
@@ -92,7 +91,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderDatablocks,
 	BidderDecenterAds,
 	BidderDeepintent,
-	BidderDefinemedia,
 	BidderDianomi,
 	BidderDmx,
 	BidderEmtv,
@@ -133,7 +131,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderKiviads,
 	BidderLmKiviads,
 	BidderKrushmedia,
-	BidderKubient,
 	BidderLiftoff,
 	BidderLimelightDigital,
 	BidderLockerDome,
@@ -169,7 +166,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderPWBid,
 	BidderQuantumdex,
 	BidderRevcontent,
-	BidderRhythmone,
 	BidderRichaudience,
 	BidderRise,
 	BidderRTBHouse,
@@ -238,6 +234,7 @@ func SetAliasBidderName(aliasBidderName string, parentBidderName BidderName) err
 	aliasBidder := BidderName(aliasBidderName)
 	coreBidderNames = append(coreBidderNames, aliasBidder)
 	aliasBidderToParent[aliasBidder] = parentBidderName
+	bidderNameLookup[strings.ToLower(aliasBidderName)] = aliasBidder
 	return nil
 }
 
@@ -346,7 +343,6 @@ const (
 	BidderAlgorix           BidderName = "algorix"
 	BidderAMX               BidderName = "amx"
 	BidderApacdex           BidderName = "apacdex"
-	BidderApplogy           BidderName = "applogy"
 	BidderAppnexus          BidderName = "appnexus"
 	BidderAppstock          BidderName = "appstock"
 	BidderAppush            BidderName = "appush"
@@ -386,7 +382,6 @@ const (
 	BidderDatablocks        BidderName = "datablocks"
 	BidderDecenterAds       BidderName = "decenterads"
 	BidderDeepintent        BidderName = "deepintent"
-	BidderDefinemedia       BidderName = "definemedia"
 	BidderDianomi           BidderName = "dianomi"
 	BidderDmx               BidderName = "dmx"
 	BidderEmtv              BidderName = "emtv"
@@ -427,7 +422,6 @@ const (
 	BidderKiviads           BidderName = "kiviads"
 	BidderLmKiviads         BidderName = "lm_kiviads"
 	BidderKrushmedia        BidderName = "krushmedia"
-	BidderKubient           BidderName = "kubient"
 	BidderLiftoff           BidderName = "liftoff"
 	BidderLimelightDigital  BidderName = "limelightDigital"
 	BidderLockerDome        BidderName = "lockerdome"
@@ -463,7 +457,6 @@ const (
 	BidderPWBid             BidderName = "pwbid"
 	BidderQuantumdex        BidderName = "quantumdex"
 	BidderRevcontent        BidderName = "revcontent"
-	BidderRhythmone         BidderName = "rhythmone"
 	BidderRichaudience      BidderName = "richaudience"
 	BidderRise              BidderName = "rise"
 	BidderRTBHouse          BidderName = "rtbhouse"
@@ -562,11 +555,11 @@ var bidderNameLookup = func() map[string]BidderName {
 		lookup[bidderNameLower] = name
 	}
 	return lookup
-}
+}()
 
 func NormalizeBidderName(name string) (BidderName, bool) {
 	nameLower := strings.ToLower(name)
-	bidderName, exists := bidderNameLookup()[nameLower]
+	bidderName, exists := bidderNameLookup[nameLower]
 	return bidderName, exists
 }
 
