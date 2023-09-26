@@ -2486,7 +2486,12 @@ func validateStoredBidRespAndImpExtBidders(bidderExts map[string]json.RawMessage
 		}
 
 		for bidderName := range bidResponses {
-			if _, present := bidderExts[bidderName]; !present {
+			bidder := bidderName
+			normalizedCoreBidder, ok := openrtb_ext.NormalizeBidderName(bidder)
+			if ok {
+				bidder = normalizedCoreBidder.String()
+			}
+			if _, present := bidderExts[bidder]; !present {
 				return generateStoredBidResponseValidationError(impId)
 			}
 		}
