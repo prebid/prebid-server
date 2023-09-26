@@ -320,8 +320,13 @@ func processBidderAliases(aliasNillableFieldsByBidder map[string]aliasNillableFi
 		if aliasBidderInfo.PlatformID == "" {
 			aliasBidderInfo.PlatformID = parentBidderInfo.PlatformID
 		}
-		if aliasBidderInfo.Syncer == nil {
-			aliasBidderInfo.Syncer = parentBidderInfo.Syncer
+		if aliasBidderInfo.Syncer == nil && parentBidderInfo.Syncer != nil {
+			syncerKey := aliasBidderInfo.AliasOf
+			if parentBidderInfo.Syncer.Key != "" {
+				syncerKey = parentBidderInfo.Syncer.Key
+			}
+			syncer := Syncer{Key: syncerKey}
+			aliasBidderInfo.Syncer = &syncer
 		}
 		if aliasBidderInfo.UserSyncURL == "" {
 			aliasBidderInfo.UserSyncURL = parentBidderInfo.UserSyncURL
