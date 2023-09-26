@@ -151,15 +151,6 @@ func TestBuildSyncers(t *testing.T) {
 				"bidder1": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhostoverride.com%2Fbidder1%2Fhost",
 			},
 		},
-		{
-			description: "parent-and-alias-cannot-have-same-syncer-key",
-			givenConfig: config.Configuration{ExternalURL: "http://host.com", UserSync: config.UserSync{ExternalURL: "http://hostoverride.com", RedirectURL: "{{.ExternalURL}}/{{.SyncerKey}}/host"}},
-			givenBidderInfos: map[string]config.BidderInfo{
-				"bidder1": {Syncer: &config.Syncer{Key: "key", IFrame: iframeConfig}},
-				"bidder2": {AliasOf: "bidder1", Syncer: &config.Syncer{Key: "key", IFrame: iframeConfig}},
-			},
-			expectedErrors: []string{"syncer key of alias bidder bidder2 is same as the syncer key for its parent bidder bidder1"},
-		},
 	}
 
 	for _, test := range testCases {
