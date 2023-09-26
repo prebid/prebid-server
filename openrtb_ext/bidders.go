@@ -91,7 +91,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderDatablocks,
 	BidderDecenterAds,
 	BidderDeepintent,
-	BidderDefinemedia,
 	BidderDianomi,
 	BidderDmx,
 	BidderEmtv,
@@ -131,7 +130,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderKiviads,
 	BidderLmKiviads,
 	BidderKrushmedia,
-	BidderKubient,
 	BidderLiftoff,
 	BidderLimelightDigital,
 	BidderLockerDome,
@@ -150,7 +148,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderMotorik,
 	BidderNanoInteractive,
 	BidderNextMillennium,
-	BidderNinthDecimal,
 	BidderNoBid,
 	BidderOneTag,
 	BidderOpenWeb,
@@ -217,7 +214,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderYahooAds,
 	BidderYahooAdvertising,
 	BidderYahooSSP,
-	BidderYeahmobi,
 	BidderYieldlab,
 	BidderYieldmo,
 	BidderYieldone,
@@ -384,7 +380,6 @@ const (
 	BidderDatablocks        BidderName = "datablocks"
 	BidderDecenterAds       BidderName = "decenterads"
 	BidderDeepintent        BidderName = "deepintent"
-	BidderDefinemedia       BidderName = "definemedia"
 	BidderDianomi           BidderName = "dianomi"
 	BidderDmx               BidderName = "dmx"
 	BidderEmtv              BidderName = "emtv"
@@ -424,7 +419,6 @@ const (
 	BidderKiviads           BidderName = "kiviads"
 	BidderLmKiviads         BidderName = "lm_kiviads"
 	BidderKrushmedia        BidderName = "krushmedia"
-	BidderKubient           BidderName = "kubient"
 	BidderLiftoff           BidderName = "liftoff"
 	BidderLimelightDigital  BidderName = "limelightDigital"
 	BidderLockerDome        BidderName = "lockerdome"
@@ -443,7 +437,6 @@ const (
 	BidderMotorik           BidderName = "motorik"
 	BidderNanoInteractive   BidderName = "nanointeractive"
 	BidderNextMillennium    BidderName = "nextmillennium"
-	BidderNinthDecimal      BidderName = "ninthdecimal"
 	BidderNoBid             BidderName = "nobid"
 	BidderOneTag            BidderName = "onetag"
 	BidderOpenWeb           BidderName = "openweb"
@@ -510,7 +503,6 @@ const (
 	BidderYahooAds          BidderName = "yahooAds"
 	BidderYahooAdvertising  BidderName = "yahooAdvertising"
 	BidderYahooSSP          BidderName = "yahoossp"
-	BidderYeahmobi          BidderName = "yeahmobi"
 	BidderYieldlab          BidderName = "yieldlab"
 	BidderYieldmo           BidderName = "yieldmo"
 	BidderYieldone          BidderName = "yieldone"
