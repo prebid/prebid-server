@@ -155,7 +155,7 @@ func chooseSyncerConfig(biddersSyncerConfig []namedSyncerConfig) (namedSyncerCon
 
 func getSyncerKey(biddersWithSyncerCfg map[string]config.BidderInfo, bidderName string, bidderInfo config.BidderInfo) (string, error) {
 	if bidderInfo.Syncer == nil {
-		return "", fmt.Errorf("found no syncer config for bidder %s", bidderName)
+		return "", fmt.Errorf("found no syncer config for alias bidder %s", bidderName)
 	}
 
 	var (
