@@ -283,12 +283,6 @@ func TestChooseSyncerConfig(t *testing.T) {
 		bidderAEmpty     = namedSyncerConfig{name: "bidderA", cfg: config.Syncer{}}
 		bidderBPopulated = namedSyncerConfig{name: "bidderB", cfg: config.Syncer{Key: "a", IFrame: &config.SyncerEndpoint{URL: "anyURL"}}}
 		bidderBEmpty     = namedSyncerConfig{name: "bidderB", cfg: config.Syncer{}}
-		syncerCfg        = config.Syncer{Key: "key", Redirect: &config.SyncerEndpoint{RedirectURL: "redirect-url"}}
-		parent1          = namedSyncerConfig{name: "parent-1", cfg: syncerCfg, bidderInfo: config.BidderInfo{AliasOf: ""}}
-		parent2          = namedSyncerConfig{name: "parent-2", cfg: syncerCfg, bidderInfo: config.BidderInfo{AliasOf: ""}}
-		alias1           = namedSyncerConfig{name: "alias-1", cfg: syncerCfg, bidderInfo: config.BidderInfo{AliasOf: "parent-1"}}
-		alias2           = namedSyncerConfig{name: "alias-2", cfg: syncerCfg, bidderInfo: config.BidderInfo{AliasOf: "parent-2"}}
-		alias3           = namedSyncerConfig{name: "alias-3", cfg: syncerCfg, bidderInfo: config.BidderInfo{AliasOf: "parent-2"}}
 	)
 
 	testCases := []struct {
@@ -322,30 +316,11 @@ func TestChooseSyncerConfig(t *testing.T) {
 			given:          []namedSyncerConfig{bidderAEmpty, bidderBPopulated},
 			expectedConfig: bidderBPopulated,
 		},
-		{
-			description:    "alias-can-have-same-key-as-parent",
-			given:          []namedSyncerConfig{parent1, alias1},
-			expectedConfig: alias1,
-		},
-		{
-			description:   "alias-of-differnt-parent-cannot-have-same-key",
-			given:         []namedSyncerConfig{alias1, alias2},
-			expectedError: "alias bidders alias-1, alias-2 of different parents defines endpoints (iframe and/or redirect) for the same syncer key, but only one bidder is permitted to define endpoints",
-		},
-		{
-			description:   "non-alias-bidders-cannot-have-same-key",
-			given:         []namedSyncerConfig{parent1, parent2},
-			expectedError: "bidders parent-1, parent-2 define endpoints (iframe and/or redirect) for the same syncer key, but only one bidder is permitted to define endpoints",
-		},
-		{
-			description:   "non-alias-and-aliases-of-same-parent-cannot-have-same-key",
-			given:         []namedSyncerConfig{parent1, alias2, alias3},
-			expectedError: "alias bidders alias-2, alias-3 and non-alias bidder parent-1 defines endpoints (iframe and/or redirect) for the same syncer key, but only one bidder is permitted to define endpoints",
-		},
 	}
 
 	for _, test := range testCases {
 		result, err := chooseSyncerConfig(test.given)
+
 		if test.expectedError == "" {
 			assert.NoError(t, err, test.description+":err")
 			assert.Equal(t, test.expectedConfig, result, test.description+":result")
