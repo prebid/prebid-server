@@ -34,7 +34,6 @@ import (
 	"github.com/prebid/prebid-server/adapters/algorix"
 	"github.com/prebid/prebid-server/adapters/amx"
 	"github.com/prebid/prebid-server/adapters/apacdex"
-	"github.com/prebid/prebid-server/adapters/applogy"
 	"github.com/prebid/prebid-server/adapters/appnexus"
 	"github.com/prebid/prebid-server/adapters/appush"
 	"github.com/prebid/prebid-server/adapters/audienceNetwork"
@@ -72,7 +71,6 @@ import (
 	"github.com/prebid/prebid-server/adapters/datablocks"
 	"github.com/prebid/prebid-server/adapters/decenterads"
 	"github.com/prebid/prebid-server/adapters/deepintent"
-	"github.com/prebid/prebid-server/adapters/definemedia"
 	"github.com/prebid/prebid-server/adapters/dianomi"
 	"github.com/prebid/prebid-server/adapters/dmx"
 	evolution "github.com/prebid/prebid-server/adapters/e_volution"
@@ -139,7 +137,6 @@ import (
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
 	"github.com/prebid/prebid-server/adapters/pwbid"
 	"github.com/prebid/prebid-server/adapters/revcontent"
-	"github.com/prebid/prebid-server/adapters/rhythmone"
 	"github.com/prebid/prebid-server/adapters/richaudience"
 	"github.com/prebid/prebid-server/adapters/rise"
 	"github.com/prebid/prebid-server/adapters/rtbhouse"
@@ -229,7 +226,6 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAlgorix:           algorix.Builder,
 		openrtb_ext.BidderAMX:               amx.Builder,
 		openrtb_ext.BidderApacdex:           apacdex.Builder,
-		openrtb_ext.BidderApplogy:           applogy.Builder,
 		openrtb_ext.BidderAppnexus:          appnexus.Builder,
 		openrtb_ext.BidderAppstock:          limelightDigital.Builder,
 		openrtb_ext.BidderAppush:            appush.Builder,
@@ -269,7 +265,6 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderDatablocks:        datablocks.Builder,
 		openrtb_ext.BidderDecenterAds:       decenterads.Builder,
 		openrtb_ext.BidderDeepintent:        deepintent.Builder,
-		openrtb_ext.BidderDefinemedia:       definemedia.Builder,
 		openrtb_ext.BidderDianomi:           dianomi.Builder,
 		openrtb_ext.BidderDmx:               dmx.Builder,
 		openrtb_ext.BidderEmtv:              emtv.Builder,
@@ -346,7 +341,6 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderPWBid:             pwbid.Builder,
 		openrtb_ext.BidderQuantumdex:        apacdex.Builder,
 		openrtb_ext.BidderRevcontent:        revcontent.Builder,
-		openrtb_ext.BidderRhythmone:         rhythmone.Builder,
 		openrtb_ext.BidderRichaudience:      richaudience.Builder,
 		openrtb_ext.BidderRise:              rise.Builder,
 		openrtb_ext.BidderRTBHouse:          rtbhouse.Builder,
