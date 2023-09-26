@@ -27,7 +27,11 @@ func NewBiddersDetailEndpoint(bidders config.BidderInfos, aliases map[string]str
 	return func(w http.ResponseWriter, _ *http.Request, ps httprouter.Params) {
 		bidder := ps.ByName("bidderName")
 
-		if response, ok := responses[bidder]; ok {
+		coreBidderName, found := getNormalisedBidderName(bidder, aliases)
+		if !found {
+			w.WriteHeader(http.StatusNotFound)
+		}
+		if response, ok := responses[coreBidderName]; ok {
 			w.Header().Set("Content-Type", "application/json")
 			if _, err := w.Write(response); err != nil {
 				glog.Errorf("error writing response to /info/bidders/%s: %v", bidder, err)
@@ -36,6 +40,20 @@ func NewBiddersDetailEndpoint(bidders config.BidderInfos, aliases map[string]str
 			w.WriteHeader(http.StatusNotFound)
 		}
 	}
+}
+
+func getNormalisedBidderName(bidderName string, aliases map[string]string) (string, bool) {
+	if strings.ToLower(bidderName) == "all" {
+		return "all", true
+	}
+	coreBidderName, ok := openrtb_ext.NormalizeBidderName(bidderName)
+	if !ok { //check default aliases if not found in coreBidders
+		if _, isDefaultAlias := aliases[bidderName]; isDefaultAlias {
+			return bidderName, true
+		}
+		return "", false
+	}
+	return coreBidderName.String(), true
 }
 
 func prepareBiddersDetailResponse(bidders config.BidderInfos, aliases map[string]string) (map[string][]byte, error) {
