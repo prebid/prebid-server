@@ -213,8 +213,8 @@ class diffHelper {
     })
 
     const directories = []
-    for (const { filename } of data) {
-      const directory = directoryExtractor(filename)
+    for (const { filename, status } of data) {
+      const directory = directoryExtractor(filename, status)
       if (directory != "" && !directories.includes(directory)) {
         directories.push(directory)
       }

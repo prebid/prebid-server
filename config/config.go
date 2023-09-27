@@ -1067,7 +1067,6 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.ReadInConfig()
 
 	// Migrate config settings to maintain compatibility with old configs
-	migrateConfig(v)
 	migrateConfigDatabaseConnection(v)
 	migrateConfigCompression(v)
 
@@ -1117,19 +1116,6 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 
 	for bidderName := range bidderInfos {
 		setBidderDefaults(v, strings.ToLower(bidderName))
-	}
-}
-
-func migrateConfig(v *viper.Viper) {
-	// if stored_requests.filesystem is not a map in conf file as expected from defaults,
-	// means we have old-style settings; migrate them to new filesystem map to avoid breaking viper
-	if _, ok := v.Get("stored_requests.filesystem").(map[string]interface{}); !ok {
-		glog.Warning("stored_requests.filesystem should be changed to stored_requests.filesystem.enabled")
-		glog.Warning("stored_requests.directorypath should be changed to stored_requests.filesystem.directorypath")
-		m := v.GetStringMap("stored_requests.filesystem")
-		m["enabled"] = v.GetBool("stored_requests.filesystem")
-		m["directorypath"] = v.GetString("stored_requests.directorypath")
-		v.Set("stored_requests.filesystem", m)
 	}
 }
 

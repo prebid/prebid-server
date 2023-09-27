@@ -18,6 +18,10 @@ type SilverMobAdapter struct {
 	endpoint *template.Template
 }
 
+func isValidHost(host string) bool {
+	return host == "eu" || host == "us" || host == "apac"
+}
+
 // Builder builds a new instance of the SilverMob adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
@@ -121,8 +125,14 @@ func (a *SilverMobAdapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.Ext
 }
 
 func (a *SilverMobAdapter) buildEndpointURL(params *openrtb_ext.ExtSilverMob) (string, error) {
-	endpointParams := macros.EndpointTemplateParams{ZoneID: params.ZoneID, Host: params.Host}
-	return macros.ResolveMacros(a.endpoint, endpointParams)
+	if isValidHost(params.Host) {
+		endpointParams := macros.EndpointTemplateParams{ZoneID: params.ZoneID, Host: params.Host}
+		return macros.ResolveMacros(a.endpoint, endpointParams)
+	} else {
+		return "", &errortypes.BadInput{
+			Message: fmt.Sprintf("invalid host %s", params.Host),
+		}
+	}
 }
 
 func (a *SilverMobAdapter) MakeBids(

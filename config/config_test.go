@@ -481,12 +481,6 @@ tmax_adjustments:
   pbs_response_preparation_duration_ms: 100
 `)
 
-var oldStoredRequestsConfig = []byte(`
-stored_requests:
-  filesystem: true
-  directorypath: "/somepath"
-`)
-
 func cmpStrings(t *testing.T, key, expected, actual string) {
 	t.Helper()
 	assert.Equal(t, expected, actual, "%s: %s != %s", key, expected, actual)
@@ -797,36 +791,15 @@ func TestValidateConfig(t *testing.T) {
 	assert.Nil(t, err, "OpenRTB filesystem config should work. %v", err)
 }
 
-func TestMigrateConfig(t *testing.T) {
-	v := viper.New()
-	SetupViper(v, "", bidderInfos)
-	v.Set("gdpr.default_value", "0")
-	v.SetConfigType("yaml")
-	v.ReadConfig(bytes.NewBuffer(oldStoredRequestsConfig))
-	migrateConfig(v)
-	cfg, err := New(v, bidderInfos, mockNormalizeBidderName)
-	assert.NoError(t, err, "Setting up config should work but it doesn't")
-	cmpBools(t, "stored_requests.filesystem.enabled", true, cfg.StoredRequests.Files.Enabled)
-	cmpStrings(t, "stored_requests.filesystem.path", "/somepath", cfg.StoredRequests.Files.Path)
-}
-
 func TestMigrateConfigFromEnv(t *testing.T) {
-	if oldval, ok := os.LookupEnv("PBS_STORED_REQUESTS_FILESYSTEM"); ok {
-		defer os.Setenv("PBS_STORED_REQUESTS_FILESYSTEM", oldval)
-	} else {
-		defer os.Unsetenv("PBS_STORED_REQUESTS_FILESYSTEM")
-	}
-
 	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_BIDDER1_ENDPOINT"); ok {
 		defer os.Setenv("PBS_ADAPTERS_BIDDER1_ENDPOINT", oldval)
 	} else {
 		defer os.Unsetenv("PBS_ADAPTERS_BIDDER1_ENDPOINT")
 	}
 
-	os.Setenv("PBS_STORED_REQUESTS_FILESYSTEM", "true")
 	os.Setenv("PBS_ADAPTERS_BIDDER1_ENDPOINT", "http://bidder1_override.com")
 	cfg, _ := newDefaultConfig(t)
-	cmpBools(t, "stored_requests.filesystem.enabled", true, cfg.StoredRequests.Files.Enabled)
 	cmpStrings(t, "adapters.bidder1.endpoint", "http://bidder1_override.com", cfg.BidderInfos["bidder1"].Endpoint)
 }
 
