@@ -75,6 +75,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/definemedia"
 	"github.com/prebid/prebid-server/adapters/dianomi"
 	"github.com/prebid/prebid-server/adapters/dmx"
+	"github.com/prebid/prebid-server/adapters/dxkulture"
 	evolution "github.com/prebid/prebid-server/adapters/e_volution"
 	"github.com/prebid/prebid-server/adapters/emtv"
 	"github.com/prebid/prebid-server/adapters/engagebdr"
@@ -273,6 +274,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderDefinemedia:       definemedia.Builder,
 		openrtb_ext.BidderDianomi:           dianomi.Builder,
 		openrtb_ext.BidderDmx:               dmx.Builder,
+		openrtb_ext.BidderDXKulture:         dxkulture.Builder,
 		openrtb_ext.BidderEmtv:              emtv.Builder,
 		openrtb_ext.BidderEmxDigital:        cadentaperturemx.Builder,
 		openrtb_ext.BidderEngageBDR:         engagebdr.Builder,
