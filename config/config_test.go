@@ -10,7 +10,6 @@ import (
 
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
@@ -189,8 +188,7 @@ func TestDefaults(t *testing.T) {
 	cmpBools(t, "account_defaults.price_floors.use_dynamic_data", false, cfg.AccountDefaults.PriceFloors.UseDynamicData)
 	cmpInts(t, "account_defaults.price_floors.max_rules", 100, cfg.AccountDefaults.PriceFloors.MaxRule)
 	cmpInts(t, "account_defaults.price_floors.max_schema_dims", 3, cfg.AccountDefaults.PriceFloors.MaxSchemaDims)
-	cmpBools(t, "account_defaults.events_enabled", *cfg.AccountDefaults.EventsEnabled, false)
-	cmpNils(t, "account_defaults.events.enabled", cfg.AccountDefaults.Events.Enabled)
+	cmpBools(t, "account_defaults.events.enabled", false, cfg.AccountDefaults.Events.Enabled)
 
 	cmpBools(t, "hooks.enabled", false, cfg.Hooks.Enabled)
 	cmpStrings(t, "validations.banner_creative_max_size", "skip", cfg.Validations.BannerCreativeMaxSize)
@@ -467,7 +465,6 @@ hooks:
 price_floors:
     enabled: true
 account_defaults:
-    events_enabled: false
     events:
         enabled: true
     price_floors:
@@ -488,12 +485,6 @@ tmax_adjustments:
   bidder_response_duration_min_ms: 700
   bidder_network_latency_buffer_ms: 100
   pbs_response_preparation_duration_ms: 100
-`)
-
-var oldStoredRequestsConfig = []byte(`
-stored_requests:
-  filesystem: true
-  directorypath: "/somepath"
 `)
 
 func cmpStrings(t *testing.T, key, expected, actual string) {
@@ -586,8 +577,7 @@ func TestFullConfig(t *testing.T) {
 	cmpBools(t, "account_defaults.price_floors.use_dynamic_data", true, cfg.AccountDefaults.PriceFloors.UseDynamicData)
 	cmpInts(t, "account_defaults.price_floors.max_rules", 120, cfg.AccountDefaults.PriceFloors.MaxRule)
 	cmpInts(t, "account_defaults.price_floors.max_schema_dims", 5, cfg.AccountDefaults.PriceFloors.MaxSchemaDims)
-	cmpBools(t, "account_defaults.events_enabled", *cfg.AccountDefaults.EventsEnabled, true)
-	cmpNils(t, "account_defaults.events.enabled", cfg.AccountDefaults.Events.Enabled)
+	cmpBools(t, "account_defaults.events.enabled", true, cfg.AccountDefaults.Events.Enabled)
 
 	cmpInts(t, "account_defaults.privacy.ipv6.anon_keep_bits", 50, cfg.AccountDefaults.Privacy.IPv6Config.AnonKeepBits)
 	cmpInts(t, "account_defaults.privacy.ipv4.anon_keep_bits", 20, cfg.AccountDefaults.Privacy.IPv4Config.AnonKeepBits)
@@ -816,36 +806,15 @@ func TestValidateConfig(t *testing.T) {
 	assert.Nil(t, err, "OpenRTB filesystem config should work. %v", err)
 }
 
-func TestMigrateConfig(t *testing.T) {
-	v := viper.New()
-	SetupViper(v, "", bidderInfos)
-	v.Set("gdpr.default_value", "0")
-	v.SetConfigType("yaml")
-	v.ReadConfig(bytes.NewBuffer(oldStoredRequestsConfig))
-	migrateConfig(v)
-	cfg, err := New(v, bidderInfos, mockNormalizeBidderName)
-	assert.NoError(t, err, "Setting up config should work but it doesn't")
-	cmpBools(t, "stored_requests.filesystem.enabled", true, cfg.StoredRequests.Files.Enabled)
-	cmpStrings(t, "stored_requests.filesystem.path", "/somepath", cfg.StoredRequests.Files.Path)
-}
-
 func TestMigrateConfigFromEnv(t *testing.T) {
-	if oldval, ok := os.LookupEnv("PBS_STORED_REQUESTS_FILESYSTEM"); ok {
-		defer os.Setenv("PBS_STORED_REQUESTS_FILESYSTEM", oldval)
-	} else {
-		defer os.Unsetenv("PBS_STORED_REQUESTS_FILESYSTEM")
-	}
-
 	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_BIDDER1_ENDPOINT"); ok {
 		defer os.Setenv("PBS_ADAPTERS_BIDDER1_ENDPOINT", oldval)
 	} else {
 		defer os.Unsetenv("PBS_ADAPTERS_BIDDER1_ENDPOINT")
 	}
 
-	os.Setenv("PBS_STORED_REQUESTS_FILESYSTEM", "true")
 	os.Setenv("PBS_ADAPTERS_BIDDER1_ENDPOINT", "http://bidder1_override.com")
 	cfg, _ := newDefaultConfig(t)
-	cmpBools(t, "stored_requests.filesystem.enabled", true, cfg.StoredRequests.Files.Enabled)
 	cmpStrings(t, "adapters.bidder1.endpoint", "http://bidder1_override.com", cfg.BidderInfos["bidder1"].Endpoint)
 }
 
@@ -2437,54 +2406,5 @@ func TestTCF2FeatureOneVendorException(t *testing.T) {
 		value := tcf2.FeatureOneVendorException(tt.giveBidder)
 
 		assert.Equal(t, tt.wantIsVendorException, value, tt.description)
-	}
-}
-
-func TestMigrateConfigEventsEnabled(t *testing.T) {
-	testCases := []struct {
-		name                  string
-		oldFieldValue         *bool
-		newFieldValue         *bool
-		expectedOldFieldValue *bool
-		expectedNewFieldValue *bool
-	}{
-		{
-			name:                  "Both old and new fields are nil",
-			oldFieldValue:         nil,
-			newFieldValue:         nil,
-			expectedOldFieldValue: nil,
-			expectedNewFieldValue: nil,
-		},
-		{
-			name:                  "Only old field is set",
-			oldFieldValue:         ptrutil.ToPtr(true),
-			newFieldValue:         nil,
-			expectedOldFieldValue: ptrutil.ToPtr(true),
-			expectedNewFieldValue: nil,
-		},
-		{
-			name:                  "Only new field is set",
-			oldFieldValue:         nil,
-			newFieldValue:         ptrutil.ToPtr(true),
-			expectedOldFieldValue: ptrutil.ToPtr(true),
-			expectedNewFieldValue: nil,
-		},
-		{
-			name:                  "Both old and new fields are set, override old field with new field value",
-			oldFieldValue:         ptrutil.ToPtr(false),
-			newFieldValue:         ptrutil.ToPtr(true),
-			expectedOldFieldValue: ptrutil.ToPtr(true),
-			expectedNewFieldValue: nil,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			updatedOldFieldValue, updatedNewFieldValue := migrateConfigEventsEnabled(tc.oldFieldValue, tc.newFieldValue)
-
-			assert.Equal(t, tc.expectedOldFieldValue, updatedOldFieldValue)
-			assert.Nil(t, updatedNewFieldValue)
-			assert.Nil(t, tc.expectedNewFieldValue)
-		})
 	}
 }

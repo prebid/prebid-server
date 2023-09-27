@@ -1,5 +1,5 @@
 {
-  "description": "This demonstrates all of the OpenRTB extensions supported by Prebid Server. Very few requests will need all of these at once.",
+  "description": "This demonstrates all extension in case insensitive.",
   "config": {
     "mockBidders": [
       {
@@ -69,7 +69,7 @@
     "ext": {
       "prebid": {
         "aliases": {
-          "districtm": "appnexus"
+          "districtm": "Appnexus"
         },
         "bidadjustmentfactors": {
           "appnexus": 1.01,
