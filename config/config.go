@@ -70,9 +70,6 @@ type Configuration struct {
 	// Array of blacklisted apps that is used to create the hash table BlacklistedAppMap so App.ID's can be instantly accessed.
 	BlacklistedApps   []string `mapstructure:"blacklisted_apps,flow"`
 	BlacklistedAppMap map[string]bool
-	// Array of blacklisted accounts that is used to create the hash table BlacklistedAcctMap so Account.ID's can be instantly accessed.
-	BlacklistedAccts   []string `mapstructure:"blacklisted_accts,flow"`
-	BlacklistedAcctMap map[string]bool
 	// Is publisher/account ID required to be submitted in the OpenRTB2 request
 	AccountRequired bool `mapstructure:"account_required"`
 	// AccountDefaults defines default settings for valid accounts that are partially defined
@@ -762,13 +759,6 @@ func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName func(strin
 	c.BlacklistedAppMap = make(map[string]bool)
 	for i := 0; i < len(c.BlacklistedApps); i++ {
 		c.BlacklistedAppMap[c.BlacklistedApps[i]] = true
-	}
-
-	// To look for a request's account id in O(1) time, we fill this hash table located in the
-	// the BlacklistedAccts field of the Configuration struct defined in this file
-	c.BlacklistedAcctMap = make(map[string]bool)
-	for i := 0; i < len(c.BlacklistedAccts); i++ {
-		c.BlacklistedAcctMap[c.BlacklistedAccts[i]] = true
 	}
 
 	// Migrate combo stored request config to separate stored_reqs and amp stored_reqs configs.
