@@ -148,10 +148,10 @@ func (a *AdButtlerAdapter) GetBidderResponse(request *openrtb2.BidRequest, adBut
 		val, ok := configValueMap[PRODUCTTEMPLATE_PREFIX + PD_TEMPLATE_PRODUCTID]
 		if ok {
 			productid = adButlerBid.ProductData[val]
-		} else {
+		}
+		if productid == "" {
 			productid = adButlerBid.ProductData[DEFAULT_PRODUCTID]
 		}
-
 
 		var impressionUrl, clickUrl, conversionUrl string
 		for _, beacon := range adButlerBid.Beacons {
