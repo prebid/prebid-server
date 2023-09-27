@@ -2359,7 +2359,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		Account: config.Account{
 			ID: "testaccount",
 			Events: config.Events{
-				Enabled: &spec.EventsEnabled,
+				Enabled: spec.EventsEnabled,
 			},
 			DebugAllow:  true,
 			PriceFloors: config.AccountPriceFloors{Enabled: spec.AccountFloorsEnabled},
