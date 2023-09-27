@@ -177,7 +177,6 @@ func TestDefaults(t *testing.T) {
 	cmpBools(t, "price_floors.enabled", false, cfg.PriceFloors.Enabled)
 
 	// Assert compression related defaults
-	cmpBools(t, "enable_gzip", false, cfg.EnableGzip)
 	cmpBools(t, "compression.request.enable_gzip", false, cfg.Compression.Request.GZIP)
 	cmpBools(t, "compression.response.enable_gzip", false, cfg.Compression.Response.GZIP)
 
@@ -382,7 +381,6 @@ external_url: http://prebid-server.prebid.org/
 host: prebid-server.prebid.org
 port: 1234
 admin_port: 5678
-enable_gzip: false
 compression:
     request:
         enable_gzip: true
@@ -583,7 +581,6 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "account_defaults.privacy.ipv4.anon_keep_bits", 20, cfg.AccountDefaults.Privacy.IPv4Config.AnonKeepBits)
 
 	// Assert compression related defaults
-	cmpBools(t, "enable_gzip", false, cfg.EnableGzip)
 	cmpBools(t, "compression.request.enable_gzip", true, cfg.Compression.Request.GZIP)
 	cmpBools(t, "compression.response.enable_gzip", false, cfg.Compression.Response.GZIP)
 
@@ -1688,74 +1685,6 @@ func TestMigrateConfigTCF2EnforcePurposeFlags(t *testing.T) {
 			assert.Nil(t, v.Get("gdpr.tcf2.purpose9.enforce_purpose"), tt.description)
 			assert.Nil(t, v.Get("gdpr.tcf2.purpose10.enforce_purpose"), tt.description)
 		}
-	}
-}
-
-func TestMigrateConfigCompression(t *testing.T) {
-	testCases := []struct {
-		desc                string
-		config              []byte
-		wantEnableGZIP      bool
-		wantReqGZIPEnabled  bool
-		wantRespGZIPEnabled bool
-	}{
-
-		{
-			desc:                "New config and old config not set",
-			config:              []byte{},
-			wantEnableGZIP:      false,
-			wantReqGZIPEnabled:  false,
-			wantRespGZIPEnabled: false,
-		},
-		{
-			desc: "Old config set, new config not set",
-			config: []byte(`
-                    enable_gzip: true
-                    `),
-			wantEnableGZIP:      true,
-			wantRespGZIPEnabled: true,
-			wantReqGZIPEnabled:  false,
-		},
-		{
-			desc: "Old config not set, new config set",
-			config: []byte(`
-                    compression:
-                        response:
-                            enable_gzip: true
-                        request:
-                            enable_gzip: false
-                    `),
-			wantEnableGZIP:      false,
-			wantRespGZIPEnabled: true,
-			wantReqGZIPEnabled:  false,
-		},
-		{
-			desc: "Old config set and new config set",
-			config: []byte(`
-                    enable_gzip: true
-                    compression:
-                        response:
-                            enable_gzip: false
-                        request:
-                            enable_gzip: true
-                    `),
-			wantEnableGZIP:      true,
-			wantRespGZIPEnabled: false,
-			wantReqGZIPEnabled:  true,
-		},
-	}
-
-	for _, test := range testCases {
-		v := viper.New()
-		v.SetConfigType("yaml")
-		err := v.ReadConfig(bytes.NewBuffer(test.config))
-		assert.NoError(t, err)
-
-		migrateConfigCompression(v)
-
-		assert.Equal(t, test.wantEnableGZIP, v.GetBool("enable_gzip"), test.desc)
-		assert.Equal(t, test.wantReqGZIPEnabled, v.GetBool("compression.request.enable_gzip"), test.desc)
-		assert.Equal(t, test.wantRespGZIPEnabled, v.GetBool("compression.response.enable_gzip"), test.desc)
 	}
 }
 

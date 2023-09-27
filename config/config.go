@@ -28,7 +28,6 @@ type Configuration struct {
 	Client           HTTPClient  `mapstructure:"http_client"`
 	CacheClient      HTTPClient  `mapstructure:"http_client_cache"`
 	AdminPort        int         `mapstructure:"admin_port"`
-	EnableGzip       bool        `mapstructure:"enable_gzip"`
 	Compression      Compression `mapstructure:"compression"`
 	// GarbageCollectorThreshold allocates virtual memory (in bytes) which is not used by PBS but
 	// serves as a hack to trigger the garbage collector only when the heap reaches at least this size.
@@ -1122,7 +1121,6 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	migrateConfigPurposeOneTreatment(v)
 	migrateConfigSpecialFeature1(v)
 	migrateConfigTCF2PurposeFlags(v)
-	migrateConfigCompression(v)
 
 	// These defaults must be set after the migrate functions because those functions look for the presence of these
 	// config fields and there isn't a way to detect presence of a config field using the viper package if a default
@@ -1163,8 +1161,6 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("gdpr.tcf2.special_feature1.vendor_exceptions", []openrtb_ext.BidderName{})
 	v.SetDefault("price_floors.enabled", false)
 
-	v.SetDefault("enable_gzip", false)
-
 	// Defaults for account_defaults.events.default_url
 	v.SetDefault("account_defaults.events.default_url", "https://PBS_HOST/event?t=##PBS-EVENTTYPE##&vtype=##PBS-VASTEVENT##&b=##PBS-BIDID##&f=i&a=##PBS-ACCOUNTID##&ts=##PBS-TIMESTAMP##&bidder=##PBS-BIDDER##&int=##PBS-INTEGRATION##&mt=##PBS-MEDIATYPE##&ch=##PBS-CHANNEL##&aid=##PBS-AUCTIONID##&l=##PBS-LINEID##")
 	v.SetDefault("account_defaults.events.enabled", false)
@@ -1181,20 +1177,6 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 
 	for bidderName := range bidderInfos {
 		setBidderDefaults(v, strings.ToLower(bidderName))
-	}
-}
-
-func migrateConfigCompression(v *viper.Viper) {
-	oldField := "enable_gzip"
-	newField := "compression.response.enable_gzip"
-	if v.IsSet(oldField) {
-		oldConfig := v.GetBool(oldField)
-		if v.IsSet(newField) {
-			glog.Warningf("using %s and ignoring deprecated %s", newField, oldField)
-		} else {
-			glog.Warningf("%s is deprecated and should be changed to %s", oldField, newField)
-			v.Set(newField, oldConfig)
-		}
 	}
 }
 
