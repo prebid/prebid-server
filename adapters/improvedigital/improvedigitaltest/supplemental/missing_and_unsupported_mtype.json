@@ -39,6 +39,14 @@
             "placementId": 13244
           }
         }
+      },
+      {
+        "id": "test-unsupported-format-id-without-mtype",
+        "ext": {
+          "bidder": {
+            "placementId": 13244
+          }
+        }
       }
     ]
   },
@@ -146,6 +154,47 @@
           "cur": "USD"
         }
       }
+    },
+    {
+      "expectedRequest": {
+        "uri": "http://localhost/pbs",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-unsupported-format-id-without-mtype",
+              "ext": {
+                "bidder": {
+                  "placementId": 13244
+                }
+              }
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "improvedigital",
+              "bid": [
+                {
+                  "id": "randomid3",
+                  "impid": "test-unsupported-format-id-without-mtype",
+                  "price": 0.5,
+                  "adm": "some-test-ad-vast",
+                  "crid": "1234567",
+                  "w": 1920,
+                  "h": 1080
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
     }
   ],
 
@@ -156,6 +205,10 @@
     },
     {
       "value": "Bid must have non-zero MType for multi format impression with ID: \"test-multi-format-id-without-mtype\"",
+      "comparison": "literal"
+    },
+    {
+      "value": "Could not determine MType from impression with ID: \"test-unsupported-format-id-without-mtype\"",
       "comparison": "literal"
     }
   ]
