@@ -85,7 +85,7 @@ const (
 	// StatusBlockedByPrivacy specifies a bidder sync url is not allowed by privacy activities
 	StatusBlockedByPrivacy
 
-	// TODO: Add desciription
+	// StatusUnconfiguredBidder refers to a bidder who hasn't been configured to have a syncer key, but is known by Prebid Server
 	StatusUnconfiguredBidder
 )
 

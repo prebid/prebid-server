@@ -397,7 +397,7 @@ func (c *cookieSyncEndpoint) writeSyncerMetrics(biddersEvaluated []usersync.Bidd
 	}
 }
 
-func (c *cookieSyncEndpoint) handleResponse(w http.ResponseWriter, tf usersync.SyncTypeFilter, co *usersync.Cookie, m macros.UserSyncPrivacy, s []usersync.SyncerChoice, biddersEvaluted []usersync.BidderEvaluation, debug bool) {
+func (c *cookieSyncEndpoint) handleResponse(w http.ResponseWriter, tf usersync.SyncTypeFilter, co *usersync.Cookie, m macros.UserSyncPrivacy, s []usersync.SyncerChoice, biddersEvaluated []usersync.BidderEvaluation, debug bool) {
 	status := "no_cookie"
 	if co.HasAnyLiveSyncs() {
 		status = "ok"
@@ -430,11 +430,11 @@ func (c *cookieSyncEndpoint) handleResponse(w http.ResponseWriter, tf usersync.S
 	if debug {
 		biddersSeen := make(map[string]struct{})
 		var debugMessages []string
-		for _, bidderEval := range biddersEvaluted {
+		for _, bidderEval := range biddersEvaluated {
 			if bidderEval.Status == usersync.StatusDuplicate && biddersSeen[bidderEval.Bidder] == struct{}{} {
 				debugMessages = append(debugMessages, getDebugMessage(bidderEval.Status)+" synced as "+bidderEval.SyncerKey)
-			} else if bidderEval.Status != usersync.StatusDuplicate {
-				debugMessages = append(debugMessages, getDebugMessage(bidderEval.Status))
+			} else if bidderEval.Status != usersync.StatusOK {
+				debugMessages = append(debugMessages, getDebugMessage(bidderEval.Status)+": "+bidderEval.Bidder)
 			}
 			biddersSeen[bidderEval.Bidder] = struct{}{}
 		}

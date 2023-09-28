@@ -262,7 +262,7 @@ func TestCookieSyncHandle(t *testing.T) {
 			expectedStatusCode: 200,
 			expectedBody: `{"status":"ok","bidder_status":[` +
 				`{"bidder":"a","no_cookie":true,"usersync":{"url":"aURL","type":"redirect","supportCORS":true}}` +
-				`],"debug":["Already in sync"]}` + "\n",
+				`],"debug":["Already in sync: a"]}` + "\n",
 			setMetricsExpectations: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordCookieSync", metrics.CookieSyncOK).Once()
 				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerCookieSyncAlreadySynced).Once()
@@ -1620,6 +1620,7 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 		{Bidder: "Bidder3", Status: usersync.StatusUnconfiguredBidder},
 		{Bidder: "Bidder4", Status: usersync.StatusBlockedByPrivacy},
 		{Bidder: "Bidder5", Status: usersync.StatusTypeNotSupported},
+		{Bidder: "Bidder6", Status: usersync.StatusBlockedByUserOptOut},
 		{Bidder: "BidderA", Status: usersync.StatusDuplicate, SyncerKey: "syncerB"},
 	}
 
@@ -1710,7 +1711,7 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 			givenCookieHasSyncs: true,
 			givenDebug:          true,
 			givenSyncersChosen:  []usersync.SyncerChoice{},
-			expectedJSON:        `{"status":"ok","bidder_status":[],"debug":["Already in sync","Unsupported bidder","No sync config","Rejected by privacy","Type not supported","Duplicate bidder synced as syncerB"]}` + "\n",
+			expectedJSON:        `{"status":"ok","bidder_status":[],"debug":["Already in sync: Bidder1","Unsupported bidder: Bidder2","No sync config: Bidder3","Rejected by privacy: Bidder4","Type not supported: Bidder5","Status blocked by user opt out: Bidder6","Duplicate bidder synced as syncerB"]}` + "\n",
 			expectedAnalytics:   analytics.CookieSyncObject{Status: 200, BidderStatus: []*analytics.CookieSyncBidder{}},
 		},
 	}
