@@ -887,6 +887,25 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("category_mapping.filesystem.enabled", true)
 	v.SetDefault("category_mapping.filesystem.directorypath", "./static/category-mapping")
 	v.SetDefault("category_mapping.http.endpoint", "")
+	v.SetDefault("stored_requests.database.connection.driver", "")
+	v.SetDefault("stored_requests.database.connection.dbname", "")
+	v.SetDefault("stored_requests.database.connection.host", "")
+	v.SetDefault("stored_requests.database.connection.port", 0)
+	v.SetDefault("stored_requests.database.connection.user", "")
+	v.SetDefault("stored_requests.database.connection.password", "")
+	v.SetDefault("stored_requests.database.connection.query_string", "")
+	v.SetDefault("stored_requests.database.connection.tls.root_cert", "")
+	v.SetDefault("stored_requests.database.connection.tls.client_cert", "")
+	v.SetDefault("stored_requests.database.connection.tls.client_key", "")
+	v.SetDefault("stored_requests.database.fetcher.query", "")
+	v.SetDefault("stored_requests.database.fetcher.amp_query", "")
+	v.SetDefault("stored_requests.database.initialize_caches.timeout_ms", 0)
+	v.SetDefault("stored_requests.database.initialize_caches.query", "")
+	v.SetDefault("stored_requests.database.initialize_caches.amp_query", "")
+	v.SetDefault("stored_requests.database.poll_for_updates.refresh_rate_seconds", 0)
+	v.SetDefault("stored_requests.database.poll_for_updates.timeout_ms", 0)
+	v.SetDefault("stored_requests.database.poll_for_updates.query", "")
+	v.SetDefault("stored_requests.database.poll_for_updates.amp_query", "")
 	v.SetDefault("stored_requests.filesystem.enabled", false)
 	v.SetDefault("stored_requests.filesystem.directorypath", "./stored_requests/data/by_id")
 	v.SetDefault("stored_requests.directorypath", "./stored_requests/data/by_id")
@@ -904,6 +923,25 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("stored_requests.http_events.timeout_ms", 0)
 	// stored_video is short for stored_video_requests.
 	// PBS is not in the business of storing video content beyond the normal prebid cache system.
+	v.SetDefault("stored_video_req.database.connection.driver", "")
+	v.SetDefault("stored_video_req.database.connection.dbname", "")
+	v.SetDefault("stored_video_req.database.connection.host", "")
+	v.SetDefault("stored_video_req.database.connection.port", 0)
+	v.SetDefault("stored_video_req.database.connection.user", "")
+	v.SetDefault("stored_video_req.database.connection.password", "")
+	v.SetDefault("stored_video_req.database.connection.query_string", "")
+	v.SetDefault("stored_video_req.database.connection.tls.root_cert", "")
+	v.SetDefault("stored_video_req.database.connection.tls.client_cert", "")
+	v.SetDefault("stored_video_req.database.connection.tls.client_key", "")
+	v.SetDefault("stored_video_req.database.fetcher.query", "")
+	v.SetDefault("stored_video_req.database.fetcher.amp_query", "")
+	v.SetDefault("stored_video_req.database.initialize_caches.timeout_ms", 0)
+	v.SetDefault("stored_video_req.database.initialize_caches.query", "")
+	v.SetDefault("stored_video_req.database.initialize_caches.amp_query", "")
+	v.SetDefault("stored_video_req.database.poll_for_updates.refresh_rate_seconds", 0)
+	v.SetDefault("stored_video_req.database.poll_for_updates.timeout_ms", 0)
+	v.SetDefault("stored_video_req.database.poll_for_updates.query", "")
+	v.SetDefault("stored_video_req.database.poll_for_updates.amp_query", "")
 	v.SetDefault("stored_video_req.filesystem.enabled", false)
 	v.SetDefault("stored_video_req.filesystem.directorypath", "")
 	v.SetDefault("stored_video_req.http.endpoint", "")
@@ -917,6 +955,25 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("stored_video_req.http_events.endpoint", "")
 	v.SetDefault("stored_video_req.http_events.refresh_rate_seconds", 0)
 	v.SetDefault("stored_video_req.http_events.timeout_ms", 0)
+	v.SetDefault("stored_responses.database.connection.driver", "")
+	v.SetDefault("stored_responses.database.connection.dbname", "")
+	v.SetDefault("stored_responses.database.connection.host", "")
+	v.SetDefault("stored_responses.database.connection.port", 0)
+	v.SetDefault("stored_responses.database.connection.user", "")
+	v.SetDefault("stored_responses.database.connection.password", "")
+	v.SetDefault("stored_responses.database.connection.query_string", "")
+	v.SetDefault("stored_responses.database.connection.tls.root_cert", "")
+	v.SetDefault("stored_responses.database.connection.tls.client_cert", "")
+	v.SetDefault("stored_responses.database.connection.tls.client_key", "")
+	v.SetDefault("stored_responses.database.fetcher.query", "")
+	v.SetDefault("stored_responses.database.fetcher.amp_query", "")
+	v.SetDefault("stored_responses.database.initialize_caches.timeout_ms", 0)
+	v.SetDefault("stored_responses.database.initialize_caches.query", "")
+	v.SetDefault("stored_responses.database.initialize_caches.amp_query", "")
+	v.SetDefault("stored_responses.database.poll_for_updates.refresh_rate_seconds", 0)
+	v.SetDefault("stored_responses.database.poll_for_updates.timeout_ms", 0)
+	v.SetDefault("stored_responses.database.poll_for_updates.query", "")
+	v.SetDefault("stored_responses.database.poll_for_updates.amp_query", "")
 	v.SetDefault("stored_responses.filesystem.enabled", false)
 	v.SetDefault("stored_responses.filesystem.directorypath", "")
 	v.SetDefault("stored_responses.http.endpoint", "")
@@ -1051,17 +1108,12 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("request_validation.ipv4_private_networks", []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "169.254.0.0/16", "127.0.0.0/8"})
 	v.SetDefault("request_validation.ipv6_private_networks", []string{"::1/128", "fc00::/7", "fe80::/10", "ff00::/8", "2001:db8::/32"})
 
-	bindDatabaseEnvVars(v)
-
 	// Set environment variable support:
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.SetTypeByDefaultValue(true)
 	v.SetEnvPrefix("PBS")
 	v.AutomaticEnv()
 	v.ReadInConfig()
-
-	// Migrate config settings to maintain compatibility with old configs
-	migrateConfigDatabaseConnection(v)
 
 	// These defaults must be set after the migrate functions because those functions look for the presence of these
 	// config fields and there isn't a way to detect presence of a config field using the viper package if a default
@@ -1111,173 +1163,6 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	}
 }
 
-func migrateConfigDatabaseConnection(v *viper.Viper) {
-
-	type QueryParamMigration struct {
-		old string
-		new string
-	}
-
-	type QueryMigration struct {
-		name   string
-		params []QueryParamMigration
-	}
-
-	type Migration struct {
-		old             string
-		new             string
-		fields          []string
-		queryMigrations []QueryMigration
-	}
-
-	queryParamMigrations := struct {
-		RequestIdList QueryParamMigration
-		ImpIdList     QueryParamMigration
-		IdList        QueryParamMigration
-		LastUpdated   QueryParamMigration
-	}{
-		RequestIdList: QueryParamMigration{
-			old: "%REQUEST_ID_LIST%",
-			new: "$REQUEST_ID_LIST",
-		},
-		ImpIdList: QueryParamMigration{
-			old: "%IMP_ID_LIST%",
-			new: "$IMP_ID_LIST",
-		},
-		IdList: QueryParamMigration{
-			old: "%ID_LIST%",
-			new: "$ID_LIST",
-		},
-		LastUpdated: QueryParamMigration{
-			old: "$1",
-			new: "$LAST_UPDATED",
-		},
-	}
-
-	queryMigrations := []QueryMigration{
-		{
-			name:   "fetcher.query",
-			params: []QueryParamMigration{queryParamMigrations.RequestIdList, queryParamMigrations.ImpIdList, queryParamMigrations.IdList},
-		},
-		{
-			name:   "fetcher.amp_query",
-			params: []QueryParamMigration{queryParamMigrations.RequestIdList, queryParamMigrations.ImpIdList, queryParamMigrations.IdList},
-		},
-		{
-			name:   "poll_for_updates.query",
-			params: []QueryParamMigration{queryParamMigrations.LastUpdated},
-		},
-		{
-			name:   "poll_for_updates.amp_query",
-			params: []QueryParamMigration{queryParamMigrations.LastUpdated},
-		},
-	}
-
-	migrations := []Migration{
-		{
-			old: "stored_requests.postgres",
-			new: "stored_requests.database",
-			fields: []string{
-				"connection.dbname",
-				"connection.host",
-				"connection.port",
-				"connection.user",
-				"connection.password",
-				"fetcher.query",
-				"fetcher.amp_query",
-				"initialize_caches.timeout_ms",
-				"initialize_caches.query",
-				"initialize_caches.amp_query",
-				"poll_for_updates.refresh_rate_seconds",
-				"poll_for_updates.timeout_ms",
-				"poll_for_updates.query",
-				"poll_for_updates.amp_query",
-			},
-			queryMigrations: queryMigrations,
-		},
-		{
-			old: "stored_video_req.postgres",
-			new: "stored_video_req.database",
-			fields: []string{
-				"connection.dbname",
-				"connection.host",
-				"connection.port",
-				"connection.user",
-				"connection.password",
-				"fetcher.query",
-				"initialize_caches.timeout_ms",
-				"initialize_caches.query",
-				"poll_for_updates.refresh_rate_seconds",
-				"poll_for_updates.timeout_ms",
-				"poll_for_updates.query",
-			},
-			queryMigrations: queryMigrations,
-		},
-		{
-			old: "stored_responses.postgres",
-			new: "stored_responses.database",
-			fields: []string{
-				"connection.dbname",
-				"connection.host",
-				"connection.port",
-				"connection.user",
-				"connection.password",
-				"fetcher.query",
-				"initialize_caches.timeout_ms",
-				"initialize_caches.query",
-				"poll_for_updates.refresh_rate_seconds",
-				"poll_for_updates.timeout_ms",
-				"poll_for_updates.query",
-			},
-			queryMigrations: queryMigrations,
-		},
-	}
-
-	for _, migration := range migrations {
-		driverField := migration.new + ".connection.driver"
-		newConfigInfoPresent := isConfigInfoPresent(v, migration.new, migration.fields)
-		oldConfigInfoPresent := isConfigInfoPresent(v, migration.old, migration.fields)
-
-		if !newConfigInfoPresent && oldConfigInfoPresent {
-			glog.Warning(fmt.Sprintf("%s is deprecated and should be changed to %s", migration.old, migration.new))
-			glog.Warning(fmt.Sprintf("%s is not set, using default (postgres)", driverField))
-			v.Set(driverField, "postgres")
-
-			for _, field := range migration.fields {
-				oldField := migration.old + "." + field
-				newField := migration.new + "." + field
-				if v.IsSet(oldField) {
-					glog.Warning(fmt.Sprintf("%s is deprecated and should be changed to %s", oldField, newField))
-					v.Set(newField, v.Get(oldField))
-				}
-			}
-
-			for _, queryMigration := range migration.queryMigrations {
-				oldQueryField := migration.old + "." + queryMigration.name
-				newQueryField := migration.new + "." + queryMigration.name
-				queryString := v.GetString(oldQueryField)
-				for _, queryParam := range queryMigration.params {
-					if strings.Contains(queryString, queryParam.old) {
-						glog.Warning(fmt.Sprintf("Query param %s for %s is deprecated and should be changed to %s", queryParam.old, oldQueryField, queryParam.new))
-						queryString = strings.ReplaceAll(queryString, queryParam.old, queryParam.new)
-						v.Set(newQueryField, queryString)
-					}
-				}
-			}
-		} else if newConfigInfoPresent && oldConfigInfoPresent {
-			glog.Warning(fmt.Sprintf("using %s and ignoring deprecated %s", migration.new, migration.old))
-
-			for _, field := range migration.fields {
-				oldField := migration.old + "." + field
-				newField := migration.new + "." + field
-				if v.IsSet(oldField) {
-					glog.Warning(fmt.Sprintf("using %s and ignoring deprecated %s", newField, oldField))
-				}
-			}
-		}
-	}
-}
-
 func isConfigInfoPresent(v *viper.Viper, prefix string, fields []string) bool {
 	prefix = prefix + "."
 	for _, field := range fields {
@@ -1287,60 +1172,6 @@ func isConfigInfoPresent(v *viper.Viper, prefix string, fields []string) bool {
 		}
 	}
 	return false
-}
-
-func bindDatabaseEnvVars(v *viper.Viper) {
-	v.BindEnv("stored_requests.database.connection.driver")
-	v.BindEnv("stored_requests.database.connection.dbname")
-	v.BindEnv("stored_requests.database.connection.host")
-	v.BindEnv("stored_requests.database.connection.port")
-	v.BindEnv("stored_requests.database.connection.user")
-	v.BindEnv("stored_requests.database.connection.password")
-	v.BindEnv("stored_requests.database.connection.query_string")
-	v.BindEnv("stored_requests.database.connection.tls.root_cert")
-	v.BindEnv("stored_requests.database.connection.tls.client_cert")
-	v.BindEnv("stored_requests.database.connection.tls.client_key")
-	v.BindEnv("stored_requests.database.fetcher.query")
-	v.BindEnv("stored_requests.database.fetcher.amp_query")
-	v.BindEnv("stored_requests.database.initialize_caches.timeout_ms")
-	v.BindEnv("stored_requests.database.initialize_caches.query")
-	v.BindEnv("stored_requests.database.initialize_caches.amp_query")
-	v.BindEnv("stored_requests.database.poll_for_updates.refresh_rate_seconds")
-	v.BindEnv("stored_requests.database.poll_for_updates.timeout_ms")
-	v.BindEnv("stored_requests.database.poll_for_updates.query")
-	v.BindEnv("stored_requests.database.poll_for_updates.amp_query")
-	v.BindEnv("stored_video_req.database.connection.driver")
-	v.BindEnv("stored_video_req.database.connection.dbname")
-	v.BindEnv("stored_video_req.database.connection.host")
-	v.BindEnv("stored_video_req.database.connection.port")
-	v.BindEnv("stored_video_req.database.connection.user")
-	v.BindEnv("stored_video_req.database.connection.password")
-	v.BindEnv("stored_video_req.database.connection.query_string")
-	v.BindEnv("stored_video_req.database.connection.tls.root_cert")
-	v.BindEnv("stored_video_req.database.connection.tls.client_cert")
-	v.BindEnv("stored_video_req.database.connection.tls.client_key")
-	v.BindEnv("stored_video_req.database.fetcher.query")
-	v.BindEnv("stored_video_req.database.initialize_caches.timeout_ms")
-	v.BindEnv("stored_video_req.database.initialize_caches.query")
-	v.BindEnv("stored_video_req.database.poll_for_updates.refresh_rate_seconds")
-	v.BindEnv("stored_video_req.database.poll_for_updates.timeout_ms")
-	v.BindEnv("stored_video_req.database.poll_for_updates.query")
-	v.BindEnv("stored_responses.database.connection.driver")
-	v.BindEnv("stored_responses.database.connection.dbname")
-	v.BindEnv("stored_responses.database.connection.host")
-	v.BindEnv("stored_responses.database.connection.port")
-	v.BindEnv("stored_responses.database.connection.user")
-	v.BindEnv("stored_responses.database.connection.password")
-	v.BindEnv("stored_responses.database.connection.query_string")
-	v.BindEnv("stored_responses.database.connection.tls.root_cert")
-	v.BindEnv("stored_responses.database.connection.tls.client_cert")
-	v.BindEnv("stored_responses.database.connection.tls.client_key")
-	v.BindEnv("stored_responses.database.fetcher.query")
-	v.BindEnv("stored_responses.database.initialize_caches.timeout_ms")
-	v.BindEnv("stored_responses.database.initialize_caches.query")
-	v.BindEnv("stored_responses.database.poll_for_updates.refresh_rate_seconds")
-	v.BindEnv("stored_responses.database.poll_for_updates.timeout_ms")
-	v.BindEnv("stored_responses.database.poll_for_updates.query")
 }
 
 func setBidderDefaults(v *viper.Viper, bidder string) {
