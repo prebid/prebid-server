@@ -10,7 +10,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderLemmadigital, config.Adapter{
-		Endpoint: "https://sg.ads.lemmatechnologies.com/lemma/servad?pid={{.PublisherID}}&aid={{.AdUnit}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+		Endpoint: "https://{{.Host}}.lemmatechnologies.com/lemma/servad?pid={{.PublisherID}}&aid={{.AdUnit}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)

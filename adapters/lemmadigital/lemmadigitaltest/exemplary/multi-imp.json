@@ -14,7 +14,8 @@
             "ext": {
                 "bidder": {
                     "aid": 1,
-                    "pid": 1
+                    "pid": 1,
+                    "host": "sg.ads"
                 }
             },
             "bidfloor": 0.1
@@ -31,7 +32,8 @@
             "ext": {
                 "bidder": {
                     "aid": 1,
-                    "pid": 1
+                    "pid": 1,
+                    "host": "sg.ads"
                 }
             },
             "bidfloor": 0.12
@@ -65,7 +67,8 @@
                     "ext": {
                         "bidder": {
                             "aid": 1,
-                            "pid": 1
+                            "pid": 1,
+                            "host": "sg.ads"
                         }
                     },
                     "bidfloor": 0.1
@@ -82,7 +85,8 @@
                     "ext": {
                         "bidder": {
                             "aid": 1,
-                            "pid": 1
+                            "pid": 1,
+                            "host": "sg.ads"
                         }
                     },
                     "bidfloor": 0.12

@@ -12,8 +12,13 @@
         "aid": {
             "type": "integer",
             "description": "Ad ID"
+        },
+        "host": {
+            "type": "string",
+            "description": "Network Host to request from",
+            "enum": ["uses.ads", "sg.ads"]
         }
     },
 
-    "required": ["pid", "aid"]
+    "required": ["pid", "aid", "host"]
 }

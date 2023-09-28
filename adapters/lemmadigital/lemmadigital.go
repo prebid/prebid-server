@@ -109,6 +109,6 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 func (a *adapter) buildEndpointURL(params openrtb_ext.ImpExtLemmaDigital) (string, error) {
 	endpointParams := macros.EndpointTemplateParams{PublisherID: strconv.Itoa(params.PublisherId),
-		AdUnit: strconv.Itoa(params.AdId)}
+		AdUnit: strconv.Itoa(params.AdId), Host: params.Host}
 	return macros.ResolveMacros(a.endpoint, endpointParams)
 }
