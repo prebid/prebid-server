@@ -14,7 +14,6 @@ import (
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/spf13/viper"
 )
 
@@ -28,7 +27,6 @@ type Configuration struct {
 	Client           HTTPClient  `mapstructure:"http_client"`
 	CacheClient      HTTPClient  `mapstructure:"http_client_cache"`
 	AdminPort        int         `mapstructure:"admin_port"`
-	EnableGzip       bool        `mapstructure:"enable_gzip"`
 	Compression      Compression `mapstructure:"compression"`
 	// GarbageCollectorThreshold allocates virtual memory (in bytes) which is not used by PBS but
 	// serves as a hack to trigger the garbage collector only when the heap reaches at least this size.
@@ -140,12 +138,12 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 		glog.Warning(`With account_defaults.disabled=true, host-defined accounts must exist and have "disabled":false. All other requests will be rejected.`)
 	}
 
-	if cfg.PriceFloors.Enabled {
-		glog.Warning(`cfg.PriceFloors.Enabled will currently not do anything as price floors feature is still under development.`)
+	if cfg.AccountDefaults.Events.Enabled {
+		glog.Warning(`account_defaults.events has no effect as the feature is under development.`)
 	}
 
-	if len(cfg.AccountDefaults.Events.VASTEvents) > 0 {
-		errs = append(errs, errors.New("account_defaults.Events.VASTEvents has no effect as the feature is under development."))
+	if cfg.PriceFloors.Enabled {
+		glog.Warning(`cfg.PriceFloors.Enabled will currently not do anything as price floors feature is still under development.`)
 	}
 
 	errs = cfg.Experiment.validate(errs)
@@ -693,9 +691,6 @@ func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName func(strin
 	// Update account defaults and generate base json for patch
 	c.AccountDefaults.CacheTTL = c.CacheURL.DefaultTTLs // comment this out to set explicitly in config
 
-	// Update the deprecated and new events enabled values for account defaults.
-	c.AccountDefaults.EventsEnabled, c.AccountDefaults.Events.Enabled = migrateConfigEventsEnabled(c.AccountDefaults.EventsEnabled, c.AccountDefaults.Events.Enabled)
-
 	if err := c.MarshalAccountDefaults(); err != nil {
 		return nil, err
 	}
@@ -1017,7 +1012,6 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("account_defaults.price_floors.use_dynamic_data", false)
 	v.SetDefault("account_defaults.price_floors.max_rules", 100)
 	v.SetDefault("account_defaults.price_floors.max_schema_dims", 3)
-	v.SetDefault("account_defaults.events_enabled", false)
 	v.SetDefault("account_defaults.privacy.ipv6.anon_keep_bits", 56)
 	v.SetDefault("account_defaults.privacy.ipv4.anon_keep_bits", 24)
 
@@ -1068,7 +1062,6 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 
 	// Migrate config settings to maintain compatibility with old configs
 	migrateConfigDatabaseConnection(v)
-	migrateConfigCompression(v)
 
 	// These defaults must be set after the migrate functions because those functions look for the presence of these
 	// config fields and there isn't a way to detect presence of a config field using the viper package if a default
@@ -1099,10 +1092,9 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("gdpr.tcf2.special_feature1.vendor_exceptions", []openrtb_ext.BidderName{})
 	v.SetDefault("price_floors.enabled", false)
 
-	v.SetDefault("enable_gzip", false)
-
 	// Defaults for account_defaults.events.default_url
 	v.SetDefault("account_defaults.events.default_url", "https://PBS_HOST/event?t=##PBS-EVENTTYPE##&vtype=##PBS-VASTEVENT##&b=##PBS-BIDID##&f=i&a=##PBS-ACCOUNTID##&ts=##PBS-TIMESTAMP##&bidder=##PBS-BIDDER##&int=##PBS-INTEGRATION##&mt=##PBS-MEDIATYPE##&ch=##PBS-CHANNEL##&aid=##PBS-AUCTIONID##&l=##PBS-LINEID##")
+	v.SetDefault("account_defaults.events.enabled", false)
 
 	v.SetDefault("experiment.adscert.mode", "off")
 	v.SetDefault("experiment.adscert.inprocess.origin", "")
@@ -1116,20 +1108,6 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 
 	for bidderName := range bidderInfos {
 		setBidderDefaults(v, strings.ToLower(bidderName))
-	}
-}
-
-func migrateConfigCompression(v *viper.Viper) {
-	oldField := "enable_gzip"
-	newField := "compression.response.enable_gzip"
-	if v.IsSet(oldField) {
-		oldConfig := v.GetBool(oldField)
-		if v.IsSet(newField) {
-			glog.Warningf("using %s and ignoring deprecated %s", newField, oldField)
-		} else {
-			glog.Warningf("%s is deprecated and should be changed to %s", oldField, newField)
-			v.Set(newField, oldConfig)
-		}
 	}
 }
 
@@ -1298,28 +1276,6 @@ func migrateConfigDatabaseConnection(v *viper.Viper) {
 			}
 		}
 	}
-}
-
-// migrateConfigEventsEnabled is responsible for ensuring backward compatibility of events_enabled field.
-// This function copies the value of newField "events.enabled" and set it to the oldField "events_enabled".
-// This is necessary to achieve the desired order of precedence favoring the account values over the host values
-// given the account fetcher JSON merge mechanics.
-func migrateConfigEventsEnabled(oldFieldValue *bool, newFieldValue *bool) (updatedOldFieldValue, updatedNewFieldValue *bool) {
-	newField := "account_defaults.events.enabled"
-	oldField := "account_defaults.events_enabled"
-
-	updatedOldFieldValue = oldFieldValue
-	if oldFieldValue != nil {
-		glog.Warningf("%s is deprecated and should be changed to %s", oldField, newField)
-	}
-	if newFieldValue != nil {
-		if oldFieldValue != nil {
-			glog.Warningf("using %s and ignoring deprecated %s", newField, oldField)
-		}
-		updatedOldFieldValue = ptrutil.ToPtr(*newFieldValue)
-	}
-
-	return updatedOldFieldValue, nil
 }
 
 func isConfigInfoPresent(v *viper.Viper, prefix string, fields []string) bool {

@@ -12,7 +12,6 @@ import (
 
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
@@ -180,7 +179,6 @@ func TestDefaults(t *testing.T) {
 	cmpBools(t, "price_floors.enabled", false, cfg.PriceFloors.Enabled)
 
 	// Assert compression related defaults
-	cmpBools(t, "enable_gzip", false, cfg.EnableGzip)
 	cmpBools(t, "compression.request.enable_gzip", false, cfg.Compression.Request.GZIP)
 	cmpBools(t, "compression.response.enable_gzip", false, cfg.Compression.Response.GZIP)
 
@@ -191,8 +189,7 @@ func TestDefaults(t *testing.T) {
 	cmpBools(t, "account_defaults.price_floors.use_dynamic_data", false, cfg.AccountDefaults.PriceFloors.UseDynamicData)
 	cmpInts(t, "account_defaults.price_floors.max_rules", 100, cfg.AccountDefaults.PriceFloors.MaxRule)
 	cmpInts(t, "account_defaults.price_floors.max_schema_dims", 3, cfg.AccountDefaults.PriceFloors.MaxSchemaDims)
-	cmpBools(t, "account_defaults.events_enabled", *cfg.AccountDefaults.EventsEnabled, false)
-	cmpNils(t, "account_defaults.events.enabled", cfg.AccountDefaults.Events.Enabled)
+	cmpBools(t, "account_defaults.events.enabled", false, cfg.AccountDefaults.Events.Enabled)
 
 	cmpBools(t, "hooks.enabled", false, cfg.Hooks.Enabled)
 	cmpStrings(t, "validations.banner_creative_max_size", "skip", cfg.Validations.BannerCreativeMaxSize)
@@ -375,7 +372,6 @@ external_url: http://prebid-server.prebid.org/
 host: prebid-server.prebid.org
 port: 1234
 admin_port: 5678
-enable_gzip: false
 compression:
     request:
         enable_gzip: true
@@ -458,7 +454,6 @@ hooks:
 price_floors:
     enabled: true
 account_defaults:
-    events_enabled: false
     events:
         enabled: true
     price_floors:
@@ -571,14 +566,12 @@ func TestFullConfig(t *testing.T) {
 	cmpBools(t, "account_defaults.price_floors.use_dynamic_data", true, cfg.AccountDefaults.PriceFloors.UseDynamicData)
 	cmpInts(t, "account_defaults.price_floors.max_rules", 120, cfg.AccountDefaults.PriceFloors.MaxRule)
 	cmpInts(t, "account_defaults.price_floors.max_schema_dims", 5, cfg.AccountDefaults.PriceFloors.MaxSchemaDims)
-	cmpBools(t, "account_defaults.events_enabled", *cfg.AccountDefaults.EventsEnabled, true)
-	cmpNils(t, "account_defaults.events.enabled", cfg.AccountDefaults.Events.Enabled)
+	cmpBools(t, "account_defaults.events.enabled", true, cfg.AccountDefaults.Events.Enabled)
 
 	cmpInts(t, "account_defaults.privacy.ipv6.anon_keep_bits", 50, cfg.AccountDefaults.Privacy.IPv6Config.AnonKeepBits)
 	cmpInts(t, "account_defaults.privacy.ipv4.anon_keep_bits", 20, cfg.AccountDefaults.Privacy.IPv4Config.AnonKeepBits)
 
 	// Assert compression related defaults
-	cmpBools(t, "enable_gzip", false, cfg.EnableGzip)
 	cmpBools(t, "compression.request.enable_gzip", true, cfg.Compression.Request.GZIP)
 	cmpBools(t, "compression.response.enable_gzip", false, cfg.Compression.Response.GZIP)
 
@@ -1804,74 +1797,6 @@ func TestMigrateConfigDatabaseQueryParams(t *testing.T) {
 	assert.Equal(t, want_queries.poll_for_updates_amp_query, v.GetString("stored_responses.database.poll_for_updates.amp_query"))
 }
 
-func TestMigrateConfigCompression(t *testing.T) {
-	testCases := []struct {
-		desc                string
-		config              []byte
-		wantEnableGZIP      bool
-		wantReqGZIPEnabled  bool
-		wantRespGZIPEnabled bool
-	}{
-
-		{
-			desc:                "New config and old config not set",
-			config:              []byte{},
-			wantEnableGZIP:      false,
-			wantReqGZIPEnabled:  false,
-			wantRespGZIPEnabled: false,
-		},
-		{
-			desc: "Old config set, new config not set",
-			config: []byte(`
-                    enable_gzip: true
-                    `),
-			wantEnableGZIP:      true,
-			wantRespGZIPEnabled: true,
-			wantReqGZIPEnabled:  false,
-		},
-		{
-			desc: "Old config not set, new config set",
-			config: []byte(`
-                    compression:
-                        response:
-                            enable_gzip: true
-                        request:
-                            enable_gzip: false
-                    `),
-			wantEnableGZIP:      false,
-			wantRespGZIPEnabled: true,
-			wantReqGZIPEnabled:  false,
-		},
-		{
-			desc: "Old config set and new config set",
-			config: []byte(`
-                    enable_gzip: true
-                    compression:
-                        response:
-                            enable_gzip: false
-                        request:
-                            enable_gzip: true
-                    `),
-			wantEnableGZIP:      true,
-			wantRespGZIPEnabled: false,
-			wantReqGZIPEnabled:  true,
-		},
-	}
-
-	for _, test := range testCases {
-		v := viper.New()
-		v.SetConfigType("yaml")
-		err := v.ReadConfig(bytes.NewBuffer(test.config))
-		assert.NoError(t, err)
-
-		migrateConfigCompression(v)
-
-		assert.Equal(t, test.wantEnableGZIP, v.GetBool("enable_gzip"), test.desc)
-		assert.Equal(t, test.wantReqGZIPEnabled, v.GetBool("compression.request.enable_gzip"), test.desc)
-		assert.Equal(t, test.wantRespGZIPEnabled, v.GetBool("compression.response.enable_gzip"), test.desc)
-	}
-}
-
 func TestIsConfigInfoPresent(t *testing.T) {
 	configPrefix1Field2Only := []byte(`
       prefix1:
@@ -2519,54 +2444,5 @@ func TestTCF2FeatureOneVendorException(t *testing.T) {
 		value := tcf2.FeatureOneVendorException(tt.giveBidder)
 
 		assert.Equal(t, tt.wantIsVendorException, value, tt.description)
-	}
-}
-
-func TestMigrateConfigEventsEnabled(t *testing.T) {
-	testCases := []struct {
-		name                  string
-		oldFieldValue         *bool
-		newFieldValue         *bool
-		expectedOldFieldValue *bool
-		expectedNewFieldValue *bool
-	}{
-		{
-			name:                  "Both old and new fields are nil",
-			oldFieldValue:         nil,
-			newFieldValue:         nil,
-			expectedOldFieldValue: nil,
-			expectedNewFieldValue: nil,
-		},
-		{
-			name:                  "Only old field is set",
-			oldFieldValue:         ptrutil.ToPtr(true),
-			newFieldValue:         nil,
-			expectedOldFieldValue: ptrutil.ToPtr(true),
-			expectedNewFieldValue: nil,
-		},
-		{
-			name:                  "Only new field is set",
-			oldFieldValue:         nil,
-			newFieldValue:         ptrutil.ToPtr(true),
-			expectedOldFieldValue: ptrutil.ToPtr(true),
-			expectedNewFieldValue: nil,
-		},
-		{
-			name:                  "Both old and new fields are set, override old field with new field value",
-			oldFieldValue:         ptrutil.ToPtr(false),
-			newFieldValue:         ptrutil.ToPtr(true),
-			expectedOldFieldValue: ptrutil.ToPtr(true),
-			expectedNewFieldValue: nil,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			updatedOldFieldValue, updatedNewFieldValue := migrateConfigEventsEnabled(tc.oldFieldValue, tc.newFieldValue)
-
-			assert.Equal(t, tc.expectedOldFieldValue, updatedOldFieldValue)
-			assert.Nil(t, updatedNewFieldValue)
-			assert.Nil(t, tc.expectedNewFieldValue)
-		})
 	}
 }
