@@ -35,7 +35,6 @@ var bidderInfos = BidderInfos{
 				MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner},
 			},
 		},
-		UserSyncURL: "http://bidder2.com/usersync",
 	},
 }
 
