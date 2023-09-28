@@ -17,7 +17,7 @@ func handleBidderRequestHook(
 	payload hookstage.BidderRequestPayload,
 ) (result hookstage.HookResult[hookstage.BidderRequestPayload], err error) {
 	if payload.BidRequest == nil || payload.BidRequest.BidRequest == nil {
-		return result, hookexecution.NewFailure("empty input provided")
+		return result, hookexecution.NewFailure("payload contains a nil bid request")
 	}
 
 	mediaTypes := mediaTypesFrom(payload.BidRequest.BidRequest)

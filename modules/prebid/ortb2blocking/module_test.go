@@ -498,7 +498,7 @@ func TestHandleBidderRequestHook(t *testing.T) {
 			bidRequest:         nil,
 			expectedBidRequest: nil,
 			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{},
-			expectedError:      hookexecution.NewFailure("empty input provided"),
+			expectedError:      hookexecution.NewFailure("payload contains a nil bid request"),
 		},
 		{
 			description:        "Expect baadv error if bidders and media_types not defined in config conditions",

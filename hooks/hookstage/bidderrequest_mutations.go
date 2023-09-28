@@ -33,7 +33,7 @@ func (c ChangeSetBidderRequest[T]) BApp() ChangeSetBApp[T] {
 
 func (c ChangeSetBidderRequest[T]) castPayload(p T) (*openrtb_ext.RequestWrapper, error) {
 	if payload, ok := any(p).(BidderRequestPayload); ok {
-		if payload.BidRequest == nil {
+		if payload.BidRequest == nil || payload.BidRequest.BidRequest == nil {
 			return nil, errors.New("payload contains a nil bid request")
 		}
 		return payload.BidRequest, nil
@@ -47,9 +47,9 @@ type ChangeSetBAdv[T any] struct {
 
 func (c ChangeSetBAdv[T]) Update(badv []string) {
 	c.changeSetBidderRequest.changeSet.AddMutation(func(p T) (T, error) {
-		bidRequestWrapper, err := c.changeSetBidderRequest.castPayload(p)
+		bidRequest, err := c.changeSetBidderRequest.castPayload(p)
 		if err == nil {
-			bidRequestWrapper.BAdv = badv
+			bidRequest.BAdv = badv
 		}
 		return p, err
 	}, MutationUpdate, "bidrequest", "badv")
