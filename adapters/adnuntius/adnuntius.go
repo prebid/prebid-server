@@ -367,11 +367,11 @@ func generateAdResponse(ad Ad, imp openrtb2.Imp, html string, request *openrtb2.
 		}}
 	}
 
-	if adnuntiusExt.PriceType != "" {
-		if strings.EqualFold(string(adnuntiusExt.PriceType), "net") {
+	if adnuntiusExt.BidType != "" {
+		if strings.EqualFold(string(adnuntiusExt.BidType), "net") {
 			price = ad.NetBid.Amount
 		}
-		if strings.EqualFold(string(adnuntiusExt.PriceType), "gross") {
+		if strings.EqualFold(string(adnuntiusExt.BidType), "gross") {
 			price = ad.GrossBid.Amount
 		}
 	}

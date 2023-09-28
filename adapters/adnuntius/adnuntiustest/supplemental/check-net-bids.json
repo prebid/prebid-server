@@ -22,7 +22,7 @@
 				"ext": {
 					"bidder": {
 						"auId": "123",
-						"priceType": "net"
+						"bidType": "net"
 					}
 				}
 			}
