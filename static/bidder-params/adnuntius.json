@@ -21,7 +21,7 @@
             "type": "boolean",
             "description": "Disable cookies being set by the ad server."
         },
-        "priceType": {
+        "bidType": {
             "type": "string",
             "description": "Allows you to specify Net or Gross bids."
         }
