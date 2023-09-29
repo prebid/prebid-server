@@ -14,6 +14,7 @@ const (
 	NoConversionRateErrorCode
 	MalformedAcctErrorCode
 	ModuleRejectionErrorCode
+	TmaxTimeoutErrorCode
 )
 
 // Defines numeric codes for well-known warnings.

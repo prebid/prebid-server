@@ -3,7 +3,6 @@ package config
 import (
 	"testing"
 
-	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -262,29 +261,22 @@ func TestValidate(t *testing.T) {
 		{
 			description: "Empty default URL",
 			events: Events{
-				Enabled: ptrutil.ToPtr(true),
+				Enabled: true,
 			},
 			expectErr: true,
 		},
 		{
 			description: "Events are disabled. Skips validations",
 			events: Events{
-				Enabled:    ptrutil.ToPtr(false),
+				Enabled:    false,
 				DefaultURL: "",
-			},
-			expectErr: false,
-		},
-		{
-			description: "Events are nil. Skip validations",
-			events: Events{
-				Enabled: nil,
 			},
 			expectErr: false,
 		},
 		{
 			description: "No VAST Events and default URL present",
 			events: Events{
-				Enabled:    ptrutil.ToPtr(true),
+				Enabled:    true,
 				DefaultURL: "http://prebid.org",
 			},
 			expectErr: false,
@@ -292,7 +284,7 @@ func TestValidate(t *testing.T) {
 		{
 			description: "Invalid VAST Event",
 			events: Events{
-				Enabled:    ptrutil.ToPtr(true),
+				Enabled:    true,
 				DefaultURL: "http://prebid.org",
 				VASTEvents: []VASTEvent{
 					{},
@@ -333,36 +325,5 @@ func TestValidateVASTEvents(t *testing.T) {
 	for _, test := range testCases {
 		err := validateVASTEvents(test.events)
 		assert.Equal(t, !test.expectErr, err == nil, test.description)
-	}
-}
-
-func TestIsEnabled(t *testing.T) {
-	testCases := []struct {
-		name     string
-		events   Events
-		expected bool
-	}{
-		{
-			name:     "nil pointer",
-			events:   Events{},
-			expected: false,
-		},
-		{
-			name:     "event false",
-			events:   Events{Enabled: ptrutil.ToPtr(false)},
-			expected: false,
-		},
-		{
-			name:     "event true",
-			events:   Events{Enabled: ptrutil.ToPtr(true)},
-			expected: true,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			actual := tc.events.IsEnabled()
-			assert.Equal(t, tc.expected, actual)
-		})
 	}
 }
