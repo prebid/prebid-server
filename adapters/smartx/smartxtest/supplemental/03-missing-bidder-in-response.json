@@ -15,7 +15,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://localhost/prebid_server",
+        "uri": "https://bid.smartclip.net/bid/1005",
         "body": {
           "id": "test-missing-bidder-in-response-id",
           "imp": [

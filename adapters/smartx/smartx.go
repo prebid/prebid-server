@@ -71,14 +71,14 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
-	if  response.Cur != "" {
+	if response.Cur != "" {
 		bidResponse.Currency = response.Cur
 	}
 
 	var errs []error
 
 	for _, seatBid := range response.SeatBid {
-		for i, _ := range seatBid.Bid {
+		for i := range seatBid.Bid {
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &seatBid.Bid[i],
 				BidType: openrtb_ext.BidTypeVideo,

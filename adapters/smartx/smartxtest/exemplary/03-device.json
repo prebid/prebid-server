@@ -36,7 +36,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://localhost/prebid_server",
+        "uri": "https://bid.smartclip.net/bid/1005",
         "body": {
           "id": "test-request-id-video",
           "device": {

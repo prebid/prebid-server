@@ -9,7 +9,7 @@ import (
 )
 
 const testsDir = "smartxtest"
-const testsBidderEndpoint = "http://localhost/prebid_server"
+const testsBidderEndpoint = "https://bid.smartclip.net/bid/1005"
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(
