@@ -420,8 +420,6 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 		UserSyncURL: "user-url",
 		XAPI: AdapterXAPI{
 			Username: "uname",
-			Password: "pwd",
-			Tracker:  "tracker",
 		},
 	}
 
