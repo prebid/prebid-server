@@ -262,12 +262,6 @@ func TestProcessBidderInfo(t *testing.T) {
 					PlatformID: "123",
 					Syncer: &Syncer{
 						Key: "foo",
-						IFrame: &SyncerEndpoint{
-							URL:         "https://foo.com/sync?mode=iframe&r={{.RedirectURL}}",
-							RedirectURL: "https://redirect/setuid/iframe",
-							ExternalURL: "https://iframe.host",
-							UserMacro:   "UID",
-						},
 					},
 					UserSyncURL: "user-url",
 					XAPI: AdapterXAPI{
@@ -293,7 +287,7 @@ func TestProcessBidderInfo(t *testing.T) {
 }
 
 func TestProcessAliasBidderInfo(t *testing.T) {
-	parentBidderInfo := BidderInfo{
+	parentWithSyncerKey := BidderInfo{
 		AppSecret: "app-secret",
 		Capabilities: &CapabilitiesInfo{
 			App: &PlatformInfo{
@@ -389,8 +383,29 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 			Tracker:  "alias-tracker",
 		},
 	}
-	bidderB := parentBidderInfo
+	bidderB := parentWithSyncerKey
 	bidderB.AliasOf = "bidderA"
+	bidderB.Syncer = &Syncer{
+		Key: bidderB.Syncer.Key,
+	}
+
+	parentWithoutSyncerKey := BidderInfo{
+		Syncer: &Syncer{
+			IFrame: &SyncerEndpoint{
+				URL:         "https://foo.com/sync?mode=iframe&r={{.RedirectURL}}",
+				RedirectURL: "https://redirect/setuid/iframe",
+				ExternalURL: "https://iframe.host",
+				UserMacro:   "UID",
+			},
+		},
+	}
+
+	bidderC := parentWithoutSyncerKey
+	bidderC.AliasOf = "bidderA"
+	bidderC.Syncer = &Syncer{
+		Key: "bidderA",
+	}
+
 	testCases := []struct {
 		description         string
 		aliasInfos          map[string]aliasNillableFields
@@ -399,7 +414,7 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 		expectedErr         error
 	}{
 		{
-			description: "inherit all parent info in alias bidder",
+			description: "inherit all parent info in alias bidder, use parent syncer key as syncer alias key",
 			aliasInfos: map[string]aliasNillableFields{
 				"bidderB": {
 					Disabled:                nil,
@@ -409,14 +424,34 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 				},
 			},
 			bidderInfos: BidderInfos{
-				"bidderA": parentBidderInfo,
+				"bidderA": parentWithSyncerKey,
 				"bidderB": BidderInfo{
 					AliasOf: "bidderA",
 					// all other fields should be inherited from parent bidder
 				},
 			},
 			expectedErr:         nil,
-			expectedBidderInfos: BidderInfos{"bidderA": parentBidderInfo, "bidderB": bidderB},
+			expectedBidderInfos: BidderInfos{"bidderA": parentWithSyncerKey, "bidderB": bidderB},
+		},
+		{
+			description: "inherit all parent info in alias bidder, use parent name as syncer alias key",
+			aliasInfos: map[string]aliasNillableFields{
+				"bidderC": {
+					Disabled:                nil,
+					ModifyingVastXmlAllowed: nil,
+					Experiment:              nil,
+					XAPI:                    nil,
+				},
+			},
+			bidderInfos: BidderInfos{
+				"bidderA": parentWithoutSyncerKey,
+				"bidderC": BidderInfo{
+					AliasOf: "bidderA",
+					// all other fields should be inherited from parent bidder
+				},
+			},
+			expectedErr:         nil,
+			expectedBidderInfos: BidderInfos{"bidderA": parentWithoutSyncerKey, "bidderC": bidderC},
 		},
 		{
 			description: "all bidder info specified for alias, do not inherit from parent bidder",
@@ -429,11 +464,11 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 				},
 			},
 			bidderInfos: BidderInfos{
-				"bidderA": parentBidderInfo,
+				"bidderA": parentWithSyncerKey,
 				"bidderB": aliasBidderInfo,
 			},
 			expectedErr:         nil,
-			expectedBidderInfos: BidderInfos{"bidderA": parentBidderInfo, "bidderB": aliasBidderInfo},
+			expectedBidderInfos: BidderInfos{"bidderA": parentWithSyncerKey, "bidderB": aliasBidderInfo},
 		},
 		{
 			description: "invalid alias",
@@ -461,7 +496,7 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 		if test.expectedErr != nil {
 			assert.Equal(t, test.expectedErr, err)
 		} else {
-			assert.Equal(t, test.expectedBidderInfos, bidderInfos)
+			assert.Equal(t, test.expectedBidderInfos, bidderInfos, test.description)
 		}
 	}
 }
