@@ -378,37 +378,6 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 	}
 
 	parentWithoutSyncerKey := BidderInfo{
-		AppSecret: "app-secret",
-		Capabilities: &CapabilitiesInfo{
-			App: &PlatformInfo{
-				MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative},
-			},
-			Site: &PlatformInfo{
-				MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative},
-			},
-		},
-		Debug: &DebugInfo{
-			Allow: true,
-		},
-		Disabled:            false,
-		Endpoint:            "https://endpoint.com",
-		EndpointCompression: "GZIP",
-		Experiment: BidderInfoExperiment{
-			AdsCert: BidderAdsCert{
-				Enabled: true,
-			},
-		},
-		ExtraAdapterInfo: "extra-info",
-		GVLVendorID:      42,
-		Maintainer: &MaintainerInfo{
-			Email: "some-email@domain.com",
-		},
-		ModifyingVastXmlAllowed: true,
-		OpenRTB: &OpenRTBInfo{
-			GPPSupported: true,
-			Version:      "2.6",
-		},
-		PlatformID: "123",
 		Syncer: &Syncer{
 			IFrame: &SyncerEndpoint{
 				URL:         "https://foo.com/sync?mode=iframe&r={{.RedirectURL}}",
@@ -416,10 +385,6 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 				ExternalURL: "https://iframe.host",
 				UserMacro:   "UID",
 			},
-		},
-		UserSyncURL: "user-url",
-		XAPI: AdapterXAPI{
-			Username: "uname",
 		},
 	}
 
