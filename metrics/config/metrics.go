@@ -322,11 +322,6 @@ func (me *MultiMetricsEngine) RecordBidValidationSecureMarkupWarn(adapter openrt
 	}
 }
 
-func (me *MultiMetricsEngine) RecordAccountGDPRPurposeWarning(account string, purposeName string) {
-	for _, thisME := range *me {
-		thisME.RecordAccountGDPRPurposeWarning(account, purposeName)
-	}
-}
 func (me *MultiMetricsEngine) RecordAccountGDPRChannelEnabledWarning(account string) {
 	for _, thisME := range *me {
 		thisME.RecordAccountGDPRChannelEnabledWarning(account)
@@ -534,9 +529,6 @@ func (me *NilMetricsEngine) RecordBidValidationSecureMarkupError(adapter openrtb
 }
 
 func (me *NilMetricsEngine) RecordBidValidationSecureMarkupWarn(adapter openrtb_ext.BidderName, account string) {
-}
-
-func (me *NilMetricsEngine) RecordAccountGDPRPurposeWarning(account string, purposeName string) {
 }
 
 func (me *NilMetricsEngine) RecordAccountGDPRChannelEnabledWarning(account string) {
