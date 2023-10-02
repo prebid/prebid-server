@@ -160,8 +160,6 @@ func runJsonBasedTest(t *testing.T, filename, desc string) {
 	if test.Config != nil {
 		cfg.BlacklistedApps = test.Config.BlacklistedApps
 		cfg.BlacklistedAppMap = test.Config.getBlacklistedAppMap()
-		cfg.BlacklistedAccts = test.Config.BlacklistedAccounts
-		cfg.BlacklistedAcctMap = test.Config.getBlackListedAccountMap()
 		cfg.AccountRequired = test.Config.AccountRequired
 	}
 	cfg.MarshalAccountDefaults()
@@ -5803,7 +5801,7 @@ func TestSendAuctionResponse_LogsErrors(t *testing.T) {
 			ao := analytics.AuctionObject{}
 			account := &config.Account{DebugAllow: true}
 
-			labels, ao = sendAuctionResponse(writer, test.hookExecutor, test.response, test.request, account, labels, ao)
+			_, ao = sendAuctionResponse(writer, test.hookExecutor, test.response, test.request, account, labels, ao)
 
 			assert.Equal(t, ao.Errors, test.expectedErrors, "Invalid errors.")
 			assert.Equal(t, test.expectedStatus, ao.Status, "Invalid HTTP response status.")

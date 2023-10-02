@@ -1938,7 +1938,7 @@ func TestCombineErrors(t *testing.T) {
 		},
 		{
 			description:    "Special Case: blocked (rejected via block list)",
-			givenErrorList: []error{&errortypes.BlacklistedAcct{}},
+			givenErrorList: []error{&errortypes.AccountDisabled{}},
 			expectedError:  errCookieSyncAccountBlocked,
 		},
 		{
@@ -1953,7 +1953,7 @@ func TestCombineErrors(t *testing.T) {
 		},
 		{
 			description:    "Special Case: multiple special cases, first one wins",
-			givenErrorList: []error{&errortypes.BlacklistedAcct{}, &errortypes.AcctRequired{}, &errortypes.MalformedAcct{}},
+			givenErrorList: []error{&errortypes.AccountDisabled{}, &errortypes.AcctRequired{}, &errortypes.MalformedAcct{}},
 			expectedError:  errCookieSyncAccountBlocked,
 		},
 	}

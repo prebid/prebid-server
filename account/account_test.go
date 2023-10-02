@@ -48,19 +48,16 @@ func TestGetAccount(t *testing.T) {
 		// expected error, or nil if account should be found
 		err error
 	}{
-		// Blacklisted account is always rejected even in permissive setup
-		{accountID: "bad_acct", required: false, disabled: false, err: &errortypes.BlacklistedAcct{}},
-
 		// empty pubID
 		{accountID: unknown, required: false, disabled: false, err: nil},
 		{accountID: unknown, required: true, disabled: false, err: &errortypes.AcctRequired{}},
-		{accountID: unknown, required: false, disabled: true, err: &errortypes.BlacklistedAcct{}},
+		{accountID: unknown, required: false, disabled: true, err: &errortypes.AccountDisabled{}},
 		{accountID: unknown, required: true, disabled: true, err: &errortypes.AcctRequired{}},
 
 		// pubID given but is not a valid host account (does not exist)
 		{accountID: "doesnt_exist_acct", required: false, disabled: false, err: nil},
 		{accountID: "doesnt_exist_acct", required: true, disabled: false, err: nil},
-		{accountID: "doesnt_exist_acct", required: false, disabled: true, err: &errortypes.BlacklistedAcct{}},
+		{accountID: "doesnt_exist_acct", required: false, disabled: true, err: &errortypes.AccountDisabled{}},
 		{accountID: "doesnt_exist_acct", required: true, disabled: true, err: &errortypes.AcctRequired{}},
 
 		// pubID given and matches a valid host account with Disabled: false
@@ -72,10 +69,10 @@ func TestGetAccount(t *testing.T) {
 		{accountID: "invalid_acct_ipv6_ipv4", required: true, disabled: false, err: nil, checkDefaultIP: true},
 
 		// pubID given and matches a host account explicitly disabled (Disabled: true on account json)
-		{accountID: "disabled_acct", required: false, disabled: false, err: &errortypes.BlacklistedAcct{}},
-		{accountID: "disabled_acct", required: true, disabled: false, err: &errortypes.BlacklistedAcct{}},
-		{accountID: "disabled_acct", required: false, disabled: true, err: &errortypes.BlacklistedAcct{}},
-		{accountID: "disabled_acct", required: true, disabled: true, err: &errortypes.BlacklistedAcct{}},
+		{accountID: "disabled_acct", required: false, disabled: false, err: &errortypes.AccountDisabled{}},
+		{accountID: "disabled_acct", required: true, disabled: false, err: &errortypes.AccountDisabled{}},
+		{accountID: "disabled_acct", required: false, disabled: true, err: &errortypes.AccountDisabled{}},
+		{accountID: "disabled_acct", required: true, disabled: true, err: &errortypes.AccountDisabled{}},
 
 		// pubID given and matches a host account that has a malformed config
 		{accountID: "malformed_acct", required: false, disabled: false, err: &errortypes.MalformedAcct{}},
@@ -86,7 +83,7 @@ func TestGetAccount(t *testing.T) {
 		// account not provided (does not exist)
 		{accountID: "", required: false, disabled: false, err: nil},
 		{accountID: "", required: true, disabled: false, err: nil},
-		{accountID: "", required: false, disabled: true, err: &errortypes.BlacklistedAcct{}},
+		{accountID: "", required: false, disabled: true, err: &errortypes.AccountDisabled{}},
 		{accountID: "", required: true, disabled: true, err: &errortypes.AcctRequired{}},
 	}
 
@@ -94,9 +91,8 @@ func TestGetAccount(t *testing.T) {
 		description := fmt.Sprintf(`ID=%s/required=%t/disabled=%t`, test.accountID, test.required, test.disabled)
 		t.Run(description, func(t *testing.T) {
 			cfg := &config.Configuration{
-				BlacklistedAcctMap: map[string]bool{"bad_acct": true},
-				AccountRequired:    test.required,
-				AccountDefaults:    config.Account{Disabled: test.disabled},
+				AccountRequired: test.required,
+				AccountDefaults: config.Account{Disabled: test.disabled},
 			}
 			fetcher := &mockAccountFetcher{}
 			assert.NoError(t, cfg.MarshalAccountDefaults())
