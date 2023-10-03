@@ -2,7 +2,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/prebid/prebid-server?style=flat-square)](https://goreportcard.com/report/github.com/prebid/prebid-server)
 ![Go Version](https://img.shields.io/github/go-mod/go-version/prebid/prebid-server?style=flat-square)
 
-<div align="center" style="padding: 20px 0 30px 0">
+<div style="padding: 20px 0 30px 0">
   <img alt="Prebid Server Logo" src="https://github.com/prebid/prebid-server/blob/master/static/pbs-logo.svg?raw=true" style="width:80%; max-width:600px">
 </div>
 
