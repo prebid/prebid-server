@@ -2,9 +2,14 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/prebid/prebid-server?style=flat-square)](https://goreportcard.com/report/github.com/prebid/prebid-server)
 ![Go Version](https://img.shields.io/github/go-mod/go-version/prebid/prebid-server?style=flat-square)
 
-<div style="padding: 20px 0 30px 0">
+<br />
+
+<div align="center">
   <img alt="Prebid Server Logo" src="https://github.com/prebid/prebid-server/blob/master/static/pbs-logo.svg?raw=true" style="width:80%; max-width:600px">
 </div>
+
+<br />
+<br />
 
 <a href="https://prebid.org/product-suite/prebid-server/">Prebid Server</a> is a key component of the Prebid open-source ecosystem used in server-side programmatic advertising. 
 
