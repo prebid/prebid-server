@@ -429,16 +429,20 @@ func (c *cookieSyncEndpoint) handleResponse(w http.ResponseWriter, tf usersync.S
 
 	if debug {
 		biddersSeen := make(map[string]struct{})
-		var debugMessages []string
+		var debugInfo []cookieSyncResponseDebug
 		for _, bidderEval := range biddersEvaluated {
+			var debug cookieSyncResponseDebug
+			debug.Bidder = bidderEval.Bidder
 			if bidderEval.Status == usersync.StatusDuplicate && biddersSeen[bidderEval.Bidder] == struct{}{} {
-				debugMessages = append(debugMessages, getDebugMessage(bidderEval.Status)+" synced as "+bidderEval.SyncerKey)
+				debug.Error = getDebugMessage(bidderEval.Status) + " synced as " + bidderEval.SyncerKey
+				debugInfo = append(debugInfo, debug)
 			} else if bidderEval.Status != usersync.StatusOK {
-				debugMessages = append(debugMessages, getDebugMessage(bidderEval.Status)+": "+bidderEval.Bidder)
+				debug.Error = getDebugMessage(bidderEval.Status)
+				debugInfo = append(debugInfo, debug)
 			}
 			biddersSeen[bidderEval.Bidder] = struct{}{}
 		}
-		response.Debug = debugMessages
+		response.Debug = debugInfo
 	}
 
 	c.pbsAnalytics.LogCookieSyncObject(&analytics.CookieSyncObject{
@@ -515,7 +519,7 @@ type cookieSyncRequestFilter struct {
 type cookieSyncResponse struct {
 	Status       string                     `json:"status"`
 	BidderStatus []cookieSyncResponseBidder `json:"bidder_status"`
-	Debug        []string                   `json:"debug"`
+	Debug        []cookieSyncResponseDebug  `json:"debug"`
 }
 
 type cookieSyncResponseBidder struct {
@@ -528,6 +532,11 @@ type cookieSyncResponseSync struct {
 	URL         string `json:"url,omitempty"`
 	Type        string `json:"type,omitempty"`
 	SupportCORS bool   `json:"supportCORS,omitempty"`
+}
+
+type cookieSyncResponseDebug struct {
+	Bidder string `json:"bidder"`
+	Error  string `json:"error,omitempty"`
 }
 
 type usersyncPrivacyConfig struct {
