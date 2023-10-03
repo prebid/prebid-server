@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Mock Analytics Module
 type eventsMockAnalyticsModule struct {
 	Fail    bool
 	Error   error
@@ -32,35 +31,30 @@ func (e *eventsMockAnalyticsModule) LogAuctionObject(ao *analytics.AuctionObject
 	if e.Fail {
 		panic(e.Error)
 	}
-	return
 }
 
 func (e *eventsMockAnalyticsModule) LogVideoObject(vo *analytics.VideoObject, _ privacy.ActivityControl) {
 	if e.Fail {
 		panic(e.Error)
 	}
-	return
 }
 
 func (e *eventsMockAnalyticsModule) LogCookieSyncObject(cso *analytics.CookieSyncObject) {
 	if e.Fail {
 		panic(e.Error)
 	}
-	return
 }
 
 func (e *eventsMockAnalyticsModule) LogSetUIDObject(so *analytics.SetUIDObject) {
 	if e.Fail {
 		panic(e.Error)
 	}
-	return
 }
 
 func (e *eventsMockAnalyticsModule) LogAmpObject(ao *analytics.AmpObject, _ privacy.ActivityControl) {
 	if e.Fail {
 		panic(e.Error)
 	}
-	return
 }
 
 func (e *eventsMockAnalyticsModule) LogNotificationEventObject(ne *analytics.NotificationEvent, _ privacy.ActivityControl) {
@@ -68,15 +62,13 @@ func (e *eventsMockAnalyticsModule) LogNotificationEventObject(ne *analytics.Not
 		panic(e.Error)
 	}
 	e.Invoked = true
-
-	return
 }
 
-// Mock Account fetcher
 var mockAccountData = map[string]json.RawMessage{
 	"events_enabled":  json.RawMessage(`{"events": {"enabled":true}}`),
 	"events_disabled": json.RawMessage(`{"events": {"enabled":false}}`),
 	"malformed_acct":  json.RawMessage(`{"events": {"enabled":"invalid type"}}`),
+	"disabled_acct":   json.RawMessage(`{"disabled": true}`),
 }
 
 type mockAccountsFetcher struct {
@@ -103,7 +95,7 @@ func (maf mockAccountsFetcher) FetchAccount(ctx context.Context, defaultAccountJ
 		return nil, []error{maf.Error}
 	}
 
-	return nil, []error{stored_requests.NotFoundError{accountID, "Account"}}
+	return nil, []error{stored_requests.NotFoundError{ID: accountID, DataType: "Account"}}
 }
 
 // Tests

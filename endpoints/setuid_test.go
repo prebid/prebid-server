@@ -1245,27 +1245,6 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 			},
 		},
 		{
-			description:            "Blocked account",
-			uri:                    "/setuid?bidder=pubmatic&uid=123&account=blocked_acct",
-			cookies:                []*usersync.Cookie{},
-			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
-			gdprAllowsHostCookies:  true,
-			expectedResponseCode:   400,
-			expectedMetrics: func(m *metrics.MetricsEngineMock) {
-				m.On("RecordSetUid", metrics.SetUidAccountBlocked).Once()
-			},
-			expectedAnalytics: func(a *MockAnalyticsRunner) {
-				expected := analytics.SetUIDObject{
-					Status:  400,
-					Bidder:  "pubmatic",
-					UID:     "",
-					Errors:  []error{errCookieSyncAccountBlocked},
-					Success: false,
-				}
-				a.On("LogSetUIDObject", &expected).Once()
-			},
-		},
-		{
 			description:            "Invalid account",
 			uri:                    "/setuid?bidder=pubmatic&uid=123&account=unknown",
 			cookies:                []*usersync.Cookie{},
@@ -1549,9 +1528,6 @@ func makeRequest(uri string, existingSyncs map[string]string) *http.Request {
 func doRequest(req *http.Request, analytics analytics.Runner, metrics metrics.MetricsEngine, syncersBidderNameToKey map[string]string, gdprAllowsHostCookies, gdprReturnsError, gdprReturnsMalformedError, cfgAccountRequired bool, maxCookieSize int, priorityGroups [][]string) *httptest.ResponseRecorder {
 	cfg := config.Configuration{
 		AccountRequired: cfgAccountRequired,
-		BlacklistedAcctMap: map[string]bool{
-			"blocked_acct": true,
-		},
 		AccountDefaults: config.Account{},
 		UserSync: config.UserSync{
 			PriorityGroups: priorityGroups,

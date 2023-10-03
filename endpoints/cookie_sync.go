@@ -367,7 +367,7 @@ func combineErrors(errs []error) error {
 	for _, err := range errs {
 		// preserve knowledge of special account errors
 		switch errortypes.ReadCode(err) {
-		case errortypes.BlacklistedAcctErrorCode:
+		case errortypes.AccountDisabledErrorCode:
 			return errCookieSyncAccountBlocked
 		case errortypes.AcctRequiredErrorCode:
 			return errCookieSyncAccountInvalid
