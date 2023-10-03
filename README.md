@@ -12,14 +12,11 @@
 
 <a href="https://prebid.org/product-suite/prebid-server/">Prebid Server</a> is an open-source solution for running real-time advertising auctions in the cloud. This project is part of the <a href="https://prebid.org/">Prebid</a> ecosystem, closely integrating with  <a href="https://prebid.org/product-suite/prebidjs/">Prebid.js</a> and the <a href="https://prebid.org/product-suite/prebid-mobile/">Prebid Mobile SDKs</a> to deliver world-class header bidding for any ad format and any type of digital media.
 
-## Documentation
-Please explore both our [Marketing Website](https://prebid.org/) and [Technical Docs](https://prebid.org/) website. We are fully open source and you can contribute here and here.
-
-Highlights:
-- [Prebid & Header Bidding Overview](https://docs.prebid.org/overview/intro.html)
-- [Prebid Server Overview](https://docs.prebid.org/prebid-server/overview/prebid-server-overview.html)
-- [Prebid Server API Reference](https://docs.prebid.org/prebid-server/overview/prebid-server-overview.html)
-- [Bidders](http://prebid.org/dev-docs/pbs-bidders.html)
+## Getting Started
+- <a href="https://deploy-preview-4516--prebid-docs-preview.netlify.app/prebid-server/overview/prebid-server-overview.html">What is Prebid Server?</a>
+- <a href="https://docs.prebid.org/overview/intro-to-header-bidding.html">Intro to Header Bidding</a>
+- <a href="https://docs.prebid.org/overview/intro.html#header-bidding-with-prebid">Header Bidding with Prebid</a>
+- <a href="https://docs.prebid.org/prebid-server/endpoints/pbs-endpoint-overview.html">API Documentation</a>
 
 ## Hosting Prebid Server
 
