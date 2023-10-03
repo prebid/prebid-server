@@ -322,22 +322,6 @@ func (me *MultiMetricsEngine) RecordBidValidationSecureMarkupWarn(adapter openrt
 	}
 }
 
-func (me *MultiMetricsEngine) RecordAccountGDPRChannelEnabledWarning(account string) {
-	for _, thisME := range *me {
-		thisME.RecordAccountGDPRChannelEnabledWarning(account)
-	}
-}
-func (me *MultiMetricsEngine) RecordAccountCCPAChannelEnabledWarning(account string) {
-	for _, thisME := range *me {
-		thisME.RecordAccountCCPAChannelEnabledWarning(account)
-	}
-}
-func (me *MultiMetricsEngine) RecordAccountUpgradeStatus(account string) {
-	for _, thisME := range *me {
-		thisME.RecordAccountUpgradeStatus(account)
-	}
-}
-
 func (me *MultiMetricsEngine) RecordModuleCalled(labels metrics.ModuleLabels, duration time.Duration) {
 	for _, thisME := range *me {
 		thisME.RecordModuleCalled(labels, duration)
@@ -529,15 +513,6 @@ func (me *NilMetricsEngine) RecordBidValidationSecureMarkupError(adapter openrtb
 }
 
 func (me *NilMetricsEngine) RecordBidValidationSecureMarkupWarn(adapter openrtb_ext.BidderName, account string) {
-}
-
-func (me *NilMetricsEngine) RecordAccountGDPRChannelEnabledWarning(account string) {
-}
-
-func (me *NilMetricsEngine) RecordAccountCCPAChannelEnabledWarning(account string) {
-}
-
-func (me *NilMetricsEngine) RecordAccountUpgradeStatus(account string) {
 }
 
 func (me *NilMetricsEngine) RecordModuleCalled(labels metrics.ModuleLabels, duration time.Duration) {
