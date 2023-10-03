@@ -20,6 +20,7 @@ const (
 	ChannelApp   ChannelType = "app"
 	ChannelVideo ChannelType = "video"
 	ChannelWeb   ChannelType = "web"
+	ChannelDOOH  ChannelType = "dooh"
 )
 
 // Account represents a publisher account configuration
@@ -27,7 +28,6 @@ type Account struct {
 	ID                      string                                      `mapstructure:"id" json:"id"`
 	Disabled                bool                                        `mapstructure:"disabled" json:"disabled"`
 	CacheTTL                DefaultTTLs                                 `mapstructure:"cache_ttl" json:"cache_ttl"`
-	EventsEnabled           *bool                                       `mapstructure:"events_enabled" json:"events_enabled"` // Deprecated: Use events.enabled instead.
 	CCPA                    AccountCCPA                                 `mapstructure:"ccpa" json:"ccpa"`
 	GDPR                    AccountGDPR                                 `mapstructure:"gdpr" json:"gdpr"`
 	DebugAllow              bool                                        `mapstructure:"debug_allow" json:"debug_allow"`
@@ -251,6 +251,7 @@ type AccountChannel struct {
 	App   *bool `mapstructure:"app" json:"app,omitempty"`
 	Video *bool `mapstructure:"video" json:"video,omitempty"`
 	Web   *bool `mapstructure:"web" json:"web,omitempty"`
+	DOOH  *bool `mapstructure:"dooh" json:"dooh,omitempty"`
 }
 
 // GetByChannelType looks up the account integration enabled setting for the specified channel type
@@ -266,6 +267,8 @@ func (a *AccountChannel) GetByChannelType(channelType ChannelType) *bool {
 		channelEnabled = a.Video
 	case ChannelWeb:
 		channelEnabled = a.Web
+	case ChannelDOOH:
+		channelEnabled = a.DOOH
 	}
 
 	return channelEnabled
@@ -296,7 +299,7 @@ func (m AccountModules) ModuleConfig(id string) (json.RawMessage, error) {
 }
 
 func (a *AccountChannel) IsSet() bool {
-	return a.AMP != nil || a.App != nil || a.Video != nil || a.Web != nil
+	return a.AMP != nil || a.App != nil || a.Video != nil || a.Web != nil || a.DOOH != nil
 }
 
 type AccountPrivacy struct {

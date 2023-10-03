@@ -222,10 +222,6 @@ func (me *MetricsEngineMock) RecordModuleTimeout(labels ModuleLabels) {
 	me.Called(labels)
 }
 
-func (me *MetricsEngineMock) RecordAccountGDPRPurposeWarning(account string, purposeName string) {
-	me.Called(account, purposeName)
-}
-
 func (me *MetricsEngineMock) RecordAccountGDPRChannelEnabledWarning(account string) {
 	me.Called(account)
 }

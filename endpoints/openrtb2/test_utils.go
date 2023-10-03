@@ -84,7 +84,6 @@ type testCase struct {
 type testConfigValues struct {
 	AccountRequired     bool                          `json:"accountRequired"`
 	AliasJSON           string                        `json:"aliases"`
-	BlacklistedAccounts []string                      `json:"blacklistedAccts"`
 	BlacklistedApps     []string                      `json:"blacklistedApps"`
 	DisabledAdapters    []string                      `json:"disabledAdapters"`
 	CurrencyRates       map[string]map[string]float64 `json:"currencyRates"`
@@ -932,7 +931,6 @@ func (s mockCurrencyRatesClient) handle(w http.ResponseWriter, req *http.Request
 		return
 	}
 	w.Write(currencyServerJsonResponse)
-	return
 }
 
 // mockBidderHandler carries mock bidder server information that will be read from JSON test files
@@ -994,7 +992,6 @@ func (b mockBidderHandler) bid(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	w.Write(serverJsonResponse)
-	return
 }
 
 // mockAdapter is a mock impression-splitting adapter
@@ -1154,18 +1151,6 @@ func (tc *testConfigValues) getBlacklistedAppMap() map[string]bool {
 	return blacklistedAppMap
 }
 
-func (tc *testConfigValues) getBlackListedAccountMap() map[string]bool {
-	var blacklistedAccountMap map[string]bool
-
-	if len(tc.BlacklistedAccounts) > 0 {
-		blacklistedAccountMap = make(map[string]bool, len(tc.BlacklistedAccounts))
-		for _, account := range tc.BlacklistedAccounts {
-			blacklistedAccountMap[account] = true
-		}
-	}
-	return blacklistedAccountMap
-}
-
 // exchangeTestWrapper is a wrapper that asserts the openrtb2 bid request just before the HoldAuction call
 type exchangeTestWrapper struct {
 	ex                    exchange.Exchange
@@ -1278,10 +1263,10 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 		storedResponseFetcher = empty_fetcher.EmptyFetcher{}
 	}
 
-	var accountFetcher stored_requests.AccountFetcher
-	accountFetcher = &mockAccountFetcher{
+	accountFetcher := &mockAccountFetcher{
 		data: map[string]json.RawMessage{
 			"malformed_acct": json.RawMessage(`{"disabled":"invalid type"}`),
+			"disabled_acct":  json.RawMessage(`{"disabled":true}`),
 		},
 	}
 

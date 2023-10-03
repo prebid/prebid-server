@@ -69,13 +69,16 @@ var (
 )
 
 var accountIdSearchPath = [...]struct {
-	isApp bool
-	key   []string
+	isApp  bool
+	isDOOH bool
+	key    []string
 }{
-	{true, []string{"app", "publisher", "ext", openrtb_ext.PrebidExtKey, "parentAccount"}},
-	{true, []string{"app", "publisher", "id"}},
-	{false, []string{"site", "publisher", "ext", openrtb_ext.PrebidExtKey, "parentAccount"}},
-	{false, []string{"site", "publisher", "id"}},
+	{true, false, []string{"app", "publisher", "ext", openrtb_ext.PrebidExtKey, "parentAccount"}},
+	{true, false, []string{"app", "publisher", "id"}},
+	{false, false, []string{"site", "publisher", "ext", openrtb_ext.PrebidExtKey, "parentAccount"}},
+	{false, false, []string{"site", "publisher", "id"}},
+	{false, true, []string{"dooh", "publisher", "ext", openrtb_ext.PrebidExtKey, "parentAccount"}},
+	{false, true, []string{"dooh", "publisher", "id"}},
 }
 
 func NewEndpoint(
@@ -98,7 +101,7 @@ func NewEndpoint(
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
 
-	defRequest := defReqJSON != nil && len(defReqJSON) > 0
+	defRequest := len(defReqJSON) > 0
 
 	ipValidator := iputil.PublicNetworkIPValidator{
 		IPv4PrivateNetworks: cfg.RequestValidation.IPv4PrivateNetworksParsed,
@@ -457,11 +460,15 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		return
 	}
 
-	accountId, isAppReq, errs := getAccountIdFromRawRequest(hasStoredBidRequest, storedRequests[storedBidRequestId], requestJson)
+	accountId, isAppReq, isDOOHReq, errs := getAccountIdFromRawRequest(hasStoredBidRequest, storedRequests[storedBidRequestId], requestJson)
 	// fill labels here in order to pass correct metrics in case of errors
 	if isAppReq {
 		labels.Source = metrics.DemandApp
 		labels.RType = metrics.ReqTypeORTB2App
+		labels.PubID = accountId
+	} else if isDOOHReq {
+		labels.Source = metrics.DemandDOOH
+		labels.RType = metrics.ReqTypeORTB2DOOH
 		labels.PubID = accountId
 	} else { // is Site request
 		labels.Source = metrics.DemandWeb
@@ -804,8 +811,8 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 		return []error{err}
 	}
 
-	if (req.Site == nil && req.App == nil) || (req.Site != nil && req.App != nil) {
-		return append(errL, errors.New("request.site or request.app must be defined, but not both."))
+	if err := validateExactlyOneInventoryType(req); err != nil {
+		return []error{err}
 	}
 
 	if errs := validateRequestExt(req); len(errs) != 0 {
@@ -823,6 +830,9 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 		return append(errL, err)
 	}
 
+	if err := deps.validateDOOH(req); err != nil {
+		return append(errL, err)
+	}
 	var gpp gpplib.GppContainer
 	if req.BidRequest.Regs != nil && len(req.BidRequest.Regs.GPP) > 0 {
 		gpp, err = gpplib.Parse(req.BidRequest.Regs.GPP)
@@ -954,7 +964,14 @@ func (deps *endpointDeps) validateBidAdjustmentFactors(adjustmentFactors map[str
 		if adjustmentFactor <= 0 {
 			return fmt.Errorf("request.ext.prebid.bidadjustmentfactors.%s must be a positive number. Got %f", bidderToAdjust, adjustmentFactor)
 		}
-		if _, isBidder := deps.bidderMap[bidderToAdjust]; !isBidder {
+
+		bidderName := bidderToAdjust
+		normalizedCoreBidder, ok := openrtb_ext.NormalizeBidderName(bidderToAdjust)
+		if ok {
+			bidderName = normalizedCoreBidder.String()
+		}
+
+		if _, isBidder := deps.bidderMap[bidderName]; !isBidder {
 			if _, isAlias := aliases[bidderToAdjust]; !isAlias {
 				return fmt.Errorf("request.ext.prebid.bidadjustmentfactors.%s is not a known bidder or alias", bidderToAdjust)
 			}
@@ -1003,7 +1020,12 @@ func validateBidders(bidders []string, knownBidders map[string]openrtb_ext.Bidde
 				return errors.New(`bidder wildcard "*" mixed with specific bidders`)
 			}
 		} else {
-			_, isCoreBidder := knownBidders[bidder]
+			bidderName := bidder
+			normalizedCoreBidder, ok := openrtb_ext.NormalizeBidderName(bidderName)
+			if ok {
+				bidderName = normalizedCoreBidder.String()
+			}
+			_, isCoreBidder := knownBidders[bidderName]
 			_, isAlias := knownAliases[bidder]
 			if !isCoreBidder && !isAlias {
 				return fmt.Errorf(`unrecognized bidder "%v"`, bidder)
@@ -1510,12 +1532,12 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb_ext.ImpWrapper, aliases ma
 	errL := []error{}
 
 	for bidder, ext := range prebid.Bidder {
-		coreBidder := bidder
+		coreBidder, _ := openrtb_ext.NormalizeBidderName(bidder)
 		if tmp, isAlias := aliases[bidder]; isAlias {
-			coreBidder = tmp
+			coreBidder = openrtb_ext.BidderName(tmp)
 		}
 
-		if coreBidderNormalized, isValid := deps.bidderMap[coreBidder]; isValid {
+		if coreBidderNormalized, isValid := deps.bidderMap[coreBidder.String()]; isValid {
 			if err := deps.paramsValidator.Validate(coreBidderNormalized, ext); err != nil {
 				return []error{fmt.Errorf("request.imp[%d].ext.prebid.bidder.%s failed validation.\n%v", impIndex, bidder, err)}
 			}
@@ -1575,18 +1597,21 @@ func (deps *endpointDeps) parseBidExt(req *openrtb_ext.RequestWrapper) error {
 }
 
 func (deps *endpointDeps) validateAliases(aliases map[string]string) error {
-	for alias, coreBidder := range aliases {
-		if _, isCoreBidderDisabled := deps.disabledBidders[coreBidder]; isCoreBidderDisabled {
-			return fmt.Errorf("request.ext.prebid.aliases.%s refers to disabled bidder: %s", alias, coreBidder)
+	for alias, bidderName := range aliases {
+		normalisedBidderName, _ := openrtb_ext.NormalizeBidderName(bidderName)
+		coreBidderName := normalisedBidderName.String()
+		if _, isCoreBidderDisabled := deps.disabledBidders[coreBidderName]; isCoreBidderDisabled {
+			return fmt.Errorf("request.ext.prebid.aliases.%s refers to disabled bidder: %s", alias, bidderName)
 		}
 
-		if _, isCoreBidder := deps.bidderMap[coreBidder]; !isCoreBidder {
-			return fmt.Errorf("request.ext.prebid.aliases.%s refers to unknown bidder: %s", alias, coreBidder)
+		if _, isCoreBidder := deps.bidderMap[coreBidderName]; !isCoreBidder {
+			return fmt.Errorf("request.ext.prebid.aliases.%s refers to unknown bidder: %s", alias, bidderName)
 		}
 
-		if alias == coreBidder {
+		if alias == coreBidderName {
 			return fmt.Errorf("request.ext.prebid.aliases.%s defines a no-op alias. Choose a different alias, or remove this entry.", alias)
 		}
+		aliases[alias] = coreBidderName
 	}
 	return nil
 }
@@ -1747,6 +1772,18 @@ func (deps *endpointDeps) validateApp(req *openrtb_ext.RequestWrapper) error {
 	return err
 }
 
+func (deps *endpointDeps) validateDOOH(req *openrtb_ext.RequestWrapper) error {
+	if req.DOOH == nil {
+		return nil
+	}
+
+	if req.DOOH.ID == "" && len(req.DOOH.VenueType) == 0 {
+		return errors.New("request.dooh should include at least one of request.dooh.id or request.dooh.venuetype.")
+	}
+
+	return nil
+}
+
 func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases map[string]string, gpp gpplib.GppContainer) []error {
 	var errL []error
 
@@ -1872,6 +1909,30 @@ func validateDevice(device *openrtb2.Device) error {
 	return nil
 }
 
+func validateExactlyOneInventoryType(reqWrapper *openrtb_ext.RequestWrapper) error {
+
+	// Prep for mutual exclusion check
+	invTypeNumMatches := 0
+	if reqWrapper.Site != nil {
+		invTypeNumMatches++
+	}
+	if reqWrapper.App != nil {
+		invTypeNumMatches++
+	}
+	if reqWrapper.DOOH != nil {
+		invTypeNumMatches++
+	}
+
+	if invTypeNumMatches == 0 {
+		return errors.New("One of request.site or request.app or request.dooh must be defined")
+	} else if invTypeNumMatches >= 2 {
+		return errors.New("No more than one of request.site or request.app or request.dooh can be defined")
+	} else {
+		return nil
+	}
+
+}
+
 func validateOrFillChannel(reqWrapper *openrtb_ext.RequestWrapper, isAmp bool) error {
 	requestExt, err := reqWrapper.GetRequestExt()
 	if err != nil {
@@ -1934,9 +1995,9 @@ func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, r *openrtb_
 
 	setDeviceImplicitly(httpReq, r, deps.privateNetworkIPValidator)
 
-	// Per the OpenRTB spec: A bid request must not contain both a Site and an App object. If neither are
-	// present, we'll assume it's a site request.
-	if r.App == nil {
+	// Per the OpenRTB spec: A bid request must not contain more than one of Site|App|DOOH
+	// Assume it's a site request if it's not declared as one of the other values
+	if r.App == nil && r.DOOH == nil {
 		setSiteImplicitly(httpReq, r)
 	}
 
@@ -2288,7 +2349,7 @@ func writeError(errs []error, w http.ResponseWriter, labels *metrics.Labels) boo
 		metricsStatus := metrics.RequestStatusBadInput
 		for _, err := range errs {
 			erVal := errortypes.ReadCode(err)
-			if erVal == errortypes.BlacklistedAppErrorCode || erVal == errortypes.BlacklistedAcctErrorCode {
+			if erVal == errortypes.BlacklistedAppErrorCode || erVal == errortypes.AccountDisabledErrorCode {
 				httpStatus = http.StatusServiceUnavailable
 				metricsStatus = metrics.RequestStatusBlacklisted
 				break
@@ -2325,43 +2386,43 @@ func getAccountID(pub *openrtb2.Publisher) string {
 	return metrics.PublisherUnknown
 }
 
-func getAccountIdFromRawRequest(hasStoredRequest bool, storedRequest json.RawMessage, originalRequest []byte) (string, bool, []error) {
+func getAccountIdFromRawRequest(hasStoredRequest bool, storedRequest json.RawMessage, originalRequest []byte) (string, bool, bool, []error) {
 	request := originalRequest
 	if hasStoredRequest {
 		request = storedRequest
 	}
 
-	accountId, isAppReq, err := searchAccountId(request)
+	accountId, isAppReq, isDOOHReq, err := searchAccountId(request)
 	if err != nil {
-		return "", isAppReq, []error{err}
+		return "", isAppReq, isDOOHReq, []error{err}
 	}
 
 	// In case the stored request did not have account data we specifically search it in the original request
 	if accountId == "" && hasStoredRequest {
-		accountId, _, err = searchAccountId(originalRequest)
+		accountId, _, _, err = searchAccountId(originalRequest)
 		if err != nil {
-			return "", isAppReq, []error{err}
+			return "", isAppReq, isDOOHReq, []error{err}
 		}
 	}
 
 	if accountId == "" {
-		return metrics.PublisherUnknown, isAppReq, nil
+		return metrics.PublisherUnknown, isAppReq, isDOOHReq, nil
 	}
 
-	return accountId, isAppReq, nil
+	return accountId, isAppReq, isDOOHReq, nil
 }
 
-func searchAccountId(request []byte) (string, bool, error) {
+func searchAccountId(request []byte) (string, bool, bool, error) {
 	for _, path := range accountIdSearchPath {
 		accountId, exists, err := getStringValueFromRequest(request, path.key)
 		if err != nil {
-			return "", path.isApp, err
+			return "", path.isApp, path.isDOOH, err
 		}
 		if exists {
-			return accountId, path.isApp, nil
+			return accountId, path.isApp, path.isDOOH, nil
 		}
 	}
-	return "", false, nil
+	return "", false, false, nil
 }
 
 func getStringValueFromRequest(request []byte, key []string) (string, bool, error) {
@@ -2437,7 +2498,12 @@ func validateStoredBidRespAndImpExtBidders(bidderExts map[string]json.RawMessage
 		}
 
 		for bidderName := range bidResponses {
-			if _, present := bidderExts[bidderName]; !present {
+			bidder := bidderName
+			normalizedCoreBidder, ok := openrtb_ext.NormalizeBidderName(bidder)
+			if ok {
+				bidder = normalizedCoreBidder.String()
+			}
+			if _, present := bidderExts[bidder]; !present {
 				return generateStoredBidResponseValidationError(impId)
 			}
 		}
