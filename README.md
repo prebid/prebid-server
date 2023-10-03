@@ -12,7 +12,7 @@
 - <a href="https://deploy-preview-4516--prebid-docs-preview.netlify.app/prebid-server/overview/prebid-server-overview.html">What is Prebid Server?</a>
 - <a href="https://docs.prebid.org/overview/intro-to-header-bidding.html">Intro to Header Bidding</a>
 - <a href="https://docs.prebid.org/overview/intro.html#header-bidding-with-prebid">Header Bidding with Prebid</a>
-- <a href="https://docs.prebid.org/prebid-server/endpoints/pbs-endpoint-overview.html">API Documentation</a>
+- <a href="https://docs.prebid.org/prebid-server/endpoints/pbs-endpoint-overview.html">API Endpoints</a>
 
 ## Hosting Prebid Server
 
@@ -61,8 +61,8 @@ of exported types.
 
 
 ## Contributing
-> All contributions must follow the [Prebid Code of Conduct](http://prebid.org/wrapper_code_of_conduct.html).
-
+> [!IMPORTANT]
+> All contributions must follow the [Prebid Code of Conduct](http://prebid.org/wrapper_code_of_conduct.html)
 
 This project does not support the same set of Bidders as Prebid.js, although there is overlap.
 The current set can be found in the [adapters](./adapters) package. If you don't see the one you want, feel free to [contribute it](https://docs.prebid.org/prebid-server/developers/add-new-bidder-go.html).
@@ -85,10 +85,3 @@ Or better yet, [open a pull request](https://github.com/prebid/prebid-server/com
 
 The quickest way to start developing Prebid Server in a reproducible environment isolated from your host OS is by using Visual Studio Code with [Remote Container Setup](devcontainer.md).
 
-
-
-
-
-
-
-## Resources
