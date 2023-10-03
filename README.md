@@ -2,9 +2,8 @@
 
 <br />
 
-<div align="center">
-    <img alt="Prebid Server Logo" src="/static/pbs-logo.svg" style="width:80%; max-width:600px">
-</div>
+<h1><div align="center"><img alt="Prebid Server Logo" src="/static/pbs-logo.svg" style="width:80%; max-width:600px">
+</div></h1>
 
 <br />
 
