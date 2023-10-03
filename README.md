@@ -9,18 +9,8 @@
 </div>
 
 <br />
-<br />
 
-<a href="https://prebid.org/product-suite/prebid-server/">Prebid Server</a> is a key component of the Prebid open-source ecosystem used in server-side programmatic advertising. 
-
-
-
-is an open-source solution for server-side header bidding.
-
-
-
-server-to-server header bidding managed by [Prebid](https://prebid.org). Prebid Server supports a variety of use cases including Mobile Web, AMP, Server Side Wed with Prebid.js and Prebid Mobile SDKs, and Long Form Video/CTV.
-Utilizing Prebid Server can reduce latency between bid request and ad selection, and speed the presentation of your site and ads.
+<a href="https://prebid.org/product-suite/prebid-server/">Prebid Server</a> is an open-source solution for running real-time advertising auctions in the cloud. This project is part of the <a href="https://prebid.org/">Prebid</a> ecosystem, closely integrating with  <a href="https://prebid.org/product-suite/prebidjs/">Prebid.js</a> and the <a href="https://prebid.org/product-suite/prebid-mobile/">Prebid Mobile SDKs</a> to deliver world-class header bidding for any ad format and any type of digital media.
 
 ## Documentation
 Please explore both our [Marketing Website](https://prebid.org/) and [Technical Docs](https://prebid.org/) website. We are fully open source and you can contribute here and here.
@@ -70,21 +60,14 @@ go build .
 Load the landing page in your browser at `http://localhost:8000/`.
 For the full API reference, see [the endpoint documentation](https://docs.prebid.org/prebid-server/endpoints/pbs-endpoint-overview.html)
 
+## Use As a Library
+
+The packages within this repository are intended to be used as part of the Prebid Server compiled binary. If you
+choose to import Prebid Server packages in other projects, please understand we make no promises on the stability
+of exported types.
+
+
 ## Contributing
-
-
-
-
-
-
-
-
-
-### VS Code
-
-The quickest way to start developing Prebid Server in a reproducible environment isolated from your host OS is by using Visual Studio Code with [Remote Container Setup](devcontainer.md).
-
-## Contribute
 > All contributions must follow the [Prebid Code of Conduct](http://prebid.org/wrapper_code_of_conduct.html).
 
 
@@ -101,15 +84,17 @@ Or better yet, [open a pull request](https://github.com/prebid/prebid-server/com
 
 
 
-## Installation
 
 
 
-## Use As a Library
 
-The packages within this repository are intended to be used as part of the Prebid Server compiled binary. If you
-choose to import Prebid Server packages in other projects, please understand we make no promises on the stability
-of exported types.
+### VS Code
+
+The quickest way to start developing Prebid Server in a reproducible environment isolated from your host OS is by using Visual Studio Code with [Remote Container Setup](devcontainer.md).
+
+
+
+
 
 
 
