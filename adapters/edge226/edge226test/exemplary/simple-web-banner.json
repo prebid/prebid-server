@@ -36,7 +36,7 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "http://ssp.dauup.com/pserver",
+                "uri": "http://test.com/pserver",
                 "body": {
                     "id": "test-request-id",
                     "imp": [
@@ -84,17 +84,13 @@
                                     "id": "test_bid_id",
                                     "impid": "test-imp-id",
                                     "price": 0.27543,
-                                    "adm": "<iframe id=\"adm-banner-1\" width=\"468\" height=\"60\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"http://ssp.dauup.com/pserver&k=bc2d316f39931a07d9a8dd249bf85fc0\"></iframe>",
+                                    "adm": "<iframe id=\"adm-banner-1\" width=\"468\" height=\"60\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"http://test.com/pserver&k=bc2d316f39931a07d9a8dd249bf85fc0\"></iframe>",
                                     "cid": "test_cid",
                                     "crid": "test_crid",
                                     "dealid": "test_dealid",
                                     "w": 468,
                                     "h": 60,
-                                    "ext": {
-                                        "prebid": {
-                                            "type": "banner"
-                                        }
-                                    }
+                                    "mtype": 1
                                 }
                             ],
                             "seat": "edge226"
@@ -113,17 +109,13 @@
                         "id": "test_bid_id",
                         "impid": "test-imp-id",
                         "price": 0.27543,
-                        "adm": "<iframe id=\"adm-banner-1\" width=\"468\" height=\"60\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"http://ssp.dauup.com/pserver&k=bc2d316f39931a07d9a8dd249bf85fc0\"></iframe>",
+                        "adm": "<iframe id=\"adm-banner-1\" width=\"468\" height=\"60\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"http://test.com/pserver&k=bc2d316f39931a07d9a8dd249bf85fc0\"></iframe>",
                         "cid": "test_cid",
                         "crid": "test_crid",
                         "dealid": "test_dealid",
                         "w": 468,
                         "h": 60,
-                        "ext": {
-                            "prebid": {
-                                "type": "banner"
-                            }
-                        }
+                        "mtype": 1
                     },
                     "type": "banner"
                 }
