@@ -4,27 +4,31 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"strconv"
-	"strings"
+	"text/template"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 type adapter struct {
-	endpoint string
+	endpoint *template.Template
 }
 
 // Builder builds a new instance of the Lemmadigital adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	bidder := &adapter{
-		endpoint: config.Endpoint,
+	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
+	bidder := &adapter{
+		endpoint: template,
+	}
 	return bidder, nil
 }
 
@@ -47,8 +51,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}}
 	}
 
-	endpoint := strings.Replace(a.endpoint, "{PID}", strconv.Itoa(impExt.PublisherId), 1)
-	endpoint = strings.Replace(endpoint, "{AID}", strconv.Itoa(impExt.AdId), 1)
+	endpoint, err := a.buildEndpointURL(impExt)
+	if err != nil {
+		return nil, []error{err}
+	}
 
 	requestJSON, err := json.Marshal(request)
 	if err != nil {
@@ -65,21 +71,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if responseData.StatusCode == http.StatusNoContent {
+	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
 	}
 
-	if responseData.StatusCode == http.StatusBadRequest {
-		err := &errortypes.BadInput{
-			Message: "Unexpected status code: 400. Bad request from publisher. Run with request.debug = 1 for more info.",
-		}
-		return nil, []error{err}
-	}
-
-	if responseData.StatusCode != http.StatusOK {
-		err := &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info.", responseData.StatusCode),
-		}
+	if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil {
 		return nil, []error{err}
 	}
 
@@ -94,7 +90,9 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
-	bidResponse.Currency = response.Cur
+	if len(response.Cur) > 0 {
+		bidResponse.Currency = response.Cur
+	}
 	for _, seatBid := range response.SeatBid {
 		for i := range seatBid.Bid {
 			b := &adapters.TypedBid{
@@ -107,4 +105,10 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	return bidResponse, nil
+}
+
+func (a *adapter) buildEndpointURL(params openrtb_ext.ImpExtLemmaDigital) (string, error) {
+	endpointParams := macros.EndpointTemplateParams{PublisherID: strconv.Itoa(params.PublisherId),
+		AdUnit: strconv.Itoa(params.AdId)}
+	return macros.ResolveMacros(a.endpoint, endpointParams)
 }
