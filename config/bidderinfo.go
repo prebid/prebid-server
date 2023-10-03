@@ -129,6 +129,13 @@ type Syncer struct {
 
 	// SupportCORS identifies if CORS is supported for the user syncing endpoints.
 	SupportCORS *bool `yaml:"supportCors" mapstructure:"support_cors"`
+
+	SkipWhen SkipWhen `yaml:"skipwhen" mapstructure:"skipwhen"`
+}
+
+type SkipWhen struct {
+	GDPR   bool   `yaml:"gdpr" mapstructure:"gdpr"`
+	GPPSID string `yaml:"gpp_sid" mapstructure:"gpp_sid"`
 }
 
 // SyncerEndpoint specifies the configuration of the URL returned by the /cookie_sync endpoint

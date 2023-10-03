@@ -1,5 +1,7 @@
 package usersync
 
+import "github.com/prebid/prebid-server/config"
+
 // Chooser determines which syncers are eligible for a given request.
 type Chooser interface {
 	// Choose considers bidders to sync, filters the bidders, and returns the result of the
@@ -88,6 +90,8 @@ const (
 
 	// StatusBlockedByPrivacy specifies a bidder sync url is not allowed by privacy activities
 	StatusBlockedByPrivacy
+
+	StatusBlockedByRegulationScope
 )
 
 // Privacy determines which privacy policies will be enforced for a user sync request.
@@ -103,6 +107,7 @@ type standardChooser struct {
 	bidderSyncerLookup map[string]Syncer
 	biddersAvailable   []string
 	bidderChooser      bidderChooser
+	bidderInfo         map[string]config.BidderInfo
 }
 
 // Choose randomly selects user syncers which are permitted by the user's privacy settings and
@@ -162,10 +167,16 @@ func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}
 
 	if !privacy.GDPRAllowsBidderSync(bidder) {
 		return nil, BidderEvaluation{Status: StatusBlockedByGDPR, Bidder: bidder, SyncerKey: syncer.Key()}
+	} else if c.bidderInfo[bidder].Syncer.SkipWhen.GDPR {
+		return nil, BidderEvaluation{Status: StatusBlockedByRegulationScope, Bidder: bidder, SyncerKey: syncer.Key()}
 	}
 
 	if !privacy.CCPAAllowsBidderSync(bidder) {
 		return nil, BidderEvaluation{Status: StatusBlockedByCCPA, Bidder: bidder, SyncerKey: syncer.Key()}
+	}
+
+	if c.bidderInfo[bidder].Syncer.SkipWhen.GPPSID != "" {
+		return nil, BidderEvaluation{Status: StatusBlockedByRegulationScope, Bidder: bidder, SyncerKey: syncer.Key()}
 	}
 
 	return syncer, BidderEvaluation{Status: StatusOK, Bidder: bidder, SyncerKey: syncer.Key()}
