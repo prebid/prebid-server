@@ -1,4 +1,4 @@
-endpoint: "http://rtb.iqzone.com/?pid={{.SourceId}}&host={{.Host}}&pbs=1"
+endpoint: "http://rtb.iqzone.com?pid={{.SourceId}}&host={{.Host}}&pbs=1"
 maintainer:
   email: "it@iqzone.com"
 capabilities:

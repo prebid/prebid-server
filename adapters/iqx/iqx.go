@@ -141,7 +141,6 @@ func prepareBidResponse(seats []openrtb2.SeatBid) (*adapters.BidderResponse, []e
 				})
 				continue
 			}
-
 			bidType, err := openrtb_ext.ParseBidType(bidExt.Prebid.Type)
 			if err != nil {
 				errs = append(errs, &errortypes.BadServerResponse{
