@@ -21,7 +21,7 @@ please view our configuration guide for further setup guidance.
 
 Please consider [registering your Prebid Server](https://docs.prebid.org/prebid-server/hosting/pbs-hosting.html#optional-registration) to get on the mailing list for updates, etc.
 
-## Running Locally
+## Developing Locally
 
 Prebid Server requires [Go](https://golang.org/doc/install) version 1.19 or newer. Helper scripts are written for Bash, but Prebid Server can run on any operating system supported by Go.
 
