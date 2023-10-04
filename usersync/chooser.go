@@ -30,6 +30,7 @@ type Request struct {
 	Limit          int
 	Privacy        Privacy
 	SyncTypeFilter SyncTypeFilter
+	GPPSID         string
 }
 
 // Cooperative specifies the settings for cooperative syncing for a given request, where bidders
@@ -91,6 +92,7 @@ const (
 	// StatusBlockedByPrivacy specifies a bidder sync url is not allowed by privacy activities
 	StatusBlockedByPrivacy
 
+	// TODO: Add Description
 	StatusBlockedByRegulationScope
 )
 
@@ -129,7 +131,7 @@ func (c standardChooser) Choose(request Request, cookie *Cookie) Result {
 
 	bidders := c.bidderChooser.choose(request.Bidders, c.biddersAvailable, request.Cooperative)
 	for i := 0; i < len(bidders) && (limitDisabled || len(syncersChosen) < request.Limit); i++ {
-		syncer, evaluation := c.evaluate(bidders[i], syncersSeen, request.SyncTypeFilter, request.Privacy, cookie)
+		syncer, evaluation := c.evaluate(bidders[i], syncersSeen, request.SyncTypeFilter, request.Privacy, cookie, request.GPPSID)
 
 		biddersEvaluated = append(biddersEvaluated, evaluation)
 		if evaluation.Status == StatusOK {
@@ -140,7 +142,7 @@ func (c standardChooser) Choose(request Request, cookie *Cookie) Result {
 	return Result{Status: StatusOK, BiddersEvaluated: biddersEvaluated, SyncersChosen: syncersChosen}
 }
 
-func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}, syncTypeFilter SyncTypeFilter, privacy Privacy, cookie *Cookie) (Syncer, BidderEvaluation) {
+func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}, syncTypeFilter SyncTypeFilter, privacy Privacy, cookie *Cookie, GPPSID string) (Syncer, BidderEvaluation) {
 	syncer, exists := c.bidderSyncerLookup[bidder]
 	if !exists {
 		return nil, BidderEvaluation{Status: StatusUnknownBidder, Bidder: bidder}
@@ -175,7 +177,7 @@ func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}
 		return nil, BidderEvaluation{Status: StatusBlockedByCCPA, Bidder: bidder, SyncerKey: syncer.Key()}
 	}
 
-	if c.bidderInfo[bidder].Syncer.SkipWhen.GPPSID != "" {
+	if c.bidderInfo[bidder].Syncer.SkipWhen.GPPSID == GPPSID {
 		return nil, BidderEvaluation{Status: StatusBlockedByRegulationScope, Bidder: bidder, SyncerKey: syncer.Key()}
 	}
 

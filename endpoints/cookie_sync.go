@@ -179,6 +179,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, ma
 			activityRequest:  privacy.NewRequestFromPolicies(privacyPolicies),
 		},
 		SyncTypeFilter: syncTypeFilter,
+		GPPSID:         request.GPPSID,
 	}
 	return rx, privacyMacros, nil
 }
