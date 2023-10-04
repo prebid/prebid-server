@@ -108,7 +108,7 @@ func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprou
 	}
 
 	// Check if events are enabled for the account
-	if !account.Events.IsEnabled() {
+	if !account.Events.Enabled {
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte(fmt.Sprintf("Account '%s' doesn't support events", eventRequest.AccountID)))
 		return
@@ -206,7 +206,7 @@ func HandleAccountServiceErrors(errs []error) (status int, messages []string) {
 
 		errCode := errortypes.ReadCode(er)
 
-		if errCode == errortypes.BlacklistedAppErrorCode || errCode == errortypes.BlacklistedAcctErrorCode {
+		if errCode == errortypes.BlacklistedAppErrorCode || errCode == errortypes.AccountDisabledErrorCode {
 			status = http.StatusServiceUnavailable
 		}
 		if errCode == errortypes.MalformedAcctErrorCode {

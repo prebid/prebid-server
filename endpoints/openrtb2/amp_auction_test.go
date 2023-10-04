@@ -99,8 +99,6 @@ func TestGoodAmpRequests(t *testing.T) {
 			if test.Config != nil {
 				cfg.BlacklistedApps = test.Config.BlacklistedApps
 				cfg.BlacklistedAppMap = test.Config.getBlacklistedAppMap()
-				cfg.BlacklistedAccts = test.Config.BlacklistedAccounts
-				cfg.BlacklistedAcctMap = test.Config.getBlackListedAccountMap()
 				cfg.AccountRequired = test.Config.AccountRequired
 			}
 
@@ -122,7 +120,7 @@ func TestGoodAmpRequests(t *testing.T) {
 			// Assertions
 			if assert.Equal(t, test.ExpectedReturnCode, recorder.Code, "Expected status %d. Got %d. Amp test file: %s", http.StatusOK, recorder.Code, filename) {
 				if test.ExpectedReturnCode == http.StatusOK {
-					assert.JSONEq(t, string(test.ExpectedAmpResponse), string(recorder.Body.Bytes()), "Not the expected response. Test file: %s", filename)
+					assert.JSONEq(t, string(test.ExpectedAmpResponse), recorder.Body.String(), "Not the expected response. Test file: %s", filename)
 				} else {
 					assert.Equal(t, test.ExpectedErrorMessage, recorder.Body.String(), filename)
 				}
@@ -149,11 +147,6 @@ func TestAccountErrors(t *testing.T) {
 			storedReqID: "1",
 			filename:    "account-malformed/malformed-acct.json",
 		},
-		{
-			description: "Blocked account",
-			storedReqID: "1",
-			filename:    "blacklisted/blacklisted-site-publisher.json",
-		},
 	}
 
 	for _, tt := range tests {
@@ -170,9 +163,7 @@ func TestAccountErrors(t *testing.T) {
 		test.endpointType = AMP_ENDPOINT
 
 		cfg := &config.Configuration{
-			BlacklistedAccts:   []string{"bad_acct"},
-			BlacklistedAcctMap: map[string]bool{"bad_acct": true},
-			MaxRequestSize:     maxSize,
+			MaxRequestSize: maxSize,
 		}
 		cfg.MarshalAccountDefaults()
 
@@ -2329,7 +2320,7 @@ func TestSendAmpResponse_LogsErrors(t *testing.T) {
 			account := &config.Account{DebugAllow: true}
 			reqWrapper := openrtb_ext.RequestWrapper{BidRequest: test.request}
 
-			labels, ao = sendAmpResponse(test.writer, test.hookExecutor, &exchange.AuctionResponse{BidResponse: test.response}, &reqWrapper, account, labels, ao, nil)
+			_, ao = sendAmpResponse(test.writer, test.hookExecutor, &exchange.AuctionResponse{BidResponse: test.response}, &reqWrapper, account, labels, ao, nil)
 
 			assert.Equal(t, ao.Errors, test.expectedErrors, "Invalid errors.")
 			assert.Equal(t, test.expectedStatus, ao.Status, "Invalid HTTP response status.")
