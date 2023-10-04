@@ -61,13 +61,13 @@ func TestFetchQueueLess(t *testing.T) {
 	}{
 		{
 			name: "first fetchperiod is less than second",
-			fq:   FetchQueue{&FetchInfo{FetchTime: 10}, &FetchInfo{FetchTime: 20}},
+			fq:   FetchQueue{&fetchInfo{fetchTime: 10}, &fetchInfo{fetchTime: 20}},
 			args: args{i: 0, j: 1},
 			want: true,
 		},
 		{
 			name: "first fetchperiod is greater than second",
-			fq:   FetchQueue{&FetchInfo{FetchTime: 30}, &FetchInfo{FetchTime: 10}},
+			fq:   FetchQueue{&fetchInfo{fetchTime: 30}, &fetchInfo{fetchTime: 10}},
 			args: args{i: 0, j: 1},
 			want: false,
 		},
@@ -93,7 +93,7 @@ func TestFetchQueueSwap(t *testing.T) {
 	}{
 		{
 			name: "Swap two elements at index i and j",
-			fq:   FetchQueue{&FetchInfo{FetchTime: 30}, &FetchInfo{FetchTime: 10}},
+			fq:   FetchQueue{&fetchInfo{fetchTime: 30}, &fetchInfo{fetchTime: 10}},
 			args: args{i: 0, j: 1},
 		},
 	}
@@ -119,14 +119,14 @@ func TestFetchQueuePush(t *testing.T) {
 		{
 			name: "Push element to queue",
 			fq:   &FetchQueue{},
-			args: args{element: &FetchInfo{FetchTime: 10}},
+			args: args{element: &fetchInfo{fetchTime: 10}},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.fq.Push(tt.args.element)
 			q := *tt.fq
-			assert.Equal(t, q[0], &FetchInfo{FetchTime: 10})
+			assert.Equal(t, q[0], &fetchInfo{fetchTime: 10})
 		})
 	}
 }
@@ -139,8 +139,8 @@ func TestFetchQueuePop(t *testing.T) {
 	}{
 		{
 			name: "Pop element from queue",
-			fq:   &FetchQueue{&FetchInfo{FetchTime: 10}},
-			want: &FetchInfo{FetchTime: 10},
+			fq:   &FetchQueue{&fetchInfo{fetchTime: 10}},
+			want: &fetchInfo{fetchTime: 10},
 		},
 	}
 	for _, tt := range tests {
@@ -156,12 +156,12 @@ func TestFetchQueueTop(t *testing.T) {
 	tests := []struct {
 		name string
 		fq   *FetchQueue
-		want *FetchInfo
+		want *fetchInfo
 	}{
 		{
 			name: "Get top element from queue",
-			fq:   &FetchQueue{&FetchInfo{FetchTime: 20}},
-			want: &FetchInfo{FetchTime: 20},
+			fq:   &FetchQueue{&fetchInfo{fetchTime: 20}},
+			want: &fetchInfo{fetchTime: 20},
 		},
 		{
 			name: "Queue is empty",
@@ -751,12 +751,13 @@ func mockFetcherInstance(config config.PriceFloors, httpClient *http.Client, met
 		pool:            pond.New(config.Fetcher.Worker, config.Fetcher.Capacity, pond.PanicHandler(workerPanicHandler)),
 		fetchQueue:      make(FetchQueue, 0, 100),
 		fetchInProgress: make(map[string]bool),
-		configReceiver:  make(chan FetchInfo, config.Fetcher.Capacity),
+		configReceiver:  make(chan fetchInfo, config.Fetcher.Capacity),
 		done:            make(chan struct{}),
 		cache:           freecache.NewCache(config.Fetcher.CacheSize * 1024 * 1024),
 		httpClient:      httpClient,
 		time:            &timeutil.RealTime{},
 		metricEngine:    metricEngine,
+		maxRetries:      10,
 	}
 
 	go floorFetcher.Fetcher()
@@ -885,9 +886,10 @@ func TestFetcherEntryNotPresentInCache(t *testing.T) {
 	floorConfig := config.PriceFloors{
 		Enabled: true,
 		Fetcher: config.PriceFloorFetcher{
-			CacheSize: 1,
-			Worker:    2,
-			Capacity:  5,
+			CacheSize:  1,
+			Worker:     2,
+			Capacity:   5,
+			MaxRetries: 10,
 		},
 	}
 
@@ -918,9 +920,10 @@ func TestFetcherDynamicFetchDisable(t *testing.T) {
 	floorConfig := config.PriceFloors{
 		Enabled: true,
 		Fetcher: config.PriceFloorFetcher{
-			CacheSize: 1,
-			Worker:    2,
-			Capacity:  5,
+			CacheSize:  1,
+			Worker:     2,
+			Capacity:   5,
+			MaxRetries: 5,
 		},
 	}
 
@@ -970,23 +973,26 @@ func TestPriceFloorFetcherWorker(t *testing.T) {
 		pool:            nil,
 		fetchQueue:      nil,
 		fetchInProgress: nil,
-		configReceiver:  make(chan FetchInfo, 1),
+		configReceiver:  make(chan fetchInfo, 1),
 		done:            nil,
 		cache:           freecache.NewCache(1 * 1024 * 1024),
 		httpClient:      mockHttpServer.Client(),
 		time:            &timeutil.RealTime{},
 		metricEngine:    &metricsConf.NilMetricsEngine{},
+		maxRetries:      10,
 	}
 	defer close(fetcherInstance.configReceiver)
 
-	fetchConfig := config.AccountFloorFetch{
-		Enabled:       true,
-		URL:           mockHttpServer.URL,
-		Timeout:       100,
-		MaxFileSizeKB: 1000,
-		MaxRules:      100,
-		MaxAge:        20,
-		Period:        1,
+	fetchConfig := fetchInfo{
+		AccountFloorFetch: config.AccountFloorFetch{
+			Enabled:       true,
+			URL:           mockHttpServer.URL,
+			Timeout:       100,
+			MaxFileSizeKB: 1000,
+			MaxRules:      100,
+			MaxAge:        20,
+			Period:        1,
+		},
 	}
 
 	fetcherInstance.worker(fetchConfig)
@@ -996,9 +1002,52 @@ func TestPriceFloorFetcherWorker(t *testing.T) {
 	assert.Equal(t, floorResp, gotFloorData, "Data should be stored in cache")
 
 	info := <-fetcherInstance.configReceiver
-	assert.Equal(t, true, info.RefetchRequest, "Recieved request is not refetch request")
+	assert.Equal(t, true, info.refetchRequest, "Recieved request is not refetch request")
 	assert.Equal(t, mockHttpServer.URL, info.AccountFloorFetch.URL, "Recieved request with different url")
 
+}
+
+func TestPriceFloorFetcherWorkerRetry(t *testing.T) {
+	mockHandler := func(mockResponse []byte, mockStatus int) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(mockStatus)
+			w.Write(mockResponse)
+		})
+	}
+
+	mockHttpServer := httptest.NewServer(mockHandler(nil, 500))
+	defer mockHttpServer.Close()
+
+	fetcherInstance := PriceFloorFetcher{
+		pool:            nil,
+		fetchQueue:      nil,
+		fetchInProgress: nil,
+		configReceiver:  make(chan fetchInfo, 1),
+		done:            nil,
+		cache:           nil,
+		httpClient:      mockHttpServer.Client(),
+		time:            &timeutil.RealTime{},
+		metricEngine:    &metricsConf.NilMetricsEngine{},
+		maxRetries:      5,
+	}
+	defer close(fetcherInstance.configReceiver)
+
+	fetchConfig := fetchInfo{
+		AccountFloorFetch: config.AccountFloorFetch{
+			Enabled:       true,
+			URL:           mockHttpServer.URL,
+			Timeout:       100,
+			MaxFileSizeKB: 1000,
+			MaxRules:      100,
+			MaxAge:        20,
+			Period:        1,
+		},
+	}
+
+	fetcherInstance.worker(fetchConfig)
+
+	info := <-fetcherInstance.configReceiver
+	assert.Equal(t, 1, info.retryCount, "Retry Count is not 1")
 }
 
 func TestPriceFloorFetcherWorkerDefaultCacheExpiry(t *testing.T) {
@@ -1023,22 +1072,25 @@ func TestPriceFloorFetcherWorkerDefaultCacheExpiry(t *testing.T) {
 		pool:            nil,
 		fetchQueue:      nil,
 		fetchInProgress: nil,
-		configReceiver:  make(chan FetchInfo, 1),
+		configReceiver:  make(chan fetchInfo, 1),
 		done:            nil,
 		cache:           freecache.NewCache(1 * 1024 * 1024),
 		httpClient:      mockHttpServer.Client(),
 		time:            &timeutil.RealTime{},
 		metricEngine:    &metricsConf.NilMetricsEngine{},
+		maxRetries:      5,
 	}
 
-	fetchConfig := config.AccountFloorFetch{
-		Enabled:       true,
-		URL:           mockHttpServer.URL,
-		Timeout:       100,
-		MaxFileSizeKB: 1000,
-		MaxRules:      100,
-		MaxAge:        20,
-		Period:        1,
+	fetchConfig := fetchInfo{
+		AccountFloorFetch: config.AccountFloorFetch{
+			Enabled:       true,
+			URL:           mockHttpServer.URL,
+			Timeout:       100,
+			MaxFileSizeKB: 1000,
+			MaxRules:      100,
+			MaxAge:        20,
+			Period:        1,
+		},
 	}
 
 	fetcherInstance.worker(fetchConfig)
@@ -1049,7 +1101,7 @@ func TestPriceFloorFetcherWorkerDefaultCacheExpiry(t *testing.T) {
 
 	info := <-fetcherInstance.configReceiver
 	defer close(fetcherInstance.configReceiver)
-	assert.Equal(t, true, info.RefetchRequest, "Recieved request is not refetch request")
+	assert.Equal(t, true, info.refetchRequest, "Recieved request is not refetch request")
 	assert.Equal(t, mockHttpServer.URL, info.AccountFloorFetch.URL, "Recieved request with different url")
 
 }
@@ -1070,18 +1122,19 @@ func TestPriceFloorFetcherSubmit(t *testing.T) {
 		pool:            pond.New(1, 1),
 		fetchQueue:      make(FetchQueue, 0),
 		fetchInProgress: nil,
-		configReceiver:  make(chan FetchInfo, 1),
+		configReceiver:  make(chan fetchInfo, 1),
 		done:            make(chan struct{}),
 		cache:           freecache.NewCache(1 * 1024 * 1024),
 		httpClient:      mockHttpServer.Client(),
 		time:            &timeutil.RealTime{},
 		metricEngine:    &metricsConf.NilMetricsEngine{},
+		maxRetries:      5,
 	}
 	defer fetcherInstance.Stop()
 
-	fetchInfo := FetchInfo{
-		RefetchRequest: false,
-		FetchTime:      time.Now().Unix(),
+	fetchInfo := fetchInfo{
+		refetchRequest: false,
+		fetchTime:      time.Now().Unix(),
 		AccountFloorFetch: config.AccountFloorFetch{
 			Enabled:       true,
 			URL:           mockHttpServer.URL,
@@ -1096,7 +1149,7 @@ func TestPriceFloorFetcherSubmit(t *testing.T) {
 	fetcherInstance.submit(&fetchInfo)
 
 	info := <-fetcherInstance.configReceiver
-	assert.Equal(t, true, info.RefetchRequest, "Recieved request is not refetch request")
+	assert.Equal(t, true, info.refetchRequest, "Recieved request is not refetch request")
 	assert.Equal(t, mockHttpServer.URL, info.AccountFloorFetch.URL, "Recieved request with different url")
 
 }
@@ -1120,9 +1173,9 @@ func TestPriceFloorFetcherSubmitFailed(t *testing.T) {
 	}
 	defer fetcherInstance.pool.Stop()
 
-	fetchInfo := FetchInfo{
-		RefetchRequest: false,
-		FetchTime:      time.Now().Unix(),
+	fetchInfo := fetchInfo{
+		refetchRequest: false,
+		fetchTime:      time.Now().Unix(),
 		AccountFloorFetch: config.AccountFloorFetch{
 			Enabled:       true,
 			URL:           "http://test.com",
@@ -1161,9 +1214,10 @@ func TestFetcherWhenRequestGetDifferentURLInrequest(t *testing.T) {
 	floorConfig := config.PriceFloors{
 		Enabled: true,
 		Fetcher: config.PriceFloorFetcher{
-			CacheSize: 1,
-			Worker:    5,
-			Capacity:  10,
+			CacheSize:  1,
+			Worker:     5,
+			Capacity:   10,
+			MaxRetries: 5,
 		},
 	}
 	fetcherInstance := mockFetcherInstance(floorConfig, mockHttpServer.Client(), &metricsConf.NilMetricsEngine{})
