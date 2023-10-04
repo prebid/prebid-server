@@ -44,16 +44,18 @@ func TestNewCookieSyncEndpoint(t *testing.T) {
 		metrics           = metrics.MetricsEngineMock{}
 		analytics         = MockAnalytics{}
 		fetcher           = FakeAccountsFetcher{}
+		bidderInfo        = map[string]config.BidderInfo{}
 		bidders           = map[string]openrtb_ext.BidderName{"bidderA": openrtb_ext.BidderName("bidderA"), "bidderB": openrtb_ext.BidderName("bidderB")}
 	)
 
 	endpoint := NewCookieSyncEndpoint(
 		syncersByBidder,
 		&config.Configuration{
-			UserSync:   configUserSync,
-			HostCookie: configHostCookie,
-			GDPR:       configGDPR,
-			CCPA:       config.CCPA{Enforce: configCCPAEnforce},
+			UserSync:    configUserSync,
+			HostCookie:  configHostCookie,
+			GDPR:        configGDPR,
+			CCPA:        config.CCPA{Enforce: configCCPAEnforce},
+			BidderInfos: bidderInfo,
 		},
 		gdprPermsBuilder,
 		tcf2ConfigBuilder,
@@ -65,7 +67,7 @@ func TestNewCookieSyncEndpoint(t *testing.T) {
 	result := endpoint.(*cookieSyncEndpoint)
 
 	expected := &cookieSyncEndpoint{
-		chooser: usersync.NewChooser(syncersByBidder),
+		chooser: usersync.NewChooser(syncersByBidder, bidderInfo),
 		config: &config.Configuration{
 			UserSync:   configUserSync,
 			HostCookie: configHostCookie,
@@ -543,6 +545,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
 					Redirect: usersync.NewSpecificBidderFilter([]string{"b"}, usersync.BidderFilterModeExclude),
 				},
+				GPPSID: "2",
 			},
 		},
 		{

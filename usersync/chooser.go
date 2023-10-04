@@ -10,7 +10,7 @@ type Chooser interface {
 }
 
 // NewChooser returns a new instance of the standard chooser implementation.
-func NewChooser(bidderSyncerLookup map[string]Syncer) Chooser {
+func NewChooser(bidderSyncerLookup map[string]Syncer, bidderInfo map[string]config.BidderInfo) Chooser {
 	bidders := make([]string, 0, len(bidderSyncerLookup))
 	for k := range bidderSyncerLookup {
 		bidders = append(bidders, k)
@@ -20,6 +20,7 @@ func NewChooser(bidderSyncerLookup map[string]Syncer) Chooser {
 		bidderSyncerLookup: bidderSyncerLookup,
 		biddersAvailable:   bidders,
 		bidderChooser:      standardBidderChooser{shuffler: randomShuffler{}},
+		bidderInfo:         bidderInfo,
 	}
 }
 

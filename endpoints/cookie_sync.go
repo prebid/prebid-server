@@ -60,7 +60,7 @@ func NewCookieSyncEndpoint(
 	}
 
 	return &cookieSyncEndpoint{
-		chooser: usersync.NewChooser(syncersByBidder),
+		chooser: usersync.NewChooser(syncersByBidder, config.BidderInfos),
 		config:  config,
 		privacyConfig: usersyncPrivacyConfig{
 			gdprConfig:             config.GDPR,
@@ -532,3 +532,5 @@ func (p usersyncPrivacy) ActivityAllowsUserSync(bidder string) bool {
 		privacy.Component{Type: privacy.ComponentTypeBidder, Name: bidder},
 		p.activityRequest)
 }
+
+//TODO: Maybe add GPPAllowsSync option?

@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/macros"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -13,6 +14,7 @@ func TestNewChooser(t *testing.T) {
 	testCases := []struct {
 		description              string
 		bidderSyncerLookup       map[string]Syncer
+		bidderInfo               map[string]config.BidderInfo
 		expectedBiddersAvailable []string
 	}{
 		{
@@ -38,7 +40,7 @@ func TestNewChooser(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		chooser, _ := NewChooser(test.bidderSyncerLookup).(standardChooser)
+		chooser, _ := NewChooser(test.bidderSyncerLookup, test.bidderInfo).(standardChooser)
 		assert.ElementsMatch(t, test.expectedBiddersAvailable, chooser.biddersAvailable, test.description)
 	}
 }
@@ -247,6 +249,8 @@ func TestChooserEvaluate(t *testing.T) {
 		givenSyncersSeen   map[string]struct{}
 		givenPrivacy       Privacy
 		givenCookie        Cookie
+		givenGPPSID        string
+		givenBidderInfo    map[string]config.BidderInfo
 		expectedSyncer     Syncer
 		expectedEvaluation BidderEvaluation
 	}{
@@ -334,8 +338,8 @@ func TestChooserEvaluate(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		chooser, _ := NewChooser(bidderSyncerLookup).(standardChooser)
-		sync, evaluation := chooser.evaluate(test.givenBidder, test.givenSyncersSeen, syncTypeFilter, test.givenPrivacy, &test.givenCookie)
+		chooser, _ := NewChooser(bidderSyncerLookup, test.givenBidderInfo).(standardChooser)
+		sync, evaluation := chooser.evaluate(test.givenBidder, test.givenSyncersSeen, syncTypeFilter, test.givenPrivacy, &test.givenCookie, test.givenGPPSID)
 
 		assert.Equal(t, test.expectedSyncer, sync, test.description+":syncer")
 		assert.Equal(t, test.expectedEvaluation, evaluation, test.description+":evaluation")
