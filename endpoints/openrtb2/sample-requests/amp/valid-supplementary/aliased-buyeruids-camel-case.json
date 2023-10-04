@@ -50,15 +50,15 @@
   "expectedAmpResponse": {
     "targeting": {
       "hb_bidder": "YahooAds",
-      "hb_bidder_yahooAds": "YahooAds",
+      "hb_bidder_YahooAds": "YahooAds",
       "hb_cache_host": "www.pbcserver.com",
-      "hb_cache_host_yahooA": "www.pbcserver.com",
+      "hb_cache_host_YahooA": "www.pbcserver.com",
       "hb_cache_id": "0",
-      "hb_cache_id_yahooAds": "0",
+      "hb_cache_id_YahooAds": "0",
       "hb_cache_path": "/pbcache/endpoint",
-      "hb_cache_path_yahooA": "/pbcache/endpoint",
+      "hb_cache_path_YahooA": "/pbcache/endpoint",
       "hb_pb": "2.00",
-      "hb_pb_yahooAds": "2.00"
+      "hb_pb_YahooAds": "2.00"
     },
     "ortb2": {
       "ext": {
