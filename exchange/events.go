@@ -28,7 +28,7 @@ type eventTracking struct {
 func getEventTracking(requestExtPrebid *openrtb_ext.ExtRequestPrebid, ts time.Time, account *config.Account, bidderInfos config.BidderInfos, externalURL string) *eventTracking {
 	return &eventTracking{
 		accountID:          account.ID,
-		enabledForAccount:  account.Events.IsEnabled(),
+		enabledForAccount:  account.Events.Enabled,
 		enabledForRequest:  requestExtPrebid != nil && requestExtPrebid.Events != nil,
 		auctionTimestampMs: ts.UnixNano() / 1e+6,
 		integrationType:    getIntegrationType(requestExtPrebid),
@@ -130,7 +130,7 @@ func (ev *eventTracking) makeEventURL(evType analytics.EventType, pbsBid *entiti
 		})
 }
 
-// isEnabled checks if events are enabled by default or on account/request level
+// isEventAllowed checks if events are enabled by default or on account/request level
 func (ev *eventTracking) isEventAllowed() bool {
 	return ev.enabledForAccount || ev.enabledForRequest
 }

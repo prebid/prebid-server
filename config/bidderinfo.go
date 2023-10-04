@@ -78,6 +78,7 @@ type MaintainerInfo struct {
 type CapabilitiesInfo struct {
 	App  *PlatformInfo `yaml:"app" mapstructure:"app"`
 	Site *PlatformInfo `yaml:"site" mapstructure:"site"`
+	DOOH *PlatformInfo `yaml:"dooh" mapstructure:"dooh"`
 }
 
 // PlatformInfo specifies the supported media types for a bidder.
@@ -320,8 +321,13 @@ func processBidderAliases(aliasNillableFieldsByBidder map[string]aliasNillableFi
 		if aliasBidderInfo.PlatformID == "" {
 			aliasBidderInfo.PlatformID = parentBidderInfo.PlatformID
 		}
-		if aliasBidderInfo.Syncer == nil {
-			aliasBidderInfo.Syncer = parentBidderInfo.Syncer
+		if aliasBidderInfo.Syncer == nil && parentBidderInfo.Syncer != nil {
+			syncerKey := aliasBidderInfo.AliasOf
+			if parentBidderInfo.Syncer.Key != "" {
+				syncerKey = parentBidderInfo.Syncer.Key
+			}
+			syncer := Syncer{Key: syncerKey}
+			aliasBidderInfo.Syncer = &syncer
 		}
 		if aliasBidderInfo.UserSyncURL == "" {
 			aliasBidderInfo.UserSyncURL = parentBidderInfo.UserSyncURL
@@ -461,7 +467,9 @@ func validateAliasCapabilities(aliasBidderInfo BidderInfo, infos BidderInfos, bi
 			return fmt.Errorf("capabilities for alias: %s should be a subset of capabilities for parent bidder: %s", bidderName, aliasBidderInfo.AliasOf)
 		}
 
-		if (aliasBidderInfo.Capabilities.App != nil && parentBidder.Capabilities.App == nil) || (aliasBidderInfo.Capabilities.Site != nil && parentBidder.Capabilities.Site == nil) {
+		if (aliasBidderInfo.Capabilities.App != nil && parentBidder.Capabilities.App == nil) ||
+			(aliasBidderInfo.Capabilities.Site != nil && parentBidder.Capabilities.Site == nil) ||
+			(aliasBidderInfo.Capabilities.DOOH != nil && parentBidder.Capabilities.DOOH == nil) {
 			return fmt.Errorf("capabilities for alias: %s should be a subset of capabilities for parent bidder: %s", bidderName, aliasBidderInfo.AliasOf)
 		}
 
@@ -473,6 +481,12 @@ func validateAliasCapabilities(aliasBidderInfo BidderInfo, infos BidderInfos, bi
 
 		if aliasBidderInfo.Capabilities.App != nil && parentBidder.Capabilities.App != nil {
 			if err := isAliasPlatformInfoSubsetOfParent(*parentBidder.Capabilities.App, *aliasBidderInfo.Capabilities.App, bidderName, aliasBidderInfo.AliasOf); err != nil {
+				return err
+			}
+		}
+
+		if aliasBidderInfo.Capabilities.DOOH != nil && parentBidder.Capabilities.DOOH != nil {
+			if err := isAliasPlatformInfoSubsetOfParent(*parentBidder.Capabilities.DOOH, *aliasBidderInfo.Capabilities.DOOH, bidderName, aliasBidderInfo.AliasOf); err != nil {
 				return err
 			}
 		}
@@ -501,8 +515,8 @@ func validateCapabilities(info *CapabilitiesInfo, bidderName string) error {
 		return fmt.Errorf("missing required field: capabilities for adapter: %s", bidderName)
 	}
 
-	if info.App == nil && info.Site == nil {
-		return fmt.Errorf("at least one of capabilities.site or capabilities.app must exist for adapter: %s", bidderName)
+	if info.App == nil && info.Site == nil && info.DOOH == nil {
+		return fmt.Errorf("at least one of capabilities.site, capabilities.app, or capabilities.dooh must exist for adapter: %s", bidderName)
 	}
 
 	if info.App != nil {
@@ -513,9 +527,16 @@ func validateCapabilities(info *CapabilitiesInfo, bidderName string) error {
 
 	if info.Site != nil {
 		if err := validatePlatformInfo(info.Site); err != nil {
-			return fmt.Errorf("capabilities.site failed validation: %v, for adapter: %s", err, bidderName)
+			return fmt.Errorf("capabilities.site failed validation: %v for adapter: %s", err, bidderName)
 		}
 	}
+
+	if info.DOOH != nil {
+		if err := validatePlatformInfo(info.DOOH); err != nil {
+			return fmt.Errorf("capabilities.dooh failed validation: %v for adapter: %s", err, bidderName)
+		}
+	}
+
 	return nil
 }
 
