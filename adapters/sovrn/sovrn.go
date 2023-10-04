@@ -97,7 +97,6 @@ func (s *SovrnAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 		video := imp.Video
 		if video != nil {
 			if video.MIMEs == nil ||
-				video.MinDuration == 0 ||
 				video.MaxDuration == 0 ||
 				video.Protocols == nil {
 				errs = append(errs, &errortypes.BadInput{
