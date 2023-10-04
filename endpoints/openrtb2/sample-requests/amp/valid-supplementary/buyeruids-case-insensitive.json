@@ -1,5 +1,5 @@
 {
-  "description": "Amp request where root.user.ext.prebid.buyeruids field makes use of alias defined in root.ext.prebid.aliases and request makes use of case sensitive bidder name",
+  "description": "Amp request where root.user.ext.prebid.buyeruids field has case insensitive bidder name",
   "query": "tag_id=101",
   "config": {
     "mockBidders": [
@@ -41,15 +41,8 @@
       "ext": {
         "prebid": {
           "buyeruids": {
-            "unknown": "123"
+            "Appnexus": "123"
           }
-        }
-      }
-    },
-    "ext": {
-      "prebid": {
-        "aliases": {
-          "unknown": "Appnexus"
         }
       }
     }
