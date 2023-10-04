@@ -3,9 +3,11 @@
 ![Go Version](https://img.shields.io/github/go-mod/go-version/prebid/prebid-server?style=flat-square)
 
 <br />
+<br />
 <p align="center"><img alt="Prebid Server Logo" src="/static/pbs-logo.svg" style="width:80%; max-width:600px;"></p>
+<br />
 
-<a href="https://prebid.org/product-suite/prebid-server/">Prebid Server</a> is an open-source solution for running real-time advertising auctions in the cloud. This project is part of the <a href="https://prebid.org/">Prebid.org</a> ecosystem, closely integrating with  <a href="https://prebid.org/product-suite/prebidjs/">Prebid.js</a> and the <a href="https://prebid.org/product-suite/prebid-mobile/">Prebid Mobile SDKs</a> to deliver world-class header bidding for any ad format and any type of digital media.
+<a href="https://prebid.org/product-suite/prebid-server/">Prebid Server</a> is an open-source solution for running real-time advertising auctions in the cloud. This project is part of the <a href="https://prebid.org/">Prebid.org</a> ecosystem, seamlessly integrating with  <a href="https://prebid.org/product-suite/prebidjs/">Prebid.js</a> and the <a href="https://prebid.org/product-suite/prebid-mobile/">Prebid Mobile SDKs</a> to deliver world-class header bidding for any ad format and for any type of digital media.
 
 ## Getting Started
 - <a href="https://docs.prebid.org/prebid-server/overview/prebid-server-overview.html">What is Prebid Server?</a>
@@ -48,28 +50,28 @@ Load the landing page in your browser at `http://localhost:8000/`.
 
 ## Importing Prebid Server
 
-This repository is not intended to be imported by other projects. This is not a supported way to use Prebid Server and we make no gaurantees about the stability of internal packages. Prebid Server uses Go modules to manage its depnendecies and follows the tag convention, but does not ahere to semantic versioning guidelines. 
+Prebid Server is not intended to be imported by other projects. Go Modules is used to manage dependencies, which also enables the technical possibility of importing Prebid Server. This is not supported. We offer no guarantees regarding the stability of packages and do not adhere to semantic versioning guidelines.
 
 ## Contributing
 > [!IMPORTANT]
 > All contributions must follow the [Prebid Code of Conduct](http://prebid.org/wrapper_code_of_conduct.html)
 
-- Contribute An Adapter
+### Contribute An Adapter
   allows prebid server to relay a bid request to your SSP and collect bids. you should only contribute an adapter for your own company. contributions from third parties are not permitted. follow the instructions here. click here to see a list of curently supported bidders.
 
-- Contribute An Analytics Module
+### Contribute An Analytics Module
  allows prebid server to collect analytics. 
 
-- Contribute A Module
+### Contribute A Module
   extends the behavior of prebid server in many ways, such as bid filters, a/b testing, etc. follow our instructions here.
 
-- Implement A Feature
+### Implement A Feature
  all are welcome to contribute to this project. feel free to pick up an issue which is in the "ready for dev" state, before working on it, please post a comment to avoid double work. if you have a question about the specs, 
 
-- Fix A Bug or Suggest A Feature
+### Fix A Bug or Suggest A Feature
  please open an issue to detail the bug and or your feature proposal. a member of the core development team will review and discuss next steps after either verifying the bug or discussing the feature. if you want to open an exploratory PR, please mark it as a draft.
 
-### IDE Recommendation
+## IDE Recommendation
 
 The quickest way to start developing Prebid Server in a reproducible environment isolated from your host OS is by using Visual Studio Code with [Remote Container Setup](devcontainer.md). This is a recommendation, not a requirement. This is useful especially if you are developing on Windows as the Remote Container will run within WSL giving you the ability to run the bash scripts.
 
