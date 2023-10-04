@@ -179,7 +179,6 @@ func (f *PriceFloorFetcher) worker(fetchConfig fetchInfo) {
 		fetchConfig.refetchRequest = true
 		f.configReceiver <- fetchConfig
 	}
-
 }
 
 // Stop terminates price floor fetcher

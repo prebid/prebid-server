@@ -182,6 +182,7 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "price_floors.fetcher.http_client.max_idle_connections", 40, cfg.PriceFloors.Fetcher.HttpClient.MaxIdleConns)
 	cmpInts(t, "price_floors.fetcher.http_client.max_idle_connections_per_host", 2, cfg.PriceFloors.Fetcher.HttpClient.MaxIdleConnsPerHost)
 	cmpInts(t, "price_floors.fetcher.http_client.idle_connection_timeout_seconds", 60, cfg.PriceFloors.Fetcher.HttpClient.IdleConnTimeout)
+	cmpInts(t, "price_floors.fetcher.max_retries", 10, cfg.PriceFloors.Fetcher.MaxRetries)
 
 	// Assert compression related defaults
 	cmpBools(t, "compression.request.enable_gzip", false, cfg.Compression.Request.GZIP)
@@ -476,6 +477,7 @@ price_floors:
         max_idle_connections: 1
         max_idle_connections_per_host: 2
         idle_connection_timeout_seconds: 10
+      max_retries: 5
 account_defaults:
     events:
         enabled: true
@@ -598,6 +600,7 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "price_floors.fetcher.http_client.max_idle_connections", 1, cfg.PriceFloors.Fetcher.HttpClient.MaxIdleConns)
 	cmpInts(t, "price_floors.fetcher.http_client.max_idle_connections_per_host", 2, cfg.PriceFloors.Fetcher.HttpClient.MaxIdleConnsPerHost)
 	cmpInts(t, "price_floors.fetcher.http_client.idle_connection_timeout_seconds", 10, cfg.PriceFloors.Fetcher.HttpClient.IdleConnTimeout)
+	cmpInts(t, "price_floors.fetcher.max_retries", 5, cfg.PriceFloors.Fetcher.MaxRetries)
 	cmpBools(t, "account_defaults.price_floors.enabled", true, cfg.AccountDefaults.PriceFloors.Enabled)
 	cmpInts(t, "account_defaults.price_floors.enforce_floors_rate", 50, cfg.AccountDefaults.PriceFloors.EnforceFloorsRate)
 	cmpBools(t, "account_defaults.price_floors.adjust_for_bid_adjustment", false, cfg.AccountDefaults.PriceFloors.AdjustForBidAdjustment)
