@@ -605,6 +605,9 @@ func applyBidderInfoConfigOverrides(configBidderInfos BidderInfos, fsBidderInfos
 			if bidderInfo.EndpointCompression == "" && fsBidderCfg.EndpointCompression != "" {
 				bidderInfo.EndpointCompression = fsBidderCfg.EndpointCompression
 			}
+			if bidderInfo.OpenRTB == nil && fsBidderCfg.OpenRTB != nil {
+				bidderInfo.OpenRTB = fsBidderCfg.OpenRTB
+			}
 
 			fsBidderInfos[string(normalizedBidderName)] = bidderInfo
 		} else {

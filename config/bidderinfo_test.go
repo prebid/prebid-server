@@ -1649,6 +1649,18 @@ func TestApplyBidderInfoConfigOverrides(t *testing.T) {
 			givenConfigBidderInfos: BidderInfos{"a": {EndpointCompression: "LZ77", Syncer: &Syncer{Key: "override"}}},
 			expectedBidderInfos:    BidderInfos{"a": {EndpointCompression: "LZ77", Syncer: &Syncer{Key: "override"}}},
 		},
+		{
+			description:            "Don't override OpenRTB",
+			givenFsBidderInfos:     BidderInfos{"a": {OpenRTB: &OpenRTBInfo{Version: "v1", GPPSupported: true}}},
+			givenConfigBidderInfos: BidderInfos{"a": {}},
+			expectedBidderInfos:    BidderInfos{"a": {OpenRTB: &OpenRTBInfo{Version: "v1", GPPSupported: true}}},
+		},
+		{
+			description:            "Override OpenRTB",
+			givenFsBidderInfos:     BidderInfos{"a": {OpenRTB: &OpenRTBInfo{Version: "v1", GPPSupported: true}}},
+			givenConfigBidderInfos: BidderInfos{"a": {OpenRTB: &OpenRTBInfo{Version: "v2", GPPSupported: false}}},
+			expectedBidderInfos:    BidderInfos{"a": {OpenRTB: &OpenRTBInfo{Version: "v2", GPPSupported: false}}},
+		},
 	}
 	for _, test := range testCases {
 		bidderInfos, resultErr := applyBidderInfoConfigOverrides(test.givenConfigBidderInfos, test.givenFsBidderInfos, mockNormalizeBidderName)
