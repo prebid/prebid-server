@@ -431,14 +431,14 @@ func (c *cookieSyncEndpoint) handleResponse(w http.ResponseWriter, tf usersync.S
 		biddersSeen := make(map[string]struct{})
 		var debugInfo []cookieSyncResponseDebug
 		for _, bidderEval := range biddersEvaluated {
-			var debug cookieSyncResponseDebug
-			debug.Bidder = bidderEval.Bidder
+			var debugResponse cookieSyncResponseDebug
+			debugResponse.Bidder = bidderEval.Bidder
 			if bidderEval.Status == usersync.StatusDuplicate && biddersSeen[bidderEval.Bidder] == struct{}{} {
-				debug.Error = getDebugMessage(bidderEval.Status) + " synced as " + bidderEval.SyncerKey
-				debugInfo = append(debugInfo, debug)
+				debugResponse.Error = getDebugMessage(bidderEval.Status) + " synced as " + bidderEval.SyncerKey
+				debugInfo = append(debugInfo, debugResponse)
 			} else if bidderEval.Status != usersync.StatusOK {
-				debug.Error = getDebugMessage(bidderEval.Status)
-				debugInfo = append(debugInfo, debug)
+				debugResponse.Error = getDebugMessage(bidderEval.Status)
+				debugInfo = append(debugInfo, debugResponse)
 			}
 			biddersSeen[bidderEval.Bidder] = struct{}{}
 		}
