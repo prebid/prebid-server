@@ -146,7 +146,19 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 			adButlerReq.Target[CITY] = request.Device.Geo.City
 		}
 	}
-
+	//Add Geo Targeting
+	if request.Device != nil {
+		switch request.Device.DeviceType {
+		case 1:
+			adButlerReq.Target[DEVICE] = DEVICE_COMPUTER
+		case 2:
+			adButlerReq.Target[DEVICE] = DEVICE_PHONE
+		case 3:
+			adButlerReq.Target[DEVICE] = DEVICE_TABLET
+		case 4:
+			adButlerReq.Target[DEVICE] = DEVICE_CONNECTEDDEVICE
+		}
+	}
 
 	//Add Page Source Targeting
 	if adButlerReq.Source != ""  {
@@ -156,19 +168,7 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 	//Add Dynamic Targeting from AdRequest
 	for _,targetObj := range commerceExt.ComParams.Targeting {
 		key := targetObj.Name
-		datatype := targetObj.Type
-        if len(targetObj.Value) > 0 {
-			switch datatype {
-				case DATATYE_NUMBER, DATATYE_STRING, DATATYE_DATETIME, DATATYE_DATE, DATATYE_TIME :
-					adButlerReq.Target[key] = targetObj.Value[0]
-		    	case DATATYE_ARRAY:
-					if len(targetObj.Value) == 1 {
-						adButlerReq.Target[key] = targetObj.Value[0]
-					} else {
-						adButlerReq.Target[key] = targetObj.Value
-					}
-			}
-		}
+		adButlerReq.Target[key] = targetObj.Value
 	}
 	//Add Identifiers from AdRequest
 	for _,prefObj := range commerceExt.ComParams.Preferred {
@@ -272,3 +272,4 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 	}}, nil
 	
 }
+

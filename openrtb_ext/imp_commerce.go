@@ -22,8 +22,7 @@ type ExtImpFiltering struct {
 // ExtImpTargeting - Impression Targeting Extension
 type ExtImpTargeting struct {
 	Name  string `json:"name,omitempty"`
-	Value []string `json:"value,omitempty"`
-	Type  int    `json:"type,omitempty"`
+	Value interface{} `json:"value,omitempty"`
 }
 
 type ExtCustomConfig struct {
@@ -77,4 +76,5 @@ type ExtBidCommerce struct {
 	ClickPrice       float64              `json:"clickprice,omitempty"`
 	Rate             float64              `json:"rate,omitempty"`
 }
+
 
