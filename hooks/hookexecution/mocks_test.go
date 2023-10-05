@@ -131,7 +131,7 @@ func (e mockTimeoutHook) HandleProcessedAuctionHook(_ context.Context, _ hooksta
 	time.Sleep(20 * time.Millisecond)
 	c := hookstage.ChangeSet[hookstage.ProcessedAuctionRequestPayload]{}
 	c.AddMutation(func(payload hookstage.ProcessedAuctionRequestPayload) (hookstage.ProcessedAuctionRequestPayload, error) {
-		payload.BidRequest.User.CustomData = "some-custom-data"
+		payload.Request.User.CustomData = "some-custom-data"
 		return payload, nil
 	}, hookstage.MutationUpdate, "bidRequest", "user.customData")
 
@@ -142,7 +142,7 @@ func (e mockTimeoutHook) HandleBidderRequestHook(_ context.Context, _ hookstage.
 	time.Sleep(20 * time.Millisecond)
 	c := hookstage.ChangeSet[hookstage.BidderRequestPayload]{}
 	c.AddMutation(func(payload hookstage.BidderRequestPayload) (hookstage.BidderRequestPayload, error) {
-		payload.BidRequest.User.CustomData = "some-custom-data"
+		payload.Request.User.CustomData = "some-custom-data"
 		return payload, nil
 	}, hookstage.MutationUpdate, "bidRequest", "user.customData")
 
@@ -305,8 +305,8 @@ func (e mockUpdateBidRequestHook) HandleProcessedAuctionHook(_ context.Context, 
 	c := hookstage.ChangeSet[hookstage.ProcessedAuctionRequestPayload]{}
 	c.AddMutation(
 		func(payload hookstage.ProcessedAuctionRequestPayload) (hookstage.ProcessedAuctionRequestPayload, error) {
-			payload.BidRequest.User.Yob = 2000
-			userExt, err := payload.BidRequest.GetUserExt()
+			payload.Request.User.Yob = 2000
+			userExt, err := payload.Request.GetUserExt()
 			if err != nil {
 				return payload, err
 			}
@@ -318,7 +318,7 @@ func (e mockUpdateBidRequestHook) HandleProcessedAuctionHook(_ context.Context, 
 		}, hookstage.MutationUpdate, "bidRequest", "user.yob",
 	).AddMutation(
 		func(payload hookstage.ProcessedAuctionRequestPayload) (hookstage.ProcessedAuctionRequestPayload, error) {
-			payload.BidRequest.User.Consent = "true"
+			payload.Request.User.Consent = "true"
 			return payload, nil
 		}, hookstage.MutationUpdate, "bidRequest", "user.consent",
 	)
@@ -330,12 +330,12 @@ func (e mockUpdateBidRequestHook) HandleBidderRequestHook(_ context.Context, _ h
 	c := hookstage.ChangeSet[hookstage.BidderRequestPayload]{}
 	c.AddMutation(
 		func(payload hookstage.BidderRequestPayload) (hookstage.BidderRequestPayload, error) {
-			payload.BidRequest.User.Yob = 2000
+			payload.Request.User.Yob = 2000
 			return payload, nil
 		}, hookstage.MutationUpdate, "bidRequest", "user.yob",
 	).AddMutation(
 		func(payload hookstage.BidderRequestPayload) (hookstage.BidderRequestPayload, error) {
-			payload.BidRequest.User.Consent = "true"
+			payload.Request.User.Consent = "true"
 			return payload, nil
 		}, hookstage.MutationUpdate, "bidRequest", "user.consent",
 	)

@@ -130,8 +130,8 @@ type bidderAdapterConfig struct {
 }
 
 func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, hookExecutor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) ([]*entities.PbsOrtbSeatBid, extraBidderRespInfo, []error) {
-	brw := openrtb_ext.RequestWrapper{BidRequest: bidderRequest.BidRequest}
-	reject := hookExecutor.ExecuteBidderRequestStage(&brw, string(bidderRequest.BidderName))
+	request := openrtb_ext.RequestWrapper{BidRequest: bidderRequest.BidRequest}
+	reject := hookExecutor.ExecuteBidderRequestStage(&request, string(bidderRequest.BidderName))
 	if reject != nil {
 		return nil, extraBidderRespInfo{}, []error{reject}
 	}
@@ -144,8 +144,8 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 	)
 
 	// rebuild request after modules execution
-	brw.RebuildRequest()
-	bidderRequest.BidRequest = brw.BidRequest
+	request.RebuildRequest()
+	bidderRequest.BidRequest = request.BidRequest
 
 	//check if real request exists for this bidder or it only has stored responses
 	dataLen := 0

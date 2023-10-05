@@ -33,10 +33,10 @@ func (c ChangeSetBidderRequest[T]) BApp() ChangeSetBApp[T] {
 
 func (c ChangeSetBidderRequest[T]) castPayload(p T) (*openrtb_ext.RequestWrapper, error) {
 	if payload, ok := any(p).(BidderRequestPayload); ok {
-		if payload.BidRequest == nil || payload.BidRequest.BidRequest == nil {
+		if payload.Request == nil || payload.Request.BidRequest == nil {
 			return nil, errors.New("payload contains a nil bid request")
 		}
-		return payload.BidRequest, nil
+		return payload.Request, nil
 	}
 	return nil, errors.New("failed to cast BidderRequestPayload")
 }

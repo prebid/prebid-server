@@ -26,5 +26,5 @@ type ProcessedAuctionRequest interface {
 // ProcessedAuctionRequestPayload consists of the openrtb_ext.RequestWrapper object.
 // Hooks are allowed to modify openrtb_ext.RequestWrapper using mutations.
 type ProcessedAuctionRequestPayload struct {
-	BidRequest *openrtb_ext.RequestWrapper
+	Request *openrtb_ext.RequestWrapper
 }
