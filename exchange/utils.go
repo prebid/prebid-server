@@ -265,20 +265,12 @@ func cloneBidderReq(req *openrtb2.BidRequest) *openrtb_ext.RequestWrapper {
 	}
 
 	if req.Device != nil {
-		var deviceCopy *openrtb2.Device
-		deviceCopy = ptrutil.Clone(req.Device)
+		deviceCopy := ortb.CloneDevice(req.Device)
 		newReq.Device = deviceCopy
-
-		if req.Device.Geo != nil {
-			var deviceGeo *openrtb2.Geo
-			deviceGeo = ptrutil.Clone(req.Device.Geo)
-			newReq.Device.Geo = deviceGeo
-		}
 	}
 
 	if req.Source != nil {
-		var sourceCopy *openrtb2.Source
-		sourceCopy = ptrutil.Clone(req.Source)
+		sourceCopy := ortb.CloneSource(req.Source)
 		newReq.Source = sourceCopy
 	}
 

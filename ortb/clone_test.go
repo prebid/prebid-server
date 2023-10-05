@@ -536,6 +536,326 @@ func TestCloneUser(t *testing.T) {
 	})
 }
 
+func TestCloneDevice(t *testing.T) {
+	t.Run("nil", func(t *testing.T) {
+		result := CloneDevice(nil)
+		assert.Nil(t, result)
+	})
+
+	t.Run("empty", func(t *testing.T) {
+		given := &openrtb2.Device{}
+		result := CloneDevice(given)
+		assert.Empty(t, result)
+		assert.NotSame(t, given, result)
+	})
+
+	t.Run("populated", func(t *testing.T) {
+		var np *int8
+		var n int8
+		n = 1
+		np = &n
+		ct := adcom1.ConnectionWIFI
+
+		given := &openrtb2.Device{
+			Geo:            &openrtb2.Geo{Lat: 1.2, Lon: 2.3, Ext: json.RawMessage(`{"geo":1}`)},
+			DNT:            np,
+			Lmt:            np,
+			UA:             "UserAgent",
+			SUA:            &openrtb2.UserAgent{Mobile: np, Model: "iPad"},
+			IP:             "127.0.0.1",
+			IPv6:           "2001::",
+			DeviceType:     adcom1.DeviceTablet,
+			Make:           "Apple",
+			Model:          "iPad",
+			OS:             "macOS",
+			OSV:            "1.2.3",
+			HWV:            "mini",
+			H:              20,
+			W:              30,
+			PPI:            100,
+			PxRatio:        200,
+			JS:             2,
+			GeoFetch:       4,
+			FlashVer:       "1.22.33",
+			Language:       "En",
+			LangB:          "ENG",
+			Carrier:        "AT&T",
+			MCCMNC:         "111-222",
+			ConnectionType: &ct,
+			IFA:            "IFA",
+			DIDSHA1:        "DIDSHA1",
+			DIDMD5:         "DIDMD5",
+			DPIDSHA1:       "DPIDSHA1",
+			DPIDMD5:        "DPIDMD5",
+			MACSHA1:        "MACSHA1",
+			MACMD5:         "MACMD5",
+			Ext:            json.RawMessage(`{"anyField":1}`),
+		}
+		result := CloneDevice(given)
+		assert.Equal(t, given, result, "equality")
+		assert.NotSame(t, given, result, "pointer")
+		assert.NotSame(t, given.Geo, result.Geo, "geo")
+		assert.NotSame(t, given.Geo.Ext, result.Geo.Ext, "geo-ext")
+		assert.NotSame(t, given.DNT, result.DNT, "dnt")
+		assert.NotSame(t, given.Lmt, result.Lmt, "lmt")
+		assert.NotSame(t, given.SUA, result.SUA, "sua")
+		assert.NotSame(t, given.ConnectionType, result.ConnectionType, "connectionType")
+		assert.NotSame(t, given.Ext, result.Ext, "ext")
+	})
+
+	t.Run("assumptions", func(t *testing.T) {
+		assert.ElementsMatch(t, discoverPointerFields(reflect.TypeOf(openrtb2.Device{})),
+			[]string{
+				"Geo",
+				"DNT",
+				"Lmt",
+				"SUA",
+				"ConnectionType",
+				"Ext",
+			})
+	})
+}
+
+func TestCloneInt8Pointer(t *testing.T) {
+
+	t.Run("nil", func(t *testing.T) {
+		result := CloneInt8Pointer(nil)
+		assert.Nil(t, result)
+	})
+
+	t.Run("empty", func(t *testing.T) {
+		var given *int8
+		result := CloneInt8Pointer(given)
+		assert.Nil(t, result)
+	})
+
+	t.Run("populated", func(t *testing.T) {
+		var given *int8
+		var n int8
+		n = 1
+		given = &n
+		result := CloneInt8Pointer(given)
+		assert.Equal(t, given, result, "equality")
+		assert.NotSame(t, given, result, "pointer")
+	})
+}
+
+func TestCloneBrandVersionSlice(t *testing.T) {
+	t.Run("nil", func(t *testing.T) {
+		result := CloneBrandVersionSlice(nil)
+		assert.Nil(t, result)
+	})
+
+	t.Run("empty", func(t *testing.T) {
+		given := []openrtb2.BrandVersion{}
+		result := CloneBrandVersionSlice(given)
+		assert.Empty(t, result)
+		assert.NotSame(t, given, result)
+	})
+
+	t.Run("one", func(t *testing.T) {
+		given := []openrtb2.BrandVersion{
+			{Brand: "1", Version: []string{"s1", "s2"}, Ext: json.RawMessage(`{"anyField":1}`)},
+		}
+		result := CloneBrandVersionSlice(given)
+		assert.Equal(t, given, result, "equality")
+		assert.NotSame(t, given[0], result[0], "item-pointer")
+		assert.NotSame(t, given[0].Ext, result[0].Ext, "item-pointer-ext")
+	})
+
+	t.Run("many", func(t *testing.T) {
+		given := []openrtb2.BrandVersion{
+			{Brand: "1", Version: []string{"s1", "s2"}, Ext: json.RawMessage(`{"anyField":1}`)},
+			{Brand: "2", Version: []string{"s3", "s4"}, Ext: json.RawMessage(`{"anyField":1}`)},
+			{Brand: "3", Version: []string{"s5", "s6"}, Ext: json.RawMessage(`{"anyField":1}`)},
+		}
+		result := CloneBrandVersionSlice(given)
+		assert.Equal(t, given, result, "equality")
+		assert.NotSame(t, given[0], result[0], "item0-pointer")
+		assert.NotSame(t, given[0].Ext, result[0].Ext, "item0-pointer-ext")
+		assert.NotSame(t, given[1], result[1], "item1-pointer")
+		assert.NotSame(t, given[1].Ext, result[1].Ext, "item1-pointer-ext")
+	})
+}
+
+func TestCloneBrandVersion(t *testing.T) {
+	t.Run("nil", func(t *testing.T) {
+		result := CloneBrandVersion(nil)
+		assert.Nil(t, result)
+	})
+
+	t.Run("empty", func(t *testing.T) {
+		given := &openrtb2.BrandVersion{}
+		result := CloneBrandVersion(given)
+		assert.Empty(t, result)
+		assert.NotSame(t, given, result)
+	})
+
+	t.Run("populated", func(t *testing.T) {
+		given := &openrtb2.BrandVersion{
+			Brand:   "Apple",
+			Version: []string{"s1"},
+			Ext:     json.RawMessage(`{"anyField":1}`),
+		}
+		result := CloneBrandVersion(given)
+		assert.Equal(t, given, result, "equality")
+		assert.NotSame(t, given, result, "pointer")
+		assert.NotSame(t, given.Ext, result.Ext, "ext")
+	})
+
+	t.Run("assumptions", func(t *testing.T) {
+		assert.ElementsMatch(t, discoverPointerFields(reflect.TypeOf(openrtb2.BrandVersion{})),
+			[]string{
+				"Version",
+				"Ext",
+			})
+	})
+}
+
+func TestCloneSource(t *testing.T) {
+	t.Run("nil", func(t *testing.T) {
+		result := CloneSource(nil)
+		assert.Nil(t, result)
+	})
+
+	t.Run("empty", func(t *testing.T) {
+		given := &openrtb2.Source{}
+		result := CloneSource(given)
+		assert.Empty(t, result)
+		assert.NotSame(t, given, result)
+	})
+
+	t.Run("populated", func(t *testing.T) {
+
+		given := &openrtb2.Source{
+			FD:     1,
+			TID:    "Tid",
+			PChain: "PChain",
+			SChain: &openrtb2.SupplyChain{
+				Complete: 1, Nodes: []openrtb2.SupplyChainNode{{ASI: "asi", Ext: json.RawMessage(`{"anyField":1}`)}}},
+			Ext: json.RawMessage(`{"anyField":1}`),
+		}
+		result := CloneSource(given)
+		assert.Equal(t, given, result, "equality")
+		assert.NotSame(t, given, result, "pointer")
+		assert.NotSame(t, given.SChain, result.SChain, "schain")
+		assert.NotSame(t, given.Ext, result.Ext, "ext")
+	})
+
+	t.Run("assumptions", func(t *testing.T) {
+		assert.ElementsMatch(t, discoverPointerFields(reflect.TypeOf(openrtb2.Source{})),
+			[]string{
+				"SChain",
+				"Ext",
+			})
+	})
+}
+
+func TestCloneSChain(t *testing.T) {
+	t.Run("nil", func(t *testing.T) {
+		result := CloneSource(nil)
+		assert.Nil(t, result)
+	})
+
+	t.Run("empty", func(t *testing.T) {
+		given := &openrtb2.SupplyChain{}
+		result := CloneSChain(given)
+		assert.Empty(t, result)
+		assert.NotSame(t, given, result)
+	})
+
+	t.Run("populated", func(t *testing.T) {
+		given := &openrtb2.SupplyChain{
+			Complete: 1, Nodes: []openrtb2.SupplyChainNode{{ASI: "asi", Ext: json.RawMessage(`{"anyField":1}`)}}}
+		result := CloneSChain(given)
+		assert.Equal(t, given, result, "equality")
+		assert.NotSame(t, given, result, "pointer")
+		assert.NotSame(t, given.Nodes, result.Nodes, "nodes")
+		assert.NotSame(t, given.Ext, result.Ext, "ext")
+	})
+
+	t.Run("assumptions", func(t *testing.T) {
+		assert.ElementsMatch(t, discoverPointerFields(reflect.TypeOf(openrtb2.SupplyChain{})),
+			[]string{
+				"Nodes",
+				"Ext",
+			})
+	})
+}
+
+func TestCloseSupplyChainNodes(t *testing.T) {
+	var np *int8
+	var n int8
+	n = 1
+	np = &n
+	t.Run("nil", func(t *testing.T) {
+		result := CloseSupplyChainNodes(nil)
+		assert.Nil(t, result)
+	})
+
+	t.Run("empty", func(t *testing.T) {
+		given := []openrtb2.SupplyChainNode{}
+		result := CloseSupplyChainNodes(given)
+		assert.Empty(t, result)
+		assert.NotSame(t, given, result)
+	})
+
+	t.Run("one", func(t *testing.T) {
+		given := []openrtb2.SupplyChainNode{
+			{ASI: "asi", HP: np, Ext: json.RawMessage(`{"anyField":1}`)},
+		}
+		result := CloseSupplyChainNodes(given)
+		assert.Equal(t, given, result, "equality")
+		assert.NotSame(t, given[0], result[0], "item-pointer")
+		assert.NotSame(t, given[0].HP, result[0].HP, "item-pointer-hp")
+		assert.NotSame(t, given[0].Ext, result[0].Ext, "item-pointer-ext")
+	})
+
+	t.Run("many", func(t *testing.T) {
+		given := []openrtb2.SupplyChainNode{
+			{ASI: "asi", HP: np, Ext: json.RawMessage(`{"anyField":1}`)},
+			{ASI: "asi", HP: np, Ext: json.RawMessage(`{"anyField":1}`)},
+			{ASI: "asi", HP: np, Ext: json.RawMessage(`{"anyField":1}`)},
+		}
+		result := CloseSupplyChainNodes(given)
+		assert.Equal(t, given, result, "equality")
+		assert.NotSame(t, given[0], result[0], "item0-pointer")
+		assert.NotSame(t, given[0].Ext, result[0].Ext, "item0-pointer-ext")
+		assert.NotSame(t, given[0].HP, result[0].HP, "item0-pointer-hp")
+		assert.NotSame(t, given[1], result[1], "item1-pointer")
+		assert.NotSame(t, given[1].Ext, result[1].Ext, "item1-pointer-ext")
+		assert.NotSame(t, given[1].HP, result[1].HP, "item1-pointer-hp")
+	})
+}
+
+func TestCloneSupplyChainNode(t *testing.T) {
+	t.Run("populated", func(t *testing.T) {
+		var np *int8
+		var n int8
+		n = 1
+		np = &n
+
+		given := openrtb2.SupplyChainNode{
+			ASI: "asi",
+			HP:  np,
+			Ext: json.RawMessage(`{"anyField":1}`),
+		}
+		result := CloneSupplyChainNode(given)
+		assert.Equal(t, given, result, "equality")
+		assert.NotSame(t, given, result, "pointer")
+		assert.NotSame(t, given.Ext, result.Ext, "ext")
+		assert.NotSame(t, given.HP, result.HP, "hp")
+	})
+
+	t.Run("assumptions", func(t *testing.T) {
+		assert.ElementsMatch(t, discoverPointerFields(reflect.TypeOf(openrtb2.SupplyChainNode{})),
+			[]string{
+				"HP",
+				"Ext",
+			})
+	})
+}
+
 func TestCloneGeo(t *testing.T) {
 	t.Run("nil", func(t *testing.T) {
 		result := CloneGeo(nil)
