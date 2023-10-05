@@ -149,13 +149,17 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, _ *adapters.Req
 			if err != nil {
 				return nil, err
 			}
+			bidType, err := getMediaTypeForImp(bid.ImpID, internalRequest.Imp)
+			if err != nil {
+				return nil, err
+			}
 			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
 				Bid: &bid,
 				BidMeta: &openrtb_ext.ExtBidPrebidMeta{
 					RendererName:    bidExtTeads.Prebid.Meta.RendererName,
 					RendererVersion: bidExtTeads.Prebid.Meta.RendererVersion,
 				},
-				BidType: getMediaTypeForImp(bid.ImpID, internalRequest.Imp),
+				BidType: bidType,
 			})
 		}
 	}
@@ -183,14 +187,16 @@ func getTeadsRendererFromBidExt(ext json.RawMessage) (*teadsBidExt, []error) {
 	return &bidExtTeads, nil
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
+func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, []error) {
 	for _, imp := range imps {
 		if imp.ID == impID {
 			if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo
+				return openrtb_ext.BidTypeVideo, nil
 			}
-			return openrtb_ext.BidTypeBanner
+			return openrtb_ext.BidTypeBanner, nil
 		}
 	}
-	return openrtb_ext.BidTypeBanner
+	return openrtb_ext.BidTypeBanner, []error{&errortypes.BadInput{
+		Message: "Imp ids were not equals",
+	}}
 }
