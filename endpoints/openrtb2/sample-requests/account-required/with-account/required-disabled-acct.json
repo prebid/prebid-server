@@ -1,8 +1,7 @@
 {
-  "description": "Account is required but request comes with a blacklisted account id",
+  "description": "Account is required but request comes with a disabled account id",
   "config": {
-    "accountRequired": true,
-    "blacklistedAccts": ["bad_acct"]
+    "accountRequired": true
   },
   "mockBidRequest": {
     "id": "some-request-id",
@@ -19,7 +18,7 @@
     "app": {
       "id": "cool_app",
       "publisher": {
-        "id": "bad_acct"
+        "id": "disabled_acct"
       }
     },
     "regs": {
@@ -87,5 +86,5 @@
     }
   },
   "expectedReturnCode": 503,
-  "expectedErrorMessage": "Invalid request: Prebid-server has disabled Account ID: bad_acct, please reach out to the prebid server host.\n"
+  "expectedErrorMessage": "Invalid request: Prebid-server has disabled Account ID: disabled_acct, please reach out to the prebid server host.\n"
 }

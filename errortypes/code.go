@@ -9,7 +9,7 @@ const (
 	BadServerResponseErrorCode
 	FailedToRequestBidsErrorCode
 	BidderTemporarilyDisabledErrorCode
-	BlacklistedAcctErrorCode
+	AccountDisabledErrorCode
 	AcctRequiredErrorCode
 	NoConversionRateErrorCode
 	MalformedAcctErrorCode

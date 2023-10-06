@@ -33,10 +33,6 @@ func buildBidders(infos config.BidderInfos, builders map[openrtb_ext.BidderName]
 	var errs []error
 
 	for bidder, info := range infos {
-		if len(info.AliasOf) > 0 {
-			errs = append(errs, fmt.Errorf("This feature is currently under development"))
-			continue
-		}
 		bidderName, bidderNameFound := openrtb_ext.NormalizeBidderName(bidder)
 		if !bidderNameFound {
 			errs = append(errs, fmt.Errorf("%v: unknown bidder", bidder))
