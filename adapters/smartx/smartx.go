@@ -53,12 +53,12 @@ func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, requestInfo 
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil {
-		return nil, []error{err}
-	}
-
 	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
+	}
+
+	if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil {
+		return nil, []error{err}
 	}
 
 	var response openrtb2.BidResponse
