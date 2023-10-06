@@ -52,7 +52,7 @@ func NewVideoEndpoint(
 	accounts stored_requests.AccountFetcher,
 	cfg *config.Configuration,
 	met metrics.MetricsEngine,
-	pbsAnalytics analytics.PBSAnalyticsModule,
+	analyticsRunner analytics.Runner,
 	disabledBidders map[string]string,
 	defReqJSON []byte,
 	bidderMap map[string]openrtb_ext.BidderName,
@@ -82,7 +82,7 @@ func NewVideoEndpoint(
 		accounts,
 		cfg,
 		met,
-		pbsAnalytics,
+		analyticsRunner,
 		disabledBidders,
 		defRequest,
 		defReqJSON,
@@ -149,6 +149,8 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 	debugLog.DebugEnabledOrOverridden = debugLog.Enabled || debugLog.DebugOverride
 
+	activityControl := privacy.ActivityControl{}
+
 	defer func() {
 		if len(debugLog.CacheKey) > 0 && vo.VideoResponse == nil {
 			err := debugLog.PutDebugLogError(deps.cache, deps.cfg.CacheURL.ExpectedTimeMillis, vo.Errors)
@@ -158,7 +160,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		}
 		deps.metricsEngine.RecordRequest(labels)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
-		deps.analytics.LogVideoObject(&vo)
+		deps.analytics.LogVideoObject(&vo, activityControl)
 	}()
 
 	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
@@ -303,7 +305,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	activityControl := privacy.NewActivityControl(&account.Privacy)
+	activityControl = privacy.NewActivityControl(&account.Privacy)
 
 	secGPC := r.Header.Get("Sec-GPC")
 	auctionRequest := &exchange.AuctionRequest{

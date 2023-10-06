@@ -16,6 +16,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/metrics"
+	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/stretchr/testify/assert"
 )
@@ -26,13 +27,13 @@ type eventsMockAnalyticsModule struct {
 	Invoked bool
 }
 
-func (e *eventsMockAnalyticsModule) LogAuctionObject(ao *analytics.AuctionObject) {
+func (e *eventsMockAnalyticsModule) LogAuctionObject(ao *analytics.AuctionObject, _ privacy.ActivityControl) {
 	if e.Fail {
 		panic(e.Error)
 	}
 }
 
-func (e *eventsMockAnalyticsModule) LogVideoObject(vo *analytics.VideoObject) {
+func (e *eventsMockAnalyticsModule) LogVideoObject(vo *analytics.VideoObject, _ privacy.ActivityControl) {
 	if e.Fail {
 		panic(e.Error)
 	}
@@ -50,13 +51,13 @@ func (e *eventsMockAnalyticsModule) LogSetUIDObject(so *analytics.SetUIDObject) 
 	}
 }
 
-func (e *eventsMockAnalyticsModule) LogAmpObject(ao *analytics.AmpObject) {
+func (e *eventsMockAnalyticsModule) LogAmpObject(ao *analytics.AmpObject, _ privacy.ActivityControl) {
 	if e.Fail {
 		panic(e.Error)
 	}
 }
 
-func (e *eventsMockAnalyticsModule) LogNotificationEventObject(ne *analytics.NotificationEvent) {
+func (e *eventsMockAnalyticsModule) LogNotificationEventObject(ne *analytics.NotificationEvent, _ privacy.ActivityControl) {
 	if e.Fail {
 		panic(e.Error)
 	}

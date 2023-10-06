@@ -9,10 +9,10 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-// PBSAnalyticsModule must be implemented by analytics modules to extract the required information and logging
+// Module must be implemented by analytics modules to extract the required information and logging
 // activities. Do not use marshal the parameter objects directly as they can change over time. Use a separate
 // model for each analytics module and transform as appropriate.
-type PBSAnalyticsModule interface {
+type Module interface {
 	LogAuctionObject(*AuctionObject)
 	LogVideoObject(*VideoObject)
 	LogCookieSyncObject(*CookieSyncObject)

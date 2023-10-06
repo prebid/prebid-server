@@ -42,7 +42,7 @@ func TestNewCookieSyncEndpoint(t *testing.T) {
 		configGDPR        = config.GDPR{HostVendorID: 42}
 		configCCPAEnforce = true
 		metrics           = metrics.MetricsEngineMock{}
-		analytics         = MockAnalytics{}
+		analytics         = MockAnalyticsRunner{}
 		fetcher           = FakeAccountsFetcher{}
 		bidders           = map[string]openrtb_ext.BidderName{"bidderA": openrtb_ext.BidderName("bidderA"), "bidderB": openrtb_ext.BidderName("bidderB")}
 	)
@@ -114,7 +114,7 @@ func TestCookieSyncHandle(t *testing.T) {
 		expectedStatusCode       int
 		expectedBody             string
 		setMetricsExpectations   func(*metrics.MetricsEngineMock)
-		setAnalyticsExpectations func(*MockAnalytics)
+		setAnalyticsExpectations func(*MockAnalyticsRunner)
 	}{
 		{
 			description: "Request With Cookie",
@@ -133,7 +133,7 @@ func TestCookieSyncHandle(t *testing.T) {
 				m.On("RecordCookieSync", metrics.CookieSyncOK).Once()
 				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerCookieSyncOK).Once()
 			},
-			setAnalyticsExpectations: func(a *MockAnalytics) {
+			setAnalyticsExpectations: func(a *MockAnalyticsRunner) {
 				expected := analytics.CookieSyncObject{
 					Status: 200,
 					Errors: nil,
@@ -165,7 +165,7 @@ func TestCookieSyncHandle(t *testing.T) {
 				m.On("RecordCookieSync", metrics.CookieSyncOK).Once()
 				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerCookieSyncOK).Once()
 			},
-			setAnalyticsExpectations: func(a *MockAnalytics) {
+			setAnalyticsExpectations: func(a *MockAnalyticsRunner) {
 				expected := analytics.CookieSyncObject{
 					Status: 200,
 					Errors: nil,
@@ -194,7 +194,7 @@ func TestCookieSyncHandle(t *testing.T) {
 			setMetricsExpectations: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordCookieSync", metrics.CookieSyncBadRequest).Once()
 			},
-			setAnalyticsExpectations: func(a *MockAnalytics) {
+			setAnalyticsExpectations: func(a *MockAnalyticsRunner) {
 				expected := analytics.CookieSyncObject{
 					Status:       400,
 					Errors:       []error{errors.New("JSON parsing failed: invalid character 'm' looking for beginning of value")},
@@ -217,7 +217,7 @@ func TestCookieSyncHandle(t *testing.T) {
 			setMetricsExpectations: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordCookieSync", metrics.CookieSyncOptOut).Once()
 			},
-			setAnalyticsExpectations: func(a *MockAnalytics) {
+			setAnalyticsExpectations: func(a *MockAnalyticsRunner) {
 				expected := analytics.CookieSyncObject{
 					Status:       401,
 					Errors:       []error{errors.New("User has opted out")},
@@ -240,7 +240,7 @@ func TestCookieSyncHandle(t *testing.T) {
 			setMetricsExpectations: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordCookieSync", metrics.CookieSyncGDPRHostCookieBlocked).Once()
 			},
-			setAnalyticsExpectations: func(a *MockAnalytics) {
+			setAnalyticsExpectations: func(a *MockAnalyticsRunner) {
 				expected := analytics.CookieSyncObject{
 					Status:       200,
 					Errors:       nil,
@@ -255,7 +255,7 @@ func TestCookieSyncHandle(t *testing.T) {
 		mockMetrics := metrics.MetricsEngineMock{}
 		test.setMetricsExpectations(&mockMetrics)
 
-		mockAnalytics := MockAnalytics{}
+		mockAnalytics := MockAnalyticsRunner{}
 		test.setAnalyticsExpectations(&mockAnalytics)
 
 		fakeAccountFetcher := FakeAccountsFetcher{}
@@ -1248,7 +1248,7 @@ func TestSetCooperativeSync(t *testing.T) {
 func TestWriteParseRequestErrorMetrics(t *testing.T) {
 	err := errors.New("anyError")
 
-	mockAnalytics := MockAnalytics{}
+	mockAnalytics := MockAnalyticsRunner{}
 	mockAnalytics.On("LogCookieSyncObject", mock.Anything)
 	writer := httptest.NewRecorder()
 
@@ -1471,7 +1471,7 @@ func TestParseBidderFilter(t *testing.T) {
 func TestCookieSyncHandleError(t *testing.T) {
 	err := errors.New("anyError")
 
-	mockAnalytics := MockAnalytics{}
+	mockAnalytics := MockAnalyticsRunner{}
 	mockAnalytics.On("LogCookieSyncObject", mock.Anything)
 	writer := httptest.NewRecorder()
 
@@ -1664,7 +1664,7 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		mockAnalytics := MockAnalytics{}
+		mockAnalytics := MockAnalyticsRunner{}
 		mockAnalytics.On("LogCookieSyncObject", &test.expectedAnalytics).Once()
 
 		cookie := usersync.NewCookie()
@@ -1996,32 +1996,32 @@ func (m *MockSyncer) GetSync(syncTypes []usersync.SyncType, privacyMacros macros
 	return args.Get(0).(usersync.Sync), args.Error(1)
 }
 
-type MockAnalytics struct {
+type MockAnalyticsRunner struct {
 	mock.Mock
 }
 
-func (m *MockAnalytics) LogAuctionObject(obj *analytics.AuctionObject) {
+func (m *MockAnalyticsRunner) LogAuctionObject(obj *analytics.AuctionObject, ac privacy.ActivityControl) {
+	m.Called(obj, ac)
+}
+
+func (m *MockAnalyticsRunner) LogVideoObject(obj *analytics.VideoObject, ac privacy.ActivityControl) {
+	m.Called(obj, ac)
+}
+
+func (m *MockAnalyticsRunner) LogCookieSyncObject(obj *analytics.CookieSyncObject) {
 	m.Called(obj)
 }
 
-func (m *MockAnalytics) LogVideoObject(obj *analytics.VideoObject) {
+func (m *MockAnalyticsRunner) LogSetUIDObject(obj *analytics.SetUIDObject) {
 	m.Called(obj)
 }
 
-func (m *MockAnalytics) LogCookieSyncObject(obj *analytics.CookieSyncObject) {
-	m.Called(obj)
+func (m *MockAnalyticsRunner) LogAmpObject(obj *analytics.AmpObject, ac privacy.ActivityControl) {
+	m.Called(obj, ac)
 }
 
-func (m *MockAnalytics) LogSetUIDObject(obj *analytics.SetUIDObject) {
-	m.Called(obj)
-}
-
-func (m *MockAnalytics) LogAmpObject(obj *analytics.AmpObject) {
-	m.Called(obj)
-}
-
-func (m *MockAnalytics) LogNotificationEventObject(obj *analytics.NotificationEvent) {
-	m.Called(obj)
+func (m *MockAnalyticsRunner) LogNotificationEventObject(obj *analytics.NotificationEvent, ac privacy.ActivityControl) {
+	m.Called(obj, ac)
 }
 
 type MockGDPRPerms struct {
