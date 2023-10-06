@@ -267,7 +267,7 @@ func TestCookieSyncHandle(t *testing.T) {
 				m.On("RecordCookieSync", metrics.CookieSyncOK).Once()
 				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerCookieSyncAlreadySynced).Once()
 			},
-			setAnalyticsExpectations: func(a *MockAnalytics) {
+			setAnalyticsExpectations: func(a *MockAnalyticsRunner) {
 				expected := analytics.CookieSyncObject{
 					Status: 200,
 					Errors: nil,
