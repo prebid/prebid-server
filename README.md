@@ -17,53 +17,51 @@
 
 ## Required Configuration
 
-If you're hosting Prebid Server or developing locally, you must set a default GDPR value. This configuration determines whether GDPR is enforced when no regulatory signal is available in the request, where a value of `0` disables enforcement by default and a value of `1` enables it.
+When hosting Prebid Server or developing locally, you must set a default GDPR value. This configuration determines whether GDPR is enabled when no regulatory signal is available in the request, where a value of `0` disables it by default and a value of `1` enables it.
 
-This configuration is required since there is no consensus on a good default. Please see the [configuration guide](docs/developers/configuration.md) for details on how to set the default GDPR value.
+This configuration is required because there is no consensus on a good default. Refer to the [configuration guide](docs/developers/configuration.md) for specific instructions on configuring the default GDPR value.
 
 
 ## Hosting Prebid Server
 > [!NOTE]
 > Please consider [registering your Prebid Server host](https://docs.prebid.org/prebid-server/hosting/pbs-hosting.html#optional-registration) to join the mailing list for updates and feedback.
 
-The quickest way to host Prebid Server is to deploy our [official Docker image](https://hub.docker.com/r/prebid/prebid-server). If you're hosting the container within Kubernetes, you can configure Prebid Server with environment variables [using a pod file](https://kubernetes.io/docs/tasks/inject-data-application/define-interdependent-environment-variables/) or [using a config map](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/#configure-all-key-value-pairs-in-a-configmap-as-container-environment-variables). Alternatively, you can deploy with a configuration [file using a config map](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/#populate-a-volume-with-data-stored-in-a-configmap) which Prebid Server will load from the path `/etc/config`.
+The quickest way to host Prebid Server is to deploy our [official Docker image](https://hub.docker.com/r/prebid/prebid-server). If you're hosting the container with Kubernetes, you can configure Prebid Server with environment variables [using a pod file](https://kubernetes.io/docs/tasks/inject-data-application/define-interdependent-environment-variables/) or [using a config map](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/#configure-all-key-value-pairs-in-a-configmap-as-container-environment-variables). Alternatively, you can use a configuration file [embeded in a config map](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/#populate-a-volume-with-data-stored-in-a-configmap) which Prebid Server will read from the path `/etc/config`.
 
-For deploying from a fork, you can either create a custom Docker container using the command `docker build -t prebid-server .` or compile a standalone binary using `go build .`. Ensure that you include the `/static` directory, as Prebid Server reads from it during startup.
+For deploying a fork, you can either create a custom Docker container using the command `docker build -t prebid-server .` or compile a standalone binary using `go build .`. Ensure that also deploy the `/static` directory, as Prebid Server reads from it during startup.
 
 ## Developing Locally
 
-Prebid Server requires [Go](https://golang.org/doc/install) version 1.19 or newer. Prebid Server can be developed on any operating system supported by Go, however our helper scripts are written for Bash.
+Prebid Server requires [Go](https://golang.org/doc/install) version 1.19 or newer. You can develop on any operating system that Go supports; however, please note that our helper scripts are written in bash.
 
-Follow these steps to begin developing:
-
-1. Clone the repository.
+1. Clone The Repository
 ``` bash
 git clone git@github.com:prebid/prebid-server.git
 cd prebid-server
 ```
 
-3. Download dependencies.
+3. Download Dependencies
 ``` bash
-go mod tidy
+go mod download
 ```
 
-3. Verify the automated tests pass:
+3. Verify Automated Tests Pass
 ```bash
 ./validate.sh
 ```
 
-4. Run the server locally:
+4. Run The Server
 
 ```bash
 go build .
 ./prebid-server
 ```
 
-5. Load the landing page in your browser at `http://localhost:8000/`.
+By default, Prebid Server will attach to port 8080. To confirm the server is running, visit `http://localhost:8000/` in your web browser.
 
 ### IDE Recommendation
 
-The quickest way to start developing Prebid Server in a reproducible environment isolated from your host OS is by using Visual Studio Code with [Remote Container Setup](devcontainer.md). This is a recommendation, not a requirement. This approach is useful especially if you are developing on Windows, since the Remote Container will run within WSL providing you with the capability to execute bash scripts.
+The quickest way to start developing Prebid Server in a reproducible environment isolated from your host OS is by using Visual Studio Code with [Remote Container Setup](devcontainer.md). This is a recommendation, not a requirement. This approach is useful especially if you are developing on Windows, since the Remote Container runs within WSL providing you with the capability to execute bash scripts.
 
 ## Importing Prebid Server
 
