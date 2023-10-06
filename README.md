@@ -26,9 +26,9 @@ This configuration is required because there is no consensus on a good default. 
 > [!NOTE]
 > Please consider [registering your Prebid Server host](https://docs.prebid.org/prebid-server/hosting/pbs-hosting.html#optional-registration) to join the mailing list for updates and feedback.
 
-The quickest way to host Prebid Server is to deploy our [official Docker image](https://hub.docker.com/r/prebid/prebid-server). If you're hosting the container with Kubernetes, you can configure Prebid Server with environment variables [using a pod file](https://kubernetes.io/docs/tasks/inject-data-application/define-interdependent-environment-variables/) or [using a config map](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/#configure-all-key-value-pairs-in-a-configmap-as-container-environment-variables). Alternatively, you can use a configuration file [embeded in a config map](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/#populate-a-volume-with-data-stored-in-a-configmap) which Prebid Server will read from the path `/etc/config`.
+The quickest way to host Prebid Server is to deploy our [official Docker image](https://hub.docker.com/r/prebid/prebid-server). If you're hosting the container with Kubernetes, you can configure Prebid Server with environment variables [using a pod file](https://kubernetes.io/docs/tasks/inject-data-application/define-interdependent-environment-variables/) or [using a config map](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/#configure-all-key-value-pairs-in-a-configmap-as-container-environment-variables). Alternatively, you can use a configuration file [embedded in a config map](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/#populate-a-volume-with-data-stored-in-a-configmap) which Prebid Server will read from the path `/etc/config`.
 
-For deploying a fork, you can either create a custom Docker container using the command `docker build -t prebid-server .` or compile a standalone binary using `go build .`. Ensure that also deploy the `/static` directory, as Prebid Server reads from it during startup.
+For deploying a fork, you can either create a custom Docker container using the command `docker build -t prebid-server .` or compile a standalone binary using `go build .` from the root project path. Ensure that you also deploy the `/static` directory, as Prebid Server reads from it during startup.
 
 ## Developing Locally
 
@@ -53,8 +53,7 @@ go mod download
 4. Run The Server
 
 ```bash
-go build .
-./prebid-server
+go run .
 ```
 
 By default, Prebid Server will attach to port 8080. To confirm the server is running, visit `http://localhost:8000/` in your web browser.
@@ -72,10 +71,10 @@ Prebid Server is not intended to be imported by other projects. Go Modules is us
 > All contributions must follow the [Prebid Code of Conduct](https://prebid.org/code-of-conduct/) and the [Prebid Module Rules](https://docs.prebid.org/dev-docs/module-rules.html).
 
 ### Bid Adapter
-  allows prebid server to relay a bid request to your SSP and collect bids. you should only contribute an adapter for your own company. contributions from third parties are not permitted. follow the instructions here. click here to see a list of curently supported bidders.
+Bid Adapters are responsible for relaying an OpenRTB request to an SSP and mapping the bid response. We invite you to contribute an adapter for your SSP. Consult our guide on [building a bid adapter](https://docs.prebid.org/prebid-server/developers/add-new-bidder-go.html) for more information.
 
 ### Analytics Module
- allows prebid server to collect analytics. 
+Analytics Modules enable analytics and reporting tools to collect data from Prebid Server, allowing publishers to gather valuable insights from their header bidding traffic. The information made available to Analytics Modules is subject to Prebid Server privacy controls. We welcome you to contribute a module for your platform. Refer to our guide on [building an analytics module](https://docs.prebid.org/prebid-server/developers/pbs-build-an-analytics-adapter.html) for more information.
 
 ### Auction Module
   extends the behavior of prebid server in many ways, such as bid filters, a/b testing, etc. follow our instructions here.
