@@ -88,11 +88,6 @@ type Metrics struct {
 	accountBidResponseSecureMarkupError   *prometheus.CounterVec
 	accountBidResponseSecureMarkupWarn    *prometheus.CounterVec
 
-	// Account Deprecation Metrics
-	channelEnabledGDPR        prometheus.Counter
-	channelEnabledCCPA        prometheus.Counter
-	accountDeprecationSummary prometheus.Counter
-
 	// Module Metrics as a map where the key is the module name
 	moduleDuration        map[string]*prometheus.HistogramVec
 	moduleCalls           map[string]*prometheus.CounterVec
@@ -502,17 +497,6 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"Count of AdsCert request, and if they were successfully sent.",
 		[]string{successLabel})
 
-	metrics.channelEnabledCCPA = newCounterWithoutLabels(cfg, reg,
-		"account_config_ccpa_channel_enabled_warn",
-		"Count of requests referencing an account whose config specifies a depreceated ccpa.channel_enabled field")
-	metrics.channelEnabledGDPR = newCounterWithoutLabels(cfg, reg,
-		"account_config_gdpr_channel_enabled_warn",
-		"Count of requests referencing an account whose config specifies a depreceated gdpr.channel_enabled field")
-
-	metrics.accountDeprecationSummary = newCounterWithoutLabels(cfg, reg,
-		"account_config_summary",
-		"Count of deprecated account config fields encountered across all accounts")
-
 	createModulesMetrics(cfg, reg, &metrics, moduleStageNames, standardTimeBuckets)
 
 	metrics.Gatherer = reg
@@ -690,24 +674,6 @@ func (m *Metrics) RecordDebugRequest(debugEnabled bool, pubID string) {
 				accountLabel: pubID,
 			}).Inc()
 		}
-	}
-}
-
-func (m *Metrics) RecordAccountGDPRChannelEnabledWarning(account string) {
-	if account != metrics.PublisherUnknown {
-		m.channelEnabledGDPR.Inc()
-	}
-}
-
-func (m *Metrics) RecordAccountCCPAChannelEnabledWarning(account string) {
-	if account != metrics.PublisherUnknown {
-		m.channelEnabledCCPA.Inc()
-	}
-}
-
-func (m *Metrics) RecordAccountUpgradeStatus(account string) {
-	if account != metrics.PublisherUnknown {
-		m.accountDeprecationSummary.Inc()
 	}
 }
 

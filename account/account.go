@@ -50,18 +50,6 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 				Message: fmt.Sprintf("The prebid-server account config for account id \"%s\" is malformed. Please reach out to the prebid server host.", accountID),
 			}}
 		}
-		usingGDPRChannelEnabled := useGDPRChannelEnabled(account)
-		usingCCPAChannelEnabled := useCCPAChannelEnabled(account)
-
-		if usingGDPRChannelEnabled {
-			me.RecordAccountGDPRChannelEnabledWarning(accountID)
-		}
-		if usingCCPAChannelEnabled {
-			me.RecordAccountCCPAChannelEnabledWarning(accountID)
-		}
-		if usingGDPRChannelEnabled || usingCCPAChannelEnabled {
-			me.RecordAccountUpgradeStatus(accountID)
-		}
 
 		if err != nil {
 			errs = append(errs, err)
@@ -153,12 +141,4 @@ func setDerivedConfig(account *config.Account) {
 			account.GDPR.BasicEnforcementVendorsMap[v] = struct{}{}
 		}
 	}
-}
-
-func useGDPRChannelEnabled(account *config.Account) bool {
-	return account.GDPR.ChannelEnabled.IsSet() && !account.GDPR.IntegrationEnabled.IsSet()
-}
-
-func useCCPAChannelEnabled(account *config.Account) bool {
-	return account.CCPA.ChannelEnabled.IsSet() && !account.CCPA.IntegrationEnabled.IsSet()
 }

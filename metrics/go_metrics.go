@@ -125,11 +125,6 @@ type accountMetrics struct {
 	bidValidationCreativeSizeWarnMeter metrics.Meter
 	bidValidationSecureMarkupMeter     metrics.Meter
 	bidValidationSecureMarkupWarnMeter metrics.Meter
-
-	// Account Deprciation Metrics
-	channelEnabledGDPRMeter        metrics.Meter
-	channelEnabledCCPAMeter        metrics.Meter
-	accountDeprecationSummaryMeter metrics.Meter
 }
 
 type ModuleMetrics struct {
@@ -566,10 +561,6 @@ func (me *Metrics) getAccountMetrics(id string) *accountMetrics {
 	am.bidValidationSecureMarkupMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.response.validation.secure.err", id), me.MetricsRegistry)
 	am.bidValidationSecureMarkupWarnMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.response.validation.secure.warn", id), me.MetricsRegistry)
 
-	am.channelEnabledCCPAMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.config.ccpa.channel_enabled.warn", id), me.MetricsRegistry)
-	am.channelEnabledGDPRMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.config.gdpr.channel_enabled.warn", id), me.MetricsRegistry)
-	am.accountDeprecationSummaryMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.config.summary", id), me.MetricsRegistry)
-
 	if !me.MetricsDisabled.AccountModulesMetrics {
 		for _, mod := range me.modules {
 			am.moduleMetrics[mod] = makeBlankModuleMetrics()
@@ -612,27 +603,6 @@ func (me *Metrics) RecordDebugRequest(debugEnabled bool, pubID string) {
 				am.debugRequestMeter.Mark(1)
 			}
 		}
-	}
-}
-
-func (me *Metrics) RecordAccountGDPRChannelEnabledWarning(account string) {
-	if account != PublisherUnknown {
-		am := me.getAccountMetrics(account)
-		am.channelEnabledGDPRMeter.Mark(1)
-	}
-}
-
-func (me *Metrics) RecordAccountCCPAChannelEnabledWarning(account string) {
-	if account != PublisherUnknown {
-		am := me.getAccountMetrics(account)
-		am.channelEnabledCCPAMeter.Mark(1)
-	}
-}
-
-func (me *Metrics) RecordAccountUpgradeStatus(account string) {
-	if account != PublisherUnknown {
-		am := me.getAccountMetrics(account)
-		am.accountDeprecationSummaryMeter.Mark(1)
 	}
 }
 
