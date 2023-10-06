@@ -79,23 +79,20 @@ func (err *BlacklistedApp) Severity() Severity {
 	return SeverityFatal
 }
 
-// BlacklistedAcct should be used when a request account ID matches an entry in the BlacklistedAccts
-// environment variable array
-//
-// These errors will be written to  http.ResponseWriter before canceling execution
-type BlacklistedAcct struct {
+// AccountDisabled should be used when a request an account is specifically disabled in account config.
+type AccountDisabled struct {
 	Message string
 }
 
-func (err *BlacklistedAcct) Error() string {
+func (err *AccountDisabled) Error() string {
 	return err.Message
 }
 
-func (err *BlacklistedAcct) Code() int {
-	return BlacklistedAcctErrorCode
+func (err *AccountDisabled) Code() int {
+	return AccountDisabledErrorCode
 }
 
-func (err *BlacklistedAcct) Severity() Severity {
+func (err *AccountDisabled) Severity() Severity {
 	return SeverityFatal
 }
 
