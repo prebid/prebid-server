@@ -51,6 +51,16 @@ func TestSetUIDEndpoint(t *testing.T) {
 			description:            "Set uid for valid bidder",
 		},
 		{
+			uri:                    "/setuid?bidder=PUBMATIC&uid=123",
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			existingSyncs:          nil,
+			gdprAllowsHostCookies:  true,
+			expectedSyncs:          map[string]string{"pubmatic": "123"},
+			expectedStatusCode:     http.StatusOK,
+			expectedHeaders:        map[string]string{"Content-Type": "text/html", "Content-Length": "0"},
+			description:            "Set uid for valid bidder case insensitive",
+		},
+		{
 			uri:                    "/setuid?bidder=appnexus&uid=123",
 			syncersBidderNameToKey: map[string]string{"appnexus": "adnxs"},
 			existingSyncs:          nil,
