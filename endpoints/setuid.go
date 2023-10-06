@@ -340,7 +340,7 @@ func getSyncer(query url.Values, syncersByBidder map[string]usersync.Syncer) (us
 func isSyncerPriority(bidderNameFromSyncerQuery string, priorityGroups [][]string) bool {
 	for _, group := range priorityGroups {
 		for _, bidder := range group {
-			if bidderNameFromSyncerQuery == bidder {
+			if strings.EqualFold(bidderNameFromSyncerQuery, bidder) {
 				return true
 			}
 		}
