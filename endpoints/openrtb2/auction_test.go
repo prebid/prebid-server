@@ -1186,6 +1186,7 @@ func TestStoredRequests(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	testStoreVideoAttr := []bool{true, true, false, false, false}
@@ -1635,6 +1636,7 @@ func TestValidateRequest(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	testCases := []struct {
@@ -2414,6 +2416,7 @@ func TestSetIntegrationType(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	testCases := []struct {
@@ -2480,6 +2483,7 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	req := &openrtb2.BidRequest{}
@@ -2584,6 +2588,7 @@ func TestOversizedRequest(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -2623,6 +2628,7 @@ func TestRequestSizeEdgeCase(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -2962,6 +2968,7 @@ func TestValidateImpExt(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	for _, group := range testGroups {
@@ -3017,6 +3024,7 @@ func TestCurrencyTrunc(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	ui := int64(1)
@@ -3065,6 +3073,7 @@ func TestCCPAInvalid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	ui := int64(1)
@@ -3117,6 +3126,7 @@ func TestNoSaleInvalid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	ui := int64(1)
@@ -3172,6 +3182,7 @@ func TestValidateSourceTID(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	ui := int64(1)
@@ -3217,6 +3228,7 @@ func TestSChainInvalid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	ui := int64(1)
@@ -3785,6 +3797,7 @@ func TestEidPermissionsInvalid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	ui := int64(1)
@@ -3854,6 +3867,13 @@ func TestValidateEidPermissions(t *testing.T) {
 			expectedError: nil,
 		},
 		{
+			description: "Valid - One - Case Insensitive",
+			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "sourceA", Bidders: []string{"A"}},
+			}}}},
+			expectedError: nil,
+		},
+		{
 			description: "Valid - Many",
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"a"}},
@@ -3901,9 +3921,16 @@ func TestValidateEidPermissions(t *testing.T) {
 			}}}},
 			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[1] contains unrecognized bidder "z"`),
 		},
+		{
+			description: "Valid - Alias Case Sensitive",
+			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "sourceA", Bidders: []string{"B"}},
+			}}}},
+			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[0] contains unrecognized bidder "B"`),
+		},
 	}
 
-	endpoint := &endpointDeps{bidderMap: knownBidders}
+	endpoint := &endpointDeps{bidderMap: knownBidders, normalizeBidderName: fakeNormalizeBidderName}
 	for _, test := range testCases {
 		result := endpoint.validateEidPermissions(test.request.Prebid.Data, knownAliases)
 		assert.Equal(t, test.expectedError, result, test.description)
@@ -3940,6 +3967,13 @@ func TestValidateBidders(t *testing.T) {
 			expectedError: nil,
 		},
 		{
+			description:   "Valid - One Core Bidder - Case Insensitive",
+			bidders:       []string{"A"},
+			knownBidders:  map[string]openrtb_ext.BidderName{"a": openrtb_ext.BidderName("a")},
+			knownAliases:  map[string]string{"c": "c"},
+			expectedError: nil,
+		},
+		{
 			description:   "Valid - Many Core Bidders",
 			bidders:       []string{"a", "b"},
 			knownBidders:  map[string]openrtb_ext.BidderName{"a": openrtb_ext.BidderName("a"), "b": openrtb_ext.BidderName("b")},
@@ -3952,6 +3986,13 @@ func TestValidateBidders(t *testing.T) {
 			knownBidders:  map[string]openrtb_ext.BidderName{"a": openrtb_ext.BidderName("a")},
 			knownAliases:  map[string]string{"c": "c"},
 			expectedError: nil,
+		},
+		{
+			description:   "Valid - One Alias Bidder - Case Sensitive",
+			bidders:       []string{"C"},
+			knownBidders:  map[string]openrtb_ext.BidderName{"a": openrtb_ext.BidderName("a")},
+			knownAliases:  map[string]string{"c": "c"},
+			expectedError: errors.New(`unrecognized bidder "C"`),
 		},
 		{
 			description:   "Valid - Many Alias Bidders",
@@ -3973,13 +4014,6 @@ func TestValidateBidders(t *testing.T) {
 			knownBidders:  map[string]openrtb_ext.BidderName{"a": openrtb_ext.BidderName("a")},
 			knownAliases:  map[string]string{"c": "c"},
 			expectedError: errors.New(`unrecognized bidder "z"`),
-		},
-		{
-			description:   "Invalid - Unknown Bidder Case Sensitive",
-			bidders:       []string{"A"},
-			knownBidders:  map[string]openrtb_ext.BidderName{"a": openrtb_ext.BidderName("a")},
-			knownAliases:  map[string]string{"c": "c"},
-			expectedError: errors.New(`unrecognized bidder "A"`),
 		},
 		{
 			description:   "Invalid - Unknown Bidder With Known Bidders",
@@ -4011,8 +4045,9 @@ func TestValidateBidders(t *testing.T) {
 		},
 	}
 
+	endpoint := &endpointDeps{normalizeBidderName: fakeNormalizeBidderName}
 	for _, test := range testCases {
-		result := validateBidders(test.bidders, test.knownBidders, test.knownAliases)
+		result := endpoint.validateBidders(test.bidders, test.knownBidders, test.knownAliases)
 		assert.Equal(t, test.expectedError, result, test.description)
 	}
 }
@@ -4102,6 +4137,7 @@ func TestAuctionWarnings(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
@@ -4148,6 +4184,7 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
@@ -4228,6 +4265,7 @@ func TestParseGzipedRequest(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
@@ -4828,6 +4866,7 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 				empty_fetcher.EmptyFetcher{},
 				hooks.EmptyPlanBuilder{},
 				nil,
+				openrtb_ext.NormalizeBidderName,
 			}
 
 			hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
@@ -4931,6 +4970,7 @@ func TestParseRequestStoredResponses(t *testing.T) {
 				&mockStoredResponseFetcher{mockStoredResponses},
 				hooks.EmptyPlanBuilder{},
 				nil,
+				openrtb_ext.NormalizeBidderName,
 			}
 
 			hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
@@ -5029,6 +5069,7 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 				&mockStoredResponseFetcher{mockStoredBidResponses},
 				hooks.EmptyPlanBuilder{},
 				nil,
+				openrtb_ext.NormalizeBidderName,
 			}
 
 			hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
@@ -5065,6 +5106,7 @@ func TestValidateStoredResp(t *testing.T) {
 		&mockStoredResponseFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	testCases := []struct {
@@ -5878,6 +5920,7 @@ func TestParseRequestMultiBid(t *testing.T) {
 				empty_fetcher.EmptyFetcher{},
 				hooks.EmptyPlanBuilder{},
 				nil,
+				openrtb_ext.NormalizeBidderName,
 			}
 
 			hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
@@ -6042,4 +6085,8 @@ func TestValidateAliases(t *testing.T) {
 			}
 		})
 	}
+}
+
+func fakeNormalizeBidderName(name string) (openrtb_ext.BidderName, bool) {
+	return openrtb_ext.BidderName(strings.ToLower(name)), true
 }

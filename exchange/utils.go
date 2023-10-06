@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"strings"
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/go-gdpr/vendorconsent"
@@ -710,7 +711,7 @@ func removeUnpermissionedEids(request *openrtb2.BidRequest, bidder string, reque
 		allowed := false
 		if rule, hasRule := eidRules[eid.Source]; hasRule {
 			for _, ruleBidder := range rule {
-				if ruleBidder == "*" || ruleBidder == bidder {
+				if ruleBidder == "*" || strings.EqualFold(ruleBidder, bidder) {
 					allowed = true
 					break
 				}

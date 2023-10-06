@@ -1227,6 +1227,7 @@ func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *m
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 	return deps, metrics, mockModule
 }
@@ -1274,6 +1275,7 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 }
 
@@ -1298,6 +1300,7 @@ func mockDepsAppendBidderNames(t *testing.T, ex *mockExchangeAppendBidderNames) 
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	return deps
@@ -1324,6 +1327,7 @@ func mockDepsNoBids(t *testing.T, ex *mockExchangeVideoNoBids) *endpointDeps {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	return edep
