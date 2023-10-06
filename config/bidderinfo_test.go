@@ -9,6 +9,7 @@ import (
 
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const testInfoFilesPathValid = "./test/bidder-info-valid"
@@ -31,6 +32,9 @@ capabilities:
       - banner
       - video
       - native
+  dooh:
+    mediaTypes:
+      - banner
 modifyingVastXmlAllowed: true
 debug:
   allow: true
@@ -47,7 +51,6 @@ disabled: false
 extra_info: extra-info
 app_secret: app-secret
 platform_id: 123
-usersync_url: user-url
 userSync:
   key: foo
   default: iframe
@@ -91,6 +94,9 @@ func TestLoadBidderInfoFromDisk(t *testing.T) {
 				},
 				Site: &PlatformInfo{
 					MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative},
+				},
+				DOOH: &PlatformInfo{
+					MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo},
 				},
 			},
 			Syncer: &Syncer{
@@ -176,6 +182,9 @@ func TestProcessBidderInfo(t *testing.T) {
 						Site: &PlatformInfo{
 							MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative},
 						},
+						DOOH: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner},
+						},
 					},
 					Debug: &DebugInfo{
 						Allow: true,
@@ -208,7 +217,6 @@ func TestProcessBidderInfo(t *testing.T) {
 							UserMacro:   "UID",
 						},
 					},
-					UserSyncURL: "user-url",
 					XAPI: AdapterXAPI{
 						Username: "uname",
 						Password: "pwd",
@@ -225,6 +233,9 @@ func TestProcessBidderInfo(t *testing.T) {
 						Site: &PlatformInfo{
 							MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative},
 						},
+						DOOH: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner},
+						},
 					},
 					Debug: &DebugInfo{
 						Allow: true,
@@ -250,14 +261,7 @@ func TestProcessBidderInfo(t *testing.T) {
 					PlatformID: "123",
 					Syncer: &Syncer{
 						Key: "foo",
-						IFrame: &SyncerEndpoint{
-							URL:         "https://foo.com/sync?mode=iframe&r={{.RedirectURL}}",
-							RedirectURL: "https://redirect/setuid/iframe",
-							ExternalURL: "https://iframe.host",
-							UserMacro:   "UID",
-						},
 					},
-					UserSyncURL: "user-url",
 					XAPI: AdapterXAPI{
 						Username: "uname",
 						Password: "pwd",
@@ -267,6 +271,7 @@ func TestProcessBidderInfo(t *testing.T) {
 			},
 		},
 	}
+
 	for _, test := range testCases {
 		reader := StubInfoReader{test.bidderInfos}
 		bidderInfos, err := processBidderInfos(reader, mockNormalizeBidderName)
@@ -275,13 +280,11 @@ func TestProcessBidderInfo(t *testing.T) {
 		} else {
 			assert.Equal(t, test.expectedBidderInfos, bidderInfos, "incorrect bidder infos for test case: %s", test.description)
 		}
-
 	}
-
 }
 
 func TestProcessAliasBidderInfo(t *testing.T) {
-	parentBidderInfo := BidderInfo{
+	parentWithSyncerKey := BidderInfo{
 		AppSecret: "app-secret",
 		Capabilities: &CapabilitiesInfo{
 			App: &PlatformInfo{
@@ -322,7 +325,6 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 				UserMacro:   "UID",
 			},
 		},
-		UserSyncURL: "user-url",
 		XAPI: AdapterXAPI{
 			Username: "uname",
 			Password: "pwd",
@@ -370,15 +372,35 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 				UserMacro:   "alias-UID",
 			},
 		},
-		UserSyncURL: "alias-user-url",
 		XAPI: AdapterXAPI{
 			Username: "alias-uname",
 			Password: "alias-pwd",
 			Tracker:  "alias-tracker",
 		},
 	}
-	bidderB := parentBidderInfo
+	bidderB := parentWithSyncerKey
 	bidderB.AliasOf = "bidderA"
+	bidderB.Syncer = &Syncer{
+		Key: bidderB.Syncer.Key,
+	}
+
+	parentWithoutSyncerKey := BidderInfo{
+		Syncer: &Syncer{
+			IFrame: &SyncerEndpoint{
+				URL:         "https://foo.com/sync?mode=iframe&r={{.RedirectURL}}",
+				RedirectURL: "https://redirect/setuid/iframe",
+				ExternalURL: "https://iframe.host",
+				UserMacro:   "UID",
+			},
+		},
+	}
+
+	bidderC := parentWithoutSyncerKey
+	bidderC.AliasOf = "bidderA"
+	bidderC.Syncer = &Syncer{
+		Key: "bidderA",
+	}
+
 	testCases := []struct {
 		description         string
 		aliasInfos          map[string]aliasNillableFields
@@ -387,7 +409,7 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 		expectedErr         error
 	}{
 		{
-			description: "inherit all parent info in alias bidder",
+			description: "inherit all parent info in alias bidder, use parent syncer key as syncer alias key",
 			aliasInfos: map[string]aliasNillableFields{
 				"bidderB": {
 					Disabled:                nil,
@@ -397,14 +419,34 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 				},
 			},
 			bidderInfos: BidderInfos{
-				"bidderA": parentBidderInfo,
+				"bidderA": parentWithSyncerKey,
 				"bidderB": BidderInfo{
 					AliasOf: "bidderA",
 					// all other fields should be inherited from parent bidder
 				},
 			},
 			expectedErr:         nil,
-			expectedBidderInfos: BidderInfos{"bidderA": parentBidderInfo, "bidderB": bidderB},
+			expectedBidderInfos: BidderInfos{"bidderA": parentWithSyncerKey, "bidderB": bidderB},
+		},
+		{
+			description: "inherit all parent info in alias bidder, use parent name as syncer alias key",
+			aliasInfos: map[string]aliasNillableFields{
+				"bidderC": {
+					Disabled:                nil,
+					ModifyingVastXmlAllowed: nil,
+					Experiment:              nil,
+					XAPI:                    nil,
+				},
+			},
+			bidderInfos: BidderInfos{
+				"bidderA": parentWithoutSyncerKey,
+				"bidderC": BidderInfo{
+					AliasOf: "bidderA",
+					// all other fields should be inherited from parent bidder
+				},
+			},
+			expectedErr:         nil,
+			expectedBidderInfos: BidderInfos{"bidderA": parentWithoutSyncerKey, "bidderC": bidderC},
 		},
 		{
 			description: "all bidder info specified for alias, do not inherit from parent bidder",
@@ -417,11 +459,11 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 				},
 			},
 			bidderInfos: BidderInfos{
-				"bidderA": parentBidderInfo,
+				"bidderA": parentWithSyncerKey,
 				"bidderB": aliasBidderInfo,
 			},
 			expectedErr:         nil,
-			expectedBidderInfos: BidderInfos{"bidderA": parentBidderInfo, "bidderB": aliasBidderInfo},
+			expectedBidderInfos: BidderInfos{"bidderA": parentWithSyncerKey, "bidderB": aliasBidderInfo},
 		},
 		{
 			description: "invalid alias",
@@ -449,7 +491,7 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 		if test.expectedErr != nil {
 			assert.Equal(t, test.expectedErr, err)
 		} else {
-			assert.Equal(t, test.expectedBidderInfos, bidderInfos)
+			assert.Equal(t, test.expectedBidderInfos, bidderInfos, test.description)
 		}
 	}
 }
@@ -533,7 +575,7 @@ func TestBidderInfoValidationPositive(t *testing.T) {
 			Endpoint:   "http://bidderB.com/openrtb2",
 			PlatformID: "B",
 			Maintainer: &MaintainerInfo{
-				Email: "maintainer@bidderA.com",
+				Email: "maintainer@bidderB.com",
 			},
 			GVLVendorID: 2,
 			Capabilities: &CapabilitiesInfo{
@@ -568,6 +610,23 @@ func TestBidderInfoValidationPositive(t *testing.T) {
 				},
 			},
 			AliasOf: "bidderB",
+		},
+		"bidderD": BidderInfo{
+			Endpoint:   "http://bidderD.com/openrtb2",
+			PlatformID: "D",
+			Maintainer: &MaintainerInfo{
+				Email: "maintainer@bidderD.com",
+			},
+			GVLVendorID: 3,
+			Capabilities: &CapabilitiesInfo{
+				DOOH: &PlatformInfo{
+					MediaTypes: []openrtb_ext.BidType{
+						openrtb_ext.BidTypeVideo,
+						openrtb_ext.BidTypeNative,
+						openrtb_ext.BidTypeBanner,
+					},
+				},
+			},
 		},
 	}
 	errs := bidderInfos.validate(make([]error, 0))
@@ -769,7 +828,7 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 			},
 		},
 		{
-			"One bidder missing capabilities site and app",
+			"One bidder missing capabilities site and app and dooh",
 			BidderInfos{
 				"bidderA": BidderInfo{
 					Endpoint: "http://bidderA.com/openrtb2",
@@ -780,7 +839,7 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 				},
 			},
 			[]error{
-				errors.New("at least one of capabilities.site or capabilities.app must exist for adapter: bidderA"),
+				errors.New("at least one of capabilities.site, capabilities.app, or capabilities.dooh must exist for adapter: bidderA"),
 			},
 		},
 		{
@@ -802,6 +861,27 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 			},
 			[]error{
 				errors.New("capabilities.app failed validation: unrecognized media type at index 0: incorrect for adapter: bidderA"),
+			},
+		},
+		{
+			"One bidder incorrect capabilities for dooh",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						DOOH: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								"incorrect",
+							},
+						},
+					},
+				},
+			},
+			[]error{
+				errors.New("capabilities.dooh failed validation: unrecognized media type at index 0: incorrect for adapter: bidderA"),
 			},
 		},
 		{
@@ -1008,7 +1088,7 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 				},
 			},
 			[]error{
-				errors.New("at least one of capabilities.site or capabilities.app must exist for adapter: bidderA"),
+				errors.New("at least one of capabilities.site, capabilities.app, or capabilities.dooh must exist for adapter: bidderA"),
 				errors.New("capabilities for alias: bidderB should be a subset of capabilities for parent bidder: bidderA"),
 			},
 		},
@@ -1408,78 +1488,15 @@ func TestSyncerEndpointOverride(t *testing.T) {
 }
 
 func TestApplyBidderInfoConfigSyncerOverrides(t *testing.T) {
-	var testCases = []struct {
-		description            string
-		givenFsBidderInfos     BidderInfos
-		givenConfigBidderInfos BidderInfos
-		expectedError          string
-		expectedBidderInfos    BidderInfos
-	}{
-		{
-			description:            "Syncer Override",
-			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{Key: "original"}}},
-			givenConfigBidderInfos: BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}},
-			expectedBidderInfos:    BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}},
-		},
-		{
-			description:            "UserSyncURL Override IFrame",
-			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{IFrame: &SyncerEndpoint{URL: "original"}}}},
-			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
-			expectedBidderInfos:    BidderInfos{"a": {UserSyncURL: "override", Syncer: &Syncer{IFrame: &SyncerEndpoint{URL: "override"}}}},
-		},
-		{
-			description:            "UserSyncURL Supports IFrame",
-			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{Supports: []string{"iframe"}}}},
-			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
-			expectedBidderInfos:    BidderInfos{"a": {UserSyncURL: "override", Syncer: &Syncer{Supports: []string{"iframe"}, IFrame: &SyncerEndpoint{URL: "override"}}}},
-		},
-		{
-			description:            "UserSyncURL Override Redirect",
-			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{Supports: []string{"redirect"}}}},
-			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
-			expectedBidderInfos:    BidderInfos{"a": {UserSyncURL: "override", Syncer: &Syncer{Supports: []string{"redirect"}, Redirect: &SyncerEndpoint{URL: "override"}}}},
-		},
-		{
-			description:            "UserSyncURL Supports Redirect",
-			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{Redirect: &SyncerEndpoint{URL: "original"}}}},
-			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
-			expectedBidderInfos:    BidderInfos{"a": {UserSyncURL: "override", Syncer: &Syncer{Redirect: &SyncerEndpoint{URL: "override"}}}},
-		},
-		{
-			description:            "UserSyncURL Override Syncer Not Defined",
-			givenFsBidderInfos:     BidderInfos{"a": {}},
-			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
-			expectedError:          "adapters.a.usersync_url cannot be applied, bidder does not define a user sync",
-		},
-		{
-			description:            "UserSyncURL Override Syncer Endpoints Not Defined",
-			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{}}},
-			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
-			expectedError:          "adapters.a.usersync_url cannot be applied, bidder does not define user sync endpoints and does not define supported endpoints",
-		},
-		{
-			description:            "UserSyncURL Override Ambiguous",
-			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{IFrame: &SyncerEndpoint{URL: "originalIFrame"}, Redirect: &SyncerEndpoint{URL: "originalRedirect"}}}},
-			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
-			expectedError:          "adapters.a.usersync_url cannot be applied, bidder defines multiple user sync endpoints or supports multiple endpoints",
-		},
-		{
-			description:            "UserSyncURL Supports Ambiguous",
-			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{Supports: []string{"iframe", "redirect"}}}},
-			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
-			expectedError:          "adapters.a.usersync_url cannot be applied, bidder defines multiple user sync endpoints or supports multiple endpoints",
-		},
-	}
+	var (
+		givenFileSystem = BidderInfos{"a": {Syncer: &Syncer{Key: "original"}}}
+		givenConfig     = BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}}
+		expected        = BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}}
+	)
 
-	for _, test := range testCases {
-		bidderInfos, resultErr := applyBidderInfoConfigOverrides(test.givenConfigBidderInfos, test.givenFsBidderInfos, mockNormalizeBidderName)
-		if test.expectedError == "" {
-			assert.NoError(t, resultErr, test.description+":err")
-			assert.Equal(t, test.expectedBidderInfos, bidderInfos, test.description+":result")
-		} else {
-			assert.EqualError(t, resultErr, test.expectedError, test.description+":err")
-		}
-	}
+	result, resultErr := applyBidderInfoConfigOverrides(givenConfig, givenFileSystem, mockNormalizeBidderName)
+	assert.NoError(t, resultErr)
+	assert.Equal(t, expected, result)
 }
 
 func TestApplyBidderInfoConfigOverrides(t *testing.T) {
@@ -1669,10 +1686,12 @@ func TestApplyBidderInfoConfigOverridesInvalid(t *testing.T) {
 func TestReadFullYamlBidderConfig(t *testing.T) {
 	bidder := "bidderA"
 	bidderInf := BidderInfo{}
-	err := yaml.Unmarshal([]byte(fullBidderYAMLConfig), &bidderInf)
-	actualBidderInfo, err := applyBidderInfoConfigOverrides(BidderInfos{bidder: bidderInf}, BidderInfos{bidder: {Syncer: &Syncer{Supports: []string{"iframe"}}}}, mockNormalizeBidderName)
 
-	assert.NoError(t, err, "Error wasn't expected")
+	err := yaml.Unmarshal([]byte(fullBidderYAMLConfig), &bidderInf)
+	require.NoError(t, err)
+
+	actualBidderInfo, err := applyBidderInfoConfigOverrides(BidderInfos{bidder: bidderInf}, BidderInfos{bidder: {Syncer: &Syncer{Supports: []string{"iframe"}}}}, mockNormalizeBidderName)
+	require.NoError(t, err)
 
 	expectedBidderInfo := BidderInfos{
 		bidder: {
@@ -1686,6 +1705,9 @@ func TestReadFullYamlBidderConfig(t *testing.T) {
 				},
 				Site: &PlatformInfo{
 					MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative},
+				},
+				DOOH: &PlatformInfo{
+					MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner},
 				},
 			},
 			ModifyingVastXmlAllowed: true,
@@ -1706,11 +1728,10 @@ func TestReadFullYamlBidderConfig(t *testing.T) {
 			ExtraAdapterInfo: "extra-info",
 			AppSecret:        "app-secret",
 			PlatformID:       "123",
-			UserSyncURL:      "user-url",
 			Syncer: &Syncer{
 				Key: "foo",
 				IFrame: &SyncerEndpoint{
-					URL:         "user-url",
+					URL:         "https://foo.com/sync?mode=iframe&r={{.RedirectURL}}",
 					RedirectURL: "https://redirect/setuid/iframe",
 					ExternalURL: "https://iframe.host",
 					UserMacro:   "UID",

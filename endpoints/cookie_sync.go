@@ -39,6 +39,7 @@ var (
 	errCookieSyncAccountBlocked                    = errors.New("account is disabled, please reach out to the prebid server host")
 	errCookieSyncAccountConfigMalformed            = errors.New("account config is malformed and could not be read")
 	errCookieSyncAccountInvalid                    = errors.New("account must be valid if provided, please reach out to the prebid server host")
+	errSyncerIsNotPriority                         = errors.New("syncer key is not a priority, and there are only priority elements left")
 )
 
 var cookieSyncBidderFilterAllowAll = usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude)
@@ -49,7 +50,7 @@ func NewCookieSyncEndpoint(
 	gdprPermsBuilder gdpr.PermissionsBuilder,
 	tcf2CfgBuilder gdpr.TCF2ConfigBuilder,
 	metrics metrics.MetricsEngine,
-	pbsAnalytics analytics.PBSAnalyticsModule,
+	analyticsRunner analytics.Runner,
 	accountsFetcher stored_requests.AccountFetcher,
 	bidders map[string]openrtb_ext.BidderName) HTTPRouterHandler {
 
@@ -69,7 +70,7 @@ func NewCookieSyncEndpoint(
 			bidderHashSet:          bidderHashSet,
 		},
 		metrics:         metrics,
-		pbsAnalytics:    pbsAnalytics,
+		pbsAnalytics:    analyticsRunner,
 		accountsFetcher: accountsFetcher,
 	}
 }
@@ -79,7 +80,7 @@ type cookieSyncEndpoint struct {
 	config          *config.Configuration
 	privacyConfig   usersyncPrivacyConfig
 	metrics         metrics.MetricsEngine
-	pbsAnalytics    analytics.PBSAnalyticsModule
+	pbsAnalytics    analytics.Runner
 	accountsFetcher stored_requests.AccountFetcher
 }
 
@@ -169,7 +170,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, ma
 		Bidders: request.Bidders,
 		Cooperative: usersync.Cooperative{
 			Enabled:        (request.CooperativeSync != nil && *request.CooperativeSync) || (request.CooperativeSync == nil && c.config.UserSync.Cooperative.EnabledByDefault),
-			PriorityGroups: c.config.UserSync.Cooperative.PriorityGroups,
+			PriorityGroups: c.config.UserSync.PriorityGroups,
 		},
 		Debug: request.Debug,
 		Limit: request.Limit,
@@ -368,7 +369,7 @@ func combineErrors(errs []error) error {
 	for _, err := range errs {
 		// preserve knowledge of special account errors
 		switch errortypes.ReadCode(err) {
-		case errortypes.BlacklistedAcctErrorCode:
+		case errortypes.AccountDisabledErrorCode:
 			return errCookieSyncAccountBlocked
 		case errortypes.AcctRequiredErrorCode:
 			return errCookieSyncAccountInvalid

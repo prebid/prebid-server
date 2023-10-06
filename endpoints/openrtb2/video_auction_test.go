@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/analytics"
-	analyticsConf "github.com/prebid/prebid-server/analytics/config"
+	analyticsBuild "github.com/prebid/prebid-server/analytics/build"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
@@ -21,6 +21,7 @@ import (
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
+	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/util/ptrutil"
 
@@ -292,7 +293,7 @@ func TestVideoEndpointNoPods(t *testing.T) {
 	deps := mockDeps(t, ex)
 	deps.VideoAuctionEndpoint(recorder, req, nil)
 
-	errorMessage := string(recorder.Body.Bytes())
+	errorMessage := recorder.Body.String()
 
 	assert.Equal(t, recorder.Code, 500, "Should catch error in request")
 	assert.Equal(t, "Critical error while running the video endpoint:  request missing required field: PodConfig.DurationRangeSec request missing required field: PodConfig.Pods", errorMessage, "Incorrect request validation message")
@@ -739,7 +740,7 @@ func TestVideoBuildVideoResponsePodErrors(t *testing.T) {
 
 func TestVideoBuildVideoResponseNoBids(t *testing.T) {
 	openRtbBidResp := openrtb2.BidResponse{}
-	podErrors := make([]PodError, 0, 0)
+	podErrors := make([]PodError, 0)
 	openRtbBidResp.SeatBid = make([]openrtb2.SeatBid, 0)
 	bidRespVideo, err := buildVideoResponse(&openRtbBidResp, podErrors)
 	assert.NoError(t, err, "Error should be nil")
@@ -808,7 +809,7 @@ func TestHandleError(t *testing.T) {
 		{
 			description: "Blocked account - return 503 with blocked metrics status",
 			giveErrors: []error{
-				&errortypes.BlacklistedAcct{},
+				&errortypes.AccountDisabled{},
 			},
 			wantCode:          503,
 			wantMetricsStatus: metrics.RequestStatusBlacklisted,
@@ -1235,11 +1236,11 @@ type mockAnalyticsModule struct {
 	videoObjects   []*analytics.VideoObject
 }
 
-func (m *mockAnalyticsModule) LogAuctionObject(ao *analytics.AuctionObject) {
+func (m *mockAnalyticsModule) LogAuctionObject(ao *analytics.AuctionObject, _ privacy.ActivityControl) {
 	m.auctionObjects = append(m.auctionObjects, ao)
 }
 
-func (m *mockAnalyticsModule) LogVideoObject(vo *analytics.VideoObject) {
+func (m *mockAnalyticsModule) LogVideoObject(vo *analytics.VideoObject, _ privacy.ActivityControl) {
 	m.videoObjects = append(m.videoObjects, vo)
 }
 
@@ -1247,9 +1248,10 @@ func (m *mockAnalyticsModule) LogCookieSyncObject(cso *analytics.CookieSyncObjec
 
 func (m *mockAnalyticsModule) LogSetUIDObject(so *analytics.SetUIDObject) {}
 
-func (m *mockAnalyticsModule) LogAmpObject(ao *analytics.AmpObject) {}
+func (m *mockAnalyticsModule) LogAmpObject(ao *analytics.AmpObject, _ privacy.ActivityControl) {}
 
-func (m *mockAnalyticsModule) LogNotificationEventObject(ne *analytics.NotificationEvent) {}
+func (m *mockAnalyticsModule) LogNotificationEventObject(ne *analytics.NotificationEvent, _ privacy.ActivityControl) {
+}
 
 func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 	return &endpointDeps{
@@ -1261,41 +1263,7 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		&mockAccountFetcher{data: mockVideoAccountData},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-		map[string]string{},
-		false,
-		[]byte{},
-		openrtb_ext.BuildBidderMap(),
-		ex.cache,
-		regexp.MustCompile(`[<>]`),
-		hardcodedResponseIPValidator{response: true},
-		empty_fetcher.EmptyFetcher{},
-		hooks.EmptyPlanBuilder{},
-		nil,
-	}
-}
-
-func mockDepsInvalidPrivacy(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
-	return &endpointDeps{
-		fakeUUIDGenerator{},
-		ex,
-		mockBidderParamValidator{},
-		&mockVideoStoredReqFetcher{},
-		&mockVideoStoredReqFetcher{},
-		&mockAccountFetcher{data: mockVideoAccountData},
-		&config.Configuration{MaxRequestSize: maxSize,
-			AccountDefaults: config.Account{
-				Privacy: config.AccountPrivacy{
-					AllowActivities: &config.AllowActivities{
-						TransmitPreciseGeo: config.Activity{Rules: []config.ActivityRule{
-							{Condition: config.ActivityCondition{ComponentName: []string{"bidderA.BidderB.bidderC"}}},
-						}},
-					},
-				},
-			},
-		},
-		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -1319,7 +1287,7 @@ func mockDepsAppendBidderNames(t *testing.T, ex *mockExchangeAppendBidderNames) 
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -1345,7 +1313,7 @@ func mockDepsNoBids(t *testing.T, ex *mockExchangeVideoNoBids) *endpointDeps {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},

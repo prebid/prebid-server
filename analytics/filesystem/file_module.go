@@ -86,7 +86,7 @@ func (f *FileLogger) LogNotificationEventObject(ne *analytics.NotificationEvent)
 }
 
 // Method to initialize the analytic module
-func NewFileLogger(filename string) (analytics.PBSAnalyticsModule, error) {
+func NewFileLogger(filename string) (analytics.Module, error) {
 	options := glog.LogOptions{
 		File:  filename,
 		Flag:  glog.LstdFlags,
