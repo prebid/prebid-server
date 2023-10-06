@@ -44,7 +44,7 @@ func TestNewCookieSyncEndpoint(t *testing.T) {
 		metrics           = metrics.MetricsEngineMock{}
 		analytics         = MockAnalyticsRunner{}
 		fetcher           = FakeAccountsFetcher{}
-		bidderInfo        = map[string]config.BidderInfo{}
+		bidderInfo        = map[string]config.BidderInfo{"bidderA": {}, "bidderB": {}}
 		bidders           = map[string]openrtb_ext.BidderName{"bidderA": openrtb_ext.BidderName("bidderA"), "bidderB": openrtb_ext.BidderName("bidderB")}
 	)
 
@@ -69,10 +69,11 @@ func TestNewCookieSyncEndpoint(t *testing.T) {
 	expected := &cookieSyncEndpoint{
 		chooser: usersync.NewChooser(syncersByBidder, bidderInfo),
 		config: &config.Configuration{
-			UserSync:   configUserSync,
-			HostCookie: configHostCookie,
-			GDPR:       configGDPR,
-			CCPA:       config.CCPA{Enforce: configCCPAEnforce},
+			UserSync:    configUserSync,
+			HostCookie:  configHostCookie,
+			GDPR:        configGDPR,
+			CCPA:        config.CCPA{Enforce: configCCPAEnforce},
+			BidderInfos: bidderInfo,
 		},
 		privacyConfig: usersyncPrivacyConfig{
 			gdprConfig:             configGDPR,

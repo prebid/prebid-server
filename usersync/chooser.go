@@ -1,6 +1,8 @@
 package usersync
 
-import "github.com/prebid/prebid-server/config"
+import (
+	"github.com/prebid/prebid-server/config"
+)
 
 // Chooser determines which syncers are eligible for a given request.
 type Chooser interface {
@@ -170,7 +172,9 @@ func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}
 
 	if !privacy.GDPRAllowsBidderSync(bidder) {
 		return nil, BidderEvaluation{Status: StatusBlockedByGDPR, Bidder: bidder, SyncerKey: syncer.Key()}
-	} else if c.bidderInfo[bidder].Syncer.SkipWhen.GDPR {
+	}
+
+	if c.bidderInfo[bidder].Syncer != nil && c.bidderInfo[bidder].Syncer.SkipWhen != nil && c.bidderInfo[bidder].Syncer.SkipWhen.GDPR {
 		return nil, BidderEvaluation{Status: StatusBlockedByRegulationScope, Bidder: bidder, SyncerKey: syncer.Key()}
 	}
 
@@ -178,7 +182,7 @@ func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}
 		return nil, BidderEvaluation{Status: StatusBlockedByCCPA, Bidder: bidder, SyncerKey: syncer.Key()}
 	}
 
-	if c.bidderInfo[bidder].Syncer.SkipWhen.GPPSID == GPPSID {
+	if c.bidderInfo[bidder].Syncer != nil && c.bidderInfo[bidder].Syncer.SkipWhen != nil && c.bidderInfo[bidder].Syncer.SkipWhen.GPPSID == GPPSID {
 		return nil, BidderEvaluation{Status: StatusBlockedByRegulationScope, Bidder: bidder, SyncerKey: syncer.Key()}
 	}
 

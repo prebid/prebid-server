@@ -63,6 +63,7 @@ func TestChooserChoose(t *testing.T) {
 		givenRequest       Request
 		givenChosenBidders []string
 		givenCookie        Cookie
+		givenBidderInfo    map[string]config.BidderInfo
 		expected           Result
 	}{
 		{
@@ -205,6 +206,53 @@ func TestChooserChoose(t *testing.T) {
 				SyncersChosen:    []SyncerChoice{syncerChoiceA},
 			},
 		},
+		{
+			description: "Regulation Scope GDPR",
+			givenRequest: Request{
+				Privacy: fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
+				Limit:   0,
+			},
+			givenChosenBidders: []string{"a"},
+			givenCookie:        Cookie{},
+			givenBidderInfo: map[string]config.BidderInfo{
+				"a": {
+					Syncer: &config.Syncer{
+						SkipWhen: &config.SkipWhen{
+							GDPR: true,
+						},
+					},
+				},
+			},
+			expected: Result{
+				Status:           StatusOK,
+				BiddersEvaluated: []BidderEvaluation{{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByRegulationScope}},
+				SyncersChosen:    []SyncerChoice{},
+			},
+		},
+		{
+			description: "Regulation Scope GPP",
+			givenRequest: Request{
+				Privacy: fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
+				Limit:   0,
+				GPPSID:  "2",
+			},
+			givenChosenBidders: []string{"a"},
+			givenCookie:        Cookie{},
+			givenBidderInfo: map[string]config.BidderInfo{
+				"a": {
+					Syncer: &config.Syncer{
+						SkipWhen: &config.SkipWhen{
+							GPPSID: "2",
+						},
+					},
+				},
+			},
+			expected: Result{
+				Status:           StatusOK,
+				BiddersEvaluated: []BidderEvaluation{{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByRegulationScope}},
+				SyncersChosen:    []SyncerChoice{},
+			},
+		},
 	}
 
 	bidders := []string{"anyRequested"}
@@ -220,10 +268,15 @@ func TestChooserChoose(t *testing.T) {
 			On("choose", test.givenRequest.Bidders, biddersAvailable, cooperativeConfig).
 			Return(test.givenChosenBidders)
 
+		if test.givenBidderInfo == nil {
+			test.givenBidderInfo = map[string]config.BidderInfo{}
+		}
+
 		chooser := standardChooser{
 			bidderSyncerLookup: bidderSyncerLookup,
 			biddersAvailable:   biddersAvailable,
 			bidderChooser:      mockBidderChooser,
+			bidderInfo:         test.givenBidderInfo,
 		}
 
 		result := chooser.Choose(test.givenRequest, &test.givenCookie)
