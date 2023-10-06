@@ -51,12 +51,11 @@ go mod download
 ```
 
 4. Run The Server
-
 ```bash
 go run .
 ```
 
-By default, Prebid Server will attach to port 8080. To confirm the server is running, visit `http://localhost:8000/` in your web browser.
+By default, Prebid Server will attach to port 8000. To confirm the server is running, visit `http://localhost:8000/` in your web browser.
 
 ### IDE Recommendation
 
@@ -71,7 +70,7 @@ Prebid Server is not intended to be imported by other projects. Go Modules is us
 > All contributions must follow the [Prebid Code of Conduct](https://prebid.org/code-of-conduct/) and the [Prebid Module Rules](https://docs.prebid.org/dev-docs/module-rules.html).
 
 ### Bid Adapter
-Bid Adapters are responsible for relaying an OpenRTB request to an SSP and mapping the bid response. We invite you to contribute an adapter for your SSP. Consult our guide on [building a bid adapter](https://docs.prebid.org/prebid-server/developers/add-new-bidder-go.html) for more information.
+Bid Adapters are responsible for translating an OpenRTB request for an SSP and mapping the bid response. We invite you to contribute an adapter for your SSP. Consult our guide on [building a bid adapter](https://docs.prebid.org/prebid-server/developers/add-new-bidder-go.html) for more information.
 
 ### Analytics Module
 Analytics Modules enable analytics and reporting tools to collect data from Prebid Server, allowing publishers to gather valuable insights from their header bidding traffic. The information made available to Analytics Modules is subject to Prebid Server privacy controls. We welcome you to contribute a module for your platform. Refer to our guide on [building an analytics module](https://docs.prebid.org/prebid-server/developers/pbs-build-an-analytics-adapter.html) for more information.
