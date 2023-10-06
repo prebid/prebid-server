@@ -24,18 +24,11 @@ This configuration is required since there is no consensus on a good default. Pl
 
 ## Hosting Prebid Server
 > [!NOTE]
-> Please consider [registering your Prebid Server](https://docs.prebid.org/prebid-server/hosting/pbs-hosting.html#optional-registration) to get on the mailing list for updates, etc.
+> Please consider [registering your Prebid Server host](https://docs.prebid.org/prebid-server/hosting/pbs-hosting.html#optional-registration) to join the mailing list for updates and feedback.
 
-### Official Docker Image
-The quickest way to host Prebid Server is to deploy our [official Docker Image](https://hub.docker.com/r/prebid/prebid-server). Configuration values may be set in the launched pod by [defining environment variables](https://kubernetes.io/docs/tasks/inject-data-application/define-interdependent-environment-variables/) or [using a config map](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/#configure-all-key-value-pairs-in-a-configmap-as-container-environment-variables). Alternatively, you can use [ConfigMaps](https://kubernetes.io/docs/tasks/inject-data-application/define-interdependent-environment-variables/) to map a pbs.yaml in a volumme. we recommend to put pbs.yaml in `/etc/config`.
+The quickest way to host Prebid Server is to deploy our [official Docker image](https://hub.docker.com/r/prebid/prebid-server). If you're hosting the container within Kubernetes, you can configure Prebid Server with environment variables [using a pod file](https://kubernetes.io/docs/tasks/inject-data-application/define-interdependent-environment-variables/) or [using a config map](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/#configure-all-key-value-pairs-in-a-configmap-as-container-environment-variables). Alternatively, you can deploy with a configuration [file using a config map](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/#populate-a-volume-with-data-stored-in-a-configmap) which Prebid Server will load from the path `/etc/config`.
 
-### Build Your Own Docker Image
-
-build your own container `docker build -t prebid-server .`, or compile and deploy the binaries directly. 
-
-### Direct File Deployment
-
-If you chooose the later, you will need to copy the entire `static` folder as that's read on startup.
+For deploying from a fork, you can either create a custom Docker container using the command `docker build -t prebid-server .` or compile a standalone binary using `go build .`. Ensure that you include the `/static` directory, as Prebid Server reads from it during startup.
 
 ## Developing Locally
 
@@ -44,7 +37,7 @@ Prebid Server requires [Go](https://golang.org/doc/install) version 1.19 or newe
 Follow these steps to begin developing:
 
 1. Clone the repository.
-2. ``` bash
+``` bash
 git clone git@github.com:prebid/prebid-server.git
 cd prebid-server
 ```
@@ -66,7 +59,7 @@ go build .
 ./prebid-server
 ```
 
-Load the landing page in your browser at `http://localhost:8000/`.
+5. Load the landing page in your browser at `http://localhost:8000/`.
 
 ### IDE Recommendation
 
@@ -89,9 +82,10 @@ Prebid Server is not intended to be imported by other projects. Go Modules is us
 ### Auction Module
   extends the behavior of prebid server in many ways, such as bid filters, a/b testing, etc. follow our instructions here.
 
-### Implement A Feature
+### Feature
+also proposals
  all are welcome to contribute to this project. feel free to pick up an issue which is in the "ready for dev" state, before working on it, please post a comment to avoid double work. if you have a question about the specs, 
 
-### Fix A Bug or Suggest A Feature
+### Bug Fix
  please open an issue to detail the bug and or your feature proposal. a member of the core development team will review and discuss next steps after either verifying the bug or discussing the feature. if you want to open an exploratory PR, please mark it as a draft.
 
