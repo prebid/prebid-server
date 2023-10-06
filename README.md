@@ -85,3 +85,5 @@ also proposals
 ### Bug Fix
  please open an issue to detail the bug and or your feature proposal. a member of the core development team will review and discuss next steps after either verifying the bug or discussing the feature. if you want to open an exploratory PR, please mark it as a draft.
 
+## License
+[Apache 2.0](/LICENSE)
