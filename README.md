@@ -15,31 +15,51 @@
 - <a href="https://docs.prebid.org/overview/intro.html#header-bidding-with-prebid">Header Bidding with Prebid</a>
 - <a href="https://docs.prebid.org/prebid-server/endpoints/pbs-endpoint-overview.html">API Endpoints</a>
 
+## Required Configuration
+
+If you're hosting Prebid Server or developing locally, you must set a default GDPR value. This configuration determines whether GDPR is enforced when no regulatory signal is available in the request, where a value of `0` disables enforcement by default and a value of `1` enables it.
+
+This configuration is required since there is no consensus on a good default. Please see the [configuration guide](docs/developers/configuration.md) for details on how to set the default GDPR value.
+
+
 ## Hosting Prebid Server
+> [!NOTE]
+> Please consider [registering your Prebid Server](https://docs.prebid.org/prebid-server/hosting/pbs-hosting.html#optional-registration) to get on the mailing list for updates, etc.
 
-use our official docker image or build your own. you must specify a gdpr.default-value to `1` if you want to require by default or `0` if you wish to ignore by default. Otherwise pbs will run out of the box with as many bidders enabled as possible. 
+### Official Docker Image
+The quickest way to host Prebid Server is to deploy our [official Docker Image](https://hub.docker.com/r/prebid/prebid-server). Configuration values may be set in the launched pod by [defining environment variables](https://kubernetes.io/docs/tasks/inject-data-application/define-interdependent-environment-variables/) or [using a config map](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/#configure-all-key-value-pairs-in-a-configmap-as-container-environment-variables). Alternatively, you can use [ConfigMaps](https://kubernetes.io/docs/tasks/inject-data-application/define-interdependent-environment-variables/) to map a pbs.yaml in a volumme. we recommend to put pbs.yaml in `/etc/config`.
 
-please view our configuration guide for further setup guidance.
+### Build Your Own Docker Image
 
-Please consider [registering your Prebid Server](https://docs.prebid.org/prebid-server/hosting/pbs-hosting.html#optional-registration) to get on the mailing list for updates, etc.
+build your own container `docker build -t prebid-server .`, or compile and deploy the binaries directly. 
+
+### Direct File Deployment
+
+If you chooose the later, you will need to copy the entire `static` folder as that's read on startup.
 
 ## Developing Locally
 
-Prebid Server requires [Go](https://golang.org/doc/install) version 1.19 or newer. Helper scripts are written for Bash, but Prebid Server can run on any operating system supported by Go.
+Prebid Server requires [Go](https://golang.org/doc/install) version 1.19 or newer. Prebid Server can be developed on any operating system supported by Go, however our helper scripts are written for Bash.
 
-For developing logcally, clone this repository. Prebid Server uses Go modules, so it's recommended to clone the repository outside of the GOPATH. You can then download all dependencies using:
+Follow these steps to begin developing:
 
+1. Clone the repository.
+2. ``` bash
+git clone git@github.com:prebid/prebid-server.git
+cd prebid-server
+```
+
+3. Download dependencies.
 ``` bash
 go mod tidy
 ```
 
-Run the automated tests:
-
+3. Verify the automated tests pass:
 ```bash
 ./validate.sh
 ```
 
-Run the server locally:
+4. Run the server locally:
 
 ```bash
 go build .
@@ -48,21 +68,25 @@ go build .
 
 Load the landing page in your browser at `http://localhost:8000/`.
 
+### IDE Recommendation
+
+The quickest way to start developing Prebid Server in a reproducible environment isolated from your host OS is by using Visual Studio Code with [Remote Container Setup](devcontainer.md). This is a recommendation, not a requirement. This approach is useful especially if you are developing on Windows, since the Remote Container will run within WSL providing you with the capability to execute bash scripts.
+
 ## Importing Prebid Server
 
-Prebid Server is not intended to be imported by other projects. Go Modules is used to manage dependencies, which also enables the technical possibility of importing Prebid Server. This is not supported. We offer no guarantees regarding the stability of packages and do not adhere to semantic versioning guidelines.
+Prebid Server is not intended to be imported by other projects. Go Modules is used to manage dependencies, which also makes it possible to import Prebid Server packages. This is not supported. We offer no guarantees regarding the stability of packages and do not adhere to semantic versioning guidelines.
 
 ## Contributing
 > [!IMPORTANT]
-> All contributions must follow the [Prebid Code of Conduct](http://prebid.org/wrapper_code_of_conduct.html)
+> All contributions must follow the [Prebid Code of Conduct](https://prebid.org/code-of-conduct/) and the [Prebid Module Rules](https://docs.prebid.org/dev-docs/module-rules.html).
 
-### Contribute An Adapter
+### Bid Adapter
   allows prebid server to relay a bid request to your SSP and collect bids. you should only contribute an adapter for your own company. contributions from third parties are not permitted. follow the instructions here. click here to see a list of curently supported bidders.
 
-### Contribute An Analytics Module
+### Analytics Module
  allows prebid server to collect analytics. 
 
-### Contribute A Module
+### Auction Module
   extends the behavior of prebid server in many ways, such as bid filters, a/b testing, etc. follow our instructions here.
 
 ### Implement A Feature
@@ -70,8 +94,4 @@ Prebid Server is not intended to be imported by other projects. Go Modules is us
 
 ### Fix A Bug or Suggest A Feature
  please open an issue to detail the bug and or your feature proposal. a member of the core development team will review and discuss next steps after either verifying the bug or discussing the feature. if you want to open an exploratory PR, please mark it as a draft.
-
-## IDE Recommendation
-
-The quickest way to start developing Prebid Server in a reproducible environment isolated from your host OS is by using Visual Studio Code with [Remote Container Setup](devcontainer.md). This is a recommendation, not a requirement. This is useful especially if you are developing on Windows as the Remote Container will run within WSL giving you the ability to run the bash scripts.
 
