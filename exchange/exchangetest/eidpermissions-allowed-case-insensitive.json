@@ -26,7 +26,7 @@
                             {
                                 "source": "source1",
                                 "bidders": [
-                                    "otherBidder"
+                                    "APPNEXUS"
                                 ]
                             }
                         ]
@@ -62,7 +62,20 @@
                     "site": {
                         "page": "test.somepage.com"
                     },
-                    "user": {},
+                    "user": {
+                        "ext": {
+                            "eids": [
+                                {
+                                    "source": "source1",
+                                    "uids": [
+                                        {
+                                            "id": "id1"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    },
                     "imp": [
                         {
                             "id": "my-imp-id",
