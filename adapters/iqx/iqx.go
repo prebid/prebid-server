@@ -141,10 +141,11 @@ func prepareBidResponse(seats []openrtb2.SeatBid) (*adapters.BidderResponse, []e
 				})
 				continue
 			}
+
 			bidType, err := openrtb_ext.ParseBidType(bidExt.Prebid.Type)
 			if err != nil {
 				errs = append(errs, &errortypes.BadServerResponse{
-					Message: fmt.Sprintf("Bid[%d].Ext.Prebid.Type expects one of the following values: 'banner', 'native', 'video', 'audio', got '%s'", bidId, bidExt.Prebid.Type),
+					Message: fmt.Sprintf("Bid[%d].Ext.Prebid.Type expects one of the following values: 'banner', 'native', 'video', got '%s'", bidId, bidExt.Prebid.Type),
 				})
 				continue
 			}

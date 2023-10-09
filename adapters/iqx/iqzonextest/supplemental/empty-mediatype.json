@@ -152,7 +152,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "Bid[1].Ext.Prebid.Type expects one of the following values: 'banner', 'native', 'video', 'audio', got ''",
+      "value": "Bid[1].Ext.Prebid.Type expects one of the following values: 'banner', 'native', 'video', got ''",
       "comparison": "literal"
     }
   ],
