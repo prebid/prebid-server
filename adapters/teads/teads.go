@@ -196,7 +196,7 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType,
 			return openrtb_ext.BidTypeBanner, nil
 		}
 	}
-	return openrtb_ext.BidTypeBanner, []error{&errortypes.BadInput{
+	return openrtb_ext.BidType(""), []error{&errortypes.BadInput{
 		Message: "Imp ids were not equals",
 	}}
 }
