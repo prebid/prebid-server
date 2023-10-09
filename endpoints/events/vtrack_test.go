@@ -29,15 +29,17 @@ const (
 
 // Mock pbs cache client
 type vtrackMockCacheClient struct {
-	Fail  bool
-	Error error
-	Uuids []string
+	Fail   bool
+	Error  error
+	Uuids  []string
+	Values []prebid_cache_client.Cacheable
 }
 
 func (m *vtrackMockCacheClient) PutJson(ctx context.Context, values []prebid_cache_client.Cacheable) ([]string, []error) {
 	if m.Fail {
 		return []string{}, []error{m.Error}
 	}
+	m.Values = values
 	return m.Uuids, []error{}
 }
 func (m *vtrackMockCacheClient) GetExtCacheData() (scheme string, host string, path string) {
@@ -468,12 +470,15 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastAllowed(t
 
 	recorder := httptest.NewRecorder()
 
+	var mockNormalizeBidderName normalizeBidderName = func(name string) (openrtb_ext.BidderName, bool) {
+		return openrtb_ext.BidderName(name), true
+	}
 	e := vtrackEndpoint{
 		Cfg:                 cfg,
 		BidderInfos:         bidderInfos,
 		Cache:               mockCacheClient,
 		Accounts:            mockAccountsFetcher,
-		normalizeBidderName: openrtb_ext.NormalizeBidderName,
+		normalizeBidderName: mockNormalizeBidderName,
 	}
 
 	// execute
@@ -488,6 +493,9 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastAllowed(t
 	assert.Equal(t, 200, recorder.Result().StatusCode, "Expected 200 when account is not found and request is valid")
 	assert.Equal(t, "{\"responses\":[{\"uuid\":\"uuid1\"},{\"uuid\":\"uuid2\"}]}", string(d), "Expected 200 when account is found and request is valid")
 	assert.Equal(t, "application/json", recorder.Header().Get("Content-Type"))
+	assert.Len(t, mockCacheClient.Values, 2)
+	assert.Contains(t, string(mockCacheClient.Values[0].Data), "bidder=bidder")
+	assert.Contains(t, string(mockCacheClient.Values[1].Data), "bidder=updatable_bidder")
 }
 
 func TestShouldSendToCacheExpectedPutsAndUpdatableUnknownBiddersWhenUnknownBidderIsAllowed(t *testing.T) {
