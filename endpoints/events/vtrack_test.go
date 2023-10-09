@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/stretchr/testify/assert"
@@ -64,10 +65,11 @@ func TestShouldRespondWithBadRequestWhenAccountParameterIsMissing(t *testing.T) 
 	recorder := httptest.NewRecorder()
 
 	e := vtrackEndpoint{
-		Cfg:         cfg,
-		BidderInfos: nil,
-		Cache:       mockCacheClient,
-		Accounts:    mockAccountsFetcher,
+		Cfg:                 cfg,
+		BidderInfos:         nil,
+		Cache:               mockCacheClient,
+		Accounts:            mockAccountsFetcher,
+		normalizeBidderName: openrtb_ext.NormalizeBidderName,
 	}
 
 	// execute
@@ -105,10 +107,11 @@ func TestShouldRespondWithBadRequestWhenRequestBodyIsEmpty(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	e := vtrackEndpoint{
-		Cfg:         cfg,
-		BidderInfos: nil,
-		Cache:       mockCacheClient,
-		Accounts:    mockAccountsFetcher,
+		Cfg:                 cfg,
+		BidderInfos:         nil,
+		Cache:               mockCacheClient,
+		Accounts:            mockAccountsFetcher,
+		normalizeBidderName: openrtb_ext.NormalizeBidderName,
 	}
 
 	// execute
@@ -146,10 +149,11 @@ func TestShouldRespondWithBadRequestWhenRequestBodyIsInvalid(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	e := vtrackEndpoint{
-		Cfg:         cfg,
-		BidderInfos: nil,
-		Cache:       mockCacheClient,
-		Accounts:    mockAccountsFetcher,
+		Cfg:                 cfg,
+		BidderInfos:         nil,
+		Cache:               mockCacheClient,
+		Accounts:            mockAccountsFetcher,
+		normalizeBidderName: openrtb_ext.NormalizeBidderName,
 	}
 
 	// execute
@@ -190,10 +194,11 @@ func TestShouldRespondWithBadRequestWhenBidIdIsMissing(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	e := vtrackEndpoint{
-		Cfg:         cfg,
-		BidderInfos: nil,
-		Cache:       mockCacheClient,
-		Accounts:    mockAccountsFetcher,
+		Cfg:                 cfg,
+		BidderInfos:         nil,
+		Cache:               mockCacheClient,
+		Accounts:            mockAccountsFetcher,
+		normalizeBidderName: openrtb_ext.NormalizeBidderName,
 	}
 
 	// execute
@@ -242,10 +247,11 @@ func TestShouldRespondWithBadRequestWhenBidderIsMissing(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	e := vtrackEndpoint{
-		Cfg:         cfg,
-		BidderInfos: nil,
-		Cache:       mockCacheClient,
-		Accounts:    mockAccountsFetcher,
+		Cfg:                 cfg,
+		BidderInfos:         nil,
+		Cache:               mockCacheClient,
+		Accounts:            mockAccountsFetcher,
+		normalizeBidderName: openrtb_ext.NormalizeBidderName,
 	}
 
 	// execute
@@ -291,10 +297,11 @@ func TestShouldRespondWithInternalServerErrorWhenPbsCacheClientFails(t *testing.
 	recorder := httptest.NewRecorder()
 
 	e := vtrackEndpoint{
-		Cfg:         cfg,
-		BidderInfos: nil,
-		Cache:       mockCacheClient,
-		Accounts:    mockAccountsFetcher,
+		Cfg:                 cfg,
+		BidderInfos:         nil,
+		Cache:               mockCacheClient,
+		Accounts:            mockAccountsFetcher,
+		normalizeBidderName: openrtb_ext.NormalizeBidderName,
 	}
 
 	// execute
@@ -340,10 +347,11 @@ func TestShouldTolerateAccountNotFound(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	e := vtrackEndpoint{
-		Cfg:         cfg,
-		BidderInfos: nil,
-		Cache:       mockCacheClient,
-		Accounts:    mockAccountsFetcher,
+		Cfg:                 cfg,
+		BidderInfos:         nil,
+		Cache:               mockCacheClient,
+		Accounts:            mockAccountsFetcher,
+		normalizeBidderName: openrtb_ext.NormalizeBidderName,
 	}
 
 	// execute
@@ -397,10 +405,11 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastNotAllowe
 	recorder := httptest.NewRecorder()
 
 	e := vtrackEndpoint{
-		Cfg:         cfg,
-		BidderInfos: bidderInfos,
-		Cache:       mockCacheClient,
-		Accounts:    mockAccountsFetcher,
+		Cfg:                 cfg,
+		BidderInfos:         bidderInfos,
+		Cache:               mockCacheClient,
+		Accounts:            mockAccountsFetcher,
+		normalizeBidderName: openrtb_ext.NormalizeBidderName,
 	}
 
 	// execute
@@ -460,10 +469,11 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastAllowed(t
 	recorder := httptest.NewRecorder()
 
 	e := vtrackEndpoint{
-		Cfg:         cfg,
-		BidderInfos: bidderInfos,
-		Cache:       mockCacheClient,
-		Accounts:    mockAccountsFetcher,
+		Cfg:                 cfg,
+		BidderInfos:         bidderInfos,
+		Cache:               mockCacheClient,
+		Accounts:            mockAccountsFetcher,
+		normalizeBidderName: openrtb_ext.NormalizeBidderName,
 	}
 
 	// execute
@@ -515,10 +525,11 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableUnknownBiddersWhenUnknownBidde
 	recorder := httptest.NewRecorder()
 
 	e := vtrackEndpoint{
-		Cfg:         cfg,
-		BidderInfos: bidderInfos,
-		Cache:       mockCacheClient,
-		Accounts:    mockAccountsFetcher,
+		Cfg:                 cfg,
+		BidderInfos:         bidderInfos,
+		Cache:               mockCacheClient,
+		Accounts:            mockAccountsFetcher,
+		normalizeBidderName: openrtb_ext.NormalizeBidderName,
 	}
 
 	// execute
@@ -571,10 +582,11 @@ func TestShouldReturnBadRequestWhenRequestExceedsMaxRequestSize(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	e := vtrackEndpoint{
-		Cfg:         cfg,
-		BidderInfos: bidderInfos,
-		Cache:       mockCacheClient,
-		Accounts:    mockAccountsFetcher,
+		Cfg:                 cfg,
+		BidderInfos:         bidderInfos,
+		Cache:               mockCacheClient,
+		Accounts:            mockAccountsFetcher,
+		normalizeBidderName: openrtb_ext.NormalizeBidderName,
 	}
 
 	// execute
@@ -615,10 +627,11 @@ func TestShouldRespondWithInternalErrorPbsCacheIsNotConfigured(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	e := vtrackEndpoint{
-		Cfg:         cfg,
-		BidderInfos: nil,
-		Cache:       nil,
-		Accounts:    mockAccountsFetcher,
+		Cfg:                 cfg,
+		BidderInfos:         nil,
+		Cache:               nil,
+		Accounts:            mockAccountsFetcher,
+		normalizeBidderName: openrtb_ext.NormalizeBidderName,
 	}
 
 	// execute

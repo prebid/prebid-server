@@ -16,6 +16,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/metrics"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/stored_requests"
 )
@@ -27,12 +28,15 @@ const (
 	ImpressionOpenTag    = "<Impression>"
 )
 
+type normalizeBidderName func(name string) (openrtb_ext.BidderName, bool)
+
 type vtrackEndpoint struct {
-	Cfg           *config.Configuration
-	Accounts      stored_requests.AccountFetcher
-	BidderInfos   config.BidderInfos
-	Cache         prebid_cache_client.Client
-	MetricsEngine metrics.MetricsEngine
+	Cfg                 *config.Configuration
+	Accounts            stored_requests.AccountFetcher
+	BidderInfos         config.BidderInfos
+	Cache               prebid_cache_client.Client
+	MetricsEngine       metrics.MetricsEngine
+	normalizeBidderName normalizeBidderName
 }
 
 type BidCacheRequest struct {
@@ -49,11 +53,12 @@ type CacheObject struct {
 
 func NewVTrackEndpoint(cfg *config.Configuration, accounts stored_requests.AccountFetcher, cache prebid_cache_client.Client, bidderInfos config.BidderInfos, me metrics.MetricsEngine) httprouter.Handle {
 	vte := &vtrackEndpoint{
-		Cfg:           cfg,
-		Accounts:      accounts,
-		BidderInfos:   bidderInfos,
-		Cache:         cache,
-		MetricsEngine: me,
+		Cfg:                 cfg,
+		Accounts:            accounts,
+		BidderInfos:         bidderInfos,
+		Cache:               cache,
+		MetricsEngine:       me,
+		normalizeBidderName: openrtb_ext.NormalizeBidderName,
 	}
 
 	return vte.Handle
