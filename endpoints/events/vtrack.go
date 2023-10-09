@@ -208,7 +208,7 @@ func ParseVTrackRequest(httpRequest *http.Request, maxRequestSize int64) (req *B
 
 // handleVTrackRequest handles a VTrack request
 func (v *vtrackEndpoint) handleVTrackRequest(ctx context.Context, req *BidCacheRequest, account *config.Account, integration string) (*BidCacheResponse, []error) {
-	biddersAllowingVastUpdate := getBiddersAllowingVastUpdate(req, &v.BidderInfos, v.Cfg.VTrack.AllowUnknownBidder)
+	biddersAllowingVastUpdate := getBiddersAllowingVastUpdate(req, &v.BidderInfos, v.Cfg.VTrack.AllowUnknownBidder, v.normalizeBidderName)
 	// cache data
 	r, errs := v.cachePutObjects(ctx, req, biddersAllowingVastUpdate, account.ID, integration)
 
@@ -256,11 +256,11 @@ func (v *vtrackEndpoint) cachePutObjects(ctx context.Context, req *BidCacheReque
 }
 
 // getBiddersAllowingVastUpdate returns a list of bidders that allow VAST XML modification
-func getBiddersAllowingVastUpdate(req *BidCacheRequest, bidderInfos *config.BidderInfos, allowUnknownBidder bool) map[string]struct{} {
+func getBiddersAllowingVastUpdate(req *BidCacheRequest, bidderInfos *config.BidderInfos, allowUnknownBidder bool, normalizeBidderName normalizeBidderName) map[string]struct{} {
 	bl := map[string]struct{}{}
 
 	for _, bcr := range req.Puts {
-		if _, ok := bl[bcr.Bidder]; isAllowVastForBidder(bcr.Bidder, bidderInfos, allowUnknownBidder) && !ok {
+		if _, ok := bl[bcr.Bidder]; isAllowVastForBidder(bcr.Bidder, bidderInfos, allowUnknownBidder, normalizeBidderName) && !ok {
 			bl[bcr.Bidder] = struct{}{}
 		}
 	}
@@ -269,10 +269,11 @@ func getBiddersAllowingVastUpdate(req *BidCacheRequest, bidderInfos *config.Bidd
 }
 
 // isAllowVastForBidder checks if a bidder is active and allowed to modify vast xml data
-func isAllowVastForBidder(bidder string, bidderInfos *config.BidderInfos, allowUnknownBidder bool) bool {
+func isAllowVastForBidder(bidder string, bidderInfos *config.BidderInfos, allowUnknownBidder bool, normalizeBidderName normalizeBidderName) bool {
 	//if bidder is active and isModifyingVastXmlAllowed is true
 	// check if bidder is configured
-	if b, ok := (*bidderInfos)[bidder]; bidderInfos != nil && ok {
+	normalizedBidder, _ := normalizeBidderName(bidder)
+	if b, ok := (*bidderInfos)[normalizedBidder.String()]; bidderInfos != nil && ok {
 		// check if bidder is enabled
 		return b.IsEnabled() && b.ModifyingVastXmlAllowed
 	}
