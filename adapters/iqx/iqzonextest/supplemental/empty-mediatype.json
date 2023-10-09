@@ -113,6 +113,7 @@
                   ],
                   "cid": "cid",
                   "crid": "crid",
+                  "mtype": 1,
                   "w": 300,
                   "h": 250,
                   "ext": {
@@ -152,7 +153,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "Bid[1].Ext.Prebid.Type expects one of the following values: 'banner', 'native', 'video', got ''",
+      "value": "failed to parse bid mType for impression \"2\"",
       "comparison": "literal"
     }
   ],
@@ -174,6 +175,7 @@
             "crid": "crid",
             "w": 300,
             "h": 250,
+            "mtype": 1,
             "ext": {
               "prebid": {
                 "type": "banner"

@@ -153,6 +153,7 @@
                   ],
                   "cid": "cid",
                   "crid": "crid",
+                  "mtype": 2,
                   "ext": {
                     "prebid": {
                       "type": "video"
@@ -188,6 +189,7 @@
             ],
             "cid": "cid",
             "crid": "crid",
+            "mtype": 2,
             "ext": {
               "prebid": {
                 "type": "video"

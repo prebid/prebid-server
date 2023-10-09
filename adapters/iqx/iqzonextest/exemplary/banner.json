@@ -125,6 +125,7 @@
                   "crid": "crid1",
                   "w": 300,
                   "h": 250,
+                  "mtype": 1,
                   "ext": {
                     "prebid": {
                       "type": "banner"
@@ -205,6 +206,7 @@
                   "crid": "crid",
                   "w": 300,
                   "h": 250,
+                  "mtype": 1,
                   "ext": {
                     "prebid": {
                       "type": "banner"
@@ -238,6 +240,7 @@
             "crid": "crid1",
             "w": 300,
             "h": 250,
+            "mtype": 1,
             "ext": {
               "prebid": {
                 "type": "banner"
@@ -265,6 +268,7 @@
             "crid": "crid",
             "w": 300,
             "h": 250,
+            "mtype": 1,
             "ext": {
               "prebid": {
                 "type": "banner"

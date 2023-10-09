@@ -113,6 +113,7 @@
                   ],
                   "cid": "cid",
                   "crid": "crid",
+                  "mtype": 4,
                   "ext": {
                     "prebid": {
                       "type": "native"
@@ -148,6 +149,7 @@
             ],
             "cid": "cid",
             "crid": "crid",
+            "mtype": 4,
             "ext": {
               "prebid": {
                 "type": "native"

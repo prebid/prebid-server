@@ -134,19 +134,9 @@ func prepareBidResponse(seats []openrtb2.SeatBid) (*adapters.BidderResponse, []e
 
 	for _, seatBid := range seats {
 		for bidId, bid := range seatBid.Bid {
-			var bidExt bidExt
-			if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
-				errs = append(errs, &errortypes.BadServerResponse{
-					Message: fmt.Sprintf("Failed to parse Bid[%d].Ext: %s", bidId, err.Error()),
-				})
-				continue
-			}
-
-			bidType, err := openrtb_ext.ParseBidType(bidExt.Prebid.Type)
+			bidType, err := getMediaTypeForBid(bid)
 			if err != nil {
-				errs = append(errs, &errortypes.BadServerResponse{
-					Message: fmt.Sprintf("Bid[%d].Ext.Prebid.Type expects one of the following values: 'banner', 'native', 'video', got '%s'", bidId, bidExt.Prebid.Type),
-				})
+				errs = append(errs, err)
 				continue
 			}
 
@@ -158,4 +148,17 @@ func prepareBidResponse(seats []openrtb2.SeatBid) (*adapters.BidderResponse, []e
 	}
 
 	return bidResponse, errs
+}
+
+func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
+	default:
+		return "", fmt.Errorf("failed to parse bid mType for impression \"%s\"", bid.ImpID)
+	}
 }
