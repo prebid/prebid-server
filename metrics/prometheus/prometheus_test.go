@@ -1098,17 +1098,17 @@ func TestAdapterTimeMetric(t *testing.T) {
 
 func TestAdapterPanicMetric(t *testing.T) {
 	m := createMetricsForTesting()
-	adapterName := "anyName"
-
+	adapterName := openrtb_ext.BidderName("anyName")
+	lowerCasedAdapterName := "anyname"
 	m.RecordAdapterPanic(metrics.AdapterLabels{
-		Adapter: openrtb_ext.BidderName(adapterName),
+		Adapter: adapterName,
 	})
 
 	expectedCount := float64(1)
 	assertCounterVecValue(t, "", "adapterPanics", m.adapterPanics,
 		expectedCount,
 		prometheus.Labels{
-			adapterLabel: adapterName,
+			adapterLabel: lowerCasedAdapterName,
 		})
 }
 
