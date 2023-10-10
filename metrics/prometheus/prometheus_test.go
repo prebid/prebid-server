@@ -768,10 +768,11 @@ func TestRecordStoredDataError(t *testing.T) {
 }
 
 func TestAdapterBidReceivedMetric(t *testing.T) {
-	adapterName := "anyName"
+	adapterName := openrtb_ext.BidderName("anyName")
+	lowerCasedAdapterName := "anyname"
 	performTest := func(m *Metrics, hasAdm bool) {
 		labels := metrics.AdapterLabels{
-			Adapter: openrtb_ext.BidderName(adapterName),
+			Adapter: adapterName,
 		}
 		bidType := openrtb_ext.BidTypeBanner
 		m.RecordAdapterBidReceived(labels, bidType, hasAdm)
@@ -809,13 +810,13 @@ func TestAdapterBidReceivedMetric(t *testing.T) {
 		assertCounterVecValue(t, test.description, "adapterBids[adm]", m.adapterBids,
 			test.expectedAdmCount,
 			prometheus.Labels{
-				adapterLabel:        adapterName,
+				adapterLabel:        lowerCasedAdapterName,
 				markupDeliveryLabel: markupDeliveryAdm,
 			})
 		assertCounterVecValue(t, test.description, "adapterBids[nurl]", m.adapterBids,
 			test.expectedNurlCount,
 			prometheus.Labels{
-				adapterLabel:        adapterName,
+				adapterLabel:        lowerCasedAdapterName,
 				markupDeliveryLabel: markupDeliveryNurl,
 			})
 	}
