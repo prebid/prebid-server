@@ -846,7 +846,7 @@ func (m *Metrics) RecordOverheadTime(overhead metrics.OverheadType, duration tim
 func (m *Metrics) RecordAdapterTime(labels metrics.AdapterLabels, length time.Duration) {
 	if len(labels.AdapterErrors) == 0 {
 		m.adapterRequestsTimer.With(prometheus.Labels{
-			adapterLabel: string(labels.Adapter),
+			adapterLabel: strings.ToLower(string(labels.Adapter)),
 		}).Observe(length.Seconds())
 	}
 }
