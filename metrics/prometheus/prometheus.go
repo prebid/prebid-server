@@ -958,7 +958,7 @@ func (m *Metrics) RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.Bidder
 	}
 
 	m.adapterGDPRBlockedRequests.With(prometheus.Labels{
-		adapterLabel: string(adapterName),
+		adapterLabel: strings.ToLower(string(adapterName)),
 	}).Inc()
 }
 
