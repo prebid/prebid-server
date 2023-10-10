@@ -980,6 +980,7 @@ func TestAdapterRequestMetrics(t *testing.T) {
 
 func TestAdapterRequestErrorMetrics(t *testing.T) {
 	adapterName := "anyName"
+	lowerCasedAdapterName := "anyname"
 	performTest := func(m *Metrics, adapterErrors map[metrics.AdapterError]struct{}) {
 		labels := metrics.AdapterLabels{
 			Adapter:       openrtb_ext.BidderName(adapterName),
@@ -1036,7 +1037,7 @@ func TestAdapterRequestErrorMetrics(t *testing.T) {
 		processMetrics(m.adapterErrors, func(m dto.Metric) {
 			isMetricForAdapter := false
 			for _, label := range m.GetLabel() {
-				if label.GetName() == adapterLabel && label.GetValue() == adapterName {
+				if label.GetName() == adapterLabel && label.GetValue() == lowerCasedAdapterName {
 					isMetricForAdapter = true
 				}
 			}
