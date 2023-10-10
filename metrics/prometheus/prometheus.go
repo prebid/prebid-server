@@ -781,22 +781,23 @@ func (m *Metrics) RecordAdapterRequest(labels metrics.AdapterLabels) {
 // Keeps track of created and reused connections to adapter bidders and the time from the
 // connection request, to the connection creation, or reuse from the pool across all engines
 func (m *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName, connWasReused bool, connWaitTime time.Duration) {
+	lowerCasedAdapterName := strings.ToLower(string(adapterName))
 	if m.metricsDisabled.AdapterConnectionMetrics {
 		return
 	}
 
 	if connWasReused {
 		m.adapterReusedConnections.With(prometheus.Labels{
-			adapterLabel: string(adapterName),
+			adapterLabel: lowerCasedAdapterName,
 		}).Inc()
 	} else {
 		m.adapterCreatedConnections.With(prometheus.Labels{
-			adapterLabel: string(adapterName),
+			adapterLabel: lowerCasedAdapterName,
 		}).Inc()
 	}
 
 	m.adapterConnectionWaitTime.With(prometheus.Labels{
-		adapterLabel: string(adapterName),
+		adapterLabel: lowerCasedAdapterName,
 	}).Observe(connWaitTime.Seconds())
 }
 
