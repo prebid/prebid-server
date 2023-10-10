@@ -18,6 +18,7 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/privacy"
 	gppPrivacy "github.com/prebid/prebid-server/privacy/gpp"
 	"github.com/prebid/prebid-server/stored_requests"
@@ -329,7 +330,13 @@ func getSyncer(query url.Values, syncersByBidder map[string]usersync.Syncer) (us
 		return nil, "", errors.New(`"bidder" query param is required`)
 	}
 
-	syncer, syncerExists := syncersByBidder[bidder]
+	// case insensitive comparison
+	bidderNormalized, bidderFound := openrtb_ext.NormalizeBidderName(bidder)
+	if !bidderFound {
+		return nil, "", errors.New("The bidder name provided is not supported by Prebid Server")
+	}
+
+	syncer, syncerExists := syncersByBidder[bidderNormalized.String()]
 	if !syncerExists {
 		return nil, "", errors.New("The bidder name provided is not supported by Prebid Server")
 	}
@@ -340,7 +347,7 @@ func getSyncer(query url.Values, syncersByBidder map[string]usersync.Syncer) (us
 func isSyncerPriority(bidderNameFromSyncerQuery string, priorityGroups [][]string) bool {
 	for _, group := range priorityGroups {
 		for _, bidder := range group {
-			if bidderNameFromSyncerQuery == bidder {
+			if strings.EqualFold(bidderNameFromSyncerQuery, bidder) {
 				return true
 			}
 		}
