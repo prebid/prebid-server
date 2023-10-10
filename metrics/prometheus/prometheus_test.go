@@ -838,6 +838,7 @@ func TestRecordAdapterPriceMetric(t *testing.T) {
 
 func TestAdapterRequestMetrics(t *testing.T) {
 	adapterName := "anyName"
+	lowerCasedAdapterName := "anyname"
 	performTest := func(m *Metrics, cookieFlag metrics.CookieFlag, adapterBids metrics.AdapterBid) {
 		labels := metrics.AdapterLabels{
 			Adapter:     openrtb_ext.BidderName(adapterName),
@@ -937,7 +938,7 @@ func TestAdapterRequestMetrics(t *testing.T) {
 		processMetrics(m.adapterRequests, func(m dto.Metric) {
 			isMetricForAdapter := false
 			for _, label := range m.GetLabel() {
-				if label.GetName() == adapterLabel && label.GetValue() == adapterName {
+				if label.GetName() == adapterLabel && label.GetValue() == lowerCasedAdapterName {
 					isMetricForAdapter = true
 				}
 			}
@@ -1509,7 +1510,6 @@ func TestRecordBidderServerResponseTime(t *testing.T) {
 }
 
 func TestRecordAdapterConnections(t *testing.T) {
-
 	type testIn struct {
 		adapterName   openrtb_ext.BidderName
 		connWasReused bool
