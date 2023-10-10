@@ -3,6 +3,7 @@ package prometheusmetrics
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/prebid/prebid-server/config"
@@ -762,15 +763,16 @@ func (m *Metrics) RecordStoredDataError(labels metrics.StoredDataLabels) {
 }
 
 func (m *Metrics) RecordAdapterRequest(labels metrics.AdapterLabels) {
+	lowerCasedAdapter := strings.ToLower(string(labels.Adapter))
 	m.adapterRequests.With(prometheus.Labels{
-		adapterLabel: string(labels.Adapter),
+		adapterLabel: lowerCasedAdapter,
 		cookieLabel:  string(labels.CookieFlag),
 		hasBidsLabel: strconv.FormatBool(labels.AdapterBids == metrics.AdapterBidPresent),
 	}).Inc()
 
 	for err := range labels.AdapterErrors {
 		m.adapterErrors.With(prometheus.Labels{
-			adapterLabel:      string(labels.Adapter),
+			adapterLabel:      lowerCasedAdapter,
 			adapterErrorLabel: string(err),
 		}).Inc()
 	}
