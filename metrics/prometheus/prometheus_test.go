@@ -825,6 +825,7 @@ func TestAdapterBidReceivedMetric(t *testing.T) {
 func TestRecordAdapterPriceMetric(t *testing.T) {
 	m := createMetricsForTesting()
 	adapterName := "anyName"
+	lowerCasedAdapterName := "anyname"
 	cpm := float64(42)
 
 	m.RecordAdapterPrice(metrics.AdapterLabels{
@@ -833,7 +834,7 @@ func TestRecordAdapterPriceMetric(t *testing.T) {
 
 	expectedCount := uint64(1)
 	expectedSum := cpm
-	result := getHistogramFromHistogramVec(m.adapterPrices, adapterLabel, adapterName)
+	result := getHistogramFromHistogramVec(m.adapterPrices, adapterLabel, lowerCasedAdapterName)
 	assertHistogram(t, "adapterPrices", result, expectedCount, expectedSum)
 }
 
