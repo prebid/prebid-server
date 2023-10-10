@@ -978,8 +978,9 @@ func (m *Metrics) RecordAdsCertSignTime(adsCertSignTime time.Duration) {
 }
 
 func (m *Metrics) RecordBidValidationCreativeSizeError(adapter openrtb_ext.BidderName, account string) {
+	lowerCasedAdapter := strings.ToLower(string(adapter))
 	m.adapterBidResponseValidationSizeError.With(prometheus.Labels{
-		adapterLabel: string(adapter), successLabel: successLabel,
+		adapterLabel: lowerCasedAdapter, successLabel: successLabel,
 	}).Inc()
 
 	if !m.metricsDisabled.AccountAdapterDetails && account != metrics.PublisherUnknown {
@@ -990,8 +991,9 @@ func (m *Metrics) RecordBidValidationCreativeSizeError(adapter openrtb_ext.Bidde
 }
 
 func (m *Metrics) RecordBidValidationCreativeSizeWarn(adapter openrtb_ext.BidderName, account string) {
+	lowerCasedAdapter := strings.ToLower(string(adapter))
 	m.adapterBidResponseValidationSizeWarn.With(prometheus.Labels{
-		adapterLabel: string(adapter), successLabel: successLabel,
+		adapterLabel: lowerCasedAdapter, successLabel: successLabel,
 	}).Inc()
 
 	if !m.metricsDisabled.AccountAdapterDetails && account != metrics.PublisherUnknown {
