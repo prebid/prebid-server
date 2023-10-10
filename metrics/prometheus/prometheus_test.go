@@ -264,17 +264,19 @@ func TestBidValidationSecureMarkupMetric(t *testing.T) {
 		},
 	}
 
+	adapterName := openrtb_ext.BidderName("AnyName")
+	lowerCasedAdapterName := "anyname"
 	for _, test := range testCases {
 		m := createMetricsForTesting()
 		m.metricsDisabled.AccountAdapterDetails = test.givenAccountAdapterMetricsDisabled
-		m.RecordBidValidationSecureMarkupError(adapterLabel, "acct-id")
-		m.RecordBidValidationSecureMarkupWarn(adapterLabel, "acct-id")
+		m.RecordBidValidationSecureMarkupError(adapterName, "acct-id")
+		m.RecordBidValidationSecureMarkupWarn(adapterName, "acct-id")
 
 		assertCounterVecValue(t, "", "Account Secure Markup Error", m.accountBidResponseSecureMarkupError, test.expectedAccountCount, prometheus.Labels{accountLabel: "acct-id", successLabel: successLabel})
-		assertCounterVecValue(t, "", "Adapter Secure Markup Error", m.adapterBidResponseSecureMarkupError, test.expectedAdapterCount, prometheus.Labels{adapterLabel: adapterLabel, successLabel: successLabel})
+		assertCounterVecValue(t, "", "Adapter Secure Markup Error", m.adapterBidResponseSecureMarkupError, test.expectedAdapterCount, prometheus.Labels{adapterLabel: lowerCasedAdapterName, successLabel: successLabel})
 
 		assertCounterVecValue(t, "", "Account Secure Markup Warn", m.accountBidResponseSecureMarkupWarn, test.expectedAccountCount, prometheus.Labels{accountLabel: "acct-id", successLabel: successLabel})
-		assertCounterVecValue(t, "", "Adapter Secure Markup Warn", m.adapterBidResponseSecureMarkupWarn, test.expectedAdapterCount, prometheus.Labels{adapterLabel: adapterLabel, successLabel: successLabel})
+		assertCounterVecValue(t, "", "Adapter Secure Markup Warn", m.adapterBidResponseSecureMarkupWarn, test.expectedAdapterCount, prometheus.Labels{adapterLabel: lowerCasedAdapterName, successLabel: successLabel})
 	}
 }
 
