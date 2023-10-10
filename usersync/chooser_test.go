@@ -312,6 +312,7 @@ func TestChooserEvaluate(t *testing.T) {
 		givenSyncersSeen            map[string]struct{}
 		givenPrivacy                Privacy
 		givenCookie                 Cookie
+		givenSyncTypeFilter         SyncTypeFilter
 		normalizedBidderNamesLookup func(name string) (openrtb_ext.BidderName, bool)
 		expectedSyncer              Syncer
 		expectedEvaluation          BidderEvaluation
@@ -322,6 +323,7 @@ func TestChooserEvaluate(t *testing.T) {
 			givenSyncersSeen:            map[string]struct{}{},
 			givenPrivacy:                fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
 			givenCookie:                 cookieNeedsSync,
+			givenSyncTypeFilter:         syncTypeFilter,
 			normalizedBidderNamesLookup: normalizedBidderNamesLookup,
 			expectedSyncer:              fakeSyncerA,
 			expectedEvaluation:          BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusOK},
@@ -332,6 +334,7 @@ func TestChooserEvaluate(t *testing.T) {
 			givenSyncersSeen:            map[string]struct{}{},
 			givenPrivacy:                fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
 			givenCookie:                 cookieNeedsSync,
+			givenSyncTypeFilter:         syncTypeFilter,
 			normalizedBidderNamesLookup: normalizedBidderNamesLookup,
 			expectedSyncer:              nil,
 			expectedEvaluation:          BidderEvaluation{Bidder: "unknown", Status: StatusUnknownBidder},
@@ -342,6 +345,7 @@ func TestChooserEvaluate(t *testing.T) {
 			givenSyncersSeen:            map[string]struct{}{"keyA": {}},
 			givenPrivacy:                fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
 			givenCookie:                 cookieNeedsSync,
+			givenSyncTypeFilter:         syncTypeFilter,
 			normalizedBidderNamesLookup: normalizedBidderNamesLookup,
 			expectedSyncer:              nil,
 			expectedEvaluation:          BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusDuplicate},
@@ -352,6 +356,7 @@ func TestChooserEvaluate(t *testing.T) {
 			givenSyncersSeen:            map[string]struct{}{},
 			givenPrivacy:                fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
 			givenCookie:                 cookieNeedsSync,
+			givenSyncTypeFilter:         syncTypeFilter,
 			normalizedBidderNamesLookup: normalizedBidderNamesLookup,
 			expectedSyncer:              nil,
 			expectedEvaluation:          BidderEvaluation{Bidder: "b", SyncerKey: "keyB", Status: StatusTypeNotSupported},
@@ -362,6 +367,7 @@ func TestChooserEvaluate(t *testing.T) {
 			givenSyncersSeen:            map[string]struct{}{},
 			givenPrivacy:                fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
 			givenCookie:                 cookieAlreadyHasSyncForA,
+			givenSyncTypeFilter:         syncTypeFilter,
 			normalizedBidderNamesLookup: normalizedBidderNamesLookup,
 			expectedSyncer:              nil,
 			expectedEvaluation:          BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusAlreadySynced},
@@ -372,6 +378,7 @@ func TestChooserEvaluate(t *testing.T) {
 			givenSyncersSeen:            map[string]struct{}{},
 			givenPrivacy:                fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
 			givenCookie:                 cookieAlreadyHasSyncForB,
+			givenSyncTypeFilter:         syncTypeFilter,
 			normalizedBidderNamesLookup: normalizedBidderNamesLookup,
 			expectedSyncer:              fakeSyncerA,
 			expectedEvaluation:          BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusOK},
@@ -382,6 +389,7 @@ func TestChooserEvaluate(t *testing.T) {
 			givenSyncersSeen:            map[string]struct{}{},
 			givenPrivacy:                fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: false, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
 			givenCookie:                 cookieNeedsSync,
+			givenSyncTypeFilter:         syncTypeFilter,
 			normalizedBidderNamesLookup: normalizedBidderNamesLookup,
 			expectedSyncer:              nil,
 			expectedEvaluation:          BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByGDPR},
@@ -392,6 +400,7 @@ func TestChooserEvaluate(t *testing.T) {
 			givenSyncersSeen:            map[string]struct{}{},
 			givenPrivacy:                fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: false, activityAllowUserSync: true},
 			givenCookie:                 cookieNeedsSync,
+			givenSyncTypeFilter:         syncTypeFilter,
 			normalizedBidderNamesLookup: normalizedBidderNamesLookup,
 			expectedSyncer:              nil,
 			expectedEvaluation:          BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByCCPA},
@@ -402,6 +411,7 @@ func TestChooserEvaluate(t *testing.T) {
 			givenSyncersSeen:            map[string]struct{}{},
 			givenPrivacy:                fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: false},
 			givenCookie:                 cookieNeedsSync,
+			givenSyncTypeFilter:         syncTypeFilter,
 			normalizedBidderNamesLookup: normalizedBidderNamesLookup,
 			expectedSyncer:              nil,
 			expectedEvaluation:          BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByPrivacy},
@@ -413,6 +423,20 @@ func TestChooserEvaluate(t *testing.T) {
 			givenPrivacy:                fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
 			givenCookie:                 cookieNeedsSync,
 			givenSyncTypeFilter:         syncTypeFilter,
+			normalizedBidderNamesLookup: openrtb_ext.NormalizeBidderName,
+			expectedSyncer:              fakeSyncerA,
+			expectedEvaluation:          BidderEvaluation{Bidder: "AppNexus", SyncerKey: "keyA", Status: StatusOK},
+		},
+		{
+			description:          "Case insensitivity check for sync type filter",
+			givenBidder:          "AppNexus",
+			normalisedBidderName: "appnexus",
+			givenSyncersSeen:     map[string]struct{}{},
+			givenPrivacy:         fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
+			givenCookie:          cookieNeedsSync,
+			givenSyncTypeFilter: SyncTypeFilter{
+				IFrame:   NewSpecificBidderFilter([]string{"AppNexuS"}, BidderFilterModeInclude),
+				Redirect: NewSpecificBidderFilter([]string{"appNexuS"}, BidderFilterModeExclude)},
 			normalizedBidderNamesLookup: openrtb_ext.NormalizeBidderName,
 			expectedSyncer:              fakeSyncerA,
 			expectedEvaluation:          BidderEvaluation{Bidder: "AppNexus", SyncerKey: "keyA", Status: StatusOK},

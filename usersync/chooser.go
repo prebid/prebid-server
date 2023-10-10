@@ -1,6 +1,9 @@
 package usersync
 
-import "github.com/prebid/prebid-server/openrtb_ext"
+import (
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"strings"
+)
 
 // Chooser determines which syncers are eligible for a given request.
 type Chooser interface {
@@ -156,7 +159,7 @@ func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}
 	}
 	syncersSeen[syncer.Key()] = struct{}{}
 
-	if !syncer.SupportsType(syncTypeFilter.ForBidder(bidder)) {
+	if !syncer.SupportsType(syncTypeFilter.ForBidder(strings.ToLower(bidder))) {
 		return nil, BidderEvaluation{Status: StatusTypeNotSupported, Bidder: bidder, SyncerKey: syncer.Key()}
 	}
 
