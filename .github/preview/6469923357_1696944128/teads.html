@@ -1,0 +1,305 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>teads: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/adapters/teads/teads.go (88.9%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package teads
+
+import (
+        "encoding/json"
+        "fmt"
+        "net/http"
+        "net/url"
+        "strconv"
+        "text/template"
+
+        "github.com/prebid/openrtb/v19/openrtb2"
+        "github.com/prebid/prebid-server/adapters"
+        "github.com/prebid/prebid-server/config"
+        "github.com/prebid/prebid-server/errortypes"
+        "github.com/prebid/prebid-server/macros"
+        "github.com/prebid/prebid-server/openrtb_ext"
+)
+
+// Builder builds a new instance of the Teads adapter for the given bidder with the given config.
+func Builder(_ openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        template, err := template.New("endpointTemplate").Parse(config.Endpoint)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
+        }</span>
+
+        <span class="cov8" title="1">bidder := &amp;adapter{
+                endpointTemplate: template,
+        }
+        return bidder, nil</span>
+}
+
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        if len(request.Imp) == 0 </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadInput{
+                        Message: "No impression in the bid request",
+                }}
+        }</span>
+
+        <span class="cov8" title="1">endpointURL, err := a.buildEndpointURL()
+        if endpointURL == "" </span><span class="cov0" title="0">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">if err := updateImpObject(request.Imp); err != nil </span><span class="cov8" title="1">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">reqJSON, err := json.Marshal(request)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, []error{&amp;errortypes.BadInput{
+                        Message: "Error parsing BidRequest object",
+                }}
+        }</span>
+
+        <span class="cov8" title="1">headers := http.Header{}
+        headers.Add("Content-Type", "application/json;charset=utf-8")
+        return []*adapters.RequestData{{
+                Method:  "POST",
+                Uri:     endpointURL,
+                Body:    reqJSON,
+                Headers: headers,
+        }}, []error{}</span>
+}
+
+func updateImpObject(imps []openrtb2.Imp) error <span class="cov8" title="1">{
+        for i := range imps </span><span class="cov8" title="1">{
+                imp := &amp;imps[i]
+
+                if imp.Banner != nil </span><span class="cov8" title="1">{
+                        if len(imp.Banner.Format) != 0 </span><span class="cov8" title="1">{
+                                bannerCopy := *imp.Banner
+                                bannerCopy.H = &amp;imp.Banner.Format[0].H
+                                bannerCopy.W = &amp;imp.Banner.Format[0].W
+                                imp.Banner = &amp;bannerCopy
+                        }</span>
+                }
+
+                <span class="cov8" title="1">var defaultImpExt defaultBidderImpExtension
+                if err := json.Unmarshal(imp.Ext, &amp;defaultImpExt); err != nil </span><span class="cov0" title="0">{
+                        return &amp;errortypes.BadInput{
+                                Message: "Error parsing Imp.Ext object",
+                        }
+                }</span>
+                <span class="cov8" title="1">if defaultImpExt.Bidder.PlacementId == 0 </span><span class="cov8" title="1">{
+                        return &amp;errortypes.BadInput{
+                                Message: "placementId should not be 0.",
+                        }
+                }</span>
+                <span class="cov8" title="1">imp.TagID = strconv.Itoa(defaultImpExt.Bidder.PlacementId)
+                teadsImpExt := &amp;teadsImpExtension{
+                        KV: teadsKV{
+                                PlacementId: defaultImpExt.Bidder.PlacementId,
+                        },
+                }
+                if extJson, err := json.Marshal(teadsImpExt); err != nil </span><span class="cov0" title="0">{
+                        return &amp;errortypes.BadInput{
+                                Message: "Error stringify Imp.Ext object",
+                        }
+                }</span> else<span class="cov8" title="1"> {
+                        imp.Ext = extJson
+                }</span>
+        }
+        <span class="cov8" title="1">return nil</span>
+}
+
+// Builds enpoint url based on adapter-specific pub settings from imp.ext
+func (a *adapter) buildEndpointURL() (string, error) <span class="cov8" title="1">{
+        endpointParams := macros.EndpointTemplateParams{}
+        host, err := macros.ResolveMacros(a.endpointTemplate, endpointParams)
+
+        if err != nil </span><span class="cov0" title="0">{
+                return "", &amp;errortypes.BadInput{
+                        Message: "Unable to parse endpoint url template: " + err.Error(),
+                }
+        }</span>
+
+        <span class="cov8" title="1">thisURI, err := url.Parse(host)
+        if err != nil </span><span class="cov0" title="0">{
+                return "", &amp;errortypes.BadInput{
+                        Message: "Malformed URL: " + err.Error(),
+                }
+        }</span>
+
+        <span class="cov8" title="1">return thisURI.String(), nil</span>
+}
+
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, _ *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+        if adapters.IsResponseStatusCodeNoContent(response) </span><span class="cov0" title="0">{
+                return nil, nil
+        }</span>
+
+        <span class="cov8" title="1">err := adapters.CheckResponseStatusCodeForErrors(response)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">var bidResp openrtb2.BidResponse
+        if err := json.Unmarshal(response.Body, &amp;bidResp); err != nil </span><span class="cov0" title="0">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">bidderResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid))
+
+        for _, sb := range bidResp.SeatBid </span><span class="cov8" title="1">{
+                for i := 0; i &lt; len(sb.Bid); i++ </span><span class="cov8" title="1">{
+                        bid := sb.Bid[i]
+
+                        bidExtTeads, err := getTeadsRendererFromBidExt(bid.Ext)
+                        if err != nil </span><span class="cov8" title="1">{
+                                return nil, err
+                        }</span>
+                        <span class="cov8" title="1">bidType, err := getMediaTypeForImp(bid.ImpID, internalRequest.Imp)
+                        if err != nil </span><span class="cov8" title="1">{
+                                return nil, err
+                        }</span>
+                        <span class="cov8" title="1">bidderResponse.Bids = append(bidderResponse.Bids, &amp;adapters.TypedBid{
+                                Bid: &amp;bid,
+                                BidMeta: &amp;openrtb_ext.ExtBidPrebidMeta{
+                                        RendererName:    bidExtTeads.Prebid.Meta.RendererName,
+                                        RendererVersion: bidExtTeads.Prebid.Meta.RendererVersion,
+                                },
+                                BidType: bidType,
+                        })</span>
+                }
+        }
+        <span class="cov8" title="1">if bidResp.Cur != "" </span><span class="cov8" title="1">{
+                bidderResponse.Currency = bidResp.Cur
+        }</span>
+        <span class="cov8" title="1">return bidderResponse, nil</span>
+}
+
+func getTeadsRendererFromBidExt(ext json.RawMessage) (*teadsBidExt, []error) <span class="cov8" title="1">{
+        var bidExtTeads teadsBidExt
+        if err := json.Unmarshal(ext, &amp;bidExtTeads); err != nil </span><span class="cov0" title="0">{
+                return nil, []error{err}
+        }</span>
+        <span class="cov8" title="1">if bidExtTeads.Prebid.Meta.RendererName == "" </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadInput{
+                        Message: "RendererName should not be empty if present",
+                }}
+        }</span>
+        <span class="cov8" title="1">if bidExtTeads.Prebid.Meta.RendererVersion == "" </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadInput{
+                        Message: "RendererVersion should not be empty if present",
+                }}
+        }</span>
+        <span class="cov8" title="1">return &amp;bidExtTeads, nil</span>
+}
+
+func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, []error) <span class="cov8" title="1">{
+        for _, imp := range imps </span><span class="cov8" title="1">{
+                if imp.ID == impID </span><span class="cov8" title="1">{
+                        if imp.Video != nil </span><span class="cov8" title="1">{
+                                return openrtb_ext.BidTypeVideo, nil
+                        }</span>
+                        <span class="cov8" title="1">return openrtb_ext.BidTypeBanner, nil</span>
+                }
+        }
+        <span class="cov8" title="1">return openrtb_ext.BidType(""), []error{&amp;errortypes.BadInput{
+                Message: "Imp ids were not equals",
+        }}</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
