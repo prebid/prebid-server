@@ -1525,7 +1525,7 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb_ext.ImpWrapper, aliases ma
 	}
 
 	if len(storedBidResp) > 0 {
-		if err := validateStoredBidRespAndImpExtBidders(prebid.Bidder, storedBidResp, imp.ID); err != nil {
+		if err := deps.validateStoredBidRespAndImpExtBidders(prebid.Bidder, storedBidResp, imp.ID); err != nil {
 			return []error{err}
 		}
 	}
@@ -2492,19 +2492,18 @@ func checkIfAppRequest(request []byte) (bool, error) {
 	return false, nil
 }
 
-func validateStoredBidRespAndImpExtBidders(bidderExts map[string]json.RawMessage, storedBidResp stored_responses.ImpBidderStoredResp, impId string) error {
+func (deps *endpointDeps) validateStoredBidRespAndImpExtBidders(bidderExts map[string]json.RawMessage, storedBidResp stored_responses.ImpBidderStoredResp, impId string) error {
 	if bidResponses, ok := storedBidResp[impId]; ok {
 		if len(bidResponses) != len(bidderExts) {
 			return generateStoredBidResponseValidationError(impId)
 		}
 
 		for bidderName := range bidResponses {
-			bidder := bidderName
-			normalizedCoreBidder, ok := openrtb_ext.NormalizeBidderName(bidder)
-			if ok {
-				bidder = normalizedCoreBidder.String()
+			_, bidderNameOk := deps.normalizeBidderName(bidderName)
+			if !bidderNameOk {
+				return fmt.Errorf(`unrecognized bidder "%v"`, bidderName)
 			}
-			if _, present := bidderExts[bidder]; !present {
+			if _, present := bidderExts[bidderName]; !present {
 				return generateStoredBidResponseValidationError(impId)
 			}
 		}

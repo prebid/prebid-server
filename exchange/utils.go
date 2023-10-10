@@ -930,7 +930,7 @@ func buildBidResponseRequest(req *openrtb2.BidRequest,
 			BidderCoreName:        resolvedBidder,
 			BidderName:            bidderName,
 			BidderStoredResponses: impResps,
-			ImpReplaceImpId:       bidderImpReplaceImpID[string(resolvedBidder)],
+			ImpReplaceImpId:       bidderImpReplaceImpID[string(bidderName)],
 			BidderLabels:          metrics.AdapterLabels{Adapter: resolvedBidder},
 		}
 	}

@@ -216,21 +216,6 @@ func TestProcessStoredAuctionAndBidResponsesErrors(t *testing.T) {
 			expectedErrorList: []error{errors.New("request.imp[0] has ext.prebid.storedbidresponse specified, but \"id\" or/and \"bidder\" fields are missing ")},
 		},
 		{
-			description: "Invalid stored bid response: storedbidresponse.bidder not found",
-			requestJson: []byte(`{"imp": [
-    			  {
-    			    "id": "imp-id1",
-    			    "ext": {
-    			      "prebid": {
-    			        "storedbidresponse": [
-							{ "bidder": "testBidder123", "id": "123abc"}]
-    			      }
-    			    }
-    			  }
-    			]}`),
-			expectedErrorList: []error{errors.New("request.imp[impId: imp-id1].ext.prebid.bidder contains unknown bidder: testBidder123. Did you forget an alias in request.ext.prebid.aliases?")},
-		},
-		{
 			description: "Invalid stored auction response format: empty stored Auction Response Id in second imp",
 			requestJson: []byte(`{"imp": [
     			  {
@@ -285,8 +270,10 @@ func TestProcessStoredAuctionAndBidResponsesErrors(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		_, _, _, errorList := ProcessStoredResponses(nil, test.requestJson, nil, bidderMap)
-		assert.Equalf(t, test.expectedErrorList, errorList, "Error doesn't match: %s\n", test.description)
+		t.Run(test.description, func(t *testing.T) {
+			_, _, _, errorList := ProcessStoredResponses(nil, test.requestJson, nil, bidderMap)
+			assert.Equalf(t, test.expectedErrorList, errorList, "Error doesn't match: %s\n", test.description)
+		})
 	}
 
 }

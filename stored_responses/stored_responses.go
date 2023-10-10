@@ -97,17 +97,6 @@ func extractStoredResponsesIds(impInfo []ImpExtPrebidData,
 				if len(bidderResp.ID) == 0 || len(bidderResp.Bidder) == 0 {
 					return nil, nil, nil, nil, fmt.Errorf("request.imp[%d] has ext.prebid.storedbidresponse specified, but \"id\" or/and \"bidder\" fields are missing ", index)
 				}
-				bidderName := bidderResp.Bidder
-				normalizedCoreBidder, ok := openrtb_ext.NormalizeBidderName(bidderResp.Bidder)
-				if ok {
-					bidderName = normalizedCoreBidder.String()
-				}
-				//check if bidder is valid/exists
-				if _, isValid := bidderMap[bidderName]; !isValid {
-					return nil, nil, nil, nil, fmt.Errorf("request.imp[impId: %s].ext.prebid.bidder contains unknown bidder: %s. Did you forget an alias in request.ext.prebid.aliases?", impId, bidderResp.Bidder)
-				}
-				// bidder is unique per one bid stored response
-				// if more than one bidder specified the last defined bidder id will take precedence
 				bidderStoredRespId[bidderResp.Bidder] = bidderResp.ID
 				impBiddersWithBidResponseIDs[impId] = bidderStoredRespId
 

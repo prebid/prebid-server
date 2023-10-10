@@ -1,5 +1,5 @@
 {
-  "description": "request with impression with stored bid response with sensitive bidder name",
+  "description": "request with impression with stored bid response with case matching bidder name",
   "mockBidRequest": {
     "id": "request-with-stored-resp",
     "site": {
@@ -23,7 +23,7 @@
           "prebid": {
             "storedbidresponse": [
               {
-                "bidder": "APPNEXUS",
+                "bidder": "appnexus",
                 "id": "bidResponseId3"
               }
             ]

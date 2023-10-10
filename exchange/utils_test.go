@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/prebid/prebid-server/stored_responses"
 	"sort"
 	"testing"
 
@@ -4678,4 +4679,26 @@ func TestApplyBidAdjustmentToFloor(t *testing.T) {
 			assert.Equal(t, tt.expectedAllBidderRequests, tt.args.allBidderRequests, tt.name)
 		})
 	}
+}
+
+func TestBuildBidResponseRequestBidderName(t *testing.T) {
+	bidderImpResponses := stored_responses.BidderImpsWithBidResponses{
+		openrtb_ext.BidderName("appnexus"): {"impId1": json.RawMessage(`{}`), "impId2": json.RawMessage(`{}`)},
+		openrtb_ext.BidderName("appneXUS"): {"impId3": json.RawMessage(`{}`), "impId4": json.RawMessage(`{}`)},
+	}
+
+	bidderImpReplaceImpID := stored_responses.BidderImpReplaceImpID{
+		"appnexus": {"impId1": true, "impId2": false},
+		"appneXUS": {"impId3": true, "impId4": false},
+	}
+	result := buildBidResponseRequest(nil, bidderImpResponses, nil, bidderImpReplaceImpID)
+
+	resultAppnexus := result["appnexus"]
+	assert.Equal(t, resultAppnexus.BidderName, openrtb_ext.BidderName("appnexus"))
+	assert.Equal(t, resultAppnexus.ImpReplaceImpId, map[string]bool{"impId1": true, "impId2": false})
+
+	resultAppneXUS := result["appneXUS"]
+	assert.Equal(t, resultAppneXUS.BidderName, openrtb_ext.BidderName("appneXUS"))
+	assert.Equal(t, resultAppneXUS.ImpReplaceImpId, map[string]bool{"impId3": true, "impId4": false})
+
 }
