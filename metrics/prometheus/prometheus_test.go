@@ -1510,6 +1510,9 @@ func TestRecordBidderServerResponseTime(t *testing.T) {
 }
 
 func TestRecordAdapterConnections(t *testing.T) {
+	adapterName := openrtb_ext.BidderName("Adapter")
+	lowerCasedAdapterName := "adapter"
+
 	type testIn struct {
 		adapterName   openrtb_ext.BidderName
 		connWasReused bool
@@ -1531,7 +1534,7 @@ func TestRecordAdapterConnections(t *testing.T) {
 		{
 			description: "[1] Successful, new connection created, was idle, has connection wait",
 			in: testIn{
-				adapterName:   openrtb_ext.BidderAppnexus,
+				adapterName:   adapterName,
 				connWasReused: false,
 				connWait:      time.Second * 5,
 			},
@@ -1545,7 +1548,7 @@ func TestRecordAdapterConnections(t *testing.T) {
 		{
 			description: "[2] Successful, new connection created, not idle, has connection wait",
 			in: testIn{
-				adapterName:   openrtb_ext.BidderAppnexus,
+				adapterName:   adapterName,
 				connWasReused: false,
 				connWait:      time.Second * 4,
 			},
@@ -1559,7 +1562,7 @@ func TestRecordAdapterConnections(t *testing.T) {
 		{
 			description: "[3] Successful, was reused, was idle, no connection wait",
 			in: testIn{
-				adapterName:   openrtb_ext.BidderAppnexus,
+				adapterName:   adapterName,
 				connWasReused: true,
 			},
 			out: testOut{
@@ -1572,7 +1575,7 @@ func TestRecordAdapterConnections(t *testing.T) {
 		{
 			description: "[4] Successful, was reused, not idle, has connection wait",
 			in: testIn{
-				adapterName:   openrtb_ext.BidderAppnexus,
+				adapterName:   adapterName,
 				connWasReused: true,
 				connWait:      time.Second * 5,
 			},
@@ -1602,7 +1605,7 @@ func TestRecordAdapterConnections(t *testing.T) {
 			"adapter_connection_reused",
 			m.adapterReusedConnections,
 			float64(test.out.expectedConnReusedCount),
-			prometheus.Labels{adapterLabel: string(test.in.adapterName)})
+			prometheus.Labels{adapterLabel: lowerCasedAdapterName})
 
 		// Assert number of new created connections
 		assertCounterVecValue(t,
@@ -1610,10 +1613,10 @@ func TestRecordAdapterConnections(t *testing.T) {
 			"adapter_connection_created",
 			m.adapterCreatedConnections,
 			float64(test.out.expectedConnCreatedCount),
-			prometheus.Labels{adapterLabel: string(test.in.adapterName)})
+			prometheus.Labels{adapterLabel: lowerCasedAdapterName})
 
 		// Assert connection wait time
-		histogram := getHistogramFromHistogramVec(m.adapterConnectionWaitTime, adapterLabel, string(test.in.adapterName))
+		histogram := getHistogramFromHistogramVec(m.adapterConnectionWaitTime, adapterLabel, lowerCasedAdapterName)
 		assert.Equal(t, test.out.expectedConnWaitCount, histogram.GetSampleCount(), assertDesciptions[2])
 		assert.Equal(t, test.out.expectedConnWaitTime, histogram.GetSampleSum(), assertDesciptions[3])
 	}
