@@ -159,6 +159,6 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative, nil
 	default:
-		return "", fmt.Errorf("failed to parse bid mType for impression \"%s\"", bid.ImpID)
+		return "", fmt.Errorf("failed to parse bid mtype for impression id \"%s\"", bid.ImpID)
 	}
 }
