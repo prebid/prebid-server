@@ -1055,6 +1055,7 @@ func TestAdapterRequestErrorMetrics(t *testing.T) {
 
 func TestAdapterTimeMetric(t *testing.T) {
 	adapterName := "anyName"
+	lowerCasedAdapterName := "anyname"
 	performTest := func(m *Metrics, timeInMs float64, adapterErrors map[metrics.AdapterError]struct{}) {
 		m.RecordAdapterTime(metrics.AdapterLabels{
 			Adapter:       openrtb_ext.BidderName(adapterName),
@@ -1093,7 +1094,7 @@ func TestAdapterTimeMetric(t *testing.T) {
 
 		test.testCase(m)
 
-		result := getHistogramFromHistogramVec(m.adapterRequestsTimer, adapterLabel, adapterName)
+		result := getHistogramFromHistogramVec(m.adapterRequestsTimer, adapterLabel, lowerCasedAdapterName)
 		assertHistogram(t, test.description, result, test.expectedCount, test.expectedSum)
 	}
 }
