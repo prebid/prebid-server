@@ -1787,8 +1787,9 @@ func assertHistogram(t *testing.T, name string, histogram dto.Histogram, expecte
 
 func TestRecordAdapterGDPRRequestBlocked(t *testing.T) {
 	m := createMetricsForTesting()
-
-	m.RecordAdapterGDPRRequestBlocked(openrtb_ext.BidderAppnexus)
+	adapterName := openrtb_ext.BidderName("AnyName")
+	lowerCasedAdapterName := "anyname"
+	m.RecordAdapterGDPRRequestBlocked(adapterName)
 
 	assertCounterVecValue(t,
 		"Increment adapter GDPR request blocked counter",
@@ -1796,7 +1797,7 @@ func TestRecordAdapterGDPRRequestBlocked(t *testing.T) {
 		m.adapterGDPRBlockedRequests,
 		1,
 		prometheus.Labels{
-			adapterLabel: string(openrtb_ext.BidderAppnexus),
+			adapterLabel: lowerCasedAdapterName,
 		})
 }
 
