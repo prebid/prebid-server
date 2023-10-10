@@ -251,10 +251,10 @@ func TestChooserChoose(t *testing.T) {
 			Return(test.givenChosenBidders)
 
 		chooser := standardChooser{
-			bidderSyncerLookup:          bidderSyncerLookup,
-			biddersAvailable:            biddersAvailable,
-			bidderChooser:               mockBidderChooser,
-			normalizedBidderNamesLookup: test.bidderNamesLookup,
+			bidderSyncerLookup:       bidderSyncerLookup,
+			biddersAvailable:         biddersAvailable,
+			bidderChooser:            mockBidderChooser,
+			normalizeValidBidderName: test.bidderNamesLookup,
 		}
 
 		result := chooser.Choose(test.givenRequest, &test.givenCookie)

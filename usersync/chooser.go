@@ -17,10 +17,10 @@ func NewChooser(bidderSyncerLookup map[string]Syncer) Chooser {
 	}
 
 	return standardChooser{
-		bidderSyncerLookup:          bidderSyncerLookup,
-		biddersAvailable:            bidders,
-		bidderChooser:               standardBidderChooser{shuffler: randomShuffler{}},
-		normalizedBidderNamesLookup: openrtb_ext.NormalizeBidderName,
+		bidderSyncerLookup:       bidderSyncerLookup,
+		biddersAvailable:         bidders,
+		bidderChooser:            standardBidderChooser{shuffler: randomShuffler{}},
+		normalizeValidBidderName: openrtb_ext.NormalizeBidderName,
 	}
 }
 
@@ -103,10 +103,10 @@ type Privacy interface {
 
 // standardChooser implements the user syncer algorithm per official Prebid specification.
 type standardChooser struct {
-	bidderSyncerLookup          map[string]Syncer
-	biddersAvailable            []string
-	bidderChooser               bidderChooser
-	normalizedBidderNamesLookup func(name string) (openrtb_ext.BidderName, bool)
+	bidderSyncerLookup       map[string]Syncer
+	biddersAvailable         []string
+	bidderChooser            bidderChooser
+	normalizeValidBidderName func(name string) (openrtb_ext.BidderName, bool)
 }
 
 // Choose randomly selects user syncers which are permitted by the user's privacy settings and
@@ -140,12 +140,12 @@ func (c standardChooser) Choose(request Request, cookie *Cookie) Result {
 }
 
 func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}, syncTypeFilter SyncTypeFilter, privacy Privacy, cookie *Cookie) (Syncer, BidderEvaluation) {
-	coreBidder, exists := c.normalizedBidderNamesLookup(bidder)
+	bidderNormalized, exists := c.normalizeValidBidderName(bidder)
 	if !exists {
 		return nil, BidderEvaluation{Status: StatusUnknownBidder, Bidder: bidder}
 	}
 
-	syncer, exists := c.bidderSyncerLookup[coreBidder.String()]
+	syncer, exists := c.bidderSyncerLookup[bidderNormalized.String()]
 	if !exists {
 		return nil, BidderEvaluation{Status: StatusUnknownBidder, Bidder: bidder}
 	}
