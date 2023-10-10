@@ -815,7 +815,7 @@ func (m *Metrics) RecordBidderServerResponseTime(bidderServerResponseTime time.D
 
 func (m *Metrics) RecordAdapterPanic(labels metrics.AdapterLabels) {
 	m.adapterPanics.With(prometheus.Labels{
-		adapterLabel: string(labels.Adapter),
+		adapterLabel: strings.ToLower(string(labels.Adapter)),
 	}).Inc()
 }
 
