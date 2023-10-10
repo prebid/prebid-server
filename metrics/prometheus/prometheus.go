@@ -826,7 +826,7 @@ func (m *Metrics) RecordAdapterBidReceived(labels metrics.AdapterLabels, bidType
 	}
 
 	m.adapterBids.With(prometheus.Labels{
-		adapterLabel:        string(labels.Adapter),
+		adapterLabel:        strings.ToLower(string(labels.Adapter)),
 		markupDeliveryLabel: markupDelivery,
 	}).Inc()
 }
