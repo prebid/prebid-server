@@ -272,10 +272,11 @@ func getBiddersAllowingVastUpdate(req *BidCacheRequest, bidderInfos *config.Bidd
 func isAllowVastForBidder(bidder string, bidderInfos *config.BidderInfos, allowUnknownBidder bool, normalizeBidderName normalizeBidderName) bool {
 	//if bidder is active and isModifyingVastXmlAllowed is true
 	// check if bidder is configured
-	normalizedBidder, _ := normalizeBidderName(bidder)
-	if b, ok := (*bidderInfos)[normalizedBidder.String()]; bidderInfos != nil && ok {
-		// check if bidder is enabled
-		return b.IsEnabled() && b.ModifyingVastXmlAllowed
+	if normalizedBidder, ok := normalizeBidderName(bidder); ok {
+		if b, ok := (*bidderInfos)[normalizedBidder.String()]; bidderInfos != nil && ok {
+			// check if bidder is enabled
+			return b.IsEnabled() && b.ModifyingVastXmlAllowed
+		}
 	}
 
 	return allowUnknownBidder
