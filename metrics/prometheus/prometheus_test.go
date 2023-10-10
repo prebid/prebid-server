@@ -226,18 +226,19 @@ func TestBidValidationCreativeSizeMetric(t *testing.T) {
 			expectedAccountCount:               0,
 		},
 	}
-
+	adapterName := openrtb_ext.BidderName("AnyName")
+	lowerCasedAdapterName := "anyname"
 	for _, test := range testCases {
 		m := createMetricsForTesting()
 		m.metricsDisabled.AccountAdapterDetails = test.givenAccountAdapterMetricsDisabled
-		m.RecordBidValidationCreativeSizeError(adapterLabel, "acct-id")
-		m.RecordBidValidationCreativeSizeWarn(adapterLabel, "acct-id")
+		m.RecordBidValidationCreativeSizeError(adapterName, "acct-id")
+		m.RecordBidValidationCreativeSizeWarn(adapterName, "acct-id")
 
 		assertCounterVecValue(t, "", "account bid validation", m.accountBidResponseValidationSizeError, test.expectedAccountCount, prometheus.Labels{accountLabel: "acct-id", successLabel: successLabel})
-		assertCounterVecValue(t, "", "adapter bid validation", m.adapterBidResponseValidationSizeError, test.expectedAdapterCount, prometheus.Labels{adapterLabel: adapterLabel, successLabel: successLabel})
+		assertCounterVecValue(t, "", "adapter bid validation", m.adapterBidResponseValidationSizeError, test.expectedAdapterCount, prometheus.Labels{adapterLabel: lowerCasedAdapterName, successLabel: successLabel})
 
 		assertCounterVecValue(t, "", "account bid validation", m.accountBidResponseValidationSizeWarn, test.expectedAccountCount, prometheus.Labels{accountLabel: "acct-id", successLabel: successLabel})
-		assertCounterVecValue(t, "", "adapter bid validation", m.adapterBidResponseValidationSizeWarn, test.expectedAdapterCount, prometheus.Labels{adapterLabel: adapterLabel, successLabel: successLabel})
+		assertCounterVecValue(t, "", "adapter bid validation", m.adapterBidResponseValidationSizeWarn, test.expectedAdapterCount, prometheus.Labels{adapterLabel: lowerCasedAdapterName, successLabel: successLabel})
 	}
 }
 
