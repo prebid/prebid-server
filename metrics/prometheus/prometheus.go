@@ -1005,7 +1005,7 @@ func (m *Metrics) RecordBidValidationCreativeSizeWarn(adapter openrtb_ext.Bidder
 
 func (m *Metrics) RecordBidValidationSecureMarkupError(adapter openrtb_ext.BidderName, account string) {
 	m.adapterBidResponseSecureMarkupError.With(prometheus.Labels{
-		adapterLabel: string(adapter), successLabel: successLabel,
+		adapterLabel: strings.ToLower(string(adapter)), successLabel: successLabel,
 	}).Inc()
 
 	if !m.metricsDisabled.AccountAdapterDetails && account != metrics.PublisherUnknown {
@@ -1017,7 +1017,7 @@ func (m *Metrics) RecordBidValidationSecureMarkupError(adapter openrtb_ext.Bidde
 
 func (m *Metrics) RecordBidValidationSecureMarkupWarn(adapter openrtb_ext.BidderName, account string) {
 	m.adapterBidResponseSecureMarkupWarn.With(prometheus.Labels{
-		adapterLabel: string(adapter), successLabel: successLabel,
+		adapterLabel: strings.ToLower(string(adapter)), successLabel: successLabel,
 	}).Inc()
 
 	if !m.metricsDisabled.AccountAdapterDetails && account != metrics.PublisherUnknown {
