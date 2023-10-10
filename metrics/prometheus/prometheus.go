@@ -833,7 +833,7 @@ func (m *Metrics) RecordAdapterBidReceived(labels metrics.AdapterLabels, bidType
 
 func (m *Metrics) RecordAdapterPrice(labels metrics.AdapterLabels, cpm float64) {
 	m.adapterPrices.With(prometheus.Labels{
-		adapterLabel: string(labels.Adapter),
+		adapterLabel: strings.ToLower(string(labels.Adapter)),
 	}).Observe(cpm)
 }
 
