@@ -212,7 +212,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderXeworks,
 	BidderXtrmqb,
 	BidderYahooAds,
-	BidderYahooAdvertising,
 	BidderYahooSSP,
 	BidderYieldlab,
 	BidderYieldmo,
@@ -501,7 +500,6 @@ const (
 	BidderXeworks           BidderName = "xeworks"
 	BidderXtrmqb            BidderName = "xtrmqb"
 	BidderYahooAds          BidderName = "yahooAds"
-	BidderYahooAdvertising  BidderName = "yahooAdvertising"
 	BidderYahooSSP          BidderName = "yahoossp"
 	BidderYieldlab          BidderName = "yieldlab"
 	BidderYieldmo           BidderName = "yieldmo"
