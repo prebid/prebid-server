@@ -2499,8 +2499,7 @@ func (deps *endpointDeps) validateStoredBidRespAndImpExtBidders(bidderExts map[s
 		}
 
 		for bidderName := range bidResponses {
-			_, bidderNameOk := deps.normalizeBidderName(bidderName)
-			if !bidderNameOk {
+			if _, bidderNameOk := deps.normalizeBidderName(bidderName); !bidderNameOk {
 				return fmt.Errorf(`unrecognized bidder "%v"`, bidderName)
 			}
 			if _, present := bidderExts[bidderName]; !present {
