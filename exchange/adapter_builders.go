@@ -273,7 +273,6 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderEvtech:            limelightDigital.Builder,
 		openrtb_ext.BidderFlipp:             flipp.Builder,
 		openrtb_ext.BidderFreewheelSSP:      freewheelssp.Builder,
-		openrtb_ext.BidderFreewheelSSPOld:   freewheelssp.Builder,
 		openrtb_ext.BidderFRVRAdNetwork:     frvradn.Builder,
 		openrtb_ext.BidderGamma:             gamma.Builder,
 		openrtb_ext.BidderGamoshi:           gamoshi.Builder,
