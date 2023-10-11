@@ -5015,10 +5015,12 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 			expectedErrorCount: 0,
 		},
 		{
-			name:                       "req imp has valid stored bid response with case not-matching bidder name",
-			givenRequestBody:           validRequest(t, "imp-with-stored-bid-resp-case-not-matching-bidder-name.json"),
-			expectedStoredBidResponses: nil,
-			expectedErrorCount:         1,
+			name:             "req imp has valid stored bid response with case not-matching bidder name",
+			givenRequestBody: validRequest(t, "imp-with-stored-bid-resp-case-not-matching-bidder-name.json"),
+			expectedStoredBidResponses: map[string]map[string]json.RawMessage{
+				"imp-id3": {"appnexus": bidRespId3},
+			},
+			expectedErrorCount: 0,
 		},
 		{
 			name:             "req imp has valid stored bid response with case matching bidder name",
@@ -5049,7 +5051,7 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 			name:                       "req has two imps with missing stored bid responses",
 			givenRequestBody:           validRequest(t, "req-two-imps-missing-stored-bid-response.json"),
 			expectedStoredBidResponses: nil,
-			expectedErrorCount:         2,
+			expectedErrorCount:         0,
 		},
 		{
 			name:                       "req imp has valid stored bid response with non existing bidder name",
