@@ -187,7 +187,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderStreamkey,
 	BidderStroeerCore,
 	BidderSuntContent,
-	BidderSynacormedia,
 	BidderTaboola,
 	BidderTappx,
 	BidderTelaria,
@@ -476,7 +475,6 @@ const (
 	BidderStreamkey         BidderName = "streamkey"
 	BidderStroeerCore       BidderName = "stroeerCore"
 	BidderSuntContent       BidderName = "suntContent"
-	BidderSynacormedia      BidderName = "synacormedia"
 	BidderTaboola           BidderName = "taboola"
 	BidderTappx             BidderName = "tappx"
 	BidderTelaria           BidderName = "telaria"
