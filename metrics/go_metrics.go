@@ -757,16 +757,18 @@ func (me *Metrics) RecordBidderServerResponseTime(bidderServerResponseTime time.
 // RecordAdapterBidReceived implements a part of the MetricsEngine interface.
 // This tracks how many bids from each Bidder use `adm` vs. `nurl.
 func (me *Metrics) RecordAdapterBidReceived(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
-	am, ok := me.AdapterMetrics[string(labels.Adapter)]
+	adapterStr := string(labels.Adapter)
+	lowerCaseAdapterName := strings.ToLower(adapterStr)
+	am, ok := me.AdapterMetrics[lowerCaseAdapterName]
 	if !ok {
-		glog.Errorf("Trying to run adapter bid metrics on %s: adapter metrics not found", string(labels.Adapter))
+		glog.Errorf("Trying to run adapter bid metrics on %s: adapter metrics not found", adapterStr)
 		return
 	}
 
 	// Adapter metrics
 	am.BidsReceivedMeter.Mark(1)
 	// Account-Adapter metrics
-	if aam, ok := me.getAccountMetrics(labels.PubID).adapterMetrics[string(labels.Adapter)]; ok {
+	if aam, ok := me.getAccountMetrics(labels.PubID).adapterMetrics[lowerCaseAdapterName]; ok {
 		aam.BidsReceivedMeter.Mark(1)
 	}
 

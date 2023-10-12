@@ -22,8 +22,8 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "no_cookie_requests", m.NoCookieMeter)
 	ensureContains(t, registry, "request_time", m.RequestTimer)
 	ensureContains(t, registry, "amp_no_cookie_requests", m.AmpNoCookieMeter)
-	ensureContainsAdapterMetrics(t, registry, "adapter.Adapter1", m.AdapterMetrics["Adapter1"])
-	ensureContainsAdapterMetrics(t, registry, "adapter.Adapter2", m.AdapterMetrics["Adapter2"])
+	ensureContainsAdapterMetrics(t, registry, "adapter.adapter1", m.AdapterMetrics["adapter1"])
+	ensureContainsAdapterMetrics(t, registry, "adapter.adapter2", m.AdapterMetrics["adapter2"])
 	ensureContains(t, registry, "cookie_sync_requests", m.CookieSyncMeter)
 	ensureContains(t, registry, "cookie_sync_requests.ok", m.CookieSyncStatusMeter[CookieSyncOK])
 	ensureContains(t, registry, "cookie_sync_requests.bad_request", m.CookieSyncStatusMeter[CookieSyncBadRequest])
@@ -95,20 +95,21 @@ func TestNewMetrics(t *testing.T) {
 
 func TestRecordBidType(t *testing.T) {
 	registry := metrics.NewRegistry()
-	adapterName := "AnyName"
+	adapterName := "FOO"
+	lowerCaseAdapterName := "foo"
 	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderName(adapterName)}, config.DisabledMetrics{}, nil, nil)
 
 	m.RecordAdapterBidReceived(AdapterLabels{
 		Adapter: openrtb_ext.BidderName(adapterName),
 	}, openrtb_ext.BidTypeBanner, true)
-	VerifyMetrics(t, "Appnexus Banner Adm Bids", m.AdapterMetrics[adapterName].MarkupMetrics[openrtb_ext.BidTypeBanner].AdmMeter.Count(), 1)
-	VerifyMetrics(t, "Appnexus Banner Nurl Bids", m.AdapterMetrics[adapterName].MarkupMetrics[openrtb_ext.BidTypeBanner].NurlMeter.Count(), 0)
+	VerifyMetrics(t, "foo Banner Adm Bids", m.AdapterMetrics[lowerCaseAdapterName].MarkupMetrics[openrtb_ext.BidTypeBanner].AdmMeter.Count(), 1)
+	VerifyMetrics(t, "foo Banner Nurl Bids", m.AdapterMetrics[lowerCaseAdapterName].MarkupMetrics[openrtb_ext.BidTypeBanner].NurlMeter.Count(), 0)
 
 	m.RecordAdapterBidReceived(AdapterLabels{
 		Adapter: openrtb_ext.BidderName(adapterName),
 	}, openrtb_ext.BidTypeVideo, false)
-	VerifyMetrics(t, "Appnexus Video Adm Bids", m.AdapterMetrics[adapterName].MarkupMetrics[openrtb_ext.BidTypeVideo].AdmMeter.Count(), 0)
-	VerifyMetrics(t, "Appnexus Video Nurl Bids", m.AdapterMetrics[adapterName].MarkupMetrics[openrtb_ext.BidTypeVideo].NurlMeter.Count(), 1)
+	VerifyMetrics(t, "foo Video Adm Bids", m.AdapterMetrics[lowerCaseAdapterName].MarkupMetrics[openrtb_ext.BidTypeVideo].AdmMeter.Count(), 0)
+	VerifyMetrics(t, "foo Video Nurl Bids", m.AdapterMetrics[lowerCaseAdapterName].MarkupMetrics[openrtb_ext.BidTypeVideo].NurlMeter.Count(), 1)
 }
 
 func ensureContains(t *testing.T, registry metrics.Registry, name string, metric interface{}) {
@@ -200,6 +201,7 @@ func TestRecordBidTypeDisabledConfig(t *testing.T) {
 		},
 	}
 	adapter := "AnyName"
+	lowerCaseAdapter := "anyname"
 	for _, test := range testCases {
 		registry := metrics.NewRegistry()
 
@@ -209,8 +211,8 @@ func TestRecordBidTypeDisabledConfig(t *testing.T) {
 			Adapter: openrtb_ext.BidderName(adapter),
 			PubID:   test.PubID,
 		}, test.BidType, test.hasAdm)
-		assert.Equal(t, test.ExpectedAdmMeterCount, m.AdapterMetrics[adapter].MarkupMetrics[test.BidType].AdmMeter.Count(), "AnyName Banner Adm Bids")
-		assert.Equal(t, test.ExpectedNurlMeterCount, m.AdapterMetrics[adapter].MarkupMetrics[test.BidType].NurlMeter.Count(), "AnyName Banner Nurl Bids")
+		assert.Equal(t, test.ExpectedAdmMeterCount, m.AdapterMetrics[lowerCaseAdapter].MarkupMetrics[test.BidType].AdmMeter.Count(), "AnyName Banner Adm Bids")
+		assert.Equal(t, test.ExpectedNurlMeterCount, m.AdapterMetrics[lowerCaseAdapter].MarkupMetrics[test.BidType].NurlMeter.Count(), "AnyName Banner Nurl Bids")
 
 		if test.DisabledMetrics.AccountAdapterDetails {
 			assert.Len(t, m.accountMetrics[test.PubID].adapterMetrics, 0, "Test failed. Account metrics that contain adapter information are disabled, therefore we expect no entries in m.accountMetrics[accountId].adapterMetrics, we have %d \n", len(m.accountMetrics[test.PubID].adapterMetrics))
