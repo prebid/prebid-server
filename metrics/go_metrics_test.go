@@ -327,7 +327,7 @@ func TestRecordBidValidationCreativeSize(t *testing.T) {
 		am := m.getAccountMetrics(test.givenPubID)
 
 		assert.Equal(t, test.expectedAdapterCount, m.AdapterMetrics[lowerCaseAdapter].BidValidationCreativeSizeErrorMeter.Count())
-		assert.Equal(t, test.expectedAdapterCount, m.AdapterMetrics[adapter].BidValidationCreativeSizeWarnMeter.Count())
+		assert.Equal(t, test.expectedAdapterCount, m.AdapterMetrics[lowerCaseAdapter].BidValidationCreativeSizeWarnMeter.Count())
 		assert.Equal(t, test.expectedAccountCount, am.bidValidationCreativeSizeMeter.Count())
 		assert.Equal(t, test.expectedAccountCount, am.bidValidationCreativeSizeWarnMeter.Count())
 	}

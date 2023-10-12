@@ -967,9 +967,10 @@ func (me *Metrics) RecordBidValidationCreativeSizeError(adapter openrtb_ext.Bidd
 }
 
 func (me *Metrics) RecordBidValidationCreativeSizeWarn(adapter openrtb_ext.BidderName, pubID string) {
-	am, ok := me.AdapterMetrics[string(adapter)]
+	adapterStr := string(adapter)
+	am, ok := me.AdapterMetrics[strings.ToLower(adapterStr)]
 	if !ok {
-		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", string(adapter))
+		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", adapterStr)
 		return
 	}
 	am.BidValidationCreativeSizeWarnMeter.Mark(1)
