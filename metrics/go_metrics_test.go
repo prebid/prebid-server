@@ -791,6 +791,7 @@ func TestRecordRequestPrivacy(t *testing.T) {
 func TestRecordAdapterGDPRRequestBlocked(t *testing.T) {
 	var fakeBidder openrtb_ext.BidderName = "fooAdvertising"
 	adapter := "AnyName"
+	lowerCaseAdapterName := "anyname"
 
 	tests := []struct {
 		description     string
@@ -823,7 +824,7 @@ func TestRecordAdapterGDPRRequestBlocked(t *testing.T) {
 
 		m.RecordAdapterGDPRRequestBlocked(tt.adapterName)
 
-		assert.Equal(t, tt.expectedCount, m.AdapterMetrics[adapter].GDPRRequestBlocked.Count(), tt.description)
+		assert.Equal(t, tt.expectedCount, m.AdapterMetrics[lowerCaseAdapterName].GDPRRequestBlocked.Count(), tt.description)
 	}
 }
 

@@ -925,13 +925,14 @@ func (me *Metrics) RecordRequestPrivacy(privacy PrivacyLabels) {
 }
 
 func (me *Metrics) RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.BidderName) {
+	adapterStr := string(adapterName)
 	if me.MetricsDisabled.AdapterGDPRRequestBlocked {
 		return
 	}
 
-	am, ok := me.AdapterMetrics[string(adapterName)]
+	am, ok := me.AdapterMetrics[strings.ToLower(adapterStr)]
 	if !ok {
-		glog.Errorf("Trying to log adapter GDPR request blocked metric for %s: adapter not found", string(adapterName))
+		glog.Errorf("Trying to log adapter GDPR request blocked metric for %s: adapter not found", adapterStr)
 		return
 	}
 
