@@ -961,6 +961,7 @@ func validateAndFillSourceTID(req *openrtb_ext.RequestWrapper, generateRequestID
 }
 
 func (deps *endpointDeps) validateBidAdjustmentFactors(adjustmentFactors map[string]float64, aliases map[string]string) error {
+	uniqueBidders := make(map[string]struct{})
 	for bidderToAdjust, adjustmentFactor := range adjustmentFactors {
 		if adjustmentFactor <= 0 {
 			return fmt.Errorf("request.ext.prebid.bidadjustmentfactors.%s must be a positive number. Got %f", bidderToAdjust, adjustmentFactor)
@@ -970,6 +971,12 @@ func (deps *endpointDeps) validateBidAdjustmentFactors(adjustmentFactors map[str
 		normalizedCoreBidder, ok := openrtb_ext.NormalizeBidderName(bidderToAdjust)
 		if ok {
 			bidderName = normalizedCoreBidder.String()
+		}
+
+		if _, exists := uniqueBidders[bidderName]; exists {
+			return fmt.Errorf("cannot have multiple bidders that differ only in case style")
+		} else {
+			uniqueBidders[bidderName] = struct{}{}
 		}
 
 		if _, isBidder := deps.bidderMap[bidderName]; !isBidder {
