@@ -317,6 +317,7 @@ func TestRecordBidValidationCreativeSize(t *testing.T) {
 		},
 	}
 	adapter := "AnyName"
+	lowerCaseAdapter := "anyname"
 	for _, test := range testCases {
 		registry := metrics.NewRegistry()
 		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderName(adapter)}, test.givenDisabledMetrics, nil, nil)
@@ -325,7 +326,7 @@ func TestRecordBidValidationCreativeSize(t *testing.T) {
 		m.RecordBidValidationCreativeSizeWarn(openrtb_ext.BidderName(adapter), test.givenPubID)
 		am := m.getAccountMetrics(test.givenPubID)
 
-		assert.Equal(t, test.expectedAdapterCount, m.AdapterMetrics[adapter].BidValidationCreativeSizeErrorMeter.Count())
+		assert.Equal(t, test.expectedAdapterCount, m.AdapterMetrics[lowerCaseAdapter].BidValidationCreativeSizeErrorMeter.Count())
 		assert.Equal(t, test.expectedAdapterCount, m.AdapterMetrics[adapter].BidValidationCreativeSizeWarnMeter.Count())
 		assert.Equal(t, test.expectedAccountCount, am.bidValidationCreativeSizeMeter.Count())
 		assert.Equal(t, test.expectedAccountCount, am.bidValidationCreativeSizeWarnMeter.Count())
