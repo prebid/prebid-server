@@ -802,7 +802,9 @@ func (me *Metrics) RecordAdapterPrice(labels AdapterLabels, cpm float64) {
 
 // RecordAdapterTime implements a part of the MetricsEngine interface. Records the adapter response time
 func (me *Metrics) RecordAdapterTime(labels AdapterLabels, length time.Duration) {
-	am, ok := me.AdapterMetrics[string(labels.Adapter)]
+	adapterStr := string(labels.Adapter)
+	lowercaseAdapter := strings.ToLower(adapterStr)
+	am, ok := me.AdapterMetrics[lowercaseAdapter]
 	if !ok {
 		glog.Errorf("Trying to run adapter latency metrics on %s: adapter metrics not found", string(labels.Adapter))
 		return
@@ -810,7 +812,7 @@ func (me *Metrics) RecordAdapterTime(labels AdapterLabels, length time.Duration)
 	// Adapter metrics
 	am.RequestTimer.Update(length)
 	// Account-Adapter metrics
-	if aam, ok := me.getAccountMetrics(labels.PubID).adapterMetrics[string(labels.Adapter)]; ok {
+	if aam, ok := me.getAccountMetrics(labels.PubID).adapterMetrics[lowercaseAdapter]; ok {
 		aam.RequestTimer.Update(length)
 	}
 }

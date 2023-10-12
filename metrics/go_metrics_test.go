@@ -1162,3 +1162,15 @@ func TestRecordAdapterPrice(t *testing.T) {
 	assert.Equal(t, m.AdapterMetrics[lowerCasedAdapterName].PriceHistogram.Max(), int64(1000))
 	assert.Equal(t, m.getAccountMetrics(pubID).adapterMetrics[lowerCasedAdapterName].PriceHistogram.Max(), int64(1000))
 }
+
+func TestRecordAdapterTime(t *testing.T) {
+	registry := metrics.NewRegistry()
+	syncerKeys := []string{"foo"}
+	adapter := "AnyName"
+	lowerCasedAdapterName := "anyname"
+	pubID := "pub1"
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderName(adapter), openrtb_ext.BidderAppnexus, openrtb_ext.BidderName("Adapter2")}, config.DisabledMetrics{}, syncerKeys, nil)
+	m.RecordAdapterTime(AdapterLabels{Adapter: openrtb_ext.BidderName(adapter), PubID: pubID}, 1000)
+	assert.Equal(t, m.AdapterMetrics[lowerCasedAdapterName].RequestTimer.Max(), int64(1000))
+	assert.Equal(t, m.getAccountMetrics(pubID).adapterMetrics[lowerCasedAdapterName].RequestTimer.Max(), int64(1000))
+}
