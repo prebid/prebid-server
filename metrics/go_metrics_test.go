@@ -1139,3 +1139,12 @@ func VerifyMetrics(t *testing.T, name string, expected int64, actual int64) {
 		t.Errorf("Error in metric %s: expected %d, got %d.", name, expected, actual)
 	}
 }
+
+func TestRecordAdapterPanic(t *testing.T) {
+	registry := metrics.NewRegistry()
+	adapter := "AnyName"
+	lowerCasedAdapterName := "anyname"
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderName(adapter)}, config.DisabledMetrics{AccountAdapterDetails: true, AccountModulesMetrics: true}, nil, map[string][]string{"foobar": {"entry", "raw"}})
+	m.RecordAdapterPanic(AdapterLabels{Adapter: openrtb_ext.BidderName(adapter)})
+	assert.Equal(t, m.AdapterMetrics[lowerCasedAdapterName].PanicMeter.Count(), int64(1))
+}

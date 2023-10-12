@@ -676,9 +676,11 @@ func (me *Metrics) RecordStoredDataError(labels StoredDataLabels) {
 
 // RecordAdapterPanic implements a part of the MetricsEngine interface
 func (me *Metrics) RecordAdapterPanic(labels AdapterLabels) {
-	am, ok := me.AdapterMetrics[string(labels.Adapter)]
+	adapterStr := string(labels.Adapter)
+	lowerCasedAdapterName := strings.ToLower(adapterStr)
+	am, ok := me.AdapterMetrics[lowerCasedAdapterName]
 	if !ok {
-		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", string(labels.Adapter))
+		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", adapterStr)
 		return
 	}
 	am.PanicMeter.Mark(1)
