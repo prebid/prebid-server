@@ -1,11 +1,18 @@
 {
-  "description": "Global and bidder FPD defined for site and user. Global FPD has site.content.data",
+  "description": "Global and bidder FPD defined for site and user. Global FPD has site.content.data. Bidders mentioned explicitly in biddersWithGlobalFPD",
   "inputRequestData": {
     "site": {
       "id": "reqSiteId",
       "page": "http://www.foobar.com/1234.html",
       "publisher": {
         "id": "1"
+      },
+      "content": {
+        "episode": 6,
+        "title": "episodeName",
+        "series": "TvName",
+        "season": "season3",
+        "len": 900
       },
       "ext": {
         "testSiteExt": 123
@@ -24,7 +31,8 @@
     }
   },
   "biddersWithGlobalFPD": [
-    "appnexus"
+    "appnexus",
+    "rubicon"
   ],
   "bidderConfigFPD": {
     "appnexus": {
@@ -41,6 +49,11 @@
             }
           }
         }
+      }
+    },
+    "rubicon": {
+      "site": {
+        "id": "rbcSiteId"
       }
     }
   },
@@ -77,6 +90,11 @@
           "id": "1"
         },
         "content": {
+          "episode": 6,
+          "title": "episodeName",
+          "series": "TvName",
+          "season": "season3",
+          "len": 900,
           "data": [
             {
               "id": "siteData1",
@@ -115,6 +133,11 @@
             "testUserFpd": "testuser"
           }
         }
+      }
+    },
+    "rubicon": {
+      "site": {
+        "id": "rbcSiteId"
       }
     }
   }

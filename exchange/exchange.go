@@ -223,6 +223,7 @@ type BidderRequest struct {
 	BidderCoreName        openrtb_ext.BidderName
 	BidderLabels          metrics.AdapterLabels
 	BidderStoredResponses map[string]json.RawMessage
+	IsRequestAlias        bool
 	ImpReplaceImpId       map[string]bool
 }
 
