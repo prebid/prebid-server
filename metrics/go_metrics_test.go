@@ -476,6 +476,7 @@ func TestRecordAdapterConnections(t *testing.T) {
 		expectedConnWaitTime     time.Duration
 	}
 	adapter := "AnyName"
+	lowerCaseAdapterName := "anyname"
 	testCases := []struct {
 		description string
 		in          testIn
@@ -560,10 +561,9 @@ func TestRecordAdapterConnections(t *testing.T) {
 		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderName(adapter)}, config.DisabledMetrics{AdapterConnectionMetrics: test.in.connMetricsDisabled}, nil, nil)
 
 		m.RecordAdapterConnections(test.in.adapterName, test.in.connWasReused, test.in.connWait)
-
-		assert.Equal(t, test.out.expectedConnReusedCount, m.AdapterMetrics[adapter].ConnReused.Count(), "Test [%d] incorrect number of reused connections to adapter", i)
-		assert.Equal(t, test.out.expectedConnCreatedCount, m.AdapterMetrics[adapter].ConnCreated.Count(), "Test [%d] incorrect number of new connections to adapter created", i)
-		assert.Equal(t, test.out.expectedConnWaitTime.Nanoseconds(), m.AdapterMetrics[adapter].ConnWaitTime.Sum(), "Test [%d] incorrect wait time in connection to adapter", i)
+		assert.Equal(t, test.out.expectedConnReusedCount, m.AdapterMetrics[lowerCaseAdapterName].ConnReused.Count(), "Test [%d] incorrect number of reused connections to adapter", i)
+		assert.Equal(t, test.out.expectedConnCreatedCount, m.AdapterMetrics[lowerCaseAdapterName].ConnCreated.Count(), "Test [%d] incorrect number of new connections to adapter created", i)
+		assert.Equal(t, test.out.expectedConnWaitTime.Nanoseconds(), m.AdapterMetrics[lowerCaseAdapterName].ConnWaitTime.Sum(), "Test [%d] incorrect wait time in connection to adapter", i)
 	}
 }
 

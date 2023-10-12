@@ -725,8 +725,8 @@ func (me *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName,
 	if me.MetricsDisabled.AdapterConnectionMetrics {
 		return
 	}
-
-	am, ok := me.AdapterMetrics[string(adapterName)]
+	lowerCasedAdapterName := strings.ToLower(string(adapterName))
+	am, ok := me.AdapterMetrics[lowerCasedAdapterName]
 	if !ok {
 		glog.Errorf("Trying to log adapter connection metrics for %s: adapter not found", string(adapterName))
 		return
