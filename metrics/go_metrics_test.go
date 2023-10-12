@@ -1177,3 +1177,94 @@ func TestRecordAdapterTime(t *testing.T) {
 	assert.Equal(t, m.AdapterMetrics[lowerCasedAdapterName].RequestTimer.Max(), int64(1000))
 	assert.Equal(t, m.getAccountMetrics(pubID).adapterMetrics[lowerCasedAdapterName].RequestTimer.Max(), int64(1000))
 }
+
+func TestRecordAdapterRequest(t *testing.T) {
+	syncerKeys := []string{"foo"}
+	moduleStageNames := map[string][]string{"foobar": {"entry", "raw"}, "another_module": {"raw", "auction"}}
+	adapter := "AnyName"
+	lowerCaseAdapter := "anyname"
+	type errorCount struct {
+		badInput, badServer, timeout, failedToRequestBid, validation, tmaxTimeout, unknown int64
+	}
+	type adapterBidsCount struct {
+		NoBid, GotBid int64
+	}
+	tests := []struct {
+		description              string
+		labels                   AdapterLabels
+		expectedNoCookieCount    int64
+		expectedAdapterBidsCount adapterBidsCount
+		expectedErrorCount       errorCount
+	}{
+		{
+			description: "no-bid",
+			labels: AdapterLabels{
+				Adapter:     openrtb_ext.BidderName(adapter),
+				AdapterBids: AdapterBidNone,
+				PubID:       "acc-1",
+			},
+			expectedAdapterBidsCount: adapterBidsCount{NoBid: 1},
+		},
+		{
+			description: "got-bid",
+			labels: AdapterLabels{
+				Adapter:     openrtb_ext.BidderName(adapter),
+				AdapterBids: AdapterBidPresent,
+				PubID:       "acc-2",
+			},
+			expectedAdapterBidsCount: adapterBidsCount{GotBid: 1},
+		},
+		{
+			description: "adapter-errors",
+			labels: AdapterLabels{
+				Adapter: openrtb_ext.BidderName(adapter),
+				PubID:   "acc-1",
+				AdapterErrors: map[AdapterError]struct{}{
+					AdapterErrorBadInput:            {},
+					AdapterErrorBadServerResponse:   {},
+					AdapterErrorFailedToRequestBids: {},
+					AdapterErrorTimeout:             {},
+					AdapterErrorValidation:          {},
+					AdapterErrorTmaxTimeout:         {},
+					AdapterErrorUnknown:             {},
+				},
+			},
+			expectedErrorCount: errorCount{
+				badInput:           1,
+				badServer:          1,
+				timeout:            1,
+				failedToRequestBid: 1,
+				validation:         1,
+				tmaxTimeout:        1,
+				unknown:            1,
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			registry := metrics.NewRegistry()
+			m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderName(adapter)}, config.DisabledMetrics{}, syncerKeys, moduleStageNames)
+			m.RecordAdapterRequest(test.labels)
+			adapterMetric := m.AdapterMetrics[lowerCaseAdapter]
+			if assert.NotNil(t, adapterMetric) {
+				assert.Equal(t, test.expectedAdapterBidsCount, adapterBidsCount{
+					NoBid:  adapterMetric.NoBidMeter.Count(),
+					GotBid: adapterMetric.GotBidsMeter.Count(),
+				})
+			}
+			assert.Equal(t, test.expectedNoCookieCount, adapterMetric.NoCookieMeter.Count())
+			adapterErrMetric := adapterMetric.ErrorMeters
+			if assert.NotNil(t, adapterErrMetric) {
+				assert.Equal(t, test.expectedErrorCount, errorCount{
+					badInput:           adapterErrMetric[AdapterErrorBadInput].Count(),
+					badServer:          adapterErrMetric[AdapterErrorBadServerResponse].Count(),
+					timeout:            adapterErrMetric[AdapterErrorTimeout].Count(),
+					failedToRequestBid: adapterErrMetric[AdapterErrorFailedToRequestBids].Count(),
+					validation:         adapterErrMetric[AdapterErrorValidation].Count(),
+					tmaxTimeout:        adapterErrMetric[AdapterErrorTmaxTimeout].Count(),
+					unknown:            adapterErrMetric[AdapterErrorUnknown].Count(),
+				})
+			}
+		})
+	}
+}

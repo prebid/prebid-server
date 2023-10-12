@@ -688,13 +688,15 @@ func (me *Metrics) RecordAdapterPanic(labels AdapterLabels) {
 
 // RecordAdapterRequest implements a part of the MetricsEngine interface
 func (me *Metrics) RecordAdapterRequest(labels AdapterLabels) {
-	am, ok := me.AdapterMetrics[string(labels.Adapter)]
+	adapterStr := string(labels.Adapter)
+	lowerCaseAdapter := strings.ToLower(adapterStr)
+	am, ok := me.AdapterMetrics[lowerCaseAdapter]
 	if !ok {
-		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", string(labels.Adapter))
+		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", adapterStr)
 		return
 	}
 
-	aam, ok := me.getAccountMetrics(labels.PubID).adapterMetrics[string(labels.Adapter)]
+	aam, ok := me.getAccountMetrics(labels.PubID).adapterMetrics[lowerCaseAdapter]
 	switch labels.AdapterBids {
 	case AdapterBidNone:
 		am.NoBidMeter.Mark(1)
