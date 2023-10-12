@@ -47,6 +47,7 @@ func addMultiBid(multiBidMap map[string]struct{}, multiBid *ExtMultiBid) ([]*Ext
 
 	var validatedMultiBids []*ExtMultiBid
 	if multiBid.Bidder != "" {
+		// Normalize multiBid.Bidder here
 		if _, ok := multiBidMap[multiBid.Bidder]; ok {
 			errs = append(errs, fmt.Errorf("multiBid already defined for %s, ignoring this instance %v", multiBid.Bidder, *multiBid))
 			return nil, errs
@@ -61,6 +62,7 @@ func addMultiBid(multiBidMap map[string]struct{}, multiBid *ExtMultiBid) ([]*Ext
 	} else if len(multiBid.Bidders) > 0 {
 		var bidders []string
 		for _, bidder := range multiBid.Bidders {
+			// Normalize bidders here
 			if _, ok := multiBidMap[bidder]; ok {
 				errs = append(errs, fmt.Errorf("multiBid already defined for %s, ignoring this instance %v", bidder, *multiBid))
 				continue

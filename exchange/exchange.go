@@ -343,7 +343,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	defer cancel()
 
 	var (
-		adapterBids     map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid
+		adapterBids     map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid //Normalized
 		adapterExtra    map[openrtb_ext.BidderName]*seatResponseExtra
 		fledge          *openrtb_ext.Fledge
 		anyBidsReturned bool
@@ -514,6 +514,7 @@ func buildMultiBidMap(prebid *openrtb_ext.ExtRequestPrebid) map[string]openrtb_e
 	multiBidMap := make(map[string]openrtb_ext.ExtMultiBid)
 	for _, multiBid := range prebid.MultiBid {
 		if multiBid.Bidder != "" {
+			// Or, could we normalize here instead?
 			multiBidMap[multiBid.Bidder] = *multiBid
 		} else {
 			for _, bidder := range multiBid.Bidders {
@@ -568,15 +569,15 @@ func applyDealSupport(bidRequest *openrtb2.BidRequest, auc *auction, bidCategory
 
 	for impID, topBidsPerImp := range auc.winningBidsByBidder {
 		impDeal := impDealMap[impID]
-		for bidder, topBidsPerBidder := range topBidsPerImp {
-			maxBid := bidsToUpdate(multiBid, bidder.String())
+		for bidder, topBidsPerBidder := range topBidsPerImp { // bidder is normalized
+			maxBid := bidsToUpdate(multiBid, bidder.String()) // Here multiBid gets compared to
 
 			for i, topBid := range topBidsPerBidder {
 				if i == maxBid {
 					break
 				}
 				if topBid.DealPriority > 0 {
-					if validateDealTier(impDeal[bidder]) {
+					if validateDealTier(impDeal[bidder]) { // comparing two normalized bidders
 						updateHbPbCatDur(topBid, impDeal[bidder], bidCategory)
 					} else {
 						errs = append(errs, fmt.Errorf("dealTier configuration invalid for bidder '%s', imp ID '%s'", string(bidder), impID))
@@ -744,7 +745,7 @@ func (e *exchange) getAllBids(
 		//if bidder returned no bids back - remove bidder from further processing
 		for _, seatBid := range brw.adapterSeatBids {
 			if seatBid != nil {
-				bidderName := openrtb_ext.BidderName(seatBid.Seat)
+				bidderName := openrtb_ext.BidderName(seatBid.Seat) // Also normalize here so we can compare in MultiBid properly
 				if len(seatBid.Bids) != 0 {
 					if val, ok := adapterBids[bidderName]; ok {
 						adapterBids[bidderName].Bids = append(val.Bids, seatBid.Bids...)
@@ -1451,7 +1452,7 @@ func buildStoredAuctionResponse(storedAuctionResponses map[string]json.RawMessag
 				bidsToAdd = append(bidsToAdd, &entities.PbsOrtbBid{Bid: &seat.Bid[i], BidType: bidType})
 			}
 
-			bidderName := openrtb_ext.BidderName(seat.Seat)
+			bidderName := openrtb_ext.BidderName(seat.Seat) // Does this need to be normalized?
 
 			if seat.Ext != nil {
 				var seatExt openrtb_ext.ExtBidResponse

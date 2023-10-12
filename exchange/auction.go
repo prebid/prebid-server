@@ -110,7 +110,7 @@ func newAuction(seatBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, nu
 	winningBids := make(map[string]*entities.PbsOrtbBid, numImps)
 	winningBidsByBidder := make(map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid, numImps)
 
-	for bidderName, seatBid := range seatBids {
+	for bidderName, seatBid := range seatBids { // bidderName is Normalized
 		if seatBid != nil {
 			for _, bid := range seatBid.Bids {
 				wbid, ok := winningBids[bid.Bid.ImpID]
@@ -148,11 +148,12 @@ func isNewWinningBid(bid, wbid *openrtb2.Bid, preferDeals bool) bool {
 	return bid.Price > wbid.Price
 }
 
+// a.winningBidsByBidder is already normalized, no need to do anything here since it doesn't get compared with anything
 func (a *auction) validateAndUpdateMultiBid(adapterBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, preferDeals bool, accountDefaultBidLimit int) {
 	bidsSnipped := false
 	// sort bids for multibid targeting
 	for _, topBidsPerBidder := range a.winningBidsByBidder {
-		for bidder, topBids := range topBidsPerBidder {
+		for bidder, topBids := range topBidsPerBidder { // 'bidder' Normalized
 			sort.Slice(topBids, func(i, j int) bool {
 				return isNewWinningBid(topBids[i].Bid, topBids[j].Bid, preferDeals)
 			})
