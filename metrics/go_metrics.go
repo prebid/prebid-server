@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -273,11 +274,11 @@ func getModuleNames(moduleStageNames map[string][]string) []string {
 // mode metrics. The code would allways try to record the metrics, but effectively noop if we are
 // using a blank meter/timer.
 func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, disableAccountMetrics config.DisabledMetrics, syncerKeys []string, moduleStageNames map[string][]string) *Metrics {
-	exchangesStr := []string{}
+	lowerCaseExchanges := []string{}
 	for _, exchange := range exchanges {
-		exchangesStr = append(exchangesStr, string(exchange))
+		lowerCaseExchanges = append(lowerCaseExchanges, strings.ToLower(string(exchange)))
 	}
-	newMetrics := NewBlankMetrics(registry, exchangesStr, disableAccountMetrics, moduleStageNames)
+	newMetrics := NewBlankMetrics(registry, lowerCaseExchanges, disableAccountMetrics, moduleStageNames)
 	newMetrics.ConnectionCounter = metrics.GetOrRegisterCounter("active_connections", registry)
 	newMetrics.TMaxTimeoutCounter = metrics.GetOrRegisterCounter("tmax_timeout", registry)
 	newMetrics.ConnectionAcceptErrorMeter = metrics.GetOrRegisterMeter("connection_accept_errors", registry)
@@ -336,7 +337,7 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 		}
 	}
 
-	for _, a := range exchangesStr {
+	for _, a := range lowerCaseExchanges {
 		registerAdapterMetrics(registry, "adapter", string(a), newMetrics.AdapterMetrics[a])
 	}
 
