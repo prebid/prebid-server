@@ -10,29 +10,36 @@
 <a href="https://prebid.org/product-suite/prebid-server/">Prebid Server</a> is an open-source solution for running real-time advertising auctions in the cloud. This project is part of the <a href="https://prebid.org/">Prebid.org</a> ecosystem, seamlessly integrating with  <a href="https://prebid.org/product-suite/prebidjs/">Prebid.js</a> and the <a href="https://prebid.org/product-suite/prebid-mobile/">Prebid Mobile SDKs</a> to deliver world-class header bidding for any ad format and for any type of digital media.
 
 ## Getting Started
-- <a href="https://docs.prebid.org/prebid-server/overview/prebid-server-overview.html">What is Prebid Server?</a>
-- <a href="https://docs.prebid.org/overview/intro-to-header-bidding.html">Intro to Header Bidding</a>
-- <a href="https://docs.prebid.org/overview/intro.html#header-bidding-with-prebid">Header Bidding with Prebid</a>
-- <a href="https://docs.prebid.org/prebid-server/endpoints/pbs-endpoint-overview.html">API Endpoints</a>
+- [What is Prebid Server](https://docs.prebid.org/prebid-server/overview/prebid-server-overview.html)
+- [Intro to Header Bidding](https://docs.prebid.org/overview/intro-to-header-bidding.html)
+- [Header Bidding with Prebid](https://docs.prebid.org/overview/intro.html#header-bidding-with-prebid)
+- [API Endpoints](https://docs.prebid.org/prebid-server/endpoints/pbs-endpoint-overview.html)
+  
+## Configuration
 
-## Required Configuration
+When hosting Prebid Server or developing locally, **you must set a default GDPR value**. This configuration determines whether GDPR is enabled when no regulatory signal is available in the request, where a value of `0` disables it by default and a value of `1` enables it. This is required as there is no consensus on a good default.
 
-When hosting Prebid Server or developing locally, you must set a default GDPR value. This configuration determines whether GDPR is enabled when no regulatory signal is available in the request, where a value of `0` disables it by default and a value of `1` enables it.
-
-This configuration is required because there is no consensus on a good default. Refer to the [configuration guide](docs/developers/configuration.md) for specific instructions on configuring the default GDPR value.
-
+Refer to the [configuration guide](docs/developers/configuration.md) for additional information and an overview of available configuration options.
 
 ## Hosting Prebid Server
 > [!NOTE]
-> Please consider [registering your Prebid Server host](https://docs.prebid.org/prebid-server/hosting/pbs-hosting.html#optional-registration) to join the mailing list for updates and feedback.
+> Please consider [registering as a Prebid Server host](https://docs.prebid.org/prebid-server/hosting/pbs-hosting.html#optional-registration) to join the mailing list for updates and feedback.
 
-The quickest way to host Prebid Server is to deploy our [official Docker image](https://hub.docker.com/r/prebid/prebid-server). If you're hosting the container with Kubernetes, you can configure Prebid Server with environment variables [using a pod file](https://kubernetes.io/docs/tasks/inject-data-application/define-interdependent-environment-variables/) or [using a config map](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/#configure-all-key-value-pairs-in-a-configmap-as-container-environment-variables). Alternatively, you can use a configuration file [embedded in a config map](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/#populate-a-volume-with-data-stored-in-a-configmap) which Prebid Server will read from the path `/etc/config`.
+The quickest way to host Prebid Server is to deploy our [official Docker image](https://hub.docker.com/r/prebid/prebid-server). If you're hosting the container with Kubernetes, you can configure Prebid Server with environment variables [using a pod file](https://kubernetes.io/docs/tasks/inject-data-application/define-interdependent-environment-variables/) or [using a config map](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/#configure-all-key-value-pairs-in-a-configmap-as-container-environment-variables). Alternatively, you can use a configuration file [embedded in a config map](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/#populate-a-volume-with-data-stored-in-a-configmap) which Prebid Server will read from at the path `/etc/config`.
 
-For deploying a fork, you can either create a custom Docker container using the command `docker build -t prebid-server .` or compile a standalone binary using `go build .` from the root project path. Ensure that you also deploy the `/static` directory, as Prebid Server reads from it during startup.
+For deploying a fork, you can create a custom Docker container using the command:
+``` bash
+docker build -t prebid-server .
+```
+or compile a standalone binary using the command:
+``` bash
+go build .
+```
+Ensure that you deploy the `/static` directory, as Prebid Server requires those files at startup.
 
 ## Developing Locally
 
-Prebid Server requires [Go](https://golang.org/doc/install) version 1.19 or newer. You can develop on any operating system that Go supports; however, please note that our helper scripts are written in bash.
+Prebid Server requires [Go](https://go.dev) version 1.19 or newer. You can develop on any operating system that Go supports; however, please note that our helper scripts are written in bash.
 
 1. Clone The Repository
 ``` bash
@@ -59,7 +66,7 @@ By default, Prebid Server will attach to port 8000. To confirm the server is run
 
 ### IDE Recommendation
 
-The quickest way to start developing Prebid Server in a reproducible environment isolated from your host OS is by using Visual Studio Code with [Remote Container Setup](devcontainer.md). This is a recommendation, not a requirement. This approach is useful especially if you are developing on Windows, since the Remote Container runs within WSL providing you with the capability to execute bash scripts.
+An option for developing Prebid Server in a reproducible environment isolated from your host OS is using Visual Studio Code with [Remote Container Setup](devcontainer.md). This is a recommendation, not a requirement. This approach is especially useful if you are developing on Windows, since the Remote Container runs within WSL providing you with the capability to execute bash scripts.
 
 ## Importing Prebid Server
 
@@ -70,20 +77,16 @@ Prebid Server is not intended to be imported by other projects. Go Modules is us
 > All contributions must follow the [Prebid Code of Conduct](https://prebid.org/code-of-conduct/) and the [Prebid Module Rules](https://docs.prebid.org/dev-docs/module-rules.html).
 
 ### Bid Adapter
-Bid Adapters are responsible for translating an OpenRTB request for an SSP and mapping the bid response. We invite you to contribute an adapter for your SSP. Consult our guide on [building a bid adapter](https://docs.prebid.org/prebid-server/developers/add-new-bidder-go.html) for more information.
+Bid Adapters transform OpenRTB requests and responses for communication with an SSP. This may be as simple as a passthrough or as complex as mapping to a custom data model. We invite you to contribute an adapter for your company. Consult our guide on [building a bid adapter](https://docs.prebid.org/prebid-server/developers/add-new-bidder-go.html) for more information.
 
 ### Analytics Module
-Analytics Modules enable analytics and reporting tools to collect data from Prebid Server, allowing publishers to gather valuable insights from their header bidding traffic. The information made available to Analytics Modules is subject to Prebid Server privacy controls. We welcome you to contribute a module for your platform. Refer to our guide on [building an analytics module](https://docs.prebid.org/prebid-server/developers/pbs-build-an-analytics-adapter.html) for more information.
+Analytics Modules enable business intelligence tools to collect data from Prebid Server to provide publishers and hosts with valuable insights into their header bidding traffic. We welcome you to contribute a module for your platform. Refer to our guide on [building an analytics module](https://docs.prebid.org/prebid-server/developers/pbs-build-an-analytics-adapter.html) for further information.
 
 ### Auction Module
-  extends the behavior of prebid server in many ways, such as bid filters, a/b testing, etc. follow our instructions here.
+Auction Modules allow hosts to extend the behavior of Prebid Server at specfic spots in the auction pipeline using existing modules or by developing custom functionality. Auction Modules may provide creative validation, traffic optimization, and real time data services amoung other potential uses. We welcome vendors and community members to contribute modules that publishers and hosts may find useful. Consult our gude on [building an auction module](https://docs.prebid.org/prebid-server/developers/add-a-module.html) for more information.
 
 ### Feature
-also proposals
- all are welcome to contribute to this project. feel free to pick up an issue which is in the "ready for dev" state, before working on it, please post a comment to avoid double work. if you have a question about the specs, 
+We welcome everyone to contribute to this project by implementing a specification or by proposing a new feature. Please review the [prioritized project board](https://github.com/orgs/prebid/projects/4), where you can select an issue labeled "Ready For Dev". To avoid redundant effort, kindly leave a comment on the issue stating your intention to take it on. To propose a feature, [open a new issue](https://github.com/prebid/prebid-server/issues/new/choose) with as much detail as possible for consideration by the Prebid Server Committee.
 
 ### Bug Fix
- please open an issue to detail the bug and or your feature proposal. a member of the core development team will review and discuss next steps after either verifying the bug or discussing the feature. if you want to open an exploratory PR, please mark it as a draft.
-
-## License
-[Apache 2.0](/LICENSE)
+Bug reports may be submitted by [opening a new issue](https://github.com/prebid/prebid-server/issues/new/choose) and describing the error in detail with with steps to reproduce with example data. A member of the core development team will validate the bug and discuss next steps. You are encouraged to open an exploratory draft pull request to either demonstrate the bug by adding a test or offering a potential fix.
