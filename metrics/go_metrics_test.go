@@ -361,6 +361,7 @@ func TestRecordBidValidationSecureMarkup(t *testing.T) {
 		},
 	}
 	adapter := "AnyName"
+	lowerCaseAdapter := "anyname"
 	for _, test := range testCases {
 		registry := metrics.NewRegistry()
 		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderName(adapter)}, test.givenDisabledMetrics, nil, nil)
@@ -369,7 +370,7 @@ func TestRecordBidValidationSecureMarkup(t *testing.T) {
 		m.RecordBidValidationSecureMarkupWarn(openrtb_ext.BidderName(adapter), test.givenPubID)
 		am := m.getAccountMetrics(test.givenPubID)
 
-		assert.Equal(t, test.expectedAdapterCount, m.AdapterMetrics[adapter].BidValidationSecureMarkupErrorMeter.Count())
+		assert.Equal(t, test.expectedAdapterCount, m.AdapterMetrics[lowerCaseAdapter].BidValidationSecureMarkupErrorMeter.Count())
 		assert.Equal(t, test.expectedAdapterCount, m.AdapterMetrics[adapter].BidValidationSecureMarkupWarnMeter.Count())
 		assert.Equal(t, test.expectedAccountCount, am.bidValidationSecureMarkupMeter.Count())
 		assert.Equal(t, test.expectedAccountCount, am.bidValidationSecureMarkupWarnMeter.Count())
