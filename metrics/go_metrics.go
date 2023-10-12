@@ -997,9 +997,10 @@ func (me *Metrics) RecordBidValidationSecureMarkupError(adapter openrtb_ext.Bidd
 }
 
 func (me *Metrics) RecordBidValidationSecureMarkupWarn(adapter openrtb_ext.BidderName, pubID string) {
-	am, ok := me.AdapterMetrics[string(adapter)]
+	adapterStr := string(adapter)
+	am, ok := me.AdapterMetrics[strings.ToLower(adapterStr)]
 	if !ok {
-		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", string(adapter))
+		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", adapterStr)
 		return
 	}
 	am.BidValidationSecureMarkupWarnMeter.Mark(1)

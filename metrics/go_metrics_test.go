@@ -371,7 +371,7 @@ func TestRecordBidValidationSecureMarkup(t *testing.T) {
 		am := m.getAccountMetrics(test.givenPubID)
 
 		assert.Equal(t, test.expectedAdapterCount, m.AdapterMetrics[lowerCaseAdapter].BidValidationSecureMarkupErrorMeter.Count())
-		assert.Equal(t, test.expectedAdapterCount, m.AdapterMetrics[adapter].BidValidationSecureMarkupWarnMeter.Count())
+		assert.Equal(t, test.expectedAdapterCount, m.AdapterMetrics[lowerCaseAdapter].BidValidationSecureMarkupWarnMeter.Count())
 		assert.Equal(t, test.expectedAccountCount, am.bidValidationSecureMarkupMeter.Count())
 		assert.Equal(t, test.expectedAccountCount, am.bidValidationSecureMarkupWarnMeter.Count())
 	}
