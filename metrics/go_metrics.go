@@ -785,15 +785,17 @@ func (me *Metrics) RecordAdapterBidReceived(labels AdapterLabels, bidType openrt
 
 // RecordAdapterPrice implements a part of the MetricsEngine interface. Generates a histogram of winning bid prices
 func (me *Metrics) RecordAdapterPrice(labels AdapterLabels, cpm float64) {
-	am, ok := me.AdapterMetrics[string(labels.Adapter)]
+	adapterStr := string(labels.Adapter)
+	lowercaseAdapter := strings.ToLower(adapterStr)
+	am, ok := me.AdapterMetrics[lowercaseAdapter]
 	if !ok {
-		glog.Errorf("Trying to run adapter price metrics on %s: adapter metrics not found", string(labels.Adapter))
+		glog.Errorf("Trying to run adapter price metrics on %s: adapter metrics not found", adapterStr)
 		return
 	}
 	// Adapter metrics
 	am.PriceHistogram.Update(int64(cpm))
 	// Account-Adapter metrics
-	if aam, ok := me.getAccountMetrics(labels.PubID).adapterMetrics[string(labels.Adapter)]; ok {
+	if aam, ok := me.getAccountMetrics(labels.PubID).adapterMetrics[lowercaseAdapter]; ok {
 		aam.PriceHistogram.Update(int64(cpm))
 	}
 }
