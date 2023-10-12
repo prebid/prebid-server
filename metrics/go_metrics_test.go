@@ -1148,34 +1148,34 @@ func VerifyMetrics(t *testing.T, name string, expected int64, actual int64) {
 func TestRecordAdapterPanic(t *testing.T) {
 	registry := metrics.NewRegistry()
 	adapter := "AnyName"
-	lowerCasedAdapterName := "anyname"
+	lowerCaseAdapterName := "anyname"
 	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderName(adapter)}, config.DisabledMetrics{AccountAdapterDetails: true, AccountModulesMetrics: true}, nil, map[string][]string{"foobar": {"entry", "raw"}})
 	m.RecordAdapterPanic(AdapterLabels{Adapter: openrtb_ext.BidderName(adapter)})
-	assert.Equal(t, m.AdapterMetrics[lowerCasedAdapterName].PanicMeter.Count(), int64(1))
+	assert.Equal(t, m.AdapterMetrics[lowerCaseAdapterName].PanicMeter.Count(), int64(1))
 }
 
 func TestRecordAdapterPrice(t *testing.T) {
 	registry := metrics.NewRegistry()
 	syncerKeys := []string{"foo"}
 	adapter := "AnyName"
-	lowerCasedAdapterName := "anyname"
+	lowerCaseAdapterName := "anyname"
 	pubID := "pub1"
 	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderName(adapter), openrtb_ext.BidderAppnexus}, config.DisabledMetrics{}, syncerKeys, nil)
 	m.RecordAdapterPrice(AdapterLabels{Adapter: openrtb_ext.BidderName(adapter), PubID: pubID}, 1000)
-	assert.Equal(t, m.AdapterMetrics[lowerCasedAdapterName].PriceHistogram.Max(), int64(1000))
-	assert.Equal(t, m.getAccountMetrics(pubID).adapterMetrics[lowerCasedAdapterName].PriceHistogram.Max(), int64(1000))
+	assert.Equal(t, m.AdapterMetrics[lowerCaseAdapterName].PriceHistogram.Max(), int64(1000))
+	assert.Equal(t, m.getAccountMetrics(pubID).adapterMetrics[lowerCaseAdapterName].PriceHistogram.Max(), int64(1000))
 }
 
 func TestRecordAdapterTime(t *testing.T) {
 	registry := metrics.NewRegistry()
 	syncerKeys := []string{"foo"}
 	adapter := "AnyName"
-	lowerCasedAdapterName := "anyname"
+	lowerCaseAdapterName := "anyname"
 	pubID := "pub1"
 	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderName(adapter), openrtb_ext.BidderAppnexus, openrtb_ext.BidderName("Adapter2")}, config.DisabledMetrics{}, syncerKeys, nil)
 	m.RecordAdapterTime(AdapterLabels{Adapter: openrtb_ext.BidderName(adapter), PubID: pubID}, 1000)
-	assert.Equal(t, m.AdapterMetrics[lowerCasedAdapterName].RequestTimer.Max(), int64(1000))
-	assert.Equal(t, m.getAccountMetrics(pubID).adapterMetrics[lowerCasedAdapterName].RequestTimer.Max(), int64(1000))
+	assert.Equal(t, m.AdapterMetrics[lowerCaseAdapterName].RequestTimer.Max(), int64(1000))
+	assert.Equal(t, m.getAccountMetrics(pubID).adapterMetrics[lowerCaseAdapterName].RequestTimer.Max(), int64(1000))
 }
 
 func TestRecordAdapterRequest(t *testing.T) {
