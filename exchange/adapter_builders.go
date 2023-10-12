@@ -384,7 +384,6 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderXtrmqb:            limelightDigital.Builder,
 		openrtb_ext.BidderYahooAds:          yahooAds.Builder,
 		openrtb_ext.BidderYahooAdvertising:  yahooAds.Builder,
-		openrtb_ext.BidderYahooSSP:          yahooAds.Builder,
 		openrtb_ext.BidderYieldlab:          yieldlab.Builder,
 		openrtb_ext.BidderYieldmo:           yieldmo.Builder,
 		openrtb_ext.BidderYieldone:          yieldone.Builder,
