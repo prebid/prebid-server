@@ -14,8 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prebid/prebid-server/privacy"
-
 	"github.com/buger/jsonparser"
 	"github.com/gofrs/uuid"
 	"github.com/golang/glog"
@@ -30,6 +28,7 @@ import (
 	"github.com/prebid/prebid-server/bidadjustment"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/ortb"
+	"github.com/prebid/prebid-server/privacy"
 	"golang.org/x/net/publicsuffix"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
@@ -89,7 +88,7 @@ func NewEndpoint(
 	accounts stored_requests.AccountFetcher,
 	cfg *config.Configuration,
 	metricsEngine metrics.MetricsEngine,
-	pbsAnalytics analytics.PBSAnalyticsModule,
+	analyticsRunner analytics.Runner,
 	disabledBidders map[string]string,
 	defReqJSON []byte,
 	bidderMap map[string]openrtb_ext.BidderName,
@@ -117,7 +116,7 @@ func NewEndpoint(
 		accounts,
 		cfg,
 		metricsEngine,
-		pbsAnalytics,
+		analyticsRunner,
 		disabledBidders,
 		defRequest,
 		defReqJSON,
@@ -127,8 +126,11 @@ func NewEndpoint(
 		ipValidator,
 		storedRespFetcher,
 		hookExecutionPlanBuilder,
-		tmaxAdjustments}).Auction), nil
+		tmaxAdjustments,
+		openrtb_ext.NormalizeBidderName}).Auction), nil
 }
+
+type normalizeBidderName func(name string) (openrtb_ext.BidderName, bool)
 
 type endpointDeps struct {
 	uuidGenerator             uuidutil.UUIDGenerator
@@ -139,7 +141,7 @@ type endpointDeps struct {
 	accounts                  stored_requests.AccountFetcher
 	cfg                       *config.Configuration
 	metricsEngine             metrics.MetricsEngine
-	analytics                 analytics.PBSAnalyticsModule
+	analytics                 analytics.Runner
 	disabledBidders           map[string]string
 	defaultRequest            bool
 	defReqJSON                []byte
@@ -150,6 +152,7 @@ type endpointDeps struct {
 	storedRespFetcher         stored_requests.Fetcher
 	hookExecutionPlanBuilder  hooks.ExecutionPlanBuilder
 	tmaxAdjustments           *exchange.TmaxAdjustmentsPreprocessed
+	normalizeBidderName       normalizeBidderName
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -176,10 +179,12 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		CookieFlag:    metrics.CookieFlagUnknown,
 		RequestStatus: metrics.RequestStatusOK,
 	}
+
+	activityControl := privacy.ActivityControl{}
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
-		deps.analytics.LogAuctionObject(&ao)
+		deps.analytics.LogAuctionObject(&ao, activityControl)
 	}()
 
 	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
@@ -197,7 +202,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
 
-	activityControl := privacy.NewActivityControl(&account.Privacy)
+	activityControl = privacy.NewActivityControl(&account.Privacy)
 
 	ctx := context.Background()
 
@@ -764,7 +769,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 		}
 	}
 
-	var aliases map[string]string
+	var requestAliases map[string]string
 	reqExt, err := req.GetRequestExt()
 	if err != nil {
 		return []error{fmt.Errorf("request.ext is invalid: %v", err)}
@@ -776,17 +781,17 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 	}
 
 	if reqPrebid != nil {
-		aliases = reqPrebid.Aliases
+		requestAliases = reqPrebid.Aliases
 
-		if err := deps.validateAliases(aliases); err != nil {
+		if err := deps.validateAliases(requestAliases); err != nil {
 			return []error{err}
 		}
 
-		if err := deps.validateAliasesGVLIDs(reqPrebid.AliasGVLIDs, aliases); err != nil {
+		if err := deps.validateAliasesGVLIDs(reqPrebid.AliasGVLIDs, requestAliases); err != nil {
 			return []error{err}
 		}
 
-		if err := deps.validateBidAdjustmentFactors(reqPrebid.BidAdjustmentFactors, aliases); err != nil {
+		if err := deps.validateBidAdjustmentFactors(reqPrebid.BidAdjustmentFactors, requestAliases); err != nil {
 			return []error{err}
 		}
 
@@ -794,7 +799,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 			return []error{err}
 		}
 
-		if err := deps.validateEidPermissions(reqPrebid.Data, aliases); err != nil {
+		if err := deps.validateEidPermissions(reqPrebid.Data, requestAliases); err != nil {
 			return []error{err}
 		}
 
@@ -843,7 +848,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 		}
 	}
 
-	if errs := deps.validateUser(req, aliases, gpp); errs != nil {
+	if errs := deps.validateUser(req, requestAliases, gpp); errs != nil {
 		if len(errs) > 0 {
 			errL = append(errL, errs...)
 		}
@@ -870,7 +875,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 		if errortypes.ContainsFatalError([]error{err}) {
 			return errL
 		}
-	} else if _, err := ccpaPolicy.Parse(exchange.GetValidBidders(aliases)); err != nil {
+	} else if _, err := ccpaPolicy.Parse(exchange.GetValidBidders(requestAliases)); err != nil {
 		if _, invalidConsent := err.(*errortypes.Warning); invalidConsent {
 			errL = append(errL, &errortypes.Warning{
 				Message:     fmt.Sprintf("CCPA consent is invalid and will be ignored. (%v)", err),
@@ -893,7 +898,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 		}
 		impIDs[imp.ID] = i
 
-		errs := deps.validateImp(imp, aliases, i, hasStoredResponses, storedBidResp)
+		errs := deps.validateImp(imp, requestAliases, i, hasStoredResponses, storedBidResp)
 		if len(errs) > 0 {
 			errL = append(errL, errs...)
 		}
@@ -985,7 +990,7 @@ func validateSChains(sChains []*openrtb_ext.ExtRequestPrebidSChain) error {
 	return err
 }
 
-func (deps *endpointDeps) validateEidPermissions(prebid *openrtb_ext.ExtRequestPrebidData, aliases map[string]string) error {
+func (deps *endpointDeps) validateEidPermissions(prebid *openrtb_ext.ExtRequestPrebidData, requestAliases map[string]string) error {
 	if prebid == nil {
 		return nil
 	}
@@ -1005,7 +1010,7 @@ func (deps *endpointDeps) validateEidPermissions(prebid *openrtb_ext.ExtRequestP
 			return fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] missing or empty required field: "bidders"`, i)
 		}
 
-		if err := validateBidders(eid.Bidders, deps.bidderMap, aliases); err != nil {
+		if err := deps.validateBidders(eid.Bidders, deps.bidderMap, requestAliases); err != nil {
 			return fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] contains %v`, i, err)
 		}
 	}
@@ -1013,20 +1018,16 @@ func (deps *endpointDeps) validateEidPermissions(prebid *openrtb_ext.ExtRequestP
 	return nil
 }
 
-func validateBidders(bidders []string, knownBidders map[string]openrtb_ext.BidderName, knownAliases map[string]string) error {
+func (deps *endpointDeps) validateBidders(bidders []string, knownBidders map[string]openrtb_ext.BidderName, knownRequestAliases map[string]string) error {
 	for _, bidder := range bidders {
 		if bidder == "*" {
 			if len(bidders) > 1 {
 				return errors.New(`bidder wildcard "*" mixed with specific bidders`)
 			}
 		} else {
-			bidderName := bidder
-			normalizedCoreBidder, ok := openrtb_ext.NormalizeBidderName(bidderName)
-			if ok {
-				bidderName = normalizedCoreBidder.String()
-			}
-			_, isCoreBidder := knownBidders[bidderName]
-			_, isAlias := knownAliases[bidder]
+			bidderNormalized, _ := deps.normalizeBidderName(bidder)
+			_, isCoreBidder := knownBidders[bidderNormalized.String()]
+			_, isAlias := knownRequestAliases[bidder]
 			if !isCoreBidder && !isAlias {
 				return fmt.Errorf(`unrecognized bidder "%v"`, bidder)
 			}
