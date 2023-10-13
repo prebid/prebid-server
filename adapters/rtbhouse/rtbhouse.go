@@ -164,23 +164,21 @@ func (adapter *RTBHouseAdapter) MakeBids(
 			bid := bid // pin! -> https://github.com/kyoh86/scopelint#whats-this
 			bidType := getMediaTypeForBid(bid)
 
-			if bidType != "" {
-				typedBid = &adapters.TypedBid{
-					Bid:     &bid,
-					BidType: bidType,
-				}
-
-				// for native bid responses fix Adm field
-				if typedBid.BidType == openrtb_ext.BidTypeNative {
-					bid.AdM, err = getNativeAdm(bid.AdM)
-					if err != nil {
-						errs = append(errs, err)
-						return nil, errs
-					}
-				}
-
-				bidderResponse.Bids = append(bidderResponse.Bids, typedBid)
+			typedBid = &adapters.TypedBid{
+				Bid:     &bid,
+				BidType: bidType,
 			}
+
+			// for native bid responses fix Adm field
+			if typedBid.BidType == openrtb_ext.BidTypeNative {
+				bid.AdM, err = getNativeAdm(bid.AdM)
+				if err != nil {
+					errs = append(errs, err)
+					return nil, errs
+				}
+			}
+
+			bidderResponse.Bids = append(bidderResponse.Bids, typedBid)
 		}
 	}
 
@@ -197,14 +195,13 @@ func getMediaTypeForBid(bid openrtb2.Bid) openrtb_ext.BidType {
 	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative
 	default:
-		return ""
+		return openrtb_ext.BidTypeBanner
 	}
 }
 
 func getNativeAdm(adm string) (string, error) {
-	var err error
 	nativeAdm := make(map[string]interface{})
-	err = json.Unmarshal([]byte(adm), &nativeAdm)
+	err := json.Unmarshal([]byte(adm), &nativeAdm)
 	if err != nil {
 		return adm, errors.New("unable to unmarshal native adm")
 	}
