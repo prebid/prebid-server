@@ -2375,12 +2375,10 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	if spec.MultiBid != nil {
 		auctionRequest.Account.DefaultBidLimit = spec.MultiBid.AccountMaxBid
 
-		auctionRequest.BidRequestWrapper.Ext = spec.IncomingRequest.OrtbRequest.Ext
-		requestExt, err := auctionRequest.BidRequestWrapper.GetRequestExt()
-		assert.NoError(t, err, "invalid request ext returned from request wrapper")
-
-		requestExtPrebid := requestExt.GetPrebid()
-		validatedMultiBids, errs := openrtb_ext.ValidateAndBuildExtMultiBid(requestExtPrebid)
+		requestExt := &openrtb_ext.ExtRequest{}
+		err := json.Unmarshal(spec.IncomingRequest.OrtbRequest.Ext, requestExt)
+		assert.NoError(t, err, "invalid request ext")
+		validatedMultiBids, errs := openrtb_ext.ValidateAndBuildExtMultiBid(&requestExt.Prebid)
 		for _, err := range errs { // same as in validateRequestExt().
 			auctionRequest.Warnings = append(auctionRequest.Warnings, &errortypes.Warning{
 				WarningCode: errortypes.MultiBidWarningCode,
@@ -2388,10 +2386,10 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 			})
 		}
 
-		copy(requestExtPrebid.MultiBid, validatedMultiBids)
-		//requestExtPrebid.MultiBid = append(requestExtPrebid.MultiBid, validatedMultiBids...)
-		requestExt.SetPrebid(requestExtPrebid)
-		auctionRequest.BidRequestWrapper.RebuildRequest()
+		requestExt.Prebid.MultiBid = validatedMultiBids
+		updateReqExt, err := json.Marshal(requestExt)
+		assert.NoError(t, err, "invalid request ext")
+		auctionRequest.BidRequestWrapper.Ext = updateReqExt
 	}
 
 	if spec.StartTime > 0 {
