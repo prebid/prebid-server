@@ -2,10 +2,12 @@ package rtbhouse
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 
+	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
@@ -49,9 +51,12 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 			if err != nil {
 				return nil, []error{err}
 			}
-			if rtbhouseExt.BidFloor > 0 && len(reqCopy.Cur) > 0 {
-				bidFloorCur = reqCopy.Cur[0]
+			if rtbhouseExt.BidFloor > 0 {
 				bidFloor = rtbhouseExt.BidFloor
+				bidFloorCur = BidderCurrency
+				if len(reqCopy.Cur) > 0 {
+					bidFloorCur = reqCopy.Cur[0]
+				}
 			}
 		}
 
@@ -155,9 +160,27 @@ func (adapter *RTBHouseAdapter) MakeBids(
 	var typedBid *adapters.TypedBid
 	for _, seatBid := range openRTBBidderResponse.SeatBid {
 		for _, bid := range seatBid.Bid {
+			var err error
 			bid := bid // pin! -> https://github.com/kyoh86/scopelint#whats-this
-			typedBid = &adapters.TypedBid{Bid: &bid, BidType: "banner"}
-			bidderResponse.Bids = append(bidderResponse.Bids, typedBid)
+			bidType := getMediaTypeForBid(bid)
+
+			if bidType != "" {
+				typedBid = &adapters.TypedBid{
+					Bid:     &bid,
+					BidType: bidType,
+				}
+
+				// for native bid responses fix Adm field
+				if typedBid.BidType == openrtb_ext.BidTypeNative {
+					bid.AdM, err = getNativeAdm(bid.AdM)
+					if err != nil {
+						errs = append(errs, err)
+						return nil, errs
+					}
+				}
+
+				bidderResponse.Bids = append(bidderResponse.Bids, typedBid)
+			}
 		}
 	}
 
@@ -165,4 +188,36 @@ func (adapter *RTBHouseAdapter) MakeBids(
 
 	return bidderResponse, nil
 
+}
+
+func getMediaTypeForBid(bid openrtb2.Bid) openrtb_ext.BidType {
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative
+	default:
+		return ""
+	}
+}
+
+func getNativeAdm(adm string) (string, error) {
+	var err error
+	nativeAdm := make(map[string]interface{})
+	err = json.Unmarshal([]byte(adm), &nativeAdm)
+	if err != nil {
+		return adm, errors.New("unable to unmarshal native adm")
+	}
+
+	// move bid.adm.native to bid.adm
+	if _, ok := nativeAdm["native"]; ok {
+		//using jsonparser to avoid marshaling, encode escape, etc.
+		value, dataType, _, err := jsonparser.Get([]byte(adm), string(openrtb_ext.BidTypeNative))
+		if err != nil || dataType != jsonparser.Object {
+			return adm, errors.New("unable to get native adm")
+		}
+		adm = string(value)
+	}
+
+	return adm, nil
 }
