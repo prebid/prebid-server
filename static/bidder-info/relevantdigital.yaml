@@ -1,0 +1,15 @@
+endpoint: "https://{{.Host}}.relevant-digital.com/openrtb2/auction"
+maintainer:
+  email: "support@relevant-digital.com"
+gvlVendorID: 1100
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
