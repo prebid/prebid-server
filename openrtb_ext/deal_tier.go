@@ -39,8 +39,9 @@ func ReadDealTiersFromImp(imp openrtb2.Imp) (DealTierBidderMap, error) {
 	}
 	for bidder, param := range impPrebidExt.Prebid.Bidders {
 		if param.DealTier != nil {
-			// Normalize before assigning to map
-			dealTiers[BidderName(bidder)] = *param.DealTier
+			if bidderNormalized, bidderFound := NormalizeBidderName(bidder); bidderFound {
+				dealTiers[bidderNormalized] = *param.DealTier
+			}
 		}
 	}
 
