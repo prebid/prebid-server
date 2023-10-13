@@ -25,6 +25,7 @@ type ExtBidPrebid struct {
 	Events            *ExtBidPrebidEvents `json:"events,omitempty"`
 	BidId             string              `json:"bidid,omitempty"`
 	Passthrough       json.RawMessage     `json:"passthrough,omitempty"`
+	OrigSeat          string              `json:"origseat,omitempty"`
 }
 
 // ExtBidPrebidCache defines the contract for  bidresponse.seatbid.bid[i].ext.prebid.cache

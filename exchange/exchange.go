@@ -1170,6 +1170,7 @@ func (e *exchange) makeBid(bids []*entities.PbsOrtbBid, auc *auction, returnCrea
 			Video:             bid.BidVideo,
 			BidId:             bid.GeneratedBidID,
 			TargetBidderCode:  bid.TargetBidderCode,
+			OrigSeat:          bid.OrigSeat,
 		}
 
 		if cacheInfo, found := e.getBidCacheInfo(bid, auc); found {

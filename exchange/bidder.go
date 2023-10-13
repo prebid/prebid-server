@@ -356,6 +356,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 							DealPriority:   bidResponse.Bids[i].DealPriority,
 							OriginalBidCPM: originalBidCpm,
 							OriginalBidCur: bidResponse.Currency,
+							OrigSeat:       bidResponse.Bids[i].OrigSeat,
 						})
 					}
 				} else {
