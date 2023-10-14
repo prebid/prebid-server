@@ -66,6 +66,8 @@ type ExtBidPrebidMeta struct {
 	PrimaryCategoryID    string          `json:"primaryCatId,omitempty"`
 	RendererName         string          `json:"rendererName,omitempty"`
 	RendererVersion      string          `json:"rendererVersion,omitempty"`
+	RendererData         json.RawMessage `json:"rendererData,omitempty"`
+	RendererUrl          string          `json:"rendererUrl,omitempty"`
 	SecondaryCategoryIDs []string        `json:"secondaryCatIds,omitempty"`
 }
 

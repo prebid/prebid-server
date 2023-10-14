@@ -9,10 +9,8 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/util/sliceutil"
 
 	validator "github.com/asaskevich/govalidator"
 	"gopkg.in/yaml.v3"
@@ -37,9 +35,6 @@ type BidderInfo struct {
 	Syncer *Syncer `yaml:"userSync" mapstructure:"userSync"`
 
 	Experiment BidderInfoExperiment `yaml:"experiment" mapstructure:"experiment"`
-
-	// needed for backwards compatibility
-	UserSyncURL string `yaml:"usersync_url" mapstructure:"usersync_url"`
 
 	// needed for Rubicon
 	XAPI AdapterXAPI `yaml:"xapi" mapstructure:"xapi"`
@@ -78,6 +73,7 @@ type MaintainerInfo struct {
 type CapabilitiesInfo struct {
 	App  *PlatformInfo `yaml:"app" mapstructure:"app"`
 	Site *PlatformInfo `yaml:"site" mapstructure:"site"`
+	DOOH *PlatformInfo `yaml:"dooh" mapstructure:"dooh"`
 }
 
 // PlatformInfo specifies the supported media types for a bidder.
@@ -241,16 +237,10 @@ func processBidderInfos(reader InfoReader, normalizeBidderName func(string) (ope
 	for fileName, data := range bidderConfigs {
 		bidderName := strings.Split(fileName, ".")
 		if len(bidderName) == 2 && bidderName[1] == "yaml" {
-			normalizedBidderName, bidderNameExists := normalizeBidderName(bidderName[0])
-			if !bidderNameExists {
-				return nil, fmt.Errorf("error parsing config for bidder %s: unknown bidder", fileName)
-			}
 			info := BidderInfo{}
 			if err := yaml.Unmarshal(data, &info); err != nil {
 				return nil, fmt.Errorf("error parsing config for bidder %s: %v", fileName, err)
 			}
-
-			bidderInfos[string(normalizedBidderName)] = info
 
 			//need to maintain nullable fields from BidderInfo struct into bidderInfoNullableFields
 			//to handle the default values in aliases yaml
@@ -260,7 +250,25 @@ func processBidderInfos(reader InfoReader, normalizeBidderName func(string) (ope
 					return nil, fmt.Errorf("error parsing config for aliased bidder %s: %v", fileName, err)
 				}
 
+				//required for CoreBidderNames function to also return aliasBiddernames
+				if err := openrtb_ext.SetAliasBidderName(bidderName[0], openrtb_ext.BidderName(info.AliasOf)); err != nil {
+					return nil, err
+				}
+
+				normalizedBidderName, bidderNameExists := normalizeBidderName(bidderName[0])
+				if !bidderNameExists {
+					return nil, fmt.Errorf("error parsing config for an alias %s: unknown bidder", fileName)
+				}
+
 				aliasNillableFieldsByBidder[string(normalizedBidderName)] = aliasFields
+				bidderInfos[string(normalizedBidderName)] = info
+			} else {
+				normalizedBidderName, bidderNameExists := normalizeBidderName(bidderName[0])
+				if !bidderNameExists {
+					return nil, fmt.Errorf("error parsing config for bidder %s: unknown bidder", fileName)
+				}
+
+				bidderInfos[string(normalizedBidderName)] = info
 			}
 		}
 	}
@@ -277,10 +285,6 @@ func processBidderAliases(aliasNillableFieldsByBidder map[string]aliasNillableFi
 			return nil, err
 		}
 
-		//required for CoreBidderNames function to also return aliasBiddernames
-		if err := openrtb_ext.SetAliasBidderName(bidderName, openrtb_ext.BidderName(aliasBidderInfo.AliasOf)); err != nil {
-			return nil, err
-		}
 		parentBidderInfo := bidderInfos[aliasBidderInfo.AliasOf]
 		if aliasBidderInfo.AppSecret == "" {
 			aliasBidderInfo.AppSecret = parentBidderInfo.AppSecret
@@ -312,11 +316,13 @@ func processBidderAliases(aliasNillableFieldsByBidder map[string]aliasNillableFi
 		if aliasBidderInfo.PlatformID == "" {
 			aliasBidderInfo.PlatformID = parentBidderInfo.PlatformID
 		}
-		if aliasBidderInfo.Syncer == nil {
-			aliasBidderInfo.Syncer = parentBidderInfo.Syncer
-		}
-		if aliasBidderInfo.UserSyncURL == "" {
-			aliasBidderInfo.UserSyncURL = parentBidderInfo.UserSyncURL
+		if aliasBidderInfo.Syncer == nil && parentBidderInfo.Syncer != nil {
+			syncerKey := aliasBidderInfo.AliasOf
+			if parentBidderInfo.Syncer.Key != "" {
+				syncerKey = parentBidderInfo.Syncer.Key
+			}
+			syncer := Syncer{Key: syncerKey}
+			aliasBidderInfo.Syncer = &syncer
 		}
 		if alias.Disabled == nil {
 			aliasBidderInfo.Disabled = parentBidderInfo.Disabled
@@ -453,7 +459,9 @@ func validateAliasCapabilities(aliasBidderInfo BidderInfo, infos BidderInfos, bi
 			return fmt.Errorf("capabilities for alias: %s should be a subset of capabilities for parent bidder: %s", bidderName, aliasBidderInfo.AliasOf)
 		}
 
-		if (aliasBidderInfo.Capabilities.App != nil && parentBidder.Capabilities.App == nil) || (aliasBidderInfo.Capabilities.Site != nil && parentBidder.Capabilities.Site == nil) {
+		if (aliasBidderInfo.Capabilities.App != nil && parentBidder.Capabilities.App == nil) ||
+			(aliasBidderInfo.Capabilities.Site != nil && parentBidder.Capabilities.Site == nil) ||
+			(aliasBidderInfo.Capabilities.DOOH != nil && parentBidder.Capabilities.DOOH == nil) {
 			return fmt.Errorf("capabilities for alias: %s should be a subset of capabilities for parent bidder: %s", bidderName, aliasBidderInfo.AliasOf)
 		}
 
@@ -465,6 +473,12 @@ func validateAliasCapabilities(aliasBidderInfo BidderInfo, infos BidderInfos, bi
 
 		if aliasBidderInfo.Capabilities.App != nil && parentBidder.Capabilities.App != nil {
 			if err := isAliasPlatformInfoSubsetOfParent(*parentBidder.Capabilities.App, *aliasBidderInfo.Capabilities.App, bidderName, aliasBidderInfo.AliasOf); err != nil {
+				return err
+			}
+		}
+
+		if aliasBidderInfo.Capabilities.DOOH != nil && parentBidder.Capabilities.DOOH != nil {
+			if err := isAliasPlatformInfoSubsetOfParent(*parentBidder.Capabilities.DOOH, *aliasBidderInfo.Capabilities.DOOH, bidderName, aliasBidderInfo.AliasOf); err != nil {
 				return err
 			}
 		}
@@ -493,8 +507,8 @@ func validateCapabilities(info *CapabilitiesInfo, bidderName string) error {
 		return fmt.Errorf("missing required field: capabilities for adapter: %s", bidderName)
 	}
 
-	if info.App == nil && info.Site == nil {
-		return fmt.Errorf("at least one of capabilities.site or capabilities.app must exist for adapter: %s", bidderName)
+	if info.App == nil && info.Site == nil && info.DOOH == nil {
+		return fmt.Errorf("at least one of capabilities.site, capabilities.app, or capabilities.dooh must exist for adapter: %s", bidderName)
 	}
 
 	if info.App != nil {
@@ -505,9 +519,16 @@ func validateCapabilities(info *CapabilitiesInfo, bidderName string) error {
 
 	if info.Site != nil {
 		if err := validatePlatformInfo(info.Site); err != nil {
-			return fmt.Errorf("capabilities.site failed validation: %v, for adapter: %s", err, bidderName)
+			return fmt.Errorf("capabilities.site failed validation: %v for adapter: %s", err, bidderName)
 		}
 	}
+
+	if info.DOOH != nil {
+		if err := validatePlatformInfo(info.DOOH); err != nil {
+			return fmt.Errorf("capabilities.dooh failed validation: %v for adapter: %s", err, bidderName)
+		}
+	}
+
 	return nil
 }
 
@@ -583,51 +604,6 @@ func applyBidderInfoConfigOverrides(configBidderInfos BidderInfos, fsBidderInfos
 			}
 			if bidderInfo.EndpointCompression == "" && fsBidderCfg.EndpointCompression != "" {
 				bidderInfo.EndpointCompression = fsBidderCfg.EndpointCompression
-			}
-
-			// validate and try to apply the legacy usersync_url configuration in attempt to provide
-			// an easier upgrade path. be warned, this will break if the bidder adds a second syncer
-			// type and will eventually be removed after we've given hosts enough time to upgrade to
-			// the new config.
-			if bidderInfo.UserSyncURL != "" {
-				if fsBidderCfg.Syncer == nil {
-					return nil, fmt.Errorf("adapters.%s.usersync_url cannot be applied, bidder does not define a user sync", strings.ToLower(bidderName))
-				}
-
-				endpointsCount := 0
-				if bidderInfo.Syncer.IFrame != nil {
-					bidderInfo.Syncer.IFrame.URL = bidderInfo.UserSyncURL
-					endpointsCount++
-				}
-				if bidderInfo.Syncer.Redirect != nil {
-					bidderInfo.Syncer.Redirect.URL = bidderInfo.UserSyncURL
-					endpointsCount++
-				}
-
-				// use Supports as a hint if there are no good defaults provided
-				if endpointsCount == 0 {
-					if sliceutil.ContainsStringIgnoreCase(bidderInfo.Syncer.Supports, "iframe") {
-						bidderInfo.Syncer.IFrame = &SyncerEndpoint{URL: bidderInfo.UserSyncURL}
-						endpointsCount++
-					}
-					if sliceutil.ContainsStringIgnoreCase(bidderInfo.Syncer.Supports, "redirect") {
-						bidderInfo.Syncer.Redirect = &SyncerEndpoint{URL: bidderInfo.UserSyncURL}
-						endpointsCount++
-					}
-				}
-
-				if endpointsCount == 0 {
-					return nil, fmt.Errorf("adapters.%s.usersync_url cannot be applied, bidder does not define user sync endpoints and does not define supported endpoints", strings.ToLower(bidderName))
-				}
-
-				// if the bidder defines both an iframe and redirect endpoint, we can't be sure which config value to
-				// override, and  it wouldn't be both. this is a fatal configuration error.
-				if endpointsCount > 1 {
-					return nil, fmt.Errorf("adapters.%s.usersync_url cannot be applied, bidder defines multiple user sync endpoints or supports multiple endpoints", strings.ToLower(bidderName))
-				}
-
-				// provide a warning that this compatibility layer is temporary
-				glog.Warningf("adapters.%s.usersync_url is deprecated and will be removed in a future version, please update to the latest user sync config values", strings.ToLower(bidderName))
 			}
 
 			fsBidderInfos[string(normalizedBidderName)] = bidderInfo

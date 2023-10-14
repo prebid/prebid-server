@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/privacy"
 	"net/http"
 	"net/url"
 	"strings"
@@ -32,6 +31,7 @@ import (
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/stored_responses"
@@ -63,7 +63,7 @@ func NewAmpEndpoint(
 	accounts stored_requests.AccountFetcher,
 	cfg *config.Configuration,
 	metricsEngine metrics.MetricsEngine,
-	pbsAnalytics analytics.PBSAnalyticsModule,
+	analyticsRunner analytics.Runner,
 	disabledBidders map[string]string,
 	defReqJSON []byte,
 	bidderMap map[string]openrtb_ext.BidderName,
@@ -76,7 +76,7 @@ func NewAmpEndpoint(
 		return nil, errors.New("NewAmpEndpoint requires non-nil arguments.")
 	}
 
-	defRequest := defReqJSON != nil && len(defReqJSON) > 0
+	defRequest := len(defReqJSON) > 0
 
 	ipValidator := iputil.PublicNetworkIPValidator{
 		IPv4PrivateNetworks: cfg.RequestValidation.IPv4PrivateNetworksParsed,
@@ -92,7 +92,7 @@ func NewAmpEndpoint(
 		accounts,
 		cfg,
 		metricsEngine,
-		pbsAnalytics,
+		analyticsRunner,
 		disabledBidders,
 		defRequest,
 		defReqJSON,
@@ -103,6 +103,7 @@ func NewAmpEndpoint(
 		storedRespFetcher,
 		hookExecutionPlanBuilder,
 		tmaxAdjustments,
+		openrtb_ext.NormalizeBidderName,
 	}).AmpAuction), nil
 
 }
@@ -133,11 +134,12 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		CookieFlag:    metrics.CookieFlagUnknown,
 		RequestStatus: metrics.RequestStatusOK,
 	}
+	activityControl := privacy.ActivityControl{}
 
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
-		deps.analytics.LogAmpObject(&ao)
+		deps.analytics.LogAmpObject(&ao, activityControl)
 	}()
 
 	// Add AMP headers
@@ -207,7 +209,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		metricsStatus := metrics.RequestStatusBadInput
 		for _, er := range errL {
 			errCode := errortypes.ReadCode(er)
-			if errCode == errortypes.BlacklistedAppErrorCode || errCode == errortypes.BlacklistedAcctErrorCode {
+			if errCode == errortypes.BlacklistedAppErrorCode || errCode == errortypes.AccountDisabledErrorCode {
 				httpStatus = http.StatusServiceUnavailable
 				metricsStatus = metrics.RequestStatusBlacklisted
 				break
@@ -229,12 +231,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 
 	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
 
-	activities, activitiesErr := privacy.NewActivityControl(account.Privacy)
-	if activitiesErr != nil {
-		errL = append(errL, activitiesErr)
-		writeError(errL, w, &labels)
-		return
-	}
+	activityControl = privacy.NewActivityControl(&account.Privacy)
 
 	secGPC := r.Header.Get("Sec-GPC")
 
@@ -253,7 +250,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		HookExecutor:               hookExecutor,
 		QueryParams:                r.URL.Query(),
 		TCF2Config:                 tcf2Config,
-		Activities:                 activities,
+		Activities:                 activityControl,
 		TmaxAdjustments:            deps.tmaxAdjustments,
 	}
 

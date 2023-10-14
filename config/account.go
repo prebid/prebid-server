@@ -8,6 +8,7 @@ import (
 
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/iputil"
 )
 
 // ChannelType enumerates the values of integrations Prebid Server can configure for an account
@@ -19,6 +20,7 @@ const (
 	ChannelApp   ChannelType = "app"
 	ChannelVideo ChannelType = "video"
 	ChannelWeb   ChannelType = "web"
+	ChannelDOOH  ChannelType = "dooh"
 )
 
 // Account represents a publisher account configuration
@@ -26,7 +28,6 @@ type Account struct {
 	ID                      string                                      `mapstructure:"id" json:"id"`
 	Disabled                bool                                        `mapstructure:"disabled" json:"disabled"`
 	CacheTTL                DefaultTTLs                                 `mapstructure:"cache_ttl" json:"cache_ttl"`
-	EventsEnabled           *bool                                       `mapstructure:"events_enabled" json:"events_enabled"` // Deprecated: Use events.enabled instead.
 	CCPA                    AccountCCPA                                 `mapstructure:"ccpa" json:"ccpa"`
 	GDPR                    AccountGDPR                                 `mapstructure:"gdpr" json:"gdpr"`
 	DebugAllow              bool                                        `mapstructure:"debug_allow" json:"debug_allow"`
@@ -40,7 +41,7 @@ type Account struct {
 	Validations             Validations                                 `mapstructure:"validations" json:"validations"`
 	DefaultBidLimit         int                                         `mapstructure:"default_bid_limit" json:"default_bid_limit"`
 	BidAdjustments          *openrtb_ext.ExtRequestPrebidBidAdjustments `mapstructure:"bidadjustments" json:"bidadjustments"`
-	Privacy                 *AccountPrivacy                             `mapstructure:"privacy" json:"privacy"`
+	Privacy                 AccountPrivacy                              `mapstructure:"privacy" json:"privacy"`
 }
 
 // CookieSync represents the account-level defaults for the cookie sync endpoint.
@@ -52,9 +53,8 @@ type CookieSync struct {
 
 // AccountCCPA represents account-specific CCPA configuration
 type AccountCCPA struct {
-	Enabled            *bool          `mapstructure:"enabled" json:"enabled,omitempty"`
-	IntegrationEnabled AccountChannel `mapstructure:"integration_enabled" json:"integration_enabled"`
-	ChannelEnabled     AccountChannel `mapstructure:"channel_enabled" json:"channel_enabled"`
+	Enabled        *bool          `mapstructure:"enabled" json:"enabled,omitempty"`
+	ChannelEnabled AccountChannel `mapstructure:"channel_enabled" json:"channel_enabled"`
 }
 
 type AccountPriceFloors struct {
@@ -84,22 +84,23 @@ func (pf *AccountPriceFloors) validate(errs []error) []error {
 	return errs
 }
 
+func (pf *AccountPriceFloors) IsAdjustForBidAdjustmentEnabled() bool {
+	return pf.AdjustForBidAdjustment
+}
+
 // EnabledForChannelType indicates whether CCPA is turned on at the account level for the specified channel type
 // by using the channel type setting if defined or the general CCPA setting if defined; otherwise it returns nil
 func (a *AccountCCPA) EnabledForChannelType(channelType ChannelType) *bool {
 	if channelEnabled := a.ChannelEnabled.GetByChannelType(channelType); channelEnabled != nil {
 		return channelEnabled
-	} else if integrationEnabled := a.IntegrationEnabled.GetByChannelType(channelType); integrationEnabled != nil {
-		return integrationEnabled
 	}
 	return a.Enabled
 }
 
 // AccountGDPR represents account-specific GDPR configuration
 type AccountGDPR struct {
-	Enabled            *bool          `mapstructure:"enabled" json:"enabled,omitempty"`
-	IntegrationEnabled AccountChannel `mapstructure:"integration_enabled" json:"integration_enabled"`
-	ChannelEnabled     AccountChannel `mapstructure:"channel_enabled" json:"channel_enabled"`
+	Enabled        *bool          `mapstructure:"enabled" json:"enabled,omitempty"`
+	ChannelEnabled AccountChannel `mapstructure:"channel_enabled" json:"channel_enabled"`
 	// Array of basic enforcement vendors that is used to create the hash table so vendor names can be instantly accessed
 	BasicEnforcementVendors    []string `mapstructure:"basic_enforcement_vendors" json:"basic_enforcement_vendors"`
 	BasicEnforcementVendorsMap map[string]struct{}
@@ -124,8 +125,6 @@ type AccountGDPR struct {
 func (a *AccountGDPR) EnabledForChannelType(channelType ChannelType) *bool {
 	if channelEnabled := a.ChannelEnabled.GetByChannelType(channelType); channelEnabled != nil {
 		return channelEnabled
-	} else if integrationEnabled := a.IntegrationEnabled.GetByChannelType(channelType); integrationEnabled != nil {
-		return integrationEnabled
 	}
 	return a.Enabled
 }
@@ -246,6 +245,7 @@ type AccountChannel struct {
 	App   *bool `mapstructure:"app" json:"app,omitempty"`
 	Video *bool `mapstructure:"video" json:"video,omitempty"`
 	Web   *bool `mapstructure:"web" json:"web,omitempty"`
+	DOOH  *bool `mapstructure:"dooh" json:"dooh,omitempty"`
 }
 
 // GetByChannelType looks up the account integration enabled setting for the specified channel type
@@ -261,6 +261,8 @@ func (a *AccountChannel) GetByChannelType(channelType ChannelType) *bool {
 		channelEnabled = a.Video
 	case ChannelWeb:
 		channelEnabled = a.Web
+	case ChannelDOOH:
+		channelEnabled = a.DOOH
 	}
 
 	return channelEnabled
@@ -290,10 +292,32 @@ func (m AccountModules) ModuleConfig(id string) (json.RawMessage, error) {
 	return m[vendor][module], nil
 }
 
-func (a *AccountChannel) IsSet() bool {
-	return a.AMP != nil || a.App != nil || a.Video != nil || a.Web != nil
+type AccountPrivacy struct {
+	AllowActivities *AllowActivities `mapstructure:"allowactivities" json:"allowactivities"`
+	IPv6Config      IPv6             `mapstructure:"ipv6" json:"ipv6"`
+	IPv4Config      IPv4             `mapstructure:"ipv4" json:"ipv4"`
 }
 
-type AccountPrivacy struct {
-	AllowActivities AllowActivities `mapstructure:"allowactivities" json:"allowactivities"`
+type IPv6 struct {
+	AnonKeepBits int `mapstructure:"anon_keep_bits" json:"anon_keep_bits"`
+}
+
+type IPv4 struct {
+	AnonKeepBits int `mapstructure:"anon_keep_bits" json:"anon_keep_bits"`
+}
+
+func (ip *IPv6) Validate(errs []error) []error {
+	if ip.AnonKeepBits > iputil.IPv6BitSize || ip.AnonKeepBits < 0 {
+		err := fmt.Errorf("bits cannot exceed %d in ipv6 address, or be less than 0", iputil.IPv6BitSize)
+		errs = append(errs, err)
+	}
+	return errs
+}
+
+func (ip *IPv4) Validate(errs []error) []error {
+	if ip.AnonKeepBits > iputil.IPv4BitSize || ip.AnonKeepBits < 0 {
+		err := fmt.Errorf("bits cannot exceed %d in ipv4 address, or be less than 0", iputil.IPv4BitSize)
+		errs = append(errs, err)
+	}
+	return errs
 }

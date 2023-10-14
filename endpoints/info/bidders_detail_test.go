@@ -2,6 +2,7 @@ package info
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -225,6 +226,7 @@ func TestMapDetailFromConfig(t *testing.T) {
 				Capabilities: &config.CapabilitiesInfo{
 					App:  &config.PlatformInfo{MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner}},
 					Site: &config.PlatformInfo{MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeVideo}},
+					DOOH: &config.PlatformInfo{MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeNative}},
 				},
 			},
 			expected: bidderDetail{
@@ -236,6 +238,7 @@ func TestMapDetailFromConfig(t *testing.T) {
 				Capabilities: &capabilities{
 					App:  &platform{MediaTypes: []string{"banner"}},
 					Site: &platform{MediaTypes: []string{"video"}},
+					DOOH: &platform{MediaTypes: []string{"native"}},
 				},
 				AliasOf: "",
 			},
@@ -363,22 +366,22 @@ func TestMapMediaTypes(t *testing.T) {
 func TestBiddersDetailHandler(t *testing.T) {
 	bidderAInfo := config.BidderInfo{Endpoint: "https://secureEndpoint.com", Disabled: false, Maintainer: &config.MaintainerInfo{Email: "bidderA"}}
 	bidderAResponse := []byte(`{"status":"ACTIVE","usesHttps":true,"maintainer":{"email":"bidderA"}}`)
-	aliasAResponse := []byte(`{"status":"ACTIVE","usesHttps":true,"maintainer":{"email":"bidderA"},"aliasOf":"a"}`)
+	aliasAResponse := []byte(`{"status":"ACTIVE","usesHttps":true,"maintainer":{"email":"bidderA"},"aliasOf":"appnexus"}`)
 
 	bidderBInfo := config.BidderInfo{Endpoint: "http://unsecureEndpoint.com", Disabled: false, Maintainer: &config.MaintainerInfo{Email: "bidderB"}}
 	bidderBResponse := []byte(`{"status":"ACTIVE","usesHttps":false,"maintainer":{"email":"bidderB"}}`)
 
 	allResponse := bytes.Buffer{}
-	allResponse.WriteString(`{"a":`)
-	allResponse.Write(bidderAResponse)
-	allResponse.WriteString(`,"aAlias":`)
+	allResponse.WriteString(`{"aAlias":`)
 	allResponse.Write(aliasAResponse)
-	allResponse.WriteString(`,"b":`)
+	allResponse.WriteString(`,"appnexus":`)
+	allResponse.Write(bidderAResponse)
+	allResponse.WriteString(`,"rubicon":`)
 	allResponse.Write(bidderBResponse)
 	allResponse.WriteString(`}`)
 
-	bidders := config.BidderInfos{"a": bidderAInfo, "b": bidderBInfo}
-	aliases := map[string]string{"aAlias": "a"}
+	bidders := config.BidderInfos{"appnexus": bidderAInfo, "rubicon": bidderBInfo}
+	aliases := map[string]string{"aAlias": "appnexus"}
 
 	handler := NewBiddersDetailEndpoint(bidders, aliases)
 
@@ -391,20 +394,34 @@ func TestBiddersDetailHandler(t *testing.T) {
 	}{
 		{
 			description:      "Bidder A",
-			givenBidder:      "a",
+			givenBidder:      "appnexus",
 			expectedStatus:   http.StatusOK,
 			expectedHeaders:  http.Header{"Content-Type": []string{"application/json"}},
 			expectedResponse: bidderAResponse,
 		},
 		{
 			description:      "Bidder B",
-			givenBidder:      "b",
+			givenBidder:      "rubicon",
+			expectedStatus:   http.StatusOK,
+			expectedHeaders:  http.Header{"Content-Type": []string{"application/json"}},
+			expectedResponse: bidderBResponse,
+		},
+		{
+			description:      "Bidder B - case insensitive",
+			givenBidder:      "RUBICON",
 			expectedStatus:   http.StatusOK,
 			expectedHeaders:  http.Header{"Content-Type": []string{"application/json"}},
 			expectedResponse: bidderBResponse,
 		},
 		{
 			description:      "Bidder A Alias",
+			givenBidder:      "aAlias",
+			expectedStatus:   http.StatusOK,
+			expectedHeaders:  http.Header{"Content-Type": []string{"application/json"}},
+			expectedResponse: aliasAResponse,
+		},
+		{
+			description:      "Bidder A Alias - case insensitive",
 			givenBidder:      "aAlias",
 			expectedStatus:   http.StatusOK,
 			expectedHeaders:  http.Header{"Content-Type": []string{"application/json"}},
@@ -418,11 +435,11 @@ func TestBiddersDetailHandler(t *testing.T) {
 			expectedResponse: allResponse.Bytes(),
 		},
 		{
-			description:      "All Bidders - Wrong Case",
-			givenBidder:      "ALL",
-			expectedStatus:   http.StatusNotFound,
-			expectedHeaders:  http.Header{},
-			expectedResponse: []byte{},
+			description:      "All Bidders - Case insensitive",
+			givenBidder:      "All",
+			expectedStatus:   http.StatusOK,
+			expectedHeaders:  http.Header{"Content-Type": []string{"application/json"}},
+			expectedResponse: allResponse.Bytes(),
 		},
 		{
 			description:      "Invalid Bidder",
@@ -434,16 +451,19 @@ func TestBiddersDetailHandler(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		responseRecorder := httptest.NewRecorder()
-		handler(responseRecorder, nil, httprouter.Params{{"bidderName", test.givenBidder}})
+		t.Run(test.description, func(t *testing.T) {
+			responseRecorder := httptest.NewRecorder()
+			handler(responseRecorder, nil, httprouter.Params{{"bidderName", test.givenBidder}})
 
-		result := responseRecorder.Result()
-		assert.Equal(t, result.StatusCode, test.expectedStatus, test.description+":statuscode")
+			result := responseRecorder.Result()
+			assert.Equal(t, result.StatusCode, test.expectedStatus, test.description+":statuscode")
 
-		resultBody, _ := io.ReadAll(result.Body)
-		assert.Equal(t, test.expectedResponse, resultBody, test.description+":body")
+			resultBody, _ := io.ReadAll(result.Body)
+			fmt.Println(string(test.expectedResponse))
+			assert.Equal(t, test.expectedResponse, resultBody, test.description+":body")
 
-		resultHeaders := result.Header
-		assert.Equal(t, test.expectedHeaders, resultHeaders, test.description+":headers")
+			resultHeaders := result.Header
+			assert.Equal(t, test.expectedHeaders, resultHeaders, test.description+":headers")
+		})
 	}
 }

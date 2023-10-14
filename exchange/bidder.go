@@ -88,8 +88,6 @@ const (
 	Gzip string = "GZIP"
 )
 
-var errTmaxTimeout = errors.New("exceeded tmax duration")
-
 // AdaptBidder converts an adapters.Bidder into an exchange.AdaptedBidder.
 //
 // The name refers to the "Adapter" architecture pattern, and should not be confused with a Prebid "Adapter"
@@ -551,7 +549,7 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 			bidder.me.RecordTMaxTimeout()
 			return &httpCallInfo{
 				request: req,
-				err:     errTmaxTimeout,
+				err:     &errortypes.TmaxTimeout{Message: "exceeded tmax duration"},
 			}
 		}
 	}

@@ -20,7 +20,7 @@ import (
 
 	"github.com/prebid/prebid-server/amp"
 	"github.com/prebid/prebid-server/analytics"
-	analyticsConf "github.com/prebid/prebid-server/analytics/config"
+	analyticsBuild "github.com/prebid/prebid-server/analytics/build"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
@@ -30,6 +30,7 @@ import (
 	"github.com/prebid/prebid-server/metrics"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 )
 
@@ -98,8 +99,6 @@ func TestGoodAmpRequests(t *testing.T) {
 			if test.Config != nil {
 				cfg.BlacklistedApps = test.Config.BlacklistedApps
 				cfg.BlacklistedAppMap = test.Config.getBlacklistedAppMap()
-				cfg.BlacklistedAccts = test.Config.BlacklistedAccounts
-				cfg.BlacklistedAcctMap = test.Config.getBlackListedAccountMap()
 				cfg.AccountRequired = test.Config.AccountRequired
 			}
 
@@ -121,7 +120,7 @@ func TestGoodAmpRequests(t *testing.T) {
 			// Assertions
 			if assert.Equal(t, test.ExpectedReturnCode, recorder.Code, "Expected status %d. Got %d. Amp test file: %s", http.StatusOK, recorder.Code, filename) {
 				if test.ExpectedReturnCode == http.StatusOK {
-					assert.JSONEq(t, string(test.ExpectedAmpResponse), string(recorder.Body.Bytes()), "Not the expected response. Test file: %s", filename)
+					assert.JSONEq(t, string(test.ExpectedAmpResponse), recorder.Body.String(), "Not the expected response. Test file: %s", filename)
 				} else {
 					assert.Equal(t, test.ExpectedErrorMessage, recorder.Body.String(), filename)
 				}
@@ -148,11 +147,6 @@ func TestAccountErrors(t *testing.T) {
 			storedReqID: "1",
 			filename:    "account-malformed/malformed-acct.json",
 		},
-		{
-			description: "Blocked account",
-			storedReqID: "1",
-			filename:    "blacklisted/blacklisted-site-publisher.json",
-		},
 	}
 
 	for _, tt := range tests {
@@ -169,9 +163,7 @@ func TestAccountErrors(t *testing.T) {
 		test.endpointType = AMP_ENDPOINT
 
 		cfg := &config.Configuration{
-			BlacklistedAccts:   []string{"bad_acct"},
-			BlacklistedAcctMap: map[string]bool{"bad_acct": true},
-			MaxRequestSize:     maxSize,
+			MaxRequestSize: maxSize,
 		}
 		cfg.MarshalAccountDefaults()
 
@@ -210,7 +202,7 @@ func TestAMPPageInfo(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -314,7 +306,7 @@ func TestGDPRConsent(t *testing.T) {
 				GDPR:           config.GDPR{Enabled: true},
 			},
 			&metricsConfig.NilMetricsEngine{},
-			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+			analyticsBuild.New(&config.Analytics{}),
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
@@ -738,7 +730,7 @@ func TestCCPAConsent(t *testing.T) {
 			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{MaxRequestSize: maxSize},
 			&metricsConfig.NilMetricsEngine{},
-			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+			analyticsBuild.New(&config.Analytics{}),
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
@@ -852,7 +844,7 @@ func TestConsentWarnings(t *testing.T) {
 			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{MaxRequestSize: maxSize},
 			&metricsConfig.NilMetricsEngine{},
-			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+			analyticsBuild.New(&config.Analytics{}),
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
@@ -951,7 +943,7 @@ func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 				GDPR:           config.GDPR{Enabled: true},
 			},
 			&metricsConfig.NilMetricsEngine{},
-			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+			analyticsBuild.New(&config.Analytics{}),
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
@@ -1006,7 +998,7 @@ func TestAMPSiteExt(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		nil,
 		nil,
 		openrtb_ext.BuildBidderMap(),
@@ -1049,7 +1041,7 @@ func TestAmpBadRequests(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -1083,7 +1075,7 @@ func TestAmpDebug(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -1219,7 +1211,7 @@ func TestQueryParamOverrides(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -1377,7 +1369,7 @@ func (s formatOverrideSpec) execute(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -1640,25 +1632,25 @@ type mockLogger struct {
 	auctionObject *analytics.AuctionObject
 }
 
-func newMockLogger(ao *analytics.AmpObject, aucObj *analytics.AuctionObject) analytics.PBSAnalyticsModule {
+func newMockLogger(ao *analytics.AmpObject, aucObj *analytics.AuctionObject) analytics.Runner {
 	return &mockLogger{
 		ampObject:     ao,
 		auctionObject: aucObj,
 	}
 }
 
-func (logger mockLogger) LogAuctionObject(ao *analytics.AuctionObject) {
+func (logger mockLogger) LogAuctionObject(ao *analytics.AuctionObject, _ privacy.ActivityControl) {
 	*logger.auctionObject = *ao
 }
-func (logger mockLogger) LogVideoObject(vo *analytics.VideoObject) {
+func (logger mockLogger) LogVideoObject(vo *analytics.VideoObject, _ privacy.ActivityControl) {
 }
 func (logger mockLogger) LogCookieSyncObject(cookieObject *analytics.CookieSyncObject) {
 }
 func (logger mockLogger) LogSetUIDObject(uuidObj *analytics.SetUIDObject) {
 }
-func (logger mockLogger) LogNotificationEventObject(uuidObj *analytics.NotificationEvent) {
+func (logger mockLogger) LogNotificationEventObject(uuidObj *analytics.NotificationEvent, _ privacy.ActivityControl) {
 }
-func (logger mockLogger) LogAmpObject(ao *analytics.AmpObject) {
+func (logger mockLogger) LogAmpObject(ao *analytics.AmpObject, _ privacy.ActivityControl) {
 	*logger.ampObject = *ao
 }
 
@@ -1971,7 +1963,7 @@ func TestAmpAuctionResponseHeaders(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -2007,7 +1999,7 @@ func TestRequestWithTargeting(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		nil,
 		nil,
 		openrtb_ext.BuildBidderMap(),
@@ -2328,7 +2320,7 @@ func TestSendAmpResponse_LogsErrors(t *testing.T) {
 			account := &config.Account{DebugAllow: true}
 			reqWrapper := openrtb_ext.RequestWrapper{BidRequest: test.request}
 
-			labels, ao = sendAmpResponse(test.writer, test.hookExecutor, &exchange.AuctionResponse{BidResponse: test.response}, &reqWrapper, account, labels, ao, nil)
+			_, ao = sendAmpResponse(test.writer, test.hookExecutor, &exchange.AuctionResponse{BidResponse: test.response}, &reqWrapper, account, labels, ao, nil)
 
 			assert.Equal(t, ao.Errors, test.expectedErrors, "Invalid errors.")
 			assert.Equal(t, test.expectedStatus, ao.Status, "Invalid HTTP response status.")

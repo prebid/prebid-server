@@ -536,8 +536,7 @@ func getNativeFormat(adslot30 *adslot30, openRTBImp *openrtb2.Imp) error {
 	// only compute the main image number, type = native1.ImageAssetTypeMain
 	var numMainImage = 0
 	var numVideo = 0
-	var width int64
-	var height int64
+
 	for _, asset := range nativePayload.Assets {
 		// Only one of the {title,img,video,data} objects should be present in each object.
 		if asset.Video != nil {
@@ -548,19 +547,10 @@ func getNativeFormat(adslot30 *adslot30, openRTBImp *openrtb2.Imp) error {
 		if asset.Img != nil {
 			if asset.Img.Type == native1.ImageAssetTypeMain {
 				numMainImage++
-				if asset.Img.H != 0 && asset.Img.W != 0 {
-					width = asset.Img.W
-					height = asset.Img.H
-				} else if asset.Img.WMin != 0 && asset.Img.HMin != 0 {
-					width = asset.Img.WMin
-					height = asset.Img.HMin
-				}
 			}
 			continue
 		}
 	}
-	adslot30.W = width
-	adslot30.H = height
 
 	var detailedCreativeTypeList = make([]string, 0, 2)
 	if numVideo >= 1 {

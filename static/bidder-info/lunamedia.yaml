@@ -1,6 +1,6 @@
 endpoint: "http://rtb.lunamedia.live/?pid={{.PublisherID}}"
 maintainer:
-  email: "josh@lunamedia.io"
+  email: "cs@lunamedia.io"
 capabilities:
   site:
     mediaTypes:

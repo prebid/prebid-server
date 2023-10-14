@@ -65,7 +65,10 @@
                         "renderers": [
                             {
                                 "name": "test-name",
-                                "version": "test-version"
+                                "version": "test-version",
+                                "data" : {
+                                    "complex": "data"
+                                }
                             }
                         ]
                     }
@@ -121,7 +124,10 @@
                                 "renderers": [
                                     {
                                         "name": "test-name",
-                                        "version": "test-version"
+                                        "version": "test-version",
+                                        "data": {
+                                            "complex": "data"
+                                        }
                                     }
                                 ]
                             }

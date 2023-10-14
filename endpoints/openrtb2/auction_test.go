@@ -23,7 +23,7 @@ import (
 	nativeRequests "github.com/prebid/openrtb/v19/native1/request"
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/analytics"
-	analyticsConf "github.com/prebid/prebid-server/analytics/config"
+	analyticsBuild "github.com/prebid/prebid-server/analytics/build"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
@@ -160,8 +160,6 @@ func runJsonBasedTest(t *testing.T, filename, desc string) {
 	if test.Config != nil {
 		cfg.BlacklistedApps = test.Config.BlacklistedApps
 		cfg.BlacklistedAppMap = test.Config.getBlacklistedAppMap()
-		cfg.BlacklistedAccts = test.Config.BlacklistedAccounts
-		cfg.BlacklistedAcctMap = test.Config.getBlackListedAccountMap()
 		cfg.AccountRequired = test.Config.AccountRequired
 	}
 	cfg.MarshalAccountDefaults()
@@ -205,7 +203,7 @@ func runEndToEndTest(t *testing.T, auctionEndpointHandler httprouter.Handle, tes
 		err = json.Unmarshal(test.ExpectedBidResponse, &expectedBidResponse)
 		if assert.NoError(t, err, "Could not unmarshal expected bidResponse taken from test file.\n Test file: %s\n Error:%s\n", testFile, err) {
 			err = json.Unmarshal([]byte(actualJsonBidResponse), &actualBidResponse)
-			if assert.NoError(t, err, "Could not unmarshal actual bidResponse from auction.\n Test file: %s\n Error:%s\n", testFile, err) {
+			if assert.NoError(t, err, "Could not unmarshal actual bidResponse from auction.\n Test file: %s\n Error:%s\n actualJsonBidResponse: %s", testFile, err, actualJsonBidResponse) {
 				assertBidResponseEqual(t, testFile, expectedBidResponse, actualBidResponse)
 			}
 		}
@@ -449,7 +447,7 @@ func TestExplicitUserId(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		cfg,
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -507,7 +505,7 @@ func doBadAliasRequest(t *testing.T, filename string, expectMsg string) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		disabledBidders,
 		aliasJSON,
 		bidderMap,
@@ -562,7 +560,7 @@ func TestNilExchange(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{},
+		analyticsBuild.New(&config.Analytics{}), map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
@@ -587,7 +585,7 @@ func TestNilValidator(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -613,7 +611,7 @@ func TestExchangeError(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -740,7 +738,7 @@ func TestImplicitIPsEndToEnd(t *testing.T) {
 			empty_fetcher.EmptyFetcher{},
 			cfg,
 			&metricsConfig.NilMetricsEngine{},
-			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+			analyticsBuild.New(&config.Analytics{}),
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
@@ -940,7 +938,7 @@ func TestImplicitDNTEndToEnd(t *testing.T) {
 			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{MaxRequestSize: maxSize},
 			&metricsConfig.NilMetricsEngine{},
-			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+			analyticsBuild.New(&config.Analytics{}),
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
@@ -965,19 +963,22 @@ func TestImplicitDNTEndToEnd(t *testing.T) {
 func TestReferer(t *testing.T) {
 	testCases := []struct {
 		description             string
-		givenSitePage           string
-		givenSiteDomain         string
-		givenPublisherDomain    string
 		givenReferer            string
 		expectedDomain          string
 		expectedPage            string
 		expectedPublisherDomain string
+		bidReq                  *openrtb_ext.RequestWrapper
 	}{
 		{
 			description:             "site.page/domain are unchanged when site.page/domain and http referer are not set",
 			expectedDomain:          "",
 			expectedPage:            "",
 			expectedPublisherDomain: "",
+			bidReq: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				Site: &openrtb2.Site{
+					Publisher: &openrtb2.Publisher{},
+				},
+			}},
 		},
 		{
 			description:             "site.page/domain are derived from referer when neither is set and http referer is set",
@@ -985,39 +986,73 @@ func TestReferer(t *testing.T) {
 			expectedDomain:          "test.somepage.com",
 			expectedPublisherDomain: "somepage.com",
 			expectedPage:            "https://test.somepage.com",
+			bidReq: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				Site: &openrtb2.Site{
+					Publisher: &openrtb2.Publisher{},
+				},
+			}},
 		},
 		{
 			description:             "site.domain is derived from site.page when site.page is set and http referer is not set",
-			givenSitePage:           "https://test.somepage.com",
 			expectedDomain:          "test.somepage.com",
 			expectedPublisherDomain: "somepage.com",
 			expectedPage:            "https://test.somepage.com",
+			bidReq: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				Site: &openrtb2.Site{
+					Page:      "https://test.somepage.com",
+					Publisher: &openrtb2.Publisher{},
+				},
+			}},
 		},
 		{
 			description:             "site.domain is derived from http referer when site.page and http referer are set",
-			givenSitePage:           "https://test.somepage.com",
 			givenReferer:            "http://test.com",
 			expectedDomain:          "test.com",
 			expectedPublisherDomain: "test.com",
 			expectedPage:            "https://test.somepage.com",
+			bidReq: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				Site: &openrtb2.Site{
+					Page:      "https://test.somepage.com",
+					Publisher: &openrtb2.Publisher{},
+				},
+			}},
 		},
 		{
 			description:             "site.page/domain are unchanged when site.page/domain and http referer are set",
-			givenSitePage:           "https://test.somepage.com",
-			givenSiteDomain:         "some.domain.com",
 			givenReferer:            "http://test.com",
 			expectedDomain:          "some.domain.com",
 			expectedPublisherDomain: "test.com",
 			expectedPage:            "https://test.somepage.com",
+			bidReq: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				Site: &openrtb2.Site{
+					Domain:    "some.domain.com",
+					Page:      "https://test.somepage.com",
+					Publisher: &openrtb2.Publisher{},
+				},
+			}},
 		},
 		{
 			description:             "Publisher domain shouldn't be overrwriten if already set",
-			givenSitePage:           "https://test.somepage.com",
-			givenSiteDomain:         "",
-			givenPublisherDomain:    "differentpage.com",
 			expectedDomain:          "test.somepage.com",
 			expectedPublisherDomain: "differentpage.com",
 			expectedPage:            "https://test.somepage.com",
+			bidReq: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				Site: &openrtb2.Site{
+					Domain: "",
+					Page:   "https://test.somepage.com",
+					Publisher: &openrtb2.Publisher{
+						Domain: "differentpage.com",
+					},
+				},
+			}},
+		},
+		{
+			description:             "request.site is nil",
+			givenReferer:            "http://test.com",
+			expectedDomain:          "test.com",
+			expectedPublisherDomain: "test.com",
+			expectedPage:            "http://test.com",
+			bidReq:                  &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
 		},
 	}
 
@@ -1025,20 +1060,12 @@ func TestReferer(t *testing.T) {
 		httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 		httpReq.Header.Set("Referer", test.givenReferer)
 
-		bidReq := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
-			Site: &openrtb2.Site{
-				Domain:    test.givenSiteDomain,
-				Page:      test.givenSitePage,
-				Publisher: &openrtb2.Publisher{Domain: test.givenPublisherDomain},
-			},
-		}}
+		setSiteImplicitly(httpReq, test.bidReq)
 
-		setSiteImplicitly(httpReq, bidReq)
-
-		assert.NotNil(t, bidReq.Site, test.description)
-		assert.Equal(t, test.expectedDomain, bidReq.Site.Domain, test.description)
-		assert.Equal(t, test.expectedPage, bidReq.Site.Page, test.description)
-		assert.Equal(t, test.expectedPublisherDomain, bidReq.Site.Publisher.Domain, test.description)
+		assert.NotNil(t, test.bidReq.Site, test.description)
+		assert.Equal(t, test.expectedDomain, test.bidReq.Site.Domain, test.description)
+		assert.Equal(t, test.expectedPage, test.bidReq.Site.Page, test.description)
+		assert.Equal(t, test.expectedPublisherDomain, test.bidReq.Site.Publisher.Domain, test.description)
 	}
 }
 
@@ -1148,7 +1175,7 @@ func TestStoredRequests(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -1159,6 +1186,7 @@ func TestStoredRequests(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	testStoreVideoAttr := []bool{true, true, false, false, false}
@@ -1512,6 +1540,81 @@ func TestMergeBidderParamsImpExtPrebid(t *testing.T) {
 	}
 }
 
+func TestValidateExactlyOneInventoryType(t *testing.T) {
+
+	testCases := []struct {
+		description         string
+		givenRequestWrapper *openrtb_ext.RequestWrapper
+		expectedError       error
+	}{
+		{
+			description:         "None provided - invalid",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
+			expectedError:       errors.New("One of request.site or request.app or request.dooh must be defined"),
+		},
+		{
+			description: "Only site provided",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				Site: &openrtb2.Site{},
+			}},
+			expectedError: nil,
+		},
+		{
+			description: "Only app provided",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				App: &openrtb2.App{},
+			}},
+			expectedError: nil,
+		},
+		{
+			description: "Only dooh provided",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				DOOH: &openrtb2.DOOH{},
+			}},
+			expectedError: nil,
+		},
+		{
+			description: "Two provided (site+app) - invalid",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				Site: &openrtb2.Site{},
+				App:  &openrtb2.App{},
+			}},
+			expectedError: errors.New("No more than one of request.site or request.app or request.dooh can be defined"),
+		},
+		{
+			description: "Two provided (site+dooh) - invalid",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				Site: &openrtb2.Site{},
+				DOOH: &openrtb2.DOOH{},
+			}},
+			expectedError: errors.New("No more than one of request.site or request.app or request.dooh can be defined"),
+		},
+		{
+			description: "Two provided (app+dooh) - invalid",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				App:  &openrtb2.App{},
+				DOOH: &openrtb2.DOOH{},
+			}},
+			expectedError: errors.New("No more than one of request.site or request.app or request.dooh can be defined"),
+		},
+		{
+			description: "Three provided - invalid",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				Site: &openrtb2.Site{},
+				App:  &openrtb2.App{},
+				DOOH: &openrtb2.DOOH{},
+			}},
+			expectedError: errors.New("No more than one of request.site or request.app or request.dooh can be defined"),
+		},
+	}
+
+	for _, test := range testCases {
+		error := validateExactlyOneInventoryType(test.givenRequestWrapper)
+		assert.Equalf(t, test.expectedError, error, "Error doesn't match: %s\n", test.description)
+	}
+
+}
+
 func TestValidateRequest(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
@@ -1522,7 +1625,7 @@ func TestValidateRequest(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -1533,6 +1636,7 @@ func TestValidateRequest(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	testCases := []struct {
@@ -1695,6 +1799,66 @@ func TestValidateRequest(t *testing.T) {
 			givenIsAmp:            false,
 			expectedErrorList:     []error{},
 			expectedChannelObject: &openrtb_ext.ExtRequestPrebidChannel{Name: appChannel, Version: ""},
+		},
+		{
+			description: "Minimum required site attributes missing",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID:   "Some-ID",
+					Site: &openrtb2.Site{},
+					Imp: []openrtb2.Imp{
+						{
+							ID: "Some-Imp-ID",
+							Banner: &openrtb2.Banner{
+								Format: []openrtb2.Format{
+									{
+										W: 600,
+										H: 500,
+									},
+									{
+										W: 300,
+										H: 600,
+									},
+								},
+							},
+							Ext: []byte(`{"appnexus":{"placementId": 12345678}}`),
+						},
+					},
+				},
+			},
+			expectedErrorList: []error{
+				errors.New("request.site should include at least one of request.site.id or request.site.page."),
+			},
+		},
+		{
+			description: "Minimum required DOOH attributes missing",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID:   "Some-ID",
+					DOOH: &openrtb2.DOOH{},
+					Imp: []openrtb2.Imp{
+						{
+							ID: "Some-Imp-ID",
+							Banner: &openrtb2.Banner{
+								Format: []openrtb2.Format{
+									{
+										W: 600,
+										H: 500,
+									},
+									{
+										W: 300,
+										H: 600,
+									},
+								},
+							},
+							Ext: []byte(`{"appnexus":{"placementId": 12345678}}`),
+						},
+					},
+				},
+			},
+			expectedErrorList: []error{
+				errors.New("request.dooh should include at least one of request.dooh.id or request.dooh.venuetype."),
+			},
 		},
 	}
 
@@ -2241,7 +2405,7 @@ func TestSetIntegrationType(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -2252,6 +2416,7 @@ func TestSetIntegrationType(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	testCases := []struct {
@@ -2307,7 +2472,7 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -2318,6 +2483,7 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	req := &openrtb2.BidRequest{}
@@ -2411,7 +2577,7 @@ func TestOversizedRequest(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: int64(len(reqBody) - 1)},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -2422,6 +2588,7 @@ func TestOversizedRequest(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -2450,7 +2617,7 @@ func TestRequestSizeEdgeCase(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: int64(len(reqBody))},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -2461,6 +2628,7 @@ func TestRequestSizeEdgeCase(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -2487,7 +2655,7 @@ func TestNoEncoding(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -2572,7 +2740,7 @@ func TestContentType(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -2789,7 +2957,7 @@ func TestValidateImpExt(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: int64(8096)},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{"disabledbidder": "The bidder 'disabledbidder' has been disabled."},
 		false,
 		[]byte{},
@@ -2800,23 +2968,26 @@ func TestValidateImpExt(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	for _, group := range testGroups {
 		for _, test := range group.testCases {
-			imp := &openrtb2.Imp{Ext: test.impExt}
-			impWrapper := &openrtb_ext.ImpWrapper{Imp: imp}
+			t.Run(test.description, func(t *testing.T) {
+				imp := &openrtb2.Imp{Ext: test.impExt}
+				impWrapper := &openrtb_ext.ImpWrapper{Imp: imp}
 
-			errs := deps.validateImpExt(impWrapper, nil, 0, false, nil)
+				errs := deps.validateImpExt(impWrapper, nil, 0, false, nil)
 
-			assert.NoError(t, impWrapper.RebuildImp(), test.description+":rebuild_imp")
+				assert.NoError(t, impWrapper.RebuildImp(), test.description+":rebuild_imp")
 
-			if len(test.expectedImpExt) > 0 {
-				assert.JSONEq(t, test.expectedImpExt, string(imp.Ext), "imp.ext JSON does not match expected. Test: %s. %s\n", group.description, test.description)
-			} else {
-				assert.Empty(t, imp.Ext, "imp.ext expected to be empty but was: %s. Test: %s. %s\n", string(imp.Ext), group.description, test.description)
-			}
-			assert.Equal(t, test.expectedErrs, errs, "errs slice does not match expected. Test: %s. %s\n", group.description, test.description)
+				if len(test.expectedImpExt) > 0 {
+					assert.JSONEq(t, test.expectedImpExt, string(imp.Ext), "imp.ext JSON does not match expected. Test: %s. %s\n", group.description, test.description)
+				} else {
+					assert.Empty(t, imp.Ext, "imp.ext expected to be empty but was: %s. Test: %s. %s\n", string(imp.Ext), group.description, test.description)
+				}
+				assert.Equal(t, test.expectedErrs, errs, "errs slice does not match expected. Test: %s. %s\n", group.description, test.description)
+			})
 		}
 	}
 }
@@ -2842,7 +3013,7 @@ func TestCurrencyTrunc(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -2853,6 +3024,7 @@ func TestCurrencyTrunc(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	ui := int64(1)
@@ -2890,7 +3062,7 @@ func TestCCPAInvalid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -2901,6 +3073,7 @@ func TestCCPAInvalid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	ui := int64(1)
@@ -2942,7 +3115,7 @@ func TestNoSaleInvalid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -2953,6 +3126,7 @@ func TestNoSaleInvalid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	ui := int64(1)
@@ -2997,7 +3171,7 @@ func TestValidateSourceTID(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		cfg,
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -3008,6 +3182,7 @@ func TestValidateSourceTID(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	ui := int64(1)
@@ -3042,7 +3217,7 @@ func TestSChainInvalid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -3053,6 +3228,7 @@ func TestSChainInvalid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	ui := int64(1)
@@ -3206,6 +3382,78 @@ func TestMapSChains(t *testing.T) {
 			assert.Equal(t, test.wantSourceExtSChain, sourceExtSChain, test.description)
 		}
 	}
+}
+
+func TestSearchAccountID(t *testing.T) {
+	// Correctness for lookup within Publisher object left to TestGetAccountID
+	// This however tests the expected lookup paths in outer site, app and dooh
+	testCases := []struct {
+		description       string
+		request           []byte
+		expectedAccID     string
+		expectedError     error
+		expectedIsAppReq  bool
+		expectedIsSiteReq bool
+		expectedIsDOOHReq bool
+	}{
+		{
+			description:       "No publisher available",
+			request:           []byte(`{}`),
+			expectedAccID:     "",
+			expectedError:     nil,
+			expectedIsAppReq:  false,
+			expectedIsDOOHReq: false,
+		},
+		{
+			description:       "Publisher.ID doesn't exist",
+			request:           []byte(`{"site":{"publisher":{}}}`),
+			expectedAccID:     "",
+			expectedError:     nil,
+			expectedIsAppReq:  false,
+			expectedIsDOOHReq: false,
+		},
+		{
+			description:       "Publisher.ID not a string",
+			request:           []byte(`{"site":{"publisher":{"id":42}}}`),
+			expectedAccID:     "",
+			expectedError:     errors.New("site.publisher.id must be a string"),
+			expectedIsAppReq:  false,
+			expectedIsDOOHReq: false,
+		},
+		{
+			description:       "Publisher available in request.site",
+			request:           []byte(`{"site":{"publisher":{"id":"42"}}}`),
+			expectedAccID:     "42",
+			expectedError:     nil,
+			expectedIsAppReq:  false,
+			expectedIsDOOHReq: false,
+		},
+		{
+			description:       "Publisher available in request.app",
+			request:           []byte(`{"app":{"publisher":{"id":"42"}}}`),
+			expectedAccID:     "42",
+			expectedError:     nil,
+			expectedIsAppReq:  true,
+			expectedIsDOOHReq: false,
+		},
+		{
+			description:       "Publisher available in request.dooh",
+			request:           []byte(`{"dooh":{"publisher":{"id":"42"}}}`),
+			expectedAccID:     "42",
+			expectedError:     nil,
+			expectedIsAppReq:  false,
+			expectedIsDOOHReq: true,
+		},
+	}
+
+	for _, test := range testCases {
+		accountId, isAppReq, isDOOHReq, err := searchAccountId(test.request)
+		assert.Equal(t, test.expectedAccID, accountId, "searchAccountID should return expected account ID for test case: %s", test.description)
+		assert.Equal(t, test.expectedIsAppReq, isAppReq, "searchAccountID should return expected isAppReq for test case: %s", test.description)
+		assert.Equal(t, test.expectedIsDOOHReq, isDOOHReq, "searchAccountID should return expected isDOOHReq for test case: %s", test.description)
+		assert.Equal(t, test.expectedError, err, "searchAccountID should return expected error for test case: %s", test.description)
+	}
+
 }
 
 func TestGetAccountID(t *testing.T) {
@@ -3538,7 +3786,7 @@ func TestEidPermissionsInvalid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -3549,6 +3797,7 @@ func TestEidPermissionsInvalid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	ui := int64(1)
@@ -3618,6 +3867,13 @@ func TestValidateEidPermissions(t *testing.T) {
 			expectedError: nil,
 		},
 		{
+			description: "Valid - One - Case Insensitive",
+			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "sourceA", Bidders: []string{"A"}},
+			}}}},
+			expectedError: nil,
+		},
+		{
 			description: "Valid - Many",
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"a"}},
@@ -3665,9 +3921,16 @@ func TestValidateEidPermissions(t *testing.T) {
 			}}}},
 			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[1] contains unrecognized bidder "z"`),
 		},
+		{
+			description: "Valid - Alias Case Sensitive",
+			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "sourceA", Bidders: []string{"B"}},
+			}}}},
+			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[0] contains unrecognized bidder "B"`),
+		},
 	}
 
-	endpoint := &endpointDeps{bidderMap: knownBidders}
+	endpoint := &endpointDeps{bidderMap: knownBidders, normalizeBidderName: fakeNormalizeBidderName}
 	for _, test := range testCases {
 		result := endpoint.validateEidPermissions(test.request.Prebid.Data, knownAliases)
 		assert.Equal(t, test.expectedError, result, test.description)
@@ -3704,6 +3967,13 @@ func TestValidateBidders(t *testing.T) {
 			expectedError: nil,
 		},
 		{
+			description:   "Valid - One Core Bidder - Case Insensitive",
+			bidders:       []string{"A"},
+			knownBidders:  map[string]openrtb_ext.BidderName{"a": openrtb_ext.BidderName("a")},
+			knownAliases:  map[string]string{"c": "c"},
+			expectedError: nil,
+		},
+		{
 			description:   "Valid - Many Core Bidders",
 			bidders:       []string{"a", "b"},
 			knownBidders:  map[string]openrtb_ext.BidderName{"a": openrtb_ext.BidderName("a"), "b": openrtb_ext.BidderName("b")},
@@ -3716,6 +3986,13 @@ func TestValidateBidders(t *testing.T) {
 			knownBidders:  map[string]openrtb_ext.BidderName{"a": openrtb_ext.BidderName("a")},
 			knownAliases:  map[string]string{"c": "c"},
 			expectedError: nil,
+		},
+		{
+			description:   "Valid - One Alias Bidder - Case Sensitive",
+			bidders:       []string{"C"},
+			knownBidders:  map[string]openrtb_ext.BidderName{"a": openrtb_ext.BidderName("a")},
+			knownAliases:  map[string]string{"c": "c"},
+			expectedError: errors.New(`unrecognized bidder "C"`),
 		},
 		{
 			description:   "Valid - Many Alias Bidders",
@@ -3737,13 +4014,6 @@ func TestValidateBidders(t *testing.T) {
 			knownBidders:  map[string]openrtb_ext.BidderName{"a": openrtb_ext.BidderName("a")},
 			knownAliases:  map[string]string{"c": "c"},
 			expectedError: errors.New(`unrecognized bidder "z"`),
-		},
-		{
-			description:   "Invalid - Unknown Bidder Case Sensitive",
-			bidders:       []string{"A"},
-			knownBidders:  map[string]openrtb_ext.BidderName{"a": openrtb_ext.BidderName("a")},
-			knownAliases:  map[string]string{"c": "c"},
-			expectedError: errors.New(`unrecognized bidder "A"`),
 		},
 		{
 			description:   "Invalid - Unknown Bidder With Known Bidders",
@@ -3775,8 +4045,9 @@ func TestValidateBidders(t *testing.T) {
 		},
 	}
 
+	endpoint := &endpointDeps{normalizeBidderName: fakeNormalizeBidderName}
 	for _, test := range testCases {
-		result := validateBidders(test.bidders, test.knownBidders, test.knownAliases)
+		result := endpoint.validateBidders(test.bidders, test.knownBidders, test.knownAliases)
 		assert.Equal(t, test.expectedError, result, test.description)
 	}
 }
@@ -3792,7 +4063,7 @@ func TestIOS14EndToEnd(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -3855,7 +4126,7 @@ func TestAuctionWarnings(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -3866,6 +4137,7 @@ func TestAuctionWarnings(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
@@ -3901,7 +4173,7 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: int64(len(reqBody))},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -3912,6 +4184,7 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
@@ -3981,7 +4254,7 @@ func TestParseGzipedRequest(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: int64(50), Compression: config.Compression{Request: config.CompressionInfo{GZIP: false}}},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -3992,6 +4265,7 @@ func TestParseGzipedRequest(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
@@ -4480,7 +4754,7 @@ func TestAuctionResponseHeaders(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -4581,7 +4855,7 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 				empty_fetcher.EmptyFetcher{},
 				&config.Configuration{MaxRequestSize: int64(len(test.givenRequestBody))},
 				&metricsConfig.NilMetricsEngine{},
-				analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+				analyticsBuild.New(&config.Analytics{}),
 				map[string]string{},
 				false,
 				[]byte{},
@@ -4592,6 +4866,7 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 				empty_fetcher.EmptyFetcher{},
 				hooks.EmptyPlanBuilder{},
 				nil,
+				openrtb_ext.NormalizeBidderName,
 			}
 
 			hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
@@ -4684,7 +4959,7 @@ func TestParseRequestStoredResponses(t *testing.T) {
 				empty_fetcher.EmptyFetcher{},
 				&config.Configuration{MaxRequestSize: int64(len(test.givenRequestBody))},
 				&metricsConfig.NilMetricsEngine{},
-				analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+				analyticsBuild.New(&config.Analytics{}),
 				map[string]string{},
 				false,
 				[]byte{},
@@ -4695,6 +4970,7 @@ func TestParseRequestStoredResponses(t *testing.T) {
 				&mockStoredResponseFetcher{mockStoredResponses},
 				hooks.EmptyPlanBuilder{},
 				nil,
+				openrtb_ext.NormalizeBidderName,
 			}
 
 			hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
@@ -4716,9 +4992,11 @@ func TestParseRequestStoredResponses(t *testing.T) {
 func TestParseRequestStoredBidResponses(t *testing.T) {
 	bidRespId1 := json.RawMessage(`{"id": "resp_id1", "seatbid": [{"bid": [{"id": "bid_id1"}], "seat": "testBidder1"}], "bidid": "123", "cur": "USD"}`)
 	bidRespId2 := json.RawMessage(`{"id": "resp_id2", "seatbid": [{"bid": [{"id": "bid_id2"}], "seat": "testBidder2"}], "bidid": "124", "cur": "USD"}`)
+	bidRespId3 := json.RawMessage(`{"id": "resp_id3", "seatbid": [{"bid": [{"id": "bid_id3"}], "seat": "APPNEXUS"}], "bidid": "125", "cur": "USD"}`)
 	mockStoredBidResponses := map[string]json.RawMessage{
 		"bidResponseId1": bidRespId1,
 		"bidResponseId2": bidRespId2,
+		"bidResponseId3": bidRespId3,
 	}
 
 	tests := []struct {
@@ -4733,6 +5011,14 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 			givenRequestBody: validRequest(t, "imp-with-stored-bid-resp.json"),
 			expectedStoredBidResponses: map[string]map[string]json.RawMessage{
 				"imp-id1": {"testBidder1": bidRespId1},
+			},
+			expectedErrorCount: 0,
+		},
+		{
+			name:             "req imp has valid stored bid response with case insensitive bidder name",
+			givenRequestBody: validRequest(t, "imp-with-stored-bid-resp-insensitive-bidder-name.json"),
+			expectedStoredBidResponses: map[string]map[string]json.RawMessage{
+				"imp-id3": {"APPNEXUS": bidRespId3},
 			},
 			expectedErrorCount: 0,
 		},
@@ -4772,24 +5058,24 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 				empty_fetcher.EmptyFetcher{},
 				&config.Configuration{MaxRequestSize: int64(len(test.givenRequestBody))},
 				&metricsConfig.NilMetricsEngine{},
-				analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+				analyticsBuild.New(&config.Analytics{}),
 				map[string]string{},
 				false,
 				[]byte{},
-				map[string]openrtb_ext.BidderName{"testBidder1": "testBidder1", "testBidder2": "testBidder2"},
+				map[string]openrtb_ext.BidderName{"testBidder1": "testBidder1", "testBidder2": "testBidder2", "appnexus": "appnexus"},
 				nil,
 				nil,
 				hardcodedResponseIPValidator{response: true},
 				&mockStoredResponseFetcher{mockStoredBidResponses},
 				hooks.EmptyPlanBuilder{},
 				nil,
+				openrtb_ext.NormalizeBidderName,
 			}
 
 			hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
 			_, _, _, storedBidResponses, _, _, errL := deps.parseRequest(req, &metrics.Labels{}, hookExecutor)
-
 			if test.expectedErrorCount == 0 {
 				assert.Equal(t, test.expectedStoredBidResponses, storedBidResponses, "stored responses should match")
 			} else {
@@ -4809,7 +5095,7 @@ func TestValidateStoredResp(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -4820,6 +5106,7 @@ func TestValidateStoredResp(t *testing.T) {
 		&mockStoredResponseFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	testCases := []struct {
@@ -5556,7 +5843,7 @@ func TestSendAuctionResponse_LogsErrors(t *testing.T) {
 			ao := analytics.AuctionObject{}
 			account := &config.Account{DebugAllow: true}
 
-			labels, ao = sendAuctionResponse(writer, test.hookExecutor, test.response, test.request, account, labels, ao)
+			_, ao = sendAuctionResponse(writer, test.hookExecutor, test.response, test.request, account, labels, ao)
 
 			assert.Equal(t, ao.Errors, test.expectedErrors, "Invalid errors.")
 			assert.Equal(t, test.expectedStatus, ao.Status, "Invalid HTTP response status.")
@@ -5622,7 +5909,7 @@ func TestParseRequestMultiBid(t *testing.T) {
 				empty_fetcher.EmptyFetcher{},
 				&config.Configuration{MaxRequestSize: int64(len(test.givenRequestBody))},
 				&metricsConfig.NilMetricsEngine{},
-				analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+				analyticsBuild.New(&config.Analytics{}),
 				map[string]string{},
 				false,
 				[]byte{},
@@ -5633,6 +5920,7 @@ func TestParseRequestMultiBid(t *testing.T) {
 				empty_fetcher.EmptyFetcher{},
 				hooks.EmptyPlanBuilder{},
 				nil,
+				openrtb_ext.NormalizeBidderName,
 			}
 
 			hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
@@ -5741,4 +6029,64 @@ func TestSetSeatNonBidRaw(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestValidateAliases(t *testing.T) {
+	deps := &endpointDeps{
+		disabledBidders: map[string]string{"rubicon": "rubicon"},
+		bidderMap:       map[string]openrtb_ext.BidderName{"appnexus": openrtb_ext.BidderName("appnexus")},
+	}
+
+	testCases := []struct {
+		description     string
+		aliases         map[string]string
+		expectedAliases map[string]string
+		expectedError   error
+	}{
+		{
+			description:     "valid case",
+			aliases:         map[string]string{"test": "appnexus"},
+			expectedAliases: map[string]string{"test": "appnexus"},
+			expectedError:   nil,
+		},
+		{
+			description:     "valid case - case insensitive",
+			aliases:         map[string]string{"test": "Appnexus"},
+			expectedAliases: map[string]string{"test": "appnexus"},
+			expectedError:   nil,
+		},
+		{
+			description:     "disabled bidder",
+			aliases:         map[string]string{"test": "rubicon"},
+			expectedAliases: nil,
+			expectedError:   errors.New("request.ext.prebid.aliases.test refers to disabled bidder: rubicon"),
+		},
+		{
+			description:     "coreBidderName not found",
+			aliases:         map[string]string{"test": "anyBidder"},
+			expectedAliases: nil,
+			expectedError:   errors.New("request.ext.prebid.aliases.test refers to unknown bidder: anyBidder"),
+		},
+		{
+			description:     "alias name is coreBidder name",
+			aliases:         map[string]string{"appnexus": "appnexus"},
+			expectedAliases: nil,
+			expectedError:   errors.New("request.ext.prebid.aliases.appnexus defines a no-op alias. Choose a different alias, or remove this entry."),
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.description, func(t *testing.T) {
+			err := deps.validateAliases(testCase.aliases)
+			if err != nil {
+				assert.Equal(t, testCase.expectedError, err)
+			} else {
+				assert.ObjectsAreEqualValues(testCase.expectedAliases, map[string]string{"test": "appnexus"})
+			}
+		})
+	}
+}
+
+func fakeNormalizeBidderName(name string) (openrtb_ext.BidderName, bool) {
+	return openrtb_ext.BidderName(strings.ToLower(name)), true
 }

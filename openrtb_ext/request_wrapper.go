@@ -42,6 +42,7 @@ type RequestWrapper struct {
 	appExt              *AppExt
 	regExt              *RegExt
 	siteExt             *SiteExt
+	doohExt             *DOOHExt
 	sourceExt           *SourceExt
 }
 
@@ -160,6 +161,17 @@ func (rw *RequestWrapper) GetSiteExt() (*SiteExt, error) {
 	return rw.siteExt, rw.siteExt.unmarshal(rw.Site.Ext)
 }
 
+func (rw *RequestWrapper) GetDOOHExt() (*DOOHExt, error) {
+	if rw.doohExt != nil {
+		return rw.doohExt, nil
+	}
+	rw.doohExt = &DOOHExt{}
+	if rw.BidRequest == nil || rw.DOOH == nil || rw.DOOH.Ext == nil {
+		return rw.doohExt, rw.doohExt.unmarshal(json.RawMessage{})
+	}
+	return rw.doohExt, rw.doohExt.unmarshal(rw.DOOH.Ext)
+}
+
 func (rw *RequestWrapper) GetSourceExt() (*SourceExt, error) {
 	if rw.sourceExt != nil {
 		return rw.sourceExt, nil
@@ -195,6 +207,9 @@ func (rw *RequestWrapper) RebuildRequest() error {
 		return err
 	}
 	if err := rw.rebuildSiteExt(); err != nil {
+		return err
+	}
+	if err := rw.rebuildDOOHExt(); err != nil {
 		return err
 	}
 	if err := rw.rebuildSourceExt(); err != nil {
@@ -297,6 +312,25 @@ func (rw *RequestWrapper) rebuildAppExt() error {
 	return nil
 }
 
+func (rw *RequestWrapper) rebuildDOOHExt() error {
+	if rw.doohExt == nil || !rw.doohExt.Dirty() {
+		return nil
+	}
+
+	doohJson, err := rw.doohExt.marshal()
+	if err != nil {
+		return err
+	}
+
+	if doohJson != nil && rw.DOOH == nil {
+		rw.DOOH = &openrtb2.DOOH{Ext: doohJson}
+	} else if rw.DOOH != nil {
+		rw.DOOH.Ext = doohJson
+	}
+
+	return nil
+}
+
 func (rw *RequestWrapper) rebuildRegExt() error {
 	if rw.regExt == nil || !rw.regExt.Dirty() {
 		return nil
@@ -370,6 +404,7 @@ func (rw *RequestWrapper) Clone() *RequestWrapper {
 	clone.appExt = rw.appExt.Clone()
 	clone.regExt = rw.regExt.Clone()
 	clone.siteExt = rw.siteExt.Clone()
+	clone.doohExt = rw.doohExt.Clone()
 	clone.sourceExt = rw.sourceExt.Clone()
 
 	return &clone
@@ -1036,6 +1071,70 @@ func (ae *AppExt) Clone() *AppExt {
 	clone.ext = maputil.Clone(ae.ext)
 
 	clone.prebid = ptrutil.Clone(ae.prebid)
+
+	return &clone
+}
+
+// ---------------------------------------------------------------
+// DOOHExt provides an interface for request.dooh.ext
+// This is currently a placeholder for consistency with others - no useful attributes and getters/setters exist yet
+// ---------------------------------------------------------------
+
+type DOOHExt struct {
+	ext      map[string]json.RawMessage
+	extDirty bool
+}
+
+func (de *DOOHExt) unmarshal(extJson json.RawMessage) error {
+	if len(de.ext) != 0 || de.Dirty() {
+		return nil
+	}
+
+	de.ext = make(map[string]json.RawMessage)
+
+	if len(extJson) == 0 {
+		return nil
+	}
+
+	if err := json.Unmarshal(extJson, &de.ext); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (de *DOOHExt) marshal() (json.RawMessage, error) {
+	de.extDirty = false
+	if len(de.ext) == 0 {
+		return nil, nil
+	}
+	return json.Marshal(de.ext)
+}
+
+func (de *DOOHExt) Dirty() bool {
+	return de.extDirty
+}
+
+func (de *DOOHExt) GetExt() map[string]json.RawMessage {
+	ext := make(map[string]json.RawMessage)
+	for k, v := range de.ext {
+		ext[k] = v
+	}
+	return ext
+}
+
+func (de *DOOHExt) SetExt(ext map[string]json.RawMessage) {
+	de.ext = ext
+	de.extDirty = true
+}
+
+func (de *DOOHExt) Clone() *DOOHExt {
+	if de == nil {
+		return nil
+	}
+
+	clone := *de
+	clone.ext = maputil.Clone(de.ext)
 
 	return &clone
 }
