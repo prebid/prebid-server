@@ -113,14 +113,21 @@ func DropElement(extension []byte, elementNames ...string) ([]byte, error) {
 	return extension, nil
 }
 
+// jsonConfigValidationOn attempts to maintain compatibility with the standard library which
+// includes enabling validation
+var jsonConfigValidationOn = jsoniter.ConfigCompatibleWithStandardLibrary
+
+// jsonConfigValidationOff disables validation
+var jsonConfigValidationOff = jsoniter.Config{
+	EscapeHTML:             true,
+	SortMapKeys:            true,
+	ValidateJsonRawMessage: false,
+}.Froze()
+
 // Unmarshal unmarshals a byte slice into the specified data structure without performing
 // any validation on the data. An unmarshal error is returned if a non-validation error occurs.
 func Unmarshal(data []byte, v interface{}) error {
-	err := jsoniter.Config{
-		EscapeHTML:             true,
-		SortMapKeys:            true,
-		ValidateJsonRawMessage: false,
-	}.Froze().Unmarshal(data, v)
+	err := jsonConfigValidationOff.Unmarshal(data, v)
 
 	if err != nil {
 		return &errortypes.FailedToUnmarshal{
@@ -133,7 +140,7 @@ func Unmarshal(data []byte, v interface{}) error {
 // UnmarshalValid validates and unmarshals a byte slice into the specified data structure
 // returning an error if validation fails
 func UnmarshalValid(data []byte, v interface{}) error {
-	if err := jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(data, v); err != nil {
+	if err := jsonConfigValidationOn.Unmarshal(data, v); err != nil {
 		return &errortypes.FailedToUnmarshal{
 			Message: err.Error(),
 		}
@@ -144,7 +151,7 @@ func UnmarshalValid(data []byte, v interface{}) error {
 // Marshal marshals a data structure into a byte slice without performing any validation
 // on the data. A marshal error is returned if a non-validation error occurs.
 func Marshal(v interface{}) ([]byte, error) {
-	data, err := jsoniter.ConfigCompatibleWithStandardLibrary.Marshal(v)
+	data, err := jsonConfigValidationOn.Marshal(v)
 	if err != nil {
 		return nil, &errortypes.FailedToMarshal{
 			Message: err.Error(),
