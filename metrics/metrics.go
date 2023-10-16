@@ -282,6 +282,7 @@ func AdapterErrors() []AdapterError {
 		AdapterErrorTimeout,
 		AdapterErrorFailedToRequestBids,
 		AdapterErrorValidation,
+		AdapterErrorTmaxTimeout,
 		AdapterErrorUnknown,
 	}
 }
