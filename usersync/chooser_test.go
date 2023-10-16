@@ -295,7 +295,7 @@ func TestChooserChoose(t *testing.T) {
 func TestChooserEvaluate(t *testing.T) {
 	fakeSyncerA := fakeSyncer{key: "keyA", supportsIFrame: true}
 	fakeSyncerB := fakeSyncer{key: "keyB", supportsIFrame: false}
-	bidderSyncerLookup := map[string]Syncer{"a": fakeSyncerA, "b": fakeSyncerB, "appnexus": fakeSyncerA}
+	bidderSyncerLookup := map[string]Syncer{"a": fakeSyncerA, "b": fakeSyncerB, "appnexus": fakeSyncerA, "suntContent": fakeSyncerA}
 	syncTypeFilter := SyncTypeFilter{
 		IFrame:   NewUniformBidderFilter(BidderFilterModeInclude),
 		Redirect: NewUniformBidderFilter(BidderFilterModeExclude)}
@@ -440,17 +440,17 @@ func TestChooserEvaluate(t *testing.T) {
 		},
 		{
 			description:          "Case insensitivity check for sync type filter",
-			givenBidder:          "AppNexus",
-			normalisedBidderName: "appnexus",
+			givenBidder:          "SuntContent",
+			normalisedBidderName: "suntContent",
 			givenSyncersSeen:     map[string]struct{}{},
 			givenPrivacy:         fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
 			givenCookie:          cookieNeedsSync,
 			givenSyncTypeFilter: SyncTypeFilter{
-				IFrame:   NewSpecificBidderFilter([]string{"AppNexuS"}, BidderFilterModeInclude),
-				Redirect: NewSpecificBidderFilter([]string{"appNexuS"}, BidderFilterModeExclude)},
+				IFrame:   NewSpecificBidderFilter([]string{"SuntContent"}, BidderFilterModeInclude),
+				Redirect: NewSpecificBidderFilter([]string{"SuntContent"}, BidderFilterModeExclude)},
 			normalizedBidderNamesLookup: openrtb_ext.NormalizeBidderName,
 			expectedSyncer:              fakeSyncerA,
-			expectedEvaluation:          BidderEvaluation{Bidder: "AppNexus", SyncerKey: "keyA", Status: StatusOK},
+			expectedEvaluation:          BidderEvaluation{Bidder: "SuntContent", SyncerKey: "keyA", Status: StatusOK},
 		},
 		{
 			description:                 "Case Insensitivity Check For Blocked By GDPR",
