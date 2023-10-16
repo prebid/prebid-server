@@ -1,5 +1,4 @@
 aliasOf: grid
-endpoint: "https://grid.bidswitch.net/sp_bid?sp=trustx"
 maintainer:
   email: "grid-tech@themediagrid.com"
 gvlVendorID: 686
