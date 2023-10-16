@@ -651,6 +651,19 @@ func TestShouldParseEventCorrectly(t *testing.T) {
 				Analytics: analytics.Enabled,
 			},
 		},
+		"case insensitive bidder name": {
+			req: httptest.NewRequest("GET", "/event?t=win&b=bidId&f=b&ts=1000&x=1&a=accountId&bidder=RubiCon&int=intType", strings.NewReader("")),
+			expected: &analytics.EventRequest{
+				Type:        analytics.Win,
+				BidID:       "bidId",
+				Timestamp:   1000,
+				Bidder:      "rubicon",
+				AccountID:   "",
+				Format:      analytics.Blank,
+				Analytics:   analytics.Enabled,
+				Integration: "intType",
+			},
+		},
 	}
 
 	for name, test := range tests {

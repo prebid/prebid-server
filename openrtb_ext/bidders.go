@@ -92,6 +92,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderDecenterAds,
 	BidderDeepintent,
 	BidderDianomi,
+	BidderEdge226,
 	BidderDmx,
 	BidderEmtv,
 	BidderEmxDigital,
@@ -129,6 +130,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderKiviads,
 	BidderLmKiviads,
 	BidderKrushmedia,
+	BidderLemmadigital,
 	BidderLiftoff,
 	BidderLimelightDigital,
 	BidderLockerDome,
@@ -189,6 +191,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderSynacormedia,
 	BidderTaboola,
 	BidderTappx,
+	BidderTeads,
 	BidderTelaria,
 	BidderTpmn,
 	BidderTrafficGate,
@@ -380,6 +383,7 @@ const (
 	BidderDecenterAds       BidderName = "decenterads"
 	BidderDeepintent        BidderName = "deepintent"
 	BidderDianomi           BidderName = "dianomi"
+	BidderEdge226           BidderName = "edge226"
 	BidderDmx               BidderName = "dmx"
 	BidderEmtv              BidderName = "emtv"
 	BidderEmxDigital        BidderName = "emx_digital"
@@ -417,6 +421,7 @@ const (
 	BidderKiviads           BidderName = "kiviads"
 	BidderLmKiviads         BidderName = "lm_kiviads"
 	BidderKrushmedia        BidderName = "krushmedia"
+	BidderLemmadigital      BidderName = "lemmadigital"
 	BidderLiftoff           BidderName = "liftoff"
 	BidderLimelightDigital  BidderName = "limelightDigital"
 	BidderLockerDome        BidderName = "lockerdome"
@@ -477,6 +482,7 @@ const (
 	BidderSynacormedia      BidderName = "synacormedia"
 	BidderTaboola           BidderName = "taboola"
 	BidderTappx             BidderName = "tappx"
+	BidderTeads             BidderName = "teads"
 	BidderTelaria           BidderName = "telaria"
 	BidderTpmn              BidderName = "tpmn"
 	BidderTrafficGate       BidderName = "trafficgate"
