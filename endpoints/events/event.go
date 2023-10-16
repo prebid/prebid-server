@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -188,7 +189,12 @@ func ParseEventRequest(r *http.Request) (*analytics.EventRequest, []error) {
 	}
 
 	// Bidder
-	event.Bidder = r.URL.Query().Get(BidderParameter)
+	bidderName := r.URL.Query().Get(BidderParameter)
+	if normalisedBidderName, ok := openrtb_ext.NormalizeBidderName(bidderName); ok {
+		bidderName = normalisedBidderName.String()
+	}
+
+	event.Bidder = bidderName
 
 	return event, errs
 }
