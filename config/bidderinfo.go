@@ -125,6 +125,7 @@ type Syncer struct {
 	// SupportCORS identifies if CORS is supported for the user syncing endpoints.
 	SupportCORS *bool `yaml:"supportCors" mapstructure:"support_cors"`
 
+	// SkipWhen allows bidders to specify when they don't want to sync
 	SkipWhen *SkipWhen `yaml:"skipwhen" mapstructure:"skipwhen"`
 }
 
