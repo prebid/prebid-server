@@ -95,7 +95,7 @@ const (
 	// StatusBlockedByPrivacy specifies a bidder sync url is not allowed by privacy activities
 	StatusBlockedByPrivacy
 
-	// TODO: Add Description
+	// StatusBlockedByRegulationScope specifies the bidder chose to not sync given GDPR being in scope or because of a GPPSID
 	StatusBlockedByRegulationScope
 )
 

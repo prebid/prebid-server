@@ -388,6 +388,43 @@ func TestChooserEvaluate(t *testing.T) {
 			expectedSyncer:     nil,
 			expectedEvaluation: BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByPrivacy},
 		},
+		{
+			description:      "Blocked By Regulation Scope - GDPR",
+			givenBidder:      "a",
+			givenSyncersSeen: map[string]struct{}{},
+			givenPrivacy:     fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
+			givenCookie:      cookieNeedsSync,
+			givenBidderInfo: map[string]config.BidderInfo{
+				"a": {
+					Syncer: &config.Syncer{
+						SkipWhen: &config.SkipWhen{
+							GDPR: true,
+						},
+					},
+				},
+			},
+			expectedSyncer:     nil,
+			expectedEvaluation: BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByRegulationScope},
+		},
+		{
+			description:      "Blocked By Regulation Scope - GPP",
+			givenBidder:      "a",
+			givenSyncersSeen: map[string]struct{}{},
+			givenPrivacy:     fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
+			givenCookie:      cookieNeedsSync,
+			givenBidderInfo: map[string]config.BidderInfo{
+				"a": {
+					Syncer: &config.Syncer{
+						SkipWhen: &config.SkipWhen{
+							GPPSID: "2",
+						},
+					},
+				},
+			},
+			givenGPPSID:        "2",
+			expectedSyncer:     nil,
+			expectedEvaluation: BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByRegulationScope},
+		},
 	}
 
 	for _, test := range testCases {
