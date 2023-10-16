@@ -1,7 +1,2 @@
 aliasOf: freewheelssp
-endpoint: "https://ads.stickyadstv.com/openrtb/dsp"
-maintainer:
-  email: prebid-maintainer@freewheel.com
-gvlVendorID: 285
-modifyingVastXmlAllowed: true
 
