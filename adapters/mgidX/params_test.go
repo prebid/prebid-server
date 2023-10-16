@@ -34,10 +34,10 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"placementId": "test"}`,
-	`{"placementId": "1"}`,
-	`{"endpointId": "test"}`,
-	`{"endpointId": "1"}`,
+	`{"placementId": "test", "host": "us-east"}`,
+	`{"placementId": "1", "host": "us-east"}`,
+	`{"endpointId": "test", "host": "eu"}`,
+	`{"endpointId": "1", "host": "eu"}`,
 }
 
 var invalidParams = []string{

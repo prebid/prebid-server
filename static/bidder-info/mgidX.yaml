@@ -1,4 +1,4 @@
-endpoint: "https://us-east-x.mgid.com/pserver"
+endpoint: "https://{{.Host}}.mgid.com/pserver"
 maintainer:
   email: "prebid@mgid.com"
 gvlVendorID: 358
