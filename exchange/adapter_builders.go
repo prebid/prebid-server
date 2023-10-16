@@ -159,6 +159,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/suntContent"
 	"github.com/prebid/prebid-server/adapters/taboola"
 	"github.com/prebid/prebid-server/adapters/tappx"
+	"github.com/prebid/prebid-server/adapters/teads"
 	"github.com/prebid/prebid-server/adapters/telaria"
 	"github.com/prebid/prebid-server/adapters/tpmn"
 	"github.com/prebid/prebid-server/adapters/trafficgate"
@@ -363,6 +364,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderSynacormedia:      imds.Builder,
 		openrtb_ext.BidderTaboola:           taboola.Builder,
 		openrtb_ext.BidderTappx:             tappx.Builder,
+		openrtb_ext.BidderTeads:             teads.Builder,
 		openrtb_ext.BidderTelaria:           telaria.Builder,
 		openrtb_ext.BidderTpmn:              tpmn.Builder,
 		openrtb_ext.BidderTrafficGate:       trafficgate.Builder,
