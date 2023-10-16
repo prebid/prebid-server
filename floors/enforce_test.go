@@ -197,6 +197,71 @@ func TestEnforceFloorToBids(t *testing.T) {
 			expErrs: []error{},
 		},
 		{
+			name: "Bids with price less than bidfloor with floorsPrecision",
+			args: args{
+				bidRequestWrapper: func() *openrtb_ext.RequestWrapper {
+					bw := openrtb_ext.RequestWrapper{
+						BidRequest: &openrtb2.BidRequest{
+							ID: "some-request-id",
+							Imp: []openrtb2.Imp{
+								{ID: "some-impression-id-1", BidFloor: 1, BidFloorCur: "USD"},
+								{ID: "some-impression-id-2", BidFloor: 2, BidFloorCur: "USD"},
+							},
+						},
+					}
+					bw.RebuildRequest()
+					return &bw
+				}(),
+				seatBids: map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid{
+					"pubmatic": {
+						Bids: []*entities.PbsOrtbBid{
+							{Bid: &openrtb2.Bid{ID: "some-bid-1", Price: 0.998, ImpID: "some-impression-id-1"}},
+							{Bid: &openrtb2.Bid{ID: "some-bid-2", Price: 1.5, DealID: "deal_Id", ImpID: "some-impression-id-2"}},
+						},
+						Seat:     "pubmatic",
+						Currency: "USD",
+					},
+					"appnexus": {
+						Bids: []*entities.PbsOrtbBid{
+							{Bid: &openrtb2.Bid{ID: "some-bid-11", Price: 0.8, ImpID: "some-impression-id-1"}},
+							{Bid: &openrtb2.Bid{ID: "some-bid-12", Price: 2.2, ImpID: "some-impression-id-2"}},
+						},
+						Seat:     "appnexus",
+						Currency: "USD",
+					},
+				},
+				conversions:       currency.Conversions(convert{}),
+				enforceDealFloors: false,
+			},
+			expEligibleBids: map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid{
+				"pubmatic": {
+					Bids: []*entities.PbsOrtbBid{
+						{Bid: &openrtb2.Bid{ID: "some-bid-1", Price: 0.998, ImpID: "some-impression-id-1"}},
+						{Bid: &openrtb2.Bid{ID: "some-bid-2", Price: 1.5, DealID: "deal_Id", ImpID: "some-impression-id-2"}},
+					},
+					Seat:     "pubmatic",
+					Currency: "USD",
+				},
+				"appnexus": {
+					Bids: []*entities.PbsOrtbBid{
+						{Bid: &openrtb2.Bid{ID: "some-bid-12", Price: 2.2, ImpID: "some-impression-id-2"}},
+					},
+					Seat:     "appnexus",
+					Currency: "USD",
+				},
+			},
+			expRejectedBids: []*entities.PbsOrtbSeatBid{
+				{
+					Seat:     "appnexus",
+					Currency: "USD",
+					Bids: []*entities.PbsOrtbBid{
+						{Bid: &openrtb2.Bid{ID: "some-bid-11", Price: 0.8, ImpID: "some-impression-id-1"}},
+					},
+				},
+			},
+			expErrs: []error{},
+		},
+		{
 			name: "Bids with different currency with enforceDealFloor true",
 			args: args{
 				bidRequestWrapper: func() *openrtb_ext.RequestWrapper {
@@ -431,7 +496,6 @@ func TestEnforce(t *testing.T) {
 					Currency: "USD",
 				},
 			},
-			expErrs:         []error{errors.New("Floors feature is disabled at account or in the request")},
 			expRejectedBids: []*entities.PbsOrtbSeatBid{},
 		},
 		{
@@ -470,7 +534,6 @@ func TestEnforce(t *testing.T) {
 					Currency: "USD",
 				},
 			},
-			expErrs:         []error{errors.New("Floors feature is disabled at account or in the request")},
 			expRejectedBids: []*entities.PbsOrtbSeatBid{},
 		},
 		{
@@ -1156,7 +1219,6 @@ func TestUpdateEnforcePBS(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := updateEnforcePBS(tt.args.enforceFloors, tt.args.reqExt)
 			assert.Equal(t, tt.want, got, tt.name)
-
 		})
 	}
 }

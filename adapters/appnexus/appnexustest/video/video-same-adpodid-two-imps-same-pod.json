@@ -49,8 +49,7 @@
 				"appnexus": {
 				 "adpod_id": "10",
 				  "hb_source": 6
-				},
-				"prebid": {}
+				}
 			},
 			"imp": [
 			  {
@@ -93,5 +92,6 @@
 		  "body": {}
 		}
 	  }
-	]
+	],
+    "expectedBidResponses": [{"currency":"USD","bids":[]}]
   }

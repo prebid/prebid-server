@@ -20,7 +20,7 @@ import (
 	"github.com/prebid/openrtb/v19/openrtb3"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/analytics"
-	analyticsConf "github.com/prebid/prebid-server/analytics/config"
+	analyticsBuild "github.com/prebid/prebid-server/analytics/build"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/errortypes"
@@ -76,7 +76,7 @@ type testCase struct {
 	ExpectedBidResponse json.RawMessage `json:"expectedBidResponse"`
 
 	// "/openrtb2/amp" endpoint JSON test info
-	storedRequest       map[string]json.RawMessage `json:"mockAmpStoredRequest"`
+	StoredRequest       map[string]json.RawMessage `json:"mockAmpStoredRequest"`
 	StoredResponse      map[string]json.RawMessage `json:"mockAmpStoredResponse"`
 	ExpectedAmpResponse json.RawMessage            `json:"expectedAmpResponse"`
 }
@@ -84,7 +84,6 @@ type testCase struct {
 type testConfigValues struct {
 	AccountRequired     bool                          `json:"accountRequired"`
 	AliasJSON           string                        `json:"aliases"`
-	BlacklistedAccounts []string                      `json:"blacklistedAccts"`
 	BlacklistedApps     []string                      `json:"blacklistedApps"`
 	DisabledAdapters    []string                      `json:"disabledAdapters"`
 	CurrencyRates       map[string]map[string]float64 `json:"currencyRates"`
@@ -94,7 +93,7 @@ type testConfigValues struct {
 
 type brokenExchange struct{}
 
-func (e *brokenExchange) HoldAuction(ctx context.Context, r *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (e *brokenExchange) HoldAuction(ctx context.Context, r *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*exchange.AuctionResponse, error) {
 	return nil, errors.New("Critical, unrecoverable error.")
 }
 
@@ -848,15 +847,17 @@ type mockExchange struct {
 	lastRequest *openrtb2.BidRequest
 }
 
-func (m *mockExchange) HoldAuction(ctx context.Context, auctionRequest *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (m *mockExchange) HoldAuction(ctx context.Context, auctionRequest *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*exchange.AuctionResponse, error) {
 	r := auctionRequest.BidRequestWrapper
 	m.lastRequest = r.BidRequest
-	return &openrtb2.BidResponse{
-		SeatBid: []openrtb2.SeatBid{{
-			Bid: []openrtb2.Bid{{
-				AdM: "<script></script>",
+	return &exchange.AuctionResponse{
+		BidResponse: &openrtb2.BidResponse{
+			SeatBid: []openrtb2.SeatBid{{
+				Bid: []openrtb2.Bid{{
+					AdM: "<script></script>",
+				}},
 			}},
-		}},
+		},
 	}, nil
 }
 
@@ -885,7 +886,7 @@ type warningsCheckExchange struct {
 	auctionRequest exchange.AuctionRequest
 }
 
-func (e *warningsCheckExchange) HoldAuction(ctx context.Context, r *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (e *warningsCheckExchange) HoldAuction(ctx context.Context, r *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*exchange.AuctionResponse, error) {
 	e.auctionRequest = *r
 	return nil, nil
 }
@@ -896,13 +897,16 @@ type nobidExchange struct {
 	gotRequest *openrtb2.BidRequest
 }
 
-func (e *nobidExchange) HoldAuction(ctx context.Context, auctionRequest *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (e *nobidExchange) HoldAuction(ctx context.Context, auctionRequest *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*exchange.AuctionResponse, error) {
 	r := auctionRequest.BidRequestWrapper
 	e.gotRequest = r.BidRequest
-	return &openrtb2.BidResponse{
-		ID:    r.BidRequest.ID,
-		BidID: "test bid id",
-		NBR:   openrtb3.NoBidUnknownError.Ptr(),
+
+	return &exchange.AuctionResponse{
+		BidResponse: &openrtb2.BidResponse{
+			ID:    r.BidRequest.ID,
+			BidID: "test bid id",
+			NBR:   openrtb3.NoBidUnknownError.Ptr(),
+		},
 	}, nil
 }
 
@@ -927,7 +931,6 @@ func (s mockCurrencyRatesClient) handle(w http.ResponseWriter, req *http.Request
 		return
 	}
 	w.Write(currencyServerJsonResponse)
-	return
 }
 
 // mockBidderHandler carries mock bidder server information that will be read from JSON test files
@@ -989,7 +992,6 @@ func (b mockBidderHandler) bid(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	w.Write(serverJsonResponse)
-	return
 }
 
 // mockAdapter is a mock impression-splitting adapter
@@ -1149,25 +1151,13 @@ func (tc *testConfigValues) getBlacklistedAppMap() map[string]bool {
 	return blacklistedAppMap
 }
 
-func (tc *testConfigValues) getBlackListedAccountMap() map[string]bool {
-	var blacklistedAccountMap map[string]bool
-
-	if len(tc.BlacklistedAccounts) > 0 {
-		blacklistedAccountMap = make(map[string]bool, len(tc.BlacklistedAccounts))
-		for _, account := range tc.BlacklistedAccounts {
-			blacklistedAccountMap[account] = true
-		}
-	}
-	return blacklistedAccountMap
-}
-
 // exchangeTestWrapper is a wrapper that asserts the openrtb2 bid request just before the HoldAuction call
 type exchangeTestWrapper struct {
 	ex                    exchange.Exchange
 	actualValidatedBidReq *openrtb2.BidRequest
 }
 
-func (te *exchangeTestWrapper) HoldAuction(ctx context.Context, r *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (te *exchangeTestWrapper) HoldAuction(ctx context.Context, r *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*exchange.AuctionResponse, error) {
 
 	// rebuild/resync the request in the request wrapper.
 	if err := r.BidRequestWrapper.RebuildRequest(); err != nil {
@@ -1241,7 +1231,7 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 
 	bidderInfos := getBidderInfos(test.Config.DisabledAdapters, openrtb_ext.CoreBidderNames())
 	bidderMap := exchange.GetActiveBidders(bidderInfos)
-	disabledBidders := exchange.GetDisabledBiddersErrorMessages(bidderInfos)
+	disabledBidders := exchange.GetDisabledBidderWarningMessages(bidderInfos)
 	met := &metricsConfig.NilMetricsEngine{}
 	mockFetcher := empty_fetcher.EmptyFetcher{}
 
@@ -1260,8 +1250,8 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 	testExchange, mockBidServersArray := buildTestExchange(test.Config, adapterMap, mockBidServersArray, mockCurrencyRatesServer, bidderInfos, cfg, met, mockFetcher)
 
 	var storedRequestFetcher stored_requests.Fetcher
-	if len(test.storedRequest) > 0 {
-		storedRequestFetcher = &mockAmpStoredReqFetcher{test.storedRequest}
+	if len(test.StoredRequest) > 0 {
+		storedRequestFetcher = &mockAmpStoredReqFetcher{test.StoredRequest}
 	} else {
 		storedRequestFetcher = &mockStoredReqFetcher{}
 	}
@@ -1273,10 +1263,10 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 		storedResponseFetcher = empty_fetcher.EmptyFetcher{}
 	}
 
-	var accountFetcher stored_requests.AccountFetcher
-	accountFetcher = &mockAccountFetcher{
+	accountFetcher := &mockAccountFetcher{
 		data: map[string]json.RawMessage{
 			"malformed_acct": json.RawMessage(`{"disabled":"invalid type"}`),
+			"disabled_acct":  json.RawMessage(`{"disabled":true}`),
 		},
 	}
 
@@ -1285,7 +1275,7 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 		planBuilder = hooks.EmptyPlanBuilder{}
 	}
 
-	var endpointBuilder func(uuidutil.UUIDGenerator, exchange.Exchange, openrtb_ext.BidderParamValidator, stored_requests.Fetcher, stored_requests.AccountFetcher, *config.Configuration, metrics.MetricsEngine, analytics.PBSAnalyticsModule, map[string]string, []byte, map[string]openrtb_ext.BidderName, stored_requests.Fetcher, hooks.ExecutionPlanBuilder) (httprouter.Handle, error)
+	var endpointBuilder func(uuidutil.UUIDGenerator, exchange.Exchange, openrtb_ext.BidderParamValidator, stored_requests.Fetcher, stored_requests.AccountFetcher, *config.Configuration, metrics.MetricsEngine, analytics.Runner, map[string]string, []byte, map[string]openrtb_ext.BidderName, stored_requests.Fetcher, hooks.ExecutionPlanBuilder, *exchange.TmaxAdjustmentsPreprocessed) (httprouter.Handle, error)
 
 	switch test.endpointType {
 	case AMP_ENDPOINT:
@@ -1302,12 +1292,13 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 		accountFetcher,
 		cfg,
 		met,
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		disabledBidders,
 		[]byte(test.Config.AliasJSON),
 		bidderMap,
 		storedResponseFetcher,
 		planBuilder,
+		nil,
 	)
 
 	return endpoint, testExchange.(*exchangeTestWrapper), mockBidServersArray, mockCurrencyRatesServer, err
@@ -1468,6 +1459,7 @@ func makePlan[H any](hook H) hooks.Plan[H] {
 
 type mockRejectionHook struct {
 	nbr int
+	err error
 }
 
 func (m mockRejectionHook) HandleEntrypointHook(
@@ -1475,7 +1467,7 @@ func (m mockRejectionHook) HandleEntrypointHook(
 	_ hookstage.ModuleInvocationContext,
 	_ hookstage.EntrypointPayload,
 ) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
-	return hookstage.HookResult[hookstage.EntrypointPayload]{Reject: true, NbrCode: m.nbr}, nil
+	return hookstage.HookResult[hookstage.EntrypointPayload]{Reject: true, NbrCode: m.nbr}, m.err
 }
 
 func (m mockRejectionHook) HandleRawAuctionHook(
@@ -1483,7 +1475,7 @@ func (m mockRejectionHook) HandleRawAuctionHook(
 	_ hookstage.ModuleInvocationContext,
 	_ hookstage.RawAuctionRequestPayload,
 ) (hookstage.HookResult[hookstage.RawAuctionRequestPayload], error) {
-	return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{Reject: true, NbrCode: m.nbr}, nil
+	return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{Reject: true, NbrCode: m.nbr}, m.err
 }
 
 func (m mockRejectionHook) HandleProcessedAuctionHook(
@@ -1491,7 +1483,7 @@ func (m mockRejectionHook) HandleProcessedAuctionHook(
 	_ hookstage.ModuleInvocationContext,
 	_ hookstage.ProcessedAuctionRequestPayload,
 ) (hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload], error) {
-	return hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload]{Reject: true, NbrCode: m.nbr}, nil
+	return hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload]{Reject: true, NbrCode: m.nbr}, m.err
 }
 
 func (m mockRejectionHook) HandleBidderRequestHook(
@@ -1505,7 +1497,7 @@ func (m mockRejectionHook) HandleBidderRequestHook(
 		result.NbrCode = m.nbr
 	}
 
-	return result, nil
+	return result, m.err
 }
 
 func (m mockRejectionHook) HandleRawBidderResponseHook(

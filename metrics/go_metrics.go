@@ -14,6 +14,7 @@ import (
 type Metrics struct {
 	MetricsRegistry                metrics.Registry
 	ConnectionCounter              metrics.Counter
+	TMaxTimeoutCounter             metrics.Counter
 	ConnectionAcceptErrorMeter     metrics.Meter
 	ConnectionCloseErrorMeter      metrics.Meter
 	ImpMeter                       metrics.Meter
@@ -124,21 +125,6 @@ type accountMetrics struct {
 	bidValidationCreativeSizeWarnMeter metrics.Meter
 	bidValidationSecureMarkupMeter     metrics.Meter
 	bidValidationSecureMarkupWarnMeter metrics.Meter
-
-	// Account Deprciation Metrics
-	accountDeprecationWarningsPurpose1Meter  metrics.Meter
-	accountDeprecationWarningsPurpose2Meter  metrics.Meter
-	accountDeprecationWarningsPurpose3Meter  metrics.Meter
-	accountDeprecationWarningsPurpose4Meter  metrics.Meter
-	accountDeprecationWarningsPurpose5Meter  metrics.Meter
-	accountDeprecationWarningsPurpose6Meter  metrics.Meter
-	accountDeprecationWarningsPurpose7Meter  metrics.Meter
-	accountDeprecationWarningsPurpose8Meter  metrics.Meter
-	accountDeprecationWarningsPurpose9Meter  metrics.Meter
-	accountDeprecationWarningsPurpose10Meter metrics.Meter
-	channelEnabledGDPRMeter                  metrics.Meter
-	channelEnabledCCPAMeter                  metrics.Meter
-	accountDeprecationSummaryMeter           metrics.Meter
 }
 
 type ModuleMetrics struct {
@@ -288,6 +274,7 @@ func getModuleNames(moduleStageNames map[string][]string) []string {
 func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, disableAccountMetrics config.DisabledMetrics, syncerKeys []string, moduleStageNames map[string][]string) *Metrics {
 	newMetrics := NewBlankMetrics(registry, exchanges, disableAccountMetrics, moduleStageNames)
 	newMetrics.ConnectionCounter = metrics.GetOrRegisterCounter("active_connections", registry)
+	newMetrics.TMaxTimeoutCounter = metrics.GetOrRegisterCounter("tmax_timeout", registry)
 	newMetrics.ConnectionAcceptErrorMeter = metrics.GetOrRegisterMeter("connection_accept_errors", registry)
 	newMetrics.ConnectionCloseErrorMeter = metrics.GetOrRegisterMeter("connection_close_errors", registry)
 	newMetrics.ImpMeter = metrics.GetOrRegisterMeter("imps_requested", registry)
@@ -574,20 +561,6 @@ func (me *Metrics) getAccountMetrics(id string) *accountMetrics {
 	am.bidValidationSecureMarkupMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.response.validation.secure.err", id), me.MetricsRegistry)
 	am.bidValidationSecureMarkupWarnMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.response.validation.secure.warn", id), me.MetricsRegistry)
 
-	am.accountDeprecationWarningsPurpose1Meter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.config.gdpr.purpose1.warn", id), me.MetricsRegistry)
-	am.accountDeprecationWarningsPurpose2Meter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.config.gdpr.purpose2.warn", id), me.MetricsRegistry)
-	am.accountDeprecationWarningsPurpose3Meter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.config.gdpr.purpose3.warn", id), me.MetricsRegistry)
-	am.accountDeprecationWarningsPurpose4Meter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.config.gdpr.purpose4.warn", id), me.MetricsRegistry)
-	am.accountDeprecationWarningsPurpose5Meter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.config.gdpr.purpose5.warn", id), me.MetricsRegistry)
-	am.accountDeprecationWarningsPurpose6Meter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.config.gdpr.purpose6.warn", id), me.MetricsRegistry)
-	am.accountDeprecationWarningsPurpose7Meter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.config.gdpr.purpose7.warn", id), me.MetricsRegistry)
-	am.accountDeprecationWarningsPurpose8Meter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.config.gdpr.purpose8.warn", id), me.MetricsRegistry)
-	am.accountDeprecationWarningsPurpose9Meter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.config.gdpr.purpose9.warn", id), me.MetricsRegistry)
-	am.accountDeprecationWarningsPurpose10Meter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.config.gdpr.purpose10.warn", id), me.MetricsRegistry)
-	am.channelEnabledCCPAMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.config.ccpa.channel_enabled.warn", id), me.MetricsRegistry)
-	am.channelEnabledGDPRMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.config.gdpr.channel_enabled.warn", id), me.MetricsRegistry)
-	am.accountDeprecationSummaryMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.config.summary", id), me.MetricsRegistry)
-
 	if !me.MetricsDisabled.AccountModulesMetrics {
 		for _, mod := range me.modules {
 			am.moduleMetrics[mod] = makeBlankModuleMetrics()
@@ -633,55 +606,6 @@ func (me *Metrics) RecordDebugRequest(debugEnabled bool, pubID string) {
 	}
 }
 
-func (me *Metrics) RecordAccountGDPRPurposeWarning(account string, purposeName string) {
-	if account != PublisherUnknown {
-		am := me.getAccountMetrics(account)
-		switch purposeName {
-		case "purpose1":
-			am.accountDeprecationWarningsPurpose1Meter.Mark(1)
-		case "purpose2":
-			am.accountDeprecationWarningsPurpose2Meter.Mark(1)
-		case "purpose3":
-			am.accountDeprecationWarningsPurpose3Meter.Mark(1)
-		case "purpose4":
-			am.accountDeprecationWarningsPurpose4Meter.Mark(1)
-		case "purpose5":
-			am.accountDeprecationWarningsPurpose5Meter.Mark(1)
-		case "purpose6":
-			am.accountDeprecationWarningsPurpose6Meter.Mark(1)
-		case "purpose7":
-			am.accountDeprecationWarningsPurpose7Meter.Mark(1)
-		case "purpose8":
-			am.accountDeprecationWarningsPurpose8Meter.Mark(1)
-		case "purpose9":
-			am.accountDeprecationWarningsPurpose9Meter.Mark(1)
-		case "purpose10":
-			am.accountDeprecationWarningsPurpose10Meter.Mark(1)
-		}
-	}
-}
-
-func (me *Metrics) RecordAccountGDPRChannelEnabledWarning(account string) {
-	if account != PublisherUnknown {
-		am := me.getAccountMetrics(account)
-		am.channelEnabledGDPRMeter.Mark(1)
-	}
-}
-
-func (me *Metrics) RecordAccountCCPAChannelEnabledWarning(account string) {
-	if account != PublisherUnknown {
-		am := me.getAccountMetrics(account)
-		am.channelEnabledCCPAMeter.Mark(1)
-	}
-}
-
-func (me *Metrics) RecordAccountUpgradeStatus(account string) {
-	if account != PublisherUnknown {
-		am := me.getAccountMetrics(account)
-		am.accountDeprecationSummaryMeter.Mark(1)
-	}
-}
-
 func (me *Metrics) RecordStoredResponse(pubId string) {
 	me.StoredResponsesMeter.Mark(1)
 	if pubId != PublisherUnknown && !me.MetricsDisabled.AccountStoredResponses {
@@ -711,6 +635,10 @@ func (me *Metrics) RecordConnectionAccept(success bool) {
 	} else {
 		me.ConnectionAcceptErrorMeter.Mark(1)
 	}
+}
+
+func (m *Metrics) RecordTMaxTimeout() {
+	m.TMaxTimeoutCounter.Inc(1)
 }
 
 func (me *Metrics) RecordConnectionClose(success bool) {

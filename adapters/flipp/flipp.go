@@ -114,9 +114,7 @@ func (a *adapter) processImp(request *openrtb2.BidRequest, imp openrtb2.Imp) (*a
 	}
 
 	var userIP string
-	if flippExtParams.IP != "" {
-		userIP = flippExtParams.IP
-	} else if request.Device != nil && request.Device.IP != "" {
+	if request.Device != nil && request.Device.IP != "" {
 		userIP = request.Device.IP
 	} else {
 		return nil, fmt.Errorf("no IP set in flipp bidder params or request device")

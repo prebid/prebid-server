@@ -20,7 +20,7 @@ import (
 
 // Listen blocks forever, serving PBS requests on the given port. This will block forever, until the process is shut down.
 func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.Handler, metrics *metricsconfig.DetailedMetricsEngine) (err error) {
-	stopSignals := make(chan os.Signal)
+	stopSignals := make(chan os.Signal, 1)
 	signal.Notify(stopSignals, syscall.SIGTERM, syscall.SIGINT)
 
 	// Run the servers. Fan any process-stopper signals out to each server for graceful shutdowns.
@@ -91,10 +91,7 @@ func newAdminServer(cfg *config.Configuration, handler http.Handler) *http.Serve
 }
 
 func newMainServer(cfg *config.Configuration, handler http.Handler) *http.Server {
-	var serverHandler = handler
-	if cfg.EnableGzip {
-		serverHandler = gziphandler.GzipHandler(handler)
-	}
+	serverHandler := getCompressionEnabledHandler(handler, cfg.Compression.Response)
 
 	return &http.Server{
 		Addr:         cfg.Host + ":" + strconv.Itoa(cfg.Port),
@@ -106,10 +103,7 @@ func newMainServer(cfg *config.Configuration, handler http.Handler) *http.Server
 }
 
 func newSocketServer(cfg *config.Configuration, handler http.Handler) *http.Server {
-	var serverHandler = handler
-	if cfg.EnableGzip {
-		serverHandler = gziphandler.GzipHandler(handler)
-	}
+	serverHandler := getCompressionEnabledHandler(handler, cfg.Compression.Response)
 
 	return &http.Server{
 		Addr:         cfg.UnixSocketName,
@@ -117,6 +111,13 @@ func newSocketServer(cfg *config.Configuration, handler http.Handler) *http.Serv
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 	}
+}
+
+func getCompressionEnabledHandler(h http.Handler, compressionInfo config.CompressionInfo) http.Handler {
+	if compressionInfo.GZIP {
+		h = gziphandler.GzipHandler(h)
+	}
+	return h
 }
 
 func runServer(server *http.Server, name string, listener net.Listener) (err error) {

@@ -192,7 +192,6 @@ func TestListen(t *testing.T) {
 			Port:             8000,
 			UnixSocketEnable: false,
 			UnixSocketName:   "prebid_socket",
-			EnableGzip:       false,
 		}
 	)
 

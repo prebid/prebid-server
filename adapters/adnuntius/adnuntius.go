@@ -27,10 +27,32 @@ type adnAdunit struct {
 	AuId       string    `json:"auId"`
 	TargetId   string    `json:"targetId"`
 	Dimensions [][]int64 `json:"dimensions,omitempty"`
+	MaxDeals   int       `json:"maxDeals,omitempty"`
 }
 
 type extDeviceAdnuntius struct {
 	NoCookies bool `json:"noCookies,omitempty"`
+}
+
+type Ad struct {
+	Bid struct {
+		Amount   float64
+		Currency string
+	}
+	NetBid struct {
+		Amount float64
+	}
+	GrossBid struct {
+		Amount float64
+	}
+	DealID          string `json:"dealId,omitempty"`
+	AdId            string
+	CreativeWidth   string
+	CreativeHeight  string
+	CreativeId      string
+	LineItemId      string
+	Html            string
+	DestinationUrls map[string]string
 }
 
 type AdUnit struct {
@@ -38,20 +60,8 @@ type AdUnit struct {
 	TargetId   string
 	Html       string
 	ResponseId string
-	Ads        []struct {
-		Bid struct {
-			Amount   float64
-			Currency string
-		}
-		DealID          string `json:"dealId,omitempty"`
-		AdId            string
-		CreativeWidth   string
-		CreativeHeight  string
-		CreativeId      string
-		LineItemId      string
-		Html            string
-		DestinationUrls map[string]string
-	}
+	Ads        []Ad
+	Deals      []Ad `json:"deals,omitempty"`
 }
 
 type AdnResponse struct {
@@ -190,6 +200,7 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 				Message: fmt.Sprintf("ignoring imp id=%s, Adnuntius supports only Banner", imp.ID),
 			}}
 		}
+
 		var bidderExt adapters.ExtImpBidder
 		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			return nil, []error{&errortypes.BadInput{
@@ -200,7 +211,7 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 		var adnuntiusExt openrtb_ext.ImpExtAdnunitus
 		if err := json.Unmarshal(bidderExt.Bidder, &adnuntiusExt); err != nil {
 			return nil, []error{&errortypes.BadInput{
-				Message: fmt.Sprintf("Error unmarshalling ExtImpBmtm: %s", err.Error()),
+				Message: fmt.Sprintf("Error unmarshalling ExtImpValues: %s", err.Error()),
 			}}
 		}
 
@@ -213,13 +224,17 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 			network = adnuntiusExt.Network
 		}
 
+		adUnit := adnAdunit{
+			AuId:       adnuntiusExt.Auid,
+			TargetId:   fmt.Sprintf("%s-%s", adnuntiusExt.Auid, imp.ID),
+			Dimensions: getImpSizes(imp),
+		}
+		if adnuntiusExt.MaxDeals > 0 {
+			adUnit.MaxDeals = adnuntiusExt.MaxDeals
+		}
 		networkAdunitMap[network] = append(
 			networkAdunitMap[network],
-			adnAdunit{
-				AuId:       adnuntiusExt.Auid,
-				TargetId:   fmt.Sprintf("%s-%s", adnuntiusExt.Auid, imp.ID),
-				Dimensions: getImpSizes(imp),
-			})
+			adUnit)
 	}
 
 	endpoint, err := makeEndpointUrl(ortbRequest, a, noCookies)
@@ -320,6 +335,71 @@ func getGDPR(request *openrtb2.BidRequest) (string, string, error) {
 	return gdpr, consent, nil
 }
 
+func generateAdResponse(ad Ad, imp openrtb2.Imp, html string, request *openrtb2.BidRequest) (*openrtb2.Bid, []error) {
+
+	creativeWidth, widthErr := strconv.ParseInt(ad.CreativeWidth, 10, 64)
+	if widthErr != nil {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("Value of width: %s is not a string", ad.CreativeWidth),
+		}}
+	}
+
+	creativeHeight, heightErr := strconv.ParseInt(ad.CreativeHeight, 10, 64)
+	if heightErr != nil {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("Value of height: %s is not a string", ad.CreativeHeight),
+		}}
+	}
+
+	price := ad.Bid.Amount
+
+	var bidderExt adapters.ExtImpBidder
+	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("Error unmarshalling ExtImpBidder: %s", err.Error()),
+		}}
+	}
+
+	var adnuntiusExt openrtb_ext.ImpExtAdnunitus
+	if err := json.Unmarshal(bidderExt.Bidder, &adnuntiusExt); err != nil {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("Error unmarshalling ExtImpValues: %s", err.Error()),
+		}}
+	}
+
+	if adnuntiusExt.BidType != "" {
+		if strings.EqualFold(string(adnuntiusExt.BidType), "net") {
+			price = ad.NetBid.Amount
+		}
+		if strings.EqualFold(string(adnuntiusExt.BidType), "gross") {
+			price = ad.GrossBid.Amount
+		}
+	}
+
+	adDomain := []string{}
+	for _, url := range ad.DestinationUrls {
+		domainArray := strings.Split(url, "/")
+		domain := strings.Replace(domainArray[2], "www.", "", -1)
+		adDomain = append(adDomain, domain)
+	}
+
+	bid := openrtb2.Bid{
+		ID:      ad.AdId,
+		ImpID:   imp.ID,
+		W:       creativeWidth,
+		H:       creativeHeight,
+		AdID:    ad.AdId,
+		DealID:  ad.DealID,
+		CID:     ad.LineItemId,
+		CrID:    ad.CreativeId,
+		Price:   price * 1000,
+		AdM:     html,
+		ADomain: adDomain,
+	}
+	return &bid, nil
+
+}
+
 func generateBidResponse(adnResponse *AdnResponse, request *openrtb2.BidRequest) (*adapters.BidderResponse, []error) {
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(adnResponse.AdUnits))
 	var currency string
@@ -329,7 +409,7 @@ func generateBidResponse(adnResponse *AdnResponse, request *openrtb2.BidRequest)
 		adunitMap[adnRespAdunit.TargetId] = adnRespAdunit
 	}
 
-	for i, imp := range request.Imp {
+	for _, imp := range request.Imp {
 
 		auId, _, _, err := jsonparser.Get(imp.Ext, "bidder", "auId")
 		if err != nil {
@@ -344,48 +424,34 @@ func generateBidResponse(adnResponse *AdnResponse, request *openrtb2.BidRequest)
 		if len(adunit.Ads) > 0 {
 
 			ad := adunit.Ads[0]
-
 			currency = ad.Bid.Currency
 
-			creativeWidth, widthErr := strconv.ParseInt(ad.CreativeWidth, 10, 64)
-			if widthErr != nil {
+			adBid, err := generateAdResponse(ad, imp, adunit.Html, request)
+			if err != nil {
 				return nil, []error{&errortypes.BadInput{
-					Message: fmt.Sprintf("Value of width: %s is not a string", ad.CreativeWidth),
+					Message: fmt.Sprintf("Error at ad generation"),
 				}}
-			}
-
-			creativeHeight, heightErr := strconv.ParseInt(ad.CreativeHeight, 10, 64)
-			if heightErr != nil {
-				return nil, []error{&errortypes.BadInput{
-					Message: fmt.Sprintf("Value of height: %s is not a string", ad.CreativeHeight),
-				}}
-			}
-
-			adDomain := []string{}
-			for _, url := range ad.DestinationUrls {
-				domainArray := strings.Split(url, "/")
-				domain := strings.Replace(domainArray[2], "www.", "", -1)
-				adDomain = append(adDomain, domain)
-			}
-
-			bid := openrtb2.Bid{
-				ID:      ad.AdId,
-				ImpID:   request.Imp[i].ID,
-				W:       creativeWidth,
-				H:       creativeHeight,
-				AdID:    ad.AdId,
-				DealID:  ad.DealID,
-				CID:     ad.LineItemId,
-				CrID:    ad.CreativeId,
-				Price:   ad.Bid.Amount * 1000,
-				AdM:     adunit.Html,
-				ADomain: adDomain,
 			}
 
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &bid,
+				Bid:     adBid,
 				BidType: "banner",
 			})
+
+			for _, deal := range adunit.Deals {
+				dealBid, err := generateAdResponse(deal, imp, deal.Html, request)
+				if err != nil {
+					return nil, []error{&errortypes.BadInput{
+						Message: fmt.Sprintf("Error at ad generation"),
+					}}
+				}
+
+				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+					Bid:     dealBid,
+					BidType: "banner",
+				})
+			}
+
 		}
 
 	}

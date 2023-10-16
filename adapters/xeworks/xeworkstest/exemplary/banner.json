@@ -247,6 +247,33 @@
           "type": "banner"
         }
       ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "id",
+            "impid": "2",
+            "price": 2.4,
+            "nurl": "http://test.com/nurl",
+            "burl": "http://test.com/burl",
+            "adm": "<span>Test3</span>",
+            "adomain": ["test.com"],
+            "cat": ["IAB1"],
+            "cid": "cid",
+            "crid": "crid",
+            "w": 300,
+            "h": 250,
+            "ext": {
+              "prebid": {
+                "type": "banner"
+              }
+            }
+          },
+          "type": "banner"
+        }
+      ]
     }
   ]
 }

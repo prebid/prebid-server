@@ -1,6 +1,6 @@
 endpoint: "https://api.w.inmobi.com/showad/openrtb/bidder/prebid"
 maintainer:
-  email: "technology-irv@inmobi.com"
+  email: "prebid-support@inmobi.com"
 gvlVendorID: 333
 capabilities:
   app:

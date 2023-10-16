@@ -80,6 +80,12 @@ func (me *MultiMetricsEngine) RecordConnectionAccept(success bool) {
 	}
 }
 
+func (me *MultiMetricsEngine) RecordTMaxTimeout() {
+	for _, thisME := range *me {
+		thisME.RecordTMaxTimeout()
+	}
+}
+
 func (me *MultiMetricsEngine) RecordConnectionClose(success bool) {
 	for _, thisME := range *me {
 		thisME.RecordConnectionClose(success)
@@ -316,27 +322,6 @@ func (me *MultiMetricsEngine) RecordBidValidationSecureMarkupWarn(adapter openrt
 	}
 }
 
-func (me *MultiMetricsEngine) RecordAccountGDPRPurposeWarning(account string, purposeName string) {
-	for _, thisME := range *me {
-		thisME.RecordAccountGDPRPurposeWarning(account, purposeName)
-	}
-}
-func (me *MultiMetricsEngine) RecordAccountGDPRChannelEnabledWarning(account string) {
-	for _, thisME := range *me {
-		thisME.RecordAccountGDPRChannelEnabledWarning(account)
-	}
-}
-func (me *MultiMetricsEngine) RecordAccountCCPAChannelEnabledWarning(account string) {
-	for _, thisME := range *me {
-		thisME.RecordAccountCCPAChannelEnabledWarning(account)
-	}
-}
-func (me *MultiMetricsEngine) RecordAccountUpgradeStatus(account string) {
-	for _, thisME := range *me {
-		thisME.RecordAccountUpgradeStatus(account)
-	}
-}
-
 func (me *MultiMetricsEngine) RecordModuleCalled(labels metrics.ModuleLabels, duration time.Duration) {
 	for _, thisME := range *me {
 		thisME.RecordModuleCalled(labels, duration)
@@ -389,6 +374,10 @@ func (me *NilMetricsEngine) RecordRequest(labels metrics.Labels) {
 
 // RecordConnectionAccept as a noop
 func (me *NilMetricsEngine) RecordConnectionAccept(success bool) {
+}
+
+// RecordTMaxTimeout as a noop
+func (me *NilMetricsEngine) RecordTMaxTimeout() {
 }
 
 // RecordConnectionClose as a noop
@@ -524,18 +513,6 @@ func (me *NilMetricsEngine) RecordBidValidationSecureMarkupError(adapter openrtb
 }
 
 func (me *NilMetricsEngine) RecordBidValidationSecureMarkupWarn(adapter openrtb_ext.BidderName, account string) {
-}
-
-func (me *NilMetricsEngine) RecordAccountGDPRPurposeWarning(account string, purposeName string) {
-}
-
-func (me *NilMetricsEngine) RecordAccountGDPRChannelEnabledWarning(account string) {
-}
-
-func (me *NilMetricsEngine) RecordAccountCCPAChannelEnabledWarning(account string) {
-}
-
-func (me *NilMetricsEngine) RecordAccountUpgradeStatus(account string) {
 }
 
 func (me *NilMetricsEngine) RecordModuleCalled(labels metrics.ModuleLabels, duration time.Duration) {

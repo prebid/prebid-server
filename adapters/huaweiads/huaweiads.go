@@ -185,6 +185,7 @@ type metaData struct {
 	ApkInfo     apkInfo     `json:"apkInfo"`
 	Duration    int64       `json:"duration"`
 	MediaFile   mediaFile   `json:"mediaFile"`
+	Cta         string      `json:"cta"`
 }
 
 type imageInfo struct {
@@ -535,8 +536,7 @@ func getNativeFormat(adslot30 *adslot30, openRTBImp *openrtb2.Imp) error {
 	// only compute the main image number, type = native1.ImageAssetTypeMain
 	var numMainImage = 0
 	var numVideo = 0
-	var width int64
-	var height int64
+
 	for _, asset := range nativePayload.Assets {
 		// Only one of the {title,img,video,data} objects should be present in each object.
 		if asset.Video != nil {
@@ -547,19 +547,10 @@ func getNativeFormat(adslot30 *adslot30, openRTBImp *openrtb2.Imp) error {
 		if asset.Img != nil {
 			if asset.Img.Type == native1.ImageAssetTypeMain {
 				numMainImage++
-				if asset.Img.H != 0 && asset.Img.W != 0 {
-					width = asset.Img.W
-					height = asset.Img.H
-				} else if asset.Img.WMin != 0 && asset.Img.HMin != 0 {
-					width = asset.Img.WMin
-					height = asset.Img.HMin
-				}
 			}
 			continue
 		}
 	}
-	adslot30.W = width
-	adslot30.H = height
 
 	var detailedCreativeTypeList = make([]string, 0, 2)
 	if numVideo >= 1 {
@@ -902,7 +893,6 @@ func getReqConsentInfo(request *huaweiAdsRequest, openRTBRequest *openrtb2.BidRe
 	if openRTBRequest.User != nil && openRTBRequest.User.Ext != nil {
 		var extUser openrtb_ext.ExtUser
 		if err := json.Unmarshal(openRTBRequest.User.Ext, &extUser); err != nil {
-			fmt.Errorf("failed to parse ExtUser in HuaweiAds GDPR check: %v", err)
 			return
 		}
 		request.Consent = extUser.Consent
@@ -1170,6 +1160,11 @@ func (a *adapter) extractAdmNative(adType int32, content *content, bidType openr
 				dataObject.Label = "desc"
 				dataObject.Value = getDecodeValue(content.MetaData.Description)
 			}
+
+			if asset.Data.Type == native1.DataAssetTypeCTAText {
+				dataObject.Type = native1.DataAssetTypeCTAText
+				dataObject.Value = getDecodeValue(content.MetaData.Cta)
+			}
 			responseAsset.Data = &dataObject
 		}
 		var id = asset.ID
@@ -1178,6 +1173,7 @@ func (a *adapter) extractAdmNative(adType int32, content *content, bidType openr
 	}
 
 	// dsp imp click tracking + imp click tracking
+	var eventTrackers []nativeResponse.EventTracker
 	if content.Monitor != nil {
 		for _, monitor := range content.Monitor {
 			if len(monitor.Url) == 0 {
@@ -1187,10 +1183,17 @@ func (a *adapter) extractAdmNative(adType int32, content *content, bidType openr
 				linkObject.ClickTrackers = append(linkObject.ClickTrackers, monitor.Url...)
 			}
 			if monitor.EventType == "imp" {
-				nativeResult.ImpTrackers = append(nativeResult.ImpTrackers, monitor.Url...)
+				for i := range monitor.Url {
+					var eventTracker nativeResponse.EventTracker
+					eventTracker.Event = native1.EventTypeImpression
+					eventTracker.Method = native1.EventTrackingMethodImage
+					eventTracker.URL = monitor.Url[i]
+					eventTrackers = append(eventTrackers, eventTracker)
+				}
 			}
 		}
 	}
+	nativeResult.EventTrackers = eventTrackers
 	nativeResult.Link = linkObject
 	nativeResult.Ver = "1.1"
 	if nativePayload.Ver != "" {

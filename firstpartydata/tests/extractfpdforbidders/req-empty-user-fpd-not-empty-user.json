@@ -50,6 +50,7 @@
   "biddersFPDResolved": {
     "appnexus": {
       "user": {
+        "id": "appnexusFpdUser",
         "yob": 2011,
         "gender": "F",
         "keywords": "fpd keywords",
@@ -65,12 +66,7 @@
         ],
         "ext": {
           "data": {
-            "ext": {
-              "data": {
-                "userdata": "appnexusFpdUserExtData"
-              }
-            },
-            "id": "appnexusFpdUser"
+            "userdata": "appnexusFpdUserExtData"
           }
         }
       }

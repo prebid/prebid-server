@@ -493,5 +493,111 @@
         }
       }
     }
+  ],
+  "expectedBidResponses": [
+      {"currency":"USD","bids":[
+        {"bid": {
+            "adm": "<div id=\"crid_1\">Buy now!</div>",
+            "crid": "crid_1",
+            "h": 150,
+            "id": "ADMVideoWithBannerImp1Banner",
+            "impid": "ADMVideoWithBannerImp1",
+            "price": 1.594764,
+            "w": 100
+        }, "type": "banner"},
+        {"bid": {
+            "adm": "<div id=\"crid_2\">Buy now!</div>",
+            "crid": "crid_2",
+            "h": 150,
+            "id": "ADMVideoWithBannerImp2Banner",
+            "impid": "ADMVideoWithBannerImp2",
+            "price": 1.594764,
+            "w": 100
+        }, "type": "banner"},
+        {"bid": {
+            "adm": "<div id=\"crid_3\">Buy now!</div>",
+            "crid": "crid_3",
+            "h": 1024,
+            "id": "RegularBannerImp4Banner",
+            "impid": "RegularBannerImp4",
+            "price": 1.501188,
+            "w": 1280
+        }, "type": "banner"},
+        {"bid": {
+            "adm": "<div id=\"crid_4\">Buy now!</div>",
+            "crid": "crid_4",
+            "h": 1024,
+            "id": "RegularBannerImp5Banner",
+            "impid": "RegularBannerImp5",
+            "price": 1.501188,
+            "w": 1280
+        }, "type": "banner"}
+      ]},
+      {"currency":"USD","bids":[
+        {
+          "bid": {
+            "id": "ADMVideoWithBannerImp1AdmVideo",
+            "impid": "ADMVideoWithBannerImp1",
+            "price": 0.8,
+            "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
+            "cat":["IAB2"],
+            "w": 300,
+            "h": 400,
+            "ext": {
+              "duration": 30
+            }
+          },
+          "type": "video"
+        }
+      ]},
+      {"currency":"USD","bids":[
+        {
+          "bid": {
+            "id": "ADMVideoWithBannerImp2AdmVideo",
+            "impid": "ADMVideoWithBannerImp2",
+            "price": 0.8,
+            "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
+            "cat":["IAB2"],
+            "w": 300,
+            "h": 400,
+            "ext": {
+              "duration": 30
+            }
+          },
+          "type": "video"
+        }
+      ]},
+      {"currency":"USD","bids":[
+        {
+          "bid": {
+            "id": "ADMVideoImp6AdmVideo",
+            "impid": "ADMVideoImp6",
+            "price": 0.8,
+            "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
+            "cat":["IAB2"],
+            "w": 100,
+            "h": 150,
+            "ext": {
+              "duration": 30
+            }
+          },
+          "type": "video"
+        }
+      ]},
+      {"currency":"USD","bids":[
+        {
+          "bid": {
+            "crid": "de5b4976-0d2a-4032-874c-35e2b3e3ab95",
+            "id": "NURLVideoImp3NurlVideo",
+            "impid": "NURLVideoImp3",
+            "nurl": "https://useast.bfmio.com/getBids?aid=bid:de5b4976-0d2a-4032-874c-35e2b3e3ab95: videoAppId1: 10.0: 10.0&v=1&dsp=5f7da002b6b0ca361fc692b0,0.01&i_type=pre",
+            "price": 20,
+            "w": 150,
+            "h": 300,
+            "ext": {}
+          },
+          "type": "video"
+        }
+      ]}
   ]
 }

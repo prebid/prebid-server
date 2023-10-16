@@ -9,6 +9,7 @@ import (
 
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const testInfoFilesPathValid = "./test/bidder-info-valid"
@@ -31,6 +32,9 @@ capabilities:
       - banner
       - video
       - native
+  dooh:
+    mediaTypes:
+      - banner
 modifyingVastXmlAllowed: true
 debug:
   allow: true
@@ -42,6 +46,26 @@ endpointCompression: GZIP
 openrtb:
   version: 2.6
   gpp-supported: true
+endpoint: https://endpoint.com
+disabled: false
+extra_info: extra-info
+app_secret: app-secret
+platform_id: 123
+userSync:
+  key: foo
+  default: iframe
+  iframe:
+    url: https://foo.com/sync?mode=iframe&r={{.RedirectURL}}
+    redirectUrl: https://redirect/setuid/iframe
+    externalUrl: https://iframe.host
+    userMacro: UID
+xapi:
+  username: uname
+  password: pwd
+  tracker: tracker
+`
+const testSimpleAliasYAML = `
+aliasOf: bidderA
 `
 
 func TestLoadBidderInfoFromDisk(t *testing.T) {
@@ -70,6 +94,9 @@ func TestLoadBidderInfoFromDisk(t *testing.T) {
 				},
 				Site: &PlatformInfo{
 					MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative},
+				},
+				DOOH: &PlatformInfo{
+					MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo},
 				},
 			},
 			Syncer: &Syncer{
@@ -131,7 +158,120 @@ func TestProcessBidderInfo(t *testing.T) {
 			expectedBidderInfos: nil,
 			expectError:         "error parsing config for bidder bidderA.yaml",
 		},
+		{
+			description: "Invalid alias name",
+			bidderInfos: map[string][]byte{
+				"all.yaml": []byte(testSimpleAliasYAML),
+			},
+			expectedBidderInfos: nil,
+			expectError:         "alias all is a reserved bidder name and cannot be used",
+		},
+		{
+			description: "Valid aliases",
+			bidderInfos: map[string][]byte{
+				"bidderA.yaml": []byte(fullBidderYAMLConfig),
+				"bidderB.yaml": []byte(testSimpleAliasYAML),
+			},
+			expectedBidderInfos: BidderInfos{
+				"bidderA": BidderInfo{
+					AppSecret: "app-secret",
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative},
+						},
+						Site: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative},
+						},
+						DOOH: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner},
+						},
+					},
+					Debug: &DebugInfo{
+						Allow: true,
+					},
+					Disabled:            false,
+					Endpoint:            "https://endpoint.com",
+					EndpointCompression: "GZIP",
+					Experiment: BidderInfoExperiment{
+						AdsCert: BidderAdsCert{
+							Enabled: true,
+						},
+					},
+					ExtraAdapterInfo: "extra-info",
+					GVLVendorID:      42,
+					Maintainer: &MaintainerInfo{
+						Email: "some-email@domain.com",
+					},
+					ModifyingVastXmlAllowed: true,
+					OpenRTB: &OpenRTBInfo{
+						GPPSupported: true,
+						Version:      "2.6",
+					},
+					PlatformID: "123",
+					Syncer: &Syncer{
+						Key: "foo",
+						IFrame: &SyncerEndpoint{
+							URL:         "https://foo.com/sync?mode=iframe&r={{.RedirectURL}}",
+							RedirectURL: "https://redirect/setuid/iframe",
+							ExternalURL: "https://iframe.host",
+							UserMacro:   "UID",
+						},
+					},
+					XAPI: AdapterXAPI{
+						Username: "uname",
+						Password: "pwd",
+						Tracker:  "tracker",
+					},
+				},
+				"bidderB": BidderInfo{
+					AliasOf:   "bidderA",
+					AppSecret: "app-secret",
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative},
+						},
+						Site: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative},
+						},
+						DOOH: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner},
+						},
+					},
+					Debug: &DebugInfo{
+						Allow: true,
+					},
+					Disabled:            false,
+					Endpoint:            "https://endpoint.com",
+					EndpointCompression: "GZIP",
+					Experiment: BidderInfoExperiment{
+						AdsCert: BidderAdsCert{
+							Enabled: true,
+						},
+					},
+					ExtraAdapterInfo: "extra-info",
+					GVLVendorID:      42,
+					Maintainer: &MaintainerInfo{
+						Email: "some-email@domain.com",
+					},
+					ModifyingVastXmlAllowed: true,
+					OpenRTB: &OpenRTBInfo{
+						GPPSupported: true,
+						Version:      "2.6",
+					},
+					PlatformID: "123",
+					Syncer: &Syncer{
+						Key: "foo",
+					},
+					XAPI: AdapterXAPI{
+						Username: "uname",
+						Password: "pwd",
+						Tracker:  "tracker",
+					},
+				},
+			},
+		},
 	}
+
 	for _, test := range testCases {
 		reader := StubInfoReader{test.bidderInfos}
 		bidderInfos, err := processBidderInfos(reader, mockNormalizeBidderName)
@@ -140,9 +280,220 @@ func TestProcessBidderInfo(t *testing.T) {
 		} else {
 			assert.Equal(t, test.expectedBidderInfos, bidderInfos, "incorrect bidder infos for test case: %s", test.description)
 		}
+	}
+}
 
+func TestProcessAliasBidderInfo(t *testing.T) {
+	parentWithSyncerKey := BidderInfo{
+		AppSecret: "app-secret",
+		Capabilities: &CapabilitiesInfo{
+			App: &PlatformInfo{
+				MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative},
+			},
+			Site: &PlatformInfo{
+				MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative},
+			},
+		},
+		Debug: &DebugInfo{
+			Allow: true,
+		},
+		Disabled:            false,
+		Endpoint:            "https://endpoint.com",
+		EndpointCompression: "GZIP",
+		Experiment: BidderInfoExperiment{
+			AdsCert: BidderAdsCert{
+				Enabled: true,
+			},
+		},
+		ExtraAdapterInfo: "extra-info",
+		GVLVendorID:      42,
+		Maintainer: &MaintainerInfo{
+			Email: "some-email@domain.com",
+		},
+		ModifyingVastXmlAllowed: true,
+		OpenRTB: &OpenRTBInfo{
+			GPPSupported: true,
+			Version:      "2.6",
+		},
+		PlatformID: "123",
+		Syncer: &Syncer{
+			Key: "foo",
+			IFrame: &SyncerEndpoint{
+				URL:         "https://foo.com/sync?mode=iframe&r={{.RedirectURL}}",
+				RedirectURL: "https://redirect/setuid/iframe",
+				ExternalURL: "https://iframe.host",
+				UserMacro:   "UID",
+			},
+		},
+		XAPI: AdapterXAPI{
+			Username: "uname",
+			Password: "pwd",
+			Tracker:  "tracker",
+		},
+	}
+	aliasBidderInfo := BidderInfo{
+		AppSecret: "alias-app-secret",
+		Capabilities: &CapabilitiesInfo{
+			App: &PlatformInfo{
+				MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner},
+			},
+			Site: &PlatformInfo{
+				MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner},
+			},
+		},
+		Debug: &DebugInfo{
+			Allow: false,
+		},
+		Disabled:            true,
+		Endpoint:            "https://alias-endpoint.com",
+		EndpointCompression: "DEFAULT",
+		Experiment: BidderInfoExperiment{
+			AdsCert: BidderAdsCert{
+				Enabled: false,
+			},
+		},
+		ExtraAdapterInfo: "alias-extra-info",
+		GVLVendorID:      43,
+		Maintainer: &MaintainerInfo{
+			Email: "alias-email@domain.com",
+		},
+		ModifyingVastXmlAllowed: false,
+		OpenRTB: &OpenRTBInfo{
+			GPPSupported: false,
+			Version:      "2.5",
+		},
+		PlatformID: "456",
+		Syncer: &Syncer{
+			Key: "alias",
+			IFrame: &SyncerEndpoint{
+				URL:         "https://alias.com/sync?mode=iframe&r={{.RedirectURL}}",
+				RedirectURL: "https://alias-redirect/setuid/iframe",
+				ExternalURL: "https://alias-iframe.host",
+				UserMacro:   "alias-UID",
+			},
+		},
+		XAPI: AdapterXAPI{
+			Username: "alias-uname",
+			Password: "alias-pwd",
+			Tracker:  "alias-tracker",
+		},
+	}
+	bidderB := parentWithSyncerKey
+	bidderB.AliasOf = "bidderA"
+	bidderB.Syncer = &Syncer{
+		Key: bidderB.Syncer.Key,
 	}
 
+	parentWithoutSyncerKey := BidderInfo{
+		Syncer: &Syncer{
+			IFrame: &SyncerEndpoint{
+				URL:         "https://foo.com/sync?mode=iframe&r={{.RedirectURL}}",
+				RedirectURL: "https://redirect/setuid/iframe",
+				ExternalURL: "https://iframe.host",
+				UserMacro:   "UID",
+			},
+		},
+	}
+
+	bidderC := parentWithoutSyncerKey
+	bidderC.AliasOf = "bidderA"
+	bidderC.Syncer = &Syncer{
+		Key: "bidderA",
+	}
+
+	testCases := []struct {
+		description         string
+		aliasInfos          map[string]aliasNillableFields
+		bidderInfos         BidderInfos
+		expectedBidderInfos BidderInfos
+		expectedErr         error
+	}{
+		{
+			description: "inherit all parent info in alias bidder, use parent syncer key as syncer alias key",
+			aliasInfos: map[string]aliasNillableFields{
+				"bidderB": {
+					Disabled:                nil,
+					ModifyingVastXmlAllowed: nil,
+					Experiment:              nil,
+					XAPI:                    nil,
+				},
+			},
+			bidderInfos: BidderInfos{
+				"bidderA": parentWithSyncerKey,
+				"bidderB": BidderInfo{
+					AliasOf: "bidderA",
+					// all other fields should be inherited from parent bidder
+				},
+			},
+			expectedErr:         nil,
+			expectedBidderInfos: BidderInfos{"bidderA": parentWithSyncerKey, "bidderB": bidderB},
+		},
+		{
+			description: "inherit all parent info in alias bidder, use parent name as syncer alias key",
+			aliasInfos: map[string]aliasNillableFields{
+				"bidderC": {
+					Disabled:                nil,
+					ModifyingVastXmlAllowed: nil,
+					Experiment:              nil,
+					XAPI:                    nil,
+				},
+			},
+			bidderInfos: BidderInfos{
+				"bidderA": parentWithoutSyncerKey,
+				"bidderC": BidderInfo{
+					AliasOf: "bidderA",
+					// all other fields should be inherited from parent bidder
+				},
+			},
+			expectedErr:         nil,
+			expectedBidderInfos: BidderInfos{"bidderA": parentWithoutSyncerKey, "bidderC": bidderC},
+		},
+		{
+			description: "all bidder info specified for alias, do not inherit from parent bidder",
+			aliasInfos: map[string]aliasNillableFields{
+				"bidderB": {
+					Disabled:                &aliasBidderInfo.Disabled,
+					ModifyingVastXmlAllowed: &aliasBidderInfo.ModifyingVastXmlAllowed,
+					Experiment:              &aliasBidderInfo.Experiment,
+					XAPI:                    &aliasBidderInfo.XAPI,
+				},
+			},
+			bidderInfos: BidderInfos{
+				"bidderA": parentWithSyncerKey,
+				"bidderB": aliasBidderInfo,
+			},
+			expectedErr:         nil,
+			expectedBidderInfos: BidderInfos{"bidderA": parentWithSyncerKey, "bidderB": aliasBidderInfo},
+		},
+		{
+			description: "invalid alias",
+			aliasInfos: map[string]aliasNillableFields{
+				"bidderB": {},
+			},
+			bidderInfos: BidderInfos{
+				"bidderB": BidderInfo{
+					AliasOf: "bidderA",
+				},
+			},
+			expectedErr: errors.New("bidder: bidderA not found for an alias: bidderB"),
+		},
+		{
+			description: "bidder info not found for an alias",
+			aliasInfos: map[string]aliasNillableFields{
+				"bidderB": {},
+			},
+			expectedErr: errors.New("bidder info not found for an alias: bidderB"),
+		},
+	}
+
+	for _, test := range testCases {
+		bidderInfos, err := processBidderAliases(test.aliasInfos, test.bidderInfos)
+		if test.expectedErr != nil {
+			assert.Equal(t, test.expectedErr, err)
+		} else {
+			assert.Equal(t, test.expectedBidderInfos, bidderInfos, test.description)
+		}
+	}
 }
 
 type StubInfoReader struct {
@@ -224,7 +575,7 @@ func TestBidderInfoValidationPositive(t *testing.T) {
 			Endpoint:   "http://bidderB.com/openrtb2",
 			PlatformID: "B",
 			Maintainer: &MaintainerInfo{
-				Email: "maintainer@bidderA.com",
+				Email: "maintainer@bidderB.com",
 			},
 			GVLVendorID: 2,
 			Capabilities: &CapabilitiesInfo{
@@ -244,9 +595,93 @@ func TestBidderInfoValidationPositive(t *testing.T) {
 				},
 			},
 		},
+		"bidderC": BidderInfo{
+			Endpoint: "http://bidderB.com/openrtb2",
+			Maintainer: &MaintainerInfo{
+				Email: "maintainer@bidderA.com",
+			},
+			Capabilities: &CapabilitiesInfo{
+				Site: &PlatformInfo{
+					MediaTypes: []openrtb_ext.BidType{
+						openrtb_ext.BidTypeVideo,
+						openrtb_ext.BidTypeNative,
+						openrtb_ext.BidTypeBanner,
+					},
+				},
+			},
+			AliasOf: "bidderB",
+		},
+		"bidderD": BidderInfo{
+			Endpoint:   "http://bidderD.com/openrtb2",
+			PlatformID: "D",
+			Maintainer: &MaintainerInfo{
+				Email: "maintainer@bidderD.com",
+			},
+			GVLVendorID: 3,
+			Capabilities: &CapabilitiesInfo{
+				DOOH: &PlatformInfo{
+					MediaTypes: []openrtb_ext.BidType{
+						openrtb_ext.BidTypeVideo,
+						openrtb_ext.BidTypeNative,
+						openrtb_ext.BidTypeBanner,
+					},
+				},
+			},
+		},
 	}
 	errs := bidderInfos.validate(make([]error, 0))
 	assert.Len(t, errs, 0, "All bidder infos should be correct")
+}
+
+func TestValidateAliases(t *testing.T) {
+	testCase := struct {
+		description  string
+		bidderInfos  BidderInfos
+		expectErrors []error
+	}{
+		description: "invalid aliases",
+		bidderInfos: BidderInfos{
+			"bidderA": BidderInfo{
+				Endpoint: "http://bidderA.com/openrtb2",
+				Maintainer: &MaintainerInfo{
+					Email: "maintainer@bidderA.com",
+				},
+				Capabilities: &CapabilitiesInfo{
+					Site: &PlatformInfo{
+						MediaTypes: []openrtb_ext.BidType{
+							openrtb_ext.BidTypeVideo,
+						},
+					},
+				},
+				AliasOf: "bidderB",
+			},
+			"bidderB": BidderInfo{
+				Endpoint: "http://bidderA.com/openrtb2",
+				Maintainer: &MaintainerInfo{
+					Email: "maintainer@bidderA.com",
+				},
+				Capabilities: &CapabilitiesInfo{
+					Site: &PlatformInfo{
+						MediaTypes: []openrtb_ext.BidType{
+							openrtb_ext.BidTypeVideo,
+						},
+					},
+				},
+				AliasOf: "bidderC",
+			},
+		},
+		expectErrors: []error{
+			errors.New("bidder: bidderB cannot be an alias of an alias: bidderA"),
+			errors.New("bidder: bidderC not found for an alias: bidderB"),
+		},
+	}
+
+	var errs []error
+	for bidderName, bidderInfo := range testCase.bidderInfos {
+		errs = append(errs, validateAliases(bidderInfo, testCase.bidderInfos, bidderName))
+	}
+
+	assert.ElementsMatch(t, errs, testCase.expectErrors)
 }
 
 func TestBidderInfoValidationNegative(t *testing.T) {
@@ -393,7 +828,7 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 			},
 		},
 		{
-			"One bidder missing capabilities site and app",
+			"One bidder missing capabilities site and app and dooh",
 			BidderInfos{
 				"bidderA": BidderInfo{
 					Endpoint: "http://bidderA.com/openrtb2",
@@ -404,7 +839,7 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 				},
 			},
 			[]error{
-				errors.New("at least one of capabilities.site or capabilities.app must exist for adapter: bidderA"),
+				errors.New("at least one of capabilities.site, capabilities.app, or capabilities.dooh must exist for adapter: bidderA"),
 			},
 		},
 		{
@@ -426,6 +861,27 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 			},
 			[]error{
 				errors.New("capabilities.app failed validation: unrecognized media type at index 0: incorrect for adapter: bidderA"),
+			},
+		},
+		{
+			"One bidder incorrect capabilities for dooh",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						DOOH: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								"incorrect",
+							},
+						},
+					},
+				},
+			},
+			[]error{
+				errors.New("capabilities.dooh failed validation: unrecognized media type at index 0: incorrect for adapter: bidderA"),
 			},
 		},
 		{
@@ -534,6 +990,332 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 			[]error{
 				errors.New("The endpoint: incorrect for bidderA is not a valid URL"),
 				errors.New("The endpoint: incorrect for bidderB is not a valid URL"),
+			},
+		},
+		{
+			"Invalid alias Site capabilities",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						Site: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+				},
+				"bidderB": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+					AliasOf: "bidderA",
+				},
+			},
+			[]error{
+				errors.New("capabilities for alias: bidderB should be a subset of capabilities for parent bidder: bidderA"),
+			},
+		},
+		{
+			"Invalid alias App capabilities",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+				},
+				"bidderB": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						Site: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+					AliasOf: "bidderA",
+				},
+			},
+			[]error{
+				errors.New("capabilities for alias: bidderB should be a subset of capabilities for parent bidder: bidderA"),
+			},
+		},
+		{
+			"Invalid alias capabilities",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{},
+				},
+				"bidderB": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+					AliasOf: "bidderA",
+				},
+			},
+			[]error{
+				errors.New("at least one of capabilities.site, capabilities.app, or capabilities.dooh must exist for adapter: bidderA"),
+				errors.New("capabilities for alias: bidderB should be a subset of capabilities for parent bidder: bidderA"),
+			},
+		},
+		{
+			"Invalid alias MediaTypes for site",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						Site: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+				},
+				"bidderB": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						Site: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeBanner,
+								openrtb_ext.BidTypeNative,
+							},
+						},
+					},
+					AliasOf: "bidderA",
+				},
+			},
+			[]error{
+				errors.New("mediaTypes for alias: bidderB should be a subset of MediaTypes for parent bidder: bidderA"),
+			},
+		},
+		{
+			"Invalid alias MediaTypes for app",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+				},
+				"bidderB": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeBanner,
+								openrtb_ext.BidTypeNative,
+							},
+						},
+					},
+					AliasOf: "bidderA",
+				},
+			},
+			[]error{
+				errors.New("mediaTypes for alias: bidderB should be a subset of MediaTypes for parent bidder: bidderA"),
+			},
+		},
+		{
+			"Invalid parent bidder capabilities",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+				},
+				"bidderB": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeBanner,
+							},
+						},
+					},
+					AliasOf: "bidderA",
+				},
+			},
+			[]error{
+				errors.New("missing required field: capabilities for adapter: bidderA"),
+				errors.New("capabilities for alias: bidderB should be a subset of capabilities for parent bidder: bidderA"),
+			},
+		},
+		{
+			"Invalid site alias capabilities with both site and app",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeBanner,
+								openrtb_ext.BidTypeNative,
+							},
+						},
+						Site: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeNative,
+							},
+						},
+					},
+				},
+				"bidderB": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeBanner,
+								openrtb_ext.BidTypeNative,
+							},
+						},
+						Site: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeBanner,
+								openrtb_ext.BidTypeNative,
+							},
+						},
+					},
+					AliasOf: "bidderA",
+				},
+			},
+			[]error{
+				errors.New("mediaTypes for alias: bidderB should be a subset of MediaTypes for parent bidder: bidderA"),
+			},
+		},
+		{
+			"Invalid app alias capabilities with both site and app",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeBanner,
+								openrtb_ext.BidTypeNative,
+							},
+						},
+						Site: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeNative,
+							},
+						},
+					},
+				},
+				"bidderB": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeBanner,
+								openrtb_ext.BidTypeNative,
+							},
+						},
+						Site: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeBanner,
+								openrtb_ext.BidTypeNative,
+							},
+						},
+					},
+					AliasOf: "bidderA",
+				},
+			},
+			[]error{
+				errors.New("mediaTypes for alias: bidderB should be a subset of MediaTypes for parent bidder: bidderA"),
+			},
+		},
+		{
+			"Invalid parent bidder for alias",
+			BidderInfos{
+				"bidderB": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeBanner,
+								openrtb_ext.BidTypeNative,
+							},
+						},
+						Site: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeBanner,
+								openrtb_ext.BidTypeNative,
+							},
+						},
+					},
+					AliasOf: "bidderC",
+				},
+			},
+			[]error{
+				errors.New("parent bidder: bidderC not found for an alias: bidderB"),
 			},
 		},
 	}
@@ -706,78 +1488,15 @@ func TestSyncerEndpointOverride(t *testing.T) {
 }
 
 func TestApplyBidderInfoConfigSyncerOverrides(t *testing.T) {
-	var testCases = []struct {
-		description            string
-		givenFsBidderInfos     BidderInfos
-		givenConfigBidderInfos BidderInfos
-		expectedError          string
-		expectedBidderInfos    BidderInfos
-	}{
-		{
-			description:            "Syncer Override",
-			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{Key: "original"}}},
-			givenConfigBidderInfos: BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}},
-			expectedBidderInfos:    BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}},
-		},
-		{
-			description:            "UserSyncURL Override IFrame",
-			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{IFrame: &SyncerEndpoint{URL: "original"}}}},
-			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
-			expectedBidderInfos:    BidderInfos{"a": {UserSyncURL: "override", Syncer: &Syncer{IFrame: &SyncerEndpoint{URL: "override"}}}},
-		},
-		{
-			description:            "UserSyncURL Supports IFrame",
-			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{Supports: []string{"iframe"}}}},
-			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
-			expectedBidderInfos:    BidderInfos{"a": {UserSyncURL: "override", Syncer: &Syncer{Supports: []string{"iframe"}, IFrame: &SyncerEndpoint{URL: "override"}}}},
-		},
-		{
-			description:            "UserSyncURL Override Redirect",
-			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{Supports: []string{"redirect"}}}},
-			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
-			expectedBidderInfos:    BidderInfos{"a": {UserSyncURL: "override", Syncer: &Syncer{Supports: []string{"redirect"}, Redirect: &SyncerEndpoint{URL: "override"}}}},
-		},
-		{
-			description:            "UserSyncURL Supports Redirect",
-			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{Redirect: &SyncerEndpoint{URL: "original"}}}},
-			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
-			expectedBidderInfos:    BidderInfos{"a": {UserSyncURL: "override", Syncer: &Syncer{Redirect: &SyncerEndpoint{URL: "override"}}}},
-		},
-		{
-			description:            "UserSyncURL Override Syncer Not Defined",
-			givenFsBidderInfos:     BidderInfos{"a": {}},
-			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
-			expectedError:          "adapters.a.usersync_url cannot be applied, bidder does not define a user sync",
-		},
-		{
-			description:            "UserSyncURL Override Syncer Endpoints Not Defined",
-			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{}}},
-			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
-			expectedError:          "adapters.a.usersync_url cannot be applied, bidder does not define user sync endpoints and does not define supported endpoints",
-		},
-		{
-			description:            "UserSyncURL Override Ambiguous",
-			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{IFrame: &SyncerEndpoint{URL: "originalIFrame"}, Redirect: &SyncerEndpoint{URL: "originalRedirect"}}}},
-			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
-			expectedError:          "adapters.a.usersync_url cannot be applied, bidder defines multiple user sync endpoints or supports multiple endpoints",
-		},
-		{
-			description:            "UserSyncURL Supports Ambiguous",
-			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{Supports: []string{"iframe", "redirect"}}}},
-			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
-			expectedError:          "adapters.a.usersync_url cannot be applied, bidder defines multiple user sync endpoints or supports multiple endpoints",
-		},
-	}
+	var (
+		givenFileSystem = BidderInfos{"a": {Syncer: &Syncer{Key: "original"}}}
+		givenConfig     = BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}}
+		expected        = BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}}
+	)
 
-	for _, test := range testCases {
-		bidderInfos, resultErr := applyBidderInfoConfigOverrides(test.givenConfigBidderInfos, test.givenFsBidderInfos, mockNormalizeBidderName)
-		if test.expectedError == "" {
-			assert.NoError(t, resultErr, test.description+":err")
-			assert.Equal(t, test.expectedBidderInfos, bidderInfos, test.description+":result")
-		} else {
-			assert.EqualError(t, resultErr, test.expectedError, test.description+":err")
-		}
-	}
+	result, resultErr := applyBidderInfoConfigOverrides(givenConfig, givenFileSystem, mockNormalizeBidderName)
+	assert.NoError(t, resultErr)
+	assert.Equal(t, expected, result)
 }
 
 func TestApplyBidderInfoConfigOverrides(t *testing.T) {
@@ -967,14 +1686,15 @@ func TestApplyBidderInfoConfigOverridesInvalid(t *testing.T) {
 func TestReadFullYamlBidderConfig(t *testing.T) {
 	bidder := "bidderA"
 	bidderInf := BidderInfo{}
-	err := yaml.Unmarshal([]byte(fullBidderYAMLConfig), &bidderInf)
-	actualBidderInfo, err := applyBidderInfoConfigOverrides(BidderInfos{bidder: bidderInf}, BidderInfos{bidder: {Syncer: &Syncer{Supports: []string{"iframe"}}}}, mockNormalizeBidderName)
 
-	assert.NoError(t, err, "Error wasn't expected")
+	err := yaml.Unmarshal([]byte(fullBidderYAMLConfig), &bidderInf)
+	require.NoError(t, err)
+
+	actualBidderInfo, err := applyBidderInfoConfigOverrides(BidderInfos{bidder: bidderInf}, BidderInfos{bidder: {Syncer: &Syncer{Supports: []string{"iframe"}}}}, mockNormalizeBidderName)
+	require.NoError(t, err)
 
 	expectedBidderInfo := BidderInfos{
 		bidder: {
-			Disabled: false,
 			Maintainer: &MaintainerInfo{
 				Email: "some-email@domain.com",
 			},
@@ -986,18 +1706,44 @@ func TestReadFullYamlBidderConfig(t *testing.T) {
 				Site: &PlatformInfo{
 					MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative},
 				},
+				DOOH: &PlatformInfo{
+					MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner},
+				},
 			},
-			Debug:                   &DebugInfo{Allow: true},
 			ModifyingVastXmlAllowed: true,
-			Syncer: &Syncer{
-				Supports: []string{"iframe"},
+			Debug: &DebugInfo{
+				Allow: true,
 			},
-			Experiment:          BidderInfoExperiment{AdsCert: BidderAdsCert{Enabled: true}},
+			Experiment: BidderInfoExperiment{
+				AdsCert: BidderAdsCert{
+					Enabled: true,
+				},
+			},
 			EndpointCompression: "GZIP",
 			OpenRTB: &OpenRTBInfo{
-				Version:      "2.6",
 				GPPSupported: true,
+				Version:      "2.6",
 			},
+			Disabled:         false,
+			ExtraAdapterInfo: "extra-info",
+			AppSecret:        "app-secret",
+			PlatformID:       "123",
+			Syncer: &Syncer{
+				Key: "foo",
+				IFrame: &SyncerEndpoint{
+					URL:         "https://foo.com/sync?mode=iframe&r={{.RedirectURL}}",
+					RedirectURL: "https://redirect/setuid/iframe",
+					ExternalURL: "https://iframe.host",
+					UserMacro:   "UID",
+				},
+				Supports: []string{"iframe"},
+			},
+			XAPI: AdapterXAPI{
+				Username: "uname",
+				Password: "pwd",
+				Tracker:  "tracker",
+			},
+			Endpoint: "https://endpoint.com",
 		},
 	}
 	assert.Equalf(t, expectedBidderInfo, actualBidderInfo, "Bidder info objects aren't matching")

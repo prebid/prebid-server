@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	analyticsConf "github.com/prebid/prebid-server/analytics/config"
+	analyticsBuild "github.com/prebid/prebid-server/analytics/build"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/exchange"
@@ -105,12 +105,13 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		nilMetrics,
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
 		nil,
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
+		nil,
 	)
 
 	b.ResetTimer()
@@ -146,12 +147,10 @@ func BenchmarkValidWholeExemplary(b *testing.B) {
 			test.endpointType = OPENRTB_ENDPOINT
 
 			cfg := &config.Configuration{
-				MaxRequestSize:     maxSize,
-				BlacklistedApps:    test.Config.BlacklistedApps,
-				BlacklistedAppMap:  test.Config.getBlacklistedAppMap(),
-				BlacklistedAccts:   test.Config.BlacklistedAccounts,
-				BlacklistedAcctMap: test.Config.getBlackListedAccountMap(),
-				AccountRequired:    test.Config.AccountRequired,
+				MaxRequestSize:    maxSize,
+				BlacklistedApps:   test.Config.BlacklistedApps,
+				BlacklistedAppMap: test.Config.getBlacklistedAppMap(),
+				AccountRequired:   test.Config.AccountRequired,
 			}
 
 			auctionEndpointHandler, _, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
