@@ -237,3 +237,20 @@ func (err *FailedToUnmarshal) Code() int {
 func (err *FailedToUnmarshal) Severity() Severity {
 	return SeverityFatal
 }
+
+// FailedToMarshal should be used to represent errors that occur when marshaling to a byte slice.
+type FailedToMarshal struct {
+	Message string
+}
+
+func (err *FailedToMarshal) Error() string {
+	return err.Message
+}
+
+func (err *FailedToMarshal) Code() int {
+	return FailedToMarshalErrorCode
+}
+
+func (err *FailedToMarshal) Severity() Severity {
+	return SeverityFatal
+}

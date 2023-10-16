@@ -140,3 +140,15 @@ func UnmarshalValid(data []byte, v interface{}) error {
 	}
 	return nil
 }
+
+// Marshal marshals a data structure into a byte slice without performing any validation
+// on the data. A marshal error is returned if a non-validation error occurs.
+func Marshal(v interface{}) ([]byte, error) {
+	data, err := jsoniter.ConfigCompatibleWithStandardLibrary.Marshal(v)
+	if err != nil {
+		return nil, &errortypes.FailedToMarshal{
+			Message: err.Error(),
+		}
+	}
+	return data, nil
+}

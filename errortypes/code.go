@@ -15,6 +15,7 @@ const (
 	MalformedAcctErrorCode
 	ModuleRejectionErrorCode
 	TmaxTimeoutErrorCode
+	FailedToMarshalErrorCode
 	FailedToUnmarshalErrorCode
 )
 
