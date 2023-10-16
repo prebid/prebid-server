@@ -39,5 +39,5 @@
     ]
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request: json: cannot unmarshal object into Go struct field ExtAppPrebid.source of type string"
+  "expectedErrorMessage": "Invalid request: openrtb_ext.ExtAppPrebid.Source: ReadString: expects \" or n, but found {"
 }  

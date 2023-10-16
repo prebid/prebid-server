@@ -1318,14 +1318,14 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 			cfgAccountRequired:     true,
 			expectedResponseCode:   400,
 			expectedMetrics: func(m *metrics.MetricsEngineMock) {
-				m.On("RecordSetUid", metrics.SetUidBadRequest).Once()
+				m.On("RecordSetUid", metrics.SetUidAccountConfigMalformed).Once()
 			},
 			expectedAnalytics: func(a *MockAnalytics) {
 				expected := analytics.SetUIDObject{
 					Status:  400,
 					Bidder:  "pubmatic",
 					UID:     "",
-					Errors:  []error{errors.New("unexpected end of JSON input")},
+					Errors:  []error{errCookieSyncAccountConfigMalformed},
 					Success: false,
 				}
 				a.On("LogSetUIDObject", &expected).Once()

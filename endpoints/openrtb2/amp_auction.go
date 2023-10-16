@@ -38,6 +38,7 @@ import (
 	"github.com/prebid/prebid-server/stored_responses"
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/prebid/prebid-server/util/iputil"
+	"github.com/prebid/prebid-server/util/jsonutil"
 	"github.com/prebid/prebid-server/version"
 )
 
@@ -340,7 +341,7 @@ func sendAmpResponse(
 					// but this is a very unlikely corner case. Doing this so we can catch "hb_cache_id"
 					// and "hb_cache_id_{deal}", which allows for deal support in AMP.
 					bidExt := &openrtb_ext.ExtBid{}
-					err := json.Unmarshal(bid.Ext, bidExt)
+					err := jsonutil.Unmarshal(bid.Ext, bidExt)
 					if err != nil {
 						w.WriteHeader(http.StatusInternalServerError)
 						fmt.Fprintf(w, "Critical error while unpacking AMP targets: %v", err)
@@ -359,7 +360,7 @@ func sendAmpResponse(
 
 	// Extract global targeting
 	var extResponse openrtb_ext.ExtBidResponse
-	eRErr := json.Unmarshal(response.Ext, &extResponse)
+	eRErr := jsonutil.Unmarshal(response.Ext, &extResponse)
 	if eRErr != nil {
 		ao.Errors = append(ao.Errors, fmt.Errorf("AMP response: failed to unpack OpenRTB response.ext, debug info cannot be forwarded: %v", eRErr))
 	}
@@ -408,7 +409,7 @@ func getExtBidResponse(
 	}
 	// Extract any errors
 	var extResponse openrtb_ext.ExtBidResponse
-	eRErr := json.Unmarshal(response.Ext, &extResponse)
+	eRErr := jsonutil.Unmarshal(response.Ext, &extResponse)
 	if eRErr != nil {
 		ao.Errors = append(ao.Errors, fmt.Errorf("AMP response: failed to unpack OpenRTB response.ext, debug info cannot be forwarded: %v", eRErr))
 	}
@@ -523,7 +524,7 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 
 	// The fetched config becomes the entire OpenRTB request
 	requestJSON := storedRequests[ampParams.StoredRequestID]
-	if err := json.Unmarshal(requestJSON, req); err != nil {
+	if err := jsonutil.UnmarshalValid(requestJSON, req); err != nil {
 		errs = []error{err}
 		return
 	}

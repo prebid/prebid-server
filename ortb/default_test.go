@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/util/ptrutil"
 )
@@ -31,7 +32,7 @@ func TestSetDefaults(t *testing.T) {
 			name:            "malformed request.ext",
 			givenRequest:    openrtb2.BidRequest{Ext: json.RawMessage(`malformed`)},
 			expectedRequest: openrtb2.BidRequest{Ext: json.RawMessage(`malformed`)},
-			expectedErr:     "invalid character 'm' looking for beginning of value",
+			expectedErr:     "ReadMapCB: expect { or n, but found m, error found in #1 byte of ...|malformed|..., bigger context ...|malformed|...",
 		},
 		{
 			name:            "targeting", // tests integration with setDefaultsTargeting
@@ -55,6 +56,7 @@ func TestSetDefaults(t *testing.T) {
 			// assert error
 			if len(test.expectedErr) > 0 {
 				assert.EqualError(t, err, test.expectedErr, "Error")
+				assert.IsType(t, &errortypes.FailedToUnmarshal{}, err)
 			}
 
 			// rebuild request

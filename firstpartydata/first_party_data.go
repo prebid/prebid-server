@@ -10,6 +10,7 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/ortb"
+	"github.com/prebid/prebid-server/util/jsonutil"
 	"github.com/prebid/prebid-server/util/ptrutil"
 )
 
@@ -213,7 +214,7 @@ func mergeUser(v *openrtb2.User, overrideJSON json.RawMessage) error {
 	}
 
 	// Merge
-	if err := json.Unmarshal(overrideJSON, &v); err != nil {
+	if err := jsonutil.Unmarshal(overrideJSON, &v); err != nil {
 		return err
 	}
 
@@ -307,7 +308,7 @@ func mergeSite(v *openrtb2.Site, overrideJSON json.RawMessage, bidderName string
 	}
 
 	// Merge
-	if err := json.Unmarshal(overrideJSON, &v); err != nil {
+	if err := jsonutil.Unmarshal(overrideJSON, &v); err != nil {
 		return err
 	}
 
@@ -424,7 +425,7 @@ func mergeApp(v *openrtb2.App, overrideJSON json.RawMessage) error {
 	}
 
 	// Merge
-	if err := json.Unmarshal(overrideJSON, &v); err != nil {
+	if err := jsonutil.Unmarshal(overrideJSON, &v); err != nil {
 		return err
 	}
 

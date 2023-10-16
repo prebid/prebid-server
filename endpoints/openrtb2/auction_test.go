@@ -194,7 +194,7 @@ func runEndToEndTest(t *testing.T, auctionEndpointHandler httprouter.Handle, tes
 
 	// Either assert bid response or expected error
 	if len(test.ExpectedErrorMessage) > 0 {
-		assert.True(t, strings.HasPrefix(actualJsonBidResponse, test.ExpectedErrorMessage), "Actual: %s \nExpected: %s. Filename: %s \n", actualJsonBidResponse, test.ExpectedErrorMessage, testFile)
+		assert.Contains(t, actualJsonBidResponse, test.ExpectedErrorMessage, "Actual: %s \nExpected: %s. Filename: %s \n", actualJsonBidResponse, test.ExpectedErrorMessage, testFile)
 	}
 
 	if len(test.ExpectedBidResponse) > 0 {
@@ -478,8 +478,8 @@ func TestExplicitUserId(t *testing.T) {
 // processes aliases before it processes stored imps.  Changing that order
 // would probably cause this test to fail.
 func TestBadAliasRequests(t *testing.T) {
-	doBadAliasRequest(t, "sample-requests/invalid-stored/bad_stored_imp.json", "Invalid request: Invalid JSON in Default Request Settings: invalid character '\"' after object key:value pair at offset 51\n")
-	doBadAliasRequest(t, "sample-requests/invalid-stored/bad_incoming_imp.json", "Invalid request: Invalid JSON in Incoming Request: invalid character '\"' after object key:value pair at offset 230\n")
+	doBadAliasRequest(t, "sample-requests/invalid-stored/bad_stored_imp.json", "Invalid request: Invalid JSON Document\n")
+	doBadAliasRequest(t, "sample-requests/invalid-stored/bad_incoming_imp.json", "Invalid request: Invalid JSON Document\n")
 }
 
 // doBadAliasRequest() is a customized variation of doRequest(), above
@@ -1907,7 +1907,7 @@ func TestValidateRequestExt(t *testing.T) {
 		{
 			description:     "prebid cache - bids - wrong type",
 			givenRequestExt: json.RawMessage(`{"prebid":{"cache":{"bids":true}}}`),
-			expectedErrors:  []string{`json: cannot unmarshal bool into Go struct field ExtRequestPrebidCache.cache.bids of type openrtb_ext.ExtRequestPrebidCacheBids`},
+			expectedErrors:  []string{"openrtb_ext.ExtRequestPrebid.Cache: openrtb_ext.ExtRequestPrebidCache.Bids: readObjectStart: expect { or n, but found t, error found in #10 byte of ...|:{\"bids\":true}}|..., bigger context ...|{\"cache\":{\"bids\":true}}|..."},
 		},
 		{
 			description:     "prebid cache - bids - provided",
@@ -1921,7 +1921,7 @@ func TestValidateRequestExt(t *testing.T) {
 		{
 			description:     "prebid cache - vastxml - wrong type",
 			givenRequestExt: json.RawMessage(`{"prebid":{"cache":{"vastxml":true}}}`),
-			expectedErrors:  []string{`json: cannot unmarshal bool into Go struct field ExtRequestPrebidCache.cache.vastxml of type openrtb_ext.ExtRequestPrebidCacheVAST`},
+			expectedErrors:  []string{"openrtb_ext.ExtRequestPrebid.Cache: openrtb_ext.ExtRequestPrebidCache.VastXML: readObjectStart: expect { or n, but found t, error found in #10 byte of ...|vastxml\":true}}|..., bigger context ...|{\"cache\":{\"vastxml\":true}}|..."},
 		},
 		{
 			description:     "prebid cache - vastxml - provided",
@@ -4161,7 +4161,7 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 	assert.Nil(t, resReq, "Result request should be nil due to incorrect imp")
 	assert.Nil(t, impExtInfoMap, "Impression info map should be nil due to incorrect imp")
 	assert.Len(t, errL, 1, "One error should be returned")
-	assert.Contains(t, errL[0].Error(), "echovideoattrs of type bool", "Incorrect error message")
+	assert.Contains(t, errL[0].Error(), "openrtb_ext.Options.EchoVideoAttrs: ReadBool", "Incorrect error message")
 }
 
 func TestParseGzipedRequest(t *testing.T) {

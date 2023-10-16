@@ -35,6 +35,7 @@ import (
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_responses"
 	"github.com/prebid/prebid-server/usersync"
+	"github.com/prebid/prebid-server/util/jsonutil"
 	"github.com/prebid/prebid-server/util/maputil"
 
 	"github.com/buger/jsonparser"
@@ -1287,7 +1288,7 @@ func makeBidExtJSON(ext json.RawMessage, prebid *openrtb_ext.ExtBidPrebid, impEx
 	var extMap map[string]interface{}
 
 	if len(ext) != 0 {
-		if err := json.Unmarshal(ext, &extMap); err != nil {
+		if err := jsonutil.Unmarshal(ext, &extMap); err != nil {
 			return nil, err
 		}
 	} else {
@@ -1311,7 +1312,7 @@ func makeBidExtJSON(ext json.RawMessage, prebid *openrtb_ext.ExtBidPrebid, impEx
 				Meta openrtb_ext.ExtBidPrebidMeta `json:"meta"`
 			} `json:"prebid"`
 		}{}
-		if err := json.Unmarshal(ext, &metaContainer); err != nil {
+		if err := jsonutil.Unmarshal(ext, &metaContainer); err != nil {
 			return nil, fmt.Errorf("error validaing response from server, %s", err)
 		}
 		prebid.Meta = &metaContainer.Prebid.Meta
@@ -1436,7 +1437,7 @@ func buildStoredAuctionResponse(storedAuctionResponses map[string]json.RawMessag
 	for impId, storedResp := range storedAuctionResponses {
 		var seatBids []openrtb2.SeatBid
 
-		if err := json.Unmarshal(storedResp, &seatBids); err != nil {
+		if err := jsonutil.UnmarshalValid(storedResp, &seatBids); err != nil {
 			return nil, nil, nil, err
 		}
 		for _, seat := range seatBids {
@@ -1455,7 +1456,7 @@ func buildStoredAuctionResponse(storedAuctionResponses map[string]json.RawMessag
 
 			if seat.Ext != nil {
 				var seatExt openrtb_ext.ExtBidResponse
-				if err := json.Unmarshal(seat.Ext, &seatExt); err != nil {
+				if err := jsonutil.Unmarshal(seat.Ext, &seatExt); err != nil {
 					return nil, nil, nil, err
 				}
 				// add in FLEDGE response with impId substituted

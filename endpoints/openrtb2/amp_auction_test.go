@@ -524,7 +524,7 @@ func TestOverrideWithParams(t *testing.T) {
 					Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)},
 					User: &openrtb2.User{Ext: json.RawMessage(`malformed`)},
 				},
-				errorMsgs:         []string{"invalid character 'm' looking for beginning of value"},
+				errorMsgs:         []string{"ReadMapCB: expect { or n, but found m, error found in #1 byte of ...|malformed|..., bigger context ...|malformed|..."},
 				expectFatalErrors: true,
 			},
 		},
@@ -572,7 +572,7 @@ func TestOverrideWithParams(t *testing.T) {
 					User: &openrtb2.User{Ext: json.RawMessage(`{"prebid":{malformed}}`)},
 					Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)},
 				},
-				errorMsgs:         []string{"invalid character 'm' looking for beginning of object key string"},
+				errorMsgs:         []string{"ReadObjectCB: expect \" after {, but found m, error found in #10 byte of ...|prebid\":{malformed}}|..., bigger context ...|{\"prebid\":{malformed}}|..."},
 				expectFatalErrors: true,
 			},
 		},
@@ -1139,7 +1139,7 @@ func TestInitAmpTargetingAndCache(t *testing.T) {
 		{
 			name:         "malformed",
 			request:      &openrtb2.BidRequest{Ext: json.RawMessage("malformed")},
-			expectedErrs: []string{"invalid character 'm' looking for beginning of value"},
+			expectedErrs: []string{"ReadMapCB: expect { or n, but found m, error found in #1 byte of ...|malformed|..., bigger context ...|malformed|..."},
 		},
 		{
 			name:           "nil",
@@ -2253,7 +2253,7 @@ func TestSendAmpResponse_LogsErrors(t *testing.T) {
 		{
 			description: "Error logged when bid.ext unmarshal fails",
 			expectedErrors: []error{
-				errors.New("Critical error while unpacking AMP targets: unexpected end of JSON input"),
+				errors.New("Critical error while unpacking AMP targets: readObjectStart: expect { or n, but found \", error found in #1 byte of ...|\"hb_cache_i|..., bigger context ...|\"hb_cache_id|..."),
 			},
 			expectedStatus: http.StatusInternalServerError,
 			writer:         httptest.NewRecorder(),
@@ -2330,7 +2330,7 @@ func TestSendAmpResponse_LogsErrors(t *testing.T) {
 
 			labels, ao = sendAmpResponse(test.writer, test.hookExecutor, &exchange.AuctionResponse{BidResponse: test.response}, &reqWrapper, account, labels, ao, nil)
 
-			assert.Equal(t, ao.Errors, test.expectedErrors, "Invalid errors.")
+			assert.Equal(t, test.expectedErrors, ao.Errors, "Invalid errors.")
 			assert.Equal(t, test.expectedStatus, ao.Status, "Invalid HTTP response status.")
 		})
 	}

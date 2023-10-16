@@ -5,11 +5,12 @@ import (
 	"fmt"
 
 	"github.com/prebid/openrtb/v19/adcom1"
+	"github.com/prebid/prebid-server/util/jsonutil"
 )
 
 func newConfig(data json.RawMessage) (config, error) {
 	var cfg config
-	if err := json.Unmarshal(data, &cfg); err != nil {
+	if err := jsonutil.UnmarshalValid(data, &cfg); err != nil {
 		return cfg, fmt.Errorf("failed to parse config: %s", err)
 	}
 	return cfg, nil

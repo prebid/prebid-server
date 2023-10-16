@@ -20,7 +20,7 @@ func TestConvertUpTo26(t *testing.T) {
 			givenRequest: openrtb2.BidRequest{
 				Ext: json.RawMessage(`malformed`),
 			},
-			expectedErr: "req.ext is invalid: invalid character 'm' looking for beginning of value",
+			expectedErr: "req.ext is invalid: ReadMapCB: expect { or n, but found m, error found in #1 byte of ...|malformed|..., bigger context ...|malformed|...",
 		},
 		{
 			description: "2.4 -> 2.6",
@@ -120,27 +120,27 @@ func TestConvertUpEnsureExt(t *testing.T) {
 		{
 			description:  "Ext",
 			givenRequest: openrtb2.BidRequest{Ext: json.RawMessage("malformed")},
-			expectedErr:  "req.ext is invalid: invalid character 'm' looking for beginning of value",
+			expectedErr:  "req.ext is invalid: ReadMapCB: expect { or n, but found m, error found in #1 byte of ...|malformed|..., bigger context ...|malformed|...",
 		},
 		{
 			description:  "Source.Ext",
 			givenRequest: openrtb2.BidRequest{Source: &openrtb2.Source{Ext: json.RawMessage("malformed")}},
-			expectedErr:  "req.source.ext is invalid: invalid character 'm' looking for beginning of value",
+			expectedErr:  "req.source.ext is invalid: ReadMapCB: expect { or n, but found m, error found in #1 byte of ...|malformed|..., bigger context ...|malformed|...",
 		},
 		{
 			description:  "Regs.Ext",
 			givenRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage("malformed")}},
-			expectedErr:  "req.regs.ext is invalid: invalid character 'm' looking for beginning of value",
+			expectedErr:  "req.regs.ext is invalid: ReadMapCB: expect { or n, but found m, error found in #1 byte of ...|malformed|..., bigger context ...|malformed|...",
 		},
 		{
 			description:  "User.Ext",
 			givenRequest: openrtb2.BidRequest{User: &openrtb2.User{Ext: json.RawMessage("malformed")}},
-			expectedErr:  "req.user.ext is invalid: invalid character 'm' looking for beginning of value",
+			expectedErr:  "req.user.ext is invalid: ReadMapCB: expect { or n, but found m, error found in #1 byte of ...|malformed|..., bigger context ...|malformed|...",
 		},
 		{
 			description:  "Imp.Ext",
 			givenRequest: openrtb2.BidRequest{Imp: []openrtb2.Imp{{Ext: json.RawMessage("malformed")}}},
-			expectedErr:  "imp[0].imp.ext is invalid: invalid character 'm' looking for beginning of value",
+			expectedErr:  "imp[0].imp.ext is invalid: ReadMapCB: expect { or n, but found m, error found in #1 byte of ...|malformed|..., bigger context ...|malformed|...",
 		},
 	}
 

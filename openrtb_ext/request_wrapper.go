@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/util/jsonutil"
 	"github.com/prebid/prebid-server/util/maputil"
 	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/prebid/prebid-server/util/sliceutil"
@@ -440,13 +441,13 @@ func (ue *UserExt) unmarshal(extJson json.RawMessage) error {
 		return nil
 	}
 
-	if err := json.Unmarshal(extJson, &ue.ext); err != nil {
+	if err := jsonutil.Unmarshal(extJson, &ue.ext); err != nil {
 		return err
 	}
 
 	consentJson, hasConsent := ue.ext[consentKey]
 	if hasConsent {
-		if err := json.Unmarshal(consentJson, &ue.consent); err != nil {
+		if err := jsonutil.Unmarshal(consentJson, &ue.consent); err != nil {
 			return err
 		}
 	}
@@ -454,7 +455,7 @@ func (ue *UserExt) unmarshal(extJson json.RawMessage) error {
 	prebidJson, hasPrebid := ue.ext[prebidKey]
 	if hasPrebid {
 		ue.prebid = &ExtUserPrebid{}
-		if err := json.Unmarshal(prebidJson, ue.prebid); err != nil {
+		if err := jsonutil.Unmarshal(prebidJson, ue.prebid); err != nil {
 			return err
 		}
 	}
@@ -462,21 +463,21 @@ func (ue *UserExt) unmarshal(extJson json.RawMessage) error {
 	eidsJson, hasEids := ue.ext[eidsKey]
 	if hasEids {
 		ue.eids = &[]openrtb2.EID{}
-		if err := json.Unmarshal(eidsJson, ue.eids); err != nil {
+		if err := jsonutil.Unmarshal(eidsJson, ue.eids); err != nil {
 			return err
 		}
 	}
 
 	if consentedProviderSettingsJson, hasCPSettings := ue.ext[consentedProvidersSettingsStringKey]; hasCPSettings {
 		ue.consentedProvidersSettingsIn = &ConsentedProvidersSettingsIn{}
-		if err := json.Unmarshal(consentedProviderSettingsJson, ue.consentedProvidersSettingsIn); err != nil {
+		if err := jsonutil.Unmarshal(consentedProviderSettingsJson, ue.consentedProvidersSettingsIn); err != nil {
 			return err
 		}
 	}
 
 	if consentedProviderSettingsJson, hasCPSettings := ue.ext[consentedProvidersSettingsListKey]; hasCPSettings {
 		ue.consentedProvidersSettingsOut = &ConsentedProvidersSettingsOut{}
-		if err := json.Unmarshal(consentedProviderSettingsJson, ue.consentedProvidersSettingsOut); err != nil {
+		if err := jsonutil.Unmarshal(consentedProviderSettingsJson, ue.consentedProvidersSettingsOut); err != nil {
 			return err
 		}
 	}
@@ -726,14 +727,14 @@ func (re *RequestExt) unmarshal(extJson json.RawMessage) error {
 		return nil
 	}
 
-	if err := json.Unmarshal(extJson, &re.ext); err != nil {
+	if err := jsonutil.Unmarshal(extJson, &re.ext); err != nil {
 		return err
 	}
 
 	prebidJson, hasPrebid := re.ext[prebidKey]
 	if hasPrebid {
 		re.prebid = &ExtRequestPrebid{}
-		if err := json.Unmarshal(prebidJson, re.prebid); err != nil {
+		if err := jsonutil.Unmarshal(prebidJson, re.prebid); err != nil {
 			return err
 		}
 	}
@@ -741,7 +742,7 @@ func (re *RequestExt) unmarshal(extJson json.RawMessage) error {
 	schainJson, hasSChain := re.ext[schainKey]
 	if hasSChain {
 		re.schain = &openrtb2.SupplyChain{}
-		if err := json.Unmarshal(schainJson, re.schain); err != nil {
+		if err := jsonutil.Unmarshal(schainJson, re.schain); err != nil {
 			return err
 		}
 	}
@@ -880,14 +881,14 @@ func (de *DeviceExt) unmarshal(extJson json.RawMessage) error {
 		return nil
 	}
 
-	if err := json.Unmarshal(extJson, &de.ext); err != nil {
+	if err := jsonutil.Unmarshal(extJson, &de.ext); err != nil {
 		return err
 	}
 
 	prebidJson, hasPrebid := de.ext[prebidKey]
 	if hasPrebid {
 		de.prebid = &ExtDevicePrebid{}
-		if err := json.Unmarshal(prebidJson, de.prebid); err != nil {
+		if err := jsonutil.Unmarshal(prebidJson, de.prebid); err != nil {
 			return err
 		}
 	}
@@ -992,14 +993,14 @@ func (ae *AppExt) unmarshal(extJson json.RawMessage) error {
 		return nil
 	}
 
-	if err := json.Unmarshal(extJson, &ae.ext); err != nil {
+	if err := jsonutil.Unmarshal(extJson, &ae.ext); err != nil {
 		return err
 	}
 
 	prebidJson, hasPrebid := ae.ext[prebidKey]
 	if hasPrebid {
 		ae.prebid = &ExtAppPrebid{}
-		if err := json.Unmarshal(prebidJson, ae.prebid); err != nil {
+		if err := jsonutil.Unmarshal(prebidJson, ae.prebid); err != nil {
 			return err
 		}
 	}
@@ -1096,7 +1097,7 @@ func (de *DOOHExt) unmarshal(extJson json.RawMessage) error {
 		return nil
 	}
 
-	if err := json.Unmarshal(extJson, &de.ext); err != nil {
+	if err := jsonutil.Unmarshal(extJson, &de.ext); err != nil {
 		return err
 	}
 
@@ -1163,20 +1164,20 @@ func (re *RegExt) unmarshal(extJson json.RawMessage) error {
 		return nil
 	}
 
-	if err := json.Unmarshal(extJson, &re.ext); err != nil {
+	if err := jsonutil.Unmarshal(extJson, &re.ext); err != nil {
 		return err
 	}
 
 	gdprJson, hasGDPR := re.ext[gdprKey]
-	if hasGDPR {
-		if err := json.Unmarshal(gdprJson, &re.gdpr); err != nil {
+	if hasGDPR && gdprJson != nil {
+		if err := jsonutil.Unmarshal(gdprJson, &re.gdpr); err != nil {
 			return errors.New("gdpr must be an integer")
 		}
 	}
 
 	uspJson, hasUsp := re.ext[us_privacyKey]
 	if hasUsp {
-		if err := json.Unmarshal(uspJson, &re.usPrivacy); err != nil {
+		if err := jsonutil.Unmarshal(uspJson, &re.usPrivacy); err != nil {
 			return err
 		}
 	}
@@ -1290,13 +1291,13 @@ func (se *SiteExt) unmarshal(extJson json.RawMessage) error {
 		return nil
 	}
 
-	if err := json.Unmarshal(extJson, &se.ext); err != nil {
+	if err := jsonutil.Unmarshal(extJson, &se.ext); err != nil {
 		return err
 	}
 
 	ampJson, hasAmp := se.ext[ampKey]
 	if hasAmp {
-		if err := json.Unmarshal(ampJson, &se.amp); err != nil {
+		if err := jsonutil.Unmarshal(ampJson, &se.amp); err != nil {
 			return errors.New(`request.site.ext.amp must be either 1, 0, or undefined`)
 		}
 	}
@@ -1385,13 +1386,13 @@ func (se *SourceExt) unmarshal(extJson json.RawMessage) error {
 		return nil
 	}
 
-	if err := json.Unmarshal(extJson, &se.ext); err != nil {
+	if err := jsonutil.Unmarshal(extJson, &se.ext); err != nil {
 		return err
 	}
 
 	schainJson, hasSChain := se.ext[schainKey]
 	if hasSChain {
-		if err := json.Unmarshal(schainJson, &se.schain); err != nil {
+		if err := jsonutil.Unmarshal(schainJson, &se.schain); err != nil {
 			return err
 		}
 	}
@@ -1550,14 +1551,14 @@ func (e *ImpExt) unmarshal(extJson json.RawMessage) error {
 		return nil
 	}
 
-	if err := json.Unmarshal(extJson, &e.ext); err != nil {
+	if err := jsonutil.Unmarshal(extJson, &e.ext); err != nil {
 		return err
 	}
 
 	prebidJson, hasPrebid := e.ext[prebidKey]
 	if hasPrebid {
 		e.prebid = &ExtImpPrebid{}
-		if err := json.Unmarshal(prebidJson, e.prebid); err != nil {
+		if err := jsonutil.Unmarshal(prebidJson, e.prebid); err != nil {
 			return err
 		}
 	}
@@ -1565,21 +1566,21 @@ func (e *ImpExt) unmarshal(extJson json.RawMessage) error {
 	dataJson, hasData := e.ext[dataKey]
 	if hasData {
 		e.data = &ExtImpData{}
-		if err := json.Unmarshal(dataJson, e.data); err != nil {
+		if err := jsonutil.Unmarshal(dataJson, e.data); err != nil {
 			return err
 		}
 	}
 
 	tidJson, hasTid := e.ext["tid"]
 	if hasTid {
-		if err := json.Unmarshal(tidJson, &e.tid); err != nil {
+		if err := jsonutil.Unmarshal(tidJson, &e.tid); err != nil {
 			return err
 		}
 	}
 
 	gpIdJson, hasGpId := e.ext["gpid"]
 	if hasGpId {
-		if err := json.Unmarshal(gpIdJson, &e.gpId); err != nil {
+		if err := jsonutil.Unmarshal(gpIdJson, &e.gpId); err != nil {
 			return err
 		}
 	}

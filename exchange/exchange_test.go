@@ -4177,7 +4177,7 @@ func TestMakeBidExtJSON(t *testing.T) {
 			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("video")},
 			impExtInfo:         map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`), json.RawMessage(`"prebid": {"passthrough": {"imp_passthrough_val": some_val}}"`)}},
 			expectedBidExt:     ``,
-			expectedErrMessage: "invalid character",
+			expectedErrMessage: "ReadString: expects \" or n, but found i, error found in #2 byte of ...|{invalid jso|..., bigger context ...|{invalid json}|...",
 		},
 		{
 			description:        "Valid extension, empty extBidPrebid and invalid imp ext info",
@@ -4192,9 +4192,8 @@ func TestMakeBidExtJSON(t *testing.T) {
 			ext:                json.RawMessage(`{"prebid":{"meta":{"brandId":"foo"}}}`), // brandId should be an int, but is a string in this test case
 			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("banner")},
 			impExtInfo:         nil,
-			expectedErrMessage: "error validaing response from server, json: cannot unmarshal string into Go struct field ExtBidPrebidMeta.prebid.meta.brandId of type int",
+			expectedErrMessage: "error validaing response from server, Prebid: Meta: openrtb_ext.ExtBidPrebidMeta.BrandID: readUint64: unexpected character: \xff, error found in #10 byte of ...|brandId\":\"foo\"}}}|..., bigger context ...|{\"prebid\":{\"meta\":{\"brandId\":\"foo\"}}}|...",
 		},
-		// add invalid
 	}
 
 	for _, test := range testCases {

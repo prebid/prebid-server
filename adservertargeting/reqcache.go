@@ -5,6 +5,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/util/jsonutil"
 )
 
 type requestCache struct {
@@ -24,7 +25,7 @@ func (reqImpCache *requestCache) GetImpsData() ([]json.RawMessage, error) {
 		}
 		var impsData []json.RawMessage
 
-		err = json.Unmarshal(imps, &impsData)
+		err = jsonutil.Unmarshal(imps, &impsData)
 		if err != nil {
 			return nil, err
 		}

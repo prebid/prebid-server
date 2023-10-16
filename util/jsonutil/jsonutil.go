@@ -3,6 +3,8 @@ package jsonutil
 import (
 	"bytes"
 	"encoding/json"
+	jsoniter "github.com/json-iterator/go"
+	"github.com/prebid/prebid-server/errortypes"
 	"io"
 )
 
@@ -109,4 +111,32 @@ func DropElement(extension []byte, elementNames ...string) ([]byte, error) {
 		extension = append(extension[:startIndex], extension[endIndex:]...)
 	}
 	return extension, nil
+}
+
+// Unmarshal unmarshals a byte slice into the specified data structure without performing
+// any validation on the data. An unmarshal error is returned if a non-validation error occurs.
+func Unmarshal(data []byte, v interface{}) error {
+	err := jsoniter.Config{
+		EscapeHTML:             true,
+		SortMapKeys:            true,
+		ValidateJsonRawMessage: false,
+	}.Froze().Unmarshal(data, v)
+
+	if err != nil {
+		return &errortypes.FailedToUnmarshal{
+			Message: err.Error(),
+		}
+	}
+	return nil
+}
+
+// UnmarshalValid validates and unmarshals a byte slice into the specified data structure
+// returning an error if validation fails
+func UnmarshalValid(data []byte, v interface{}) error {
+	if err := jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(data, v); err != nil {
+		return &errortypes.FailedToUnmarshal{
+			Message: err.Error(),
+		}
+	}
+	return nil
 }

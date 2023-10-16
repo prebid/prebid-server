@@ -220,3 +220,20 @@ func (err *Warning) Code() int {
 func (err *Warning) Severity() Severity {
 	return SeverityWarning
 }
+
+// FailedToUnmarshal should be used to represent errors that occur when unmarshaling raw json.
+type FailedToUnmarshal struct {
+	Message string
+}
+
+func (err *FailedToUnmarshal) Error() string {
+	return err.Message
+}
+
+func (err *FailedToUnmarshal) Code() int {
+	return FailedToUnmarshalErrorCode
+}
+
+func (err *FailedToUnmarshal) Severity() Severity {
+	return SeverityFatal
+}
