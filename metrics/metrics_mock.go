@@ -221,15 +221,3 @@ func (me *MetricsEngineMock) RecordModuleExecutionError(labels ModuleLabels) {
 func (me *MetricsEngineMock) RecordModuleTimeout(labels ModuleLabels) {
 	me.Called(labels)
 }
-
-func (me *MetricsEngineMock) RecordAccountGDPRChannelEnabledWarning(account string) {
-	me.Called(account)
-}
-
-func (me *MetricsEngineMock) RecordAccountCCPAChannelEnabledWarning(account string) {
-	me.Called(account)
-}
-
-func (me *MetricsEngineMock) RecordAccountUpgradeStatus(account string) {
-	me.Called(account)
-}

@@ -23,7 +23,7 @@ import (
 	nativeRequests "github.com/prebid/openrtb/v19/native1/request"
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/analytics"
-	analyticsConf "github.com/prebid/prebid-server/analytics/config"
+	analyticsBuild "github.com/prebid/prebid-server/analytics/build"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
@@ -160,8 +160,6 @@ func runJsonBasedTest(t *testing.T, filename, desc string) {
 	if test.Config != nil {
 		cfg.BlacklistedApps = test.Config.BlacklistedApps
 		cfg.BlacklistedAppMap = test.Config.getBlacklistedAppMap()
-		cfg.BlacklistedAccts = test.Config.BlacklistedAccounts
-		cfg.BlacklistedAcctMap = test.Config.getBlackListedAccountMap()
 		cfg.AccountRequired = test.Config.AccountRequired
 	}
 	cfg.MarshalAccountDefaults()
@@ -449,7 +447,7 @@ func TestExplicitUserId(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		cfg,
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -507,7 +505,7 @@ func doBadAliasRequest(t *testing.T, filename string, expectMsg string) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		disabledBidders,
 		aliasJSON,
 		bidderMap,
@@ -562,7 +560,7 @@ func TestNilExchange(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{},
+		analyticsBuild.New(&config.Analytics{}), map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
@@ -587,7 +585,7 @@ func TestNilValidator(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -613,7 +611,7 @@ func TestExchangeError(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -740,7 +738,7 @@ func TestImplicitIPsEndToEnd(t *testing.T) {
 			empty_fetcher.EmptyFetcher{},
 			cfg,
 			&metricsConfig.NilMetricsEngine{},
-			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+			analyticsBuild.New(&config.Analytics{}),
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
@@ -940,7 +938,7 @@ func TestImplicitDNTEndToEnd(t *testing.T) {
 			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{MaxRequestSize: maxSize},
 			&metricsConfig.NilMetricsEngine{},
-			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+			analyticsBuild.New(&config.Analytics{}),
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
@@ -1177,7 +1175,7 @@ func TestStoredRequests(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -1188,6 +1186,7 @@ func TestStoredRequests(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	testStoreVideoAttr := []bool{true, true, false, false, false}
@@ -1626,7 +1625,7 @@ func TestValidateRequest(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -1637,6 +1636,7 @@ func TestValidateRequest(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	testCases := []struct {
@@ -2405,7 +2405,7 @@ func TestSetIntegrationType(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -2416,6 +2416,7 @@ func TestSetIntegrationType(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	testCases := []struct {
@@ -2471,7 +2472,7 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -2482,6 +2483,7 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	req := &openrtb2.BidRequest{}
@@ -2575,7 +2577,7 @@ func TestOversizedRequest(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: int64(len(reqBody) - 1)},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -2586,6 +2588,7 @@ func TestOversizedRequest(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -2614,7 +2617,7 @@ func TestRequestSizeEdgeCase(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: int64(len(reqBody))},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -2625,6 +2628,7 @@ func TestRequestSizeEdgeCase(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -2651,7 +2655,7 @@ func TestNoEncoding(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -2736,7 +2740,7 @@ func TestContentType(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -2953,7 +2957,7 @@ func TestValidateImpExt(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: int64(8096)},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{"disabledbidder": "The bidder 'disabledbidder' has been disabled."},
 		false,
 		[]byte{},
@@ -2964,6 +2968,7 @@ func TestValidateImpExt(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	for _, group := range testGroups {
@@ -3008,7 +3013,7 @@ func TestCurrencyTrunc(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -3019,6 +3024,7 @@ func TestCurrencyTrunc(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	ui := int64(1)
@@ -3056,7 +3062,7 @@ func TestCCPAInvalid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -3067,6 +3073,7 @@ func TestCCPAInvalid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	ui := int64(1)
@@ -3108,7 +3115,7 @@ func TestNoSaleInvalid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -3119,6 +3126,7 @@ func TestNoSaleInvalid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	ui := int64(1)
@@ -3163,7 +3171,7 @@ func TestValidateSourceTID(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		cfg,
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -3174,6 +3182,7 @@ func TestValidateSourceTID(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	ui := int64(1)
@@ -3208,7 +3217,7 @@ func TestSChainInvalid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -3219,6 +3228,7 @@ func TestSChainInvalid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	ui := int64(1)
@@ -3776,7 +3786,7 @@ func TestEidPermissionsInvalid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -3787,6 +3797,7 @@ func TestEidPermissionsInvalid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	ui := int64(1)
@@ -3856,6 +3867,13 @@ func TestValidateEidPermissions(t *testing.T) {
 			expectedError: nil,
 		},
 		{
+			description: "Valid - One - Case Insensitive",
+			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "sourceA", Bidders: []string{"A"}},
+			}}}},
+			expectedError: nil,
+		},
+		{
 			description: "Valid - Many",
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"a"}},
@@ -3903,9 +3921,16 @@ func TestValidateEidPermissions(t *testing.T) {
 			}}}},
 			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[1] contains unrecognized bidder "z"`),
 		},
+		{
+			description: "Valid - Alias Case Sensitive",
+			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "sourceA", Bidders: []string{"B"}},
+			}}}},
+			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[0] contains unrecognized bidder "B"`),
+		},
 	}
 
-	endpoint := &endpointDeps{bidderMap: knownBidders}
+	endpoint := &endpointDeps{bidderMap: knownBidders, normalizeBidderName: fakeNormalizeBidderName}
 	for _, test := range testCases {
 		result := endpoint.validateEidPermissions(test.request.Prebid.Data, knownAliases)
 		assert.Equal(t, test.expectedError, result, test.description)
@@ -3942,6 +3967,13 @@ func TestValidateBidders(t *testing.T) {
 			expectedError: nil,
 		},
 		{
+			description:   "Valid - One Core Bidder - Case Insensitive",
+			bidders:       []string{"A"},
+			knownBidders:  map[string]openrtb_ext.BidderName{"a": openrtb_ext.BidderName("a")},
+			knownAliases:  map[string]string{"c": "c"},
+			expectedError: nil,
+		},
+		{
 			description:   "Valid - Many Core Bidders",
 			bidders:       []string{"a", "b"},
 			knownBidders:  map[string]openrtb_ext.BidderName{"a": openrtb_ext.BidderName("a"), "b": openrtb_ext.BidderName("b")},
@@ -3954,6 +3986,13 @@ func TestValidateBidders(t *testing.T) {
 			knownBidders:  map[string]openrtb_ext.BidderName{"a": openrtb_ext.BidderName("a")},
 			knownAliases:  map[string]string{"c": "c"},
 			expectedError: nil,
+		},
+		{
+			description:   "Valid - One Alias Bidder - Case Sensitive",
+			bidders:       []string{"C"},
+			knownBidders:  map[string]openrtb_ext.BidderName{"a": openrtb_ext.BidderName("a")},
+			knownAliases:  map[string]string{"c": "c"},
+			expectedError: errors.New(`unrecognized bidder "C"`),
 		},
 		{
 			description:   "Valid - Many Alias Bidders",
@@ -3975,13 +4014,6 @@ func TestValidateBidders(t *testing.T) {
 			knownBidders:  map[string]openrtb_ext.BidderName{"a": openrtb_ext.BidderName("a")},
 			knownAliases:  map[string]string{"c": "c"},
 			expectedError: errors.New(`unrecognized bidder "z"`),
-		},
-		{
-			description:   "Invalid - Unknown Bidder Case Sensitive",
-			bidders:       []string{"A"},
-			knownBidders:  map[string]openrtb_ext.BidderName{"a": openrtb_ext.BidderName("a")},
-			knownAliases:  map[string]string{"c": "c"},
-			expectedError: errors.New(`unrecognized bidder "A"`),
 		},
 		{
 			description:   "Invalid - Unknown Bidder With Known Bidders",
@@ -4013,8 +4045,9 @@ func TestValidateBidders(t *testing.T) {
 		},
 	}
 
+	endpoint := &endpointDeps{normalizeBidderName: fakeNormalizeBidderName}
 	for _, test := range testCases {
-		result := validateBidders(test.bidders, test.knownBidders, test.knownAliases)
+		result := endpoint.validateBidders(test.bidders, test.knownBidders, test.knownAliases)
 		assert.Equal(t, test.expectedError, result, test.description)
 	}
 }
@@ -4030,7 +4063,7 @@ func TestIOS14EndToEnd(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -4093,7 +4126,7 @@ func TestAuctionWarnings(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -4104,6 +4137,7 @@ func TestAuctionWarnings(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
@@ -4139,7 +4173,7 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: int64(len(reqBody))},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -4150,6 +4184,7 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
@@ -4219,7 +4254,7 @@ func TestParseGzipedRequest(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: int64(50), Compression: config.Compression{Request: config.CompressionInfo{GZIP: false}}},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -4230,6 +4265,7 @@ func TestParseGzipedRequest(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
@@ -4718,7 +4754,7 @@ func TestAuctionResponseHeaders(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -4819,7 +4855,7 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 				empty_fetcher.EmptyFetcher{},
 				&config.Configuration{MaxRequestSize: int64(len(test.givenRequestBody))},
 				&metricsConfig.NilMetricsEngine{},
-				analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+				analyticsBuild.New(&config.Analytics{}),
 				map[string]string{},
 				false,
 				[]byte{},
@@ -4830,6 +4866,7 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 				empty_fetcher.EmptyFetcher{},
 				hooks.EmptyPlanBuilder{},
 				nil,
+				openrtb_ext.NormalizeBidderName,
 			}
 
 			hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
@@ -4922,7 +4959,7 @@ func TestParseRequestStoredResponses(t *testing.T) {
 				empty_fetcher.EmptyFetcher{},
 				&config.Configuration{MaxRequestSize: int64(len(test.givenRequestBody))},
 				&metricsConfig.NilMetricsEngine{},
-				analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+				analyticsBuild.New(&config.Analytics{}),
 				map[string]string{},
 				false,
 				[]byte{},
@@ -4933,6 +4970,7 @@ func TestParseRequestStoredResponses(t *testing.T) {
 				&mockStoredResponseFetcher{mockStoredResponses},
 				hooks.EmptyPlanBuilder{},
 				nil,
+				openrtb_ext.NormalizeBidderName,
 			}
 
 			hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
@@ -5020,7 +5058,7 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 				empty_fetcher.EmptyFetcher{},
 				&config.Configuration{MaxRequestSize: int64(len(test.givenRequestBody))},
 				&metricsConfig.NilMetricsEngine{},
-				analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+				analyticsBuild.New(&config.Analytics{}),
 				map[string]string{},
 				false,
 				[]byte{},
@@ -5031,6 +5069,7 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 				&mockStoredResponseFetcher{mockStoredBidResponses},
 				hooks.EmptyPlanBuilder{},
 				nil,
+				openrtb_ext.NormalizeBidderName,
 			}
 
 			hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
@@ -5056,7 +5095,7 @@ func TestValidateStoredResp(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -5067,6 +5106,7 @@ func TestValidateStoredResp(t *testing.T) {
 		&mockStoredResponseFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	testCases := []struct {
@@ -5803,7 +5843,7 @@ func TestSendAuctionResponse_LogsErrors(t *testing.T) {
 			ao := analytics.AuctionObject{}
 			account := &config.Account{DebugAllow: true}
 
-			labels, ao = sendAuctionResponse(writer, test.hookExecutor, test.response, test.request, account, labels, ao)
+			_, ao = sendAuctionResponse(writer, test.hookExecutor, test.response, test.request, account, labels, ao)
 
 			assert.Equal(t, ao.Errors, test.expectedErrors, "Invalid errors.")
 			assert.Equal(t, test.expectedStatus, ao.Status, "Invalid HTTP response status.")
@@ -5869,7 +5909,7 @@ func TestParseRequestMultiBid(t *testing.T) {
 				empty_fetcher.EmptyFetcher{},
 				&config.Configuration{MaxRequestSize: int64(len(test.givenRequestBody))},
 				&metricsConfig.NilMetricsEngine{},
-				analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+				analyticsBuild.New(&config.Analytics{}),
 				map[string]string{},
 				false,
 				[]byte{},
@@ -5880,6 +5920,7 @@ func TestParseRequestMultiBid(t *testing.T) {
 				empty_fetcher.EmptyFetcher{},
 				hooks.EmptyPlanBuilder{},
 				nil,
+				openrtb_ext.NormalizeBidderName,
 			}
 
 			hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
@@ -6044,4 +6085,8 @@ func TestValidateAliases(t *testing.T) {
 			}
 		})
 	}
+}
+
+func fakeNormalizeBidderName(name string) (openrtb_ext.BidderName, bool) {
+	return openrtb_ext.BidderName(strings.ToLower(name)), true
 }

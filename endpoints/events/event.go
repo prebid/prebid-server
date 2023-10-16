@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -16,6 +17,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/metrics"
+	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/util/httputil"
 )
@@ -40,13 +42,13 @@ const integrationParamMaxLength = 64
 
 type eventEndpoint struct {
 	Accounts      stored_requests.AccountFetcher
-	Analytics     analytics.PBSAnalyticsModule
+	Analytics     analytics.Runner
 	Cfg           *config.Configuration
 	TrackingPixel *httputil.Pixel
 	MetricsEngine metrics.MetricsEngine
 }
 
-func NewEventEndpoint(cfg *config.Configuration, accounts stored_requests.AccountFetcher, analytics analytics.PBSAnalyticsModule, me metrics.MetricsEngine) httprouter.Handle {
+func NewEventEndpoint(cfg *config.Configuration, accounts stored_requests.AccountFetcher, analytics analytics.Runner, me metrics.MetricsEngine) httprouter.Handle {
 	ee := &eventEndpoint{
 		Accounts:      accounts,
 		Analytics:     analytics,
@@ -114,11 +116,13 @@ func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprou
 		return
 	}
 
+	activities := privacy.NewActivityControl(&account.Privacy)
+
 	// handle notification event
 	e.Analytics.LogNotificationEventObject(&analytics.NotificationEvent{
 		Request: eventRequest,
 		Account: account,
-	})
+	}, activities)
 
 	// Add tracking pixel if format == image
 	if eventRequest.Format == analytics.Image {
@@ -185,7 +189,12 @@ func ParseEventRequest(r *http.Request) (*analytics.EventRequest, []error) {
 	}
 
 	// Bidder
-	event.Bidder = r.URL.Query().Get(BidderParameter)
+	bidderName := r.URL.Query().Get(BidderParameter)
+	if normalisedBidderName, ok := openrtb_ext.NormalizeBidderName(bidderName); ok {
+		bidderName = normalisedBidderName.String()
+	}
+
+	event.Bidder = bidderName
 
 	return event, errs
 }
@@ -206,7 +215,7 @@ func HandleAccountServiceErrors(errs []error) (status int, messages []string) {
 
 		errCode := errortypes.ReadCode(er)
 
-		if errCode == errortypes.BlacklistedAppErrorCode || errCode == errortypes.BlacklistedAcctErrorCode {
+		if errCode == errortypes.BlacklistedAppErrorCode || errCode == errortypes.AccountDisabledErrorCode {
 			status = http.StatusServiceUnavailable
 		}
 		if errCode == errortypes.MalformedAcctErrorCode {

@@ -3,7 +3,9 @@ package account
 import (
 	"context"
 	"fmt"
+
 	"github.com/prebid/go-gdpr/consentconstants"
+
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/metrics"
@@ -15,17 +17,12 @@ import (
 
 // GetAccount looks up the config.Account object referenced by the given accountID, with access rules applied
 func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_requests.AccountFetcher, accountID string, me metrics.MetricsEngine) (account *config.Account, errs []error) {
-	// Check BlacklistedAcctMap until we have deprecated it
-	if _, found := cfg.BlacklistedAcctMap[accountID]; found {
-		return nil, []error{&errortypes.BlacklistedAcct{
-			Message: fmt.Sprintf("Prebid-server has disabled Account ID: %s, please reach out to the prebid server host.", accountID),
-		}}
-	}
 	if cfg.AccountRequired && accountID == metrics.PublisherUnknown {
 		return nil, []error{&errortypes.AcctRequired{
 			Message: fmt.Sprintf("Prebid-server has been configured to discard requests without a valid Account ID. Please reach out to the prebid server host."),
 		}}
 	}
+
 	if accountJSON, accErrs := fetcher.FetchAccount(ctx, cfg.AccountDefaultsJSON(), accountID); len(accErrs) > 0 || accountJSON == nil {
 		// accountID does not reference a valid account
 		for _, e := range accErrs {
@@ -52,18 +49,6 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 				Message: fmt.Sprintf("The prebid-server account config for account id \"%s\" is malformed. Please reach out to the prebid server host.", accountID),
 			}}
 		}
-		usingGDPRChannelEnabled := useGDPRChannelEnabled(account)
-		usingCCPAChannelEnabled := useCCPAChannelEnabled(account)
-
-		if usingGDPRChannelEnabled {
-			me.RecordAccountGDPRChannelEnabledWarning(accountID)
-		}
-		if usingCCPAChannelEnabled {
-			me.RecordAccountCCPAChannelEnabledWarning(accountID)
-		}
-		if usingGDPRChannelEnabled || usingCCPAChannelEnabled {
-			me.RecordAccountUpgradeStatus(accountID)
-		}
 
 		// Fill in ID if needed, so it can be left out of account definition
 		if len(account.ID) == 0 {
@@ -74,7 +59,7 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 		setDerivedConfig(account)
 	}
 	if account.Disabled {
-		errs = append(errs, &errortypes.BlacklistedAcct{
+		errs = append(errs, &errortypes.AccountDisabled{
 			Message: fmt.Sprintf("Prebid-server has disabled Account ID: %s, please reach out to the prebid server host.", accountID),
 		})
 		return nil, errs
@@ -151,12 +136,4 @@ func setDerivedConfig(account *config.Account) {
 			account.GDPR.BasicEnforcementVendorsMap[v] = struct{}{}
 		}
 	}
-}
-
-func useGDPRChannelEnabled(account *config.Account) bool {
-	return account.GDPR.ChannelEnabled.IsSet() && !account.GDPR.IntegrationEnabled.IsSet()
-}
-
-func useCCPAChannelEnabled(account *config.Account) bool {
-	return account.CCPA.ChannelEnabled.IsSet() && !account.CCPA.IntegrationEnabled.IsSet()
 }

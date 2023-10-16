@@ -52,7 +52,7 @@ func NewVideoEndpoint(
 	accounts stored_requests.AccountFetcher,
 	cfg *config.Configuration,
 	met metrics.MetricsEngine,
-	pbsAnalytics analytics.PBSAnalyticsModule,
+	analyticsRunner analytics.Runner,
 	disabledBidders map[string]string,
 	defReqJSON []byte,
 	bidderMap map[string]openrtb_ext.BidderName,
@@ -82,7 +82,7 @@ func NewVideoEndpoint(
 		accounts,
 		cfg,
 		met,
-		pbsAnalytics,
+		analyticsRunner,
 		disabledBidders,
 		defRequest,
 		defReqJSON,
@@ -92,7 +92,8 @@ func NewVideoEndpoint(
 		ipValidator,
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
-		tmaxAdjustments}).VideoAuctionEndpoint), nil
+		tmaxAdjustments,
+		openrtb_ext.NormalizeBidderName}).VideoAuctionEndpoint), nil
 }
 
 /*
@@ -149,6 +150,8 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 	debugLog.DebugEnabledOrOverridden = debugLog.Enabled || debugLog.DebugOverride
 
+	activityControl := privacy.ActivityControl{}
+
 	defer func() {
 		if len(debugLog.CacheKey) > 0 && vo.VideoResponse == nil {
 			err := debugLog.PutDebugLogError(deps.cache, deps.cfg.CacheURL.ExpectedTimeMillis, vo.Errors)
@@ -158,7 +161,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		}
 		deps.metricsEngine.RecordRequest(labels)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
-		deps.analytics.LogVideoObject(&vo)
+		deps.analytics.LogVideoObject(&vo, activityControl)
 	}()
 
 	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
@@ -244,7 +247,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		for _, podEr := range podErrors {
 			resPodErr = append(resPodErr, strings.Join(podEr.ErrMsgs, ", "))
 		}
-		err := errors.New(fmt.Sprintf("all pods are incorrect: %s", strings.Join(resPodErr, "; ")))
+		err := fmt.Errorf("all pods are incorrect: %s", strings.Join(resPodErr, "; "))
 		errL = append(errL, err)
 		handleError(&labels, w, errL, &vo, &debugLog)
 		return
@@ -303,7 +306,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	activityControl := privacy.NewActivityControl(&account.Privacy)
+	activityControl = privacy.NewActivityControl(&account.Privacy)
 
 	secGPC := r.Header.Get("Sec-GPC")
 	auctionRequest := &exchange.AuctionRequest{
@@ -403,7 +406,7 @@ func handleError(labels *metrics.Labels, w http.ResponseWriter, errL []error, vo
 	var status int = http.StatusInternalServerError
 	for _, er := range errL {
 		erVal := errortypes.ReadCode(er)
-		if erVal == errortypes.BlacklistedAppErrorCode || erVal == errortypes.BlacklistedAcctErrorCode {
+		if erVal == errortypes.BlacklistedAppErrorCode || erVal == errortypes.AccountDisabledErrorCode {
 			status = http.StatusServiceUnavailable
 			labels.RequestStatus = metrics.RequestStatusBlacklisted
 			break
@@ -555,7 +558,7 @@ func buildVideoResponse(bidresponse *openrtb2.BidResponse, podErrors []PodError)
 			if adPod == nil {
 				adPod = &openrtb_ext.AdPod{
 					PodId:     podId,
-					Targeting: make([]openrtb_ext.VideoTargeting, 0, 0),
+					Targeting: make([]openrtb_ext.VideoTargeting, 0),
 				}
 				adPods = append(adPods, adPod)
 			}
@@ -620,22 +623,15 @@ func getVideoStoredRequestId(request []byte) (string, error) {
 func mergeData(videoRequest *openrtb_ext.BidRequestVideo, bidRequest *openrtb2.BidRequest) error {
 	if videoRequest.Site != nil {
 		bidRequest.Site = videoRequest.Site
-		if &videoRequest.Content != nil {
-			bidRequest.Site.Content = &videoRequest.Content
-		}
+		bidRequest.Site.Content = &videoRequest.Content
 	}
 
 	if videoRequest.App != nil {
 		bidRequest.App = videoRequest.App
-		if &videoRequest.Content != nil {
-			bidRequest.App.Content = &videoRequest.Content
-		}
+		bidRequest.App.Content = &videoRequest.Content
 	}
 
-	if &videoRequest.Device != nil {
-		bidRequest.Device = &videoRequest.Device
-	}
-
+	bidRequest.Device = &videoRequest.Device
 	bidRequest.User = videoRequest.User
 
 	if len(videoRequest.BCat) != 0 {
@@ -768,7 +764,7 @@ func (deps *endpointDeps) validateVideoRequest(req *openrtb_ext.BidRequestVideo)
 		err := errors.New("request missing required field: PodConfig.Pods")
 		errL = append(errL, err)
 	}
-	podErrors := make([]PodError, 0, 0)
+	podErrors := make([]PodError, 0)
 	podIdsSet := make(map[int]bool)
 	for ind, pod := range req.PodConfig.Pods {
 		podErr := PodError{}

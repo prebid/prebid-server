@@ -68,13 +68,6 @@ func TestBuildAdapters(t *testing.T) {
 				errors.New("unknown: unknown bidder"),
 			},
 		},
-		{
-			description: "Alias feature disabled",
-			bidderInfos: map[string]config.BidderInfo{"appNexus": {AliasOf: "rubicon"}},
-			expectedErrors: []error{
-				errors.New("This feature is currently under development"),
-			},
-		},
 	}
 
 	cfg := &config.Configuration{}

@@ -48,19 +48,16 @@ func TestGetAccount(t *testing.T) {
 		// expected error, or nil if account should be found
 		err error
 	}{
-		// Blacklisted account is always rejected even in permissive setup
-		{accountID: "bad_acct", required: false, disabled: false, err: &errortypes.BlacklistedAcct{}},
-
 		// empty pubID
 		{accountID: unknown, required: false, disabled: false, err: nil},
 		{accountID: unknown, required: true, disabled: false, err: &errortypes.AcctRequired{}},
-		{accountID: unknown, required: false, disabled: true, err: &errortypes.BlacklistedAcct{}},
+		{accountID: unknown, required: false, disabled: true, err: &errortypes.AccountDisabled{}},
 		{accountID: unknown, required: true, disabled: true, err: &errortypes.AcctRequired{}},
 
 		// pubID given but is not a valid host account (does not exist)
 		{accountID: "doesnt_exist_acct", required: false, disabled: false, err: nil},
 		{accountID: "doesnt_exist_acct", required: true, disabled: false, err: nil},
-		{accountID: "doesnt_exist_acct", required: false, disabled: true, err: &errortypes.BlacklistedAcct{}},
+		{accountID: "doesnt_exist_acct", required: false, disabled: true, err: &errortypes.AccountDisabled{}},
 		{accountID: "doesnt_exist_acct", required: true, disabled: true, err: &errortypes.AcctRequired{}},
 
 		// pubID given and matches a valid host account with Disabled: false
@@ -72,10 +69,10 @@ func TestGetAccount(t *testing.T) {
 		{accountID: "invalid_acct_ipv6_ipv4", required: true, disabled: false, err: nil, checkDefaultIP: true},
 
 		// pubID given and matches a host account explicitly disabled (Disabled: true on account json)
-		{accountID: "disabled_acct", required: false, disabled: false, err: &errortypes.BlacklistedAcct{}},
-		{accountID: "disabled_acct", required: true, disabled: false, err: &errortypes.BlacklistedAcct{}},
-		{accountID: "disabled_acct", required: false, disabled: true, err: &errortypes.BlacklistedAcct{}},
-		{accountID: "disabled_acct", required: true, disabled: true, err: &errortypes.BlacklistedAcct{}},
+		{accountID: "disabled_acct", required: false, disabled: false, err: &errortypes.AccountDisabled{}},
+		{accountID: "disabled_acct", required: true, disabled: false, err: &errortypes.AccountDisabled{}},
+		{accountID: "disabled_acct", required: false, disabled: true, err: &errortypes.AccountDisabled{}},
+		{accountID: "disabled_acct", required: true, disabled: true, err: &errortypes.AccountDisabled{}},
 
 		// pubID given and matches a host account that has a malformed config
 		{accountID: "malformed_acct", required: false, disabled: false, err: &errortypes.MalformedAcct{}},
@@ -86,7 +83,7 @@ func TestGetAccount(t *testing.T) {
 		// account not provided (does not exist)
 		{accountID: "", required: false, disabled: false, err: nil},
 		{accountID: "", required: true, disabled: false, err: nil},
-		{accountID: "", required: false, disabled: true, err: &errortypes.BlacklistedAcct{}},
+		{accountID: "", required: false, disabled: true, err: &errortypes.AccountDisabled{}},
 		{accountID: "", required: true, disabled: true, err: &errortypes.AcctRequired{}},
 	}
 
@@ -94,9 +91,8 @@ func TestGetAccount(t *testing.T) {
 		description := fmt.Sprintf(`ID=%s/required=%t/disabled=%t`, test.accountID, test.required, test.disabled)
 		t.Run(description, func(t *testing.T) {
 			cfg := &config.Configuration{
-				BlacklistedAcctMap: map[string]bool{"bad_acct": true},
-				AccountRequired:    test.required,
-				AccountDefaults:    config.Account{Disabled: test.disabled},
+				AccountRequired: test.required,
+				AccountDefaults: config.Account{Disabled: test.disabled},
 			}
 			fetcher := &mockAccountFetcher{}
 			assert.NoError(t, cfg.MarshalAccountDefaults())
@@ -216,108 +212,5 @@ func TestSetDerivedConfig(t *testing.T) {
 		assert.ElementsMatch(t, basicEnforcementMapKeys, tt.basicEnforcementVendors, tt.description)
 
 		assert.Equal(t, account.GDPR.Purpose1.EnforceAlgoID, tt.wantEnforceAlgoID, tt.description)
-	}
-}
-
-func TestGdprCcpaChannelEnabledMetrics(t *testing.T) {
-	cfg := &config.Configuration{}
-	fetcher := &mockAccountFetcher{}
-	assert.NoError(t, cfg.MarshalAccountDefaults())
-
-	testCases := []struct {
-		name                string
-		givenAccountID      string
-		givenMetric         string
-		expectedMetricCount int
-	}{
-		{
-			name:                "ChannelEnabledGDPR",
-			givenAccountID:      "gdpr_channel_enabled_acct",
-			givenMetric:         "RecordAccountGDPRChannelEnabledWarning",
-			expectedMetricCount: 1,
-		},
-		{
-			name:                "ChannelEnabledCCPA",
-			givenAccountID:      "ccpa_channel_enabled_acct",
-			givenMetric:         "RecordAccountCCPAChannelEnabledWarning",
-			expectedMetricCount: 1,
-		},
-		{
-			name:                "NotChannelEnabledCCPA",
-			givenAccountID:      "valid_acct",
-			givenMetric:         "RecordAccountCCPAChannelEnabledWarning",
-			expectedMetricCount: 0,
-		},
-		{
-			name:                "NotChannelEnabledGDPR",
-			givenAccountID:      "valid_acct",
-			givenMetric:         "RecordAccountGDPRChannelEnabledWarning",
-			expectedMetricCount: 0,
-		},
-	}
-
-	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
-			metrics := &metrics.MetricsEngineMock{}
-			metrics.Mock.On(test.givenMetric, mock.Anything, mock.Anything).Return()
-			metrics.Mock.On("RecordAccountUpgradeStatus", mock.Anything, mock.Anything).Return()
-
-			_, _ = GetAccount(context.Background(), cfg, fetcher, test.givenAccountID, metrics)
-
-			metrics.AssertNumberOfCalls(t, test.givenMetric, test.expectedMetricCount)
-		})
-	}
-}
-
-func TestAccountUpgradeStatusGetAccount(t *testing.T) {
-	cfg := &config.Configuration{}
-	fetcher := &mockAccountFetcher{}
-	assert.NoError(t, cfg.MarshalAccountDefaults())
-
-	testCases := []struct {
-		name                string
-		givenAccountIDs     []string
-		givenMetrics        []string
-		expectedMetricCount int
-	}{
-		{
-			name:                "ZeroDeprecatedConfigs",
-			givenAccountIDs:     []string{"valid_acct"},
-			givenMetrics:        []string{},
-			expectedMetricCount: 0,
-		},
-		{
-			name:                "OneDeprecatedConfigGDPRChannelEnabled",
-			givenAccountIDs:     []string{"gdpr_channel_enabled_acct"},
-			givenMetrics:        []string{"RecordAccountGDPRChannelEnabledWarning"},
-			expectedMetricCount: 1,
-		},
-		{
-			name:                "OneDeprecatedConfigCCPAChannelEnabled",
-			givenAccountIDs:     []string{"ccpa_channel_enabled_acct"},
-			givenMetrics:        []string{"RecordAccountCCPAChannelEnabledWarning"},
-			expectedMetricCount: 1,
-		},
-		{
-			name:                "MultipleAccountsWithDeprecatedConfigs",
-			givenAccountIDs:     []string{"gdpr_channel_enabled_acct", "ccpa_channel_enabled_acct"},
-			givenMetrics:        []string{"RecordAccountGDPRChannelEnabledWarning", "RecordAccountCCPAChannelEnabledWarning"},
-			expectedMetricCount: 2,
-		},
-	}
-
-	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
-			metrics := &metrics.MetricsEngineMock{}
-			for _, metric := range test.givenMetrics {
-				metrics.Mock.On(metric, mock.Anything, mock.Anything).Return()
-			}
-			metrics.Mock.On("RecordAccountUpgradeStatus", mock.Anything, mock.Anything).Return()
-
-			for _, accountID := range test.givenAccountIDs {
-				_, _ = GetAccount(context.Background(), cfg, fetcher, accountID, metrics)
-			}
-			metrics.AssertNumberOfCalls(t, "RecordAccountUpgradeStatus", test.expectedMetricCount)
-		})
 	}
 }

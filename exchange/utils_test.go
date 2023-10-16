@@ -2753,6 +2753,14 @@ func TestRemoveUnpermissionedEids(t *testing.T) {
 			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","uids":[{"id":"anyID"}]}]}`),
 		},
 		{
+			description: "Allowed By Specific Bidder - Case Insensitive",
+			userExt:     json.RawMessage(`{"eids":[{"source":"source1","uids":[{"id":"anyID"}]}]}`),
+			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "source1", Bidders: []string{"BIDDERA"}},
+			},
+			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","uids":[{"id":"anyID"}]}]}`),
+		},
+		{
 			description: "Allowed By All Bidders",
 			userExt:     json.RawMessage(`{"eids":[{"source":"source1","uids":[{"id":"anyID"}]}]}`),
 			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
