@@ -288,7 +288,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 							errs = append(errs, moreErrs...)
 
 							if nativeMarkup != nil {
-								markup, err := json.Marshal(*nativeMarkup)
+								markup, err := jsonutil.Marshal(*nativeMarkup)
 								if err != nil {
 									errs = append(errs, err)
 								} else {
@@ -637,7 +637,7 @@ func (bidder *bidderAdapter) doTimeoutNotification(timeoutBidder adapters.Timeou
 			}
 		}
 	} else if bidder.config.Debug.TimeoutNotification.Log {
-		reqJSON, err := json.Marshal(req)
+		reqJSON, err := jsonutil.Marshal(req)
 		var msg string
 		if err == nil {
 			msg = fmt.Sprintf("TimeoutNotification: Failed to generate timeout request: error(%s), bidder request(%s)", errL[0].Error(), string(reqJSON))

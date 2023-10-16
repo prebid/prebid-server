@@ -1966,7 +1966,7 @@ func TestBidResponseImpExtInfo(t *testing.T) {
 	impExtInfo["some-impression-id"] = ImpExtInfo{
 		true,
 		[]byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`),
-		json.RawMessage(`{"imp_passthrough_val": 1}`)}
+		json.RawMessage(`{"imp_passthrough_val":1}`)}
 
 	expectedBidResponseExt := `{"origbidcpm":0,"prebid":{"type":"video","passthrough":{"imp_passthrough_val":1}},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]}}`
 
@@ -4175,17 +4175,8 @@ func TestMakeBidExtJSON(t *testing.T) {
 			description:        "Invalid extension, valid extBidPrebid and valid imp ext info",
 			ext:                json.RawMessage(`{invalid json}`),
 			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("video")},
-			impExtInfo:         map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`), json.RawMessage(`"prebid": {"passthrough": {"imp_passthrough_val": some_val}}"`)}},
 			expectedBidExt:     ``,
 			expectedErrMessage: "ReadString: expects \" or n, but found i, error found in #2 byte of ...|{invalid jso|..., bigger context ...|{invalid json}|...",
-		},
-		{
-			description:        "Valid extension, empty extBidPrebid and invalid imp ext info",
-			ext:                json.RawMessage(`{"video":{"h":100}}`),
-			extBidPrebid:       openrtb_ext.ExtBidPrebid{},
-			impExtInfo:         map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"video":{!}}`), nil}},
-			expectedBidExt:     ``,
-			expectedErrMessage: "invalid character",
 		},
 		{
 			description:        "Meta - Invalid",
@@ -4197,14 +4188,16 @@ func TestMakeBidExtJSON(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		result, err := makeBidExtJSON(test.ext, &test.extBidPrebid, test.impExtInfo, "test_imp_id", test.origbidcpm, test.origbidcur)
+		t.Run(test.description, func(t *testing.T) {
+			result, err := makeBidExtJSON(test.ext, &test.extBidPrebid, test.impExtInfo, "test_imp_id", test.origbidcpm, test.origbidcur)
 
-		if test.expectedErrMessage == "" {
-			assert.JSONEq(t, test.expectedBidExt, string(result), "Incorrect result")
-			assert.NoError(t, err, "Error should not be returned")
-		} else {
-			assert.Contains(t, err.Error(), test.expectedErrMessage, "incorrect error message")
-		}
+			if test.expectedErrMessage == "" {
+				assert.JSONEq(t, test.expectedBidExt, string(result), "Incorrect result")
+				assert.NoError(t, err, "Error should not be returned")
+			} else {
+				assert.Contains(t, err.Error(), test.expectedErrMessage, "incorrect error message")
+			}
+		})
 	}
 }
 

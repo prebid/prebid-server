@@ -403,22 +403,6 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 			},
 			expectedError: "",
 		},
-		{
-			description: "Marshal Error - imp.ext.prebid",
-			givenImpExt: map[string]json.RawMessage{
-				"prebid":  json.RawMessage(`"ignoredInFavorOfSeparatelyUnmarshalledImpExtPrebid"`),
-				"data":    json.RawMessage(`"anyData"`),
-				"context": json.RawMessage(`"anyContext"`),
-				"skadn":   json.RawMessage(`"anySKAdNetwork"`),
-				"gpid":    json.RawMessage(`"anyGPID"`),
-				"tid":     json.RawMessage(`"anyTID"`),
-			},
-			givenImpExtPrebid: map[string]json.RawMessage{
-				"options": json.RawMessage(`malformed`), // String value without quotes.
-			},
-			expected:      nil,
-			expectedError: "cannot marshal ext.prebid: json: error calling MarshalJSON for type json.RawMessage: invalid character 'm' looking for beginning of value",
-		},
 	}
 
 	for _, test := range testCases {
@@ -3159,7 +3143,7 @@ func TestCleanOpenRTBRequestsBidAdjustment(t *testing.T) {
 						H: 600,
 					}},
 				},
-				Ext: json.RawMessage(`{"bidder":{"placementId":1}}`),
+				Ext: json.RawMessage(`{"bidder":{"placementId": 1}}`),
 			}},
 		},
 		{
@@ -3187,7 +3171,7 @@ func TestCleanOpenRTBRequestsBidAdjustment(t *testing.T) {
 						H: 600,
 					}},
 				},
-				Ext: json.RawMessage(`{"bidder":{"placementId":1}}`),
+				Ext: json.RawMessage(`{"bidder":{"placementId": 1}}`),
 			}},
 		},
 	}

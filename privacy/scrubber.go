@@ -149,7 +149,7 @@ func (s scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enfo
 	}
 
 	if userExtModified {
-		userExt, _ := json.Marshal(userExtParsed)
+		userExt, _ := jsonutil.Marshal(userExtParsed)
 		userCopy.Ext = userExt
 	}
 
@@ -292,7 +292,7 @@ func scrubExtIDs(ext json.RawMessage, fieldName string) json.RawMessage {
 	_, hasField := userExtParsed[fieldName]
 	if hasField {
 		delete(userExtParsed, fieldName)
-		result, err := json.Marshal(userExtParsed)
+		result, err := jsonutil.Marshal(userExtParsed)
 		if err == nil {
 			return result
 		}

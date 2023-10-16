@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/jsonutil"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 )
 
@@ -79,7 +80,7 @@ func buildBidExt(targetingData map[string]string,
 			Targeting: targetingDataTruncated,
 		},
 	}
-	bidExtTargeting, err := json.Marshal(bidExtTargetingData)
+	bidExtTargeting, err := jsonutil.Marshal(bidExtTargetingData)
 	if err != nil {
 		warnings = append(warnings, createWarning(err.Error()))
 		return nil

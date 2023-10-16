@@ -824,7 +824,7 @@ func setTrace(req *openrtb2.BidRequest, value string) error {
 		return nil
 	}
 
-	ext, err := json.Marshal(map[string]map[string]string{"prebid": {"trace": value}})
+	ext, err := jsonutil.Marshal(map[string]map[string]string{"prebid": {"trace": value}})
 	if err != nil {
 		return err
 	}

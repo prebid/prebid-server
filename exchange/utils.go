@@ -408,7 +408,7 @@ func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, request
 	}
 
 	// Marshal New Prebid Object
-	prebidJson, err := json.Marshal(prebid)
+	prebidJson, err := jsonutil.Marshal(prebid)
 	if err != nil {
 		return nil, err
 	}
@@ -429,7 +429,7 @@ func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, request
 	}
 
 	if len(extMap) > 0 {
-		return json.Marshal(extMap)
+		return jsonutil.Marshal(extMap)
 	} else {
 		return nil, nil
 	}
@@ -527,7 +527,7 @@ func extractBuyerUIDs(user *openrtb2.User) (map[string]string, error) {
 
 	// Remarshal (instead of removing) if the ext has other known fields
 	if userExt.Consent != "" || len(userExt.Eids) > 0 {
-		if newUserExtBytes, err := json.Marshal(userExt); err != nil {
+		if newUserExtBytes, err := jsonutil.Marshal(userExt); err != nil {
 			return nil, err
 		} else {
 			user.Ext = newUserExtBytes
@@ -577,7 +577,7 @@ func splitImps(imps []openrtb2.Imp) (map[string][]openrtb2.Imp, error) {
 
 			sanitizedImpExt[openrtb_ext.PrebidExtBidderKey] = bidderExt
 
-			impExtJSON, err := json.Marshal(sanitizedImpExt)
+			impExtJSON, err := jsonutil.Marshal(sanitizedImpExt)
 			if err != nil {
 				return nil, fmt.Errorf("unable to remove other bidder fields for imp[%d]: cannot marshal ext: %v", i, err)
 			}
@@ -617,7 +617,7 @@ func createSanitizedImpExt(impExt, impExtPrebid map[string]json.RawMessage) (map
 
 	// marshal sanitized imp[].ext.prebid
 	if len(sanitizedImpPrebidExt) > 0 {
-		if impExtPrebidJSON, err := json.Marshal(sanitizedImpPrebidExt); err == nil {
+		if impExtPrebidJSON, err := jsonutil.Marshal(sanitizedImpPrebidExt); err == nil {
 			sanitizedImpExt[openrtb_ext.PrebidExtKey] = impExtPrebidJSON
 		} else {
 			return nil, fmt.Errorf("cannot marshal ext.prebid: %v", err)
@@ -734,7 +734,7 @@ func removeUnpermissionedEids(request *openrtb2.BidRequest, bidder string, reque
 	if len(eidsAllowed) == 0 {
 		delete(userExt, "eids")
 	} else {
-		eidsRaw, err := json.Marshal(eidsAllowed)
+		eidsRaw, err := jsonutil.Marshal(eidsAllowed)
 		if err != nil {
 			return err
 		}
@@ -747,7 +747,7 @@ func removeUnpermissionedEids(request *openrtb2.BidRequest, bidder string, reque
 		return nil
 	}
 
-	userExtJSON, err := json.Marshal(userExt)
+	userExtJSON, err := jsonutil.Marshal(userExt)
 	if err != nil {
 		return err
 	}

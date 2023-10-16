@@ -49,7 +49,7 @@ func (bidsCache *bidsCache) GetBid(bidderName, bidId string, bid openrtb2.Bid) (
 	}
 	_, bidExists := bidsCache.bids[bidderName][bidId]
 	if !bidExists {
-		bidBytes, err := json.Marshal(bid)
+		bidBytes, err := jsonutil.Marshal(bid)
 		if err != nil {
 			return nil, err
 		}

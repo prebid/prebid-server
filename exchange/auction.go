@@ -2,7 +2,6 @@ package exchange
 
 import (
 	"context"
-	"encoding/json"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -17,6 +16,7 @@ import (
 	"github.com/prebid/prebid-server/exchange/entities"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
+	"github.com/prebid/prebid-server/util/jsonutil"
 )
 
 const (
@@ -83,7 +83,7 @@ func (d *DebugLog) PutDebugLogError(cache prebid_cache_client.Client, timeout in
 		d.CacheKey = rawUUID.String()
 	}
 
-	data, err := json.Marshal(d.CacheString)
+	data, err := jsonutil.Marshal(d.CacheString)
 	if err != nil {
 		return err
 	}
@@ -244,7 +244,7 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 					}
 				}
 				if bids {
-					if jsonBytes, err := json.Marshal(topBid.Bid); err == nil {
+					if jsonBytes, err := jsonutil.Marshal(topBid.Bid); err == nil {
 						jsonBytes, err = evTracking.modifyBidJSON(topBid, bidderName, jsonBytes)
 						if err != nil {
 							errs = append(errs, err)
@@ -265,7 +265,7 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 				}
 				if vast && topBid.BidType == openrtb_ext.BidTypeVideo {
 					vastXML := makeVAST(topBid.Bid)
-					if jsonBytes, err := json.Marshal(vastXML); err == nil {
+					if jsonBytes, err := jsonutil.Marshal(vastXML); err == nil {
 						if useCustomCacheKey {
 							toCache = append(toCache, prebid_cache_client.Cacheable{
 								Type:       prebid_cache_client.TypeXML,
@@ -292,7 +292,7 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 	if len(toCache) > 0 && debugLog != nil && debugLog.DebugEnabledOrOverridden {
 		debugLog.CacheKey = hbCacheID
 		debugLog.BuildCacheString()
-		if jsonBytes, err := json.Marshal(debugLog.CacheString); err == nil {
+		if jsonBytes, err := jsonutil.Marshal(debugLog.CacheString); err == nil {
 			toCache = append(toCache, prebid_cache_client.Cacheable{
 				Type:       debugLog.CacheType,
 				Data:       jsonBytes,

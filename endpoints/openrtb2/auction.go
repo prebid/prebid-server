@@ -308,7 +308,7 @@ func setSeatNonBidRaw(request *openrtb_ext.RequestWrapper, auctionResponse *exch
 		return err
 	}
 	if setSeatNonBid(respExt, request, auctionResponse) {
-		if respExtJson, err := json.Marshal(respExt); err == nil {
+		if respExtJson, err := jsonutil.Marshal(respExt); err == nil {
 			response.Ext = respExtJson
 			return nil
 		} else {
@@ -674,7 +674,7 @@ func mergeBidderParamsImpExt(impExt *openrtb_ext.ImpExt, reqExtParams map[string
 		}
 
 		if modified {
-			impExtBidderJson, err := json.Marshal(impExtBidderMap)
+			impExtBidderJson, err := jsonutil.Marshal(impExtBidderMap)
 			if err != nil {
 				return fmt.Errorf("error marshalling ext.BIDDER: %s", err.Error())
 			}
@@ -722,7 +722,7 @@ func mergeBidderParamsImpExtPrebid(impExt *openrtb_ext.ImpExt, reqExtParams map[
 		}
 
 		if modified {
-			impExtPrebidBidderJson, err := json.Marshal(impExtPrebidBidderMap)
+			impExtPrebidBidderJson, err := jsonutil.Marshal(impExtPrebidBidderMap)
 			if err != nil {
 				return fmt.Errorf("error marshalling ext.prebid.bidder.BIDDER: %s", err.Error())
 			}
@@ -1205,7 +1205,7 @@ func fillAndValidateNative(n *openrtb2.Native, impIndex int) error {
 		return err
 	}
 
-	serialized, err := json.Marshal(nativePayload)
+	serialized, err := jsonutil.Marshal(nativePayload)
 	if err != nil {
 		return err
 	}
@@ -2226,7 +2226,7 @@ func (deps *endpointDeps) processStoredRequests(requestJson []byte, impInfo []Im
 		}
 	}
 	if len(resolvedImps) > 0 {
-		newImpJson, err := json.Marshal(resolvedImps)
+		newImpJson, err := jsonutil.Marshal(resolvedImps)
 		if err != nil {
 			return nil, nil, []error{err}
 		}
