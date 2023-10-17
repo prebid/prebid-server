@@ -369,6 +369,18 @@ func (this *FacebookAdapter) MakeBids(request *openrtb2.BidRequest, adapterReque
 				continue
 			}
 
+			// TODO: move to msp repo and apply for all bidders
+			var fbreq openrtb2.BidRequest
+			err := json.Unmarshal(adapterRequest.Body, &fbreq)
+			if err != nil {
+				if len(fbreq.Imp) > 0 && fbreq.Imp[0].BidFloor > bid.Price {
+					errs = append(errs, &errortypes.BadServerResponse{
+						Message: fmt.Sprintf("bid price %f less than floor %f", bid.Price, fbreq.Imp[0].BidFloor),
+					})
+					continue
+				}
+			}
+
 			bid.AdID = obj.BidID
 			bid.CrID = obj.BidID
 
