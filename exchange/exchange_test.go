@@ -2259,8 +2259,13 @@ func TestTimeoutComputation(t *testing.T) {
 func TestExchangeJSON(t *testing.T) {
 	if specFiles, err := os.ReadDir("./exchangetest"); err == nil {
 		for _, specFile := range specFiles {
+			if !strings.HasSuffix(specFile.Name(), ".json") {
+				continue
+			}
+
 			fileName := "./exchangetest/" + specFile.Name()
 			fileDisplayName := "exchange/exchangetest/" + specFile.Name()
+
 			t.Run(fileDisplayName, func(t *testing.T) {
 				specData, err := loadFile(fileName)
 				if assert.NoError(t, err, "Failed to load contents of file %s: %v", fileDisplayName, err) {
@@ -2269,6 +2274,18 @@ func TestExchangeJSON(t *testing.T) {
 			})
 		}
 	}
+}
+
+func TestExchangeJSON2(t *testing.T) {
+	fileName := "./exchangetest/multi-bids-mixed-case.json"
+	fileDisplayName := "exchange/exchangetest/multi-bids-mixed-case.json"
+
+	t.Run(fileDisplayName, func(t *testing.T) {
+		specData, err := loadFile(fileName)
+		if assert.NoError(t, err, "Failed to load contents of file %s: %v", fileDisplayName, err) {
+			assert.NotPanics(t, func() { runSpec(t, fileDisplayName, specData) }, fileDisplayName)
+		}
+	})
 }
 
 // LoadFile reads and parses a file as a test case. If something goes wrong, it returns an error.
@@ -5798,6 +5815,17 @@ func TestBuildMultiBidMap(t *testing.T) {
 					},
 				},
 				{
+					desc: "Uppercase prebid.MultiBid.Bidder is found in the BidderName list, entry is mapped",
+					inPrebid: &openrtb_ext.ExtRequestPrebid{
+						MultiBid: []*openrtb_ext.ExtMultiBid{
+							{Bidder: "APPNEXUS"},
+						},
+					},
+					expected: map[string]openrtb_ext.ExtMultiBid{
+						"appnexus": {Bidder: "appnexus"},
+					},
+				},
+				{
 					desc: "Lowercase prebid.MultiBid.Bidder is not found in the BidderName list, expect empty map",
 					inPrebid: &openrtb_ext.ExtRequestPrebid{
 						MultiBid: []*openrtb_ext.ExtMultiBid{
@@ -5882,7 +5910,7 @@ func TestBuildMultiBidMap(t *testing.T) {
 			groupDesc: "prebid.MultiBid.Bidder and prebid.MultiBid.Bidders entries in tests",
 			tests: []testCase{
 				{
-					desc: "If prebid.MultiBid.Bidder is found ignore entries in prebid.MultiBid.Bidders, even if its unknown",
+					desc: "prebid.MultiBid.Bidder found, ignore entries in prebid.MultiBid.Bidders, even if its unknown",
 					inPrebid: &openrtb_ext.ExtRequestPrebid{
 						MultiBid: []*openrtb_ext.ExtMultiBid{
 							{
@@ -5894,7 +5922,7 @@ func TestBuildMultiBidMap(t *testing.T) {
 					expected: map[string]openrtb_ext.ExtMultiBid{},
 				},
 				{
-					desc: "If prebid.MultiBid.Bidder is found in one entry, prebid.MultiBid.Bidders in another. Add all to map",
+					desc: "prebid.MultiBid.Bidder found in one entry, prebid.MultiBid.Bidders in another. Add all to map",
 					inPrebid: &openrtb_ext.ExtRequestPrebid{
 						MultiBid: []*openrtb_ext.ExtMultiBid{
 							{
@@ -5922,10 +5950,12 @@ func TestBuildMultiBidMap(t *testing.T) {
 			},
 		},
 	}
-	for _, groups := range testGroups {
-		for _, tc := range groups.tests {
-			multiBidMap := buildMultiBidMap(tc.inPrebid)
-			assert.Equal(t, tc.expected, multiBidMap, tc.desc)
+	for _, group := range testGroups {
+		for _, tc := range group.tests {
+			t.Run(group.groupDesc+tc.desc, func(t *testing.T) {
+				multiBidMap := buildMultiBidMap(tc.inPrebid)
+				assert.Equal(t, tc.expected, multiBidMap, tc.desc)
+			})
 		}
 	}
 }
