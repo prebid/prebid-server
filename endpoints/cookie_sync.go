@@ -120,7 +120,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, ma
 	}
 
 	request := cookieSyncRequest{}
-	if err := jsonutil.Unmarshal(body, &request); err != nil {
+	if err := jsonutil.UnmarshalValid(body, &request); err != nil {
 		return usersync.Request{}, macros.UserSyncPrivacy{}, fmt.Errorf("JSON parsing failed: %s", err.Error())
 	}
 
