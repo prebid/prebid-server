@@ -442,6 +442,43 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
 			},
 		},
 		{
+			description: "Stored bid responses 3 same mixed case bidders in imp.ext and imp.ext.prebid.bidders one imp, duplicated stored response",
+			request: openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "imp-id1",
+						Ext: json.RawMessage(`{
+                		"bidderA": {
+							"placementId": 123
+                		},
+						"BIDDERa": {
+							"placementId": 123
+                		},
+                		"prebid": {
+							"bidder": {
+                        		"BiddeRa": {
+                            		"placementId": 12883451
+                        		}
+                    		},
+                    		"storedbidresponse": [
+                        		{"bidder":"bidderA", "id": "1", "replaceimpid": true},
+                        		{"bidder":"bidderA", "id": "2", "replaceimpid": true},
+                        		{"bidder":"bidderB", "id": "2", "replaceimpid": false}
+                    		]
+                		}
+            		}`)},
+				},
+			},
+			expectedStoredAuctionResponses: ImpsWithBidResponses{},
+			expectedStoredBidResponses: ImpBidderStoredResp{
+				"imp-id1": {"bidderA": bidStoredResp1, "BIDDERa": bidStoredResp1, "BiddeRa": bidStoredResp1},
+			},
+			expectedBidderImpReplaceImpID: BidderImpReplaceImpID{
+				"BIDDERa": map[string]bool{"imp-id1": true},
+				"bidderA": map[string]bool{"imp-id1": true},
+				"BiddeRa": map[string]bool{"imp-id1": true},
+			},
+		},
+		{
 			//This is not a valid scenario for real auction request, added for testing purposes
 			description: "Stored auction and bid responses one imp",
 			request: openrtb2.BidRequest{

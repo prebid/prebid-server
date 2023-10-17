@@ -113,7 +113,7 @@ func extractStoredResponsesIds(impInfo []*openrtb_ext.ImpWrapper) (
 				}
 
 				for _, bidderName := range allBidderNames {
-					if strings.EqualFold(bidderName, bidderResp.Bidder) {
+					if _, found := bidderStoredRespId[bidderName]; !found && strings.EqualFold(bidderName, bidderResp.Bidder) {
 						bidderStoredRespId[bidderName] = bidderResp.ID
 						impBiddersWithBidResponseIDs[impId] = bidderStoredRespId
 
