@@ -113,7 +113,7 @@ type Override struct {
 
 func (o *Override) UnmarshalJSON(bytes []byte) error {
 	var overrideData interface{}
-	if err := json.Unmarshal(bytes, &overrideData); err != nil {
+	if err := jsonutil.UnmarshalValid(bytes, &overrideData); err != nil {
 		return err
 	}
 

@@ -16,6 +16,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/util/jsonutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -186,7 +187,7 @@ func TestShouldRespondWithBadRequestWhenBidIdIsMissing(t *testing.T) {
 		},
 	}
 
-	reqData, err := json.Marshal(data)
+	reqData, err := jsonutil.Marshal(data)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -239,7 +240,7 @@ func TestShouldRespondWithBadRequestWhenBidderIsMissing(t *testing.T) {
 		},
 	}
 
-	reqData, err := json.Marshal(data)
+	reqData, err := jsonutil.Marshal(data)
 	if err != nil {
 		t.Fatal(err)
 	}
