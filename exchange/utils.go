@@ -327,6 +327,12 @@ func getAuctionBidderRequests(auctionRequest AuctionRequest,
 		return nil, []error{err}
 	}
 
+	lowerCaseExplicitBuyerUIDs := make(map[string]string)
+	for bidder, uid := range explicitBuyerUIDs {
+		lowerKey := strings.ToLower(bidder)
+		lowerCaseExplicitBuyerUIDs[lowerKey] = uid
+	}
+
 	var errs []error
 	for bidder, imps := range impsByBidder {
 		coreBidder := resolveBidder(bidder, aliases)
@@ -361,7 +367,7 @@ func getAuctionBidderRequests(auctionRequest AuctionRequest,
 		}
 
 		syncerKey := bidderToSyncerKey[string(coreBidder)]
-		if hadSync := prepareUser(&reqCopy, bidder, syncerKey, explicitBuyerUIDs, auctionRequest.UserSyncs); !hadSync && req.BidRequest.App == nil {
+		if hadSync := prepareUser(&reqCopy, bidder, syncerKey, lowerCaseExplicitBuyerUIDs, auctionRequest.UserSyncs); !hadSync && req.BidRequest.App == nil {
 			bidderRequest.BidderLabels.CookieFlag = metrics.CookieFlagNo
 		} else {
 			bidderRequest.BidderLabels.CookieFlag = metrics.CookieFlagYes
@@ -642,7 +648,7 @@ func createSanitizedImpExt(impExt, impExtPrebid map[string]json.RawMessage) (map
 func prepareUser(req *openrtb2.BidRequest, givenBidder, syncerKey string, explicitBuyerUIDs map[string]string, usersyncs IdFetcher) bool {
 	cookieId, hadCookie, _ := usersyncs.GetUID(syncerKey)
 
-	if id, ok := explicitBuyerUIDs[givenBidder]; ok {
+	if id, ok := explicitBuyerUIDs[strings.ToLower(givenBidder)]; ok {
 		req.User = copyWithBuyerUID(req.User, id)
 	} else if hadCookie {
 		req.User = copyWithBuyerUID(req.User, cookieId)
