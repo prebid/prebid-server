@@ -15,7 +15,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type YeahmobiAdapter struct {
+type adapter struct {
 	EndpointTemplate *template.Template
 }
 
@@ -26,16 +26,16 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
-	bidder := &YeahmobiAdapter{
+	bidder := &adapter{
 		EndpointTemplate: template,
 	}
 	return bidder, nil
 }
 
-func (adapter *YeahmobiAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var adapterRequests []*adapters.RequestData
 
-	adapterRequest, errs := adapter.makeRequest(request)
+	adapterRequest, errs := a.makeRequest(request)
 	if errs == nil {
 		adapterRequests = append(adapterRequests, adapterRequest)
 	}
@@ -43,7 +43,7 @@ func (adapter *YeahmobiAdapter) MakeRequests(request *openrtb2.BidRequest, reqIn
 	return adapterRequests, errs
 }
 
-func (adapter *YeahmobiAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, []error) {
+func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, []error) {
 	var errs []error
 
 	yeahmobiExt, errs := getYeahmobiExt(request)
@@ -51,7 +51,7 @@ func (adapter *YeahmobiAdapter) makeRequest(request *openrtb2.BidRequest) (*adap
 	if yeahmobiExt == nil {
 		return nil, errs
 	}
-	endPoint, err := adapter.getEndpoint(yeahmobiExt)
+	endPoint, err := a.getEndpoint(yeahmobiExt)
 	if err != nil {
 		return nil, append(errs, err)
 	}
@@ -124,12 +124,12 @@ func getYeahmobiExt(request *openrtb2.BidRequest) (*openrtb_ext.ExtImpYeahmobi, 
 
 }
 
-func (adapter *YeahmobiAdapter) getEndpoint(ext *openrtb_ext.ExtImpYeahmobi) (string, error) {
-	return macros.ResolveMacros(adapter.EndpointTemplate, macros.EndpointTemplateParams{Host: "gw-" + url.QueryEscape(ext.ZoneId) + "-bid.yeahtargeter.com"})
+func (a *adapter) getEndpoint(ext *openrtb_ext.ExtImpYeahmobi) (string, error) {
+	return macros.ResolveMacros(a.EndpointTemplate, macros.EndpointTemplateParams{Host: "gw-" + url.QueryEscape(ext.ZoneId) + "-bid.yeahtargeter.com"})
 }
 
 // MakeBids make the bids for the bid response.
-func (a *YeahmobiAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
