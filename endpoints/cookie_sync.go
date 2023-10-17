@@ -27,6 +27,7 @@ import (
 	gppPrivacy "github.com/prebid/prebid-server/privacy/gpp"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/usersync"
+	"github.com/prebid/prebid-server/util/jsonutil"
 	stringutil "github.com/prebid/prebid-server/util/stringutil"
 )
 
@@ -119,7 +120,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, ma
 	}
 
 	request := cookieSyncRequest{}
-	if err := json.Unmarshal(body, &request); err != nil {
+	if err := jsonutil.Unmarshal(body, &request); err != nil {
 		return usersync.Request{}, macros.UserSyncPrivacy{}, fmt.Errorf("JSON parsing failed: %s", err.Error())
 	}
 
