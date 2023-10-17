@@ -2276,18 +2276,6 @@ func TestExchangeJSON(t *testing.T) {
 	}
 }
 
-func TestExchangeJSON2(t *testing.T) {
-	fileName := "./exchangetest/multi-bids-mixed-case.json"
-	fileDisplayName := "exchange/exchangetest/multi-bids-mixed-case.json"
-
-	t.Run(fileDisplayName, func(t *testing.T) {
-		specData, err := loadFile(fileName)
-		if assert.NoError(t, err, "Failed to load contents of file %s: %v", fileDisplayName, err) {
-			assert.NotPanics(t, func() { runSpec(t, fileDisplayName, specData) }, fileDisplayName)
-		}
-	})
-}
-
 // LoadFile reads and parses a file as a test case. If something goes wrong, it returns an error.
 func loadFile(filename string) (*exchangeSpec, error) {
 	specData, err := os.ReadFile(filename)

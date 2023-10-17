@@ -98,7 +98,11 @@
                   "video/mp4"
                 ]
               },
-              "ext":{"bidder":{"publisherId":"5890"}}
+              "ext": {
+                "bidder": {
+                  "publisherId": "5890"
+                }
+              }
             },
             {
               "id": "imp-id-2",
@@ -107,10 +111,24 @@
                   "video/mp4"
                 ]
               },
-              "ext":{"bidder":{"publisherId":"5890"}}
+              "ext": {
+                "bidder": {
+                  "publisherId": "5890"
+                }
+              }
             }
           ],
-          "ext": {"prebid":{"multibid":[{"bidder":"PUBmatic","maxbids":2,"targetbiddercodeprefix":"pubm"}]}}
+          "ext": {
+            "prebid": {
+              "multibid": [
+                {
+                  "bidder": "PUBmatic",
+                  "maxbids": 2,
+                  "targetbiddercodeprefix": "pubm"
+                }
+              ]
+            }
+          }
         }
       },
       "mockResponse": {
@@ -194,7 +212,11 @@
                   "video/mp4"
                 ]
               },
-              "ext": {"bidder":{"placementId":1}}
+              "ext": {
+                "bidder": {
+                  "placementId": 1
+                }
+              }
             },
             {
               "id": "imp-id-2",
@@ -203,10 +225,25 @@
                   "video/mp4"
                 ]
               },
-              "ext": {"bidder":{"placementId":1}}
+              "ext": {
+                "bidder": {
+                  "placementId": 1
+                }
+              }
             }
           ],
-          "ext": {"prebid":{"multibid":[{"bidders":["appnexus"],"maxbids":2}]}}
+          "ext": {
+            "prebid": {
+              "multibid": [
+                {
+                  "bidders": [
+                    "appnexus"
+                  ],
+                  "maxbids": 2
+                }
+              ]
+            }
+          }
         }
       },
       "mockResponse": {
