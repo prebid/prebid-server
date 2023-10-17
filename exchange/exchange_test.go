@@ -5822,7 +5822,7 @@ func TestBuildMultiBidMap(t *testing.T) {
 						},
 					},
 					expected: map[string]openrtb_ext.ExtMultiBid{
-						"appnexus": {Bidder: "appnexus"},
+						"appnexus": {Bidder: "APPNEXUS"},
 					},
 				},
 				{
