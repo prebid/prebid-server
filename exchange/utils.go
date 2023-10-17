@@ -899,8 +899,12 @@ func parseRequestDebugValues(test int8, requestExtPrebid *openrtb_ext.ExtRequest
 }
 
 func getExtBidAdjustmentFactors(requestExtPrebid *openrtb_ext.ExtRequestPrebid) map[string]float64 {
-	if requestExtPrebid != nil {
-		return requestExtPrebid.BidAdjustmentFactors
+	if requestExtPrebid != nil && requestExtPrebid.BidAdjustmentFactors != nil {
+		caseInsensitiveMap := make(map[string]float64, len(requestExtPrebid.BidAdjustmentFactors))
+		for bidder, bidAdjFactor := range requestExtPrebid.BidAdjustmentFactors {
+			caseInsensitiveMap[strings.ToLower(bidder)] = bidAdjFactor
+		}
+		return caseInsensitiveMap
 	}
 	return nil
 }

@@ -1834,6 +1834,11 @@ func TestGetExtBidAdjustmentFactors(t *testing.T) {
 			requestExtPrebid:        &openrtb_ext.ExtRequestPrebid{BidAdjustmentFactors: map[string]float64{"bid-factor": 1.0}},
 			outBidAdjustmentFactors: map[string]float64{"bid-factor": 1.0},
 		},
+		{
+			desc:                    "BidAdjustmentFactors contains uppercase bidders, expect case insensitve map returned",
+			requestExtPrebid:        &openrtb_ext.ExtRequestPrebid{BidAdjustmentFactors: map[string]float64{"Bidder": 1.0, "APPNEXUS": 2.0}},
+			outBidAdjustmentFactors: map[string]float64{"bidder": 1.0, "appnexus": 2.0},
+		},
 	}
 	for _, test := range testCases {
 		actualBidAdjustmentFactors := getExtBidAdjustmentFactors(test.requestExtPrebid)
