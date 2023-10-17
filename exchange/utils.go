@@ -467,14 +467,12 @@ func buildRequestExtMultiBid(adapter string, reqMultiBid []*openrtb_ext.ExtMulti
 	adapterMultiBid := make([]*openrtb_ext.ExtMultiBid, 0)
 	for _, multiBid := range reqMultiBid {
 		if multiBid.Bidder != "" {
-			normalizedBidderName, _ := openrtb_ext.NormalizeBidderName(multiBid.Bidder)
-			if string(normalizedBidderName) == adapter || isBidderInExtAlternateBidderCodes(adapter, string(normalizedBidderName), adapterABC) {
+			if strings.ToLower(multiBid.Bidder) == adapter || isBidderInExtAlternateBidderCodes(adapter, strings.ToLower(multiBid.Bidder), adapterABC) {
 				adapterMultiBid = append(adapterMultiBid, multiBid)
 			}
 		} else {
 			for _, bidder := range multiBid.Bidders {
-				normalizedBidderName, _ := openrtb_ext.NormalizeBidderName(bidder)
-				if string(normalizedBidderName) == adapter || isBidderInExtAlternateBidderCodes(adapter, string(normalizedBidderName), adapterABC) {
+				if strings.ToLower(bidder) == adapter || isBidderInExtAlternateBidderCodes(adapter, strings.ToLower(bidder), adapterABC) {
 					adapterMultiBid = append(adapterMultiBid, &openrtb_ext.ExtMultiBid{
 						Bidders: []string{bidder},
 						MaxBids: multiBid.MaxBids,
