@@ -4684,3 +4684,77 @@ func TestApplyBidAdjustmentToFloor(t *testing.T) {
 		})
 	}
 }
+
+func TestBuildRequestExtAlternateBidderCodes(t *testing.T) {
+	type testInput struct {
+		bidderNameRaw string
+		accABC        *openrtb_ext.ExtAlternateBidderCodes
+		reqABC        *openrtb_ext.ExtAlternateBidderCodes
+	}
+	testCases := []struct {
+		desc     string
+		in       testInput
+		expected *openrtb_ext.ExtAlternateBidderCodes
+	}{
+		{
+			desc: "No biddername",
+			in: testInput{
+				bidderNameRaw: "",
+			},
+			expected: nil,
+		},
+		{
+			desc: "disabled in both accABC and reqABC",
+			in: testInput{
+				bidderNameRaw: "pubmatic",
+				accABC:        &openrtb_ext.ExtAlternateBidderCodes{Enabled: false},
+				reqABC:        &openrtb_ext.ExtAlternateBidderCodes{Enabled: false},
+			},
+			expected: &openrtb_ext.ExtAlternateBidderCodes{},
+		},
+		{
+			desc: "accABC enabled but empty bidders array",
+			in: testInput{
+				bidderNameRaw: "pubmatic",
+				accABC: &openrtb_ext.ExtAlternateBidderCodes{
+					Enabled: true,
+				},
+				reqABC: nil,
+			},
+			expected: &openrtb_ext.ExtAlternateBidderCodes{
+				Enabled: true,
+			},
+		},
+		//{
+		//	desc: "",
+		//	in: testInput{
+		//		bidderNameRaw: "pubmatic",
+		//		accABC: &openrtb_ext.ExtAlternateBidderCodes{
+		//			Enabled: false,
+		//			Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+		//				"str": openrtb_ext.ExtAdapterAlternateBidderCodes{
+		//					Enabled:            true,
+		//					AllowedBidderCodes: []string{},
+		//				},
+		//			},
+		//		},
+		//		reqABC: &openrtb_ext.ExtAlternateBidderCodes{
+		//			Enabled: false,
+		//			Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+		//				"str": openrtb_ext.ExtAdapterAlternateBidderCodes{
+		//					Enabled:            true,
+		//					AllowedBidderCodes: []string{},
+		//				},
+		//			},
+		//		},
+		//	},
+		//},
+	}
+	for _, tc := range testCases {
+		// set test
+		// run
+		alternateBidderCodes := buildRequestExtAlternateBidderCodes(tc.in.bidderNameRaw, tc.in.accABC, tc.in.reqABC)
+		// assertions
+		assert.Equal(t, tc.expected, alternateBidderCodes, tc.desc)
+	}
+}
