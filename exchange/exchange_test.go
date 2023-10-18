@@ -2260,8 +2260,13 @@ func TestTimeoutComputation(t *testing.T) {
 func TestExchangeJSON(t *testing.T) {
 	if specFiles, err := os.ReadDir("./exchangetest"); err == nil {
 		for _, specFile := range specFiles {
+			if !strings.HasSuffix(specFile.Name(), ".json") {
+				continue
+			}
+
 			fileName := "./exchangetest/" + specFile.Name()
 			fileDisplayName := "exchange/exchangetest/" + specFile.Name()
+
 			t.Run(fileDisplayName, func(t *testing.T) {
 				specData, err := loadFile(fileName)
 				if assert.NoError(t, err, "Failed to load contents of file %s: %v", fileDisplayName, err) {
@@ -5741,5 +5746,197 @@ func TestSetSeatNonBid(t *testing.T) {
 				t.Errorf("setSeatNonBid() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestBuildMultiBidMap(t *testing.T) {
+	type testCase struct {
+		desc     string
+		inPrebid *openrtb_ext.ExtRequestPrebid
+		expected map[string]openrtb_ext.ExtMultiBid
+	}
+	testGroups := []struct {
+		groupDesc string
+		tests     []testCase
+	}{
+		{
+			groupDesc: "Nil or empty tests",
+			tests: []testCase{
+				{
+					desc:     "prebid nil, expect nil map",
+					inPrebid: nil,
+					expected: nil,
+				},
+				{
+					desc:     "prebid.MultiBid nil, expect nil map",
+					inPrebid: &openrtb_ext.ExtRequestPrebid{},
+					expected: nil,
+				},
+				{
+					desc: "not-nil prebid.MultiBid is empty, expect empty map",
+					inPrebid: &openrtb_ext.ExtRequestPrebid{
+						MultiBid: []*openrtb_ext.ExtMultiBid{},
+					},
+					expected: map[string]openrtb_ext.ExtMultiBid{},
+				},
+			},
+		},
+		{
+			groupDesc: "prebid.MultiBid.Bidder tests",
+			tests: []testCase{
+				{
+					desc: "Lowercase prebid.MultiBid.Bidder is found in the BidderName list, entry is mapped",
+					inPrebid: &openrtb_ext.ExtRequestPrebid{
+						MultiBid: []*openrtb_ext.ExtMultiBid{
+							{Bidder: "appnexus"},
+						},
+					},
+					expected: map[string]openrtb_ext.ExtMultiBid{
+						"appnexus": {Bidder: "appnexus"},
+					},
+				},
+				{
+					desc: "Uppercase prebid.MultiBid.Bidder is found in the BidderName list, entry is mapped",
+					inPrebid: &openrtb_ext.ExtRequestPrebid{
+						MultiBid: []*openrtb_ext.ExtMultiBid{
+							{Bidder: "APPNEXUS"},
+						},
+					},
+					expected: map[string]openrtb_ext.ExtMultiBid{
+						"appnexus": {Bidder: "APPNEXUS"},
+					},
+				},
+				{
+					desc: "Lowercase prebid.MultiBid.Bidder is not found in the BidderName list, expect empty map",
+					inPrebid: &openrtb_ext.ExtRequestPrebid{
+						MultiBid: []*openrtb_ext.ExtMultiBid{
+							{Bidder: "unknown"},
+						},
+					},
+					expected: map[string]openrtb_ext.ExtMultiBid{},
+				},
+				{
+					desc: "Mixed-case prebid.MultiBid.Bidder is not found in the BidderName list, expect empty map",
+					inPrebid: &openrtb_ext.ExtRequestPrebid{
+						MultiBid: []*openrtb_ext.ExtMultiBid{
+							{Bidder: "UnknownBidder"},
+						},
+					},
+					expected: map[string]openrtb_ext.ExtMultiBid{},
+				},
+				{
+					desc: "Different-cased prebid.MultiBid.Bidder entries that refer to the same adapter are found in the BidderName list are mapped once",
+					inPrebid: &openrtb_ext.ExtRequestPrebid{
+						MultiBid: []*openrtb_ext.ExtMultiBid{
+							{Bidder: "AppNexus"},
+							{Bidder: "appnexus"},
+						},
+					},
+					expected: map[string]openrtb_ext.ExtMultiBid{
+						"appnexus": {Bidder: "appnexus"},
+					},
+				},
+			},
+		},
+		{
+			groupDesc: "prebid.MultiBid.Bidders tests",
+			tests: []testCase{
+				{
+					desc: "Lowercase prebid.MultiBid.Bidder is found in the BidderName list, entry is mapped",
+					inPrebid: &openrtb_ext.ExtRequestPrebid{
+						MultiBid: []*openrtb_ext.ExtMultiBid{
+							{Bidders: []string{"appnexus"}},
+						},
+					},
+					expected: map[string]openrtb_ext.ExtMultiBid{
+						"appnexus": {
+							Bidders: []string{"appnexus"},
+						},
+					},
+				},
+				{
+					desc: "Lowercase prebid.MultiBid.Bidder is not found in the BidderName list, expect empty map",
+					inPrebid: &openrtb_ext.ExtRequestPrebid{
+						MultiBid: []*openrtb_ext.ExtMultiBid{
+							{Bidders: []string{"unknown"}},
+						},
+					},
+					expected: map[string]openrtb_ext.ExtMultiBid{},
+				},
+				{
+					desc: "Mixed-case prebid.MultiBid.Bidder is not found in the BidderName list, expect empty map",
+					inPrebid: &openrtb_ext.ExtRequestPrebid{
+						MultiBid: []*openrtb_ext.ExtMultiBid{
+							{Bidders: []string{"UnknownBidder"}},
+						},
+					},
+					expected: map[string]openrtb_ext.ExtMultiBid{},
+				},
+				{
+					desc: "Different-cased prebid.MultiBid.Bidder entries that refer to the same adapter are found in the BidderName list are mapped once",
+					inPrebid: &openrtb_ext.ExtRequestPrebid{
+						MultiBid: []*openrtb_ext.ExtMultiBid{
+							{Bidders: []string{"AppNexus", "appnexus", "UnknownBidder"}},
+						},
+					},
+					expected: map[string]openrtb_ext.ExtMultiBid{
+						"appnexus": {
+							Bidders: []string{"AppNexus", "appnexus", "UnknownBidder"},
+						},
+					},
+				},
+			},
+		},
+		{
+			groupDesc: "prebid.MultiBid.Bidder and prebid.MultiBid.Bidders entries in tests",
+			tests: []testCase{
+				{
+					desc: "prebid.MultiBid.Bidder found, ignore entries in prebid.MultiBid.Bidders, even if its unknown",
+					inPrebid: &openrtb_ext.ExtRequestPrebid{
+						MultiBid: []*openrtb_ext.ExtMultiBid{
+							{
+								Bidder:  "UnknownBidder",
+								Bidders: []string{"appnexus", "rubicon", "pubmatic"},
+							},
+						},
+					},
+					expected: map[string]openrtb_ext.ExtMultiBid{},
+				},
+				{
+					desc: "prebid.MultiBid.Bidder found in one entry, prebid.MultiBid.Bidders in another. Add all to map",
+					inPrebid: &openrtb_ext.ExtRequestPrebid{
+						MultiBid: []*openrtb_ext.ExtMultiBid{
+							{
+								Bidder:  "pubmatic",
+								Bidders: []string{"appnexus", "rubicon", "UnknownBidder"},
+							},
+							{
+								Bidders: []string{"UnknownBidder", "appnexus", "rubicon"},
+							},
+						},
+					},
+					expected: map[string]openrtb_ext.ExtMultiBid{
+						"pubmatic": {
+							Bidder:  "pubmatic",
+							Bidders: []string{"appnexus", "rubicon", "UnknownBidder"},
+						},
+						"appnexus": {
+							Bidders: []string{"UnknownBidder", "appnexus", "rubicon"},
+						},
+						"rubicon": {
+							Bidders: []string{"UnknownBidder", "appnexus", "rubicon"},
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, group := range testGroups {
+		for _, tc := range group.tests {
+			t.Run(group.groupDesc+tc.desc, func(t *testing.T) {
+				multiBidMap := buildMultiBidMap(tc.inPrebid)
+				assert.Equal(t, tc.expected, multiBidMap, tc.desc)
+			})
+		}
 	}
 }

@@ -51,6 +51,9 @@ func TestGoodAmpRequests(t *testing.T) {
 				"imp-with-stored-resp.json",
 				"gdpr-no-consentstring.json",
 				"gdpr.json",
+				"buyeruids-case-insensitive.json",
+				"buyeruids-camel-case.json",
+				"aliased-buyeruids-case-insensitive.json",
 			},
 		},
 		{
