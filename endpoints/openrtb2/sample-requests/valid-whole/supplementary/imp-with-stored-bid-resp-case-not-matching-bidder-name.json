@@ -1,5 +1,5 @@
 {
-  "description": "request with impression with stored bid response with case matching bidder name",
+  "description": "request with impression with stored bid response with case not matching bidder name",
   "mockBidRequest": {
     "id": "request-with-stored-resp",
     "site": {

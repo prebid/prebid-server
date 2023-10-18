@@ -664,9 +664,9 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			rw := openrtb_ext.RequestWrapper{BidRequest: &test.request}
 			storedAuctionResponses, storedBidResponses, bidderImpReplaceImpId, errorList := ProcessStoredResponses(nil, &rw, fetcher)
-			assert.Equal(t, test.expectedStoredAuctionResponses, storedAuctionResponses, "storedAuctionResponses doesn't match: %s\n", test.description)
-			assert.Equalf(t, test.expectedStoredBidResponses, storedBidResponses, "storedBidResponses doesn't match: %s\n", test.description)
-			assert.Equal(t, test.expectedBidderImpReplaceImpID, bidderImpReplaceImpId, "bidderImpReplaceImpId doesn't match: %s\n", test.description)
+			assert.Equal(t, test.expectedStoredAuctionResponses, storedAuctionResponses)
+			assert.Equal(t, test.expectedStoredBidResponses, storedBidResponses)
+			assert.Equal(t, test.expectedBidderImpReplaceImpID, bidderImpReplaceImpId)
 			assert.Nil(t, errorList, "Error should be nil")
 		})
 	}
@@ -868,7 +868,7 @@ func TestProcessStoredResponsesNotFoundResponse(t *testing.T) {
 			rw := openrtb_ext.RequestWrapper{BidRequest: &test.request}
 			_, _, _, errorList := ProcessStoredResponses(nil, &rw, fetcher)
 			for _, err := range test.expectedErrors {
-				assert.Contains(t, errorList, err, "incorrect errors returned: %s", test.description)
+				assert.Contains(t, errorList, err)
 			}
 		})
 	}
@@ -926,7 +926,7 @@ func TestFlipMap(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
 			actualResult := flipMap(test.inImpBidderReplaceImpID)
-			assert.Equal(t, test.outBidderImpReplaceImpID, actualResult, "Incorrect flipped map for test case %s\n", test.description)
+			assert.Equal(t, test.outBidderImpReplaceImpID, actualResult)
 		})
 	}
 }
