@@ -563,6 +563,15 @@ func NormalizeBidderName(name string) (BidderName, bool) {
 	return bidderName, exists
 }
 
+// NormalizeBidderNameOrUnchanged returns the normalized name of known bidders, otherwise returns
+// the name exactly as provided.
+func NormalizeBidderNameOrUnchanged(name string) BidderName {
+	if normalized, exists := NormalizeBidderName(name); exists {
+		return normalized
+	}
+	return BidderName(name)
+}
+
 // The BidderParamValidator is used to enforce bidrequest.imp[i].ext.prebid.bidder.{anyBidder} values.
 //
 // This is treated differently from the other types because we rely on JSON-schemas to validate bidder params.
