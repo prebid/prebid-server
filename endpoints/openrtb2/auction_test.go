@@ -5051,7 +5051,7 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 			name:                       "req has two imps with missing stored bid responses",
 			givenRequestBody:           validRequest(t, "req-two-imps-missing-stored-bid-response.json"),
 			expectedStoredBidResponses: nil,
-			expectedErrorCount:         0,
+			expectedErrorCount:         1,
 		},
 		{
 			name:                       "req imp has valid stored bid response with non existing bidder name",
@@ -5667,8 +5667,10 @@ func TestValidateStoredResp(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		errorList := deps.validateRequest(test.givenRequestWrapper, false, test.hasStoredAuctionResponses, test.storedBidResponses, false)
-		assert.Equalf(t, test.expectedErrorList, errorList, "Error doesn't match: %s\n", test.description)
+		t.Run(test.description, func(t *testing.T) {
+			errorList := deps.validateRequest(test.givenRequestWrapper, false, test.hasStoredAuctionResponses, test.storedBidResponses, false)
+			assert.Equalf(t, test.expectedErrorList, errorList, "Error doesn't match: %s\n", test.description)
+		})
 	}
 }
 
