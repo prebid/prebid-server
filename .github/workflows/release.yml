@@ -6,11 +6,12 @@ on:
       releaseType:
         type: choice
         options:
+          - major
           - minor
           - patch
         default: minor
         required: true
-        description: 'minor: v0.X.0, patch: v0.0.X'
+        description: 'major: vX.0.0, minor: v0.X.0, patch: v0.0.X'
       debug:
         type: boolean
         default: true
