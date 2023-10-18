@@ -515,10 +515,14 @@ func buildMultiBidMap(prebid *openrtb_ext.ExtRequestPrebid) map[string]openrtb_e
 	multiBidMap := make(map[string]openrtb_ext.ExtMultiBid)
 	for _, multiBid := range prebid.MultiBid {
 		if multiBid.Bidder != "" {
-			multiBidMap[multiBid.Bidder] = *multiBid
+			if bidderNormalized, bidderFound := openrtb_ext.NormalizeBidderName(multiBid.Bidder); bidderFound {
+				multiBidMap[string(bidderNormalized)] = *multiBid
+			}
 		} else {
 			for _, bidder := range multiBid.Bidders {
-				multiBidMap[bidder] = *multiBid
+				if bidderNormalized, bidderFound := openrtb_ext.NormalizeBidderName(bidder); bidderFound {
+					multiBidMap[string(bidderNormalized)] = *multiBid
+				}
 			}
 		}
 	}
