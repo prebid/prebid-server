@@ -3,17 +3,17 @@ package jsonutil
 import (
 	"bytes"
 	"encoding/json"
+	"io"
+	"strings"
+
 	jsoniter "github.com/json-iterator/go"
 	"github.com/prebid/prebid-server/errortypes"
-	"io"
 )
 
-var comma = []byte(",")[0]
-var colon = []byte(":")[0]
-var sqBracket = []byte("]")[0]
-var openCurlyBracket = []byte("{")[0]
-var closingCurlyBracket = []byte("}")[0]
-var quote = []byte(`"`)[0]
+var comma = byte(',')
+var colon = byte(':')
+var sqBracket = byte(']')
+var closingCurlyBracket = byte('}')
 
 // Finds element in json byte array with any level of nesting
 func FindElement(extension []byte, elementNames ...string) (bool, int64, int64, error) {
@@ -128,10 +128,9 @@ var jsonConfigValidationOff = jsoniter.Config{
 // any validation on the data. An unmarshal error is returned if a non-validation error occurs.
 func Unmarshal(data []byte, v interface{}) error {
 	err := jsonConfigValidationOff.Unmarshal(data, v)
-
 	if err != nil {
 		return &errortypes.FailedToUnmarshal{
-			Message: err.Error(),
+			Message: tryExtractErrorMessage(err),
 		}
 	}
 	return nil
@@ -142,7 +141,7 @@ func Unmarshal(data []byte, v interface{}) error {
 func UnmarshalValid(data []byte, v interface{}) error {
 	if err := jsonConfigValidationOn.Unmarshal(data, v); err != nil {
 		return &errortypes.FailedToUnmarshal{
-			Message: err.Error(),
+			Message: tryExtractErrorMessage(err),
 		}
 	}
 	return nil
@@ -158,4 +157,57 @@ func Marshal(v interface{}) ([]byte, error) {
 		}
 	}
 	return data, nil
+}
+
+// tryExtractErrorMessage attempts to extract a sane error message from the json-iter package. The errors
+// returned from that library are not types and include a lot of extra information we don't want to respond with.
+// This is hacky, but it's the only downside to the json-iter library.
+func tryExtractErrorMessage(err error) string {
+	msg := err.Error()
+
+	msgEndIndex := strings.LastIndex(msg, ", error found in #")
+	if msgEndIndex == -1 {
+		return msg
+	}
+
+	msgStartIndex := strings.Index(msg, ": ")
+	if msgStartIndex == -1 {
+		return msg
+	}
+
+	operationStack := []string{msg[0:msgStartIndex]}
+	for {
+		msgStartIndexNext := strings.Index(msg[msgStartIndex+2:], ": ")
+
+		// no more matches
+		if msgStartIndexNext == -1 {
+			break
+		}
+
+		// matches occur after the end message marker (sanity check)
+		if (msgStartIndex + msgStartIndexNext) >= msgEndIndex {
+			break
+		}
+
+		// match should not contain a space, indicates operation is really an error message
+		match := msg[msgStartIndex+2 : msgStartIndex+2+msgStartIndexNext]
+		if strings.Contains(match, " ") {
+			break
+		}
+
+		operationStack = append(operationStack, match)
+		msgStartIndex += msgStartIndexNext + 2
+	}
+
+	if len(operationStack) > 1 && isLikelyDetailedErrorMessage(msg[msgStartIndex+2:]) {
+		return "cannot unmarshal " + operationStack[len(operationStack)-2] + ": " + msg[msgStartIndex+2:msgEndIndex]
+	}
+
+	return msg[msgStartIndex+2 : msgEndIndex]
+}
+
+// isLikelyDetailedErrorMessage checks if the json unmarshal error contains enough information such
+// that the caller clearly understands the context, where the structure name is not needed.
+func isLikelyDetailedErrorMessage(msg string) bool {
+	return !strings.HasPrefix(msg, "request.")
 }

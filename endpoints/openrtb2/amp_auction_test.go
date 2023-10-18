@@ -32,6 +32,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/util/jsonutil"
 )
 
 // TestGoodRequests makes sure that the auction runs properly-formatted stored bids correctly.
@@ -74,7 +75,7 @@ func TestGoodAmpRequests(t *testing.T) {
 			}
 
 			test := testCase{}
-			if !assert.NoError(t, json.Unmarshal(fileJsonData, &test), "Failed to unmarshal data from file: %s. Error: %v", filename, err) {
+			if !assert.NoError(t, jsonutil.UnmarshalValid(fileJsonData, &test), "Failed to unmarshal data from file: %s. Error: %v", filename, err) {
 				continue
 			}
 
@@ -127,7 +128,7 @@ func TestGoodAmpRequests(t *testing.T) {
 			}
 			if test.ExpectedValidatedBidReq != nil {
 				// compare as json to ignore whitespace and ext field ordering
-				actualJson, err := json.Marshal(ex.actualValidatedBidReq)
+				actualJson, err := jsonutil.Marshal(ex.actualValidatedBidReq)
 				if assert.NoError(t, err, "Error converting actual bid request to json. Test file: %s", filename) {
 					assert.JSONEq(t, string(test.ExpectedValidatedBidReq), string(actualJson), "Not the expected validated request. Test file: %s", filename)
 				}
@@ -156,7 +157,7 @@ func TestAccountErrors(t *testing.T) {
 		}
 
 		test := testCase{}
-		if !assert.NoError(t, json.Unmarshal(fileJsonData, &test), "Failed to unmarshal data from file: %s. Error: %v", tt.filename, err) {
+		if !assert.NoError(t, jsonutil.UnmarshalValid(fileJsonData, &test), "Failed to unmarshal data from file: %s. Error: %v", tt.filename, err) {
 			continue
 		}
 		test.StoredRequest = map[string]json.RawMessage{tt.storedReqID: test.BidRequest}
@@ -322,7 +323,7 @@ func TestGDPRConsent(t *testing.T) {
 
 		// Parse Response
 		var response AmpResponse
-		if err := json.Unmarshal(responseRecorder.Body.Bytes(), &response); err != nil {
+		if err := jsonutil.UnmarshalValid(responseRecorder.Body.Bytes(), &response); err != nil {
 			t.Fatalf("Error unmarshalling response: %s", err.Error())
 		}
 
@@ -338,7 +339,7 @@ func TestGDPRConsent(t *testing.T) {
 			return
 		}
 		var ue openrtb_ext.ExtUser
-		err = json.Unmarshal(result.User.Ext, &ue)
+		err = jsonutil.UnmarshalValid(result.User.Ext, &ue)
 		if !assert.NoError(t, err, test.description+":deserialize") {
 			return
 		}
@@ -353,7 +354,7 @@ func TestGDPRConsent(t *testing.T) {
 
 		// Parse Resonse
 		var responseLegacy AmpResponse
-		if err := json.Unmarshal(responseRecorderLegacy.Body.Bytes(), &responseLegacy); err != nil {
+		if err := jsonutil.UnmarshalValid(responseRecorderLegacy.Body.Bytes(), &responseLegacy); err != nil {
 			t.Fatalf("Error unmarshalling response: %s", err.Error())
 		}
 
@@ -369,7 +370,7 @@ func TestGDPRConsent(t *testing.T) {
 			return
 		}
 		var ueLegacy openrtb_ext.ExtUser
-		err = json.Unmarshal(resultLegacy.User.Ext, &ueLegacy)
+		err = jsonutil.UnmarshalValid(resultLegacy.User.Ext, &ueLegacy)
 		if !assert.NoError(t, err, test.description+":legacy:deserialize") {
 			return
 		}
@@ -516,7 +517,7 @@ func TestOverrideWithParams(t *testing.T) {
 					Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)},
 					User: &openrtb2.User{Ext: json.RawMessage(`malformed`)},
 				},
-				errorMsgs:         []string{"ReadMapCB: expect { or n, but found m, error found in #1 byte of ...|malformed|..., bigger context ...|malformed|..."},
+				errorMsgs:         []string{"expect { or n, but found m"},
 				expectFatalErrors: true,
 			},
 		},
@@ -564,7 +565,7 @@ func TestOverrideWithParams(t *testing.T) {
 					User: &openrtb2.User{Ext: json.RawMessage(`{"prebid":{malformed}}`)},
 					Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)},
 				},
-				errorMsgs:         []string{"ReadObjectCB: expect \" after {, but found m, error found in #10 byte of ...|prebid\":{malformed}}|..., bigger context ...|{\"prebid\":{malformed}}|..."},
+				errorMsgs:         []string{"expect \" after {, but found m"},
 				expectFatalErrors: true,
 			},
 		},
@@ -746,7 +747,7 @@ func TestCCPAConsent(t *testing.T) {
 
 		// Parse Response
 		var response AmpResponse
-		if err := json.Unmarshal(responseRecorder.Body.Bytes(), &response); err != nil {
+		if err := jsonutil.UnmarshalValid(responseRecorder.Body.Bytes(), &response); err != nil {
 			t.Fatalf("Error unmarshalling response: %s", err.Error())
 		}
 
@@ -762,7 +763,7 @@ func TestCCPAConsent(t *testing.T) {
 			return
 		}
 		var re openrtb_ext.ExtRegs
-		err = json.Unmarshal(result.Regs.Ext, &re)
+		err = jsonutil.UnmarshalValid(result.Regs.Ext, &re)
 		if !assert.NoError(t, err, test.description+":deserialize") {
 			return
 		}
@@ -868,7 +869,7 @@ func TestConsentWarnings(t *testing.T) {
 
 		// Parse Response
 		var response AmpResponse
-		if err := json.Unmarshal(responseRecorder.Body.Bytes(), &response); err != nil {
+		if err := jsonutil.UnmarshalValid(responseRecorder.Body.Bytes(), &response); err != nil {
 			t.Fatalf("Error unmarshalling response: %s", err.Error())
 		}
 
@@ -959,7 +960,7 @@ func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 
 		// Parse Response
 		var response AmpResponse
-		if err := json.Unmarshal(responseRecorder.Body.Bytes(), &response); err != nil {
+		if err := jsonutil.UnmarshalValid(responseRecorder.Body.Bytes(), &response); err != nil {
 			t.Fatalf("Error unmarshalling response: %s", err.Error())
 		}
 
@@ -975,7 +976,7 @@ func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 			return
 		}
 		var ue openrtb_ext.ExtUser
-		err = json.Unmarshal(result.User.Ext, &ue)
+		err = jsonutil.UnmarshalValid(result.User.Ext, &ue)
 		if !assert.NoError(t, err, test.description+":deserialize") {
 			return
 		}
@@ -1096,7 +1097,7 @@ func TestAmpDebug(t *testing.T) {
 		}
 
 		var response AmpResponse
-		if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
+		if err := jsonutil.UnmarshalValid(recorder.Body.Bytes(), &response); err != nil {
 			t.Fatalf("Error unmarshalling response: %s", err.Error())
 		}
 
@@ -1131,7 +1132,7 @@ func TestInitAmpTargetingAndCache(t *testing.T) {
 		{
 			name:         "malformed",
 			request:      &openrtb2.BidRequest{Ext: json.RawMessage("malformed")},
-			expectedErrs: []string{"ReadMapCB: expect { or n, but found m, error found in #1 byte of ...|malformed|..., bigger context ...|malformed|..."},
+			expectedErrs: []string{"expect { or n, but found m"},
 		},
 		{
 			name:           "nil",
@@ -1237,12 +1238,12 @@ func TestQueryParamOverrides(t *testing.T) {
 	}
 
 	var response AmpResponse
-	if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
+	if err := jsonutil.UnmarshalValid(recorder.Body.Bytes(), &response); err != nil {
 		t.Fatalf("Error unmarshalling response: %s", err.Error())
 	}
 
 	var resolvedRequest openrtb2.BidRequest
-	err := json.Unmarshal(response.ORTB2.Ext.Debug.ResolvedRequest, &resolvedRequest)
+	err := jsonutil.UnmarshalValid(response.ORTB2.Ext.Debug.ResolvedRequest, &resolvedRequest)
 	assert.NoError(t, err, "resolved request should have a correct format")
 	if resolvedRequest.TMax != timeout {
 		t.Errorf("Expected TMax to equal timeout (%d), got: %d", timeout, resolvedRequest.TMax)
@@ -1388,11 +1389,11 @@ func (s formatOverrideSpec) execute(t *testing.T) {
 		t.Errorf("Request was: %s", string(requests["1"]))
 	}
 	var response AmpResponse
-	if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
+	if err := jsonutil.UnmarshalValid(recorder.Body.Bytes(), &response); err != nil {
 		t.Fatalf("Error unmarshalling response: %s", err.Error())
 	}
 	var resolvedRequest openrtb2.BidRequest
-	err := json.Unmarshal(response.ORTB2.Ext.Debug.ResolvedRequest, &resolvedRequest)
+	err := jsonutil.UnmarshalValid(response.ORTB2.Ext.Debug.ResolvedRequest, &resolvedRequest)
 	assert.NoError(t, err, "resolved request should have the correct format")
 	formats := resolvedRequest.Imp[0].Banner.Format
 	if len(formats) != len(s.expect) {
@@ -1442,14 +1443,14 @@ func (m *mockAmpExchange) HoldAuction(ctx context.Context, auctionRequest *excha
 	if len(auctionRequest.StoredAuctionResponses) > 0 {
 		var seatBids []openrtb2.SeatBid
 
-		if err := json.Unmarshal(auctionRequest.StoredAuctionResponses[r.BidRequest.Imp[0].ID], &seatBids); err != nil {
+		if err := jsonutil.UnmarshalValid(auctionRequest.StoredAuctionResponses[r.BidRequest.Imp[0].ID], &seatBids); err != nil {
 			return nil, err
 		}
 		response.SeatBid = seatBids
 	}
 
 	if r.BidRequest.Test == 1 {
-		resolvedRequest, err := json.Marshal(r.BidRequest)
+		resolvedRequest, err := jsonutil.Marshal(r.BidRequest)
 		if err != nil {
 			resolvedRequest = json.RawMessage("{}")
 		}
@@ -1508,7 +1509,7 @@ func getTestBidRequest(nilUser bool, userExt *openrtb_ext.ExtUser, nilRegs bool,
 	var userExtData []byte
 	if userExt != nil {
 		var err error
-		userExtData, err = json.Marshal(userExt)
+		userExtData, err = jsonutil.Marshal(userExt)
 		if err != nil {
 			return nil, err
 		}
@@ -1525,7 +1526,7 @@ func getTestBidRequest(nilUser bool, userExt *openrtb_ext.ExtUser, nilRegs bool,
 	var regsExtData []byte
 	if regsExt != nil {
 		var err error
-		regsExtData, err = json.Marshal(regsExt)
+		regsExtData, err = jsonutil.Marshal(regsExt)
 		if err != nil {
 			return nil, err
 		}
@@ -1537,7 +1538,7 @@ func getTestBidRequest(nilUser bool, userExt *openrtb_ext.ExtUser, nilRegs bool,
 			Ext:   regsExtData,
 		}
 	}
-	return json.Marshal(bidRequest)
+	return jsonutil.Marshal(bidRequest)
 }
 
 func TestSetEffectiveAmpPubID(t *testing.T) {
@@ -2188,7 +2189,7 @@ func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
 			assert.NoError(t, err, "Failed to read test file.")
 
 			test := testCase{}
-			assert.NoError(t, json.Unmarshal(fileData, &test), "Failed to parse test file.")
+			assert.NoError(t, jsonutil.UnmarshalValid(fileData, &test), "Failed to parse test file.")
 
 			request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?%s", test.Query), nil)
 			recorder := httptest.NewRecorder()
@@ -2208,8 +2209,8 @@ func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
 
 			var actualAmpResp AmpResponse
 			var expectedAmpResp AmpResponse
-			assert.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &actualAmpResp), "Unable to unmarshal actual AmpResponse.")
-			assert.NoError(t, json.Unmarshal(test.ExpectedAmpResponse, &expectedAmpResp), "Unable to unmarshal expected AmpResponse.")
+			assert.NoError(t, jsonutil.UnmarshalValid(recorder.Body.Bytes(), &actualAmpResp), "Unable to unmarshal actual AmpResponse.")
+			assert.NoError(t, jsonutil.UnmarshalValid(test.ExpectedAmpResponse, &expectedAmpResp), "Unable to unmarshal expected AmpResponse.")
 
 			// validate modules data separately, because it has dynamic data
 			if expectedAmpResp.ORTB2.Ext.Prebid == nil {
@@ -2245,7 +2246,7 @@ func TestSendAmpResponse_LogsErrors(t *testing.T) {
 		{
 			description: "Error logged when bid.ext unmarshal fails",
 			expectedErrors: []error{
-				errors.New("Critical error while unpacking AMP targets: readObjectStart: expect { or n, but found \", error found in #1 byte of ...|\"hb_cache_i|..., bigger context ...|\"hb_cache_id|..."),
+				errors.New("Critical error while unpacking AMP targets: expect { or n, but found \""),
 			},
 			expectedStatus: http.StatusInternalServerError,
 			writer:         httptest.NewRecorder(),

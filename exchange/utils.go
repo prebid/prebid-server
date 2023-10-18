@@ -552,7 +552,7 @@ func splitImps(imps []openrtb2.Imp) (map[string][]openrtb2.Imp, error) {
 
 	for i, imp := range imps {
 		var impExt map[string]json.RawMessage
-		if err := jsonutil.Unmarshal(imp.Ext, &impExt); err != nil {
+		if err := jsonutil.UnmarshalValid(imp.Ext, &impExt); err != nil {
 			return nil, fmt.Errorf("invalid json for imp[%d]: %v", i, err)
 		}
 

@@ -9,6 +9,7 @@ import (
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/jsonutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -480,7 +481,7 @@ func TestExtractBidderConfigFPD(t *testing.T) {
 			require.NoError(t, err, "Cannot Load Test")
 
 			givenRequestExtPrebid := &openrtb_ext.ExtRequestPrebid{}
-			err = json.Unmarshal(fpdFile.InputRequestData, givenRequestExtPrebid)
+			err = jsonutil.UnmarshalValid(fpdFile.InputRequestData, givenRequestExtPrebid)
 			require.NoError(t, err, "Cannot Load Test Conditions")
 
 			testRequest := &openrtb_ext.RequestExt{}
@@ -535,15 +536,15 @@ func TestResolveFPD(t *testing.T) {
 			require.NoError(t, err, "Cannot Load Test")
 
 			request := &openrtb2.BidRequest{}
-			err = json.Unmarshal(fpdFile.InputRequestData, &request)
+			err = jsonutil.UnmarshalValid(fpdFile.InputRequestData, &request)
 			require.NoError(t, err, "Cannot Load Request")
 
 			originalRequest := &openrtb2.BidRequest{}
-			err = json.Unmarshal(fpdFile.InputRequestData, &originalRequest)
+			err = jsonutil.UnmarshalValid(fpdFile.InputRequestData, &originalRequest)
 			require.NoError(t, err, "Cannot Load Request")
 
 			outputReq := &openrtb2.BidRequest{}
-			err = json.Unmarshal(fpdFile.OutputRequestData, &outputReq)
+			err = jsonutil.UnmarshalValid(fpdFile.OutputRequestData, &outputReq)
 			require.NoError(t, err, "Cannot Load Output Request")
 
 			reqExtFPD := make(map[string][]byte)
@@ -556,7 +557,7 @@ func TestResolveFPD(t *testing.T) {
 			reqFPDSiteContentData := fpdFile.GlobalFPD[siteContentDataKey]
 			if len(reqFPDSiteContentData) > 0 {
 				var siteConData []openrtb2.Data
-				err = json.Unmarshal(reqFPDSiteContentData, &siteConData)
+				err = jsonutil.UnmarshalValid(reqFPDSiteContentData, &siteConData)
 				if err != nil {
 					t.Errorf("Unable to unmarshal site.content.data:")
 				}
@@ -566,7 +567,7 @@ func TestResolveFPD(t *testing.T) {
 			reqFPDAppContentData := fpdFile.GlobalFPD[appContentDataKey]
 			if len(reqFPDAppContentData) > 0 {
 				var appConData []openrtb2.Data
-				err = json.Unmarshal(reqFPDAppContentData, &appConData)
+				err = jsonutil.UnmarshalValid(reqFPDAppContentData, &appConData)
 				if err != nil {
 					t.Errorf("Unable to unmarshal app.content.data: ")
 				}
@@ -576,7 +577,7 @@ func TestResolveFPD(t *testing.T) {
 			reqFPDUserData := fpdFile.GlobalFPD[userDataKey]
 			if len(reqFPDUserData) > 0 {
 				var userData []openrtb2.Data
-				err = json.Unmarshal(reqFPDUserData, &userData)
+				err = jsonutil.UnmarshalValid(reqFPDUserData, &userData)
 				if err != nil {
 					t.Errorf("Unable to unmarshal app.content.data: ")
 				}
@@ -642,14 +643,14 @@ func TestExtractFPDForBidders(t *testing.T) {
 			}
 
 			var expectedRequest openrtb2.BidRequest
-			err = json.Unmarshal(fpdFile.OutputRequestData, &expectedRequest)
+			err = jsonutil.UnmarshalValid(fpdFile.OutputRequestData, &expectedRequest)
 			if err != nil {
 				t.Errorf("Unable to unmarshal input request: %s", fileName)
 			}
 
 			resultRequest := &openrtb_ext.RequestWrapper{}
 			resultRequest.BidRequest = &openrtb2.BidRequest{}
-			err = json.Unmarshal(fpdFile.InputRequestData, resultRequest.BidRequest)
+			err = jsonutil.UnmarshalValid(fpdFile.InputRequestData, resultRequest.BidRequest)
 			assert.NoError(t, err, "Error should be nil")
 
 			resultFPD, errL := ExtractFPDForBidders(resultRequest)
@@ -726,7 +727,7 @@ func loadFpdFile(filename string) (fpdFile, error) {
 	if err != nil {
 		return fileData, err
 	}
-	err = json.Unmarshal(fileContents, &fileData)
+	err = jsonutil.UnmarshalValid(fileContents, &fileData)
 	if err != nil {
 		return fileData, err
 	}

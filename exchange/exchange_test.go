@@ -41,6 +41,7 @@ import (
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
 	"github.com/prebid/prebid-server/usersync"
+	"github.com/prebid/prebid-server/util/jsonutil"
 	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -379,7 +380,7 @@ func TestDebugBehaviour(t *testing.T) {
 		assert.NotNilf(t, outBidResponse.Ext, "%s. outBidResponse.Ext should not be nil \n", test.desc)
 		assert.False(t, auctionRequest.BidderResponseStartTime.IsZero())
 		actualExt := &openrtb_ext.ExtBidResponse{}
-		err = json.Unmarshal(outBidResponse.Ext, actualExt)
+		err = jsonutil.UnmarshalValid(outBidResponse.Ext, actualExt)
 		assert.NoErrorf(t, err, "%s. \"ext\" JSON field could not be unmarshaled. err: \"%v\" \n outBidResponse.Ext: \"%s\" \n", test.desc, err, outBidResponse.Ext)
 
 		assert.NotEmpty(t, actualExt.Prebid, "%s. ext.prebid should not be empty")
@@ -541,7 +542,7 @@ func TestTwoBiddersDebugDisabledAndEnabled(t *testing.T) {
 		assert.False(t, auctionRequest.BidderResponseStartTime.IsZero())
 
 		actualExt := &openrtb_ext.ExtBidResponse{}
-		err = json.Unmarshal(outBidResponse.Ext, actualExt)
+		err = jsonutil.UnmarshalValid(outBidResponse.Ext, actualExt)
 		assert.NoErrorf(t, err, "JSON field unmarshaling err. ")
 
 		assert.NotEmpty(t, actualExt.Prebid, "ext.prebid should not be empty")
@@ -1143,7 +1144,7 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 	for _, tc := range testCases {
 
 		// Test setup:
-		jsonPbsRates, err := json.Marshal(tc.given.pbsRates)
+		jsonPbsRates, err := jsonutil.Marshal(tc.given.pbsRates)
 		if err != nil {
 			t.Fatalf("Failed to marshal PBS rates: %v", err)
 		}
@@ -1627,7 +1628,7 @@ func TestBidReturnsCreative(t *testing.T) {
 		assert.Equal(t, test.expectedCreativeMarkup, resultingBids[0].AdM, "%s. Ad markup string doesn't match expected \n", test.description)
 
 		var bidExt openrtb_ext.ExtBid
-		json.Unmarshal(resultingBids[0].Ext, &bidExt)
+		jsonutil.UnmarshalValid(resultingBids[0].Ext, &bidExt)
 		assert.Equal(t, 0, bidExt.Prebid.DealPriority, "%s. Test should have DealPriority set to 0", test.description)
 		assert.Equal(t, false, bidExt.Prebid.DealTierSatisfied, "%s. Test should have DealTierSatisfied set to false", test.description)
 	}
@@ -2279,7 +2280,7 @@ func loadFile(filename string) (*exchangeSpec, error) {
 	}
 
 	var spec exchangeSpec
-	if err := json.Unmarshal(specData, &spec); err != nil {
+	if err := jsonutil.UnmarshalValid(specData, &spec); err != nil {
 		return nil, fmt.Errorf("Failed to unmarshal JSON from file: %v", err)
 	}
 
@@ -2376,7 +2377,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		auctionRequest.Account.DefaultBidLimit = spec.MultiBid.AccountMaxBid
 
 		requestExt := &openrtb_ext.ExtRequest{}
-		err := json.Unmarshal(spec.IncomingRequest.OrtbRequest.Ext, requestExt)
+		err := jsonutil.UnmarshalValid(spec.IncomingRequest.OrtbRequest.Ext, requestExt)
 		assert.NoError(t, err, "invalid request ext")
 		validatedMultiBids, errs := openrtb_ext.ValidateAndBuildExtMultiBid(&requestExt.Prebid)
 		for _, err := range errs { // same as in validateRequestExt().
@@ -2387,7 +2388,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		}
 
 		requestExt.Prebid.MultiBid = validatedMultiBids
-		updateReqExt, err := json.Marshal(requestExt)
+		updateReqExt, err := jsonutil.Marshal(requestExt)
 		assert.NoError(t, err, "invalid request ext")
 		auctionRequest.BidRequestWrapper.Ext = updateReqExt
 	}
@@ -2450,7 +2451,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		actualPassthrough := ""
 		actualBidRespExt := &openrtb_ext.ExtBidResponse{}
 		if bid.Ext != nil {
-			if err := json.Unmarshal(bid.Ext, actualBidRespExt); err != nil {
+			if err := jsonutil.UnmarshalValid(bid.Ext, actualBidRespExt); err != nil {
 				assert.NoError(t, err, fmt.Sprintf("Error when unmarshalling: %s", err))
 			}
 			if actualBidRespExt.Prebid != nil {
@@ -2459,7 +2460,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		}
 		expectedBidRespExt := &openrtb_ext.ExtBidResponse{}
 		if spec.Response.Ext != nil {
-			if err := json.Unmarshal(spec.Response.Ext, expectedBidRespExt); err != nil {
+			if err := jsonutil.UnmarshalValid(spec.Response.Ext, expectedBidRespExt); err != nil {
 				assert.NoError(t, err, fmt.Sprintf("Error when unmarshalling: %s", err))
 			}
 			if expectedBidRespExt.Prebid != nil {
@@ -2490,11 +2491,11 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		actualBidRespExt := &openrtb_ext.ExtBidResponse{}
 		expectedBidRespExt := &openrtb_ext.ExtBidResponse{}
 		if bid.Ext != nil {
-			if err := json.Unmarshal(bid.Ext, actualBidRespExt); err != nil {
+			if err := jsonutil.UnmarshalValid(bid.Ext, actualBidRespExt); err != nil {
 				assert.NoError(t, err, fmt.Sprintf("Error when unmarshalling: %s", err))
 			}
 		}
-		if err := json.Unmarshal(spec.Response.Ext, expectedBidRespExt); err != nil {
+		if err := jsonutil.UnmarshalValid(spec.Response.Ext, expectedBidRespExt); err != nil {
 			assert.NoError(t, err, fmt.Sprintf("Error when unmarshalling: %s", err))
 		}
 
@@ -2524,7 +2525,7 @@ func extractResponseTimes(t *testing.T, context string, bid *openrtb2.BidRespons
 		return nil
 	} else {
 		responseTimes := make(map[string]int)
-		if err := json.Unmarshal(data, &responseTimes); err != nil {
+		if err := jsonutil.UnmarshalValid(data, &responseTimes); err != nil {
 			t.Errorf("%s: Failed to unmarshal ext.responsetimemillis into map[string]int: %v", context, err)
 			return nil
 		}
@@ -4176,14 +4177,14 @@ func TestMakeBidExtJSON(t *testing.T) {
 			ext:                json.RawMessage(`{invalid json}`),
 			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("video")},
 			expectedBidExt:     ``,
-			expectedErrMessage: "ReadString: expects \" or n, but found i, error found in #2 byte of ...|{invalid jso|..., bigger context ...|{invalid json}|...",
+			expectedErrMessage: "expects \" or n, but found i",
 		},
 		{
 			description:        "Meta - Invalid",
 			ext:                json.RawMessage(`{"prebid":{"meta":{"brandId":"foo"}}}`), // brandId should be an int, but is a string in this test case
 			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("banner")},
 			impExtInfo:         nil,
-			expectedErrMessage: "error validaing response from server, Prebid: Meta: openrtb_ext.ExtBidPrebidMeta.BrandID: readUint64: unexpected character: \xff, error found in #10 byte of ...|brandId\":\"foo\"}}}|..., bigger context ...|{\"prebid\":{\"meta\":{\"brandId\":\"foo\"}}}|...",
+			expectedErrMessage: "error validaing response from server, cannot unmarshal openrtb_ext.ExtBidPrebidMeta.BrandID: unexpected character: \xff",
 		},
 	}
 
@@ -5330,12 +5331,12 @@ func (b *capturingRequestBidder) requestBid(ctx context.Context, bidderRequest B
 
 func diffOrtbRequests(t *testing.T, description string, expected *openrtb2.BidRequest, actual *openrtb2.BidRequest) {
 	t.Helper()
-	actualJSON, err := json.Marshal(actual)
+	actualJSON, err := jsonutil.Marshal(actual)
 	if err != nil {
 		t.Fatalf("%s failed to marshal actual BidRequest into JSON. %v", description, err)
 	}
 
-	expectedJSON, err := json.Marshal(expected)
+	expectedJSON, err := jsonutil.Marshal(expected)
 	if err != nil {
 		t.Fatalf("%s failed to marshal expected BidRequest into JSON. %v", description, err)
 	}
@@ -5353,12 +5354,12 @@ func diffOrtbResponses(t *testing.T, description string, expected *openrtb2.BidR
 	// this implementation detail, I'm cutting a corner and ignoring it here.
 	actualSeats := mapifySeatBids(t, description, actual.SeatBid)
 	expectedSeats := mapifySeatBids(t, description, expected.SeatBid)
-	actualJSON, err := json.Marshal(actualSeats)
+	actualJSON, err := jsonutil.Marshal(actualSeats)
 	if err != nil {
 		t.Fatalf("%s failed to marshal actual BidResponse into JSON. %v", description, err)
 	}
 
-	expectedJSON, err := json.Marshal(expectedSeats)
+	expectedJSON, err := jsonutil.Marshal(expectedSeats)
 	if err != nil {
 		t.Fatalf("%s failed to marshal expected BidResponse into JSON. %v", description, err)
 	}
@@ -5488,13 +5489,13 @@ func getInfoFromImp(req *openrtb_ext.RequestWrapper) (json.RawMessage, string, e
 	impID := imp.ID
 
 	var bidderExts map[string]json.RawMessage
-	if err := json.Unmarshal(imp.Ext, &bidderExts); err != nil {
+	if err := jsonutil.UnmarshalValid(imp.Ext, &bidderExts); err != nil {
 		return nil, "", err
 	}
 
 	var extPrebid openrtb_ext.ExtImpPrebid
 	if bidderExts[openrtb_ext.PrebidExtKey] != nil {
-		if err := json.Unmarshal(bidderExts[openrtb_ext.PrebidExtKey], &extPrebid); err != nil {
+		if err := jsonutil.UnmarshalValid(bidderExts[openrtb_ext.PrebidExtKey], &extPrebid); err != nil {
 			return nil, "", err
 		}
 	}

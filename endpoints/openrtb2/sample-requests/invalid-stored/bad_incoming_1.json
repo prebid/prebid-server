@@ -11,5 +11,5 @@
     }
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request: readObjectStart: expect { or n, but found"
+  "expectedErrorMessage": "Invalid request: expect { or n, but found"
 }

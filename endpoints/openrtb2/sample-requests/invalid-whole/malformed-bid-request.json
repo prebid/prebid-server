@@ -2,5 +2,5 @@
   "description": "Malformed bid request throws an error",
   "mockBidRequest": "malformed",
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request: readObjectStart: expect { or n, but found m"
+  "expectedErrorMessage": "Invalid request: expect { or n, but found m"
 }

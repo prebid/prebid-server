@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/util/jsonutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -58,7 +59,7 @@ func validateStoredReqOne(t *testing.T, storedRequests map[string]json.RawMessag
 	}
 
 	var req1Val map[string]string
-	if err := json.Unmarshal(value, &req1Val); err != nil {
+	if err := jsonutil.UnmarshalValid(value, &req1Val); err != nil {
 		t.Errorf("Failed to unmarshal 1: %v", err)
 	}
 	if len(req1Val) != 1 {
@@ -80,7 +81,7 @@ func validateStoredReqTwo(t *testing.T, storedRequests map[string]json.RawMessag
 	}
 
 	var req2Val string
-	if err := json.Unmarshal(value, &req2Val); err != nil {
+	if err := jsonutil.UnmarshalValid(value, &req2Val); err != nil {
 		t.Errorf("Failed to unmarshal %d: %v", 2, err)
 	}
 	if req2Val != `esca"ped` {
@@ -95,7 +96,7 @@ func validateImp(t *testing.T, storedImps map[string]json.RawMessage) {
 	}
 
 	var impVal map[string]bool
-	if err := json.Unmarshal(value, &impVal); err != nil {
+	if err := jsonutil.UnmarshalValid(value, &impVal); err != nil {
 		t.Errorf("Failed to unmarshal some-imp: %v", err)
 	}
 	if len(impVal) != 1 {

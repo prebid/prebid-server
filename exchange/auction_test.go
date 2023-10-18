@@ -2,7 +2,6 @@ package exchange
 
 import (
 	"context"
-	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"os"
@@ -17,6 +16,7 @@ import (
 	"github.com/prebid/prebid-server/exchange/entities"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
+	"github.com/prebid/prebid-server/util/jsonutil"
 	"github.com/prebid/prebid-server/util/ptrutil"
 
 	"github.com/stretchr/testify/assert"
@@ -179,7 +179,7 @@ func loadCacheSpec(filename string) (*cacheSpec, error) {
 	}
 
 	var spec cacheSpec
-	if err := json.Unmarshal(specData, &spec); err != nil {
+	if err := jsonutil.UnmarshalValid(specData, &spec); err != nil {
 		return nil, fmt.Errorf("Failed to unmarshal JSON from file: %v", err)
 	}
 
@@ -286,18 +286,18 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 		for i, expectedCacheable := range specData.ExpectedCacheables {
 			found := false
 			var expectedData interface{}
-			if err := json.Unmarshal(expectedCacheable.Data, &expectedData); err != nil {
+			if err := jsonutil.UnmarshalValid(expectedCacheable.Data, &expectedData); err != nil {
 				t.Fatalf("Failed to decode expectedCacheables[%d].value: %v", i, err)
 			}
 			if s, ok := expectedData.(string); ok && expectedCacheable.Type == prebid_cache_client.TypeJSON {
 				// decode again if we have pre-encoded json string values
-				if err := json.Unmarshal([]byte(s), &expectedData); err != nil {
+				if err := jsonutil.UnmarshalValid([]byte(s), &expectedData); err != nil {
 					t.Fatalf("Failed to re-decode expectedCacheables[%d].value :%v", i, err)
 				}
 			}
 			for j, cachedItem := range cache.items {
 				var actualData interface{}
-				if err := json.Unmarshal(cachedItem.Data, &actualData); err != nil {
+				if err := jsonutil.UnmarshalValid(cachedItem.Data, &actualData); err != nil {
 					t.Fatalf("Failed to decode actual cache[%d].value: %s", j, err)
 				}
 				if assert.ObjectsAreEqual(expectedData, actualData) &&
