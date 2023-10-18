@@ -1,5 +1,10 @@
 package usersync
 
+import (
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"strings"
+)
+
 // Chooser determines which syncers are eligible for a given request.
 type Chooser interface {
 	// Choose considers bidders to sync, filters the bidders, and returns the result of the
@@ -15,9 +20,10 @@ func NewChooser(bidderSyncerLookup map[string]Syncer) Chooser {
 	}
 
 	return standardChooser{
-		bidderSyncerLookup: bidderSyncerLookup,
-		biddersAvailable:   bidders,
-		bidderChooser:      standardBidderChooser{shuffler: randomShuffler{}},
+		bidderSyncerLookup:       bidderSyncerLookup,
+		biddersAvailable:         bidders,
+		bidderChooser:            standardBidderChooser{shuffler: randomShuffler{}},
+		normalizeValidBidderName: openrtb_ext.NormalizeBidderName,
 	}
 }
 
@@ -100,9 +106,10 @@ type Privacy interface {
 
 // standardChooser implements the user syncer algorithm per official Prebid specification.
 type standardChooser struct {
-	bidderSyncerLookup map[string]Syncer
-	biddersAvailable   []string
-	bidderChooser      bidderChooser
+	bidderSyncerLookup       map[string]Syncer
+	biddersAvailable         []string
+	bidderChooser            bidderChooser
+	normalizeValidBidderName func(name string) (openrtb_ext.BidderName, bool)
 }
 
 // Choose randomly selects user syncers which are permitted by the user's privacy settings and
@@ -136,7 +143,12 @@ func (c standardChooser) Choose(request Request, cookie *Cookie) Result {
 }
 
 func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}, syncTypeFilter SyncTypeFilter, privacy Privacy, cookie *Cookie) (Syncer, BidderEvaluation) {
-	syncer, exists := c.bidderSyncerLookup[bidder]
+	bidderNormalized, exists := c.normalizeValidBidderName(bidder)
+	if !exists {
+		return nil, BidderEvaluation{Status: StatusUnknownBidder, Bidder: bidder}
+	}
+
+	syncer, exists := c.bidderSyncerLookup[bidderNormalized.String()]
 	if !exists {
 		return nil, BidderEvaluation{Status: StatusUnknownBidder, Bidder: bidder}
 	}
@@ -147,7 +159,7 @@ func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}
 	}
 	syncersSeen[syncer.Key()] = struct{}{}
 
-	if !syncer.SupportsType(syncTypeFilter.ForBidder(bidder)) {
+	if !syncer.SupportsType(syncTypeFilter.ForBidder(strings.ToLower(bidder))) {
 		return nil, BidderEvaluation{Status: StatusTypeNotSupported, Bidder: bidder, SyncerKey: syncer.Key()}
 	}
 
@@ -160,11 +172,11 @@ func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}
 		return nil, BidderEvaluation{Status: StatusBlockedByPrivacy, Bidder: bidder, SyncerKey: syncer.Key()}
 	}
 
-	if !privacy.GDPRAllowsBidderSync(bidder) {
+	if !privacy.GDPRAllowsBidderSync(bidderNormalized.String()) {
 		return nil, BidderEvaluation{Status: StatusBlockedByGDPR, Bidder: bidder, SyncerKey: syncer.Key()}
 	}
 
-	if !privacy.CCPAAllowsBidderSync(bidder) {
+	if !privacy.CCPAAllowsBidderSync(bidderNormalized.String()) {
 		return nil, BidderEvaluation{Status: StatusBlockedByCCPA, Bidder: bidder, SyncerKey: syncer.Key()}
 	}
 

@@ -1,0 +1,97 @@
+{
+    "description": "This demonstrates bid adjustment factors with bidder names that have different casing in imp vs. in bidadjustmentfactors",
+    "config": {
+        "mockBidders": [
+            {
+                "bidderName": "appnexus",
+                "currency": "USD",
+                "price": 1.00
+            }
+        ]
+    },
+    "mockBidRequest": {
+        "id": "some-request-id",
+        "site": {
+            "page": "prebid.org"
+        },
+        "user": {
+            "ext": {
+                "consent": "gdpr-consent-string"
+            }
+        },
+        "regs": {
+            "ext": {
+                "gdpr": 1,
+                "us_privacy": "1NYN"
+            }
+        },
+        "imp": [
+            {
+                "id": "some-impression-id",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        },
+                        {
+                            "w": 300,
+                            "h": 600
+                        }
+                    ]
+                },
+                "ext": {
+                    "Appnexus": {
+                        "placementId": 12883451
+                    }
+                }
+            }
+        ],
+        "tmax": 500,
+        "ext": {
+            "prebid": {
+                "bidadjustmentfactors": {
+                    "APPNEXUS": 1.01
+                },
+                "cache": {
+                    "bids": {}
+                },
+                "channel": {
+                    "name": "video",
+                    "version": "1.0"
+                },
+                "targeting": {
+                    "includewinners": false,
+                    "pricegranularity": {
+                        "precision": 2,
+                        "ranges": [
+                            {
+                                "max": 20,
+                                "increment": 0.10
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    },
+    "expectedBidResponse": {
+        "id": "some-request-id",
+        "seatbid": [
+            {
+                "bid": [
+                    {
+                        "id": "appnexus-bid",
+                        "impid": "some-impression-id",
+                        "price": 1.01
+                    }
+                ],
+                "seat": "Appnexus"
+            }
+        ],
+        "bidid": "test bid id",
+        "cur": "USD",
+        "nbr": 0
+    },
+    "expectedReturnCode": 200
+}

@@ -214,9 +214,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 
 		}
 
-		if auctionReq.FirstPartyData != nil && auctionReq.FirstPartyData[bidderRequest.BidderName] != nil {
-			applyFPD(auctionReq.FirstPartyData[bidderRequest.BidderName], bidderRequest.BidRequest)
-		}
+		applyFPD(auctionReq.FirstPartyData, bidderRequest)
 
 		privacyEnforcement.TID = !auctionReq.Activities.Allow(privacy.ActivityTransmitTIDs, scopedName, privacy.NewRequestFromBidRequest(*req))
 
@@ -327,9 +325,15 @@ func getAuctionBidderRequests(auctionRequest AuctionRequest,
 		return nil, []error{err}
 	}
 
+	lowerCaseExplicitBuyerUIDs := make(map[string]string)
+	for bidder, uid := range explicitBuyerUIDs {
+		lowerKey := strings.ToLower(bidder)
+		lowerCaseExplicitBuyerUIDs[lowerKey] = uid
+	}
+
 	var errs []error
 	for bidder, imps := range impsByBidder {
-		coreBidder := resolveBidder(bidder, aliases)
+		coreBidder, isRequestAlias := resolveBidder(bidder, aliases)
 
 		reqCopy := *req.BidRequest
 		reqCopy.Imp = imps
@@ -349,6 +353,7 @@ func getAuctionBidderRequests(auctionRequest AuctionRequest,
 		bidderRequest := BidderRequest{
 			BidderName:     openrtb_ext.BidderName(bidder),
 			BidderCoreName: coreBidder,
+			IsRequestAlias: isRequestAlias,
 			BidRequest:     &reqCopy,
 			BidderLabels: metrics.AdapterLabels{
 				Source:      auctionRequest.LegacyLabels.Source,
@@ -361,7 +366,7 @@ func getAuctionBidderRequests(auctionRequest AuctionRequest,
 		}
 
 		syncerKey := bidderToSyncerKey[string(coreBidder)]
-		if hadSync := prepareUser(&reqCopy, bidder, syncerKey, explicitBuyerUIDs, auctionRequest.UserSyncs); !hadSync && req.BidRequest.App == nil {
+		if hadSync := prepareUser(&reqCopy, bidder, syncerKey, lowerCaseExplicitBuyerUIDs, auctionRequest.UserSyncs); !hadSync && req.BidRequest.App == nil {
 			bidderRequest.BidderLabels.CookieFlag = metrics.CookieFlagNo
 		} else {
 			bidderRequest.BidderLabels.CookieFlag = metrics.CookieFlagYes
@@ -467,12 +472,12 @@ func buildRequestExtMultiBid(adapter string, reqMultiBid []*openrtb_ext.ExtMulti
 	adapterMultiBid := make([]*openrtb_ext.ExtMultiBid, 0)
 	for _, multiBid := range reqMultiBid {
 		if multiBid.Bidder != "" {
-			if multiBid.Bidder == adapter || isBidderInExtAlternateBidderCodes(adapter, multiBid.Bidder, adapterABC) {
+			if strings.ToLower(multiBid.Bidder) == adapter || isBidderInExtAlternateBidderCodes(adapter, strings.ToLower(multiBid.Bidder), adapterABC) {
 				adapterMultiBid = append(adapterMultiBid, multiBid)
 			}
 		} else {
 			for _, bidder := range multiBid.Bidders {
-				if bidder == adapter || isBidderInExtAlternateBidderCodes(adapter, bidder, adapterABC) {
+				if strings.ToLower(bidder) == adapter || isBidderInExtAlternateBidderCodes(adapter, strings.ToLower(bidder), adapterABC) {
 					adapterMultiBid = append(adapterMultiBid, &openrtb_ext.ExtMultiBid{
 						Bidders: []string{bidder},
 						MaxBids: multiBid.MaxBids,
@@ -642,7 +647,7 @@ func createSanitizedImpExt(impExt, impExtPrebid map[string]json.RawMessage) (map
 func prepareUser(req *openrtb2.BidRequest, givenBidder, syncerKey string, explicitBuyerUIDs map[string]string, usersyncs IdFetcher) bool {
 	cookieId, hadCookie, _ := usersyncs.GetUID(syncerKey)
 
-	if id, ok := explicitBuyerUIDs[givenBidder]; ok {
+	if id, ok := explicitBuyerUIDs[strings.ToLower(givenBidder)]; ok {
 		req.User = copyWithBuyerUID(req.User, id)
 	} else if hadCookie {
 		req.User = copyWithBuyerUID(req.User, cookieId)
@@ -762,12 +767,14 @@ func setUserExtWithCopy(request *openrtb2.BidRequest, userExtJSON json.RawMessag
 }
 
 // resolveBidder returns the known BidderName associated with bidder, if bidder is an alias. If it's not an alias, the bidder is returned.
-func resolveBidder(bidder string, aliases map[string]string) openrtb_ext.BidderName {
+func resolveBidder(bidder string, requestAliases map[string]string) (openrtb_ext.BidderName, bool) {
 	normalisedBidderName, _ := openrtb_ext.NormalizeBidderName(bidder)
-	if coreBidder, ok := aliases[bidder]; ok {
-		return openrtb_ext.BidderName(coreBidder)
+
+	if coreBidder, ok := requestAliases[bidder]; ok {
+		return openrtb_ext.BidderName(coreBidder), true
 	}
-	return normalisedBidderName
+
+	return normalisedBidderName, false
 }
 
 // parseAliases parses the aliases from the BidRequest
@@ -893,26 +900,46 @@ func parseRequestDebugValues(test int8, requestExtPrebid *openrtb_ext.ExtRequest
 }
 
 func getExtBidAdjustmentFactors(requestExtPrebid *openrtb_ext.ExtRequestPrebid) map[string]float64 {
-	if requestExtPrebid != nil {
-		return requestExtPrebid.BidAdjustmentFactors
+	if requestExtPrebid != nil && requestExtPrebid.BidAdjustmentFactors != nil {
+		caseInsensitiveMap := make(map[string]float64, len(requestExtPrebid.BidAdjustmentFactors))
+		for bidder, bidAdjFactor := range requestExtPrebid.BidAdjustmentFactors {
+			caseInsensitiveMap[strings.ToLower(bidder)] = bidAdjFactor
+		}
+		return caseInsensitiveMap
 	}
 	return nil
 }
 
-func applyFPD(fpd *firstpartydata.ResolvedFirstPartyData, bidReq *openrtb2.BidRequest) {
-	if fpd.Site != nil {
-		bidReq.Site = fpd.Site
+func applyFPD(fpd map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData, r BidderRequest) {
+	if fpd == nil {
+		return
 	}
-	if fpd.App != nil {
-		bidReq.App = fpd.App
+
+	bidder := r.BidderCoreName
+	if r.IsRequestAlias {
+		bidder = r.BidderName
 	}
-	if fpd.User != nil {
+
+	fpdToApply, exists := fpd[bidder]
+	if !exists || fpdToApply == nil {
+		return
+	}
+
+	if fpdToApply.Site != nil {
+		r.BidRequest.Site = fpdToApply.Site
+	}
+
+	if fpdToApply.App != nil {
+		r.BidRequest.App = fpdToApply.App
+	}
+
+	if fpdToApply.User != nil {
 		//BuyerUID is a value obtained between fpd extraction and fpd application.
 		//BuyerUID needs to be set back to fpd before applying this fpd to final bidder request
-		if bidReq.User != nil && len(bidReq.User.BuyerUID) > 0 {
-			fpd.User.BuyerUID = bidReq.User.BuyerUID
+		if r.BidRequest.User != nil && len(r.BidRequest.User.BuyerUID) > 0 {
+			fpdToApply.User.BuyerUID = r.BidRequest.User.BuyerUID
 		}
-		bidReq.User = fpd.User
+		r.BidRequest.User = fpdToApply.User
 	}
 }
 
@@ -924,13 +951,14 @@ func buildBidResponseRequest(req *openrtb2.BidRequest,
 	bidderToBidderResponse := make(map[openrtb_ext.BidderName]BidderRequest)
 
 	for bidderName, impResps := range bidderImpResponses {
-		resolvedBidder := resolveBidder(string(bidderName), aliases)
+		resolvedBidder, isRequestAlias := resolveBidder(string(bidderName), aliases)
 		bidderToBidderResponse[bidderName] = BidderRequest{
 			BidRequest:            req,
 			BidderCoreName:        resolvedBidder,
 			BidderName:            bidderName,
 			BidderStoredResponses: impResps,
-			ImpReplaceImpId:       bidderImpReplaceImpID[string(bidderName)],
+			ImpReplaceImpId:       bidderImpReplaceImpID[string(resolvedBidder)],
+			IsRequestAlias:        isRequestAlias,
 			BidderLabels:          metrics.AdapterLabels{Adapter: resolvedBidder},
 		}
 	}

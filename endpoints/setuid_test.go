@@ -51,6 +51,16 @@ func TestSetUIDEndpoint(t *testing.T) {
 			description:            "Set uid for valid bidder",
 		},
 		{
+			uri:                    "/setuid?bidder=PUBMATIC&uid=123",
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			existingSyncs:          nil,
+			gdprAllowsHostCookies:  true,
+			expectedSyncs:          map[string]string{"pubmatic": "123"},
+			expectedStatusCode:     http.StatusOK,
+			expectedHeaders:        map[string]string{"Content-Type": "text/html", "Content-Length": "0"},
+			description:            "Set uid for valid bidder case insensitive",
+		},
+		{
 			uri:                    "/setuid?bidder=appnexus&uid=123",
 			syncersBidderNameToKey: map[string]string{"appnexus": "adnxs"},
 			existingSyncs:          nil,
@@ -1458,35 +1468,44 @@ func TestIsSyncerPriority(t *testing.T) {
 		expected                       bool
 	}{
 		{
-			name:                           "bidder-name-is-priority",
-			givenBidderNameFromSyncerQuery: "priorityBidder",
-			givenPriorityGroups: [][]string{
-				{"priorityBidder"},
-				{"2", "3"},
-			},
-			expected: true,
+			name:                           "priority-tier-1",
+			givenBidderNameFromSyncerQuery: "a",
+			givenPriorityGroups:            [][]string{{"a"}},
+			expected:                       true,
 		},
 		{
-			name:                           "bidder-name-is-not-priority",
-			givenBidderNameFromSyncerQuery: "notPriorityBidderName",
-			givenPriorityGroups: [][]string{
-				{"1"},
-				{"2", "3"},
-			},
-			expected: false,
+			name:                           "priority-tier-other",
+			givenBidderNameFromSyncerQuery: "c",
+			givenPriorityGroups:            [][]string{{"a"}, {"b", "c"}},
+			expected:                       true,
 		},
 		{
-			name:                           "no-bidder-name-given",
+			name:                           "priority-case-insensitive",
+			givenBidderNameFromSyncerQuery: "A",
+			givenPriorityGroups:            [][]string{{"a"}},
+			expected:                       true,
+		},
+		{
+			name:                           "not-priority-empty",
+			givenBidderNameFromSyncerQuery: "a",
+			givenPriorityGroups:            [][]string{},
+			expected:                       false,
+		},
+		{
+			name:                           "not-priority-not-defined",
+			givenBidderNameFromSyncerQuery: "a",
+			givenPriorityGroups:            [][]string{{"b"}},
+			expected:                       false,
+		},
+		{
+			name:                           "no-bidder",
 			givenBidderNameFromSyncerQuery: "",
-			givenPriorityGroups: [][]string{
-				{"1"},
-				{"2", "3"},
-			},
-			expected: false,
+			givenPriorityGroups:            [][]string{{"b"}},
+			expected:                       false,
 		},
 		{
-			name:                           "no-priority-groups-given",
-			givenBidderNameFromSyncerQuery: "bidderName",
+			name:                           "no-priority-groups",
+			givenBidderNameFromSyncerQuery: "a",
 			givenPriorityGroups:            [][]string{},
 			expected:                       false,
 		},

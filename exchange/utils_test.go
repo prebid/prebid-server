@@ -1835,6 +1835,11 @@ func TestGetExtBidAdjustmentFactors(t *testing.T) {
 			requestExtPrebid:        &openrtb_ext.ExtRequestPrebid{BidAdjustmentFactors: map[string]float64{"bid-factor": 1.0}},
 			outBidAdjustmentFactors: map[string]float64{"bid-factor": 1.0},
 		},
+		{
+			desc:                    "BidAdjustmentFactors contains uppercase bidders, expect case insensitve map returned",
+			requestExtPrebid:        &openrtb_ext.ExtRequestPrebid{BidAdjustmentFactors: map[string]float64{"Bidder": 1.0, "APPNEXUS": 2.0}},
+			outBidAdjustmentFactors: map[string]float64{"bidder": 1.0, "appnexus": 2.0},
+		},
 	}
 	for _, test := range testCases {
 		actualBidAdjustmentFactors := getExtBidAdjustmentFactors(test.requestExtPrebid)
@@ -3238,60 +3243,145 @@ func TestCleanOpenRTBRequestsBidAdjustment(t *testing.T) {
 }
 
 func TestApplyFPD(t *testing.T) {
-
 	testCases := []struct {
-		description     string
-		inputFpd        firstpartydata.ResolvedFirstPartyData
-		inputRequest    openrtb2.BidRequest
-		expectedRequest openrtb2.BidRequest
+		description               string
+		inputFpd                  map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData
+		inputBidderName           string
+		inputBidderCoreName       string
+		inputBidderIsRequestAlias bool
+		inputRequest              openrtb2.BidRequest
+		expectedRequest           openrtb2.BidRequest
 	}{
 		{
-			description:     "req.Site defined; bidderFPD.Site not defined; expect request.Site remains the same",
-			inputFpd:        firstpartydata.ResolvedFirstPartyData{Site: nil, App: nil, User: nil},
-			inputRequest:    openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
-			expectedRequest: openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
+			description:               "fpd-nil",
+			inputFpd:                  nil,
+			inputBidderName:           "bidderFromRequest",
+			inputBidderCoreName:       "bidderNormalized",
+			inputBidderIsRequestAlias: false,
+			inputRequest:              openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
+			expectedRequest:           openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
+		},
+		{
+			description: "fpd-bidderdata-nil",
+			inputFpd: map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData{
+				"bidderNormalized": nil,
+			},
+			inputBidderName:           "bidderFromRequest",
+			inputBidderCoreName:       "bidderNormalized",
+			inputBidderIsRequestAlias: false,
+			inputRequest:              openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
+			expectedRequest:           openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
+		},
+		{
+			description: "fpd-bidderdata-notdefined",
+			inputFpd: map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData{
+				"differentBidder": {App: &openrtb2.App{ID: "AppId"}},
+			},
+			inputBidderName:           "bidderFromRequest",
+			inputBidderCoreName:       "bidderNormalized",
+			inputBidderIsRequestAlias: false,
+			inputRequest:              openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
+			expectedRequest:           openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
+		},
+		{
+			description: "fpd-bidderdata-alias",
+			inputFpd: map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData{
+				"alias": {App: &openrtb2.App{ID: "AppId"}},
+			},
+			inputBidderName:           "alias",
+			inputBidderCoreName:       "bidder",
+			inputBidderIsRequestAlias: true,
+			inputRequest:              openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
+			expectedRequest:           openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}},
+		},
+		{
+			description: "req.Site defined; bidderFPD.Site not defined; expect request.Site remains the same",
+			inputFpd: map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData{
+				"bidderNormalized": {Site: nil, App: nil, User: nil},
+			},
+			inputBidderName:           "bidderFromRequest",
+			inputBidderCoreName:       "bidderNormalized",
+			inputBidderIsRequestAlias: false,
+			inputRequest:              openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
+			expectedRequest:           openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
 		},
 		{
 			description: "req.Site, req.App, req.User are not defined; bidderFPD.App, bidderFPD.Site and bidderFPD.User defined; " +
 				"expect req.Site, req.App, req.User to be overriden by bidderFPD.App, bidderFPD.Site and bidderFPD.User",
-			inputFpd:        firstpartydata.ResolvedFirstPartyData{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId"}},
-			inputRequest:    openrtb2.BidRequest{},
-			expectedRequest: openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId"}},
+			inputFpd: map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData{
+				"bidderNormalized": {Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId"}},
+			},
+			inputBidderName:           "bidderFromRequest",
+			inputBidderCoreName:       "bidderNormalized",
+			inputBidderIsRequestAlias: false,
+			inputRequest:              openrtb2.BidRequest{},
+			expectedRequest:           openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId"}},
 		},
 		{
-			description:     "req.Site, defined; bidderFPD.App defined; expect request.App to be overriden by bidderFPD.App; expect req.Site remains the same",
-			inputFpd:        firstpartydata.ResolvedFirstPartyData{App: &openrtb2.App{ID: "AppId"}},
-			inputRequest:    openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
-			expectedRequest: openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}},
+			description: "req.Site, defined; bidderFPD.App defined; expect request.App to be overriden by bidderFPD.App; expect req.Site remains the same",
+			inputFpd: map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData{
+				"bidderNormalized": {App: &openrtb2.App{ID: "AppId"}},
+			},
+			inputBidderName:           "bidderFromRequest",
+			inputBidderCoreName:       "bidderNormalized",
+			inputBidderIsRequestAlias: false,
+			inputRequest:              openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
+			expectedRequest:           openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}},
 		},
 		{
-			description:     "req.Site, req.App defined; bidderFPD.App defined; expect request.App to be overriden by bidderFPD.App",
-			inputFpd:        firstpartydata.ResolvedFirstPartyData{App: &openrtb2.App{ID: "AppId"}},
-			inputRequest:    openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "TestAppId"}},
-			expectedRequest: openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}},
+			description: "req.Site, req.App defined; bidderFPD.App defined; expect request.App to be overriden by bidderFPD.App",
+			inputFpd: map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData{
+				"bidderNormalized": {App: &openrtb2.App{ID: "AppId"}},
+			},
+			inputBidderName:           "bidderFromRequest",
+			inputBidderCoreName:       "bidderNormalized",
+			inputBidderIsRequestAlias: false,
+			inputRequest:              openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "TestAppId"}},
+			expectedRequest:           openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}},
 		},
 		{
-			description:     "req.User is defined; bidderFPD.User defined; req.User has BuyerUID. Expect to see user.BuyerUID in result request",
-			inputFpd:        firstpartydata.ResolvedFirstPartyData{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId"}},
-			inputRequest:    openrtb2.BidRequest{User: &openrtb2.User{ID: "UserIdIn", BuyerUID: "12345"}},
-			expectedRequest: openrtb2.BidRequest{User: &openrtb2.User{ID: "UserId", BuyerUID: "12345"}, Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}},
+			description: "req.User is defined; bidderFPD.User defined; req.User has BuyerUID. Expect to see user.BuyerUID in result request",
+			inputFpd: map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData{
+				"bidderNormalized": {Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId"}},
+			},
+			inputBidderName:           "bidderFromRequest",
+			inputBidderCoreName:       "bidderNormalized",
+			inputBidderIsRequestAlias: false,
+			inputRequest:              openrtb2.BidRequest{User: &openrtb2.User{ID: "UserIdIn", BuyerUID: "12345"}},
+			expectedRequest:           openrtb2.BidRequest{User: &openrtb2.User{ID: "UserId", BuyerUID: "12345"}, Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}},
 		},
 		{
-			description:     "req.User is defined; bidderFPD.User defined; req.User has BuyerUID with zero length. Expect to see empty user.BuyerUID in result request",
-			inputFpd:        firstpartydata.ResolvedFirstPartyData{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId"}},
-			inputRequest:    openrtb2.BidRequest{User: &openrtb2.User{ID: "UserIdIn", BuyerUID: ""}},
-			expectedRequest: openrtb2.BidRequest{User: &openrtb2.User{ID: "UserId"}, Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}},
+			description: "req.User is defined; bidderFPD.User defined; req.User has BuyerUID with zero length. Expect to see empty user.BuyerUID in result request",
+			inputFpd: map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData{
+				"bidderNormalized": {Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId"}},
+			},
+			inputBidderName:           "bidderFromRequest",
+			inputBidderCoreName:       "bidderNormalized",
+			inputBidderIsRequestAlias: false,
+			inputRequest:              openrtb2.BidRequest{User: &openrtb2.User{ID: "UserIdIn", BuyerUID: ""}},
+			expectedRequest:           openrtb2.BidRequest{User: &openrtb2.User{ID: "UserId"}, Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}},
 		},
 		{
-			description:     "req.User is not defined; bidderFPD.User defined and has BuyerUID. Expect to see user.BuyerUID in result request",
-			inputFpd:        firstpartydata.ResolvedFirstPartyData{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId", BuyerUID: "FPDBuyerUID"}},
-			inputRequest:    openrtb2.BidRequest{},
-			expectedRequest: openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId", BuyerUID: "FPDBuyerUID"}},
+			description: "req.User is not defined; bidderFPD.User defined and has BuyerUID. Expect to see user.BuyerUID in result request",
+			inputFpd: map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData{
+				"bidderNormalized": {Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId", BuyerUID: "FPDBuyerUID"}},
+			},
+			inputBidderName:           "bidderFromRequest",
+			inputBidderCoreName:       "bidderNormalized",
+			inputBidderIsRequestAlias: false,
+			inputRequest:              openrtb2.BidRequest{},
+			expectedRequest:           openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId", BuyerUID: "FPDBuyerUID"}},
 		},
 	}
 
 	for _, testCase := range testCases {
-		applyFPD(&testCase.inputFpd, &testCase.inputRequest)
+		bidderRequest := BidderRequest{
+			BidderName:     openrtb_ext.BidderName(testCase.inputBidderName),
+			BidderCoreName: openrtb_ext.BidderName(testCase.inputBidderCoreName),
+			IsRequestAlias: testCase.inputBidderIsRequestAlias,
+			BidRequest:     &testCase.inputRequest,
+		}
+		applyFPD(testCase.inputFpd, bidderRequest)
 		assert.Equal(t, testCase.expectedRequest, testCase.inputRequest, fmt.Sprintf("incorrect request after applying fpd, testcase %s", testCase.description))
 	}
 }

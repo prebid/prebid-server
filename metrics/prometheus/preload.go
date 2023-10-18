@@ -9,7 +9,7 @@ import (
 func preloadLabelValues(m *Metrics, syncerKeys []string, moduleStageNames map[string][]string) {
 	var (
 		adapterErrorValues        = enumAsString(metrics.AdapterErrors())
-		adapterValues             = enumAsString(openrtb_ext.CoreBidderNames())
+		adapterValues             = enumAsLowerCaseString(openrtb_ext.CoreBidderNames())
 		bidTypeValues             = []string{markupDeliveryAdm, markupDeliveryNurl}
 		boolValues                = boolValuesAsString()
 		cacheResultValues         = enumAsString(metrics.CacheResults())
