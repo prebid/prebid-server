@@ -482,7 +482,7 @@ func TestExtractBidderConfigFPD(t *testing.T) {
 			require.NoError(t, err, "Load Test File")
 
 			givenRequestExtPrebid := &openrtb_ext.ExtRequestPrebid{}
-			err = jsonutil.UnmarshalValid(fpdFile.InputRequestData, givenRequestExtPrebid)
+			err = jsonutil.UnmarshalValid(testFile.InputRequestData, givenRequestExtPrebid)
 			require.NoError(t, err, "Cannot Load Test Conditions")
 
 			testRequest := &openrtb_ext.RequestExt{}
@@ -538,16 +538,12 @@ func TestResolveFPD(t *testing.T) {
 			require.NoError(t, err, "Load Test File")
 
 			request := &openrtb2.BidRequest{}
-			err = jsonutil.UnmarshalValid(fpdFile.InputRequestData, &request)
+			err = jsonutil.UnmarshalValid(testFile.InputRequestData, &request)
 			require.NoError(t, err, "Cannot Load Request")
 
 			originalRequest := &openrtb2.BidRequest{}
-			err = jsonutil.UnmarshalValid(fpdFile.InputRequestData, &originalRequest)
+			err = jsonutil.UnmarshalValid(testFile.InputRequestData, &originalRequest)
 			require.NoError(t, err, "Cannot Load Request")
-
-			outputReq := &openrtb2.BidRequest{}
-			err = jsonutil.UnmarshalValid(fpdFile.OutputRequestData, &outputReq)
-			require.NoError(t, err, "Cannot Load Output Request")
 
 			reqExtFPD := make(map[string][]byte)
 			reqExtFPD["site"] = testFile.GlobalFPD["site"]
@@ -645,14 +641,14 @@ func TestExtractFPDForBidders(t *testing.T) {
 			require.NoError(t, err, "Load Test File")
 
 			var expectedRequest openrtb2.BidRequest
-			err = jsonutil.UnmarshalValid(fpdFile.OutputRequestData, &expectedRequest)
+			err = jsonutil.UnmarshalValid(testFile.OutputRequestData, &expectedRequest)
 			if err != nil {
 				t.Errorf("Unable to unmarshal input request: %s", path)
 			}
 
 			resultRequest := &openrtb_ext.RequestWrapper{}
 			resultRequest.BidRequest = &openrtb2.BidRequest{}
-			err = jsonutil.UnmarshalValid(fpdFile.InputRequestData, resultRequest.BidRequest)
+			err = jsonutil.UnmarshalValid(testFile.InputRequestData, resultRequest.BidRequest)
 			assert.NoError(t, err, "Error should be nil")
 
 			resultFPD, errL := ExtractFPDForBidders(resultRequest)
