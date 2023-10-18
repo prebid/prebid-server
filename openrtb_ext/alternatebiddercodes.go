@@ -1,6 +1,9 @@
 package openrtb_ext
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // ExtAlternateBidderCodes defines list of alternate bidder codes allowed by adatpers. This overrides host level configs.
 type ExtAlternateBidderCodes struct {
@@ -14,7 +17,7 @@ type ExtAdapterAlternateBidderCodes struct {
 }
 
 func (bidderCodes *ExtAlternateBidderCodes) IsValidBidderCode(bidder, alternateBidder string) (bool, error) {
-	if alternateBidder == "" || bidder == alternateBidder {
+	if alternateBidder == "" || strings.EqualFold(bidder, alternateBidder) {
 		return true, nil
 	}
 
