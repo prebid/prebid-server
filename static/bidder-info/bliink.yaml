@@ -15,6 +15,9 @@ capabilities:
       - video
       - native
 userSync:
+  iframe:
+    url: "https://tag.bliink.io/usersync.html?gdpr={{.GDPR}}&gdprConsent={{.GDPRConsent}}&uspConsent={{.USPrivacy}"
+    userMacro: ""
   redirect:
     url: "https://cookiesync.api.bliink.io/getuid?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&url={{.RedirectURL}}"
     userMacro: "$UID"
