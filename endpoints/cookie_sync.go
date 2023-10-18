@@ -532,5 +532,3 @@ func (p usersyncPrivacy) ActivityAllowsUserSync(bidder string) bool {
 		privacy.Component{Type: privacy.ComponentTypeBidder, Name: bidder},
 		p.activityRequest)
 }
-
-//TODO: Maybe add GPPAllowsSync option?
