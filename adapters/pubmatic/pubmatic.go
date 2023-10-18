@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/buger/jsonparser"
-	"github.com/golang/glog"
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -18,6 +18,8 @@ import (
 )
 
 const MAX_IMPRESSIONS_PUBMATIC = 30
+
+const ae = "ae"
 
 type PubmaticAdapter struct {
 	URI string
@@ -42,6 +44,7 @@ type pubmaticBidExtVideo struct {
 type ExtImpBidderPubmatic struct {
 	adapters.ExtImpBidder
 	Data json.RawMessage `json:"data,omitempty"`
+	AE   int             `json:"ae,omitempty"`
 }
 
 type ExtAdServer struct {
@@ -58,6 +61,10 @@ type extRequestAdServer struct {
 	Acat        []string            `json:"acat,omitempty"`
 	Marketplace *marketplaceReqExt  `json:"marketplace,omitempty"`
 	openrtb_ext.ExtRequest
+}
+
+type respExt struct {
+	FledgeAuctionConfigs map[string]json.RawMessage `json:"fledge_auction_configs,omitempty"`
 }
 
 const (
@@ -283,8 +290,8 @@ func parseImpressionObject(imp *openrtb2.Imp, extractWrapperExtFromImp, extractP
 	if pubmaticExt.Kadfloor != "" {
 		bidfloor, err := strconv.ParseFloat(strings.TrimSpace(pubmaticExt.Kadfloor), 64)
 		if err == nil {
-			//do not overwrite existing value if kadfloor is invalid
-			imp.BidFloor = bidfloor
+			// In case of valid kadfloor, select maximum of original imp.bidfloor and kadfloor
+			imp.BidFloor = math.Max(bidfloor, imp.BidFloor)
 		}
 	}
 
@@ -302,6 +309,10 @@ func parseImpressionObject(imp *openrtb2.Imp, extractWrapperExtFromImp, extractP
 
 	if len(bidderExt.Data) > 0 {
 		populateFirstPartyDataImpAttributes(bidderExt.Data, extMap)
+	}
+
+	if bidderExt.AE != 0 {
+		extMap[ae] = bidderExt.AE
 	}
 
 	imp.Ext = nil
@@ -389,7 +400,6 @@ func getAlternateBidderCodesFromRequestExt(reqExt *openrtb_ext.ExtRequest) []str
 func addKeywordsToExt(keywords []*openrtb_ext.ExtImpPubmaticKeyVal, extMap map[string]interface{}) {
 	for _, keyVal := range keywords {
 		if len(keyVal.Values) == 0 {
-			logf("No values present for key = %s", keyVal.Key)
 			continue
 		} else {
 			key := keyVal.Key
@@ -465,6 +475,20 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 	}
 	if bidResp.Cur != "" {
 		bidResponse.Currency = bidResp.Cur
+	}
+
+	if bidResp.Ext != nil {
+		var bidRespExt respExt
+		if err := json.Unmarshal(bidResp.Ext, &bidRespExt); err == nil && bidRespExt.FledgeAuctionConfigs != nil {
+			bidResponse.FledgeAuctionConfigs = make([]*openrtb_ext.FledgeAuctionConfig, 0, len(bidRespExt.FledgeAuctionConfigs))
+			for impId, config := range bidRespExt.FledgeAuctionConfigs {
+				fledgeAuctionConfig := &openrtb_ext.FledgeAuctionConfig{
+					ImpId:  impId,
+					Config: config,
+				}
+				bidResponse.FledgeAuctionConfigs = append(bidResponse.FledgeAuctionConfigs, fledgeAuctionConfig)
+			}
+		}
 	}
 	return bidResponse, errs
 }
@@ -611,12 +635,6 @@ func getBidType(bidExt *pubmaticBidExt) openrtb_ext.BidType {
 		}
 	}
 	return bidType
-}
-
-func logf(msg string, args ...interface{}) {
-	if glog.V(2) {
-		glog.Infof(msg, args...)
-	}
 }
 
 // Builder builds a new instance of the Pubmatic adapter for the given bidder with the given config.

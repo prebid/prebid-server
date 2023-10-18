@@ -1,0 +1,55 @@
+{
+  "description": "Well formed amp request with conflicting (openrtb 2.6 vs. GPP) CCPA consent values",
+  "mockBidRequest": {
+    "id": "b9c97a4b-cbc4-483d-b2c4-58a19ed5cfc5",
+    "site": {
+      "page": "prebid.org",
+      "publisher": {
+        "id": "a3de7af2-a86a-4043-a77b-c7e86744155e"
+      }
+    },
+    "source": {
+      "tid": "b9c97a4b-cbc4-483d-b2c4-58a19ed5cfc5"
+    },
+    "tmax": 1000,
+    "imp": [
+      {
+        "id": "/19968336/header-bid-tag-0",
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          }
+        },
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 300
+            }
+          ]
+        }
+      }
+    ],
+    "regs": {
+      "gpp": "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1NYN",
+      "gpp_sid": [6],
+      "us_privacy": "1YYY",
+      "ext": {
+        "us_privacy": "1YYY"
+      }
+    },
+    "user": {
+      "ext": {}
+    }
+  },
+  "expectedBidResponse": {
+      "id":"b9c97a4b-cbc4-483d-b2c4-58a19ed5cfc5",
+      "bidid":"test bid id",
+      "nbr":0
+  },
+  "expectedReturnCode": 200
+}

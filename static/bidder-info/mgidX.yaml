@@ -1,0 +1,23 @@
+endpoint: "https://us-east-x.mgid.com/pserver"
+maintainer:
+  email: "prebid@mgid.com"
+gvlVendorID: 358
+capabilities:
+  site:
+    mediaTypes:
+    - banner
+    - video
+    - native
+    
+  app:
+    mediaTypes:
+    - banner
+    - video
+    - native
+userSync:
+  redirect:
+    url: "https://cm.mgid.com/i.gif?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&adu={{.RedirectURL}}"
+    userMacro: "{muidn}"
+  iframe:
+    url: "https://cm.mgid.com/i.html?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&adu={{.RedirectURL}}"
+    userMacro: "{muidn}"

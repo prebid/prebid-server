@@ -1,0 +1,19 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Silverpush OpenRTB Bidder Adapter",
+    "description": "A schema which validates params accepted by the SilverPush adapter",
+    "type": "object",
+  
+    "properties": { 
+      "publisherId": {
+         "type":"string",
+         "description": "Publisher id provided by silverpush"
+      },
+      "bidfloor": {
+         "type":"number", 
+         "description": "Minimum price in USD. bidFloor applies to a specific unit. For example, use the following value to set a $1.50 floor: 1.50."
+      }
+    },
+  
+    "required": ["publisherId"]
+  }

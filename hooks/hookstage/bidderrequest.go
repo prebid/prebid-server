@@ -3,7 +3,7 @@ package hookstage
 import (
 	"context"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 )
 
 // BidderRequest hooks are invoked for each bidder participating in auction.

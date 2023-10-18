@@ -12,21 +12,24 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/analytics"
-	analyticsConf "github.com/prebid/prebid-server/analytics/config"
+	analyticsBuild "github.com/prebid/prebid-server/analytics/build"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
-	"github.com/prebid/prebid-server/hooks/hookexecution"
+	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/metrics"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
+	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/util/ptrutil"
 
-	"github.com/prebid/openrtb/v17/adcom1"
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/adcom1"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	gometrics "github.com/rcrowley/go-metrics"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestVideoEndpointImpressionsNumber(t *testing.T) {
@@ -60,6 +63,7 @@ func TestVideoEndpointImpressionsNumber(t *testing.T) {
 	assert.Len(t, resp.AdPods[4].Targeting, 3, "Incorrect Targeting data in response")
 
 	assert.Equal(t, resp.AdPods[4].Targeting[0].HbPbCatDur, "20.00_395_30s", "Incorrect number of Ad Pods in response")
+	assert.Equal(t, resp.AdPods[0].Targeting[0].HbDeal, "ABC_123", "If DealID exists in bid response, hb_deal targeting needs to be added to resp")
 }
 
 func TestVideoEndpointImpressionsDuration(t *testing.T) {
@@ -77,7 +81,8 @@ func TestVideoEndpointImpressionsDuration(t *testing.T) {
 
 	var extData openrtb_ext.ExtRequest
 	json.Unmarshal(ex.lastRequest.Ext, &extData)
-	assert.True(t, extData.Prebid.Targeting.IncludeBidderKeys, "Request ext incorrect: IncludeBidderKeys should be true ")
+	assert.NotNil(t, extData.Prebid.Targeting.IncludeBidderKeys, "Request ext incorrect: IncludeBidderKeys should be true ")
+	assert.True(t, *extData.Prebid.Targeting.IncludeBidderKeys, "Request ext incorrect: IncludeBidderKeys should be true ")
 
 	assert.Len(t, ex.lastRequest.Imp, 22, "Incorrect number of impressions in request")
 	assert.Equal(t, ex.lastRequest.Imp[0].ID, "1_0", "Incorrect impression id in request")
@@ -120,8 +125,8 @@ func TestCreateBidExtension(t *testing.T) {
 			DurationRangeSec:     durationRange,
 			RequireExactDuration: false,
 		},
-		PriceGranularity: openrtb_ext.PriceGranularity{
-			Precision: 2,
+		PriceGranularity: &openrtb_ext.PriceGranularity{
+			Precision: ptrutil.ToPtr(2),
 			Ranges:    priceGranRanges,
 		},
 	}
@@ -137,37 +142,20 @@ func TestCreateBidExtension(t *testing.T) {
 	assert.Equal(t, resExt.Prebid.Targeting.PriceGranularity.Ranges, priceGranRanges, "Price granularity is incorrect")
 }
 
-func TestCreateBidExtensionExactDurTrueNoPriceRange(t *testing.T) {
-	durationRange := make([]int, 0)
-	durationRange = append(durationRange, 15)
-	durationRange = append(durationRange, 30)
+func TestCreateBidExtensionTargeting(t *testing.T) {
+	ex := &mockExchangeVideo{}
+	reqBody := readVideoTestFile(t, "sample-requests/video/video_valid_sample.json")
+	req := httptest.NewRequest("POST", "/openrtb2/video", strings.NewReader(reqBody))
+	recorder := httptest.NewRecorder()
 
-	translateCategories := false
-	videoRequest := openrtb_ext.BidRequestVideo{
-		IncludeBrandCategory: &openrtb_ext.IncludeBrandCategory{
-			PrimaryAdserver:     1,
-			Publisher:           "",
-			TranslateCategories: &translateCategories,
-		},
-		PodConfig: openrtb_ext.PodConfig{
-			DurationRangeSec:     durationRange,
-			RequireExactDuration: true,
-		},
-		PriceGranularity: openrtb_ext.PriceGranularity{
-			Precision: 0,
-			Ranges:    nil,
-		},
-	}
-	res, err := createBidExtension(&videoRequest)
-	assert.NoError(t, err, "Error should be nil")
+	deps := mockDeps(t, ex)
+	deps.VideoAuctionEndpoint(recorder, req, nil)
 
-	resExt := &openrtb_ext.ExtRequest{}
+	require.NotNil(t, ex.lastRequest, "The request never made it into the Exchange.")
 
-	if err := json.Unmarshal(res, &resExt); err != nil {
-		assert.Fail(t, "Unable to unmarshal bid extension")
-	}
-	assert.Equal(t, resExt.Prebid.Targeting.DurationRangeSec, []int(nil), "Duration range seconds is incorrect")
-	assert.Equal(t, resExt.Prebid.Targeting.PriceGranularity, openrtb_ext.PriceGranularityFromString("med"), "Price granularity is incorrect")
+	// assert targeting set to default
+	expectedRequestExt := `{"prebid":{"cache":{"vastxml":{}},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"mediatypepricegranularity":{},"includebidderkeys":true,"includewinners":true,"includebrandcategory":{"primaryadserver":1,"publisher":"","withcategory":true}}}}`
+	assert.JSONEq(t, expectedRequestExt, string(ex.lastRequest.Ext))
 }
 
 func TestVideoEndpointDebugQueryTrue(t *testing.T) {
@@ -305,7 +293,7 @@ func TestVideoEndpointNoPods(t *testing.T) {
 	deps := mockDeps(t, ex)
 	deps.VideoAuctionEndpoint(recorder, req, nil)
 
-	errorMessage := string(recorder.Body.Bytes())
+	errorMessage := recorder.Body.String()
 
 	assert.Equal(t, recorder.Code, 500, "Should catch error in request")
 	assert.Equal(t, "Critical error while running the video endpoint:  request missing required field: PodConfig.DurationRangeSec request missing required field: PodConfig.Pods", errorMessage, "Incorrect request validation message")
@@ -752,7 +740,7 @@ func TestVideoBuildVideoResponsePodErrors(t *testing.T) {
 
 func TestVideoBuildVideoResponseNoBids(t *testing.T) {
 	openRtbBidResp := openrtb2.BidResponse{}
-	podErrors := make([]PodError, 0, 0)
+	podErrors := make([]PodError, 0)
 	openRtbBidResp.SeatBid = make([]openrtb2.SeatBid, 0)
 	bidRespVideo, err := buildVideoResponse(&openRtbBidResp, podErrors)
 	assert.NoError(t, err, "Error should be nil")
@@ -821,7 +809,7 @@ func TestHandleError(t *testing.T) {
 		{
 			description: "Blocked account - return 503 with blocked metrics status",
 			giveErrors: []error{
-				&errortypes.BlacklistedAcct{},
+				&errortypes.AccountDisabled{},
 			},
 			wantCode:          503,
 			wantMetricsStatus: metrics.RequestStatusBlacklisted,
@@ -1237,7 +1225,9 @@ func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *m
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		&hookexecution.EmptyHookExecutor{},
+		hooks.EmptyPlanBuilder{},
+		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 	return deps, metrics, mockModule
 }
@@ -1247,21 +1237,22 @@ type mockAnalyticsModule struct {
 	videoObjects   []*analytics.VideoObject
 }
 
-func (m *mockAnalyticsModule) LogAuctionObject(ao *analytics.AuctionObject) {
+func (m *mockAnalyticsModule) LogAuctionObject(ao *analytics.AuctionObject, _ privacy.ActivityControl) {
 	m.auctionObjects = append(m.auctionObjects, ao)
 }
 
-func (m *mockAnalyticsModule) LogVideoObject(vo *analytics.VideoObject) {
+func (m *mockAnalyticsModule) LogVideoObject(vo *analytics.VideoObject, _ privacy.ActivityControl) {
 	m.videoObjects = append(m.videoObjects, vo)
 }
 
-func (m *mockAnalyticsModule) LogCookieSyncObject(cso *analytics.CookieSyncObject) { return }
+func (m *mockAnalyticsModule) LogCookieSyncObject(cso *analytics.CookieSyncObject) {}
 
-func (m *mockAnalyticsModule) LogSetUIDObject(so *analytics.SetUIDObject) { return }
+func (m *mockAnalyticsModule) LogSetUIDObject(so *analytics.SetUIDObject) {}
 
-func (m *mockAnalyticsModule) LogAmpObject(ao *analytics.AmpObject) { return }
+func (m *mockAnalyticsModule) LogAmpObject(ao *analytics.AmpObject, _ privacy.ActivityControl) {}
 
-func (m *mockAnalyticsModule) LogNotificationEventObject(ne *analytics.NotificationEvent) { return }
+func (m *mockAnalyticsModule) LogNotificationEventObject(ne *analytics.NotificationEvent, _ privacy.ActivityControl) {
+}
 
 func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 	return &endpointDeps{
@@ -1273,7 +1264,7 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		&mockAccountFetcher{data: mockVideoAccountData},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -1282,7 +1273,9 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		regexp.MustCompile(`[<>]`),
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		&hookexecution.EmptyHookExecutor{},
+		hooks.EmptyPlanBuilder{},
+		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 }
 
@@ -1296,7 +1289,7 @@ func mockDepsAppendBidderNames(t *testing.T, ex *mockExchangeAppendBidderNames) 
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -1305,7 +1298,9 @@ func mockDepsAppendBidderNames(t *testing.T, ex *mockExchangeAppendBidderNames) 
 		regexp.MustCompile(`[<>]`),
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		&hookexecution.EmptyHookExecutor{},
+		hooks.EmptyPlanBuilder{},
+		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	return deps
@@ -1321,7 +1316,7 @@ func mockDepsNoBids(t *testing.T, ex *mockExchangeVideoNoBids) *endpointDeps {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -1330,7 +1325,9 @@ func mockDepsNoBids(t *testing.T, ex *mockExchangeVideoNoBids) *endpointDeps {
 		regexp.MustCompile(`[<>]`),
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		&hookexecution.EmptyHookExecutor{},
+		hooks.EmptyPlanBuilder{},
+		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	return edep
@@ -1367,13 +1364,17 @@ type mockExchangeVideo struct {
 	cache       *mockCacheClient
 }
 
-func (m *mockExchangeVideo) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (m *mockExchangeVideo) HoldAuction(ctx context.Context, r *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*exchange.AuctionResponse, error) {
+	if err := r.BidRequestWrapper.RebuildRequest(); err != nil {
+		return nil, err
+	}
+
 	m.lastRequest = r.BidRequestWrapper.BidRequest
 	if debugLog != nil && debugLog.Enabled {
 		m.cache.called = true
 	}
-	ext := []byte(`{"prebid":{"targeting":{"hb_bidder_appnexus":"appnexus","hb_pb_appnexus":"20.00","hb_pb_cat_dur_appnex":"20.00_395_30s","hb_size":"1x1", "hb_uuid_appnexus":"837ea3b7-5598-4958-8c45-8e9ef2bf7cc1"},"type":"video","dealpriority":0,"dealtiersatisfied":false},"bidder":{"appnexus":{"brand_id":1,"auction_id":7840037870526938650,"bidder_id":2,"bid_ad_type":1,"creative_info":{"video":{"duration":30,"mimes":["video\/mp4"]}}}}}`)
-	return &openrtb2.BidResponse{
+	ext := []byte(`{"prebid":{"targeting":{"hb_bidder_appnexus":"appnexus","hb_pb_appnexus":"20.00","hb_pb_cat_dur_appnex":"20.00_395_30s","hb_size":"1x1", "hb_uuid_appnexus":"837ea3b7-5598-4958-8c45-8e9ef2bf7cc1", "hb_deal_appnexus": "ABC_123"},"type":"video","dealpriority":0,"dealtiersatisfied":false},"bidder":{"appnexus":{"brand_id":1,"auction_id":7840037870526938650,"bidder_id":2,"bid_ad_type":1,"creative_info":{"video":{"duration":30,"mimes":["video\/mp4"]}}}}}`)
+	return &exchange.AuctionResponse{BidResponse: &openrtb2.BidResponse{
 		SeatBid: []openrtb2.SeatBid{{
 			Seat: "appnexus",
 			Bid: []openrtb2.Bid{
@@ -1395,7 +1396,7 @@ func (m *mockExchangeVideo) HoldAuction(ctx context.Context, r exchange.AuctionR
 				{ID: "16", ImpID: "5_2", Ext: ext},
 			},
 		}},
-	}, nil
+	}}, nil
 }
 
 type mockExchangeAppendBidderNames struct {
@@ -1403,13 +1404,13 @@ type mockExchangeAppendBidderNames struct {
 	cache       *mockCacheClient
 }
 
-func (m *mockExchangeAppendBidderNames) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (m *mockExchangeAppendBidderNames) HoldAuction(ctx context.Context, r *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*exchange.AuctionResponse, error) {
 	m.lastRequest = r.BidRequestWrapper.BidRequest
 	if debugLog != nil && debugLog.Enabled {
 		m.cache.called = true
 	}
 	ext := []byte(`{"prebid":{"targeting":{"hb_bidder_appnexus":"appnexus","hb_pb_appnexus":"20.00","hb_pb_cat_dur_appnex":"20.00_395_30s_appnexus","hb_size":"1x1", "hb_uuid_appnexus":"837ea3b7-5598-4958-8c45-8e9ef2bf7cc1"},"type":"video"},"bidder":{"appnexus":{"brand_id":1,"auction_id":7840037870526938650,"bidder_id":2,"bid_ad_type":1,"creative_info":{"video":{"duration":30,"mimes":["video\/mp4"]}}}}}`)
-	return &openrtb2.BidResponse{
+	return &exchange.AuctionResponse{BidResponse: &openrtb2.BidResponse{
 		SeatBid: []openrtb2.SeatBid{{
 			Seat: "appnexus",
 			Bid: []openrtb2.Bid{
@@ -1430,7 +1431,7 @@ func (m *mockExchangeAppendBidderNames) HoldAuction(ctx context.Context, r excha
 				{ID: "15", ImpID: "5_1", Ext: ext},
 				{ID: "16", ImpID: "5_2", Ext: ext},
 			},
-		}},
+		}}},
 	}, nil
 }
 
@@ -1439,11 +1440,11 @@ type mockExchangeVideoNoBids struct {
 	cache       *mockCacheClient
 }
 
-func (m *mockExchangeVideoNoBids) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (m *mockExchangeVideoNoBids) HoldAuction(ctx context.Context, r *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*exchange.AuctionResponse, error) {
 	m.lastRequest = r.BidRequestWrapper.BidRequest
-	return &openrtb2.BidResponse{
+	return &exchange.AuctionResponse{BidResponse: &openrtb2.BidResponse{
 		SeatBid: []openrtb2.SeatBid{{}},
-	}, nil
+	}}, nil
 }
 
 var mockVideoAccountData = map[string]json.RawMessage{

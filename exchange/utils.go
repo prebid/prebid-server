@@ -1,19 +1,22 @@
 package exchange
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"math/rand"
+	"strings"
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/go-gdpr/vendorconsent"
 	gpplib "github.com/prebid/go-gpp"
-	"github.com/prebid/openrtb/v17/openrtb2"
+	gppConstants "github.com/prebid/go-gpp/constants"
+	"github.com/prebid/openrtb/v19/openrtb2"
 
-	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/firstpartydata"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
@@ -23,34 +26,38 @@ import (
 	"github.com/prebid/prebid-server/privacy/lmt"
 	"github.com/prebid/prebid-server/schain"
 	"github.com/prebid/prebid-server/stored_responses"
+	"github.com/prebid/prebid-server/util/ptrutil"
 )
 
 var channelTypeMap = map[metrics.RequestType]config.ChannelType{
-	metrics.ReqTypeAMP:      config.ChannelAMP,
-	metrics.ReqTypeORTB2App: config.ChannelApp,
-	metrics.ReqTypeVideo:    config.ChannelVideo,
-	metrics.ReqTypeORTB2Web: config.ChannelWeb,
+	metrics.ReqTypeAMP:       config.ChannelAMP,
+	metrics.ReqTypeORTB2App:  config.ChannelApp,
+	metrics.ReqTypeVideo:     config.ChannelVideo,
+	metrics.ReqTypeORTB2Web:  config.ChannelWeb,
+	metrics.ReqTypeORTB2DOOH: config.ChannelDOOH,
 }
 
 const unknownBidder string = ""
+
+type requestSplitter struct {
+	bidderToSyncerKey map[string]string
+	me                metrics.MetricsEngine
+	privacyConfig     config.Privacy
+	gdprPermsBuilder  gdpr.PermissionsBuilder
+	hostSChainNode    *openrtb2.SupplyChainNode
+	bidderInfo        config.BidderInfos
+}
 
 // cleanOpenRTBRequests splits the input request into requests which are sanitized for each bidder. Intended behavior is:
 //
 //  1. BidRequest.Imp[].Ext will only contain the "prebid" field and a "bidder" field which has the params for the intended Bidder.
 //  2. Every BidRequest.Imp[] requested Bids from the Bidder who keys it.
 //  3. BidRequest.User.BuyerUID will be set to that Bidder's ID.
-func cleanOpenRTBRequests(ctx context.Context,
+func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 	auctionReq AuctionRequest,
 	requestExt *openrtb_ext.ExtRequest,
-	bidderToSyncerKey map[string]string,
-	metricsEngine metrics.MetricsEngine,
-	gdprDefaultValue gdpr.Signal,
-	privacyConfig config.Privacy,
-	gdprPermsBuilder gdpr.PermissionsBuilder,
-	tcf2ConfigBuilder gdpr.TCF2ConfigBuilder,
-	hostSChainNode *openrtb2.SupplyChainNode,
+	gdprDefaultValue gdpr.Signal, bidAdjustmentFactors map[string]float64,
 ) (allowedBidderRequests []BidderRequest, privacyLabels metrics.PrivacyLabels, errs []error) {
-
 	req := auctionReq.BidRequestWrapper
 	aliases, errs := parseAliases(req.BidRequest)
 	if len(errs) > 0 {
@@ -73,7 +80,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 	}
 
 	var allBidderRequests []BidderRequest
-	allBidderRequests, errs = getAuctionBidderRequests(auctionReq, requestExt, bidderToSyncerKey, impsByBidder, aliases, hostSChainNode)
+	allBidderRequests, errs = getAuctionBidderRequests(auctionReq, requestExt, rs.bidderToSyncerKey, impsByBidder, aliases, rs.hostSChainNode)
 
 	bidderNameToBidderReq := buildBidResponseRequest(req.BidRequest, bidderImpWithBidResp, aliases, auctionReq.BidderImpReplaceImpID)
 	//this function should be executed after getAuctionBidderRequests
@@ -87,42 +94,43 @@ func cleanOpenRTBRequests(ctx context.Context,
 		}
 	}
 
-	gdprSignal, err := extractGDPR(req.BidRequest)
+	if auctionReq.Account.PriceFloors.IsAdjustForBidAdjustmentEnabled() {
+		//Apply BidAdjustmentFactor to imp.BidFloor
+		applyBidAdjustmentToFloor(allBidderRequests, bidAdjustmentFactors)
+	}
+
+	gdprSignal, err := getGDPR(req)
 	if err != nil {
 		errs = append(errs, err)
 	}
 
-	consent, err := extractConsent(req.BidRequest, gpp)
+	consent, err := getConsent(req, gpp)
 	if err != nil {
 		errs = append(errs, err)
 	}
 	gdprApplies := gdprSignal == gdpr.SignalYes || (gdprSignal == gdpr.SignalAmbiguous && gdprDefaultValue == gdpr.SignalYes)
 
-	ccpaEnforcer, err := extractCCPA(req.BidRequest, privacyConfig, &auctionReq.Account, aliases, channelTypeMap[auctionReq.LegacyLabels.RType], gpp)
+	ccpaEnforcer, err := extractCCPA(req.BidRequest, rs.privacyConfig, &auctionReq.Account, aliases, channelTypeMap[auctionReq.LegacyLabels.RType], gpp)
 	if err != nil {
 		errs = append(errs, err)
 	}
 
-	lmtEnforcer := extractLMT(req.BidRequest, privacyConfig)
+	lmtEnforcer := extractLMT(req.BidRequest, rs.privacyConfig)
 
 	// request level privacy policies
-	privacyEnforcement := privacy.Enforcement{
-		COPPA: req.BidRequest.Regs != nil && req.BidRequest.Regs.COPPA == 1,
-		LMT:   lmtEnforcer.ShouldEnforce(unknownBidder),
-	}
+	coppa := req.BidRequest.Regs != nil && req.BidRequest.Regs.COPPA == 1
+	lmt := lmtEnforcer.ShouldEnforce(unknownBidder)
 
 	privacyLabels.CCPAProvided = ccpaEnforcer.CanEnforce()
 	privacyLabels.CCPAEnforced = ccpaEnforcer.ShouldEnforce(unknownBidder)
-	privacyLabels.COPPAEnforced = privacyEnforcement.COPPA
-	privacyLabels.LMTEnforced = lmtEnforcer.ShouldEnforce(unknownBidder)
-
-	tcf2Cfg := tcf2ConfigBuilder(privacyConfig.GDPR.TCF2, auctionReq.Account.GDPR)
+	privacyLabels.COPPAEnforced = coppa
+	privacyLabels.LMTEnforced = lmt
 
 	var gdprEnforced bool
 	var gdprPerms gdpr.Permissions = &gdpr.AlwaysAllow{}
 
 	if gdprApplies {
-		gdprEnforced = tcf2Cfg.ChannelEnabled(channelTypeMap[auctionReq.LegacyLabels.RType])
+		gdprEnforced = auctionReq.TCF2Config.ChannelEnabled(channelTypeMap[auctionReq.LegacyLabels.RType])
 	}
 
 	if gdprEnforced {
@@ -139,45 +147,98 @@ func cleanOpenRTBRequests(ctx context.Context,
 			GDPRSignal:  gdprSignal,
 			PublisherID: auctionReq.LegacyLabels.PubID,
 		}
-		gdprPerms = gdprPermsBuilder(tcf2Cfg, gdprRequestInfo)
+		gdprPerms = rs.gdprPermsBuilder(auctionReq.TCF2Config, gdprRequestInfo)
 	}
 
 	// bidder level privacy policies
 	for _, bidderRequest := range allBidderRequests {
-		bidRequestAllowed := true
+		privacyEnforcement := privacy.Enforcement{
+			COPPA: coppa,
+			LMT:   lmt,
+		}
 
-		// CCPA
-		privacyEnforcement.CCPA = ccpaEnforcer.ShouldEnforce(bidderRequest.BidderName.String())
+		// fetchBids activity
+		scopedName := privacy.Component{Type: privacy.ComponentTypeBidder, Name: bidderRequest.BidderName.String()}
+		fetchBidsActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityFetchBids, scopedName, privacy.NewRequestFromBidRequest(*req))
+		if !fetchBidsActivityAllowed {
+			// skip the call to a bidder if fetchBids activity is not allowed
+			// do not add this bidder to allowedBidderRequests
+			continue
+		}
 
-		// GDPR
+		var auctionPermissions gdpr.AuctionPermissions
+		var gdprErr error
+
 		if gdprEnforced {
-			auctionPermissions, err := gdprPerms.AuctionActivitiesAllowed(ctx, bidderRequest.BidderCoreName, bidderRequest.BidderName)
-			bidRequestAllowed = auctionPermissions.AllowBidRequest
-
-			if err == nil {
-				privacyEnforcement.GDPRGeo = !auctionPermissions.PassGeo
-				privacyEnforcement.GDPRID = !auctionPermissions.PassID
-			} else {
-				privacyEnforcement.GDPRGeo = true
-				privacyEnforcement.GDPRID = true
-			}
-
-			if !bidRequestAllowed {
-				metricsEngine.RecordAdapterGDPRRequestBlocked(bidderRequest.BidderCoreName)
+			auctionPermissions, gdprErr = gdprPerms.AuctionActivitiesAllowed(ctx, bidderRequest.BidderCoreName, bidderRequest.BidderName)
+			if !auctionPermissions.AllowBidRequest {
+				// auction request is not permitted by GDPR
+				// do not add this bidder to allowedBidderRequests
+				rs.me.RecordAdapterGDPRRequestBlocked(bidderRequest.BidderCoreName)
+				continue
 			}
 		}
 
-		if auctionReq.FirstPartyData != nil && auctionReq.FirstPartyData[bidderRequest.BidderName] != nil {
-			applyFPD(auctionReq.FirstPartyData[bidderRequest.BidderName], bidderRequest.BidRequest)
+		passIDActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitUserFPD, scopedName, privacy.NewRequestFromBidRequest(*req))
+		if !passIDActivityAllowed {
+			privacyEnforcement.UFPD = true
+		} else {
+			// run existing policies (GDPR, CCPA, COPPA, LMT)
+			// potentially block passing IDs based on GDPR
+			if gdprEnforced {
+				if gdprErr == nil {
+					privacyEnforcement.GDPRID = !auctionPermissions.PassID
+				} else {
+					privacyEnforcement.GDPRID = true
+				}
+			}
+			// potentially block passing IDs based on CCPA
+			privacyEnforcement.CCPA = ccpaEnforcer.ShouldEnforce(bidderRequest.BidderName.String())
 		}
 
-		if bidRequestAllowed {
-			privacyEnforcement.Apply(bidderRequest.BidRequest)
-			allowedBidderRequests = append(allowedBidderRequests, bidderRequest)
+		passGeoActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitPreciseGeo, scopedName, privacy.NewRequestFromBidRequest(*req))
+		if !passGeoActivityAllowed {
+			privacyEnforcement.PreciseGeo = true
+		} else {
+			// run existing policies (GDPR, CCPA, COPPA, LMT)
+			// potentially block passing geo based on GDPR
+			if gdprEnforced {
+				if gdprErr == nil {
+					privacyEnforcement.GDPRGeo = !auctionPermissions.PassGeo
+				} else {
+					privacyEnforcement.GDPRGeo = true
+				}
+			}
+			// potentially block passing geo based on CCPA
+			privacyEnforcement.CCPA = ccpaEnforcer.ShouldEnforce(bidderRequest.BidderName.String())
+
+		}
+
+		applyFPD(auctionReq.FirstPartyData, bidderRequest)
+
+		privacyEnforcement.TID = !auctionReq.Activities.Allow(privacy.ActivityTransmitTIDs, scopedName, privacy.NewRequestFromBidRequest(*req))
+
+		privacyEnforcement.Apply(bidderRequest.BidRequest, auctionReq.Account.Privacy)
+		allowedBidderRequests = append(allowedBidderRequests, bidderRequest)
+
+		// GPP downgrade: always downgrade unless we can confirm GPP is supported
+		if shouldSetLegacyPrivacy(rs.bidderInfo, string(bidderRequest.BidderCoreName)) {
+			setLegacyGDPRFromGPP(bidderRequest.BidRequest, gpp)
+			setLegacyUSPFromGPP(bidderRequest.BidRequest, gpp)
 		}
 	}
 
 	return
+}
+
+func shouldSetLegacyPrivacy(bidderInfo config.BidderInfos, bidder string) bool {
+	binfo, defined := bidderInfo[bidder]
+
+	if !defined || binfo.OpenRTB == nil {
+		return true
+	}
+
+	return !binfo.OpenRTB.GPPSupported
 }
 
 func ccpaEnabled(account *config.Account, privacyConfig config.Privacy, requestType config.ChannelType) bool {
@@ -214,6 +275,32 @@ func extractLMT(orig *openrtb2.BidRequest, privacyConfig config.Privacy) privacy
 	}
 }
 
+func ExtractReqExtBidderParamsMap(bidRequest *openrtb2.BidRequest) (map[string]json.RawMessage, error) {
+	if bidRequest == nil {
+		return nil, errors.New("error bidRequest should not be nil")
+	}
+
+	reqExt := &openrtb_ext.ExtRequest{}
+	if len(bidRequest.Ext) > 0 {
+		err := json.Unmarshal(bidRequest.Ext, &reqExt)
+		if err != nil {
+			return nil, fmt.Errorf("error decoding Request.ext : %s", err.Error())
+		}
+	}
+
+	if reqExt.Prebid.BidderParams == nil {
+		return nil, nil
+	}
+
+	var bidderParams map[string]json.RawMessage
+	err := json.Unmarshal(reqExt.Prebid.BidderParams, &bidderParams)
+	if err != nil {
+		return nil, err
+	}
+
+	return bidderParams, nil
+}
+
 func getAuctionBidderRequests(auctionRequest AuctionRequest,
 	requestExt *openrtb_ext.ExtRequest,
 	bidderToSyncerKey map[string]string,
@@ -228,7 +315,7 @@ func getAuctionBidderRequests(auctionRequest AuctionRequest,
 		return nil, []error{err}
 	}
 
-	bidderParamsInReqExt, err := adapters.ExtractReqExtBidderParamsMap(req.BidRequest)
+	bidderParamsInReqExt, err := ExtractReqExtBidderParamsMap(req.BidRequest)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -238,9 +325,15 @@ func getAuctionBidderRequests(auctionRequest AuctionRequest,
 		return nil, []error{err}
 	}
 
+	lowerCaseExplicitBuyerUIDs := make(map[string]string)
+	for bidder, uid := range explicitBuyerUIDs {
+		lowerKey := strings.ToLower(bidder)
+		lowerCaseExplicitBuyerUIDs[lowerKey] = uid
+	}
+
 	var errs []error
 	for bidder, imps := range impsByBidder {
-		coreBidder := resolveBidder(bidder, aliases)
+		coreBidder, isRequestAlias := resolveBidder(bidder, aliases)
 
 		reqCopy := *req.BidRequest
 		reqCopy.Imp = imps
@@ -260,6 +353,7 @@ func getAuctionBidderRequests(auctionRequest AuctionRequest,
 		bidderRequest := BidderRequest{
 			BidderName:     openrtb_ext.BidderName(bidder),
 			BidderCoreName: coreBidder,
+			IsRequestAlias: isRequestAlias,
 			BidRequest:     &reqCopy,
 			BidderLabels: metrics.AdapterLabels{
 				Source:      auctionRequest.LegacyLabels.Source,
@@ -272,7 +366,7 @@ func getAuctionBidderRequests(auctionRequest AuctionRequest,
 		}
 
 		syncerKey := bidderToSyncerKey[string(coreBidder)]
-		if hadSync := prepareUser(&reqCopy, bidder, syncerKey, explicitBuyerUIDs, auctionRequest.UserSyncs); !hadSync && req.BidRequest.App == nil {
+		if hadSync := prepareUser(&reqCopy, bidder, syncerKey, lowerCaseExplicitBuyerUIDs, auctionRequest.UserSyncs); !hadSync && req.BidRequest.App == nil {
 			bidderRequest.BidderLabels.CookieFlag = metrics.CookieFlagNo
 		} else {
 			bidderRequest.BidderLabels.CookieFlag = metrics.CookieFlagYes
@@ -292,7 +386,7 @@ func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, request
 	alternateBidderCodes := buildRequestExtAlternateBidderCodes(bidder, cfgABC, reqABC)
 
 	if (len(requestExt) == 0 || requestExtParsed == nil) && alternateBidderCodes == nil {
-		return json.RawMessage(``), nil
+		return nil, nil
 	}
 
 	// Resolve Bidder Params
@@ -309,10 +403,12 @@ func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, request
 	}
 
 	if requestExtParsed != nil {
-		prebid.CurrencyConversions = requestExtParsed.Prebid.CurrencyConversions
-		prebid.Integration = requestExtParsed.Prebid.Integration
 		prebid.Channel = requestExtParsed.Prebid.Channel
+		prebid.CurrencyConversions = requestExtParsed.Prebid.CurrencyConversions
 		prebid.Debug = requestExtParsed.Prebid.Debug
+		prebid.Integration = requestExtParsed.Prebid.Integration
+		prebid.MultiBid = buildRequestExtMultiBid(bidder, requestExtParsed.Prebid.MultiBid, alternateBidderCodes)
+		prebid.Sdk = requestExtParsed.Prebid.Sdk
 		prebid.Server = requestExtParsed.Prebid.Server
 	}
 
@@ -322,16 +418,26 @@ func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, request
 		return nil, err
 	}
 
-	// Update Ext With Prebid Json
+	// Parse Existing Ext
 	extMap := make(map[string]json.RawMessage)
 	if len(requestExt) != 0 {
 		if err := json.Unmarshal(requestExt, &extMap); err != nil {
 			return nil, err
 		}
 	}
-	extMap["prebid"] = prebidJson
 
-	return json.Marshal(extMap)
+	// Update Ext With Prebid Json
+	if bytes.Equal(prebidJson, []byte(`{}`)) {
+		delete(extMap, "prebid")
+	} else {
+		extMap["prebid"] = prebidJson
+	}
+
+	if len(extMap) > 0 {
+		return json.Marshal(extMap)
+	} else {
+		return nil, nil
+	}
 }
 
 func buildRequestExtAlternateBidderCodes(bidder string, accABC *openrtb_ext.ExtAlternateBidderCodes, reqABC *openrtb_ext.ExtAlternateBidderCodes) *openrtb_ext.ExtAlternateBidderCodes {
@@ -360,6 +466,45 @@ func buildRequestExtAlternateBidderCodes(bidder string, accABC *openrtb_ext.ExtA
 	}
 
 	return nil
+}
+
+func buildRequestExtMultiBid(adapter string, reqMultiBid []*openrtb_ext.ExtMultiBid, adapterABC *openrtb_ext.ExtAlternateBidderCodes) []*openrtb_ext.ExtMultiBid {
+	adapterMultiBid := make([]*openrtb_ext.ExtMultiBid, 0)
+	for _, multiBid := range reqMultiBid {
+		if multiBid.Bidder != "" {
+			if strings.ToLower(multiBid.Bidder) == adapter || isBidderInExtAlternateBidderCodes(adapter, strings.ToLower(multiBid.Bidder), adapterABC) {
+				adapterMultiBid = append(adapterMultiBid, multiBid)
+			}
+		} else {
+			for _, bidder := range multiBid.Bidders {
+				if strings.ToLower(bidder) == adapter || isBidderInExtAlternateBidderCodes(adapter, strings.ToLower(bidder), adapterABC) {
+					adapterMultiBid = append(adapterMultiBid, &openrtb_ext.ExtMultiBid{
+						Bidders: []string{bidder},
+						MaxBids: multiBid.MaxBids,
+					})
+				}
+			}
+		}
+	}
+
+	if len(adapterMultiBid) > 0 {
+		return adapterMultiBid
+	}
+
+	return nil
+}
+
+func isBidderInExtAlternateBidderCodes(adapter, currentMultiBidBidder string, adapterABC *openrtb_ext.ExtAlternateBidderCodes) bool {
+	if adapterABC != nil {
+		if abc, ok := adapterABC.Bidders[adapter]; ok {
+			for _, bidder := range abc.AllowedBidderCodes {
+				if bidder == "*" || bidder == currentMultiBidBidder {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 // extractBuyerUIDs parses the values from user.ext.prebid.buyeruids, and then deletes those values from the ext.
@@ -502,7 +647,7 @@ func createSanitizedImpExt(impExt, impExtPrebid map[string]json.RawMessage) (map
 func prepareUser(req *openrtb2.BidRequest, givenBidder, syncerKey string, explicitBuyerUIDs map[string]string, usersyncs IdFetcher) bool {
 	cookieId, hadCookie, _ := usersyncs.GetUID(syncerKey)
 
-	if id, ok := explicitBuyerUIDs[givenBidder]; ok {
+	if id, ok := explicitBuyerUIDs[strings.ToLower(givenBidder)]; ok {
 		req.User = copyWithBuyerUID(req.User, id)
 	} else if hadCookie {
 		req.User = copyWithBuyerUID(req.User, cookieId)
@@ -571,7 +716,7 @@ func removeUnpermissionedEids(request *openrtb2.BidRequest, bidder string, reque
 		allowed := false
 		if rule, hasRule := eidRules[eid.Source]; hasRule {
 			for _, ruleBidder := range rule {
-				if ruleBidder == "*" || ruleBidder == bidder {
+				if ruleBidder == "*" || strings.EqualFold(ruleBidder, bidder) {
 					allowed = true
 					break
 				}
@@ -622,11 +767,14 @@ func setUserExtWithCopy(request *openrtb2.BidRequest, userExtJSON json.RawMessag
 }
 
 // resolveBidder returns the known BidderName associated with bidder, if bidder is an alias. If it's not an alias, the bidder is returned.
-func resolveBidder(bidder string, aliases map[string]string) openrtb_ext.BidderName {
-	if coreBidder, ok := aliases[bidder]; ok {
-		return openrtb_ext.BidderName(coreBidder)
+func resolveBidder(bidder string, requestAliases map[string]string) (openrtb_ext.BidderName, bool) {
+	normalisedBidderName, _ := openrtb_ext.NormalizeBidderName(bidder)
+
+	if coreBidder, ok := requestAliases[bidder]; ok {
+		return openrtb_ext.BidderName(coreBidder), true
 	}
-	return openrtb_ext.BidderName(bidder)
+
+	return normalisedBidderName, false
 }
 
 // parseAliases parses the aliases from the BidRequest
@@ -676,73 +824,58 @@ func randomizeList(list []openrtb_ext.BidderName) {
 	}
 }
 
-func extractBidRequestExt(bidRequest *openrtb2.BidRequest) (*openrtb_ext.ExtRequest, error) {
-	requestExt := &openrtb_ext.ExtRequest{}
-
-	if bidRequest == nil {
-		return requestExt, errors.New("Error bidRequest should not be nil")
-	}
-
-	if len(bidRequest.Ext) > 0 {
-		err := json.Unmarshal(bidRequest.Ext, &requestExt)
-		if err != nil {
-			return requestExt, fmt.Errorf("Error decoding Request.ext : %s", err.Error())
-		}
-	}
-	return requestExt, nil
-}
-
-func getExtCacheInstructions(requestExt *openrtb_ext.ExtRequest) extCacheInstructions {
+func getExtCacheInstructions(requestExtPrebid *openrtb_ext.ExtRequestPrebid) extCacheInstructions {
 	//returnCreative defaults to true
 	cacheInstructions := extCacheInstructions{returnCreative: true}
 	foundBidsRC := false
 	foundVastRC := false
 
-	if requestExt != nil && requestExt.Prebid.Cache != nil {
-		if requestExt.Prebid.Cache.Bids != nil {
+	if requestExtPrebid != nil && requestExtPrebid.Cache != nil {
+		if requestExtPrebid.Cache.Bids != nil {
 			cacheInstructions.cacheBids = true
-			if requestExt.Prebid.Cache.Bids.ReturnCreative != nil {
-				cacheInstructions.returnCreative = *requestExt.Prebid.Cache.Bids.ReturnCreative
+			if requestExtPrebid.Cache.Bids.ReturnCreative != nil {
+				cacheInstructions.returnCreative = *requestExtPrebid.Cache.Bids.ReturnCreative
 				foundBidsRC = true
 			}
 		}
-		if requestExt.Prebid.Cache.VastXML != nil {
+
+		if requestExtPrebid.Cache.VastXML != nil {
 			cacheInstructions.cacheVAST = true
-			if requestExt.Prebid.Cache.VastXML.ReturnCreative != nil {
-				cacheInstructions.returnCreative = *requestExt.Prebid.Cache.VastXML.ReturnCreative
+			if requestExtPrebid.Cache.VastXML.ReturnCreative != nil {
+				cacheInstructions.returnCreative = *requestExtPrebid.Cache.VastXML.ReturnCreative
 				foundVastRC = true
 			}
 		}
 	}
 
 	if foundBidsRC && foundVastRC {
-		cacheInstructions.returnCreative = *requestExt.Prebid.Cache.Bids.ReturnCreative || *requestExt.Prebid.Cache.VastXML.ReturnCreative
+		cacheInstructions.returnCreative = *requestExtPrebid.Cache.Bids.ReturnCreative || *requestExtPrebid.Cache.VastXML.ReturnCreative
 	}
 
 	return cacheInstructions
 }
 
-func getExtTargetData(requestExt *openrtb_ext.ExtRequest, cacheInstructions *extCacheInstructions) *targetData {
-	var targData *targetData
-
-	if requestExt != nil && requestExt.Prebid.Targeting != nil {
-		targData = &targetData{
-			priceGranularity:  requestExt.Prebid.Targeting.PriceGranularity,
-			includeWinners:    requestExt.Prebid.Targeting.IncludeWinners,
-			includeBidderKeys: requestExt.Prebid.Targeting.IncludeBidderKeys,
-			includeCacheBids:  cacheInstructions.cacheBids,
-			includeCacheVast:  cacheInstructions.cacheVAST,
-			includeFormat:     requestExt.Prebid.Targeting.IncludeFormat,
-			preferDeals:       requestExt.Prebid.Targeting.PreferDeals,
+func getExtTargetData(requestExtPrebid *openrtb_ext.ExtRequestPrebid, cacheInstructions extCacheInstructions) *targetData {
+	if requestExtPrebid != nil && requestExtPrebid.Targeting != nil {
+		return &targetData{
+			includeWinners:            *requestExtPrebid.Targeting.IncludeWinners,
+			includeBidderKeys:         *requestExtPrebid.Targeting.IncludeBidderKeys,
+			includeCacheBids:          cacheInstructions.cacheBids,
+			includeCacheVast:          cacheInstructions.cacheVAST,
+			includeFormat:             requestExtPrebid.Targeting.IncludeFormat,
+			priceGranularity:          *requestExtPrebid.Targeting.PriceGranularity,
+			mediaTypePriceGranularity: requestExtPrebid.Targeting.MediaTypePriceGranularity,
+			preferDeals:               requestExtPrebid.Targeting.PreferDeals,
 		}
 	}
-	return targData
+
+	return nil
 }
 
 // getDebugInfo returns the boolean flags that allow for debug information in bidResponse.Ext, the SeatBid.httpcalls slice, and
 // also sets the debugLog information
-func getDebugInfo(bidRequest *openrtb2.BidRequest, requestExt *openrtb_ext.ExtRequest, accountDebugFlag bool, debugLog *DebugLog) (bool, bool, *DebugLog) {
-	requestDebugAllow := parseRequestDebugValues(bidRequest, requestExt)
+func getDebugInfo(test int8, requestExtPrebid *openrtb_ext.ExtRequestPrebid, accountDebugFlag bool, debugLog *DebugLog) (bool, bool, *DebugLog) {
+	requestDebugAllow := parseRequestDebugValues(test, requestExtPrebid)
 	debugLog = setDebugLogValues(accountDebugFlag, debugLog)
 
 	responseDebugAllow := (requestDebugAllow && accountDebugFlag) || debugLog.DebugEnabledOrOverridden
@@ -762,32 +895,51 @@ func setDebugLogValues(accountDebugFlag bool, debugLog *DebugLog) *DebugLog {
 	return debugLog
 }
 
-func parseRequestDebugValues(bidRequest *openrtb2.BidRequest, requestExt *openrtb_ext.ExtRequest) bool {
-	return (bidRequest != nil && bidRequest.Test == 1) || (requestExt != nil && requestExt.Prebid.Debug)
+func parseRequestDebugValues(test int8, requestExtPrebid *openrtb_ext.ExtRequestPrebid) bool {
+	return test == 1 || (requestExtPrebid != nil && requestExtPrebid.Debug)
 }
 
-func getExtBidAdjustmentFactors(requestExt *openrtb_ext.ExtRequest) map[string]float64 {
-	var bidAdjustmentFactors map[string]float64
-	if requestExt != nil {
-		bidAdjustmentFactors = requestExt.Prebid.BidAdjustmentFactors
+func getExtBidAdjustmentFactors(requestExtPrebid *openrtb_ext.ExtRequestPrebid) map[string]float64 {
+	if requestExtPrebid != nil && requestExtPrebid.BidAdjustmentFactors != nil {
+		caseInsensitiveMap := make(map[string]float64, len(requestExtPrebid.BidAdjustmentFactors))
+		for bidder, bidAdjFactor := range requestExtPrebid.BidAdjustmentFactors {
+			caseInsensitiveMap[strings.ToLower(bidder)] = bidAdjFactor
+		}
+		return caseInsensitiveMap
 	}
-	return bidAdjustmentFactors
+	return nil
 }
 
-func applyFPD(fpd *firstpartydata.ResolvedFirstPartyData, bidReq *openrtb2.BidRequest) {
-	if fpd.Site != nil {
-		bidReq.Site = fpd.Site
+func applyFPD(fpd map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData, r BidderRequest) {
+	if fpd == nil {
+		return
 	}
-	if fpd.App != nil {
-		bidReq.App = fpd.App
+
+	bidder := r.BidderCoreName
+	if r.IsRequestAlias {
+		bidder = r.BidderName
 	}
-	if fpd.User != nil {
+
+	fpdToApply, exists := fpd[bidder]
+	if !exists || fpdToApply == nil {
+		return
+	}
+
+	if fpdToApply.Site != nil {
+		r.BidRequest.Site = fpdToApply.Site
+	}
+
+	if fpdToApply.App != nil {
+		r.BidRequest.App = fpdToApply.App
+	}
+
+	if fpdToApply.User != nil {
 		//BuyerUID is a value obtained between fpd extraction and fpd application.
 		//BuyerUID needs to be set back to fpd before applying this fpd to final bidder request
-		if bidReq.User != nil && len(bidReq.User.BuyerUID) > 0 {
-			fpd.User.BuyerUID = bidReq.User.BuyerUID
+		if r.BidRequest.User != nil && len(r.BidRequest.User.BuyerUID) > 0 {
+			fpdToApply.User.BuyerUID = r.BidRequest.User.BuyerUID
 		}
-		bidReq.User = fpd.User
+		r.BidRequest.User = fpdToApply.User
 	}
 }
 
@@ -799,13 +951,14 @@ func buildBidResponseRequest(req *openrtb2.BidRequest,
 	bidderToBidderResponse := make(map[openrtb_ext.BidderName]BidderRequest)
 
 	for bidderName, impResps := range bidderImpResponses {
-		resolvedBidder := resolveBidder(string(bidderName), aliases)
+		resolvedBidder, isRequestAlias := resolveBidder(string(bidderName), aliases)
 		bidderToBidderResponse[bidderName] = BidderRequest{
 			BidRequest:            req,
 			BidderCoreName:        resolvedBidder,
 			BidderName:            bidderName,
 			BidderStoredResponses: impResps,
 			ImpReplaceImpId:       bidderImpReplaceImpID[string(resolvedBidder)],
+			IsRequestAlias:        isRequestAlias,
 			BidderLabels:          metrics.AdapterLabels{Adapter: resolvedBidder},
 		}
 	}
@@ -843,10 +996,135 @@ func mergeBidderRequests(allBidderRequests []BidderRequest, bidderNameToBidderRe
 	return allBidderRequests
 }
 
+func setLegacyGDPRFromGPP(r *openrtb2.BidRequest, gpp gpplib.GppContainer) {
+	if r.Regs != nil && r.Regs.GDPR == nil {
+		if r.Regs.GPPSID != nil {
+			// Set to 0 unless SID exists
+			regs := *r.Regs
+			regs.GDPR = ptrutil.ToPtr[int8](0)
+			for _, id := range r.Regs.GPPSID {
+				if id == int8(gppConstants.SectionTCFEU2) {
+					regs.GDPR = ptrutil.ToPtr[int8](1)
+				}
+			}
+			r.Regs = &regs
+		}
+	}
+
+	if r.User == nil || len(r.User.Consent) == 0 {
+		for _, sec := range gpp.Sections {
+			if sec.GetID() == gppConstants.SectionTCFEU2 {
+				var user openrtb2.User
+				if r.User == nil {
+					user = openrtb2.User{}
+				} else {
+					user = *r.User
+				}
+				user.Consent = sec.GetValue()
+				r.User = &user
+			}
+		}
+	}
+
+}
+func setLegacyUSPFromGPP(r *openrtb2.BidRequest, gpp gpplib.GppContainer) {
+	if r.Regs == nil {
+		return
+	}
+
+	if len(r.Regs.USPrivacy) > 0 || r.Regs.GPPSID == nil {
+		return
+	}
+	for _, sid := range r.Regs.GPPSID {
+		if sid == int8(gppConstants.SectionUSPV1) {
+			for _, sec := range gpp.Sections {
+				if sec.GetID() == gppConstants.SectionUSPV1 {
+					regs := *r.Regs
+					regs.USPrivacy = sec.GetValue()
+					r.Regs = &regs
+				}
+			}
+		}
+	}
+
+}
+
 func WrapJSONInData(data []byte) []byte {
 	res := make([]byte, 0, len(data))
 	res = append(res, []byte(`{"data":`)...)
 	res = append(res, data...)
 	res = append(res, []byte(`}`)...)
 	return res
+}
+
+func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	mType := bid.MType
+	var bidType openrtb_ext.BidType
+	if mType > 0 {
+		switch mType {
+		case openrtb2.MarkupBanner:
+			bidType = openrtb_ext.BidTypeBanner
+		case openrtb2.MarkupVideo:
+			bidType = openrtb_ext.BidTypeVideo
+		case openrtb2.MarkupAudio:
+			bidType = openrtb_ext.BidTypeAudio
+		case openrtb2.MarkupNative:
+			bidType = openrtb_ext.BidTypeNative
+		default:
+			return bidType, fmt.Errorf("Failed to parse bid mType for impression \"%s\"", bid.ImpID)
+		}
+	} else {
+		var err error
+		bidType, err = getPrebidMediaTypeForBid(bid)
+		if err != nil {
+			return bidType, err
+		}
+	}
+	return bidType, nil
+}
+
+func getPrebidMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	var err error
+	var bidType openrtb_ext.BidType
+
+	if bid.Ext != nil {
+		var bidExt openrtb_ext.ExtBid
+		err = json.Unmarshal(bid.Ext, &bidExt)
+		if err == nil && bidExt.Prebid != nil {
+			if bidType, err = openrtb_ext.ParseBidType(string(bidExt.Prebid.Type)); err == nil {
+				return bidType, nil
+			}
+		}
+	}
+
+	errMsg := fmt.Sprintf("Failed to parse bid mediatype for impression \"%s\"", bid.ImpID)
+	if err != nil {
+		errMsg = fmt.Sprintf("%s, %s", errMsg, err.Error())
+	}
+
+	return bidType, &errortypes.BadServerResponse{
+		Message: errMsg,
+	}
+}
+
+func applyBidAdjustmentToFloor(allBidderRequests []BidderRequest, bidAdjustmentFactors map[string]float64) {
+
+	if len(bidAdjustmentFactors) == 0 {
+		return
+	}
+
+	for _, bidderRequest := range allBidderRequests {
+		bidAdjustment := 1.0
+
+		if bidAdjustemntValue, ok := bidAdjustmentFactors[string(bidderRequest.BidderName)]; ok {
+			bidAdjustment = bidAdjustemntValue
+		}
+
+		if bidAdjustment != 1.0 {
+			for index, imp := range bidderRequest.BidRequest.Imp {
+				imp.BidFloor = imp.BidFloor / bidAdjustment
+				bidderRequest.BidRequest.Imp[index] = imp
+			}
+		}
+	}
 }

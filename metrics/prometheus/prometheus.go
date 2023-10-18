@@ -3,6 +3,7 @@ package prometheusmetrics
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/prebid/prebid-server/config"
@@ -18,13 +19,13 @@ type Metrics struct {
 	Gatherer   *prometheus.Registry
 
 	// General Metrics
+	tmaxTimeout                  prometheus.Counter
 	connectionsClosed            prometheus.Counter
 	connectionsError             *prometheus.CounterVec
 	connectionsOpened            prometheus.Counter
 	cookieSync                   *prometheus.CounterVec
 	setUid                       *prometheus.CounterVec
 	impressions                  *prometheus.CounterVec
-	impressionsLegacy            prometheus.Counter
 	prebidCacheWriteTimer        *prometheus.HistogramVec
 	requests                     *prometheus.CounterVec
 	debugRequests                prometheus.Counter
@@ -56,6 +57,7 @@ type Metrics struct {
 	storedResponsesErrors        *prometheus.CounterVec
 	adsCertRequests              *prometheus.CounterVec
 	adsCertSignTimer             prometheus.Histogram
+	bidderServerResponseTimer    prometheus.Histogram
 
 	// Adapter Metrics
 	adapterBids                           *prometheus.CounterVec
@@ -63,6 +65,7 @@ type Metrics struct {
 	adapterPanics                         *prometheus.CounterVec
 	adapterPrices                         *prometheus.HistogramVec
 	adapterRequests                       *prometheus.CounterVec
+	overheadTimer                         *prometheus.HistogramVec
 	adapterRequestsTimer                  *prometheus.HistogramVec
 	adapterReusedConnections              *prometheus.CounterVec
 	adapterCreatedConnections             *prometheus.CounterVec
@@ -83,9 +86,8 @@ type Metrics struct {
 	accountStoredResponses                *prometheus.CounterVec
 	accountBidResponseValidationSizeError *prometheus.CounterVec
 	accountBidResponseValidationSizeWarn  *prometheus.CounterVec
-
-	accountBidResponseSecureMarkupError *prometheus.CounterVec
-	accountBidResponseSecureMarkupWarn  *prometheus.CounterVec
+	accountBidResponseSecureMarkupError   *prometheus.CounterVec
+	accountBidResponseSecureMarkupWarn    *prometheus.CounterVec
 
 	// Module Metrics as a map where the key is the module name
 	moduleDuration        map[string]*prometheus.HistogramVec
@@ -116,6 +118,7 @@ const (
 	isVideoLabel         = "video"
 	markupDeliveryLabel  = "delivery"
 	optOutLabel          = "opt_out"
+	overheadTypeLabel    = "overhead_type"
 	privacyBlockedLabel  = "privacy_blocked"
 	requestStatusLabel   = "request_status"
 	requestTypeLabel     = "request_type"
@@ -162,6 +165,7 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 	cacheWriteTimeBuckets := []float64{0.001, 0.002, 0.005, 0.01, 0.025, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 1}
 	priceBuckets := []float64{250, 500, 750, 1000, 1500, 2000, 2500, 3000, 3500, 4000}
 	queuedRequestTimeBuckets := []float64{0, 1, 5, 30, 60, 120, 180, 240, 300}
+	overheadTimeBuckets := []float64{0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1}
 
 	metrics := Metrics{}
 	reg := prometheus.NewRegistry()
@@ -180,6 +184,10 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"connections_opened",
 		"Count of successful connections opened to Prebid Server.")
 
+	metrics.tmaxTimeout = newCounterWithoutLabels(cfg, reg,
+		"tmax_timeout",
+		"Count of requests rejected due to Tmax timeout exceed.")
+
 	metrics.cookieSync = newCounter(cfg, reg,
 		"cookie_sync_requests",
 		"Count of cookie sync requests to Prebid Server.",
@@ -194,10 +202,6 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"impressions_requests",
 		"Count of requested impressions to Prebid Server labeled by type.",
 		[]string{isBannerLabel, isVideoLabel, isAudioLabel, isNativeLabel})
-
-	metrics.impressionsLegacy = newCounterWithoutLabels(cfg, reg,
-		"impressions_requests_legacy",
-		"Count of requested impressions to Prebid Server using the legacy endpoint.")
 
 	metrics.prebidCacheWriteTimer = newHistogramVec(cfg, reg,
 		"prebidcache_write_time_seconds",
@@ -416,10 +420,21 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"Count that tracks number of bids removed from bid response that had a invalid bidAdm (warn)",
 		[]string{adapterLabel, successLabel})
 
+	metrics.overheadTimer = newHistogramVec(cfg, reg,
+		"overhead_time_seconds",
+		"Seconds to prepare adapter request or resolve adapter response",
+		[]string{overheadTypeLabel},
+		overheadTimeBuckets)
+
 	metrics.adapterRequestsTimer = newHistogramVec(cfg, reg,
 		"adapter_request_time_seconds",
 		"Seconds to resolve each successful request labeled by adapter.",
 		[]string{adapterLabel},
+		standardTimeBuckets)
+
+	metrics.bidderServerResponseTimer = newHistogram(cfg, reg,
+		"bidder_server_response_time_seconds",
+		"Duration needed to send HTTP request and receive response back from bidder server.",
 		standardTimeBuckets)
 
 	metrics.syncerRequests = newCounter(cfg, reg,
@@ -619,6 +634,10 @@ func (m *Metrics) RecordConnectionAccept(success bool) {
 	}
 }
 
+func (m *Metrics) RecordTMaxTimeout() {
+	m.tmaxTimeout.Inc()
+}
+
 func (m *Metrics) RecordConnectionClose(success bool) {
 	if success {
 		m.connectionsClosed.Inc()
@@ -744,15 +763,16 @@ func (m *Metrics) RecordStoredDataError(labels metrics.StoredDataLabels) {
 }
 
 func (m *Metrics) RecordAdapterRequest(labels metrics.AdapterLabels) {
+	lowerCasedAdapter := strings.ToLower(string(labels.Adapter))
 	m.adapterRequests.With(prometheus.Labels{
-		adapterLabel: string(labels.Adapter),
+		adapterLabel: lowerCasedAdapter,
 		cookieLabel:  string(labels.CookieFlag),
 		hasBidsLabel: strconv.FormatBool(labels.AdapterBids == metrics.AdapterBidPresent),
 	}).Inc()
 
 	for err := range labels.AdapterErrors {
 		m.adapterErrors.With(prometheus.Labels{
-			adapterLabel:      string(labels.Adapter),
+			adapterLabel:      lowerCasedAdapter,
 			adapterErrorLabel: string(err),
 		}).Inc()
 	}
@@ -761,22 +781,23 @@ func (m *Metrics) RecordAdapterRequest(labels metrics.AdapterLabels) {
 // Keeps track of created and reused connections to adapter bidders and the time from the
 // connection request, to the connection creation, or reuse from the pool across all engines
 func (m *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName, connWasReused bool, connWaitTime time.Duration) {
+	lowerCasedAdapterName := strings.ToLower(string(adapterName))
 	if m.metricsDisabled.AdapterConnectionMetrics {
 		return
 	}
 
 	if connWasReused {
 		m.adapterReusedConnections.With(prometheus.Labels{
-			adapterLabel: string(adapterName),
+			adapterLabel: lowerCasedAdapterName,
 		}).Inc()
 	} else {
 		m.adapterCreatedConnections.With(prometheus.Labels{
-			adapterLabel: string(adapterName),
+			adapterLabel: lowerCasedAdapterName,
 		}).Inc()
 	}
 
 	m.adapterConnectionWaitTime.With(prometheus.Labels{
-		adapterLabel: string(adapterName),
+		adapterLabel: lowerCasedAdapterName,
 	}).Observe(connWaitTime.Seconds())
 }
 
@@ -788,9 +809,13 @@ func (m *Metrics) RecordTLSHandshakeTime(tlsHandshakeTime time.Duration) {
 	m.tlsHandhakeTimer.Observe(tlsHandshakeTime.Seconds())
 }
 
+func (m *Metrics) RecordBidderServerResponseTime(bidderServerResponseTime time.Duration) {
+	m.bidderServerResponseTimer.Observe(bidderServerResponseTime.Seconds())
+}
+
 func (m *Metrics) RecordAdapterPanic(labels metrics.AdapterLabels) {
 	m.adapterPanics.With(prometheus.Labels{
-		adapterLabel: string(labels.Adapter),
+		adapterLabel: strings.ToLower(string(labels.Adapter)),
 	}).Inc()
 }
 
@@ -801,21 +826,27 @@ func (m *Metrics) RecordAdapterBidReceived(labels metrics.AdapterLabels, bidType
 	}
 
 	m.adapterBids.With(prometheus.Labels{
-		adapterLabel:        string(labels.Adapter),
+		adapterLabel:        strings.ToLower(string(labels.Adapter)),
 		markupDeliveryLabel: markupDelivery,
 	}).Inc()
 }
 
 func (m *Metrics) RecordAdapterPrice(labels metrics.AdapterLabels, cpm float64) {
 	m.adapterPrices.With(prometheus.Labels{
-		adapterLabel: string(labels.Adapter),
+		adapterLabel: strings.ToLower(string(labels.Adapter)),
 	}).Observe(cpm)
+}
+
+func (m *Metrics) RecordOverheadTime(overhead metrics.OverheadType, duration time.Duration) {
+	m.overheadTimer.With(prometheus.Labels{
+		overheadTypeLabel: overhead.String(),
+	}).Observe(duration.Seconds())
 }
 
 func (m *Metrics) RecordAdapterTime(labels metrics.AdapterLabels, length time.Duration) {
 	if len(labels.AdapterErrors) == 0 {
 		m.adapterRequestsTimer.With(prometheus.Labels{
-			adapterLabel: string(labels.Adapter),
+			adapterLabel: strings.ToLower(string(labels.Adapter)),
 		}).Observe(length.Seconds())
 	}
 }
@@ -927,7 +958,7 @@ func (m *Metrics) RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.Bidder
 	}
 
 	m.adapterGDPRBlockedRequests.With(prometheus.Labels{
-		adapterLabel: string(adapterName),
+		adapterLabel: strings.ToLower(string(adapterName)),
 	}).Inc()
 }
 
@@ -947,8 +978,9 @@ func (m *Metrics) RecordAdsCertSignTime(adsCertSignTime time.Duration) {
 }
 
 func (m *Metrics) RecordBidValidationCreativeSizeError(adapter openrtb_ext.BidderName, account string) {
+	lowerCasedAdapter := strings.ToLower(string(adapter))
 	m.adapterBidResponseValidationSizeError.With(prometheus.Labels{
-		adapterLabel: string(adapter), successLabel: successLabel,
+		adapterLabel: lowerCasedAdapter, successLabel: successLabel,
 	}).Inc()
 
 	if !m.metricsDisabled.AccountAdapterDetails && account != metrics.PublisherUnknown {
@@ -959,8 +991,9 @@ func (m *Metrics) RecordBidValidationCreativeSizeError(adapter openrtb_ext.Bidde
 }
 
 func (m *Metrics) RecordBidValidationCreativeSizeWarn(adapter openrtb_ext.BidderName, account string) {
+	lowerCasedAdapter := strings.ToLower(string(adapter))
 	m.adapterBidResponseValidationSizeWarn.With(prometheus.Labels{
-		adapterLabel: string(adapter), successLabel: successLabel,
+		adapterLabel: lowerCasedAdapter, successLabel: successLabel,
 	}).Inc()
 
 	if !m.metricsDisabled.AccountAdapterDetails && account != metrics.PublisherUnknown {
@@ -972,7 +1005,7 @@ func (m *Metrics) RecordBidValidationCreativeSizeWarn(adapter openrtb_ext.Bidder
 
 func (m *Metrics) RecordBidValidationSecureMarkupError(adapter openrtb_ext.BidderName, account string) {
 	m.adapterBidResponseSecureMarkupError.With(prometheus.Labels{
-		adapterLabel: string(adapter), successLabel: successLabel,
+		adapterLabel: strings.ToLower(string(adapter)), successLabel: successLabel,
 	}).Inc()
 
 	if !m.metricsDisabled.AccountAdapterDetails && account != metrics.PublisherUnknown {
@@ -984,7 +1017,7 @@ func (m *Metrics) RecordBidValidationSecureMarkupError(adapter openrtb_ext.Bidde
 
 func (m *Metrics) RecordBidValidationSecureMarkupWarn(adapter openrtb_ext.BidderName, account string) {
 	m.adapterBidResponseSecureMarkupWarn.With(prometheus.Labels{
-		adapterLabel: string(adapter), successLabel: successLabel,
+		adapterLabel: strings.ToLower(string(adapter)), successLabel: successLabel,
 	}).Inc()
 
 	if !m.metricsDisabled.AccountAdapterDetails && account != metrics.PublisherUnknown {

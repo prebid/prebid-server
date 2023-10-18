@@ -15,6 +15,8 @@ import (
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/metrics"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/stored_requests"
 )
@@ -26,11 +28,15 @@ const (
 	ImpressionOpenTag    = "<Impression>"
 )
 
+type normalizeBidderName func(name string) (openrtb_ext.BidderName, bool)
+
 type vtrackEndpoint struct {
-	Cfg         *config.Configuration
-	Accounts    stored_requests.AccountFetcher
-	BidderInfos config.BidderInfos
-	Cache       prebid_cache_client.Client
+	Cfg                 *config.Configuration
+	Accounts            stored_requests.AccountFetcher
+	BidderInfos         config.BidderInfos
+	Cache               prebid_cache_client.Client
+	MetricsEngine       metrics.MetricsEngine
+	normalizeBidderName normalizeBidderName
 }
 
 type BidCacheRequest struct {
@@ -45,12 +51,14 @@ type CacheObject struct {
 	UUID string `json:"uuid"`
 }
 
-func NewVTrackEndpoint(cfg *config.Configuration, accounts stored_requests.AccountFetcher, cache prebid_cache_client.Client, bidderInfos config.BidderInfos) httprouter.Handle {
+func NewVTrackEndpoint(cfg *config.Configuration, accounts stored_requests.AccountFetcher, cache prebid_cache_client.Client, bidderInfos config.BidderInfos, me metrics.MetricsEngine) httprouter.Handle {
 	vte := &vtrackEndpoint{
-		Cfg:         cfg,
-		Accounts:    accounts,
-		BidderInfos: bidderInfos,
-		Cache:       cache,
+		Cfg:                 cfg,
+		Accounts:            accounts,
+		BidderInfos:         bidderInfos,
+		Cache:               cache,
+		MetricsEngine:       me,
+		normalizeBidderName: openrtb_ext.NormalizeBidderName,
 	}
 
 	return vte.Handle
@@ -91,7 +99,7 @@ func (v *vtrackEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httpro
 	defer cancel()
 
 	// get account details
-	account, errs := accountService.GetAccount(ctx, v.Cfg, v.Accounts, accountId)
+	account, errs := accountService.GetAccount(ctx, v.Cfg, v.Accounts, accountId, v.MetricsEngine)
 	if len(errs) > 0 {
 		status, messages := HandleAccountServiceErrors(errs)
 		w.WriteHeader(status)
@@ -200,7 +208,7 @@ func ParseVTrackRequest(httpRequest *http.Request, maxRequestSize int64) (req *B
 
 // handleVTrackRequest handles a VTrack request
 func (v *vtrackEndpoint) handleVTrackRequest(ctx context.Context, req *BidCacheRequest, account *config.Account, integration string) (*BidCacheResponse, []error) {
-	biddersAllowingVastUpdate := getBiddersAllowingVastUpdate(req, &v.BidderInfos, v.Cfg.VTrack.AllowUnknownBidder)
+	biddersAllowingVastUpdate := getBiddersAllowingVastUpdate(req, &v.BidderInfos, v.Cfg.VTrack.AllowUnknownBidder, v.normalizeBidderName)
 	// cache data
 	r, errs := v.cachePutObjects(ctx, req, biddersAllowingVastUpdate, account.ID, integration)
 
@@ -248,11 +256,11 @@ func (v *vtrackEndpoint) cachePutObjects(ctx context.Context, req *BidCacheReque
 }
 
 // getBiddersAllowingVastUpdate returns a list of bidders that allow VAST XML modification
-func getBiddersAllowingVastUpdate(req *BidCacheRequest, bidderInfos *config.BidderInfos, allowUnknownBidder bool) map[string]struct{} {
+func getBiddersAllowingVastUpdate(req *BidCacheRequest, bidderInfos *config.BidderInfos, allowUnknownBidder bool, normalizeBidderName normalizeBidderName) map[string]struct{} {
 	bl := map[string]struct{}{}
 
 	for _, bcr := range req.Puts {
-		if _, ok := bl[bcr.Bidder]; isAllowVastForBidder(bcr.Bidder, bidderInfos, allowUnknownBidder) && !ok {
+		if _, ok := bl[bcr.Bidder]; isAllowVastForBidder(bcr.Bidder, bidderInfos, allowUnknownBidder, normalizeBidderName) && !ok {
 			bl[bcr.Bidder] = struct{}{}
 		}
 	}
@@ -261,12 +269,14 @@ func getBiddersAllowingVastUpdate(req *BidCacheRequest, bidderInfos *config.Bidd
 }
 
 // isAllowVastForBidder checks if a bidder is active and allowed to modify vast xml data
-func isAllowVastForBidder(bidder string, bidderInfos *config.BidderInfos, allowUnknownBidder bool) bool {
+func isAllowVastForBidder(bidder string, bidderInfos *config.BidderInfos, allowUnknownBidder bool, normalizeBidderName normalizeBidderName) bool {
 	//if bidder is active and isModifyingVastXmlAllowed is true
 	// check if bidder is configured
-	if b, ok := (*bidderInfos)[bidder]; bidderInfos != nil && ok {
-		// check if bidder is enabled
-		return b.IsEnabled() && b.ModifyingVastXmlAllowed
+	if normalizedBidder, ok := normalizeBidderName(bidder); ok {
+		if b, ok := (*bidderInfos)[normalizedBidder.String()]; bidderInfos != nil && ok {
+			// check if bidder is enabled
+			return b.IsEnabled() && b.ModifyingVastXmlAllowed
+		}
 	}
 
 	return allowUnknownBidder

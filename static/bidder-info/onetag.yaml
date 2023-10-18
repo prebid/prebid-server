@@ -1,4 +1,6 @@
 endpoint: "https://prebid-server.onetag-sys.com/prebid-server/{{.PublisherID}}"
+openrtb:
+  version: 2.6
 maintainer:
   email: devops@onetag.com
 gvlVendorID: 241

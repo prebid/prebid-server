@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"text/template"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -104,6 +104,8 @@ func getRegionInfo(region string) string {
 		return "apac.xyz"
 	case "USE":
 		return "use.xyz"
+	case "EUC":
+		return "euc.xyz"
 	default:
 		return "xyz"
 	}

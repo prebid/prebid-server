@@ -8,19 +8,21 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/prebid/prebid-server/analytics"
+	analyticsBuild "github.com/prebid/prebid-server/analytics/build"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/gdpr"
+	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/stretchr/testify/assert"
 
-	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	metricsConf "github.com/prebid/prebid-server/metrics/config"
 )
 
@@ -49,7 +51,17 @@ func TestSetUIDEndpoint(t *testing.T) {
 			description:            "Set uid for valid bidder",
 		},
 		{
-			uri:                    "/setuid?bidder=adnxs&uid=123",
+			uri:                    "/setuid?bidder=PUBMATIC&uid=123",
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			existingSyncs:          nil,
+			gdprAllowsHostCookies:  true,
+			expectedSyncs:          map[string]string{"pubmatic": "123"},
+			expectedStatusCode:     http.StatusOK,
+			expectedHeaders:        map[string]string{"Content-Type": "text/html", "Content-Length": "0"},
+			description:            "Set uid for valid bidder case insensitive",
+		},
+		{
+			uri:                    "/setuid?bidder=appnexus&uid=123",
 			syncersBidderNameToKey: map[string]string{"appnexus": "adnxs"},
 			existingSyncs:          nil,
 			gdprAllowsHostCookies:  true,
@@ -157,7 +169,7 @@ func TestSetUIDEndpoint(t *testing.T) {
 			expectedSyncs:          nil,
 			gdprAllowsHostCookies:  true,
 			expectedStatusCode:     http.StatusBadRequest,
-			expectedBody:           "gdpr_consent is required when gdpr=1",
+			expectedBody:           "GDPR consent is required when gdpr signal equals 1",
 			description:            "Return an error if GDPR is set to 1 but GDPR consent string is missing",
 		},
 		{
@@ -194,8 +206,29 @@ func TestSetUIDEndpoint(t *testing.T) {
 			description:            "Should set uid for a bidder that is allowed by the GDPR consent string",
 		},
 		{
-			uri: "/setuid?bidder=pubmatic&uid=123&gdpr=1&gdpr_consent=" +
-				"malformed",
+			uri:                    "/setuid?bidder=pubmatic&uid=123&gpp_sid=2,4&gpp=DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			gdprAllowsHostCookies:  true,
+			existingSyncs:          nil,
+			expectedSyncs:          map[string]string{"pubmatic": "123"},
+			expectedStatusCode:     http.StatusOK,
+			expectedHeaders:        map[string]string{"Content-Type": "text/html", "Content-Length": "0"},
+			description:            "Sets uid for a bidder allowed by GDPR consent string in the GPP query field",
+		},
+		{
+			uri: "/setuid?bidder=pubmatic&uid=123&gpp_sid=2,4&gpp=DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA" +
+				"gdpr=1&gdpr_consent=BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw",
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			gdprAllowsHostCookies:  true,
+			existingSyncs:          nil,
+			expectedSyncs:          map[string]string{"pubmatic": "123"},
+			expectedStatusCode:     http.StatusOK,
+			expectedBody:           "Warning: 'gpp' value will be used over the one found in the deprecated 'gdpr_consent' field.",
+			expectedHeaders:        map[string]string{"Content-Type": "text/plain; charset=utf-8"},
+			description:            "Sets uid for a bidder allowed by GDPR in GPP, throws warning because GDPR legacy values weren't used",
+		},
+		{
+			uri:                    "/setuid?bidder=pubmatic&uid=123&gdpr=1&gdpr_consent=malformed",
 			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
 			gdprAllowsHostCookies:  true,
 			gdprMalformed:          true,
@@ -254,14 +287,63 @@ func TestSetUIDEndpoint(t *testing.T) {
 			expectedBody:           "account is disabled, please reach out to the prebid server host",
 			description:            "Set uid for valid bidder with valid disabled account provided",
 		},
+		{
+			uri:                    "/setuid?bidder=pubmatic&uid=123&account=valid_acct_with_valid_activities_usersync_enabled",
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			existingSyncs:          nil,
+			gdprAllowsHostCookies:  true,
+			expectedSyncs:          map[string]string{"pubmatic": "123"},
+			expectedStatusCode:     http.StatusOK,
+			expectedHeaders:        map[string]string{"Content-Type": "text/html", "Content-Length": "0"},
+			description:            "Set uid for valid bidder with valid account provided with user sync allowed activity",
+		},
+		{
+			uri:                    "/setuid?bidder=pubmatic&uid=123&account=valid_acct_with_valid_activities_usersync_disabled",
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			existingSyncs:          nil,
+			gdprAllowsHostCookies:  true,
+			expectedSyncs:          nil,
+			expectedStatusCode:     http.StatusUnavailableForLegalReasons,
+			description:            "Set uid for valid bidder with valid account provided with user sync disallowed activity",
+		},
+		{
+			uri:                    "/setuid?bidder=pubmatic&uid=123&account=valid_acct_with_invalid_activities",
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			existingSyncs:          nil,
+			gdprAllowsHostCookies:  true,
+			expectedSyncs:          map[string]string{"pubmatic": "123"},
+			expectedStatusCode:     http.StatusOK,
+			expectedHeaders:        map[string]string{"Content-Type": "text/html", "Content-Length": "0"},
+			description:            "Set uid for valid bidder with valid account provided with invalid user sync activity",
+		},
+		{
+			description:            "gppsid-valid",
+			uri:                    "/setuid?bidder=appnexus&uid=123&gpp_sid=100,101", // fake sids to avoid GDPR logic in this test
+			syncersBidderNameToKey: map[string]string{"appnexus": "appnexus"},
+			existingSyncs:          nil,
+			gdprAllowsHostCookies:  true,
+			expectedSyncs:          map[string]string{"appnexus": "123"},
+			expectedStatusCode:     http.StatusOK,
+			expectedHeaders:        map[string]string{"Content-Type": "text/html", "Content-Length": "0"},
+		},
+		{
+			description:            "gppsid-malformed",
+			uri:                    "/setuid?bidder=appnexus&uid=123&gpp_sid=malformed",
+			syncersBidderNameToKey: map[string]string{"appnexus": "appnexus"},
+			existingSyncs:          nil,
+			gdprAllowsHostCookies:  true,
+			expectedSyncs:          nil,
+			expectedStatusCode:     http.StatusBadRequest,
+			expectedBody:           "invalid gpp_sid encoding, must be a csv list of integers",
+		},
 	}
 
-	analytics := analyticsConf.NewPBSAnalytics(&config.Analytics{})
+	analytics := analyticsBuild.New(&config.Analytics{})
 	metrics := &metricsConf.NilMetricsEngine{}
 
 	for _, test := range testCases {
 		response := doRequest(makeRequest(test.uri, test.existingSyncs), analytics, metrics,
-			test.syncersBidderNameToKey, test.gdprAllowsHostCookies, test.gdprReturnsError, test.gdprMalformed, false)
+			test.syncersBidderNameToKey, test.gdprAllowsHostCookies, test.gdprReturnsError, test.gdprMalformed, false, 0, nil)
 		assert.Equal(t, test.expectedStatusCode, response.Code, "Test Case: %s. /setuid returned unexpected error code", test.description)
 
 		if test.expectedSyncs != nil {
@@ -288,6 +370,726 @@ func TestSetUIDEndpoint(t *testing.T) {
 	}
 }
 
+func TestSetUIDPriorityEjection(t *testing.T) {
+	decoder := usersync.Base64Decoder{}
+	analytics := analyticsBuild.New(&config.Analytics{})
+	syncersByBidder := map[string]string{
+		"pubmatic":             "pubmatic",
+		"syncer1":              "syncer1",
+		"syncer2":              "syncer2",
+		"syncer3":              "syncer3",
+		"syncer4":              "syncer4",
+		"mismatchedBidderName": "syncer5",
+		"syncerToEject":        "syncerToEject",
+	}
+
+	testCases := []struct {
+		description           string
+		uri                   string
+		givenExistingSyncs    []string
+		givenPriorityGroups   [][]string
+		givenMaxCookieSize    int
+		expectedStatusCode    int
+		expectedSyncer        string
+		expectedUID           string
+		expectedNumOfElements int
+		expectedWarning       string
+	}{
+		{
+			description:           "Cookie empty, expect bidder to be synced, no ejection",
+			uri:                   "/setuid?bidder=pubmatic&uid=123",
+			givenPriorityGroups:   [][]string{},
+			givenMaxCookieSize:    500,
+			expectedSyncer:        "pubmatic",
+			expectedUID:           "123",
+			expectedNumOfElements: 1,
+			expectedStatusCode:    http.StatusOK,
+		},
+		{
+			description:           "Cookie full, no priority groups, one ejection",
+			uri:                   "/setuid?bidder=pubmatic&uid=123",
+			givenExistingSyncs:    []string{"syncer1", "syncer2", "syncer3", "syncer4"},
+			givenPriorityGroups:   [][]string{},
+			givenMaxCookieSize:    500,
+			expectedUID:           "123",
+			expectedSyncer:        "pubmatic",
+			expectedNumOfElements: 4,
+			expectedStatusCode:    http.StatusOK,
+		},
+		{
+			description:           "Cookie full, eject lowest priority element",
+			uri:                   "/setuid?bidder=pubmatic&uid=123",
+			givenExistingSyncs:    []string{"syncer2", "syncer3", "syncer4", "syncerToEject"},
+			givenPriorityGroups:   [][]string{{"pubmatic", "syncer2", "syncer3", "syncer4"}, {"syncerToEject"}},
+			givenMaxCookieSize:    500,
+			expectedUID:           "123",
+			expectedSyncer:        "pubmatic",
+			expectedNumOfElements: 4,
+			expectedStatusCode:    http.StatusOK,
+		},
+		{
+			description:           "Cookie full, all elements same priority, one ejection",
+			uri:                   "/setuid?bidder=pubmatic&uid=123",
+			givenExistingSyncs:    []string{"syncer1", "syncer2", "syncer3", "syncer5"},
+			givenPriorityGroups:   [][]string{{"pubmatic", "syncer1", "syncer2", "syncer3", "mismatchedBidderName"}},
+			givenMaxCookieSize:    500,
+			expectedUID:           "123",
+			expectedSyncer:        "pubmatic",
+			expectedNumOfElements: 4,
+			expectedStatusCode:    http.StatusOK,
+		},
+		{
+			description:         "There are only priority elements left, but the bidder being synced isn't one",
+			uri:                 "/setuid?bidder=pubmatic&uid=123",
+			givenExistingSyncs:  []string{"syncer1", "syncer2", "syncer3", "syncer4"},
+			givenPriorityGroups: [][]string{{"syncer1", "syncer2", "syncer3", "syncer4"}},
+			givenMaxCookieSize:  500,
+			expectedStatusCode:  http.StatusOK,
+			expectedWarning:     "Warning: syncer key is not a priority, and there are only priority elements left, cookie not updated",
+		},
+		{
+			description:        "Uid that's trying to be synced is bigger than MaxCookieSize",
+			uri:                "/setuid?bidder=pubmatic&uid=123",
+			givenMaxCookieSize: 1,
+			expectedStatusCode: http.StatusBadRequest,
+		},
+	}
+	for _, test := range testCases {
+		request := httptest.NewRequest("GET", test.uri, nil)
+
+		// Cookie Set Up
+		cookie := usersync.NewCookie()
+		for _, key := range test.givenExistingSyncs {
+			cookie.Sync(key, "111")
+		}
+		httpCookie, err := ToHTTPCookie(cookie)
+		assert.NoError(t, err)
+		request.AddCookie(httpCookie)
+
+		// Make Request to /setuid
+		response := doRequest(request, analytics, &metricsConf.NilMetricsEngine{}, syncersByBidder, true, false, false, false, test.givenMaxCookieSize, test.givenPriorityGroups)
+
+		if test.expectedWarning != "" {
+			assert.Equal(t, test.expectedWarning, response.Body.String(), test.description)
+		} else if test.expectedSyncer != "" {
+			// Get Cookie From Header
+			var cookieHeader string
+			for k, v := range response.Result().Header {
+				if k == "Set-Cookie" {
+					cookieHeader = v[0]
+				}
+			}
+			encodedCookieValue := getUIDFromHeader(cookieHeader)
+
+			// Check That Bidder On Request was Synced, it's UID matches, and that the right number of elements are present after ejection
+			decodedCookie := decoder.Decode(encodedCookieValue)
+			decodedCookieUIDs := decodedCookie.GetUIDs()
+
+			assert.Equal(t, test.expectedUID, decodedCookieUIDs[test.expectedSyncer], test.description)
+			assert.Equal(t, test.expectedNumOfElements, len(decodedCookieUIDs), test.description)
+
+			// Specific test case handling where we eject the lowest priority element
+			if len(test.givenPriorityGroups) == 2 {
+				syncer := test.givenPriorityGroups[len(test.givenPriorityGroups)-1][0]
+				_, syncerExists := decodedCookieUIDs[syncer]
+				assert.False(t, syncerExists, test.description)
+			}
+		}
+		assert.Equal(t, test.expectedStatusCode, response.Result().StatusCode, test.description)
+	}
+}
+
+func TestParseSignalFromGPPSID(t *testing.T) {
+	type testOutput struct {
+		signal gdpr.Signal
+		err    error
+	}
+	testCases := []struct {
+		desc     string
+		strSID   string
+		expected testOutput
+	}{
+		{
+			desc:   "Empty gpp_sid, expect gdpr.SignalAmbiguous",
+			strSID: "",
+			expected: testOutput{
+				signal: gdpr.SignalAmbiguous,
+				err:    nil,
+			},
+		},
+		{
+			desc:   "Malformed gpp_sid, expect gdpr.SignalAmbiguous",
+			strSID: "malformed",
+			expected: testOutput{
+				signal: gdpr.SignalAmbiguous,
+				err:    errors.New(`Error parsing gpp_sid strconv.ParseInt: parsing "malformed": invalid syntax`),
+			},
+		},
+		{
+			desc:   "Valid gpp_sid doesn't come with TCF2, expect gdpr.SignalNo",
+			strSID: "6",
+			expected: testOutput{
+				signal: gdpr.SignalNo,
+				err:    nil,
+			},
+		},
+		{
+			desc:   "Valid gpp_sid comes with TCF2, expect gdpr.SignalYes",
+			strSID: "2",
+			expected: testOutput{
+				signal: gdpr.SignalYes,
+				err:    nil,
+			},
+		},
+	}
+	for _, tc := range testCases {
+		outSignal, outErr := parseSignalFromGppSidStr(tc.strSID)
+
+		assert.Equal(t, tc.expected.signal, outSignal, tc.desc)
+		assert.Equal(t, tc.expected.err, outErr, tc.desc)
+	}
+}
+
+func TestParseConsentFromGppStr(t *testing.T) {
+	type testOutput struct {
+		gdprConsent string
+		err         error
+	}
+	testCases := []struct {
+		desc       string
+		inGppQuery string
+		expected   testOutput
+	}{
+		{
+			desc:       "Empty gpp field, expect empty GDPR consent",
+			inGppQuery: "",
+			expected: testOutput{
+				gdprConsent: "",
+				err:         nil,
+			},
+		},
+		{
+			desc:       "Malformed gpp field value, expect empty GDPR consent and error",
+			inGppQuery: "malformed",
+			expected: testOutput{
+				gdprConsent: "",
+				err:         errors.New(`error parsing GPP header, base64 decoding: illegal base64 data at input byte 8`),
+			},
+		},
+		{
+			desc:       "Valid gpp string comes with TCF2 in its gppConstants.SectionID's, expect non-empty GDPR consent",
+			inGppQuery: "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+			expected: testOutput{
+				gdprConsent: "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+				err:         nil,
+			},
+		},
+		{
+			desc:       "Valid gpp string doesn't come with TCF2 in its gppConstants.SectionID's, expect blank GDPR consent",
+			inGppQuery: "DBABjw~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
+			expected: testOutput{
+				gdprConsent: "",
+				err:         nil,
+			},
+		},
+	}
+	for _, tc := range testCases {
+		outConsent, outErr := parseConsentFromGppStr(tc.inGppQuery)
+
+		assert.Equal(t, tc.expected.gdprConsent, outConsent, tc.desc)
+		assert.Equal(t, tc.expected.err, outErr, tc.desc)
+	}
+}
+
+func TestParseGDPRFromGPP(t *testing.T) {
+	type testOutput struct {
+		reqInfo gdpr.RequestInfo
+		err     error
+	}
+	type aTest struct {
+		desc     string
+		inUri    string
+		expected testOutput
+	}
+	testGroups := []struct {
+		groupDesc string
+		testCases []aTest
+	}{
+		{
+			groupDesc: "No gpp_sid nor gpp",
+			testCases: []aTest{
+				{
+					desc:  "Input URL is mising gpp_sid and gpp, expect signal ambiguous and no error",
+					inUri: "/setuid?bidder=pubmatic&uid=123",
+					expected: testOutput{
+						reqInfo: gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous},
+						err:     nil,
+					},
+				},
+			},
+		},
+		{
+			groupDesc: "gpp only",
+			testCases: []aTest{
+				{
+					desc:  "gpp is malformed, expect error",
+					inUri: "/setuid?gpp=malformed",
+					expected: testOutput{
+						reqInfo: gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous},
+						err:     errors.New("error parsing GPP header, base64 decoding: illegal base64 data at input byte 8"),
+					},
+				},
+				{
+					desc:  "gpp with a valid TCF2 value. Expect valid consent string and no error",
+					inUri: "/setuid?gpp=DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+					expected: testOutput{
+						reqInfo: gdpr.RequestInfo{
+							GDPRSignal: gdpr.SignalAmbiguous,
+							Consent:    "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+						},
+						err: nil,
+					},
+				},
+				{
+					desc:  "gpp does not include TCF2 string. Expect empty consent string and no error",
+					inUri: "/setuid?gpp=DBABjw~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
+					expected: testOutput{
+						reqInfo: gdpr.RequestInfo{
+							GDPRSignal: gdpr.SignalAmbiguous,
+							Consent:    "",
+						},
+						err: nil,
+					},
+				},
+			},
+		},
+		{
+			groupDesc: "gpp_sid only",
+			testCases: []aTest{
+				{
+					desc:  "gpp_sid is malformed, expect error",
+					inUri: "/setuid?gpp_sid=malformed",
+					expected: testOutput{
+						reqInfo: gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous},
+						err:     errors.New("Error parsing gpp_sid strconv.ParseInt: parsing \"malformed\": invalid syntax"),
+					},
+				},
+				{
+					desc:  "TCF2 found in gpp_sid list. Given that the consent string will be empty, expect an error",
+					inUri: "/setuid?gpp_sid=2,6",
+					expected: testOutput{
+						reqInfo: gdpr.RequestInfo{GDPRSignal: gdpr.SignalYes},
+						err:     nil,
+					},
+				},
+				{
+					desc:  "TCF2 not found in gpp_sid list. Expect SignalNo and no error",
+					inUri: "/setuid?gpp_sid=6,8",
+					expected: testOutput{
+						reqInfo: gdpr.RequestInfo{GDPRSignal: gdpr.SignalNo},
+						err:     nil,
+					},
+				},
+			},
+		},
+		{
+			groupDesc: "both gpp_sid and gpp",
+			testCases: []aTest{
+				{
+					desc:  "TCF2 found in gpp_sid list and gpp has a valid GDPR string. Expect no error",
+					inUri: "/setuid?gpp_sid=2,6&gpp=DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+					expected: testOutput{
+						reqInfo: gdpr.RequestInfo{
+							GDPRSignal: gdpr.SignalYes,
+							Consent:    "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+						},
+						err: nil,
+					},
+				},
+			},
+		},
+	}
+	for _, tgroup := range testGroups {
+		for _, tc := range tgroup.testCases {
+			// set test
+			testURL, err := url.Parse(tc.inUri)
+			assert.NoError(t, err, "%s - %s", tgroup.groupDesc, tc.desc)
+
+			query := testURL.Query()
+
+			// run
+			outReqInfo, outErr := parseGDPRFromGPP(query)
+
+			// assertions
+			assert.Equal(t, tc.expected.reqInfo, outReqInfo, "%s - %s", tgroup.groupDesc, tc.desc)
+			assert.Equal(t, tc.expected.err, outErr, "%s - %s", tgroup.groupDesc, tc.desc)
+		}
+	}
+}
+
+func TestParseLegacyGDPRFields(t *testing.T) {
+	type testInput struct {
+		uri            string
+		gppGDPRSignal  gdpr.Signal
+		gppGDPRConsent string
+	}
+	type testOutput struct {
+		signal  gdpr.Signal
+		consent string
+		err     error
+	}
+	testCases := []struct {
+		desc     string
+		in       testInput
+		expected testOutput
+	}{
+		{
+			desc: `both "gdpr" and "gdpr_consent" missing from URI, expect SignalAmbiguous, blank consent and no error`,
+			in: testInput{
+				uri: "/setuid?bidder=pubmatic&uid=123",
+			},
+			expected: testOutput{
+				signal:  gdpr.SignalAmbiguous,
+				consent: "",
+				err:     nil,
+			},
+		},
+		{
+			desc: `invalid "gdpr" value, expect SignalAmbiguous, blank consent and error`,
+			in: testInput{
+				uri:           "/setuid?gdpr=2",
+				gppGDPRSignal: gdpr.SignalAmbiguous,
+			},
+			expected: testOutput{
+				signal:  gdpr.SignalAmbiguous,
+				consent: "",
+				err:     errors.New("the gdpr query param must be either 0 or 1. You gave 2"),
+			},
+		},
+		{
+			desc: `valid "gdpr" value but valid GDPRSignal was previously parsed before, expect SignalAmbiguous, blank consent and a warning`,
+			in: testInput{
+				uri:           "/setuid?gdpr=1",
+				gppGDPRSignal: gdpr.SignalYes,
+			},
+			expected: testOutput{
+				signal:  gdpr.SignalAmbiguous,
+				consent: "",
+				err: &errortypes.Warning{
+					Message:     "'gpp_sid' signal value will be used over the one found in the deprecated 'gdpr' field.",
+					WarningCode: errortypes.UnknownWarningCode,
+				},
+			},
+		},
+		{
+			desc: `valid "gdpr_consent" value but valid GDPRSignal was previously parsed before, expect SignalAmbiguous, blank consent and a warning`,
+			in: testInput{
+				uri:            "/setuid?gdpr_consent=someConsent",
+				gppGDPRConsent: "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+			},
+			expected: testOutput{
+				signal:  gdpr.SignalAmbiguous,
+				consent: "",
+				err: &errortypes.Warning{
+					Message:     "'gpp' value will be used over the one found in the deprecated 'gdpr_consent' field.",
+					WarningCode: errortypes.UnknownWarningCode,
+				},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		// set test
+		testURL, err := url.Parse(tc.in.uri)
+		assert.NoError(t, err, tc.desc)
+
+		query := testURL.Query()
+
+		// run
+		outSignal, outConsent, outErr := parseLegacyGDPRFields(query, tc.in.gppGDPRSignal, tc.in.gppGDPRConsent)
+
+		// assertions
+		assert.Equal(t, tc.expected.signal, outSignal, tc.desc)
+		assert.Equal(t, tc.expected.consent, outConsent, tc.desc)
+		assert.Equal(t, tc.expected.err, outErr, tc.desc)
+	}
+}
+
+func TestExtractGDPRInfo(t *testing.T) {
+	type testOutput struct {
+		requestInfo gdpr.RequestInfo
+		err         error
+	}
+	type testCase struct {
+		desc     string
+		inUri    string
+		expected testOutput
+	}
+	testSuite := []struct {
+		sDesc string
+		tests []testCase
+	}{
+		{
+			sDesc: "no gdpr nor gpp values in query",
+			tests: []testCase{
+				{
+					desc:  "expect blank consent, signalNo and nil error",
+					inUri: "/setuid?bidder=pubmatic&uid=123",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{
+							Consent:    "",
+							GDPRSignal: gdpr.SignalAmbiguous,
+						},
+						err: nil,
+					},
+				},
+			},
+		},
+		{
+			sDesc: "missing gpp, gdpr only",
+			tests: []testCase{
+				{
+					desc:  "Invalid gdpr signal value in query, expect blank request info and error",
+					inUri: "/setuid?gdpr=2",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous},
+						err:         errors.New("the gdpr query param must be either 0 or 1. You gave 2"),
+					},
+				},
+				{
+					desc:  "GDPR equals 0, blank consent, expect blank consent, signalNo and nil error",
+					inUri: "/setuid?gdpr=0",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{GDPRSignal: gdpr.SignalNo},
+						err:         nil,
+					},
+				},
+				{
+					desc:  "GDPR equals 1, blank consent, expect blank request info and error",
+					inUri: "/setuid?gdpr=1",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous},
+						err:         errors.New("GDPR consent is required when gdpr signal equals 1"),
+					},
+				},
+				{
+					desc:  "GDPR equals 0, non-blank consent, expect non-blank request info and nil error",
+					inUri: "/setuid?gdpr=0&gdpr_consent=someConsent",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{
+							Consent:    "someConsent",
+							GDPRSignal: gdpr.SignalNo,
+						},
+						err: nil,
+					},
+				},
+				{
+					desc:  "GDPR equals 1, non-blank consent, expect non-blank request info and nil error",
+					inUri: "/setuid?gdpr=1&gdpr_consent=someConsent",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{
+							Consent:    "someConsent",
+							GDPRSignal: gdpr.SignalYes,
+						},
+						err: nil,
+					},
+				},
+			},
+		},
+		{
+			sDesc: "missing gdpr, gpp only",
+			tests: []testCase{
+				{
+					desc:  "Malformed GPP_SID string, expect blank request info and error",
+					inUri: "/setuid?gpp_sid=malformed",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous},
+						err:         errors.New("Error parsing gpp_sid strconv.ParseInt: parsing \"malformed\": invalid syntax"),
+					},
+				},
+				{
+					desc:  "Valid GPP_SID string but invalid GPP string in query, expect blank request info and error",
+					inUri: "/setuid?gpp=malformed&gpp_sid=2",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous},
+						err:         errors.New("error parsing GPP header, base64 decoding: illegal base64 data at input byte 8"),
+					},
+				},
+				{
+					desc:  "SectionTCFEU2 not found in GPP string, expect blank consent and signalAmbiguous",
+					inUri: "/setuid?gpp=DBABBgA~xlgWEYCZAA",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{
+							Consent:    "",
+							GDPRSignal: gdpr.SignalAmbiguous,
+						},
+						err: nil,
+					},
+				},
+				{
+					desc:  "No GPP string, nor SectionTCFEU2 found in SID list in query, expect blank consent and signalAmbiguous",
+					inUri: "/setuid?gpp_sid=3,6",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{
+							Consent:    "",
+							GDPRSignal: gdpr.SignalNo,
+						},
+						err: nil,
+					},
+				},
+				{
+					desc:  "No GPP string, SectionTCFEU2 found in SID list in query, expect blank request info and error",
+					inUri: "/setuid?gpp_sid=2",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous},
+						err:         errors.New("GDPR consent is required when gdpr signal equals 1"),
+					},
+				},
+				{
+					desc:  "SectionTCFEU2 only found in SID list, expect blank request info and error",
+					inUri: "/setuid?gpp=DBABBgA~xlgWEYCZAA&gpp_sid=2",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous},
+						err:         errors.New("GDPR consent is required when gdpr signal equals 1"),
+					},
+				},
+				{
+					desc:  "SectionTCFEU2 found in GPP string but SID list is nil, expect valid consent and SignalAmbiguous",
+					inUri: "/setuid?gpp=DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{
+							Consent:    "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+							GDPRSignal: gdpr.SignalAmbiguous,
+						},
+						err: nil,
+					},
+				},
+				{
+					desc:  "SectionTCFEU2 found in GPP string but not in the non-nil SID list, expect valid consent and signalNo",
+					inUri: "/setuid?gpp=DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA&gpp_sid=6",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{
+							Consent:    "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+							GDPRSignal: gdpr.SignalNo,
+						},
+						err: nil,
+					},
+				},
+				{
+					desc:  "SectionTCFEU2 found both in GPP string and SID list, expect valid consent and signalYes",
+					inUri: "/setuid?gpp=DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA&gpp_sid=2,4",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{
+							Consent:    "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+							GDPRSignal: gdpr.SignalYes,
+						},
+						err: nil,
+					},
+				},
+			},
+		},
+		{
+			sDesc: "GPP values take priority over GDPR",
+			tests: []testCase{
+				{
+					desc:  "SignalNo in gdpr field but SignalYes in SID list, CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA consent in gpp but legacyConsent in gdpr_consent, expect GPP values to prevail",
+					inUri: "/setuid?gpp=DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA&gpp_sid=2,4&gdpr=0&gdpr_consent=legacyConsent",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{
+							Consent:    "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+							GDPRSignal: gdpr.SignalYes,
+						},
+						err: &errortypes.Warning{
+							Message:     "'gpp' value will be used over the one found in the deprecated 'gdpr_consent' field.",
+							WarningCode: errortypes.UnknownWarningCode,
+						},
+					},
+				},
+				{
+					desc:  "SignalNo in gdpr field but SignalYes in SID list because SectionTCFEU2 is listed, expect GPP to prevail",
+					inUri: "/setuid?gpp=DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA&gpp_sid=2,4&gdpr=0",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{
+							Consent:    "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+							GDPRSignal: gdpr.SignalYes,
+						},
+						err: &errortypes.Warning{
+							Message:     "'gpp_sid' signal value will be used over the one found in the deprecated 'gdpr' field.",
+							WarningCode: errortypes.UnknownWarningCode,
+						},
+					},
+				},
+				{
+					desc:  "No gpp string in URL query, use gdpr_consent and SignalYes found in SID list because SectionTCFEU2 is listed",
+					inUri: "/setuid?gpp_sid=2,4&gdpr_consent=legacyConsent",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{
+							Consent:    "",
+							GDPRSignal: gdpr.SignalAmbiguous,
+						},
+						err: errors.New("GDPR consent is required when gdpr signal equals 1"),
+					},
+				},
+				{
+					desc:  "SectionTCFEU2 not found in GPP string but found in SID list, choose the GDPR_CONSENT and GPP_SID signal",
+					inUri: "/setuid?gpp=DBABBgA~xlgWEYCZAA&gpp_sid=2&gdpr=0&gdpr_consent=legacyConsent",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{
+							Consent:    "",
+							GDPRSignal: gdpr.SignalAmbiguous,
+						},
+						err: errors.New("GDPR consent is required when gdpr signal equals 1"),
+					},
+				},
+				{
+					desc:  "SectionTCFEU2 found in GPP string but not in SID list, choose GDPR signal GPP consent value",
+					inUri: "/setuid?gpp=DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA&gpp_sid=6&gdpr=1&gdpr_consent=legacyConsent",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{
+							Consent:    "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+							GDPRSignal: gdpr.SignalNo,
+						},
+						err: &errortypes.Warning{
+							Message:     "'gpp' value will be used over the one found in the deprecated 'gdpr_consent' field.",
+							WarningCode: errortypes.UnknownWarningCode,
+						},
+					},
+				},
+				{
+					desc:  "SectionTCFEU2 not found in GPP, use GDPR_CONSENT value. SignalYes found in gdpr field, but not in the valid SID list, expect SignalNo",
+					inUri: "/setuid?gpp=DBABBgA~xlgWEYCZAA&gpp_sid=6&gdpr=1&gdpr_consent=legacyConsent",
+					expected: testOutput{
+						requestInfo: gdpr.RequestInfo{
+							Consent:    "",
+							GDPRSignal: gdpr.SignalNo,
+						},
+						err: &errortypes.Warning{
+							Message:     "'gpp_sid' signal value will be used over the one found in the deprecated 'gdpr' field.",
+							WarningCode: errortypes.UnknownWarningCode,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, ts := range testSuite {
+		for _, tc := range ts.tests {
+			// set test
+			testURL, err := url.Parse(tc.inUri)
+			assert.NoError(t, err, tc.desc)
+
+			query := testURL.Query()
+
+			// run
+			outReqInfo, outErr := extractGDPRInfo(query)
+
+			// assertions
+			assert.Equal(t, tc.expected.requestInfo, outReqInfo, tc.desc)
+			assert.Equal(t, tc.expected.err, outErr, tc.desc)
+		}
+	}
+}
+
 func TestSetUIDEndpointMetrics(t *testing.T) {
 	cookieWithOptOut := usersync.NewCookie()
 	cookieWithOptOut.SetOptOut(true)
@@ -301,7 +1103,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 		cfgAccountRequired     bool
 		expectedResponseCode   int
 		expectedMetrics        func(*metrics.MetricsEngineMock)
-		expectedAnalytics      func(*MockAnalytics)
+		expectedAnalytics      func(*MockAnalyticsRunner)
 	}{
 		{
 			description:            "Success - Sync",
@@ -314,7 +1116,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 				m.On("RecordSetUid", metrics.SetUidOK).Once()
 				m.On("RecordSyncerSet", "pubmatic", metrics.SyncerSetUidOK).Once()
 			},
-			expectedAnalytics: func(a *MockAnalytics) {
+			expectedAnalytics: func(a *MockAnalyticsRunner) {
 				expected := analytics.SetUIDObject{
 					Status:  200,
 					Bidder:  "pubmatic",
@@ -336,7 +1138,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 				m.On("RecordSetUid", metrics.SetUidOK).Once()
 				m.On("RecordSyncerSet", "pubmatic", metrics.SyncerSetUidCleared).Once()
 			},
-			expectedAnalytics: func(a *MockAnalytics) {
+			expectedAnalytics: func(a *MockAnalyticsRunner) {
 				expected := analytics.SetUIDObject{
 					Status:  200,
 					Bidder:  "pubmatic",
@@ -357,7 +1159,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 			expectedMetrics: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordSetUid", metrics.SetUidOptOut).Once()
 			},
-			expectedAnalytics: func(a *MockAnalytics) {
+			expectedAnalytics: func(a *MockAnalyticsRunner) {
 				expected := analytics.SetUIDObject{
 					Status:  401,
 					Bidder:  "",
@@ -378,7 +1180,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 			expectedMetrics: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordSetUid", metrics.SetUidSyncerUnknown).Once()
 			},
-			expectedAnalytics: func(a *MockAnalytics) {
+			expectedAnalytics: func(a *MockAnalyticsRunner) {
 				expected := analytics.SetUIDObject{
 					Status:  400,
 					Bidder:  "",
@@ -399,7 +1201,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 			expectedMetrics: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordSetUid", metrics.SetUidBadRequest).Once()
 			},
-			expectedAnalytics: func(a *MockAnalytics) {
+			expectedAnalytics: func(a *MockAnalyticsRunner) {
 				expected := analytics.SetUIDObject{
 					Status:  400,
 					Bidder:  "pubmatic",
@@ -420,12 +1222,12 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 			expectedMetrics: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordSetUid", metrics.SetUidBadRequest).Once()
 			},
-			expectedAnalytics: func(a *MockAnalytics) {
+			expectedAnalytics: func(a *MockAnalyticsRunner) {
 				expected := analytics.SetUIDObject{
 					Status:  400,
 					Bidder:  "pubmatic",
 					UID:     "",
-					Errors:  []error{errors.New("gdpr_consent is required when gdpr=1")},
+					Errors:  []error{errors.New("GDPR consent is required when gdpr signal equals 1")},
 					Success: false,
 				}
 				a.On("LogSetUIDObject", &expected).Once()
@@ -441,33 +1243,12 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 			expectedMetrics: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordSetUid", metrics.SetUidGDPRHostCookieBlocked).Once()
 			},
-			expectedAnalytics: func(a *MockAnalytics) {
+			expectedAnalytics: func(a *MockAnalyticsRunner) {
 				expected := analytics.SetUIDObject{
 					Status:  451,
 					Bidder:  "pubmatic",
 					UID:     "",
 					Errors:  []error{errors.New("The gdpr_consent string prevents cookies from being saved")},
-					Success: false,
-				}
-				a.On("LogSetUIDObject", &expected).Once()
-			},
-		},
-		{
-			description:            "Blocked account",
-			uri:                    "/setuid?bidder=pubmatic&uid=123&account=blocked_acct",
-			cookies:                []*usersync.Cookie{},
-			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
-			gdprAllowsHostCookies:  true,
-			expectedResponseCode:   400,
-			expectedMetrics: func(m *metrics.MetricsEngineMock) {
-				m.On("RecordSetUid", metrics.SetUidAccountBlocked).Once()
-			},
-			expectedAnalytics: func(a *MockAnalytics) {
-				expected := analytics.SetUIDObject{
-					Status:  400,
-					Bidder:  "pubmatic",
-					UID:     "",
-					Errors:  []error{errCookieSyncAccountBlocked},
 					Success: false,
 				}
 				a.On("LogSetUIDObject", &expected).Once()
@@ -484,7 +1265,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 			expectedMetrics: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordSetUid", metrics.SetUidAccountInvalid).Once()
 			},
-			expectedAnalytics: func(a *MockAnalytics) {
+			expectedAnalytics: func(a *MockAnalyticsRunner) {
 				expected := analytics.SetUIDObject{
 					Status:  400,
 					Bidder:  "pubmatic",
@@ -506,7 +1287,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 			expectedMetrics: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordSetUid", metrics.SetUidAccountConfigMalformed).Once()
 			},
-			expectedAnalytics: func(a *MockAnalytics) {
+			expectedAnalytics: func(a *MockAnalyticsRunner) {
 				expected := analytics.SetUIDObject{
 					Status:  400,
 					Bidder:  "pubmatic",
@@ -528,7 +1309,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 			expectedMetrics: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordSetUid", metrics.SetUidBadRequest).Once()
 			},
-			expectedAnalytics: func(a *MockAnalytics) {
+			expectedAnalytics: func(a *MockAnalyticsRunner) {
 				expected := analytics.SetUIDObject{
 					Status:  400,
 					Bidder:  "pubmatic",
@@ -542,7 +1323,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		analyticsEngine := &MockAnalytics{}
+		analyticsEngine := &MockAnalyticsRunner{}
 		test.expectedAnalytics(analyticsEngine)
 
 		metricsEngine := &metrics.MetricsEngineMock{}
@@ -552,7 +1333,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 		for _, v := range test.cookies {
 			addCookie(req, v)
 		}
-		response := doRequest(req, analyticsEngine, metricsEngine, test.syncersBidderNameToKey, test.gdprAllowsHostCookies, false, false, test.cfgAccountRequired)
+		response := doRequest(req, analyticsEngine, metricsEngine, test.syncersBidderNameToKey, test.gdprAllowsHostCookies, false, false, test.cfgAccountRequired, 0, nil)
 
 		assert.Equal(t, test.expectedResponseCode, response.Code, test.description)
 		analyticsEngine.AssertExpectations(t)
@@ -566,9 +1347,9 @@ func TestOptedOut(t *testing.T) {
 	cookie.SetOptOut(true)
 	addCookie(request, cookie)
 	syncersBidderNameToKey := map[string]string{"pubmatic": "pubmatic"}
-	analytics := analyticsConf.NewPBSAnalytics(&config.Analytics{})
+	analytics := analyticsBuild.New(&config.Analytics{})
 	metrics := &metricsConf.NilMetricsEngine{}
-	response := doRequest(request, analytics, metrics, syncersBidderNameToKey, true, false, false, false)
+	response := doRequest(request, analytics, metrics, syncersBidderNameToKey, true, false, false, false, 0, nil)
 
 	assert.Equal(t, http.StatusUnauthorized, response.Code)
 }
@@ -679,6 +1460,65 @@ func TestGetResponseFormat(t *testing.T) {
 	}
 }
 
+func TestIsSyncerPriority(t *testing.T) {
+	testCases := []struct {
+		name                           string
+		givenBidderNameFromSyncerQuery string
+		givenPriorityGroups            [][]string
+		expected                       bool
+	}{
+		{
+			name:                           "priority-tier-1",
+			givenBidderNameFromSyncerQuery: "a",
+			givenPriorityGroups:            [][]string{{"a"}},
+			expected:                       true,
+		},
+		{
+			name:                           "priority-tier-other",
+			givenBidderNameFromSyncerQuery: "c",
+			givenPriorityGroups:            [][]string{{"a"}, {"b", "c"}},
+			expected:                       true,
+		},
+		{
+			name:                           "priority-case-insensitive",
+			givenBidderNameFromSyncerQuery: "A",
+			givenPriorityGroups:            [][]string{{"a"}},
+			expected:                       true,
+		},
+		{
+			name:                           "not-priority-empty",
+			givenBidderNameFromSyncerQuery: "a",
+			givenPriorityGroups:            [][]string{},
+			expected:                       false,
+		},
+		{
+			name:                           "not-priority-not-defined",
+			givenBidderNameFromSyncerQuery: "a",
+			givenPriorityGroups:            [][]string{{"b"}},
+			expected:                       false,
+		},
+		{
+			name:                           "no-bidder",
+			givenBidderNameFromSyncerQuery: "",
+			givenPriorityGroups:            [][]string{{"b"}},
+			expected:                       false,
+		},
+		{
+			name:                           "no-priority-groups",
+			givenBidderNameFromSyncerQuery: "a",
+			givenPriorityGroups:            [][]string{},
+			expected:                       false,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			isPriority := isSyncerPriority(test.givenBidderNameFromSyncerQuery, test.givenPriorityGroups)
+			assert.Equal(t, test.expected, isPriority)
+		})
+	}
+}
+
 func assertHasSyncs(t *testing.T, testCase string, resp *httptest.ResponseRecorder, syncs map[string]string) {
 	t.Helper()
 	cookie := parseCookieString(t, resp)
@@ -697,20 +1537,23 @@ func makeRequest(uri string, existingSyncs map[string]string) *http.Request {
 	if len(existingSyncs) > 0 {
 		pbsCookie := usersync.NewCookie()
 		for key, value := range existingSyncs {
-			pbsCookie.TrySync(key, value)
+			pbsCookie.Sync(key, value)
 		}
 		addCookie(request, pbsCookie)
 	}
 	return request
 }
 
-func doRequest(req *http.Request, analytics analytics.PBSAnalyticsModule, metrics metrics.MetricsEngine, syncersBidderNameToKey map[string]string, gdprAllowsHostCookies, gdprReturnsError, gdprReturnsMalformedError, cfgAccountRequired bool) *httptest.ResponseRecorder {
+func doRequest(req *http.Request, analytics analytics.Runner, metrics metrics.MetricsEngine, syncersBidderNameToKey map[string]string, gdprAllowsHostCookies, gdprReturnsError, gdprReturnsMalformedError, cfgAccountRequired bool, maxCookieSize int, priorityGroups [][]string) *httptest.ResponseRecorder {
 	cfg := config.Configuration{
 		AccountRequired: cfgAccountRequired,
-		BlacklistedAcctMap: map[string]bool{
-			"blocked_acct": true,
-		},
 		AccountDefaults: config.Account{},
+		UserSync: config.UserSync{
+			PriorityGroups: priorityGroups,
+		},
+		HostCookie: config.HostCookie{
+			MaxCookieSizeBytes: maxCookieSize,
+		},
 	}
 	cfg.MarshalAccountDefaults()
 
@@ -733,6 +1576,10 @@ func doRequest(req *http.Request, analytics analytics.PBSAnalyticsModule, metric
 	syncersByBidder := make(map[string]usersync.Syncer)
 	for bidderName, syncerKey := range syncersBidderNameToKey {
 		syncersByBidder[bidderName] = fakeSyncer{key: syncerKey, defaultSyncType: usersync.SyncTypeIFrame}
+		if priorityGroups == nil {
+			cfg.UserSync.PriorityGroups = [][]string{{}}
+			cfg.UserSync.PriorityGroups[0] = append(cfg.UserSync.PriorityGroups[0], bidderName)
+		}
 	}
 
 	fakeAccountsFetcher := FakeAccountsFetcher{AccountData: map[string]json.RawMessage{
@@ -740,6 +1587,10 @@ func doRequest(req *http.Request, analytics analytics.PBSAnalyticsModule, metric
 		"disabled_acct":     json.RawMessage(`{"disabled":true}`),
 		"malformed_acct":    json.RawMessage(`{"disabled":"malformed"}`),
 		"invalid_json_acct": json.RawMessage(`{"}`),
+
+		"valid_acct_with_valid_activities_usersync_enabled":  json.RawMessage(`{"privacy":{"allowactivities":{"syncUser":{"default": true}}}}`),
+		"valid_acct_with_valid_activities_usersync_disabled": json.RawMessage(`{"privacy":{"allowactivities":{"syncUser":{"default": false}}}}`),
+		"valid_acct_with_invalid_activities":                 json.RawMessage(`{"privacy":{"allowactivities":{"syncUser":{"rules":[{"condition":{"componentName": ["bidderA.bidderB.bidderC"]}}]}}}}`),
 	}}
 
 	endpoint := NewSetUIDEndpoint(&cfg, syncersByBidder, gdprPermsBuilder, tcf2ConfigBuilder, analytics, fakeAccountsFetcher, metrics)
@@ -749,10 +1600,12 @@ func doRequest(req *http.Request, analytics analytics.PBSAnalyticsModule, metric
 }
 
 func addCookie(req *http.Request, cookie *usersync.Cookie) {
-	req.AddCookie(cookie.ToHTTPCookie(time.Duration(1) * time.Hour))
+	httpCookie, _ := ToHTTPCookie(cookie)
+	req.AddCookie(httpCookie)
 }
 
 func parseCookieString(t *testing.T, response *httptest.ResponseRecorder) *usersync.Cookie {
+	decoder := usersync.Base64Decoder{}
 	cookieString := response.Header().Get("Set-Cookie")
 	parser := regexp.MustCompile("uids=(.*?);")
 	res := parser.FindStringSubmatch(cookieString)
@@ -761,7 +1614,7 @@ func parseCookieString(t *testing.T, response *httptest.ResponseRecorder) *users
 		Name:  "uids",
 		Value: res[1],
 	}
-	return usersync.ParseCookie(&httpCookie)
+	return decoder.Decode(httpCookie.Value)
 }
 
 type fakePermissionsBuilder struct {
@@ -827,6 +1680,35 @@ func (s fakeSyncer) SupportsType(syncTypes []usersync.SyncType) bool {
 	return true
 }
 
-func (s fakeSyncer) GetSync(syncTypes []usersync.SyncType, privacyPolicies privacy.Policies) (usersync.Sync, error) {
+func (s fakeSyncer) GetSync(syncTypes []usersync.SyncType, privacyMacros macros.UserSyncPrivacy) (usersync.Sync, error) {
 	return usersync.Sync{}, nil
+}
+
+func ToHTTPCookie(cookie *usersync.Cookie) (*http.Cookie, error) {
+	encoder := usersync.Base64Encoder{}
+	encodedCookie, err := encoder.Encode(cookie)
+	if err != nil {
+		return nil, nil
+	}
+
+	return &http.Cookie{
+		Name:    uidCookieName,
+		Value:   encodedCookie,
+		Expires: time.Now().Add((90 * 24 * time.Hour)),
+		Path:    "/",
+	}, nil
+}
+
+func getUIDFromHeader(setCookieHeader string) string {
+	cookies := strings.Split(setCookieHeader, ";")
+	for _, cookie := range cookies {
+		trimmedCookie := strings.TrimSpace(cookie)
+		if strings.HasPrefix(trimmedCookie, "uids=") {
+			parts := strings.SplitN(trimmedCookie, "=", 2)
+			if len(parts) == 2 {
+				return parts[1]
+			}
+		}
+	}
+	return ""
 }

@@ -81,10 +81,7 @@
     "ext": {
       "prebid": {
         "cache": {
-          "bids": {
-            "returnCreative": null
-          },
-          "vastxml": null
+          "bids": {}
         },
         "channel": {
           "name": "amp",
@@ -103,10 +100,7 @@
           },
           "includewinners": true,
           "includebidderkeys": true,
-          "includebrandcategory": null,
-          "includeformat": false,
-          "durationrangesec": null,
-          "preferdeals": false
+          "mediatypepricegranularity": {}
         }
       }
     }

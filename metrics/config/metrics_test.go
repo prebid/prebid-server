@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -34,7 +35,7 @@ func TestGoMetricsEngine(t *testing.T) {
 	testEngine := NewMetricsEngine(&cfg, adapterList, syncerKeys, modulesStages)
 	_, ok := testEngine.MetricsEngine.(*metrics.Metrics)
 	if !ok {
-		t.Error("Expected a legacy Metrics as MetricsEngine, but didn't get it")
+		t.Error("Expected a Metrics as MetricsEngine, but didn't get it")
 	}
 }
 
@@ -148,7 +149,6 @@ func TestMultiMetricsEngine(t *testing.T) {
 
 	//Make the metrics engine, instantiated here with goEngine, fill its RequestStatuses[RequestType][metrics.RequestStatusXX] with the new boolean values added to metrics.Labels
 	VerifyMetrics(t, "RequestStatuses.OpenRTB2.OK", goEngine.RequestStatuses[metrics.ReqTypeORTB2Web][metrics.RequestStatusOK].Count(), 5)
-	VerifyMetrics(t, "RequestStatuses.Legacy.OK", goEngine.RequestStatuses[metrics.ReqTypeLegacy][metrics.RequestStatusOK].Count(), 0)
 	VerifyMetrics(t, "RequestStatuses.AMP.OK", goEngine.RequestStatuses[metrics.ReqTypeAMP][metrics.RequestStatusOK].Count(), 0)
 	VerifyMetrics(t, "RequestStatuses.AMP.BlacklistedAcctOrApp", goEngine.RequestStatuses[metrics.ReqTypeAMP][metrics.RequestStatusBlacklisted].Count(), 1)
 	VerifyMetrics(t, "RequestStatuses.Video.OK", goEngine.RequestStatuses[metrics.ReqTypeVideo][metrics.RequestStatusOK].Count(), 0)
@@ -169,13 +169,14 @@ func TestMultiMetricsEngine(t *testing.T) {
 	VerifyMetrics(t, "Request", goEngine.RequestStatuses[metrics.ReqTypeORTB2Web][metrics.RequestStatusOK].Count(), 5)
 	VerifyMetrics(t, "ImpMeter", goEngine.ImpMeter.Count(), 8)
 	VerifyMetrics(t, "NoCookieMeter", goEngine.NoCookieMeter.Count(), 0)
-	VerifyMetrics(t, "AdapterMetrics.Pubmatic.GotBidsMeter", goEngine.AdapterMetrics[openrtb_ext.BidderPubmatic].GotBidsMeter.Count(), 5)
-	VerifyMetrics(t, "AdapterMetrics.Pubmatic.NoBidMeter", goEngine.AdapterMetrics[openrtb_ext.BidderPubmatic].NoBidMeter.Count(), 0)
+
+	VerifyMetrics(t, "AdapterMetrics.pubmatic.GotBidsMeter", goEngine.AdapterMetrics[strings.ToLower(string(openrtb_ext.BidderPubmatic))].GotBidsMeter.Count(), 5)
+	VerifyMetrics(t, "AdapterMetrics.pubmatic.NoBidMeter", goEngine.AdapterMetrics[strings.ToLower(string(openrtb_ext.BidderPubmatic))].NoBidMeter.Count(), 0)
 	for _, err := range metrics.AdapterErrors() {
-		VerifyMetrics(t, "AdapterMetrics.Pubmatic.Request.ErrorMeter."+string(err), goEngine.AdapterMetrics[openrtb_ext.BidderPubmatic].ErrorMeters[err].Count(), 0)
+		VerifyMetrics(t, "AdapterMetrics.pubmatic.Request.ErrorMeter."+string(err), goEngine.AdapterMetrics[strings.ToLower(string(openrtb_ext.BidderPubmatic))].ErrorMeters[err].Count(), 0)
 	}
-	VerifyMetrics(t, "AdapterMetrics.AppNexus.GotBidsMeter", goEngine.AdapterMetrics[openrtb_ext.BidderAppnexus].GotBidsMeter.Count(), 0)
-	VerifyMetrics(t, "AdapterMetrics.AppNexus.NoBidMeter", goEngine.AdapterMetrics[openrtb_ext.BidderAppnexus].NoBidMeter.Count(), 5)
+	VerifyMetrics(t, "AdapterMetrics.appnexus.GotBidsMeter", goEngine.AdapterMetrics[strings.ToLower(string(openrtb_ext.BidderAppnexus))].GotBidsMeter.Count(), 0)
+	VerifyMetrics(t, "AdapterMetrics.appnexus.NoBidMeter", goEngine.AdapterMetrics[strings.ToLower(string(openrtb_ext.BidderAppnexus))].NoBidMeter.Count(), 5)
 
 	VerifyMetrics(t, "RecordRequestQueueTime.Video.Rejected", goEngine.RequestsQueueTimer[metrics.ReqTypeVideo][false].Count(), 1)
 	VerifyMetrics(t, "RecordRequestQueueTime.Video.Accepted", goEngine.RequestsQueueTimer[metrics.ReqTypeVideo][true].Count(), 0)
@@ -187,7 +188,7 @@ func TestMultiMetricsEngine(t *testing.T) {
 	VerifyMetrics(t, "StoredImpCache.Hit", goEngine.StoredImpCacheMeter[metrics.CacheHit].Count(), 5)
 	VerifyMetrics(t, "AccountCache.Hit", goEngine.AccountCacheMeter[metrics.CacheHit].Count(), 6)
 
-	VerifyMetrics(t, "AdapterMetrics.AppNexus.GDPRRequestBlocked", goEngine.AdapterMetrics[openrtb_ext.BidderAppnexus].GDPRRequestBlocked.Count(), 1)
+	VerifyMetrics(t, "AdapterMetrics.appNexus.GDPRRequestBlocked", goEngine.AdapterMetrics[strings.ToLower(string(openrtb_ext.BidderAppnexus))].GDPRRequestBlocked.Count(), 1)
 
 	// verify that each module has its own metric recorded
 	for module, stages := range modulesStages {

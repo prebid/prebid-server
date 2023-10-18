@@ -113,7 +113,7 @@
       }
     }
   ],
-
+  "expectedBidResponses": [{"currency":"USD","bids":[]}],
   "expectedMakeBidsErrors": [
     {
       "value": "Imp ID test-imp-idx in bid didn't match with any imp in the original request",

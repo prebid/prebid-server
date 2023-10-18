@@ -4,9 +4,135 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestCloneRequestWrapper(t *testing.T) {
+	testCases := []struct {
+		name        string
+		reqWrap     *RequestWrapper
+		reqWrapCopy *RequestWrapper                             // manual copy of above ext object to verify against
+		mutator     func(t *testing.T, reqWrap *RequestWrapper) // function to modify the Ext object
+	}{
+		{
+			name:        "Nil", // Verify the nil case
+			reqWrap:     nil,
+			reqWrapCopy: nil,
+			mutator:     func(t *testing.T, reqWrap *RequestWrapper) {},
+		},
+		{
+			name: "NoMutate",
+			reqWrap: &RequestWrapper{
+				impWrappers: []*ImpWrapper{
+					{
+						impExt: &ImpExt{prebid: &ExtImpPrebid{Options: &Options{EchoVideoAttrs: true}}, prebidDirty: true, tid: "fun"},
+					},
+					{
+						impExt: &ImpExt{tid: "star"},
+					},
+				},
+				userExt:   &UserExt{consentDirty: true},
+				deviceExt: &DeviceExt{extDirty: true},
+				requestExt: &RequestExt{
+					prebid: &ExtRequestPrebid{Integration: "derivative"},
+				},
+				appExt:    &AppExt{prebidDirty: true},
+				regExt:    &RegExt{usPrivacy: "foo"},
+				siteExt:   &SiteExt{amp: ptrutil.ToPtr[int8](1)},
+				doohExt:   &DOOHExt{},
+				sourceExt: &SourceExt{schainDirty: true},
+			},
+			reqWrapCopy: &RequestWrapper{
+				impWrappers: []*ImpWrapper{
+					{
+						impExt: &ImpExt{prebid: &ExtImpPrebid{Options: &Options{EchoVideoAttrs: true}}, prebidDirty: true, tid: "fun"},
+					},
+					{
+						impExt: &ImpExt{tid: "star"},
+					},
+				},
+				userExt:   &UserExt{consentDirty: true},
+				deviceExt: &DeviceExt{extDirty: true},
+				requestExt: &RequestExt{
+					prebid: &ExtRequestPrebid{Integration: "derivative"},
+				},
+				appExt:    &AppExt{prebidDirty: true},
+				regExt:    &RegExt{usPrivacy: "foo"},
+				siteExt:   &SiteExt{amp: ptrutil.ToPtr[int8](1)},
+				doohExt:   &DOOHExt{},
+				sourceExt: &SourceExt{schainDirty: true},
+			},
+			mutator: func(t *testing.T, reqWrap *RequestWrapper) {},
+		},
+		{
+			name: "General",
+			reqWrap: &RequestWrapper{
+				impWrappers: []*ImpWrapper{
+					{
+						impExt: &ImpExt{prebid: &ExtImpPrebid{Options: &Options{EchoVideoAttrs: true}}, prebidDirty: true, tid: "fun"},
+					},
+					{
+						impExt: &ImpExt{tid: "star"},
+					},
+				},
+				userExt:   &UserExt{consentDirty: true},
+				deviceExt: &DeviceExt{extDirty: true},
+				requestExt: &RequestExt{
+					prebid: &ExtRequestPrebid{Integration: "derivative"},
+				},
+				appExt:    &AppExt{prebidDirty: true},
+				regExt:    &RegExt{usPrivacy: "foo"},
+				siteExt:   &SiteExt{amp: ptrutil.ToPtr[int8](1)},
+				doohExt:   &DOOHExt{},
+				sourceExt: &SourceExt{schainDirty: true},
+			},
+			reqWrapCopy: &RequestWrapper{
+				impWrappers: []*ImpWrapper{
+					{
+						impExt: &ImpExt{prebid: &ExtImpPrebid{Options: &Options{EchoVideoAttrs: true}}, prebidDirty: true, tid: "fun"},
+					},
+					{
+						impExt: &ImpExt{tid: "star"},
+					},
+				},
+				userExt:   &UserExt{consentDirty: true},
+				deviceExt: &DeviceExt{extDirty: true},
+				requestExt: &RequestExt{
+					prebid: &ExtRequestPrebid{Integration: "derivative"},
+				},
+				appExt:    &AppExt{prebidDirty: true},
+				regExt:    &RegExt{usPrivacy: "foo"},
+				siteExt:   &SiteExt{amp: ptrutil.ToPtr[int8](1)},
+				doohExt:   &DOOHExt{},
+				sourceExt: &SourceExt{schainDirty: true},
+			},
+			mutator: func(t *testing.T, reqWrap *RequestWrapper) {
+				reqWrap.impWrappers[1].impExt.prebidDirty = true
+				reqWrap.impWrappers[0] = nil
+				reqWrap.impWrappers = append(reqWrap.impWrappers, &ImpWrapper{impExt: &ImpExt{tid: "star"}})
+				reqWrap.impWrappers = nil
+				reqWrap.userExt = nil
+				reqWrap.deviceExt = nil
+				reqWrap.requestExt = nil
+				reqWrap.appExt = nil
+				reqWrap.regExt = nil
+				reqWrap.siteExt = nil
+				reqWrap.doohExt = nil
+				reqWrap.sourceExt = nil
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			clone := test.reqWrap.Clone()
+			test.mutator(t, test.reqWrap)
+			assert.Equal(t, test.reqWrapCopy, clone)
+		})
+	}
+}
 
 func TestUserExt(t *testing.T) {
 	userExt := &UserExt{}
@@ -465,6 +591,162 @@ func TestUserExtUnmarshal(t *testing.T) {
 	}
 }
 
+func TestCloneUserExt(t *testing.T) {
+	testCases := []struct {
+		name        string
+		userExt     *UserExt
+		userExtCopy *UserExt                             // manual copy of above ext object to verify against
+		mutator     func(t *testing.T, userExt *UserExt) // function to modify the Ext object
+	}{
+		{
+			name:        "Nil", // Verify the nil case
+			userExt:     nil,
+			userExtCopy: nil,
+			mutator:     func(t *testing.T, user *UserExt) {},
+		},
+		{
+			name: "NoMutate",
+			userExt: &UserExt{
+				ext:          map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
+				consent:      ptrutil.ToPtr("Myconsent"),
+				consentDirty: true,
+				prebid: &ExtUserPrebid{
+					BuyerUIDs: map[string]string{"A": "X", "B": "Y"},
+				},
+				prebidDirty: true,
+				eids:        &[]openrtb2.EID{},
+			},
+			userExtCopy: &UserExt{
+				ext:          map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
+				consent:      ptrutil.ToPtr("Myconsent"),
+				consentDirty: true,
+				prebid: &ExtUserPrebid{
+					BuyerUIDs: map[string]string{"A": "X", "B": "Y"},
+				},
+				prebidDirty: true,
+				eids:        &[]openrtb2.EID{},
+			},
+			mutator: func(t *testing.T, user *UserExt) {},
+		},
+		{
+			name: "General",
+			userExt: &UserExt{
+				ext:          map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
+				consent:      ptrutil.ToPtr("Myconsent"),
+				consentDirty: true,
+				prebid: &ExtUserPrebid{
+					BuyerUIDs: map[string]string{"A": "X", "B": "Y"},
+				},
+				prebidDirty: true,
+				eids:        &[]openrtb2.EID{},
+			},
+			userExtCopy: &UserExt{
+				ext:          map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
+				consent:      ptrutil.ToPtr("Myconsent"),
+				consentDirty: true,
+				prebid: &ExtUserPrebid{
+					BuyerUIDs: map[string]string{"A": "X", "B": "Y"},
+				},
+				prebidDirty: true,
+				eids:        &[]openrtb2.EID{},
+			},
+			mutator: func(t *testing.T, user *UserExt) {
+				user.ext["A"] = json.RawMessage(`G`)
+				user.ext["C"] = json.RawMessage(`L`)
+				user.extDirty = true
+				user.consent = nil
+				user.consentDirty = false
+				user.prebid.BuyerUIDs["A"] = "C"
+				user.prebid.BuyerUIDs["C"] = "A"
+				user.prebid = nil
+			},
+		},
+		{
+			name: "EIDs",
+			userExt: &UserExt{
+				eids: &[]openrtb2.EID{
+					{
+						Source: "Sauce",
+						UIDs: []openrtb2.UID{
+							{ID: "A", AType: 5, Ext: json.RawMessage(`{}`)},
+							{ID: "B", AType: 1, Ext: json.RawMessage(`{"extra": "stuff"}`)},
+						},
+					},
+					{
+						Source: "Moon",
+						UIDs: []openrtb2.UID{
+							{ID: "G", AType: 3, Ext: json.RawMessage(`{}`)},
+							{ID: "D", AType: 1},
+						},
+					},
+				},
+			},
+			userExtCopy: &UserExt{
+				eids: &[]openrtb2.EID{
+					{
+						Source: "Sauce",
+						UIDs: []openrtb2.UID{
+							{ID: "A", AType: 5, Ext: json.RawMessage(`{}`)},
+							{ID: "B", AType: 1, Ext: json.RawMessage(`{"extra": "stuff"}`)},
+						},
+					},
+					{
+						Source: "Moon",
+						UIDs: []openrtb2.UID{
+							{ID: "G", AType: 3, Ext: json.RawMessage(`{}`)},
+							{ID: "D", AType: 1},
+						},
+					},
+				},
+			},
+			mutator: func(t *testing.T, userExt *UserExt) {
+				eids := *userExt.eids
+				eids[0].UIDs[1].ID = "G2"
+				eids[1].UIDs[0].AType = 0
+				eids[0].UIDs = append(eids[0].UIDs, openrtb2.UID{ID: "Z", AType: 2})
+				eids = append(eids, openrtb2.EID{Source: "Blank"})
+				userExt.eids = nil
+			},
+		},
+		{
+			name: "ConsentedProviders",
+			userExt: &UserExt{
+				consentedProvidersSettingsIn: &ConsentedProvidersSettingsIn{
+					ConsentedProvidersString: "A,B,C",
+				},
+				consentedProvidersSettingsOut: &ConsentedProvidersSettingsOut{
+					ConsentedProvidersList: []int{1, 2, 3, 4},
+				},
+			},
+			userExtCopy: &UserExt{
+				consentedProvidersSettingsIn: &ConsentedProvidersSettingsIn{
+					ConsentedProvidersString: "A,B,C",
+				},
+				consentedProvidersSettingsOut: &ConsentedProvidersSettingsOut{
+					ConsentedProvidersList: []int{1, 2, 3, 4},
+				},
+			},
+			mutator: func(t *testing.T, userExt *UserExt) {
+				userExt.consentedProvidersSettingsIn.ConsentedProvidersString = "B,C,D"
+				userExt.consentedProvidersSettingsIn = &ConsentedProvidersSettingsIn{
+					ConsentedProvidersString: "G,H,I",
+				}
+				userExt.consentedProvidersSettingsOut.ConsentedProvidersList[1] = 5
+				userExt.consentedProvidersSettingsOut.ConsentedProvidersList = append(userExt.consentedProvidersSettingsOut.ConsentedProvidersList, 7)
+				userExt.consentedProvidersSettingsOut = nil
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			clone := test.userExt.Clone()
+			test.mutator(t, test.userExt)
+			assert.Equal(t, test.userExtCopy, clone)
+		})
+	}
+}
+
 func TestRebuildDeviceExt(t *testing.T) {
 	prebidContent1 := ExtDevicePrebid{Interstitial: &ExtDeviceInt{MinWidthPerc: 1}}
 	prebidContent2 := ExtDevicePrebid{Interstitial: &ExtDeviceInt{MinWidthPerc: 2}}
@@ -611,6 +893,172 @@ func TestRebuildRequestExt(t *testing.T) {
 	}
 }
 
+func TestCloneRequestExt(t *testing.T) {
+	testCases := []struct {
+		name       string
+		reqExt     *RequestExt
+		reqExtCopy *RequestExt                            // manual copy of above ext object to verify against
+		mutator    func(t *testing.T, reqExt *RequestExt) // function to modify the Ext object
+	}{
+		{
+			name:       "Nil", // Verify the nil case
+			reqExt:     nil,
+			reqExtCopy: nil,
+			mutator:    func(t *testing.T, reqExt *RequestExt) {},
+		},
+		{
+			name: "NoMutate", // Verify the nil case
+			reqExt: &RequestExt{
+				ext:      map[string]json.RawMessage{"A": json.RawMessage(`{}`), "B": json.RawMessage(`{"foo":"bar"}`)},
+				extDirty: true,
+				prebid: &ExtRequestPrebid{
+					BidderParams: json.RawMessage(`{}`),
+				},
+			},
+			reqExtCopy: &RequestExt{
+				ext:      map[string]json.RawMessage{"A": json.RawMessage(`{}`), "B": json.RawMessage(`{"foo":"bar"}`)},
+				extDirty: true,
+				prebid: &ExtRequestPrebid{
+					BidderParams: json.RawMessage(`{}`),
+				},
+			},
+			mutator: func(t *testing.T, reqExt *RequestExt) {},
+		},
+		{
+			name: "General", // Verify the nil case
+			reqExt: &RequestExt{
+				ext:      map[string]json.RawMessage{"A": json.RawMessage(`{}`), "B": json.RawMessage(`{"foo":"bar"}`)},
+				extDirty: true,
+				prebid: &ExtRequestPrebid{
+					BidderParams: json.RawMessage(`{}`),
+				},
+			},
+			reqExtCopy: &RequestExt{
+				ext:      map[string]json.RawMessage{"A": json.RawMessage(`{}`), "B": json.RawMessage(`{"foo":"bar"}`)},
+				extDirty: true,
+				prebid: &ExtRequestPrebid{
+					BidderParams: json.RawMessage(`{}`),
+				},
+			},
+			mutator: func(t *testing.T, reqExt *RequestExt) {
+				reqExt.ext["A"] = json.RawMessage(`"string"`)
+				reqExt.ext["C"] = json.RawMessage(`{}`)
+				reqExt.extDirty = false
+				reqExt.prebid.Channel = &ExtRequestPrebidChannel{Name: "Bob"}
+				reqExt.prebid.BidderParams = nil
+				reqExt.prebid = nil
+			},
+		},
+		{
+			name: "SChain", // Verify the nil case
+			reqExt: &RequestExt{
+				schain: &openrtb2.SupplyChain{
+					Complete: 1,
+					Ver:      "1.1",
+					Nodes: []openrtb2.SupplyChainNode{
+						{ASI: "Is a", RID: "off", HP: ptrutil.ToPtr[int8](1)},
+						{ASI: "other", RID: "drift", HP: ptrutil.ToPtr[int8](0)},
+					},
+				},
+			},
+			reqExtCopy: &RequestExt{
+				schain: &openrtb2.SupplyChain{
+					Complete: 1,
+					Ver:      "1.1",
+					Nodes: []openrtb2.SupplyChainNode{
+						{ASI: "Is a", RID: "off", HP: ptrutil.ToPtr[int8](1)},
+						{ASI: "other", RID: "drift", HP: ptrutil.ToPtr[int8](0)},
+					},
+				},
+			},
+			mutator: func(t *testing.T, reqExt *RequestExt) {
+				reqExt.schain.Complete = 0
+				reqExt.schain.Ver = "1.2"
+				reqExt.schain.Nodes[0].ASI = "some"
+				reqExt.schain.Nodes[1].HP = nil
+				reqExt.schain.Nodes = append(reqExt.schain.Nodes, openrtb2.SupplyChainNode{ASI: "added"})
+				reqExt.schain = nil
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			clone := test.reqExt.Clone()
+			test.mutator(t, test.reqExt)
+			assert.Equal(t, test.reqExtCopy, clone)
+		})
+	}
+
+}
+
+func TestCloneDeviceExt(t *testing.T) {
+	testCases := []struct {
+		name       string
+		devExt     *DeviceExt
+		devExtCopy *DeviceExt                            // manual copy of above ext object to verify against
+		mutator    func(t *testing.T, devExt *DeviceExt) // function to modify the Ext object
+	}{
+		{
+			name:       "Nil", // Verify the nil case
+			devExt:     nil,
+			devExtCopy: nil,
+			mutator:    func(t *testing.T, devExt *DeviceExt) {},
+		},
+		{
+			name: "NoMutate",
+			devExt: &DeviceExt{
+				ext:      map[string]json.RawMessage{"A": json.RawMessage(`{}`), "B": json.RawMessage(`{"foo":"bar"}`)},
+				extDirty: true,
+				prebid: &ExtDevicePrebid{
+					Interstitial: &ExtDeviceInt{MinWidthPerc: 65.0, MinHeightPerc: 75.0},
+				},
+			},
+			devExtCopy: &DeviceExt{
+				ext:      map[string]json.RawMessage{"A": json.RawMessage(`{}`), "B": json.RawMessage(`{"foo":"bar"}`)},
+				extDirty: true,
+				prebid: &ExtDevicePrebid{
+					Interstitial: &ExtDeviceInt{MinWidthPerc: 65.0, MinHeightPerc: 75.0},
+				},
+			},
+			mutator: func(t *testing.T, devExt *DeviceExt) {},
+		},
+		{
+			name: "General",
+			devExt: &DeviceExt{
+				ext:      map[string]json.RawMessage{"A": json.RawMessage(`{}`), "B": json.RawMessage(`{"foo":"bar"}`)},
+				extDirty: true,
+				prebid: &ExtDevicePrebid{
+					Interstitial: &ExtDeviceInt{MinWidthPerc: 65.0, MinHeightPerc: 75.0},
+				},
+			},
+			devExtCopy: &DeviceExt{
+				ext:      map[string]json.RawMessage{"A": json.RawMessage(`{}`), "B": json.RawMessage(`{"foo":"bar"}`)},
+				extDirty: true,
+				prebid: &ExtDevicePrebid{
+					Interstitial: &ExtDeviceInt{MinWidthPerc: 65, MinHeightPerc: 75},
+				},
+			},
+			mutator: func(t *testing.T, devExt *DeviceExt) {
+				devExt.ext["A"] = json.RawMessage(`"string"`)
+				devExt.ext["C"] = json.RawMessage(`{}`)
+				devExt.extDirty = false
+				devExt.prebid.Interstitial.MinHeightPerc = 55
+				devExt.prebid.Interstitial = &ExtDeviceInt{MinWidthPerc: 80}
+				devExt.prebid = nil
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			clone := test.devExt.Clone()
+			test.mutator(t, test.devExt)
+			assert.Equal(t, test.devExtCopy, clone)
+		})
+	}
+}
+
 func TestRebuildAppExt(t *testing.T) {
 	prebidContent1 := ExtAppPrebid{Source: "1"}
 	prebidContent2 := ExtAppPrebid{Source: "2"}
@@ -690,6 +1138,278 @@ func TestRebuildAppExt(t *testing.T) {
 		w := RequestWrapper{BidRequest: &test.request, appExt: &test.requestAppExtWrapper}
 		w.RebuildRequest()
 		assert.Equal(t, test.expectedRequest, *w.BidRequest, test.description)
+	}
+}
+
+func TestCloneAppExt(t *testing.T) {
+	testCases := []struct {
+		name       string
+		appExt     *AppExt
+		appExtCopy *AppExt                            // manual copy of above ext object to verify against
+		mutator    func(t *testing.T, appExt *AppExt) // function to modify the Ext object
+	}{
+		{
+			name:       "Nil", // Verify the nil case
+			appExt:     nil,
+			appExtCopy: nil,
+			mutator:    func(t *testing.T, appExt *AppExt) {},
+		},
+		{
+			name: "NoMutate",
+			appExt: &AppExt{
+				ext:      map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
+				extDirty: true,
+				prebid: &ExtAppPrebid{
+					Source:  "Sauce",
+					Version: "2.2",
+				},
+			},
+			appExtCopy: &AppExt{
+				ext:      map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
+				extDirty: true,
+				prebid: &ExtAppPrebid{
+					Source:  "Sauce",
+					Version: "2.2",
+				},
+			},
+			mutator: func(t *testing.T, appExt *AppExt) {},
+		},
+		{
+			name: "General",
+			appExt: &AppExt{
+				ext:      map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
+				extDirty: true,
+				prebid: &ExtAppPrebid{
+					Source:  "Sauce",
+					Version: "2.2",
+				},
+			},
+			appExtCopy: &AppExt{
+				ext:      map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
+				extDirty: true,
+				prebid: &ExtAppPrebid{
+					Source:  "Sauce",
+					Version: "2.2",
+				},
+			},
+			mutator: func(t *testing.T, appExt *AppExt) {
+				appExt.ext["A"] = json.RawMessage(`"string"`)
+				appExt.ext["C"] = json.RawMessage(`{}`)
+				appExt.extDirty = false
+				appExt.prebid.Source = "foobar"
+				appExt.prebid = nil
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			clone := test.appExt.Clone()
+			test.mutator(t, test.appExt)
+			assert.Equal(t, test.appExtCopy, clone)
+		})
+	}
+}
+
+func TestRebuildDOOHExt(t *testing.T) {
+	// These permutations look a bit wonky
+	// Since DOOHExt currently exists for consistency but there isn't a single field
+	// expected - hence unable to test dirty and variations
+	// Once one is established, updated the permutations below similar to TestRebuildAppExt example
+	testCases := []struct {
+		description           string
+		request               openrtb2.BidRequest
+		requestDOOHExtWrapper DOOHExt
+		expectedRequest       openrtb2.BidRequest
+	}{
+		{
+			description:           "Nil - Not Dirty",
+			request:               openrtb2.BidRequest{},
+			requestDOOHExtWrapper: DOOHExt{},
+			expectedRequest:       openrtb2.BidRequest{},
+		},
+		{
+			description:           "Nil - Dirty",
+			request:               openrtb2.BidRequest{},
+			requestDOOHExtWrapper: DOOHExt{},
+			expectedRequest:       openrtb2.BidRequest{DOOH: nil},
+		},
+		{
+			description:           "Nil - Dirty - No Change",
+			request:               openrtb2.BidRequest{},
+			requestDOOHExtWrapper: DOOHExt{},
+			expectedRequest:       openrtb2.BidRequest{},
+		},
+		{
+			description:           "Empty - Not Dirty",
+			request:               openrtb2.BidRequest{DOOH: &openrtb2.DOOH{}},
+			requestDOOHExtWrapper: DOOHExt{},
+			expectedRequest:       openrtb2.BidRequest{DOOH: &openrtb2.DOOH{}},
+		},
+		{
+			description:           "Empty - Dirty",
+			request:               openrtb2.BidRequest{DOOH: &openrtb2.DOOH{}},
+			requestDOOHExtWrapper: DOOHExt{},
+			expectedRequest:       openrtb2.BidRequest{DOOH: &openrtb2.DOOH{}},
+		},
+		{
+			description:           "Empty - Dirty - No Change",
+			request:               openrtb2.BidRequest{DOOH: &openrtb2.DOOH{}},
+			requestDOOHExtWrapper: DOOHExt{},
+			expectedRequest:       openrtb2.BidRequest{DOOH: &openrtb2.DOOH{}},
+		},
+		{
+			description:           "Populated - Not Dirty",
+			request:               openrtb2.BidRequest{DOOH: &openrtb2.DOOH{Ext: json.RawMessage(`{}`)}},
+			requestDOOHExtWrapper: DOOHExt{},
+			expectedRequest:       openrtb2.BidRequest{DOOH: &openrtb2.DOOH{Ext: json.RawMessage(`{}`)}},
+		},
+		{
+			description:           "Populated - Dirty",
+			request:               openrtb2.BidRequest{DOOH: &openrtb2.DOOH{Ext: json.RawMessage(`{}`)}},
+			requestDOOHExtWrapper: DOOHExt{},
+			expectedRequest:       openrtb2.BidRequest{DOOH: &openrtb2.DOOH{Ext: json.RawMessage(`{}`)}},
+		},
+		{
+			description:           "Populated - Dirty - No Change",
+			request:               openrtb2.BidRequest{DOOH: &openrtb2.DOOH{Ext: json.RawMessage(`{}`)}},
+			requestDOOHExtWrapper: DOOHExt{},
+			expectedRequest:       openrtb2.BidRequest{DOOH: &openrtb2.DOOH{Ext: json.RawMessage(`{}`)}},
+		},
+		{
+			description:           "Populated - Dirty - Cleared",
+			request:               openrtb2.BidRequest{DOOH: &openrtb2.DOOH{Ext: json.RawMessage(`{}`)}},
+			requestDOOHExtWrapper: DOOHExt{},
+			expectedRequest:       openrtb2.BidRequest{DOOH: &openrtb2.DOOH{Ext: json.RawMessage(`{}`)}},
+		},
+	}
+
+	for _, test := range testCases {
+		// create required filed in the test loop to keep test declaration easier to read
+		test.requestDOOHExtWrapper.ext = make(map[string]json.RawMessage)
+
+		w := RequestWrapper{BidRequest: &test.request, doohExt: &test.requestDOOHExtWrapper}
+		w.RebuildRequest()
+		assert.Equal(t, test.expectedRequest, *w.BidRequest, test.description)
+	}
+}
+
+func TestCloneDOOHExt(t *testing.T) {
+	testCases := []struct {
+		name        string
+		DOOHExt     *DOOHExt
+		DOOHExtCopy *DOOHExt                             // manual copy of above ext object to verify against
+		mutator     func(t *testing.T, DOOHExt *DOOHExt) // function to modify the Ext object
+	}{
+		{
+			name:        "Nil", // Verify the nil case
+			DOOHExt:     nil,
+			DOOHExtCopy: nil,
+			mutator:     func(t *testing.T, DOOHExt *DOOHExt) {},
+		},
+		{
+			name: "NoMutate",
+			DOOHExt: &DOOHExt{
+				ext:      map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
+				extDirty: true,
+			},
+			DOOHExtCopy: &DOOHExt{
+				ext:      map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
+				extDirty: true,
+			},
+			mutator: func(t *testing.T, DOOHExt *DOOHExt) {},
+		},
+		{
+			name: "General",
+			DOOHExt: &DOOHExt{
+				ext:      map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
+				extDirty: true,
+			},
+			DOOHExtCopy: &DOOHExt{
+				ext:      map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
+				extDirty: true,
+			},
+			mutator: func(t *testing.T, DOOHExt *DOOHExt) {
+				DOOHExt.ext["A"] = json.RawMessage(`"string"`)
+				DOOHExt.ext["C"] = json.RawMessage(`{}`)
+				DOOHExt.extDirty = false
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			clone := test.DOOHExt.Clone()
+			test.mutator(t, test.DOOHExt)
+			assert.Equal(t, test.DOOHExtCopy, clone)
+		})
+	}
+}
+
+func TestCloneRegExt(t *testing.T) {
+	testCases := []struct {
+		name       string
+		regExt     *RegExt
+		regExtCopy *RegExt                            // manual copy of above ext object to verify against
+		mutator    func(t *testing.T, regExt *RegExt) // function to modify the Ext object
+	}{
+		{
+			name:       "Nil", // Verify the nil case
+			regExt:     nil,
+			regExtCopy: nil,
+			mutator:    func(t *testing.T, appExt *RegExt) {},
+		},
+		{
+			name: "NoMutate",
+			regExt: &RegExt{
+				ext:            map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
+				extDirty:       true,
+				gdpr:           ptrutil.ToPtr[int8](1),
+				usPrivacy:      "priv",
+				usPrivacyDirty: true,
+			},
+			regExtCopy: &RegExt{
+				ext:            map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
+				extDirty:       true,
+				gdpr:           ptrutil.ToPtr[int8](1),
+				usPrivacy:      "priv",
+				usPrivacyDirty: true,
+			},
+			mutator: func(t *testing.T, appExt *RegExt) {},
+		},
+		{
+			name: "General",
+			regExt: &RegExt{
+				ext:            map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
+				extDirty:       true,
+				gdpr:           ptrutil.ToPtr[int8](1),
+				usPrivacy:      "priv",
+				usPrivacyDirty: true,
+			},
+			regExtCopy: &RegExt{
+				ext:            map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
+				extDirty:       true,
+				gdpr:           ptrutil.ToPtr[int8](1),
+				usPrivacy:      "priv",
+				usPrivacyDirty: true,
+			},
+			mutator: func(t *testing.T, appExt *RegExt) {
+				appExt.ext["A"] = json.RawMessage(`"string"`)
+				appExt.ext["C"] = json.RawMessage(`{}`)
+				appExt.extDirty = false
+				appExt.gdpr = nil
+				appExt.gdprDirty = true
+				appExt.usPrivacy = "Other"
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			clone := test.regExt.Clone()
+			test.mutator(t, test.regExt)
+			assert.Equal(t, test.regExtCopy, clone)
+		})
 	}
 }
 
@@ -775,6 +1495,64 @@ func TestRebuildSiteExt(t *testing.T) {
 	}
 }
 
+func TestCloneSiteExt(t *testing.T) {
+	testCases := []struct {
+		name        string
+		siteExt     *SiteExt
+		siteExtCopy *SiteExt                             // manual copy of above ext object to verify against
+		mutator     func(t *testing.T, siteExt *SiteExt) // function to modify the Ext object
+	}{
+		{
+			name:        "Nil", // Verify the nil case
+			siteExt:     nil,
+			siteExtCopy: nil,
+			mutator:     func(t *testing.T, siteExt *SiteExt) {},
+		},
+		{
+			name: "NoMutate",
+			siteExt: &SiteExt{
+				ext:      map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
+				extDirty: true,
+				amp:      ptrutil.ToPtr[int8](1),
+			},
+			siteExtCopy: &SiteExt{
+				ext:      map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
+				extDirty: true,
+				amp:      ptrutil.ToPtr[int8](1),
+			},
+			mutator: func(t *testing.T, siteExt *SiteExt) {},
+		},
+		{
+			name: "General",
+			siteExt: &SiteExt{
+				ext:      map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
+				extDirty: true,
+				amp:      ptrutil.ToPtr[int8](1),
+			},
+			siteExtCopy: &SiteExt{
+				ext:      map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
+				extDirty: true,
+				amp:      ptrutil.ToPtr[int8](1),
+			},
+			mutator: func(t *testing.T, siteExt *SiteExt) {
+				siteExt.ext["A"] = json.RawMessage(`"string"`)
+				siteExt.ext["C"] = json.RawMessage(`{}`)
+				siteExt.extDirty = false
+				siteExt.amp = nil
+				siteExt.ampDirty = true
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			clone := test.siteExt.Clone()
+			test.mutator(t, test.siteExt)
+			assert.Equal(t, test.siteExtCopy, clone)
+		})
+	}
+}
+
 func TestRebuildSourceExt(t *testing.T) {
 	schainContent1 := openrtb2.SupplyChain{Ver: "1"}
 	schainContent2 := openrtb2.SupplyChain{Ver: "2"}
@@ -854,6 +1632,69 @@ func TestRebuildSourceExt(t *testing.T) {
 		w := RequestWrapper{BidRequest: &test.request, sourceExt: &test.requestSourceExtWrapper}
 		w.RebuildRequest()
 		assert.Equal(t, test.expectedRequest, *w.BidRequest, test.description)
+	}
+}
+
+func TestCloneSourceExt(t *testing.T) {
+	testCases := []struct {
+		name          string
+		sourceExt     *SourceExt
+		sourceExtCopy *SourceExt                               // manual copy of above ext object to verify against
+		mutator       func(t *testing.T, sourceExt *SourceExt) // function to modify the Ext object
+	}{
+		{
+			name:          "Nil", // Verify the nil case
+			sourceExt:     nil,
+			sourceExtCopy: nil,
+			mutator:       func(t *testing.T, sourceExt *SourceExt) {},
+		},
+		{
+			name: "NoMutate",
+			sourceExt: &SourceExt{
+				ext:      map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
+				extDirty: true,
+				schain: &openrtb2.SupplyChain{
+					Complete: 1,
+					Ver:      "1.1",
+					Nodes: []openrtb2.SupplyChainNode{
+						{ASI: "Is a", RID: "off", HP: ptrutil.ToPtr[int8](1)},
+						{ASI: "other", RID: "drift", HP: ptrutil.ToPtr[int8](0)},
+					},
+				},
+			},
+			sourceExtCopy: &SourceExt{
+				ext:      map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
+				extDirty: true,
+				schain: &openrtb2.SupplyChain{
+					Complete: 1,
+					Ver:      "1.1",
+					Nodes: []openrtb2.SupplyChainNode{
+						{ASI: "Is a", RID: "off", HP: ptrutil.ToPtr[int8](1)},
+						{ASI: "other", RID: "drift", HP: ptrutil.ToPtr[int8](0)},
+					},
+				},
+			},
+			mutator: func(t *testing.T, sourceExt *SourceExt) {
+				sourceExt.ext["A"] = json.RawMessage(`"string"`)
+				sourceExt.ext["C"] = json.RawMessage(`{}`)
+				sourceExt.extDirty = false
+				sourceExt.schain.Complete = 0
+				sourceExt.schain.Ver = "1.2"
+				sourceExt.schain.Nodes[0].ASI = "some"
+				sourceExt.schain.Nodes[1].HP = nil
+				sourceExt.schain.Nodes = append(sourceExt.schain.Nodes, openrtb2.SupplyChainNode{ASI: "added"})
+				sourceExt.schain = nil
+
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			clone := test.sourceExt.Clone()
+			test.mutator(t, test.sourceExt)
+			assert.Equal(t, test.sourceExtCopy, clone)
+		})
 	}
 }
 
@@ -963,14 +1804,24 @@ func TestImpWrapperGetImpExt(t *testing.T) {
 		},
 		{
 			description:  "Populated - Ext",
-			givenWrapper: ImpWrapper{Imp: &openrtb2.Imp{Ext: json.RawMessage(`{"prebid":{"is_rewarded_inventory":1},"other":42, "tid": "test-tid"}`)}},
+			givenWrapper: ImpWrapper{Imp: &openrtb2.Imp{Ext: json.RawMessage(`{"prebid":{"is_rewarded_inventory":1},"other":42,"tid":"test-tid","gpid":"test-gpid","data":{"adserver":{"name":"ads","adslot":"adslot123"},"pbadslot":"pbadslot123"}}`)}},
 			expectedImpExt: ImpExt{
 				ext: map[string]json.RawMessage{
 					"prebid": json.RawMessage(`{"is_rewarded_inventory":1}`),
 					"other":  json.RawMessage(`42`),
 					"tid":    json.RawMessage(`"test-tid"`),
+					"gpid":   json.RawMessage(`"test-gpid"`),
+					"data":   json.RawMessage(`{"adserver":{"name":"ads","adslot":"adslot123"},"pbadslot":"pbadslot123"}`),
 				},
-				tid:    "test-tid",
+				tid:  "test-tid",
+				gpId: "test-gpid",
+				data: &ExtImpData{
+					AdServer: &ExtImpDataAdServer{
+						Name:   "ads",
+						AdSlot: "adslot123",
+					},
+					PbAdslot: "pbadslot123",
+				},
 				prebid: &ExtImpPrebid{IsRewardedInventory: &isRewardedInventoryOne},
 			},
 		},
@@ -1015,4 +1866,185 @@ func TestImpExtTid(t *testing.T) {
 	impExt.SetTid(newTid)
 	assert.Equal(t, "tid", impExt.GetTid(), "ImpExt tid is incorrect")
 	assert.Equal(t, true, impExt.Dirty(), "New impext should be dirty.")
+}
+
+func TestCloneImpWrapper(t *testing.T) {
+	testCases := []struct {
+		name           string
+		impWrapper     *ImpWrapper
+		impWrapperCopy *ImpWrapper                                // manual copy of above ext object to verify against
+		mutator        func(t *testing.T, impWrapper *ImpWrapper) // function to modify the Ext object
+	}{
+		{
+			name:           "Nil", // Verify the nil case
+			impWrapper:     nil,
+			impWrapperCopy: nil,
+			mutator:        func(t *testing.T, impWrapper *ImpWrapper) {},
+		},
+		{
+			name: "NoMutate",
+			impWrapper: &ImpWrapper{
+				impExt: &ImpExt{
+					tid: "occupied",
+				},
+			},
+			impWrapperCopy: &ImpWrapper{
+				impExt: &ImpExt{
+					tid: "occupied",
+				},
+			},
+			mutator: func(t *testing.T, impWrapper *ImpWrapper) {},
+		},
+		{
+			name: "General",
+			impWrapper: &ImpWrapper{
+				impExt: &ImpExt{
+					tid: "occupied",
+				},
+			},
+			impWrapperCopy: &ImpWrapper{
+				impExt: &ImpExt{
+					tid: "occupied",
+				},
+			},
+			mutator: func(t *testing.T, impWrapper *ImpWrapper) {
+				impWrapper.impExt.extDirty = true
+				impWrapper.impExt.tid = "Something"
+				impWrapper.impExt = nil
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			clone := test.impWrapper.Clone()
+			test.mutator(t, test.impWrapper)
+			assert.Equal(t, test.impWrapperCopy, clone)
+		})
+	}
+}
+
+func TestCloneImpExt(t *testing.T) {
+	testCases := []struct {
+		name       string
+		impExt     *ImpExt
+		impExtCopy *ImpExt                            // manual copy of above ext object to verify against
+		mutator    func(t *testing.T, impExt *ImpExt) // function to modify the Ext object
+	}{
+		{
+			name:       "Nil", // Verify the nil case
+			impExt:     nil,
+			impExtCopy: nil,
+			mutator:    func(t *testing.T, impExt *ImpExt) {},
+		},
+		{
+			name: "NoMutate",
+			impExt: &ImpExt{
+				ext:      map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
+				extDirty: true,
+				tid:      "TID",
+			},
+			impExtCopy: &ImpExt{
+				ext:      map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
+				extDirty: true,
+				tid:      "TID",
+			},
+			mutator: func(t *testing.T, impExt *ImpExt) {},
+		},
+		{
+			name: "General",
+			impExt: &ImpExt{
+				ext:      map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
+				extDirty: true,
+				tid:      "TID",
+			},
+			impExtCopy: &ImpExt{
+				ext:      map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
+				extDirty: true,
+				tid:      "TID",
+			},
+			mutator: func(t *testing.T, impExt *ImpExt) {
+				impExt.ext["A"] = json.RawMessage(`"string"`)
+				impExt.ext["C"] = json.RawMessage(`{}`)
+				impExt.extDirty = false
+				impExt.tid = "other"
+				impExt.tidDirty = true
+			},
+		},
+		{
+			name: "Prebid",
+			impExt: &ImpExt{
+				prebid: &ExtImpPrebid{
+					StoredRequest:         &ExtStoredRequest{ID: "abc123"},
+					StoredAuctionResponse: &ExtStoredAuctionResponse{ID: "123abc"},
+					StoredBidResponse: []ExtStoredBidResponse{
+						{ID: "foo", Bidder: "bar", ReplaceImpId: ptrutil.ToPtr(true)},
+						{ID: "def", Bidder: "xyz", ReplaceImpId: ptrutil.ToPtr(false)},
+					},
+					IsRewardedInventory: ptrutil.ToPtr[int8](1),
+					Bidder: map[string]json.RawMessage{
+						"abc": json.RawMessage(`{}`),
+						"def": json.RawMessage(`{"alpha":"beta"}`),
+					},
+					Options:     &Options{EchoVideoAttrs: true},
+					Passthrough: json.RawMessage(`{"foo":"bar"}`),
+					Floors: &ExtImpPrebidFloors{
+						FloorRule:      "Rule 16",
+						FloorRuleValue: 16.17,
+						FloorValue:     6.7,
+					},
+				},
+			},
+			impExtCopy: &ImpExt{
+				prebid: &ExtImpPrebid{
+					StoredRequest:         &ExtStoredRequest{ID: "abc123"},
+					StoredAuctionResponse: &ExtStoredAuctionResponse{ID: "123abc"},
+					StoredBidResponse: []ExtStoredBidResponse{
+						{ID: "foo", Bidder: "bar", ReplaceImpId: ptrutil.ToPtr(true)},
+						{ID: "def", Bidder: "xyz", ReplaceImpId: ptrutil.ToPtr(false)},
+					},
+					IsRewardedInventory: ptrutil.ToPtr[int8](1),
+					Bidder: map[string]json.RawMessage{
+						"abc": json.RawMessage(`{}`),
+						"def": json.RawMessage(`{"alpha":"beta"}`),
+					},
+					Options:     &Options{EchoVideoAttrs: true},
+					Passthrough: json.RawMessage(`{"foo":"bar"}`),
+					Floors: &ExtImpPrebidFloors{
+						FloorRule:      "Rule 16",
+						FloorRuleValue: 16.17,
+						FloorValue:     6.7,
+					},
+				},
+			},
+			mutator: func(t *testing.T, impExt *ImpExt) {
+				impExt.prebid.StoredRequest.ID = "seventy"
+				impExt.prebid.StoredRequest = nil
+				impExt.prebid.StoredAuctionResponse.ID = "xyz"
+				impExt.prebid.StoredAuctionResponse = nil
+				impExt.prebid.StoredBidResponse[0].ID = "alpha"
+				impExt.prebid.StoredBidResponse[1].ReplaceImpId = nil
+				impExt.prebid.StoredBidResponse[0] = ExtStoredBidResponse{ID: "o", Bidder: "k", ReplaceImpId: ptrutil.ToPtr(false)}
+				impExt.prebid.StoredBidResponse = append(impExt.prebid.StoredBidResponse, ExtStoredBidResponse{ID: "jay", Bidder: "walk"})
+				impExt.prebid.IsRewardedInventory = nil
+				impExt.prebid.Bidder["def"] = json.RawMessage(``)
+				delete(impExt.prebid.Bidder, "abc")
+				impExt.prebid.Bidder["xyz"] = json.RawMessage(`{"jar":5}`)
+				impExt.prebid.Options.EchoVideoAttrs = false
+				impExt.prebid.Options = nil
+				impExt.prebid.Passthrough = json.RawMessage(`{}`)
+				impExt.prebid.Floors.FloorRule = "Friday"
+				impExt.prebid.Floors.FloorMinCur = "EUR"
+				impExt.prebid.Floors = nil
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			clone := test.impExt.Clone()
+			test.mutator(t, test.impExt)
+			assert.Equal(t, test.impExtCopy, clone)
+		})
+	}
 }

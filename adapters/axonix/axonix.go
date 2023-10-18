@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
+	"strings"
 	"text/template"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -105,6 +107,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	for _, seatBid := range response.SeatBid {
 		for _, bid := range seatBid.Bid {
 			bid := bid
+			resolveMacros(&bid)
 			b := &adapters.TypedBid{
 				Bid:     &bid,
 				BidType: getMediaType(bid.ImpID, request.Imp),
@@ -128,4 +131,13 @@ func getMediaType(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 		}
 	}
 	return openrtb_ext.BidTypeBanner
+}
+
+func resolveMacros(bid *openrtb2.Bid) {
+	if bid == nil {
+		return
+	}
+	price := strconv.FormatFloat(bid.Price, 'f', -1, 64)
+	bid.NURL = strings.Replace(bid.NURL, "${AUCTION_PRICE}", price, -1)
+	bid.AdM = strings.Replace(bid.AdM, "${AUCTION_PRICE}", price, -1)
 }

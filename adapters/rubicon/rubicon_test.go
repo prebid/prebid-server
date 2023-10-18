@@ -15,8 +15,8 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 
 	"github.com/buger/jsonparser"
-	"github.com/prebid/openrtb/v17/adcom1"
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/adcom1"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -123,7 +123,12 @@ func TestResolveNativeObject(t *testing.T) {
 		{
 			nativeObject:  openrtb2.Native{Ver: "1", Request: "{\"eventtrackers\": [], \"context\": \"someWrongValue\"}"},
 			target:        map[string]interface{}{},
-			expectedError: fmt.Errorf("Context is not present or not of int type"),
+			expectedError: fmt.Errorf("Context is not of int type"),
+		},
+		{
+			nativeObject:  openrtb2.Native{Ver: "1", Request: "{\"eventtrackers\": [], \"plcmttype\": 2}"},
+			target:        map[string]interface{}{},
+			expectedError: nil,
 		},
 		{
 			nativeObject:  openrtb2.Native{Ver: "1", Request: "{\"eventtrackers\": [], \"context\": 1}"},
@@ -290,12 +295,12 @@ type mockCurrencyConversion struct {
 	mock.Mock
 }
 
-func (m mockCurrencyConversion) GetRate(from string, to string) (float64, error) {
+func (m *mockCurrencyConversion) GetRate(from string, to string) (float64, error) {
 	args := m.Called(from, to)
 	return args.Get(0).(float64), args.Error(1)
 }
 
-func (m mockCurrencyConversion) GetRates() *map[string]map[string]float64 {
+func (m *mockCurrencyConversion) GetRates() *map[string]map[string]float64 {
 	args := m.Called()
 	return args.Get(0).(*map[string]map[string]float64)
 }
@@ -637,97 +642,6 @@ func TestOpenRTBRequestWithBadvOverflowed(t *testing.T) {
 
 	badvRequest := rubiconReq.BAdv
 	assert.Equal(t, badvOverflowed[:50], badvRequest, "Unexpected dfp_ad_unit_code: %s")
-}
-
-func TestOpenRTBRequestWithSpecificExtUserEids(t *testing.T) {
-	bidder := new(RubiconAdapter)
-
-	request := &openrtb2.BidRequest{
-		ID: "test-request-id",
-		Imp: []openrtb2.Imp{{
-			ID: "test-imp-id",
-			Banner: &openrtb2.Banner{
-				Format: []openrtb2.Format{
-					{W: 300, H: 250},
-				},
-			},
-			Ext: json.RawMessage(`{"bidder": {
-				"zoneId": 8394,
-				"siteId": 283282,
-				"accountId": 7891
-			}}`),
-		}},
-		App: &openrtb2.App{
-			ID:   "com.test",
-			Name: "testApp",
-		},
-		User: &openrtb2.User{
-			Ext: json.RawMessage(`{"eids": [
-			{
-				"source": "pubcid",
-				"uids": [{
-					"id": "2402fc76-7b39-4f0e-bfc2-060ef7693648"
-				}]
-			},
-			{
-				"source": "adserver.org",
-				"uids": [{
-					"id": "3d50a262-bd8e-4be3-90b8-246291523907",
-					"ext": {
-						"rtiPartner": "TDID"
-					}
-				}]
-			},
-			{
-				"source": "liveintent.com",
-				"uids": [{
-					"id": "T7JiRRvsRAmh88"
-				}],
-				"ext": {
-					"segments": ["999","888"]
-				}
-			},
-			{
-				"source": "liveramp.com",
-				"uids": [{
-					"id": "LIVERAMPID"
-				}],
-				"ext": {
-					"segments": ["111","222"]
-				}
-			}
-			]}`),
-		},
-	}
-
-	reqs, _ := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
-
-	rubiconReq := &openrtb2.BidRequest{}
-	if err := json.Unmarshal(reqs[0].Body, rubiconReq); err != nil {
-		t.Fatalf("Unexpected error while decoding request: %s", err)
-	}
-
-	assert.NotNil(t, rubiconReq.User.Ext, "User.Ext object should not be nil.")
-
-	var userExt rubiconUserExt
-	if err := json.Unmarshal(rubiconReq.User.Ext, &userExt); err != nil {
-		t.Fatal("Error unmarshalling request.user.ext object.")
-	}
-
-	assert.NotNil(t, userExt.Eids)
-	assert.Equal(t, 4, len(userExt.Eids), "Eids values are not as expected!")
-
-	// liveramp.com
-	assert.Equal(t, "LIVERAMPID", userExt.LiverampIdl, "Liveramp_idl value is not as expected!")
-
-	userExtRPTarget := make(map[string]interface{})
-	if err := json.Unmarshal(userExt.RP.Target, &userExtRPTarget); err != nil {
-		t.Fatal("Error unmarshalling request.user.ext.rp.target object.")
-	}
-
-	assert.Contains(t, userExtRPTarget, "LIseg", "request.user.ext.rp.target value is not as expected!")
-	assert.Contains(t, userExtRPTarget["LIseg"], "888", "No segment with 888 as expected!")
-	assert.Contains(t, userExtRPTarget["LIseg"], "999", "No segment with 999 as expected!")
 }
 
 func TestOpenRTBRequestWithVideoImpEvenIfImpHasBannerButAllRequiredVideoFields(t *testing.T) {

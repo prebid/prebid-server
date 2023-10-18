@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/config"
@@ -64,7 +64,7 @@ func TestGetBuilder(t *testing.T) {
 		t.Errorf("error %s", buildErr)
 	}
 
-	adapterstest.RunJSONBidderTest(t, "richaudience", bidder)
+	adapterstest.RunJSONBidderTest(t, "richaudiencetest", bidder)
 }
 
 func TestGetSite(t *testing.T) {

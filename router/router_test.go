@@ -37,8 +37,9 @@ func ensureHasKey(t *testing.T, data map[string]json.RawMessage, key string) {
 }
 
 func TestNewJsonDirectoryServer(t *testing.T) {
-	alias := map[string]string{"aliastest": "appnexus"}
-	handler := NewJsonDirectoryServer("../static/bidder-params", &testValidator{}, alias)
+	defaultAlias := map[string]string{"aliastest": "appnexus"}
+	yamlAlias := map[openrtb_ext.BidderName]openrtb_ext.BidderName{openrtb_ext.BidderName("alias"): openrtb_ext.BidderName("parentAlias")}
+	handler := newJsonDirectoryServer("../static/bidder-params", &testValidator{}, defaultAlias, yamlAlias)
 	recorder := httptest.NewRecorder()
 	request, _ := http.NewRequest("GET", "/whatever", nil)
 	handler(recorder, request, nil)
@@ -59,6 +60,7 @@ func TestNewJsonDirectoryServer(t *testing.T) {
 	}
 
 	ensureHasKey(t, data, "aliastest")
+	ensureHasKey(t, data, "alias")
 }
 
 func TestCheckSupportedUserSyncEndpoints(t *testing.T) {

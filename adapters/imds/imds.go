@@ -4,15 +4,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"text/template"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
+
+const adapterVersion string = "pbs-go/1.0.0"
 
 type adapter struct {
 	EndpointTemplate *template.Template
@@ -127,7 +130,7 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestDa
 
 // Builds enpoint url based on adapter-specific pub settings from imp.ext
 func (adapter *adapter) buildEndpointURL(params *openrtb_ext.ExtImpImds) (string, error) {
-	return macros.ResolveMacros(adapter.EndpointTemplate, macros.EndpointTemplateParams{Host: params.SeatId})
+	return macros.ResolveMacros(adapter.EndpointTemplate, macros.EndpointTemplateParams{AccountID: url.QueryEscape(params.SeatId), SourceId: url.QueryEscape(adapterVersion)})
 }
 
 func getExtImpObj(imp *openrtb2.Imp) (*openrtb_ext.ExtImpImds, error) {

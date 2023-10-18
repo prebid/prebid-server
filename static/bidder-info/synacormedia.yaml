@@ -1,5 +1,5 @@
 # DEPRECATED: Use imds bidder instead
-endpoint: "http://{{.Host}}.technoratimedia.com/openrtb/bids/{{.Host}}"
+endpoint: "https://pbs.technoratimedia.com/openrtb/bids/{{.AccountID}}?src={{.SourceId}}&adapter=synacormedia"
 maintainer:
   email: "eng-demand@imds.tv"
 capabilities:

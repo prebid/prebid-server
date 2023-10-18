@@ -3,12 +3,18 @@
   "query": "tag_id=101&addtl_consent=1~1.35.41.101",
   "config": {
     "mockBidders": [
-      {"bidderName": "appnexus", "currency": "USD", "price": 15}
+      {
+        "bidderName": "appnexus",
+        "currency": "USD",
+        "price": 15
+      }
     ]
   },
   "mockBidRequest": {
     "id": "b9c97a4b-cbc4-483d-b2c4-58a19ed5cfc5",
-    "site": {"page": "prebid.org"},
+    "site": {
+      "page": "prebid.org"
+    },
     "imp": [
       {
         "id": "/19968336/header-bid-tag-0",
@@ -32,10 +38,12 @@
     "id": "b9c97a4b-cbc4-483d-b2c4-58a19ed5cfc5",
     "site": {
       "page": "prebid.org",
-      "ext": {"amp":1}
+      "ext": {
+        "amp": 1
+      }
     },
     "device": {
-      "ip":"192.0.2.1"
+      "ip": "192.0.2.1"
     },
     "at": 1,
     "imp": [
@@ -63,11 +71,45 @@
     ],
     "user": {
       "ext": {
-        "ConsentedProvidersSettings":{"consented_providers":"1~1.35.41.101"},
-        "consented_providers_settings":{"consented_providers":[1,35,41,101]}
+        "ConsentedProvidersSettings": {
+          "consented_providers": "1~1.35.41.101"
+        },
+        "consented_providers_settings": {
+          "consented_providers": [
+            1,
+            35,
+            41,
+            101
+          ]
+        }
       }
     },
-    "ext": {"prebid":{"cache":{"bids":{"returnCreative":null},"vastxml":null},"channel":{"name":"amp","version":""},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"includewinners":true,"includebidderkeys":true,"includebrandcategory":null,"includeformat":false,"durationrangesec":null,"preferdeals":false}}}
+    "ext": {
+      "prebid": {
+        "cache": {
+          "bids": {}
+        },
+        "channel": {
+          "name": "amp",
+          "version": ""
+        },
+        "targeting": {
+          "pricegranularity": {
+            "precision": 2,
+            "ranges": [
+              {
+                "min": 0,
+                "max": 20,
+                "increment": 0.1
+              }
+            ]
+          },
+          "includewinners": true,
+          "includebidderkeys": true,
+          "mediatypepricegranularity": {}
+        }
+      }
+    }
   },
   "expectedAmpResponse": {
     "targeting": {

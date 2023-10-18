@@ -9,11 +9,12 @@ const (
 	BadServerResponseErrorCode
 	FailedToRequestBidsErrorCode
 	BidderTemporarilyDisabledErrorCode
-	BlacklistedAcctErrorCode
+	AccountDisabledErrorCode
 	AcctRequiredErrorCode
 	NoConversionRateErrorCode
 	MalformedAcctErrorCode
 	ModuleRejectionErrorCode
+	TmaxTimeoutErrorCode
 )
 
 // Defines numeric codes for well-known warnings.
@@ -24,6 +25,10 @@ const (
 	BidderLevelDebugDisabledWarningCode
 	DisabledCurrencyConversionWarningCode
 	AlternateBidderCodeWarningCode
+	MultiBidWarningCode
+	AdServerTargetingWarningCode
+	BidAdjustmentWarningCode
+	FloorBidRejectionWarningCode
 )
 
 // Coder provides an error or warning code with severity.

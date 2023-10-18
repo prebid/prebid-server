@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/prebid/openrtb/v17/adcom1"
+	"github.com/prebid/openrtb/v19/adcom1"
 )
 
 func newConfig(data json.RawMessage) (config, error) {

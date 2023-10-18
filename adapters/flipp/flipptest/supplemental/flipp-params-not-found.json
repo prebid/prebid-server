@@ -1,0 +1,44 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "test": 1,
+        "device": {
+            "ip": "123.123.123.123"
+        },
+        "site": {
+            "id": "1243066",
+            "page": "http://www.example.com/test?flipp-content-code=publisher-test"
+        },
+        "user": {
+            "id": "1234"
+        },
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "tagid": "test",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 1800
+                        }
+                    ]
+                },
+                "ext": {
+
+                }
+            }
+                
+        ]
+    },
+    "expectedMakeRequestsErrors": [
+        {
+            "value": "flipp params not found. Key path not found",
+            "comparison": "literal"
+        },
+        {
+            "value": "adapterRequest is empty",
+            "comparison": "literal"
+        }
+    ]
+}

@@ -13,7 +13,10 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAdnuntius, config.Adapter{
-		Endpoint: "http://whatever.url"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+		Endpoint:         "http://whatever.url",
+		ExtraAdapterInfo: "http://gdpr.url",
+	},
+		config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -43,5 +46,4 @@ func AssignDefaultValues(bidder adapters.Bidder) {
 	bidderAdnuntius.time = &FakeTime{
 		time: time.Date(2016, 1, 1, 12, 30, 15, 0, time.UTC),
 	}
-	bidderAdnuntius.extraInfo = "http://gdpr.url"
 }

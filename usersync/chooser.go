@@ -1,5 +1,10 @@
 package usersync
 
+import (
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"strings"
+)
+
 // Chooser determines which syncers are eligible for a given request.
 type Chooser interface {
 	// Choose considers bidders to sync, filters the bidders, and returns the result of the
@@ -15,9 +20,10 @@ func NewChooser(bidderSyncerLookup map[string]Syncer) Chooser {
 	}
 
 	return standardChooser{
-		bidderSyncerLookup: bidderSyncerLookup,
-		biddersAvailable:   bidders,
-		bidderChooser:      standardBidderChooser{shuffler: randomShuffler{}},
+		bidderSyncerLookup:       bidderSyncerLookup,
+		biddersAvailable:         bidders,
+		bidderChooser:            standardBidderChooser{shuffler: randomShuffler{}},
+		normalizeValidBidderName: openrtb_ext.NormalizeBidderName,
 	}
 }
 
@@ -85,6 +91,9 @@ const (
 
 	// StatusDuplicate specifies the bidder is a duplicate or shared a syncer key with another bidder choice.
 	StatusDuplicate
+
+	// StatusBlockedByPrivacy specifies a bidder sync url is not allowed by privacy activities
+	StatusBlockedByPrivacy
 )
 
 // Privacy determines which privacy policies will be enforced for a user sync request.
@@ -92,13 +101,15 @@ type Privacy interface {
 	GDPRAllowsHostCookie() bool
 	GDPRAllowsBidderSync(bidder string) bool
 	CCPAAllowsBidderSync(bidder string) bool
+	ActivityAllowsUserSync(bidder string) bool
 }
 
 // standardChooser implements the user syncer algorithm per official Prebid specification.
 type standardChooser struct {
-	bidderSyncerLookup map[string]Syncer
-	biddersAvailable   []string
-	bidderChooser      bidderChooser
+	bidderSyncerLookup       map[string]Syncer
+	biddersAvailable         []string
+	bidderChooser            bidderChooser
+	normalizeValidBidderName func(name string) (openrtb_ext.BidderName, bool)
 }
 
 // Choose randomly selects user syncers which are permitted by the user's privacy settings and
@@ -132,32 +143,42 @@ func (c standardChooser) Choose(request Request, cookie *Cookie) Result {
 }
 
 func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}, syncTypeFilter SyncTypeFilter, privacy Privacy, cookie *Cookie) (Syncer, BidderEvaluation) {
-	syncer, exists := c.bidderSyncerLookup[bidder]
+	bidderNormalized, exists := c.normalizeValidBidderName(bidder)
 	if !exists {
-		return nil, BidderEvaluation{Bidder: bidder, Status: StatusUnknownBidder}
+		return nil, BidderEvaluation{Status: StatusUnknownBidder, Bidder: bidder}
+	}
+
+	syncer, exists := c.bidderSyncerLookup[bidderNormalized.String()]
+	if !exists {
+		return nil, BidderEvaluation{Status: StatusUnknownBidder, Bidder: bidder}
 	}
 
 	_, seen := syncersSeen[syncer.Key()]
 	if seen {
-		return nil, BidderEvaluation{Bidder: bidder, Status: StatusDuplicate}
+		return nil, BidderEvaluation{Status: StatusDuplicate, Bidder: bidder, SyncerKey: syncer.Key()}
 	}
 	syncersSeen[syncer.Key()] = struct{}{}
 
-	if !syncer.SupportsType(syncTypeFilter.ForBidder(bidder)) {
-		return nil, BidderEvaluation{Bidder: bidder, Status: StatusTypeNotSupported}
+	if !syncer.SupportsType(syncTypeFilter.ForBidder(strings.ToLower(bidder))) {
+		return nil, BidderEvaluation{Status: StatusTypeNotSupported, Bidder: bidder, SyncerKey: syncer.Key()}
 	}
 
 	if cookie.HasLiveSync(syncer.Key()) {
-		return nil, BidderEvaluation{Bidder: bidder, Status: StatusAlreadySynced}
+		return nil, BidderEvaluation{Status: StatusAlreadySynced, Bidder: bidder, SyncerKey: syncer.Key()}
 	}
 
-	if !privacy.GDPRAllowsBidderSync(bidder) {
-		return nil, BidderEvaluation{Bidder: bidder, Status: StatusBlockedByGDPR}
+	userSyncActivityAllowed := privacy.ActivityAllowsUserSync(bidder)
+	if !userSyncActivityAllowed {
+		return nil, BidderEvaluation{Status: StatusBlockedByPrivacy, Bidder: bidder, SyncerKey: syncer.Key()}
 	}
 
-	if !privacy.CCPAAllowsBidderSync(bidder) {
-		return nil, BidderEvaluation{Bidder: bidder, Status: StatusBlockedByCCPA}
+	if !privacy.GDPRAllowsBidderSync(bidderNormalized.String()) {
+		return nil, BidderEvaluation{Status: StatusBlockedByGDPR, Bidder: bidder, SyncerKey: syncer.Key()}
 	}
 
-	return syncer, BidderEvaluation{Bidder: bidder, Status: StatusOK}
+	if !privacy.CCPAAllowsBidderSync(bidderNormalized.String()) {
+		return nil, BidderEvaluation{Status: StatusBlockedByCCPA, Bidder: bidder, SyncerKey: syncer.Key()}
+	}
+
+	return syncer, BidderEvaluation{Status: StatusOK, Bidder: bidder, SyncerKey: syncer.Key()}
 }

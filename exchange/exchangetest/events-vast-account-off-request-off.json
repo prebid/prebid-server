@@ -29,7 +29,17 @@
         "prebid": {
           "targeting": {
             "includewinners": true,
-            "includebidderkeys": false
+            "includebidderkeys": false,
+            "pricegranularity": {
+              "precision": 2,
+              "ranges": [
+                {
+                  "min": 0,
+                  "max": 20,
+                  "increment": 0.1
+                }
+              ]
+            }
           }
         }
       }
