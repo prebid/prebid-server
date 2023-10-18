@@ -38,7 +38,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderAdquery,
 	BidderAdrino,
 	BidderAdsinteractive,
-	BidderAdsyield,
 	BidderAdtarget,
 	BidderAdtrgtme,
 	BidderAdtelligent,
@@ -52,7 +51,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderAMX,
 	BidderApacdex,
 	BidderAppnexus,
-	BidderAppstock,
 	BidderAppush,
 	BidderAudienceNetwork,
 	BidderAutomatad,
@@ -98,7 +96,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderEpom,
 	BidderEpsilon,
 	BidderEVolution,
-	BidderEvtech,
 	BidderFlipp,
 	BidderFreewheelSSP,
 	BidderFreewheelSSPOld,
@@ -107,11 +104,9 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderGamoshi,
 	BidderGlobalsun,
 	BidderGothamads,
-	BidderGreedygame,
 	BidderGrid,
 	BidderGumGum,
 	BidderHuaweiAds,
-	BidderIionads,
 	BidderImds,
 	BidderImpactify,
 	BidderImprovedigital,
@@ -207,7 +202,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderVox,
 	BidderVrtcal,
 	BidderXeworks,
-	BidderXtrmqb,
 	BidderYahooAds,
 	BidderYahooAdvertising,
 	BidderYahooSSP,
@@ -325,7 +319,6 @@ const (
 	BidderAdquery           BidderName = "adquery"
 	BidderAdrino            BidderName = "adrino"
 	BidderAdsinteractive    BidderName = "adsinteractive"
-	BidderAdsyield          BidderName = "adsyield"
 	BidderAdtarget          BidderName = "adtarget"
 	BidderAdtrgtme          BidderName = "adtrgtme"
 	BidderAdtelligent       BidderName = "adtelligent"
@@ -339,7 +332,6 @@ const (
 	BidderAMX               BidderName = "amx"
 	BidderApacdex           BidderName = "apacdex"
 	BidderAppnexus          BidderName = "appnexus"
-	BidderAppstock          BidderName = "appstock"
 	BidderAppush            BidderName = "appush"
 	BidderAudienceNetwork   BidderName = "audienceNetwork"
 	BidderAutomatad         BidderName = "automatad"
@@ -385,7 +377,6 @@ const (
 	BidderEpsilon           BidderName = "epsilon"
 	BidderEpom              BidderName = "epom"
 	BidderEVolution         BidderName = "e_volution"
-	BidderEvtech            BidderName = "evtech"
 	BidderFlipp             BidderName = "flipp"
 	BidderFreewheelSSP      BidderName = "freewheelssp"
 	BidderFreewheelSSPOld   BidderName = "freewheel-ssp"
@@ -394,11 +385,9 @@ const (
 	BidderGamoshi           BidderName = "gamoshi"
 	BidderGlobalsun         BidderName = "globalsun"
 	BidderGothamads         BidderName = "gothamads"
-	BidderGreedygame        BidderName = "greedygame"
 	BidderGrid              BidderName = "grid"
 	BidderGumGum            BidderName = "gumgum"
 	BidderHuaweiAds         BidderName = "huaweiads"
-	BidderIionads           BidderName = "iionads"
 	BidderImds              BidderName = "imds"
 	BidderImpactify         BidderName = "impactify"
 	BidderImprovedigital    BidderName = "improvedigital"
@@ -494,7 +483,6 @@ const (
 	BidderVox               BidderName = "vox"
 	BidderVrtcal            BidderName = "vrtcal"
 	BidderXeworks           BidderName = "xeworks"
-	BidderXtrmqb            BidderName = "xtrmqb"
 	BidderYahooAds          BidderName = "yahooAds"
 	BidderYahooAdvertising  BidderName = "yahooAdvertising"
 	BidderYahooSSP          BidderName = "yahoossp"
