@@ -92,7 +92,8 @@ func NewVideoEndpoint(
 		ipValidator,
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
-		tmaxAdjustments}).VideoAuctionEndpoint), nil
+		tmaxAdjustments,
+		openrtb_ext.NormalizeBidderName}).VideoAuctionEndpoint), nil
 }
 
 /*

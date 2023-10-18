@@ -103,6 +103,7 @@ func NewAmpEndpoint(
 		storedRespFetcher,
 		hookExecutionPlanBuilder,
 		tmaxAdjustments,
+		openrtb_ext.NormalizeBidderName,
 	}).AmpAuction), nil
 
 }
