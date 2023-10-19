@@ -9,8 +9,6 @@ import (
 
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 type AdButlerRequest struct { 
@@ -30,61 +28,13 @@ type AdButlerRequest struct {
 	
 }
 
-func (a *AdButtlerAdapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpCommerce, error) {
-	var commerceExt openrtb_ext.ExtImpCommerce
-	if err := json.Unmarshal(imp.Ext, &commerceExt); err != nil {
-		return nil, &errortypes.BadInput{
-			Message: "Impression extension not provided or can't be unmarshalled",
-		}
-	}
-
-	return &commerceExt, nil
-
-}
-
-
-func (a *AdButtlerAdapter) getSiteExt(request *openrtb2.BidRequest) (*openrtb_ext.ExtSiteCommerce, error) {
-	var siteExt openrtb_ext.ExtSiteCommerce
-
-	if request.Site.Ext != nil {
-		if err := json.Unmarshal(request.Site.Ext, &siteExt); err != nil {
-			return nil, &errortypes.BadInput{
-				Message: "Impression extension not provided or can't be unmarshalled",
-			}
-		}
-	}
-
-	return &siteExt, nil
-
-}
-
 func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var commerceExt *openrtb_ext.ExtImpCommerce
-	var siteExt *openrtb_ext.ExtSiteCommerce
-	var err error
-	var errors []error
 
-	if len(request.Imp) > 0 {
-		commerceExt, err = a.getImpressionExt(&(request.Imp[0]))
-		if err != nil {
-			errors = append(errors, err)
-		}
-	} else {
-		errors = append(errors, &errortypes.BadInput{
-			Message: "Missing Imp Object",
-		})
-	}
-
-	siteExt, err = a.getSiteExt(request)
-	if err != nil {
-		errors = append(errors, err)
-	}
-
+    commerceExt, siteExt, errors := adapters.ValidateCommRequest(request)
 	if len(errors) > 0 {
 		return nil, errors
 	}
 
-	var adButlerReq AdButlerRequest 
     var configValueMap = make(map[string]string)
     var configTypeMap = make(map[string]int)
 	for _,obj := range commerceExt.Bidder.CustomConfig {
@@ -92,6 +42,7 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 		configTypeMap[obj.Key] = obj.Type
 	}
 
+	var adButlerReq AdButlerRequest 
 	//Assign Page Source if Present
 	if siteExt != nil {
 		adButlerReq.Source = siteExt.Page
@@ -272,4 +223,5 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 	}}, nil
 	
 }
+
 

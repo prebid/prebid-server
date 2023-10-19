@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/google/uuid"
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
@@ -34,16 +33,6 @@ type AdButlerResponse struct {
 	Bids   []*AdButlerBid `json:"items,omitempty"`
 }
 
-func AddDefaultFields(bid *openrtb2.Bid) {
-	if bid != nil {
-		bid.CrID = "DefaultCRID"
-	}
-}
-
-func GenerateUniqueBidID() string {
-	id := uuid.New()
-	return id.String()
-}
 
 func (a *AdButtlerAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var errors []error
@@ -117,7 +106,7 @@ func (a *AdButtlerAdapter) GetBidderResponse(request *openrtb2.BidRequest, adBut
 	var configValueMap = make(map[string]string)
 
 	if len(request.Imp) > 0 {
-		commerceExt, _ = a.getImpressionExt(&(request.Imp[0]))	
+		commerceExt, _ = adapters.GetImpressionExtComm(&(request.Imp[0]))	
 		for _,obj := range commerceExt.Bidder.CustomConfig {
 			configValueMap[obj.Key] = obj.Value
 		}	
@@ -137,7 +126,7 @@ func (a *AdButtlerAdapter) GetBidderResponse(request *openrtb2.BidRequest, adBut
 
 	for index, adButlerBid := range adButlerResp.Bids {
 
-		bidID := GenerateUniqueBidID()
+		bidID := adapters.GenerateUniqueBidIDComm()
 		impID := requestImpID + "_" + strconv.Itoa(index+1)
 		bidPrice := adButlerBid.CPCBid
 		campaignID := strconv.FormatInt(adButlerBid.CampaignID, 10)
@@ -180,7 +169,7 @@ func (a *AdButtlerAdapter) GetBidderResponse(request *openrtb2.BidRequest, adBut
 			IURL:  impressionUrl,
 		}
 
-		AddDefaultFields(bid)
+		adapters.AddDefaultFieldsComm(bid)
 
 		bidExtJSON, err1 := json.Marshal(bidExt)
 		if nil == err1 {
@@ -212,3 +201,4 @@ func GenerateConversionUrl(adbutlerID, zoneID,adbUID, productID string) string {
 	return conversionUrl
 
 }
+

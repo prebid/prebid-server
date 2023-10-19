@@ -10,7 +10,6 @@ import (
 
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/adapters/adbuttler"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -89,7 +88,7 @@ func GetDummyBids(impUrl , clickUrl , conversionUrl, seatName string, requestCou
 		campaignID := GetRandomCampaignID()
 		bidPrice := GetRandomBidPrice()
 		clickPrice := GetRandomClickPrice()
-		bidID := adbuttler.GenerateUniqueBidID()
+		bidID := adapters.GenerateUniqueBidIDComm()
 		impID := ImpID + "_" + strconv.Itoa(i)
 
 		bidExt := &openrtb_ext.ExtBidCommerce{
@@ -104,7 +103,7 @@ func GetDummyBids(impUrl , clickUrl , conversionUrl, seatName string, requestCou
 			CID: campaignID,
 		}
 
-		adbuttler.AddDefaultFields(bid)
+		adapters.AddDefaultFieldsComm(bid)
 
 		bidExtJSON, err1 := json.Marshal(bidExt)
 		if nil == err1 {
@@ -135,7 +134,7 @@ func GetDummyBids_NoBid(impUrl , clickUrl , conversionUrl, seatName string, requ
 		campaignID := GetRandomCampaignID()
 		bidPrice := GetRandomBidPrice()
 		clickPrice := GetRandomClickPrice()
-		bidID := adbuttler.GenerateUniqueBidID()
+		bidID := adapters.GenerateUniqueBidIDComm()
 		newIurl := impUrl + "_ImpID=" +bidID
 		newCurl := clickUrl + "_ImpID=" +bidID
 		newPurl := conversionUrl + "_ImpID=" +bidID
@@ -157,7 +156,7 @@ func GetDummyBids_NoBid(impUrl , clickUrl , conversionUrl, seatName string, requ
 			Tactic: "Dummy",
 		}
 
-		adbuttler.AddDefaultFields(bid)
+		adapters.AddDefaultFieldsComm(bid)
 
 		bidExtJSON, err1 := json.Marshal(bidExt)
 		if nil == err1 {
@@ -279,3 +278,4 @@ func (a *KoddiAdapter) buildConversionURL(hostName string) (string, error) {
 	endpointParams := macros.EndpointTemplateParams{ Host: hostName}
 	return macros.ResolveMacros(a.conversionurl, endpointParams)
 }
+
