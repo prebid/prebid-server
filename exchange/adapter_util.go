@@ -117,7 +117,6 @@ func GetDisabledBidderWarningMessages(infos config.BidderInfos) map[string]strin
 		"engagebdr":       `Bidder "engagebdr" is no longer available in Prebid Server. Please update your configuration.`,
 		"ninthdecimal":    `Bidder "ninthdecimal" is no longer available in Prebid Server. Please update your configuration.`,
 		"kubient":         `Bidder "kubient" is no longer available in Prebid Server. Please update your configuration.`,
-		"definemedia":     `Bidder "definemedia" is no longer available in Prebid Server. Please update your configuration.`,
 		"applogy":         `Bidder "applogy" is no longer available in Prebid Server. Please update your configuration.`,
 		"rhythmone":       `Bidder "rhythmone" is no longer available in Prebid Server. Please update your configuration.`,
 		"nanointeractive": `Bidder "nanointeractive" is no longer available in Prebid Server. Please update your configuration.`,
