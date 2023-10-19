@@ -43,7 +43,7 @@ func (a *CriteoStaplesAdapter) MakeRequests(request *openrtb2.BidRequest, reqInf
 		configTypeMap[obj.Key] = obj.Type
 	}
 	
-	uri, err := url.Parse(a.endpoint)
+     _, err := url.Parse(a.endpoint)
 	if err != nil {
 		return nil, []error{fmt.Errorf("failed to parse yieldlab endpoint: %v", err)}
 	}
@@ -66,7 +66,7 @@ func (a *CriteoStaplesAdapter) MakeRequests(request *openrtb2.BidRequest, reqInf
 	// Add other fields as needed
 
 	criteoQueryString := values.Encode()
-	requestURL := uri + "?" + criteoQueryString
+	requestURL := a.endpoint + "?" + criteoQueryString
 
 	return []*adapters.RequestData{{
 		Method:  "GET",
@@ -74,5 +74,6 @@ func (a *CriteoStaplesAdapter) MakeRequests(request *openrtb2.BidRequest, reqInf
 		Headers: http.Header{},
 	}}, nil
 }
+
 
 
