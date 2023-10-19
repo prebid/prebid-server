@@ -1,0 +1,10 @@
+endpoint: "https://rtb.conative.network/openrtb2/auction"
+maintainer:
+  email: "development@definemedia.de"
+  gvlVendorID: 440  # GDPR vendor list ID
+capabilities:
+
+  site:
+    mediaTypes:
+      - banner
+      - native

@@ -9,6 +9,7 @@ import (
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/util/jsonutil"
 )
 
 type ImpsWithAuctionResponseIDs map[string]string
@@ -210,7 +211,7 @@ func parseImpInfo(requestJson []byte) (impData []ImpExtPrebidData, errs []error)
 			impExtData, _, _, err := jsonparser.Get(imp, "ext", "prebid")
 			var impExtPrebid openrtb_ext.ExtImpPrebid
 			if impExtData != nil {
-				if err := json.Unmarshal(impExtData, &impExtPrebid); err != nil {
+				if err := jsonutil.Unmarshal(impExtData, &impExtPrebid); err != nil {
 					errs = append(errs, err)
 				}
 			}

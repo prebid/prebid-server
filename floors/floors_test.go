@@ -9,6 +9,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/jsonutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -447,7 +448,7 @@ func TestResolveFloors(t *testing.T) {
 }
 
 func printFloors(floors *openrtb_ext.PriceFloorRules) string {
-	fbytes, _ := json.Marshal(floors)
+	fbytes, _ := jsonutil.Marshal(floors)
 	return string(fbytes)
 }
 

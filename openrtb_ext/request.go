@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/util/jsonutil"
 	"github.com/prebid/prebid-server/util/maputil"
 	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/prebid/prebid-server/util/sliceutil"
@@ -234,7 +235,7 @@ func (pg *PriceGranularity) UnmarshalJSON(b []byte) error {
 	// price granularity used to be a string referencing a predefined value, try to parse
 	// and map the legacy string before falling back to the modern custom model.
 	legacyID := ""
-	if err := json.Unmarshal(b, &legacyID); err == nil {
+	if err := jsonutil.Unmarshal(b, &legacyID); err == nil {
 		if legacyValue, ok := NewPriceGranularityFromLegacyID(legacyID); ok {
 			*pg = legacyValue
 			return nil
@@ -243,7 +244,7 @@ func (pg *PriceGranularity) UnmarshalJSON(b []byte) error {
 
 	// use a type-alias to avoid calling back into this UnmarshalJSON implementation
 	modernValue := PriceGranularityRaw{}
-	err := json.Unmarshal(b, &modernValue)
+	err := jsonutil.Unmarshal(b, &modernValue)
 	if err == nil {
 		*pg = (PriceGranularity)(modernValue)
 	}

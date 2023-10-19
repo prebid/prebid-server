@@ -2,7 +2,6 @@ package account
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/prebid/go-gdpr/consentconstants"
@@ -13,6 +12,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/util/iputil"
+	"github.com/prebid/prebid-server/util/jsonutil"
 )
 
 // GetAccount looks up the config.Account object referenced by the given accountID, with access rules applied
@@ -44,17 +44,12 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 	} else {
 		// accountID resolved to a valid account, merge with AccountDefaults for a complete config
 		account = &config.Account{}
-		err := json.Unmarshal(accountJSON, account)
-		if _, ok := err.(*json.UnmarshalTypeError); ok {
+		if err := jsonutil.UnmarshalValid(accountJSON, account); err != nil {
 			return nil, []error{&errortypes.MalformedAcct{
 				Message: fmt.Sprintf("The prebid-server account config for account id \"%s\" is malformed. Please reach out to the prebid server host.", accountID),
 			}}
 		}
 
-		if err != nil {
-			errs = append(errs, err)
-			return nil, errs
-		}
 		// Fill in ID if needed, so it can be left out of account definition
 		if len(account.ID) == 0 {
 			account.ID = accountID

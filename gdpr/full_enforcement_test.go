@@ -1,7 +1,6 @@
 package gdpr
 
 import (
-	"encoding/json"
 	"testing"
 
 	"github.com/prebid/go-gdpr/consentconstants"
@@ -10,6 +9,7 @@ import (
 	"github.com/prebid/go-gdpr/vendorlist"
 	"github.com/prebid/go-gdpr/vendorlist2"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/jsonutil"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -961,7 +961,7 @@ func TestLegalBasisWithoutVendor(t *testing.T) {
 func getVendorList(t *testing.T) vendorlist.VendorList {
 	GVL := makeVendorList()
 
-	marshaledGVL, err := json.Marshal(GVL)
+	marshaledGVL, err := jsonutil.Marshal(GVL)
 	if err != nil {
 		t.Fatalf("Failed to marshal GVL")
 	}

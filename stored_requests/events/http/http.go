@@ -13,6 +13,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/prebid-server/stored_requests/events"
+	"github.com/prebid/prebid-server/util/jsonutil"
 
 	"github.com/golang/glog"
 )
@@ -184,7 +185,7 @@ func (e *HTTPEvents) parse(endpoint string, resp *httpCore.Response, err error) 
 	}
 
 	var respObj responseContract
-	if err := json.Unmarshal(respBytes, &respObj); err != nil {
+	if err := jsonutil.UnmarshalValid(respBytes, &respObj); err != nil {
 		glog.Errorf("Failed to unmarshal body of GET %s for Stored Requests: %v", endpoint, err)
 		return nil, false
 	}
