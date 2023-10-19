@@ -65,8 +65,7 @@ func (a *CriteoStaplesAdapter) MakeRequests(request *openrtb2.BidRequest, reqInf
 	values.Add("item-whitelist", getProductList(commerceExt))
 	// Add other fields as needed
 
-	queryparams := values.Encode()
-	criteoQueryString := queryparams.ToQueryString()
+	criteoQueryString := values.Encode()
 	requestURL := uri + "?" + criteoQueryString
 
 	return []*adapters.RequestData{{
@@ -75,4 +74,5 @@ func (a *CriteoStaplesAdapter) MakeRequests(request *openrtb2.BidRequest, reqInf
 		Headers: http.Header{},
 	}}, nil
 }
+
 
