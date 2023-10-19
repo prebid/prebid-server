@@ -6,6 +6,7 @@ import (
 
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/jsonutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -197,7 +198,7 @@ func TestSChainWriter(t *testing.T) {
 		var reqExt *openrtb_ext.ExtRequest
 		if tt.giveRequest.Ext != nil {
 			reqExt = &openrtb_ext.ExtRequest{}
-			err := json.Unmarshal(tt.giveRequest.Ext, reqExt)
+			err := jsonutil.UnmarshalValid(tt.giveRequest.Ext, reqExt)
 			if err != nil {
 				t.Error("Unable to unmarshal request.ext")
 			}

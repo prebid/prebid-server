@@ -33,6 +33,7 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/jsonutil"
 	"golang.org/x/net/context/ctxhttp"
 )
 
@@ -287,7 +288,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 							errs = append(errs, moreErrs...)
 
 							if nativeMarkup != nil {
-								markup, err := json.Marshal(*nativeMarkup)
+								markup, err := jsonutil.Marshal(*nativeMarkup)
 								if err != nil {
 									errs = append(errs, err)
 								} else {
@@ -406,7 +407,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 func addNativeTypes(bid *openrtb2.Bid, request *openrtb2.BidRequest) (*nativeResponse.Response, []error) {
 	var errs []error
 	var nativeMarkup *nativeResponse.Response
-	if err := json.Unmarshal(json.RawMessage(bid.AdM), &nativeMarkup); err != nil || len(nativeMarkup.Assets) == 0 {
+	if err := jsonutil.UnmarshalValid(json.RawMessage(bid.AdM), &nativeMarkup); err != nil || len(nativeMarkup.Assets) == 0 {
 		// Some bidders are returning non-IAB compliant native markup. In this case Prebid server will not be able to add types. E.g Facebook
 		return nil, errs
 	}
@@ -418,7 +419,7 @@ func addNativeTypes(bid *openrtb2.Bid, request *openrtb2.BidRequest) (*nativeRes
 	}
 
 	var nativePayload nativeRequests.Request
-	if err := json.Unmarshal(json.RawMessage((*nativeImp).Request), &nativePayload); err != nil {
+	if err := jsonutil.UnmarshalValid(json.RawMessage((*nativeImp).Request), &nativePayload); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -636,7 +637,7 @@ func (bidder *bidderAdapter) doTimeoutNotification(timeoutBidder adapters.Timeou
 			}
 		}
 	} else if bidder.config.Debug.TimeoutNotification.Log {
-		reqJSON, err := json.Marshal(req)
+		reqJSON, err := jsonutil.Marshal(req)
 		var msg string
 		if err == nil {
 			msg = fmt.Sprintf("TimeoutNotification: Failed to generate timeout request: error(%s), bidder request(%s)", errL[0].Error(), string(reqJSON))

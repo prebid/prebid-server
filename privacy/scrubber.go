@@ -6,6 +6,7 @@ import (
 
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/util/iputil"
+	"github.com/prebid/prebid-server/util/jsonutil"
 	"github.com/prebid/prebid-server/util/ptrutil"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
@@ -103,7 +104,7 @@ func (s scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enfo
 
 	if userCopy != nil && (enforcement.UFPD || enforcement.Eids) {
 		if len(userCopy.Ext) != 0 {
-			json.Unmarshal(userCopy.Ext, &userExtParsed)
+			jsonutil.Unmarshal(userCopy.Ext, &userExtParsed)
 		}
 	}
 
@@ -148,7 +149,7 @@ func (s scrubber) ScrubRequest(bidRequest *openrtb2.BidRequest, enforcement Enfo
 	}
 
 	if userExtModified {
-		userExt, _ := json.Marshal(userExtParsed)
+		userExt, _ := jsonutil.Marshal(userExtParsed)
 		userCopy.Ext = userExt
 	}
 
@@ -283,7 +284,7 @@ func scrubExtIDs(ext json.RawMessage, fieldName string) json.RawMessage {
 	}
 
 	var userExtParsed map[string]json.RawMessage
-	err := json.Unmarshal(ext, &userExtParsed)
+	err := jsonutil.Unmarshal(ext, &userExtParsed)
 	if err != nil {
 		return ext
 	}
@@ -291,7 +292,7 @@ func scrubExtIDs(ext json.RawMessage, fieldName string) json.RawMessage {
 	_, hasField := userExtParsed[fieldName]
 	if hasField {
 		delete(userExtParsed, fieldName)
-		result, err := json.Marshal(userExtParsed)
+		result, err := jsonutil.Marshal(userExtParsed)
 		if err == nil {
 			return result
 		}

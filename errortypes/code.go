@@ -15,6 +15,8 @@ const (
 	MalformedAcctErrorCode
 	ModuleRejectionErrorCode
 	TmaxTimeoutErrorCode
+	FailedToMarshalErrorCode
+	FailedToUnmarshalErrorCode
 )
 
 // Defines numeric codes for well-known warnings.

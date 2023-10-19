@@ -38,6 +38,7 @@ import (
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/util/iputil"
+	"github.com/prebid/prebid-server/util/jsonutil"
 	"github.com/prebid/prebid-server/util/uuidutil"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 )
@@ -925,7 +926,7 @@ func (s mockCurrencyRatesClient) handle(w http.ResponseWriter, req *http.Request
 	s.data.DataAsOfRaw = "2018-09-12"
 
 	// Marshal the response and http write it
-	currencyServerJsonResponse, err := json.Marshal(&s.data)
+	currencyServerJsonResponse, err := jsonutil.Marshal(&s.data)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -949,13 +950,13 @@ func (b mockBidderHandler) bid(w http.ResponseWriter, req *http.Request) {
 
 	// Unmarshal exit if error
 	var openrtb2Request openrtb2.BidRequest
-	if err := json.Unmarshal(buf.Bytes(), &openrtb2Request); err != nil {
+	if err := jsonutil.UnmarshalValid(buf.Bytes(), &openrtb2Request); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	var openrtb2ImpExt map[string]json.RawMessage
-	if err := json.Unmarshal(openrtb2Request.Imp[0].Ext, &openrtb2ImpExt); err != nil {
+	if err := jsonutil.UnmarshalValid(openrtb2Request.Imp[0].Ext, &openrtb2ImpExt); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -986,7 +987,7 @@ func (b mockBidderHandler) bid(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Marshal the response and http write it
-	serverJsonResponse, err := json.Marshal(&serverResponseObject)
+	serverJsonResponse, err := jsonutil.Marshal(&serverResponseObject)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -1016,7 +1017,7 @@ func (a mockAdapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *ada
 	for _, imp := range request.Imp {
 		requestCopy.Imp = []openrtb2.Imp{imp}
 
-		requestJSON, err := json.Marshal(request)
+		requestJSON, err := jsonutil.Marshal(request)
 		if err != nil {
 			errors = append(errors, err)
 			continue
@@ -1049,7 +1050,7 @@ func (a mockAdapter) MakeBids(request *openrtb2.BidRequest, requestData *adapter
 	}
 
 	var publisherResponse openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &publisherResponse); err != nil {
+	if err := jsonutil.UnmarshalValid(responseData.Body, &publisherResponse); err != nil {
 		return nil, []error{err}
 	}
 
@@ -1113,7 +1114,7 @@ func parseTestData(fileData []byte, testFile string) (testCase, error) {
 
 	jsonTestConfig, _, _, err = jsonparser.Get(fileData, "config")
 	if err == nil {
-		if err = json.Unmarshal(jsonTestConfig, parsedTestData.Config); err != nil {
+		if err = jsonutil.UnmarshalValid(jsonTestConfig, parsedTestData.Config); err != nil {
 			return parsedTestData, fmt.Errorf("Error unmarshaling root.config from file %s. Desc: %v.", testFile, err)
 		}
 	}

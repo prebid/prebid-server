@@ -85,7 +85,7 @@ func TestModuleBuilderBuild(t *testing.T) {
 			givenConfig:           map[string]map[string]interface{}{vendor: {moduleName: math.Inf(1)}},
 			expectedHookRepo:      nil,
 			expectedModulesStages: nil,
-			expectedErr:           fmt.Errorf(`failed to marshal "%s.%s" module config: json: unsupported value: +Inf`, vendor, moduleName),
+			expectedErr:           fmt.Errorf(`failed to marshal "%s.%s" module config: unsupported value: +Inf`, vendor, moduleName),
 		},
 	}
 

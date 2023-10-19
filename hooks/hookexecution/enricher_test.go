@@ -10,6 +10,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/hooks/hookanalytics"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/jsonutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -258,7 +259,7 @@ func TestGetModulesJSON(t *testing.T) {
 				assert.Empty(t, expectedResponse)
 			} else {
 				var expectedExtBidResponse openrtb_ext.ExtBidResponse
-				err := json.Unmarshal(expectedResponse, &expectedExtBidResponse)
+				err := jsonutil.UnmarshalValid(expectedResponse, &expectedExtBidResponse)
 				assert.NoError(t, err, "Failed to unmarshal prebid response extension")
 				assert.JSONEq(t, string(expectedExtBidResponse.Prebid.Modules), string(modules))
 			}
@@ -271,7 +272,7 @@ func getStageOutcomes(t *testing.T, file string) []StageOutcome {
 	var stageOutcomesTest []StageOutcomeTest
 
 	data := readFile(t, file)
-	err := json.Unmarshal(data, &stageOutcomesTest)
+	err := jsonutil.UnmarshalValid(data, &stageOutcomesTest)
 	require.NoError(t, err, "Failed to unmarshal stage outcomes: %s", err)
 
 	for _, stageT := range stageOutcomesTest {

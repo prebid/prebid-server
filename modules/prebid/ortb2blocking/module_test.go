@@ -488,7 +488,7 @@ func TestHandleBidderRequestHook(t *testing.T) {
 			bidRequest:         &openrtb2.BidRequest{},
 			expectedBidRequest: &openrtb2.BidRequest{},
 			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{},
-			expectedError:      errors.New("failed to parse config: invalid character '.' looking for beginning of value"),
+			expectedError:      errors.New("failed to parse config: expect { or n, but found ."),
 		},
 		{
 			description:        "Expect error if nil BidRequest provided",
