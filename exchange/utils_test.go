@@ -4782,9 +4782,31 @@ func TestBuildRequestExtAlternateBidderCodes(t *testing.T) {
 		expected *openrtb_ext.ExtAlternateBidderCodes
 	}{
 		{
-			desc:     "No biddername",
+			desc:     "No biddername, nil reqABC and accABC",
 			in:       testInput{},
 			expected: nil,
+		},
+		{
+			desc: "No biddername, non-nil reqABC",
+			in: testInput{
+				reqABC: &openrtb_ext.ExtAlternateBidderCodes{},
+			},
+			expected: &openrtb_ext.ExtAlternateBidderCodes{},
+		},
+		{
+			desc: "No biddername, non-nil accABC",
+			in: testInput{
+				accABC: &openrtb_ext.ExtAlternateBidderCodes{},
+			},
+			expected: &openrtb_ext.ExtAlternateBidderCodes{},
+		},
+		{
+			desc: "No biddername, non-nil reqABC nor accABC",
+			in: testInput{
+				reqABC: &openrtb_ext.ExtAlternateBidderCodes{},
+				accABC: &openrtb_ext.ExtAlternateBidderCodes{},
+			},
+			expected: &openrtb_ext.ExtAlternateBidderCodes{},
 		},
 		{
 			desc: "non-nil reqABC",
@@ -4795,7 +4817,7 @@ func TestBuildRequestExtAlternateBidderCodes(t *testing.T) {
 			expected: &openrtb_ext.ExtAlternateBidderCodes{},
 		},
 		{
-			desc: "non-nil reqABC",
+			desc: "non-nil accABC",
 			in: testInput{
 				bidderNameRaw: "pubmatic",
 				accABC:        &openrtb_ext.ExtAlternateBidderCodes{},
@@ -4855,11 +4877,35 @@ func TestBuildRequestExtAlternateBidderCodes(t *testing.T) {
 				},
 			},
 		},
+		{
+			desc: "nil reqABC non-nil accABC enabled and bidder matches elements in accABC",
+			in: testInput{
+				bidderNameRaw: "APPnexus",
+				accABC: &openrtb_ext.ExtAlternateBidderCodes{
+					Enabled: true,
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						"appnexus": {
+							AllowedBidderCodes: []string{"anxsCode"},
+						},
+					},
+				},
+			},
+			expected: &openrtb_ext.ExtAlternateBidderCodes{
+				Enabled: true,
+				Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+					"APPnexus": {
+						AllowedBidderCodes: []string{"anxsCode"},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
-		alternateBidderCodes := buildRequestExtAlternateBidderCodes(tc.in.bidderNameRaw, tc.in.accABC, tc.in.reqABC)
-		assert.Equal(t, tc.expected, alternateBidderCodes, tc.desc)
+		t.Run(tc.desc, func(t *testing.T) {
+			alternateBidderCodes := buildRequestExtAlternateBidderCodes(tc.in.bidderNameRaw, tc.in.accABC, tc.in.reqABC)
+			assert.Equal(t, tc.expected, alternateBidderCodes)
+		})
 	}
 }
 

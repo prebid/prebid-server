@@ -442,10 +442,6 @@ func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, request
 
 func buildRequestExtAlternateBidderCodes(bidder string, accABC *openrtb_ext.ExtAlternateBidderCodes, reqABC *openrtb_ext.ExtAlternateBidderCodes) *openrtb_ext.ExtAlternateBidderCodes {
 
-	if len(bidder) == 0 {
-		return nil
-	}
-
 	if altBidderCodes := copyExtAlternateBidderCodes(bidder, reqABC); altBidderCodes != nil {
 		return altBidderCodes
 	}

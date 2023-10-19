@@ -319,8 +319,10 @@ func TestIsBidderInAlternateBidderCodes(t *testing.T) {
 		},
 	}
 	for _, tc := range testCases {
-		adapterCfg, found := tc.in.bidderCodes.IsBidderInAlternateBidderCodes(tc.in.bidder)
-		assert.Equal(t, tc.expected.adapterCfg, adapterCfg, tc.desc)
-		assert.Equal(t, tc.expected.found, found, tc.desc)
+		t.Run(tc.desc, func(t *testing.T) {
+			adapterCfg, found := tc.in.bidderCodes.IsBidderInAlternateBidderCodes(tc.in.bidder)
+			assert.Equal(t, tc.expected.adapterCfg, adapterCfg)
+			assert.Equal(t, tc.expected.found, found)
+		})
 	}
 }
