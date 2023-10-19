@@ -1,4 +1,4 @@
-package crieostaples
+package criteostaples
 
 import (
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
