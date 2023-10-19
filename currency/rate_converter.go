@@ -1,7 +1,6 @@
 package currency
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/util/jsonutil"
 	"github.com/prebid/prebid-server/util/timeutil"
 )
 
@@ -66,7 +66,7 @@ func (rc *RateConverter) fetch() (*Rates, error) {
 	}
 
 	updatedRates := &Rates{}
-	err = json.Unmarshal(bytesJSON, updatedRates)
+	err = jsonutil.UnmarshalValid(bytesJSON, updatedRates)
 	if err != nil {
 		return nil, err
 	}

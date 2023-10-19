@@ -760,7 +760,7 @@ func TestGetMinFloorValue(t *testing.T) {
 			},
 			want:    0.0,
 			want1:   "",
-			wantErr: errors.New("Error in getting FloorMin value : 'unexpected end of JSON input'"),
+			wantErr: errors.New("Error in getting FloorMin value : 'expects \" or n, but found \x00'"),
 		},
 	}
 	for _, tc := range testCases {

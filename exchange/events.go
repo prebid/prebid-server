@@ -1,7 +1,6 @@
 package exchange
 
 import (
-	"encoding/json"
 	"time"
 
 	"github.com/prebid/prebid-server/exchange/entities"
@@ -11,6 +10,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/endpoints/events"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/jsonutil"
 )
 
 // eventTracking has configuration fields needed for adding event tracking to an auction response
@@ -91,7 +91,7 @@ func (ev *eventTracking) modifyBidJSON(pbsBid *entities.PbsOrtbBid, bidderName o
 		winEventURL = ev.makeEventURL(analytics.Win, pbsBid, bidderName)
 	}
 	// wurl attribute is not in the schema, so we have to patch
-	patch, err := json.Marshal(map[string]string{"wurl": winEventURL})
+	patch, err := jsonutil.Marshal(map[string]string{"wurl": winEventURL})
 	if err != nil {
 		return jsonBytes, err
 	}

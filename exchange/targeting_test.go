@@ -16,6 +16,7 @@ import (
 	"github.com/prebid/prebid-server/hooks/hookexecution"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/jsonutil"
 	"github.com/prebid/prebid-server/util/ptrutil"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
@@ -182,7 +183,7 @@ func buildParams(t *testing.T, mockBids map[openrtb_ext.BidderName][]*openrtb2.B
 
 	paramsPrebid["bidder"] = paramsPrebidBidders
 	params["prebid"] = paramsPrebid
-	ext, err := json.Marshal(params)
+	ext, err := jsonutil.Marshal(params)
 	if err != nil {
 		t.Fatalf("Failed to make imp exts: %v", err)
 	}
@@ -224,7 +225,7 @@ func buildBidMap(seatBids []openrtb2.SeatBid, numBids int) map[string]*openrtb2.
 func parseTargets(t *testing.T, bid *openrtb2.Bid) map[string]string {
 	t.Helper()
 	var parsed openrtb_ext.ExtBid
-	if err := json.Unmarshal(bid.Ext, &parsed); err != nil {
+	if err := jsonutil.UnmarshalValid(bid.Ext, &parsed); err != nil {
 		t.Fatalf("Unexpected error parsing targeting params: %v", err)
 	}
 	return parsed.Prebid.Targeting

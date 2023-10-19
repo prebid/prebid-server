@@ -2,7 +2,6 @@ package gdpr
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -13,6 +12,7 @@ import (
 	"github.com/prebid/go-gdpr/api"
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/util/jsonutil"
 )
 
 func TestFetcherDynamicLoadListExists(t *testing.T) {
@@ -305,7 +305,7 @@ type vendor struct {
 }
 
 func MarshalVendorList(vendorList vendorList) string {
-	json, _ := json.Marshal(vendorList)
+	json, _ := jsonutil.Marshal(vendorList)
 	return string(json)
 }
 

@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prebid/prebid-server/util/jsonutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -233,7 +234,7 @@ func newHandler(t *testing.T, expectReqIDs []string, expectImpIDs []string, json
 			Imps:     impIDResponse,
 		}
 
-		if respBytes, err := json.Marshal(respObj); err != nil {
+		if respBytes, err := jsonutil.Marshal(respObj); err != nil {
 			t.Errorf("failed to marshal responseContract in test:  %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 		} else {
@@ -267,7 +268,7 @@ func newAccountHandler(t *testing.T, expectAccIDs []string) func(w http.Response
 			Accounts: accIDResponse,
 		}
 
-		if respBytes, err := json.Marshal(respObj); err != nil {
+		if respBytes, err := jsonutil.Marshal(respObj); err != nil {
 			t.Errorf("failed to marshal responseContract in test:  %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 		} else {
@@ -327,7 +328,7 @@ func richSplit(queryVal string) []string {
 }
 
 func jsonifyID(id string) json.RawMessage {
-	if b, err := json.Marshal(id); err != nil {
+	if b, err := jsonutil.Marshal(id); err != nil {
 		return json.RawMessage([]byte("\"error encoding ID=" + id + "\""))
 	} else {
 		return json.RawMessage(b)

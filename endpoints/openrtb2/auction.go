@@ -52,6 +52,7 @@ import (
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/prebid/prebid-server/util/httputil"
 	"github.com/prebid/prebid-server/util/iputil"
+	"github.com/prebid/prebid-server/util/jsonutil"
 	"github.com/prebid/prebid-server/util/uuidutil"
 	"github.com/prebid/prebid-server/version"
 )
@@ -308,11 +309,11 @@ func setSeatNonBidRaw(request *openrtb_ext.RequestWrapper, auctionResponse *exch
 	// by HoldAuction
 	response := auctionResponse.BidResponse
 	respExt := &openrtb_ext.ExtBidResponse{}
-	if err := json.Unmarshal(response.Ext, &respExt); err != nil {
+	if err := jsonutil.Unmarshal(response.Ext, &respExt); err != nil {
 		return err
 	}
 	if setSeatNonBid(respExt, request, auctionResponse) {
-		if respExtJson, err := json.Marshal(respExt); err == nil {
+		if respExtJson, err := jsonutil.Marshal(respExt); err == nil {
 			response.Ext = respExtJson
 			return nil
 		} else {
@@ -445,7 +446,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	requestJson, rejectErr := hookExecutor.ExecuteEntrypointStage(httpRequest, requestJson)
 	if rejectErr != nil {
 		errs = []error{rejectErr}
-		if err = json.Unmarshal(requestJson, req.BidRequest); err != nil {
+		if err = jsonutil.UnmarshalValid(requestJson, req.BidRequest); err != nil {
 			glog.Errorf("Failed to unmarshal BidRequest during entrypoint rejection: %s", err)
 		}
 		return
@@ -493,7 +494,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	requestJson, rejectErr = hookExecutor.ExecuteRawAuctionStage(requestJson)
 	if rejectErr != nil {
 		errs = []error{rejectErr}
-		if err = json.Unmarshal(requestJson, req.BidRequest); err != nil {
+		if err = jsonutil.UnmarshalValid(requestJson, req.BidRequest); err != nil {
 			glog.Errorf("Failed to unmarshal BidRequest during raw auction stage rejection: %s", err)
 		}
 		return
@@ -516,7 +517,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		return
 	}
 
-	if err := json.Unmarshal(requestJson, req.BidRequest); err != nil {
+	if err := jsonutil.UnmarshalValid(requestJson, req.BidRequest); err != nil {
 		errs = []error{err}
 		return
 	}
@@ -621,7 +622,7 @@ func mergeBidderParams(req *openrtb_ext.RequestWrapper) error {
 	}
 
 	bidderParams := map[string]map[string]json.RawMessage{}
-	if err := json.Unmarshal(bidderParamsJson, &bidderParams); err != nil {
+	if err := jsonutil.Unmarshal(bidderParamsJson, &bidderParams); err != nil {
 		return nil
 	}
 
@@ -664,7 +665,7 @@ func mergeBidderParamsImpExt(impExt *openrtb_ext.ImpExt, reqExtParams map[string
 
 		impExtBidderMap := map[string]json.RawMessage{}
 		if len(impExtBidder) > 0 {
-			if err := json.Unmarshal(impExtBidder, &impExtBidderMap); err != nil {
+			if err := jsonutil.Unmarshal(impExtBidder, &impExtBidderMap); err != nil {
 				continue
 			}
 		}
@@ -678,7 +679,7 @@ func mergeBidderParamsImpExt(impExt *openrtb_ext.ImpExt, reqExtParams map[string
 		}
 
 		if modified {
-			impExtBidderJson, err := json.Marshal(impExtBidderMap)
+			impExtBidderJson, err := jsonutil.Marshal(impExtBidderMap)
 			if err != nil {
 				return fmt.Errorf("error marshalling ext.BIDDER: %s", err.Error())
 			}
@@ -712,7 +713,7 @@ func mergeBidderParamsImpExtPrebid(impExt *openrtb_ext.ImpExt, reqExtParams map[
 
 		impExtPrebidBidderMap := map[string]json.RawMessage{}
 		if len(impExtPrebidBidder) > 0 {
-			if err := json.Unmarshal(impExtPrebidBidder, &impExtPrebidBidderMap); err != nil {
+			if err := jsonutil.Unmarshal(impExtPrebidBidder, &impExtPrebidBidderMap); err != nil {
 				continue
 			}
 		}
@@ -726,7 +727,7 @@ func mergeBidderParamsImpExtPrebid(impExt *openrtb_ext.ImpExt, reqExtParams map[
 		}
 
 		if modified {
-			impExtPrebidBidderJson, err := json.Marshal(impExtPrebidBidderMap)
+			impExtPrebidBidderJson, err := jsonutil.Marshal(impExtPrebidBidderMap)
 			if err != nil {
 				return fmt.Errorf("error marshalling ext.prebid.bidder.BIDDER: %s", err.Error())
 			}
@@ -1195,7 +1196,7 @@ func fillAndValidateNative(n *openrtb2.Native, impIndex int) error {
 		return fmt.Errorf("request.imp[%d].native missing required property \"request\"", impIndex)
 	}
 	var nativePayload nativeRequests.Request
-	if err := json.Unmarshal(json.RawMessage(n.Request), &nativePayload); err != nil {
+	if err := jsonutil.UnmarshalValid(json.RawMessage(n.Request), &nativePayload); err != nil {
 		return err
 	}
 
@@ -1212,7 +1213,7 @@ func fillAndValidateNative(n *openrtb2.Native, impIndex int) error {
 		return err
 	}
 
-	serialized, err := json.Marshal(nativePayload)
+	serialized, err := jsonutil.Marshal(nativePayload)
 	if err != nil {
 		return err
 	}
@@ -2084,7 +2085,7 @@ func getJsonSyntaxError(testJSON []byte) (bool, string) {
 	}
 	type jNode map[string]*JsonNode
 	docErrdoc := &jNode{}
-	docErr := json.Unmarshal(testJSON, docErrdoc)
+	docErr := jsonutil.UnmarshalValid(testJSON, docErrdoc)
 	if uerror, ok := docErr.(*json.SyntaxError); ok {
 		err := fmt.Sprintf("%s at offset %v", uerror.Error(), uerror.Offset)
 		return true, err
@@ -2233,7 +2234,7 @@ func (deps *endpointDeps) processStoredRequests(requestJson []byte, impInfo []Im
 		}
 	}
 	if len(resolvedImps) > 0 {
-		newImpJson, err := json.Marshal(resolvedImps)
+		newImpJson, err := jsonutil.Marshal(resolvedImps)
 		if err != nil {
 			return nil, nil, []error{err}
 		}
@@ -2253,7 +2254,7 @@ func parseImpInfo(requestJson []byte) (impData []ImpExtPrebidData, errs []error)
 			impExtData, _, _, err := jsonparser.Get(imp, "ext", "prebid")
 			var impExtPrebid openrtb_ext.ExtImpPrebid
 			if impExtData != nil {
-				if err := json.Unmarshal(impExtData, &impExtPrebid); err != nil {
+				if err := jsonutil.Unmarshal(impExtData, &impExtPrebid); err != nil {
 					errs = append(errs, err)
 				}
 			}
@@ -2382,7 +2383,7 @@ func getAccountID(pub *openrtb2.Publisher) string {
 	if pub != nil {
 		if pub.Ext != nil {
 			var pubExt openrtb_ext.ExtPublisher
-			err := json.Unmarshal(pub.Ext, &pubExt)
+			err := jsonutil.Unmarshal(pub.Ext, &pubExt)
 			if err == nil && pubExt.Prebid != nil && pubExt.Prebid.ParentAccount != nil && *pubExt.Prebid.ParentAccount != "" {
 				return *pubExt.Prebid.ParentAccount
 			}

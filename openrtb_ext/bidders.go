@@ -90,6 +90,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderDianomi,
 	BidderEdge226,
 	BidderDmx,
+	BidderDXKulture,
 	BidderEmtv,
 	BidderEmxDigital,
 	BidderEPlanning,
@@ -114,6 +115,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderInMobi,
 	BidderInteractiveoffers,
 	BidderInvibes,
+	BidderIQX,
 	BidderIQZone,
 	BidderIx,
 	BidderJixie,
@@ -369,6 +371,7 @@ const (
 	BidderDianomi           BidderName = "dianomi"
 	BidderEdge226           BidderName = "edge226"
 	BidderDmx               BidderName = "dmx"
+	BidderDXKulture         BidderName = "dxkulture"
 	BidderEmtv              BidderName = "emtv"
 	BidderEmxDigital        BidderName = "emx_digital"
 	BidderEPlanning         BidderName = "eplanning"
@@ -393,6 +396,7 @@ const (
 	BidderInMobi            BidderName = "inmobi"
 	BidderInteractiveoffers BidderName = "interactiveoffers"
 	BidderInvibes           BidderName = "invibes"
+	BidderIQX               BidderName = "iqx"
 	BidderIQZone            BidderName = "iqzone"
 	BidderIx                BidderName = "ix"
 	BidderJixie             BidderName = "jixie"

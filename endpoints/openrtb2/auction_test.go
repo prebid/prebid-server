@@ -36,6 +36,7 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/stored_responses"
 	"github.com/prebid/prebid-server/util/iputil"
+	"github.com/prebid/prebid-server/util/jsonutil"
 	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
@@ -192,7 +193,7 @@ func runEndToEndTest(t *testing.T, auctionEndpointHandler httprouter.Handle, tes
 
 	// Either assert bid response or expected error
 	if len(test.ExpectedErrorMessage) > 0 {
-		assert.True(t, strings.HasPrefix(actualJsonBidResponse, test.ExpectedErrorMessage), "Actual: %s \nExpected: %s. Filename: %s \n", actualJsonBidResponse, test.ExpectedErrorMessage, testFile)
+		assert.Contains(t, actualJsonBidResponse, test.ExpectedErrorMessage, "Actual: %s \nExpected: %s. Filename: %s \n", actualJsonBidResponse, test.ExpectedErrorMessage, testFile)
 	}
 
 	if len(test.ExpectedBidResponse) > 0 {
@@ -200,9 +201,9 @@ func runEndToEndTest(t *testing.T, auctionEndpointHandler httprouter.Handle, tes
 		var actualBidResponse openrtb2.BidResponse
 		var err error
 
-		err = json.Unmarshal(test.ExpectedBidResponse, &expectedBidResponse)
+		err = jsonutil.Unmarshal(test.ExpectedBidResponse, &expectedBidResponse)
 		if assert.NoError(t, err, "Could not unmarshal expected bidResponse taken from test file.\n Test file: %s\n Error:%s\n", testFile, err) {
-			err = json.Unmarshal([]byte(actualJsonBidResponse), &actualBidResponse)
+			err = jsonutil.UnmarshalValid([]byte(actualJsonBidResponse), &actualBidResponse)
 			if assert.NoError(t, err, "Could not unmarshal actual bidResponse from auction.\n Test file: %s\n Error:%s\n actualJsonBidResponse: %s", testFile, err, actualJsonBidResponse) {
 				assertBidResponseEqual(t, testFile, expectedBidResponse, actualBidResponse)
 			}
@@ -222,13 +223,13 @@ func compareWarnings(t *testing.T, expectedBidResponseExt, actualBidResponseExt 
 		}
 
 		var expectedWarn []openrtb_ext.ExtBidderMessage
-		err = json.Unmarshal(expectedWarnings, &expectedWarn)
+		err = jsonutil.UnmarshalValid(expectedWarnings, &expectedWarn)
 		if err != nil {
 			assert.Fail(t, "error unmarshalling expected warnings data from response extension")
 		}
 
 		var actualWarn []openrtb_ext.ExtBidderMessage
-		err = json.Unmarshal(actualWarnings, &actualWarn)
+		err = jsonutil.UnmarshalValid(actualWarnings, &actualWarn)
 		if err != nil {
 			assert.Fail(t, "error unmarshalling actual warnings data from response extension")
 		}
@@ -476,8 +477,8 @@ func TestExplicitUserId(t *testing.T) {
 // processes aliases before it processes stored imps.  Changing that order
 // would probably cause this test to fail.
 func TestBadAliasRequests(t *testing.T) {
-	doBadAliasRequest(t, "sample-requests/invalid-stored/bad_stored_imp.json", "Invalid request: Invalid JSON in Default Request Settings: invalid character '\"' after object key:value pair at offset 51\n")
-	doBadAliasRequest(t, "sample-requests/invalid-stored/bad_incoming_imp.json", "Invalid request: Invalid JSON in Incoming Request: invalid character '\"' after object key:value pair at offset 230\n")
+	doBadAliasRequest(t, "sample-requests/invalid-stored/bad_stored_imp.json", "Invalid request: Invalid JSON Document\n")
+	doBadAliasRequest(t, "sample-requests/invalid-stored/bad_incoming_imp.json", "Invalid request: Invalid JSON Document\n")
 }
 
 // doBadAliasRequest() is a customized variation of doRequest(), above
@@ -1907,7 +1908,7 @@ func TestValidateRequestExt(t *testing.T) {
 		{
 			description:     "prebid cache - bids - wrong type",
 			givenRequestExt: json.RawMessage(`{"prebid":{"cache":{"bids":true}}}`),
-			expectedErrors:  []string{`json: cannot unmarshal bool into Go struct field ExtRequestPrebidCache.cache.bids of type openrtb_ext.ExtRequestPrebidCacheBids`},
+			expectedErrors:  []string{"cannot unmarshal openrtb_ext.ExtRequestPrebidCache.Bids: expect { or n, but found t"},
 		},
 		{
 			description:     "prebid cache - bids - provided",
@@ -1921,7 +1922,7 @@ func TestValidateRequestExt(t *testing.T) {
 		{
 			description:     "prebid cache - vastxml - wrong type",
 			givenRequestExt: json.RawMessage(`{"prebid":{"cache":{"vastxml":true}}}`),
-			expectedErrors:  []string{`json: cannot unmarshal bool into Go struct field ExtRequestPrebidCache.cache.vastxml of type openrtb_ext.ExtRequestPrebidCacheVAST`},
+			expectedErrors:  []string{"cannot unmarshal openrtb_ext.ExtRequestPrebidCache.VastXML: expect { or n, but found t"},
 		},
 		{
 			description:     "prebid cache - vastxml - provided",
@@ -2555,7 +2556,7 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 		newRequest, _, errList := deps.processStoredRequests(json.RawMessage(test.givenRawData), impInfo, storedRequests, storedImps, storedBidRequestId, hasStoredBidRequest)
 		assert.Empty(t, errList, test.description)
 
-		if err := json.Unmarshal(newRequest, req); err != nil {
+		if err := jsonutil.UnmarshalValid(newRequest, req); err != nil {
 			t.Errorf("processStoredRequests Error: %s", err.Error())
 		}
 		if test.expectedCur != "" {
@@ -3464,7 +3465,7 @@ func TestGetAccountID(t *testing.T) {
 			ParentAccount: &testParentAccount,
 		},
 	}
-	testPubExtJSON, err := json.Marshal(testPubExt)
+	testPubExtJSON, err := jsonutil.Marshal(testPubExt)
 	assert.NoError(t, err)
 
 	testCases := []struct {
@@ -4196,7 +4197,7 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 	assert.Nil(t, resReq, "Result request should be nil due to incorrect imp")
 	assert.Nil(t, impExtInfoMap, "Impression info map should be nil due to incorrect imp")
 	assert.Len(t, errL, 1, "One error should be returned")
-	assert.Contains(t, errL[0].Error(), "echovideoattrs of type bool", "Incorrect error message")
+	assert.Contains(t, errL[0].Error(), "cannot unmarshal openrtb_ext.Options.EchoVideoAttrs", "Incorrect error message")
 }
 
 func TestParseGzipedRequest(t *testing.T) {
@@ -4878,20 +4879,20 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 			assert.NoError(t, resReq.RebuildRequest())
 
 			var expIExt, iExt map[string]interface{}
-			err := json.Unmarshal(test.expectedImpExt, &expIExt)
+			err := jsonutil.UnmarshalValid(test.expectedImpExt, &expIExt)
 			assert.Nil(t, err, "unmarshal() should return nil error")
 
 			assert.NotNil(t, resReq.BidRequest.Imp[0].Ext, "imp[0].Ext should not be nil")
-			err = json.Unmarshal(resReq.BidRequest.Imp[0].Ext, &iExt)
+			err = jsonutil.UnmarshalValid(resReq.BidRequest.Imp[0].Ext, &iExt)
 			assert.Nil(t, err, "unmarshal() should return nil error")
 
 			assert.Equal(t, expIExt, iExt, "bidderparams in imp[].Ext should match")
 
 			var eReqE, reqE map[string]interface{}
-			err = json.Unmarshal(test.expectedReqExt, &eReqE)
+			err = jsonutil.UnmarshalValid(test.expectedReqExt, &eReqE)
 			assert.Nil(t, err, "unmarshal() should return nil error")
 
-			err = json.Unmarshal(resReq.BidRequest.Ext, &reqE)
+			err = jsonutil.UnmarshalValid(resReq.BidRequest.Ext, &reqE)
 			assert.Nil(t, err, "unmarshal() should return nil error")
 
 			assert.Equal(t, eReqE, reqE, "req.Ext should match")
@@ -5770,11 +5771,11 @@ func TestValidResponseAfterExecutingStages(t *testing.T) {
 			var actualExt openrtb_ext.ExtBidResponse
 			var expectedExt openrtb_ext.ExtBidResponse
 
-			assert.NoError(t, json.Unmarshal(test.ExpectedBidResponse, &expectedResp), "Unable to unmarshal expected BidResponse.")
-			assert.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &actualResp), "Unable to unmarshal actual BidResponse.")
+			assert.NoError(t, jsonutil.UnmarshalValid(test.ExpectedBidResponse, &expectedResp), "Unable to unmarshal expected BidResponse.")
+			assert.NoError(t, jsonutil.UnmarshalValid(recorder.Body.Bytes(), &actualResp), "Unable to unmarshal actual BidResponse.")
 			if expectedResp.Ext != nil {
-				assert.NoError(t, json.Unmarshal(expectedResp.Ext, &expectedExt), "Unable to unmarshal expected ExtBidResponse.")
-				assert.NoError(t, json.Unmarshal(actualResp.Ext, &actualExt), "Unable to unmarshal actual ExtBidResponse.")
+				assert.NoError(t, jsonutil.UnmarshalValid(expectedResp.Ext, &expectedExt), "Unable to unmarshal expected ExtBidResponse.")
+				assert.NoError(t, jsonutil.UnmarshalValid(actualResp.Ext, &actualExt), "Unable to unmarshal actual ExtBidResponse.")
 			}
 
 			assertBidResponseEqual(t, tc.file, expectedResp, actualResp)
@@ -5976,7 +5977,7 @@ func getObject(t *testing.T, filename, key string) json.RawMessage {
 	assert.NoError(t, err, "Error jsonparsing root.mockBidRequest from file %s. Desc: %v.", filename, err)
 
 	var obj json.RawMessage
-	err = json.Unmarshal(testBidRequest, &obj)
+	err = jsonutil.UnmarshalValid(testBidRequest, &obj)
 	if err != nil {
 		t.Fatalf("Failed to fetch object with key '%s' ... got error: %v", key, err)
 	}
