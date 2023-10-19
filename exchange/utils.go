@@ -440,36 +440,35 @@ func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, request
 	}
 }
 
+func copyExtAlternateBidderCodes(bidder string, altBidderCodes *openrtb_ext.ExtAlternateBidderCodes) *openrtb_ext.ExtAlternateBidderCodes {
+	if altBidderCodes != nil {
+		alternateBidderCodes := &openrtb_ext.ExtAlternateBidderCodes{
+			Enabled: altBidderCodes.Enabled,
+		}
+
+		if bidderCodes, ok := altBidderCodes.IsBidderInAlternateBidderCodes(bidder); ok {
+			alternateBidderCodes.Bidders = map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+				bidder: bidderCodes,
+			}
+		}
+
+		return alternateBidderCodes
+	}
+	return nil
+}
+
 func buildRequestExtAlternateBidderCodes(bidder string, accABC *openrtb_ext.ExtAlternateBidderCodes, reqABC *openrtb_ext.ExtAlternateBidderCodes) *openrtb_ext.ExtAlternateBidderCodes {
+
 	if len(bidder) == 0 {
 		return nil
 	}
 
-	normalisedBidderName, _ := openrtb_ext.NormalizeBidderName(bidder)
-	ciBidder := string(normalisedBidderName)
-
-	if reqABC != nil {
-		alternateBidderCodes := &openrtb_ext.ExtAlternateBidderCodes{
-			Enabled: reqABC.Enabled,
-		}
-		if bidderCodes, ok := reqABC.Bidders[ciBidder]; ok {
-			alternateBidderCodes.Bidders = map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
-				bidder: bidderCodes,
-			}
-		}
-		return alternateBidderCodes
+	if altBidderCodes := copyExtAlternateBidderCodes(bidder, reqABC); altBidderCodes != nil {
+		return altBidderCodes
 	}
 
-	if accABC != nil {
-		alternateBidderCodes := &openrtb_ext.ExtAlternateBidderCodes{
-			Enabled: accABC.Enabled,
-		}
-		if bidderCodes, ok := accABC.Bidders[ciBidder]; ok {
-			alternateBidderCodes.Bidders = map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
-				bidder: bidderCodes,
-			}
-		}
-		return alternateBidderCodes
+	if altBidderCodes := copyExtAlternateBidderCodes(bidder, accABC); altBidderCodes != nil {
+		return altBidderCodes
 	}
 
 	return nil

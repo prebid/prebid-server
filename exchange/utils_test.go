@@ -4782,64 +4782,160 @@ func TestBuildRequestExtAlternateBidderCodes(t *testing.T) {
 		expected *openrtb_ext.ExtAlternateBidderCodes
 	}{
 		{
-			desc: "No biddername",
-			in: testInput{
-				bidderNameRaw: "",
-			},
+			desc:     "No biddername",
+			in:       testInput{},
 			expected: nil,
 		},
 		{
-			desc: "disabled in both accABC and reqABC",
+			desc: "non-nil reqABC",
 			in: testInput{
 				bidderNameRaw: "pubmatic",
-				accABC:        &openrtb_ext.ExtAlternateBidderCodes{Enabled: false},
-				reqABC:        &openrtb_ext.ExtAlternateBidderCodes{Enabled: false},
+				reqABC:        &openrtb_ext.ExtAlternateBidderCodes{},
 			},
 			expected: &openrtb_ext.ExtAlternateBidderCodes{},
 		},
 		{
-			desc: "accABC enabled but empty bidders array",
+			desc: "non-nil reqABC",
 			in: testInput{
 				bidderNameRaw: "pubmatic",
+				accABC:        &openrtb_ext.ExtAlternateBidderCodes{},
+			},
+			expected: &openrtb_ext.ExtAlternateBidderCodes{},
+		},
+		{
+			desc: "both reqABC and accABC enabled and bidder matches elements in accABC but reqABC comes first",
+			in: testInput{
+				bidderNameRaw: "PUBmatic",
+				reqABC: &openrtb_ext.ExtAlternateBidderCodes{
+					Enabled: true,
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						"appnexus": {
+							AllowedBidderCodes: []string{"pubCode1"},
+						},
+					},
+				},
 				accABC: &openrtb_ext.ExtAlternateBidderCodes{
 					Enabled: true,
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						"PubMatic": {
+							AllowedBidderCodes: []string{"pubCode2"},
+						},
+					},
 				},
-				reqABC: nil,
+			},
+			expected: &openrtb_ext.ExtAlternateBidderCodes{Enabled: true},
+		},
+		{
+			desc: "both reqABC and accABC enabled and bidder matches elements in both but we prioritize reqABC",
+			in: testInput{
+				bidderNameRaw: "pubmatic",
+				reqABC: &openrtb_ext.ExtAlternateBidderCodes{
+					Enabled: true,
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						"PubMatic": {
+							AllowedBidderCodes: []string{"pubCode"},
+						},
+					},
+				},
+				accABC: &openrtb_ext.ExtAlternateBidderCodes{
+					Enabled: true,
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						"appnexus": {
+							AllowedBidderCodes: []string{"anxsCode"},
+						},
+					},
+				},
+			},
+			expected: &openrtb_ext.ExtAlternateBidderCodes{
+				Enabled: true,
+				Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+					"pubmatic": {
+						AllowedBidderCodes: []string{"pubCode"},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		alternateBidderCodes := buildRequestExtAlternateBidderCodes(tc.in.bidderNameRaw, tc.in.accABC, tc.in.reqABC)
+		assert.Equal(t, tc.expected, alternateBidderCodes, tc.desc)
+	}
+}
+
+func TestCopyExtAlternateBidderCodes(t *testing.T) {
+	type testInput struct {
+		bidder               string
+		alternateBidderCodes *openrtb_ext.ExtAlternateBidderCodes
+	}
+	testCases := []struct {
+		desc     string
+		in       testInput
+		expected *openrtb_ext.ExtAlternateBidderCodes
+	}{
+		{
+			desc:     "pass a nil alternateBidderCodes argument, expect nil output",
+			in:       testInput{},
+			expected: nil,
+		},
+		{
+			desc: "non-nil alternateBidderCodes argument but bidder doesn't match",
+			in: testInput{
+				alternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{
+					Enabled: true,
+				},
 			},
 			expected: &openrtb_ext.ExtAlternateBidderCodes{
 				Enabled: true,
 			},
 		},
-		//{
-		//	desc: "",
-		//	in: testInput{
-		//		bidderNameRaw: "pubmatic",
-		//		accABC: &openrtb_ext.ExtAlternateBidderCodes{
-		//			Enabled: false,
-		//			Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
-		//				"str": openrtb_ext.ExtAdapterAlternateBidderCodes{
-		//					Enabled:            true,
-		//					AllowedBidderCodes: []string{},
-		//				},
-		//			},
-		//		},
-		//		reqABC: &openrtb_ext.ExtAlternateBidderCodes{
-		//			Enabled: false,
-		//			Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
-		//				"str": openrtb_ext.ExtAdapterAlternateBidderCodes{
-		//					Enabled:            true,
-		//					AllowedBidderCodes: []string{},
-		//				},
-		//			},
-		//		},
-		//	},
-		//},
+		{
+			desc: "non-nil alternateBidderCodes argument bidder is identical to one element in map",
+			in: testInput{
+				bidder: "appnexus",
+				alternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{
+					Enabled: true,
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						"appnexus": {
+							AllowedBidderCodes: []string{"adnxs"},
+						},
+					},
+				},
+			},
+			expected: &openrtb_ext.ExtAlternateBidderCodes{
+				Enabled: true,
+				Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+					"appnexus": {
+						AllowedBidderCodes: []string{"adnxs"},
+					},
+				},
+			},
+		},
+		{
+			desc: "case insensitive match, keep bidder casing in output",
+			in: testInput{
+				bidder: "AppNexus",
+				alternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{
+					Enabled: true,
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						"appnexus": {
+							AllowedBidderCodes: []string{"adnxs"},
+						},
+					},
+				},
+			},
+			expected: &openrtb_ext.ExtAlternateBidderCodes{
+				Enabled: true,
+				Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+					"AppNexus": {
+						AllowedBidderCodes: []string{"adnxs"},
+					},
+				},
+			},
+		},
 	}
 	for _, tc := range testCases {
-		// set test
-		// run
-		alternateBidderCodes := buildRequestExtAlternateBidderCodes(tc.in.bidderNameRaw, tc.in.accABC, tc.in.reqABC)
-		// assertions
+		alternateBidderCodes := copyExtAlternateBidderCodes(tc.in.bidder, tc.in.alternateBidderCodes)
 		assert.Equal(t, tc.expected, alternateBidderCodes, tc.desc)
 	}
 }

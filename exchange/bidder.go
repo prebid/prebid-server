@@ -336,7 +336,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 							bidderName = bidResponse.Bids[i].Seat
 						}
 
-						if valid, err := alternateBidderCodes.IsValidBidderCode(bidderRequest.BidderCoreName.String(), bidderName.String()); !valid {
+						if valid, err := alternateBidderCodes.IsValidBidderCode(bidderRequest.BidderName.String(), bidderName.String()); !valid {
 							if err != nil {
 								err = &errortypes.Warning{
 									WarningCode: errortypes.AlternateBidderCodeWarningCode,
