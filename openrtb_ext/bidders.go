@@ -38,7 +38,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderAdquery,
 	BidderAdrino,
 	BidderAdsinteractive,
-	BidderAdsyield,
 	BidderAdtarget,
 	BidderAdtrgtme,
 	BidderAdtelligent,
@@ -52,7 +51,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderAMX,
 	BidderApacdex,
 	BidderAppnexus,
-	BidderAppstock,
 	BidderAppush,
 	BidderAudienceNetwork,
 	BidderAutomatad,
@@ -98,7 +96,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderEpom,
 	BidderEpsilon,
 	BidderEVolution,
-	BidderEvtech,
 	BidderFlipp,
 	BidderFreewheelSSP,
 	BidderFreewheelSSPOld,
@@ -107,11 +104,9 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderGamoshi,
 	BidderGlobalsun,
 	BidderGothamads,
-	BidderGreedygame,
 	BidderGrid,
 	BidderGumGum,
 	BidderHuaweiAds,
-	BidderIionads,
 	BidderImds,
 	BidderImpactify,
 	BidderImprovedigital,
@@ -119,9 +114,9 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderInMobi,
 	BidderInteractiveoffers,
 	BidderInvibes,
+	BidderIQX,
 	BidderIQZone,
 	BidderIx,
-	BidderJANet,
 	BidderJixie,
 	BidderKargo,
 	BidderKayzen,
@@ -156,13 +151,11 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderOutbrain,
 	BidderOwnAdx,
 	BidderPangle,
-	BidderPGAM,
 	BidderPGAMSsp,
 	BidderPubmatic,
 	BidderPubnative,
 	BidderPulsepoint,
 	BidderPWBid,
-	BidderQuantumdex,
 	BidderRevcontent,
 	BidderRichaudience,
 	BidderRise,
@@ -184,7 +177,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderSonobi,
 	BidderSovrn,
 	BidderSspBC,
-	BidderStreamkey,
 	BidderStroeerCore,
 	BidderSuntContent,
 	BidderSynacormedia,
@@ -201,17 +193,14 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderUndertone,
 	BidderUnicorn,
 	BidderUnruly,
-	BidderValueImpression,
 	BidderVideoByte,
 	BidderVideoHeroes,
 	BidderVidoomy,
-	BidderViewdeos,
 	BidderVisibleMeasures,
 	BidderVisx,
 	BidderVox,
 	BidderVrtcal,
 	BidderXeworks,
-	BidderXtrmqb,
 	BidderYahooAds,
 	BidderYahooAdvertising,
 	BidderYahooSSP,
@@ -329,7 +318,6 @@ const (
 	BidderAdquery           BidderName = "adquery"
 	BidderAdrino            BidderName = "adrino"
 	BidderAdsinteractive    BidderName = "adsinteractive"
-	BidderAdsyield          BidderName = "adsyield"
 	BidderAdtarget          BidderName = "adtarget"
 	BidderAdtrgtme          BidderName = "adtrgtme"
 	BidderAdtelligent       BidderName = "adtelligent"
@@ -343,7 +331,6 @@ const (
 	BidderAMX               BidderName = "amx"
 	BidderApacdex           BidderName = "apacdex"
 	BidderAppnexus          BidderName = "appnexus"
-	BidderAppstock          BidderName = "appstock"
 	BidderAppush            BidderName = "appush"
 	BidderAudienceNetwork   BidderName = "audienceNetwork"
 	BidderAutomatad         BidderName = "automatad"
@@ -389,7 +376,6 @@ const (
 	BidderEpsilon           BidderName = "epsilon"
 	BidderEpom              BidderName = "epom"
 	BidderEVolution         BidderName = "e_volution"
-	BidderEvtech            BidderName = "evtech"
 	BidderFlipp             BidderName = "flipp"
 	BidderFreewheelSSP      BidderName = "freewheelssp"
 	BidderFreewheelSSPOld   BidderName = "freewheel-ssp"
@@ -398,11 +384,9 @@ const (
 	BidderGamoshi           BidderName = "gamoshi"
 	BidderGlobalsun         BidderName = "globalsun"
 	BidderGothamads         BidderName = "gothamads"
-	BidderGreedygame        BidderName = "greedygame"
 	BidderGrid              BidderName = "grid"
 	BidderGumGum            BidderName = "gumgum"
 	BidderHuaweiAds         BidderName = "huaweiads"
-	BidderIionads           BidderName = "iionads"
 	BidderImds              BidderName = "imds"
 	BidderImpactify         BidderName = "impactify"
 	BidderImprovedigital    BidderName = "improvedigital"
@@ -410,9 +394,9 @@ const (
 	BidderInMobi            BidderName = "inmobi"
 	BidderInteractiveoffers BidderName = "interactiveoffers"
 	BidderInvibes           BidderName = "invibes"
+	BidderIQX               BidderName = "iqx"
 	BidderIQZone            BidderName = "iqzone"
 	BidderIx                BidderName = "ix"
-	BidderJANet             BidderName = "janet"
 	BidderJixie             BidderName = "jixie"
 	BidderKargo             BidderName = "kargo"
 	BidderKayzen            BidderName = "kayzen"
@@ -447,13 +431,11 @@ const (
 	BidderOutbrain          BidderName = "outbrain"
 	BidderOwnAdx            BidderName = "ownadx"
 	BidderPangle            BidderName = "pangle"
-	BidderPGAM              BidderName = "pgam"
 	BidderPGAMSsp           BidderName = "pgamssp"
 	BidderPubmatic          BidderName = "pubmatic"
 	BidderPubnative         BidderName = "pubnative"
 	BidderPulsepoint        BidderName = "pulsepoint"
 	BidderPWBid             BidderName = "pwbid"
-	BidderQuantumdex        BidderName = "quantumdex"
 	BidderRevcontent        BidderName = "revcontent"
 	BidderRichaudience      BidderName = "richaudience"
 	BidderRise              BidderName = "rise"
@@ -475,7 +457,6 @@ const (
 	BidderSonobi            BidderName = "sonobi"
 	BidderSovrn             BidderName = "sovrn"
 	BidderSspBC             BidderName = "sspBC"
-	BidderStreamkey         BidderName = "streamkey"
 	BidderStroeerCore       BidderName = "stroeerCore"
 	BidderSuntContent       BidderName = "suntContent"
 	BidderSynacormedia      BidderName = "synacormedia"
@@ -492,17 +473,14 @@ const (
 	BidderUndertone         BidderName = "undertone"
 	BidderUnicorn           BidderName = "unicorn"
 	BidderUnruly            BidderName = "unruly"
-	BidderValueImpression   BidderName = "valueimpression"
 	BidderVideoByte         BidderName = "videobyte"
 	BidderVideoHeroes       BidderName = "videoheroes"
 	BidderVidoomy           BidderName = "vidoomy"
-	BidderViewdeos          BidderName = "viewdeos"
 	BidderVisibleMeasures   BidderName = "visiblemeasures"
 	BidderVisx              BidderName = "visx"
 	BidderVox               BidderName = "vox"
 	BidderVrtcal            BidderName = "vrtcal"
 	BidderXeworks           BidderName = "xeworks"
-	BidderXtrmqb            BidderName = "xtrmqb"
 	BidderYahooAds          BidderName = "yahooAds"
 	BidderYahooAdvertising  BidderName = "yahooAdvertising"
 	BidderYahooSSP          BidderName = "yahoossp"
