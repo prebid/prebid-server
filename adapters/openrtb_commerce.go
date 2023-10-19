@@ -2,9 +2,10 @@ package adapters
 
 import (
 	"encoding/json"
-	"errors"
 
+	"github.com/google/uuid"
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
