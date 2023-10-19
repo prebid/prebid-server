@@ -4981,7 +4981,9 @@ func TestCopyExtAlternateBidderCodes(t *testing.T) {
 		},
 	}
 	for _, tc := range testCases {
-		alternateBidderCodes := copyExtAlternateBidderCodes(tc.in.bidder, tc.in.alternateBidderCodes)
-		assert.Equal(t, tc.expected, alternateBidderCodes, tc.desc)
+		t.Run(tc.desc, func(t *testing.T) {
+			alternateBidderCodes := copyExtAlternateBidderCodes(tc.in.bidder, tc.in.alternateBidderCodes)
+			assert.Equal(t, tc.expected, alternateBidderCodes)
+		})
 	}
 }
