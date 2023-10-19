@@ -12,7 +12,7 @@ import (
 	"golang.org/x/net/context/ctxhttp"
 
 	"github.com/buger/jsonparser"
-	"github.com/prebid/prebid-server/stored_requests/events"
+	"github.com/prebid/prebid-server/v2/stored_requests/events"
 
 	"github.com/golang/glog"
 )

@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/v2/stored_requests"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 )
 

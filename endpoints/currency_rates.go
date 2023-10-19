@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/currency"
+	"github.com/prebid/prebid-server/v2/currency"
 )
 
 // currencyRatesInfo holds currency rates information.

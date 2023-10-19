@@ -12,7 +12,7 @@ import (
 
 	"github.com/prebid/go-gdpr/api"
 	"github.com/prebid/go-gdpr/consentconstants"
-	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/v2/config"
 )
 
 func TestFetcherDynamicLoadListExists(t *testing.T) {

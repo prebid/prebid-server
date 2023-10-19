@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"net"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/util/iputil"
-	"github.com/prebid/prebid-server/util/ptrutil"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/util/iputil"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
 )

@@ -30,8 +30,8 @@ vendor
 
 # build artifacts
 prebid-server
-build
-debug
+/build
+/debug
 __debug_bin
 
 # config files

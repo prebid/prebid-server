@@ -9,7 +9,7 @@ import (
 	tcf2 "github.com/prebid/go-gdpr/vendorconsent/tcf2"
 	"github.com/prebid/go-gdpr/vendorlist"
 	"github.com/prebid/go-gdpr/vendorlist2"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 
 	"github.com/stretchr/testify/assert"
 )

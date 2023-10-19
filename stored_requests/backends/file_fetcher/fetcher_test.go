@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/v2/stored_requests"
 	"github.com/stretchr/testify/assert"
 )
 
