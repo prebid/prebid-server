@@ -1411,4 +1411,3 @@ func isValidCookieSize(maxCookieSize int) error {
 	}
 	return nil
 }
-

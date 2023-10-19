@@ -59,6 +59,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/conversant"
 	"github.com/prebid/prebid-server/adapters/cpmstar"
 	"github.com/prebid/prebid-server/adapters/criteo"
+	"github.com/prebid/prebid-server/adapters/criteostaples"
 	"github.com/prebid/prebid-server/adapters/datablocks"
 	"github.com/prebid/prebid-server/adapters/decenterads"
 	"github.com/prebid/prebid-server/adapters/deepintent"
@@ -321,7 +322,10 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderYieldone:          yieldone.Builder,
 		openrtb_ext.BidderYSSP:              yahoossp.Builder,
 		openrtb_ext.BidderZeroClickFraud:    zeroclickfraud.Builder,
-		openrtb_ext.BidderKoddi:   koddi.Builder,
-		openrtb_ext.BidderAdButtler:    adbuttler.Builder,
+		openrtb_ext.BidderKoddi:             koddi.Builder,
+		openrtb_ext.BidderAdButtler:         adbuttler.Builder,
+		openrtb_ext.BidderCriteoStaples:     criteostaples.Builder,
+
 	}
 }
+

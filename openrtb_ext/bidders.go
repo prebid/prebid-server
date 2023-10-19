@@ -243,8 +243,10 @@ const (
 	BidderYieldone          BidderName = "yieldone"
 	BidderYSSP              BidderName = "yssp"
 	BidderZeroClickFraud    BidderName = "zeroclickfraud"
-	BidderKoddi    BidderName = "koddi"
-	BidderAdButtler    BidderName = "adbuttler"
+	BidderKoddi             BidderName = "koddi"
+	BidderAdButtler         BidderName = "adbuttler"
+	BidderCriteoStaples     BidderName = "criteostaples"
+
 )
 
 // CoreBidderNames returns a slice of all core bidders.
@@ -413,6 +415,7 @@ func CoreBidderNames() []BidderName {
 		BidderZeroClickFraud,
 		BidderKoddi,
 		BidderAdButtler,
+		BidderCriteoStaples,
 	}
 }
 
@@ -534,3 +537,4 @@ func (validator *bidderParamValidator) Validate(name BidderName, ext json.RawMes
 func (validator *bidderParamValidator) Schema(name BidderName) string {
 	return validator.schemaContents[name]
 }
+
