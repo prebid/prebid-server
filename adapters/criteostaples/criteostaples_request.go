@@ -49,7 +49,7 @@ func (a *CriteoStaplesAdapter) MakeRequests(request *openrtb2.BidRequest, reqInf
 	}
 
 	var criteoPartnerID string
-	val, ok := configValueMap[BIDDERDETAILS_PREFIX + BD_ACCOUNT_ID]
+	val, ok := configValueMap[AUCTIONDETAILS_PREFIX + AD_ACCOUNT_ID]
 	if ok {
 		criteoPartnerID = val
 	}
@@ -74,6 +74,7 @@ func (a *CriteoStaplesAdapter) MakeRequests(request *openrtb2.BidRequest, reqInf
 		Headers: http.Header{},
 	}}, nil
 }
+
 
 
 
