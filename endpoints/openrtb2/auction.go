@@ -1531,14 +1531,8 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb_ext.ImpWrapper, aliases ma
 		return []error{fmt.Errorf("request validation failed. The StoredAuctionResponse.ID field must be completely present with, or completely absent from, all impressions in request. No StoredAuctionResponse data found for request.imp[%d].ext.prebid \n", impIndex)}
 	}
 
-	if len(prebid.StoredBidResponse) > 0 || len(storedBidResp) > 0 {
-		// prebid.StoredBidResponse - data from incoming imp.ext.prebid.storedbidresponse
-		// storedBidResp - imp id mapped to bidders from imp.ext (case insensitive) that have matched stored bid response
-		// in case only one of prebid.StoredBidResponse or storedBidResp exist means stored responses are specified
-		// in imp.ext.prebid.storedresponse, but don't match bidders in imp.ext (or imp.ext.prebid.bidders)
-		if err := deps.validateStoredBidRespAndImpExtBidders(prebid.Bidder, storedBidResp, imp.ID); err != nil {
-			return []error{err}
-		}
+	if err := deps.validateStoredBidRespAndImpExtBidders(prebid, storedBidResp, imp.ID); err != nil {
+		return []error{err}
 	}
 
 	errL := []error{}
@@ -2505,12 +2499,16 @@ func checkIfAppRequest(request []byte) (bool, error) {
 	return false, nil
 }
 
-func (deps *endpointDeps) validateStoredBidRespAndImpExtBidders(bidderExts map[string]json.RawMessage, storedBidResp stored_responses.ImpBidderStoredResp, impId string) error {
+func (deps *endpointDeps) validateStoredBidRespAndImpExtBidders(prebid *openrtb_ext.ExtImpPrebid, storedBidResp stored_responses.ImpBidderStoredResp, impId string) error {
+	if storedBidResp == nil && len(prebid.StoredBidResponse) == 0 {
+		return nil
+	}
+
 	if storedBidResp == nil {
 		return generateStoredBidResponseValidationError(impId)
 	}
 	if bidResponses, ok := storedBidResp[impId]; ok {
-		if len(bidResponses) != len(bidderExts) {
+		if len(bidResponses) != len(prebid.Bidder) {
 			return generateStoredBidResponseValidationError(impId)
 		}
 
@@ -2518,7 +2516,7 @@ func (deps *endpointDeps) validateStoredBidRespAndImpExtBidders(bidderExts map[s
 			if _, bidderNameOk := deps.normalizeBidderName(bidderName); !bidderNameOk {
 				return fmt.Errorf(`unrecognized bidder "%v"`, bidderName)
 			}
-			if _, present := bidderExts[bidderName]; !present {
+			if _, present := prebid.Bidder[bidderName]; !present {
 				return generateStoredBidResponseValidationError(impId)
 			}
 		}
