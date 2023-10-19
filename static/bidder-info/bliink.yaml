@@ -16,7 +16,7 @@ capabilities:
       - native
 userSync:
   iframe:
-    url: "https://tag.bliink.io/usersync.html?gdpr={{.GDPR}}&gdprConsent={{.GDPRConsent}}&uspConsent={{.USPrivacy}}"
+    url: "https://tag.bliink.io/usersync.html?gdpr={{.GDPR}}&gdprConsent={{.GDPRConsent}}&uspConsent={{.USPrivacy}}&url={{.RedirectURL}}"
     userMacro: "$UID"
   redirect:
     url: "https://cookiesync.api.bliink.io/getuid?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&url={{.RedirectURL}}"
