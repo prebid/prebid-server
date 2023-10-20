@@ -442,30 +442,32 @@ func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, request
 }
 
 func buildRequestExtAlternateBidderCodes(bidder string, accABC *openrtb_ext.ExtAlternateBidderCodes, reqABC *openrtb_ext.ExtAlternateBidderCodes) *openrtb_ext.ExtAlternateBidderCodes {
-	if reqABC != nil {
+
+	if altBidderCodes := copyExtAlternateBidderCodes(bidder, reqABC); altBidderCodes != nil {
+		return altBidderCodes
+	}
+
+	if altBidderCodes := copyExtAlternateBidderCodes(bidder, accABC); altBidderCodes != nil {
+		return altBidderCodes
+	}
+
+	return nil
+}
+
+func copyExtAlternateBidderCodes(bidder string, altBidderCodes *openrtb_ext.ExtAlternateBidderCodes) *openrtb_ext.ExtAlternateBidderCodes {
+	if altBidderCodes != nil {
 		alternateBidderCodes := &openrtb_ext.ExtAlternateBidderCodes{
-			Enabled: reqABC.Enabled,
+			Enabled: altBidderCodes.Enabled,
 		}
-		if bidderCodes, ok := reqABC.Bidders[bidder]; ok {
+
+		if bidderCodes, ok := altBidderCodes.IsBidderInAlternateBidderCodes(bidder); ok {
 			alternateBidderCodes.Bidders = map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
 				bidder: bidderCodes,
 			}
 		}
+
 		return alternateBidderCodes
 	}
-
-	if accABC != nil {
-		alternateBidderCodes := &openrtb_ext.ExtAlternateBidderCodes{
-			Enabled: accABC.Enabled,
-		}
-		if bidderCodes, ok := accABC.Bidders[bidder]; ok {
-			alternateBidderCodes.Bidders = map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
-				bidder: bidderCodes,
-			}
-		}
-		return alternateBidderCodes
-	}
-
 	return nil
 }
 
