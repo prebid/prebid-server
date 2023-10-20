@@ -6,8 +6,8 @@ import (
 
 	"github.com/chasex/glog"
 	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/analytics"
-	"github.com/prebid/prebid-server/util/jsonutil"
+	"github.com/prebid/prebid-server/v2/analytics"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 type RequestType string

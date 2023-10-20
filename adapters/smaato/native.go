@@ -3,7 +3,8 @@ package smaato
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/errortypes"
+
+	"github.com/prebid/prebid-server/v2/errortypes"
 )
 
 type nativeAd struct {
