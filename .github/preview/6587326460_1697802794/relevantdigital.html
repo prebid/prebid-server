@@ -1,0 +1,370 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>relevantdigital: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/adapters/relevantdigital/relevantdigital.go (85.7%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package relevantdigital
+
+import (
+        "encoding/json"
+        "fmt"
+        "math"
+        "net/http"
+        "strings"
+        "text/template"
+
+        "github.com/buger/jsonparser"
+        "github.com/prebid/openrtb/v19/openrtb2"
+        "github.com/prebid/prebid-server/adapters"
+        "github.com/prebid/prebid-server/config"
+        "github.com/prebid/prebid-server/errortypes"
+        "github.com/prebid/prebid-server/macros"
+        "github.com/prebid/prebid-server/openrtb_ext"
+)
+
+type adapter struct {
+        endpoint *template.Template
+        name     string
+}
+
+const RELEVANT_DOMAIN = ".relevant-digital.com"
+const DEFAULT_TIMEOUT = 1000
+const DEFAULT_BUFFER_MS = 250
+const STORED_REQUEST_EXT = "{\"prebid\":{\"debug\":%t,\"storedrequest\":{\"id\":\"%s\"}},\"relevant\":{\"count\":%d,\"adapterType\":\"server\"}}"
+const STORED_IMP_EXT = "{\"prebid\":{\"storedrequest\":{\"id\":\"%s\"}}}"
+
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        template, err := template.New("endpointTemplate").Parse(config.Endpoint)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
+        }</span>
+        <span class="cov8" title="1">return &amp;adapter{
+                endpoint: template,
+                name:     bidderName.String(),
+        }, nil</span>
+}
+
+func patchBidRequestExt(prebidBidRequest *openrtb2.BidRequest, id string) error <span class="cov8" title="1">{
+        count, cerr := jsonparser.GetInt(prebidBidRequest.Ext, "relevant", "count")
+        if cerr != nil </span><span class="cov8" title="1">{
+                count = 0
+        }</span>
+
+        <span class="cov8" title="1">if count &gt;= 5 </span><span class="cov8" title="1">{
+                return &amp;errortypes.FailedToRequestBids{
+                        Message: "too many requests",
+                }
+        }</span> else<span class="cov8" title="1"> {
+                count = count + 1
+        }</span>
+
+        <span class="cov8" title="1">debug, derr := jsonparser.GetBoolean(prebidBidRequest.Ext, "prebid", "debug")
+        if derr != nil </span><span class="cov8" title="1">{
+                debug = false
+        }</span>
+
+        <span class="cov8" title="1">prebidBidRequest.Ext = []byte(fmt.Sprintf(STORED_REQUEST_EXT, debug, id, count))
+        return nil</span>
+}
+
+func patchBidImpExt(imp *openrtb2.Imp, id string) <span class="cov8" title="1">{
+        imp.Ext = []byte(fmt.Sprintf(STORED_IMP_EXT, id))
+        if imp.Banner != nil </span><span class="cov8" title="1">{
+                imp.Banner.Ext = nil
+        }</span>
+        <span class="cov8" title="1">if imp.Video != nil </span><span class="cov8" title="1">{
+                imp.Video.Ext = nil
+        }</span>
+        <span class="cov8" title="1">if imp.Native != nil </span><span class="cov8" title="1">{
+                imp.Native.Ext = nil
+        }</span>
+        <span class="cov8" title="1">if imp.Audio != nil </span><span class="cov0" title="0">{
+                imp.Audio.Ext = nil
+        }</span>
+}
+
+func setTMax(prebidBidRequest *openrtb2.BidRequest, pbsBufferMs int) <span class="cov8" title="1">{
+        timeout := float64(prebidBidRequest.TMax)
+        if timeout &lt;= 0 </span><span class="cov8" title="1">{
+                timeout = DEFAULT_TIMEOUT
+        }</span>
+        <span class="cov8" title="1">buffer := float64(pbsBufferMs)
+        prebidBidRequest.TMax = int64(math.Min(math.Max(timeout-buffer, buffer), timeout))</span>
+}
+
+func cloneBidRequest(prebidBidRequest *openrtb2.BidRequest) (*openrtb2.BidRequest, error) <span class="cov8" title="1">{
+        jsonRes, err := json.Marshal(prebidBidRequest)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">var copy openrtb2.BidRequest
+        err = json.Unmarshal(jsonRes, &amp;copy)
+        return &amp;copy, err</span>
+}
+
+func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params []*openrtb_ext.ExtRelevantDigital) (*openrtb2.BidRequest, error) <span class="cov8" title="1">{
+        bidRequestCopy, err := cloneBidRequest(prebidBidRequest)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">err = patchBidRequestExt(bidRequestCopy, params[0].AccountId)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("failed to create bidRequest, error: %s", err),
+                }
+        }</span>
+
+        <span class="cov8" title="1">setTMax(bidRequestCopy, params[0].PbsBufferMs)
+
+        for idx := range bidRequestCopy.Imp </span><span class="cov8" title="1">{
+                patchBidImpExt(&amp;bidRequestCopy.Imp[idx], params[idx].PlacementId)
+        }</span>
+        <span class="cov8" title="1">return bidRequestCopy, err</span>
+}
+
+func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtRelevantDigital, error) <span class="cov8" title="1">{
+        var bidderExt adapters.ExtImpBidder
+        if err := json.Unmarshal(imp.Ext, &amp;bidderExt); err != nil </span><span class="cov8" title="1">{
+                return nil, &amp;errortypes.BadInput{
+                        Message: "imp.ext not provided",
+                }
+        }</span>
+        <span class="cov8" title="1">relevantExt := openrtb_ext.ExtRelevantDigital{PbsBufferMs: DEFAULT_BUFFER_MS}
+        if err := json.Unmarshal(bidderExt.Bidder, &amp;relevantExt); err != nil </span><span class="cov8" title="1">{
+                return nil, &amp;errortypes.BadInput{
+                        Message: "ext.bidder not provided",
+                }
+        }</span>
+        <span class="cov8" title="1">return &amp;relevantExt, nil</span>
+}
+
+func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtRelevantDigital) (string, error) <span class="cov8" title="1">{
+        params.Host = strings.ReplaceAll(params.Host, "http://", "")
+        params.Host = strings.ReplaceAll(params.Host, "https://", "")
+        params.Host = strings.ReplaceAll(params.Host, RELEVANT_DOMAIN, "")
+
+        endpointParams := macros.EndpointTemplateParams{Host: params.Host}
+        return macros.ResolveMacros(a.endpoint, endpointParams)
+}</span>
+
+func (a *adapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidRequest, params []*openrtb_ext.ExtRelevantDigital) (*adapters.RequestData, error) <span class="cov8" title="1">{
+        newBidRequest, err := createBidRequest(prebidBidRequest, params)
+
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">reqJSON, err := json.Marshal(newBidRequest)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">url, err := a.buildEndpointURL(params[0])
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">return &amp;adapters.RequestData{
+                Method:  "POST",
+                Uri:     url,
+                Body:    reqJSON,
+                Headers: getHeaders(prebidBidRequest),
+        }, nil</span>
+}
+
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        impParams, errs := getImpressionsInfo(request.Imp)
+        if len(errs) &gt; 0 </span><span class="cov8" title="1">{
+                return nil, errs
+        }</span>
+
+        <span class="cov8" title="1">bidRequest, err := a.buildAdapterRequest(request, impParams)
+        if err != nil </span><span class="cov8" title="1">{
+                errs = []error{err}
+        }</span>
+
+        <span class="cov8" title="1">if bidRequest != nil </span><span class="cov8" title="1">{
+                return []*adapters.RequestData{bidRequest}, errs
+        }</span>
+        <span class="cov8" title="1">return nil, errs</span>
+}
+
+func getImpressionsInfo(imps []openrtb2.Imp) (resImps []*openrtb_ext.ExtRelevantDigital, errors []error) <span class="cov8" title="1">{
+        for _, imp := range imps </span><span class="cov8" title="1">{
+                impExt, err := getImpressionExt(&amp;imp)
+                if err != nil </span><span class="cov8" title="1">{
+                        errors = append(errors, err)
+                        continue</span>
+                }
+                <span class="cov8" title="1">resImps = append(resImps, impExt)</span>
+        }
+        <span class="cov8" title="1">return</span>
+}
+
+func getHeaders(request *openrtb2.BidRequest) http.Header <span class="cov8" title="1">{
+        headers := http.Header{}
+        headers.Add("Content-Type", "application/json;charset=utf-8")
+        headers.Add("Accept", "application/json")
+        headers.Add("X-Openrtb-Version", "2.5")
+
+        if request.Device != nil </span><span class="cov0" title="0">{
+                if len(request.Device.UA) &gt; 0 </span><span class="cov0" title="0">{
+                        headers.Add("User-Agent", request.Device.UA)
+                }</span>
+                <span class="cov0" title="0">if len(request.Device.IPv6) &gt; 0 </span><span class="cov0" title="0">{
+                        headers.Add("X-Forwarded-For", request.Device.IPv6)
+                }</span>
+                <span class="cov0" title="0">if len(request.Device.IP) &gt; 0 </span><span class="cov0" title="0">{
+                        headers.Add("X-Forwarded-For", request.Device.IP)
+                }</span>
+        }
+        <span class="cov8" title="1">return headers</span>
+}
+
+func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) <span class="cov8" title="1">{
+        switch bid.MType </span>{
+        case openrtb2.MarkupBanner:<span class="cov8" title="1">
+                return openrtb_ext.BidTypeBanner, nil</span>
+        case openrtb2.MarkupVideo:<span class="cov8" title="1">
+                return openrtb_ext.BidTypeVideo, nil</span>
+        case openrtb2.MarkupAudio:<span class="cov0" title="0">
+                return openrtb_ext.BidTypeAudio, nil</span>
+        case openrtb2.MarkupNative:<span class="cov8" title="1">
+                return openrtb_ext.BidTypeNative, nil</span>
+        default:<span class="cov0" title="0">
+                return "", fmt.Errorf("unable to fetch mediaType in multi-format: %s", bid.ImpID)</span>
+        }
+}
+
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+        if adapters.IsResponseStatusCodeNoContent(responseData) </span><span class="cov0" title="0">{
+                return nil, nil
+        }</span>
+
+        <span class="cov8" title="1">if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil </span><span class="cov0" title="0">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">var response openrtb2.BidResponse
+        if err := json.Unmarshal(responseData.Body, &amp;response); err != nil </span><span class="cov0" title="0">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(response.SeatBid))
+        bidResponse.Currency = response.Cur
+        var errs []error
+        for _, seatBid := range response.SeatBid </span><span class="cov8" title="1">{
+                for i, bid := range seatBid.Bid </span><span class="cov8" title="1">{
+                        bidType, err := getMediaTypeForBid(bid)
+                        if err != nil </span><span class="cov0" title="0">{
+                                errs = append(errs, err)
+                        }</span> else<span class="cov8" title="1"> {
+                                b := &amp;adapters.TypedBid{
+                                        Bid:     &amp;seatBid.Bid[i],
+                                        BidType: bidType,
+                                }
+                                bidResponse.Bids = append(bidResponse.Bids, b)
+                        }</span>
+                }
+        }
+        <span class="cov8" title="1">return bidResponse, errs</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
