@@ -2,7 +2,7 @@ package openrtb_ext
 
 import (
 	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/util/jsonutil"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 // DealTier defines the configuration of a deal tier.
