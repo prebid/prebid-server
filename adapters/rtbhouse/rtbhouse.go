@@ -160,42 +160,45 @@ func (adapter *RTBHouseAdapter) MakeBids(
 	var typedBid *adapters.TypedBid
 	for _, seatBid := range openRTBBidderResponse.SeatBid {
 		for _, bid := range seatBid.Bid {
-			var err error
 			bid := bid // pin! -> https://github.com/kyoh86/scopelint#whats-this
-			bidType := getMediaTypeForBid(bid)
-
-			typedBid = &adapters.TypedBid{
-				Bid:     &bid,
-				BidType: bidType,
-			}
-
-			// for native bid responses fix Adm field
-			if typedBid.BidType == openrtb_ext.BidTypeNative {
-				bid.AdM, err = getNativeAdm(bid.AdM)
-				if err != nil {
-					errs = append(errs, err)
-					return nil, errs
+			bidType, err := getMediaTypeForBid(bid)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			} else {
+				typedBid = &adapters.TypedBid{
+					Bid:     &bid,
+					BidType: bidType,
 				}
-			}
 
-			bidderResponse.Bids = append(bidderResponse.Bids, typedBid)
+				// for native bid responses fix Adm field
+				if typedBid.BidType == openrtb_ext.BidTypeNative {
+					bid.AdM, err = getNativeAdm(bid.AdM)
+					if err != nil {
+						errs = append(errs, err)
+						continue
+					}
+				}
+
+				bidderResponse.Bids = append(bidderResponse.Bids, typedBid)
+			}
 		}
 	}
 
 	bidderResponse.Currency = BidderCurrency
 
-	return bidderResponse, nil
+	return bidderResponse, errs
 
 }
 
-func getMediaTypeForBid(bid openrtb2.Bid) openrtb_ext.BidType {
+func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	switch bid.MType {
 	case openrtb2.MarkupBanner:
-		return openrtb_ext.BidTypeBanner
+		return openrtb_ext.BidTypeBanner, nil
 	case openrtb2.MarkupNative:
-		return openrtb_ext.BidTypeNative
+		return openrtb_ext.BidTypeNative, nil
 	default:
-		return openrtb_ext.BidTypeBanner
+		return "", fmt.Errorf("unrecognized bid type in response from rtbhouse for bid %s", bid.ImpID)
 	}
 }
 

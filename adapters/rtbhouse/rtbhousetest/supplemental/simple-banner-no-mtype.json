@@ -81,20 +81,13 @@
   "expectedBidResponses": [
     {
       "currency": "USD",
-      "bids": [{
-        "bid": {
-            "id": "randomid",
-            "impid": "test-imp-id",
-            "price": 0.5,
-            "adm": "some-test-ad",
-            "adid": "12345678",
-            "cid": "987",
-            "crid": "12345678",
-            "w": 300,
-            "h": 250
-        },
-        "type": "banner"
-    }]
+      "bids": []
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "unrecognized bid type in response from rtbhouse for bid test-imp-id",
+      "comparison": "literal"
     }
   ]
 }
