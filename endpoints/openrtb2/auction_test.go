@@ -4991,8 +4991,8 @@ func TestParseRequestStoredResponses(t *testing.T) {
 }
 
 func TestParseRequestStoredBidResponses(t *testing.T) {
-	bidRespId1 := json.RawMessage(`{"id": "resp_id1", "seatbid": [{"bid": [{"id": "bid_id1"}], "seat": "testBidder1"}], "bidid": "123", "cur": "USD"}`)
-	bidRespId2 := json.RawMessage(`{"id": "resp_id2", "seatbid": [{"bid": [{"id": "bid_id2"}], "seat": "testBidder2"}], "bidid": "124", "cur": "USD"}`)
+	bidRespId1 := json.RawMessage(`{"id": "resp_id1", "seatbid": [{"bid": [{"id": "bid_id1"}], "seat": "telaria"}], "bidid": "123", "cur": "USD"}`)
+	bidRespId2 := json.RawMessage(`{"id": "resp_id2", "seatbid": [{"bid": [{"id": "bid_id2"}], "seat": "amx"}], "bidid": "124", "cur": "USD"}`)
 	bidRespId3 := json.RawMessage(`{"id": "resp_id3", "seatbid": [{"bid": [{"id": "bid_id3"}], "seat": "APPNEXUS"}], "bidid": "125", "cur": "USD"}`)
 	mockStoredBidResponses := map[string]json.RawMessage{
 		"bidResponseId1": bidRespId1,
@@ -5011,15 +5011,23 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 			name:             "req imp has valid stored bid response",
 			givenRequestBody: validRequest(t, "imp-with-stored-bid-resp.json"),
 			expectedStoredBidResponses: map[string]map[string]json.RawMessage{
-				"imp-id1": {"testBidder1": bidRespId1},
+				"imp-id1": {"telaria": bidRespId1},
 			},
 			expectedErrorCount: 0,
 		},
 		{
-			name:             "req imp has valid stored bid response with case insensitive bidder name",
-			givenRequestBody: validRequest(t, "imp-with-stored-bid-resp-insensitive-bidder-name.json"),
+			name:             "req imp has valid stored bid response with case not-matching bidder name",
+			givenRequestBody: validRequest(t, "imp-with-stored-bid-resp-case-not-matching-bidder-name.json"),
 			expectedStoredBidResponses: map[string]map[string]json.RawMessage{
-				"imp-id3": {"APPNEXUS": bidRespId3},
+				"imp-id3": {"appnexus": bidRespId3},
+			},
+			expectedErrorCount: 0,
+		},
+		{
+			name:             "req imp has valid stored bid response with case matching bidder name",
+			givenRequestBody: validRequest(t, "imp-with-stored-bid-resp-case-matching-bidder-name.json"),
+			expectedStoredBidResponses: map[string]map[string]json.RawMessage{
+				"imp-id3": {"appnexus": bidRespId3},
 			},
 			expectedErrorCount: 0,
 		},
@@ -5027,8 +5035,8 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 			name:             "req has two imps with valid stored bid responses",
 			givenRequestBody: validRequest(t, "req-two-imps-stored-bid-responses.json"),
 			expectedStoredBidResponses: map[string]map[string]json.RawMessage{
-				"imp-id1": {"testBidder1": bidRespId1},
-				"imp-id2": {"testBidder2": bidRespId2},
+				"imp-id1": {"telaria": bidRespId1},
+				"imp-id2": {"amx": bidRespId2},
 			},
 			expectedErrorCount: 0,
 		},
@@ -5036,7 +5044,7 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 			name:             "req has two imps one with valid stored bid responses and another one without stored bid responses",
 			givenRequestBody: validRequest(t, "req-two-imps-with-and-without-stored-bid-responses.json"),
 			expectedStoredBidResponses: map[string]map[string]json.RawMessage{
-				"imp-id2": {"testBidder2": bidRespId2},
+				"imp-id2": {"amx": bidRespId2},
 			},
 			expectedErrorCount: 0,
 		},
@@ -5044,7 +5052,13 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 			name:                       "req has two imps with missing stored bid responses",
 			givenRequestBody:           validRequest(t, "req-two-imps-missing-stored-bid-response.json"),
 			expectedStoredBidResponses: nil,
-			expectedErrorCount:         2,
+			expectedErrorCount:         1,
+		},
+		{
+			name:                       "req imp has valid stored bid response with non existing bidder name",
+			givenRequestBody:           validRequest(t, "imp-with-stored-bid-resp-non-existing-bidder-name.json"),
+			expectedStoredBidResponses: nil,
+			expectedErrorCount:         1,
 		},
 	}
 	for _, test := range tests {
@@ -5063,7 +5077,7 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 				map[string]string{},
 				false,
 				[]byte{},
-				map[string]openrtb_ext.BidderName{"testBidder1": "testBidder1", "testBidder2": "testBidder2", "appnexus": "appnexus"},
+				map[string]openrtb_ext.BidderName{"telaria": "telaria", "amx": "amx", "appnexus": "appnexus"},
 				nil,
 				nil,
 				hardcodedResponseIPValidator{response: true},
@@ -5078,6 +5092,7 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
 			_, _, _, storedBidResponses, _, _, errL := deps.parseRequest(req, &metrics.Labels{}, hookExecutor)
 			if test.expectedErrorCount == 0 {
+				assert.Empty(t, errL)
 				assert.Equal(t, test.expectedStoredBidResponses, storedBidResponses, "stored responses should match")
 			} else {
 				assert.Contains(t, errL[0].Error(), test.expectedError, "error should match")
@@ -5653,8 +5668,10 @@ func TestValidateStoredResp(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		errorList := deps.validateRequest(test.givenRequestWrapper, false, test.hasStoredAuctionResponses, test.storedBidResponses, false)
-		assert.Equalf(t, test.expectedErrorList, errorList, "Error doesn't match: %s\n", test.description)
+		t.Run(test.description, func(t *testing.T) {
+			errorList := deps.validateRequest(test.givenRequestWrapper, false, test.hasStoredAuctionResponses, test.storedBidResponses, false)
+			assert.Equalf(t, test.expectedErrorList, errorList, "Error doesn't match: %s\n", test.description)
+		})
 	}
 }
 

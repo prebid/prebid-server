@@ -517,12 +517,6 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		return
 	}
 
-	//Stored auction responses should be processed after stored requests due to possible impression modification
-	storedAuctionResponses, storedBidResponses, bidderImpReplaceImpId, errs = stored_responses.ProcessStoredResponses(ctx, requestJson, deps.storedRespFetcher, deps.bidderMap)
-	if len(errs) > 0 {
-		return nil, nil, nil, nil, nil, nil, errs
-	}
-
 	if err := jsonutil.UnmarshalValid(requestJson, req.BidRequest); err != nil {
 		errs = []error{err}
 		return
@@ -547,6 +541,12 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	}
 
 	lmt.ModifyForIOS(req.BidRequest)
+
+	//Stored auction responses should be processed after stored requests due to possible impression modification
+	storedAuctionResponses, storedBidResponses, bidderImpReplaceImpId, errs = stored_responses.ProcessStoredResponses(ctx, req, deps.storedRespFetcher)
+	if len(errs) > 0 {
+		return nil, nil, nil, nil, nil, nil, errs
+	}
 
 	hasStoredResponses := len(storedAuctionResponses) > 0
 	errL := deps.validateRequest(req, false, hasStoredResponses, storedBidResponses, hasStoredBidRequest)
@@ -1532,10 +1532,8 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb_ext.ImpWrapper, aliases ma
 		return []error{fmt.Errorf("request validation failed. The StoredAuctionResponse.ID field must be completely present with, or completely absent from, all impressions in request. No StoredAuctionResponse data found for request.imp[%d].ext.prebid \n", impIndex)}
 	}
 
-	if len(storedBidResp) > 0 {
-		if err := validateStoredBidRespAndImpExtBidders(prebid.Bidder, storedBidResp, imp.ID); err != nil {
-			return []error{err}
-		}
+	if err := deps.validateStoredBidRespAndImpExtBidders(prebid, storedBidResp, imp.ID); err != nil {
+		return []error{err}
 	}
 
 	errL := []error{}
@@ -2502,19 +2500,24 @@ func checkIfAppRequest(request []byte) (bool, error) {
 	return false, nil
 }
 
-func validateStoredBidRespAndImpExtBidders(bidderExts map[string]json.RawMessage, storedBidResp stored_responses.ImpBidderStoredResp, impId string) error {
+func (deps *endpointDeps) validateStoredBidRespAndImpExtBidders(prebid *openrtb_ext.ExtImpPrebid, storedBidResp stored_responses.ImpBidderStoredResp, impId string) error {
+	if storedBidResp == nil && len(prebid.StoredBidResponse) == 0 {
+		return nil
+	}
+
+	if storedBidResp == nil {
+		return generateStoredBidResponseValidationError(impId)
+	}
 	if bidResponses, ok := storedBidResp[impId]; ok {
-		if len(bidResponses) != len(bidderExts) {
+		if len(bidResponses) != len(prebid.Bidder) {
 			return generateStoredBidResponseValidationError(impId)
 		}
 
 		for bidderName := range bidResponses {
-			bidder := bidderName
-			normalizedCoreBidder, ok := openrtb_ext.NormalizeBidderName(bidder)
-			if ok {
-				bidder = normalizedCoreBidder.String()
+			if _, bidderNameOk := deps.normalizeBidderName(bidderName); !bidderNameOk {
+				return fmt.Errorf(`unrecognized bidder "%v"`, bidderName)
 			}
-			if _, present := bidderExts[bidder]; !present {
+			if _, present := prebid.Bidder[bidderName]; !present {
 				return generateStoredBidResponseValidationError(impId)
 			}
 		}

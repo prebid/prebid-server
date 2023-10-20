@@ -17,10 +17,10 @@
           ]
         },
         "ext": {
-          "telaria": {},
+          "bidderABC": {},
           "prebid": {
             "storedbidresponse": [
-              {"bidder":"telaria", "id": "bidResponseId1"}
+              {"bidder":"bidderABC", "id": "bidResponseId1"}
             ]
           }
         }
