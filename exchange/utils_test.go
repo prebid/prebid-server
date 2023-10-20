@@ -4757,6 +4757,224 @@ func TestApplyBidAdjustmentToFloor(t *testing.T) {
 	}
 }
 
+func TestBuildRequestExtAlternateBidderCodes(t *testing.T) {
+	type testInput struct {
+		bidderNameRaw string
+		accABC        *openrtb_ext.ExtAlternateBidderCodes
+		reqABC        *openrtb_ext.ExtAlternateBidderCodes
+	}
+	testCases := []struct {
+		desc     string
+		in       testInput
+		expected *openrtb_ext.ExtAlternateBidderCodes
+	}{
+		{
+			desc:     "No biddername, nil reqABC and accABC",
+			in:       testInput{},
+			expected: nil,
+		},
+		{
+			desc: "No biddername, non-nil reqABC",
+			in: testInput{
+				reqABC: &openrtb_ext.ExtAlternateBidderCodes{},
+			},
+			expected: &openrtb_ext.ExtAlternateBidderCodes{},
+		},
+		{
+			desc: "No biddername, non-nil accABC",
+			in: testInput{
+				accABC: &openrtb_ext.ExtAlternateBidderCodes{},
+			},
+			expected: &openrtb_ext.ExtAlternateBidderCodes{},
+		},
+		{
+			desc: "No biddername, non-nil reqABC nor accABC",
+			in: testInput{
+				reqABC: &openrtb_ext.ExtAlternateBidderCodes{},
+				accABC: &openrtb_ext.ExtAlternateBidderCodes{},
+			},
+			expected: &openrtb_ext.ExtAlternateBidderCodes{},
+		},
+		{
+			desc: "non-nil reqABC",
+			in: testInput{
+				bidderNameRaw: "pubmatic",
+				reqABC:        &openrtb_ext.ExtAlternateBidderCodes{},
+			},
+			expected: &openrtb_ext.ExtAlternateBidderCodes{},
+		},
+		{
+			desc: "non-nil accABC",
+			in: testInput{
+				bidderNameRaw: "pubmatic",
+				accABC:        &openrtb_ext.ExtAlternateBidderCodes{},
+			},
+			expected: &openrtb_ext.ExtAlternateBidderCodes{},
+		},
+		{
+			desc: "both reqABC and accABC enabled and bidder matches elements in accABC but reqABC comes first",
+			in: testInput{
+				bidderNameRaw: "PUBmatic",
+				reqABC: &openrtb_ext.ExtAlternateBidderCodes{
+					Enabled: true,
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						"appnexus": {
+							AllowedBidderCodes: []string{"pubCode1"},
+						},
+					},
+				},
+				accABC: &openrtb_ext.ExtAlternateBidderCodes{
+					Enabled: true,
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						"PubMatic": {
+							AllowedBidderCodes: []string{"pubCode2"},
+						},
+					},
+				},
+			},
+			expected: &openrtb_ext.ExtAlternateBidderCodes{Enabled: true},
+		},
+		{
+			desc: "both reqABC and accABC enabled and bidder matches elements in both but we prioritize reqABC",
+			in: testInput{
+				bidderNameRaw: "pubmatic",
+				reqABC: &openrtb_ext.ExtAlternateBidderCodes{
+					Enabled: true,
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						"PubMatic": {
+							AllowedBidderCodes: []string{"pubCode"},
+						},
+					},
+				},
+				accABC: &openrtb_ext.ExtAlternateBidderCodes{
+					Enabled: true,
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						"appnexus": {
+							AllowedBidderCodes: []string{"anxsCode"},
+						},
+					},
+				},
+			},
+			expected: &openrtb_ext.ExtAlternateBidderCodes{
+				Enabled: true,
+				Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+					"pubmatic": {
+						AllowedBidderCodes: []string{"pubCode"},
+					},
+				},
+			},
+		},
+		{
+			desc: "nil reqABC non-nil accABC enabled and bidder matches elements in accABC",
+			in: testInput{
+				bidderNameRaw: "APPnexus",
+				accABC: &openrtb_ext.ExtAlternateBidderCodes{
+					Enabled: true,
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						"appnexus": {
+							AllowedBidderCodes: []string{"anxsCode"},
+						},
+					},
+				},
+			},
+			expected: &openrtb_ext.ExtAlternateBidderCodes{
+				Enabled: true,
+				Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+					"APPnexus": {
+						AllowedBidderCodes: []string{"anxsCode"},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			alternateBidderCodes := buildRequestExtAlternateBidderCodes(tc.in.bidderNameRaw, tc.in.accABC, tc.in.reqABC)
+			assert.Equal(t, tc.expected, alternateBidderCodes)
+		})
+	}
+}
+
+func TestCopyExtAlternateBidderCodes(t *testing.T) {
+	type testInput struct {
+		bidder               string
+		alternateBidderCodes *openrtb_ext.ExtAlternateBidderCodes
+	}
+	testCases := []struct {
+		desc     string
+		in       testInput
+		expected *openrtb_ext.ExtAlternateBidderCodes
+	}{
+		{
+			desc:     "pass a nil alternateBidderCodes argument, expect nil output",
+			in:       testInput{},
+			expected: nil,
+		},
+		{
+			desc: "non-nil alternateBidderCodes argument but bidder doesn't match",
+			in: testInput{
+				alternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{
+					Enabled: true,
+				},
+			},
+			expected: &openrtb_ext.ExtAlternateBidderCodes{
+				Enabled: true,
+			},
+		},
+		{
+			desc: "non-nil alternateBidderCodes argument bidder is identical to one element in map",
+			in: testInput{
+				bidder: "appnexus",
+				alternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{
+					Enabled: true,
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						"appnexus": {
+							AllowedBidderCodes: []string{"adnxs"},
+						},
+					},
+				},
+			},
+			expected: &openrtb_ext.ExtAlternateBidderCodes{
+				Enabled: true,
+				Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+					"appnexus": {
+						AllowedBidderCodes: []string{"adnxs"},
+					},
+				},
+			},
+		},
+		{
+			desc: "case insensitive match, keep bidder casing in output",
+			in: testInput{
+				bidder: "AppNexus",
+				alternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{
+					Enabled: true,
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						"appnexus": {
+							AllowedBidderCodes: []string{"adnxs"},
+						},
+					},
+				},
+			},
+			expected: &openrtb_ext.ExtAlternateBidderCodes{
+				Enabled: true,
+				Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+					"AppNexus": {
+						AllowedBidderCodes: []string{"adnxs"},
+					},
+				},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			alternateBidderCodes := copyExtAlternateBidderCodes(tc.in.bidder, tc.in.alternateBidderCodes)
+			assert.Equal(t, tc.expected, alternateBidderCodes)
+		})
+	}
+}
+
 func TestBuildBidResponseRequestBidderName(t *testing.T) {
 	bidderImpResponses := stored_responses.BidderImpsWithBidResponses{
 		openrtb_ext.BidderName("appnexus"): {"impId1": json.RawMessage(`{}`), "impId2": json.RawMessage(`{}`)},
