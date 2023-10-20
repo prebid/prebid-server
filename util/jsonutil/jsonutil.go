@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	jsoniter "github.com/json-iterator/go"
-	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/v2/errortypes"
 )
 
 var comma = byte(',')

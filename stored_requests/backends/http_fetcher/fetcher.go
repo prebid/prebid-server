@@ -9,8 +9,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/prebid/prebid-server/stored_requests"
-	"github.com/prebid/prebid-server/util/jsonutil"
+	"github.com/prebid/prebid-server/v2/stored_requests"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
 	"github.com/golang/glog"

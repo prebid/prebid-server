@@ -5,8 +5,8 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/util/jsonutil"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 )
 

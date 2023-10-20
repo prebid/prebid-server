@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/prebid/openrtb/v19/adcom1"
-	"github.com/prebid/prebid-server/util/jsonutil"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 func newConfig(data json.RawMessage) (config, error) {

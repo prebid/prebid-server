@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/prebid/prebid-server/util/sliceutil"
+	"github.com/prebid/prebid-server/v2/util/sliceutil"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 )
 

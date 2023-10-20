@@ -5,10 +5,10 @@ import (
 	"errors"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/util/jsonutil"
-	"github.com/prebid/prebid-server/util/maputil"
-	"github.com/prebid/prebid-server/util/ptrutil"
-	"github.com/prebid/prebid-server/util/sliceutil"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v2/util/maputil"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v2/util/sliceutil"
 )
 
 // RequestWrapper wraps the OpenRTB request to provide a storage location for unmarshalled ext fields, so they

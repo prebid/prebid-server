@@ -7,11 +7,11 @@ import (
 	"github.com/prebid/openrtb/v19/openrtb2"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/ortb"
-	"github.com/prebid/prebid-server/util/jsonutil"
-	"github.com/prebid/prebid-server/util/ptrutil"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/ortb"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 )
 
 const (
