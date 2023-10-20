@@ -1,13 +1,13 @@
 {
-  "description": "request with two valid imp with stored bid responses",
+  "description": "request with impression with stored bid response with case not matching bidder name",
   "mockBidRequest": {
-    "id": "some-request-id",
+    "id": "request-with-stored-resp",
     "site": {
       "page": "test.somepage.com"
     },
     "imp": [
       {
-        "id": "imp-id1",
+        "id": "imp-id3",
         "banner": {
           "format": [
             {
@@ -19,31 +19,21 @@
         "ext": {
           "appnexus": {
             "placementId": 12883451
-          }
-        }
-      },
-      {
-        "id": "imp-id2",
-        "banner": {
-          "format": [
-            {
-              "w": 300,
-              "h": 600
-            }
-          ]
-        },
-        "ext": {
-          "amx": {
-            "placementId": 12883451
           },
           "prebid": {
             "storedbidresponse": [
-              {"bidder":"amx", "id": "bidResponseId2"}
+              {
+                "bidder": "APPNEXUS",
+                "id": "bidResponseId3"
+              }
             ]
           }
         }
       }
-    ]
+    ],
+    "user": {
+      "yob": 1989
+    }
   },
   "expectedReturnCode": 200
 }
