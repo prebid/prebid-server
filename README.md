@@ -17,7 +17,7 @@
   
 ## Configuring
 
-When hosting Prebid Server or developing locally, **you must set a default GDPR value**. This configuration determines whether GDPR is enabled when no regulatory signal is available in the request, where a value of `0` disables it by default and a value of `1` enables it. This is required as there is no consensus on a good default.
+When hosting Prebid Server or developing locally, **you must set a default GDPR value**. This configuration determines whether GDPR is enabled when no regulatory signal is available in the request, where a value of `"0"` disables it by default and a value of `"1"` enables it. This is required as there is no consensus on a good default.
 
 Refer to the [configuration guide](docs/developers/configuration.md) for additional information and an overview of available configuration options.
 
