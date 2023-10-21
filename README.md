@@ -15,7 +15,7 @@
 - [Header Bidding with Prebid](https://docs.prebid.org/overview/intro.html#header-bidding-with-prebid)
 - [API Endpoints](https://docs.prebid.org/prebid-server/endpoints/pbs-endpoint-overview.html)
   
-## Configuration
+## Configuring
 
 When hosting Prebid Server or developing locally, **you must set a default GDPR value**. This configuration determines whether GDPR is enabled when no regulatory signal is available in the request, where a value of `0` disables it by default and a value of `1` enables it. This is required as there is no consensus on a good default.
 
@@ -52,7 +52,7 @@ cd prebid-server
 go mod download
 ```
 
-3. Verify Automated Tests Pass
+3. Verify Tests Pass
 ```bash
 ./validate.sh
 ```
@@ -83,10 +83,10 @@ Bid Adapters transform OpenRTB requests and responses for communication with an 
 Analytics Modules enable business intelligence tools to collect data from Prebid Server to provide publishers and hosts with valuable insights into their header bidding traffic. We welcome you to contribute a module for your platform. Refer to our guide on [building an analytics module](https://docs.prebid.org/prebid-server/developers/pbs-build-an-analytics-adapter.html) for further information.
 
 ### Auction Module
-Auction Modules allow hosts to extend the behavior of Prebid Server at specfic spots in the auction pipeline using existing modules or by developing custom functionality. Auction Modules may provide creative validation, traffic optimization, and real time data services amoung other potential uses. We welcome vendors and community members to contribute modules that publishers and hosts may find useful. Consult our gude on [building an auction module](https://docs.prebid.org/prebid-server/developers/add-a-module.html) for more information.
+Auction Modules allow hosts to extend the behavior of Prebid Server at specfic spots in the auction pipeline using existing modules or by developing custom functionality. Auction Modules may provide creative validation, traffic optimization, and real time data services amoung many other potential uses. We welcome vendors and community members to contribute modules that publishers and hosts may find useful. Consult our gude on [building an auction module](https://docs.prebid.org/prebid-server/developers/add-a-module.html) for more information.
 
 ### Feature
 We welcome everyone to contribute to this project by implementing a specification or by proposing a new feature. Please review the [prioritized project board](https://github.com/orgs/prebid/projects/4), where you can select an issue labeled "Ready For Dev". To avoid redundant effort, kindly leave a comment on the issue stating your intention to take it on. To propose a feature, [open a new issue](https://github.com/prebid/prebid-server/issues/new/choose) with as much detail as possible for consideration by the Prebid Server Committee.
 
 ### Bug Fix
-Bug reports may be submitted by [opening a new issue](https://github.com/prebid/prebid-server/issues/new/choose) and describing the error in detail with with steps to reproduce with example data. A member of the core development team will validate the bug and discuss next steps. You are encouraged to open an exploratory draft pull request to either demonstrate the bug by adding a test or offering a potential fix.
+Bug reports may be submitted by [opening a new issue](https://github.com/prebid/prebid-server/issues/new/choose) and describing the error in detail with with steps to reproduce and example data. A member of the core development team will validate the bug and discuss next steps. You are encouraged to open an exploratory draft pull request to either demonstrate the bug by adding a test or offering a potential fix.
