@@ -1,14 +1,44 @@
 # Configuration
 
-Configuration is handled by [Viper](https://github.com/spf13/viper), which supports [many ways](https://github.com/spf13/viper#why-viper) of setting config values.
+Prebid Server is built using [Viper](https://github.com/spf13/viper) for configuration. Viper supports JSON, TOML, YAML, HCL, INI, envfile or Java properties formats. YAML, JSON, and Environment Variables are the most popular formats and are used as examples in this guide. 
 
-As a general rule, Prebid Server will log its resolved config values on startup and exit immediately if they're not valid.
+Configuration is logged to standard out as Prebid Server starts up. If a validation error is detected, the application will immediately exit and report the problem.
 
-For development, it's easiest to define your config inside a `pbs.yaml` file in the project root.
+For development, it's easiest to define your config inside a `pbs.yaml` file in the project root. This file is marked to be ignored by `.gitignore` and will not be automatically included in commits.
 
-## Available options
+# We're Working On It
 
-For now, see [the contract classes](../../config/config.go) in the code.
+As we build this guide, please refer to [the contract classes](../../config/config.go) in code for a complete defintion of the configuration options.
 
-Also note that `Viper` will also read environment variables for config values. Prebid Server will look for the prefix `PBS_` on the environment variables, and map underscores (`_`)
-to periods. For example, to set `host_cookie.ttl_days` via an environment variable, set `PBS_HOST_COOKIE_TTL_DAYS` to the desired value.
+# Privacy
+
+## GDPR
+
+### Default Value
+String value that determines whether GDPR is enabled when no regulatory signal is available in the request. A value of `"0"` disables it by default and a value of `"1"` enabled it.
+<details>
+  <summary>Example</summary>
+  <p>
+
+  YAML:
+  ```
+  gdpr:
+    default_value: "0"
+  ```
+
+  JSON:
+  ```
+  {
+    "gdpr": {
+      "default_value": "0"
+    }
+  }
+  ```
+
+  Environment Variable:
+  ```
+  PBS_GDPR_DEFAULT_VALUE: 0
+  ```
+
+  </p>
+</details>
