@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"testing"
 
 	"github.com/prebid/openrtb/v19/adcom1"
@@ -14,6 +13,7 @@ import (
 	"github.com/prebid/prebid-server/v2/hooks/hookexecution"
 	"github.com/prebid/prebid-server/v2/hooks/hookstage"
 	"github.com/prebid/prebid-server/v2/modules/moduledeps"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
