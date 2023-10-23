@@ -59,6 +59,8 @@ github.com/IABTechLab/adscert v0.34.0/go.mod h1:pCLd3Up1kfTrH6kYFUGGeavxIc1f6Tvv
 github.com/NYTimes/gziphandler v1.1.1 h1:ZUDjpQae29j0ryrS0u/B8HZfJBtBQHjqw2rQ2cqUQ3I=
 github.com/NYTimes/gziphandler v1.1.1/go.mod h1:n/CVRwUEOgIxrgPvAQhUUr9oeUtvrhMomdKFjzJNB0c=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
+github.com/SirDataFR/iabtcfv2 v1.2.0 h1:IMVoOYqoAdZanTHDznjyM1Yf7P9P8orviFM9ESfXxpU=
+github.com/SirDataFR/iabtcfv2 v1.2.0/go.mod h1:wBEfrSz6AcFCRtxRSGPj8XB4Ut4ntjkM32zV4V/byTk=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=

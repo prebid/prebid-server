@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/SirDataFR/iabtcfv2"
 	"github.com/buger/jsonparser"
 	"github.com/gofrs/uuid"
 	"github.com/prebid/openrtb/v19/openrtb2"
@@ -123,7 +124,7 @@ func (a *adapter) processImp(request *openrtb2.BidRequest, imp openrtb2.Imp) (*a
 	var userKey string
 	if request.User != nil && request.User.ID != "" {
 		userKey = request.User.ID
-	} else if flippExtParams.UserKey != "" {
+	} else if flippExtParams.UserKey != "" && paramsUserKeyPermitted(request) {
 		userKey = flippExtParams.UserKey
 	} else {
 		uid, err := uuid.NewV4()
@@ -222,4 +223,36 @@ func buildBid(decision *InlineModel, impId string) *openrtb2.Bid {
 		bid.H = 0
 	}
 	return bid
+}
+
+func paramsUserKeyPermitted(request *openrtb2.BidRequest) bool {
+	if request.Regs != nil {
+		if request.Regs.COPPA == 1 {
+			return false
+		}
+		if request.Regs.GDPR != nil && *request.Regs.GDPR == 1 {
+			return false
+		}
+	}
+	if request.Ext != nil {
+		var extData struct {
+			TransmitEids bool `json:"transmitEids"`
+		}
+		if err := json.Unmarshal(request.Ext, &extData); err == nil {
+			if !extData.TransmitEids {
+				return false
+			}
+		}
+	}
+	if request.User != nil && request.User.Consent != "" {
+		tcModel, err := iabtcfv2.Decode(request.User.Consent)
+		if err != nil {
+			fmt.Printf("%v", err)
+			return true
+		}
+		if tcModel.CoreString.PurposesConsent[4] && !tcModel.IsPurposeAllowed(4) {
+			return false
+		}
+	}
+	return true
 }
