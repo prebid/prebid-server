@@ -6,7 +6,7 @@ import (
 	"reflect"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/v2/config"
 )
 
 func NewDbProviderMock() (*DbProviderMock, sqlmock.Sqlmock, error) {

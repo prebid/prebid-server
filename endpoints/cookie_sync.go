@@ -14,20 +14,21 @@ import (
 	"github.com/julienschmidt/httprouter"
 	gpplib "github.com/prebid/go-gpp"
 	gppConstants "github.com/prebid/go-gpp/constants"
-	accountService "github.com/prebid/prebid-server/account"
-	"github.com/prebid/prebid-server/analytics"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/gdpr"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/privacy"
-	"github.com/prebid/prebid-server/privacy/ccpa"
-	gppPrivacy "github.com/prebid/prebid-server/privacy/gpp"
-	"github.com/prebid/prebid-server/stored_requests"
-	"github.com/prebid/prebid-server/usersync"
-	stringutil "github.com/prebid/prebid-server/util/stringutil"
+	accountService "github.com/prebid/prebid-server/v2/account"
+	"github.com/prebid/prebid-server/v2/analytics"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/gdpr"
+	"github.com/prebid/prebid-server/v2/macros"
+	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/privacy"
+	"github.com/prebid/prebid-server/v2/privacy/ccpa"
+	gppPrivacy "github.com/prebid/prebid-server/v2/privacy/gpp"
+	"github.com/prebid/prebid-server/v2/stored_requests"
+	"github.com/prebid/prebid-server/v2/usersync"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	stringutil "github.com/prebid/prebid-server/v2/util/stringutil"
 )
 
 var (
@@ -120,7 +121,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, ma
 	}
 
 	request := cookieSyncRequest{}
-	if err := json.Unmarshal(body, &request); err != nil {
+	if err := jsonutil.UnmarshalValid(body, &request); err != nil {
 		return usersync.Request{}, macros.UserSyncPrivacy{}, fmt.Errorf("JSON parsing failed: %s", err.Error())
 	}
 

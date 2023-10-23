@@ -3,7 +3,7 @@ package hookstage
 import (
 	"encoding/json"
 
-	"github.com/prebid/prebid-server/hooks/hookanalytics"
+	"github.com/prebid/prebid-server/v2/hooks/hookanalytics"
 )
 
 // HookResult represents the result of execution the concrete hook instance.

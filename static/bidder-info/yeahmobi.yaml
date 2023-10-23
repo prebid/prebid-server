@@ -1,0 +1,9 @@
+endpoint: "https://{{.Host}}/prebid/bid"
+maintainer:
+  email: "developer@yeahmobi.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
