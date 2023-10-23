@@ -11,34 +11,34 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prebid/prebid-server/privacy"
-
 	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/openrtb/v19/openrtb3"
-	"github.com/prebid/prebid-server/hooks/hookexecution"
-	"github.com/prebid/prebid-server/ortb"
-	"github.com/prebid/prebid-server/util/uuidutil"
+	"github.com/prebid/prebid-server/v2/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v2/ortb"
+	"github.com/prebid/prebid-server/v2/util/uuidutil"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
-	accountService "github.com/prebid/prebid-server/account"
-	"github.com/prebid/prebid-server/amp"
-	"github.com/prebid/prebid-server/analytics"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/exchange"
-	"github.com/prebid/prebid-server/gdpr"
-	"github.com/prebid/prebid-server/hooks"
-	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/stored_requests"
-	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
-	"github.com/prebid/prebid-server/stored_responses"
-	"github.com/prebid/prebid-server/usersync"
-	"github.com/prebid/prebid-server/util/iputil"
-	"github.com/prebid/prebid-server/version"
+	accountService "github.com/prebid/prebid-server/v2/account"
+	"github.com/prebid/prebid-server/v2/amp"
+	"github.com/prebid/prebid-server/v2/analytics"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/exchange"
+	"github.com/prebid/prebid-server/v2/gdpr"
+	"github.com/prebid/prebid-server/v2/hooks"
+	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/privacy"
+	"github.com/prebid/prebid-server/v2/stored_requests"
+	"github.com/prebid/prebid-server/v2/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/v2/stored_responses"
+	"github.com/prebid/prebid-server/v2/usersync"
+	"github.com/prebid/prebid-server/v2/util/iputil"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v2/version"
 )
 
 const defaultAmpRequestTimeoutMillis = 900
@@ -64,7 +64,7 @@ func NewAmpEndpoint(
 	accounts stored_requests.AccountFetcher,
 	cfg *config.Configuration,
 	metricsEngine metrics.MetricsEngine,
-	pbsAnalytics analytics.PBSAnalyticsModule,
+	analyticsRunner analytics.Runner,
 	disabledBidders map[string]string,
 	defReqJSON []byte,
 	bidderMap map[string]openrtb_ext.BidderName,
@@ -77,7 +77,7 @@ func NewAmpEndpoint(
 		return nil, errors.New("NewAmpEndpoint requires non-nil arguments.")
 	}
 
-	defRequest := defReqJSON != nil && len(defReqJSON) > 0
+	defRequest := len(defReqJSON) > 0
 
 	ipValidator := iputil.PublicNetworkIPValidator{
 		IPv4PrivateNetworks: cfg.RequestValidation.IPv4PrivateNetworksParsed,
@@ -93,7 +93,7 @@ func NewAmpEndpoint(
 		accounts,
 		cfg,
 		metricsEngine,
-		pbsAnalytics,
+		analyticsRunner,
 		disabledBidders,
 		defRequest,
 		defReqJSON,
@@ -104,6 +104,7 @@ func NewAmpEndpoint(
 		storedRespFetcher,
 		hookExecutionPlanBuilder,
 		tmaxAdjustments,
+		openrtb_ext.NormalizeBidderName,
 	}).AmpAuction), nil
 
 }
@@ -134,11 +135,12 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		CookieFlag:    metrics.CookieFlagUnknown,
 		RequestStatus: metrics.RequestStatusOK,
 	}
+	activityControl := privacy.ActivityControl{}
 
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
-		deps.analytics.LogAmpObject(&ao)
+		deps.analytics.LogAmpObject(&ao, activityControl)
 	}()
 
 	// Add AMP headers
@@ -208,7 +210,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		metricsStatus := metrics.RequestStatusBadInput
 		for _, er := range errL {
 			errCode := errortypes.ReadCode(er)
-			if errCode == errortypes.BlacklistedAppErrorCode || errCode == errortypes.BlacklistedAcctErrorCode {
+			if errCode == errortypes.BlacklistedAppErrorCode || errCode == errortypes.AccountDisabledErrorCode {
 				httpStatus = http.StatusServiceUnavailable
 				metricsStatus = metrics.RequestStatusBlacklisted
 				break
@@ -230,7 +232,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 
 	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
 
-	activityControl := privacy.NewActivityControl(&account.Privacy)
+	activityControl = privacy.NewActivityControl(&account.Privacy)
 
 	secGPC := r.Header.Get("Sec-GPC")
 
@@ -340,7 +342,7 @@ func sendAmpResponse(
 					// but this is a very unlikely corner case. Doing this so we can catch "hb_cache_id"
 					// and "hb_cache_id_{deal}", which allows for deal support in AMP.
 					bidExt := &openrtb_ext.ExtBid{}
-					err := json.Unmarshal(bid.Ext, bidExt)
+					err := jsonutil.Unmarshal(bid.Ext, bidExt)
 					if err != nil {
 						w.WriteHeader(http.StatusInternalServerError)
 						fmt.Fprintf(w, "Critical error while unpacking AMP targets: %v", err)
@@ -359,7 +361,7 @@ func sendAmpResponse(
 
 	// Extract global targeting
 	var extResponse openrtb_ext.ExtBidResponse
-	eRErr := json.Unmarshal(response.Ext, &extResponse)
+	eRErr := jsonutil.Unmarshal(response.Ext, &extResponse)
 	if eRErr != nil {
 		ao.Errors = append(ao.Errors, fmt.Errorf("AMP response: failed to unpack OpenRTB response.ext, debug info cannot be forwarded: %v", eRErr))
 	}
@@ -408,7 +410,7 @@ func getExtBidResponse(
 	}
 	// Extract any errors
 	var extResponse openrtb_ext.ExtBidResponse
-	eRErr := json.Unmarshal(response.Ext, &extResponse)
+	eRErr := jsonutil.Unmarshal(response.Ext, &extResponse)
 	if eRErr != nil {
 		ao.Errors = append(ao.Errors, fmt.Errorf("AMP response: failed to unpack OpenRTB response.ext, debug info cannot be forwarded: %v", eRErr))
 	}
@@ -523,12 +525,12 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 
 	// The fetched config becomes the entire OpenRTB request
 	requestJSON := storedRequests[ampParams.StoredRequestID]
-	if err := json.Unmarshal(requestJSON, req); err != nil {
+	if err := jsonutil.UnmarshalValid(requestJSON, req); err != nil {
 		errs = []error{err}
 		return
 	}
 
-	storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, errs = stored_responses.ProcessStoredResponses(ctx, requestJSON, deps.storedRespFetcher, deps.bidderMap)
+	storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, errs = stored_responses.ProcessStoredResponses(ctx, &openrtb_ext.RequestWrapper{BidRequest: req}, deps.storedRespFetcher)
 	if err != nil {
 		errs = []error{err}
 		return
@@ -823,7 +825,7 @@ func setTrace(req *openrtb2.BidRequest, value string) error {
 		return nil
 	}
 
-	ext, err := json.Marshal(map[string]map[string]string{"prebid": {"trace": value}})
+	ext, err := jsonutil.Marshal(map[string]map[string]string{"prebid": {"trace": value}})
 	if err != nil {
 		return err
 	}

@@ -1,0 +1,84 @@
+{
+  "description": "Amp request where root.user.ext.prebid.buyeruids field makes use of alias defined in root.ext.prebid.aliases and request makes use of case sensitive bidder name",
+  "query": "tag_id=101",
+  "config": {
+    "mockBidders": [
+      {
+        "bidderName": "appnexus",
+        "currency": "USD",
+        "price": 2
+      }
+    ]
+  },
+  "mockBidRequest": {
+    "id": "request-with-user-ext-obj",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "prebid": {
+            "bidder": {
+              "Appnexus": {
+                "placementId": 12883451
+              }
+            }
+          }
+        }
+      }
+    ],
+    "user": {
+      "ext": {
+        "prebid": {
+          "buyeruids": {
+            "unknown": "123"
+          }
+        }
+      }
+    },
+    "ext": {
+      "prebid": {
+        "aliases": {
+          "unknown": "Appnexus"
+        }
+      }
+    }
+  },
+  "expectedAmpResponse": {
+    "targeting": {
+      "hb_bidder": "Appnexus",
+      "hb_bidder_Appnexus": "Appnexus",
+      "hb_cache_host": "www.pbcserver.com",
+      "hb_cache_host_Appnex": "www.pbcserver.com",
+      "hb_cache_id": "0",
+      "hb_cache_id_Appnexus": "0",
+      "hb_cache_path": "/pbcache/endpoint",
+      "hb_cache_path_Appnex": "/pbcache/endpoint",
+      "hb_pb": "2.00",
+      "hb_pb_Appnexus": "2.00"
+    },
+    "ortb2": {
+      "ext": {
+        "warnings": {
+          "general": [
+            {
+              "code": 10002,
+              "message": "debug turned off for account"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "expectedReturnCode": 200
+}

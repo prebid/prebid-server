@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "DXKulture Adapter Params",
+  "description": "A schema which validates params accepted by the DXKulture adapter",
+  "type": "object",
+  "properties": {
+    "publisherId": {
+      "type": "string",
+      "description": "The publisher id"
+    },
+    "placementId": {
+      "type": "string",
+      "description": "The placement id"
+    }
+  },
+  "required": [
+    "publisherId",
+    "placementId"
+  ]
+}

@@ -8,11 +8,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/util/maputil"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/maputil"
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v19/adcom1"
@@ -98,11 +98,10 @@ type rubiconDataExt struct {
 }
 
 type rubiconUserExt struct {
-	Eids        []openrtb2.EID   `json:"eids,omitempty"`
-	RP          rubiconUserExtRP `json:"rp"`
-	LiverampIdl string           `json:"liveramp_idl,omitempty"`
-	Data        json.RawMessage  `json:"data,omitempty"`
-	Consent     string           `json:"consent,omitempty"`
+	Eids    []openrtb2.EID   `json:"eids,omitempty"`
+	RP      rubiconUserExtRP `json:"rp"`
+	Data    json.RawMessage  `json:"data,omitempty"`
+	Consent string           `json:"consent,omitempty"`
 }
 
 type rubiconSiteExtRP struct {
@@ -340,19 +339,6 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 				if userBuyerUID == "" {
 					userBuyerUID = extractUserBuyerUID(userExtRP.Eids)
 				}
-
-				mappedRubiconUidsParam, errors := getSegments(userExtRP.Eids)
-				if len(errors) > 0 {
-					errs = append(errs, errors...)
-					continue
-				}
-
-				if err := updateUserExtWithSegments(&userExtRP, mappedRubiconUidsParam); err != nil {
-					errs = append(errs, err)
-					continue
-				}
-
-				userExtRP.LiverampIdl = mappedRubiconUidsParam.liverampIdl
 			}
 
 			if userCopy.Consent != "" {
@@ -939,66 +925,6 @@ func extractUserBuyerUID(eids []openrtb2.EID) string {
 	}
 
 	return ""
-}
-
-func getSegments(eids []openrtb2.EID) (mappedRubiconUidsParam, []error) {
-	rubiconUidsParam := mappedRubiconUidsParam{
-		segments: make([]string, 0),
-	}
-	errs := make([]error, 0)
-
-	for _, eid := range eids {
-		switch eid.Source {
-		case "liveintent.com":
-			uids := eid.UIDs
-			if len(uids) > 0 {
-				if eid.Ext != nil {
-					var eidExt rubiconUserExtEidExt
-					if err := json.Unmarshal(eid.Ext, &eidExt); err != nil {
-						errs = append(errs, &errortypes.BadInput{
-							Message: err.Error(),
-						})
-						continue
-					}
-					rubiconUidsParam.segments = eidExt.Segments
-				}
-			}
-		case "liveramp.com":
-			uids := eid.UIDs
-			if len(uids) > 0 {
-				uidId := uids[0].ID
-				if uidId != "" && rubiconUidsParam.liverampIdl == "" {
-					rubiconUidsParam.liverampIdl = uidId
-				}
-			}
-		}
-	}
-
-	return rubiconUidsParam, errs
-}
-
-func updateUserExtWithSegments(userExtRP *rubiconUserExt, rubiconUidsParam mappedRubiconUidsParam) error {
-	if len(rubiconUidsParam.segments) > 0 {
-
-		if rubiconUidsParam.segments != nil {
-			userExtRPTarget := make(map[string]interface{})
-
-			if userExtRP.RP.Target != nil {
-				if err := json.Unmarshal(userExtRP.RP.Target, &userExtRPTarget); err != nil {
-					return &errortypes.BadInput{Message: err.Error()}
-				}
-			}
-
-			userExtRPTarget["LIseg"] = rubiconUidsParam.segments
-
-			if target, err := json.Marshal(&userExtRPTarget); err != nil {
-				return &errortypes.BadInput{Message: err.Error()}
-			} else {
-				userExtRP.RP.Target = target
-			}
-		}
-	}
-	return nil
 }
 
 func isVideo(imp openrtb2.Imp) bool {

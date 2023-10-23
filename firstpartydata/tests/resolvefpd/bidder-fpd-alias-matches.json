@@ -1,0 +1,25 @@
+{
+  "description": "Bidder FPD defined with a case sensitive request alias, positive test",
+  "inputRequestData": {
+    "app": {
+      "id": "reqUserID"
+    }
+  },
+  "biddersWithGlobalFPD": [
+    "requestAlias"
+  ],
+  "bidderConfigFPD": {
+    "requestAlias": {
+      "app": {
+        "id": "apnAppId"
+      }
+    }
+  },
+  "outputRequestData": {
+    "requestAlias": {
+      "app": {
+        "id": "apnAppId"
+      }
+    }
+  }
+}

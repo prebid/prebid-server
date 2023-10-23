@@ -9,11 +9,11 @@ import (
 
 	"github.com/prebid/openrtb/v19/adcom1"
 	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/hooks/hookanalytics"
-	"github.com/prebid/prebid-server/hooks/hookexecution"
-	"github.com/prebid/prebid-server/hooks/hookstage"
-	"github.com/prebid/prebid-server/modules/moduledeps"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/hooks/hookanalytics"
+	"github.com/prebid/prebid-server/v2/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v2/hooks/hookstage"
+	"github.com/prebid/prebid-server/v2/modules/moduledeps"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -489,7 +489,7 @@ func TestHandleBidderRequestHook(t *testing.T) {
 			bidRequest:         &openrtb2.BidRequest{},
 			expectedBidRequest: &openrtb2.BidRequest{},
 			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{},
-			expectedError:      errors.New("failed to parse config: invalid character '.' looking for beginning of value"),
+			expectedError:      errors.New("failed to parse config: expect { or n, but found ."),
 		},
 		{
 			description:        "Expect error if nil BidRequest provided",

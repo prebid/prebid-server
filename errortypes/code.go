@@ -9,12 +9,14 @@ const (
 	BadServerResponseErrorCode
 	FailedToRequestBidsErrorCode
 	BidderTemporarilyDisabledErrorCode
-	BlacklistedAcctErrorCode
+	AccountDisabledErrorCode
 	AcctRequiredErrorCode
 	NoConversionRateErrorCode
 	MalformedAcctErrorCode
 	ModuleRejectionErrorCode
 	TmaxTimeoutErrorCode
+	FailedToMarshalErrorCode
+	FailedToUnmarshalErrorCode
 )
 
 // Defines numeric codes for well-known warnings.
