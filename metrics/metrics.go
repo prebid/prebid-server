@@ -3,7 +3,7 @@ package metrics
 import (
 	"time"
 
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 // Labels defines the labels that can be attached to the metrics.
@@ -282,6 +282,7 @@ func AdapterErrors() []AdapterError {
 		AdapterErrorTimeout,
 		AdapterErrorFailedToRequestBids,
 		AdapterErrorValidation,
+		AdapterErrorTmaxTimeout,
 		AdapterErrorUnknown,
 	}
 }
@@ -470,8 +471,4 @@ type MetricsEngine interface {
 	RecordModuleSuccessRejected(labels ModuleLabels)
 	RecordModuleExecutionError(labels ModuleLabels)
 	RecordModuleTimeout(labels ModuleLabels)
-	RecordAccountGDPRPurposeWarning(account string, purposeName string)
-	RecordAccountGDPRChannelEnabledWarning(account string)
-	RecordAccountCCPAChannelEnabledWarning(account string)
-	RecordAccountUpgradeStatus(account string)
 }

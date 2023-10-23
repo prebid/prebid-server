@@ -2,7 +2,7 @@ package gdpr
 
 import (
 	tcf2 "github.com/prebid/go-gdpr/vendorconsent/tcf2"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 // BasicEnforcement determines if legal basis is satisfied for a given purpose and bidder using

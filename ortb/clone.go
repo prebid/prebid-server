@@ -2,8 +2,8 @@ package ortb
 
 import (
 	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/util/ptrutil"
-	"github.com/prebid/prebid-server/util/sliceutil"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v2/util/sliceutil"
 )
 
 func CloneApp(s *openrtb2.App) *openrtb2.App {

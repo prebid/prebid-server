@@ -21,27 +21,28 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/currency"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/exchange/entities"
-	"github.com/prebid/prebid-server/experiment/adscert"
-	"github.com/prebid/prebid-server/gdpr"
-	"github.com/prebid/prebid-server/hooks"
-	"github.com/prebid/prebid-server/hooks/hookexecution"
-	"github.com/prebid/prebid-server/hooks/hookstage"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/metrics"
-	metricsConf "github.com/prebid/prebid-server/metrics/config"
-	metricsConfig "github.com/prebid/prebid-server/metrics/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	pbc "github.com/prebid/prebid-server/prebid_cache_client"
-	"github.com/prebid/prebid-server/privacy"
-	"github.com/prebid/prebid-server/stored_requests"
-	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
-	"github.com/prebid/prebid-server/usersync"
-	"github.com/prebid/prebid-server/util/ptrutil"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/currency"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/exchange/entities"
+	"github.com/prebid/prebid-server/v2/experiment/adscert"
+	"github.com/prebid/prebid-server/v2/gdpr"
+	"github.com/prebid/prebid-server/v2/hooks"
+	"github.com/prebid/prebid-server/v2/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v2/hooks/hookstage"
+	"github.com/prebid/prebid-server/v2/macros"
+	"github.com/prebid/prebid-server/v2/metrics"
+	metricsConf "github.com/prebid/prebid-server/v2/metrics/config"
+	metricsConfig "github.com/prebid/prebid-server/v2/metrics/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	pbc "github.com/prebid/prebid-server/v2/prebid_cache_client"
+	"github.com/prebid/prebid-server/v2/privacy"
+	"github.com/prebid/prebid-server/v2/stored_requests"
+	"github.com/prebid/prebid-server/v2/stored_requests/backends/file_fetcher"
+	"github.com/prebid/prebid-server/v2/usersync"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
@@ -379,7 +380,7 @@ func TestDebugBehaviour(t *testing.T) {
 		assert.NotNilf(t, outBidResponse.Ext, "%s. outBidResponse.Ext should not be nil \n", test.desc)
 		assert.False(t, auctionRequest.BidderResponseStartTime.IsZero())
 		actualExt := &openrtb_ext.ExtBidResponse{}
-		err = json.Unmarshal(outBidResponse.Ext, actualExt)
+		err = jsonutil.UnmarshalValid(outBidResponse.Ext, actualExt)
 		assert.NoErrorf(t, err, "%s. \"ext\" JSON field could not be unmarshaled. err: \"%v\" \n outBidResponse.Ext: \"%s\" \n", test.desc, err, outBidResponse.Ext)
 
 		assert.NotEmpty(t, actualExt.Prebid, "%s. ext.prebid should not be empty")
@@ -541,7 +542,7 @@ func TestTwoBiddersDebugDisabledAndEnabled(t *testing.T) {
 		assert.False(t, auctionRequest.BidderResponseStartTime.IsZero())
 
 		actualExt := &openrtb_ext.ExtBidResponse{}
-		err = json.Unmarshal(outBidResponse.Ext, actualExt)
+		err = jsonutil.UnmarshalValid(outBidResponse.Ext, actualExt)
 		assert.NoErrorf(t, err, "JSON field unmarshaling err. ")
 
 		assert.NotEmpty(t, actualExt.Prebid, "ext.prebid should not be empty")
@@ -769,7 +770,7 @@ func TestAdapterCurrency(t *testing.T) {
 		categoriesFetcher: nilCategoryFetcher{},
 		bidIDGenerator:    &mockBidIDGenerator{false, false},
 		adapterMap: map[openrtb_ext.BidderName]AdaptedBidder{
-			openrtb_ext.BidderName("foo"): AdaptBidder(mockBidder, nil, &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderName("foo"), nil, ""),
+			openrtb_ext.BidderName("appnexus"): AdaptBidder(mockBidder, nil, &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderName("appnexus"), nil, ""),
 		},
 	}
 	e.requestSplitter = requestSplitter{
@@ -783,7 +784,7 @@ func TestAdapterCurrency(t *testing.T) {
 		Imp: []openrtb2.Imp{{
 			ID:     "some-impression-id",
 			Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}, {W: 300, H: 600}}},
-			Ext:    json.RawMessage(`{"prebid":{"bidder":{"foo":{"placementId":1}}}}`),
+			Ext:    json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placementId":1}}}}`),
 		}},
 		Site: &openrtb2.Site{
 			Page: "prebid.org",
@@ -805,7 +806,7 @@ func TestAdapterCurrency(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "some-request-id", response.ID, "Response ID")
 	assert.Empty(t, response.SeatBid, "Response Bids")
-	assert.Contains(t, string(response.Ext), `"errors":{"foo":[{"code":5,"message":"The adapter failed to generate any bid requests, but also failed to generate an error explaining why"}]}`, "Response Ext")
+	assert.Contains(t, string(response.Ext), `"errors":{"appnexus":[{"code":5,"message":"The adapter failed to generate any bid requests, but also failed to generate an error explaining why"}]}`, "Response Ext")
 
 	// Test Currency Converter Properly Passed To Adapter
 	if assert.NotNil(t, mockBidder.lastExtraRequestInfo, "Currency Conversion Argument") {
@@ -1143,7 +1144,7 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 	for _, tc := range testCases {
 
 		// Test setup:
-		jsonPbsRates, err := json.Marshal(tc.given.pbsRates)
+		jsonPbsRates, err := jsonutil.Marshal(tc.given.pbsRates)
 		if err != nil {
 			t.Fatalf("Failed to marshal PBS rates: %v", err)
 		}
@@ -1627,7 +1628,7 @@ func TestBidReturnsCreative(t *testing.T) {
 		assert.Equal(t, test.expectedCreativeMarkup, resultingBids[0].AdM, "%s. Ad markup string doesn't match expected \n", test.description)
 
 		var bidExt openrtb_ext.ExtBid
-		json.Unmarshal(resultingBids[0].Ext, &bidExt)
+		jsonutil.UnmarshalValid(resultingBids[0].Ext, &bidExt)
 		assert.Equal(t, 0, bidExt.Prebid.DealPriority, "%s. Test should have DealPriority set to 0", test.description)
 		assert.Equal(t, false, bidExt.Prebid.DealTierSatisfied, "%s. Test should have DealTierSatisfied set to false", test.description)
 	}
@@ -1966,7 +1967,7 @@ func TestBidResponseImpExtInfo(t *testing.T) {
 	impExtInfo["some-impression-id"] = ImpExtInfo{
 		true,
 		[]byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`),
-		json.RawMessage(`{"imp_passthrough_val": 1}`)}
+		json.RawMessage(`{"imp_passthrough_val":1}`)}
 
 	expectedBidResponseExt := `{"origbidcpm":0,"prebid":{"type":"video","passthrough":{"imp_passthrough_val":1}},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]}}`
 
@@ -2259,8 +2260,13 @@ func TestTimeoutComputation(t *testing.T) {
 func TestExchangeJSON(t *testing.T) {
 	if specFiles, err := os.ReadDir("./exchangetest"); err == nil {
 		for _, specFile := range specFiles {
+			if !strings.HasSuffix(specFile.Name(), ".json") {
+				continue
+			}
+
 			fileName := "./exchangetest/" + specFile.Name()
 			fileDisplayName := "exchange/exchangetest/" + specFile.Name()
+
 			t.Run(fileDisplayName, func(t *testing.T) {
 				specData, err := loadFile(fileName)
 				if assert.NoError(t, err, "Failed to load contents of file %s: %v", fileDisplayName, err) {
@@ -2279,7 +2285,7 @@ func loadFile(filename string) (*exchangeSpec, error) {
 	}
 
 	var spec exchangeSpec
-	if err := json.Unmarshal(specData, &spec); err != nil {
+	if err := jsonutil.UnmarshalValid(specData, &spec); err != nil {
 		return nil, fmt.Errorf("Failed to unmarshal JSON from file: %v", err)
 	}
 
@@ -2359,7 +2365,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		Account: config.Account{
 			ID: "testaccount",
 			Events: config.Events{
-				Enabled: &spec.EventsEnabled,
+				Enabled: spec.EventsEnabled,
 			},
 			DebugAllow:  true,
 			PriceFloors: config.AccountPriceFloors{Enabled: spec.AccountFloorsEnabled},
@@ -2376,7 +2382,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		auctionRequest.Account.DefaultBidLimit = spec.MultiBid.AccountMaxBid
 
 		requestExt := &openrtb_ext.ExtRequest{}
-		err := json.Unmarshal(spec.IncomingRequest.OrtbRequest.Ext, requestExt)
+		err := jsonutil.UnmarshalValid(spec.IncomingRequest.OrtbRequest.Ext, requestExt)
 		assert.NoError(t, err, "invalid request ext")
 		validatedMultiBids, errs := openrtb_ext.ValidateAndBuildExtMultiBid(&requestExt.Prebid)
 		for _, err := range errs { // same as in validateRequestExt().
@@ -2387,7 +2393,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		}
 
 		requestExt.Prebid.MultiBid = validatedMultiBids
-		updateReqExt, err := json.Marshal(requestExt)
+		updateReqExt, err := jsonutil.Marshal(requestExt)
 		assert.NoError(t, err, "invalid request ext")
 		auctionRequest.BidRequestWrapper.Ext = updateReqExt
 	}
@@ -2450,7 +2456,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		actualPassthrough := ""
 		actualBidRespExt := &openrtb_ext.ExtBidResponse{}
 		if bid.Ext != nil {
-			if err := json.Unmarshal(bid.Ext, actualBidRespExt); err != nil {
+			if err := jsonutil.UnmarshalValid(bid.Ext, actualBidRespExt); err != nil {
 				assert.NoError(t, err, fmt.Sprintf("Error when unmarshalling: %s", err))
 			}
 			if actualBidRespExt.Prebid != nil {
@@ -2459,7 +2465,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		}
 		expectedBidRespExt := &openrtb_ext.ExtBidResponse{}
 		if spec.Response.Ext != nil {
-			if err := json.Unmarshal(spec.Response.Ext, expectedBidRespExt); err != nil {
+			if err := jsonutil.UnmarshalValid(spec.Response.Ext, expectedBidRespExt); err != nil {
 				assert.NoError(t, err, fmt.Sprintf("Error when unmarshalling: %s", err))
 			}
 			if expectedBidRespExt.Prebid != nil {
@@ -2490,11 +2496,11 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		actualBidRespExt := &openrtb_ext.ExtBidResponse{}
 		expectedBidRespExt := &openrtb_ext.ExtBidResponse{}
 		if bid.Ext != nil {
-			if err := json.Unmarshal(bid.Ext, actualBidRespExt); err != nil {
+			if err := jsonutil.UnmarshalValid(bid.Ext, actualBidRespExt); err != nil {
 				assert.NoError(t, err, fmt.Sprintf("Error when unmarshalling: %s", err))
 			}
 		}
-		if err := json.Unmarshal(spec.Response.Ext, expectedBidRespExt); err != nil {
+		if err := jsonutil.UnmarshalValid(spec.Response.Ext, expectedBidRespExt); err != nil {
 			assert.NoError(t, err, fmt.Sprintf("Error when unmarshalling: %s", err))
 		}
 
@@ -2524,7 +2530,7 @@ func extractResponseTimes(t *testing.T, context string, bid *openrtb2.BidRespons
 		return nil
 	} else {
 		responseTimes := make(map[string]int)
-		if err := json.Unmarshal(data, &responseTimes); err != nil {
+		if err := jsonutil.UnmarshalValid(data, &responseTimes); err != nil {
 			t.Errorf("%s: Failed to unmarshal ext.responsetimemillis into map[string]int: %v", context, err)
 			return nil
 		}
@@ -4175,37 +4181,29 @@ func TestMakeBidExtJSON(t *testing.T) {
 			description:        "Invalid extension, valid extBidPrebid and valid imp ext info",
 			ext:                json.RawMessage(`{invalid json}`),
 			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("video")},
-			impExtInfo:         map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`), json.RawMessage(`"prebid": {"passthrough": {"imp_passthrough_val": some_val}}"`)}},
 			expectedBidExt:     ``,
-			expectedErrMessage: "invalid character",
-		},
-		{
-			description:        "Valid extension, empty extBidPrebid and invalid imp ext info",
-			ext:                json.RawMessage(`{"video":{"h":100}}`),
-			extBidPrebid:       openrtb_ext.ExtBidPrebid{},
-			impExtInfo:         map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"video":{!}}`), nil}},
-			expectedBidExt:     ``,
-			expectedErrMessage: "invalid character",
+			expectedErrMessage: "expects \" or n, but found i",
 		},
 		{
 			description:        "Meta - Invalid",
 			ext:                json.RawMessage(`{"prebid":{"meta":{"brandId":"foo"}}}`), // brandId should be an int, but is a string in this test case
 			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("banner")},
 			impExtInfo:         nil,
-			expectedErrMessage: "error validaing response from server, json: cannot unmarshal string into Go struct field ExtBidPrebidMeta.prebid.meta.brandId of type int",
+			expectedErrMessage: "error validaing response from server, cannot unmarshal openrtb_ext.ExtBidPrebidMeta.BrandID: unexpected character: \xff",
 		},
-		// add invalid
 	}
 
 	for _, test := range testCases {
-		result, err := makeBidExtJSON(test.ext, &test.extBidPrebid, test.impExtInfo, "test_imp_id", test.origbidcpm, test.origbidcur)
+		t.Run(test.description, func(t *testing.T) {
+			result, err := makeBidExtJSON(test.ext, &test.extBidPrebid, test.impExtInfo, "test_imp_id", test.origbidcpm, test.origbidcur)
 
-		if test.expectedErrMessage == "" {
-			assert.JSONEq(t, test.expectedBidExt, string(result), "Incorrect result")
-			assert.NoError(t, err, "Error should not be returned")
-		} else {
-			assert.Contains(t, err.Error(), test.expectedErrMessage, "incorrect error message")
-		}
+			if test.expectedErrMessage == "" {
+				assert.JSONEq(t, test.expectedBidExt, string(result), "Incorrect result")
+				assert.NoError(t, err, "Error should not be returned")
+			} else {
+				assert.Contains(t, err.Error(), test.expectedErrMessage, "incorrect error message")
+			}
+		})
 	}
 }
 
@@ -5338,12 +5336,12 @@ func (b *capturingRequestBidder) requestBid(ctx context.Context, bidderRequest B
 
 func diffOrtbRequests(t *testing.T, description string, expected *openrtb2.BidRequest, actual *openrtb2.BidRequest) {
 	t.Helper()
-	actualJSON, err := json.Marshal(actual)
+	actualJSON, err := jsonutil.Marshal(actual)
 	if err != nil {
 		t.Fatalf("%s failed to marshal actual BidRequest into JSON. %v", description, err)
 	}
 
-	expectedJSON, err := json.Marshal(expected)
+	expectedJSON, err := jsonutil.Marshal(expected)
 	if err != nil {
 		t.Fatalf("%s failed to marshal expected BidRequest into JSON. %v", description, err)
 	}
@@ -5361,12 +5359,12 @@ func diffOrtbResponses(t *testing.T, description string, expected *openrtb2.BidR
 	// this implementation detail, I'm cutting a corner and ignoring it here.
 	actualSeats := mapifySeatBids(t, description, actual.SeatBid)
 	expectedSeats := mapifySeatBids(t, description, expected.SeatBid)
-	actualJSON, err := json.Marshal(actualSeats)
+	actualJSON, err := jsonutil.Marshal(actualSeats)
 	if err != nil {
 		t.Fatalf("%s failed to marshal actual BidResponse into JSON. %v", description, err)
 	}
 
-	expectedJSON, err := json.Marshal(expectedSeats)
+	expectedJSON, err := jsonutil.Marshal(expectedSeats)
 	if err != nil {
 		t.Fatalf("%s failed to marshal expected BidResponse into JSON. %v", description, err)
 	}
@@ -5496,13 +5494,13 @@ func getInfoFromImp(req *openrtb_ext.RequestWrapper) (json.RawMessage, string, e
 	impID := imp.ID
 
 	var bidderExts map[string]json.RawMessage
-	if err := json.Unmarshal(imp.Ext, &bidderExts); err != nil {
+	if err := jsonutil.UnmarshalValid(imp.Ext, &bidderExts); err != nil {
 		return nil, "", err
 	}
 
 	var extPrebid openrtb_ext.ExtImpPrebid
 	if bidderExts[openrtb_ext.PrebidExtKey] != nil {
-		if err := json.Unmarshal(bidderExts[openrtb_ext.PrebidExtKey], &extPrebid); err != nil {
+		if err := jsonutil.UnmarshalValid(bidderExts[openrtb_ext.PrebidExtKey], &extPrebid); err != nil {
 			return nil, "", err
 		}
 	}
@@ -5748,5 +5746,197 @@ func TestSetSeatNonBid(t *testing.T) {
 				t.Errorf("setSeatNonBid() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestBuildMultiBidMap(t *testing.T) {
+	type testCase struct {
+		desc     string
+		inPrebid *openrtb_ext.ExtRequestPrebid
+		expected map[string]openrtb_ext.ExtMultiBid
+	}
+	testGroups := []struct {
+		groupDesc string
+		tests     []testCase
+	}{
+		{
+			groupDesc: "Nil or empty tests",
+			tests: []testCase{
+				{
+					desc:     "prebid nil, expect nil map",
+					inPrebid: nil,
+					expected: nil,
+				},
+				{
+					desc:     "prebid.MultiBid nil, expect nil map",
+					inPrebid: &openrtb_ext.ExtRequestPrebid{},
+					expected: nil,
+				},
+				{
+					desc: "not-nil prebid.MultiBid is empty, expect empty map",
+					inPrebid: &openrtb_ext.ExtRequestPrebid{
+						MultiBid: []*openrtb_ext.ExtMultiBid{},
+					},
+					expected: map[string]openrtb_ext.ExtMultiBid{},
+				},
+			},
+		},
+		{
+			groupDesc: "prebid.MultiBid.Bidder tests",
+			tests: []testCase{
+				{
+					desc: "Lowercase prebid.MultiBid.Bidder is found in the BidderName list, entry is mapped",
+					inPrebid: &openrtb_ext.ExtRequestPrebid{
+						MultiBid: []*openrtb_ext.ExtMultiBid{
+							{Bidder: "appnexus"},
+						},
+					},
+					expected: map[string]openrtb_ext.ExtMultiBid{
+						"appnexus": {Bidder: "appnexus"},
+					},
+				},
+				{
+					desc: "Uppercase prebid.MultiBid.Bidder is found in the BidderName list, entry is mapped",
+					inPrebid: &openrtb_ext.ExtRequestPrebid{
+						MultiBid: []*openrtb_ext.ExtMultiBid{
+							{Bidder: "APPNEXUS"},
+						},
+					},
+					expected: map[string]openrtb_ext.ExtMultiBid{
+						"appnexus": {Bidder: "APPNEXUS"},
+					},
+				},
+				{
+					desc: "Lowercase prebid.MultiBid.Bidder is not found in the BidderName list, expect empty map",
+					inPrebid: &openrtb_ext.ExtRequestPrebid{
+						MultiBid: []*openrtb_ext.ExtMultiBid{
+							{Bidder: "unknown"},
+						},
+					},
+					expected: map[string]openrtb_ext.ExtMultiBid{},
+				},
+				{
+					desc: "Mixed-case prebid.MultiBid.Bidder is not found in the BidderName list, expect empty map",
+					inPrebid: &openrtb_ext.ExtRequestPrebid{
+						MultiBid: []*openrtb_ext.ExtMultiBid{
+							{Bidder: "UnknownBidder"},
+						},
+					},
+					expected: map[string]openrtb_ext.ExtMultiBid{},
+				},
+				{
+					desc: "Different-cased prebid.MultiBid.Bidder entries that refer to the same adapter are found in the BidderName list are mapped once",
+					inPrebid: &openrtb_ext.ExtRequestPrebid{
+						MultiBid: []*openrtb_ext.ExtMultiBid{
+							{Bidder: "AppNexus"},
+							{Bidder: "appnexus"},
+						},
+					},
+					expected: map[string]openrtb_ext.ExtMultiBid{
+						"appnexus": {Bidder: "appnexus"},
+					},
+				},
+			},
+		},
+		{
+			groupDesc: "prebid.MultiBid.Bidders tests",
+			tests: []testCase{
+				{
+					desc: "Lowercase prebid.MultiBid.Bidder is found in the BidderName list, entry is mapped",
+					inPrebid: &openrtb_ext.ExtRequestPrebid{
+						MultiBid: []*openrtb_ext.ExtMultiBid{
+							{Bidders: []string{"appnexus"}},
+						},
+					},
+					expected: map[string]openrtb_ext.ExtMultiBid{
+						"appnexus": {
+							Bidders: []string{"appnexus"},
+						},
+					},
+				},
+				{
+					desc: "Lowercase prebid.MultiBid.Bidder is not found in the BidderName list, expect empty map",
+					inPrebid: &openrtb_ext.ExtRequestPrebid{
+						MultiBid: []*openrtb_ext.ExtMultiBid{
+							{Bidders: []string{"unknown"}},
+						},
+					},
+					expected: map[string]openrtb_ext.ExtMultiBid{},
+				},
+				{
+					desc: "Mixed-case prebid.MultiBid.Bidder is not found in the BidderName list, expect empty map",
+					inPrebid: &openrtb_ext.ExtRequestPrebid{
+						MultiBid: []*openrtb_ext.ExtMultiBid{
+							{Bidders: []string{"UnknownBidder"}},
+						},
+					},
+					expected: map[string]openrtb_ext.ExtMultiBid{},
+				},
+				{
+					desc: "Different-cased prebid.MultiBid.Bidder entries that refer to the same adapter are found in the BidderName list are mapped once",
+					inPrebid: &openrtb_ext.ExtRequestPrebid{
+						MultiBid: []*openrtb_ext.ExtMultiBid{
+							{Bidders: []string{"AppNexus", "appnexus", "UnknownBidder"}},
+						},
+					},
+					expected: map[string]openrtb_ext.ExtMultiBid{
+						"appnexus": {
+							Bidders: []string{"AppNexus", "appnexus", "UnknownBidder"},
+						},
+					},
+				},
+			},
+		},
+		{
+			groupDesc: "prebid.MultiBid.Bidder and prebid.MultiBid.Bidders entries in tests",
+			tests: []testCase{
+				{
+					desc: "prebid.MultiBid.Bidder found, ignore entries in prebid.MultiBid.Bidders, even if its unknown",
+					inPrebid: &openrtb_ext.ExtRequestPrebid{
+						MultiBid: []*openrtb_ext.ExtMultiBid{
+							{
+								Bidder:  "UnknownBidder",
+								Bidders: []string{"appnexus", "rubicon", "pubmatic"},
+							},
+						},
+					},
+					expected: map[string]openrtb_ext.ExtMultiBid{},
+				},
+				{
+					desc: "prebid.MultiBid.Bidder found in one entry, prebid.MultiBid.Bidders in another. Add all to map",
+					inPrebid: &openrtb_ext.ExtRequestPrebid{
+						MultiBid: []*openrtb_ext.ExtMultiBid{
+							{
+								Bidder:  "pubmatic",
+								Bidders: []string{"appnexus", "rubicon", "UnknownBidder"},
+							},
+							{
+								Bidders: []string{"UnknownBidder", "appnexus", "rubicon"},
+							},
+						},
+					},
+					expected: map[string]openrtb_ext.ExtMultiBid{
+						"pubmatic": {
+							Bidder:  "pubmatic",
+							Bidders: []string{"appnexus", "rubicon", "UnknownBidder"},
+						},
+						"appnexus": {
+							Bidders: []string{"UnknownBidder", "appnexus", "rubicon"},
+						},
+						"rubicon": {
+							Bidders: []string{"UnknownBidder", "appnexus", "rubicon"},
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, group := range testGroups {
+		for _, tc := range group.tests {
+			t.Run(group.groupDesc+tc.desc, func(t *testing.T) {
+				multiBidMap := buildMultiBidMap(tc.inPrebid)
+				assert.Equal(t, tc.expected, multiBidMap, tc.desc)
+			})
+		}
 	}
 }
