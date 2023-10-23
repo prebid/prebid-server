@@ -31,7 +31,7 @@ func getProductList(commerceExt *openrtb_ext.ExtImpCommerce) string {
 }
 
 func (a *CriteoStaplesAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	commerceExt, siteExt, errors := adapters.ValidateCommRequest(request)
+	commerceExt, siteExt, bidderParams, errors := adapters.ValidateCommRequest(request)
 	if len(errors) > 0 {
 		return nil, errors
 	}
@@ -58,13 +58,15 @@ func (a *CriteoStaplesAdapter) MakeRequests(request *openrtb2.BidRequest, reqInf
 
 	// Add the fields to the query string
 	values.Add("criteo-partner-id", criteoPartnerID)
-	values.Add("environment", "d")
 	values.Add("retailer-visitor-id", request.User.ID)
-	values.Add("event-type", "viewHome")
 	values.Add("page-id", siteExt.Page)
 	values.Add("item-whitelist", getProductList(commerceExt))
 	// Add other fields as needed
 
+	for key, value := range bidderParams {
+		values.Add(key, fmt.Sprintf("%v", value))
+	}
+	
 	criteoQueryString := values.Encode()
 	requestURL := a.endpoint + "?" + criteoQueryString
 
@@ -74,6 +76,7 @@ func (a *CriteoStaplesAdapter) MakeRequests(request *openrtb2.BidRequest, reqInf
 		Headers: http.Header{},
 	}}, nil
 }
+
 
 
 

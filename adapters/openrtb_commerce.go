@@ -37,9 +37,43 @@ func GetSiteExtComm(request *openrtb2.BidRequest) (*openrtb_ext.ExtSiteCommerce,
 
 }
 
-func ValidateCommRequest(request *openrtb2.BidRequest ) (*openrtb_ext.ExtImpCommerce, *openrtb_ext.ExtSiteCommerce,[]error) {
+func GetRequestExtComm(request *openrtb2.BidRequest) (*openrtb_ext.ExtOWRequest, error) {
+	var requestExt openrtb_ext.ExtOWRequest
+
+	if request.Ext != nil {
+		if err := json.Unmarshal(request.Ext, &requestExt); err != nil {
+			return nil, &errortypes.BadInput{
+				Message: "Impression extension not provided or can't be unmarshalled",
+			}
+		}
+	}
+
+	return &requestExt, nil
+}
+
+
+func GetBidderParamsComm(prebidExt *openrtb_ext.ExtOWRequest) (map[string]interface{},error) {
+	var bidderParams map[string]interface{}
+
+	if prebidExt.Prebid.BidderParams != nil {
+		if err := json.Unmarshal(prebidExt.Prebid.BidderParams, &bidderParams); err != nil {
+			return nil, &errortypes.BadInput{
+				Message: "Impression extension not provided or can't be unmarshalled",
+			}
+		}
+	}
+
+	return bidderParams, nil
+}
+
+func ValidateCommRequest(request *openrtb2.BidRequest ) (*openrtb_ext.ExtImpCommerce, 
+	*openrtb_ext.ExtSiteCommerce, map[string]interface{},[]error) {
 	var commerceExt *openrtb_ext.ExtImpCommerce
 	var siteExt *openrtb_ext.ExtSiteCommerce
+	var requestExt *openrtb_ext.ExtOWRequest
+	var bidderParams map[string]interface{}
+
+
 	var err error
 	var errors []error
 
@@ -59,11 +93,21 @@ func ValidateCommRequest(request *openrtb2.BidRequest ) (*openrtb_ext.ExtImpComm
 		errors = append(errors, err)
 	}
 
-	if len(errors) > 0 {
-		return nil, nil, errors
+	requestExt, err = GetRequestExtComm(request)
+	if err != nil {
+		errors = append(errors, err)
 	}
 
-	return commerceExt, siteExt, nil
+	bidderParams, err = GetBidderParamsComm(requestExt)
+	if err != nil {
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return nil, nil, nil, errors
+	}
+
+	return commerceExt, siteExt, bidderParams, nil
 }
 
 func AddDefaultFieldsComm(bid *openrtb2.Bid) {
@@ -76,3 +120,4 @@ func GenerateUniqueBidIDComm() string {
 	id := uuid.New()
 	return id.String()
 }
+
