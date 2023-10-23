@@ -1,7 +1,6 @@
 package usersync
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
@@ -150,12 +149,10 @@ func (c standardChooser) Choose(request Request, cookie *Cookie) Result {
 }
 
 func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}, syncTypeFilter SyncTypeFilter, privacy Privacy, cookie *Cookie) (Syncer, BidderEvaluation) {
-	fmt.Println("In evaluate")
 	bidderNormalized, exists := c.normalizeValidBidderName(bidder)
 	if !exists {
 		return nil, BidderEvaluation{Status: StatusUnknownBidder, Bidder: bidder}
 	}
-	fmt.Println("Pass normalize")
 
 	syncer, exists := c.bidderSyncerLookup[bidderNormalized.String()]
 	if !exists {
