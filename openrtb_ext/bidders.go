@@ -540,7 +540,6 @@ var bidderNameLookup = func() map[string]BidderName {
 }()
 
 func NormalizeBidderName(name string) (BidderName, bool) {
-	fmt.Println("in normalize")
 	nameLower := strings.ToLower(name)
 	bidderName, exists := bidderNameLookup[nameLower]
 	return bidderName, exists
