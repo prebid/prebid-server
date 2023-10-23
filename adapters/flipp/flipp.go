@@ -250,7 +250,7 @@ func paramsUserKeyPermitted(request *openrtb2.BidRequest) bool {
 			fmt.Printf("%v", err)
 			return true
 		}
-		if tcModel.CoreString.PurposesConsent[4] && !tcModel.IsPurposeAllowed(4) {
+		if !tcModel.IsPurposeAllowed(4) {
 			return false
 		}
 	}
