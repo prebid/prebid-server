@@ -20,8 +20,8 @@ import (
 	"github.com/prebid/prebid-server/v2/firstpartydata"
 	"github.com/prebid/prebid-server/v2/gdpr"
 	"github.com/prebid/prebid-server/v2/metrics"
-	"github.com/prebid/prebid-server/ortb"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/ortb"
 	"github.com/prebid/prebid-server/v2/privacy"
 	"github.com/prebid/prebid-server/v2/privacy/ccpa"
 	"github.com/prebid/prebid-server/v2/privacy/lmt"
@@ -178,12 +178,10 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 
 		ipConf := privacy.IPConf{IPV6: auctionReq.Account.Privacy.IPv6Config, IPV4: auctionReq.Account.Privacy.IPv4Config}
 
-		reqWrapper := cloneBidderReq(bidderRequest.BidRequest)
-
 		// FPD should be applied before policies, otherwise it overrides policies and activities restricted data
-		if auctionReq.FirstPartyData != nil && auctionReq.FirstPartyData[bidderRequest.BidderName] != nil {
-			applyFPD(auctionReq.FirstPartyData[bidderRequest.BidderName], reqWrapper)
-		}
+		applyFPD(auctionReq.FirstPartyData, bidderRequest)
+
+		reqWrapper := cloneBidderReq(bidderRequest.BidRequest)
 
 		passIDActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitUserFPD, scopedName, privacy.NewRequestFromBidRequest(*req))
 		if !passIDActivityAllowed {
@@ -236,7 +234,6 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		if !passTIDAllowed {
 			privacy.ScrubTID(reqWrapper)
 		}
-		applyFPD(auctionReq.FirstPartyData, bidderRequest)
 
 		reqWrapper.RebuildRequest()
 		bidderRequest.BidRequest = reqWrapper.BidRequest

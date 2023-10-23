@@ -2,12 +2,13 @@ package privacy
 
 import (
 	"encoding/json"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 	"net"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/util/iputil"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/iputil"
 )
 
 type IPConf struct {
@@ -172,7 +173,7 @@ func scrubExtIDs(ext json.RawMessage, fieldName string) json.RawMessage {
 	}
 
 	var userExtParsed map[string]json.RawMessage
-	err := json.Unmarshal(ext, &userExtParsed)
+	err := jsonutil.Unmarshal(ext, &userExtParsed)
 	if err != nil {
 		return ext
 	}
@@ -180,7 +181,7 @@ func scrubExtIDs(ext json.RawMessage, fieldName string) json.RawMessage {
 	_, hasField := userExtParsed[fieldName]
 	if hasField {
 		delete(userExtParsed, fieldName)
-		result, err := json.Marshal(userExtParsed)
+		result, err := jsonutil.Marshal(userExtParsed)
 		if err == nil {
 			return result
 		}
