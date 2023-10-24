@@ -19,7 +19,8 @@ import (
 )
 
 type IxAdapter struct {
-	URI string
+	URI        string
+	bidderName string
 }
 
 type ExtRequest struct {
@@ -32,6 +33,15 @@ type IxDiag struct {
 	PbsV            string `json:"pbsv,omitempty"`
 	PbjsV           string `json:"pbjsv,omitempty"`
 	MultipleSiteIds string `json:"multipleSiteIds,omitempty"`
+}
+
+type auctionConfig struct {
+	BidId  string          `json:"bidId,omitempty"`
+	Config json.RawMessage `json:"config,omitempty"`
+}
+
+type ixRespExt struct {
+	AuctionConfig []auctionConfig `json:"protectedAudienceAuctionConfigs,omitempty"`
 }
 
 func (a *IxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -273,6 +283,23 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 		}
 	}
 
+	if bidResponse.Ext != nil {
+		var bidRespExt ixRespExt
+		if err := json.Unmarshal(bidResponse.Ext, &bidRespExt); err == nil && bidRespExt.AuctionConfig != nil {
+			bidderResponse.FledgeAuctionConfigs = make([]*openrtb_ext.FledgeAuctionConfig, 0, len(bidRespExt.AuctionConfig))
+			for _, config := range bidRespExt.AuctionConfig {
+				if config.Config != nil {
+					fledgeAuctionConfig := &openrtb_ext.FledgeAuctionConfig{
+						ImpId:  config.BidId,
+						Bidder: a.bidderName,
+						Config: config.Config,
+					}
+					bidderResponse.FledgeAuctionConfigs = append(bidderResponse.FledgeAuctionConfigs, fledgeAuctionConfig)
+				}
+			}
+		}
+	}
+
 	return bidderResponse, errs
 }
 
@@ -309,7 +336,8 @@ func getMediaTypeForBid(bid openrtb2.Bid, impMediaTypeReq map[string]openrtb_ext
 // Builder builds a new instance of the Ix adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &IxAdapter{
-		URI: config.Endpoint,
+		URI:        config.Endpoint,
+		bidderName: string(bidderName),
 	}
 	return bidder, nil
 }
