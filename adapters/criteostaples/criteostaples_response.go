@@ -7,44 +7,23 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type product struct {
-	ProductName   string `json:"ProductName,omitempty"`
-	Image         string `json:"Image,omitempty"`
-	ProductPage   string `json:"ProductPage,omitempty"`
-	ComparePrice  string `json:"ComparePrice,omitempty"`
-	Price         string `json:"Price,omitempty"`
-	Rating        string `json:"Rating,omitempty"`
-	RendAttr      string `json:"RenderingAttributes,omitempty"`
-	AdId          string `json:"adid,omitempty"`
-	ShortDscrp    string `json:"shortDescription,omitempty"`
-	MatchType     string `json:"MatchType,omitempty"`
-	ParentSKU     string `json:"ParentSKU,omitempty"`
-	OnViewBeacon  string `json:"OnViewBeacon,omitempty"`
-	OnClickBeacon string `json:"OnClickBeacon,omitempty"`
-	ProductID     string `json:"ProductID,omitempty"`
-}
-
-type item struct {
-	Format       string     `json:"format,omitempty"`
-	Products     []*product `json:"products,omitempty"`
+type Placement struct {
+	Format   string               `json:"format"`
+	Products []map[string]interface{} `json:"products"`
 	OnLoadBeacon string     `json:"OnLoadBeacon,omitempty"`
 	OnViewBeacon string     `json:"OnViewBeacon,omitempty"`
 }
 
-type placement struct {
-	Items []*item `json:"viewItem_API_Rec_desktop-Carousel,omitempty"`
-}
-
-type criteoStaplesResponse struct {
-	Status       string       `json:"status,omitempty"`
-	OnAvalUpdate string       `json:"OnAvailabilityUpdate,omitempty"`
-	Placements   []*placement `json:"placements,omitempty"`
+type CriteoResponse struct {
+	Status             string `json:"status"`
+	OnAvailabilityUpdate interface{} `json:"OnAvailabilityUpdate"`
+	Placements         []map[string][]Placement `json:"placements"`
 }
 
 func (a *CriteoStaplesAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -59,131 +38,119 @@ func (a *CriteoStaplesAdapter) MakeBids(internalRequest *openrtb2.BidRequest, ex
 		}}
 	}
 
-	criteoStaplesResponse, err := newCriteoStaplesResponseFromBytes(response.Body)
+	criteoResponse, err := newCriteoStaplesResponseFromBytes(response.Body)
 	if err != nil {
 		return nil, []error{err}
 	}
 
-	if criteoStaplesResponse.Status != RESPONSE_OK {
+	if criteoResponse.Status != RESPONSE_OK {
 		return nil, []error{&errortypes.BidderFailedSchemaValidation{
-			Message: "Error Occured at Criteo for the given request with ErrorCode",
+			Message: "Error Occured at Criteo for the given request ",
 		}}
 	}
 
-	if criteoStaplesResponse.Placements == nil || len(criteoStaplesResponse.Placements) <= 0 {
-		return nil, []error{&errortypes.NoBidPrice{
-			Message: "No Placement For the given Request",
-		}}
-	}
-
-	var products []*product
-	var itemPresent bool
-	for _, placement := range criteoStaplesResponse.Placements {
-		if placement.Items != nil && len(placement.Items) > 0 {
-			itemPresent = true
-			for _, item := range placement.Items {
-				if item.Products != nil && len(item.Products) > 0 {
-					products = append(products, item.Products...)
-				}
-			}
-		}
-	}
-
-	if !itemPresent {
-		return nil, []error{&errortypes.NoBidPrice{
-			Message: "No Item For the given Request",
-		}}
-	}
-
-	if len(products) <= 0 {
+	if  criteoResponse.Placements == nil || len(criteoResponse.Placements) <= 0 {
 		return nil, []error{&errortypes.NoBidPrice{
 			Message: "No Bid For the given Request",
 		}}
 	}
 
 	impID := internalRequest.Imp[0].ID
-	bidderResponse := a.getBidderResponse(internalRequest, &criteoStaplesResponse, impID, products)
+	bidderResponse := a.getBidderResponse(internalRequest, &criteoResponse, impID)
 	return bidderResponse, nil
 }
 
-func (a *CriteoStaplesAdapter) getBidderResponse(request *openrtb2.BidRequest, response *criteoStaplesResponse, requestImpID string, products []*product) *adapters.BidderResponse {
+func (a *CriteoStaplesAdapter) getBidderResponse(request *openrtb2.BidRequest, criteoResponse *CriteoResponse, requestImpID string) *adapters.BidderResponse {
 
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(products))
-	var adbutlerID, zoneID, adbUID string
-	var configValueMap = make(map[string]string)
+	noOfBids := countSponsoredProducts(criteoResponse)
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(noOfBids)
+    index := 1
+	for _, placementMap := range criteoResponse.Placements {
+		for _, placements := range placementMap {
+			for _, placement := range placements {
+				if placement.Format == FORMAT_SPONSORED {
+					for _, productMap := range placement.Products {
+						bidID := adapters.GenerateUniqueBidIDComm()
+						impID := requestImpID + "_" + strconv.Itoa(index)
+						bidPrice, _ := strconv.ParseFloat(strings.TrimSpace(productMap[BID_PRICE].(string)), 64)
+						clickPrice, _ := strconv.ParseFloat(strings.TrimSpace(productMap[CLICK_PRICE].(string)), 64)
+						productID := productMap[PRODUCT_ID].(string)
+		
+						impressionURL := IMP_KEY + adapters.EncodeURL(productMap[VIEW_BEACON].(string))
+						clickURL := CLICK_KEY + adapters.EncodeURL(productMap[CLICK_BEACON].(string))
+						index++
 
-	if len(request.Imp) > 0 {
-		commerceExt, _ := adapters.GetImpressionExtComm(&(request.Imp[0]))
-		for _, obj := range commerceExt.Bidder.CustomConfig {
-			configValueMap[obj.Key] = obj.Value
+						// Add ProductDetails to bidExtension
+						productDetails := make(map[string]interface{})
+						for key, value := range productMap {
+							productDetails[key] = value
+						}
+
+						delete(productDetails, PRODUCT_ID)
+						delete(productDetails, BID_PRICE)
+						delete(productDetails, CLICK_PRICE)
+						delete(productDetails, VIEW_BEACON)
+						delete(productDetails, CLICK_BEACON)
+					
+						bidExt := &openrtb_ext.ExtBidCommerce{
+							ProductId:     productID,
+							ClickUrl:      clickURL,
+							ClickPrice:    clickPrice,
+							ProductDetails: productDetails,
+						}
+
+						bid := &openrtb2.Bid{
+							ID:    bidID,
+							ImpID: impID,
+							Price: bidPrice,
+							IURL:  impressionURL,
+						}
+
+						adapters.AddDefaultFieldsComm(bid)
+							bidExtJSON, err1 := json.Marshal(bidExt)
+						if nil == err1 {
+							bid.Ext = json.RawMessage(bidExtJSON)
+						}
+
+						seat := openrtb_ext.BidderName(SEAT_CRITEO)
+
+						typedbid := &adapters.TypedBid{
+							Bid:  bid,
+							Seat: seat,
+						}
+						bidResponse.Bids = append(bidResponse.Bids, typedbid)
+					}
+				}
+			}
 		}
-
-		val, ok := configValueMap[BIDDERDETAILS_PREFIX+BD_ACCOUNT_ID]
-		if ok {
-			adbutlerID = val
-		}
-
-		val, ok = configValueMap[BIDDERDETAILS_PREFIX+BD_ZONE_ID]
-		if ok {
-			zoneID = val
-		}
-		adbUID = request.User.ID
-
-	}
-
-	for index, bid := range products {
-
-		bidID := adapters.GenerateUniqueBidIDComm()
-		impID := requestImpID + "_" + strconv.Itoa(index+1)
-		bidPrice, _ := strconv.ParseFloat(strings.TrimSpace(bid.Price), 64)
-		clickPrice, _ := strconv.ParseFloat(strings.TrimSpace(bid.ComparePrice), 64)
-		campaignID := bid.AdId
-		productid := bid.ProductID
-
-		impressionUrl := IMP_KEY + adapters.EncodeURl(bid.OnViewBeacon)
-		clickUrl := CLICK_KEY + adapters.EncodeURl(bid.OnClickBeacon)
-		conversionUrl := adapters.GenerateConversionUrl(adbutlerID, zoneID, adbUID, productid)
-
-		bidExt := &openrtb_ext.ExtBidCommerce{
-			ProductId:     productid,
-			ClickUrl:      clickUrl,
-			ClickPrice:    clickPrice,
-			ConversionUrl: conversionUrl,
-		}
-
-		bid := &openrtb2.Bid{
-			ID:    bidID,
-			ImpID: impID,
-			Price: bidPrice,
-			CID:   campaignID,
-			IURL:  impressionUrl,
-		}
-
-		adapters.AddDefaultFieldsComm(bid)
-
-		bidExtJSON, err1 := json.Marshal(bidExt)
-		if nil == err1 {
-			bid.Ext = json.RawMessage(bidExtJSON)
-		}
-
-		seat := openrtb_ext.BidderName(SEAT_CRITEO)
-
-		typedbid := &adapters.TypedBid{
-			Bid:  bid,
-			Seat: seat,
-		}
-		bidResponse.Bids = append(bidResponse.Bids, typedbid)
 	}
 	return bidResponse
 }
 
-func newCriteoStaplesResponseFromBytes(bytes []byte) (criteoStaplesResponse, error) {
+func newCriteoStaplesResponseFromBytes(bytes []byte) (CriteoResponse, error) {
 	var err error
-	var bidResponse criteoStaplesResponse
+	var bidResponse CriteoResponse
 
 	if err = json.Unmarshal(bytes, &bidResponse); err != nil {
 		return bidResponse, err
 	}
 
 	return bidResponse, nil
+}
+
+func countSponsoredProducts(adResponse* CriteoResponse) int {
+	count := 0
+
+	// Iterate through placements
+	for _, placementMap := range adResponse.Placements {
+		for _, placements := range placementMap {
+			for _, placement := range placements {
+				if placement.Format == FORMAT_SPONSORED {
+					count += len(placement.Products)
+				}
+			}
+		}
+	}
+
+	return count
 }

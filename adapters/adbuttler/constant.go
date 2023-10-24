@@ -36,6 +36,11 @@ const (
 	IMP_KEY                = "tps_impurl="
 	CLICK_KEY              = "tps_clkurl="
 	CONV_HOSTNAME          = "conv_host"
+	CONVERSION_URL         = `tps_ID=conv_adbutlerID&tps_setID=conv_zoneID&tps_adb_uid=conv_adbUID&tps_identifier=conv_Identifier`
+	CONV_ADBUTLERID        = "conv_adbutlerID"
+	CONV_ZONEID            = "conv_zoneID"
+	CONV_ADBUID            = "conv_adbUID"
+	CONV_IDENTIFIER        = "conv_Identifier"
 	PD_TEMPLATE_BRAND      = "brandName"
 	PD_TEMPLATE_CATEGORY   = "categories"
 	PD_TEMPLATE_PRODUCTID  = "productId"
@@ -46,3 +51,4 @@ const (
 	DATATYE_TIME           = 5
 	DATATYE_DATETIME       = 6
 )
+

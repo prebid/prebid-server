@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
@@ -138,13 +139,13 @@ func (a *AdButtlerAdapter) GetBidderResponse(request *openrtb2.BidRequest, adBut
 		for _, beacon := range adButlerBid.Beacons {
 			switch beacon.Type {
 			case BEACONTYPE_IMP:
-				impressionUrl = IMP_KEY + adapters.EncodeURl(beacon.TrackingUrl)
+				impressionUrl = IMP_KEY + adapters.EncodeURL(beacon.TrackingUrl)
 			case BEACONTYPE_CLICK:
-				clickUrl = CLICK_KEY + adapters.EncodeURl(beacon.TrackingUrl)
+				clickUrl = CLICK_KEY + adapters.EncodeURL(beacon.TrackingUrl)
 			}
 		}
 
-		conversionUrl = adapters.GenerateConversionUrl(adbutlerID, zoneID, adbUID, productid)
+		conversionUrl = GenerateConversionUrl(adbutlerID, zoneID, adbUID, productid)
 
 		bidExt := &openrtb_ext.ExtBidCommerce{
 			ProductId:     productid,
@@ -176,3 +177,13 @@ func (a *AdButtlerAdapter) GetBidderResponse(request *openrtb2.BidRequest, adBut
 	}
 	return bidResponse
 }
+
+func GenerateConversionUrl(adbutlerID, zoneID, adbUID, productID string) string {
+	conversionUrl := strings.Replace(CONVERSION_URL, CONV_ADBUTLERID, adbutlerID, 1)
+	conversionUrl = strings.Replace(conversionUrl, CONV_ZONEID, zoneID, 1)
+	conversionUrl = strings.Replace(conversionUrl, CONV_ADBUID, adbUID, 1)
+	conversionUrl = strings.Replace(conversionUrl, CONV_IDENTIFIER, productID, 1)
+
+	return conversionUrl
+}
+

@@ -81,3 +81,4 @@ func (a *CriteoStaplesAdapter) MakeRequests(request *openrtb2.BidRequest, reqInf
 
 
 
+
