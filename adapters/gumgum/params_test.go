@@ -42,6 +42,7 @@ var validParams = []string{
 	`{"pubId":12345678, "irisid": "iris_6f9285823a48bne5"}`,
 	`{"zone":"dc9d6be1", "irisid": "iris_6f9285823a48bne5"}`,
 	`{"zone":"dc9d6be1", "pubId":12345678, "irisid": "iris_6f9285823a48bne5"}`,
+	`{"zone":"dc9d6be1", "pubId":12345678, "irisid": "iris_6f9285823a48bne5", "product": "skins"}`,
 }
 
 var invalidParams = []string{
