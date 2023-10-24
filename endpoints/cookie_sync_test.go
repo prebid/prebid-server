@@ -129,7 +129,7 @@ func TestCookieSyncHandle(t *testing.T) {
 			expectedStatusCode: 200,
 			expectedBody: `{"status":"ok","bidder_status":[` +
 				`{"bidder":"a","no_cookie":true,"usersync":{"url":"aURL","type":"redirect","supportCORS":true}}` +
-				`],"debug":null}` + "\n",
+				`]}` + "\n",
 			setMetricsExpectations: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordCookieSync", metrics.CookieSyncOK).Once()
 				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerCookieSyncOK).Once()
@@ -161,7 +161,7 @@ func TestCookieSyncHandle(t *testing.T) {
 			expectedStatusCode: 200,
 			expectedBody: `{"status":"no_cookie","bidder_status":[` +
 				`{"bidder":"a","no_cookie":true,"usersync":{"url":"aURL","type":"redirect","supportCORS":true}}` +
-				`],"debug":null}` + "\n",
+				`]}` + "\n",
 			setMetricsExpectations: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordCookieSync", metrics.CookieSyncOK).Once()
 				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerCookieSyncOK).Once()
@@ -237,7 +237,7 @@ func TestCookieSyncHandle(t *testing.T) {
 				SyncersChosen:    []usersync.SyncerChoice{{Bidder: "a", Syncer: &syncer}},
 			},
 			expectedStatusCode: 200,
-			expectedBody:       `{"status":"ok","bidder_status":[],"debug":null}` + "\n",
+			expectedBody:       `{"status":"ok","bidder_status":[]}` + "\n",
 			setMetricsExpectations: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordCookieSync", metrics.CookieSyncGDPRHostCookieBlocked).Once()
 			},
@@ -1635,7 +1635,7 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 			description:         "None",
 			givenCookieHasSyncs: true,
 			givenSyncersChosen:  []usersync.SyncerChoice{},
-			expectedJSON:        `{"status":"ok","bidder_status":[],"debug":null}` + "\n",
+			expectedJSON:        `{"status":"ok","bidder_status":[]}` + "\n",
 			expectedAnalytics:   analytics.CookieSyncObject{Status: 200, BidderStatus: []*analytics.CookieSyncBidder{}},
 		},
 		{
@@ -1644,7 +1644,7 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 			givenSyncersChosen:  []usersync.SyncerChoice{{Bidder: "foo", Syncer: &syncerA}},
 			expectedJSON: `{"status":"ok","bidder_status":[` +
 				`{"bidder":"foo","no_cookie":true,"usersync":{"url":"https://syncA.com/sync?a=1&b=2","type":"redirect","supportCORS":true}}` +
-				`],"debug":null}` + "\n",
+				`]}` + "\n",
 			expectedAnalytics: analytics.CookieSyncObject{
 				Status: 200,
 				BidderStatus: []*analytics.CookieSyncBidder{
@@ -1663,7 +1663,7 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 			expectedJSON: `{"status":"ok","bidder_status":[` +
 				`{"bidder":"foo","no_cookie":true,"usersync":{"url":"https://syncA.com/sync?a=1&b=2","type":"redirect","supportCORS":true}},` +
 				`{"bidder":"bar","no_cookie":true,"usersync":{"url":"https://syncB.com/sync?a=1&b=2","type":"redirect"}}` +
-				`],"debug":null}` + "\n",
+				`]}` + "\n",
 			expectedAnalytics: analytics.CookieSyncObject{
 				Status: 200,
 				BidderStatus: []*analytics.CookieSyncBidder{
@@ -1686,7 +1686,7 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 			givenSyncersChosen:  []usersync.SyncerChoice{{Bidder: "foo", Syncer: &syncerWithError}, {Bidder: "bar", Syncer: &syncerB}},
 			expectedJSON: `{"status":"ok","bidder_status":[` +
 				`{"bidder":"bar","no_cookie":true,"usersync":{"url":"https://syncB.com/sync?a=1&b=2","type":"redirect"}}` +
-				`],"debug":null}` + "\n",
+				`]}` + "\n",
 			expectedAnalytics: analytics.CookieSyncObject{
 				Status: 200,
 				BidderStatus: []*analytics.CookieSyncBidder{
@@ -1702,7 +1702,7 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 			description:         "No Existing Syncs",
 			givenCookieHasSyncs: false,
 			givenSyncersChosen:  []usersync.SyncerChoice{},
-			expectedJSON:        `{"status":"no_cookie","bidder_status":[],"debug":null}` + "\n",
+			expectedJSON:        `{"status":"no_cookie","bidder_status":[]}` + "\n",
 			expectedAnalytics:   analytics.CookieSyncObject{Status: 200, BidderStatus: []*analytics.CookieSyncBidder{}},
 		},
 		{

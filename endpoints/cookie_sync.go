@@ -521,7 +521,7 @@ type cookieSyncRequestFilter struct {
 type cookieSyncResponse struct {
 	Status       string                     `json:"status"`
 	BidderStatus []cookieSyncResponseBidder `json:"bidder_status"`
-	Debug        []cookieSyncResponseDebug  `json:"debug"`
+	Debug        []cookieSyncResponseDebug  `json:"debug,omitempty"`
 }
 
 type cookieSyncResponseBidder struct {
