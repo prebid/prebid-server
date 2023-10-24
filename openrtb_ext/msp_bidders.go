@@ -4,6 +4,9 @@ func mspBidderNames() []BidderName {
 	return []BidderName{
 		BidderMspGoogle,
 		BidderMspNova,
+		BidderMspFbAlpha,
+		BidderMspFbBeta,
+		BidderMspFbGamma,
 	}
 }
 
