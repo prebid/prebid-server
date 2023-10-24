@@ -18,13 +18,13 @@ pipeline {
     }
     agent any
     stages {
-        //stage('Prepare build') {
-        //    steps {
-        //        script {
-        //           sh 'cp ./src/main/resources/bidder-config/alkimi.yaml.${MY_ENV} ./src/main/resources/bidder-config/alkimi.yaml'
-        //        }
-        //    }
-        //}
+        stage('Tests') {
+           steps {
+               script {
+                  sh "./validate.sh"
+               }
+           }
+        }
 	    stage('Build') {
             steps {
                 script {
