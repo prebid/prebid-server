@@ -15,6 +15,7 @@ require (
 	github.com/docker/go-units v0.4.0
 	github.com/gofrs/uuid v4.2.0+incompatible
 	github.com/golang/glog v1.0.0
+	github.com/google/uuid v1.1.2
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/lib/pq v1.10.4
 	github.com/magiconair/properties v1.8.6

@@ -1,13 +1,37 @@
 package adapters
 
 import (
+	"encoding/base64"
 	"encoding/json"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
+
+const (
+	CONVERSION_URL  = `tps_ID=conv_adbutlerID&tps_setID=conv_zoneID&tps_adb_uid=conv_adbUID&tps_identifier=conv_Identifier`
+	CONV_ADBUTLERID = "conv_adbutlerID"
+	CONV_ZONEID     = "conv_zoneID"
+	CONV_ADBUID     = "conv_adbUID"
+	CONV_IDENTIFIER = "conv_Identifier"
+)
+
+func EncodeURl(url string) string {
+	str := base64.StdEncoding.EncodeToString([]byte(url))
+	return str
+}
+
+func GenerateConversionUrl(adbutlerID, zoneID, adbUID, productID string) string {
+	conversionUrl := strings.Replace(CONVERSION_URL, CONV_ADBUTLERID, adbutlerID, 1)
+	conversionUrl = strings.Replace(conversionUrl, CONV_ZONEID, zoneID, 1)
+	conversionUrl = strings.Replace(conversionUrl, CONV_ADBUID, adbUID, 1)
+	conversionUrl = strings.Replace(conversionUrl, CONV_IDENTIFIER, productID, 1)
+
+	return conversionUrl
+}
 
 func GetImpressionExtComm(imp *openrtb2.Imp) (*openrtb_ext.ExtImpCommerce, error) {
 	var commerceExt openrtb_ext.ExtImpCommerce
@@ -20,7 +44,6 @@ func GetImpressionExtComm(imp *openrtb2.Imp) (*openrtb_ext.ExtImpCommerce, error
 	return &commerceExt, nil
 
 }
-
 
 func GetSiteExtComm(request *openrtb2.BidRequest) (*openrtb_ext.ExtSiteCommerce, error) {
 	var siteExt openrtb_ext.ExtSiteCommerce
@@ -37,7 +60,7 @@ func GetSiteExtComm(request *openrtb2.BidRequest) (*openrtb_ext.ExtSiteCommerce,
 
 }
 
-func ValidateCommRequest(request *openrtb2.BidRequest ) (*openrtb_ext.ExtImpCommerce, *openrtb_ext.ExtSiteCommerce,[]error) {
+func ValidateCommRequest(request *openrtb2.BidRequest) (*openrtb_ext.ExtImpCommerce, *openrtb_ext.ExtSiteCommerce, []error) {
 	var commerceExt *openrtb_ext.ExtImpCommerce
 	var siteExt *openrtb_ext.ExtSiteCommerce
 	var err error
