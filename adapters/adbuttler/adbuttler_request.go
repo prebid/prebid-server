@@ -30,7 +30,7 @@ type AdButlerRequest struct {
 
 func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
-    commerceExt, siteExt, errors := adapters.ValidateCommRequest(request)
+    commerceExt, siteExt, _,errors := adapters.ValidateCommRequest(request)
 	if len(errors) > 0 {
 		return nil, errors
 	}
@@ -223,5 +223,6 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 	}}, nil
 	
 }
+
 
 
