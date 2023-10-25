@@ -169,6 +169,9 @@
                             "ext": {
                                 "origbidcpm": 0.3,
                                 "prebid": {
+                                    "meta": {
+                                        "adaptercode":"appnexus"
+                                    },
                                     "type": "banner"
                                 }
                             }
@@ -188,6 +191,9 @@
                             "ext": {
                                 "origbidcpm": 0.4,
                                 "prebid": {
+                                    "meta": {
+                                        "adaptercode":"rubicon"
+                                    },
                                     "type": "banner"
                                 }
                             }
