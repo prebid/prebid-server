@@ -2,16 +2,12 @@ package criteostaples
 
 import (
 	"encoding/json"
-	"fmt"
 	"math/rand"
-	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/macros"
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -147,4 +143,5 @@ func (a *CriteoStaplesAdapter) buildConversionURL(hostName string) (string, erro
 	endpointParams := macros.EndpointTemplateParams{Host: hostName}
 	return macros.ResolveMacros(a.conversionurl, endpointParams)
 }
+
 
