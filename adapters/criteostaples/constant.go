@@ -4,7 +4,7 @@ const (
 	AUCTIONDETAILS_PREFIX = "AD_"
 	AD_ACCOUNT_ID         = "account_id"
 	RESPONSE_OK           = "OK"
-	SEAT_CRITEO           = "criteostaples"
+	SEAT_CRITEOSTAPLES    = "criteostaples"
 	IMP_KEY               = "tps_impurl="
 	CLICK_KEY             = "tps_clkurl="
 	FORMAT_SPONSORED      = "sponsored_products"
@@ -14,4 +14,3 @@ const (
 	VIEW_BEACON           = "OnViewBeacon"
 	CLICK_BEACON          = "OnClickBeacon"
 )
-
