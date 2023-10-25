@@ -39,7 +39,12 @@
             "bidonmultiformat": true,
             "accountId": 1001,
             "siteId": 113932,
-            "zoneId": 535510
+            "zoneId": 535510,
+            "formats": [
+              "banner",
+              "video",
+              "native"
+            ]
           }
         }
       }
@@ -100,7 +105,8 @@
                   "rtb": {
                     "formats": [
                       "banner",
-                      "video"
+                      "video",
+                      "native"
                     ]
                   },
                   "target": {
@@ -212,7 +218,8 @@
                   "rtb": {
                     "formats": [
                       "banner",
-                      "video"
+                      "video",
+                      "native"
                     ]
                   },
                   "target": {
