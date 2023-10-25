@@ -11,19 +11,20 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/prebid/prebid-server/analytics"
-	analyticsBuild "github.com/prebid/prebid-server/analytics/build"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/exchange"
-	"github.com/prebid/prebid-server/hooks"
-	"github.com/prebid/prebid-server/metrics"
-	metricsConfig "github.com/prebid/prebid-server/metrics/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/prebid_cache_client"
-	"github.com/prebid/prebid-server/privacy"
-	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
-	"github.com/prebid/prebid-server/util/ptrutil"
+	"github.com/prebid/prebid-server/v2/analytics"
+	analyticsBuild "github.com/prebid/prebid-server/v2/analytics/build"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/exchange"
+	"github.com/prebid/prebid-server/v2/hooks"
+	"github.com/prebid/prebid-server/v2/metrics"
+	metricsConfig "github.com/prebid/prebid-server/v2/metrics/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/prebid_cache_client"
+	"github.com/prebid/prebid-server/v2/privacy"
+	"github.com/prebid/prebid-server/v2/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 
 	"github.com/prebid/openrtb/v19/adcom1"
 	"github.com/prebid/openrtb/v19/openrtb2"
@@ -47,7 +48,7 @@ func TestVideoEndpointImpressionsNumber(t *testing.T) {
 
 	respBytes := recorder.Body.Bytes()
 	resp := &openrtb_ext.BidResponseVideo{}
-	if err := json.Unmarshal(respBytes, resp); err != nil {
+	if err := jsonutil.UnmarshalValid(respBytes, resp); err != nil {
 		t.Fatalf("Unable to unmarshal response.")
 	}
 
@@ -80,7 +81,7 @@ func TestVideoEndpointImpressionsDuration(t *testing.T) {
 	}
 
 	var extData openrtb_ext.ExtRequest
-	json.Unmarshal(ex.lastRequest.Ext, &extData)
+	jsonutil.UnmarshalValid(ex.lastRequest.Ext, &extData)
 	assert.NotNil(t, extData.Prebid.Targeting.IncludeBidderKeys, "Request ext incorrect: IncludeBidderKeys should be true ")
 	assert.True(t, *extData.Prebid.Targeting.IncludeBidderKeys, "Request ext incorrect: IncludeBidderKeys should be true ")
 
@@ -135,7 +136,7 @@ func TestCreateBidExtension(t *testing.T) {
 
 	resExt := &openrtb_ext.ExtRequest{}
 
-	if err := json.Unmarshal(res, &resExt); err != nil {
+	if err := jsonutil.UnmarshalValid(res, &resExt); err != nil {
 		assert.Fail(t, "Unable to unmarshal bid extension")
 	}
 	assert.Equal(t, resExt.Prebid.Targeting.DurationRangeSec, durationRange, "Duration range seconds is incorrect")
@@ -178,7 +179,7 @@ func TestVideoEndpointDebugQueryTrue(t *testing.T) {
 
 	respBytes := recorder.Body.Bytes()
 	resp := &openrtb_ext.BidResponseVideo{}
-	if err := json.Unmarshal(respBytes, resp); err != nil {
+	if err := jsonutil.UnmarshalValid(respBytes, resp); err != nil {
 		t.Fatalf("Unable to unmarshal response.")
 	}
 
@@ -216,7 +217,7 @@ func TestVideoEndpointDebugQueryFalse(t *testing.T) {
 
 	respBytes := recorder.Body.Bytes()
 	resp := &openrtb_ext.BidResponseVideo{}
-	if err := json.Unmarshal(respBytes, resp); err != nil {
+	if err := jsonutil.UnmarshalValid(respBytes, resp); err != nil {
 		t.Fatalf("Unable to unmarshal response.")
 	}
 
@@ -272,7 +273,7 @@ func TestVideoEndpointDebugNoAdPods(t *testing.T) {
 
 	respBytes := recorder.Body.Bytes()
 	resp := &openrtb_ext.BidResponseVideo{}
-	if err := json.Unmarshal(respBytes, resp); err != nil {
+	if err := jsonutil.UnmarshalValid(respBytes, resp); err != nil {
 		t.Fatalf("Unable to unmarshal response.")
 	}
 
@@ -1091,7 +1092,7 @@ func TestCCPA(t *testing.T) {
 			t.Fatalf("%s: The request never made it into the exchange.", test.description)
 		}
 		extRegs := &openrtb_ext.ExtRegs{}
-		if err := json.Unmarshal(ex.lastRequest.Regs.Ext, extRegs); err != nil {
+		if err := jsonutil.UnmarshalValid(ex.lastRequest.Regs.Ext, extRegs); err != nil {
 			t.Fatalf("%s: Failed to unmarshal reg.ext in request to the exchange: %v", test.description, err)
 		}
 		if test.expectConsentString {
@@ -1103,7 +1104,7 @@ func TestCCPA(t *testing.T) {
 		// Validate HTTP Response
 		responseBytes := httpResponseRecorder.Body.Bytes()
 		response := &openrtb_ext.BidResponseVideo{}
-		if err := json.Unmarshal(responseBytes, response); err != nil {
+		if err := jsonutil.UnmarshalValid(responseBytes, response); err != nil {
 			t.Fatalf("%s: Unable to unmarshal response.", test.description)
 		}
 		assert.Len(t, ex.lastRequest.Imp, 11, test.description+":imps")
@@ -1125,12 +1126,12 @@ func TestVideoEndpointAppendBidderNames(t *testing.T) {
 	}
 
 	var extData openrtb_ext.ExtRequest
-	json.Unmarshal(ex.lastRequest.Ext, &extData)
+	jsonutil.UnmarshalValid(ex.lastRequest.Ext, &extData)
 	assert.True(t, extData.Prebid.Targeting.AppendBidderNames, "Request ext incorrect: AppendBidderNames should be true ")
 
 	respBytes := recorder.Body.Bytes()
 	resp := &openrtb_ext.BidResponseVideo{}
-	if err := json.Unmarshal(respBytes, resp); err != nil {
+	if err := jsonutil.UnmarshalValid(respBytes, resp); err != nil {
 		t.Fatalf("Unable to unmarshal response.")
 	}
 
