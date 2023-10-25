@@ -292,13 +292,13 @@ func CloneSChain(s *openrtb2.SupplyChain) *openrtb2.SupplyChain {
 	c := *s
 
 	// Deep Copy (Pointers)
-	c.Nodes = CloseSupplyChainNodes(s.Nodes)
+	c.Nodes = CloneSupplyChainNodes(s.Nodes)
 	c.Ext = sliceutil.Clone(s.Ext)
 
 	return &c
 }
 
-func CloseSupplyChainNodes(s []openrtb2.SupplyChainNode) []openrtb2.SupplyChainNode {
+func CloneSupplyChainNodes(s []openrtb2.SupplyChainNode) []openrtb2.SupplyChainNode {
 	if s == nil {
 		return nil
 	}
