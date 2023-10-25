@@ -789,13 +789,13 @@ func TestCloseSupplyChainNodes(t *testing.T) {
 	n = 1
 	np = &n
 	t.Run("nil", func(t *testing.T) {
-		result := CloseSupplyChainNodes(nil)
+		result := CloneSupplyChainNodes(nil)
 		assert.Nil(t, result)
 	})
 
 	t.Run("empty", func(t *testing.T) {
 		given := []openrtb2.SupplyChainNode{}
-		result := CloseSupplyChainNodes(given)
+		result := CloneSupplyChainNodes(given)
 		assert.Empty(t, result)
 		assert.NotSame(t, given, result)
 	})
@@ -804,7 +804,7 @@ func TestCloseSupplyChainNodes(t *testing.T) {
 		given := []openrtb2.SupplyChainNode{
 			{ASI: "asi", HP: np, Ext: json.RawMessage(`{"anyField":1}`)},
 		}
-		result := CloseSupplyChainNodes(given)
+		result := CloneSupplyChainNodes(given)
 		assert.Equal(t, given, result, "equality")
 		assert.NotSame(t, given[0], result[0], "item-pointer")
 		assert.NotSame(t, given[0].HP, result[0].HP, "item-pointer-hp")
@@ -817,7 +817,7 @@ func TestCloseSupplyChainNodes(t *testing.T) {
 			{ASI: "asi", HP: np, Ext: json.RawMessage(`{"anyField":1}`)},
 			{ASI: "asi", HP: np, Ext: json.RawMessage(`{"anyField":1}`)},
 		}
-		result := CloseSupplyChainNodes(given)
+		result := CloneSupplyChainNodes(given)
 		assert.Equal(t, given, result, "equality")
 		assert.NotSame(t, given[0], result[0], "item0-pointer")
 		assert.NotSame(t, given[0].Ext, result[0].Ext, "item0-pointer-ext")
