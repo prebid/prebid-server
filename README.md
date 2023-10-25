@@ -19,7 +19,7 @@
 
 When hosting Prebid Server or developing locally, **you must set a default GDPR value**. This configuration determines whether GDPR is enabled when no regulatory signal is available in the request, where a value of `"0"` disables it by default and a value of `"1"` enables it. This is required as there is no consensus on a good default.
 
-Refer to the [configuration guide](docs/developers/configuration.md) for additional information and an overview of available configuration options.
+Refer to the [configuration guide](docs/developers/configuration.md) for additional information and a list of available configuration options.
 
 ## Hosting Prebid Server
 > [!NOTE]
@@ -70,14 +70,14 @@ An option for developing Prebid Server in a reproducible environment isolated fr
 
 ## Importing Prebid Server
 
-Prebid Server is not intended to be imported by other projects. Go Modules is used to manage dependencies, which also makes it possible to import Prebid Server packages. This is not supported. We offer no guarantees regarding the stability of packages and do not adhere to semantic versioning guidelines.
+Prebid Server is not currently intended to be imported by other projects. Go Modules is used to manage dependencies, which also makes it possible to import Prebid Server packages. This is not supported. We offer no guarantees regarding the stability of packages and do not adhere to semantic versioning guidelines.
 
 ## Contributing
 > [!IMPORTANT]
 > All contributions must follow the [Prebid Code of Conduct](https://prebid.org/code-of-conduct/) and the [Prebid Module Rules](https://docs.prebid.org/dev-docs/module-rules.html).
 
 ### Bid Adapter
-Bid Adapters transform OpenRTB requests and responses for communication with an SSP. This may be as simple as a passthrough or as complex as mapping to a custom data model. We invite you to contribute an adapter for your company. Consult our guide on [building a bid adapter](https://docs.prebid.org/prebid-server/developers/add-new-bidder-go.html) for more information.
+Bid Adapters transform OpenRTB requests and responses for communicating with a bidding server. This may be as simple as a passthrough or as complex as mapping to a custom data model. We invite you to contribute an adapter for your company. Consult our guide on [building a bid adapter](https://docs.prebid.org/prebid-server/developers/add-new-bidder-go.html) for more information.
 
 ### Analytics Module
 Analytics Modules enable business intelligence tools to collect data from Prebid Server to provide publishers and hosts with valuable insights into their header bidding traffic. We welcome you to contribute a module for your platform. Refer to our guide on [building an analytics module](https://docs.prebid.org/prebid-server/developers/pbs-build-an-analytics-adapter.html) for further information.
