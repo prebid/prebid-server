@@ -4,11 +4,8 @@ import (
 	"testing"
 	"text/template"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/privacy"
-	"github.com/prebid/prebid-server/privacy/ccpa"
-	"github.com/prebid/prebid-server/privacy/gdpr"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/macros"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,7 +13,7 @@ func TestNewSyncer(t *testing.T) {
 	var (
 		supportCORS      = true
 		hostConfig       = config.UserSync{ExternalURL: "http://host.com", RedirectURL: "{{.ExternalURL}}/host"}
-		macroValues      = macros.UserSyncTemplateParams{GDPR: "A", GDPRConsent: "B", USPrivacy: "C"}
+		macroValues      = macros.UserSyncPrivacy{GDPR: "A", GDPRConsent: "B", USPrivacy: "C"}
 		iframeConfig     = &config.SyncerEndpoint{URL: "https://bidder.com/iframe?redirect={{.RedirectURL}}"}
 		redirectConfig   = &config.SyncerEndpoint{URL: "https://bidder.com/redirect?redirect={{.RedirectURL}}"}
 		errParseConfig   = &config.SyncerEndpoint{URL: "{{malformed}}"}
@@ -26,9 +23,10 @@ func TestNewSyncer(t *testing.T) {
 	testCases := []struct {
 		description         string
 		givenKey            string
-		givenDefault        string
+		givenBidderName     string
 		givenIFrameConfig   *config.SyncerEndpoint
 		givenRedirectConfig *config.SyncerEndpoint
+		givenExternalURL    string
 		expectedError       string
 		expectedDefault     SyncType
 		expectedIFrame      string
@@ -37,7 +35,7 @@ func TestNewSyncer(t *testing.T) {
 		{
 			description:         "Missing Key",
 			givenKey:            "",
-			givenDefault:        "iframe",
+			givenBidderName:     "",
 			givenIFrameConfig:   iframeConfig,
 			givenRedirectConfig: nil,
 			expectedError:       "key is required",
@@ -45,23 +43,15 @@ func TestNewSyncer(t *testing.T) {
 		{
 			description:         "Missing Endpoints",
 			givenKey:            "a",
-			givenDefault:        "",
+			givenBidderName:     "bidderA",
 			givenIFrameConfig:   nil,
 			givenRedirectConfig: nil,
 			expectedError:       "at least one endpoint (iframe and/or redirect) is required",
 		},
 		{
-			description:         "Resolve Default Sync Type Error ",
-			givenKey:            "a",
-			givenDefault:        "",
-			givenIFrameConfig:   iframeConfig,
-			givenRedirectConfig: redirectConfig,
-			expectedError:       "default sync type is required when more then one sync endpoint is configured",
-		},
-		{
 			description:         "IFrame & Redirect Endpoints",
 			givenKey:            "a",
-			givenDefault:        "iframe",
+			givenBidderName:     "bidderA",
 			givenIFrameConfig:   iframeConfig,
 			givenRedirectConfig: redirectConfig,
 			expectedDefault:     SyncTypeIFrame,
@@ -71,15 +61,15 @@ func TestNewSyncer(t *testing.T) {
 		{
 			description:         "IFrame - Parse Error",
 			givenKey:            "a",
-			givenDefault:        "iframe",
+			givenBidderName:     "bidderA",
 			givenIFrameConfig:   errParseConfig,
 			givenRedirectConfig: nil,
-			expectedError:       "iframe template: a_usersync_url:1: function \"malformed\" not defined",
+			expectedError:       "iframe template: biddera_usersync_url:1: function \"malformed\" not defined",
 		},
 		{
 			description:         "IFrame - Validation Error",
 			givenKey:            "a",
-			givenDefault:        "iframe",
+			givenBidderName:     "bidderA",
 			givenIFrameConfig:   errInvalidConfig,
 			givenRedirectConfig: nil,
 			expectedError:       "iframe composed url: \"notAURL:http%3A%2F%2Fhost.com%2Fhost\" is invalid",
@@ -87,18 +77,29 @@ func TestNewSyncer(t *testing.T) {
 		{
 			description:         "Redirect - Parse Error",
 			givenKey:            "a",
-			givenDefault:        "redirect",
+			givenBidderName:     "bidderA",
 			givenIFrameConfig:   nil,
 			givenRedirectConfig: errParseConfig,
-			expectedError:       "redirect template: a_usersync_url:1: function \"malformed\" not defined",
+			expectedError:       "redirect template: biddera_usersync_url:1: function \"malformed\" not defined",
 		},
 		{
 			description:         "Redirect - Validation Error",
 			givenKey:            "a",
-			givenDefault:        "redirect",
+			givenBidderName:     "bidderA",
 			givenIFrameConfig:   nil,
 			givenRedirectConfig: errInvalidConfig,
 			expectedError:       "redirect composed url: \"notAURL:http%3A%2F%2Fhost.com%2Fhost\" is invalid",
+		},
+		{
+			description:         "Syncer Level External URL",
+			givenKey:            "a",
+			givenBidderName:     "bidderA",
+			givenExternalURL:    "http://syncer.com",
+			givenIFrameConfig:   iframeConfig,
+			givenRedirectConfig: redirectConfig,
+			expectedDefault:     SyncTypeIFrame,
+			expectedIFrame:      "https://bidder.com/iframe?redirect=http%3A%2F%2Fsyncer.com%2Fhost",
+			expectedRedirect:    "https://bidder.com/redirect?redirect=http%3A%2F%2Fsyncer.com%2Fhost",
 		},
 	}
 
@@ -106,12 +107,12 @@ func TestNewSyncer(t *testing.T) {
 		syncerConfig := config.Syncer{
 			Key:         test.givenKey,
 			SupportCORS: &supportCORS,
-			Default:     test.givenDefault,
 			IFrame:      test.givenIFrameConfig,
 			Redirect:    test.givenRedirectConfig,
+			ExternalURL: test.givenExternalURL,
 		}
 
-		result, err := NewSyncer(hostConfig, syncerConfig)
+		result, err := NewSyncer(hostConfig, syncerConfig, test.givenBidderName)
 
 		if test.expectedError == "" {
 			assert.NoError(t, err, test.description+":err")
@@ -153,73 +154,27 @@ func TestResolveDefaultSyncType(t *testing.T) {
 		description      string
 		givenConfig      config.Syncer
 		expectedSyncType SyncType
-		expectedError    string
 	}{
 		{
-			description:      "IFrame & Redirect - IFrame Default",
-			givenConfig:      config.Syncer{Default: "iframe", IFrame: anyEndpoint, Redirect: anyEndpoint},
+			description:      "IFrame & Redirect",
+			givenConfig:      config.Syncer{IFrame: anyEndpoint, Redirect: anyEndpoint},
 			expectedSyncType: SyncTypeIFrame,
 		},
 		{
-			description:      "IFrame & Redirect - Redirect Default",
-			givenConfig:      config.Syncer{Default: "redirect", IFrame: anyEndpoint, Redirect: anyEndpoint},
-			expectedSyncType: SyncTypeRedirect,
-		},
-		{
-			description:      "IFrame & Redirect - No Default",
-			givenConfig:      config.Syncer{Default: "", IFrame: anyEndpoint, Redirect: anyEndpoint},
-			expectedSyncType: SyncTypeUnknown,
-			expectedError:    "default sync type is required when more then one sync endpoint is configured",
-		},
-		{
-			description:      "IFrame & Redirect - Invalid Default",
-			givenConfig:      config.Syncer{Default: "invalid", IFrame: anyEndpoint, Redirect: anyEndpoint},
-			expectedSyncType: SyncTypeUnknown,
-			expectedError:    "invalid default sync type 'invalid'",
-		},
-		{
-			description:      "IFrame Only - IFrame Default",
-			givenConfig:      config.Syncer{Default: "iframe", IFrame: anyEndpoint, Redirect: nil},
+			description:      "IFrame Only",
+			givenConfig:      config.Syncer{IFrame: anyEndpoint, Redirect: nil},
 			expectedSyncType: SyncTypeIFrame,
-		},
-		{
-			description:      "IFrame Only - No Default",
-			givenConfig:      config.Syncer{Default: "", IFrame: anyEndpoint, Redirect: nil},
-			expectedSyncType: SyncTypeIFrame,
-		},
-		{
-			description:      "IFrame Only - Redirect Default",
-			givenConfig:      config.Syncer{Default: "redirect", IFrame: anyEndpoint, Redirect: nil},
-			expectedSyncType: SyncTypeUnknown,
-			expectedError:    "default is set to redirect but no redirect endpoint is configured",
 		},
 		{
 			description:      "Redirect Only - Redirect Default",
-			givenConfig:      config.Syncer{Default: "redirect", IFrame: nil, Redirect: anyEndpoint},
+			givenConfig:      config.Syncer{IFrame: nil, Redirect: anyEndpoint},
 			expectedSyncType: SyncTypeRedirect,
-		},
-		{
-			description:      "IFrame Only - No Default",
-			givenConfig:      config.Syncer{Default: "", IFrame: nil, Redirect: anyEndpoint},
-			expectedSyncType: SyncTypeRedirect,
-		},
-		{
-			description:      "IFrame Only - IFrame Default",
-			givenConfig:      config.Syncer{Default: "iframe", IFrame: nil, Redirect: anyEndpoint},
-			expectedSyncType: SyncTypeUnknown,
-			expectedError:    "default is set to iframe but no iframe endpoint is configured",
 		},
 	}
 
 	for _, test := range testCases {
-		result, err := resolveDefaultSyncType(test.givenConfig)
-
+		result := resolveDefaultSyncType(test.givenConfig)
 		assert.Equal(t, test.expectedSyncType, result, test.description+":result")
-		if test.expectedError == "" {
-			assert.NoError(t, err, test.description+":err")
-		} else {
-			assert.EqualError(t, err, test.expectedError, test.description+":err")
-		}
 	}
 }
 
@@ -228,15 +183,16 @@ func TestBuildTemplate(t *testing.T) {
 		key           = "anyKey"
 		syncTypeValue = "x"
 		hostConfig    = config.UserSync{ExternalURL: "http://host.com", RedirectURL: "{{.ExternalURL}}/host"}
-		macroValues   = macros.UserSyncTemplateParams{GDPR: "A", GDPRConsent: "B", USPrivacy: "C"}
+		macroValues   = macros.UserSyncPrivacy{GDPR: "A", GDPRConsent: "B", USPrivacy: "C", GPP: "D", GPPSID: "1"}
 	)
 
 	testCases := []struct {
-		description         string
-		givenHostConfig     config.UserSync
-		givenSyncerEndpoint config.SyncerEndpoint
-		expectedError       string
-		expectedRendered    string
+		description            string
+		givenHostConfig        config.UserSync
+		givenSyncerExternalURL string
+		givenSyncerEndpoint    config.SyncerEndpoint
+		expectedError          string
+		expectedRendered       string
 	}{
 		{
 			description: "No Composed Macros",
@@ -246,14 +202,24 @@ func TestBuildTemplate(t *testing.T) {
 			expectedRendered: "hasNoComposedMacros,gdpr=A",
 		},
 		{
-			description: "All Composed Macros",
+			description: "All Composed Macros - SyncerKey",
 			givenSyncerEndpoint: config.SyncerEndpoint{
 				URL:         "https://bidder.com/sync?redirect={{.RedirectURL}}",
-				RedirectURL: "{{.ExternalURL}}/setuid?bidder={{.SyncerKey}}&f={{.SyncType}}&gdpr={{.GDPR}}&uid={{.UserMacro}}",
+				RedirectURL: "{{.ExternalURL}}/setuid?bidder={{.SyncerKey}}&f={{.SyncType}}&gdpr={{.GDPR}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&uid={{.UserMacro}}",
 				ExternalURL: "http://syncer.com",
 				UserMacro:   "$UID$",
 			},
-			expectedRendered: "https://bidder.com/sync?redirect=http%3A%2F%2Fsyncer.com%2Fsetuid%3Fbidder%3DanyKey%26f%3Dx%26gdpr%3DA%26uid%3D%24UID%24",
+			expectedRendered: "https://bidder.com/sync?redirect=http%3A%2F%2Fsyncer.com%2Fsetuid%3Fbidder%3DanyKey%26f%3Dx%26gdpr%3DA%26gpp%3DD%26gpp_sid%3D1%26uid%3D%24UID%24",
+		},
+		{
+			description: "All Composed Macros - BidderName",
+			givenSyncerEndpoint: config.SyncerEndpoint{
+				URL:         "https://bidder.com/sync?redirect={{.RedirectURL}}",
+				RedirectURL: "{{.ExternalURL}}/setuid?bidder={{.BidderName}}&f={{.SyncType}}&gdpr={{.GDPR}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&uid={{.UserMacro}}",
+				ExternalURL: "http://syncer.com",
+				UserMacro:   "$UID$",
+			},
+			expectedRendered: "https://bidder.com/sync?redirect=http%3A%2F%2Fsyncer.com%2Fsetuid%3Fbidder%3DanyKey%26f%3Dx%26gdpr%3DA%26gpp%3DD%26gpp_sid%3D1%26uid%3D%24UID%24",
 		},
 		{
 			description: "Redirect URL + External URL From Host",
@@ -272,6 +238,23 @@ func TestBuildTemplate(t *testing.T) {
 		},
 		{
 			description: "External URL From Host",
+			givenSyncerEndpoint: config.SyncerEndpoint{
+				URL:         "https://bidder.com/sync?redirect={{.RedirectURL}}",
+				ExternalURL: "http://syncer.com",
+			},
+			expectedRendered: "https://bidder.com/sync?redirect=http%3A%2F%2Fsyncer.com%2Fhost",
+		},
+		{
+			description:            "External URL From Syncer Config",
+			givenSyncerExternalURL: "http://syncershared.com",
+			givenSyncerEndpoint: config.SyncerEndpoint{
+				URL: "https://bidder.com/sync?redirect={{.RedirectURL}}",
+			},
+			expectedRendered: "https://bidder.com/sync?redirect=http%3A%2F%2Fsyncershared.com%2Fhost",
+		},
+		{
+			description:            "External URL From Syncer Config (Most Specific Wins)",
+			givenSyncerExternalURL: "http://syncershared.com",
 			givenSyncerEndpoint: config.SyncerEndpoint{
 				URL:         "https://bidder.com/sync?redirect={{.RedirectURL}}",
 				ExternalURL: "http://syncer.com",
@@ -339,7 +322,7 @@ func TestBuildTemplate(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		result, err := buildTemplate(key, syncTypeValue, hostConfig, test.givenSyncerEndpoint)
+		result, err := buildTemplate(key, syncTypeValue, hostConfig, test.givenSyncerExternalURL, test.givenSyncerEndpoint)
 
 		if test.expectedError == "" {
 			assert.NoError(t, err, test.description+":err")
@@ -350,6 +333,50 @@ func TestBuildTemplate(t *testing.T) {
 		} else {
 			assert.EqualError(t, err, test.expectedError, test.description+":err")
 		}
+	}
+}
+
+func TestChooseExternalURL(t *testing.T) {
+	testCases := []struct {
+		description            string
+		givenSyncerEndpointURL string
+		givenSyncerURL         string
+		givenHostConfigURL     string
+		expected               string
+	}{
+		{
+			description:            "Syncer Endpoint Chosen",
+			givenSyncerEndpointURL: "a",
+			givenSyncerURL:         "b",
+			givenHostConfigURL:     "c",
+			expected:               "a",
+		},
+		{
+			description:            "Syncer Chosen",
+			givenSyncerEndpointURL: "",
+			givenSyncerURL:         "b",
+			givenHostConfigURL:     "c",
+			expected:               "b",
+		},
+		{
+			description:            "Host Config Chosen",
+			givenSyncerEndpointURL: "",
+			givenSyncerURL:         "",
+			givenHostConfigURL:     "c",
+			expected:               "c",
+		},
+		{
+			description:            "All Empty",
+			givenSyncerEndpointURL: "",
+			givenSyncerURL:         "",
+			givenHostConfigURL:     "",
+			expected:               "",
+		},
+	}
+
+	for _, test := range testCases {
+		result := chooseExternalURL(test.givenSyncerEndpointURL, test.givenSyncerURL, test.givenHostConfigURL)
+		assert.Equal(t, test.expected, result, test.description)
 	}
 }
 
@@ -421,7 +448,7 @@ func TestValidateTemplate(t *testing.T) {
 		{
 			description:   "Contains Unrecognized Macro",
 			given:         template.Must(template.New("test").Parse("invalid:{{.DoesNotExist}}")),
-			expectedError: "template: test:1:10: executing \"test\" at <.DoesNotExist>: can't evaluate field DoesNotExist in type macros.UserSyncTemplateParams",
+			expectedError: "template: test:1:10: executing \"test\" at <.DoesNotExist>: can't evaluate field DoesNotExist in type macros.UserSyncPrivacy",
 		},
 		{
 			description:   "Not A Url",
@@ -606,45 +633,45 @@ func TestSyncerGetSync(t *testing.T) {
 	)
 
 	testCases := []struct {
-		description          string
-		givenSyncer          standardSyncer
-		givenSyncTypes       []SyncType
-		givenPrivacyPolicies privacy.Policies
-		expectedError        string
-		expectedSync         Sync
+		description    string
+		givenSyncer    standardSyncer
+		givenSyncTypes []SyncType
+		givenMacros    macros.UserSyncPrivacy
+		expectedError  string
+		expectedSync   Sync
 	}{
 		{
-			description:          "No Sync Types",
-			givenSyncer:          standardSyncer{iframe: iframeTemplate, redirect: redirectTemplate},
-			givenSyncTypes:       []SyncType{},
-			givenPrivacyPolicies: privacy.Policies{GDPR: gdpr.Policy{Signal: "A", Consent: "B"}, CCPA: ccpa.Policy{Consent: "C"}},
-			expectedError:        "no sync types provided",
+			description:    "No Sync Types",
+			givenSyncer:    standardSyncer{iframe: iframeTemplate, redirect: redirectTemplate},
+			givenSyncTypes: []SyncType{},
+			givenMacros:    macros.UserSyncPrivacy{GDPR: "A", GDPRConsent: "B", USPrivacy: "C"},
+			expectedError:  "no sync types provided",
 		},
 		{
-			description:          "IFrame",
-			givenSyncer:          standardSyncer{iframe: iframeTemplate, redirect: redirectTemplate},
-			givenSyncTypes:       []SyncType{SyncTypeIFrame},
-			givenPrivacyPolicies: privacy.Policies{GDPR: gdpr.Policy{Signal: "A", Consent: "B"}, CCPA: ccpa.Policy{Consent: "C"}},
-			expectedSync:         Sync{URL: "iframe,gdpr:A,gdprconsent:B,ccpa:C", Type: SyncTypeIFrame, SupportCORS: false},
+			description:    "IFrame",
+			givenSyncer:    standardSyncer{iframe: iframeTemplate, redirect: redirectTemplate},
+			givenSyncTypes: []SyncType{SyncTypeIFrame},
+			givenMacros:    macros.UserSyncPrivacy{GDPR: "A", GDPRConsent: "B", USPrivacy: "C"},
+			expectedSync:   Sync{URL: "iframe,gdpr:A,gdprconsent:B,ccpa:C", Type: SyncTypeIFrame, SupportCORS: false},
 		},
 		{
-			description:          "Redirect",
-			givenSyncer:          standardSyncer{iframe: iframeTemplate, redirect: redirectTemplate},
-			givenSyncTypes:       []SyncType{SyncTypeRedirect},
-			givenPrivacyPolicies: privacy.Policies{GDPR: gdpr.Policy{Signal: "A", Consent: "B"}, CCPA: ccpa.Policy{Consent: "C"}},
-			expectedSync:         Sync{URL: "redirect,gdpr:A,gdprconsent:B,ccpa:C", Type: SyncTypeRedirect, SupportCORS: false},
+			description:    "Redirect",
+			givenSyncer:    standardSyncer{iframe: iframeTemplate, redirect: redirectTemplate},
+			givenSyncTypes: []SyncType{SyncTypeRedirect},
+			givenMacros:    macros.UserSyncPrivacy{GDPR: "A", GDPRConsent: "B", USPrivacy: "C"},
+			expectedSync:   Sync{URL: "redirect,gdpr:A,gdprconsent:B,ccpa:C", Type: SyncTypeRedirect, SupportCORS: false},
 		},
 		{
-			description:          "Macro Error",
-			givenSyncer:          standardSyncer{iframe: malformedTemplate},
-			givenSyncTypes:       []SyncType{SyncTypeIFrame},
-			givenPrivacyPolicies: privacy.Policies{GDPR: gdpr.Policy{Signal: "A", Consent: "B"}, CCPA: ccpa.Policy{Consent: "C"}},
-			expectedError:        "template: test:1:20: executing \"test\" at <.DoesNotExist>: can't evaluate field DoesNotExist in type macros.UserSyncTemplateParams",
+			description:    "Macro Error",
+			givenSyncer:    standardSyncer{iframe: malformedTemplate},
+			givenSyncTypes: []SyncType{SyncTypeIFrame},
+			givenMacros:    macros.UserSyncPrivacy{GDPR: "A", GDPRConsent: "B", USPrivacy: "C"},
+			expectedError:  "template: test:1:20: executing \"test\" at <.DoesNotExist>: can't evaluate field DoesNotExist in type macros.UserSyncPrivacy",
 		},
 	}
 
 	for _, test := range testCases {
-		result, err := test.givenSyncer.GetSync(test.givenSyncTypes, test.givenPrivacyPolicies)
+		result, err := test.givenSyncer.GetSync(test.givenSyncTypes, test.givenMacros)
 
 		if test.expectedError == "" {
 			assert.NoError(t, err, test.description+":err")

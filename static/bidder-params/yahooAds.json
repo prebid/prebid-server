@@ -1,0 +1,19 @@
+{
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"title": "YahooAds Adapter Params",
+	"description": "A schema which validates params accepted by the YahooAds adapter",
+	"type": "object",
+	"properties": {
+		"dcn": {
+			"type": "string",
+			"minLength": 1,
+			"description": "Site ID provided by One Mobile"
+		},
+		"pos": {
+			"type": "string",
+			"minLength": 1,
+			"description": "Placement ID"
+		}
+	},
+	"required": ["dcn", "pos"]
+}

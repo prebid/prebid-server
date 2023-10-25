@@ -239,6 +239,7 @@
             {
               "id": "test-imp-id",
               "instl": 1,
+              "secure": 1,
               "video": {
                 "placement": 3,
                 "ext": {
@@ -257,7 +258,6 @@
                 "h": 576
               },
               "ext": {
-                "gpid": "someAdSlot",
                 "rp": {
                   "target": {
                     "dataAttr1": [
@@ -274,7 +274,8 @@
                     ],
                     "search": [
                       "someSearch"
-                    ]
+                    ],
+                    "dfp_ad_unit_code": "someAdSlot"
                   },
                   "track": {
                     "mint": "",

@@ -1,5 +1,7 @@
+endpoint: "https://dsp.adotmob.com/headerbidding{PUBLISHER_PATH}/bidrequest"
 maintainer:
   email: "admin@we-are-adot.com"
+gvlVendorID: 272
 modifyingVastXmlAllowed: false
 capabilities:
   app:

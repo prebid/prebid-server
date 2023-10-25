@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Bliink Adapter Params",
+  "description": "A schema which validates params accepted by the Bliink adapter",
+  "type": "object",
+
+  "properties": {
+    "tagId": {
+      "type": "string",
+      "description": "The TagID from BLIINK"
+    },
+    "imageUrl": {
+      "type": "string",
+      "description": "The image url on which the ad is displayed in case of in-image ad"
+    }
+  },
+  "required": ["tagId"]
+}

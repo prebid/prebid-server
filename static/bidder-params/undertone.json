@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Undertone Adapter Params",
+  "description": "A schema which validates params accepted by the Undertone adapter",
+  "type": "object",
+  "properties": {
+    "placementId": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Undertone unique placement identifier"
+    },
+    "publisherId": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Publisher unique identifier"
+    }
+  },
+  "required": [
+    "placementId",
+    "publisherId"
+  ]
+}

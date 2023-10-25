@@ -1,21 +1,26 @@
 package openrtb2
 
 import (
+	"bytes"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
 
-	analyticsConf "github.com/prebid/prebid-server/analytics/config"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/currency"
-	"github.com/prebid/prebid-server/exchange"
-	"github.com/prebid/prebid-server/gdpr"
-	metricsConfig "github.com/prebid/prebid-server/metrics/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
-	"github.com/prebid/prebid-server/usersync"
+	analyticsBuild "github.com/prebid/prebid-server/v2/analytics/build"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/currency"
+	"github.com/prebid/prebid-server/v2/exchange"
+	"github.com/prebid/prebid-server/v2/experiment/adscert"
+	"github.com/prebid/prebid-server/v2/hooks"
+	"github.com/prebid/prebid-server/v2/macros"
+	metricsConfig "github.com/prebid/prebid-server/v2/metrics/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/v2/usersync"
 )
 
 // benchmarkTestServer returns the header bidding test ad. This response was scraped from a real appnexus server response.
@@ -60,7 +65,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 	server := httptest.NewServer(http.HandlerFunc(benchmarkTestServer))
 	defer server.Close()
 
-	var infos config.BidderInfos
+	var infos = make(config.BidderInfos, 0)
 	infos["appnexus"] = config.BidderInfo{Capabilities: &config.CapabilitiesInfo{Site: &config.PlatformInfo{MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner}}}}
 	paramValidator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 	if err != nil {
@@ -74,6 +79,10 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		b.Fatal("unable to build adapters")
 	}
 
+	gdprPermsBuilder := fakePermissionsBuilder{
+		permissions: &fakePermissions{},
+	}.Builder
+
 	exchange := exchange.NewExchange(
 		adapters,
 		nil,
@@ -81,9 +90,11 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		map[string]usersync.Syncer{},
 		nilMetrics,
 		infos,
-		gdpr.AlwaysAllow{},
+		gdprPermsBuilder,
 		currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
 		empty_fetcher.EmptyFetcher{},
+		&adscert.NilSigner{},
+		macros.NewStringIndexBasedReplacer(),
 	)
 
 	endpoint, _ := NewEndpoint(
@@ -94,14 +105,72 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		nilMetrics,
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
+		nil,
+		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 		nil,
 	)
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		endpoint(httptest.NewRecorder(), benchmarkBuildTestRequest(), nil)
+	}
+}
+
+// BenchmarkValidWholeExemplary benchmarks the process that results of hitting the `openrtb2/auction` with
+// the different JSON bid requests found in the `sample-requests/valid-whole/exemplary/` directory. As
+// especified in said file, we expect this bid request to succeed with a 200 status code.
+func BenchmarkValidWholeExemplary(b *testing.B) {
+	var benchInput = []string{
+		"sample-requests/valid-whole/exemplary/all-ext.json",
+		"sample-requests/valid-whole/exemplary/interstitial-no-size.json",
+		"sample-requests/valid-whole/exemplary/prebid-test-ad.json",
+		"sample-requests/valid-whole/exemplary/simple.json",
+		"sample-requests/valid-whole/exemplary/skadn.json",
+	}
+
+	for _, testFile := range benchInput {
+		b.Run(fmt.Sprintf("input_file_%s", testFile), func(b *testing.B) {
+			b.StopTimer()
+			// Set up
+			fileData, err := os.ReadFile(testFile)
+			if err != nil {
+				b.Fatalf("unable to read file %s", testFile)
+			}
+			test, err := parseTestData(fileData, testFile)
+			if err != nil {
+				b.Fatal(err.Error())
+			}
+			test.endpointType = OPENRTB_ENDPOINT
+
+			cfg := &config.Configuration{
+				MaxRequestSize:    maxSize,
+				BlacklistedApps:   test.Config.BlacklistedApps,
+				BlacklistedAppMap: test.Config.getBlacklistedAppMap(),
+				AccountRequired:   test.Config.AccountRequired,
+			}
+
+			auctionEndpointHandler, _, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
+			if err != nil {
+				b.Fatal(err.Error())
+			}
+			request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(test.BidRequest))
+			recorder := httptest.NewRecorder()
+
+			// Run benchmark
+			b.ResetTimer()
+			for n := 0; n < b.N; n++ {
+				b.StartTimer()
+				auctionEndpointHandler(recorder, request, nil) //Request comes from the unmarshalled mockBidRequest
+				b.StopTimer()
+			}
+			for _, mockBidServer := range mockBidServers {
+				mockBidServer.Close()
+			}
+			mockCurrencyRatesServer.Close()
+		})
 	}
 }

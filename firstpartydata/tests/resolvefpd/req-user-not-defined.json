@@ -1,0 +1,35 @@
+{
+  "description": "Incorrect bidder specific FPD: user not defined in request",
+  "inputRequestData": {
+    "test": 1,
+    "at": 1,
+    "tmax": 5000
+  },
+  "biddersWithGlobalFPD": [
+    "appnexus"
+  ],
+  "bidderConfigFPD": {
+    "appnexus": {
+      "user": {
+        "keywords": "test user keywords",
+        "ext": {
+          "data": {
+            "morefpdData": "morefpddata",
+            "siteFpddata": "siteFpddata",
+            "moreFpd": {
+              "fpd": 123
+            }
+          }
+        }
+      }
+    }
+  },
+  "outputRequestData": {
+    "appnexus": {}
+  },
+  "validationErrors": [
+    {
+      "Message": "incorrect First Party Data for bidder appnexus: User object is not defined in request, but defined in FPD config"
+    }
+  ]
+}

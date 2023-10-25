@@ -27,7 +27,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "zoneId is empty",
+      "value": "ext.bidder.zoneId not provided",
       "comparison": "literal"
     }
   ]

@@ -10,13 +10,12 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/golang/glog"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/macros"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type AdheseAdapter struct {
@@ -109,7 +108,7 @@ func (a *AdheseAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adap
 	// Compose url
 	endpointParams := macros.EndpointTemplateParams{AccountID: params.Account}
 
-	host, err := macros.ResolveMacros(*&a.endpointTemplate, endpointParams)
+	host, err := macros.ResolveMacros(a.endpointTemplate, endpointParams)
 	if err != nil {
 		errs = append(errs, WrapReqError("Could not compose url from template and request account val: "+err.Error()))
 		return nil, errs
@@ -201,7 +200,6 @@ func (a *AdheseAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 func convertAdheseBid(adheseBid AdheseBid, adheseExt AdheseExt, adheseOriginData AdheseOriginData) openrtb2.BidResponse {
 	adheseExtJson, err := json.Marshal(adheseOriginData)
 	if err != nil {
-		glog.Error(fmt.Sprintf("Unable to parse adhese Origin Data as JSON due to %v", err))
 		adheseExtJson = make([]byte, 0)
 	}
 	return openrtb2.BidResponse{
@@ -269,7 +267,7 @@ func ContainsAny(raw string, keys []string) bool {
 }
 
 // Builder builds a new instance of the Adhese adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)

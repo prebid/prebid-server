@@ -7,18 +7,23 @@
       },
       "user": {
         "id": "foo",
-        "ext": {
-        }
+        "ext": {}
       },
       "imp": [
         {
           "id": "my-imp-id",
           "video": {
-            "mimes": ["video/mp4"]
+            "mimes": [
+              "video/mp4"
+            ]
           },
           "ext": {
-            "appnexus": {
-              "placementId": 1
+            "prebid": {
+              "bidder": {
+                "appnexus": {
+                  "placementId": 1
+                }
+              }
             }
           }
         }
@@ -39,14 +44,15 @@
           "user": {
             "id": "foo",
             "buyeruid": "implicit-appnexus",
-            "ext": {
-            }
+            "ext": {}
           },
           "imp": [
             {
               "id": "my-imp-id",
               "video": {
-                "mimes": ["video/mp4"]
+                "mimes": [
+                  "video/mp4"
+                ]
               },
               "ext": {
                 "bidder": {
@@ -55,11 +61,12 @@
               }
             }
           ]
-        },
-        "bidAdjustment": 1.0
+        }
       },
       "mockResponse": {
-        "errors": ["appnexus-error"]
+        "errors": [
+          "appnexus-error"
+        ]
       }
     }
   }

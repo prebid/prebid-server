@@ -49,6 +49,7 @@
           "uri": "https://localhost/bid/4",
           "body": {
             "id": "test-request-id",
+            "cur": ["USD"],
             "imp": [
               {
                 "banner": {

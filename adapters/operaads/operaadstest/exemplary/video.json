@@ -37,9 +37,9 @@
         },
         "ext": {
           "bidder": {
-            "placementId":"s00000",
-            "endpointId":"ep00000",
-            "publisherId":"pub00000"
+            "placementId": "s00000",
+            "endpointId": "ep00000",
+            "publisherId": "pub00000"
           }
         }
       }
@@ -63,7 +63,7 @@
           "id": "test-video-request",
           "imp": [
             {
-              "id": "test-video-imp",
+              "id": "test-video-imp:opa:video",
               "tagid": "s00000",
               "video": {
                 "w": 640,
@@ -98,9 +98,9 @@
               },
               "ext": {
                 "bidder": {
-                  "placementId":"s00000",
-                  "endpointId":"ep00000",
-                  "publisherId":"pub00000"
+                  "placementId": "s00000",
+                  "endpointId": "ep00000",
+                  "publisherId": "pub00000"
                 }
               }
             }
@@ -127,7 +127,7 @@
               "bid": [
                 {
                   "id": "7706636740145184841",
-                  "impid": "test-video-imp",
+                  "impid": "test-video-imp:opa:video",
                   "price": 0.5,
                   "adid": "29681110",
                   "adm": "some-test-ad",

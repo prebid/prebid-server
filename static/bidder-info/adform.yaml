@@ -1,15 +1,4 @@
-maintainer:
-  email: "scope.sspp@adform.com"
-gvlVendorID: 50
-capabilities:
-  app:
-    mediaTypes:
-      - banner
-      - video
-  site:
-    mediaTypes:
-      - banner
-      - video
+aliasOf: adf
 userSync:
   redirect:
     url: "https://cm.adform.net/cookie?redirect_url={{.RedirectURL}}"

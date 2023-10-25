@@ -1,0 +1,87 @@
+{
+  "description": "Auction request",
+  "config": {
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 0.00}
+    ]
+  },
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "prebid.org"
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          }
+        }
+      }
+    ],
+    "tmax": 500,
+    "test": 1,
+    "ext": {
+      "prebid": {
+        "trace": "verbose"
+      }
+    }
+  },
+  "expectedBidResponse": {
+    "id": "some-request-id",
+    "bidid": "test bid id",
+    "nbr": 123,
+    "ext": {
+      "prebid": {
+        "modules": {
+          "errors": {
+            "foobar": {
+              "foo": [
+                "dummy",
+                "Module foobar (hook: foo) rejected request with code 123 at entrypoint stage"
+              ]
+            }
+          },
+          "trace": {
+            "stages": [
+              {
+                "stage": "entrypoint",
+                "outcomes": [
+                  {
+                    "entity": "http-request",
+                    "groups": [
+                      {
+                        "invocation_results": [
+                          {
+                            "analytics_tags": {},
+                            "hook_id": {
+                              "module_code": "foobar",
+                              "hook_impl_code": "foo"
+                            },
+                            "status": "execution_failure",
+                            "action": "reject",
+                            "message": ""
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "expectedReturnCode": 200
+}

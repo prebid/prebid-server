@@ -2,13 +2,13 @@ package http
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	httpCore "net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,7 +34,7 @@ func TestStartup(t *testing.T) {
 				{
 					statusCode: httpCore.StatusOK,
 					response:   `{"requests": {"request1": {"value":1}, "request2": {"value":2}}}`,
-					saves:      `{"requests": {"request1": {"value":1}, "request2": {"value":2}}, "imps": null, "accounts": null}`,
+					saves:      `{"requests": {"request1": {"value":1}, "request2": {"value":2}}, "imps": null, "responses": null,  "accounts": null}`,
 				},
 			},
 		},
@@ -44,23 +44,33 @@ func TestStartup(t *testing.T) {
 				{
 					statusCode: httpCore.StatusOK,
 					response:   `{"imps": {"imp1": {"value":1}}}`,
-					saves:      `{"imps": {"imp1": {"value":1}}, "requests": null, "accounts": null}`,
+					saves:      `{"imps": {"imp1": {"value":1}}, "requests": null, "responses": null, "accounts": null}`,
 				},
 			},
 		},
 		{
-			description: "Load requests and imps then update",
+			description: "Load responses at startup",
 			tests: []testStep{
 				{
 					statusCode: httpCore.StatusOK,
-					response:   `{"requests": {"request1": {"value":1}, "request2": {"value":2}}, "imps": {"imp1": {"value":3}, "imp2": {"value":4}}}`,
-					saves:      `{"requests": {"request1": {"value":1}, "request2": {"value":2}}, "imps": {"imp1": {"value":3}, "imp2": {"value":4}}, "accounts":null}`,
+					response:   `{"responses": {"resp1": {"value":1}}}`,
+					saves:      `{"responses": {"resp1": {"value":1}}, "imps": null, "requests": null, "accounts": null}`,
+				},
+			},
+		},
+		{
+			description: "Load requests imps and responses then update",
+			tests: []testStep{
+				{
+					statusCode: httpCore.StatusOK,
+					response:   `{"requests": {"request1": {"value":1}, "request2": {"value":2}}, "imps": {"imp1": {"value":3}, "imp2": {"value":4}}, "responses": {"resp1": {"value":5}, "resp2": {"value":6}}}`,
+					saves:      `{"requests": {"request1": {"value":1}, "request2": {"value":2}}, "imps": {"imp1": {"value":3}, "imp2": {"value":4}}, "responses": {"resp1": {"value":5}, "resp2": {"value":6}}, "accounts":null}`,
 				},
 				{
 					statusCode:    httpCore.StatusOK,
-					response:      `{"requests": {"request1": {"value":5}, "request2": {"deleted":true}}, "imps": {"imp1": {"deleted":true}, "imp2": {"value":6}}}`,
-					saves:         `{"requests": {"request1": {"value":5}}, "imps": {"imp2": {"value":6}}, "accounts":null}`,
-					invalidations: `{"requests": ["request2"], "imps": ["imp1"], "accounts": []}`,
+					response:      `{"requests": {"request1": {"value":7}, "request2": {"deleted":true}}, "imps": {"imp1": {"deleted":true}, "imp2": {"value":8}}, "responses": {"resp1": {"deleted":true}, "resp2": {"value":9}}}`,
+					saves:         `{"requests": {"request1": {"value":7}}, "imps": {"imp2": {"value":8}}, "responses": {"resp2": {"value":9}}, "accounts":null}`,
+					invalidations: `{"requests": ["request2"], "imps": ["imp1"], "responses": ["resp1"], "accounts": []}`,
 				},
 			},
 		},
@@ -70,13 +80,13 @@ func TestStartup(t *testing.T) {
 				{
 					statusCode: httpCore.StatusOK,
 					response:   `{"accounts":{"account1":{"value":1}, "account2":{"value":2}}}`,
-					saves:      `{"accounts":{"account1":{"value":1}, "account2":{"value":2}}, "imps": null, "requests": null}`,
+					saves:      `{"accounts":{"account1":{"value":1}, "account2":{"value":2}}, "imps": null, "requests": null, "responses": null}`,
 				},
 				{
 					statusCode:    httpCore.StatusOK,
 					response:      `{"accounts":{"account1":{"value":5}, "account2":{"deleted": true}}}`,
-					saves:         `{"accounts":{"account1":{"value":5}}, "imps": null, "requests": null}`,
-					invalidations: `{"accounts":["account2"], "requests": [], "imps": []}`,
+					saves:         `{"accounts":{"account1":{"value":5}}, "imps": null, "requests": null, "responses": null}`,
+					invalidations: `{"accounts":["account2"], "requests": [], "imps": [], "responses":[]}`,
 				},
 			},
 		},
@@ -141,14 +151,14 @@ func TestStartup(t *testing.T) {
 				t.Run(fmt.Sprintf("Step %d", i+1), func(t *testing.T) {
 					// Check expected Saves
 					if len(test.saves) > 0 {
-						saves, err := json.Marshal(<-ev.Saves())
+						saves, err := jsonutil.Marshal(<-ev.Saves())
 						assert.NoError(t, err, `Failed to marshal event.Save object: %v`, err)
 						assert.JSONEq(t, test.saves, string(saves))
 					}
 					assert.Empty(t, ev.Saves(), "Unexpected additional messages in save channel")
 					// Check expected Invalidations
 					if len(test.invalidations) > 0 {
-						invalidations, err := json.Marshal(<-ev.Invalidations())
+						invalidations, err := jsonutil.Marshal(<-ev.Invalidations())
 						assert.NoError(t, err, `Failed to marshal event.Invalidation object: %v`, err)
 						assert.JSONEq(t, test.invalidations, string(invalidations))
 					}

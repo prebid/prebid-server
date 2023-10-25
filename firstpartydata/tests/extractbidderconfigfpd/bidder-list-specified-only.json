@@ -1,0 +1,14 @@
+{
+  "description": "Only global bidder list specified - no bidder fpds expected",
+  "inputRequestData": {
+    "data": {
+      "bidders": [
+        "appnexus",
+        "telaria",
+        "testBidder"
+      ]
+    }
+  },
+  "outputRequestData": {},
+  "bidderConfigFPD": {}
+}

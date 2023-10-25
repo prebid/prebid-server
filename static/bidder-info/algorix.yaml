@@ -1,3 +1,4 @@
+endpoint: "https://{{.Host}}.svr-algorix.com/rtb/sa?sid={{.SourceId}}&token={{.AccountID}}"
 maintainer:
   email: "prebid@algorix.co"
 capabilities:

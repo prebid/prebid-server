@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/prebid/prebid-server/metrics"
+	"github.com/prebid/prebid-server/v2/metrics"
 )
 
 // Fetcher knows how to fetch Stored Request data by id.
@@ -23,11 +23,12 @@ type Fetcher interface {
 	//
 	// The returned objects can only be read from. They may not be written to.
 	FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error)
+	FetchResponses(ctx context.Context, ids []string) (data map[string]json.RawMessage, errs []error)
 }
 
 type AccountFetcher interface {
 	// FetchAccount fetches the host account configuration for a publisher
-	FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error)
+	FetchAccount(ctx context.Context, accountDefaultJSON json.RawMessage, accountID string) (json.RawMessage, []error)
 }
 
 type CategoryFetcher interface {
@@ -63,9 +64,10 @@ func (e NotFoundError) Error() string {
 // Implementations must be safe for concurrent access by multiple goroutines.
 // To add a Cache layer in front of a Fetcher, see WithCache()
 type Cache struct {
-	Requests CacheJSON
-	Imps     CacheJSON
-	Accounts CacheJSON
+	Requests  CacheJSON
+	Imps      CacheJSON
+	Responses CacheJSON
+	Accounts  CacheJSON
 }
 type CacheJSON interface {
 	// Get works much like Fetcher.FetchRequests, with a few exceptions:
@@ -191,7 +193,24 @@ func (f *fetcherWithCache) FetchRequests(ctx context.Context, requestIDs []strin
 	return
 }
 
-func (f *fetcherWithCache) FetchAccount(ctx context.Context, accountID string) (account json.RawMessage, errs []error) {
+func (f *fetcherWithCache) FetchResponses(ctx context.Context, ids []string) (data map[string]json.RawMessage, errs []error) {
+	data = f.cache.Responses.Get(ctx, ids)
+
+	leftoverResp := findLeftovers(ids, data)
+
+	if len(leftoverResp) > 0 {
+		fetcherRespData, fetcherErrs := f.fetcher.FetchResponses(ctx, leftoverResp)
+		errs = fetcherErrs
+
+		f.cache.Responses.Save(ctx, fetcherRespData)
+
+		data = mergeData(data, fetcherRespData)
+	}
+
+	return
+}
+
+func (f *fetcherWithCache) FetchAccount(ctx context.Context, acccountDefaultJSON json.RawMessage, accountID string) (account json.RawMessage, errs []error) {
 	accountData := f.cache.Accounts.Get(ctx, []string{accountID})
 	// TODO: add metrics
 	if account, ok := accountData[accountID]; ok {
@@ -200,7 +219,7 @@ func (f *fetcherWithCache) FetchAccount(ctx context.Context, accountID string) (
 	} else {
 		f.metricsEngine.RecordAccountCacheResult(metrics.CacheMiss, 1)
 	}
-	account, errs = f.fetcher.FetchAccount(ctx, accountID)
+	account, errs = f.fetcher.FetchAccount(ctx, acccountDefaultJSON, accountID)
 	if len(errs) == 0 {
 		f.cache.Accounts.Save(ctx, map[string]json.RawMessage{accountID: account})
 	}

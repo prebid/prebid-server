@@ -1,0 +1,17 @@
+endpoint: "https://pbs.nextmillmedia.com/openrtb2/auction"
+maintainer:
+  email: "accountmanagers@nextmillennium.io"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner
+userSync:
+  iframe:
+    url: "https://cookies.nextmillmedia.com/sync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+    userMacro: "[NMUID]"
+  redirect:
+    url: "https://cookies.nextmillmedia.com/sync?type=image&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+    userMacro: "[NMUID]"

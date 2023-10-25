@@ -21,15 +21,14 @@
       }
     ],
     "app": {
-      "bundle": "com.huawei.browser",
+      "bundle": "com.huawei.p11",
       "name": "Huawei Browser",
       "ver": "9.1.0.301"
     },
     "device": {
       "ua": "useragent",
       "h": 1920,
-      "language": "zh",
-      "geoCountry": "CH",
+      "language": "en",
       "model": "COL-TEST",
       "os": "android",
       "osv": "10.0.0",
@@ -39,7 +38,7 @@
       "ip": "152.193.6.74",
       "pxratio": 23.01,
       "geo": {
-        "country": ""
+        "country": "ARG"
       }
     },
     "user": {
@@ -63,7 +62,7 @@
   "httpcalls": [
     {
       "expectedRequest": {
-        "uri": "https://huaweiads.com/adxtest/",
+        "uri": "https://adx-dra.op.hicloud.com/ppsadx/getResult",
         "headers": {
           "Accept": [
             "application/json"
@@ -81,9 +80,9 @@
         "body": {
           "app": {
             "lang": "en",
-            "country": "ZA",
+            "country": "AR",
             "name": "Huawei Browser",
-            "pkgname": "com.huawei.browser",
+            "pkgname": "com.example.pkgname2",
             "version": "9.1.0.301"
           },
           "multislot": [
@@ -94,18 +93,18 @@
                 "904"
               ],
               "h": 200,
-              "test": 0,
-              "w": 200
+              "w": 200,
+              "test": 1
             }
           ],
           "device": {
             "height": 1920,
-            "language": "zh",
+            "language": "en",
             "oaid": "oaid",
             "os": "android",
             "type": 4,
             "ip": "152.193.6.74",
-            "localeCountry": "ZA",
+            "localeCountry": "AR",
             "pxratio": 23.01,
             "model": "COL-TEST",
             "width": 1080,
@@ -114,7 +113,7 @@
             "useragent": "useragent",
             "version": "10.0.0",
             "maker": "huawei",
-            "belongCountry": "ZA"
+            "belongCountry": "AR"
           },
           "geo": {
           },
@@ -123,7 +122,8 @@
           },
           "regs": {
           },
-          "version": "3.4"
+          "version": "3.4",
+          "clientAdRequestId": "test-req-id"
         }
       },
       "mockResponse": {
@@ -138,7 +138,7 @@
                   "contentid": "58022259",
                   "creativetype": 106,
                   "endtime": 1621344684645,
-                  "interactiontype": 2,
+                  "interactiontype": 1,
                   "landingTitle": 1,
                   "metaData": {
                     "adSign": "2",
@@ -319,7 +319,7 @@
               "huaweiads"
             ],
             "crid": "58022259",
-            "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":100,\"title\":{\"text\":\"/test/\",\"len\":6}},{\"id\":101,\"img\":{\"type\":3,\"url\":\"http://image1.jpg\",\"w\":400,\"h\":350}},{\"id\":102,\"img\":{\"type\":3,\"url\":\"http://image2.jpg\",\"w\":400,\"h\":300}},{\"id\":103,\"img\":{\"type\":3,\"url\":\"http://image3.jpg\",\"w\":400,\"h\":300}},{\"id\":105,\"data\":{\"label\":\"desc\",\"value\":\"this is a test ad\"}}],\"link\":{\"url\":\"https://ads.huawei.com/usermgtportal/home/index.html#/\",\"clicktrackers\":[\"http://test/click\"]},\"imptrackers\":[\"http://test/imp\"]}",
+            "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":100,\"title\":{\"text\":\"/test/\",\"len\":6}},{\"id\":101,\"img\":{\"type\":3,\"url\":\"http://image1.jpg\",\"w\":400,\"h\":350}},{\"id\":102,\"img\":{\"type\":3,\"url\":\"http://image2.jpg\",\"w\":400,\"h\":300}},{\"id\":103,\"img\":{\"type\":3,\"url\":\"http://image3.jpg\",\"w\":400,\"h\":300}},{\"id\":105,\"data\":{\"label\":\"desc\",\"value\":\"this is a test ad\"}}],\"link\":{\"url\":\"https://ads.huawei.com/usermgtportal/home/index.html#/\",\"clicktrackers\":[\"http://test/click\"]},\"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"http://test/imp\"}]}",
             "id": "test-imp-id",
             "impid": "test-imp-id",
             "price": 2.8,

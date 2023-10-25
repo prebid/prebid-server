@@ -1,0 +1,105 @@
+{
+  "description": "Bid Adjustment Test with CPM, and WildCard Preference Testing",
+  "config": {
+    "mockBidders": [
+      {
+        "bidderName": "appnexus",
+        "currency": "USD",
+        "price": 20.00
+      }
+    ]
+  },
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "prebid.org"
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          }
+        }
+      }
+    ],
+    "tmax": 500,
+    "ext": {
+      "prebid": {
+        "currency": {
+          "rates": {
+            "EUR": {
+              "USD": 2.0
+            }
+          },
+          "usepbsrates": false
+        },
+        "bidadjustments": {
+          "mediatype": {
+            "banner": {
+              "appnexus": {
+                "*": [
+                  {
+                    "adjtype": "cpm",
+                    "value": 5.0,
+                    "currency": "EUR"
+                  }
+                ]
+              },
+              "*": {
+                "*": [
+                  {
+                    "adjtype": "multiplier",
+                    "value": 3.0
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "expectedBidResponse": {
+    "id": "some-request-id",
+    "seatbid": [
+      {
+        "bid": [
+          {
+            "id": "appnexus-bid",
+            "impid": "some-impression-id",
+            "price": 10.0,
+            "ext": {
+              "origbidcpm": 20,
+              "origbidcur": "USD",
+              "prebid": {
+                "meta": {
+                  "adaptercode": "appnexus"
+                },
+                "type": "banner"
+              }
+            }
+          }
+        ],
+        "seat": "appnexus"
+      }
+    ],
+    "bidid": "test bid id",
+    "cur": "USD",
+    "nbr": 0
+  },
+  "expectedReturnCode": 200
+}

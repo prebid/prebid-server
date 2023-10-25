@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "CWire Adapter Params",
+  "description": "A schema which validates params accepted by the CWire adapter",
+  "type": "object",
+  "properties": {
+    "placementId": {
+      "type": "integer",
+      "description": "An ID which identifies this placement of the impression"
+    },
+    "pageId": {
+      "type": "integer",
+      "description": "An ID which identifies the site selling the impression"
+    },
+    "cwcreative": {
+      "type": "string",
+      "description": "An CWire ID of the creative that we want to show"
+    },
+    "cwdebug": {
+      "type": "boolean",
+      "description": "Enable CWire debug mode"
+    },
+    "cwfeatures": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "A string array of CWire features"
+    }
+  },
+  "required": []
+}

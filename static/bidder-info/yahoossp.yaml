@@ -1,3 +1,4 @@
+endpoint: "https://s2shb.ssp.yahoo.com/admax/bid/partners/PBS"
 maintainer:
   email: "hb-fe-tech@oath.com"
 gvlVendorID: 25
@@ -5,9 +6,11 @@ capabilities:
   app:
     mediaTypes:
       - banner
+      - video
   site:
     mediaTypes:
       - banner
+      - video
 userSync:
   # yahoossp supports user syncing, but requires configuration by the host. contact this
   # bidder directly at the email address in this file to ask about enabling user sync.

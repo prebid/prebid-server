@@ -1,0 +1,21 @@
+endpoint: "https://prebid-adapter.media.net/rtb/pb/prebids2s"
+extra_info: "https://medianet.golang.pbs.com"
+maintainer:
+  email: "prebid-support@media.net"
+gvlVendorID: 142
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  redirect:
+    url: https://hbx.media.net/cksync.php?cs=1&type=pbs&ovsid=setstatuscode&bidder=medianet&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
+    userMacro: "<vsid>"

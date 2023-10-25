@@ -12,47 +12,53 @@
           "id": "my-imp-id",
           "banner": {},
           "ext": {
-            "appnexus": {
-              "placementId": 1
+            "prebid": {
+              "bidder": {
+                "appnexus": {
+                  "placementId": 1
+                }
+              }
             }
           }
         }
       ],
       "ext": {
-        "prebid": {
-        }
+        "prebid": {}
       }
     }
   },
   "outgoingRequests": {
     "appnexus": {
       "mockResponse": {
-        "pbsSeatBid": {
-          "pbsBids": [
-            {
-              "ortbBid": {
-                "id": "winning-bid",
-                "impid": "my-imp-id",
-                "price": 0.71,
-                "w": 200,
-                "h": 250,
-                "crid": "creative-1"
+        "pbsSeatBids": [
+          {
+            "pbsBids": [
+              {
+                "ortbBid": {
+                  "id": "winning-bid",
+                  "impid": "my-imp-id",
+                  "price": 0.71,
+                  "w": 200,
+                  "h": 250,
+                  "crid": "creative-1"
+                },
+                "bidType": "banner"
               },
-              "bidType": "banner"
-            },
-            {
-              "ortbBid": {
-                "id": "losing-bid",
-                "impid": "my-imp-id",
-                "price": 0.21,
-                "w": 200,
-                "h": 250,
-                "crid": "creative-2"
-              },
-              "bidType": "banner"
-            }
-          ]
-        }
+              {
+                "ortbBid": {
+                  "id": "losing-bid",
+                  "impid": "my-imp-id",
+                  "price": 0.21,
+                  "w": 200,
+                  "h": 250,
+                  "crid": "creative-2"
+                },
+                "bidType": "banner"
+              }
+            ],
+            "seat": "appnexus"
+          }
+        ]
       }
     }
   },
@@ -71,6 +77,7 @@
               "h": 250,
               "crid": "creative-1",
               "ext": {
+                "origbidcpm": 0.71,
                 "prebid": {
                   "type": "banner"
                 }
@@ -84,6 +91,7 @@
               "h": 250,
               "crid": "creative-2",
               "ext": {
+                "origbidcpm": 0.21,
                 "prebid": {
                   "type": "banner"
                 }

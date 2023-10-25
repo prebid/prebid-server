@@ -1,0 +1,47 @@
+{
+  "description": "Incorrect bidder specific FPD: site has no id and attempts to overwrite page to empty",
+  "inputRequestData": {
+    "site": {
+      "page": "http://www.foobar.com/1234.html",
+      "publisher": {
+        "id": "1"
+      }
+    },
+    "device": {
+      "ua": "testDevice",
+      "ip": "123.145.167.10",
+      "devicetype": 1,
+      "ifa": "123"
+    },
+    "user": {
+      "id": "reqUserID",
+      "yob": 1982,
+      "gender": "M"
+    }
+  },
+  "biddersWithGlobalFPD": [
+    "appnexus"
+  ],
+  "bidderConfigFPD": {
+    "appnexus": {
+      "site": {
+        "page": "",
+        "ext": {
+          "data": {
+            "morefpdData": "morefpddata",
+            "siteFpddata": "siteFpddata",
+            "moreFpd": {
+              "fpd": 123
+            }
+          }
+        }
+      }
+    }
+  },
+  "outputRequestData": {},
+  "validationErrors": [
+    {
+      "Message": "incorrect First Party Data for bidder appnexus: Site object cannot set empty page if req.site.id is empty"
+    }
+  ]
+}

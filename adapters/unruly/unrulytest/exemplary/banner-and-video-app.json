@@ -18,7 +18,8 @@
         },
         "ext": {
           "bidder": {
-            "siteid": 72721
+            "siteId": 72721,
+            "siteid": 0
           }
         }
       },
@@ -39,7 +40,8 @@
         },
         "ext": {
           "bidder": {
-            "siteid": 72721
+            "siteId": 72721,
+            "siteid": 0
           }
         }
       }
@@ -94,7 +96,8 @@
               },
               "ext": {
                 "bidder": {
-                  "siteid": 72721
+                  "siteId": 72721,
+                  "siteid": 0
                 }
               }
             },
@@ -115,7 +118,8 @@
               },
               "ext": {
                 "bidder": {
-                  "siteid": 72721
+                  "siteId": 72721,
+                  "siteid": 0
                 }
               }
             }

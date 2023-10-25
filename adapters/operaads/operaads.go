@@ -2,25 +2,32 @@ package operaads
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"text/template"
 
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/macros"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 )
 
 type adapter struct {
 	epTemplate *template.Template
 }
 
+var (
+	errBannerFormatMiss = errors.New("Size information missing for banner")
+	errDeviceOrOSMiss   = errors.New("Impression is missing device OS information")
+)
+
 // Builder builds a new instance of the operaads adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	epTemplate, err := template.New("endpoint").Parse(config.Endpoint)
 	if err != nil {
 		return nil, err
@@ -41,12 +48,13 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	err := checkRequest(request)
 	if err != nil {
-		errs = append(errs, err)
+		errs = append(errs, &errortypes.BadInput{
+			Message: err.Error(),
+		})
 		return nil, errs
 	}
 
 	for _, imp := range request.Imp {
-		requestCopy := *request
 		var bidderExt adapters.ExtImpBidder
 		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			errs = append(errs, &errortypes.BadInput{
@@ -54,7 +62,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			})
 			continue
 		}
-
 		var operaadsExt openrtb_ext.ImpExtOperaads
 		if err := json.Unmarshal(bidderExt.Bidder, &operaadsExt); err != nil {
 			errs = append(errs, &errortypes.BadInput{
@@ -62,46 +69,78 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			})
 			continue
 		}
-
-		err := convertImpression(&imp)
+		macro := macros.EndpointTemplateParams{PublisherID: operaadsExt.PublisherID, AccountID: operaadsExt.EndpointID}
+		endpoint, err := macros.ResolveMacros(a.epTemplate, &macro)
 		if err != nil {
 			errs = append(errs, &errortypes.BadInput{
 				Message: err.Error(),
 			})
 			continue
 		}
-
 		imp.TagID = operaadsExt.PlacementID
-
-		requestCopy.Imp = []openrtb2.Imp{imp}
-		reqJSON, err := json.Marshal(&requestCopy)
-		if err != nil {
-			errs = append(errs, err)
-			return nil, errs
+		formats := make([]interface{}, 0, 1)
+		if imp.Native != nil {
+			formats = append(formats, imp.Native)
 		}
-
-		macro := macros.EndpointTemplateParams{PublisherID: operaadsExt.PublisherID, AccountID: operaadsExt.EndpointID}
-		endpoint, err := macros.ResolveMacros(a.epTemplate, &macro)
-		if err != nil {
-			errs = append(errs, err)
-			continue
+		if imp.Video != nil {
+			formats = append(formats, imp.Video)
 		}
-		reqData := &adapters.RequestData{
-			Method:  http.MethodPost,
-			Uri:     endpoint,
-			Body:    reqJSON,
-			Headers: headers,
+		if imp.Banner != nil {
+			formats = append(formats, imp.Banner)
 		}
-		requestData = append(requestData, reqData)
+		for _, format := range formats {
+			req, err := flatImp(*request, imp, headers, endpoint, format)
+			if err != nil {
+				errs = append(errs, &errortypes.BadInput{
+					Message: err.Error(),
+				})
+				continue
+			}
+			if req != nil {
+				requestData = append(requestData, req)
+			}
+		}
 	}
 	return requestData, errs
 }
 
+func flatImp(requestCopy openrtb2.BidRequest, impCopy openrtb2.Imp, headers http.Header, endpoint string, format interface{}) (*adapters.RequestData, error) {
+	switch format.(type) {
+	case *openrtb2.Video:
+		impCopy.Native = nil
+		impCopy.Banner = nil
+		impCopy.ID = buildOperaImpId(impCopy.ID, openrtb_ext.BidTypeVideo)
+	case *openrtb2.Banner:
+		impCopy.Video = nil
+		impCopy.Native = nil
+		impCopy.ID = buildOperaImpId(impCopy.ID, openrtb_ext.BidTypeBanner)
+	case *openrtb2.Native:
+		impCopy.Video = nil
+		impCopy.Banner = nil
+		impCopy.ID = buildOperaImpId(impCopy.ID, openrtb_ext.BidTypeNative)
+	default: // do not need flat
+		return nil, nil
+	}
+	err := convertImpression(&impCopy)
+	if err != nil {
+		return nil, err
+	}
+	requestCopy.Imp = []openrtb2.Imp{impCopy}
+	reqJSON, err := json.Marshal(&requestCopy)
+	if err != nil {
+		return nil, err
+	}
+	return &adapters.RequestData{
+		Method:  http.MethodPost,
+		Uri:     endpoint,
+		Body:    reqJSON,
+		Headers: headers,
+	}, nil
+}
+
 func checkRequest(request *openrtb2.BidRequest) error {
 	if request.Device == nil || len(request.Device.OS) == 0 {
-		return &errortypes.BadInput{
-			Message: "Impression is missing device OS information",
-		}
+		return errDeviceOrOSMiss
 	}
 
 	return nil
@@ -144,17 +183,12 @@ func convertBanner(banner *openrtb2.Banner) (*openrtb2.Banner, error) {
 	if banner.W == nil || banner.H == nil || *banner.W == 0 || *banner.H == 0 {
 		if len(banner.Format) > 0 {
 			f := banner.Format[0]
-
 			bannerCopy := *banner
-
 			bannerCopy.W = openrtb2.Int64Ptr(f.W)
 			bannerCopy.H = openrtb2.Int64Ptr(f.H)
-
 			return &bannerCopy, nil
 		} else {
-			return nil, &errortypes.BadInput{
-				Message: "Size information missing for banner",
-			}
+			return nil, errBannerFormatMiss
 		}
 	}
 	return banner, nil
@@ -185,14 +219,15 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
-
 	for _, sb := range parsedResponse.SeatBid {
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
 			if bid.Price != 0 {
+				var bidType openrtb_ext.BidType
+				bid.ImpID, bidType = parseOriginImpId(bid.ImpID)
 				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 					Bid:     &bid,
-					BidType: getMediaTypeForImp(bid.ImpID, internalRequest.Imp),
+					BidType: bidType,
 				})
 			}
 		}
@@ -200,17 +235,14 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	return bidResponse, nil
 }
 
-func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
-	mediaType := openrtb_ext.BidTypeBanner
-	for _, imp := range imps {
-		if imp.ID == impId {
-			if imp.Video != nil {
-				mediaType = openrtb_ext.BidTypeVideo
-			} else if imp.Native != nil {
-				mediaType = openrtb_ext.BidTypeNative
-			}
-			return mediaType
-		}
+func buildOperaImpId(originId string, bidType openrtb_ext.BidType) string {
+	return strings.Join([]string{originId, "opa", string(bidType)}, ":")
+}
+
+func parseOriginImpId(impId string) (originId string, bidType openrtb_ext.BidType) {
+	items := strings.Split(impId, ":")
+	if len(items) < 2 {
+		return impId, ""
 	}
-	return mediaType
+	return strings.Join(items[:len(items)-2], ":"), openrtb_ext.BidType(items[len(items)-1])
 }

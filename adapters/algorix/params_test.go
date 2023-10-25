@@ -2,8 +2,9 @@ package algorix
 
 import (
 	"encoding/json"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"testing"
+
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 func TestValidParams(t *testing.T) {
@@ -34,8 +35,11 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"sid": "11233", "token": "sin"}`,
+	`{"sid": "11233", "token": "sin", "placementId": "123", "appId": "abc"}`,
 	`{"sid": "11244", "token": "iad"}`,
+	`{"sid": "11244", "token": "iad", "region": "APAC"}`,
+	`{"sid": "11244", "token": "iad", "region": "USE"}`,
+	`{"sid": "11244", "token": "iad", "region": "EUC"}`,
 }
 
 var invalidParams = []string{
@@ -44,4 +48,8 @@ var invalidParams = []string{
 	`{"sid": 123, "token": "sin"}`,
 	`{"sid": "", "token": "iad"}`,
 	`{"sid": "11233", "token": ""}`,
+	`{"sid": "11233", "token": "sin", "placementId": 123, "appId": "abc"}`,
+	`{"sid": "11233", "token": "sin", "placementId": "123", "appId": 456}`,
+	`{"sid": "11233", "token": "sin", "placementId": 123, "appId": 456}`,
+	`{"sid": "11233", "token": "sin", "region": 123}`,
 }

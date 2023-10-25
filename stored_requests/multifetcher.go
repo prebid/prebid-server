@@ -36,10 +36,14 @@ func (mf MultiFetcher) FetchRequests(ctx context.Context, requestIDs []string, i
 	return
 }
 
-func (mf MultiFetcher) FetchAccount(ctx context.Context, accountID string) (account json.RawMessage, errs []error) {
+func (mf MultiFetcher) FetchResponses(ctx context.Context, ids []string) (data map[string]json.RawMessage, errs []error) {
+	return nil, nil
+}
+
+func (mf MultiFetcher) FetchAccount(ctx context.Context, accountDefaultJSON json.RawMessage, accountID string) (account json.RawMessage, errs []error) {
 	for _, f := range mf {
 		if af, ok := f.(AccountFetcher); ok {
-			if account, accErrs := af.FetchAccount(ctx, accountID); len(accErrs) == 0 {
+			if account, accErrs := af.FetchAccount(ctx, accountDefaultJSON, accountID); len(accErrs) == 0 {
 				return account, nil
 			} else {
 				accErrs = dropMissingIDs(accErrs)

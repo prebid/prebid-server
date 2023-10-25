@@ -5,20 +5,20 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
-	"strings"
 	"text/template"
 	"time"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/macros"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
-const TAPPX_BIDDER_VERSION = "1.3"
+const TAPPX_BIDDER_VERSION = "1.5"
 const TYPE_CNN = "prebid"
 
 type TappxAdapter struct {
@@ -37,7 +37,7 @@ type Ext struct {
 }
 
 // Builder builds a new instance of the Tappx adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
@@ -119,12 +119,6 @@ func (a *TappxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 // Builds enpoint url based on adapter-specific pub settings from imp.ext
 func (a *TappxAdapter) buildEndpointURL(params *openrtb_ext.ExtImpTappx, test int) (string, error) {
 
-	if params.Host == "" {
-		return "", &errortypes.BadInput{
-			Message: "Tappx host undefined",
-		}
-	}
-
 	if params.Endpoint == "" {
 		return "", &errortypes.BadInput{
 			Message: "Tappx endpoint undefined",
@@ -137,7 +131,15 @@ func (a *TappxAdapter) buildEndpointURL(params *openrtb_ext.ExtImpTappx, test in
 		}
 	}
 
-	endpointParams := macros.EndpointTemplateParams{Host: params.Host}
+	tappxHost := "tappx.com"
+	isNewEndpoint, err := regexp.Match(`^(zz|vz)[0-9]{3,}([a-z]{2,3}|test)$`, []byte(params.Endpoint))
+	if isNewEndpoint {
+		tappxHost = params.Endpoint + ".pub.tappx.com/rtb/"
+	} else {
+		tappxHost = "ssp.api.tappx.com/rtb/v2/"
+	}
+
+	endpointParams := macros.EndpointTemplateParams{Host: tappxHost}
 	host, err := macros.ResolveMacros(a.endpointTemplate, endpointParams)
 
 	if err != nil {
@@ -147,15 +149,14 @@ func (a *TappxAdapter) buildEndpointURL(params *openrtb_ext.ExtImpTappx, test in
 	}
 
 	thisURI, err := url.Parse(host)
-
 	if err != nil {
 		return "", &errortypes.BadInput{
 			Message: "Malformed URL: " + err.Error(),
 		}
 	}
 
-	if !(strings.Contains(strings.ToLower(thisURI.Host), strings.ToLower(params.Endpoint))) {
-		thisURI.Path += params.Endpoint //Now version is backward compatible. In future, this condition and content will be delete
+	if !isNewEndpoint {
+		thisURI.Path += params.Endpoint
 	}
 
 	queryParams := url.Values{}

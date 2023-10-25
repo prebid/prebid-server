@@ -6,19 +6,23 @@ import (
 	"net/http"
 
 	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type ColossusAdapter struct {
 	URI string
 }
 
+type ColossusResponseBidExt struct {
+	MediaType string `json:"mediaType"`
+}
+
 // Builder builds a new instance of the Colossus adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &ColossusAdapter{
 		URI: config.Endpoint,
 	}
@@ -28,22 +32,18 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 // MakeRequests create bid request for colossus demand
 func (a *ColossusAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
-	var err error
-	var tagID string
-
 	var adapterRequests []*adapters.RequestData
 
 	reqCopy := *request
 	for _, imp := range request.Imp {
 		reqCopy.Imp = []openrtb2.Imp{imp}
 
-		tagID, err = jsonparser.GetString(reqCopy.Imp[0].Ext, "bidder", "TagID")
-		if err != nil {
+		if tagID, err := jsonparser.GetString(reqCopy.Imp[0].Ext, "bidder", "TagID"); err == nil {
+			reqCopy.Imp[0].TagID = tagID
+		} else if err != jsonparser.KeyPathNotFoundError {
 			errs = append(errs, err)
 			continue
 		}
-
-		reqCopy.Imp[0].TagID = tagID
 
 		adapterReq, errors := a.makeRequest(&reqCopy)
 		if adapterReq != nil {
@@ -106,7 +106,7 @@ func (a *ColossusAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
-			bidType, err := getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp)
+			bidType, err := getMediaTypeForImp(sb.Bid[i], internalRequest.Imp)
 			if err != nil {
 				errs = append(errs, err)
 			} else {
@@ -121,19 +121,36 @@ func (a *ColossusAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 	return bidResponse, errs
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
-	mediaType := openrtb_ext.BidTypeBanner
+func getMediaTypeForImp(bid openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
+	var bidExt ColossusResponseBidExt
+	err := json.Unmarshal(bid.Ext, &bidExt)
+	if err == nil {
+		switch bidExt.MediaType {
+		case "banner":
+			return openrtb_ext.BidTypeBanner, nil
+		case "native":
+			return openrtb_ext.BidTypeNative, nil
+		case "video":
+			return openrtb_ext.BidTypeVideo, nil
+		}
+	}
+
 	for _, imp := range imps {
-		if imp.ID == impID {
-			if imp.Banner == nil && imp.Video != nil {
-				mediaType = openrtb_ext.BidTypeVideo
+		if imp.ID == bid.ImpID {
+			if imp.Banner != nil {
+				return openrtb_ext.BidTypeBanner, nil
 			}
-			return mediaType, nil
+			if imp.Video != nil {
+				return openrtb_ext.BidTypeVideo, nil
+			}
+			if imp.Native != nil {
+				return openrtb_ext.BidTypeNative, nil
+			}
 		}
 	}
 
 	// This shouldnt happen. Lets handle it just incase by returning an error.
 	return "", &errortypes.BadInput{
-		Message: fmt.Sprintf("Failed to find impression \"%s\" ", impID),
+		Message: fmt.Sprintf("Failed to find impression \"%s\"", bid.ImpID),
 	}
 }

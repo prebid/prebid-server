@@ -6,10 +6,9 @@
         "MXN": 2.00
       }
     },
-    "mockBidder": {
-      "currency": "USD",
-	  "price": 1.00
-    }
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 1.00}
+    ]
   },
   "mockBidRequest": {
     "id": "some-request-id",
@@ -58,11 +57,11 @@
           "bid": [
             {
               "id": "appnexus-bid",
-              "impid": "",
+              "impid": "my-imp-id",
               "price": 2.00
             }
           ],
-          "seat": "appnexus-bids"
+          "seat": "appnexus"
         }
       ]
   },

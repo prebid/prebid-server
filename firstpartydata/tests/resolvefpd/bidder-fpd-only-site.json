@@ -1,0 +1,35 @@
+{
+  "description": "Bidder FPD defined only for site",
+  "inputRequestData": {
+    "site": {
+      "id": "reqUserID"
+    }
+  },
+  "biddersWithGlobalFPD": [
+    "appnexus"
+  ],
+  "bidderConfigFPD": {
+    "appnexus": {
+      "site": {
+        "id": "apnSiteId",
+        "ext": {
+          "data": {
+            "other": "data"
+          }
+        }
+      }
+    }
+  },
+  "outputRequestData": {
+    "appnexus": {
+      "site": {
+        "id": "apnSiteId",
+        "ext": {
+          "data": {
+            "other": "data"
+          }
+        }
+      }
+    }
+  }
+}

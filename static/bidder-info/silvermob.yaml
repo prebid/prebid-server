@@ -1,3 +1,4 @@
+endpoint: "http://{{.Host}}.silvermob.com/marketplace/api/dsp/bid/{{.ZoneID}}"
 maintainer:
   email: "support@silvermob.com"
 capabilities:

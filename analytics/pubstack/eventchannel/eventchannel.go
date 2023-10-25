@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/benbjohnson/clock"
 	"github.com/golang/glog"
 )
 
@@ -13,11 +14,13 @@ type Metrics struct {
 	bufferSize int64
 	eventCount int64
 }
+
 type Limit struct {
 	maxByteSize   int64
 	maxEventCount int64
 	maxTime       time.Duration
 }
+
 type EventChannel struct {
 	gz   *gzip.Writer
 	buff *bytes.Buffer
@@ -28,9 +31,10 @@ type EventChannel struct {
 	muxGzBuffer sync.RWMutex
 	send        Sender
 	limit       Limit
+	clock       clock.Clock
 }
 
-func NewEventChannel(sender Sender, maxByteSize, maxEventCount int64, maxTime time.Duration) *EventChannel {
+func NewEventChannel(sender Sender, clock clock.Clock, maxByteSize, maxEventCount int64, maxTime time.Duration) *EventChannel {
 	b := &bytes.Buffer{}
 	gzw := gzip.NewWriter(b)
 
@@ -42,6 +46,7 @@ func NewEventChannel(sender Sender, maxByteSize, maxEventCount int64, maxTime ti
 		metrics: Metrics{},
 		send:    sender,
 		limit:   Limit{maxByteSize, maxEventCount, maxTime},
+		clock:   clock,
 	}
 	go c.start()
 	return &c
@@ -116,19 +121,21 @@ func (c *EventChannel) flush() {
 }
 
 func (c *EventChannel) start() {
-	ticker := time.NewTicker(c.limit.maxTime)
+	ticker := c.clock.Ticker(c.limit.maxTime)
 
 	for {
 		select {
 		case <-c.endCh:
 			c.flush()
 			return
+
 		// event is received
 		case event := <-c.ch:
 			c.buffer(event)
 			if c.isBufferFull() {
 				c.flush()
 			}
+
 		// time between 2 flushes has passed
 		case <-ticker.C:
 			c.flush()

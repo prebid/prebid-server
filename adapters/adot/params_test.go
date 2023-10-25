@@ -2,13 +2,14 @@ package adot
 
 import (
 	"encoding/json"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"testing"
+
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 // This file actually intends to test static/bidder-params/adot.json
 //
-// These also validate the format of the external API: request.imp[i].ext.adot
+// These also validate the format of the external API: request.imp[i].ext.prebid.bidder.adot
 
 // TestValidParams makes sure that the adot schema accepts all imp.ext fields which we intend to support.
 func TestValidParams(t *testing.T) {
@@ -42,12 +43,16 @@ var validParams = []string{
 	`{"placementId": "test-114"}`,
 	`{"placementId": "test-113", "parallax": true}`,
 	`{"placementId": "test-113", "parallax": false}`,
+	`{"placementId": "test-113", "parallax": false, "publisherPath": "/hubvisor"}`,
+	`{"placementId": "test-113", "parallax": false, "publisherPath": ""}`,
 }
 
 var invalidParams = []string{
 	`{"parallax": 1}`,
 	`{"placementId": 135123}`,
+	`{"publisherPath": 111}`,
 	`{"placementId": 113, "parallax": 1}`,
 	`{"placementId": 142, "parallax": true}`,
 	`{"placementId": "test-114", "parallax": 1}`,
+	`{"placementId": "test-114", "parallax": true, "publisherPath": 111}`,
 }

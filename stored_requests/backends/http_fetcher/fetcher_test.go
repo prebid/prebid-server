@@ -1,16 +1,16 @@
 package http_fetcher
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"io"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -136,16 +136,25 @@ func TestFetchAccount(t *testing.T) {
 	fetcher, close := newTestAccountFetcher(t, []string{"acc-1"})
 	defer close()
 
-	account, errs := fetcher.FetchAccount(context.Background(), "acc-1")
+	account, errs := fetcher.FetchAccount(context.Background(), json.RawMessage(`{"disabled":true}`), "acc-1")
 	assert.Empty(t, errs, "Unexpected error fetching existing account")
-	assert.JSONEq(t, `"acc-1"`, string(account), "Unexpected account data fetching existing account")
+	assert.JSONEq(t, `{"disabled": true, "id":"acc-1"}`, string(account), "Unexpected account data fetching existing account")
+}
+
+func TestAccountMergeError(t *testing.T) {
+	fetcher, close := newTestAccountFetcher(t, []string{"acc-1"})
+	defer close()
+
+	_, errs := fetcher.FetchAccount(context.Background(), json.RawMessage(`{"disabled"}`), "acc-1")
+	assert.Error(t, errs[0])
+	assert.Equal(t, fmt.Errorf("Invalid JSON Document"), errs[0])
 }
 
 func TestFetchAccountNoData(t *testing.T) {
 	fetcher, close := newFetcherBrokenBackend()
 	defer close()
 
-	unknownAccount, errs := fetcher.FetchAccount(context.Background(), "unknown-acc")
+	unknownAccount, errs := fetcher.FetchAccount(context.Background(), json.RawMessage(`{disabled":true}`), "unknown-acc")
 	assert.NotEmpty(t, errs, "Retrieving unknown account should return error")
 	assert.Nil(t, unknownAccount, "Retrieving unknown account should return nil json.RawMessage")
 }
@@ -154,7 +163,7 @@ func TestFetchAccountNoIDProvided(t *testing.T) {
 	fetcher, close := newTestAccountFetcher(t, nil)
 	defer close()
 
-	account, errs := fetcher.FetchAccount(context.Background(), "")
+	account, errs := fetcher.FetchAccount(context.Background(), json.RawMessage(`{disabled":true}`), "")
 	assert.Len(t, errs, 1, "Fetching account with empty id should error")
 	assert.Nil(t, account, "Fetching account with empty id should return nil")
 }
@@ -166,42 +175,6 @@ func TestErrResponse(t *testing.T) {
 	assertMapKeys(t, reqData)
 	assertMapKeys(t, impData)
 	assert.Len(t, errs, 1)
-}
-
-func assertSameContents(t *testing.T, expected map[string]json.RawMessage, actual map[string]json.RawMessage) {
-	if len(expected) != len(actual) {
-		t.Errorf("Wrong counts. Expected %d, actual %d", len(expected), len(actual))
-		return
-	}
-	for expectedKey, expectedVal := range expected {
-		if actualVal, ok := actual[expectedKey]; ok {
-			if !bytes.Equal(expectedVal, actualVal) {
-				t.Errorf("actual[%s] value %s does not match expected: %s", expectedKey, string(actualVal), string(actualVal))
-			}
-		} else {
-			t.Errorf("actual map missing expected key %s", expectedKey)
-		}
-	}
-}
-
-func assertSameErrMsgs(t *testing.T, expected []string, actual []error) {
-	if len(expected) != len(actual) {
-		t.Errorf("Wrong error counts. Expected %d, actual %d", len(expected), len(actual))
-		return
-	}
-	for i, expectedErr := range expected {
-		if actual[i].Error() != expectedErr {
-			t.Errorf("Wrong error[%d]. Expected %s, got %s", i, expectedErr, actual[i].Error())
-		}
-	}
-}
-
-type closeWrapper struct {
-	io.Reader
-}
-
-func (w closeWrapper) Close() error {
-	return nil
 }
 
 func newFetcherBrokenBackend() (fetcher *HttpFetcher, closer func()) {
@@ -261,7 +234,7 @@ func newHandler(t *testing.T, expectReqIDs []string, expectImpIDs []string, json
 			Imps:     impIDResponse,
 		}
 
-		if respBytes, err := json.Marshal(respObj); err != nil {
+		if respBytes, err := jsonutil.Marshal(respObj); err != nil {
 			t.Errorf("failed to marshal responseContract in test:  %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 		} else {
@@ -271,12 +244,12 @@ func newHandler(t *testing.T, expectReqIDs []string, expectImpIDs []string, json
 }
 
 func newTestAccountFetcher(t *testing.T, expectAccIDs []string) (fetcher *HttpFetcher, closer func()) {
-	handler := newAccountHandler(t, expectAccIDs, jsonifyID)
+	handler := newAccountHandler(t, expectAccIDs)
 	server := httptest.NewServer(http.HandlerFunc(handler))
 	return NewFetcher(server.Client(), server.URL), server.Close
 }
 
-func newAccountHandler(t *testing.T, expectAccIDs []string, jsonifier func(string) json.RawMessage) func(w http.ResponseWriter, r *http.Request) {
+func newAccountHandler(t *testing.T, expectAccIDs []string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		query := r.URL.Query()
 		gotAccIDs := richSplit(query.Get("account-ids"))
@@ -287,7 +260,7 @@ func newAccountHandler(t *testing.T, expectAccIDs []string, jsonifier func(strin
 
 		for _, accID := range gotAccIDs {
 			if accID != "" {
-				accIDResponse[accID] = jsonifier(accID)
+				accIDResponse[accID] = json.RawMessage(`{"id":"` + accID + `"}`)
 			}
 		}
 
@@ -295,7 +268,7 @@ func newAccountHandler(t *testing.T, expectAccIDs []string, jsonifier func(strin
 			Accounts: accIDResponse,
 		}
 
-		if respBytes, err := json.Marshal(respObj); err != nil {
+		if respBytes, err := jsonutil.Marshal(respObj); err != nil {
 			t.Errorf("failed to marshal responseContract in test:  %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 		} else {
@@ -355,7 +328,7 @@ func richSplit(queryVal string) []string {
 }
 
 func jsonifyID(id string) json.RawMessage {
-	if b, err := json.Marshal(id); err != nil {
+	if b, err := jsonutil.Marshal(id); err != nil {
 		return json.RawMessage([]byte("\"error encoding ID=" + id + "\""))
 	} else {
 		return json.RawMessage(b)

@@ -1,3 +1,4 @@
+endpoint: "http://pub.admanmedia.com/?c=o&m=ortb"
 maintainer:
   email: "prebid@admanmedia.com"
 gvlVendorID: 149
@@ -14,3 +15,4 @@ userSync:
   redirect:
     url: "https://sync.admanmedia.com/pbs.gif?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir={{.RedirectURL}}"
     userMacro: "[UID]"
+

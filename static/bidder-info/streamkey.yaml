@@ -1,0 +1,16 @@
+aliasOf: adtelligent
+endpoint: "http://ghb.hb.streamkey.net/pbs/ortb"
+maintainer:
+  email: "contact@streamkey.tv"
+capabilities:
+  app:
+    mediaTypes:
+      - video
+  site:
+    mediaTypes:
+      - video
+userSync:
+  # streamkey supports user syncing, but requires configuration by the host. contact this
+  # bidder directly at the email address in this file to ask about enabling user sync.
+  supports:
+    - iframe

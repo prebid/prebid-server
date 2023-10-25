@@ -1,0 +1,121 @@
+{
+  "mockBidRequest": {
+      "id": "test-native-request",
+      "imp": [
+          {
+              "id": "test-native-imp",
+              "native": {
+                  "request": "{\"assets\":[{\"id\":1,\"img\":{\"ext\":{\"image1\":\"image2\"},\"h\": 250,\"mimes\":[\"image\/gif\",\"image\/png\"],\"type\":3,\"w\":300},\"required\":1}]}"
+              },
+              "ext": {
+                  "bidder": {
+                      "publisherId": "999",
+                      "wrapper": {
+                          "version": 1,
+                          "profile": 5123
+                      }
+                  }
+              }
+          }
+      ],
+      "ext": {},
+      "device": {
+          "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36"
+      },
+      "site": {
+          "id": "siteID",
+          "publisher": {
+              "id": "1234"
+          }
+      }
+  },
+  "httpCalls": [
+      {
+          "expectedRequest": {
+              "uri": "https://hbopenbid.pubmatic.com/translator?source=prebid-server",
+              "body": {
+                  "id": "test-native-request",
+                  "imp": [
+                      {
+                          "id": "test-native-imp",
+                          "native": {
+                              "request": "{\"assets\":[{\"id\":1,\"img\":{\"ext\":{\"image1\":\"image2\"},\"h\": 250,\"mimes\":[\"image\/gif\",\"image\/png\"],\"type\":3,\"w\":300},\"required\":1}]}"
+                          }
+                      }
+                  ],
+                  "device": {
+                      "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36"
+                  },
+                  "site": {
+                      "id": "siteID",
+                      "publisher": {
+                          "id": "999"
+                      }
+                  },
+                  "ext": {
+                      "prebid": {},
+                      "wrapper": {
+                          "profile": 5123,
+                          "version": 1
+                      }
+                  }
+              }
+          },
+          "mockResponse": {
+              "status": 200,
+              "body": {
+                  "id": "test-native-request",
+                  "seatbid": [
+                      {
+                          "seat": "958",
+                          "bid": [
+                              {
+                                "id": "test-native-invalid-adm-json",
+                                  "impid": "test-native-imp-invalid-adm",
+                                  "price": 0.500000,
+                                  "adid": "some-test-id",
+                                  "adm": "{",
+                                  "crid": "29681110",
+                                  "ext": {
+                                      "deal_channel": 1,
+                                      "bidtype": 2
+                                  }
+                              }
+                          ]
+                      }
+                  ],
+                  "bidid": "5778926625248726496",
+                  "cur": "USD"
+              }
+          }
+      }
+  ],
+  "expectedBidResponses": [
+      {
+          "currency": "USD",
+          "bids": [
+              {
+                "bid": {
+                    "id": "test-native-invalid-adm-json",
+                    "impid": "test-native-imp-invalid-adm",
+                    "price": 0.5,
+                    "adid": "some-test-id",
+                    "adm": "{",
+                    "crid": "29681110",
+                    "ext": {
+                        "deal_channel": 1,
+                        "bidtype": 2
+                    }
+                },
+                "type": "native"
+              }
+          ]
+      }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "unable to unmarshal native adm",
+      "comparison": "literal"
+    }
+  ]
+}

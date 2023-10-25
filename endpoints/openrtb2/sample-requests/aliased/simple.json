@@ -33,12 +33,12 @@
       {
         "bid": [
           {
-            "id": "alias1-bid",
-            "impid": "",
+            "id": "appnexus-bid",
+            "impid": "my-imp-id",
             "price": 0
           }
         ],
-       "seat": "alias1-bids"
+       "seat": "alias1"
       }
     ]
   },

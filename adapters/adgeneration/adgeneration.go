@@ -10,11 +10,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type AdgenerationAdapter struct {
@@ -55,8 +55,13 @@ func (adg *AdgenerationAdapter) MakeRequests(request *openrtb2.BidRequest, reqIn
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
-	if request.Device != nil && len(request.Device.UA) > 0 {
-		headers.Add("User-Agent", request.Device.UA)
+	if request.Device != nil {
+		if len(request.Device.UA) > 0 {
+			headers.Add("User-Agent", request.Device.UA)
+		}
+		if len(request.Device.IP) > 0 {
+			headers.Add("X-Forwarded-For", request.Device.IP)
+		}
 	}
 
 	bidRequestArray := make([]*adapters.RequestData, 0, numRequests)
@@ -102,7 +107,6 @@ func (adg *AdgenerationAdapter) getRawQuery(id string, request *openrtb2.BidRequ
 	v := url.Values{}
 	v.Set("posall", "SSPLOC")
 	v.Set("id", id)
-	v.Set("sdktype", "0")
 	v.Set("hb", "true")
 	v.Set("t", "json3")
 	v.Set("currency", adg.getCurrency(request))
@@ -112,12 +116,32 @@ func (adg *AdgenerationAdapter) getRawQuery(id string, request *openrtb2.BidRequ
 	if adSize != "" {
 		v.Set("sizes", adSize)
 	}
+	if request.Device != nil && request.Device.OS == "android" {
+		v.Set("sdktype", "1")
+	} else if request.Device != nil && request.Device.OS == "ios" {
+		v.Set("sdktype", "2")
+	} else {
+		v.Set("sdktype", "0")
+	}
 	if request.Site != nil && request.Site.Page != "" {
 		v.Set("tp", request.Site.Page)
 	}
 	if request.Source != nil && request.Source.TID != "" {
 		v.Set("transactionid", request.Source.TID)
 	}
+	if request.App != nil && request.App.Bundle != "" {
+		v.Set("appbundle", request.App.Bundle)
+	}
+	if request.App != nil && request.App.Name != "" {
+		v.Set("appname", request.App.Name)
+	}
+	if request.Device != nil && request.Device.OS == "ios" && request.Device.IFA != "" {
+		v.Set("idfa", request.Device.IFA)
+	}
+	if request.Device != nil && request.Device.OS == "android" && request.Device.IFA != "" {
+		v.Set("advertising_id", request.Device.IFA)
+	}
+
 	return &v
 }
 
@@ -260,10 +284,10 @@ func removeWrapper(ad string) string {
 }
 
 // Builder builds a new instance of the Adgeneration adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &AdgenerationAdapter{
 		config.Endpoint,
-		"1.0.2",
+		"1.0.3",
 		"JPY",
 	}
 	return bidder, nil

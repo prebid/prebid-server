@@ -1,0 +1,63 @@
+{
+  "description": "Verifies error presence in case more than one bidder config specified for the same bidder",
+  "inputRequestData": {
+    "data": {},
+    "bidderconfig": [
+      {
+        "bidders": [
+          "appnexus"
+        ],
+        "config": {
+          "ortb2": {
+            "site": {
+              "id": "apnSiteId",
+              "ext": {
+                "data": {
+                  "sitefpddata": "sitefpddata",
+                  "moreFpd": {
+                    "fpd": 123
+                  },
+                  "morefpdData": "morefpddata"
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "bidders": [
+          "appnexus",
+          "telaria",
+          "testBidder2"
+        ],
+        "config": {
+          "ortb2": {
+            "user": {
+              "id": "telariaUserData",
+              "ext": {
+                "data": {
+                  "userdata": "fpduserdata"
+                }
+              }
+            },
+            "app": {
+              "id": "telariaAppData",
+              "ext": {
+                "data": {
+                  "appdata": "fpdappdata"
+                }
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "outputRequestData": {},
+  "bidderConfigFPD": {},
+  "validationErrors": [
+    {
+      "Message": "multiple First Party Data bidder configs provided for bidder: appnexus"
+    }
+  ]
+}

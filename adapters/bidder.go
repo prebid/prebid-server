@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/currency"
-	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/currency"
+	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 // Bidder describes how to connect to external demand.
@@ -60,8 +60,9 @@ type TimeoutBidder interface {
 // From the bid response, the bidder accepts a list of valid currencies for the bid.
 // The currency is the same across all bids.
 type BidderResponse struct {
-	Currency string
-	Bids     []*TypedBid
+	Currency             string
+	Bids                 []*TypedBid
+	FledgeAuctionConfigs []*openrtb_ext.FledgeAuctionConfig
 }
 
 // NewBidderResponseWithBidsCapacity create a new BidderResponse initialising the bids array capacity and the default currency value
@@ -93,12 +94,14 @@ func NewBidderResponse() *BidderResponse {
 // TypedBid.BidType will become "response.seatbid[i].bid.ext.prebid.type" in the final OpenRTB response.
 // TypedBid.BidVideo will become "response.seatbid[i].bid.ext.prebid.video" in the final OpenRTB response.
 // TypedBid.DealPriority is optionally provided by adapters and used internally by the exchange to support deal targeted campaigns.
+// TypedBid.Seat new seat under which the bid should pe placed. Default is adapter name
 type TypedBid struct {
 	Bid          *openrtb2.Bid
 	BidMeta      *openrtb_ext.ExtBidPrebidMeta
 	BidType      openrtb_ext.BidType
 	BidVideo     *openrtb_ext.ExtBidPrebidVideo
 	DealPriority int
+	Seat         openrtb_ext.BidderName
 }
 
 // RequestData and ResponseData exist so that prebid-server core code can implement its "debug" functionality
@@ -132,6 +135,8 @@ type ExtImpBidder struct {
 	// Bidder implementations may safely assume that this JSON has been validated by their
 	// static/bidder-params/{bidder}.json file.
 	Bidder json.RawMessage `json:"bidder"`
+
+	AuctionEnvironment openrtb_ext.AuctionEnvironmentType `json:"ae,omitempty"`
 }
 
 func (r *RequestData) SetBasicAuth(username string, password string) {
@@ -151,9 +156,9 @@ func NewExtraRequestInfo(c currency.Conversions) ExtraRequestInfo {
 }
 
 // ConvertCurrency converts a given amount from one currency to another, or returns:
-//  - Error if the `from` or `to` arguments are malformed or unknown ISO-4217 codes.
-//  - ConversionNotFoundError if the conversion mapping is unknown to Prebid Server
-//    and not provided in the bid request.
+//   - Error if the `from` or `to` arguments are malformed or unknown ISO-4217 codes.
+//   - ConversionNotFoundError if the conversion mapping is unknown to Prebid Server
+//     and not provided in the bid request.
 func (r ExtraRequestInfo) ConvertCurrency(value float64, from, to string) (float64, error) {
 	if rate, err := r.CurrencyConversions.GetRate(from, to); err == nil {
 		return value * rate, nil
@@ -162,4 +167,4 @@ func (r ExtraRequestInfo) ConvertCurrency(value float64, from, to string) (float
 	}
 }
 
-type Builder func(openrtb_ext.BidderName, config.Adapter) (Bidder, error)
+type Builder func(openrtb_ext.BidderName, config.Adapter, config.Server) (Bidder, error)

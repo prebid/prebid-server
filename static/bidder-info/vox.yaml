@@ -1,0 +1,19 @@
+endpoint: "https://ssp.hybrid.ai/prebid/server/v1/auction"
+maintainer:
+  email: prebid@hybrid.ai
+endpointCompression: gzip
+gvlVendorID: 206
+modifyingVastXmlAllowed: true
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+  app:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  redirect:
+    url: "https://ssp.hybrid.ai/prebid/server/v1/userSync?consent={{.GDPRConsent}}&redirect={{.RedirectURL}}"
+    userMacro: $UID
