@@ -1,4 +1,4 @@
-package criteostaples
+package criteoretail
 
 import (
 	"encoding/json"
@@ -27,7 +27,7 @@ const (
 	IMP_URL  = "//b.va.us.criteo.com/rm?rm_e=V371SUC6Q0sB1j7Qlln9yr4HmnAeOoZf79-n9l7MezTyqJTRG9e0i5nSRGOMvkJVIy916h08clCmFSUIeYuJI1pNc1Skg2jiJnnLr9_IDUiIGwaE1-r6TQZtzwz2CuFXuc5ZNn86gzWlM3ciRwey0bumgKtGwi3zX1NWgsg0HmKEVLkwjHslFwdVSg6phjt29NuQ-fxPnp4SOschyHefI0HNM0AvREMQkLcYMGKkADJ07E0FomZhagxPFhBE4Qrk0m3AB46CHNsu3E7IVJ2RwAatybYFDQP2rgTr--mFQ0jlZUggctRZvMAQkd1e17YPW-x8mQd_NqPVSYHvo6peUfSUhgeRyvBf2NtZWMG4NBaaXCHZZuNFDT2_DYCcQfeFanp1wOYNii3_-WLBdiEhWgvIVH5psM-xgV8hEnZSlz-__UtOMVTaXdZiRDEouaHnEaaZTV7Vi8clDSz04v2nbTSL2ta1sl7-EzDEtQAfftjVd42k3OzofBbad57JXSZ9hbJaomW5r8yibxkbdjEv1u-Nldm-HkIIc0xsWMLCUog&ev=4"
 	CLICK_URL    = "//b.va.us.criteo.com/rm?rm_e=4Cwm-UKrl2ok74hbwFbixP5V17YxlhWthucJj_ny-DoqhUxhNLckmIt2T8Xpc3U0pq3aIZBPY4tp8MQQ53PKfRascJnYUUkz3RI-z5JZB5nlNOq9_lPZxCjtd0YDHZvWw2Bu05u1SvnOiHNpBQpqBw68R4Fsbsed78vQ4DnOtnntXzS9xCqVHOKS6sIQIInjAiFvcEIa4MU7PrOTa1KoHGM-qmUQlaCZxKzADq0MTA3Nr5xaFZFBiZhyCjWxss27YVCbNjXHS8N4xSiCaCkrN9tZcRVtKzc-CdmKcUss-ZfHog_Q_1X76qc59nklcPznF6ax-EDx8xTQQ_cZnja_c_QnSrH732fuHG9vbuEhHl-tbRo3XCEI39PRupAcMB75k_a--VnxgOjgdJryWp6Sl2Qme23qHv2YdZkBBcxt4Z78KnjFeBGwPPA98wNSig5g15QN_Dae3K-XEmSrAFDjWnZmXb4PuVVeP72VOSaG9_YLwx_L4vsXzeDdnjM6w3WRP6yIqc_ZVBnloH8I1T31KayJfxKkh2Fs4a5-1NDgcgZoxmqfbtpd5LIbgPBexD8Sw7H9efxx8ql_EpgmnxMBTA&ev=4"
 )
-func (a *CriteoStaplesAdapter) GetMockResponse(internalRequest *openrtb2.BidRequest) *adapters.BidderResponse {
+func (a *CriteoRetailAdapter) GetMockResponse(internalRequest *openrtb2.BidRequest) *adapters.BidderResponse {
 	requestCount := GetRequestSlotCount(internalRequest)
 	impiD := internalRequest.Imp[0].ID
 
@@ -106,7 +106,7 @@ func GetMockBids(requestCount int, ImpID string) *adapters.BidderResponse {
 
 		typedbid := &adapters.TypedBid{
 			Bid:  bid,
-			Seat: openrtb_ext.BidderName(SEAT_CRITEOSTAPLES),
+			Seat: openrtb_ext.BidderName(SEAT_CRITEORETAIL),
 		}
 		typedArray = append(typedArray, typedbid)
 	}

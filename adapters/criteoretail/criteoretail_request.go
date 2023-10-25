@@ -1,4 +1,4 @@
-package criteostaples
+package criteoretail
 
 import (
 	"fmt"
@@ -30,7 +30,7 @@ func getProductList(commerceExt *openrtb_ext.ExtImpCommerce) string {
 	return ""
 }
 
-func (a *CriteoStaplesAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *CriteoRetailAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	commerceExt, siteExt, bidderParams, errors := adapters.ValidateCommRequest(request)
 	if len(errors) > 0 {
 		return nil, errors
@@ -80,4 +80,5 @@ func (a *CriteoStaplesAdapter) MakeRequests(request *openrtb2.BidRequest, reqInf
 		Headers: http.Header{},
 	}}, nil
 }
+
 

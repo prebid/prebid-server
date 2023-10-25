@@ -1,10 +1,10 @@
-package criteostaples
+package criteoretail
 
 const (
 	AUCTIONDETAILS_PREFIX = "AD_"
 	AD_ACCOUNT_ID         = "account_id"
 	RESPONSE_OK           = "OK"
-	SEAT_CRITEOSTAPLES    = "criteostaples"
+	SEAT_CRITEORETAIL     = "criteoretail"
 	IMP_KEY               = "tps_impurl="
 	CLICK_KEY             = "tps_clkurl="
 	FORMAT_SPONSORED      = "sponsored_products"

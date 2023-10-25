@@ -245,7 +245,7 @@ const (
 	BidderZeroClickFraud    BidderName = "zeroclickfraud"
 	BidderKoddi             BidderName = "koddi"
 	BidderAdButtler         BidderName = "adbuttler"
-	BidderCriteoStaples     BidderName = "criteostaples"
+	BidderCriteoRetail     BidderName = "criteoretail"
 
 )
 
@@ -415,7 +415,7 @@ func CoreBidderNames() []BidderName {
 		BidderZeroClickFraud,
 		BidderKoddi,
 		BidderAdButtler,
-		BidderCriteoStaples,
+		BidderCriteoRetail,
 	}
 }
 

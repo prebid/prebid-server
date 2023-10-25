@@ -1,4 +1,4 @@
-package criteostaples
+package criteoretail
 
 import (
 	"encoding/json"
@@ -26,7 +26,7 @@ type CriteoResponse struct {
 	Placements           []map[string][]Placement `json:"placements"`
 }
 
-func (a *CriteoStaplesAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *CriteoRetailAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	var errors []error
 
@@ -52,7 +52,7 @@ func (a *CriteoStaplesAdapter) MakeBids(internalRequest *openrtb2.BidRequest, ex
 		}}
 	}
 
-	criteoResponse, err := newCriteoStaplesResponseFromBytes(response.Body)
+	criteoResponse, err := newcriteoretailResponseFromBytes(response.Body)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -74,7 +74,7 @@ func (a *CriteoStaplesAdapter) MakeBids(internalRequest *openrtb2.BidRequest, ex
 	return bidderResponse, nil
 }
 
-func (a *CriteoStaplesAdapter) getBidderResponse(request *openrtb2.BidRequest, criteoResponse *CriteoResponse, requestImpID string) *adapters.BidderResponse {
+func (a *CriteoRetailAdapter) getBidderResponse(request *openrtb2.BidRequest, criteoResponse *CriteoResponse, requestImpID string) *adapters.BidderResponse {
 
 	noOfBids := countSponsoredProducts(criteoResponse)
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(noOfBids)
@@ -126,7 +126,7 @@ func (a *CriteoStaplesAdapter) getBidderResponse(request *openrtb2.BidRequest, c
 							bid.Ext = json.RawMessage(bidExtJSON)
 						}
 
-						seat := openrtb_ext.BidderName(SEAT_CRITEOSTAPLES)
+						seat := openrtb_ext.BidderName(SEAT_CRITEORETAIL)
 
 						typedbid := &adapters.TypedBid{
 							Bid:  bid,
@@ -141,7 +141,7 @@ func (a *CriteoStaplesAdapter) getBidderResponse(request *openrtb2.BidRequest, c
 	return bidResponse
 }
 
-func newCriteoStaplesResponseFromBytes(bytes []byte) (CriteoResponse, error) {
+func newcriteoretailResponseFromBytes(bytes []byte) (CriteoResponse, error) {
 	var err error
 	var bidResponse CriteoResponse
 
