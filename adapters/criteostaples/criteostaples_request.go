@@ -60,7 +60,11 @@ func (a *CriteoStaplesAdapter) MakeRequests(request *openrtb2.BidRequest, reqInf
 	values.Add("criteo-partner-id", criteoPartnerID)
 	values.Add("retailer-visitor-id", request.User.ID)
 	values.Add("page-id", siteExt.Page)
-	values.Add("item-whitelist", getProductList(commerceExt))
+
+	productList := getProductList(commerceExt) 
+	if productList != ""{
+		values.Add("item-whitelist",productList)
+	}
 	// Add other fields as needed
 
 	for key, value := range bidderParams {
@@ -76,9 +80,4 @@ func (a *CriteoStaplesAdapter) MakeRequests(request *openrtb2.BidRequest, reqInf
 		Headers: http.Header{},
 	}}, nil
 }
-
-
-
-
-
 
