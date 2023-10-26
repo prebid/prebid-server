@@ -95,7 +95,7 @@ func (a *AdButtlerAdapter) GetBidderResponse(request *openrtb2.BidRequest, adBut
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(adButlerResp.Bids))
 	var commerceExt *openrtb_ext.ExtImpCommerce
-	var adbutlerID, zoneID, adbUID string
+	var adbutlerID, zoneID, adbUID, keyToRemove string
 	var configValueMap = make(map[string]string)
 
 	if len(request.Imp) > 0 {
@@ -127,12 +127,24 @@ func (a *AdButtlerAdapter) GetBidderResponse(request *openrtb2.BidRequest, adBut
 
 		var productid string
 		//Retailer Specific ProductID is present from Product Feed Template
-		val, ok := configValueMap[PRODUCTTEMPLATE_PREFIX+PD_TEMPLATE_PRODUCTID]
+		val, ok := configValueMap[PRODUCTTEMPLATE_PREFIX + PD_TEMPLATE_PRODUCTID]
 		if ok {
 			productid = adButlerBid.ProductData[val]
+			keyToRemove = val
 		}
 		if productid == "" {
 			productid = adButlerBid.ProductData[DEFAULT_PRODUCTID]
+			keyToRemove = DEFAULT_PRODUCTID
+		}
+
+		productDetails := make(map[string]interface{})
+		for key, value := range adButlerBid.ProductData {
+			productDetails[key] = value
+		}
+	
+		// Delete the "Product Id" key if present
+		if _, ok := productDetails[keyToRemove]; ok {
+			delete(productDetails, keyToRemove)
 		}
 
 		var impressionUrl, clickUrl, conversionUrl string
@@ -186,4 +198,5 @@ func GenerateConversionUrl(adbutlerID, zoneID, adbUID, productID string) string 
 
 	return conversionUrl
 }
+
 
