@@ -33,17 +33,17 @@ pipeline {
                 }
             }
         }
-        // stage('Deploy to dev') {
-        //     when {
-        //         branch "master_asterio"
-        //     }
-        //     steps {
-        //         dir('ansible') {
-        //             git branch: 'master', url: "git@github.com:Alkimi-Exchange/alkimi-ansible.git", credentialsId: 'ssh-alkimi-ansible'
-        //         }
-        //         sh "cd ./ansible && ansible-playbook ./apps/dev/prebid-server.yml --extra-vars='artifactPath=${env.WORKSPACE}/target/prebid-server.jar configPath=${env.WORKSPACE}/config'"
-        //     }
-        // }
+        stage('Deploy to dev') {
+            when {
+                branch "master_asterio"
+            }
+            steps {
+                dir('ansible') {
+                    git branch: 'master', url: "git@github.com:Alkimi-Exchange/alkimi-ansible.git", credentialsId: 'ssh-alkimi-ansible'
+                }
+                sh "cd ./ansible && ansible-playbook ./apps/dev/prebid-server-go.yml --extra-vars='artifactPath=${env.WORKSPACE}/prebid-server' "
+            }
+        }
         // stage('Build and push docker images') {
         //     //when { tag "REL_V*" }
         //     steps {
