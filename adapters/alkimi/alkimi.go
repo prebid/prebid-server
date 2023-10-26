@@ -65,10 +65,10 @@ func _updateImps(bidRequest openrtb2.BidRequest) []openrtb2.Imp {
 			imp.Instl = extImpAlkimi.Instl
 			imp.Exp = extImpAlkimi.Exp
 
-			extJson, err := json.Marshal(extImpAlkimi)
-			if err != nil {
-				continue
-			}
+			// extJson, err := json.Marshal(extImpAlkimi)
+			// if err != nil {
+			// 	continue
+			// }
 			// imp.Ext = extJson
 			updatedImps = append(updatedImps, imp)
 		}
