@@ -41,7 +41,7 @@ pipeline {
                 dir('ansible') {
                     git branch: 'master', url: "git@github.com:Alkimi-Exchange/alkimi-ansible.git", credentialsId: 'ssh-alkimi-ansible'
                 }
-                sh "cd ./ansible && ansible-playbook ./apps/dev/prebid-server-go.yml --extra-vars='artifactPath=${env.WORKSPACE}/prebid-server' "
+                sh "cd ./ansible && ansible-playbook ./apps/dev/prebid-server-go.yml --extra-vars='artifactPath=${env.WORKSPACE}/prebid-server configPath=${env.WORKSPACE}/static/bidder-info' "
             }
         }
         // stage('Build and push docker images') {
