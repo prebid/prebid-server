@@ -1,13 +1,15 @@
 endpoint: https://exchange.alkimi-onboarding.com/server/bid
-meta-info:
-  maintainer-email: support@alkimi.org
-  app-media-types:
-    - banner
-    - video
-    - audio
-  site-media-types:
-    - banner
-    - video
-    - audio
-  supported-vendors:
-  vendor-id: 0
+maintainer:
+  email: support@alkimi.org
+gvlVendorID: 1169
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - audio
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - audio
