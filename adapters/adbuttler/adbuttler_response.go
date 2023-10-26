@@ -164,6 +164,7 @@ func (a *AdButtlerAdapter) GetBidderResponse(request *openrtb2.BidRequest, adBut
 			ClickUrl:      clickUrl,
 			ClickPrice:    clickPrice,
 			ConversionUrl: conversionUrl,
+			ProductDetails: productDetails,
 		}
 
 		bid := &openrtb2.Bid{
@@ -198,5 +199,4 @@ func GenerateConversionUrl(adbutlerID, zoneID, adbUID, productID string) string 
 
 	return conversionUrl
 }
-
 

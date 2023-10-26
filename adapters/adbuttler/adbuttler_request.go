@@ -3,6 +3,7 @@ package adbuttler
 import (
 	"encoding/json"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -28,6 +29,16 @@ type AdButlerRequest struct {
 	
 }
 
+func isLowercaseNumbersDashes(s string) bool {
+    // Define a regular expression pattern to match lowercase letters, numbers, and dashes
+    pattern := "^[a-z0-9-]+$"
+    re := regexp.MustCompile(pattern)
+
+    // Use the MatchString function to check if the string matches the pattern
+    return re.MatchString(s)
+}
+
+
 func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
     commerceExt, siteExt, _,errors := adapters.ValidateCommRequest(request)
@@ -45,7 +56,9 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 	var adButlerReq AdButlerRequest 
 	//Assign Page Source if Present
 	if siteExt != nil {
-		adButlerReq.Source = siteExt.Page
+		if isLowercaseNumbersDashes(siteExt.Page) {
+			adButlerReq.Source = siteExt.Page
+		}
 	}
 
     //Retrieve AccountID and ZoneID from Request and Build endpoint Url
@@ -223,6 +236,4 @@ func (a *AdButtlerAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 	}}, nil
 	
 }
-
-
 
