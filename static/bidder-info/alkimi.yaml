@@ -1,15 +1,13 @@
-adapters:
-  alkimi:
-    endpoint: https://exchange.alkimi-onboarding.com/server/bid
-    meta-info:
-      maintainer-email: support@alkimi.org
-      app-media-types:
-        - banner
-        - video
-        - audio
-      site-media-types:
-        - banner
-        - video
-        - audio
-      supported-vendors:
-      vendor-id: 0
+endpoint: https://exchange.alkimi-onboarding.com/server/bid
+meta-info:
+  maintainer-email: support@alkimi.org
+  app-media-types:
+    - banner
+    - video
+    - audio
+  site-media-types:
+    - banner
+    - video
+    - audio
+  supported-vendors:
+  vendor-id: 0
