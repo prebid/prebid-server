@@ -51,8 +51,8 @@ func (adapter *AlkimiAdapter) MakeRequests(request *openrtb2.BidRequest, req *ad
 func _updateImps(bidRequest openrtb2.BidRequest) []openrtb2.Imp {
 	updatedImps := make([]openrtb2.Imp, 0, len(bidRequest.Imp))
 	for _, imp := range bidRequest.Imp {
-		var impExtAlkimi openrtb_ext.ImpExtAlkimi
-		if err := json.Unmarshal(imp.Ext, &impExtAlkimi); err == nil {
+		var extImpAlkimi openrtb_ext.ExtImpAlkimi
+		if err := json.Unmarshal(imp.Ext, &extImpAlkimi); err == nil {
 			var bidFloorPrice floors.Price
 			bidFloorPrice.FloorMinCur = imp.BidFloorCur
 			bidFloorPrice.FloorMin = imp.BidFloor
@@ -60,16 +60,16 @@ func _updateImps(bidRequest openrtb2.BidRequest) []openrtb2.Imp {
 			if len(bidFloorPrice.FloorMinCur) > 0 && bidFloorPrice.FloorMin > 0 {
 				imp.BidFloor = bidFloorPrice.FloorMin
 			} else {
-				imp.BidFloor = impExtAlkimi.BidFloor
+				imp.BidFloor = extImpAlkimi.BidFloor
 			}
-			imp.Instl = impExtAlkimi.Instl
-			imp.Exp = impExtAlkimi.Exp
+			imp.Instl = extImpAlkimi.Instl
+			imp.Exp = extImpAlkimi.Exp
 
-			extJson, err := json.Marshal(impExtAlkimi)
+			extJson, err := json.Marshal(extImpAlkimi)
 			if err != nil {
 				continue
 			}
-			imp.Ext = extJson
+			// imp.Ext = extJson
 			updatedImps = append(updatedImps, imp)
 		}
 	}
