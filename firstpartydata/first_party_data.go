@@ -7,10 +7,11 @@ import (
 	"github.com/prebid/openrtb/v19/openrtb2"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/ortb"
-	"github.com/prebid/prebid-server/util/ptrutil"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/ortb"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 )
 
 const (
@@ -120,7 +121,9 @@ func ResolveFPD(bidRequest *openrtb2.BidRequest, fpdBidderConfigData map[openrtb
 		}
 	} else {
 		// only bidders in global bidder list will receive global data and bidder specific data
-		for _, bidderName := range biddersWithGlobalFPD {
+		for _, bidder := range biddersWithGlobalFPD {
+			bidderName := openrtb_ext.NormalizeBidderNameOrUnchanged(bidder)
+
 			if _, present := allBiddersTable[string(bidderName)]; !present {
 				allBiddersTable[string(bidderName)] = struct{}{}
 			}
@@ -213,7 +216,7 @@ func mergeUser(v *openrtb2.User, overrideJSON json.RawMessage) error {
 	}
 
 	// Merge
-	if err := json.Unmarshal(overrideJSON, &v); err != nil {
+	if err := jsonutil.Unmarshal(overrideJSON, &v); err != nil {
 		return err
 	}
 
@@ -307,7 +310,7 @@ func mergeSite(v *openrtb2.Site, overrideJSON json.RawMessage, bidderName string
 	}
 
 	// Merge
-	if err := json.Unmarshal(overrideJSON, &v); err != nil {
+	if err := jsonutil.Unmarshal(overrideJSON, &v); err != nil {
 		return err
 	}
 
@@ -424,7 +427,7 @@ func mergeApp(v *openrtb2.App, overrideJSON json.RawMessage) error {
 	}
 
 	// Merge
-	if err := json.Unmarshal(overrideJSON, &v); err != nil {
+	if err := jsonutil.Unmarshal(overrideJSON, &v); err != nil {
 		return err
 	}
 
@@ -462,12 +465,14 @@ func buildExtData(data []byte) []byte {
 // ExtractBidderConfigFPD extracts bidder specific configs from req.ext.prebid.bidderconfig
 func ExtractBidderConfigFPD(reqExt *openrtb_ext.RequestExt) (map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, error) {
 	fpd := make(map[openrtb_ext.BidderName]*openrtb_ext.ORTB2)
+
 	reqExtPrebid := reqExt.GetPrebid()
 	if reqExtPrebid != nil {
 		for _, bidderConfig := range reqExtPrebid.BidderConfigs {
 			for _, bidder := range bidderConfig.Bidders {
-				if _, present := fpd[openrtb_ext.BidderName(bidder)]; present {
-					//if bidder has duplicated config - throw an error
+				bidderName := openrtb_ext.NormalizeBidderNameOrUnchanged(bidder)
+
+				if _, duplicate := fpd[bidderName]; duplicate {
 					return nil, &errortypes.BadInput{
 						Message: fmt.Sprintf("multiple First Party Data bidder configs provided for bidder: %s", bidder),
 					}
@@ -476,18 +481,12 @@ func ExtractBidderConfigFPD(reqExt *openrtb_ext.RequestExt) (map[openrtb_ext.Bid
 				fpdBidderData := &openrtb_ext.ORTB2{}
 
 				if bidderConfig.Config != nil && bidderConfig.Config.ORTB2 != nil {
-					if bidderConfig.Config.ORTB2.Site != nil {
-						fpdBidderData.Site = bidderConfig.Config.ORTB2.Site
-					}
-					if bidderConfig.Config.ORTB2.App != nil {
-						fpdBidderData.App = bidderConfig.Config.ORTB2.App
-					}
-					if bidderConfig.Config.ORTB2.User != nil {
-						fpdBidderData.User = bidderConfig.Config.ORTB2.User
-					}
+					fpdBidderData.Site = bidderConfig.Config.ORTB2.Site
+					fpdBidderData.App = bidderConfig.Config.ORTB2.App
+					fpdBidderData.User = bidderConfig.Config.ORTB2.User
 				}
 
-				fpd[openrtb_ext.BidderName(bidder)] = fpdBidderData
+				fpd[bidderName] = fpdBidderData
 			}
 		}
 		reqExtPrebid.BidderConfigs = nil

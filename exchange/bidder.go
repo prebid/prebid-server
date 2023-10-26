@@ -16,23 +16,24 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/bidadjustment"
-	"github.com/prebid/prebid-server/config/util"
-	"github.com/prebid/prebid-server/currency"
-	"github.com/prebid/prebid-server/exchange/entities"
-	"github.com/prebid/prebid-server/experiment/adscert"
-	"github.com/prebid/prebid-server/hooks/hookexecution"
-	"github.com/prebid/prebid-server/version"
+	"github.com/prebid/prebid-server/v2/bidadjustment"
+	"github.com/prebid/prebid-server/v2/config/util"
+	"github.com/prebid/prebid-server/v2/currency"
+	"github.com/prebid/prebid-server/v2/exchange/entities"
+	"github.com/prebid/prebid-server/v2/experiment/adscert"
+	"github.com/prebid/prebid-server/v2/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v2/version"
 
 	"github.com/prebid/openrtb/v19/adcom1"
 	nativeRequests "github.com/prebid/openrtb/v19/native1/request"
 	nativeResponse "github.com/prebid/openrtb/v19/native1/response"
 	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 	"golang.org/x/net/context/ctxhttp"
 )
 
@@ -287,7 +288,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 							errs = append(errs, moreErrs...)
 
 							if nativeMarkup != nil {
-								markup, err := json.Marshal(*nativeMarkup)
+								markup, err := jsonutil.Marshal(*nativeMarkup)
 								if err != nil {
 									errs = append(errs, err)
 								} else {
@@ -348,9 +349,9 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 						}
 
 						adjustmentFactor := 1.0
-						if givenAdjustment, ok := bidRequestOptions.bidAdjustments[bidderName.String()]; ok {
+						if givenAdjustment, ok := bidRequestOptions.bidAdjustments[(strings.ToLower(bidderName.String()))]; ok {
 							adjustmentFactor = givenAdjustment
-						} else if givenAdjustment, ok := bidRequestOptions.bidAdjustments[bidderRequest.BidderName.String()]; ok {
+						} else if givenAdjustment, ok := bidRequestOptions.bidAdjustments[(strings.ToLower(bidderRequest.BidderName.String()))]; ok {
 							adjustmentFactor = givenAdjustment
 						}
 
@@ -406,7 +407,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 func addNativeTypes(bid *openrtb2.Bid, request *openrtb2.BidRequest) (*nativeResponse.Response, []error) {
 	var errs []error
 	var nativeMarkup *nativeResponse.Response
-	if err := json.Unmarshal(json.RawMessage(bid.AdM), &nativeMarkup); err != nil || len(nativeMarkup.Assets) == 0 {
+	if err := jsonutil.UnmarshalValid(json.RawMessage(bid.AdM), &nativeMarkup); err != nil || len(nativeMarkup.Assets) == 0 {
 		// Some bidders are returning non-IAB compliant native markup. In this case Prebid server will not be able to add types. E.g Facebook
 		return nil, errs
 	}
@@ -418,7 +419,7 @@ func addNativeTypes(bid *openrtb2.Bid, request *openrtb2.BidRequest) (*nativeRes
 	}
 
 	var nativePayload nativeRequests.Request
-	if err := json.Unmarshal(json.RawMessage((*nativeImp).Request), &nativePayload); err != nil {
+	if err := jsonutil.UnmarshalValid(json.RawMessage((*nativeImp).Request), &nativePayload); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -636,7 +637,7 @@ func (bidder *bidderAdapter) doTimeoutNotification(timeoutBidder adapters.Timeou
 			}
 		}
 	} else if bidder.config.Debug.TimeoutNotification.Log {
-		reqJSON, err := json.Marshal(req)
+		reqJSON, err := jsonutil.Marshal(req)
 		var msg string
 		if err == nil {
 			msg = fmt.Sprintf("TimeoutNotification: Failed to generate timeout request: error(%s), bidder request(%s)", errL[0].Error(), string(reqJSON))

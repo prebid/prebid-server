@@ -12,12 +12,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/analytics"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/privacy"
-	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/v2/analytics"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v2/privacy"
+	"github.com/prebid/prebid-server/v2/stored_requests"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -649,6 +649,19 @@ func TestShouldParseEventCorrectly(t *testing.T) {
 				BidID:     "bidId",
 				Timestamp: 0,
 				Analytics: analytics.Enabled,
+			},
+		},
+		"case insensitive bidder name": {
+			req: httptest.NewRequest("GET", "/event?t=win&b=bidId&f=b&ts=1000&x=1&a=accountId&bidder=RubiCon&int=intType", strings.NewReader("")),
+			expected: &analytics.EventRequest{
+				Type:        analytics.Win,
+				BidID:       "bidId",
+				Timestamp:   1000,
+				Bidder:      "rubicon",
+				AccountID:   "",
+				Format:      analytics.Blank,
+				Analytics:   analytics.Enabled,
+				Integration: "intType",
 			},
 		},
 	}
