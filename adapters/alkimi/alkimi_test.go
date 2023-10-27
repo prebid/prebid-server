@@ -39,54 +39,54 @@ func TestBuilder(t *testing.T) {
 	assert.NotNil(t, bidder)
 }
 
-// func TestMakeRequests(t *testing.T) {
-// 	// given
-// 	bidder, _ := buildBidder()
-// 	extImpAlkimi, _ := json.Marshal(reqBodyExt2{AlkimiBidderExt: openrtb_ext.ExtImpAlkimi{BidFloor: 5, Instl: 1, Exp: 2}})
-// 	bidRequest := openrtb2.BidRequest{
-// 		Imp: []openrtb2.Imp{
-// 			{
-// 				BidFloor:    6,
-// 				BidFloorCur: "",
-// 				Ext:         extImpAlkimi,
-// 			},
-// 			{
-// 				BidFloor:    -1,
-// 				BidFloorCur: "USD",
-// 				Ext:         extImpAlkimi,
-// 			},
-// 			{
-// 				BidFloor:    10,
-// 				BidFloorCur: "USD",
-// 				Ext:         extImpAlkimi,
-// 			},
-// 		},
-// 	}
-// 	// when
-// 	requestData, _ := bidder.MakeRequests(&bidRequest, nil)
-// 	request := requestData[0]
-// 	var updatedRequest openrtb2.BidRequest
-// 	errUnmarshal := json.Unmarshal(request.Body, &updatedRequest)
-// 	updatedImps := updatedRequest.Imp
-// 	// then
-// 	assert.Len(t, requestData, 1)
-// 	if errUnmarshal != nil {
-// 		t.Fatal("Corrupted updated request")
-// 	}
-// 	assert.Len(t, updatedImps, 3)
+func TestMakeRequests(t *testing.T) {
+	// given
+	bidder, _ := buildBidder()
+	extImpAlkimi, _ := json.Marshal(reqBodyExt2{AlkimiBidderExt: openrtb_ext.ExtImpAlkimi{BidFloor: 5, Instl: 1, Exp: 2}})
+	bidRequest := openrtb2.BidRequest{
+		Imp: []openrtb2.Imp{
+			{
+				BidFloor:    6,
+				BidFloorCur: "",
+				Ext:         extImpAlkimi,
+			},
+			{
+				BidFloor:    -1,
+				BidFloorCur: "USD",
+				Ext:         extImpAlkimi,
+			},
+			{
+				BidFloor:    10,
+				BidFloorCur: "USD",
+				Ext:         extImpAlkimi,
+			},
+		},
+	}
+	// when
+	requestData, _ := bidder.MakeRequests(&bidRequest, nil)
+	request := requestData[0]
+	var updatedRequest openrtb2.BidRequest
+	errUnmarshal := json.Unmarshal(request.Body, &updatedRequest)
+	updatedImps := updatedRequest.Imp
+	// then
+	assert.Len(t, requestData, 1)
+	if errUnmarshal != nil {
+		t.Fatal("Corrupted updated request")
+	}
+	assert.Len(t, updatedImps, 3)
 
-// 	assert.Equal(t, 5.0, updatedImps[0].BidFloor)
-// 	assert.Equal(t, int8(1), updatedImps[0].Instl)
-// 	assert.Equal(t, int64(2), updatedImps[0].Exp)
+	assert.Equal(t, 5.0, updatedImps[0].BidFloor)
+	assert.Equal(t, int8(1), updatedImps[0].Instl)
+	assert.Equal(t, int64(2), updatedImps[0].Exp)
 
-// 	assert.Equal(t, 5.0, updatedImps[1].BidFloor)
-// 	assert.Equal(t, int8(1), updatedImps[1].Instl)
-// 	assert.Equal(t, int64(2), updatedImps[1].Exp)
+	assert.Equal(t, 5.0, updatedImps[1].BidFloor)
+	assert.Equal(t, int8(1), updatedImps[1].Instl)
+	assert.Equal(t, int64(2), updatedImps[1].Exp)
 
-// 	assert.Equal(t, 10.0, updatedImps[2].BidFloor)
-// 	assert.Equal(t, int8(1), updatedImps[2].Instl)
-// 	assert.Equal(t, int64(2), updatedImps[2].Exp)
-// }
+	assert.Equal(t, 10.0, updatedImps[2].BidFloor)
+	assert.Equal(t, int8(1), updatedImps[2].Instl)
+	assert.Equal(t, int64(2), updatedImps[2].Exp)
+}
 
 func TestMakeBidsShouldReturnErrorIfResponseBodyCouldNotBeParsed(t *testing.T) {
 	// given
