@@ -15,6 +15,10 @@ const (
 	alkimiTestEndpoint = "https://exchange.alkimi-onboarding.com/server/bid"
 )
 
+type reqBodyExt struct {
+	AlkimiBidderExt openrtb_ext.ExtImpAlkimi `json:"bidder"`
+}
+
 func TestEndpointEmpty(t *testing.T) {
 	_, buildErr := Builder(openrtb_ext.BidderAlkimi, config.Adapter{
 		Endpoint: ""}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
