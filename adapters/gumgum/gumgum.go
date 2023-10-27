@@ -178,7 +178,6 @@ func preprocess(imp *openrtb2.Imp) (*openrtb_ext.ExtImpGumGum, error) {
 
 	if gumgumExt.Product != "" {
 		var err error
-		//imp.Ext, err = json.Marshal(`{ "product": "%s" }`, gumgumExt.Product)
 		imp.Ext, err = json.Marshal(map[string]string{"product": gumgumExt.Product})
 		if err != nil {
 			return nil, err
