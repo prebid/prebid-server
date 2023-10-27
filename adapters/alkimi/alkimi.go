@@ -21,7 +21,7 @@ type AlkimiAdapter struct {
 	endpoint string
 }
 
-type reqBodyExt struct {
+type extObj struct {
 	AlkimiBidderExt openrtb_ext.ExtImpAlkimi `json:"bidder"`
 }
 
@@ -76,7 +76,7 @@ func _updateImps(bidRequest openrtb2.BidRequest) []openrtb2.Imp {
 			imp.Instl = extImpAlkimi.Instl
 			imp.Exp = extImpAlkimi.Exp
 
-			temp := reqBodyExt{AlkimiBidderExt: extImpAlkimi}
+			temp := extObj{AlkimiBidderExt: extImpAlkimi}
 			temp.AlkimiBidderExt.AdUnitCode = imp.ID
 
 			extJson, err := json.Marshal(temp)

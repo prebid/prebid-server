@@ -15,10 +15,6 @@ const (
 	alkimiTestEndpoint = "https://exchange.alkimi-onboarding.com/server/bid"
 )
 
-type reqBodyExt2 struct {
-	AlkimiBidderExt openrtb_ext.ExtImpAlkimi `json:"bidder"`
-}
-
 func TestEndpointEmpty(t *testing.T) {
 	_, buildErr := Builder(openrtb_ext.BidderAlkimi, config.Adapter{
 		Endpoint: ""}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
@@ -42,7 +38,7 @@ func TestBuilder(t *testing.T) {
 func TestMakeRequests(t *testing.T) {
 	// given
 	bidder, _ := buildBidder()
-	extImpAlkimi, _ := json.Marshal(reqBodyExt2{AlkimiBidderExt: openrtb_ext.ExtImpAlkimi{BidFloor: 5, Instl: 1, Exp: 2}})
+	extImpAlkimi, _ := json.Marshal(extObj{AlkimiBidderExt: openrtb_ext.ExtImpAlkimi{BidFloor: 5, Instl: 1, Exp: 2}})
 	bidRequest := openrtb2.BidRequest{
 		Imp: []openrtb2.Imp{
 			{
