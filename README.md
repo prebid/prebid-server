@@ -7,7 +7,7 @@
 <p align="center"><img alt="Prebid Server Logo" src="/static/pbs-logo.svg" style="width:80%; max-width:600px;"></p>
 <br />
 
-<a href="https://prebid.org/product-suite/prebid-server/">Prebid Server</a> is an open-source solution for running real-time advertising auctions in the cloud. This project is part of the <a href="https://prebid.org/">Prebid.org</a> ecosystem, seamlessly integrating with  <a href="https://prebid.org/product-suite/prebidjs/">Prebid.js</a> and the <a href="https://prebid.org/product-suite/prebid-mobile/">Prebid Mobile SDKs</a> to deliver world-class header bidding for any ad format and for any type of digital media.
+<a href="https://prebid.org/product-suite/prebid-server/">Prebid Server</a> is an open-source solution for running real-time advertising auctions in the cloud. This project is part of the <a href="https://prebid.org/">Prebid</a> ecosystem, seamlessly integrating with  <a href="https://prebid.org/product-suite/prebidjs/">Prebid.js</a> and the <a href="https://prebid.org/product-suite/prebid-mobile/">Prebid Mobile SDKs</a> to deliver world-class header bidding for any ad format and for any type of digital media.
 
 ## Getting Started
 - [What is Prebid Server](https://docs.prebid.org/prebid-server/overview/prebid-server-overview.html)
@@ -64,6 +64,21 @@ go run .
 
 By default, Prebid Server will attach to port 8000. To confirm the server is running, visit `http://localhost:8000/` in your web browser.
 
+### Code Style
+To maintain consistency in the project's code, please:
+ 
+- Follow the recommendations set by [Effective Go](https://go.dev/doc/effective_go). This article provides a comprehensive guide on how to write idiomatic Go code, covering topics such as naming and formatting. Many IDEs will automatically format your code upon save. If you need to manaully format your code, run either the bash script or execute the make step:
+   ```
+   ./scripts/format.sh -f true
+   ```
+   ```
+   make format
+   ```
+
+- Prefer small functions with descriptive names instead of complex functions with comments. This approach helps make the code more readable, maintainable, and testable.
+
+- Do not discard errors. You should implement appropriate error handling, such as gracefully falling back to a default behavior or bubbling up an error.
+   
 ### IDE Recommendation
 
 An option for developing Prebid Server in a reproducible environment isolated from your host OS is using Visual Studio Code with [Remote Container Setup](devcontainer.md). This is a recommendation, not a requirement. This approach is especially useful if you are developing on Windows, since the Remote Container runs within WSL providing you with the capability to execute bash scripts.
