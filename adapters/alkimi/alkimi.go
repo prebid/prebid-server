@@ -21,6 +21,10 @@ type AlkimiAdapter struct {
 	endpoint string
 }
 
+type reqBodyExt struct {
+	AlkimiBidderExt openrtb_ext.ExtImpAlkimi `json:"bidder"`
+}
+
 // Builder builds a new instance of the Alkimi adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	endpointURL, err := url.Parse(config.Endpoint)
@@ -52,10 +56,10 @@ func _updateImps(bidRequest openrtb2.BidRequest) []openrtb2.Imp {
 	updatedImps := make([]openrtb2.Imp, 0, len(bidRequest.Imp))
 	for _, imp := range bidRequest.Imp {
 		
-		// var bidderExt adapters.ExtImpBidder
+		var bidderExt adapters.ExtImpBidder
 		var extImpAlkimi openrtb_ext.ExtImpAlkimi
 		
-		if err := json.Unmarshal(imp.Ext, &extImpAlkimi); err == nil {
+		if err := json.Unmarshal(bidderExt.Bidder, &extImpAlkimi); err == nil {
 			var bidFloorPrice floors.Price
 			bidFloorPrice.FloorMinCur = imp.BidFloorCur
 			bidFloorPrice.FloorMin = imp.BidFloor
@@ -68,11 +72,13 @@ func _updateImps(bidRequest openrtb2.BidRequest) []openrtb2.Imp {
 			imp.Instl = extImpAlkimi.Instl
 			imp.Exp = extImpAlkimi.Exp
 
-			// extJson, err := json.Marshal(extImpAlkimi)
-			// if err != nil {
-			// 	continue
-			// }
-			imp.Ext = extImpAlkimi
+			temp := reqBodyExt{AlkimiBidderExt: openrtb_ext.ExtImpAlkimi{}}
+
+			extJson, err := json.Marshal(temp)
+			if err != nil {
+				continue
+			}
+			imp.Ext = extJson
 			updatedImps = append(updatedImps, imp)
 		}
 	}

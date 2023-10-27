@@ -38,7 +38,7 @@ func TestBuilder(t *testing.T) {
 func TestMakeRequests(t *testing.T) {
 	// given
 	bidder, _ := buildBidder()
-	extImpAlkimi, _ := json.Marshal(openrtb_ext.ExtImpAlkimi{BidFloor: 5, Instl: 1, Exp: 2})
+	extImpAlkimi, _ := json.Marshal(reqBodyExt{AlkimiBidderExt: openrtb_ext.ExtImpAlkimi{BidFloor: 5, Instl: 1, Exp: 2}})
 	bidRequest := openrtb2.BidRequest{
 		Imp: []openrtb2.Imp{
 			{
