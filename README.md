@@ -37,7 +37,7 @@ go build .
 ```
 Ensure that you deploy the `/static` directory, as Prebid Server requires those files at startup.
 
-## Developing Locally
+## Developing
 
 Prebid Server requires [Go](https://go.dev) version 1.19 or newer. You can develop on any operating system that Go supports; however, please note that our helper scripts are written in bash.
 
