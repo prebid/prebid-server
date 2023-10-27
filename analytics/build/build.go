@@ -3,12 +3,12 @@ package build
 import (
 	"github.com/benbjohnson/clock"
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/analytics"
-	"github.com/prebid/prebid-server/analytics/clients"
-	"github.com/prebid/prebid-server/analytics/filesystem"
-	"github.com/prebid/prebid-server/analytics/pubstack"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/privacy"
+	"github.com/prebid/prebid-server/v2/analytics"
+	"github.com/prebid/prebid-server/v2/analytics/clients"
+	"github.com/prebid/prebid-server/v2/analytics/filesystem"
+	"github.com/prebid/prebid-server/v2/analytics/pubstack"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/privacy"
 )
 
 // Modules that need to be logged to need to be initialized here

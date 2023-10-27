@@ -12,18 +12,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/analytics"
-	analyticsBuild "github.com/prebid/prebid-server/analytics/build"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/gdpr"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/usersync"
+	"github.com/prebid/prebid-server/v2/analytics"
+	analyticsBuild "github.com/prebid/prebid-server/v2/analytics/build"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/gdpr"
+	"github.com/prebid/prebid-server/v2/macros"
+	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/usersync"
 	"github.com/stretchr/testify/assert"
 
-	metricsConf "github.com/prebid/prebid-server/metrics/config"
+	metricsConf "github.com/prebid/prebid-server/v2/metrics/config"
 )
 
 func TestSetUIDEndpoint(t *testing.T) {
@@ -49,6 +49,16 @@ func TestSetUIDEndpoint(t *testing.T) {
 			expectedStatusCode:     http.StatusOK,
 			expectedHeaders:        map[string]string{"Content-Type": "text/html", "Content-Length": "0"},
 			description:            "Set uid for valid bidder",
+		},
+		{
+			uri:                    "/setuid?bidder=PUBMATIC&uid=123",
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			existingSyncs:          nil,
+			gdprAllowsHostCookies:  true,
+			expectedSyncs:          map[string]string{"pubmatic": "123"},
+			expectedStatusCode:     http.StatusOK,
+			expectedHeaders:        map[string]string{"Content-Type": "text/html", "Content-Length": "0"},
+			description:            "Set uid for valid bidder case insensitive",
 		},
 		{
 			uri:                    "/setuid?bidder=appnexus&uid=123",
@@ -1297,14 +1307,14 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 			cfgAccountRequired:     true,
 			expectedResponseCode:   400,
 			expectedMetrics: func(m *metrics.MetricsEngineMock) {
-				m.On("RecordSetUid", metrics.SetUidBadRequest).Once()
+				m.On("RecordSetUid", metrics.SetUidAccountConfigMalformed).Once()
 			},
 			expectedAnalytics: func(a *MockAnalyticsRunner) {
 				expected := analytics.SetUIDObject{
 					Status:  400,
 					Bidder:  "pubmatic",
 					UID:     "",
-					Errors:  []error{errors.New("unexpected end of JSON input")},
+					Errors:  []error{errCookieSyncAccountConfigMalformed},
 					Success: false,
 				}
 				a.On("LogSetUIDObject", &expected).Once()
@@ -1458,35 +1468,44 @@ func TestIsSyncerPriority(t *testing.T) {
 		expected                       bool
 	}{
 		{
-			name:                           "bidder-name-is-priority",
-			givenBidderNameFromSyncerQuery: "priorityBidder",
-			givenPriorityGroups: [][]string{
-				{"priorityBidder"},
-				{"2", "3"},
-			},
-			expected: true,
+			name:                           "priority-tier-1",
+			givenBidderNameFromSyncerQuery: "a",
+			givenPriorityGroups:            [][]string{{"a"}},
+			expected:                       true,
 		},
 		{
-			name:                           "bidder-name-is-not-priority",
-			givenBidderNameFromSyncerQuery: "notPriorityBidderName",
-			givenPriorityGroups: [][]string{
-				{"1"},
-				{"2", "3"},
-			},
-			expected: false,
+			name:                           "priority-tier-other",
+			givenBidderNameFromSyncerQuery: "c",
+			givenPriorityGroups:            [][]string{{"a"}, {"b", "c"}},
+			expected:                       true,
 		},
 		{
-			name:                           "no-bidder-name-given",
+			name:                           "priority-case-insensitive",
+			givenBidderNameFromSyncerQuery: "A",
+			givenPriorityGroups:            [][]string{{"a"}},
+			expected:                       true,
+		},
+		{
+			name:                           "not-priority-empty",
+			givenBidderNameFromSyncerQuery: "a",
+			givenPriorityGroups:            [][]string{},
+			expected:                       false,
+		},
+		{
+			name:                           "not-priority-not-defined",
+			givenBidderNameFromSyncerQuery: "a",
+			givenPriorityGroups:            [][]string{{"b"}},
+			expected:                       false,
+		},
+		{
+			name:                           "no-bidder",
 			givenBidderNameFromSyncerQuery: "",
-			givenPriorityGroups: [][]string{
-				{"1"},
-				{"2", "3"},
-			},
-			expected: false,
+			givenPriorityGroups:            [][]string{{"b"}},
+			expected:                       false,
 		},
 		{
-			name:                           "no-priority-groups-given",
-			givenBidderNameFromSyncerQuery: "bidderName",
+			name:                           "no-priority-groups",
+			givenBidderNameFromSyncerQuery: "a",
 			givenPriorityGroups:            [][]string{},
 			expected:                       false,
 		},

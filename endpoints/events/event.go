@@ -10,15 +10,17 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+
 	"github.com/julienschmidt/httprouter"
-	accountService "github.com/prebid/prebid-server/account"
-	"github.com/prebid/prebid-server/analytics"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/privacy"
-	"github.com/prebid/prebid-server/stored_requests"
-	"github.com/prebid/prebid-server/util/httputil"
+	accountService "github.com/prebid/prebid-server/v2/account"
+	"github.com/prebid/prebid-server/v2/analytics"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v2/privacy"
+	"github.com/prebid/prebid-server/v2/stored_requests"
+	"github.com/prebid/prebid-server/v2/util/httputil"
 )
 
 const (
@@ -188,7 +190,12 @@ func ParseEventRequest(r *http.Request) (*analytics.EventRequest, []error) {
 	}
 
 	// Bidder
-	event.Bidder = r.URL.Query().Get(BidderParameter)
+	bidderName := r.URL.Query().Get(BidderParameter)
+	if normalisedBidderName, ok := openrtb_ext.NormalizeBidderName(bidderName); ok {
+		bidderName = normalisedBidderName.String()
+	}
+
+	event.Bidder = bidderName
 
 	return event, errs
 }

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/macros"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 
 	validator "github.com/asaskevich/govalidator"
 	"gopkg.in/yaml.v3"

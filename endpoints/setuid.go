@@ -12,18 +12,19 @@ import (
 	"github.com/julienschmidt/httprouter"
 	gpplib "github.com/prebid/go-gpp"
 	gppConstants "github.com/prebid/go-gpp/constants"
-	accountService "github.com/prebid/prebid-server/account"
-	"github.com/prebid/prebid-server/analytics"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/gdpr"
-	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/privacy"
-	gppPrivacy "github.com/prebid/prebid-server/privacy/gpp"
-	"github.com/prebid/prebid-server/stored_requests"
-	"github.com/prebid/prebid-server/usersync"
-	"github.com/prebid/prebid-server/util/httputil"
-	stringutil "github.com/prebid/prebid-server/util/stringutil"
+	accountService "github.com/prebid/prebid-server/v2/account"
+	"github.com/prebid/prebid-server/v2/analytics"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/gdpr"
+	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/privacy"
+	gppPrivacy "github.com/prebid/prebid-server/v2/privacy/gpp"
+	"github.com/prebid/prebid-server/v2/stored_requests"
+	"github.com/prebid/prebid-server/v2/usersync"
+	"github.com/prebid/prebid-server/v2/util/httputil"
+	stringutil "github.com/prebid/prebid-server/v2/util/stringutil"
 )
 
 const (
@@ -329,7 +330,13 @@ func getSyncer(query url.Values, syncersByBidder map[string]usersync.Syncer) (us
 		return nil, "", errors.New(`"bidder" query param is required`)
 	}
 
-	syncer, syncerExists := syncersByBidder[bidder]
+	// case insensitive comparison
+	bidderNormalized, bidderFound := openrtb_ext.NormalizeBidderName(bidder)
+	if !bidderFound {
+		return nil, "", errors.New("The bidder name provided is not supported by Prebid Server")
+	}
+
+	syncer, syncerExists := syncersByBidder[bidderNormalized.String()]
 	if !syncerExists {
 		return nil, "", errors.New("The bidder name provided is not supported by Prebid Server")
 	}
@@ -340,7 +347,7 @@ func getSyncer(query url.Values, syncersByBidder map[string]usersync.Syncer) (us
 func isSyncerPriority(bidderNameFromSyncerQuery string, priorityGroups [][]string) bool {
 	for _, group := range priorityGroups {
 		for _, bidder := range group {
-			if bidderNameFromSyncerQuery == bidder {
+			if strings.EqualFold(bidderNameFromSyncerQuery, bidder) {
 				return true
 			}
 		}

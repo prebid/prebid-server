@@ -22,21 +22,22 @@ import (
 	"github.com/prebid/openrtb/v19/native1"
 	nativeRequests "github.com/prebid/openrtb/v19/native1/request"
 	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/analytics"
-	analyticsBuild "github.com/prebid/prebid-server/analytics/build"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/exchange"
-	"github.com/prebid/prebid-server/hooks"
-	"github.com/prebid/prebid-server/hooks/hookexecution"
-	"github.com/prebid/prebid-server/hooks/hookstage"
-	"github.com/prebid/prebid-server/metrics"
-	metricsConfig "github.com/prebid/prebid-server/metrics/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
-	"github.com/prebid/prebid-server/stored_responses"
-	"github.com/prebid/prebid-server/util/iputil"
-	"github.com/prebid/prebid-server/util/ptrutil"
+	"github.com/prebid/prebid-server/v2/analytics"
+	analyticsBuild "github.com/prebid/prebid-server/v2/analytics/build"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/exchange"
+	"github.com/prebid/prebid-server/v2/hooks"
+	"github.com/prebid/prebid-server/v2/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v2/hooks/hookstage"
+	"github.com/prebid/prebid-server/v2/metrics"
+	metricsConfig "github.com/prebid/prebid-server/v2/metrics/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/v2/stored_responses"
+	"github.com/prebid/prebid-server/v2/util/iputil"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -192,7 +193,7 @@ func runEndToEndTest(t *testing.T, auctionEndpointHandler httprouter.Handle, tes
 
 	// Either assert bid response or expected error
 	if len(test.ExpectedErrorMessage) > 0 {
-		assert.True(t, strings.HasPrefix(actualJsonBidResponse, test.ExpectedErrorMessage), "Actual: %s \nExpected: %s. Filename: %s \n", actualJsonBidResponse, test.ExpectedErrorMessage, testFile)
+		assert.Contains(t, actualJsonBidResponse, test.ExpectedErrorMessage, "Actual: %s \nExpected: %s. Filename: %s \n", actualJsonBidResponse, test.ExpectedErrorMessage, testFile)
 	}
 
 	if len(test.ExpectedBidResponse) > 0 {
@@ -200,9 +201,9 @@ func runEndToEndTest(t *testing.T, auctionEndpointHandler httprouter.Handle, tes
 		var actualBidResponse openrtb2.BidResponse
 		var err error
 
-		err = json.Unmarshal(test.ExpectedBidResponse, &expectedBidResponse)
+		err = jsonutil.Unmarshal(test.ExpectedBidResponse, &expectedBidResponse)
 		if assert.NoError(t, err, "Could not unmarshal expected bidResponse taken from test file.\n Test file: %s\n Error:%s\n", testFile, err) {
-			err = json.Unmarshal([]byte(actualJsonBidResponse), &actualBidResponse)
+			err = jsonutil.UnmarshalValid([]byte(actualJsonBidResponse), &actualBidResponse)
 			if assert.NoError(t, err, "Could not unmarshal actual bidResponse from auction.\n Test file: %s\n Error:%s\n actualJsonBidResponse: %s", testFile, err, actualJsonBidResponse) {
 				assertBidResponseEqual(t, testFile, expectedBidResponse, actualBidResponse)
 			}
@@ -222,13 +223,13 @@ func compareWarnings(t *testing.T, expectedBidResponseExt, actualBidResponseExt 
 		}
 
 		var expectedWarn []openrtb_ext.ExtBidderMessage
-		err = json.Unmarshal(expectedWarnings, &expectedWarn)
+		err = jsonutil.UnmarshalValid(expectedWarnings, &expectedWarn)
 		if err != nil {
 			assert.Fail(t, "error unmarshalling expected warnings data from response extension")
 		}
 
 		var actualWarn []openrtb_ext.ExtBidderMessage
-		err = json.Unmarshal(actualWarnings, &actualWarn)
+		err = jsonutil.UnmarshalValid(actualWarnings, &actualWarn)
 		if err != nil {
 			assert.Fail(t, "error unmarshalling actual warnings data from response extension")
 		}
@@ -476,8 +477,8 @@ func TestExplicitUserId(t *testing.T) {
 // processes aliases before it processes stored imps.  Changing that order
 // would probably cause this test to fail.
 func TestBadAliasRequests(t *testing.T) {
-	doBadAliasRequest(t, "sample-requests/invalid-stored/bad_stored_imp.json", "Invalid request: Invalid JSON in Default Request Settings: invalid character '\"' after object key:value pair at offset 51\n")
-	doBadAliasRequest(t, "sample-requests/invalid-stored/bad_incoming_imp.json", "Invalid request: Invalid JSON in Incoming Request: invalid character '\"' after object key:value pair at offset 230\n")
+	doBadAliasRequest(t, "sample-requests/invalid-stored/bad_stored_imp.json", "Invalid request: Invalid JSON Document\n")
+	doBadAliasRequest(t, "sample-requests/invalid-stored/bad_incoming_imp.json", "Invalid request: Invalid JSON Document\n")
 }
 
 // doBadAliasRequest() is a customized variation of doRequest(), above
@@ -1186,6 +1187,7 @@ func TestStoredRequests(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	testStoreVideoAttr := []bool{true, true, false, false, false}
@@ -1635,6 +1637,7 @@ func TestValidateRequest(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	testCases := []struct {
@@ -1905,7 +1908,7 @@ func TestValidateRequestExt(t *testing.T) {
 		{
 			description:     "prebid cache - bids - wrong type",
 			givenRequestExt: json.RawMessage(`{"prebid":{"cache":{"bids":true}}}`),
-			expectedErrors:  []string{`json: cannot unmarshal bool into Go struct field ExtRequestPrebidCache.cache.bids of type openrtb_ext.ExtRequestPrebidCacheBids`},
+			expectedErrors:  []string{"cannot unmarshal openrtb_ext.ExtRequestPrebidCache.Bids: expect { or n, but found t"},
 		},
 		{
 			description:     "prebid cache - bids - provided",
@@ -1919,7 +1922,7 @@ func TestValidateRequestExt(t *testing.T) {
 		{
 			description:     "prebid cache - vastxml - wrong type",
 			givenRequestExt: json.RawMessage(`{"prebid":{"cache":{"vastxml":true}}}`),
-			expectedErrors:  []string{`json: cannot unmarshal bool into Go struct field ExtRequestPrebidCache.cache.vastxml of type openrtb_ext.ExtRequestPrebidCacheVAST`},
+			expectedErrors:  []string{"cannot unmarshal openrtb_ext.ExtRequestPrebidCache.VastXML: expect { or n, but found t"},
 		},
 		{
 			description:     "prebid cache - vastxml - provided",
@@ -2414,6 +2417,7 @@ func TestSetIntegrationType(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	testCases := []struct {
@@ -2480,6 +2484,7 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	req := &openrtb2.BidRequest{}
@@ -2551,7 +2556,7 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 		newRequest, _, errList := deps.processStoredRequests(json.RawMessage(test.givenRawData), impInfo, storedRequests, storedImps, storedBidRequestId, hasStoredBidRequest)
 		assert.Empty(t, errList, test.description)
 
-		if err := json.Unmarshal(newRequest, req); err != nil {
+		if err := jsonutil.UnmarshalValid(newRequest, req); err != nil {
 			t.Errorf("processStoredRequests Error: %s", err.Error())
 		}
 		if test.expectedCur != "" {
@@ -2584,6 +2589,7 @@ func TestOversizedRequest(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -2623,6 +2629,7 @@ func TestRequestSizeEdgeCase(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -2962,6 +2969,7 @@ func TestValidateImpExt(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	for _, group := range testGroups {
@@ -3017,6 +3025,7 @@ func TestCurrencyTrunc(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	ui := int64(1)
@@ -3065,6 +3074,7 @@ func TestCCPAInvalid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	ui := int64(1)
@@ -3117,6 +3127,7 @@ func TestNoSaleInvalid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	ui := int64(1)
@@ -3172,6 +3183,7 @@ func TestValidateSourceTID(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	ui := int64(1)
@@ -3217,6 +3229,7 @@ func TestSChainInvalid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	ui := int64(1)
@@ -3452,7 +3465,7 @@ func TestGetAccountID(t *testing.T) {
 			ParentAccount: &testParentAccount,
 		},
 	}
-	testPubExtJSON, err := json.Marshal(testPubExt)
+	testPubExtJSON, err := jsonutil.Marshal(testPubExt)
 	assert.NoError(t, err)
 
 	testCases := []struct {
@@ -3785,6 +3798,7 @@ func TestEidPermissionsInvalid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	ui := int64(1)
@@ -3854,6 +3868,13 @@ func TestValidateEidPermissions(t *testing.T) {
 			expectedError: nil,
 		},
 		{
+			description: "Valid - One - Case Insensitive",
+			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "sourceA", Bidders: []string{"A"}},
+			}}}},
+			expectedError: nil,
+		},
+		{
 			description: "Valid - Many",
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"a"}},
@@ -3901,9 +3922,16 @@ func TestValidateEidPermissions(t *testing.T) {
 			}}}},
 			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[1] contains unrecognized bidder "z"`),
 		},
+		{
+			description: "Valid - Alias Case Sensitive",
+			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "sourceA", Bidders: []string{"B"}},
+			}}}},
+			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[0] contains unrecognized bidder "B"`),
+		},
 	}
 
-	endpoint := &endpointDeps{bidderMap: knownBidders}
+	endpoint := &endpointDeps{bidderMap: knownBidders, normalizeBidderName: fakeNormalizeBidderName}
 	for _, test := range testCases {
 		result := endpoint.validateEidPermissions(test.request.Prebid.Data, knownAliases)
 		assert.Equal(t, test.expectedError, result, test.description)
@@ -3940,6 +3968,13 @@ func TestValidateBidders(t *testing.T) {
 			expectedError: nil,
 		},
 		{
+			description:   "Valid - One Core Bidder - Case Insensitive",
+			bidders:       []string{"A"},
+			knownBidders:  map[string]openrtb_ext.BidderName{"a": openrtb_ext.BidderName("a")},
+			knownAliases:  map[string]string{"c": "c"},
+			expectedError: nil,
+		},
+		{
 			description:   "Valid - Many Core Bidders",
 			bidders:       []string{"a", "b"},
 			knownBidders:  map[string]openrtb_ext.BidderName{"a": openrtb_ext.BidderName("a"), "b": openrtb_ext.BidderName("b")},
@@ -3952,6 +3987,13 @@ func TestValidateBidders(t *testing.T) {
 			knownBidders:  map[string]openrtb_ext.BidderName{"a": openrtb_ext.BidderName("a")},
 			knownAliases:  map[string]string{"c": "c"},
 			expectedError: nil,
+		},
+		{
+			description:   "Valid - One Alias Bidder - Case Sensitive",
+			bidders:       []string{"C"},
+			knownBidders:  map[string]openrtb_ext.BidderName{"a": openrtb_ext.BidderName("a")},
+			knownAliases:  map[string]string{"c": "c"},
+			expectedError: errors.New(`unrecognized bidder "C"`),
 		},
 		{
 			description:   "Valid - Many Alias Bidders",
@@ -3973,13 +4015,6 @@ func TestValidateBidders(t *testing.T) {
 			knownBidders:  map[string]openrtb_ext.BidderName{"a": openrtb_ext.BidderName("a")},
 			knownAliases:  map[string]string{"c": "c"},
 			expectedError: errors.New(`unrecognized bidder "z"`),
-		},
-		{
-			description:   "Invalid - Unknown Bidder Case Sensitive",
-			bidders:       []string{"A"},
-			knownBidders:  map[string]openrtb_ext.BidderName{"a": openrtb_ext.BidderName("a")},
-			knownAliases:  map[string]string{"c": "c"},
-			expectedError: errors.New(`unrecognized bidder "A"`),
 		},
 		{
 			description:   "Invalid - Unknown Bidder With Known Bidders",
@@ -4011,8 +4046,9 @@ func TestValidateBidders(t *testing.T) {
 		},
 	}
 
+	endpoint := &endpointDeps{normalizeBidderName: fakeNormalizeBidderName}
 	for _, test := range testCases {
-		result := validateBidders(test.bidders, test.knownBidders, test.knownAliases)
+		result := endpoint.validateBidders(test.bidders, test.knownBidders, test.knownAliases)
 		assert.Equal(t, test.expectedError, result, test.description)
 	}
 }
@@ -4102,6 +4138,7 @@ func TestAuctionWarnings(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
@@ -4148,6 +4185,7 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
@@ -4159,7 +4197,7 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 	assert.Nil(t, resReq, "Result request should be nil due to incorrect imp")
 	assert.Nil(t, impExtInfoMap, "Impression info map should be nil due to incorrect imp")
 	assert.Len(t, errL, 1, "One error should be returned")
-	assert.Contains(t, errL[0].Error(), "echovideoattrs of type bool", "Incorrect error message")
+	assert.Contains(t, errL[0].Error(), "cannot unmarshal openrtb_ext.Options.EchoVideoAttrs", "Incorrect error message")
 }
 
 func TestParseGzipedRequest(t *testing.T) {
@@ -4228,6 +4266,7 @@ func TestParseGzipedRequest(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
@@ -4828,6 +4867,7 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 				empty_fetcher.EmptyFetcher{},
 				hooks.EmptyPlanBuilder{},
 				nil,
+				openrtb_ext.NormalizeBidderName,
 			}
 
 			hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
@@ -4839,20 +4879,20 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 			assert.NoError(t, resReq.RebuildRequest())
 
 			var expIExt, iExt map[string]interface{}
-			err := json.Unmarshal(test.expectedImpExt, &expIExt)
+			err := jsonutil.UnmarshalValid(test.expectedImpExt, &expIExt)
 			assert.Nil(t, err, "unmarshal() should return nil error")
 
 			assert.NotNil(t, resReq.BidRequest.Imp[0].Ext, "imp[0].Ext should not be nil")
-			err = json.Unmarshal(resReq.BidRequest.Imp[0].Ext, &iExt)
+			err = jsonutil.UnmarshalValid(resReq.BidRequest.Imp[0].Ext, &iExt)
 			assert.Nil(t, err, "unmarshal() should return nil error")
 
 			assert.Equal(t, expIExt, iExt, "bidderparams in imp[].Ext should match")
 
 			var eReqE, reqE map[string]interface{}
-			err = json.Unmarshal(test.expectedReqExt, &eReqE)
+			err = jsonutil.UnmarshalValid(test.expectedReqExt, &eReqE)
 			assert.Nil(t, err, "unmarshal() should return nil error")
 
-			err = json.Unmarshal(resReq.BidRequest.Ext, &reqE)
+			err = jsonutil.UnmarshalValid(resReq.BidRequest.Ext, &reqE)
 			assert.Nil(t, err, "unmarshal() should return nil error")
 
 			assert.Equal(t, eReqE, reqE, "req.Ext should match")
@@ -4931,6 +4971,7 @@ func TestParseRequestStoredResponses(t *testing.T) {
 				&mockStoredResponseFetcher{mockStoredResponses},
 				hooks.EmptyPlanBuilder{},
 				nil,
+				openrtb_ext.NormalizeBidderName,
 			}
 
 			hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
@@ -4950,8 +4991,8 @@ func TestParseRequestStoredResponses(t *testing.T) {
 }
 
 func TestParseRequestStoredBidResponses(t *testing.T) {
-	bidRespId1 := json.RawMessage(`{"id": "resp_id1", "seatbid": [{"bid": [{"id": "bid_id1"}], "seat": "testBidder1"}], "bidid": "123", "cur": "USD"}`)
-	bidRespId2 := json.RawMessage(`{"id": "resp_id2", "seatbid": [{"bid": [{"id": "bid_id2"}], "seat": "testBidder2"}], "bidid": "124", "cur": "USD"}`)
+	bidRespId1 := json.RawMessage(`{"id": "resp_id1", "seatbid": [{"bid": [{"id": "bid_id1"}], "seat": "telaria"}], "bidid": "123", "cur": "USD"}`)
+	bidRespId2 := json.RawMessage(`{"id": "resp_id2", "seatbid": [{"bid": [{"id": "bid_id2"}], "seat": "amx"}], "bidid": "124", "cur": "USD"}`)
 	bidRespId3 := json.RawMessage(`{"id": "resp_id3", "seatbid": [{"bid": [{"id": "bid_id3"}], "seat": "APPNEXUS"}], "bidid": "125", "cur": "USD"}`)
 	mockStoredBidResponses := map[string]json.RawMessage{
 		"bidResponseId1": bidRespId1,
@@ -4970,15 +5011,23 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 			name:             "req imp has valid stored bid response",
 			givenRequestBody: validRequest(t, "imp-with-stored-bid-resp.json"),
 			expectedStoredBidResponses: map[string]map[string]json.RawMessage{
-				"imp-id1": {"testBidder1": bidRespId1},
+				"imp-id1": {"telaria": bidRespId1},
 			},
 			expectedErrorCount: 0,
 		},
 		{
-			name:             "req imp has valid stored bid response with case insensitive bidder name",
-			givenRequestBody: validRequest(t, "imp-with-stored-bid-resp-insensitive-bidder-name.json"),
+			name:             "req imp has valid stored bid response with case not-matching bidder name",
+			givenRequestBody: validRequest(t, "imp-with-stored-bid-resp-case-not-matching-bidder-name.json"),
 			expectedStoredBidResponses: map[string]map[string]json.RawMessage{
-				"imp-id3": {"APPNEXUS": bidRespId3},
+				"imp-id3": {"appnexus": bidRespId3},
+			},
+			expectedErrorCount: 0,
+		},
+		{
+			name:             "req imp has valid stored bid response with case matching bidder name",
+			givenRequestBody: validRequest(t, "imp-with-stored-bid-resp-case-matching-bidder-name.json"),
+			expectedStoredBidResponses: map[string]map[string]json.RawMessage{
+				"imp-id3": {"appnexus": bidRespId3},
 			},
 			expectedErrorCount: 0,
 		},
@@ -4986,8 +5035,8 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 			name:             "req has two imps with valid stored bid responses",
 			givenRequestBody: validRequest(t, "req-two-imps-stored-bid-responses.json"),
 			expectedStoredBidResponses: map[string]map[string]json.RawMessage{
-				"imp-id1": {"testBidder1": bidRespId1},
-				"imp-id2": {"testBidder2": bidRespId2},
+				"imp-id1": {"telaria": bidRespId1},
+				"imp-id2": {"amx": bidRespId2},
 			},
 			expectedErrorCount: 0,
 		},
@@ -4995,7 +5044,7 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 			name:             "req has two imps one with valid stored bid responses and another one without stored bid responses",
 			givenRequestBody: validRequest(t, "req-two-imps-with-and-without-stored-bid-responses.json"),
 			expectedStoredBidResponses: map[string]map[string]json.RawMessage{
-				"imp-id2": {"testBidder2": bidRespId2},
+				"imp-id2": {"amx": bidRespId2},
 			},
 			expectedErrorCount: 0,
 		},
@@ -5003,7 +5052,13 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 			name:                       "req has two imps with missing stored bid responses",
 			givenRequestBody:           validRequest(t, "req-two-imps-missing-stored-bid-response.json"),
 			expectedStoredBidResponses: nil,
-			expectedErrorCount:         2,
+			expectedErrorCount:         1,
+		},
+		{
+			name:                       "req imp has valid stored bid response with non existing bidder name",
+			givenRequestBody:           validRequest(t, "imp-with-stored-bid-resp-non-existing-bidder-name.json"),
+			expectedStoredBidResponses: nil,
+			expectedErrorCount:         1,
 		},
 	}
 	for _, test := range tests {
@@ -5022,13 +5077,14 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 				map[string]string{},
 				false,
 				[]byte{},
-				map[string]openrtb_ext.BidderName{"testBidder1": "testBidder1", "testBidder2": "testBidder2", "appnexus": "appnexus"},
+				map[string]openrtb_ext.BidderName{"telaria": "telaria", "amx": "amx", "appnexus": "appnexus"},
 				nil,
 				nil,
 				hardcodedResponseIPValidator{response: true},
 				&mockStoredResponseFetcher{mockStoredBidResponses},
 				hooks.EmptyPlanBuilder{},
 				nil,
+				openrtb_ext.NormalizeBidderName,
 			}
 
 			hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
@@ -5036,6 +5092,7 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
 			_, _, _, storedBidResponses, _, _, errL := deps.parseRequest(req, &metrics.Labels{}, hookExecutor)
 			if test.expectedErrorCount == 0 {
+				assert.Empty(t, errL)
 				assert.Equal(t, test.expectedStoredBidResponses, storedBidResponses, "stored responses should match")
 			} else {
 				assert.Contains(t, errL[0].Error(), test.expectedError, "error should match")
@@ -5065,6 +5122,7 @@ func TestValidateStoredResp(t *testing.T) {
 		&mockStoredResponseFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	testCases := []struct {
@@ -5610,8 +5668,10 @@ func TestValidateStoredResp(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		errorList := deps.validateRequest(test.givenRequestWrapper, false, test.hasStoredAuctionResponses, test.storedBidResponses, false)
-		assert.Equalf(t, test.expectedErrorList, errorList, "Error doesn't match: %s\n", test.description)
+		t.Run(test.description, func(t *testing.T) {
+			errorList := deps.validateRequest(test.givenRequestWrapper, false, test.hasStoredAuctionResponses, test.storedBidResponses, false)
+			assert.Equalf(t, test.expectedErrorList, errorList, "Error doesn't match: %s\n", test.description)
+		})
 	}
 }
 
@@ -5711,11 +5771,11 @@ func TestValidResponseAfterExecutingStages(t *testing.T) {
 			var actualExt openrtb_ext.ExtBidResponse
 			var expectedExt openrtb_ext.ExtBidResponse
 
-			assert.NoError(t, json.Unmarshal(test.ExpectedBidResponse, &expectedResp), "Unable to unmarshal expected BidResponse.")
-			assert.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &actualResp), "Unable to unmarshal actual BidResponse.")
+			assert.NoError(t, jsonutil.UnmarshalValid(test.ExpectedBidResponse, &expectedResp), "Unable to unmarshal expected BidResponse.")
+			assert.NoError(t, jsonutil.UnmarshalValid(recorder.Body.Bytes(), &actualResp), "Unable to unmarshal actual BidResponse.")
 			if expectedResp.Ext != nil {
-				assert.NoError(t, json.Unmarshal(expectedResp.Ext, &expectedExt), "Unable to unmarshal expected ExtBidResponse.")
-				assert.NoError(t, json.Unmarshal(actualResp.Ext, &actualExt), "Unable to unmarshal actual ExtBidResponse.")
+				assert.NoError(t, jsonutil.UnmarshalValid(expectedResp.Ext, &expectedExt), "Unable to unmarshal expected ExtBidResponse.")
+				assert.NoError(t, jsonutil.UnmarshalValid(actualResp.Ext, &actualExt), "Unable to unmarshal actual ExtBidResponse.")
 			}
 
 			assertBidResponseEqual(t, tc.file, expectedResp, actualResp)
@@ -5878,6 +5938,7 @@ func TestParseRequestMultiBid(t *testing.T) {
 				empty_fetcher.EmptyFetcher{},
 				hooks.EmptyPlanBuilder{},
 				nil,
+				openrtb_ext.NormalizeBidderName,
 			}
 
 			hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
@@ -5916,7 +5977,7 @@ func getObject(t *testing.T, filename, key string) json.RawMessage {
 	assert.NoError(t, err, "Error jsonparsing root.mockBidRequest from file %s. Desc: %v.", filename, err)
 
 	var obj json.RawMessage
-	err = json.Unmarshal(testBidRequest, &obj)
+	err = jsonutil.UnmarshalValid(testBidRequest, &obj)
 	if err != nil {
 		t.Fatalf("Failed to fetch object with key '%s' ... got error: %v", key, err)
 	}
@@ -6042,4 +6103,8 @@ func TestValidateAliases(t *testing.T) {
 			}
 		})
 	}
+}
+
+func fakeNormalizeBidderName(name string) (openrtb_ext.BidderName, bool) {
+	return openrtb_ext.BidderName(strings.ToLower(name)), true
 }

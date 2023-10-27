@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/v2/config"
 )
 
 type TmaxAdjustmentsPreprocessed struct {
