@@ -68,7 +68,7 @@ func _updateImps(bidRequest openrtb2.BidRequest) []openrtb2.Imp {
 			imp.Instl = extImpAlkimi.Instl
 			imp.Exp = extImpAlkimi.Exp
 
-			fmt.Printf("Imp ext \"%s\"", extImpAlkimi)
+			fmt.Println("Imp ext: ", extImpAlkimi)
 
 			// extJson, err := json.Marshal(extImpAlkimi)
 			// if err != nil {
