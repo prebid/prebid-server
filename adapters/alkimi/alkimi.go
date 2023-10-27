@@ -58,6 +58,10 @@ func _updateImps(bidRequest openrtb2.BidRequest) []openrtb2.Imp {
 		
 		var bidderExt adapters.ExtImpBidder
 		var extImpAlkimi openrtb_ext.ExtImpAlkimi
+
+		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+			return nil
+		}
 		
 		if err := json.Unmarshal(bidderExt.Bidder, &extImpAlkimi); err == nil {
 			var bidFloorPrice floors.Price
