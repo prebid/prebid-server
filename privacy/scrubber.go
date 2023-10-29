@@ -16,7 +16,7 @@ type IPConf struct {
 	IPV4 config.IPv4
 }
 
-func ScrubDeviceIDs(reqWrapper *openrtb_ext.RequestWrapper) {
+func scrubDeviceIDs(reqWrapper *openrtb_ext.RequestWrapper) {
 	if reqWrapper.Device != nil {
 		reqWrapper.Device.DIDMD5 = ""
 		reqWrapper.Device.DIDSHA1 = ""
@@ -28,7 +28,7 @@ func ScrubDeviceIDs(reqWrapper *openrtb_ext.RequestWrapper) {
 	}
 }
 
-func ScrubUserIDs(reqWrapper *openrtb_ext.RequestWrapper) {
+func scrubUserIDs(reqWrapper *openrtb_ext.RequestWrapper) {
 	if reqWrapper.User != nil {
 		reqWrapper.User.Data = nil
 		reqWrapper.User.ID = ""
@@ -40,7 +40,7 @@ func ScrubUserIDs(reqWrapper *openrtb_ext.RequestWrapper) {
 	}
 }
 
-func ScrubUserDemographics(reqWrapper *openrtb_ext.RequestWrapper) {
+func scrubUserDemographics(reqWrapper *openrtb_ext.RequestWrapper) {
 	if reqWrapper.User != nil {
 		reqWrapper.User.BuyerUID = ""
 		reqWrapper.User.ID = ""
@@ -49,7 +49,7 @@ func ScrubUserDemographics(reqWrapper *openrtb_ext.RequestWrapper) {
 	}
 }
 
-func ScrubUserExt(reqWrapper *openrtb_ext.RequestWrapper, fieldName string) error {
+func scrubUserExt(reqWrapper *openrtb_ext.RequestWrapper, fieldName string) error {
 	if reqWrapper.User != nil {
 		userExt, err := reqWrapper.GetUserExt()
 		if err != nil {
@@ -65,12 +65,12 @@ func ScrubUserExt(reqWrapper *openrtb_ext.RequestWrapper, fieldName string) erro
 	return nil
 }
 
-func ScrubEids(reqWrapper *openrtb_ext.RequestWrapper) error {
-	//transmitEids covers user.eids and user.ext.eids
+func ScrubEIDs(reqWrapper *openrtb_ext.RequestWrapper) error {
+	//transmitEids removes user.eids and user.ext.eids
 	if reqWrapper.User != nil {
 		reqWrapper.User.EIDs = nil
 	}
-	return ScrubUserExt(reqWrapper, "eids")
+	return scrubUserExt(reqWrapper, "eids")
 }
 
 func ScrubTID(reqWrapper *openrtb_ext.RequestWrapper) {
@@ -85,21 +85,19 @@ func ScrubTID(reqWrapper *openrtb_ext.RequestWrapper) {
 	reqWrapper.SetImp(impWrapper)
 }
 
-func ScrubGEO(reqWrapper *openrtb_ext.RequestWrapper) {
+func scrubGEO(reqWrapper *openrtb_ext.RequestWrapper) {
 	//round user's geographic location by rounding off IP address and lat/lng data.
 	//this applies to both device.geo and user.geo
 	if reqWrapper.User != nil && reqWrapper.User.Geo != nil {
 		reqWrapper.User.Geo = scrubGeoPrecision(reqWrapper.User.Geo)
 	}
 
-	if reqWrapper.Device != nil {
-		if reqWrapper.Device.Geo != nil {
-			reqWrapper.Device.Geo = scrubGeoPrecision(reqWrapper.Device.Geo)
-		}
+	if reqWrapper.Device != nil && reqWrapper.Device.Geo != nil {
+		reqWrapper.Device.Geo = scrubGeoPrecision(reqWrapper.Device.Geo)
 	}
 }
 
-func ScrubGeoFull(reqWrapper *openrtb_ext.RequestWrapper) {
+func scrubGeoFull(reqWrapper *openrtb_ext.RequestWrapper) {
 	if reqWrapper.User != nil && reqWrapper.User.Geo != nil {
 		reqWrapper.User.Geo = &openrtb2.Geo{}
 	}
@@ -109,7 +107,7 @@ func ScrubGeoFull(reqWrapper *openrtb_ext.RequestWrapper) {
 
 }
 
-func ScrubDeviceIP(reqWrapper *openrtb_ext.RequestWrapper, ipConf IPConf) {
+func scrubDeviceIP(reqWrapper *openrtb_ext.RequestWrapper, ipConf IPConf) {
 	if reqWrapper.Device != nil {
 		reqWrapper.Device.IP = scrubIP(reqWrapper.Device.IP, ipConf.IPV4.AnonKeepBits, iputil.IPv4BitSize)
 		reqWrapper.Device.IPv6 = scrubIP(reqWrapper.Device.IPv6, ipConf.IPV6.AnonKeepBits, iputil.IPv6BitSize)
@@ -117,34 +115,34 @@ func ScrubDeviceIP(reqWrapper *openrtb_ext.RequestWrapper, ipConf IPConf) {
 }
 
 func ScrubDeviceIDsIPsUserDemoExt(reqWrapper *openrtb_ext.RequestWrapper, ipConf IPConf, fieldName string, scrubFullGeo bool) {
-	ScrubDeviceIDs(reqWrapper)
-	ScrubDeviceIP(reqWrapper, ipConf)
-	ScrubUserDemographics(reqWrapper)
-	ScrubUserExt(reqWrapper, fieldName)
+	scrubDeviceIDs(reqWrapper)
+	scrubDeviceIP(reqWrapper, ipConf)
+	scrubUserDemographics(reqWrapper)
+	scrubUserExt(reqWrapper, fieldName)
 
 	if scrubFullGeo {
-		ScrubGeoFull(reqWrapper)
+		scrubGeoFull(reqWrapper)
 	} else {
-		ScrubGEO(reqWrapper)
+		scrubGEO(reqWrapper)
 	}
 }
 
 func ScrubUserFPD(reqWrapper *openrtb_ext.RequestWrapper) {
-	ScrubDeviceIDs(reqWrapper)
-	ScrubUserIDs(reqWrapper)
-	ScrubUserExt(reqWrapper, "data")
+	scrubDeviceIDs(reqWrapper)
+	scrubUserIDs(reqWrapper)
+	scrubUserExt(reqWrapper, "data")
 	reqWrapper.User.EIDs = nil
 }
 
 func ScrubGdprID(reqWrapper *openrtb_ext.RequestWrapper) {
-	ScrubDeviceIDs(reqWrapper)
-	ScrubUserDemographics(reqWrapper)
-	ScrubUserExt(reqWrapper, "eids")
+	scrubDeviceIDs(reqWrapper)
+	scrubUserDemographics(reqWrapper)
+	scrubUserExt(reqWrapper, "eids")
 }
 
 func ScrubGeoAndDeviceIP(reqWrapper *openrtb_ext.RequestWrapper, ipConf IPConf) {
-	ScrubDeviceIP(reqWrapper, ipConf)
-	ScrubGEO(reqWrapper)
+	scrubDeviceIP(reqWrapper, ipConf)
+	scrubGEO(reqWrapper)
 }
 
 func scrubIP(ip string, ones, bits int) string {

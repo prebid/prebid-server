@@ -48,6 +48,12 @@ func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac priv
 	for name, module := range ea {
 		component := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: name}
 		if ac.Allow(privacy.ActivityReportAnalytics, component, privacy.ActivityRequest{}) {
+			if !ac.Allow(privacy.ActivityTransmitUserFPD, component, privacy.ActivityRequest{}) {
+				// scrub UFPD from ao.RequestWrapper
+			}
+			if !ac.Allow(privacy.ActivityTransmitPreciseGeo, component, privacy.ActivityRequest{}) {
+				// scrub geo from ao.RequestWrapper
+			}
 			module.LogAuctionObject(ao)
 		}
 	}

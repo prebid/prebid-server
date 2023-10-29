@@ -190,14 +190,8 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		} else {
 			// run existing policies (GDPR, CCPA, COPPA, LMT)
 			// potentially block passing IDs based on GDPR
-			if gdprEnforced {
-				if gdprErr == nil {
-					if !auctionPermissions.PassID {
-						privacy.ScrubGdprID(reqWrapper)
-					}
-				} else {
-					privacy.ScrubGdprID(reqWrapper)
-				}
+			if gdprEnforced && (gdprErr != nil || !auctionPermissions.PassID) {
+				privacy.ScrubGdprID(reqWrapper)
 			}
 			// potentially block passing IDs based on CCPA
 			if ccpaEnforcer.ShouldEnforce(bidderRequest.BidderName.String()) {
@@ -211,14 +205,8 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		} else {
 			// run existing policies (GDPR, CCPA, COPPA, LMT)
 			// potentially block passing geo based on GDPR
-			if gdprEnforced {
-				if gdprErr == nil {
-					if !auctionPermissions.PassGeo {
-						privacy.ScrubGeoAndDeviceIP(reqWrapper, ipConf)
-					}
-				} else {
-					privacy.ScrubGeoAndDeviceIP(reqWrapper, ipConf)
-				}
+			if gdprEnforced && (gdprErr != nil || !auctionPermissions.PassGeo) {
+				privacy.ScrubGeoAndDeviceIP(reqWrapper, ipConf)
 			}
 			// potentially block passing geo based on CCPA
 			if ccpaEnforcer.ShouldEnforce(bidderRequest.BidderName.String()) {

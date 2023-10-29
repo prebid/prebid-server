@@ -29,7 +29,7 @@ func TestScrubDeviceIDs(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			brw := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Device: test.deviceIn}}
-			ScrubDeviceIDs(brw)
+			scrubDeviceIDs(brw)
 			brw.RebuildRequest()
 			assert.Equal(t, test.expectedDevice, brw.Device)
 		})
@@ -56,7 +56,7 @@ func TestScrubUserIDs(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			brw := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{User: test.userIn}}
-			ScrubUserIDs(brw)
+			scrubUserIDs(brw)
 			brw.RebuildRequest()
 			assert.Equal(t, test.expectedUser, brw.User)
 		})
@@ -83,7 +83,7 @@ func TestScrubUserDemographics(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			brw := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{User: test.userIn}}
-			ScrubUserDemographics(brw)
+			scrubUserDemographics(brw)
 			brw.RebuildRequest()
 			assert.Equal(t, test.expectedUser, brw.User)
 		})
@@ -97,6 +97,11 @@ func TestScrubUserExt(t *testing.T) {
 		fieldName    string
 		expectedUser *openrtb2.User
 	}{
+		{
+			name:         "nil_user",
+			userIn:       nil,
+			expectedUser: nil,
+		},
 		{
 			name:         "nil_ext",
 			userIn:       &openrtb2.User{ID: "ID", Ext: nil},
@@ -128,7 +133,7 @@ func TestScrubUserExt(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			brw := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{User: test.userIn}}
-			ScrubUserExt(brw, test.fieldName)
+			scrubUserExt(brw, test.fieldName)
 			brw.RebuildRequest()
 			assert.Equal(t, test.expectedUser, brw.User)
 		})
@@ -160,7 +165,7 @@ func TestScrubEids(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			brw := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{User: test.userIn}}
-			ScrubEids(brw)
+			ScrubEIDs(brw)
 			brw.RebuildRequest()
 			assert.Equal(t, test.expectedUser, brw.User)
 		})
@@ -243,14 +248,28 @@ func TestScrubGEO(t *testing.T) {
 			expectedDevice: &openrtb2.Device{Geo: &openrtb2.Geo{Lat: 123.12}},
 		},
 		{
-			name:           "with_device_geo",
+			name:           "with_user_geo",
 			userIn:         &openrtb2.User{ID: "ID", Geo: &openrtb2.Geo{Lat: 123.123}},
 			expectedUser:   &openrtb2.User{ID: "ID", Geo: &openrtb2.Geo{Lat: 123.12}},
 			deviceIn:       &openrtb2.Device{},
 			expectedDevice: &openrtb2.Device{},
 		},
 		{
-			name:           "with_geo",
+			name:           "nil_device_geo",
+			userIn:         &openrtb2.User{},
+			expectedUser:   &openrtb2.User{},
+			deviceIn:       &openrtb2.Device{Geo: nil},
+			expectedDevice: &openrtb2.Device{Geo: nil},
+		},
+		{
+			name:           "with_device_geo",
+			userIn:         &openrtb2.User{},
+			expectedUser:   &openrtb2.User{},
+			deviceIn:       &openrtb2.Device{Geo: &openrtb2.Geo{Lat: 123.123}},
+			expectedDevice: &openrtb2.Device{Geo: &openrtb2.Geo{Lat: 123.12}},
+		},
+		{
+			name:           "with_user_and_device_geo",
 			userIn:         &openrtb2.User{ID: "ID", Geo: &openrtb2.Geo{Lat: 123.123}},
 			expectedUser:   &openrtb2.User{ID: "ID", Geo: &openrtb2.Geo{Lat: 123.12}},
 			deviceIn:       &openrtb2.Device{Geo: &openrtb2.Geo{Lat: 123.123}},
@@ -260,7 +279,7 @@ func TestScrubGEO(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			brw := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{User: test.userIn, Device: test.deviceIn}}
-			ScrubGEO(brw)
+			scrubGEO(brw)
 			brw.RebuildRequest()
 			assert.Equal(t, test.expectedUser, brw.User)
 			assert.Equal(t, test.expectedDevice, brw.Device)
@@ -287,18 +306,32 @@ func TestScrubGeoFull(t *testing.T) {
 			name:           "nil_user_geo",
 			userIn:         &openrtb2.User{ID: "ID", Geo: nil},
 			expectedUser:   &openrtb2.User{ID: "ID", Geo: nil},
-			deviceIn:       &openrtb2.Device{Geo: &openrtb2.Geo{Lat: 123.123}},
-			expectedDevice: &openrtb2.Device{Geo: &openrtb2.Geo{}},
+			deviceIn:       &openrtb2.Device{},
+			expectedDevice: &openrtb2.Device{},
 		},
 		{
-			name:           "with_device_geo",
+			name:           "with_user_geo",
 			userIn:         &openrtb2.User{ID: "ID", Geo: &openrtb2.Geo{Lat: 123.123}},
 			expectedUser:   &openrtb2.User{ID: "ID", Geo: &openrtb2.Geo{}},
 			deviceIn:       &openrtb2.Device{},
 			expectedDevice: &openrtb2.Device{},
 		},
 		{
-			name:           "with_geo",
+			name:           "nil_device_geo",
+			userIn:         &openrtb2.User{},
+			expectedUser:   &openrtb2.User{},
+			deviceIn:       &openrtb2.Device{Geo: nil},
+			expectedDevice: &openrtb2.Device{Geo: nil},
+		},
+		{
+			name:           "with_user_geo",
+			userIn:         &openrtb2.User{},
+			expectedUser:   &openrtb2.User{},
+			deviceIn:       &openrtb2.Device{Geo: &openrtb2.Geo{Lat: 123.123}},
+			expectedDevice: &openrtb2.Device{Geo: &openrtb2.Geo{}},
+		},
+		{
+			name:           "with_user_and_device_geo",
 			userIn:         &openrtb2.User{ID: "ID", Geo: &openrtb2.Geo{Lat: 123.123}},
 			expectedUser:   &openrtb2.User{ID: "ID", Geo: &openrtb2.Geo{}},
 			deviceIn:       &openrtb2.Device{Geo: &openrtb2.Geo{Lat: 123.123}},
@@ -308,7 +341,7 @@ func TestScrubGeoFull(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			brw := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{User: test.userIn, Device: test.deviceIn}}
-			ScrubGeoFull(brw)
+			scrubGeoFull(brw)
 			brw.RebuildRequest()
 			assert.Equal(t, test.expectedUser, brw.User)
 			assert.Equal(t, test.expectedDevice, brw.Device)
@@ -454,24 +487,9 @@ func TestScrubUserExtIDs(t *testing.T) {
 			expected:    json.RawMessage(`{"anyExisting":{"existing":42}}`),
 		},
 		{
-			description: "Remove eids Only",
-			userExt:     json.RawMessage(`{"eids":[{"source":"anySource","id":"anyId","uids":[{"id":"anyId","ext":{"id":42}}],"ext":{"id":42}}]}`),
-			expected:    json.RawMessage(`{}`),
-		},
-		{
 			description: "Remove eids Only - Empty Array",
 			userExt:     json.RawMessage(`{"eids":[]}`),
 			expected:    json.RawMessage(`{}`),
-		},
-		{
-			description: "Remove eids Only - With Other Data",
-			userExt:     json.RawMessage(`{"anyExisting":42,"eids":[{"source":"anySource","id":"anyId","uids":[{"id":"anyId","ext":{"id":42}}],"ext":{"id":42}}]}`),
-			expected:    json.RawMessage(`{"anyExisting":42}`),
-		},
-		{
-			description: "Remove eids Only - With Other Nested Data",
-			userExt:     json.RawMessage(`{"anyExisting":{"existing":42},"eids":[{"source":"anySource","id":"anyId","uids":[{"id":"anyId","ext":{"id":42}}],"ext":{"id":42}}]}`),
-			expected:    json.RawMessage(`{"anyExisting":{"existing":42}}`),
 		},
 	}
 

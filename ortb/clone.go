@@ -235,8 +235,10 @@ func CloneUserAgent(s *openrtb2.UserAgent) *openrtb2.UserAgent {
 	c.Browsers = CloneBrandVersionSlice(s.Browsers)
 	c.Platform = CloneBrandVersion(s.Platform)
 
-	mobileCopy := &s.Mobile
-	c.Mobile = *mobileCopy
+	if s.Mobile != nil {
+		mobileCopy := *s.Mobile
+		c.Mobile = &mobileCopy
+	}
 	s.Ext = sliceutil.Clone(s.Ext)
 
 	return &c
