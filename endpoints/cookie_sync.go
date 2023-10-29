@@ -61,7 +61,7 @@ func NewCookieSyncEndpoint(
 	}
 
 	return &cookieSyncEndpoint{
-		chooser: usersync.NewChooser(syncersByBidder),
+		chooser: usersync.NewChooser(syncersByBidder, config.BidderInfos),
 		config:  config,
 		privacyConfig: usersyncPrivacyConfig{
 			gdprConfig:             config.GDPR,
@@ -180,6 +180,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, ma
 			activityRequest:  privacy.NewRequestFromPolicies(privacyPolicies),
 		},
 		SyncTypeFilter: syncTypeFilter,
+		GPPSID:         request.GPPSID,
 	}
 	return rx, privacyMacros, nil
 }

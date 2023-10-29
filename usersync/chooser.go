@@ -3,6 +3,7 @@ package usersync
 import (
 	"strings"
 
+	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
@@ -14,7 +15,7 @@ type Chooser interface {
 }
 
 // NewChooser returns a new instance of the standard chooser implementation.
-func NewChooser(bidderSyncerLookup map[string]Syncer) Chooser {
+func NewChooser(bidderSyncerLookup map[string]Syncer, bidderInfo map[string]config.BidderInfo) Chooser {
 	bidders := make([]string, 0, len(bidderSyncerLookup))
 	for k := range bidderSyncerLookup {
 		bidders = append(bidders, k)
@@ -25,6 +26,7 @@ func NewChooser(bidderSyncerLookup map[string]Syncer) Chooser {
 		biddersAvailable:         bidders,
 		bidderChooser:            standardBidderChooser{shuffler: randomShuffler{}},
 		normalizeValidBidderName: openrtb_ext.NormalizeBidderName,
+		bidderInfo:               bidderInfo,
 	}
 }
 
@@ -35,6 +37,7 @@ type Request struct {
 	Limit          int
 	Privacy        Privacy
 	SyncTypeFilter SyncTypeFilter
+	GPPSID         string
 }
 
 // Cooperative specifies the settings for cooperative syncing for a given request, where bidders
@@ -95,6 +98,9 @@ const (
 
 	// StatusBlockedByPrivacy specifies a bidder sync url is not allowed by privacy activities
 	StatusBlockedByPrivacy
+
+	// StatusBlockedByRegulationScope specifies the bidder chose to not sync given GDPR being in scope or because of a GPPSID
+	StatusBlockedByRegulationScope
 )
 
 // Privacy determines which privacy policies will be enforced for a user sync request.
@@ -111,6 +117,7 @@ type standardChooser struct {
 	biddersAvailable         []string
 	bidderChooser            bidderChooser
 	normalizeValidBidderName func(name string) (openrtb_ext.BidderName, bool)
+	bidderInfo               map[string]config.BidderInfo
 }
 
 // Choose randomly selects user syncers which are permitted by the user's privacy settings and
@@ -132,7 +139,7 @@ func (c standardChooser) Choose(request Request, cookie *Cookie) Result {
 
 	bidders := c.bidderChooser.choose(request.Bidders, c.biddersAvailable, request.Cooperative)
 	for i := 0; i < len(bidders) && (limitDisabled || len(syncersChosen) < request.Limit); i++ {
-		syncer, evaluation := c.evaluate(bidders[i], syncersSeen, request.SyncTypeFilter, request.Privacy, cookie)
+		syncer, evaluation := c.evaluate(bidders[i], syncersSeen, request.SyncTypeFilter, request.Privacy, cookie, request.GPPSID)
 
 		biddersEvaluated = append(biddersEvaluated, evaluation)
 		if evaluation.Status == StatusOK {
@@ -143,7 +150,7 @@ func (c standardChooser) Choose(request Request, cookie *Cookie) Result {
 	return Result{Status: StatusOK, BiddersEvaluated: biddersEvaluated, SyncersChosen: syncersChosen}
 }
 
-func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}, syncTypeFilter SyncTypeFilter, privacy Privacy, cookie *Cookie) (Syncer, BidderEvaluation) {
+func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}, syncTypeFilter SyncTypeFilter, privacy Privacy, cookie *Cookie, GPPSID string) (Syncer, BidderEvaluation) {
 	bidderNormalized, exists := c.normalizeValidBidderName(bidder)
 	if !exists {
 		return nil, BidderEvaluation{Status: StatusUnknownBidder, Bidder: bidder}
@@ -177,8 +184,16 @@ func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}
 		return nil, BidderEvaluation{Status: StatusBlockedByGDPR, Bidder: bidder, SyncerKey: syncer.Key()}
 	}
 
+	if c.bidderInfo[bidder].Syncer != nil && c.bidderInfo[bidder].Syncer.SkipWhen != nil && c.bidderInfo[bidder].Syncer.SkipWhen.GDPR {
+		return nil, BidderEvaluation{Status: StatusBlockedByRegulationScope, Bidder: bidder, SyncerKey: syncer.Key()}
+	}
+
 	if !privacy.CCPAAllowsBidderSync(bidderNormalized.String()) {
 		return nil, BidderEvaluation{Status: StatusBlockedByCCPA, Bidder: bidder, SyncerKey: syncer.Key()}
+	}
+
+	if c.bidderInfo[bidder].Syncer != nil && c.bidderInfo[bidder].Syncer.SkipWhen != nil && c.bidderInfo[bidder].Syncer.SkipWhen.GPPSID == GPPSID {
+		return nil, BidderEvaluation{Status: StatusBlockedByRegulationScope, Bidder: bidder, SyncerKey: syncer.Key()}
 	}
 
 	return syncer, BidderEvaluation{Status: StatusOK, Bidder: bidder, SyncerKey: syncer.Key()}
