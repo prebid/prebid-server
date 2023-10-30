@@ -32,6 +32,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/aidem"
 	"github.com/prebid/prebid-server/v2/adapters/aja"
 	"github.com/prebid/prebid-server/v2/adapters/algorix"
+	"github.com/prebid/prebid-server/v2/adapters/alkimi"
 	"github.com/prebid/prebid-server/v2/adapters/amx"
 	"github.com/prebid/prebid-server/v2/adapters/apacdex"
 	"github.com/prebid/prebid-server/v2/adapters/appnexus"
