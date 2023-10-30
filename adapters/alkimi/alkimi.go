@@ -3,16 +3,16 @@ package alkimi
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/floors"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/floors"
 	"net/http"
 	"net/url"
 	"strings"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 const PRICE_MACRO = "${AUCTION_PRICE}"
