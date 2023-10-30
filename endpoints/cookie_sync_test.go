@@ -12,17 +12,17 @@ import (
 	"testing"
 	"testing/iotest"
 
-	"github.com/prebid/prebid-server/analytics"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/gdpr"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/privacy"
-	"github.com/prebid/prebid-server/privacy/ccpa"
-	"github.com/prebid/prebid-server/usersync"
-	"github.com/prebid/prebid-server/util/ptrutil"
+	"github.com/prebid/prebid-server/v2/analytics"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/gdpr"
+	"github.com/prebid/prebid-server/v2/macros"
+	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/privacy"
+	"github.com/prebid/prebid-server/v2/privacy/ccpa"
+	"github.com/prebid/prebid-server/v2/usersync"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -190,14 +190,14 @@ func TestCookieSyncHandle(t *testing.T) {
 				SyncersChosen:    []usersync.SyncerChoice{{Bidder: "a", Syncer: &syncer}},
 			},
 			expectedStatusCode: 400,
-			expectedBody:       `JSON parsing failed: invalid character 'm' looking for beginning of value` + "\n",
+			expectedBody:       `JSON parsing failed: expect { or n, but found m` + "\n",
 			setMetricsExpectations: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordCookieSync", metrics.CookieSyncBadRequest).Once()
 			},
 			setAnalyticsExpectations: func(a *MockAnalyticsRunner) {
 				expected := analytics.CookieSyncObject{
 					Status:       400,
-					Errors:       []error{errors.New("JSON parsing failed: invalid character 'm' looking for beginning of value")},
+					Errors:       []error{errors.New("JSON parsing failed: expect { or n, but found m")},
 					BidderStatus: []*analytics.CookieSyncBidder{},
 				}
 				a.On("LogCookieSyncObject", &expected).Once()
@@ -805,7 +805,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			givenBody:        strings.NewReader(`malformed`),
 			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
-			expectedError:    "JSON parsing failed: invalid character 'm' looking for beginning of value",
+			expectedError:    "JSON parsing failed: expect { or n, but found m",
 		},
 		{
 			description:      "Invalid Type Filter",

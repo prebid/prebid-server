@@ -1,13 +1,14 @@
 package usersync
 
 import (
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/macros"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+
+	"github.com/prebid/prebid-server/v2/macros"
 )
 
 func TestNewChooser(t *testing.T) {

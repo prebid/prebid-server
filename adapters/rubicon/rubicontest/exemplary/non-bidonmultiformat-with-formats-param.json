@@ -1,0 +1,187 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "device": {
+      "ip": "123.123.123.123",
+      "ifa": "zxcjbzxmc-zxcbmz-zxbcz-zxczx"
+    },
+    "site": {
+      "page": "somePage",
+      "ref": "someRef",
+      "search": "someSearch"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "instl": 1,
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 400
+            }
+          ]
+        },
+        "video": {
+          "placement": 3,
+          "mimes": [
+            "video/mp4"
+          ],
+          "protocols": [
+            2,
+            5
+          ],
+          "w": 1024,
+          "h": 576
+        },
+        "ext": {
+          "bidder": {
+            "accountId": 1001,
+            "siteId": 113932,
+            "zoneId": 535510,
+            "formats": [
+              "banner",
+              "video",
+              "native"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "uri?tk_xint=pbs-test-tracker",
+        "body": {
+          "id": "test-request-id",
+          "device": {
+            "ext": {
+              "rp": {
+                "pixelratio": 0
+              }
+            },
+            "ip": "123.123.123.123",
+            "ifa": "zxcjbzxmc-zxcbmz-zxbcz-zxczx"
+          },
+          "site": {
+            "page": "somePage",
+            "ref": "someRef",
+            "search": "someSearch",
+            "ext": {
+              "rp": {
+                "site_id": 113932
+              }
+            },
+            "publisher": {
+              "ext": {
+                "rp": {
+                  "account_id": 1001
+                }
+              }
+            }
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "instl": 1,
+              "secure": 1,
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 400
+                  }
+                ],
+                "ext": {
+                  "rp": {
+                    "mime": "text/html"
+                  }
+                }
+              },
+              "ext": {
+                "rp": {
+                  "rtb": {
+                    "formats": [
+                      "banner",
+                      "video",
+                      "native"
+                    ]
+                  },
+                  "target": {
+                    "page": [
+                      "somePage"
+                    ],
+                    "ref": [
+                      "someRef"
+                    ],
+                    "search": [
+                      "someSearch"
+                    ]
+                  },
+                  "track": {
+                    "mint": "",
+                    "mint_version": ""
+                  },
+                  "zone_id": 535510
+                }
+              }
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "test_bid_id",
+                  "impid": "test-imp-id",
+                  "price": 0.27543,
+                  "adm": "some-test-ad",
+                  "cid": "test_cid",
+                  "crid": "test_crid",
+                  "dealid": "test_dealid",
+                  "ext": {
+                    "prebid": {
+                      "type": "banner"
+                    }
+                  }
+                }
+              ],
+              "seat": "adman"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test_bid_id",
+            "impid": "test-imp-id",
+            "price": 0.27543,
+            "adm": "some-test-ad",
+            "cid": "test_cid",
+            "crid": "test_crid",
+            "dealid": "test_dealid",
+            "ext": {
+              "prebid": {
+                "type": "banner"
+              }
+            }
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

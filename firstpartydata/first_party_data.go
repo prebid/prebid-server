@@ -7,10 +7,11 @@ import (
 	"github.com/prebid/openrtb/v19/openrtb2"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/ortb"
-	"github.com/prebid/prebid-server/util/ptrutil"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/ortb"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 )
 
 const (
@@ -215,7 +216,7 @@ func mergeUser(v *openrtb2.User, overrideJSON json.RawMessage) error {
 	}
 
 	// Merge
-	if err := json.Unmarshal(overrideJSON, &v); err != nil {
+	if err := jsonutil.Unmarshal(overrideJSON, &v); err != nil {
 		return err
 	}
 
@@ -309,7 +310,7 @@ func mergeSite(v *openrtb2.Site, overrideJSON json.RawMessage, bidderName string
 	}
 
 	// Merge
-	if err := json.Unmarshal(overrideJSON, &v); err != nil {
+	if err := jsonutil.Unmarshal(overrideJSON, &v); err != nil {
 		return err
 	}
 
@@ -426,7 +427,7 @@ func mergeApp(v *openrtb2.App, overrideJSON json.RawMessage) error {
 	}
 
 	// Merge
-	if err := json.Unmarshal(overrideJSON, &v); err != nil {
+	if err := jsonutil.Unmarshal(overrideJSON, &v); err != nil {
 		return err
 	}
 
