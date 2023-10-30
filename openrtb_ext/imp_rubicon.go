@@ -16,7 +16,6 @@ type ExtImpRubicon struct {
 	Video            rubiconVideoParams `json:"video"`
 	Debug            impExtRubiconDebug `json:"debug,omitempty"`
 	PChain           string             `json:"pchain,omitempty"`
-	Formats          []BidType          `json:"formats"`
 }
 
 // rubiconVideoParams defines the contract for bidrequest.imp[i].ext.prebid.bidder.rubicon.video
