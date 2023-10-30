@@ -3,8 +3,8 @@ package alkimi
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/floors"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/floors"
 	"net/http"
 	"net/url"
 	"strings"
