@@ -8,11 +8,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/util/maputil"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/maputil"
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v19/adcom1"
@@ -87,6 +87,11 @@ type rubiconImpExtRP struct {
 	ZoneID int                  `json:"zone_id"`
 	Target json.RawMessage      `json:"target,omitempty"`
 	Track  rubiconImpExtRPTrack `json:"track"`
+	RTB    *rubiconImpExtRpRtb  `json:"rtb,omitempty"`
+}
+
+type rubiconImpExtRpRtb struct {
+	Formats []openrtb_ext.BidType `json:"formats,omitempty"`
 }
 
 type rubiconUserExtRP struct {
@@ -297,6 +302,10 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			},
 			GPID:  bidderExt.Gpid,
 			Skadn: bidderExt.Skadn,
+		}
+
+		if len(bidderExt.Bidder.Formats) > 0 {
+			impExt.RP.RTB = &rubiconImpExtRpRtb{bidderExt.Bidder.Formats}
 		}
 
 		imp.Ext, err = json.Marshal(&impExt)
@@ -592,9 +601,19 @@ func prepareImpsToExtMap(impsToExtMap map[*openrtb2.Imp]rubiconExtImpBidder) map
 			continue
 		}
 
-		splitImps := splitMultiFormatImp(imp)
+		splitImps, formats := splitMultiFormatImp(imp)
 		for _, imp := range splitImps {
 			impCopy := imp
+
+			existingFormats := bidderExt.Bidder.Formats
+			var resolvedFormats []openrtb_ext.BidType
+			if len(existingFormats) > 0 {
+				resolvedFormats = existingFormats
+			} else {
+				resolvedFormats = formats
+			}
+			bidderExt.Bidder.Formats = resolvedFormats
+
 			preparedImpsToExtMap[impCopy] = bidderExt
 		}
 	}
@@ -602,9 +621,11 @@ func prepareImpsToExtMap(impsToExtMap map[*openrtb2.Imp]rubiconExtImpBidder) map
 	return preparedImpsToExtMap
 }
 
-func splitMultiFormatImp(imp *openrtb2.Imp) []*openrtb2.Imp {
+func splitMultiFormatImp(imp *openrtb2.Imp) ([]*openrtb2.Imp, []openrtb_ext.BidType) {
 	splitImps := make([]*openrtb2.Imp, 0)
+	mediaTypes := make([]openrtb_ext.BidType, 0)
 	if imp.Banner != nil {
+		mediaTypes = append(mediaTypes, openrtb_ext.BidTypeBanner)
 		impCopy := *imp
 		impCopy.Video = nil
 		impCopy.Native = nil
@@ -613,6 +634,7 @@ func splitMultiFormatImp(imp *openrtb2.Imp) []*openrtb2.Imp {
 	}
 
 	if imp.Video != nil {
+		mediaTypes = append(mediaTypes, openrtb_ext.BidTypeVideo)
 		impCopy := *imp
 		impCopy.Banner = nil
 		impCopy.Native = nil
@@ -621,6 +643,7 @@ func splitMultiFormatImp(imp *openrtb2.Imp) []*openrtb2.Imp {
 	}
 
 	if imp.Native != nil {
+		mediaTypes = append(mediaTypes, openrtb_ext.BidTypeNative)
 		impCopy := *imp
 		impCopy.Banner = nil
 		impCopy.Video = nil
@@ -629,6 +652,7 @@ func splitMultiFormatImp(imp *openrtb2.Imp) []*openrtb2.Imp {
 	}
 
 	if imp.Audio != nil {
+		mediaTypes = append(mediaTypes, openrtb_ext.BidTypeAudio)
 		impCopy := *imp
 		impCopy.Banner = nil
 		impCopy.Video = nil
@@ -636,7 +660,7 @@ func splitMultiFormatImp(imp *openrtb2.Imp) []*openrtb2.Imp {
 		splitImps = append(splitImps, &impCopy)
 	}
 
-	return splitImps
+	return splitImps, mediaTypes
 }
 
 func resolveBidFloor(bidFloor float64, bidFloorCur string, reqInfo *adapters.ExtraRequestInfo) (float64, error) {

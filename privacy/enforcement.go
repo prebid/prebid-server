@@ -2,7 +2,7 @@ package privacy
 
 import (
 	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/v2/config"
 )
 
 // Enforcement represents the privacy policies to enforce for an OpenRTB bid request.

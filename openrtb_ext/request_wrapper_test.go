@@ -5,7 +5,8 @@ import (
 	"testing"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/util/ptrutil"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -1792,10 +1793,10 @@ func TestImpWrapperGetImpExt(t *testing.T) {
 	var isRewardedInventoryOne int8 = 1
 
 	testCases := []struct {
-		description    string
-		givenWrapper   ImpWrapper
-		expectedImpExt ImpExt
-		expectedError  string
+		description       string
+		givenWrapper      ImpWrapper
+		expectedImpExt    ImpExt
+		expectedErrorType error
 	}{
 		{
 			description:    "Empty",
@@ -1833,21 +1834,21 @@ func TestImpWrapperGetImpExt(t *testing.T) {
 			expectedImpExt: ImpExt{ext: map[string]json.RawMessage{"foo": json.RawMessage("bar")}},
 		},
 		{
-			description:   "Error - Ext",
-			givenWrapper:  ImpWrapper{Imp: &openrtb2.Imp{Ext: json.RawMessage(`malformed`)}},
-			expectedError: "invalid character 'm' looking for beginning of value",
+			description:       "Error - Ext",
+			givenWrapper:      ImpWrapper{Imp: &openrtb2.Imp{Ext: json.RawMessage(`malformed`)}},
+			expectedErrorType: &errortypes.FailedToUnmarshal{},
 		},
 		{
-			description:   "Error - Ext - Prebid",
-			givenWrapper:  ImpWrapper{Imp: &openrtb2.Imp{Ext: json.RawMessage(`{"prebid":malformed}`)}},
-			expectedError: "invalid character 'm' looking for beginning of value",
+			description:       "Error - Ext - Prebid",
+			givenWrapper:      ImpWrapper{Imp: &openrtb2.Imp{Ext: json.RawMessage(`{"prebid":malformed}`)}},
+			expectedErrorType: &errortypes.FailedToUnmarshal{},
 		},
 	}
 
 	for _, test := range testCases {
 		impExt, err := test.givenWrapper.GetImpExt()
-		if test.expectedError != "" {
-			assert.EqualError(t, err, test.expectedError, test.description)
+		if test.expectedErrorType != nil {
+			assert.IsType(t, test.expectedErrorType, err)
 		} else {
 			assert.NoError(t, err, test.description)
 			assert.Equal(t, test.expectedImpExt, *impExt, test.description)

@@ -14,28 +14,29 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prebid/prebid-server/privacy"
+	"github.com/prebid/prebid-server/v2/privacy"
 
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/adservertargeting"
-	"github.com/prebid/prebid-server/bidadjustment"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/currency"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/exchange/entities"
-	"github.com/prebid/prebid-server/experiment/adscert"
-	"github.com/prebid/prebid-server/firstpartydata"
-	"github.com/prebid/prebid-server/floors"
-	"github.com/prebid/prebid-server/gdpr"
-	"github.com/prebid/prebid-server/hooks/hookexecution"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/prebid_cache_client"
-	"github.com/prebid/prebid-server/stored_requests"
-	"github.com/prebid/prebid-server/stored_responses"
-	"github.com/prebid/prebid-server/usersync"
-	"github.com/prebid/prebid-server/util/maputil"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/adservertargeting"
+	"github.com/prebid/prebid-server/v2/bidadjustment"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/currency"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/exchange/entities"
+	"github.com/prebid/prebid-server/v2/experiment/adscert"
+	"github.com/prebid/prebid-server/v2/firstpartydata"
+	"github.com/prebid/prebid-server/v2/floors"
+	"github.com/prebid/prebid-server/v2/gdpr"
+	"github.com/prebid/prebid-server/v2/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v2/macros"
+	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/prebid_cache_client"
+	"github.com/prebid/prebid-server/v2/stored_requests"
+	"github.com/prebid/prebid-server/v2/stored_responses"
+	"github.com/prebid/prebid-server/v2/usersync"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v2/util/maputil"
 
 	"github.com/buger/jsonparser"
 	"github.com/gofrs/uuid"
@@ -278,7 +279,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		if err := r.BidRequestWrapper.RebuildRequest(); err != nil {
 			return nil, err
 		}
-		resolvedBidReq, err := json.Marshal(r.BidRequestWrapper.BidRequest)
+		resolvedBidReq, err := jsonutil.Marshal(r.BidRequestWrapper.BidRequest)
 		if err != nil {
 			return nil, err
 		}
@@ -442,7 +443,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 
 			bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, *r, responseDebugAllow, requestExtPrebid.Passthrough, fledge, errs)
 			if debugLog.DebugEnabledOrOverridden {
-				if bidRespExtBytes, err := json.Marshal(bidResponseExt); err == nil {
+				if bidRespExtBytes, err := jsonutil.Marshal(bidResponseExt); err == nil {
 					debugLog.Data.Response = string(bidRespExtBytes)
 				} else {
 					debugLog.Data.Response = "Unable to marshal response ext for debugging"
@@ -463,7 +464,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 
 		if debugLog.DebugEnabledOrOverridden {
 
-			if bidRespExtBytes, err := json.Marshal(bidResponseExt); err == nil {
+			if bidRespExtBytes, err := jsonutil.Marshal(bidResponseExt); err == nil {
 				debugLog.Data.Response = string(bidRespExtBytes)
 			} else {
 				debugLog.Data.Response = "Unable to marshal response ext for debugging"
@@ -1292,7 +1293,7 @@ func makeBidExtJSON(ext json.RawMessage, prebid *openrtb_ext.ExtBidPrebid, impEx
 	var extMap map[string]interface{}
 
 	if len(ext) != 0 {
-		if err := json.Unmarshal(ext, &extMap); err != nil {
+		if err := jsonutil.Unmarshal(ext, &extMap); err != nil {
 			return nil, err
 		}
 	} else {
@@ -1316,7 +1317,7 @@ func makeBidExtJSON(ext json.RawMessage, prebid *openrtb_ext.ExtBidPrebid, impEx
 				Meta openrtb_ext.ExtBidPrebidMeta `json:"meta"`
 			} `json:"prebid"`
 		}{}
-		if err := json.Unmarshal(ext, &metaContainer); err != nil {
+		if err := jsonutil.Unmarshal(ext, &metaContainer); err != nil {
 			return nil, fmt.Errorf("error validaing response from server, %s", err)
 		}
 		prebid.Meta = &metaContainer.Prebid.Meta
@@ -1337,7 +1338,7 @@ func makeBidExtJSON(ext json.RawMessage, prebid *openrtb_ext.ExtBidPrebid, impEx
 		}
 	}
 	extMap[openrtb_ext.PrebidExtKey] = prebid
-	return json.Marshal(extMap)
+	return jsonutil.Marshal(extMap)
 }
 
 // If bid got cached inside `(a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client, targData *targetData, bidRequest *openrtb2.BidRequest, ttlBuffer int64, defaultTTLs *config.DefaultTTLs, bidCategory map[string]string)`,
@@ -1441,7 +1442,7 @@ func buildStoredAuctionResponse(storedAuctionResponses map[string]json.RawMessag
 	for impId, storedResp := range storedAuctionResponses {
 		var seatBids []openrtb2.SeatBid
 
-		if err := json.Unmarshal(storedResp, &seatBids); err != nil {
+		if err := jsonutil.UnmarshalValid(storedResp, &seatBids); err != nil {
 			return nil, nil, nil, err
 		}
 		for _, seat := range seatBids {
@@ -1460,7 +1461,7 @@ func buildStoredAuctionResponse(storedAuctionResponses map[string]json.RawMessag
 
 			if seat.Ext != nil {
 				var seatExt openrtb_ext.ExtBidResponse
-				if err := json.Unmarshal(seat.Ext, &seatExt); err != nil {
+				if err := jsonutil.Unmarshal(seat.Ext, &seatExt); err != nil {
 					return nil, nil, nil, err
 				}
 				// add in FLEDGE response with impId substituted

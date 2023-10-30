@@ -19,10 +19,10 @@ import (
 	nativeRequests "github.com/prebid/openrtb/v19/native1/request"
 	nativeResponse "github.com/prebid/openrtb/v19/native1/response"
 	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 const huaweiAdxApiVersion = "3.4"
@@ -536,7 +536,8 @@ func getNativeFormat(adslot30 *adslot30, openRTBImp *openrtb2.Imp) error {
 	// only compute the main image number, type = native1.ImageAssetTypeMain
 	var numMainImage = 0
 	var numVideo = 0
-
+	var width int64
+	var height int64
 	for _, asset := range nativePayload.Assets {
 		// Only one of the {title,img,video,data} objects should be present in each object.
 		if asset.Video != nil {
@@ -547,10 +548,19 @@ func getNativeFormat(adslot30 *adslot30, openRTBImp *openrtb2.Imp) error {
 		if asset.Img != nil {
 			if asset.Img.Type == native1.ImageAssetTypeMain {
 				numMainImage++
+				if asset.Img.H != 0 && asset.Img.W != 0 {
+					width = asset.Img.W
+					height = asset.Img.H
+				} else if asset.Img.WMin != 0 && asset.Img.HMin != 0 {
+					width = asset.Img.WMin
+					height = asset.Img.HMin
+				}
 			}
 			continue
 		}
 	}
+	adslot30.W = width
+	adslot30.H = height
 
 	var detailedCreativeTypeList = make([]string, 0, 2)
 	if numVideo >= 1 {

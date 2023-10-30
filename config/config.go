@@ -12,8 +12,9 @@ import (
 	"github.com/golang/glog"
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 	"github.com/spf13/viper"
 )
 
@@ -775,7 +776,7 @@ func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName func(strin
 // MarshalAccountDefaults compiles AccountDefaults into the JSON format used for merge patch
 func (cfg *Configuration) MarshalAccountDefaults() error {
 	var err error
-	if cfg.accountDefaultsJSON, err = json.Marshal(cfg.AccountDefaults); err != nil {
+	if cfg.accountDefaultsJSON, err = jsonutil.Marshal(cfg.AccountDefaults); err != nil {
 		glog.Warningf("converting %+v to json: %v", cfg.AccountDefaults, err)
 	}
 	return err

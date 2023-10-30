@@ -97,6 +97,12 @@
               },
               "ext": {
                 "rp": {
+                  "rtb": {
+                    "formats": [
+                      "banner",
+                      "video"
+                    ]
+                  },
                   "target": {
                     "page": [
                       "somePage"
@@ -203,6 +209,12 @@
               },
               "ext": {
                 "rp": {
+                  "rtb": {
+                    "formats": [
+                      "banner",
+                      "video"
+                    ]
+                  },
                   "target": {
                     "page": [
                       "somePage"
