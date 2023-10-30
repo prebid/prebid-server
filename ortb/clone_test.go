@@ -828,6 +828,7 @@ func TestCloneSChain(t *testing.T) {
 		assert.Equal(t, given, result, "equality")
 		assert.NotSame(t, given, result, "pointer")
 		assert.NotSame(t, given.Nodes, result.Nodes, "nodes")
+		assert.NotSame(t, given.Nodes[0].Ext, result.Nodes[0].Ext, "nodes.ext")
 		assert.NotSame(t, given.Ext, result.Ext, "ext")
 	})
 
