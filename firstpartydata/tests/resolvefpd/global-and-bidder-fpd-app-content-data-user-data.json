@@ -14,6 +14,9 @@
       "gender": "reqUserGender"
     }
   },
+  "biddersWithGlobalFPD": [
+    "appnexus"
+  ],
   "bidderConfigFPD": {
     "appnexus": {
       "app": {
@@ -55,48 +58,50 @@
     ]
   },
   "outputRequestData": {
-    "app": {
-      "id": "apnAppId",
-      "page": "http://www.foobar.com/1234.html",
-      "publisher": {
-        "id": "1"
+    "appnexus": {
+      "app": {
+        "id": "apnAppId",
+        "page": "http://www.foobar.com/1234.html",
+        "publisher": {
+          "id": "1"
+        },
+        "content": {
+          "data": [
+            {
+              "id": "appData1",
+              "name": "appName1"
+            },
+            {
+              "id": "appData2",
+              "name": "appName2"
+            }
+          ]
+        },
+        "ext": {
+          "data": {
+            "morefpdData": "morefpddata",
+            "appFpd": 123
+          }
+        }
       },
-      "content": {
+      "user": {
+        "id": "reqUserID",
+        "yob": 1982,
+        "gender": "reqUserGender",
         "data": [
           {
-            "id": "appData1",
-            "name": "appName1"
+            "id": "userData1",
+            "name": "userName1"
           },
           {
-            "id": "appData2",
-            "name": "appName2"
+            "id": "userData2",
+            "name": "userName2"
           }
-        ]
-      },
-      "ext": {
-        "data": {
-          "morefpdData": "morefpddata",
-          "appFpd": 123
-        }
-      }
-    },
-    "user": {
-      "id": "reqUserID",
-      "yob": 1982,
-      "gender": "reqUserGender",
-      "data": [
-        {
-          "id": "userData1",
-          "name": "userName1"
-        },
-        {
-          "id": "userData2",
-          "name": "userName2"
-        }
-      ],
-      "ext": {
-        "data": {
-          "testUserFpd": "testuser"
+        ],
+        "ext": {
+          "data": {
+            "testUserFpd": "testuser"
+          }
         }
       }
     }

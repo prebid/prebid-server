@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/prebid/go-gdpr/consentconstants"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/util/iputil"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/iputil"
 )
 
 // ChannelType enumerates the values of integrations Prebid Server can configure for an account

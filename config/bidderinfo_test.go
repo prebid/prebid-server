@@ -7,8 +7,9 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const testInfoFilesPathValid = "./test/bidder-info-valid"
@@ -50,7 +51,6 @@ disabled: false
 extra_info: extra-info
 app_secret: app-secret
 platform_id: 123
-usersync_url: user-url
 userSync:
   key: foo
   default: iframe
@@ -217,7 +217,6 @@ func TestProcessBidderInfo(t *testing.T) {
 							UserMacro:   "UID",
 						},
 					},
-					UserSyncURL: "user-url",
 					XAPI: AdapterXAPI{
 						Username: "uname",
 						Password: "pwd",
@@ -263,7 +262,6 @@ func TestProcessBidderInfo(t *testing.T) {
 					Syncer: &Syncer{
 						Key: "foo",
 					},
-					UserSyncURL: "user-url",
 					XAPI: AdapterXAPI{
 						Username: "uname",
 						Password: "pwd",
@@ -273,6 +271,7 @@ func TestProcessBidderInfo(t *testing.T) {
 			},
 		},
 	}
+
 	for _, test := range testCases {
 		reader := StubInfoReader{test.bidderInfos}
 		bidderInfos, err := processBidderInfos(reader, mockNormalizeBidderName)
@@ -281,9 +280,7 @@ func TestProcessBidderInfo(t *testing.T) {
 		} else {
 			assert.Equal(t, test.expectedBidderInfos, bidderInfos, "incorrect bidder infos for test case: %s", test.description)
 		}
-
 	}
-
 }
 
 func TestProcessAliasBidderInfo(t *testing.T) {
@@ -328,7 +325,6 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 				UserMacro:   "UID",
 			},
 		},
-		UserSyncURL: "user-url",
 		XAPI: AdapterXAPI{
 			Username: "uname",
 			Password: "pwd",
@@ -376,7 +372,6 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 				UserMacro:   "alias-UID",
 			},
 		},
-		UserSyncURL: "alias-user-url",
 		XAPI: AdapterXAPI{
 			Username: "alias-uname",
 			Password: "alias-pwd",
@@ -1493,78 +1488,15 @@ func TestSyncerEndpointOverride(t *testing.T) {
 }
 
 func TestApplyBidderInfoConfigSyncerOverrides(t *testing.T) {
-	var testCases = []struct {
-		description            string
-		givenFsBidderInfos     BidderInfos
-		givenConfigBidderInfos BidderInfos
-		expectedError          string
-		expectedBidderInfos    BidderInfos
-	}{
-		{
-			description:            "Syncer Override",
-			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{Key: "original"}}},
-			givenConfigBidderInfos: BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}},
-			expectedBidderInfos:    BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}},
-		},
-		{
-			description:            "UserSyncURL Override IFrame",
-			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{IFrame: &SyncerEndpoint{URL: "original"}}}},
-			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
-			expectedBidderInfos:    BidderInfos{"a": {UserSyncURL: "override", Syncer: &Syncer{IFrame: &SyncerEndpoint{URL: "override"}}}},
-		},
-		{
-			description:            "UserSyncURL Supports IFrame",
-			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{Supports: []string{"iframe"}}}},
-			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
-			expectedBidderInfos:    BidderInfos{"a": {UserSyncURL: "override", Syncer: &Syncer{Supports: []string{"iframe"}, IFrame: &SyncerEndpoint{URL: "override"}}}},
-		},
-		{
-			description:            "UserSyncURL Override Redirect",
-			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{Supports: []string{"redirect"}}}},
-			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
-			expectedBidderInfos:    BidderInfos{"a": {UserSyncURL: "override", Syncer: &Syncer{Supports: []string{"redirect"}, Redirect: &SyncerEndpoint{URL: "override"}}}},
-		},
-		{
-			description:            "UserSyncURL Supports Redirect",
-			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{Redirect: &SyncerEndpoint{URL: "original"}}}},
-			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
-			expectedBidderInfos:    BidderInfos{"a": {UserSyncURL: "override", Syncer: &Syncer{Redirect: &SyncerEndpoint{URL: "override"}}}},
-		},
-		{
-			description:            "UserSyncURL Override Syncer Not Defined",
-			givenFsBidderInfos:     BidderInfos{"a": {}},
-			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
-			expectedError:          "adapters.a.usersync_url cannot be applied, bidder does not define a user sync",
-		},
-		{
-			description:            "UserSyncURL Override Syncer Endpoints Not Defined",
-			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{}}},
-			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
-			expectedError:          "adapters.a.usersync_url cannot be applied, bidder does not define user sync endpoints and does not define supported endpoints",
-		},
-		{
-			description:            "UserSyncURL Override Ambiguous",
-			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{IFrame: &SyncerEndpoint{URL: "originalIFrame"}, Redirect: &SyncerEndpoint{URL: "originalRedirect"}}}},
-			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
-			expectedError:          "adapters.a.usersync_url cannot be applied, bidder defines multiple user sync endpoints or supports multiple endpoints",
-		},
-		{
-			description:            "UserSyncURL Supports Ambiguous",
-			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{Supports: []string{"iframe", "redirect"}}}},
-			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
-			expectedError:          "adapters.a.usersync_url cannot be applied, bidder defines multiple user sync endpoints or supports multiple endpoints",
-		},
-	}
+	var (
+		givenFileSystem = BidderInfos{"a": {Syncer: &Syncer{Key: "original"}}}
+		givenConfig     = BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}}
+		expected        = BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}}
+	)
 
-	for _, test := range testCases {
-		bidderInfos, resultErr := applyBidderInfoConfigOverrides(test.givenConfigBidderInfos, test.givenFsBidderInfos, mockNormalizeBidderName)
-		if test.expectedError == "" {
-			assert.NoError(t, resultErr, test.description+":err")
-			assert.Equal(t, test.expectedBidderInfos, bidderInfos, test.description+":result")
-		} else {
-			assert.EqualError(t, resultErr, test.expectedError, test.description+":err")
-		}
-	}
+	result, resultErr := applyBidderInfoConfigOverrides(givenConfig, givenFileSystem, mockNormalizeBidderName)
+	assert.NoError(t, resultErr)
+	assert.Equal(t, expected, result)
 }
 
 func TestApplyBidderInfoConfigOverrides(t *testing.T) {
@@ -1754,10 +1686,12 @@ func TestApplyBidderInfoConfigOverridesInvalid(t *testing.T) {
 func TestReadFullYamlBidderConfig(t *testing.T) {
 	bidder := "bidderA"
 	bidderInf := BidderInfo{}
-	err := yaml.Unmarshal([]byte(fullBidderYAMLConfig), &bidderInf)
-	actualBidderInfo, err := applyBidderInfoConfigOverrides(BidderInfos{bidder: bidderInf}, BidderInfos{bidder: {Syncer: &Syncer{Supports: []string{"iframe"}}}}, mockNormalizeBidderName)
 
-	assert.NoError(t, err, "Error wasn't expected")
+	err := yaml.Unmarshal([]byte(fullBidderYAMLConfig), &bidderInf)
+	require.NoError(t, err)
+
+	actualBidderInfo, err := applyBidderInfoConfigOverrides(BidderInfos{bidder: bidderInf}, BidderInfos{bidder: {Syncer: &Syncer{Supports: []string{"iframe"}}}}, mockNormalizeBidderName)
+	require.NoError(t, err)
 
 	expectedBidderInfo := BidderInfos{
 		bidder: {
@@ -1794,11 +1728,10 @@ func TestReadFullYamlBidderConfig(t *testing.T) {
 			ExtraAdapterInfo: "extra-info",
 			AppSecret:        "app-secret",
 			PlatformID:       "123",
-			UserSyncURL:      "user-url",
 			Syncer: &Syncer{
 				Key: "foo",
 				IFrame: &SyncerEndpoint{
-					URL:         "user-url",
+					URL:         "https://foo.com/sync?mode=iframe&r={{.RedirectURL}}",
 					RedirectURL: "https://redirect/setuid/iframe",
 					ExternalURL: "https://iframe.host",
 					UserMacro:   "UID",

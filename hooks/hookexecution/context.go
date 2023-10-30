@@ -4,8 +4,8 @@ import (
 	"sync"
 
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/hooks/hookstage"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/hooks/hookstage"
 )
 
 // executionContext holds information passed to module's hook during hook execution.

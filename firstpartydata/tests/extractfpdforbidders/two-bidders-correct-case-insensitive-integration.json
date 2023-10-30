@@ -1,0 +1,88 @@
+{
+  "description": "case insensitive known bidder, case sensitive request alias",
+  "inputRequestData": {
+    "id": "bid_id",
+    "site": {
+      "id": "reqSiteId",
+      "page": "http://www.foobar.com/1234.html",
+      "publisher": {
+        "id": "1"
+      }
+    },
+    "user": {
+      "id": "reqUserId"
+    },
+    "test": 1,
+    "ext": {
+      "prebid": {
+        "data": {
+          "bidders": [
+            "APPNEXUS",
+            "requestAlias"
+          ]
+        },
+        "bidderconfig": [
+          {
+            "bidders": [
+              "appnexus"
+            ],
+            "config": {
+              "ortb2": {
+                "site": {
+                  "id": "apnSiteId"
+                },
+                "user": {
+                  "id": "apnUserId"
+                }
+              }
+            }
+          },
+          {
+            "bidders": [
+              "requestAlias"
+            ],
+            "config": {
+              "ortb2": {
+                "user": {
+                  "keywords": "aliasUserKeywords"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "outputRequestData": {
+    "id": "bid_id",
+    "site": {
+      "id": "reqSiteId",
+      "page": "http://www.foobar.com/1234.html",
+      "publisher": {
+        "id": "1"
+      }
+    },
+    "test": 1
+  },
+  "biddersFPDResolved": {
+    "appnexus": {
+      "site": {
+        "id": "apnSiteId",
+        "page": "http://www.foobar.com/1234.html",
+        "publisher": {
+          "id": "1"
+        }
+      },
+      "user": {
+        "id": "apnUserId"
+      }
+    },
+    "requestAlias": {
+      "user": {
+        "id": "reqUserId",
+        "keywords": "aliasUserKeywords"
+      }
+    }
+  },
+  "validationErrors": []
+}

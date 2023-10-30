@@ -12,11 +12,11 @@ import (
 
 	"github.com/alitto/pond"
 	"github.com/coocood/freecache"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/metrics"
-	metricsConf "github.com/prebid/prebid-server/metrics/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/util/timeutil"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/metrics"
+	metricsConf "github.com/prebid/prebid-server/v2/metrics/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/timeutil"
 	"github.com/stretchr/testify/assert"
 )
 

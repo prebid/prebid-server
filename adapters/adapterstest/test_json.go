@@ -12,9 +12,9 @@ import (
 
 	"github.com/mitchellh/copystructure"
 	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/currency"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/currency"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 	"github.com/yudai/gojsondiff"
 	"github.com/yudai/gojsondiff/formatter"

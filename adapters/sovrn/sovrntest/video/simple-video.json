@@ -10,7 +10,6 @@
           "video/3gpp",
           "video/x-ms-wmv"
         ],
-        "minduration": 5,
         "maxduration": 30,
         "protocols": [
           4,
@@ -79,7 +78,6 @@
                   "video/3gpp",
                   "video/x-ms-wmv"
                 ],
-                "minduration": 5,
                 "maxduration": 30,
                 "protocols": [
                   4,

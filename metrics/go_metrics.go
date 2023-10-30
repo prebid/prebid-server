@@ -2,12 +2,13 @@ package metrics
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	metrics "github.com/rcrowley/go-metrics"
 )
 
@@ -62,12 +63,13 @@ type Metrics struct {
 	PrivacyLMTRequest        metrics.Meter
 	PrivacyTCFRequestVersion map[TCFVersionValue]metrics.Meter
 
-	AdapterMetrics map[openrtb_ext.BidderName]*AdapterMetrics
+	AdapterMetrics map[string]*AdapterMetrics
 	// Don't export accountMetrics because we need helper functions here to insure its properly populated dynamically
 	accountMetrics        map[string]*accountMetrics
 	accountMetricsRWMutex sync.RWMutex
 
-	exchanges []openrtb_ext.BidderName
+	// adapter name exchanges
+	exchanges []string
 	modules   []string
 	// Will hold boolean values to help us disable metric collection if needed
 	MetricsDisabled config.DisabledMetrics
@@ -117,7 +119,7 @@ type accountMetrics struct {
 	bidsReceivedMeter metrics.Meter
 	priceHistogram    metrics.Histogram
 	// store account by adapter metrics. Type is map[PBSBidder.BidderCode]
-	adapterMetrics       map[openrtb_ext.BidderName]*AdapterMetrics
+	adapterMetrics       map[string]*AdapterMetrics
 	moduleMetrics        map[string]*ModuleMetrics
 	storedResponsesMeter metrics.Meter
 
@@ -145,7 +147,7 @@ type ModuleMetrics struct {
 // rather than loading metrics that never get filled.
 // This will also eventually let us configure metrics, such as setting a limited set of metrics
 // for a production instance, and then expanding again when we need more debugging.
-func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, disabledMetrics config.DisabledMetrics, moduleStageNames map[string][]string) *Metrics {
+func NewBlankMetrics(registry metrics.Registry, exchanges []string, disabledMetrics config.DisabledMetrics, moduleStageNames map[string][]string) *Metrics {
 	blankMeter := &metrics.NilMeter{}
 	blankTimer := &metrics.NilTimer{}
 
@@ -193,7 +195,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		PrivacyLMTRequest:        blankMeter,
 		PrivacyTCFRequestVersion: make(map[TCFVersionValue]metrics.Meter, len(TCFVersions())),
 
-		AdapterMetrics:  make(map[openrtb_ext.BidderName]*AdapterMetrics, len(exchanges)),
+		AdapterMetrics:  make(map[string]*AdapterMetrics, len(exchanges)),
 		accountMetrics:  make(map[string]*accountMetrics),
 		MetricsDisabled: disabledMetrics,
 
@@ -272,7 +274,11 @@ func getModuleNames(moduleStageNames map[string][]string) []string {
 // mode metrics. The code would allways try to record the metrics, but effectively noop if we are
 // using a blank meter/timer.
 func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, disableAccountMetrics config.DisabledMetrics, syncerKeys []string, moduleStageNames map[string][]string) *Metrics {
-	newMetrics := NewBlankMetrics(registry, exchanges, disableAccountMetrics, moduleStageNames)
+	lowerCaseExchanges := []string{}
+	for _, exchange := range exchanges {
+		lowerCaseExchanges = append(lowerCaseExchanges, strings.ToLower(string(exchange)))
+	}
+	newMetrics := NewBlankMetrics(registry, lowerCaseExchanges, disableAccountMetrics, moduleStageNames)
 	newMetrics.ConnectionCounter = metrics.GetOrRegisterCounter("active_connections", registry)
 	newMetrics.TMaxTimeoutCounter = metrics.GetOrRegisterCounter("tmax_timeout", registry)
 	newMetrics.ConnectionAcceptErrorMeter = metrics.GetOrRegisterMeter("connection_accept_errors", registry)
@@ -331,7 +337,7 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 		}
 	}
 
-	for _, a := range exchanges {
+	for _, a := range lowerCaseExchanges {
 		registerAdapterMetrics(registry, "adapter", string(a), newMetrics.AdapterMetrics[a])
 	}
 
@@ -546,7 +552,7 @@ func (me *Metrics) getAccountMetrics(id string) *accountMetrics {
 	am.debugRequestMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.debug_requests", id), me.MetricsRegistry)
 	am.bidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.bids_received", id), me.MetricsRegistry)
 	am.priceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("account.%s.prices", id), me.MetricsRegistry, metrics.NewExpDecaySample(1028, 0.015))
-	am.adapterMetrics = make(map[openrtb_ext.BidderName]*AdapterMetrics, len(me.exchanges))
+	am.adapterMetrics = make(map[string]*AdapterMetrics, len(me.exchanges))
 	am.moduleMetrics = make(map[string]*ModuleMetrics)
 	am.storedResponsesMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.stored_responses", id), me.MetricsRegistry)
 	if !me.MetricsDisabled.AccountAdapterDetails {
@@ -670,9 +676,11 @@ func (me *Metrics) RecordStoredDataError(labels StoredDataLabels) {
 
 // RecordAdapterPanic implements a part of the MetricsEngine interface
 func (me *Metrics) RecordAdapterPanic(labels AdapterLabels) {
-	am, ok := me.AdapterMetrics[labels.Adapter]
+	adapterStr := string(labels.Adapter)
+	lowerCaseAdapterName := strings.ToLower(adapterStr)
+	am, ok := me.AdapterMetrics[lowerCaseAdapterName]
 	if !ok {
-		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", string(labels.Adapter))
+		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", adapterStr)
 		return
 	}
 	am.PanicMeter.Mark(1)
@@ -680,13 +688,15 @@ func (me *Metrics) RecordAdapterPanic(labels AdapterLabels) {
 
 // RecordAdapterRequest implements a part of the MetricsEngine interface
 func (me *Metrics) RecordAdapterRequest(labels AdapterLabels) {
-	am, ok := me.AdapterMetrics[labels.Adapter]
+	adapterStr := string(labels.Adapter)
+	lowerCaseAdapter := strings.ToLower(adapterStr)
+	am, ok := me.AdapterMetrics[lowerCaseAdapter]
 	if !ok {
-		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", string(labels.Adapter))
+		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", adapterStr)
 		return
 	}
 
-	aam, ok := me.getAccountMetrics(labels.PubID).adapterMetrics[labels.Adapter]
+	aam, ok := me.getAccountMetrics(labels.PubID).adapterMetrics[lowerCaseAdapter]
 	switch labels.AdapterBids {
 	case AdapterBidNone:
 		am.NoBidMeter.Mark(1)
@@ -719,8 +729,8 @@ func (me *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName,
 	if me.MetricsDisabled.AdapterConnectionMetrics {
 		return
 	}
-
-	am, ok := me.AdapterMetrics[adapterName]
+	lowerCaseAdapterName := strings.ToLower(string(adapterName))
+	am, ok := me.AdapterMetrics[lowerCaseAdapterName]
 	if !ok {
 		glog.Errorf("Trying to log adapter connection metrics for %s: adapter not found", string(adapterName))
 		return
@@ -749,16 +759,18 @@ func (me *Metrics) RecordBidderServerResponseTime(bidderServerResponseTime time.
 // RecordAdapterBidReceived implements a part of the MetricsEngine interface.
 // This tracks how many bids from each Bidder use `adm` vs. `nurl.
 func (me *Metrics) RecordAdapterBidReceived(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
-	am, ok := me.AdapterMetrics[labels.Adapter]
+	adapterStr := string(labels.Adapter)
+	lowerCaseAdapterName := strings.ToLower(adapterStr)
+	am, ok := me.AdapterMetrics[lowerCaseAdapterName]
 	if !ok {
-		glog.Errorf("Trying to run adapter bid metrics on %s: adapter metrics not found", string(labels.Adapter))
+		glog.Errorf("Trying to run adapter bid metrics on %s: adapter metrics not found", adapterStr)
 		return
 	}
 
 	// Adapter metrics
 	am.BidsReceivedMeter.Mark(1)
 	// Account-Adapter metrics
-	if aam, ok := me.getAccountMetrics(labels.PubID).adapterMetrics[labels.Adapter]; ok {
+	if aam, ok := me.getAccountMetrics(labels.PubID).adapterMetrics[lowerCaseAdapterName]; ok {
 		aam.BidsReceivedMeter.Mark(1)
 	}
 
@@ -775,22 +787,26 @@ func (me *Metrics) RecordAdapterBidReceived(labels AdapterLabels, bidType openrt
 
 // RecordAdapterPrice implements a part of the MetricsEngine interface. Generates a histogram of winning bid prices
 func (me *Metrics) RecordAdapterPrice(labels AdapterLabels, cpm float64) {
-	am, ok := me.AdapterMetrics[labels.Adapter]
+	adapterStr := string(labels.Adapter)
+	lowercaseAdapter := strings.ToLower(adapterStr)
+	am, ok := me.AdapterMetrics[lowercaseAdapter]
 	if !ok {
-		glog.Errorf("Trying to run adapter price metrics on %s: adapter metrics not found", string(labels.Adapter))
+		glog.Errorf("Trying to run adapter price metrics on %s: adapter metrics not found", adapterStr)
 		return
 	}
 	// Adapter metrics
 	am.PriceHistogram.Update(int64(cpm))
 	// Account-Adapter metrics
-	if aam, ok := me.getAccountMetrics(labels.PubID).adapterMetrics[labels.Adapter]; ok {
+	if aam, ok := me.getAccountMetrics(labels.PubID).adapterMetrics[lowercaseAdapter]; ok {
 		aam.PriceHistogram.Update(int64(cpm))
 	}
 }
 
 // RecordAdapterTime implements a part of the MetricsEngine interface. Records the adapter response time
 func (me *Metrics) RecordAdapterTime(labels AdapterLabels, length time.Duration) {
-	am, ok := me.AdapterMetrics[labels.Adapter]
+	adapterStr := string(labels.Adapter)
+	lowercaseAdapter := strings.ToLower(adapterStr)
+	am, ok := me.AdapterMetrics[lowercaseAdapter]
 	if !ok {
 		glog.Errorf("Trying to run adapter latency metrics on %s: adapter metrics not found", string(labels.Adapter))
 		return
@@ -798,7 +814,7 @@ func (me *Metrics) RecordAdapterTime(labels AdapterLabels, length time.Duration)
 	// Adapter metrics
 	am.RequestTimer.Update(length)
 	// Account-Adapter metrics
-	if aam, ok := me.getAccountMetrics(labels.PubID).adapterMetrics[labels.Adapter]; ok {
+	if aam, ok := me.getAccountMetrics(labels.PubID).adapterMetrics[lowercaseAdapter]; ok {
 		aam.RequestTimer.Update(length)
 	}
 }
@@ -911,13 +927,14 @@ func (me *Metrics) RecordRequestPrivacy(privacy PrivacyLabels) {
 }
 
 func (me *Metrics) RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.BidderName) {
+	adapterStr := string(adapterName)
 	if me.MetricsDisabled.AdapterGDPRRequestBlocked {
 		return
 	}
 
-	am, ok := me.AdapterMetrics[adapterName]
+	am, ok := me.AdapterMetrics[strings.ToLower(adapterStr)]
 	if !ok {
-		glog.Errorf("Trying to log adapter GDPR request blocked metric for %s: adapter not found", string(adapterName))
+		glog.Errorf("Trying to log adapter GDPR request blocked metric for %s: adapter not found", adapterStr)
 		return
 	}
 
@@ -937,9 +954,10 @@ func (me *Metrics) RecordAdsCertSignTime(adsCertSignTime time.Duration) {
 }
 
 func (me *Metrics) RecordBidValidationCreativeSizeError(adapter openrtb_ext.BidderName, pubID string) {
-	am, ok := me.AdapterMetrics[adapter]
+	adapterStr := string(adapter)
+	am, ok := me.AdapterMetrics[strings.ToLower(adapterStr)]
 	if !ok {
-		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", string(adapter))
+		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", adapterStr)
 		return
 	}
 	am.BidValidationCreativeSizeErrorMeter.Mark(1)
@@ -951,9 +969,10 @@ func (me *Metrics) RecordBidValidationCreativeSizeError(adapter openrtb_ext.Bidd
 }
 
 func (me *Metrics) RecordBidValidationCreativeSizeWarn(adapter openrtb_ext.BidderName, pubID string) {
-	am, ok := me.AdapterMetrics[adapter]
+	adapterStr := string(adapter)
+	am, ok := me.AdapterMetrics[strings.ToLower(adapterStr)]
 	if !ok {
-		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", string(adapter))
+		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", adapterStr)
 		return
 	}
 	am.BidValidationCreativeSizeWarnMeter.Mark(1)
@@ -965,9 +984,10 @@ func (me *Metrics) RecordBidValidationCreativeSizeWarn(adapter openrtb_ext.Bidde
 }
 
 func (me *Metrics) RecordBidValidationSecureMarkupError(adapter openrtb_ext.BidderName, pubID string) {
-	am, ok := me.AdapterMetrics[adapter]
+	adapterStr := string(adapter)
+	am, ok := me.AdapterMetrics[strings.ToLower(adapterStr)]
 	if !ok {
-		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", string(adapter))
+		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", adapterStr)
 		return
 	}
 	am.BidValidationSecureMarkupErrorMeter.Mark(1)
@@ -979,9 +999,10 @@ func (me *Metrics) RecordBidValidationSecureMarkupError(adapter openrtb_ext.Bidd
 }
 
 func (me *Metrics) RecordBidValidationSecureMarkupWarn(adapter openrtb_ext.BidderName, pubID string) {
-	am, ok := me.AdapterMetrics[adapter]
+	adapterStr := string(adapter)
+	am, ok := me.AdapterMetrics[strings.ToLower(adapterStr)]
 	if !ok {
-		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", string(adapter))
+		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", adapterStr)
 		return
 	}
 	am.BidValidationSecureMarkupWarnMeter.Mark(1)

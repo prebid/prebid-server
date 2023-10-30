@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 func BuildAdapters(client *http.Client, cfg *config.Configuration, infos config.BidderInfos, me metrics.MetricsEngine) (map[openrtb_ext.BidderName]AdaptedBidder, []error) {
@@ -33,10 +33,6 @@ func buildBidders(infos config.BidderInfos, builders map[openrtb_ext.BidderName]
 	var errs []error
 
 	for bidder, info := range infos {
-		if len(info.AliasOf) > 0 {
-			errs = append(errs, fmt.Errorf("This feature is currently under development"))
-			continue
-		}
 		bidderName, bidderNameFound := openrtb_ext.NormalizeBidderName(bidder)
 		if !bidderNameFound {
 			errs = append(errs, fmt.Errorf("%v: unknown bidder", bidder))
@@ -119,10 +115,8 @@ func GetDisabledBidderWarningMessages(infos config.BidderInfos) map[string]strin
 		"verizonmedia":    `Bidder "verizonmedia" is no longer available in Prebid Server. Please update your configuration.`,
 		"brightroll":      `Bidder "brightroll" is no longer available in Prebid Server. Please update your configuration.`,
 		"engagebdr":       `Bidder "engagebdr" is no longer available in Prebid Server. Please update your configuration.`,
-		"yeahmobi":        `Bidder "yeahmobi" is no longer available in Prebid Server. Please update your configuration.`,
 		"ninthdecimal":    `Bidder "ninthdecimal" is no longer available in Prebid Server. Please update your configuration.`,
 		"kubient":         `Bidder "kubient" is no longer available in Prebid Server. Please update your configuration.`,
-		"definemedia":     `Bidder "definemedia" is no longer available in Prebid Server. Please update your configuration.`,
 		"applogy":         `Bidder "applogy" is no longer available in Prebid Server. Please update your configuration.`,
 		"rhythmone":       `Bidder "rhythmone" is no longer available in Prebid Server. Please update your configuration.`,
 		"nanointeractive": `Bidder "nanointeractive" is no longer available in Prebid Server. Please update your configuration.`,
