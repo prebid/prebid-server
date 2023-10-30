@@ -670,9 +670,6 @@ func TestCloneUserAgent(t *testing.T) {
 		assert.NotSame(t, given.Platform, result.Platform, "platform")
 		assert.NotSame(t, given.Mobile, result.Mobile, "mobile")
 		assert.NotSame(t, given.Architecture, result.Architecture, "architecture")
-		assert.NotSame(t, given.Bitness, result.Bitness, "bitness")
-		assert.NotSame(t, given.Model, result.Model, "model")
-		assert.NotSame(t, given.Source, result.Source, "source")
 		assert.NotSame(t, given.Ext, result.Ext, "ext")
 	})
 
@@ -722,6 +719,8 @@ func TestCloneBrandVersionSlice(t *testing.T) {
 		assert.NotSame(t, given[0].Ext, result[0].Ext, "item0-pointer-ext")
 		assert.NotSame(t, given[1], result[1], "item1-pointer")
 		assert.NotSame(t, given[1].Ext, result[1].Ext, "item1-pointer-ext")
+		assert.NotSame(t, given[2], result[2], "item1-pointer")
+		assert.NotSame(t, given[2].Ext, result[2].Ext, "item1-pointer-ext")
 	})
 }
 

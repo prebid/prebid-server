@@ -324,7 +324,7 @@ func TestScrubGeoFull(t *testing.T) {
 			expectedDevice: &openrtb2.Device{Geo: nil},
 		},
 		{
-			name:           "with_user_geo",
+			name:           "with_device_geo",
 			userIn:         &openrtb2.User{},
 			expectedUser:   &openrtb2.User{},
 			deviceIn:       &openrtb2.Device{Geo: &openrtb2.Geo{Lat: 123.123}},
