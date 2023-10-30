@@ -33,12 +33,12 @@
           ]
         },
         "ext": {
-          "appnexus": {
+          "amx": {
             "placementId": 12883451
           },
           "prebid": {
             "storedbidresponse": [
-              {"bidder":"testBidder2", "id": "bidResponseId2"}
+              {"bidder":"amx", "id": "bidResponseId2"}
             ]
           }
         }

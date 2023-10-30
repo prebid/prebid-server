@@ -8,17 +8,20 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/prebid/prebid-server/v2/stored_responses"
+
 	gpplib "github.com/prebid/go-gpp"
 	"github.com/prebid/go-gpp/constants"
 	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/firstpartydata"
-	"github.com/prebid/prebid-server/gdpr"
-	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/privacy"
-	"github.com/prebid/prebid-server/util/ptrutil"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/firstpartydata"
+	"github.com/prebid/prebid-server/v2/gdpr"
+	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/privacy"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -187,21 +190,21 @@ func TestSplitImps(t *testing.T) {
 			givenImps: []openrtb2.Imp{
 				{ID: "imp1", Ext: json.RawMessage(`malformed`)},
 			},
-			expectedError: "invalid json for imp[0]: invalid character 'm' looking for beginning of value",
+			expectedError: "invalid json for imp[0]: expect { or n, but found m",
 		},
 		{
 			description: "Malformed imp.ext.prebid",
 			givenImps: []openrtb2.Imp{
 				{ID: "imp1", Ext: json.RawMessage(`{"prebid": malformed}`)},
 			},
-			expectedError: "invalid json for imp[0]: invalid character 'm' looking for beginning of value",
+			expectedError: "invalid json for imp[0]: do not know how to skip: 109",
 		},
 		{
 			description: "Malformed imp.ext.prebid.bidder",
 			givenImps: []openrtb2.Imp{
 				{ID: "imp1", Ext: json.RawMessage(`{"prebid": {"bidder": malformed}}`)},
 			},
-			expectedError: "invalid json for imp[0]: invalid character 'm' looking for beginning of value",
+			expectedError: "invalid json for imp[0]: do not know how to skip: 109",
 		},
 	}
 
@@ -403,22 +406,6 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 			},
 			expectedError: "",
 		},
-		{
-			description: "Marshal Error - imp.ext.prebid",
-			givenImpExt: map[string]json.RawMessage{
-				"prebid":  json.RawMessage(`"ignoredInFavorOfSeparatelyUnmarshalledImpExtPrebid"`),
-				"data":    json.RawMessage(`"anyData"`),
-				"context": json.RawMessage(`"anyContext"`),
-				"skadn":   json.RawMessage(`"anySKAdNetwork"`),
-				"gpid":    json.RawMessage(`"anyGPID"`),
-				"tid":     json.RawMessage(`"anyTID"`),
-			},
-			givenImpExtPrebid: map[string]json.RawMessage{
-				"options": json.RawMessage(`malformed`), // String value without quotes.
-			},
-			expected:      nil,
-			expectedError: "cannot marshal ext.prebid: json: error calling MarshalJSON for type json.RawMessage: invalid character 'm' looking for beginning of value",
-		},
 	}
 
 	for _, test := range testCases {
@@ -592,7 +579,7 @@ func TestExtractAdapterReqBidderParamsMap(t *testing.T) {
 			name:            "malformed req.ext",
 			givenBidRequest: &openrtb2.BidRequest{Ext: json.RawMessage("malformed")},
 			want:            nil,
-			wantErr:         errors.New("error decoding Request.ext : invalid character 'm' looking for beginning of value"),
+			wantErr:         errors.New("error decoding Request.ext : expect { or n, but found m"),
 		},
 		{
 			name:            "extract bidder params from req.Ext for input request in adapter code",
@@ -1081,7 +1068,7 @@ func TestCleanOpenRTBRequestsCCPAErrors(t *testing.T) {
 		req.Regs = &openrtb2.Regs{Ext: test.reqRegsExt}
 
 		var reqExtStruct openrtb_ext.ExtRequest
-		err := json.Unmarshal(req.Ext, &reqExtStruct)
+		err := jsonutil.UnmarshalValid(req.Ext, &reqExtStruct)
 		assert.NoError(t, err, test.description+":marshal_ext")
 
 		auctionReq := AuctionRequest{
@@ -1240,7 +1227,7 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 		if test.inExt != nil {
 			req.Ext = test.inExt
 			extRequest = &openrtb_ext.ExtRequest{}
-			err := json.Unmarshal(req.Ext, extRequest)
+			err := jsonutil.UnmarshalValid(req.Ext, extRequest)
 			assert.NoErrorf(t, err, test.description+":Error unmarshaling inExt")
 		}
 
@@ -1311,7 +1298,7 @@ func TestCleanOpenRTBRequestsBidderParams(t *testing.T) {
 		if test.inExt != nil {
 			req.Ext = test.inExt
 			extRequest = &openrtb_ext.ExtRequest{}
-			err := json.Unmarshal(req.Ext, extRequest)
+			err := jsonutil.UnmarshalValid(req.Ext, extRequest)
 			assert.NoErrorf(t, err, test.description+":Error unmarshaling inExt")
 		}
 
@@ -2492,7 +2479,7 @@ func TestBuildRequestExtForBidder(t *testing.T) {
 	for _, test := range testCases {
 		requestExtParsed := &openrtb_ext.ExtRequest{}
 		if test.requestExt != nil {
-			err := json.Unmarshal(test.requestExt, requestExtParsed)
+			err := jsonutil.UnmarshalValid(test.requestExt, requestExtParsed)
 			if !assert.NoError(t, err, test.description+":parse_ext") {
 				continue
 			}
@@ -2533,7 +2520,7 @@ func TestBuildRequestExtForBidder_RequestExtMalformed(t *testing.T) {
 
 	actualJson, actualErr := buildRequestExtForBidder(bidder, requestExt, requestExtParsed, bidderParams, alternateBidderCodes)
 	assert.Equal(t, json.RawMessage(nil), actualJson)
-	assert.EqualError(t, actualErr, "invalid character 'm' looking for beginning of value")
+	assert.EqualError(t, actualErr, "expect { or n, but found m")
 }
 
 // newAdapterAliasBidRequest builds a BidRequest with aliases
@@ -2864,17 +2851,17 @@ func TestRemoveUnpermissionedEidsUnmarshalErrors(t *testing.T) {
 		{
 			description: "Malformed Ext",
 			userExt:     json.RawMessage(`malformed`),
-			expectedErr: "invalid character 'm' looking for beginning of value",
+			expectedErr: "expect { or n, but found m",
 		},
 		{
 			description: "Malformed Eid Array Type",
 			userExt:     json.RawMessage(`{"eids":[42]}`),
-			expectedErr: "json: cannot unmarshal number into Go value of type openrtb2.EID",
+			expectedErr: "cannot unmarshal []openrtb2.EID: expect { or n, but found 4",
 		},
 		{
 			description: "Malformed Eid Item Type",
 			userExt:     json.RawMessage(`{"eids":[{"source":42,"id":"anyID"}]}`),
-			expectedErr: "json: cannot unmarshal number into Go struct field EID.source of type string",
+			expectedErr: "cannot unmarshal openrtb2.EID.Source: expects \" or n, but found 4",
 		},
 	}
 
@@ -3088,7 +3075,7 @@ func TestCleanOpenRTBRequestsSChainMultipleBidders(t *testing.T) {
 	}
 
 	extRequest := &openrtb_ext.ExtRequest{}
-	err := json.Unmarshal(req.Ext, extRequest)
+	err := jsonutil.UnmarshalValid(req.Ext, extRequest)
 	assert.NoErrorf(t, err, "Error unmarshaling inExt")
 
 	auctionReq := AuctionRequest{
@@ -3172,7 +3159,7 @@ func TestCleanOpenRTBRequestsBidAdjustment(t *testing.T) {
 						H: 600,
 					}},
 				},
-				Ext: json.RawMessage(`{"bidder":{"placementId":1}}`),
+				Ext: json.RawMessage(`{"bidder":{"placementId": 1}}`),
 			}},
 		},
 		{
@@ -3200,7 +3187,7 @@ func TestCleanOpenRTBRequestsBidAdjustment(t *testing.T) {
 						H: 600,
 					}},
 				},
-				Ext: json.RawMessage(`{"bidder":{"placementId":1}}`),
+				Ext: json.RawMessage(`{"bidder":{"placementId": 1}}`),
 			}},
 		},
 	}
@@ -3635,7 +3622,7 @@ func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
 		if test.inExt != nil {
 			req.Ext = test.inExt
 			extRequest = &openrtb_ext.ExtRequest{}
-			err := json.Unmarshal(req.Ext, extRequest)
+			err := jsonutil.UnmarshalValid(req.Ext, extRequest)
 			assert.NoErrorf(t, err, test.desc+":Error unmarshaling inExt")
 		}
 
@@ -4396,7 +4383,7 @@ func TestGetPrebidMediaTypeForBid(t *testing.T) {
 		{
 			description:   "Invalid bid ext",
 			inputBid:      openrtb2.Bid{ID: "bidId", ImpID: "impId", Ext: json.RawMessage(`[true`)},
-			expectedError: "Failed to parse bid mediatype for impression \"impId\", unexpected end of JSON input",
+			expectedError: "Failed to parse bid mediatype for impression \"impId\", expect { or n, but found [",
 		},
 		{
 			description:   "Bid ext is nil",
@@ -4437,7 +4424,7 @@ func TestGetMediaTypeForBid(t *testing.T) {
 		{
 			description:   "invalid bid ext",
 			inputBid:      openrtb2.Bid{ID: "bidId", ImpID: "impId", Ext: json.RawMessage(`{"prebid"`)},
-			expectedError: "Failed to parse bid mediatype for impression \"impId\", unexpected end of JSON input",
+			expectedError: "Failed to parse bid mediatype for impression \"impId\", expect :, but found \x00",
 		},
 		{
 			description:     "Valid bid ext with mtype native",
@@ -4768,4 +4755,244 @@ func TestApplyBidAdjustmentToFloor(t *testing.T) {
 			assert.Equal(t, tt.expectedAllBidderRequests, tt.args.allBidderRequests, tt.name)
 		})
 	}
+}
+
+func TestBuildRequestExtAlternateBidderCodes(t *testing.T) {
+	type testInput struct {
+		bidderNameRaw string
+		accABC        *openrtb_ext.ExtAlternateBidderCodes
+		reqABC        *openrtb_ext.ExtAlternateBidderCodes
+	}
+	testCases := []struct {
+		desc     string
+		in       testInput
+		expected *openrtb_ext.ExtAlternateBidderCodes
+	}{
+		{
+			desc:     "No biddername, nil reqABC and accABC",
+			in:       testInput{},
+			expected: nil,
+		},
+		{
+			desc: "No biddername, non-nil reqABC",
+			in: testInput{
+				reqABC: &openrtb_ext.ExtAlternateBidderCodes{},
+			},
+			expected: &openrtb_ext.ExtAlternateBidderCodes{},
+		},
+		{
+			desc: "No biddername, non-nil accABC",
+			in: testInput{
+				accABC: &openrtb_ext.ExtAlternateBidderCodes{},
+			},
+			expected: &openrtb_ext.ExtAlternateBidderCodes{},
+		},
+		{
+			desc: "No biddername, non-nil reqABC nor accABC",
+			in: testInput{
+				reqABC: &openrtb_ext.ExtAlternateBidderCodes{},
+				accABC: &openrtb_ext.ExtAlternateBidderCodes{},
+			},
+			expected: &openrtb_ext.ExtAlternateBidderCodes{},
+		},
+		{
+			desc: "non-nil reqABC",
+			in: testInput{
+				bidderNameRaw: "pubmatic",
+				reqABC:        &openrtb_ext.ExtAlternateBidderCodes{},
+			},
+			expected: &openrtb_ext.ExtAlternateBidderCodes{},
+		},
+		{
+			desc: "non-nil accABC",
+			in: testInput{
+				bidderNameRaw: "pubmatic",
+				accABC:        &openrtb_ext.ExtAlternateBidderCodes{},
+			},
+			expected: &openrtb_ext.ExtAlternateBidderCodes{},
+		},
+		{
+			desc: "both reqABC and accABC enabled and bidder matches elements in accABC but reqABC comes first",
+			in: testInput{
+				bidderNameRaw: "PUBmatic",
+				reqABC: &openrtb_ext.ExtAlternateBidderCodes{
+					Enabled: true,
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						"appnexus": {
+							AllowedBidderCodes: []string{"pubCode1"},
+						},
+					},
+				},
+				accABC: &openrtb_ext.ExtAlternateBidderCodes{
+					Enabled: true,
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						"PubMatic": {
+							AllowedBidderCodes: []string{"pubCode2"},
+						},
+					},
+				},
+			},
+			expected: &openrtb_ext.ExtAlternateBidderCodes{Enabled: true},
+		},
+		{
+			desc: "both reqABC and accABC enabled and bidder matches elements in both but we prioritize reqABC",
+			in: testInput{
+				bidderNameRaw: "pubmatic",
+				reqABC: &openrtb_ext.ExtAlternateBidderCodes{
+					Enabled: true,
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						"PubMatic": {
+							AllowedBidderCodes: []string{"pubCode"},
+						},
+					},
+				},
+				accABC: &openrtb_ext.ExtAlternateBidderCodes{
+					Enabled: true,
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						"appnexus": {
+							AllowedBidderCodes: []string{"anxsCode"},
+						},
+					},
+				},
+			},
+			expected: &openrtb_ext.ExtAlternateBidderCodes{
+				Enabled: true,
+				Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+					"pubmatic": {
+						AllowedBidderCodes: []string{"pubCode"},
+					},
+				},
+			},
+		},
+		{
+			desc: "nil reqABC non-nil accABC enabled and bidder matches elements in accABC",
+			in: testInput{
+				bidderNameRaw: "APPnexus",
+				accABC: &openrtb_ext.ExtAlternateBidderCodes{
+					Enabled: true,
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						"appnexus": {
+							AllowedBidderCodes: []string{"anxsCode"},
+						},
+					},
+				},
+			},
+			expected: &openrtb_ext.ExtAlternateBidderCodes{
+				Enabled: true,
+				Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+					"APPnexus": {
+						AllowedBidderCodes: []string{"anxsCode"},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			alternateBidderCodes := buildRequestExtAlternateBidderCodes(tc.in.bidderNameRaw, tc.in.accABC, tc.in.reqABC)
+			assert.Equal(t, tc.expected, alternateBidderCodes)
+		})
+	}
+}
+
+func TestCopyExtAlternateBidderCodes(t *testing.T) {
+	type testInput struct {
+		bidder               string
+		alternateBidderCodes *openrtb_ext.ExtAlternateBidderCodes
+	}
+	testCases := []struct {
+		desc     string
+		in       testInput
+		expected *openrtb_ext.ExtAlternateBidderCodes
+	}{
+		{
+			desc:     "pass a nil alternateBidderCodes argument, expect nil output",
+			in:       testInput{},
+			expected: nil,
+		},
+		{
+			desc: "non-nil alternateBidderCodes argument but bidder doesn't match",
+			in: testInput{
+				alternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{
+					Enabled: true,
+				},
+			},
+			expected: &openrtb_ext.ExtAlternateBidderCodes{
+				Enabled: true,
+			},
+		},
+		{
+			desc: "non-nil alternateBidderCodes argument bidder is identical to one element in map",
+			in: testInput{
+				bidder: "appnexus",
+				alternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{
+					Enabled: true,
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						"appnexus": {
+							AllowedBidderCodes: []string{"adnxs"},
+						},
+					},
+				},
+			},
+			expected: &openrtb_ext.ExtAlternateBidderCodes{
+				Enabled: true,
+				Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+					"appnexus": {
+						AllowedBidderCodes: []string{"adnxs"},
+					},
+				},
+			},
+		},
+		{
+			desc: "case insensitive match, keep bidder casing in output",
+			in: testInput{
+				bidder: "AppNexus",
+				alternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{
+					Enabled: true,
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						"appnexus": {
+							AllowedBidderCodes: []string{"adnxs"},
+						},
+					},
+				},
+			},
+			expected: &openrtb_ext.ExtAlternateBidderCodes{
+				Enabled: true,
+				Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+					"AppNexus": {
+						AllowedBidderCodes: []string{"adnxs"},
+					},
+				},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			alternateBidderCodes := copyExtAlternateBidderCodes(tc.in.bidder, tc.in.alternateBidderCodes)
+			assert.Equal(t, tc.expected, alternateBidderCodes)
+		})
+	}
+}
+
+func TestBuildBidResponseRequestBidderName(t *testing.T) {
+	bidderImpResponses := stored_responses.BidderImpsWithBidResponses{
+		openrtb_ext.BidderName("appnexus"): {"impId1": json.RawMessage(`{}`), "impId2": json.RawMessage(`{}`)},
+		openrtb_ext.BidderName("appneXUS"): {"impId3": json.RawMessage(`{}`), "impId4": json.RawMessage(`{}`)},
+	}
+
+	bidderImpReplaceImpID := stored_responses.BidderImpReplaceImpID{
+		"appnexus": {"impId1": true, "impId2": false},
+		"appneXUS": {"impId3": true, "impId4": false},
+	}
+	result := buildBidResponseRequest(nil, bidderImpResponses, nil, bidderImpReplaceImpID)
+
+	resultAppnexus := result["appnexus"]
+	assert.Equal(t, resultAppnexus.BidderName, openrtb_ext.BidderName("appnexus"))
+	assert.Equal(t, resultAppnexus.ImpReplaceImpId, map[string]bool{"impId1": true, "impId2": false})
+
+	resultAppneXUS := result["appneXUS"]
+	assert.Equal(t, resultAppneXUS.BidderName, openrtb_ext.BidderName("appneXUS"))
+	assert.Equal(t, resultAppneXUS.ImpReplaceImpId, map[string]bool{"impId3": true, "impId4": false})
+
 }

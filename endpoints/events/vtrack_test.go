@@ -12,10 +12,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/prebid_cache_client"
-	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/prebid_cache_client"
+	"github.com/prebid/prebid-server/v2/stored_requests"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -186,7 +187,7 @@ func TestShouldRespondWithBadRequestWhenBidIdIsMissing(t *testing.T) {
 		},
 	}
 
-	reqData, err := json.Marshal(data)
+	reqData, err := jsonutil.Marshal(data)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -239,7 +240,7 @@ func TestShouldRespondWithBadRequestWhenBidderIsMissing(t *testing.T) {
 		},
 	}
 
-	reqData, err := json.Marshal(data)
+	reqData, err := jsonutil.Marshal(data)
 	if err != nil {
 		t.Fatal(err)
 	}

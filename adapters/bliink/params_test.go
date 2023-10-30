@@ -2,8 +2,9 @@ package bliink
 
 import (
 	"encoding/json"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"testing"
+
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 var validParams = []string{

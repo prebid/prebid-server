@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 func BuildAdapters(client *http.Client, cfg *config.Configuration, infos config.BidderInfos, me metrics.MetricsEngine) (map[openrtb_ext.BidderName]AdaptedBidder, []error) {
@@ -117,7 +117,6 @@ func GetDisabledBidderWarningMessages(infos config.BidderInfos) map[string]strin
 		"engagebdr":       `Bidder "engagebdr" is no longer available in Prebid Server. Please update your configuration.`,
 		"ninthdecimal":    `Bidder "ninthdecimal" is no longer available in Prebid Server. Please update your configuration.`,
 		"kubient":         `Bidder "kubient" is no longer available in Prebid Server. Please update your configuration.`,
-		"definemedia":     `Bidder "definemedia" is no longer available in Prebid Server. Please update your configuration.`,
 		"applogy":         `Bidder "applogy" is no longer available in Prebid Server. Please update your configuration.`,
 		"rhythmone":       `Bidder "rhythmone" is no longer available in Prebid Server. Please update your configuration.`,
 		"nanointeractive": `Bidder "nanointeractive" is no longer available in Prebid Server. Please update your configuration.`,

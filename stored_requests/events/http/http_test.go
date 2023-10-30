@@ -2,13 +2,13 @@ package http
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	httpCore "net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -151,14 +151,14 @@ func TestStartup(t *testing.T) {
 				t.Run(fmt.Sprintf("Step %d", i+1), func(t *testing.T) {
 					// Check expected Saves
 					if len(test.saves) > 0 {
-						saves, err := json.Marshal(<-ev.Saves())
+						saves, err := jsonutil.Marshal(<-ev.Saves())
 						assert.NoError(t, err, `Failed to marshal event.Save object: %v`, err)
 						assert.JSONEq(t, test.saves, string(saves))
 					}
 					assert.Empty(t, ev.Saves(), "Unexpected additional messages in save channel")
 					// Check expected Invalidations
 					if len(test.invalidations) > 0 {
-						invalidations, err := json.Marshal(<-ev.Invalidations())
+						invalidations, err := jsonutil.Marshal(<-ev.Invalidations())
 						assert.NoError(t, err, `Failed to marshal event.Invalidation object: %v`, err)
 						assert.JSONEq(t, test.invalidations, string(invalidations))
 					}
