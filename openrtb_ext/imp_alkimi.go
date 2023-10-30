@@ -1,6 +1,6 @@
 package openrtb_ext
 
-type ImpExtAlkimi struct {
+type ExtImpAlkimi struct {
 	Token      string  `json:"token"`
 	BidFloor   float64 `json:"bidFloor"`
 	Instl      int8    `json:"instl"`
