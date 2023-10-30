@@ -429,7 +429,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		r.HookExecutor.ExecuteAllProcessedBidResponsesStage(adapterBids)
 
 		if targData != nil {
-			multiBidMap := buildMultiBidMap(requestExtPrebid)
+			multiBidMap := buildMultiBidMap(requestExtPrebid) // Normalized
 
 			// A non-nil auction is only needed if targeting is active. (It is used below this block to extract cache keys)
 			auc = newAuction(adapterBids, len(r.BidRequestWrapper.Imp), targData.preferDeals)
@@ -570,13 +570,13 @@ func recordImpMetrics(r *openrtb_ext.RequestWrapper, metricsEngine metrics.Metri
 // applyDealSupport updates targeting keys with deal prefixes if minimum deal tier exceeded
 func applyDealSupport(bidRequest *openrtb2.BidRequest, auc *auction, bidCategory map[string]string, multiBid map[string]openrtb_ext.ExtMultiBid) []error {
 	errs := []error{}
-	impDealMap := getDealTiers(bidRequest)
+	impDealMap := getDealTiers(bidRequest) // normalized
 
 	for impID, topBidsPerImp := range auc.winningBidsByBidder {
-		impDeal := impDealMap[impID]
+		impDeal := impDealMap[impID] //   ^---- NOT normalized
 		for bidder, topBidsPerBidder := range topBidsPerImp {
 			maxBid := bidsToUpdate(multiBid, bidder.String())
-
+			//   ^---- NOT normalized
 			for i, topBid := range topBidsPerBidder {
 				if i == maxBid {
 					break
