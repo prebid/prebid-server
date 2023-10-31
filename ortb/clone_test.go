@@ -792,6 +792,7 @@ func TestCloneSource(t *testing.T) {
 		assert.NotSame(t, given.SChain, result.SChain, "schain")
 		assert.NotSame(t, given.SChain.Ext, result.SChain.Ext, "schain.ext")
 		assert.NotSame(t, given.Ext, result.Ext, "ext")
+		assert.NotSame(t, given.SChain.Nodes[0].Ext, result.SChain.Nodes[0].Ext, "schain.nodes.ext")
 	})
 
 	t.Run("assumptions", func(t *testing.T) {
