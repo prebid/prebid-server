@@ -7,6 +7,7 @@ import (
 	"github.com/prebid/prebid-server/v2/floors"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
@@ -15,9 +16,9 @@ import (
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
-const PRICE_MACRO = "${AUCTION_PRICE}"
+const price_macro = "${AUCTION_PRICE}"
 
-type AlkimiAdapter struct {
+type adapter struct {
 	endpoint string
 }
 
@@ -32,27 +33,35 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 		return nil, fmt.Errorf("invalid endpoint: %v", err)
 	}
 
-	bidder := &AlkimiAdapter{
+	bidder := &adapter{
 		endpoint: endpointURL.String(),
 	}
 	return bidder, nil
 }
 
 // MakeRequests creates Alkimi adapter requests
-func (adapter *AlkimiAdapter) MakeRequests(request *openrtb2.BidRequest, req *adapters.ExtraRequestInfo) (reqsBidder []*adapters.RequestData, errs []error) {
+func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, req *adapters.ExtraRequestInfo) (reqsBidder []*adapters.RequestData, errs []error) {
 	reqCopy := *request
-	reqCopy.Imp = _updateImps(reqCopy)
+
+	updated, errs := updateImps(reqCopy)
+	if len(errs) > 0 || len(reqCopy.Imp) != len(updated) {
+		return nil, errs
+	}
+
+	reqCopy.Imp = updated
 	encoded, err := json.Marshal(reqCopy)
 	if err != nil {
 		errs = append(errs, err)
 	} else {
-		reqBidder := _buildBidderRequest(adapter, encoded)
+		reqBidder := buildBidderRequest(adapter, encoded)
 		reqsBidder = append(reqsBidder, reqBidder)
 	}
 	return
 }
 
-func _updateImps(bidRequest openrtb2.BidRequest) []openrtb2.Imp {
+func updateImps(bidRequest openrtb2.BidRequest) ([]openrtb2.Imp, []error) {
+	var errs []error
+
 	updatedImps := make([]openrtb2.Imp, 0, len(bidRequest.Imp))
 	for _, imp := range bidRequest.Imp {
 		
@@ -60,37 +69,43 @@ func _updateImps(bidRequest openrtb2.BidRequest) []openrtb2.Imp {
 		var extImpAlkimi openrtb_ext.ExtImpAlkimi
 
 		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-			return nil
+			errs = append(errs, err)
+			continue
+		}
+
+		if err := json.Unmarshal(bidderExt.Bidder, &extImpAlkimi); err != nil {
+			errs = append(errs, err)
+			continue
 		}
 		
-		if err := json.Unmarshal(bidderExt.Bidder, &extImpAlkimi); err == nil {
-			var bidFloorPrice floors.Price
-			bidFloorPrice.FloorMinCur = imp.BidFloorCur
-			bidFloorPrice.FloorMin = imp.BidFloor
+		var bidFloorPrice floors.Price
+		bidFloorPrice.FloorMinCur = imp.BidFloorCur
+		bidFloorPrice.FloorMin = imp.BidFloor
 
-			if len(bidFloorPrice.FloorMinCur) > 0 && bidFloorPrice.FloorMin > 0 {
-				imp.BidFloor = bidFloorPrice.FloorMin
-			} else {
-				imp.BidFloor = extImpAlkimi.BidFloor
-			}
-			imp.Instl = extImpAlkimi.Instl
-			imp.Exp = extImpAlkimi.Exp
-
-			temp := extObj{AlkimiBidderExt: extImpAlkimi}
-			temp.AlkimiBidderExt.AdUnitCode = imp.ID
-
-			extJson, err := json.Marshal(temp)
-			if err != nil {
-				continue
-			}
-			imp.Ext = extJson
-			updatedImps = append(updatedImps, imp)
+		if len(bidFloorPrice.FloorMinCur) > 0 && bidFloorPrice.FloorMin > 0 {
+			imp.BidFloor = bidFloorPrice.FloorMin
+		} else {
+			imp.BidFloor = extImpAlkimi.BidFloor
 		}
+		imp.Instl = extImpAlkimi.Instl
+		imp.Exp = extImpAlkimi.Exp
+
+		temp := extObj{AlkimiBidderExt: extImpAlkimi}
+		temp.AlkimiBidderExt.AdUnitCode = imp.ID
+
+		extJson, err := json.Marshal(temp)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		imp.Ext = extJson
+		updatedImps = append(updatedImps, imp)
 	}
-	return updatedImps
+
+	return updatedImps, errs
 }
 
-func _buildBidderRequest(adapter *AlkimiAdapter, encoded []byte) *adapters.RequestData {
+func buildBidderRequest(adapter *adapter, encoded []byte) *adapters.RequestData {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
@@ -105,11 +120,15 @@ func _buildBidderRequest(adapter *AlkimiAdapter, encoded []byte) *adapters.Reque
 }
 
 // MakeBids will parse the bids from the Alkimi server
-func (adapter *AlkimiAdapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (adapter *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var errs []error
 
-	if request == nil || response == nil || http.StatusNoContent == response.StatusCode {
+	if request == nil || response == nil || adapters.IsResponseStatusCodeNoContent(response) {
 		return nil, nil
+	}
+
+	if err := adapters.CheckResponseStatusCodeForErrors(response); err != nil {
+		return nil, []error{err}
 	}
 
 	var bidResp openrtb2.BidResponse
@@ -124,10 +143,13 @@ func (adapter *AlkimiAdapter) MakeBids(request *openrtb2.BidRequest, externalReq
 		for _, seatBid := range bidResp.SeatBid {
 			for _, bid := range seatBid.Bid {
 				copyBid := bid
-				_resolveMacros(&copyBid)
+				resolveMacros(&copyBid)
 				impId := copyBid.ImpID
 				imp := request.Imp
-				bidType, _ := _getMediaTypeForImp(impId, imp)
+				bidType, err := getMediaTypeForImp(impId, imp)
+				if err != nil {
+					errs = append(errs, err)
+				}
 				bidderBid := &adapters.TypedBid{
 					Bid:     &copyBid,
 					BidType: bidType,
@@ -141,14 +163,16 @@ func (adapter *AlkimiAdapter) MakeBids(request *openrtb2.BidRequest, externalReq
 	return nil, nil
 }
 
-func _resolveMacros(bid *openrtb2.Bid) {
-	price := bid.Price
-	strPrice := fmt.Sprint(price)
-	bid.NURL = strings.ReplaceAll(bid.NURL, PRICE_MACRO, strPrice)
-	bid.AdM = strings.ReplaceAll(bid.AdM, PRICE_MACRO, strPrice)
+func resolveMacros(bid *openrtb2.Bid) {
+	if bid == nil {
+		return
+	}
+	strPrice := strconv.FormatFloat(bid.Price, 'f', -1, 64)
+	bid.NURL = strings.Replace(bid.NURL, price_macro, strPrice, -1)
+	bid.AdM = strings.Replace(bid.AdM, price_macro, strPrice, -1)
 }
 
-func _getMediaTypeForImp(impId string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
+func getMediaTypeForImp(impId string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
 	for _, imp := range imps {
 		if imp.ID == impId {
 			if imp.Banner != nil {
