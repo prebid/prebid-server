@@ -35,14 +35,14 @@ func TestInvalidParams(t *testing.T) {
 
 var validParams = []string{
 	`{"token": "ABC"}`,
-	`{"bidFloor": 1.0}`,
-	`{"instl": 1}`,
-	`{"exp": 30}`,
+	`{"token": "ABC", "bidFloor": 1.0}`,
+	`{"token": "ABC", "instl": 1}`,
+	`{"token": "ABC", "exp": 30}`,
 }
 
 var invalidParams = []string{
 	`{"token": 42}`,
-	`{"bidFloor": "invalid"}`,
-	`{"instl": "invalid"}`,
-	`{"exp": "invalid"}`,
+	`{"token": "ABC", "bidFloor": "invalid"}`,
+	`{"token": "ABC", "instl": "invalid"}`,
+	`{"token": "ABC", "exp": "invalid"}`,
 }
