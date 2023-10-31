@@ -130,8 +130,8 @@ type Syncer struct {
 }
 
 type SkipWhen struct {
-	GDPR   bool   `yaml:"gdpr" mapstructure:"gdpr"`
-	GPPSID string `yaml:"gpp_sid" mapstructure:"gpp_sid"`
+	GDPR   bool     `yaml:"gdpr" mapstructure:"gdpr"`
+	GPPSID []string `yaml:"gpp_sid" mapstructure:"gpp_sid"`
 }
 
 // SyncerEndpoint specifies the configuration of the URL returned by the /cookie_sync endpoint

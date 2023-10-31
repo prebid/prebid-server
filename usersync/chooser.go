@@ -192,8 +192,12 @@ func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}
 		return nil, BidderEvaluation{Status: StatusBlockedByCCPA, Bidder: bidder, SyncerKey: syncer.Key()}
 	}
 
-	if c.bidderInfo[bidder].Syncer != nil && c.bidderInfo[bidder].Syncer.SkipWhen != nil && c.bidderInfo[bidder].Syncer.SkipWhen.GPPSID == GPPSID {
-		return nil, BidderEvaluation{Status: StatusBlockedByRegulationScope, Bidder: bidder, SyncerKey: syncer.Key()}
+	if c.bidderInfo[bidder].Syncer != nil && c.bidderInfo[bidder].Syncer.SkipWhen != nil {
+		for _, gppSID := range c.bidderInfo[bidder].Syncer.SkipWhen.GPPSID {
+			if gppSID == GPPSID {
+				return nil, BidderEvaluation{Status: StatusBlockedByRegulationScope, Bidder: bidder, SyncerKey: syncer.Key()}
+			}
+		}
 	}
 
 	return syncer, BidderEvaluation{Status: StatusOK, Bidder: bidder, SyncerKey: syncer.Key()}

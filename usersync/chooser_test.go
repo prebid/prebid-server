@@ -306,7 +306,7 @@ func TestChooserChoose(t *testing.T) {
 				"a": {
 					Syncer: &config.Syncer{
 						SkipWhen: &config.SkipWhen{
-							GPPSID: "2",
+							GPPSID: []string{"2", "3"},
 						},
 					},
 				},
@@ -567,7 +567,7 @@ func TestChooserEvaluate(t *testing.T) {
 				"a": {
 					Syncer: &config.Syncer{
 						SkipWhen: &config.SkipWhen{
-							GPPSID: "2",
+							GPPSID: []string{"2", "3"},
 						},
 					},
 				},
