@@ -570,20 +570,23 @@ func recordImpMetrics(r *openrtb_ext.RequestWrapper, metricsEngine metrics.Metri
 // applyDealSupport updates targeting keys with deal prefixes if minimum deal tier exceeded
 func applyDealSupport(bidRequest *openrtb2.BidRequest, auc *auction, bidCategory map[string]string, multiBid map[string]openrtb_ext.ExtMultiBid) []error {
 	errs := []error{}
-	impDealMap := getDealTiers(bidRequest) // normalized
+	impDealMap := getDealTiers(bidRequest)
 
 	for impID, topBidsPerImp := range auc.winningBidsByBidder {
-		impDeal := impDealMap[impID] //   ^---- NOT normalized
+		impDeal := impDealMap[impID]
 		for bidder, topBidsPerBidder := range topBidsPerImp {
-			maxBid := bidsToUpdate(multiBid, bidder.String())
-			//   ^---- NOT normalized
+			bidderNormalized, bidderFound := openrtb_ext.NormalizeBidderName(bidder.String())
+			if !bidderFound {
+				continue
+			}
+			maxBid := bidsToUpdate(multiBid, bidderNormalized.String())
 			for i, topBid := range topBidsPerBidder {
 				if i == maxBid {
 					break
 				}
 				if topBid.DealPriority > 0 {
-					if validateDealTier(impDeal[bidder]) {
-						updateHbPbCatDur(topBid, impDeal[bidder], bidCategory)
+					if validateDealTier(impDeal[bidderNormalized]) {
+						updateHbPbCatDur(topBid, impDeal[bidderNormalized], bidCategory)
 					} else {
 						errs = append(errs, fmt.Errorf("dealTier configuration invalid for bidder '%s', imp ID '%s'", string(bidder), impID))
 					}
