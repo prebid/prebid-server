@@ -272,7 +272,7 @@ func TestChooserChoose(t *testing.T) {
 		{
 			description: "Regulation Scope GDPR",
 			givenRequest: Request{
-				Privacy: &fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
+				Privacy: &fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true, gdprInScope: true},
 				Limit:   0,
 			},
 			givenChosenBidders: []string{"a"},
@@ -540,7 +540,7 @@ func TestChooserEvaluate(t *testing.T) {
 			description:      "Blocked By Regulation Scope - GDPR",
 			givenBidder:      "a",
 			givenSyncersSeen: map[string]struct{}{},
-			givenPrivacy:     fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
+			givenPrivacy:     fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true, gdprInScope: true},
 			givenCookie:      cookieNeedsSync,
 			givenBidderInfo: map[string]config.BidderInfo{
 				"a": {
@@ -638,6 +638,7 @@ type fakePrivacy struct {
 	gdprAllowsBidderSync  bool
 	ccpaAllowsBidderSync  bool
 	activityAllowUserSync bool
+	gdprInScope           bool
 	inputBidderName       string
 }
 
@@ -657,4 +658,8 @@ func (p *fakePrivacy) CCPAAllowsBidderSync(bidder string) bool {
 
 func (p *fakePrivacy) ActivityAllowsUserSync(bidder string) bool {
 	return p.activityAllowUserSync
+}
+
+func (p *fakePrivacy) GDPRInScope() bool {
+	return p.gdprInScope
 }
