@@ -12,18 +12,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/analytics"
-	analyticsBuild "github.com/prebid/prebid-server/analytics/build"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/gdpr"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/usersync"
+	"github.com/prebid/prebid-server/v2/analytics"
+	analyticsBuild "github.com/prebid/prebid-server/v2/analytics/build"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/gdpr"
+	"github.com/prebid/prebid-server/v2/macros"
+	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/usersync"
 	"github.com/stretchr/testify/assert"
 
-	metricsConf "github.com/prebid/prebid-server/metrics/config"
+	metricsConf "github.com/prebid/prebid-server/v2/metrics/config"
 )
 
 func TestSetUIDEndpoint(t *testing.T) {
@@ -1307,14 +1307,14 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 			cfgAccountRequired:     true,
 			expectedResponseCode:   400,
 			expectedMetrics: func(m *metrics.MetricsEngineMock) {
-				m.On("RecordSetUid", metrics.SetUidBadRequest).Once()
+				m.On("RecordSetUid", metrics.SetUidAccountConfigMalformed).Once()
 			},
 			expectedAnalytics: func(a *MockAnalyticsRunner) {
 				expected := analytics.SetUIDObject{
 					Status:  400,
 					Bidder:  "pubmatic",
 					UID:     "",
-					Errors:  []error{errors.New("unexpected end of JSON input")},
+					Errors:  []error{errCookieSyncAccountConfigMalformed},
 					Success: false,
 				}
 				a.On("LogSetUIDObject", &expected).Once()

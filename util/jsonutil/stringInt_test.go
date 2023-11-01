@@ -1,7 +1,6 @@
 package jsonutil
 
 import (
-	"encoding/json"
 	"testing"
 
 	"github.com/buger/jsonparser"
@@ -16,27 +15,27 @@ func TestStringIntUnmarshalJSON(t *testing.T) {
 	t.Run("string", func(t *testing.T) {
 		jsonData := []byte(`{"item_id":"30"}`)
 		var item Item
-		assert.NoError(t, json.Unmarshal(jsonData, &item))
+		assert.NoError(t, UnmarshalValid(jsonData, &item))
 		assert.Equal(t, 30, int(item.ItemId))
 	})
 
 	t.Run("int", func(t *testing.T) {
 		jsonData := []byte(`{"item_id":30}`)
 		var item Item
-		assert.NoError(t, json.Unmarshal(jsonData, &item))
+		assert.NoError(t, UnmarshalValid(jsonData, &item))
 		assert.Equal(t, 30, int(item.ItemId))
 	})
 
 	t.Run("empty_id", func(t *testing.T) {
 		jsonData := []byte(`{"item_id": ""}`)
 		var item Item
-		assert.NoError(t, json.Unmarshal(jsonData, &item))
+		assert.NoError(t, UnmarshalValid(jsonData, &item))
 	})
 
 	t.Run("invalid_input", func(t *testing.T) {
 		jsonData := []byte(`{"item_id":true}`)
 		var item Item
-		err := json.Unmarshal(jsonData, &item)
-		assert.Equal(t, jsonparser.MalformedValueError, err)
+		err := UnmarshalValid(jsonData, &item)
+		assert.EqualError(t, err, "cannot unmarshal jsonutil.Item.ItemId: "+jsonparser.MalformedValueError.Error())
 	})
 }

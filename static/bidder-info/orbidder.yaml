@@ -11,6 +11,7 @@ capabilities:
       - banner
       - native
 userSync:
+  supportCors: true
   redirect:
     url: "https://orbidder.otto.de/pbs-usersync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&redirect={{.RedirectURL}}"
     userMacro: "[ODN_ID]"

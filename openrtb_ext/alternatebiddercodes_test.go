@@ -36,6 +36,14 @@ func TestAlternateBidderCodes_IsValidBidderCode(t *testing.T) {
 			wantIsValid: true,
 		},
 		{
+			name: "alternateBidder and bidder are the same under Unicode case-folding (default non-extra bid case with seat's alternateBidder explicitly set)",
+			args: args{
+				bidder:          "pubmatic",
+				alternateBidder: "pubmatic",
+			},
+			wantIsValid: true,
+		},
+		{
 			name: "account.alternatebiddercodes config not defined (default, reject bid)",
 			args: args{
 				bidder:          "pubmatic",
@@ -88,6 +96,20 @@ func TestAlternateBidderCodes_IsValidBidderCode(t *testing.T) {
 			name: "account.alternatebiddercodes and adapter config enabled but adapter config does not have allowedBidderCodes defined",
 			args: args{
 				bidder:          "pubmatic",
+				alternateBidder: "groupm",
+			},
+			fields: fields{
+				Enabled: true,
+				Bidders: map[string]ExtAdapterAlternateBidderCodes{
+					"pubmatic": {Enabled: true},
+				},
+			},
+			wantIsValid: true,
+		},
+		{
+			name: "bidder is different in casing than the entry in account.alternatebiddercodes but they match because our case insensitive comparison",
+			args: args{
+				bidder:          "PUBmatic",
 				alternateBidder: "groupm",
 			},
 			fields: fields{
@@ -175,6 +197,132 @@ func TestAlternateBidderCodes_IsValidBidderCode(t *testing.T) {
 			gotIsValid, gotErr := a.IsValidBidderCode(tt.args.bidder, tt.args.alternateBidder)
 			assert.Equal(t, tt.wantIsValid, gotIsValid)
 			assert.Equal(t, tt.wantErr, gotErr)
+		})
+	}
+}
+
+func TestIsBidderInAlternateBidderCodes(t *testing.T) {
+	type testInput struct {
+		bidder      string
+		bidderCodes *ExtAlternateBidderCodes
+	}
+	type testOutput struct {
+		adapterCfg ExtAdapterAlternateBidderCodes
+		found      bool
+	}
+	testCases := []struct {
+		desc     string
+		in       testInput
+		expected testOutput
+	}{
+		{
+			desc: "empty bidder",
+			in: testInput{
+				bidderCodes: &ExtAlternateBidderCodes{},
+			},
+			expected: testOutput{
+				adapterCfg: ExtAdapterAlternateBidderCodes{},
+				found:      false,
+			},
+		},
+		{
+			desc: "nil ExtAlternateBidderCodes",
+			in: testInput{
+				bidder:      "appnexus",
+				bidderCodes: nil,
+			},
+			expected: testOutput{
+				adapterCfg: ExtAdapterAlternateBidderCodes{},
+				found:      false,
+			},
+		},
+		{
+			desc: "nil ExtAlternateBidderCodes.Bidder map",
+			in: testInput{
+				bidder:      "appnexus",
+				bidderCodes: &ExtAlternateBidderCodes{},
+			},
+			expected: testOutput{
+				adapterCfg: ExtAdapterAlternateBidderCodes{},
+				found:      false,
+			},
+		},
+		{
+			desc: "nil ExtAlternateBidderCodes.Bidder map",
+			in: testInput{
+				bidder: "appnexus",
+				bidderCodes: &ExtAlternateBidderCodes{
+					Bidders: nil,
+				},
+			},
+			expected: testOutput{
+				adapterCfg: ExtAdapterAlternateBidderCodes{},
+				found:      false,
+			},
+		},
+		{
+			desc: "bidder arg identical to entry in Bidders map",
+			in: testInput{
+				bidder: "appnexus",
+				bidderCodes: &ExtAlternateBidderCodes{
+					Bidders: map[string]ExtAdapterAlternateBidderCodes{
+						"appnexus": {
+							Enabled:            true,
+							AllowedBidderCodes: []string{"abcCode"},
+						},
+					},
+				},
+			},
+			expected: testOutput{
+				adapterCfg: ExtAdapterAlternateBidderCodes{
+					Enabled:            true,
+					AllowedBidderCodes: []string{"abcCode"},
+				},
+				found: true,
+			},
+		},
+		{
+			desc: "bidder arg matches an entry in Bidders map with case insensitive comparisson",
+			in: testInput{
+				bidder: "appnexus",
+				bidderCodes: &ExtAlternateBidderCodes{
+					Bidders: map[string]ExtAdapterAlternateBidderCodes{
+						"AppNexus": {AllowedBidderCodes: []string{"adnxsCode"}},
+						"PubMatic": {AllowedBidderCodes: []string{"pubCode"}},
+						"Rubicon":  {AllowedBidderCodes: []string{"rCode"}},
+					},
+				},
+			},
+			expected: testOutput{
+				adapterCfg: ExtAdapterAlternateBidderCodes{
+					AllowedBidderCodes: []string{"adnxsCode"},
+				},
+				found: true,
+			},
+		},
+		{
+			desc: "bidder arg doesn't match any entry in map",
+			in: testInput{
+				bidder: "unknown",
+				bidderCodes: &ExtAlternateBidderCodes{
+					Bidders: map[string]ExtAdapterAlternateBidderCodes{
+						"AppNexus": {AllowedBidderCodes: []string{"adnxsCode"}},
+						"PubMatic": {AllowedBidderCodes: []string{"pubCode"}},
+						"Rubicon":  {AllowedBidderCodes: []string{"rCode"}},
+					},
+				},
+			},
+			expected: testOutput{
+				adapterCfg: ExtAdapterAlternateBidderCodes{},
+				found:      false,
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			adapterCfg, found := tc.in.bidderCodes.IsBidderInAlternateBidderCodes(tc.in.bidder)
+			assert.Equal(t, tc.expected.adapterCfg, adapterCfg)
+			assert.Equal(t, tc.expected.found, found)
 		})
 	}
 }

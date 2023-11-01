@@ -8,8 +8,9 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 const (
@@ -101,7 +102,7 @@ func marshalDetailsResponse(details map[string]bidderDetail) (map[string][]byte,
 	responses := map[string][]byte{}
 
 	for bidder, detail := range details {
-		json, err := json.Marshal(detail)
+		json, err := jsonutil.Marshal(detail)
 		if err != nil {
 			return nil, fmt.Errorf("unable to marshal info for bidder %s: %v", bidder, err)
 		}
@@ -118,7 +119,7 @@ func marshalAllResponse(responses map[string][]byte) ([]byte, error) {
 		responsesJSON[k] = json.RawMessage(v)
 	}
 
-	json, err := json.Marshal(responsesJSON)
+	json, err := jsonutil.Marshal(responsesJSON)
 	if err != nil {
 		return nil, fmt.Errorf("unable to marshal info for bidder all: %v", err)
 	}
