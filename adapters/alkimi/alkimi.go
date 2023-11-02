@@ -64,7 +64,7 @@ func updateImps(bidRequest openrtb2.BidRequest) ([]openrtb2.Imp, []error) {
 
 	updatedImps := make([]openrtb2.Imp, 0, len(bidRequest.Imp))
 	for _, imp := range bidRequest.Imp {
-		
+
 		var bidderExt adapters.ExtImpBidder
 		var extImpAlkimi openrtb_ext.ExtImpAlkimi
 
@@ -77,7 +77,7 @@ func updateImps(bidRequest openrtb2.BidRequest) ([]openrtb2.Imp, []error) {
 			errs = append(errs, err)
 			continue
 		}
-		
+
 		var bidFloorPrice floors.Price
 		bidFloorPrice.FloorMinCur = imp.BidFloorCur
 		bidFloorPrice.FloorMin = imp.BidFloor
