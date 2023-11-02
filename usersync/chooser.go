@@ -3,6 +3,7 @@ package usersync
 import (
 	"strings"
 
+	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
@@ -14,7 +15,7 @@ type Chooser interface {
 }
 
 // NewChooser returns a new instance of the standard chooser implementation.
-func NewChooser(bidderSyncerLookup map[string]Syncer) Chooser {
+func NewChooser(bidderSyncerLookup map[string]Syncer, bidderInfo config.BidderInfos) Chooser {
 	bidders := make([]string, 0, len(bidderSyncerLookup))
 	for k := range bidderSyncerLookup {
 		bidders = append(bidders, k)
@@ -25,6 +26,7 @@ func NewChooser(bidderSyncerLookup map[string]Syncer) Chooser {
 		biddersAvailable:         bidders,
 		bidderChooser:            standardBidderChooser{shuffler: randomShuffler{}},
 		normalizeValidBidderName: openrtb_ext.NormalizeBidderName,
+		bidderInfo:               bidderInfo,
 	}
 }
 
@@ -95,6 +97,9 @@ const (
 
 	// StatusBlockedByPrivacy specifies a bidder sync url is not allowed by privacy activities
 	StatusBlockedByPrivacy
+
+	// TODO: Add description
+	StatusBlockedByDisabledUsersync
 )
 
 // Privacy determines which privacy policies will be enforced for a user sync request.
@@ -111,6 +116,7 @@ type standardChooser struct {
 	biddersAvailable         []string
 	bidderChooser            bidderChooser
 	normalizeValidBidderName func(name string) (openrtb_ext.BidderName, bool)
+	bidderInfo               map[string]config.BidderInfo
 }
 
 // Choose randomly selects user syncers which are permitted by the user's privacy settings and
@@ -179,6 +185,10 @@ func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}
 
 	if !privacy.CCPAAllowsBidderSync(bidderNormalized.String()) {
 		return nil, BidderEvaluation{Status: StatusBlockedByCCPA, Bidder: bidder, SyncerKey: syncer.Key()}
+	}
+
+	if c.bidderInfo[bidder].Syncer != nil && c.bidderInfo[bidder].Syncer.Enabled != nil && !*c.bidderInfo[bidder].Syncer.Enabled {
+		return nil, BidderEvaluation{Status: StatusBlockedByDisabledUsersync, Bidder: bidder, SyncerKey: syncer.Key()}
 	}
 
 	return syncer, BidderEvaluation{Status: StatusOK, Bidder: bidder, SyncerKey: syncer.Key()}

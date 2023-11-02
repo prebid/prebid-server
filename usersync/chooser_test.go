@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -15,6 +16,7 @@ func TestNewChooser(t *testing.T) {
 	testCases := []struct {
 		description              string
 		bidderSyncerLookup       map[string]Syncer
+		bidderInfo               map[string]config.BidderInfo
 		expectedBiddersAvailable []string
 	}{
 		{
@@ -40,7 +42,7 @@ func TestNewChooser(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		chooser, _ := NewChooser(test.bidderSyncerLookup).(standardChooser)
+		chooser, _ := NewChooser(test.bidderSyncerLookup, test.bidderInfo).(standardChooser)
 		assert.ElementsMatch(t, test.expectedBiddersAvailable, chooser.biddersAvailable, test.description)
 	}
 }
@@ -61,11 +63,16 @@ func TestChooserChoose(t *testing.T) {
 
 	cooperativeConfig := Cooperative{Enabled: true}
 
+	var usersyncDisabled *bool
+	enabled := false
+	usersyncDisabled = &enabled
+
 	testCases := []struct {
 		description        string
 		givenRequest       Request
 		givenChosenBidders []string
 		givenCookie        Cookie
+		givenBidderInfo    map[string]config.BidderInfo
 		bidderNamesLookup  func(name string) (openrtb_ext.BidderName, bool)
 		expected           Result
 	}{
@@ -266,6 +273,28 @@ func TestChooserChoose(t *testing.T) {
 				SyncersChosen:    []SyncerChoice{{Bidder: "AppNexus", Syncer: fakeSyncerA}},
 			},
 		},
+		{
+			description: "Disabled Usersync",
+			givenRequest: Request{
+				Privacy: &fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
+				Limit:   0,
+			},
+			givenChosenBidders: []string{"a"},
+			givenCookie:        Cookie{},
+			givenBidderInfo: map[string]config.BidderInfo{
+				"a": {
+					Syncer: &config.Syncer{
+						Enabled: usersyncDisabled,
+					},
+				},
+			},
+			bidderNamesLookup: normalizedBidderNamesLookup,
+			expected: Result{
+				Status:           StatusOK,
+				BiddersEvaluated: []BidderEvaluation{{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByDisabledUsersync}},
+				SyncersChosen:    []SyncerChoice{},
+			},
+		},
 	}
 
 	bidders := []string{"anyRequested"}
@@ -286,6 +315,7 @@ func TestChooserChoose(t *testing.T) {
 			biddersAvailable:         biddersAvailable,
 			bidderChooser:            mockBidderChooser,
 			normalizeValidBidderName: test.bidderNamesLookup,
+			bidderInfo:               test.givenBidderInfo,
 		}
 
 		result := chooser.Choose(test.givenRequest, &test.givenCookie)
@@ -307,6 +337,10 @@ func TestChooserEvaluate(t *testing.T) {
 	cookieAlreadyHasSyncForA := Cookie{uids: map[string]UIDEntry{"keyA": {Expires: time.Now().Add(time.Duration(24) * time.Hour)}}}
 	cookieAlreadyHasSyncForB := Cookie{uids: map[string]UIDEntry{"keyB": {Expires: time.Now().Add(time.Duration(24) * time.Hour)}}}
 
+	var usersyncDisabled *bool
+	enabled := false
+	usersyncDisabled = &enabled
+
 	testCases := []struct {
 		description                 string
 		givenBidder                 string
@@ -314,6 +348,7 @@ func TestChooserEvaluate(t *testing.T) {
 		givenSyncersSeen            map[string]struct{}
 		givenPrivacy                fakePrivacy
 		givenCookie                 Cookie
+		givenBidderInfo             map[string]config.BidderInfo
 		givenSyncTypeFilter         SyncTypeFilter
 		normalizedBidderNamesLookup func(name string) (openrtb_ext.BidderName, bool)
 		expectedSyncer              Syncer
@@ -477,11 +512,30 @@ func TestChooserEvaluate(t *testing.T) {
 			expectedSyncer:              nil,
 			expectedEvaluation:          BidderEvaluation{Bidder: "AppNexus", SyncerKey: "keyA", Status: StatusBlockedByCCPA},
 		},
+		{
+			description:          "Disabled Usersync",
+			givenBidder:          "a",
+			normalisedBidderName: "a",
+			givenSyncersSeen:     map[string]struct{}{},
+			givenPrivacy:         fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
+			givenCookie:          cookieNeedsSync,
+			givenBidderInfo: map[string]config.BidderInfo{
+				"a": {
+					Syncer: &config.Syncer{
+						Enabled: usersyncDisabled,
+					},
+				},
+			},
+			givenSyncTypeFilter:         syncTypeFilter,
+			normalizedBidderNamesLookup: normalizedBidderNamesLookup,
+			expectedSyncer:              nil,
+			expectedEvaluation:          BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByDisabledUsersync},
+		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
-			chooser, _ := NewChooser(bidderSyncerLookup).(standardChooser)
+			chooser, _ := NewChooser(bidderSyncerLookup, test.givenBidderInfo).(standardChooser)
 			chooser.normalizeValidBidderName = test.normalizedBidderNamesLookup
 			sync, evaluation := chooser.evaluate(test.givenBidder, test.givenSyncersSeen, test.givenSyncTypeFilter, &test.givenPrivacy, &test.givenCookie)
 

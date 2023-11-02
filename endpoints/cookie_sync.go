@@ -61,7 +61,7 @@ func NewCookieSyncEndpoint(
 	}
 
 	return &cookieSyncEndpoint{
-		chooser: usersync.NewChooser(syncersByBidder),
+		chooser: usersync.NewChooser(syncersByBidder, config.BidderInfos),
 		config:  config,
 		privacyConfig: usersyncPrivacyConfig{
 			gdprConfig:             config.GDPR,

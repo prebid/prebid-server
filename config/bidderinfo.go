@@ -124,6 +124,9 @@ type Syncer struct {
 
 	// SupportCORS identifies if CORS is supported for the user syncing endpoints.
 	SupportCORS *bool `yaml:"supportCors" mapstructure:"support_cors"`
+
+	// TODO: Add description
+	Enabled *bool `yaml:"enabled" mapstructure:"enabled"`
 }
 
 // SyncerEndpoint specifies the configuration of the URL returned by the /cookie_sync endpoint

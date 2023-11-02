@@ -45,6 +45,7 @@ func TestNewCookieSyncEndpoint(t *testing.T) {
 		analytics         = MockAnalyticsRunner{}
 		fetcher           = FakeAccountsFetcher{}
 		bidders           = map[string]openrtb_ext.BidderName{"bidderA": openrtb_ext.BidderName("bidderA"), "bidderB": openrtb_ext.BidderName("bidderB")}
+		bidderInfo        = map[string]config.BidderInfo{"bidderA": {}, "bidderB": {}}
 	)
 
 	endpoint := NewCookieSyncEndpoint(
@@ -65,7 +66,7 @@ func TestNewCookieSyncEndpoint(t *testing.T) {
 	result := endpoint.(*cookieSyncEndpoint)
 
 	expected := &cookieSyncEndpoint{
-		chooser: usersync.NewChooser(syncersByBidder),
+		chooser: usersync.NewChooser(syncersByBidder, bidderInfo),
 		config: &config.Configuration{
 			UserSync:   configUserSync,
 			HostCookie: configHostCookie,
