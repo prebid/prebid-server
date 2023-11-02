@@ -142,11 +142,6 @@ func TestJsonSampleRequests(t *testing.T) {
 	}
 }
 
-func TestSingleTestFile(t *testing.T) {
-	//runJsonBasedTest(t, "sample-requests/valid-whole/exemplary/simple.json", "single test file")
-	runJsonBasedTest(t, "sample-requests/valid-whole/exemplary/all-ext-case-insensitive.json", "single test file")
-}
-
 func runJsonBasedTest(t *testing.T, filename, desc string) {
 	t.Helper()
 
