@@ -4,6 +4,10 @@
     "user": {
       "id": "xyz"
     },
+    "device": {
+      "ip": "104.28.131.104",
+      "ua": "PostmanRuntime/7.26.8"
+    },
     "imp": [],
     "bidder": "adquery"
   },

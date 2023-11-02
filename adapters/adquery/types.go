@@ -10,6 +10,8 @@ type BidderRequest struct {
 	AdUnitCode          string `json:"adUnitCode"`
 	BidQid              string `json:"bidQid"`
 	BidId               string `json:"bidId"`
+	BidIp               string `json:"bidIp,omitempty"`
+	BidUa               string `json:"bidUa,omitempty"`
 	Bidder              string `json:"bidder"`
 	BidPageUrl          string `json:"bidPageUrl"`
 	BidderRequestId     string `json:"bidderRequestId"`

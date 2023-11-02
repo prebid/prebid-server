@@ -118,7 +118,7 @@ func buildRequest(bidReq *openrtb2.BidRequest, imp *openrtb2.Imp, ext *openrtb_e
 		userId = bidReq.User.ID
 	}
 
-	return &BidderRequest{
+	bidderRequest := &BidderRequest{
 		V:                   prebidVersion,
 		PlacementCode:       ext.PlacementID,
 		AuctionId:           "",
@@ -132,6 +132,13 @@ func buildRequest(bidReq *openrtb2.BidRequest, imp *openrtb2.Imp, ext *openrtb_e
 		BidderRequestsCount: 1,
 		Sizes:               getImpSizes(imp),
 	}
+
+	if bidReq.Device != nil {
+		bidderRequest.BidIp = bidReq.Device.IP
+		bidderRequest.BidUa = bidReq.Device.UA
+	}
+
+	return bidderRequest
 }
 
 func parseExt(ext json.RawMessage) (*openrtb_ext.ImpExtAdQuery, error) {
