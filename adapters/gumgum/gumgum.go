@@ -7,11 +7,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 // GumGumAdapter implements Bidder interface.
@@ -146,6 +146,16 @@ func preprocess(imp *openrtb2.Imp) (*openrtb_ext.ExtImpGumGum, error) {
 		format := bannerCopy.Format[0]
 		bannerCopy.W = &(format.W)
 		bannerCopy.H = &(format.H)
+
+		if gumgumExt.Slot != 0 {
+			var err error
+			bannerExt := getBiggerFormat(bannerCopy.Format, gumgumExt.Slot)
+			bannerCopy.Ext, err = json.Marshal(&bannerExt)
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		imp.Banner = &bannerCopy
 	}
 
@@ -169,6 +179,30 @@ func preprocess(imp *openrtb2.Imp) (*openrtb_ext.ExtImpGumGum, error) {
 	return &gumgumExt, nil
 }
 
+func getBiggerFormat(formatList []openrtb2.Format, slot float64) openrtb_ext.ExtImpGumGumBanner {
+	maxw := int64(0)
+	maxh := int64(0)
+	greatestVal := int64(0)
+	for _, size := range formatList {
+		var biggerSide int64
+		if size.W > size.H {
+			biggerSide = size.W
+		} else {
+			biggerSide = size.H
+		}
+
+		if biggerSide > greatestVal || (biggerSide == greatestVal && size.W >= maxw && size.H >= maxh) {
+			greatestVal = biggerSide
+			maxh = size.H
+			maxw = size.W
+		}
+	}
+
+	bannerExt := openrtb_ext.ExtImpGumGumBanner{Si: slot, MaxW: float64(maxw), MaxH: float64(maxh)}
+
+	return bannerExt
+}
+
 func getMediaTypeForImpID(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	for _, imp := range imps {
 		if imp.ID == impID && imp.Banner != nil {
@@ -188,7 +222,7 @@ func validateVideoParams(video *openrtb2.Video) (err error) {
 }
 
 // Builder builds a new instance of the GumGum adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &GumGumAdapter{
 		URI: config.Endpoint,
 	}

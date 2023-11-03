@@ -1,5 +1,6 @@
+endpoint: "https://{{.Host}}.svr-algorix.com/rtb/sa?sid={{.SourceId}}&token={{.AccountID}}"
 maintainer:
-  email: "xunyunbo@algorix.co"
+  email: "prebid@algorix.co"
 capabilities:
   app:
     mediaTypes:

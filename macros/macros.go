@@ -5,7 +5,7 @@ import (
 	"text/template"
 )
 
-// EndpointTemplateParams specifies params for an endpoint template
+// EndpointTemplateParams specifies macros for bidder endpoints.
 type EndpointTemplateParams struct {
 	Host        string
 	PublisherID string
@@ -13,23 +13,27 @@ type EndpointTemplateParams struct {
 	SourceId    string
 	AccountID   string
 	AdUnit      string
+	MediaType   string
+	GvlID       string
 }
 
-// UserSyncTemplateParams specifies params for an user sync URL template
-type UserSyncTemplateParams struct {
+// UserSyncPrivacy specifies privacy policy macros, represented as strings, for user sync urls.
+type UserSyncPrivacy struct {
 	GDPR        string
 	GDPRConsent string
 	USPrivacy   string
+	GPP         string
+	GPPSID      string
 }
 
 // ResolveMacros resolves macros in the given template with the provided params
-func ResolveMacros(aTemplate template.Template, params interface{}) (string, error) {
+func ResolveMacros(aTemplate *template.Template, params interface{}) (string, error) {
 	strBuf := bytes.Buffer{}
 
-	err := aTemplate.Execute(&strBuf, params)
-	if err != nil {
+	if err := aTemplate.Execute(&strBuf, params); err != nil {
 		return "", err
 	}
+
 	res := strBuf.String()
 	return res, nil
 }

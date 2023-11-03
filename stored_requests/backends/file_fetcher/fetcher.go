@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 
-	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/v2/stored_requests"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 )
 
 // NewFileFetcher _immediately_ loads stored request data from local files.
@@ -33,8 +35,12 @@ func (fetcher *eagerFetcher) FetchRequests(ctx context.Context, requestIDs []str
 	return storedRequests, storedImpressions, errs
 }
 
+func (fetcher *eagerFetcher) FetchResponses(ctx context.Context, ids []string) (data map[string]json.RawMessage, errs []error) {
+	return nil, nil
+}
+
 // FetchAccount fetches the host account configuration for a publisher
-func (fetcher *eagerFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
+func (fetcher *eagerFetcher) FetchAccount(ctx context.Context, accountDefaultsJSON json.RawMessage, accountID string) (json.RawMessage, []error) {
 	if len(accountID) == 0 {
 		return nil, []error{fmt.Errorf("Cannot look up an empty accountID")}
 	}
@@ -45,7 +51,12 @@ func (fetcher *eagerFetcher) FetchAccount(ctx context.Context, accountID string)
 			DataType: "Account",
 		}}
 	}
-	return accountJSON, nil
+
+	completeJSON, err := jsonpatch.MergePatch(accountDefaultsJSON, accountJSON)
+	if err != nil {
+		return nil, []error{err}
+	}
+	return completeJSON, nil
 }
 
 func (fetcher *eagerFetcher) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {
@@ -68,7 +79,7 @@ func (fetcher *eagerFetcher) FetchCategories(ctx context.Context, primaryAdServe
 
 			tmp := make(map[string]stored_requests.Category)
 
-			if err := json.Unmarshal(file, &tmp); err != nil {
+			if err := jsonutil.UnmarshalValid(file, &tmp); err != nil {
 				return "", fmt.Errorf("Unable to unmarshal categories for adserver: '%s', publisherId: '%s'", primaryAdServer, publisherId)
 			}
 			fetcher.Categories[fileName] = tmp
@@ -100,7 +111,7 @@ func collectStoredData(directory string, fileSystem FileSystem, err error) (File
 	if err != nil {
 		return FileSystem{nil, nil}, err
 	}
-	fileInfos, err := ioutil.ReadDir(directory)
+	fileInfos, err := os.ReadDir(directory)
 	if err != nil {
 		return FileSystem{nil, nil}, err
 	}
@@ -118,7 +129,7 @@ func collectStoredData(directory string, fileSystem FileSystem, err error) (File
 
 		} else {
 			if strings.HasSuffix(fileInfo.Name(), ".json") { // Skip the .gitignore
-				fileData, err := ioutil.ReadFile(fmt.Sprintf("%s/%s", directory, fileInfo.Name()))
+				fileData, err := os.ReadFile(fmt.Sprintf("%s/%s", directory, fileInfo.Name()))
 				if err != nil {
 					return FileSystem{nil, nil}, err
 				}

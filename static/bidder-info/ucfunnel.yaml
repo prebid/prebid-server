@@ -1,3 +1,4 @@
+endpoint: "https://pbs.aralego.com/prebid"
 maintainer:
   email: "support@ucfunnel.com"
 gvlVendorID: 607
@@ -10,3 +11,8 @@ capabilities:
     mediaTypes:
       - banner
       - video
+userSync:
+  redirect:
+  # for syncing to work, please register your Prebid Server domain with the contact email above
+    url: "https://sync.aralego.com/idsync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&usprivacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+    userMacro: "SspCookieUserId"

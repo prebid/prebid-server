@@ -165,7 +165,7 @@
                         "keywords": "keywords"
                     },
                     "ext": {
-                        "client": "prebid_server_0.2"
+                        "client": "prebid_server_0.6"
                     }
                 }
             },
@@ -220,7 +220,8 @@
                         "nurl": "https://nurl",
                         "price": 0.01,
                         "w": 1024,
-                        "h": 768
+                        "h": 768,
+                        "exp": 300
                     },
                     "type": "video"
                 }

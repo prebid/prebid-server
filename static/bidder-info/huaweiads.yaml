@@ -1,0 +1,12 @@
+endpoint: "https://acd.op.hicloud.com/ppsadx/getResult"
+disabled: true
+maintainer:
+  email: prebid@huawei.com
+gvlVendorID: 856
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - native
+      - video

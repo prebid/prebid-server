@@ -1,0 +1,15 @@
+endpoint: "http://ssp.videowalldirect.com/pserver"
+maintainer:
+  email: "wls_demo_box@smartyads.com"
+capabilities:
+  site:
+    mediaTypes:
+    - banner
+    - video
+    - native
+    
+  app:
+    mediaTypes:
+    - banner
+    - video
+    - native

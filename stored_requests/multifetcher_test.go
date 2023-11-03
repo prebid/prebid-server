@@ -132,9 +132,9 @@ func TestMultiFetcherAccountFoundInFirstFetcher(t *testing.T) {
 	fetcher := &MultiFetcher{f1, f2}
 	ctx := context.Background()
 
-	f1.On("FetchAccount", ctx, "ONE").Once().Return(json.RawMessage(`{"id": "ONE"}`), []error{})
+	f1.On("FetchAccount", ctx, json.RawMessage("{}"), "ONE").Once().Return(json.RawMessage(`{"id": "ONE"}`), []error{})
 
-	account, errs := fetcher.FetchAccount(ctx, "ONE")
+	account, errs := fetcher.FetchAccount(ctx, json.RawMessage("{}"), "ONE")
 
 	f1.AssertExpectations(t)
 	f2.AssertNotCalled(t, "FetchAccount")
@@ -148,10 +148,10 @@ func TestMultiFetcherAccountFoundInSecondFetcher(t *testing.T) {
 	fetcher := &MultiFetcher{f1, f2}
 	ctx := context.Background()
 
-	f1.On("FetchAccount", ctx, "TWO").Once().Return(json.RawMessage(``), []error{NotFoundError{"TWO", "Account"}})
-	f2.On("FetchAccount", ctx, "TWO").Once().Return(json.RawMessage(`{"id": "TWO"}`), []error{})
+	f1.On("FetchAccount", ctx, json.RawMessage("{}"), "TWO").Once().Return(json.RawMessage(``), []error{NotFoundError{"TWO", "Account"}})
+	f2.On("FetchAccount", ctx, json.RawMessage("{}"), "TWO").Once().Return(json.RawMessage(`{"id": "TWO"}`), []error{})
 
-	account, errs := fetcher.FetchAccount(ctx, "TWO")
+	account, errs := fetcher.FetchAccount(ctx, json.RawMessage("{}"), "TWO")
 
 	f1.AssertExpectations(t)
 	f2.AssertExpectations(t)
@@ -165,10 +165,10 @@ func TestMultiFetcherAccountNotFound(t *testing.T) {
 	fetcher := &MultiFetcher{f1, f2}
 	ctx := context.Background()
 
-	f1.On("FetchAccount", ctx, "MISSING").Once().Return(json.RawMessage(``), []error{NotFoundError{"TWO", "Account"}})
-	f2.On("FetchAccount", ctx, "MISSING").Once().Return(json.RawMessage(``), []error{NotFoundError{"TWO", "Account"}})
+	f1.On("FetchAccount", ctx, json.RawMessage("{}"), "MISSING").Once().Return(json.RawMessage(``), []error{NotFoundError{"TWO", "Account"}})
+	f2.On("FetchAccount", ctx, json.RawMessage("{}"), "MISSING").Once().Return(json.RawMessage(``), []error{NotFoundError{"TWO", "Account"}})
 
-	account, errs := fetcher.FetchAccount(ctx, "MISSING")
+	account, errs := fetcher.FetchAccount(ctx, json.RawMessage("{}"), "MISSING")
 
 	f1.AssertExpectations(t)
 	f2.AssertExpectations(t)

@@ -7,19 +7,19 @@ import (
 	"strconv"
 	"text/template"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/macros"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type adkernelAdapter struct {
-	EndpointTemplate template.Template
+	EndpointTemplate *template.Template
 }
 
-//MakeRequests prepares request information for prebid-server core
+// MakeRequests prepares request information for prebid-server core
 func (adapter *adkernelAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 	if len(request.Imp) == 0 {
@@ -78,16 +78,13 @@ func validateImpression(imp *openrtb2.Imp, impExt *openrtb_ext.ExtImpAdkernel) e
 	if impExt.ZoneId < 1 {
 		return newBadInputError(fmt.Sprintf("Invalid zoneId value: %d. Ignoring imp id=%s", impExt.ZoneId, imp.ID))
 	}
-	if len(impExt.Host) == 0 {
-		return newBadInputError(fmt.Sprintf("Host is empty. Ignoring imp id=%s", imp.ID))
-	}
-	if imp.Video == nil && imp.Banner == nil {
-		return newBadInputError(fmt.Sprintf("Invalid imp id=%s. Expected imp.banner or imp.video", imp.ID))
+	if imp.Video == nil && imp.Banner == nil && imp.Native == nil {
+		return newBadInputError(fmt.Sprintf("Invalid imp id=%s. Expected imp.banner / imp.video / imp.native", imp.ID))
 	}
 	return nil
 }
 
-//Group impressions by AdKernel-specific parameters `zoneId` & `host`
+// Group impressions by AdKernel-specific parameter `zoneId`
 func dispatchImpressions(imps []openrtb2.Imp, impsExt []openrtb_ext.ExtImpAdkernel) (map[openrtb_ext.ExtImpAdkernel][]openrtb2.Imp, []error) {
 	res := make(map[openrtb_ext.ExtImpAdkernel][]openrtb2.Imp)
 	errors := make([]error, 0)
@@ -107,7 +104,7 @@ func dispatchImpressions(imps []openrtb2.Imp, impsExt []openrtb_ext.ExtImpAdkern
 	return res, errors
 }
 
-//Alter impression info to comply with adkernel platform requirements
+// Alter impression info to comply with adkernel platform requirements
 func compatImpression(imp *openrtb2.Imp) error {
 	imp.Ext = nil //do not forward ext to adkernel platform
 	if imp.Banner != nil {
@@ -115,6 +112,9 @@ func compatImpression(imp *openrtb2.Imp) error {
 	}
 	if imp.Video != nil {
 		return compatVideoImpression(imp)
+	}
+	if imp.Native != nil {
+		return compatNativeImpression(imp)
 	}
 	return newBadInputError("Invalid impression")
 }
@@ -130,6 +130,13 @@ func compatVideoImpression(imp *openrtb2.Imp) error {
 	imp.Banner = nil
 	imp.Audio = nil
 	imp.Native = nil
+	return nil
+}
+
+func compatNativeImpression(imp *openrtb2.Imp) error {
+	imp.Banner = nil
+	imp.Audio = nil
+	imp.Video = nil
 	return nil
 }
 
@@ -193,11 +200,11 @@ func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext
 
 // Builds endpoint url based on adapter-specific pub settings from imp.ext
 func (adapter *adkernelAdapter) buildEndpointURL(params *openrtb_ext.ExtImpAdkernel) (string, error) {
-	endpointParams := macros.EndpointTemplateParams{Host: params.Host, ZoneID: strconv.Itoa(params.ZoneId)}
+	endpointParams := macros.EndpointTemplateParams{ZoneID: strconv.Itoa(params.ZoneId)}
 	return macros.ResolveMacros(adapter.EndpointTemplate, endpointParams)
 }
 
-//MakeBids translates adkernel bid response to prebid-server specific format
+// MakeBids translates adkernel bid response to prebid-server specific format
 func (adapter *adkernelAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -213,6 +220,7 @@ func (adapter *adkernelAdapter) MakeBids(internalRequest *openrtb2.BidRequest, e
 			newBadServerResponseError(fmt.Sprintf("Bad server response: %d", err)),
 		}
 	}
+
 	if len(bidResp.SeatBid) != 1 {
 		return nil, []error{
 			newBadServerResponseError(fmt.Sprintf("Invalid SeatBids count: %d", len(bidResp.SeatBid))),
@@ -221,7 +229,7 @@ func (adapter *adkernelAdapter) MakeBids(internalRequest *openrtb2.BidRequest, e
 
 	seatBid := bidResp.SeatBid[0]
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
-
+	bidResponse.Currency = bidResp.Cur
 	for i := 0; i < len(seatBid.Bid); i++ {
 		bid := seatBid.Bid[i]
 		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
@@ -255,14 +263,14 @@ func newBadServerResponseError(message string) error {
 }
 
 // Builder builds a new instance of the Adkernel adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	urlTemplate, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
 	bidder := &adkernelAdapter{
-		EndpointTemplate: *urlTemplate,
+		EndpointTemplate: urlTemplate,
 	}
 	return bidder, nil
 }

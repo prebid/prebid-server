@@ -1,0 +1,108 @@
+{
+  "description": "Extracts bidder configs for multiple bidders, one config has two bidders; expect to have bidder FPD configs for all bidders",
+  "inputRequestData": {
+    "data": {},
+    "bidderconfig": [
+      {
+        "bidders": [
+          "appnexus"
+        ],
+        "config": {
+          "ortb2": {
+            "site": {
+              "id": "apnSiteId",
+              "ext": {
+                "data": {
+                  "sitefpddata": "sitefpddata",
+                  "moreFpd": {
+                    "fpd": 123
+                  },
+                  "morefpdData": "morefpddata"
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "bidders": [
+          "telaria",
+          "testBidder2"
+        ],
+        "config": {
+          "ortb2": {
+            "user": {
+              "id": "telariaUserData",
+              "ext": {
+                "data": {
+                  "userdata": "fpduserdata"
+                }
+              }
+            },
+            "app": {
+              "id": "telariaAppData",
+              "ext": {
+                "data": {
+                  "appdata": "fpdappdata"
+                }
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "outputRequestData": {},
+  "bidderConfigFPD": {
+    "appnexus": {
+      "site": {
+        "id": "apnSiteId",
+        "ext": {
+          "data": {
+            "sitefpddata": "sitefpddata",
+            "moreFpd": {
+              "fpd": 123
+            },
+            "morefpdData": "morefpddata"
+          }
+        }
+      }
+    },
+    "telaria": {
+      "user": {
+        "id": "telariaUserData",
+        "ext": {
+          "data": {
+            "userdata": "fpduserdata"
+          }
+        }
+      },
+      "app": {
+        "id": "telariaAppData",
+        "ext": {
+          "data": {
+            "appdata": "fpdappdata"
+          }
+        }
+      }
+    },
+    "testBidder2": {
+      "user": {
+        "id": "telariaUserData",
+        "ext": {
+          "data": {
+            "userdata": "fpduserdata"
+          }
+        }
+      },
+      "app": {
+        "id": "telariaAppData",
+        "ext": {
+          "data": {
+            "appdata": "fpdappdata"
+          }
+        }
+      }
+    }
+  }
+}

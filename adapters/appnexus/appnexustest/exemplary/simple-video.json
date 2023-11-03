@@ -30,8 +30,7 @@
 			"ext": {
 				"appnexus": {
 				  "hb_source": 5
-				},
-				"prebid": {}
+				}
 			  },
 			"imp": [
 			  {
@@ -111,7 +110,7 @@
 			  "crid": "29681110",
 			  "w": 300,
 			  "h": 250,
-			  "cat": ["IAB5-3"],
+			  "cat": ["IAB5-1"],
 			  "ext": {
 				"appnexus": {
 				  "brand_id": 9,

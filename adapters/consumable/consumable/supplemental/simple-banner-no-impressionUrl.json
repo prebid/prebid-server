@@ -72,6 +72,11 @@
               "unitName": "the-answer"
             }
           ],
+          "schain": {
+            "complete": 0,
+            "nodes": null,
+            "ver": ""
+          },
           "networkId": 11,
           "siteId": 32,
           "unitId": 42,

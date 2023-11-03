@@ -1,151 +1,175 @@
 package usersync
 
 import (
-	"encoding/base64"
-	"encoding/json"
 	"errors"
-	"math"
 	"net/http"
 	"time"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
-const (
-	// DEFAULT_TTL is the default amount of time which a cookie is considered valid.
-	DEFAULT_TTL         = 14 * 24 * time.Hour
-	UID_COOKIE_NAME     = "uids"
-	SameSiteCookieName  = "SSCookie"
-	SameSiteCookieValue = "1"
-	SameSiteAttribute   = "; SameSite=None"
-)
+const uidCookieName = "uids"
 
-// customBidderTTLs stores rules about how long a particular UID sync is valid for each bidder.
-// If a bidder does a cookie sync *without* listing a rule here, then the DEFAULT_TTL will be used.
-var customBidderTTLs = map[string]time.Duration{}
+// uidTTL is the default amount of time a uid stored within a cookie is considered valid. This is
+// separate from the cookie ttl.
+const uidTTL = 14 * 24 * time.Hour
 
-// bidderToFamilyNames maps the BidderName to Adapter.Name() for the early adapters.
-// If a mapping isn't listed here, then we assume that the two are the same.
-var bidderToFamilyNames = map[openrtb_ext.BidderName]string{
-	openrtb_ext.BidderAppnexus: "adnxs",
-}
-
-// PBSCookie is the cookie used in Prebid Server.
+// Cookie is the cookie used in Prebid Server.
 //
-// To get an instance of this from a request, use ParsePBSCookieFromRequest.
-// To write an instance onto a response, use SetCookieOnResponse.
-type PBSCookie struct {
-	uids     map[string]uidWithExpiry
-	optOut   bool
-	birthday *time.Time
+// To get an instance of this from a request, use ReadCookie.
+// To write an instance onto a response, use WriteCookie.
+type Cookie struct {
+	uids   map[string]UIDEntry
+	optOut bool
 }
 
-// uidWithExpiry bundles the UID with an Expiration date.
-// After the expiration, the UID is no longer valid.
-type uidWithExpiry struct {
+// UIDEntry bundles the UID with an Expiration date.
+type UIDEntry struct {
 	// UID is the ID given to a user by a particular bidder
 	UID string `json:"uid"`
 	// Expires is the time at which this UID should no longer apply.
 	Expires time.Time `json:"expires"`
 }
 
-// ParsePBSCookieFromRequest parses the UserSyncMap from an HTTP Request.
-func ParsePBSCookieFromRequest(r *http.Request, cookie *config.HostCookie) *PBSCookie {
-	if cookie.OptOutCookie.Name != "" {
-		optOutCookie, err1 := r.Cookie(cookie.OptOutCookie.Name)
-		if err1 == nil && optOutCookie.Value == cookie.OptOutCookie.Value {
-			pc := NewPBSCookie()
-			pc.SetPreference(false)
-			return pc
-		}
+// NewCookie returns a new empty cookie.
+func NewCookie() *Cookie {
+	return &Cookie{
+		uids: make(map[string]UIDEntry),
 	}
-	var parsed *PBSCookie
-	uidCookie, err2 := r.Cookie(UID_COOKIE_NAME)
-	if err2 == nil {
-		parsed = ParsePBSCookie(uidCookie)
-	} else {
-		parsed = NewPBSCookie()
-	}
-	// Fixes #582
-	if uid, _, _ := parsed.GetUID(cookie.Family); uid == "" && cookie.CookieName != "" {
-		if hostCookie, err := r.Cookie(cookie.CookieName); err == nil {
-			parsed.TrySync(cookie.Family, hostCookie.Value)
-		}
-	}
-	return parsed
 }
 
-// ParsePBSCookie parses the UserSync cookie from a raw HTTP cookie.
-func ParsePBSCookie(uidCookie *http.Cookie) *PBSCookie {
-	pc := NewPBSCookie()
+// ReadCookie reads the cookie from the request
+func ReadCookie(r *http.Request, decoder Decoder, host *config.HostCookie) *Cookie {
+	if hostOptOutCookie := checkHostCookieOptOut(r, host); hostOptOutCookie != nil {
+		return hostOptOutCookie
+	}
 
-	j, err := base64.URLEncoding.DecodeString(uidCookie.Value)
+	// Read cookie from request
+	cookieFromRequest, err := r.Cookie(uidCookieName)
 	if err != nil {
-		// corrupted cookie; we should reset
-		return pc
+		return NewCookie()
 	}
-	err = json.Unmarshal(j, pc)
+	decodedCookie := decoder.Decode(cookieFromRequest.Value)
 
-	// The error on Unmarshal here isn't terribly important.
-	// If the cookie has been corrupted, we should reset to an empty one anyway.
-	return pc
+	return decodedCookie
 }
 
-// NewPBSCookie returns an empty PBSCookie
-func NewPBSCookie() *PBSCookie {
-	return &PBSCookie{
-		uids:     make(map[string]uidWithExpiry),
-		birthday: timestamp(),
+// PrepareCookieForWrite ejects UIDs as long as the cookie is too full
+func (cookie *Cookie) PrepareCookieForWrite(cfg *config.HostCookie, encoder Encoder, ejector Ejector) (string, error) {
+	for len(cookie.uids) > 0 {
+		encodedCookie, err := encoder.Encode(cookie)
+		if err != nil {
+			return encodedCookie, nil
+		}
+
+		// Convert to HTTP Cookie to Get Size
+		httpCookie := &http.Cookie{
+			Name:    uidCookieName,
+			Value:   encodedCookie,
+			Expires: time.Now().Add(cfg.TTLDuration()),
+			Path:    "/",
+		}
+		cookieSize := len([]byte(httpCookie.String()))
+
+		isCookieTooBig := cookieSize > cfg.MaxCookieSizeBytes && cfg.MaxCookieSizeBytes > 0
+		if !isCookieTooBig {
+			return encodedCookie, nil
+		} else if len(cookie.uids) == 1 {
+			return "", errors.New("uid that's trying to be synced is bigger than MaxCookieSize")
+		}
+
+		uidToDelete, err := ejector.Choose(cookie.uids)
+		if err != nil {
+			return encodedCookie, err
+		}
+		delete(cookie.uids, uidToDelete)
 	}
+	return "", nil
 }
 
-// NewPBSCookie returns an empty PBSCookie with optOut enabled
-func NewPBSCookieWithOptOut() *PBSCookie {
-	return &PBSCookie{
-		uids:     make(map[string]uidWithExpiry),
-		optOut:   true,
-		birthday: timestamp(),
-	}
-}
+// WriteCookie sets the prepared cookie onto the header
+func WriteCookie(w http.ResponseWriter, encodedCookie string, cfg *config.HostCookie, setSiteCookie bool) {
+	ttl := cfg.TTLDuration()
 
-// AllowSyncs is true if the user lets bidders sync cookies, and false otherwise.
-func (cookie *PBSCookie) AllowSyncs() bool {
-	return cookie != nil && !cookie.optOut
-}
-
-// SetPreference is used to change whether or not we're allowed to sync cookies for this user.
-func (cookie *PBSCookie) SetPreference(allow bool) {
-	if allow {
-		cookie.optOut = false
-	} else {
-		cookie.optOut = true
-		cookie.uids = make(map[string]uidWithExpiry)
-	}
-}
-
-// Gets an HTTP cookie containing all the data from this UserSyncMap. This is a snapshot--not a live view.
-func (cookie *PBSCookie) ToHTTPCookie(ttl time.Duration) *http.Cookie {
-	j, _ := json.Marshal(cookie)
-	b64 := base64.URLEncoding.EncodeToString(j)
-
-	return &http.Cookie{
-		Name:    UID_COOKIE_NAME,
-		Value:   b64,
+	httpCookie := &http.Cookie{
+		Name:    uidCookieName,
+		Value:   encodedCookie,
 		Expires: time.Now().Add(ttl),
 		Path:    "/",
 	}
+
+	if cfg.Domain != "" {
+		httpCookie.Domain = cfg.Domain
+	}
+
+	if setSiteCookie {
+		httpCookie.Secure = true
+		httpCookie.SameSite = http.SameSiteNoneMode
+	}
+
+	w.Header().Add("Set-Cookie", httpCookie.String())
 }
 
-// GetUID Gets this user's ID for the given family.
-// The first returned value is the user's ID.
-// The second returned value is true if we had a value stored, and false if we didn't.
-// The third returned value is true if that value is "active", and false if it's expired.
-//
-// If no value was stored, then the "isActive" return value will be false.
-func (cookie *PBSCookie) GetUID(familyName string) (string, bool, bool) {
+// Sync tries to set the UID for some syncer key. It returns an error if the set didn't happen.
+func (cookie *Cookie) Sync(key string, uid string) error {
+	if !cookie.AllowSyncs() {
+		return errors.New("the user has opted out of prebid server cookie syncs")
+	}
+
+	if checkAudienceNetwork(key, uid) {
+		return errors.New("audienceNetwork uses a UID of 0 as \"not yet recognized\"")
+	}
+
+	// Sync
+	cookie.uids[key] = UIDEntry{
+		UID:     uid,
+		Expires: time.Now().Add(uidTTL),
+	}
+
+	return nil
+}
+
+// SyncHostCookie syncs the request cookie with the host cookie
+func SyncHostCookie(r *http.Request, requestCookie *Cookie, host *config.HostCookie) {
+	if uid, _, _ := requestCookie.GetUID(host.Family); uid == "" && host.CookieName != "" {
+		if hostCookie, err := r.Cookie(host.CookieName); err == nil {
+			requestCookie.Sync(host.Family, hostCookie.Value)
+		}
+	}
+}
+
+func checkHostCookieOptOut(r *http.Request, host *config.HostCookie) *Cookie {
+	if host.OptOutCookie.Name != "" {
+		optOutCookie, err := r.Cookie(host.OptOutCookie.Name)
+		if err == nil && optOutCookie.Value == host.OptOutCookie.Value {
+			hostOptOut := NewCookie()
+			hostOptOut.SetOptOut(true)
+			return hostOptOut
+		}
+	}
+	return nil
+}
+
+// AllowSyncs is true if the user lets bidders sync cookies, and false otherwise.
+func (cookie *Cookie) AllowSyncs() bool {
+	return cookie != nil && !cookie.optOut
+}
+
+// SetOptOut is used to change whether or not we're allowed to sync cookies for this user.
+func (cookie *Cookie) SetOptOut(optOut bool) {
+	cookie.optOut = optOut
+
+	if optOut {
+		cookie.uids = make(map[string]UIDEntry)
+	}
+}
+
+// GetUID Gets this user's ID for the given syncer key.
+func (cookie *Cookie) GetUID(key string) (uid string, isUIDFound bool, isUIDActive bool) {
 	if cookie != nil {
-		if uid, ok := cookie.uids[familyName]; ok {
+		if uid, ok := cookie.uids[key]; ok {
 			return uid.UID, true, time.Now().Before(uid.Expires)
 		}
 	}
@@ -153,7 +177,7 @@ func (cookie *PBSCookie) GetUID(familyName string) (string, bool, bool) {
 }
 
 // GetUIDs returns this user's ID for all the bidders
-func (cookie *PBSCookie) GetUIDs() map[string]string {
+func (cookie *Cookie) GetUIDs() map[string]string {
 	uids := make(map[string]string)
 	if cookie != nil {
 		// Extract just the uid for each bidder
@@ -164,189 +188,72 @@ func (cookie *PBSCookie) GetUIDs() map[string]string {
 	return uids
 }
 
-// GetId wraps GetUID, letting callers fetch the ID given an OpenRTB BidderName.
-func (cookie *PBSCookie) GetId(bidderName openrtb_ext.BidderName) (id string, exists bool) {
-	if familyName, ok := bidderToFamilyNames[bidderName]; ok {
-		id, exists, _ = cookie.GetUID(familyName)
-	} else {
-		id, exists, _ = cookie.GetUID(string(bidderName))
-	}
-	return
+// Unsync removes the user's ID for the given syncer key from this cookie.
+func (cookie *Cookie) Unsync(key string) {
+	delete(cookie.uids, key)
 }
 
-// SetCookieOnResponse is a shortcut for "ToHTTPCookie(); cookie.setDomain(domain); setCookie(w, cookie)"
-func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, setSiteCookie bool, cfg *config.HostCookie, ttl time.Duration) {
-	httpCookie := cookie.ToHTTPCookie(ttl)
-	var domain string = cfg.Domain
-
-	if domain != "" {
-		httpCookie.Domain = domain
-	}
-
-	var currSize int = len([]byte(httpCookie.String()))
-	for cfg.MaxCookieSizeBytes > 0 && currSize > cfg.MaxCookieSizeBytes && len(cookie.uids) > 0 {
-		var oldestElem string = ""
-		var oldestDate int64 = math.MaxInt64
-		for key, value := range cookie.uids {
-			timeUntilExpiration := time.Until(value.Expires)
-			if timeUntilExpiration < time.Duration(oldestDate) {
-				oldestElem = key
-				oldestDate = int64(timeUntilExpiration)
-			}
-		}
-		delete(cookie.uids, oldestElem)
-		httpCookie = cookie.ToHTTPCookie(ttl)
-		if domain != "" {
-			httpCookie.Domain = domain
-		}
-		currSize = len([]byte(httpCookie.String()))
-	}
-
-	var uidsCookieStr string
-	var sameSiteCookie *http.Cookie
-	if setSiteCookie {
-		httpCookie.Secure = true
-		uidsCookieStr = httpCookie.String()
-		uidsCookieStr += SameSiteAttribute
-		sameSiteCookie = &http.Cookie{
-			Name:    SameSiteCookieName,
-			Value:   SameSiteCookieValue,
-			Expires: time.Now().Add(ttl),
-			Path:    "/",
-			Secure:  true,
-		}
-		sameSiteCookieStr := sameSiteCookie.String()
-		sameSiteCookieStr += SameSiteAttribute
-		w.Header().Add("Set-Cookie", sameSiteCookieStr)
-	} else {
-		uidsCookieStr = httpCookie.String()
-	}
-	w.Header().Add("Set-Cookie", uidsCookieStr)
-}
-
-// Unsync removes the user's ID for the given family from this cookie.
-func (cookie *PBSCookie) Unsync(familyName string) {
-	delete(cookie.uids, familyName)
-}
-
-// HasLiveSync returns true if we have an active UID for the given family, and false otherwise.
-func (cookie *PBSCookie) HasLiveSync(familyName string) bool {
-	_, _, isLive := cookie.GetUID(familyName)
+// HasLiveSync returns true if we have an active UID for the given syncer key, and false otherwise.
+func (cookie *Cookie) HasLiveSync(key string) bool {
+	_, _, isLive := cookie.GetUID(key)
 	return isLive
 }
 
-// LiveSyncCount returns the number of families which have active UIDs for this user.
-func (cookie *PBSCookie) LiveSyncCount() int {
+// HasAnyLiveSyncs returns true if this cookie has at least one active sync.
+func (cookie *Cookie) HasAnyLiveSyncs() bool {
 	now := time.Now()
-	numSyncs := 0
 	if cookie != nil {
 		for _, value := range cookie.uids {
 			if now.Before(value.Expires) {
-				numSyncs++
+				return true
 			}
 		}
 	}
-	return numSyncs
+	return false
 }
 
-// TrySync tries to set the UID for some family name. It returns an error if the set didn't happen.
-func (cookie *PBSCookie) TrySync(familyName string, uid string) error {
-	if !cookie.AllowSyncs() {
-		return errors.New("The user has opted out of prebid server PBSCookie syncs.")
-	}
-
-	// At the moment, Facebook calls /setuid with a UID of 0 if the user isn't logged into Facebook.
-	// They shouldn't be sending us a sentinel value... but since they are, we're refusing to save that ID.
-	if familyName == string(openrtb_ext.BidderAudienceNetwork) && uid == "0" {
-		return errors.New("audienceNetwork uses a UID of 0 as \"not yet recognized\".")
-	}
-
-	cookie.uids[familyName] = uidWithExpiry{
-		UID:     uid,
-		Expires: getExpiry(familyName),
-	}
-
-	return nil
+func checkAudienceNetwork(key string, uid string) bool {
+	return key == string(openrtb_ext.BidderAudienceNetwork) && uid == "0"
 }
 
-// pbsCookieJson defines the JSON contract for the cookie data's storage format.
+// cookieJson defines the JSON contract for the cookie data's storage format.
 //
-// This exists so that PBSCookie (which is public) can have private fields, and the rest of
-// PBS doesn't have to worry about the cookie data storage format.
-type pbsCookieJson struct {
-	LegacyUIDs map[string]string        `json:"uids,omitempty"`
-	UIDs       map[string]uidWithExpiry `json:"tempUIDs,omitempty"`
-	OptOut     bool                     `json:"optout,omitempty"`
-	Birthday   *time.Time               `json:"bday,omitempty"`
+// This exists so that Cookie (which is public) can have private fields, and the rest of
+// the code doesn't have to worry about the cookie data storage format.
+type cookieJson struct {
+	UIDs   map[string]UIDEntry `json:"tempUIDs,omitempty"`
+	OptOut bool                `json:"optout,omitempty"`
 }
 
-func (cookie *PBSCookie) MarshalJSON() ([]byte, error) {
-	return json.Marshal(pbsCookieJson{
-		UIDs:     cookie.uids,
-		OptOut:   cookie.optOut,
-		Birthday: cookie.birthday,
+func (cookie *Cookie) MarshalJSON() ([]byte, error) {
+	return jsonutil.Marshal(cookieJson{
+		UIDs:   cookie.uids,
+		OptOut: cookie.optOut,
 	})
 }
 
-// UnmarshalJSON holds some transition code.
-//
-// "Legacy" cookies had UIDs *without* expiration dates, and recognized "0" as a legitimate UID for audienceNetwork.
-// "Current" cookies always include UIDs with expiration dates, and never allow "0" for audienceNetwork.
-//
-// This Unmarshal method interprets both data formats, and does some conversions on legacy data to make it current.
-// If you're seeing this message after March 2018, it's safe to assume that all the legacy cookies have been
-// updated and remove the legacy logic.
-func (cookie *PBSCookie) UnmarshalJSON(b []byte) error {
-	var cookieContract pbsCookieJson
-	err := json.Unmarshal(b, &cookieContract)
-	if err == nil {
-		cookie.optOut = cookieContract.OptOut
-		cookie.birthday = cookieContract.Birthday
-
-		if cookie.optOut {
-			cookie.uids = make(map[string]uidWithExpiry)
-		} else {
-			cookie.uids = cookieContract.UIDs
-
-			if cookie.uids == nil {
-				cookie.uids = make(map[string]uidWithExpiry, len(cookieContract.LegacyUIDs))
-			}
-
-			// Interpret "legacy" UIDs as having been expired already.
-			// This should cause us to re-sync, since it would be time for a new one.
-			for bidder, uid := range cookieContract.LegacyUIDs {
-				if _, ok := cookie.uids[bidder]; !ok {
-					cookie.uids[bidder] = uidWithExpiry{
-						UID:     uid,
-						Expires: time.Now().Add(-5 * time.Minute),
-					}
-				}
-			}
-
-			// Any "0" values from audienceNetwork really meant "no ID available." This happens if they've never
-			// logged into Facebook. However... once we know a user's ID, we stop trying to re-sync them until the
-			// expiration date has passed.
-			//
-			// Since users may log into facebook later, this is a bad strategy.
-			// Since "0" is a fake ID for this bidder, we'll just treat it like it doesn't exist.
-			if id, ok := cookie.uids[string(openrtb_ext.BidderAudienceNetwork)]; ok && id.UID == "0" {
-				delete(cookie.uids, string(openrtb_ext.BidderAudienceNetwork))
-			}
-		}
+func (cookie *Cookie) UnmarshalJSON(b []byte) error {
+	var cookieContract cookieJson
+	if err := jsonutil.Unmarshal(b, &cookieContract); err != nil {
+		return err
 	}
-	return err
-}
 
-// getExpiry gets an expiry date for the cookie, assuming it was generated right now.
-func getExpiry(familyName string) time.Time {
-	ttl := DEFAULT_TTL
-	if customTTL, ok := customBidderTTLs[familyName]; ok {
-		ttl = customTTL
+	cookie.optOut = cookieContract.OptOut
+
+	if cookie.optOut {
+		cookie.uids = nil
+	} else {
+		cookie.uids = cookieContract.UIDs
 	}
-	return time.Now().Add(ttl)
-}
 
-func timestamp() *time.Time {
-	birthday := time.Now()
-	return &birthday
+	if cookie.uids == nil {
+		cookie.uids = make(map[string]UIDEntry)
+	}
+
+	// Audience Network Handling
+	if id, ok := cookie.uids[string(openrtb_ext.BidderAudienceNetwork)]; ok && id.UID == "0" {
+		delete(cookie.uids, string(openrtb_ext.BidderAudienceNetwork))
+	}
+
+	return nil
 }

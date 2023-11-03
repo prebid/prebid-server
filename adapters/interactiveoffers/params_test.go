@@ -2,8 +2,9 @@ package interactiveoffers
 
 import (
 	"encoding/json"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"testing"
+
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 func TestValidParams(t *testing.T) {
@@ -33,12 +34,17 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"pubid":35}`,
+	`{"partnerId":"abc123"}`,
 }
 
 var invalidParams = []string{
-	`{"pubid":"35"}`,
-	`{"pubId":35}`,
-	`{"PubId":35}`,
-	`{}`,
+	``,
+	`{"partnerId":35}`,
+	`{"partnerId":false}`,
+	`{"partnerId":null}`,
+	`null`,
+	`true`,
+	`0`,
+	`abc`,
+	`[]`,
 }

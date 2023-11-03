@@ -1,3 +1,4 @@
+endpoint: "https://api.w.inmobi.com/showad/openrtb/bidder/prebid"
 maintainer:
   email: "prebid-support@inmobi.com"
 gvlVendorID: 333
@@ -6,7 +7,13 @@ capabilities:
     mediaTypes:
       - banner
       - video
+      - native
   site:
     mediaTypes:
       - banner
       - video
+userSync:
+  redirect:
+    url: "https://sync.inmobi.com/prebid?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+    userMacro: "{ID5UID}"
+

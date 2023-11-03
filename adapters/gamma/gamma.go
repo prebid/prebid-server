@@ -7,11 +7,12 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb3"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type GammaAdapter struct {
@@ -30,13 +31,13 @@ type gammaSeatBid struct {
 	Ext   json.RawMessage `json:"ext,omitempty"`
 }
 type gammaBidResponse struct {
-	ID         string                    `json:"id"`
-	SeatBid    []gammaSeatBid            `json:"seatbid,omitempty"`
-	BidID      string                    `json:"bidid,omitempty"`
-	Cur        string                    `json:"cur,omitempty"`
-	CustomData string                    `json:"customdata,omitempty"`
-	NBR        *openrtb2.NoBidReasonCode `json:"nbr,omitempty"`
-	Ext        json.RawMessage           `json:"ext,omitempty"`
+	ID         string                `json:"id"`
+	SeatBid    []gammaSeatBid        `json:"seatbid,omitempty"`
+	BidID      string                `json:"bidid,omitempty"`
+	Cur        string                `json:"cur,omitempty"`
+	CustomData string                `json:"customdata,omitempty"`
+	NBR        *openrtb3.NoBidReason `json:"nbr,omitempty"`
+	Ext        json.RawMessage       `json:"ext,omitempty"`
 }
 
 func checkParams(gammaExt openrtb_ext.ExtImpGamma) error {
@@ -275,7 +276,7 @@ func (a *GammaAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRe
 	return bidResponse, errs
 }
 
-//Adding header fields to request header
+// Adding header fields to request header
 func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue string) {
 	if len(headerValue) > 0 {
 		headers.Add(headerName, headerValue)
@@ -297,7 +298,7 @@ func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 }
 
 // Builder builds a new instance of the Gamma adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &GammaAdapter{
 		URI: config.Endpoint,
 	}

@@ -1,0 +1,11 @@
+endpoint: "http://request-global.czilladx.com/serve/prebid-server.php"
+maintainer:
+  email: "technical@sevio.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner
+

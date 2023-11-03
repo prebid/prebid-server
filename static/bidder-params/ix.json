@@ -4,10 +4,20 @@
   "description": "A schema which validates params accepted by the Ix adapter",
   "type": "object",
   "properties": {
+    "siteid": {
+      "type": "string",
+      "minLength": 1,
+      "description": "An ID which identifies the site selling the impression, preferred."
+    },
     "siteId": {
       "type": "string",
       "minLength": 1,
-      "description": "An ID which identifies the site selling the impression"
+      "description": "An ID which identifies the site selling the impression."
+    },
+    "siteID": {
+      "type": "string",
+      "minLength": 1,
+      "description": "An ID which identifies the site selling the impression."
     },
     "size": {
       "type": "array",
@@ -17,7 +27,16 @@
       "minItems": 2,
       "maxItems": 2,
       "description": "An array of two integer containing the dimension"
+    },
+    "sid": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Slot ID"
     }
   },
-  "required": ["siteId"]
+  "oneOf": [
+    {"required": ["siteid"]},
+    {"required": ["siteId"]},
+    {"required": ["siteID"]}
+  ]
 }

@@ -91,10 +91,8 @@
                           "w": 300,
                           "h": 250,
                           "ext": {
-                              "prebid": {
-                                  "type": "banner"
-                              }
-                          }
+                            "mediaType": "banner"
+                        }
                       }
                   ]
               }
@@ -119,10 +117,8 @@
             "w": 300,
             "h": 250,
             "ext": {
-              "prebid": {
-                "type": "banner"
-              }
-            }
+              "mediaType": "banner"
+          }
           },
           "type": "banner"
         }

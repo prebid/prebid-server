@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Axonix Adapter Params",
+  "description": "A schema which validates params accepted by the Axonix adapter",
+  "type": "object",
+  "properties": {
+    "supplyId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique supply identifier"
+    }
+  },
+  "required": ["supplyId"]
+}

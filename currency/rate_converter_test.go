@@ -1,7 +1,7 @@
 package currency
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/util/task"
+	"github.com/prebid/prebid-server/v2/util/task"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -54,7 +54,6 @@ func TestReadWriteRates(t *testing.T) {
 		wantUpdateErr     bool
 		wantConstantRates bool
 		wantLastUpdated   time.Time
-		wantDataAsOf      time.Time
 		wantConversions   map[string]map[string]float64
 	}{
 		{
@@ -63,7 +62,6 @@ func TestReadWriteRates(t *testing.T) {
 			giveMockResponse: getMockRates(),
 			giveMockStatus:   200,
 			wantLastUpdated:  time.Date(2018, time.September, 12, 30, 0, 0, 0, time.UTC),
-			wantDataAsOf:     time.Date(2018, time.September, 12, 0, 0, 0, 0, time.UTC),
 			wantConversions:  map[string]map[string]float64{"USD": {"GBP": 0.77208}, "GBP": {"USD": 1.2952}},
 		},
 		{
@@ -72,7 +70,6 @@ func TestReadWriteRates(t *testing.T) {
 			giveMockResponse: []byte("{}"),
 			giveMockStatus:   200,
 			wantLastUpdated:  time.Date(2018, time.September, 12, 30, 0, 0, 0, time.UTC),
-			wantDataAsOf:     time.Time{},
 			wantConversions:  nil,
 		},
 		{
@@ -143,7 +140,6 @@ func TestReadWriteRates(t *testing.T) {
 		} else {
 			rates := currencyConverter.Rates().(*Rates)
 			assert.Equal(t, tt.wantConversions, (*rates).Conversions, tt.description)
-			assert.Equal(t, tt.wantDataAsOf, (*rates).DataAsOf, tt.description)
 		}
 
 		lastUpdated := currencyConverter.LastUpdated()
@@ -169,7 +165,6 @@ func TestRateStaleness(t *testing.T) {
 	defer mockedHttpServer.Close()
 
 	expectedRates := &Rates{
-		DataAsOf: time.Date(2018, time.September, 12, 0, 0, 0, 0, time.UTC),
 		Conversions: map[string]map[string]float64{
 			"USD": {
 				"GBP": 0.77208,
@@ -257,7 +252,6 @@ func TestRatesAreNeverConsideredStale(t *testing.T) {
 	defer mockedHttpServer.Close()
 
 	expectedRates := &Rates{
-		DataAsOf: time.Date(2018, time.September, 12, 0, 0, 0, 0, time.UTC),
 		Conversions: map[string]map[string]float64{
 			"USD": {
 				"GBP": 0.77208,
@@ -380,6 +374,6 @@ func (m *mockHttpClient) Do(req *http.Request) (*http.Response, error) {
 	return &http.Response{
 		Status:     "200 OK",
 		StatusCode: http.StatusOK,
-		Body:       ioutil.NopCloser(strings.NewReader(m.responseBody)),
+		Body:       io.NopCloser(strings.NewReader(m.responseBody)),
 	}, nil
 }

@@ -1,0 +1,10 @@
+endpoint: "https://server.bidstack.com/openrtb"
+maintainer:
+  email: tech@bidstack.com
+endpointCompression: gzip
+gvlVendorID: 462
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - video

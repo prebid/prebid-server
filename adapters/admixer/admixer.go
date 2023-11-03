@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type AdmixerAdapter struct {
@@ -17,7 +17,7 @@ type AdmixerAdapter struct {
 }
 
 // Builder builds a new instance of the Admixer adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &AdmixerAdapter{
 		endpoint: config.Endpoint,
 	}
@@ -100,14 +100,17 @@ func preprocess(imp *openrtb2.Imp) error {
 	}
 
 	//don't use regexp due to possible performance reduce
-	if len(admixerExt.ZoneId) != 36 {
+	if len(admixerExt.ZoneId) < 32 || len(admixerExt.ZoneId) > 36 {
 		return &errortypes.BadInput{
 			Message: "ZoneId must be UUID/GUID",
 		}
 	}
 
 	imp.TagID = admixerExt.ZoneId
-	imp.BidFloor = admixerExt.CustomBidFloor
+
+	if imp.BidFloor == 0 && admixerExt.CustomBidFloor > 0 {
+		imp.BidFloor = admixerExt.CustomBidFloor
+	}
 
 	imp.Ext = nil
 

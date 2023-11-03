@@ -1,0 +1,48 @@
+{
+  "description": "Incorrect bidder specific FPD: app not defined in request",
+  "inputRequestData": {
+    "site": {
+      "page": "http://www.foobar.com/1234.html",
+      "publisher": {
+        "id": "1"
+      },
+      "content": {
+        "episode": 6,
+        "title": "episodeName",
+        "series": "TvName",
+        "season": "season3",
+        "len": 900
+      }
+    },
+    "user": {
+      "id": "reqUserID",
+      "yob": 1982,
+      "gender": "M"
+    }
+  },
+  "biddersWithGlobalFPD": [
+    "appnexus"
+  ],
+  "bidderConfigFPD": {
+    "appnexus": {
+      "app": {
+        "page": "",
+        "ext": {
+          "data": {
+            "morefpdData": "morefpddata",
+            "siteFpddata": "siteFpddata",
+            "moreFpd": {
+              "fpd": 123
+            }
+          }
+        }
+      }
+    }
+  },
+  "outputRequestData": {},
+  "validationErrors": [
+    {
+      "Message": "incorrect First Party Data for bidder appnexus: App object is not defined in request, but defined in FPD config"
+    }
+  ]
+}

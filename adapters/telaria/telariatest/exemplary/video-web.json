@@ -122,7 +122,7 @@
               "bid": [
                 {
                   "id": "a3ae1b4e2fc24a4fb45540082e98e161",
-                  "impid": "1",
+                  "impid": "some-impression-id",
                   "price": 3.5,
                   "adm": "awesome-markup",
                   "adomain": [
@@ -157,7 +157,7 @@
       "bids": [{
         "bid": {
           "id": "a3ae1b4e2fc24a4fb45540082e98e161",
-          "impid": "1",
+          "impid": "some-impression-id",
           "price": 3.5,
           "adm": "awesome-markup",
           "adomain": [

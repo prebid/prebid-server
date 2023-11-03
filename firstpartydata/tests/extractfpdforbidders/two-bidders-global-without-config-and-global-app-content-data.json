@@ -1,0 +1,174 @@
+{
+  "description": "req.app.content.data defined; bidder config defined for appnexus and telaria but only appnexus listed in req.ext.prebid.data.bidders; expect all FPD data to be included only in appnexus resolved FPD and extracted from the original request",
+  "inputRequestData": {
+    "id": "bid_id",
+    "app": {
+      "id": "reqAppId",
+      "name": "reqAppName",
+      "cat": [
+        "electronics",
+        "phone"
+      ],
+      "publisher": {
+        "id": "1"
+      },
+      "content": {
+        "len": 900,
+        "title": "reqContentTitle",
+        "season": "reqContentSeason",
+        "data": [
+          {
+            "id": "reqContentDataId1",
+            "name": "reqContentDataName1"
+          },
+          {
+            "id": "reqContentDataId2",
+            "name": "reqContentDataName2"
+          }
+        ]
+      }
+    },
+    "user": {
+      "id": "reqUserId",
+      "keywords": "reqUserKeyword"
+    },
+    "test": 1,
+    "ext": {
+      "prebid": {
+        "data": {
+          "bidders": [
+            "appnexus", "telaria"
+          ]
+        },
+        "bidderconfig": [
+          {
+            "bidders": [
+              "appnexus"
+            ],
+            "config": {
+              "ortb2": {
+                "app": {
+                  "id": "apnFpdAppId",
+                  "name": "apnFpdAppIdAppName",
+                  "cat": [
+                    "books",
+                    "news"
+                  ],
+                  "publisher": {
+                    "id": "1"
+                  },
+                  "content": {
+                    "len": 900,
+                    "title": "apnFpdAppIdContentTitle",
+                    "season": "apnFpdAppIdContentSeason",
+                    "data": [
+                      {
+                        "id": "apnFpdAppIdContentDataId1",
+                        "name": "apnFpdAppIdContentDataName1"
+                      },
+                      {
+                        "id": "apnFpdAppIdContentDataId2",
+                        "name": "apnFpdAppIdContentDataName2"
+                      }
+                    ]
+                  }
+                },
+                "user": {
+                  "id": "apnUserId",
+                  "keywords": "apnFpdUserKeyword"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "outputRequestData": {
+    "id": "bid_id",
+    "app": {
+      "id": "reqAppId",
+      "name": "reqAppName",
+      "cat": [
+        "electronics",
+        "phone"
+      ],
+      "publisher": {
+        "id": "1"
+      },
+      "content": {
+        "len": 900,
+        "title": "reqContentTitle",
+        "season": "reqContentSeason"
+      }
+    },
+    "test": 1
+  },
+  "biddersFPDResolved": {
+    "appnexus": {
+      "app": {
+        "id": "apnFpdAppId",
+        "name": "apnFpdAppIdAppName",
+        "cat": [
+          "books",
+          "news"
+        ],
+        "publisher": {
+          "id": "1"
+        },
+        "content": {
+          "len": 900,
+          "title": "apnFpdAppIdContentTitle",
+          "season": "apnFpdAppIdContentSeason",
+          "data": [
+            {
+              "id": "apnFpdAppIdContentDataId1",
+              "name": "apnFpdAppIdContentDataName1"
+            },
+            {
+              "id": "apnFpdAppIdContentDataId2",
+              "name": "apnFpdAppIdContentDataName2"
+            }
+          ]
+        }
+      },
+      "user": {
+        "id": "apnUserId",
+        "keywords": "apnFpdUserKeyword"
+      }
+    },
+    "telaria": {
+      "app": {
+        "id": "reqAppId",
+        "name": "reqAppName",
+        "cat": [
+          "electronics",
+          "phone"
+        ],
+        "publisher": {
+          "id": "1"
+        },
+        "content": {
+          "len": 900,
+          "title": "reqContentTitle",
+          "season": "reqContentSeason",
+          "data": [
+            {
+              "id": "reqContentDataId1",
+              "name": "reqContentDataName1"
+            },
+            {
+              "id": "reqContentDataId2",
+              "name": "reqContentDataName2"
+            }
+          ]
+        }
+      },
+      "user": {
+        "id": "reqUserId",
+        "keywords": "reqUserKeyword"
+      }
+    }
+  },
+  "validationErrors": []
+}

@@ -1,0 +1,188 @@
+{
+  "mockBidRequest": {
+    "id": "auction-id",
+    "cur": ["EUR"],
+    "imp": [
+      {
+        "id": "3",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "sid": "123456"
+          }
+        }
+      }
+    ],
+    "device": {
+      "geo":{
+        "city":"Paris",
+        "country":"FRA",
+        "lat": 48.860757,
+        "lon": 2.337562,
+        "region":"IDF",
+        "zip":"75001"
+      },
+      "ua": "test-user-agent",
+      "ip": "123.123.123.123",
+      "language": "en",
+      "dnt": 0,
+      "devicetype": 4,
+      "ifa": "e785543f-0be8-48f1-2c53-b4ae46a942d3",
+      "hwv": "6S",
+      "make": "Apple",
+      "model": "iPhone",
+      "os": "iOS",
+      "osv": "8.1"
+    },
+    "app": {
+      "id": "test-app-id",
+      "name": "test-app-name",
+      "bundle": "test-app-bundle",
+      "domain": "test-app-domain",
+      "storeurl": "test-app-storeurl",
+      "cat": [
+        "IAB9-30",
+        "IAB9-5"
+      ],
+      "ver": "1.0",
+      "privacypolicy": 1,
+      "paid": 2,
+      "publisher": {
+        "domain": "topleveldomain.com",
+        "id": "04241e0b1cc98976858ce16377c7eef4",
+        "name": "App Publisher"
+      },
+      "keywords": "game,puzzle"
+    },
+    "user": {
+      "buyeruid": "test-buyer-user-id"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Accept": ["application/json"],
+          "Content-Type": ["application/json;charset=utf-8"]
+        },
+        "uri": "http://localhost/s2sdsh",
+        "body": {
+          "id": "auction-id",
+          "cur": ["EUR"],
+          "imp": [
+            {
+              "id": "3",
+              "tagid": "123456",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  },
+                  {
+                    "w": 728,
+                    "h": 90
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "sid": "123456"
+                }
+              }
+            }
+          ],
+          "device": {
+            "geo":{
+              "city":"Paris",
+              "country":"FRA",
+              "lat": 48.860757,
+              "lon": 2.337562,
+              "region":"IDF",
+              "zip":"75001"
+            },
+            "ua": "test-user-agent",
+            "ip": "123.123.123.123",
+            "language": "en",
+            "dnt": 0,
+            "devicetype": 4,
+            "ifa": "e785543f-0be8-48f1-2c53-b4ae46a942d3",
+            "hwv": "6S",
+            "make": "Apple",
+            "model": "iPhone",
+            "os": "iOS",
+            "osv": "8.1"
+          },
+          "app": {
+            "id": "test-app-id",
+            "name": "test-app-name",
+            "bundle": "test-app-bundle",
+            "domain": "test-app-domain",
+            "storeurl": "test-app-storeurl",
+            "cat": [
+              "IAB9-30",
+              "IAB9-5"
+            ],
+            "ver": "1.0",
+            "privacypolicy": 1,
+            "paid": 2,
+            "publisher": {
+              "domain": "topleveldomain.com",
+              "id": "04241e0b1cc98976858ce16377c7eef4",
+              "name": "App Publisher"
+            },
+            "keywords": "game,puzzle"
+          },
+          "user": {
+            "buyeruid": "test-buyer-user-id"
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "bids": [
+            {
+              "id": "4985939039393-04",
+              "bidId": "3",
+              "cpm": 0.24,
+              "width": 468,
+              "height": 60,
+              "ad": "advert",
+              "crid": "XYZijk"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids" : [{
+        "bid": {
+          "id": "4985939039393-04",
+          "impid": "3",
+          "price": 0.24,
+          "adm": "advert",
+          "w": 468,
+          "h": 60,
+          "crid": "XYZijk"
+        },
+        "type": "banner"
+      }]
+    }
+  ]
+}

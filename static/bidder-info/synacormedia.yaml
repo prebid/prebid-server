@@ -1,5 +1,7 @@
+# DEPRECATED: Use imds bidder instead
+endpoint: "https://pbs.technoratimedia.com/openrtb/bids/{{.AccountID}}?src={{.SourceId}}&adapter=synacormedia"
 maintainer:
-  email: "eng-demand@synacor.com"
+  email: "eng-demand@imds.tv"
 capabilities:
   app:
     mediaTypes:
@@ -9,3 +11,5 @@ capabilities:
     mediaTypes:
       - banner
       - video
+userSync:
+  key: "imds"

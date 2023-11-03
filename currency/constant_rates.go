@@ -27,7 +27,7 @@ func (r *ConstantRates) GetRate(from string, to string) (float64, error) {
 	}
 
 	if fromUnit.String() != toUnit.String() {
-		return 0, ConversionRateNotFound{fromUnit.String(), toUnit.String()}
+		return 0, ConversionNotFoundError{FromCur: fromUnit.String(), ToCur: toUnit.String()}
 	}
 
 	return 1, nil

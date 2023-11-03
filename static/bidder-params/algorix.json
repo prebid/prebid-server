@@ -13,6 +13,19 @@
       "type": "string",
       "description": "Your Token",
       "minLength": 1
+    },
+    "placementId": {
+      "type": "string",
+      "description": "An ID which identifies this placement of the impression"
+    },
+    "appId": {
+      "type": "string",
+      "description": "An ID which identifies this app of the impression"
+    },
+    "region": {
+      "type": "string",
+      "enum": ["APAC", "USE", "EUC"],
+      "description": "Server region for PBS request, null for global, APAC for SG Region, USE for US Region, EUC for EU Region."
     }
   },
   "required": ["sid", "token"]

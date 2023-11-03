@@ -1,8 +1,8 @@
 # Makefile
 
-all: deps test build
+all: deps test build-modules build
 
-.PHONY: deps test build image
+.PHONY: deps test build-modules build image format
 
 # deps will clean out the vendor directory and use go mod for a fresh install
 deps:
@@ -15,8 +15,12 @@ test: deps
 ifeq "$(adapter)" ""
 	./validate.sh
 else
-	go test github.com/prebid/prebid-server/adapters/$(adapter) -bench=.
+	go test github.com/prebid/prebid-server/v2/adapters/$(adapter) -bench=.
 endif
+
+# build-modules generates modules/builder.go file which provides a list of all available modules
+build-modules:
+	go generate modules/modules.go
 
 # build will ensure all of our tests pass and then build the go binary
 build: test
@@ -25,3 +29,7 @@ build: test
 # image will build a docker image
 image:
 	docker build -t prebid-server .
+
+# format runs format
+format:
+	./scripts/format.sh -f true

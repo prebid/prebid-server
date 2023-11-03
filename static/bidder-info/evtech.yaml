@@ -1,0 +1,9 @@
+endpoint: "http://ads-pbs.direct.e-volution.ai/openrtb/{{.PublisherID}}?host={{.Host}}"
+aliasOf: "limelightDigital"
+userSync:
+  iframe:
+    url: https://tracker.direct.e-volution.ai/sync.html?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
+    userMacro: "{PLL_USER_ID}"
+  redirect:
+    url: https://tracker.direct.e-volution.ai/sync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
+    userMacro: "{PLL_USER_ID}"

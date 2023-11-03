@@ -11,7 +11,9 @@
         "ext": {
           "bidder": {
             "sid": "testSid",
-            "token": "testToken"
+            "token": "testToken",
+            "placementId": "testPlacementId",
+            "appId": "testAppId"
           }
         }
       }
@@ -20,7 +22,7 @@
   "httpcalls": [
     {
       "expectedRequest": {
-        "uri": "https://test.com?sid=testSid&token=testToken",
+        "uri": "https://xyz.test.com?sid=testSid&token=testToken",
         "body": {
           "id": "test-request-id",
           "imp": [
@@ -33,7 +35,9 @@
               "ext": {
                 "bidder": {
                   "sid": "testSid",
-                  "token": "testToken"
+                  "token": "testToken",
+                  "placementId": "testPlacementId",
+                  "appId": "testAppId"
                 }
               }
             }

@@ -1,0 +1,18 @@
+{
+  "description": "Bidder config for bidder is null - expected bidder fpd with no data",
+  "inputRequestData": {
+    "data": {},
+    "bidderconfig": [
+      {
+        "bidders": [
+          "appnexus"
+        ],
+        "config": null
+      }
+    ]
+  },
+  "outputRequestData": {},
+  "bidderConfigFPD": {
+    "appnexus": {}
+  }
+}

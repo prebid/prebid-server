@@ -2,11 +2,12 @@ package gdpr
 
 import (
 	"context"
-	"net/http"
 	"testing"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/go-gdpr/consentconstants"
+	"github.com/prebid/go-gdpr/vendorlist"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -42,61 +43,23 @@ func TestNewPermissions(t *testing.T) {
 			HostVendorID: tt.hostVendorID,
 		}
 		vendorIDs := map[openrtb_ext.BidderName]uint16{}
+		vendorListFetcher := func(ctx context.Context, specVersion, listVersion uint16) (vendorlist.VendorList, error) {
+			return nil, nil
+		}
 
-		perms := NewPermissions(context.Background(), config, vendorIDs, &http.Client{})
+		fakePurposeEnforcerBuilder := fakePurposeEnforcerBuilder{
+			purposeEnforcer: nil,
+		}.Builder
+		perms := NewPermissions(config, &tcf2Config{}, vendorIDs, vendorListFetcher, fakePurposeEnforcerBuilder, RequestInfo{})
 
 		assert.IsType(t, tt.wantType, perms, tt.description)
 	}
 }
 
-func TestSignalParse(t *testing.T) {
-	tests := []struct {
-		description string
-		rawSignal   string
-		wantSignal  Signal
-		wantError   bool
-	}{
-		{
-			description: "valid raw signal is 0",
-			rawSignal:   "0",
-			wantSignal:  SignalNo,
-			wantError:   false,
-		},
-		{
-			description: "Valid signal - raw signal is 1",
-			rawSignal:   "1",
-			wantSignal:  SignalYes,
-			wantError:   false,
-		},
-		{
-			description: "Valid signal - raw signal is empty",
-			rawSignal:   "",
-			wantSignal:  SignalAmbiguous,
-			wantError:   false,
-		},
-		{
-			description: "Invalid signal - raw signal is -1",
-			rawSignal:   "-1",
-			wantSignal:  SignalAmbiguous,
-			wantError:   true,
-		},
-		{
-			description: "Invalid signal - raw signal is abc",
-			rawSignal:   "abc",
-			wantSignal:  SignalAmbiguous,
-			wantError:   true,
-		},
-	}
+type fakePurposeEnforcerBuilder struct {
+	purposeEnforcer PurposeEnforcer
+}
 
-	for _, tt := range tests {
-		signal, err := SignalParse(tt.rawSignal)
-
-		assert.Equal(t, tt.wantSignal, signal, tt.description)
-
-		if tt.wantError {
-			assert.NotNil(t, err, tt.description)
-		} else {
-			assert.Nil(t, err, tt.description)
-		}
-	}
+func (fpeb fakePurposeEnforcerBuilder) Builder(consentconstants.Purpose, openrtb_ext.BidderName) PurposeEnforcer {
+	return fpeb.purposeEnforcer
 }

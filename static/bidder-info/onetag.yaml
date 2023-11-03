@@ -1,3 +1,6 @@
+endpoint: "https://prebid-server.onetag-sys.com/prebid-server/{{.PublisherID}}"
+openrtb:
+  version: 2.6
 maintainer:
   email: devops@onetag.com
 gvlVendorID: 241
@@ -12,3 +15,8 @@ capabilities:
       - banner
       - video
       - native
+userSync:
+  iframe:
+    url: "https://onetag-sys.com/usync/?redir={{.RedirectURL}}&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}"
+    userMacro: "${USER_TOKEN}"
+endpointCompression: "GZIP"

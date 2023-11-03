@@ -1,42 +1,37 @@
 package exchange
 
 import (
-	"encoding/json"
-
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/gdpr"
+	gpplib "github.com/prebid/go-gpp"
+	gppConstants "github.com/prebid/go-gpp/constants"
+	"github.com/prebid/prebid-server/v2/gdpr"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	gppPolicy "github.com/prebid/prebid-server/v2/privacy/gpp"
 )
 
-// ExtractGDPR will pull the gdpr flag from an openrtb request
-func extractGDPR(bidRequest *openrtb2.BidRequest) (gdpr.Signal, error) {
-	var re regsExt
-	var err error
-	if bidRequest.Regs != nil && bidRequest.Regs.Ext != nil {
-		err = json.Unmarshal(bidRequest.Regs.Ext, &re)
+// getGDPR will pull the gdpr flag from an openrtb request
+func getGDPR(req *openrtb_ext.RequestWrapper) (gdpr.Signal, error) {
+	if req.Regs != nil && len(req.Regs.GPPSID) > 0 {
+		if gppPolicy.IsSIDInList(req.Regs.GPPSID, gppConstants.SectionTCFEU2) {
+			return gdpr.SignalYes, nil
+		}
+		return gdpr.SignalNo, nil
 	}
-	if re.GDPR == nil || err != nil {
+	re, err := req.GetRegExt()
+	if re == nil || re.GetGDPR() == nil || err != nil {
 		return gdpr.SignalAmbiguous, err
 	}
-	return gdpr.Signal(*re.GDPR), nil
+	return gdpr.Signal(*re.GetGDPR()), nil
 }
 
-// ExtractConsent will pull the consent string from an openrtb request
-func extractConsent(bidRequest *openrtb2.BidRequest) (consent string, err error) {
-	var ue userExt
-	if bidRequest.User != nil && bidRequest.User.Ext != nil {
-		err = json.Unmarshal(bidRequest.User.Ext, &ue)
-	}
-	if err != nil {
+// getConsent will pull the consent string from an openrtb request
+func getConsent(req *openrtb_ext.RequestWrapper, gpp gpplib.GppContainer) (consent string, err error) {
+	if i := gppPolicy.IndexOfSID(gpp, gppConstants.SectionTCFEU2); i >= 0 {
+		consent = gpp.Sections[i].GetValue()
 		return
 	}
-	consent = ue.Consent
-	return
-}
-
-type userExt struct {
-	Consent string `json:"consent,omitempty"`
-}
-
-type regsExt struct {
-	GDPR *int `json:"gdpr,omitempty"`
+	ue, err := req.GetUserExt()
+	if ue == nil || ue.GetConsent() == nil || err != nil {
+		return
+	}
+	return *ue.GetConsent(), nil
 }

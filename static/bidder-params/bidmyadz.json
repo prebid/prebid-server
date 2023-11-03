@@ -1,0 +1,12 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "BidMyAdz Adapter Params",
+    "description": "A schema which validates params accepted by the BidMyAdz adapter",
+    "type": "object",
+    "properties": {
+      "placementId": {
+        "type": "string"
+      }
+    },
+    "required": ["placementId"]
+  }

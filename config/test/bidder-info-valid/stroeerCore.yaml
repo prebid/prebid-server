@@ -1,0 +1,31 @@
+maintainer:
+  email: "some-email@domain.com"
+gvlVendorID: 42
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  dooh:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  key: "foo"
+  default: "iframe"
+  iframe:
+    url: "https://foo.com/sync?mode=iframe&r={{.RedirectURL}}"
+    redirectUrl: "{{.ExternalURL}}/setuid/iframe"
+    externalUrl: "https://iframe.host"
+    userMacro: "%UID"
+  redirect:
+    url: "https://foo.com/sync?mode=redirect&r={{.RedirectURL}}"
+    redirectUrl: "{{.ExternalURL}}/setuid/redirect"
+    externalUrl: "https://redirect.host"
+    userMacro: "#UID"
+  supportCors: true
