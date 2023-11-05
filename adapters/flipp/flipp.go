@@ -21,7 +21,10 @@ const (
 	inlineDivName   = "inline"
 	flippBidder     = "flipp"
 	defaultCurrency = "USD"
+	fakeUuid        = "30470a14-2949-4110-abce-b62d57304ad5"
 )
+
+var uuidGenerator UUIDGenerator
 
 var (
 	count    int64 = 1
@@ -31,6 +34,30 @@ var (
 
 type adapter struct {
 	endpoint string
+}
+
+type UUIDGenerator interface {
+	Generate() (uuid.UUID, error)
+}
+
+type RealUUIDGenerator struct{}
+
+func (g *RealUUIDGenerator) Generate() (uuid.UUID, error) {
+	return uuid.NewV4()
+}
+
+type FakeUUIDGenerator struct{}
+
+func (g *FakeUUIDGenerator) Generate() (uuid.UUID, error) {
+	return uuid.FromStringOrNil(fakeUuid), nil
+}
+
+func NewUUIDGenerator(isTest bool) {
+	if isTest {
+		uuidGenerator = &FakeUUIDGenerator{}
+	} else {
+		uuidGenerator = &RealUUIDGenerator{}
+	}
 }
 
 // Builder builds a new instance of the Flipp adapter for the given bidder with the given config.
@@ -127,7 +154,8 @@ func (a *adapter) processImp(request *openrtb2.BidRequest, imp openrtb2.Imp) (*a
 	} else if flippExtParams.UserKey != "" && paramsUserKeyPermitted(request) {
 		userKey = flippExtParams.UserKey
 	} else {
-		uid, err := uuid.NewV4()
+
+		uid, err := uuidGenerator.Generate()
 		if err != nil {
 			return nil, fmt.Errorf("unable to generate user uuid. %v", err)
 		}
@@ -247,10 +275,10 @@ func paramsUserKeyPermitted(request *openrtb2.BidRequest) bool {
 	if request.User != nil && request.User.Consent != "" {
 		tcModel, err := iabtcfv2.Decode(request.User.Consent)
 		if err != nil {
-			fmt.Printf("%v", err)
 			return true
 		}
-		if !tcModel.IsPurposeAllowed(4) {
+		_, tcf4InScope := tcModel.CoreString.PurposesConsent[4]
+		if tcf4InScope && !tcModel.IsPurposeAllowed(4) {
 			return false
 		}
 	}
