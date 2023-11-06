@@ -1,15 +1,17 @@
 package flipp
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
 
-	"github.com/SirDataFR/iabtcfv2"
 	"github.com/buger/jsonparser"
 	"github.com/gofrs/uuid"
+	"github.com/prebid/go-gdpr/consentconstants"
+	"github.com/prebid/go-gdpr/vendorconsent"
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
@@ -252,18 +254,20 @@ func paramsUserKeyPermitted(request *openrtb2.BidRequest) bool {
 		}
 		if err := json.Unmarshal(request.Ext, &extData); err == nil {
 			if extData.TransmitEids != nil && !*extData.TransmitEids {
-				fmt.Printf("HEREEEEEEEEEE %s", request.Ext)
 				return false
 			}
 		}
 	}
 	if request.User != nil && request.User.Consent != "" {
-		tcModel, err := iabtcfv2.Decode(request.User.Consent)
+		data, err := base64.RawURLEncoding.DecodeString(request.User.Consent)
 		if err != nil {
 			return true
 		}
-		_, tcf4InScope := tcModel.CoreString.PurposesConsent[4]
-		if tcf4InScope && !tcModel.IsPurposeAllowed(4) {
+		consent, err := vendorconsent.Parse(data)
+		if err != nil {
+			return true
+		}
+		if !consent.PurposeAllowed(consentconstants.ContentSelectionDeliveryReporting) {
 			return false
 		}
 	}
