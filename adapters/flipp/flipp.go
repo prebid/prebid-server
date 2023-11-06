@@ -21,7 +21,6 @@ const (
 	inlineDivName   = "inline"
 	flippBidder     = "flipp"
 	defaultCurrency = "USD"
-	fakeUuid        = "30470a14-2949-4110-abce-b62d57304ad5"
 )
 
 var uuidGenerator UUIDGenerator
@@ -36,32 +35,17 @@ type adapter struct {
 	endpoint string
 }
 
-type UUIDGenerator interface {
-	Generate() (uuid.UUID, error)
+type UUIDGenerator struct {
+	Generate func() (uuid.UUID, error)
 }
 
-type RealUUIDGenerator struct{}
-
-func (g *RealUUIDGenerator) Generate() (uuid.UUID, error) {
+func Generate() (uuid.UUID, error) {
 	return uuid.NewV4()
-}
-
-type FakeUUIDGenerator struct{}
-
-func (g *FakeUUIDGenerator) Generate() (uuid.UUID, error) {
-	return uuid.FromStringOrNil(fakeUuid), nil
-}
-
-func NewUUIDGenerator(isTest bool) {
-	if isTest {
-		uuidGenerator = &FakeUUIDGenerator{}
-	} else {
-		uuidGenerator = &RealUUIDGenerator{}
-	}
 }
 
 // Builder builds a new instance of the Flipp adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	uuidGenerator.Generate = Generate
 	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
@@ -264,10 +248,11 @@ func paramsUserKeyPermitted(request *openrtb2.BidRequest) bool {
 	}
 	if request.Ext != nil {
 		var extData struct {
-			TransmitEids bool `json:"transmitEids"`
+			TransmitEids *bool `json:"transmitEids,omitempty"`
 		}
 		if err := json.Unmarshal(request.Ext, &extData); err == nil {
-			if !extData.TransmitEids {
+			if extData.TransmitEids != nil && !*extData.TransmitEids {
+				fmt.Printf("HEREEEEEEEEEE %s", request.Ext)
 				return false
 			}
 		}
