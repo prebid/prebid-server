@@ -123,7 +123,7 @@ func buildBidderRequest(adapter *adapter, encoded []byte) *adapters.RequestData 
 func (adapter *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var errs []error
 
-	if request == nil || response == nil || adapters.IsResponseStatusCodeNoContent(response) {
+	if adapters.IsResponseStatusCodeNoContent(response) {
 		return nil, nil
 	}
 

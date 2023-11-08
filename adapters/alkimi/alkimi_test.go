@@ -120,7 +120,9 @@ func TestMakeBidsShouldReturnEmptyListIfBidResponseIsNull(t *testing.T) {
 	// given
 	bidder, _ := buildBidder()
 	// when
-	bids, errs := bidder.MakeBids(&openrtb2.BidRequest{}, nil, nil)
+	bids, errs := bidder.MakeBids(&openrtb2.BidRequest{}, nil, &adapters.ResponseData{
+		StatusCode: 204,
+	})
 	// then
 	if len(errs) > 0 {
 		t.Fatalf("Failed to make bids: %v", errs)
@@ -134,7 +136,6 @@ func TestMakeBidsShouldReturnEmptyListIfBidResponseIsError(t *testing.T) {
 	// when
 	bids, errs := bidder.MakeBids(&openrtb2.BidRequest{}, nil, &adapters.ResponseData{
 		StatusCode: 500,
-		Body:       nil,
 	})
 	// then
 	assert.Len(t, errs, 1)
