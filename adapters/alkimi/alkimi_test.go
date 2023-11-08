@@ -128,6 +128,19 @@ func TestMakeBidsShouldReturnEmptyListIfBidResponseIsNull(t *testing.T) {
 	assert.Nil(t, bids)
 }
 
+func TestMakeBidsShouldReturnEmptyListIfBidResponseIsError(t *testing.T) {
+	// given
+	bidder, _ := buildBidder()
+	// when
+	bids, errs := bidder.MakeBids(&openrtb2.BidRequest{}, nil, &adapters.ResponseData{
+		StatusCode: 500,
+		Body:       nil,
+	})
+	// then
+	assert.Len(t, errs, 1)
+	assert.Nil(t, bids)
+}
+
 func TestMakeBidsShouldReturnBidWithResolvedMacros(t *testing.T) {
 	// given
 	bidder, _ := buildBidder()
