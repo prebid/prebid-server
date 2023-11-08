@@ -166,9 +166,6 @@ func (adapter *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *
 }
 
 func resolveMacros(bid *openrtb2.Bid) {
-	if bid == nil {
-		return
-	}
 	strPrice := strconv.FormatFloat(bid.Price, 'f', -1, 64)
 	bid.NURL = strings.Replace(bid.NURL, price_macro, strPrice, -1)
 	bid.AdM = strings.Replace(bid.AdM, price_macro, strPrice, -1)

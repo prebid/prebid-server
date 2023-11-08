@@ -203,6 +203,71 @@ func TestMakeBidsShouldReturnBidWithResolvedMacros(t *testing.T) {
 	assert.Equal(t, "adm:1", bids.Bids[0].Bid.AdM)
 }
 
+func TestMakeBidsShouldReturnBidForAllTypes(t *testing.T) {
+	// given
+	bidder, _ := buildBidder()
+	bid := openrtb2.Bid{
+		ImpID: "impId-1",
+		AdM:   "adm:${AUCTION_PRICE}",
+		NURL:  "nurl:${AUCTION_PRICE}",
+		Price: 1,
+	}
+	seatBid := openrtb2.SeatBid{Bid: []openrtb2.Bid{bid}}
+	resp := openrtb2.BidResponse{SeatBid: []openrtb2.SeatBid{seatBid}}
+	respJson, jsonErr := json.Marshal(resp)
+
+	request := openrtb2.BidRequest{
+		Imp: append(make([]openrtb2.Imp, 1), openrtb2.Imp{ID: "impId-1", Video: &openrtb2.Video{}}),
+	}
+	// when
+	bids, errs := bidder.MakeBids(&request, nil, &adapters.ResponseData{
+		StatusCode: 200,
+		Body:       respJson,
+	})
+	// then
+	if jsonErr != nil {
+		t.Fatalf("Failed to serialize test bid %v: %v", bid, jsonErr)
+	}
+	if len(errs) > 0 {
+		t.Fatalf("Failed to make bids: %v", errs)
+	}
+	assert.Len(t, bids.Bids, 1)
+
+	request := openrtb2.BidRequest{
+		Imp: append(make([]openrtb2.Imp, 1), openrtb2.Imp{ID: "impId-1", Audio: &openrtb2.Audio{}}),
+	}
+	// when
+	bids, errs := bidder.MakeBids(&request, nil, &adapters.ResponseData{
+		StatusCode: 200,
+		Body:       respJson,
+	})
+	// then
+	if jsonErr != nil {
+		t.Fatalf("Failed to serialize test bid %v: %v", bid, jsonErr)
+	}
+	if len(errs) > 0 {
+		t.Fatalf("Failed to make bids: %v", errs)
+	}
+	assert.Len(t, bids.Bids, 1)
+
+	request := openrtb2.BidRequest{
+		Imp: append(make([]openrtb2.Imp, 1), openrtb2.Imp{ID: "impId-1", Native: &openrtb2.Native{}}),
+	}
+	// when
+	bids, errs := bidder.MakeBids(&request, nil, &adapters.ResponseData{
+		StatusCode: 200,
+		Body:       respJson,
+	})
+	// then
+	if jsonErr != nil {
+		t.Fatalf("Failed to serialize test bid %v: %v", bid, jsonErr)
+	}
+	if len(errs) > 0 {
+		t.Fatalf("Failed to make bids: %v", errs)
+	}
+	assert.Len(t, bids.Bids, 1)
+}
+
 func buildBidder() (adapters.Bidder, error) {
 	return Builder(
 		openrtb_ext.BidderAlkimi,
