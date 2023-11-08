@@ -116,6 +116,30 @@ func TestMakeBidsShouldReturnErrorIfResponseBodyCouldNotBeParsed(t *testing.T) {
 	assert.Equal(t, "adm:1", bids.Bids[0].Bid.AdM)
 }
 
+func TestMakeBidsShouldReturnErrorIfResponseBodyContainsIncorrectImp(t *testing.T) {
+	// given
+	bidder, _ := buildBidder()
+	bid := openrtb2.Bid{
+		ImpID: "impId-1-incorrect",
+		AdM:   "adm:${AUCTION_PRICE}",
+		NURL:  "nurl:${AUCTION_PRICE}",
+		Price: 1,
+	}
+	sb := openrtb2.SeatBid{Bid: []openrtb2.Bid{bid}}
+	resp := openrtb2.BidResponse{SeatBid: []openrtb2.SeatBid{sb}}
+	respJson, jsonErr := json.Marshal(resp)
+	request := openrtb2.BidRequest{
+		Imp: append(make([]openrtb2.Imp, 1), openrtb2.Imp{ID: "impId-1", Banner: &openrtb2.Banner{}}),
+	}
+	// when
+	bids, errs := bidder.MakeBids(&request, nil, &adapters.ResponseData{
+		StatusCode: 200,
+		Body:       respJson,
+	})
+	// then
+	assert.Len(t, errs, 1)
+}
+
 func TestMakeBidsShouldReturnEmptyListIfBidResponseIsNull(t *testing.T) {
 	// given
 	bidder, _ := buildBidder()
