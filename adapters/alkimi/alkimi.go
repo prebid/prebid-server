@@ -137,7 +137,8 @@ func (adapter *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *
 		return nil, []error{err}
 	}
 
-	if len(bidResp.SeatBid) == 0 {
+	bidCount := len(bidResp.SeatBid)
+	if bidCount == 0 {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: "Empty SeatBid array",
 		}}
