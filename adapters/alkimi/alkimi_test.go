@@ -137,6 +137,10 @@ func TestMakeBidsShouldReturnErrorIfResponseBodyContainsIncorrectImp(t *testing.
 		Body:       respJson,
 	})
 	// then
+	if jsonErr != nil {
+		t.Fatalf("Failed to serialize test bid %v: %v", bid, jsonErr)
+	}
+	assert.Len(t, bids.Bids, 1)
 	assert.Len(t, errs, 1)
 }
 
