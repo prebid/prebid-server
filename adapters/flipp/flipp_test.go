@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/gofrs/uuid"
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters/adapterstest"
 	"github.com/prebid/prebid-server/v2/config"
@@ -14,15 +13,17 @@ import (
 
 const fakeUuid = "30470a14-2949-4110-abce-b62d57304ad5"
 
-func GenerateFakeUUID() (uuid.UUID, error) {
-	return uuid.FromStringOrNil(fakeUuid), nil
+type TestUUIDGenerator struct{}
+
+func (TestUUIDGenerator) Generate() (string, error) {
+	return fakeUuid, nil
 }
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderFlipp, config.Adapter{
 		Endpoint: "http://example.com/pserver"},
 		config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
-	uuidGenerator.Generate = GenerateFakeUUID
+	uuidGenerator = TestUUIDGenerator{}
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)

@@ -9,13 +9,13 @@ import (
 	"strings"
 
 	"github.com/buger/jsonparser"
-	"github.com/gofrs/uuid"
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/go-gdpr/vendorconsent"
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/uuidutil"
 )
 
 const (
@@ -25,7 +25,7 @@ const (
 	defaultCurrency = "USD"
 )
 
-var uuidGenerator UUIDGenerator
+var uuidGenerator uuidutil.UUIDGenerator
 
 var (
 	count    int64 = 1
@@ -37,17 +37,9 @@ type adapter struct {
 	endpoint string
 }
 
-type UUIDGenerator struct {
-	Generate func() (uuid.UUID, error)
-}
-
-func Generate() (uuid.UUID, error) {
-	return uuid.NewV4()
-}
-
 // Builder builds a new instance of the Flipp adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	uuidGenerator.Generate = Generate
+	uuidGenerator = uuidutil.UUIDRandomGenerator{}
 	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
@@ -145,7 +137,7 @@ func (a *adapter) processImp(request *openrtb2.BidRequest, imp openrtb2.Imp) (*a
 		if err != nil {
 			return nil, fmt.Errorf("unable to generate user uuid. %v", err)
 		}
-		userKey = uid.String()
+		userKey = uid
 	}
 
 	keywordsArray := strings.Split(request.Site.Keywords, ",")
