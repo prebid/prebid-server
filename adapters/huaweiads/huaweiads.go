@@ -989,10 +989,14 @@ func checkRespStatusCode(response *adapters.ResponseData) error {
 }
 
 func checkHuaweiAdsResponseRetcode(response huaweiAdsResponse) error {
-	if response.Retcode == 200 || response.Retcode == 204 || response.Retcode == 206 {
+	if response.Retcode == 200 || response.Retcode == 206 {
 		return nil
 	}
-
+	if response.Retcode == 204 {
+		return &errortypes.BadInput{
+			Message: fmt.Sprintf("HuaweiAdsResponse retcode: %d , reason: The request packet is correct, but no advertisement was found for this request.", response.Retcode),
+		}
+	}
 	if (response.Retcode < 600 && response.Retcode >= 400) || (response.Retcode < 300 && response.Retcode > 200) {
 		return &errortypes.BadInput{
 			Message: fmt.Sprintf("HuaweiAdsResponse retcode: %d , reason: %s", response.Retcode, response.Reason),
