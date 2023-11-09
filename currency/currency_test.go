@@ -131,7 +131,7 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 			assertRates: pbsRates,
 		},
 		{
-			name: "empty ConversionRates, nil pbsRates, false UsePBSRates. Default to constant rates",
+			name: "empty ConversionRates, nil pbsRates, false UsePBSRates. No conversion rates available, disable currency conversion",
 			args: args{
 				currencyConverter: setupMockRateConverter(pbsRates),
 				requestRates: &openrtb_ext.ExtRequestCurrency{
@@ -143,7 +143,7 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 		},
 
 		{
-			name: "empty ConversionRates, nil pbsRates, true UsePBSRates. Return default constant rates converter",
+			name: "empty ConversionRates, nil pbsRates, true UsePBSRates. No conversion rates available, disable currency conversion",
 			args: args{
 				currencyConverter: nil,
 				requestRates: &openrtb_ext.ExtRequestCurrency{
@@ -154,7 +154,7 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 			assertRates: nil,
 		},
 		{
-			name: "nil customRates, nil pbsRates, true UsePBSRates. Return default constant rates converter",
+			name: "nil customRates, nil pbsRates. No conversion rates available, disable currency conversion",
 			args: args{
 				currencyConverter: nil,
 				requestRates:      nil,
@@ -162,7 +162,7 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 			assertRates: nil,
 		},
 		{
-			name: "empty ConversionRates, valid pbsRates, true UsePBSRates. Because pbsRates cannot be used, disable currency conversion",
+			name: "empty ConversionRates, valid pbsRates, true UsePBSRates. Resulting rates will be identical to pbsRates",
 			args: args{
 				currencyConverter: setupMockRateConverter(pbsRates),
 				requestRates: &openrtb_ext.ExtRequestCurrency{
