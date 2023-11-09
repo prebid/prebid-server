@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"math"
 	"net/http"
 	"net/http/httptest"
@@ -573,9 +572,8 @@ func TestTwoBiddersDebugDisabledAndEnabled(t *testing.T) {
 }
 
 func TestOverrideWithCustomCurrency(t *testing.T) {
-
-	mockCurrencyClient := &fakeCurrencyRatesHttpClient{
-		responseBody: `{"dataAsOf":"2018-09-12","conversions":{"USD":{"MXN":10.00}}}`,
+	mockCurrencyClient := &currency.MockCurrencyRatesHttpClient{
+		ResponseBody: `{"dataAsOf":"2018-09-12","conversions":{"USD":{"MXN":10.00}}}`,
 	}
 	mockCurrencyConverter := currency.NewRateConverter(
 		mockCurrencyClient,
@@ -741,11 +739,11 @@ func TestOverrideWithCustomCurrency(t *testing.T) {
 }
 
 func TestAdapterCurrency(t *testing.T) {
-	fakeCurrencyClient := &fakeCurrencyRatesHttpClient{
-		responseBody: `{"dataAsOf":"2018-09-12","conversions":{"USD":{"MXN":10.00}}}`,
+	mockCurrencyClient := &currency.MockCurrencyRatesHttpClient{
+		ResponseBody: `{"dataAsOf":"2018-09-12","conversions":{"USD":{"MXN":10.00}}}`,
 	}
 	currencyConverter := currency.NewRateConverter(
-		fakeCurrencyClient,
+		mockCurrencyClient,
 		"currency.fake.com",
 		24*time.Hour,
 	)
@@ -817,12 +815,11 @@ func TestAdapterCurrency(t *testing.T) {
 }
 
 func TestFloorsSignalling(t *testing.T) {
-
-	fakeCurrencyClient := &fakeCurrencyRatesHttpClient{
-		responseBody: `{"dataAsOf":"2023-04-10","conversions":{"USD":{"MXN":10.00}}}`,
+	mockCurrencyClient := &currency.MockCurrencyRatesHttpClient{
+		ResponseBody: `{"dataAsOf":"2023-04-10","conversions":{"USD":{"MXN":10.00}}}`,
 	}
 	currencyConverter := currency.NewRateConverter(
-		fakeCurrencyClient,
+		mockCurrencyClient,
 		"currency.com",
 		24*time.Hour,
 	)
@@ -984,208 +981,6 @@ func TestFloorsSignalling(t *testing.T) {
 		}
 	}
 
-}
-func TestGetAuctionCurrencyRates(t *testing.T) {
-
-	pbsRates := map[string]map[string]float64{
-		"MXN": {
-			"USD": 20.13,
-			"EUR": 27.82,
-			"JPY": 5.09, // "MXN" to "JPY" rate not found in customRates
-		},
-	}
-
-	customRates := map[string]map[string]float64{
-		"MXN": {
-			"USD": 25.00, // different rate than in pbsRates
-			"EUR": 27.82, // same as in pbsRates
-			"GBP": 31.12, // not found in pbsRates at all
-		},
-	}
-
-	expectedRateEngineRates := map[string]map[string]float64{
-		"MXN": {
-			"USD": 25.00, // rates engine will prioritize the value found in custom rates
-			"EUR": 27.82, // same value in both the engine reads the custom entry first
-			"JPY": 5.09,  // the engine will find it in the pbsRates conversions
-			"GBP": 31.12, // the engine will find it in the custom conversions
-		},
-	}
-
-	boolTrue := true
-	boolFalse := false
-
-	type testInput struct {
-		pbsRates       map[string]map[string]float64
-		bidExtCurrency *openrtb_ext.ExtRequestCurrency
-	}
-	type testOutput struct {
-		constantRates  bool
-		resultingRates map[string]map[string]float64
-	}
-	testCases := []struct {
-		desc     string
-		given    testInput
-		expected testOutput
-	}{
-		{
-			"valid pbsRates, valid ConversionRates, false UsePBSRates. Resulting rates identical to customRates",
-			testInput{
-				pbsRates: pbsRates,
-				bidExtCurrency: &openrtb_ext.ExtRequestCurrency{
-					ConversionRates: customRates,
-					UsePBSRates:     &boolFalse,
-				},
-			},
-			testOutput{
-				resultingRates: customRates,
-			},
-		},
-		{
-			"valid pbsRates, valid ConversionRates, true UsePBSRates. Resulting rates are a mix but customRates gets priority",
-			testInput{
-				pbsRates: pbsRates,
-				bidExtCurrency: &openrtb_ext.ExtRequestCurrency{
-					ConversionRates: customRates,
-					UsePBSRates:     &boolTrue,
-				},
-			},
-			testOutput{
-				resultingRates: expectedRateEngineRates,
-			},
-		},
-		{
-			"nil pbsRates, valid ConversionRates, false UsePBSRates. Resulting rates identical to customRates",
-			testInput{
-				pbsRates: nil,
-				bidExtCurrency: &openrtb_ext.ExtRequestCurrency{
-					ConversionRates: customRates,
-					UsePBSRates:     &boolFalse,
-				},
-			},
-			testOutput{
-				resultingRates: customRates,
-			},
-		},
-		{
-			"nil pbsRates, valid ConversionRates, true UsePBSRates. Resulting rates identical to customRates",
-			testInput{
-				pbsRates: nil,
-				bidExtCurrency: &openrtb_ext.ExtRequestCurrency{
-					ConversionRates: customRates,
-					UsePBSRates:     &boolTrue,
-				},
-			},
-			testOutput{
-				resultingRates: customRates,
-			},
-		},
-		{
-			"valid pbsRates, empty ConversionRates, false UsePBSRates. Because pbsRates cannot be used, default to constant rates",
-			testInput{
-				pbsRates: pbsRates,
-				bidExtCurrency: &openrtb_ext.ExtRequestCurrency{
-					// ConversionRates inCustomRates not initialized makes for a zero-length map
-					UsePBSRates: &boolFalse,
-				},
-			},
-			testOutput{
-				constantRates: true,
-			},
-		},
-		{
-			"valid pbsRates, nil ConversionRates, UsePBSRates defaults to true. Resulting rates will be identical to pbsRates",
-			testInput{
-				pbsRates:       pbsRates,
-				bidExtCurrency: nil,
-			},
-			testOutput{
-				resultingRates: pbsRates,
-			},
-		},
-		{
-			"nil pbsRates, empty ConversionRates, false UsePBSRates. Default to constant rates",
-			testInput{
-				pbsRates: nil,
-				bidExtCurrency: &openrtb_ext.ExtRequestCurrency{
-					// ConversionRates inCustomRates not initialized makes for a zero-length map
-					UsePBSRates: &boolFalse,
-				},
-			},
-			testOutput{
-				constantRates: true,
-			},
-		},
-		{
-			"customRates empty, UsePBSRates set to true, pbsRates are nil. Return default constant rates converter",
-			testInput{
-				pbsRates: nil,
-				bidExtCurrency: &openrtb_ext.ExtRequestCurrency{
-					// ConversionRates inCustomRates not initialized makes for a zero-length map
-					UsePBSRates: &boolTrue,
-				},
-			},
-			testOutput{
-				constantRates: true,
-			},
-		},
-		{
-			"nil customRates, nil pbsRates, UsePBSRates defaults to true. Return default constant rates converter",
-			testInput{
-				pbsRates:       nil,
-				bidExtCurrency: nil,
-			},
-			testOutput{
-				constantRates: true,
-			},
-		},
-	}
-
-	for _, tc := range testCases {
-
-		// Test setup:
-		jsonPbsRates, err := jsonutil.Marshal(tc.given.pbsRates)
-		if err != nil {
-			t.Fatalf("Failed to marshal PBS rates: %v", err)
-		}
-
-		// Init mock currency conversion service
-		mockCurrencyClient := &fakeCurrencyRatesHttpClient{
-			responseBody: `{"dataAsOf":"2018-09-12","conversions":` + string(jsonPbsRates) + `}`,
-		}
-		mockCurrencyConverter := currency.NewRateConverter(
-			mockCurrencyClient,
-			"currency.fake.com",
-			24*time.Hour,
-		)
-		mockCurrencyConverter.Run()
-
-		e := new(exchange)
-		e.currencyConverter = mockCurrencyConverter
-
-		// Run test
-		auctionRates := e.getAuctionCurrencyRates(tc.given.bidExtCurrency)
-
-		// When fromCurrency and toCurrency are the same, a rate of 1.00 is always expected
-		rate, err := auctionRates.GetRate("USD", "USD")
-		assert.NoError(t, err, tc.desc)
-		assert.Equal(t, float64(1), rate, tc.desc)
-
-		// If we expect an error, assert we have one along with a conversion rate of zero
-		if tc.expected.constantRates {
-			rate, err := auctionRates.GetRate("USD", "MXN")
-			assert.Error(t, err, tc.desc)
-			assert.Equal(t, float64(0), rate, tc.desc)
-		} else {
-			for fromCurrency, rates := range tc.expected.resultingRates {
-				for toCurrency, expectedRate := range rates {
-					actualRate, err := auctionRates.GetRate(fromCurrency, toCurrency)
-					assert.NoError(t, err, tc.desc)
-					assert.Equal(t, expectedRate, actualRate, tc.desc)
-				}
-			}
-		}
-	}
 }
 
 func TestReturnCreativeEndToEnd(t *testing.T) {
@@ -5456,19 +5251,6 @@ type nilCategoryFetcher struct{}
 
 func (nilCategoryFetcher) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {
 	return "", nil
-}
-
-// fakeCurrencyRatesHttpClient is a simple http client mock returning a constant response body
-type fakeCurrencyRatesHttpClient struct {
-	responseBody string
-}
-
-func (m *fakeCurrencyRatesHttpClient) Do(req *http.Request) (*http.Response, error) {
-	return &http.Response{
-		Status:     "200 OK",
-		StatusCode: http.StatusOK,
-		Body:       io.NopCloser(strings.NewReader(m.responseBody)),
-	}, nil
 }
 
 type mockBidder struct {

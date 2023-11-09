@@ -14,6 +14,7 @@ func GetAuctionCurrencyRates(currencyConverter *RateConverter, requestRates *ope
 		return currencyConverter.Rates()
 	}
 
+	// currencyConverter will never be nil, refer main.serve(), adding this check for future usecases
 	if currencyConverter == nil {
 		return NewRates(requestRates.ConversionRates)
 	}
