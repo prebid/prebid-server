@@ -546,6 +546,9 @@ func getNativeFormat(adslot30 *adslot30, openRTBImp *openrtb2.Imp) error {
 
 	//number of the requested image size
 	for _, asset := range nativePayload.Assets {
+		if numFormat > 1 {
+			break
+		}
 		if asset.Img != nil {
 			if asset.Img.Type == native1.ImageAssetTypeMain {
 				numFormat++
@@ -580,7 +583,6 @@ func getNativeFormat(adslot30 *adslot30, openRTBImp *openrtb2.Imp) error {
 			}
 		}
 		adslot30.Format = formats
-		continue
 	}
 	detailedCreativeTypeList = append(detailedCreativeTypeList, "901", "905")
 	adslot30.DetailedCreativeTypeList = detailedCreativeTypeList
@@ -589,14 +591,18 @@ func getNativeFormat(adslot30 *adslot30, openRTBImp *openrtb2.Imp) error {
 
 // filter popular size by range or ratio to append format array
 func filterPopularSizes(sizes []map[string]int64, width int64, height int64, byWhat string) []map[string]int64 {
-	ratio := float64(width) / float64(height)
+
 	filtered := []map[string]int64{}
 	for _, size := range sizes {
 		w := size["w"]
 		h := size["h"]
-		diff := math.Abs(float64(w)/float64(h) - ratio)
-		if byWhat == "ratio" && diff <= 0.3 {
-			filtered = append(filtered, size)
+
+		if byWhat == "ratio" {
+			ratio := float64(width) / float64(height)
+			diff := math.Abs(float64(w)/float64(h) - ratio)
+			if diff <= 0.3 {
+				filtered = append(filtered, size)
+			}
 		}
 		if byWhat == "range" && w > width && h > height {
 			filtered = append(filtered, size)
