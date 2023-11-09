@@ -561,57 +561,78 @@ func validateSyncer(bidderInfo BidderInfo) error {
 }
 
 func applyBidderInfoConfigOverrides(configBidderInfos BidderInfos, fsBidderInfos BidderInfos, normalizeBidderName func(string) (openrtb_ext.BidderName, bool)) (BidderInfos, error) {
-	for bidderName, bidderInfo := range configBidderInfos {
-		normalizedBidderName, bidderNameExists := normalizeBidderName(bidderName)
-		if !bidderNameExists {
+	mergedBidderInfos := make(map[string]BidderInfo, len(fsBidderInfos))
+
+	for bidderName, configBidderInfo := range configBidderInfos {
+		normalizedBidderName, exists := normalizeBidderName(bidderName)
+		if !exists {
 			return nil, fmt.Errorf("error setting configuration for bidder %s: unknown bidder", bidderName)
 		}
-		if fsBidderCfg, exists := fsBidderInfos[string(normalizedBidderName)]; exists {
-			bidderInfo.Syncer = bidderInfo.Syncer.Override(fsBidderCfg.Syncer)
-
-			if bidderInfo.Endpoint == "" && len(fsBidderCfg.Endpoint) > 0 {
-				bidderInfo.Endpoint = fsBidderCfg.Endpoint
-			}
-			if bidderInfo.ExtraAdapterInfo == "" && len(fsBidderCfg.ExtraAdapterInfo) > 0 {
-				bidderInfo.ExtraAdapterInfo = fsBidderCfg.ExtraAdapterInfo
-			}
-			if bidderInfo.Maintainer == nil && fsBidderCfg.Maintainer != nil {
-				bidderInfo.Maintainer = fsBidderCfg.Maintainer
-			}
-			if bidderInfo.Capabilities == nil && fsBidderCfg.Capabilities != nil {
-				bidderInfo.Capabilities = fsBidderCfg.Capabilities
-			}
-			if bidderInfo.Debug == nil && fsBidderCfg.Debug != nil {
-				bidderInfo.Debug = fsBidderCfg.Debug
-			}
-			if bidderInfo.GVLVendorID == 0 && fsBidderCfg.GVLVendorID > 0 {
-				bidderInfo.GVLVendorID = fsBidderCfg.GVLVendorID
-			}
-			if bidderInfo.XAPI.Username == "" && fsBidderCfg.XAPI.Username != "" {
-				bidderInfo.XAPI.Username = fsBidderCfg.XAPI.Username
-			}
-			if bidderInfo.XAPI.Password == "" && fsBidderCfg.XAPI.Password != "" {
-				bidderInfo.XAPI.Password = fsBidderCfg.XAPI.Password
-			}
-			if bidderInfo.XAPI.Tracker == "" && fsBidderCfg.XAPI.Tracker != "" {
-				bidderInfo.XAPI.Tracker = fsBidderCfg.XAPI.Tracker
-			}
-			if bidderInfo.PlatformID == "" && fsBidderCfg.PlatformID != "" {
-				bidderInfo.PlatformID = fsBidderCfg.PlatformID
-			}
-			if bidderInfo.AppSecret == "" && fsBidderCfg.AppSecret != "" {
-				bidderInfo.AppSecret = fsBidderCfg.AppSecret
-			}
-			if bidderInfo.EndpointCompression == "" && fsBidderCfg.EndpointCompression != "" {
-				bidderInfo.EndpointCompression = fsBidderCfg.EndpointCompression
-			}
-
-			fsBidderInfos[string(normalizedBidderName)] = bidderInfo
-		} else {
+		fsBidderInfo, exists := fsBidderInfos[string(normalizedBidderName)]
+		if !exists {
 			return nil, fmt.Errorf("error finding configuration for bidder %s: unknown bidder", bidderName)
 		}
+
+		mergedBidderInfo := fsBidderInfo
+		mergedBidderInfo.Syncer = configBidderInfo.Syncer.Override(fsBidderInfo.Syncer)
+		if len(configBidderInfo.Endpoint) > 0 {
+			mergedBidderInfo.Endpoint = configBidderInfo.Endpoint
+		}
+		if len(configBidderInfo.ExtraAdapterInfo) > 0 {
+			mergedBidderInfo.ExtraAdapterInfo = configBidderInfo.ExtraAdapterInfo
+		}
+		if configBidderInfo.Maintainer != nil {
+			mergedBidderInfo.Maintainer = configBidderInfo.Maintainer
+		}
+		if configBidderInfo.Capabilities != nil {
+			mergedBidderInfo.Capabilities = configBidderInfo.Capabilities
+		}
+		if configBidderInfo.Debug != nil {
+			mergedBidderInfo.Debug = configBidderInfo.Debug
+		}
+		if configBidderInfo.GVLVendorID > 0 {
+			mergedBidderInfo.GVLVendorID = configBidderInfo.GVLVendorID
+		}
+		if configBidderInfo.XAPI.Username != "" {
+			mergedBidderInfo.XAPI.Username = configBidderInfo.XAPI.Username
+		}
+		if configBidderInfo.XAPI.Password != "" {
+			mergedBidderInfo.XAPI.Password = configBidderInfo.XAPI.Password
+		}
+		if configBidderInfo.XAPI.Tracker != "" {
+			mergedBidderInfo.XAPI.Tracker = configBidderInfo.XAPI.Tracker
+		}
+		if configBidderInfo.PlatformID != "" {
+			mergedBidderInfo.PlatformID = configBidderInfo.PlatformID
+		}
+		if configBidderInfo.AppSecret != "" {
+			mergedBidderInfo.AppSecret = configBidderInfo.AppSecret
+		}
+		if configBidderInfo.Disabled == true {
+			mergedBidderInfo.Disabled = true
+		}
+		if configBidderInfo.ModifyingVastXmlAllowed == true {
+			mergedBidderInfo.ModifyingVastXmlAllowed = true
+		}
+		if configBidderInfo.Experiment.AdsCert.Enabled == true {
+			mergedBidderInfo.Experiment.AdsCert.Enabled = true
+		}
+		if configBidderInfo.EndpointCompression != "" {
+			mergedBidderInfo.EndpointCompression = configBidderInfo.EndpointCompression
+		}
+		if configBidderInfo.OpenRTB != nil {
+			mergedBidderInfo.OpenRTB = configBidderInfo.OpenRTB
+		}
+
+		mergedBidderInfos[string(normalizedBidderName)] = mergedBidderInfo
 	}
-	return fsBidderInfos, nil
+	for bidderName, fsBidderInfo := range fsBidderInfos {
+		if _, exists := mergedBidderInfos[bidderName]; !exists {
+			mergedBidderInfos[bidderName] = fsBidderInfo
+		}
+	}
+
+	return mergedBidderInfos, nil
 }
 
 // Override returns a new Syncer object where values in the original are replaced by non-empty/non-default

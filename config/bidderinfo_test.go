@@ -1649,6 +1649,18 @@ func TestApplyBidderInfoConfigOverrides(t *testing.T) {
 			givenConfigBidderInfos: BidderInfos{"a": {EndpointCompression: "LZ77", Syncer: &Syncer{Key: "override"}}},
 			expectedBidderInfos:    BidderInfos{"a": {EndpointCompression: "LZ77", Syncer: &Syncer{Key: "override"}}},
 		},
+		{
+			description:            "Don't override AliasOf",
+			givenFsBidderInfos:     BidderInfos{"a": {AliasOf: "Alias1"}},
+			givenConfigBidderInfos: BidderInfos{"a": {}},
+			expectedBidderInfos:    BidderInfos{"a": {AliasOf: "Alias1"}},
+		},
+		{
+			description:            "Attempt override AliasOf but ignored",
+			givenFsBidderInfos:     BidderInfos{"a": {AliasOf: "Alias1"}},
+			givenConfigBidderInfos: BidderInfos{"a": {AliasOf: "Alias2"}},
+			expectedBidderInfos:    BidderInfos{"a": {AliasOf: "Alias1"}},
+		},
 	}
 	for _, test := range testCases {
 		bidderInfos, resultErr := applyBidderInfoConfigOverrides(test.givenConfigBidderInfos, test.givenFsBidderInfos, mockNormalizeBidderName)
