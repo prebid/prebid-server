@@ -123,7 +123,7 @@ func buildBidderRequest(adapter *adapter, encoded []byte) *adapters.RequestData 
 func (adapter *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var errs []error
 
-	if request == nil || response == nil || adapters.IsResponseStatusCodeNoContent(response) {
+	if adapters.IsResponseStatusCodeNoContent(response) {
 		return nil, nil
 	}
 
@@ -138,35 +138,34 @@ func (adapter *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *
 	}
 
 	bidCount := len(bidResp.SeatBid)
-	if bidCount > 0 {
-		bidResponse := adapters.NewBidderResponseWithBidsCapacity(bidCount)
-		for _, seatBid := range bidResp.SeatBid {
-			for _, bid := range seatBid.Bid {
-				copyBid := bid
-				resolveMacros(&copyBid)
-				impId := copyBid.ImpID
-				imp := request.Imp
-				bidType, err := getMediaTypeForImp(impId, imp)
-				if err != nil {
-					errs = append(errs, err)
-				}
-				bidderBid := &adapters.TypedBid{
-					Bid:     &copyBid,
-					BidType: bidType,
-					Seat:    "alkimi",
-				}
-				bidResponse.Bids = append(bidResponse.Bids, bidderBid)
-			}
-		}
-		return bidResponse, errs
+	if bidCount == 0 {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: "Empty SeatBid array",
+		}}
 	}
-	return nil, nil
+
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(bidCount)
+	for _, seatBid := range bidResp.SeatBid {
+		for _, bid := range seatBid.Bid {
+			copyBid := bid
+			resolveMacros(&copyBid)
+			impId := copyBid.ImpID
+			imp := request.Imp
+			bidType, err := getMediaTypeForImp(impId, imp)
+			if err != nil {
+				errs = append(errs, err)
+			}
+			bidderBid := &adapters.TypedBid{
+				Bid:     &copyBid,
+				BidType: bidType,
+			}
+			bidResponse.Bids = append(bidResponse.Bids, bidderBid)
+		}
+	}
+	return bidResponse, errs
 }
 
 func resolveMacros(bid *openrtb2.Bid) {
-	if bid == nil {
-		return
-	}
 	strPrice := strconv.FormatFloat(bid.Price, 'f', -1, 64)
 	bid.NURL = strings.Replace(bid.NURL, price_macro, strPrice, -1)
 	bid.AdM = strings.Replace(bid.AdM, price_macro, strPrice, -1)
