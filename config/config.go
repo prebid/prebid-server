@@ -758,7 +758,11 @@ func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName func(strin
 	// Migrate combo stored request config to separate stored_reqs and amp stored_reqs configs.
 	resolvedStoredRequestsConfig(&c)
 
-	mergedBidderInfos, err := applyBidderInfoConfigOverrides(c.BidderInfos, bidderInfos, normalizeBidderName)
+	configBidderInfosWithNillableFields, err := setConfigBidderInfoNillableFields(v, c.BidderInfos)
+	if err != nil {
+		return nil, err
+	}
+	mergedBidderInfos, err := applyBidderInfoConfigOverrides(configBidderInfosWithNillableFields, bidderInfos, normalizeBidderName)
 	if err != nil {
 		return nil, err
 	}
@@ -771,6 +775,31 @@ func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName func(strin
 	}
 
 	return &c, nil
+}
+
+type bidderInfoNillableFields struct {
+	Disabled                *bool `yaml:"disabled" mapstructure:"disabled"`
+	ModifyingVastXmlAllowed *bool `yaml:"modifyingVastXmlAllowed" mapstructure:"modifyingVastXmlAllowed"`
+}
+type nillableFieldBidderInfos map[string]nillableFieldBidderInfo
+type nillableFieldBidderInfo struct {
+	nillableFields bidderInfoNillableFields
+	bidderInfo     BidderInfo
+}
+
+func setConfigBidderInfoNillableFields(v *viper.Viper, bidderInfos BidderInfos) (nillableFieldBidderInfos, error) {
+	infos := make(nillableFieldBidderInfos, len(bidderInfos))
+
+	for bidderName, bidderInfo := range bidderInfos {
+		info := nillableFieldBidderInfo{bidderInfo: bidderInfo}
+
+		key := "adapters." + bidderName
+		if err := v.UnmarshalKey(key, &info.nillableFields); err != nil {
+			return nil, fmt.Errorf("viper failed to unmarshal bidder config: %v", err)
+		}
+		infos[bidderName] = info
+	}
+	return infos, nil
 }
 
 // MarshalAccountDefaults compiles AccountDefaults into the JSON format used for merge patch

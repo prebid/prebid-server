@@ -560,7 +560,7 @@ func validateSyncer(bidderInfo BidderInfo) error {
 	return nil
 }
 
-func applyBidderInfoConfigOverrides(configBidderInfos BidderInfos, fsBidderInfos BidderInfos, normalizeBidderName func(string) (openrtb_ext.BidderName, bool)) (BidderInfos, error) {
+func applyBidderInfoConfigOverrides(configBidderInfos nillableFieldBidderInfos, fsBidderInfos BidderInfos, normalizeBidderName func(string) (openrtb_ext.BidderName, bool)) (BidderInfos, error) {
 	mergedBidderInfos := make(map[string]BidderInfo, len(fsBidderInfos))
 
 	for bidderName, configBidderInfo := range configBidderInfos {
@@ -574,54 +574,54 @@ func applyBidderInfoConfigOverrides(configBidderInfos BidderInfos, fsBidderInfos
 		}
 
 		mergedBidderInfo := fsBidderInfo
-		mergedBidderInfo.Syncer = configBidderInfo.Syncer.Override(fsBidderInfo.Syncer)
-		if len(configBidderInfo.Endpoint) > 0 {
-			mergedBidderInfo.Endpoint = configBidderInfo.Endpoint
+		mergedBidderInfo.Syncer = configBidderInfo.bidderInfo.Syncer.Override(fsBidderInfo.Syncer)
+		if len(configBidderInfo.bidderInfo.Endpoint) > 0 {
+			mergedBidderInfo.Endpoint = configBidderInfo.bidderInfo.Endpoint
 		}
-		if len(configBidderInfo.ExtraAdapterInfo) > 0 {
-			mergedBidderInfo.ExtraAdapterInfo = configBidderInfo.ExtraAdapterInfo
+		if len(configBidderInfo.bidderInfo.ExtraAdapterInfo) > 0 {
+			mergedBidderInfo.ExtraAdapterInfo = configBidderInfo.bidderInfo.ExtraAdapterInfo
 		}
-		if configBidderInfo.Maintainer != nil {
-			mergedBidderInfo.Maintainer = configBidderInfo.Maintainer
+		if configBidderInfo.bidderInfo.Maintainer != nil {
+			mergedBidderInfo.Maintainer = configBidderInfo.bidderInfo.Maintainer
 		}
-		if configBidderInfo.Capabilities != nil {
-			mergedBidderInfo.Capabilities = configBidderInfo.Capabilities
+		if configBidderInfo.bidderInfo.Capabilities != nil {
+			mergedBidderInfo.Capabilities = configBidderInfo.bidderInfo.Capabilities
 		}
-		if configBidderInfo.Debug != nil {
-			mergedBidderInfo.Debug = configBidderInfo.Debug
+		if configBidderInfo.bidderInfo.Debug != nil {
+			mergedBidderInfo.Debug = configBidderInfo.bidderInfo.Debug
 		}
-		if configBidderInfo.GVLVendorID > 0 {
-			mergedBidderInfo.GVLVendorID = configBidderInfo.GVLVendorID
+		if configBidderInfo.bidderInfo.GVLVendorID > 0 {
+			mergedBidderInfo.GVLVendorID = configBidderInfo.bidderInfo.GVLVendorID
 		}
-		if configBidderInfo.XAPI.Username != "" {
-			mergedBidderInfo.XAPI.Username = configBidderInfo.XAPI.Username
+		if configBidderInfo.bidderInfo.XAPI.Username != "" {
+			mergedBidderInfo.XAPI.Username = configBidderInfo.bidderInfo.XAPI.Username
 		}
-		if configBidderInfo.XAPI.Password != "" {
-			mergedBidderInfo.XAPI.Password = configBidderInfo.XAPI.Password
+		if configBidderInfo.bidderInfo.XAPI.Password != "" {
+			mergedBidderInfo.XAPI.Password = configBidderInfo.bidderInfo.XAPI.Password
 		}
-		if configBidderInfo.XAPI.Tracker != "" {
-			mergedBidderInfo.XAPI.Tracker = configBidderInfo.XAPI.Tracker
+		if configBidderInfo.bidderInfo.XAPI.Tracker != "" {
+			mergedBidderInfo.XAPI.Tracker = configBidderInfo.bidderInfo.XAPI.Tracker
 		}
-		if configBidderInfo.PlatformID != "" {
-			mergedBidderInfo.PlatformID = configBidderInfo.PlatformID
+		if configBidderInfo.bidderInfo.PlatformID != "" {
+			mergedBidderInfo.PlatformID = configBidderInfo.bidderInfo.PlatformID
 		}
-		if configBidderInfo.AppSecret != "" {
-			mergedBidderInfo.AppSecret = configBidderInfo.AppSecret
+		if configBidderInfo.bidderInfo.AppSecret != "" {
+			mergedBidderInfo.AppSecret = configBidderInfo.bidderInfo.AppSecret
 		}
-		if configBidderInfo.Disabled == true {
-			mergedBidderInfo.Disabled = true
+		if configBidderInfo.nillableFields.Disabled != nil {
+			mergedBidderInfo.Disabled = configBidderInfo.bidderInfo.Disabled
 		}
-		if configBidderInfo.ModifyingVastXmlAllowed == true {
-			mergedBidderInfo.ModifyingVastXmlAllowed = true
+		if configBidderInfo.nillableFields.ModifyingVastXmlAllowed != nil {
+			mergedBidderInfo.ModifyingVastXmlAllowed = configBidderInfo.bidderInfo.ModifyingVastXmlAllowed
 		}
-		if configBidderInfo.Experiment.AdsCert.Enabled == true {
+		if configBidderInfo.bidderInfo.Experiment.AdsCert.Enabled == true {
 			mergedBidderInfo.Experiment.AdsCert.Enabled = true
 		}
-		if configBidderInfo.EndpointCompression != "" {
-			mergedBidderInfo.EndpointCompression = configBidderInfo.EndpointCompression
+		if configBidderInfo.bidderInfo.EndpointCompression != "" {
+			mergedBidderInfo.EndpointCompression = configBidderInfo.bidderInfo.EndpointCompression
 		}
-		if configBidderInfo.OpenRTB != nil {
-			mergedBidderInfo.OpenRTB = configBidderInfo.OpenRTB
+		if configBidderInfo.bidderInfo.OpenRTB != nil {
+			mergedBidderInfo.OpenRTB = configBidderInfo.bidderInfo.OpenRTB
 		}
 
 		mergedBidderInfos[string(normalizedBidderName)] = mergedBidderInfo
