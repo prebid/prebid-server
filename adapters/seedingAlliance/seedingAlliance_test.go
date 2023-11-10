@@ -163,7 +163,7 @@ func TestAddTagID(t *testing.T) {
 
 		ortbImp := openrtb2.Imp{Ext: extBidder}
 
-		if err := addTagID(&ortbImp); err != nil {
+		if _, err := getExtInfo(&ortbImp); err != nil {
 			if test.wantErr {
 				continue
 			}
