@@ -246,20 +246,6 @@ func TestMakeBidsShouldReturnBidForAllTypes(t *testing.T) {
 		t.Fatalf("Failed to make bids: %v", errs)
 	}
 	assert.Len(t, bids.Bids, 1)
-
-	request = openrtb2.BidRequest{
-		Imp: append(make([]openrtb2.Imp, 1), openrtb2.Imp{ID: "impId-1", Native: &openrtb2.Native{}}),
-	}
-	// when
-	bids, errs = bidder.MakeBids(&request, nil, &adapters.ResponseData{
-		StatusCode: 200,
-		Body:       respJson,
-	})
-	// then
-	if len(errs) > 0 {
-		t.Fatalf("Failed to make bids: %v", errs)
-	}
-	assert.Len(t, bids.Bids, 1)
 }
 
 func buildBidder() (adapters.Bidder, error) {

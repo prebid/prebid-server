@@ -154,6 +154,7 @@ func (adapter *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *
 			bidType, err := getMediaTypeForImp(impId, imp)
 			if err != nil {
 				errs = append(errs, err)
+				continue
 			}
 			bidderBid := &adapters.TypedBid{
 				Bid:     &copyBid,
@@ -183,12 +184,9 @@ func getMediaTypeForImp(impId string, imps []openrtb2.Imp) (openrtb_ext.BidType,
 			if imp.Audio != nil {
 				return openrtb_ext.BidTypeAudio, nil
 			}
-			if imp.Native != nil {
-				return openrtb_ext.BidTypeNative, nil
-			}
 		}
 	}
-	return openrtb_ext.BidTypeBanner, &errortypes.BadInput{
+	return "", &errortypes.BadInput{
 		Message: fmt.Sprintf("Failed to find imp \"%s\"", impId),
 	}
 }
