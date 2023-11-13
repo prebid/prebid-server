@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -1291,6 +1292,155 @@ func TestSpecialFeature1VendorExceptionMap(t *testing.T) {
 
 		assert.Equal(t, tt.wantVendorExceptions, cfg.GDPR.TCF2.SpecialFeature1.VendorExceptions, tt.description)
 		assert.Equal(t, tt.wantVendorExceptionsMap, cfg.GDPR.TCF2.SpecialFeature1.VendorExceptionMap, tt.description)
+	}
+}
+
+func TestSetConfigBidderInfoNillableFields(t *testing.T) {
+	falseValue := false
+	trueValue := true
+
+	bidder1ConfigFalses := []byte(`
+    adapters:
+      bidder1:
+        disabled: false
+        modifyingVastXmlAllowed: false`)
+	bidder1ConfigTrues := []byte(`
+    adapters:
+      bidder1:
+        disabled: true
+        modifyingVastXmlAllowed: true`)
+	bidder1ConfigNils := []byte(`
+    adapters:
+      bidder1:
+        disabled: null
+        modifyingVastXmlAllowed: null`)
+	bidder1Bidder2ConfigMixed := []byte(`
+    adapters:
+      bidder1:
+        disabled: true
+        modifyingVastXmlAllowed: false
+      bidder2:
+        disabled: false
+        modifyingVastXmlAllowed: true`)
+
+	tests := []struct {
+		name        string
+		rawConfig   []byte
+		bidderInfos BidderInfos
+		expected    nillableFieldBidderInfos
+		expectError bool
+	}{
+		{
+			name:     "viper and bidder infos are nil",
+			expected: nil,
+		},
+		{
+			name:        "viper is nil",
+			bidderInfos: map[string]BidderInfo{},
+			expected:    nil,
+		},
+		{
+			name:      "bidder infos is nil",
+			rawConfig: []byte{},
+			expected:  nil,
+		},
+		{
+			name:        "bidder infos is empty",
+			bidderInfos: map[string]BidderInfo{},
+			expected:    nil,
+		},
+		{
+			name: "one: bidder info has nillable fields as false, viper has as nil",
+			bidderInfos: map[string]BidderInfo{
+				"bidder1": {Disabled: false, ModifyingVastXmlAllowed: false},
+			},
+			rawConfig: bidder1ConfigNils,
+			expected: nillableFieldBidderInfos{
+				"bidder1": nillableFieldBidderInfo{
+					nillableFields: bidderInfoNillableFields{
+						Disabled:                nil,
+						ModifyingVastXmlAllowed: nil,
+					},
+					bidderInfo: BidderInfo{Disabled: false, ModifyingVastXmlAllowed: false},
+				},
+			},
+		},
+		{
+			name: "one: bidder info has nillable fields as false, viper has as false",
+			bidderInfos: map[string]BidderInfo{
+				"bidder1": {Disabled: false, ModifyingVastXmlAllowed: false},
+			},
+			rawConfig: bidder1ConfigFalses,
+			expected: nillableFieldBidderInfos{
+				"bidder1": nillableFieldBidderInfo{
+					nillableFields: bidderInfoNillableFields{
+						Disabled:                &falseValue,
+						ModifyingVastXmlAllowed: &falseValue,
+					},
+					bidderInfo: BidderInfo{Disabled: false, ModifyingVastXmlAllowed: false},
+				},
+			},
+		},
+		{
+			name: "one: bidder info has nillable fields as false, viper has as true",
+			bidderInfos: map[string]BidderInfo{
+				"bidder1": {Disabled: false, ModifyingVastXmlAllowed: false},
+			},
+			rawConfig: bidder1ConfigTrues,
+			expected: nillableFieldBidderInfos{
+				"bidder1": nillableFieldBidderInfo{
+					nillableFields: bidderInfoNillableFields{
+						Disabled:                &trueValue,
+						ModifyingVastXmlAllowed: &trueValue,
+					},
+					bidderInfo: BidderInfo{Disabled: false, ModifyingVastXmlAllowed: false},
+				},
+			},
+		},
+		{
+			name: "many with extra info: bidder infos have nillable fields as false and true, viper has as true and false",
+			bidderInfos: map[string]BidderInfo{
+				"bidder1": {Disabled: false, ModifyingVastXmlAllowed: true, Endpoint: "endpoint a"},
+				"bidder2": {Disabled: true, ModifyingVastXmlAllowed: false, Endpoint: "endpoint b"},
+			},
+			rawConfig: bidder1Bidder2ConfigMixed,
+			expected: nillableFieldBidderInfos{
+				"bidder1": nillableFieldBidderInfo{
+					nillableFields: bidderInfoNillableFields{
+						Disabled:                &trueValue,
+						ModifyingVastXmlAllowed: &falseValue,
+					},
+					bidderInfo: BidderInfo{Disabled: false, ModifyingVastXmlAllowed: true, Endpoint: "endpoint a"},
+				},
+				"bidder2": nillableFieldBidderInfo{
+					nillableFields: bidderInfoNillableFields{
+						Disabled:                &falseValue,
+						ModifyingVastXmlAllowed: &trueValue,
+					},
+					bidderInfo: BidderInfo{Disabled: true, ModifyingVastXmlAllowed: false, Endpoint: "endpoint b"},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := viper.New()
+			v.SetConfigType("yaml")
+			for bidderName := range tt.bidderInfos {
+				setBidderDefaults(v, strings.ToLower(bidderName))
+			}
+			v.ReadConfig(bytes.NewBuffer(tt.rawConfig))
+
+			result, err := setConfigBidderInfoNillableFields(v, tt.bidderInfos)
+
+			assert.Equal(t, tt.expected, result)
+			if tt.expectError {
+				assert.NotNil(t, err)
+			} else {
+				assert.Nil(t, err)
+			}
+		})
 	}
 }
 

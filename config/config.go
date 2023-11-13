@@ -788,6 +788,9 @@ type nillableFieldBidderInfo struct {
 }
 
 func setConfigBidderInfoNillableFields(v *viper.Viper, bidderInfos BidderInfos) (nillableFieldBidderInfos, error) {
+	if len(bidderInfos) == 0 || v == nil {
+		return nil, nil
+	}
 	infos := make(nillableFieldBidderInfos, len(bidderInfos))
 
 	for bidderName, bidderInfo := range bidderInfos {
