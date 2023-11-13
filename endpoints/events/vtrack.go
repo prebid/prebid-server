@@ -276,7 +276,7 @@ func isAllowVastForBidder(bidder string, bidderInfos *config.BidderInfos, allowU
 	if normalizedBidder, ok := normalizeBidderName(bidder); ok {
 		if b, ok := (*bidderInfos)[normalizedBidder.String()]; bidderInfos != nil && ok {
 			// check if bidder is enabled
-			return b.IsEnabled() && b.ModifyingVastXmlAllowed
+			return b.IsEnabled() && b.IsModifyingVastXmlAllowed()
 		}
 	}
 

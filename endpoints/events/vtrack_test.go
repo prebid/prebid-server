@@ -366,6 +366,9 @@ func TestShouldTolerateAccountNotFound(t *testing.T) {
 }
 
 func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastNotAllowed(t *testing.T) {
+	falseValue := false
+	trueValue := true
+
 	// mock pbs cache client
 	mockCacheClient := &vtrackMockCacheClient{
 		Fail:  false,
@@ -389,12 +392,12 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastNotAllowe
 	// bidder info
 	bidderInfos := make(config.BidderInfos)
 	bidderInfos["bidder"] = config.BidderInfo{
-		Disabled:                false,
-		ModifyingVastXmlAllowed: false,
+		Disabled:                &falseValue,
+		ModifyingVastXmlAllowed: &falseValue,
 	}
 	bidderInfos["updatable_bidder"] = config.BidderInfo{
-		Disabled:                false,
-		ModifyingVastXmlAllowed: true,
+		Disabled:                &falseValue,
+		ModifyingVastXmlAllowed: &trueValue,
 	}
 
 	// prepare
@@ -430,6 +433,9 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastNotAllowe
 }
 
 func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastAllowed(t *testing.T) {
+	falseValue := false
+	trueValue := true
+
 	// mock pbs cache client
 	mockCacheClient := &vtrackMockCacheClient{
 		Fail:  false,
@@ -453,12 +459,12 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastAllowed(t
 	// bidder info
 	bidderInfos := make(config.BidderInfos)
 	bidderInfos["bidder"] = config.BidderInfo{
-		Disabled:                false,
-		ModifyingVastXmlAllowed: true,
+		Disabled:                &falseValue,
+		ModifyingVastXmlAllowed: &trueValue,
 	}
 	bidderInfos["updatable_bidder"] = config.BidderInfo{
-		Disabled:                false,
-		ModifyingVastXmlAllowed: true,
+		Disabled:                &falseValue,
+		ModifyingVastXmlAllowed: &trueValue,
 	}
 
 	// prepare
@@ -500,6 +506,9 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastAllowed(t
 }
 
 func TestShouldSendToCacheExpectedPutsAndUpdatableCaseSensitiveBiddersWhenBidderVastAllowed(t *testing.T) {
+	falseValue := false
+	trueValue := true
+
 	// mock pbs cache client
 	mockCacheClient := &vtrackMockCacheClient{
 		Fail:  false,
@@ -523,8 +532,8 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableCaseSensitiveBiddersWhenBidder
 	// bidder info
 	bidderInfos := make(config.BidderInfos)
 	bidderInfos["appnexus"] = config.BidderInfo{
-		Disabled:                false,
-		ModifyingVastXmlAllowed: true,
+		Disabled:                &falseValue,
+		ModifyingVastXmlAllowed: &trueValue,
 	}
 
 	d, err := getVTrackRequestData(true, true)

@@ -22,13 +22,13 @@ type BidderInfos map[string]BidderInfo
 // BidderInfo specifies all configuration for a bidder except for enabled status, endpoint, and extra information.
 type BidderInfo struct {
 	AliasOf          string `yaml:"aliasOf" mapstructure:"aliasOf"`
-	Disabled         bool   `yaml:"disabled" mapstructure:"disabled"`
+	Disabled         *bool  `yaml:"disabled" mapstructure:"disabled"`
 	Endpoint         string `yaml:"endpoint" mapstructure:"endpoint"`
 	ExtraAdapterInfo string `yaml:"extra_info" mapstructure:"extra_info"`
 
 	Maintainer              *MaintainerInfo   `yaml:"maintainer" mapstructure:"maintainer"`
 	Capabilities            *CapabilitiesInfo `yaml:"capabilities" mapstructure:"capabilities"`
-	ModifyingVastXmlAllowed bool              `yaml:"modifyingVastXmlAllowed" mapstructure:"modifyingVastXmlAllowed"`
+	ModifyingVastXmlAllowed *bool             `yaml:"modifyingVastXmlAllowed" mapstructure:"modifyingVastXmlAllowed"`
 	Debug                   *DebugInfo        `yaml:"debug" mapstructure:"debug"`
 	GVLVendorID             uint16            `yaml:"gvlVendorID" mapstructure:"gvlVendorID"`
 
@@ -184,7 +184,11 @@ type SyncerEndpoint struct {
 }
 
 func (bi BidderInfo) IsEnabled() bool {
-	return !bi.Disabled
+	return bi.Disabled != nil && !*bi.Disabled
+}
+
+func (bi BidderInfo) IsModifyingVastXmlAllowed() bool {
+	return bi.ModifyingVastXmlAllowed != nil && *bi.ModifyingVastXmlAllowed
 }
 
 type InfoReader interface {
@@ -608,11 +612,11 @@ func applyBidderInfoConfigOverrides(configBidderInfos BidderInfos, fsBidderInfos
 		if configBidderInfo.AppSecret != "" {
 			mergedBidderInfo.AppSecret = configBidderInfo.AppSecret
 		}
-		if configBidderInfo.Disabled == true {
-			mergedBidderInfo.Disabled = true
+		if configBidderInfo.Disabled != nil {
+			mergedBidderInfo.Disabled = configBidderInfo.Disabled
 		}
-		if configBidderInfo.ModifyingVastXmlAllowed == true {
-			mergedBidderInfo.ModifyingVastXmlAllowed = true
+		if configBidderInfo.ModifyingVastXmlAllowed != nil {
+			mergedBidderInfo.ModifyingVastXmlAllowed = configBidderInfo.ModifyingVastXmlAllowed
 		}
 		if configBidderInfo.Experiment.AdsCert.Enabled == true {
 			mergedBidderInfo.Experiment.AdsCert.Enabled = true

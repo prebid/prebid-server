@@ -1093,7 +1093,7 @@ func getBidderInfos(disabledAdapters []string, biddersNames []openrtb_ext.Bidder
 
 func newBidderInfo(isDisabled bool) config.BidderInfo {
 	return config.BidderInfo{
-		Disabled: isDisabled,
+		Disabled: &isDisabled,
 	}
 }
 

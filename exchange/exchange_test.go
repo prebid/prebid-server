@@ -2557,7 +2557,7 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 				expectations:  map[string]*bidderRequest{string(bidderName): spec.ExpectedRequest},
 				mockResponses: map[string]bidderResponse{string(bidderName): spec.MockResponse},
 			}
-			bidderInfos[string(bidderName)] = config.BidderInfo{ModifyingVastXmlAllowed: spec.ModifyingVastXmlAllowed}
+			bidderInfos[string(bidderName)] = config.BidderInfo{ModifyingVastXmlAllowed: &spec.ModifyingVastXmlAllowed}
 		}
 	}
 

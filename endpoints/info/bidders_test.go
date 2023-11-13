@@ -11,11 +11,14 @@ import (
 )
 
 func TestPrepareBiddersResponseAll(t *testing.T) {
+	falseValue := false
+	trueValue := true
+
 	var (
-		enabledCore   = config.BidderInfo{Disabled: false}
-		enabledAlias  = config.BidderInfo{Disabled: false, AliasOf: "something"}
-		disabledCore  = config.BidderInfo{Disabled: true}
-		disabledAlias = config.BidderInfo{Disabled: true, AliasOf: "something"}
+		enabledCore   = config.BidderInfo{Disabled: &falseValue}
+		enabledAlias  = config.BidderInfo{Disabled: &falseValue, AliasOf: "something"}
+		disabledCore  = config.BidderInfo{Disabled: &trueValue}
+		disabledAlias = config.BidderInfo{Disabled: &trueValue, AliasOf: "something"}
 	)
 
 	testCases := []struct {
@@ -108,11 +111,14 @@ func TestPrepareBiddersResponseAll(t *testing.T) {
 }
 
 func TestPrepareBiddersResponseAllBaseOnly(t *testing.T) {
+	falseValue := false
+	trueValue := true
+
 	var (
-		enabledCore   = config.BidderInfo{Disabled: false}
-		enabledAlias  = config.BidderInfo{Disabled: false, AliasOf: "something"}
-		disabledCore  = config.BidderInfo{Disabled: true}
-		disabledAlias = config.BidderInfo{Disabled: true, AliasOf: "something"}
+		enabledCore   = config.BidderInfo{Disabled: &falseValue}
+		enabledAlias  = config.BidderInfo{Disabled: &falseValue, AliasOf: "something"}
+		disabledCore  = config.BidderInfo{Disabled: &trueValue}
+		disabledAlias = config.BidderInfo{Disabled: &trueValue, AliasOf: "something"}
 	)
 
 	testCases := []struct {
@@ -167,11 +173,14 @@ func TestPrepareBiddersResponseAllBaseOnly(t *testing.T) {
 }
 
 func TestPrepareBiddersResponseEnabledOnly(t *testing.T) {
+	falseValue := false
+	trueValue := true
+
 	var (
-		enabledCore   = config.BidderInfo{Disabled: false}
-		enabledAlias  = config.BidderInfo{Disabled: false, AliasOf: "something"}
-		disabledCore  = config.BidderInfo{Disabled: true}
-		disabledAlias = config.BidderInfo{Disabled: true, AliasOf: "something"}
+		enabledCore   = config.BidderInfo{Disabled: &falseValue}
+		enabledAlias  = config.BidderInfo{Disabled: &falseValue, AliasOf: "something"}
+		disabledCore  = config.BidderInfo{Disabled: &trueValue}
+		disabledAlias = config.BidderInfo{Disabled: &trueValue, AliasOf: "something"}
 	)
 
 	testCases := []struct {
@@ -264,11 +273,14 @@ func TestPrepareBiddersResponseEnabledOnly(t *testing.T) {
 }
 
 func TestPrepareBiddersResponseEnabledOnlyBaseOnly(t *testing.T) {
+	falseValue := false
+	trueValue := true
+
 	var (
-		enabledCore   = config.BidderInfo{Disabled: false}
-		enabledAlias  = config.BidderInfo{Disabled: false, AliasOf: "something"}
-		disabledCore  = config.BidderInfo{Disabled: true}
-		disabledAlias = config.BidderInfo{Disabled: true, AliasOf: "something"}
+		enabledCore   = config.BidderInfo{Disabled: &falseValue}
+		enabledAlias  = config.BidderInfo{Disabled: &falseValue, AliasOf: "something"}
+		disabledCore  = config.BidderInfo{Disabled: &trueValue}
+		disabledAlias = config.BidderInfo{Disabled: &trueValue, AliasOf: "something"}
 	)
 
 	testCases := []struct {
@@ -328,11 +340,14 @@ func TestPrepareBiddersResponseEnabledOnlyBaseOnly(t *testing.T) {
 }
 
 func TestBiddersHandler(t *testing.T) {
+	falseValue := false
+	trueValue := true
+
 	var (
-		enabledCore   = config.BidderInfo{Disabled: false}
-		enabledAlias  = config.BidderInfo{Disabled: false, AliasOf: "something"}
-		disabledCore  = config.BidderInfo{Disabled: true}
-		disabledAlias = config.BidderInfo{Disabled: true, AliasOf: "something"}
+		enabledCore   = config.BidderInfo{Disabled: &falseValue}
+		enabledAlias  = config.BidderInfo{Disabled: &falseValue, AliasOf: "something"}
+		disabledCore  = config.BidderInfo{Disabled: &trueValue}
+		disabledAlias = config.BidderInfo{Disabled: &trueValue, AliasOf: "something"}
 	)
 
 	bidders := config.BidderInfos{"a": enabledCore, "b": enabledAlias, "c": disabledCore, "d": disabledAlias}

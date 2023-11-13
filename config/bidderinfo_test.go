@@ -83,7 +83,6 @@ func TestLoadBidderInfoFromDisk(t *testing.T) {
 
 	expected := BidderInfos{
 		bidder: {
-			Disabled: false,
 			Maintainer: &MaintainerInfo{
 				Email: "some-email@domain.com",
 			},
@@ -121,6 +120,9 @@ func TestLoadBidderInfoFromDisk(t *testing.T) {
 }
 
 func TestProcessBidderInfo(t *testing.T) {
+	falseValue := false
+	trueValue := true
+
 	testCases := []struct {
 		description         string
 		bidderInfos         map[string][]byte
@@ -189,7 +191,7 @@ func TestProcessBidderInfo(t *testing.T) {
 					Debug: &DebugInfo{
 						Allow: true,
 					},
-					Disabled:            false,
+					Disabled:            &falseValue,
 					Endpoint:            "https://endpoint.com",
 					EndpointCompression: "GZIP",
 					Experiment: BidderInfoExperiment{
@@ -202,7 +204,7 @@ func TestProcessBidderInfo(t *testing.T) {
 					Maintainer: &MaintainerInfo{
 						Email: "some-email@domain.com",
 					},
-					ModifyingVastXmlAllowed: true,
+					ModifyingVastXmlAllowed: &trueValue,
 					OpenRTB: &OpenRTBInfo{
 						GPPSupported: true,
 						Version:      "2.6",
@@ -240,7 +242,7 @@ func TestProcessBidderInfo(t *testing.T) {
 					Debug: &DebugInfo{
 						Allow: true,
 					},
-					Disabled:            false,
+					Disabled:            &falseValue,
 					Endpoint:            "https://endpoint.com",
 					EndpointCompression: "GZIP",
 					Experiment: BidderInfoExperiment{
@@ -253,7 +255,7 @@ func TestProcessBidderInfo(t *testing.T) {
 					Maintainer: &MaintainerInfo{
 						Email: "some-email@domain.com",
 					},
-					ModifyingVastXmlAllowed: true,
+					ModifyingVastXmlAllowed: &trueValue,
 					OpenRTB: &OpenRTBInfo{
 						GPPSupported: true,
 						Version:      "2.6",
@@ -284,6 +286,9 @@ func TestProcessBidderInfo(t *testing.T) {
 }
 
 func TestProcessAliasBidderInfo(t *testing.T) {
+	falseValue := false
+	trueValue := true
+
 	parentWithSyncerKey := BidderInfo{
 		AppSecret: "app-secret",
 		Capabilities: &CapabilitiesInfo{
@@ -297,7 +302,7 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 		Debug: &DebugInfo{
 			Allow: true,
 		},
-		Disabled:            false,
+		Disabled:            &falseValue,
 		Endpoint:            "https://endpoint.com",
 		EndpointCompression: "GZIP",
 		Experiment: BidderInfoExperiment{
@@ -310,7 +315,7 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 		Maintainer: &MaintainerInfo{
 			Email: "some-email@domain.com",
 		},
-		ModifyingVastXmlAllowed: true,
+		ModifyingVastXmlAllowed: &trueValue,
 		OpenRTB: &OpenRTBInfo{
 			GPPSupported: true,
 			Version:      "2.6",
@@ -344,7 +349,7 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 		Debug: &DebugInfo{
 			Allow: false,
 		},
-		Disabled:            true,
+		Disabled:            &trueValue,
 		Endpoint:            "https://alias-endpoint.com",
 		EndpointCompression: "DEFAULT",
 		Experiment: BidderInfoExperiment{
@@ -357,7 +362,7 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 		Maintainer: &MaintainerInfo{
 			Email: "alias-email@domain.com",
 		},
-		ModifyingVastXmlAllowed: false,
+		ModifyingVastXmlAllowed: &falseValue,
 		OpenRTB: &OpenRTBInfo{
 			GPPSupported: false,
 			Version:      "2.5",
@@ -452,8 +457,8 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 			description: "all bidder info specified for alias, do not inherit from parent bidder",
 			aliasInfos: map[string]aliasNillableFields{
 				"bidderB": {
-					Disabled:                &aliasBidderInfo.Disabled,
-					ModifyingVastXmlAllowed: &aliasBidderInfo.ModifyingVastXmlAllowed,
+					Disabled:                aliasBidderInfo.Disabled,
+					ModifyingVastXmlAllowed: aliasBidderInfo.ModifyingVastXmlAllowed,
 					Experiment:              &aliasBidderInfo.Experiment,
 					XAPI:                    &aliasBidderInfo.XAPI,
 				},
@@ -519,11 +524,14 @@ func mockNormalizeBidderName(name string) (openrtb_ext.BidderName, bool) {
 }
 
 func TestToGVLVendorIDMap(t *testing.T) {
+	falseValue := false
+	trueValue := true
+
 	givenBidderInfos := BidderInfos{
-		"bidderA": BidderInfo{Disabled: false, GVLVendorID: 0},
-		"bidderB": BidderInfo{Disabled: false, GVLVendorID: 100},
-		"bidderC": BidderInfo{Disabled: true, GVLVendorID: 0},
-		"bidderD": BidderInfo{Disabled: true, GVLVendorID: 200},
+		"bidderA": BidderInfo{Disabled: &falseValue, GVLVendorID: 0},
+		"bidderB": BidderInfo{Disabled: &falseValue, GVLVendorID: 100},
+		"bidderC": BidderInfo{Disabled: &trueValue, GVLVendorID: 0},
+		"bidderD": BidderInfo{Disabled: &trueValue, GVLVendorID: 200},
 	}
 
 	expectedGVLVendorIDMap := map[openrtb_ext.BidderName]uint16{
@@ -1696,6 +1704,9 @@ func TestApplyBidderInfoConfigOverridesInvalid(t *testing.T) {
 }
 
 func TestReadFullYamlBidderConfig(t *testing.T) {
+	falseValue := false
+	trueValue := true
+
 	bidder := "bidderA"
 	bidderInf := BidderInfo{}
 
@@ -1722,7 +1733,7 @@ func TestReadFullYamlBidderConfig(t *testing.T) {
 					MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner},
 				},
 			},
-			ModifyingVastXmlAllowed: true,
+			ModifyingVastXmlAllowed: &trueValue,
 			Debug: &DebugInfo{
 				Allow: true,
 			},
@@ -1736,7 +1747,7 @@ func TestReadFullYamlBidderConfig(t *testing.T) {
 				GPPSupported: true,
 				Version:      "2.6",
 			},
-			Disabled:         false,
+			Disabled:         &falseValue,
 			ExtraAdapterInfo: "extra-info",
 			AppSecret:        "app-secret",
 			PlatformID:       "123",

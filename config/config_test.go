@@ -841,6 +841,8 @@ func TestUserSyncFromEnv(t *testing.T) {
 }
 
 func TestBidderInfoFromEnv(t *testing.T) {
+	trueValue := true
+
 	// setup env vars for testing
 	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_BIDDER1_DISABLED"); ok {
 		defer os.Setenv("PBS_ADAPTERS_BIDDER1_DISABLED", oldval)
@@ -908,7 +910,7 @@ func TestBidderInfoFromEnv(t *testing.T) {
 
 	cfg, _ := newDefaultConfig(t)
 
-	assert.Equal(t, true, cfg.BidderInfos["bidder1"].Disabled)
+	assert.Equal(t, &trueValue, cfg.BidderInfos["bidder1"].Disabled)
 	assert.Equal(t, "http://some.url/override", cfg.BidderInfos["bidder1"].Endpoint)
 	assert.Equal(t, `{"extrainfo": true}`, cfg.BidderInfos["bidder1"].ExtraAdapterInfo)
 

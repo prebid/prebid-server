@@ -129,7 +129,7 @@ func mergeRemovedAndDisabledBidderWarningMessages(removed map[string]string, inf
 	disabledBidders := removed
 
 	for name, info := range infos {
-		if info.Disabled {
+		if !info.IsEnabled() {
 			msg := fmt.Sprintf(`Bidder "%s" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`, name)
 			disabledBidders[name] = msg
 		}

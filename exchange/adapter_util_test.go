@@ -17,8 +17,10 @@ import (
 )
 
 var (
-	infoEnabled  = config.BidderInfo{Disabled: false}
-	infoDisabled = config.BidderInfo{Disabled: true}
+	falseValue   = false
+	trueValue    = true
+	infoEnabled  = config.BidderInfo{Disabled: &falseValue}
+	infoDisabled = config.BidderInfo{Disabled: &trueValue}
 )
 
 func TestBuildAdapters(t *testing.T) {
@@ -165,6 +167,8 @@ func TestBuildBidders(t *testing.T) {
 }
 
 func TestSetAliasBuilder(t *testing.T) {
+	falseValue := false
+
 	rubiconBidder := fakeBidder{"b"}
 	ixBidder := fakeBidder{"ix"}
 	rubiconBuilder := fakeBuilder{rubiconBidder, nil}.Builder
@@ -180,21 +184,21 @@ func TestSetAliasBuilder(t *testing.T) {
 	}{
 		{
 			description:      "Success - Alias builder",
-			bidderInfo:       config.BidderInfo{Disabled: false, AliasOf: "rubicon"},
+			bidderInfo:       config.BidderInfo{Disabled: &falseValue, AliasOf: "rubicon"},
 			bidderName:       openrtb_ext.BidderName("appnexus"),
 			builders:         map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderRubicon: rubiconBuilder},
 			expectedBuilders: map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderRubicon: rubiconBuilder, openrtb_ext.BidderAppnexus: rubiconBuilder},
 		},
 		{
 			description:   "Failure - Invalid parent bidder builder",
-			bidderInfo:    config.BidderInfo{Disabled: false, AliasOf: "rubicon"},
+			bidderInfo:    config.BidderInfo{Disabled: &falseValue, AliasOf: "rubicon"},
 			bidderName:    openrtb_ext.BidderName("appnexus"),
 			builders:      map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderIx: ixBuilder},
 			expectedError: errors.New("rubicon: parent builder not registered"),
 		},
 		{
 			description:   "Failure - Invalid parent for alias",
-			bidderInfo:    config.BidderInfo{Disabled: false, AliasOf: "unknown"},
+			bidderInfo:    config.BidderInfo{Disabled: &falseValue, AliasOf: "unknown"},
 			bidderName:    openrtb_ext.BidderName("appnexus"),
 			builders:      map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderIx: ixBuilder},
 			expectedError: errors.New("unknown parent bidder: unknown for alias: appnexus"),

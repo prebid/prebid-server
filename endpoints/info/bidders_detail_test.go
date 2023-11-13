@@ -15,10 +15,12 @@ import (
 )
 
 func TestPrepareBiddersDetailResponse(t *testing.T) {
-	bidderAInfo := config.BidderInfo{Endpoint: "https://secureEndpoint.com", Disabled: false, Maintainer: &config.MaintainerInfo{Email: "bidderA"}}
+	falseValue := false
+
+	bidderAInfo := config.BidderInfo{Endpoint: "https://secureEndpoint.com", Disabled: &falseValue, Maintainer: &config.MaintainerInfo{Email: "bidderA"}}
 	bidderAResponse := []byte(`{"status":"ACTIVE","usesHttps":true,"maintainer":{"email":"bidderA"}}`)
 
-	bidderBInfo := config.BidderInfo{Endpoint: "http://unsecureEndpoint.com", Disabled: false, Maintainer: &config.MaintainerInfo{Email: "bidderB"}}
+	bidderBInfo := config.BidderInfo{Endpoint: "http://unsecureEndpoint.com", Disabled: &falseValue, Maintainer: &config.MaintainerInfo{Email: "bidderB"}}
 	bidderBResponse := []byte(`{"status":"ACTIVE","usesHttps":false,"maintainer":{"email":"bidderB"}}`)
 
 	allResponseBidderA := bytes.Buffer{}
@@ -83,11 +85,11 @@ func TestMapDetails(t *testing.T) {
 	trueValue := true
 	falseValue := false
 
-	bidderAInfo := config.BidderInfo{Endpoint: "https://secureEndpoint.com", Disabled: false, Maintainer: &config.MaintainerInfo{Email: "bidderA"}}
+	bidderAInfo := config.BidderInfo{Endpoint: "https://secureEndpoint.com", Disabled: &falseValue, Maintainer: &config.MaintainerInfo{Email: "bidderA"}}
 	bidderADetail := bidderDetail{Status: "ACTIVE", UsesHTTPS: &trueValue, Maintainer: &maintainer{Email: "bidderA"}}
 	aliasADetail := bidderDetail{Status: "ACTIVE", UsesHTTPS: &trueValue, Maintainer: &maintainer{Email: "bidderA"}, AliasOf: "a"}
 
-	bidderBInfo := config.BidderInfo{Endpoint: "http://unsecureEndpoint.com", Disabled: false, Maintainer: &config.MaintainerInfo{Email: "bidderB"}}
+	bidderBInfo := config.BidderInfo{Endpoint: "http://unsecureEndpoint.com", Disabled: &falseValue, Maintainer: &config.MaintainerInfo{Email: "bidderB"}}
 	bidderBDetail := bidderDetail{Status: "ACTIVE", UsesHTTPS: &falseValue, Maintainer: &maintainer{Email: "bidderB"}}
 	aliasBDetail := bidderDetail{Status: "ACTIVE", UsesHTTPS: &falseValue, Maintainer: &maintainer{Email: "bidderB"}, AliasOf: "b"}
 
@@ -219,7 +221,7 @@ func TestMapDetailFromConfig(t *testing.T) {
 			description: "Enabled - All Values Present",
 			givenBidderInfo: config.BidderInfo{
 				Endpoint: "http://anyEndpoint",
-				Disabled: false,
+				Disabled: &falseValue,
 				Maintainer: &config.MaintainerInfo{
 					Email: "foo@bar.com",
 				},
@@ -247,7 +249,7 @@ func TestMapDetailFromConfig(t *testing.T) {
 			description: "Disabled - All Values Present",
 			givenBidderInfo: config.BidderInfo{
 				Endpoint: "http://anyEndpoint",
-				Disabled: true,
+				Disabled: &trueValue,
 				Maintainer: &config.MaintainerInfo{
 					Email: "foo@bar.com",
 				},
@@ -270,7 +272,7 @@ func TestMapDetailFromConfig(t *testing.T) {
 			description: "Enabled - No Values Present",
 			givenBidderInfo: config.BidderInfo{
 				Endpoint: "http://amyEndpoint",
-				Disabled: false,
+				Disabled: &falseValue,
 			},
 			expected: bidderDetail{
 				Status:    "ACTIVE",
@@ -281,7 +283,7 @@ func TestMapDetailFromConfig(t *testing.T) {
 			description: "Enabled - Protocol - HTTP",
 			givenBidderInfo: config.BidderInfo{
 				Endpoint: "http://amyEndpoint",
-				Disabled: false,
+				Disabled: &falseValue,
 			},
 			expected: bidderDetail{
 				Status:    "ACTIVE",
@@ -292,7 +294,7 @@ func TestMapDetailFromConfig(t *testing.T) {
 			description: "Enabled - Protocol - HTTPS",
 			givenBidderInfo: config.BidderInfo{
 				Endpoint: "https://amyEndpoint",
-				Disabled: false,
+				Disabled: &falseValue,
 			},
 			expected: bidderDetail{
 				Status:    "ACTIVE",
@@ -302,7 +304,7 @@ func TestMapDetailFromConfig(t *testing.T) {
 		{
 			description: "Enabled - Protocol - HTTPS - Case Insensitive",
 			givenBidderInfo: config.BidderInfo{
-				Disabled: false,
+				Disabled: &falseValue,
 				Endpoint: "https://amyEndpoint",
 			},
 			expected: bidderDetail{
@@ -314,7 +316,7 @@ func TestMapDetailFromConfig(t *testing.T) {
 			description: "Enabled - Protocol - Unknown",
 			givenBidderInfo: config.BidderInfo{
 				Endpoint: "endpointWithoutProtocol",
-				Disabled: false,
+				Disabled: &falseValue,
 			},
 			expected: bidderDetail{
 				Status:    "ACTIVE",
@@ -364,11 +366,13 @@ func TestMapMediaTypes(t *testing.T) {
 }
 
 func TestBiddersDetailHandler(t *testing.T) {
-	bidderAInfo := config.BidderInfo{Endpoint: "https://secureEndpoint.com", Disabled: false, Maintainer: &config.MaintainerInfo{Email: "bidderA"}}
+	falseValue := false
+
+	bidderAInfo := config.BidderInfo{Endpoint: "https://secureEndpoint.com", Disabled: &falseValue, Maintainer: &config.MaintainerInfo{Email: "bidderA"}}
 	bidderAResponse := []byte(`{"status":"ACTIVE","usesHttps":true,"maintainer":{"email":"bidderA"}}`)
 	aliasAResponse := []byte(`{"status":"ACTIVE","usesHttps":true,"maintainer":{"email":"bidderA"},"aliasOf":"appnexus"}`)
 
-	bidderBInfo := config.BidderInfo{Endpoint: "http://unsecureEndpoint.com", Disabled: false, Maintainer: &config.MaintainerInfo{Email: "bidderB"}}
+	bidderBInfo := config.BidderInfo{Endpoint: "http://unsecureEndpoint.com", Disabled: &falseValue, Maintainer: &config.MaintainerInfo{Email: "bidderB"}}
 	bidderBResponse := []byte(`{"status":"ACTIVE","usesHttps":false,"maintainer":{"email":"bidderB"}}`)
 
 	allResponse := bytes.Buffer{}
