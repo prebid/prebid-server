@@ -296,6 +296,10 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 					bidderResponse.FledgeAuctionConfigs = append(bidderResponse.FledgeAuctionConfigs, fledgeAuctionConfig)
 				}
 			}
+		} else {
+			if err != nil {
+				errs = append(errs, err)
+			}
 		}
 	}
 

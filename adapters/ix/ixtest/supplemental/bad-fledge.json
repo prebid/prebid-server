@@ -105,7 +105,7 @@
                     "cur": "USD",
                     "ext": {
                         "protectedAudienceAuctionConfigs": [{
-                            "bidId": "test-imp-id",
+                            "bidId": 123,
                             "config": {
                                 "seller": "https://seller.com",
                                 "decisionLogicUrl": "https://ssp.com/decision-logic.js",
@@ -123,6 +123,12 @@
                     }
                 }
             }
+        }
+    ],
+    "expectedMakeBidsErrors": [
+        {
+            "value": "json: cannot unmarshal number into Go struct field auctionConfig.protectedAudienceAuctionConfigs.bidId of type string",
+            "comparison": "literal"
         }
     ],
     "expectedBidResponses": [
@@ -149,23 +155,7 @@
                     },
                     "type": "banner"
                 }
-            ],
-            "fledgeauctionconfigs": [{
-                "impid": "test-imp-id",
-                "config": {
-                    "seller": "https://seller.com",
-                    "decisionLogicUrl": "https://ssp.com/decision-logic.js",
-                    "interestGroupBuyers": [
-                        "https://buyer.com"
-                    ],
-                    "sellerSignals": {
-                        "callbackURL": "https://callbackurl.com"
-                    },
-                    "perBuyerSignals": {
-                        "https://buyer.com": []
-                    }
-                }
-            }]
+            ]
         }
     ]
 }
