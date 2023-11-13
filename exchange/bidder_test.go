@@ -1568,6 +1568,46 @@ func TestMobileNativeTypes(t *testing.T) {
 	}
 }
 
+func TestAddNativeTypes(t *testing.T) {
+	testCases := []struct {
+		description      string
+		bidderRequest    *openrtb2.BidRequest
+		bid              *openrtb2.Bid
+		expectedResponse *nativeResponse.Response
+		expectedErrors   []error
+	}{
+		{
+			description: "Null in bid.Adm in response",
+			bidderRequest: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{
+						ID: "some-imp-id",
+						Native: &openrtb2.Native{
+							Request: "{\"ver\":\"1.1\",\"context\":1,\"contextsubtype\":11,\"plcmttype\":4,\"plcmtcnt\":1,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":500}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1,\"hmin\":1}},{\"id\":3,\"required\":0,\"data\":{\"type\":1,\"len\":200}},{\"id\":4,\"required\":0,\"data\":{\"type\":2,\"len\":15000}},{\"id\":5,\"required\":0,\"data\":{\"type\":6,\"len\":40}}]}",
+						},
+					},
+				},
+				App: &openrtb2.App{},
+			},
+			bid: &openrtb2.Bid{
+				ImpID: "some-imp-id",
+				AdM:   "null",
+				Price: 10,
+			},
+			expectedResponse: nil,
+			expectedErrors:   nil,
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.description, func(t *testing.T) {
+			resp, errs := addNativeTypes(tt.bid, tt.bidderRequest)
+			assert.Equal(t, tt.expectedResponse, resp, "response")
+			assert.Equal(t, tt.expectedErrors, errs, "errors")
+		})
+	}
+}
+
 func TestRequestBidsStoredBidResponses(t *testing.T) {
 	respBody := "{\"bid\":false}"
 	respStatus := 200
