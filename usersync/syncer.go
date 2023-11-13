@@ -35,6 +35,9 @@ type Syncer interface {
 	// GetSync returns a user sync for the user's device to perform, or an error if the none of the
 	// sync types are supported or if macro substitution fails.
 	GetSync(syncTypes []SyncType, userSyncMacros macros.UserSyncPrivacy) (Sync, error)
+
+	// TODO: Add Description
+	ForceResponseFormat() string
 }
 
 // Sync represents a user sync to be performed by the user's device.
@@ -50,6 +53,7 @@ type standardSyncer struct {
 	iframe          *template.Template
 	redirect        *template.Template
 	supportCORS     bool
+	forceSyncType   string
 }
 
 const (
@@ -72,6 +76,7 @@ func NewSyncer(hostConfig config.UserSync, syncerConfig config.Syncer, bidder st
 		key:             syncerConfig.Key,
 		defaultSyncType: resolveDefaultSyncType(syncerConfig),
 		supportCORS:     syncerConfig.SupportCORS != nil && *syncerConfig.SupportCORS,
+		forceSyncType:   syncerConfig.ForceSyncType,
 	}
 
 	if syncerConfig.IFrame != nil {
@@ -264,5 +269,16 @@ func (s standardSyncer) chooseTemplate(syncType SyncType) *template.Template {
 		return s.redirect
 	default:
 		return nil
+	}
+}
+
+func (s standardSyncer) ForceResponseFormat() string {
+	switch s.forceSyncType {
+	case setuidSyncTypeIFrame:
+		return s.forceSyncType
+	case setuidSyncTypeRedirect:
+		return s.forceSyncType
+	default:
+		return ""
 	}
 }

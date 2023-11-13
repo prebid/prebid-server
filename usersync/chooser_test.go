@@ -505,6 +505,7 @@ type fakeSyncer struct {
 	key              string
 	supportsIFrame   bool
 	supportsRedirect bool
+	forceSyncType    string
 }
 
 func (s fakeSyncer) Key() string {
@@ -529,6 +530,10 @@ func (s fakeSyncer) SupportsType(syncTypes []SyncType) bool {
 
 func (fakeSyncer) GetSync([]SyncType, macros.UserSyncPrivacy) (Sync, error) {
 	return Sync{}, nil
+}
+
+func (s fakeSyncer) ForceResponseFormat() string {
+	return s.forceSyncType
 }
 
 type fakePrivacy struct {

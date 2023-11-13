@@ -1996,6 +1996,10 @@ func (m *MockSyncer) GetSync(syncTypes []usersync.SyncType, privacyMacros macros
 	return args.Get(0).(usersync.Sync), args.Error(1)
 }
 
+func (m *MockSyncer) ForceResponseFormat() string {
+	return ""
+}
+
 type MockAnalyticsRunner struct {
 	mock.Mock
 }

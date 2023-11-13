@@ -359,6 +359,10 @@ func isSyncerPriority(bidderNameFromSyncerQuery string, priorityGroups [][]strin
 // Returns either "b" (iframe), "i" (redirect), or an empty string "" (legacy behavior of an
 // empty response body with no content type).
 func getResponseFormat(query url.Values, syncer usersync.Syncer) (string, error) {
+	if syncer.ForceResponseFormat() != "" {
+		return syncer.ForceResponseFormat(), nil
+	}
+
 	format, formatProvided := query["f"]
 	formatEmpty := len(format) == 0 || format[0] == ""
 

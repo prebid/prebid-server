@@ -1666,6 +1666,7 @@ func (g *fakePermsSetUID) AuctionActivitiesAllowed(ctx context.Context, bidderCo
 type fakeSyncer struct {
 	key             string
 	defaultSyncType usersync.SyncType
+	forceSyncType   string
 }
 
 func (s fakeSyncer) Key() string {
@@ -1682,6 +1683,10 @@ func (s fakeSyncer) SupportsType(syncTypes []usersync.SyncType) bool {
 
 func (s fakeSyncer) GetSync(syncTypes []usersync.SyncType, privacyMacros macros.UserSyncPrivacy) (usersync.Sync, error) {
 	return usersync.Sync{}, nil
+}
+
+func (s fakeSyncer) ForceResponseFormat() string {
+	return s.forceSyncType
 }
 
 func ToHTTPCookie(cookie *usersync.Cookie) (*http.Cookie, error) {
