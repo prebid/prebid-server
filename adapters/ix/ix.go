@@ -291,7 +291,6 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 				if config.Config != nil {
 					fledgeAuctionConfig := &openrtb_ext.FledgeAuctionConfig{
 						ImpId:  config.BidId,
-						Bidder: a.bidderName,
 						Config: config.Config,
 					}
 					bidderResponse.FledgeAuctionConfigs = append(bidderResponse.FledgeAuctionConfigs, fledgeAuctionConfig)
