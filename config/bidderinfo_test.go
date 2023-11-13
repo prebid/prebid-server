@@ -1758,6 +1758,10 @@ func TestReadFullYamlBidderConfig(t *testing.T) {
 	bidderInfoOverrides := nillableFieldBidderInfos{
 		bidder: nillableFieldBidderInfo{
 			bidderInfo: bidderInf,
+			nillableFields: bidderInfoNillableFields{
+				Disabled:                &bidderInf.Disabled,
+				ModifyingVastXmlAllowed: &bidderInf.ModifyingVastXmlAllowed,
+			},
 		},
 	}
 	bidderInfoBase := BidderInfos{

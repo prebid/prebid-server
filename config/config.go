@@ -796,9 +796,11 @@ func setConfigBidderInfoNillableFields(v *viper.Viper, bidderInfos BidderInfos) 
 	for bidderName, bidderInfo := range bidderInfos {
 		info := nillableFieldBidderInfo{bidderInfo: bidderInfo}
 
-		key := "adapters." + bidderName
-		if err := v.UnmarshalKey(key, &info.nillableFields); err != nil {
-			return nil, fmt.Errorf("viper failed to unmarshal bidder config: %v", err)
+		if err := v.UnmarshalKey("adapters."+bidderName+".disabled", &info.nillableFields.Disabled); err != nil {
+			return nil, fmt.Errorf("viper failed to unmarshal bidder config disabled: %v", err)
+		}
+		if err := v.UnmarshalKey("adapters."+bidderName+".modifyingvastxmlallowed", &info.nillableFields.ModifyingVastXmlAllowed); err != nil {
+			return nil, fmt.Errorf("viper failed to unmarshal bidder config modifyingvastxmlallowed: %v", err)
 		}
 		infos[bidderName] = info
 	}
