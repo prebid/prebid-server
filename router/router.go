@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"unicode"
 
 	analyticsBuild "github.com/prebid/prebid-server/v2/analytics/build"
 	"github.com/prebid/prebid-server/v2/config"
@@ -97,10 +98,24 @@ func newJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.Bidder
 		glog.Fatalf("Failed to marshal bidder param JSON-schema: %v", err)
 	}
 
+	//trim spaces in between the lines
+	formattedString := spaceStringsBuilder(string(response))
+
 	return func(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 		w.Header().Add("Content-Type", "application/json")
-		w.Write(response)
+		w.Write([]byte(formattedString))
 	}
+}
+
+func spaceStringsBuilder(str string) string {
+	var b strings.Builder
+	b.Grow(len(str))
+	for _, ch := range str {
+		if !unicode.IsSpace(ch) {
+			b.WriteRune(ch)
+		}
+	}
+	return b.String()
 }
 
 func serveIndex(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
