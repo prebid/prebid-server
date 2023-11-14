@@ -406,7 +406,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 
 func addNativeTypes(bid *openrtb2.Bid, request *openrtb2.BidRequest) (*nativeResponse.Response, []error) {
 	var errs []error
-	var nativeMarkup *nativeResponse.Response
+	var nativeMarkup nativeResponse.Response
 	if err := jsonutil.UnmarshalValid(json.RawMessage(bid.AdM), &nativeMarkup); err != nil || len(nativeMarkup.Assets) == 0 {
 		// Some bidders are returning non-IAB compliant native markup. In this case Prebid server will not be able to add types. E.g Facebook
 		return nil, errs
@@ -429,7 +429,7 @@ func addNativeTypes(bid *openrtb2.Bid, request *openrtb2.BidRequest) (*nativeRes
 		}
 	}
 
-	return nativeMarkup, errs
+	return &nativeMarkup, errs
 }
 
 func setAssetTypes(asset nativeResponse.Asset, nativePayload nativeRequests.Request) error {
