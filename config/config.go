@@ -85,7 +85,7 @@ type Configuration struct {
 	RequestValidation RequestValidation `mapstructure:"request_validation"`
 	// When true, PBS will assign a randomly generated UUID to req.Source.TID if it is empty
 	AutoGenSourceTID bool `mapstructure:"auto_gen_source_tid"`
-	//When true, new bid id will be generated in seatbid[].bid[].ext.prebid.bidid and used in event urls instead
+	// When true, new bid id will be generated in seatbid[].bid[].ext.prebid.bidid and used in event urls instead
 	GenerateBidID bool `mapstructure:"generate_bid_id"`
 	// GenerateRequestID overrides the bidrequest.id in an AMP Request or an App Stored Request with a generated UUID if set to true. The default is false.
 	GenerateRequestID bool                      `mapstructure:"generate_request_id"`
@@ -442,8 +442,9 @@ type LMT struct {
 }
 
 type Analytics struct {
-	File     FileLogs `mapstructure:"file"`
-	Pubstack Pubstack `mapstructure:"pubstack"`
+	File     FileLogs      `mapstructure:"file"`
+	Http     AnalyticsHttp `mapstructure:"http"`
+	Pubstack Pubstack      `mapstructure:"pubstack"`
 }
 
 type CurrencyConverter struct {
@@ -457,6 +458,49 @@ func (cfg *CurrencyConverter) validate(errs []error) []error {
 		errs = append(errs, fmt.Errorf("currency_converter.fetch_interval_seconds must be in the range [0, %d]. Got %d", 0xffff, cfg.FetchIntervalSeconds))
 	}
 	return errs
+}
+
+type AnalyticsHttp struct {
+	// Enable or disable the module
+	Enabled bool `mapstructure:"enabled"`
+	// Endpoint Config
+	Endpoint AnalyticsHttpEndpoint `mapstructure:"endpoint"`
+	// Buffer, triggers a flush whan any of the conditions are met
+	Buffers AnalyticsBuffer `mapstructure:"buffers"`
+	// Features
+	Auction      AnalyticsFeature `mapstructure:"auction"`
+	Video        AnalyticsFeature `mapstructure:"video"`
+	AMP          AnalyticsFeature `mapstructure:"amp"`
+	SetUID       AnalyticsFeature `mapstructure:"setuid"`
+	CookieSync   AnalyticsFeature `mapstructure:"cookie_sync"`
+	Notification AnalyticsFeature `mapstructure:"notification"`
+}
+
+type AnalyticsBuffer struct {
+	// Size of the buffer in bytes
+	BufferSize string `mapstructure:"size"`
+	// Number of events to buffer before sending
+	EventCount int `mapstructure:"count"`
+	// Buffer Timeout in milliseconds
+	Timeout string `mapstructure:"timeout"`
+}
+
+type AnalyticsHttpEndpoint struct {
+	// URL of the endpoint
+	Url string `mapstructure:"url"`
+	// HTTP Timeout in milliseconds
+	Timeout string `mapstructure:"timeout"`
+	// Use GZIP compression for buffering and sending, this does make the body non valid json
+	Gzip bool `mapstructure:"gzip"`
+	// Additional headers to send with the request
+	AdditionalHeaders map[string]string `mapstructure:"additional_headers"`
+}
+
+type AnalyticsFeature struct {
+	// Sampling rate 0-1 for the feature
+	SampleRate float64 `mapstructure:"sample_rate"`
+	// Filter to apply to the feature
+	Filter string `mapstructure:"filter"`
 }
 
 // FileLogs Corresponding config for FileLogger as a PBS Analytics Module
@@ -1075,10 +1119,12 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("gdpr.tcf2.purpose9.vendor_exceptions", []openrtb_ext.BidderName{})
 	v.SetDefault("gdpr.tcf2.purpose10.vendor_exceptions", []openrtb_ext.BidderName{})
 	v.SetDefault("gdpr.amp_exception", false)
-	v.SetDefault("gdpr.eea_countries", []string{"ALA", "AUT", "BEL", "BGR", "HRV", "CYP", "CZE", "DNK", "EST",
+	v.SetDefault("gdpr.eea_countries", []string{
+		"ALA", "AUT", "BEL", "BGR", "HRV", "CYP", "CZE", "DNK", "EST",
 		"FIN", "FRA", "GUF", "DEU", "GIB", "GRC", "GLP", "GGY", "HUN", "ISL", "IRL", "IMN", "ITA", "JEY", "LVA",
 		"LIE", "LTU", "LUX", "MLT", "MTQ", "MYT", "NLD", "NOR", "POL", "PRT", "REU", "ROU", "BLM", "MAF", "SPM",
-		"SVK", "SVN", "ESP", "SWE", "GBR"})
+		"SVK", "SVN", "ESP", "SWE", "GBR",
+	})
 	v.SetDefault("ccpa.enforce", false)
 	v.SetDefault("lmt.enforce", true)
 	v.SetDefault("currency_converter.fetch_url", "https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json")

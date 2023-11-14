@@ -6,6 +6,7 @@ import (
 	"github.com/prebid/prebid-server/v2/analytics"
 	"github.com/prebid/prebid-server/v2/analytics/clients"
 	"github.com/prebid/prebid-server/v2/analytics/filesystem"
+	"github.com/prebid/prebid-server/v2/analytics/http"
 	"github.com/prebid/prebid-server/v2/analytics/pubstack"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/privacy"
@@ -38,6 +39,19 @@ func New(analytics *config.Analytics) analytics.Runner {
 			glog.Errorf("Could not initialize PubstackModule: %v", err)
 		}
 	}
+
+	if analytics.Http.Enabled {
+		httpModule, err := http.NewModule(
+			clients.GetDefaultHttpInstance(),
+			analytics.Http,
+			clock.New())
+		if err == nil {
+			modules["http"] = httpModule
+		} else {
+			glog.Errorf("Could not initialize Http Anayltics: %v", err)
+		}
+	}
+
 	return modules
 }
 
