@@ -1,14 +1,10 @@
 package alkimi
 
 import (
-	"encoding/json"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
 	"testing"
-
+	"github.com/prebid/prebid-server/v2/adapters/adapterstest"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/stretchr/testify/assert"
 )
 
 const (
