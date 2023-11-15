@@ -32,7 +32,7 @@
                     ]
                 },
                 "ext": {
-                    "alkimi": {
+                    "bidder": {
                         "token": "XXX",
                         "bidFloor": 0.5
                     }
@@ -62,11 +62,14 @@
                                     }
                                 ]
                             },
+                            "bidfloor": 0.5,
                             "ext": {
                                 "bidder": {
                                     "token": "XXX",
                                     "bidFloor": 0.5,
-                                    "adUnitCode": "test-imp-id"
+                                    "adUnitCode": "test-imp-id",
+                                    "exp": 0,
+        	            	        "instl": 0
                                 }
                             }
                         }
