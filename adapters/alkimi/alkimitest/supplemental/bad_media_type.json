@@ -93,6 +93,12 @@
             }
         }
     }],
+    "expectedBidResponses": [
+        {
+            "currency": "USD",
+            "bids": []
+        }
+    ],
     "expectedMakeBidsErrors": [
         {
           "value": "Failed to find imp \"test-imp-id\"",
