@@ -32,7 +32,7 @@
                     ]
                 },
                 "ext": {
-                    "bidder": {
+                    "alkimi": {
                         "token": "XXX",
                         "bidFloor": 0.5
                     }
