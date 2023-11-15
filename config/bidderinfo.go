@@ -125,8 +125,7 @@ type Syncer struct {
 	// SupportCORS identifies if CORS is supported for the user syncing endpoints.
 	SupportCORS *bool `yaml:"supportCors" mapstructure:"support_cors"`
 
-	// TODO: Check what Java does if applicable
-	// TODO: Add description
+	// ForceSyncType allows a bidder to override their callback type "b" for iframe, "i" for redirect
 	ForceSyncType string `yaml:"forceSyncType" mapstructure:"force_sync_type"`
 }
 

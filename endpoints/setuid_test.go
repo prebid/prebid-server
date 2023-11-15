@@ -34,6 +34,7 @@ func TestSetUIDEndpoint(t *testing.T) {
 		gdprAllowsHostCookies  bool
 		gdprReturnsError       bool
 		gdprMalformed          bool
+		forceSyncType          string
 		expectedSyncs          map[string]string
 		expectedBody           string
 		expectedStatusCode     int
@@ -336,6 +337,17 @@ func TestSetUIDEndpoint(t *testing.T) {
 			expectedStatusCode:     http.StatusBadRequest,
 			expectedBody:           "invalid gpp_sid encoding, must be a csv list of integers",
 		},
+		{
+			uri:                    "/setuid?bidder=pubmatic&uid=123&f=b",
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			existingSyncs:          nil,
+			gdprAllowsHostCookies:  true,
+			forceSyncType:          "i",
+			expectedSyncs:          map[string]string{"pubmatic": "123"},
+			expectedStatusCode:     http.StatusOK,
+			expectedHeaders:        map[string]string{"Content-Length": "86", "Content-Type": "image/png"},
+			description:            "Set uid for valid bidder with iframe format, but it's overriden by forceType",
+		},
 	}
 
 	analytics := analyticsBuild.New(&config.Analytics{})
@@ -343,7 +355,7 @@ func TestSetUIDEndpoint(t *testing.T) {
 
 	for _, test := range testCases {
 		response := doRequest(makeRequest(test.uri, test.existingSyncs), analytics, metrics,
-			test.syncersBidderNameToKey, test.gdprAllowsHostCookies, test.gdprReturnsError, test.gdprMalformed, false, 0, nil)
+			test.syncersBidderNameToKey, test.gdprAllowsHostCookies, test.gdprReturnsError, test.gdprMalformed, false, 0, nil, test.forceSyncType)
 		assert.Equal(t, test.expectedStatusCode, response.Code, "Test Case: %s. /setuid returned unexpected error code", test.description)
 
 		if test.expectedSyncs != nil {
@@ -467,7 +479,7 @@ func TestSetUIDPriorityEjection(t *testing.T) {
 		request.AddCookie(httpCookie)
 
 		// Make Request to /setuid
-		response := doRequest(request, analytics, &metricsConf.NilMetricsEngine{}, syncersByBidder, true, false, false, false, test.givenMaxCookieSize, test.givenPriorityGroups)
+		response := doRequest(request, analytics, &metricsConf.NilMetricsEngine{}, syncersByBidder, true, false, false, false, test.givenMaxCookieSize, test.givenPriorityGroups, "")
 
 		if test.expectedWarning != "" {
 			assert.Equal(t, test.expectedWarning, response.Body.String(), test.description)
@@ -1333,7 +1345,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 		for _, v := range test.cookies {
 			addCookie(req, v)
 		}
-		response := doRequest(req, analyticsEngine, metricsEngine, test.syncersBidderNameToKey, test.gdprAllowsHostCookies, false, false, test.cfgAccountRequired, 0, nil)
+		response := doRequest(req, analyticsEngine, metricsEngine, test.syncersBidderNameToKey, test.gdprAllowsHostCookies, false, false, test.cfgAccountRequired, 0, nil, "")
 
 		assert.Equal(t, test.expectedResponseCode, response.Code, test.description)
 		analyticsEngine.AssertExpectations(t)
@@ -1349,7 +1361,7 @@ func TestOptedOut(t *testing.T) {
 	syncersBidderNameToKey := map[string]string{"pubmatic": "pubmatic"}
 	analytics := analyticsBuild.New(&config.Analytics{})
 	metrics := &metricsConf.NilMetricsEngine{}
-	response := doRequest(request, analytics, metrics, syncersBidderNameToKey, true, false, false, false, 0, nil)
+	response := doRequest(request, analytics, metrics, syncersBidderNameToKey, true, false, false, false, 0, nil, "")
 
 	assert.Equal(t, http.StatusUnauthorized, response.Code)
 }
@@ -1444,6 +1456,24 @@ func TestGetResponseFormat(t *testing.T) {
 			syncer:         fakeSyncer{key: "a", defaultSyncType: usersync.SyncTypeRedirect},
 			expectedFormat: "i",
 			description:    "parameter given is empty (by empty item), use default sync type redirect",
+		},
+		{
+			urlValues:      url.Values{"f": []string{""}},
+			syncer:         fakeSyncer{key: "a", defaultSyncType: usersync.SyncTypeRedirect},
+			expectedFormat: "i",
+			description:    "parameter given is empty (by empty item), use default sync type redirect",
+		},
+		{
+			urlValues:      url.Values{"f": []string{"b"}},
+			syncer:         fakeSyncer{key: "a", forceSyncType: "i"},
+			expectedFormat: "i",
+			description:    "parameter given as `b`, but force sync type is opposite",
+		},
+		{
+			urlValues:      url.Values{"f": []string{"i"}},
+			syncer:         fakeSyncer{key: "a", forceSyncType: "b"},
+			expectedFormat: "b",
+			description:    "parameter given as `i`, but force sync type is opposite",
 		},
 	}
 
@@ -1544,7 +1574,7 @@ func makeRequest(uri string, existingSyncs map[string]string) *http.Request {
 	return request
 }
 
-func doRequest(req *http.Request, analytics analytics.Runner, metrics metrics.MetricsEngine, syncersBidderNameToKey map[string]string, gdprAllowsHostCookies, gdprReturnsError, gdprReturnsMalformedError, cfgAccountRequired bool, maxCookieSize int, priorityGroups [][]string) *httptest.ResponseRecorder {
+func doRequest(req *http.Request, analytics analytics.Runner, metrics metrics.MetricsEngine, syncersBidderNameToKey map[string]string, gdprAllowsHostCookies, gdprReturnsError, gdprReturnsMalformedError, cfgAccountRequired bool, maxCookieSize int, priorityGroups [][]string, forceSyncType string) *httptest.ResponseRecorder {
 	cfg := config.Configuration{
 		AccountRequired: cfgAccountRequired,
 		AccountDefaults: config.Account{},
@@ -1575,7 +1605,7 @@ func doRequest(req *http.Request, analytics analytics.Runner, metrics metrics.Me
 
 	syncersByBidder := make(map[string]usersync.Syncer)
 	for bidderName, syncerKey := range syncersBidderNameToKey {
-		syncersByBidder[bidderName] = fakeSyncer{key: syncerKey, defaultSyncType: usersync.SyncTypeIFrame}
+		syncersByBidder[bidderName] = fakeSyncer{key: syncerKey, defaultSyncType: usersync.SyncTypeIFrame, forceSyncType: forceSyncType}
 		if priorityGroups == nil {
 			cfg.UserSync.PriorityGroups = [][]string{{}}
 			cfg.UserSync.PriorityGroups[0] = append(cfg.UserSync.PriorityGroups[0], bidderName)

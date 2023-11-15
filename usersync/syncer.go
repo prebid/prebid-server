@@ -36,7 +36,7 @@ type Syncer interface {
 	// sync types are supported or if macro substitution fails.
 	GetSync(syncTypes []SyncType, userSyncMacros macros.UserSyncPrivacy) (Sync, error)
 
-	// TODO: Add Description
+	// ForceResponseFromat returns the callback format as specified in a bidders config
 	ForceResponseFormat() string
 }
 

@@ -27,6 +27,7 @@ func TestNewSyncer(t *testing.T) {
 		givenIFrameConfig   *config.SyncerEndpoint
 		givenRedirectConfig *config.SyncerEndpoint
 		givenExternalURL    string
+		givenForceType      string
 		expectedError       string
 		expectedDefault     SyncType
 		expectedIFrame      string
@@ -97,6 +98,7 @@ func TestNewSyncer(t *testing.T) {
 			givenExternalURL:    "http://syncer.com",
 			givenIFrameConfig:   iframeConfig,
 			givenRedirectConfig: redirectConfig,
+			givenForceType:      "i",
 			expectedDefault:     SyncTypeIFrame,
 			expectedIFrame:      "https://bidder.com/iframe?redirect=http%3A%2F%2Fsyncer.com%2Fhost",
 			expectedRedirect:    "https://bidder.com/redirect?redirect=http%3A%2F%2Fsyncer.com%2Fhost",
@@ -105,11 +107,12 @@ func TestNewSyncer(t *testing.T) {
 
 	for _, test := range testCases {
 		syncerConfig := config.Syncer{
-			Key:         test.givenKey,
-			SupportCORS: &supportCORS,
-			IFrame:      test.givenIFrameConfig,
-			Redirect:    test.givenRedirectConfig,
-			ExternalURL: test.givenExternalURL,
+			Key:           test.givenKey,
+			SupportCORS:   &supportCORS,
+			IFrame:        test.givenIFrameConfig,
+			Redirect:      test.givenRedirectConfig,
+			ExternalURL:   test.givenExternalURL,
+			ForceSyncType: test.givenForceType,
 		}
 
 		result, err := NewSyncer(hostConfig, syncerConfig, test.givenBidderName)
@@ -120,6 +123,7 @@ func TestNewSyncer(t *testing.T) {
 				result := result.(standardSyncer)
 				assert.Equal(t, test.givenKey, result.key, test.description+":key")
 				assert.Equal(t, supportCORS, result.supportCORS, test.description+":cors")
+				assert.Equal(t, test.givenForceType, result.forceSyncType, test.description+":cors")
 				assert.Equal(t, test.expectedDefault, result.defaultSyncType, test.description+":default_sync")
 
 				if test.expectedIFrame == "" {
@@ -777,5 +781,34 @@ func TestSyncerChooseTemplate(t *testing.T) {
 		syncer := standardSyncer{iframe: iframeTemplate, redirect: redirectTemplate}
 		result := syncer.chooseTemplate(test.givenSyncType)
 		assert.Equal(t, test.expectedTemplate, result, test.description)
+	}
+}
+
+func TestSyncerForceResponseFormat(t *testing.T) {
+	testCases := []struct {
+		description       string
+		givenForceType    string
+		expectedForceType string
+	}{
+		{
+			description:       "IFrame",
+			givenForceType:    "b",
+			expectedForceType: "b",
+		},
+		{
+			description:       "Redirect",
+			givenForceType:    "i",
+			expectedForceType: "i",
+		},
+		{
+			description:       "Empty",
+			expectedForceType: "",
+		},
+	}
+
+	for _, test := range testCases {
+		syncer := standardSyncer{forceSyncType: test.givenForceType}
+		forceType := syncer.ForceResponseFormat()
+		assert.Equal(t, test.expectedForceType, forceType, test.description)
 	}
 }
