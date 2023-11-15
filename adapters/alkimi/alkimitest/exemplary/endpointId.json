@@ -32,13 +32,9 @@
                     ]
                 },
                 "ext": {
-                    "prebid": {
-                        "bidder": {
-                            "alkimi": {
-                                "token": "XXX",
-                                "bidFloor": 0.5
-                            }
-                        }
+                    "bidder": {
+                        "token": "XXX",
+                        "bidFloor": 0.5
                     }
                 }
             }
