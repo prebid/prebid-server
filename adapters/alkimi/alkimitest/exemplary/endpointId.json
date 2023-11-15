@@ -69,7 +69,7 @@
                                     "bidFloor": 0.5,
                                     "adUnitCode": "test-imp-id",
                                     "exp": 0,
-        	            	        "instl": 0
+                                    "instl": 0
                                 }
                             }
                         }
@@ -100,11 +100,10 @@
                                 {
                                     "id": "test_bid_id",
                                     "impid": "test-imp-id",
-                                    "price": 0.27543,
-                                    "adm": "<iframe id=\"adm-banner-16\" width=\"300\" height=\"250\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"http://example.com/pserver&k=882b2510ed6d6c94fa69c99aa522a708\"></iframe>",
+                                    "price": 0.9,
+                                    "adm": "<div id=\"qsum\"><a href='https:\/\/alkimi.org' target='_blank'><img src='https:\/\/cloudfront.net\/jpeg\/2_Banner_02_300x250px.jpg'><\/a><\/div><script async src=\"https:\/\/exchange.alkimi-onboarding.com\/dsp-impression?id=H4sIAAAAAAAA_2NkUElJMkszSjIz17VITDPVNTFONdRNSks10zU3TkpNskhJMjU3TmNkYGDsvuy5eQqQAQZMAFKoSf85AAAA&price=${AUCTION_PRICE}\"><\/script>",
                                     "cid": "test_cid",
                                     "crid": "test_crid",
-                                    "dealid": "test_dealid",
                                     "w": 300,
                                     "h": 250,
                                     "ext": {
@@ -114,7 +113,7 @@
                                     }
                                 }
                             ],
-                            "seat": "appush"
+                            "seat": "alkimi"
                         }
                     ],
                     "cur": "USD"
@@ -129,11 +128,10 @@
                     "bid": {
                         "id": "test_bid_id",
                         "impid": "test-imp-id",
-                        "price": 0.27543,
-                        "adm": "<iframe id=\"adm-banner-16\" width=\"300\" height=\"250\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"http://example.com/pserver&k=882b2510ed6d6c94fa69c99aa522a708\"></iframe>",
+                        "price": 0.9,
+                        "adm": "<div id=\"qsum\"><a href='https:\/\/alkimi.org' target='_blank'><img src='https:\/\/cloudfront.net\/jpeg\/2_Banner_02_300x250px.jpg'><\/a><\/div><script async src=\"https:\/\/exchange.alkimi-onboarding.com\/dsp-impression?id=H4sIAAAAAAAA_2NkUElJMkszSjIz17VITDPVNTFONdRNSks10zU3TkpNskhJMjU3TmNkYGDsvuy5eQqQAQZMAFKoSf85AAAA&price=${AUCTION_PRICE}\"><\/script>",
                         "cid": "test_cid",
                         "crid": "test_crid",
-                        "dealid": "test_dealid",
                         "w": 300,
                         "h": 250,
                         "ext": {
