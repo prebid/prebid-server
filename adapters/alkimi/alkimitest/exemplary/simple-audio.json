@@ -58,6 +58,7 @@
                                 "minbitrate": 32,
                                 "maxbitrate": 128
                             },
+                            "bidfloor": 0.5,
                             "ext": {
                                 "bidder": {
                                     "token": "XXX",
