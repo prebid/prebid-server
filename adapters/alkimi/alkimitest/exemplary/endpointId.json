@@ -5,9 +5,15 @@
             "ip": "123.123.123.123",
             "ua": "iPad"
         },
-        "app": {
-            "id": "1",
-            "bundle": "com.wls.testwlsapplication"
+        "site": {
+            "domain": "www.example.com",
+            "page": "http://www.example.com",
+            "publisher": {
+                "domain": "example.com"
+            },
+            "ext": {
+                "amp": 0
+            }
         },
         "imp": [
             {
@@ -26,8 +32,13 @@
                     ]
                 },
                 "ext": {
-                    "bidder": {
-                        "endpointId": "test"
+                    "prebid": {
+                        "bidder": {
+                            "alkimi": {
+                                "token": "XXX",
+                                "bidFloor": 0.5
+                            }
+                        }
                     }
                 }
             }
@@ -57,15 +68,22 @@
                             },
                             "ext": {
                                 "bidder": {
-                                    "endpointId": "test",
-                                    "type": "network"
+                                    "token": "XXX",
+                                    "bidFloor": 0.5,
+                                    "adUnitCode": "test-imp-id"
                                 }
                             }
                         }
                     ],
-                    "app": {
-                        "id": "1",
-                        "bundle": "com.wls.testwlsapplication"
+                    "site": {
+                        "domain": "www.example.com",
+                        "page": "http://www.example.com",
+                        "publisher": {
+                            "domain": "example.com"
+                        },
+                        "ext": {
+                            "amp": 0
+                        }
                     },
                     "device": {
                         "ip": "123.123.123.123",
