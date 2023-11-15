@@ -14,7 +14,7 @@ As we build this guide, please refer to [the contract classes](../../config/conf
 
 ## GDPR
 
-### Enabled
+### `gdpr.enabled`
 Boolean value that determines if GDPR processing is enabled. Defaults to `true`.
 <details>
   <summary>Example</summary>
@@ -44,7 +44,7 @@ Boolean value that determines if GDPR processing is enabled. Defaults to `true`.
 </details>
 
 
-### Default Value
+### `gdpr.default_value` (required)
 String value that determines whether GDPR is enabled when no regulatory signal is available in the request. A value of `"0"` disables it by default and a value of `"1"` enabled it. This is a required configuration value with no default.
 <details>
   <summary>Example</summary>
