@@ -41,7 +41,7 @@
     },
 	"httpCalls": [{
 		"expectedRequest": {
-			"uri": "http://example.com/pserver",
+			"uri": "https://exchange.alkimi-onboarding.com/server/bid",
 			"body": {
                 "id": "test-request-id",
                 "imp": [
