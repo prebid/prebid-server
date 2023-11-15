@@ -5,9 +5,15 @@
             "ip": "123.123.123.123",
             "ua": "iPad"
         },
-        "app": {
-            "id": "1",
-            "bundle": "com.wls.testwlsapplication"
+        "site": {
+            "domain": "www.example.com",
+            "page": "http://www.example.com",
+            "publisher": {
+                "domain": "example.com"
+            },
+            "ext": {
+                "amp": 0
+            }
         },
         "imp": [
             {
@@ -21,12 +27,13 @@
                         2,
                         5
                     ],
-                    "w": 1024,
-                    "h": 576
+                    "w": 300,
+                    "h": 250
                 },
                 "ext": {
                     "bidder": {
-                        "placementId": "test"
+                        "token": "XXX",
+                        "bidFloor": 0.5
                     }
                 }
             }
@@ -35,16 +42,22 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "http://example.com/pserver",
+                "uri": "https://exchange.alkimi-onboarding.com/server/bid",
                 "body": {
                     "id": "test-request-id",
                     "device": {
                         "ip": "123.123.123.123",
                         "ua": "iPad"
                     },
-                    "app": {
-                        "id": "1",
-                        "bundle": "com.wls.testwlsapplication"
+                    "site": {
+                        "domain": "www.example.com",
+                        "page": "http://www.example.com",
+                        "publisher": {
+                            "domain": "example.com"
+                        },
+                        "ext": {
+                            "amp": 0
+                        }
                     },
                     "imp": [
                         {
@@ -58,13 +71,17 @@
                                     2,
                                     5
                                 ],
-                                "w": 1024,
-                                "h": 576
+                                "w": 300,
+                                "h": 250
                             },
+                            "bidfloor": 0.5,
                             "ext": {
                                 "bidder": {
-                                    "placementId": "test",
-                                    "type": "publisher"
+                                    "token": "XXX",
+                                    "bidFloor": 0.5,
+                                    "adUnitCode": "test-imp-id",
+                                    "exp": 0,
+                                    "instl": 0
                                 }
                             }
                         }
@@ -81,11 +98,10 @@
                                 {
                                     "id": "test_bid_id",
                                     "impid": "test-imp-id",
-                                    "price": 0.27543,
-                                    "adm": "<VAST version=\"3.0\"><Ad id=\"20001\" sequence=\"1\"><InLine><AdSystem version=\"4.0\"><![CDATA[iabtechlab]]></AdSystem><AdTitle><![CDATA[Inline Simple Ad]]></AdTitle><Impression><![CDATA[]]></Impression><Creatives><Creative id=\"5480\" sequence=\"1\"><Linear><Duration>00:01:00</Duration><MediaFiles><MediaFile id=\"5246\" delivery=\"progressive\" type=\"video/mp4\" bitrate=\"600\" width=\"640\" height=\"360\" minBitrate=\"500\" maxBitrate=\"700\" scalable=\"1\" maintainAspectRatio=\"1\" codec=\"0\"><![CDATA[https://s0.2mdn.net/4253510/google_ddm_animation_480P.mp4]]></MediaFile></MediaFiles><VideoClicks><ClickThrough id=\"blog\"><![CDATA[https://example.com]]></ClickThrough></VideoClicks></Linear></Creative></Creatives></InLine></Ad></VAST>",
+                                    "price": 0.9,
+                                    "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\" ?><VAST version=\"2.0\"><Ad id=\"128a6.44d74.46b3\"><InLine><Error><![CDATA[http:\/\/example.net\/hbx\/verr?e=]]><\/Error><Impression><![CDATA[http:\/\/example.net\/hbx\/vimp?lid=test&aid=testapp]]><\/Impression><Creatives><Creative sequence=\"1\"><Linear><Duration>00:00:15<\/Duration><TrackingEvents><Tracking event=\"firstQuartile\"><![CDATA[https:\/\/example.com?event=first_quartile]]><\/Tracking><\/TrackingEvents><VideoClicks><ClickThrough><![CDATA[http:\/\/example.com]]><\/ClickThrough><\/VideoClicks><MediaFiles><MediaFile delivery=\"progressive\" width=\"16\" height=\"9\" type=\"video\/mp4\" bitrate=\"512\"><![CDATA[https:\/\/example.com\/media.mp4]]><\/MediaFile><\/MediaFiles><\/Linear><\/Creative><\/Creatives><\/InLine><\/Ad><\/VAST>",
                                     "cid": "test_cid",
                                     "crid": "test_crid",
-                                    "dealid": "test_dealid",
                                     "ext": {
                                         "prebid": {
                                             "type": "video"
@@ -93,7 +109,7 @@
                                     }
                                 }
                             ],
-                            "seat": "appush"
+                            "seat": "alkimi"
                         }
                     ],
                     "cur": "USD"
@@ -109,11 +125,10 @@
                     "bid": {
                         "id": "test_bid_id",
                         "impid": "test-imp-id",
-                        "price": 0.27543,
-                        "adm": "<VAST version=\"3.0\"><Ad id=\"20001\" sequence=\"1\"><InLine><AdSystem version=\"4.0\"><![CDATA[iabtechlab]]></AdSystem><AdTitle><![CDATA[Inline Simple Ad]]></AdTitle><Impression><![CDATA[]]></Impression><Creatives><Creative id=\"5480\" sequence=\"1\"><Linear><Duration>00:01:00</Duration><MediaFiles><MediaFile id=\"5246\" delivery=\"progressive\" type=\"video/mp4\" bitrate=\"600\" width=\"640\" height=\"360\" minBitrate=\"500\" maxBitrate=\"700\" scalable=\"1\" maintainAspectRatio=\"1\" codec=\"0\"><![CDATA[https://s0.2mdn.net/4253510/google_ddm_animation_480P.mp4]]></MediaFile></MediaFiles><VideoClicks><ClickThrough id=\"blog\"><![CDATA[https://example.com]]></ClickThrough></VideoClicks></Linear></Creative></Creatives></InLine></Ad></VAST>",
+                        "price": 0.9,
+                        "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\" ?><VAST version=\"2.0\"><Ad id=\"128a6.44d74.46b3\"><InLine><Error><![CDATA[http:\/\/example.net\/hbx\/verr?e=]]><\/Error><Impression><![CDATA[http:\/\/example.net\/hbx\/vimp?lid=test&aid=testapp]]><\/Impression><Creatives><Creative sequence=\"1\"><Linear><Duration>00:00:15<\/Duration><TrackingEvents><Tracking event=\"firstQuartile\"><![CDATA[https:\/\/example.com?event=first_quartile]]><\/Tracking><\/TrackingEvents><VideoClicks><ClickThrough><![CDATA[http:\/\/example.com]]><\/ClickThrough><\/VideoClicks><MediaFiles><MediaFile delivery=\"progressive\" width=\"16\" height=\"9\" type=\"audio\/mp3\" bitrate=\"128\"><![CDATA[https:\/\/example.com\/media.mp4]]><\/MediaFile><\/MediaFiles><\/Linear><\/Creative><\/Creatives><\/InLine><\/Ad><\/VAST>",
                         "cid": "test_cid",
                         "crid": "test_crid",
-                        "dealid": "test_dealid",
                         "ext": {
                             "prebid": {
                                 "type": "video"
