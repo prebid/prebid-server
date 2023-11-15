@@ -1,19 +1,34 @@
 package alkimi
 
 import (
-	"encoding/json"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
 	"testing"
+	"encoding/json"
 
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/stretchr/testify/assert"
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/adapters/adapterstest"
 )
 
 const (
 	alkimiTestEndpoint = "https://exchange.alkimi-onboarding.com/server/bid"
 )
+
+func TestJsonSamples(t *testing.T) {
+	bidder, buildErr := Builder(
+		openrtb_ext.BidderAlkimi,
+		config.Adapter{Endpoint: alkimiTestEndpoint},
+		config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"},
+	)
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	adapterstest.RunJSONBidderTest(t, "alkimitest", bidder)
+}
 
 func TestEndpointEmpty(t *testing.T) {
 	_, buildErr := Builder(openrtb_ext.BidderAlkimi, config.Adapter{
