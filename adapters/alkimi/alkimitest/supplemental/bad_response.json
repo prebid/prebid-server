@@ -18,18 +18,25 @@
                 },
                 "ext": {
                     "bidder": {
-                        "placementId": "test"
+                        "token": "XXX",
+                        "bidFloor": 0.5
                     }
                 }
             }
         ],
-        "app": {
-            "id": "1",
-            "bundle": "com.wls.testwlsapplication"
+        "site": {
+            "domain": "www.example.com",
+            "page": "http://www.example.com",
+            "publisher": {
+                "domain": "example.com"
+            },
+            "ext": {
+                "amp": 0
+            }
         },
         "device": {
             "ip": "123.123.123.123",
-            "ifa": "sdjfksdf-dfsds-dsdg-dsgg"
+            "ifa": "test"
         }
     },
 	"httpCalls": [{
@@ -52,21 +59,31 @@
                                 }
                             ]
                         },
+                        "bidfloor": 0.5,
                         "ext": {
                             "bidder": {
-                                "placementId": "test",
-                                "type": "publisher"
+                                "token": "XXX",
+                                "bidFloor": 0.5,
+                                "adUnitCode": "test-imp-id",
+                                "exp": 0,
+                                "instl": 0
                             }
                         }
                     }
                 ],
-                "app": {
-                    "id": "1",
-                    "bundle": "com.wls.testwlsapplication"
+                "site": {
+                    "domain": "www.example.com",
+                    "page": "http://www.example.com",
+                    "publisher": {
+                        "domain": "example.com"
+                    },
+                    "ext": {
+                        "amp": 0
+                    }
                 },
                 "device": {
                     "ip": "123.123.123.123",
-                    "ifa": "sdjfksdf-dfsds-dsdg-dsgg"
+                    "ifa": "test"
                 }
             }
 		},
