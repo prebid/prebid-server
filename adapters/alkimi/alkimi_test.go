@@ -17,9 +17,9 @@ const (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(
-		openrtb_ext.BidderAlkimi, 
-		config.Adapter{Endpoint: alkimiTestEndpoint}, 
-		config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"}
+		openrtb_ext.BidderAlkimi,
+		config.Adapter{Endpoint: alkimiTestEndpoint},
+		config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"},
 	)
 
 	if buildErr != nil {
