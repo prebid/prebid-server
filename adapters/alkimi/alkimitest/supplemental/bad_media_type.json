@@ -95,7 +95,7 @@
     }],
     "expectedMakeBidsErrors": [
         {
-          "value": "Failed to find impression \"test-imp-id\"",
+          "value": "Failed to find imp \"test-imp-id\"",
           "comparison": "literal"
         }
     ]
