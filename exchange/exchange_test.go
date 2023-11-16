@@ -83,7 +83,7 @@ func TestNewExchange(t *testing.T) {
 		},
 	}.Builder
 
-	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer()).(*exchange)
+	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil).(*exchange)
 	for _, bidderName := range knownAdapters {
 		if _, ok := e.adapterMap[bidderName]; !ok {
 			if biddersInfo[string(bidderName)].IsEnabled() {
@@ -133,7 +133,7 @@ func TestCharacterEscape(t *testing.T) {
 		},
 	}.Builder
 
-	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer()).(*exchange)
+	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil).(*exchange)
 
 	// 	3) Build all the parameters e.buildBidResponse(ctx.Background(), liveA... ) needs
 	//liveAdapters []openrtb_ext.BidderName,
@@ -816,6 +816,14 @@ func TestAdapterCurrency(t *testing.T) {
 	}
 }
 
+type mockPriceFloorFetcher struct{}
+
+func (mpf *mockPriceFloorFetcher) Fetch(configs config.AccountPriceFloors) (*openrtb_ext.PriceFloorRules, string) {
+	return nil, openrtb_ext.FetchNone
+}
+
+func (mpf *mockPriceFloorFetcher) Stop() {}
+
 func TestFloorsSignalling(t *testing.T) {
 
 	fakeCurrencyClient := &fakeCurrencyRatesHttpClient{
@@ -840,7 +848,8 @@ func TestFloorsSignalling(t *testing.T) {
 		currencyConverter: currencyConverter,
 		categoriesFetcher: nilCategoryFetcher{},
 		bidIDGenerator:    &mockBidIDGenerator{false, false},
-		floor:             config.PriceFloors{Enabled: true},
+		priceFloorEnabled: true,
+		priceFloorFetcher: &mockPriceFloorFetcher{},
 	}
 	e.requestSplitter = requestSplitter{
 		me:               e.me,
@@ -1428,7 +1437,7 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 		},
 	}.Builder
 
-	e := NewExchange(adapters, pbc, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer()).(*exchange)
+	e := NewExchange(adapters, pbc, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil).(*exchange)
 	// 	3) Build all the parameters e.buildBidResponse(ctx.Background(), liveA... ) needs
 	liveAdapters := []openrtb_ext.BidderName{bidderName}
 
@@ -1785,7 +1794,7 @@ func TestBidResponseCurrency(t *testing.T) {
 		},
 	}.Builder
 
-	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer()).(*exchange)
+	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil).(*exchange)
 
 	liveAdapters := make([]openrtb_ext.BidderName, 1)
 	liveAdapters[0] = "appnexus"
@@ -1931,7 +1940,7 @@ func TestBidResponseImpExtInfo(t *testing.T) {
 		t.Fatalf("Error intializing adapters: %v", adaptersErr)
 	}
 
-	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, nil, gdprPermsBuilder, nil, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer()).(*exchange)
+	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, nil, gdprPermsBuilder, nil, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil).(*exchange)
 
 	liveAdapters := make([]openrtb_ext.BidderName, 1)
 	liveAdapters[0] = "appnexus"
@@ -2023,7 +2032,7 @@ func TestRaceIntegration(t *testing.T) {
 		},
 	}.Builder
 
-	ex := NewExchange(adapters, &wellBehavedCache{}, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, &nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer()).(*exchange)
+	ex := NewExchange(adapters, &wellBehavedCache{}, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, &nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil).(*exchange)
 	_, err = ex.HoldAuction(context.Background(), auctionRequest, &debugLog)
 	if err != nil {
 		t.Errorf("HoldAuction returned unexpected error: %v", err)
@@ -2121,7 +2130,7 @@ func TestPanicRecovery(t *testing.T) {
 		},
 	}.Builder
 
-	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer()).(*exchange)
+	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil).(*exchange)
 
 	chBids := make(chan *bidResponseWrapper, 1)
 	panicker := func(bidderRequest BidderRequest, conversions currency.Conversions) {
@@ -2191,7 +2200,7 @@ func TestPanicRecoveryHighLevel(t *testing.T) {
 			allowAllBidders: true,
 		},
 	}.Builder
-	e := NewExchange(adapters, &mockCache{}, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, categoriesFetcher, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer()).(*exchange)
+	e := NewExchange(adapters, &mockCache{}, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, categoriesFetcher, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil).(*exchange)
 
 	e.adapterMap[openrtb_ext.BidderBeachfront] = panicingAdapter{}
 	e.adapterMap[openrtb_ext.BidderAppnexus] = panicingAdapter{}
@@ -2634,7 +2643,8 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		server:                   config.Server{ExternalUrl: server.ExternalUrl, GvlID: server.GvlID, DataCenter: server.DataCenter},
 		bidValidationEnforcement: hostBidValidation,
 		requestSplitter:          requestSplitter,
-		floor:                    config.PriceFloors{Enabled: floorsFlag},
+		priceFloorEnabled:        floorsFlag,
+		priceFloorFetcher:        &mockPriceFloorFetcher{},
 	}
 }
 
@@ -4660,7 +4670,7 @@ func TestPassExperimentConfigsToHoldAuction(t *testing.T) {
 		},
 	}.Builder
 
-	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &signer, macros.NewStringIndexBasedReplacer()).(*exchange)
+	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &signer, macros.NewStringIndexBasedReplacer(), nil).(*exchange)
 
 	// Define mock incoming bid requeset
 	mockBidRequest := &openrtb2.BidRequest{

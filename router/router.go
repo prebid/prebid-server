@@ -20,6 +20,7 @@ import (
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/exchange"
 	"github.com/prebid/prebid-server/v2/experiment/adscert"
+	"github.com/prebid/prebid-server/v2/floors"
 	"github.com/prebid/prebid-server/v2/gdpr"
 	"github.com/prebid/prebid-server/v2/hooks"
 	"github.com/prebid/prebid-server/v2/macros"
@@ -162,6 +163,16 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		},
 	}
 
+	floorFechterHttpClient := &http.Client{
+		Transport: &http.Transport{
+			Proxy:               http.ProxyFromEnvironment,
+			MaxConnsPerHost:     cfg.PriceFloors.Fetcher.HttpClient.MaxConnsPerHost,
+			MaxIdleConns:        cfg.PriceFloors.Fetcher.HttpClient.MaxIdleConns,
+			MaxIdleConnsPerHost: cfg.PriceFloors.Fetcher.HttpClient.MaxIdleConnsPerHost,
+			IdleConnTimeout:     time.Duration(cfg.PriceFloors.Fetcher.HttpClient.IdleConnTimeout) * time.Second,
+		},
+	}
+
 	if err := checkSupportedUserSyncEndpoints(cfg.BidderInfos); err != nil {
 		return nil, err
 	}
@@ -224,10 +235,12 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		glog.Fatalf("Failed to create ads cert signer: %v", err)
 	}
 
+	priceFloorFetcher := floors.NewPriceFloorFetcher(cfg.PriceFloors, floorFechterHttpClient, r.MetricsEngine)
+
 	tmaxAdjustments := exchange.ProcessTMaxAdjustments(cfg.TmaxAdjustments)
 	planBuilder := hooks.NewExecutionPlanBuilder(cfg.Hooks, repo)
 	macroReplacer := macros.NewStringIndexBasedReplacer()
-	theExchange := exchange.NewExchange(adapters, cacheClient, cfg, syncersByBidder, r.MetricsEngine, cfg.BidderInfos, gdprPermsBuilder, rateConvertor, categoriesFetcher, adsCertSigner, macroReplacer)
+	theExchange := exchange.NewExchange(adapters, cacheClient, cfg, syncersByBidder, r.MetricsEngine, cfg.BidderInfos, gdprPermsBuilder, rateConvertor, categoriesFetcher, adsCertSigner, macroReplacer, priceFloorFetcher)
 	var uuidGenerator uuidutil.UUIDRandomGenerator
 	openrtbEndpoint, err := openrtb2.NewEndpoint(uuidGenerator, theExchange, paramsValidator, fetcher, accounts, cfg, r.MetricsEngine, analyticsRunner, disabledBidders, defReqJSON, activeBidders, storedRespFetcher, planBuilder, tmaxAdjustments)
 	if err != nil {

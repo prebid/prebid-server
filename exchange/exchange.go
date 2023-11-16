@@ -81,7 +81,8 @@ type exchange struct {
 	bidValidationEnforcement config.Validations
 	requestSplitter          requestSplitter
 	macroReplacer            macros.Replacer
-	floor                    config.PriceFloors
+	priceFloorEnabled        bool
+	priceFloorFetcher        floors.FloorFetcher
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -130,7 +131,7 @@ func (randomDeduplicateBidBooleanGenerator) Generate() bool {
 	return rand.Intn(100) < 50
 }
 
-func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, gdprPermsBuilder gdpr.PermissionsBuilder, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher, adsCertSigner adscert.Signer, macroReplacer macros.Replacer) Exchange {
+func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, gdprPermsBuilder gdpr.PermissionsBuilder, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher, adsCertSigner adscert.Signer, macroReplacer macros.Replacer, priceFloorFetcher floors.FloorFetcher) Exchange {
 	bidderToSyncerKey := map[string]string{}
 	for bidder, syncer := range syncersByBidder {
 		bidderToSyncerKey[bidder] = syncer.Key()
@@ -175,7 +176,8 @@ func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid
 		bidValidationEnforcement: cfg.Validations,
 		requestSplitter:          requestSplitter,
 		macroReplacer:            macroReplacer,
-		floor:                    cfg.PriceFloors,
+		priceFloorEnabled:        cfg.PriceFloors.Enabled,
+		priceFloorFetcher:        priceFloorFetcher,
 	}
 }
 
@@ -233,7 +235,6 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		return nil, nil
 	}
 
-	var floorErrs []error
 	err := r.HookExecutor.ExecuteProcessedAuctionStage(r.BidRequestWrapper)
 	if err != nil {
 		return nil, err
@@ -268,8 +269,9 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	// Get currency rates conversions for the auction
 	conversions := e.getAuctionCurrencyRates(requestExtPrebid.CurrencyConversions)
 
-	if e.floor.Enabled {
-		floorErrs = floors.EnrichWithPriceFloors(r.BidRequestWrapper, r.Account, conversions)
+	var floorErrs []error
+	if e.priceFloorEnabled {
+		floorErrs = floors.EnrichWithPriceFloors(r.BidRequestWrapper, r.Account, conversions, e.priceFloorFetcher)
 	}
 
 	responseDebugAllow, accountDebugAllow, debugLog := getDebugInfo(r.BidRequestWrapper.Test, requestExtPrebid, r.Account.DebugAllow, debugLog)
@@ -386,7 +388,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	)
 
 	if anyBidsReturned {
-		if e.floor.Enabled {
+		if e.priceFloorEnabled {
 			var rejectedBids []*entities.PbsOrtbSeatBid
 			var enforceErrs []error
 
