@@ -90,6 +90,7 @@
             "crid": "crid_10",
             "w": 300,
             "h": 250,
+            "mtype": 2,
             "ext":
             {
               "mediatype": "video"
