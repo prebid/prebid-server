@@ -1,7 +1,8 @@
 package privacy
 
 import (
-	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type ActivityResult int
@@ -13,6 +14,27 @@ const (
 )
 
 const defaultActivityResult = true
+
+func NewRequestFromPolicies(p Policies) ActivityRequest {
+	return ActivityRequest{policies: &p}
+}
+
+func NewRequestFromBidRequest(r openrtb_ext.RequestWrapper) ActivityRequest {
+	return ActivityRequest{bidRequest: &r}
+}
+
+type ActivityRequest struct {
+	policies   *Policies
+	bidRequest *openrtb_ext.RequestWrapper
+}
+
+func (r ActivityRequest) IsPolicies() bool {
+	return r.policies != nil
+}
+
+func (r ActivityRequest) IsBidRequest() bool {
+	return r.bidRequest != nil
+}
 
 type ActivityControl struct {
 	plans map[Activity]ActivityPlan
@@ -32,8 +54,8 @@ func NewActivityControl(cfg *config.AccountPrivacy) ActivityControl {
 	plans[ActivityReportAnalytics] = buildPlan(cfg.AllowActivities.ReportAnalytics)
 	plans[ActivityTransmitUserFPD] = buildPlan(cfg.AllowActivities.TransmitUserFPD)
 	plans[ActivityTransmitPreciseGeo] = buildPlan(cfg.AllowActivities.TransmitPreciseGeo)
-	plans[ActivityTransmitUniqueRequestIds] = buildPlan(cfg.AllowActivities.TransmitUniqueRequestIds)
-	plans[ActivityTransmitTids] = buildPlan(cfg.AllowActivities.TransmitTids)
+	plans[ActivityTransmitUniqueRequestIDs] = buildPlan(cfg.AllowActivities.TransmitUniqueRequestIds)
+	plans[ActivityTransmitTIDs] = buildPlan(cfg.AllowActivities.TransmitTids)
 	ac.plans = plans
 
 	return ac
@@ -50,11 +72,9 @@ func cfgToRules(rules []config.ActivityRule) []Rule {
 	var enfRules []Rule
 
 	for _, r := range rules {
-		var result ActivityResult
+		result := ActivityDeny
 		if r.Allow {
 			result = ActivityAllow
-		} else {
-			result = ActivityDeny
 		}
 
 		er := ConditionRule{
@@ -74,14 +94,14 @@ func cfgToDefaultResult(activityDefault *bool) bool {
 	return *activityDefault
 }
 
-func (e ActivityControl) Allow(activity Activity, target Component) bool {
+func (e ActivityControl) Allow(activity Activity, target Component, request ActivityRequest) bool {
 	plan, planDefined := e.plans[activity]
 
 	if !planDefined {
 		return defaultActivityResult
 	}
 
-	return plan.Evaluate(target)
+	return plan.Evaluate(target, request)
 }
 
 type ActivityPlan struct {
@@ -89,9 +109,9 @@ type ActivityPlan struct {
 	rules         []Rule
 }
 
-func (p ActivityPlan) Evaluate(target Component) bool {
+func (p ActivityPlan) Evaluate(target Component, request ActivityRequest) bool {
 	for _, rule := range p.rules {
-		result := rule.Evaluate(target)
+		result := rule.Evaluate(target, request)
 		if result == ActivityDeny || result == ActivityAllow {
 			return result == ActivityAllow
 		}

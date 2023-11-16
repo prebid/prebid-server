@@ -3,7 +3,7 @@ package modules
 {{if .}}
 import (
     {{- range .}}
-    {{.Vendor}}{{.Module | Title}} "github.com/prebid/prebid-server/modules/{{.Vendor}}/{{.Module}}"
+    {{.Vendor}}{{.Module | Title}} "github.com/prebid/prebid-server/v2/modules/{{.Vendor}}/{{.Module}}"
     {{- end}}
 )
 {{end}}

@@ -1,5 +1,9 @@
 package usersync
 
+import (
+	"strings"
+)
+
 // BidderFilter determines if a bidder has permission to perform a user sync activity.
 type BidderFilter interface {
 	// Allowed returns true if the filter determines the bidder has permission and false if either
@@ -40,7 +44,7 @@ func (f SpecificBidderFilter) Allowed(bidder string) bool {
 func NewSpecificBidderFilter(bidders []string, mode BidderFilterMode) BidderFilter {
 	biddersLookup := make(map[string]struct{}, len(bidders))
 	for _, bidder := range bidders {
-		biddersLookup[bidder] = struct{}{}
+		biddersLookup[strings.ToLower(bidder)] = struct{}{}
 	}
 
 	return SpecificBidderFilter{biddersLookup: biddersLookup, mode: mode}
