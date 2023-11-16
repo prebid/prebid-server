@@ -21,6 +21,7 @@ import (
 	"github.com/prebid/prebid-server/v2/gdpr"
 	"github.com/prebid/prebid-server/v2/metrics"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/ortb"
 	"github.com/prebid/prebid-server/v2/privacy"
 	"github.com/prebid/prebid-server/v2/privacy/ccpa"
 	"github.com/prebid/prebid-server/v2/privacy/lmt"
@@ -153,11 +154,6 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 
 	// bidder level privacy policies
 	for _, bidderRequest := range allBidderRequests {
-		privacyEnforcement := privacy.Enforcement{
-			COPPA: coppa,
-			LMT:   lmt,
-		}
-
 		// fetchBids activity
 		scopedName := privacy.Component{Type: privacy.ComponentTypeBidder, Name: bidderRequest.BidderName.String()}
 		fetchBidsActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityFetchBids, scopedName, privacy.NewRequestFromBidRequest(*req))
@@ -180,46 +176,56 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 			}
 		}
 
+		ipConf := privacy.IPConf{IPV6: auctionReq.Account.Privacy.IPv6Config, IPV4: auctionReq.Account.Privacy.IPv4Config}
+
+		// FPD should be applied before policies, otherwise it overrides policies and activities restricted data
+		applyFPD(auctionReq.FirstPartyData, bidderRequest)
+
+		reqWrapper := cloneBidderReq(bidderRequest.BidRequest)
+
 		passIDActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitUserFPD, scopedName, privacy.NewRequestFromBidRequest(*req))
 		if !passIDActivityAllowed {
-			privacyEnforcement.UFPD = true
+			//UFPD
+			privacy.ScrubUserFPD(reqWrapper)
 		} else {
 			// run existing policies (GDPR, CCPA, COPPA, LMT)
 			// potentially block passing IDs based on GDPR
-			if gdprEnforced {
-				if gdprErr == nil {
-					privacyEnforcement.GDPRID = !auctionPermissions.PassID
-				} else {
-					privacyEnforcement.GDPRID = true
-				}
+			if gdprEnforced && (gdprErr != nil || !auctionPermissions.PassID) {
+				privacy.ScrubGdprID(reqWrapper)
 			}
 			// potentially block passing IDs based on CCPA
-			privacyEnforcement.CCPA = ccpaEnforcer.ShouldEnforce(bidderRequest.BidderName.String())
+			if ccpaEnforcer.ShouldEnforce(bidderRequest.BidderName.String()) {
+				privacy.ScrubDeviceIDsIPsUserDemoExt(reqWrapper, ipConf, "eids", false)
+			}
 		}
 
 		passGeoActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitPreciseGeo, scopedName, privacy.NewRequestFromBidRequest(*req))
 		if !passGeoActivityAllowed {
-			privacyEnforcement.PreciseGeo = true
+			privacy.ScrubGeoAndDeviceIP(reqWrapper, ipConf)
 		} else {
 			// run existing policies (GDPR, CCPA, COPPA, LMT)
 			// potentially block passing geo based on GDPR
-			if gdprEnforced {
-				if gdprErr == nil {
-					privacyEnforcement.GDPRGeo = !auctionPermissions.PassGeo
-				} else {
-					privacyEnforcement.GDPRGeo = true
-				}
+			if gdprEnforced && (gdprErr != nil || !auctionPermissions.PassGeo) {
+				privacy.ScrubGeoAndDeviceIP(reqWrapper, ipConf)
 			}
 			// potentially block passing geo based on CCPA
-			privacyEnforcement.CCPA = ccpaEnforcer.ShouldEnforce(bidderRequest.BidderName.String())
-
+			if ccpaEnforcer.ShouldEnforce(bidderRequest.BidderName.String()) {
+				privacy.ScrubDeviceIDsIPsUserDemoExt(reqWrapper, ipConf, "eids", false)
+			}
 		}
 
-		applyFPD(auctionReq.FirstPartyData, bidderRequest)
+		if lmt || coppa {
+			privacy.ScrubDeviceIDsIPsUserDemoExt(reqWrapper, ipConf, "eids", coppa)
+		}
 
-		privacyEnforcement.TID = !auctionReq.Activities.Allow(privacy.ActivityTransmitTIDs, scopedName, privacy.NewRequestFromBidRequest(*req))
+		passTIDAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitTIDs, scopedName, privacy.NewRequestFromBidRequest(*req))
+		if !passTIDAllowed {
+			privacy.ScrubTID(reqWrapper)
+		}
 
-		privacyEnforcement.Apply(bidderRequest.BidRequest, auctionReq.Account.Privacy)
+		reqWrapper.RebuildRequest()
+		bidderRequest.BidRequest = reqWrapper.BidRequest
+
 		allowedBidderRequests = append(allowedBidderRequests, bidderRequest)
 
 		// GPP downgrade: always downgrade unless we can confirm GPP is supported
@@ -230,6 +236,34 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 	}
 
 	return
+}
+
+// cloneBidderReq - clones bidder request and replaces req.User and req.Device with new copies
+func cloneBidderReq(req *openrtb2.BidRequest) *openrtb_ext.RequestWrapper {
+
+	// bidder request may be modified differently per bidder based on privacy configs
+	// new request should be created for each bidder request
+	// pointer fields like User and Device should be cloned and set back to the request copy
+	var newReq *openrtb2.BidRequest
+	newReq = ptrutil.Clone(req)
+
+	if req.User != nil {
+		userCopy := ortb.CloneUser(req.User)
+		newReq.User = userCopy
+	}
+
+	if req.Device != nil {
+		deviceCopy := ortb.CloneDevice(req.Device)
+		newReq.Device = deviceCopy
+	}
+
+	if req.Source != nil {
+		sourceCopy := ortb.CloneSource(req.Source)
+		newReq.Source = sourceCopy
+	}
+
+	reqWrapper := &openrtb_ext.RequestWrapper{BidRequest: newReq}
+	return reqWrapper
 }
 
 func shouldSetLegacyPrivacy(bidderInfo config.BidderInfos, bidder string) bool {

@@ -81,7 +81,8 @@ type exchange struct {
 	bidValidationEnforcement config.Validations
 	requestSplitter          requestSplitter
 	macroReplacer            macros.Replacer
-	floor                    config.PriceFloors
+	priceFloorEnabled        bool
+	priceFloorFetcher        floors.FloorFetcher
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -130,7 +131,7 @@ func (randomDeduplicateBidBooleanGenerator) Generate() bool {
 	return rand.Intn(100) < 50
 }
 
-func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, gdprPermsBuilder gdpr.PermissionsBuilder, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher, adsCertSigner adscert.Signer, macroReplacer macros.Replacer) Exchange {
+func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, gdprPermsBuilder gdpr.PermissionsBuilder, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher, adsCertSigner adscert.Signer, macroReplacer macros.Replacer, priceFloorFetcher floors.FloorFetcher) Exchange {
 	bidderToSyncerKey := map[string]string{}
 	for bidder, syncer := range syncersByBidder {
 		bidderToSyncerKey[bidder] = syncer.Key()
@@ -175,7 +176,8 @@ func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid
 		bidValidationEnforcement: cfg.Validations,
 		requestSplitter:          requestSplitter,
 		macroReplacer:            macroReplacer,
-		floor:                    cfg.PriceFloors,
+		priceFloorEnabled:        cfg.PriceFloors.Enabled,
+		priceFloorFetcher:        priceFloorFetcher,
 	}
 }
 
@@ -233,7 +235,6 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		return nil, nil
 	}
 
-	var floorErrs []error
 	err := r.HookExecutor.ExecuteProcessedAuctionStage(r.BidRequestWrapper)
 	if err != nil {
 		return nil, err
@@ -268,8 +269,9 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	// Get currency rates conversions for the auction
 	conversions := e.getAuctionCurrencyRates(requestExtPrebid.CurrencyConversions)
 
-	if e.floor.Enabled {
-		floorErrs = floors.EnrichWithPriceFloors(r.BidRequestWrapper, r.Account, conversions)
+	var floorErrs []error
+	if e.priceFloorEnabled {
+		floorErrs = floors.EnrichWithPriceFloors(r.BidRequestWrapper, r.Account, conversions, e.priceFloorFetcher)
 	}
 
 	responseDebugAllow, accountDebugAllow, debugLog := getDebugInfo(r.BidRequestWrapper.Test, requestExtPrebid, r.Account.DebugAllow, debugLog)
@@ -386,7 +388,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	)
 
 	if anyBidsReturned {
-		if e.floor.Enabled {
+		if e.priceFloorEnabled {
 			var rejectedBids []*entities.PbsOrtbSeatBid
 			var enforceErrs []error
 
@@ -1275,7 +1277,7 @@ func (e *exchange) makeBid(bids []*entities.PbsOrtbBid, auc *auction, returnCrea
 			}
 		}
 
-		if bidExtJSON, err := makeBidExtJSON(bid.Bid.Ext, bidExtPrebid, impExtInfoMap, bid.Bid.ImpID, bid.OriginalBidCPM, bid.OriginalBidCur); err != nil {
+		if bidExtJSON, err := makeBidExtJSON(bid.Bid.Ext, bidExtPrebid, impExtInfoMap, bid.Bid.ImpID, bid.OriginalBidCPM, bid.OriginalBidCur, adapter); err != nil {
 			errs = append(errs, err)
 		} else {
 			result = append(result, *bid.Bid)
@@ -1289,7 +1291,7 @@ func (e *exchange) makeBid(bids []*entities.PbsOrtbBid, auc *auction, returnCrea
 	return result, errs
 }
 
-func makeBidExtJSON(ext json.RawMessage, prebid *openrtb_ext.ExtBidPrebid, impExtInfoMap map[string]ImpExtInfo, impId string, originalBidCpm float64, originalBidCur string) (json.RawMessage, error) {
+func makeBidExtJSON(ext json.RawMessage, prebid *openrtb_ext.ExtBidPrebid, impExtInfoMap map[string]ImpExtInfo, impId string, originalBidCpm float64, originalBidCur string, adapter openrtb_ext.BidderName) (json.RawMessage, error) {
 	var extMap map[string]interface{}
 
 	if len(ext) != 0 {
@@ -1318,10 +1320,16 @@ func makeBidExtJSON(ext json.RawMessage, prebid *openrtb_ext.ExtBidPrebid, impEx
 			} `json:"prebid"`
 		}{}
 		if err := jsonutil.Unmarshal(ext, &metaContainer); err != nil {
-			return nil, fmt.Errorf("error validaing response from server, %s", err)
+			return nil, fmt.Errorf("error validating response from server, %s", err)
 		}
 		prebid.Meta = &metaContainer.Prebid.Meta
 	}
+
+	if prebid.Meta == nil {
+		prebid.Meta = &openrtb_ext.ExtBidPrebidMeta{}
+	}
+
+	prebid.Meta.AdapterCode = adapter.String()
 
 	// ext.prebid.storedrequestattributes and ext.prebid.passthrough
 	if impExtInfo, ok := impExtInfoMap[impId]; ok {
