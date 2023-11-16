@@ -5630,12 +5630,12 @@ func (e mockUpdateBidRequestHook) HandleBidderRequestHook(_ context.Context, mct
 	c := hookstage.ChangeSet[hookstage.BidderRequestPayload]{}
 	c.AddMutation(
 		func(payload hookstage.BidderRequestPayload) (hookstage.BidderRequestPayload, error) {
-			payload.BidRequest.Site.Name = "test"
+			payload.Request.Site.Name = "test"
 			return payload, nil
 		}, hookstage.MutationUpdate, "bidRequest", "site.name",
 	).AddMutation(
 		func(payload hookstage.BidderRequestPayload) (hookstage.BidderRequestPayload, error) {
-			payload.BidRequest.Site.Domain = "test.com"
+			payload.Request.Site.Domain = "test.com"
 			return payload, nil
 		}, hookstage.MutationUpdate, "bidRequest", "site.domain",
 	)
