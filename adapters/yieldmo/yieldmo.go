@@ -171,5 +171,14 @@ func getMediaTypeForImp(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 		return "", &errortypes.BadInput{Message: err.Error()}
 	}
 
-	return openrtb_ext.ParseBidType(bidExt.MediaType)
+	switch bidExt.MediaType {
+	case "banner":
+		return openrtb_ext.BidTypeBanner, nil
+	case "video":
+		return openrtb_ext.BidTypeVideo, nil
+	case "native":
+		return openrtb_ext.BidTypeNative, nil
+	default:
+		return "", fmt.Errorf("invalid BidType: %s", bidExt.MediaType)
+	}
 }
