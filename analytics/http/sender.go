@@ -48,7 +48,7 @@ func createHttpSender(httpClient *http.Client, endpoint config.AnalyticsHttpEndp
 		var err error
 
 		if endpoint.Gzip {
-			// we compsress with gzip if enabled
+			// we compress with gzip if enabled
 			requestBody, err = compressToGZIP(payload)
 			if err != nil {
 				glog.Errorf("[HttpAnalytics] Compressing request failed %v", err)

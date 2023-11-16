@@ -30,13 +30,8 @@ func createAuctionFilter(feature config.AnalyticsFeature) (auctionFilter, error)
 	}
 
 	return func(event *analytics.AuctionObject) bool {
-		// disbale tracking for nil events or events with a sample rate of 0
-		if event == nil || feature.SampleRate <= 0 {
-			return false
-		}
-
-		// Sample the event
-		if rand.Float64() > feature.SampleRate {
+		// Disable tracking for nil events or events with a sample rate of 0
+		if event == nil || feature.SampleRate <= 0 || rand.Float64() > feature.SampleRate {
 			return false
 		}
 
@@ -65,11 +60,7 @@ func createAmpFilter(feature config.AnalyticsFeature) (ampFilter, error) {
 	}
 
 	return func(event *analytics.AmpObject) bool {
-		if event == nil || feature.SampleRate <= 0 {
-			return false
-		}
-
-		if rand.Float64() > feature.SampleRate {
+		if event == nil || feature.SampleRate <= 0 || rand.Float64() > feature.SampleRate {
 			return false
 		}
 
@@ -97,11 +88,7 @@ func createCookieSyncFilter(feature config.AnalyticsFeature) (cookieSyncFilter, 
 	}
 
 	return func(event *analytics.CookieSyncObject) bool {
-		if event == nil || feature.SampleRate <= 0 {
-			return false
-		}
-
-		if rand.Float64() > feature.SampleRate {
+		if event == nil || feature.SampleRate <= 0 || rand.Float64() > feature.SampleRate {
 			return false
 		}
 
@@ -129,11 +116,7 @@ func createNotificationFilter(feature config.AnalyticsFeature) (notificationFilt
 	}
 
 	return func(event *analytics.NotificationEvent) bool {
-		if event == nil || feature.SampleRate <= 0 {
-			return false
-		}
-
-		if rand.Float64() > feature.SampleRate {
+		if event == nil || feature.SampleRate <= 0 || rand.Float64() > feature.SampleRate {
 			return false
 		}
 
@@ -161,11 +144,7 @@ func createSetUIDFilter(feature config.AnalyticsFeature) (setUIDFilter, error) {
 	}
 
 	return func(event *analytics.SetUIDObject) bool {
-		if event == nil || feature.SampleRate <= 0 {
-			return false
-		}
-
-		if rand.Float64() > feature.SampleRate {
+		if event == nil || feature.SampleRate <= 0 || rand.Float64() > feature.SampleRate {
 			return false
 		}
 
@@ -193,11 +172,7 @@ func createVideoFilter(feature config.AnalyticsFeature) (videoFilter, error) {
 	}
 
 	return func(event *analytics.VideoObject) bool {
-		if event == nil || feature.SampleRate <= 0 {
-			return false
-		}
-
-		if rand.Float64() > feature.SampleRate {
+		if event == nil || feature.SampleRate <= 0 || rand.Float64() > feature.SampleRate {
 			return false
 		}
 

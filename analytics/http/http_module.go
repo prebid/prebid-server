@@ -195,80 +195,80 @@ func (l *HttpLogger) reset() {
 	l.eventCount = 0
 }
 
-func (m *HttpLogger) LogAuctionObject(event *analytics.AuctionObject) {
-	shouldTrack := m.shouldTrackAuction(event)
+func (l *HttpLogger) LogAuctionObject(event *analytics.AuctionObject) {
+	shouldTrack := l.shouldTrackAuction(event)
 	if !shouldTrack {
 		return
 	}
-	data, err := serializeAuctionObject(event, m.clock.Now())
+	data, err := serializeAuctionObject(event, l.clock.Now())
 	if err != nil {
 		glog.Errorf("[HttpAnalytics] Error serializing auction object: %v", err)
 		return
 	}
-	m.bufferCh <- data
+	l.bufferCh <- data
 }
 
-func (m *HttpLogger) LogAmpObject(event *analytics.AmpObject) {
-	shouldTrack := m.shouldTrackAmp(event)
+func (l *HttpLogger) LogAmpObject(event *analytics.AmpObject) {
+	shouldTrack := l.shouldTrackAmp(event)
 	if !shouldTrack {
 		return
 	}
-	data, err := serializeAmpObject(event, m.clock.Now())
+	data, err := serializeAmpObject(event, l.clock.Now())
 	if err != nil {
 		glog.Errorf("[HttpAnalytics] Error serializing amp object: %v", err)
 		return
 	}
-	m.bufferCh <- data
+	l.bufferCh <- data
 }
 
-func (m *HttpLogger) LogCookieSyncObject(event *analytics.CookieSyncObject) {
-	shouldTrack := m.shouldTrackCookieSync(event)
+func (l *HttpLogger) LogCookieSyncObject(event *analytics.CookieSyncObject) {
+	shouldTrack := l.shouldTrackCookieSync(event)
 	if !shouldTrack {
 		return
 	}
-	data, err := serializeCookieSyncObject(event, m.clock.Now())
+	data, err := serializeCookieSyncObject(event, l.clock.Now())
 	if err != nil {
 		glog.Errorf("[HttpAnalytics] Error serializing cookie sync object: %v", err)
 		return
 	}
-	m.bufferCh <- data
+	l.bufferCh <- data
 }
 
-func (m *HttpLogger) LogNotificationEventObject(event *analytics.NotificationEvent) {
-	shouldTrack := m.shouldTrackNotification(event)
+func (l *HttpLogger) LogNotificationEventObject(event *analytics.NotificationEvent) {
+	shouldTrack := l.shouldTrackNotification(event)
 	if !shouldTrack {
 		return
 	}
-	data, err := serializeNotificationEvent(event, m.clock.Now())
+	data, err := serializeNotificationEvent(event, l.clock.Now())
 	if err != nil {
 		glog.Errorf("[HttpAnalytics] Error serializing notification event object: %v", err)
 		return
 	}
-	m.bufferCh <- data
+	l.bufferCh <- data
 }
 
-func (m *HttpLogger) LogSetUIDObject(event *analytics.SetUIDObject) {
-	shouldTrack := m.shouldTrackSetUID(event)
+func (l *HttpLogger) LogSetUIDObject(event *analytics.SetUIDObject) {
+	shouldTrack := l.shouldTrackSetUID(event)
 	if !shouldTrack {
 		return
 	}
-	data, err := serializeSetUIDObject(event, m.clock.Now())
+	data, err := serializeSetUIDObject(event, l.clock.Now())
 	if err != nil {
 		glog.Errorf("[HttpAnalytics] Error serializing setuid object: %v", err)
 		return
 	}
-	m.bufferCh <- data
+	l.bufferCh <- data
 }
 
-func (m *HttpLogger) LogVideoObject(event *analytics.VideoObject) {
-	shouldTrack := m.shouldTrackVideo(event)
+func (l *HttpLogger) LogVideoObject(event *analytics.VideoObject) {
+	shouldTrack := l.shouldTrackVideo(event)
 	if !shouldTrack {
 		return
 	}
-	data, err := serializeVideoObject(event, m.clock.Now())
+	data, err := serializeVideoObject(event, l.clock.Now())
 	if err != nil {
 		glog.Errorf("[HttpAnalytics] Error serializing video object: %v", err)
 		return
 	}
-	m.bufferCh <- data
+	l.bufferCh <- data
 }
