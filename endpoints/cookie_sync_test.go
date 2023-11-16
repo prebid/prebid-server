@@ -1994,6 +1994,39 @@ func TestCookieSyncActivityControlIntegration(t *testing.T) {
 	}
 }
 
+func TestUsersyncPrivacyGDPRInScope(t *testing.T) {
+	testCases := []struct {
+		description     string
+		givenGdprSignal gdpr.Signal
+		expected        bool
+	}{
+		{
+			description:     "GDPR Signal Yes",
+			givenGdprSignal: gdpr.SignalYes,
+			expected:        true,
+		},
+		{
+			description:     "GDPR Signal No",
+			givenGdprSignal: gdpr.SignalNo,
+			expected:        false,
+		},
+		{
+			description:     "GDPR Signal Ambigious",
+			givenGdprSignal: gdpr.SignalAmbiguous,
+			expected:        false,
+		},
+	}
+
+	for _, test := range testCases {
+		privacy := usersyncPrivacy{
+			gdprSignal: test.givenGdprSignal,
+		}
+
+		result := privacy.GDPRInScope()
+		assert.Equal(t, test.expected, result, test.description)
+	}
+}
+
 func TestCombineErrors(t *testing.T) {
 	testCases := []struct {
 		description    string

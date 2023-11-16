@@ -582,8 +582,5 @@ func (p usersyncPrivacy) ActivityAllowsUserSync(bidder string) bool {
 }
 
 func (p usersyncPrivacy) GDPRInScope() bool {
-	if p.gdprSignal == gdpr.SignalYes {
-		return true
-	}
-	return false
+	return p.gdprSignal == gdpr.SignalYes
 }
