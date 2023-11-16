@@ -139,6 +139,43 @@ func TestNewPBSAnalytics_Pubstack(t *testing.T) {
 	assert.Equal(t, len(instanceWithError), 0)
 }
 
+func TestNewModuleHttp(t *testing.T) {
+	httpAnalyticsWithoutError := New(&config.Analytics{
+		Http: config.AnalyticsHttp{
+			Enabled: true,
+			Endpoint: config.AnalyticsHttpEndpoint{
+				Url:     "http://localhost:8080",
+				Timeout: "1s",
+			},
+			Buffers: config.AnalyticsBuffer{
+				BufferSize: "100KB",
+				EventCount: 50,
+				Timeout:    "30s",
+			},
+			Auction: config.AnalyticsFeature{
+				SampleRate: 1,
+			},
+		},
+	})
+	instanceWithoutError := httpAnalyticsWithoutError.(enabledAnalytics)
+
+	assert.Equal(t, len(instanceWithoutError), 1)
+
+	httpAnalyticsWithError := New(&config.Analytics{
+		Http: config.AnalyticsHttp{
+			Enabled: true,
+			Endpoint: config.AnalyticsHttpEndpoint{
+				Url: "http://localhost:8080",
+			},
+			Auction: config.AnalyticsFeature{
+				SampleRate: 1,
+				Filter:     "invalid == filter",
+			},
+		},
+	})
+	instanceWithError := httpAnalyticsWithError.(enabledAnalytics)
+	assert.Equal(t, len(instanceWithError), 0)
+}
 func TestSampleModuleActivitiesAllowed(t *testing.T) {
 	var count int
 	am := initAnalytics(&count)
