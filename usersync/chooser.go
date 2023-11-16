@@ -15,8 +15,9 @@ type Chooser interface {
 }
 
 // NewChooser returns a new instance of the standard chooser implementation.
-func NewChooser(bidderSyncerLookup map[string]Syncer, bidderInfo config.BidderInfos) Chooser {
+func NewChooser(bidderSyncerLookup map[string]Syncer, biddersKnown map[string]struct{}, bidderInfo config.BidderInfos) Chooser {
 	bidders := make([]string, 0, len(bidderSyncerLookup))
+
 	for k := range bidderSyncerLookup {
 		bidders = append(bidders, k)
 	}
@@ -26,6 +27,7 @@ func NewChooser(bidderSyncerLookup map[string]Syncer, bidderInfo config.BidderIn
 		biddersAvailable:         bidders,
 		bidderChooser:            standardBidderChooser{shuffler: randomShuffler{}},
 		normalizeValidBidderName: openrtb_ext.NormalizeBidderName,
+		biddersKnown:             biddersKnown,
 		bidderInfo:               bidderInfo,
 	}
 }
@@ -37,6 +39,7 @@ type Request struct {
 	Limit          int
 	Privacy        Privacy
 	SyncTypeFilter SyncTypeFilter
+	Debug          bool
 }
 
 // Cooperative specifies the settings for cooperative syncing for a given request, where bidders
@@ -76,13 +79,6 @@ const (
 	// StatusBlockedByUserOptOut specifies a user's cookie explicitly signals an opt-out.
 	StatusBlockedByUserOptOut
 
-	// StatusBlockedByGDPR specifies a user's GDPR TCF consent explicitly forbids host cookies
-	// or specific bidder syncing.
-	StatusBlockedByGDPR
-
-	// StatusBlockedByCCPA specifies a user's CCPA consent explicitly forbids bidder syncing.
-	StatusBlockedByCCPA
-
 	// StatusAlreadySynced specifies a user's cookie has an existing non-expired sync for a specific bidder.
 	StatusAlreadySynced
 
@@ -98,7 +94,10 @@ const (
 	// StatusBlockedByPrivacy specifies a bidder sync url is not allowed by privacy activities
 	StatusBlockedByPrivacy
 
-	// TODO: Add description
+	// StatusUnconfiguredBidder refers to a bidder who hasn't been configured to have a syncer key, but is known by Prebid Server
+	StatusUnconfiguredBidder
+
+	// StatusBlockedByDisabledUsersync refers to a bidder who won't be synced because it's been disabled in its config by the host
 	StatusBlockedByDisabledUsersync
 )
 
@@ -116,6 +115,7 @@ type standardChooser struct {
 	biddersAvailable         []string
 	bidderChooser            bidderChooser
 	normalizeValidBidderName func(name string) (openrtb_ext.BidderName, bool)
+	biddersKnown             map[string]struct{}
 	bidderInfo               map[string]config.BidderInfo
 }
 
@@ -127,10 +127,11 @@ func (c standardChooser) Choose(request Request, cookie *Cookie) Result {
 	}
 
 	if !request.Privacy.GDPRAllowsHostCookie() {
-		return Result{Status: StatusBlockedByGDPR}
+		return Result{Status: StatusBlockedByPrivacy}
 	}
 
 	syncersSeen := make(map[string]struct{})
+	biddersSeen := make(map[string]struct{})
 	limitDisabled := request.Limit <= 0
 
 	biddersEvaluated := make([]BidderEvaluation, 0)
@@ -138,12 +139,16 @@ func (c standardChooser) Choose(request Request, cookie *Cookie) Result {
 
 	bidders := c.bidderChooser.choose(request.Bidders, c.biddersAvailable, request.Cooperative)
 	for i := 0; i < len(bidders) && (limitDisabled || len(syncersChosen) < request.Limit); i++ {
+		if _, ok := biddersSeen[bidders[i]]; ok {
+			continue
+		}
 		syncer, evaluation := c.evaluate(bidders[i], syncersSeen, request.SyncTypeFilter, request.Privacy, cookie)
 
 		biddersEvaluated = append(biddersEvaluated, evaluation)
 		if evaluation.Status == StatusOK {
 			syncersChosen = append(syncersChosen, SyncerChoice{Bidder: bidders[i], Syncer: syncer})
 		}
+		biddersSeen[bidders[i]] = struct{}{}
 	}
 
 	return Result{Status: StatusOK, BiddersEvaluated: biddersEvaluated, SyncersChosen: syncersChosen}
@@ -157,7 +162,11 @@ func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}
 
 	syncer, exists := c.bidderSyncerLookup[bidderNormalized.String()]
 	if !exists {
-		return nil, BidderEvaluation{Status: StatusUnknownBidder, Bidder: bidder}
+		if _, ok := c.biddersKnown[bidder]; !ok {
+			return nil, BidderEvaluation{Status: StatusUnknownBidder, Bidder: bidder}
+		} else {
+			return nil, BidderEvaluation{Status: StatusUnconfiguredBidder, Bidder: bidder}
+		}
 	}
 
 	_, seen := syncersSeen[syncer.Key()]
@@ -180,11 +189,7 @@ func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}
 	}
 
 	if !privacy.GDPRAllowsBidderSync(bidderNormalized.String()) {
-		return nil, BidderEvaluation{Status: StatusBlockedByGDPR, Bidder: bidder, SyncerKey: syncer.Key()}
-	}
-
-	if !privacy.CCPAAllowsBidderSync(bidderNormalized.String()) {
-		return nil, BidderEvaluation{Status: StatusBlockedByCCPA, Bidder: bidder, SyncerKey: syncer.Key()}
+		return nil, BidderEvaluation{Status: StatusBlockedByPrivacy, Bidder: bidder, SyncerKey: syncer.Key()}
 	}
 
 	if c.bidderInfo[bidder].Syncer != nil && c.bidderInfo[bidder].Syncer.Enabled != nil && !*c.bidderInfo[bidder].Syncer.Enabled {

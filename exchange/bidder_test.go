@@ -1568,6 +1568,46 @@ func TestMobileNativeTypes(t *testing.T) {
 	}
 }
 
+func TestAddNativeTypes(t *testing.T) {
+	testCases := []struct {
+		description      string
+		bidderRequest    *openrtb2.BidRequest
+		bid              *openrtb2.Bid
+		expectedResponse *nativeResponse.Response
+		expectedErrors   []error
+	}{
+		{
+			description: "Null in bid.Adm in response",
+			bidderRequest: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{
+						ID: "some-imp-id",
+						Native: &openrtb2.Native{
+							Request: "{\"ver\":\"1.1\",\"context\":1,\"contextsubtype\":11,\"plcmttype\":4,\"plcmtcnt\":1,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":500}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1,\"hmin\":1}},{\"id\":3,\"required\":0,\"data\":{\"type\":1,\"len\":200}},{\"id\":4,\"required\":0,\"data\":{\"type\":2,\"len\":15000}},{\"id\":5,\"required\":0,\"data\":{\"type\":6,\"len\":40}}]}",
+						},
+					},
+				},
+				App: &openrtb2.App{},
+			},
+			bid: &openrtb2.Bid{
+				ImpID: "some-imp-id",
+				AdM:   "null",
+				Price: 10,
+			},
+			expectedResponse: nil,
+			expectedErrors:   nil,
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.description, func(t *testing.T) {
+			resp, errs := addNativeTypes(tt.bid, tt.bidderRequest)
+			assert.Equal(t, tt.expectedResponse, resp, "response")
+			assert.Equal(t, tt.expectedErrors, errs, "errors")
+		})
+	}
+}
+
 func TestRequestBidsStoredBidResponses(t *testing.T) {
 	respBody := "{\"bid\":false}"
 	respStatus := 200
@@ -2480,7 +2520,6 @@ func TestExtraBid(t *testing.T) {
 				DealPriority:   5,
 				BidType:        openrtb_ext.BidTypeVideo,
 				OriginalBidCur: "USD",
-				BidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
 			}},
 			Seat:     "groupm",
 			Currency: "USD",
@@ -2492,7 +2531,6 @@ func TestExtraBid(t *testing.T) {
 				DealPriority:   4,
 				BidType:        openrtb_ext.BidTypeBanner,
 				OriginalBidCur: "USD",
-				BidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
 			}},
 			Seat:     string(openrtb_ext.BidderPubmatic),
 			Currency: "USD",
@@ -2590,7 +2628,6 @@ func TestExtraBidWithAlternateBidderCodeDisabled(t *testing.T) {
 				DealPriority:   5,
 				BidType:        openrtb_ext.BidTypeVideo,
 				OriginalBidCur: "USD",
-				BidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
 			}},
 			Seat:     "groupm-allowed",
 			Currency: "USD",
@@ -2602,7 +2639,6 @@ func TestExtraBidWithAlternateBidderCodeDisabled(t *testing.T) {
 				DealPriority:   4,
 				BidType:        openrtb_ext.BidTypeBanner,
 				OriginalBidCur: "USD",
-				BidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
 			}},
 			Seat:     string(openrtb_ext.BidderPubmatic),
 			Currency: "USD",
@@ -2700,7 +2736,6 @@ func TestExtraBidWithBidAdjustments(t *testing.T) {
 				BidType:        openrtb_ext.BidTypeVideo,
 				OriginalBidCPM: 7,
 				OriginalBidCur: "USD",
-				BidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: "PUBMATIC"},
 			}},
 			Seat:     "groupm",
 			Currency: "USD",
@@ -2716,7 +2751,6 @@ func TestExtraBidWithBidAdjustments(t *testing.T) {
 				BidType:        openrtb_ext.BidTypeBanner,
 				OriginalBidCur: "USD",
 				OriginalBidCPM: 3,
-				BidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: "PUBMATIC"},
 			}},
 			Seat:     "PUBMATIC",
 			Currency: "USD",
@@ -2815,7 +2849,6 @@ func TestExtraBidWithBidAdjustmentsUsingAdapterCode(t *testing.T) {
 				BidType:        openrtb_ext.BidTypeVideo,
 				OriginalBidCPM: 7,
 				OriginalBidCur: "USD",
-				BidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
 			}},
 			Seat:     "groupm",
 			Currency: "USD",
@@ -2831,7 +2864,6 @@ func TestExtraBidWithBidAdjustmentsUsingAdapterCode(t *testing.T) {
 				BidType:        openrtb_ext.BidTypeBanner,
 				OriginalBidCur: "USD",
 				OriginalBidCPM: 3,
-				BidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
 			}},
 			Seat:     string(openrtb_ext.BidderPubmatic),
 			Currency: "USD",
@@ -2929,7 +2961,6 @@ func TestExtraBidWithMultiCurrencies(t *testing.T) {
 				BidType:        openrtb_ext.BidTypeVideo,
 				OriginalBidCPM: 7,
 				OriginalBidCur: "USD",
-				BidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
 			}},
 			Seat:     "groupm",
 			Currency: "INR",
@@ -2945,7 +2976,6 @@ func TestExtraBidWithMultiCurrencies(t *testing.T) {
 				BidType:        openrtb_ext.BidTypeBanner,
 				OriginalBidCPM: 3,
 				OriginalBidCur: "USD",
-				BidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
 			}},
 			Seat:     string(openrtb_ext.BidderPubmatic),
 			Currency: "INR",

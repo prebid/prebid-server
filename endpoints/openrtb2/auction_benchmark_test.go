@@ -95,6 +95,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		empty_fetcher.EmptyFetcher{},
 		&adscert.NilSigner{},
 		macros.NewStringIndexBasedReplacer(),
+		nil,
 	)
 
 	endpoint, _ := NewEndpoint(
