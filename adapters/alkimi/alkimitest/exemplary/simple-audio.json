@@ -29,6 +29,8 @@
                     "minbitrate": 32,
                     "maxbitrate": 128
                 },
+                "bidfloor": 0.7,
+				"bidfloorcur": "USD",
                 "ext": {
                     "bidder": {
                         "token": "XXX",
@@ -58,7 +60,7 @@
                                 "minbitrate": 32,
                                 "maxbitrate": 128
                             },
-                            "bidfloor": 0.5,
+                            "bidfloor": 0.7,
                             "ext": {
                                 "bidder": {
                                     "token": "XXX",
