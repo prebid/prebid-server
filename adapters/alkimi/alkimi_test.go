@@ -1,13 +1,13 @@
 package alkimi
 
 import (
-    "testing"
+	"testing"
 
-    "github.com/prebid/prebid-server/v2/adapters"
-    "github.com/prebid/prebid-server/v2/adapters/adapterstest"
-    "github.com/prebid/prebid-server/v2/config"
-    "github.com/prebid/prebid-server/v2/openrtb_ext"
-    "github.com/stretchr/testify/assert"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/adapters/adapterstest"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
