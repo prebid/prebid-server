@@ -1,12 +1,12 @@
 package http
 
 import (
-	"math/rand"
-
 	"github.com/antonmedv/expr"
 	"github.com/antonmedv/expr/vm"
+	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/v2/analytics"
 	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/util/randomutil"
 )
 
 type (
@@ -18,7 +18,10 @@ type (
 	videoFilter        func(event *analytics.VideoObject) bool
 )
 
-func createAuctionFilter(feature config.AnalyticsFeature) (auctionFilter, error) {
+func createAuctionFilter(
+	feature config.AnalyticsFeature,
+	randomGenerator randomutil.RandomGenerator,
+) (auctionFilter, error) {
 	var filterProgram *vm.Program
 	var err error
 	if feature.Filter != "" {
@@ -31,7 +34,7 @@ func createAuctionFilter(feature config.AnalyticsFeature) (auctionFilter, error)
 
 	return func(event *analytics.AuctionObject) bool {
 		// Disable tracking for nil events or events with a sample rate of 0
-		if event == nil || feature.SampleRate <= 0 || rand.Float64() > feature.SampleRate {
+		if event == nil || feature.SampleRate <= 0 || randomGenerator.GenerateFloat64() > feature.SampleRate {
 			return false
 		}
 
@@ -39,6 +42,7 @@ func createAuctionFilter(feature config.AnalyticsFeature) (auctionFilter, error)
 		if filterProgram != nil {
 			output, err := expr.Run(filterProgram, event)
 			if err != nil {
+				glog.Errorf("[HttpAnalytics] Error filter auction: %v", err)
 				return false
 			}
 			return output.(bool)
@@ -48,7 +52,10 @@ func createAuctionFilter(feature config.AnalyticsFeature) (auctionFilter, error)
 	}, nil
 }
 
-func createAmpFilter(feature config.AnalyticsFeature) (ampFilter, error) {
+func createAmpFilter(
+	feature config.AnalyticsFeature,
+	randomGenerator randomutil.RandomGenerator,
+) (ampFilter, error) {
 	var filterProgram *vm.Program
 	var err error
 
@@ -60,13 +67,14 @@ func createAmpFilter(feature config.AnalyticsFeature) (ampFilter, error) {
 	}
 
 	return func(event *analytics.AmpObject) bool {
-		if event == nil || feature.SampleRate <= 0 || rand.Float64() > feature.SampleRate {
+		if event == nil || feature.SampleRate <= 0 || randomGenerator.GenerateFloat64() > feature.SampleRate {
 			return false
 		}
 
 		if filterProgram != nil {
 			output, err := expr.Run(filterProgram, event)
 			if err != nil {
+				glog.Errorf("[HttpAnalytics] Error filter amp: %v", err)
 				return false
 			}
 			return output.(bool)
@@ -76,7 +84,10 @@ func createAmpFilter(feature config.AnalyticsFeature) (ampFilter, error) {
 	}, nil
 }
 
-func createCookieSyncFilter(feature config.AnalyticsFeature) (cookieSyncFilter, error) {
+func createCookieSyncFilter(
+	feature config.AnalyticsFeature,
+	randomGenerator randomutil.RandomGenerator,
+) (cookieSyncFilter, error) {
 	var filterProgram *vm.Program
 	var err error
 
@@ -88,13 +99,14 @@ func createCookieSyncFilter(feature config.AnalyticsFeature) (cookieSyncFilter, 
 	}
 
 	return func(event *analytics.CookieSyncObject) bool {
-		if event == nil || feature.SampleRate <= 0 || rand.Float64() > feature.SampleRate {
+		if event == nil || feature.SampleRate <= 0 || randomGenerator.GenerateFloat64() > feature.SampleRate {
 			return false
 		}
 
 		if filterProgram != nil {
 			output, err := expr.Run(filterProgram, event)
 			if err != nil {
+				glog.Errorf("[HttpAnalytics] Error filter cookie sync: %v", err)
 				return false
 			}
 			return output.(bool)
@@ -104,7 +116,10 @@ func createCookieSyncFilter(feature config.AnalyticsFeature) (cookieSyncFilter, 
 	}, nil
 }
 
-func createNotificationFilter(feature config.AnalyticsFeature) (notificationFilter, error) {
+func createNotificationFilter(
+	feature config.AnalyticsFeature,
+	randomGenerator randomutil.RandomGenerator,
+) (notificationFilter, error) {
 	var filterProgram *vm.Program
 	var err error
 
@@ -116,13 +131,14 @@ func createNotificationFilter(feature config.AnalyticsFeature) (notificationFilt
 	}
 
 	return func(event *analytics.NotificationEvent) bool {
-		if event == nil || feature.SampleRate <= 0 || rand.Float64() > feature.SampleRate {
+		if event == nil || feature.SampleRate <= 0 || randomGenerator.GenerateFloat64() > feature.SampleRate {
 			return false
 		}
 
 		if filterProgram != nil {
 			output, err := expr.Run(filterProgram, event)
 			if err != nil {
+				glog.Errorf("[HttpAnalytics] Error filter notification: %v", err)
 				return false
 			}
 			return output.(bool)
@@ -132,7 +148,10 @@ func createNotificationFilter(feature config.AnalyticsFeature) (notificationFilt
 	}, nil
 }
 
-func createSetUIDFilter(feature config.AnalyticsFeature) (setUIDFilter, error) {
+func createSetUIDFilter(
+	feature config.AnalyticsFeature,
+	randomGenerator randomutil.RandomGenerator,
+) (setUIDFilter, error) {
 	var filterProgram *vm.Program
 	var err error
 
@@ -144,13 +163,14 @@ func createSetUIDFilter(feature config.AnalyticsFeature) (setUIDFilter, error) {
 	}
 
 	return func(event *analytics.SetUIDObject) bool {
-		if event == nil || feature.SampleRate <= 0 || rand.Float64() > feature.SampleRate {
+		if event == nil || feature.SampleRate <= 0 || randomGenerator.GenerateFloat64() > feature.SampleRate {
 			return false
 		}
 
 		if filterProgram != nil {
 			output, err := expr.Run(filterProgram, event)
 			if err != nil {
+				glog.Errorf("[HttpAnalytics] Error filter setUID: %v", err)
 				return false
 			}
 			return output.(bool)
@@ -160,7 +180,10 @@ func createSetUIDFilter(feature config.AnalyticsFeature) (setUIDFilter, error) {
 	}, nil
 }
 
-func createVideoFilter(feature config.AnalyticsFeature) (videoFilter, error) {
+func createVideoFilter(
+	feature config.AnalyticsFeature,
+	randomGenerator randomutil.RandomGenerator,
+) (videoFilter, error) {
 	var filterProgram *vm.Program
 	var err error
 
@@ -172,13 +195,14 @@ func createVideoFilter(feature config.AnalyticsFeature) (videoFilter, error) {
 	}
 
 	return func(event *analytics.VideoObject) bool {
-		if event == nil || feature.SampleRate <= 0 || rand.Float64() > feature.SampleRate {
+		if event == nil || feature.SampleRate <= 0 || randomGenerator.GenerateFloat64() > feature.SampleRate {
 			return false
 		}
 
 		if filterProgram != nil {
 			output, err := expr.Run(filterProgram, event)
 			if err != nil {
+				glog.Errorf("[HttpAnalytics] Error filter video: %v", err)
 				return false
 			}
 			return output.(bool)

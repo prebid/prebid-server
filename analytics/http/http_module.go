@@ -14,6 +14,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/v2/analytics"
 	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/util/randomutil"
 )
 
 type httpSender = func(payload []byte) error
@@ -55,32 +56,33 @@ func newHttpLogger(cfg config.AnalyticsHttp, sender httpSender, clock clock.Cloc
 	}
 
 	// Check for filters
-	shouldTrackAuction, err := createAuctionFilter(cfg.Auction)
+	randomGenerator := randomutil.RandomNumberGenerator{}
+	shouldTrackAuction, err := createAuctionFilter(cfg.Auction, randomGenerator)
 	if err != nil {
 		return nil, err
 	}
 
-	shouldTrackAmp, err := createAmpFilter(cfg.Auction)
+	shouldTrackAmp, err := createAmpFilter(cfg.Auction, randomGenerator)
 	if err != nil {
 		return nil, err
 	}
 
-	shouldTrackCookieSync, err := createCookieSyncFilter(cfg.CookieSync)
+	shouldTrackCookieSync, err := createCookieSyncFilter(cfg.CookieSync, randomGenerator)
 	if err != nil {
 		return nil, err
 	}
 
-	shouldTrackNotification, err := createNotificationFilter(cfg.Notification)
+	shouldTrackNotification, err := createNotificationFilter(cfg.Notification, randomGenerator)
 	if err != nil {
 		return nil, err
 	}
 
-	shouldTrackSetUID, err := createSetUIDFilter(cfg.SetUID)
+	shouldTrackSetUID, err := createSetUIDFilter(cfg.SetUID, randomGenerator)
 	if err != nil {
 		return nil, err
 	}
 
-	shouldTrackVideo, err := createVideoFilter(cfg.Video)
+	shouldTrackVideo, err := createVideoFilter(cfg.Video, randomGenerator)
 	if err != nil {
 		return nil, err
 	}
