@@ -7,8 +7,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -45,7 +46,7 @@ func TestNewJsonDirectoryServer(t *testing.T) {
 	handler(recorder, request, nil)
 
 	var data map[string]json.RawMessage
-	json.Unmarshal(recorder.Body.Bytes(), &data)
+	jsonutil.UnmarshalValid(recorder.Body.Bytes(), &data)
 
 	// Make sure that every adapter has a json schema by the same name associated with it.
 	adapterFiles, err := os.ReadDir(adapterDirectory)

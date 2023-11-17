@@ -12,8 +12,9 @@ import (
 	"github.com/golang/glog"
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 	"github.com/spf13/viper"
 )
 
@@ -102,7 +103,16 @@ type Configuration struct {
 }
 
 type PriceFloors struct {
-	Enabled bool `mapstructure:"enabled"`
+	Enabled bool              `mapstructure:"enabled"`
+	Fetcher PriceFloorFetcher `mapstructure:"fetcher"`
+}
+
+type PriceFloorFetcher struct {
+	HttpClient HTTPClient `mapstructure:"http_client"`
+	CacheSize  int        `mapstructure:"cache_size_mb"`
+	Worker     int        `mapstructure:"worker"`
+	Capacity   int        `mapstructure:"capacity"`
+	MaxRetries int        `mapstructure:"max_retries"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -137,10 +147,6 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 
 	if cfg.AccountDefaults.Events.Enabled {
 		glog.Warning(`account_defaults.events has no effect as the feature is under development.`)
-	}
-
-	if cfg.PriceFloors.Enabled {
-		glog.Warning(`cfg.PriceFloors.Enabled will currently not do anything as price floors feature is still under development.`)
 	}
 
 	errs = cfg.Experiment.validate(errs)
@@ -757,7 +763,11 @@ func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName func(strin
 	// Migrate combo stored request config to separate stored_reqs and amp stored_reqs configs.
 	resolvedStoredRequestsConfig(&c)
 
-	mergedBidderInfos, err := applyBidderInfoConfigOverrides(c.BidderInfos, bidderInfos, normalizeBidderName)
+	configBidderInfosWithNillableFields, err := setConfigBidderInfoNillableFields(v, c.BidderInfos)
+	if err != nil {
+		return nil, err
+	}
+	mergedBidderInfos, err := applyBidderInfoConfigOverrides(configBidderInfosWithNillableFields, bidderInfos, normalizeBidderName)
 	if err != nil {
 		return nil, err
 	}
@@ -772,10 +782,40 @@ func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName func(strin
 	return &c, nil
 }
 
+type bidderInfoNillableFields struct {
+	Disabled                *bool `yaml:"disabled" mapstructure:"disabled"`
+	ModifyingVastXmlAllowed *bool `yaml:"modifyingVastXmlAllowed" mapstructure:"modifyingVastXmlAllowed"`
+}
+type nillableFieldBidderInfos map[string]nillableFieldBidderInfo
+type nillableFieldBidderInfo struct {
+	nillableFields bidderInfoNillableFields
+	bidderInfo     BidderInfo
+}
+
+func setConfigBidderInfoNillableFields(v *viper.Viper, bidderInfos BidderInfos) (nillableFieldBidderInfos, error) {
+	if len(bidderInfos) == 0 || v == nil {
+		return nil, nil
+	}
+	infos := make(nillableFieldBidderInfos, len(bidderInfos))
+
+	for bidderName, bidderInfo := range bidderInfos {
+		info := nillableFieldBidderInfo{bidderInfo: bidderInfo}
+
+		if err := v.UnmarshalKey("adapters."+bidderName+".disabled", &info.nillableFields.Disabled); err != nil {
+			return nil, fmt.Errorf("viper failed to unmarshal bidder config disabled: %v", err)
+		}
+		if err := v.UnmarshalKey("adapters."+bidderName+".modifyingvastxmlallowed", &info.nillableFields.ModifyingVastXmlAllowed); err != nil {
+			return nil, fmt.Errorf("viper failed to unmarshal bidder config modifyingvastxmlallowed: %v", err)
+		}
+		infos[bidderName] = info
+	}
+	return infos, nil
+}
+
 // MarshalAccountDefaults compiles AccountDefaults into the JSON format used for merge patch
 func (cfg *Configuration) MarshalAccountDefaults() error {
 	var err error
-	if cfg.accountDefaultsJSON, err = json.Marshal(cfg.AccountDefaults); err != nil {
+	if cfg.accountDefaultsJSON, err = jsonutil.Marshal(cfg.AccountDefaults); err != nil {
 		glog.Warningf("converting %+v to json: %v", cfg.AccountDefaults, err)
 	}
 	return err
@@ -1059,9 +1099,30 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("account_defaults.price_floors.use_dynamic_data", false)
 	v.SetDefault("account_defaults.price_floors.max_rules", 100)
 	v.SetDefault("account_defaults.price_floors.max_schema_dims", 3)
+	v.SetDefault("account_defaults.price_floors.fetch.enabled", false)
+	v.SetDefault("account_defaults.price_floors.fetch.url", "")
+	v.SetDefault("account_defaults.price_floors.fetch.timeout_ms", 3000)
+	v.SetDefault("account_defaults.price_floors.fetch.max_file_size_kb", 100)
+	v.SetDefault("account_defaults.price_floors.fetch.max_rules", 1000)
+	v.SetDefault("account_defaults.price_floors.fetch.max_age_sec", 86400)
+	v.SetDefault("account_defaults.price_floors.fetch.period_sec", 3600)
+	v.SetDefault("account_defaults.price_floors.fetch.max_schema_dims", 0)
+
+	v.SetDefault("account_defaults.events_enabled", false)
 	v.SetDefault("account_defaults.privacy.ipv6.anon_keep_bits", 56)
 	v.SetDefault("account_defaults.privacy.ipv4.anon_keep_bits", 24)
 
+	//Defaults for Price floor fetcher
+	v.SetDefault("price_floors.fetcher.worker", 20)
+	v.SetDefault("price_floors.fetcher.capacity", 20000)
+	v.SetDefault("price_floors.fetcher.cache_size_mb", 64)
+	v.SetDefault("price_floors.fetcher.http_client.max_connections_per_host", 0) // unlimited
+	v.SetDefault("price_floors.fetcher.http_client.max_idle_connections", 40)
+	v.SetDefault("price_floors.fetcher.http_client.max_idle_connections_per_host", 2)
+	v.SetDefault("price_floors.fetcher.http_client.idle_connection_timeout_seconds", 60)
+	v.SetDefault("price_floors.fetcher.max_retries", 10)
+
+	v.SetDefault("account_defaults.events_enabled", false)
 	v.SetDefault("compression.response.enable_gzip", false)
 	v.SetDefault("compression.request.enable_gzip", false)
 

@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	mainConfig "github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	mainConfig "github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 
 	gometrics "github.com/rcrowley/go-metrics"
 )

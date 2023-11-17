@@ -2,10 +2,11 @@ package adscert
 
 import (
 	"errors"
-	"github.com/IABTechLab/adscert/pkg/adscert/api"
-	"github.com/prebid/prebid-server/config"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/IABTechLab/adscert/pkg/adscert/api"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNilSigner(t *testing.T) {

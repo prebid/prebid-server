@@ -34,7 +34,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://whatever.url",
+        "uri": "https://ssp.disqus.com/bid/prebid-server?sid=11",
         "headers": {
           "Content-Type": [
             "application/json;charset=utf-8"

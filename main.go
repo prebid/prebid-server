@@ -8,12 +8,12 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/currency"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/router"
-	"github.com/prebid/prebid-server/server"
-	"github.com/prebid/prebid-server/util/task"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/currency"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/router"
+	"github.com/prebid/prebid-server/v2/server"
+	"github.com/prebid/prebid-server/v2/util/task"
 
 	"github.com/golang/glog"
 	"github.com/spf13/viper"

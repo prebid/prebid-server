@@ -12,9 +12,9 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/golang/glog"
 
-	"github.com/prebid/prebid-server/analytics"
-	"github.com/prebid/prebid-server/analytics/pubstack/eventchannel"
-	"github.com/prebid/prebid-server/analytics/pubstack/helpers"
+	"github.com/prebid/prebid-server/v2/analytics"
+	"github.com/prebid/prebid-server/v2/analytics/pubstack/eventchannel"
+	"github.com/prebid/prebid-server/v2/analytics/pubstack/helpers"
 )
 
 type Configuration struct {

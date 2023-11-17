@@ -2,7 +2,8 @@ package usersync
 
 import (
 	"encoding/base64"
-	"encoding/json"
+
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 type Encoder interface {
@@ -13,7 +14,7 @@ type Encoder interface {
 type Base64Encoder struct{}
 
 func (e Base64Encoder) Encode(c *Cookie) (string, error) {
-	j, err := json.Marshal(c)
+	j, err := jsonutil.Marshal(c)
 	if err != nil {
 		return "", err
 	}
