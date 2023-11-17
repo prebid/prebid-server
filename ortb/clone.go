@@ -2,6 +2,7 @@ package ortb
 
 import (
 	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/prebid/prebid-server/v2/util/ptrutil"
 	"github.com/prebid/prebid-server/v2/util/sliceutil"
 )
@@ -398,4 +399,35 @@ func CloneDOOH(s *openrtb2.DOOH) *openrtb2.DOOH {
 	c.Ext = sliceutil.Clone(s.Ext)
 
 	return &c
+}
+
+// cloneBidderReq - clones bidder request and replaces req.User and req.Device and req.Source with new copies
+func CloneBidderReq(req *openrtb2.BidRequest) *openrtb_ext.RequestWrapper {
+	if req == nil {
+		return nil
+	}
+
+	// bidder request may be modified differently per bidder based on privacy configs
+	// new request should be created for each bidder request
+	// pointer fields like User and Device should be cloned and set back to the request copy
+	var newReq *openrtb2.BidRequest
+	newReq = ptrutil.Clone(req)
+
+	if req.User != nil {
+		userCopy := CloneUser(req.User)
+		newReq.User = userCopy
+	}
+
+	if req.Device != nil {
+		deviceCopy := CloneDevice(req.Device)
+		newReq.Device = deviceCopy
+	}
+
+	if req.Source != nil {
+		sourceCopy := CloneSource(req.Source)
+		newReq.Source = sourceCopy
+	}
+
+	reqWrapper := &openrtb_ext.RequestWrapper{BidRequest: newReq}
+	return reqWrapper
 }

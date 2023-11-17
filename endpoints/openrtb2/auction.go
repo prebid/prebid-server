@@ -205,7 +205,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	activityControl = privacy.NewActivityControl(&account.Privacy)
 
-	hookExecutor.SetActivityControl(activities)
+	hookExecutor.SetActivityControl(activityControl)
 
 	ctx := context.Background()
 

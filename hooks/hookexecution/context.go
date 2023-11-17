@@ -6,7 +6,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/hooks/hookstage"
-	"github.com/prebid/prebid-server/privacy"
+	"github.com/prebid/prebid-server/v2/privacy"
 )
 
 // executionContext holds information passed to module's hook during hook execution.

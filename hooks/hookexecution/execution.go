@@ -3,16 +3,15 @@ package hookexecution
 import (
 	"context"
 	"fmt"
+	"github.com/prebid/prebid-server/v2/ortb"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/hooks"
 	"github.com/prebid/prebid-server/v2/hooks/hookstage"
 	"github.com/prebid/prebid-server/v2/metrics"
 	"github.com/prebid/prebid-server/v2/privacy"
-	"github.com/prebid/prebid-serverv2/util/ptrutil"
 )
 
 type hookResponse[T any] struct {
@@ -322,22 +321,17 @@ func handleModuleActivities[T any, P any](hook hooks.HookWrapper[T], activityCon
 		return payload
 	}
 
-	privacyEnforcement := privacy.Enforcement{}
-
 	// parse hook.Module to split it to type and mame?
-	// hook.Module example: "mytest.mymodule". Can it be "rtd.mymodule" or "general.mymodule"?
-	scopeGeneral := privacy.Component{Type: privacy.ComponentTypeGeneral, Name: hook.Code} ///!!!!! hook.Code?
-	transmitUserFPDActivityAllowed := activityControl.Allow(privacy.ActivityTransmitUserFPD, scopeGeneral)
-	if !transmitUserFPDActivityAllowed {
-		privacyEnforcement.UFPD = true
-	}
+	scopeGeneral := privacy.Component{Type: privacy.ComponentTypeGeneral, Name: hook.Code}
+	transmitUserFPDActivityAllowed := activityControl.Allow(privacy.ActivityTransmitUserFPD, scopeGeneral, privacy.ActivityRequest{})
 
-	if privacyEnforcement.AnyActivities() {
+	if !transmitUserFPDActivityAllowed {
 		// changes need to be applied to new payload and leave original payload unchanged
 		bidderReq := payloadData.GetBidderRequestPayload()
-		bidderReqCopy := ptrutil.Clone(bidderReq)
 
-		privacyEnforcement.Apply(bidderReqCopy, config.AccountPrivacy{})
+		bidderReqCopy := ortb.CloneBidderReq(bidderReq.BidRequest)
+
+		privacy.ScrubUserFPD(bidderReqCopy)
 
 		var newPayload = payload
 		var np = any(&newPayload).(hookstage.PayloadBidderRequest)

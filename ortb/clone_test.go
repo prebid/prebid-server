@@ -1127,6 +1127,57 @@ func TestCloneDOOH(t *testing.T) {
 	})
 }
 
+func TestCloneBidderReq(t *testing.T) {
+	t.Run("nil", func(t *testing.T) {
+		result := CloneBidderReq(nil)
+		assert.Nil(t, result)
+	})
+
+	t.Run("empty", func(t *testing.T) {
+		given := &openrtb2.BidRequest{}
+		result := CloneBidderReq(given)
+		assert.Equal(t, given, result.BidRequest)
+		assert.NotSame(t, given, result)
+	})
+
+	t.Run("populated", func(t *testing.T) {
+		given := &openrtb2.BidRequest{
+			ID:     "anyID",
+			User:   &openrtb2.User{ID: "testUserId"},
+			Device: &openrtb2.Device{Carrier: "testCarrier"},
+			Source: &openrtb2.Source{TID: "testTID"},
+		}
+		result := CloneBidderReq(given)
+		assert.NotSame(t, given, result.BidRequest, "pointer")
+		assert.NotSame(t, given.User, result.User, "user")
+		assert.NotSame(t, given.Device, result.Device, "device")
+		assert.NotSame(t, given.Source, result.Source, "source")
+	})
+
+	t.Run("assumptions", func(t *testing.T) {
+		assert.ElementsMatch(t, discoverPointerFields(reflect.TypeOf(openrtb2.BidRequest{})),
+			[]string{
+				"Device",
+				"User",
+				"Source",
+				"Imp",
+				"Site",
+				"App",
+				"DOOH",
+				"WSeat",
+				"BSeat",
+				"Cur",
+				"WLang",
+				"WLangB",
+				"BCat",
+				"BAdv",
+				"BApp",
+				"Regs",
+				"Ext",
+			})
+	})
+}
+
 // discoverPointerFields returns the names of all fields of an object that are
 // pointers and would need to be cloned. This method is specific to types which can
 // appear within an OpenRTB data model object.

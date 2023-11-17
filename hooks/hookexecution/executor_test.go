@@ -739,8 +739,7 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{})
 			exec.SetAccount(test.givenAccount)
 
-			ac, err := privacy.NewActivityControl(test.privacyConfig)
-			assert.NoError(t, err, "Unexpected error creating activity control")
+			ac := privacy.NewActivityControl(test.privacyConfig)
 			exec.SetActivityControl(ac)
 
 			newBody, reject := exec.ExecuteRawAuctionStage([]byte(test.givenBody))
@@ -1292,8 +1291,7 @@ func TestExecuteBidderRequestStage(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{})
 			exec.SetAccount(test.givenAccount)
-			ac, err := privacy.NewActivityControl(test.privacyConfig)
-			assert.NoError(t, err, "Unexpected error creating activity control")
+			ac := privacy.NewActivityControl(test.privacyConfig)
 			exec.SetActivityControl(ac)
 
 			reject := exec.ExecuteBidderRequestStage(&openrtb_ext.RequestWrapper{BidRequest: test.givenBidderRequest}, bidderName)
@@ -1327,7 +1325,8 @@ func buildDefaultActivityConfig(componentName string, allow bool) config.Activit
 			{
 				Allow: allow,
 				Condition: config.ActivityCondition{
-					ComponentName: []string{"general." + componentName},
+					ComponentName: []string{componentName},
+					ComponentType: []string{"general"},
 				},
 			},
 		},

@@ -28,17 +28,17 @@ type BidderRequestPayload struct {
 	Bidder  string
 }
 
-func (brp *BidderRequestPayload) GetBidderRequestPayload() *openrtb2.BidRequest {
-	return brp.BidRequest
+func (brp *BidderRequestPayload) GetBidderRequestPayload() *openrtb_ext.RequestWrapper {
+	return brp.Request
 }
 
-func (brp *BidderRequestPayload) SetBidderRequestPayload(br *openrtb2.BidRequest) {
-	brp.BidRequest = br
+func (brp *BidderRequestPayload) SetBidderRequestPayload(br *openrtb_ext.RequestWrapper) {
+	brp.Request = br
 }
 
 // PayloadBidderRequest indicated of hook carries a bid request.
 // used for activities, name can be better
 type PayloadBidderRequest interface {
-	GetBidderRequestPayload() *openrtb2.BidRequest
-	SetBidderRequestPayload(br *openrtb2.BidRequest)
+	GetBidderRequestPayload() *openrtb_ext.RequestWrapper
+	SetBidderRequestPayload(br *openrtb_ext.RequestWrapper)
 }
