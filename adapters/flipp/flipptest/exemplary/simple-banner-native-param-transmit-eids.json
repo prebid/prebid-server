@@ -10,7 +10,9 @@
             "page": "http://www.example.com/test?flipp-content-code=publisher-test"
         },
         "user": {
-            "consent": "CP0xeHPP0xeHPBcABBENAgCAAPAAAAAAAGcgAAAAAAAA"
+        },
+        "ext": {
+            "transmitEids": false
         },
         "regs": {
             "coppa": 0,
@@ -82,7 +84,7 @@
                     ],
                     "url":"http://www.example.com/test?flipp-content-code=publisher-test",
                     "user":{
-                       "key":"abc123"
+                       "key":"30470a14-2949-4110-abce-b62d57304ad5"
                     }
                 }
             },
