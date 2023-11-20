@@ -48,6 +48,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderAidem,
 	BidderAJA,
 	BidderAlgorix,
+	BidderAlkimi,
 	BidderAMX,
 	BidderApacdex,
 	BidderAppnexus,
@@ -96,7 +97,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderEmxDigital,
 	BidderEPlanning,
 	BidderEpom,
-	BidderEpsilon,
 	BidderEVolution,
 	BidderFlipp,
 	BidderFreewheelSSP,
@@ -145,6 +145,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderMotorik,
 	BidderNextMillennium,
 	BidderNoBid,
+	BidderOms,
 	BidderOneTag,
 	BidderOpenWeb,
 	BidderOpenx,
@@ -203,7 +204,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderVrtcal,
 	BidderXeworks,
 	BidderYahooAds,
-	BidderYahooAdvertising,
 	BidderYahooSSP,
 	BidderYeahmobi,
 	BidderYieldlab,
@@ -329,6 +329,7 @@ const (
 	BidderAidem             BidderName = "aidem"
 	BidderAJA               BidderName = "aja"
 	BidderAlgorix           BidderName = "algorix"
+	BidderAlkimi            BidderName = "alkimi"
 	BidderAMX               BidderName = "amx"
 	BidderApacdex           BidderName = "apacdex"
 	BidderAppnexus          BidderName = "appnexus"
@@ -376,7 +377,6 @@ const (
 	BidderEmtv              BidderName = "emtv"
 	BidderEmxDigital        BidderName = "emx_digital"
 	BidderEPlanning         BidderName = "eplanning"
-	BidderEpsilon           BidderName = "epsilon"
 	BidderEpom              BidderName = "epom"
 	BidderEVolution         BidderName = "e_volution"
 	BidderFlipp             BidderName = "flipp"
@@ -426,6 +426,7 @@ const (
 	BidderMotorik           BidderName = "motorik"
 	BidderNextMillennium    BidderName = "nextmillennium"
 	BidderNoBid             BidderName = "nobid"
+	BidderOms               BidderName = "oms"
 	BidderOneTag            BidderName = "onetag"
 	BidderOpenWeb           BidderName = "openweb"
 	BidderOpenx             BidderName = "openx"
@@ -484,7 +485,6 @@ const (
 	BidderVrtcal            BidderName = "vrtcal"
 	BidderXeworks           BidderName = "xeworks"
 	BidderYahooAds          BidderName = "yahooAds"
-	BidderYahooAdvertising  BidderName = "yahooAdvertising"
 	BidderYahooSSP          BidderName = "yahoossp"
 	BidderYeahmobi          BidderName = "yeahmobi"
 	BidderYieldlab          BidderName = "yieldlab"
