@@ -3390,92 +3390,168 @@ func TestUpdateRejections(t *testing.T) {
 }
 
 func TestApplyDealSupport(t *testing.T) {
+	type testInput struct {
+		dealPriority int
+		impExt       json.RawMessage
+		targ         map[string]string
+		bidderName   openrtb_ext.BidderName
+	}
+
+	type testOutput struct {
+		hbPbCatDur        string
+		dealErr           string
+		dealTierSatisfied bool
+	}
+
 	testCases := []struct {
-		description               string
-		dealPriority              int
-		impExt                    json.RawMessage
-		targ                      map[string]string
-		expectedHbPbCatDur        string
-		expectedDealErr           string
-		expectedDealTierSatisfied bool
+		description string
+		in          testInput
+		expected    testOutput
 	}{
 		{
-			description:  "hb_pb_cat_dur should be modified",
-			dealPriority: 5,
-			impExt:       json.RawMessage(`{"prebid": {"bidder": {"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}}}`),
-			targ: map[string]string{
-				"hb_pb_cat_dur": "12.00_movies_30s",
+			description: "hb_pb_cat_dur should be modified",
+			in: testInput{
+				dealPriority: 5,
+				impExt:       json.RawMessage(`{"prebid": {"bidder": {"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}}}`),
+				targ: map[string]string{
+					"hb_pb_cat_dur": "12.00_movies_30s",
+				},
+				bidderName: openrtb_ext.BidderName("appnexus"),
 			},
-			expectedHbPbCatDur:        "tier5_movies_30s",
-			expectedDealErr:           "",
-			expectedDealTierSatisfied: true,
+			expected: testOutput{
+				hbPbCatDur:        "tier5_movies_30s",
+				dealErr:           "",
+				dealTierSatisfied: true,
+			},
 		},
 		{
-			description:  "hb_pb_cat_dur should not be modified due to priority not exceeding min",
-			dealPriority: 9,
-			impExt:       json.RawMessage(`{"prebid": {"bidder": {"appnexus": {"dealTier": {"minDealTier": 10, "prefix": "tier"}, "placementId": 10433394}}}}`),
-			targ: map[string]string{
-				"hb_pb_cat_dur": "12.00_medicine_30s",
+			description: "hb_pb_cat_dur should be modified even with a mixed case bidder in the impExt",
+			in: testInput{
+				dealPriority: 5,
+				impExt:       json.RawMessage(`{"prebid": {"bidder": {"APPnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}}}`),
+				targ: map[string]string{
+					"hb_pb_cat_dur": "12.00_movies_30s",
+				},
+				bidderName: openrtb_ext.BidderName("appnexus"),
 			},
-			expectedHbPbCatDur:        "12.00_medicine_30s",
-			expectedDealErr:           "",
-			expectedDealTierSatisfied: false,
+			expected: testOutput{
+				hbPbCatDur:        "tier5_movies_30s",
+				dealErr:           "",
+				dealTierSatisfied: true,
+			},
 		},
 		{
-			description:  "hb_pb_cat_dur should not be modified due to invalid config",
-			dealPriority: 5,
-			impExt:       json.RawMessage(`{"prebid": {"bidder": {"appnexus": {"dealTier": {"minDealTier": 5, "prefix": ""}, "placementId": 10433394}}}}`),
-			targ: map[string]string{
-				"hb_pb_cat_dur": "12.00_games_30s",
+			description: "hb_pb_cat_dur should be modified even with a mixed case bidder in the winningBidsByBidder map",
+			in: testInput{
+				dealPriority: 5,
+				impExt:       json.RawMessage(`{"prebid": {"bidder": {"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}}}`),
+				targ: map[string]string{
+					"hb_pb_cat_dur": "12.00_movies_30s",
+				},
+				bidderName: openrtb_ext.BidderName("APPnexus"),
 			},
-			expectedHbPbCatDur:        "12.00_games_30s",
-			expectedDealErr:           "dealTier configuration invalid for bidder 'appnexus', imp ID 'imp_id1'",
-			expectedDealTierSatisfied: false,
+			expected: testOutput{
+				hbPbCatDur:        "tier5_movies_30s",
+				dealErr:           "",
+				dealTierSatisfied: true,
+			},
 		},
 		{
-			description:  "hb_pb_cat_dur should not be modified due to deal priority of 0",
-			dealPriority: 0,
-			impExt:       json.RawMessage(`{"prebid": {"bidder": {"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}}}`),
-			targ: map[string]string{
-				"hb_pb_cat_dur": "12.00_auto_30s",
+			description: "hb_pb_cat_dur should not be modified due to unknown bidder in the winningBidsByBidder map",
+			in: testInput{
+				dealPriority: 9,
+				impExt:       json.RawMessage(`{"prebid": {"bidder": {"appnexus": {"dealTier": {"minDealTier": 10, "prefix": "tier"}, "placementId": 10433394}}}}`),
+				targ: map[string]string{
+					"hb_pb_cat_dur": "12.00_medicine_30s",
+				},
+				bidderName: openrtb_ext.BidderName("unknown"),
 			},
-			expectedHbPbCatDur:        "12.00_auto_30s",
-			expectedDealErr:           "",
-			expectedDealTierSatisfied: false,
+			expected: testOutput{
+				hbPbCatDur:        "12.00_medicine_30s",
+				dealErr:           "",
+				dealTierSatisfied: false,
+			},
+		},
+		{
+			description: "hb_pb_cat_dur should not be modified due to priority not exceeding min",
+			in: testInput{
+				dealPriority: 9,
+				impExt:       json.RawMessage(`{"prebid": {"bidder": {"appnexus": {"dealTier": {"minDealTier": 10, "prefix": "tier"}, "placementId": 10433394}}}}`),
+				targ: map[string]string{
+					"hb_pb_cat_dur": "12.00_medicine_30s",
+				},
+				bidderName: openrtb_ext.BidderName("appnexus"),
+			},
+			expected: testOutput{
+				hbPbCatDur:        "12.00_medicine_30s",
+				dealErr:           "",
+				dealTierSatisfied: false,
+			},
+		},
+		{
+			description: "hb_pb_cat_dur should not be modified due to invalid config",
+			in: testInput{
+				dealPriority: 5,
+				impExt:       json.RawMessage(`{"prebid": {"bidder": {"appnexus": {"dealTier": {"minDealTier": 5, "prefix": ""}, "placementId": 10433394}}}}`),
+				targ: map[string]string{
+					"hb_pb_cat_dur": "12.00_games_30s",
+				},
+				bidderName: openrtb_ext.BidderName("appnexus"),
+			},
+			expected: testOutput{
+				hbPbCatDur:        "12.00_games_30s",
+				dealErr:           "dealTier configuration invalid for bidder 'appnexus', imp ID 'imp_id1'",
+				dealTierSatisfied: false,
+			},
+		},
+		{
+			description: "hb_pb_cat_dur should not be modified due to deal priority of 0",
+			in: testInput{
+				dealPriority: 0,
+				impExt:       json.RawMessage(`{"prebid": {"bidder": {"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}}}`),
+				targ: map[string]string{
+					"hb_pb_cat_dur": "12.00_auto_30s",
+				},
+				bidderName: openrtb_ext.BidderName("appnexus"),
+			},
+			expected: testOutput{
+				hbPbCatDur:        "12.00_auto_30s",
+				dealErr:           "",
+				dealTierSatisfied: false,
+			},
 		},
 	}
 
-	bidderName := openrtb_ext.BidderName("appnexus")
 	for _, test := range testCases {
 		bidRequest := &openrtb2.BidRequest{
 			ID: "some-request-id",
 			Imp: []openrtb2.Imp{
 				{
 					ID:  "imp_id1",
-					Ext: test.impExt,
+					Ext: test.in.impExt,
 				},
 			},
 		}
 
-		bid := entities.PbsOrtbBid{&openrtb2.Bid{ID: "123456"}, nil, "video", map[string]string{}, &openrtb_ext.ExtBidPrebidVideo{}, nil, nil, test.dealPriority, false, "", 0, "USD", ""}
+		bid := entities.PbsOrtbBid{&openrtb2.Bid{ID: "123456"}, nil, "video", map[string]string{}, &openrtb_ext.ExtBidPrebidVideo{}, nil, nil, test.in.dealPriority, false, "", 0, "USD", ""}
 		bidCategory := map[string]string{
-			bid.Bid.ID: test.targ["hb_pb_cat_dur"],
+			bid.Bid.ID: test.in.targ["hb_pb_cat_dur"],
 		}
 
 		auc := &auction{
 			winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
 				"imp_id1": {
-					bidderName: {&bid},
+					test.in.bidderName: {&bid},
 				},
 			},
 		}
 
 		dealErrs := applyDealSupport(bidRequest, auc, bidCategory, nil)
 
-		assert.Equal(t, test.expectedHbPbCatDur, bidCategory[auc.winningBidsByBidder["imp_id1"][bidderName][0].Bid.ID], test.description)
-		assert.Equal(t, test.expectedDealTierSatisfied, auc.winningBidsByBidder["imp_id1"][bidderName][0].DealTierSatisfied, "expectedDealTierSatisfied=%v when %v", test.expectedDealTierSatisfied, test.description)
-		if len(test.expectedDealErr) > 0 {
-			assert.Containsf(t, dealErrs, errors.New(test.expectedDealErr), "Expected error message not found in deal errors")
+		assert.Equal(t, test.expected.hbPbCatDur, bidCategory[auc.winningBidsByBidder["imp_id1"][test.in.bidderName][0].Bid.ID], test.description)
+		assert.Equal(t, test.expected.dealTierSatisfied, auc.winningBidsByBidder["imp_id1"][test.in.bidderName][0].DealTierSatisfied, "expected.dealTierSatisfied=%v when %v", test.expected.dealTierSatisfied, test.description)
+		if len(test.expected.dealErr) > 0 {
+			assert.Containsf(t, dealErrs, errors.New(test.expected.dealErr), "Expected error message not found in deal errors")
 		}
 	}
 }
@@ -5731,5 +5807,67 @@ func TestBuildMultiBidMap(t *testing.T) {
 				assert.Equal(t, tc.expected, multiBidMap, tc.desc)
 			})
 		}
+	}
+}
+
+func TestBidsToUpdate(t *testing.T) {
+	type testInput struct {
+		multiBid map[string]openrtb_ext.ExtMultiBid
+		bidder   string
+	}
+	testCases := []struct {
+		desc     string
+		in       testInput
+		expected int
+	}{
+		{
+			desc:     "Empty multibid map. Expect openrtb_ext.DefaultBidLimit",
+			in:       testInput{},
+			expected: openrtb_ext.DefaultBidLimit,
+		},
+		{
+			desc: "Empty bidder. Expect openrtb_ext.DefaultBidLimit",
+			in: testInput{
+				multiBid: map[string]openrtb_ext.ExtMultiBid{
+					"appnexus": {
+						Bidder:  "appnexus",
+						MaxBids: ptrutil.ToPtr(2),
+					},
+				},
+			},
+			expected: openrtb_ext.DefaultBidLimit,
+		},
+		{
+			desc: "bidder finds a match in multibid map but TargetBidderCodePrefix is empty. Expect openrtb_ext.DefaultBidLimit",
+			in: testInput{
+				multiBid: map[string]openrtb_ext.ExtMultiBid{
+					"appnexus": {
+						Bidder:  "appnexus",
+						MaxBids: ptrutil.ToPtr(2),
+					},
+				},
+				bidder: "appnexus",
+			},
+			expected: openrtb_ext.DefaultBidLimit,
+		},
+		{
+			desc: "multibid element with non-empty TargetBidderCodePrefix matches bidder. Expect MaxBids value",
+			in: testInput{
+				multiBid: map[string]openrtb_ext.ExtMultiBid{
+					"appnexus": {
+						Bidder:                 "appnexus",
+						MaxBids:                ptrutil.ToPtr(2),
+						TargetBidderCodePrefix: "aPrefix",
+					},
+				},
+				bidder: "appnexus",
+			},
+			expected: 2,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			assert.Equal(t, tc.expected, bidsToUpdate(tc.in.multiBid, tc.in.bidder), tc.desc)
+		})
 	}
 }

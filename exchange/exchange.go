@@ -577,15 +577,18 @@ func applyDealSupport(bidRequest *openrtb2.BidRequest, auc *auction, bidCategory
 	for impID, topBidsPerImp := range auc.winningBidsByBidder {
 		impDeal := impDealMap[impID]
 		for bidder, topBidsPerBidder := range topBidsPerImp {
-			maxBid := bidsToUpdate(multiBid, bidder.String())
-
+			bidderNormalized, bidderFound := openrtb_ext.NormalizeBidderName(bidder.String())
+			if !bidderFound {
+				continue
+			}
+			maxBid := bidsToUpdate(multiBid, bidderNormalized.String())
 			for i, topBid := range topBidsPerBidder {
 				if i == maxBid {
 					break
 				}
 				if topBid.DealPriority > 0 {
-					if validateDealTier(impDeal[bidder]) {
-						updateHbPbCatDur(topBid, impDeal[bidder], bidCategory)
+					if validateDealTier(impDeal[bidderNormalized]) {
+						updateHbPbCatDur(topBid, impDeal[bidderNormalized], bidCategory)
 					} else {
 						errs = append(errs, fmt.Errorf("dealTier configuration invalid for bidder '%s', imp ID '%s'", string(bidder), impID))
 					}
