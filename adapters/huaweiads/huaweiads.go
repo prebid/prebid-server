@@ -1178,6 +1178,9 @@ func (a *adapter) extractAdmNative(adType int32, content *content, bidType openr
 			}
 			responseAsset.Video = &videoObject
 		} else if asset.Img != nil {
+			if len(content.MetaData.ImageInfo) == imgIndex && asset.Img.Type == native1.ImageAssetTypeMain {
+				continue
+			}
 			var imgObject nativeResponse.Image
 			imgObject.URL = ""
 			imgObject.Type = asset.Img.Type
