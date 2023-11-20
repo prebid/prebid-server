@@ -19,8 +19,7 @@ import (
 )
 
 type IxAdapter struct {
-	URI        string
-	bidderName string
+	URI string
 }
 
 type ExtRequest struct {
@@ -285,7 +284,11 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 
 	if bidResponse.Ext != nil {
 		var bidRespExt ixRespExt
-		if err := json.Unmarshal(bidResponse.Ext, &bidRespExt); err == nil && bidRespExt.AuctionConfig != nil {
+		if err := json.Unmarshal(bidResponse.Ext, &bidRespExt); err != nil {
+			return nil, append(errs, err)
+		}
+
+		if bidRespExt.AuctionConfig != nil {
 			bidderResponse.FledgeAuctionConfigs = make([]*openrtb_ext.FledgeAuctionConfig, 0, len(bidRespExt.AuctionConfig))
 			for _, config := range bidRespExt.AuctionConfig {
 				if config.Config != nil {
@@ -295,10 +298,6 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 					}
 					bidderResponse.FledgeAuctionConfigs = append(bidderResponse.FledgeAuctionConfigs, fledgeAuctionConfig)
 				}
-			}
-		} else {
-			if err != nil {
-				errs = append(errs, err)
 			}
 		}
 	}
@@ -339,8 +338,7 @@ func getMediaTypeForBid(bid openrtb2.Bid, impMediaTypeReq map[string]openrtb_ext
 // Builder builds a new instance of the Ix adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &IxAdapter{
-		URI:        config.Endpoint,
-		bidderName: string(bidderName),
+		URI: config.Endpoint,
 	}
 	return bidder, nil
 }

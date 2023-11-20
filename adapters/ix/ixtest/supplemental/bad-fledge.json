@@ -130,32 +130,5 @@
             "value": "json: cannot unmarshal number into Go struct field auctionConfig.protectedAudienceAuctionConfigs.bidId of type string",
             "comparison": "literal"
         }
-    ],
-    "expectedBidResponses": [
-        {
-            "currency": "USD",
-            "bids": [
-                {
-                    "bid": {
-                        "id": "7706636740145184841",
-                        "impid": "test-imp-id",
-                        "price": 0.5,
-                        "adm": "some-test-ad",
-                        "adid": "29681110",
-                        "adomain": [
-                            "https://advertiser.example.com"
-                        ],
-                        "cid": "958",
-                        "crid": "29681110",
-                        "w": 300,
-                        "h": 250,
-                        "ext": {
-                            "ix": {}
-                        }
-                    },
-                    "type": "banner"
-                }
-            ]
-        }
     ]
 }
