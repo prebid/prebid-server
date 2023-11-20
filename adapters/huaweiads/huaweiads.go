@@ -535,7 +535,7 @@ func getNativeFormat(adslot30 *adslot30, openRTBImp *openrtb2.Imp) error {
 	}
 
 	//popular size for native ads
-	popularSizes := []map[string]int64{{"w": 225, "h": 150}, {"w": 300, "h": 250}, {"w": 320, "h": 250}, {"w": 640, "h": 360}, {"w": 720, "h": 1280}, {"w": 1080, "h": 170}, {"w": 1080, "h": 430}, {"w": 1080, "h": 432}, {"w": 1080, "h": 504}, {"w": 1080, "h": 607}, {"w": 1080, "h": 1620}, {"w": 1200, "h": 627}, {"w": 1280, "h": 720}, {"w": 1312, "h": 768}, {"w": 1920, "h": 1080}}
+	popularSizes := []map[string]int64{{"w": 225, "h": 150}, {"w": 300, "h": 250}, {"w": 320, "h": 250}, {"w": 640, "h": 360}, {"w": 1080, "h": 170}, {"w": 1080, "h": 430}, {"w": 1080, "h": 432}, {"w": 1080, "h": 504}, {"w": 1080, "h": 607}, {"w": 1080, "h": 1620}, {"w": 1200, "h": 627}, {"w": 1280, "h": 720}, {"w": 1312, "h": 768}, {"w": 1920, "h": 1080}}
 
 	// only compute the main image number, type = native1.ImageAssetTypeMain
 	var numMainImage = 0
