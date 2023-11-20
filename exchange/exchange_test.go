@@ -2974,84 +2974,89 @@ func TestCategoryMappingTranslateCategoriesFalse(t *testing.T) {
 	assert.Equal(t, 3, len(bidCategory), "Bidders category mapping doesn't match")
 }
 
-func TestCategoryDedupe(t *testing.T) {
+type DeduplicateBidBooleanGenerator struct {
+	value bool
+}
 
+func (dbbg DeduplicateBidBooleanGenerator) Generate() bool {
+	return dbbg.value
+}
+
+func TestCategoryDedupe(t *testing.T) {
 	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
 	if error != nil {
 		t.Errorf("Failed to create a category Fetcher: %v", error)
 	}
-
 	requestExt := newExtRequest()
-
 	targData := &targetData{
 		priceGranularity: *requestExt.Prebid.Targeting.PriceGranularity,
 		includeWinners:   true,
 	}
 
-	adapterBids := make(map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid)
+	// bid3 and bid5 will be same price, category, and duration so one of them should be removed based on the dedupe generator
+	bid1 := openrtb2.Bid{ID: "bid_id1", ImpID: "imp_id1", Price: 10.0000, Cat: []string{"IAB1-3"}, W: 1, H: 1}
+	bid2 := openrtb2.Bid{ID: "bid_id2", ImpID: "imp_id2", Price: 15.0000, Cat: []string{"IAB1-4"}, W: 1, H: 1}
+	bid3 := openrtb2.Bid{ID: "bid_id3", ImpID: "imp_id3", Price: 20.0000, Cat: []string{"IAB1-3"}, W: 1, H: 1}
+	bid4 := openrtb2.Bid{ID: "bid_id4", ImpID: "imp_id4", Price: 20.0000, Cat: []string{"IAB1-INVALID"}, W: 1, H: 1}
+	bid5 := openrtb2.Bid{ID: "bid_id5", ImpID: "imp_id5", Price: 20.0000, Cat: []string{"IAB1-3"}, W: 1, H: 1}
 
-	cats1 := []string{"IAB1-3"}
-	cats2 := []string{"IAB1-4"}
-	// bid3 will be same price, category, and duration as bid1 so one of them should get removed
-	cats4 := []string{"IAB1-2000"}
-	bid1 := openrtb2.Bid{ID: "bid_id1", ImpID: "imp_id1", Price: 10.0000, Cat: cats1, W: 1, H: 1}
-	bid2 := openrtb2.Bid{ID: "bid_id2", ImpID: "imp_id2", Price: 15.0000, Cat: cats2, W: 1, H: 1}
-	bid3 := openrtb2.Bid{ID: "bid_id3", ImpID: "imp_id3", Price: 20.0000, Cat: cats1, W: 1, H: 1}
-	bid4 := openrtb2.Bid{ID: "bid_id4", ImpID: "imp_id4", Price: 20.0000, Cat: cats4, W: 1, H: 1}
-	bid5 := openrtb2.Bid{ID: "bid_id5", ImpID: "imp_id5", Price: 20.0000, Cat: cats1, W: 1, H: 1}
+	bid1_1 := entities.PbsOrtbBid{Bid: &bid1, BidType: "video", BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, OriginalBidCPM: 10.0000, OriginalBidCur: "USD"}
+	bid1_2 := entities.PbsOrtbBid{Bid: &bid2, BidType: "video", BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 50}, OriginalBidCPM: 15.0000, OriginalBidCur: "USD"}
+	bid1_3 := entities.PbsOrtbBid{Bid: &bid3, BidType: "video", BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, OriginalBidCPM: 20.0000, OriginalBidCur: "USD"}
+	bid1_4 := entities.PbsOrtbBid{Bid: &bid4, BidType: "video", BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, OriginalBidCPM: 20.0000, OriginalBidCur: "USD"}
+	bid1_5 := entities.PbsOrtbBid{Bid: &bid5, BidType: "video", BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, OriginalBidCPM: 20.0000, OriginalBidCur: "USD"}
 
-	bid1_1 := entities.PbsOrtbBid{&bid1, nil, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, nil, nil, 0, false, "", 10.0000, "USD", ""}
-	bid1_2 := entities.PbsOrtbBid{&bid2, nil, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 50}, nil, nil, 0, false, "", 15.0000, "USD", ""}
-	bid1_3 := entities.PbsOrtbBid{&bid3, nil, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, nil, nil, 0, false, "", 20.0000, "USD", ""}
-	bid1_4 := entities.PbsOrtbBid{&bid4, nil, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, nil, nil, 0, false, "", 20.0000, "USD", ""}
-	bid1_5 := entities.PbsOrtbBid{&bid5, nil, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, nil, nil, 0, false, "", 20.0000, "USD", ""}
+	bidderName1 := openrtb_ext.BidderName("appnexus")
 
-	selectedBids := make(map[string]int)
-	expectedCategories := map[string]string{
-		"bid_id1": "10.00_Electronics_30s",
-		"bid_id2": "14.00_Sports_50s",
-		"bid_id3": "20.00_Electronics_30s",
-		"bid_id5": "20.00_Electronics_30s",
+	tests := []struct {
+		name                 string
+		dedupeGeneratorValue bool
+		expectedBids         []*entities.PbsOrtbBid
+		expectedCategories   map[string]string
+	}{
+		{
+			name:                 "bid_id5_selected_over_bid_id3",
+			dedupeGeneratorValue: true,
+			expectedBids:         []*entities.PbsOrtbBid{&bid1_2, &bid1_5},
+			expectedCategories: map[string]string{
+				"bid_id2": "14.00_Sports_50s",
+				"bid_id5": "20.00_Electronics_30s",
+			},
+		},
+		{
+			name:                 "bid_id3_selected_over_bid_id5",
+			dedupeGeneratorValue: false,
+			expectedBids:         []*entities.PbsOrtbBid{&bid1_2, &bid1_3},
+			expectedCategories: map[string]string{
+				"bid_id2": "14.00_Sports_50s",
+				"bid_id3": "20.00_Electronics_30s",
+			},
+		},
 	}
 
-	numIterations := 10
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			adapterBids := map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid{
+				bidderName1: {
+					Bids: []*entities.PbsOrtbBid{
+						&bid1_1,
+						&bid1_2,
+						&bid1_3,
+						&bid1_4,
+						&bid1_5,
+					},
+					Currency: "USD",
+				},
+			}
+			deduplicateGenerator := DeduplicateBidBooleanGenerator{value: tt.dedupeGeneratorValue}
+			bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &deduplicateGenerator, &nonBids{})
 
-	// Run the function many times, this should be enough for the 50% chance of which bid to remove to remove bid1 sometimes
-	// and bid3 others. It's conceivably possible (but highly unlikely) that the same bid get chosen every single time, but
-	// if you notice false fails from this test increase numIterations to make it even less likely to happen.
-	for i := 0; i < numIterations; i++ {
-		innerBids := []*entities.PbsOrtbBid{
-			&bid1_1,
-			&bid1_2,
-			&bid1_3,
-			&bid1_4,
-			&bid1_5,
-		}
-
-		seatBid := entities.PbsOrtbSeatBid{Bids: innerBids, Currency: "USD"}
-		bidderName1 := openrtb_ext.BidderName("appnexus")
-
-		adapterBids[bidderName1] = &seatBid
-
-		bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &nonBids{})
-
-		assert.Equal(t, nil, err, "Category mapping error should be empty")
-		assert.Equal(t, 3, len(rejections), "There should be 2 bid rejection messages")
-		assert.Regexpf(t, regexp.MustCompile(`bid rejected \[bid ID: bid_id(1|3)\] reason: Bid was deduplicated`), rejections[0], "Rejection message did not match expected")
-		assert.Equal(t, "bid rejected [bid ID: bid_id4] reason: Category mapping file for primary ad server: 'freewheel', publisher: '' not found", rejections[1], "Rejection message did not match expected")
-		assert.Equal(t, 2, len(adapterBids[bidderName1].Bids), "Bidders number doesn't match")
-		assert.Equal(t, 2, len(bidCategory), "Bidders category mapping doesn't match")
-
-		for bidId, bidCat := range bidCategory {
-			assert.Equal(t, expectedCategories[bidId], bidCat, "Category mapping doesn't match")
-			selectedBids[bidId]++
-		}
+			assert.Nil(t, err)
+			assert.Equal(t, 3, len(rejections))
+			assert.Equal(t, adapterBids[bidderName1].Bids, tt.expectedBids)
+			assert.Equal(t, bidCategory, tt.expectedCategories)
+		})
 	}
-
-	assert.Equal(t, numIterations, selectedBids["bid_id2"], "Bid 2 did not make it through every time")
-	assert.Equal(t, 0, selectedBids["bid_id1"], "Bid 1 should be rejected on every iteration due to lower price")
-	assert.NotEqual(t, 0, selectedBids["bid_id3"], "Bid 3 should be accepted at least once")
-	assert.NotEqual(t, 0, selectedBids["bid_id5"], "Bid 5 should be accepted at least once")
 }
 
 func TestNoCategoryDedupe(t *testing.T) {
