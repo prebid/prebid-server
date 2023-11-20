@@ -48,6 +48,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderAidem,
 	BidderAJA,
 	BidderAlgorix,
+	BidderAlkimi,
 	BidderAMX,
 	BidderApacdex,
 	BidderAppnexus,
@@ -328,6 +329,7 @@ const (
 	BidderAidem             BidderName = "aidem"
 	BidderAJA               BidderName = "aja"
 	BidderAlgorix           BidderName = "algorix"
+	BidderAlkimi            BidderName = "alkimi"
 	BidderAMX               BidderName = "amx"
 	BidderApacdex           BidderName = "apacdex"
 	BidderAppnexus          BidderName = "appnexus"

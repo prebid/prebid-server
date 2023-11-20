@@ -32,6 +32,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/aidem"
 	"github.com/prebid/prebid-server/v2/adapters/aja"
 	"github.com/prebid/prebid-server/v2/adapters/algorix"
+	"github.com/prebid/prebid-server/v2/adapters/alkimi"
 	"github.com/prebid/prebid-server/v2/adapters/amx"
 	"github.com/prebid/prebid-server/v2/adapters/apacdex"
 	"github.com/prebid/prebid-server/v2/adapters/appnexus"
@@ -227,6 +228,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAidem:             aidem.Builder,
 		openrtb_ext.BidderAJA:               aja.Builder,
 		openrtb_ext.BidderAlgorix:           algorix.Builder,
+		openrtb_ext.BidderAlkimi:            alkimi.Builder,
 		openrtb_ext.BidderAMX:               amx.Builder,
 		openrtb_ext.BidderApacdex:           apacdex.Builder,
 		openrtb_ext.BidderAppnexus:          appnexus.Builder,
