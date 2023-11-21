@@ -2974,14 +2974,6 @@ func TestCategoryMappingTranslateCategoriesFalse(t *testing.T) {
 	assert.Equal(t, 3, len(bidCategory), "Bidders category mapping doesn't match")
 }
 
-type DeduplicateBidBooleanGenerator struct {
-	value bool
-}
-
-func (dbbg DeduplicateBidBooleanGenerator) Generate() bool {
-	return dbbg.value
-}
-
 func TestCategoryDedupe(t *testing.T) {
 	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
 	if error != nil {
@@ -3048,7 +3040,7 @@ func TestCategoryDedupe(t *testing.T) {
 					Currency: "USD",
 				},
 			}
-			deduplicateGenerator := DeduplicateBidBooleanGenerator{value: tt.dedupeGeneratorValue}
+			deduplicateGenerator := fakeRandomDeduplicateBidBooleanGenerator{returnValue: tt.dedupeGeneratorValue}
 			bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &deduplicateGenerator, &nonBids{})
 
 			assert.Nil(t, err)
