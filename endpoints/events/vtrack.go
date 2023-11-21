@@ -11,14 +11,15 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
-	accountService "github.com/prebid/prebid-server/account"
-	"github.com/prebid/prebid-server/analytics"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/prebid_cache_client"
-	"github.com/prebid/prebid-server/stored_requests"
+	accountService "github.com/prebid/prebid-server/v2/account"
+	"github.com/prebid/prebid-server/v2/analytics"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/prebid_cache_client"
+	"github.com/prebid/prebid-server/v2/stored_requests"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 const (
@@ -123,7 +124,7 @@ func (v *vtrackEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httpro
 			}
 		}
 
-		d, err := json.Marshal(*cachingResponse)
+		d, err := jsonutil.Marshal(*cachingResponse)
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -187,7 +188,7 @@ func ParseVTrackRequest(httpRequest *http.Request, maxRequestSize int64) (req *B
 		return req, err
 	}
 
-	if err := json.Unmarshal(requestJson, req); err != nil {
+	if err := jsonutil.UnmarshalValid(requestJson, req); err != nil {
 		return req, err
 	}
 
@@ -319,7 +320,7 @@ func ModifyVastXmlString(externalUrl, vast, bidid, bidder, accountID string, tim
 // ModifyVastXmlJSON modifies BidCacheRequest element Vast XML data
 func ModifyVastXmlJSON(externalUrl string, data json.RawMessage, bidid, bidder, accountId string, timestamp int64, integrationType string) json.RawMessage {
 	var vast string
-	if err := json.Unmarshal(data, &vast); err != nil {
+	if err := jsonutil.Unmarshal(data, &vast); err != nil {
 		// failed to decode json, fall back to string
 		vast = string(data)
 	}

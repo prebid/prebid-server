@@ -9,15 +9,15 @@ import (
 	"time"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/exchange/entities"
-	"github.com/prebid/prebid-server/hooks"
-	"github.com/prebid/prebid-server/hooks/hookanalytics"
-	"github.com/prebid/prebid-server/hooks/hookstage"
-	"github.com/prebid/prebid-server/metrics"
-	metricsConfig "github.com/prebid/prebid-server/metrics/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/exchange/entities"
+	"github.com/prebid/prebid-server/v2/hooks"
+	"github.com/prebid/prebid-server/v2/hooks/hookanalytics"
+	"github.com/prebid/prebid-server/v2/hooks/hookstage"
+	"github.com/prebid/prebid-server/v2/metrics"
+	metricsConfig "github.com/prebid/prebid-server/v2/metrics/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -37,7 +37,7 @@ func TestEmptyHookExecutor(t *testing.T) {
 	entrypointBody, entrypointRejectErr := executor.ExecuteEntrypointStage(req, body)
 	rawAuctionBody, rawAuctionRejectErr := executor.ExecuteRawAuctionStage(body)
 	processedAuctionRejectErr := executor.ExecuteProcessedAuctionStage(&openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}})
-	bidderRequestRejectErr := executor.ExecuteBidderRequestStage(bidderRequest, "bidder-name")
+	bidderRequestRejectErr := executor.ExecuteBidderRequestStage(&openrtb_ext.RequestWrapper{BidRequest: bidderRequest}, "bidder-name")
 	executor.ExecuteAuctionResponseStage(&openrtb2.BidResponse{})
 
 	outcomes := executor.GetOutcomes()
@@ -1171,7 +1171,7 @@ func TestExecuteBidderRequestStage(t *testing.T) {
 			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{})
 			exec.SetAccount(test.givenAccount)
 
-			reject := exec.ExecuteBidderRequestStage(test.givenBidderRequest, bidderName)
+			reject := exec.ExecuteBidderRequestStage(&openrtb_ext.RequestWrapper{BidRequest: test.givenBidderRequest}, bidderName)
 
 			assert.Equal(t, test.expectedReject, reject, "Unexpected stage reject.")
 			assert.Equal(t, test.expectedBidderRequest, test.givenBidderRequest, "Incorrect bidder request.")

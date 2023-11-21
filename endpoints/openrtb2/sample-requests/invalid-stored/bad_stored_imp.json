@@ -33,5 +33,5 @@
     "tmax": 500
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request: imp.ext.prebid.storedrequest.id 7: Stored Imp has Invalid JSON"
+  "expectedErrorMessage": "Invalid request: Invalid JSON Document"
 }

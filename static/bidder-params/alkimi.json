@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Alkimi Adapter Params",
+  "description": "A schema which validates params accepted by the Alkimi adapter",
+  "type": "object",
+
+  "properties": {
+    "token": {
+      "type": "string",
+      "description": "Publisher Token provided by Alkimi"
+    },
+    "bidFloor": {
+      "type": "number",
+      "description": "The minimum CPM price in USD",
+      "minimum": 0
+    },
+    "instl": {
+      "type": "number",
+      "description": "Set to 1 if using interstitial (default: 0)"
+    },
+    "exp": {
+      "type": "number",
+      "description": "Advisory as to the number of seconds that may elapse between the auction and the actual impression"
+    }
+  },
+
+  "required": ["token"]
+}

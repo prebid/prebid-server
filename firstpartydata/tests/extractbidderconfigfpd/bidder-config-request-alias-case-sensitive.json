@@ -1,0 +1,28 @@
+{
+  "description": "Extracts bidder configs for a bidder, normalizing the case",
+  "inputRequestData": {
+    "data": {},
+    "bidderconfig": [
+      {
+        "bidders": [
+          "requestAlias"
+        ],
+        "config": {
+          "ortb2": {
+            "site": {
+              "id": "aliasSiteId"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "outputRequestData": {},
+  "bidderConfigFPD": {
+    "requestAlias": {
+      "site": {
+        "id": "aliasSiteId"
+      }
+    }
+  }
+}

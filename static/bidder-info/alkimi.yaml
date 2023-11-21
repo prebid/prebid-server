@@ -1,0 +1,15 @@
+endpoint: https://exchange.alkimi-onboarding.com/server/bid
+maintainer:
+  email: support@alkimi.org
+gvlVendorID: 1169
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - audio
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - audio

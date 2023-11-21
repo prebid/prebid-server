@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/v2/errortypes"
 )
 
 func CheckResponseStatusCodeForErrors(response *ResponseData) error {
