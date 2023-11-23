@@ -5040,6 +5040,325 @@ func TestOverrideConfigAlternateBidderCodesWithRequestValues(t *testing.T) {
 	}
 }
 
+func TestGetAllBids(t *testing.T) {
+	noBidServer := func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(200) }
+	server := httptest.NewServer(http.HandlerFunc(noBidServer))
+	defer server.Close()
+
+	type testIn struct {
+		bidderRequests             []BidderRequest
+		bidAdjustments             map[string]float64
+		conversions                currency.Conversions
+		accountDebugAllowed        bool
+		globalPrivacyControlHeader string
+		headerDebugAllowed         bool
+		alternateBidderCodes       openrtb_ext.ExtAlternateBidderCodes
+		experiment                 *openrtb_ext.Experiment
+		hookExecutor               hookexecution.StageExecutor
+		pbsRequestStartTime        time.Time
+		bidAdjustmentRules         map[string][]openrtb_ext.Adjustment
+		tmaxAdjustments            *TmaxAdjustmentsPreprocessed
+		adapterMap                 map[openrtb_ext.BidderName]AdaptedBidder
+	}
+	type testResults struct {
+		adapterBids   map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid
+		adapterExtra  map[openrtb_ext.BidderName]*seatResponseExtra
+		extraRespInfo extraAuctionResponseInfo
+	}
+	testCases := []struct {
+		desc     string
+		in       testIn
+		expected testResults
+	}{
+		{
+			desc: "alternateBidderCodes-config-absent: pubmatic bidder returns bids with 'pubmatic' and 'groupm' seats",
+			in: testIn{
+				bidderRequests: []BidderRequest{
+					{
+						BidderName:     "pubmatic",
+						BidderCoreName: "pubmatic",
+						BidRequest: &openrtb2.BidRequest{
+							ID: "some-request-id",
+							Imp: []openrtb2.Imp{{
+								ID: "some-impression-id",
+							}},
+						},
+					},
+				},
+				conversions:         &currency.ConstantRates{},
+				hookExecutor:        hookexecution.EmptyHookExecutor{},
+				pbsRequestStartTime: time.Now(),
+				adapterMap: map[openrtb_ext.BidderName]AdaptedBidder{
+					openrtb_ext.BidderPubmatic: AdaptBidder(&goodSingleBidder{
+						httpRequest: &adapters.RequestData{
+							Method: "POST",
+							Uri:    server.URL,
+						},
+						bidResponse: &adapters.BidderResponse{
+							Bids: []*adapters.TypedBid{
+								{Bid: &openrtb2.Bid{ID: "1"}, Seat: "pubmatic"},
+								{Bid: &openrtb2.Bid{ID: "2"}, Seat: "groupm"},
+							},
+						},
+					}, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderPubmatic, nil, ""),
+				},
+			},
+			expected: testResults{
+				extraRespInfo: extraAuctionResponseInfo{
+					bidsFound: true,
+				},
+				adapterExtra: map[openrtb_ext.BidderName]*seatResponseExtra{
+					"pubmatic": {
+						Warnings: []openrtb_ext.ExtBidderMessage{
+							{
+								Code:    errortypes.AlternateBidderCodeWarningCode,
+								Message: `alternateBidderCodes disabled for "pubmatic", rejecting bids for "groupm"`,
+							},
+						},
+					},
+				},
+				adapterBids: map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid{
+					"pubmatic": {
+						Bids: []*entities.PbsOrtbBid{
+							{
+								Bid: &openrtb2.Bid{
+									ID: "1",
+								},
+								OriginalBidCur: "USD",
+							},
+						},
+						Currency:  "USD",
+						Seat:      "pubmatic",
+						HttpCalls: []*openrtb_ext.ExtHttpCall{},
+					},
+				},
+			},
+		},
+		{
+			desc: "alternateBidderCodes-enabled: pubmatic bidder returns bids with 'pubmatic' and 'groupm' seats",
+			in: testIn{
+				bidderRequests: []BidderRequest{
+					{
+						BidderName:     "pubmatic",
+						BidderCoreName: "pubmatic",
+						BidRequest: &openrtb2.BidRequest{
+							ID: "some-request-id",
+							Imp: []openrtb2.Imp{{
+								ID: "some-impression-id",
+							}},
+						},
+					},
+				},
+				conversions: &currency.ConstantRates{},
+				alternateBidderCodes: openrtb_ext.ExtAlternateBidderCodes{
+					Enabled: true,
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						"pubmatic": {
+							Enabled:            true,
+							AllowedBidderCodes: []string{"groupm"},
+						},
+					},
+				},
+				hookExecutor:        hookexecution.EmptyHookExecutor{},
+				pbsRequestStartTime: time.Now(),
+				adapterMap: map[openrtb_ext.BidderName]AdaptedBidder{
+					openrtb_ext.BidderPubmatic: AdaptBidder(&goodSingleBidder{
+						httpRequest: &adapters.RequestData{
+							Method: "POST",
+							Uri:    server.URL,
+						},
+						bidResponse: &adapters.BidderResponse{
+							Bids: []*adapters.TypedBid{
+								{Bid: &openrtb2.Bid{ID: "1"}, Seat: "pubmatic"},
+								{Bid: &openrtb2.Bid{ID: "2"}, Seat: "groupm"},
+							},
+						},
+					}, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderPubmatic, nil, ""),
+				},
+			},
+			expected: testResults{
+				extraRespInfo: extraAuctionResponseInfo{
+					bidsFound: true,
+				},
+				adapterExtra: map[openrtb_ext.BidderName]*seatResponseExtra{
+					"pubmatic": {
+						Warnings: []openrtb_ext.ExtBidderMessage{},
+					},
+				},
+				adapterBids: map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid{
+					"pubmatic": {
+						Bids: []*entities.PbsOrtbBid{
+							{
+								Bid: &openrtb2.Bid{
+									ID: "1",
+								},
+								OriginalBidCur: "USD",
+							},
+						},
+						Currency:  "USD",
+						Seat:      "pubmatic",
+						HttpCalls: []*openrtb_ext.ExtHttpCall{},
+					},
+					"groupm": {
+						Bids: []*entities.PbsOrtbBid{
+							{
+								Bid: &openrtb2.Bid{
+									ID: "2",
+								},
+								OriginalBidCur: "USD",
+							},
+						},
+						Currency:  "USD",
+						Seat:      "groupm",
+						HttpCalls: []*openrtb_ext.ExtHttpCall{},
+					},
+				},
+			},
+		},
+		{
+			desc: "alternateBidderCodes-enabled: pubmatic bidder returns bids with only 'groupm' seat",
+			in: testIn{
+				bidderRequests: []BidderRequest{
+					{
+						BidderName:     "pubmatic",
+						BidderCoreName: "pubmatic",
+						BidRequest: &openrtb2.BidRequest{
+							ID: "some-request-id",
+							Imp: []openrtb2.Imp{{
+								ID: "some-impression-id",
+							}},
+						},
+					},
+				},
+				conversions: &currency.ConstantRates{},
+				alternateBidderCodes: openrtb_ext.ExtAlternateBidderCodes{
+					Enabled: true,
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						"pubmatic": {
+							Enabled:            true,
+							AllowedBidderCodes: []string{"groupm"},
+						},
+					},
+				},
+				hookExecutor:        hookexecution.EmptyHookExecutor{},
+				pbsRequestStartTime: time.Now(),
+				adapterMap: map[openrtb_ext.BidderName]AdaptedBidder{
+					openrtb_ext.BidderPubmatic: AdaptBidder(&goodSingleBidder{
+						httpRequest: &adapters.RequestData{
+							Method: "POST",
+							Uri:    server.URL,
+						},
+						bidResponse: &adapters.BidderResponse{
+							Bids: []*adapters.TypedBid{
+								{Bid: &openrtb2.Bid{ID: "2"}, Seat: "groupm"},
+							},
+						},
+					}, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderPubmatic, nil, ""),
+				},
+			},
+			expected: testResults{
+				extraRespInfo: extraAuctionResponseInfo{
+					bidsFound: true,
+				},
+				adapterExtra: map[openrtb_ext.BidderName]*seatResponseExtra{
+					"pubmatic": {
+						Warnings: []openrtb_ext.ExtBidderMessage{},
+					},
+				},
+				adapterBids: map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid{
+					"groupm": {
+						Bids: []*entities.PbsOrtbBid{
+							{
+								Bid: &openrtb2.Bid{
+									ID: "2",
+								},
+								OriginalBidCur: "USD",
+							},
+						},
+						Currency:  "USD",
+						Seat:      "groupm",
+						HttpCalls: []*openrtb_ext.ExtHttpCall{},
+					},
+				},
+			},
+		},
+		{
+			desc: "bidder responded with empty bid",
+			in: testIn{
+				bidderRequests: []BidderRequest{
+					{
+						BidderName:     "pubmatic",
+						BidderCoreName: "pubmatic",
+						BidRequest: &openrtb2.BidRequest{
+							ID: "some-request-id",
+							Imp: []openrtb2.Imp{{
+								ID: "some-impression-id",
+							}},
+						},
+					},
+				},
+				conversions: &currency.ConstantRates{},
+				alternateBidderCodes: openrtb_ext.ExtAlternateBidderCodes{
+					Enabled: true,
+					Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+						"pubmatic": {
+							Enabled:            true,
+							AllowedBidderCodes: []string{"groupm"},
+						},
+					},
+				},
+				hookExecutor:        hookexecution.EmptyHookExecutor{},
+				pbsRequestStartTime: time.Now(),
+				adapterMap: map[openrtb_ext.BidderName]AdaptedBidder{
+					openrtb_ext.BidderPubmatic: AdaptBidder(&goodSingleBidder{
+						httpRequest: &adapters.RequestData{
+							Method: "POST",
+							Uri:    server.URL,
+						},
+						bidResponse: &adapters.BidderResponse{},
+					}, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderPubmatic, nil, ""),
+				},
+			},
+			expected: testResults{
+				extraRespInfo: extraAuctionResponseInfo{
+					bidsFound: false,
+				},
+				adapterExtra: map[openrtb_ext.BidderName]*seatResponseExtra{
+					"pubmatic": {
+						Warnings: []openrtb_ext.ExtBidderMessage{},
+					},
+				},
+				adapterBids: map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid{},
+			},
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.desc, func(t *testing.T) {
+			e := exchange{
+				cache: &wellBehavedCache{},
+				me:    &metricsConf.NilMetricsEngine{},
+				gdprPermsBuilder: fakePermissionsBuilder{
+					permissions: &permissionsMock{
+						allowAllBidders: true,
+					},
+				}.Builder,
+				adapterMap: test.in.adapterMap,
+			}
+
+			adapterBids, adapterExtra, extraRespInfo := e.getAllBids(context.Background(), test.in.bidderRequests, test.in.bidAdjustments,
+				test.in.conversions, test.in.accountDebugAllowed, test.in.globalPrivacyControlHeader, test.in.headerDebugAllowed, test.in.alternateBidderCodes, test.in.experiment,
+				test.in.hookExecutor, test.in.pbsRequestStartTime, test.in.bidAdjustmentRules, test.in.tmaxAdjustments)
+
+			assert.Equalf(t, test.expected.extraRespInfo.bidsFound, extraRespInfo.bidsFound, "extraRespInfo.bidsFound mismatch")
+			assert.Equalf(t, test.expected.adapterBids, adapterBids, "adapterBids mismatch")
+			assert.Equalf(t, len(test.expected.adapterExtra), len(adapterExtra), "adapterExtra length mismatch")
+			for adapter, extra := range test.expected.adapterExtra {
+				assert.Equalf(t, extra.Warnings, adapterExtra[adapter].Warnings, "adapterExtra.Warnings mismatch for adapter [%s]", adapter)
+			}
+		})
+	}
+}
+
 type MockSigner struct {
 	data string
 }
